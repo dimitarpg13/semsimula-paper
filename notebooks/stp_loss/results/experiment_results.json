@@ -1,0 +1,180 @@
+{
+  "model": "gpt2",
+  "num_trajectories": 50,
+  "global_fits": {
+    "gaussian_well": {
+      "params": [
+        3.6693211366684495,
+        39425833.24444366
+      ],
+      "r2": 1.1102230246251565e-16,
+      "aic": 2974.861551186208
+    },
+    "harmonic": {
+      "params": [
+        31.939264771634743
+      ],
+      "r2": -1.5164221300601297,
+      "aic": 4231.612723689428
+    },
+    "linear": {
+      "params": [
+        67.06399165814025
+      ],
+      "r2": -0.9139480255104322,
+      "aic": 3858.3268910857705
+    }
+  },
+  "domain_fits": {
+    "mathematics": {
+      "gaussian_well": {
+        "params": [
+          3.948922818145942,
+          675807.7536503205
+        ],
+        "r2": 8.4907036068671e-08
+      },
+      "harmonic": {
+        "params": [
+          468.5344805549099
+        ],
+        "r2": -1.3678064106000654
+      },
+      "linear": {
+        "params": [
+          113.22372962873004
+        ],
+        "r2": -0.6733933699661903
+      }
+    },
+    "narrative": {
+      "gaussian_well": {
+        "params": [
+          3.826792181113363,
+          11424.961867094169
+        ],
+        "r2": 0.0008285804338256098
+      },
+      "harmonic": {
+        "params": [
+          396.7367923837023
+        ],
+        "r2": -1.495371039183194
+      },
+      "linear": {
+        "params": [
+          93.49746123331623
+        ],
+        "r2": -0.47703786047290286
+      }
+    },
+    "scientific": {
+      "gaussian_well": {
+        "params": [
+          3.3209890262412194,
+          181317.40253825177
+        ],
+        "r2": 3.3306690738754696e-16
+      },
+      "harmonic": {
+        "params": [
+          11.401093938039445
+        ],
+        "r2": -1.2759058218244665
+      },
+      "linear": {
+        "params": [
+          38.134240498357215
+        ],
+        "r2": -0.9281516599404083
+      }
+    },
+    "code_description": {
+      "gaussian_well": {
+        "params": [
+          3.9483846111418566,
+          1586713.9670323308
+        ],
+        "r2": -8.656476691015769e-08
+      },
+      "harmonic": {
+        "params": [
+          12.77499228131161
+        ],
+        "r2": -1.479612785408365
+      },
+      "linear": {
+        "params": [
+          45.2872053359859
+        ],
+        "r2": -1.2372134316662913
+      }
+    },
+    "conversational": {
+      "gaussian_well": {
+        "params": [
+          3.3704352690617347,
+          30911.361423581697
+        ],
+        "r2": -0.012947637501166565
+      },
+      "harmonic": {
+        "params": [
+          1249.8717600510686
+        ],
+        "r2": -1.6338757849705838
+      },
+      "linear": {
+        "params": [
+          110.10364211556511
+        ],
+        "r2": -0.43917171012699496
+      }
+    }
+  },
+  "correlation": {
+    "pearson_r": -0.26034503791972535,
+    "pearson_p": 0.06785247800825579,
+    "spearman_rho": -0.20854741896758705,
+    "spearman_p": 0.14611558282783543
+  },
+  "action_stats": {
+    "mean": -95.868408203125,
+    "std": 14.128847122192383
+  },
+  "stp_loss_stats": {
+    "mean": 1.333423989682492,
+    "std": 0.07158389832854381
+  },
+  "acceleration_analysis": {
+    "num_consecutive_triplets": 1314,
+    "stp_acceleration_equivalence": {
+      "pearson_r": 1.0,
+      "max_absolute_error": 1.6764367671839864e-13,
+      "mean_absolute_error": 4.743372953002762e-16
+    },
+    "normal_acceleration": {
+      "mean_a_perp": 44.20364884592269,
+      "std_a_perp": 24.18410705326588
+    },
+    "tangential_acceleration": {
+      "mean_a_par_abs": 92.46575087457526,
+      "std_a_par_abs": 65.57417428739922,
+      "mean_a_par_signed": -91.71383736921032,
+      "frac_speeding_up": 0.0213089802130898,
+      "frac_slowing_down": 0.9786910197869102
+    },
+    "ratio_tangential_to_normal": {
+      "per_trajectory_mean": 2.091807836646992,
+      "per_trajectory_median": 2.099598978336341,
+      "global": 2.091812628339213
+    },
+    "permutation_null_test": {
+      "n_permutations": 100,
+      "tangential_z_score": -11.828807882321899,
+      "tangential_p_value": 1.0,
+      "normal_z_score": -12.006874006917503,
+      "normal_p_value": 1.0
+    }
+  }
+}
