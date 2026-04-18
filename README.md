@@ -129,18 +129,24 @@ also cite the paper above as the canonical source of the framework.
 
 ## License
 
-**TODO.** The author has not yet selected a license for this companion
-repository. Until a LICENSE file is added, all contents are © Dimitar P.
-Gueorguiev 2026 and all rights are reserved. This section will be updated
-before the companion repository is made public.
+This repository is released under a **dual license** that reflects the
+difference in character between its code and its prose content.
 
-Recommended candidates:
+**Code.** The Jupyter notebooks under `notebooks/` and any configuration
+files (e.g., a future `requirements.txt` or `environment.yml`) are licensed
+under the MIT License; see [`LICENSE`](LICENSE).
 
-- **CC BY 4.0** for the `manuscripts/` and `companion_notes/` text content
-  (treats them as scholarly writing).
-- **MIT** or **Apache-2.0** for the `notebooks/` code content.
-- A dual license (one for prose, one for code) is common for ML companion
-  repositories.
+**Prose content.** The manuscripts under `manuscripts/`, the companion notes
+under `companion_notes/`, this `README.md`, and `CITATION.bib` are licensed
+under the Creative Commons Attribution 4.0 International License (CC BY 4.0);
+see [`LICENSE-CC-BY-4.0`](LICENSE-CC-BY-4.0). A human-readable summary of
+CC BY 4.0 is available at
+[creativecommons.org/licenses/by/4.0](https://creativecommons.org/licenses/by/4.0/).
+
+Both licenses allow broad reuse, including commercial use and the creation of
+derivative works, and require only that the original author be credited.
+When reusing any material from this repository, please cite the paper (see
+[`CITATION.bib`](CITATION.bib)) as the canonical source of the framework.
 
 ---
 
@@ -167,11 +173,10 @@ present companion repository are cited in and required by the paper.
    URL at a pinned commit hash.
 2. **arXiv identifier.** Fill in once v1 is submitted; propagate to both
    `README.md` and `CITATION.bib`.
-3. **License.** Select and add a `LICENSE` file.
-4. **`requirements.txt`.** Produce from the actual environment used to run
+3. **`requirements.txt`.** Produce from the actual environment used to run
    the notebooks; commit with pinned versions.
-5. **Reproducibility runtime.** Measure and document notebook runtime and
+4. **Reproducibility runtime.** Measure and document notebook runtime and
    hardware.
-6. **Zenodo archive (optional).** If you want a DOI for citation stability,
+5. **Zenodo archive (optional).** If you want a DOI for citation stability,
    mint one via Zenodo once the repo is public and tag the first release as
    `v1.0-arxiv`.
