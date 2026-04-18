@@ -38,7 +38,6 @@ available.
 | `Gueorguiev2022Execution`       | `Execution_Of_Semantic_Structures.{pdf,docx}`                                                    | §8.6 (summary only)             |
 | `Gueorguiev2024SemSim`          | `Semantic_Simulation.{pdf,docx}`                                                                 | §§1–2                           |
 | `Gueorguiev2026Lagrangian`      | `Constructing_Langrangian_for_Semantic_Space.{pdf,docx}`                                         | §7                              |
-| `Gueorguiev2026ExecutionProblem`| `The_Execution_Problem.md`                                                                       | §8.6 (deferred to companion)    |
 
 These manuscripts are the **historical record** of the work. The paper is the
 canonical statement of the framework as of 2026; the notes above are preserved
@@ -51,19 +50,21 @@ because they are cited in the paper.
 
 ### `companion_notes/` — 2026 companion notes (work in progress)
 
-These are informal companion notes developed alongside the paper. They are
-cited in the paper as `@unpublished{SemSimNotes2026…}` with the annotation
-"Companion note to present paper, work in progress." They are **not**
-peer-reviewable standalone artifacts; they are included so that readers of the
-paper can trace the reasoning behind claims that are summarized (but not fully
-developed) in the main text.
+These are informal companion notes and living documents developed alongside
+the paper. They capture material that the paper **does not subsume** but that
+is either summarized briefly in the main text (with a pointer here for the
+detailed treatment) or is the target of explicit deferral to future work.
+They are **not** peer-reviewable standalone artifacts; they are included so
+that readers of the paper can trace the reasoning behind claims that are
+summarized (but not fully developed) in the main text.
 
-| BibTeX key                   | File                                                                                          | Cited around              |
-| ---------------------------- | --------------------------------------------------------------------------------------------- | ------------------------- |
-| `SemSimNotes2026Mass`        | `On_the_Interpretation_of_Semantic_Mass.md`                                                   | §11                       |
-| `SemSimNotes2026Hidden`      | `On_the_Interpretation_of_Hidden_State.md`                                                    | §10                       |
-| `SemSimNotes2026Accel`       | `On_The_Existence_of_Acceleration_in_Semantic_Structures.md`                                  | §12                       |
-| `SemSimNotes2026Emergent`    | `STP_Loss_Is_An_Emergent_Property_Of_The_Energy_Landscape_Defined_By_Gaussian_Well_Potential.md` | §12                       |
+| BibTeX key                       | File                                                                                             | Cited around                |
+| -------------------------------- | ------------------------------------------------------------------------------------------------ | --------------------------- |
+| `SemSimNotes2026Mass`            | `On_the_Interpretation_of_Semantic_Mass.md`                                                      | §11                         |
+| `SemSimNotes2026Hidden`          | `On_the_Interpretation_of_Hidden_State.md`                                                       | §10                         |
+| `SemSimNotes2026Accel`           | `On_The_Existence_of_Acceleration_in_Semantic_Structures.md`                                     | §12                         |
+| `SemSimNotes2026Emergent`        | `STP_Loss_Is_An_Emergent_Property_Of_The_Energy_Landscape_Defined_By_Gaussian_Well_Potential.md` | §12                         |
+| `Gueorguiev2026ExecutionProblem` | `The_Execution_Problem.md`                                                                       | §8.6 (deferred to companion)|
 
 ### `notebooks/` — reproducibility
 
