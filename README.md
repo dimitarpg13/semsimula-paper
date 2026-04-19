@@ -58,12 +58,11 @@ long-running research repository
 provided in [`manuscripts/PROVENANCE.md`](manuscripts/PROVENANCE.md).
 
 > **Note on `Gueorguiev2024ReadMe`.** The citation "Semantic Simulation with
-> Reinforcement Learning — README" (cited in §8) does not have a copy in this
-> companion repository; it is pinned to commit
-> [`38b1be1`](https://github.com/dimitarpg13/semsimula/blob/38b1be1/README.md)
-> (2024-09-30) of the main research repository. This is the only external
-> citation in the paper's bibliography that is not resolved inside this
-> companion repository.
+> Reinforcement Learning — README" (cited in §8) refers to unpublished
+> project documentation dated 30 September 2024. The document is not
+> publicly distributed and is not included in this companion repository;
+> the bibliography entry records it as an `@unpublished` note whose
+> material is subsumed and extended in §8 of the paper.
 
 ### `companion_notes/` — 2026 companion notes (work in progress)
 
