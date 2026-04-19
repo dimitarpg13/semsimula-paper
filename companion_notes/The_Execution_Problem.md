@@ -6,7 +6,7 @@
 
 _Static semantic meaning_ (a structure at rest relative to an observer) can be computationally executed to produce new semantic structures. This is essentially asking: How does _meaning_ become _action_? How does _understanding_ become _computation_?
 
-The framework so far (from [Execution_of_Semantic_Structures.docx](https://github.com/dimitarpg13/semsimula/blob/main/docs/Execution_Of_Semantic_Structures.docx)):
+The framework so far (from [Execution_Of_Semantic_Structures.docx](https://github.com/dimitarpg13/semsimula-paper/blob/main/manuscripts/Execution_Of_Semantic_Structures.docx)):
 ```
 Semantic Space (𝚺)                    Execution Space (𝜠)
        │                                     │
@@ -36,7 +36,7 @@ For brevity, instead of using the notation $\alpha = \left(\mu, \mathfrak{i}, \m
 
 **Note 2**: _**Latch in template matching vs execution**_
 
-First, let us anchor the concept. From the document [Semantic_Templates.docx](https://github.com/dimitarpg13/semsimula/blob/main/docs/Semantic_Templates.docx), the latch $\mu$ appears in the definition of template matching:
+First, let us anchor the concept. In the *Semantic Templates* working note (cited in the main paper as `Gueorguiev2022Templates`; not included in this repository), the latch $\mu$ appears in the definition of template matching:
 
 > "When the semantic latch $\mu$ associated with 𝔗 is triggered the centroid of 𝔗 is affixed to the point which has triggered the latch."
 
@@ -129,7 +129,7 @@ A semantic template $\mathfrak{t} \in \mathfrak{T}$ performs the following opera
 
 $M\left(\mathfrak{t}\right)\text{ scans region }\mathfrak{U}\left(\mathfrak{t}\right) \in \boldsymbol{\Sigma}  \rightarrow\text{ latch }\mu\text{ triggers }\rightarrow I\left(\mathfrak{t}\right)\text{ produces }S'\text{ in } \boldsymbol{\Sigma}$
 
-The template is an _incomplete_ semantic structure - the missing pieces are filled by template particles which are in a sense stochastic placeholders. Matching succeeds when a real semantic structure $S$ in $\boldsymbol{\Sigma}$ "fills the gaps" sufficiently well (that is, exceeding the matching threshold $\Theta$, as defined via the average trajectory weight $\bar{w}$ in the document [Semantic_Templates.docx](https://github.com/dimitarpg13/semsimula/blob/main/docs/Semantic_Templates.docx).  
+The template is an _incomplete_ semantic structure - the missing pieces are filled by template particles which are in a sense stochastic placeholders. Matching succeeds when a real semantic structure $S$ in $\boldsymbol{\Sigma}$ "fills the gaps" sufficiently well (that is, exceeding the matching threshold $\Theta$, as defined via the average trajectory weight $\bar{w}$ in the *Semantic Templates* working note referenced above).  
 
 Thus, the template matching can be viewed as an analysis operation:
 

@@ -404,7 +404,7 @@ GPT-2 was chosen as a deliberately weak baseline. It is a 2019-era model with no
 
 The per-token NTP loss across all 50 trajectories has mean 3.67, standard deviation 2.97, and range [0.0001, 14.62]. The distribution is right-skewed, with most tokens predicted at moderate loss and a tail of high-loss tokens corresponding to rare or context-dependent words.
 
-<img src="images/exp_gpt2_energy_proxy.png" width="85%">
+<img src="../notebooks/stp_loss/results/stage2_energy_proxy.png" width="85%">
 
 **Figure 2**: Per-token NTP loss (energy proxy) across token positions for five semantic domains (five representative trajectories shown per domain), and the aggregate density distribution (lower right). The energy proxy is highly variable within and across trajectories.
 
@@ -420,7 +420,7 @@ Three potential models were fitted to the pooled (distance, energy) data from al
 
 The Gaussian well achieves the lowest AIC by a substantial margin: 382 points below the linear model and 933 points below the harmonic model. However, the $R^2$ is effectively zero for all three models, indicating that none of them explain meaningful variance in the raw scatter.
 
-<img src="images/exp_gpt2_global_fit.png" width="85%">
+<img src="../notebooks/stp_loss/results/stage4_global_fit.png" width="85%">
 
 **Figure 3**: Energy proxy vs. Euclidean distance from trajectory center, with fitted curves for all three potential models. The Gaussian well (red) saturates at $a \approx 3.67$; the harmonic (blue dashed) and linear (green dash-dot) diverge. The data scatter is large relative to the fitted signal.
 
@@ -430,7 +430,7 @@ The AIC result deserves careful interpretation. The Gaussian well wins not becau
 
 The empirical restoring force, estimated by binning the distance-energy data and computing $-dV/dx$ numerically, was compared against the theoretical Gaussian well force profile $F(x) = 2ab \cdot x \cdot e^{-bx^2}$.
 
-<img src="images/exp_gpt2_restoring_force.png" width="85%">
+<img src="../notebooks/stp_loss/results/stage4_restoring_force.png" width="85%">
 
 **Figure 4**: Left: Binned mean energy proxy as a function of distance from center, with the fitted Gaussian well curve. Right: Empirical restoring force (black) compared to the theoretical force profile (red). The empirical force oscillates around zero with no clear resemblance to the predicted peak structure.
 
@@ -448,7 +448,7 @@ The Gaussian well was fitted separately for each semantic domain:
 | Code description | 4.05 | 0.005 | 0.003 |
 | Conversational | 3.37 | 0.006 | 0.001 |
 
-<img src="images/exp_gpt2_domain_fits.png" width="85%">
+<img src="../notebooks/stp_loss/results/stage4_domain_fits.png" width="85%">
 
 **Figure 5**: Per-domain scatter plots with fitted Gaussian well curves, and a comparison of fitted well parameters across domains (lower right). Mathematics and narrative produce wells with $\kappa^2 \approx 0.07$, while scientific, code, and conversational produce wells with $\kappa^2 \approx 0.005$ — a factor of 14 difference.
 
@@ -470,7 +470,7 @@ Using the global Gaussian well parameters ($a = 3.669$, $b = 0.083$), the Lagran
 | Pearson $r$ (STP loss, action) | 0.190 | $p = 0.186$ |
 | Spearman $\rho$ (STP loss, action) | 0.239 | $p = 0.094$ |
 
-<img src="images/exp_gpt2_lagrangian_analysis.png" width="85%">
+<img src="../notebooks/stp_loss/results/stage5_lagrangian_analysis.png" width="85%">
 
 **Figure 6**: Left: STP loss vs. total action, colored by domain, with Pearson $r = 0.190$ and Spearman $\rho = 0.239$. Center: Virial-like diagram showing mean kinetic vs. mean potential energy per trajectory. Right: Action distribution by domain.
 
@@ -478,7 +478,7 @@ The correlation between STP loss and total action is positive, as predicted, but
 
 The virial-like diagram (Figure 6, center) reveals a striking imbalance: mean kinetic energy exceeds mean potential energy by 2-3 orders of magnitude for every trajectory. In classical mechanics, $T \gg V$ indicates an unbound system — the particles have far more kinetic energy than the well can contain. This is visible in the per-trajectory dynamics profiles:
 
-<img src="images/exp_gpt2_trajectory_profiles.png" width="70%">
+<img src="../notebooks/stp_loss/results/stage5_trajectory_profiles.png" width="70%">
 
 **Figure 7**: Kinetic energy $T_t$ (blue), potential energy $V_t$ (orange, near zero), and Lagrangian $\mathcal{L}_t = T - V$ (black dashed) along representative trajectories from each domain. The potential energy is negligible relative to the kinetic energy at every token position.
 
@@ -757,4 +757,4 @@ Note: the sign of the STP-action correlation is not a criterion for refutation. 
 
 [7] Y. LeCun, S. Chopra, R. Hadsell, M. Ranzato, F. Huang, "A Tutorial on Energy-Based Learning," in Predicting Structured Data, MIT Press, 2006.
 
-[8] "On the Interpretation of Semantic Mass in Terms of Transformer Mechanisms," 2026 (companion document: `docs/On_the_Interpretation_of_Semantic_Mass.md`).
+[8] "On the Interpretation of Semantic Mass in Terms of Transformer Mechanisms," 2026 (companion note: [`On_the_Interpretation_of_Semantic_Mass.md`](On_the_Interpretation_of_Semantic_Mass.md)).
