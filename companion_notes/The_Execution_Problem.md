@@ -590,20 +590,20 @@ None of those places offers a proof, or even a precise statement of the conjectu
 ### Statement of the Conjecture
 
 > **Conjecture (NDTM-equivalence of Semantic Execution).**
-> Let `\semT` denote the template space of Semantic Simulation and let `𝜠` denote the execution space, with executive atoms α = (μ, ℑ, 𝔖, 𝔈, δ) defined as in *Execution of Semantic Structures*. Fix a semantic structure S ∈ 𝚺 that is stationary with respect to the observer, together with its target point τ ∈ 𝜠 and the executive tree aggregated around τ. Then the multiset of execution trajectories rooted at τ — under stochastic δ (or equivalently, under the non-deterministic selection of applicable atoms by μ) — recognises the same class of languages as a non-deterministic Turing machine, provided that the template calculus underlying `\semT` is Turing-expressive and that the energy-damping constraints of the Lagrangian do not restrict the admissible computations to a strict sub-class.
+> Let $\mathfrak{T}$ denote the template space of Semantic Simulation and let $\boldsymbol{E}$ denote the execution space, with executive atoms $\alpha = (\mu, \mathfrak{I}, \mathfrak{S}, \mathfrak{E}, \delta)$ defined as in *Execution of Semantic Structures*. Fix a semantic structure $S \in \boldsymbol{\Sigma}$ that is stationary with respect to the observer, together with its target point $\tau \in \boldsymbol{E}$ and the executive tree aggregated around $\tau$. Then the multiset of execution trajectories rooted at $\tau$ — under stochastic $\delta$ (or equivalently, under the non-deterministic selection of applicable atoms by $\mu$) — recognises the same class of languages as a non-deterministic Turing machine, provided that the template calculus underlying $\mathfrak{T}$ is Turing-expressive and that the energy-damping constraints of the Lagrangian do not restrict the admissible computations to a strict sub-class.
 
 The conjecture therefore has two necessary riders:
 
 1. **Template-calculus expressiveness.** The template space must be rich enough to express arbitrary tree-to-tree computable functions. A template calculus that admits only linear left-hand sides, or only first-order pattern matching without variable binding, is **strictly sub-Turing** (orthogonal left-linear term rewriting systems are confluent but not Turing-complete).
 
-2. **Lagrangian admissibility.** The energy-damping constraints of `\eqref{eq:full-dynamics}` and the bound-state arrival rule of *§"Bound-state arrival and the freeze–unfreeze scheme"* must not forcibly terminate every execution in finite time at a bounded energy. If they do, the effective computational class collapses below NDTM (at most decidable, possibly context-sensitive).
+2. **Lagrangian admissibility.** The energy-damping constraints of the full-dynamics equation of the main paper and the bound-state arrival rule of *§"Bound-state arrival and the freeze–unfreeze scheme"* must not forcibly terminate every execution in finite time at a bounded energy. If they do, the effective computational class collapses below NDTM (at most decidable, possibly context-sensitive).
 
 ### Heuristic Argument: Why the Conjecture is Plausible
 
 The execution process, viewed abstractly, is:
 
 $$
-\text{(template match on } S) \;\to\; \text{(select operation } \mathcal O) \;\to\; \text{(apply rewriting)} \;\to\; S'
+\text{(template match on } S) \to \text{(select operation } \mathcal{O}) \to \text{(apply rewriting)} \to S'
 $$
 
 Formally, this is a **tree-rewriting system with side conditions** (the template-match precondition) plus a policy over applicable rules. Two standard results from rewriting theory bracket the expected position in the Chomsky hierarchy:
@@ -638,47 +638,47 @@ Four distinct gaps prevent a formal proof in the present state of the framework:
 
 The following steps, in order, constitute a concrete programme of work to turn the conjecture into a theorem.
 
-#### Step 1. Formalise the template calculus `\semT`.
+#### Step 1. Formalise the template calculus $\mathfrak{T}$.
 
-1.1 Fix a finite signature of node labels Σ and a set of meta-variables X. Define a template as a tree over Σ ∪ X with optional side-conditions on meta-variable bindings.
+1.1 Fix a finite signature of node labels $\Sigma$ and a set of meta-variables $X$. Define a template as a tree over $\Sigma \cup X$ with optional side-conditions on meta-variable bindings.
 
-1.2 Define template matching: given a template t and a semantic structure S, a match is a substitution σ: X → (subtrees of S) such that σ(t) ≡ (a specified subtree of S) up to the matching-threshold criterion already used in the matching document.
+1.2 Define template matching: given a template $t$ and a semantic structure $S$, a match is a substitution $\sigma: X \rightarrow (\text{subtrees of } S)$ such that $\sigma(t) \equiv (\text{a specified subtree of } S)$ up to the matching-threshold criterion already used in the matching document.
 
-1.3 Prove (or conjecture and test on examples) a **normal-form theorem** for `\semT`: every template reduces to a canonical form under a specified set of template-space equivalences.
+1.3 Prove (or conjecture and test on examples) a **normal-form theorem** for $\mathfrak{T}$: every template reduces to a canonical form under a specified set of template-space equivalences.
 
-1.4 Establish the expressiveness baseline: show that `\semT` can express at minimum all **first-order linear patterns**. Then show, as a separate result, that `\semT` can express **non-linear patterns with variable repetition** — this is the key step that takes the calculus from TRS-style (polynomial-time matching) to Turing-expressive (undecidable matching in general).
+1.4 Establish the expressiveness baseline: show that $\mathfrak{T}$ can express at minimum all **first-order linear patterns**. Then show, as a separate result, that $\mathfrak{T}$ can express **non-linear patterns with variable repetition** — this is the key step that takes the calculus from TRS-style (polynomial-time matching) to Turing-expressive (undecidable matching in general).
 
-#### Step 2. Formalise the operation calculus in `\execSpace`.
+#### Step 2. Formalise the operation calculus in the executive space $\mathcal{E}_{\mathrm{exec}}$.
 
-2.1 Fix a signature of tree-rewriting operations: substitution (replace subtree t with t'), insertion (add subtree t as the i-th child of node n), deletion (remove subtree rooted at n), and relabeling (change the label of node n).
+2.1 Fix a signature of tree-rewriting operations: substitution (replace subtree $t$ with $t'$), insertion (add subtree $t$ as the $i$-th child of node $n$), deletion (remove subtree rooted at $n$), and relabeling (change the label of node $n$).
 
 2.2 Prove the **completeness of tree-rewriting**: every tree-to-tree computable function can be expressed as a finite composition of the four primitives above. (This is a standard result in rewriting theory, adapted to the semantic-tree signature.)
 
-2.3 Integrate operations with templates: define an **executive rule** as a pair (t, op) where t ∈ `\semT` and op is a tree-rewriting operation, with semantics *"if t matches S with substitution σ, apply op to the matched subtree"*. Show that the set of executive rules equipped with concatenation forms a category whose morphisms are exactly the tree-to-tree computable functions.
+2.3 Integrate operations with templates: define an **executive rule** as a pair $(t, \mathrm{op})$ where $t \in \mathfrak{T}$ and $\mathrm{op}$ is a tree-rewriting operation, with semantics *"if $t$ matches $S$ with substitution $\sigma$, apply $\mathrm{op}$ to the matched subtree"*. Show that the set of executive rules equipped with concatenation forms a category whose morphisms are exactly the tree-to-tree computable functions.
 
 #### Step 3. Execute the simulation arguments.
 
-3.1 **NDTM → Executive system.** Fix an NDTM M = (Q, Γ, δ, q₀, F). Construct:
-- a semantic signature Σ_M for encoding configurations of M as trees;
-- a template calculus sub-language that expresses the patterns *"head is at position p, reads symbol a, in state q"*;
-- a set of executive rules implementing δ;
-- a proof that the non-deterministic execution tree of the resulting executive system, rooted at the initial-configuration tree, accepts exactly L(M).
+3.1 **NDTM → Executive system.** Fix an NDTM $M = (Q, \Gamma, \delta, q_0, F)$. Construct:
+- a semantic signature $\Sigma_M$ for encoding configurations of $M$ as trees;
+- a template calculus sub-language that expresses the patterns *"head is at position $p$, reads symbol $a$, in state $q$"*;
+- a set of executive rules implementing $\delta$;
+- a proof that the non-deterministic execution tree of the resulting executive system, rooted at the initial-configuration tree, accepts exactly $L(M)$.
 
-3.2 **Executive system → NDTM.** Fix an arbitrary executive system E with a Turing-expressive template calculus. Construct:
+3.2 **Executive system → NDTM.** Fix an arbitrary executive system $\mathcal{X}$ with a Turing-expressive template calculus. Construct:
 - a tape alphabet capable of representing semantic structures as strings;
 - NDTM transition rules that implement, for each step: (i) enumeration of applicable templates, (ii) non-deterministic selection of one applicable atom, (iii) application of its operation, (iv) replacement of the current tape content with the rewritten structure;
-- a proof that L(the NDTM) = L(the executive system).
+- a proof that $L(\text{the NDTM}) = L(\text{the executive system})$.
 
 3.3 Combine 3.1 and 3.2 into a single equivalence theorem: the class of languages recognised by executive systems equals the class of recursively enumerable languages (i.e. class RE), under a Turing-expressive template calculus and unconstrained dynamics.
 
 #### Step 4. Characterise the admissible regime under Lagrangian constraints.
 
-4.1 Formalise the energy budget of an executive tree: each executive atom's application contributes a quantum of energy E(α) (the operational cost from `\eqref{eq:op-lagrangian}`), and the cumulative energy is bounded by the structure's ensemble net energy E_t(S).
+4.1 Formalise the energy budget of an executive tree: each executive atom's application contributes a quantum of energy $E(\alpha)$ (the operational cost from the operation-Lagrangian equation of the main paper), and the cumulative energy is bounded by the structure's ensemble net energy $E_t(S)$.
 
 4.2 Prove a **trichotomy theorem** (refining the dichotomy originally envisaged). The admissible computational class depends jointly on the operation calculus and on the presence of a **structural-retirement** mechanism:
-   - **(i)** No deletion operation and no structural retirement: class ≤ context-sensitive (monotone growth only).
-   - **(ii)** Explicit deletion-as-operation (Step 2.1) but no structural retirement, closed energy: class ≤ **LBA / context-sensitive** (bounded workspace; structures are never forgotten so the addressable workspace grows with the computation length).
-   - **(iii)** Explicit deletion-as-operation **plus** a structural-retirement mechanism (cf. Step 4.4 below) **plus** reinforcement-replenished energy via `\semE`: class = **RE / NDTM-equivalent**.
+   - **(i)** No deletion operation and no structural retirement: class $\le$ context-sensitive (monotone growth only).
+   - **(ii)** Explicit deletion-as-operation (Step 2.1) but no structural retirement, closed energy: class $\le$ **LBA / context-sensitive** (bounded workspace; structures are never forgotten so the addressable workspace grows with the computation length).
+   - **(iii)** Explicit deletion-as-operation **plus** a structural-retirement mechanism (cf. Step 4.4 below) **plus** reinforcement-replenished energy via $\mathfrak{F}$: class $=$ **RE / NDTM-equivalent**.
 
 4.3 Characterise which regime applies to specific classes of semantic structures (sentences, short discourses, full documents). Empirical hypothesis: short structures are in regime (i)–(ii); longer structures with reinforcement-driven context are in regime (iii).
 
@@ -725,7 +725,7 @@ Until this programme is carried out, the NDTM-equivalence claim should be treate
 
 The trichotomy theorem of Step 4.2 makes **structural retirement** — the removal of semantic structures from the active arena after their usefulness has ended — a load-bearing ingredient of the full NDTM-equivalence claim. Deletion-as-operation (Step 2.1 of the action plan) is sufficient for *locally correct* rewriting but is *not* sufficient to push the computational class from LBA / context-sensitive up to RE / NDTM-equivalent. An additional mechanism is needed that clears structures which the execution process is no longer actively rewriting. This section develops two concrete candidate mechanisms, compares them, and specifies an implementation and validation plan for each.
 
-Throughout this section we write `S` for a semantic structure in `\semSpace`, `t` for the (continuous or discrete) time parameter of the dynamics, `T(S, t)` for its kinetic energy, `V(S, t)` for its potential energy under the Gaussian well, PARF, and SARF contributions, and `\semE(S, t)` for the reinforcement flux deposited onto `S` by the semantic energy field.
+Throughout this section we write $S$ for a semantic structure in $\boldsymbol{\Sigma}$, $t$ for the (continuous or discrete) time parameter of the dynamics, $T(S, t)$ for its kinetic energy, $V(S, t)$ for its potential energy under the Gaussian well, PARF, and SARF contributions, and $\mathfrak{F}(S, t)$ for the reinforcement flux deposited onto $S$ by the semantic energy field.
 
 ### Mechanism A. Energy-Threshold Retirement
 
@@ -734,56 +734,56 @@ Throughout this section we write `S` for a semantic structure in `\semSpace`, `t
 Define the **residual energy** of a semantic structure as the sum of its kinetic and potential contributions:
 
 $$
-E_{\mathrm{res}}(S, t) \;=\; T(S, t) + V(S, t).
+E_{\mathrm{res}}(S, t) = T(S, t) + V(S, t).
 $$
 
-Fix a retirement threshold `\epsilon_{\min} > 0` and a hold window `\tau_{\mathrm{hold}} > 0`. The retirement rule is:
+Fix a retirement threshold $\epsilon_{\min} > 0$ and a hold window $\tau_{\mathrm{hold}} > 0$. The retirement rule is:
 
-> *If `E_{\mathrm{res}}(S, t) < \epsilon_{\min}` for all `t \in [t_0, t_0 + \tau_{\mathrm{hold}}]`, remove `S` from `\semSpace` at time `t_0 + \tau_{\mathrm{hold}}`.*
+> *If $E_{\mathrm{res}}(S, t) < \epsilon_{\min}$ for all $t \in [t_0, t_0 + \tau_{\mathrm{hold}}]$, remove $S$ from $\boldsymbol{\Sigma}$ at time $t_0 + \tau_{\mathrm{hold}}$.*
 
-The hold window `\tau_{\mathrm{hold}}` is essential. It prevents transient dips below threshold (caused by damping, collisional events, or numerical discretisation) from triggering spurious retirements. In practice `\tau_{\mathrm{hold}}` will be chosen in proportion to the characteristic decay time-scale of the damping factor `H_i`.
+The hold window $\tau_{\mathrm{hold}}$ is essential. It prevents transient dips below threshold (caused by damping, collisional events, or numerical discretisation) from triggering spurious retirements. In practice $\tau_{\mathrm{hold}}$ will be chosen in proportion to the characteristic decay time-scale of the damping factor $H_i$.
 
 #### Coupling to the Existing Lagrangian
 
-This mechanism folds cleanly into the existing dynamics of the paper because it introduces no new state variables. The quantities `T` and `V` are already tracked per-structure; the threshold check is a scalar comparison applied post-update at each integration step. Three properties make the coupling natural:
+This mechanism folds cleanly into the existing dynamics of the paper because it introduces no new state variables. The quantities $T$ and $V$ are already tracked per-structure; the threshold check is a scalar comparison applied post-update at each integration step. Three properties make the coupling natural:
 
-1. **Consistency with bound states.** A structure that arrives at a bound state has `T → 0` (kinetic energy fully dissipated by `H_i`) but in general `V \ne 0` because the Gaussian well has a non-zero floor at the centroid. Thus bound states with `V > \epsilon_{\min}` persist — they are "interesting" frozen structures that merit continued presence in the semantic arena. Bound states that additionally drain their potential energy (e.g. through SARF-mediated coupling to other structures) drop below threshold and retire.
+1. **Consistency with bound states.** A structure that arrives at a bound state has $T \to 0$ (kinetic energy fully dissipated by $H_i$) but in general $V \ne 0$ because the Gaussian well has a non-zero floor at the centroid. Thus bound states with $V > \epsilon_{\min}$ persist — they are "interesting" frozen structures that merit continued presence in the semantic arena. Bound states that additionally drain their potential energy (e.g. through SARF-mediated coupling to other structures) drop below threshold and retire.
 
-2. **Consistency with damping.** The damping factor `H_i` removes kinetic energy only; without a retirement mechanism it would leave the configuration cluttered with zero-velocity but non-zero-potential relics. Energy-threshold retirement is the natural extension of damping to the structure-presence level.
+2. **Consistency with damping.** The damping factor $H_i$ removes kinetic energy only; without a retirement mechanism it would leave the configuration cluttered with zero-velocity but non-zero-potential relics. Energy-threshold retirement is the natural extension of damping to the structure-presence level.
 
 3. **Emergent, not stipulated.** Retirement becomes a **consequence** of the dynamics rather than an independent primitive. This preserves the framework's editorial commitment to deriving mechanisms from the Lagrangian wherever possible.
 
 #### Advantages
 
-- **Minimal theoretical overhead.** No new fields, no new rate constants beyond `\epsilon_{\min}` and `\tau_{\mathrm{hold}}`, no new rewriting primitives.
+- **Minimal theoretical overhead.** No new fields, no new rate constants beyond $\epsilon_{\min}$ and $\tau_{\mathrm{hold}}$, no new rewriting primitives.
 - **Physically interpretable.** Analogous to thermal dissociation in chemistry: structures whose binding energy has fallen below the background noise level dissociate.
-- **Energy-conservation story is clean.** Retirement releases `E_{\mathrm{res}}(S, t) < \epsilon_{\min}` back to the field; the total energy budget accounts for this explicitly, providing a convenient hook for verifying conservation laws in simulation.
+- **Energy-conservation story is clean.** Retirement releases $E_{\mathrm{res}}(S, t) < \epsilon_{\min}$ back to the field; the total energy budget accounts for this explicitly, providing a convenient hook for verifying conservation laws in simulation.
 
 #### Concerns
 
-- **Threshold calibration is non-trivial.** `\epsilon_{\min}` must be small enough to preserve meaningful bound states and large enough to retire clutter. Calibration likely depends on the scale `\mathfrak{m}\upsilon^2` of the Gaussian well.
+- **Threshold calibration is non-trivial.** $\epsilon_{\min}$ must be small enough to preserve meaningful bound states and large enough to retire clutter. Calibration likely depends on the scale $\mathfrak{m}\upsilon^2$ of the Gaussian well.
 - **Interaction with numerical damping.** In discrete-time simulations, numerical dissipation from the integrator may artificially drive structures below threshold. The hold window mitigates this, but it must be tuned to the integrator.
 - **No memory of usefulness.** A structure that has never been reinforced is treated identically to one that *has* been reinforced but now sits below threshold. If reinforcement is a better proxy for "computational usefulness" than residual energy, Mechanism B may be preferable.
 
 #### Action Plan — Mechanism A
 
 **A.1 Theoretical specification.**
-- Fix a precise form of `V(S, t)` that aggregates the Gaussian-well contribution of `\semE` with the PARF/SARF pairwise contributions.
-- State the retirement rule as a formal sentence of the dynamics, including the hold window and the release of residual energy back to `\semE`.
+- Fix a precise form of $V(S, t)$ that aggregates the Gaussian-well contribution of $\mathfrak{F}$ with the PARF/SARF pairwise contributions.
+- State the retirement rule as a formal sentence of the dynamics, including the hold window and the release of residual energy back to $\mathfrak{F}$.
 - Prove a **conservation lemma**: total system energy (field + structures + released retirement quanta) is conserved up to the damping loss, with retirement contributing an identifiable term.
 
 **A.2 Reduction to a rewriting property.**
-- Prove a **necessity lemma**: in the closed-energy, deletion-as-operation regime without retirement, the reachable configuration space from any initial `S` is bounded by a function of the number of operations applied, hence the system is LBA-equivalent.
-- Prove a **sufficiency lemma**: with energy-threshold retirement **and** reinforcement-replenished energy via `\semE`, the reachable configuration space is unbounded, hence the system can simulate an NDTM.
+- Prove a **necessity lemma**: in the closed-energy, deletion-as-operation regime without retirement, the reachable configuration space from any initial $S$ is bounded by a function of the number of operations applied, hence the system is LBA-equivalent.
+- Prove a **sufficiency lemma**: with energy-threshold retirement **and** reinforcement-replenished energy via $\mathfrak{F}$, the reachable configuration space is unbounded, hence the system can simulate an NDTM.
 
 **A.3 Implementation in the STP/Lagrangian simulator.**
 - Extend the existing simulator used for the STP-loss validation to track per-structure residual energy.
 - Add a post-step retirement pass: iterate over active structures, apply the threshold-and-hold rule, remove structures that satisfy it, and record the released energy.
-- Expose `\epsilon_{\min}` and `\tau_{\mathrm{hold}}` as configuration parameters.
+- Expose $\epsilon_{\min}$ and $\tau_{\mathrm{hold}}$ as configuration parameters.
 
 **A.4 Empirical validation.**
-- **(Sanity)** In a two-structure PARF demonstration, verify that structures with `V > \epsilon_{\min}` at their bound state persist indefinitely, while structures driven below threshold (e.g. by SARF-mediated coupling) retire.
-- **(Sensitivity)** Sweep `\epsilon_{\min}` and `\tau_{\mathrm{hold}}` across two orders of magnitude each; plot the retirement rate as a function of both.
+- **(Sanity)** In a two-structure PARF demonstration, verify that structures with $V > \epsilon_{\min}$ at their bound state persist indefinitely, while structures driven below threshold (e.g. by SARF-mediated coupling) retire.
+- **(Sensitivity)** Sweep $\epsilon_{\min}$ and $\tau_{\mathrm{hold}}$ across two orders of magnitude each; plot the retirement rate as a function of both.
 - **(Consistency)** Verify the conservation lemma numerically: track total energy across retirements and confirm it is conserved to within the integrator's tolerance.
 - **(Behavioural)** On a small executive-tree toy problem (3–5 atoms, 2–3 retirement events expected), confirm that the computation completes correctly and that the retired structures are indeed those that would have been "garbage" in a hand-analysed reference execution.
 
@@ -794,65 +794,65 @@ This mechanism folds cleanly into the existing dynamics of the paper because it 
 
 #### Formulation
 
-Attach to each active semantic structure `S` a scalar **persistence variable** `\pi(S, t) \in \mathbb{R}_{\ge 0}` with the following dynamics:
+Attach to each active semantic structure $S$ a scalar **persistence variable** $\pi(S, t) \in \mathbb{R}_{\ge 0}$ with the following dynamics:
 
 $$
-\frac{d\pi(S, t)}{dt} \;=\; -\lambda\, \pi(S, t) \;+\; \rho\bigl(\semE(S, t)\bigr),
+\frac{d\pi(S, t)}{dt} = -\lambda\, \pi(S, t) + \rho\bigl(\mathfrak{F}(S, t)\bigr),
 $$
 
 where:
-- `\lambda > 0` is a decay rate, specifying how quickly persistence leaks away in the absence of reinforcement.
-- `\rho: \mathbb{R} \to \mathbb{R}_{\ge 0}` is a monotone-increasing rate function converting the local reinforcement flux `\semE(S, t)` into a persistence-replenishment rate. A natural choice is `\rho(x) = \kappa \max(x, 0)` with `\kappa > 0`.
+- $\lambda > 0$ is a decay rate, specifying how quickly persistence leaks away in the absence of reinforcement.
+- $\rho: \mathbb{R} \to \mathbb{R}_{\ge 0}$ is a monotone-increasing rate function converting the local reinforcement flux $\mathfrak{F}(S, t)$ into a persistence-replenishment rate. A natural choice is $\rho(x) = \kappa \max(x, 0)$ with $\kappa > 0$.
 
-Fix a persistence threshold `\pi_{\min} > 0`. The retirement rule is:
+Fix a persistence threshold $\pi_{\min} > 0$. The retirement rule is:
 
-> *If `\pi(S, t) < \pi_{\min}`, remove `S` from `\semSpace` at time `t`.*
+> *If $\pi(S, t) < \pi_{\min}$, remove $S$ from $\boldsymbol{\Sigma}$ at time $t$.*
 
-Unlike Mechanism A, there is no hold window: the low-pass-filter dynamics of `\pi` itself already smooth out transients, so a bare threshold is sufficient.
+Unlike Mechanism A, there is no hold window: the low-pass-filter dynamics of $\pi$ itself already smooth out transients, so a bare threshold is sufficient.
 
-#### Coupling to the Deferred `\semE`-Update Rule
+#### Coupling to the Deferred $\mathfrak{F}$-Update Rule
 
-The main paper defers the specification of the `\semE`-update rule to a separate manuscript (cf. the "Scope: two senses of reinforcement" paragraph in §6.2 of the paper). Mechanism B couples retirement directly to that rule: a structure survives iff `\semE` continues to deposit reinforcement on it. Three properties make the coupling natural:
+The main paper defers the specification of the $\mathfrak{F}$-update rule to a separate manuscript (cf. the "Scope: two senses of reinforcement" paragraph in §6.2 of the paper). Mechanism B couples retirement directly to that rule: a structure survives iff $\mathfrak{F}$ continues to deposit reinforcement on it. Three properties make the coupling natural:
 
-1. **Symmetry with reinforcement.** Reinforcement creates and reshapes `\semE`; reinforcement-driven persistence retires structures that `\semE` has stopped reinforcing. The two sides of the reinforcement loop are made symmetric: `\semE` both builds up and dissolves structures depending on whether it continues to interact with them.
+1. **Symmetry with reinforcement.** Reinforcement creates and reshapes $\mathfrak{F}$; reinforcement-driven persistence retires structures that $\mathfrak{F}$ has stopped reinforcing. The two sides of the reinforcement loop are made symmetric: $\mathfrak{F}$ both builds up and dissolves structures depending on whether it continues to interact with them.
 
-2. **RL-interpretable.** In the RL view of §6 of the paper, `\semE` is the externally shaped reward-like field. Reinforcement-driven persistence makes structural lifetime a direct function of cumulative reinforcement received. This is the closest analogue to eligibility traces in RL: `\pi(S, t)` *is* an eligibility trace, decaying at rate `\lambda` and replenished by the reinforcement flux.
+2. **RL-interpretable.** In the RL view of §6 of the paper, $\mathfrak{F}$ is the externally shaped reward-like field. Reinforcement-driven persistence makes structural lifetime a direct function of cumulative reinforcement received. This is the closest analogue to eligibility traces in RL: $\pi(S, t)$ *is* an eligibility trace, decaying at rate $\lambda$ and replenished by the reinforcement flux.
 
-3. **Cognitively plausible.** The structure "forgets" itself if it is not being actively referenced by the environment (the field `\semE`). This matches the working-memory story: items in working memory that are not rehearsed decay and are retired.
+3. **Cognitively plausible.** The structure "forgets" itself if it is not being actively referenced by the environment (the field $\mathfrak{F}$). This matches the working-memory story: items in working memory that are not rehearsed decay and are retired.
 
 #### Advantages
 
 - **Semantically meaningful.** Retirement tracks *computational usefulness* (as proxied by reinforcement) rather than mere energy. A high-energy structure that no one cares about is retired just as readily as a low-energy one.
-- **Natural hook for the deferred `\semE` manuscript.** Any specification of the `\semE`-update rule — whether additive, multiplicative, or RL-policy-driven — can be paired with this mechanism without further changes to the retirement rule itself.
-- **No interaction with the integrator.** Because `\pi` is a first-order linear ODE driven by `\semE`, it is easy to integrate stably in discrete time and does not suffer from the transient-dip pathology of Mechanism A.
+- **Natural hook for the deferred $\mathfrak{F}$ manuscript.** Any specification of the $\mathfrak{F}$-update rule — whether additive, multiplicative, or RL-policy-driven — can be paired with this mechanism without further changes to the retirement rule itself.
+- **No interaction with the integrator.** Because $\pi$ is a first-order linear ODE driven by $\mathfrak{F}$, it is easy to integrate stably in discrete time and does not suffer from the transient-dip pathology of Mechanism A.
 
 #### Concerns
 
-- **New state variable.** Introduces `\pi(S, t)` as a per-structure scalar field, orthogonal to the energy variables. This slightly expands the state of the dynamics.
-- **Depends on the `\semE`-update rule being specified.** Until the deferred manuscript fixes that rule, Mechanism B cannot be fully operationalised. In the interim, one can use a placeholder rule (e.g. `\semE(S, t) \propto` a count of recent template matches on `S`), but the full validation must wait.
-- **Double-counting risk.** If `\semE` already encodes "how much the structure is being used" somewhere in its dynamics, then `\pi` may duplicate that information. Avoided by specifying `\pi` as a *local time-integral* of `\semE(S, t)` rather than an independent quantity.
+- **New state variable.** Introduces $\pi(S, t)$ as a per-structure scalar field, orthogonal to the energy variables. This slightly expands the state of the dynamics.
+- **Depends on the $\mathfrak{F}$-update rule being specified.** Until the deferred manuscript fixes that rule, Mechanism B cannot be fully operationalised. In the interim, one can use a placeholder rule (e.g. $\mathfrak{F}(S, t) \propto$ a count of recent template matches on $S$), but the full validation must wait.
+- **Double-counting risk.** If $\mathfrak{F}$ already encodes "how much the structure is being used" somewhere in its dynamics, then $\pi$ may duplicate that information. Avoided by specifying $\pi$ as a *local time-integral* of $\mathfrak{F}(S, t)$ rather than an independent quantity.
 
 #### Action Plan — Mechanism B
 
 **B.1 Theoretical specification.**
-- Fix a placeholder form of `\rho(\semE)` (e.g. `\rho(x) = \kappa \max(x, 0)`) and of the retirement threshold `\pi_{\min}`.
-- State the joint dynamics (structures + `\semE` + `\pi`) as a coupled ODE system.
-- Prove an **eligibility-trace lemma**: in the limit `\lambda \to 0`, `\pi(S, t)` reduces to the cumulative reinforcement received by `S`; for general `\lambda > 0`, `\pi(S, t)` is an exponentially-weighted moving average of `\semE(S, \cdot)` over a window of width `\sim 1/\lambda`.
+- Fix a placeholder form of $\rho(\mathfrak{F})$ (e.g. $\rho(x) = \kappa \max(x, 0)$) and of the retirement threshold $\pi_{\min}$.
+- State the joint dynamics (structures + $\mathfrak{F}$ + $\pi$) as a coupled ODE system.
+- Prove an **eligibility-trace lemma**: in the limit $\lambda \to 0$, $\pi(S, t)$ reduces to the cumulative reinforcement received by $S$; for general $\lambda > 0$, $\pi(S, t)$ is an exponentially-weighted moving average of $\mathfrak{F}(S, \cdot)$ over a window of width $\sim 1/\lambda$.
 
 **B.2 Reduction to a rewriting property.**
 - Prove a **necessity lemma**: in the closed-energy, deletion-as-operation regime without reinforcement-driven retirement, the reachable configuration space is LBA-bounded (same as Mechanism A).
-- Prove a **sufficiency lemma**: with reinforcement-driven retirement **and** an `\semE` that continuously redirects reinforcement in response to the execution process, the reachable configuration space is unbounded and the system can simulate an NDTM.
+- Prove a **sufficiency lemma**: with reinforcement-driven retirement **and** an $\mathfrak{F}$ that continuously redirects reinforcement in response to the execution process, the reachable configuration space is unbounded and the system can simulate an NDTM.
 
 **B.3 Implementation in the STP/Lagrangian simulator.**
-- Extend the simulator to track per-structure `\pi(S, t)`.
-- Add a placeholder `\semE`-update rule (e.g. deposit rate proportional to recent template-match count) to drive `\pi` in the absence of the final `\semE` manuscript.
-- Add a post-step retirement pass applying the `\pi < \pi_{\min}` rule.
-- Expose `\lambda`, `\kappa`, and `\pi_{\min}` as configuration parameters.
+- Extend the simulator to track per-structure $\pi(S, t)$.
+- Add a placeholder $\mathfrak{F}$-update rule (e.g. deposit rate proportional to recent template-match count) to drive $\pi$ in the absence of the final $\mathfrak{F}$ manuscript.
+- Add a post-step retirement pass applying the $\pi < \pi_{\min}$ rule.
+- Expose $\lambda$, $\kappa$, and $\pi_{\min}$ as configuration parameters.
 
 **B.4 Empirical validation.**
-- **(Sanity)** In a toy two-structure scenario, reinforce structure `S_1` periodically and leave `S_2` unreinforced. Verify that `\pi(S_2, t) \to 0` within `O(1/\lambda)` and `S_2` retires, while `S_1` persists.
-- **(Sensitivity)** Sweep `\lambda` across two orders of magnitude; plot the mean structure lifetime as a function of `\lambda`. Expected: lifetime `\propto 1/\lambda` in the unreinforced regime.
-- **(Consistency with RL)** Verify that `\pi(S, t)` behaves as an eligibility trace by comparing it against the analytical solution of the linear ODE on a known reinforcement schedule.
+- **(Sanity)** In a toy two-structure scenario, reinforce structure $S_1$ periodically and leave $S_2$ unreinforced. Verify that $\pi(S_2, t) \to 0$ within $O(1/\lambda)$ and $S_2$ retires, while $S_1$ persists.
+- **(Sensitivity)** Sweep $\lambda$ across two orders of magnitude; plot the mean structure lifetime as a function of $\lambda$. Expected: lifetime $\propto 1/\lambda$ in the unreinforced regime.
+- **(Consistency with RL)** Verify that $\pi(S, t)$ behaves as an eligibility trace by comparing it against the analytical solution of the linear ODE on a known reinforcement schedule.
 - **(Behavioural)** On the same small executive-tree toy problem used for Mechanism A, confirm that retirements coincide with structures that cease to receive reinforcement (i.e. whose parent atoms have fired and moved on).
 
 **B.5 Documentation deliverable.**
@@ -864,18 +864,18 @@ Mechanisms A and B address the same problem (structural retirement for RE-regime
 
 | Aspect | Mechanism A (energy-threshold) | Mechanism B (reinforcement-driven) |
 |--|--|--|
-| New state variable per structure | None | Persistence scalar `\pi(S, t)` |
-| Driven by | Residual energy `T + V` | Reinforcement flux `\semE(S, t)` |
-| Time-scale knob | Hold window `\tau_{\mathrm{hold}}` | Decay rate `\lambda` |
-| Threshold | Energy `\epsilon_{\min}` | Persistence `\pi_{\min}` |
-| Couples to | Existing Lagrangian | Deferred `\semE`-update rule |
+| New state variable per structure | None | Persistence scalar $\pi(S, t)$ |
+| Driven by | Residual energy $T + V$ | Reinforcement flux $\mathfrak{F}(S, t)$ |
+| Time-scale knob | Hold window $\tau_{\mathrm{hold}}$ | Decay rate $\lambda$ |
+| Threshold | Energy $\epsilon_{\min}$ | Persistence $\pi_{\min}$ |
+| Couples to | Existing Lagrangian | Deferred $\mathfrak{F}$-update rule |
 | Retires structures that | Have lost all energy | Have lost all reinforcement |
 | Interpretation | Thermal dissociation | Eligibility-trace decay |
-| Dependency | Self-contained within the paper's Lagrangian | Requires `\semE`-update manuscript |
+| Dependency | Self-contained within the paper's Lagrangian | Requires $\mathfrak{F}$-update manuscript |
 
 The two mechanisms are **not mutually exclusive**. A unified rule is straightforward:
 
-> *Retire `S` at time `t` when either `E_{\mathrm{res}}(S, t) < \epsilon_{\min}` for `\tau_{\mathrm{hold}}` seconds (Mechanism A) or `\pi(S, t) < \pi_{\min}` (Mechanism B).*
+> *Retire $S$ at time $t$ when either $E_{\mathrm{res}}(S, t) < \epsilon_{\min}$ for $\tau_{\mathrm{hold}}$ seconds (Mechanism A) or $\pi(S, t) < \pi_{\min}$ (Mechanism B).*
 
 Under this **OR-combined rule**, a structure must maintain *both* non-trivial energy *and* non-trivial reinforcement to persist. Physically, this corresponds to a system in which persistence requires both internal stability (energy) and external relevance (reinforcement) — arguably the cognitively most plausible formulation.
 
@@ -891,8 +891,8 @@ Under this **OR-combined rule**, a structure must maintain *both* non-trivial en
 
 ### Dependency on Other WIP Pieces of the Framework
 
-- **Mechanism A** is self-contained within the existing Lagrangian formalism of the paper; its companion manuscript can be written **in parallel with** or even **before** the `\semE`-update manuscript.
-- **Mechanism B** is blocked on the `\semE`-update manuscript for full fidelity. A placeholder rule allows partial implementation and validation in advance; the placeholder should be swapped out for the final rule once that manuscript is complete.
+- **Mechanism A** is self-contained within the existing Lagrangian formalism of the paper; its companion manuscript can be written **in parallel with** or even **before** the $\mathfrak{F}$-update manuscript.
+- **Mechanism B** is blocked on the $\mathfrak{F}$-update manuscript for full fidelity. A placeholder rule allows partial implementation and validation in advance; the placeholder should be swapped out for the final rule once that manuscript is complete.
 - The **unified mechanism** is blocked on both, but the implementation skeleton (U.1–U.2) can be put in place while individual mechanisms mature.
 
 ### Relation to the NDTM Proof
