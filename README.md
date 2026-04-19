@@ -42,6 +42,14 @@ These manuscripts are the **historical record** of the work. The paper is the
 canonical statement of the framework as of 2026; the notes above are preserved
 because they are cited in the paper.
 
+**Additional background manuscript (not cited in the paper).** For
+completeness, the `manuscripts/` folder also includes
+`Semantic_Templates.{pdf,docx}`, a 2022 background note from the same line of
+work. It is **not** referenced in the paper and has no BibTeX entry; it is
+retained here only as context for readers who want to trace the evolution of
+the framework. Its earliest git commit in `aiconcepts` is recorded in
+[`manuscripts/PROVENANCE.md`](manuscripts/PROVENANCE.md) for completeness.
+
 The authorship dates asserted in the paper's bibliography (`note` fields) are
 the primary record for each manuscript. An independent external anchor —
 showing the earliest commit of the original `.docx` source in the author's

@@ -17,10 +17,13 @@ included in this `manuscripts/` folder. For every manuscript it gives:
 
 The commit history in `dimitarpg13/aiconcepts` provides an independent,
 cryptographically-anchored attestation of the existence of each manuscript at
-or before the stated git timestamp. For eight of the ten manuscripts, the
-earliest git commit date falls **within a few days** of the authorship date
-asserted in the paper's bibliography, closely corroborating the bibliography
-record through external git evidence.
+or before the stated git timestamp. For eight of the ten *cited* manuscripts,
+the earliest git commit date falls **within a few days** of the authorship
+date asserted in the paper's bibliography, closely corroborating the
+bibliography record through external git evidence. One additional manuscript
+(`Semantic_Templates`) is included in this folder as background material; it
+is not cited in the paper and therefore has no BibTeX key, but its git
+provenance in `aiconcepts` is recorded below for completeness.
 
 ---
 
@@ -38,6 +41,7 @@ record through external git evidence.
 | `Semantic_Simulation.{pdf,docx}`                                                                         | `Gueorguiev2024SemSim`            | first revision 11 February 2023; second revision 10 March 2024    | [`1bdbd47` — 2023-02-11](https://github.com/dimitarpg13/aiconcepts/blob/1bdbd47/docs/SemanticSimulation.pdf)                                                                                     |
 | `The_Foundations_of_Semantic_Simulation.{pdf,docx}`                                                      | `Gueorguiev2022Foundations`       | 2022 (per bib `year` field)                                       | [`b9b1ceb` — 2024-12-30](https://github.com/dimitarpg13/aiconcepts/blob/b9b1ceb/docs/SemanticStructures/TheFoundationsOfSemanticSimulation.docx) (no earlier `.pdf` in aiconcepts)                |
 | `Constructing_Langrangian_for_Semantic_Space.{pdf,docx}`                                                 | `Gueorguiev2026Lagrangian`        | 2026                                                              | [`de90d71` — 2026-04-12](https://github.com/dimitarpg13/aiconcepts/blob/de90d71/docs/SemanticStructures/ConstructingLangrangianForSemanticSpace.docx) (no earlier `.pdf` in aiconcepts)          |
+| `Semantic_Templates.{pdf,docx}` *(not cited in the paper)*                                               | *(no BibTeX key)*                 | *(no bib entry; earliest git evidence 9 January 2022)*            | [`4d0684b` — 2022-01-09](https://github.com/dimitarpg13/aiconcepts/blob/4d0684b/docs/SemanticTemplates.pdf)                                                                                      |
 
 ---
 
@@ -107,6 +111,23 @@ date ("first revision 11 February 2023"). Two subsequent revisions occur
 at `2bffb23` (2023-02-12) and `9267a14` (2023-02-14), with the second
 major revision date noted in the bib (10 March 2024) reflected in further
 commits during 2024.
+
+### `Semantic_Templates` — background manuscript, not cited in the paper
+
+`Semantic_Templates.{pdf,docx}` is included in this `manuscripts/` folder
+as a background research document from the same line of work but is
+**not** cited in the main paper and therefore has no BibTeX entry. Its
+git provenance in aiconcepts is nevertheless clear:
+
+* The earliest PDF commit is `4d0684b` on **2022-01-09**, which introduces
+  `docs/SemanticTemplates.pdf` alongside several other PDFs authored
+  earlier in the `SemanticStructures` line of work.
+* The same filename receives further revisions through 2022
+  (`5addf6b`, `4a1e990`, `1bbfab2`, …, up to `019cdfc` on 2022-06-24).
+* The `.docx` source included here is the canonical version currently at
+  `docs/SemanticStructures/SemanticTemplates.docx` in aiconcepts; the
+  PDF included here is the last PDF blob from git history (commit
+  `019cdfc`, 2022-06-24).
 
 ---
 
