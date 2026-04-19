@@ -1,5 +1,7 @@
 # The Execution Problem
 
+> **Rendering note.** This document contains LaTeX math (inline `$...$` and display `$$...$$` blocks, with macros such as `\mathfrak{...}`, `\boldsymbol{...}`, `\mathcal{...}`, etc.). The math has been verified to render correctly in **Safari**. In **Chrome** some symbols — notably calligraphic and fraktur letters, e.g. `\mathfrak{C}` rendering as a plain `C` instead of $\mathfrak{C}$ — appear to render incorrectly. **Firefox** has not been tested. If symbols look wrong, please view the document in Safari or consult the main paper's PDF, where the same symbols are typeset by LaTeX directly.
+
 ## The Proposal
 
 _Static semantic meaning_ (a structure at rest relative to an observer) can be computationally executed to produce new semantic structures. This is essentially asking: How does _meaning_ become _action_? How does _understanding_ become _computation_?
