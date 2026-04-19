@@ -42,10 +42,13 @@ These manuscripts are the **historical record** of the work. The paper is the
 canonical statement of the framework as of 2026; the notes above are preserved
 because they are cited in the paper.
 
-> **Pending citation:** `Gueorguiev2024ReadMe` ("Semantic Simulation with
-> Reinforcement Learning — README") is cited in §8 but points to an external
-> source whose resolution is still pending — see the "Open items" section
-> below.
+> **Note on `Gueorguiev2024ReadMe`.** The citation "Semantic Simulation with
+> Reinforcement Learning — README" (cited in §8) does not have a copy in this
+> companion repository; it is pinned to commit
+> [`38b1be1`](https://github.com/dimitarpg13/semsimula/blob/38b1be1/README.md)
+> (2024-09-30) of the main research repository. This is the only external
+> citation in the paper's bibliography that is not resolved inside this
+> companion repository.
 
 ### `companion_notes/` — 2026 companion notes (work in progress)
 
@@ -151,16 +154,12 @@ When reusing any material from this repository, please cite the paper (see
 
 ## Open items (to resolve before public release)
 
-1. **`Gueorguiev2024ReadMe` resolution.** The cited "Semantic Simulation with
-   Reinforcement Learning — README" currently points to an external source.
-   Decide whether to (a) copy a dated snapshot here under `manuscripts/`, or
-   (b) replace the bibliography entry with a pinned-URL citation.
-2. **arXiv identifier.** Fill in once v1 is submitted; propagate to both
+1. **arXiv identifier.** Fill in once v1 is submitted; propagate to both
    `README.md` and `CITATION.bib`.
-3. **`requirements.txt`.** Produce from the actual environment used to run
+2. **`requirements.txt`.** Produce from the actual environment used to run
    the notebooks; commit with pinned versions.
-4. **Reproducibility runtime.** Measure and document notebook runtime and
+3. **Reproducibility runtime.** Measure and document notebook runtime and
    hardware.
-5. **Zenodo archive (optional).** If you want a DOI for citation stability,
+4. **Zenodo archive (optional).** If you want a DOI for citation stability,
    mint one via Zenodo once the repo is public and tag the first release as
    `v1.0-arxiv`.
