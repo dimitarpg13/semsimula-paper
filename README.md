@@ -9,10 +9,7 @@ Companion repository for the paper
 This repository collects the **reproducibility artifacts** and the **unpublished
 background manuscripts** cited in the paper. Its scope is deliberately narrow:
 everything here is either directly required to resolve a citation in the paper
-or needed to reproduce a figure or experimental claim. Broader exploratory
-notes, ongoing theoretical drafts, and unrelated research notebooks live in
-the author's main research repository at
-[`dimitarpg13/semsimula`](https://github.com/dimitarpg13/semsimula).
+or needed to reproduce a figure or experimental claim.
 
 > **Rendering note.** Several markdown files under `companion_notes/` in this repository contain LaTeX math (inline `$...$` and display `$$...$$` blocks, with macros such as `\mathfrak{...}`, `\boldsymbol{...}`, `\mathcal{...}`, etc.). The math has been verified to render correctly in **Safari**. In **Chrome** some symbols — notably calligraphic and fraktur letters, e.g. `\mathfrak{C}` rendering as a plain `C` instead of $\mathfrak{C}$ — appear to render incorrectly. **Firefox** has not been tested. If symbols look wrong while viewing a companion note on GitHub, please open the file in Safari or consult the main paper's PDF, where the same symbols are typeset by LaTeX directly. Each affected companion note repeats this warning in its own header.
 
@@ -46,9 +43,9 @@ canonical statement of the framework as of 2026; the notes above are preserved
 because they are cited in the paper.
 
 > **Pending citation:** `Gueorguiev2024ReadMe` ("Semantic Simulation with
-> Reinforcement Learning — README") is cited in §8 but resolves to the main
-> research repository's `README.md`. Whether to copy a snapshot here or cite
-> the live URL is an open decision — see the "Open items" section below.
+> Reinforcement Learning — README") is cited in §8 but points to an external
+> source whose resolution is still pending — see the "Open items" section
+> below.
 
 ### `companion_notes/` — 2026 companion notes (work in progress)
 
@@ -152,27 +149,12 @@ When reusing any material from this repository, please cite the paper (see
 
 ---
 
-## Relationship to the main research repository
-
-The author's main research repository,
-[`dimitarpg13/semsimula`](https://github.com/dimitarpg13/semsimula), contains
-a much broader set of notes, drafts, and exploratory material on Semantic
-Simulation beyond what is cited in the present paper — including ongoing work
-on semantic context and self-containedness of semantic structures, template
-formalism, executive-space dynamics, and reinforcement-learning readings of
-the framework. Readers interested in the author's ongoing research program are
-encouraged to consult that repository; however, only the artifacts in the
-present companion repository are cited in and required by the paper.
-
----
-
 ## Open items (to resolve before public release)
 
 1. **`Gueorguiev2024ReadMe` resolution.** The cited "Semantic Simulation with
-   Reinforcement Learning — README" points to a historical state of the main
-   repo's `README.md`. Decide whether to (a) copy a dated snapshot here under
-   `manuscripts/`, or (b) change the bibliography entry to cite the main-repo
-   URL at a pinned commit hash.
+   Reinforcement Learning — README" currently points to an external source.
+   Decide whether to (a) copy a dated snapshot here under `manuscripts/`, or
+   (b) replace the bibliography entry with a pinned-URL citation.
 2. **arXiv identifier.** Fill in once v1 is submitted; propagate to both
    `README.md` and `CITATION.bib`.
 3. **`requirements.txt`.** Produce from the actual environment used to run
