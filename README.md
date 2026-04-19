@@ -42,6 +42,13 @@ These manuscripts are the **historical record** of the work. The paper is the
 canonical statement of the framework as of 2026; the notes above are preserved
 because they are cited in the paper.
 
+The authorship dates asserted in the paper's bibliography (`note` fields) are
+the primary record for each manuscript. An independent external anchor —
+showing the earliest commit of the original `.docx` source in the author's
+long-running research repository
+[`dimitarpg13/aiconcepts`](https://github.com/dimitarpg13/aiconcepts) — is
+provided in [`manuscripts/PROVENANCE.md`](manuscripts/PROVENANCE.md).
+
 > **Note on `Gueorguiev2024ReadMe`.** The citation "Semantic Simulation with
 > Reinforcement Learning — README" (cited in §8) does not have a copy in this
 > companion repository; it is pinned to commit
