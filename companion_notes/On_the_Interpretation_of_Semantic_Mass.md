@@ -33,7 +33,7 @@ Semantic mass enters the framework at every level of the dynamics. The following
 | Role | Expression | Source |
 |---|---|---|
 | **Center of mass** | $\vec{r}_c = \frac{\sum \mathfrak{m}_i \vec{r}_i}{\sum \mathfrak{m}_i}$ | [1, eq. 1] |
-| **Centering matrix** $M$ | $M_{ij} = \delta_{ij}(1 - \tilde{\mathfrak{m}}_i) - (1-\delta_{ij})\tilde{\mathfrak{m}}_j$ | [3, eq. 8] |
+| **Centering matrix** $M$ | $M\_{ij} = \delta\_{ij}(1 - \tilde{\mathfrak{m}}\_i) - (1-\delta\_{ij})\tilde{\mathfrak{m}}\_j$ | [3, eq. 8] |
 | **Asymptotic velocity** | $\upsilon = \sqrt{E_t / \mathfrak{m}}$ | [1, eq. 40] |
 | **Gaussian well depth** | $V(x) = \mathfrak{m} \cdot \upsilon^2 \cdot (1 - e^{-\kappa^2 x^2})$ | [2, eq. 1] |
 | **Kinetic energy** | $T = \frac{1}{2} \mathfrak{m} v^2$ | [4, eq. 1] |
