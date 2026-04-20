@@ -286,6 +286,87 @@ The experiments in [5, Sections 7–8] found a Pearson correlation of $r = -0.26
 
 **Prediction**: The mass-weighted action should correlate more strongly with STP loss than the unweighted action, because both are measuring dynamics along the same mass-determined backbone.
 
+### 5.4 Initial Conditions and the Shallow Limit of STP
+
+The Lagrangian of §5.1 gives rise to second-order equations of motion, which require **two** pieces of initial data — an initial position $x_0$ and an initial velocity $v_0$ — to determine a unique trajectory. The identifications of §3 and §5.1 provide the mass ($\mathfrak{m}_t = w_t$) and the position ($h_t \leftrightarrow \vec{x}_t$), but leave the initial velocity unspecified. This subsection closes that gap. The resulting identification clarifies the formal relationship between the present framework and the first-order STP flow of [6], and exposes the first transformer block as the physical "launching apparatus" that fixes $v_0$ as a function of $x_0$ *and its neighbors*.
+
+**Two readings of time.** The correspondence admits two equally legitimate choices of the time coordinate. Under the **position-as-time** reading, used in the trajectory experiments of [5, §§7–8], a trajectory is the sequence $h_s^{(L)}, h_{s+1}^{(L)}, \ldots$ at a fixed layer $L$, indexed by token position. Under the **layer-as-time** reading, a trajectory is the sequence $h_t^{(0)}, h_t^{(1)}, \ldots, h_t^{(L)}$ at a fixed token position $t$, indexed by depth. Each reading selects a different object as the "initial state" of a property and therefore defines a distinct initial velocity. The two are complementary, not competing.
+
+#### 5.4.1 Property Initial Velocity: Layer-as-Time
+
+At a fixed token position $t$, the initial position is the pre-contextual token representation,
+
+$$h_t^{(0)} = \mathrm{TokenEmbedding}(x_t) + \mathrm{PositionalEncoding}(t),$$
+
+i.e., the token's identity decorated with a position index, *before* any contextual information has been injected. The corresponding initial velocity is the first-block residual update:
+
+$$\vec{v}_t^{(0)} = h_t^{(1)} - h_t^{(0)} = \mathrm{Attn}^{(0)}(h^{(0)})_t + \mathrm{MLP}^{(0)}\big(h^{(0)} + \mathrm{Attn}^{(0)}(h^{(0)})\big)_t.$$
+
+This decomposition follows the standard **residual-stream** formulation of the transformer [7]: each block contributes a pair of additive updates — an attention output and a position-wise MLP output — to a shared state that is read and written across layers. Under our correspondence, $\vec{v}_t^{(0)}$ is the amount by which the first transformer block displaces the token's representation from its decontextualized starting point. We call it the **first contextual kick** imparted to the property by its local neighborhood.
+
+Two observations follow.
+
+**(a) Contextual vs. intrinsic decomposition of the first kick.** The attention component $\mathrm{Attn}^{(0)}(h^{(0)})_t$ is the part of the initial velocity that is **not** computable from the token alone: it requires the full matrix $h^{(0)}$ and therefore encodes what the first layer extracts from context. The MLP component is a position-wise transformation of an already-contextualized input. The split
+
+$$\vec{v}_t^{(0)} = \vec{v}_t^{(0),\mathrm{attn}} + \vec{v}_t^{(0),\mathrm{mlp}}$$
+
+therefore separates the contextual contribution from the intrinsic contribution to the first kick. This is a decomposition without analog in classical mechanics, but a natural one in the transformer instantiation: it distinguishes what the token brings with it from what the neighborhood imprints on it during the first layer of processing.
+
+**(b) Magnitude variation across token types.** Anchor tokens — sentence-initial markers, high-frequency function words, the positions identified in §3.2 as attention sinks — receive large $w_t$ but are expected to have **small** $\|\vec{v}_t^{(0)}\|$. The reason is structural: the first block can only attend to what is already in the input, and anchor tokens are tokens whose representation does not yet depend on the specifics of the surrounding content. Content tokens whose representation depends strongly on context (polysemous nouns in a disambiguating frame, pronouns referring to earlier entities, punctuation at syntactic inflection points) are expected to have **large** $\|\vec{v}_t^{(0)}\|$. This aligns with the layer-specialization picture of [8]: early layers carry out morphosyntactic and surface-disambiguation work, and $\|\vec{v}_t^{(0)}\|$ is a direct proxy for how much of that work the token requires.
+
+The combination of (a)+(b) gives a second-order consistency check on Axiom M1 (inertia) of §1.3: heavy tokens should move little at early layers not because of a generic "force balance" but because the first block's ability to move them is itself bounded by the information already present in the input. Experiment 5 below (§8.5, E-init) tests this directly.
+
+#### 5.4.2 Property Initial Velocity: Position-as-Time
+
+At a fixed layer $L$, the initial position of a window starting at token $s_0$ is simply $h_{s_0}^{(L)}$, and the initial velocity is the first discrete displacement,
+
+$$\vec{v}_{s_0}^{(L)} = h_{s_0+1}^{(L)} - h_{s_0}^{(L)},$$
+
+which coincides with the vector $\vec{d}_1$ entering the STP loss of the first consecutive triplet in the sequence. This reading is operationally simpler but semantically less informative than the layer-as-time reading: it describes the token-to-token transition at a fixed depth rather than the token's own becoming from embedding to contextualized representation.
+
+#### 5.4.3 Ensemble Initial Velocity and the König Kinetic-Energy Decomposition
+
+For a phrase-sized ensemble $\{t_1, \ldots, t_k\}$, the attention-weighted centroid at layer $\ell$ (§4.1) is
+
+$$\vec{r}_c^{(\ell)} = \sum_{i=1}^{k} \tilde{w}_{t_i}\, h_{t_i}^{(\ell)}, \qquad \tilde{w}_{t_i} = \frac{w_{t_i}}{\sum_j w_{t_j}},$$
+
+and the ensemble's initial velocity under the layer-as-time reading is
+
+$$\vec{V}_c^{(0)} = \vec{r}_c^{(1)} - \vec{r}_c^{(0)} = \sum_i \tilde{w}_{t_i}\, \vec{v}_{t_i}^{(0)},$$
+
+the mass-weighted average of the per-token initial velocities. This quantity acquires a direct physical meaning through the **König decomposition** of kinetic energy. Writing $M = \sum_i \mathfrak{m}_{t_i} = \sum_i w_{t_i}$ for the total ensemble mass,
+
+$$T = \underbrace{\tfrac{1}{2}\, M\, \|\vec{V}_c\|^2}_{\text{bulk}} + \underbrace{\tfrac{1}{2}\, \sum_i \mathfrak{m}_{t_i}\, \|\vec{v}_{t_i} - \vec{V}_c\|^2}_{\text{internal}}.$$
+
+The two terms have distinct transformer interpretations:
+
+- **Bulk kinetic energy** $T_{\text{bulk}} = \tfrac{1}{2} M \|\vec{V}_c\|^2$ is the kinetic energy associated with *translation of the phrase as a whole*. Large values at the transition $\ell = 0 \to 1$ indicate that the first block is repositioning the entire phrase in semantic space — the phrase is being recontextualized, disambiguated, or projected onto a relevant subspace as a unit.
+- **Internal kinetic energy** $T_{\text{int}} = \tfrac{1}{2}\sum_i \mathfrak{m}_{t_i} \|\vec{v}_{t_i} - \vec{V}_c\|^2$ is the kinetic energy of the constituent particles *relative to the ensemble centroid*. Large values at $\ell = 0 \to 1$ indicate that the first block is reorganizing the phrase internally — individual token representations are shifting with respect to each other even when the centroid may be stable. This is the transformer realization of an ensemble whose particles are still settling into their bound states.
+
+The decomposition is the classical separation of an interacting $k$-body system into translational and internal motion, and it matches naturally the multi-particle view of transformers developed by [9] and the interacting-particle analysis of self-attention dynamics of [10]. Both of those works model hidden-state evolution as a coupled-particle system; the bulk/internal split is precisely the standard König decomposition for such a system.
+
+**Prediction**: Phrases of distinct syntactic and semantic types should occupy distinct regions of the $(\|\vec{V}_c\|, \sigma_v)$ plane at early layers, where $\sigma_v = \sqrt{(1/k)\sum_i \|\vec{v}_{t_i} - \vec{V}_c\|^2}$. For example:
+
+- Semantically atomic multiword expressions (idioms, named entities): low bulk velocity, low internal velocity.
+- Phrases undergoing contextual disambiguation: high bulk velocity, low internal velocity — the phrase moves as a unit.
+- Phrases undergoing internal restructuring (e.g., coreference within the span): low bulk velocity, high internal velocity.
+
+#### 5.4.4 The STP First-Order Model as the Shallow Limit of Semantic Simulation
+
+The identification of the initial velocity clarifies the formal relationship between Semantic Simulation and the STP model of [6]. STP specifies the dynamics of the hidden state as a first-order ODE [6, eq. (2)]:
+
+$$d x_{\leq t} = \mathring{u} \circ \mathring{f}(x_{\leq t})\, dt,$$
+
+which **enforces** $v_0 = \mathring{u} \circ \mathring{f}(x_0)$: under STP, initial velocity is not an independent boundary condition; it is determined by the initial position through the flow operator. The Semantic Simulation Lagrangian, being second-order, treats $(x_0, v_0)$ as independent. The transformer itself sits between the two: the embedding layer controls $x_0 = h_t^{(0)}$ directly, and the first block *computes* $\vec{v}_t^{(0)}$ via the equation of §5.4.1. The first block is therefore the physical implementation of a "launching apparatus" that fixes $v_0$ as a function of $x_0$ **and its neighbors** — a function that depends on the entire input sequence, not just on the token at position $t$.
+
+This yields a precise statement of how the two models are related:
+
+> **The STP first-order flow is the shallow limit of the Semantic Simulation dynamics**, obtained by collapsing the first-block computation of $\vec{v}_t^{(0)}$ into a function $\mathring{u} \circ \mathring{f}$ evaluated on $h_t^{(0)}$ alone.
+
+The collapse is exact when the first block is a point-wise map of each token — i.e., when $\mathrm{Attn}^{(0)} \equiv \mathrm{id}$. Any contribution of $\mathrm{Attn}^{(0)}$ that draws on neighbors $h_s^{(0)}$ with $s \neq t$ is captured by the second-order term in the present framework and is invisible to STP. In practice the attention component dominates the early-layer residual updates for most token types, so the second-order treatment is not a formal extension of STP but a description of effects that the first-order model cannot represent in principle.
+
+**Corollary for the mass interpretation.** The first-block initial velocity $\vec{v}_t^{(0)}$ is produced by the same attention tensor that defines the mass $w_t$ under our identification. Anchor tokens (high $w_t$) receive large attention *from* later positions but contribute only small amounts of context *to* themselves at the first layer, because the rest of the sequence has not yet been processed. This ties the inertia axiom M1 directly to the residual-stream architecture: a heavy token is one that the rest of the sequence needs a lot, but that the first layer cannot yet change much.
+
 ---
 
 ## 6. Consequences for Bound State Distances
@@ -418,6 +499,37 @@ graph LR
 
 **Success criterion**: Negative correlation $r(\dot{\omega}_t, w_t) < -0.2$ with $p < 0.01$.
 
+### 8.5 Experiment 5 (E-init): Forward Integration from First-Block Initial Conditions
+
+**Objective**: Test whether hidden-state trajectories *across layers* (layer-as-time reading of §5.4) are governed by the second-order Lagrangian of §5.1 using only the first-block initial conditions of §5.4.1 — i.e., whether $(h_t^{(0)}, \vec{v}_t^{(0)})$ together with $\mathfrak{m}_t = w_t$ form a **complete** set of boundary data that determines the subsequent layer-wise evolution under the fitted Gaussian well.
+
+**Procedure**:
+
+1. For each token position $t$ in a test corpus, extract $h_t^{(0)}$ (token + positional embedding) and $h_t^{(\ell)}$ for $\ell = 1, \ldots, L$.
+2. Compute the initial velocity $\vec{v}_t^{(0)} = h_t^{(1)} - h_t^{(0)}$ and the attention mass $w_t$ (chosen layer as in E1–E4).
+3. Using per-component Gaussian-well parameters $(a_k, b_k)$ fitted by the Acceleration Program (§A.1 for GPT-2, §A.2 for Llama-3.2-1B — see `docs/To_Dos_for_paper_v2.md` §A), integrate the Euler–Lagrange equations forward in layer-time $\ell$ to obtain the predicted trajectory $\hat{h}_t^{(\ell)}$ for $\ell = 2, \ldots, L$.
+4. Report the per-layer relative residual $\rho_t^{(\ell)} = \|\hat{h}_t^{(\ell)} - h_t^{(\ell)}\| / \|h_t^{(\ell)}\|$ and its distribution across token types.
+
+**Success criteria (tiered)**:
+
+- **Strong**: median $\rho_t^{(\ell)} < 0.2$ for $\ell \leq L/2$. Confirms the second-order dynamical reading in its strongest form — the first-block residual update supplies all the dynamical information needed to reconstruct the first half of the layer-wise trajectory from the fitted well alone.
+- **Moderate**: median $\rho_t^{(\ell)} < 0.5$ for $\ell \leq L/4$ only. Diagnoses early divergence that points to non-conservative contributions (damping, active driving from later blocks), which an extension of §5.1 with a dissipative term would be needed to capture.
+- **Failure**: large residuals from $\ell = 2$ onward. Would indicate that the first-block initial conditions do not propagate coherently under the posited dynamics, and would force either a retreat from the second-order reading or a substantial extension of the Lagrangian.
+
+**Ensemble version**: Repeat for phrase-level ensembles using $(\vec{r}_c^{(0)}, \vec{V}_c^{(0)})$ from §5.4.3 as initial conditions. Decompose the residual kinetic energy at each layer into bulk and internal components via the König split,
+
+$$\rho_t^{\text{bulk},(\ell)} = \frac{\big|\tfrac{1}{2} M \|\vec{V}_c^{(\ell),\text{pred}}\|^2 - \tfrac{1}{2} M \|\vec{V}_c^{(\ell),\text{obs}}\|^2\big|}{\tfrac{1}{2} M \|\vec{V}_c^{(\ell),\text{obs}}\|^2}, \qquad \rho_t^{\text{int},(\ell)} \text{ analogously},$$
+
+and ask whether the framework captures translational (phrase-as-a-unit) motion better than internal reorganization, or vice versa. This is a finer-grained diagnostic than the per-token residual and directly tests the coupled-particle claim of §5.4.3.
+
+**Interpretation**:
+
+- A **strong per-token result** confirms that $(h_t^{(0)}, \vec{v}_t^{(0)})$ — the output of the embedding layer plus the output of the first transformer block — is sufficient to predict later-layer representations under the fitted well, validating the "launching apparatus" reading of the first block (§5.4.4).
+- A **strong ensemble result**, particularly one in which $\rho^{\text{bulk}}$ is small and $\rho^{\text{int}}$ is large (or vice versa), specifies which aspect of phrase evolution the framework models faithfully and which requires further development.
+- **Failure at either scale** forces a retreat from the pure-Lagrangian reading and motivates a damping extension (the companion §A.4 damping-coefficient experiment is then the natural next step).
+
+**Relationship to E1–E4**: E-init is distinct from E1–E4 in that it tests the dynamics in its **integrated** form rather than through individual moments (correlation, centering, action). It is the single most direct test of the second-order reading, because it uses only boundary data on the left (initial conditions), the fitted potential in the interior, and compares against the full observed trajectory on the right. Together with the Jacobi-geodesic test (§A.3 of the TODO) and the damping-coefficient experiment (§A.4), E-init probes three orthogonal aspects of the Lagrangian hypothesis: *geometry*, *dissipation*, and *integration from boundary data*.
+
 ---
 
 ## 9. Alternative and Hybrid Mass Definitions
@@ -471,3 +583,13 @@ This suggests that the attention mechanism is not arbitrary — it is the transf
 [4] D. Gueorguiev, "Constructing the Lagrangian for Semantic Space," 2026.
 
 [5] "STP Loss as an Emergent Property of the Energy Landscape Defined by a Gaussian Well Potential," 2026 (this project).
+
+[6] H. Huang, Y. LeCun, R. Balestriero, "Semantic Tube Prediction: Beating LLM Data Efficiency with JEPA," arXiv:2602.22617, 2026.
+
+[7] N. Elhage, N. Nanda, C. Olsson, T. Henighan, N. Joseph, B. Mann, et al., "A Mathematical Framework for Transformer Circuits," Anthropic Transformer Circuits Thread, 2021. https://transformer-circuits.pub/2021/framework/index.html
+
+[8] I. Tenney, D. Das, E. Pavlick, "BERT Rediscovers the Classical NLP Pipeline," Proc. ACL 2019, pp. 4593–4601. arXiv:1905.05950.
+
+[9] Y. Lu, Z. Li, D. He, Z. Sun, B. Dong, T. Qin, L. Wang, T.-Y. Liu, "Understanding and Improving Transformer From a Multi-Particle Dynamic System Point of View," ICLR 2020. arXiv:1906.02762.
+
+[10] B. Geshkovski, C. Letrouit, Y. Polyanskiy, P. Rigollet, "A Mathematical Perspective on Transformers," arXiv:2312.10794, 2023.
