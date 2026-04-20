@@ -99,6 +99,26 @@ outputs intact for reviewers who prefer a static rendering. The
 and rendered figures (`stage2–stage6_*.png`) that back the corresponding
 figures in §13 of the paper.
 
+#### `notebooks/cross_model/pythia_tangential_acceleration.ipynb`
+
+The notebook behind the cross-architecture replication reported as
+**Result 5** in §13 of the paper. It runs the tangential / normal
+acceleration analysis on **both** GPT-2 small and Pythia-160M, extracting
+last-layer hidden-state trajectories, decomposing discrete acceleration
+into tangential and normal components, and comparing the observed
+distribution against a token-swap permutation null. The result is that
+both architectures exhibit the same qualitative signature --- net
+deceleration on essentially every triplet (≈ 98% for GPT-2, 100% for
+Pythia-160M), with $|\vec a_{\parallel}|$ and $|\vec a_{\perp}|$ both
+significantly smaller than the permutation null --- showing that the
+"bounded attractive well plus deceleration" picture is not an idiosyncrasy
+of GPT-2's specific training trajectory.
+
+The `results/` subfolder contains the serialized summary
+(`cross_model_summary.json`), the raw per-triplet samples
+(`cross_model_samples.npz`), and the two figures used in §13 of the paper
+(`cross_model_obs_vs_null_bars.png`, `cross_model_a_par_hist.png`).
+
 ---
 
 ## Reproducing the §13 experiments
@@ -110,14 +130,21 @@ figures in §13 of the paper.
 > 2. Install dependencies. A `requirements.txt` will be added before the
 >    companion repo goes public; key dependencies are `torch`,
 >    `transformers`, `numpy`, `scipy`, `matplotlib`, `pandas`, `jupyter`.
-> 3. Launch `jupyter lab` and open `notebooks/stp_loss/energy_landscape_validation.ipynb`.
+> 3. Launch `jupyter lab` and open one of:
+>    - `notebooks/stp_loss/energy_landscape_validation.ipynb` (GPT-2
+>      STP-acceleration and Gaussian-well analysis, backing Results 1–4
+>      and Figures 4–6 in §13);
+>    - `notebooks/cross_model/pythia_tangential_acceleration.ipynb`
+>      (cross-architecture replication on GPT-2 and Pythia-160M, backing
+>      Result 5 in §13).
 > 4. Execute top-to-bottom. Expected runtime on an M-series Mac with 16 GB
 >    unified memory: **TODO (measure before release)**. GPU is not required.
 >
-> The notebook writes its outputs into `notebooks/stp_loss/results/`. The
-> versions already committed there were produced by the author on **TODO
-> (date + hardware)** and are included so that the figures in §13 can be
-> inspected without re-executing the notebook.
+> Each notebook writes its outputs into the sibling `results/` subfolder
+> (`notebooks/stp_loss/results/` and `notebooks/cross_model/results/`
+> respectively). The versions already committed there were produced by
+> the author on **TODO (date + hardware)** and are included so that the
+> figures in §13 can be inspected without re-executing the notebooks.
 
 ---
 
