@@ -1,0 +1,42 @@
+{
+  "gpt2": {
+    "model_id": "gpt2",
+    "pretty_name": "GPT-2 small",
+    "n_trajectories": 50,
+    "n_triplets": 1295,
+    "mean_a_par_signed": -89.79267338939536,
+    "std_a_par_signed": 63.937369129135035,
+    "mean_a_par_abs": 90.29508126628534,
+    "mean_a_perp": 43.9229167636118,
+    "ratio_par_to_perp": 2.0557624110493675,
+    "frac_slowing_down": 0.983011583011583,
+    "frac_speeding_up": 0.01698841698841699,
+    "null_a_par_mean": 114.69715881347656,
+    "null_a_par_std": 1.8121771812438965,
+    "null_a_perp_mean": 48.514373779296875,
+    "null_a_perp_std": 0.49147388339042664,
+    "z_par": -13.465613517121946,
+    "z_perp": -9.342219741162278,
+    "runtime_s": 12.796485185623169
+  },
+  "EleutherAI/pythia-160m": {
+    "model_id": "EleutherAI/pythia-160m",
+    "pretty_name": "Pythia-160M",
+    "n_trajectories": 50,
+    "n_triplets": 1249,
+    "mean_a_par_signed": -55.98079616023239,
+    "std_a_par_signed": 23.53685986153933,
+    "mean_a_par_abs": 55.98079616023239,
+    "mean_a_perp": 34.82290947070026,
+    "ratio_par_to_perp": 1.6075852653073863,
+    "frac_slowing_down": 1.0,
+    "frac_speeding_up": 0.0,
+    "null_a_par_mean": 67.50267028808594,
+    "null_a_par_std": 0.34736281633377075,
+    "null_a_perp_mean": 37.48813247680664,
+    "null_a_perp_std": 0.11450561881065369,
+    "z_par": -33.169566764306026,
+    "z_perp": -23.27591461245507,
+    "runtime_s": 40.37351131439209
+  }
+}
