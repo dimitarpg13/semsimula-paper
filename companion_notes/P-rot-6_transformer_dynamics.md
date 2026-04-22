@@ -5,6 +5,17 @@
 
 > **Abstract.** We derive the P-rot-6 model — a second-order damped equation of motion augmented with a velocity-coupled skew-symmetric force — from first principles, situate it within the Helmholtz decomposition of hidden state dynamics, and trace its theoretical connection to the key-value asymmetry ($K \ne V$) in scaled dot-product attention. We then develop a concrete, end-to-end methodology for estimating the P-rot-6 $B$ matrix from the weight matrices of decoder-only transformer models (GPT-2, Pythia), including code, diagnostics, and a principled failure-mode analysis. Finally, we discuss what a pass or fail of P-rot-6 implies for the geometry of semantic space and outline the next model class hierarchy.
 
+> **Scope and status note (added retroactively).**
+> This document formulates P-rot-6 as a *descriptive* candidate for hidden-state trajectories of a **pretrained attention-based transformer** (GPT-2, Pythia). Its central theoretical claim is that the key-value asymmetry $W_K \ne W_V$ produces a non-zero antisymmetric operator $\Omega(x) = \frac{\beta}{2}\sum_\mu s_\mu(\beta K x) (V^\mu\otimes K^\mu - K^\mu\otimes V^\mu)$, and that, over smooth trajectories, its linearisation $B_{\text{theory}} = \Omega(\bar x)$ should show up as a velocity-coupled skew term in a second-order damped equation of motion.
+>
+> The document was written *before* we empirically tested this prediction and *before* we built the prescriptive counterpart. Both are now in hand and the reader should know about them when approaching this note:
+>
+> 1. **The empirical test.** The constant and affine-in-$x$ skew-$B$ fits reported in §1.5 of [`The_Failure_of_Conservative_Models_to_explain_hidden_state_trajectories.md`](The_Failure_of_Conservative_Models_to_explain_hidden_state_trajectories.md) are direct realisations of the P-rot-6 hypothesis on GPT-2 small over the E-init corpus. They **fail** to beat the static null on the held-out test set; the TRAIN-optimal shrinkage factor collapses to $\le 5\%$ for every configuration, i.e. the optimiser prefers almost none of the fitted gauge field. The companion script is `notebooks/e_init/velocity_coupled_gauge.py`.
+> 2. **Why the prediction failed.** The linearisation $B_{\text{eff}} \approx \Omega(\bar x) \delta t$ of §6.2 assumes a *locally quasi-straight* trajectory and *frozen attention* over the integration window. Neither assumption holds for pretrained transformer trajectories: attention is path-dependent on the full prefix $h_{<t}$, the softmax distribution shifts every token, and the per-head torques are rank-deficient. In the Helmholtz language this means P-rot-6 captures the wrong *structural sector* — the obstruction is position-dependence and path-dependence, not a missing velocity coupling. See §3 of the Failure doc for the structural argument.
+> 3. **The prescriptive response.** Rather than continue to patch the descriptive ansatz, we flipped the question: can we **construct** a language model whose hidden-state dynamics are, by design, the Euler–Lagrange flow of a single scalar potential — so that the K≠V vortex problem does not arise at all? That flip produced the **Scalar-Potential Language Model (SPLM)** documented in [`Conservative_by_Construction_Language_Models.md`](Conservative_by_Construction_Language_Models.md), [`Training_and_Inference_with_SPLM.md`](Training_and_Inference_with_SPLM.md), and paper v2 §14. SPLM has no separate $W_K$/$W_V$ tensors — its layer update is $\partial V_\theta / \partial x$ for a shared neural scalar $V_\theta$, so $\Omega(x) \equiv 0$ by construction. Trained on the same corpus as the §1.5 tests, SPLM admits a shared potential with $R^2 \approx 0.79$ across depth, versus the $\le 0$ ceiling every attention variant reaches.
+>
+> The reader should therefore think of P-rot-6 as the **strongest descriptive ansatz we could write down for an attention transformer** — the one with zero free parameters predicted directly from $W_K$, $W_V$, and the context. Its empirical refusal is what licensed the prescriptive pivot. This document remains valuable as (a) a clean derivation of why $K \ne V$ is the structural reason scalar potentials cannot describe attention (§5, the K≠V theorem), and (b) a complete methodological recipe for anyone who wants to replicate the test on a new architecture before deciding it, too, needs an SPLM-style prescriptive alternative.
+
 ---
 
 ## Table of Contents
@@ -960,6 +971,18 @@ P-rot-6 is the **minimal model** that can capture velocity-coupled solenoidal dy
 - Elhage, N., et al. (2021). A Mathematical Framework for Transformer Circuits. *Transformer Circuits Thread*.
 - Olshausen, B.A., & Field, D.J. (1996). Emergence of simple-cell receptive field properties by learning a sparse code for natural images. *Nature*, 381, 607–609.
 - Helmholtz, H. (1858). Über Integrale der hydrodynamischen Gleichungen, welche den Wirbelbewegungen entsprechen. *Journal für die reine und angewandte Mathematik*, 55, 25–55.
+
+---
+
+## 13. Related documents (added retroactively)
+
+The scope-and-status note at the top already names the documents that situate P-rot-6 in the larger descriptive → empirical → prescriptive arc. They are gathered here for convenience:
+
+- [`The_Failure_of_Conservative_Models_to_explain_hidden_state_trajectories.md`](The_Failure_of_Conservative_Models_to_explain_hidden_state_trajectories.md) — the *empirical* counterpart to this document. §1.5 of that note is the direct test of the P-rot-6 hypothesis on GPT-2 small; §3 gives the structural argument (path dependence, $W_Q^\top K$ non-symmetry, per-head rank-deficient torques) for why the linearisation of §6.2 should not be expected to hold in pretrained attention.
+- [`Conservative_by_Construction_Language_Models.md`](Conservative_by_Construction_Language_Models.md) — the *prescriptive* response produced *after* P-rot-6 was rejected: build a language model whose layer dynamics are the Euler–Lagrange flow of a single scalar $V_\theta$, so the $\Omega(x) \ne 0$ obstruction does not arise in the first place.
+- [`Training_and_Inference_with_SPLM.md`](Training_and_Inference_with_SPLM.md) — how the resulting Scalar-Potential Language Model is actually trained (nested-autograd force computation) and decoded (constant-in-$T$ autoregressive step), including the SARF-faithful and per-token semantic-mass ablations.
+- [`On_Modeling_Semantic_Energy_Field_into_SPLM.md`](On_Modeling_Semantic_Energy_Field_into_SPLM.md) — component-by-component mapping from the Semantic Simulation framework's full energy field onto SPLM's $V_\theta$, $\xi$, and $m_t$.
+- Paper v2 §14 and Appendix A report the consolidated empirical result: the SPLM admits a shared potential with $R^2 \approx 0.79$ across depth, versus the $\le 0$ ceiling every attention variant — including the P-rot-6 fits of §1.5 — reaches on the same corpus under the same diagnostic.
 
 ---
 
