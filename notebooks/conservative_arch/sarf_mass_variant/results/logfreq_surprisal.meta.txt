@@ -1,0 +1,7 @@
+Unigram surprisal -log p_hat(v) for GPT-2 BPE vocabulary
+Corpus: Tiny Shakespeare (train split)
+Tokens: 321,124
+Vocab:  50,257
+Unique seen: 11,482
+Smoothing: add-one Laplace, p = (c+1)/(N+V)
+surprisal: min=2.285  max=12.825  mean=12.430  median=12.825

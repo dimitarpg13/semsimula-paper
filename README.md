@@ -220,6 +220,39 @@ for the full list):
   context pool yields a **33 % Tiny-Shakespeare perplexity
   reduction** at identical parameter count, wall-clock, and compute,
   while preserving the shared-potential separator.
+- **`sarf_mass_variant/`.** Follow-up ablation of §14.14 stacking
+  per-token semantic mass on top of the SARF-faithful $\xi$ of
+  §14.13 --- the first paper experiment that directly targets
+  Open Question Q10 (the prescribed per-token mass of §7). Ships a
+  `model_sarf_mass.py` that exposes three mass modes
+  (`global`, `embed_head`, `logfreq`), a
+  `compute_unigram_frequencies.py` that builds the frozen
+  Shannon-surprisal lookup $-\log\hat p(x_t)$ on the Tiny
+  Shakespeare training split, a `train_splm_sarf_mass.py` selecting
+  the mass mode via `--mass-mode`, a
+  `trajectory_extraction_sarf_mass.py`, a four-way `compare.py`
+  covering fixed-$\xi$ / SARF / SARF+embed-head / SARF+logfreq, and
+  [`comparison_report.md`](notebooks/conservative_arch/sarf_mass_variant/comparison_report.md);
+  the parent `shared_potential_fit.py` and `token_direction_fit.py`
+  diagnostics are reused verbatim and their mass-variant outputs
+  (`sharedV_sarfmass_*`, `tokdir_sarfmass_*`) live alongside the
+  baseline and SARF results in `results/`. Headline finding: the
+  framework-prescribed surprisal mass
+  $m_t \propto -\log\hat p(x_t)$ (variant (B)) yields a
+  **44 % Tiny-Shakespeare perplexity reduction** vs. fixed-$\xi$
+  SPLM (and **17 % vs. SARF-faithful SPLM**) at the cost of a
+  single extra scalar parameter and a frozen vocabulary-sized
+  surprisal tensor, and *simultaneously* raises the depth-axis
+  pooled shared-$V_\psi$ $R^2$ from $+0.79$ (fixed-$\xi$) to
+  $+0.84$ — the first configuration in which LM perplexity and
+  strict shared-potential fidelity improve in the same direction.
+  A free learned linear head (variant (A)) underperforms variant
+  (B) by ~27 % val ppl at this scale, an inductive-bias-vs-data-
+  efficiency result flagged as the Q10 open follow-up in §14.16 and
+  §16. All four training logs, checkpoints, trajectory pickles, and
+  per-layer diagnostic tables live under
+  `sarf_mass_variant/results/`; `comparison_*.png` are mirrored at
+  the folder root for direct figure inclusion in the paper.
 
 ---
 

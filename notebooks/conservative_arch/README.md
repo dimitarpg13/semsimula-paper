@@ -322,6 +322,106 @@ PYTHONUNBUFFERED=1 python3 -u token_direction_fit.py \
 cd sarf_variant && python3 compare.py
 ```
 
+## SARF + per-token semantic mass (paper §14.14)
+
+Follow-up ablation on top of the SARF-faithful variant above: promote
+the semantic mass $m$ from a single global scalar to a per-token
+quantity $m_t$, keeping the force $-\nabla_h V_\theta(\xi, h)$
+pointwise-conservative and only the kinetic-term prefactor of the
+Euler--Lagrange integrator position-dependent.  This is the first
+paper experiment that directly targets Open Question **Q10** (the
+per-token mass prescription of §7).
+
+All code, training artefacts, diagnostic outputs and the four-way
+comparison report live under [`sarf_mass_variant/`](sarf_mass_variant/);
+the parent [`shared_potential_fit.py`](shared_potential_fit.py) and
+[`token_direction_fit.py`](token_direction_fit.py) are reused verbatim
+on the mass-variant trajectory pickles.
+
+### Two cheap parameterisations
+
+- **Variant (A) – embed-head mass.** Learned linear head on the token
+  embedding, $m_t = \mathrm{softplus}(\langle w_m, E_{x_t}\rangle + b_m) + \varepsilon$.
+  Adds $(d + 1)$ parameters; maximally data-driven.
+- **Variant (B) – logfreq surprisal mass.** Freeze the *shape* to the
+  information-theoretic prior of §7,
+  $m_t = \mathrm{softplus}(b_m + \alpha \cdot (-\log\hat p(x_t))) + \varepsilon$,
+  where $\hat p$ is the add-one-smoothed unigram frequency on the
+  Tiny Shakespeare training split.  The only newly learnable parameter
+  is the scalar scale $\alpha$; framework-prescribed.
+
+### Results (Tiny Shakespeare, identical $(d, L, d_V) = (128, 8, 512)$, identical seed, 4,000 AdamW steps)
+
+| variant                      | final val CE | val ppl | $\Delta$ ppl vs fixed-$\xi$ | depth pooled $R^2$ | mass mean (std) |
+|---|--:|--:|--:|--:|--:|
+| fixed-$\xi$ SPLM             | 5.661 | 287.4 | — | +0.790 | 0.980 (0.000) |
+| SARF-faithful SPLM           | 5.259 | 192.2 | −33.1 % | +0.713 | 0.959 (0.000) |
+| SARF + embed-head mass (A)   | 5.407 | 222.9 | −22.4 % | +0.718 | 0.841 (0.212) |
+| **SARF + logfreq mass (B)**  | **5.079** | **160.6** | **−44.1 %** | **+0.837** | 1.277 (0.162) |
+
+**Headline:** stacking the framework's information-theoretic surprisal
+mass (B) on top of SARF-faithful $\xi$ yields the **best language
+model we obtain in the paper** on Tiny Shakespeare — val ppl 160.6, a
+further 17 % reduction over plain SARF at the cost of a single extra
+scalar — and **simultaneously raises** the depth-axis pooled
+shared-$V_\psi$ $R^2$ from +0.71 (SARF) to +0.84, *above* the
+fixed-$\xi$ +0.79 baseline.  This is the unique configuration in which
+LM perplexity and strict shared-$V_\psi$ fidelity improve in the same
+direction.  Variant (A), which is strictly more expressive in
+principle, underperforms (B) by ~27 % val ppl at this scale — an
+inductive-bias-vs-data-efficiency finding flagged as the Q10 open
+follow-up in §14.16 and §16.
+
+Full numbers, per-layer tables, interpretation and the four-way
+comparison plots:
+[`sarf_mass_variant/comparison_report.md`](sarf_mass_variant/comparison_report.md).
+
+### Reproduction
+
+```bash
+# From repository root:
+cd notebooks/conservative_arch/sarf_mass_variant
+
+# 0. Build the frozen unigram-surprisal lookup on Tiny Shakespeare (~5 s).
+python3 compute_unigram_frequencies.py
+
+# 1. Train variant (A) — embed-head mass on top of SARF-faithful SPLM (~40 min on MPS).
+PYTHONUNBUFFERED=1 python3 -u train_splm_sarf_mass.py \
+  --mode shakespeare --mass-mode embed_head
+
+# 2. Train variant (B) — logfreq surprisal mass on top of SARF-faithful SPLM (~40 min on MPS).
+PYTHONUNBUFFERED=1 python3 -u train_splm_sarf_mass.py \
+  --mode shakespeare --mass-mode logfreq
+
+# 3. Extract trajectories for both variants.
+for MODE in embed_head logfreq; do
+  PYTHONUNBUFFERED=1 python3 -u trajectory_extraction_sarf_mass.py \
+    --ckpt results/splm_sarfmass_${MODE}_shakespeare_ckpt_latest.pt
+done
+
+# 4. Run the paper's §14.2 shared-potential fit for each variant (parent script, generic).
+cd ..
+for MODE in embed_head logfreq; do
+  PYTHONUNBUFFERED=1 python3 -u shared_potential_fit.py \
+    --traj sarf_mass_variant/results/splm_sarfmass_${MODE}_shakespeare_ckpt_latest.trajectories.pkl \
+    --tag sarfmass_${MODE}_shakespeare
+done
+
+# 5. Run the paper's §14.5 token-direction fit for each variant.
+for MODE in embed_head logfreq; do
+  PYTHONUNBUFFERED=1 python3 -u token_direction_fit.py \
+    --traj sarf_mass_variant/results/splm_sarfmass_${MODE}_shakespeare_ckpt_latest.trajectories.pkl \
+    --tag sarfmass_${MODE}_shakespeare
+done
+
+# 6. Four-way side-by-side comparison table, plots and report.
+cd sarf_mass_variant && python3 compare.py
+```
+
+Figures produced by step 6 and used in the paper:
+`comparison_loss_curve.png`, `comparison_sharedV_r2.png`,
+`comparison_tokdir_r2.png`, `comparison_mass_hist.png`.
+
 ## Next steps
 
 **Step 2 (DONE):** Shared-$V_\psi$ separator established -- see above and
