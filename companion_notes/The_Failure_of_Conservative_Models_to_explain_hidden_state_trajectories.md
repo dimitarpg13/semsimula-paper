@@ -4,6 +4,31 @@
 extensions.  Targeted at paper v2.  Status: working document synthesising
 empirical and theoretical observations, not a submitted result.*
 
+> **Scope and status note (added retroactively).**
+> This document records the chain of *descriptive* experiments in which we
+> tried to approximate the hidden-state trajectories of a **pretrained
+> attention-based transformer** (GPT-2) by a conservative or Helmholtz-extended
+> mechanical system: a scalar potential $V(x)$ alone (§1.1–§1.3), then the same
+> plus a position-coupled linear solenoidal term $V_\ell\Omega_\ell V_\ell^{\top}x$
+> (§1.4), and finally the velocity-coupled electromagnetic-analogue form
+> $\dot x\times B(x)$ with constant and affine-in-$x$ gauge fields (§1.5).
+> All five variants fail to beat the static null on the held-out test set.
+>
+> The document was written *before* we built the **Scalar-Potential Language
+> Model (SPLM)**, i.e. before we flipped from descriptive fitting to prescriptive
+> design. The conclusion the reader should draw from this file is **not** that
+> the Semantic Simulation framework fails, but that *attention-based*
+> transformers are the wrong architecture to ask it to describe — §3 below
+> explains structurally why (path-dependence, query-key non-symmetry, per-head
+> rank-deficient torques), and the companion note
+> [`Conservative_by_Construction_Language_Models.md`](Conservative_by_Construction_Language_Models.md)
+> documents the resulting prescriptive pivot. Paper §14 reports the positive
+> result: an SPLM trained on the same corpus admits a shared scalar potential
+> with $R^2 \approx 0.79$ at every layer, the diagnostic on which every attention
+> variant in this document scores $\le 0$. Where the reader should think of this
+> file is as the *obstruction* half of a negative/positive pair; SPLM (paper §14)
+> is the *construction* half.
+
 *Companion experiments (scripts / notebook):*
 - `notebooks/e_init/e_init_validation.ipynb` &nbsp;--- v1 E-init with the
   Gaussian well (§1.1 below)
@@ -1065,6 +1090,23 @@ Report:
   semantic-mass formalism referenced in §5.1.
 - `companion_notes/On_The_Existence_of_Acceleration_in_Semantic_Structures.md`
   --- the STP-acceleration derivation referenced in §5.1.
+- [`docs/Conservative_by_Construction_Language_Models.md`][cbc] --- the
+  prescriptive pivot produced *after* this document was written:
+  instead of fitting the attention transformer with a conservative
+  system, build a language model whose layer dynamics are a conservative
+  system by construction. This is the positive-control counterpart to
+  the five negative results of §1; paper v2 §14 reports the empirical
+  outcome (shared-potential $R^{2}\approx 0.79$ across depth, versus
+  $\le 0$ for every attention variant tested here).
+- [`docs/Training_and_Inference_with_SPLM.md`][tisplm] --- how the
+  resulting Scalar-Potential Language Model is actually trained and
+  decoded, including the SARF-faithful and per-token semantic-mass
+  ablations.
+- [`docs/On_Modeling_Semantic_Energy_Field_into_SPLM.md`][semf] ---
+  component-by-component mapping from the framework's full semantic
+  energy field (Gaussian well, PARF, SARF, semantic mass) onto SPLM's
+  architecture, with an explicit list of what is explicit, what is
+  absorbed, and what is (by design) absent.
 
 [wpg]: ../notebooks/e_init/results/well_params.json
 [nvg]: ../notebooks/e_init/results/e_init_results.npz
@@ -1072,3 +1114,6 @@ Report:
 [fbg]: ../notebooks/e_init/results/fig_B_residual_vs_logw.png
 [s4]: ../notebooks/e_init/results/stage4_well_r2_vs_layer.png
 [plan]: ./E_init_execution_plan.md
+[cbc]: ./Conservative_by_Construction_Language_Models.md
+[tisplm]: ./Training_and_Inference_with_SPLM.md
+[semf]: ./On_Modeling_Semantic_Energy_Field_into_SPLM.md
