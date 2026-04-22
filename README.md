@@ -106,6 +106,7 @@ exposition:
 | File                                                                                | Cited around                              |
 | ----------------------------------------------------------------------------------- | ----------------------------------------- |
 | `The_Failure_of_Conservative_Models_to_explain_hidden_state_trajectories.md`        | §14.1 (negative results)                  |
+| `P-rot-6_transformer_dynamics.md`                                                   | §14.1 (theoretical motivation for the velocity-coupled gauge fit: derives the zero-free-parameter prediction $B_{\text{theory}} = \Omega(\bar x)$ from the K$\ne$V antisymmetry in scaled dot-product attention that the E5 experiment in `notebooks/e_init/velocity_coupled_gauge.py` empirically tests) |
 | `Conservative_by_Construction_Language_Models.md`                                   | §14 (motivation for SPLM)                 |
 | `Considered_Non-Autonomous_Conservative_Mechanisms.md`                              | Appendix A (non-autonomous framework)     |
 | `On_Modeling_Semantic_Energy_Field_into_SPLM.md`                                    | §14.2 (mapping framework energy field onto $V_\theta$, $\xi$, $m_t$; candidate Q11–Q13) |

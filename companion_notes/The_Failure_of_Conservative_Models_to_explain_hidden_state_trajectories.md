@@ -1090,6 +1090,19 @@ Report:
   semantic-mass formalism referenced in §5.1.
 - `companion_notes/On_The_Existence_of_Acceleration_in_Semantic_Structures.md`
   --- the STP-acceleration derivation referenced in §5.1.
+- [`docs/P-rot-6_transformer_dynamics.md`][prot6] --- the *theoretical*
+  predecessor to §1.5 of this document. Derives, from first principles,
+  why $W_K\neq W_V$ in scaled dot-product attention produces a non-zero
+  skew operator $\Omega(x) = \tfrac{\beta}{2}\sum_\mu s_\mu(\beta Kx)\,
+  (V_\mu\otimes K_\mu - K_\mu\otimes V_\mu)$ on the hidden state, and
+  gives the zero-free-parameter linearised prediction
+  $B_{\text{theory}} = \Omega(\bar x)$ that the constant- and
+  affine-in-$x$ skew fits of §1.5 were implicitly testing. Read it
+  alongside §1.5: this document reports the empirical failure, P-rot-6
+  is the theory that said the fit should work in the first place, and
+  whose rejection — together with the pure-scalar and linear-Helmholtz
+  rejections in §§1.1--1.4 — is what forces the prescriptive pivot to
+  SPLM.
 - [`docs/Conservative_by_Construction_Language_Models.md`][cbc] --- the
   prescriptive pivot produced *after* this document was written:
   instead of fitting the attention transformer with a conservative
@@ -1114,6 +1127,7 @@ Report:
 [fbg]: ../notebooks/e_init/results/fig_B_residual_vs_logw.png
 [s4]: ../notebooks/e_init/results/stage4_well_r2_vs_layer.png
 [plan]: ./E_init_execution_plan.md
+[prot6]: ./P-rot-6_transformer_dynamics.md
 [cbc]: ./Conservative_by_Construction_Language_Models.md
 [tisplm]: ./Training_and_Inference_with_SPLM.md
 [semf]: ./On_Modeling_Semantic_Energy_Field_into_SPLM.md
