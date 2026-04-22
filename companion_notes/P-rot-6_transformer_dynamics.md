@@ -3,7 +3,7 @@
 
 ---
 
-> **Abstract.** We derive the P-rot-6 model — a second-order damped equation of motion augmented with a velocity-coupled skew-symmetric force — from first principles, situate it within the Helmholtz decomposition of hidden state dynamics, and trace its theoretical connection to the key-value asymmetry (K≠V) in scaled dot-product attention. We then develop a concrete, end-to-end methodology for estimating the P-rot-6 B matrix from the weight matrices of decoder-only transformer models (GPT-2, Pythia), including code, diagnostics, and a principled failure-mode analysis. Finally, we discuss what a pass or fail of P-rot-6 implies for the geometry of semantic space and outline the next model class hierarchy.
+> **Abstract.** We derive the P-rot-6 model — a second-order damped equation of motion augmented with a velocity-coupled skew-symmetric force — from first principles, situate it within the Helmholtz decomposition of hidden state dynamics, and trace its theoretical connection to the key-value asymmetry ($K \ne V$) in scaled dot-product attention. We then develop a concrete, end-to-end methodology for estimating the P-rot-6 $B$ matrix from the weight matrices of decoder-only transformer models (GPT-2, Pythia), including code, diagnostics, and a principled failure-mode analysis. Finally, we discuss what a pass or fail of P-rot-6 implies for the geometry of semantic space and outline the next model class hierarchy.
 
 ---
 
@@ -28,13 +28,13 @@
 
 ### 1.1 The Experimental Setting
 
-We study the motion of hidden states `h_t ∈ ℝᵈ` across token positions `t = 1, ..., T` at a fixed layer `ℓ` of a decoder-only transformer. The fundamental question is:
+We study the motion of hidden states $h_t \in \mathbb{R}^d$ across token positions $t = 1, \ldots, T$ at a fixed layer $\ell$ of a decoder-only transformer. The fundamental question is:
 
-> **Does the trajectory `{h_t}` admit a compact dynamical description? If so, what class of differential equation governs it?**
+> **Does the trajectory $\{h_t\}$ admit a compact dynamical description? If so, what class of differential equation governs it?**
 
 This is not merely a descriptive question. A successful dynamical model of hidden state trajectories would:
 - Reveal the geometric structure of semantic space as implicitly defined by the model's weights
-- Connect the algebraic properties of attention (K, Q, V matrices) to observable trajectory geometry
+- Connect the algebraic properties of attention ($K$, $Q$, $V$ matrices) to observable trajectory geometry
 - Provide a mechanistic account of phenomena such as deceleration near semantic attractors, trajectory curvature at syntactic boundaries, and layer-wise representational change
 
 ### 1.2 Empirical Starting Point
@@ -43,11 +43,11 @@ The following results motivate the current investigation:
 
 | Model class | Equation | Result |
 |---|---|---|
-| Pure scalar potential | `F = -∇V(x)`, any `V` | **Fails** — residual ≈ static null (0.1773) |
-| Constant skew position force | `F = -∇V + Ωx`, constant `Ω` | **Fails** |
-| Velocity-coupled, constant skew | `F = -∇V + Bẋ`, constant `B = -Bᵀ` | Not yet tested |
-| Position-dependent gauge | `F = -∇V + B(x)ẋ` | Not yet tested |
-| Riemannian geodesic | `ẍᵏ + Γᵏᵢⱼẋⁱẋʲ = -γẋᵏ` | Not yet tested |
+| Pure scalar potential | $F = -\nabla V(x)$, any $V$ | **Fails** — residual $\approx$ static null (0.1773) |
+| Constant skew position force | $F = -\nabla V + \Omega x$, constant $\Omega$ | **Fails** |
+| Velocity-coupled, constant skew | $F = -\nabla V + B\dot x$, constant $B = -B^\top$ | Not yet tested |
+| Position-dependent gauge | $F = -\nabla V + B(x)\dot x$ | Not yet tested |
+| Riemannian geodesic | $\ddot x^k + \Gamma^k_{ij}\dot x^i \dot x^j = -\gamma \dot x^k$ | Not yet tested |
 
 The failure of pure scalar potentials — including the Gaussian well — and position-coupled skew forces points to a **velocity-coupled solenoidal component** as the next candidate. This is the P-rot-6 model.
 
@@ -55,7 +55,7 @@ The failure of pure scalar potentials — including the Gaussian well — and po
 
 The designation encodes the model's position in a systematic hierarchy of rotation/solenoidal extensions of the base second-order damped oscillator:
 
-- **P**: potential-augmented (includes `-∇V` term)
+- **P**: potential-augmented (includes $-\nabla V$ term)
 - **rot**: rotational/solenoidal extension present
 - **6**: sixth variant in the hierarchy, corresponding to velocity-coupling with position-independent skew matrix
 
@@ -65,41 +65,39 @@ The designation encodes the model's position in a systematic hierarchy of rotati
 
 ### 2.1 The Decomposition Theorem
 
-By the Helmholtz decomposition, any smooth vector field `F : ℝᵈ → ℝᵈ` decomposes uniquely (under appropriate boundary conditions) as:
+By the Helmholtz decomposition, any smooth vector field $F : \mathbb{R}^d \to \mathbb{R}^d$ decomposes uniquely (under appropriate boundary conditions) as:
 
-```
-F(x) = -∇φ(x)  +  ∇ × A(x)
-        ────────    ────────────
-        curl-free   divergence-free
-       irrotational   solenoidal
-```
+$$F(x) = -\nabla \varphi(x) + \nabla \times A(x)$$
+
+The first term is **curl-free** (irrotational) and the second is **divergence-free** (solenoidal).
 
 In matrix form, the decomposition manifests through the Jacobian:
 
-```
-JF(x) = S(x) + Ω(x)
+$$J F(x) = S(x) + \Omega(x)$$
 
-S(x) = (JF + JFᵀ)/2    ← symmetric  → curl-free component
-Ω(x) = (JF - JFᵀ)/2    ← antisymm.  → solenoidal component
-```
+where the two pieces are respectively
 
-A force field is **conservative** (path-independent work, closed-loop ∮F·dx = 0) if and only if `Ω(x) = 0` everywhere.
+$$S(x) = \frac12 (J F + J F^\top) \quad \text{(symmetric, curl-free)}$$
+$$\Omega(x) = \frac12 (J F - J F^\top) \quad \text{(antisymmetric, solenoidal)}$$
+
+A force field is **conservative** (path-independent work, closed-loop $\oint F \cdot dx = 0$) if and only if $\Omega(x) = 0$ everywhere.
 
 ### 2.2 Why This Matters for Hidden State Dynamics
 
-The scalar potential models tested in §1.2 model 100% of `F` with the curl-free component. If the true force field has non-zero `Ω(x)`, no scalar potential — regardless of shape, depth, or parameterization — can represent it. This is not a capacity or fitting failure. It is a **structural impossibility**.
+The scalar potential models tested in §1.2 model 100% of $F$ with the curl-free component. If the true force field has non-zero $\Omega(x)$, no scalar potential — regardless of shape, depth, or parameterization — can represent it. This is not a capacity or fitting failure. It is a **structural impossibility**.
 
 ### 2.3 The Full Force Taxonomy
 
-For second-order dynamics `mẍ = F(x, ẋ)`, the Helmholtz decomposition generalizes to phase space `(x, ẋ)`:
+For second-order dynamics $m\ddot x = F(x, \dot x)$, the Helmholtz decomposition generalizes to phase space $(x, \dot x)$:
 
-```
-F(x, ẋ) = -∇φ(x)           ← conservative, position only
-         + F_sol(x)         ← solenoidal, position only (curl ≠ 0)
-         + B(x) · ẋ        ← gyroscopic/magnetic (velocity coupled)
-         + D(x) · ẋ        ← symmetric dissipation (drag)
-         + nonlinear terms
-```
+$$F(x, \dot x) = -\nabla \varphi(x) + F_{\text{sol}}(x) + B(x) \dot x + D(x) \dot x + \text{nonlinear terms}$$
+
+Reading term by term:
+
+- $-\nabla \varphi(x)$ — conservative, position-only
+- $F_{\text{sol}}(x)$ — solenoidal, position-only (curl $\ne 0$)
+- $B(x) \dot x$ — gyroscopic / magnetic (velocity-coupled)
+- $D(x) \dot x$ — symmetric dissipation (drag)
 
 Each row is orthogonal to the others in function space. A scalar potential tests only the first. P-rot-6 adds the third.
 
@@ -109,95 +107,72 @@ Each row is orthogonal to the others in function space. A scalar potential tests
 
 ### 3.1 The Equation of Motion
 
-```
-mẍ = -∇V(x) + Bₗẋ - mγẋ
-
-subject to:  Bₗ = -Bₗᵀ ∈ ℝᵏˣᵏ   (skew-symmetric)
-```
+$$m\ddot x = -\nabla V(x) + B_\ell \dot x - m\gamma \dot x, \qquad B_\ell = -B_\ell^\top \in \mathbb{R}^{k \times k}$$
 
 In component form:
 
-```
-m ẍᵢ = -∂V/∂xᵢ  +  ∑ⱼ (Bₗ)ᵢⱼ ẋⱼ  -  mγẋᵢ
-```
+$$m \ddot x_i = -\frac{\partial V}{\partial x_i} + \sum_j (B_\ell)_{ij} \dot x_j - m\gamma \dot x_i$$
 
-### 3.2 Why Bₗ Must Be Skew-Symmetric
+### 3.2 Why $B_\ell$ Must Be Skew-Symmetric
 
-The velocity coupling `Bẋ` decomposes as:
+The velocity coupling $B\dot x$ decomposes as:
 
-```
-Bẋ = ½(B + Bᵀ)ẋ  +  ½(B - Bᵀ)ẋ
-      ──────────       ──────────
-      symmetric         skew-symmetric
-      → extra drag       → gyroscopic force
-      (absorbed into γ)  (does no work)
-```
+$$B\dot x = \frac12 (B + B^\top)\dot x + \frac12 (B - B^\top)\dot x$$
 
-The symmetric part is equivalent to anisotropic damping and is absorbed into the `-mγẋ` term. Only the skew-symmetric part is structurally new. Furthermore:
+The first piece (symmetric) is equivalent to anisotropic damping and is absorbed into the $-m\gamma\dot x$ term. The second piece (skew-symmetric) is the gyroscopic force — it is structurally new and does no work. Furthermore:
 
-```
-Power delivered by Bẋ:  P = ẋᵀBẋ = 0  ∀ẋ  iff  B = -Bᵀ
-```
+$$\text{Power delivered by } B\dot x : \quad P = \dot x^\top B \dot x = 0 \ \ \forall \dot x \iff B = -B^\top$$
 
-The skew-symmetric constraint ensures the gyroscopic force **does zero work** — it curves trajectories without changing kinetic energy. This is the magnetic/Lorentz force analogy: a charged particle in a magnetic field is deflected but not accelerated.
+The skew-symmetric constraint ensures the gyroscopic force **does zero work** — it curves trajectories without changing kinetic energy. This is the magnetic / Lorentz force analogy: a charged particle in a magnetic field is deflected but not accelerated.
 
 ### 3.3 The Energy Function
 
 P-rot-6 admits a modified energy:
 
-```
-E(x, ẋ) = ½m‖ẋ‖²  +  V(x)
-```
+$$E(x, \dot x) = \frac12 m \|\dot x\|^2 + V(x)$$
 
 Taking the time derivative along trajectories:
 
-```
-dE/dt = mẋᵀẍ + ẋᵀ∇V
-      = ẋᵀ(-∇V + Bẋ - mγẋ) + ẋᵀ∇V
-      = ẋᵀBẋ  -  mγ‖ẋ‖²
-      = 0  -  mγ‖ẋ‖²   ← only dissipation remains
-      = -mγ‖ẋ‖²
-```
+$$\begin{aligned}
+\frac{dE}{dt} &= m \dot x^\top \ddot x + \dot x^\top \nabla V \\
+ &= \dot x^\top (-\nabla V + B\dot x - m\gamma \dot x) + \dot x^\top \nabla V \\
+ &= \dot x^\top B \dot x - m\gamma \|\dot x\|^2 \\
+ &= 0 - m\gamma \|\dot x\|^2 \ =\ -m\gamma \|\dot x\|^2.
+\end{aligned}$$
 
-**The skew-symmetric B contributes exactly zero to energy dissipation.** The system is a damped, rotating system with well-defined Lyapunov function `E(x, ẋ)`. This is a key sanity check for any fitted B: if energy is not monotonically decreasing (up to noise), B is not purely skew.
+**The skew-symmetric $B$ contributes exactly zero to energy dissipation.** The system is a damped, rotating system with well-defined Lyapunov function $E(x, \dot x)$. This is a key sanity check for any fitted $B$: if energy is not monotonically decreasing (up to noise), $B$ is not purely skew.
 
 ### 3.4 The Number of Free Parameters
 
-`B ∈ ℝᵏˣᵏ` skew-symmetric has `k(k-1)/2` free parameters.
+$B \in \mathbb{R}^{k \times k}$ skew-symmetric has $k(k-1)/2$ free parameters.
 
-| Subspace dimension k | Parameters |
+| Subspace dimension $k$ | Parameters |
 |---|---|
 | 10 | 45 |
 | 50 | 1225 |
 | 100 | 4950 |
 | 768 (full BERT/GPT-2) | 295,128 |
 
-For practical fitting, **PCA reduction to k = 20–50** of the velocity principal subspace is strongly recommended before estimating B.
+For practical fitting, **PCA reduction to $k = 20\text{--}50$** of the velocity principal subspace is strongly recommended before estimating $B$.
 
 ### 3.5 Continuous-Time Formulation
 
 For direct comparison with the ODE literature, P-rot-6 can be written as:
 
-```
-ẋ = v
-v̇ = -∇V(x)/m  +  (B/m - γI)v
-```
+$$\begin{aligned}
+\dot x &= v, \\
+\dot v &= -\frac{\nabla V(x)}{m} + \left(\frac{B}{m} - \gamma I\right) v.
+\end{aligned}$$
 
-or in Hamiltonian form with a non-canonical Poisson bracket. The phase space flow is:
+or in Hamiltonian form with a non-canonical Poisson bracket. The phase-space flow is:
 
-```
-d/dt [x]  =  [        v              ]
-     [v]     [ -∇V/m + (B/m - γI)v  ]
-```
+$$\frac{d}{dt}\begin{bmatrix} x \\ v \end{bmatrix} = \begin{bmatrix} v \\ -\nabla V / m + (B/m - \gamma I) v \end{bmatrix}$$
 
-The Jacobian of the right-hand side at a fixed point (x*, 0) is:
+The Jacobian of the right-hand side at a fixed point $(x^\ast, 0)$ is:
 
-```
-J* = [     0          I    ]
-     [ -H_V(x*)/m   B/m-γI ]
-```
+$$J^\ast = \begin{bmatrix} 0 & I \\ -H_V(x^\ast)/m & B/m - \gamma I \end{bmatrix}$$
 
-where `H_V = ∇²V` is the Hessian of V. Stability requires the real parts of the eigenvalues of `J*` to be negative — dominated by the damping `γ`.
+where $H_V = \nabla^2 V$ is the Hessian of $V$. Stability requires the real parts of the eigenvalues of $J^\ast$ to be negative — dominated by the damping $\gamma$.
 
 ---
 
@@ -205,49 +180,44 @@ where `H_V = ∇²V` is the Hessian of V. Stability requires the real parts of t
 
 ### 4.1 The Krotov-Hopfield Hierarchy
 
-**Classical Hopfield (1982):**
-```
-E = -½ xᵀΞᵀΞx + ½‖x‖²
-F = -∇E = Ξᵀ(Ξx) - x   (Hebbian retrieval)
-Capacity: ~ 0.14d
-```
+**Classical Hopfield (1982).**
 
-**Krotov-Hopfield 2016 (polynomial interactions):**
-```
-E = -∑_μ F_n(ξᵘ·x) + ½‖x‖²,   F_n(z) = zⁿ/n
-Capacity: ~ dⁿ⁻¹   (superlinear in d for n > 2)
-```
+$$E = -\frac12 x^\top \Xi^\top \Xi x + \frac12 \|x\|^2$$
+$$F = -\nabla E = \Xi^\top (\Xi x) - x \quad \text{(Hebbian retrieval)}$$
 
-**Ramsauer et al. 2020 (exponential / softmax limit):**
+Capacity: $\sim 0.14 d$.
 
-Take `F_n → exp` as `n → ∞`:
+**Krotov-Hopfield 2016 (polynomial interactions).**
 
-```
-E(x) = -1/β · log ∑_μ exp(β ξᵘ·x) + ½‖x‖²
-     = -1/β · log Z(x) + ½‖x‖²
+$$E = -\sum_\mu F_n(\xi^\mu \cdot x) + \frac12 \|x\|^2, \qquad F_n(z) = \frac{z^n}{n}$$
 
-F(x) = -∇E = Ξᵀ softmax(βΞx) - x
-Capacity: ~ exp(d)   (exponential in dimension)
-```
+Capacity: $\sim d^{n-1}$ (superlinear in $d$ for $n > 2$).
 
-The synchronous update `x_new = Ξᵀ softmax(βΞx)` is **exactly** softmax self-attention.
+**Ramsauer et al. 2020 (exponential / softmax limit).**
+
+Take $F_n \to \exp$ as $n \to \infty$:
+
+$$E(x) = -\frac{1}{\beta}\log \sum_\mu \exp(\beta \xi^\mu \cdot x) + \frac12 \|x\|^2 = -\frac{1}{\beta}\log Z(x) + \frac12 \|x\|^2$$
+$$F(x) = -\nabla E = \Xi^\top \text{softmax}(\beta \Xi x) - x$$
+
+Capacity: $\sim \exp(d)$ (exponential in dimension).
+
+The synchronous update $x_{\text{new}} = \Xi^\top \text{softmax}(\beta \Xi x)$ is **exactly** softmax self-attention.
 
 ### 4.2 The Transformer Identification
 
 Standard scaled dot-product attention:
 
-```
-Attention(Q, K, V) = V · softmax(KᵀQ / √d)
-```
+$$\text{Attention}(Q, K, V) = V \cdot \text{softmax}\left(\frac{K^\top Q}{\sqrt d}\right)$$
 
 Maps to Hopfield retrieval under:
 
 | Transformer | Hopfield |
 |---|---|
-| Query Q | State being retrieved x |
-| Key matrix K | Stored pattern index Ξ |
-| Value matrix V | Retrieved pattern content Ξ (if K=V) |
-| Scaling 1/√d | Inverse temperature β |
+| Query $Q$ | State being retrieved $x$ |
+| Key matrix $K$ | Stored pattern index $\Xi$ |
+| Value matrix $V$ | Retrieved pattern content $\Xi$ (if $K = V$) |
+| Scaling $1/\sqrt d$ | Inverse temperature $\beta$ |
 | softmax | Boltzmann retrieval distribution |
 
 **One transformer attention operation = one synchronous Hopfield update step.**
@@ -256,78 +226,60 @@ Maps to Hopfield retrieval under:
 
 In a decoder-only transformer (GPT-2, Pythia), the causal mask enforces:
 
-```
-Attention(Q_t, K_{≤t}, V_{≤t}) = V_{≤t} · softmax(K_{≤t}ᵀ Q_t / √d)
-```
+$$\text{Attention}(Q_t, K_{\le t}, V_{\le t}) = V_{\le t} \cdot \text{softmax}\left(\frac{K_{\le t}^\top Q_t}{\sqrt d}\right)$$
 
-The "stored patterns" are the keys and values of all preceding tokens. The hidden state at position `t` is being retrieved as a query against a **growing memory bank**. This means the effective Hopfield network grows with sequence length — the attractor landscape changes at every token position.
+The "stored patterns" are the keys and values of all preceding tokens. The hidden state at position $t$ is being retrieved as a query against a **growing memory bank**. This means the effective Hopfield network grows with sequence length — the attractor landscape changes at every token position.
 
 ---
 
 ## 5. Why Transformers Are Non-Conservative: The K≠V Theorem
 
-### 5.1 The Conservative Case (K = V)
+### 5.1 The Conservative Case ($K = V$)
 
-When `K = V = Ξ` (pure Hopfield, auto-associative):
+When $K = V = \Xi$ (pure Hopfield, auto-associative):
 
-```
-F(x) = Ξᵀ softmax(βΞx) - x
-```
+$$F(x) = \Xi^\top \text{softmax}(\beta \Xi x) - x$$
 
 Jacobian:
 
-```
-JF(x) = β Ξᵀ [diag(s) - ssᵀ] Ξ - I
-```
+$$J F(x) = \beta \Xi^\top [\mathrm{diag}(s) - s s^\top]\Xi - I$$
 
-where `s = softmax(βΞx)`. The matrix `[diag(s) - ssᵀ]` is symmetric positive semidefinite (it is the Jacobian of softmax). Therefore `JF(x)` is **symmetric** for all x. Symmetric Jacobian ↔ path-independent work ↔ **conservative**.
+where $s = \text{softmax}(\beta \Xi x)$. The matrix $\mathrm{diag}(s) - s s^\top$ is symmetric positive semidefinite (it is the Jacobian of softmax). Therefore $J F(x)$ is **symmetric** for all $x$. Symmetric Jacobian $\Leftrightarrow$ path-independent work $\Leftrightarrow$ **conservative**.
 
-**Proof of conservativity:**
+**Proof of conservativity.** The existence of a scalar potential is equivalent to $\partial F_i / \partial x_j = \partial F_j / \partial x_i$ for all $i, j$. This holds exactly when $J F$ is symmetric, which is guaranteed when $K = V$.
 
-The existence of a scalar potential is equivalent to `∂Fᵢ/∂xⱼ = ∂Fⱼ/∂xᵢ` for all `i, j`. This holds exactly when `JF` is symmetric, which is guaranteed when K = V.
+### 5.2 The Non-Conservative Case ($K \ne V$)
 
-### 5.2 The Non-Conservative Case (K ≠ V)
+In every real transformer, $K = W_K \cdot \text{context}$ and $V = W_V \cdot \text{context}$ with $W_K \ne W_V$. The force becomes:
 
-In every real transformer, `K = W_K · context` and `V = W_V · context` with `W_K ≠ W_V`. The force becomes:
-
-```
-F(x) = Vᵀ softmax(βKx) - x
-```
+$$F(x) = V^\top \text{softmax}(\beta K x) - x$$
 
 Jacobian:
 
-```
-(JF)ᵢⱼ = β ∑_μ softmax_μ(βKx) · (Kⱼᵘ - [Ks]ⱼ) · Vᵢᵘ  -  δᵢⱼ
-```
+$$(J F)_{ij} = \beta \sum_\mu \text{softmax}_\mu(\beta K x) (K^\mu_j - [K s]_j) V^\mu_i - \delta_{ij}$$
 
 The **antisymmetric part** (the solenoidal component):
 
-```
-Ω(x) = (JF - JFᵀ)/2
+$$\Omega(x) = \frac12 (J F - J F^\top) = \frac{\beta}{2}\sum_\mu \text{softmax}_\mu(\beta K x) (V^\mu \otimes K^\mu - K^\mu \otimes V^\mu)$$
 
-      = β/2 · ∑_μ softmax_μ(βKx) · (Vᵘ⊗Kᵘ  -  Kᵘ⊗Vᵘ)
-               ──────────────────────────────────────────
-               attention-weighted antisymmetric outer products
-```
+This is an attention-weighted sum of antisymmetric outer products.
 
 ### 5.3 The Non-Conservativity Theorem
 
-**Theorem.** The attention force `F(x) = Vᵀ softmax(βKx) - x` is conservative if and only if `Vᵘ ∥ Kᵘ` for all `μ` (i.e., each key and its associated value are collinear).
+**Theorem.** The attention force $F(x) = V^\top \text{softmax}(\beta K x) - x$ is conservative if and only if $V^\mu \parallel K^\mu$ for all $\mu$ (i.e. each key and its associated value are collinear).
 
-**Proof sketch.** `Ω(x) = 0 ∀x` requires each outer product `Vᵘ⊗Kᵘ - Kᵘ⊗Vᵘ = 0`, which holds iff `Vᵘ = λᵘKᵘ` for scalars `λᵘ` — collinearity. Since `Vᵘ = W_V ξᵘ` and `Kᵘ = W_K ξᵘ`, collinearity for all context tokens requires `W_V = ΛW_K` for diagonal `Λ` — a measure-zero set of weight configurations, never achieved in trained models. ∎
+**Proof sketch.** $\Omega(x) = 0$ for all $x$ requires each outer product $V^\mu \otimes K^\mu - K^\mu \otimes V^\mu = 0$, which holds iff $V^\mu = \lambda^\mu K^\mu$ for scalars $\lambda^\mu$ — collinearity. Since $V^\mu = W_V \xi^\mu$ and $K^\mu = W_K \xi^\mu$, collinearity for all context tokens requires $W_V = \Lambda W_K$ for diagonal $\Lambda$ — a measure-zero set of weight configurations, never achieved in trained models. $\blacksquare$
 
 ### 5.4 The Geometric Interpretation
 
-Each stored pattern `μ` contributes a **vortex** in the plane spanned by `{Kᵘ, Vᵘ}`:
+Each stored pattern $\mu$ contributes a **vortex** in the plane spanned by $\{K^\mu, V^\mu\}$:
 
-```
-Ωᵘ = Vᵘ⊗Kᵘ - Kᵘ⊗Vᵘ  ∈  ℝᵈˣᵈ   (rank-2 antisymmetric matrix)
-```
+$$\Omega^\mu = V^\mu \otimes K^\mu - K^\mu \otimes V^\mu \in \mathbb{R}^{d \times d} \quad \text{(rank-2 antisymmetric)}$$
 
-The full solenoidal field is a **softmax-weighted superposition of vortices**, where the weights change with position x (via the attention distribution). This is:
+The full solenoidal field is a **softmax-weighted superposition of vortices**, where the weights change with position $x$ (via the attention distribution). This is:
 
-- **Spatially inhomogeneous**: different context tokens dominate at different hidden state positions
-- **Dynamically active**: as `x` evolves, the attention weights shift, changing which vortices are active
+- **Spatially inhomogeneous**: different context tokens dominate at different hidden-state positions
+- **Dynamically active**: as $x$ evolves, the attention weights shift, changing which vortices are active
 - **Structurally irreducible**: cannot be represented by any scalar potential
 
 ---
@@ -336,96 +288,73 @@ The full solenoidal field is a **softmax-weighted superposition of vortices**, w
 
 ### 6.1 The Key Structural Difference
 
-The K≠V solenoidal component is a **position-only force**:
+The $K \ne V$ solenoidal component is a **position-only** force:
 
-```
-F_sol(x) ← depends on x, not ẋ
-```
+$$F_{\text{sol}}(x) \quad \text{depends on } x, \text{ not } \dot x$$
 
-The P-rot-6 gyroscopic term is a **velocity-coupled force**:
+The P-rot-6 gyroscopic term is a **velocity-coupled** force:
 
-```
-F_gyro = Bẋ ← depends on ẋ, not x
-```
+$$F_{\text{gyro}} = B \dot x \quad \text{depends on } \dot x, \text{ not } x$$
 
-These occupy **distinct sectors** of the Helmholtz decomposition. The identification `Ω(x) ↔ B` is not exact — it requires additional conditions.
+These occupy **distinct sectors** of the Helmholtz decomposition. The identification $\Omega(x) \leftrightarrow B$ is not exact — it requires additional conditions.
 
 ### 6.2 When the Identification Is Valid
 
-Consider a trajectory `x(t)` linearized around a reference `x̄(t)`:
+Consider a trajectory $x(t)$ linearized around a reference $\bar x(t)$:
 
-```
-x(t) = x̄(t) + δx(t)
-```
+$$x(t) = \bar x(t) + \delta x(t)$$
 
 Force on perturbed trajectory:
 
-```
-F(x̄ + δx) ≈ F(x̄) + JF(x̄)·δx
-            = F(x̄) + S(x̄)·δx + Ω(x̄)·δx
-```
+$$F(\bar x + \delta x) \approx F(\bar x) + J F(\bar x) \delta x = F(\bar x) + S(\bar x) \delta x + \Omega(\bar x) \delta x$$
 
-For a locally quasi-straight trajectory over a short time window `δt`:
+For a locally quasi-straight trajectory over a short time window $\delta t$:
 
-```
-δx(t) ≈ ẋ(t) · δt
-```
+$$\delta x(t) \approx \dot x(t) \delta t$$
 
 The antisymmetric correction becomes:
 
-```
-Ω(x̄)·δx ≈ Ω(x̄) · ẋ · δt
-```
+$$\Omega(\bar x) \delta x \approx \Omega(\bar x) \dot x \delta t$$
 
 This gives an **effective velocity coupling** with:
 
-```
-B_eff ≈ Ω(x̄) · δt
-```
+$$B_{\text{eff}} \approx \Omega(\bar x) \delta t$$
 
 The identification holds when:
 
 | Condition | Mathematical form |
 |---|---|
-| Locally straight trajectory | `‖ẍ‖ · δt ≪ ‖ẋ‖` |
-| Frozen attention | `‖∂s/∂x‖ · ‖δx‖ ≪ ‖s‖` |
-| Short window | `δt ≪ 1/β‖K‖` |
+| Locally straight trajectory | $\|\ddot x\| \delta t \ll \|\dot x\|$ |
+| Frozen attention | $\|\partial s / \partial x\| \|\delta x\| \ll \|s\|$ |
+| Short window | $\delta t \ll 1/(\beta \|K\|)$ |
 
-### 6.3 The Phase Space Lifting
+### 6.3 The Phase-Space Lifting
 
-A cleaner connection avoids linearization. Lift to phase space `z = (x, v)`:
+A cleaner connection avoids linearization. Lift to phase space $z = (x, v)$:
 
-```
-ż = G(z) = [        v             ]
-            [ F(x)/m - γv         ]
-```
+$$\dot z = G(z) = \begin{bmatrix} v \\ F(x)/m - \gamma v \end{bmatrix}$$
 
-The Jacobian of `G` in phase space:
+The Jacobian of $G$ in phase space:
 
-```
-JG(z) = [    0         I    ]
-         [ JF(x)/m   -γI    ]
-```
+$$J G(z) = \begin{bmatrix} 0 & I \\ J F(x)/m & -\gamma I \end{bmatrix}$$
 
-The off-diagonal block `JF(x)/m` contains `Ω(x)/m`. In phase space, the solenoidal component of the position-space force **appears as a coupling between the velocity equation and the position coordinate** — structurally analogous to a velocity coupling when projected back.
+The off-diagonal block $J F(x)/m$ contains $\Omega(x)/m$. In phase space, the solenoidal component of the position-space force **appears as a coupling between the velocity equation and the position coordinate** — structurally analogous to a velocity coupling when projected back.
 
-This projection is exact when the phase space manifold is locally a product. For transformer trajectories, this holds approximately in **slow-varying semantic regions** (plateau phases between transitions).
+This projection is exact when the phase-space manifold is locally a product. For transformer trajectories, this holds approximately in **slow-varying semantic regions** (plateau phases between transitions).
 
 ### 6.4 The Theoretical B Matrix
 
-The P-rot-6 B matrix theoretically predicted by transformer weights is:
+The P-rot-6 $B$ matrix theoretically predicted by transformer weights is:
 
-```
-B_theory(x̄) = β/2 · ∑_μ softmax_μ(β K x̄) · (Vᵘ⊗Kᵘ - Kᵘ⊗Vᵘ)
-```
+$$B_{\text{theory}}(\bar x) = \frac{\beta}{2}\sum_\mu \text{softmax}_\mu(\beta K \bar x) (V^\mu \otimes K^\mu - K^\mu \otimes V^\mu)$$
 
-where the sum is over context tokens, and `x̄` is a reference hidden state (e.g., trajectory mean). This has **zero free parameters** — it is entirely determined by:
+where the sum is over context tokens and $\bar x$ is a reference hidden state (e.g. trajectory mean). This has **zero free parameters** — it is entirely determined by:
 
-- The K and V weight matrices `W_K`, `W_V`
-- The context token representations at layer `ℓ`
-- The reference state `x̄`
+- The $K$ and $V$ weight matrices $W_K$, $W_V$
+- The context token representations at layer $\ell$
+- The reference state $\bar x$
 
-This theoretical prediction can be tested directly against the empirically fitted B — the residual difference quantifies the validity of the linearization.
+This theoretical prediction can be tested directly against the empirically fitted $B$ — the residual difference quantifies the validity of the linearization.
 
 ---
 
@@ -557,7 +486,7 @@ def compute_hopfield_curl(W_K, W_V, context_hidden, x_ref, beta=None, d_head=64)
     # Per-token antisymmetric outer products (vortex contributions)
     Omega_per_token = np.zeros((M, d, d))
     for mu in range(M):
-        # Vᵘ⊗Kᵘ - Kᵘ⊗Vᵘ : antisymmetric rank-2 matrix
+        # V^mu tensor K^mu - K^mu tensor V^mu : antisymmetric rank-2 matrix
         Omega_per_token[mu] = (
             np.outer(V[mu], K[mu]) - np.outer(K[mu], V[mu])
         )
@@ -585,7 +514,7 @@ print(f"B Frobenius norm: {np.linalg.norm(B_theory):.4f}")
 
 ### 7.5 PCA Reduction to Velocity Subspace
 
-Before fitting B empirically, reduce to the subspace where dynamics actually live:
+Before fitting $B$ empirically, reduce to the subspace where dynamics actually live:
 
 ```python
 def velocity_pca(H_list, k=30):
@@ -626,9 +555,9 @@ def compute_second_order_residual(H, V, gamma, V_fn, B=None):
     """
     Compute residual of P-rot-6 equation of motion.
     
-    r[t] = ẍ[t] - (-∇V(x[t]) + B·ẋ[t] - γẋ[t])
+    r[t] = xddot[t] - ( -grad V(x[t]) + B @ xdot[t] - gamma * xdot[t] )
     
-    Uses finite differences for ẋ and ẍ.
+    Uses finite differences for xdot and xddot.
     """
     # Positions, velocities, accelerations via finite difference
     x = H[1:-1]                              # (T-2, k) interior points
@@ -668,7 +597,7 @@ def fit_B_empirical(H_list, gamma, V_fn, k):
     """
     Fit the skew-symmetric B matrix by linear regression on velocity residuals.
     
-    Solves: r[t] ≈ B @ v[t]
+    Solves: r[t] ~= B @ v[t]
     where r[t] is the residual after removing potential and damping.
     
     Returns B_fit (k, k) skew-symmetric.
@@ -691,7 +620,7 @@ def fit_B_empirical(H_list, gamma, V_fn, k):
     R = np.vstack(R_all)    # (N, k)
     V = np.vstack(V_all)    # (N, k)
     
-    # Least squares: R ≈ V @ Bᵀ  →  Bᵀ = (VᵀV)⁻¹ VᵀR
+    # Least squares: R ~= V @ B^T  =>  B^T = (V^T V)^-1 V^T R
     B_T_ls = np.linalg.lstsq(V, R, rcond=None)[0]   # (k, k)
     B_ls   = B_T_ls.T
     
@@ -710,7 +639,7 @@ B_empirical = fit_B_empirical(H_proj_list, gamma=0.1, V_fn=V_fn, k=30)
 def project_B_to_subspace(B_theory, P):
     """
     Project full-dimensional B_theory (d, d) to PCA subspace (k, k).
-    B_proj = P @ B_theory @ Pᵀ
+    B_proj = P @ B_theory @ P^T
     """
     B_proj = P @ B_theory @ P.T       # (k, k)
     # Re-enforce skew-symmetry after projection
@@ -725,8 +654,8 @@ alignment = np.trace(B_theory_proj.T @ B_empirical) / (
     np.linalg.norm(B_theory_proj) * np.linalg.norm(B_empirical) + 1e-10
 )
 print(f"Theoretical B alignment with empirical B: {alignment:.4f}")
-# 1.0 → perfect alignment (theoretical prediction is correct)
-# 0.0 → orthogonal (theory misses the empirical structure entirely)
+# 1.0 -> perfect alignment (theoretical prediction is correct)
+# 0.0 -> orthogonal (theory misses the empirical structure entirely)
 ```
 
 ---
@@ -735,15 +664,15 @@ print(f"Theoretical B alignment with empirical B: {alignment:.4f}")
 
 ### 8.1 The Spatial Variation Diagnostic
 
-Before committing to a constant B, measure how much `Ω(x)` varies along the trajectory:
+Before committing to a constant $B$, measure how much $\Omega(x)$ varies along the trajectory:
 
 ```python
 def spatial_variation_diagnostic(W_K, W_V, H, beta, d_head=64):
     """
-    Compute Ω(x_t) at each trajectory point and measure variation.
+    Compute Omega(x_t) at each trajectory point and measure variation.
     
-    High variation ratio → constant B not justified → need B(x).
-    Low variation ratio  → constant B is a good approximation.
+    High variation ratio -> constant B not justified -> need B(x).
+    Low variation ratio  -> constant B is a good approximation.
     """
     Omegas = []
     for x_t in H:
@@ -755,10 +684,10 @@ def spatial_variation_diagnostic(W_K, W_V, H, beta, d_head=64):
     deviations = [np.linalg.norm(O - Omega_mean) for O in Omegas]
     variation_ratio = np.std(deviations) / (np.linalg.norm(Omega_mean) + 1e-10)
     
-    print(f"Ω spatial variation ratio: {variation_ratio:.4f}")
-    print(f"  < 0.05 → constant B is valid")
-    print(f"  0.05–0.20 → moderate position-dependence, B(x) recommended")
-    print(f"  > 0.20 → strong position-dependence, constant B will fail")
+    print(f"Omega spatial variation ratio: {variation_ratio:.4f}")
+    print(f"  < 0.05 -> constant B is valid")
+    print(f"  0.05-0.20 -> moderate position-dependence, B(x) recommended")
+    print(f"  > 0.20 -> strong position-dependence, constant B will fail")
     
     return variation_ratio, Omegas
 ```
@@ -768,7 +697,7 @@ def spatial_variation_diagnostic(W_K, W_V, H, beta, d_head=64):
 ```python
 def check_energy_monotonicity(H, B_fit, gamma, V_fn):
     """
-    Verify that dE/dt ≤ 0 along trajectories (required for valid B).
+    Verify that dE/dt <= 0 along trajectories (required for valid B).
     If dE/dt > 0 consistently, B is not purely skew.
     """
     v = np.diff(H, axis=0)           # (T-1, k)
@@ -779,13 +708,13 @@ def check_energy_monotonicity(H, B_fit, gamma, V_fn):
     E       = KE + V_vals
     dE_dt   = np.diff(E)
     
-    # Theoretical dE/dt = -gamma * ‖v‖²
+    # Theoretical dE/dt = -gamma * ||v||^2
     dE_theory = -gamma * np.sum(v[:-1]**2, axis=1)
     
     # Check gyroscopic work (should be ~0)
     gyro_work = np.array([v[t] @ B_fit @ v[t] for t in range(len(v)-1)])
     
-    print(f"Mean gyroscopic work (should be ≈0): {gyro_work.mean():.4e}")
+    print(f"Mean gyroscopic work (should be ~0): {gyro_work.mean():.4e}")
     print(f"Max |gyroscopic work|: {np.abs(gyro_work).max():.4e}")
     print(f"Skew-symmetry of B_fit: {np.max(np.abs(B_fit + B_fit.T)):.4e}")
     
@@ -815,7 +744,7 @@ def full_model_comparison(H_list, gamma, V_fn, B_theory_proj, B_empirical, P):
         compute_second_order_residual(H, None, gamma, V_fn, B=None)
         for H in H_list
     ])
-    results["-∇V only"] = res_V
+    results["-grad V only"] = res_V
     
     # 3. P-rot-6 with theoretical B (zero free parameters)
     res_theory = np.mean([
@@ -877,7 +806,7 @@ def per_head_curl_analysis(W_K_heads, W_V_heads, context, x_ref, beta, d_head):
         B_h = (B_h - B_h.T) / 2
         B_per_head.append(B_h)
         
-        print(f"Head {h:2d}: ‖B_h‖_F = {np.linalg.norm(B_h):.4f}")
+        print(f"Head {h:2d}: ||B_h||_F = {np.linalg.norm(B_h):.4f}")
     
     return B_per_head
 ```
@@ -890,24 +819,25 @@ def per_head_curl_analysis(W_K_heads, W_V_heads, context, x_ref, beta, d_head):
 
 | Residual outcome | Interpretation | Next action |
 |---|---|---|
-| B_theory ≈ B_fit, both beat null | **Theory confirmed**: K≠V antisymmetry drives solenoidal dynamics; linearization holds | Measure curvature of B(x); check head decomposition |
-| B_fit beats null, B_theory doesn't | **Structure correct, theory approximate**: velocity coupling exists but linearization is inaccurate | Fit full B(x) network; measure spatial variation ratio |
-| Both beat null but weakly (< 5%) | **Partial success**: B captures some solenoidal structure | Check if head-specific B gives stronger signal |
-| Neither beats null | **Velocity coupling absent**: solenoidal dynamics are position-driven (pure F_sol) | Move to position-dependent B(x); check MLP contribution |
-| B_fit beats null, but B + B_theory orthogonal | **Wrong vortex structure**: K≠V is not the source | Examine MLP, LayerNorm, or inter-layer contributions |
+| $B_{\text{theory}} \approx B_{\text{fit}}$, both beat null | **Theory confirmed**: $K \ne V$ antisymmetry drives solenoidal dynamics; linearization holds | Measure curvature of $B(x)$; check head decomposition |
+| $B_{\text{fit}}$ beats null, $B_{\text{theory}}$ doesn't | **Structure correct, theory approximate**: velocity coupling exists but linearization is inaccurate | Fit full $B(x)$ network; measure spatial variation ratio |
+| Both beat null but weakly ($< 5\%$) | **Partial success**: $B$ captures some solenoidal structure | Check if head-specific $B$ gives stronger signal |
+| Neither beats null | **Velocity coupling absent**: solenoidal dynamics are position-driven (pure $F_{\text{sol}}$) | Move to position-dependent $B(x)$; check MLP contribution |
+| $B_{\text{fit}}$ beats null, but $B_{\text{fit}} + B_{\text{theory}}$ orthogonal | **Wrong vortex structure**: $K \ne V$ is not the source | Examine MLP, LayerNorm, or inter-layer contributions |
 
 ### 9.2 What Each Outcome Implies About Semantic Space Geometry
 
-**P-rot-6 succeeds (globally):**
-The semantic space has an approximately **uniform magnetic-like field** — every region of meaning-space is subject to the same rotational bias. Semantic trajectories are helical around the K≠V vortex axes. The relevant geometry is a flat space with a constant connection form.
+**P-rot-6 succeeds (globally).**
+The semantic space has an approximately **uniform magnetic-like field** — every region of meaning-space is subject to the same rotational bias. Semantic trajectories are helical around the $K \ne V$ vortex axes. The relevant geometry is a flat space with a constant connection form.
 
-**P-rot-6 succeeds locally (high spatial variation ratio):**
-The magnetic field is **inhomogeneous** — the rotational structure depends on position. Near certain semantic attractors, the vortex intensity increases (high softmax concentration → single dominant token's K/V pair dominates `Ω`). This is the **position-dependent gauge field** B(x) scenario.
+**P-rot-6 succeeds locally (high spatial variation ratio).**
+The magnetic field is **inhomogeneous** — the rotational structure depends on position. Near certain semantic attractors, the vortex intensity increases (high softmax concentration $\Rightarrow$ single dominant token's $K$/$V$ pair dominates $\Omega$). This is the **position-dependent gauge field** $B(x)$ scenario.
 
-**P-rot-6 fails entirely:**
+**P-rot-6 fails entirely.**
 The dynamics are not velocity-linear in any sense. This points toward either:
+
 - **Riemannian geodesic structure**: the curvature IS the force, not a correction to Newtonian dynamics
-- **Non-Markovian dynamics**: the effective force at time t depends on the full history `h_{<t}`, not just `h_t` and `ḣ_t`
+- **Non-Markovian dynamics**: the effective force at time $t$ depends on the full history $h_{<t}$, not just $h_t$ and $\dot h_t$
 - **Discrete punctuation**: the trajectory is not smooth enough for second-order ODE models to apply
 
 ---
@@ -916,23 +846,21 @@ The dynamics are not velocity-linear in any sense. This points toward either:
 
 Having established the hierarchy through P-rot-6, the next steps follow a principled progression:
 
-### 10.1 Position-Dependent Gauge Field B(x)
+### 10.1 Position-Dependent Gauge Field $B(x)$
 
-```
-mẍ = -∇V(x) + B(x)ẋ - mγẋ,     B(x) = -B(x)ᵀ
-```
+$$m\ddot x = -\nabla V(x) + B(x) \dot x - m\gamma \dot x, \qquad B(x) = -B(x)^\top$$
 
 **Parameterization options** (in order of complexity):
 
-1. **RBF interpolation**: `B(x) = ∑_c w_c · B_c · φ(‖x - c‖)` — cluster-based, interpretable
-2. **Low-rank skew network**: `B(x) = U(x)Σ(x)V(x)ᵀ - V(x)Σ(x)U(x)ᵀ` with neural U, V, Σ
-3. **Full gauge network**: unrestricted MLP output projected to skew manifold via `(B - Bᵀ)/2`
+1. **RBF interpolation**: $B(x) = \sum_c w_c B_c \varphi(\|x - c\|)$ — cluster-based, interpretable
+2. **Low-rank skew network**: $B(x) = U(x)\Sigma(x) V(x)^\top - V(x)\Sigma(x) U(x)^\top$ with neural $U, V, \Sigma$
+3. **Full gauge network**: unrestricted MLP output projected to skew manifold via $(B - B^\top)/2$
 
 The theoretical prediction from transformer weights becomes:
 
 ```python
 def B_theoretical_at_x(x, W_K, W_V, context, beta, d_head):
-    """Position-dependent version: Ω(x) evaluated at current state."""
+    """Position-dependent version: Omega(x) evaluated at current state."""
     K = context @ W_K.T
     V = context @ W_V.T
     s = softmax(beta * K @ x)
@@ -940,23 +868,19 @@ def B_theoretical_at_x(x, W_K, W_V, context, beta, d_head):
                         for mu in range(len(s)))
 ```
 
-This is the **zero-free-parameter theoretical prediction** for B(x) — fully determined by transformer weights.
+This is the **zero-free-parameter theoretical prediction** for $B(x)$ — fully determined by transformer weights.
 
 ### 10.2 Riemannian Geodesic Formulation
 
 If all gauge field models fail, the hypothesis shifts to:
 
-```
-ẍᵏ + Γᵏᵢⱼ(x) ẋⁱ ẋʲ = -γẋᵏ
-```
+$$\ddot x^k + \Gamma^k_{ij}(x) \dot x^i \dot x^j = -\gamma \dot x^k$$
 
-where Γᵏᵢⱼ are the Christoffel symbols of an implicit Riemannian metric on semantic space.
+where $\Gamma^k_{ij}$ are the Christoffel symbols of an implicit Riemannian metric on semantic space.
 
 The metric can be estimated from the Fisher information of the transformer's output distribution:
 
-```
-g_ij(x) = E_y[∂log p(y|x)/∂xᵢ · ∂log p(y|x)/∂xⱼ]
-```
+$$g_{ij}(x) = \mathbb{E}_y\left[\frac{\partial \log p(y \mid x)}{\partial x_i} \frac{\partial \log p(y \mid x)}{\partial x_j}\right]$$
 
 This directly connects representational geometry to predictive uncertainty.
 
@@ -993,42 +917,34 @@ This directly connects representational geometry to predictive uncertainty.
 
 ### 11.1 What P-rot-6 Tests
 
-P-rot-6 is the **minimal model** that can capture velocity-coupled solenoidal dynamics. Its B matrix is:
+P-rot-6 is the **minimal model** that can capture velocity-coupled solenoidal dynamics. Its $B$ matrix is:
 
-- **Theoretically motivated** by the K≠V antisymmetry in transformer attention
-- **Zero-free-parameter predictable** from W_K, W_V, and the context
+- **Theoretically motivated** by the $K \ne V$ antisymmetry in transformer attention
+- **Zero-free-parameter predictable** from $W_K$, $W_V$, and the context
 - **Empirically fittable** by a single linear regression on velocity residuals
 - **Physically interpretable** as a gyroscopic force doing no work, curving trajectories without dissipation
 
 ### 11.2 The Theoretical Prediction Chain
 
-```
-W_K ≠ W_V  (by design in every transformer)
-    ↓
-Ω(x) = β/2 ∑_μ softmax_μ(βKx)(Vᵘ⊗Kᵘ - Kᵘ⊗Vᵘ) ≠ 0
-    ↓
-Force field is non-conservative (curl ≠ 0)
-    ↓
-Scalar potentials structurally fail (confirmed empirically)
-    ↓
-Linearized approximation: Ω(x̄)ẋ ≈ Bẋ  (valid for smooth trajectories)
-    ↓
-P-rot-6 with B_theory = Ω(x̄) is a zero-free-parameter mechanistic model
-    ↓
-Test: does residual drop significantly when B_theory is added?
-```
+1. $W_K \ne W_V$ (by design in every transformer)
+2. $\Omega(x) = \dfrac{\beta}{2}\sum_\mu \text{softmax}_\mu(\beta K x) (V^\mu \otimes K^\mu - K^\mu \otimes V^\mu) \ne 0$
+3. Force field is non-conservative (curl $\ne 0$)
+4. Scalar potentials structurally fail (confirmed empirically)
+5. Linearized approximation: $\Omega(\bar x) \dot x \approx B \dot x$ (valid for smooth trajectories)
+6. P-rot-6 with $B_{\text{theory}} = \Omega(\bar x)$ is a zero-free-parameter mechanistic model
+7. Test: does the residual drop significantly when $B_{\text{theory}}$ is added?
 
 ### 11.3 Open Questions
 
-1. **Multi-head superposition**: Does each head contribute an independent vortex, or do heads interfere constructively/destructively? The per-head analysis in §8.4 addresses this, but the algebraic structure of head superposition in the full B matrix is not yet characterized.
+1. **Multi-head superposition.** Does each head contribute an independent vortex, or do heads interfere constructively/destructively? The per-head analysis in §8.4 addresses this, but the algebraic structure of head superposition in the full $B$ matrix is not yet characterized.
 
-2. **Layer depth dependence**: Does `‖Ω(x)‖` grow or decay with layer depth? If it grows, solenoidal dynamics become more dominant at later layers — consistent with the view that deep layers perform semantic integration (curved trajectories) while early layers perform syntactic processing (more linear).
+2. **Layer depth dependence.** Does $\|\Omega(x)\|$ grow or decay with layer depth? If it grows, solenoidal dynamics become more dominant at later layers — consistent with the view that deep layers perform semantic integration (curved trajectories) while early layers perform syntactic processing (more linear).
 
-3. **Curvature tensor of the gauge field**: If B(x) is position-dependent, its curvature tensor `F_μν = ∂_μBν - ∂_νBμ + [Bμ, Bν]` determines whether there are topological obstructions to gauge-away the solenoidal component. Non-zero curvature would constitute evidence for genuine topological structure in semantic space.
+3. **Curvature tensor of the gauge field.** If $B(x)$ is position-dependent, its curvature tensor $F_{\mu\nu} = \partial_\mu B_\nu - \partial_\nu B_\mu + [B_\mu, B_\nu]$ determines whether there are topological obstructions to gauge-away the solenoidal component. Non-zero curvature would constitute evidence for genuine topological structure in semantic space.
 
-4. **Connection to induction heads**: Mechanistic interpretability identifies induction heads as key circuits for in-context learning. These heads have strongly structured K/V relationships. Their contribution to `Ω(x)` is likely dominant — testing P-rot-6 on induction-head-ablated models would isolate the induction head's geometric contribution.
+4. **Connection to induction heads.** Mechanistic interpretability identifies induction heads as key circuits for in-context learning. These heads have strongly structured $K$/$V$ relationships. Their contribution to $\Omega(x)$ is likely dominant — testing P-rot-6 on induction-head-ablated models would isolate the induction head's geometric contribution.
 
-5. **Temperature scaling**: As `β → ∞` (sharp attention), `Ω(x)` becomes dominated by the single highest-attention token, and its vortex becomes the only active one. As `β → 0`, contributions average out and `Ω → 0`. This predicts a phase transition in solenoidal dynamics as a function of attention temperature.
+5. **Temperature scaling.** As $\beta \to \infty$ (sharp attention), $\Omega(x)$ becomes dominated by the single highest-attention token, and its vortex becomes the only active one. As $\beta \to 0$, contributions average out and $\Omega \to 0$. This predicts a phase transition in solenoidal dynamics as a function of attention temperature.
 
 ---
 
