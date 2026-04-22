@@ -1,0 +1,32 @@
+# Git LFS tracking for the v2 experimental artifacts under
+# notebooks/e_init/ and notebooks/conservative_arch/. These folders
+# ship the serialized trajectories, model checkpoints, result
+# archives, and rendered figures that back §14 and Appendix A of the
+# paper. Large binaries that cannot live inside GitHub's 100 MB
+# per-file limit (notably `gpt2_baseline.trajectories.pkl` at ~110 MB)
+# are stored via Git LFS; all other pattern-matched binaries below are
+# also LFS-tracked for bandwidth economy.
+#
+# Files under notebooks/stp_loss/ and notebooks/cross_model/ (v1
+# artifacts) are small enough to live in regular git and are not
+# listed here.
+
+# Trajectories extracted from SPLM, matched GPT-2, and pretrained GPT-2
+notebooks/conservative_arch/results/*.pkl filter=lfs diff=lfs merge=lfs -text
+
+# Model checkpoints (SPLM, matched GPT-2)
+notebooks/conservative_arch/results/*.pt filter=lfs diff=lfs merge=lfs -text
+
+# Serialized NumPy result archives (shared-V, capacity sweep, oracle,
+# Jacobian symmetry, token-direction fits)
+notebooks/conservative_arch/results/*.npz filter=lfs diff=lfs merge=lfs -text
+
+# Rendered figures (separator panels, loss curves, capacity-sweep plots)
+notebooks/conservative_arch/results/*.png filter=lfs diff=lfs merge=lfs -text
+
+# Cached tokenised Tiny Shakespeare corpus
+notebooks/conservative_arch/data/*.npz filter=lfs diff=lfs merge=lfs -text
+
+# e_init artifacts (scalar-potential, Helmholtz, and gauge-field fits)
+notebooks/e_init/results/*.npz filter=lfs diff=lfs merge=lfs -text
+notebooks/e_init/results/*.png filter=lfs diff=lfs merge=lfs -text

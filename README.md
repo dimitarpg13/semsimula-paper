@@ -2,14 +2,28 @@
 
 Companion repository for the paper
 
-> **Semantic Simulation: A Dynamical Framework for Language Model Representations, and its Connection to Joint Embedding Predictive Architectures**
+> **Semantic Simulation: A Prescriptive Lagrangian Framework for Efficient Semantic Inference**
+> *Conservative-by-Construction Language Models and the Shared-Potential Separator, with a Correspondence to Joint Embedding Predictive Architectures.*
 > Dimitar P. Gueorguiev (Independent Researcher), 2026.
-> arXiv: `TODO: arXiv:XXXX.XXXXX` (link to be added after v1 submission).
+> arXiv: `TODO: arXiv:XXXX.XXXXX` (link to be added after submission).
 
 This repository collects the **reproducibility artifacts** and the **unpublished
 background manuscripts** cited in the paper. Its scope is deliberately narrow:
 everything here is either directly required to resolve a citation in the paper
-or needed to reproduce a figure or experimental claim.
+or needed to reproduce a figure or experimental claim. The repository covers
+both the descriptive experiments of §13 (STP–acceleration identity and the
+Pythia / GPT-2 deceleration analysis) and the prescriptive experiments of §14
+and Appendix A (the negative-results chain on attention transformers, the
+scalar-potential language model, and the three-way shared-potential
+separator).
+
+> **Git LFS.** Some large binary artefacts under
+> `notebooks/conservative_arch/` (trajectory pickles up to ~110 MB, SPLM and
+> matched-GPT-2 checkpoints at ~30 MB each, and several PNG figures) are
+> stored via **Git LFS**. After cloning, run `git lfs pull` once to download
+> them; without this step the large files will appear as short text pointers.
+> Git LFS is not required for the v1 artefacts under `notebooks/stp_loss/`
+> and `notebooks/cross_model/`.
 
 > **Rendering note.** Several markdown files under `companion_notes/` in this repository contain LaTeX math (inline `$...$` and display `$$...$$` blocks, with macros such as `\mathfrak{...}`, `\boldsymbol{...}`, `\mathcal{...}`, etc.). The math has been verified to render correctly in **Safari**. In **Chrome** some symbols — notably calligraphic and fraktur letters, e.g. `\mathfrak{C}` rendering as a plain `C` instead of $\mathfrak{C}$ — appear to render incorrectly. **Firefox** has not been tested. If symbols look wrong while viewing a companion note on GitHub, please open the file in Safari or consult the main paper's PDF, where the same symbols are typeset by LaTeX directly. Each affected companion note repeats this warning in its own header.
 
@@ -82,6 +96,19 @@ summarized (but not fully developed) in the main text.
 | `SemSimNotes2026Emergent`        | `STP_Loss_Is_An_Emergent_Property_Of_The_Energy_Landscape_Defined_By_Gaussian_Well_Potential.md` | §12                         |
 | `Gueorguiev2026ExecutionProblem` | `The_Execution_Problem.md`                                                                       | §8.6 (deferred to companion)|
 
+In addition, the following three living documents back the §14 / Appendix A
+discussion of attention-transformer conservativity and the conservative-by-
+construction language model. They are not cited by BibTeX key in the paper's
+bibliography (the paper develops their content in-line) but are included
+here as the author's working notes for readers who want the longer
+exposition:
+
+| File                                                                                | Cited around                              |
+| ----------------------------------------------------------------------------------- | ----------------------------------------- |
+| `The_Failure_of_Conservative_Models_to_explain_hidden_state_trajectories.md`        | §14.1 (negative results)                  |
+| `Conservative_by_Construction_Language_Models.md`                                   | §14 (motivation for SPLM)                 |
+| `Considered_Non-Autonomous_Conservative_Mechanisms.md`                              | Appendix A (non-autonomous framework)     |
+
 ### `notebooks/` — reproducibility
 
 #### `notebooks/stp_loss/energy_landscape_validation.ipynb`
@@ -119,9 +146,71 @@ The `results/` subfolder contains the serialized summary
 (`cross_model_samples.npz`), and the two figures used in §13 of the paper
 (`cross_model_obs_vs_null_bars.png`, `cross_model_a_par_hist.png`).
 
+#### `notebooks/e_init/` — scalar, Helmholtz, and gauge-field fits on GPT-2
+
+The **negative-results chain** of §14.1 ("Retrospective: five negative
+experiments on scalar, linear Helmholtz, and velocity-coupled gauge fits").
+This folder closes the natural classical-Lagrangian menu on pretrained
+GPT-2 small hidden-state trajectories over the 50-sentence, five-domain
+E-init corpus and shows that every ansatz considered ties or loses to the
+static-null baseline on held-out data. Contents:
+
+- `e_init_validation.ipynb` — the reference run (§1 Gaussian-well fit,
+  per-sentence per-layer centered, produces the `e_init_results*.npz` and
+  `well_params*.json` artefacts consumed by the follow-up scripts);
+- `extended_gamma_and_first_order.py` — E1 (extended damping sweep
+  $\gamma \in \{0,\ldots,50\}$) and E2 (first-order overdamped gradient
+  flow, $\eta \in \{10^{-4},\ldots,10^{-1}\}$);
+- `well_functional_form_comparison.py` — E3 (seven scalar-well functional
+  forms: harmonic, Gaussian, Morse, Lorentzian-saturation, log-saturation,
+  Weibull, power);
+- `helmholtz_curl_augmented.py` — E4 (linear Helmholtz augmentation with a
+  position-coupled skew term $\Omega x$);
+- `velocity_coupled_gauge.py` — E5 (velocity-coupled gauge
+  $F(x)\,\dot x$ with constant, affine-rank-1, and affine-rank-2 $F$).
+
+Each script writes a markdown summary, an `.npz` of numerical results, and
+one or more `.png` figures to `results/`. See
+[`notebooks/e_init/README.md`](notebooks/e_init/README.md) for the full
+catalogue and the reproduction commands.
+
+#### `notebooks/conservative_arch/` — the SPLM prototype and the three-way separator
+
+The **prescriptive experiments** of §14.2 ff. and Appendix A. This folder
+implements the scalar-potential language model (SPLM), trains it and a
+scale-matched attention baseline on Tiny Shakespeare, extracts hidden-
+state trajectories from SPLM / matched GPT-2 / pretrained GPT-2 small on
+the identical corpus, and runs the strict shared-potential fit, the
+velocity-aware Jacobian-symmetry test, the $V_{\psi}$ capacity sweep, the
+SPLM oracle fit, and the token-direction replication. Contents (see
+[`notebooks/conservative_arch/README.md`](notebooks/conservative_arch/README.md)
+for the full list):
+
+- **Models.** `model.py` (SPLM), `matched_baseline_model.py` (matched GPT-2);
+- **Training.** `train_splm.py`, `train_matched.py` (Tiny Shakespeare
+  loaders in `data_module.py`, BPE-tokenised in `data/`);
+- **Trajectory extraction.** `trajectory_extraction.py`,
+  `extract_gpt2_baseline.py`, `extract_matched_baseline.py`;
+- **Diagnostics.** `e_init_validation.py` (Gaussian-well E-init on SPLM),
+  `jacobian_symmetry.py` (velocity-aware PCA-16 test),
+  `shared_potential_fit.py` (strict shared-$V_{\psi}$ across all layers),
+  `sharedV_capacity_sweep.py` (6-config $V_{\psi}$ capacity band),
+  `splm_oracle_fit.py` (oracle upper bound using SPLM's own $V_{\theta}$),
+  `token_direction_fit.py` (token-axis replication);
+- **Plots.** `plot_sharedV_comparison.py`,
+  `plot_three_way_comparison.py`,
+  `plot_token_vs_layer_three_way.py`;
+- **Pipeline driver.** `run_full_pipeline.py`;
+- **`results/`.** Serialised pickles (SPLM / matched / GPT-2 trajectories),
+  model checkpoints (`.pt`), `.npz` result archives, markdown summaries,
+  and rendered figures — the raw material behind the separator plot
+  (Fig. 8, "SPLM vs.\ matched GPT-2 vs.\ pretrained GPT-2"), the
+  capacity-sweep saturation plot, the oracle ceiling, and the
+  token-direction robustness check.
+
 ---
 
-## Reproducing the §13 experiments
+## Reproducing the paper's experiments
 
 > **TODO — fill in before release.** Concretely:
 >
@@ -130,21 +219,56 @@ The `results/` subfolder contains the serialized summary
 > 2. Install dependencies. A `requirements.txt` will be added before the
 >    companion repo goes public; key dependencies are `torch`,
 >    `transformers`, `numpy`, `scipy`, `matplotlib`, `pandas`, `jupyter`.
-> 3. Launch `jupyter lab` and open one of:
+> 3. Pull the Git LFS artefacts: `git lfs pull`. Without this step, the
+>    large trajectory pickles and checkpoints under
+>    `notebooks/conservative_arch/results/` will appear as short pointer
+>    files rather than the real binary data.
+>
+> **§13 — descriptive experiments (Results 1–5).**
+>
+> 4. Launch `jupyter lab` and open one of:
 >    - `notebooks/stp_loss/energy_landscape_validation.ipynb` (GPT-2
 >      STP-acceleration and Gaussian-well analysis, backing Results 1–4
 >      and Figures 4–6 in §13);
 >    - `notebooks/cross_model/pythia_tangential_acceleration.ipynb`
 >      (cross-architecture replication on GPT-2 and Pythia-160M, backing
 >      Result 5 in §13).
-> 4. Execute top-to-bottom. Expected runtime on an M-series Mac with 16 GB
->    unified memory: **TODO (measure before release)**. GPU is not required.
 >
-> Each notebook writes its outputs into the sibling `results/` subfolder
-> (`notebooks/stp_loss/results/` and `notebooks/cross_model/results/`
-> respectively). The versions already committed there were produced by
-> the author on **TODO (date + hardware)** and are included so that the
-> figures in §13 can be inspected without re-executing the notebooks.
+> **§14.1 — negative-results chain on attention transformers.**
+>
+> 5. Run the notebook then the four companion scripts under
+>    `notebooks/e_init/` (see
+>    [`notebooks/e_init/README.md`](notebooks/e_init/README.md) for the
+>    exact commands and the mapping from experiment IDs E1–E5 to scripts).
+>    Each script writes a markdown summary, an `.npz` of numerical
+>    results, and figures to `notebooks/e_init/results/`.
+>
+> **§14.2 ff. and Appendix A — prescriptive experiments.**
+>
+> 6. Follow the step-by-step pipeline in
+>    [`notebooks/conservative_arch/README.md`](notebooks/conservative_arch/README.md):
+>    train SPLM and the matched GPT-2 baseline, extract hidden-state
+>    trajectories (SPLM, matched GPT-2, pretrained GPT-2 small), then
+>    run the shared-$V_{\psi}$ fit, Jacobian-symmetry test, capacity
+>    sweep, oracle fit, and token-direction replication. The separator
+>    figure (SPLM vs.\ matched GPT-2 vs.\ pretrained GPT-2, median per-
+>    layer $R^{2} \in \{0.90, 0.45, 0.56\}$) is produced by
+>    `plot_three_way_comparison.py`; the token-direction two-panel figure
+>    by `plot_token_vs_layer_three_way.py`. Full checkpoints and
+>    trajectories are shipped under `results/` (via Git LFS) so that any
+>    result in §14 and Appendix A can be **replotted without retraining**.
+>
+> Expected end-to-end runtime on an M-series Mac with 16 GB unified memory:
+> §13 notebooks **TODO (measure before release)**; §14.1 e_init scripts
+> 2–10 minutes each; §14.2 ff. conservative_arch pipeline ~30–40 minutes
+> including SPLM training and trajectory extraction, or ~5 minutes for
+> fit-and-plot only when starting from the shipped checkpoints. GPU is not
+> required; everything runs on CPU or MPS.
+>
+> Each notebook / script writes its outputs into the sibling `results/`
+> subfolder. The versions already committed there were produced by the
+> author on **TODO (date + hardware)** and are included so that every
+> figure in the paper can be inspected without re-executing the pipeline.
 
 ---
 
@@ -155,9 +279,10 @@ See [`CITATION.bib`](CITATION.bib) for a BibTeX entry. The short form:
 ```bibtex
 @article{Gueorguiev2026SemSim,
   author  = {Gueorguiev, Dimitar P.},
-  title   = {Semantic Simulation: A Dynamical Framework for Language Model
-             Representations, and its Connection to Joint Embedding Predictive
-             Architectures},
+  title   = {Semantic Simulation: A Prescriptive Lagrangian Framework for
+             Efficient Semantic Inference --- Conservative-by-Construction
+             Language Models and the Shared-Potential Separator, with a
+             Correspondence to Joint Embedding Predictive Architectures},
   journal = {arXiv preprint},
   volume  = {TODO: arXiv:XXXX.XXXXX},
   year    = {2026}
