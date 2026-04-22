@@ -78,12 +78,12 @@ Specifically:
    (§1.4): **fails** (marginally worse than null).
 3. $+$ linear skew-symmetric $B \dot x$, constant per layer (§1.5):
    **unstable at full strength; at TRAIN-optimal shrinkage factor
-   $s^{*}\approx 0.05$, ties null**.
+   $s^{\ast}\approx 0.05$, ties null**.
 4. $+$ affine-in-$x$ skew $B(x) \dot x$ with rank 1 or 2 position
-   dependence (§1.5): **unstable at full strength; at $s^{*}\approx 0.01$,
+   dependence (§1.5): **unstable at full strength; at $s^{\ast}\approx 0.01$,
    ties null**.
 5. $+$ both $\Omega x$ and $B \dot x$ simultaneously (§1.5): **unstable
-   at full strength; at $s^{*}=0$ (i.e. the optimiser turns the gauge
+   at full strength; at $s^{\ast}=0$ (i.e. the optimiser turns the gauge
    term off), ties null**.
 
 The combined evidence is a signature of a structural property of the
@@ -128,7 +128,7 @@ $$\mathfrak{m} \ddot{\vec x} = -2ab \vec x e^{-b\|\vec x\|^2} - \mathfrak{m}\gam
 
 integrated forward from $(\vec x_0, \vec v_0 = \vec x_1 - \vec x_0)$ with
 per-layer fitted Gaussian $(a,b)$, under-performs the static null at
-$\gamma^{*}=1.0$ (median layer-$L$ residual $0.2064$ vs. $0.1773$). This
+$\gamma^{\ast}=1.0$ (median layer-$L$ residual $0.2064$ vs. $0.1773$). This
 was reported in v1 as the E-init negative result.
 
 **Reproducibility trail for §1.1**
@@ -166,9 +166,9 @@ $$\vec x_{\ell+1} = \vec x_\ell - \eta \nabla V(\vec x_\ell) \qquad (1.2)$$
 
 with the *same* per-sentence Gaussian well, yields two findings:
 
-1. The correct $\gamma^{*} = 5.0$ (not $\gamma^{*}=1.0$) reduces the median
+1. The correct $\gamma^{\ast} = 5.0$ (not $\gamma^{\ast}=1.0$) reduces the median
    layer-$L$ residual to $0.1768$ -- _exactly_ the static-null floor
-   $0.1773$ to three decimal places. At $\gamma^{*}=5.0$ the 2nd-order
+   $0.1773$ to three decimal places. At $\gamma^{\ast}=5.0$ the 2nd-order
    integrator beats the static null on $68.44\%$ of tokens, but by tiny
    margins (median improvement $0.0011$).
 2. The first-order flow (1.2) reproduces the static null to
@@ -221,7 +221,7 @@ integrator (1.1). Two empirical findings:
   jumps to $\approx 0.82\text{-}0.90$ at layers 3-7 -- again
   essentially the same across all seven forms.
 - **On integrator behaviour** every form, and the AIC-selected mixed
-  map, produces median layer-$L$ residual $0.1768$ at $\gamma^{*}=5.0$,
+  map, produces median layer-$L$ residual $0.1768$ at $\gamma^{\ast}=5.0$,
   identical to Gaussian to four decimals.
 
 The mechanism is quantitative: at a typical per-sentence-centered radius
@@ -299,10 +299,10 @@ Three empirical findings (raw numbers in
    $R^{2}$ means applying $\Omega$ to $x$ produces a vector with _larger_
    magnitude than the residual and essentially perpendicular to it).
 2. **The unconstrained linear $M$ captures ~78 % of per-layer residual
-   variance** in PCA space at $\gamma^*=5$ -- a genuinely strong linear
+   variance** in PCA space at $\gamma^{\ast}=5$ -- a genuinely strong linear
    approximation of what each transformer block does in one layer.
 3. **Neither augmentation beats the static null on the held-out test
-   set.** At the best $\gamma^*=5$ the TEST medians are
+   set.** At the best $\gamma^{\ast}=5$ the TEST medians are
    $0.1774$ (scalar-only), $0.1882$ (+skew $\Omega$), $0.2890$
    (+full linear $M$), vs. static null $0.1796$.
 
@@ -343,7 +343,7 @@ that cannot be captured by a single antisymmetric $\Omega_\ell$.
   (TRAIN / TEST median residual vs. $\gamma$ for all three
   configurations), and
   [`fig_helmholtz_residual_vs_layer_at_gamma_star.png`][hmf2]
-  (per-layer TEST residual at $\gamma^{*}=5$).
+  (per-layer TEST residual at $\gamma^{\ast}=5$).
 - Human-readable report: [`helmholtz_curl_summary.md`][sum4].
 
 [s3]:   ../notebooks/e_init/helmholtz_curl_augmented.py
@@ -388,20 +388,20 @@ Three quantitative findings (full numbers in
    (`B_affine_r2`), $0.67$ (`omega_and_Bconst`) -- at the low-$\gamma$
    end many reach $10^{1}$--$10^{2}$ or overflow to NaN.
 2. **Shrinking the fitted operators by a TRAIN-optimal factor
-   $s^{*}\in[0,1]$ stabilises the integrator -- and $s^{*}$
-   collapses towards 0 for every config.** The TRAIN-optimal $s^{*}$
+   $s^{\ast}\in[0,1]$ stabilises the integrator -- and $s^{\ast}$
+   collapses towards 0 for every config.** The TRAIN-optimal $s^{\ast}$
    at $\gamma=5$ is
-   $s^{*}_{\mathrm{B\_const}}=0.05$,
-   $s^{*}_{\mathrm{B\_affine\_r1}}=0.01$,
-   $s^{*}_{\mathrm{B\_affine\_r2}}=0.01$,
-   $s^{*}_{\mathrm{omega\_and\_Bconst}}=0$.
+   $s^{\ast}_{\mathrm{B\_const}}=0.05$,
+   $s^{\ast}_{\mathrm{B\_affine\_r1}}=0.01$,
+   $s^{\ast}_{\mathrm{B\_affine\_r2}}=0.01$,
+   $s^{\ast}_{\mathrm{omega\_and\_Bconst}}=0$.
    That is, when asked to pick how much of the fitted gauge field to
    apply, the optimiser prefers *almost none of it*.
 3. **At the TRAIN-optimal shrinkage, TEST residual equals the
    gaussian-only baseline (and hence the static null) to within
    $\sim 10^{-4}$.** Concretely:
 
-   | config | $\gamma^{*}$ | $s^{*}$ | TEST layer-$L$ | Δ vs. null |
+   | config | $\gamma^{\ast}$ | $s^{\ast}$ | TEST layer-$L$ | Δ vs. null |
    |---|:-:|:-:|--:|--:|
    | `gaussian`         | 5 | 0    | 0.1774 | −0.0022 |
    | `omega_x`          | 5 | 0    | 0.1774 | −0.0022 |
@@ -435,7 +435,7 @@ electromagnetic-analogue Lagrangian captures that part.
   panels; log y-axis because divergent configs would otherwise squash
   the plot) and
   [`fig_gauge_residual_vs_layer_at_gamma_star.png`][vcf2] (per-layer
-  TEST residual at per-config $\gamma^{*}$ with the shrinkage-tuned
+  TEST residual at per-config $\gamma^{\ast}$ with the shrinkage-tuned
   operators).
 - Report: [`velocity_coupled_gauge_summary.md`][sum5].
 
@@ -617,14 +617,14 @@ live in the function class of §6 (velocity-coupled vector potential with
 position dependence) or the connection-based formulation of §14's
 Jacobi-metric programme.
 
-### 4.1 Why damping "wins" at $\gamma^*\approx 5$
+### 4.1 Why damping "wins" at $\gamma^{\ast}\approx 5$
 
 The $\gamma$ sweep of §1.2 (raw data in
 [`extended_gamma_first_order_results.npz`][r1], visualised in
 [`fig_extended_gamma.png`][f1]) shows a monotone decrease from
 $\gamma=0$ (trajectories wildly over-shoot because $\vec v_0$ launches
 them in unphysical directions, median residual $\approx 1.44$) down to a
-plateau at $\gamma^{*}\approx 5$ (median residual $0.1768$, i.e. the
+plateau at $\gamma^{\ast}\approx 5$ (median residual $0.1768$, i.e. the
 static-null floor $0.1773$ to three decimal places). The interpretation
 now is clean: **what $\gamma$ is doing is killing the initial velocity
 component that would otherwise inject energy into the wrong rotational
@@ -1019,7 +1019,7 @@ Figures:
   &nbsp;--- median residual vs. $\gamma$, TRAIN and TEST panels, with
   the three integrator configurations and the static-null reference.
 - [`fig_helmholtz_residual_vs_layer_at_gamma_star.png`][hmf2]
-  &nbsp;--- per-layer TEST residual at $\gamma^{*}=5$.
+  &nbsp;--- per-layer TEST residual at $\gamma^{\ast}=5$.
 
 Report:
 - [`notebooks/e_init/results/helmholtz_curl_summary.md`][sum4]
@@ -1042,7 +1042,7 @@ Raw data:
 - [`notebooks/e_init/results/velocity_coupled_gauge_results.npz`][vc1]
   &nbsp;--- full $\gamma$ sweep, per-config per-scale TRAIN/TEST median
   layer-$L$ residuals, per-layer TEST medians at $s=1$ and at the
-  TRAIN-optimal $s^{*}$, and per-layer fit-quality $R^{2}$ for both
+  TRAIN-optimal $s^{\ast}$, and per-layer fit-quality $R^{2}$ for both
   skew-projected and unconstrained operators.
 
 Figures:
@@ -1051,7 +1051,7 @@ Figures:
   y-axis, shrinkage-tuned operators, six-config comparison with
   static-null reference.
 - [`fig_gauge_residual_vs_layer_at_gamma_star.png`][vcf2]
-  &nbsp;--- per-layer TEST residual at per-config $\gamma^{*}$ with the
+  &nbsp;--- per-layer TEST residual at per-config $\gamma^{\ast}$ with the
   TRAIN-optimal shrinkage applied.
 
 Report:
