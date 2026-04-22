@@ -124,7 +124,7 @@ per-sentence per-layer centering:
 
 The Euler--Lagrange equation
 
-$$\mathfrak{m}\,\ddot{\vec x} = -2ab\,\vec x\,e^{-b\|\vec x\|^2} - \mathfrak{m}\gamma\,\dot{\vec x} \tag{1.1}$$
+$$\mathfrak{m}\,\ddot{\vec x} = -2ab\,\vec x\,e^{-b\|\vec x\|^2} - \mathfrak{m}\gamma\,\dot{\vec x} \qquad (1.1)$$
 
 integrated forward from $(\vec x_0, \vec v_0 = \vec x_1 - \vec x_0)$ with
 per-layer fitted Gaussian $(a,b)$, under-performs the static null at
@@ -162,7 +162,7 @@ Extending the v1 sweep from $\gamma \in \{0, \dots, 1\}$ to
 $\gamma \in [0, 50]$ on the same integrator (1.1), and running a
 parallel pure first-order flow
 
-$$\vec x_{\ell+1} = \vec x_\ell - \eta\,\nabla V(\vec x_\ell) \tag{1.2}$$
+$$\vec x_{\ell+1} = \vec x_\ell - \eta\,\nabla V(\vec x_\ell) \qquad (1.2)$$
 
 with the *same* per-sentence Gaussian well, yields two findings:
 
@@ -274,7 +274,7 @@ Helmholtz programme and *add* a divergence-free correction to the force.
 The simplest choice is a layer-local linear solenoidal field in the
 top-$k$ PCA subspace of training hidden states,
 
-$$\mathfrak m\,\ddot x = -\nabla V(x) + V_\ell\,\Omega_\ell\,V_\ell^{\top}x - \mathfrak m\,\gamma\,\dot x, \qquad \Omega_\ell=-\Omega_\ell^{\top}\in\mathbb R^{k\times k}, \tag{1.3}$$
+$$\mathfrak m\,\ddot x = -\nabla V(x) + V_\ell\,\Omega_\ell\,V_\ell^{\top}x - \mathfrak m\,\gamma\,\dot x, \qquad \Omega_\ell=-\Omega_\ell^{\top}\in\mathbb R^{k\times k} \qquad (1.3)$$
 
 with $V_\ell\in\mathbb R^{d\times k}$ the per-layer top-$k$ PCA basis.
 The skew constraint makes the extra term divergence-free in the linear
@@ -357,7 +357,7 @@ Because §1.4 tested the simplest *position*-coupled linear solenoidal
 term and it failed, we now test the richer *velocity*-coupled class
 derived from the electromagnetic-analogue Lagrangian
 
-$$L = \tfrac{1}{2}\mathfrak m\,\|\dot x\|^{2} + \vec A(\vec x)\cdot\dot x - V(\vec x), \qquad F_{ij}(\vec x) = \partial_i A_j - \partial_j A_i, \tag{1.4}$$
+$$L = \tfrac{1}{2}\mathfrak m\,\|\dot x\|^{2} + \vec A(\vec x)\cdot\dot x - V(\vec x), \qquad F_{ij}(\vec x) = \partial_i A_j - \partial_j A_i \qquad (1.4)$$
 
 whose Euler--Lagrange equation is
 $\mathfrak m\,\ddot x = -\nabla V + F(\vec x)\,\dot x - \mathfrak m\gamma\,\dot x$.
