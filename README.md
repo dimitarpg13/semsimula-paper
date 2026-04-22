@@ -108,6 +108,7 @@ exposition:
 | `The_Failure_of_Conservative_Models_to_explain_hidden_state_trajectories.md`        | §14.1 (negative results)                  |
 | `Conservative_by_Construction_Language_Models.md`                                   | §14 (motivation for SPLM)                 |
 | `Considered_Non-Autonomous_Conservative_Mechanisms.md`                              | Appendix A (non-autonomous framework)     |
+| `On_Modeling_Semantic_Energy_Field_into_SPLM.md`                                    | §14.2 (mapping framework energy field onto $V_\theta$, $\xi$, $m_t$; candidate Q11–Q13) |
 
 ### `notebooks/` — reproducibility
 
