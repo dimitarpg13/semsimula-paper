@@ -27,6 +27,16 @@ notebooks/conservative_arch/results/*.png filter=lfs diff=lfs merge=lfs -text
 # Cached tokenised Tiny Shakespeare corpus
 notebooks/conservative_arch/data/*.npz filter=lfs diff=lfs merge=lfs -text
 
+# SARF-faithful SPLM ablation (§14.13) -- same patterns as the baseline
+# results folder above. The checkpoint (~27 MB) and trajectory pickle
+# (~13 MB) are both under GitHub's 100 MB per-file limit, but are
+# LFS-tracked for bandwidth economy alongside their baseline
+# counterparts.
+notebooks/conservative_arch/sarf_variant/results/*.pkl filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/sarf_variant/results/*.pt  filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/sarf_variant/results/*.npz filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/sarf_variant/results/*.png filter=lfs diff=lfs merge=lfs -text
+
 # e_init artifacts (scalar-potential, Helmholtz, and gauge-field fits)
 notebooks/e_init/results/*.npz filter=lfs diff=lfs merge=lfs -text
 notebooks/e_init/results/*.png filter=lfs diff=lfs merge=lfs -text

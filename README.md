@@ -207,6 +207,19 @@ for the full list):
   (Fig. 8, "SPLM vs.\ matched GPT-2 vs.\ pretrained GPT-2"), the
   capacity-sweep saturation plot, the oracle ceiling, and the
   token-direction robustness check.
+- **`sarf_variant/`.** Controlled ablation of §14.13: a SARF-faithful
+  SPLM that recomputes the reinforcement-field pool $\xi^{(\ell)}$ at
+  every integration step instead of freezing it at the input layer.
+  Ships its own `model_sarf.py`, `train_splm_sarf.py`,
+  `trajectory_extraction_sarf.py`, `compare.py`, comparison plots, and
+  [`comparison_report.md`](notebooks/conservative_arch/sarf_variant/comparison_report.md);
+  the parent `shared_potential_fit.py` and `token_direction_fit.py`
+  diagnostics are reused verbatim and their SARF outputs
+  (`sharedV_sarf_*`, `tokdir_sarf_*`) live alongside the baseline
+  results in `results/`. Headline finding: a single-line change to the
+  context pool yields a **33 % Tiny-Shakespeare perplexity
+  reduction** at identical parameter count, wall-clock, and compute,
+  while preserving the shared-potential separator.
 
 ---
 
