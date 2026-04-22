@@ -390,11 +390,8 @@ Three quantitative findings (full numbers in
 2. **Shrinking the fitted operators by a TRAIN-optimal factor
    $s^{\ast}\in[0,1]$ stabilises the integrator -- and $s^{\ast}$
    collapses towards 0 for every config.** The TRAIN-optimal $s^{\ast}$
-   at $\gamma=5$ is
-   $s^{\ast}_{\mathrm{B\_const}}=0.05$,
-   $s^{\ast}_{\mathrm{B\_affine\_r1}}=0.01$,
-   $s^{\ast}_{\mathrm{B\_affine\_r2}}=0.01$,
-   $s^{\ast}_{\mathrm{omega\_and\_Bconst}}=0$.
+   at $\gamma=5$ is $0.05$ for `B_const`, $0.01$ for `B_affine_r1`,
+   $0.01$ for `B_affine_r2`, and $0$ for `omega_and_Bconst`.
    That is, when asked to pick how much of the fitted gauge field to
    apply, the optimiser prefers *almost none of it*.
 3. **At the TRAIN-optimal shrinkage, TEST residual equals the
