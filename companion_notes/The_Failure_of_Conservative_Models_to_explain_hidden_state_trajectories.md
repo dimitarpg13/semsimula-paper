@@ -124,8 +124,7 @@ per-sentence per-layer centering:
 
 The Euler--Lagrange equation
 
-$$\mathfrak{m}\,\ddot{\vec x} = -2ab\,\vec x\,e^{-b\|\vec x\|^2}
-  -\mathfrak{m}\gamma\,\dot{\vec x} \tag{1.1}$$
+$$\mathfrak{m}\,\ddot{\vec x} = -2ab\,\vec x\,e^{-b\|\vec x\|^2} - \mathfrak{m}\gamma\,\dot{\vec x} \tag{1.1}$$
 
 integrated forward from $(\vec x_0, \vec v_0 = \vec x_1 - \vec x_0)$ with
 per-layer fitted Gaussian $(a,b)$, under-performs the static null at
@@ -163,8 +162,7 @@ Extending the v1 sweep from $\gamma \in \{0, \dots, 1\}$ to
 $\gamma \in [0, 50]$ on the same integrator (1.1), and running a
 parallel pure first-order flow
 
-$$\vec x_{\ell+1} \;=\; \vec x_\ell \;-\; \eta\,\nabla V(\vec x_\ell)
-  \tag{1.2}$$
+$$\vec x_{\ell+1} = \vec x_\ell - \eta\,\nabla V(\vec x_\ell) \tag{1.2}$$
 
 with the *same* per-sentence Gaussian well, yields two findings:
 
@@ -276,15 +274,11 @@ Helmholtz programme and *add* a divergence-free correction to the force.
 The simplest choice is a layer-local linear solenoidal field in the
 top-$k$ PCA subspace of training hidden states,
 
-$$\mathfrak m\,\ddot x
-  \;=\; -\nabla V(x)
-  \;+\; V_\ell\,\Omega_\ell\,V_\ell^{\top}x
-  \;-\; \mathfrak m\,\gamma\,\dot x,\qquad
-  \Omega_\ell=-\Omega_\ell^{\top}\in\mathbb R^{k\times k}, \tag{1.3}$$
+$$\mathfrak m\,\ddot x = -\nabla V(x) + V_\ell\,\Omega_\ell\,V_\ell^{\top}x - \mathfrak m\,\gamma\,\dot x, \qquad \Omega_\ell=-\Omega_\ell^{\top}\in\mathbb R^{k\times k}, \tag{1.3}$$
 
 with $V_\ell\in\mathbb R^{d\times k}$ the per-layer top-$k$ PCA basis.
 The skew constraint makes the extra term divergence-free in the linear
-sense ($\nabla\cdot (V\Omega V^{\top}x)=\operatorname{tr}\Omega=0$). We
+sense ($\nabla\cdot (V\Omega V^{\top}x)=\mathrm{tr}\,\Omega=0$). We
 split the corpus 40 train / 10 test (balanced across the five domains),
 fit $\Omega_\ell$ per layer by weighted OLS on observed
 $f_\ell/m=(1+\gamma)v_{\ell+1}-v_\ell$ after subtracting the Gaussian
@@ -363,9 +357,7 @@ Because §1.4 tested the simplest *position*-coupled linear solenoidal
 term and it failed, we now test the richer *velocity*-coupled class
 derived from the electromagnetic-analogue Lagrangian
 
-$$L = \tfrac{1}{2}\mathfrak m\,\lVert\dot x\rVert^{2}
-  + \vec A(\vec x)\cdot\dot x - V(\vec x),\qquad
-  F_{ij}(\vec x) = \partial_i A_j - \partial_j A_i, \tag{1.4}$$
+$$L = \tfrac{1}{2}\mathfrak m\,\|\dot x\|^{2} + \vec A(\vec x)\cdot\dot x - V(\vec x), \qquad F_{ij}(\vec x) = \partial_i A_j - \partial_j A_i, \tag{1.4}$$
 
 whose Euler--Lagrange equation is
 $\mathfrak m\,\ddot x = -\nabla V + F(\vec x)\,\dot x - \mathfrak m\gamma\,\dot x$.
@@ -501,10 +493,7 @@ gradient flow from $(\vec x_0, \vec v_0)$ would never reach.**
 The Helmholtz decomposition of an arbitrary (smooth, sufficiently
 decaying) vector field on $\mathbb{R}^d$ is
 
-$$\vec F(\vec x) \;=\; \underbrace{-\nabla V(\vec x)}_{\text{conservative}}
-  \;+\; \underbrace{\vec F_{\mathrm s}(\vec x)}_{\text{solenoidal}},
-  \qquad \nabla \cdot \vec F_{\mathrm s} = 0,\;
-  \nabla \times \vec F_{\mathrm s} \neq 0 \text{ in general}.$$
+$$\vec F(\vec x) = \underbrace{-\nabla V(\vec x)}_{\text{conservative}} + \underbrace{\vec F_{\mathrm s}(\vec x)}_{\text{solenoidal}}, \qquad \nabla \cdot \vec F_{\mathrm s} = 0, \qquad \nabla \times \vec F_{\mathrm s} \neq 0 \text{ in general}.$$
 
 Our experiments effectively fit the best scalar $V$ (in a broad
 functional class) to the observed displacement data. What remains --
@@ -520,10 +509,7 @@ observed layer-to-layer motion**.
 
 The hidden-state update between consecutive layers is, schematically,
 
-$$h_t^{(\ell+1)} \;=\; h_t^{(\ell)} \;+\;
-  \underbrace{\mathrm{FFN}^{(\ell)}\!\bigl(h_t^{(\ell)}\bigr)}_{\text{per-token, potentially gradient-like}}
-  \;+\;
-  \underbrace{\sum_{j\le t}\alpha^{(\ell)}_{t,j}(h^{(\ell)}_{\le t})\,V^{(\ell)} h_j^{(\ell)}}_{\text{attention update}}.$$
+$$h_t^{(\ell+1)} = h_t^{(\ell)} + \underbrace{\mathrm{FFN}^{(\ell)}(h_t^{(\ell)})}_{\text{per-token, potentially gradient-like}} + \underbrace{\sum_{j\le t}\alpha^{(\ell)}_{t,j}(h^{(\ell)}_{\le t})\,V^{(\ell)} h_j^{(\ell)}}_{\text{attention update}}.$$
 
 The attention term alone is already sufficient to destroy conservativity
 at the layer-wise level. Three separate properties, any one of them
@@ -759,16 +745,12 @@ this argument:
 The simplest Lagrangian extension that accommodates a non-zero curl
 is the electromagnetic-analogue form:
 
-$$L \;=\; \tfrac{1}{2}\mathfrak{m}\,\lVert\dot{\vec x}\rVert^{2}
-  \;+\; \vec A(\vec x)\!\cdot\!\dot{\vec x}
-  \;-\; V(\vec x),$$
+$$L = \tfrac{1}{2}\mathfrak{m}\,\|\dot{\vec x}\|^{2} + \vec A(\vec x) \cdot \dot{\vec x} - V(\vec x),$$
 
 where $\vec A$ is a vector potential. The Euler--Lagrange equation
 becomes
 
-$$\mathfrak{m}\,\ddot{\vec x} \;=\; -\nabla V(\vec x)
-  \;+\; \bigl[\dot{\vec x}\!\times\!B(\vec x)\bigr]
-  \;-\; \mathfrak{m}\gamma\,\dot{\vec x},$$
+$$\mathfrak{m}\,\ddot{\vec x} = -\nabla V(\vec x) + [\dot{\vec x} \times B(\vec x)] - \mathfrak{m}\gamma\,\dot{\vec x},$$
 
 with $B = \nabla\times\vec A$ in 3D and with the obvious $d$-dimensional
 antisymmetric generalisation $F_{ij} = \partial_i A_j - \partial_j A_i$
@@ -881,7 +863,7 @@ concrete predictions follow that v2 experiments can pursue:
   question -- what fraction of the symmetric part of $M_\ell$ is
   Hessian of a scalar (Helmholtz-conservative-linear) vs. non-Hessian
   (neither conservative nor solenoidal) -- has not been split out yet.
-  The split uses $\operatorname{sym}(M) = \operatorname{sym}(M)_{\text{Hess}} + \operatorname{sym}(M)_{\text{non-Hess}}$ via the constraint
+  The split uses $\mathrm{sym}(M) = \mathrm{sym}(M)_{\mathrm{Hess}} + \mathrm{sym}(M)_{\text{non-Hess}}$ via the constraint
   that the Hessian part must be a second derivative of some scalar
   field; per layer this is a small linear-algebra exercise and would
   turn the §1.5 fit-quality signal into a positive empirical
