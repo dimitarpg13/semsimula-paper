@@ -381,6 +381,7 @@ When reusing any material from this repository, please cite the paper (see
    mint one via Zenodo once the repo is public and tag the first release as
    `v1.0-arxiv`.
 
-   ---
+---
 
-   [![DOI](https://zenodo.org/badge/1214332385.svg)](https://doi.org/10.5281/zenodo.19708204)
+[![DOI](https://zenodo.org/badge/1214332385.svg)](https://doi.org/10.5281/zenodo.19708205)
+
