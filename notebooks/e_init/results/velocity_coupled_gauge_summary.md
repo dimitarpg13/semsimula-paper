@@ -4,13 +4,13 @@ Model: **gpt2**.  TRAIN: 40 sentences / 1127 tokens.  TEST: 10 sentences / 286 t
 
 ## 1. Question and ansatzes
 
-The §1.4 negative result ruled out the simplest Helmholtz correction $V_\ell\,\Omega_\ell\,V_\ell^\top x$ with constant skew $\Omega_\ell$.  Here we test four strictly richer linear gauge ansatzes derived from the electromagnetic-analogue Lagrangian
+The §1.4 negative result ruled out the simplest Helmholtz correction $V_\ell \Omega_\ell V_\ell^\top x$ with constant skew $\Omega_\ell$.  Here we test four strictly richer linear gauge ansatzes derived from the electromagnetic-analogue Lagrangian
 
-$$L = \tfrac12\,\mathfrak m\,\lVert\dot x\rVert^2 + \vec A(x)\!\cdot\!\dot x - V(x),$$
+$$L = \tfrac12 \mathfrak m \lVert\dot x\rVert^2 + \vec A(x) \cdot \dot x - V(x),$$
 
 which gives the Euler-Lagrange equation
 
-$$\mathfrak m\,\ddot x = -\nabla V(x) + F(x)\,\dot x - \mathfrak m\gamma\,\dot x,\qquad F = \partial A - (\partial A)^\top.$$
+$$\mathfrak m \ddot x = -\nabla V(x) + F(x) \dot x - \mathfrak m \gamma \dot x,\qquad F = \partial A - (\partial A)^\top.$$
 
 We parameterise $F$ in the per-layer top-$k$ PCA subspace (with $z = V^\top x$ and $w = V^\top v$) as one of:
 
@@ -19,9 +19,9 @@ We parameterise $F$ in the per-layer top-$k$ PCA subspace (with $z = V^\top x$ a
 | `gaussian`         | 0 | 0 |
 | `omega_x`          | $\Omega_0 z$ (skew) | $k(k-1)/2$ |
 | `B_const`          | $B_0 w$ (skew) | $k(k-1)/2$ |
-| `B_affine_r1`      | $(B_0 + z_1 B_1) w$ | $2\,k(k-1)/2$ |
-| `B_affine_r2`      | $(B_0 + z_1 B_1 + z_2 B_2) w$ | $3\,k(k-1)/2$ |
-| `omega_and_Bconst` | $\Omega_0 z + B_0 w$ | $2\,k(k-1)/2$ |
+| `B_affine_r1`      | $(B_0 + z_1 B_1) w$ | $2 k(k-1)/2$ |
+| `B_affine_r2`      | $(B_0 + z_1 B_1 + z_2 B_2) w$ | $3 k(k-1)/2$ |
+| `omega_and_Bconst` | $\Omega_0 z + B_0 w$ | $2 k(k-1)/2$ |
 
 (At $k=16$: 120 params per skew block; up to 360 per layer for `B_affine_r2`.  Training samples per layer: $\approx 1127$.)
 

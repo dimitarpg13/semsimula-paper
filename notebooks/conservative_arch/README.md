@@ -278,7 +278,7 @@ on the SARF trajectory pickle.
 | metric                          | fixed-$\xi$ SPLM | SARF-faithful SPLM | delta |
 |---|--:|--:|--:|
 | Params                          | 7,123,075 | 7,123,075 | 0 |
-| Wall-clock (MPS)                | 2000 s    | 1879 s    | $\sim\!0$ |
+| Wall-clock (MPS)                | 2000 s    | 1879 s    | $\sim 0$ |
 | Final val CE                    | 5.661     | **5.259** | **−0.40** |
 | Final val ppl                   | 287.4     | **192.2** | **−33.1 %** |
 | Shared-$V_\psi$ depth TEST $R^2$ | +0.790    | +0.713    | −0.077 |
