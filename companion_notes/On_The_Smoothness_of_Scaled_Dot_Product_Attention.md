@@ -76,7 +76,7 @@ Theorem 46 analyzes a specific object:
 $$
 \begin{aligned}
 \text{The per-head attention force:}\quad
-F(h) &= \sum_{\mu=1}^{N} s_\mu(h) V^\mu - h \\[0.4em]
+F(h) &= \sum_{\mu=1}^{N} s_\mu(h) V^\mu - h \\
 \text{where:}\qquad\quad
 s_\mu(h) &= \mathrm{softmax}_\mu\bigl(\beta K^\mu \cdot h\bigr) \quad \text{(attention weights)} \\
 K^\mu &= W_K \xi^\mu \qquad\qquad\ \text{(key for context pattern } \mu\text{)} \\
@@ -158,7 +158,7 @@ a $C^\infty$ function.
 $$
 \begin{aligned}
 &\text{The per-head attention force } F(h) \text{ is } C^\infty \text{ (infinitely differentiable)} \\
-&\text{and in fact } C^\omega \text{ (real-analytic) on all of } \mathbb{R}^d. \\[0.3em]
+&\text{and in fact } C^\omega \text{ (real-analytic) on all of } \mathbb{R}^d. \\
 &\text{Poincaré's lemma requires } C^1. \\
 &\text{The attention force satisfies } C^\omega \supset C^\infty \supset \cdots \supset C^1. \\
 &\text{The smoothness assumption is satisfied with room to spare.}
