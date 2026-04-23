@@ -120,8 +120,10 @@ but its *antisymmetric* (skew / solenoidal) projection is essentially
 orthogonal to the observed residual, and its full unconstrained variant
 blows up across 12 integration steps because its symmetric part is not a
 Hessian. The residual structure that a linear per-layer operator can
-fit is overwhelmingly **symmetric and non-Hessian** -- outside the
-Helmholtz (grad + curl) decomposition altogether.
+fit is overwhelmingly **symmetric and non-Hessian** -- i.e. not the
+Hessian of any single scalar potential shared across layers, placing
+the observed dynamics outside the class of *autonomous,
+shared-potential* Helmholtz (grad + curl) decompositions.
 
 What remains consistent with the data is a flow that is
 **state-dependent in a non-polynomial way**, rank-deficient by layer,
@@ -481,7 +483,9 @@ of a structural limitation, not of any particular choice of $V$, $A$,
 or $B(x)$. Moreover the §1.5 fit-quality ceiling tells us that the
 one-step residual **can** be captured with $R^{2}\sim 0.8$ by a linear
 operator on $(x,v)$ -- but only if we allow that operator a **symmetric
-non-Hessian** component, which is outside the Helmholtz decomposition.
+non-Hessian** component, which cannot be written as the Hessian of any
+shared scalar potential and therefore lies outside the *autonomous,
+shared-potential* Helmholtz decomposition class.
 The next natural formalism is therefore a non-flat Riemannian
 (Jacobi-metric) one in which Christoffel symbols of a generic metric
 encode both rotational and non-Hessian stretching without any scalar

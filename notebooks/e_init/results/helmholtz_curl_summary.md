@@ -85,7 +85,7 @@ Translation: per-layer hidden-state dynamics are dominated by a
 There is a well-defined locally-linear description of each block; it is
 just almost entirely the non-rotational part.
 
-### 3.2 This breaks both Helmholtz halves simultaneously
+### 3.2 Both Helmholtz halves are poorly captured by the natural parametric ansätze
 
 This is important for the theoretical narrative: the decomposition
 

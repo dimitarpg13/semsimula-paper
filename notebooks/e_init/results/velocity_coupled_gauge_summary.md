@@ -112,7 +112,7 @@ The Helmholtz electromagnetic-analogue Lagrangian, at the level of constant or l
 Remaining untested candidates that are strictly richer than anything here and could in principle still work:
 
 - Non-linear (not just affine) position dependence in $B(x)$, e.g. $B(x) = \sum_k c_k B_k \phi_k(x)$ with a basis of smooth position features $\phi_k$ (RBFs, Fourier on PCA coords, etc.).
-- Symmetric-but-non-Hessian extensions -- these are **outside** the Helmholtz framework but are what the $R^{2}$ data say is actually needed.  A Riemannian / Jacobi-geodesic formulation (§14 of the paper) accommodates them via Christoffel symbols of a non-flat metric, without any scalar potential.
+- Symmetric-but-non-Hessian extensions -- these lie **outside the autonomous, shared-potential** Helmholtz class (they cannot be written as the Hessian of any single shared scalar potential) but are what the $R^{2}$ data say is actually needed.  A Riemannian / Jacobi-geodesic formulation (§14 of the paper) accommodates them via Christoffel symbols of a non-flat metric, without any scalar potential.
 - Non-abelian (multi-head) gauge structure $\vec F = \sum_h F^{(h)}(x)$ with head-specific antisymmetric generators -- left for future work.
 
 ## 4. Artefacts
