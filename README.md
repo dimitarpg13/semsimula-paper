@@ -112,7 +112,7 @@ exposition:
 | `Addendum_Non_Autonomous_Fields_For_Appendix_A.md`                                  | Appendix A, §14 (short reader’s guide: Class F equation, Hopfield / Tracks A–B, integrability; points to the full appendix in the PDF) |
 | `On_Modeling_Semantic_Energy_Field_into_SPLM.md`                                    | §14.2 (mapping framework energy field onto $V_\theta$, $\xi$, $m_t$; candidate Q11–Q13) |
 | `On_The_Smoothness_of_Scaled_Dot_Product_Attention.md`                              | §14, Theorem 46 (smoothness of attention in $h$; Poincaré prerequisites; $\Omega^{\mathrm{att}}$; LayerNorm / ReLU / mask caveats) |
-| `Training_and_Inference_with_SPLM.md`                                               | §14.2, §14.13, §14.14 (training loop, nested-autograd force computation, inference pipeline, and summary of the fixed-$\xi$ / SARF-faithful / per-token-mass ablations) |
+| `Training_and_Inference_with_SPLM.md`                                               | §14.2, §14.13, §14.14 (training loop, nested-autograd force computation, inference pipeline, and summary of the fixed-$x_i$ / SARF-faithful / per-token-mass ablations) |
 
 ### `notebooks/` — reproducibility
 
