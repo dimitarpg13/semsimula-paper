@@ -369,7 +369,7 @@ When reusing any material from this repository, please cite the paper (see
 
 ---
 
-## Zenodo Badge and target URL:
+## Zenodo badge and target URL:
 
 Zenodo badge: https://zenodo.org/badge/1214332385.svg
 
