@@ -76,11 +76,11 @@ Theorem 46 analyzes a specific object:
 $$
 \begin{aligned}
 \text{The per-head attention force:}\quad
-F(h) &= \sum_{\mu=1}^{N} s_\mu(h)\,V^\mu - h \\[0.4em]
+F(h) &= \sum_{\mu=1}^{N} s_\mu(h) V^\mu - h \\[0.4em]
 \text{where:}\qquad\quad
-s_\mu(h) &= \mathrm{softmax}_\mu\bigl(\beta\, K^\mu \cdot h\bigr) \quad \text{(attention weights)} \\
-K^\mu &= W_K\,\xi^\mu \qquad\qquad\ \text{(key for context pattern } \mu\text{)} \\
-V^\mu &= W_V\,\xi^\mu \qquad\qquad\ \text{(value for context pattern } \mu\text{)} \\
+s_\mu(h) &= \mathrm{softmax}_\mu\bigl(\beta K^\mu \cdot h\bigr) \quad \text{(attention weights)} \\
+K^\mu &= W_K \xi^\mu \qquad\qquad\ \text{(key for context pattern } \mu\text{)} \\
+V^\mu &= W_V \xi^\mu \qquad\qquad\ \text{(value for context pattern } \mu\text{)} \\
 \{\xi^\mu\} &= \text{fixed context patterns (not functions of } h \text{)}
 \end{aligned}
 $$
@@ -103,11 +103,11 @@ The per-head map is $C^\infty$ (in fact $C^\omega$) in $h$ on all of $\mathbb{R}
 The per-head attention force is:
 
 $$
-F(h) = \sum_{\mu=1}^{N} s_\mu(h)\,V^\mu - h
+F(h) = \sum_{\mu=1}^{N} s_\mu(h) V^\mu - h
 $$
 
 $$
-s_\mu(h) = \frac{\exp\bigl(\beta\, K^\mu\!\cdot\!h\bigr)}{\sum_{\nu} \exp\bigl(\beta\, K^\nu\!\cdot\!h\bigr)} \qquad \text{(softmax)}
+s_\mu(h) = \frac{\exp\bigl(\beta K^\mu \cdot h\bigr)}{\sum_{\nu} \exp\bigl(\beta K^\nu \cdot h\bigr)} \qquad \text{(softmax)}
 $$
 
 where $\{K^\mu\}$, $\{V^\mu\}$, and $\beta$ are all fixed (functions of the weights and context,
@@ -115,29 +115,26 @@ not of the current hidden state $h$).
 
 ### 2.2 Component-by-Component Smoothness
 
-**Step 1: Linear projections $W_Q h$, $K^\mu\!\cdot\!h$**
+**Step 1: Linear projections $W_Q h$, $K^\mu \cdot h$**
 
-Each dot product $K^\mu\!\cdot\!h = \sum_i K^\mu_i\, h_i$ is a linear function of $h$.
+Each dot product $K^\mu \cdot h = \sum_i K^\mu_i h_i$ is a linear function of $h$.
 Linear maps are $C^\infty$ — they are polynomials of degree 1.
 
-**Step 2: The exponential $\exp\bigl(\beta\, K^\mu\!\cdot\!h\bigr)$**
+**Step 2: The exponential $\exp\bigl(\beta K^\mu \cdot h\bigr)$**
 
-Composition of $\exp\colon \mathbb{R}\to\mathbb{R}$ ($C^\infty$, analytic) with $K^\mu\!\cdot\!h$ ($C^\infty$).
+Composition of $\exp\colon \mathbb{R}\to\mathbb{R}$ ($C^\infty$, analytic) with $K^\mu \cdot h$ ($C^\infty$).
 Composition of smooth functions is smooth. Result: $C^\infty$, analytic.
 
 **Step 3: The softmax $s_\mu(h)$**
 
 $$
-s_\mu(h) = \frac{\exp\bigl(\beta\, K^\mu\!\cdot\!h\bigr)}{\sum_{\nu} \exp\bigl(\beta\, K^\nu\!\cdot\!h\bigr)}
+s_\mu(h) = \frac{\exp\bigl(\beta K^\mu \cdot h\bigr)}{\sum_{\nu} \exp\bigl(\beta K^\nu \cdot h\bigr)}
 $$
 
-This is a ratio of $C^\infty$ functions. The denominator $Z(h) = \sum_{\nu} \exp\bigl(\beta\, K^\nu\!\cdot\!h\bigr)$
+This is a ratio of $C^\infty$ functions. The denominator $Z(h) = \sum_{\nu} \exp\bigl(\beta K^\nu \cdot h\bigr)$
 is a sum of positive exponentials, so
-$$
-Z(h) \ge \exp\Bigl(\beta\,\min_\nu (K^\nu\!\cdot\!h)\Bigr) > 0
-$$
-for
-all $h \in \mathbb{R}^d$.
+$$Z(h) \ge \exp\Bigl(\beta \min_\nu (K^\nu \cdot h)\Bigr) > 0$$
+for all $h \in \mathbb{R}^d$.
 
 A $C^\infty$ function divided by a strictly positive $C^\infty$ function is $C^\infty$.
 
@@ -145,13 +142,13 @@ A $C^\infty$ function divided by a strictly positive $C^\infty$ function is $C^\
 its Taylor series in a neighborhood of every point. This is strictly stronger
 than $C^\infty$.
 
-**Step 4: The weighted sum $\sum_\mu s_\mu(h)\,V^\mu$**
+**Step 4: The weighted sum $\sum_\mu s_\mu(h) V^\mu$**
 
-Each $V^\mu$ is a fixed vector (constant in $h$). The map $h\mapsto s_\mu(h)\,V^\mu$ is the
+Each $V^\mu$ is a fixed vector (constant in $h$). The map $h\mapsto s_\mu(h) V^\mu$ is the
 scalar function $s_\mu(h)$ times a constant vector — it is $C^\infty$ in $h$.
 A finite sum of $C^\infty$ functions is $C^\infty$.
 
-**Step 5: The full force $F(h) = \sum_\mu s_\mu(h)\,V^\mu - h$**
+**Step 5: The full force $F(h) = \sum_\mu s_\mu(h) V^\mu - h$**
 
 Subtracting the linear function $h$ (which is $C^\infty$) from a $C^\infty$ function gives
 a $C^\infty$ function.
@@ -176,7 +173,7 @@ per-head attention force as a function of $h$.
 Since $F$ is $C^\infty$, its Jacobian $\partial F_i/\partial h_j$ is $C^\infty$. The antisymmetric part:
 
 $$
-\Omega^{\mathrm{att}}(h) = \frac{J_F(h) - J_F(h)^{\mathsf T}}{2} = \frac{\beta}{2} \sum_\mu s_\mu(h) \left( V^\mu\!\otimes\!K^\mu - K^\mu\!\otimes\!V^\mu \right)
+\Omega^{\mathrm{att}}(h) = \frac{J_F(h) - J_F(h)^{\mathsf T}}{2} = \frac{\beta}{2} \sum_\mu s_\mu(h) \left( V^\mu \otimes K^\mu - K^\mu \otimes V^\mu \right)
 $$
 
 is also $C^\infty$ (so Theorem 46 is applied to this $F$; we write $\Omega^{\mathrm{att}}$ when
@@ -204,17 +201,14 @@ $$
 \sigma(h) = \sqrt{ \frac{1}{d}\sum_i (h_i - \mu(h))^2 } \qquad \text{(standard deviation)}
 $$
 $$
-\gamma,\,\beta \in \mathbb{R}^d\text{: learned scale and shift parameters}\qquad\quad
-\varepsilon > 0\text{: numerical stabilizer}
+\gamma, \beta \in \mathbb{R}^d\text{: learned scale and shift parameters} \qquad\quad \varepsilon > 0\text{: numerical stabilizer}
 $$
 
 ### 3.2 With $\varepsilon > 0$ (Every Real Implementation)
 
 Every practical transformer implementation uses $\varepsilon > 0$ (typical values: $10^{-5}$ or
 $10^{-6}$). In that case the **denominator** in the standard formula is strictly positive:
-$$
-\sigma(h) + \varepsilon \ge \varepsilon > 0 \quad \text{for all } h \in \mathbb{R}^d\,.
-$$
+$$\sigma(h) + \varepsilon \ge \varepsilon > 0 \quad \text{for all } h \in \mathbb{R}^d\text{.}$$
 The **numerator** $h - \mu(h)\mathbf{1}$ is a polynomial in $h$; the **scale** $\sigma(h) = \sqrt{\varphi(h)}$ with
 $\varphi(h) = \frac{1}{d}\|h - \mu(h)\mathbf{1}\|^{2} \ge 0$ is the Euclidean norm of a linear image of
 $h$, hence $C^1$ on most of the space, but the map $\sqrt{\varphi}$ (before adding $\varepsilon$) has
@@ -231,8 +225,8 @@ $\mathbb{R}^{d}$ for fixed $\varepsilon' > 0$.
 **Bottom line for this note:** LayerNorm (with any $\varepsilon>0$ in the **denominator path**) is as
 regular as a trained pipeline needs for standard analysis; the **microscopic** global $C^\infty$
 claim in older drafts is replaced here by: **$C^1$ on a dense open full-measure set** for the
-literal $\sigma$ definition above, or **$C^\infty$ everywhere** for the “$\sqrt{\varphi+\varepsilon'{}^{2}\!}$-style”
-stabilized denominator, depending on the implementation.
+literal $\sigma$ definition above, or **$C^\infty$ everywhere** for the
+**$\sqrt{\varphi + (\varepsilon')^2}$-style** stabilized denominator, depending on the implementation.
 
 ### 3.3 Without $\varepsilon$ (Mathematical Idealization)
 
@@ -243,7 +237,7 @@ $$
 $$
 
 $$
-\text{Singular set: } S = \{ h \in \mathbb{R}^d : h = c\,\mathbf{1} \text{ for some } c \in \mathbb{R} \}
+\text{Singular set: } S = \{ h \in \mathbb{R}^d : h = c \mathbf{1} \text{ for some } c \in \mathbb{R} \}
 $$
 
 $S$ is a one-dimensional subspace — a line through the origin in the direction
@@ -325,7 +319,7 @@ classical architectures, not to the specific model analyzed in the paper.
 GPT-2 uses GELU (Gaussian Error Linear Unit):
 
 $$
-\mathrm{GELU}(x) = x\,\Phi(x) \qquad
+\mathrm{GELU}(x) = x \Phi(x) \qquad
 \text{where } \Phi(x) = \tfrac{1}{2}\bigl(1 + \mathrm{erf}(x/\sqrt{2})\bigr) \ \text{is the Gaussian CDF}
 $$
 
@@ -345,7 +339,7 @@ certainly no worse than the ReLU class for standard theory.
 Used in LLaMA, Mistral, and many modern architectures:
 
 $$
-\mathrm{SiLU}(x) = x\,\sigma(x) = \frac{x}{1 + e^{-x}}
+\mathrm{SiLU}(x) = x \sigma(x) = \frac{x}{1 + e^{-x}}
 \qquad \text{where } \sigma \text{ is the sigmoid: } C^\infty \text{, analytic}
 $$
 
@@ -372,7 +366,7 @@ For the specific architecture analyzed in the Semantic Simulation paper
 Causal (autoregressive) attention adds a position-dependent mask:
 
 $$
-\text{Masked attention: } \mathrm{softmax}\bigl( (QK^{\mathsf T} + M) / \sqrt{d_k} \bigr) \, V
+\text{Masked attention: } \mathrm{softmax}\bigl( (QK^{\mathsf T} + M) / \sqrt{d_k} \bigr) V
 $$
 with the usual $Q, K$ of shapes $(n_{\text{pos}}\times d_k)$; $QK^{\mathsf T} + M$ is the logit matrix
 before the row-wise $\mathrm{softmax}$ and multiplication by $V$.
@@ -445,7 +439,7 @@ Dropout is irrelevant to every smoothness claim in the paper.
 Theorem 46 analyzes:
 
 $$
-F(h) = \sum_{\mu=1}^{N} s_\mu(h)\,V^\mu - h \qquad \text{(per-head attention force)}
+F(h) = \sum_{\mu=1}^{N} s_\mu(h) V^\mu - h \qquad \text{(per-head attention force)}
 $$
 
 This is:
@@ -458,7 +452,7 @@ This is:
 
 | | |
 |---|---|
-| Component analyzed | $F(h) = \sum_\mu \mathrm{softmax}_\mu\bigl(\beta\,K^\mu\!\cdot\!h\bigr)\,V^\mu - h$ |
+| Component analyzed | $F(h) = \sum_\mu \mathrm{softmax}_\mu\bigl(\beta K^\mu \cdot h\bigr) V^\mu - h$ |
 | Smoothness | $C^\omega$ (real-analytic) on all of $\mathbb{R}^d$ |
 | Poincaré's lemma requires | $C^1$ |
 | Conclusion | $F$ is vastly smoother than required. The lemma applies without qualification. The proof of Theorem 46 is not affected by any smoothness concern. |
@@ -509,9 +503,9 @@ separate.
 
 | Component | Smooth in h? | Class | Affects Theorem 46? | Notes |
 |---|---|---|---|---|
-| Linear projection ($W_Q h$, $W_K\,\xi$, etc.) | Everywhere | $C^\omega$ | Yes — smooth ✓ | Polynomials of degree 1 |
-| Dot product $K^\mu\!\cdot\!h$ | Everywhere | $C^\omega$ | Yes — smooth ✓ | Bilinear, analytic |
-| Exponential $\exp\bigl(\beta\,K^\mu\!\cdot\!h\bigr)$ | Everywhere | $C^\omega$ | Yes — smooth ✓ | Analytic composition |
+| Linear projection ($W_Q h$, $W_K \xi$, etc.) | Everywhere | $C^\omega$ | Yes — smooth ✓ | Polynomials of degree 1 |
+| Dot product $K^\mu \cdot h$ | Everywhere | $C^\omega$ | Yes — smooth ✓ | Bilinear, analytic |
+| Exponential $\exp\bigl(\beta K^\mu \cdot h\bigr)$ | Everywhere | $C^\omega$ | Yes — smooth ✓ | Analytic composition |
 | Softmax $s_\mu(h)$ | Everywhere | $C^\omega$ | Yes — smooth ✓ | Denominator always $> 0$ |
 | Full per-head attention $F(h)$ | Everywhere | $C^\omega$ | Yes — smooth ✓ | **Theorem 46 domain** |
 | $\Omega^{\mathrm{att}}(h) = (J_F - J_F^{\mathsf T})/2$ for Thm.~46 $F$ | Everywhere | $C^\infty$ | Yes — smooth ✓ | For attention $F$; Eq.~(103) |
