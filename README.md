@@ -369,6 +369,12 @@ When reusing any material from this repository, please cite the paper (see
 
 ---
 
+## Zenodo Badge and target URL:
+
+Zenodo badge: https://zenodo.org/badge/1214332385.svg
+
+Target URL: https://doi.org/10.5281/zenodo.19708204
+
 [![DOI](https://zenodo.org/badge/1214332385.svg)](https://doi.org/10.5281/zenodo.19708204)
 
 
