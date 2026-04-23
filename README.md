@@ -236,7 +236,7 @@ for the full list):
   Shakespeare training split, a `train_splm_sarf_mass.py` selecting
   the mass mode via `--mass-mode`, a
   `trajectory_extraction_sarf_mass.py`, a four-way `compare.py`
-  covering fixed-$\xi$ / SARF / SARF+embed-head / SARF+logfreq, and
+  covering fixed-$x\_i$ / SARF / SARF+embed-head / SARF+logfreq, and
   [`comparison_report.md`](notebooks/conservative_arch/sarf_mass_variant/comparison_report.md);
   the parent `shared_potential_fit.py` and `token_direction_fit.py`
   diagnostics are reused verbatim and their mass-variant outputs
@@ -244,11 +244,11 @@ for the full list):
   baseline and SARF results in `results/`. Headline finding: the
   framework-prescribed surprisal mass
   $m_t \propto -\log\hat p(x_t)$ (variant (B)) yields a
-  **44 % Tiny-Shakespeare perplexity reduction** vs. fixed-$\xi$
+  **44 % Tiny-Shakespeare perplexity reduction** vs. fixed-$x\_i$
   SPLM (and **17 % vs. SARF-faithful SPLM**) at the cost of a
   single extra scalar parameter and a frozen vocabulary-sized
   surprisal tensor, and *simultaneously* raises the depth-axis
-  pooled shared-$V_\psi$ $R^2$ from $+0.79$ (fixed-$\xi$) to
+  pooled shared-$V\_psi$ $R^2$ from $+0.79$ (fixed-$x\_i$) to
   $+0.84$ — the first configuration in which LM perplexity and
   strict shared-potential fidelity improve in the same direction.
   A free learned linear head (variant (A)) underperforms variant
