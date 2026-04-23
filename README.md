@@ -248,7 +248,7 @@ for the full list):
   SPLM (and **17 % vs. SARF-faithful SPLM**) at the cost of a
   single extra scalar parameter and a frozen vocabulary-sized
   surprisal tensor, and *simultaneously* raises the depth-axis
-  pooled shared-$V\_psi$ $R^2$ from $+0.79$ (fixed-$\xi$) to
+  pooled shared-$V\_{\psi}$ $R^2$ from $+0.79$ (fixed-$\xi$) to
   $+0.84$ — the first configuration in which LM perplexity and
   strict shared-potential fidelity improve in the same direction.
   A free learned linear head (variant (A)) underperforms variant
