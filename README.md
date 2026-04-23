@@ -380,3 +380,7 @@ When reusing any material from this repository, please cite the paper (see
 4. **Zenodo archive (optional).** If you want a DOI for citation stability,
    mint one via Zenodo once the repo is public and tag the first release as
    `v1.0-arxiv`.
+
+   ---
+
+   [![DOI](https://zenodo.org/badge/1214332385.svg)](https://doi.org/10.5281/zenodo.19708204)
