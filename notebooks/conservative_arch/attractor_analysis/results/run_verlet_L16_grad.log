@@ -1,0 +1,100 @@
+[attractors] device=mps  ckpt=../symplectic_variant/results/splm_sym_logfreq_shakespeare_L16_dt05_ckpt_latest.pt  tag=verlet_L16_dt05_grad
+[attractors] variant=symplectic  d=128  L=16  mass_mode=logfreq
+[attractors] seeds: 384 total  (gauss 128, tok 128, real 128)
+[attractors] data-manifold stats: |h_center|=31.750  mean h_std=2.8816  lambda_reg=100.0
+
+[attractors] === prompt: narrative :: 'The old king sat on the' ===
+  real h_L: V=-531.709  |h_L|=42.314
+  real continuation top-5:  d(0.06), t(0.03),  the(0.02), oth(0.01),  king(0.01)
+  [descend] step   300/1500  <V>=-294.762  <reg>=+71.081  <loss>=-223.681
+  [descend] step   600/1500  <V>=-297.930  <reg>=+24.416  <loss>=-273.514
+  [descend] step   900/1500  <V>=-297.991  <reg>=+21.698  <loss>=-276.294
+  [descend] step  1200/1500  <V>=-298.007  <reg>=+21.267  <loss>=-276.740
+  [descend] step  1500/1500  <V>=-297.998  <reg>=+21.197  <loss>=-276.801
+  converged: 359/384  (grad_eps=0.05)
+  <V|conv>=-297.988  <reg|conv>=+21.179
+  <V|fail>=-298.146  <reg|fail>=+21.444
+/Users/dimitargueorguiev/.pyenv/versions/3.12.11/lib/python3.12/site-packages/threadpoolctl.py:1226: RuntimeWarning: 
+Found Intel OpenMP ('libiomp') and LLVM OpenMP ('libomp') loaded at
+the same time. Both libraries are known to be incompatible and this
+can cause random crashes or deadlocks on Linux when loaded in the
+same Python program.
+Using threadpoolctl may cause crashes or deadlocks. For more
+information and possible workarounds, please see
+    https://github.com/joblib/threadpoolctl/blob/master/multiple_openmp.md
+
+  warnings.warn(msg, RuntimeWarning)
+  K*=2  silhouettes: 2:+0.94, 3:+0.92, 4:+0.88, 5:+0.87, 6:+0.87, 7:+0.87, 8:+0.86
+    A0  (n= 358, <V>=-297.988): ,(0.08),  the(0.06), \n(0.06),  a(0.03), -(0.03)
+    A1  (n=   1, <V>=-297.971): ,(0.08),  the(0.06), \n(0.06),  a(0.03), -(0.03)
+  saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/attractors_verlet_L16_dt05_grad_narrative.png
+
+[attractors] === prompt: mathematics :: 'The theorem states that for every' ===
+  real h_L: V=-495.243  |h_L|=37.036
+  real continuation top-5:  the(0.04),  a(0.04), ,(0.02), t(0.02), -(0.01)
+  [descend] step   300/1500  <V>=-296.867  <reg>=+70.278  <loss>=-226.589
+  [descend] step   600/1500  <V>=-300.630  <reg>=+24.198  <loss>=-276.432
+  [descend] step   900/1500  <V>=-300.889  <reg>=+21.644  <loss>=-279.245
+  [descend] step  1200/1500  <V>=-300.918  <reg>=+21.269  <loss>=-279.649
+  [descend] step  1500/1500  <V>=-300.912  <reg>=+21.209  <loss>=-279.703
+  converged: 364/384  (grad_eps=0.05)
+  <V|conv>=-300.903  <reg|conv>=+21.195
+  <V|fail>=-301.070  <reg|fail>=+21.473
+  K*=3  silhouettes: 2:+0.94, 3:+0.94, 4:+0.90, 5:+0.90, 6:+0.90, 7:+0.89, 8:+0.88
+    A0  (n= 362, <V>=-300.903): ,(0.08),  the(0.07), \n(0.06),  a(0.04), -(0.03)
+    A1  (n=   1, <V>=-300.891): ,(0.08),  the(0.07), \n(0.06),  a(0.04), -(0.03)
+    A2  (n=   1, <V>=-300.892): ,(0.08),  the(0.07), \n(0.06),  a(0.04), -(0.03)
+  saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/attractors_verlet_L16_dt05_grad_mathematics.png
+
+[attractors] === prompt: scientific :: 'Photosynthesis converts carbon dioxide and' ===
+  real h_L: V=-832.826  |h_L|=56.633
+  real continuation top-5: oth(0.22), UM(0.21), ER(0.08),  d(0.07), EN(0.06)
+  [descend] step   300/1500  <V>=-249.656  <reg>=+62.415  <loss>=-187.241
+  [descend] step   600/1500  <V>=-253.052  <reg>=+16.564  <loss>=-236.488
+  [descend] step   900/1500  <V>=-253.486  <reg>=+13.954  <loss>=-239.532
+  [descend] step  1200/1500  <V>=-253.543  <reg>=+13.577  <loss>=-239.966
+  [descend] step  1500/1500  <V>=-253.547  <reg>=+13.511  <loss>=-240.036
+  converged: 360/384  (grad_eps=0.05)
+  <V|conv>=-253.546  <reg|conv>=+13.498
+  <V|fail>=-253.575  <reg|fail>=+13.699
+  K*=3  silhouettes: 2:+0.91, 3:+0.91, 4:+0.91, 5:+0.91, 6:+0.91, 7:+0.89, 8:+0.87
+    A0  (n= 357, <V>=-253.545): \n(0.15), ,(0.14),  the(0.09),  a(0.04), -(0.03)
+    A1  (n=   2, <V>=-253.548): \n(0.15), ,(0.14),  the(0.09),  a(0.04), -(0.03)
+    A2  (n=   1, <V>=-253.551): \n(0.15), ,(0.14),  the(0.09),  a(0.04), -(0.03)
+  saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/attractors_verlet_L16_dt05_grad_scientific.png
+
+[attractors] === prompt: dialogue :: 'She whispered: I love' ===
+  real h_L: V=-326.596  |h_L|=41.824
+  real continuation top-5: \n(0.65),  the(0.11), -(0.07),  a(0.02), 's(0.02)
+  [descend] step   300/1500  <V>=-261.708  <reg>=+69.962  <loss>=-191.745
+  [descend] step   600/1500  <V>=-265.697  <reg>=+24.457  <loss>=-241.239
+  [descend] step   900/1500  <V>=-266.070  <reg>=+21.918  <loss>=-244.153
+  [descend] step  1200/1500  <V>=-266.095  <reg>=+21.558  <loss>=-244.537
+  [descend] step  1500/1500  <V>=-266.087  <reg>=+21.498  <loss>=-244.589
+  converged: 363/384  (grad_eps=0.05)
+  <V|conv>=-266.078  <reg|conv>=+21.484
+  <V|fail>=-266.239  <reg|fail>=+21.747
+  K*=2  silhouettes: 2:+0.94, 3:+0.92, 4:+0.90, 5:+0.86, 6:+0.82, 7:+0.83, 8:+0.83
+    A0  (n= 362, <V>=-266.078): ,(0.08),  the(0.07), \n(0.07),  a(0.04), -(0.03)
+    A1  (n=   1, <V>=-266.068): ,(0.08),  the(0.07), \n(0.07),  a(0.04), -(0.03)
+  saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/attractors_verlet_L16_dt05_grad_dialogue.png
+
+[attractors] === prompt: code :: 'def fibonacci(n): return 1 if n < 2 else' ===
+  real h_L: V=-362.010  |h_L|=40.171
+  real continuation top-5: \n(0.91), ,(0.04), .(0.02), :(0.01),  of(0.01)
+  [descend] step   300/1500  <V>=-257.640  <reg>=+63.016  <loss>=-194.624
+  [descend] step   600/1500  <V>=-260.496  <reg>=+16.381  <loss>=-244.115
+  [descend] step   900/1500  <V>=-260.936  <reg>=+13.816  <loss>=-247.120
+  [descend] step  1200/1500  <V>=-261.004  <reg>=+13.445  <loss>=-247.559
+  [descend] step  1500/1500  <V>=-261.018  <reg>=+13.384  <loss>=-247.634
+  converged: 361/384  (grad_eps=0.05)
+  <V|conv>=-261.022  <reg|conv>=+13.376
+  <V|fail>=-260.960  <reg|fail>=+13.508
+  K*=3  silhouettes: 2:+0.89, 3:+0.89, 4:+0.88, 5:+0.82, 6:+0.88, 7:+0.88, 8:+0.83
+    A0  (n= 357, <V>=-261.021): \n(0.17), ,(0.16),  the(0.09),  a(0.04), -(0.03)
+    A1  (n=   3, <V>=-261.021): \n(0.17), ,(0.16),  the(0.09),  a(0.04), -(0.03)
+    A2  (n=   1, <V>=-261.023): \n(0.17), ,(0.16),  the(0.09),  a(0.04), -(0.03)
+  saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/attractors_verlet_L16_dt05_grad_code.png
+
+[attractors] saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/attractors_verlet_L16_dt05_grad_results.json
+[attractors] saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/attractors_verlet_L16_dt05_grad_summary.md

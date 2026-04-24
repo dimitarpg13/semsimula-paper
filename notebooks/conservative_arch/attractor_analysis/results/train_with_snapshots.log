@@ -1,0 +1,51 @@
+[train-snap] device=mps  tag=euler_shakespeare
+[train-snap] snapshot_steps = [0, 50, 200, 500, 1000, 2000, 4000]
+[train-snap] params: 7,123,076
+  snapshot -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/snapshots/euler_shakespeare/ckpt_step00000.pt  (val_loss=None)
+  snapshot -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/snapshots/euler_shakespeare/ckpt_step00050.pt  (val_loss=10.746757984161377)
+[train-snap] step   100/4000  train 9.6523  lr 2.53e-04  elapsed 31s
+[train-snap] step   200/4000  train 6.4480  lr 5.00e-04  elapsed 58s
+  snapshot -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/snapshots/euler_shakespeare/ckpt_step00200.pt  (val_loss=6.534859216213226)
+[train-snap] step   300/4000  train 6.2186  lr 4.99e-04  elapsed 95s
+[train-snap] step   400/4000  train 6.0775  lr 4.97e-04  elapsed 130s
+[train-snap] step   500/4000  train 5.8987  lr 4.92e-04  elapsed 170s
+  snapshot -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/snapshots/euler_shakespeare/ckpt_step00500.pt  (val_loss=6.129622125625611)
+[train-snap] step   600/4000  train 5.7449  lr 4.86e-04  elapsed 213s
+[train-snap] step   700/4000  train 5.5707  lr 4.79e-04  elapsed 251s
+[train-snap] step   800/4000  train 5.4590  lr 4.70e-04  elapsed 286s
+[train-snap] step   900/4000  train 5.3271  lr 4.59e-04  elapsed 323s
+[train-snap] step  1000/4000  train 5.2175  lr 4.47e-04  elapsed 361s
+  snapshot -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/snapshots/euler_shakespeare/ckpt_step01000.pt  (val_loss=5.8041675090789795)
+[train-snap] step  1100/4000  train 5.1206  lr 4.34e-04  elapsed 405s
+[train-snap] step  1200/4000  train 4.9909  lr 4.19e-04  elapsed 444s
+[train-snap] step  1300/4000  train 4.8903  lr 4.04e-04  elapsed 484s
+[train-snap] step  1400/4000  train 4.8141  lr 3.87e-04  elapsed 525s
+[train-snap] step  1500/4000  train 4.7649  lr 3.69e-04  elapsed 567s
+[train-snap] step  1600/4000  train 4.7036  lr 3.50e-04  elapsed 607s
+[train-snap] step  1700/4000  train 4.6789  lr 3.31e-04  elapsed 647s
+[train-snap] step  1800/4000  train 4.5777  lr 3.11e-04  elapsed 687s
+[train-snap] step  1900/4000  train 4.5264  lr 2.91e-04  elapsed 729s
+[train-snap] step  2000/4000  train 4.4877  lr 2.71e-04  elapsed 779s
+  snapshot -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/snapshots/euler_shakespeare/ckpt_step02000.pt  (val_loss=5.59838684797287)
+[train-snap] step  2100/4000  train 4.4605  lr 2.50e-04  elapsed 825s
+[train-snap] step  2200/4000  train 4.4465  lr 2.29e-04  elapsed 861s
+[train-snap] step  2300/4000  train 4.4073  lr 2.09e-04  elapsed 897s
+[train-snap] step  2400/4000  train 4.3537  lr 1.89e-04  elapsed 933s
+[train-snap] step  2500/4000  train 4.3525  lr 1.69e-04  elapsed 970s
+[train-snap] step  2600/4000  train 4.3252  lr 1.50e-04  elapsed 1008s
+[train-snap] step  2700/4000  train 4.3088  lr 1.31e-04  elapsed 1047s
+[train-snap] step  2800/4000  train 4.2494  lr 1.13e-04  elapsed 1085s
+[train-snap] step  2900/4000  train 4.2362  lr 9.64e-05  elapsed 1126s
+[train-snap] step  3000/4000  train 4.2545  lr 8.07e-05  elapsed 1176s
+[train-snap] step  3100/4000  train 4.2171  lr 6.61e-05  elapsed 1220s
+[train-snap] step  3200/4000  train 4.1891  lr 5.27e-05  elapsed 1267s
+[train-snap] step  3300/4000  train 4.2013  lr 4.07e-05  elapsed 1309s
+[train-snap] step  3400/4000  train 4.1717  lr 3.01e-05  elapsed 1348s
+[train-snap] step  3500/4000  train 4.1389  lr 2.11e-05  elapsed 1384s
+[train-snap] step  3600/4000  train 4.1807  lr 1.35e-05  elapsed 1427s
+[train-snap] step  3700/4000  train 4.1563  lr 7.65e-06  elapsed 1471s
+[train-snap] step  3800/4000  train 4.1609  lr 3.41e-06  elapsed 1517s
+[train-snap] step  3900/4000  train 4.1609  lr 8.54e-07  elapsed 1561s
+[train-snap] step  4000/4000  train 4.1732  lr 0.00e+00  elapsed 1604s
+  snapshot -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/snapshots/euler_shakespeare/ckpt_step04000.pt  (val_loss=5.611017966270447)
+[train-snap] done in 1609s

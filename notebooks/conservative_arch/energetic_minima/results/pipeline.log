@@ -1,0 +1,133 @@
+[pipeline] === step 1: attractor extraction (dynamical) ===
+  [run]  em_base -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/sarf_mass_variant/results/splm_sarfmass_logfreq_shakespeare_ckpt_latest.pt
+  [sim] step    4/8  <V>=-217.983  <|v|>=11.565  <|h|>=60.918
+  [sim] step    5/8  <V>=-279.900  <|v|>=10.330  <|h|>=64.908
+  [sim] step    6/8  <V>=-333.247  <|v|>=10.677  <|h|>=69.291
+  [sim] step    7/8  <V>=-385.050  <|v|>=9.687  <|h|>=73.926
+  [sim] step    8/8  <V>=-455.494  <|v|>=10.728  <|h|>=78.816
+  converged (|v|<0.05): 0/288  <V|final>=-455.494  <|h|>=78.82
+  dynamics not fully settled; clustering on all final h
+  K*=8  silhouettes: 2:+0.40, 3:+0.42, 4:+0.43, 5:+0.43, 6:+0.44, 7:+0.43, 8:+0.45, 9:+0.44, 10:+0.41
+    A0  (n=  18, <V>=-1004.673):  I(0.98), \n(0.01),  the(0.00),  to(0.00),  we(0.00)
+    A1  (n= 103, <V>=-48.119): IN(0.22), EN(0.17),  V(0.16), ONT(0.10), :(0.05)
+    A2  (n= 100, <V>=-795.996):  the(0.94),  I(0.04), \n(0.01),  to(0.00),  this(0.00)
+    A3  (n=  41, <V>=-146.383): \n(1.00),  the(0.00), ,(0.00), :(0.00),  and(0.00)
+    A4  (n=   5, <V>=-1098.641):  the(0.77), :(0.22), \n(0.01), ,(0.01), BR(0.00)
+    A5  (n=  11, <V>=-167.516): .(0.31),  to(0.10),  H(0.08), ESS(0.05),  and(0.04)
+    A6  (n=   2, <V>=-1792.134): \n(1.00),  I(0.00),  and(0.00),  the(0.00),  '(0.00)
+    A7  (n=   8, <V>=-1452.579):  I(0.99),  the(0.00),  to(0.00),  we(0.00),  this(0.00)
+  saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/attractors_em_base_code.png
+
+[attractors] saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/attractors_em_base_results.json
+[attractors] saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/attractors_em_base_summary.md
+  [run]  em_ln -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/energetic_minima/results/em_ln_shakespeare_ckpt_latest.pt
+  real h_L: V=-59.895  |h_L|=11.314
+  real continuation top-5: .(0.16), \n(0.10), ;(0.08), ,(0.05),  to(0.05)
+  [sim] m=0.950  gamma=0.852  dt=1.000  steps=8  N=288
+  [sim] step    1/8  <V>=-46.395  <|v|>=5.900  <|h|>=10.638
+  [sim] step    2/8  <V>=-47.874  <|v|>=4.167  <|h|>=12.637
+  [sim] step    3/8  <V>=-59.173  <|v|>=3.394  <|h|>=12.082
+  [sim] step    4/8  <V>=-65.713  <|v|>=3.440  <|h|>=11.770
+  [sim] step    5/8  <V>=-69.277  <|v|>=2.747  <|h|>=12.600
+  [sim] step    6/8  <V>=-72.502  <|v|>=2.668  <|h|>=13.623
+  [sim] step    7/8  <V>=-75.871  <|v|>=2.172  <|h|>=13.948
+  [sim] step    8/8  <V>=-77.782  <|v|>=1.831  <|h|>=14.565
+  converged (|v|<0.05): 0/288  <V|final>=-77.782  <|h|>=14.56
+  dynamics not fully settled; clustering on all final h
+  K*=2  silhouettes: 2:+0.51, 3:+0.33, 4:+0.30, 5:+0.32, 6:+0.32, 7:+0.34, 8:+0.33, 9:+0.33, 10:+0.35
+    A0  (n= 257, <V>=-78.110): \n(0.25), :(0.24), ,(0.15), ;(0.06), ?(0.02)
+    A1  (n=  31, <V>=-75.058): :(0.46), ;(0.12), !(0.11), ?(0.05), ,(0.03)
+  saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/attractors_em_ln_code.png
+
+[attractors] saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/attractors_em_ln_results.json
+[attractors] saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/attractors_em_ln_summary.md
+  [run]  em_sg -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/energetic_minima/results/em_sg_lam1e-03_shakespeare_ckpt_latest.pt
+  [sim] step    6/8  <V>=-443.483  <|v|>=10.453  <|h|>=67.745
+  [sim] step    7/8  <V>=-539.981  <|v|>=10.704  <|h|>=74.524
+  [sim] step    8/8  <V>=-642.758  <|v|>=10.994  <|h|>=82.031
+  converged (|v|<0.05): 0/288  <V|final>=-642.758  <|h|>=82.03
+  dynamics not fully settled; clustering on all final h
+  K*=10  silhouettes: 2:+0.37, 3:+0.31, 4:+0.29, 5:+0.32, 6:+0.34, 7:+0.35, 8:+0.36, 9:+0.37, 10:+0.38
+    A0  (n=  78, <V>=-186.038): ,(0.54), :(0.36), ;(0.03), \n(0.03), !(0.01)
+    A1  (n=  24, <V>=-1769.219): \n(1.00), HAM(0.00), ING(0.00), :(0.00), BR(0.00)
+    A2  (n=  17, <V>=-969.687): \n(1.00),  the(0.00),  a(0.00),  I(0.00),  to(0.00)
+    A3  (n=  13, <V>=-549.405): -(0.19), ath(0.17),  b(0.15),  pl(0.07), EN(0.04)
+    A4  (n=  48, <V>=-368.209): \n(0.43), :(0.23), -(0.16), 'd(0.03), ow(0.01)
+    A5  (n=   5, <V>=-1442.871): \n(1.00),  the(0.00),  to(0.00),  your(0.00),  my(0.00)
+    A6  (n=  34, <V>=-638.468): \n(0.98), ,(0.01), :(0.01),  the(0.00),  to(0.00)
+    A7  (n=  24, <V>=-1112.170): \n(1.00), :(0.00),  I(0.00),  thou(0.00),  we(0.00)
+    A8  (n=   3, <V>=-1833.758):  III(0.50), US(0.26), AN(0.08), IO(0.08), OL(0.04)
+    A9  (n=  42, <V>=-612.514): \n(1.00), :(0.00), ,(0.00),  the(0.00),  in(0.00)
+  saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/attractors_em_sg_code.png
+
+[attractors] saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/attractors_em_sg_results.json
+[attractors] saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/attractors_em_sg_summary.md
+  [run]  em_gm -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/energetic_minima/results/em_gm_K64_shakespeare_ckpt_latest.pt
+[attractors] === prompt: code :: 'def fibonacci(n): return 1 if n < 2 else' ===
+  real h_L: V=+60.323  |h_L|=1.604
+  real continuation top-5: \n(0.09), ,(0.05), :(0.03), .(0.02),  the(0.01)
+  [sim] m=0.783  gamma=0.869  dt=1.000  steps=8  N=288
+  [sim] step    1/8  <V>=+62.716  <|v|>=0.454  <|h|>=2.594
+  [sim] step    2/8  <V>=+62.286  <|v|>=0.605  <|h|>=2.301
+  [sim] step    3/8  <V>=+61.731  <|v|>=0.586  <|h|>=1.982
+  [sim] step    4/8  <V>=+60.977  <|v|>=0.533  <|h|>=1.586
+  [sim] step    5/8  <V>=+60.398  <|v|>=0.614  <|h|>=1.474
+  [sim] step    6/8  <V>=+60.376  <|v|>=0.468  <|h|>=1.797
+  [sim] step    7/8  <V>=+60.440  <|v|>=0.184  <|h|>=1.883
+  [sim] step    8/8  <V>=+60.389  <|v|>=0.098  <|h|>=1.793
+  converged (|v|<0.05): 196/288  <V|final>=+60.389  <|h|>=1.79
+  K*=2  silhouettes: 2:+0.43, 3:+0.19, 4:+0.18, 5:+0.16, 6:+0.08, 7:+0.08, 8:+0.10, 9:+0.10, 10:+0.08
+    A0  (n= 180, <V>=+60.324): \n(0.09), ,(0.05), :(0.03), .(0.02),  the(0.01)
+    A1  (n=  16, <V>=+60.329): \n(0.07), ,(0.04), :(0.02), .(0.02),  the(0.01)
+  saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/attractors_em_gm_code.png
+
+[attractors] saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/attractors_em_gm_results.json
+[attractors] saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/attractors_em_gm_summary.md
+
+[pipeline] === step 2: 3D landscape rendering (dialogue prompt) ===
+  [run]  landscape3d for em_base
+can cause random crashes or deadlocks on Linux when loaded in the
+same Python program.
+Using threadpoolctl may cause crashes or deadlocks. For more
+information and possible workarounds, please see
+    https://github.com/joblib/threadpoolctl/blob/master/multiple_openmp.md
+
+  warnings.warn(msg, RuntimeWarning)
+  K*=5  endpoints clustered.
+  V range on trajectories: [-2343.7, +868.7]  clip=[-1329.3, +225.6]
+  saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/landscape3d_landscape3d_em_base_dialogue.png
+  [run]  landscape3d for em_ln
+can cause random crashes or deadlocks on Linux when loaded in the
+same Python program.
+Using threadpoolctl may cause crashes or deadlocks. For more
+information and possible workarounds, please see
+    https://github.com/joblib/threadpoolctl/blob/master/multiple_openmp.md
+
+  warnings.warn(msg, RuntimeWarning)
+  K*=8  endpoints clustered.
+  V range on trajectories: [-89.1, +50.2]  clip=[-85.7, +50.1]
+  saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/landscape3d_landscape3d_em_ln_dialogue.png
+  [run]  landscape3d for em_sg
+can cause random crashes or deadlocks on Linux when loaded in the
+same Python program.
+Using threadpoolctl may cause crashes or deadlocks. For more
+information and possible workarounds, please see
+    https://github.com/joblib/threadpoolctl/blob/master/multiple_openmp.md
+
+  warnings.warn(msg, RuntimeWarning)
+  K*=8  endpoints clustered.
+  V range on trajectories: [-2863.9, +817.0]  clip=[-2347.1, +169.5]
+  saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/landscape3d_landscape3d_em_sg_dialogue.png
+  [run]  landscape3d for em_gm
+can cause random crashes or deadlocks on Linux when loaded in the
+same Python program.
+Using threadpoolctl may cause crashes or deadlocks. For more
+information and possible workarounds, please see
+    https://github.com/joblib/threadpoolctl/blob/master/multiple_openmp.md
+
+  warnings.warn(msg, RuntimeWarning)
+  K*=2  endpoints clustered.
+  V range on trajectories: [+60.3, +69.0]  clip=[+19.0, +69.0]
+  saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/landscape3d_landscape3d_em_gm_dialogue.png
+
+[pipeline] done.  See /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/ for outputs.

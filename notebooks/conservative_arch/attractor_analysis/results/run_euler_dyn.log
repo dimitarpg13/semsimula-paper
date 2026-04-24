@@ -1,0 +1,144 @@
+[attractors] device=mps  ckpt=../sarf_mass_variant/results/splm_sarfmass_logfreq_shakespeare_ckpt_latest.pt  tag=euler_L8_dt1_dyn
+[attractors] variant=sarf_mass  d=128  L=8  mass_mode=logfreq
+[attractors] seeds: 384 total  (gauss 128, tok 128, real 128)
+[attractors] data-manifold stats: |h_center|=34.032  mean h_std=3.8180  lambda_reg=100.0
+
+[attractors] === prompt: narrative :: 'The old king sat on the' ===
+  real h_L: V=-525.159  |h_L|=67.709
+  real continuation top-5:  the(0.60),  good(0.05),  noble(0.02), ,(0.02), \n(0.02)
+  [sim] m=0.910  gamma=0.834  dt=1.000  steps=8  N=384
+  [sim] step    1/8  <V>=+59.214  <|v|>=24.386  <|h|>=52.529
+  [sim] step    2/8  <V>=+4.682  <|v|>=16.775  <|h|>=61.037
+  [sim] step    3/8  <V>=-65.247  <|v|>=14.745  <|h|>=66.969
+  [sim] step    4/8  <V>=-134.977  <|v|>=13.796  <|h|>=72.048
+  [sim] step    5/8  <V>=-204.343  <|v|>=12.959  <|h|>=76.811
+  [sim] step    6/8  <V>=-277.444  <|v|>=12.081  <|h|>=81.422
+  [sim] step    7/8  <V>=-351.164  <|v|>=12.154  <|h|>=86.177
+  [sim] step    8/8  <V>=-426.341  <|v|>=11.796  <|h|>=91.196
+  converged (|v|<0.05): 0/384  <V|final>=-426.341  <|h|>=91.20
+  dynamics not fully settled; clustering on all final h
+/Users/dimitargueorguiev/.pyenv/versions/3.12.11/lib/python3.12/site-packages/threadpoolctl.py:1226: RuntimeWarning: 
+Found Intel OpenMP ('libiomp') and LLVM OpenMP ('libomp') loaded at
+the same time. Both libraries are known to be incompatible and this
+can cause random crashes or deadlocks on Linux when loaded in the
+same Python program.
+Using threadpoolctl may cause crashes or deadlocks. For more
+information and possible workarounds, please see
+    https://github.com/joblib/threadpoolctl/blob/master/multiple_openmp.md
+
+  warnings.warn(msg, RuntimeWarning)
+  K*=10  silhouettes: 2:+0.41, 3:+0.38, 4:+0.41, 5:+0.42, 6:+0.40, 7:+0.42, 8:+0.42, 9:+0.42, 10:+0.43
+    A0  (n= 133, <V>=+61.166): :(0.50), IN(0.27), OU(0.13), EN(0.06),  V(0.02)
+    A1  (n=  39, <V>=-955.499):  the(0.93),  my(0.03),  this(0.02),  his(0.01),  your(0.01)
+    A2  (n=  45, <V>=-861.581):  I(0.67),  to(0.16),  the(0.11), \n(0.01),  and(0.01)
+    A3  (n=  23, <V>=-1317.188):  the(0.81),  I(0.12),  to(0.03),  this(0.01),  my(0.01)
+    A4  (n=  38, <V>=-171.443): \n(0.31),  the(0.24),  my(0.07), ,(0.06),  and(0.05)
+    A5  (n=  74, <V>=-671.981):  the(0.91),  to(0.03),  my(0.02),  this(0.01),  his(0.01)
+    A6  (n=   4, <V>=-1208.930):  the(0.89), :(0.10), \n(0.00),  good(0.00), ,(0.00)
+    A7  (n=  17, <V>=-144.686): :(0.14), C(0.11),  and(0.05), UM(0.03),  to(0.03)
+    A8  (n=   2, <V>=-1867.715): \n(1.00), .(0.00), --(0.00), ?(0.00), :(0.00)
+    A9  (n=   9, <V>=+194.782): \n(0.97), ,(0.02), :(0.01),  the(0.00),  B(0.00)
+  saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/attractors_euler_L8_dt1_dyn_narrative.png
+
+[attractors] === prompt: mathematics :: 'The theorem states that for every' ===
+  real h_L: V=-414.941  |h_L|=49.287
+  real continuation top-5: \n(0.16), ,(0.08),  I(0.07),  to(0.06),  be(0.06)
+  [sim] m=0.910  gamma=0.834  dt=1.000  steps=8  N=384
+  [sim] step    1/8  <V>=+18.977  <|v|>=21.778  <|h|>=50.151
+  [sim] step    2/8  <V>=-40.287  <|v|>=14.803  <|h|>=57.230
+  [sim] step    3/8  <V>=-122.554  <|v|>=13.570  <|h|>=62.306
+  [sim] step    4/8  <V>=-191.272  <|v|>=13.382  <|h|>=67.108
+  [sim] step    5/8  <V>=-253.777  <|v|>=12.600  <|h|>=71.865
+  [sim] step    6/8  <V>=-325.158  <|v|>=12.178  <|h|>=76.724
+  [sim] step    7/8  <V>=-402.748  <|v|>=12.007  <|h|>=81.790
+  [sim] step    8/8  <V>=-484.273  <|v|>=11.769  <|h|>=87.153
+  converged (|v|<0.05): 0/384  <V|final>=-484.273  <|h|>=87.15
+  dynamics not fully settled; clustering on all final h
+  K*=2  silhouettes: 2:+0.41, 3:+0.39, 4:+0.38, 5:+0.38, 6:+0.41, 7:+0.40, 8:+0.39, 9:+0.40, 10:+0.40
+    A0  (n= 202, <V>=-84.428): :(0.53), EN(0.26), IN(0.05),  V(0.04), ONT(0.02)
+    A1  (n= 182, <V>=-928.058):  I(0.47),  the(0.30), \n(0.11),  to(0.09),  this(0.01)
+  saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/attractors_euler_L8_dt1_dyn_mathematics.png
+
+[attractors] === prompt: scientific :: 'Photosynthesis converts carbon dioxide and' ===
+  real h_L: V=-223.798  |h_L|=51.504
+  real continuation top-5: ,(0.35), ilt(0.10), is(0.05), RY(0.05), :(0.03)
+  [sim] m=0.910  gamma=0.834  dt=1.000  steps=8  N=384
+  [sim] step    1/8  <V>=-21.319  <|v|>=16.697  <|h|>=46.347
+  [sim] step    2/8  <V>=-87.942  <|v|>=11.615  <|h|>=51.261
+  [sim] step    3/8  <V>=-168.402  <|v|>=10.921  <|h|>=54.837
+  [sim] step    4/8  <V>=-233.370  <|v|>=10.946  <|h|>=58.589
+  [sim] step    5/8  <V>=-293.324  <|v|>=10.086  <|h|>=62.547
+  [sim] step    6/8  <V>=-346.390  <|v|>=9.899  <|h|>=66.893
+  [sim] step    7/8  <V>=-403.534  <|v|>=10.111  <|h|>=71.613
+  [sim] step    8/8  <V>=-475.031  <|v|>=11.476  <|h|>=76.707
+  converged (|v|<0.05): 0/384  <V|final>=-475.031  <|h|>=76.71
+  dynamics not fully settled; clustering on all final h
+  K*=10  silhouettes: 2:+0.40, 3:+0.39, 4:+0.41, 5:+0.42, 6:+0.43, 7:+0.41, 8:+0.42, 9:+0.41, 10:+0.43
+    A0  (n=  10, <V>=+48.034): \n(1.00),  the(0.00), ,(0.00),  a(0.00), 's(0.00)
+    A1  (n= 138, <V>=-81.333): EN(0.09),  V(0.07),  OF(0.07),  ED(0.04), ONT(0.04)
+    A2  (n=  97, <V>=-746.031):  the(0.87),  I(0.10), \n(0.01),  to(0.01),  this(0.00)
+    A3  (n=  21, <V>=-1335.545):  I(0.94),  the(0.05), \n(0.01),  to(0.00),  this(0.00)
+    A4  (n=  25, <V>=-929.993):  the(0.97), \n(0.02),  I(0.01),  this(0.00),  my(0.00)
+    A5  (n=   2, <V>=-1963.992): \n(1.00), .(0.00), --(0.00), ?(0.00),  I(0.00)
+    A6  (n=   4, <V>=-1091.333): :(0.80),  the(0.18), \n(0.01), ,(0.01), ;(0.00)
+    A7  (n=  27, <V>=-1028.760):  I(0.84), \n(0.15),  the(0.00),  to(0.00),  we(0.00)
+    A8  (n=  46, <V>=-208.205): \n(0.99),  the(0.01), ,(0.00), RY(0.00),  and(0.00)
+    A9  (n=  14, <V>=-168.555): .(0.15),  M(0.06),  to(0.06), ESS(0.05),  H(0.05)
+  saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/attractors_euler_L8_dt1_dyn_scientific.png
+
+[attractors] === prompt: dialogue :: 'She whispered: I love' ===
+  real h_L: V=-149.813  |h_L|=45.469
+  real continuation top-5: \n(0.09), ish(0.02), ,'(0.02), 's(0.02), ,(0.02)
+  [sim] m=0.910  gamma=0.834  dt=1.000  steps=8  N=384
+  [sim] step    1/8  <V>=+31.565  <|v|>=18.718  <|h|>=48.150
+  [sim] step    2/8  <V>=-50.158  <|v|>=13.594  <|h|>=54.044
+  [sim] step    3/8  <V>=-134.373  <|v|>=13.626  <|h|>=58.929
+  [sim] step    4/8  <V>=-206.358  <|v|>=12.536  <|h|>=63.611
+  [sim] step    5/8  <V>=-274.293  <|v|>=12.510  <|h|>=68.449
+  [sim] step    6/8  <V>=-345.092  <|v|>=12.430  <|h|>=73.571
+  [sim] step    7/8  <V>=-422.724  <|v|>=12.060  <|h|>=79.028
+  [sim] step    8/8  <V>=-503.283  <|v|>=11.300  <|h|>=84.871
+  converged (|v|<0.05): 0/384  <V|final>=-503.283  <|h|>=84.87
+  dynamics not fully settled; clustering on all final h
+  K*=10  silhouettes: 2:+0.39, 3:+0.41, 4:+0.38, 5:+0.40, 6:+0.39, 7:+0.39, 8:+0.40, 9:+0.40, 10:+0.41
+    A0  (n=  70, <V>=-675.569):  the(0.63),  I(0.21),  to(0.06), \n(0.02),  this(0.02)
+    A1  (n= 136, <V>=+0.191): IN(0.23), ONT(0.13), EN(0.08),  V(0.07), ULE(0.06)
+    A2  (n=  17, <V>=-974.041):  I(0.44), \n(0.32),  and(0.15), I(0.06), '(0.01)
+    A3  (n=  26, <V>=-1350.378):  I(0.73), \n(0.17),  the(0.07),  to(0.01),  this(0.00)
+    A4  (n=   4, <V>=-1102.531): :(0.77),  the(0.17), \n(0.06), ,(0.00), BR(0.00)
+    A5  (n=   2, <V>=-2178.310): \n(1.00), --(0.00), .(0.00), :(0.00), ?(0.00)
+    A6  (n=  41, <V>=-922.612):  the(0.70), \n(0.13),  this(0.05),  I(0.03),  his(0.02)
+    A7  (n=  38, <V>=-1023.966):  I(0.81), \n(0.17),  to(0.01),  and(0.00),  you(0.00)
+    A8  (n=  40, <V>=-210.036):  the(0.15),  and(0.10), \n(0.09),  that(0.05), RY(0.04)
+    A9  (n=  10, <V>=-42.249): \n(0.98),  the(0.02),  VI(0.00), ,(0.00),  B(0.00)
+  saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/attractors_euler_L8_dt1_dyn_dialogue.png
+
+[attractors] === prompt: code :: 'def fibonacci(n): return 1 if n < 2 else' ===
+  real h_L: V=-153.715  |h_L|=44.046
+  real continuation top-5: ,(0.75), :(0.12), ;(0.04), \n(0.02), -(0.00)
+  [sim] m=0.910  gamma=0.834  dt=1.000  steps=8  N=384
+  [sim] step    1/8  <V>=-0.381  <|v|>=18.363  <|h|>=47.487
+  [sim] step    2/8  <V>=-70.419  <|v|>=12.350  <|h|>=52.992
+  [sim] step    3/8  <V>=-155.769  <|v|>=11.715  <|h|>=56.870
+  [sim] step    4/8  <V>=-225.608  <|v|>=11.639  <|h|>=60.877
+  [sim] step    5/8  <V>=-292.053  <|v|>=10.565  <|h|>=65.036
+  [sim] step    6/8  <V>=-350.633  <|v|>=10.234  <|h|>=69.422
+  [sim] step    7/8  <V>=-406.017  <|v|>=9.948  <|h|>=74.179
+  [sim] step    8/8  <V>=-478.375  <|v|>=10.273  <|h|>=79.112
+  converged (|v|<0.05): 0/384  <V|final>=-478.375  <|h|>=79.11
+  dynamics not fully settled; clustering on all final h
+  K*=10  silhouettes: 2:+0.41, 3:+0.41, 4:+0.43, 5:+0.43, 6:+0.39, 7:+0.42, 8:+0.40, 9:+0.40, 10:+0.45
+    A0  (n= 112, <V>=-755.698):  the(0.85),  I(0.12), \n(0.01),  to(0.01),  this(0.00)
+    A1  (n=  48, <V>=-191.070): \n(0.99),  the(0.01), ,(0.00), :(0.00),  and(0.00)
+    A2  (n=  14, <V>=-213.061):  to(0.11), .(0.09), ESS(0.06),  A(0.05),  and(0.05)
+    A3  (n= 129, <V>=-44.859): IN(0.24),  V(0.17), EN(0.14), ONT(0.11),  OF(0.04)
+    A4  (n=  21, <V>=-1316.888):  I(0.90),  the(0.09), \n(0.01),  to(0.00),  this(0.00)
+    A5  (n=  20, <V>=-1039.493):  I(0.78), \n(0.21),  the(0.00),  to(0.00),  and(0.00)
+    A6  (n=   4, <V>=-1102.009): :(0.87),  the(0.12), \n(0.01), ,(0.00), BR(0.00)
+    A7  (n=   2, <V>=-1972.824): \n(1.00), .(0.00), --(0.00), ?(0.00), :(0.00)
+    A8  (n=   8, <V>=-30.361): :(0.56), ,(0.40), EN(0.02), UM(0.01), ;(0.00)
+    A9  (n=  26, <V>=-925.984):  the(0.97), \n(0.01),  this(0.00),  I(0.00),  my(0.00)
+  saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/attractors_euler_L8_dt1_dyn_code.png
+
+[attractors] saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/attractors_euler_L8_dt1_dyn_results.json
+[attractors] saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/attractors_euler_L8_dt1_dyn_summary.md

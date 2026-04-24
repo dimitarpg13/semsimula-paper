@@ -1,0 +1,123 @@
+[attractors] device=mps  ckpt=../symplectic_variant/results/splm_sym_logfreq_shakespeare_L16_dt05_ckpt_latest.pt  tag=verlet_L16_dt05_dyn
+[attractors] variant=symplectic  d=128  L=16  mass_mode=logfreq
+[attractors] seeds: 384 total  (gauss 128, tok 128, real 128)
+[attractors] data-manifold stats: |h_center|=31.750  mean h_std=2.8816  lambda_reg=100.0
+
+[attractors] === prompt: narrative :: 'The old king sat on the' ===
+  real h_L: V=-531.709  |h_L|=42.314
+  real continuation top-5:  d(0.06), t(0.03),  the(0.02), oth(0.01),  king(0.01)
+  [sim] m=0.969  gamma=0.897  dt=0.500  steps=16  N=384
+  [sim] step    2/16  <V>=-270.303  <|v|>=14.917  <|h|>=42.568
+  [sim] step    4/16  <V>=-378.293  <|v|>=12.361  <|h|>=51.280
+  [sim] step    6/16  <V>=-516.874  <|v|>=11.977  <|h|>=59.379
+  [sim] step    8/16  <V>=-677.121  <|v|>=12.569  <|h|>=67.898
+  [sim] step   10/16  <V>=-862.005  <|v|>=13.565  <|h|>=77.253
+  [sim] step   12/16  <V>=-1069.458  <|v|>=14.505  <|h|>=87.695
+  [sim] step   14/16  <V>=-1295.943  <|v|>=15.225  <|h|>=99.250
+  [sim] step   16/16  <V>=-1539.234  <|v|>=15.843  <|h|>=111.792
+  converged (|v|<0.05): 0/384  <V|final>=-1539.234  <|h|>=111.79
+  dynamics not fully settled; clustering on all final h
+/Users/dimitargueorguiev/.pyenv/versions/3.12.11/lib/python3.12/site-packages/threadpoolctl.py:1226: RuntimeWarning: 
+Found Intel OpenMP ('libiomp') and LLVM OpenMP ('libomp') loaded at
+the same time. Both libraries are known to be incompatible and this
+can cause random crashes or deadlocks on Linux when loaded in the
+same Python program.
+Using threadpoolctl may cause crashes or deadlocks. For more
+information and possible workarounds, please see
+    https://github.com/joblib/threadpoolctl/blob/master/multiple_openmp.md
+
+  warnings.warn(msg, RuntimeWarning)
+  K*=5  silhouettes: 2:+0.45, 3:+0.40, 4:+0.44, 5:+0.45, 6:+0.40, 7:+0.41, 8:+0.41, 9:+0.44, 10:+0.45
+    A0  (n=  61, <V>=-2954.141): :(0.55), ,(0.34), ;(0.07), \n(0.01),  is(0.01)
+    A1  (n= 148, <V>=-536.139): \n(0.52), ,(0.47),  of(0.01), .(0.00), ;(0.00)
+    A2  (n= 158, <V>=-1840.021): ,(0.90), \n(0.03), ;(0.03), :(0.03),  in(0.00)
+    A3  (n=  11, <V>=-2076.923): :(0.97), IN(0.01), C(0.01),  IV(0.00), OU(0.00)
+    A4  (n=   6, <V>=-2990.893): O(0.99), ER(0.01), UT(0.00), UM(0.00), IA(0.00)
+  saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/attractors_verlet_L16_dt05_dyn_narrative.png
+
+[attractors] === prompt: mathematics :: 'The theorem states that for every' ===
+  real h_L: V=-495.243  |h_L|=37.036
+  real continuation top-5:  the(0.04),  a(0.04), ,(0.02), t(0.02), -(0.01)
+  [sim] m=0.969  gamma=0.897  dt=0.500  steps=16  N=384
+  [sim] step    2/16  <V>=-279.542  <|v|>=11.698  <|h|>=39.022
+  [sim] step    4/16  <V>=-389.044  <|v|>=11.020  <|h|>=45.731
+  [sim] step    6/16  <V>=-534.610  <|v|>=12.103  <|h|>=53.065
+  [sim] step    8/16  <V>=-694.963  <|v|>=12.785  <|h|>=61.727
+  [sim] step   10/16  <V>=-868.436  <|v|>=13.230  <|h|>=71.589
+  [sim] step   12/16  <V>=-1056.311  <|v|>=13.555  <|h|>=82.406
+  [sim] step   14/16  <V>=-1261.712  <|v|>=14.074  <|h|>=94.007
+  [sim] step   16/16  <V>=-1483.631  <|v|>=14.613  <|h|>=106.305
+  converged (|v|<0.05): 0/384  <V|final>=-1483.631  <|h|>=106.30
+  dynamics not fully settled; clustering on all final h
+  K*=3  silhouettes: 2:+0.43, 3:+0.45, 4:+0.41, 5:+0.44, 6:+0.38, 7:+0.39, 8:+0.39, 9:+0.42, 10:+0.42
+    A0  (n= 208, <V>=-2135.693): ,(0.67), \n(0.14), :(0.12), ;(0.05),  with(0.01)
+    A1  (n=  16, <V>=-2439.093): EN(0.60), ER(0.35), C(0.03), :(0.02), O(0.00)
+    A2  (n= 160, <V>=-540.404): \n(0.94), ,(0.02),  the(0.01),  of(0.01), -(0.01)
+  saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/attractors_verlet_L16_dt05_dyn_mathematics.png
+
+[attractors] === prompt: scientific :: 'Photosynthesis converts carbon dioxide and' ===
+  real h_L: V=-832.826  |h_L|=56.633
+  real continuation top-5: oth(0.22), UM(0.21), ER(0.08),  d(0.07), EN(0.06)
+  [sim] m=0.969  gamma=0.897  dt=0.500  steps=16  N=384
+  [sim] step    2/16  <V>=-247.686  <|v|>=12.068  <|h|>=37.470
+  [sim] step    4/16  <V>=-331.588  <|v|>=9.678  <|h|>=43.591
+  [sim] step    6/16  <V>=-464.156  <|v|>=11.275  <|h|>=49.932
+  [sim] step    8/16  <V>=-617.246  <|v|>=12.323  <|h|>=57.926
+  [sim] step   10/16  <V>=-787.863  <|v|>=13.009  <|h|>=67.508
+  [sim] step   12/16  <V>=-981.334  <|v|>=13.783  <|h|>=78.360
+  [sim] step   14/16  <V>=-1199.833  <|v|>=14.795  <|h|>=90.283
+  [sim] step   16/16  <V>=-1437.849  <|v|>=15.510  <|h|>=103.108
+  converged (|v|<0.05): 0/384  <V|final>=-1437.849  <|h|>=103.11
+  dynamics not fully settled; clustering on all final h
+  K*=6  silhouettes: 2:+0.37, 3:+0.37, 4:+0.39, 5:+0.31, 6:+0.41, 7:+0.37, 8:+0.37, 9:+0.36, 10:+0.38
+    A0  (n= 169, <V>=-644.348): ,(0.51), \n(0.42),  of(0.02), :(0.01), ;(0.01)
+    A1  (n=  19, <V>=-2189.129): :(1.00), ARD(0.00), TER(0.00),  OF(0.00),  V(0.00)
+    A2  (n= 149, <V>=-1910.443): ,(0.80), \n(0.15), :(0.03), ;(0.02),  in(0.00)
+    A3  (n=  16, <V>=-3505.975): .(0.98), :(0.02), ?(0.00), ,(0.00), \n(0.00)
+    A4  (n=   6, <V>=-2912.246): O(1.00), ER(0.00), A(0.00), ESS(0.00), EN(0.00)
+    A5  (n=  25, <V>=-1736.825): \n(0.98), .(0.02), :(0.00), ?(0.00), !(0.00)
+  saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/attractors_verlet_L16_dt05_dyn_scientific.png
+
+[attractors] === prompt: dialogue :: 'She whispered: I love' ===
+  real h_L: V=-326.596  |h_L|=41.824
+  real continuation top-5: \n(0.65),  the(0.11), -(0.07),  a(0.02), 's(0.02)
+  [sim] m=0.969  gamma=0.897  dt=0.500  steps=16  N=384
+  [sim] step    2/16  <V>=-261.595  <|v|>=9.401  <|h|>=36.633
+  [sim] step    4/16  <V>=-379.448  <|v|>=11.785  <|h|>=42.622
+  [sim] step    6/16  <V>=-539.682  <|v|>=12.897  <|h|>=50.657
+  [sim] step    8/16  <V>=-719.323  <|v|>=13.558  <|h|>=60.280
+  [sim] step   10/16  <V>=-933.004  <|v|>=14.752  <|h|>=71.338
+  [sim] step   12/16  <V>=-1175.506  <|v|>=15.839  <|h|>=83.839
+  [sim] step   14/16  <V>=-1446.185  <|v|>=16.866  <|h|>=97.634
+  [sim] step   16/16  <V>=-1736.814  <|v|>=17.613  <|h|>=112.567
+  converged (|v|<0.05): 0/384  <V|final>=-1736.814  <|h|>=112.57
+  dynamics not fully settled; clustering on all final h
+  K*=2  silhouettes: 2:+0.41, 3:+0.33, 4:+0.35, 5:+0.36, 6:+0.37, 7:+0.38, 8:+0.38, 9:+0.39, 10:+0.39
+    A0  (n= 329, <V>=-1512.055): ,(0.61), \n(0.30), :(0.05), ;(0.02),  with(0.01)
+    A1  (n=  55, <V>=-3081.280): \n(1.00),  and(0.00),  with(0.00),  in(0.00),  for(0.00)
+  saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/attractors_verlet_L16_dt05_dyn_dialogue.png
+
+[attractors] === prompt: code :: 'def fibonacci(n): return 1 if n < 2 else' ===
+  real h_L: V=-362.010  |h_L|=40.171
+  real continuation top-5: \n(0.91), ,(0.04), .(0.02), :(0.01),  of(0.01)
+  [sim] m=0.969  gamma=0.897  dt=0.500  steps=16  N=384
+  [sim] step    2/16  <V>=-260.391  <|v|>=13.224  <|h|>=38.623
+  [sim] step    4/16  <V>=-342.710  <|v|>=10.185  <|h|>=45.602
+  [sim] step    6/16  <V>=-468.182  <|v|>=11.177  <|h|>=52.418
+  [sim] step    8/16  <V>=-605.679  <|v|>=11.743  <|h|>=60.259
+  [sim] step   10/16  <V>=-753.306  <|v|>=12.077  <|h|>=69.176
+  [sim] step   12/16  <V>=-915.484  <|v|>=12.506  <|h|>=79.003
+  [sim] step   14/16  <V>=-1095.649  <|v|>=13.159  <|h|>=89.626
+  [sim] step   16/16  <V>=-1293.362  <|v|>=13.881  <|h|>=101.002
+  converged (|v|<0.05): 0/384  <V|final>=-1293.362  <|h|>=101.00
+  dynamics not fully settled; clustering on all final h
+  K*=5  silhouettes: 2:+0.44, 3:+0.43, 4:+0.46, 5:+0.47, 6:+0.42, 7:+0.42, 8:+0.44, 9:+0.44, 10:+0.43
+    A0  (n= 142, <V>=-1682.108): ,(0.55), \n(0.41), :(0.02), ;(0.01),  in(0.00)
+    A1  (n= 182, <V>=-545.440): \n(0.87), ,(0.11),  of(0.01),  the(0.00),  to(0.00)
+    A2  (n=  39, <V>=-2879.956): :(0.77), \n(0.08), ,(0.07), .(0.06), ;(0.01)
+    A3  (n=   6, <V>=-2923.958): O(0.99), ER(0.01), EN(0.00), A(0.00), UE(0.00)
+    A4  (n=  15, <V>=-1910.647): :(1.00), IN(0.00), ONT(0.00),  OF(0.00), OU(0.00)
+  saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/attractors_verlet_L16_dt05_dyn_code.png
+
+[attractors] saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/attractors_verlet_L16_dt05_dyn_results.json
+[attractors] saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/attractor_analysis/results/attractors_verlet_L16_dt05_dyn_summary.md
