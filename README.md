@@ -331,11 +331,11 @@ for the full list):
   back onto the unit-LayerNorm shell after every damped step;
   compactness of $S^{d-1}$ guarantees a finite minimum without
   changing $V_\theta$ itself), `model_gm.py` (Gaussian-mixture head
-  $V_\theta(\xi,h) = \sum_{k=1}^{K} \mathrm{amp}_k (1 - e^{-\kappa_k^2 \|z - c_k\|^2})$,
+  $V_\theta(\xi,h) = \sum_{k=1}^{K} \mathrm{amp}\_k (1 - e^{-\kappa_k^2 \|z - c_k\|^2})$,
   the **honest test** of the framework's prescribed well form at
   full SPLM scale), a unified `train.py --variant {ln, sg, gm}` (the
   scale-gauge `sg` is a loss-side regulariser
-  $\lambda_{V_0} \mathbb{E}_{b,t} V_\theta(\xi_0, h_0)^2$ on the
+  $\lambda_{V_0} \mathbb{E}\_{b,t} V_\theta(\xi_0, h_0)^2$ on the
   baseline model, anchoring $V_\theta$ at the input embedding),
   `run_attractor_pipeline.sh` driving `attractor_analysis/` over all
   four checkpoints (baseline + three alternatives), `compare.py`
