@@ -112,7 +112,27 @@ exposition:
 | `Addendum_Non_Autonomous_Fields_For_Appendix_A.md`                                  | Appendix A, §14 (short reader’s guide: Class F equation, Hopfield / Tracks A–B, integrability; points to the full appendix in the PDF) |
 | `On_Modeling_Semantic_Energy_Field_into_SPLM.md`                                    | §14.2 (mapping framework energy field onto $V_\theta$, $\xi$, $m_t$; candidate Q11–Q13) |
 | `On_The_Smoothness_of_Scaled_Dot_Product_Attention.md`                              | §14, Theorem 46 (smoothness of attention in $h$; Poincaré prerequisites; $\Omega^{\mathrm{att}}$; LayerNorm / ReLU / mask caveats) |
-| `Training_and_Inference_with_SPLM.md`                                               | §14.2, §14.13, §14.14 (training loop, nested-autograd force computation, inference pipeline, and summary of the fixed-$x_i$ / SARF-faithful / per-token-mass ablations) |
+| `Training_and_Inference_with_SPLM.md`                                               | §14.2, §14.13, §14.14 (training loop, nested-autograd force computation, inference pipeline, and summary of the fixed-$\xi$ / SARF-faithful / per-token-mass ablations) |
+
+#### Forthcoming-work planning artifacts (deferred to a future companion paper)
+
+The two documents below are categorically different from the working
+notes above. They do **not** support a claim made in the present paper;
+they specify a separate, deliberately deferred research programme — a
+direct, RL-calibrated particle-mechanics simulator in semantic space —
+that the paper points to as forthcoming work in the §14.16 Q12 entry
+(destruction / salience-decay requirements (D1)–(D5)) and in the §16
+"deferred extension: structure lifecycle" paragraph. They are
+included here so that readers who follow the paper's `\path{...}`
+pointers can locate them; they are explicitly **not** part of the
+SPLM/conservative-architectures experimental record of §14, and a
+self-contained future companion paper covering this branch is the
+natural home for the empirical validation of their content.
+
+| File                                              | Pointed to from                                                                                                                                 |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Semantic_Simulator_RL_Calibration_Programme.md`  | §14.16 (Q12 status paragraph, "forthcoming companion work"), §16 ("deferred extension: structure lifecycle") — programme-level memo, milestones M0–M6 + v1.5/v2/v3 lifecycle extensions |
+| `Semantic_Simulator_EOM.md`                       | §14.16 (Q12 status paragraph, "specified at the equation-of-motion level"), §16 ("deferred extension: structure lifecycle") — v0 equations of motion, parameter classification, pseudocode |
 
 ### `notebooks/` — reproducibility
 
@@ -248,7 +268,7 @@ for the full list):
   SPLM (and **17 % vs. SARF-faithful SPLM**) at the cost of a
   single extra scalar parameter and a frozen vocabulary-sized
   surprisal tensor, and *simultaneously* raises the depth-axis
-  pooled shared-$V\_{\psi}$ $R^2$ from $+0.79$ (fixed-$\xi$) to
+  pooled shared-$V_\psi$ $R^2$ from $+0.79$ (fixed-$\xi$) to
   $+0.84$ — the first configuration in which LM perplexity and
   strict shared-potential fidelity improve in the same direction.
   A free learned linear head (variant (A)) underperforms variant
@@ -369,12 +389,14 @@ When reusing any material from this repository, please cite the paper (see
 
 ---
 
-## Zenodo badge and target URL:
+## Open items (to resolve before public release)
 
-Zenodo badge: https://zenodo.org/badge/1214332385.svg
-
-Target URL: https://doi.org/10.5281/zenodo.19708204
-
-[![DOI](https://zenodo.org/badge/1214332385.svg)](https://doi.org/10.5281/zenodo.19708204)
-
-
+1. **arXiv identifier.** Fill in once v1 is submitted; propagate to both
+   `README.md` and `CITATION.bib`.
+2. **`requirements.txt`.** Produce from the actual environment used to run
+   the notebooks; commit with pinned versions.
+3. **Reproducibility runtime.** Measure and document notebook runtime and
+   hardware.
+4. **Zenodo archive (optional).** If you want a DOI for citation stability,
+   mint one via Zenodo once the repo is public and tag the first release as
+   `v1.0-arxiv`.
