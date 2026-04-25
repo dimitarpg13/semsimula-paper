@@ -106,7 +106,7 @@ $$
 Specific parametric forms (a starting point, to be refined):
 
 - **Wells** (one per concept anchor $k$):
-  $V_{\text{wells}}(x) = \sum_k \mathfrak{m}_k \upsilon_k^2 \bigl(1 - e^{-\kappa_k^2 \|x - x_{c,k}\|^2}\bigr)$.
+  $V_{\text{wells}}(x) = \sum_k \mathfrak{m}\_k \upsilon_k^2 \bigl(1 - e^{-\kappa_k^2 \|x - x_{c,k}\|^2}\bigr)$.
   Parameters per well: centre $x_{c,k}$, width $\kappa_k$, depth
   $\upsilon_k$, mass $\mathfrak{m}_k$.
 
