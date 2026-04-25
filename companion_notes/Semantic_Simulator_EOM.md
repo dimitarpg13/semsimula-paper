@@ -86,7 +86,7 @@ This is the SPLM-paper definition (§11), preserved for v0.
 Three artifacts are computed once on the corpus and never updated by
 RL:
 
-### 3.1 Vocabulary embeddings $\{e_v\}_{v=1}^{V}$
+### 3.1 Vocabulary embeddings $e_v \in \mathbb{R}^d$
 
 **[v0 choice]** Initial embeddings are the top-$d$ eigenvectors of the
 PMI matrix:
