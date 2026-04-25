@@ -120,7 +120,7 @@ corpus, smoothed with a small additive constant. Frozen after counting.
 This is the surprisal mass of §11. Per-position mass is the source
 token's mass: $\mathfrak{m}_t := \mathfrak{m}_{v_t}$.
 
-### 3.3 Concept anchor positions $\{x_{c,k}\}_{k=1}^{K}$
+### 3.3 Concept anchor positions $x_{c,k} \in \mathbb{R}^d$
 
 $K$-means clustering of the embedding rows $\{e_v\}$ in $S^{d-1}$
 gives anchor centres $x_{c,k}$ (Euclidean centroids, then re-projected
