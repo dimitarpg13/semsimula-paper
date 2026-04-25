@@ -278,6 +278,107 @@ for the full list):
   per-layer diagnostic tables live under
   `sarf_mass_variant/results/`; `comparison_*.png` are mirrored at
   the folder root for direct figure inclusion in the paper.
+- **`attractor_analysis/`.** Direct test of one of the load-bearing
+  predictions of the *Semantic Simulation* framework, reported in
+  §14.15 (`subsec:cba-attractors`): that a trained scalar potential
+  $V_\theta(\xi, h)$ exhibits prompt-dependent localised basins
+  corresponding to coherent semantic configurations. Attention
+  transformers have no analogue of this prediction. Ships
+  `attractor_extraction.py` (two modes — `gradient`: Adam descent on
+  $V_\theta(\xi, h)$ plus a data-manifold anchor
+  $\tfrac{\lambda}{2}\|(h - h_c)/h_s\|^2$; `dynamical`: SPLM's own
+  semi-implicit damped Euler from random $h$ seeds at fixed $\xi$ for
+  exactly $L_\text{train}$ steps), `landscape_3d.py` and
+  `compare_landscapes_3d.py` (3D rendering of $V_\theta$ as a surface
+  over the 2D PCA plane of trajectory data, with damped-flow
+  trajectories overlaid; Euler-vs-Verlet side-by-side comparison
+  including
+  [`landscape3d_compare_dialogue.png`](notebooks/conservative_arch/attractor_analysis/results/landscape3d_compare_dialogue.png)
+  and rotating 360° GIFs), and the during-training pair
+  `train_with_snapshots.py` + `render_training_evolution.py` (retrain
+  SARF+mass SPLM with checkpoints at log-spaced steps
+  $\{0, 50, 200, 500, 1000, 2000, 4000\}$, render the seven-panel
+  landscape-evolution grid showing how $V_\theta$ carves a basin from
+  flat). Headline findings: (1) pure Adam descent on $V_\theta$ runs
+  $h$ off to infinity ($\langle V\rangle = -2500$ at step 300 vs.
+  $-260$ on the real trajectory) — $V_\theta$ is **unbounded below**
+  along multiple directions because training only ever sees its
+  gradient; (2) anchored descent (any $\lambda \in [10, 10^3]$)
+  collapses to **one prompt-independent attractor** decoding to the
+  same five stopwords (`,`, `\n`, `the`, `a`, `-`); (3) the **damped
+  dynamics at $L = L_\text{train}$** *does* exhibit prompt-dependent
+  multi-basin structure with silhouette-optimal
+  $K^\ast \in \{2, \dots, 10\}$ basins decoding to real tokens
+  (`the`, `I`, `to`, `\n`, `:`, `,`). The "semantic attractors" of
+  SPLM are therefore **time-bounded basins of the damped flow**, not
+  minima of $V_\theta$ — consistent with the framework's
+  pullback-attractor mathematics but distinct from the narrower
+  energetic reading. The Verlet $L = 16$ ablation produces fewer,
+  more punctuation-dominated basins, which tracks its slight
+  perplexity regression: more accurate but heavier-damped integrators
+  concentrate probability mass on the global "punctuation manifold"
+  of Tiny Shakespeare. The consolidated paper-style write-up is
+  [`companion_notes/Semantic_Attractor_Extraction.md`](companion_notes/Semantic_Attractor_Extraction.md);
+  the in-folder
+  [`attractor_analysis/README.md`](notebooks/conservative_arch/attractor_analysis/README.md)
+  documents the per-prompt JSON/PNG/MD outputs.
+- **`energetic_minima/`.** Three falsification experiments motivated
+  by the §14.15 design rationale (R1–R6) and reported as Q11 of
+  §14.16: structural alternatives to a free $V_\theta$ that *should*
+  buy a finite energetic minimum at zero or modest expressivity cost,
+  if R5/R6 are correctly framed. Implements all three in a unified
+  pipeline: `model_ln.py` (LayerNorm-after-step — project $h_{l+1}$
+  back onto the unit-LayerNorm shell after every damped step;
+  compactness of $S^{d-1}$ guarantees a finite minimum without
+  changing $V_\theta$ itself), `model_gm.py` (Gaussian-mixture head
+  $V_\theta(\xi,h) = \sum_{k=1}^{K} \mathrm{amp}_k (1 - e^{-\kappa_k^2 \|z - c_k\|^2})$,
+  the **honest test** of the framework's prescribed well form at
+  full SPLM scale), a unified `train.py --variant {ln, sg, gm}` (the
+  scale-gauge `sg` is a loss-side regulariser
+  $\lambda_{V_0} \mathbb{E}_{b,t} V_\theta(\xi_0, h_0)^2$ on the
+  baseline model, anchoring $V_\theta$ at the input embedding),
+  `run_attractor_pipeline.sh` driving `attractor_analysis/` over all
+  four checkpoints (baseline + three alternatives), `compare.py`
+  building [`results/comparison_report.md`](notebooks/conservative_arch/energetic_minima/results/comparison_report.md),
+  and `make_compare_figure.py` assembling
+  [`results/landscape3d_compare_four_variants_dialogue.png`](notebooks/conservative_arch/energetic_minima/results/landscape3d_compare_four_variants_dialogue.png).
+  Headline findings:
+  **(i) LayerNorm-after-step** drops val ppl from baseline's
+  $160.55$ to **$88.63$** — a 45 % relative improvement at
+  zero additional parameters — and narrows the $V$ range from
+  $[-1916, +1445]$ to $[-84, -60]$ (~$30\times$ reduction)
+  while keeping $K^\ast$ prompt-dependent; the neutrality prediction
+  is **refuted in the positive direction**, R6 ("unbounded below is
+  a gauge, not a pathology") is **strengthened by a second witness**,
+  and the cost is a shift toward punctuation-dominated attractors
+  (content-basin fraction drops from $0.58$ to $0.23$).
+  **(ii) Scale-gauge** at $\lambda_{V_0} = 10^{-3}$ gives val ppl
+  $191.0$ (+19 % vs. baseline), $V$ range $[-2332, -186]$ (not
+  narrower), and $K^\ast$ collapse to $2$ on four of five prompts —
+  neither a useful regulariser nor a decisive falsifier at this
+  $\lambda$; full $\lambda_{V_0}$ sweep noted but not promising
+  given the basin-collapse signal.
+  **(iii) Gaussian-mixture head** ($K = 64$) plateaus at val ppl
+  **$677.67$** ($4.2 \times$ worse), the $V$ range collapses to a
+  $0.05$-wide spike at $\approx +60.3$, $196$ of $288$ seeds
+  structurally converge to the same two basins for **every one of
+  the five prompts**, and both basins decode to the Tiny-Shakespeare
+  unigram distribution (content-basin fraction $0.00$) — the model
+  has collapsed to a context-free unigram predictor. The
+  pre-registered falsification criterion (a Gaussian-mixture SPLM
+  matching the SARF-faithful val ppl $160.6$) **fails by a factor of
+  four**; **R5** ("structurally bounded $V$ is expressivity-limited
+  at this scale") is **vindicated both statically and dynamically**.
+  Net effect: R5 must be *sharpened* from "structurally bounded
+  scalar potentials are expressivity-limited" to "structurally
+  bounded $V_\theta$ (GM) is expressivity-limited; compactifying the
+  state space while keeping $V_\theta$ a free MLP (LN) is not." The
+  consolidated paper-style write-up is
+  [`companion_notes/Energetic_Minima_Alternatives.md`](companion_notes/Energetic_Minima_Alternatives.md);
+  the in-folder
+  [`energetic_minima/README.md`](notebooks/conservative_arch/energetic_minima/README.md)
+  documents the variant flags, training schedule, and full attractor
+  pipeline.
 
 ---
 
