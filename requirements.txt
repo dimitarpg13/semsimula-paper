@@ -1,0 +1,15 @@
+# Runtime dependencies for notebooks/conservative_arch/
+# Tested with Python 3.12.11 on macOS (Apple Silicon) and Linux (CUDA 12.1).
+#
+# GPU note: replace the torch line with the CUDA wheel for your driver, e.g.
+#   pip install torch==2.2.2+cu121 --index-url https://download.pytorch.org/whl/cu121
+# See https://pytorch.org/get-started/locally/
+
+torch>=2.2.2
+numpy>=1.26.4
+matplotlib>=3.10.3
+Pillow>=12.2.0
+scipy>=1.16.1
+scikit-learn>=1.7.1
+transformers>=4.57.6
+tokenizers>=0.22.2

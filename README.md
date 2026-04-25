@@ -133,8 +133,8 @@ natural home for the empirical validation of their content.
 
 | File                                              | Pointed to from                                                                                                                                 |
 | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Semantic_Simulator_RL_Calibration_Programme.md`  | §8.8 ((D1)–(D5) destruction requirements), §14.17 (Open follow-ups bridge), §16 ("Empirical scope: the structure lifecycle") — programme-level memo, milestones M0–M6 + v1.5/v2/v3 lifecycle extensions |
-| `Semantic_Simulator_EOM.md`                       | §8.8 ((D1)–(D5) destruction requirements), §14.17 (Open follow-ups bridge), §16 ("Empirical scope: the structure lifecycle") — v0 equations of motion, parameter classification, pseudocode |
+| `Semantic_Simulator_RL_Calibration_Programme.md`  | §8.8 (bounded-active-state salience requirement), §14.17 (F1–F5 open follow-ups bridge), §16.1 (“Genuinely deferred to forthcoming companion work”) — programme-level memo, milestones M0–M6 + v1.5/v2/v3 lifecycle extensions |
+| `Semantic_Simulator_EOM.md`                       | §8.8 (bounded-active-state salience requirement), §14.17 (F1–F5 open follow-ups bridge), §16.1 (“Genuinely deferred to forthcoming companion work”) — v0 equations of motion, parameter classification, pseudocode |
 
 ### `notebooks/` — reproducibility
 
@@ -250,7 +250,7 @@ for the full list):
 - **`sarf_mass_variant/`.** Follow-up ablation of §14.14 stacking
   per-token semantic mass on top of the SARF-faithful $\xi$ of
   §14.13 --- the first paper experiment that directly targets
-  Open Question Q10 (the prescribed per-token mass of §7). Ships a
+  Open Question Q7 (the prescribed per-token mass of §11). Ships a
   `model_sarf_mass.py` that exposes three mass modes
   (`global`, `embed_head`, `logfreq`), a
   `compute_unigram_frequencies.py` that builds the frozen
@@ -275,8 +275,8 @@ for the full list):
   strict shared-potential fidelity improve in the same direction.
   A free learned linear head (variant (A)) underperforms variant
   (B) by ~27 % val ppl at this scale, an inductive-bias-vs-data-
-  efficiency result flagged as the Q10 open follow-up in §14.17 and
-  §16. All four training logs, checkpoints, trajectory pickles, and
+  efficiency result flagged as open follow-up (F4) in §14.17 and
+  as Q7 in §16. All four training logs, checkpoints, trajectory pickles, and
   per-layer diagnostic tables live under
   `sarf_mass_variant/results/`; `comparison_*.png` are mirrored at
   the folder root for direct figure inclusion in the paper.
@@ -325,7 +325,7 @@ for the full list):
   [`attractor_analysis/README.md`](notebooks/conservative_arch/attractor_analysis/README.md)
   documents the per-prompt JSON/PNG/MD outputs.
 - **`energetic_minima/`.** Three falsification experiments motivated
-  by the §14.15 design rationale (R1–R6) and reported as Q11 of
+  by the §14.15 design rationale (R1–R6) and reported as (F5) of
   §14.17: structural alternatives to a free $V_\theta$ that *should*
   buy a finite energetic minimum at zero or modest expressivity cost,
   if R5/R6 are correctly framed. Implements all three in a unified
@@ -386,63 +386,171 @@ for the full list):
 
 ## Reproducing the paper's experiments
 
-> **TODO — fill in before release.** Concretely:
->
-> 1. Clone this repo and create a fresh Python environment (e.g., `python -m
->    venv .venv && source .venv/bin/activate`).
-> 2. Install dependencies. A `requirements.txt` will be added before the
->    companion repo goes public; key dependencies are `torch`,
->    `transformers`, `numpy`, `scipy`, `matplotlib`, `pandas`, `jupyter`.
-> 3. Pull the Git LFS artefacts: `git lfs pull`. Without this step, the
->    large trajectory pickles and checkpoints under
->    `notebooks/conservative_arch/results/` will appear as short pointer
->    files rather than the real binary data.
->
-> **§13 — descriptive experiments (Results 1–5).**
->
-> 4. Launch `jupyter lab` and open one of:
->    - `notebooks/stp_loss/energy_landscape_validation.ipynb` (GPT-2
->      STP-acceleration and Gaussian-well analysis, backing Results 1–4
->      and Figures 4–6 in §13);
->    - `notebooks/cross_model/pythia_tangential_acceleration.ipynb`
->      (cross-architecture replication on GPT-2 and Pythia-160M, backing
->      Result 5 in §13).
->
-> **§14.1 — negative-results chain on attention transformers.**
->
-> 5. Run the notebook then the four companion scripts under
->    `notebooks/e_init/` (see
->    [`notebooks/e_init/README.md`](notebooks/e_init/README.md) for the
->    exact commands and the mapping from experiment IDs E1–E5 to scripts).
->    Each script writes a markdown summary, an `.npz` of numerical
->    results, and figures to `notebooks/e_init/results/`.
->
-> **§14.2 ff. and Appendix A — prescriptive experiments.**
->
-> 6. Follow the step-by-step pipeline in
->    [`notebooks/conservative_arch/README.md`](notebooks/conservative_arch/README.md):
->    train SPLM and the matched GPT-2 baseline, extract hidden-state
->    trajectories (SPLM, matched GPT-2, pretrained GPT-2 small), then
->    run the shared-$V_{\psi}$ fit, Jacobian-symmetry test, capacity
->    sweep, oracle fit, and token-direction replication. The separator
->    figure (SPLM vs.\ matched GPT-2 vs.\ pretrained GPT-2, median per-
->    layer $R^{2} \in \{0.90, 0.45, 0.56\}$) is produced by
->    `plot_three_way_comparison.py`; the token-direction two-panel figure
->    by `plot_token_vs_layer_three_way.py`. Full checkpoints and
->    trajectories are shipped under `results/` (via Git LFS) so that any
->    result in §14 and Appendix A can be **replotted without retraining**.
->
-> Expected end-to-end runtime on an M-series Mac with 16 GB unified memory:
-> §13 notebooks **TODO (measure before release)**; §14.1 e_init scripts
-> 2–10 minutes each; §14.2 ff. conservative_arch pipeline ~30–40 minutes
-> including SPLM training and trajectory extraction, or ~5 minutes for
-> fit-and-plot only when starting from the shipped checkpoints. GPU is not
-> required; everything runs on CPU or MPS.
->
-> Each notebook / script writes its outputs into the sibling `results/`
-> subfolder. The versions already committed there were produced by the
-> author on **TODO (date + hardware)** and are included so that every
-> figure in the paper can be inspected without re-executing the pipeline.
+### 0. Prerequisites
+
+```bash
+# 1. Clone and enter the repository
+git clone https://github.com/dimitarpg13/semsimula-paper.git
+cd semsimula-paper
+
+# 2. Create and activate a Python 3.10+ virtual environment
+python -m venv .venv && source .venv/bin/activate   # Linux / macOS
+# python -m venv .venv && .venv\Scripts\activate    # Windows
+
+# 3. Install dependencies
+pip install -r requirements.txt
+# For GPU training, replace the torch line first:
+#   pip install torch==2.2.2+cu121 --index-url https://download.pytorch.org/whl/cu121
+
+# 4. Pull Git LFS artefacts (trajectory pickles, checkpoints, figures)
+git lfs pull
+# Without this step, large files under notebooks/conservative_arch/results/
+# appear as short text pointers rather than real binary data.
+```
+
+All results committed to this repository were produced on a **MacBook Pro,
+Intel Core i9 2.3 GHz (8-core), 64 GB RAM**, running Python 3.12.11,
+between 18 April and 25 April 2026. GPU is **not required**; every script
+runs on CPU (or MPS on Apple Silicon). The shipped `results/` artefacts
+mean that any figure in the paper can be replotted without retraining.
+
+---
+
+### §13 — descriptive experiments (Results 1–5)
+
+```bash
+# Results 1–4 and Figures 4–6: STP–acceleration identity and
+# Gaussian-well analysis on GPT-2 small.
+jupyter lab notebooks/stp_loss/energy_landscape_validation.ipynb
+# Static rendering with all outputs pre-executed:
+#   notebooks/stp_loss/energy_landscape_validation_executed.ipynb
+
+# Result 5: cross-architecture replication on GPT-2 small + Pythia-160M.
+jupyter lab notebooks/cross_model/pythia_tangential_acceleration.ipynb
+```
+
+Expected runtime: **5–15 minutes** per notebook on the reference hardware
+(GPT-2 small hidden-state extraction over a ~200-sentence corpus is the
+bottleneck; the Pythia notebook adds a second model load).
+
+---
+
+### §14.1 — negative-results chain on attention transformers (E1–E5)
+
+```bash
+# Baseline Gaussian-well E-init on GPT-2 (prerequisite for E1–E5):
+jupyter lab notebooks/e_init/e_init_validation.ipynb
+
+# E1 (damping sweep) + E2 (first-order gradient flow):
+python notebooks/e_init/extended_gamma_and_first_order.py
+
+# E3 (seven scalar-well functional forms):
+python notebooks/e_init/well_functional_form_comparison.py
+
+# E4 (linear Helmholtz position-coupled skew augmentation):
+python notebooks/e_init/helmholtz_curl_augmented.py
+
+# E5 (velocity-coupled gauge, constant / affine-rank-1 / affine-rank-2):
+python notebooks/e_init/velocity_coupled_gauge.py
+```
+
+See [`notebooks/e_init/README.md`](notebooks/e_init/README.md) for the
+exact command sequence and the mapping from experiment IDs E1–E5 to
+scripts. Each script writes a markdown summary, an `.npz` result archive,
+and one or more figures to `notebooks/e_init/results/`.
+
+Expected runtime: **2–10 minutes** per script on the reference hardware.
+
+---
+
+### §14.2 ff. and Appendix A — prescriptive experiments (SPLM pipeline)
+
+The full end-to-end pipeline is documented step by step in
+[`notebooks/conservative_arch/README.md`](notebooks/conservative_arch/README.md).
+The quick summary:
+
+```bash
+cd notebooks/conservative_arch
+
+# 1. Train SPLM and the scale-matched attention baseline
+python train_splm.py
+python train_matched.py
+
+# 2. Extract hidden-state trajectories from all three models
+python trajectory_extraction.py          # SPLM
+python extract_matched_baseline.py       # matched GPT-2
+python extract_gpt2_baseline.py          # pretrained GPT-2 small
+
+# 3. Run the full diagnostic suite
+python shared_potential_fit.py           # strict shared-V_psi separator
+python jacobian_symmetry.py              # velocity-aware Jacobian-symmetry test
+python sharedV_capacity_sweep.py         # 6-config V_psi capacity band
+python splm_oracle_fit.py                # oracle upper bound (SPLM's own V_theta)
+python token_direction_fit.py            # token-direction replication
+
+# 4. Produce paper figures
+python plot_three_way_comparison.py      # Fig. 8: SPLM / matched / pretrained GPT-2
+python plot_token_vs_layer_three_way.py  # token-direction two-panel figure
+python plot_sharedV_comparison.py        # shared-V_psi profile plot
+```
+
+**Shortcut:** checkpoints and trajectory pickles are shipped via Git LFS
+in `results/`. Steps 1–2 can be skipped and steps 3–4 run in
+**~5 minutes** on the reference hardware using the precomputed artefacts.
+End-to-end including training takes **~35–45 minutes** (SPLM ~20 min,
+matched baseline ~15 min, extraction ~5 min, diagnostics ~5 min).
+
+#### SARF-faithful ablation (§14.13)
+
+```bash
+cd sarf_variant
+python train_splm_sarf.py
+python trajectory_extraction_sarf.py
+python compare.py
+# Re-runs shared_potential_fit.py and token_direction_fit.py from the
+# parent directory automatically; outputs go to ../results/.
+```
+
+#### Per-token semantic-mass ablation (§14.14)
+
+```bash
+cd sarf_mass_variant
+python compute_unigram_frequencies.py    # build frozen surprisal lookup (once)
+python train_splm_sarf_mass.py --mass-mode global
+python train_splm_sarf_mass.py --mass-mode embed_head
+python train_splm_sarf_mass.py --mass-mode logfreq
+python trajectory_extraction_sarf_mass.py
+python compare.py
+```
+
+#### Attractor analysis (§14.15)
+
+```bash
+cd attractor_analysis
+python attractor_extraction.py --mode gradient    # Adam descent on V_theta
+python attractor_extraction.py --mode dynamical   # damped Euler from random seeds
+python compare_landscapes_3d.py                    # Euler-vs-Verlet 3D comparison
+python train_with_snapshots.py                     # retrain with log-spaced checkpoints
+python render_training_evolution.py                # seven-panel landscape-evolution grid
+```
+
+See [`notebooks/conservative_arch/attractor_analysis/README.md`](notebooks/conservative_arch/attractor_analysis/README.md)
+for the per-prompt JSON/PNG/MD output catalogue.
+
+#### Energetic-minima alternatives (F5 of §14.17)
+
+```bash
+cd energetic_minima
+python train.py --variant ln   # LayerNorm-after-step
+python train.py --variant sg   # scale-gauge regulariser
+python train.py --variant gm   # Gaussian-mixture V_theta head
+bash run_attractor_pipeline.sh  # attractor extraction over all four checkpoints
+python compare.py               # produces results/comparison_report.md
+python make_compare_figure.py   # produces results/landscape3d_compare_four_variants_dialogue.png
+```
+
+See [`notebooks/conservative_arch/energetic_minima/README.md`](notebooks/conservative_arch/energetic_minima/README.md)
+for variant flags, training schedule, and expected outputs.
 
 ---
 
@@ -474,9 +582,9 @@ also cite the paper above as the canonical source of the framework.
 This repository is released under a **dual license** that reflects the
 difference in character between its code and its prose content.
 
-**Code.** The Jupyter notebooks under `notebooks/` and any configuration
-files (e.g., a future `requirements.txt` or `environment.yml`) are licensed
-under the MIT License; see [`LICENSE`](LICENSE).
+**Code.** The Jupyter notebooks under `notebooks/`, the Python scripts,
+`requirements.txt`, and `pyproject.toml` are licensed under the MIT
+License; see [`LICENSE`](LICENSE).
 
 **Prose content.** The manuscripts under `manuscripts/`, the companion notes
 under `companion_notes/`, this `README.md`, and `CITATION.bib` are licensed
@@ -496,10 +604,6 @@ When reusing any material from this repository, please cite the paper (see
 
 1. **arXiv identifier.** Fill in once v1 is submitted; propagate to both
    `README.md` and `CITATION.bib`.
-2. **`requirements.txt`.** Produce from the actual environment used to run
-   the notebooks; commit with pinned versions.
-3. **Reproducibility runtime.** Measure and document notebook runtime and
-   hardware.
-4. **Zenodo archive (optional).** If you want a DOI for citation stability,
+2. **Zenodo archive (optional).** If you want a DOI for citation stability,
    mint one via Zenodo once the repo is public and tag the first release as
    `v1.0-arxiv`.
