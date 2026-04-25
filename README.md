@@ -346,7 +346,7 @@ for the full list):
   **(i) LayerNorm-after-step** drops val ppl from baseline's
   $160.55$ to **$88.63$** — a 45 % relative improvement at
   zero additional parameters — and narrows the $V$ range from
-  $[-1916, +1445]$ to $[-84, -60]$ (~$30\times$ reduction)
+  $[-1916, +1445]$ to $[-84, -60]$ (about $30\times$ narrower)
   while keeping $K^\ast$ prompt-dependent; the neutrality prediction
   is **refuted in the positive direction**, R6 ("unbounded below is
   a gauge, not a pathology") is **strengthened by a second witness**,
