@@ -370,7 +370,7 @@ LM perplexity and strict shared-$V_\psi$ fidelity improve in the same
 direction.  Variant (A), which is strictly more expressive in
 principle, underperforms (B) by ~27 % val ppl at this scale — an
 inductive-bias-vs-data-efficiency finding flagged as the Q10 open
-follow-up in §14.16 and §16.
+follow-up in §14.17 and §16.
 
 Full numbers, per-layer tables, interpretation and the four-way
 comparison plots:

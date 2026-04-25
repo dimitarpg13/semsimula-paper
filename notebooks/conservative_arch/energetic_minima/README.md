@@ -2,7 +2,7 @@
 
 This folder implements the three falsification experiments that the
 paper's §14.15 (design rationale: why we do not enforce energetic
-minima by construction) flags as open follow-ups in §14.16 (Q11).
+minima by construction) flags as open follow-ups in §14.17 (Q11).
 
 ## What's in the paper
 
@@ -107,7 +107,7 @@ Per the paper's §14.15 rationale:
 SARF-faithful val ppl 160.55 of the logfreq baseline would force the
 paper's position to invert, from "structural boundedness is an
 expressivity downgrade" to "a physics-prescribed $V$ suffices."  In
-that event, §14.15 and §14.16 (Q11) should be rewritten to reflect
+that event, §14.15 and §14.17 (Q11) should be rewritten to reflect
 the new evidence.
 
 ## Outputs

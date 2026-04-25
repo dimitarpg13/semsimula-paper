@@ -154,7 +154,7 @@ argument about what $V_\theta$ must converge to.
 ## 5. Where these gaps would live as open questions
 
 These three gaps are natural candidates for **Q11, Q12, Q13** in the
-open-questions list of §14.16 / §16 of `paper_v2`. Framed that way
+open-questions list of §14.17 / §16 of `paper_v2`. Framed that way
 they would extend the existing programme from "*what more of the
 mass prescription can we recover?*" (Q10) to "*what more of the
 field prescription can we recover?*":

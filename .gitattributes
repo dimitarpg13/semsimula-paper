@@ -65,7 +65,7 @@ notebooks/conservative_arch/attractor_analysis/results/*.json filter=lfs diff=lf
 notebooks/conservative_arch/attractor_analysis/results/*.jsonl filter=lfs diff=lfs merge=lfs -text
 notebooks/conservative_arch/attractor_analysis/results/snapshots/**/*.pt filter=lfs diff=lfs merge=lfs -text
 
-# Energetic-minima alternatives (§14.16, Q11) -- three SPLM variants
+# Energetic-minima alternatives (§14.17, Q11) -- three SPLM variants
 # probing the free $V_{\theta}$ head: (i) LayerNorm-after-step, (ii) weak
 # scale-gauge penalty on $V(\xi_0, h_0)^2$, and (iii) Gaussian-mixture
 # head. Each variant ships training log + loss curve + checkpoint; the

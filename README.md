@@ -120,19 +120,21 @@ The two documents below are categorically different from the working
 notes above. They do **not** support a claim made in the present paper;
 they specify a separate, deliberately deferred research programme — a
 direct, RL-calibrated particle-mechanics simulator in semantic space —
-that the paper points to as forthcoming work in the §14.16 Q12 entry
-(destruction / salience-decay requirements (D1)–(D5)) and in the §16
-"deferred extension: structure lifecycle" paragraph. They are
-included here so that readers who follow the paper's `\path{...}`
-pointers can locate them; they are explicitly **not** part of the
-SPLM/conservative-architectures experimental record of §14, and a
-self-contained future companion paper covering this branch is the
+that the paper points to as forthcoming work at the end of the theory
+chapter (§8.8, "Salience and destruction of semantic structures",
+formalising the (D1)–(D5) framework requirements), with a bridging
+sentence in §14.17 (Open follow-ups) and a final empirical-scope
+forward-pointer in §16 ("Empirical scope: the structure lifecycle").
+They are included here so that readers who follow the paper's
+`\path{...}` pointers can locate them; they are explicitly **not** part
+of the SPLM/conservative-architectures experimental record of §14, and
+a self-contained future companion paper covering this branch is the
 natural home for the empirical validation of their content.
 
 | File                                              | Pointed to from                                                                                                                                 |
 | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Semantic_Simulator_RL_Calibration_Programme.md`  | §14.16 (Q12 status paragraph, "forthcoming companion work"), §16 ("deferred extension: structure lifecycle") — programme-level memo, milestones M0–M6 + v1.5/v2/v3 lifecycle extensions |
-| `Semantic_Simulator_EOM.md`                       | §14.16 (Q12 status paragraph, "specified at the equation-of-motion level"), §16 ("deferred extension: structure lifecycle") — v0 equations of motion, parameter classification, pseudocode |
+| `Semantic_Simulator_RL_Calibration_Programme.md`  | §8.8 ((D1)–(D5) destruction requirements), §14.17 (Open follow-ups bridge), §16 ("Empirical scope: the structure lifecycle") — programme-level memo, milestones M0–M6 + v1.5/v2/v3 lifecycle extensions |
+| `Semantic_Simulator_EOM.md`                       | §8.8 ((D1)–(D5) destruction requirements), §14.17 (Open follow-ups bridge), §16 ("Empirical scope: the structure lifecycle") — v0 equations of motion, parameter classification, pseudocode |
 
 ### `notebooks/` — reproducibility
 
@@ -273,7 +275,7 @@ for the full list):
   strict shared-potential fidelity improve in the same direction.
   A free learned linear head (variant (A)) underperforms variant
   (B) by ~27 % val ppl at this scale, an inductive-bias-vs-data-
-  efficiency result flagged as the Q10 open follow-up in §14.16 and
+  efficiency result flagged as the Q10 open follow-up in §14.17 and
   §16. All four training logs, checkpoints, trajectory pickles, and
   per-layer diagnostic tables live under
   `sarf_mass_variant/results/`; `comparison_*.png` are mirrored at
@@ -324,18 +326,18 @@ for the full list):
   documents the per-prompt JSON/PNG/MD outputs.
 - **`energetic_minima/`.** Three falsification experiments motivated
   by the §14.15 design rationale (R1–R6) and reported as Q11 of
-  §14.16: structural alternatives to a free $V_\theta$ that *should*
+  §14.17: structural alternatives to a free $V_\theta$ that *should*
   buy a finite energetic minimum at zero or modest expressivity cost,
   if R5/R6 are correctly framed. Implements all three in a unified
   pipeline: `model_ln.py` (LayerNorm-after-step — project $h_{l+1}$
   back onto the unit-LayerNorm shell after every damped step;
   compactness of $S^{d-1}$ guarantees a finite minimum without
   changing $V_\theta$ itself), `model_gm.py` (Gaussian-mixture head
-  $V_\theta(\xi,h) = \sum_{k=1}^{K} \mathrm{amp}\_k (1 - e^{-\kappa_k^2 \|z - c_k\|^2})$,
+  $V_\theta(\xi,h) = \sum_{k=1}^{K} \mathrm{amp}_k (1 - e^{-\kappa_k^2 \|z - c_k\|^2})$,
   the **honest test** of the framework's prescribed well form at
   full SPLM scale), a unified `train.py --variant {ln, sg, gm}` (the
   scale-gauge `sg` is a loss-side regulariser
-  $\lambda_{V_0} \mathbb{E}\_{b,t} V_\theta(\xi_0, h_0)^2$ on the
+  $\lambda_{V_0} \mathbb{E}_{b,t} V_\theta(\xi_0, h_0)^2$ on the
   baseline model, anchoring $V_\theta$ at the input embedding),
   `run_attractor_pipeline.sh` driving `attractor_analysis/` over all
   four checkpoints (baseline + three alternatives), `compare.py`

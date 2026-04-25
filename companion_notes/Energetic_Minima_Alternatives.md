@@ -2,10 +2,10 @@
 
 **Companion note to the main paper, Section 14 (Conservative
 Architectures), Subsections 14.15 (attractor analysis and design
-rationale) and 14.16 (Q11, structural alternatives).**
+rationale) and 14.17 (Q11, structural alternatives).**
 
 This document reports the three follow-up experiments flagged as open
-problems in the paper's §14.16 (Q11), implemented in
+problems in the paper's §14.17 (Q11), implemented in
 [`notebooks/conservative_arch/energetic_minima/`](../notebooks/conservative_arch/energetic_minima/).
 It ended up producing one decisive confirmation of the paper's
 position and one clean refutation of a specific neutrality claim;
@@ -185,7 +185,7 @@ not promising based on the coarsened-basin signal we saw.
 mixture should reproduce the static-null behaviour of the seven
 scalar-form fits of §14.2 (five-negatives) and degrade LM quality.
 A Gaussian-mixture SPLM matching the SARF-faithful val ppl 160.55
-would force §14.15 and §14.16 (Q11) to invert.
+would force §14.15 and §14.17 (Q11) to invert.
 
 **What we see.** Complete vindication of R5, at the extreme end of
 the predicted range.
@@ -233,7 +233,7 @@ seven scalar fits to frozen GPT-2 trajectories) and dynamically
 
 ## 5. What this changes in the paper's story
 
-Net effect on the paper's §14.15 and §14.16 (Q11):
+Net effect on the paper's §14.15 and §14.17 (Q11):
 
 1. **R1 – R4 are unchanged.** The conserved quantity is still
    $E = T + V$ not $V$ alone (R1), the correct mathematical object
@@ -280,7 +280,7 @@ Net effect on the paper's §14.15 and §14.16 (Q11):
 
 We note these but do not chase them here. The three experiments in
 this document answer the specific falsification criterion flagged in
-§14.16 (Q11) of the paper: GM fails to match baseline ppl,
+§14.17 (Q11) of the paper: GM fails to match baseline ppl,
 decisively; LN exceeds baseline ppl, decisively; SG does neither.
 
 ---
