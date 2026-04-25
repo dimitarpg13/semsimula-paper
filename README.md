@@ -5,7 +5,10 @@ Companion repository for the paper
 > **Semantic Simulation: A Prescriptive Lagrangian Framework for Efficient Semantic Inference**
 > *Conservative-by-Construction Language Models and the Shared-Potential Separator, with a Correspondence to Joint Embedding Predictive Architectures.*
 > Dimitar P. Gueorguiev (Independent Researcher), 2026.
-> arXiv: `TODO: arXiv:XXXX.XXXXX` (link to be added after submission).
+> Zenodo preprint: [10.5281/zenodo.19712428](https://doi.org/10.5281/zenodo.19712428)
+
+[![DOI — paper](https://zenodo.org/badge/DOI/10.5281/zenodo.19712428.svg)](https://doi.org/10.5281/zenodo.19712428)
+[![DOI — companion code](https://zenodo.org/badge/DOI/10.5281/zenodo.19708205.svg)](https://doi.org/10.5281/zenodo.19708205)
 
 This repository collects the **reproducibility artifacts** and the **unpublished
 background manuscripts** cited in the paper. Its scope is deliberately narrow:
@@ -133,8 +136,8 @@ natural home for the empirical validation of their content.
 
 | File                                              | Pointed to from                                                                                                                                 |
 | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Semantic_Simulator_RL_Calibration_Programme.md`  | §8.8 (bounded-active-state salience requirement), §14.17 (F1–F5 open follow-ups bridge), §16.1 (“Genuinely deferred to forthcoming companion work”) — programme-level memo, milestones M0–M6 + v1.5/v2/v3 lifecycle extensions |
-| `Semantic_Simulator_EOM.md`                       | §8.8 (bounded-active-state salience requirement), §14.17 (F1–F5 open follow-ups bridge), §16.1 (“Genuinely deferred to forthcoming companion work”) — v0 equations of motion, parameter classification, pseudocode |
+| `Semantic_Simulator_RL_Calibration_Programme.md`  | §8.8 ((D1)–(D5) destruction requirements), §14.17 (Open follow-ups bridge), §16 ("Empirical scope: the structure lifecycle") — programme-level memo, milestones M0–M6 + v1.5/v2/v3 lifecycle extensions |
+| `Semantic_Simulator_EOM.md`                       | §8.8 ((D1)–(D5) destruction requirements), §14.17 (Open follow-ups bridge), §16 ("Empirical scope: the structure lifecycle") — v0 equations of motion, parameter classification, pseudocode |
 
 ### `notebooks/` — reproducibility
 
@@ -250,7 +253,7 @@ for the full list):
 - **`sarf_mass_variant/`.** Follow-up ablation of §14.14 stacking
   per-token semantic mass on top of the SARF-faithful $\xi$ of
   §14.13 --- the first paper experiment that directly targets
-  Open Question Q7 (the prescribed per-token mass of §11). Ships a
+  Open Question Q10 (the prescribed per-token mass of §7). Ships a
   `model_sarf_mass.py` that exposes three mass modes
   (`global`, `embed_head`, `logfreq`), a
   `compute_unigram_frequencies.py` that builds the frozen
@@ -275,8 +278,8 @@ for the full list):
   strict shared-potential fidelity improve in the same direction.
   A free learned linear head (variant (A)) underperforms variant
   (B) by ~27 % val ppl at this scale, an inductive-bias-vs-data-
-  efficiency result flagged as open follow-up (F4) in §14.17 and
-  as Q7 in §16. All four training logs, checkpoints, trajectory pickles, and
+  efficiency result flagged as the Q10 open follow-up in §14.17 and
+  §16. All four training logs, checkpoints, trajectory pickles, and
   per-layer diagnostic tables live under
   `sarf_mass_variant/results/`; `comparison_*.png` are mirrored at
   the folder root for direct figure inclusion in the paper.
@@ -325,7 +328,7 @@ for the full list):
   [`attractor_analysis/README.md`](notebooks/conservative_arch/attractor_analysis/README.md)
   documents the per-prompt JSON/PNG/MD outputs.
 - **`energetic_minima/`.** Three falsification experiments motivated
-  by the §14.15 design rationale (R1–R6) and reported as (F5) of
+  by the §14.15 design rationale (R1–R6) and reported as Q11 of
   §14.17: structural alternatives to a free $V_\theta$ that *should*
   buy a finite energetic minimum at zero or modest expressivity cost,
   if R5/R6 are correctly framed. Implements all three in a unified
@@ -556,20 +559,29 @@ for variant flags, training schedule, and expected outputs.
 
 ## Citing this work
 
-See [`CITATION.bib`](CITATION.bib) for a BibTeX entry. The short form:
+See [`CITATION.bib`](CITATION.bib) for the full BibTeX file. The short form:
 
 ```bibtex
-@article{Gueorguiev2026SemSim,
-  author  = {Gueorguiev, Dimitar P.},
-  title   = {Semantic Simulation: A Prescriptive Lagrangian Framework for
-             Efficient Semantic Inference --- Conservative-by-Construction
-             Language Models and the Shared-Potential Separator, with a
-             Correspondence to Joint Embedding Predictive Architectures},
-  journal = {arXiv preprint},
-  volume  = {TODO: arXiv:XXXX.XXXXX},
-  year    = {2026}
+@misc{Gueorguiev2026SemSim,
+  author    = {Gueorguiev, Dimitar P.},
+  title     = {Semantic Simulation: A Prescriptive {L}agrangian Framework
+               for Efficient Semantic Inference --- Conservative-by-
+               Construction Language Models and the Shared-Potential
+               Separator, with a Correspondence to Joint Embedding
+               Predictive Architectures},
+  year      = {2026},
+  publisher = {Zenodo},
+  doi       = {10.5281/zenodo.19712428},
+  url       = {https://doi.org/10.5281/zenodo.19712428},
+  note      = {Companion code repository (DOI 10.5281/zenodo.19708205):
+               \url{https://github.com/dimitarpg13/semsimula-paper}}
 }
 ```
+
+The companion code archive (this repository, tagged `v1.0-arxiv`) has its own
+citable DOI: [10.5281/zenodo.19708205](https://doi.org/10.5281/zenodo.19708205).
+If you re-run the experiments or build on the code specifically, please cite
+both DOIs.
 
 If you use or build on material from this companion repository specifically
 (e.g., re-run the notebook, cite one of the background manuscripts), please
@@ -602,8 +614,7 @@ When reusing any material from this repository, please cite the paper (see
 
 ## Open items (to resolve before public release)
 
-1. **arXiv identifier.** Fill in once v1 is submitted; propagate to both
+1. **arXiv identifier.** The paper is currently available as a Zenodo preprint
+   ([10.5281/zenodo.19712428](https://doi.org/10.5281/zenodo.19712428)).
+   Once submitted to arXiv, fill in the arXiv identifier and propagate to both
    `README.md` and `CITATION.bib`.
-2. **Zenodo archive (optional).** If you want a DOI for citation stability,
-   mint one via Zenodo once the repo is public and tag the first release as
-   `v1.0-arxiv`.
