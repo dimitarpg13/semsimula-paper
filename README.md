@@ -5,9 +5,9 @@ Companion repository for the paper
 > **Semantic Simulation: A Prescriptive Lagrangian Framework for Efficient Semantic Inference**
 > *Conservative-by-Construction Language Models and the Shared-Potential Separator, with a Correspondence to Joint Embedding Predictive Architectures.*
 > Dimitar P. Gueorguiev (Independent Researcher), 2026.
-> Zenodo preprint: [10.5281/zenodo.19712428](https://doi.org/10.5281/zenodo.19712428)
+> Zenodo preprint: [10.5281/zenodo.19798918](https://doi.org/10.5281/zenodo.19798918)
 
-[![DOI — paper](https://zenodo.org/badge/DOI/10.5281/zenodo.19712428.svg)](https://doi.org/10.5281/zenodo.19712428)
+[![DOI — paper](https://zenodo.org/badge/DOI/10.5281/zenodo.19798918.svg)](https://doi.org/10.5281/zenodo.19798918)
 [![DOI — companion code](https://zenodo.org/badge/DOI/10.5281/zenodo.19708205.svg)](https://doi.org/10.5281/zenodo.19708205)
 
 This repository collects the **reproducibility artifacts** and the **unpublished
@@ -571,8 +571,8 @@ See [`CITATION.bib`](CITATION.bib) for the full BibTeX file. The short form:
                Predictive Architectures},
   year      = {2026},
   publisher = {Zenodo},
-  doi       = {10.5281/zenodo.19712428},
-  url       = {https://doi.org/10.5281/zenodo.19712428},
+  doi       = {10.5281/zenodo.19798918},
+  url       = {https://doi.org/10.5281/zenodo.19798918},
   note      = {Companion code repository (DOI 10.5281/zenodo.19708205):
                \url{https://github.com/dimitarpg13/semsimula-paper}}
 }
@@ -615,6 +615,6 @@ When reusing any material from this repository, please cite the paper (see
 ## Open items (to resolve before public release)
 
 1. **arXiv identifier.** The paper is currently available as a Zenodo preprint
-   ([10.5281/zenodo.19712428](https://doi.org/10.5281/zenodo.19712428)).
+   ([10.5281/zenodo.19798918](https://doi.org/10.5281/zenodo.19798918)).
    Once submitted to arXiv, fill in the arXiv identifier and propagate to both
    `README.md` and `CITATION.bib`.
