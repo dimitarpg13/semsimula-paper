@@ -1,0 +1,50 @@
+[2026-04-26 20:31:25] === E1 phase transition watcher started ===
+[2026-04-26 20:31:25] watching run_log: /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/multi_seed/results/E1_shakespeare/run_log.jsonl
+[2026-04-26 20:31:25] expected runner pids: zsh=33241  py=33247
+[2026-04-26 20:31:25] [step 1] waiting for splm_sarfmass_logfreq seed=2 to finish...
+[2026-04-26 20:33:50] [step 1] seed-2 run_log entry detected
+[2026-04-26 20:33:50] [step 2] sending SIGTERM to runner py pid=33247
+[2026-04-26 20:33:53] [step 2] sending SIGTERM to runner zsh pid=33241
+[2026-04-26 20:33:53]   (zsh pid already gone)
+[2026-04-26 20:33:58] [step 2] orphaned sarfmass trainer detected, nuking
+[2026-04-26 20:34:01] [step 2] runner stopped; MPS free for next phase
+[2026-04-26 20:34:01] [step 3] launching matched_baseline N=5
+[multi_seed] tag=E1_shakespeare  mode=shakespeare  models=['matched_baseline']  seeds=[0, 1, 2, 3, 4]  device=auto
+[multi_seed] outputs -> notebooks/conservative_arch/multi_seed/results/E1_shakespeare
+[multi_seed] run-log -> notebooks/conservative_arch/multi_seed/results/E1_shakespeare/run_log.jsonl
+
+=== matched_baseline ===
+  [run]  python3 train_matched.py --mode shakespeare --seed 0  (cwd=notebooks/conservative_arch)
+  [done] elapsed=1597.2s  moved=4 artefact(s)
+  [run]  python3 train_matched.py --mode shakespeare --seed 1  (cwd=notebooks/conservative_arch)
+  [done] elapsed=1730.1s  moved=4 artefact(s)
+  [run]  python3 train_matched.py --mode shakespeare --seed 2  (cwd=notebooks/conservative_arch)
+  [done] elapsed=1748.6s  moved=4 artefact(s)
+  [run]  python3 train_matched.py --mode shakespeare --seed 3  (cwd=notebooks/conservative_arch)
+  [done] elapsed=1754.9s  moved=4 artefact(s)
+  [run]  python3 train_matched.py --mode shakespeare --seed 4  (cwd=notebooks/conservative_arch)
+  [done] elapsed=1753.4s  moved=4 artefact(s)
+
+[multi_seed] summary: 5/5 OK  0 skipped  0 failed
+[2026-04-26 22:57:05] [step 3] matched_baseline runner exited rc=0
+[2026-04-26 22:57:05] [step 4] launching splm_em_ln N=5 (LN-after-step phase 2)
+[multi_seed] tag=E1_shakespeare  mode=shakespeare  models=['splm_em_ln']  seeds=[0, 1, 2, 3, 4]  device=auto
+[multi_seed] outputs -> notebooks/conservative_arch/multi_seed/results/E1_shakespeare
+[multi_seed] run-log -> notebooks/conservative_arch/multi_seed/results/E1_shakespeare/run_log.jsonl
+
+=== splm_em_ln ===
+  [preflight] marker present (notebooks/conservative_arch/sarf_mass_variant/results/logfreq_surprisal.npy), skipping precompute for splm_em_ln.
+  [run]  python3 train.py --mode shakespeare --seed 0 --variant ln  (cwd=notebooks/conservative_arch/energetic_minima)
+  [done] elapsed=2639.5s  moved=4 artefact(s)
+  [run]  python3 train.py --mode shakespeare --seed 1 --variant ln  (cwd=notebooks/conservative_arch/energetic_minima)
+  [done] elapsed=2513.2s  moved=4 artefact(s)
+  [run]  python3 train.py --mode shakespeare --seed 2 --variant ln  (cwd=notebooks/conservative_arch/energetic_minima)
+  [done] elapsed=2445.2s  moved=4 artefact(s)
+  [run]  python3 train.py --mode shakespeare --seed 3 --variant ln  (cwd=notebooks/conservative_arch/energetic_minima)
+  [done] elapsed=18604.4s  moved=4 artefact(s)
+  [run]  python3 train.py --mode shakespeare --seed 4 --variant ln  (cwd=notebooks/conservative_arch/energetic_minima)
+  [done] elapsed=3549.6s  moved=4 artefact(s)
+
+[multi_seed] summary: 5/5 OK  0 skipped  0 failed
+[2026-04-27 07:12:58] [step 4] splm_em_ln runner exited rc=0
+[2026-04-27 07:12:58] === E1 phase transition watcher finished (matched_rc=0  ln_rc=0) ===

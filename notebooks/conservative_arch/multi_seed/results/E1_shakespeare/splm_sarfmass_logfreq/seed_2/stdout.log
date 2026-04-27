@@ -1,0 +1,108 @@
+[train-mass] device=mps  mode=shakespeare  mass_mode=logfreq
+[train-mass] tokens: train=321,124  val=16,901
+[train-mass] params: 7,123,076   d=128  L=8  v_hidden=512
+[train-mass] init mass: mean=1.449  std=0.205  min=1.151  max=1.915
+[train-mass] step    50/4000   train 10.8199   lr 1.25e-04   grad 0.23   m[mean 1.458 std 0.202]   gamma=0.998   elapsed 15s
+[train-mass] step   100/4000   train 9.4091   lr 2.50e-04   grad 9.76   m[mean 1.443 std 0.199]   gamma=0.992   elapsed 28s
+[train-mass] step   150/4000   train 6.6467   lr 3.75e-04   grad 0.71   m[mean 1.450 std 0.205]   gamma=0.994   elapsed 41s
+[train-mass] step   200/4000   train 6.4088   lr 5.00e-04   grad 0.71   m[mean 1.457 std 0.205]   gamma=0.994   elapsed 55s
+[train-mass] >>> eval @ 200: train 6.3669   val 6.5859   ppl 724.81
+[train-mass] step   250/4000   train 6.3229   lr 5.00e-04   grad 0.71   m[mean 1.446 std 0.201]   gamma=0.994   elapsed 78s
+[train-mass] step   300/4000   train 6.1681   lr 4.99e-04   grad 1.23   m[mean 1.435 std 0.204]   gamma=0.993   elapsed 94s
+[train-mass] step   350/4000   train 6.0901   lr 4.98e-04   grad 0.85   m[mean 1.448 std 0.203]   gamma=0.991   elapsed 109s
+[train-mass] step   400/4000   train 6.0348   lr 4.97e-04   grad 1.95   m[mean 1.440 std 0.197]   gamma=0.991   elapsed 125s
+[train-mass] >>> eval @ 400: train 6.0433   val 6.2754   ppl 531.36
+[train-mass] step   450/4000   train 6.0109   lr 4.95e-04   grad 0.61   m[mean 1.438 std 0.204]   gamma=0.989   elapsed 149s
+[train-mass] step   500/4000   train 5.9576   lr 4.92e-04   grad 3.96   m[mean 1.446 std 0.206]   gamma=0.989   elapsed 164s
+[train-mass] step   550/4000   train 5.9277   lr 4.90e-04   grad 1.89   m[mean 1.439 std 0.201]   gamma=0.988   elapsed 181s
+[train-mass] step   600/4000   train 5.8702   lr 4.87e-04   grad 1.59   m[mean 1.436 std 0.200]   gamma=0.988   elapsed 197s
+[train-mass] >>> eval @ 600: train 5.8356   val 6.1319   ppl 460.32
+[train-mass] step   650/4000   train 5.8411   lr 4.83e-04   grad 5.15   m[mean 1.431 std 0.202]   gamma=0.986   elapsed 223s
+[train-mass] step   700/4000   train 5.7702   lr 4.79e-04   grad 2.96   m[mean 1.432 std 0.199]   gamma=0.986   elapsed 239s
+[train-mass] step   750/4000   train 5.7090   lr 4.75e-04   grad 1.29   m[mean 1.433 std 0.198]   gamma=0.985   elapsed 255s
+[train-mass] step   800/4000   train 5.6469   lr 4.70e-04   grad 2.05   m[mean 1.443 std 0.204]   gamma=0.984   elapsed 272s
+[train-mass] >>> eval @ 800: train 5.6180   val 6.0079   ppl 406.63
+[train-mass] step   850/4000   train 5.6057   lr 4.65e-04   grad 1.03   m[mean 1.433 std 0.197]   gamma=0.983   elapsed 298s
+[train-mass] step   900/4000   train 5.5779   lr 4.59e-04   grad 3.62   m[mean 1.424 std 0.198]   gamma=0.982   elapsed 315s
+[train-mass] step   950/4000   train 5.5641   lr 4.54e-04   grad 2.59   m[mean 1.428 std 0.200]   gamma=0.981   elapsed 332s
+[train-mass] step  1000/4000   train 5.4798   lr 4.47e-04   grad 2.68   m[mean 1.424 std 0.197]   gamma=0.980   elapsed 349s
+[train-mass] >>> eval @ 1000: train 5.4624   val 5.9206   ppl 372.63
+[train-mass] step  1050/4000   train 5.4577   lr 4.41e-04   grad 2.03   m[mean 1.437 std 0.200]   gamma=0.979   elapsed 376s
+[train-mass] step  1100/4000   train 5.4293   lr 4.34e-04   grad 1.79   m[mean 1.429 std 0.200]   gamma=0.978   elapsed 393s
+[train-mass] step  1150/4000   train 5.4297   lr 4.27e-04   grad 1.79   m[mean 1.431 std 0.204]   gamma=0.977   elapsed 411s
+[train-mass] step  1200/4000   train 5.3570   lr 4.19e-04   grad 4.11   m[mean 1.418 std 0.196]   gamma=0.976   elapsed 530s
+[train-mass] >>> eval @ 1200: train 15.0243   val 73.3575   ppl 72237732588934382436888057217024.00
+[train-mass] step  1250/4000   train nan   lr 4.12e-04   grad nan   m[mean nan std nan]   gamma=nan   elapsed 2478s
+[train-mass] step  1300/4000   train nan   lr 4.04e-04   grad nan   m[mean nan std nan]   gamma=nan   elapsed 4512s
+[train-mass] step  1350/4000   train nan   lr 3.95e-04   grad nan   m[mean nan std nan]   gamma=nan   elapsed 4526s
+[train-mass] step  1400/4000   train nan   lr 3.87e-04   grad nan   m[mean nan std nan]   gamma=nan   elapsed 4539s
+[train-mass] >>> eval @ 1400: train nan   val nan   ppl nan
+[train-mass] step  1450/4000   train nan   lr 3.78e-04   grad nan   m[mean nan std nan]   gamma=nan   elapsed 4559s
+[train-mass] step  1500/4000   train nan   lr 3.69e-04   grad nan   m[mean nan std nan]   gamma=nan   elapsed 4571s
+[train-mass] step  1550/4000   train nan   lr 3.60e-04   grad nan   m[mean nan std nan]   gamma=nan   elapsed 4584s
+[train-mass] step  1600/4000   train nan   lr 3.51e-04   grad nan   m[mean nan std nan]   gamma=nan   elapsed 4597s
+[train-mass] >>> eval @ 1600: train nan   val nan   ppl nan
+[train-mass] step  1650/4000   train nan   lr 3.41e-04   grad nan   m[mean nan std nan]   gamma=nan   elapsed 4617s
+[train-mass] step  1700/4000   train nan   lr 3.31e-04   grad nan   m[mean nan std nan]   gamma=nan   elapsed 4630s
+[train-mass] step  1750/4000   train nan   lr 3.22e-04   grad nan   m[mean nan std nan]   gamma=nan   elapsed 4642s
+[train-mass] step  1800/4000   train nan   lr 3.12e-04   grad nan   m[mean nan std nan]   gamma=nan   elapsed 4655s
+[train-mass] >>> eval @ 1800: train nan   val nan   ppl nan
+[train-mass] step  1850/4000   train nan   lr 3.02e-04   grad nan   m[mean nan std nan]   gamma=nan   elapsed 4675s
+[train-mass] step  1900/4000   train nan   lr 2.91e-04   grad nan   m[mean nan std nan]   gamma=nan   elapsed 4688s
+[train-mass] step  1950/4000   train nan   lr 2.81e-04   grad nan   m[mean nan std nan]   gamma=nan   elapsed 4701s
+[train-mass] step  2000/4000   train nan   lr 2.71e-04   grad nan   m[mean nan std nan]   gamma=nan   elapsed 4713s
+[train-mass] >>> eval @ 2000: train nan   val nan   ppl nan
+[train-mass] step  2050/4000   train nan   lr 2.61e-04   grad nan   m[mean nan std nan]   gamma=nan   elapsed 4733s
+[train-mass] step  2100/4000   train nan   lr 2.50e-04   grad nan   m[mean nan std nan]   gamma=nan   elapsed 4746s
+[train-mass] step  2150/4000   train nan   lr 2.40e-04   grad nan   m[mean nan std nan]   gamma=nan   elapsed 4759s
+[train-mass] step  2200/4000   train nan   lr 2.30e-04   grad nan   m[mean nan std nan]   gamma=nan   elapsed 4771s
+[train-mass] >>> eval @ 2200: train nan   val nan   ppl nan
+[train-mass] step  2250/4000   train nan   lr 2.19e-04   grad nan   m[mean nan std nan]   gamma=nan   elapsed 4791s
+[train-mass] step  2300/4000   train nan   lr 2.09e-04   grad nan   m[mean nan std nan]   gamma=nan   elapsed 4804s
+[train-mass] step  2350/4000   train nan   lr 1.99e-04   grad nan   m[mean nan std nan]   gamma=nan   elapsed 4817s
+[train-mass] step  2400/4000   train nan   lr 1.89e-04   grad nan   m[mean nan std nan]   gamma=nan   elapsed 4830s
+[train-mass] >>> eval @ 2400: train nan   val nan   ppl nan
+[train-mass] step  2450/4000   train nan   lr 1.79e-04   grad nan   m[mean nan std nan]   gamma=nan   elapsed 4854s
+[train-mass] step  2500/4000   train nan   lr 1.69e-04   grad nan   m[mean nan std nan]   gamma=nan   elapsed 4869s
+[train-mass] step  2550/4000   train nan   lr 1.59e-04   grad nan   m[mean nan std nan]   gamma=nan   elapsed 4883s
+[train-mass] step  2600/4000   train nan   lr 1.50e-04   grad nan   m[mean nan std nan]   gamma=nan   elapsed 4899s
+[train-mass] >>> eval @ 2600: train nan   val nan   ppl nan
+[train-mass] step  2650/4000   train nan   lr 1.40e-04   grad nan   m[mean nan std nan]   gamma=nan   elapsed 4922s
+[train-mass] step  2700/4000   train nan   lr 1.31e-04   grad nan   m[mean nan std nan]   gamma=nan   elapsed 4936s
+[train-mass] step  2750/4000   train nan   lr 1.22e-04   grad nan   m[mean nan std nan]   gamma=nan   elapsed 4952s
+[train-mass] step  2800/4000   train nan   lr 1.13e-04   grad nan   m[mean nan std nan]   gamma=nan   elapsed 4967s
+[train-mass] >>> eval @ 2800: train nan   val nan   ppl nan
+[train-mass] step  2850/4000   train nan   lr 1.05e-04   grad nan   m[mean nan std nan]   gamma=nan   elapsed 4990s
+[train-mass] step  2900/4000   train nan   lr 9.66e-05   grad nan   m[mean nan std nan]   gamma=nan   elapsed 5006s
+[train-mass] step  2950/4000   train nan   lr 8.86e-05   grad nan   m[mean nan std nan]   gamma=nan   elapsed 5021s
+[train-mass] step  3000/4000   train nan   lr 8.08e-05   grad nan   m[mean nan std nan]   gamma=nan   elapsed 5038s
+[train-mass] >>> eval @ 3000: train nan   val nan   ppl nan
+[train-mass] step  3050/4000   train nan   lr 7.34e-05   grad nan   m[mean nan std nan]   gamma=nan   elapsed 5062s
+[train-mass] step  3100/4000   train nan   lr 6.62e-05   grad nan   m[mean nan std nan]   gamma=nan   elapsed 5077s
+[train-mass] step  3150/4000   train nan   lr 5.94e-05   grad nan   m[mean nan std nan]   gamma=nan   elapsed 5092s
+[train-mass] step  3200/4000   train nan   lr 5.28e-05   grad nan   m[mean nan std nan]   gamma=nan   elapsed 5108s
+[train-mass] >>> eval @ 3200: train nan   val nan   ppl nan
+[train-mass] step  3250/4000   train nan   lr 4.67e-05   grad nan   m[mean nan std nan]   gamma=nan   elapsed 5133s
+[train-mass] step  3300/4000   train nan   lr 4.08e-05   grad nan   m[mean nan std nan]   gamma=nan   elapsed 5149s
+[train-mass] step  3350/4000   train nan   lr 3.53e-05   grad nan   m[mean nan std nan]   gamma=nan   elapsed 5166s
+[train-mass] step  3400/4000   train nan   lr 3.02e-05   grad nan   m[mean nan std nan]   gamma=nan   elapsed 5182s
+[train-mass] >>> eval @ 3400: train nan   val nan   ppl nan
+[train-mass] step  3450/4000   train nan   lr 2.55e-05   grad nan   m[mean nan std nan]   gamma=nan   elapsed 5210s
+[train-mass] step  3500/4000   train nan   lr 2.11e-05   grad nan   m[mean nan std nan]   gamma=nan   elapsed 5227s
+[train-mass] step  3550/4000   train nan   lr 1.72e-05   grad nan   m[mean nan std nan]   gamma=nan   elapsed 5243s
+[train-mass] step  3600/4000   train nan   lr 1.36e-05   grad nan   m[mean nan std nan]   gamma=nan   elapsed 5260s
+[train-mass] >>> eval @ 3600: train nan   val nan   ppl nan
+[train-mass] step  3650/4000   train nan   lr 1.05e-05   grad nan   m[mean nan std nan]   gamma=nan   elapsed 5287s
+[train-mass] step  3700/4000   train nan   lr 7.70e-06   grad nan   m[mean nan std nan]   gamma=nan   elapsed 5303s
+[train-mass] step  3750/4000   train nan   lr 5.36e-06   grad nan   m[mean nan std nan]   gamma=nan   elapsed 5321s
+[train-mass] step  3800/4000   train nan   lr 3.44e-06   grad nan   m[mean nan std nan]   gamma=nan   elapsed 5339s
+[train-mass] >>> eval @ 3800: train nan   val nan   ppl nan
+[train-mass] step  3850/4000   train nan   lr 1.95e-06   grad nan   m[mean nan std nan]   gamma=nan   elapsed 5372s
+[train-mass] step  3900/4000   train nan   lr 8.71e-07   grad nan   m[mean nan std nan]   gamma=nan   elapsed 5394s
+[train-mass] step  3950/4000   train nan   lr 2.22e-07   grad nan   m[mean nan std nan]   gamma=nan   elapsed 5414s
+[train-mass] step  4000/4000   train nan   lr 8.54e-11   grad nan   m[mean nan std nan]   gamma=nan   elapsed 5433s
+[train-mass] >>> eval @ 4000: train nan   val nan   ppl nan
+[train-mass] done in 5444s
+[train-mass] saved checkpoint -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/sarf_mass_variant/results/splm_sarfmass_logfreq_shakespeare_ckpt_latest.pt
+[train-mass] saved loss curve -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/sarf_mass_variant/results/splm_sarfmass_logfreq_shakespeare_loss_curve.png
+[train-mass] saved summary -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/sarf_mass_variant/results/splm_sarfmass_logfreq_shakespeare_summary.md
