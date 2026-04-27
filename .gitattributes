@@ -81,6 +81,6 @@ notebooks/conservative_arch/multi_seed/results/**/*.png filter=lfs diff=lfs merg
 notebooks/conservative_arch/multi_seed/results/**/*.npz filter=lfs diff=lfs merge=lfs -text
 notebooks/conservative_arch/multi_seed/results/**/*.jsonl filter=lfs diff=lfs merge=lfs -text
 notebooks/conservative_arch/multi_seed/results/**/*.json filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/energy_drift/energy_drift_diagnostic.py filter=lfs diff=lfs merge=lfs -text
 notebooks/conservative_arch/energy_drift/extract_energy_states.py filter=lfs diff=lfs merge=lfs -text
 notebooks/conservative_arch/energy_drift/README.md filter=lfs diff=lfs merge=lfs -text
-notebooks/conservative_arch/energy_drift/energy_drift_diagnostic.py filter=lfs diff=lfs merge=lfs -text
