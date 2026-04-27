@@ -139,6 +139,43 @@ natural home for the empirical validation of their content.
 | `Semantic_Simulator_RL_Calibration_Programme.md`  | §8.8 ((D1)–(D5) destruction requirements), §14.17 (Open follow-ups bridge), §16 ("Empirical scope: the structure lifecycle") — programme-level memo, milestones M0–M6 + v1.5/v2/v3 lifecycle extensions |
 | `Semantic_Simulator_EOM.md`                       | §8.8 ((D1)–(D5) destruction requirements), §14.17 (Open follow-ups bridge), §16 ("Empirical scope: the structure lifecycle") — v0 equations of motion, parameter classification, pseudocode |
 
+#### Dynamical-simulation expressivity programme — formal proofs and prioritised catalogue
+
+The four documents below extend the v0 dynamical-simulation programme of
+`Semantic_Simulator_RL_Calibration_Programme.md` and
+`Semantic_Simulator_EOM.md` with **formal expressivity bounds** that pin
+the framework on both sides of the Chomsky hierarchy and a **prioritised
+experimental catalogue** that operationalises them. Two are short
+technical notes that prove specific theorems; two are longer planning
+documents that organise the staged research programme. Together they
+back the §16 ("Empirical scope: the structure lifecycle") forward-pointer
+and motivate the multi-seed (E1) and energy-drift (E3) experiments
+catalogued under
+[`notebooks/conservative_arch/multi_seed/`](notebooks/conservative_arch/multi_seed/)
+and
+[`notebooks/conservative_arch/energy_drift/`](notebooks/conservative_arch/energy_drift/)
+below.
+
+| File                                              | Role                                                                                                                                                                                                                                                                              |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Expressivity_Bounds_For_v0_Simulator.md`         | Formal short note: the v0 simulator class accepts **at most regular languages**, by a four-step argument (phase-space-capacity bound $\dim M \cdot \log_2(L/\epsilon)$ bits, exponential information contraction at damping rate $\gamma$, smooth non-chaotic $V$ ruling out the Siegelmann–Sontag continuous-flow construction, and consequent acceptance class $\subseteq$ REG). Derives the predicted $\mathrm{Dyck}_n$ collapse depth $D^\ast$ in closed form; supplies one-paragraph mathematical-apparatus sketches for the v1.5 / v2 / v3 extensions. |
+| `MCS_Reduction_For_v3_Composite.md`               | Formal proof of the framework's *upper* expressivity boundary: the composite v0+v1.5+v2+v3 simulator, under explicit boundedness assumptions on its operator algebra, generates **exactly** the **mildly context-sensitive** class — equivalently LCFRS / MCFG of bounded fan-out and bounded rank, the empirically established class for human language (Joshi 1985, Shieber 1985). The reduction is constructive in both directions and verifies the four classical MCS criteria of Joshi (1985); §5.5 catalogues the structural and architectural reasons v3 cannot be eliminated. |
+| `Advancing_The_Dynamic_Simulation_Model.md`       | Conceptual scaffold for the v1.5 / v2 / v3 extensions: maps each onto a mature mathematical apparatus (salient decay → dissipative semigroups and discounted MDPs; creation/destruction → Fock space and the canonical creation/annihilation algebra; execution → Lie groups acting via non-abelian gauge fields), specifies the falsifying-experiment battery ($\mathrm{Dyck}_n$ + topic-shift, $\mathrm{Dyck}_n$ + let-binding, cross-serial $a^n b^n c^n$, bounded copy $ww$, 2-counter), and identifies the composite as a classical-mechanical analogue of a Haag–Kastler-style local operator algebra. |
+| `Next_Model_Experiments_for_SPLM.md`              | Prioritised, actionable catalogue of experiments that either strengthen the framework's applicability (sections A–F: multi-seed variance, scaling, integrator ablation, expressivity falsifiers, capacity sweeps, energy-drift diagnostic) or measurably improve SPLM's performance. Each item is concrete (what to run, what to measure, why it matters). The source of truth for the **E1** multi-seed harness and the **E3** energy-drift diagnostic shipped under `notebooks/conservative_arch/`. |
+
+`Expressivity_Bounds_For_v0_Simulator.md` and
+`MCS_Reduction_For_v3_Composite.md` are formal proofs whose claims
+directly back the framework's expressivity statements;
+`Advancing_The_Dynamic_Simulation_Model.md` and
+`Next_Model_Experiments_for_SPLM.md` are programme-level planning
+artifacts in the same family as the two notes immediately above and are
+included so that readers who follow the paper's `\path{...}` pointers,
+or want to trace the design rationale of the experiments shipped under
+[`notebooks/conservative_arch/multi_seed/`](notebooks/conservative_arch/multi_seed/)
+and
+[`notebooks/conservative_arch/energy_drift/`](notebooks/conservative_arch/energy_drift/),
+can locate them.
+
 ### `notebooks/` — reproducibility
 
 #### `notebooks/stp_loss/energy_landscape_validation.ipynb`
@@ -384,6 +421,97 @@ for the full list):
   [`energetic_minima/README.md`](notebooks/conservative_arch/energetic_minima/README.md)
   documents the variant flags, training schedule, and full attractor
   pipeline.
+- **`multi_seed/`.** Multi-seed variance harness — the **E1** experiment
+  of the
+  [`Next_Model_Experiments_for_SPLM.md`](companion_notes/Next_Model_Experiments_for_SPLM.md)
+  programme — that closes the *"no error bars"* gap inherited by every
+  earlier single-seed SPLM perplexity number. Re-runs three trainers
+  (the matched GPT-2-micro baseline `matched_baseline`, the previous
+  SPLM flagship `splm_sarfmass_logfreq`, and the new
+  LayerNorm-after-step variant `splm_em_ln`) at five distinct random
+  seeds each on Tiny Shakespeare and aggregates per-seed training logs
+  into a curated multi-seed report with mean ± std, pairwise Welch
+  t-tests with 95 % CIs, per-seed loss-curve overlays, and a
+  divergence-rate diagnostic that stratifies architectures by
+  gradient-norm trajectory. Ships
+  [`multi_seed_runner.py`](notebooks/conservative_arch/multi_seed/multi_seed_runner.py)
+  (subprocess-driven N-seed launcher; one model spec per row in
+  `MODEL_SPECS`, model-agnostic — adding a variant is a 5-line entry),
+  [`multi_seed_aggregator.py`](notebooks/conservative_arch/multi_seed/multi_seed_aggregator.py)
+  (NaN-aware mean / std / min / max + Welch's t-test + overlay plots
+  that draw diverged seeds as dotted exclusions from the mean), and
+  [`e1_divergence_diagnostic.py`](notebooks/conservative_arch/multi_seed/e1_divergence_diagnostic.py)
+  (per-seed first-NaN step + grad-norm trajectory tabulation, with a
+  stratified figure overlaying training NLL and grad-norm for all three
+  architectures). Headline finding (`results/E1_shakespeare/`,
+  N = 5 seeds): `splm_em_ln` reaches val ppl **$95.33 \pm 4.44$**
+  versus `matched_baseline` **$149.80 \pm 7.21$** — a **36.4 %**
+  relative improvement at **11.5 %** fewer parameters
+  ($7.12$ M vs $8.05$ M), Welch's $t = 14.4$, two-sided p-value
+  $< 10^{-5}$, with 95 % CI on the gap **$[+45.4,\,+63.5]$ ppl**
+  (well-separated from zero); the worst `em_ln` seed (98.78) still
+  beats the best baseline seed (141.80) by ~30 %. The previous
+  flagship `splm_sarfmass_logfreq` is **structurally falsified** at this
+  corpus scale: 2 of 3 seeds NaN-diverge at training steps 1250 and
+  3250 with *modest* gradient norms (5–13), which together with the
+  stable LN-after-step run-mate establishes that the failure mode is
+  **integrator-side state-space drift**, not gradient blow-up, and that
+  the LayerNorm-after-step projection onto $S^{d-1}$ is the minimal
+  intervention that restores stability without sacrificing perplexity.
+  The curated narrative report
+  [`results/E1_shakespeare/E1_report.md`](notebooks/conservative_arch/multi_seed/results/E1_shakespeare/E1_report.md)
+  is the canonical write-up; the auto-generated machine-friendly
+  companion `E1_shakespeare_report.md` is regenerable from per-seed
+  logs in ~20 seconds. The in-folder
+  [`multi_seed/README.md`](notebooks/conservative_arch/multi_seed/README.md)
+  documents the runner / aggregator / diagnostic interface and is the
+  template for adding additional model specs (E2 width sweep,
+  E3 integrator ablation, etc.). All 13 per-seed checkpoints, training
+  logs, and loss curves (11 finite + 2 NaN-diverged seeds — the latter
+  retained because they are themselves the falsifying evidence for the
+  divergence-rate diagnostic) are committed under Git LFS so that the
+  aggregator and diagnostic steps alone reproduce the headline table
+  from shipped artifacts.
+- **`energy_drift/`.** Eval-only diagnostic that opens a new
+  *architecture-discriminating* axis for the SPLM — the **E3**
+  experiment of the
+  [`Next_Model_Experiments_for_SPLM.md`](companion_notes/Next_Model_Experiments_for_SPLM.md)
+  programme (section C2). Computes the SPLM Hamiltonian energy
+  $H_\ell = \tfrac{1}{2}\,\mathfrak{m}\,\|v_\ell\|^{2} + V_\theta(\xi_\ell, h_\ell)$
+  at every layer of an SPLM forward pass and reports the linear drift
+  slope $\partial H/\partial \ell$ across depth and the oscillation
+  bandwidth $\max_\ell H_\ell - \min_\ell H_\ell$ around the layer-mean.
+  The expectation, derived directly from the integrator class, is
+  three-way separable: a **velocity-Verlet** flow ($L=16,\,\Delta t=0.5$)
+  is symplectic at $\gamma = 0$ and $O(\Delta t^4)$-bounded in energy
+  at finite damping, so $H_\ell$ should oscillate around an
+  exponentially-damped envelope; an **explicit Euler** flow ($L=8$) is
+  first-order and should exhibit a systematic drift growing linearly
+  with depth; a **transformer** is not derived from any potential and
+  should show no structure at all when its hidden-state flow is forced
+  through the same diagnostic with a fitted $V_\psi$ proxy. Ships
+  [`extract_energy_states.py`](notebooks/conservative_arch/energy_drift/extract_energy_states.py)
+  (re-runs the SPLM forward pass on the §1 e-init test corpus and
+  saves $(h_\ell, v_\ell, V_\theta(\xi_\ell, h_\ell), \tfrac{1}{2}m\|v_\ell\|^2)$
+  per layer for one checkpoint at a time; supports parent-SPLM Euler,
+  `sarf_mass_variant` Euler + per-token mass, and `symplectic_variant`
+  velocity-Verlet) and
+  [`energy_drift_diagnostic.py`](notebooks/conservative_arch/energy_drift/energy_drift_diagnostic.py)
+  (per-variant linear drift fit with 95 % CI, oscillation-bandwidth
+  tabulation, overlay plots of $H_\ell$, $\tfrac{1}{2}m\|v\|^2$ and
+  $V_\theta$, and a markdown comparison report). The diagnostic is
+  forward-pass-only on existing checkpoints and complements the
+  *fixed-point* analysis of [`attractor_analysis/`](notebooks/conservative_arch/attractor_analysis/)
+  (where are the basins of $V_\theta$?) and the *depth-axis existence*
+  question of `shared_potential_fit.py` (is there *some* scalar
+  potential whose gradient explains the layer updates?) with a
+  *flow-conservation* analysis (does the *learned* $V_\theta$ obey the
+  conservation law it was designed to?). The in-folder
+  [`energy_drift/README.md`](notebooks/conservative_arch/energy_drift/README.md)
+  documents the variant flags, the comparison output layout, and the
+  expected energy-drift signatures for each integrator. Production
+  results ship once E1 frees MPS and the symplectic-variant checkpoint
+  is in hand (tracked task `e3_run_production`).
 
 ---
 
@@ -554,6 +682,79 @@ python make_compare_figure.py   # produces results/landscape3d_compare_four_vari
 
 See [`notebooks/conservative_arch/energetic_minima/README.md`](notebooks/conservative_arch/energetic_minima/README.md)
 for variant flags, training schedule, and expected outputs.
+
+#### Multi-seed variance harness (E1 of `Next_Model_Experiments_for_SPLM.md`)
+
+```bash
+cd notebooks/conservative_arch
+
+# 0. (Once) Precompute the surprisal lookup table for SPLM logfreq mass.
+python sarf_mass_variant/compute_unigram_frequencies.py
+
+# 1. Smoke test (single seed, ~1-2 minutes total).
+python multi_seed/multi_seed_runner.py \
+    --mode smoke --n-seeds 1 --models splm_sarfmass_logfreq
+
+# 2. E1 production: 5 seeds x 3 models on Tiny Shakespeare
+#    (~7-8 hours wall-clock on Apple MPS; runs sequentially).
+python multi_seed/multi_seed_runner.py \
+    --mode shakespeare --n-seeds 5 \
+    --models splm_em_ln,splm_sarfmass_logfreq,matched_baseline
+
+# 3. Aggregate logs into report + overlay plots + divergence diagnostic.
+python multi_seed/multi_seed_aggregator.py --tag E1_shakespeare
+python multi_seed/e1_divergence_diagnostic.py --tag E1_shakespeare
+```
+
+The shipped `results/E1_shakespeare/` includes 13 per-seed checkpoints,
+training logs, and loss curves under Git LFS (5 seeds for
+`matched_baseline` and `splm_em_ln`, 3 for `splm_sarfmass_logfreq`
+before the divergence-rate diagnostic short-circuited the sweep), plus
+the curated [`E1_report.md`](notebooks/conservative_arch/multi_seed/results/E1_shakespeare/E1_report.md)
+narrative. Re-running step 3 alone reproduces the mean / std /
+Welch-t table and the overlay figures from the shipped per-seed logs in
+**~20 seconds**. See
+[`notebooks/conservative_arch/multi_seed/README.md`](notebooks/conservative_arch/multi_seed/README.md)
+for the model-spec interface and the recipe for adding new variants
+(E2 width sweep, E3 integrator ablation, etc.).
+
+#### Energy-drift diagnostic (E3 of `Next_Model_Experiments_for_SPLM.md`)
+
+```bash
+cd notebooks/conservative_arch
+
+# 1. Extract energy states for each SPLM checkpoint
+#    (one invocation per variant; runs in torch.no_grad() forward mode).
+python energy_drift/extract_energy_states.py \
+    --variant euler \
+    --ckpt results/splm_shakespeare_ckpt_latest.pt \
+    --label splm_euler_L8 \
+    --out_npz energy_drift/results/splm_euler_L8.npz
+
+python energy_drift/extract_energy_states.py \
+    --variant sarfmass \
+    --ckpt sarf_mass_variant/results/splm_sarfmass_logfreq_shakespeare_ckpt_latest.pt \
+    --label splm_sarfmass_L8 \
+    --logfreq sarf_mass_variant/results/logfreq_surprisal.npy \
+    --out_npz energy_drift/results/splm_sarfmass_L8.npz
+
+# (analogous --variant symplectic call once the symplectic_variant
+#  checkpoint is in hand; see energy_drift/README.md for the full
+#  command sequence.)
+
+# 2. Cross-variant comparison: drift slope, oscillation bandwidth,
+#    overlay plots of H_l, kinetic, and potential per layer.
+python energy_drift/energy_drift_diagnostic.py \
+    --inputs splm_euler_L8.npz,splm_sarfmass_L8.npz,splm_verlet_L16_dt05.npz \
+    --tag E3_splm_compare
+```
+
+The diagnostic is forward-pass-only on existing checkpoints; no
+retraining is required. See
+[`notebooks/conservative_arch/energy_drift/README.md`](notebooks/conservative_arch/energy_drift/README.md)
+for the variant flags, the expected drift signatures for each
+integrator, and the relationship to `shared_potential_fit.py` and
+`attractor_analysis/`.
 
 ---
 
