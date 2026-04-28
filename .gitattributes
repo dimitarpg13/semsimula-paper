@@ -81,6 +81,12 @@ notebooks/conservative_arch/multi_seed/results/**/*.png filter=lfs diff=lfs merg
 notebooks/conservative_arch/multi_seed/results/**/*.npz filter=lfs diff=lfs merge=lfs -text
 notebooks/conservative_arch/multi_seed/results/**/*.jsonl filter=lfs diff=lfs merge=lfs -text
 notebooks/conservative_arch/multi_seed/results/**/*.json filter=lfs diff=lfs merge=lfs -text
-notebooks/conservative_arch/energy_drift/energy_drift_diagnostic.py filter=lfs diff=lfs merge=lfs -text
-notebooks/conservative_arch/energy_drift/extract_energy_states.py filter=lfs diff=lfs merge=lfs -text
-notebooks/conservative_arch/energy_drift/README.md filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/energy_drift/results/E3_splm_em_ln_compare filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/energy_drift/results/splm_em_ln_L8_seed0.npz filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/energy_drift/results/splm_euler_L8.npz filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/energy_drift/results/splm_verlet_L16_dt05.npz filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/symplectic_variant/model_symplectic.py filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/symplectic_variant/README.md filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/symplectic_variant/results filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/symplectic_variant/train_splm_symplectic.py filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/symplectic_variant/trajectory_extraction_symplectic.py filter=lfs diff=lfs merge=lfs -text
