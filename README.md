@@ -494,8 +494,9 @@ for the full list):
   (re-runs the SPLM forward pass on the §1 e-init test corpus and
   saves $(h_\ell, v_\ell, V_\theta(\xi_\ell, h_\ell), \tfrac{1}{2}m\|v_\ell\|^2)$
   per layer for one checkpoint at a time; supports parent-SPLM Euler,
-  `sarf_mass_variant` Euler + per-token mass, and `symplectic_variant`
-  velocity-Verlet) and
+  `sarf_mass_variant` Euler + per-token mass, `symplectic_variant`
+  velocity-Verlet, and the production `energetic_minima/model_ln.py`
+  Euler + per-token mass + LayerNorm-after-step) and
   [`energy_drift_diagnostic.py`](notebooks/conservative_arch/energy_drift/energy_drift_diagnostic.py)
   (per-variant linear drift fit with 95 % CI, oscillation-bandwidth
   tabulation, overlay plots of $H_\ell$, $\tfrac{1}{2}m\|v\|^2$ and
@@ -509,9 +510,29 @@ for the full list):
   conservation law it was designed to?). The in-folder
   [`energy_drift/README.md`](notebooks/conservative_arch/energy_drift/README.md)
   documents the variant flags, the comparison output layout, and the
-  expected energy-drift signatures for each integrator. Production
-  results ship once E1 frees MPS and the symplectic-variant checkpoint
-  is in hand (tracked task `e3_run_production`).
+  expected energy-drift signatures for each integrator. The production
+  E3 run ships under
+  [`energy_drift/results/E3_splm_em_ln_compare/`](notebooks/conservative_arch/energy_drift/results/E3_splm_em_ln_compare/)
+  and is a 3-way comparison `parent_euler_L8` × `verlet_L16_dt05` ×
+  `em_ln_L8_seed0` (the LayerNorm-after-step production SPLM, val ppl
+  88.63 at seed 0). The originally-planned `sarfmass logfreq` (no-LN)
+  column was dropped because the multi-seed E1 sweep falsified its
+  stability (2/3 NaN-divergent seeds at modest gradient norms); using a
+  single-seed energy trace from a model the rest of the repo has
+  invalidated would not be informative. The headline finding is that
+  `em_ln` uses the explicit-Euler integrator yet exhibits a Verlet-like
+  energy-conservation signature: bandwidth-to-scale ratio $7.0 / 10.0 =
+  70\,\%$, versus $145.7 / 76.6 = 190\,\%$ for the bare Euler model and
+  $91.4 / 205.5 = 45\,\%$ for the genuine Verlet integrator. The
+  mechanism is the LayerNorm projection
+  $h_{l+1} \leftarrow \mathrm{LN}(h_l + \Delta t\,v_{l+1})$, which clips
+  the trajectory's dynamic range without contributing any potential
+  gradient; the production SPLM is consequently *not* a clean
+  Hamiltonian flow but a "cheating" symplectic integrator whose
+  stability comes from compactification of the state space rather than
+  from symplectic structure of the integrator. See
+  [`E3_splm_em_ln_compare_report.md`](notebooks/conservative_arch/energy_drift/results/E3_splm_em_ln_compare/E3_splm_em_ln_compare_report.md)
+  for the full per-variant table, overlay figures, and caveats.
 
 ---
 
@@ -720,11 +741,17 @@ for the model-spec interface and the recipe for adding new variants
 
 #### Energy-drift diagnostic (E3 of `Next_Model_Experiments_for_SPLM.md`)
 
+The production E3 comparison is `parent_euler_L8` × `verlet_L16_dt05` ×
+`em_ln_L8_seed0` (LayerNorm-after-step SPLM, val ppl 88.63 at seed 0,
+the production-best variant of the multi-seed E1 sweep). The originally
+planned `sarfmass logfreq` (no-LN) column is omitted: E1 multi-seed
+falsified its stability (2/3 NaN-divergent seeds), so a single-seed
+energy trace from it is not representative.
+
 ```bash
 cd notebooks/conservative_arch
 
-# 1. Extract energy states for each SPLM checkpoint
-#    (one invocation per variant; runs in torch.no_grad() forward mode).
+# 1. Extract energy states for the three production SPLM checkpoints.
 python energy_drift/extract_energy_states.py \
     --variant euler \
     --ckpt results/splm_shakespeare_ckpt_latest.pt \
@@ -732,29 +759,37 @@ python energy_drift/extract_energy_states.py \
     --out_npz energy_drift/results/splm_euler_L8.npz
 
 python energy_drift/extract_energy_states.py \
-    --variant sarfmass \
-    --ckpt sarf_mass_variant/results/splm_sarfmass_logfreq_shakespeare_ckpt_latest.pt \
-    --label splm_sarfmass_L8 \
+    --variant symplectic \
+    --ckpt symplectic_variant/results/splm_sym_logfreq_shakespeare_L16_dt05_ckpt_latest.pt \
+    --label splm_verlet_L16_dt05 \
     --logfreq sarf_mass_variant/results/logfreq_surprisal.npy \
-    --out_npz energy_drift/results/splm_sarfmass_L8.npz
+    --out_npz energy_drift/results/splm_verlet_L16_dt05.npz
 
-# (analogous --variant symplectic call once the symplectic_variant
-#  checkpoint is in hand; see energy_drift/README.md for the full
-#  command sequence.)
+python energy_drift/extract_energy_states.py \
+    --variant em_ln \
+    --ckpt multi_seed/results/E1_shakespeare/splm_em_ln/seed_0/em_ln_shakespeare_ckpt_latest.pt \
+    --label splm_em_ln_L8_seed0 \
+    --logfreq sarf_mass_variant/results/logfreq_surprisal.npy \
+    --out_npz energy_drift/results/splm_em_ln_L8_seed0.npz
 
 # 2. Cross-variant comparison: drift slope, oscillation bandwidth,
 #    overlay plots of H_l, kinetic, and potential per layer.
 python energy_drift/energy_drift_diagnostic.py \
-    --inputs splm_euler_L8.npz,splm_sarfmass_L8.npz,splm_verlet_L16_dt05.npz \
-    --tag E3_splm_compare
+    --inputs splm_euler_L8.npz,splm_verlet_L16_dt05.npz,splm_em_ln_L8_seed0.npz \
+    --tag E3_splm_em_ln_compare
 ```
 
-The diagnostic is forward-pass-only on existing checkpoints; no
-retraining is required. See
+The full pipeline finishes in under three minutes on MPS. The diagnostic
+is forward-pass-only on existing checkpoints; no retraining is required.
+See
 [`notebooks/conservative_arch/energy_drift/README.md`](notebooks/conservative_arch/energy_drift/README.md)
 for the variant flags, the expected drift signatures for each
-integrator, and the relationship to `shared_potential_fit.py` and
-`attractor_analysis/`.
+integrator, the production-result interpretation, and the relationship
+to `shared_potential_fit.py` and `attractor_analysis/`. If you want to
+run the diagnostic on the original `sarfmass logfreq` no-LN checkpoint
+as an ablation, the syntax is documented in the in-folder README; any
+conclusion drawn from such a single-seed run must be qualified by the
+E1 multi-seed instability finding.
 
 ---
 

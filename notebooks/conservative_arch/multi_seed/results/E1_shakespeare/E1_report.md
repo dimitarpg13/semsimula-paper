@@ -217,10 +217,22 @@ What it does *not* yet show (deferred to E3 / Dyck production):
   `ln_after_step = True, ln_affine = False` until / unless an alternative
   stabiliser is shown to match it. (`splm_sarfmass_logfreq` is retained only
   as a baseline to motivate the LN intervention.)
-* **E3 production sweep.** Once MPS is free, run the planned three-way
-  comparison: Euler (`L = 8`), `sarfmass_logfreq` (`L = 8`),
-  Verlet (`L = 16, dt = 0.5`), all under `em_ln` LN-after-step where
-  applicable. (Pending task `e3_run_production`.)
+* **E3 production sweep.** *Completed 2026-04-27.* The originally-planned
+  three-way comparison `parent_euler_L8 × sarfmass_logfreq × verlet` was
+  revised to `parent_euler_L8 × verlet_L16_dt05 × em_ln_L8_seed0` in light
+  of the divergence-rate finding above: any single-seed energy trace from
+  `splm_sarfmass_logfreq` would not be representative of a model class with
+  a 66.67 % per-seed divergence rate. The production E3 column was
+  reassigned to the production-best `em_ln` (LayerNorm-after-step,
+  val ppl 88.63 at seed 0). Headline finding: `em_ln` uses the
+  explicit-Euler integrator yet exhibits a Verlet-like energy-conservation
+  signature (bandwidth-to-scale 70 % vs 190 % bare Euler vs 45 % genuine
+  Verlet), driven by the LN projection clipping the trajectory's dynamic
+  range rather than by symplectic structure of the integrator.
+  Artifacts:
+  [`notebooks/conservative_arch/energy_drift/results/E3_splm_em_ln_compare/`](../../../energy_drift/results/E3_splm_em_ln_compare/);
+  full interpretation in
+  [`E3_splm_em_ln_compare_report.md`](../../../energy_drift/results/E3_splm_em_ln_compare/E3_splm_em_ln_compare_report.md).
 * **Dyck-n expressivity experiment.** Implement the corpus generator and
   matched-parameter / matched-compute comparison vs a tiny
   transformer / LSTM. Target completion ~1 week.

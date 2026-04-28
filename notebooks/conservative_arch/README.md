@@ -433,13 +433,24 @@ Figures produced by step 6 and used in the paper:
 **Step 4 (DONE):** Token-direction coordinate-robustness check completed -- see
 [`results/token_direction_summary.md`](results/token_direction_summary.md).
 
-**Remaining open question:**
+**Status note (April 2026).** The §14.13 SARF-faithful and §14.14
+SARF + per-token-mass ablations (sections above) and the §14.x
+shared-$V_\psi$ / token-direction diagnostics summarised here have all
+been incorporated into the published paper v3 (Zenodo
+[10.5281/zenodo.19819861](https://doi.org/10.5281/zenodo.19819861)).
+The follow-on multi-seed variance harness (E1) and energy-drift
+diagnostic (E3) shipped on 2026-04-27; see
+[`multi_seed/`](multi_seed/) and [`energy_drift/`](energy_drift/)
+for the production results.
+
+**Remaining open questions (queued for paper v4):**
 
 1. **SPLM scale sweep** -- does the +0.90 median (depth direction) / +0.51
    median (token direction) hold at larger $d$, longer training, and larger
    corpora (TinyStories, WikiText)?  Alternatively, does it *improve* toward
    the oracle 1.00 as capacity grows, and does the token-direction fit
    approach 1.0 under a context-aware $V_\psi(\xi, h)$ oracle?  This would
-   complete the scaling-law story on the positive-control side and is the
-   one remaining follow-up before incorporating the results into the v2
-   paper.
+   complete the scaling-law story on the positive-control side; queued as
+   future work behind the dynamical-order rejection test
+   ([`docs/first_order_ODE_rejection_pre-registered_protocol.md`](../../docs/first_order_ODE_rejection_pre-registered_protocol.md))
+   and the Dyck-$n$ expressivity experiment.
