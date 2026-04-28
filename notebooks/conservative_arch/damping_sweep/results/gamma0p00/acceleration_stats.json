@@ -1,0 +1,10 @@
+{
+  "n_triplets": 1314,
+  "frac_a_par_negative": 0.9665144596651446,
+  "mean_ratio_apar_aperp": 4.063977241516113,
+  "median_ratio_apar_aperp": 2.4225828647613525,
+  "natural_mean_a_squared": 9789.1983203125,
+  "perm_mean_a_squared": 13924.910193554688,
+  "permutation_z": 3.1825615340778612,
+  "n_perm_per_sentence": 50
+}

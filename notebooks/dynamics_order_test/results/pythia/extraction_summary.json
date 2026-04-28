@@ -1,0 +1,24 @@
+{
+  "model": "EleutherAI/pythia-160m",
+  "device": "mps",
+  "n_sentences": 50,
+  "n_domains": 5,
+  "hidden_dim": 768,
+  "num_layers": 12,
+  "n_params": 162322944,
+  "max_length": 256,
+  "n_quadruples_total": 1219,
+  "token_lengths": {
+    "min": 17,
+    "max": 36,
+    "mean": 27.38,
+    "median": 27.0
+  },
+  "quadruples_per_sentence": {
+    "min": 14,
+    "max": 33,
+    "mean": 24.38
+  },
+  "skipped_sentences_too_short": [],
+  "extract_seconds": 9.6545991897583
+}

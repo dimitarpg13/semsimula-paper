@@ -1,0 +1,36 @@
+{
+  "n_quadruples": 1264,
+  "k_values": [
+    1,
+    2,
+    3
+  ],
+  "R1_mean": 2799.239990234375,
+  "R1_sem": 129.78472631466224,
+  "R2_mean": 2860.14990234375,
+  "R2_sem": 129.0378585761337,
+  "R3_mean": 2922.104736328125,
+  "R3_sem": 136.44995195077684,
+  "rho_12": 0.9787039160728455,
+  "wilcoxon_p_12": 0.12421508630950198,
+  "bootstrap_ci_diff_R1_R2": [
+    -123.08263301849365,
+    -0.5575507491827373
+  ],
+  "rho_23": 0.9787978529930115,
+  "wilcoxon_p_23": 0.008603360252311358,
+  "bootstrap_ci_diff_R2_R3": [
+    -133.40816688537598,
+    -1.6939138859510796
+  ],
+  "decision": "C",
+  "runtime_seconds": 174.1982879638672,
+  "p": 50,
+  "function_class": "kernel",
+  "n_jobs": -1,
+  "wilcoxon_p_12_one_sided_R1_gt_R2": 0.937892456845249,
+  "wilcoxon_p_12_one_sided_R1_lt_R2": 0.06210754315475099,
+  "wilcoxon_p_23_one_sided_R2_gt_R3": 0.9956983198738443,
+  "wilcoxon_p_23_one_sided_R2_lt_R3": 0.004301680126155679,
+  "_protocol_compliance_note": "Wilcoxon recomputed two-sided per \u00a76.2."
+}

@@ -1,0 +1,11 @@
+{
+  "n_cells": 24,
+  "decisions": {
+    "A": 0,
+    "B": 3,
+    "C": 21,
+    "D": 0
+  },
+  "bonferroni_rejecting_cells": 2,
+  "bonferroni_threshold": 4.1666666666666665e-05
+}

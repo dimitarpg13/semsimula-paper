@@ -1,0 +1,108 @@
+[train-mass] device=mps  mode=shakespeare  mass_mode=logfreq  fixed_gamma=0.85  results_dir=/Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/damping_sweep/results/gamma0p85
+[train-mass] tokens: train=321,124  val=16,901
+[train-mass] params: 7,123,075   d=128  L=8  v_hidden=512
+[train-mass] init mass: mean=1.453  std=0.203  min=1.151  max=1.915
+[train-mass] step    50/4000   train 10.8199   lr 1.25e-04   grad 0.27   m[mean 1.446 std 0.204]   gamma=0.850   elapsed 16s
+[train-mass] step   100/4000   train 9.4115   lr 2.50e-04   grad 10.85   m[mean 1.440 std 0.199]   gamma=0.850   elapsed 31s
+[train-mass] step   150/4000   train 6.6513   lr 3.75e-04   grad 1.25   m[mean 1.446 std 0.199]   gamma=0.850   elapsed 48s
+[train-mass] step   200/4000   train 6.4092   lr 5.00e-04   grad 1.19   m[mean 1.442 std 0.196]   gamma=0.850   elapsed 67s
+[train-mass] >>> eval @ 200: train 6.3632   val 6.5614   ppl 707.24
+[train-mass] step   250/4000   train 6.3519   lr 5.00e-04   grad 1.02   m[mean 1.429 std 0.193]   gamma=0.850   elapsed 96s
+[train-mass] step   300/4000   train 6.2078   lr 4.99e-04   grad 0.96   m[mean 1.442 std 0.200]   gamma=0.850   elapsed 117s
+[train-mass] step   350/4000   train 6.1153   lr 4.98e-04   grad 1.75   m[mean 1.446 std 0.203]   gamma=0.850   elapsed 137s
+[train-mass] step   400/4000   train 6.0894   lr 4.97e-04   grad 1.20   m[mean 1.457 std 0.209]   gamma=0.850   elapsed 157s
+[train-mass] >>> eval @ 400: train 6.0178   val 6.3130   ppl 551.68
+[train-mass] step   450/4000   train 6.0203   lr 4.95e-04   grad 0.73   m[mean 1.439 std 0.206]   gamma=0.850   elapsed 188s
+[train-mass] step   500/4000   train 5.9415   lr 4.92e-04   grad 1.54   m[mean 1.447 std 0.203]   gamma=0.850   elapsed 207s
+[train-mass] step   550/4000   train 5.8900   lr 4.90e-04   grad 1.37   m[mean 1.433 std 0.199]   gamma=0.850   elapsed 226s
+[train-mass] step   600/4000   train 5.7782   lr 4.87e-04   grad 0.76   m[mean 1.425 std 0.196]   gamma=0.850   elapsed 246s
+[train-mass] >>> eval @ 600: train 5.7553   val 6.1187   ppl 454.25
+[train-mass] step   650/4000   train 5.6878   lr 4.83e-04   grad 2.08   m[mean 1.428 std 0.199]   gamma=0.850   elapsed 276s
+[train-mass] step   700/4000   train 5.6662   lr 4.79e-04   grad 2.56   m[mean 1.431 std 0.200]   gamma=0.850   elapsed 294s
+[train-mass] step   750/4000   train 5.5412   lr 4.75e-04   grad 0.98   m[mean 1.425 std 0.199]   gamma=0.850   elapsed 313s
+[train-mass] step   800/4000   train 5.4949   lr 4.70e-04   grad 2.37   m[mean 1.418 std 0.199]   gamma=0.850   elapsed 332s
+[train-mass] >>> eval @ 800: train 5.4934   val 5.9342   ppl 377.72
+[train-mass] step   850/4000   train 5.4569   lr 4.65e-04   grad 1.50   m[mean 1.415 std 0.198]   gamma=0.850   elapsed 362s
+[train-mass] step   900/4000   train 5.3973   lr 4.59e-04   grad 1.97   m[mean 1.407 std 0.192]   gamma=0.850   elapsed 382s
+[train-mass] step   950/4000   train 5.3802   lr 4.54e-04   grad 2.29   m[mean 1.407 std 0.197]   gamma=0.850   elapsed 401s
+[train-mass] step  1000/4000   train 5.2990   lr 4.47e-04   grad 3.06   m[mean 1.408 std 0.196]   gamma=0.850   elapsed 420s
+[train-mass] >>> eval @ 1000: train 5.3293   val 5.8393   ppl 343.53
+[train-mass] step  1050/4000   train 5.2193   lr 4.41e-04   grad 1.67   m[mean 1.408 std 0.200]   gamma=0.850   elapsed 450s
+[train-mass] step  1100/4000   train 5.1798   lr 4.34e-04   grad 2.27   m[mean 1.401 std 0.193]   gamma=0.850   elapsed 469s
+[train-mass] step  1150/4000   train 5.1886   lr 4.27e-04   grad 4.82   m[mean 1.406 std 0.201]   gamma=0.850   elapsed 488s
+[train-mass] step  1200/4000   train 5.1430   lr 4.19e-04   grad 4.00   m[mean 1.400 std 0.194]   gamma=0.850   elapsed 508s
+[train-mass] >>> eval @ 1200: train 5.1594   val 5.7003   ppl 298.97
+[train-mass] step  1250/4000   train 5.1181   lr 4.12e-04   grad 1.95   m[mean 1.400 std 0.196]   gamma=0.850   elapsed 539s
+[train-mass] step  1300/4000   train 5.0581   lr 4.04e-04   grad 2.67   m[mean 1.391 std 0.194]   gamma=0.850   elapsed 558s
+[train-mass] step  1350/4000   train 5.0538   lr 3.95e-04   grad 3.59   m[mean 1.396 std 0.198]   gamma=0.850   elapsed 577s
+[train-mass] step  1400/4000   train 4.9981   lr 3.87e-04   grad 3.09   m[mean 1.384 std 0.191]   gamma=0.850   elapsed 597s
+[train-mass] >>> eval @ 1400: train 4.9765   val 5.6495   ppl 284.15
+[train-mass] step  1450/4000   train 4.9357   lr 3.78e-04   grad 2.96   m[mean 1.384 std 0.192]   gamma=0.850   elapsed 627s
+[train-mass] step  1500/4000   train 4.9058   lr 3.69e-04   grad 4.14   m[mean 1.379 std 0.187]   gamma=0.850   elapsed 645s
+[train-mass] step  1550/4000   train 4.8742   lr 3.60e-04   grad 3.39   m[mean 1.380 std 0.193]   gamma=0.850   elapsed 664s
+[train-mass] step  1600/4000   train 4.8444   lr 3.51e-04   grad 4.93   m[mean 1.378 std 0.194]   gamma=0.850   elapsed 684s
+[train-mass] >>> eval @ 1600: train 4.8172   val 5.5125   ppl 247.78
+[train-mass] step  1650/4000   train 4.8442   lr 3.41e-04   grad 2.63   m[mean 1.374 std 0.190]   gamma=0.850   elapsed 715s
+[train-mass] step  1700/4000   train 4.8394   lr 3.31e-04   grad 3.92   m[mean 1.376 std 0.186]   gamma=0.850   elapsed 735s
+[train-mass] step  1750/4000   train 4.8077   lr 3.22e-04   grad 5.23   m[mean 1.364 std 0.186]   gamma=0.850   elapsed 754s
+[train-mass] step  1800/4000   train 4.7639   lr 3.12e-04   grad 5.85   m[mean 1.375 std 0.191]   gamma=0.850   elapsed 779s
+[train-mass] >>> eval @ 1800: train 27.4648   val 5.4889   ppl 242.00
+[train-mass] step  1850/4000   train 4.7172   lr 3.02e-04   grad 4.49   m[mean 1.374 std 0.191]   gamma=0.850   elapsed 1495s
+[train-mass] step  1900/4000   train 4.6916   lr 2.91e-04   grad 6.72   m[mean 1.374 std 0.195]   gamma=0.850   elapsed 1508s
+[train-mass] step  1950/4000   train 4.7477   lr 2.81e-04   grad 3.84   m[mean 1.374 std 0.194]   gamma=0.850   elapsed 1521s
+[train-mass] step  2000/4000   train 4.6671   lr 2.71e-04   grad 3.73   m[mean 1.371 std 0.186]   gamma=0.850   elapsed 1535s
+[train-mass] >>> eval @ 2000: train 4.6468   val 5.4624   ppl 235.67
+[train-mass] step  2050/4000   train 4.6628   lr 2.61e-04   grad 4.98   m[mean 1.365 std 0.187]   gamma=0.850   elapsed 1556s
+[train-mass] step  2100/4000   train 4.6701   lr 2.50e-04   grad 5.56   m[mean 1.361 std 0.190]   gamma=0.850   elapsed 1569s
+[train-mass] step  2150/4000   train 4.6002   lr 2.40e-04   grad 5.91   m[mean 1.365 std 0.192]   gamma=0.850   elapsed 1583s
+[train-mass] step  2200/4000   train 4.5755   lr 2.30e-04   grad 4.01   m[mean 1.352 std 0.184]   gamma=0.850   elapsed 1597s
+[train-mass] >>> eval @ 2200: train 4.5906   val 5.4332   ppl 228.87
+[train-mass] step  2250/4000   train 4.5947   lr 2.19e-04   grad 4.87   m[mean 1.350 std 0.186]   gamma=0.850   elapsed 1620s
+[train-mass] step  2300/4000   train 4.5931   lr 2.09e-04   grad 4.19   m[mean 1.357 std 0.185]   gamma=0.850   elapsed 1635s
+[train-mass] step  2350/4000   train 4.5456   lr 1.99e-04   grad 7.14   m[mean 1.357 std 0.190]   gamma=0.850   elapsed 1650s
+[train-mass] step  2400/4000   train 4.5555   lr 1.89e-04   grad 8.78   m[mean 1.349 std 0.185]   gamma=0.850   elapsed 1666s
+[train-mass] >>> eval @ 2400: train 4.5410   val 5.3946   ppl 220.20
+[train-mass] step  2450/4000   train 4.4926   lr 1.79e-04   grad 6.31   m[mean 1.344 std 0.184]   gamma=0.850   elapsed 1690s
+[train-mass] step  2500/4000   train 4.5329   lr 1.69e-04   grad 7.40   m[mean 1.345 std 0.188]   gamma=0.850   elapsed 1705s
+[train-mass] step  2550/4000   train 4.5155   lr 1.59e-04   grad 6.47   m[mean 1.352 std 0.189]   gamma=0.850   elapsed 1721s
+[train-mass] step  2600/4000   train 4.4861   lr 1.50e-04   grad 6.11   m[mean 1.345 std 0.187]   gamma=0.850   elapsed 1736s
+[train-mass] >>> eval @ 2600: train 4.4630   val 5.4217   ppl 226.25
+[train-mass] step  2650/4000   train 4.4188   lr 1.40e-04   grad 7.14   m[mean 1.362 std 0.195]   gamma=0.850   elapsed 1762s
+[train-mass] step  2700/4000   train 4.4743   lr 1.31e-04   grad 6.58   m[mean 1.352 std 0.186]   gamma=0.850   elapsed 1777s
+[train-mass] step  2750/4000   train 4.4745   lr 1.22e-04   grad 5.75   m[mean 1.341 std 0.184]   gamma=0.850   elapsed 1795s
+[train-mass] step  2800/4000   train 4.4332   lr 1.13e-04   grad 6.16   m[mean 1.339 std 0.186]   gamma=0.850   elapsed 1812s
+[train-mass] >>> eval @ 2800: train 4.4567   val 5.4165   ppl 225.09
+[train-mass] step  2850/4000   train 4.4603   lr 1.05e-04   grad 6.02   m[mean 1.340 std 0.185]   gamma=0.850   elapsed 1840s
+[train-mass] step  2900/4000   train 4.4359   lr 9.66e-05   grad 5.95   m[mean 1.336 std 0.183]   gamma=0.850   elapsed 1858s
+[train-mass] step  2950/4000   train 4.4176   lr 8.86e-05   grad 7.56   m[mean 1.345 std 0.187]   gamma=0.850   elapsed 1874s
+[train-mass] step  3000/4000   train 4.3961   lr 8.08e-05   grad 4.66   m[mean 1.337 std 0.185]   gamma=0.850   elapsed 1892s
+[train-mass] >>> eval @ 3000: train 4.4096   val 5.3795   ppl 216.92
+[train-mass] step  3050/4000   train 4.4180   lr 7.34e-05   grad 5.38   m[mean 1.335 std 0.183]   gamma=0.850   elapsed 1922s
+[train-mass] step  3100/4000   train 4.4027   lr 6.62e-05   grad 8.11   m[mean 1.330 std 0.186]   gamma=0.850   elapsed 1940s
+[train-mass] step  3150/4000   train 4.3458   lr 5.94e-05   grad 5.41   m[mean 1.338 std 0.186]   gamma=0.850   elapsed 1958s
+[train-mass] step  3200/4000   train 4.3711   lr 5.28e-05   grad 5.57   m[mean 1.332 std 0.181]   gamma=0.850   elapsed 1978s
+[train-mass] >>> eval @ 3200: train 4.3883   val 5.4270   ppl 227.46
+[train-mass] step  3250/4000   train 4.3493   lr 4.67e-05   grad 7.37   m[mean 1.335 std 0.186]   gamma=0.850   elapsed 2008s
+[train-mass] step  3300/4000   train 4.3193   lr 4.08e-05   grad 7.15   m[mean 1.326 std 0.180]   gamma=0.850   elapsed 2028s
+[train-mass] step  3350/4000   train 4.3796   lr 3.53e-05   grad 6.81   m[mean 1.330 std 0.180]   gamma=0.850   elapsed 2048s
+[train-mass] step  3400/4000   train 4.3896   lr 3.02e-05   grad 4.02   m[mean 1.333 std 0.184]   gamma=0.850   elapsed 2066s
+[train-mass] >>> eval @ 3400: train 4.3811   val 5.4098   ppl 223.60
+[train-mass] step  3450/4000   train 4.3574   lr 2.55e-05   grad 7.46   m[mean 1.334 std 0.182]   gamma=0.850   elapsed 2099s
+[train-mass] step  3500/4000   train 4.3082   lr 2.11e-05   grad 6.47   m[mean 1.324 std 0.181]   gamma=0.850   elapsed 2119s
+[train-mass] step  3550/4000   train 4.3701   lr 1.72e-05   grad 5.00   m[mean 1.334 std 0.185]   gamma=0.850   elapsed 2140s
+[train-mass] step  3600/4000   train 4.3887   lr 1.36e-05   grad 4.95   m[mean 1.332 std 0.184]   gamma=0.850   elapsed 2160s
+[train-mass] >>> eval @ 3600: train 4.3374   val 5.4442   ppl 231.42
+[train-mass] step  3650/4000   train 4.3519   lr 1.05e-05   grad 5.29   m[mean 1.339 std 0.183]   gamma=0.850   elapsed 2193s
+[train-mass] step  3700/4000   train 4.3310   lr 7.70e-06   grad 4.49   m[mean 1.330 std 0.183]   gamma=0.850   elapsed 2213s
+[train-mass] step  3750/4000   train 4.3577   lr 5.36e-06   grad 5.80   m[mean 1.341 std 0.187]   gamma=0.850   elapsed 2235s
+[train-mass] step  3800/4000   train 4.3442   lr 3.44e-06   grad 4.63   m[mean 1.323 std 0.181]   gamma=0.850   elapsed 2257s
+[train-mass] >>> eval @ 3800: train 4.2992   val 5.3481   ppl 210.20
+[train-mass] step  3850/4000   train 4.3222   lr 1.95e-06   grad 4.60   m[mean 1.325 std 0.180]   gamma=0.850   elapsed 2292s
+[train-mass] step  3900/4000   train 4.3394   lr 8.71e-07   grad 4.19   m[mean 1.333 std 0.181]   gamma=0.850   elapsed 2313s
+[train-mass] step  3950/4000   train 4.3472   lr 2.22e-07   grad 5.63   m[mean 1.330 std 0.182]   gamma=0.850   elapsed 2334s
+[train-mass] step  4000/4000   train 4.3480   lr 8.54e-11   grad 5.44   m[mean 1.328 std 0.178]   gamma=0.850   elapsed 2356s
+[train-mass] >>> eval @ 4000: train 4.3419   val 5.3132   ppl 203.00
+[train-mass] done in 2369s
+[train-mass] saved checkpoint -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/damping_sweep/results/gamma0p85/splm_sarfmass_logfreq_shakespeare_gamma0p85_ckpt_latest.pt
+[train-mass] saved loss curve -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/damping_sweep/results/gamma0p85/splm_sarfmass_logfreq_shakespeare_gamma0p85_loss_curve.png
+[train-mass] saved summary -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/damping_sweep/results/gamma0p85/splm_sarfmass_logfreq_shakespeare_gamma0p85_summary.md

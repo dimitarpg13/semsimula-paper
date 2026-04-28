@@ -1,0 +1,25 @@
+{
+  "ckpt": "/Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/damping_sweep/results/gamma0p85/splm_sarfmass_logfreq_shakespeare_gamma0p85_ckpt_latest.pt",
+  "device": "mps",
+  "L": 8,
+  "d": 128,
+  "dt": 1.0,
+  "final_gamma": 0.8500000238418579,
+  "fixed_gamma": 0.85,
+  "n_sentences": 50,
+  "n_domains": 5,
+  "n_quadruples_total": 1264,
+  "token_lengths": {
+    "min": 17,
+    "max": 39,
+    "mean": 28.28,
+    "median": 28.0
+  },
+  "quadruples_per_sentence": {
+    "min": 14,
+    "max": 36,
+    "mean": 25.28
+  },
+  "skipped_sentences_too_short": [],
+  "extract_seconds": 4.423006057739258
+}
