@@ -10,17 +10,23 @@
 # Files under notebooks/stp_loss/ and notebooks/cross_model/ (v1
 # artifacts) are small enough to live in regular git and are not
 # listed here.
+
 # Trajectories extracted from SPLM, matched GPT-2, and pretrained GPT-2
 notebooks/conservative_arch/results/*.pkl filter=lfs diff=lfs merge=lfs -text
+
 # Model checkpoints (SPLM, matched GPT-2)
 notebooks/conservative_arch/results/*.pt filter=lfs diff=lfs merge=lfs -text
+
 # Serialized NumPy result archives (shared-V, capacity sweep, oracle,
 # Jacobian symmetry, token-direction fits)
 notebooks/conservative_arch/results/*.npz filter=lfs diff=lfs merge=lfs -text
+
 # Rendered figures (separator panels, loss curves, capacity-sweep plots)
 notebooks/conservative_arch/results/*.png filter=lfs diff=lfs merge=lfs -text
+
 # Cached tokenised Tiny Shakespeare corpus
 notebooks/conservative_arch/data/*.npz filter=lfs diff=lfs merge=lfs -text
+
 # SARF-faithful SPLM ablation (§14.13) -- same patterns as the baseline
 # results folder above. The checkpoint (~27 MB) and trajectory pickle
 # (~13 MB) are both under GitHub's 100 MB per-file limit, but are
@@ -30,6 +36,7 @@ notebooks/conservative_arch/sarf_variant/results/*.pkl filter=lfs diff=lfs merge
 notebooks/conservative_arch/sarf_variant/results/*.pt  filter=lfs diff=lfs merge=lfs -text
 notebooks/conservative_arch/sarf_variant/results/*.npz filter=lfs diff=lfs merge=lfs -text
 notebooks/conservative_arch/sarf_variant/results/*.png filter=lfs diff=lfs merge=lfs -text
+
 # SARF + per-token semantic mass ablation (§14.14) -- stacked on top of
 # SARF-faithful $\xi$, adds variants (A) embed-head mass and (B)
 # logfreq surprisal mass. Two checkpoint/trajectory pairs (one per
@@ -42,9 +49,11 @@ notebooks/conservative_arch/sarf_mass_variant/results/*.pt  filter=lfs diff=lfs 
 notebooks/conservative_arch/sarf_mass_variant/results/*.npz filter=lfs diff=lfs merge=lfs -text
 notebooks/conservative_arch/sarf_mass_variant/results/*.npy filter=lfs diff=lfs merge=lfs -text
 notebooks/conservative_arch/sarf_mass_variant/results/*.png filter=lfs diff=lfs merge=lfs -text
+
 # e_init artifacts (scalar-potential, Helmholtz, and gauge-field fits)
 notebooks/e_init/results/*.npz filter=lfs diff=lfs merge=lfs -text
 notebooks/e_init/results/*.png filter=lfs diff=lfs merge=lfs -text
+
 # Semantic attractor extraction (§14.15) -- landscape 3D plots, K-means
 # summaries, and per-variant attractor dumps for the Euler (L=8, dt=1.0)
 # baseline and the velocity-Verlet (L=16, dt=0.5) symplectic ablation.
@@ -55,6 +64,7 @@ notebooks/conservative_arch/attractor_analysis/results/*.gif filter=lfs diff=lfs
 notebooks/conservative_arch/attractor_analysis/results/*.json filter=lfs diff=lfs merge=lfs -text
 notebooks/conservative_arch/attractor_analysis/results/*.jsonl filter=lfs diff=lfs merge=lfs -text
 notebooks/conservative_arch/attractor_analysis/results/snapshots/**/*.pt filter=lfs diff=lfs merge=lfs -text
+
 # Energetic-minima alternatives (§14.17, Q11) -- three SPLM variants
 # probing the free $V_{\theta}$ head: (i) LayerNorm-after-step, (ii) weak
 # scale-gauge penalty on $V(\xi_0, h_0)^2$, and (iii) Gaussian-mixture
@@ -65,6 +75,7 @@ notebooks/conservative_arch/energetic_minima/results/*.pt filter=lfs diff=lfs me
 notebooks/conservative_arch/energetic_minima/results/*.png filter=lfs diff=lfs merge=lfs -text
 notebooks/conservative_arch/energetic_minima/results/*.jsonl filter=lfs diff=lfs merge=lfs -text
 notebooks/conservative_arch/energetic_minima/results/*.json filter=lfs diff=lfs merge=lfs -text
+
 # Multi-seed sweeps (E1 onward, §15.16) -- N=5 (or N=3) per architecture
 # under a single tag. Each tag directory ships top-level curated +
 # auto-generated reports (E1_report.md, E1_shakespeare_report.md,
@@ -81,12 +92,3 @@ notebooks/conservative_arch/multi_seed/results/**/*.png filter=lfs diff=lfs merg
 notebooks/conservative_arch/multi_seed/results/**/*.npz filter=lfs diff=lfs merge=lfs -text
 notebooks/conservative_arch/multi_seed/results/**/*.jsonl filter=lfs diff=lfs merge=lfs -text
 notebooks/conservative_arch/multi_seed/results/**/*.json filter=lfs diff=lfs merge=lfs -text
-notebooks/conservative_arch/energy_drift/results/E3_splm_em_ln_compare filter=lfs diff=lfs merge=lfs -text
-notebooks/conservative_arch/energy_drift/results/splm_em_ln_L8_seed0.npz filter=lfs diff=lfs merge=lfs -text
-notebooks/conservative_arch/energy_drift/results/splm_euler_L8.npz filter=lfs diff=lfs merge=lfs -text
-notebooks/conservative_arch/energy_drift/results/splm_verlet_L16_dt05.npz filter=lfs diff=lfs merge=lfs -text
-notebooks/conservative_arch/symplectic_variant/model_symplectic.py filter=lfs diff=lfs merge=lfs -text
-notebooks/conservative_arch/symplectic_variant/README.md filter=lfs diff=lfs merge=lfs -text
-notebooks/conservative_arch/symplectic_variant/results filter=lfs diff=lfs merge=lfs -text
-notebooks/conservative_arch/symplectic_variant/train_splm_symplectic.py filter=lfs diff=lfs merge=lfs -text
-notebooks/conservative_arch/symplectic_variant/trajectory_extraction_symplectic.py filter=lfs diff=lfs merge=lfs -text
