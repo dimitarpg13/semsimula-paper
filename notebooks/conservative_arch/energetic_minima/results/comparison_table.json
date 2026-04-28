@@ -1,3 +1,82 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:aab52804693259921c7581e5331baec03b71b36b2bada4a2d4dd9b2c53b44bd1
-size 1562
+[
+  {
+    "tag": "em_base",
+    "pretty": "baseline SARF+mass (logfreq)",
+    "val_ppl": 160.54913760531593,
+    "val_loss": 5.07860004901886,
+    "train_loss": 4.322857475280761,
+    "K_star_per_prompt": [
+      9,
+      10,
+      8,
+      10,
+      8
+    ],
+    "V_range_global": [
+      -1916.568,
+      1444.826
+    ],
+    "mean_content_basin_frac": 0.5811111111111111,
+    "attr_found": true
+  },
+  {
+    "tag": "em_ln",
+    "pretty": "(i) LayerNorm-after-step",
+    "val_ppl": 88.62769907637939,
+    "val_loss": 4.484444439411163,
+    "train_loss": 3.5930686593055725,
+    "K_star_per_prompt": [
+      5,
+      9,
+      10,
+      2,
+      2
+    ],
+    "V_range_global": [
+      -84.213,
+      -60.49
+    ],
+    "mean_content_basin_frac": 0.2311111111111111,
+    "attr_found": true
+  },
+  {
+    "tag": "em_sg",
+    "pretty": "(ii) scale-gauge (lambda_V0=1e-3)",
+    "val_ppl": 191.00359760697287,
+    "val_loss": 5.252292263507843,
+    "train_loss": 4.448739421367645,
+    "K_star_per_prompt": [
+      2,
+      2,
+      2,
+      2,
+      10
+    ],
+    "V_range_global": [
+      -2332.447,
+      -186.038
+    ],
+    "mean_content_basin_frac": 0.12,
+    "attr_found": true
+  },
+  {
+    "tag": "em_gm",
+    "pretty": "(iii) Gaussian-mixture head (K=64)",
+    "val_ppl": 677.6653429446897,
+    "val_loss": 6.518653571605682,
+    "train_loss": 6.326111900806427,
+    "K_star_per_prompt": [
+      2,
+      2,
+      2,
+      2,
+      2
+    ],
+    "V_range_global": [
+      60.281,
+      60.33
+    ],
+    "mean_content_basin_frac": 0.0,
+    "attr_found": true
+  }
+]
