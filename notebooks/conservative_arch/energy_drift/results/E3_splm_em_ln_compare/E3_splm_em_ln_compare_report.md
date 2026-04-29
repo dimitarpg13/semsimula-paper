@@ -1,6 +1,6 @@
 # Energy-drift diagnostic: `E3_splm_em_ln_compare`
 
-Eval-only diagnostic on existing SPLM checkpoints. Computes the per-layer Hamiltonian energy $H_\ell = \tfrac{1}{2} m \|v_\ell\|^2 + V_\theta(\xi_\ell, h_\ell)$, fits a linear drift slope across depth, and reports the oscillation bandwidth around that trend.
+Eval-only diagnostic on existing SPLM checkpoints. Computes the per-layer Hamiltonian energy $H_\ell = \tfrac{1}{2} m \lVertv_\ell\rVert^2 + V_\theta(\xi_\ell, h_\ell)$, fits a linear drift slope across depth, and reports the oscillation bandwidth around that trend.
 
 ## Per-variant summary
 
@@ -54,9 +54,9 @@ Absolute Hamiltonian magnitudes are not directly comparable across
 variants because they reflect the depth of the learned $V_\theta$ basin,
 which is itself larger for the better-trained models. The right
 discriminator is the **bandwidth-to-scale ratio**, i.e. detrended
-oscillation bandwidth divided by $|\mathrm{mean}\,H|$:
+oscillation bandwidth divided by $|\mathrm{mean}H|$:
 
-| variant | bandwidth | $|\mathrm{mean}\,H|$ | bandwidth / $|\mathrm{mean}\,H|$ |
+| variant | bandwidth | $|\mathrm{mean}H|$ | bandwidth / $|\mathrm{mean}H|$ |
 |---|---:|---:|---:|
 | `parent_euler_L8` | 145.7 | 76.6 | **190 %** |
 | `verlet_L16_dt05` | 91.4 | 205.5 | **45 %** |
@@ -88,7 +88,7 @@ internally, but its energy trace is Verlet-like, not Euler-like:**
 The mechanism is exactly the LayerNorm projection. Each step of the
 `em_ln` integrator is
 
-$$h_{l+1} \;\leftarrow\; \mathrm{LN}\!\left(h_l + \Delta t\,v_{l+1}\right),$$
+$$h_{l+1} \leftarrow \mathrm{LN}\left(h_l + \Delta tv_{l+1}\right),$$
 
 i.e. an Euler position update *followed by a re-projection of $h$ onto
 the unit-LN shell.* The LN step has no Hamiltonian content — it derives

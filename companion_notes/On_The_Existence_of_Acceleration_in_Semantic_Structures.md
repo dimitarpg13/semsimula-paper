@@ -40,7 +40,7 @@ $$\mathcal{L}_i = \frac{1}{2}\mathfrak{m}_i v_i^2 - \mathfrak{m}_i \upsilon^2 (1
 
 The Euler-Lagrange equations yield [5]:
 
-$$\mathfrak{m}_i \ddot{x}_i = -2\mathfrak{m}_i \upsilon^2 \kappa^2 x_i\, e^{-\kappa^2 x_i^2}$$
+$$\mathfrak{m}_i \ddot{x}_i = -2\mathfrak{m}_i \upsilon^2 \kappa^2 x_i e^{-\kappa^2 x_i^2}$$
 
 This is Newton's second law: $F = ma$. The restoring force on the right-hand side is nonzero whenever $x_i \neq 0$. A property away from the well center **must** accelerate — it is pulled inward, gains speed, and (with damping) decelerates as it approaches bound state. The trajectory curves.
 
@@ -178,9 +178,9 @@ The STP loss is an exact, monotonic measure of the normal component of accelerat
 | STP loss | Normal acceleration | Trajectory | Physical interpretation |
 |---|---|---|---|
 | $\mathcal{L}\_{STP} = 0$ | $\vec{a}\_\perp = 0$ | Straight line (may speed up/slow down) | No transverse force; trajectory is undeflected |
-| $0 < \mathcal{L}_{STP} \ll 1$ | $\|\vec{a}\_\perp\| \ll \|\vec{d}_2\|$ | Nearly straight, slight curvature | Weak restoring force or strong damping |
-| $\mathcal{L}_{STP} \approx 1$ | $\|\vec{a}\_\perp\| \approx \|\vec{d}_2\|$ | Right-angle turn | Strong transverse force |
-| $\mathcal{L}\_{STP} = 2$ | $\|\vec{a}\_\perp\| = \text{maximum}$ | Complete reversal ($\vec{d}\_2 = -\vec{d}\_1$) | Elastic collision or reflection |
+| $0 < \mathcal{L}_{STP} \ll 1$ | $\lVert\vec{a}\_\perp\rVert \ll \lVert\vec{d}_2\rVert$ | Nearly straight, slight curvature | Weak restoring force or strong damping |
+| $\mathcal{L}_{STP} \approx 1$ | $\lVert\vec{a}\_\perp\rVert \approx \lVert\vec{d}_2\rVert$ | Right-angle turn | Strong transverse force |
+| $\mathcal{L}\_{STP} = 2$ | $\lVert\vec{a}\_\perp\rVert = \text{maximum}$ | Complete reversal ($\vec{d}\_2 = -\vec{d}\_1$) | Elastic collision or reflection |
 
 The conjecture from [6, Section 2.4] therefore acquires a precise physical meaning: the STP loss correlates with the action because both are consequences of the same restoring force. The STP loss measures the directional acceleration caused by that force; the action integrates the kinetic and potential energies along the trajectory shaped by that force. They are two views of the same underlying dynamics.
 
@@ -188,7 +188,7 @@ The conjecture from [6, Section 2.4] therefore acquires a precise physical meani
 
 The derivation above shows that the STP loss captures exclusively normal acceleration (curvature) while being blind to tangential acceleration (speed changes along a straight line). This raises a critical question: **does tangential acceleration exist in hidden state trajectories?** If it does, it constitutes evidence for a potential-driven dynamics that the STP framework does not model and cannot suppress.
 
-**Why tangential acceleration must exist under the Gaussian well.** Consider a property traveling toward the well center along a straight radial path. The restoring force $F(x) = -2\mathfrak{m}\upsilon^2\kappa^2 x\, e^{-\kappa^2 x^2}$ is directed along the path — it is entirely tangential. The property accelerates inward (gaining speed) as it approaches the inflection point, then decelerates as it nears the center (where $F \to 0$). Throughout this radial trajectory, $\vec{a}_\perp = 0$ and $\vec{a}_\parallel \neq 0$. The STP loss would be exactly zero, yet the trajectory is undergoing strong acceleration. This is not a pathological edge case — it is the expected behavior for a property approaching its bound state along the well axis.
+**Why tangential acceleration must exist under the Gaussian well.** Consider a property traveling toward the well center along a straight radial path. The restoring force $F(x) = -2\mathfrak{m}\upsilon^2\kappa^2 x e^{-\kappa^2 x^2}$ is directed along the path — it is entirely tangential. The property accelerates inward (gaining speed) as it approaches the inflection point, then decelerates as it nears the center (where $F \to 0$). Throughout this radial trajectory, $\vec{a}_\perp = 0$ and $\vec{a}_\parallel \neq 0$. The STP loss would be exactly zero, yet the trajectory is undergoing strong acceleration. This is not a pathological edge case — it is the expected behavior for a property approaching its bound state along the well axis.
 
 **Evidence from the GPT-2 experiments.** Three independent observations in the experimental data [6, Sections 7–8] confirm the presence of tangential acceleration:
 
@@ -223,7 +223,7 @@ This has zero **covariant** acceleration (geodesic acceleration), but can have n
 
 The Gaussian well potential induces a Riemannian metric via the Jacobi-Maupertuis principle. For a particle with total energy $E$ in potential $V(x)$, the action-minimizing trajectories are geodesics of the **Jacobi metric**:
 
-$$\tilde{g}_{ij} = 2(E - V(x))\, g_{ij}$$
+$$\tilde{g}_{ij} = 2(E - V(x)) g_{ij}$$
 
 In this metric, the action-minimizing trajectories of the Lagrangian $\mathcal{L} = T - V$ are straight lines (geodesics) — even though they curve in coordinate space. The STP loss, by enforcing "straightness" of hidden state trajectories, may be enforcing geodesics of the Jacobi metric — which are the physically correct trajectories under the Gaussian well.
 
@@ -243,7 +243,7 @@ This is a first-order ODE — velocity is proportional to force, with no acceler
 
 The Semantic Simulation framework includes a damping factor $H_i$ [3, eq. 8] that decelerates properties as they approach bound state:
 
-$$H_i = \frac{\tanh\left(\frac{\|\vec{p}_E - \vec{p}_{c,i} + \Delta\vec{p}_i\|}{x_0}\right) + 1}{2}$$
+$$H_i = \frac{\tanh\left(\frac{\lVert\vec{p}_E - \vec{p}_{c,i} + \Delta\vec{p}_i\rVert}{x_0}\right) + 1}{2}$$
 
 If the effective damping is strong enough throughout the trajectory (not just near bound state), the dynamics become first-order. In this regime:
 
@@ -309,7 +309,7 @@ $$\vec{a}_t = h_{t+1} - 2h_t + h_{t-1} = \vec{v}_{t+1} - \vec{v}_t$$
 
 **Angular velocity**:
 
-$$\omega_t = \arccos\left(\frac{h_t \cdot h_{t-1}}{\|h_t\|\|h_{t-1}\|}\right)$$
+$$\omega_t = \arccos\left(\frac{h_t \cdot h_{t-1}}{\lVerth_t\rVert\lVerth_{t-1}\rVert}\right)$$
 
 **Angular acceleration**:
 
@@ -334,7 +334,7 @@ In the damped equation $\mathfrak{m}\ddot{x} + \gamma\dot{x} = F(x)$, we can sol
 $$\gamma_t = \frac{F(d_t) - w_t \cdot a_{\parallel,t}}{v_t}$$
 
 where:
-- $F(d_t) = -2a b\, d_t\, e^{-b\, d_t^2}$ is the Gaussian well restoring force at cosine distance $d_t$
+- $F(d_t) = -2a b d_t e^{-b d_t^2}$ is the Gaussian well restoring force at cosine distance $d_t$
 - $w_t$ is the attention mass (the analog of $\mathfrak{m}$, see [7])
 - $a_{\parallel,t}$ is the tangential acceleration
 - $v_t = |\vec{v}_t|$ is the speed
@@ -373,12 +373,12 @@ If the system is strongly overdamped ($\gamma \gg w_t \omega_0$), then $\gamma_t
 
 ### 4.2 Experiment 2: Does Acceleration Correlate With the Restoring Force?
 
-**Objective**: Test whether the observed acceleration is consistent with the Gaussian well restoring force — i.e., whether $\vec{a}_t$ points toward the trajectory center and its magnitude follows $F(x) \propto x\, e^{-\kappa^2 x^2}$.
+**Objective**: Test whether the observed acceleration is consistent with the Gaussian well restoring force — i.e., whether $\vec{a}_t$ points toward the trajectory center and its magnitude follows $F(x) \propto x e^{-\kappa^2 x^2}$.
 
 **Procedure**:
 
 1. For each trajectory, identify the trajectory center $c$ (final hidden state $h_T$, or attention-weighted centroid).
-2. Compute the "radial" direction at each position: $\hat{r}_t = (c - h_t) / \|c - h_t\|$.
+2. Compute the "radial" direction at each position: $\hat{r}_t = (c - h_t) / \lVertc - h_t\rVert$.
 3. Compute the **radial component** of acceleration: $a_{r,t} = \vec{a}_t \cdot \hat{r}_t$.
 4. If the acceleration is a restoring force, $a_{r,t}$ should be **positive** (pointing toward center) for positions away from center, and near zero at the center.
 5. Fit the radial acceleration profile $a_{r,t}$ vs. cosine distance $d_t$ to:
@@ -527,7 +527,7 @@ The three resolutions proposed in Section 2 have very different validation costs
 
 1. Compute the discrete acceleration vector $\vec{a}_t = h_{t+1} - 2h_t + h_{t-1}$ at each interior position.
 2. Decompose into tangential and normal components:
-   - $a_{\parallel,t} = (\vec{a}_t \cdot \hat{v}_t)\,\hat{v}_t$ where $\hat{v}_t = \vec{d}_2 / |\vec{d}_2|$
+   - $a_{\parallel,t} = (\vec{a}_t \cdot \hat{v}_t)\hat{v}_t$ where $\hat{v}_t = \vec{d}_2 / |\vec{d}_2|$
    - $\vec{a}_{\perp,t} = \vec{a}_t - a_{\parallel,t}$
 3. For each triplet $(s, r, t)$, verify the exact relationship from Section 2.1.5:
 
@@ -552,7 +552,7 @@ $$\mathcal{L}_{STP} = 1 - \sqrt{1 - \frac{|\vec{a}_\perp|^2}{|\vec{d}_2|^2}}$$
 
 The Jacobi metric for a potential $V(x)$ in Euclidean space is:
 
-$$\tilde{g}_{ij} = 2(E - V(x))\,\delta_{ij}$$
+$$\tilde{g}_{ij} = 2(E - V(x))\delta_{ij}$$
 
 This is a **conformally flat** metric — it is the flat metric multiplied by a scalar function. Conformal transformations preserve **angles** between vectors at a point. The STP loss is defined using **cosine similarity**, which measures the angle between displacement vectors:
 
@@ -711,7 +711,7 @@ This section makes the question precise, separates what is mathematical necessit
 
 Given any smooth potential $V(x)$ on a space with a background metric $g_{ij}$, the Jacobi-Maupertuis principle provides a Riemannian metric:
 
-$$\tilde{g}_{ij}(x) = 2(E - V(x))\, g_{ij}(x)$$
+$$\tilde{g}_{ij}(x) = 2(E - V(x)) g_{ij}(x)$$
 
 This is a **theorem**, not a hypothesis. Once a potential exists, the Jacobi metric exists. The question is never "does a Riemannian metric exist?" — it is "does this particular Riemannian metric govern the observed dynamics?"
 
@@ -741,11 +741,11 @@ $$\vec{a}\_{pred} = -\tilde{\Gamma}^i\_{jk} v^j v^k$$
 
 For the conformally flat Jacobi metric with conformal factor $\Omega^2(x) = 2(E - V(x))$, the Christoffel symbols are:
 
-$$\tilde{\Gamma}^i\_{jk} = \frac{1}{\Omega^2}\left(\delta^i\_j\,\partial\_k\Omega^2 + \delta^i\_k\,\partial\_j\Omega^2 - \delta\_{jk}\,\partial^i\Omega^2\right) \cdot \frac{1}{2}$$
+$$\tilde{\Gamma}^i\_{jk} = \frac{1}{\Omega^2}\left(\delta^i\_j\partial\_k\Omega^2 + \delta^i\_k\partial\_j\Omega^2 - \delta\_{jk}\partial^i\Omega^2\right) \cdot \frac{1}{2}$$
 
 which simplifies to:
 
-$$\tilde{\Gamma}^i\_{jk} = \frac{1}{2(E - V)}\left(\delta^i\_j\,F_k + \delta^i\_k\,F\_j - \delta\_{jk}\,F^i\right)$$
+$$\tilde{\Gamma}^i\_{jk} = \frac{1}{2(E - V)}\left(\delta^i\_jF_k + \delta^i\_kF\_j - \delta\_{jk}F^i\right)$$
 
 where $F_k = \partial_k V$ is the $k$-th component of the force. The predicted coordinate acceleration for a Jacobi geodesic is therefore:
 
@@ -837,10 +837,10 @@ The decomposition of the total acceleration into normal (curvature) and tangenti
 
 | Quantity | Mean | Std |
 |---|---|---|
-| $\|\vec{a}_\perp\|$ (normal, curvature) | 44.2 | — |
-| $\|a_\parallel\|$ (tangential, speed change) | 92.5 | — |
-| $\|a_\parallel\| / \|\vec{a}_\perp\|$ (per trajectory) | 2.09 | 0.20 |
-| $\|a_\parallel\| / \|\vec{a}_\perp\|$ (per trajectory, median) | 2.10 | — |
+| $\lVert\vec{a}_\perp\rVert$ (normal, curvature) | 44.2 | — |
+| $\lVerta_\parallel\rVert$ (tangential, speed change) | 92.5 | — |
+| $\lVerta_\parallel\rVert / \lVert\vec{a}_\perp\rVert$ (per trajectory) | 2.09 | 0.20 |
+| $\lVerta_\parallel\rVert / \lVert\vec{a}_\perp\rVert$ (per trajectory, median) | 2.10 | — |
 
 Tangential acceleration is roughly **twice** the normal acceleration in magnitude. The ratio $|a_\parallel|/|\vec{a}_\perp| \approx 2.1$ is consistent across all trajectories (standard deviation 0.20) and across all five semantic domains (the boxplot in Figure S6.2c shows no significant domain dependence in the ratio).
 

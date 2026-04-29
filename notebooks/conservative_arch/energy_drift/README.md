@@ -2,7 +2,7 @@
 
 Eval-only diagnostic that computes the SPLM Hamiltonian energy
 
-$$H_\ell \;=\; \tfrac{1}{2}\,\mathfrak m\,\|v_\ell\|^{2} \;+\; V_\theta(\xi_\ell, h_\ell)$$
+$$H_\ell = \tfrac{1}{2}\mathfrak m\lVertv_\ell\rVert^{2} + V_\theta(\xi_\ell, h_\ell)$$
 
 at every layer $\ell$ of an SPLM forward pass and reports
 
@@ -23,7 +23,7 @@ The headline E3 production run is in
 [`results/E3_splm_em_ln_compare/`](results/E3_splm_em_ln_compare/) and compares
 three production-best SPLM checkpoints on the same e-init test corpus:
 
-| variant | $L$ | mean $H$ | drift / layer | 95% CI | bandwidth | bandwidth / $|\mathrm{mean}\,H|$ |
+| variant | $L$ | mean $H$ | drift / layer | 95% CI | bandwidth | bandwidth / $|\mathrm{mean}H|$ |
 |---|---:|---:|---:|---:|---:|---:|
 | `parent_euler_L8` | 8 | -76.6 | -34.5 | ±1.7 | 145.7 | **190 %** |
 | `verlet_L16_dt05` | 16 | -205.5 | -38.4 | ±0.6 | 91.4 | **45 %** |
@@ -35,7 +35,7 @@ is confirmed quantitatively: Verlet's bandwidth-to-scale ratio (45 %) is
 **`em_ln` uses the Euler integrator internally yet exhibits a Verlet-like
 energy-conservation signature** (bandwidth-to-scale 70 %, 2.7× tighter than
 bare Euler). The mechanism is the LayerNorm-after-step projection
-$h_{l+1} \leftarrow \mathrm{LN}(h_l + \Delta t\,v_{l+1})$, which clips the
+$h_{l+1} \leftarrow \mathrm{LN}(h_l + \Delta tv_{l+1})$, which clips the
 trajectory's dynamic range without contributing any potential gradient; the
 production-best SPLM is consequently *not* a clean Hamiltonian flow but a
 "cheating" symplectic integrator whose stability comes from compactification of
@@ -65,7 +65,7 @@ The SPLM forward pass is a numerical solver for a damped Lagrangian. Whether
 the solver actually preserves energy (modulo damping) depends on integrator
 choice:
 
-- **Velocity-Verlet ($L=16,\,\Delta t=0.5$)** is symplectic at $\gamma = 0$ and
+- **Velocity-Verlet ($L=16,\Delta t=0.5$)** is symplectic at $\gamma = 0$ and
   $O(\Delta t^4)$-bounded in energy at finite damping. We expect $H_\ell$ to
   oscillate around an exponentially-damped envelope.
 - **Euler ($L=8$)** is a first-order explicit integrator. We expect a
@@ -81,8 +81,8 @@ choice:
 
 | file | purpose |
 |---|---|
-| [`extract_energy_states.py`](extract_energy_states.py) | Re-runs the SPLM forward pass on the §1 e-init test corpus and saves $(h_\ell, v_\ell, V_\theta(\xi_\ell, h_\ell), \tfrac{1}{2}m\|v_\ell\|^2)$ at every layer, for one checkpoint at a time. Supports parent-SPLM (`--variant euler`), `sarf_mass_variant` (`--variant sarfmass`, Euler + per-token mass), `symplectic_variant` (`--variant symplectic`, velocity-Verlet), and `energetic_minima/model_ln.py` (`--variant em_ln`, Euler + per-token mass + LayerNorm-after-step projection — the production SPLM). |
-| [`energy_drift_diagnostic.py`](energy_drift_diagnostic.py) | Loads one or more saved energy-state files, plots $H_\ell$, $\tfrac{1}{2}m\|v\|^2$, and $V_\theta$ overlaid across variants, fits a linear drift slope and reports oscillation bandwidth, writes a markdown report. |
+| [`extract_energy_states.py`](extract_energy_states.py) | Re-runs the SPLM forward pass on the §1 e-init test corpus and saves $(h_\ell, v_\ell, V_\theta(\xi_\ell, h_\ell), \tfrac{1}{2}m\lVertv_\ell\rVert^2)$ at every layer, for one checkpoint at a time. Supports parent-SPLM (`--variant euler`), `sarf_mass_variant` (`--variant sarfmass`, Euler + per-token mass), `symplectic_variant` (`--variant symplectic`, velocity-Verlet), and `energetic_minima/model_ln.py` (`--variant em_ln`, Euler + per-token mass + LayerNorm-after-step projection — the production SPLM). |
+| [`energy_drift_diagnostic.py`](energy_drift_diagnostic.py) | Loads one or more saved energy-state files, plots $H_\ell$, $\tfrac{1}{2}m\lVertv\rVert^2$, and $V_\theta$ overlaid across variants, fits a linear drift slope and reports oscillation bandwidth, writes a markdown report. |
 | `results/` | Populated by runs. One `.npz` per checkpoint and one report per comparison. |
 
 ## How to reproduce

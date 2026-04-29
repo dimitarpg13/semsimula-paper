@@ -10,8 +10,8 @@
 
 The protocol's primary cell (Gaussian RBF kernel ridge, PCA dim 50) on the
 50-sentence × 5-domain corpus, run through GPT-2 small *and* Pythia-160m,
-fails to reject first-order at the pre-registered $(\rho_{12}\!\ge\!1.20,\;
-p_{12}\!<\!10^{-3})$ thresholds in §6.4. In fact, the lag-1 kernel-ridge
+fails to reject first-order at the pre-registered $(\rho_{12} \ge 1.20,
+p_{12} < 10^{-3})$ thresholds in §6.4. In fact, the lag-1 kernel-ridge
 predictor is significantly *better* than the lag-2 predictor — the opposite
 of the direction predicted by the second-order ODE hypothesis. All three
 required confirmations of §6.5 (architecture independence, function-class
@@ -19,10 +19,10 @@ robustness, PCA-dim robustness) hold for this C verdict.
 
 ## Primary cells (§6.4)
 
-| Architecture | $\bar R_1$ | $\bar R_2$ | $\bar R_3$ | $\rho_{12}$ | $p_{12}$ (two-sided) | $\rho_{23}$ | $p_{23}$ | 95 % CI on $\bar R_1\!-\!\bar R_2$ | Decision |
+| Architecture | $\bar R_1$ | $\bar R_2$ | $\bar R_3$ | $\rho_{12}$ | $p_{12}$ (two-sided) | $\rho_{23}$ | $p_{23}$ | 95 % CI on $\bar R_1-\bar R_2$ | Decision |
 |---|---|---|---|---|---|---|---|---|---|
-| GPT-2 small  | 2 799.24 | 2 860.15 | 2 922.10 | 0.9787 | 0.124 | 0.9788 | 0.0086 | $[-123.08,\,-0.56]$ | **C** |
-| Pythia-160 m |   282.16 |   286.44 |   290.31 | 0.9850 | $7.9\!\times\!10^{-7}$ | 0.9867 | $7.1\!\times\!10^{-6}$ | $[-6.06,\,-2.50]$ | **C** |
+| GPT-2 small  | 2 799.24 | 2 860.15 | 2 922.10 | 0.9787 | 0.124 | 0.9788 | 0.0086 | $[-123.08,-0.56]$ | **C** |
+| Pythia-160 m |   282.16 |   286.44 |   290.31 | 0.9850 | $7.9\times10^{-7}$ | 0.9867 | $7.1\times10^{-6}$ | $[-6.06,-2.50]$ | **C** |
 
 Both architectures share three signatures of a robust negative result for
 the framework's H₁ / H₂:
@@ -48,7 +48,7 @@ $p_{12} < 10^{-3} / 24 \approx 4.2 \times 10^{-5}$.
 | **B** (first-order rejected, second-order insufficient) | 3 |
 | **C** (first-order not rejected) | **21** |
 | **D** (boundary / inconclusive) | 0 |
-| Cells passing Bonferroni-corrected $\rho_{12}\!\ge\!1.20$ AND $p_{12}\!<\!4.2\!\times\!10^{-5}$ | **2 / 24** |
+| Cells passing Bonferroni-corrected $\rho_{12}\ge1.20$ AND $p_{12}<4.2\times10^{-5}$ | **2 / 24** |
 
 ### What the 3 B cells actually show
 
@@ -56,9 +56,9 @@ All three B-decision cells are **poly-2 ridge** at $p \in \{50, 100\}$:
 
 | Cell | $\bar R_1$ | $\bar R_2$ | $\bar R_3$ | $\rho_{12}$ |
 |---|---|---|---|---|
-| GPT-2,  $p\!=\!100$, poly2  | 56 839 | 9 800 | 7 665 | 5.80 |
-| Pythia, $p\!=\!50$,  poly2  | 11 222 |   714 |   522 | 15.71 |
-| Pythia, $p\!=\!100$, poly2  |  1 138 |   619 |   549 | 1.84 |
+| GPT-2,  $p=100$, poly2  | 56 839 | 9 800 | 7 665 | 5.80 |
+| Pythia, $p=50$,  poly2  | 11 222 |   714 |   522 | 15.71 |
+| Pythia, $p=100$, poly2  |  1 138 |   619 |   549 | 1.84 |
 
 Read literally, these would suggest *very* strong rejection of first-order
 in favour of second. But the inflated $\bar R_1$ values are diagnostic of
@@ -66,12 +66,12 @@ in favour of second. But the inflated $\bar R_1$ values are diagnostic of
 signature in the dynamics:
 
 - At $p = 50$, the degree-2 polynomial expansion of a lag-1 input has
-  $50 + 50 \cdot 51 / 2 = 1\,325$ features fitted to ~1 240 training
+  $50 + 50 \cdot 51 / 2 = 1325$ features fitted to ~1 240 training
   quadruples — the classical underdetermined regime where ridge can stabilise
   training but generalisation is at the mercy of the regulariser.
 - At lag-2 the polynomial expansion balloons to 5 150 features. Counter-
   intuitively, this *helps* generalisation: the larger the feature count
-  relative to $n$, the more the ridge $\alpha\|w\|^2$ term dominates the data
+  relative to $n$, the more the ridge $\alpha\lVertw\rVert^2$ term dominates the data
   term, so the predictor is forced toward a smoother fit. Adding lag does
   not "use" the extra information — it merely forces the ridge to behave
   more like a smoothed kernel.
@@ -107,7 +107,7 @@ $h_{t-1}$ marginally hurts.**
 What the test does *not* say:
 
 1. **It does not say transformer trajectories are first-order in the
-   continuous-time sense.** A second-order ODE $\ddot x = f(x, \dot x)$
+   continuous-time sense.** A second-order ODE $\ddot{x} = f(x, \dot{x})$
    *can* be discretised in many ways. If the discretisation maps to a
    one-step recurrence $h_{t+1} = F(h_t)$ — which is exactly what
    transformer position-axis dynamics are by construction — then the
@@ -138,8 +138,8 @@ compatible.
 
 | Generative model of hidden-state evolution | Compatible with the data? | Mechanism |
 |---|---|---|
-| First-order ODE / gradient flow $\dot h = -\nabla V(h)$ | **Yes** | $h_t$ is the full state; lag-2 adds noise. |
-| **Overdamped** second-order ODE $w_t\,\ddot h + \gamma(h_t)\,\dot h + \nabla V = 0$ with $\gamma \gg \omega_0$ | **Yes** | In the overdamped limit $w_t\,\ddot h$ is negligible, the EOM reduces to $\dot h \approx -\nabla V / \gamma$, and the trajectory is observationally indistinguishable from a first-order gradient flow at one-token resolution. |
+| First-order ODE / gradient flow $\dot{h} = -\nabla V(h)$ | **Yes** | $h_t$ is the full state; lag-2 adds noise. |
+| **Overdamped** second-order ODE $w_t\ddot{h} + \gamma(h_t)\dot{h} + \nabla V = 0$ with $\gamma \gg \omega_0$ | **Yes** | In the overdamped limit $w_t\ddot{h}$ is negligible, the EOM reduces to $\dot{h} \approx -\nabla V / \gamma$, and the trajectory is observationally indistinguishable from a first-order gradient flow at one-token resolution. |
 | Underdamped second-order ODE with detectable inertia | **No** | This would predict $\bar R_2 < \bar R_1$ at the rejection threshold; we observe the opposite at every PCA dim, every architecture and every primary function class. |
 
 The two compatible models are observationally indistinguishable at
@@ -150,19 +150,19 @@ ODE per se.
 The unifying reading: transformer hidden-state trajectories, at one-token
 resolution, are well described by the **overdamped limit** of the full
 Euler–Lagrange equation (paper Eq. 67),
-$w_t\,\ddot h_t + \gamma(h_t)\,\dot h_t = -\nabla V(h_t)$,
+$w_t\ddot{h}_t + \gamma(h_t)\dot{h}_t = -\nabla V(h_t)$,
 in the regime $\gamma \gg \omega_0$. In this limit:
 
-- The kinetic term $T = \tfrac12\,w_t\,\|\dot h_t\|^2$ contributes to the
-  Lagrangian, but its dynamical signature ($\ddot h_t$-mediated inertial
-  memory) is too small relative to the dissipation $\gamma\,\dot h_t$ and
+- The kinetic term $T = \tfrac12w_t\lVert\dot{h}_t\rVert^2$ contributes to the
+  Lagrangian, but its dynamical signature ($\ddot{h}_t$-mediated inertial
+  memory) is too small relative to the dissipation $\gamma\dot{h}_t$ and
   the potential gradient $\nabla V$ to be recovered from one-step-ahead
   prediction.
-- The dynamics collapse to $\dot h \approx -\nabla V / \gamma$ — a
+- The dynamics collapse to $\dot{h} \approx -\nabla V / \gamma$ — a
   first-order gradient flow on the same potential $V$ that the Lagrangian
   framework constructs.
 - The §14 acceleration statistics ($a_\parallel < 0$ on 97.9 % of
-  triplets, $|a_\parallel|/|a_\perp|\!\approx\!2$, permutation-null
+  triplets, $|a_\parallel|/|a_\perp|\approx2$, permutation-null
   $z=23$) are exactly the trajectory-shape signature an overdamped
   attractive potential produces: the trajectory decelerates along its
   tangent because the velocity is simultaneously being damped *and*
@@ -197,7 +197,7 @@ and adding 50 more dims (from $h_t$ alone to $(h_t, h_{t-1})$) does not
 A subtler possibility: $h_{t-1}$ is so highly correlated with $h_t$ that
 its incremental information about $h_{t+1}$ is essentially in the residual
 component $h_{t-1} - h_t$, which is the per-token *displacement vector*.
-Even if the displacement is informative for $\ddot h_t$, kernel ridge in
+Even if the displacement is informative for $\ddot{h}_t$, kernel ridge in
 the concatenated-feature space pays a dimensionality cost equal to the
 *full* dimensionality of $h_{t-1}$ rather than just the rank of the
 displacement. A targeted "displacement-as-feature" experiment would be a
@@ -218,7 +218,7 @@ which the post-experiment banner already reframes:
   second-order** synthesis: hidden-state evolution at one-token
   resolution is consistent with the Euler–Lagrange equation (Eq. 67) in
   the regime $\gamma \gg \omega_0$, where it reduces to a first-order
-  gradient flow $\dot h \approx -\nabla V / \gamma$ on the same
+  gradient flow $\dot{h} \approx -\nabla V / \gamma$ on the same
   potential $V$. This regime is observationally indistinguishable from
   a strict first-order ODE; what the test rejects is only the
   underdamped variant in which a velocity slot would carry detectable

@@ -14,9 +14,9 @@ motivate this document.
 ## 0. TL;DR
 
 The five negative experiments of the Failure doc -- scalar potentials
-(§1.1-1.3), linear position-coupled skew $\Omega\,x$ (§1.4), constant and
-affine-in-$x$ velocity-coupled skew $B(x)\,\dot x$ (§1.5), and the
-combined $\Omega x + B \dot x$ linear U(1) gauge (§1.5) -- do **not**
+(§1.1-1.3), linear position-coupled skew $\Omegax$ (§1.4), constant and
+affine-in-$x$ velocity-coupled skew $B(x)\dot{x}$ (§1.5), and the
+combined $\Omega x + B \dot{x}$ linear U(1) gauge (§1.5) -- do **not**
 refute the Semantic Simulation framework. They demonstrate a different,
 stronger claim:
 
@@ -74,7 +74,7 @@ analysis.
 Each of the following architectural choices in the standard
 decoder-only transformer block violates one condition for conservatism.
 Taken together they guarantee that the hidden-state flow cannot be
-written as $-\nabla V(h)$ or even as $-\nabla V(h) + F(h)\dot h$ with
+written as $-\nabla V(h)$ or even as $-\nabla V(h) + F(h)\dot{h}$ with
 antisymmetric $F$:
 
 | transformer feature | non-conservative consequence |
@@ -100,10 +100,10 @@ it. Together they define a natural experimental programme for v2.
 
 | architecture | conservative structure | prior art |
 |---|---|---|
-| **Modern Hopfield network (symmetric, continuous)** | $\dot h = -\nabla E(h)$ with $E(h) = -\mathrm{lse}(\beta X h)$ stored-pattern energy; one update = one gradient step | Ramsauer et al. 2020 *"Hopfield Networks Is All You Need"*; Krotov & Hopfield 2016, 2020 |
-| **Symmetric attention (tied $Q=K$), no softmax, weight-tied across layers** | $h \leftarrow h - \eta\,\nabla_h (\tfrac12 h^{\top} W h)$ with $W=W^{\top}$; pure gradient flow on a quadratic energy | Katharopoulos et al. 2020 *"Transformers are RNNs"*; Tay et al. 2021 *"Synthesizer"* |
-| **Hamiltonian Neural Networks (HNN)** applied to token dynamics | learn a scalar $H(h, p)$ and evolve via $\dot h = \partial_p H$, $\dot p = -\partial_h H$; energy-conserving up to integrator error | Greydanus et al. 2019; Finzi et al. 2020 |
-| **Lagrangian Neural Networks (LNN)** applied to token dynamics | learn $L(h, \dot h)$ as a neural scalar; integrate the Euler--Lagrange equations | Cranmer et al. 2020 |
+| **Modern Hopfield network (symmetric, continuous)** | $\dot{h} = -\nabla E(h)$ with $E(h) = -\mathrm{lse}(\beta X h)$ stored-pattern energy; one update = one gradient step | Ramsauer et al. 2020 *"Hopfield Networks Is All You Need"*; Krotov & Hopfield 2016, 2020 |
+| **Symmetric attention (tied $Q=K$), no softmax, weight-tied across layers** | $h \leftarrow h - \eta\nabla_h (\tfrac12 h^{\top} W h)$ with $W=W^{\top}$; pure gradient flow on a quadratic energy | Katharopoulos et al. 2020 *"Transformers are RNNs"*; Tay et al. 2021 *"Synthesizer"* |
+| **Hamiltonian Neural Networks (HNN)** applied to token dynamics | learn a scalar $H(h, p)$ and evolve via $\dot{h} = \partial_p H$, $\dot{p} = -\partial_h H$; energy-conserving up to integrator error | Greydanus et al. 2019; Finzi et al. 2020 |
+| **Lagrangian Neural Networks (LNN)** applied to token dynamics | learn $L(h, \dot{h})$ as a neural scalar; integrate the Euler--Lagrange equations | Cranmer et al. 2020 |
 | **Deep Equilibrium Models with monotone / symmetric fixed-point map** | the equilibrium $h^{*} = \arg\min_h V(h)$ is by definition the minimum of an implicit scalar $V$ | Bai, Kolter, Koltun 2019 (DEQ); Winston & Kolter 2020 (monotone DEQ -- provably conservative) |
 | **Neural scalar-potential language model** *(this document's canonical v2 proposal)* | a single learned scalar $V_\theta : \mathbb{R}^d \to \mathbb{R}$ of the pooled context; inference = damped Lagrangian flow on $V_\theta$; next-token head reads off basin of attraction | no direct prior art -- this is what Semantic Simulation theory directly prescribes |
 
@@ -123,7 +123,7 @@ Concretely:
   in a scalar), smooth in $h$.
 
 - **Inference = deterministic damped Lagrangian flow:** for $L$ integration steps,
-  $$\mathfrak m\,\ddot h = -\nabla_h V_\theta(\xi, h) - \mathfrak m\,\gamma\,\dot h,$$
+  $$\mathfrak m\ddot{h} = -\nabla_h V_\theta(\xi, h) - \mathfrak m\gamma\dot{h},$$
   with fixed $(\mathfrak m, \gamma)$ (or learnable scalars). The "depth"
   of the network is the number of integration steps on a **single
   shared** force law -- i.e. weight-tied over layers.
@@ -156,8 +156,8 @@ envelope:
   but gives more expressive landscapes.
 
 - **Non-flat kinetic metric on $h$.** Replace the Euclidean kinetic term
-  $\tfrac12\,\mathfrak m\,\lVert\dot h\rVert^2$ with
-  $\tfrac12\,g_{ij}(h)\,\dot h^i \dot h^j$ where $g$ is a learned
+  $\tfrac12\mathfrak m\lVert\dot{h}\rVert^2$ with
+  $\tfrac12g_{ij}(h)\dot{h}^i \dot{h}^j$ where $g$ is a learned
   positive-definite metric.  Dynamics are then geodesic + potential on
   $(M, g, V)$, which is the §14 Jacobi form.  Still conservative, no
   non-integrable rotation.

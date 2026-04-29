@@ -156,7 +156,7 @@ $V$ reproduce all per-layer operators?  We answered it by joint
 optimisation of a **single** neural scalar $V_\psi$ plus per-layer
 scalars $\alpha_\ell,\beta_\ell$ minimising
 
-$$\left\lVert \Delta x_\ell \;-\; \alpha_\ell v_\ell \;+\; \beta_\ell\, \nabla_h V_\psi(x_\ell) \right\rVert^2$$
+$$\left\lVert \Delta x_\ell - \alpha_\ell v_\ell + \beta_\ell \nabla_h V_\psi(x_\ell) \right\rVert^2$$
 
 pooled across all layers and all training sentences, with per-layer
 TEST $R^2$ evaluated on held-out sentences.  $V_\psi$ is a 2-layer MLP

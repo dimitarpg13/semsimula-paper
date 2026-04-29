@@ -6,11 +6,11 @@ Model: **gpt2**.  TRAIN: 40 sentences / 1127 tokens.  TEST: 10 sentences / 286 t
 
 The §1.4 negative result ruled out the simplest Helmholtz correction $V_\ell \Omega_\ell V_\ell^\top x$ with constant skew $\Omega_\ell$.  Here we test four strictly richer linear gauge ansatzes derived from the electromagnetic-analogue Lagrangian
 
-$$L = \tfrac12 \mathfrak m \lVert\dot x\rVert^2 + \vec A(x) \cdot \dot x - V(x),$$
+$$L = \tfrac12 \mathfrak m \lVert\dot{x}\rVert^2 + \vec A(x) \cdot \dot{x} - V(x),$$
 
 which gives the Euler-Lagrange equation
 
-$$\mathfrak m \ddot x = -\nabla V(x) + F(x) \dot x - \mathfrak m \gamma \dot x,\qquad F = \partial A - (\partial A)^\top.$$
+$$\mathfrak m \ddot{x} = -\nabla V(x) + F(x) \dot{x} - \mathfrak m \gamma \dot{x},\qquad F = \partial A - (\partial A)^\top.$$
 
 We parameterise $F$ in the per-layer top-$k$ PCA subspace (with $z = V^\top x$ and $w = V^\top v$) as one of:
 
@@ -74,7 +74,7 @@ Sanity check against §1.4 (`helmholtz_curl_summary.md`): at $\gamma=5$, `omega_
 
 ### 3.1 Velocity-coupled ansatzes are numerically unstable at s = 1
 
-`B_const`, `B_affine_r1`, `B_affine_r2`, and `omega_and_Bconst` all **diverge** when the fitted operators are applied at full strength. The symptom is the positive-feedback loop $v \to B\dot x \to v' \to \ldots$ that a linear integrator cannot stabilise when the fitted $B$ has eigenvalues of magnitude comparable to the damping.  Concretely, at $\gamma=5$, $s=1$:
+`B_const`, `B_affine_r1`, `B_affine_r2`, and `omega_and_Bconst` all **diverge** when the fitted operators are applied at full strength. The symptom is the positive-feedback loop $v \to B\dot{x} \to v' \to \ldots$ that a linear integrator cannot stabilise when the fitted $B$ has eigenvalues of magnitude comparable to the damping.  Concretely, at $\gamma=5$, $s=1$:
 - `B_const` TEST median = 3.051
 - `B_affine_r1` TEST median = 0.1851
 - `omega_and_Bconst` TEST median = 0.6745
@@ -103,9 +103,9 @@ Five consecutive negative experiments now bracket the linear Lagrangian programm
 
 1. Scalar $V(x)$, any $V$ (§1.1-1.3): **fails** (static null).
 2. $+$ skew $\Omega x$ (§1.4): **fails** (marginally worse than null).
-3. $+$ skew $B \dot x$, constant: **unstable at s=1**; at s\*, at or slightly above null.
-4. $+$ skew $B(x)\dot x$, affine in $x$, rank 1 or 2: **unstable at s=1**; at s\*, at or slightly above null.
-5. $+$ skew $\Omega x + B\dot x$ (combined): **unstable at s=1**; at s\*, strictly worse than null.
+3. $+$ skew $B \dot{x}$, constant: **unstable at s=1**; at s\*, at or slightly above null.
+4. $+$ skew $B(x)\dot{x}$, affine in $x$, rank 1 or 2: **unstable at s=1**; at s\*, at or slightly above null.
+5. $+$ skew $\Omega x + B\dot{x}$ (combined): **unstable at s=1**; at s\*, strictly worse than null.
 
 The Helmholtz electromagnetic-analogue Lagrangian, at the level of constant or low-order-polynomial antisymmetric operators in a top-16 PCA subspace, does not fit hidden-state trajectories on held-out sentences.  The per-layer one-step linear approximation of the transformer block is symmetric and non-Hessian, not antisymmetric; this is not captured by the electromagnetic analogue.
 

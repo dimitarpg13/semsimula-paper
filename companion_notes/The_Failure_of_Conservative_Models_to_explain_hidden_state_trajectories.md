@@ -11,7 +11,7 @@ empirical and theoretical observations, not a submitted result.*
 > mechanical system: a scalar potential $V(x)$ alone (§1.1–§1.3), then the same
 > plus a position-coupled linear solenoidal term $V_\ell\Omega_\ell V_\ell^{\top}x$
 > (§1.4), and finally the velocity-coupled electromagnetic-analogue form
-> $\dot x\times B(x)$ with constant and affine-in-$x$ gauge fields (§1.5).
+> $\dot{x}\times B(x)$ with constant and affine-in-$x$ gauge fields (§1.5).
 > All five variants fail to beat the static null on the held-out test set.
 >
 > The document was written *before* we built the **Scalar-Potential Language
@@ -41,7 +41,7 @@ empirical and theoretical observations, not a submitted result.*
   to the 2nd-order integrator (§1.4)
 - `notebooks/e_init/velocity_coupled_gauge.py` &nbsp;--- electromagnetic-
   analogue Lagrangian: add a skew-symmetric velocity-coupled term
-  $B(x) \dot x$, with constant $B$ and with affine position-dependent
+  $B(x) \dot{x}$, with constant $B$ and with affine position-dependent
   $B(x)$ (§1.5)
 
 *Companion result files:* all artefacts under
@@ -101,13 +101,13 @@ Specifically:
    (§1.1--1.3): **fails** (ties static null).
 2. $+$ linear skew-symmetric $\Omega x$ in the top-$k$ PCA subspace
    (§1.4): **fails** (marginally worse than null).
-3. $+$ linear skew-symmetric $B \dot x$, constant per layer (§1.5):
+3. $+$ linear skew-symmetric $B \dot{x}$, constant per layer (§1.5):
    **unstable at full strength; at TRAIN-optimal shrinkage factor
    $s^{\ast}\approx 0.05$, ties null**.
-4. $+$ affine-in-$x$ skew $B(x) \dot x$ with rank 1 or 2 position
+4. $+$ affine-in-$x$ skew $B(x) \dot{x}$ with rank 1 or 2 position
    dependence (§1.5): **unstable at full strength; at $s^{\ast}\approx 0.01$,
    ties null**.
-5. $+$ both $\Omega x$ and $B \dot x$ simultaneously (§1.5): **unstable
+5. $+$ both $\Omega x$ and $B \dot{x}$ simultaneously (§1.5): **unstable
    at full strength; at $s^{\ast}=0$ (i.e. the optimiser turns the gauge
    term off), ties null**.
 
@@ -151,7 +151,7 @@ per-sentence per-layer centering:
 
 The Euler--Lagrange equation
 
-$$\mathfrak{m} \ddot{\vec x} = -2ab \vec x e^{-b\|\vec x\|^2} - \mathfrak{m}\gamma \dot{\vec x} \qquad (1.1)$$
+$$\mathfrak{m} \ddot{\vec x} = -2ab \vec x e^{-b\lVert\vec x\rVert^2} - \mathfrak{m}\gamma \dot{\vec x} \qquad (1.1)$$
 
 integrated forward from $(\vec x_0, \vec v_0 = \vec x_1 - \vec x_0)$ with
 per-layer fitted Gaussian $(a,b)$, under-performs the static null at
@@ -237,7 +237,7 @@ Seven functional forms -- **harmonic** $a r^2$,
 **log-saturation** $a\log(1+br^2)$,
 **Weibull / stretched-exponential** $a(1-e^{-br^\alpha})$,
 and **power** $a r^p$ -- were fit layer-by-layer to the
-$(\|x\|,\text{NTP loss})$ scatter with per-sentence centering, and each
+$(\lVertx\rVert,\text{NTP loss})$ scatter with per-sentence centering, and each
 was plugged (via its analytic gradient) into the damped 2nd-order
 integrator (1.1). Two empirical findings:
 
@@ -255,7 +255,7 @@ The mechanism is quantitative: at a typical per-sentence-centered radius
 $r\approx 300$ (middle layers), the fitted force-per-displacement
 $k(r) = V'(r)/r$ is pinned in a narrow band $\sim (0.7\text{-}3.1)\times 10^{-6}$
 across all seven forms, set by the data geometry -- well depth
-$a\approx 8$ nats divided by squared data scale $\|x\|^2\sim 10^{5}$.
+$a\approx 8$ nats divided by squared data scale $\lVertx\rVert^2\sim 10^{5}$.
 See §4.3 for the calculation.
 
 **Reproducibility trail for §1.3**
@@ -301,7 +301,7 @@ Helmholtz programme and *add* a divergence-free correction to the force.
 The simplest choice is a layer-local linear solenoidal field in the
 top-$k$ PCA subspace of training hidden states,
 
-$$\mathfrak m \ddot x = -\nabla V(x) + V_\ell \Omega_\ell V_\ell^{\top}x - \mathfrak m \gamma \dot x, \qquad \Omega_\ell=-\Omega_\ell^{\top}\in\mathbb R^{k\times k} \qquad (1.3)$$
+$$\mathfrak m \ddot{x} = -\nabla V(x) + V_\ell \Omega_\ell V_\ell^{\top}x - \mathfrak m \gamma \dot{x}, \qquad \Omega_\ell=-\Omega_\ell^{\top}\in\mathbb R^{k\times k} \qquad (1.3)$$
 
 with $V_\ell\in\mathbb R^{d\times k}$ the per-layer top-$k$ PCA basis.
 The skew constraint makes the extra term divergence-free in the linear
@@ -384,10 +384,10 @@ Because §1.4 tested the simplest *position*-coupled linear solenoidal
 term and it failed, we now test the richer *velocity*-coupled class
 derived from the electromagnetic-analogue Lagrangian
 
-$$L = \frac{1}{2}\mathfrak m \|\dot x\|^{2} + \vec A(\vec x)\cdot\dot x - V(\vec x), \qquad F_{ij}(\vec x) = \partial_i A_j - \partial_j A_i \qquad (1.4)$$
+$$L = \frac{1}{2}\mathfrak m \lVert\dot{x}\rVert^{2} + \vec A(\vec x)\cdot\dot{x} - V(\vec x), \qquad F_{ij}(\vec x) = \partial_i A_j - \partial_j A_i \qquad (1.4)$$
 
 whose Euler--Lagrange equation is
-$\mathfrak m \ddot x = -\nabla V + F(\vec x) \dot x - \mathfrak m\gamma \dot x$.
+$\mathfrak m \ddot{x} = -\nabla V + F(\vec x) \dot{x} - \mathfrak m\gamma \dot{x}$.
 In the per-layer top-$k$ PCA subspace (same split and basis as §1.4)
 we parameterise $F$ as skew-symmetric and try four progressively richer
 variants, with $z=V^{\top}x$, $w=V^{\top}v$:
@@ -410,7 +410,7 @@ Three quantitative findings (full numbers in
 1. **At full strength ($s=1$) the velocity-coupled integrators
    diverge.** The fitted skew-symmetric $B$ has eigenvalues whose
    magnitudes, after $12$ symplectic-Euler steps, drive positive
-   feedback $v\to B \dot x\to v'\to\dots$. At $\gamma=5$, $s=1$, TEST
+   feedback $v\to B \dot{x}\to v'\to\dots$. At $\gamma=5$, $s=1$, TEST
    medians are $3.05$ (`B_const`), $0.185$ (`B_affine_r1`), $0.18$
    (`B_affine_r2`), $0.67$ (`omega_and_Bconst`) -- at the low-$\gamma$
    end many reach $10^{1}$--$10^{2}$ or overflow to NaN.
@@ -474,9 +474,9 @@ Three of them (§1.1-1.3) assume, explicitly, that the layer-wise force
 on the hidden state is the gradient of some scalar function of
 position: $\vec F(\vec x) = -\nabla V(\vec x)$. The fourth (§1.4)
 adds a linear solenoidal correction $V\Omega V^{\top}x$. The fifth
-(§1.5) adds the velocity-coupled analogue $F(x) \dot x$ from the
+(§1.5) adds the velocity-coupled analogue $F(x) \dot{x}$ from the
 electromagnetic Lagrangian, including position-dependent $F(x)$ at
-rank 1 and rank 2 and the combined $\Omega x + B\dot x$ ansatz. **All
+rank 1 and rank 2 and the combined $\Omega x + B\dot{x}$ ansatz. **All
 five produce the same TEST residual floor, to four decimal places, and
 that floor equals the static null.** This is the empirical fingerprint
 of a structural limitation, not of any particular choice of $V$, $A$,
@@ -505,7 +505,7 @@ $\nabla \times \vec F = 0$ (zero curl in every 2-plane), or equivalently
 there exists a scalar potential $V$ such that $\vec F = -\nabla V$.
 A dynamical system $\mathfrak{m} \ddot{\vec x} = \vec F(\vec x) + \text{damping}$
 with conservative $\vec F$ is fully described by the two scalar
-quantities $V$ and $T=\frac{1}{2}\mathfrak{m}\|\dot x\|^2$ and
+quantities $V$ and $T=\frac{1}{2}\mathfrak{m}\lVert\dot{x}\rVert^2$ and
 conserves their sum along undamped trajectories.
 
 The paper's current Lagrangian construction
@@ -549,7 +549,7 @@ $h_{<t}$, not of $h_t$ alone:
 $$\Delta h_t  =  f(h_t, h_{t-1}, \dots, h_0).$$
 
 A conservative force on $h_t$ must depend on $h_t$ only (or on $h_t$ and
-$\dot h_t$, for dissipative systems). Any dependence on the history
+$\dot{h}_t$, for dissipative systems). Any dependence on the history
 $h_{<t}$ means that two different _paths_ arriving at the same point
 $h_t$ receive, in general, different updates. That is precisely the
 defining property of a **path-dependent** (hence non-conservative) force.
@@ -633,7 +633,7 @@ the *one-step* residual, let alone generate the integrated trajectory.
 What the data support is the stronger claim:
 
 > *The rotational component of the layer-wise force is non-linear in
-> $x$ (or coupled to $\dot x$), rank-deficient and head-specific, and
+> $x$ (or coupled to $\dot{x}$), rank-deficient and head-specific, and
 > state-dependent in a way consistent with the LayerNorm + softmax
 > nonlinearities in each transformer block.*
 
@@ -664,7 +664,7 @@ A pure first-order flow with a very weak $V$ moves the state by a
 negligible amount per layer: the fitted $b_\ell \sim 10^{-5}$ and
 typical $r^2 \sim 10^5$ at middle layers give a gradient
 $2 a b x e^{-b r^2} \sim 6\times 10^{-5} x$, which even at $\eta=25$
-over 12 layers accumulates to $\lesssim 0.02\|x\|$ -- well below the
+over 12 layers accumulates to $\lesssim 0.02\lVertx\rVert$ -- well below the
 scale of the observed inter-layer motion. Because there is no velocity
 variable to carry rotational information, the first-order integrator
 has no mechanism for anything but tiny radial displacement, and that
@@ -706,7 +706,7 @@ across every functional form we tested (raw values backed by
 [`well_form_integrator_results.npz`][ni] and derived in detail in
 [`well_form_comparison_summary.md`][sum3] §4). This common $\sim 10^{-6}$
 force scale is set by the data geometry --
-well depth $a\approx 8$ nats divided by squared data scale $\|x\|^2\sim 10^{5}$ --
+well depth $a\approx 8$ nats divided by squared data scale $\lVertx\rVert^2\sim 10^{5}$ --
 and is the reason all eight integrator configurations collapse onto
 the static-null floor. It is not a property of $V$'s shape.
 
@@ -732,7 +732,7 @@ this argument:
   (attention column sum) remains a valid per-layer scalar. Nothing
   in §3 depends on removing it.
 - **Per-phrase attractive wells.** Per-phrase centering shrinks the
-  relevant $\| x\|$ scale by an order of magnitude, and the
+  relevant $\lVert x\rVert$ scale by an order of magnitude, and the
   binned-median $R^{2}\approx 0.90$ at middle layers (§1.3) shows the
   conservative part is _real_ at phrase-local resolution. Prediction
   P4 in §10.3 still has empirical content: it is testing the
@@ -771,7 +771,7 @@ this argument:
 The simplest Lagrangian extension that accommodates a non-zero curl
 is the electromagnetic-analogue form:
 
-$$L = \frac{1}{2}\mathfrak{m} \|\dot{\vec x}\|^{2} + \vec A(\vec x) \cdot \dot{\vec x} - V(\vec x),$$
+$$L = \frac{1}{2}\mathfrak{m} \lVert\dot{\vec x}\rVert^{2} + \vec A(\vec x) \cdot \dot{\vec x} - V(\vec x),$$
 
 where $\vec A$ is a vector potential. The Euler--Lagrange equation
 becomes
@@ -813,7 +813,7 @@ three reasons:
    dependent and $B(\vec x)$ is *position*-dependent, so the Lagrangian
    (6.1) is strictly richer than the ansatz tested in §1.4. Section
    §1.5 has now closed the next natural step of this programme --
-   constant skew $B \dot x$ and affine-in-$x$ skew $B(x) \dot x$ with
+   constant skew $B \dot{x}$ and affine-in-$x$ skew $B(x) \dot{x}$ with
    rank 1 and rank 2 position dependence, both alone and in combination
    with $\Omega x$ -- and the outcome is uniformly negative on held-out
    data. The path forward, if one wishes to stay inside a gauge
@@ -898,10 +898,10 @@ concrete predictions follow that v2 experiments can pursue:
   fit a local Riemannian metric $g_{ij}(x)$ per layer (e.g. by
   parameterising $g$ as low-rank perturbation of the Euclidean metric
   in PCA coordinates) and run the geodesic equation
-  $\ddot x^i + \Gamma^i_{jk} \dot x^j \dot x^k = 0$ as integrator.
+  $\ddot{x}^i + \Gamma^i_{jk} \dot{x}^j \dot{x}^k = 0$ as integrator.
   This is the §14 Jacobi programme made operational. Unlike §1.5 the
-  Christoffel term $\Gamma^i_{jk}\dot x^j\dot x^k$ is
-  quadratic in $\dot x$ and naturally encodes both rotational and
+  Christoffel term $\Gamma^i_{jk}\dot{x}^j\dot{x}^k$ is
+  quadratic in $\dot{x}$ and naturally encodes both rotational and
   stretching contributions. A positive result here is the strongest
   evidence for the Riemannian reading of the paper.
 
@@ -1097,7 +1097,7 @@ Report:
 - [`docs/P-rot-6_transformer_dynamics.md`][prot6] --- the *theoretical*
   predecessor to §1.5 of this document. Derives, from first principles,
   why $W_K\neq W_V$ in scaled dot-product attention produces a non-zero
-  skew operator $\Omega(x) = \tfrac{\beta}{2}\sum_\mu s_\mu(\beta Kx)\,
+  skew operator $\Omega(x) = \tfrac{\beta}{2}\sum_\mu s_\mu(\beta Kx)
   (V_\mu\otimes K_\mu - K_\mu\otimes V_\mu)$ on the hidden state, and
   gives the zero-free-parameter linearised prediction
   $B_{\text{theory}} = \Omega(\bar x)$ that the constant- and

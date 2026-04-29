@@ -72,9 +72,9 @@ Define:
 
 At a converged network where training loss is minimized, the sequence dynamics satisfy:
 
-$$x_{t+1} = \mathring{u} \circ \mathring{f}(x_{\leq t}) \tag{1}$$
+$$x_{t+1} = \mathring{u} \circ \mathring{f}(x_{\leq t}) $$
 
-$$h_t = \mathring{f}(x_{\leq t}) + \epsilon_t \tag{2}$$
+$$h_t = \mathring{f}(x_{\leq t}) + \epsilon_t $$
 
 ### 2.2 From Difference Equation to ODE
 
@@ -486,7 +486,7 @@ The argument that $\lVert \tilde{\xi}_t - \xi_t^* \rVert_2 \propto 1/\sqrt{t}$ (
 
 Under **positive autocorrelation** with correlation $\rho$ between successive errors, the variance of the average scales as:
 
-$$\text{Var}\!\left(\frac{1}{t}\sum_{s=1}^{t} \delta_s\right) \propto \frac{1 + 2\rho(1 - 1/t)}{t}$$
+$$\text{Var}\left(\frac{1}{t}\sum_{s=1}^{t} \delta_s\right) \propto \frac{1 + 2\rho(1 - 1/t)}{t}$$
 
 which approaches $1/t$ only when $\rho = 0$. For persistent autocorrelation ($\rho \to 1$) the suppression vanishes entirely and the context noise grows rather than shrinks. The actual slope of $N_\xi(t)$ therefore lies somewhere in the range $[-0.5, +0.5]$ depending on the empirical autocorrelation of inference errors — and measuring this slope is the most informative single output of the sweep, precisely because it directly probes whether the averaging argument survives autocorrelation.
 

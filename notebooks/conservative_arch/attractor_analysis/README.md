@@ -18,7 +18,7 @@ The conclusion of this study is more subtle than the original prediction:
    never penalised.
 
 2. **Anchored descent is unimodal and prompt-independent.**  Adding a
-   data-manifold prior, $\frac{\lambda}{2}\|(h-h_c)/h_s\|^2$, makes the
+   data-manifold prior, $\frac{\lambda}{2}\lVert(h-h_c)/h_s\rVert^2$, makes the
    problem well-posed.  But for any $\lambda \in [10, 10^3]$, the
    landscape collapses to *one* dominant attractor whose decoded
    distribution is essentially $h_c$ itself -- the same five stopwords
@@ -154,10 +154,10 @@ Outputs land in `results/`:
 ## Key arguments
 
 - `--mode {gradient, dynamical}`
-  - `gradient`: Adam on $V_\theta(\xi, h) + \frac{\lambda}{2}\|(h-h_c)/h_s\|^2$.
+  - `gradient`: Adam on $V_\theta(\xi, h) + \frac{\lambda}{2}\lVert(h-h_c)/h_s\rVert^2$.
     Diagnostic only; $V_\theta$ alone has no finite minima so the anchor
     is required.
-  - `dynamical`: semi-implicit Euler on $\ddot h = -\nabla V_\theta(\xi, h)/m - \gamma \dot h$
+  - `dynamical`: semi-implicit Euler on $\ddot{h} = -\nabla V_\theta(\xi, h)/m - \gamma \dot{h}$
     from random $h$ seeds.  Use `--n_sim_steps L_train` to reproduce
     the basins the model actually uses.
 - `--lambda_reg`: anchor strength for `gradient` mode.  100 is a sane

@@ -15,7 +15,7 @@ For every layer $\ell \in \{0, \dots, L\}$ (pre-embedding through
 final pre-logit) and every sentence $s$ we collect per-token triples
 
 $$
-\big(\,h^{(\ell)}_{s,t-1},\; h^{(\ell)}_{s,t},\; h^{(\ell)}_{s,t+1}\,\big),
+\big(h^{(\ell)}_{s,t-1}, h^{(\ell)}_{s,t}, h^{(\ell)}_{s,t+1}\big),
 \qquad t = 1+\Delta,\dots,T-2-\Delta
 $$
 
@@ -24,7 +24,7 @@ same velocity proxy $v_t = h_t - h_{t-1}$ and target
 $\Delta h_t = h_{t+1} - h_t$:
 
 1. **Shared scalar-potential fit** (direct analogue of step 2):
-   $$\Delta h_t^{(\ell)} \;\approx\; \alpha_\ell\,v_t^{(\ell)} \;-\; \beta_\ell\,\nabla_h V_\psi\big(h_t^{(\ell)}\big)$$
+   $$\Delta h_t^{(\ell)} \approx \alpha_\ellv_t^{(\ell)} - \beta_\ell\nabla_h V_\psi\big(h_t^{(\ell)}\big)$$
    with one neural scalar $V_\psi$ shared across **all tokens and
    all layers**, and per-layer scalars $\alpha_\ell,\beta_\ell$
    absorbing scale.  Same MLP ($d{\to}256{\to}256{\to}1$ GELU),
@@ -32,7 +32,7 @@ $\Delta h_t = h_{t+1} - h_t$:
 
 2. **Velocity-aware Jacobian-symmetry** (direct analogue of step 3):
    at each layer $\ell$ fit, on a PCA-16 subspace,
-   $$\Delta h_t = A\,v_t + M_\ell h_t + b_\ell$$
+   $$\Delta h_t = Av_t + M_\ell h_t + b_\ell$$
    unconstrained and with $M_\ell = M_\ell^\top$.  A small full-vs-sym
    gap means the per-step linear operator is locally Hessian-of-scalar.
 
@@ -172,7 +172,7 @@ explanations:
    content.**  Adjacent tokens can be whitespace / punctuation /
    content-words with very different semantic roles, so token-time
    is non-uniform whereas layer-time is a uniform integrator step.
-   A uniform $\|v_t\|$ assumption is violated; this alone depresses
+   A uniform $\lVertv_t\rVert$ assumption is violated; this alone depresses
    $R^2$ without invalidating the shared-scalar structure.
 
 Both explanations predict that SPLM's token-direction $R^2$ will
@@ -245,5 +245,5 @@ python3 notebooks/conservative_arch/plot_token_vs_layer_three_way.py
   serves as the token-direction analogue of the depth-direction
   oracle.
 - **Deeper BOS/EOS skip + velocity filtering.**  Robustness check:
-  does dropping tokens with anomalous $\|v_t\|$ (whitespace /
+  does dropping tokens with anomalous $\lVertv_t\rVert$ (whitespace /
   punctuation) raise the SPLM ceiling?

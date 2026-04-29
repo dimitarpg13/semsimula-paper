@@ -171,7 +171,7 @@ For SPLM, the ground-truth V_θ(ξ, h) that generated the trajectories
 is known. Running `splm_oracle_fit.py` fits only the per-layer
 (α_ℓ, β_ℓ) scalars under the ansatz
 
-$$\Delta h_\ell \;\approx\; \alpha_\ell v_\ell - \beta_\ell \nabla_h V_\theta(\xi, h_\ell)$$
+$$\Delta h_\ell \approx \alpha_\ell v_\ell - \beta_\ell \nabla_h V_\theta(\xi, h_\ell)$$
 
 with V_θ held fixed at its learned value.
 

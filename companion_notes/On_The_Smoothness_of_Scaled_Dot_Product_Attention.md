@@ -210,7 +210,7 @@ Every practical transformer implementation uses $\varepsilon > 0$ (typical value
 $10^{-6}$). In that case the **denominator** in the standard formula is strictly positive:
 $$\sigma(h) + \varepsilon \ge \varepsilon > 0 \quad \text{for all } h \in \mathbb{R}^d\text{.}$$
 The **numerator** $h - \mu(h)\mathbf{1}$ is a polynomial in $h$; the **scale** $\sigma(h) = \sqrt{\varphi(h)}$ with
-$\varphi(h) = \frac{1}{d}\|h - \mu(h)\mathbf{1}\|^{2} \ge 0$ is the Euclidean norm of a linear image of
+$\varphi(h) = \frac{1}{d}\lVerth - \mu(h)\mathbf{1}\rVert^{2} \ge 0$ is the Euclidean norm of a linear image of
 $h$, hence $C^1$ on most of the space, but the map $\sqrt{\varphi}$ (before adding $\varepsilon$) has
 the usual **non-smoothness at $\varphi = 0$** (the “cone” in the mean-zero subspace). After adding
 the constant $\varepsilon$ to the denominator, the **ratio** $(h-\mu)/(\sigma+\varepsilon)$ is continuous and

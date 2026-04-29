@@ -316,7 +316,7 @@ That is, the scaled singular values of the signature matrix — which determine 
 
 The sphere constraint $(H^{\ast})^2 = \varsigma_1^2 + \varsigma_2^2 + \cdots + \varsigma_k^2$ in the Signature Matrix framework constrains the in-situ position to lie at a specific "radius" (information content). In PCA space, the analogous constraint is the Frobenius norm:
 
-$$\|\tilde{H}\|_F^2 = \sum_i \sigma_{H,i}^2 = \text{const.}$$
+$$\lVert\tilde{H}\rVert_F^2 = \sum_i \sigma_{H,i}^2 = \text{const.}$$
 
 which is the total variance of the hidden states. This total variance is the PCA analog of $H^{\ast}$ — it measures the total "spread" of the trajectory in representation space.
 
@@ -334,7 +334,7 @@ The correspondence becomes physically meaningful when combined with the Gaussian
 
 This yields a testable geometric prediction. Define $\vec{u}_{well}$ as the direction from the trajectory center (final hidden state $h_T$) toward the mean of the trajectory:
 
-$$\vec{u}_{well} = \frac{\bar{h} - h_T}{\|\bar{h} - h_T\|}$$
+$$\vec{u}_{well} = \frac{\bar{h} - h_T}{\lVert\bar{h} - h_T\rVert}$$
 
 The first principal component $\vec{v}_{H,1}$ should satisfy:
 
@@ -352,7 +352,7 @@ The table below collects the formal identifications:
 | Columns of $V_P$: semantic axes in $\Sigma$ | Columns of $V_H$: representation axes in $\mathbb{R}^d$ | $\vec{v}_{P,i} \leftrightarrow \vec{v}_{H,i}$ |
 | $\sigma_i$: spread along $i$-th semantic axis | $\sigma_{H,i}$: variance along $i$-th representation axis | $\sigma_i \leftrightarrow \sigma_{H,i}$ |
 | $H(P)$: information content (entropy of spectrum) | $H_{PCA}$: spectral entropy of variance | $H(P) \leftrightarrow H_{PCA}$ |
-| $H^{\ast}$: radius of feasibility sphere | $\|\tilde{H}\|_F$: total representation spread | $H^{\ast} \leftrightarrow \|\tilde{H}\|_F$ |
+| $H^{\ast}$: radius of feasibility sphere | $\lVert\tilde{H}\rVert_F$: total representation spread | $H^{\ast} \leftrightarrow \lVert\tilde{H}\rVert_F$ |
 | $\mathfrak{S}^{\ast}$: feasibility ellipsoid | $\mathcal{E}_{PCA}$: covariance ellipsoid | $\sigma_i^{\ast} \leftrightarrow \sigma_{H,i}$ |
 | Effective rank of $P$ | $k^{\ast}$: optimal PCA dimensionality for well fit | Effective rank $\leftrightarrow k^{\ast}$ |
 | $\vec{v}_1$: principal axis of property | $\vec{v}_{H,1}$: principal axis of trajectory | Should align with well axis |
@@ -390,7 +390,7 @@ A first experimental validation of the conjecture was carried out using the prot
 | Domains | mathematics, narrative, scientific, code description, conversational |
 | Sentences per domain | 10 |
 | Token lengths | min = 17, max = 39, mean = 28.3 |
-| Distance metric | Euclidean $\|h_t - \bar{h}\|$ in $\mathbb{R}^{768}$ |
+| Distance metric | Euclidean $\lVerth_t - \bar{h}\rVert$ in $\mathbb{R}^{768}$ |
 | Trajectory center | Arithmetic mean of hidden states |
 | Energy proxy | Per-token NTP cross-entropy loss |
 | STP triplets sampled | 500 per trajectory |
@@ -461,7 +461,7 @@ This 14-fold difference in inverse well width is consistent with Prediction 5 (S
 
 #### 7.2.5 Lagrangian Reconstruction and Action (Stage 5)
 
-Using the global Gaussian well parameters ($a = 3.669$, $b = 0.083$), the Lagrangian $\mathcal{L}_t = T_t - V_t$ was reconstructed along each trajectory. Velocities were computed as $v_t = \|h_t - h_{t-1}\|$ (Euclidean displacement between consecutive hidden states). The STP loss was estimated from 500 randomly sampled triplets per trajectory.
+Using the global Gaussian well parameters ($a = 3.669$, $b = 0.083$), the Lagrangian $\mathcal{L}_t = T_t - V_t$ was reconstructed along each trajectory. Velocities were computed as $v_t = \lVerth_t - h_{t-1}\rVert$ (Euclidean displacement between consecutive hidden states). The STP loss was estimated from 500 randomly sampled triplets per trajectory.
 
 | Quantity | Mean | Std |
 |---|---|---|
@@ -510,7 +510,7 @@ The weak signal in the GPT-2 results is attributable to a combination of model l
 
 #### 7.4.1 Euclidean Distance in High Dimensions
 
-The most consequential limitation is the use of Euclidean distance $\|h_t - \bar{h}\|$ in $\mathbb{R}^{768}$ as the independent variable in the well fits. In high-dimensional spaces, the concentration of measure phenomenon causes all points to cluster at approximately the same distance from the mean. This compresses the effective range of the distance variable and obscures any potential-energy structure.
+The most consequential limitation is the use of Euclidean distance $\lVerth_t - \bar{h}\rVert$ in $\mathbb{R}^{768}$ as the independent variable in the well fits. In high-dimensional spaces, the concentration of measure phenomenon causes all points to cluster at approximately the same distance from the mean. This compresses the effective range of the distance variable and obscures any potential-energy structure.
 
 Critically, the STP loss itself is defined in terms of **cosine similarity** (angular distance), not Euclidean distance. If the energy landscape has Gaussian well structure, it is the angular geometry — not the Euclidean geometry — that should reveal it.
 
@@ -540,9 +540,9 @@ Following the methodological critique in Section 7.4, the two highest-priority i
 
 | Parameter | Euclidean baseline (Section 7) | Cosine experiment |
 |---|---|---|
-| Distance metric | Euclidean $\|h_t - \bar{h}\|$ | **Cosine** $1 - \cos(h_t, c)$ |
+| Distance metric | Euclidean $\lVerth_t - \bar{h}\rVert$ | **Cosine** $1 - \cos(h_t, c)$ |
 | Trajectory center | Arithmetic mean $\bar{h}$ | **Final hidden state** $h_T$ |
-| Velocity | Euclidean displacement $\|h_t - h_{t-1}\|$ | **Angular velocity** $\arccos\bigl(\cos(h_t, h_{t-1})\bigr)$ |
+| Velocity | Euclidean displacement $\lVerth_t - h_{t-1}\rVert$ | **Angular velocity** $\arccos\bigl(\cos(h_t, h_{t-1})\bigr)$ |
 
 All other parameters (model, corpus, STP triplet count) were held constant.
 

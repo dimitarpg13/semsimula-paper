@@ -81,7 +81,7 @@ $$dx_{\leq t} = \hat{u} \circ \hat{f}(x_{\leq t}) dt + \sigma_t dW_t.$$
 The Brownian noise $\sigma_t dW_t$ plays the role of an effective damping field: it causes the hidden
 state trajectory $h_t$ to deviate from the optimal geodesic $h_t^*$, with distortion growing as
 
-$$\|h_t - h_t^*\|_2 \propto \sigma\sqrt{t}.$$
+$$\lVerth_t - h_t^*\rVert_2 \propto \sigma\sqrt{t}.$$
 
 Without regularization, the STP loss
 $$\mathcal{L}_{\mathrm{STP}} = 1 - \cos(h_t - h_r, h_r - h_s)$$
@@ -114,7 +114,7 @@ $$\tilde{x}_{l,i} = x_{l,i} + \tfrac{1}{2}\mathrm{FFN}(x_{l,i}),$$
 
 $$\hat{x}_{l,i} = \tilde{x}_{l,i} + \mathrm{MultiHeadAtt}(\tilde{x}_{l,i}, [\tilde{x}_{l,1}, \ldots, \tilde{x}_{l,n}]),$$
 
-$$x_{l+1,i} = \hat{x}_{l,i} + \tfrac{1}{2}\mathrm{FFN}\!\left(\hat{x}_{l,i}\right).$$
+$$x_{l+1,i} = \hat{x}_{l,i} + \tfrac{1}{2}\mathrm{FFN}\left(\hat{x}_{l,i}\right).$$
 
 This is a more accurate first-order numerical solver, not a promotion to second-order dynamics. To
 genuinely introduce inertia in the layer dimension, one would require a heavy-ball momentum term
@@ -236,12 +236,12 @@ $$m\ddot{h} + \eta_0 H_i \dot{h} + \nabla_h V(h) = 0,$$
 
 where the tanh damping factor is
 
-$$H_i = \tanh\!\left(\frac{\|p - p_E\|}{x_u}\right),$$
+$$H_i = \tanh\left(\frac{\lVertp - p_E\rVert}{x_u}\right),$$
 
 $\eta_0$ is the base friction coefficient, $x_u$ is the damping onset length scale, and $p_E$ is the
 ensemble centroid (bound-state attractor). The Gaussian semantic energy well is
 
-$$V(h) = m\upsilon^2\!\left(1 - e^{-\kappa^2 \|h\|^2}\right), \quad \upsilon = \sqrt{E_t/m},\quad \kappa = f/\upsilon.$$
+$$V(h) = m\upsilon^2\left(1 - e^{-\kappa^2 \lVerth\rVert^2}\right), \quad \upsilon = \sqrt{E_t/m},\quad \kappa = f/\upsilon.$$
 
 This is a complete second-order ODE system with three independently tunable parameters: $\eta_0$
 (damping magnitude), $x_u$ (damping spatial scale), and $\kappa$ (well shape / restoring force

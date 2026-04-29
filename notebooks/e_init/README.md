@@ -21,10 +21,10 @@ construction reported separately under
 | Experiment (paper ID) | Script | Ansatz | Result vs. static null |
 |---|---|---|---|
 | E1 — extended damping | `extended_gamma_and_first_order.py` | Scalar Gaussian well, second-order, $\gamma \in \{0.0, \ldots, 50.0\}$ | saturates at null for all $\gamma$ |
-| E2 — first-order overdamped | `extended_gamma_and_first_order.py` | Gradient flow $\dot x = -\eta\nabla V$, $\eta \in \{10^{-4}, \ldots, 10^{-1}\}$ | pinned at null for all $\eta$ |
+| E2 — first-order overdamped | `extended_gamma_and_first_order.py` | Gradient flow $\dot{x} = -\eta\nabla V$, $\eta \in \{10^{-4}, \ldots, 10^{-1}\}$ | pinned at null for all $\eta$ |
 | E3 — functional-form sweep | `well_functional_form_comparison.py` | seven forms: harmonic, Gaussian, Morse, Lorentzian-saturation, log-saturation, Weibull, power | every form ties null |
-| E4 — linear Helmholtz | `helmholtz_curl_augmented.py` | $m\ddot x = -\nabla V(x) + \Omega x - m\gamma \dot x$ with $\Omega = -\Omega^{\top}$ (PCA-$k$) | train $\|\Omega\|$ shrinks to zero; test ties null |
-| E5 — velocity-coupled gauge | `velocity_coupled_gauge.py` | $m\ddot x = -\nabla V(x) + F(x)\,\dot x - m\gamma\dot x$, constant / affine-rank-1 / affine-rank-2 $F(x) = -F(x)^{\top}$ | every variant ties null on test |
+| E4 — linear Helmholtz | `helmholtz_curl_augmented.py` | $m\ddot{x} = -\nabla V(x) + \Omega x - m\gamma \dot{x}$ with $\Omega = -\Omega^{\top}$ (PCA-$k$) | train $\lVert\Omega\rVert$ shrinks to zero; test ties null |
+| E5 — velocity-coupled gauge | `velocity_coupled_gauge.py` | $m\ddot{x} = -\nabla V(x) + F(x)\dot{x} - m\gamma\dot{x}$, constant / affine-rank-1 / affine-rank-2 $F(x) = -F(x)^{\top}$ | every variant ties null on test |
 
 Each script writes a structured markdown summary, an `.npz` of numerical
 results, and one or more `.png` figures to `results/`. The per-layer $R^{2}$

@@ -82,7 +82,7 @@ s_\ell = (x_\ell, \dot x_\ell, \xi_\ell, \mathfrak{m}_\ell, \theta_\ell),
 $$
 
 where $x_\ell \in \mathbb{R}^d$ is the particle's semantic-space
-position, $\dot x_\ell$ its velocity, $\xi_\ell$ the cumulative
+position, $\dot{x}_\ell$ its velocity, $\xi_\ell$ the cumulative
 semantic context (causal mean of preceding semantic structures), and
 $\mathfrak{m}_\ell$ the per-step semantic mass. $\theta_\ell$ collects
 the layer-indexed parameters of any non-autonomous fields.
@@ -106,7 +106,7 @@ $$
 Specific parametric forms (a starting point, to be refined):
 
 - **Wells** (one per concept anchor $k$):
-  $V_{\text{wells}}(x) = \sum_k \mathfrak{m}\_k \upsilon_k^2 \bigl(1 - e^{-\kappa_k^2 \|x - x_{c,k}\|^2}\bigr)$.
+  $V_{\text{wells}}(x) = \sum_k \mathfrak{m}\_k \upsilon_k^2 \bigl(1 - e^{-\kappa_k^2 \lVertx - x_{c,k}\rVert^2}\bigr)$.
   Parameters per well: centre $x_{c,k}$, width $\kappa_k$, depth
   $\upsilon_k$, mass $\mathfrak{m}_k$.
 

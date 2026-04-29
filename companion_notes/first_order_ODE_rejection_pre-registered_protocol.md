@@ -8,12 +8,12 @@
 > **Status.** Pre-registered, not yet executed. This document fixes the experimental design, the analysis pipeline, and the decision rule **before** any new data extraction or regression is run. Once committed to git, any post-hoc deviation must be flagged explicitly in the eventual write-up. The committing commit hash is the timestamp of pre-registration.
 >
 > **Executed 2026-04-27 (same-day).** Outcome **C — first-order not
-> rejected** at the primary cell on GPT-2 small ($\rho_{12}\!=\!0.979$,
-> two-sided $p_{12}\!=\!0.124$), confirmed on Pythia-160m
-> ($\rho_{12}\!=\!0.985$, two-sided $p_{12}\!=\!7.9\!\times\!10^{-7}$ but
-> with the *opposite* direction $\bar R_1\!<\!\bar R_2$), and robust across
+> rejected** at the primary cell on GPT-2 small ($\rho_{12}=0.979$,
+> two-sided $p_{12}=0.124$), confirmed on Pythia-160m
+> ($\rho_{12}=0.985$, two-sided $p_{12}=7.9\times10^{-7}$ but
+> with the *opposite* direction $\bar R_1<\bar R_2$), and robust across
 > the 24-cell sweep (21 / 24 cells return C; the 3 non-C cells are poly-2
-> ridge over-fitting artefacts at $p\!\ge\!50$). All implementation lives
+> ridge over-fitting artefacts at $p\ge50$). All implementation lives
 > in [`notebooks/dynamics_order_test/`](../notebooks/dynamics_order_test/);
 > the headline write-up is
 > [`results/RESULTS.md`](../notebooks/dynamics_order_test/results/RESULTS.md).
@@ -32,7 +32,7 @@ The paper claims that transformer hidden-state evolution along token position is
 Those arguments establish **second-order as a sufficient and natural framing**, but — as audited internally — they do **not** rigorously exclude every first-order ODE. Specifically:
 
 - **Theorem 49 is kinematic.** It is an algebraic identity over any three vectors and is silent on the dynamical class that produced them.
-- **The 97.9 % tangential-deceleration statistic** can be reproduced by a pure first-order gradient flow $\dot x = -\nabla V(x)$ on a locally convex potential.
+- **The 97.9 % tangential-deceleration statistic** can be reproduced by a pure first-order gradient flow $\dot{x} = -\nabla V(x)$ on a locally convex potential.
 
 The present experiment is designed to close this gap with a **distribution-free Markov-order regression test** that asks the question directly: *is $h_t$ alone a sufficient statistic for predicting $h_{t+1}$, or is at least one extra lag $h_{t-1}$ required?*
 
@@ -42,17 +42,17 @@ The present experiment is designed to close this gap with a **distribution-free 
 
 Let $\hat F_k$ denote the best predictor in a fixed function class for $h_{t+1}$ given the lag-$k$ history $(h_t, h_{t-1}, \ldots, h_{t-k+1})$. Define the per-fold mean-squared residual:
 
-$$R_k \;=\; \mathbb{E}_{(h_{t-k+1}, \ldots, h_{t+1})}\!\left[\big\| h_{t+1} - \hat F_k(h_t, \ldots, h_{t-k+1}) \big\|^2\right].$$
+$$R_k = \mathbb{E}_{(h_{t-k+1}, \ldots, h_{t+1})}\left[\big\lVert h_{t+1} - \hat F_k(h_t, \ldots, h_{t-k+1}) \big\rVert^2\right].$$
 
 | Hypothesis | Operational form |
 |---|---|
-| $H_0$ (first-order suffices) | $R_1 \;=\; R_2 \;=\; R_3$ |
-| $H_1$ (second-order suffices, but not first) | $R_1 \;>\; R_2 \;\approx\; R_3$ |
-| $H_2$ (higher than second order) | $R_1 \;>\; R_2 \;>\; R_3$ |
+| $H_0$ (first-order suffices) | $R_1 = R_2 = R_3$ |
+| $H_1$ (second-order suffices, but not first) | $R_1 > R_2 \approx R_3$ |
+| $H_2$ (higher than second order) | $R_1 > R_2 > R_3$ |
 
 The paper's claim is $H_1$. The headline rejection of *any* first-order ODE in the chosen class corresponds to rejecting $H_0$ in favour of $H_1$ or $H_2$.
 
-A first-order ODE $\dot h = f(h, t)$, in its discrete one-step embedding, must factorise as $h_{t+1} = F_1(h_t)$ — the next state is a function of the current state alone. Any deterministic dynamical system with this property satisfies $R_1 = R_2 = R_3$ at the level of its true conditional expectation, regardless of the form of $f$. This is what makes the test *distribution-free over $f$*: we never need to fit $f$, we only need to fit the conditional expectation of $h_{t+1}$ given various-length histories and compare them.
+A first-order ODE $\dot{h} = f(h, t)$, in its discrete one-step embedding, must factorise as $h_{t+1} = F_1(h_t)$ — the next state is a function of the current state alone. Any deterministic dynamical system with this property satisfies $R_1 = R_2 = R_3$ at the level of its true conditional expectation, regardless of the form of $f$. This is what makes the test *distribution-free over $f$*: we never need to fit $f$, we only need to fit the conditional expectation of $h_{t+1}$ given various-length histories and compare them.
 
 ---
 
@@ -132,7 +132,7 @@ The selected hyperparameters are then refit on the full outer-training fold and 
 
 For each quadruple $i$ in the outer-held-out fold, we record the squared error vector
 
-$$r_k^{(i)} \;=\; \big\| h_{t+1}^{(i)} - \hat F_k\!\left(h_t^{(i)}, \ldots, h_{t-k+1}^{(i)}\right) \big\|^2.$$
+$$r_k^{(i)} = \big\lVert h_{t+1}^{(i)} - \hat F_k\left(h_t^{(i)}, \ldots, h_{t-k+1}^{(i)}\right) \big\rVert^2.$$
 
 These per-quadruple residuals are the unit of paired statistical comparison.
 
@@ -142,7 +142,7 @@ These per-quadruple residuals are the unit of paired statistical comparison.
 
 ### 6.1 Effect-size ratios
 
-$$\rho_{12} \;=\; \frac{\bar R_1}{\bar R_2}, \qquad \rho_{23} \;=\; \frac{\bar R_2}{\bar R_3},$$
+$$\rho_{12} = \frac{\bar R_1}{\bar R_2}, \qquad \rho_{23} = \frac{\bar R_2}{\bar R_3},$$
 
 where $\bar R_k$ is the mean per-quadruple squared residual, averaged across all LOSO folds.
 

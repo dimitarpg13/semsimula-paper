@@ -37,7 +37,7 @@ main text (or, equivalently, four independent markdowns in this
 
 The full prescribed Lagrangian therefore reads
 
-$$\mathcal{L} = \sum_t \frac{1}{2} m_t \| \dot h_t \|^2 - V_{\mathrm{well}}(h_t) - V_{\mathrm{PARF}}(h_t, h_{\ne t}) - V_{\mathrm{SARF}}(h_t, \mathcal{E}(t)),$$
+$$\mathcal{L} = \sum_t \frac{1}{2} m_t \lVert \dot{h}_t \rVert^2 - V_{\mathrm{well}}(h_t) - V_{\mathrm{PARF}}(h_t, h_{\ne t}) - V_{\mathrm{SARF}}(h_t, \mathcal{E}(t)),$$
 
 where $h_{\ne t}$ denotes the set of hidden states at all positions other than $t$.
 
@@ -142,11 +142,11 @@ making separate quantitative claims about either one.
 ### 4.3 The Gaussian-well shape is a learned outcome, not an inductive bias
 
 Nothing in SPLM's parameterisation biases $V_\theta(\xi, h)$ toward
-the $\| h \|^2$-quadratic form at small displacements; the
+the $\lVert h \rVert^2$-quadratic form at small displacements; the
 E-init validation just empirically confirms that it tends there.
 Stronger claims (e.g. "SPLM *provably* has a Gaussian basin") would
 require either an architectural constraint (add a hand-crafted
-$\lambda \| h \|^2$ term to the MLP output) or a theoretical
+$\lambda \lVert h \rVert^2$ term to the MLP output) or a theoretical
 argument about what $V_\theta$ must converge to.
 
 ---

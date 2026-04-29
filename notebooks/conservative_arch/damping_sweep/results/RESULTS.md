@@ -5,7 +5,7 @@
 
 ## Headline grid
 
-| tag | $\gamma$ | val ppl | drift slope / layer | bandwidth | $\rho_{12}$ | $p_{12}$ | Markov decision | $a_\parallel<0$ | $\|a_\parallel\|/\|a_\perp\|$ | perm $z$ |
+| tag | $\gamma$ | val ppl | drift slope / layer | bandwidth | $\rho_{12}$ | $p_{12}$ | Markov decision | $a_\parallel<0$ | $\lVerta_\parallel\rVert/\lVerta_\perp\rVert$ | perm $z$ |
 |---|---:|---:|---:|---:|---:|---:|---|---:|---:|---:|
 | `gamma0p00` | 0.00 | 201.65 | 9.729 | 17.32 | 0.9061 | 4.92e-11 | **C** | 0.967 | 4.064 | 3.18 |
 | `gamma0p10` | 0.10 | 166.30 | -1.07 | 6.278 | 0.9767 | 1.84e-03 | **C** | 0.981 | 3.528 | 1.96 |

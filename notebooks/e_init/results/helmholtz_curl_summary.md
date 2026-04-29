@@ -13,16 +13,16 @@ rational, log-saturation, Weibull, or power law — reduces the layer-$L$
 residual below the static-null floor.  By the Helmholtz decomposition any
 sufficiently regular force field can be written
 
-$$\vec F(\vec x)\;=\;-\nabla V(\vec x)\;+\;\vec F_{\mathrm s}(\vec x),\qquad \nabla\cdot\vec F_{\mathrm s}=0.$$
+$$\vec F(\vec x)=-\nabla V(\vec x)+\vec F_{\mathrm s}(\vec x),\qquad \nabla\cdot\vec F_{\mathrm s}=0.$$
 
 This experiment asks whether *adding* a linear solenoidal term
 
-$$\vec F_{\mathrm s}(\vec x)\;=\;V_\ell\,\Omega_\ell\,V_\ell^{\top}\vec x,\qquad \Omega_\ell=-\Omega_\ell^{\top}\in\mathbb R^{k\times k},$$
+$$\vec F_{\mathrm s}(\vec x)=V_\ell\Omega_\ellV_\ell^{\top}\vec x,\qquad \Omega_\ell=-\Omega_\ell^{\top}\in\mathbb R^{k\times k},$$
 
 (where $V_\ell\in\mathbb R^{d\times k}$ is the per-layer top-$k$ PCA basis of
 **training** hidden states) lets the damped second-order integrator
 
-$$\mathfrak m\,\ddot x = -\nabla V(x)+V_\ell\Omega_\ell V_\ell^{\top}x-\mathfrak m\,\gamma\,\dot x$$
+$$\mathfrak m\ddot{x} = -\nabla V(x)+V_\ell\Omega_\ell V_\ell^{\top}x-\mathfrak m\gamma\dot{x}$$
 
 actually fit the hidden-state trajectories on held-out sentences.  As an
 **upper bound** that brackets the skew contribution, we also fit the

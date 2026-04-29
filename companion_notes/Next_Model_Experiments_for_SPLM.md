@@ -133,7 +133,7 @@ quality numbers are essentially unknown outside this regime.
 ### A1. Width sweep at fixed $L$: $d \in \{128, 256, 512\}$
 
 **Motivation.** Attention-transformer FLOP scaling is $O(T d^{2})$;
-SPLM's is $O(T d\,d_V)$.  The FLOP gap **grows with $d$**, so the
+SPLM's is $O(T dd_V)$.  The FLOP gap **grows with $d$**, so the
 crossover is at larger $d$, not smaller.  Shakespeare at $d=128$ is
 arguably the worst regime for SPLM relative to attention.
 
@@ -221,7 +221,7 @@ on wall-clock / memory.
 ### B3. Adaptive-$\Delta t$ inference
 
 **Motivation.** Today's experiments showed that most of the "flow
-distance" $L\,\Delta t$ matters; the discretization granularity
+distance" $L\Delta t$ matters; the discretization granularity
 matters less for LM quality.  One can **train at
 $L=8,\ \Delta t=1$** and **infer at $L=4,\ \Delta t=2$** or
 **$L=16,\ \Delta t=0.5$** without retraining, trading compute vs
@@ -240,7 +240,7 @@ a deployment-time choice.
 layer $\ell^\* < L$, later layers are redundant.
 
 **What to run.** Add a lightweight convergence criterion
-($\|v_\ell\|$ or $|V_\theta(\xi_\ell, h_\ell) - V_\theta(\xi_{\ell-1},
+($\lVertv_\ell\rVert$ or $|V_\theta(\xi_\ell, h_\ell) - V_\theta(\xi_{\ell-1},
 h_{\ell-1})|$) and sample-adaptively stop.  Measure average
 layers-per-token on held-out data and the ppl cost.
 
@@ -261,7 +261,7 @@ know how to fix; several parallel upgrades are natural.
 ### C1. Two-point (integrator-matched) shared-$V_\psi$ ansatz
 
 **Motivation.** The current ansatz
-$\Delta h = \alpha v - \beta\,\nabla V_\psi(h_\ell)$ rewards
+$\Delta h = \alpha v - \beta\nabla V_\psi(h_\ell)$ rewards
 Euler-style one-step updates.  A Verlet-matched ansatz
 $\Delta h = \alpha v - \tfrac{1}{2}\beta
 \bigl[\nabla V_\psi(h_\ell) + \nabla V_\psi(h_{\ell+1})\bigr]$
@@ -278,7 +278,7 @@ unbiased diagnostic.
 
 **Motivation.** The direct test of "is the flow Hamiltonian?" is to
 compute the total energy
-$H_\ell = \tfrac{1}{2}\mathfrak m\,\|v_\ell\|^{2}
+$H_\ell = \tfrac{1}{2}\mathfrak m\|v_\ell\|^{2}
 + V_\theta(\xi_\ell, h_\ell)$
 across depth and check for drift vs bounded oscillation.
 
@@ -308,7 +308,7 @@ Implementation lives in
   produced by the extractor, fits OLS drift slopes per variant
   with $t$-distribution $95\%$ CI, computes detrended oscillation
   bandwidth, and produces overlay plots of $H_\ell$,
-  $\tfrac{1}{2}\mathfrak m\,\|v_\ell\|^{2}$, and
+  $\tfrac{1}{2}\mathfrak m\lVertv_\ell\rVert^{2}$, and
   $V_\theta(\xi_\ell, h_\ell)$ vs normalised layer index.
 
 End-to-end CPU smoke validated on idle checkpoints.  Production
@@ -336,7 +336,7 @@ Three sub-results:
    finite local minima because its absolute scale is an unconstrained
    gauge degree of freedom (the loss only sees $-\nabla V_\theta$).
 2. *Anchored descent is unimodal and prompt-independent* — the
-   posterior $\propto \exp(-V_\theta - \tfrac{\lambda}{2}\|(h-h_c)/h_s\|^2)$
+   posterior $\propto \exp(-V_\theta - \tfrac{\lambda}{2}\lVert(h-h_c)/h_s\rVert^2)$
    collapses to one mode that decodes to the unconditional unigram
    over Tiny Shakespeare for every prompt.
 3. *The damped flow at $L = L_\text{train}$ does have prompt-dependent

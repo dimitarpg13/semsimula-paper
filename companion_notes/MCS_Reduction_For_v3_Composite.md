@@ -260,9 +260,9 @@ The upper bound is *tight*: v0 alone is at most regular (`Expressivity_Bounds_Fo
 
 $$
 \mathcal{L}(\text{v0}) \subseteq \text{REG}
-\;\subsetneq\;
+\subsetneq
 \mathcal{L}(\text{v0+v2}) \subseteq \text{CFL}
-\;\subsetneq\;
+\subsetneq
 \mathcal{L}(\text{v0+v1.5+v2+v3}) = \text{MCS}. \qquad(5.3)
 $$
 

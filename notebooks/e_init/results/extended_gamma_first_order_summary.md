@@ -17,10 +17,10 @@ GPT-2 hidden-state trajectories, at the layer-$L$ level, once its free
 parameter is tuned?
 
 - **(A) Damped second-order Euler-Lagrange** with damping $\gamma$:
-  $$\mathfrak{m}\,\ddot x = -2ab\,x\,e^{-br^{2}} - \mathfrak{m}\gamma\,\dot x.$$
+  $$\mathfrak{m}\ddot{x} = -2abxe^{-br^{2}} - \mathfrak{m}\gamma\dot{x}.$$
 - **(B) Pure first-order (overdamped) gradient flow** with step size $\eta$:
-  $$x_{\ell+1} = x_{\ell} - \eta\,\nabla V(x_{\ell}),\qquad
-    \nabla V(x) = 2ab\,x\,e^{-br^{2}}.$$
+  $$x_{\ell+1} = x_{\ell} - \eta\nabla V(x_{\ell}),\qquad
+    \nabla V(x) = 2abxe^{-br^{2}}.$$
   This is the $\mathfrak{m}\gamma\to\infty$ limit of (A) with
   $\eta := 1/(\mathfrak{m}\gamma)$; it has no velocity variable, no mass.
 
@@ -108,17 +108,17 @@ velocity still matters) and smallest at layer 12.
 
 Per-token check: the first-order trajectories coincide with the
 static-null trajectories **to floating-point precision**:
-$$\max_{t}\,\lvert \rho_{t,\text{1st}}^{(L)} - \rho_{t,\text{static}}^{(L)}\rvert = 0.0.$$
+$$\max_{t}\lvert \rho_{t,\text{1st}}^{(L)} - \rho_{t,\text{static}}^{(L)}\rvert = 0.0.$$
 
 **The first-order integrator does not move the hidden state at all**
 within the $\eta$ range explored. The mechanistic explanation is
 immediate: at the middle layers where the Gaussian-well fit is
 non-trivial, the fitted $b\sim 10^{-5}$ and typical $r^{2}\sim 10^{5}$,
 so $e^{-br^{2}}\sim e^{-1}$, and the gradient
-$2ab\,x\,e^{-br^{2}} \sim 2\cdot 8\cdot 10^{-5}\cdot x\cdot 0.37\sim
-6\times 10^{-5}\,x.$
+$2abxe^{-br^{2}} \sim 2\cdot 8\cdot 10^{-5}\cdot x\cdot 0.37\sim
+6\times 10^{-5}x.$
 Even with $\eta=25$ over 12 layers, that accumulates to
-$\sim 0.02\,\lVert x\rVert$, well below numerical resolution on the
+$\sim 0.02\lVert x\rVert$, well below numerical resolution on the
 scale of the observed inter-layer motion $\sim \lVert x\rVert$. The
 gradient is simply too weak for the first-order flow to do anything.
 

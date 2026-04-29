@@ -56,9 +56,9 @@ The following results motivate the current investigation:
 |---|---|---|
 | Pure scalar potential | $F = -\nabla V(x)$, any $V$ | **Fails** — residual $\approx$ static null (0.1773) |
 | Constant skew position force | $F = -\nabla V + \Omega x$, constant $\Omega$ | **Fails** |
-| Velocity-coupled, constant skew | $F = -\nabla V + B\dot x$, constant $B = -B^\top$ | Not yet tested |
-| Position-dependent gauge | $F = -\nabla V + B(x)\dot x$ | Not yet tested |
-| Riemannian geodesic | $\ddot x^k + \Gamma^k_{ij}\dot x^i \dot x^j = -\gamma \dot x^k$ | Not yet tested |
+| Velocity-coupled, constant skew | $F = -\nabla V + B\dot{x}$, constant $B = -B^\top$ | Not yet tested |
+| Position-dependent gauge | $F = -\nabla V + B(x)\dot{x}$ | Not yet tested |
+| Riemannian geodesic | $\ddot{x}^k + \Gamma^k_{ij}\dot{x}^i \dot{x}^j = -\gamma \dot{x}^k$ | Not yet tested |
 
 The failure of pure scalar potentials — including the Gaussian well — and position-coupled skew forces points to a **velocity-coupled solenoidal component** as the next candidate. This is the P-rot-6 model.
 
@@ -99,16 +99,16 @@ The scalar potential models tested in §1.2 model 100% of $F$ with the curl-free
 
 ### 2.3 The Full Force Taxonomy
 
-For second-order dynamics $m\ddot x = F(x, \dot x)$, the Helmholtz decomposition generalizes to phase space $(x, \dot x)$:
+For second-order dynamics $m\ddot{x} = F(x, \dot{x})$, the Helmholtz decomposition generalizes to phase space $(x, \dot{x})$:
 
-$$F(x, \dot x) = -\nabla \varphi(x) + F_{\text{sol}}(x) + B(x) \dot x + D(x) \dot x + \text{nonlinear terms}$$
+$$F(x, \dot{x}) = -\nabla \varphi(x) + F_{\text{sol}}(x) + B(x) \dot{x} + D(x) \dot{x} + \text{nonlinear terms}$$
 
 Reading term by term:
 
 - $-\nabla \varphi(x)$ — conservative, position-only
 - $F_{\text{sol}}(x)$ — solenoidal, position-only (curl $\ne 0$)
-- $B(x) \dot x$ — gyroscopic / magnetic (velocity-coupled)
-- $D(x) \dot x$ — symmetric dissipation (drag)
+- $B(x) \dot{x}$ — gyroscopic / magnetic (velocity-coupled)
+- $D(x) \dot{x}$ — symmetric dissipation (drag)
 
 Each row is orthogonal to the others in function space. A scalar potential tests only the first. P-rot-6 adds the third.
 
@@ -118,21 +118,21 @@ Each row is orthogonal to the others in function space. A scalar potential tests
 
 ### 3.1 The Equation of Motion
 
-$$m\ddot x = -\nabla V(x) + B_\ell \dot x - m\gamma \dot x, \qquad B_\ell = -B_\ell^\top \in \mathbb{R}^{k \times k}$$
+$$m\ddot{x} = -\nabla V(x) + B_\ell \dot{x} - m\gamma \dot{x}, \qquad B_\ell = -B_\ell^\top \in \mathbb{R}^{k \times k}$$
 
 In component form:
 
-$$m \ddot x_i = -\frac{\partial V}{\partial x_i} + \sum_j (B_\ell)_{ij} \dot x_j - m\gamma \dot x_i$$
+$$m \ddot{x}_i = -\frac{\partial V}{\partial x_i} + \sum_j (B_\ell)_{ij} \dot{x}_j - m\gamma \dot{x}_i$$
 
 ### 3.2 Why $B_\ell$ Must Be Skew-Symmetric
 
-The velocity coupling $B\dot x$ decomposes as:
+The velocity coupling $B\dot{x}$ decomposes as:
 
-$$B\dot x = \frac12 (B + B^\top)\dot x + \frac12 (B - B^\top)\dot x$$
+$$B\dot{x} = \frac12 (B + B^\top)\dot{x} + \frac12 (B - B^\top)\dot{x}$$
 
-The first piece (symmetric) is equivalent to anisotropic damping and is absorbed into the $-m\gamma\dot x$ term. The second piece (skew-symmetric) is the gyroscopic force — it is structurally new and does no work. Furthermore:
+The first piece (symmetric) is equivalent to anisotropic damping and is absorbed into the $-m\gamma\dot{x}$ term. The second piece (skew-symmetric) is the gyroscopic force — it is structurally new and does no work. Furthermore:
 
-$$\text{Power delivered by } B\dot x : \quad P = \dot x^\top B \dot x = 0 \ \ \forall \dot x \iff B = -B^\top$$
+$$\text{Power delivered by } B\dot{x} : \quad P = \dot{x}^\top B \dot{x} = 0 \ \ \forall \dot{x} \iff B = -B^\top$$
 
 The skew-symmetric constraint ensures the gyroscopic force **does zero work** — it curves trajectories without changing kinetic energy. This is the magnetic / Lorentz force analogy: a charged particle in a magnetic field is deflected but not accelerated.
 
@@ -140,7 +140,7 @@ The skew-symmetric constraint ensures the gyroscopic force **does zero work** �
 
 P-rot-6 admits a modified energy:
 
-$$E(x, \dot x) = \frac12 m \|\dot x\|^2 + V(x)$$
+$$E(x, \dot{x}) = \frac12 m \lVert\dot{x}\rVert^2 + V(x)$$
 
 Taking the time derivative along trajectories:
 
@@ -151,7 +151,7 @@ $$\begin{aligned}
  &= 0 - m\gamma \|\dot x\|^2 \ =\ -m\gamma \|\dot x\|^2.
 \end{aligned}$$
 
-**The skew-symmetric $B$ contributes exactly zero to energy dissipation.** The system is a damped, rotating system with well-defined Lyapunov function $E(x, \dot x)$. This is a key sanity check for any fitted $B$: if energy is not monotonically decreasing (up to noise), $B$ is not purely skew.
+**The skew-symmetric $B$ contributes exactly zero to energy dissipation.** The system is a damped, rotating system with well-defined Lyapunov function $E(x, \dot{x})$. This is a key sanity check for any fitted $B$: if energy is not monotonically decreasing (up to noise), $B$ is not purely skew.
 
 ### 3.4 The Number of Free Parameters
 
@@ -193,14 +193,14 @@ where $H_V = \nabla^2 V$ is the Hessian of $V$. Stability requires the real part
 
 **Classical Hopfield (1982).**
 
-$$E = -\frac12 x^\top \Xi^\top \Xi x + \frac12 \|x\|^2$$
+$$E = -\frac12 x^\top \Xi^\top \Xi x + \frac12 \lVertx\rVert^2$$
 $$F = -\nabla E = \Xi^\top (\Xi x) - x \quad \text{(Hebbian retrieval)}$$
 
 Capacity: $\sim 0.14 d$.
 
 **Krotov-Hopfield 2016 (polynomial interactions).**
 
-$$E = -\sum_\mu F_n(\xi^\mu \cdot x) + \frac12 \|x\|^2, \qquad F_n(z) = \frac{z^n}{n}$$
+$$E = -\sum_\mu F_n(\xi^\mu \cdot x) + \frac12 \lVertx\rVert^2, \qquad F_n(z) = \frac{z^n}{n}$$
 
 Capacity: $\sim d^{n-1}$ (superlinear in $d$ for $n > 2$).
 
@@ -208,7 +208,7 @@ Capacity: $\sim d^{n-1}$ (superlinear in $d$ for $n > 2$).
 
 Take $F_n \to \exp$ as $n \to \infty$:
 
-$$E(x) = -\frac{1}{\beta}\log \sum_\mu \exp(\beta \xi^\mu \cdot x) + \frac12 \|x\|^2 = -\frac{1}{\beta}\log Z(x) + \frac12 \|x\|^2$$
+$$E(x) = -\frac{1}{\beta}\log \sum_\mu \exp(\beta \xi^\mu \cdot x) + \frac12 \lVertx\rVert^2 = -\frac{1}{\beta}\log Z(x) + \frac12 \lVertx\rVert^2$$
 $$F(x) = -\nabla E = \Xi^\top \text{softmax}(\beta \Xi x) - x$$
 
 Capacity: $\sim \exp(d)$ (exponential in dimension).
@@ -301,11 +301,11 @@ The full solenoidal field is a **softmax-weighted superposition of vortices**, w
 
 The $K \ne V$ solenoidal component is a **position-only** force:
 
-$$F_{\text{sol}}(x) \quad \text{depends on } x, \text{ not } \dot x$$
+$$F_{\text{sol}}(x) \quad \text{depends on } x, \text{ not } \dot{x}$$
 
 The P-rot-6 gyroscopic term is a **velocity-coupled** force:
 
-$$F_{\text{gyro}} = B \dot x \quad \text{depends on } \dot x, \text{ not } x$$
+$$F_{\text{gyro}} = B \dot{x} \quad \text{depends on } \dot{x}, \text{ not } x$$
 
 These occupy **distinct sectors** of the Helmholtz decomposition. The identification $\Omega(x) \leftrightarrow B$ is not exact — it requires additional conditions.
 
@@ -321,11 +321,11 @@ $$F(\bar x + \delta x) \approx F(\bar x) + J F(\bar x) \delta x = F(\bar x) + S(
 
 For a locally quasi-straight trajectory over a short time window $\delta t$:
 
-$$\delta x(t) \approx \dot x(t) \delta t$$
+$$\delta x(t) \approx \dot{x}(t) \delta t$$
 
 The antisymmetric correction becomes:
 
-$$\Omega(\bar x) \delta x \approx \Omega(\bar x) \dot x \delta t$$
+$$\Omega(\bar x) \delta x \approx \Omega(\bar x) \dot{x} \delta t$$
 
 This gives an **effective velocity coupling** with:
 
@@ -335,15 +335,15 @@ The identification holds when:
 
 | Condition | Mathematical form |
 |---|---|
-| Locally straight trajectory | $\|\ddot x\| \delta t \ll \|\dot x\|$ |
-| Frozen attention | $\|\partial s / \partial x\| \|\delta x\| \ll \|s\|$ |
-| Short window | $\delta t \ll 1/(\beta \|K\|)$ |
+| Locally straight trajectory | $\lVert\ddot{x}\rVert \delta t \ll \lVert\dot{x}\rVert$ |
+| Frozen attention | $\lVert\partial s / \partial x\rVert \lVert\delta x\rVert \ll \lVerts\rVert$ |
+| Short window | $\delta t \ll 1/(\beta \lVertK\rVert)$ |
 
 ### 6.3 The Phase-Space Lifting
 
 A cleaner connection avoids linearization. Lift to phase space $z = (x, v)$:
 
-$$\dot z = G(z) = \begin{bmatrix} v \\ F(x)/m - \gamma v \end{bmatrix}$$
+$$\dot{z} = G(z) = \begin{bmatrix} v \\ F(x)/m - \gamma v \end{bmatrix}$$
 
 The Jacobian of $G$ in phase space:
 
@@ -848,7 +848,7 @@ The magnetic field is **inhomogeneous** — the rotational structure depends on 
 The dynamics are not velocity-linear in any sense. This points toward either:
 
 - **Riemannian geodesic structure**: the curvature IS the force, not a correction to Newtonian dynamics
-- **Non-Markovian dynamics**: the effective force at time $t$ depends on the full history $h_{<t}$, not just $h_t$ and $\dot h_t$
+- **Non-Markovian dynamics**: the effective force at time $t$ depends on the full history $h_{<t}$, not just $h_t$ and $\dot{h}_t$
 - **Discrete punctuation**: the trajectory is not smooth enough for second-order ODE models to apply
 
 ---
@@ -859,11 +859,11 @@ Having established the hierarchy through P-rot-6, the next steps follow a princi
 
 ### 10.1 Position-Dependent Gauge Field $B(x)$
 
-$$m\ddot x = -\nabla V(x) + B(x) \dot x - m\gamma \dot x, \qquad B(x) = -B(x)^\top$$
+$$m\ddot{x} = -\nabla V(x) + B(x) \dot{x} - m\gamma \dot{x}, \qquad B(x) = -B(x)^\top$$
 
 **Parameterization options** (in order of complexity):
 
-1. **RBF interpolation**: $B(x) = \sum_c w_c B_c \varphi(\|x - c\|)$ — cluster-based, interpretable
+1. **RBF interpolation**: $B(x) = \sum_c w_c B_c \varphi(\lVertx - c\rVert)$ — cluster-based, interpretable
 2. **Low-rank skew network**: $B(x) = U(x)\Sigma(x) V(x)^\top - V(x)\Sigma(x) U(x)^\top$ with neural $U, V, \Sigma$
 3. **Full gauge network**: unrestricted MLP output projected to skew manifold via $(B - B^\top)/2$
 
@@ -885,7 +885,7 @@ This is the **zero-free-parameter theoretical prediction** for $B(x)$ — fully 
 
 If all gauge field models fail, the hypothesis shifts to:
 
-$$\ddot x^k + \Gamma^k_{ij}(x) \dot x^i \dot x^j = -\gamma \dot x^k$$
+$$\ddot{x}^k + \Gamma^k_{ij}(x) \dot{x}^i \dot{x}^j = -\gamma \dot{x}^k$$
 
 where $\Gamma^k_{ij}$ are the Christoffel symbols of an implicit Riemannian metric on semantic space.
 
@@ -941,7 +941,7 @@ P-rot-6 is the **minimal model** that can capture velocity-coupled solenoidal dy
 2. $\Omega(x) = \dfrac{\beta}{2}\sum_\mu \text{softmax}_\mu(\beta K x) (V^\mu \otimes K^\mu - K^\mu \otimes V^\mu) \ne 0$
 3. Force field is non-conservative (curl $\ne 0$)
 4. Scalar potentials structurally fail (confirmed empirically)
-5. Linearized approximation: $\Omega(\bar x) \dot x \approx B \dot x$ (valid for smooth trajectories)
+5. Linearized approximation: $\Omega(\bar x) \dot{x} \approx B \dot{x}$ (valid for smooth trajectories)
 6. P-rot-6 with $B_{\text{theory}} = \Omega(\bar x)$ is a zero-free-parameter mechanistic model
 7. Test: does the residual drop significantly when $B_{\text{theory}}$ is added?
 
@@ -949,7 +949,7 @@ P-rot-6 is the **minimal model** that can capture velocity-coupled solenoidal dy
 
 1. **Multi-head superposition.** Does each head contribute an independent vortex, or do heads interfere constructively/destructively? The per-head analysis in §8.4 addresses this, but the algebraic structure of head superposition in the full $B$ matrix is not yet characterized.
 
-2. **Layer depth dependence.** Does $\|\Omega(x)\|$ grow or decay with layer depth? If it grows, solenoidal dynamics become more dominant at later layers — consistent with the view that deep layers perform semantic integration (curved trajectories) while early layers perform syntactic processing (more linear).
+2. **Layer depth dependence.** Does $\lVert\Omega(x)\rVert$ grow or decay with layer depth? If it grows, solenoidal dynamics become more dominant at later layers — consistent with the view that deep layers perform semantic integration (curved trajectories) while early layers perform syntactic processing (more linear).
 
 3. **Curvature tensor of the gauge field.** If $B(x)$ is position-dependent, its curvature tensor $F_{\mu\nu} = \partial_\mu B_\nu - \partial_\nu B_\mu + [B_\mu, B_\nu]$ determines whether there are topological obstructions to gauge-away the solenoidal component. Non-zero curvature would constitute evidence for genuine topological structure in semantic space. The commutator term $[B_\mu, B_\nu]$ is the non-abelian part and is precisely the object studied in the *Gauge Theory* and *Lie Groups for Gauge Theory* tutorials cited in §12; see §7 of the former for the field-strength tensor and §8 for its non-abelian generalisation.
 

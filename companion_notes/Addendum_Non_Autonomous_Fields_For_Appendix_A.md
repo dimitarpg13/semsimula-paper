@@ -194,8 +194,8 @@ Appendix A’s later subsections rephrase the same picture as:
 
 - a **connection** on the trivial product bundle (hidden state $\times$ layer index)
   and **holonomy** as non-conservativity when $\theta_\ell$ varies, and
-- an **adiabatic** regime when $\|\partial_\ell V\|$ is small compared to
-  $\|\nabla^2 V \dot{h}\|$ (fast relaxation in the instantaneous well).
+- an **adiabatic** regime when $\lVert\partial_\ell V\rVert$ is small compared to
+  $\lVert\nabla^2 V \dot{h}\rVert$ (fast relaxation in the instantaneous well).
 
 You can read the mainline argument **without** that geometry; the bundle section is
 a second coordinate system, not a separate hypothesis.

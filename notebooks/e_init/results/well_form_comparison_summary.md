@@ -12,7 +12,7 @@ targets &nbsp;&nbsp; **Centering:** per-sentence per-layer.
 Section 14.6 of the paper flags _functional-form discrimination_ (Outcome
 C) as the natural next step when the Gaussian well under-performs. Here
 we ask concretely: **does any member of the bounded-attractive class,
-other than Gaussian, fit the empirical $(\|x\|, \text{NTP loss})$
+other than Gaussian, fit the empirical $(\lVertx\rVert, \text{NTP loss})$
 scatter better, and -- more importantly -- does using it rescue the
 damped second-order integrator?**
 
@@ -24,7 +24,7 @@ $c$):
 | harmonic | $a r^{2}$ | simplest, unbounded |
 | gaussian | $a(1-e^{-br^{2}})$ | reference form from v1 |
 | morse | $a(1-e^{-br})^{2}$ | uses $r$, not $r^{2}$ |
-| rational (Lorentzian) | $a\,br^{2}/(1+br^{2})$ | saturates polynomially |
+| rational (Lorentzian) | $abr^{2}/(1+br^{2})$ | saturates polynomially |
 | log-saturation | $a\log(1+br^{2})$ | slow saturation |
 | Weibull / stretched-exp | $a(1-e^{-br^{\alpha}})$ | generalises Gaussian via $\alpha$ |
 | power law | $a r^{p}$ | unbounded with free exponent |
@@ -136,15 +136,15 @@ the force-per-unit-displacement $k(r) := V'(r)/r$ is, for each form:
 | power | $0.66\times 10^{-6}$ |
 
 Every form is in the same narrow band of $\sim 10^{-6}$. The absolute
-scale is what matters: a force $\sim 10^{-6}\cdot\|x\|$ accumulated over
+scale is what matters: a force $\sim 10^{-6}\cdot\lVertx\rVert$ accumulated over
 12 layers with damping $\gamma\gtrsim 1$ produces a displacement far
 below the layer-to-layer motion in GPT-2, so the integrator outputs
 collapse onto each other -- and onto the static null.
 
 The force scale is set by the fitted $a$ (well depth $\approx 8$ nats)
-divided by the _squared_ data scale ($\|x\|^{2}\approx 10^{5}$). This
+divided by the _squared_ data scale ($\lVertx\rVert^{2}\approx 10^{5}$). This
 ratio is $\sim 10^{-4}$ per unit $r^{2}$, and the $r$-derivative picks
-up another factor of $\sim 10^{-2}\,\|x\|$, giving the $\sim 10^{-6}$
+up another factor of $\sim 10^{-2}\lVertx\rVert$, giving the $\sim 10^{-6}$
 number. It is a property of the _data geometry_, not of the functional
 choice.
 
@@ -179,7 +179,7 @@ for v2 considerably:
 
 1. **Change the geometry, not the form.** Per-phrase centering
    (Prediction P4 in §10.3) or PCA projection (§14.5) reduce the
-   effective $\|x\|$ scale by an order of magnitude or more, and
+   effective $\lVertx\rVert$ scale by an order of magnitude or more, and
    therefore raise the effective force by the same factor. This is the
    lever most likely to produce a non-trivial residual drop.
 2. **Let $a$ depend on position within the phrase.** The binned-median
@@ -187,7 +187,7 @@ for v2 considerably:
    pooled fit is shallow because the phrase-mean centroid mixes basins
    of different depths. Per-phrase $(a,b)$ fits should yield larger
    $a$ and therefore stronger forces.
-3. **Drop $\|x\|$ as the sole state variable.** The residual bound
+3. **Drop $\lVertx\rVert$ as the sole state variable.** The residual bound
    may reflect that $V$ depends on a phrase-embedding or attention
    feature that is not captured by distance-from-centroid alone.
 

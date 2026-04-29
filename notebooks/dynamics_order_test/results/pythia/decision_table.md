@@ -15,8 +15,8 @@
 | PCA dim $p$ | **50** |
 | Function class | Kernel ridge regression (RBF), $\alpha$ and $\gamma$ inner-CV-selected |
 | Outer CV | Leave-one-sentence-out (50 folds) |
-| Inner CV | 5-fold, $\alpha \in \{10^{-3}, ..., 10\}$, $\gamma \in \{0.5, 1, 2\}\!\times\!\gamma_{med}$ |
-| Bootstrap | Sentence-cluster percentile, $B = 10\,000$ |
+| Inner CV | 5-fold, $\alpha \in \{10^{-3}, ..., 10\}$, $\gamma \in \{0.5, 1, 2\}\times\gamma_{med}$ |
+| Bootstrap | Sentence-cluster percentile, $B = 10000$ |
 | Runtime | 144 s |
 
 ## Mean per-quadruple residuals
@@ -41,10 +41,10 @@ GPT-2).
 | Wilcoxon $p_{12}$ (two-sided) | **$7.94\times 10^{-7}$** | $< 10^{-3}$ — **but in the wrong direction** | NO (direction fails) |
 | Wilcoxon $p_{12}$ (one-sided $R_1 > R_2$) | 1.0 | — | — |
 | Wilcoxon $p_{12}$ (one-sided $R_1 < R_2$) | $3.97\times 10^{-7}$ | — | — |
-| 95 % cluster-bootstrap CI for $\bar R_1 - \bar R_2$ | $[-6.06,\, -2.50]$ | strictly excludes $0$ negatively | — |
+| 95 % cluster-bootstrap CI for $\bar R_1 - \bar R_2$ | $[-6.06, -2.50]$ | strictly excludes $0$ negatively | — |
 | $\rho_{23} = \bar R_2 / \bar R_3$ | 0.9867 | $\le 1.05$ | (passes) |
 | Wilcoxon $p_{23}$ (two-sided) | $7.14\times 10^{-6}$ | $> 0.05$ | **NO** |
-| 95 % cluster-bootstrap CI for $\bar R_2 - \bar R_3$ | $[-5.20,\, -2.60]$ | excludes $0$ negatively | — |
+| 95 % cluster-bootstrap CI for $\bar R_2 - \bar R_3$ | $[-5.20, -2.60]$ | excludes $0$ negatively | — |
 
 The $\rho_{12}$ effect-size threshold for outcome A or B (≥ 1.20) is not
 met (it is below 1.0), and although $p_{12}$ achieves astronomical
@@ -76,9 +76,9 @@ pairwise distance in the projected space.
 Outcome C does **not** imply that the second-order Lagrangian framework
 is wrong. It implies the framework is in the **overdamped regime**.
 Concretely, the full Euler–Lagrange equation (paper Eq. 67),
-$w_t\,\ddot h_t + \gamma(h_t)\,\dot h_t = -\nabla V(h_t)$,
+$w_t\ddot{h}_t + \gamma(h_t)\dot{h}_t = -\nabla V(h_t)$,
 in the limit $\gamma \gg \omega_0$ collapses to
-$\dot h \approx -\nabla V / \gamma$,
+$\dot{h} \approx -\nabla V / \gamma$,
 a first-order gradient flow on the same potential. The two are
 observationally indistinguishable at one-token resolution. The variant
 this test rejects is the *underdamped* second-order ODE — the one in

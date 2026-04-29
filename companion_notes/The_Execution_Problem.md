@@ -799,7 +799,7 @@ This mechanism folds cleanly into the existing dynamics of the paper because it 
 Attach to each active semantic structure $S$ a scalar **persistence variable** $\pi(S, t) \in \mathbb{R}_{\ge 0}$ with the following dynamics:
 
 $$
-\frac{d\pi(S, t)}{dt} = -\lambda\, \pi(S, t) + \rho\bigl(\mathfrak{F}(S, t)\bigr),
+\frac{d\pi(S, t)}{dt} = -\lambda \pi(S, t) + \rho\bigl(\mathfrak{F}(S, t)\bigr),
 $$
 
 where:

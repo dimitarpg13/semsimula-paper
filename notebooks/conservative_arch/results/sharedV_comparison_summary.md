@@ -4,7 +4,7 @@
 
 The ansatz is
 
-$$\Delta x_\ell \;\approx\; \alpha_\ell\, v_\ell \;-\; \beta_\ell\, \nabla_h V_\psi(x_\ell),$$
+$$\Delta x_\ell \approx \alpha_\ell v_\ell - \beta_\ell \nabla_h V_\psi(x_\ell),$$
 
 with **one** shared $V_\psi$ (a 2-layer MLP, hidden 256, GELU) and per-layer scalars $\alpha_\ell,\beta_\ell$ that absorb the layer-varying velocity and force coefficients of the damped-second-order integrator ($\alpha_\ell \sim dt/(1+\gamma)$, $\beta_\ell \sim dt^2/((1+\gamma) m_\ell)$). $V_\psi$ is fit jointly with $\alpha_\ell,\beta_\ell$ by AdamW on pooled TRAIN samples, then evaluated on held-out sentences per layer.
 

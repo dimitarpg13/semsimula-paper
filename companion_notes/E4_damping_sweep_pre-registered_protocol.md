@@ -44,9 +44,9 @@ be compared in the §6 decision matrix.
 training, val perplexity is **monotonically non-increasing as $\gamma$
 increases from 0 toward the natural operating point** $\gamma \approx
 0.85$, then approximately flat or slightly increasing past it. Formally:
-$\mathrm{PPL}(\gamma=0)\,>\,\mathrm{PPL}(\gamma=0.1)\,>\,
-\mathrm{PPL}(\gamma=0.3)\,\ge\,\mathrm{PPL}(\gamma=0.85)\,\le\,
-\mathrm{PPL}(\gamma=2.0)\,\le\,\mathrm{PPL}(\gamma=5.0)$.
+$\mathrm{PPL}(\gamma=0)>\mathrm{PPL}(\gamma=0.1)>
+\mathrm{PPL}(\gamma=0.3)\ge\mathrm{PPL}(\gamma=0.85)\le
+\mathrm{PPL}(\gamma=2.0)\le\mathrm{PPL}(\gamma=5.0)$.
 
 **H2 (Energy-drift signature).** The E3 energy-drift slope and oscillation
 bandwidth are monotone in $\gamma$: small $\gamma$ ⇒ large drift / large
@@ -64,7 +64,7 @@ the same test will return outcome C (consistent with the natural-
 transformer baseline).
 
 **H4 (Trajectory-shape correlation).** §14 acceleration statistics
-($a_\parallel<0$ rate, $\|a_\parallel\|/\|a_\perp\|$, permutation-null
+($a_\parallel<0$ rate, $\lVerta_\parallel\rVert/\lVerta_\perp\rVert$, permutation-null
 $z$) are monotone in $\gamma$ in the same direction as PPL: at low
 $\gamma$, oscillatory trajectories degrade these signatures; at high
 $\gamma$ they recover the natural-transformer values.
@@ -75,7 +75,7 @@ A **single-axis sweep over $\gamma$**, with everything else held fixed
 to the existing best-PPL Euler baseline (`sarf_mass_variant`, mass_mode
 = `logfreq`):
 
-| Cell | $\gamma$ | per-step damping $1-e^{-\gamma\,\Delta t}$ at $\Delta t = 1$ | regime |
+| Cell | $\gamma$ | per-step damping $1-e^{-\gamma\Delta t}$ at $\Delta t = 1$ | regime |
 |---|---|---|---|
 | C0 (ballistic floor) | 0.00 | 0 % | undamped |
 | C1 (very underdamped) | 0.10 | 9.5 % | underdamped |
@@ -154,7 +154,7 @@ Run the **identical primary-cell pipeline** from
   selected on the 5-fold inner grid;
 - PCA dim: **50** (same as the GPT-2 / Pythia primary cell);
 - outer CV: **leave-one-sentence-out**, 50 folds;
-- bootstrap: sentence-cluster percentile, $B = 10\,000$;
+- bootstrap: sentence-cluster percentile, $B = 10000$;
 - decision matrix: **identical to the locked §6.4 matrix** of the
   first-order rejection protocol.
 
@@ -190,7 +190,7 @@ the one the readout sees), and compute on inside-sentence triplets:
 
 - `frac_a_par_negative` — fraction of triplets with $a_\parallel < 0$
   (paper §14: 97.9 % on natural GPT-2);
-- `mean_ratio_apar_aperp` — mean $\|a_\parallel\| / \|a_\perp\|$
+- `mean_ratio_apar_aperp` — mean $\lVerta_\parallel\rVert / \lVerta_\perp\rVert$
   (paper §14: ~2.0 on natural GPT-2);
 - `permutation_z` — z-score of natural-ordering acceleration vs. random-
   permutation null (paper §14: ~23 on natural GPT-2; this is a weak
@@ -203,7 +203,7 @@ For *each* $\gamma$ cell, three independent verdicts are reported:
 | Diagnostic | Verdict |
 |---|---|
 | Markov-order test | A / B / C / D per the locked §6.4 matrix |
-| Energy-drift slope | "drifting" if slope $> 0.05$ per layer in $\|H_0\|$, "bounded" otherwise |
+| Energy-drift slope | "drifting" if slope $> 0.05$ per layer in $\lVertH_0\rVert$, "bounded" otherwise |
 | Trajectory-shape match to natural | "match" if `frac_a_par_negative` $\ge 0.85$ AND `mean_ratio_apar_aperp` $\in [1.0, 3.0]$, "mismatch" otherwise |
 
 The headline reading of the sweep is the *correlation* of these three
@@ -250,7 +250,7 @@ and execution without a follow-up amendment to this document:
 | Per-cell training | seed = 0, 4000 steps, default optimiser (matching the existing baseline) |
 | PCA dim for Markov-order regression | 50 |
 | Function class for Markov-order regression | kernel ridge (RBF), inner-CV-selected $(\alpha, \gamma_{\text{kernel}})$ |
-| Bootstrap | sentence-cluster, $B=10\,000$ |
+| Bootstrap | sentence-cluster, $B=10000$ |
 | Decision matrix | the one locked in §6.4 of the first-order rejection protocol, applied per cell |
 | Energy-drift threshold | `slope > 0.05/layer` for "drifting" |
 | Trajectory-shape thresholds | `frac_a_par_negative ≥ 0.85`, `|a_par|/|a_perp| ∈ [1.0, 3.0]` for "match" |

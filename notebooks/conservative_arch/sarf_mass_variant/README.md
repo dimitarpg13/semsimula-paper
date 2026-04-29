@@ -26,7 +26,7 @@ particle** (token identity), not a state- or layer-dependent quantity.
 |---|---|---:|---|
 | `global`     | $\semm_t = \mathrm{softplus}(b) + \varepsilon$, single scalar | 1 | null control: no per-token variation |
 | `embed_head` **(A)** | $\semm_t = \mathrm{softplus}(\langle w_m, E_{x_t}\rangle + b_m) + \varepsilon$ | $d + 1 = 129$ | mass is a learned linear function of the token embedding |
-| `logfreq` **(B)**   | $\semm_t = \mathrm{softplus}(b_m + \alpha\, s(x_t)) + \varepsilon$, $s(v) = -\log \hat p(v)$ frozen | 1 | mass = Shannon surprisal, one scale knob |
+| `logfreq` **(B)**   | $\semm_t = \mathrm{softplus}(b_m + \alpha s(x_t)) + \varepsilon$, $s(v) = -\log \hat p(v)$ frozen | 1 | mass = Shannon surprisal, one scale knob |
 
 ### Variant (A) `embed_head` — learned content-driven mass
 

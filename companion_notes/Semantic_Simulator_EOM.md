@@ -97,7 +97,7 @@ $$
 
 Window size: 5 tokens each side. Spectral decomposition gives
 $E \in \mathbb{R}^{V \times d}$, with rows $e_v$. Norm-normalised
-($\|e_v\|_2 = 1$ for all $v$) so the embedding lives on the unit
+($\lVerte_v\rVert_2 = 1$ for all $v$) so the embedding lives on the unit
 sphere $S^{d-1}$.
 
 **Estimator:** sparse PMI matrix + truncated SVD. Cost
@@ -440,7 +440,7 @@ with:
   $|E^{(L)} - E^{(0)} + \gamma \int_0^L T d\ell|$, i.e. enforce
   energy conservation modulo damping.
 - **Trajectory predictability** $r_{\text{predict}}$: reward low
-  variance of $\|x_t^{(\ell+1)} - x_t^{(\ell)}\|$ across $\ell$
+  variance of $\lVertx_t^{(\ell+1)} - x_t^{(\ell)}\rVert$ across $\ell$
   (smooth flows).
 - **Basin stability at horizon** $r_{\text{basin}}$: reward low
   variance of $x_t^{(L)}$ across nearby initialisations

@@ -7,7 +7,7 @@ Three follow-ups to the `symplectic_variant/` baseline (velocity-Verlet
 |---|------|---------|-------------------------|-----------|
 | 1 | Baseline re-run of diagnostics on the **already-trained** $L=8$ Verlet checkpoint | `sym_logfreq_shakespeare` | 9 | 0 (just eval) |
 | 2 | **FLOP-matched** Verlet (halve integration depth) | `sym_logfreq_shakespeare_L4` | 5 | 17 min |
-| 3 | **Small-$dt$** Verlet (halve step, double layers, same total flow $L\,dt=8$) | `sym_logfreq_shakespeare_L16_dt05` | 17 | 49 min |
+| 3 | **Small-$dt$** Verlet (halve step, double layers, same total flow $Ldt=8$) | `sym_logfreq_shakespeare_L16_dt05` | 17 | 49 min |
 
 The Euler `logfreq` baseline (`sarf_mass_variant/` with $L=8$, $dt=1$) is
 used as the reference point throughout.
@@ -25,8 +25,8 @@ used as the reference point throughout.
 
 **Finding.** No Verlet variant beats Euler on LM quality.  Halving $L$ at
 fixed $dt$ is disastrous (280 ppl): the model needs at least $\approx 8$
-units of "flow distance" $L\,dt$ to form a useful semantic potential
-landscape.  Refining $dt$ while keeping $L\,dt = 8$ (L16-dt05, 2 $\times$
+units of "flow distance" $Ldt$ to form a useful semantic potential
+landscape.  Refining $dt$ while keeping $Ldt = 8$ (L16-dt05, 2 $\times$
 the cost) does **not** recover Euler's perplexity -- it is the worst
 Verlet variant in our matched-flow regime.
 
@@ -60,7 +60,7 @@ ansatz *worse*, not better (0.755 vs 0.837 pooled TEST).
 The reason is that the fit ansatz is *one-step pointwise*:
 $\Delta h_\ell = \alpha_\ell v_\ell - \beta_\ell \nabla V_\psi(h_\ell)$.
 Euler's update is literally
-$\Delta h = dt\,(v_{\text{prev}} + dt\,f(h_\ell)/m)/(1 + dt\,\gamma)$ --
+$\Delta h = dt(v_{\text{prev}} + dtf(h_\ell)/m)/(1 + dt\gamma)$ --
 a one-step pointwise update centred at $h_\ell$.  The ansatz matches
 Euler's update structure exactly (modulo the re-parameterisation
 $\alpha_\ell, \beta_\ell$) so it scores high by construction.

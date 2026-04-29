@@ -46,7 +46,7 @@ The metric $\epsilon$-entropy of a compact subset $K \subseteq \mathbb{R}^n$ sat
 
 ### Numerical implication
 
-For the v0 toy ($d=64$, $L=8$, $K=32$, $N_S=16$, $P=5$), $\dim M$ is dominated by the $(x_\ell, \dot x_\ell, \xi_\ell) \in \mathbb{R}^{3d}$ contribution plus the parameter slot. Conservatively, $\dim M \approx 200$. At $\epsilon = 10^{-6}$ and $L_M = O(10)$:
+For the v0 toy ($d=64$, $L=8$, $K=32$, $N_S=16$, $P=5$), $\dim M$ is dominated by the $(x_\ell, \dot{x}_\ell, \xi_\ell) \in \mathbb{R}^{3d}$ contribution plus the parameter slot. Conservatively, $\dim M \approx 200$. At $\epsilon = 10^{-6}$ and $L_M = O(10)$:
 
 $$
 \log_2 N_\epsilon(M) \lesssim 200 \cdot \log_2(10^7) \approx 4600\text{ bits}.
@@ -76,10 +76,10 @@ $$
 
 ### Proof
 
-Liouville's theorem in its damped form: along trajectories of (EOM) with damping $\gamma$, phase-space volume satisfies $\dot V_M = \mathrm{tr}(DF) \cdot V_M$, where $F$ is the right-hand side of (EOM). Computing the divergence:
+Liouville's theorem in its damped form: along trajectories of (EOM) with damping $\gamma$, phase-space volume satisfies $\dot{V}_M = \mathrm{tr}(DF) \cdot V_M$, where $F$ is the right-hand side of (EOM). Computing the divergence:
 
 $$
-\nabla \cdot F = -\dim M \cdot \gamma + O\!\left(\mathrm{tr}(\nabla^2 V) / \mathfrak{m}\right).
+\nabla \cdot F = -\dim M \cdot \gamma + O\left(\mathrm{tr}(\nabla^2 V) / \mathfrak{m}\right).
 $$
 
 For our $V$ — Gaussian wells + bilinear forms + bounded SARF — the second-derivative trace is bounded uniformly on $M$, and is small relative to $\dim M\cdot\gamma$ at typical operating points. Hence (3.1).
@@ -224,7 +224,7 @@ $$
 
 Naively this gives $D^\ast \sim 2300$. But this overestimate ignores two important factors:
 
-1. **Effective representational dimension.** The simulator does not use all of $\dim M$ as memory — much of $\dim M$ is committed to the immediate $x_\ell, \dot x_\ell$ representation and the static parameters. The effective memory dimension is $\dim_{\mathrm{mem}} \approx d = 64$, not $\dim M$.
+1. **Effective representational dimension.** The simulator does not use all of $\dim M$ as memory — much of $\dim M$ is committed to the immediate $x_\ell, \dot{x}_\ell$ representation and the static parameters. The effective memory dimension is $\dim_{\mathrm{mem}} \approx d = 64$, not $\dim M$.
 2. **Finite resolution per stack frame.** Distinguishing two bracket types at finite working precision requires a separation of $\Omega(\epsilon^{-1/2})$ in the embedding direction, not $\epsilon^{-1}$. So the *practical* bits per frame at the embedding scale are $\log_2(d/\delta) \approx 10$–$20$ where $\delta$ is the achievable inter-anchor separation, not $\log_2(1/\epsilon) \approx 23$.
 
 Refined estimate, with $\dim_{\mathrm{mem}} = d = 64$ and effective bits per frame $\approx \log_2(L_M / \delta)$ with $\delta = 0.1$:

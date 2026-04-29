@@ -189,7 +189,7 @@ Headline numbers:
    ansatz at coarse $dt$, so Verlet looks less conservative
    through this particular lens even though the continuous flow is
    identical.
-2. **At finer $dt=0.5$ (same flow distance $L\,dt=8$), Verlet lifts
+2. **At finer $dt=0.5$ (same flow distance $Ldt=8$), Verlet lifts
    the depth-axis $R^2$ to +0.958 pooled TEST**, every layer
    $\geq +0.938$ — the highest conservative-dynamics signature of
    any SPLM variant trained so far, and a +0.12 gain over the Euler
@@ -223,7 +223,7 @@ nuanced picture:
 - **Halving integration depth is expensive** — $L{=}4$ Verlet at
   5 force evals is 63% of Euler's integration cost but the LM
   degrades from 160 to 280 ppl.  The architecture still needs a
-  minimum flow distance of $L\,dt \gtrsim 8$ to form a useful
+  minimum flow distance of $Ldt \gtrsim 8$ to form a useful
   semantic landscape.
 
 ## Directory layout

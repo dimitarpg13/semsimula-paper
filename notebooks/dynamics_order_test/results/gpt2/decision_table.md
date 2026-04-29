@@ -15,8 +15,8 @@
 | PCA dim $p$ | **50** (basis fit on training fold's $h_{t+1}$, applied to all four lags) |
 | Function class | Kernel ridge regression (RBF), $\alpha$ and $\gamma$ inner-CV-selected |
 | Outer CV | Leave-one-sentence-out (50 folds) |
-| Inner CV | 5-fold on training quadruples, $\alpha \in \{10^{-3}, ..., 10\}$, $\gamma \in \{0.5, 1, 2\}\!\times\!\gamma_{med}$ |
-| Bootstrap | Sentence-cluster percentile, $B = 10\,000$ resamples |
+| Inner CV | 5-fold on training quadruples, $\alpha \in \{10^{-3}, ..., 10\}$, $\gamma \in \{0.5, 1, 2\}\times\gamma_{med}$ |
+| Bootstrap | Sentence-cluster percentile, $B = 10000$ resamples |
 | Runtime | 174 s on 16-core CPU (parallelised across LOSO folds) |
 
 ## Mean per-quadruple residuals
@@ -39,12 +39,12 @@ account.
 | Wilcoxon $p_{12}$ (two-sided, §6.2) | **0.124** | $< 10^{-3}$ | **NO** |
 | Wilcoxon $p_{12}$ (one-sided $R_1 > R_2$) | 0.938 | — | — |
 | Wilcoxon $p_{12}$ (one-sided $R_1 < R_2$) | 0.062 | — | — |
-| 95 % cluster-bootstrap CI for $\bar R_1 - \bar R_2$ | $[-123.08,\, -0.56]$ | strictly excludes $0$ on the **negative** side | — |
+| 95 % cluster-bootstrap CI for $\bar R_1 - \bar R_2$ | $[-123.08, -0.56]$ | strictly excludes $0$ on the **negative** side | — |
 | $\rho_{23} = \bar R_2 / \bar R_3$ | 0.9788 | $\le 1.05$ (row A) | (passes) |
 | Wilcoxon $p_{23}$ (two-sided) | **0.0086** | $> 0.05$ (row A) | **NO** |
 | Wilcoxon $p_{23}$ (one-sided $R_2 > R_3$) | 0.996 | — | — |
 | Wilcoxon $p_{23}$ (one-sided $R_2 < R_3$) | 0.0043 | — | — |
-| 95 % cluster-bootstrap CI for $\bar R_2 - \bar R_3$ | $[-133.41,\, -1.69]$ | excludes $0$ negatively | — |
+| 95 % cluster-bootstrap CI for $\bar R_2 - \bar R_3$ | $[-133.41, -1.69]$ | excludes $0$ negatively | — |
 
 The $\rho_{12}$ effect-size threshold is **not met**, the Wilcoxon
 two-sided $p_{12}$ does not reach the $10^{-3}$ threshold, and the bootstrap
@@ -98,9 +98,9 @@ correctly, ruling out a "wrong $\gamma$ at high $k$" explanation.
 Outcome C does **not** imply that the second-order Lagrangian framework
 is wrong. It implies the framework is in the **overdamped regime**.
 Concretely, the full Euler–Lagrange equation (paper Eq. 67),
-$w_t\,\ddot h_t + \gamma(h_t)\,\dot h_t = -\nabla V(h_t)$,
+$w_t\ddot{h}_t + \gamma(h_t)\dot{h}_t = -\nabla V(h_t)$,
 in the limit $\gamma \gg \omega_0$ collapses to
-$\dot h \approx -\nabla V / \gamma$,
+$\dot{h} \approx -\nabla V / \gamma$,
 a first-order gradient flow on the same potential. The two are
 observationally indistinguishable at one-token resolution. The variant
 this test rejects is the *underdamped* second-order ODE — the one in

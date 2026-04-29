@@ -19,7 +19,7 @@
 > (Eq. 67) in the regime $\gamma \gg \omega_0$, where the inertial term
 > $w_t\ddot{h}_t$ is small relative to the dissipation $\gamma\dot{h}_t$
 > and the potential $\nabla V$. In that limit the EOM collapses to
-> $\dot h \approx -\nabla V / \gamma$ — observationally indistinguishable
+> $\dot{h} \approx -\nabla V / \gamma$ — observationally indistinguishable
 > from a first-order gradient flow at one-token resolution, but
 > *generatively* still a Lagrangian system with kinetic, potential and
 > Rayleigh terms. What the test rejects is the *underdamped* version of
@@ -148,7 +148,7 @@ This is both a proof and a conceptual sharpening: since the STP loss equals a fu
 
 **The companion total-acceleration decomposition identity** (Eq. 113):
 
-$$\|\vec{a}_t\|^2 = \left(\|\vec{d}_2\| - \|\vec{d}_1\|\right)^2 + 2\|\vec{d}_1\|\|\vec{d}_2\| \cdot \mathcal{L}_{\text{STP}}$$
+$$\lVert\vec{a}_t\rVert^2 = \left(\lVert\vec{d}_2\rVert - \lVert\vec{d}_1\rVert\right)^2 + 2\lVert\vec{d}_1\rVert\lVert\vec{d}_2\rVert \cdot \mathcal{L}_{\text{STP}}$$
 
 makes explicit that any nonzero STP loss implies acceleration — specifically normal acceleration — and cleanly separates tangential and normal contributions.
 

@@ -88,7 +88,7 @@ where $H$ is the number of attention heads. This measures how much the rest of t
 
 ### 2.2 Candidate 2: Hidden State Norm
 
-Define $w_s = \|h_s\|$, the Euclidean norm of the hidden state.
+Define $w_s = \lVerth_s\rVert$, the Euclidean norm of the hidden state.
 
 | Axiom | Assessment |
 |---|---|
@@ -116,7 +116,7 @@ Define $w_s = 1 / \ell_s$ (or $w_s = e^{-\ell_s}$), so that easily predicted tok
 
 ### 2.4 Candidate 4: Gradient Norm (Sensitivity)
 
-Define $w_s = \|\nabla_{h_s} \mathcal{L}_{NTP}\|$, the norm of the loss gradient with respect to the hidden state at position $s$.
+Define $w_s = \lVert\nabla_{h_s} \mathcal{L}_{NTP}\rVert$, the norm of the loss gradient with respect to the hidden state at position $s$.
 
 | Axiom | Assessment |
 |---|---|
@@ -247,7 +247,7 @@ In the Signature Matrix framework, the feasible in-situ positions lie on a spher
 
 $$\mathcal{E}_{w}: \sum_{i=1}^{k} \frac{z_{w,i}^2}{\sigma_{w,i}^2} \leq \chi^2_k(\alpha)$$
 
-where $z_{w,t} = V_{w,k}^T (h_t - \bar{h}_w)$ are the attention-weighted PCA coordinates. The semi-axes $\sigma_{w,i}$ replace $\sigma_i^*$ in the correspondence, and the mass-weighted Frobenius norm $\|\tilde{H}_w\|_F$ replaces $H^*$ as the effective representation radius.
+where $z_{w,t} = V_{w,k}^T (h_t - \bar{h}_w)$ are the attention-weighted PCA coordinates. The semi-axes $\sigma_{w,i}$ replace $\sigma_i^*$ in the correspondence, and the mass-weighted Frobenius norm $\lVert\tilde{H}_w\rVert_F$ replaces $H^*$ as the effective representation radius.
 
 ---
 
@@ -312,7 +312,7 @@ $$\vec{v}_t^{(0)} = \vec{v}_t^{(0),\mathrm{attn}} + \vec{v}_t^{(0),\mathrm{mlp}}
 
 therefore separates the contextual contribution from the intrinsic contribution to the first kick. This is a decomposition without analog in classical mechanics, but a natural one in the transformer instantiation: it distinguishes what the token brings with it from what the neighborhood imprints on it during the first layer of processing.
 
-**(b) Magnitude variation across token types.** Anchor tokens — sentence-initial markers, high-frequency function words, the positions identified in §3.2 as attention sinks — receive large $w_t$ but are expected to have **small** $\|\vec{v}_t^{(0)}\|$. The reason is structural: the first block can only attend to what is already in the input, and anchor tokens are tokens whose representation does not yet depend on the specifics of the surrounding content. Content tokens whose representation depends strongly on context (polysemous nouns in a disambiguating frame, pronouns referring to earlier entities, punctuation at syntactic inflection points) are expected to have **large** $\|\vec{v}_t^{(0)}\|$. This aligns with the layer-specialization picture of [8]: early layers carry out morphosyntactic and surface-disambiguation work, and $\|\vec{v}_t^{(0)}\|$ is a direct proxy for how much of that work the token requires.
+**(b) Magnitude variation across token types.** Anchor tokens — sentence-initial markers, high-frequency function words, the positions identified in §3.2 as attention sinks — receive large $w_t$ but are expected to have **small** $\lVert\vec{v}_t^{(0)}\rVert$. The reason is structural: the first block can only attend to what is already in the input, and anchor tokens are tokens whose representation does not yet depend on the specifics of the surrounding content. Content tokens whose representation depends strongly on context (polysemous nouns in a disambiguating frame, pronouns referring to earlier entities, punctuation at syntactic inflection points) are expected to have **large** $\lVert\vec{v}_t^{(0)}\rVert$. This aligns with the layer-specialization picture of [8]: early layers carry out morphosyntactic and surface-disambiguation work, and $\lVert\vec{v}_t^{(0)}\rVert$ is a direct proxy for how much of that work the token requires.
 
 The combination of (a)+(b) gives a second-order consistency check on Axiom M1 (inertia) of §1.3: heavy tokens should move little at early layers not because of a generic "force balance" but because the first block's ability to move them is itself bounded by the information already present in the input. Experiment 5 below (§8.5, E-init) tests this directly.
 
@@ -328,24 +328,24 @@ which coincides with the vector $\vec{d}_1$ entering the STP loss of the first c
 
 For a phrase-sized ensemble $\{t_1, \ldots, t_k\}$, the attention-weighted centroid at layer $\ell$ (§4.1) is
 
-$$\vec{r}_c^{(\ell)} = \sum_{i=1}^{k} \tilde{w}_{t_i}\, h_{t_i}^{(\ell)}, \qquad \tilde{w}_{t_i} = \frac{w_{t_i}}{\sum_j w_{t_j}},$$
+$$\vec{r}_c^{(\ell)} = \sum_{i=1}^{k} \tilde{w}_{t_i} h_{t_i}^{(\ell)}, \qquad \tilde{w}_{t_i} = \frac{w_{t_i}}{\sum_j w_{t_j}},$$
 
 and the ensemble's initial velocity under the layer-as-time reading is
 
-$$\vec{V}_c^{(0)} = \vec{r}_c^{(1)} - \vec{r}_c^{(0)} = \sum_i \tilde{w}_{t_i}\, \vec{v}_{t_i}^{(0)},$$
+$$\vec{V}_c^{(0)} = \vec{r}_c^{(1)} - \vec{r}_c^{(0)} = \sum_i \tilde{w}_{t_i} \vec{v}_{t_i}^{(0)},$$
 
 the mass-weighted average of the per-token initial velocities. This quantity acquires a direct physical meaning through the **König decomposition** of kinetic energy. Writing $M = \sum_i \mathfrak{m}_{t_i} = \sum_i w_{t_i}$ for the total ensemble mass,
 
-$$T = \underbrace{\tfrac{1}{2}\, M\, \|\vec{V}_c\|^2}_{\text{bulk}} + \underbrace{\tfrac{1}{2}\, \sum_i \mathfrak{m}_{t_i}\, \|\vec{v}_{t_i} - \vec{V}_c\|^2}_{\text{internal}}.$$
+$$T = \underbrace{\tfrac{1}{2} M \lVert\vec{V}_c\rVert^2}_{\text{bulk}} + \underbrace{\tfrac{1}{2} \sum_i \mathfrak{m}_{t_i} \lVert\vec{v}_{t_i} - \vec{V}_c\rVert^2}_{\text{internal}}.$$
 
 The two terms have distinct transformer interpretations:
 
-- **Bulk kinetic energy** $T_{\text{bulk}} = \tfrac{1}{2} M \|\vec{V}_c\|^2$ is the kinetic energy associated with *translation of the phrase as a whole*. Large values at the transition $\ell = 0 \to 1$ indicate that the first block is repositioning the entire phrase in semantic space — the phrase is being recontextualized, disambiguated, or projected onto a relevant subspace as a unit.
-- **Internal kinetic energy** $T_{\text{int}} = \tfrac{1}{2}\sum_i \mathfrak{m}_{t_i} \|\vec{v}_{t_i} - \vec{V}_c\|^2$ is the kinetic energy of the constituent particles *relative to the ensemble centroid*. Large values at $\ell = 0 \to 1$ indicate that the first block is reorganizing the phrase internally — individual token representations are shifting with respect to each other even when the centroid may be stable. This is the transformer realization of an ensemble whose particles are still settling into their bound states.
+- **Bulk kinetic energy** $T_{\text{bulk}} = \tfrac{1}{2} M \lVert\vec{V}_c\rVert^2$ is the kinetic energy associated with *translation of the phrase as a whole*. Large values at the transition $\ell = 0 \to 1$ indicate that the first block is repositioning the entire phrase in semantic space — the phrase is being recontextualized, disambiguated, or projected onto a relevant subspace as a unit.
+- **Internal kinetic energy** $T_{\text{int}} = \tfrac{1}{2}\sum_i \mathfrak{m}_{t_i} \lVert\vec{v}_{t_i} - \vec{V}_c\rVert^2$ is the kinetic energy of the constituent particles *relative to the ensemble centroid*. Large values at $\ell = 0 \to 1$ indicate that the first block is reorganizing the phrase internally — individual token representations are shifting with respect to each other even when the centroid may be stable. This is the transformer realization of an ensemble whose particles are still settling into their bound states.
 
 The decomposition is the classical separation of an interacting $k$-body system into translational and internal motion, and it matches naturally the multi-particle view of transformers developed by [9] and the interacting-particle analysis of self-attention dynamics of [10]. Both of those works model hidden-state evolution as a coupled-particle system; the bulk/internal split is precisely the standard König decomposition for such a system.
 
-**Prediction**: Phrases of distinct syntactic and semantic types should occupy distinct regions of the $(\|\vec{V}_c\|, \sigma_v)$ plane at early layers, where $\sigma_v = \sqrt{(1/k)\sum_i \|\vec{v}_{t_i} - \vec{V}_c\|^2}$. For example:
+**Prediction**: Phrases of distinct syntactic and semantic types should occupy distinct regions of the $(\lVert\vec{V}_c\rVert, \sigma_v)$ plane at early layers, where $\sigma_v = \sqrt{(1/k)\sum_i \lVert\vec{v}_{t_i} - \vec{V}_c\rVert^2}$. For example:
 
 - Semantically atomic multiword expressions (idioms, named entities): low bulk velocity, low internal velocity.
 - Phrases undergoing contextual disambiguation: high bulk velocity, low internal velocity — the phrase moves as a unit.
@@ -355,7 +355,7 @@ The decomposition is the classical separation of an interacting $k$-body system 
 
 The identification of the initial velocity clarifies the formal relationship between Semantic Simulation and the STP model of [6]. STP specifies the dynamics of the hidden state as a first-order ODE [6, eq. (2)]:
 
-$$d x_{\leq t} = \mathring{u} \circ \mathring{f}(x_{\leq t})\, dt,$$
+$$d x_{\leq t} = \mathring{u} \circ \mathring{f}(x_{\leq t}) dt,$$
 
 which **enforces** $v_0 = \mathring{u} \circ \mathring{f}(x_0)$: under STP, initial velocity is not an independent boundary condition; it is determined by the initial position through the flow operator. The Semantic Simulation Lagrangian, being second-order, treats $(x_0, v_0)$ as independent. The transformer itself sits between the two: the embedding layer controls $x_0 = h_t^{(0)}$ directly, and the first block *computes* $\vec{v}_t^{(0)}$ via the equation of §5.4.1. The first block is therefore the physical implementation of a "launching apparatus" that fixes $v_0$ as a function of $x_0$ **and its neighbors** — a function that depends on the entire input sequence, not just on the token at position $t$.
 
@@ -508,7 +508,7 @@ graph LR
 1. For each token position $t$ in a test corpus, extract $h_t^{(0)}$ (token + positional embedding) and $h_t^{(\ell)}$ for $\ell = 1, \ldots, L$.
 2. Compute the initial velocity $\vec{v}_t^{(0)} = h_t^{(1)} - h_t^{(0)}$ and the attention mass $w_t$ (chosen layer as in E1–E4).
 3. Using per-component Gaussian-well parameters $(a_k, b_k)$ fitted by the Acceleration Program (§A.1 for GPT-2, §A.2 for Llama-3.2-1B — see `docs/To_Dos_for_paper_v2.md` §A), integrate the Euler–Lagrange equations forward in layer-time $\ell$ to obtain the predicted trajectory $\hat{h}_t^{(\ell)}$ for $\ell = 2, \ldots, L$.
-4. Report the per-layer relative residual $\rho_t^{(\ell)} = \|\hat{h}_t^{(\ell)} - h_t^{(\ell)}\| / \|h_t^{(\ell)}\|$ and its distribution across token types.
+4. Report the per-layer relative residual $\rho_t^{(\ell)} = \lVert\hat{h}_t^{(\ell)} - h_t^{(\ell)}\rVert / \lVerth_t^{(\ell)}\rVert$ and its distribution across token types.
 
 **Success criteria (tiered)**:
 
@@ -518,7 +518,7 @@ graph LR
 
 **Ensemble version**: Repeat for phrase-level ensembles using $(\vec{r}_c^{(0)}, \vec{V}_c^{(0)})$ from §5.4.3 as initial conditions. Decompose the residual kinetic energy at each layer into bulk and internal components via the König split,
 
-$$\rho_t^{\text{bulk},(\ell)} = \frac{\big|\tfrac{1}{2} M \|\vec{V}_c^{(\ell),\text{pred}}\|^2 - \tfrac{1}{2} M \|\vec{V}_c^{(\ell),\text{obs}}\|^2\big|}{\tfrac{1}{2} M \|\vec{V}_c^{(\ell),\text{obs}}\|^2}, \qquad \rho_t^{\text{int},(\ell)} \text{ analogously},$$
+$$\rho_t^{\text{bulk},(\ell)} = \frac{\big|\tfrac{1}{2} M \lVert\vec{V}_c^{(\ell),\text{pred}}\rVert^2 - \tfrac{1}{2} M \lVert\vec{V}_c^{(\ell),\text{obs}}\rVert^2\big|}{\tfrac{1}{2} M \lVert\vec{V}_c^{(\ell),\text{obs}}\rVert^2}, \qquad \rho_t^{\text{int},(\ell)} \text{ analogously},$$
 
 and ask whether the framework captures translational (phrase-as-a-unit) motion better than internal reorganization, or vice versa. This is a finer-grained diagnostic than the per-token residual and directly tests the coupled-particle claim of §5.4.3.
 
@@ -548,7 +548,7 @@ If the attention mass identification is correct, $\mathfrak{m}_t^{(\text{inferre
 
 The true semantic mass may be a composite of multiple transformer quantities:
 
-$$\mathfrak{m}_t = \beta_1 w_t + \beta_2 \|h_t\| + \beta_3 / \ell_t$$
+$$\mathfrak{m}_t = \beta_1 w_t + \beta_2 \lVerth_t\rVert + \beta_3 / \ell_t$$
 
 where the coefficients $\beta_i$ could be determined by maximizing the Gaussian well $R^2$ or the STP-action correlation. This is an empirical route to discovering the correct mass formula.
 

@@ -51,8 +51,8 @@ itself.
 |---|---|---|---|
 | `em_base` | flagship SARF+mass+logfreq | nothing | `sarf_mass_variant/` (baseline) |
 | `em_ln` | (i) **LayerNorm-after-step** | project $h_{l+1}$ onto the unit-LayerNorm shell (mean 0, var 1) after every damped step | `energetic_minima/model_ln.py` |
-| `em_sg` | (ii) **scale-gauge** $\lambda_{V_0}=10^{-3}$ | add $\lambda_{V_0} \cdot \mathbb{E}_{b,t}\,V_\theta(\xi_0, h_0)^2$ to the loss | `energetic_minima/train.py --variant sg` |
-| `em_gm` | (iii) **Gaussian-mixture head** $K=64$ | replace the MLP $V_\theta$ with $\sum_{k=1}^{K} \mathrm{amp}_k\,\bigl(1 - e^{-\kappa_k^2 \lVert z - c_k\rVert^2}\bigr)$ in $(xi, h)$ space | `energetic_minima/model_gm.py` |
+| `em_sg` | (ii) **scale-gauge** $\lambda_{V_0}=10^{-3}$ | add $\lambda_{V_0} \cdot \mathbb{E}_{b,t}V_\theta(\xi_0, h_0)^2$ to the loss | `energetic_minima/train.py --variant sg` |
+| `em_gm` | (iii) **Gaussian-mixture head** $K=64$ | replace the MLP $V_\theta$ with $\sum_{k=1}^{K} \mathrm{amp}_k\bigl(1 - e^{-\kappa_k^2 \lVert z - c_k\rVert^2}\bigr)$ in $(xi, h)$ space | `energetic_minima/model_gm.py` |
 
 Attractor extraction (on all four) uses the standard
 `attractor_analysis/` pipeline in *dynamical* mode with $N=288$ seeds
@@ -252,7 +252,7 @@ Net effect on the paper's §14.15 and §14.17 (Q11):
    (in fact more successfully).
 4. **A new positive result joins the open-follow-up discussion.**
    LayerNorm-after-step is not a neutral alternative design, it is a
-   *useful* one: it gives a $45\,\%$ ppl improvement at zero
+   *useful* one: it gives a $45\%$ ppl improvement at zero
    additional parameters, with 30 × narrower $V$. The cost is a
    shift of the dynamic basin structure toward punctuation-dominated
    attractors, consistent with the Verlet side-finding. Whether this
