@@ -27,7 +27,39 @@
 
 ## 1. Question
 
-The paper claims that transformer hidden-state evolution along token position is governed (in its effective dynamics on the attractor manifold) by a **second-order** ordinary differential equation, of which the STP first-order flow (Huang et al.) and the Lu et al. convection–diffusion flow are shallow-limit specialisations. The companion document `Evidence_for_second_order_ODE_governing_evolution.md` argues for this through Theorem 49 (the STP–acceleration identity), the "promotion" argument of §12, and the §14 empirical results (≈2× tangential dominance, 97.9 % systematic deceleration, permutation null).
+> **Update 2026-04-27 (post-outcome C) — clarification of the paper's claim.**
+> At the time this protocol was pre-registered, the working assumption was that the
+> paper asserted the *observational* second-order claim: that transformer hidden-state
+> evolution is governed by a second-order ODE whose second-order character would
+> be detectable by a Markov-order regression test. Outcome C (first-order not
+> rejected) prompted a clarification of the paper's actual position, which the
+> current version of the paper (v3, §12 "Generative second-order, observational
+> first-order") now makes explicit.
+>
+> **What the current paper claims.** The framework commits to the *generative*
+> second-order claim: the underlying Lagrangian is genuinely second-order — the
+> EL equation $w_t\ddot{h}_t + \gamma\dot{h}_t = -\nabla V(h_t)$ contains an
+> inertial term, the kinematic state is $(h_t, \dot{h}_t)$, and Theorem 49
+> algebraically identifies acceleration with the STP loss. This claim is supported
+> throughout the paper and is not affected by the present experiment.
+>
+> **What the current paper does not claim.** The paper explicitly does *not*
+> assert the *observational* second-order claim — that the inertial term carries
+> detectable predictive information beyond $h_t$ alone at inference. The current
+> paper acknowledges that trained models inhabit the overdamped regime
+> $\gamma \gg \omega_0$, where the EL equation reduces to the first-order gradient
+> flow $\dot{h} \approx -\nabla V/\gamma$, making the Markov-order test unable to
+> distinguish the full second-order Lagrangian from a genuinely first-order ODE.
+>
+> **Historical context.** The pre-registration below was drafted under the prior
+> belief that the observational claim was operative. Outcome C confirmed the
+> overdamped interpretation rather than refuting the second-order framework.
+> The §2 hypothesis $H_1$ ("second-order suffices, but not first") was the
+> claim the pre-registration was designed to test; the experiment returned $H_0$
+> (Outcome C), which the current paper explains as the predicted overdamped
+> reduction of the same Lagrangian.
+
+At the time of pre-registration, the paper asserted that transformer hidden-state evolution along token position is governed (in its effective dynamics on the attractor manifold) by a **second-order** ordinary differential equation, of which the STP first-order flow (Huang et al.) and the Lu et al. convection–diffusion flow are shallow-limit specialisations. The companion document `Evidence_for_second_order_ODE_governing_evolution.md` argues for this through Theorem 49 (the STP–acceleration identity), the "promotion" argument of §12, and the §14 empirical results (≈2× tangential dominance, 97.9 % systematic deceleration, permutation null).
 
 Those arguments establish **second-order as a sufficient and natural framing**, but — as audited internally — they do **not** rigorously exclude every first-order ODE. Specifically:
 
@@ -50,7 +82,18 @@ $$R_k = \mathbb{E}_{(h_{t-k+1}, \ldots, h_{t+1})}\left[\big\lVert h_{t+1} - \hat
 | $H_1$ (second-order suffices, but not first) | $R_1 > R_2 \approx R_3$ |
 | $H_2$ (higher than second order) | $R_1 > R_2 > R_3$ |
 
-The paper's claim is $H_1$. The headline rejection of *any* first-order ODE in the chosen class corresponds to rejecting $H_0$ in favour of $H_1$ or $H_2$.
+At the time of pre-registration, the paper's working claim was $H_1$. The headline rejection of *any* first-order ODE in the chosen class would have corresponded to rejecting $H_0$ in favour of $H_1$ or $H_2$.
+
+> **Update 2026-04-27 (post-outcome C).** The experiment returned Outcome C ($H_0$
+> not rejected), meaning the lag-1 representation $h_t \to h_{t+1}$ was preferred
+> over the lag-2 representation $\{h_t, h_{t-1}\} \to h_{t+1}$ across all tested
+> architectures and function classes. The current paper (v3, §12) no longer asserts
+> $H_1$ as its claim. Instead, the paper explains Outcome C as the expected
+> consequence of the overdamped regime: the full second-order EL equation reduces
+> to a first-order gradient flow at inference, so a Markov-order regression at
+> one-token resolution cannot distinguish the two — making $H_0$ the
+> *observationally predicted* outcome of the second-order framework in the
+> overdamped limit, not a refutation of it.
 
 A first-order ODE $\dot{h} = f(h, t)$, in its discrete one-step embedding, must factorise as $h_{t+1} = F_1(h_t)$ — the next state is a function of the current state alone. Any deterministic dynamical system with this property satisfies $R_1 = R_2 = R_3$ at the level of its true conditional expectation, regardless of the form of $f$. This is what makes the test *distribution-free over $f$*: we never need to fit $f$, we only need to fit the conditional expectation of $h_{t+1}$ given various-length histories and compare them.
 
@@ -201,10 +244,10 @@ The robustness sweep amounts to $4 \text{ classes} \times 3 \text{ PCA dims} \ti
 ## 8. What we are explicitly **not** claiming
 
 - We do not claim to identify the specific functional form of the second-order ODE.
-- We do not claim the dynamics is *exactly* Markov-2 in the underlying continuous flow; we claim that, at the temporal-resolution probed (one token position), two lags are sufficient to predict the next state to within the noise floor of the kernel-ridge predictor. This is the operational meaning of "effectively second-order" relevant to the framework's claims.
-- We do not claim the $a_\parallel < 0$ statistic of §14 is, by itself, exclusive of first-order; this experiment is what would deliver that exclusion (or fail to).
-- We do not claim that rejection of first-order is rejection of *all* finite-order ODEs other than second; outcome **B** is explicitly allowed and would itself be a publishable, framework-relevant finding.
-- We do not claim our pipeline tests the Lu et al. *layer-axis* first-order reading, only the STP / position-axis first-order reading. The Lu axis would require a separate experiment (regress $h_t^{(\ell+1)}$ on $\{h_t^{(\ell)}, h_t^{(\ell-1)}\}$); we flag this as a follow-up but do not pre-register it here.
+- We do not claim the dynamics is *exactly* Markov-2 in the underlying continuous flow; the pre-registration claimed that, at the temporal-resolution probed (one token position), two lags are sufficient to predict the next state to within the noise floor of the kernel-ridge predictor. Outcome C (first-order not rejected) demonstrated that this claim does not hold at inference-fixed-point resolution, consistent with the overdamped reduction of the full EL equation.
+- We do not claim the $a_\parallel < 0$ statistic of §14 is, by itself, exclusive of first-order. This experiment was intended to deliver that exclusion or to fail to do so; it returned Outcome C — first-order not excluded — and the current paper accounts for this as the predicted observational signature of the overdamped regime.
+- We do not claim that rejection of first-order is rejection of *all* finite-order ODEs other than second; outcome **B** was explicitly allowed and would have itself been a publishable, framework-relevant finding.
+- We do not claim our pipeline tests the Lu et al. *layer-axis* first-order reading, only the STP / position-axis first-order reading. The Lu axis would require a separate experiment (regress $h_t^{(\ell+1)}$ on $\{h_t^{(\ell)}, h_t^{(\ell-1)}\}$); this remains flagged as a follow-up.
 
 ---
 
@@ -218,9 +261,9 @@ Independent of the outcome, the following artefacts will be produced and committ
 - `notebooks/dynamics_order_test/results/figures/` — at minimum: per-class $R_k$ bar plot with error bars; $r_1^{(i)}$ vs $r_2^{(i)}$ paired scatter; LOSO-fold spaghetti plot of $\bar R_k$ across folds.
 - A self-contained `RESULTS.md` summarising primary, replication, robustness, decision row, and any deviations from this protocol with explicit justification.
 
-If outcome **A** holds, the result constitutes quantitative empirical support for the second-order dynamical-class claim, with the decision table and protocol reference forming the complete documentation of the test.
+**Outcome A** was not realised. Had it been, the result would have constituted quantitative empirical support for the observational second-order claim, with the decision table and protocol reference forming the complete documentation of the test.
 
-If outcome **C** holds, the second-order Lagrangian provides the unifying theoretical account, while the empirical question of whether some first-order ODE of arbitrary form could match the observed trajectories at this temporal resolution remains open. The negative result and its implications are documented in `Evidence_for_second_order_ODE_governing_evolution.md` and in the companion repository's open-items section.
+**Outcome C was returned (executed 2026-04-27).** The second-order Lagrangian provides the unifying theoretical account for the generative dynamics, while the observational question of whether some first-order ODE of arbitrary form could match the observed trajectories at this temporal resolution remains empirically open. The current paper explains this as the predicted consequence of the overdamped regime rather than as a refutation of the framework. The result and its theoretical synthesis are documented in `Evidence_for_second_order_ODE_governing_evolution.md`, in [`notebooks/dynamics_order_test/results/RESULTS.md`](../notebooks/dynamics_order_test/results/RESULTS.md), and in the paper's §12 paragraph "Generative second-order, observational first-order."
 
 ---
 
