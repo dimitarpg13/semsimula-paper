@@ -141,7 +141,7 @@ per-sentence-centering setup:
   reading.
 
 - The **first-order overdamped** model produces trajectories
-  *indistinguishable from "predict $h_{0}$ everywhere"*, for every
+  indistinguishable from "predict $h_{0}$ everywhere", for every
   $\eta$ we tried. With these well parameters it is literally the
   static null.
 

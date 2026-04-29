@@ -123,9 +123,11 @@ $$w_t \ddot{h}_t + \gamma(h_t) \dot{h}_t = -\nabla V(h_t)$$
 
 a genuine second-order ODE. Both prior equations are recovered by **dropping the inertial term** $w_t \ddot{h}_t$ and fixing velocity algebraically as a function of position. They are **sibling shallow limits** of the same Lagrangian — not independent models.
 
-The paper states this explicitly:
+The current paper (v3, §12) states this as follows:
 
-> *"The promotion from first to second order is not cosmetic: the defining observable of a second-order system is acceleration, and it is precisely acceleration that Section 14 measures on GPT-2 hidden-state trajectories and that neither (105) nor (106) can host."*
+> "The promotion from first to second order is therefore generative — it changes the kinematic state space and licenses the kinematic identity [Theorem 49] that is invisible to first-order accounts — without committing to the strictly underdamped observational claim that the data does not support."
+
+> **Historical note.** An earlier draft of the paper used stronger language: "The promotion from first to second order is not cosmetic: the defining observable of a second-order system is acceleration, and it is precisely acceleration that Section 14 measures on GPT-2 hidden-state trajectories and that neither (105) nor (106) can host." This framing was revised in paper v3 after a pre-registered Markov-order regression test (Outcome C) demonstrated that the observed trajectory behaviour is also consistent with an overdamped first-order reduction of the same Lagrangian, so the observational second-order claim cannot be made from these data alone. See `first_order_ODE_rejection_pre-registered_protocol.md` and the §12 paragraph "Generative second-order, observational first-order."
 
 ### Architectural Grounding
 
@@ -171,7 +173,9 @@ The paper validates the second-order reading with four results on GPT-2 last-lay
 | Sign of $a_\parallel$ | Negative (deceleration) on **97.9%** of triplets — consistent with Gaussian well attraction |
 | Permutation null test | Natural token orderings produce **significantly less acceleration** than random permutations, quantifying the near-geodesic character of learned trajectories |
 
-Results 2–4 are genuine empirical support for the second-order dynamical reading specifically — they have no explanation under either first-order model.
+Results 2–4 are empirical support for the second-order dynamical reading — these kinematics signatures (tangential dominance, systematic deceleration, permutation null) are consistent with and motivated by the second-order framework.
+
+> **Update (post Outcome C).** A subsequent pre-registered Markov-order regression test demonstrated that these signatures are also consistent with an overdamped first-order gradient flow $\dot{h} \approx -\nabla V / \gamma$ — the predicted reduction of the full EL equation when $\gamma \gg \omega_0$. Results 2–4 therefore support the **generative** second-order reading (the Lagrangian has an inertial term; acceleration is the primitive the STP identity measures) but do not by themselves exclude a first-order ODE as an effective description at the trained inference fixed point. The current paper (v3, §12) draws this distinction explicitly.
 
 ---
 
@@ -195,8 +199,10 @@ GPT-2 validation: a∥ ≈ 2|a⊥|, 97.9% deceleration — empirical confirmatio
 
 ## Summary
 
-The **main reason** the paper argues for second-order dynamics is that the transformer's first block fixes $v_0$ contextually (via attention over neighbors), making velocity an **independent initial condition** — the defining feature of a second-order system.
+The **main reason** the paper argues for the generative second-order framework is that the transformer's first block computes the initial velocity $v_0$ as a function of both $x_0$ and its sequence neighbors (via cross-position attention) — a context-dependent computation that cannot be collapsed into a pointwise first-order flow. The framework treats $(x_0, v_0)$ as an independent pair, making velocity an architectural initial-condition slot. This is the **generative** second-order claim; the current paper (v3, §12) commits to this claim.
 
-The **definitive proof** is Theorem 49, which shows the STP loss *is* normal acceleration — a quantity that only has meaning, and only can be measured, in a second-order dynamical system.
+The **definitive proof** is Theorem 49, which shows the STP loss is normal acceleration — a quantity that only has meaning, and only can be measured, in a second-order dynamical system.
 
-The **empirical confirmation** comes from GPT-2 experiments establishing that (i) the identity holds to machine precision, (ii) tangential deceleration dominates and is systematically negative, and (iii) natural orderings produce smoother trajectories than permuted ones — all of which are signatures of second-order inertial dynamics invisible to any first-order account.
+The **empirical confirmation** comes from GPT-2 experiments establishing that (i) the identity holds to machine precision, (ii) tangential deceleration dominates and is systematically negative, and (iii) natural orderings produce smoother trajectories than permuted ones — all consistent with second-order inertial dynamics.
+
+> **Update (post Outcome C).** A pre-registered Markov-order regression test subsequently found that the observed trajectory behavior at inference is **not** exclusively second-order (Outcome C — first-order not rejected). The current paper explains this as the predicted observational consequence of the overdamped regime $\gamma \gg \omega_0$: the full EL equation reduces to a first-order gradient flow at the trained inference fixed point, so a Markov-order regression cannot distinguish the two. The **observational** second-order claim — that velocity carries independent predictive power beyond $h_t$ alone at inference — is therefore not supported, and the current paper (v3, §12 "Generative second-order, observational first-order") does not make it. The summary above describes only the generative claim, which the paper does make and which the Markov-order test does not refute.

@@ -656,13 +656,13 @@ The following steps, in order, constitute a concrete programme of work to turn t
 
 2.2 Prove the **completeness of tree-rewriting**: every tree-to-tree computable function can be expressed as a finite composition of the four primitives above. (This is a standard result in rewriting theory, adapted to the semantic-tree signature.)
 
-2.3 Integrate operations with templates: define an **executive rule** as a pair $(t, \mathrm{op})$ where $t \in \mathfrak{T}$ and $\mathrm{op}$ is a tree-rewriting operation, with semantics *"if $t$ matches $S$ with substitution $\sigma$, apply $\mathrm{op}$ to the matched subtree"*. Show that the set of executive rules equipped with concatenation forms a category whose morphisms are exactly the tree-to-tree computable functions.
+2.3 Integrate operations with templates: define an **executive rule** as a pair $(t, \mathrm{op})$ where $t \in \mathfrak{T}$ and $\mathrm{op}$ is a tree-rewriting operation, with semantics "if $t$ matches $S$ with substitution $\sigma$, apply $\mathrm{op}$ to the matched subtree". Show that the set of executive rules equipped with concatenation forms a category whose morphisms are exactly the tree-to-tree computable functions.
 
 #### Step 3. Execute the simulation arguments.
 
 3.1 **NDTM → Executive system.** Fix an NDTM $M = (Q, \Gamma, \delta, q_0, F)$. Construct:
 - a semantic signature $\Sigma_M$ for encoding configurations of $M$ as trees;
-- a template calculus sub-language that expresses the patterns *"head is at position $p$, reads symbol $a$, in state $q$"*;
+- a template calculus sub-language that expresses the patterns "head is at position $p$, reads symbol $a$, in state $q$";
 - a set of executive rules implementing $\delta$;
 - a proof that the non-deterministic execution tree of the resulting executive system, rooted at the initial-configuration tree, accepts exactly $L(M)$.
 
@@ -741,7 +741,7 @@ $$
 
 Fix a retirement threshold $\epsilon_{\min} > 0$ and a hold window $\tau_{\mathrm{hold}} > 0$. The retirement rule is:
 
-> *If $E_{\mathrm{res}}(S, t) < \epsilon_{\min}$ for all $t \in [t_0, t_0 + \tau_{\mathrm{hold}}]$, remove $S$ from $\boldsymbol{\Sigma}$ at time $t_0 + \tau_{\mathrm{hold}}$.*
+> If $E_{\mathrm{res}}(S, t) < \epsilon_{\min}$ for all $t \in [t_0, t_0 + \tau_{\mathrm{hold}}]$, remove $S$ from $\boldsymbol{\Sigma}$ at time $t_0 + \tau_{\mathrm{hold}}$.
 
 The hold window $\tau_{\mathrm{hold}}$ is essential. It prevents transient dips below threshold (caused by damping, collisional events, or numerical discretisation) from triggering spurious retirements. In practice $\tau_{\mathrm{hold}}$ will be chosen in proportion to the characteristic decay time-scale of the damping factor $H_i$.
 
@@ -808,7 +808,7 @@ where:
 
 Fix a persistence threshold $\pi_{\min} > 0$. The retirement rule is:
 
-> *If $\pi(S, t) < \pi_{\min}$, remove $S$ from $\boldsymbol{\Sigma}$ at time $t$.*
+> If $\pi(S, t) < \pi_{\min}$, remove $S$ from $\boldsymbol{\Sigma}$ at time $t$.
 
 Unlike Mechanism A, there is no hold window: the low-pass-filter dynamics of $\pi$ itself already smooth out transients, so a bare threshold is sufficient.
 
@@ -877,7 +877,7 @@ Mechanisms A and B address the same problem (structural retirement for RE-regime
 
 The two mechanisms are **not mutually exclusive**. A unified rule is straightforward:
 
-> *Retire $S$ at time $t$ when either $E_{\mathrm{res}}(S, t) < \epsilon_{\min}$ for $\tau_{\mathrm{hold}}$ seconds (Mechanism A) or $\pi(S, t) < \pi_{\min}$ (Mechanism B).*
+> Retire $S$ at time $t$ when either $E_{\mathrm{res}}(S, t) < \epsilon_{\min}$ for $\tau_{\mathrm{hold}}$ seconds (Mechanism A) or $\pi(S, t) < \pi_{\min}$ (Mechanism B).
 
 Under this **OR-combined rule**, a structure must maintain *both* non-trivial energy *and* non-trivial reinforcement to persist. Physically, this corresponds to a system in which persistence requires both internal stability (energy) and external relevance (reinforcement) — arguably the cognitively most plausible formulation.
 

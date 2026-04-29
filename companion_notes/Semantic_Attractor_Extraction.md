@@ -103,7 +103,7 @@ where doing so has zero penalty.
 
 **Implication for the framework.**  The phrase \"semantic attractor\"
 should be read **dynamically**, not energetically.  An attractor is a
-region of $h$-space that the *damped flow at fixed $\xi$* concentrates
+region of $h$-space that the damped flow at fixed $\xi$ concentrates
 on within $L_\text{train}$ steps.  It need not be -- and empirically
 is not -- a critical point of $V_\theta$.
 

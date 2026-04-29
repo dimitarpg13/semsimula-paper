@@ -95,7 +95,7 @@ At the time of pre-registration, the paper's working claim was $H_1$. The headli
 > *observationally predicted* outcome of the second-order framework in the
 > overdamped limit, not a refutation of it.
 
-A first-order ODE $\dot{h} = f(h, t)$, in its discrete one-step embedding, must factorise as $h_{t+1} = F_1(h_t)$ — the next state is a function of the current state alone. Any deterministic dynamical system with this property satisfies $R_1 = R_2 = R_3$ at the level of its true conditional expectation, regardless of the form of $f$. This is what makes the test *distribution-free over $f$*: we never need to fit $f$, we only need to fit the conditional expectation of $h_{t+1}$ given various-length histories and compare them.
+A first-order ODE $\dot{h} = f(h, t)$, in its discrete one-step embedding, must factorise as $h_{t+1} = F_1(h_t)$ — the next state is a function of the current state alone. Any deterministic dynamical system with this property satisfies $R_1 = R_2 = R_3$ at the level of its true conditional expectation, regardless of the form of $f$. This is what makes the test distribution-free over $f$: we never need to fit $f$, we only need to fit the conditional expectation of $h_{t+1}$ given various-length histories and compare them.
 
 ---
 

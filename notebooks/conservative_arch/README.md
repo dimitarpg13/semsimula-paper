@@ -146,7 +146,7 @@ This is the refined v2 narrative (details in
 
 Detailed write-up in [`results/sharedV_comparison_summary.md`](results/sharedV_comparison_summary.md).
 
-We ask the strongest question short of the SPLM construction: *does a single smooth scalar $V_\psi(h)$ (a 2-layer MLP with hidden 256) whose gradient explains $\Delta x_\ell$ across **every** layer and token simultaneously exist?* We fit $V_\psi$ jointly with per-layer scalars $\alpha_\ell,\beta_\ell$ (absorbing the integrator's $dt/(1+\gamma)$ and $dt^2/((1+\gamma)m_\ell)$) on the TRAIN pool, and evaluate per-layer $R^2$ on held-out sentences.
+We ask the strongest question short of the SPLM construction: does a single smooth scalar $V_\psi(h)$ (a 2-layer MLP with hidden 256) whose gradient explains $\Delta x_\ell$ across **every** layer and token simultaneously exist? We fit $V_\psi$ jointly with per-layer scalars $\alpha_\ell,\beta_\ell$ (absorbing the integrator's $dt/(1+\gamma)$ and $dt^2/((1+\gamma)m_\ell)$) on the TRAIN pool, and evaluate per-layer $R^2$ on held-out sentences.
 
 ![sharedV](results/sharedV_splm_vs_gpt2.png)
 

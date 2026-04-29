@@ -332,7 +332,7 @@ whether they correspond to coherent token distributions / topics.
 Implemented in `notebooks/conservative_arch/attractor_analysis/`.
 Three sub-results:
 
-1. *Pure $V_\theta$ gradient descent diverges* — $V_\theta$ has no
+1. Pure $V_\theta$ gradient descent diverges — $V_\theta$ has no
    finite local minima because its absolute scale is an unconstrained
    gauge degree of freedom (the loss only sees $-\nabla V_\theta$).
 2. *Anchored descent is unimodal and prompt-independent* — the

@@ -1,6 +1,6 @@
 # Shared-potential fit — SPLM vs GPT-2
 
-**The strict conservative-dynamics test.** We ask the strongest possible question short of the SPLM construction itself: *does there exist a single smooth scalar $V_\psi(h)$ whose gradient explains $\Delta x_\ell$ across every layer, every token, and every held-out sentence?*
+**The strict conservative-dynamics test.** We ask the strongest possible question short of the SPLM construction itself: does there exist a single smooth scalar $V_\psi(h)$ whose gradient explains $\Delta x_\ell$ across every layer, every token, and every held-out sentence?
 
 The ansatz is
 

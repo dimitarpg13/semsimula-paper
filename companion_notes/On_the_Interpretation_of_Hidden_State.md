@@ -8,7 +8,7 @@
 
 ## Abstract
 
-This document records an ongoing investigation into the correct mapping between **transformer hidden states** and the entities of the **Semantic Simulation framework** (Gueorguiev [1][2][3][4][5]). The central question is: *what does a single hidden state $h_t$ correspond to in the hierarchy of semantic aspects, properties, particles, and structures?*
+This document records an ongoing investigation into the correct mapping between **transformer hidden states** and the entities of the **Semantic Simulation framework** (Gueorguiev [1][2][3][4][5]). The central question is: what does a single hidden state $h_t$ correspond to in the hierarchy of semantic aspects, properties, particles, and structures?
 
 The discussion originated from an inconsistency in earlier analyses that loosely identified hidden states with "semantic structures." A closer examination reveals that because a token is indivisible from the transformer's perspective, its hidden state more naturally maps to a **semantic property** — the first entity in the hierarchy that has internal structure (via its $d$ dimensions) while remaining a single unit. However, this identification remains conjectural and requires experimental validation. The key testable prediction is that groups of hidden states (corresponding to linguistic phrases) should converge into cohesive units across transformer layers, mirroring the formation of **semantic particles** from ensembles of properties in the Semantic Simulation framework.
 
