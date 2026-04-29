@@ -38,7 +38,7 @@
 >
 > **What the current paper claims.** The framework commits to the *generative*
 > second-order claim: the underlying Lagrangian is genuinely second-order — the
-> EL equation $w_t\ddot{h}_t + \gamma\dot{h}_t = -\nabla V(h_t)$ contains an
+> EL equation $w_t\ddot{h}\_t + \gamma\dot{h}\_t = -\nabla V(h_t)$ contains an
 > inertial term, the kinematic state is $(h_t, \dot{h}_t)$, and Theorem 49
 > algebraically identifies acceleration with the STP loss. This claim is supported
 > throughout the paper and is not affected by the present experiment.
@@ -191,7 +191,7 @@ where $\bar R_k$ is the mean per-quadruple squared residual, averaged across all
 
 ### 6.2 Paired Wilcoxon signed-rank tests
 
-On the paired sequences $\{r_1^{(i)} - r_2^{(i)}\}_i$ and $\{r_2^{(i)} - r_3^{(i)}\}_i$, two-sided.
+On the paired sequences $\{r_1^{(i)} - r_2^{(i)}\}\_i$ and $\{r_2^{(i)} - r_3^{(i)}\}\_i$, two-sided.
 
 ### 6.3 Bootstrap confidence intervals
 

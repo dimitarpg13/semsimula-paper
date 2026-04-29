@@ -98,7 +98,7 @@ correctly, ruling out a "wrong $\gamma$ at high $k$" explanation.
 Outcome C does **not** imply that the second-order Lagrangian framework
 is wrong. It implies the framework is in the **overdamped regime**.
 Concretely, the full Euler–Lagrange equation (paper Eq. 67),
-$w_t\ddot{h}_t + \gamma(h_t)\dot{h}_t = -\nabla V(h_t)$,
+$w_t\ddot{h}\_t + \gamma(h_t)\dot{h}\_t = -\nabla V(h_t)$,
 in the limit $\gamma \gg \omega_0$ collapses to
 $\dot{h} \approx -\nabla V / \gamma$,
 a first-order gradient flow on the same potential. The two are

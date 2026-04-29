@@ -156,7 +156,7 @@ This is the formal expressivity ceiling. It is independent of the choice of $V$ 
 
 ### Why $\mathrm{Dyck}_n$
 
-$\mathrm{Dyck}_n$ for $n \ge 2$ is the language of balanced strings over $n$ bracket types. It is **deterministic context-free**, strictly above regular in the Chomsky hierarchy. Recognition requires a stack of depth at least equal to the maximum nesting depth $D$ of the input. A finite automaton with $|Q|$ states accepts $\mathrm{Dyck}_n$ correctly only up to depth $D \le \log_n |Q|$; beyond that, accuracy collapses to chance ($1/n$ on the closing-bracket-type prediction). The minimal computational requirement is *exactly* a stack of varying depth; no other context-free phenomenon (anaphora, agreement, etc.) is conflated with it.
+$\mathrm{Dyck}\_n$ for $n \ge 2$ is the language of balanced strings over $n$ bracket types. It is **deterministic context-free**, strictly above regular in the Chomsky hierarchy. Recognition requires a stack of depth at least equal to the maximum nesting depth $D$ of the input. A finite automaton with $|Q|$ states accepts $\mathrm{Dyck}\_n$ correctly only up to depth $D \le \log_n |Q|$; beyond that, accuracy collapses to chance ($1/n$ on the closing-bracket-type prediction). The minimal computational requirement is *exactly* a stack of varying depth; no other context-free phenomenon (anaphora, agreement, etc.) is conflated with it.
 
 Hewitt et al. (2020) and Yao et al. (2021) established that tiny transformers and tiny LSTMs solve $\mathrm{Dyck}_n$ to substantial depth at modest parameter count. The contrast between v0's predicted collapse and the baselines' continued success at matched parameters and matched compute is the falsifier.
 

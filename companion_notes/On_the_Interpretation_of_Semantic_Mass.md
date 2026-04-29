@@ -32,7 +32,7 @@ Semantic mass enters the framework at every level of the dynamics. The following
 
 | Role | Expression | Source |
 |---|---|---|
-| **Center of mass** | $\vec{r}_c = \frac{\sum \mathfrak{m}_i \vec{r}_i}{\sum \mathfrak{m}_i}$ | [1, eq. 1] |
+| **Center of mass** | $\vec{r}\_c = \frac{\sum \mathfrak{m}\_i \vec{r}\_i}{\sum \mathfrak{m}\_i}$ | [1, eq. 1] |
 | **Centering matrix** $M$ | $M\_{ij} = \delta\_{ij}(1 - \tilde{\mathfrak{m}}\_i) - (1-\delta\_{ij})\tilde{\mathfrak{m}}\_j$ | [3, eq. 8] |
 | **Asymptotic velocity** | $\upsilon = \sqrt{E_t / \mathfrak{m}}$ | [1, eq. 40] |
 | **Gaussian well depth** | $V(x) = \mathfrak{m} \cdot \upsilon^2 \cdot (1 - e^{-\kappa^2 x^2})$ | [2, eq. 1] |
@@ -40,7 +40,7 @@ Semantic mass enters the framework at every level of the dynamics. The following
 | **Lagrangian** | $\mathcal{L} = \frac{1}{2} \mathfrak{m} v^2 - V(x)$ | [4, eq. 4] |
 | **Newton's second law** | $\vec{f}_{net} = \mathfrak{m} \frac{d\vec{v}}{dt}$ | [4, Appendix A1.2] |
 | **Restoring force** | $\mathfrak{m} \ddot{x} = -2\mathfrak{m}\upsilon^2\kappa^2 x e^{-\kappa^2 x^2}$ | [4, eq. 5] |
-| **Bound state distance** | $x_i = \frac{E_t(P_i)}{\mathfrak{m}_i} \mathcal{K}_i$ | [1, eq. 44c] |
+| **Bound state distance** | $x_i = \frac{E_t(P_i)}{\mathfrak{m}\_i} \mathcal{K}\_i$ | [1, eq. 44c] |
 
 ### 1.3 The Physics of Mass: Five Axioms
 
@@ -48,7 +48,7 @@ From the table above, we can extract five **axioms** that any candidate for "sem
 
 **Axiom M1 (Inertia):** Mass determines resistance to change. A property with higher $\mathfrak{m}$ requires more force to displace: $\vec{f} = \mathfrak{m} \vec{a}$.
 
-**Axiom M2 (Gravitational centering):** Mass determines the center of mass. Properties with higher mass pull the center toward themselves: $\vec{r}_c = \sum \tilde{\mathfrak{m}}_i \vec{r}_i$.
+**Axiom M2 (Gravitational centering):** Mass determines the center of mass. Properties with higher mass pull the center toward themselves: $\vec{r}\_c = \sum \tilde{\mathfrak{m}}\_i \vec{r}\_i$.
 
 **Axiom M3 (Well depth):** Mass determines the depth of the potential well. The Gaussian well saturates at $V_\infty = \mathfrak{m} \upsilon^2$, where $\upsilon$ depends inversely on $\sqrt{\mathfrak{m}}$. In the equal-energy regime, heavier properties sit in shallower wells.
 
@@ -225,7 +225,7 @@ where $M_w$ is the mass-ratio centering matrix:
 
 $$(M_w)_{st} = \begin{cases} 1 - \tilde{w}_s & \text{if } s = t \\ -\tilde{w}_t & \text{if } s \neq t \end{cases}$$
 
-with $\tilde{w}_t = w_t / \sum_s w_s$. The SVD of $\tilde{H}_w$ is:
+with $\tilde{w}\_t = w_t / \sum_s w_s$. The SVD of $\tilde{H}\_w$ is:
 
 $$\tilde{H}_w = U_w \Sigma_w V_w^T$$
 
@@ -247,7 +247,7 @@ In the Signature Matrix framework, the feasible in-situ positions lie on a spher
 
 $$\mathcal{E}_{w}: \sum_{i=1}^{k} \frac{z_{w,i}^2}{\sigma_{w,i}^2} \leq \chi^2_k(\alpha)$$
 
-where $z_{w,t} = V_{w,k}^T (h_t - \bar{h}_w)$ are the attention-weighted PCA coordinates. The semi-axes $\sigma_{w,i}$ replace $\sigma_i^*$ in the correspondence, and the mass-weighted Frobenius norm $\lVert\tilde{H}_w\rVert_F$ replaces $H^*$ as the effective representation radius.
+where $z_{w,t} = V_{w,k}^T (h_t - \bar{h}\_w)$ are the attention-weighted PCA coordinates. The semi-axes $\sigma_{w,i}$ replace $\sigma_i^*$ in the correspondence, and the mass-weighted Frobenius norm $\lVert\tilde{H}\_w\rVert_F$ replaces $H^*$ as the effective representation radius.
 
 ---
 
@@ -288,7 +288,7 @@ The experiments in [5, Sections 7–8] found a Pearson correlation of $r = -0.26
 
 ### 5.4 Initial Conditions and the Shallow Limit of STP
 
-The Lagrangian of §5.1 gives rise to second-order equations of motion, which require **two** pieces of initial data — an initial position $x_0$ and an initial velocity $v_0$ — to determine a unique trajectory. The identifications of §3 and §5.1 provide the mass ($\mathfrak{m}_t = w_t$) and the position ($h_t \leftrightarrow \vec{x}_t$), but leave the initial velocity unspecified. This subsection closes that gap. The resulting identification clarifies the formal relationship between the present framework and the first-order STP flow of [6], and exposes the first transformer block as the physical "launching apparatus" that fixes $v_0$ as a function of $x_0$ *and its neighbors*.
+The Lagrangian of §5.1 gives rise to second-order equations of motion, which require **two** pieces of initial data — an initial position $x_0$ and an initial velocity $v_0$ — to determine a unique trajectory. The identifications of §3 and §5.1 provide the mass ($\mathfrak{m}\_t = w_t$) and the position ($h_t \leftrightarrow \vec{x}\_t$), but leave the initial velocity unspecified. This subsection closes that gap. The resulting identification clarifies the formal relationship between the present framework and the first-order STP flow of [6], and exposes the first transformer block as the physical "launching apparatus" that fixes $v_0$ as a function of $x_0$ *and its neighbors*.
 
 **Two readings of time.** The correspondence admits two equally legitimate choices of the time coordinate. Under the **position-as-time** reading, used in the trajectory experiments of [5, §§7–8], a trajectory is the sequence $h_s^{(L)}, h_{s+1}^{(L)}, \ldots$ at a fixed layer $L$, indexed by token position. Under the **layer-as-time** reading, a trajectory is the sequence $h_t^{(0)}, h_t^{(1)}, \ldots, h_t^{(L)}$ at a fixed token position $t$, indexed by depth. Each reading selects a different object as the "initial state" of a property and therefore defines a distinct initial velocity. The two are complementary, not competing.
 
@@ -312,7 +312,7 @@ $$\vec{v}_t^{(0)} = \vec{v}_t^{(0),\mathrm{attn}} + \vec{v}_t^{(0),\mathrm{mlp}}
 
 therefore separates the contextual contribution from the intrinsic contribution to the first kick. This is a decomposition without analog in classical mechanics, but a natural one in the transformer instantiation: it distinguishes what the token brings with it from what the neighborhood imprints on it during the first layer of processing.
 
-**(b) Magnitude variation across token types.** Anchor tokens — sentence-initial markers, high-frequency function words, the positions identified in §3.2 as attention sinks — receive large $w_t$ but are expected to have **small** $\lVert\vec{v}_t^{(0)}\rVert$. The reason is structural: the first block can only attend to what is already in the input, and anchor tokens are tokens whose representation does not yet depend on the specifics of the surrounding content. Content tokens whose representation depends strongly on context (polysemous nouns in a disambiguating frame, pronouns referring to earlier entities, punctuation at syntactic inflection points) are expected to have **large** $\lVert\vec{v}_t^{(0)}\rVert$. This aligns with the layer-specialization picture of [8]: early layers carry out morphosyntactic and surface-disambiguation work, and $\lVert\vec{v}_t^{(0)}\rVert$ is a direct proxy for how much of that work the token requires.
+**(b) Magnitude variation across token types.** Anchor tokens — sentence-initial markers, high-frequency function words, the positions identified in §3.2 as attention sinks — receive large $w_t$ but are expected to have **small** $\lVert\vec{v}\_t^{(0)}\rVert$. The reason is structural: the first block can only attend to what is already in the input, and anchor tokens are tokens whose representation does not yet depend on the specifics of the surrounding content. Content tokens whose representation depends strongly on context (polysemous nouns in a disambiguating frame, pronouns referring to earlier entities, punctuation at syntactic inflection points) are expected to have **large** $\lVert\vec{v}\_t^{(0)}\rVert$. This aligns with the layer-specialization picture of [8]: early layers carry out morphosyntactic and surface-disambiguation work, and $\lVert\vec{v}\_t^{(0)}\rVert$ is a direct proxy for how much of that work the token requires.
 
 The combination of (a)+(b) gives a second-order consistency check on Axiom M1 (inertia) of §1.3: heavy tokens should move little at early layers not because of a generic "force balance" but because the first block's ability to move them is itself bounded by the information already present in the input. Experiment 5 below (§8.5, E-init) tests this directly.
 
@@ -345,7 +345,7 @@ The two terms have distinct transformer interpretations:
 
 The decomposition is the classical separation of an interacting $k$-body system into translational and internal motion, and it matches naturally the multi-particle view of transformers developed by [9] and the interacting-particle analysis of self-attention dynamics of [10]. Both of those works model hidden-state evolution as a coupled-particle system; the bulk/internal split is precisely the standard König decomposition for such a system.
 
-**Prediction**: Phrases of distinct syntactic and semantic types should occupy distinct regions of the $(\lVert\vec{V}_c\rVert, \sigma_v)$ plane at early layers, where $\sigma_v = \sqrt{(1/k)\sum_i \lVert\vec{v}_{t_i} - \vec{V}_c\rVert^2}$. For example:
+**Prediction**: Phrases of distinct syntactic and semantic types should occupy distinct regions of the $(\lVert\vec{V}\_c\rVert, \sigma_v)$ plane at early layers, where $\sigma_v = \sqrt{(1/k)\sum_i \lVert\vec{v}_{t_i} - \vec{V}\_c\rVert^2}$. For example:
 
 - Semantically atomic multiword expressions (idioms, named entities): low bulk velocity, low internal velocity.
 - Phrases undergoing contextual disambiguation: high bulk velocity, low internal velocity — the phrase moves as a unit.
@@ -501,7 +501,7 @@ graph LR
 
 ### 8.5 Experiment 5 (E-init): Forward Integration from First-Block Initial Conditions
 
-**Objective**: Test whether hidden-state trajectories *across layers* (layer-as-time reading of §5.4) are governed by the second-order Lagrangian of §5.1 using only the first-block initial conditions of §5.4.1 — i.e., whether $(h_t^{(0)}, \vec{v}_t^{(0)})$ together with $\mathfrak{m}_t = w_t$ form a **complete** set of boundary data that determines the subsequent layer-wise evolution under the fitted Gaussian well.
+**Objective**: Test whether hidden-state trajectories *across layers* (layer-as-time reading of §5.4) are governed by the second-order Lagrangian of §5.1 using only the first-block initial conditions of §5.4.1 — i.e., whether $(h_t^{(0)}, \vec{v}\_t^{(0)})$ together with $\mathfrak{m}\_t = w_t$ form a **complete** set of boundary data that determines the subsequent layer-wise evolution under the fitted Gaussian well.
 
 **Procedure**:
 
@@ -516,7 +516,7 @@ graph LR
 - **Moderate**: median $\rho_t^{(\ell)} < 0.5$ for $\ell \leq L/4$ only. Diagnoses early divergence that points to non-conservative contributions (damping, active driving from later blocks), which an extension of §5.1 with a dissipative term would be needed to capture.
 - **Failure**: large residuals from $\ell = 2$ onward. Would indicate that the first-block initial conditions do not propagate coherently under the posited dynamics, and would force either a retreat from the second-order reading or a substantial extension of the Lagrangian.
 
-**Ensemble version**: Repeat for phrase-level ensembles using $(\vec{r}_c^{(0)}, \vec{V}_c^{(0)})$ from §5.4.3 as initial conditions. Decompose the residual kinetic energy at each layer into bulk and internal components via the König split,
+**Ensemble version**: Repeat for phrase-level ensembles using $(\vec{r}\_c^{(0)}, \vec{V}\_c^{(0)})$ from §5.4.3 as initial conditions. Decompose the residual kinetic energy at each layer into bulk and internal components via the König split,
 
 $$\rho_t^{\text{bulk},(\ell)} = \frac{\big|\tfrac{1}{2} M \lVert\vec{V}_c^{(\ell),\text{pred}}\rVert^2 - \tfrac{1}{2} M \lVert\vec{V}_c^{(\ell),\text{obs}}\rVert^2\big|}{\tfrac{1}{2} M \lVert\vec{V}_c^{(\ell),\text{obs}}\rVert^2}, \qquad \rho_t^{\text{int},(\ell)} \text{ analogously},$$
 
@@ -568,7 +568,7 @@ The experiments in [5, Sections 7–8] treated all token positions equally (unit
 
 The identification $\mathfrak{m} \equiv w$ establishes a direct link between the **attention mechanism** (the defining innovation of the transformer architecture) and the **Lagrangian dynamics** of semantic space. Attention is not merely a soft routing mechanism — it is the mechanism by which the transformer assigns mass to its representations, and mass is the quantity that determines how those representations move, interact, and reach equilibrium.
 
-This suggests that the attention mechanism is not arbitrary — it is the transformer's implementation of a mass assignment operator, and the softmax function that normalizes attention weights is the analog of the mass normalization $\tilde{\mathfrak{m}}_i = \mathfrak{m}_i / \sum_j \mathfrak{m}_j$ in the Semantic Simulation framework.
+This suggests that the attention mechanism is not arbitrary — it is the transformer's implementation of a mass assignment operator, and the softmax function that normalizes attention weights is the analog of the mass normalization $\tilde{\mathfrak{m}}\_i = \mathfrak{m}\_i / \sum_j \mathfrak{m}\_j$ in the Semantic Simulation framework.
 
 ---
 

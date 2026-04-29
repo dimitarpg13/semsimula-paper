@@ -121,7 +121,7 @@ $$\mathcal{L}_{STP} \approx 0 \quad \Longleftrightarrow \quad \text{trajectory m
 
 The conjecture ties the two losses together: **if the energy landscape (measured via NTP loss) has Gaussian well structure, then the action-minimizing trajectories through that landscape should be geodesics (measured via STP loss)**. This is the reason the experiments in Sections 7–8 correlate STP loss against total action reconstructed from the NTP-loss-derived potential — we are testing whether the geometric straightness enforced by STP is a consequence of the energy landscape.
 
-The chain of reasoning is as follows. The per-token NTP loss $\ell_t = -\log p_\theta(x_{t+1} \mid x_{\leq t})$ serves as a proxy for the potential energy $V(h_t)$: a hidden state that the model finds "easy" (low NTP loss) sits near the bottom of a well, while a state that the model finds "surprising" (high NTP loss) sits higher on the potential surface. Using this energy proxy and the observed velocities between consecutive hidden states, we reconstruct the Lagrangian $\mathcal{L}_t = T_t - V_t$ and compute the total action $\mathcal{S} = \sum_t \mathcal{L}_t$. Independently, we compute the STP loss purely from the angular geometry of the trajectory, with no reference to the NTP loss.
+The chain of reasoning is as follows. The per-token NTP loss $\ell_t = -\log p_\theta(x_{t+1} \mid x_{\leq t})$ serves as a proxy for the potential energy $V(h_t)$: a hidden state that the model finds "easy" (low NTP loss) sits near the bottom of a well, while a state that the model finds "surprising" (high NTP loss) sits higher on the potential surface. Using this energy proxy and the observed velocities between consecutive hidden states, we reconstruct the Lagrangian $\mathcal{L}\_t = T_t - V_t$ and compute the total action $\mathcal{S} = \sum_t \mathcal{L}\_t$. Independently, we compute the STP loss purely from the angular geometry of the trajectory, with no reference to the NTP loss.
 
 If the conjecture holds, trajectories with lower STP loss (straighter, more geodesic-like) should also have action values closer to the action-minimizing solution — because the geodesic *is* the action-minimizing trajectory under the Gaussian well potential. The experimental programme therefore tests a four-step implication:
 
@@ -234,7 +234,7 @@ If the conjecture holds, a precise structural correspondence emerges between the
 
 #### 5.3.1 The Two SVD Decompositions
 
-**Signature Matrix side.** A semantic property $P$ with $N$ aspects in $L$-dimensional semantic space $\Sigma$ has signature matrix $P = MX$ [5, eq. 7], where $M$ is the $N \times N$ mass-ratio centering matrix and $X$ is the $N \times L$ position matrix. The centering operation maps absolute aspect positions $\vec{r}_i$ to relative positions $\vec{p}_i = \vec{r}_i - \vec{r}_c$ (centered on the center of mass $\vec{r}_c$). The SVD of $P$ is [5, eq. 10]:
+**Signature Matrix side.** A semantic property $P$ with $N$ aspects in $L$-dimensional semantic space $\Sigma$ has signature matrix $P = MX$ [5, eq. 7], where $M$ is the $N \times N$ mass-ratio centering matrix and $X$ is the $N \times L$ position matrix. The centering operation maps absolute aspect positions $\vec{r}\_i$ to relative positions $\vec{p}\_i = \vec{r}\_i - \vec{r}\_c$ (centered on the center of mass $\vec{r}\_c$). The SVD of $P$ is [5, eq. 10]:
 
 $$P = U_P \ \Sigma_P \ V_P^T$$
 
@@ -256,13 +256,13 @@ The centering matrix in the Signature Matrix framework is not the identity minus
 
 $$M_{ij} = \begin{cases} 1 - \tilde{\mathfrak{m}}_i & \text{if } i = j \\ -\tilde{\mathfrak{m}}_j & \text{if } i \neq j \end{cases}$$
 
-where $\tilde{\mathfrak{m}}_i = \mathfrak{m}_i / \sum_j \mathfrak{m}_j$ is the normalized mass of aspect $i$. When all masses are equal ($\tilde{\mathfrak{m}}_i = 1/N$), this reduces to the standard centering matrix $M = I - \frac{1}{N}\mathbf{1}\mathbf{1}^T$, which is precisely the centering used in PCA.
+where $\tilde{\mathfrak{m}}\_i = \mathfrak{m}\_i / \sum_j \mathfrak{m}\_j$ is the normalized mass of aspect $i$. When all masses are equal ($\tilde{\mathfrak{m}}\_i = 1/N$), this reduces to the standard centering matrix $M = I - \frac{1}{N}\mathbf{1}\mathbf{1}^T$, which is precisely the centering used in PCA.
 
 In a transformer, the hidden states do not carry explicit masses. However, if we define a **token importance weight** $w_t$ — specifically, the aggregate attention received at position $t$ — we can construct a weighted centering. The identification of aggregate attention with semantic mass, including its decomposition into information content and valence components, is developed in detail in the companion document [8]. Here we state the structural consequence: given $w_t$, we can construct a weighted centering:
 
 $$\tilde{H}_w = M_w X_H \quad \text{where} \quad (M_w)_{st} = \begin{cases} 1 - \tilde{w}_s & \text{if } s = t \\ -\tilde{w}_t & \text{if } s \neq t \end{cases}$$
 
-with $\tilde{w}_t = w_t / \sum_s w_s$. This would make the PCA centering operation structurally identical to the signature matrix centering. The standard (unweighted) PCA corresponds to the equal-mass case $\mathfrak{m}_i = \mathfrak{m}$ for all aspects.
+with $\tilde{w}\_t = w_t / \sum_s w_s$. This would make the PCA centering operation structurally identical to the signature matrix centering. The standard (unweighted) PCA corresponds to the equal-mass case $\mathfrak{m}\_i = \mathfrak{m}$ for all aspects.
 
 #### 5.3.3 Information Content vs. Explained Variance Entropy
 
@@ -283,7 +283,7 @@ The correspondence is:
 | Signature Matrix [5] | PCA of Hidden States |
 |---|---|
 | $\hat{\sigma}_i = \sigma_i^2 / \sum \sigma_j^2$ | $r_i = \sigma_{H,i}^2 / \sum \sigma_{H,j}^2$ |
-| $H(P) = -\sum \hat{\sigma}_i \log \hat{\sigma}_i$ | $H_{PCA} = -\sum r_i \log r_i$ |
+| $H(P) = -\sum \hat{\sigma}\_i \log \hat{\sigma}\_i$ | $H_{PCA} = -\sum r_i \log r_i$ |
 | $H^{\ast} = H(P) \cdot \sum \sigma_i$ | $H^{\ast}_{PCA} = H_{PCA} \cdot \sum \sigma_{H,i}$ |
 | Effective rank of $P$: number of significant $\sigma_i$ | $k^{\ast}$: number of PCA components at which $R^2$ peaks |
 
@@ -300,7 +300,7 @@ The feasible in-situ positions for a property $P$ with information content $H^{\
 
 $$\mathfrak{S}^{\ast}: \left(\frac{\varsigma_1}{\sigma_1^{\ast}}\right)^2 + \left(\frac{\varsigma_2}{\sigma_2^{\ast}}\right)^2 + \cdots + \left(\frac{\varsigma_k}{\sigma_k^{\ast}}\right)^2 \leq 1 \quad \text{s.t.} \quad \frac{\sigma_1^{\ast} + \sigma_2^{\ast} + \cdots + \sigma_k^{\ast}}{k} = H^{\ast}$$
 
-In PCA space, the centered hidden states $\tilde{h}_t$ projected onto the top $k$ principal components have coordinates $z_t = V_k^T \tilde{h}_t \in \mathbb{R}^k$. The covariance of these projected states is diagonal:
+In PCA space, the centered hidden states $\tilde{h}\_t$ projected onto the top $k$ principal components have coordinates $z_t = V_k^T \tilde{h}\_t \in \mathbb{R}^k$. The covariance of these projected states is diagonal:
 
 $$\text{Cov}(z) = \frac{1}{T} \text{diag}(\sigma_{H,1}^2, \sigma_{H,2}^2, \ldots, \sigma_{H,k}^2)$$
 

@@ -16,9 +16,9 @@
 >
 > The synthesis the data *does* support is **overdamped second order**:
 > the full Euler–Lagrange equation
-> $w_t\ddot{h}_t + \gamma(h_t)\dot{h}_t = -\nabla V(h_t)$
+> $w_t\ddot{h}\_t + \gamma(h_t)\dot{h}\_t = -\nabla V(h_t)$
 > (Eq. 67) in the regime $\gamma \gg \omega_0$, where the inertial term
-> $w_t\ddot{h}_t$ is small relative to the dissipation $\gamma\dot{h}_t$
+> $w_t\ddot{h}\_t$ is small relative to the dissipation $\gamma\dot{h}\_t$
 > and the potential $\nabla V$. In that limit the EOM collapses to
 > $\dot{h} \approx -\nabla V / \gamma$ — observationally indistinguishable
 > from a first-order gradient flow at one-token resolution, but

@@ -136,10 +136,10 @@ and Pythia-160M. The test asks: given $h_t$ as a regressor, does the addition of
 measurable improvement in one-step-ahead prediction of $h_{t+1}$ across function classes
 (linear, kernel-RBF, polynomial degree 2, MLP) and PCA dimensionalities (3, 64, 128)?
 
-The headline result is **Decision C** for both architectures: $\bar{R}_1 / \bar{R}_2 > 1$ in 21 of
+The headline result is **Decision C** for both architectures: $\bar{R}\_1 / \bar{R}\_2 > 1$ in 21 of
 24 robustness cells, with the three exceptions attributable to degree-2 polynomial overfitting
 artifacts confirmed by bootstrap confidence intervals and Leave-One-Sequence-Out (LOSO) fold
-ordering $\bar{R}_1 < \bar{R}_2$ in 47 of 50 folds.
+ordering $\bar{R}\_1 < \bar{R}\_2$ in 47 of 50 folds.
 
 The three-way compatibility table is:
 
@@ -147,7 +147,7 @@ The three-way compatibility table is:
 |---|---|---|
 | Strict first-order ODE: $\dot{h} = F(h)$ | **Yes** | $h_t$ is the full state; lag-2 adds noise |
 | Overdamped second-order ODE: $m\ddot{h} + \gamma\dot{h} + \nabla V = 0$, $\gamma \gg \omega_0$ | **Yes** | In the overdamped limit, $\ddot{h}$ is negligible; EOM collapses to $\dot{h} \approx -\nabla V/\gamma$ |
-| Underdamped second-order ODE with detectable inertia | **No** | Would predict $\bar{R}_2 < \bar{R}_1$; observed opposite universally |
+| Underdamped second-order ODE with detectable inertia | **No** | Would predict $\bar{R}\_2 < \bar{R}\_1$; observed opposite universally |
 
 The test **rules out** a second-order ODE in which the velocity component $\dot{h}_t$ carries
 unique, predictively useful information beyond $h_t$ at one-token resolution with standard function
@@ -181,7 +181,7 @@ The empirically defensible claim is therefore:
 
 The Markov-order test was also applied to hidden states extracted from a partially trained SPLM
 checkpoint at $\gamma = 0.5$ (moderate damping). The result is again Decision C:
-$\rho_{12} = 1.038$ (i.e., $\bar{R}_1/\bar{R}_2$), $p_{12} = 2.9 \times 10^{-4}$,
+$\rho_{12} = 1.038$ (i.e., $\bar{R}\_1/\bar{R}\_2$), $p_{12} = 2.9 \times 10^{-4}$,
 bootstrap CI $= [0.006, 0.016]$. The §14 acceleration statistic gives
 `frac_a_par_negative` = 97.9% — coinciding precisely with the natural GPT-2 figure.
 
@@ -201,7 +201,7 @@ therefore large by training dynamics, not solely by architectural constraint.
 
 A full gamma sweep across SPLM checkpoints is underway. The sweep constitutes a **damping-order
 phase diagram** for the hidden-state dynamics. The critical observable is the ratio
-$\rho_{12}(\gamma)$, defined as $\bar{R}_1(\gamma)/\bar{R}_2(\gamma)$, as a continuous function of $\gamma$.
+$\rho_{12}(\gamma)$, defined as $\bar{R}\_1(\gamma)/\bar{R}\_2(\gamma)$, as a continuous function of $\gamma$.
 Three outcomes are possible:
 
 1. **Decision C holds at all $\gamma$**: training dynamics dominate architecture, always driving the

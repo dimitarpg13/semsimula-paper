@@ -150,7 +150,7 @@ ODE per se.
 The unifying reading: transformer hidden-state trajectories, at one-token
 resolution, are well described by the **overdamped limit** of the full
 Euler–Lagrange equation (paper Eq. 67),
-$w_t\ddot{h}_t + \gamma(h_t)\dot{h}_t = -\nabla V(h_t)$,
+$w_t\ddot{h}\_t + \gamma(h_t)\dot{h}\_t = -\nabla V(h_t)$,
 in the regime $\gamma \gg \omega_0$. In this limit:
 
 - The kinetic term $T = \tfrac12w_t\lVert\dot{h}_t\rVert^2$ contributes to the

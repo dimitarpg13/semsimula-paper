@@ -206,6 +206,29 @@ F_{\text{diff}}\left(x_i, \{x_j\}_{j \neq i}\right)
 
 ---
 
+## 12. `}_x` subscripts inside inline math trigger italic — escape as `\_`
+
+When an inline `$...$` expression contains a subscript of the form `\cmd{arg}_x` (closing brace `}` immediately followed by `_`), GitHub's Markdown parser treats the `_` as a potential italic delimiter. The `}` is punctuation (not alphanumeric), so the parser considers `_x` a valid left-flanking italic opener. When two such `}_x` patterns appear on the same line — in the same or different `$...$` spans — the parser pairs them as italic open/close markers, which:
+
+- breaks the math expression (subscripts become plain text or disappear), and
+- causes all text after the first matched `_` to render in italic until the paired closing `_` is found elsewhere on the line or page.
+
+**Symptom:** text after an expression like `$\ddot{h}_t + \dot{h}_t$` suddenly renders in italic; the rendered math shows `\dot{h}t` with `_` and everything after in italic.
+
+**Mechanism:** `\_` is a Markdown-level escape. The `\` is consumed by GitHub's Markdown processor, preventing `_` from acting as an italic delimiter. KaTeX then receives the bare `_` and interprets it correctly as a subscript operator.
+
+```markdown
+<!-- Bad: two }_t patterns on one line — the parser pairs them as italic -->
+$w_t\ddot{h}_t + \gamma(h_t)\dot{h}_t = -\nabla V(h_t)$
+
+<!-- Good: escape the _ that follows } -->
+$w_t\ddot{h}\_t + \gamma(h_t)\dot{h}\_t = -\nabla V(h_t)$
+```
+
+**Rule:** whenever an inline `$...$` expression (or a line containing multiple such spans) has two or more `}_[alphanumeric]` subscript patterns, change each `}_x` to `}\_x`. This applies to common patterns like `\ddot{h}\_t`, `\dot{h}\_t`, `\vec{d}\_1`, `\mathfrak{m}\_i`, `\bar{R}\_1`, `\mathrm{Dyck}\_n`, etc. Alternatively, move such expressions to a display block `$$...$$` where the Markdown parser is less aggressive.
+
+---
+
 ## Quick reference card
 
 | Problem | Symptom | Fix |
@@ -221,3 +244,4 @@ F_{\text{diff}}\left(x_i, \{x_j\}_{j \neq i}\right)
 | `\boxed{...}` multiline with `-` | bullet inside box | single-line `\boxed{...}` |
 | `\tag{n}` in `$$...$$` | equation renders vertically | remove `\tag`, number in prose |
 | `\!` near `\left(` | parse failure or broken layout | remove `\!` entirely |
+| `}_x` in inline math (2+ on same line) | italic bleeds; subscript disappears | change `}_x` to `}\_x` |

@@ -84,7 +84,7 @@ This is the standard central finite difference approximation to the second deriv
 
 #### 2.1.2 Decomposing Acceleration into Normal and Tangential Components
 
-Decompose $\vec{d}_2$ into components parallel and perpendicular to $\vec{d}_1$:
+Decompose $\vec{d}\_2$ into components parallel and perpendicular to $\vec{d}\_1$:
 
 $$\vec{d}_2 = \vec{d}_{2\parallel} + \vec{d}_{2\perp}$$
 
@@ -92,7 +92,7 @@ where:
 
 $$\vec{d}_{2\parallel} = \frac{\vec{d}_2 \cdot \vec{d}_1}{|\vec{d}_1|^2}\vec{d}_1 = |\vec{d}_2|\cos\theta\ \hat{d}_1 \qquad \vec{d}_{2\perp} = \vec{d}_2 - \vec{d}_{2\parallel}$$
 
-and $\theta$ is the angle between $\vec{d}_1$ and $\vec{d}_2$, and $\hat{d}_1 = \vec{d}_1 / |\vec{d}_1|$.
+and $\theta$ is the angle between $\vec{d}\_1$ and $\vec{d}\_2$, and $\hat{d}\_1 = \vec{d}\_1 / |\vec{d}\_1|$.
 
 The acceleration decomposes correspondingly:
 
@@ -136,7 +136,7 @@ The total acceleration magnitude can also be expressed in terms of the STP loss.
 
 $$|\vec{a}|^2 = |\vec{d}_2 - \vec{d}_1|^2 = |\vec{d}_1|^2 + |\vec{d}_2|^2 - 2\vec{d}_1 \cdot \vec{d}_2$$
 
-and substituting $\vec{d}_1 \cdot \vec{d}_2 = |\vec{d}_1||\vec{d}_2|(1 - \mathcal{L}_{STP})$:
+and substituting $\vec{d}\_1 \cdot \vec{d}\_2 = |\vec{d}\_1||\vec{d}\_2|(1 - \mathcal{L}_{STP})$:
 
 $$|\vec{a}|^2 = |\vec{d}_1|^2 + |\vec{d}_2|^2 - 2|\vec{d}_1||\vec{d}_2| + 2|\vec{d}_1||\vec{d}_2|\mathcal{L}_{STP}$$
 
@@ -144,9 +144,9 @@ $$\boxed{|\vec{a}|^2 = \underbrace{(|\vec{d}_2| - |\vec{d}_1|)^2}_{\text{speed c
 
 This decomposition shows that the total squared acceleration has two sources:
 
-1. **Speed change**: $(|\vec{d}_2| - |\vec{d}_1|)^2$ — the squared difference in step sizes. This is nonzero when the trajectory speeds up or slows down, even if it stays on a straight line. **The STP loss is blind to this component.**
+1. **Speed change**: $(|\vec{d}\_2| - |\vec{d}\_1|)^2$ — the squared difference in step sizes. This is nonzero when the trajectory speeds up or slows down, even if it stays on a straight line. **The STP loss is blind to this component.**
 
-2. **Direction change**: $2|\vec{d}_1||\vec{d}_2| \cdot \mathcal{L}_{STP}$ — directly proportional to the STP loss. This is nonzero when the trajectory curves.
+2. **Direction change**: $2|\vec{d}\_1||\vec{d}\_2| \cdot \mathcal{L}_{STP}$ — directly proportional to the STP loss. This is nonzero when the trajectory curves.
 
 Rearranging:
 
@@ -156,7 +156,7 @@ The STP loss extracts from the total acceleration precisely the **directional** 
 
 #### 2.1.5 Special Case: Constant Speed
 
-When the speed is constant along the trajectory ($|\vec{d}_1| = |\vec{d}_2| = v$), the speed-change term vanishes and the total acceleration is entirely directional:
+When the speed is constant along the trajectory ($|\vec{d}\_1| = |\vec{d}\_2| = v$), the speed-change term vanishes and the total acceleration is entirely directional:
 
 $$\mathcal{L}_{STP} = \frac{|\vec{a}|^2}{2v^2} \qquad \text{(constant speed)}$$
 
@@ -323,7 +323,7 @@ $$a_{\parallel,t} = |\vec{v}_{t+1}| - |\vec{v}_t|$$
 
 $$a_{\perp,t} = |\vec{a}_t - a_{\parallel,t}\hat{v}_t|$$
 
-where $\hat{v}_t = \vec{v}_t / |\vec{v}_t|$.
+where $\hat{v}\_t = \vec{v}\_t / |\vec{v}\_t|$.
 
 The STP loss is related to the normal acceleration (curvature). The tangential acceleration (speed change) is a separate quantity that the STP loss does not directly measure.
 
@@ -353,9 +353,9 @@ If the system is strongly overdamped ($\gamma \gg w_t \omega_0$), then $\gamma_t
 
 1. Extract last-layer hidden states $h_1, \ldots, h_T$ for 500+ sentences.
 2. Compute the discrete acceleration $\vec{a}_t = h_{t+1} - 2h_t + h_{t-1}$ at each interior position.
-3. Compute the **acceleration magnitude** $|\vec{a}_t|$ and the **normalized acceleration** $|\vec{a}_t| / |\vec{v}_t|$ (acceleration relative to velocity).
+3. Compute the **acceleration magnitude** $|\vec{a}\_t|$ and the **normalized acceleration** $|\vec{a}\_t| / |\vec{v}\_t|$ (acceleration relative to velocity).
 4. Test against the null hypothesis that acceleration is zero:
-   - Compute the mean and standard deviation of $|\vec{a}_t| / |\vec{v}_t|$ across all positions.
+   - Compute the mean and standard deviation of $|\vec{a}\_t| / |\vec{v}\_t|$ across all positions.
    - Compare with a null distribution obtained by randomly permuting the token order within each sentence (destroying sequential structure while preserving the marginal distribution of hidden states).
 5. Decompose acceleration into tangential ($a_\parallel$) and normal ($a_\perp$) components. The STP loss should correlate with $a_\perp$ (curvature) but not necessarily with $a_\parallel$ (speed change).
 
@@ -369,7 +369,7 @@ If the system is strongly overdamped ($\gamma \gg w_t \omega_0$), then $\gamma_t
 
 *If an STP-tuned checkpoint is not available, fine-tuning with $\mathcal{L}_{NTP} + 0.02 \cdot \mathcal{L}_{STP}$ on a small corpus would produce one.
 
-**Success criterion**: $|\vec{a}_t| / |\vec{v}_t|$ is significantly greater than the permuted null ($p < 0.001$) in all three models. If the conjecture holds, acceleration should be systematically present, with GPT-2 showing the most and the STP-tuned model showing the least.
+**Success criterion**: $|\vec{a}\_t| / |\vec{v}\_t|$ is significantly greater than the permuted null ($p < 0.001$) in all three models. If the conjecture holds, acceleration should be systematically present, with GPT-2 showing the most and the STP-tuned model showing the least.
 
 ### 4.2 Experiment 2: Does Acceleration Correlate With the Restoring Force?
 
@@ -379,7 +379,7 @@ If the system is strongly overdamped ($\gamma \gg w_t \omega_0$), then $\gamma_t
 
 1. For each trajectory, identify the trajectory center $c$ (final hidden state $h_T$, or attention-weighted centroid).
 2. Compute the "radial" direction at each position: $\hat{r}_t = (c - h_t) / \lVertc - h_t\rVert$.
-3. Compute the **radial component** of acceleration: $a_{r,t} = \vec{a}_t \cdot \hat{r}_t$.
+3. Compute the **radial component** of acceleration: $a_{r,t} = \vec{a}\_t \cdot \hat{r}\_t$.
 4. If the acceleration is a restoring force, $a_{r,t}$ should be **positive** (pointing toward center) for positions away from center, and near zero at the center.
 5. Fit the radial acceleration profile $a_{r,t}$ vs. cosine distance $d_t$ to:
    - Gaussian well force: $a_r(d) = A \cdot d \cdot e^{-B d^2}$
@@ -437,7 +437,7 @@ $$\gamma_t = \frac{F(d_t) - w_t \cdot a_{\parallel,t}}{v_t}$$
 **Procedure**:
 
 1. Extract hidden states from **all layers** (not just the last).
-2. At each layer $\ell$, compute the acceleration magnitude $|\vec{a}_t^{(\ell)}| / |\vec{v}_t^{(\ell)}|$ across all positions.
+2. At each layer $\ell$, compute the acceleration magnitude $|\vec{a}\_t^{(\ell)}| / |\vec{v}\_t^{(\ell)}|$ across all positions.
 3. Plot the mean normalized acceleration as a function of layer depth.
 4. Similarly, estimate $\zeta^{(\ell)}$ at each layer.
 
@@ -527,7 +527,7 @@ The three resolutions proposed in Section 2 have very different validation costs
 
 1. Compute the discrete acceleration vector $\vec{a}_t = h_{t+1} - 2h_t + h_{t-1}$ at each interior position.
 2. Decompose into tangential and normal components:
-   - $a_{\parallel,t} = (\vec{a}_t \cdot \hat{v}_t)\hat{v}_t$ where $\hat{v}_t = \vec{d}_2 / |\vec{d}_2|$
+   - $a_{\parallel,t} = (\vec{a}\_t \cdot \hat{v}\_t)\hat{v}\_t$ where $\hat{v}\_t = \vec{d}\_2 / |\vec{d}\_2|$
    - $\vec{a}_{\perp,t} = \vec{a}_t - a_{\parallel,t}$
 3. For each triplet $(s, r, t)$, verify the exact relationship from Section 2.1.5:
 
@@ -558,7 +558,7 @@ This is a **conformally flat** metric — it is the flat metric multiplied by a 
 
 $$\mathcal{L}_{STP} = 1 - \cos(\vec{d}_2, \vec{d}_1)$$
 
-Therefore, the STP loss is **invariant under the Jacobi conformal rescaling**: the conformal factor $2(E - V(x))$ rescales the lengths of $\vec{d}_1, \vec{d}_2$ but leaves the angle between them unchanged.
+Therefore, the STP loss is **invariant under the Jacobi conformal rescaling**: the conformal factor $2(E - V(x))$ rescales the lengths of $\vec{d}\_1, \vec{d}\_2$ but leaves the angle between them unchanged.
 
 **Important clarification**: This conformal invariance does **not** mean that $\mathcal{L}\_{STP} = 0$ for physical trajectories (Jacobi geodesics). A Jacobi geodesic has zero *covariant* acceleration (it is "free" in the curved geometry), but it has nonzero *coordinate* acceleration — it curves in flat coordinates because the metric is curved. The consecutive displacement vectors $\vec{d}\_1, \vec{d}\_2$ of a Jacobi geodesic are generally **not** parallel in flat coordinates, so $\mathcal{L}\_{STP} > 0$.
 
@@ -568,7 +568,7 @@ What the conformal invariance *does* tell us is:
 2. **Cosine similarity is the geometrically natural choice** for measuring trajectory deviation when the metric is conformally flat. Had Huang et al. defined STP loss using Euclidean distance between displacement vectors, it would depend on the local conformal factor (i.e., on the local potential energy) — making it a noisier, less intrinsic quantity.
 3. **The nonzero STP loss for a Jacobi geodesic is exactly the normal acceleration** from Resolution 2.1 — the curvature of the physical trajectory in flat coordinates.
 
-To directly test whether hidden state trajectories are Jacobi geodesics, we need to go beyond angle comparison. The proper test is to compute the **parallel transport** of $\vec{d}_1$ along the Jacobi metric from point $r$ to point $t$, yielding a transported vector $\vec{d}_1'$, and then measure the angle between $\vec{d}_1'$ and $\vec{d}_2$. For a true Jacobi geodesic, this angle would be zero — the geodesic parallel-transports its own tangent vector. The difference between the "raw" STP loss and this "Jacobi-corrected" STP loss quantifies how much of the observed curvature is explained by the Riemannian geometry (see Section 9 for the full framework).
+To directly test whether hidden state trajectories are Jacobi geodesics, we need to go beyond angle comparison. The proper test is to compute the **parallel transport** of $\vec{d}\_1$ along the Jacobi metric from point $r$ to point $t$, yielding a transported vector $\vec{d}\_1'$, and then measure the angle between $\vec{d}\_1'$ and $\vec{d}\_2$. For a true Jacobi geodesic, this angle would be zero — the geodesic parallel-transports its own tangent vector. The difference between the "raw" STP loss and this "Jacobi-corrected" STP loss quantifies how much of the observed curvature is explained by the Riemannian geometry (see Section 9 for the full framework).
 
 **What to do**:
 
@@ -645,7 +645,7 @@ In physical terms: Huang et al. showed that planets move in approximately straig
 **What to do**:
 
 1. From Step 3, obtain the fitted restoring force $F(d_t)$ at each position.
-2. From Step 1, obtain the acceleration $\vec{a}_t$ and velocity $\vec{v}_t$ at each position.
+2. From Step 1, obtain the acceleration $\vec{a}\_t$ and velocity $\vec{v}\_t$ at each position.
 3. Compute the damping coefficient: $\gamma_t = (F(d_t) - \mathfrak{m}_t \cdot a_{\parallel,t}) / v_t$.
 4. Estimate the semantic mass $\mathfrak{m}_t$ using aggregate attention received [7].
 5. Compute the natural frequency $\omega_0 = \kappa\upsilon\sqrt{2}$ and the damping ratio $\zeta = \gamma / (2\mathfrak{m}\omega_0)$.
@@ -813,7 +813,7 @@ The predicted STP loss, computed from the normal acceleration via the formula fr
 
 $$\mathcal{L}_{STP}^{(\mathrm{pred})} = 1 - \sqrt{1 - \frac{|\vec{a}_\perp|^2}{|\vec{d}_2|^2}}$$
 
-was compared against the actual STP loss $\mathcal{L}_{STP} = 1 - \cos(\vec{d}_2, \vec{d}_1)$ for all 1,314 consecutive triplets.
+was compared against the actual STP loss $\mathcal{L}_{STP} = 1 - \cos(\vec{d}\_2, \vec{d}\_1)$ for all 1,314 consecutive triplets.
 
 | Metric | Value |
 |---|---|
@@ -848,7 +848,7 @@ This means the STP loss captures only about **one-third** of the total accelerat
 
 ### 10.3 Systematic Deceleration Toward Bound State
 
-The signed tangential acceleration $a_\parallel = |\vec{d}_2|\cos\theta - |\vec{d}_1|$ reveals a near-universal pattern:
+The signed tangential acceleration $a_\parallel = |\vec{d}\_2|\cos\theta - |\vec{d}\_1|$ reveals a near-universal pattern:
 
 | Statistic | Value |
 |---|---|
@@ -856,11 +856,11 @@ The signed tangential acceleration $a_\parallel = |\vec{d}_2|\cos\theta - |\vec{
 | Fraction with $a_\parallel < 0$ (decelerating) | **97.9%** |
 | Fraction with $a_\parallel > 0$ (accelerating) | 2.1% |
 
-In 97.9% of all consecutive triplets, the hidden state is **slowing down** — the current step $|\vec{d}_2|$ is smaller than the projection of the previous step $|\vec{d}_1|$ onto the current direction. This is a near-universal deceleration.
+In 97.9% of all consecutive triplets, the hidden state is **slowing down** — the current step $|\vec{d}\_2|$ is smaller than the projection of the previous step $|\vec{d}\_1|$ onto the current direction. This is a near-universal deceleration.
 
 In the Gaussian well framework, this is the expected behavior for a property approaching its bound state. The restoring force decelerates the property as it descends into the well. The damping field $H_i$ [3, eq. 8] further removes kinetic energy. The trajectory slows progressively as it converges toward the well center.
 
-The speed constancy test (Figure S6.2f) shows the scatter of $|\vec{d}_2|$ vs. $|\vec{d}_1|$. If speed were constant (no tangential acceleration), points would cluster on the identity line. Instead, the vast majority of points lie *below* the identity line ($|\vec{d}_2| < |\vec{d}_1|$), confirming the systematic deceleration.
+The speed constancy test (Figure S6.2f) shows the scatter of $|\vec{d}\_2|$ vs. $|\vec{d}\_1|$. If speed were constant (no tangential acceleration), points would cluster on the identity line. Instead, the vast majority of points lie *below* the identity line ($|\vec{d}\_2| < |\vec{d}\_1|$), confirming the systematic deceleration.
 
 ### 10.4 Permutation Null Test: Sequential Structure Reduces Acceleration
 

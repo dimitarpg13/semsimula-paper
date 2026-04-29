@@ -158,7 +158,7 @@ In more formal terms, if we write template matching as a relation:
 
 $$M\left(T,S\right)=S′\text{ meaning: template }T\text{ applied to }S\text{ yields }S′$$
 
-Then execution inverts this: given $S'$, find the sequence of atomic inference templates $\mathfrak{I}_1, \mathfrak{I}_2, ...$ such that the composition of their outputs reconstitutes meaningful consequences of $S'$. The tree structure of executive atoms in $\boldsymbol{E}$ precisely organizes this sequential/branching inversion.
+Then execution inverts this: given $S'$, find the sequence of atomic inference templates $\mathfrak{I}\_1, \mathfrak{I}\_2, ...$ such that the composition of their outputs reconstitutes meaningful consequences of $S'$. The tree structure of executive atoms in $\boldsymbol{E}$ precisely organizes this sequential/branching inversion.
 
 #### Three Levels of Inversion
 
