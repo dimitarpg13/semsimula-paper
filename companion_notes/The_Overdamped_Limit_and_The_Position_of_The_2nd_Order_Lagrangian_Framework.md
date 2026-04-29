@@ -365,8 +365,8 @@ three levels of the programme.
 | **Prescriptive** (SPLM architecture) | Shared-potential diagnostic satisfied at $R^2 = 0.90$; SPLM is globally conservative by design | Full EOM is the governing dynamics by construction; $\gamma$ is independently tunable |
 | **Generative** (future dynamical simulation) | Gamma sweep in progress; optimal $\gamma^*$ predicted to be strictly below training-converged value | Second-order Lagrangian is the only framework that can predict and interpret the phase transition; Dyck-depth bound $D^*(\gamma)$ gives falsifiable prediction |
 
-The scientifically correct framing, consistent with the empirical evidence and grounded in
-Sections 2–9 of the paper, is therefore:
+The framing consistent with the empirical evidence and grounded in
+Sections 2–9 of the framework is therefore:
 
 > Trained attention transformers and SPLM at moderate damping both converge empirically to the
 > overdamped gradient-flow regime — the first-order shallow limit of the Semantic Simulation EOM

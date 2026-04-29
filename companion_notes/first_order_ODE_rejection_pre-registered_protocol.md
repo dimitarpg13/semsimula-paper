@@ -160,10 +160,10 @@ The decision is taken on the **GPT-2 primary** result (kernel ridge, $p = 50$, a
 
 | Outcome | $\rho_{12}$ | $p_{12}$ (Wilcoxon) | $\rho_{23}$ | $p_{23}$ (Wilcoxon) | Conclusion |
 |---|---|---|---|---|---|
-| **A** | $\ge 1.20$ | $< 10^{-3}$ | $\le 1.05$ | $> 0.05$ | **First-order rejected; second-order sufficient.** Paper's claim empirically supported. |
-| **B** | $\ge 1.20$ | $< 10^{-3}$ | $> 1.10$ | $< 0.05$ | **First-order rejected; second-order *also* insufficient.** Soften paper claim to "*at least* second-order; truncation order TBD." |
-| **C** | $< 1.10$ | OR $> 0.01$ | — | — | **First-order not rejected.** Soften the headline rhetoric of the markdown to "the second-order Lagrangian provides a unifying account; rigorous dynamical-class exclusion remains open." Report the negative result honestly in any new revision. |
-| **D** | otherwise | otherwise | — | — | **Inconclusive.** Document the boundary case, discuss what extra power would resolve it, do not change paper rhetoric in either direction. |
+| **A** | $\ge 1.20$ | $< 10^{-3}$ | $\le 1.05$ | $> 0.05$ | **First-order rejected; second-order sufficient.** The second-order dynamical-class claim is empirically supported. |
+| **B** | $\ge 1.20$ | $< 10^{-3}$ | $> 1.10$ | $< 0.05$ | **First-order rejected; second-order *also* insufficient.** The dynamics are at least second-order; the truncation order remains to be determined. |
+| **C** | $< 1.10$ | OR $> 0.01$ | — | — | **First-order not rejected.** The second-order Lagrangian provides a unifying theoretical account; rigorous dynamical-class exclusion at this temporal resolution remains open. |
+| **D** | otherwise | otherwise | — | — | **Inconclusive.** The boundary case should be documented alongside a power analysis identifying what sample size would resolve the ambiguity. |
 
 The thresholds 1.20, 1.05, 1.10, $10^{-3}$, 0.01, 0.05 are committed in this document; they are not to be adjusted after observing the data. If the headline result lands at the edge (e.g., $\rho_{12} = 1.18$), the conclusion is **D**, not **A**.
 
@@ -218,9 +218,9 @@ Independent of the outcome, the following artefacts will be produced and committ
 - `notebooks/dynamics_order_test/results/figures/` — at minimum: per-class $R_k$ bar plot with error bars; $r_1^{(i)}$ vs $r_2^{(i)}$ paired scatter; LOSO-fold spaghetti plot of $\bar R_k$ across folds.
 - A self-contained `RESULTS.md` summarising primary, replication, robustness, decision row, and any deviations from this protocol with explicit justification.
 
-If outcome **A** holds, the paper gains a new **§14.6 — Markov-order regression test of the dynamical-order claim**, with the decision table inline and the protocol reference cited.
+If outcome **A** holds, the result constitutes quantitative empirical support for the second-order dynamical-class claim, with the decision table and protocol reference forming the complete documentation of the test.
 
-If outcome **C** holds, the rhetoric of `Evidence_for_second_order_ODE_governing_evolution.md` and any matching paper-side language will be softened from *"definitely no first-order ODE"* to *"the second-order Lagrangian provides the unifying account; the empirical question of whether some first-order ODE of arbitrary form could match the observed trajectories at this temporal resolution remains open"*. The negative result will be reported in the companion repository's `Open items` section and in the next paper revision's discussion.
+If outcome **C** holds, the second-order Lagrangian provides the unifying theoretical account, while the empirical question of whether some first-order ODE of arbitrary form could match the observed trajectories at this temporal resolution remains open. The negative result and its implications are documented in `Evidence_for_second_order_ODE_governing_evolution.md` and in the companion repository's open-items section.
 
 ---
 

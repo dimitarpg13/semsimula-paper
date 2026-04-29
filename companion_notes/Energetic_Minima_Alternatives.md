@@ -89,13 +89,14 @@ prompt are assembled in
 
 ## 4. Interpretation, variant by variant
 
-### 4.1 (i) LayerNorm-after-step: paper's prediction refuted, in the nice direction
+### 4.1 (i) LayerNorm-after-step: theoretical prediction refuted, in the positive direction
 
-**The paper said:** LN should leave val ppl "essentially unchanged
-(within 10 – 15 %) while producing a narrower $V_\theta$ range and
-comparable or slightly crisper basins." This was R5's negative-case
-corollary: LN buys a finite minimum of $V$ on the compact shell
-$S^{d-1}$ but shouldn't otherwise matter.
+**Prior theoretical expectation:** LN should leave val ppl "essentially
+unchanged (within 10 – 15 %) while producing a narrower $V_\theta$
+range and comparable or slightly crisper basins." This was the
+negative-case corollary of R5: LN buys a finite minimum of $V$ on the
+compact shell $S^{d-1}$ but was not expected to otherwise affect
+language-model quality.
 
 **What we see.**
 
@@ -141,11 +142,11 @@ in $V$-space hurts; compactifying the state space while keeping $V$
 free does not**. The distinction matters and is made precise in
 §5 below.
 
-### 4.2 (ii) Scale-gauge: paper's prediction partially confirmed
+### 4.2 (ii) Scale-gauge: theoretical prediction partially confirmed
 
-**The paper said:** a small loss-side anchor on $V_\theta$'s absolute
-value at the input embedding should leave ppl essentially unchanged
-while narrowing the $V$ range.
+**Prior theoretical expectation:** a small loss-side anchor on
+$V_\theta$'s absolute value at the input embedding should leave ppl
+essentially unchanged while narrowing the $V$ range.
 
 **What we see.**
 
@@ -179,13 +180,13 @@ zero everywhere; our single value landed on the low-$\lambda$ side of
 that crossover. We leave that sweep as explicit future work; it is
 not promising based on the coarsened-basin signal we saw.
 
-### 4.3 (iii) Gaussian-mixture head: paper's prediction vindicated
+### 4.3 (iii) Gaussian-mixture head: theoretical prediction vindicated
 
-**The paper said:** a physics-prescribed, bounded-below Gaussian
-mixture should reproduce the static-null behaviour of the seven
-scalar-form fits of §14.2 (five-negatives) and degrade LM quality.
+**Prior theoretical expectation:** a physics-prescribed, bounded-below
+Gaussian mixture should reproduce the static-null behaviour of the
+seven scalar-form fits of §14.2 (five-negatives) and degrade LM quality.
 A Gaussian-mixture SPLM matching the SARF-faithful val ppl 160.55
-would force §14.15 and §14.17 (Q11) to invert.
+would invert the findings of §14.15 and §14.17 (Q11).
 
 **What we see.** Complete vindication of R5, at the extreme end of
 the predicted range.

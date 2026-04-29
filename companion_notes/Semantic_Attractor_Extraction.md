@@ -229,41 +229,41 @@ corpus.  This is a concrete, mechanistic explanation for the slight
 PPL regression observed in the symplectic experiments
 (`docs/Symplectic_Integration_for_SPLM.md`).
 
-## 9.  What this means for the paper
+## 9.  Technical findings and implications
 
-1. **Replace "minima of $V_\theta$" with "basins of the damped flow at
-   $L = L_\text{train}$"** in the introduction's promissory text.
-   The minima formulation is empirically false; the dynamical
-   formulation is empirically supported.
+1. **Basins of the damped flow, not minima of $V_\theta$.**
+   The empirical attractor structure arises from the damped
+   Euler / Verlet flow at $L = L_\text{train}$ layers, not from
+   gradient descent on $V_\theta$ alone.  The dynamical formulation
+   is empirically supported; the static-minima formulation is not.
 
-2. **Add a figure** (`attractors_comparison.png`) showing the 5x3
-   grid -- Euler dynamics, Verlet dynamics, $V_\theta$ gradient
-   descent.  This is the first concrete interpretability artefact
-   the paper has that has no transformer counterpart.  The Euler
-   column alone -- 10 distinct content-bearing basins per prompt --
-   is the strongest qualitative evidence we have so far that SPLM
-   exposes interpretable structure that attention does not.
+2. **Interpretability artefact: `attractors_comparison.png`.**
+   The 5×3 grid (Euler dynamics, Verlet dynamics, $V_\theta$ gradient
+   descent) is the first concrete interpretability result produced
+   by SPLM that has no direct transformer counterpart.  The Euler
+   column alone shows 10 distinct content-bearing basins per prompt,
+   constituting qualitative evidence that SPLM exposes structure
+   that standard attention analysis does not surface.
 
-3. **State the gauge symmetry of $V_\theta$ explicitly**.  The
-   training loss is invariant under $V_\theta \mapsto V_\theta + c$
-   and (modulo $\gamma, m, \Delta t$) under positive rescaling of
-   $V_\theta$.  This explains why gradient descent on $V_\theta$
-   alone is ill-posed and motivates the damped-flow reading.
+3. **Gauge symmetry of $V_\theta$.**  The training loss is invariant
+   under $V_\theta \mapsto V_\theta + c$ and (modulo
+   $\gamma, m, \Delta t$) under positive rescaling of $V_\theta$.
+   This invariance explains why gradient descent on $V_\theta$ alone
+   is ill-posed and establishes that the damped-flow reading is the
+   correct interpretation of the attractor structure.
 
-4. **Add a future-work line on $V_\theta$ regularisation.**  An
-   explicit penalty $\lambda_V \lVertV_\theta\rVert_2^2$ on the network's
-   own scalar output (not its weights) would break the gauge and
-   give an actually bounded-below potential.  Whether that recovers
-   genuine $V_\theta$-minima attractors -- and whether it costs
-   perplexity -- is now a sharp, testable hypothesis.
+4. **Open question: $V_\theta$ regularisation.**  An explicit penalty
+   $\lambda_V \lVert V_\theta \rVert_2^2$ on the network's own scalar
+   output (not its weights) would break the gauge and give an
+   actually bounded-below potential.  Whether that recovers genuine
+   $V_\theta$-minima attractors — and at what perplexity cost — is
+   a sharp, testable hypothesis for future work.
 
-5. **Re-frame the symplectic study.**  The Verlet result is no
-   longer "an interesting tangential experiment that slightly
-   regressed".  It is a clean demonstration that *integrator
-   accuracy can hurt model expressivity* when the underlying
-   continuous system has no equilibria -- which is itself a
-   simulation-framework insight that attention-based papers cannot
-   make.
+5. **Integrator-accuracy and expressivity trade-off.**  The Verlet
+   result demonstrates that integrator accuracy can reduce model
+   expressivity when the underlying continuous system has no
+   equilibria.  This is a simulation-framework finding that arises
+   naturally from the SPLM formulation.
 
 ## 10.  Visualising the landscape in 3D
 

@@ -216,9 +216,7 @@ Three qualitative outcomes are possible at the level of the entire grid.
 **Outcome α — overdamped synthesis confirmed.** PPL is monotone (best at
 $\gamma \approx 0.85$, worsens both directions); Markov-order test
 returns A/B at small $\gamma$ and C at large $\gamma$; energy-drift and
-trajectory-shape co-vary in the predicted direction. The §16 paper
-text can then directly cite this sweep as quantitative evidence for the
-overdamped synthesis.
+trajectory-shape co-vary in the predicted direction. This sweep provides quantitative evidence for the overdamped synthesis.
 
 **Outcome β — partial confirmation.** PPL is monotone but Markov-order
 test does *not* reject first-order even at $\gamma = 0$. This is

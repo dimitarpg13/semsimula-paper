@@ -123,7 +123,7 @@ H4's trajectory-ordering prediction is not confirmed: the SPLM does not approach
 
 ## 7. Synthesis
 
-The sweep produces four headline findings for the paper.
+The sweep produces four headline findings.
 
 **Finding 1 — $\gamma^* \approx 0.30$, 29 % below the freely-trained value.**
 The optimal fixed damping is $\gamma^* \approx 0.30$, yielding PPL 144 vs PPL 203 for the jointly-trained model that converges to $\gamma \approx 0.85$. The framework's prediction that joint optimisation drives $\gamma$ away from the true optimum (§7 of the companion theory document) is confirmed with a large, actionable margin.
@@ -137,9 +137,9 @@ The Markov-order regression returns Decision C at all six $\gamma$ values, exten
 **Finding 4 — The energy diagnostics are a reliable proxy for regime.**
 The drift-slope and bandwidth provide a clean, computationally cheap signal for where a model sits on the underdamped/overdamped spectrum. The qualitative transition (positive drift → small negative drift → large negative drift; large bandwidth → small bandwidth) tracks both the PPL U-shape and the theoretical regime boundaries.
 
-### Actionable recommendation for the paper
+### Conclusion
 
-Treat $\gamma$ as a physical hyperparameter to be selected by sweep rather than jointly optimised. Fix $\gamma$ in the range $[0.10, 0.50]$, train $V_\theta$, $m$, $\alpha$ with $\gamma$ held constant. Based on this sweep, $\gamma = 0.30$ is the recommended default for the Shakespeare-scale setting; a finer sweep over $[0.10, 0.50]$ on a larger corpus may sharpen $\gamma^*$.
+$\gamma$ is a physical hyperparameter that should be selected by sweep rather than jointly optimised. Fixing $\gamma$ in the range $[0.10, 0.50]$ and training $V_\theta$, $m$, $\alpha$ with $\gamma$ held constant yields the best perplexity outcomes. At the Shakespeare-scale setting, $\gamma = 0.30$ is the empirically optimal value; a finer sweep over $[0.10, 0.50]$ on a larger corpus may sharpen $\gamma^*$ further.
 
 ---
 

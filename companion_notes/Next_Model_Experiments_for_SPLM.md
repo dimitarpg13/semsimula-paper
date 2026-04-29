@@ -482,7 +482,7 @@ working inference procedure.
 
 ---
 
-## F. Positioning against attention (comparison studies the paper needs)
+## F. Positioning against attention (comparison studies)
 
 ### F1. Hybrid SPLM + attention architecture
 
@@ -594,53 +594,36 @@ was chosen given today's compute budget.
    items 1-2 complete would mean any aggregate findings are
    still single-seed.
 
-**Conditional paper edits (after E1 completes).**  The single-seed
-§14.16(F5(i)) number $88.63$ already inverts the paper's
-introduction-level "matched baseline beats SPLM by perplexity"
-hedge ($88.63 < 141.7$).  E1 phase 2 turns this from a single
-data point into a properly-reported $\mathrm{ppl} \pm \sigma$
+**Interpretation framework for E1 outcomes.**  The single-seed
+number $88.63$ (LN-after-step) already inverts the baseline
+ordering ($88.63 < 141.7$ matched).  E1 phase 2 turns this from a
+single data point into a properly-reported $\mathrm{ppl} \pm \sigma$
 measurement.  Three outcome regimes are possible at $N=5$:
 
 - **Regime A: LN cleanly beats matched (LN mean $+ \sigma$ below
-  matched mean $- \sigma$).**  Recommended edits to the paper
-  ("option (c)" of the conversational triage):
-
-  1. Add a short §14.13.1 *"Best-known SPLM configuration:
-     LayerNorm-after-step"* subsection that records the
-     LN-after-step $\mathrm{ppl} \pm \sigma$ alongside the matched
-     baseline's $\mathrm{ppl} \pm \sigma$ and reports the
-     SPLM-vs-matched gap with $95\%$ CI from Welch's $t$-test.
-  2. Soften the §1 / §14 framing: the matched baseline is the
-     better LM *by perplexity at the SARF+logfreq flagship
-     configuration*, but **not** at the strongest tested SPLM
-     configuration (LN-after-step).
-  3. Update §14.16(F5(i)) with the variance bar but otherwise
-     keep the falsification narrative intact -- the
-     "neutrality-prediction-refuted-positively" framing remains
-     correct.
-  4. Optionally promote LN-after-step to the flagship in §14.13's
-     *"Headline: language-modelling quality"* table -- highest-yield
-     but highest-risk edit; recommend deferring to v3 unless the
-     LN-vs-SARF+mass gap is also significant ($p < 0.05$ at $N=5$).
+  matched mean $- \sigma$).**  This constitutes statistically
+  significant evidence that LN-after-step is the stronger SPLM
+  configuration.  The SPLM-vs-matched perplexity gap with 95% CI
+  from Welch's $t$-test is the primary reportable quantity.
+  The result also shows that the matched baseline is the better LM
+  *at the SARF+logfreq configuration* but not at the strongest
+  tested SPLM configuration.
 
 - **Regime B: LN beats matched but not cleanly (overlapping CIs).**
-  Recommended edits: (1) and (3) above only.  Skip the
-  introduction softening; phrase §14.13.1 as
-  *"first known SPLM configuration where the ppl gap to the matched
-  baseline closes within $1\sigma$"* and present the gap with
-  appropriate caveats.
+  The LN-after-step configuration represents the first known SPLM
+  setting where the perplexity gap to the matched baseline closes
+  within $1\sigma$; the gap should be presented with appropriate
+  uncertainty quantification.
 
 - **Regime C: $88.63$ does not survive multi-seed (LN mean
-  comparable to or worse than matched mean).**  Then the existing
-  §14.16(F5(i)) text needs a correction: the seed=0 number was
-  unrepresentative.  No §14.13.1 addition; instead, a
-  pre-registered $N=5$ note in §14.16(F5(i)) explaining what
-  changed and why the original prediction (LN ppl essentially
-  unchanged) is partly recovered.
+  comparable to or worse than matched mean).**  The seed=0 number
+  was unrepresentative; the multi-seed result recovers the original
+  theoretical prediction that LN-after-step leaves validation
+  perplexity essentially unchanged relative to the baseline
+  configuration.
 
-Pre-deciding the regime→edit mapping now -- before the data lands
--- protects the paper-position decision against ex-post
-rationalisation.
+Pre-registering the regime-to-conclusion mapping before the data
+lands protects the interpretation against ex-post rationalisation.
 
 **Deferred to Round-2 (with reasoning).**  B1 (KV-cache-free
 decoding benchmark) is the original top-3 item but its payoff

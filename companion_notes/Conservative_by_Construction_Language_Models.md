@@ -4,7 +4,7 @@
 the empirical failures of conservative and linear-Helmholtz fits to
 attention-transformer hidden-state trajectories.*
 
-**Status:** design document / research plan for v2 of the paper.
+**Status:** design document / research programme for prescriptive SPLM architectures.
 **Companion:** [`The_Failure_of_Conservative_Models_to_explain_hidden_state_trajectories.md`](./The_Failure_of_Conservative_Models_to_explain_hidden_state_trajectories.md)
 (hereafter "**Failure doc**") contains the five negative experiments that
 motivate this document.
@@ -41,8 +41,8 @@ first half of a two-sided argument:
 
 This document captures the logic of that reframing, enumerates concrete
 conservative-by-construction architectures, proposes the minimal
-experimental protocol to validate the approach, and outlines the
-resulting v2 narrative.
+experimental protocol to validate the approach, and establishes the
+resulting theoretical narrative.
 
 ---
 
@@ -244,10 +244,10 @@ Parallel directories for the other architectures
 structurally identical and can share the trajectory-extraction and
 E-init validation modules unchanged.
 
-## 5. The resulting v2 narrative
+## 5. The resulting theoretical narrative
 
-Under this re-framing, the v2 paper tells a much sharper story than v1
-can:
+Under this re-framing, the Semantic Simulation framework tells a sharper
+story:
 
 1. **Theory (unchanged from v1).** Semantic inference is Lagrangian
    motion of semantic particles on an energy manifold.

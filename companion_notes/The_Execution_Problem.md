@@ -718,9 +718,9 @@ The intended end state of this programme is a stand-alone manuscript, *"Computat
 - The dichotomy theorem of Step 4 as a refinement that connects the computational class to the Lagrangian dynamics of the main framework.
 - The locus result of Step 5 as the summary statement.
 
-This manuscript would subsume the current scattered NDTM-equivalence assertions (in "Level 3", "Step 5", and "The Aggregation Problem"), replacing them with a single cite and removing an overclaim that currently appears in multiple informal places.
+Such a manuscript would consolidate the NDTM-equivalence argument, replacing the scattered informal assertions with a single rigorous proof.
 
-Until this programme is carried out, the NDTM-equivalence claim should be treated as a **working conjecture**, cited as such, and not used as a load-bearing assumption in downstream arguments.
+Pending that proof, the NDTM-equivalence claim has the status of a **working conjecture** and should not be used as a load-bearing assumption in downstream formal arguments.
 
 
 ## Structural Retirement Mechanisms

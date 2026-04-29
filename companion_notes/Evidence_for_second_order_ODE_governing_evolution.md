@@ -10,8 +10,9 @@
 > **C — first-order ODE not rejected** in the kernel-ridge / linear-ridge /
 > MLP function classes at PCA dim 50, robustly across the
 > 4-class × 3-PCA-dim × 2-architecture grid (21 / 24 cells C; 3 poly-2
-> over-fitting artefacts). The headline rhetoric below in the form
-> *"definitely no first-order ODE"* is **not** empirically supported.
+> over-fitting artefacts). The strong dynamical-exclusion claim
+> (*"definitely no first-order ODE"*) is **not** empirically supported
+> at one-token resolution.
 >
 > The synthesis the data *does* support is **overdamped second order**:
 > the full Euler–Lagrange equation
@@ -43,9 +44,8 @@
 > neural ODEs, score-matching and overdamped Langevin dynamics — all
 > first-order in the same observational sense, and all derivable from
 > the overdamped limit of the same Lagrangian. The sections below
-> should be read as a development of the *generative* second-order
-> account; the *predictive* test does not detect the inertial term and
-> we should not claim it does. Full write-up:
+> develop the *generative* second-order account; the *predictive* test
+> does not detect the inertial term at one-token resolution. Full write-up:
 > [`notebooks/dynamics_order_test/results/RESULTS.md`](../notebooks/dynamics_order_test/results/RESULTS.md).
 
 > **Update 2026-04-28 — E4 damping sweep (SPLM with controlled $\gamma$).**
