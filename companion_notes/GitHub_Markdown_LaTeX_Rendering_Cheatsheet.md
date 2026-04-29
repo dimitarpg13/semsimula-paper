@@ -60,19 +60,32 @@ Inline math inside `| ... |` table cells is often not parsed. The `$...$` delimi
 
 ---
 
-## 4. Inline math inside italic blocks breaks — remove the italic wrapper
+## 4. Inline math inside italic spans breaks — remove the italic wrapper
 
-A paragraph that is both italic (`*...*`) and contains `$...$` math or backtick code spans will often fail to render either the math or the italics correctly. GitHub's parser resolves italic/code spans before handing text to the math renderer.
+GitHub's Markdown parser resolves `*...*` italic spans **before** handing text to the math renderer. Any `$...$` expression inside an italic span is therefore processed as Markdown first; the resulting mangled text is then passed to KaTeX, which cannot parse it. The math silently renders as raw literal text (e.g., `$h_t$` appears verbatim).
+
+This applies at **both levels**:
+
+- **Paragraph-level italic:** a whole paragraph wrapped in `*...*`.
+- **Inline italic clause:** a phrase or sentence wrapped in `*...*` inside an otherwise normal paragraph. This is the most common silent failure — the clause looks fine in the source but the math inside it is not rendered.
 
 ```markdown
-<!-- Bad: italic wrapper around backticks and math -->
+<!-- Bad: entire paragraph italic -->
 *Companion to `docs/foo.md`. Derives $D^\ast$ in closed form.*
 
 <!-- Good: plain text, no italic wrapper -->
 Companion to `docs/foo.md`. Derives $D^\ast$ in closed form.
 ```
 
-**Rule:** preamble/abstract paragraphs that contain file references (backticks) or math should be plain text, not wrapped in `*...*`.
+```markdown
+<!-- Bad: inline italic clause containing math -->
+The test asks: *is $h_t$ alone sufficient for predicting $h_{t+1}$?*
+
+<!-- Good: remove the italic markers; the question reads clearly in plain text -->
+The test asks: is $h_t$ alone sufficient for predicting $h_{t+1}$?
+```
+
+**Rule:** never wrap a clause or sentence in `*...*` (or `_..._`) if it contains `$...$` math expressions or backtick code spans. Use plain text. If emphasis is needed, restructure the sentence so the emphasised fragment contains no math (e.g., use **bold** for a keyword before or after the math).
 
 ---
 
@@ -201,7 +214,7 @@ F_{\text{diff}}\left(x_i, \{x_j\}_{j \neq i}\right)
 | `\,` in math | renders as `,` | remove it |
 | `\operatorname{foo}` | pink error block | use `\text{foo}`, `\mathrm{foo}(...)`, or physics notation |
 | `$\sim$` in table cell | shows raw `$\sim$` | use `~` |
-| Italic block + math/backticks | math not rendered | remove `*...*` wrapper |
+| Italic block or inline `*clause*` + math | math renders as raw literal text | remove `*...*`; use plain text or bold for emphasis |
 | Many `_` in one `$...$` | subscripts disappear | break into shorter expressions |
 | `\|...\|` in inline math | math context broken | use `\lVert...\rVert` or display block |
 | Display line starts with `- ` | becomes bullet point | collapse to one line |

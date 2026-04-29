@@ -66,7 +66,7 @@ Those arguments establish **second-order as a sufficient and natural framing**, 
 - **Theorem 49 is kinematic.** It is an algebraic identity over any three vectors and is silent on the dynamical class that produced them.
 - **The 97.9 % tangential-deceleration statistic** can be reproduced by a pure first-order gradient flow $\dot{x} = -\nabla V(x)$ on a locally convex potential.
 
-The present experiment is designed to close this gap with a **distribution-free Markov-order regression test** that asks the question directly: *is $h_t$ alone a sufficient statistic for predicting $h_{t+1}$, or is at least one extra lag $h_{t-1}$ required?*
+The present experiment is designed to close this gap with a **distribution-free Markov-order regression test** that asks the question directly: is $h_t$ alone a sufficient statistic for predicting $h_{t+1}$, or is at least one extra lag $h_{t-1}$ required?
 
 ---
 
