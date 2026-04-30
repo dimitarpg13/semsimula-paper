@@ -1,0 +1,42 @@
+{
+  "checkpoint": "notebooks/conservative_arch/first_order_ablation/results/splm1/seed1/splm_first_order_shakespeare_seed1_ckpt_latest.pt",
+  "variant": "splm_first_order",
+  "device": "cpu",
+  "model_cfg": {
+    "vocab_size": 50257,
+    "d": 128,
+    "max_len": 256,
+    "v_hidden": 512,
+    "v_depth": 3,
+    "L": 8,
+    "dt": 1.0,
+    "init_m": 1.0,
+    "init_gamma": 1.0,
+    "learn_mgamma": true,
+    "mass_mode": "logfreq",
+    "logfreq_init_alpha": 0.1,
+    "logfreq_path": "notebooks/conservative_arch/sarf_mass_variant/results/logfreq_surprisal.npy",
+    "fixed_gamma": 0.0,
+    "ln_eps": 1e-05,
+    "ln_after_step": true,
+    "ln_affine": false
+  },
+  "final_val_ppl": 111.40053379505339,
+  "n_sentences": 100,
+  "min_tokens": 16,
+  "max_length": 128,
+  "n_quadruples_total": 2256,
+  "token_lengths": {
+    "min": 16,
+    "max": 64,
+    "mean": 25.56,
+    "median": 21.5
+  },
+  "quadruples_per_sentence": {
+    "min": 13,
+    "max": 61,
+    "mean": 22.56
+  },
+  "skipped_sentences_too_short": [],
+  "extract_seconds": 4.422835826873779
+}

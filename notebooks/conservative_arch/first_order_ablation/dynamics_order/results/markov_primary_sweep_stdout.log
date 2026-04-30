@@ -1,0 +1,13 @@
+[markov] splm1__seed0  n_jobs=4  n_bootstrap=10000
+[markov] splm1__seed0: done in 1975s  decision=C rho_12=1.003 rho_23=0.987
+[markov] splm1__seed1  n_jobs=4  n_bootstrap=10000
+[markov] splm1__seed1: done in 1855s  decision=C rho_12=1.003 rho_23=0.986
+[markov] splm1__seed2  n_jobs=4  n_bootstrap=10000
+[markov] splm1__seed2: done in 1486s  decision=C rho_12=1.005 rho_23=0.988
+[markov] splm2_gamma0p30__seed0  n_jobs=4  n_bootstrap=10000
+[markov] splm2_gamma0p30__seed0: done in 1224s  decision=C rho_12=1.028 rho_23=0.978
+[markov] splm2_gamma0p30__seed1  n_jobs=4  n_bootstrap=10000
+[markov] splm2_gamma0p30__seed1: done in 1241s  decision=C rho_12=1.038 rho_23=0.980
+[markov] splm2_gamma0p30__seed2  n_jobs=4  n_bootstrap=10000
+[markov] splm2_gamma0p30__seed2: done in 1235s  decision=C rho_12=1.035 rho_23=0.976
+[markov] ALL DONE in 9018s

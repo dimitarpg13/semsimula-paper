@@ -1,0 +1,280 @@
+{
+  "config": {
+    "p_splm": {
+      "d": 128,
+      "L": 8,
+      "v_hidden": 512,
+      "v_depth": 3,
+      "vocab_size": 50257,
+      "ln_after_step": true
+    },
+    "p_attn": {
+      "d": 128,
+      "L": 8,
+      "n_head": 4,
+      "mlp_mult": 4,
+      "vocab_size": 50257
+    }
+  },
+  "phase1": {
+    "grade": "Q2 (SPLM beats ATTN by margin)",
+    "measured": "Delta_quality = +67.81 PPL  (SPLM 88.32\u00b12.03, ATTN 156.13\u00b17.91, n=3)",
+    "threshold": "Q1 if |Delta|<5  /  Q2 if Delta>=+5  /  Q3 if Delta<=-5",
+    "note": ""
+  },
+  "phase2": {
+    "headline_grade": "C",
+    "headline_label": "A2 materially wrong; rewrite REFUTED sub-claims",
+    "counts": {
+      "CONFIRMED": 2,
+      "MARGINAL": 2,
+      "REFUTED": 2
+    },
+    "subclaims": [
+      {
+        "name": "A2.C1 \u2014 Long-context FLOP scaling (ratio doubles on T-doubling)",
+        "grade": "MARGINAL",
+        "measured": "ratio_attn_over_splm at T=8192: 1.146 -> at T=16384: 1.932; growth factor = 1.685",
+        "threshold": ">=1.8 CONFIRMED, [1.4, 1.8) MARGINAL, <1.4 REFUTED",
+        "note": ""
+      },
+      {
+        "name": "A2.C2 \u2014 Forward-pass FLOP crossover at T*=34d",
+        "grade": "REFUTED",
+        "measured": "T* = 7165 (analytical from flop_counter)",
+        "threshold": "34d = 4352  \u00b18 % CONFIRMED (4003-4700); \u00b120 % MARGINAL (3481-5222)",
+        "note": "observed deviation +64.6 % from 34d prediction"
+      },
+      {
+        "name": "A2.C3-SPLM \u2014 streaming-xi decode constant in T (wall-clock)",
+        "grade": "REFUTED",
+        "measured": "baseline W^dec(T=256) = 9.27 ms; worst-case drift = +90.2% at T=2048 (over T in [256, 16384], 1024x span)",
+        "threshold": "<=5 % CONFIRMED; <=20 % MARGINAL; >20 % REFUTED  (worst-case)",
+        "note": "wall-clock drift includes measurement noise; per-token FLOPs are exactly constant by construction"
+      },
+      {
+        "name": "A2.C3-ATTN \u2014 KV-cached decode is linear in T (wall-clock)",
+        "grade": "MARGINAL",
+        "measured": "OLS on 8 grid points: W = +7.119 + +2.858*T (us); R^2 = 0.9026",
+        "threshold": ">=0.95 CONFIRMED; >=0.85 MARGINAL; <0.85 REFUTED",
+        "note": "linear slope = 2.858 us/token-of-context  (positive => linear-in-T as predicted)"
+      },
+      {
+        "name": "A2.C4 \u2014 SPLM params flat in L; ATTN params linear in L",
+        "grade": "CONFIRMED",
+        "measured": "SPLM non-embedding params at L=4,8,16: [657417, 657425, 657441]; max-drift = 0.0037%. ATTN non-embedding at L=4,8,16: [793344, 1586432, 3172608]; max deviation from linear fit = 0.0000%.",
+        "threshold": "SPLM <=1 % drift AND ATTN <=5 % linear-fit dev for CONFIRMED; SPLM <=5 % AND ATTN <=15 % for MARGINAL.",
+        "note": "SPLM scalars (m, gamma) per layer add 8 params at L=4 vs 32 at L=16"
+      },
+      {
+        "name": "Wall-clock crossover (new claim, not in v3)",
+        "grade": "CONFIRMED",
+        "measured": "T_wall_crossover = 1536",
+        "threshold": "<=16384 CONFIRMED; >16384 with monotone decrease MARGINAL; otherwise REFUTED",
+        "note": ""
+      }
+    ]
+  },
+  "phase3": {
+    "grade": "P2 (Q6 partially confirmed; advantage materialises at T~16384)",
+    "measured": "ATTN/SPLM forward-FLOP ratio at T=4096: 0.754; at T=16384: 1.932. Phase 1 = Q2, so PPL-parity is satisfied trivially (SPLM has lower PPL).",
+    "threshold": ">=1.5 at T=4096 AND T=16384 = P1; >=1.5 at T=16384 only = P2; otherwise P3",
+    "note": "",
+    "pareto_rows": [
+      {
+        "T": 128,
+        "splm_ppl_mean": 88.31666666666666,
+        "splm_ppl_std": 2.0262362481540332,
+        "attn_ppl_mean": 156.13,
+        "attn_ppl_std": 7.910000000000001,
+        "splm_flops_total_per_seq": 5682774016,
+        "attn_flops_total_per_seq": 2121154560,
+        "attn_over_splm_flops_ratio": 0.37326041014966166,
+        "splm_over_attn_flops_ratio": 2.6790947360290427
+      },
+      {
+        "T": 1024,
+        "splm_ppl_mean": 88.31666666666666,
+        "splm_ppl_std": 2.0262362481540332,
+        "attn_ppl_mean": 156.13,
+        "attn_ppl_std": 7.910000000000001,
+        "splm_flops_total_per_seq": 45462192128,
+        "attn_flops_total_per_seq": 20874133504,
+        "attn_over_splm_flops_ratio": 0.4591536951238147,
+        "splm_over_attn_flops_ratio": 2.177919965841376
+      },
+      {
+        "T": 4096,
+        "splm_ppl_mean": 88.31666666666666,
+        "splm_ppl_std": 2.0262362481540332,
+        "attn_ppl_mean": 156.13,
+        "attn_ppl_std": 7.910000000000001,
+        "splm_flops_total_per_seq": 181848768512,
+        "attn_flops_total_per_seq": 137049407488,
+        "attn_over_splm_flops_ratio": 0.7536449578923393,
+        "splm_over_attn_flops_ratio": 1.3268847479542925
+      },
+      {
+        "T": 16384,
+        "splm_ppl_mean": 88.31666666666666,
+        "splm_ppl_std": 2.0262362481540332,
+        "attn_ppl_mean": 156.13,
+        "attn_ppl_std": 7.910000000000001,
+        "splm_flops_total_per_seq": 727395074048,
+        "attn_flops_total_per_seq": 1405043605504,
+        "attn_over_splm_flops_ratio": 1.9316100089664379,
+        "splm_over_attn_flops_ratio": 0.5177028465156267
+      }
+    ]
+  },
+  "composite_outcome": "(Q2, C, P2)",
+  "locked_grid_table": [
+    {
+      "T": 128,
+      "source": "short-ctx",
+      "splm_full_ms": 35.61023797374219,
+      "splm_stream_ms": 11.18054351536557,
+      "attn_full_ms": 15.843919478356838,
+      "attn_kv_ms": 6.3570605125278234,
+      "splm_full_flops": 5682774016,
+      "splm_stream_flops": 44396544,
+      "attn_full_flops": 2121154560,
+      "attn_kv_flops": 16571392
+    },
+    {
+      "T": 256,
+      "source": "long-ctx",
+      "splm_full_ms": 64.68451899127103,
+      "splm_stream_ms": 9.2650594888255,
+      "attn_full_ms": 19.109888991806656,
+      "attn_kv_ms": 4.819497495191172,
+      "splm_full_flops": 11365548032,
+      "splm_stream_flops": 44396544,
+      "attn_full_flops": 4381769728,
+      "attn_kv_flops": 17116160
+    },
+    {
+      "T": 512,
+      "source": "long-ctx",
+      "splm_full_ms": 75.51196651184,
+      "splm_stream_ms": 9.66474597225897,
+      "attn_full_ms": 49.56524650333449,
+      "attn_kv_ms": 6.884234520839527,
+      "splm_full_flops": 22731096064,
+      "splm_stream_flops": 44396544,
+      "attn_full_flops": 9321381888,
+      "attn_kv_flops": 18205696
+    },
+    {
+      "T": 1024,
+      "source": "long-ctx",
+      "splm_full_ms": 171.17537852027453,
+      "splm_stream_ms": 8.753774018259719,
+      "attn_full_ms": 87.67114899819717,
+      "attn_kv_ms": 6.787574995541945,
+      "splm_full_flops": 45462192128,
+      "splm_stream_flops": 44396544,
+      "attn_full_flops": 20874133504,
+      "attn_kv_flops": 20384768
+    },
+    {
+      "T": 2048,
+      "source": "long-ctx",
+      "splm_full_ms": 350.05268099484965,
+      "splm_stream_ms": 17.62318197870627,
+      "attn_full_ms": 237.01099446043372,
+      "attn_kv_ms": 14.869450009427965,
+      "splm_full_flops": 90924384256,
+      "splm_stream_flops": 44396544,
+      "attn_full_flops": 50673745920,
+      "attn_kv_flops": 24742912
+    },
+    {
+      "T": 4096,
+      "source": "long-ctx",
+      "splm_full_ms": NaN,
+      "splm_stream_ms": 9.282796032493934,
+      "attn_full_ms": NaN,
+      "attn_kv_ms": 20.75594203779474,
+      "splm_full_flops": 181848768512,
+      "splm_stream_flops": 44396544,
+      "attn_full_flops": 137049407488,
+      "attn_kv_flops": 33459200
+    },
+    {
+      "T": 8192,
+      "source": "long-ctx",
+      "splm_full_ms": NaN,
+      "splm_stream_ms": 12.759426521370187,
+      "attn_full_ms": NaN,
+      "attn_kv_ms": 41.92327198688872,
+      "splm_full_flops": 363697537024,
+      "splm_stream_flops": 44396544,
+      "attn_full_flops": 416906477568,
+      "attn_kv_flops": 50891776
+    },
+    {
+      "T": 16384,
+      "source": "long-ctx",
+      "splm_full_ms": NaN,
+      "splm_stream_ms": 11.995912529528141,
+      "attn_full_ms": NaN,
+      "attn_kv_ms": 47.84873951575719,
+      "splm_full_flops": 727395074048,
+      "splm_stream_flops": 44396544,
+      "attn_full_flops": 1405043605504,
+      "attn_kv_flops": 85756928
+    }
+  ],
+  "param_count_table": {
+    "splm": [
+      {
+        "L": 4,
+        "V_theta": 657409,
+        "per_layer_scalars": 8,
+        "non_embedding": 657417,
+        "embedding+P": 6465664,
+        "total": 7123081
+      },
+      {
+        "L": 8,
+        "V_theta": 657409,
+        "per_layer_scalars": 16,
+        "non_embedding": 657425,
+        "embedding+P": 6465664,
+        "total": 7123089
+      },
+      {
+        "L": 16,
+        "V_theta": 657409,
+        "per_layer_scalars": 32,
+        "non_embedding": 657441,
+        "embedding+P": 6465664,
+        "total": 7123105
+      }
+    ],
+    "attn": [
+      {
+        "L": 4,
+        "per_block": 198272,
+        "non_embedding": 793344,
+        "embedding+P": 6465664,
+        "total": 7259008
+      },
+      {
+        "L": 8,
+        "per_block": 198272,
+        "non_embedding": 1586432,
+        "embedding+P": 6465664,
+        "total": 8052096
+      },
+      {
+        "L": 16,
+        "per_block": 198272,
+        "non_embedding": 3172608,
+        "embedding+P": 6465664,
+        "total": 9638272
+      }
+    ]
+  }
+}

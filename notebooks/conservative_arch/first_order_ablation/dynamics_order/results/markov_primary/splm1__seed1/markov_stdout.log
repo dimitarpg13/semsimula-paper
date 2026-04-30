@@ -1,0 +1,39 @@
+[loso] 100 sentences  p=50  k_values=[1, 2, 3]  function_class=kernel  n_jobs=4
+[Parallel(n_jobs=4)]: Using backend LokyBackend with 4 concurrent workers.
+[Parallel(n_jobs=4)]: Done   5 tasks      | elapsed:  2.4min
+[Parallel(n_jobs=4)]: Done  10 tasks      | elapsed:  3.6min
+[Parallel(n_jobs=4)]: Done  17 tasks      | elapsed:  6.1min
+[Parallel(n_jobs=4)]: Done  24 tasks      | elapsed:  7.6min
+[Parallel(n_jobs=4)]: Done  33 tasks      | elapsed: 11.1min
+[Parallel(n_jobs=4)]: Done  42 tasks      | elapsed: 13.9min
+[Parallel(n_jobs=4)]: Done  53 tasks      | elapsed: 17.5min
+[Parallel(n_jobs=4)]: Done  64 tasks      | elapsed: 20.2min
+[Parallel(n_jobs=4)]: Done  77 tasks      | elapsed: 24.6min
+[Parallel(n_jobs=4)]: Done  90 tasks      | elapsed: 28.3min
+[Parallel(n_jobs=4)]: Done 100 out of 100 | elapsed: 30.7min finished
+
+[summary]
+  n_quadruples = 2256
+  k_values = [1, 2, 3]
+  R1_mean = 55.31852722167969
+  R1_sem = 0.5534219272130914
+  R2_mean = 55.17038345336914
+  R2_sem = 0.5245938272944035
+  R3_mean = 55.932559967041016
+  R3_sem = 0.5065581440292608
+  rho_12 = 1.0026851892471313
+  wilcoxon_p_12 = 0.9252026469176585
+  wilcoxon_p_12_one_sided_R1_gt_R2 = 0.46260132345882926
+  wilcoxon_p_12_one_sided_R1_lt_R2 = 0.5373986765411708
+  bootstrap_ci_diff_R1_R2 = [-0.16374726481735705, 0.46072140708565706]
+  rho_23 = 0.9863733053207397
+  wilcoxon_p_23 = 2.0773755514013192e-16
+  wilcoxon_p_23_one_sided_R2_gt_R3 = 0.9999999999999999
+  wilcoxon_p_23_one_sided_R2_lt_R3 = 1.0386877757006596e-16
+  bootstrap_ci_diff_R2_R3 = [-0.9492886275053024, -0.5793380901217461]
+  decision = C
+  runtime_seconds = 1844.7975461483002
+  p = 50
+  function_class = kernel
+  n_jobs = 4
+[done] runtime=1844.8s  decision=C

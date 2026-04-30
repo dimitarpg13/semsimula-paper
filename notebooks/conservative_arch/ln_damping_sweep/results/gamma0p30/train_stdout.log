@@ -1,0 +1,108 @@
+[train-em-ln] device=mps  mode=shakespeare  fixed_gamma=0.3  results_dir=notebooks/conservative_arch/ln_damping_sweep/results/gamma0p30
+[train-em-ln] tokens: train=321,124  val=16,901
+[train-em-ln] params: 7,123,075   d=128  L=8  v_hidden=512  ln_after_step=True
+[train-em-ln] init mass: mean=1.453  std=0.203  min=1.151  max=1.915
+[train-em-ln] step    50/4000   train 10.7561   lr 1.25e-04   grad 1.14   m[mean 1.446 std 0.204]   gamma=0.300   elapsed 15s
+[train-em-ln] step   100/4000   train 9.6693   lr 2.50e-04   grad 1.63   m[mean 1.440 std 0.199]   gamma=0.300   elapsed 31s
+[train-em-ln] step   150/4000   train 7.6686   lr 3.75e-04   grad 1.30   m[mean 1.445 std 0.201]   gamma=0.300   elapsed 49s
+[train-em-ln] step   200/4000   train 6.4969   lr 5.00e-04   grad 0.29   m[mean 1.441 std 0.199]   gamma=0.300   elapsed 67s
+[train-em-ln] step   200   val_loss=6.5130  val_ppl=673.87
+[train-em-ln] step   250/4000   train 6.2639   lr 5.00e-04   grad 1.50   m[mean 1.449 std 0.207]   gamma=0.300   elapsed 92s
+[train-em-ln] step   300/4000   train 5.9998   lr 4.99e-04   grad 0.96   m[mean 1.451 std 0.212]   gamma=0.300   elapsed 111s
+[train-em-ln] step   350/4000   train 5.7739   lr 4.98e-04   grad 1.19   m[mean 1.462 std 0.209]   gamma=0.300   elapsed 130s
+[train-em-ln] step   400/4000   train 5.5639   lr 4.97e-04   grad 0.88   m[mean 1.459 std 0.204]   gamma=0.300   elapsed 148s
+[train-em-ln] step   400   val_loss=5.7649  val_ppl=318.92
+[train-em-ln] step   450/4000   train 5.3734   lr 4.95e-04   grad 1.15   m[mean 1.457 std 0.211]   gamma=0.300   elapsed 172s
+[train-em-ln] step   500/4000   train 5.2196   lr 4.92e-04   grad 0.92   m[mean 1.463 std 0.213]   gamma=0.300   elapsed 190s
+[train-em-ln] step   550/4000   train 5.1321   lr 4.90e-04   grad 1.17   m[mean 1.465 std 0.211]   gamma=0.300   elapsed 209s
+[train-em-ln] step   600/4000   train 5.0053   lr 4.87e-04   grad 0.90   m[mean 1.443 std 0.209]   gamma=0.300   elapsed 228s
+[train-em-ln] step   600   val_loss=5.4137  val_ppl=224.47
+[train-em-ln] step   650/4000   train 4.8890   lr 4.83e-04   grad 1.71   m[mean 1.456 std 0.213]   gamma=0.300   elapsed 252s
+[train-em-ln] step   700/4000   train 4.8573   lr 4.79e-04   grad 1.09   m[mean 1.458 std 0.207]   gamma=0.300   elapsed 271s
+[train-em-ln] step   750/4000   train 4.7295   lr 4.75e-04   grad 1.45   m[mean 1.450 std 0.211]   gamma=0.300   elapsed 289s
+[train-em-ln] step   800/4000   train 4.7273   lr 4.70e-04   grad 1.25   m[mean 1.447 std 0.210]   gamma=0.300   elapsed 307s
+[train-em-ln] step   800   val_loss=5.2217  val_ppl=185.26
+[train-em-ln] step   850/4000   train 4.6323   lr 4.65e-04   grad 1.36   m[mean 1.455 std 0.210]   gamma=0.300   elapsed 330s
+[train-em-ln] step   900/4000   train 4.5469   lr 4.59e-04   grad 1.58   m[mean 1.449 std 0.207]   gamma=0.300   elapsed 348s
+[train-em-ln] step   950/4000   train 4.5147   lr 4.54e-04   grad 1.80   m[mean 1.440 std 0.206]   gamma=0.300   elapsed 366s
+[train-em-ln] step  1000/4000   train 4.4917   lr 4.47e-04   grad 1.99   m[mean 1.439 std 0.207]   gamma=0.300   elapsed 385s
+[train-em-ln] step  1000   val_loss=5.0715  val_ppl=159.42
+[train-em-ln] step  1050/4000   train 4.4737   lr 4.41e-04   grad 1.84   m[mean 1.445 std 0.201]   gamma=0.300   elapsed 409s
+[train-em-ln] step  1100/4000   train 4.3440   lr 4.34e-04   grad 1.80   m[mean 1.439 std 0.205]   gamma=0.300   elapsed 429s
+[train-em-ln] step  1150/4000   train 4.3141   lr 4.27e-04   grad 1.70   m[mean 1.438 std 0.207]   gamma=0.300   elapsed 449s
+[train-em-ln] step  1200/4000   train 4.3099   lr 4.19e-04   grad 1.86   m[mean 1.440 std 0.208]   gamma=0.300   elapsed 470s
+[train-em-ln] step  1200   val_loss=4.9400  val_ppl=139.78
+[train-em-ln] step  1250/4000   train 4.1765   lr 4.12e-04   grad 1.75   m[mean 1.436 std 0.207]   gamma=0.300   elapsed 496s
+[train-em-ln] step  1300/4000   train 4.1851   lr 4.04e-04   grad 2.07   m[mean 1.433 std 0.204]   gamma=0.300   elapsed 516s
+[train-em-ln] step  1350/4000   train 4.1649   lr 3.95e-04   grad 1.64   m[mean 1.436 std 0.206]   gamma=0.300   elapsed 536s
+[train-em-ln] step  1400/4000   train 4.1374   lr 3.87e-04   grad 1.67   m[mean 1.435 std 0.204]   gamma=0.300   elapsed 555s
+[train-em-ln] step  1400   val_loss=4.8758  val_ppl=131.07
+[train-em-ln] step  1450/4000   train 4.1222   lr 3.78e-04   grad 2.01   m[mean 1.433 std 0.203]   gamma=0.300   elapsed 580s
+[train-em-ln] step  1500/4000   train 4.0748   lr 3.69e-04   grad 1.96   m[mean 1.431 std 0.203]   gamma=0.300   elapsed 599s
+[train-em-ln] step  1550/4000   train 4.0637   lr 3.60e-04   grad 2.08   m[mean 1.436 std 0.207]   gamma=0.300   elapsed 619s
+[train-em-ln] step  1600/4000   train 4.0184   lr 3.51e-04   grad 2.53   m[mean 1.429 std 0.201]   gamma=0.300   elapsed 639s
+[train-em-ln] step  1600   val_loss=4.7453  val_ppl=115.05
+[train-em-ln] step  1650/4000   train 4.0016   lr 3.41e-04   grad 3.08   m[mean 1.423 std 0.197]   gamma=0.300   elapsed 664s
+[train-em-ln] step  1700/4000   train 3.9485   lr 3.31e-04   grad 2.01   m[mean 1.425 std 0.202]   gamma=0.300   elapsed 684s
+[train-em-ln] step  1750/4000   train 3.9240   lr 3.22e-04   grad 2.47   m[mean 1.425 std 0.203]   gamma=0.300   elapsed 706s
+[train-em-ln] step  1800/4000   train 3.8754   lr 3.12e-04   grad 3.01   m[mean 1.419 std 0.198]   gamma=0.300   elapsed 728s
+[train-em-ln] step  1800   val_loss=4.7317  val_ppl=113.48
+[train-em-ln] step  1850/4000   train 3.8824   lr 3.02e-04   grad 2.35   m[mean 1.424 std 0.199]   gamma=0.300   elapsed 755s
+[train-em-ln] step  1900/4000   train 3.8373   lr 2.91e-04   grad 2.24   m[mean 1.432 std 0.205]   gamma=0.300   elapsed 775s
+[train-em-ln] step  1950/4000   train 3.8758   lr 2.81e-04   grad 2.85   m[mean 1.408 std 0.195]   gamma=0.300   elapsed 794s
+[train-em-ln] step  2000/4000   train 3.8389   lr 2.71e-04   grad 2.64   m[mean 1.425 std 0.200]   gamma=0.300   elapsed 814s
+[train-em-ln] step  2000   val_loss=4.6966  val_ppl=109.57
+[train-em-ln] step  2050/4000   train 3.8116   lr 2.61e-04   grad 3.25   m[mean 1.412 std 0.199]   gamma=0.300   elapsed 840s
+[train-em-ln] step  2100/4000   train 3.7798   lr 2.50e-04   grad 2.71   m[mean 1.419 std 0.199]   gamma=0.300   elapsed 861s
+[train-em-ln] step  2150/4000   train 3.7465   lr 2.40e-04   grad 2.39   m[mean 1.417 std 0.195]   gamma=0.300   elapsed 882s
+[train-em-ln] step  2200/4000   train 3.7087   lr 2.30e-04   grad 4.12   m[mean 1.420 std 0.197]   gamma=0.300   elapsed 903s
+[train-em-ln] step  2200   val_loss=4.6004  val_ppl=99.53
+[train-em-ln] step  2250/4000   train 3.7307   lr 2.19e-04   grad 3.46   m[mean 1.407 std 0.195]   gamma=0.300   elapsed 930s
+[train-em-ln] step  2300/4000   train 3.7268   lr 2.09e-04   grad 2.53   m[mean 1.408 std 0.196]   gamma=0.300   elapsed 949s
+[train-em-ln] step  2350/4000   train 3.6755   lr 1.99e-04   grad 2.52   m[mean 1.416 std 0.196]   gamma=0.300   elapsed 969s
+[train-em-ln] step  2400/4000   train 3.6830   lr 1.89e-04   grad 2.35   m[mean 1.407 std 0.192]   gamma=0.300   elapsed 988s
+[train-em-ln] step  2400   val_loss=4.5641  val_ppl=95.98
+[train-em-ln] step  2450/4000   train 3.6429   lr 1.79e-04   grad 3.22   m[mean 1.404 std 0.195]   gamma=0.300   elapsed 1013s
+[train-em-ln] step  2500/4000   train 3.6432   lr 1.69e-04   grad 3.22   m[mean 1.403 std 0.194]   gamma=0.300   elapsed 1033s
+[train-em-ln] step  2550/4000   train 3.5982   lr 1.59e-04   grad 3.15   m[mean 1.412 std 0.193]   gamma=0.300   elapsed 1052s
+[train-em-ln] step  2600/4000   train 3.6141   lr 1.50e-04   grad 3.06   m[mean 1.407 std 0.192]   gamma=0.300   elapsed 1072s
+[train-em-ln] step  2600   val_loss=4.5431  val_ppl=93.98
+[train-em-ln] step  2650/4000   train 3.6133   lr 1.40e-04   grad 3.04   m[mean 1.412 std 0.195]   gamma=0.300   elapsed 1098s
+[train-em-ln] step  2700/4000   train 3.5830   lr 1.31e-04   grad 2.75   m[mean 1.405 std 0.198]   gamma=0.300   elapsed 1119s
+[train-em-ln] step  2750/4000   train 3.5875   lr 1.22e-04   grad 2.79   m[mean 1.406 std 0.194]   gamma=0.300   elapsed 1139s
+[train-em-ln] step  2800/4000   train 3.5641   lr 1.13e-04   grad 2.71   m[mean 1.400 std 0.195]   gamma=0.300   elapsed 1159s
+[train-em-ln] step  2800   val_loss=4.4953  val_ppl=89.60
+[train-em-ln] step  2850/4000   train 3.5420   lr 1.05e-04   grad 3.86   m[mean 1.404 std 0.196]   gamma=0.300   elapsed 1185s
+[train-em-ln] step  2900/4000   train 3.5678   lr 9.66e-05   grad 2.93   m[mean 1.400 std 0.195]   gamma=0.300   elapsed 1204s
+[train-em-ln] step  2950/4000   train 3.5572   lr 8.86e-05   grad 2.90   m[mean 1.407 std 0.195]   gamma=0.300   elapsed 1224s
+[train-em-ln] step  3000/4000   train 3.5430   lr 8.08e-05   grad 3.41   m[mean 1.403 std 0.195]   gamma=0.300   elapsed 1248s
+[train-em-ln] step  3000   val_loss=4.4965  val_ppl=89.71
+[train-em-ln] step  3050/4000   train 3.5051   lr 7.34e-05   grad 2.85   m[mean 1.401 std 0.191]   gamma=0.300   elapsed 1279s
+[train-em-ln] step  3100/4000   train 3.4921   lr 6.62e-05   grad 2.85   m[mean 1.394 std 0.187]   gamma=0.300   elapsed 1305s
+[train-em-ln] step  3150/4000   train 3.5311   lr 5.94e-05   grad 2.76   m[mean 1.404 std 0.195]   gamma=0.300   elapsed 1331s
+[train-em-ln] step  3200/4000   train 3.5308   lr 5.28e-05   grad 3.60   m[mean 1.400 std 0.191]   gamma=0.300   elapsed 1358s
+[train-em-ln] step  3200   val_loss=4.5019  val_ppl=90.19
+[train-em-ln] step  3250/4000   train 3.5006   lr 4.67e-05   grad 2.81   m[mean 1.412 std 0.196]   gamma=0.300   elapsed 1386s
+[train-em-ln] step  3300/4000   train 3.5151   lr 4.08e-05   grad 2.73   m[mean 1.407 std 0.192]   gamma=0.300   elapsed 1407s
+[train-em-ln] step  3350/4000   train 3.4974   lr 3.53e-05   grad 2.84   m[mean 1.405 std 0.194]   gamma=0.300   elapsed 1429s
+[train-em-ln] step  3400/4000   train 3.5285   lr 3.02e-05   grad 2.92   m[mean 1.405 std 0.195]   gamma=0.300   elapsed 1453s
+[train-em-ln] step  3400   val_loss=4.4521  val_ppl=85.81
+[train-em-ln] step  3450/4000   train 3.4965   lr 2.55e-05   grad 3.40   m[mean 1.407 std 0.193]   gamma=0.300   elapsed 1482s
+[train-em-ln] step  3500/4000   train 3.5085   lr 2.11e-05   grad 3.00   m[mean 1.407 std 0.194]   gamma=0.300   elapsed 1507s
+[train-em-ln] step  3550/4000   train 3.5046   lr 1.72e-05   grad 2.66   m[mean 1.408 std 0.198]   gamma=0.300   elapsed 1528s
+[train-em-ln] step  3600/4000   train 3.5049   lr 1.36e-05   grad 3.77   m[mean 1.408 std 0.194]   gamma=0.300   elapsed 1550s
+[train-em-ln] step  3600   val_loss=4.4372  val_ppl=84.54
+[train-em-ln] step  3650/4000   train 3.4487   lr 1.05e-05   grad 2.63   m[mean 1.409 std 0.198]   gamma=0.300   elapsed 1575s
+[train-em-ln] step  3700/4000   train 3.4687   lr 7.70e-06   grad 2.82   m[mean 1.398 std 0.193]   gamma=0.300   elapsed 1594s
+[train-em-ln] step  3750/4000   train 3.5102   lr 5.36e-06   grad 2.57   m[mean 1.407 std 0.193]   gamma=0.300   elapsed 1614s
+[train-em-ln] step  3800/4000   train 3.4597   lr 3.44e-06   grad 2.42   m[mean 1.404 std 0.193]   gamma=0.300   elapsed 1637s
+[train-em-ln] step  3800   val_loss=4.4266  val_ppl=83.65
+[train-em-ln] step  3850/4000   train 3.4715   lr 1.95e-06   grad 2.65   m[mean 1.417 std 0.202]   gamma=0.300   elapsed 1668s
+[train-em-ln] step  3900/4000   train 3.5135   lr 8.71e-07   grad 2.99   m[mean 1.405 std 0.199]   gamma=0.300   elapsed 1693s
+[train-em-ln] step  3950/4000   train 3.5105   lr 2.22e-07   grad 2.68   m[mean 1.418 std 0.197]   gamma=0.300   elapsed 1716s
+[train-em-ln] step  4000/4000   train 3.4958   lr 8.54e-11   grad 2.55   m[mean 1.397 std 0.192]   gamma=0.300   elapsed 1739s
+[train-em-ln] step  4000   val_loss=4.4930  val_ppl=89.39
+
+[train-em-ln] DONE  val_loss=4.4666  val_ppl=87.06  gamma=0.3000
+[train-em-ln] checkpoint saved to notebooks/conservative_arch/ln_damping_sweep/results/gamma0p30/splm_em_ln_shakespeare_gamma0p30_ckpt_latest.pt
+[train-em-ln] summary written to notebooks/conservative_arch/ln_damping_sweep/results/gamma0p30/splm_em_ln_shakespeare_gamma0p30_summary.md

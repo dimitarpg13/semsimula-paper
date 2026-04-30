@@ -1,0 +1,107 @@
+[train-attn] device=mps  mode=shakespeare  seed=0  results_dir=notebooks/conservative_arch/inference_efficiency/results/matched_attn/seed0
+[train-attn] tokens: train=321,124  val=16,901
+[train-attn] params: 8,052,096   d=128  L=8  n_head=4  mlp_mult=4  tie=True
+[train-attn] step    50/4000   train 10.4118   lr 1.25e-04   grad 1.65   elapsed 16s
+[train-attn] step   100/4000   train 9.2052   lr 2.50e-04   grad 1.71   elapsed 30s
+[train-attn] step   150/4000   train 7.4172   lr 3.75e-04   grad 1.47   elapsed 44s
+[train-attn] step   200/4000   train 6.2537   lr 5.00e-04   grad 1.31   elapsed 58s
+[train-attn] step   200   val_loss=6.1197  val_ppl=454.71
+[train-attn] step   250/4000   train 5.7436   lr 5.00e-04   grad 0.93   elapsed 75s
+[train-attn] step   300/4000   train 5.4353   lr 4.99e-04   grad 0.93   elapsed 89s
+[train-attn] step   350/4000   train 5.2291   lr 4.98e-04   grad 1.14   elapsed 104s
+[train-attn] step   400/4000   train 5.0667   lr 4.97e-04   grad 1.02   elapsed 118s
+[train-attn] step   400   val_loss=5.3886  val_ppl=218.89
+[train-attn] step   450/4000   train 4.9391   lr 4.95e-04   grad 1.29   elapsed 135s
+[train-attn] step   500/4000   train 4.8029   lr 4.92e-04   grad 1.30   elapsed 150s
+[train-attn] step   550/4000   train 4.7622   lr 4.90e-04   grad 1.22   elapsed 164s
+[train-attn] step   600/4000   train 4.6676   lr 4.87e-04   grad 1.23   elapsed 179s
+[train-attn] step   600   val_loss=5.2098  val_ppl=183.06
+[train-attn] step   650/4000   train 4.5625   lr 4.83e-04   grad 1.27   elapsed 195s
+[train-attn] step   700/4000   train 4.5584   lr 4.79e-04   grad 1.36   elapsed 207s
+[train-attn] step   750/4000   train 4.4487   lr 4.75e-04   grad 1.35   elapsed 219s
+[train-attn] step   800/4000   train 4.4816   lr 4.70e-04   grad 1.41   elapsed 232s
+[train-attn] step   800   val_loss=5.1126  val_ppl=166.10
+[train-attn] step   850/4000   train 4.3949   lr 4.65e-04   grad 1.43   elapsed 248s
+[train-attn] step   900/4000   train 4.3400   lr 4.59e-04   grad 1.53   elapsed 262s
+[train-attn] step   950/4000   train 4.3146   lr 4.54e-04   grad 1.33   elapsed 278s
+[train-attn] step  1000/4000   train 4.3219   lr 4.47e-04   grad 1.47   elapsed 300s
+[train-attn] step  1000   val_loss=5.0630  val_ppl=158.06
+[train-attn] step  1050/4000   train 4.3112   lr 4.41e-04   grad 1.09   elapsed 335s
+[train-attn] step  1100/4000   train 4.1918   lr 4.34e-04   grad 1.10   elapsed 365s
+[train-attn] step  1150/4000   train 4.1805   lr 4.27e-04   grad 1.19   elapsed 393s
+[train-attn] step  1200/4000   train 4.1895   lr 4.19e-04   grad 1.40   elapsed 422s
+[train-attn] step  1200   val_loss=5.0103  val_ppl=149.95
+[train-attn] step  1250/4000   train 4.0755   lr 4.12e-04   grad 1.34   elapsed 456s
+[train-attn] step  1300/4000   train 4.0829   lr 4.04e-04   grad 1.33   elapsed 486s
+[train-attn] step  1350/4000   train 4.0700   lr 3.95e-04   grad 1.13   elapsed 516s
+[train-attn] step  1400/4000   train 4.0622   lr 3.87e-04   grad 1.44   elapsed 545s
+[train-attn] step  1400   val_loss=5.0704  val_ppl=159.25
+[train-attn] step  1450/4000   train 4.0552   lr 3.78e-04   grad 1.23   elapsed 584s
+[train-attn] step  1500/4000   train 4.0155   lr 3.69e-04   grad 1.27   elapsed 614s
+[train-attn] step  1550/4000   train 4.0077   lr 3.60e-04   grad 1.37   elapsed 643s
+[train-attn] step  1600/4000   train 3.9688   lr 3.51e-04   grad 1.28   elapsed 672s
+[train-attn] step  1600   val_loss=4.9790  val_ppl=145.33
+[train-attn] step  1650/4000   train 3.9656   lr 3.41e-04   grad 1.31   elapsed 709s
+[train-attn] step  1700/4000   train 3.9179   lr 3.31e-04   grad 1.23   elapsed 740s
+[train-attn] step  1750/4000   train 3.8994   lr 3.22e-04   grad 1.37   elapsed 769s
+[train-attn] step  1800/4000   train 3.8654   lr 3.12e-04   grad 1.36   elapsed 800s
+[train-attn] step  1800   val_loss=5.0394  val_ppl=154.38
+[train-attn] step  1850/4000   train 3.8774   lr 3.02e-04   grad 1.57   elapsed 836s
+[train-attn] step  1900/4000   train 3.8248   lr 2.91e-04   grad 1.53   elapsed 867s
+[train-attn] step  1950/4000   train 3.8923   lr 2.81e-04   grad 1.51   elapsed 898s
+[train-attn] step  2000/4000   train 3.8422   lr 2.71e-04   grad 2.08   elapsed 926s
+[train-attn] step  2000   val_loss=5.0498  val_ppl=155.98
+[train-attn] step  2050/4000   train 3.8289   lr 2.61e-04   grad 1.79   elapsed 961s
+[train-attn] step  2100/4000   train 3.7914   lr 2.50e-04   grad 1.68   elapsed 998s
+[train-attn] step  2150/4000   train 3.7656   lr 2.40e-04   grad 1.43   elapsed 1032s
+[train-attn] step  2200/4000   train 3.7382   lr 2.30e-04   grad 1.62   elapsed 1066s
+[train-attn] step  2200   val_loss=4.9980  val_ppl=148.11
+[train-attn] step  2250/4000   train 3.7575   lr 2.19e-04   grad 1.38   elapsed 1106s
+[train-attn] step  2300/4000   train 3.7649   lr 2.09e-04   grad 1.66   elapsed 1141s
+[train-attn] step  2350/4000   train 3.7138   lr 1.99e-04   grad 1.79   elapsed 1173s
+[train-attn] step  2400/4000   train 3.7253   lr 1.89e-04   grad 1.76   elapsed 1205s
+[train-attn] step  2400   val_loss=5.0238  val_ppl=151.98
+[train-attn] step  2450/4000   train 3.6843   lr 1.79e-04   grad 1.89   elapsed 1242s
+[train-attn] step  2500/4000   train 3.6883   lr 1.69e-04   grad 1.49   elapsed 1273s
+[train-attn] step  2550/4000   train 3.6258   lr 1.59e-04   grad 1.58   elapsed 1307s
+[train-attn] step  2600/4000   train 3.6564   lr 1.50e-04   grad 1.46   elapsed 1340s
+[train-attn] step  2600   val_loss=5.0485  val_ppl=155.78
+[train-attn] step  2650/4000   train 3.6556   lr 1.40e-04   grad 1.55   elapsed 1383s
+[train-attn] step  2700/4000   train 3.6313   lr 1.31e-04   grad 1.69   elapsed 1414s
+[train-attn] step  2750/4000   train 3.6329   lr 1.22e-04   grad 1.49   elapsed 1442s
+[train-attn] step  2800/4000   train 3.6073   lr 1.13e-04   grad 1.90   elapsed 1470s
+[train-attn] step  2800   val_loss=5.0161  val_ppl=150.82
+[train-attn] step  2850/4000   train 3.5909   lr 1.05e-04   grad 1.50   elapsed 1510s
+[train-attn] step  2900/4000   train 3.6244   lr 9.66e-05   grad 1.61   elapsed 1542s
+[train-attn] step  2950/4000   train 3.5982   lr 8.86e-05   grad 1.89   elapsed 1574s
+[train-attn] step  3000/4000   train 3.6030   lr 8.08e-05   grad 1.54   elapsed 1607s
+[train-attn] step  3000   val_loss=5.0380  val_ppl=154.15
+[train-attn] step  3050/4000   train 3.5641   lr 7.34e-05   grad 1.85   elapsed 1652s
+[train-attn] step  3100/4000   train 3.5452   lr 6.62e-05   grad 1.58   elapsed 1685s
+[train-attn] step  3150/4000   train 3.5829   lr 5.94e-05   grad 1.63   elapsed 1718s
+[train-attn] step  3200/4000   train 3.5914   lr 5.28e-05   grad 1.51   elapsed 1746s
+[train-attn] step  3200   val_loss=5.0413  val_ppl=154.68
+[train-attn] step  3250/4000   train 3.5519   lr 4.67e-05   grad 1.67   elapsed 1781s
+[train-attn] step  3300/4000   train 3.5749   lr 4.08e-05   grad 1.45   elapsed 1808s
+[train-attn] step  3350/4000   train 3.5538   lr 3.53e-05   grad 1.55   elapsed 1837s
+[train-attn] step  3400/4000   train 3.5788   lr 3.02e-05   grad 1.69   elapsed 1865s
+[train-attn] step  3400   val_loss=5.0226  val_ppl=151.81
+[train-attn] step  3450/4000   train 3.5394   lr 2.55e-05   grad 1.68   elapsed 1899s
+[train-attn] step  3500/4000   train 3.5647   lr 2.11e-05   grad 1.65   elapsed 1921s
+[train-attn] step  3550/4000   train 3.5580   lr 1.72e-05   grad 2.06   elapsed 1938s
+[train-attn] step  3600/4000   train 3.5587   lr 1.36e-05   grad 1.60   elapsed 1955s
+[train-attn] step  3600   val_loss=5.0153  val_ppl=150.71
+[train-attn] step  3650/4000   train 3.5032   lr 1.05e-05   grad 1.54   elapsed 1975s
+[train-attn] step  3700/4000   train 3.5208   lr 7.70e-06   grad 1.93   elapsed 1993s
+[train-attn] step  3750/4000   train 3.5625   lr 5.36e-06   grad 1.62   elapsed 2011s
+[train-attn] step  3800/4000   train 3.5206   lr 3.44e-06   grad 1.55   elapsed 2028s
+[train-attn] step  3800   val_loss=5.0147  val_ppl=150.60
+[train-attn] step  3850/4000   train 3.5206   lr 1.95e-06   grad 1.65   elapsed 2048s
+[train-attn] step  3900/4000   train 3.5750   lr 8.71e-07   grad 1.48   elapsed 2065s
+[train-attn] step  3950/4000   train 3.5631   lr 2.22e-07   grad 1.91   elapsed 2083s
+[train-attn] step  4000/4000   train 3.5497   lr 8.54e-11   grad 1.79   elapsed 2101s
+[train-attn] step  4000   val_loss=5.0789  val_ppl=160.59
+
+[train-attn] DONE  val_loss=5.0722  val_ppl=159.52  (matched attention baseline)
+[train-attn] checkpoint saved to notebooks/conservative_arch/inference_efficiency/results/matched_attn/seed0/matched_baseline_shakespeare_seed0_ckpt_latest.pt
+[train-attn] summary written to notebooks/conservative_arch/inference_efficiency/results/matched_attn/seed0/matched_baseline_shakespeare_seed0_summary.md

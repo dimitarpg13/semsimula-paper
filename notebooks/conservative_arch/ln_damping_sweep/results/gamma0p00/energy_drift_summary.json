@@ -1,0 +1,13 @@
+{
+  "L": 8,
+  "H0": 3.7188384532928467,
+  "HL": 19.677474975585938,
+  "delta_H": 15.958636283874512,
+  "drift_slope_per_normalised_layer": 4.888651736577352,
+  "drift_slope_per_layer": 0.611081467072169,
+  "rolling_std_mean_normalised": 0.9737945506774965,
+  "kinetic_layer0_mean": 0.0,
+  "kinetic_layerL_mean": 16.557710647583008,
+  "potential_layer0_mean": 3.7188384532928467,
+  "potential_layerL_mean": 3.1197593212127686
+}

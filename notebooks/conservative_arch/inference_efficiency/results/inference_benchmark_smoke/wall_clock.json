@@ -1,0 +1,77 @@
+{
+  "device": "cpu",
+  "splm": {
+    "d": 128,
+    "L": 8,
+    "v_hidden": 512,
+    "v_depth": 3,
+    "max_len": 256,
+    "variant": "sarf_mass_ln"
+  },
+  "attn": {
+    "d": 128,
+    "L": 8,
+    "n_head": 4,
+    "mlp_mult": 4,
+    "max_len": 256
+  },
+  "T_FLOP_crossover": 8092,
+  "T_wall_crossover": null,
+  "results": [
+    {
+      "T": 16,
+      "splm_full_ms": 42.00670949649066,
+      "splm_stream_ms": 33.078554493840784,
+      "attn_full_ms": 17.52656200551428,
+      "attn_kv_ms": 12.874312495114282,
+      "splm_full_flops": 710346752,
+      "splm_stream_flops": 44396544,
+      "attn_full_flops": 257517568,
+      "attn_kv_flops": 16094720
+    },
+    {
+      "T": 32,
+      "splm_full_ms": 48.24207301135175,
+      "splm_stream_ms": 29.191191482823342,
+      "attn_full_ms": 24.99224100029096,
+      "attn_kv_ms": 13.463484530802816,
+      "splm_full_flops": 1420693504,
+      "splm_stream_flops": 44396544,
+      "attn_full_flops": 517214208,
+      "attn_kv_flops": 16162816
+    },
+    {
+      "T": 64,
+      "splm_full_ms": 64.20018599601462,
+      "splm_stream_ms": 31.914077466353774,
+      "attn_full_ms": 26.559275982435793,
+      "attn_kv_ms": 16.415738500654697,
+      "splm_full_flops": 2841387008,
+      "splm_stream_flops": 44396544,
+      "attn_full_flops": 1043144704,
+      "attn_kv_flops": 16299008
+    },
+    {
+      "T": 128,
+      "splm_full_ms": 90.29055049177259,
+      "splm_stream_ms": 29.799159499816597,
+      "attn_full_ms": 39.17042198008858,
+      "attn_kv_ms": 16.673085483489558,
+      "splm_full_flops": 5682774016,
+      "splm_stream_flops": 44396544,
+      "attn_full_flops": 2121154560,
+      "attn_kv_flops": 16571392
+    },
+    {
+      "T": 200,
+      "splm_full_ms": 117.23612403147854,
+      "splm_stream_ms": 41.001119010616094,
+      "attn_full_ms": 72.01087599969469,
+      "attn_kv_ms": 26.794287987286225,
+      "splm_full_flops": 8879334400,
+      "splm_stream_flops": 44396544,
+      "attn_full_flops": 3375590400,
+      "attn_kv_flops": 16877824
+    }
+  ]
+}
