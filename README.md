@@ -20,13 +20,29 @@ and Appendix A (the negative-results chain on attention transformers, the
 scalar-potential language model, and the three-way shared-potential
 separator).
 
-> **Git LFS.** Some large binary artefacts under
-> `notebooks/conservative_arch/` (trajectory pickles up to ~110 MB, SPLM and
-> matched-GPT-2 checkpoints at ~30 MB each, and several PNG figures) are
-> stored via **Git LFS**. After cloning, run `git lfs pull` once to download
-> them; without this step the large files will appear as short text pointers.
-> Git LFS is not required for the v1 artefacts under `notebooks/stp_loss/`
-> and `notebooks/cross_model/`.
+> **Git LFS.** Several PNG figures, NPZ result archives, NPY frozen
+> surprisal tensors, and a couple of GIF landscape rotations under
+> `notebooks/conservative_arch/` are stored via **Git LFS** for
+> bandwidth economy. After cloning, run `git lfs pull` once to
+> download them; without this step the large files will appear as
+> short text pointers. Git LFS is not required for the v1 artefacts
+> under `notebooks/stp_loss/` and `notebooks/cross_model/`.
+
+> **Checkpoint policy (v3 release, May 2026).** Following the
+> causal-leak audit (see the *v3 update* section below), **no model
+> checkpoints (`*.pt`) or hidden-state trajectory pickles (`*.pkl`)
+> are committed** to this repository. Every SPLM checkpoint that
+> existed in earlier releases was trained under the v2 leaky
+> integrator and is therefore an empirical casualty of the bug; the
+> matched-GPT-2 / pretrained-GPT-2 trajectory pickles existed only to
+> back the three-way separator comparison against those SPLMs and
+> have no standalone reproducibility value. All claims in the
+> paper that previously cited a shipped checkpoint are now backed by
+> training logs, summary markdown, and loss-curve PNGs that *are*
+> committed. Reproducing any v2 ablation or any v3 R6-ladder cell
+> from scratch requires re-running the relevant
+> `train_*.py` script — runtimes are documented per cell in the
+> reproduction recipe sections below.
 
 > **Rendering note.** Several markdown files under `companion_notes/` in this repository contain LaTeX math (inline `$...$` and display `$$...$$` blocks, with macros such as `\mathfrak{...}`, `\boldsymbol{...}`, `\mathcal{...}`, etc.). The math has been verified to render correctly in **Safari**. In **Chrome** some symbols — notably calligraphic and fraktur letters, e.g. `\mathfrak{C}` rendering as a plain `C` instead of $\mathfrak{C}$ — appear to render incorrectly. **Firefox** has not been tested. If symbols look wrong while viewing a companion note on GitHub, please open the file in Safari or consult the main paper's PDF, where the same symbols are typeset by LaTeX directly. Each affected companion note repeats this warning in its own header.
 
@@ -361,12 +377,16 @@ for the full list):
   `plot_three_way_comparison.py`,
   `plot_token_vs_layer_three_way.py`;
 - **Pipeline driver.** `run_full_pipeline.py`;
-- **`results/`.** Serialised pickles (SPLM / matched / GPT-2 trajectories),
-  model checkpoints (`.pt`), `.npz` result archives, markdown summaries,
-  and rendered figures — the raw material behind the separator plot
-  (Fig. 8, "SPLM vs.\ matched GPT-2 vs.\ pretrained GPT-2"), the
-  capacity-sweep saturation plot, the oracle ceiling, and the
-  token-direction robustness check.
+- **`results/`.** `.npz` result archives, markdown summaries, training
+  logs, loss-curve PNGs, and rendered figures — the raw material
+  behind the separator plot (Fig. 8, "SPLM vs.\ matched GPT-2 vs.\
+  pretrained GPT-2"), the capacity-sweep saturation plot, the oracle
+  ceiling, and the token-direction robustness check. As of the v3
+  release, model checkpoints (`*.pt`) and hidden-state trajectory
+  pickles (`*.pkl`) are *not* shipped here (see the *Checkpoint
+  policy* notice at the top of this README); rerun
+  `train_splm.py`/`train_matched.py` and the trajectory-extraction
+  scripts to regenerate them.
 - **`sarf_variant/`.** Controlled ablation of §14.13: a SARF-faithful
   SPLM that recomputes the reinforcement-field pool $\xi^{(\ell)}$ at
   every integration step instead of freezing it at the input layer.
@@ -409,10 +429,11 @@ for the full list):
   A free learned linear head (variant (A)) underperforms variant
   (B) by ~27 % val ppl at this scale, an inductive-bias-vs-data-
   efficiency result flagged as the Q10 open follow-up in §14.17 and
-  §16. All four training logs, checkpoints, trajectory pickles, and
-  per-layer diagnostic tables live under
-  `sarf_mass_variant/results/`; `comparison_*.png` are mirrored at
-  the folder root for direct figure inclusion in the paper.
+  §16. All four training logs and per-layer diagnostic tables live
+  under `sarf_mass_variant/results/`; `comparison_*.png` are mirrored
+  at the folder root for direct figure inclusion in the paper.
+  Checkpoints and trajectory pickles are not shipped (v3 release;
+  see the *Checkpoint policy* notice at the top of this README).
 - **`attractor_analysis/`.** Direct test of one of the load-bearing
   predictions of the *Semantic Simulation* framework, reported in
   §14.15 (`subsec:cba-attractors`): that a trained scalar potential
@@ -559,12 +580,17 @@ for the full list):
   [`multi_seed/README.md`](notebooks/conservative_arch/multi_seed/README.md)
   documents the runner / aggregator / diagnostic interface and is the
   template for adding additional model specs (E2 width sweep,
-  E3 integrator ablation, etc.). All 13 per-seed checkpoints, training
-  logs, and loss curves (11 finite + 2 NaN-diverged seeds — the latter
-  retained because they are themselves the falsifying evidence for the
-  divergence-rate diagnostic) are committed under Git LFS so that the
-  aggregator and diagnostic steps alone reproduce the headline table
-  from shipped artifacts.
+  E3 integrator ablation, etc.). All 13 per-seed training logs and
+  loss curves (11 finite + 2 NaN-diverged seeds — the latter retained
+  because they are themselves the falsifying evidence for the
+  divergence-rate diagnostic) are committed so that the aggregator
+  and diagnostic steps alone reproduce the headline table from
+  shipped artifacts. The 13 per-seed `*.pt` checkpoints (~28 MB each,
+  ~370 MB total) are *not* shipped as of the v3 release (see the
+  *Checkpoint policy* notice at the top of this README); rerun
+  `multi_seed_runner.py` to regenerate them — the aggregator
+  / diagnostic only reads the per-seed JSONL training logs and
+  loss-curve PNGs, both of which remain committed.
 - **`energy_drift/`.** Eval-only diagnostic that opens a new
   *architecture-discriminating* axis for the SPLM — the **E3**
   experiment of the
@@ -726,10 +752,11 @@ pip install -r requirements.txt
 # For GPU training, replace the torch line first:
 #   pip install torch==2.2.2+cu121 --index-url https://download.pytorch.org/whl/cu121
 
-# 4. Pull Git LFS artefacts (trajectory pickles, checkpoints, figures)
+# 4. Pull Git LFS artefacts (PNG figures, NPZ result archives, NPY surprisal
+#    tensors, GIF landscape rotations). Note: as of the v3 release no model
+#    checkpoints or trajectory pickles are shipped -- see the "Checkpoint
+#    policy" notice at the top of this README.
 git lfs pull
-# Without this step, large files under notebooks/conservative_arch/results/
-# appear as short text pointers rather than real binary data.
 ```
 
 All results committed to this repository were produced on a **MacBook Pro,
@@ -818,11 +845,18 @@ python plot_token_vs_layer_three_way.py  # token-direction two-panel figure
 python plot_sharedV_comparison.py        # shared-V_psi profile plot
 ```
 
-**Shortcut:** checkpoints and trajectory pickles are shipped via Git LFS
-in `results/`. Steps 1–2 can be skipped and steps 3–4 run in
-**~5 minutes** on the reference hardware using the precomputed artefacts.
-End-to-end including training takes **~35–45 minutes** (SPLM ~20 min,
-matched baseline ~15 min, extraction ~5 min, diagnostics ~5 min).
+**Note (v3 release, May 2026):** earlier releases shipped the
+checkpoint files (`*.pt`) and trajectory pickles (`*.pkl`) via Git
+LFS, which made it possible to skip steps 1–2 and run steps 3–4 in
+~5 minutes. As of v3 those artefacts are no longer shipped (see the
+*Checkpoint policy* notice at the top of this README); the full
+pipeline must be re-run end-to-end. Total **~35–45 minutes** (SPLM
+~20 min, matched baseline ~15 min, extraction ~5 min, diagnostics
+~5 min) on the reference hardware. The training logs, summary
+markdown, and loss-curve PNGs remain committed and back the
+quantitative claims that depend on the historical (v2-buggy) runs;
+the v3 paper documents which of those numbers survive the leak fix
+and which are flagged as casualties of the bug.
 
 #### SARF-faithful ablation (§14.13)
 
@@ -899,14 +933,18 @@ python multi_seed/multi_seed_aggregator.py --tag E1_shakespeare
 python multi_seed/e1_divergence_diagnostic.py --tag E1_shakespeare
 ```
 
-The shipped `results/E1_shakespeare/` includes 13 per-seed checkpoints,
-training logs, and loss curves under Git LFS (5 seeds for
+The shipped `results/E1_shakespeare/` includes 13 per-seed training
+logs (JSONL + summary markdown) and loss-curve PNGs (5 seeds for
 `matched_baseline` and `splm_em_ln`, 3 for `splm_sarfmass_logfreq`
 before the divergence-rate diagnostic short-circuited the sweep), plus
 the curated [`E1_report.md`](notebooks/conservative_arch/multi_seed/results/E1_shakespeare/E1_report.md)
-narrative. Re-running step 3 alone reproduces the mean / std /
-Welch-t table and the overlay figures from the shipped per-seed logs in
-**~20 seconds**. See
+narrative. **Per-seed `*.pt` checkpoints are not shipped** as of the
+v3 release (see the *Checkpoint policy* notice at the top of this
+README) — re-run step 2 above to regenerate them. Re-running step 3
+alone, however, *does* reproduce the mean / std / Welch-t table and
+the overlay figures from the shipped per-seed JSONL training logs in
+**~20 seconds**, since the aggregator and the divergence diagnostic
+only read the logs (not the checkpoints). See
 [`notebooks/conservative_arch/multi_seed/README.md`](notebooks/conservative_arch/multi_seed/README.md)
 for the model-spec interface and the recipe for adding new variants
 (E2 width sweep, E3 integrator ablation, etc.).
@@ -920,10 +958,22 @@ planned `sarfmass logfreq` (no-LN) column is omitted: E1 multi-seed
 falsified its stability (2/3 NaN-divergent seeds), so a single-seed
 energy trace from it is not representative.
 
+> **Note (v3 release).** As of the v3 release the three SPLM
+> checkpoints referenced below are *not* shipped (see the *Checkpoint
+> policy* notice at the top of this README). To re-run the E3
+> diagnostic from scratch, first regenerate the relevant checkpoints
+> by running the appropriate `train_*.py` scripts under
+> `notebooks/conservative_arch/`,
+> `notebooks/conservative_arch/symplectic_variant/`, and
+> `notebooks/conservative_arch/multi_seed/multi_seed_runner.py`
+> (`splm_em_ln` model spec, seed 0). The example commands below
+> assume the regenerated checkpoint paths.
+
 ```bash
 cd notebooks/conservative_arch
 
-# 1. Extract energy states for the three production SPLM checkpoints.
+# 1. Extract energy states for the three production SPLM checkpoints
+#    (must be regenerated locally; see the v3 note above).
 python energy_drift/extract_energy_states.py \
     --variant euler \
     --ckpt results/splm_shakespeare_ckpt_latest.pt \
