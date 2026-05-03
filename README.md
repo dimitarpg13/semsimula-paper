@@ -236,7 +236,7 @@ below.
 
 | File                                              | Role                                                                                                                                                                                                                                                                              |
 | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Expressivity_Bounds_For_v0_Simulator.md`         | Formal short note: the v0 simulator class accepts **at most regular languages**, by a four-step argument (phase-space-capacity bound $\dim M \cdot \log_2(L/\epsilon)$ bits, exponential information contraction at damping rate $\gamma$, smooth non-chaotic $V$ ruling out the Siegelmann–Sontag continuous-flow construction, and consequent acceptance class $\subseteq$ REG). Derives the predicted $\mathrm{Dyck}_n$ collapse depth $D^\ast$ in closed form; supplies one-paragraph mathematical-apparatus sketches for the v1.5 / v2 / v3 extensions. |
+| `Expressivity_Bounds_For_v0_Simulator.md`         | Formal short note: the v0 simulator class accepts **at most regular languages**, by a four-step argument (phase-space-capacity bound $\dim M \cdot \log_2(L/\epsilon)$ bits, exponential information contraction at damping rate $\gamma$, smooth non-chaotic $V$ ruling out the Siegelmann–Sontag continuous-flow construction, and consequent acceptance class $\subseteq$ REG). Derives the predicted $\mathrm{Dyck}\_n$ collapse depth $D^\ast$ in closed form; supplies one-paragraph mathematical-apparatus sketches for the v1.5 / v2 / v3 extensions. |
 | `MCS_Reduction_For_v3_Composite.md`               | Formal proof of the framework's *upper* expressivity boundary: the composite v0+v1.5+v2+v3 simulator, under explicit boundedness assumptions on its operator algebra, generates **exactly** the **mildly context-sensitive** class — equivalently LCFRS / MCFG of bounded fan-out and bounded rank, the empirically established class for human language (Joshi 1985, Shieber 1985). The reduction is constructive in both directions and verifies the four classical MCS criteria of Joshi (1985); §5.5 catalogues the structural and architectural reasons v3 cannot be eliminated. |
 | `Advancing_The_Dynamic_Simulation_Model.md`       | Conceptual scaffold for the v1.5 / v2 / v3 extensions: maps each onto a mature mathematical apparatus (salient decay → dissipative semigroups and discounted MDPs; creation/destruction → Fock space and the canonical creation/annihilation algebra; execution → Lie groups acting via non-abelian gauge fields), specifies the falsifying-experiment battery ($\mathrm{Dyck}\_n$ + topic-shift, $\mathrm{Dyck}\_n$ + let-binding, cross-serial $a^n b^n c^n$, bounded copy $ww$, 2-counter), and identifies the composite as a classical-mechanical analogue of a Haag–Kastler-style local operator algebra. |
 | `Next_Model_Experiments_for_SPLM.md`              | Prioritised, actionable catalogue of experiments that either strengthen the framework's applicability (sections A–F: multi-seed variance, scaling, integrator ablation, expressivity falsifiers, capacity sweeps, energy-drift diagnostic) or measurably improve SPLM's performance. Each item is concrete (what to run, what to measure, why it matters). The source of truth for the **E1** multi-seed harness and the **E3** energy-drift diagnostic shipped under `notebooks/conservative_arch/`. |
@@ -487,11 +487,11 @@ for the full list):
   back onto the unit-LayerNorm shell after every damped step;
   compactness of $S^{d-1}$ guarantees a finite minimum without
   changing $V_\theta$ itself), `model_gm.py` (Gaussian-mixture head
-  $V_\theta(\xi,h) = \sum_{k=1}^{K} \mathrm{amp}_k (1 - e^{-\kappa_k^2 \lVert z - c_k \rVert^2})$,
+  $V\_\theta(\xi,h) = \sum\_{k=1}^{K} \mathrm{amp}\_k (1 - e^{-\kappa\_k^2 \lVert z - c\_k \rVert^2})$,
   the **honest test** of the framework's prescribed well form at
   full SPLM scale), a unified `train.py --variant {ln, sg, gm}` (the
   scale-gauge `sg` is a loss-side regulariser
-  $\lambda_{V_0} \mathbb{E}_{b,t} V_\theta(\xi_0, h_0)^2$ on the
+  $\lambda\_{V\_0} \mathbb{E}\_{b,t} V\_\theta(\xi\_0, h\_0)^2$ on the
   baseline model, anchoring $V_\theta$ at the input embedding),
   `run_attractor_pipeline.sh` driving `attractor_analysis/` over all
   four checkpoints (baseline + three alternatives), `compare.py`
@@ -596,10 +596,10 @@ for the full list):
   experiment of the
   [`Next_Model_Experiments_for_SPLM.md`](companion_notes/Next_Model_Experiments_for_SPLM.md)
   programme (section C2). Computes the SPLM Hamiltonian energy
-  $H_\ell = \tfrac{1}{2}\mathfrak{m}\lVert v_\ell \rVert^{2} + V_\theta(\xi_\ell, h_\ell)$
+  $H\_\ell = \tfrac{1}{2}\mathfrak{m}\lVert v\_\ell \rVert^{2} + V\_\theta(\xi\_\ell, h\_\ell)$
   at every layer of an SPLM forward pass and reports the linear drift
   slope $\partial H/\partial \ell$ across depth and the oscillation
-  bandwidth $\max_\ell H_\ell - \min_\ell H_\ell$ around the layer-mean.
+  bandwidth $\max\_\ell H\_\ell - \min\_\ell H\_\ell$ around the layer-mean.
   The expectation, derived directly from the integrator class, is
   three-way separable: a **velocity-Verlet** flow ($L=16,\Delta t=0.5$)
   is symplectic at $\gamma = 0$ and $O(\Delta t^4)$-bounded in energy
@@ -611,7 +611,7 @@ for the full list):
   through the same diagnostic with a fitted $V_\psi$ proxy. Ships
   [`extract_energy_states.py`](notebooks/conservative_arch/energy_drift/extract_energy_states.py)
   (re-runs the SPLM forward pass on the §1 e-init test corpus and
-  saves $(h_\ell, v_\ell, V_\theta(\xi_\ell, h_\ell), \tfrac{1}{2}m\lVert v_\ell \rVert^2)$
+  saves $(h\_\ell, v\_\ell, V\_\theta(\xi\_\ell, h\_\ell), \tfrac{1}{2}m\lVert v\_\ell \rVert^2)$
   per layer for one checkpoint at a time; supports parent-SPLM Euler,
   `sarf_mass_variant` Euler + per-token mass, `symplectic_variant`
   velocity-Verlet, and the production `energetic_minima/model_ln.py`
@@ -644,7 +644,7 @@ for the full list):
   70\%$, versus $145.7 / 76.6 = 190\%$ for the bare Euler model and
   $91.4 / 205.5 = 45\%$ for the genuine Verlet integrator. The
   mechanism is the LayerNorm projection
-  $h_{l+1} \leftarrow \mathrm{LN}(h_l + \Delta tv_{l+1})$, which clips
+  $h\_{l+1} \leftarrow \mathrm{LN}(h\_l + \Delta tv\_{l+1})$, which clips
   the trajectory's dynamic range without contributing any potential
   gradient; the production SPLM is consequently *not* a clean
   Hamiltonian flow but a "cheating" symplectic integrator whose
