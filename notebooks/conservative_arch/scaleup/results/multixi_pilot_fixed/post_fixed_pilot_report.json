@@ -1,0 +1,190 @@
+{
+  "ckpt": "/Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/scaleup/results/multixi_pilot_fixed/splm_em_ln_multixi_pilot_fixed_ckpt_latest.pt",
+  "probe": {
+    "label": "multixi (K-channel \u03be)",
+    "vocab_size": 50257,
+    "max_len": 1024,
+    "T": 64,
+    "t_pert": 40,
+    "buggy": {
+      "causal_delta": 0.0958099365234375,
+      "after_delta": 0.1953887939453125
+    },
+    "fixed": {
+      "causal_delta": 0.0,
+      "after_delta": 0.21386289596557617
+    }
+  },
+  "inflation": {
+    "label": "multixi (K-channel \u03be)",
+    "device": "mps",
+    "corpus": "tinystories",
+    "n_batches": 20,
+    "batch": 8,
+    "block": 256,
+    "seed": 0,
+    "val_tokens": 4787906,
+    "buggy": {
+      "loss": 8.883964586257935,
+      "ppl": 7215.339943093645
+    },
+    "fixed": {
+      "loss": 2.6983620047569277,
+      "ppl": 14.855378745566407
+    },
+    "inflation": 0.0020588605474902992
+  },
+  "training_log": {
+    "log_path": "/Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/scaleup/results/multixi_pilot_fixed/splm_em_ln_multixi_pilot_fixed_training_log.jsonl",
+    "n_rows": 80,
+    "first_step": 50,
+    "last_step": 4000,
+    "alphas_first": [
+      1.0004104069594177e-06,
+      0.4995480179786682,
+      0.8999989628791809,
+      0.990010678768158
+    ],
+    "alphas_last": [
+      1.2085392881999724e-06,
+      0.5190631151199341,
+      0.8546685576438904,
+      0.9793670773506165
+    ],
+    "alpha_drift": [
+      {
+        "channel": 0,
+        "init": 1.0004104069594177e-06,
+        "final": 1.2085392881999724e-06,
+        "drift": 2.0812888124055462e-07
+      },
+      {
+        "channel": 1,
+        "init": 0.4995480179786682,
+        "final": 0.5190631151199341,
+        "drift": 0.01951509714126587
+      },
+      {
+        "channel": 2,
+        "init": 0.8999989628791809,
+        "final": 0.8546685576438904,
+        "drift": -0.04533040523529053
+      },
+      {
+        "channel": 3,
+        "init": 0.990010678768158,
+        "final": 0.9793670773506165,
+        "drift": -0.010643601417541504
+      }
+    ],
+    "val_curve": [
+      {
+        "step": 200,
+        "val_loss": 4.7239,
+        "val_ppl": 112.6
+      },
+      {
+        "step": 400,
+        "val_loss": 3.6785,
+        "val_ppl": 39.59
+      },
+      {
+        "step": 600,
+        "val_loss": 3.4062,
+        "val_ppl": 30.15
+      },
+      {
+        "step": 800,
+        "val_loss": 3.2134,
+        "val_ppl": 24.86
+      },
+      {
+        "step": 1000,
+        "val_loss": 3.1095,
+        "val_ppl": 22.41
+      },
+      {
+        "step": 1200,
+        "val_loss": 3.0093,
+        "val_ppl": 20.27
+      },
+      {
+        "step": 1400,
+        "val_loss": 2.9579,
+        "val_ppl": 19.26
+      },
+      {
+        "step": 1600,
+        "val_loss": 2.913,
+        "val_ppl": 18.41
+      },
+      {
+        "step": 1800,
+        "val_loss": 2.8722,
+        "val_ppl": 17.68
+      },
+      {
+        "step": 2000,
+        "val_loss": 2.8144,
+        "val_ppl": 16.68
+      },
+      {
+        "step": 2200,
+        "val_loss": 2.8106,
+        "val_ppl": 16.62
+      },
+      {
+        "step": 2400,
+        "val_loss": 2.7416,
+        "val_ppl": 15.51
+      },
+      {
+        "step": 2600,
+        "val_loss": 2.7338,
+        "val_ppl": 15.39
+      },
+      {
+        "step": 2800,
+        "val_loss": 2.7295,
+        "val_ppl": 15.33
+      },
+      {
+        "step": 3000,
+        "val_loss": 2.7259,
+        "val_ppl": 15.27
+      },
+      {
+        "step": 3200,
+        "val_loss": 2.7168,
+        "val_ppl": 15.13
+      },
+      {
+        "step": 3400,
+        "val_loss": 2.7202,
+        "val_ppl": 15.18
+      },
+      {
+        "step": 3600,
+        "val_loss": 2.6818,
+        "val_ppl": 14.61
+      },
+      {
+        "step": 3800,
+        "val_loss": 2.7026,
+        "val_ppl": 14.92
+      },
+      {
+        "step": 4000,
+        "val_loss": 2.6934,
+        "val_ppl": 14.78
+      }
+    ],
+    "val_source": "stdout",
+    "stdout_path": "/Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/scaleup/results/multixi_pilot_fixed/train_stdout.log",
+    "final_val": {
+      "step": 4000,
+      "val_loss": 2.6934,
+      "val_ppl": 14.78
+    }
+  }
+}

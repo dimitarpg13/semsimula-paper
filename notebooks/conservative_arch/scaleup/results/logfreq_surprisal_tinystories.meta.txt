@@ -1,0 +1,8 @@
+Unigram surprisal -log p_hat(v) for GPT-2 BPE vocabulary
+Corpus: TinyStories train split (capped)
+Tokens: 5,000,000
+Vocab:  50,257
+Unique seen: 12,742
+max_train_tokens cap: 5,000,000
+Smoothing: add-one Laplace, p = (c+1)/(N+V)
+surprisal: min=2.630  max=15.435  mean=14.718  median=15.435

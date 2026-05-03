@@ -1,0 +1,36 @@
+{
+  "ckpt": "/Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/scaleup/results/multihippo_pilot_fixed/splm_em_ln_multixi_hippo_pilot_legt_seed0_ckpt_latest.pt",
+  "label": "HiPPO-legt (K=4, theta=200.0)",
+  "K": 4,
+  "n_samples": 10485760,
+  "corr_matrix": [
+    [
+      1.0000001192092896,
+      0.1974816620349884,
+      -0.16083243489265442,
+      -0.02417626976966858
+    ],
+    [
+      0.1974816620349884,
+      1.0,
+      0.17944768071174622,
+      -0.3556363880634308
+    ],
+    [
+      -0.16083243489265442,
+      0.17944768071174622,
+      1.0000001192092896,
+      0.5015731453895569
+    ],
+    [
+      -0.02417626976966858,
+      -0.3556363880634308,
+      0.5015731453895569,
+      1.0000001192092896
+    ]
+  ],
+  "mean_off_abs_corr": 0.2365245819091797,
+  "total_correlation_nats": 0.38902562856674194,
+  "k_eff_entropy_power": 3.469555377960205,
+  "k_eff_logdet": 2.877509309776099
+}

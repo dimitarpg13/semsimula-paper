@@ -1,0 +1,43 @@
+[multixi-hippo-splm] device=mps  mode=smoke  fixed_gamma=0.3  seed=0  results_dir=/Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/scaleup/results/multihippo_smoke
+[multixi-hippo-splm] tokens: train=5,000,000  val=4,787,906
+[multixi-hippo-splm] params: 16,539,907   d=256  L=8  v_hidden=1024  max_len=1024  ln_after_step=True
+[multixi-hippo-splm] hippo: K=4  basis=legt  theta=200.0  dt=0.005  learnable_dt=False
+[multixi-hippo-splm] causal_force=True  (FIXED (post-bug))  steps=300
+[multixi-hippo-splm] init mass: mean=1.426  std=0.188  min=1.175  max=2.106
+[multixi-hippo-splm] step    10/300   train 10.7344   lr 2.50e-04   grad 1.03   m[mean 1.414 std 0.182]   gamma=0.300   dt=0.005   elapsed 6s
+[multixi-hippo-splm] step    20/300   train 10.2679   lr 5.00e-04   grad 4.20   m[mean 1.415 std 0.187]   gamma=0.300   dt=0.005   elapsed 12s
+[multixi-hippo-splm] step    30/300   train 8.3701   lr 4.99e-04   grad 1.87   m[mean 1.408 std 0.181]   gamma=0.300   dt=0.005   elapsed 18s
+[multixi-hippo-splm] step    40/300   train 6.9931   lr 4.94e-04   grad 1.34   m[mean 1.405 std 0.179]   gamma=0.300   dt=0.005   elapsed 23s
+[multixi-hippo-splm] step    50/300   train 6.2555   lr 4.87e-04   grad 0.62   m[mean 1.408 std 0.178]   gamma=0.300   dt=0.005   elapsed 29s
+[multixi-hippo-splm] step    60/300   train 6.0588   lr 4.76e-04   grad 0.57   m[mean 1.410 std 0.188]   gamma=0.300   dt=0.005   elapsed 34s
+[multixi-hippo-splm] step    70/300   train 6.0243   lr 4.63e-04   grad 0.76   m[mean 1.410 std 0.185]   gamma=0.300   dt=0.005   elapsed 40s
+[multixi-hippo-splm] step    80/300   train 5.9725   lr 4.47e-04   grad 0.49   m[mean 1.405 std 0.175]   gamma=0.300   dt=0.005   elapsed 46s
+[multixi-hippo-splm] step    90/300   train 5.9685   lr 4.29e-04   grad 0.81   m[mean 1.409 std 0.174]   gamma=0.300   dt=0.005   elapsed 51s
+[multixi-hippo-splm] step   100/300   train 5.8547   lr 4.08e-04   grad 0.91   m[mean 1.418 std 0.183]   gamma=0.300   dt=0.005   elapsed 57s
+[multixi-hippo-splm] step   100   val_loss=5.7726  val_ppl=321.37
+[multixi-hippo-splm] step   110/300   train 5.6787   lr 3.85e-04   grad 0.92   m[mean 1.420 std 0.180]   gamma=0.300   dt=0.005   elapsed 65s
+[multixi-hippo-splm] step   120/300   train 5.5973   lr 3.61e-04   grad 1.12   m[mean 1.421 std 0.187]   gamma=0.300   dt=0.005   elapsed 71s
+[multixi-hippo-splm] step   130/300   train 5.5265   lr 3.35e-04   grad 0.69   m[mean 1.423 std 0.186]   gamma=0.300   dt=0.005   elapsed 77s
+[multixi-hippo-splm] step   140/300   train 5.4551   lr 3.08e-04   grad 2.41   m[mean 1.429 std 0.191]   gamma=0.300   dt=0.005   elapsed 83s
+[multixi-hippo-splm] step   150/300   train 5.3849   lr 2.81e-04   grad 1.37   m[mean 1.420 std 0.181]   gamma=0.300   dt=0.005   elapsed 89s
+[multixi-hippo-splm] step   160/300   train 5.2859   lr 2.53e-04   grad 1.04   m[mean 1.423 std 0.189]   gamma=0.300   dt=0.005   elapsed 95s
+[multixi-hippo-splm] step   170/300   train 5.2791   lr 2.25e-04   grad 1.29   m[mean 1.423 std 0.188]   gamma=0.300   dt=0.005   elapsed 101s
+[multixi-hippo-splm] step   180/300   train 5.2199   lr 1.97e-04   grad 1.27   m[mean 1.430 std 0.184]   gamma=0.300   dt=0.005   elapsed 108s
+[multixi-hippo-splm] step   190/300   train 5.2137   lr 1.70e-04   grad 3.71   m[mean 1.421 std 0.187]   gamma=0.300   dt=0.005   elapsed 114s
+[multixi-hippo-splm] step   200/300   train 5.1526   lr 1.44e-04   grad 0.81   m[mean 1.418 std 0.187]   gamma=0.300   dt=0.005   elapsed 120s
+[multixi-hippo-splm] step   200   val_loss=5.1486  val_ppl=172.20
+[multixi-hippo-splm] step   210/300   train 5.1201   lr 1.19e-04   grad 0.92   m[mean 1.419 std 0.179]   gamma=0.300   dt=0.005   elapsed 128s
+[multixi-hippo-splm] step   220/300   train 5.1121   lr 9.63e-05   grad 0.79   m[mean 1.429 std 0.192]   gamma=0.300   dt=0.005   elapsed 134s
+[multixi-hippo-splm] step   230/300   train 5.0679   lr 7.52e-05   grad 1.01   m[mean 1.416 std 0.179]   gamma=0.300   dt=0.005   elapsed 140s
+[multixi-hippo-splm] step   240/300   train 5.1506   lr 5.63e-05   grad 0.87   m[mean 1.417 std 0.186]   gamma=0.300   dt=0.005   elapsed 146s
+[multixi-hippo-splm] step   250/300   train 5.0536   lr 3.98e-05   grad 1.08   m[mean 1.426 std 0.190]   gamma=0.300   dt=0.005   elapsed 153s
+[multixi-hippo-splm] step   260/300   train 5.0078   lr 2.60e-05   grad 0.81   m[mean 1.419 std 0.182]   gamma=0.300   dt=0.005   elapsed 159s
+[multixi-hippo-splm] step   270/300   train 5.0084   lr 1.50e-05   grad 0.97   m[mean 1.408 std 0.172]   gamma=0.300   dt=0.005   elapsed 165s
+[multixi-hippo-splm] step   280/300   train 4.9861   lr 6.91e-06   grad 0.82   m[mean 1.423 std 0.184]   gamma=0.300   dt=0.005   elapsed 171s
+[multixi-hippo-splm] step   290/300   train 5.0388   lr 1.90e-06   grad 0.76   m[mean 1.416 std 0.179]   gamma=0.300   dt=0.005   elapsed 177s
+[multixi-hippo-splm] step   300/300   train 5.0953   lr 1.57e-08   grad 0.88   m[mean 1.418 std 0.185]   gamma=0.300   dt=0.005   elapsed 183s
+[multixi-hippo-splm] step   300   val_loss=5.0535  val_ppl=156.57
+
+[multixi-hippo-splm] DONE  val_loss=5.0172  val_ppl=151.00  gamma=0.3000  dt=0.005  elapsed=188s
+[multixi-hippo-splm] checkpoint saved to /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/scaleup/results/multihippo_smoke/splm_em_ln_multixi_hippo_smoke_smoke_legt_ckpt_latest.pt
+[multixi-hippo-splm] summary written to /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/scaleup/results/multihippo_smoke/splm_em_ln_multixi_hippo_smoke_smoke_legt_summary.md

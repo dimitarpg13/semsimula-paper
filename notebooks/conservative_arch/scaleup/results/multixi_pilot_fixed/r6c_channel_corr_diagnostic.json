@@ -1,0 +1,36 @@
+{
+  "ckpt": "/Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/scaleup/results/multixi_pilot_fixed/splm_em_ln_multixi_pilot_fixed_ckpt_latest.pt",
+  "label": "K-EMA (K=4, \u03b1=[0.000, 0.519, 0.855, 0.979])",
+  "K": 4,
+  "n_samples": 10485760,
+  "corr_matrix": [
+    [
+      1.0,
+      0.8740867972373962,
+      0.6054753661155701,
+      0.39368465542793274
+    ],
+    [
+      0.8740867972373962,
+      1.0000001192092896,
+      0.8490190505981445,
+      0.5763044953346252
+    ],
+    [
+      0.6054753661155701,
+      0.8490190505981445,
+      1.0,
+      0.8211792707443237
+    ],
+    [
+      0.39368465542793274,
+      0.5763044953346252,
+      0.8211792707443237,
+      1.0
+    ]
+  ],
+  "mean_off_abs_corr": 0.6866250038146973,
+  "total_correlation_nats": 2.205811023712158,
+  "k_eff_entropy_power": 1.9788055419921875,
+  "k_eff_logdet": -2.364625250095477
+}

@@ -1,0 +1,114 @@
+[multixi-s4d-splm] device=mps  mode=pilot  fixed_gamma=0.3  seed=0  results_dir=/Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/scaleup/results/multis4d_pilot_legtinit
+[multixi-s4d-splm] tokens: train=5,000,000  val=4,787,906
+[multixi-s4d-splm] params: 16,539,920   d=256  L=8  v_hidden=1024  max_len=1024  ln_after_step=True
+[multixi-s4d-splm] s4d: K=4  init=legt  dt=0.005  learnable_dt=True  learnable_B=True
+[multixi-s4d-splm] eigvals_init = (-3.213+4.773j) (-3.213-4.773j) (-4.787+1.567j) (-4.787-1.567j)
+[multixi-s4d-splm] B_proj_init  = ['+2.236', '+2.646', '+1.000', '+1.732']
+[multixi-s4d-splm] causal_force=True  (FIXED (post-bug))  steps=4000
+[multixi-s4d-splm] init mass: mean=1.421  std=0.183  min=1.175  max=2.142
+[multixi-s4d-splm] step    50/4000   train 10.6018   lr 1.25e-04   grad 3.26   m[mean 1.416 std 0.181]   gamma=0.300   dt=0.005005   eig.re=[-4.77,-3.22]   |eig.im|max=4.77   elapsed 299s
+[multixi-s4d-splm] step   100/4000   train 8.0554   lr 2.50e-04   grad 1.35   m[mean 1.415 std 0.184]   gamma=0.300   dt=0.005039   eig.re=[-4.76,-3.23]   |eig.im|max=4.77   elapsed 611s
+[multixi-s4d-splm] step   150/4000   train 5.9718   lr 3.75e-04   grad 0.69   m[mean 1.415 std 0.182]   gamma=0.300   dt=0.005106   eig.re=[-4.78,-3.24]   |eig.im|max=4.77   elapsed 924s
+[multixi-s4d-splm] step   200/4000   train 5.3671   lr 5.00e-04   grad 1.19   m[mean 1.410 std 0.176]   gamma=0.300   dt=0.005233   eig.re=[-4.79,-3.27]   |eig.im|max=4.77   elapsed 1237s
+[multixi-s4d-splm] step   200   val_loss=5.0780  val_ppl=160.46
+[multixi-s4d-splm] step   250/4000   train 4.8363   lr 5.00e-04   grad 1.34   m[mean 1.424 std 0.193]   gamma=0.300   dt=0.005381   eig.re=[-4.78,-3.32]   |eig.im|max=4.77   elapsed 1653s
+[multixi-s4d-splm] step   300/4000   train 4.4255   lr 4.99e-04   grad 1.15   m[mean 1.414 std 0.189]   gamma=0.300   dt=0.005527   eig.re=[-4.77,-3.40]   |eig.im|max=4.78   elapsed 2039s
+[multixi-s4d-splm] step   350/4000   train 4.1254   lr 4.98e-04   grad 1.68   m[mean 1.413 std 0.182]   gamma=0.300   dt=0.005678   eig.re=[-4.76,-3.48]   |eig.im|max=4.78   elapsed 2426s
+[multixi-s4d-splm] step   400/4000   train 3.9666   lr 4.97e-04   grad 1.05   m[mean 1.413 std 0.185]   gamma=0.300   dt=0.005823   eig.re=[-4.77,-3.55]   |eig.im|max=4.79   elapsed 2812s
+[multixi-s4d-splm] step   400   val_loss=3.9254  val_ppl=50.67
+[multixi-s4d-splm] step   450/4000   train 3.8577   lr 4.95e-04   grad 1.50   m[mean 1.411 std 0.184]   gamma=0.300   dt=0.005975   eig.re=[-4.77,-3.63]   |eig.im|max=4.80   elapsed 3152s
+[multixi-s4d-splm] step   500/4000   train 3.7778   lr 4.92e-04   grad 1.32   m[mean 1.407 std 0.180]   gamma=0.300   dt=0.006127   eig.re=[-4.78,-3.72]   |eig.im|max=4.81   elapsed 3440s
+[multixi-s4d-splm] step   550/4000   train 3.6893   lr 4.90e-04   grad 1.29   m[mean 1.415 std 0.184]   gamma=0.300   dt=0.006282   eig.re=[-4.79,-3.81]   |eig.im|max=4.82   elapsed 3731s
+[multixi-s4d-splm] step   600/4000   train 3.6334   lr 4.87e-04   grad 1.35   m[mean 1.413 std 0.185]   gamma=0.300   dt=0.006437   eig.re=[-4.80,-3.90]   |eig.im|max=4.83   elapsed 4033s
+[multixi-s4d-splm] step   600   val_loss=3.6517  val_ppl=38.54
+[multixi-s4d-splm] step   650/4000   train 3.5556   lr 4.83e-04   grad 0.97   m[mean 1.412 std 0.185]   gamma=0.300   dt=0.006593   eig.re=[-4.81,-3.98]   |eig.im|max=4.84   elapsed 4390s
+[multixi-s4d-splm] step   700/4000   train 3.5225   lr 4.79e-04   grad 1.19   m[mean 1.410 std 0.188]   gamma=0.300   dt=0.006755   eig.re=[-4.84,-4.08]   |eig.im|max=4.85   elapsed 4705s
+[multixi-s4d-splm] step   750/4000   train 3.4669   lr 4.75e-04   grad 1.15   m[mean 1.413 std 0.184]   gamma=0.300   dt=0.006921   eig.re=[-4.87,-4.17]   |eig.im|max=4.86   elapsed 5016s
+[multixi-s4d-splm] step   800/4000   train 3.4326   lr 4.70e-04   grad 0.91   m[mean 1.413 std 0.185]   gamma=0.300   dt=0.007084   eig.re=[-4.89,-4.26]   |eig.im|max=4.88   elapsed 5343s
+[multixi-s4d-splm] step   800   val_loss=3.4401  val_ppl=31.19
+[multixi-s4d-splm] step   850/4000   train 3.3973   lr 4.65e-04   grad 0.95   m[mean 1.413 std 0.188]   gamma=0.300   dt=0.007251   eig.re=[-4.91,-4.36]   |eig.im|max=4.89   elapsed 5738s
+[multixi-s4d-splm] step   900/4000   train 3.3526   lr 4.59e-04   grad 0.97   m[mean 1.417 std 0.189]   gamma=0.300   dt=0.007422   eig.re=[-4.93,-4.46]   |eig.im|max=4.90   elapsed 6129s
+[multixi-s4d-splm] step   950/4000   train 3.3105   lr 4.54e-04   grad 1.00   m[mean 1.420 std 0.194]   gamma=0.300   dt=0.0076   eig.re=[-4.96,-4.56]   |eig.im|max=4.91   elapsed 6514s
+[multixi-s4d-splm] step  1000/4000   train 3.2924   lr 4.47e-04   grad 0.83   m[mean 1.414 std 0.188]   gamma=0.300   dt=0.007773   eig.re=[-5.00,-4.66]   |eig.im|max=4.92   elapsed 6900s
+[multixi-s4d-splm] step  1000   val_loss=3.3424  val_ppl=28.29
+[multixi-s4d-splm] step  1050/4000   train 3.2502   lr 4.41e-04   grad 1.25   m[mean 1.420 std 0.186]   gamma=0.300   dt=0.007949   eig.re=[-5.01,-4.76]   |eig.im|max=4.93   elapsed 7302s
+[multixi-s4d-splm] step  1100/4000   train 3.2518   lr 4.34e-04   grad 0.94   m[mean 1.414 std 0.186]   gamma=0.300   dt=0.008127   eig.re=[-5.04,-4.86]   |eig.im|max=4.95   elapsed 7686s
+[multixi-s4d-splm] step  1150/4000   train 3.2107   lr 4.27e-04   grad 0.84   m[mean 1.413 std 0.187]   gamma=0.300   dt=0.008307   eig.re=[-5.05,-4.97]   |eig.im|max=4.96   elapsed 8071s
+[multixi-s4d-splm] step  1200/4000   train 3.1878   lr 4.19e-04   grad 0.93   m[mean 1.418 std 0.191]   gamma=0.300   dt=0.008487   eig.re=[-5.10,-5.00]   |eig.im|max=4.97   elapsed 8455s
+[multixi-s4d-splm] step  1200   val_loss=3.2309  val_ppl=25.30
+[multixi-s4d-splm] step  1250/4000   train 3.1686   lr 4.12e-04   grad 0.80   m[mean 1.416 std 0.189]   gamma=0.300   dt=0.008668   eig.re=[-5.20,-5.01]   |eig.im|max=4.99   elapsed 8875s
+[multixi-s4d-splm] step  1300/4000   train 3.1268   lr 4.04e-04   grad 1.27   m[mean 1.414 std 0.188]   gamma=0.300   dt=0.00885   eig.re=[-5.30,-5.02]   |eig.im|max=5.00   elapsed 9273s
+[multixi-s4d-splm] step  1350/4000   train 3.1171   lr 3.95e-04   grad 0.89   m[mean 1.417 std 0.188]   gamma=0.300   dt=0.009029   eig.re=[-5.41,-5.03]   |eig.im|max=5.01   elapsed 9671s
+[multixi-s4d-splm] step  1400/4000   train 3.1098   lr 3.87e-04   grad 0.91   m[mean 1.407 std 0.182]   gamma=0.300   dt=0.00921   eig.re=[-5.51,-5.04]   |eig.im|max=5.03   elapsed 10103s
+[multixi-s4d-splm] step  1400   val_loss=3.1555  val_ppl=23.46
+[multixi-s4d-splm] step  1450/4000   train 3.0923   lr 3.78e-04   grad 0.95   m[mean 1.421 std 0.192]   gamma=0.300   dt=0.009391   eig.re=[-5.61,-5.05]   |eig.im|max=5.04   elapsed 10603s
+[multixi-s4d-splm] step  1500/4000   train 3.0837   lr 3.69e-04   grad 0.92   m[mean 1.423 std 0.195]   gamma=0.300   dt=0.00957   eig.re=[-5.71,-5.05]   |eig.im|max=5.05   elapsed 11031s
+[multixi-s4d-splm] step  1550/4000   train 3.0514   lr 3.60e-04   grad 0.97   m[mean 1.420 std 0.194]   gamma=0.300   dt=0.009748   eig.re=[-5.82,-5.05]   |eig.im|max=5.06   elapsed 11440s
+[multixi-s4d-splm] step  1600/4000   train 3.0081   lr 3.51e-04   grad 0.97   m[mean 1.411 std 0.184]   gamma=0.300   dt=0.009925   eig.re=[-5.91,-5.05]   |eig.im|max=5.08   elapsed 11831s
+[multixi-s4d-splm] step  1600   val_loss=3.0915  val_ppl=22.01
+[multixi-s4d-splm] step  1650/4000   train 2.9968   lr 3.41e-04   grad 0.87   m[mean 1.413 std 0.191]   gamma=0.300   dt=0.0101   eig.re=[-6.01,-5.05]   |eig.im|max=5.09   elapsed 12281s
+[multixi-s4d-splm] step  1700/4000   train 3.0056   lr 3.31e-04   grad 0.98   m[mean 1.415 std 0.191]   gamma=0.300   dt=0.01027   eig.re=[-6.11,-5.06]   |eig.im|max=5.10   elapsed 12669s
+[multixi-s4d-splm] step  1750/4000   train 2.9895   lr 3.22e-04   grad 1.05   m[mean 1.418 std 0.193]   gamma=0.300   dt=0.01044   eig.re=[-6.21,-5.05]   |eig.im|max=5.11   elapsed 13055s
+[multixi-s4d-splm] step  1800/4000   train 2.9746   lr 3.12e-04   grad 0.95   m[mean 1.413 std 0.188]   gamma=0.300   dt=0.01061   eig.re=[-6.30,-5.05]   |eig.im|max=5.13   elapsed 13442s
+[multixi-s4d-splm] step  1800   val_loss=3.0435  val_ppl=20.98
+[multixi-s4d-splm] step  1850/4000   train 2.9524   lr 3.02e-04   grad 0.89   m[mean 1.414 std 0.189]   gamma=0.300   dt=0.01078   eig.re=[-6.39,-5.04]   |eig.im|max=5.14   elapsed 13872s
+[multixi-s4d-splm] step  1900/4000   train 2.9308   lr 2.91e-04   grad 0.85   m[mean 1.415 std 0.191]   gamma=0.300   dt=0.01094   eig.re=[-6.48,-5.04]   |eig.im|max=5.15   elapsed 14255s
+[multixi-s4d-splm] step  1950/4000   train 2.9325   lr 2.81e-04   grad 0.90   m[mean 1.418 std 0.197]   gamma=0.300   dt=0.0111   eig.re=[-6.57,-5.03]   |eig.im|max=5.16   elapsed 14637s
+[multixi-s4d-splm] step  2000/4000   train 2.9358   lr 2.71e-04   grad 0.87   m[mean 1.414 std 0.191]   gamma=0.300   dt=0.01126   eig.re=[-6.66,-5.02]   |eig.im|max=5.17   elapsed 15023s
+[multixi-s4d-splm] step  2000   val_loss=2.9725  val_ppl=19.54
+[multixi-s4d-splm] step  2050/4000   train 2.9293   lr 2.61e-04   grad 0.99   m[mean 1.417 std 0.192]   gamma=0.300   dt=0.01141   eig.re=[-6.74,-5.01]   |eig.im|max=5.18   elapsed 15494s
+[multixi-s4d-splm] step  2100/4000   train 2.9071   lr 2.50e-04   grad 0.95   m[mean 1.423 std 0.200]   gamma=0.300   dt=0.01155   eig.re=[-6.82,-5.01]   |eig.im|max=5.19   elapsed 15902s
+[multixi-s4d-splm] step  2150/4000   train 2.8873   lr 2.40e-04   grad 0.99   m[mean 1.417 std 0.196]   gamma=0.300   dt=0.0117   eig.re=[-6.90,-4.99]   |eig.im|max=5.20   elapsed 16297s
+[multixi-s4d-splm] step  2200/4000   train 2.8887   lr 2.30e-04   grad 0.89   m[mean 1.413 std 0.192]   gamma=0.300   dt=0.01183   eig.re=[-6.98,-4.98]   |eig.im|max=5.21   elapsed 16687s
+[multixi-s4d-splm] step  2200   val_loss=2.9633  val_ppl=19.36
+[multixi-s4d-splm] step  2250/4000   train 2.8688   lr 2.19e-04   grad 0.90   m[mean 1.411 std 0.192]   gamma=0.300   dt=0.01197   eig.re=[-7.06,-4.97]   |eig.im|max=5.22   elapsed 17103s
+[multixi-s4d-splm] step  2300/4000   train 2.8764   lr 2.09e-04   grad 0.84   m[mean 1.413 std 0.189]   gamma=0.300   dt=0.0121   eig.re=[-7.13,-4.96]   |eig.im|max=5.23   elapsed 17483s
+[multixi-s4d-splm] step  2350/4000   train 2.8469   lr 1.99e-04   grad 0.91   m[mean 1.417 std 0.195]   gamma=0.300   dt=0.01222   eig.re=[-7.20,-4.95]   |eig.im|max=5.23   elapsed 17864s
+[multixi-s4d-splm] step  2400/4000   train 2.8574   lr 1.89e-04   grad 0.96   m[mean 1.418 std 0.194]   gamma=0.300   dt=0.01234   eig.re=[-7.26,-4.94]   |eig.im|max=5.24   elapsed 18245s
+[multixi-s4d-splm] step  2400   val_loss=2.8896  val_ppl=17.99
+[multixi-s4d-splm] step  2450/4000   train 2.8411   lr 1.79e-04   grad 0.91   m[mean 1.410 std 0.191]   gamma=0.300   dt=0.01245   eig.re=[-7.33,-4.92]   |eig.im|max=5.25   elapsed 18739s
+[multixi-s4d-splm] step  2500/4000   train 2.8193   lr 1.69e-04   grad 0.87   m[mean 1.421 std 0.196]   gamma=0.300   dt=0.01256   eig.re=[-7.39,-4.91]   |eig.im|max=5.25   elapsed 19174s
+[multixi-s4d-splm] step  2550/4000   train 2.8138   lr 1.59e-04   grad 0.81   m[mean 1.416 std 0.190]   gamma=0.300   dt=0.01267   eig.re=[-7.45,-4.89]   |eig.im|max=5.26   elapsed 19636s
+[multixi-s4d-splm] step  2600/4000   train 2.8240   lr 1.50e-04   grad 0.81   m[mean 1.411 std 0.191]   gamma=0.300   dt=0.01276   eig.re=[-7.50,-4.88]   |eig.im|max=5.27   elapsed 20129s
+[multixi-s4d-splm] step  2600   val_loss=2.8737  val_ppl=17.70
+[multixi-s4d-splm] step  2650/4000   train 2.8072   lr 1.40e-04   grad 0.81   m[mean 1.411 std 0.191]   gamma=0.300   dt=0.01286   eig.re=[-7.55,-4.87]   |eig.im|max=5.27   elapsed 20608s
+[multixi-s4d-splm] step  2700/4000   train 2.7975   lr 1.31e-04   grad 0.85   m[mean 1.408 std 0.189]   gamma=0.300   dt=0.01294   eig.re=[-7.60,-4.86]   |eig.im|max=5.28   elapsed 20998s
+[multixi-s4d-splm] step  2750/4000   train 2.8152   lr 1.22e-04   grad 0.79   m[mean 1.410 std 0.191]   gamma=0.300   dt=0.01302   eig.re=[-7.65,-4.85]   |eig.im|max=5.28   elapsed 21386s
+[multixi-s4d-splm] step  2800/4000   train 2.7763   lr 1.13e-04   grad 0.90   m[mean 1.413 std 0.190]   gamma=0.300   dt=0.0131   eig.re=[-7.69,-4.84]   |eig.im|max=5.29   elapsed 21772s
+[multixi-s4d-splm] step  2800   val_loss=2.8694  val_ppl=17.63
+[multixi-s4d-splm] step  2850/4000   train 2.7733   lr 1.05e-04   grad 0.89   m[mean 1.412 std 0.193]   gamma=0.300   dt=0.01317   eig.re=[-7.73,-4.83]   |eig.im|max=5.29   elapsed 22215s
+[multixi-s4d-splm] step  2900/4000   train 2.7648   lr 9.66e-05   grad 0.81   m[mean 1.404 std 0.189]   gamma=0.300   dt=0.01324   eig.re=[-7.77,-4.82]   |eig.im|max=5.30   elapsed 22600s
+[multixi-s4d-splm] step  2950/4000   train 2.7837   lr 8.86e-05   grad 0.82   m[mean 1.411 std 0.194]   gamma=0.300   dt=0.0133   eig.re=[-7.80,-4.81]   |eig.im|max=5.30   elapsed 22983s
+[multixi-s4d-splm] step  3000/4000   train 2.7660   lr 8.08e-05   grad 0.89   m[mean 1.411 std 0.194]   gamma=0.300   dt=0.01335   eig.re=[-7.83,-4.80]   |eig.im|max=5.30   elapsed 23368s
+[multixi-s4d-splm] step  3000   val_loss=2.8608  val_ppl=17.48
+[multixi-s4d-splm] step  3050/4000   train 2.7646   lr 7.34e-05   grad 0.83   m[mean 1.414 std 0.196]   gamma=0.300   dt=0.01341   eig.re=[-7.86,-4.80]   |eig.im|max=5.31   elapsed 23841s
+[multixi-s4d-splm] step  3100/4000   train 2.7336   lr 6.62e-05   grad 0.82   m[mean 1.408 std 0.193]   gamma=0.300   dt=0.01345   eig.re=[-7.89,-4.79]   |eig.im|max=5.31   elapsed 24289s
+[multixi-s4d-splm] step  3150/4000   train 2.7697   lr 5.94e-05   grad 0.82   m[mean 1.410 std 0.192]   gamma=0.300   dt=0.01349   eig.re=[-7.91,-4.79]   |eig.im|max=5.31   elapsed 24760s
+[multixi-s4d-splm] step  3200/4000   train 2.7584   lr 5.28e-05   grad 0.88   m[mean 1.410 std 0.190]   gamma=0.300   dt=0.01353   eig.re=[-7.93,-4.78]   |eig.im|max=5.31   elapsed 25209s
+[multixi-s4d-splm] step  3200   val_loss=2.8482  val_ppl=17.26
+[multixi-s4d-splm] step  3250/4000   train 2.7551   lr 4.67e-05   grad 0.76   m[mean 1.409 std 0.190]   gamma=0.300   dt=0.01356   eig.re=[-7.95,-4.78]   |eig.im|max=5.32   elapsed 25693s
+[multixi-s4d-splm] step  3300/4000   train 2.7408   lr 4.08e-05   grad 0.80   m[mean 1.413 std 0.194]   gamma=0.300   dt=0.01359   eig.re=[-7.96,-4.77]   |eig.im|max=5.32   elapsed 26139s
+[multixi-s4d-splm] step  3350/4000   train 2.7424   lr 3.53e-05   grad 0.80   m[mean 1.408 std 0.191]   gamma=0.300   dt=0.01362   eig.re=[-7.98,-4.77]   |eig.im|max=5.32   elapsed 26584s
+[multixi-s4d-splm] step  3400/4000   train 2.7487   lr 3.02e-05   grad 0.79   m[mean 1.411 std 0.195]   gamma=0.300   dt=0.01364   eig.re=[-7.99,-4.76]   |eig.im|max=5.32   elapsed 27023s
+[multixi-s4d-splm] step  3400   val_loss=2.8536  val_ppl=17.35
+[multixi-s4d-splm] step  3450/4000   train 2.7413   lr 2.55e-05   grad 0.81   m[mean 1.408 std 0.190]   gamma=0.300   dt=0.01366   eig.re=[-8.00,-4.76]   |eig.im|max=5.32   elapsed 27375s
+[multixi-s4d-splm] step  3500/4000   train 2.7293   lr 2.11e-05   grad 0.78   m[mean 1.411 std 0.192]   gamma=0.300   dt=0.01367   eig.re=[-8.01,-4.76]   |eig.im|max=5.32   elapsed 27683s
+[multixi-s4d-splm] step  3550/4000   train 2.7317   lr 1.72e-05   grad 0.78   m[mean 1.413 std 0.196]   gamma=0.300   dt=0.01369   eig.re=[-8.02,-4.76]   |eig.im|max=5.32   elapsed 27992s
+[multixi-s4d-splm] step  3600/4000   train 2.7321   lr 1.36e-05   grad 0.82   m[mean 1.404 std 0.185]   gamma=0.300   dt=0.0137   eig.re=[-8.02,-4.76]   |eig.im|max=5.32   elapsed 28300s
+[multixi-s4d-splm] step  3600   val_loss=2.8160  val_ppl=16.71
+[multixi-s4d-splm] step  3650/4000   train 2.7253   lr 1.05e-05   grad 0.81   m[mean 1.409 std 0.194]   gamma=0.300   dt=0.01371   eig.re=[-8.03,-4.76]   |eig.im|max=5.32   elapsed 28637s
+[multixi-s4d-splm] step  3700/4000   train 2.7153   lr 7.70e-06   grad 0.82   m[mean 1.407 std 0.190]   gamma=0.300   dt=0.01371   eig.re=[-8.03,-4.76]   |eig.im|max=5.32   elapsed 28919s
+[multixi-s4d-splm] step  3750/4000   train 2.7378   lr 5.36e-06   grad 0.78   m[mean 1.407 std 0.191]   gamma=0.300   dt=0.01372   eig.re=[-8.03,-4.75]   |eig.im|max=5.32   elapsed 29203s
+[multixi-s4d-splm] step  3800/4000   train 2.7299   lr 3.44e-06   grad 0.78   m[mean 1.403 std 0.186]   gamma=0.300   dt=0.01372   eig.re=[-8.04,-4.75]   |eig.im|max=5.33   elapsed 29563s
+[multixi-s4d-splm] step  3800   val_loss=2.8386  val_ppl=17.09
+[multixi-s4d-splm] step  3850/4000   train 2.7313   lr 1.95e-06   grad 0.79   m[mean 1.412 std 0.194]   gamma=0.300   dt=0.01372   eig.re=[-8.04,-4.75]   |eig.im|max=5.33   elapsed 30084s
+[multixi-s4d-splm] step  3900/4000   train 2.7490   lr 8.71e-07   grad 0.77   m[mean 1.413 std 0.193]   gamma=0.300   dt=0.01372   eig.re=[-8.04,-4.75]   |eig.im|max=5.33   elapsed 30527s
+[multixi-s4d-splm] step  3950/4000   train 2.7214   lr 2.22e-07   grad 0.77   m[mean 1.411 std 0.191]   gamma=0.300   dt=0.01372   eig.re=[-8.04,-4.75]   |eig.im|max=5.33   elapsed 30970s
+[multixi-s4d-splm] step  4000/4000   train 2.7540   lr 8.54e-11   grad 0.84   m[mean 1.407 std 0.188]   gamma=0.300   dt=0.01372   eig.re=[-8.04,-4.75]   |eig.im|max=5.33   elapsed 31413s
+[multixi-s4d-splm] step  4000   val_loss=2.8242  val_ppl=16.85
+
+[multixi-s4d-splm] DONE  val_loss=2.8249  val_ppl=16.86  gamma=0.3000  dt=0.01372  elapsed=31545s
+[multixi-s4d-splm] DONE  eigvals_final = (-8.005+5.325j) (-8.038-5.306j) (-4.754+1.108j) (-5.076-1.134j)
+[multixi-s4d-splm] DONE  B_proj_final  = ['+2.756', '+3.133', '+1.161', '+1.856']
+[multixi-s4d-splm] checkpoint saved to /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/scaleup/results/multis4d_pilot_legtinit/splm_em_ln_multixi_s4d_pilot_seed0_legtinit_ckpt_latest.pt
+[multixi-s4d-splm] summary written to /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/scaleup/results/multis4d_pilot_legtinit/splm_em_ln_multixi_s4d_pilot_seed0_legtinit_summary.md

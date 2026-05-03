@@ -86,3 +86,28 @@ notebooks/conservative_arch/multi_seed/results/**/*.pt filter=lfs diff=lfs merge
 notebooks/conservative_arch/multi_seed/results/**/*.pkl filter=lfs diff=lfs merge=lfs -text
 notebooks/conservative_arch/multi_seed/results/**/*.png filter=lfs diff=lfs merge=lfs -text
 notebooks/conservative_arch/multi_seed/results/**/*.npz filter=lfs diff=lfs merge=lfs -text
+
+# v3 R6 ladder -- TinyStories scaleup pilots (May 2026). The
+# `notebooks/conservative_arch/scaleup/` tree houses the leak-corrected
+# multi-channel-xi pilots (R6.a / R6.e / R6.h.0 / R6.h.1 / R6.i) and
+# the budget-matched attention baseline. Per-pilot subdirectories under
+# `scaleup/results/` ship a training-log JSONL, a summary markdown, a
+# loss-curve PNG, and a JSON channel-correlation diagnostic; the
+# top-level `scaleup/results/` also ships a frozen TinyStories
+# unigram-surprisal tensor (`logfreq_surprisal_tinystories.npy`,
+# ~200 KB). Model checkpoints (~63 MB each per pilot) are not
+# committed to keep the repository lean -- they are fully reproducible
+# from the training scripts -- but the `*.pt` pattern is LFS-tracked
+# for future-proofing. The `**/...` and direct `*` patterns are both
+# listed so files at either depth are covered regardless of the git
+# version's `**` matching behaviour.
+notebooks/conservative_arch/scaleup/results/*.pt  filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/scaleup/results/*.pkl filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/scaleup/results/*.png filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/scaleup/results/*.npz filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/scaleup/results/*.npy filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/scaleup/results/**/*.pt  filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/scaleup/results/**/*.pkl filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/scaleup/results/**/*.png filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/scaleup/results/**/*.npz filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/scaleup/results/**/*.npy filter=lfs diff=lfs merge=lfs -text

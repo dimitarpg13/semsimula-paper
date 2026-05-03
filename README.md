@@ -3,9 +3,9 @@
 Companion repository for the paper
 
 > **Semantic Simulation: A Prescriptive Lagrangian Framework for Efficient Semantic Inference**
-> *Conservative-by-Construction Language Models and the Shared-Potential Separator, with a Correspondence to Joint Embedding Predictive Architectures.*
+> *A Conservative-by-Construction Language Model and the Shared-Potential Separator, with a Correspondence to Joint Embedding Predictive Architectures.*
 > Dimitar P. Gueorguiev (Independent Researcher), 2026.
-> Zenodo preprint: [10.5281/zenodo.19819861](https://doi.org/10.5281/zenodo.19819861)
+> Zenodo preprint (v2): [10.5281/zenodo.19819861](https://doi.org/10.5281/zenodo.19819861); v3 release pending.
 
 [![DOI — paper](https://zenodo.org/badge/DOI/10.5281/zenodo.19819861.svg)](https://doi.org/10.5281/zenodo.19819861)
 [![DOI — companion code](https://zenodo.org/badge/DOI/10.5281/zenodo.19708205.svg)](https://doi.org/10.5281/zenodo.19708205)
@@ -29,6 +29,68 @@ separator).
 > and `notebooks/cross_model/`.
 
 > **Rendering note.** Several markdown files under `companion_notes/` in this repository contain LaTeX math (inline `$...$` and display `$$...$$` blocks, with macros such as `\mathfrak{...}`, `\boldsymbol{...}`, `\mathcal{...}`, etc.). The math has been verified to render correctly in **Safari**. In **Chrome** some symbols — notably calligraphic and fraktur letters, e.g. `\mathfrak{C}` rendering as a plain `C` instead of $\mathfrak{C}$ — appear to render incorrectly. **Firefox** has not been tested. If symbols look wrong while viewing a companion note on GitHub, please open the file in Safari or consult the main paper's PDF, where the same symbols are typeset by LaTeX directly. Each affected companion note repeats this warning in its own header.
+
+---
+
+## v3 update (May 2026): causal-leak audit, leak-corrected re-evaluation, and the information-bottleneck programme
+
+Between the v2 SSRN/Zenodo release of the paper and v3 we discovered an
+**anti-causal autograd path** in every per-step `integrate()` site of
+the SPLM family: the conservative force was being computed against
+*future* positions through the multi-channel cumulative-mean context
+pool, and the trained `V_θ` had silently learned to route prediction
+signal through the leak channel. The fix is a one-line `h.detach()`
+before forming `ξ`. Under the fix, the published v2 SPLM val
+perplexity of `8.85` on TinyStories evaluates to `6843` PPL — an
+inflation factor of `777×`. **Every SPLM PPL number reported in v2 is
+therefore a casualty of the bug.** The descriptive findings on
+pretrained GPT-2 / Pythia (§13) and the *static* shared-potential
+separator R² numbers (§14) are independent of the SPLM integrator
+and survive the fix unchanged.
+
+The v3 paper adds a leak-corrected re-evaluation (best multi-channel
+SPLM at val\_ppl `14.78` vs a budget-matched attention baseline at
+`~8`), a regression-tested causality-audit framework, a
+multi-channel-ξ **information-bottleneck programme** (the *R6 ladder*:
+K-EMA / log-spaced K-EMA / HiPPO-LegT / learnable-Δ HiPPO / S4D, with
+four information-theoretic diagnostics — pairwise correlation matrix,
+mean off-diagonal `|corr|`, total correlation, entropy-power effective
+channel count K_eff), and a reframing of SPLM as a maximally-structured
+Lagrangian counterfactual to attention rather than as a competitive
+replacement.
+
+**New v3 markdowns** (under [`companion_notes/`](companion_notes/)):
+
+| File                                                            | Cited around                                                                  |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`                  | §1 (v3 status footnote), §14, §16 (C5)                                        |
+| `Causal_Leak_Empirical_Comparison_Report.md`                    | §1 (v3 status footnote), §14                                                  |
+| `Reducing_Information_Bottleneck_In_Multi-Channel_Xi_SPLM.md`   | §1 (v3 status footnote), §14 (R6 ladder), §16 (C7)                            |
+| `Restructuring_paper_v3_after_causal_leak_bug.md`               | §1 (v3 status footnote), §14, §16 — the strategic reframing                   |
+| `Semantic_Simulator_v15_EOM.md` *(forthcoming stub)*            | §9 / §16 Q8 — equation-of-motion specification for the v1.5 dynamics          |
+| `Semantic_Simulator_v2_EOM.md`  *(forthcoming stub)*            | §9 / §16 Q8 — equation-of-motion specification for the v2 dynamics            |
+| `Semantic_Simulator_v3_EOM.md`  *(forthcoming stub)*            | §9 / §16 Q8 — equation-of-motion specification for the v3 dynamics            |
+
+**New v3 experiment code** (under [`notebooks/conservative_arch/`](notebooks/conservative_arch/)):
+
+| File or directory                                            | Role                                                                                                                         |
+| ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| `causal_probe.py`                                            | Regression-test framework verifying that ∂loss\_t / ∂h\_s = 0 for s>t at every model registration. Cited 4× in §1, §14, §16. |
+| `eval_ppl_under_fix.py`                                      | Closed-loop leak-free re-evaluation of v2 SPLM checkpoints — the source of the `777×` inflation factor.                       |
+| `post_fixed_pilot.py`                                        | Driver for leak-corrected single-channel SPLM pilot training.                                                                |
+| `multixi/`                                                   | Multi-channel-ξ model implementations (K-EMA / HiPPO-LegT / S4D) + channel-correlation diagnostics for the R6 ladder.        |
+| `scaleup/`                                                   | Training scripts and per-pilot result logs for the R6 ladder on TinyStories at the `~16M`-parameter pilot scale.             |
+
+The new entries above are described in detail in the
+[`companion_notes/`](#companion_notes--2026-companion-notes-work-in-progress)
+and
+[`notebooks/conservative_arch/`](#notebooksconservative_arch--the-splm-prototype-and-the-three-way-separator)
+sections below; the paper-level reading is the v3 status footnote at
+the start of §1 of the PDF, and §14 / §16 Q9 (the hybrid programme)
+of the conclusion. Forensic detail, the R6 ladder data, and the
+strategic reframing are in the four `companion_notes/Causal_Leak_*`,
+`companion_notes/Reducing_Information_Bottleneck_*`, and
+`companion_notes/Restructuring_*` files listed above.
 
 ---
 
@@ -175,6 +237,37 @@ or want to trace the design rationale of the experiments shipped under
 and
 [`notebooks/conservative_arch/energy_drift/`](notebooks/conservative_arch/energy_drift/),
 can locate them.
+
+#### v3 leak-correction and information-bottleneck programme (May 2026)
+
+The four documents below back the **v3** revision of the paper after
+the causal-leak audit (see the *v3 update* block above). They are
+written as standalone working notes; the paper summarises them in the
+§1 v3 status footnote, §14 (the leak-corrected experimental record),
+§16 (C5)–(C7) of the conclusion, and §16 Q9 (the hybrid programme).
+
+| File                                                            | Cited around                                                                                                                                                                                                                                                        |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`                  | §1, §14, §16 (C5) — forensic detail of the anti-causal autograd path: closed-loop Jacobian analysis, the `h.detach()` fix, the `causal_probe.py` regression-test framework, and an audit checklist for any future autoregressive-integrator construction in the framework.                                                                          |
+| `Causal_Leak_Empirical_Comparison_Report.md`                    | §1, §14 — closed-loop leak-free re-evaluation of every v2 SPLM checkpoint in the repository: per-model `(PPL_buggy, PPL_fixed)` pairs, inflation factors (the headline `777×` for TinyStories `splm_em_ln_multixi`), and the methodology of the closed-loop fixed-graph re-eval.                                                                                  |
+| `Reducing_Information_Bottleneck_In_Multi-Channel_Xi_SPLM.md`   | §1, §14 (R6 ladder), §16 (C7) — the *information-bottleneck programme*: theory and experiments narrowing the SPLM-vs-attention val\_ppl gap by varying the multi-channel-ξ basis (K-EMA / log-spaced K-EMA / HiPPO-LegT / learnable-Δ HiPPO / S4D), with four information-theoretic diagnostics on the integrator-final ξ trajectory and the V_θ-fit-difficulty synthesis. |
+| `Restructuring_paper_v3_after_causal_leak_bug.md`               | §1, §14, §16 — the strategic reframing of v3: SPLM as a maximally-structured Lagrangian counterfactual to attention rather than as a competitive replacement; subtitle plural→singular decision; SSRN/Zenodo versioning recommendation; the §-by-§ edit list executed in v3 of the paper.                                                                          |
+
+#### Forthcoming-work EOM stubs for the v1.5 / v2 / v3 dynamics
+
+The three stubs below are intentionally short placeholders pointed to
+from §9 (Expressivity, mechanism justification, and the MCS reach)
+and §16 Q8 of the paper. Each one names the formal home of its
+dynamics — dissipative semigroups (v1.5), Fock-space second
+quantisation (v2), Lie groups / non-abelian gauge theory (v3) — and
+sketches the equation-of-motion specification a future companion
+note will fill in.
+
+| File                                | Status      | Pointed to from                                                                                |
+| ----------------------------------- | ----------- | ---------------------------------------------------------------------------------------------- |
+| `Semantic_Simulator_v15_EOM.md`     | Forthcoming | §9, §16 Q8 — v1.5 dynamics (salient decay / dissipative semigroups)                            |
+| `Semantic_Simulator_v2_EOM.md`      | Forthcoming | §9, §16 Q8 — v2 dynamics (structure creation / Fock-space second quantisation)                 |
+| `Semantic_Simulator_v3_EOM.md`      | Forthcoming | §9, §16 Q8 — v3 dynamics (structure execution / non-abelian gauge theory)                      |
 
 ### `notebooks/` — reproducibility
 
@@ -533,6 +626,85 @@ for the full list):
   from symplectic structure of the integrator. See
   [`E3_splm_em_ln_compare_report.md`](notebooks/conservative_arch/energy_drift/results/E3_splm_em_ln_compare/E3_splm_em_ln_compare_report.md)
   for the full per-variant table, overlay figures, and caveats.
+- **v3 leak-correction and R6 ladder additions (May 2026).**
+  The v3 paper revision (see the *v3 update* block at the top of this
+  README) ships three new top-level Python files and two new
+  subdirectories under `notebooks/conservative_arch/`. They cover the
+  causal-leak audit framework, the leak-corrected re-evaluation, the
+  leak-corrected pilot, and the multi-channel-ξ information-bottleneck
+  programme (the R6 ladder).
+  - **`causal_probe.py`** — regression-test framework that, at every
+    model registration, builds a tiny instance, runs a forward pass
+    on a probe input, and verifies that
+    `∂loss_t / ∂h_s = 0 for s > t` by closed-loop autograd. Catches
+    any future re-introduction of the
+    [`Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`](companion_notes/Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md)
+    bug. Cited 4× in the paper (§1, §14, §16).
+  - **`eval_ppl_under_fix.py`** — closed-loop, fixed-graph re-evaluation
+    harness: loads a v2 SPLM checkpoint trained under the leaky
+    integrator and computes its leak-free val\_ppl by running the
+    corrected closed-loop integrator over the same validation tokens.
+    The source of the headline `777×` inflation factor reported in
+    [`companion_notes/Causal_Leak_Empirical_Comparison_Report.md`](companion_notes/Causal_Leak_Empirical_Comparison_Report.md).
+  - **`post_fixed_pilot.py`** — driver for leak-corrected
+    single-channel SPLM pilot training on TinyStories at the v2
+    LayerNorm-after-step configuration. The reference single-channel
+    leak-free SPLM ceiling (val\_ppl ≈ 30) reported in the v3 paper.
+  - **`multixi/`** — multi-channel-ξ model implementations and
+    diagnostics for the R6 ladder. Five files:
+    `__init__.py`,
+    `model_multixi.py` (K-EMA bank with optional log-spaced α
+    initialisation; the v2 default and R6.h.0 / R6.h.1 cells),
+    `model_multixi_hippo.py` (HiPPO-LegT translated-Legendre basis
+    with bilinear / Tustin discretisation, fixed and learnable Δt
+    variants — R6.a / R6.e cells),
+    `model_multixi_s4d.py` (diagonal state-space substitute with
+    learnable diagonal complex `A`, `B`, and Δt; LegT and S4D-Lin
+    initialisations — R6.i cell), and
+    `diagnose_xi_channel_correlations.py` (the four
+    information-theoretic diagnostics: pairwise Pearson correlation
+    matrix, mean off-diagonal `|corr|`, total correlation
+    `TC(c) = -½ log det R`, entropy-power effective-channel count
+    `K_eff = exp(H(λ̃))`). All R6-ladder val\_ppl numbers in §14 of the
+    paper are produced by these files, and the `K_eff/K` and total
+    correlation numbers in §16 (C7) and the R6 table are produced by
+    `diagnose_xi_channel_correlations.py`. The full programme,
+    cell-by-cell, is documented in
+    [`companion_notes/Reducing_Information_Bottleneck_In_Multi-Channel_Xi_SPLM.md`](companion_notes/Reducing_Information_Bottleneck_In_Multi-Channel_Xi_SPLM.md).
+  - **`scaleup/`** — training scripts and per-pilot result logs for
+    the R6 ladder on TinyStories at the `~16M`-parameter pilot scale.
+    Top-level scripts:
+    `train_splm_em_ln_scaleup.py` (single-channel SPLM baseline),
+    `train_splm_em_ln_multixi_scaleup.py` (K-EMA driver — R6.h.0,
+    R6.h.1),
+    `train_splm_em_ln_multixi_hippo_scaleup.py` (HiPPO-LegT driver —
+    R6.a, R6.e),
+    `train_splm_em_ln_multixi_s4d_scaleup.py` (S4D driver — R6.i),
+    `train_matched_baseline_scaleup.py` (budget-matched attention
+    baseline — the val\_ppl `~8` reference number), and
+    `compute_unigram_frequencies_tinystories.py` (TinyStories
+    surprisal-prior precomputation, mirroring the Tiny-Shakespeare
+    version under `sarf_mass_variant/`). The
+    `gamma_transfer/` subdir houses the leak-corrected `γ`-sweep
+    follow-up (planned). All per-pilot training logs, loss curves,
+    summaries, and channel-correlation `.json` artefacts ship under
+    `scaleup/results/`:
+    `multihippo_pilot_fixed/` (R6.a),
+    `multihippo_pilot_learndt/` (R6.e),
+    `multihippo_smoke/` (HiPPO smoke test),
+    `multis4d_pilot_legtinit/` (R6.i),
+    `multixi_pilot_fixed/` (R6.h.0 K-EMA hand-picked α),
+    `multixi_pilot_logspaced_taumax100/` (R6.h.1 K-EMA log-spaced α,
+    in flight),
+    `multixi_buggy_2k/` (the v2 buggy-integrator reference run),
+    `pilot_splm_fixed/` (single-channel leak-free pilot),
+    `seed0_attn` / `seed0_splm` / `seed0_multixi` (seed-0 baselines),
+    and the `smoke_*` smoke-test pilots. Model checkpoints (`.pt`) are
+    not committed (`~63 MB` each, fully reproducible from the scripts);
+    every training log and summary that the paper cites *is* committed.
+    The aggregate per-cell `val_ppl` table and the
+    information-theoretic-diagnostic table that drive §14 of the paper
+    are reconstructible from these files alone.
 
 ---
 
@@ -793,6 +965,66 @@ E1 multi-seed instability finding.
 
 ---
 
+### v3 — leak-correction audit and the R6 ladder
+
+The v3 paper revision (May 2026) adds a regression-tested causality
+audit, a leak-corrected re-evaluation of every v2 SPLM checkpoint, a
+leak-corrected single-channel pilot, and an information-bottleneck
+programme over the multi-channel-ξ basis (the *R6 ladder*: K-EMA /
+log-spaced K-EMA / HiPPO-LegT / learnable-Δ HiPPO / S4D). The full
+programme is documented in
+[`companion_notes/Reducing_Information_Bottleneck_In_Multi-Channel_Xi_SPLM.md`](companion_notes/Reducing_Information_Bottleneck_In_Multi-Channel_Xi_SPLM.md);
+the audit framework is documented in
+[`companion_notes/Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`](companion_notes/Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md).
+Quick-start commands:
+
+```bash
+cd notebooks/conservative_arch
+
+# 1. Causality regression test (≤ 5 s; runs on every model variant
+#    registered in the file — fails loudly if a future change
+#    re-introduces the v2 leak).
+python causal_probe.py --strict
+
+# 2. Leak-free re-evaluation of any v2 SPLM checkpoint
+#    (closed-loop, fixed-graph; produces (PPL_buggy, PPL_fixed)).
+python eval_ppl_under_fix.py \
+    --ckpt scaleup/results/multixi_buggy_2k/em_ln_multixi_tinystories_ckpt_latest.pt
+
+# 3. Leak-corrected single-channel SPLM pilot on TinyStories
+#    (~30 min on Apple MPS; ~10 min on a single A100).
+python post_fixed_pilot.py
+
+# 4. R6 ladder pilots (~30 min – 4 h each on Apple MPS, depending on
+#    cell — see `scaleup/README.md` for per-cell runtimes).
+python scaleup/train_splm_em_ln_multixi_scaleup.py        \
+    --xi-channels 4 --xi-alpha-init-mode log_spaced       \
+    --xi-tau-max 100  --tag multixi_pilot_logspaced_taumax100   # R6.h.1
+python scaleup/train_splm_em_ln_multixi_hippo_scaleup.py  \
+    --xi-channels 4 --tag multihippo_pilot_fixed                # R6.a
+python scaleup/train_splm_em_ln_multixi_hippo_scaleup.py  \
+    --xi-channels 4 --learnable-dt --tag multihippo_pilot_learndt   # R6.e
+python scaleup/train_splm_em_ln_multixi_s4d_scaleup.py    \
+    --xi-channels 4 --xi-eigval-init legt --tag multis4d_pilot_legtinit  # R6.i
+
+# 5. Information-theoretic diagnostics on a trained ξ trajectory:
+#    pairwise correlation matrix, mean off-diagonal |corr|,
+#    total correlation TC, entropy-power K_eff. Same script for
+#    every R6-ladder variant — dispatched on the checkpoint config.
+python multixi/diagnose_xi_channel_correlations.py \
+    --ckpt scaleup/results/multihippo_pilot_learndt/em_ln_multixi_hippo_tinystories_ckpt_latest.pt
+```
+
+Output: each pilot writes a per-step training log, val\_ppl trajectory,
+and a final-summary `.md` to `scaleup/results/<tag>/`. The
+`diagnose_xi_channel_correlations.py` script writes a
+`channel_correlations.json` next to the checkpoint and an overlay PNG
+of the K×K correlation matrix; these are the source of the
+`mean |corr|`, `TC`, and `K_eff/K` numbers in the §14 R6-ladder table
+of the paper.
+
+---
+
 ## Citing this work
 
 See [`CITATION.bib`](CITATION.bib) for the full BibTeX file. The short form:
@@ -854,3 +1086,18 @@ When reusing any material from this repository, please cite the paper (see
    ([10.5281/zenodo.19819861](https://doi.org/10.5281/zenodo.19819861)).
    Once submitted to arXiv, fill in the arXiv identifier and propagate to both
    `README.md` and `CITATION.bib`.
+2. **v3 Zenodo DOI.** Zenodo DOI `10.5281/zenodo.19819861` resolves to the
+   v2 release of the paper. The v3 release (causal-leak audit, leak-corrected
+   re-evaluation, R6 ladder, reframing — see the *v3 update* block above)
+   has been bundled as `semsimula_paper_source.zip` at the root of the
+   author's main research repository and will be uploaded as a new Zenodo
+   version of the same record. Once uploaded, propagate the new version
+   DOI to `README.md` and `CITATION.bib` and supersede v2 with a status
+   notice on the v2 record so that readers landing on v2 are pointed at
+   v3.
+3. **Forthcoming-work EOM stubs.** `companion_notes/Semantic_Simulator_v15_EOM.md`,
+   `Semantic_Simulator_v2_EOM.md`, and `Semantic_Simulator_v3_EOM.md` are
+   short placeholders flagged "*Forthcoming*" in their headers. They exist
+   so that the §9 / §16 Q8 `\path{...}` references in the paper resolve
+   to a real file in the public companion repository. Each will be filled
+   in by a future companion paper covering the v1.5 / v2 / v3 dynamics.

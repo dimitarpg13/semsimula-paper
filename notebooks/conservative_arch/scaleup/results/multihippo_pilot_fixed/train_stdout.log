@@ -1,0 +1,110 @@
+[multixi-hippo-splm] device=mps  mode=pilot  fixed_gamma=0.3  seed=0  results_dir=/Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/scaleup/results/multihippo_pilot_fixed
+[multixi-hippo-splm] tokens: train=5,000,000  val=4,787,906
+[multixi-hippo-splm] params: 16,539,907   d=256  L=8  v_hidden=1024  max_len=1024  ln_after_step=True
+[multixi-hippo-splm] hippo: K=4  basis=legt  theta=200.0  dt=0.005  learnable_dt=False
+[multixi-hippo-splm] causal_force=True  (FIXED (post-bug))  steps=4000
+[multixi-hippo-splm] init mass: mean=1.421  std=0.183  min=1.175  max=2.142
+[multixi-hippo-splm] step    50/4000   train 10.6081   lr 1.25e-04   grad 2.92   m[mean 1.416 std 0.181]   gamma=0.300   dt=0.005   elapsed 289s
+[multixi-hippo-splm] step   100/4000   train 8.0955   lr 2.50e-04   grad 1.36   m[mean 1.415 std 0.184]   gamma=0.300   dt=0.005   elapsed 578s
+[multixi-hippo-splm] step   150/4000   train 5.9031   lr 3.75e-04   grad 0.47   m[mean 1.412 std 0.181]   gamma=0.300   dt=0.005   elapsed 867s
+[multixi-hippo-splm] step   200/4000   train 5.2221   lr 5.00e-04   grad 1.75   m[mean 1.407 std 0.175]   gamma=0.300   dt=0.005   elapsed 1177s
+[multixi-hippo-splm] step   200   val_loss=4.9216  val_ppl=137.23
+[multixi-hippo-splm] step   250/4000   train 4.6700   lr 5.00e-04   grad 1.36   m[mean 1.419 std 0.190]   gamma=0.300   dt=0.005   elapsed 1546s
+[multixi-hippo-splm] step   300/4000   train 4.2834   lr 4.99e-04   grad 1.32   m[mean 1.409 std 0.185]   gamma=0.300   dt=0.005   elapsed 1878s
+[multixi-hippo-splm] step   350/4000   train 4.0319   lr 4.98e-04   grad 1.94   m[mean 1.408 std 0.178]   gamma=0.300   dt=0.005   elapsed 2204s
+[multixi-hippo-splm] step   400/4000   train 3.8961   lr 4.97e-04   grad 1.52   m[mean 1.406 std 0.181]   gamma=0.300   dt=0.005   elapsed 2524s
+[multixi-hippo-splm] step   400   val_loss=3.8786  val_ppl=48.35
+[multixi-hippo-splm] step   450/4000   train 3.8004   lr 4.95e-04   grad 1.73   m[mean 1.403 std 0.178]   gamma=0.300   dt=0.005   elapsed 2891s
+[multixi-hippo-splm] step   500/4000   train 3.7274   lr 4.92e-04   grad 1.51   m[mean 1.399 std 0.175]   gamma=0.300   dt=0.005   elapsed 3258s
+[multixi-hippo-splm] step   550/4000   train 3.6545   lr 4.90e-04   grad 1.26   m[mean 1.405 std 0.178]   gamma=0.300   dt=0.005   elapsed 3554s
+[multixi-hippo-splm] step   600/4000   train 3.6021   lr 4.87e-04   grad 1.47   m[mean 1.402 std 0.178]   gamma=0.300   dt=0.005   elapsed 3859s
+[multixi-hippo-splm] step   600   val_loss=3.6231  val_ppl=37.45
+[multixi-hippo-splm] step   650/4000   train 3.5350   lr 4.83e-04   grad 1.75   m[mean 1.401 std 0.177]   gamma=0.300   dt=0.005   elapsed 4250s
+[multixi-hippo-splm] step   700/4000   train 3.5217   lr 4.79e-04   grad 1.43   m[mean 1.398 std 0.179]   gamma=0.300   dt=0.005   elapsed 4515s
+[multixi-hippo-splm] step   750/4000   train 3.4634   lr 4.75e-04   grad 1.40   m[mean 1.400 std 0.176]   gamma=0.300   dt=0.005   elapsed 4780s
+[multixi-hippo-splm] step   800/4000   train 3.4377   lr 4.70e-04   grad 1.48   m[mean 1.400 std 0.176]   gamma=0.300   dt=0.005   elapsed 5042s
+[multixi-hippo-splm] step   800   val_loss=3.4513  val_ppl=31.54
+[multixi-hippo-splm] step   850/4000   train 3.4081   lr 4.65e-04   grad 1.60   m[mean 1.401 std 0.179]   gamma=0.300   dt=0.005   elapsed 5392s
+[multixi-hippo-splm] step   900/4000   train 3.3662   lr 4.59e-04   grad 1.27   m[mean 1.404 std 0.179]   gamma=0.300   dt=0.005   elapsed 5729s
+[multixi-hippo-splm] step   950/4000   train 3.3324   lr 4.54e-04   grad 1.24   m[mean 1.406 std 0.184]   gamma=0.300   dt=0.005   elapsed 6061s
+[multixi-hippo-splm] step  1000/4000   train 3.3199   lr 4.47e-04   grad 1.36   m[mean 1.400 std 0.177]   gamma=0.300   dt=0.005   elapsed 6394s
+[multixi-hippo-splm] step  1000   val_loss=3.3678  val_ppl=29.01
+[multixi-hippo-splm] step  1050/4000   train 3.2867   lr 4.41e-04   grad 1.12   m[mean 1.405 std 0.176]   gamma=0.300   dt=0.005   elapsed 6832s
+[multixi-hippo-splm] step  1100/4000   train 3.2881   lr 4.34e-04   grad 1.49   m[mean 1.400 std 0.175]   gamma=0.300   dt=0.005   elapsed 7166s
+[multixi-hippo-splm] step  1150/4000   train 3.2549   lr 4.27e-04   grad 1.24   m[mean 1.399 std 0.176]   gamma=0.300   dt=0.005   elapsed 7505s
+[multixi-hippo-splm] step  1200/4000   train 3.2400   lr 4.19e-04   grad 1.44   m[mean 1.403 std 0.180]   gamma=0.300   dt=0.005   elapsed 7878s
+[multixi-hippo-splm] step  1200   val_loss=3.2861  val_ppl=26.74
+[multixi-hippo-splm] step  1250/4000   train 3.2263   lr 4.12e-04   grad 1.10   m[mean 1.402 std 0.178]   gamma=0.300   dt=0.005   elapsed 8338s
+[multixi-hippo-splm] step  1300/4000   train 3.1904   lr 4.04e-04   grad 1.39   m[mean 1.400 std 0.177]   gamma=0.300   dt=0.005   elapsed 8683s
+[multixi-hippo-splm] step  1350/4000   train 3.1902   lr 3.95e-04   grad 1.23   m[mean 1.402 std 0.177]   gamma=0.300   dt=0.005   elapsed 9025s
+[multixi-hippo-splm] step  1400/4000   train 3.1866   lr 3.87e-04   grad 1.15   m[mean 1.392 std 0.171]   gamma=0.300   dt=0.005   elapsed 9364s
+[multixi-hippo-splm] step  1400   val_loss=3.2367  val_ppl=25.45
+[multixi-hippo-splm] step  1450/4000   train 3.1773   lr 3.78e-04   grad 1.60   m[mean 1.406 std 0.180]   gamma=0.300   dt=0.005   elapsed 9805s
+[multixi-hippo-splm] step  1500/4000   train 3.1711   lr 3.69e-04   grad 1.46   m[mean 1.408 std 0.183]   gamma=0.300   dt=0.005   elapsed 10140s
+[multixi-hippo-splm] step  1550/4000   train 3.1453   lr 3.60e-04   grad 1.14   m[mean 1.404 std 0.182]   gamma=0.300   dt=0.005   elapsed 10483s
+[multixi-hippo-splm] step  1600/4000   train 3.1041   lr 3.51e-04   grad 1.27   m[mean 1.396 std 0.173]   gamma=0.300   dt=0.005   elapsed 10819s
+[multixi-hippo-splm] step  1600   val_loss=3.1858  val_ppl=24.19
+[multixi-hippo-splm] step  1650/4000   train 3.1024   lr 3.41e-04   grad 1.27   m[mean 1.398 std 0.179]   gamma=0.300   dt=0.005   elapsed 11238s
+[multixi-hippo-splm] step  1700/4000   train 3.1114   lr 3.31e-04   grad 1.33   m[mean 1.400 std 0.179]   gamma=0.300   dt=0.005   elapsed 11573s
+[multixi-hippo-splm] step  1750/4000   train 3.1017   lr 3.22e-04   grad 1.34   m[mean 1.403 std 0.180]   gamma=0.300   dt=0.005   elapsed 11908s
+[multixi-hippo-splm] step  1800/4000   train 3.0870   lr 3.12e-04   grad 1.18   m[mean 1.399 std 0.176]   gamma=0.300   dt=0.005   elapsed 12243s
+[multixi-hippo-splm] step  1800   val_loss=3.1502  val_ppl=23.34
+[multixi-hippo-splm] step  1850/4000   train 3.0699   lr 3.02e-04   grad 1.42   m[mean 1.399 std 0.177]   gamma=0.300   dt=0.005   elapsed 12692s
+[multixi-hippo-splm] step  1900/4000   train 3.0554   lr 2.91e-04   grad 1.32   m[mean 1.401 std 0.179]   gamma=0.300   dt=0.005   elapsed 13048s
+[multixi-hippo-splm] step  1950/4000   train 3.0590   lr 2.81e-04   grad 1.44   m[mean 1.403 std 0.184]   gamma=0.300   dt=0.005   elapsed 13403s
+[multixi-hippo-splm] step  2000/4000   train 3.0629   lr 2.71e-04   grad 1.29   m[mean 1.399 std 0.179]   gamma=0.300   dt=0.005   elapsed 13762s
+[multixi-hippo-splm] step  2000   val_loss=3.1029  val_ppl=22.26
+[multixi-hippo-splm] step  2050/4000   train 3.0561   lr 2.61e-04   grad 1.27   m[mean 1.402 std 0.179]   gamma=0.300   dt=0.005   elapsed 14192s
+[multixi-hippo-splm] step  2100/4000   train 3.0423   lr 2.50e-04   grad 1.36   m[mean 1.408 std 0.186]   gamma=0.300   dt=0.005   elapsed 14572s
+[multixi-hippo-splm] step  2150/4000   train 3.0231   lr 2.40e-04   grad 1.49   m[mean 1.403 std 0.183]   gamma=0.300   dt=0.005   elapsed 14926s
+[multixi-hippo-splm] step  2200/4000   train 3.0287   lr 2.30e-04   grad 1.27   m[mean 1.398 std 0.179]   gamma=0.300   dt=0.005   elapsed 15222s
+[multixi-hippo-splm] step  2200   val_loss=3.0984  val_ppl=22.16
+[multixi-hippo-splm] step  2250/4000   train 3.0083   lr 2.19e-04   grad 1.28   m[mean 1.397 std 0.179]   gamma=0.300   dt=0.005   elapsed 15583s
+[multixi-hippo-splm] step  2300/4000   train 3.0194   lr 2.09e-04   grad 1.07   m[mean 1.399 std 0.177]   gamma=0.300   dt=0.005   elapsed 15844s
+[multixi-hippo-splm] step  2350/4000   train 2.9918   lr 1.99e-04   grad 1.62   m[mean 1.403 std 0.182]   gamma=0.300   dt=0.005   elapsed 16105s
+[multixi-hippo-splm] step  2400/4000   train 3.0065   lr 1.89e-04   grad 1.43   m[mean 1.404 std 0.181]   gamma=0.300   dt=0.005   elapsed 16397s
+[multixi-hippo-splm] step  2400   val_loss=3.0371  val_ppl=20.85
+[multixi-hippo-splm] step  2450/4000   train 2.9910   lr 1.79e-04   grad 1.26   m[mean 1.396 std 0.178]   gamma=0.300   dt=0.005   elapsed 16837s
+[multixi-hippo-splm] step  2500/4000   train 2.9707   lr 1.69e-04   grad 1.19   m[mean 1.406 std 0.182]   gamma=0.300   dt=0.005   elapsed 17170s
+[multixi-hippo-splm] step  2550/4000   train 2.9659   lr 1.59e-04   grad 1.26   m[mean 1.402 std 0.177]   gamma=0.300   dt=0.005   elapsed 17503s
+[multixi-hippo-splm] step  2600/4000   train 2.9756   lr 1.50e-04   grad 1.23   m[mean 1.397 std 0.178]   gamma=0.300   dt=0.005   elapsed 17836s
+[multixi-hippo-splm] step  2600   val_loss=3.0246  val_ppl=20.59
+[multixi-hippo-splm] step  2650/4000   train 2.9615   lr 1.40e-04   grad 1.16   m[mean 1.398 std 0.178]   gamma=0.300   dt=0.005   elapsed 18279s
+[multixi-hippo-splm] step  2700/4000   train 2.9543   lr 1.31e-04   grad 1.20   m[mean 1.395 std 0.176]   gamma=0.300   dt=0.005   elapsed 18616s
+[multixi-hippo-splm] step  2750/4000   train 2.9751   lr 1.22e-04   grad 1.14   m[mean 1.397 std 0.178]   gamma=0.300   dt=0.005   elapsed 18950s
+[multixi-hippo-splm] step  2800/4000   train 2.9373   lr 1.13e-04   grad 1.31   m[mean 1.400 std 0.177]   gamma=0.300   dt=0.005   elapsed 19284s
+[multixi-hippo-splm] step  2800   val_loss=3.0219  val_ppl=20.53
+[multixi-hippo-splm] step  2850/4000   train 2.9334   lr 1.05e-04   grad 1.26   m[mean 1.399 std 0.180]   gamma=0.300   dt=0.005   elapsed 19704s
+[multixi-hippo-splm] step  2900/4000   train 2.9279   lr 9.66e-05   grad 1.20   m[mean 1.392 std 0.176]   gamma=0.300   dt=0.005   elapsed 20043s
+[multixi-hippo-splm] step  2950/4000   train 2.9460   lr 8.86e-05   grad 1.29   m[mean 1.398 std 0.180]   gamma=0.300   dt=0.005   elapsed 20382s
+[multixi-hippo-splm] step  3000/4000   train 2.9269   lr 8.08e-05   grad 1.32   m[mean 1.398 std 0.180]   gamma=0.300   dt=0.005   elapsed 20720s
+[multixi-hippo-splm] step  3000   val_loss=3.0217  val_ppl=20.53
+[multixi-hippo-splm] step  3050/4000   train 2.9289   lr 7.34e-05   grad 1.15   m[mean 1.401 std 0.182]   gamma=0.300   dt=0.005   elapsed 21116s
+[multixi-hippo-splm] step  3100/4000   train 2.8999   lr 6.62e-05   grad 1.20   m[mean 1.395 std 0.179]   gamma=0.300   dt=0.005   elapsed 21455s
+[multixi-hippo-splm] step  3150/4000   train 2.9347   lr 5.94e-05   grad 1.25   m[mean 1.398 std 0.178]   gamma=0.300   dt=0.005   elapsed 21789s
+[multixi-hippo-splm] step  3200/4000   train 2.9234   lr 5.28e-05   grad 1.28   m[mean 1.398 std 0.177]   gamma=0.300   dt=0.005   elapsed 22141s
+[multixi-hippo-splm] step  3200   val_loss=3.0078  val_ppl=20.24
+[multixi-hippo-splm] step  3250/4000   train 2.9227   lr 4.67e-05   grad 1.10   m[mean 1.397 std 0.177]   gamma=0.300   dt=0.005   elapsed 22621s
+[multixi-hippo-splm] step  3300/4000   train 2.9078   lr 4.08e-05   grad 1.11   m[mean 1.401 std 0.180]   gamma=0.300   dt=0.005   elapsed 22985s
+[multixi-hippo-splm] step  3350/4000   train 2.9067   lr 3.53e-05   grad 1.19   m[mean 1.396 std 0.178]   gamma=0.300   dt=0.005   elapsed 23332s
+[multixi-hippo-splm] step  3400/4000   train 2.9175   lr 3.02e-05   grad 1.12   m[mean 1.398 std 0.182]   gamma=0.300   dt=0.005   elapsed 23673s
+[multixi-hippo-splm] step  3400   val_loss=3.0154  val_ppl=20.40
+[multixi-hippo-splm] step  3450/4000   train 2.9091   lr 2.55e-05   grad 1.20   m[mean 1.395 std 0.177]   gamma=0.300   dt=0.005   elapsed 24097s
+[multixi-hippo-splm] step  3500/4000   train 2.8965   lr 2.11e-05   grad 1.16   m[mean 1.399 std 0.179]   gamma=0.300   dt=0.005   elapsed 24433s
+[multixi-hippo-splm] step  3550/4000   train 2.8990   lr 1.72e-05   grad 1.13   m[mean 1.400 std 0.183]   gamma=0.300   dt=0.005   elapsed 24770s
+[multixi-hippo-splm] step  3600/4000   train 2.9020   lr 1.36e-05   grad 1.09   m[mean 1.392 std 0.172]   gamma=0.300   dt=0.005   elapsed 25103s
+[multixi-hippo-splm] step  3600   val_loss=2.9780  val_ppl=19.65
+[multixi-hippo-splm] step  3650/4000   train 2.8919   lr 1.05e-05   grad 1.14   m[mean 1.396 std 0.181]   gamma=0.300   dt=0.005   elapsed 25544s
+[multixi-hippo-splm] step  3700/4000   train 2.8840   lr 7.70e-06   grad 1.07   m[mean 1.395 std 0.177]   gamma=0.300   dt=0.005   elapsed 25882s
+[multixi-hippo-splm] step  3750/4000   train 2.9065   lr 5.36e-06   grad 1.06   m[mean 1.395 std 0.178]   gamma=0.300   dt=0.005   elapsed 26218s
+[multixi-hippo-splm] step  3800/4000   train 2.8982   lr 3.44e-06   grad 1.04   m[mean 1.391 std 0.173]   gamma=0.300   dt=0.005   elapsed 26557s
+[multixi-hippo-splm] step  3800   val_loss=3.0018  val_ppl=20.12
+[multixi-hippo-splm] step  3850/4000   train 2.9005   lr 1.95e-06   grad 1.06   m[mean 1.399 std 0.181]   gamma=0.300   dt=0.005   elapsed 26998s
+[multixi-hippo-splm] step  3900/4000   train 2.9161   lr 8.71e-07   grad 1.00   m[mean 1.400 std 0.180]   gamma=0.300   dt=0.005   elapsed 27334s
+[multixi-hippo-splm] step  3950/4000   train 2.8930   lr 2.22e-07   grad 1.05   m[mean 1.399 std 0.177]   gamma=0.300   dt=0.005   elapsed 27613s
+[multixi-hippo-splm] step  4000/4000   train 2.9211   lr 8.54e-11   grad 1.13   m[mean 1.395 std 0.175]   gamma=0.300   dt=0.005   elapsed 27894s
+[multixi-hippo-splm] step  4000   val_loss=2.9865  val_ppl=19.82
+
+[multixi-hippo-splm] DONE  val_loss=2.9867  val_ppl=19.82  gamma=0.3000  dt=0.005  elapsed=28101s
+[multixi-hippo-splm] checkpoint saved to /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/scaleup/results/multihippo_pilot_fixed/splm_em_ln_multixi_hippo_pilot_legt_seed0_ckpt_latest.pt
+[multixi-hippo-splm] summary written to /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/scaleup/results/multihippo_pilot_fixed/splm_em_ln_multixi_hippo_pilot_legt_seed0_summary.md

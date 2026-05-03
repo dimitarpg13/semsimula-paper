@@ -1,0 +1,36 @@
+{
+  "ckpt": "/Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/scaleup/results/multis4d_pilot_legtinit/splm_em_ln_multixi_s4d_pilot_seed0_legtinit_ckpt_latest.pt",
+  "label": "S4D (K=4, init=legt, theta_init=200.0, learnable_dt=True, learnable_B=True)",
+  "K": 4,
+  "n_samples": 10485760,
+  "corr_matrix": [
+    [
+      0.9999998807907104,
+      0.9999919533729553,
+      0.9308426976203918,
+      0.938820481300354
+    ],
+    [
+      0.9999919533729553,
+      0.9999999403953552,
+      0.9312602877616882,
+      0.9392030835151672
+    ],
+    [
+      0.9308426976203918,
+      0.9312602877616882,
+      0.9999999403953552,
+      0.9997265338897705
+    ],
+    [
+      0.938820481300354,
+      0.9392030835151672,
+      0.9997265338897705,
+      1.0000001192092896
+    ]
+  ],
+  "mean_off_abs_corr": 0.9566407799720764,
+  "total_correlation_nats": 11.750995635986328,
+  "k_eff_entropy_power": 1.1542564630508423,
+  "k_eff_logdet": -29.906206259090652
+}
