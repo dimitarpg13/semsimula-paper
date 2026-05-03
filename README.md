@@ -487,7 +487,7 @@ for the full list):
   back onto the unit-LayerNorm shell after every damped step;
   compactness of $S^{d-1}$ guarantees a finite minimum without
   changing $V_\theta$ itself), `model_gm.py` (Gaussian-mixture head
-  $V_\theta(\xi,h) = \sum_{k=1}^{K} \mathrm{amp}_k (1 - e^{-\kappa_k^2 \lVertz - c_k\rVert^2})$,
+  $V_\theta(\xi,h) = \sum_{k=1}^{K} \mathrm{amp}_k (1 - e^{-\kappa_k^2 \lVert z - c_k \rVert^2})$,
   the **honest test** of the framework's prescribed well form at
   full SPLM scale), a unified `train.py --variant {ln, sg, gm}` (the
   scale-gauge `sg` is a loss-side regulariser
@@ -596,7 +596,7 @@ for the full list):
   experiment of the
   [`Next_Model_Experiments_for_SPLM.md`](companion_notes/Next_Model_Experiments_for_SPLM.md)
   programme (section C2). Computes the SPLM Hamiltonian energy
-  $H_\ell = \tfrac{1}{2}\mathfrak{m}\lVertv_\ell\rVert^{2} + V_\theta(\xi_\ell, h_\ell)$
+  $H_\ell = \tfrac{1}{2}\mathfrak{m}\lVert v_\ell \rVert^{2} + V_\theta(\xi_\ell, h_\ell)$
   at every layer of an SPLM forward pass and reports the linear drift
   slope $\partial H/\partial \ell$ across depth and the oscillation
   bandwidth $\max_\ell H_\ell - \min_\ell H_\ell$ around the layer-mean.
@@ -611,14 +611,14 @@ for the full list):
   through the same diagnostic with a fitted $V_\psi$ proxy. Ships
   [`extract_energy_states.py`](notebooks/conservative_arch/energy_drift/extract_energy_states.py)
   (re-runs the SPLM forward pass on the §1 e-init test corpus and
-  saves $(h_\ell, v_\ell, V_\theta(\xi_\ell, h_\ell), \tfrac{1}{2}m\lVertv_\ell\rVert^2)$
+  saves $(h_\ell, v_\ell, V_\theta(\xi_\ell, h_\ell), \tfrac{1}{2}m\lVert v_\ell \rVert^2)$
   per layer for one checkpoint at a time; supports parent-SPLM Euler,
   `sarf_mass_variant` Euler + per-token mass, `symplectic_variant`
   velocity-Verlet, and the production `energetic_minima/model_ln.py`
   Euler + per-token mass + LayerNorm-after-step) and
   [`energy_drift_diagnostic.py`](notebooks/conservative_arch/energy_drift/energy_drift_diagnostic.py)
   (per-variant linear drift fit with 95 % CI, oscillation-bandwidth
-  tabulation, overlay plots of $H_\ell$, $\tfrac{1}{2}m\lVertv\rVert^2$ and
+  tabulation, overlay plots of $H_\ell$, $\tfrac{1}{2}m\lVert v \rVert^2$ and
   $V_\theta$, and a markdown comparison report). The diagnostic is
   forward-pass-only on existing checkpoints and complements the
   *fixed-point* analysis of [`attractor_analysis/`](notebooks/conservative_arch/attractor_analysis/)
