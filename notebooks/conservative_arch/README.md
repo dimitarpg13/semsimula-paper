@@ -433,11 +433,11 @@ Figures produced by step 6 and used in the paper:
 **Step 4 (DONE):** Token-direction coordinate-robustness check completed -- see
 [`results/token_direction_summary.md`](results/token_direction_summary.md).
 
-**Status note (April 2026).** The §14.13 SARF-faithful and §14.14
+**Status note (April 2026; updated May 2026).** The §14.13 SARF-faithful and §14.14
 SARF + per-token-mass ablations (sections above) and the §14.x
 shared-$V_\psi$ / token-direction diagnostics summarised here have all
 been incorporated into the published paper v3 (Zenodo
-[10.5281/zenodo.19819861](https://doi.org/10.5281/zenodo.19819861)).
+[10.5281/zenodo.20014411](https://doi.org/10.5281/zenodo.20014411)).
 The follow-on multi-seed variance harness (E1) and energy-drift
 diagnostic (E3) shipped on 2026-04-27; see
 [`multi_seed/`](multi_seed/) and [`energy_drift/`](energy_drift/)

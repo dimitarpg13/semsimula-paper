@@ -318,7 +318,7 @@ The directory `notebooks/dynamics_order_test/` is **created empty** at the time 
 | Pre-registration date | 2026-04-27 |
 | Pre-registered by | Dimitar Gueorguiev (with Claude) |
 | Companion document | [`Evidence_for_second_order_ODE_governing_evolution.md`](./Evidence_for_second_order_ODE_governing_evolution.md) |
-| Paper version this targets | v3 (Zenodo DOI [10.5281/zenodo.19819861](https://doi.org/10.5281/zenodo.19819861)) |
+| Paper version this targets | v3 (Zenodo DOI [10.5281/zenodo.20014411](https://doi.org/10.5281/zenodo.20014411); supersedes v2 [10.5281/zenodo.19819861](https://doi.org/10.5281/zenodo.19819861)) |
 | Status | **Executed 2026-04-27.** Outcome **C — first-order not rejected.** |
 | Execution gating | E3 production complete; ran on 16-core CPU after Pythia and GPT-2 extraction on MPS. |
 | Lock-in commit | filled by the commit creating this file (in `git log` of `docs/first_order_ODE_rejection_pre-registered_protocol.md`) |

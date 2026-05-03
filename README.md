@@ -5,10 +5,10 @@ Companion repository for the paper
 > **Semantic Simulation: A Prescriptive Lagrangian Framework for Efficient Semantic Inference**
 > *A Conservative-by-Construction Language Model and the Shared-Potential Separator, with a Correspondence to Joint Embedding Predictive Architectures.*
 > Dimitar P. Gueorguiev (Independent Researcher), 2026.
-> Zenodo preprint (v2): [10.5281/zenodo.19819861](https://doi.org/10.5281/zenodo.19819861); v3 release pending.
+> Zenodo preprint (v3, May 2026): [10.5281/zenodo.20014411](https://doi.org/10.5281/zenodo.20014411). Supersedes v2 ([10.5281/zenodo.19819861](https://doi.org/10.5281/zenodo.19819861), December 2025).
 
-[![DOI — paper](https://zenodo.org/badge/DOI/10.5281/zenodo.19819861.svg)](https://doi.org/10.5281/zenodo.19819861)
-[![DOI — companion code](https://zenodo.org/badge/DOI/10.5281/zenodo.19708205.svg)](https://doi.org/10.5281/zenodo.19708205)
+[![DOI — paper](https://zenodo.org/badge/DOI/10.5281/zenodo.20014411.svg)](https://doi.org/10.5281/zenodo.20014411)
+[![DOI — companion code](https://zenodo.org/badge/DOI/10.5281/zenodo.20014131.svg)](https://doi.org/10.5281/zenodo.20014131)
 
 This repository collects the **reproducibility artifacts** and the **unpublished
 background manuscripts** cited in the paper. Its scope is deliberately narrow:
@@ -1083,21 +1083,23 @@ See [`CITATION.bib`](CITATION.bib) for the full BibTeX file. The short form:
 @misc{Gueorguiev2026SemSim,
   author    = {Gueorguiev, Dimitar P.},
   title     = {Semantic Simulation: A Prescriptive {L}agrangian Framework
-               for Efficient Semantic Inference --- Conservative-by-
-               Construction Language Models and the Shared-Potential
+               for Efficient Semantic Inference --- A Conservative-by-
+               Construction Language Model and the Shared-Potential
                Separator, with a Correspondence to Joint Embedding
                Predictive Architectures},
   year      = {2026},
   publisher = {Zenodo},
-  doi       = {10.5281/zenodo.19819861},
-  url       = {https://doi.org/10.5281/zenodo.19819861},
-  note      = {Companion code repository (DOI 10.5281/zenodo.19708205):
+  doi       = {10.5281/zenodo.20014411},
+  url       = {https://doi.org/10.5281/zenodo.20014411},
+  note      = {Version v3 (May 2026); supersedes v2
+               (DOI 10.5281/zenodo.19819861, December 2025).
+               Companion code repository (DOI 10.5281/zenodo.20014131):
                \url{https://github.com/dimitarpg13/semsimula-paper}}
 }
 ```
 
-The companion code archive (this repository, tagged `v1.0-arxiv`) has its own
-citable DOI: [10.5281/zenodo.19708205](https://doi.org/10.5281/zenodo.19708205).
+The companion code archive at the v3 release has its own citable DOI:
+[10.5281/zenodo.20014131](https://doi.org/10.5281/zenodo.20014131).
 If you re-run the experiments or build on the code specifically, please cite
 both DOIs.
 
@@ -1133,21 +1135,20 @@ When reusing any material from this repository, please cite the paper (see
 ## Open items (to resolve before public release)
 
 1. **arXiv identifier.** The paper is currently available as a Zenodo preprint
-   ([10.5281/zenodo.19819861](https://doi.org/10.5281/zenodo.19819861)).
-   Once submitted to arXiv, fill in the arXiv identifier and propagate to both
-   `README.md` and `CITATION.bib`.
-2. **v3 Zenodo DOI.** Zenodo DOI `10.5281/zenodo.19819861` resolves to the
-   v2 release of the paper. The v3 release (causal-leak audit, leak-corrected
-   re-evaluation, R6 ladder, reframing — see the *v3 update* block above)
-   has been bundled as `semsimula_paper_source.zip` at the root of the
-   author's main research repository and will be uploaded as a new Zenodo
-   version of the same record. Once uploaded, propagate the new version
-   DOI to `README.md` and `CITATION.bib` and supersede v2 with a status
-   notice on the v2 record so that readers landing on v2 are pointed at
-   v3.
-3. **Forthcoming-work EOM stubs.** `companion_notes/Semantic_Simulator_v15_EOM.md`,
+   ([10.5281/zenodo.20014411](https://doi.org/10.5281/zenodo.20014411), v3,
+   May 2026). Once submitted to arXiv, fill in the arXiv identifier and
+   propagate to both `README.md` and `CITATION.bib`.
+2. **Forthcoming-work EOM stubs.** `companion_notes/Semantic_Simulator_v15_EOM.md`,
    `Semantic_Simulator_v2_EOM.md`, and `Semantic_Simulator_v3_EOM.md` are
    short placeholders flagged "*Forthcoming*" in their headers. They exist
    so that the §9 / §16 Q8 `\path{...}` references in the paper resolve
    to a real file in the public companion repository. Each will be filled
    in by a future companion paper covering the v1.5 / v2 / v3 dynamics.
+
+## Version history
+
+| Release | Date | Paper DOI | Code DOI | Notes |
+|---|---|---|---|---|
+| v3 | May 2026 | [10.5281/zenodo.20014411](https://doi.org/10.5281/zenodo.20014411) | [10.5281/zenodo.20014131](https://doi.org/10.5281/zenodo.20014131) | Causal-leak audit, leak-corrected re-evaluation of every v2 SPLM result, multi-channel-ξ R6 information-bottleneck programme, reframing of SPLM as a Lagrangian counterfactual. See the *v3 update* block at the top of this README. |
+| v2 | December 2025 | [10.5281/zenodo.19819861](https://doi.org/10.5281/zenodo.19819861) | — | Two-version SSRN/Zenodo release of the paper. **Note:** every SPLM perplexity number in this version is an empirical casualty of the causal-leak bug discovered after release; the descriptive findings on pretrained GPT-2 / Pythia survive the fix unchanged. v2 is preserved as a historical record; new readers should land on v3. |
+| v1.0-arxiv | April 2026 | — | [10.5281/zenodo.19708205](https://doi.org/10.5281/zenodo.19708205) | First publicly archived snapshot of this companion repository. Superseded by v3 code archive above; the v1.0 record remains accessible as a historical reference. |
