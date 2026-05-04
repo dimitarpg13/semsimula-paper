@@ -1,5 +1,5 @@
 {
-  "ckpt": "notebooks/conservative_arch/ln_damping_sweep/results/gamma0p00/splm_em_ln_shakespeare_gamma0p00_ckpt_latest.pt",
+  "ckpt": "/Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p00/splm_em_ln_shakespeare_gamma0p00_ckpt_latest.pt",
   "device": "mps",
   "variant": "sarf_mass_ln",
   "ln_after_step": true,

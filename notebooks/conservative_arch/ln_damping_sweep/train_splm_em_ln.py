@@ -175,6 +175,9 @@ def main():
     n_params = model.num_params()
     print(f"[train-em-ln] params: {n_params:,}   d={model_cfg.d}  L={model_cfg.L}  "
           f"v_hidden={model_cfg.v_hidden}  ln_after_step={model_cfg.ln_after_step}")
+    print(f"[train-em-ln] causal_force={model_cfg.causal_force}  "
+          f"({'FIXED (post-bug)' if model_cfg.causal_force else 'BUGGY (pre-fix)'})  "
+          f"steps={train_cfg['steps']}")
 
     xb0, _ = get_batch(train_ids, train_cfg["batch_size"],
                        train_cfg["block_size"], rng)

@@ -1,7 +1,7 @@
 r"""Extract per-position lagged quadruples from a trained SPLM checkpoint.
 
 This is **Phase 1** of E7 (the SPLM Markov-order test, pre-registered in
-`companion_notes/SPLM_inference_first_order_pre-registered_protocol.md`). The
+`docs/SPLM_inference_first_order_pre-registered_protocol.md`). The
 companion downstream module is the unmodified
 `notebooks/dynamics_order_test/markov_order_regression.py` -- this
 extractor produces a `quadruples.npz` in exactly the same schema so the

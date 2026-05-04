@@ -1,0 +1,31 @@
+[2026-05-03 22:59:11] launching full splm1_leakfree_re_eval.py (6 ckpts × n_batches=40, CPU)
+[driver] discovered 6 ckpts:
+  - splm1 seed=0  /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm1/seed0/splm_first_order_shakespeare_seed0_ckpt_latest.pt
+  - splm1 seed=1  /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm1/seed1/splm_first_order_shakespeare_seed1_ckpt_latest.pt
+  - splm1 seed=2  /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm1/seed2/splm_first_order_shakespeare_seed2_ckpt_latest.pt
+  - splm2 seed=0  /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm2_gamma0p30/seed0/splm_em_ln_shakespeare_seed0_ckpt_latest.pt
+  - splm2 seed=1  /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm2_gamma0p30/seed1/splm_em_ln_shakespeare_seed1_ckpt_latest.pt
+  - splm2 seed=2  /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm2_gamma0p30/seed2/splm_em_ln_shakespeare_seed2_ckpt_latest.pt
+
+[driver] arm=splm1 seed=0  ckpt=splm_first_order_shakespeare_seed0_ckpt_latest.pt
+[driver]   /Users/dimitargueorguiev/.pyenv/versions/3.12.11/bin/python3 /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/eval_ppl_under_fix.py /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm1/seed0/splm_first_order_shakespeare_seed0_ckpt_latest.pt --n-batches 40 --batch 16 --block 128 --corpus shakespeare --seed 0 --device cpu
+[driver]   -> buggy ppl=110.16  fixed ppl=602.34  inflation=5.47x
+[driver] arm=splm1 seed=1  ckpt=splm_first_order_shakespeare_seed1_ckpt_latest.pt
+[driver]   /Users/dimitargueorguiev/.pyenv/versions/3.12.11/bin/python3 /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/eval_ppl_under_fix.py /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm1/seed1/splm_first_order_shakespeare_seed1_ckpt_latest.pt --n-batches 40 --batch 16 --block 128 --corpus shakespeare --seed 0 --device cpu
+[driver]   -> buggy ppl=116.91  fixed ppl=365.66  inflation=3.13x
+[driver] arm=splm1 seed=2  ckpt=splm_first_order_shakespeare_seed2_ckpt_latest.pt
+[driver]   /Users/dimitargueorguiev/.pyenv/versions/3.12.11/bin/python3 /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/eval_ppl_under_fix.py /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm1/seed2/splm_first_order_shakespeare_seed2_ckpt_latest.pt --n-batches 40 --batch 16 --block 128 --corpus shakespeare --seed 0 --device cpu
+[driver]   -> buggy ppl=116.51  fixed ppl=357.27  inflation=3.07x
+[driver] arm=splm2 seed=0  ckpt=splm_em_ln_shakespeare_seed0_ckpt_latest.pt
+[driver]   /Users/dimitargueorguiev/.pyenv/versions/3.12.11/bin/python3 /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/eval_ppl_under_fix.py /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm2_gamma0p30/seed0/splm_em_ln_shakespeare_seed0_ckpt_latest.pt --n-batches 40 --batch 16 --block 128 --corpus shakespeare --seed 0 --device cpu
+[driver]   -> buggy ppl=90.04  fixed ppl=1559.19  inflation=17.32x
+[driver] arm=splm2 seed=1  ckpt=splm_em_ln_shakespeare_seed1_ckpt_latest.pt
+[driver]   /Users/dimitargueorguiev/.pyenv/versions/3.12.11/bin/python3 /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/eval_ppl_under_fix.py /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm2_gamma0p30/seed1/splm_em_ln_shakespeare_seed1_ckpt_latest.pt --n-batches 40 --batch 16 --block 128 --corpus shakespeare --seed 0 --device cpu
+[driver]   -> buggy ppl=94.64  fixed ppl=1233.17  inflation=13.03x
+[driver] arm=splm2 seed=2  ckpt=splm_em_ln_shakespeare_seed2_ckpt_latest.pt
+[driver]   /Users/dimitargueorguiev/.pyenv/versions/3.12.11/bin/python3 /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/eval_ppl_under_fix.py /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm2_gamma0p30/seed2/splm_em_ln_shakespeare_seed2_ckpt_latest.pt --n-batches 40 --batch 16 --block 128 --corpus shakespeare --seed 0 --device cpu
+[driver]   -> buggy ppl=88.35  fixed ppl=1249.13  inflation=14.14x
+
+[driver] all 6 ckpts evaluated.
+[driver] wrote JSON -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/leakfree_re_eval.json
+[driver] wrote markdown summary -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/LEAKFREE_RE_EVAL.md

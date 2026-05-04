@@ -1,4 +1,4 @@
-[train-em-ln] device=mps  mode=shakespeare  fixed_gamma=0.3  results_dir=notebooks/conservative_arch/first_order_ablation/results/splm2_gamma0p30/seed2
+[train-em-ln] device=mps  mode=shakespeare  fixed_gamma=0.3  results_dir=/Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm2_gamma0p30/seed2
 [train-em-ln] tokens: train=321,124  val=16,901
 [train-em-ln] params: 7,123,075   d=128  L=8  v_hidden=512  ln_after_step=True
 [train-em-ln] init mass: mean=1.449  std=0.205  min=1.151  max=1.915
@@ -104,5 +104,5 @@
 [train-em-ln] step  4000   val_loss=4.3774  val_ppl=79.63
 
 [train-em-ln] DONE  val_loss=4.4550  val_ppl=86.06  gamma=0.3000
-[train-em-ln] checkpoint saved to notebooks/conservative_arch/first_order_ablation/results/splm2_gamma0p30/seed2/splm_em_ln_shakespeare_seed2_ckpt_latest.pt
-[train-em-ln] summary written to notebooks/conservative_arch/first_order_ablation/results/splm2_gamma0p30/seed2/splm_em_ln_shakespeare_seed2_summary.md
+[train-em-ln] checkpoint saved to /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm2_gamma0p30/seed2/splm_em_ln_shakespeare_seed2_ckpt_latest.pt
+[train-em-ln] summary written to /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm2_gamma0p30/seed2/splm_em_ln_shakespeare_seed2_summary.md

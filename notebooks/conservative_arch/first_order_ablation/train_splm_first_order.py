@@ -181,6 +181,9 @@ def main():
           f"L={model_cfg.L}  v_hidden={model_cfg.v_hidden}  "
           f"ln_after_step={model_cfg.ln_after_step}  "
           f"first_order=True (no v-buffer, no gamma)")
+    print(f"[train-fo] causal_force={model_cfg.causal_force}  "
+          f"({'FIXED (post-bug)' if model_cfg.causal_force else 'BUGGY (pre-fix)'})  "
+          f"steps={train_cfg['steps']}")
 
     xb0, _ = get_batch(train_ids, train_cfg["batch_size"],
                        train_cfg["block_size"], rng)

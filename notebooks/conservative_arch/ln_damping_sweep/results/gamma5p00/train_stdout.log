@@ -1,4 +1,4 @@
-[train-em-ln] device=mps  mode=shakespeare  fixed_gamma=5.0  results_dir=notebooks/conservative_arch/ln_damping_sweep/results/gamma5p00
+[train-em-ln] device=mps  mode=shakespeare  fixed_gamma=5.0  results_dir=/Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma5p00
 [train-em-ln] tokens: train=321,124  val=16,901
 [train-em-ln] params: 7,123,075   d=128  L=8  v_hidden=512  ln_after_step=True
 [train-em-ln] init mass: mean=1.453  std=0.203  min=1.151  max=1.915
@@ -104,5 +104,5 @@
 [train-em-ln] step  4000   val_loss=4.8280  val_ppl=124.97
 
 [train-em-ln] DONE  val_loss=4.8031  val_ppl=121.89  gamma=5.0000
-[train-em-ln] checkpoint saved to notebooks/conservative_arch/ln_damping_sweep/results/gamma5p00/splm_em_ln_shakespeare_gamma5p00_ckpt_latest.pt
-[train-em-ln] summary written to notebooks/conservative_arch/ln_damping_sweep/results/gamma5p00/splm_em_ln_shakespeare_gamma5p00_summary.md
+[train-em-ln] checkpoint saved to /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma5p00/splm_em_ln_shakespeare_gamma5p00_ckpt_latest.pt
+[train-em-ln] summary written to /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma5p00/splm_em_ln_shakespeare_gamma5p00_summary.md

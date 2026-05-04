@@ -1,6 +1,6 @@
 # RESULTS — SPLM-1 first-order ablation
 
-> Pre-registered protocol: [`companion_notes/SPLM-1_ablation_pre-registered_protocol.md`](../../../../companion_notes/SPLM-1_ablation_pre-registered_protocol.md)
+> Pre-registered protocol: [`docs/SPLM-1_ablation_pre-registered_protocol.md`](../../../../docs/SPLM-1_ablation_pre-registered_protocol.md)
 > Pre-registration commit: `295e4f4` (drafted 2026-04-28, committed before the sweep launched).
 > Generated 2026-04-29, immediately after the 6-cell sweep finished.
 
@@ -73,7 +73,7 @@ For the Wilcoxon signed-rank and the sign test, $S = 3$ paired observations admi
 
 ### 3.1 What was pre-registered
 
-§5 of [`companion_notes/SPLM-1_ablation_pre-registered_protocol.md`](../../../../companion_notes/SPLM-1_ablation_pre-registered_protocol.md) locked three criteria for Outcome A:
+§5 of [`docs/SPLM-1_ablation_pre-registered_protocol.md`](../../../../docs/SPLM-1_ablation_pre-registered_protocol.md) locked three criteria for Outcome A:
 
 - (i) $\overline{\Delta} \ge 5.0$,
 - (ii) all three seeds with $\Delta_s > 0$ (sign consistency),
@@ -108,7 +108,7 @@ The figure below plots validation perplexity vs. training step for all six cells
 
 ![Trajectories](figures/trajectories.png)
 
-The per-step head-to-head between seed 0 of each arm (the only seed for which an exact step-by-step comparison was possible at the time of the in-flight check) showed the gap stabilising at ~20-22 PPL by step 800 and persisting through the end of training, with the second-order arm dropping a further 4-5 PPL between step 3000 and step 3800 while the first-order arm plateaued earlier. This is the qualitative signature predicted by H₁ and is consistent with the §15 "richer second-order landscape" framing in the paper.
+The per-step head-to-head between seed 0 of each arm (the only seed for which an exact step-by-step comparison was possible at the time of the in-flight check) showed the gap stabilising at ~20-22 PPL by step 800 and persisting through the end of training, with the second-order arm dropping a further 4-5 PPL between step 3000 and step 3800 while the first-order arm plateaued earlier. This is the qualitative signature predicted by H₁ and is consistent with the §15 "richer second-order landscape" framing in `paper_v3`.
 
 ---
 
@@ -133,7 +133,7 @@ All six cells converged cleanly. No `TRAINING_FAILED.txt` markers were produced.
 Per §9 of the protocol, Outcome A triggers the following actions:
 
 - (a) This `RESULTS.md` is committed alongside the per-cell training logs, checkpoints, and figures.
-- (b) `the paper` is updated by appending a single sentence to the existing "*The interior of $\gamma^{\ast}$ is the value-add*" paragraph, citing this protocol's outcome (Δ̄ = 23.18 PPL across $S = 3$ seeds, paired $t$-test $p = 0.005$, sign-consistent across all seeds).
+- (b) `paper_v3/sections/15_conservative_architectures.tex` is updated by appending a single sentence to the existing "*The interior of $\gamma^{\ast}$ is the value-add*" paragraph, citing this protocol's outcome (Δ̄ = 23.18 PPL across $S = 3$ seeds, paired $t$-test $p = 0.005$, sign-consistent across all seeds).
 - (c) The pre-registration deviation note (§3 above) is included as part of this document. The protocol document itself is not retroactively edited — its committed git hash is preserved as the canonical pre-registration artefact.
 
 ---

@@ -1,8 +1,8 @@
 
 ========== cell gamma0p00 ==========
 
-$ python3 notebooks/conservative_arch/energy_drift/extract_energy_states.py --variant em_ln --ckpt notebooks/conservative_arch/ln_damping_sweep/results/gamma0p00/splm_em_ln_shakespeare_gamma0p00_ckpt_latest.pt --out_npz notebooks/conservative_arch/ln_damping_sweep/results/gamma0p00/energy_states.npz --label E5_ln_gamma0p00 --logfreq notebooks/conservative_arch/sarf_mass_variant/results/logfreq_surprisal.npy
-[extract] variant=em_ln  ckpt=notebooks/conservative_arch/ln_damping_sweep/results/gamma0p00/splm_em_ln_shakespeare_gamma0p00_ckpt_latest.pt  device=mps
+$ /Users/dimitargueorguiev/.pyenv/versions/3.12.11/bin/python3 /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/energy_drift/extract_energy_states.py --variant em_ln --ckpt /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p00/splm_em_ln_shakespeare_gamma0p00_ckpt_latest.pt --out_npz /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p00/energy_states.npz --label E5_ln_gamma0p00 --logfreq /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/sarf_mass_variant/results/logfreq_surprisal.npy
+[extract] variant=em_ln  ckpt=/Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p00/splm_em_ln_shakespeare_gamma0p00_ckpt_latest.pt  device=mps
 [extract] loaded em_ln  L=8  d=128
 [extract] 50 sentences from 5 domains.
   [ 10/50] T= 29  H_0=2.9847  H_L=16.3925  elapsed 3.8s
@@ -10,10 +10,10 @@ $ python3 notebooks/conservative_arch/energy_drift/extract_energy_states.py --va
   [ 30/50] T= 29  H_0=6.1889  H_L=27.8221  elapsed 5.9s
   [ 40/50] T= 27  H_0=4.0424  H_L=22.0143  elapsed 6.7s
   [ 50/50] T= 27  H_0=1.6821  H_L=13.0371  elapsed 7.5s
-[extract] saved -> notebooks/conservative_arch/ln_damping_sweep/results/gamma0p00/energy_states.npz  (50 sent x 9 layers x up to 39 tokens)
+[extract] saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p00/energy_states.npz  (50 sent x 9 layers x up to 39 tokens)
 
-$ python3 notebooks/conservative_arch/ln_damping_sweep/extract_ln_quadruples.py --ckpt notebooks/conservative_arch/ln_damping_sweep/results/gamma0p00/splm_em_ln_shakespeare_gamma0p00_ckpt_latest.pt --logfreq notebooks/conservative_arch/sarf_mass_variant/results/logfreq_surprisal.npy --out_dir notebooks/conservative_arch/ln_damping_sweep/results/gamma0p00/markov_order
-[ln-extract] ckpt=notebooks/conservative_arch/ln_damping_sweep/results/gamma0p00/splm_em_ln_shakespeare_gamma0p00_ckpt_latest.pt  device=mps
+$ /Users/dimitargueorguiev/.pyenv/versions/3.12.11/bin/python3 /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/extract_ln_quadruples.py --ckpt /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p00/splm_em_ln_shakespeare_gamma0p00_ckpt_latest.pt --logfreq /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/sarf_mass_variant/results/logfreq_surprisal.npy --out_dir /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p00/markov_order
+[ln-extract] ckpt=/Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p00/splm_em_ln_shakespeare_gamma0p00_ckpt_latest.pt  device=mps
 [ln-extract] corpus: 50 sentences, 5 domains
 [ln-extract] L=8  d=128  final_gamma=0.0000  fixed_gamma=0.0  ln_after_step=True
   [ 10/50] T= 32  |h_L|^2_mean=127.9988  elapsed 2.0s
@@ -21,11 +21,11 @@ $ python3 notebooks/conservative_arch/ln_damping_sweep/extract_ln_quadruples.py 
   [ 30/50] T= 39  |h_L|^2_mean=127.9988  elapsed 3.4s
   [ 40/50] T= 32  |h_L|^2_mean=127.9988  elapsed 4.1s
   [ 50/50] T= 24  |h_L|^2_mean=127.9989  elapsed 4.7s
-[ln-extract] saved notebooks/conservative_arch/ln_damping_sweep/results/gamma0p00/markov_order/quadruples.npz  (2.4 MB; n_quads=1264)
-[ln-extract] saved notebooks/conservative_arch/ln_damping_sweep/results/gamma0p00/markov_order/trajectories.npz  (0.7 MB; 50 sentences, T_max=39)
+[ln-extract] saved /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p00/markov_order/quadruples.npz  (2.4 MB; n_quads=1264)
+[ln-extract] saved /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p00/markov_order/trajectories.npz  (0.7 MB; 50 sentences, T_max=39)
 [ln-extract] 1264 quadruples emitted; summary written.
 
-$ python3 notebooks/dynamics_order_test/markov_order_regression.py --quads notebooks/conservative_arch/ln_damping_sweep/results/gamma0p00/markov_order/quadruples.npz --output_dir notebooks/conservative_arch/ln_damping_sweep/results/gamma0p00/markov_order --p 50 --n_jobs 4
+$ /Users/dimitargueorguiev/.pyenv/versions/3.12.11/bin/python3 /Users/dimitargueorguiev/git/ml/semsimula/notebooks/dynamics_order_test/markov_order_regression.py --quads /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p00/markov_order/quadruples.npz --output_dir /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p00/markov_order --p 50 --n_jobs 4
 [Parallel(n_jobs=4)]: Using backend LokyBackend with 4 concurrent workers.
 [loso] 50 sentences  p=50  k_values=[1, 2, 3]  function_class=kernel  n_jobs=4
 [Parallel(n_jobs=4)]: Done   5 tasks      | elapsed:   31.6s
@@ -64,8 +64,8 @@ $ python3 notebooks/dynamics_order_test/markov_order_regression.py --quads noteb
 
 ========== cell gamma0p10 ==========
 
-$ python3 notebooks/conservative_arch/energy_drift/extract_energy_states.py --variant em_ln --ckpt notebooks/conservative_arch/ln_damping_sweep/results/gamma0p10/splm_em_ln_shakespeare_gamma0p10_ckpt_latest.pt --out_npz notebooks/conservative_arch/ln_damping_sweep/results/gamma0p10/energy_states.npz --label E5_ln_gamma0p10 --logfreq notebooks/conservative_arch/sarf_mass_variant/results/logfreq_surprisal.npy
-[extract] variant=em_ln  ckpt=notebooks/conservative_arch/ln_damping_sweep/results/gamma0p10/splm_em_ln_shakespeare_gamma0p10_ckpt_latest.pt  device=mps
+$ /Users/dimitargueorguiev/.pyenv/versions/3.12.11/bin/python3 /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/energy_drift/extract_energy_states.py --variant em_ln --ckpt /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p10/splm_em_ln_shakespeare_gamma0p10_ckpt_latest.pt --out_npz /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p10/energy_states.npz --label E5_ln_gamma0p10 --logfreq /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/sarf_mass_variant/results/logfreq_surprisal.npy
+[extract] variant=em_ln  ckpt=/Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p10/splm_em_ln_shakespeare_gamma0p10_ckpt_latest.pt  device=mps
 [extract] loaded em_ln  L=8  d=128
 [extract] 50 sentences from 5 domains.
   [ 10/50] T= 29  H_0=15.5932  H_L=-0.6638  elapsed 2.2s
@@ -73,10 +73,10 @@ $ python3 notebooks/conservative_arch/energy_drift/extract_energy_states.py --va
   [ 30/50] T= 29  H_0=28.2197  H_L=10.5310  elapsed 4.1s
   [ 40/50] T= 27  H_0=18.7588  H_L=3.8407  elapsed 4.9s
   [ 50/50] T= 27  H_0=9.7221  H_L=-0.0799  elapsed 5.7s
-[extract] saved -> notebooks/conservative_arch/ln_damping_sweep/results/gamma0p10/energy_states.npz  (50 sent x 9 layers x up to 39 tokens)
+[extract] saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p10/energy_states.npz  (50 sent x 9 layers x up to 39 tokens)
 
-$ python3 notebooks/conservative_arch/ln_damping_sweep/extract_ln_quadruples.py --ckpt notebooks/conservative_arch/ln_damping_sweep/results/gamma0p10/splm_em_ln_shakespeare_gamma0p10_ckpt_latest.pt --logfreq notebooks/conservative_arch/sarf_mass_variant/results/logfreq_surprisal.npy --out_dir notebooks/conservative_arch/ln_damping_sweep/results/gamma0p10/markov_order
-[ln-extract] ckpt=notebooks/conservative_arch/ln_damping_sweep/results/gamma0p10/splm_em_ln_shakespeare_gamma0p10_ckpt_latest.pt  device=mps
+$ /Users/dimitargueorguiev/.pyenv/versions/3.12.11/bin/python3 /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/extract_ln_quadruples.py --ckpt /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p10/splm_em_ln_shakespeare_gamma0p10_ckpt_latest.pt --logfreq /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/sarf_mass_variant/results/logfreq_surprisal.npy --out_dir /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p10/markov_order
+[ln-extract] ckpt=/Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p10/splm_em_ln_shakespeare_gamma0p10_ckpt_latest.pt  device=mps
 [ln-extract] corpus: 50 sentences, 5 domains
 [ln-extract] L=8  d=128  final_gamma=0.1000  fixed_gamma=0.1  ln_after_step=True
   [ 10/50] T= 32  |h_L|^2_mean=127.9984  elapsed 1.8s
@@ -84,11 +84,11 @@ $ python3 notebooks/conservative_arch/ln_damping_sweep/extract_ln_quadruples.py 
   [ 30/50] T= 39  |h_L|^2_mean=127.9983  elapsed 3.1s
   [ 40/50] T= 32  |h_L|^2_mean=127.9985  elapsed 3.8s
   [ 50/50] T= 24  |h_L|^2_mean=127.9984  elapsed 4.4s
-[ln-extract] saved notebooks/conservative_arch/ln_damping_sweep/results/gamma0p10/markov_order/quadruples.npz  (2.4 MB; n_quads=1264)
-[ln-extract] saved notebooks/conservative_arch/ln_damping_sweep/results/gamma0p10/markov_order/trajectories.npz  (0.7 MB; 50 sentences, T_max=39)
+[ln-extract] saved /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p10/markov_order/quadruples.npz  (2.4 MB; n_quads=1264)
+[ln-extract] saved /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p10/markov_order/trajectories.npz  (0.7 MB; 50 sentences, T_max=39)
 [ln-extract] 1264 quadruples emitted; summary written.
 
-$ python3 notebooks/dynamics_order_test/markov_order_regression.py --quads notebooks/conservative_arch/ln_damping_sweep/results/gamma0p10/markov_order/quadruples.npz --output_dir notebooks/conservative_arch/ln_damping_sweep/results/gamma0p10/markov_order --p 50 --n_jobs 4
+$ /Users/dimitargueorguiev/.pyenv/versions/3.12.11/bin/python3 /Users/dimitargueorguiev/git/ml/semsimula/notebooks/dynamics_order_test/markov_order_regression.py --quads /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p10/markov_order/quadruples.npz --output_dir /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p10/markov_order --p 50 --n_jobs 4
 [Parallel(n_jobs=4)]: Using backend LokyBackend with 4 concurrent workers.
 [loso] 50 sentences  p=50  k_values=[1, 2, 3]  function_class=kernel  n_jobs=4
 [Parallel(n_jobs=4)]: Done   5 tasks      | elapsed:   32.5s
@@ -127,8 +127,8 @@ $ python3 notebooks/dynamics_order_test/markov_order_regression.py --quads noteb
 
 ========== cell gamma0p30 ==========
 
-$ python3 notebooks/conservative_arch/energy_drift/extract_energy_states.py --variant em_ln --ckpt notebooks/conservative_arch/ln_damping_sweep/results/gamma0p30/splm_em_ln_shakespeare_gamma0p30_ckpt_latest.pt --out_npz notebooks/conservative_arch/ln_damping_sweep/results/gamma0p30/energy_states.npz --label E5_ln_gamma0p30 --logfreq notebooks/conservative_arch/sarf_mass_variant/results/logfreq_surprisal.npy
-[extract] variant=em_ln  ckpt=notebooks/conservative_arch/ln_damping_sweep/results/gamma0p30/splm_em_ln_shakespeare_gamma0p30_ckpt_latest.pt  device=mps
+$ /Users/dimitargueorguiev/.pyenv/versions/3.12.11/bin/python3 /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/energy_drift/extract_energy_states.py --variant em_ln --ckpt /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p30/splm_em_ln_shakespeare_gamma0p30_ckpt_latest.pt --out_npz /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p30/energy_states.npz --label E5_ln_gamma0p30 --logfreq /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/sarf_mass_variant/results/logfreq_surprisal.npy
+[extract] variant=em_ln  ckpt=/Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p30/splm_em_ln_shakespeare_gamma0p30_ckpt_latest.pt  device=mps
 [extract] loaded em_ln  L=8  d=128
 [extract] 50 sentences from 5 domains.
   [ 10/50] T= 29  H_0=21.5748  H_L=-3.6425  elapsed 2.2s
@@ -136,10 +136,10 @@ $ python3 notebooks/conservative_arch/energy_drift/extract_energy_states.py --va
   [ 30/50] T= 29  H_0=39.2828  H_L=-3.7095  elapsed 4.0s
   [ 40/50] T= 27  H_0=26.6660  H_L=-7.7599  elapsed 4.7s
   [ 50/50] T= 27  H_0=15.0593  H_L=0.2172  elapsed 5.5s
-[extract] saved -> notebooks/conservative_arch/ln_damping_sweep/results/gamma0p30/energy_states.npz  (50 sent x 9 layers x up to 39 tokens)
+[extract] saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p30/energy_states.npz  (50 sent x 9 layers x up to 39 tokens)
 
-$ python3 notebooks/conservative_arch/ln_damping_sweep/extract_ln_quadruples.py --ckpt notebooks/conservative_arch/ln_damping_sweep/results/gamma0p30/splm_em_ln_shakespeare_gamma0p30_ckpt_latest.pt --logfreq notebooks/conservative_arch/sarf_mass_variant/results/logfreq_surprisal.npy --out_dir notebooks/conservative_arch/ln_damping_sweep/results/gamma0p30/markov_order
-[ln-extract] ckpt=notebooks/conservative_arch/ln_damping_sweep/results/gamma0p30/splm_em_ln_shakespeare_gamma0p30_ckpt_latest.pt  device=mps
+$ /Users/dimitargueorguiev/.pyenv/versions/3.12.11/bin/python3 /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/extract_ln_quadruples.py --ckpt /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p30/splm_em_ln_shakespeare_gamma0p30_ckpt_latest.pt --logfreq /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/sarf_mass_variant/results/logfreq_surprisal.npy --out_dir /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p30/markov_order
+[ln-extract] ckpt=/Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p30/splm_em_ln_shakespeare_gamma0p30_ckpt_latest.pt  device=mps
 [ln-extract] corpus: 50 sentences, 5 domains
 [ln-extract] L=8  d=128  final_gamma=0.3000  fixed_gamma=0.3  ln_after_step=True
   [ 10/50] T= 32  |h_L|^2_mean=127.9982  elapsed 1.7s
@@ -147,11 +147,11 @@ $ python3 notebooks/conservative_arch/ln_damping_sweep/extract_ln_quadruples.py 
   [ 30/50] T= 39  |h_L|^2_mean=127.9981  elapsed 3.0s
   [ 40/50] T= 32  |h_L|^2_mean=127.9982  elapsed 3.7s
   [ 50/50] T= 24  |h_L|^2_mean=127.9983  elapsed 4.3s
-[ln-extract] saved notebooks/conservative_arch/ln_damping_sweep/results/gamma0p30/markov_order/quadruples.npz  (2.4 MB; n_quads=1264)
-[ln-extract] saved notebooks/conservative_arch/ln_damping_sweep/results/gamma0p30/markov_order/trajectories.npz  (0.7 MB; 50 sentences, T_max=39)
+[ln-extract] saved /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p30/markov_order/quadruples.npz  (2.4 MB; n_quads=1264)
+[ln-extract] saved /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p30/markov_order/trajectories.npz  (0.7 MB; 50 sentences, T_max=39)
 [ln-extract] 1264 quadruples emitted; summary written.
 
-$ python3 notebooks/dynamics_order_test/markov_order_regression.py --quads notebooks/conservative_arch/ln_damping_sweep/results/gamma0p30/markov_order/quadruples.npz --output_dir notebooks/conservative_arch/ln_damping_sweep/results/gamma0p30/markov_order --p 50 --n_jobs 4
+$ /Users/dimitargueorguiev/.pyenv/versions/3.12.11/bin/python3 /Users/dimitargueorguiev/git/ml/semsimula/notebooks/dynamics_order_test/markov_order_regression.py --quads /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p30/markov_order/quadruples.npz --output_dir /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p30/markov_order --p 50 --n_jobs 4
 [Parallel(n_jobs=4)]: Using backend LokyBackend with 4 concurrent workers.
 [loso] 50 sentences  p=50  k_values=[1, 2, 3]  function_class=kernel  n_jobs=4
 [Parallel(n_jobs=4)]: Done   5 tasks      | elapsed:   30.1s
@@ -190,8 +190,8 @@ $ python3 notebooks/dynamics_order_test/markov_order_regression.py --quads noteb
 
 ========== cell gamma0p85 ==========
 
-$ python3 notebooks/conservative_arch/energy_drift/extract_energy_states.py --variant em_ln --ckpt notebooks/conservative_arch/ln_damping_sweep/results/gamma0p85/splm_em_ln_shakespeare_gamma0p85_ckpt_latest.pt --out_npz notebooks/conservative_arch/ln_damping_sweep/results/gamma0p85/energy_states.npz --label E5_ln_gamma0p85 --logfreq notebooks/conservative_arch/sarf_mass_variant/results/logfreq_surprisal.npy
-[extract] variant=em_ln  ckpt=notebooks/conservative_arch/ln_damping_sweep/results/gamma0p85/splm_em_ln_shakespeare_gamma0p85_ckpt_latest.pt  device=mps
+$ /Users/dimitargueorguiev/.pyenv/versions/3.12.11/bin/python3 /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/energy_drift/extract_energy_states.py --variant em_ln --ckpt /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p85/splm_em_ln_shakespeare_gamma0p85_ckpt_latest.pt --out_npz /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p85/energy_states.npz --label E5_ln_gamma0p85 --logfreq /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/sarf_mass_variant/results/logfreq_surprisal.npy
+[extract] variant=em_ln  ckpt=/Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p85/splm_em_ln_shakespeare_gamma0p85_ckpt_latest.pt  device=mps
 [extract] loaded em_ln  L=8  d=128
 [extract] 50 sentences from 5 domains.
   [ 10/50] T= 29  H_0=37.1283  H_L=-25.4875  elapsed 2.3s
@@ -199,10 +199,10 @@ $ python3 notebooks/conservative_arch/energy_drift/extract_energy_states.py --va
   [ 30/50] T= 29  H_0=73.6408  H_L=-14.2581  elapsed 4.2s
   [ 40/50] T= 27  H_0=49.7628  H_L=-27.0586  elapsed 5.1s
   [ 50/50] T= 27  H_0=23.7936  H_L=-28.2498  elapsed 6.0s
-[extract] saved -> notebooks/conservative_arch/ln_damping_sweep/results/gamma0p85/energy_states.npz  (50 sent x 9 layers x up to 39 tokens)
+[extract] saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p85/energy_states.npz  (50 sent x 9 layers x up to 39 tokens)
 
-$ python3 notebooks/conservative_arch/ln_damping_sweep/extract_ln_quadruples.py --ckpt notebooks/conservative_arch/ln_damping_sweep/results/gamma0p85/splm_em_ln_shakespeare_gamma0p85_ckpt_latest.pt --logfreq notebooks/conservative_arch/sarf_mass_variant/results/logfreq_surprisal.npy --out_dir notebooks/conservative_arch/ln_damping_sweep/results/gamma0p85/markov_order
-[ln-extract] ckpt=notebooks/conservative_arch/ln_damping_sweep/results/gamma0p85/splm_em_ln_shakespeare_gamma0p85_ckpt_latest.pt  device=mps
+$ /Users/dimitargueorguiev/.pyenv/versions/3.12.11/bin/python3 /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/extract_ln_quadruples.py --ckpt /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p85/splm_em_ln_shakespeare_gamma0p85_ckpt_latest.pt --logfreq /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/sarf_mass_variant/results/logfreq_surprisal.npy --out_dir /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p85/markov_order
+[ln-extract] ckpt=/Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p85/splm_em_ln_shakespeare_gamma0p85_ckpt_latest.pt  device=mps
 [ln-extract] corpus: 50 sentences, 5 domains
 [ln-extract] L=8  d=128  final_gamma=0.8500  fixed_gamma=0.85  ln_after_step=True
   [ 10/50] T= 32  |h_L|^2_mean=127.9986  elapsed 1.8s
@@ -210,11 +210,11 @@ $ python3 notebooks/conservative_arch/ln_damping_sweep/extract_ln_quadruples.py 
   [ 30/50] T= 39  |h_L|^2_mean=127.9986  elapsed 3.1s
   [ 40/50] T= 32  |h_L|^2_mean=127.9985  elapsed 3.8s
   [ 50/50] T= 24  |h_L|^2_mean=127.9985  elapsed 4.4s
-[ln-extract] saved notebooks/conservative_arch/ln_damping_sweep/results/gamma0p85/markov_order/quadruples.npz  (2.4 MB; n_quads=1264)
-[ln-extract] saved notebooks/conservative_arch/ln_damping_sweep/results/gamma0p85/markov_order/trajectories.npz  (0.7 MB; 50 sentences, T_max=39)
+[ln-extract] saved /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p85/markov_order/quadruples.npz  (2.4 MB; n_quads=1264)
+[ln-extract] saved /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p85/markov_order/trajectories.npz  (0.7 MB; 50 sentences, T_max=39)
 [ln-extract] 1264 quadruples emitted; summary written.
 
-$ python3 notebooks/dynamics_order_test/markov_order_regression.py --quads notebooks/conservative_arch/ln_damping_sweep/results/gamma0p85/markov_order/quadruples.npz --output_dir notebooks/conservative_arch/ln_damping_sweep/results/gamma0p85/markov_order --p 50 --n_jobs 4
+$ /Users/dimitargueorguiev/.pyenv/versions/3.12.11/bin/python3 /Users/dimitargueorguiev/git/ml/semsimula/notebooks/dynamics_order_test/markov_order_regression.py --quads /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p85/markov_order/quadruples.npz --output_dir /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma0p85/markov_order --p 50 --n_jobs 4
 [Parallel(n_jobs=4)]: Using backend LokyBackend with 4 concurrent workers.
 [loso] 50 sentences  p=50  k_values=[1, 2, 3]  function_class=kernel  n_jobs=4
 [Parallel(n_jobs=4)]: Done   5 tasks      | elapsed:   33.3s
@@ -253,8 +253,8 @@ $ python3 notebooks/dynamics_order_test/markov_order_regression.py --quads noteb
 
 ========== cell gamma2p00 ==========
 
-$ python3 notebooks/conservative_arch/energy_drift/extract_energy_states.py --variant em_ln --ckpt notebooks/conservative_arch/ln_damping_sweep/results/gamma2p00/splm_em_ln_shakespeare_gamma2p00_ckpt_latest.pt --out_npz notebooks/conservative_arch/ln_damping_sweep/results/gamma2p00/energy_states.npz --label E5_ln_gamma2p00 --logfreq notebooks/conservative_arch/sarf_mass_variant/results/logfreq_surprisal.npy
-[extract] variant=em_ln  ckpt=notebooks/conservative_arch/ln_damping_sweep/results/gamma2p00/splm_em_ln_shakespeare_gamma2p00_ckpt_latest.pt  device=mps
+$ /Users/dimitargueorguiev/.pyenv/versions/3.12.11/bin/python3 /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/energy_drift/extract_energy_states.py --variant em_ln --ckpt /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma2p00/splm_em_ln_shakespeare_gamma2p00_ckpt_latest.pt --out_npz /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma2p00/energy_states.npz --label E5_ln_gamma2p00 --logfreq /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/sarf_mass_variant/results/logfreq_surprisal.npy
+[extract] variant=em_ln  ckpt=/Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma2p00/splm_em_ln_shakespeare_gamma2p00_ckpt_latest.pt  device=mps
 [extract] loaded em_ln  L=8  d=128
 [extract] 50 sentences from 5 domains.
   [ 10/50] T= 29  H_0=74.4488  H_L=-136.6783  elapsed 3.3s
@@ -262,10 +262,10 @@ $ python3 notebooks/conservative_arch/energy_drift/extract_energy_states.py --va
   [ 30/50] T= 29  H_0=156.5166  H_L=-130.0864  elapsed 5.1s
   [ 40/50] T= 27  H_0=94.2384  H_L=-150.5296  elapsed 5.8s
   [ 50/50] T= 27  H_0=41.3226  H_L=-131.0601  elapsed 6.6s
-[extract] saved -> notebooks/conservative_arch/ln_damping_sweep/results/gamma2p00/energy_states.npz  (50 sent x 9 layers x up to 39 tokens)
+[extract] saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma2p00/energy_states.npz  (50 sent x 9 layers x up to 39 tokens)
 
-$ python3 notebooks/conservative_arch/ln_damping_sweep/extract_ln_quadruples.py --ckpt notebooks/conservative_arch/ln_damping_sweep/results/gamma2p00/splm_em_ln_shakespeare_gamma2p00_ckpt_latest.pt --logfreq notebooks/conservative_arch/sarf_mass_variant/results/logfreq_surprisal.npy --out_dir notebooks/conservative_arch/ln_damping_sweep/results/gamma2p00/markov_order
-[ln-extract] ckpt=notebooks/conservative_arch/ln_damping_sweep/results/gamma2p00/splm_em_ln_shakespeare_gamma2p00_ckpt_latest.pt  device=mps
+$ /Users/dimitargueorguiev/.pyenv/versions/3.12.11/bin/python3 /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/extract_ln_quadruples.py --ckpt /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma2p00/splm_em_ln_shakespeare_gamma2p00_ckpt_latest.pt --logfreq /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/sarf_mass_variant/results/logfreq_surprisal.npy --out_dir /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma2p00/markov_order
+[ln-extract] ckpt=/Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma2p00/splm_em_ln_shakespeare_gamma2p00_ckpt_latest.pt  device=mps
 [ln-extract] corpus: 50 sentences, 5 domains
 [ln-extract] L=8  d=128  final_gamma=2.0000  fixed_gamma=2.0  ln_after_step=True
   [ 10/50] T= 32  |h_L|^2_mean=127.9983  elapsed 1.7s
@@ -273,11 +273,11 @@ $ python3 notebooks/conservative_arch/ln_damping_sweep/extract_ln_quadruples.py 
   [ 30/50] T= 39  |h_L|^2_mean=127.9983  elapsed 2.9s
   [ 40/50] T= 32  |h_L|^2_mean=127.9983  elapsed 3.6s
   [ 50/50] T= 24  |h_L|^2_mean=127.9983  elapsed 4.1s
-[ln-extract] saved notebooks/conservative_arch/ln_damping_sweep/results/gamma2p00/markov_order/quadruples.npz  (2.4 MB; n_quads=1264)
-[ln-extract] saved notebooks/conservative_arch/ln_damping_sweep/results/gamma2p00/markov_order/trajectories.npz  (0.7 MB; 50 sentences, T_max=39)
+[ln-extract] saved /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma2p00/markov_order/quadruples.npz  (2.4 MB; n_quads=1264)
+[ln-extract] saved /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma2p00/markov_order/trajectories.npz  (0.7 MB; 50 sentences, T_max=39)
 [ln-extract] 1264 quadruples emitted; summary written.
 
-$ python3 notebooks/dynamics_order_test/markov_order_regression.py --quads notebooks/conservative_arch/ln_damping_sweep/results/gamma2p00/markov_order/quadruples.npz --output_dir notebooks/conservative_arch/ln_damping_sweep/results/gamma2p00/markov_order --p 50 --n_jobs 4
+$ /Users/dimitargueorguiev/.pyenv/versions/3.12.11/bin/python3 /Users/dimitargueorguiev/git/ml/semsimula/notebooks/dynamics_order_test/markov_order_regression.py --quads /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma2p00/markov_order/quadruples.npz --output_dir /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma2p00/markov_order --p 50 --n_jobs 4
 [Parallel(n_jobs=4)]: Using backend LokyBackend with 4 concurrent workers.
 [loso] 50 sentences  p=50  k_values=[1, 2, 3]  function_class=kernel  n_jobs=4
 [Parallel(n_jobs=4)]: Done   5 tasks      | elapsed:   29.5s
@@ -316,8 +316,8 @@ $ python3 notebooks/dynamics_order_test/markov_order_regression.py --quads noteb
 
 ========== cell gamma5p00 ==========
 
-$ python3 notebooks/conservative_arch/energy_drift/extract_energy_states.py --variant em_ln --ckpt notebooks/conservative_arch/ln_damping_sweep/results/gamma5p00/splm_em_ln_shakespeare_gamma5p00_ckpt_latest.pt --out_npz notebooks/conservative_arch/ln_damping_sweep/results/gamma5p00/energy_states.npz --label E5_ln_gamma5p00 --logfreq notebooks/conservative_arch/sarf_mass_variant/results/logfreq_surprisal.npy
-[extract] variant=em_ln  ckpt=notebooks/conservative_arch/ln_damping_sweep/results/gamma5p00/splm_em_ln_shakespeare_gamma5p00_ckpt_latest.pt  device=mps
+$ /Users/dimitargueorguiev/.pyenv/versions/3.12.11/bin/python3 /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/energy_drift/extract_energy_states.py --variant em_ln --ckpt /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma5p00/splm_em_ln_shakespeare_gamma5p00_ckpt_latest.pt --out_npz /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma5p00/energy_states.npz --label E5_ln_gamma5p00 --logfreq /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/sarf_mass_variant/results/logfreq_surprisal.npy
+[extract] variant=em_ln  ckpt=/Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma5p00/splm_em_ln_shakespeare_gamma5p00_ckpt_latest.pt  device=mps
 [extract] loaded em_ln  L=8  d=128
 [extract] 50 sentences from 5 domains.
   [ 10/50] T= 29  H_0=192.9018  H_L=-223.8798  elapsed 3.7s
@@ -325,10 +325,10 @@ $ python3 notebooks/conservative_arch/energy_drift/extract_energy_states.py --va
   [ 30/50] T= 29  H_0=363.0406  H_L=-160.8660  elapsed 6.4s
   [ 40/50] T= 27  H_0=234.5875  H_L=-201.8625  elapsed 7.5s
   [ 50/50] T= 27  H_0=125.1007  H_L=-181.9628  elapsed 8.5s
-[extract] saved -> notebooks/conservative_arch/ln_damping_sweep/results/gamma5p00/energy_states.npz  (50 sent x 9 layers x up to 39 tokens)
+[extract] saved -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma5p00/energy_states.npz  (50 sent x 9 layers x up to 39 tokens)
 
-$ python3 notebooks/conservative_arch/ln_damping_sweep/extract_ln_quadruples.py --ckpt notebooks/conservative_arch/ln_damping_sweep/results/gamma5p00/splm_em_ln_shakespeare_gamma5p00_ckpt_latest.pt --logfreq notebooks/conservative_arch/sarf_mass_variant/results/logfreq_surprisal.npy --out_dir notebooks/conservative_arch/ln_damping_sweep/results/gamma5p00/markov_order
-[ln-extract] ckpt=notebooks/conservative_arch/ln_damping_sweep/results/gamma5p00/splm_em_ln_shakespeare_gamma5p00_ckpt_latest.pt  device=mps
+$ /Users/dimitargueorguiev/.pyenv/versions/3.12.11/bin/python3 /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/extract_ln_quadruples.py --ckpt /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma5p00/splm_em_ln_shakespeare_gamma5p00_ckpt_latest.pt --logfreq /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/sarf_mass_variant/results/logfreq_surprisal.npy --out_dir /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma5p00/markov_order
+[ln-extract] ckpt=/Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma5p00/splm_em_ln_shakespeare_gamma5p00_ckpt_latest.pt  device=mps
 [ln-extract] corpus: 50 sentences, 5 domains
 [ln-extract] L=8  d=128  final_gamma=5.0000  fixed_gamma=5.0  ln_after_step=True
   [ 10/50] T= 32  |h_L|^2_mean=127.9984  elapsed 4.3s
@@ -336,11 +336,11 @@ $ python3 notebooks/conservative_arch/ln_damping_sweep/extract_ln_quadruples.py 
   [ 30/50] T= 39  |h_L|^2_mean=127.9984  elapsed 6.8s
   [ 40/50] T= 32  |h_L|^2_mean=127.9984  elapsed 8.1s
   [ 50/50] T= 24  |h_L|^2_mean=127.9983  elapsed 9.4s
-[ln-extract] saved notebooks/conservative_arch/ln_damping_sweep/results/gamma5p00/markov_order/quadruples.npz  (2.4 MB; n_quads=1264)
-[ln-extract] saved notebooks/conservative_arch/ln_damping_sweep/results/gamma5p00/markov_order/trajectories.npz  (0.7 MB; 50 sentences, T_max=39)
+[ln-extract] saved /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma5p00/markov_order/quadruples.npz  (2.4 MB; n_quads=1264)
+[ln-extract] saved /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma5p00/markov_order/trajectories.npz  (0.7 MB; 50 sentences, T_max=39)
 [ln-extract] 1264 quadruples emitted; summary written.
 
-$ python3 notebooks/dynamics_order_test/markov_order_regression.py --quads notebooks/conservative_arch/ln_damping_sweep/results/gamma5p00/markov_order/quadruples.npz --output_dir notebooks/conservative_arch/ln_damping_sweep/results/gamma5p00/markov_order --p 50 --n_jobs 4
+$ /Users/dimitargueorguiev/.pyenv/versions/3.12.11/bin/python3 /Users/dimitargueorguiev/git/ml/semsimula/notebooks/dynamics_order_test/markov_order_regression.py --quads /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma5p00/markov_order/quadruples.npz --output_dir /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/gamma5p00/markov_order --p 50 --n_jobs 4
 [Parallel(n_jobs=4)]: Using backend LokyBackend with 4 concurrent workers.
 [loso] 50 sentences  p=50  k_values=[1, 2, 3]  function_class=kernel  n_jobs=4
 [Parallel(n_jobs=4)]: Done   5 tasks      | elapsed:   33.7s
@@ -378,4 +378,4 @@ $ python3 notebooks/dynamics_order_test/markov_order_regression.py --quads noteb
 [done] runtime=209.3s  decision=C
 
 [E5-diag] all cells done in 1426s
-[E5-diag] wrote notebooks/conservative_arch/ln_damping_sweep/results/diagnostics_summary.json
+[E5-diag] wrote /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/ln_damping_sweep/results/diagnostics_summary.json

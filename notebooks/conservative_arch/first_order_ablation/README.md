@@ -8,9 +8,9 @@ velocity buffer, no damping coefficient, just gradient flow on $V_\theta$).
 The full pre-registered protocol — including the locked decision rule,
 effect-size threshold ($\Delta_{\min} = 5.0$ PPL), and the predicted
 outcome — lives in
-[`companion_notes/SPLM-1_ablation_pre-registered_protocol.md`](../../../companion_notes/SPLM-1_ablation_pre-registered_protocol.md).
+[`docs/SPLM-1_ablation_pre-registered_protocol.md`](../../../docs/SPLM-1_ablation_pre-registered_protocol.md).
 The architectural design note that motivated the experiment is
-[`companion_notes/Replacing_The_Conservative_Mechanism_of_SPLM_with_First_Order.md`](../../../companion_notes/Replacing_The_Conservative_Mechanism_of_SPLM_with_First_Order.md).
+[`docs/Replacing_The_Conservative_Mechanism_of_SPLM_with_First_Order.md`](../../../docs/Replacing_The_Conservative_Mechanism_of_SPLM_with_First_Order.md).
 
 ## Files
 

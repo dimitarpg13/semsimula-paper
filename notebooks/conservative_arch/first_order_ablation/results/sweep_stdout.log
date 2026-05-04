@@ -1,9 +1,9 @@
 
 ============================================================
-[SPLM-1] arm A (first-order)   seed=0   -> notebooks/conservative_arch/first_order_ablation/results/splm1/seed0
+[SPLM-1] arm A (first-order)   seed=0   -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm1/seed0
 [SPLM-1] start  2026-04-28 22:55:45
 ============================================================
-[train-fo] device=mps  mode=shakespeare  seed=0  results_dir=notebooks/conservative_arch/first_order_ablation/results/splm1/seed0
+[train-fo] device=mps  mode=shakespeare  seed=0  results_dir=/Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm1/seed0
 [train-fo] tokens: train=321,124  val=16,901
 [train-fo] params: 7,123,075   d=128  L=8  v_hidden=512  ln_after_step=True  first_order=True (no v-buffer, no gamma)
 [train-fo] init mass: mean=1.453  std=0.203  min=1.151  max=1.915
@@ -109,15 +109,15 @@
 [train-fo] step  4000   val_loss=4.7172  val_ppl=111.86
 
 [train-fo] DONE  val_loss=4.6941  val_ppl=109.30  (first-order, no gamma)
-[train-fo] checkpoint saved to notebooks/conservative_arch/first_order_ablation/results/splm1/seed0/splm_first_order_shakespeare_seed0_ckpt_latest.pt
-[train-fo] summary written to notebooks/conservative_arch/first_order_ablation/results/splm1/seed0/splm_first_order_shakespeare_seed0_summary.md
+[train-fo] checkpoint saved to /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm1/seed0/splm_first_order_shakespeare_seed0_ckpt_latest.pt
+[train-fo] summary written to /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm1/seed0/splm_first_order_shakespeare_seed0_summary.md
 [SPLM-1] arm A seed=0 OK in 3423s
 
 ============================================================
-[SPLM-1] arm A (first-order)   seed=1   -> notebooks/conservative_arch/first_order_ablation/results/splm1/seed1
+[SPLM-1] arm A (first-order)   seed=1   -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm1/seed1
 [SPLM-1] start  2026-04-28 23:52:48
 ============================================================
-[train-fo] device=mps  mode=shakespeare  seed=1  results_dir=notebooks/conservative_arch/first_order_ablation/results/splm1/seed1
+[train-fo] device=mps  mode=shakespeare  seed=1  results_dir=/Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm1/seed1
 [train-fo] tokens: train=321,124  val=16,901
 [train-fo] params: 7,123,075   d=128  L=8  v_hidden=512  ln_after_step=True  first_order=True (no v-buffer, no gamma)
 [train-fo] init mass: mean=1.459  std=0.209  min=1.151  max=1.915
@@ -223,15 +223,15 @@
 [train-fo] step  4000   val_loss=4.7207  val_ppl=112.25
 
 [train-fo] DONE  val_loss=4.7131  val_ppl=111.40  (first-order, no gamma)
-[train-fo] checkpoint saved to notebooks/conservative_arch/first_order_ablation/results/splm1/seed1/splm_first_order_shakespeare_seed1_ckpt_latest.pt
-[train-fo] summary written to notebooks/conservative_arch/first_order_ablation/results/splm1/seed1/splm_first_order_shakespeare_seed1_summary.md
+[train-fo] checkpoint saved to /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm1/seed1/splm_first_order_shakespeare_seed1_ckpt_latest.pt
+[train-fo] summary written to /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm1/seed1/splm_first_order_shakespeare_seed1_summary.md
 [SPLM-1] arm A seed=1 OK in 1689s
 
 ============================================================
-[SPLM-1] arm A (first-order)   seed=2   -> notebooks/conservative_arch/first_order_ablation/results/splm1/seed2
+[SPLM-1] arm A (first-order)   seed=2   -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm1/seed2
 [SPLM-1] start  2026-04-29 00:20:57
 ============================================================
-[train-fo] device=mps  mode=shakespeare  seed=2  results_dir=notebooks/conservative_arch/first_order_ablation/results/splm1/seed2
+[train-fo] device=mps  mode=shakespeare  seed=2  results_dir=/Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm1/seed2
 [train-fo] tokens: train=321,124  val=16,901
 [train-fo] params: 7,123,075   d=128  L=8  v_hidden=512  ln_after_step=True  first_order=True (no v-buffer, no gamma)
 [train-fo] init mass: mean=1.449  std=0.205  min=1.151  max=1.915
@@ -337,15 +337,15 @@
 [train-fo] step  4000   val_loss=4.6626  val_ppl=105.91
 
 [train-fo] DONE  val_loss=4.7344  val_ppl=113.80  (first-order, no gamma)
-[train-fo] checkpoint saved to notebooks/conservative_arch/first_order_ablation/results/splm1/seed2/splm_first_order_shakespeare_seed2_ckpt_latest.pt
-[train-fo] summary written to notebooks/conservative_arch/first_order_ablation/results/splm1/seed2/splm_first_order_shakespeare_seed2_summary.md
+[train-fo] checkpoint saved to /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm1/seed2/splm_first_order_shakespeare_seed2_ckpt_latest.pt
+[train-fo] summary written to /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm1/seed2/splm_first_order_shakespeare_seed2_summary.md
 [SPLM-1] arm A seed=2 OK in 1818s
 
 ============================================================
-[SPLM-1] arm B (second-order γ=0.30)   seed=0   -> notebooks/conservative_arch/first_order_ablation/results/splm2_gamma0p30/seed0
+[SPLM-1] arm B (second-order γ=0.30)   seed=0   -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm2_gamma0p30/seed0
 [SPLM-1] start  2026-04-29 00:51:15
 ============================================================
-[train-em-ln] device=mps  mode=shakespeare  fixed_gamma=0.3  results_dir=notebooks/conservative_arch/first_order_ablation/results/splm2_gamma0p30/seed0
+[train-em-ln] device=mps  mode=shakespeare  fixed_gamma=0.3  results_dir=/Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm2_gamma0p30/seed0
 [train-em-ln] tokens: train=321,124  val=16,901
 [train-em-ln] params: 7,123,075   d=128  L=8  v_hidden=512  ln_after_step=True
 [train-em-ln] init mass: mean=1.453  std=0.203  min=1.151  max=1.915
@@ -451,15 +451,15 @@
 [train-em-ln] step  4000   val_loss=4.5100  val_ppl=90.92
 
 [train-em-ln] DONE  val_loss=4.4876  val_ppl=88.91  gamma=0.3000
-[train-em-ln] checkpoint saved to notebooks/conservative_arch/first_order_ablation/results/splm2_gamma0p30/seed0/splm_em_ln_shakespeare_seed0_ckpt_latest.pt
-[train-em-ln] summary written to notebooks/conservative_arch/first_order_ablation/results/splm2_gamma0p30/seed0/splm_em_ln_shakespeare_seed0_summary.md
+[train-em-ln] checkpoint saved to /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm2_gamma0p30/seed0/splm_em_ln_shakespeare_seed0_ckpt_latest.pt
+[train-em-ln] summary written to /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm2_gamma0p30/seed0/splm_em_ln_shakespeare_seed0_summary.md
 [SPLM-1] arm B seed=0 OK in 1531s
 
 ============================================================
-[SPLM-1] arm B (second-order γ=0.30)   seed=1   -> notebooks/conservative_arch/first_order_ablation/results/splm2_gamma0p30/seed1
+[SPLM-1] arm B (second-order γ=0.30)   seed=1   -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm2_gamma0p30/seed1
 [SPLM-1] start  2026-04-29 01:16:46
 ============================================================
-[train-em-ln] device=mps  mode=shakespeare  fixed_gamma=0.3  results_dir=notebooks/conservative_arch/first_order_ablation/results/splm2_gamma0p30/seed1
+[train-em-ln] device=mps  mode=shakespeare  fixed_gamma=0.3  results_dir=/Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm2_gamma0p30/seed1
 [train-em-ln] tokens: train=321,124  val=16,901
 [train-em-ln] params: 7,123,075   d=128  L=8  v_hidden=512  ln_after_step=True
 [train-em-ln] init mass: mean=1.459  std=0.209  min=1.151  max=1.915
@@ -565,15 +565,15 @@
 [train-em-ln] step  4000   val_loss=4.5040  val_ppl=90.38
 
 [train-em-ln] DONE  val_loss=4.4996  val_ppl=89.98  gamma=0.3000
-[train-em-ln] checkpoint saved to notebooks/conservative_arch/first_order_ablation/results/splm2_gamma0p30/seed1/splm_em_ln_shakespeare_seed1_ckpt_latest.pt
-[train-em-ln] summary written to notebooks/conservative_arch/first_order_ablation/results/splm2_gamma0p30/seed1/splm_em_ln_shakespeare_seed1_summary.md
+[train-em-ln] checkpoint saved to /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm2_gamma0p30/seed1/splm_em_ln_shakespeare_seed1_ckpt_latest.pt
+[train-em-ln] summary written to /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm2_gamma0p30/seed1/splm_em_ln_shakespeare_seed1_summary.md
 [SPLM-1] arm B seed=1 OK in 1949s
 
 ============================================================
-[SPLM-1] arm B (second-order γ=0.30)   seed=2   -> notebooks/conservative_arch/first_order_ablation/results/splm2_gamma0p30/seed2
+[SPLM-1] arm B (second-order γ=0.30)   seed=2   -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm2_gamma0p30/seed2
 [SPLM-1] start  2026-04-29 01:49:15
 ============================================================
-[train-em-ln] device=mps  mode=shakespeare  fixed_gamma=0.3  results_dir=notebooks/conservative_arch/first_order_ablation/results/splm2_gamma0p30/seed2
+[train-em-ln] device=mps  mode=shakespeare  fixed_gamma=0.3  results_dir=/Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm2_gamma0p30/seed2
 [train-em-ln] tokens: train=321,124  val=16,901
 [train-em-ln] params: 7,123,075   d=128  L=8  v_hidden=512  ln_after_step=True
 [train-em-ln] init mass: mean=1.449  std=0.205  min=1.151  max=1.915
@@ -679,8 +679,8 @@
 [train-em-ln] step  4000   val_loss=4.3774  val_ppl=79.63
 
 [train-em-ln] DONE  val_loss=4.4550  val_ppl=86.06  gamma=0.3000
-[train-em-ln] checkpoint saved to notebooks/conservative_arch/first_order_ablation/results/splm2_gamma0p30/seed2/splm_em_ln_shakespeare_seed2_ckpt_latest.pt
-[train-em-ln] summary written to notebooks/conservative_arch/first_order_ablation/results/splm2_gamma0p30/seed2/splm_em_ln_shakespeare_seed2_summary.md
+[train-em-ln] checkpoint saved to /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm2_gamma0p30/seed2/splm_em_ln_shakespeare_seed2_ckpt_latest.pt
+[train-em-ln] summary written to /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm2_gamma0p30/seed2/splm_em_ln_shakespeare_seed2_summary.md
 [SPLM-1] arm B seed=2 OK in 2050s
 
 [SPLM-1] sweep done in 12460s. Per-cell summary:

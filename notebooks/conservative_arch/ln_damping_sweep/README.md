@@ -111,4 +111,4 @@ figures/
 - E3 energy-drift comparison (LN vs. plain Euler): [`../energy_drift/results/E3_splm_em_ln_compare/`](../energy_drift/results/E3_splm_em_ln_compare/)
 - E1 multi-seed validation (em_ln freely-trained): [`../multi_seed/`](../multi_seed/)
 - Markov-order regression machinery: [`../../dynamics_order_test/`](../../dynamics_order_test/)
-- Overdamped synthesis document: [`companion_notes/Evidence_for_second_order_ODE_governing_evolution.md`](../../../companion_notes/Evidence_for_second_order_ODE_governing_evolution.md)
+- Overdamped synthesis document: [`docs/Evidence_for_second_order_ODE_governing_evolution.md`](../../../docs/Evidence_for_second_order_ODE_governing_evolution.md)

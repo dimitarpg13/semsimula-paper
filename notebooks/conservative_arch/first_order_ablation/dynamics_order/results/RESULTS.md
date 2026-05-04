@@ -1,6 +1,6 @@
 # RESULTS — E7: SPLM Markov-order test (observational first-order at inference)
 
-> Pre-registered protocol: [`companion_notes/SPLM_inference_first_order_pre-registered_protocol.md`](../../../../companion_notes/SPLM_inference_first_order_pre-registered_protocol.md)
+> Pre-registered protocol: [`docs/SPLM_inference_first_order_pre-registered_protocol.md`](../../../../docs/SPLM_inference_first_order_pre-registered_protocol.md)
 > Pre-registration commit: `6c377be` (committed before any extraction or regression was run).
 > Generated 2026-04-29, immediately after the 6-cell sweep finished.
 
@@ -18,7 +18,7 @@ The Markov-order regression (kernel ridge, $p = 50$, LOSO over 100 sentences, ke
 A second, *unanticipated* finding cleanly emerges from the same data:
 
 - **Within Outcome C, the two arms separate.** SPLM-1 (the structurally first-order ablation) has $\rho_{12}$ that is *not statistically distinguishable from 1.00*: per-seed $p_{12} \in \{0.77, 0.93, 0.53\}$. The trained second-order SPLM $\gamma^{\ast} = 0.30$ has a small but statistically robust lift $\rho_{12} \approx 1.034$ with $p_{12} \in \{8.7\!\times\!10^{-15},\ 1.1\!\times\!10^{-26},\ 1.7\!\times\!10^{-18}\}$. The cross-arm paired test ($H_1: \rho_{12,\,\mathrm{SPLM-2}} > \rho_{12,\,\mathrm{SPLM-1}}$) gives $\bar{\Delta} = 0.030$, paired $t = 10.27$, df = 2, one-sided $p = 0.005$.
-- This is exactly the "observationally first-order *with a small inertial trace*" picture promised in §15 of the paper. The structural first-order ablation has no trace at all; the trained second-order SPLM has a faint but measurable one, while still being firmly within Outcome C.
+- This is exactly the "observationally first-order *with a small inertial trace*" picture promised in §15 of `paper_v3`. The structural first-order ablation has no trace at all; the trained second-order SPLM has a faint but measurable one, while still being firmly within Outcome C.
 
 The paper-side consequence per §9.1 of the protocol: the first-order rejection-test outcome corroborates the existing Tier-2 framing without requiring any rewording of the Lemma 9 / observational-first-order claims.
 
@@ -83,11 +83,11 @@ So the second-order trained SPLM has a small but statistically robust *more*-tha
 
 ### 3.1 Tier-2 corroboration (the headline)
 
-§15 of the paper claims that SPLM is *generative second-order, observational first-order*. E7 turns this from a theoretical signature into a falsifiable, pre-registered, paired-test-supported empirical statement: the trained model's hidden-state dynamics, run on a fixed corpus and probed by an architecture-agnostic regression test, do not exhibit the second-order memory that the integrator is, by construction, capable of expressing. The trained inference fixed point lives on the first-order manifold even though training pushes through the full second-order one.
+§15 of `paper_v3` claims that SPLM is *generative second-order, observational first-order*. E7 turns this from a theoretical signature into a falsifiable, pre-registered, paired-test-supported empirical statement: the trained model's hidden-state dynamics, run on a fixed corpus and probed by an architecture-agnostic regression test, do not exhibit the second-order memory that the integrator is, by construction, capable of expressing. The trained inference fixed point lives on the first-order manifold even though training pushes through the full second-order one.
 
 ### 3.2 Falsifying alternative theories
 
-A natural sceptical reading of the SPLM-1 ablation result (`companion_notes/SPLM-1_ablation_pre-registered_protocol.md` → `notebooks/conservative_arch/first_order_ablation/results/RESULTS.md`, $\bar{\Delta} = 23.18$ PPL win for the second-order arm) was: maybe the second-order term is *also* shaping the inference-time dynamics in some non-trivial way. E7 falsifies this directly: the trained SPLM em\_ln $\gamma^{\ast} = 0.30$ has $\rho_{12} \approx 1.034$, well below the rejection threshold and within 3 % of the SPLM-1 baseline. The inertial term is *training-time-only*; at inference, both arms behave first-order.
+A natural sceptical reading of the SPLM-1 ablation result (`docs/SPLM-1_ablation_pre-registered_protocol.md` → `notebooks/conservative_arch/first_order_ablation/results/RESULTS.md`, $\bar{\Delta} = 23.18$ PPL win for the second-order arm) was: maybe the second-order term is *also* shaping the inference-time dynamics in some non-trivial way. E7 falsifies this directly: the trained SPLM em\_ln $\gamma^{\ast} = 0.30$ has $\rho_{12} \approx 1.034$, well below the rejection threshold and within 3 % of the SPLM-1 baseline. The inertial term is *training-time-only*; at inference, both arms behave first-order.
 
 ### 3.3 What if it had failed?
 
@@ -122,7 +122,7 @@ Quadruples extraction (CPU, single-threaded): 49 s for all 6 checkpoints combine
 Per §9.1 of the E7 protocol, Outcome C in 6 / 6 cells triggers the following actions:
 
 - (a) This `RESULTS.md` is committed alongside per-cell `primary_summary.json`, `primary_residuals.npz`, and the aggregator output `aggregate_summary.json` + figures.
-- (b) `the paper` is updated by appending a single sentence to the existing "*observationally first-order*" framing (§15.5 / Lemma 9 paragraph) citing this protocol's outcome.
+- (b) `paper_v3/sections/15_conservative_architectures.tex` is updated by appending a single sentence to the existing "*observationally first-order*" framing (§15.5 / Lemma 9 paragraph) citing this protocol's outcome.
 - (c) The cross-arm $\rho_{12}$ paired test (§2 above) is also reported in the same paper sentence as a *within-Outcome-C* refinement: the trained second-order SPLM does have a small but measurable inertial trace in its hidden-state dynamics, even though both arms satisfy the first-order observational criterion.
 
 ---

@@ -1,5 +1,5 @@
 {
-  "checkpoint": "notebooks/conservative_arch/first_order_ablation/results/splm1/seed0/splm_first_order_shakespeare_seed0_ckpt_latest.pt",
+  "checkpoint": "/Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/first_order_ablation/results/splm1/seed0/splm_first_order_shakespeare_seed0_ckpt_latest.pt",
   "variant": "splm_first_order",
   "device": "cpu",
   "model_cfg": {
@@ -15,7 +15,7 @@
     "learn_mgamma": true,
     "mass_mode": "logfreq",
     "logfreq_init_alpha": 0.1,
-    "logfreq_path": "notebooks/conservative_arch/sarf_mass_variant/results/logfreq_surprisal.npy",
+    "logfreq_path": "/Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/sarf_mass_variant/results/logfreq_surprisal.npy",
     "fixed_gamma": 0.0,
     "ln_eps": 1e-05,
     "ln_after_step": true,

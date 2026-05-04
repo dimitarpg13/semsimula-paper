@@ -9,7 +9,7 @@ The damped semi-implicit Euler step
     h_{l+1} = h_l + dt * v_{l+1}
 
 is replaced by the first-order gradient-flow step (eq. 6 of
-companion_notes/Replacing_The_Conservative_Mechanism_of_SPLM_with_First_Order.md):
+docs/Replacing_The_Conservative_Mechanism_of_SPLM_with_First_Order.md):
 
     h_{l+1} = h_l - dt * grad_V / m
 
@@ -28,7 +28,7 @@ Pre-registered prediction
 At matched architecture, matched data, matched training budget, and matched
 multi-seed protocol, this model should reach a strictly worse validation
 perplexity than its second-order counterpart at gamma* = 0.30 (the E5 minimum,
-val ppl 87.06). See companion_notes/SPLM-1_ablation_pre-registered_protocol.md for the
+val ppl 87.06). See docs/SPLM-1_ablation_pre-registered_protocol.md for the
 locked decision rule and effect-size thresholds.
 """
 
@@ -105,7 +105,8 @@ class ScalarPotentialLMFirstOrder(ScalarPotentialLMSARFMassLN):
             traj_xi = []
 
         for _ in range(cfg.L):
-            xi_now = causal_cumulative_mean(h)
+            xi_input = h.detach() if cfg.causal_force else h
+            xi_now = causal_cumulative_mean(xi_input)
             if return_xi_trajectory:
                 assert traj_xi is not None
                 traj_xi.append(xi_now.detach().cpu())
