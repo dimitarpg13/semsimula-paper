@@ -1,0 +1,36 @@
+{
+  "ckpt": "/Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/scaleup/results/multixi_pilot_logspaced_taumax100/splm_em_ln_multixi_pilot_seed0_logspaced_tau100_ckpt_latest.pt",
+  "label": "K-EMA (K=4, \u03b1=[0.000, 0.642, 0.919, 0.984])",
+  "K": 4,
+  "n_samples": 10485760,
+  "corr_matrix": [
+    [
+      1.0000001192092896,
+      0.8022063970565796,
+      0.5198872089385986,
+      0.3845653533935547
+    ],
+    [
+      0.8022063970565796,
+      1.0000001192092896,
+      0.8228880763053894,
+      0.6229075789451599
+    ],
+    [
+      0.5198872089385986,
+      0.8228880763053894,
+      1.0,
+      0.8871433138847351
+    ],
+    [
+      0.3845653533935547,
+      0.6229075789451599,
+      0.8871433138847351,
+      1.0
+    ]
+  ],
+  "mean_off_abs_corr": 0.6732663512229919,
+  "total_correlation_nats": 2.061342239379883,
+  "k_eff_entropy_power": 2.022061824798584,
+  "k_eff_logdet": -1.9477764526566155
+}

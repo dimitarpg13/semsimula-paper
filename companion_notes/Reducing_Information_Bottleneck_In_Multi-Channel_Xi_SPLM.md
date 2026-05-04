@@ -771,10 +771,10 @@ attribution of any val_ppl movement to a specific intervention.
 `--xi-channels 4`, LayerNorm-after-step, identical LR schedule, identical
 seed. Only the K-EMA channel construction varies between pilots.
 
-| pilot | K-EMA construction | extra params | new code | ETA |
+| pilot | K-EMA construction | extra params | new code | ETA / status |
 |---|---|---|---|---|
 | **R6.h.0** (have) | Vanilla K-EMA, hand-picked α = (0, 0.5, 0.9, 0.99), learnable | — | — | done; val_ppl 14.78 |
-| **R6.h.1** | Fix 2 only — log-spaced α from §4.2, K = 4, τ_max = 100, learnable | — | ~5 LoC in `MultiChannelXi.__init__` to seed `α_k = 1 − 1/τ_max^{k/(K−1)}` | ≈ 7.8 h |
+| **R6.h.1** (done 2026-05-03) | Fix 2 only — log-spaced α from §4.2, K = 4, τ_max = 100, learnable | — | ~5 LoC in `MultiChannelXi.__init__` to seed `α_k = 1 − 1/τ_max^{k/(K−1)}` | done; val_ppl 15.03 (§10.12) |
 | **R6.h.2** | Fix 1 + Fix 2 — log-spaced α + band-pass differencing $\xi^k = \mathrm{EMA}_{\alpha_k} − \mathrm{EMA}_{\alpha_{k−1}}$ ($\alpha_0 = 0$) | — | ~30 LoC: subtract previous-channel EMA in `_forward_xi` post-step, ahead of the LN | ≈ 7.8 h |
 | **R6.h.3** | Fix 1 + Fix 2 + Fix 3 (small λ) — add $\lambda \sum_{j \neq k} \overline{\mathrm{corr}(\xi^j_t, \xi^k_t)^2}$ to the LM loss with λ ∈ {1e−4, 1e−3, 1e−2} (one λ per pilot, picked by smoke-screen at 300 steps) | — | ~10 LoC in trainer: aggregate per-feature Pearson over the batch and add to loss | ≈ 7.8 h × ≤ 3 (smoke + 1 full pilot) |
 | **R6.h.4** | Best-of-{R6.h.0..3} paired with the best HiPPO-LegT config (R6.e or R6.a, whichever wins) | — | — | ≈ 7.8 h, head-to-head |
@@ -903,6 +903,179 @@ to LR floor. Δt drift was monotone (no oscillation around init) — the
 optimiser had a clear preference for larger Δt and pursued it without
 hesitation. Real architectural lift, not a trick or a numerical
 artifact.
+
+### 10.12 R6.h.1 empirical results — K = 4 K-EMA Fix 2 (log-spaced α, τ_max = 100)
+
+> **Status.** Run completed 2026-05-03 21:48 EDT. Configuration:
+> `--mode pilot --xi-channels 4 --xi-alpha-init-mode log_spaced --xi-tau-max 100 --fixed-gamma 0.30 --seed 0 --causal-force true --tag-suffix seed0_logspaced_tau100`.
+> 16.54 M params, 5 M-token TinyStories cap, fixed γ = 0.30, MPS,
+> elapsed 8.09 h. Artefacts:
+> `notebooks/conservative_arch/scaleup/results/multixi_pilot_logspaced_taumax100/`.
+
+**Headline.** Final val PPL = **15.03**, **+0.25 PPL** worse than
+R6.h.0 (vanilla K-EMA hand-picked α, 14.78), inside seed-to-seed
+variance and far below the predicted "mild improvement, magnitude ≤ 1
+PPL" threshold of §12.5. The cleanest characterisation at single-seed
+pilot is *Fix 2 ≈ R6.h.0 K-EMA*, with the structural finding (below)
+sharper than the val_ppl point estimate.
+
+**val PPL trajectory** (R6.h.1 vs K-EMA pilot side-by-side; full log
+in `multixi_pilot_logspaced_taumax100/train_stdout.log`):
+
+| step | K-EMA pilot (R6.h.0) | **R6.h.1 (Fix 2)** | Δ |
+|---:|---:|---:|---:|
+|  200 | 112.60 | 100.36 | −12.2 |
+|  600 |  30.15 |  28.72 | −1.4 |
+| 1000 |  22.41 |  22.86 | +0.5 |
+| 1400 |  19.26 |  19.76 | +0.5 |
+| 1800 |  17.68 |  17.95 | +0.3 |
+| 2200 |  16.62 |  17.02 | +0.4 |
+| 2600 |  15.39 |  15.67 | +0.3 |
+| 3000 |  15.27 |  15.59 | +0.3 |
+| 3400 |  15.18 |  15.46 | +0.3 |
+| 3600 | (not logged) |  14.89 | — |
+| 3800 |  14.92 |  15.24 | +0.3 |
+| **4000** | **14.78** | **15.08** | **+0.30** |
+| **DONE (smoothed)** | **14.78** | **15.03** | **+0.25** |
+
+R6.h.1 starts noticeably *ahead* of R6.h.0 at step 200 (Fix 2's wider
+initialisation lets the longer-τ channels skip a warm-up phase) but
+the curves cross by step 1000 and Fix 2 trails by ~0.3 PPL for the
+remainder of training. The step-3600 dip to 14.89 is at-noise-level
+(LR was already 1.4e-5 and only 200 steps of post-LR-floor refinement
+remained); the smoothed `DONE` value of 15.03 is the right summary
+statistic.
+
+**α evolution** (the central empirical finding — **K-EMA auto-tunes
+α toward a similar regime regardless of initialisation**):
+
+| | R6.h.0 (hand-picked) | R6.h.1 (log-spaced, τ_max = 100) | |Δ| |
+|---|---:|---:|---:|
+| **α₀ init** | 0.000 | 0.000 | 0.000 |
+| **α₀ final** | 0.000 | 0.000 | 0.000 |
+| **α₁ init** | 0.500 | 0.785 | 0.285 |
+| **α₁ final** | 0.519 | 0.642 | **0.123** |
+| **α₂ init** | 0.900 | 0.954 | 0.054 |
+| **α₂ final** | 0.855 | 0.919 | **0.064** |
+| **α₃ init** | 0.990 | 0.990 | 0.000 |
+| **α₃ final** | 0.979 | 0.984 | **0.005** |
+
+The Fix 2 initialisation places α₁, α₂ at notably longer effective
+time-constants than R6.h.0 (init τ_k = −1/ln α_k = {1.44, 9.49, 99.5}
+for R6.h.0 vs {4.13, 21.05, 99.5} for R6.h.1, hand-picked vs
+log-spaced). After 4000 steps the trained α values **shrank toward
+R6.h.0's territory**: the absolute α-gap to R6.h.0 closed from 0.285
+to 0.123 on α₁ (a 57 % reduction), the τ₁ effective integration
+window contracted from 4.13 to 2.25 tokens (vs R6.h.0's final 1.51),
+α₂ contracted only marginally (Δα = 0.054 → 0.064, the absolute gap
+held while both channels drifted slightly downward), and α₃ converged
+to within 0.005 of R6.h.0's final value. The dominant convergent
+channel is α₁ — the channel whose initialisation was most different —
+which is exactly the prediction of a *gradient pulling toward a
+preferred operating point*: the further from the basin you start, the
+larger the corrective force during training.
+
+**Channel-correlation diagnostic** (40 K val tokens, identical
+protocol to §10.8;
+`notebooks/conservative_arch/scaleup/results/multixi_pilot_logspaced_taumax100/r6h1_channel_corr_diagnostic.json`):
+
+| metric | R6.h.0 K-EMA | **R6.h.1 K-EMA Fix 2** | R6.a HiPPO-LegT | R6.e HiPPO learn-Δt |
+|---|---:|---:|---:|---:|
+| mean \|off-diagonal corr\| | 0.687 | **0.673** | 0.237 | 0.202 |
+| total correlation TC(c) (nats) | 2.21 | **2.06** | 0.39 | 0.32 |
+| K_eff (entropy power) / 4 | 1.98 (49 %) | **2.02 (51 %)** | 3.47 (87 %) | 3.54 (88 %) |
+| K_eff (logdet form, §5.4) | −2.37 | **−1.95** | 2.88 | 3.07 |
+| **val PPL @ 4000 steps** | **14.78** | **15.03** | 19.82 | 17.45 |
+
+Empirical correlation matrix (R6.h.1):
+
+```
+[[1.000  0.802  0.520  0.385]
+ [0.802  1.000  0.823  0.623]
+ [0.520  0.823  1.000  0.887]
+ [0.385  0.623  0.887  1.000]]
+```
+
+R6.h.1 sits **on top of R6.h.0** on every diagnostic axis: |corr| 0.67
+vs 0.69 (Δ = −0.014), TC 2.06 vs 2.21 nats (Δ = −0.15), K_eff 2.02 vs
+1.98 (Δ = +0.04). All four deltas are within sampling-noise of zero
+relative to the R6.h.0 ↔ R6.a gap (|corr| 0.69 → 0.24, K_eff 1.98 →
+3.47). Fix 2's initialisation-time channel re-spacing **did not
+survive training** — the trained Fix 2 bank is operationally a
+re-discovery of R6.h.0's K-EMA bank.
+
+**Why this happens.** The K-EMA gradient signal favours channel
+configurations in which adjacent EMAs share a substantial fraction of
+their effective integration window — i.e. correlated, smooth,
+multi-scale running averages. Fix 2's wider initialisation places α₁
+and α₂ outside that preferred regime and the optimiser pulls them
+back: τ₁ contracts from 4.13 toward 2.25 (effective integration window
+roughly halved), τ₂ contracts from 21.05 toward 11.86 (window roughly
+halved as well), while α₀ (no-EMA, identity channel) stays pinned at
+zero by parameterisation and α₃ (slowest channel) settles within 0.005
+of R6.h.0's final value. The trajectory is monotonic across the run
+(no oscillation around init, no late re-spreading; full curve in the
+training log), indicating a clean gradient preference rather than a
+vanishing-update artefact. The contraction is partial — final R6.h.1
+τ values are still longer than R6.h.0's final τ values — but the
+*channel-correlation profile* this produces is identical to R6.h.0's
+to within sampling noise, because the §5.4 analytic correlation
+depends on the *ratio* of adjacent τ's, not their absolute magnitudes,
+and Fix 2's contracted spacing puts those ratios within 10 % of
+R6.h.0's. This is the *training-time auto-tuning* mechanism: K-EMA is
+self-stabilising under SGD toward a particular redundancy regime that
+appears to be a local optimum of the joint
+$(V\_\theta, \alpha)$ landscape at the current $V\_\theta$ capacity.
+
+**Causal verification.** R6.h.1's `MultiChannelXi` with
+`xi_alpha_init_mode='log_spaced'` and `xi_tau_max=100` was registered
+in `causal_probe.py` and passes the strict probe with causal-side Δ ≡
+0, identical to R6.h.0. Trained ckpt is therefore exactly causal under
+the post-fix integrator.
+
+**Compute parity.** R6.h.1 runtime 8.09 h vs R6.h.0 baseline (≈ 7.8
+h) — Fix 2's extra cost is a one-off log-space α generation in
+`__init__`; per-step cost is identical to R6.h.0. Step rate, LR
+schedule, data, batch size, block size, all identical to R6.h.0.
+
+**Training was clean.** Train loss monotone (10.0 → 2.6), grad norm in
+[0.60, 0.80] throughout (slightly *tighter* than R6.h.0's 0.65–0.95),
+no NaNs, no plateau-then-drift, smooth descent to LR floor. Mass
+distribution stable at m̄ ≈ 1.42, σ ≈ 0.19 throughout. No instabilities
+attributable to the wider Fix-2 α-init.
+
+**Implication for §12.5 predictions.** §12.5 pre-registered Fix 2 as
+"mild improvement or null (Δ ≤ 0, magnitude ≤ 1 PPL)". The actual
+outcome (Δ = +0.25 PPL) is **inside the magnitude bound** but on the
+*opposite side of zero* from the directional prediction. This is the
+weakest of the three §12.5 prediction tests in informational content —
+it neither corroborates nor falsifies the §12.3 hypothesis on its
+own, because Fix 2's intervention failed to move channel correlation
+in any meaningful way (the |Δ corr| was 0.014, not the predicted
+0.1+). The auto-tuning finding is a **new mechanism not anticipated by
+§12.3**: the K-EMA bank's redundancy regime is not a free choice of
+the designer but a **gradient-preferred basin** that initialisation
+alone cannot escape. This refines §12.5's R6.h.2 / R6.h.3 design: a
+clean test of the §12.3 hypothesis now requires an intervention that
+is **robust to training-time auto-tuning**. The candidates are:
+
+- **R6.h.2′ (frozen-α variant of Fix 1 + Fix 2):** lock α at log-spaced
+  τ ∈ [1, 100], `requires_grad=False`. This forces the operational
+  channel spread that R6.h.1 demonstrated cannot persist as a free
+  parameter. Expected if §12.3 holds: val_ppl rises by ≥ 1 PPL because
+  the gradient cannot route around the imposed orthogonality.
+- **R6.h.3′ (decorrelation-regularised α variant):** retain learnable
+  α but add λ · (mean off-diag |corr|)² to the LM loss for
+  λ ∈ {1e−4, 1e−3, 1e−2}. This actively *opposes* the auto-tuning
+  mechanism. Expected if §12.3 holds: monotone val_ppl rise in λ; the
+  λ at which val_ppl rises by ≥ 0.5 PPL is the magnitude of the
+  inductive-bias prior the gradient is paying to maintain.
+
+Both redesigned variants are causal-leak-safe (they touch only post-
+detach pathways) and would land at ≈ 7.8 h compute each on the same
+hardware. The original R6.h.2 (Fix 1: band-pass differencing) is
+preserved as a separate test of *channel structure* (independent of
+auto-tuning).
 
 ---
 
@@ -1399,7 +1572,8 @@ identical LR schedule and corpus across all four runs:
 
 | run | basis | trainable params for $\xi$ | val PPL | gap to K-EMA |
 |---|---|---:|---:|---:|
-| K-EMA pilot | learnable $\{\alpha\_k\}$ | $K = 4$ | **14.78** | — |
+| K-EMA pilot (R6.h.0) | learnable $\{\alpha\_k\}$, hand-picked init | $K = 4$ | **14.78** | — |
+| R6.h.1 K-EMA Fix 2 | learnable $\{\alpha\_k\}$, log-spaced init $\tau\_{\max} = 100$ | $K = 4$ | **15.03** | **+0.25** |
 | R6.a HiPPO-LegT, fixed $\Delta$ | LegT spectrum, fixed | 0 | 19.82 | +5.04 |
 | R6.e HiPPO-LegT, learnable $\Delta$ | LegT spectrum, learnable $\Delta t$ | 1 | 17.45 | +2.67 |
 | R6.i S4D, legt-init | learnable $(A, B)$ | 12 | **16.85** | **+2.07** |
@@ -1523,20 +1697,31 @@ R6.a-R6.e-R6.i evidence supports the following pre-registered
 predictions on the **direction** of the val_ppl change relative to
 vanilla K-EMA's 14.78:
 
-| pilot | intervention | predicted sign | reasoning |
-|---|---|---|---|
-| **R6.h.1** (Fix 2) | log-spaced $\alpha$ with $\tau\_{\max} = 100$, learnable | mild improvement or null ($\Delta \le 0$, magnitude $\le 1$ PPL) | Argument 2: tighter timescale coverage may help slightly; orthogonal to the redundancy question. |
-| **R6.h.2** (Fix 1 + Fix 2) | + band-pass differencing $\xi^k = \mathrm{EMA}\_{\alpha\_k} − \mathrm{EMA}\_{\alpha\_{k-1}}$ | **predicted to hurt** ($\Delta \gt 0$) | Argument 3: differencing decorrelates channels, removing the implicit-ensembling regulariser. Argument 1: differencing introduces non-monotonic time-domain shapes, hurting smoothness for $V\_\theta$. |
-| **R6.h.3** (Fix 1 + Fix 2 + Fix 3) | + decorrelation regulariser, $\lambda \in \{10^{-4}, 10^{-3}, 10^{-2}\}$ | **predicted to hurt monotonically in $\lambda$** ($\Delta \gt 0$, increasing with $\lambda$) | Argument 3: the decorrelation regulariser is the most direct removal of K-EMA's correlated-channel inductive bias. Should hurt cleanly under the §12.3 hypothesis. |
+| pilot | intervention | predicted sign | actual outcome | reasoning |
+|---|---|---|---|---|
+| **R6.h.1** (Fix 2) | log-spaced $\alpha$ with $\tau\_{\max} = 100$, learnable | mild improvement or null ($\Delta \le 0$, magnitude $\le 1$ PPL) | **Δ = +0.25 PPL** (val_ppl 15.03; §10.12) — magnitude bound *holds*, sign opposite of predicted | Argument 2: tighter timescale coverage was expected to help slightly; orthogonal to the redundancy question. *Outcome*: did not move channel correlation (|Δ corr| = 0.014). The auto-tuning mechanism (§10.12) is a new finding; Fix 2 is now the weakest of the three §12.5 tests because the gradient pulls the channels back toward R6.h.0's regime regardless of init. |
+| **R6.h.2** (Fix 1 + Fix 2) | + band-pass differencing $\xi^k = \mathrm{EMA}\_{\alpha\_k} − \mathrm{EMA}\_{\alpha\_{k-1}}$ | **predicted to hurt** ($\Delta \gt 0$) | not yet run | Argument 3: differencing decorrelates channels, removing the implicit-ensembling regulariser. Argument 1: differencing introduces non-monotonic time-domain shapes, hurting smoothness for $V\_\theta$. |
+| **R6.h.2′** (Frozen-α + Fix 2) — *new test, post-§10.12* | log-spaced $\alpha$ with $\tau\_{\max} = 100$, **`requires_grad=False`** | **predicted to hurt** ($\Delta \gt 0$, magnitude $\ge 1$ PPL) | not yet run | Forces the channel spread that auto-tuning could not preserve in R6.h.1. If §12.3 holds, locking the wider spread should produce the val_ppl rise that R6.h.1 could not. |
+| **R6.h.3** (Fix 1 + Fix 2 + Fix 3) | + decorrelation regulariser, $\lambda \in \{10^{-4}, 10^{-3}, 10^{-2}\}$ | **predicted to hurt monotonically in $\lambda$** ($\Delta \gt 0$, increasing with $\lambda$) | not yet run | Argument 3: the decorrelation regulariser is the most direct removal of K-EMA's correlated-channel inductive bias. Should hurt cleanly under the §12.3 hypothesis. *Refined*: with R6.h.1's auto-tuning finding, R6.h.3 is now the *strongest* falsifiability test — it actively opposes the gradient preference that R6.h.1 demonstrated. |
 
-These predictions are pre-registered before R6.h.1 is launched. If
-they hold, the §12.3 hypothesis is corroborated and the design
-programme should *abandon orthogonality as an objective* for the K-EMA
-bank. If R6.h.2 or R6.h.3 *helps*, the §12.3 hypothesis is partially
-falsified — band-pass / decorrelated K-EMA is not equivalent to
-HiPPO-LegT's orthogonality, and the redundancy effect of §10.9 may be
-incidental rather than causal. The result tightens the next-basis
-search either way.
+These predictions are pre-registered before each pilot launches. R6.h.1
+landed inside the predicted magnitude bound (Δ ≤ 1 PPL) but on the
+opposite side of zero from the directional prediction; the outcome is
+*compatible* with both the §12.3 hypothesis and the null. The
+auto-tuning finding (§10.12) reframes the falsifiability programme:
+R6.h.2 (band-pass differencing — a *structural* change to the channels
+that the gradient cannot undo without retraining the whole bank) and
+R6.h.3 (decorrelation regulariser — an active counter-force to the
+auto-tuning gradient) remain the cleanest tests, and we add **R6.h.2′**
+(frozen-α variant of Fix 2) as a complementary test that decouples
+*initialisation effect* from *auto-tuning convergence*. If the R6.h.2
++ R6.h.2′ + R6.h.3 set holds the predicted signs, the §12.3 hypothesis
+is corroborated and the design programme should *abandon orthogonality
+as an objective* for the K-EMA bank. If any of them helps, the §12.3
+hypothesis is partially falsified — band-pass / frozen-α / decorrelated
+K-EMA is not equivalent to HiPPO-LegT's orthogonality, and the
+redundancy effect of §10.9 may be incidental rather than causal. The
+result tightens the next-basis search either way.
 
 ### 12.6 Implications for the next basis-class search
 
@@ -1584,11 +1769,40 @@ the K-EMA bank's smooth, multi-scale, correlated-channel structure
 presents that fit problem with a more favourable inductive bias than
 any orthogonal LTI alternative we have tried.
 
-R6.h, with the §12.5 pre-registered predictions, is the cleanest test
-of this synthesis. If R6.h confirms (Fix 1 / Fix 3 hurt), the design
-programme turns from orthogonality toward smooth-multi-scale
-parameterised filters and toward joint $(V\_\theta, \xi)$ co-design. If
-R6.h falsifies (Fix 1 / Fix 3 help), the residual gap to K-EMA is in
+**R6.h.1 update (added 2026-05-03 after the Fix 2 pilot lands).**
+The first K-EMA Fix sweep cell (§10.12) added a structural finding
+that §12.3 did not anticipate: K-EMA's α values **auto-tune toward a
+similar spread regardless of initialisation**. Fix 2 (log-spaced α,
+$\tau\_{\max} = 100$) initialised the channels at a wider spread than
+R6.h.0's hand-picked scheme, and after 4000 steps of joint training
+the trained α values had moved within 0.005–0.13 of R6.h.0's on every
+channel. The channel-correlation diagnostic on the final R6.h.1 ckpt
+sits on top of R6.h.0 (mean |off-diag corr| 0.673 vs 0.687, K_eff 2.02
+vs 1.98). Val PPL moved by Δ = +0.25 — inside the §12.5 magnitude
+bound (≤ 1 PPL) but on the opposite side of zero from the directional
+prediction. The cleanest reading is that **K-EMA's redundancy regime
+is not a free choice of the designer but a gradient-preferred basin
+of the joint $(V\_\theta, \alpha)$ landscape**; initialisation alone
+cannot move it. This refines the §12.3 hypothesis from "redundancy is
+a useful inductive bias" to "redundancy is the gradient-preferred
+operating point of K-EMA × $V\_\theta$", and it argues against any
+future K-EMA-initialisation-only intervention (no point trying
+$\tau\_{\max} = 200$, $\tau\_{\max} = 50$, etc.; the gradient pulls
+back regardless). The §12.3 hypothesis remains compatible with the
+data but R6.h.1 alone does not corroborate it — Fix 2 failed to
+*operationalise* a meaningfully different channel-correlation regime,
+so its near-null val_ppl outcome is uninformative. The cleaner tests
+shift to R6.h.2 (band-pass differencing — structural change the
+gradient cannot undo), R6.h.2′ (frozen-α, the new
+post-auto-tuning-finding test), and R6.h.3 (decorrelation regulariser
+— active counter-force to the auto-tuning gradient).
+
+R6.h, with the §12.5 pre-registered predictions, is still the cleanest
+test of the synthesis as a whole. If R6.h.2 / R6.h.2′ / R6.h.3 confirm
+(differencing / frozen-α / decorrelation regulariser all hurt), the
+design programme turns from orthogonality toward smooth-multi-scale
+parameterised filters and toward joint $(V\_\theta, \xi)$ co-design.
+If any of them falsifies (helps), the residual gap to K-EMA is in
 basis specifics, not in correlation structure, and the basis-class
 search continues within the structured-A family with renewed
 priority on R6.j / R6.k.

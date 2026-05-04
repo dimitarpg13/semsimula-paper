@@ -32,3 +32,79 @@
 [multixi-splm] step  1050/4000   train 3.0384   lr 4.41e-04   grad 0.77   m[mean 1.429 std 0.187]   gamma=0.300   α=[0.000,0.720,0.934,0.989]   elapsed 6945s
 [multixi-splm] step  1100/4000   train 3.0497   lr 4.34e-04   grad 0.72   m[mean 1.424 std 0.186]   gamma=0.300   α=[0.000,0.716,0.933,0.989]   elapsed 7327s
 [multixi-splm] step  1150/4000   train 3.0165   lr 4.27e-04   grad 0.69   m[mean 1.422 std 0.187]   gamma=0.300   α=[0.000,0.713,0.933,0.988]   elapsed 7727s
+[multixi-splm] step  1200/4000   train 2.9925   lr 4.19e-04   grad 0.68   m[mean 1.427 std 0.191]   gamma=0.300   α=[0.000,0.709,0.932,0.988]   elapsed 8127s
+[multixi-splm] step  1200   val_loss=3.0408  val_ppl=20.92
+[multixi-splm] step  1250/4000   train 2.9741   lr 4.12e-04   grad 0.66   m[mean 1.426 std 0.189]   gamma=0.300   α=[0.000,0.706,0.931,0.988]   elapsed 8547s
+[multixi-splm] step  1300/4000   train 2.9351   lr 4.04e-04   grad 0.80   m[mean 1.423 std 0.188]   gamma=0.300   α=[0.000,0.702,0.930,0.988]   elapsed 8890s
+[multixi-splm] step  1350/4000   train 2.9262   lr 3.95e-04   grad 0.66   m[mean 1.427 std 0.188]   gamma=0.300   α=[0.000,0.699,0.930,0.988]   elapsed 9225s
+[multixi-splm] step  1400/4000   train 2.9245   lr 3.87e-04   grad 0.63   m[mean 1.416 std 0.182]   gamma=0.300   α=[0.000,0.696,0.929,0.988]   elapsed 9545s
+[multixi-splm] step  1400   val_loss=2.9838  val_ppl=19.76
+[multixi-splm] step  1450/4000   train 2.9081   lr 3.78e-04   grad 0.71   m[mean 1.431 std 0.192]   gamma=0.300   α=[0.000,0.693,0.928,0.988]   elapsed 9938s
+[multixi-splm] step  1500/4000   train 2.9033   lr 3.69e-04   grad 0.68   m[mean 1.433 std 0.195]   gamma=0.300   α=[0.000,0.690,0.928,0.988]   elapsed 10314s
+[multixi-splm] step  1550/4000   train 2.8748   lr 3.60e-04   grad 0.68   m[mean 1.429 std 0.193]   gamma=0.300   α=[0.000,0.687,0.927,0.987]   elapsed 10717s
+[multixi-splm] step  1600/4000   train 2.8289   lr 3.51e-04   grad 0.67   m[mean 1.420 std 0.184]   gamma=0.300   α=[0.000,0.684,0.927,0.987]   elapsed 11126s
+[multixi-splm] step  1600   val_loss=2.9270  val_ppl=18.67
+[multixi-splm] step  1650/4000   train 2.8273   lr 3.41e-04   grad 0.73   m[mean 1.422 std 0.190]   gamma=0.300   α=[0.000,0.682,0.926,0.987]   elapsed 11548s
+[multixi-splm] step  1700/4000   train 2.8379   lr 3.31e-04   grad 0.66   m[mean 1.424 std 0.191]   gamma=0.300   α=[0.000,0.679,0.926,0.987]   elapsed 11911s
+[multixi-splm] step  1750/4000   train 2.8261   lr 3.22e-04   grad 0.67   m[mean 1.427 std 0.192]   gamma=0.300   α=[0.000,0.677,0.925,0.987]   elapsed 12262s
+[multixi-splm] step  1800/4000   train 2.8108   lr 3.12e-04   grad 0.62   m[mean 1.423 std 0.187]   gamma=0.300   α=[0.000,0.674,0.925,0.987]   elapsed 12607s
+[multixi-splm] step  1800   val_loss=2.8878  val_ppl=17.95
+[multixi-splm] step  1850/4000   train 2.7908   lr 3.02e-04   grad 0.64   m[mean 1.423 std 0.188]   gamma=0.300   α=[0.000,0.672,0.924,0.987]   elapsed 13030s
+[multixi-splm] step  1900/4000   train 2.7777   lr 2.91e-04   grad 0.63   m[mean 1.424 std 0.190]   gamma=0.300   α=[0.000,0.670,0.924,0.987]   elapsed 13426s
+[multixi-splm] step  1950/4000   train 2.7741   lr 2.81e-04   grad 0.66   m[mean 1.427 std 0.196]   gamma=0.300   α=[0.000,0.668,0.924,0.986]   elapsed 13795s
+[multixi-splm] step  2000/4000   train 2.7807   lr 2.71e-04   grad 0.65   m[mean 1.423 std 0.190]   gamma=0.300   α=[0.000,0.666,0.923,0.986]   elapsed 14151s
+[multixi-splm] step  2000   val_loss=2.8327  val_ppl=16.99
+[multixi-splm] step  2050/4000   train 2.7771   lr 2.61e-04   grad 0.68   m[mean 1.426 std 0.191]   gamma=0.300   α=[0.000,0.665,0.923,0.986]   elapsed 14578s
+[multixi-splm] step  2100/4000   train 2.7553   lr 2.50e-04   grad 0.65   m[mean 1.432 std 0.199]   gamma=0.300   α=[0.000,0.663,0.923,0.986]   elapsed 14974s
+[multixi-splm] step  2150/4000   train 2.7395   lr 2.40e-04   grad 0.82   m[mean 1.426 std 0.195]   gamma=0.300   α=[0.000,0.661,0.922,0.986]   elapsed 15374s
+[multixi-splm] step  2200/4000   train 2.7425   lr 2.30e-04   grad 0.71   m[mean 1.421 std 0.190]   gamma=0.300   α=[0.000,0.660,0.922,0.986]   elapsed 15793s
+[multixi-splm] step  2200   val_loss=2.8341  val_ppl=17.02
+[multixi-splm] step  2250/4000   train 2.7230   lr 2.19e-04   grad 0.69   m[mean 1.419 std 0.191]   gamma=0.300   α=[0.000,0.658,0.922,0.986]   elapsed 16181s
+[multixi-splm] step  2300/4000   train 2.7359   lr 2.09e-04   grad 0.65   m[mean 1.422 std 0.188]   gamma=0.300   α=[0.000,0.657,0.922,0.986]   elapsed 16480s
+[multixi-splm] step  2350/4000   train 2.7071   lr 1.99e-04   grad 0.67   m[mean 1.425 std 0.193]   gamma=0.300   α=[0.000,0.656,0.921,0.986]   elapsed 16778s
+[multixi-splm] step  2400/4000   train 2.7157   lr 1.89e-04   grad 0.73   m[mean 1.426 std 0.192]   gamma=0.300   α=[0.000,0.655,0.921,0.985]   elapsed 17083s
+[multixi-splm] step  2400   val_loss=2.7598  val_ppl=15.80
+[multixi-splm] step  2450/4000   train 2.7037   lr 1.79e-04   grad 0.68   m[mean 1.418 std 0.189]   gamma=0.300   α=[0.000,0.653,0.921,0.985]   elapsed 17544s
+[multixi-splm] step  2500/4000   train 2.6826   lr 1.69e-04   grad 0.65   m[mean 1.429 std 0.194]   gamma=0.300   α=[0.000,0.652,0.921,0.985]   elapsed 17994s
+[multixi-splm] step  2550/4000   train 2.6769   lr 1.59e-04   grad 0.63   m[mean 1.423 std 0.188]   gamma=0.300   α=[0.000,0.651,0.921,0.985]   elapsed 18436s
+[multixi-splm] step  2600/4000   train 2.6881   lr 1.50e-04   grad 0.70   m[mean 1.419 std 0.190]   gamma=0.300   α=[0.000,0.650,0.921,0.985]   elapsed 18887s
+[multixi-splm] step  2600   val_loss=2.7517  val_ppl=15.67
+[multixi-splm] step  2650/4000   train 2.6745   lr 1.40e-04   grad 0.64   m[mean 1.419 std 0.189]   gamma=0.300   α=[0.000,0.649,0.920,0.985]   elapsed 19312s
+[multixi-splm] step  2700/4000   train 2.6628   lr 1.31e-04   grad 0.64   m[mean 1.416 std 0.187]   gamma=0.300   α=[0.000,0.649,0.920,0.985]   elapsed 19622s
+[multixi-splm] step  2750/4000   train 2.6820   lr 1.22e-04   grad 0.67   m[mean 1.418 std 0.189]   gamma=0.300   α=[0.000,0.648,0.920,0.985]   elapsed 19908s
+[multixi-splm] step  2800/4000   train 2.6442   lr 1.13e-04   grad 0.66   m[mean 1.420 std 0.189]   gamma=0.300   α=[0.000,0.647,0.920,0.985]   elapsed 20198s
+[multixi-splm] step  2800   val_loss=2.7473  val_ppl=15.60
+[multixi-splm] step  2850/4000   train 2.6428   lr 1.05e-04   grad 0.70   m[mean 1.419 std 0.191]   gamma=0.300   α=[0.000,0.647,0.920,0.985]   elapsed 20570s
+[multixi-splm] step  2900/4000   train 2.6326   lr 9.66e-05   grad 0.65   m[mean 1.412 std 0.188]   gamma=0.300   α=[0.000,0.646,0.920,0.985]   elapsed 20940s
+[multixi-splm] step  2950/4000   train 2.6535   lr 8.86e-05   grad 0.65   m[mean 1.418 std 0.192]   gamma=0.300   α=[0.000,0.645,0.920,0.985]   elapsed 21346s
+[multixi-splm] step  3000/4000   train 2.6374   lr 8.08e-05   grad 0.65   m[mean 1.418 std 0.192]   gamma=0.300   α=[0.000,0.645,0.920,0.985]   elapsed 21739s
+[multixi-splm] step  3000   val_loss=2.7469  val_ppl=15.59
+[multixi-splm] step  3050/4000   train 2.6366   lr 7.34e-05   grad 0.67   m[mean 1.421 std 0.194]   gamma=0.300   α=[0.000,0.644,0.920,0.985]   elapsed 22164s
+[multixi-splm] step  3100/4000   train 2.6052   lr 6.62e-05   grad 0.66   m[mean 1.415 std 0.191]   gamma=0.300   α=[0.000,0.644,0.920,0.985]   elapsed 22520s
+[multixi-splm] step  3150/4000   train 2.6382   lr 5.94e-05   grad 0.62   m[mean 1.417 std 0.190]   gamma=0.300   α=[0.000,0.644,0.920,0.985]   elapsed 22876s
+[multixi-splm] step  3200/4000   train 2.6283   lr 5.28e-05   grad 0.65   m[mean 1.418 std 0.188]   gamma=0.300   α=[0.000,0.643,0.920,0.985]   elapsed 23190s
+[multixi-splm] step  3200   val_loss=2.7320  val_ppl=15.36
+[multixi-splm] step  3250/4000   train 2.6260   lr 4.67e-05   grad 0.60   m[mean 1.416 std 0.189]   gamma=0.300   α=[0.000,0.643,0.920,0.985]   elapsed 23569s
+[multixi-splm] step  3300/4000   train 2.6134   lr 4.08e-05   grad 0.63   m[mean 1.420 std 0.192]   gamma=0.300   α=[0.000,0.643,0.920,0.985]   elapsed 23888s
+[multixi-splm] step  3350/4000   train 2.6157   lr 3.53e-05   grad 0.63   m[mean 1.415 std 0.189]   gamma=0.300   α=[0.000,0.643,0.919,0.984]   elapsed 24201s
+[multixi-splm] step  3400/4000   train 2.6224   lr 3.02e-05   grad 0.63   m[mean 1.418 std 0.193]   gamma=0.300   α=[0.000,0.642,0.919,0.984]   elapsed 24607s
+[multixi-splm] step  3400   val_loss=2.7381  val_ppl=15.46
+[multixi-splm] step  3450/4000   train 2.6136   lr 2.55e-05   grad 0.63   m[mean 1.414 std 0.188]   gamma=0.300   α=[0.000,0.642,0.919,0.984]   elapsed 25007s
+[multixi-splm] step  3500/4000   train 2.6022   lr 2.11e-05   grad 0.66   m[mean 1.418 std 0.191]   gamma=0.300   α=[0.000,0.642,0.919,0.984]   elapsed 25395s
+[multixi-splm] step  3550/4000   train 2.6050   lr 1.72e-05   grad 0.64   m[mean 1.419 std 0.195]   gamma=0.300   α=[0.000,0.642,0.919,0.984]   elapsed 25782s
+[multixi-splm] step  3600/4000   train 2.6063   lr 1.36e-05   grad 0.66   m[mean 1.411 std 0.183]   gamma=0.300   α=[0.000,0.642,0.919,0.984]   elapsed 26172s
+[multixi-splm] step  3600   val_loss=2.7007  val_ppl=14.89
+[multixi-splm] step  3650/4000   train 2.5986   lr 1.05e-05   grad 0.66   m[mean 1.415 std 0.192]   gamma=0.300   α=[0.000,0.642,0.919,0.984]   elapsed 26518s
+[multixi-splm] step  3700/4000   train 2.5874   lr 7.70e-06   grad 0.66   m[mean 1.414 std 0.188]   gamma=0.300   α=[0.000,0.642,0.919,0.984]   elapsed 26822s
+[multixi-splm] step  3750/4000   train 2.6112   lr 5.36e-06   grad 0.62   m[mean 1.414 std 0.189]   gamma=0.300   α=[0.000,0.642,0.919,0.984]   elapsed 27128s
+[multixi-splm] step  3800/4000   train 2.6038   lr 3.44e-06   grad 0.61   m[mean 1.409 std 0.184]   gamma=0.300   α=[0.000,0.642,0.919,0.984]   elapsed 27417s
+[multixi-splm] step  3800   val_loss=2.7236  val_ppl=15.24
+[multixi-splm] step  3850/4000   train 2.6063   lr 1.95e-06   grad 0.63   m[mean 1.418 std 0.192]   gamma=0.300   α=[0.000,0.642,0.919,0.984]   elapsed 27828s
+[multixi-splm] step  3900/4000   train 2.6218   lr 8.71e-07   grad 0.62   m[mean 1.419 std 0.191]   gamma=0.300   α=[0.000,0.642,0.919,0.984]   elapsed 28226s
+[multixi-splm] step  3950/4000   train 2.5961   lr 2.22e-07   grad 0.62   m[mean 1.418 std 0.189]   gamma=0.300   α=[0.000,0.642,0.919,0.984]   elapsed 28614s
+[multixi-splm] step  4000/4000   train 2.6280   lr 8.54e-11   grad 0.66   m[mean 1.414 std 0.186]   gamma=0.300   α=[0.000,0.642,0.919,0.984]   elapsed 29001s
+[multixi-splm] step  4000   val_loss=2.7136  val_ppl=15.08
+
+[multixi-splm] DONE  val_loss=2.7099  val_ppl=15.03  gamma=0.3000  α_final=[1.7069863815777353e-06, 0.6416216492652893, 0.919352114200592, 0.9844106435775757]  elapsed=29110s
+[multixi-splm] checkpoint saved to /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/scaleup/results/multixi_pilot_logspaced_taumax100/splm_em_ln_multixi_pilot_seed0_logspaced_tau100_ckpt_latest.pt
+[multixi-splm] summary written to /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/scaleup/results/multixi_pilot_logspaced_taumax100/splm_em_ln_multixi_pilot_seed0_logspaced_tau100_summary.md
