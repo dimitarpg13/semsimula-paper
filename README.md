@@ -96,6 +96,8 @@ replacement.
 | `post_fixed_pilot.py`                                        | Driver for leak-corrected single-channel SPLM pilot training.                                                                |
 | `multixi/`                                                   | Multi-channel-ξ model implementations (K-EMA / HiPPO-LegT / S4D) + channel-correlation diagnostics for the R6 ladder.        |
 | `scaleup/`                                                   | Training scripts and per-pilot result logs for the R6 ladder on TinyStories at the `~16M`-parameter pilot scale.             |
+| `first_order_ablation/`                                      | SPLM-1 first-order ablation: pre-registered v2 baseline (`results/RESULTS.md`), leak-free 3-seed retrain (`results/RESULTS_LEAKFREE.md`), and forensic re-eval of the buggy ckpts (`splm1_leakfree_re_eval.py` / `results/LEAKFREE_RE_EVAL.md`). |
+| `ln_damping_sweep/`                                          | Controlled-$\gamma$ damping sweep on LayerNorm-after-step SPLM: pre-registered v2 6-cell sweep (`results/RESULTS.md`) and leak-free 3-seed 4-point U-curve (`results/RESULTS_LEAKFREE_GAMMA_SWEEP.md`).                                |
 
 The new entries above are described in detail in the
 [`companion_notes/`](#companion_notes--2026-companion-notes-work-in-progress)
@@ -268,6 +270,31 @@ written as standalone working notes; the paper summarises them in the
 | `Causal_Leak_Empirical_Comparison_Report.md`                    | §1, §14 — closed-loop leak-free re-evaluation of every v2 SPLM checkpoint in the repository: per-model `(PPL_buggy, PPL_fixed)` pairs, inflation factors (the headline `777×` for TinyStories `splm_em_ln_multixi`), and the methodology of the closed-loop fixed-graph re-eval.                                                                                  |
 | `Reducing_Information_Bottleneck_In_Multi-Channel_Xi_SPLM.md`   | §1, §14 (R6 ladder), §16 (C7) — the *information-bottleneck programme*: theory and experiments narrowing the SPLM-vs-attention val\_ppl gap by varying the multi-channel-ξ basis (K-EMA / log-spaced K-EMA / HiPPO-LegT / learnable-Δ HiPPO / S4D), with four information-theoretic diagnostics on the integrator-final ξ trajectory and the V_θ-fit-difficulty synthesis. |
 | `Restructuring_paper_v3_after_causal_leak_bug.md`               | §1, §14, §16 — the strategic reframing of v3: SPLM as a maximally-structured Lagrangian counterfactual to attention rather than as a competitive replacement; subtitle plural→singular decision; SSRN/Zenodo versioning recommendation; the §-by-§ edit list executed in v3 of the paper.                                                                          |
+
+The four documents above are the v3 strategic / forensic record. The
+*empirical* leak-free retrain artefacts that they motivate live
+inside [`notebooks/conservative_arch/`](notebooks/conservative_arch/):
+the SPLM-1 first-order ablation 3-seed retrain plus its forensic
+re-evaluation
+([`first_order_ablation/results/RESULTS_LEAKFREE.md`](notebooks/conservative_arch/first_order_ablation/results/RESULTS_LEAKFREE.md),
+[`first_order_ablation/results/LEAKFREE_RE_EVAL.md`](notebooks/conservative_arch/first_order_ablation/results/LEAKFREE_RE_EVAL.md)),
+and the leak-free 3-seed 4-point $\gamma$-sweep
+([`ln_damping_sweep/results/RESULTS_LEAKFREE_GAMMA_SWEEP.md`](notebooks/conservative_arch/ln_damping_sweep/results/RESULTS_LEAKFREE_GAMMA_SWEEP.md)).
+Headline finding of these retrains: the v2 $\gamma^{\ast} = 0.30$
+identity does *not* survive the leak-fix — it shifts to the
+leak-corrected $\gamma^{\ast} = 0.10$ (paired-$t = -5.97$,
+two-sided $p \approx 0.027$, $d_{z} = -3.45$ on the paired
+difference between $\gamma = 0.10$ and $\gamma = 0.30$ means), and the
+$\gamma$-vs-PPL bowl flattens by $\sim\!3.7\times$. The published
+$+23.18$-PPL second-order architectural lift over a structurally
+first-order ablation collapses to $+4.71$ PPL at the leak-corrected
+$\gamma^{\ast}$ (3 seeds, $3/3$ sign-consistent, paired-$t = +2.81$,
+$d_{z} = +1.62$; $0.29$ PPL short of the pre-registered minimum
+effect size $\Delta_{\min} = 5.0$ PPL). The retrain artefacts (per-cell
+training logs, summary `.md`s, and loss-curve PNGs; per-cell
+checkpoints kept local-only by `.gitignore`) are exposed via the
+[**v3 — leak-correction audit and the R6 ladder**](#v3--leak-correction-audit-and-the-r6-ladder)
+reproduction section below (steps 5–6).
 
 #### Forthcoming-work EOM stubs for the v1.5 / v2 / v3 dynamics
 
@@ -1019,10 +1046,14 @@ E1 multi-seed instability finding.
 
 The v3 paper revision (May 2026) adds a regression-tested causality
 audit, a leak-corrected re-evaluation of every v2 SPLM checkpoint, a
-leak-corrected single-channel pilot, and an information-bottleneck
+leak-corrected single-channel pilot, an information-bottleneck
 programme over the multi-channel-ξ basis (the *R6 ladder*: K-EMA /
-log-spaced K-EMA / HiPPO-LegT / learnable-Δ HiPPO / S4D). The full
-programme is documented in
+log-spaced K-EMA / HiPPO-LegT / learnable-Δ HiPPO / S4D), and
+leak-free 3-seed retrains of the v2 SPLM-1 first-order ablation
+and the controlled-$\gamma$ damping sweep — both of whose v2
+absolute and paired numbers do not survive the leak-fix (see the
+*v3 leak-correction and information-bottleneck programme* table
+above). The full programme is documented in
 [`companion_notes/Reducing_Information_Bottleneck_In_Multi-Channel_Xi_SPLM.md`](companion_notes/Reducing_Information_Bottleneck_In_Multi-Channel_Xi_SPLM.md);
 the audit framework is documented in
 [`companion_notes/Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`](companion_notes/Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md).
@@ -1057,7 +1088,31 @@ python scaleup/train_splm_em_ln_multixi_hippo_scaleup.py  \
 python scaleup/train_splm_em_ln_multixi_s4d_scaleup.py    \
     --xi-channels 4 --xi-eigval-init legt --tag multis4d_pilot_legtinit  # R6.i
 
-# 5. Information-theoretic diagnostics on a trained ξ trajectory:
+# 5. Forensic re-eval of the buggy SPLM-1 / SPLM-2 ckpts under the
+#    corrected integrator (loads the v2 ckpts, runs them through
+#    causal_force=True; reports asymmetric inflation 3.89× / 14.83×
+#    and predicts the asymmetric collapse the leak-free retrain
+#    in step 6 confirms).
+python first_order_ablation/splm1_leakfree_re_eval.py \
+    --out-md   first_order_ablation/results/LEAKFREE_RE_EVAL.md \
+    --out-json first_order_ablation/results/leakfree_re_eval.json
+
+# 6. Leak-free 3-seed retrains of the v2 ablation grid:
+#      (a) SPLM-1 vs SPLM-2 6-cell at γ=0.30 (~3 h 12 min on MPS)
+#      (b) γ-sweep 9-cell at γ ∈ {0.00, 0.10, 0.85} (~4 h 47 min on MPS)
+#    Combined with the existing γ=0.30 leak-free 3-seed retrain from
+#    (a) above, (b) gives a 4-point leak-free U-curve that puts the
+#    new γ* at 0.10 (vs the buggy γ* = 0.30); see the
+#    *v3 leak-correction* paragraph above for the full headline.
+bash first_order_ablation/scripts/run_ablation_leakfree.sh
+bash ln_damping_sweep/scripts/run_gamma_sweep_leakfree.sh
+# Per-cell artefacts land under
+#   first_order_ablation/results/{splm1_leakfree,splm2_gamma0p30_leakfree}/
+#   ln_damping_sweep/results/leakfree_3seed/gamma{0p00,0p10,0p85}/
+# (training logs + summary mds + loss-curve PNGs; per-cell .pt
+#  checkpoints are .gitignored and stay local-only).
+
+# 7. Information-theoretic diagnostics on a trained ξ trajectory:
 #    pairwise correlation matrix, mean off-diagonal |corr|,
 #    total correlation TC, entropy-power K_eff. Same script for
 #    every R6-ladder variant — dispatched on the checkpoint config.
@@ -1071,7 +1126,11 @@ and a final-summary `.md` to `scaleup/results/<tag>/`. The
 `channel_correlations.json` next to the checkpoint and an overlay PNG
 of the K×K correlation matrix; these are the source of the
 `mean |corr|`, `TC`, and `K_eff/K` numbers in the §14 R6-ladder table
-of the paper.
+of the paper. Steps 5–6 land their own report markdowns
+([`LEAKFREE_RE_EVAL.md`](notebooks/conservative_arch/first_order_ablation/results/LEAKFREE_RE_EVAL.md),
+[`RESULTS_LEAKFREE.md`](notebooks/conservative_arch/first_order_ablation/results/RESULTS_LEAKFREE.md),
+[`RESULTS_LEAKFREE_GAMMA_SWEEP.md`](notebooks/conservative_arch/ln_damping_sweep/results/RESULTS_LEAKFREE_GAMMA_SWEEP.md))
+that the v3 paper's §15 leak-free addenda cite directly.
 
 ---
 
