@@ -103,7 +103,8 @@ class ScalarPotentialLMSARFMassLN(ScalarPotentialLMSARFMass):
             traj_xi = []
 
         for _ in range(cfg.L):
-            xi_now = causal_cumulative_mean(h)
+            xi_input = h.detach() if cfg.causal_force else h
+            xi_now = causal_cumulative_mean(xi_input)
             if return_xi_trajectory:
                 assert traj_xi is not None
                 traj_xi.append(xi_now.detach().cpu())

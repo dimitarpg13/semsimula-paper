@@ -2,9 +2,9 @@
   {
     "tag": "em_base",
     "pretty": "baseline SARF+mass (logfreq)",
-    "val_ppl": 160.54913760531593,
-    "val_loss": 5.07860004901886,
-    "train_loss": 4.322857475280761,
+    "val_ppl": null,
+    "val_loss": null,
+    "train_loss": null,
     "K_star_per_prompt": [
       9,
       10,
@@ -22,49 +22,49 @@
   {
     "tag": "em_ln",
     "pretty": "(i) LayerNorm-after-step",
-    "val_ppl": 88.62769907637939,
-    "val_loss": 4.484444439411163,
-    "train_loss": 3.5930686593055725,
+    "val_ppl": 173.59397794996295,
+    "val_loss": 5.156719112396241,
+    "train_loss": 4.2397502064704895,
     "K_star_per_prompt": [
-      5,
-      9,
-      10,
       2,
+      4,
+      2,
+      3,
       2
     ],
     "V_range_global": [
-      -84.213,
-      -60.49
+      -114.764,
+      -24.635
     ],
-    "mean_content_basin_frac": 0.2311111111111111,
+    "mean_content_basin_frac": 0.0,
     "attr_found": true
   },
   {
     "tag": "em_sg",
     "pretty": "(ii) scale-gauge (lambda_V0=1e-3)",
-    "val_ppl": 191.00359760697287,
-    "val_loss": 5.252292263507843,
-    "train_loss": 4.448739421367645,
+    "val_ppl": 244.83846269078236,
+    "val_loss": 5.500598657131195,
+    "train_loss": 4.886687326431274,
     "K_star_per_prompt": [
-      2,
-      2,
-      2,
-      2,
-      10
+      7,
+      5,
+      4,
+      5,
+      5
     ],
     "V_range_global": [
-      -2332.447,
-      -186.038
+      -1698.768,
+      -311.279
     ],
-    "mean_content_basin_frac": 0.12,
+    "mean_content_basin_frac": 0.5228571428571429,
     "attr_found": true
   },
   {
     "tag": "em_gm",
     "pretty": "(iii) Gaussian-mixture head (K=64)",
-    "val_ppl": 677.6653429446897,
-    "val_loss": 6.518653571605682,
-    "train_loss": 6.326111900806427,
+    "val_ppl": 542.6464580992249,
+    "val_loss": 6.2964580178260805,
+    "train_loss": 5.9920343399047855,
     "K_star_per_prompt": [
       2,
       2,
@@ -73,8 +73,8 @@
       2
     ],
     "V_range_global": [
-      60.281,
-      60.33
+      63.431,
+      64.133
     ],
     "mean_content_basin_frac": 0.0,
     "attr_found": true

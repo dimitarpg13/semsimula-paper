@@ -52,6 +52,19 @@ class SPLMSARFMassConfig:
     logfreq_init_alpha: float = 0.0
     logfreq_path: Optional[str] = None
 
+    fixed_gamma: Optional[float] = None
+
+    # When True (default), compute ξ from h.detach() inside the integration
+    # loop. This severs the autograd path from ξ back to h, eliminating an
+    # anti-causal leak in the conservative force where ∂V[t']/∂h[t] ≠ 0 for
+    # t' > t (because ξ[t'] is a causal weighted average that includes h[t]).
+    # The fix restores the physics-correct Euler-Lagrange equation
+    #     m · ḧ_t = -∂V(ξ_t, h_t)/∂h_t
+    # as the per-token dynamics. See docs/Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md
+    # for the full bug-and-fix writeup. Set causal_force=False ONLY to
+    # bit-exactly reproduce pre-fix experiments (e.g. E9 forensics).
+    causal_force: bool = True
+
 
 class ScalarPotential(nn.Module):
     """MLP (xi, h) -> scalar energy. Identical to SARF baseline."""
@@ -105,10 +118,18 @@ class ScalarPotentialLMSARFMass(nn.Module):
             torch.tensor(_raw_from_positive(cfg.init_m)),
             requires_grad=cfg.learn_mgamma,
         )
-        self.raw_gamma = nn.Parameter(
-            torch.tensor(_raw_from_positive(cfg.init_gamma)),
-            requires_grad=cfg.learn_mgamma,
-        )
+        if cfg.fixed_gamma is not None:
+            self.raw_gamma = nn.Parameter(
+                torch.tensor(0.0),
+                requires_grad=False,
+            )
+            self._gamma_value: Optional[float] = float(cfg.fixed_gamma)
+        else:
+            self.raw_gamma = nn.Parameter(
+                torch.tensor(_raw_from_positive(cfg.init_gamma)),
+                requires_grad=cfg.learn_mgamma,
+            )
+            self._gamma_value = None
 
         if cfg.mass_mode == "global":
             pass
@@ -140,6 +161,11 @@ class ScalarPotentialLMSARFMass(nn.Module):
 
     @property
     def gamma(self) -> torch.Tensor:
+        if self._gamma_value is not None:
+            return torch.full(
+                (), self._gamma_value,
+                device=self.raw_gamma.device, dtype=self.raw_gamma.dtype,
+            )
         return F.softplus(self.raw_gamma)
 
     @property
@@ -204,7 +230,8 @@ class ScalarPotentialLMSARFMass(nn.Module):
             traj_xi = []
 
         for _ in range(cfg.L):
-            xi_now = causal_cumulative_mean(h)
+            xi_input = h.detach() if cfg.causal_force else h
+            xi_now = causal_cumulative_mean(xi_input)
             if return_xi_trajectory:
                 assert traj_xi is not None
                 traj_xi.append(xi_now.detach().cpu())

@@ -42,6 +42,12 @@ class SPLMSARFConfig:
     init_gamma: float = 1.0
     learn_mgamma: bool = True
 
+    # See SPLMSARFMassConfig.causal_force for full documentation.
+    # When True (default), ξ is computed from h.detach() inside the
+    # integration loop, severing the autograd path from ξ back to h
+    # and restoring the physics-correct per-token Euler-Lagrange force.
+    causal_force: bool = True
+
 
 class ScalarPotential(nn.Module):
     """MLP  (xi, h) in R^(2d)  ->  scalar energy.  Identical to baseline."""
@@ -143,7 +149,8 @@ class ScalarPotentialLMSARF(nn.Module):
             traj_xi = []
 
         for _ in range(cfg.L):
-            xi_now = causal_cumulative_mean(h)
+            xi_input = h.detach() if cfg.causal_force else h
+            xi_now = causal_cumulative_mean(xi_input)
             if return_xi_trajectory:
                 assert traj_xi is not None
                 traj_xi.append(xi_now.detach().cpu())

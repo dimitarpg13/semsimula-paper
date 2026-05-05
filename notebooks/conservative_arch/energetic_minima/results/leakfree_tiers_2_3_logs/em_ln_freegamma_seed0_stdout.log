@@ -1,0 +1,107 @@
+[em-train] device=mps  variant=ln  mode=shakespeare  tag=em_ln
+[em-train] tokens: train=321,124  val=16,901
+[em-train] params: 7,123,076  cfg: d=128, L=8, v_hidden=512
+[em-train] step    50/4000   train 10.7597   lr 1.25e-04   grad 0.99   v0_sq 0.000e+00   gamma=0.998   elapsed 15s
+[em-train] step   100/4000   train 9.8072   lr 2.50e-04   grad 1.67   v0_sq 0.000e+00   gamma=0.992   elapsed 28s
+[em-train] step   150/4000   train 7.7078   lr 3.75e-04   grad 1.38   v0_sq 0.000e+00   gamma=0.991   elapsed 40s
+[em-train] step   200/4000   train 6.4877   lr 5.00e-04   grad 0.35   v0_sq 0.000e+00   gamma=0.989   elapsed 54s
+[em-train] >>> eval @ 200: train 6.2890   val 6.4545   ppl 635.57
+[em-train] step   250/4000   train 6.1838   lr 5.00e-04   grad 0.56   v0_sq 0.000e+00   gamma=0.979   elapsed 78s
+[em-train] step   300/4000   train 5.8754   lr 4.99e-04   grad 0.83   v0_sq 0.000e+00   gamma=0.978   elapsed 94s
+[em-train] step   350/4000   train 5.6866   lr 4.98e-04   grad 0.54   v0_sq 0.000e+00   gamma=0.979   elapsed 110s
+[em-train] step   400/4000   train 5.5398   lr 4.97e-04   grad 0.56   v0_sq 0.000e+00   gamma=0.982   elapsed 126s
+[em-train] >>> eval @ 400: train 5.4153   val 5.7668   ppl 319.51
+[em-train] step   450/4000   train 5.4023   lr 4.95e-04   grad 0.84   v0_sq 0.000e+00   gamma=0.984   elapsed 155s
+[em-train] step   500/4000   train 5.2864   lr 4.92e-04   grad 1.00   v0_sq 0.000e+00   gamma=0.984   elapsed 177s
+[em-train] step   550/4000   train 5.2372   lr 4.90e-04   grad 1.36   v0_sq 0.000e+00   gamma=0.984   elapsed 200s
+[em-train] step   600/4000   train 5.1091   lr 4.87e-04   grad 1.34   v0_sq 0.000e+00   gamma=0.983   elapsed 222s
+[em-train] >>> eval @ 600: train 5.1055   val 5.5470   ppl 256.47
+[em-train] step   650/4000   train 5.0212   lr 4.83e-04   grad 2.25   v0_sq 0.000e+00   gamma=0.982   elapsed 256s
+[em-train] step   700/4000   train 5.0364   lr 4.79e-04   grad 1.74   v0_sq 0.000e+00   gamma=0.981   elapsed 278s
+[em-train] step   750/4000   train 4.9186   lr 4.75e-04   grad 0.95   v0_sq 0.000e+00   gamma=0.980   elapsed 299s
+[em-train] step   800/4000   train 4.8946   lr 4.70e-04   grad 1.22   v0_sq 0.000e+00   gamma=0.980   elapsed 321s
+[em-train] >>> eval @ 800: train 4.8774   val 5.4358   ppl 229.48
+[em-train] step   850/4000   train 4.8568   lr 4.65e-04   grad 1.01   v0_sq 0.000e+00   gamma=0.979   elapsed 356s
+[em-train] step   900/4000   train 4.8022   lr 4.59e-04   grad 1.33   v0_sq 0.000e+00   gamma=0.978   elapsed 377s
+[em-train] step   950/4000   train 4.7850   lr 4.54e-04   grad 0.94   v0_sq 0.000e+00   gamma=0.977   elapsed 400s
+[em-train] step  1000/4000   train 4.7052   lr 4.47e-04   grad 0.88   v0_sq 0.000e+00   gamma=0.975   elapsed 424s
+[em-train] >>> eval @ 1000: train 4.7400   val 5.3506   ppl 210.73
+[em-train] step  1050/4000   train 4.6364   lr 4.41e-04   grad 1.18   v0_sq 0.000e+00   gamma=0.975   elapsed 461s
+[em-train] step  1100/4000   train 4.5957   lr 4.34e-04   grad 1.17   v0_sq 0.000e+00   gamma=0.974   elapsed 484s
+[em-train] step  1150/4000   train 4.6071   lr 4.27e-04   grad 1.21   v0_sq 0.000e+00   gamma=0.973   elapsed 508s
+[em-train] step  1200/4000   train 4.5953   lr 4.19e-04   grad 0.99   v0_sq 0.000e+00   gamma=0.972   elapsed 534s
+[em-train] >>> eval @ 1200: train 4.6226   val 5.2570   ppl 191.90
+[em-train] step  1250/4000   train 4.5843   lr 4.12e-04   grad 1.26   v0_sq 0.000e+00   gamma=0.971   elapsed 574s
+[em-train] step  1300/4000   train 4.5536   lr 4.04e-04   grad 0.99   v0_sq 0.000e+00   gamma=0.970   elapsed 599s
+[em-train] step  1350/4000   train 4.5508   lr 3.95e-04   grad 1.09   v0_sq 0.000e+00   gamma=0.969   elapsed 625s
+[em-train] step  1400/4000   train 4.5162   lr 3.87e-04   grad 1.14   v0_sq 0.000e+00   gamma=0.969   elapsed 650s
+[em-train] >>> eval @ 1400: train 4.5129   val 5.2316   ppl 187.09
+[em-train] step  1450/4000   train 4.4834   lr 3.78e-04   grad 0.82   v0_sq 0.000e+00   gamma=0.968   elapsed 689s
+[em-train] step  1500/4000   train 4.4732   lr 3.69e-04   grad 1.04   v0_sq 0.000e+00   gamma=0.967   elapsed 713s
+[em-train] step  1550/4000   train 4.4406   lr 3.60e-04   grad 0.95   v0_sq 0.000e+00   gamma=0.967   elapsed 739s
+[em-train] step  1600/4000   train 4.4416   lr 3.51e-04   grad 1.01   v0_sq 0.000e+00   gamma=0.966   elapsed 767s
+[em-train] >>> eval @ 1600: train 4.3974   val 5.2169   ppl 184.37
+[em-train] step  1650/4000   train 4.4390   lr 3.41e-04   grad 1.04   v0_sq 0.000e+00   gamma=0.966   elapsed 808s
+[em-train] step  1700/4000   train 4.4502   lr 3.31e-04   grad 1.06   v0_sq 0.000e+00   gamma=0.965   elapsed 833s
+[em-train] step  1750/4000   train 4.4491   lr 3.22e-04   grad 0.85   v0_sq 0.000e+00   gamma=0.965   elapsed 859s
+[em-train] step  1800/4000   train 4.3962   lr 3.12e-04   grad 1.41   v0_sq 0.000e+00   gamma=0.965   elapsed 887s
+[em-train] >>> eval @ 1800: train 4.4025   val 5.2804   ppl 196.45
+[em-train] step  1850/4000   train 4.3675   lr 3.02e-04   grad 1.04   v0_sq 0.000e+00   gamma=0.964   elapsed 935s
+[em-train] step  1900/4000   train 4.3653   lr 2.91e-04   grad 0.94   v0_sq 0.000e+00   gamma=0.964   elapsed 965s
+[em-train] step  1950/4000   train 4.4080   lr 2.81e-04   grad 0.90   v0_sq 0.000e+00   gamma=0.964   elapsed 1003s
+[em-train] step  2000/4000   train 4.3543   lr 2.71e-04   grad 0.98   v0_sq 0.000e+00   gamma=0.963   elapsed 1043s
+[em-train] >>> eval @ 2000: train 4.3476   val 5.2990   ppl 200.14
+[em-train] step  2050/4000   train 4.3709   lr 2.61e-04   grad 1.02   v0_sq 0.000e+00   gamma=0.963   elapsed 1096s
+[em-train] step  2100/4000   train 4.3725   lr 2.50e-04   grad 1.02   v0_sq 0.000e+00   gamma=0.963   elapsed 1124s
+[em-train] step  2150/4000   train 4.3182   lr 2.40e-04   grad 1.34   v0_sq 0.000e+00   gamma=0.963   elapsed 1153s
+[em-train] step  2200/4000   train 4.3065   lr 2.30e-04   grad 0.91   v0_sq 0.000e+00   gamma=0.962   elapsed 1182s
+[em-train] >>> eval @ 2200: train 4.3207   val 5.2225   ppl 185.39
+[em-train] step  2250/4000   train 4.3334   lr 2.19e-04   grad 0.95   v0_sq 0.000e+00   gamma=0.962   elapsed 1225s
+[em-train] step  2300/4000   train 4.3280   lr 2.09e-04   grad 1.18   v0_sq 0.000e+00   gamma=0.962   elapsed 1253s
+[em-train] step  2350/4000   train 4.2884   lr 1.99e-04   grad 1.05   v0_sq 0.000e+00   gamma=0.961   elapsed 1281s
+[em-train] step  2400/4000   train 4.3182   lr 1.89e-04   grad 1.31   v0_sq 0.000e+00   gamma=0.961   elapsed 1311s
+[em-train] >>> eval @ 2400: train 4.3198   val 5.2499   ppl 190.56
+[em-train] step  2450/4000   train 4.2694   lr 1.79e-04   grad 1.00   v0_sq 0.000e+00   gamma=0.961   elapsed 1356s
+[em-train] step  2500/4000   train 4.3035   lr 1.69e-04   grad 1.18   v0_sq 0.000e+00   gamma=0.961   elapsed 1385s
+[em-train] step  2550/4000   train 4.2857   lr 1.59e-04   grad 1.25   v0_sq 0.000e+00   gamma=0.961   elapsed 1412s
+[em-train] step  2600/4000   train 4.2828   lr 1.50e-04   grad 1.01   v0_sq 0.000e+00   gamma=0.960   elapsed 1439s
+[em-train] >>> eval @ 2600: train 4.2541   val 5.2490   ppl 190.38
+[em-train] step  2650/4000   train 4.2138   lr 1.40e-04   grad 1.07   v0_sq 0.000e+00   gamma=0.960   elapsed 1476s
+[em-train] step  2700/4000   train 4.2742   lr 1.31e-04   grad 1.01   v0_sq 0.000e+00   gamma=0.960   elapsed 1500s
+[em-train] step  2750/4000   train 4.2870   lr 1.22e-04   grad 1.22   v0_sq 0.000e+00   gamma=0.960   elapsed 1525s
+[em-train] step  2800/4000   train 4.2480   lr 1.13e-04   grad 1.53   v0_sq 0.000e+00   gamma=0.960   elapsed 1549s
+[em-train] >>> eval @ 2800: train 4.2724   val 5.2040   ppl 182.00
+[em-train] step  2850/4000   train 4.2787   lr 1.05e-04   grad 1.34   v0_sq 0.000e+00   gamma=0.960   elapsed 1590s
+[em-train] step  2900/4000   train 4.2574   lr 9.66e-05   grad 1.28   v0_sq 0.000e+00   gamma=0.959   elapsed 1616s
+[em-train] step  2950/4000   train 4.2539   lr 8.86e-05   grad 1.20   v0_sq 0.000e+00   gamma=0.959   elapsed 1640s
+[em-train] step  3000/4000   train 4.2357   lr 8.08e-05   grad 1.02   v0_sq 0.000e+00   gamma=0.959   elapsed 1666s
+[em-train] >>> eval @ 3000: train 4.2552   val 5.2091   ppl 182.93
+[em-train] step  3050/4000   train 4.2626   lr 7.34e-05   grad 1.34   v0_sq 0.000e+00   gamma=0.959   elapsed 1709s
+[em-train] step  3100/4000   train 4.2693   lr 6.62e-05   grad 1.00   v0_sq 0.000e+00   gamma=0.959   elapsed 1734s
+[em-train] step  3150/4000   train 4.2078   lr 5.94e-05   grad 0.98   v0_sq 0.000e+00   gamma=0.959   elapsed 1758s
+[em-train] step  3200/4000   train 4.2241   lr 5.28e-05   grad 1.03   v0_sq 0.000e+00   gamma=0.959   elapsed 1783s
+[em-train] >>> eval @ 3200: train 4.2534   val 5.2560   ppl 191.71
+[em-train] step  3250/4000   train 4.2138   lr 4.67e-05   grad 1.17   v0_sq 0.000e+00   gamma=0.959   elapsed 1822s
+[em-train] step  3300/4000   train 4.1958   lr 4.08e-05   grad 1.03   v0_sq 0.000e+00   gamma=0.959   elapsed 1847s
+[em-train] step  3350/4000   train 4.2492   lr 3.53e-05   grad 1.05   v0_sq 0.000e+00   gamma=0.959   elapsed 1873s
+[em-train] step  3400/4000   train 4.2574   lr 3.02e-05   grad 0.94   v0_sq 0.000e+00   gamma=0.959   elapsed 1899s
+[em-train] >>> eval @ 3400: train 4.2556   val 5.2391   ppl 188.50
+[em-train] step  3450/4000   train 4.2230   lr 2.55e-05   grad 1.33   v0_sq 0.000e+00   gamma=0.959   elapsed 1937s
+[em-train] step  3500/4000   train 4.1960   lr 2.11e-05   grad 1.06   v0_sq 0.000e+00   gamma=0.958   elapsed 1961s
+[em-train] step  3550/4000   train 4.2472   lr 1.72e-05   grad 0.98   v0_sq 0.000e+00   gamma=0.958   elapsed 1985s
+[em-train] step  3600/4000   train 4.2746   lr 1.36e-05   grad 0.96   v0_sq 0.000e+00   gamma=0.958   elapsed 2009s
+[em-train] >>> eval @ 3600: train 4.2097   val 5.2650   ppl 193.44
+[em-train] step  3650/4000   train 4.2439   lr 1.05e-05   grad 1.28   v0_sq 0.000e+00   gamma=0.958   elapsed 2044s
+[em-train] step  3700/4000   train 4.2234   lr 7.70e-06   grad 0.91   v0_sq 0.000e+00   gamma=0.958   elapsed 2065s
+[em-train] step  3750/4000   train 4.2380   lr 5.36e-06   grad 1.00   v0_sq 0.000e+00   gamma=0.958   elapsed 2087s
+[em-train] step  3800/4000   train 4.2425   lr 3.44e-06   grad 1.10   v0_sq 0.000e+00   gamma=0.958   elapsed 2111s
+[em-train] >>> eval @ 3800: train 4.1843   val 5.1743   ppl 176.67
+[em-train] step  3850/4000   train 4.2242   lr 1.95e-06   grad 1.13   v0_sq 0.000e+00   gamma=0.958   elapsed 2148s
+[em-train] step  3900/4000   train 4.2192   lr 8.71e-07   grad 1.04   v0_sq 0.000e+00   gamma=0.958   elapsed 2172s
+[em-train] step  3950/4000   train 4.2367   lr 2.22e-07   grad 0.93   v0_sq 0.000e+00   gamma=0.958   elapsed 2194s
+[em-train] step  4000/4000   train 4.2400   lr 8.54e-11   grad 0.97   v0_sq 0.000e+00   gamma=0.958   elapsed 2216s
+[em-train] >>> eval @ 4000: train 4.2398   val 5.1567   ppl 173.59
+[em-train] done in 2228s
+[em-train] saved checkpoint -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/energetic_minima/results/em_ln_shakespeare_ckpt_latest.pt
+[em-train] saved loss curve -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/energetic_minima/results/em_ln_shakespeare_loss_curve.png
+[em-train] saved summary -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/energetic_minima/results/em_ln_shakespeare_summary.md

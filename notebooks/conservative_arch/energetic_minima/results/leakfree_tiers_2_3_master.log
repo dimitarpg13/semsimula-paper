@@ -1,0 +1,14 @@
+[tiers-2-3] device=mps  seed=0  PWD=/Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/energetic_minima  LOGS=/Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/energetic_minima/results/leakfree_tiers_2_3_logs
+[tiers-2-3] starting at 2026-05-04 23:14:17
+[tiers-2-3] === Tier 2a: em_ln freely-trained gamma ===
+[tiers-2-3] Tier 2a done in 2235s
+[tiers-2-3] === Tier 3a: em_sg lambda_v0=1e-3 ===
+[tiers-2-3] Tier 3a done in 2410s
+[tiers-2-3] === Tier 3b: em_gm K=64 ===
+[tiers-2-3] Tier 3b done in 6603s
+[tiers-2-3] === SUMMARY ===
+[tiers-2-3] Tier 2a (em_ln free-γ):  2235s
+[tiers-2-3] Tier 3a (em_sg λ=1e-3):  2410s
+[tiers-2-3] Tier 3b (em_gm K=64):    6603s
+[tiers-2-3] TOTAL:                    11248s
+[tiers-2-3] finished at 2026-05-05 02:21:45

@@ -4,10 +4,10 @@ All four variants share the SARF-faithful $\xi$ re-pooling, logfreq per-token ma
 
 | variant | val ppl | K* per prompt (n,m,s,d,c) | V range | mean content-basin fraction |
 |---|---:|---|---|---:|
-| baseline SARF+mass (logfreq) | 160.55 | 9,10,8,10,8 | [-1916.6, +1444.8] | 0.58 |
-| (i) LayerNorm-after-step | 88.63 | 5,9,10,2,2 | [-84.2, -60.5] | 0.23 |
-| (ii) scale-gauge (lambda_V0=1e-3) | 191.00 | 2,2,2,2,10 | [-2332.4, -186.0] | 0.12 |
-| (iii) Gaussian-mixture head (K=64) | 677.67 | 2,2,2,2,2 | [+60.3, +60.3] | 0.00 |
+| baseline SARF+mass (logfreq) | — | 9,10,8,10,8 | [-1916.6, +1444.8] | 0.58 |
+| (i) LayerNorm-after-step | 173.59 | 2,4,2,3,2 | [-114.8, -24.6] | 0.00 |
+| (ii) scale-gauge (lambda_V0=1e-3) | 244.84 | 7,5,4,5,5 | [-1698.8, -311.3] | 0.52 |
+| (iii) Gaussian-mixture head (K=64) | 542.65 | 2,2,2,2,2 | [+63.4, +64.1] | 0.00 |
 
 Columns:
 - **val ppl**: final validation perplexity from the last   training eval step.

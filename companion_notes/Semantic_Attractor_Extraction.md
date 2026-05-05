@@ -375,6 +375,160 @@ Two observations stand out:
     plus `attractors_comparison.png`,
     `landscape3d_*.png`, `training_evolution_*.png`
 
+## 12. v3 leak-free attractor pass (May 4-5, 2026; companion result)
+
+> **Context.** Sections 1–11 of this document report the v2 buggy
+> attractor pipeline run (the integrator's `xi <- causal_cumulative_mean(h)`
+> step had a missing `h.detach()`, closing an anti-causal channel; full
+> diagnosis at
+> [`Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`](Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md)).
+> The leak-free retrain produces *different* trajectories from a
+> *different* trained $V_{\theta}$, so this section reports the
+> attractor-extraction repeat on leak-corrected SPLM-2 checkpoints.
+> **Sections 1–11 above are preserved verbatim as the v2 buggy reading;
+> Section 12 reports the leak-free repeat.** F3 (prompt-dependent
+> multi-basin structure) is the structural prediction at stake; F1/F2
+> (no finite stationary points; anchored descent unimodal/prompt-
+> independent) are leak-immune by construction (they do not depend on
+> the trained $V_{\theta}$).
+
+### 12.1 Tier 1: leak-free fixed-γ=0.10 attractor extraction
+
+Re-ran `attractor_extraction.py --mode dynamical` on the leak-free
+`leakfree_3seed/gamma0p10/seed0` SPLM-2 checkpoint (`cfg.causal_force =
+True`, $\gamma^{\ast} = 0.10$, the inference-optimal damping per the S=5
+confirmation sweep at
+[`leakfree_5seed_confirmation/RESULTS_CONFIRMATION_S5.md`](../notebooks/conservative_arch/ln_damping_sweep/results/leakfree_5seed_confirmation/RESULTS_CONFIRMATION_S5.md)),
+with N = 768 initial states (256 Gaussian + 256 token-embedding + 256
+real-$h_L$ perturbed), 128 damped-dynamics steps at trained γ.
+
+| prompt domain | $K^{\ast}$ (v2 buggy) | $K^{\ast}$ (leak-free fixed γ=0.10) | top decoded basin token |
+|---|---:|---:|---|
+| narrative ("The old king sat on the") | $10$ | $4$ | `:`, `\n`, `,`, `\n` |
+| mathematics ("The theorem states... for every") | $2$ | $4$ | `A`, `\n`, `'s`, `\n` |
+| scientific ("Photosynthesis converts...") | $10$ | $11$ | `O`, `\n`, `is`, `to`, ... |
+| dialogue ("She whispered: I love") | $10$ | $8$ | `\n`, `.`, `io`, `alt`, ... |
+| code ("def fibonacci(n):...") | $10$ | $12$ | `ings`, `\n`, `'`, `s`, ... |
+
+**F3 verdict (leak-free fixed γ).** Prompt-dependent multi-basin
+structure **survives the leak fix** at the inference-optimal damping
+$\gamma = 0.10$: $K^{\ast} \in [4, 12]$ across the five prompts (vs
+$K^{\ast} \in [2, 10]$ in v2 buggy), all prompts multi-basin with
+$K^{\ast} \geq 4$. The basin content remains heavily punctuation /
+morpheme-dominated (top decoded token per basin is one of $\{
+\mathtt{:}, \mathtt{A}, \mathtt{'s}, \mathtt{O}, \mathtt{.},
+\mathtt{io}, \mathtt{alt}, \mathtt{ings}, \ldots \}$ for every basin
+in every prompt, content-basin fraction comparable to v2 LN's $0.23$),
+so the leak fix does **not** improve the basin-content question (which
+is an architectural limitation of the SPLM-2 family at this scale,
+flagged in §15-cba-open of the v3 paper). The qualitative direction of
+F3 — basins live in the combined potential-plus-damping-plus-horizon
+system and are prompt-dependent — is preserved.
+
+Source: `attractors_em_ln_leakfree_gamma0p10_seed0_*` in
+`notebooks/conservative_arch/attractor_analysis/results/`.
+
+### 12.2 Tier 2b: leak-free freely-trained-γ attractor extraction
+
+Re-ran `attractor_extraction.py --mode dynamical` on the leak-free
+`em_ln_shakespeare_ckpt_latest.pt` SPLM-2 checkpoint produced by Tier 2a
+(`cfg.causal_force = True`, freely-trained γ from $\gamma_{\mathrm{init}}
+= 1.0$, settled at $\gamma_{\mathrm{natural}} = 0.958$, val\_ppl 173.59;
+see `Energetic_Minima_Alternatives.md` §8 for the training pass). Same
+extraction parameters as §12.1.
+
+| prompt | $K^{\ast}$ | top decoded basin token (largest basin) | content-basin fraction |
+|---|---:|---|---:|
+| narrative | $2$ | `\n` (1.00) | $0.00$ |
+| mathematics | $4$ | `\n` (1.00) | $0.00$ |
+| scientific | $2$ | `\n` (1.00) | $0.00$ |
+| dialogue | $3$ | `\n` (1.00) | $0.00$ |
+| code | $2$ | `\n` (0.97) | $0.00$ |
+
+**F3 verdict (leak-free free-γ).** F3 is **partially weakened** under
+freely-trained γ: $K^{\ast} \in [2, 4]$, content-basin fraction $0.00$
+(every dominant basin decodes to a newline token; the fixed-γ regime
+above had basins decoding to non-newline punctuation/morphemes).
+Mathematics is the only prompt that retains $K^{\ast} \geq 4$;
+narrative, scientific, dialogue, and code all collapse to a single
+dominant newline-emitting basin. **The leak-corrected free-γ regime
+trades attractor diversity for $\sim 5\!-\!7$ PPL of LM quality versus
+the leak-corrected fixed-γ regime.** This is a striking single-seed
+observation that needs a paired-seed validation (the leak-free fixed-γ
+result is a 5-seed mean, the free-γ here is 1 seed) before reading it
+as a robust trade-off; that paired-seed validation is one of the open
+follow-ups in v3 paper §15.cba-open.
+
+Source: `attractors_em_ln_leakfree_freegamma_seed0_*` in
+`notebooks/conservative_arch/attractor_analysis/results/`.
+
+### 12.3 What changed about the attractor framework under the leak fix
+
+**Leak-immune** (mathematical form unchanged):
+
+- F1: $V_{\theta}$ has no finite local minima under pure Adam descent
+  (architectural fact about the unbounded-below MLP head; survives leak fix
+  unchanged).
+- F2: anchored descent is unimodal and prompt-independent (mathematical
+  fact about the data-manifold-prior composite landscape; survives).
+- The basin-as-pullback-of-damped-flow reinterpretation of §6 (the
+  "framework has attractors but they are time-bounded basins of the
+  damped flow, not energetic minima"): unchanged.
+
+**Leak-affected** (numerical values shift, qualitative direction held):
+
+- F3: prompt-dependent multi-basin structure under fixed-γ training
+  *survives* with shifted $K^{\ast}$ tuple ($(10, 2, 10, 10, 10) \to
+  (4, 4, 11, 8, 12)$ at γ\* shift $0.30 \to 0.10$); under free-γ
+  training F3 is *partially weakened* ($K^{\ast} \to (2, 4, 2, 3, 2)$,
+  newline-dominated basins).
+- The 3D-landscape rendering (§6 figure) on leak-free SPLM-2 looks
+  qualitatively similar to the buggy v2 rendering: a shallow funnel
+  with prompt-dependent saddles, no finite minima, basins as pullback
+  catchments of the damped trajectory ensemble.
+
+### 12.4 Updated reading of §11 files
+
+In addition to the v2 buggy artefacts listed in §11, the leak-free pass
+produces:
+
+- `attractors_em_ln_leakfree_gamma0p10_seed0_*` (Tier 1, fixed γ=0.10,
+  n\_sim\_steps=128): 5 PNGs + JSON + summary
+- `attractors_em_ln_leakfree_freegamma_seed0_*` (Tier 2b, free γ=0.958,
+  n\_sim\_steps=128): 5 PNGs + JSON + summary
+- `attractors_em_ln_*`, `attractors_em_sg_*`, `attractors_em_gm_*` were
+  *overwritten in-place* by the leak-free `run_attractor_pipeline.sh`
+  rerun (n\_sim\_steps=L\_train=8); the v2 buggy versions live in
+  earlier git revisions for archival
+- `landscape3d_landscape3d_em_*_dialogue.png`: leak-free 3D landscape
+  rendering for em\_ln, em\_sg, em\_gm
+
+### 12.5 Reproducing the v3 leak-free attractor pass
+
+```bash
+cd notebooks/conservative_arch/attractor_analysis
+
+# Tier 1: leak-free fixed-γ=0.10 attractor extraction
+python3 attractor_extraction.py \
+  --ckpt ../ln_damping_sweep/results/leakfree_3seed/gamma0p10/seed0/splm_em_ln_shakespeare_gamma0p10_seed0_ckpt_latest.pt \
+  --tag em_ln_leakfree_gamma0p10_seed0 \
+  --mode dynamical --device cpu --seed 0
+
+# Tier 2b: leak-free free-γ attractor extraction (after Tier 2a retrain)
+python3 attractor_extraction.py \
+  --ckpt ../energetic_minima/results/em_ln_shakespeare_ckpt_latest.pt \
+  --tag em_ln_leakfree_freegamma_seed0 \
+  --mode dynamical --device cpu --seed 0
+```
+
+Each invocation takes $\sim 4$–$5$ min on a single CPU core. Note: the
+checkpoint `splm_em_ln_shakespeare_gamma0p10_seed0_ckpt_latest.pt` is
+not committed to the companion repo (per the no-checkpoints policy);
+reproduce it from the leak-free 3-seed γ-sweep launcher
+[`run_gamma_sweep_leakfree.sh`](../notebooks/conservative_arch/ln_damping_sweep/scripts/run_gamma_sweep_leakfree.sh)
+or the cell launcher
+[`run_confirmation_5seed_sweep.sh`](../notebooks/conservative_arch/ln_damping_sweep/scripts/run_confirmation_5seed_sweep.sh).
+
 ## References
 
 - Sec. \"Inference of Semantic Structures\" of the SPLM paper draft

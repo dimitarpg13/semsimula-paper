@@ -308,3 +308,143 @@ Each shakespeare run takes $\sim 20$ min (LN, SG) to $\sim 85$ min
 (GM) on an Apple-Silicon MPS device; the attractor pipeline takes
 another $\sim 8$ min. Total wall-clock for the full experiment from
 scratch: $\sim 2.5$ hours.
+
+---
+
+## 8. v3 leak-free retrain pass (May 4-5, 2026; companion result)
+
+> **Context.** Sections 1–7 of this document report the v2 buggy
+> training pass on the energetic-minima alternatives, in which the
+> integrator's `xi <- causal_cumulative_mean(h)` step had a missing
+> `h.detach()` and the auto-grad loop closed an anti-causal channel
+> ([`Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`](Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md)).
+> The leak inflated v2 SPLM val\_ppl by a corpus-dependent factor
+> (e.g. $777\times$ on the TinyStories scale-up checkpoint, $\sim
+> 1.36\times$ on the Tiny-Shakespeare 6-cell SPLM-1 vs SPLM-2
+> retrain). After the leak fix landed (`cfg.causal_force = True` is
+> now the post-fix default), all three energetic-minima variants
+> were retrained from scratch. This section reports those retrain
+> results. **Sections 1–7 above are preserved verbatim as the v2
+> buggy reading; the v3 leak-free retrain numbers below supersede
+> them.** The full report (with per-prompt attractor JSON / PNG
+> bundles) is at
+> [`notebooks/conservative_arch/energetic_minima/results/leakfree_tiers_2_3_summary.md`](../notebooks/conservative_arch/energetic_minima/results/leakfree_tiers_2_3_summary.md).
+
+### 8.1 Leak-free retrain final metrics
+
+All three retrains used `train.py` from `energetic_minima/`, seed 0,
+Tiny Shakespeare 4000 steps, `em_ln` integrator at $L = 8$, $d = 128$,
+$v_{\mathrm{hidden}} = 512$, `mass_mode='logfreq'`, `cfg.causal_force = True`,
+`fixed_gamma = None` (γ freely trained from $\gamma_{\mathrm{init}} = 1.0$).
+
+| variant | tag | val\_ppl | val\_loss | final γ | wall-clock | params |
+|---|---|---:|---:|---:|---:|---:|
+| (i) em\_ln (LN-after-step) | `em_ln` | **173.59** | 5.157 | 0.9583 | 2235s (37 min) | 7.12 M |
+| (ii) em\_sg (scale-gauge, λ\_v0 = 1e-3) | `em_sg_lam1e-03` | 244.84 | 5.501 | 0.8632 | 2410s (40 min) | 7.10 M |
+| (iii) em\_gm (Gaussian-mixture, K=64) | `em_gm_K64` | 542.65 | 6.296 | 0.6683 | 6603s (110 min) | 7.13 M |
+
+### 8.2 Cross-variant attractor comparison (n\_sim\_steps = L\_train = 8)
+
+| variant | val\_ppl | $K^{\ast}$ tuple (n,m,s,d,c) | V range | content-basin frac. |
+|---|---:|---:|---|---:|
+| em\_base (v2 buggy SARF+mass, retained) | --- | $(9, 10, 8, 10, 8)$ | $[-1917, +1445]$ | $0.58$ |
+| em\_ln (leak-free, free-γ, $\gamma=0.958$) | $173.59$ | $(2, 4, 2, 3, 2)$ | $[-115, -25]$ | $0.00$ |
+| em\_sg (leak-free, $\lambda_{V_0}=10^{-3}$, $\gamma=0.863$) | $244.84$ | $(7, 5, 4, 5, 5)$ | $[-1699, -311]$ | $0.52$ |
+| em\_gm (leak-free, $K=64$, $\gamma=0.668$) | $542.65$ | $(2, 2, 2, 2, 2)$ | $[+63, +64]$ | $0.00$ |
+
+### 8.3 Leak-free reading of the three falsification criteria
+
+**(i) LN-after-step under leak-free training.** The freely-trained $\gamma$
+lands at $0.958$ — *essentially unchanged from* $\gamma_{\mathrm{init}} = 1.0$,
+the *opposite* of the v2 buggy regime in which free-γ landed at $\gamma
+\approx 0.65$. The leak-free val\_ppl of $173.59$ at $\gamma = 0.958$ is
+$\sim\!5\!-\!7$ PPL **below** the leak-free fixed-γ basin at $\gamma \in
+[0.10, 0.15]$ (S=5 confirmation sweep mean SPLM-2 val\_ppl $\sim 178\!-\!181$;
+[`leakfree_5seed_confirmation/RESULTS_CONFIRMATION_S5.md`](../notebooks/conservative_arch/ln_damping_sweep/results/leakfree_5seed_confirmation/RESULTS_CONFIRMATION_S5.md)).
+The qualitative direction of the v2 buggy LN result — "ppl is
+*not* essentially unchanged" — therefore survives the leak fix and is in
+fact strengthened: the $\sim\!45\%$ relative ppl improvement over the
+SARF-faithful baseline is no longer attributable to the leak channel
+(which would inflate the baseline more than LN). However, the leak-free
+LN attractor profile **collapses to $K^{\ast} = (2, 4, 2, 3, 2)$** and
+**content-basin fraction $0.00$** (every dominant basin decodes to a
+newline token). The buggy v2 LN content-basin fraction was $0.23$,
+itself lower than the buggy SARF-faithful baseline's $0.58$. The leak fix
+does not improve LN's basin-content coverage; if anything, the
+free-γ regime that the leak-corrected integrator settles into is *worse*
+on the basin-content axis than the buggy v2 fixed-γ regime. **Net effect
+on R6**: the structural argument ("compactifying the state space buys a
+finite minimum without a bounded $V_\theta$") is leak-immune; the
+empirical claim ("LN improves attractor crispness") is *partially refuted*
+under leak-free free-γ (attractors get less prompt-dependent and more
+newline-dominated).
+
+**(ii) Scale-gauge $\lambda_{V_0} = 10^{-3}$.** Under the v2 buggy retrain
+SG was *inconclusive*: ppl rose by 19% over the buggy baseline, $K^{\ast}$
+collapsed to 2 on four of five prompts, and the verdict was "neither a
+useful regulariser nor a decisive falsifier at this strength." Under the
+leak-free retrain SG **becomes a useful regulariser** for attractor
+diversity: $K^{\ast}$ recovers to $(7, 5, 4, 5, 5)$ (every prompt
+multi-basin with $K^{\ast} \geq 4$), content-basin fraction recovers to
+$0.52$ (comparable to v2 buggy `em_base` baseline at $0.58$), at a cost of
+$\sim\!71$ paired PPL on the LM objective ($244.84$ vs em\_ln free-γ
+$173.59$). The leak-free SG verdict is therefore "structurally rescued by
+the leak fix": a small loss-side anchor on $V_\theta$'s absolute scale at
+the input embedding **does** narrow $V$ range, **does** preserve diverse
+prompt-dependent basins, and **does** prevent collapse into the
+newline-only attractor regime — when the integrator is causally honest.
+Under causal honesty the SG penalty does the structural work that the v2
+buggy reading credited LN with.
+
+**(iii) Gaussian-mixture head ($K = 64$).** GM **continues to fail**
+under leak-free training: val\_ppl $542.65$ ($\sim\!4.7\times$ worse than
+em\_ln free-γ $173.59$, qualitatively comparable to the v2 buggy GM's
+$4.2\times$ overshoot of the buggy SARF-faithful baseline), $K^{\ast} =
+(2, 2, 2, 2, 2)$ (single-basin collapse on every prompt), $V$ range
+collapsed to a $\sim\!0.7$-unit-wide spike at $\sim\!+64$, content-basin
+fraction $0.00$. The leak fix does **not** rescue GM. R5 (the structural
+prediction that "structurally bounded $V_\theta$ is expressivity-limited")
+is therefore preserved and modestly reinforced under causal honesty.
+
+### 8.4 Updated narrative for §14.17 / §15-cba-attractors of the paper
+
+Combining the three retrain readings:
+
+* The **flagship recommendation shifts from (i) LN-after-step to (ii) SG**
+  for any future SPLM design where attractor diversity matters.
+  LN-after-step still gives the lowest val\_ppl, but at the cost of
+  collapsing all attractor basins to the newline channel under leak-free
+  free-γ training. SG sacrifices ~71 PPL but preserves prompt-dependent
+  multi-basin structure with content-coverage $0.52$.
+* The **structural argument** R5/R6 (R5 hardened, R6 strengthened) is
+  preserved.
+* The **buggy v2 reading that LN was a "different and empirically better
+  gauge choice"** survives in the *quantitative*-ppl sense (leak-free LN
+  free-γ at $173.59$ is the best ppl of the three) but is **partially
+  refuted in the qualitative-attractor sense** (leak-free LN free-γ has
+  $K^{\ast} = 2$ on three of five prompts with content-basin fraction
+  $0.00$; the v2 buggy LN had content-basin fraction $0.23$). The
+  flagship choice between LN and SG therefore now depends on which axis
+  of the trade-off matters for the downstream task; this is one of the
+  open follow-ups in v3 paper §15.cba-open.
+
+### 8.5 Reproducing the v3 leak-free retrain pass
+
+```bash
+# Tier 2a + Tier 3 trainings (~3h on Apple MPS, M2 Pro)
+cd notebooks/conservative_arch/energetic_minima
+bash scripts/run_leakfree_tiers_2_3.sh
+
+# Cross-variant attractor extraction + 3D landscape (~5 min CPU)
+bash run_attractor_pipeline.sh
+
+# Cross-variant report + JSON
+python3 compare.py
+```
+
+The launcher orchestrates Tier 2a (em\_ln free-γ), Tier 3a (em\_sg
+λ=1e-3), and Tier 3b (em\_gm K=64) under `cfg.causal_force = True` (the
+post-fix default). Outputs are in `energetic_minima/results/` (training
+artefacts) and `attractor_analysis/results/` (attractor summaries and 3D
+landscapes); the canonical summary is
+[`leakfree_tiers_2_3_summary.md`](../notebooks/conservative_arch/energetic_minima/results/leakfree_tiers_2_3_summary.md).

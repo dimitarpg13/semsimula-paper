@@ -37,7 +37,7 @@ sys.path.insert(0, str(NOTEBOOKS_DIR))
 sys.path.insert(0, str(NOTEBOOKS_DIR / "energetic_minima"))
 sys.path.insert(0, str(NOTEBOOKS_DIR / "sarf_mass_variant"))
 
-from data_module import get_batch, load_tiny_stories  # noqa: E402
+from data_module import get_batch, load_tiny_stories, load_tiny_shakespeare  # noqa: E402
 from model_ln import ScalarPotentialLMSARFMassLN, SPLMSARFMassLNConfig  # noqa: E402
 from model_sarf_mass import causal_cumulative_mean  # noqa: E402
 
@@ -324,6 +324,8 @@ def main() -> int:
     ap.add_argument("--n-power-iter", type=int, default=20)
     ap.add_argument("--n-hutchinson", type=int, default=5)
     ap.add_argument("--max-train-tokens", type=int, default=5_000_000)
+    ap.add_argument("--mode", choices=["stories", "shakespeare"], default="stories",
+                    help="Validation-data corpus for hidden-state sampling.")
     args = ap.parse_args()
 
     if args.device is None:
@@ -362,9 +364,15 @@ def main() -> int:
     )
 
     # --- Load val data ---
-    train_ids, val_ids = load_tiny_stories(
-        max_train_tokens=args.max_train_tokens,
-    )
+    if args.mode == "shakespeare":
+        print(f"[predict-gamma] mode=shakespeare", flush=True)
+        train_ids, val_ids = load_tiny_shakespeare()
+    else:
+        print(f"[predict-gamma] mode=stories  max_train_tokens={args.max_train_tokens:,}",
+              flush=True)
+        train_ids, val_ids = load_tiny_stories(
+            max_train_tokens=args.max_train_tokens,
+        )
     print(f"[predict-gamma] tokens: train={len(train_ids):,}  val={len(val_ids):,}",
           flush=True)
 
@@ -391,8 +399,8 @@ def main() -> int:
     L = model_cfg.L
     dt = model_cfg.dt
     gamma_depth = {
-        f"rho_{rho:.2f}": gamma_depth_closed_form(L, dt, m_mean, rho)
-        for rho in [0.05, 0.10, 0.15, 0.18, 0.20]
+        f"rho_{rho:.3f}": gamma_depth_closed_form(L, dt, m_mean, rho)
+        for rho in [0.05, 0.10, 0.15, 0.18, 0.20, 0.30, 0.50, 0.565, 0.70]
     }
 
     # --- §2.3 corpus-surprisal scaling ---
@@ -467,8 +475,8 @@ def main() -> int:
     md_lines.append("")
     md_lines.append("| ρ | γ\\*_depth |")
     md_lines.append("|---:|---:|")
-    for rho in [0.05, 0.10, 0.15, 0.18, 0.20]:
-        md_lines.append(f"| {rho:.2f} | {gamma_depth[f'rho_{rho:.2f}']:.4f} |")
+    for rho in [0.05, 0.10, 0.15, 0.18, 0.20, 0.30, 0.50, 0.565, 0.70]:
+        md_lines.append(f"| {rho:.3f} | {gamma_depth[f'rho_{rho:.3f}']:.4f} |")
     md_lines.append("")
     md_lines.append("## §2.2 Hessian-spectrum critical damping")
     md_lines.append("")
@@ -522,8 +530,8 @@ def main() -> int:
     )
     md_lines.append("|---|---:|---|")
     md_lines.append(
-        f"| §2.1 depth (ρ=0.18, recommended)  | "
-        f"{gamma_depth['rho_0.18']:.4f} | closed form |"
+        f"| §2.1 depth (ρ=0.18, buggy v2 anchor)  | "
+        f"{gamma_depth['rho_0.180']:.4f} | closed form |"
     )
     md_lines.append(
         f"| §2.2 Hessian top-eigenvalue       | "
@@ -532,6 +540,10 @@ def main() -> int:
     md_lines.append(
         f"| §2.2 Hessian avg-eigenvalue       | "
         f"{overall['gamma_hessian_avg']:.4f} | trained-checkpoint diagnostic |"
+    )
+    md_lines.append(
+        f"| §2.1 depth (ρ=0.565, leak-free anchor) | "
+        f"{gamma_depth['rho_0.565']:.4f} | closed form |"
     )
     md_lines.append(
         f"| §2.3 corpus-surprisal scaling     | "
@@ -553,12 +565,13 @@ def main() -> int:
 
     print("")
     print("=== γ\\* PREDICTIONS ===")
-    print(f"  §2.1 depth (ρ=0.18) : {gamma_depth['rho_0.18']:.4f}")
-    print(f"  §2.2 Hessian top    : {overall['gamma_hessian_top']:.4f}")
-    print(f"  §2.2 Hessian avg    : {overall['gamma_hessian_avg']:.4f}")
-    print(f"  §2.3 surprisal      : {gamma_surprisal:.4f}")
-    print(f"  trained γ (locked)  : {ckpt.get('final_gamma', '?')}")
-    print(f"  E10 Stage 1 (TBD)   : awaiting grid sweep")
+    print(f"  §2.1 depth (ρ=0.18,  buggy)     : {gamma_depth['rho_0.180']:.4f}")
+    print(f"  §2.1 depth (ρ=0.565, leak-free) : {gamma_depth['rho_0.565']:.4f}")
+    print(f"  §2.2 Hessian top                 : {overall['gamma_hessian_top']:.4f}")
+    print(f"  §2.2 Hessian avg                 : {overall['gamma_hessian_avg']:.4f}")
+    print(f"  §2.3 surprisal                   : {gamma_surprisal:.4f}")
+    print(f"  trained γ (locked)               : {ckpt.get('final_gamma', '?')}")
+    print(f"  E10 Stage 1 (TBD)                : awaiting grid sweep")
 
     return 0
 
