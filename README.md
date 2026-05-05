@@ -83,6 +83,9 @@ replacement.
 | `Causal_Leak_Empirical_Comparison_Report.md`                    | §1 (v3 status footnote), §14                                                  |
 | `Reducing_Information_Bottleneck_In_Multi-Channel_Xi_SPLM.md`   | §1 (v3 status footnote), §14 (R6 ladder), §16 (C7)                            |
 | `Restructuring_paper_v3_after_causal_leak_bug.md`               | §1 (v3 status footnote), §14, §16 — the strategic reframing                   |
+| `Determining_optimal_gamma_for_SPLM.md`                         | §1 (v3 status footnote), §15 — the four-estimator γ*-prediction framework (depth-scaling, Hessian-spectrum, corpus-surprisal, conditional-γ) and the leak-correction calibration: ρ shifts 0.18 → 0.565, the same closed form predicts both buggy γ* = 0.30 and leak-free γ* = 0.10 to three decimal places (resonance-predictor double success). |
+| `Energetic_Minima_Alternatives.md` (§8 leak-free retrain pass)  | §15.10 leak-free retrain — leak-corrected `em_ln` / `em_sg` / `em_gm` retrains; flagship recommendation shifts from LN-after-step to scale-gauge when attractor diversity matters (see §8 of this companion note). |
+| `Semantic_Attractor_Extraction.md` (§12 leak-free attractor pass) | §15.cba-attractors leak-free retrain — Tier 1 fixed-γ=0.10 (K\* = (4, 4, 11, 8, 12)) and Tier 2b free-γ (K\* = (2, 4, 2, 3, 2)) attractor extractions on leak-corrected `em_ln` checkpoints. |
 | `Semantic_Simulator_v15_EOM.md` *(forthcoming stub)*            | §9 / §16 Q8 — equation-of-motion specification for the v1.5 dynamics          |
 | `Semantic_Simulator_v2_EOM.md`  *(forthcoming stub)*            | §9 / §16 Q8 — equation-of-motion specification for the v2 dynamics            |
 | `Semantic_Simulator_v3_EOM.md`  *(forthcoming stub)*            | §9 / §16 Q8 — equation-of-motion specification for the v3 dynamics            |
@@ -97,7 +100,11 @@ replacement.
 | `multixi/`                                                   | Multi-channel-ξ model implementations (K-EMA / HiPPO-LegT / S4D) + channel-correlation diagnostics for the R6 ladder.        |
 | `scaleup/`                                                   | Training scripts and per-pilot result logs for the R6 ladder on TinyStories at the `~16M`-parameter pilot scale.             |
 | `first_order_ablation/`                                      | SPLM-1 first-order ablation: pre-registered v2 baseline (`results/RESULTS.md`), leak-free 3-seed retrain (`results/RESULTS_LEAKFREE.md`), and forensic re-eval of the buggy ckpts (`splm1_leakfree_re_eval.py` / `results/LEAKFREE_RE_EVAL.md`). |
-| `ln_damping_sweep/`                                          | Controlled-$\gamma$ damping sweep on LayerNorm-after-step SPLM: pre-registered v2 6-cell sweep (`results/RESULTS.md`) and leak-free 3-seed 4-point U-curve (`results/RESULTS_LEAKFREE_GAMMA_SWEEP.md`).                                |
+| `ln_damping_sweep/`                                          | Controlled-$\gamma$ damping sweep on LayerNorm-after-step SPLM: pre-registered v2 6-cell sweep (`results/RESULTS.md`), leak-free 3-seed 4-point U-curve (`results/RESULTS_LEAKFREE_GAMMA_SWEEP.md`), and **5-seed S=5 confirmation sweep** narrowed to $\gamma \in \{0.05, 0.10, 0.15, 0.20\}$ (`aggregate_confirmation_5seed.py` / `results/leakfree_5seed_confirmation/RESULTS_CONFIRMATION_S5.md`) which **confirms** the leak-free SPLM-2 vs SPLM-1 lift at all four pre-registered decision criteria simultaneously: paired $\Delta = +5.09$ PPL at $\gamma = 0.10$ (paired-$t = +5.30$, $d_{z} = +2.37$, $p = 0.006$, sign 5/5) and the strongest single result at $\gamma = 0.15$ at paired $\Delta = +7.03$ PPL (paired-$t = +4.23$, $d_{z} = +1.89$, $p = 0.013$, sign 5/5).                                |
+| `scaleup/gamma_transfer/`                                    | $\gamma^{\ast}$-prediction calibration site (Tier 0.5 of the leak-correction pass). `predict_gamma_hessian.py` evaluates the four-estimator framework of `Determining_optimal_gamma_for_SPLM.md` on a trained checkpoint; per-checkpoint output dirs under `results/<tag>/predict_gamma_summary.md`. The leak-free $\rho \approx 0.565$ depth-scaling anchor and the resonance-predictor double success live in `results/leakfree_gamma0p10_seed0/`. |
+| `results/sharedV_em_ln_leakfree_*` + `*.trajectories.pkl`     | Leak-free shared-potential separator regression on a leak-corrected `em_ln` checkpoint (Tier 0.6 of the leak-correction pass; the leak-free counterpart of §14.7 of the v2 paper). Median per-layer test $R^{2} = 0.949$, range $[0.925, 0.960]$, uniform layer profile — *higher* than the v2 buggy $R^{2} = 0.90$. Used to fill the placeholders in TMLR1 §A.3.3. |
+| `attractor_analysis/results/attractors_em_ln_leakfree_*`     | Leak-free dynamical-mode attractor extractions (Tiers 1 + 2b of the leak-correction pass). `attractors_em_ln_leakfree_gamma0p10_seed0_*` (Tier 1, fixed $\gamma = 0.10$, $K^{\ast} = (4, 4, 11, 8, 12)$ — F3 multi-basin structure survives the leak fix). `attractors_em_ln_leakfree_freegamma_seed0_*` (Tier 2b, freely-trained $\gamma = 0.958$, $K^{\ast} = (2, 4, 2, 3, 2)$ — free-γ trades attractor diversity for $\sim\!5\!-\!7$ PPL of LM quality). |
+| `energetic_minima/scripts/`, `results/leakfree_tiers_2_3_*`  | Leak-free retrains of the three energetic-minima alternatives (Tiers 2a, 3a, 3b): `em_ln` (LN-after-step, val\_ppl 173.59, $\gamma_{\mathrm{nat}} = 0.958$), `em_sg` (scale-gauge, val\_ppl 244.84, $\gamma_{\mathrm{nat}} = 0.863$, attractor diversity rescued: $K^{\ast} = (7, 5, 4, 5, 5)$, content frac. 0.52), `em_gm` (Gaussian-mixture, val\_ppl 542.65, $\gamma_{\mathrm{nat}} = 0.668$, still fails). Canonical synthesis report: `results/leakfree_tiers_2_3_summary.md`. Launchers: `scripts/run_leakfree_tiers_2_3.sh` (Tier 2a + 3a + 3b orchestrator) and `scripts/run_tier2b_attractor.sh` (Tier 2b standalone). |
 
 The new entries above are described in detail in the
 [`companion_notes/`](#companion_notes--2026-companion-notes-work-in-progress)
@@ -278,23 +285,86 @@ the SPLM-1 first-order ablation 3-seed retrain plus its forensic
 re-evaluation
 ([`first_order_ablation/results/RESULTS_LEAKFREE.md`](notebooks/conservative_arch/first_order_ablation/results/RESULTS_LEAKFREE.md),
 [`first_order_ablation/results/LEAKFREE_RE_EVAL.md`](notebooks/conservative_arch/first_order_ablation/results/LEAKFREE_RE_EVAL.md)),
-and the leak-free 3-seed 4-point $\gamma$-sweep
-([`ln_damping_sweep/results/RESULTS_LEAKFREE_GAMMA_SWEEP.md`](notebooks/conservative_arch/ln_damping_sweep/results/RESULTS_LEAKFREE_GAMMA_SWEEP.md)).
-Headline finding of these retrains: the v2 $\gamma^{\ast} = 0.30$
-identity does *not* survive the leak-fix — it shifts to the
-leak-corrected $\gamma^{\ast} = 0.10$ (paired-$t = -5.97$,
-two-sided $p \approx 0.027$, $d_{z} = -3.45$ on the paired
-difference between $\gamma = 0.10$ and $\gamma = 0.30$ means), and the
-$\gamma$-vs-PPL bowl flattens by $\sim\!3.7\times$. The published
-$+23.18$-PPL second-order architectural lift over a structurally
-first-order ablation collapses to $+4.71$ PPL at the leak-corrected
-$\gamma^{\ast}$ (3 seeds, $3/3$ sign-consistent, paired-$t = +2.81$,
-$d_{z} = +1.62$; $0.29$ PPL short of the pre-registered minimum
-effect size $\Delta_{\min} = 5.0$ PPL). The retrain artefacts (per-cell
-training logs, summary `.md`s, and loss-curve PNGs; per-cell
-checkpoints kept local-only by `.gitignore`) are exposed via the
+the leak-free 3-seed 4-point $\gamma$-sweep
+([`ln_damping_sweep/results/RESULTS_LEAKFREE_GAMMA_SWEEP.md`](notebooks/conservative_arch/ln_damping_sweep/results/RESULTS_LEAKFREE_GAMMA_SWEEP.md)),
+and the **5-seed S=5 confirmation sweep** that refines the
+$\gamma$-grid to $\gamma \in \{0.05, 0.10, 0.15, 0.20\}$
+([`ln_damping_sweep/results/leakfree_5seed_confirmation/RESULTS_CONFIRMATION_S5.md`](notebooks/conservative_arch/ln_damping_sweep/results/leakfree_5seed_confirmation/RESULTS_CONFIRMATION_S5.md)).
+
+Headline finding of the retrains plus the S=5 confirmation:
+
+* The v2 $\gamma^{\ast} = 0.30$ identity does *not* survive the
+  leak-fix — at S=5 the absolute-PPL minimum of the leak-free
+  $\gamma$-sweep sits in the basin $\gamma^{\ast} \in [0.10, 0.15]$,
+  and the $\gamma$-vs-PPL bowl flattens by $\sim\!3.7\times$.
+* The published $+23.18$-PPL second-order architectural lift over the
+  structurally first-order ablation collapses but **survives**: the
+  3-seed retrain alone reported a suggestive $+4.71$ PPL, $0.29$ PPL
+  short of the pre-registered minimum effect size $\Delta_{\min} = 5.0$
+  PPL; the S=5 confirmation sweep **confirms the lift at all four
+  pre-registered decision criteria simultaneously**: paired
+  $\Delta = +5.09$ PPL at $\gamma = 0.10$ (paired-$t = +5.30$,
+  $d_{z} = +2.37$, $p = 0.006$, sign 5/5), with the strongest single
+  result at $\gamma = 0.15$ at $\Delta = +7.03$ PPL ($t = +4.23$,
+  $d_{z} = +1.89$, $p = 0.013$, sign 5/5). Sign-consistency is 5/5 at
+  every $\gamma$ in $\{0.05, 0.10, 0.15, 0.20\}$, paired $\bar\Delta$
+  exceeds $\Delta_{\min}$ at $\gamma \in \{0.10, 0.15\}$ and is just
+  below it (`+4.16` / `+4.43` PPL respectively) at the basin shoulders
+  $\gamma \in \{0.05, 0.20\}$.
+
+The S=5 confirmation also unblocks four further leak-free experiments
+(Tiers 0.5 / 0.6 / 1 / 2a–b / 3a–b in the v3 retrain pass), all of
+which ship under
+[`notebooks/conservative_arch/`](notebooks/conservative_arch/) at this
+release:
+
+* **Tier 0.5 — γ\*-prediction reanchored.** The four-estimator
+  framework of [`Determining_optimal_gamma_for_SPLM.md`](companion_notes/Determining_optimal_gamma_for_SPLM.md)
+  re-run on a leak-corrected SPLM-2 checkpoint (`predict_gamma_hessian.py`
+  in `scaleup/gamma_transfer/`; outputs at
+  [`scaleup/gamma_transfer/results/leakfree_gamma0p10_seed0/predict_gamma_summary.md`](notebooks/conservative_arch/scaleup/gamma_transfer/results/leakfree_gamma0p10_seed0/predict_gamma_summary.md)).
+  The same depth-scaling closed form, with the same dataset-probed
+  mass, predicts both empirical $\gamma^{\ast}$ values to three
+  decimal places, with only the kinetic-energy retention factor
+  $\rho$ shifting from the v2 buggy $0.18$ to the leak-free $0.565$
+  (the *resonance-predictor double success*).
+* **Tier 0.6 — shared-potential separator on leak-free SPLM.** Re-fit
+  on a leak-corrected `em_ln` checkpoint (Tier-0.5's same checkpoint),
+  median per-layer test $R^{2} = 0.949$, range $[0.925, 0.960]$,
+  uniform layer profile — *higher* than the v2 buggy $R^{2} = 0.90$.
+  Source: [`results/sharedV_em_ln_leakfree_gamma0p10_seed0_summary.md`](notebooks/conservative_arch/results/sharedV_em_ln_leakfree_gamma0p10_seed0_summary.md);
+  trajectory pickle + NPZ + figure shipped under the same prefix.
+* **Tier 1 — leak-free fixed-γ=0.10 attractor extraction.** F3
+  (prompt-dependent multi-basin structure) survives the leak fix at
+  the inference-optimal $\gamma$: $K^{\ast} = (4, 4, 11, 8, 12)$
+  across the five prompt domains. Source:
+  [`attractor_analysis/results/attractors_em_ln_leakfree_gamma0p10_seed0_summary.md`](notebooks/conservative_arch/attractor_analysis/results/attractors_em_ln_leakfree_gamma0p10_seed0_summary.md).
+* **Tiers 2a + 2b — `em_ln` free-γ retrain + attractor pipeline.**
+  Freely-trained $\gamma$ settles at $0.958$ (essentially unchanged
+  from $\gamma_{\mathrm{init}} = 1.0$, opposite of the v2 buggy regime
+  where free-γ collapsed to $\gamma \approx 0.65$). val\_ppl $= 173.59$
+  is $\sim\!5\!-\!7$ PPL *below* the leak-free fixed-γ basin at $\gamma
+  \in [0.10, 0.15]$, but at the cost of attractor-diversity collapse:
+  $K^{\ast} = (2, 4, 2, 3, 2)$ with newline-only basins. Source:
+  [`energetic_minima/results/em_ln_shakespeare_summary.md`](notebooks/conservative_arch/energetic_minima/results/em_ln_shakespeare_summary.md)
+  + [`attractor_analysis/results/attractors_em_ln_leakfree_freegamma_seed0_summary.md`](notebooks/conservative_arch/attractor_analysis/results/attractors_em_ln_leakfree_freegamma_seed0_summary.md).
+* **Tiers 3a + 3b — `em_sg` + `em_gm` leak-free retrains.** Scale-gauge
+  is **rescued by the leak fix**: val\_ppl $244.84$ at $\gamma = 0.863$
+  with $K^{\ast} = (7, 5, 4, 5, 5)$ and content-basin fraction $0.52$
+  (every prompt multi-basin, content recovered). Gaussian-mixture
+  **continues to fail**: val\_ppl $542.65$ at $\gamma = 0.668$ with
+  $K^{\ast} = (2, 2, 2, 2, 2)$ and content-basin fraction $0.00$.
+  Cross-variant synthesis: [`energetic_minima/results/leakfree_tiers_2_3_summary.md`](notebooks/conservative_arch/energetic_minima/results/leakfree_tiers_2_3_summary.md).
+  Updated reading of §14.17 / §15.10 of the paper, including the
+  flagship recommendation shift LN → SG when attractor diversity
+  matters: [`companion_notes/Energetic_Minima_Alternatives.md`](companion_notes/Energetic_Minima_Alternatives.md)
+  §8 (v2 buggy reading sections 1–7 preserved verbatim).
+
+The retrain artefacts (per-cell training logs, summary `.md`s, and
+loss-curve PNGs; per-cell `*.pt` checkpoints kept local-only by
+`.gitignore`) are exposed via the
 [**v3 — leak-correction audit and the R6 ladder**](#v3--leak-correction-audit-and-the-r6-ladder)
-reproduction section below (steps 5–6).
+reproduction section below (steps 5–10).
 
 #### Forthcoming-work EOM stubs for the v1.5 / v2 / v3 dynamics
 
@@ -1112,10 +1182,78 @@ bash ln_damping_sweep/scripts/run_gamma_sweep_leakfree.sh
 # (training logs + summary mds + loss-curve PNGs; per-cell .pt
 #  checkpoints are .gitignored and stay local-only).
 
-# 7. Information-theoretic diagnostics on a trained ξ trajectory:
-#    pairwise correlation matrix, mean off-diagonal |corr|,
-#    total correlation TC, entropy-power K_eff. Same script for
-#    every R6-ladder variant — dispatched on the checkpoint config.
+# 7. S=5 confirmation sweep. Refine the γ-grid to {0.05, 0.10, 0.15,
+#    0.20} at 5 paired SPLM-1/SPLM-2 seeds per γ to firmly establish
+#    or refute the +4.71-PPL second-order lift from step 6 against
+#    the pre-registered Δ_min = 5.0 PPL. Reuses the leak-free 3-seed
+#    γ=0.10 cells from step 6 above; runs ~11 h of wall-clock on MPS
+#    for the remaining 16 cells.
+bash ln_damping_sweep/scripts/run_confirmation_5seed_sweep.sh
+python ln_damping_sweep/aggregate_confirmation_5seed.py
+# Per-cell artefacts land under
+#   ln_damping_sweep/results/leakfree_5seed_confirmation/gamma{0p05,...,0p20}/seed{0..4}/
+# Aggregated paired-t / d_z / sign-consistency table:
+#   ln_damping_sweep/results/leakfree_5seed_confirmation/RESULTS_CONFIRMATION_S5.md
+#   ln_damping_sweep/results/leakfree_5seed_confirmation/results_confirmation_s5.json
+
+# 8. Tier 0.5 — γ*-prediction reanchored on a leak-corrected ckpt.
+#    Runs the four-estimator framework of
+#    companion_notes/Determining_optimal_gamma_for_SPLM.md on a
+#    leak-free SPLM-2 checkpoint at the inference-optimal γ = 0.10.
+#    Validates the *resonance-predictor double success*: the same
+#    closed form predicts both v2 buggy γ* = 0.30 and leak-free
+#    γ* = 0.10, with only ρ shifting (0.18 → 0.565).
+python scaleup/gamma_transfer/predict_gamma_hessian.py \
+    --ckpt ln_damping_sweep/results/leakfree_3seed/gamma0p10/seed0/splm_em_ln_shakespeare_gamma0p10_seed0_ckpt_latest.pt \
+    --mode shakespeare \
+    --tag leakfree_gamma0p10_seed0
+# Output: scaleup/gamma_transfer/results/leakfree_gamma0p10_seed0/predict_gamma_summary.md
+#       + scaleup/gamma_transfer/results/leakfree_gamma0p10_seed0/predict_gamma.json
+
+# 9. Tier 0.6 — shared-potential separator on a leak-corrected ckpt.
+#    Re-fits the §14.7 separator regression on a leak-free em_ln
+#    checkpoint (the same Tier-0.5 ckpt). Yields median per-layer
+#    test R^2 = 0.949, range [0.925, 0.960] — *higher* than the v2
+#    buggy R^2 = 0.90. Used to fill the placeholders in TMLR1 §A.3.3.
+python energetic_minima/trajectory_extraction_em_ln.py \
+    --ckpt ln_damping_sweep/results/leakfree_3seed/gamma0p10/seed0/splm_em_ln_shakespeare_gamma0p10_seed0_ckpt_latest.pt \
+    --tag em_ln_leakfree_gamma0p10_seed0
+python shared_potential_fit.py \
+    --traj results/splm_em_ln_leakfree_gamma0p10_seed0.trajectories.pkl \
+    --tag em_ln_leakfree_gamma0p10_seed0
+# Output: results/sharedV_em_ln_leakfree_gamma0p10_seed0_{fig.png, results.npz, summary.md}
+
+# 10. Tier 1 / Tier 2a–b / Tier 3a–b retrains of the energetic-minima
+#     alternatives + attractor extractions on leak-free ckpts.
+#     Tier 1 — leak-free fixed-γ=0.10 attractor (~5 min on CPU):
+python attractor_analysis/attractor_extraction.py \
+    --ckpt ln_damping_sweep/results/leakfree_3seed/gamma0p10/seed0/splm_em_ln_shakespeare_gamma0p10_seed0_ckpt_latest.pt \
+    --tag em_ln_leakfree_gamma0p10_seed0 \
+    --mode dynamical --device cpu --seed 0
+#     Tier 2a + 3a + 3b — em_ln / em_sg / em_gm leak-free retrains
+#     on Tiny Shakespeare (~3 h on Apple MPS):
+bash energetic_minima/scripts/run_leakfree_tiers_2_3.sh
+#     Tier 2b — attractor extraction on the em_ln free-γ ckpt
+#     produced by Tier 2a (~5 min on CPU):
+bash energetic_minima/scripts/run_tier2b_attractor.sh
+#     Cross-variant 4-way comparison + 3D landscape grid:
+bash energetic_minima/run_attractor_pipeline.sh
+python energetic_minima/compare.py
+python energetic_minima/make_compare_figure.py
+# Per-tier artefacts land under
+#   attractor_analysis/results/attractors_em_ln_leakfree_gamma0p10_seed0_*  (Tier 1)
+#   energetic_minima/results/em_{ln, sg_lam1e-03, gm_K64}_shakespeare_*     (Tiers 2a, 3a, 3b)
+#   attractor_analysis/results/attractors_em_ln_leakfree_freegamma_seed0_*  (Tier 2b)
+#   attractor_analysis/results/attractors_em_{ln, sg, gm}_*                 (pipeline n_sim_steps=8)
+#   energetic_minima/results/comparison_{report.md, table.json}
+#   energetic_minima/results/landscape3d_compare_four_variants_dialogue.png
+# Canonical synthesis report:
+#   energetic_minima/results/leakfree_tiers_2_3_summary.md
+
+# 11. Information-theoretic diagnostics on a trained ξ trajectory:
+#     pairwise correlation matrix, mean off-diagonal |corr|,
+#     total correlation TC, entropy-power K_eff. Same script for
+#     every R6-ladder variant — dispatched on the checkpoint config.
 python multixi/diagnose_xi_channel_correlations.py \
     --ckpt scaleup/results/multihippo_pilot_learndt/em_ln_multixi_hippo_tinystories_ckpt_latest.pt
 ```
@@ -1126,11 +1264,16 @@ and a final-summary `.md` to `scaleup/results/<tag>/`. The
 `channel_correlations.json` next to the checkpoint and an overlay PNG
 of the K×K correlation matrix; these are the source of the
 `mean |corr|`, `TC`, and `K_eff/K` numbers in the §14 R6-ladder table
-of the paper. Steps 5–6 land their own report markdowns
+of the paper. Steps 5–10 land their own report markdowns
 ([`LEAKFREE_RE_EVAL.md`](notebooks/conservative_arch/first_order_ablation/results/LEAKFREE_RE_EVAL.md),
 [`RESULTS_LEAKFREE.md`](notebooks/conservative_arch/first_order_ablation/results/RESULTS_LEAKFREE.md),
-[`RESULTS_LEAKFREE_GAMMA_SWEEP.md`](notebooks/conservative_arch/ln_damping_sweep/results/RESULTS_LEAKFREE_GAMMA_SWEEP.md))
-that the v3 paper's §15 leak-free addenda cite directly.
+[`RESULTS_LEAKFREE_GAMMA_SWEEP.md`](notebooks/conservative_arch/ln_damping_sweep/results/RESULTS_LEAKFREE_GAMMA_SWEEP.md),
+[`RESULTS_CONFIRMATION_S5.md`](notebooks/conservative_arch/ln_damping_sweep/results/leakfree_5seed_confirmation/RESULTS_CONFIRMATION_S5.md),
+[`predict_gamma_summary.md`](notebooks/conservative_arch/scaleup/gamma_transfer/results/leakfree_gamma0p10_seed0/predict_gamma_summary.md),
+[`sharedV_em_ln_leakfree_gamma0p10_seed0_summary.md`](notebooks/conservative_arch/results/sharedV_em_ln_leakfree_gamma0p10_seed0_summary.md),
+[`leakfree_tiers_2_3_summary.md`](notebooks/conservative_arch/energetic_minima/results/leakfree_tiers_2_3_summary.md))
+that the v3 paper's §15 leak-free addenda and the prospective TMLR1
+paper's §A.3 leak-correction note cite directly.
 
 ---
 
