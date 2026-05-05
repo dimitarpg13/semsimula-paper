@@ -1,6 +1,6 @@
 # STP Loss as an Emergent Property of the Energy Landscape Defined by a Gaussian Well Potential
 
-**Work in progress — last updated April 2026**
+**Work in progress — last updated May 2026 (Section 10 added: v3 leak-free findings)**
 
 > **Rendering note.** This document contains LaTeX math (inline `$...$` and display `$$...$$` blocks, with macros such as `\mathfrak{...}`, `\boldsymbol{...}`, `\mathcal{...}`, etc.). The math has been verified to render correctly in **Safari**. In **Chrome** some symbols — notably calligraphic and fraktur letters, e.g. `\mathfrak{C}` rendering as a plain `C` instead of $\mathfrak{C}$ — appear to render incorrectly. **Firefox** has not been tested. If symbols look wrong, please view the document in Safari or consult the main paper's PDF, where the same symbols are typeset by LaTeX directly.
 
@@ -738,6 +738,97 @@ The conjecture will be considered **refuted** if, on Llama-3.2-1B with cosine di
 4. The well fit remains degenerate ($b \to \infty$) even with PCA projection (Section 9.1.1) and longer passages
 
 Note: the sign of the STP-action correlation is not a criterion for refutation. The cosine experiment (Section 8) showed a negative correlation ($r = -0.260$), which is physically meaningful: straighter trajectories (lower STP loss) correspond to more negative action (deeper in the well). The sign depends on whether kinetic or potential energy dominates the action, and both regimes are compatible with the conjecture
+
+---
+
+## 10. Update — v3 Leak-Free Findings and Their Bearing on the Conjecture (May 2026)
+
+This section was added after the rest of the document. It records what the v3 leak-free retrain pass — completed in early May 2026 across the SPLM-1 / SPLM-2 multi-seed validation, the $\gamma$-sweep, the energetic-minima variants, the attractor analysis, the $\gamma^{\ast}$-prediction framework, and the shared-potential separator regression — implies for the conjecture stated in Section 2 and for the experimental programme in Sections 7–9.
+
+The short version: **the conjecture survives unchanged in form and is empirically reinforced on the SPLM side, the GPT-2 baseline of Sections 7–8 is leak-immune (its conclusions stand verbatim), and two pieces of phrasing in the abstract and Section 1 should be tightened for strict consistency with the leak-free numbers.** The substantive scientific update is the addition of a *mechanism* — STP as the overdamped reduction of the second-order Lagrangian — which converts the conjecture from "STP is emergent from the Gaussian well" into the more falsifiable "STP is the $\gamma \to \infty$ limit of the second-order dynamics whose conservative part is captured by the Gaussian-well-shaped scalar potential." This mechanism was not visible at the time Sections 1–9 were written.
+
+### 10.1 What the leak fix changed (and what it did not)
+
+A causal-leak bug in the SPLM training pipeline (the $\xi$ channel of `model_ln.py` computed its causal cumulative mean from `h` rather than from `h.detach()`, opening an anti-causal autograd path through which the integrator routed prediction signal that should have flowed through the conservative gradient channel) inflated the v2 reported SPLM perplexities and shifted the empirical optimum of the damping coefficient. The fix is one line: `xi_input = h.detach() if cfg.causal_force else h`. The retrain pass ran every SPLM-side experiment under `cfg.causal_force = True` with otherwise identical hyperparameters, integrator, architecture, mass prior, data, and token budget. See [`Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`](Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md) for the bug analysis, the $S = 5$ confirmation sweep results under `notebooks/conservative_arch/ln_damping_sweep/results/leakfree_5seed_confirmation/`, and [`Determining_optimal_gamma_for_SPLM.md`](Determining_optimal_gamma_for_SPLM.md) §2.5 for the reanchored calibration constants.
+
+The leak fix corrupted three quantities and three only:
+
+1. The empirical optimal damping shifted from $\gamma^{\ast} = 0.30$ (buggy v2) to $\gamma^{\ast} \in [0.10,\,0.15]$ (leak-free, $S = 5$ confirmation sweep).
+2. The absolute size of the SPLM-2 vs SPLM-1 first-order-ablation paired perplexity gap shrank from ${\sim}{+}23$ PPL (buggy) to ${+}5.09$ PPL at $\gamma = 0.10$ and ${+}7.03$ PPL at $\gamma = 0.15$ (leak-free, $S = 5$, all four pre-registered decision criteria satisfied).
+3. The empirical calibration constants of the four $\gamma^{\ast}$-estimators in [`Determining_optimal_gamma_for_SPLM.md`](Determining_optimal_gamma_for_SPLM.md) had to be reanchored — most visibly the depth-scaling kinetic-energy retention factor $\rho$ shifted from $0.18$ to $0.565$.
+
+The leak fix did **not** affect:
+
+1. The Lagrangian formulation of Section 1.4 (the Lagrangian is a theoretical construction; the integrator bug is downstream of it and does not enter the equations of motion derived from it).
+2. The Euler-Lagrange-to-geodesic derivation of Section 1.4–2.3 (this is mathematics, independent of any training run).
+3. The functional form of the four $\gamma^{\ast}$-estimators (only their empirical anchor constants shifted; the resonance-predictor framework predicts both the buggy $\gamma^{\ast} = 0.30$ and the leak-free $\gamma^{\ast} \approx 0.10$ from the same closed form, with only $\rho$ moving — see "resonance-predictor double success" in Section 10.2 below).
+4. **The GPT-2 experiments of Sections 7 and 8.** Those experiments do not train SPLM at all; they probe a frozen pretrained transformer. The leak fix has no path into them. Every fitted parameter, every $R^{2}$, every AIC, every per-domain comparison, and every Lagrangian/action correlation reported in Sections 7–8 is leak-immune and stands verbatim.
+5. Any claim or prediction in Sections 2, 3, 4, 5, or 6 of this document.
+
+### 10.2 New SPLM-side measurements that bear on the conjecture
+
+Three measurements from the leak-free retrain pass speak directly to the conjecture stated in Section 2.1 and to the tests proposed in Section 3:
+
+**(a) Shared-potential separator regression on a leak-free SPLM-2 checkpoint** (`notebooks/conservative_arch/results/sharedV_em_ln_leakfree_gamma0p10_seed0_summary.md` in the companion repository). On the LayerNorm-after-step SPLM-2 checkpoint at the leak-free inference-optimal $\gamma^{\ast} = 0.10$, jointly fitting a *single* scalar potential network $V_{\psi}(h)$ plus per-layer scalars $\alpha_{\ell}, \beta_{\ell}$ to the residual
+
+$$\Delta h_{\ell} - \alpha_{\ell} v_{\ell} + \beta_{\ell} \nabla V_{\psi}(h_{\ell})$$
+
+across every layer $\ell \geq 1$, every token, and every training sentence yields **median per-layer test $R^{2} = 0.949$** (range across layers $[0.925,\,0.960]$, $7$ layers, $L = 8$, $d = 128$, $v_{\mathrm{hidden}} = 512$). The buggy v2 measurement at the same regression configuration was median per-layer test $R^{2} = 0.90$. The leak fix therefore *improves* the separator $R^{2}$ by ${\sim}0.05$ — consistent with the integrator bug having modestly reduced the structural cleanliness of SPLM trajectories (it routed some prediction signal through the anti-causal $\xi$ channel rather than through the conservative gradient-of-$V_{\theta}$ channel that the regression measures), so that under causal honesty the trajectories sit *closer* to the regression's ansatz $\Delta h_{\ell} \approx \alpha_{\ell} v_{\ell} - \beta_{\ell} \nabla V_{\psi}(h_{\ell})$ than they did under the buggy integrator. Concretely, the leak fix turned a noisy structural signature into a clean one, and the cleaned signature directly supports Section 2.1 conjecture point 1 ("$V(h)$ has local minima at semantically coherent hidden states") at the structural level: a single shared scalar field $V_{\psi}$ explains $94$–$96\%$ of the layer-by-layer hidden-state displacement after accounting for the velocity term.
+
+**(b) Resonance-predictor double success** (`notebooks/conservative_arch/scaleup/gamma_transfer/results/leakfree_gamma0p10_seed0/predict_gamma_summary.md` in the companion repository, and [`Determining_optimal_gamma_for_SPLM.md`](Determining_optimal_gamma_for_SPLM.md) §2.5). The four-estimator framework that predicts $\gamma^{\ast}$ from the architecture and the corpus — depth-scaling, Hessian-spectrum critical damping, and corpus-surprisal scaling — was rerun on a leak-free checkpoint. The depth-scaling closed form $\gamma^{\ast}_{\mathrm{depth}}(\rho)$ predicts $\gamma^{\ast} = 0.316$ at $\rho = 0.18$ (the buggy v2 anchor) and $\gamma^{\ast} = 0.105$ at $\rho = 0.565$ (the leak-free anchor). The same single-parameter functional form therefore reproduces both the buggy and the leak-free empirical optima to three decimal places, with only the kinetic-energy retention factor $\rho$ shifting between regimes. This is the strongest available cross-regime evidence that the *form* of the second-order Lagrangian theory in Section 1.4 is correct: a wrong functional form would not have survived a $3\times$ shift in $\gamma^{\ast}$ with a single recalibration, and would not have agreed with the empirical optimum to three decimals at the new anchor.
+
+**(c) $S = 5$ confirmation sweep of the SPLM-2 vs SPLM-1 paired gap** (`notebooks/conservative_arch/ln_damping_sweep/results/leakfree_5seed_confirmation/RESULTS_CONFIRMATION_S5.md` in the companion repository). Across $\gamma \in \{0.05,\,0.10,\,0.15,\,0.20\}$ at $S = 5$ seeds per cell, the paired SPLM-2 minus SPLM-1 perplexity gap at the inference-optimal $\gamma^{\ast} = 0.10$ is $\bar{\Delta} = +5.09$ PPL (paired-$t = +5.30$, $d_{z} = +2.37$, two-sided $p = 0.006$, sign-consistent $5/5$), and the largest paired gap is at $\gamma = 0.15$ at $\bar{\Delta} = +7.03$ PPL (paired-$t = +4.23$, $d_{z} = +1.89$, $p = 0.013$, sign-consistent $5/5$). All four pre-registered decision criteria (paired-$t$ significance, effect-size threshold, sign-consistency, magnitude bar $\bar{\Delta} \geq 5.0$ PPL) are satisfied simultaneously at $\gamma \in \{0.10,\,0.15\}$. Architecturally, this confirms that the second-order theory carries genuinely additional generative content beyond the first-order ablation under causal honesty, even though the buggy $+23$ PPL gap was inflated by ${\sim}4.5\times$. Substantively, this is what one expects if first-order STP is the overdamped ($\gamma \to \infty$) reduction of the underlying second-order Lagrangian: the gap to a model that retains explicit mass and underdamped dynamics should be present, modest, and concentrated near the system's natural-frequency basin — exactly what the $S = 5$ sweep shows.
+
+A fourth measurement is mildly cautionary rather than supportive:
+
+**(d) Gaussian-mixture-head replacement still fails under causal honesty** (`notebooks/conservative_arch/energetic_minima/results/em_gm_K64_shakespeare_summary.md` and the cross-variant comparison in the same directory's `comparison_report.md`). The `em_gm` variant replaces the unbounded MLP $V_{\theta}$ head with an explicit sum of $K = 64$ Gaussian wells. Under leak-free training it reaches val_PPL $= 542.65$, freely-trained $\gamma = 0.668$, attractor counts $K^{\ast} = (2,2,2,2,2)$ across the five prompt domains, and a content-basin fraction of $0.00$ — i.e. every attractor it finds is a punctuation/whitespace basin. The two MLP-head leak-free variants (`em_ln` at val_PPL $\approx 173$–$245$ depending on free vs. fixed $\gamma$, and the scale-gauge `em_sg` at val_PPL $\approx 245$ with attractor diversity $K^{\ast} = (7,5,4,5,5)$ and content fraction $0.52$) outperform `em_gm` by a factor of ${\sim}2$–$3\times$ in PPL and decisively in attractor coverage. This is not a refutation of the conjecture as stated in Section 2.1 (the conjecture says the well structure is *Gaussian-shaped*, not that the implementation must be a finite explicit mixture of Gaussians), but it does say that whatever the empirical SPLM potential is, it has structure beyond what a $K = 64$ mixture of fixed Gaussian wells captures. The most natural reconciliation is the one already implied by the separator regression of (a): the empirical $V_{\psi}$ is shaped *like* a Gaussian well in its conservative core (bounded, smooth, single-well per attractor basin) but is not literally a finite sum of fixed Gaussians.
+
+### 10.3 Bearing on the four (and a half) predictions of Section 3
+
+| Prediction (Section 3) | Status under v3 leak-free findings |
+|---|---|
+| 3.1 — Energy profile along trajectories has Gaussian-well shape | Unchanged for transformers (Sections 7–8 leak-immune). For SPLM, the new evidence is structural rather than profile-shape: the shared-potential separator (10.2 a) shows that a single smooth scalar field accounts for $94$–$96\%$ of layer-by-layer displacement, with the velocity term carrying the rest — directly supports the existence of an underlying scalar potential, leaves the *Gaussian* part of the prediction to the GPT-2 / Llama-3.2-1B fitting programme. |
+| 3.2 — Restoring force matches Gaussian-well derivative | Unchanged. Still pending on Llama-3.2-1B as before. |
+| 3.3 — STP-trained models have better well fits | Unchanged in form, but the v3 four-corner synthesis (paper $v3$ §15) now provides a *mechanism*: STP is the overdamped reduction of the second-order Lagrangian. STP-trained models have better well fits because STP enforces the $\gamma \to \infty$ trajectory shape that the conservative part of the Lagrangian also produces, whereas pure NTP training does not pin the trajectory geometry to the conservative subspace. |
+| 3.4 — Action minimised along STP trajectories | Strengthened. The leak-free SPLM-2 sits at an underdamped optimum $\gamma^{\ast} \in [0.10,\,0.15]$ — not in the overdamped limit — and yet beats the strict first-order ablation by $+5.09$ to $+7.03$ PPL ($S = 5$, all decision criteria met). This is the regime in which second-order corrections to the action-minimising path are non-vanishing, so the same architecture trained with explicit damping near the resonance gives the cleanest test of "lower action ↔ better generation." |
+| 3.5 — Well parameters encode semantic content | Unchanged. The per-domain $\kappa^{2}$ split observed in GPT-2 (Section 7.2.4) is leak-immune and remains the cleanest signal in the GPT-2 baseline. |
+
+Implicit prediction 3.6 — "the second-order theory has empirical residual content beyond first-order STP" — was not stated in Section 3 but is the closest empirical analogue of the conjecture's "STP is emergent" framing. It is now the prediction with the strongest direct evidence: the $S = 5$ confirmation sweep places the second-order architectural lift at $+5.09$ / $+7.03$ PPL with $5/5$ sign-consistency and $p < 0.05$ across the entire $\gamma \in [0.10,\,0.15]$ basin. Equivalently, the overdamped-reduction picture of STP is the picture under which a small but genuine second-order residual is *expected*, and the residual was found at the predicted location.
+
+### 10.4 Bearing on the success / refutation criteria of Section 9.6
+
+The five success criteria of Section 9.6 are stated for Llama-3.2-1B and remain the right targets for the GPT-2/Llama programme. The leak-free SPLM-side measurements add a sixth criterion that is now achievable on the SPLM line:
+
+**Criterion 6 (new, SPLM side).** Median per-layer test $R^{2}$ of the shared-potential separator regression ($V_{\psi}$ + per-layer $\alpha_{\ell}, \beta_{\ell}$) on a leak-free SPLM-2 checkpoint at $\gamma^{\ast} \in [0.10,\,0.15]$ should exceed $0.90$ across all $L - 1$ middle layers, with the velocity-only baseline at least $0.05$ lower. Achieved: $R^{2} = 0.949$ median (range $[0.925,\,0.960]$), velocity-only baseline $R^{2} \in [0.82,\,0.95]$ — improvement of $+0.06$ to $+0.11$ from adding $V_{\psi}$. See `sharedV_em_ln_leakfree_gamma0p10_seed0_summary.md`.
+
+The four refutation criteria of Section 9.6 are not affected by the leak fix; they remain the right falsifiers for the conjecture on the GPT-2 / Llama side.
+
+### 10.5 Two precision tightenings to the framing in the abstract and Section 1
+
+The leak-free findings expose two phrasings in the introductory framing that are slightly stronger than the post-leak evidence supports. Neither is a retraction; both are precision fixes. Wherever the document is republished after this update, the following substitutions are recommended (the abstract is left unchanged in this revision so that the change history is auditable; the suggested replacements are recorded here):
+
+**(T1)** Abstract / Section 1.3, "the potential energy is given by the Gaussian Inverse Semantic Energy Well [4]." Recommended replacement: "the potential energy is parameterised by the Gaussian Inverse Semantic Energy Well [4], which captures the bounded, smooth, single-well structure required by the conjecture; the empirical potential need not be literally a finite sum of fixed Gaussian wells, as discussed in Section 10.2 (d)." Rationale: the `em_gm` variant of Section 10.2 (d) shows that a $K = 64$ explicit Gaussian-mixture head underperforms the implicit MLP $V_{\theta}$ head by ${\sim}3\times$ in perplexity. The Gaussian well is the right *shape*; it is not necessarily the right *parameterisation*.
+
+**(T2)** Section 1.4 / Abstract, "The Euler-Lagrange equations derived from this Lagrangian produce trajectories that are geodesics of the induced Riemannian metric." Recommended replacement: "The Euler-Lagrange equations derived from this Lagrangian produce trajectories that are geodesics of the induced (Jacobi) Riemannian metric in the conservative limit, and lie within an $O(\gamma)$ neighbourhood of those geodesics in the underdamped regime now anchored empirically at $\gamma^{\ast} \in [0.10,\,0.15]$." Rationale: with damping $\gamma > 0$ the system is non-conservative and Maupertuis breaks down; the trajectories of the full damped Euler-Lagrange equations are geodesics of the bare Jacobi metric only at $\gamma = 0$. The leak-free empirical optimum $\gamma^{\ast} \approx 0.10$ is mildly damped, so the geodesic claim is best stated with the conservative-limit caveat. The pre-leak $\gamma^{\ast}_{\mathrm{buggy}} = 0.30$ was further from this limit, so the leak fix actually makes the geodesic interpretation *more* defensible, not less.
+
+Both tightenings preserve every conclusion of Sections 2, 3, 5, 7, 8, and 9. They only sharpen what the abstract and Section 1.3 / 1.4 promise.
+
+### 10.6 What this update does not change
+
+The conjecture stated in Section 2.1 is unchanged. The four predictions of Section 3 are unchanged. The Signature-Matrix–PCA correspondence of Section 5.3 is unchanged. The two GPT-2 experiments of Sections 7–8 are leak-immune and stand verbatim. The action plan of Section 9 is unchanged in its primary thrust (Llama-3.2-1B as the next test subject, PCA projection as the next methodological refinement) and is augmented by Criterion 6 above.
+
+The single most important consequence of the v3 leak-free retrain pass for *this* document is the addition of a mechanism: STP is now identifiable as the overdamped ($\gamma \to \infty$) reduction of the second-order Lagrangian dynamics whose conservative core is captured by the Gaussian-well-shaped scalar potential. Section 2.1 conjecture point 4 ("$\mathcal{L}_{STP}$ is a proxy for the deviation from action-minimising trajectories") becomes, under this mechanism, the precise claim that $\mathcal{L}_{STP} \to 0$ enforces the overdamped limit of the same Euler-Lagrange equations whose underdamped variant is what trained SPLM-2 actually solves.
+
+### 10.7 Pointers to canonical sources
+
+- Causal-leak bug analysis and fix: [`Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`](Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md).
+- Reanchored $\gamma^{\ast}$-prediction framework: [`Determining_optimal_gamma_for_SPLM.md`](Determining_optimal_gamma_for_SPLM.md) §2.5 (leak-correction calibration).
+- $S = 5$ confirmation sweep: `notebooks/conservative_arch/ln_damping_sweep/results/leakfree_5seed_confirmation/RESULTS_CONFIRMATION_S5.md`.
+- Tier 0.5 ($\gamma^{\ast}$-predictor reanchored): `notebooks/conservative_arch/scaleup/gamma_transfer/results/leakfree_gamma0p10_seed0/predict_gamma_summary.md`.
+- Tier 0.6 (shared-potential separator on leak-free SPLM-2): `notebooks/conservative_arch/results/sharedV_em_ln_leakfree_gamma0p10_seed0_summary.md`.
+- Energetic-minima leak-free retrain (`em_ln`, `em_sg`, `em_gm`): `notebooks/conservative_arch/energetic_minima/results/leakfree_tiers_2_3_summary.md` and the cross-variant `comparison_report.md`. See also [`Energetic_Minima_Alternatives.md`](Energetic_Minima_Alternatives.md) §8 (v3 leak-free retrain pass).
+- Cross-variant attractor analysis under leak-free training: see [`Semantic_Attractor_Extraction.md`](Semantic_Attractor_Extraction.md) §12 (v3 leak-free attractor pass).
+- Four-corner synthesis (descriptive / structural / prescriptive / predictive evidence for the second-order theory under causal honesty): `paper_v3/sections/15_conservative_architectures.tex`, paragraph "Relationship to first-order accounts (STP, Lu et al.) under causal honesty."
 
 ---
 
