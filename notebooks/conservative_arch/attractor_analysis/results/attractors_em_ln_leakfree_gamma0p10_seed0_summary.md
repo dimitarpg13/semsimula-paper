@@ -4,7 +4,7 @@
 - Model config: `d=128, L=8, mass_mode=logfreq`
 - Seeds: 256 Gaussian + 256 token-embedding + 256 perturbed real-$h$
 - Descent: Adam lr=0.05, 2000 steps
-- Convergence filter: $\|\nabla V\| < 0.05$
+- Convergence filter: $\lVert \nabla V\rVert < 0.05$
 - Clustering: K-means, silhouette-sweep K $\in$ [2, 12]
 
 ## Prompt (narrative): *"The old king sat on the"*

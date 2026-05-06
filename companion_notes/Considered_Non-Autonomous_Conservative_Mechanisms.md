@@ -749,19 +749,19 @@ Implication:    For GPT-2, any attempt to fit V_ψ(h) alone (context-free) will
 
 ```mermaid
 flowchart TD
-    subgraph SHARED["Shared (T × L × d) Hidden State Tensor"]
+    subgraph SHARED [Shared T x L x d Hidden State Tensor]
         direction TB
         TENSOR["h[token t][layer ℓ][dimension i]"]
     end
 
-    subgraph LAYERSPACE["Layer-Space Dynamics (YOUR EXPERIMENTS)"]
+    subgraph LAYERSPACE [Layer-Space Dynamics - YOUR EXPERIMENTS]
         direction TB
         LS_SLICE["Fixed token t*, vary ℓ = 1..L\nh[t*][1], h[t*][2], ..., h[t*][L]"]
         LS_Q["Asks: How does a single token's\nrepresentation transform through depth?"]
         LS_EXP["Step 1: Gaussian well, Jacobian symmetry\nStep 2: Shared-V_ψ test"]
     end
 
-    subgraph TOKENSPACE["Token-Space Dynamics (STP PAPER)"]
+    subgraph TOKENSPACE [Token-Space Dynamics - STP PAPER]
         direction TB
         TS_SLICE["Fixed layer ℓ*, vary t = 1..T\nh[1][ℓ*], h[2][ℓ*], ..., h[T][ℓ*]"]
         TS_Q["Asks: How do successive token\nrepresentations relate at fixed depth?"]
@@ -771,27 +771,27 @@ flowchart TD
     TENSOR --> LAYERSPACE
     TENSOR --> TOKENSPACE
 
-    subgraph SPLM_BOX["SPLM Architecture"]
+    subgraph SPLM_BOX [SPLM Architecture]
         direction TB
         SPLM_ARCH["θ_ℓ = θ (constant across layers)\nV_θ(ξ_t, h) same at every ℓ\nMechanism 1 ABSENT by design"]
         SPLM_M2["Mechanism 2 present:\nξ_t omission → layer-4 dip R²=0.28"]
         SPLM_RESULT["Shared-V_ψ: R²=0.90 median\n6/7 layers above 0.5 ✓"]
     end
 
-    subgraph GPT2_BOX["GPT-2 Architecture"]
+    subgraph GPT2_BOX [GPT-2 Architecture]
         direction TB
         GPT2_BOUNDARY["Boundary layers 1–4\nK_ℓ curvature compatible\nMechanism 2 dominant\nR² ≈ 0.72–0.79"]
         GPT2_MIDDLE["Middle layers 5–10\nK_ℓ curvature incompatible\nMechanism 1 dominant\nR² ≈ 0.04–0.20 (structural)"]
         GPT2_PRELOGIT["Pre-logit layer 11\nK ≈ V (tied embeddings)\nK=V theorem → conservative\nR² = 0.99 ✓"]
     end
 
-    subgraph MECHANISMS["Non-Autonomy Mechanisms"]
+    subgraph MECHANISMS [Non-Autonomy Mechanisms]
         direction LR
         MECH1["Mechanism 1\nLayer-varying θ_ℓ\nK_ℓ rotates Hessian directions\nStructural — cannot be cured\nby context conditioning\nDominant: GPT-2 layers 5–10"]
         MECH2["Mechanism 2\nToken-varying context ξ_t\nV_ψ(h) misses prefix info\nCurable: condition on z=f(prefix)\nActive: SPLM layer 4\nGPT-2 boundary layers"]
     end
 
-    subgraph GOVERNING["Governing Equation (Refined)"]
+    subgraph GOVERNING [Governing Equation - Refined]
         direction TB
         EOM["mẍ = -∇_x V(x; θ_ℓ, ξ_t)  +  Ω_ℓ(x; θ_ℓ)ẋ  -  mγẋ"]
         TERM1["Term 1: Doubly non-autonomous\nconservative (dominant)\nMechanisms 1+2"]
@@ -802,7 +802,7 @@ flowchart TD
         EOM --> TERM3
     end
 
-    subgraph SEPARATOR["The Prescriptive Separator"]
+    subgraph SEPARATOR [The Prescriptive Separator]
         direction TB
         SEP_Q["Is the architecture\narchitecturally committed\nto a single shared V?"]
         SEP_YES["YES → SPLM\nθ_ℓ = θ constant\nMechanism 1 absent\nShared-V_ψ R²=0.90"]
@@ -818,7 +818,7 @@ flowchart TD
     MECHANISMS --> GOVERNING
     GOVERNING --> SEPARATOR
 
-    subgraph PROT6_TRACK["Track B: P-rot-6 Programme"]
+    subgraph PROT6_TRACK [Track B - P-rot-6 Programme]
         direction TB
         PROT6_STATUS["Status: Secondary correction\nJacobian gap: 0.079 (GPT-2)\nvs 0.040 (SPLM floor)\nΔ ≈ 0.039 = within-layer solenoidal"]
         PROT6_TEST["Zero-parameter test:\nB_theory = Ω(x̄) from W_K, W_V\nFit B_empirical by skew LSQ\nMeasure alignment"]

@@ -17,7 +17,7 @@ The Markov-order regression (kernel ridge, $p = 50$, LOSO over 100 sentences, ke
 
 A second, *unanticipated* finding cleanly emerges from the same data:
 
-- **Within Outcome C, the two arms separate.** SPLM-1 (the structurally first-order ablation) has $\rho_{12}$ that is *not statistically distinguishable from 1.00*: per-seed $p_{12} \in \{0.77, 0.93, 0.53\}$. The trained second-order SPLM $\gamma^{\ast} = 0.30$ has a small but statistically robust lift $\rho_{12} \approx 1.034$ with $p_{12} \in \{8.7\!\times\!10^{-15},\ 1.1\!\times\!10^{-26},\ 1.7\!\times\!10^{-18}\}$. The cross-arm paired test ($H_1: \rho_{12,\,\mathrm{SPLM-2}} > \rho_{12,\,\mathrm{SPLM-1}}$) gives $\bar{\Delta} = 0.030$, paired $t = 10.27$, df = 2, one-sided $p = 0.005$.
+- **Within Outcome C, the two arms separate.** SPLM-1 (the structurally first-order ablation) has $\rho_{12}$ that is *not statistically distinguishable from 1.00*: per-seed $p_{12} \in \{0.77, 0.93, 0.53\}$. The trained second-order SPLM $\gamma^{\ast} = 0.30$ has a small but statistically robust lift $\rho_{12} \approx 1.034$ with $p_{12} \in \{8.7\times10^{-15},\ 1.1\times10^{-26},\ 1.7\times10^{-18}\}$. The cross-arm paired test ($H_1: \rho_{12, \mathrm{SPLM-2}} > \rho_{12, \mathrm{SPLM-1}}$) gives $\bar{\Delta} = 0.030$, paired $t = 10.27$, df = 2, one-sided $p = 0.005$.
 - This is exactly the "observationally first-order *with a small inertial trace*" picture promised in §15 of `paper_v3`. The structural first-order ablation has no trace at all; the trained second-order SPLM has a faint but measurable one, while still being firmly within Outcome C.
 
 The paper-side consequence per §9.1 of the protocol: the first-order rejection-test outcome corroborates the existing Tier-2 framing without requiring any rewording of the Lemma 9 / observational-first-order claims.
@@ -65,7 +65,7 @@ Two structural readings of the table:
 
 Per E7 §6.3 of the protocol the *primary* per-arm decision is always C in this experiment (cells fall into Outcome C, not into A or B), so there is no formal cross-arm decision rule pre-registered. The cross-arm comparison reported below is *exploratory*.
 
-| Seed | SPLM-1 $\rho_{12}$ | SPLM-2 $\rho_{12}$ | $\Delta = \rho_{12}^{\,\mathrm{SPLM\text{-}2}} - \rho_{12}^{\,\mathrm{SPLM\text{-}1}}$ |
+| Seed | SPLM-1 $\rho_{12}$ | SPLM-2 $\rho_{12}$ | $\Delta = \rho_{12}^{ \mathrm{SPLM\text{-}2}} - \rho_{12}^{ \mathrm{SPLM\text{-}1}}$ |
 |---:|---:|---:|---:|
 | 0 | 1.00275 | 1.02825 | +0.02549 |
 | 1 | 1.00269 | 1.03846 | +0.03577 |
@@ -73,7 +73,7 @@ Per E7 §6.3 of the protocol the *primary* per-arm decision is always C in this 
 | **mean** | **1.00345** | **1.03396** | **+0.03051** |
 | std | 0.00126 | 0.00524 | 0.00514 |
 
-Paired one-sided $t$-test ($H_1: \rho_{12,\,\mathrm{SPLM-2}} > \rho_{12,\,\mathrm{SPLM-1}}$): $t = 10.27$, df = 2, one-sided $p = 0.0047$. Sign-consistent across all 3 seeds.
+Paired one-sided $t$-test ($H_1: \rho_{12, \mathrm{SPLM-2}} > \rho_{12, \mathrm{SPLM-1}}$): $t = 10.27$, df = 2, one-sided $p = 0.0047$. Sign-consistent across all 3 seeds.
 
 So the second-order trained SPLM has a small but statistically robust *more*-than-first-order signature compared to SPLM-1 — about a 3 % per-token lift. This is the empirical realisation of the §15 framing "*the inertial term has training-time value but is observationally first-order at inference*": both arms satisfy the observational-first-order criterion (Outcome C), but the second-order arm preserves a residual fraction of inertial dynamics in its hidden-state evolution at inference time, while SPLM-1's are indistinguishable from a Markov-1 process even at the most powerful paired-Wilcoxon test the design supports.
 

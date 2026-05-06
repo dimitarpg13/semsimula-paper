@@ -81,7 +81,7 @@ antisymmetric $F$:
 |---|---|
 | asymmetric $W_Q \neq W_K^{\top}$ attention | similarity $q^{\top}k$ is not the gradient of any scalar $V(h)$ -- exactly the non-integrability of $A \to B$ vs. $B \to A$ moves in §3 of the Failure doc. |
 | multi-head concatenation | a sum of per-head torques cannot in general be written as $\nabla V$; the Yang--Mills / non-abelian obstruction. |
-| causal mask + position-dependent $h_{<t}$ context | force at $h_t$ depends on extrinsic history, violating $\vec F = \vec F(h)$. |
+| causal mask + position-dependent $h_{\lt t}$ context | force at $h_t$ depends on extrinsic history, violating $\vec F = \vec F(h)$. |
 | LayerNorm after residual | projects onto a non-Euclidean manifold whose induced metric breaks Hamiltonian volume preservation. |
 | distinct $W^{(\ell)}$ per layer | the "force law" changes every step, so the layer-indexed evolution is not a time integration of any single Lagrangian. |
 | softmax in attention | exponentiation + normalisation is not a volume-preserving map on $h$. |
@@ -113,7 +113,7 @@ The last row is the sharp, minimal form of the architectural thesis.
 Concretely:
 
 - **Context pooling (permutation- / symmetry-invariant):** the context
-  $h_{<t}$ is summarised into a single pooled state
+  $h_{\lt t}$ is summarised into a single pooled state
   $\xi \in \mathbb{R}^d$, e.g. via a set-pooling that is manifestly
   symmetric under permutation of context tokens. This replaces
   asymmetric attention with an explicit invariant.

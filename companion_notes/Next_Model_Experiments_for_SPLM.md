@@ -370,7 +370,7 @@ trajectories overlaid and colour-coded by endpoint basin:
 - `results/training_evolution_euler_shakespeare_<prompt>.png` --
   7-panel figure showing $V_\theta$ forming from flat (step 0, $V$
   range $\sim 10^{-5}$) to a deep canyon (step 4000, $V$ range $\sim
-  10^3$).  $K^*$ drops from 10 (noise) to 2 (real basins) at step 500,
+  10^3$). $K^*$ drops from 10 (noise) to 2 (real basins) at step 500,
   showing that basin topology is established early; subsequent
   training deepens the wells, it does not create new ones.
 

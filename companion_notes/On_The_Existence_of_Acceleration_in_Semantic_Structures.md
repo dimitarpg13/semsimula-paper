@@ -265,15 +265,15 @@ The three resolutions are not mutually exclusive. Together they form a coherent 
 ```mermaid
 graph TB
     subgraph "Underlying Theory (Second-Order)"
-        L["Lagrangian: L = T - V<br/>Euler-Lagrange: m·ẍ = F(x)"]
-        D["Damping field γ<br/>(from H_i in Semantic Simulation)"]
+        L["Lagrangian: L = T - V<br>Euler-Lagrange: m·ẍ = F(x)"]
+        D["Damping field γ<br>(from H_i in Semantic Simulation)"]
     end
     subgraph "Effective Description (First-Order)"
-        G["Gradient flow: γ·ẋ = -∇V<br/>(overdamped limit)"]
-        STP["STP geodesic: locally linear<br/>(Huang et al.)"]
+        G["Gradient flow: γ·ẋ = -∇V<br>(overdamped limit)"]
+        STP["STP geodesic: locally linear<br>(Huang et al.)"]
     end
     subgraph "Observable"
-        R["Residual STP loss > 0<br/>= residual acceleration"]
+        R["Residual STP loss > 0<br>= residual acceleration"]
     end
     
     L -->|"+ strong damping"| G

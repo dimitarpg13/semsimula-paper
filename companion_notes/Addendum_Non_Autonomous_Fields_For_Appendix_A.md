@@ -44,7 +44,7 @@ dynamics. The “parameters” of the per-layer energy are:
 - **$\theta_\ell$** — trainable weights of layer $\ell$ (distinct across layers in a
   standard decoder: $W_Q^{(\ell)}$, $W_K^{(\ell)}$, $W_V^{(\ell)}$, MLP, etc.).
 - **$\xi_t$** — a **context** that fixes how token $t$ is coupled to the prefix (in a
-  causal model, the effective Hopfield “memory” depends on $h_{<t}$; in SPLM, the paper
+  causal model, the effective Hopfield “memory” depends on $h_{\lt t}$; in SPLM, the paper
   realises a concrete pool $\xi$).
 
 A map is **autonomous in layer** if the *same* potential $V(h)$ (or the same

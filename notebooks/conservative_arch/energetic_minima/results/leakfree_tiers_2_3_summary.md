@@ -14,7 +14,7 @@
 
 **Caveat.** The freely-γ result is a **single-seed** observation. The fixed-γ optimum is a 5-seed mean. The free-γ vs fixed-γ paired comparison at the same seed budget is a follow-up experiment (would require 5 × 4000 step retrains with γ_init = 1.0; ~3 h wall-clock).
 
-**Tier 3a (em_sg).** The scale-gauge regulariser $\lambda_{v_0} \cdot \mathbb{E}[V_\theta(\xi_0, h_0)^2]$ at $\lambda_{v_0} = 1e\!-\!3$ pulls $V_\theta$'s absolute scale toward zero at the input embedding, which costs ~71 PPL on Tiny Shakespeare under leak-free training (val_ppl 244.84 vs em_ln free-γ 173.59) but recovers attractor diversity (see §2). The trained γ lands at 0.863, lower than em_ln free-γ's 0.958 — the regulariser pushes the model toward more dissipative dynamics.
+**Tier 3a (em_sg).** The scale-gauge regulariser $\lambda_{v_0} \cdot \mathbb{E}[V_\theta(\xi_0, h_0)^2]$ at $\lambda_{v_0} = 1e-3$ pulls $V_\theta$'s absolute scale toward zero at the input embedding, which costs ~71 PPL on Tiny Shakespeare under leak-free training (val_ppl 244.84 vs em_ln free-γ 173.59) but recovers attractor diversity (see §2). The trained γ lands at 0.863, lower than em_ln free-γ's 0.958 — the regulariser pushes the model toward more dissipative dynamics.
 
 **Tier 3b (em_gm).** The Gaussian-mixture head with $K = 64$ wells trains substantially worse under leak-free regime (val_ppl 542.65). The trained γ lands at 0.668, the lowest of the three. The fixed-mixture potential structure conflicts with the actual energy landscape SPLM converges to under causal honesty.
 

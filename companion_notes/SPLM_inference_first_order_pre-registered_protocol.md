@@ -158,7 +158,7 @@ The full robustness sweep is now $4 \text{ classes} \times 3 \text{ PCA dims} \t
 
 | Pitfall | Mitigation |
 |---|---|
-| SPLM hidden dim is much smaller than GPT-2's ($d = 128$ vs $d = 768$); the test might be noisier. | Larger sample (100 sentences vs 50), $\ge 99 \%$ variance retained at $p = 50$, BCa cluster bootstrap with $B = 10\,000$. |
+| SPLM hidden dim is much smaller than GPT-2's ($d = 128$ vs $d = 768$); the test might be noisier. | Larger sample (100 sentences vs 50), $\ge 99 \%$ variance retained at $p = 50$, BCa cluster bootstrap with $B = 10 000$. |
 | Out-of-distribution corpus might bias residuals. | Primary cell is in-distribution Shakespeare validation; out-of-distribution 5-domain corpus is robustness only. |
 | LayerNorm-after-step constrains $\lVert h_t \rVert \approx 1$, possibly trivialising or hardening the Markov-order signature. | Both SPLM em\_ln $\gamma^{\ast} = 0.30$ and SPLM-1 use the same LN-after-step projection, so any LN artefact appears in both arms equally; the comparison cancels it out. |
 | SPLM-1 is structurally first-order; if it fails the Outcome C check, the test is broken. | Arm-level rule §6.1 pauses the SPLM verdict in that case. |
@@ -217,7 +217,7 @@ This belief does not modify the decision rule — the locked thresholds of §6 s
 | Quadruple construction + PCA fitting | local CPU | ~2 min |
 | Primary kernel-ridge regression with LOSO + nested 5-fold (6 checkpoints × 2 corpora × 100 LOSO folds = 1 200 fits) | local CPU | ~30–60 min |
 | Robustness sweep (144 cells, lighter classes than primary) | local CPU | ~60–90 min |
-| BCa cluster bootstrap ($B = 10\,000$ × 6 checkpoints × 2 corpora = 12 cells) | local CPU | ~10–20 min |
+| BCa cluster bootstrap ($B = 10 000$ × 6 checkpoints × 2 corpora = 12 cells) | local CPU | ~10–20 min |
 | Plot generation + RESULTS.md | local CPU | ~5 min |
 
 **Total wall-clock: ~2–3 hours.** No GPU required after the extraction step.

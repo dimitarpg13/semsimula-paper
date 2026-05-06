@@ -189,7 +189,7 @@ principle, not a purely dissipative one.
 ### 5.2 Inertia and Energy-Barrier Traversal
 
 The second-order system (equation 3) allows trajectories to **overshoot** local minima,
-building up kinetic energy $T = \frac{1}{2}\|v\|^2$ to traverse energy barriers and
+building up kinetic energy $T = \frac{1}{2}\lVert v\rVert^2$ to traverse energy barriers and
 explore the landscape beyond the nearest basin:
 
 $$E_\text{total} = T + V_\theta(\xi, h) = \frac{1}{2}\|v\|^2 + V_\theta(\xi, h)$$
@@ -212,8 +212,8 @@ Concretely, the layer-$\ell$ contraction factor for a perturbation $\delta h$ in
 
 $$\|\delta h^{(\ell+1)}\|_2 \approx \left\|\left(I - \beta_\ell\, \nabla^2_h V_\theta\right) \delta h^{(\ell)}\right\|_2$$
 
-When $\nabla^2_h V_\theta \approx 0$ (flat region), this approaches $\|\delta h^{(\ell)}\|_2$
-— no suppression. The full SPLM always has $\gamma \|\delta v^{(\ell)}\|$ as an
+When $\nabla^2_h V_\theta \approx 0$ (flat region), this approaches $\lVert \delta h^{(\ell)}\rVert_2$
+— no suppression. The full SPLM always has $\gamma \lVert \delta v^{(\ell)}\rVert$ as an
 additional contraction independent of landscape curvature.
 
 ### 5.4 Near-Underdamped Oscillatory Dynamics
@@ -323,7 +323,7 @@ near-overdamped ($\gamma = 10$).
 
 1. Validation perplexity
 2. Shared-$V_\psi$ $R^2$
-3. Trajectory deviation $\|h_t - h_t^*\|_2$ vs. sequence length (Brownian suppression)
+3. Trajectory deviation $\lVert h_t - h_t^*\rVert_2$ vs. sequence length (Brownian suppression)
 
 **Expected results.** Perplexity should be convex-shaped in $\gamma$ — too low $\gamma$
 (conservative) leads to poor optimization, too high $\gamma$ (overdamped) leads to poor

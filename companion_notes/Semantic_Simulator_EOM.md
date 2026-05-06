@@ -73,8 +73,8 @@ Constants of the model:
 The cumulative context is
 
 $$
-\xi_t  =  \frac{1}{t+1}\sum_{m=0}^{t} e_{v_m},
-\qquad \xi_{-1}  =  \mathbf{0}.
+\xi_t = \frac{1}{t+1}\sum_{m=0}^{t} e_{v_m},
+\qquad \xi_{-1} = \mathbf{0}.
 $$
 
 This is the SPLM-paper definition (§11), preserved for v0.
@@ -92,7 +92,7 @@ RL:
 PMI matrix:
 
 $$
-\mathrm{PMI}(v, w)  =  \log\frac{p(v, w \mid \text{window})}{p(v) p(w)}.
+\mathrm{PMI}(v, w) = \log\frac{p(v, w \mid \text{window})}{p(v) p(w)}.
 $$
 
 Window size: 5 tokens each side. Spectral decomposition gives
@@ -111,7 +111,7 @@ would conflate (3.1) with (4) and obscure the parameter classification.
 ### 3.2 Per-token semantic mass $\mathfrak{m}_v$
 
 $$
-\mathfrak{m}_v  =  -\log\hat{p}_{\text{corpus}}(v),
+\mathfrak{m}_v = -\log\hat{p}_{\text{corpus}}(v),
 $$
 
 where $\hat{p}_{\text{corpus}}(v)$ is the unigram MLE on the calibration
@@ -127,7 +127,7 @@ gives anchor centres $x_{c,k}$ (Euclidean centroids, then re-projected
 to $S^{d-1}$). Each anchor inherits a mass
 
 $$
-\mathfrak{m}_k  =  \sum_{v \in \mathrm{cluster}(k)} \mathfrak{m}_v
+\mathfrak{m}_k = \sum_{v \in \mathrm{cluster}(k)} \mathfrak{m}_v
 $$
 
 i.e. the total surprisal weight of its cluster.
@@ -142,11 +142,11 @@ corpora. Sweep target.
 The potential decomposes as
 
 $$
-V(\xi, x)  = 
-   V_{\text{wells}}(x) +
-   V_{\text{SARF}}(x) +
-   V_{\text{PARF}}(\xi, x) +
-   V_{\text{ctx}}(\xi, x).
+V(\xi, x) =
+ V_{\text{wells}}(x) +
+ V_{\text{SARF}}(x) +
+ V_{\text{PARF}}(\xi, x) +
+ V_{\text{ctx}}(\xi, x).
 $$
 
 Each term has an explicit parametric form. The **force** is the
@@ -158,17 +158,17 @@ below.
 Sum of inverted Gaussian wells over the $K$ concept anchors:
 
 $$
-V_{\text{wells}}(x)  = 
-   \sum_{k=1}^{K} \mathfrak{m}_k \upsilon_k^{2} 
-      \bigl(1 - e^{-\kappa_k^{2} \|x - x_{c,k}\|^{2}}\bigr).
+V_{\text{wells}}(x) =
+ \sum_{k=1}^{K} \mathfrak{m}_k \upsilon_k^{2}
+ \bigl(1 - e^{-\kappa_k^{2} \lVert x - x_{c,k}\rVert^{2}}\bigr).
 $$
 
 Force:
 
 $$
-F_{\text{wells}}(x)  = 
-   -\sum_{k=1}^{K} 2 \mathfrak{m}_k \upsilon_k^{2} \kappa_k^{2} 
-      (x - x_{c,k}) e^{-\kappa_k^{2} \|x - x_{c,k}\|^{2}}.
+F_{\text{wells}}(x) =
+ -\sum_{k=1}^{K} 2 \mathfrak{m}_k \upsilon_k^{2} \kappa_k^{2}
+ (x - x_{c,k}) e^{-\kappa_k^{2} \lVert x - x_{c,k}\rVert^{2}}.
 $$
 
 Parameters: $\{x_{c,k}\}$ static (3.3); $\{\mathfrak{m}_k\}$ static
@@ -185,12 +185,12 @@ Each anchor contributes a two-component (short-range repulsion +
 long-range attraction) interaction:
 
 $$
-V_{\text{SARF}}(x)  = 
-   \sum_{j=1}^{N_S} \alpha_j 
-      \Bigl[
-         \beta_j e^{-\|x - a_j\|^{2}/\sigma_{j,-}^{2}}
-          -  e^{-\|x - a_j\|^{2}/\sigma_{j,+}^{2}}
-      \Bigr],
+V_{\text{SARF}}(x) =
+ \sum_{j=1}^{N_S} \alpha_j
+ \Bigl[
+ \beta_j e^{-\lVert x - a_j\rVert^{2}/\sigma_{j,-}^{2}} -
+ e^{-\lVert x - a_j\rVert^{2}/\sigma_{j,+}^{2}}
+ \Bigr],
 \qquad \sigma_{j,-} < \sigma_{j,+},\ \alpha_j > 0,\ \beta_j \ge 1.
 $$
 
@@ -205,12 +205,12 @@ by $(\sigma_{j,-}, \sigma_{j,+}, \beta_j)$.
 Force:
 
 $$
-F_{\text{SARF}}(x)  = 
-   2\sum_{j=1}^{N_S} \alpha_j (x - a_j) 
-      \Bigl[
-         \frac{\beta_j}{\sigma_{j,-}^{2}} e^{-\|x - a_j\|^{2}/\sigma_{j,-}^{2}}
-          -  \frac{1}{\sigma_{j,+}^{2}} e^{-\|x - a_j\|^{2}/\sigma_{j,+}^{2}}
-      \Bigr].
+F_{\text{SARF}}(x) =
+ 2\sum_{j=1}^{N_S} \alpha_j (x - a_j)
+ \Bigl[
+ \frac{\beta_j}{\sigma_{j,-}^{2}} e^{-\lVert x - a_j\rVert^{2}/\sigma_{j,-}^{2}} -
+ \frac{1}{\sigma_{j,+}^{2}} e^{-\lVert x - a_j\rVert^{2}/\sigma_{j,+}^{2}}
+ \Bigr].
 $$
 
 (For $r$ small, the bracket is positive and the force points away
@@ -241,11 +241,11 @@ Linear couplings to a small set of property directions. v0 properties:
 **Form:**
 
 $$
-V_{\text{PARF}}(\xi, x)  = 
-   \sum_{p=1}^{P} \lambda_p c_p(\xi) \langle w_p, x \rangle,
+V_{\text{PARF}}(\xi, x) =
+ \sum_{p=1}^{P} \lambda_p c_p(\xi) \langle w_p, x \rangle,
 \qquad
-F_{\text{PARF}}(\xi, x)  = 
-   -\sum_{p=1}^{P} \lambda_p c_p(\xi) w_p.
+F_{\text{PARF}}(\xi, x) =
+ -\sum_{p=1}^{P} \lambda_p c_p(\xi) w_p.
 $$
 
 This is a **linear-in-$x$** force: the property field exerts a
@@ -267,9 +267,9 @@ property justifies the calibration cost.
 The simplest non-trivial form of explicit non-autonomy:
 
 $$
-V_{\text{ctx}}(\xi, x)  =  \tfrac{1}{2} \lambda_{\text{ctx}} \|x - \xi\|^{2},
+V_{\text{ctx}}(\xi, x) = \tfrac{1}{2} \lambda_{\text{ctx}} \lVert x - \xi\rVert^{2},
 \qquad
-F_{\text{ctx}}(\xi, x)  =  -\lambda_{\text{ctx}} (x - \xi).
+F_{\text{ctx}}(\xi, x) = -\lambda_{\text{ctx}} (x - \xi).
 $$
 
 A scalar harmonic well centred at $\xi$. Pulls the particle toward
@@ -291,13 +291,13 @@ coupling. Almost certainly necessary for non-toy languages.
 $\Delta t$.
 
 $$
-\dot{x}_t^{(\ell+1)}  = 
-   (1 - \gamma \Delta t) \dot{x}_t^{(\ell)}
-    +  \frac{\Delta t}{\mathfrak{m}_t} F\bigl(\xi_t, x_t^{(\ell)}\bigr),
+\dot{x}_t^{(\ell+1)} =
+ (1 - \gamma \Delta t) \dot{x}_t^{(\ell)}
+ + \frac{\Delta t}{\mathfrak{m}_t} F\bigl(\xi_t, x_t^{(\ell)}\bigr),
 $$
 
 $$
-x_t^{(\ell+1)}  =  x_t^{(\ell)}  +  \Delta t \dot{x}_t^{(\ell+1)}.
+x_t^{(\ell+1)} = x_t^{(\ell)} + \Delta t \dot{x}_t^{(\ell+1)}.
 $$
 
 **Why semi-implicit Euler and not velocity-Verlet:** the §14.15
@@ -320,9 +320,9 @@ inherited from the SPLM-tiny experiments.
 Tied nearest-neighbour with temperature:
 
 $$
-p(v \mid x_t^{(L)})  = 
-   \frac{\exp\bigl(\beta \langle e_v, x_t^{(L)} \rangle\bigr)}
-        {\sum_{v'=1}^{V}\exp\bigl(\beta \langle e_{v'}, x_t^{(L)} \rangle\bigr)}.
+p(v \mid x_t^{(L)}) =
+ \frac{\exp\bigl(\beta \langle e_v, x_t^{(L)} \rangle\bigr)}
+ {\sum_{v'=1}^{V}\exp\bigl(\beta \langle e_{v'}, x_t^{(L)} \rangle\bigr)}.
 $$
 
 Tied means the readout uses the **same** vocabulary embeddings as
@@ -339,8 +339,8 @@ embedding space.
 For each position $t$:
 
 $$
-x_t^{(0)}  =  e_{v_t},
-\qquad \dot{x}_t^{(0)}  =  \mathbf{0}.
+x_t^{(0)} = e_{v_t},
+\qquad \dot{x}_t^{(0)} = \mathbf{0}.
 $$
 
 The particle is initialised **at** the input token's embedding with
@@ -408,9 +408,9 @@ Loss: KL between simulator next-token distribution and corpus
 next-token distribution at each position:
 
 $$
-\mathcal{L}_{\text{BC}}  = 
-   \frac{1}{T}\sum_{t=0}^{T-1}
-   \mathrm{KL}\bigl(p_{\text{corpus}}(\cdot \mid v_{0:t}) \| p_{\text{sim}}(\cdot \mid x_t^{(L)})\bigr).
+\mathcal{L}_{\text{BC}} =
+ \frac{1}{T}\sum_{t=0}^{T-1}
+ \mathrm{KL}\bigl(p_{\text{corpus}}(\cdot \mid v_{0:t}) \lVert p_{\text{sim}}(\cdot \mid x_t^{(L)})\bigr).
 $$
 
 For corpora where the conditional distribution isn't directly
@@ -430,8 +430,8 @@ pretraining.
 Reward terms (each computed per trajectory):
 
 $$
-r_{\text{intrinsic}}  = 
-   r_{\text{energy}} + r_{\text{predict}} + r_{\text{basin}} + r_{\text{stp}},
+r_{\text{intrinsic}} =
+ r_{\text{energy}} + r_{\text{predict}} + r_{\text{basin}} + r_{\text{stp}},
 $$
 
 with:

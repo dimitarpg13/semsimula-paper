@@ -237,7 +237,7 @@ Seven functional forms -- **harmonic** $a r^2$,
 **log-saturation** $a\log(1+br^2)$,
 **Weibull / stretched-exponential** $a(1-e^{-br^\alpha})$,
 and **power** $a r^p$ -- were fit layer-by-layer to the
-$(\|x\|,\text{NTP loss})$ scatter with per-sentence centering, and each
+$(\lVert x\rVert,\text{NTP loss})$ scatter with per-sentence centering, and each
 was plugged (via its analytic gradient) into the damped 2nd-order
 integrator (1.1). Two empirical findings:
 
@@ -255,7 +255,7 @@ The mechanism is quantitative: at a typical per-sentence-centered radius
 $r\approx 300$ (middle layers), the fitted force-per-displacement
 $k(r) = V'(r)/r$ is pinned in a narrow band $\sim (0.7\text{-}3.1)\times 10^{-6}$
 across all seven forms, set by the data geometry -- well depth
-$a\approx 8$ nats divided by squared data scale $\|x\|^2\sim 10^{5}$.
+$a\approx 8$ nats divided by squared data scale $\lVert x\rVert^2\sim 10^{5}$.
 See §4.3 for the calculation.
 
 **Reproducibility trail for §1.3**
@@ -505,7 +505,7 @@ $\nabla \times \vec F = 0$ (zero curl in every 2-plane), or equivalently
 there exists a scalar potential $V$ such that $\vec F = -\nabla V$.
 A dynamical system $\mathfrak{m} \ddot{\vec x} = \vec F(\vec x) + \text{damping}$
 with conservative $\vec F$ is fully described by the two scalar
-quantities $V$ and $T=\frac{1}{2}\mathfrak{m}\|\dot x\|^2$ and
+quantities $V$ and $T=\frac{1}{2}\mathfrak{m}\lVert \dot x\rVert^2$ and
 conserves their sum along undamped trajectories.
 
 The paper's current Lagrangian construction
@@ -544,13 +544,13 @@ fatal to the gradient-field reading:
 ### 3.1 Path dependence
 
 The attention update at position $t$ is a function of the **full prefix**
-$h_{<t}$, not of $h_t$ alone:
+$h_{\lt t}$, not of $h_t$ alone:
 
 $$\Delta h_t  =  f(h_t, h_{t-1}, \dots, h_0).$$
 
 A conservative force on $h_t$ must depend on $h_t$ only (or on $h_t$ and
 $\dot h_t$, for dissipative systems). Any dependence on the history
-$h_{<t}$ means that two different _paths_ arriving at the same point
+$h_{\lt t}$ means that two different _paths_ arriving at the same point
 $h_t$ receive, in general, different updates. That is precisely the
 defining property of a **path-dependent** (hence non-conservative) force.
 
@@ -664,7 +664,7 @@ A pure first-order flow with a very weak $V$ moves the state by a
 negligible amount per layer: the fitted $b_\ell \sim 10^{-5}$ and
 typical $r^2 \sim 10^5$ at middle layers give a gradient
 $2 a b x e^{-b r^2} \sim 6\times 10^{-5} x$, which even at $\eta=25$
-over 12 layers accumulates to $\lesssim 0.02\|x\|$ -- well below the
+over 12 layers accumulates to $\lesssim 0.02\lVert x\rVert$ -- well below the
 scale of the observed inter-layer motion. Because there is no velocity
 variable to carry rotational information, the first-order integrator
 has no mechanism for anything but tiny radial displacement, and that
@@ -706,7 +706,7 @@ across every functional form we tested (raw values backed by
 [`well_form_integrator_results.npz`][ni] and derived in detail in
 [`well_form_comparison_summary.md`][sum3] §4). This common $\sim 10^{-6}$
 force scale is set by the data geometry --
-well depth $a\approx 8$ nats divided by squared data scale $\|x\|^2\sim 10^{5}$ --
+well depth $a\approx 8$ nats divided by squared data scale $\lVert x\rVert^2\sim 10^{5}$ --
 and is the reason all eight integrator configurations collapse onto
 the static-null floor. It is not a property of $V$'s shape.
 
@@ -732,7 +732,7 @@ this argument:
   (attention column sum) remains a valid per-layer scalar. Nothing
   in §3 depends on removing it.
 - **Per-phrase attractive wells.** Per-phrase centering shrinks the
-  relevant $\| x\|$ scale by an order of magnitude, and the
+  relevant $\lVert x\rVert$ scale by an order of magnitude, and the
   binned-median $R^{2}\approx 0.90$ at middle layers (§1.3) shows the
   conservative part is _real_ at phrase-local resolution. Prediction
   P4 in §10.3 still has empirical content: it is testing the

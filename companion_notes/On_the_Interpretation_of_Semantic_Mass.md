@@ -194,11 +194,11 @@ where $\bar{\ell}$ is the mean NTP loss across the trajectory. This means:
 ```mermaid
 graph TB
     subgraph "Token Mass Hierarchy"
-        A["High mass (attention sink)<br/>Large w_t, small υ_t<br/>Narrow well, near center"]
-        B["Medium mass (content word)<br/>Moderate w_t<br/>Moderate well width"]
-        C["Low mass (function word / filler)<br/>Small w_t, large υ_t<br/>Wide well, far from center"]
+        A["High mass (attention sink)<br>Large w_t, small υ_t<br>Narrow well, near center"]
+        B["Medium mass (content word)<br>Moderate w_t<br>Moderate well width"]
+        C["Low mass (function word / filler)<br>Small w_t, large υ_t<br>Wide well, far from center"]
     end
-    A -->|"bound state distance x_i ≈ E_t / m_i"| D["Ensemble Center<br/>(Energy-weighted centroid)"]
+    A -->|"bound state distance x_i ≈ E_t / m_i"| D["Ensemble Center<br>(Energy-weighted centroid)"]
     B -->|"medium distance"| D
     C -->|"large distance"| D
 ```
@@ -437,8 +437,8 @@ The evolution of $w_t^{(\ell)}$ with layer depth $\ell$ tells us how the mass hi
 
 ```mermaid
 graph LR
-    L1["Layer 1<br/>Uniform mass<br/>w_t ≈ const"] --> L6["Layer 6<br/>Emerging hierarchy<br/>Syntactic heads differentiate"]
-    L6 --> L12["Layer 12<br/>Full hierarchy<br/>Attention sinks dominate"]
+    L1["Layer 1<br>Uniform mass<br>w_t ≈ const"] --> L6["Layer 6<br>Emerging hierarchy<br>Syntactic heads differentiate"]
+    L6 --> L12["Layer 12<br>Full hierarchy<br>Attention sinks dominate"]
     
     style L1 fill:#e8f5e9
     style L6 fill:#fff9c4

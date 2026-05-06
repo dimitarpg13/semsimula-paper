@@ -113,8 +113,8 @@ To check whether the unboundedness is "merely" a missing prior, we
 add a Gaussian anchor on the data manifold,
 
 $$
-   \mathcal{L}_\text{anchored}(h) = V_\theta(\xi, h)
-       + \frac{\lambda}{2}\bigg\|\frac{h - h_\text{c}}{h_\text{s}}\bigg\|^2,
+ \mathcal{L}_\text{anchored}(h) = V_\theta(\xi, h)
+ + \frac{\lambda}{2}\bigg\lVert \frac{h - h_\text{c}}{h_\text{s}}\bigg\rVert^2,
 $$
 
 where $h_\text{c}, h_\text{s}$ are the empirical mean and per-dimension
@@ -452,7 +452,7 @@ above had basins decoding to non-newline punctuation/morphemes).
 Mathematics is the only prompt that retains $K^{\ast} \geq 4$;
 narrative, scientific, dialogue, and code all collapse to a single
 dominant newline-emitting basin. **The leak-corrected free-γ regime
-trades attractor diversity for $\sim 5\!-\!7$ PPL of LM quality versus
+trades attractor diversity for $\sim 5-7$ PPL of LM quality versus
 the leak-corrected fixed-γ regime.** This is a striking single-seed
 observation that needs a paired-seed validation (the leak-free fixed-γ
 result is a 5-seed mean, the free-γ here is 1 seed) before reading it

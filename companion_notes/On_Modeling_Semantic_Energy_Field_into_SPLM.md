@@ -160,7 +160,7 @@ mass prescription can we recover?*" (Q10) to "*what more of the
 field prescription can we recover?*":
 
 - **Q11 (low-rank PARF).** Can we add a rank-$r$ pairwise term
-  $\sum_{s<t}\phi(h_t)^\top\psi(h_s)$ evaluated via associative
+  $\sum_{s\lt t}\phi(h_t)^\top\psi(h_s)$ evaluated via associative
   scans, giving an *efficient* PARF at $O(T r d)$ cost? If so, does it
   close any of the remaining 13 % perplexity gap between SARF +
   logfreq SPLM and the matched attention baseline, and does it keep

@@ -127,7 +127,7 @@ Working statement: templates and execution are dual operations
 
 A semantic template $\mathfrak{t} \in \mathfrak{T}$ performs the following operation:
 
-$M\left(\mathfrak{t}\right)\text{ scans region }\mathfrak{U}\left(\mathfrak{t}\right) \in \boldsymbol{\Sigma}  \rightarrow\text{ latch }\mu\text{ triggers }\rightarrow I\left(\mathfrak{t}\right)\text{ produces }S'\text{ in } \boldsymbol{\Sigma}$
+$M\left(\mathfrak{t}\right)\text{ scans region }\mathfrak{U}\left(\mathfrak{t}\right) \in \boldsymbol{\Sigma} \rightarrow\text{ latch }\mu\text{ triggers }\rightarrow I\left(\mathfrak{t}\right)\text{ produces }S'\text{ in } \boldsymbol{\Sigma}$
 
 The template is an _incomplete_ semantic structure - the missing pieces are filled by template particles which are in a sense stochastic placeholders. Matching succeeds when a real semantic structure $S$ in $\boldsymbol{\Sigma}$ "fills the gaps" sufficiently well (that is, exceeding the matching threshold $\Theta$, as defined via the average trajectory weight $\bar{w}$ in the *Semantic Templates* working note referenced above).  
 

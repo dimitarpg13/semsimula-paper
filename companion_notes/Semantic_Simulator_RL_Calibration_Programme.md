@@ -90,17 +90,16 @@ the layer-indexed parameters of any non-autonomous fields.
 The dynamics is the damped Euler–Lagrange flow of the paper's §7:
 
 $$
-\mathfrak{m}_\ell \ddot x_\ell  =  -\nabla_x V(\xi_\ell, x_\ell)
-                                  -  \gamma \dot x_\ell,
+\mathfrak{m}_\ell \ddot x_\ell = -\nabla_x V(\xi_\ell, x_\ell) - \gamma \dot x_\ell,
 $$
 
 with the potential decomposed into named force terms:
 
 $$
-V(\xi, x)  =  \underbrace{V_{\text{wells}}(x)}_{\text{lexical attractors}}
-             +  \underbrace{V_{\text{SARF}}(\xi, x)}_{\text{semantic attractor-repellor field}}
-             +  \underbrace{V_{\text{PARF}}(x)}_{\text{property field}}
-             +  \underbrace{V_{\text{ctx}}(\xi, x)}_{\text{context coupling}}.
+V(\xi, x) = \underbrace{V_{\text{wells}}(x)}_{\text{lexical attractors}}
+ + \underbrace{V_{\text{SARF}}(\xi, x)}_{\text{semantic attractor-repellor field}}
+ + \underbrace{V_{\text{PARF}}(x)}_{\text{property field}}
+ + \underbrace{V_{\text{ctx}}(\xi, x)}_{\text{context coupling}}.
 $$
 
 Specific parametric forms (a starting point, to be refined):
@@ -130,7 +129,7 @@ that says we should not over-engineer the integrator.
 The **readout** $x_L \mapsto p(\text{token})$ is, at v0, a tied
 nearest-neighbour decoder over a fixed vocabulary embedding
 $\{e_v\}_v \subset \mathbb{R}^d$:
-$p(v \mid x_L) \propto \exp(\beta  e_v^\top x_L)$.
+$p(v \mid x_L) \propto \exp(\beta e_v^\top x_L)$.
 Whether $\{e_v\}$ is fixed (corpus-derived) or RL-calibrated is
 itself a parameter-classification decision (§4).
 

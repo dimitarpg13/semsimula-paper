@@ -36,7 +36,7 @@ The numbers below are the final post-training validation losses (`evaluate(model
 
 Three additional sanity properties:
 
-- **Worst-case cross-arm pair.** $\min(\mathrm{Arm\,A}) - \max(\mathrm{Arm\,B}) = 109.30 - 89.98 = +19.32$ PPL. Even the closest possible pairing across seeds gives a $> 19$-PPL gap in favour of the second-order arm.
+- **Worst-case cross-arm pair.** $\min(\mathrm{Arm A}) - \max(\mathrm{Arm B}) = 109.30 - 89.98 = +19.32$ PPL. Even the closest possible pairing across seeds gives a $> 19$-PPL gap in favour of the second-order arm.
 - **Cross-seed reproducibility.** Both arms are extremely tight: $\sigma_{\mathrm{A}} = 2.25$, $\sigma_{\mathrm{B}} = 2.03$. SPLM-1 is robustly worse across the full seed window; SPLM-2 is robustly better.
 - **Per-seed direction.** $\Delta_s > 0$ for $s \in \{0, 1, 2\}$ — sign consistency criterion of §5 met unanimously.
 

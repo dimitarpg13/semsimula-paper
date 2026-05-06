@@ -103,7 +103,7 @@ replacement.
 | `ln_damping_sweep/`                                          | Controlled-$\gamma$ damping sweep on LayerNorm-after-step SPLM: pre-registered v2 6-cell sweep (`results/RESULTS.md`), leak-free 3-seed 4-point U-curve (`results/RESULTS_LEAKFREE_GAMMA_SWEEP.md`), and **5-seed S=5 confirmation sweep** narrowed to $\gamma \in \{0.05, 0.10, 0.15, 0.20\}$ (`aggregate_confirmation_5seed.py` / `results/leakfree_5seed_confirmation/RESULTS_CONFIRMATION_S5.md`) which **confirms** the leak-free SPLM-2 vs SPLM-1 lift at all four pre-registered decision criteria simultaneously: paired $\Delta = +5.09$ PPL at $\gamma = 0.10$ (paired-$t = +5.30$, $d_{z} = +2.37$, $p = 0.006$, sign 5/5) and the strongest single result at $\gamma = 0.15$ at paired $\Delta = +7.03$ PPL (paired-$t = +4.23$, $d_{z} = +1.89$, $p = 0.013$, sign 5/5).                                |
 | `scaleup/gamma_transfer/`                                    | $\gamma^{\ast}$-prediction calibration site (Tier 0.5 of the leak-correction pass). `predict_gamma_hessian.py` evaluates the four-estimator framework of `Determining_optimal_gamma_for_SPLM.md` on a trained checkpoint; per-checkpoint output dirs under `results/<tag>/predict_gamma_summary.md`. The leak-free $\rho \approx 0.565$ depth-scaling anchor and the resonance-predictor double success live in `results/leakfree_gamma0p10_seed0/`. |
 | `results/sharedV_em_ln_leakfree_*` + `*.trajectories.pkl`     | Leak-free shared-potential separator regression on a leak-corrected `em_ln` checkpoint (Tier 0.6 of the leak-correction pass; the leak-free counterpart of §14.7 of the v2 paper). Median per-layer test $R^{2} = 0.949$, range $[0.925, 0.960]$, uniform layer profile — *higher* than the v2 buggy $R^{2} = 0.90$. Used to fill the placeholders in TMLR1 §A.3.3. |
-| `attractor_analysis/results/attractors_em_ln_leakfree_*`     | Leak-free dynamical-mode attractor extractions (Tiers 1 + 2b of the leak-correction pass). `attractors_em_ln_leakfree_gamma0p10_seed0_*` (Tier 1, fixed $\gamma = 0.10$, $K^{\ast} = (4, 4, 11, 8, 12)$ — F3 multi-basin structure survives the leak fix). `attractors_em_ln_leakfree_freegamma_seed0_*` (Tier 2b, freely-trained $\gamma = 0.958$, $K^{\ast} = (2, 4, 2, 3, 2)$ — free-γ trades attractor diversity for $\sim\!5\!-\!7$ PPL of LM quality). |
+| `attractor_analysis/results/attractors_em_ln_leakfree_*`     | Leak-free dynamical-mode attractor extractions (Tiers 1 + 2b of the leak-correction pass). `attractors_em_ln_leakfree_gamma0p10_seed0_*` (Tier 1, fixed $\gamma = 0.10$, $K^{\ast} = (4, 4, 11, 8, 12)$ — F3 multi-basin structure survives the leak fix). `attractors_em_ln_leakfree_freegamma_seed0_*` (Tier 2b, freely-trained $\gamma = 0.958$, $K^{\ast} = (2, 4, 2, 3, 2)$ — free-γ trades attractor diversity for $\sim5-7$ PPL of LM quality). |
 | `energetic_minima/scripts/`, `results/leakfree_tiers_2_3_*`  | Leak-free retrains of the three energetic-minima alternatives (Tiers 2a, 3a, 3b): `em_ln` (LN-after-step, val\_ppl 173.59, $\gamma_{\mathrm{nat}} = 0.958$), `em_sg` (scale-gauge, val\_ppl 244.84, $\gamma_{\mathrm{nat}} = 0.863$, attractor diversity rescued: $K^{\ast} = (7, 5, 4, 5, 5)$, content frac. 0.52), `em_gm` (Gaussian-mixture, val\_ppl 542.65, $\gamma_{\mathrm{nat}} = 0.668$, still fails). Canonical synthesis report: `results/leakfree_tiers_2_3_summary.md`. Launchers: `scripts/run_leakfree_tiers_2_3.sh` (Tier 2a + 3a + 3b orchestrator) and `scripts/run_tier2b_attractor.sh` (Tier 2b standalone). |
 
 The new entries above are described in detail in the
@@ -296,7 +296,7 @@ Headline finding of the retrains plus the S=5 confirmation:
 * The v2 $\gamma^{\ast} = 0.30$ identity does *not* survive the
   leak-fix — at S=5 the absolute-PPL minimum of the leak-free
   $\gamma$-sweep sits in the basin $\gamma^{\ast} \in [0.10, 0.15]$,
-  and the $\gamma$-vs-PPL bowl flattens by $\sim\!3.7\times$.
+  and the $\gamma$-vs-PPL bowl flattens by $\sim3.7\times$.
 * The published $+23.18$-PPL second-order architectural lift over the
   structurally first-order ablation collapses but **survives**: the
   3-seed retrain alone reported a suggestive $+4.71$ PPL, $0.29$ PPL
@@ -343,7 +343,7 @@ release:
   Freely-trained $\gamma$ settles at $0.958$ (essentially unchanged
   from $\gamma_{\mathrm{init}} = 1.0$, opposite of the v2 buggy regime
   where free-γ collapsed to $\gamma \approx 0.65$). val\_ppl $= 173.59$
-  is $\sim\!5\!-\!7$ PPL *below* the leak-free fixed-γ basin at $\gamma
+  is $\sim5-7$ PPL *below* the leak-free fixed-γ basin at $\gamma
   \in [0.10, 0.15]$, but at the cost of attractor-diversity collapse:
   $K^{\ast} = (2, 4, 2, 3, 2)$ with newline-only basins. Source:
   [`energetic_minima/results/em_ln_shakespeare_summary.md`](notebooks/conservative_arch/energetic_minima/results/em_ln_shakespeare_summary.md)

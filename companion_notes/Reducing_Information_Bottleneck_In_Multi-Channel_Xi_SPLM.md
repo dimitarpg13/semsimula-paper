@@ -144,18 +144,18 @@ The **provably optimal** answer to "what is the best K-dimensional causal projec
 At time $t$, define the past trajectory $f(s) := h\_s$ for $s \le t$ (the sequence of hidden states up to now). We want a $K$-dimensional summary $c(t) \in \mathbb{R}^K$ that is the **best $K$-dim approximation of $f$** under some choice of "what's important to remember" measure $\mu\_t$ supported on $(-\infty, t]$:
 
 $$
-c(t) = \arg\min\_{c \in \mathbb{R}^K}  \int\_{-\infty}^{t} \left( f(s) - \sum\_{k=0}^{K-1} c\_k  \phi\_k(s, t) \right)^2 d\mu\_t(s),
+c(t) = \arg\min\_{c \in \mathbb{R}^K} \int\_{-\infty}^{t} \left( f(s) - \sum\_{k=0}^{K-1} c\_k \phi\_k(s, t) \right)^2 d\mu\_t(s),
 $$
 
 for a chosen basis of K functions $\{\phi\_k(s, t)\}\_{k=0}^{K-1}$ on the past axis. The choice of measure $\mu\_t$ encodes the prior over which past tokens matter:
 
-- **HiPPO-LegT (translated Legendre):** $\mu\_t = \mathbb{1}[t-\theta \le s \le t]  ds$, a uniform measure on a *fixed window* of length $\theta$ ending at $t$. This corresponds to "remember the last $\theta$ tokens equally well; forget everything older."
-- **HiPPO-LegS (scaled Legendre):** $\mu\_t = \mathbb{1}[0 \le s \le t]  ds / t$, a uniform measure on the *entire history* but rescaled so that recent and distant tokens are weighted equally on a normalised time axis. This corresponds to "remember the whole past at scale-invariant resolution."
+- **HiPPO-LegT (translated Legendre):** $\mu\_t = \mathbb{1}[t-\theta \le s \le t] ds$, a uniform measure on a *fixed window* of length $\theta$ ending at $t$. This corresponds to "remember the last $\theta$ tokens equally well; forget everything older."
+- **HiPPO-LegS (scaled Legendre):** $\mu\_t = \mathbb{1}[0 \le s \le t] ds / t$, a uniform measure on the *entire history* but rescaled so that recent and distant tokens are weighted equally on a normalised time axis. This corresponds to "remember the whole past at scale-invariant resolution."
 
 The fundamental theorem of HiPPO (Gu et al. 2020, Theorem 1) is that **for either choice of $\mu\_t$**, the optimal coefficients $c(t)$ satisfy a linear ordinary differential equation:
 
 $$
-\frac{d c(t)}{d t} = A(t)  c(t) + B(t)  f(t),
+\frac{d c(t)}{d t} = A(t) c(t) + B(t) f(t),
 $$
 
 where $A(t) \in \mathbb{R}^{K \times K}$ and $B(t) \in \mathbb{R}^{K}$ are **structured** matrices determined by the basis $\{\phi\_k\}$ and the measure $\mu\_t$. For LegT, $A$ and $B$ are constant in $t$ (translation-invariant). For LegS, $A$ and $B$ have a $1/t$ rescaling.
@@ -179,7 +179,7 @@ that decays as $K^{-2r}$ if $f$ is $r$-times differentiable — **this is the op
 **Why exponentials are sub-optimal.** The K-EMA bank corresponds to the basis
 
 $$
-\phi\_k(s, t) = \sqrt{2 r\_k}  e^{-r\_k  (t-s)},
+\phi\_k(s, t) = \sqrt{2 r\_k} e^{-r\_k (t-s)},
 \qquad r\_k = 1/\tau\_k,
 $$
 
@@ -188,7 +188,7 @@ $$
 1. The exponentials **are not orthogonal** under uniform Lebesgue measure on $(-\infty, t]$:
 
 $$
-\langle \phi\_j, \phi\_k \rangle = \int\_0^{\infty} \sqrt{2 r\_j}  e^{-r\_j \tau} \sqrt{2 r\_k}  e^{-r\_k \tau}  d\tau = \frac{2 \sqrt{r\_j r\_k}}{r\_j + r\_k}.
+\langle \phi\_j, \phi\_k \rangle = \int\_0^{\infty} \sqrt{2 r\_j} e^{-r\_j \tau} \sqrt{2 r\_k} e^{-r\_k \tau} d\tau = \frac{2 \sqrt{r\_j r\_k}}{r\_j + r\_k}.
 $$
 
 This inner product is in $(0, 1]$ for any $r\_j, r\_k \gt 0$, with equality at $1$ only when $r\_j = r\_k$.
@@ -202,13 +202,13 @@ So the K-EMA representation of $f$ has structurally higher reconstruction error 
 If we restrict the HiPPO matrix $A$ to be **diagonal**, $A = -\mathrm{diag}(r\_0, r\_1, \ldots, r\_{K-1})$, the ODE becomes
 
 $$
-\frac{d c\_k(t)}{d t} = -r\_k  c\_k(t) + b\_k  f(t),\qquad k = 0, \ldots, K-1,
+\frac{d c\_k(t)}{d t} = -r\_k c\_k(t) + b\_k f(t),\qquad k = 0, \ldots, K-1,
 $$
 
 which integrates (with $c\_k(-\infty) = 0$) to
 
 $$
-c\_k(t) = b\_k \int\_{-\infty}^{t} e^{-r\_k(t-s)}  f(s)  ds.
+c\_k(t) = b\_k \int\_{-\infty}^{t} e^{-r\_k(t-s)} f(s) ds.
 $$
 
 That is **exactly the K-EMA bank**, with $b\_k$ a per-channel input scaling. The diagonal restriction means the channels evolve **independently**: the update for $c\_k$ at time $t$ uses only $c\_k(t-\Delta t)$ and $f(t)$, with no coupling to $c\_j$ for $j \neq k$.
@@ -228,19 +228,19 @@ The off-diagonal entries are what couple polynomial orders and produce the Legen
 To convert the basis-mismatch into an information-theoretic statement, assume the past trajectory $f$ is wide-sense stationary with autocorrelation $R\_f(\tau) = \mathbb{E}[f(s) f(s+\tau)]$. Under the additional Gaussian assumption (locally accurate for trained-model hidden states by central limit arguments), the channel coefficients $c\_k(t)$ are jointly Gaussian with covariance
 
 $$
-\mathrm{Cov}(c\_j, c\_k) = \int\_0^{\infty}\int\_0^{\infty} \phi\_j(\tau) \phi\_k(\tau') R\_f(\tau - \tau')  d\tau  d\tau'.
+\mathrm{Cov}(c\_j, c\_k) = \int\_0^{\infty}\int\_0^{\infty} \phi\_j(\tau) \phi\_k(\tau') R\_f(\tau - \tau') d\tau d\tau'.
 $$
 
 For two unit-norm exponential channels with $R\_f(\tau) = \delta(\tau)$ (white-noise simplification), the cross-correlation reduces to the basis inner product itself:
 
 $$
-\rho\_{jk}  :=  \mathrm{corr}(c\_j, c\_k)  =  \frac{2 \sqrt{r\_j r\_k}}{r\_j + r\_k}  =  \mathrm{sech}\left( \tfrac{1}{2} \log(r\_j / r\_k) \right).
+\rho\_{jk} := \mathrm{corr}(c\_j, c\_k) = \frac{2 \sqrt{r\_j r\_k}}{r\_j + r\_k} = \mathrm{sech}\left( \tfrac{1}{2} \log(r\_j / r\_k) \right).
 $$
 
 (Note: $\rho\_{jk}$ depends only on the **ratio** $r\_j / r\_k$, not on the absolute decay rates — so it is purely a function of how widely separated the channels are in log-horizon space.) This gives the precise mutual information between two EMA channels:
 
 $$
-I(c\_j; c\_k) = -\tfrac{1}{2} \log \left( 1 - \rho\_{jk}^2 \right)  =  -\tfrac{1}{2} \log \left( \tanh^2\left( \tfrac{1}{2} \log(r\_j / r\_k) \right) \right).
+I(c\_j; c\_k) = -\tfrac{1}{2} \log \left( 1 - \rho\_{jk}^2 \right) = -\tfrac{1}{2} \log \left( \tanh^2\left( \tfrac{1}{2} \log(r\_j / r\_k) \right) \right).
 $$
 
 For the current K = 4 vanilla grid with effective horizons $\tau \in \{1, 2, 10, 100\}$:
@@ -278,7 +278,7 @@ By contrast, for HiPPO-LegT the effective capacity grows linearly in $K$ (orthog
 SPLM's `integrate()` method runs in discrete steps of $\Delta t = 1$ token. The continuous HiPPO ODE $\dot c = A c + B f$ is discretised most accurately by the **bilinear (Tustin) transform**:
 
 $$
-c\_{t+1} = \left( I - \tfrac{1}{2} A \right)^{-1} \left[ \left( I + \tfrac{1}{2} A \right) c\_t + B  h\_t \right].
+c\_{t+1} = \left( I - \tfrac{1}{2} A \right)^{-1} \left[ \left( I + \tfrac{1}{2} A \right) c\_t + B h\_t \right].
 $$
 
 For HiPPO-LegT, $A$ is a fixed $K \times K$ matrix; the inverse $(I - A/2)^{-1}$ is precomputed once and stored. Each token requires one $K \times K$ matrix-vector product to update $c$, costing $K^2 d$ ops vs the EMA's $K d$. For $K = 4$, $K = 8$ this is negligible (4× and 8× respectively, on top of an already cheap operation, on a sub-1% slice of total compute).
@@ -286,7 +286,7 @@ For HiPPO-LegT, $A$ is a fixed $K \times K$ matrix; the inverse $(I - A/2)^{-1}$
 Equivalent factorisation that avoids a runtime inverse: precompute $\tilde A = (I - A/2)^{-1}(I + A/2)$ and $\tilde B = (I - A/2)^{-1} B$, then
 
 $$
-c\_{t+1} = \tilde A  c\_t + \tilde B  h\_t.
+c\_{t+1} = \tilde A c\_t + \tilde B h\_t.
 $$
 
 Both $\tilde A$ and $\tilde B$ are constants of the architecture, just like the K decay rates $\{\alpha\_k\}$ are constants in K-EMA. They become **non-learnable** initialisation values (or weakly learnable, if we want to optimise the structured $A$ directly via parametric perturbation, as S4 does).
@@ -308,7 +308,7 @@ where $\mathrm{stop}(\cdot)$ is the stop-gradient operator (`h.detach()` in PyTo
 The Euler–Lagrange equation governing the SPLM dynamics is
 
 $$
-m  \ddot{h}\_t + \gamma  \dot{h}\_t = -\nabla\_h V\_\theta(c\_t, h\_t),
+m \ddot{h}\_t + \gamma \dot{h}\_t = -\nabla\_h V\_\theta(c\_t, h\_t),
 $$
 
 with $c\_t$ now the HiPPO state instead of the EMA mean. The conservative-flow geometry (the $-\nabla V\_\theta$ form of the right-hand side) is preserved. The only change is that the gradient $\nabla\_h V\_\theta$ is computed against a **richer**, **less-redundant** context summary — directly increasing the predictive information available per gradient step.
@@ -322,7 +322,7 @@ with $c\_t$ now the HiPPO state instead of the EMA mean. The conservative-flow g
 | pairwise channel correlation | $\rho\_{jk} = 2\sqrt{r\_j r\_k}/(r\_j + r\_k)$ | $\rho\_{jk} = 0$ | $\rho\_{jk} = 0$ | $\rho\_{jk} \approx 0$ |
 | effective capacity at K = 4 | ~2.2 channels | 4 channels | 4 channels | 4 channels |
 | effective capacity scaling | saturates as $K \to \infty$ | linear in K | linear in K | linear in K |
-| per-token cost | $O(K  d)$ | $O(K^2 d)$ | $O(K^2 d)$ | $O(K  d \log d)$ via FFT |
+| per-token cost | $O(K d)$ | $O(K^2 d)$ | $O(K^2 d)$ | $O(K d \log d)$ via FFT |
 | training cost (T tokens, K state) | $O(T K d)$ | $O(T K^2 d)$ | $O(T K^2 d)$ | $O(T K d \log T)$ FFT-based |
 | optimisation difficulty | trivial (K scalars) | moderate ($A$ is fixed; affine warp learnable) | moderate (time-varying) | hard (DPLR conditioning) |
 | theoretical optimality | none | optimal under fixed-window prior | optimal under scale-invariant prior | matches LegT/LegS |
@@ -1113,15 +1113,15 @@ If $A$ is Hurwitz (all eigenvalues with negative real part), the ODE
 admits the convolution solution
 
 $$
-c(t) = \int\_{-\infty}^{t} e^{A(t - s)} B  h(s)  ds,
+c(t) = \int\_{-\infty}^{t} e^{A(t - s)} B h(s) ds,
 $$
 
 i.e. each component of $c(t)$ is a causal weighted average of the past,
 with the weights given by the columns of the matrix exponential
-$e^{A(t - s)}  B$. **These columns are the K basis functions of the
+$e^{A(t - s)} B$. **These columns are the K basis functions of the
 context summary.** Choosing $(A, B)$ is choosing a basis. Concretely:
 
-- **K-EMA**: $A = -\mathrm{diag}(r\_0, \ldots, r\_{K-1})$, $B = (b\_0, \ldots, b\_{K-1})^\top$. Basis = K decaying exponentials $\{\sqrt{2 r\_k}  e^{-r\_k \tau}\}$.
+- **K-EMA**: $A = -\mathrm{diag}(r\_0, \ldots, r\_{K-1})$, $B = (b\_0, \ldots, b\_{K-1})^\top$. Basis = K decaying exponentials $\{\sqrt{2 r\_k} e^{-r\_k \tau}\}$.
 - **HiPPO-LegT**: $A$ is the structured matrix from §5.3, $B = (\sqrt{2k+1})\_k$. Basis = K translated Legendre polynomials over a sliding window.
 
 There is no a priori reason to prefer one basis over another except by
@@ -1190,7 +1190,7 @@ exact, inverse-free closed form. Per-channel:
 $$
 \bar{A}\_{kk} = e^{\lambda\_k \Delta t},
 \qquad
-\bar{B}\_k = \frac{e^{\lambda\_k \Delta t} - 1}{\lambda\_k}  B\_k.
+\bar{B}\_k = \frac{e^{\lambda\_k \Delta t} - 1}{\lambda\_k} B\_k.
 $$
 
 The K complex eigenvalues commute (they live on the diagonal of $A$),
@@ -1199,13 +1199,13 @@ so the matrix exponential factorises into K scalar exponentials.
 The discrete-time recurrence is
 
 $$
-c\_k(t+1) = \bar{A}\_{kk}  c\_k(t) + \bar{B}\_k  h(t),
+c\_k(t+1) = \bar{A}\_{kk} c\_k(t) + \bar{B}\_k h(t),
 $$
 
 with the corresponding convolution kernel
 
 $$
-M[\Delta, k] = \bar{A}\_{kk}^{\Delta}  \bar{B}\_k = e^{\lambda\_k \Delta t \cdot \Delta}  \bar{B}\_k.
+M[\Delta, k] = \bar{A}\_{kk}^{\Delta} \bar{B}\_k = e^{\lambda\_k \Delta t \cdot \Delta} \bar{B}\_k.
 $$
 
 Closed-form, autograd-friendly, no per-step matrix inverse: the entire
@@ -1263,9 +1263,9 @@ inspectable. For $K = 4$, the eigenvalues of HiPPO-LegT's $A$ matrix
 are computed numerically as
 
 $$
-\lambda\_{1,2} = -3.213 \pm 4.773  i,
+\lambda\_{1,2} = -3.213 \pm 4.773 i,
 \qquad
-\lambda\_{3,4} = -4.787 \pm 1.567  i.
+\lambda\_{3,4} = -4.787 \pm 1.567 i.
 $$
 
 Two complex-conjugate pairs, both with non-trivial imaginary parts.

@@ -288,11 +288,11 @@ The per-layer operator satisfies $M_\ell(h) = -\beta_\ell \nabla^2_h V_\theta(\x
 
 ```mermaid
 flowchart LR
-    subgraph Token_Position["Token-Position Axis (t)"]
+    subgraph Token_Position [Token-Position Axis t]
         direction LR
         T1["t=1\nh₁"] --> T2["t=2\nh₂"] --> T3["t=3\nh₃"] --> T4["...\nhₜ"]
     end
-    subgraph Layer_Depth["Layer-Depth Axis (ℓ)"]
+    subgraph Layer_Depth [Layer-Depth Axis ell]
         direction TB
         L1["ℓ=1"] --> L2["ℓ=2"] --> L3["ℓ=3"] --> L4["...\nℓ=L"]
     end
@@ -339,7 +339,7 @@ Because SPLM's forward pass is governed by $-\beta_\ell \nabla_h V_\theta(\xi_t,
 
 ```mermaid
 flowchart TD
-    subgraph StandardTransformer["Standard Attention Transformer (Inference)"]
+    subgraph StandardTransformer [Standard Attention Transformer - Inference]
         ST1["Token error ε_t"] --> ST2["Accumulates freely\nh_t - h*_t = Σε_s"]
         ST2 --> ST3["Brownian cone grows\n∝ σ√t"]
         ST3 --> ST4["Attention score corruption\nq̃·k̃ = q·k + noise(σ√t)"]
@@ -347,7 +347,7 @@ flowchart TD
         ST5 --> ST6["Mode collapse when\ncones collide"]
     end
 
-    subgraph SPLM_["SPLM (Inference)"]
+    subgraph SPLM_ [SPLM - Inference]
         SP1["Token error ε_t"] --> SP2["Same Brownian accumulation\nh_t - h*_t = Σε_s ∝ σ√t"]
         SP2 --> SP3["Layer damping -γv_t\nDissipates perturbations\nthrough depth"]
         SP3 --> SP4["Gradient restoring force\n-β∇V_θ pulls toward\nenergy minimum"]

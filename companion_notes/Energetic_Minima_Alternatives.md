@@ -358,12 +358,12 @@ $v_{\mathrm{hidden}} = 512$, `mass_mode='logfreq'`, `cfg.causal_force = True`,
 lands at $0.958$ — *essentially unchanged from* $\gamma_{\mathrm{init}} = 1.0$,
 the *opposite* of the v2 buggy regime in which free-γ landed at $\gamma
 \approx 0.65$. The leak-free val\_ppl of $173.59$ at $\gamma = 0.958$ is
-$\sim\!5\!-\!7$ PPL **below** the leak-free fixed-γ basin at $\gamma \in
+$\sim5-7$ PPL **below** the leak-free fixed-γ basin at $\gamma \in
 [0.10, 0.15]$ (S=5 confirmation sweep mean SPLM-2 val\_ppl $\sim 178\!-\!181$;
 [`leakfree_5seed_confirmation/RESULTS_CONFIRMATION_S5.md`](../notebooks/conservative_arch/ln_damping_sweep/results/leakfree_5seed_confirmation/RESULTS_CONFIRMATION_S5.md)).
 The qualitative direction of the v2 buggy LN result — "ppl is
 *not* essentially unchanged" — therefore survives the leak fix and is in
-fact strengthened: the $\sim\!45\%$ relative ppl improvement over the
+fact strengthened: the $\sim45\%$ relative ppl improvement over the
 SARF-faithful baseline is no longer attributable to the leak channel
 (which would inflate the baseline more than LN). However, the leak-free
 LN attractor profile **collapses to $K^{\ast} = (2, 4, 2, 3, 2)$** and
@@ -387,7 +387,7 @@ leak-free retrain SG **becomes a useful regulariser** for attractor
 diversity: $K^{\ast}$ recovers to $(7, 5, 4, 5, 5)$ (every prompt
 multi-basin with $K^{\ast} \geq 4$), content-basin fraction recovers to
 $0.52$ (comparable to v2 buggy `em_base` baseline at $0.58$), at a cost of
-$\sim\!71$ paired PPL on the LM objective ($244.84$ vs em\_ln free-γ
+$\sim71$ paired PPL on the LM objective ($244.84$ vs em\_ln free-γ
 $173.59$). The leak-free SG verdict is therefore "structurally rescued by
 the leak fix": a small loss-side anchor on $V_\theta$'s absolute scale at
 the input embedding **does** narrow $V$ range, **does** preserve diverse
@@ -397,11 +397,11 @@ Under causal honesty the SG penalty does the structural work that the v2
 buggy reading credited LN with.
 
 **(iii) Gaussian-mixture head ($K = 64$).** GM **continues to fail**
-under leak-free training: val\_ppl $542.65$ ($\sim\!4.7\times$ worse than
+under leak-free training: val\_ppl $542.65$ ($\sim4.7\times$ worse than
 em\_ln free-γ $173.59$, qualitatively comparable to the v2 buggy GM's
 $4.2\times$ overshoot of the buggy SARF-faithful baseline), $K^{\ast} =
 (2, 2, 2, 2, 2)$ (single-basin collapse on every prompt), $V$ range
-collapsed to a $\sim\!0.7$-unit-wide spike at $\sim\!+64$, content-basin
+collapsed to a $\sim0.7$-unit-wide spike at $\sim+64$, content-basin
 fraction $0.00$. The leak fix does **not** rescue GM. R5 (the structural
 prediction that "structurally bounded $V_\theta$ is expressivity-limited")
 is therefore preserved and modestly reinforced under causal honesty.

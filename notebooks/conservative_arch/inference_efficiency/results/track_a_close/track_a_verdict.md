@@ -43,9 +43,9 @@ Six sub-claims, locked thresholds, applied to the actual data:
 | # | sub-claim | measured | threshold | grade |
 |---|---|---|---|:-:|
 | A2.C1 | $F_{\mathrm{attn}}^{\mathrm{fwd}}/F_{\mathrm{splm}}^{\mathrm{fwd}}$ doubles when $T$ doubles in the long-T regime | ratio 1.146 at $T = 8192$, 1.932 at $T = 16384$; growth factor **1.685×** | ≥1.8 = CONFIRMED; [1.4, 1.8) = MARGINAL; <1.4 = REFUTED | **MARGINAL** |
-| A2.C2 | forward-pass FLOP crossover at $T^{*} = 34d \;(= 4{,}352$ at $d = 128)$ | $T^{*} = $ **7 165** (numerical equality of `splm_forward_flops` and `attn_forward_flops`) | ±8 % CONFIRMED [4 003, 4 700]; ±20 % MARGINAL [3 481, 5 222] | **REFUTED** |
+| A2.C2 | forward-pass FLOP crossover at $T^{*} = 34d (= 4{,}352$ at $d = 128)$ | $T^{*} = $ **7 165** (numerical equality of `splm_forward_flops` and `attn_forward_flops`) | ±8 % CONFIRMED [4 003, 4 700]; ±20 % MARGINAL [3 481, 5 222] | **REFUTED** |
 | A2.C3-SPLM | streaming-ξ wall-clock per-step constant in $T$ | per-token FLOPs **exactly 44.4 M** for every $T$; wall-clock worst-case drift +90 % at $T = 2048$ vs $T = 256$ baseline | ≤5 % CONFIRMED; ≤20 % MARGINAL; >20 % REFUTED | **REFUTED** |
-| A2.C3-ATTN | KV-cached wall-clock linear in $T$ | OLS over the locked grid: $W = 7.119 + 2.858\times 10^{-3}\,T$ ms; **$R^{2} = 0.903$** | ≥0.95 CONFIRMED; ≥0.85 MARGINAL; <0.85 REFUTED | **MARGINAL** |
+| A2.C3-ATTN | KV-cached wall-clock linear in $T$ | OLS over the locked grid: $W = 7.119 + 2.858\times 10^{-3} T$ ms; **$R^{2} = 0.903$** | ≥0.95 CONFIRMED; ≥0.85 MARGINAL; <0.85 REFUTED | **MARGINAL** |
 | A2.C4 | SPLM params flat in $L$, ATTN params linear in $L$ | SPLM non-emb at $L \in \{4,8,16\}$: 657 417 → 657 425 → 657 441 (drift **0.004 %**); ATTN linear-fit deviation **0.0000 %** | SPLM ≤1 % AND ATTN ≤5 % linear deviation = CONFIRMED | **CONFIRMED** |
 | WC-cross | empirical wall-clock crossover $T_{\mathrm{wc}} \le 16384$ | $T_{\mathrm{wc}}$ = **1 536** | ≤16 384 = CONFIRMED | **CONFIRMED** |
 
@@ -62,7 +62,7 @@ architectural failures:
   asymptotic per-block formula $T^{*} = 34d = 4{,}352$ as the
   threshold. The numerical `flop_counter` value $T^{*}_{\text{fwd}} =
   7{,}165$ comes out larger because *the realistic FLOP count
-  includes the embedding+logits projections* ($2 d V \approx 12.9\,$M
+  includes the embedding+logits projections* ($2 d V \approx 12.9 $M
   per token at $d = 128$, $V = 50{,}257$), which adds the same
   constant-in-$T$ overhead to **both** architectures and shifts the
   crossover to higher $T$. The architectural claim — "a forward-FLOP
@@ -149,7 +149,7 @@ increase in $L$, well within the locked 1 % CONFIRMED band.
 
 MatchedGPT's per-block parameter count is exactly 198 336 (LN1 + QKV
 + O proj + LN2 + fc1 + fc2 with biases) at $d = 128$, $\mathrm{mlp\_mult} = 4$.
-Non-embedding params are exactly $198{,}336\,L + 256$ (final LN), giving
+Non-embedding params are exactly $198{,}336 L + 256$ (final LN), giving
 an $R^{2} = 1.000$ linear fit.
 
 ---

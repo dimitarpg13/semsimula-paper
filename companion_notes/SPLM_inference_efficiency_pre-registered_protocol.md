@@ -15,9 +15,9 @@
 
 the paper Appendix A2 advances four quantitative claims about SPLM's inference efficiency relative to a parameter-matched attention transformer:
 
-- **A2.C1 — No $T^2$ attention term.** SPLM's per-forward-pass cost is $O(LTd\,d_V)$; attention is $O(LTd^2 + LT^2d)$. As $T \to \infty$ at fixed $d$, the ratio $F_{\text{attn}} / F_{\text{splm}}$ grows linearly in $T$.
-- **A2.C2 — FLOP crossover at $T^{\ast} = 34d$** (eq. A2.crossover, derived for the prototype $d_V = 4d$, $v_{\text{depth}} = 3$). For $d = 128$, $T^{\ast} \approx 4\,352$.
-- **A2.C3 — KV-cache-free decoding.** Per-new-token autoregressive decode cost at prefix $T$ is $O(L\,d\,d_V)$ for SPLM (constant in $T$) vs. $O(LTd)$ for attention with KV cache. Cache memory shrinks from $2LTd$ to $Ld$ — a factor of $2T$.
+- **A2.C1 — No $T^2$ attention term.** SPLM's per-forward-pass cost is $O(LTd d_V)$; attention is $O(LTd^2 + LT^2d)$. As $T \to \infty$ at fixed $d$, the ratio $F_{\text{attn}} / F_{\text{splm}}$ grows linearly in $T$.
+- **A2.C2 — FLOP crossover at $T^{\ast} = 34d$** (eq. A2.crossover, derived for the prototype $d_V = 4d$, $v_{\text{depth}} = 3$). For $d = 128$, $T^{\ast} \approx 4 352$.
+- **A2.C3 — KV-cache-free decoding.** Per-new-token autoregressive decode cost at prefix $T$ is $O(L d d_V)$ for SPLM (constant in $T$) vs. $O(LTd)$ for attention with KV cache. Cache memory shrinks from $2LTd$ to $Ld$ — a factor of $2T$.
 - **A2.C4 — Depth-independent parameters.** SPLM's non-embedding parameter count is independent of $L$; attention's grows as $12Ld^2$.
 
 The paper itself flags one variant of these claims as **explicitly open** in A2's last paragraph:
@@ -95,7 +95,7 @@ For each $(T, \text{architecture})$ cell, four numbers are recorded:
 Implementation requirements (locked):
 
 - **For ATTN\_match.** Standard pre-LN GPT-2 block. KV-cache implemented in the matched-baseline trainer's inference path (delta of HuggingFace's standard `past_key_values` mechanism).
-- **For SPLM (both flavours).** A streaming-$\xi$ inference path. The current `model.forward` recomputes $\xi_t$ from scratch on every call, which artificially inflates SPLM's per-new-token decode cost from $O(Ld\,d_V)$ to $O(LTd\,d_V)$. The paper's A2.C3 claim explicitly assumes streaming. Implementing streaming-$\xi$ is part of this experiment; we add `model.generate_streaming(prefix, max_new_tokens)` that maintains a single $L$-vector of running cumulative means and updates them incrementally.
+- **For SPLM (both flavours).** A streaming-$\xi$ inference path. The current `model.forward` recomputes $\xi_t$ from scratch on every call, which artificially inflates SPLM's per-new-token decode cost from $O(Ld d_V)$ to $O(LTd d_V)$. The paper's A2.C3 claim explicitly assumes streaming. Implementing streaming-$\xi$ is part of this experiment; we add `model.generate_streaming(prefix, max_new_tokens)` that maintains a single $L$-vector of running cumulative means and updates them incrementally.
 - **No torch.compile, no flash-attention.** Both architectures run in eager-mode PyTorch, with the same kernel-maturity baseline. The protocol explicitly does *not* claim wall-clock speedups under fused / compiled kernels — that would require a separate "production engineering" study.
 
 Code: `notebooks/conservative_arch/inference_efficiency/{count_flops.py, benchmark_wallclock.py, model_streaming.py}` (all new).
@@ -104,12 +104,12 @@ Code: `notebooks/conservative_arch/inference_efficiency/{count_flops.py, benchma
 
 | Sub-claim | Operational form | Pre-registered prediction |
 |---|---|---|
-| **A2.C2** — FLOP crossover at $T^{\ast} = 34d$ | for $d = 128$, $T^{\ast} \in [128, 4096]$ such that $F_{\text{attn}}^{\text{fwd}}(T^{\ast}) = F_{\text{splm}}^{\text{fwd}}(T^{\ast})$ | $T^{\ast} \in [4\,000, 4\,700]$ (i.e. paper's $34d \approx 4\,352$ ± 8 %), with $T^{\ast}$ between $T = 1\,024$ and $T = 4\,096$. |
-| **A2.C1** — long-context FLOP scaling | $F_{\text{attn}}^{\text{fwd}}(T) / F_{\text{splm}}^{\text{fwd}}(T)$ grows linearly in $T$ at $T \ge T^{\ast}$ | for $T \in \{8\,192, 16\,384\}$ the ratio should approximately double, consistent with linear-in-$T$ growth. |
-| **A2.C3** — constant-cost decoding for SPLM | $W_{\text{splm}}^{\text{dec}}(T) - W_{\text{splm}}^{\text{dec}}(128) < 5\%$ of $W_{\text{splm}}^{\text{dec}}(128)$ for all $T \le 16\,384$ | confirmed if streaming-$\xi$ is implemented correctly; this is essentially a unit test on the streaming path. |
+| **A2.C2** — FLOP crossover at $T^{\ast} = 34d$ | for $d = 128$, $T^{\ast} \in [128, 4096]$ such that $F_{\text{attn}}^{\text{fwd}}(T^{\ast}) = F_{\text{splm}}^{\text{fwd}}(T^{\ast})$ | $T^{\ast} \in [4 000, 4 700]$ (i.e. paper's $34d \approx 4 352$ ± 8 %), with $T^{\ast}$ between $T = 1 024$ and $T = 4 096$. |
+| **A2.C1** — long-context FLOP scaling | $F_{\text{attn}}^{\text{fwd}}(T) / F_{\text{splm}}^{\text{fwd}}(T)$ grows linearly in $T$ at $T \ge T^{\ast}$ | for $T \in \{8 192, 16 384\}$ the ratio should approximately double, consistent with linear-in-$T$ growth. |
+| **A2.C3** — constant-cost decoding for SPLM | $W_{\text{splm}}^{\text{dec}}(T) - W_{\text{splm}}^{\text{dec}}(128) < 5\%$ of $W_{\text{splm}}^{\text{dec}}(128)$ for all $T \le 16 384$ | confirmed if streaming-$\xi$ is implemented correctly; this is essentially a unit test on the streaming path. |
 | **A2.C3** — linear-cost decoding for attention | $W_{\text{attn}}^{\text{dec}}(T)$ scales as $\alpha + \beta T$ with $\beta > 0$ on a regression of the 8 grid points | confirmed if KV-cache is implemented correctly; also a unit test. |
 | **A2.C4** — depth-independent parameters for SPLM | report counted parameters for SPLM $L \in \{4, 8, 16\}$ and ATTN $L \in \{4, 8, 16\}$ | trivial; SPLM should be flat in $L$ (modulo the v-buffer for SPLM\_2 which is layer-state, not parameter), ATTN should be linear in $L$. |
-| **Wall-clock crossover (new claim, not in v3)** | $T_{\text{wc}}^{\ast}$ such that $W_{\text{attn}}^{\text{fwd}}(T_{\text{wc}}^{\ast}) = W_{\text{splm}}^{\text{fwd}}(T_{\text{wc}}^{\ast})$ | The paper's A2 acknowledges kernel-maturity asymmetry as a known caveat. The pre-registered prediction is that $T_{\text{wc}}^{\ast}$ exists but lies above $T^{\ast}$ (i.e. above $\sim 4\,352$). If $T_{\text{wc}}^{\ast} \le 16\,384$, the practical wall-clock advantage is realisable at long contexts; if not, the FLOP advantage is conceded as theoretical-only at the prototype kernel. |
+| **Wall-clock crossover (new claim, not in v3)** | $T_{\text{wc}}^{\ast}$ such that $W_{\text{attn}}^{\text{fwd}}(T_{\text{wc}}^{\ast}) = W_{\text{splm}}^{\text{fwd}}(T_{\text{wc}}^{\ast})$ | The paper's A2 acknowledges kernel-maturity asymmetry as a known caveat. The pre-registered prediction is that $T_{\text{wc}}^{\ast}$ exists but lies above $T^{\ast}$ (i.e. above $\sim 4 352$). If $T_{\text{wc}}^{\ast} \le 16 384$, the practical wall-clock advantage is realisable at long contexts; if not, the FLOP advantage is conceded as theoretical-only at the prototype kernel. |
 
 #### Phase 2 decision rule (locked)
 
@@ -122,7 +122,7 @@ Each sub-claim is independently classified as **CONFIRMED** / **MARGINAL** / **R
 | A2.C3 SPLM | $\le 5$ % drift | $\le 20$ % | $> 20$ % |
 | A2.C3 ATTN | $R^2 \ge 0.95$ on linear fit | $\ge 0.85$ | $< 0.85$ |
 | A2.C4 | flat to within 1 % of SPLM params, linear $\pm 5$ % for ATTN | flat to within 5 %, linear $\pm 15$ % | otherwise |
-| WC crossover | $T_{\text{wc}}^{\ast} \le 16\,384$ | $T_{\text{wc}}^{\ast} > 16\,384$ but ratio decreasing monotonically | ratio not decreasing |
+| WC crossover | $T_{\text{wc}}^{\ast} \le 16 384$ | $T_{\text{wc}}^{\ast} > 16 384$ but ratio decreasing monotonically | ratio not decreasing |
 
 The headline conclusion of Phase 2 is determined by the count of CONFIRMED / MARGINAL / REFUTED sub-claims:
 
@@ -134,17 +134,17 @@ The headline conclusion of Phase 2 is determined by the count of CONFIRMED / MAR
 
 For each architecture, plot val PPL on the validation split (a **fixed** number per architecture, computed at evaluation $T = 128$ to match the training configuration) against forward-pass FLOPs at multiple inference $T$. The quality number is fixed; the FLOP number is the inference cost the user pays per evaluation context of length $T$.
 
-This produces a "PPL-vs-inference-FLOPs at length-$T$" plot for $T \in \{128, 1\,024, 4\,096, 16\,384\}$. The Pareto-dominant architecture at each $T$ is the headline.
+This produces a "PPL-vs-inference-FLOPs at length-$T$" plot for $T \in \{128, 1 024, 4 096, 16 384\}$. The Pareto-dominant architecture at each $T$ is the headline.
 
 #### Phase 3 hypotheses (locked)
 
 | Outcome | Operational form | Conclusion |
 |---|---|---|
-| **P1 — Q6 confirmed** | At $T = 4\,096$ and $T = 16\,384$, SPLM\_2 lies on the Pareto frontier of (PPL, FLOPs); SPLM\_2 is FLOP-cheaper than ATTN\_match by $\ge 1.5\times$ at PPL within $\pm 5$ of ATTN\_match's. | A2.last-paragraph "Q6 unresolved" wording is replaced by a positive empirical statement. |
-| **P2 — Q6 partially confirmed** | SPLM\_2 is FLOP-cheaper at $T = 16\,384$ but not at $T = 4\,096$. | A2 is updated to note that the quality-adjusted advantage materialises at $T \ge T_{\text{Q6}}^{\ast}$, with $T_{\text{Q6}}^{\ast}$ given by the data. |
-| **P3 — Q6 falsified** | SPLM\_2 is not FLOP-cheaper at any $T \le 16\,384$ when conditioned on PPL parity (Phase 1 outcome Q1) or SPLM\_2 is not Pareto-dominant under outcome Q3. | A2 is materially weakened; the paper is rewritten to acknowledge that the quality-adjusted version of the inference-efficiency claim does not hold at this scale, and the asymptotic claim is reported as theoretical-only. |
+| **P1 — Q6 confirmed** | At $T = 4 096$ and $T = 16 384$, SPLM\_2 lies on the Pareto frontier of (PPL, FLOPs); SPLM\_2 is FLOP-cheaper than ATTN\_match by $\ge 1.5\times$ at PPL within $\pm 5$ of ATTN\_match's. | A2.last-paragraph "Q6 unresolved" wording is replaced by a positive empirical statement. |
+| **P2 — Q6 partially confirmed** | SPLM\_2 is FLOP-cheaper at $T = 16 384$ but not at $T = 4 096$. | A2 is updated to note that the quality-adjusted advantage materialises at $T \ge T_{\text{Q6}}^{\ast}$, with $T_{\text{Q6}}^{\ast}$ given by the data. |
+| **P3 — Q6 falsified** | SPLM\_2 is not FLOP-cheaper at any $T \le 16 384$ when conditioned on PPL parity (Phase 1 outcome Q1) or SPLM\_2 is not Pareto-dominant under outcome Q3. | A2 is materially weakened; the paper is rewritten to acknowledge that the quality-adjusted version of the inference-efficiency claim does not hold at this scale, and the asymptotic claim is reported as theoretical-only. |
 
-The decision in Phase 3 is conditional on Phase 1: if Phase 1 returns Q3 (ATTN beats SPLM by $\ge 5$ PPL), the Pareto frontier at low $T$ is dominated by ATTN, and the question becomes "is SPLM still Pareto-dominant at $T = 16\,384$?" The locked threshold $1.5\times$ FLOP saving compensates for up to a $\sim 10$-PPL quality gap.
+The decision in Phase 3 is conditional on Phase 1: if Phase 1 returns Q3 (ATTN beats SPLM by $\ge 5$ PPL), the Pareto frontier at low $T$ is dominated by ATTN, and the question becomes "is SPLM still Pareto-dominant at $T = 16 384$?" The locked threshold $1.5\times$ FLOP saving compensates for up to a $\sim 10$-PPL quality gap.
 
 ---
 
@@ -153,7 +153,7 @@ The decision in Phase 3 is conditional on Phase 1: if Phase 1 returns Q3 (ATTN b
 The author's predictions, locked in writing for accountability:
 
 - **Phase 1**: Q1 (quality parity, $|\Delta| < 5$). Belief: ATTN\_match at the new protocol reaches $\sim 90 \pm 10$ PPL, similar to SPLM\_2's 87. Caveat: this is the noisiest of the three predictions; the matched baseline at the *old* protocol reached 142, so the improvement to $\sim 90$ assumes the LR/schedule/grad-clip choices that helped SPLM also help ATTN.
-- **Phase 2**: outcome **A** for everything except wall-clock crossover; outcome **B** for the wall-clock crossover (i.e. crossover exists at some $T \le 16\,384$ but is well above the FLOP $T^{\ast}$).
+- **Phase 2**: outcome **A** for everything except wall-clock crossover; outcome **B** for the wall-clock crossover (i.e. crossover exists at some $T \le 16 384$ but is well above the FLOP $T^{\ast}$).
 - **Phase 3**: outcome **P1** if Phase 1 returns Q1 or Q2, outcome **P2** if Phase 1 returns Q3.
 
 ---
@@ -192,7 +192,7 @@ After all three phases run, the following artefacts are committed:
 
 | Phase 1 | Phase 2 | Phase 3 | the paper consequence |
 |---|---|---|---|
-| Q1 or Q2 | **A** | **P1** | Add a §6.5 (or §A2.6) sub-section "Empirical verification of the inference-efficiency claims" with the headline numbers inline. Replace A2.last-paragraph "Q6 unresolved" wording with the measured FLOP-saving factor at $T = 16\,384$ at matched PPL. The paper now claims A2 end-to-end with empirical backing. |
+| Q1 or Q2 | **A** | **P1** | Add a §6.5 (or §A2.6) sub-section "Empirical verification of the inference-efficiency claims" with the headline numbers inline. Replace A2.last-paragraph "Q6 unresolved" wording with the measured FLOP-saving factor at $T = 16 384$ at matched PPL. The paper now claims A2 end-to-end with empirical backing. |
 | Q1 or Q2 | **B** | **P1** or **P2** | Same as above but soften the sub-claims rated MARGINAL in Phase 2; report the actual measured constants in place of the predicted ones. |
 | Q3 | any | any | A2 is rewritten conditional on $\Delta_{\text{quality}}$ measured: SPLM is FLOP-cheaper *despite* a $\Delta_{\text{quality}}$-PPL quality penalty; the paper is honest that this is the price of the prototype scale. |
 | any | **C** | any | The REFUTED Phase-2 sub-claim has its A2 paragraph rewritten with the measured number replacing the analytical argument. |
@@ -216,7 +216,7 @@ After all three phases run, the following artefacts are committed:
 
 ## 9. Pre-registered authors' beliefs (separate from the decision rule)
 
-The author believes the most likely composite outcome is **(Q1, A, P1)**: quality parity between ATTN\_match and SPLM\_2 at the improved protocol, all six A2 sub-claims confirmed in the unconditional benchmark, and a quality-adjusted FLOP saving of $\ge 2 \times$ at $T = 16\,384$. This belief does **not** modify the decision rule of §3; the locked thresholds stand regardless.
+The author believes the most likely composite outcome is **(Q1, A, P1)**: quality parity between ATTN\_match and SPLM\_2 at the improved protocol, all six A2 sub-claims confirmed in the unconditional benchmark, and a quality-adjusted FLOP saving of $\ge 2 \times$ at $T = 16 384$. This belief does **not** modify the decision rule of §3; the locked thresholds stand regardless.
 
 If the actual outcome is (Q3, *, *) — ATTN beats SPLM on quality at this scale — the paper consequence is the most consequential rewrite: A2 is reframed as "asymptotically SPLM is FLOP-cheaper, but at the prototype scale it pays a quality cost; closing this gap is the v4 scaling experiment". This would be a partial concession but not a falsification of the framework.
 

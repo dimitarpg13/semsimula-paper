@@ -24,10 +24,10 @@ The Semantic Simulation framework defines a hierarchy of entities in semantic sp
 
 ```mermaid
 graph TB
-    A["Semantic Aspect A_i<br/>(type l_i, angular coordinates θ_i)<br/>The indivisible unit"]
-    P["Semantic Property P<br/>(K-polytope of N aspects, signature matrix P = MX)<br/>Has internal structure but is a single entity"]
-    V["Semantic Particle V<br/>(ensemble of properties in bound state)<br/>The first 'compound' unit"]
-    S["Semantic Structure S<br/>(compound of particles)<br/>Full semantic meaning"]
+    A["Semantic Aspect A_i<br>(type l_i, angular coordinates θ_i)<br>The indivisible unit"]
+    P["Semantic Property P<br>(K-polytope of N aspects, signature matrix P = MX)<br>Has internal structure but is a single entity"]
+    V["Semantic Particle V<br>(ensemble of properties in bound state)<br>The first 'compound' unit"]
+    S["Semantic Structure S<br>(compound of particles)<br>Full semantic meaning"]
     
     A -->|"N aspects form"| P
     P -->|"properties converge to bound state"| V
