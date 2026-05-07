@@ -184,11 +184,11 @@ construction and is documented in the design doc as expected.
 | P1 | First quality cell: `structural` V_phi, seed 0, em-ln vh=128 cell shape, S=1 | 1 | ~252 min MPS | ✅ done (val PPL 210.54 → **FAIL** §6.3) |
 | P1.5a | OQ-1 comparator: `mlp` V_phi (mlp_h=16), seed 0, em-ln vh=128 cell shape, S=1 | 1 | ~430 min MPS | ✅ done (val PPL 297.22; OQ-1 verdict: **structural prior empirically active**) |
 | P1.5b | OQ-1 comparator: `mlp` V_phi (mlp_h=32), seed 0, em-ln vh=128 cell shape, S=1 | 1 | ~640 min MPS | deferred (P1.5a verdict already unambiguous) |
-| P1.6 | Wider `structural` V_phi (`phi_hidden=128, theta_hidden=128`), seed 0, em-ln vh=128 cell shape, S=1 — capacity disambiguation | 1 | ~300 min MPS | **in progress** (launched 7 May 2026 09:06 EDT) |
-| P2 | Paired confirmation at n=5 on the better V_phi variant; seeds 0..4 | 4 | ~17 h MPS | **planned (post-P1.5)** |
+| P1.6 | Wider `structural` V_phi (`phi_hidden=128, theta_hidden=128`), seed 0, em-ln vh=128 cell shape, S=1 — capacity disambiguation | 1 | ~458 min MPS | ✅ done 7 May 2026 16:49 EDT (val PPL **207.58**; verdict: **V_φ width is NOT the binding constraint**; pivot to P5 designated) |
+| P2 | Paired confirmation at n=5 on the better V_phi variant; seeds 0..4 | 4 | ~17 h MPS | **deferred behind P5** (paired confirmation gated on a PARF cell that closes the dense-aggregation gap) |
 | P3 | Framework-native diagnostics on best cell: OQ-2 (joint pair test on real GPT-2 attention), holonomy decomposition, R6 ladder inversion | 1-3 | ~3 h CPU | **planned (post-P2)** |
 | P4 | TinyStories scale-up cell on best PARF configuration, S=3 | 3 | ~4-5 h MPS | optional |
-| P5 | Stage 1.5 — Gumbel-softmax sparsity for $V_\phi$ (token sparsification → decode-FLOP arm) | 2 | ~6 h MPS | optional |
+| P5 | **Stage 1.5 — Gumbel-softmax sparsity for $V_\phi$** (top-$k$ pair selection over past tokens; framework-native §5.2 cutoff → decode-FLOP arm) | 2-4 | ~6-12 h MPS | **next on critical path** (decision-relevant per P1.6 verdict; design doc: [`On_Gumbel_softmax_sparsity_applied_to_V_phi.md`](On_Gumbel_softmax_sparsity_applied_to_V_phi.md)) |
 | P6 | Algorithm B / Algorithm C — PPO with framework-native reward / Pair-Selective REINFORCE (the v4 §15.24.7 prescriptive primary) | ? | ? | **deferred** (separate paper draft) |
 
 P3 is the deliverable that distinguishes Q9c from a pure
@@ -468,12 +468,137 @@ fixed-source `h_src.detach` that prevents the pair force from
 co-evolving with the queries, OR the per-layer-shared $V_\phi$
 overconstraining capacity vs a per-layer $V_\phi$).
 
-### 4.6. P1.6 — wider structural V_phi (phi_hidden=128, theta_hidden=128)
+### 4.6. P1.6 — wider structural V_phi (phi_hidden=128, theta_hidden=128) — completed 7 May 2026
 
-**Status: launched 7 May 2026 09:06 EDT**, structural V_phi at
-`phi_hidden=128, theta_hidden=128` (vs P1's 32/32 → ~7× capacity
-bump on V_φ), seed 0. Estimated wall-clock ~5 h MPS. Result to
-be appended here on completion.
+Output:
+`notebooks/conservative_arch/parf/results/structural/seed0_vphi128/training.log` (live tail)
+plus the trainer-emitted artifacts at
+`notebooks/conservative_arch/parf/results/parf_structural_vphi128_shakespeare_seed0_*`
+(`*_summary.md`, `*_training_log.jsonl`, `*_loss_curve.png` are
+committed; `.png` via Git LFS; the `*_ckpt_latest.pt` is local-only).
+
+#### Headline result
+
+| arm                                                              | val PPL (seed 0) | train-loss floor | final γ  | V_φ params | total params |
+|------------------------------------------------------------------|-----------------:|-----------------:|---------:|-----------:|-------------:|
+| Variant A HSPLM (k=4, m=4)                                        | 133.01           | 3.74             | 0.154    | —          | 7.92 M       |
+| Q9d Helmholtz `AAAASSSS` vh=128                                    | 134.89           | 3.78             | 0.163    | —          | 7.92 M       |
+| All-attention                                                     | 141.80           | —                | —        | —          | ~8.0 M       |
+| All-SPLM em_ln (free-γ, leak-free)                                 | 173.59           | —                | —        | —          | ~6.5 M       |
+| **PARF Q9c structural (P1)**                                       | **210.54**       | 4.76             | 0.088    | 4,002      | 6.54 M       |
+| **PARF Q9c MLP V_φ, mlp_h=16 (P1.5a)**                            | **297.22**       | 4.43             | 0.139    | 28,865     | 6.54 M       |
+| **PARF Q9c wider structural V_φ, φ/θ=128 (P1.6, this cell)**       | **207.58**       | 4.77             | 0.094    | 6,786      | 6.54 M       |
+
+Wall-clock 27,502 s (~7.64 h MPS, vs the ~5 h estimate due to MPS
+contention from other workloads on the box). Final eval at step 4000:
+train 4.7726, val 5.3355, ppl 207.58. Causal probe at startup passed
+at strict 1e-6 under both `.detach()` points. The cosine LR cool-down
+in the last ~500 steps brought val PPL down from ~225 (mid-run plateau)
+to the final 207.58 — the canonical late-cosine cool-down dividend.
+
+#### Verdict per the §6.3 / §6.4-style decision rule
+
+**P1.6 succeeds iff val PPL drops materially below P1's 210.54 —
+ideally into the 150–170 range (~Q9d/VA range minus a small
+structural-prior tax). If P1.6 still places ≥ 200 PPL, the bottleneck
+is NOT V_φ width but something deeper in Algorithm A.**
+
+Result: val PPL 207.58 — a $\sim 3$ PPL improvement over P1's 210.54,
+well inside the seed-noise envelope. **P1.6 fails the "drop materially"
+gate**; the binding constraint is therefore **NOT V_φ width**.
+
+#### Diagnostic readout
+
+The training run was *operationally* clean (same as P1):
+
+- Causal-violation probe at startup passed at the strict 1e-6
+  threshold under both `.detach()` points.
+- No numerical instability, no NaN/Inf, no optimizer divergence; the
+  trainer ran the full 4000-step schedule.
+- Train and val losses tracked each other tightly; small
+  generalization gap; this is **not an overfitting issue**.
+- Best val checkpoint at step 4000 (the final eval); val PPL
+  trajectory: 219.50 (step 3000, mid-run minimum) → 227.35 → 225.35
+  → 225.88 → 211.43 → **207.58** (cosine cool-down dividend).
+
+The two interpretable diagnostic signals from P1 reproduce here:
+
+1. **γ converged to 0.094** (vs P1: 0.088) — both structural cells
+   collapse into the same suppressed-dissipation basin, well below
+   the leak-free SPLM resonance anchor (γ\* ≈ 0.166). The 7× V_φ
+   widening does NOT move the basin; the optimiser still has to
+   suppress dissipation to keep the integrator stable under the
+   §5.1 pair force.
+2. **Train loss floor at 4.77** (vs P1: 4.76) — *indistinguishable*.
+   The fitting bottleneck is NOT on V_φ width; raising V_φ from
+   $\sim 4{,}000$ to $\sim 6{,}786$ params buys us ~0.01 nat at the
+   train-loss floor, i.e., nothing.
+
+#### Implication for the OQ-1 question (re-evaluated at P1.6 capacity)
+
+The OQ-1 contrast hardens slightly at the wider structural-V_φ
+capacity: structural at 207.58 beats unstructured MLP (P1.5a) at
+297.22 by **+89.64 PPL** (vs +86.68 PPL at the P1 budget). This is
+$\sim 18\times$ the ±5 PPL parity bar, reaffirming
+**OQ-1 verdict: structural prior empirically active** with a wider
+margin at higher V_φ capacity. The §5.1 factorisation ($-C \cdot
+\Theta_\phi \cdot \Phi_\phi / r$) continues to be the carrier of
+empirical content on the pair-interaction term, not a pedagogical
+framing.
+
+#### Implication for the dynamics / aggregation hypothesis
+
+Combined reading of P1 + P1.5a + P1.6:
+
+- **V_φ width hypothesis: REFUTED.** A 7× widening of the §5.1
+  internal MLPs (P1 → P1.6) buys $\sim 3$ PPL, well inside seed
+  noise. Within the §5.1 form, the bottleneck is not capacity.
+- **Structural-prior hypothesis: REFUTED at the §5.1 form.** The
+  unstructured MLP V_φ at +60% capacity loses by ~90 PPL. The §5.1
+  prior is *helping* substantially.
+- **Dense-aggregation / test-particle reduction hypothesis:
+  consistent with the data.** What remains as the candidate
+  binding constraint is the dense $\sum_{s \lt t}$ aggregation
+  under `h_src = h.detach()` — every layer pays $O(BT^2)$ pair
+  evaluations against frozen sources, with all $T-1$ past tokens
+  feeding a single per-query force. The §5.2 quantile cutoff
+  (Definition 17 of the framework) prescribes that only the top-$k$
+  most-relevant pairs should contribute. Operationally the cutoff
+  is differentiable via Gumbel-softmax + straight-through estimator
+  (see [`On_Gumbel_softmax_sparsity_applied_to_V_phi.md`](On_Gumbel_softmax_sparsity_applied_to_V_phi.md)).
+
+#### Acted on (7 May 2026): pivot to P5 — Stage 1.5 Gumbel-softmax sparsity
+
+Per the P1.6 verdict, **P5 is the decision-relevant next experiment**:
+
+- **What:** Re-train the P1.6 cell (structural V_φ at φ/θ=128) with
+  the §5.2 quantile cutoff realised as straight-through Gumbel-softmax
+  top-$k$ pair selection over past tokens. Sweep $k \in \{4, 8, 16,
+  32\}$ at fixed temperature schedule. Same em-ln vh=128 cell shape,
+  same trainer hyperparameters; only the pair-aggregation step in
+  `_layer_step` changes (sparse selection of $k$ source tokens per
+  query, vs all $t-1$ past tokens in P1.6).
+- **Why this matters:** P5 lands on **two questions on the same
+  cell**: (i) does sparse aggregation close the architectural gap to
+  the hybrid anchors? (the P1.6 verdict's residual question); and
+  (ii) does the §5.2 prescribed sparsity primitive deliver the
+  $O(T)$ per-layer decoding regime that distinguishes PARF from
+  softmax attention? (the title-arm "efficient" question). Both
+  are blocking for any subsequent paper carving of the PARF arm.
+- **Why P2 is deferred behind P5:** Paired confirmation at n=5 is
+  only justified once a PARF cell closes the dense-aggregation gap.
+  Running n=5 paired on a 207.58-PPL prototype confirms a
+  not-competitive cell at S=5, which is not the question the
+  framework needs answered.
+- **Cost:** ~6–12 h MPS for the full $k$-sweep at single seed
+  (estimated by linear extrapolation from P1.6's 7.64 h MPS at
+  dense aggregation; sparse aggregation is faster per step but
+  carries the Gumbel + STE overhead, expected net wash at small
+  $k$).
+
+P5's first cell will be written to §4.7 once it completes. The
+design doc for the sparse model is at
+[`On_Gumbel_softmax_sparsity_applied_to_V_phi.md`](On_Gumbel_softmax_sparsity_applied_to_V_phi.md).
 
 ---
 
@@ -833,6 +958,8 @@ Supporting documents:
 | 7 May 2026 | **P1.5a MLP-V_φ (mlp_h=16) seed-0 cell completed at val PPL 297.22** | structural beats MLP by 86.68 PPL (17× the ±5 PPL parity bar) → **OQ-1 verdict: structural prior empirically active**. γ trajectory diagnostic: structural γ collapsed to 0.088, MLP γ stayed at 0.139 → dynamics-instability hypothesis partially refuted; capacity AND prior-fit both matter. |
 | 7 May 2026 | **Defer P1.5b** (mlp_h=32) — OQ-1 verdict already unambiguous at mlp_h=16 | mlp_h=32 would only widen the OQ-1 verdict's margin in the same direction; not on critical path. Held in reserve for v4-revision reviewer requests. |
 | 7 May 2026 | **Launch P1.6 wider-structural V_φ** (`phi_hidden=128, theta_hidden=128`) | ~7× capacity bump on V_φ; preserves §5.1 form (so OQ-1 verdict transfers); ~5 h MPS. Disambiguates capacity-vs-architectural-bottleneck on the structural variant. |
+| 7 May 2026 | **P1.6 wider-structural V_φ seed-0 cell completed at val PPL 207.58** | Wall-clock 27,502 s (~7.64 h MPS, slower than 5 h estimate due to MPS contention). Causal probe + numerical stability clean; train-loss floor 4.77 (indistinguishable from P1's 4.76); γ converged to 0.094 (in same suppressed-dissipation basin as P1); 7× V_φ widening buys ~3 PPL. **V_φ width hypothesis REFUTED.** OQ-1 verdict re-confirmed at wider capacity (+89.6 PPL structural-vs-MLP gap, vs +86.7 at P1). |
+| 7 May 2026 | **Pivot to P5 — Stage 1.5 Gumbel-softmax sparsity** (designated next experiment) | P1.6 verdict localises the binding constraint to the dense $O(BT^2)$ aggregation under the test-particle reduction; the §5.2 quantile cutoff is the framework-native fix. Defer P2 (paired n=5) behind P5 until a PARF cell closes the architectural gap. Design doc: [`On_Gumbel_softmax_sparsity_applied_to_V_phi.md`](On_Gumbel_softmax_sparsity_applied_to_V_phi.md). |
 
 ---
 
@@ -855,4 +982,4 @@ Supporting documents:
 
 ---
 
-*Last updated: 6 May 2026.*
+*Last updated: 7 May 2026 (P1.6 wider-structural V_φ completed; pivoted to P5 Gumbel-softmax sparsity).*

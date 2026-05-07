@@ -27,3 +27,84 @@
 [parf-train] step   850/4000   train 6.3469   lr 4.65e-04   grad 2.46   gamma=0.141   elapsed 5706s
 [parf-train] step   900/4000   train 6.3102   lr 4.59e-04   grad 5.73   gamma=0.140   elapsed 6046s
 [parf-train] step   950/4000   train 6.2403   lr 4.54e-04   grad 1.22   gamma=0.138   elapsed 6381s
+[parf-train] step  1000/4000   train 6.1308   lr 4.47e-04   grad 1.96   gamma=0.136   elapsed 6718s
+[parf-train] >>> eval @ 1000: train 6.1353   val 6.3626   ppl 579.73
+[parf-train] step  1050/4000   train 5.9976   lr 4.41e-04   grad 2.05   gamma=0.135   elapsed 7104s
+[parf-train] step  1100/4000   train 5.9148   lr 4.34e-04   grad 1.86   gamma=0.132   elapsed 7440s
+[parf-train] step  1150/4000   train 5.8645   lr 4.27e-04   grad 3.70   gamma=0.131   elapsed 7766s
+[parf-train] step  1200/4000   train 5.7908   lr 4.19e-04   grad 1.27   gamma=0.130   elapsed 8093s
+[parf-train] >>> eval @ 1200: train 5.7969   val 6.0766   ppl 435.54
+[parf-train] step  1250/4000   train 5.7442   lr 4.12e-04   grad 1.38   gamma=0.128   elapsed 8490s
+[parf-train] step  1300/4000   train 5.7102   lr 4.04e-04   grad 2.30   gamma=0.125   elapsed 8836s
+[parf-train] step  1350/4000   train 5.6984   lr 3.95e-04   grad 1.76   gamma=0.124   elapsed 9198s
+[parf-train] step  1400/4000   train 5.5426   lr 3.87e-04   grad 1.34   gamma=0.122   elapsed 9544s
+[parf-train] >>> eval @ 1400: train 5.4995   val 5.8747   ppl 355.93
+[parf-train] step  1450/4000   train 5.4632   lr 3.78e-04   grad 1.57   gamma=0.120   elapsed 9935s
+[parf-train] step  1500/4000   train 5.4076   lr 3.69e-04   grad 2.36   gamma=0.119   elapsed 10289s
+[parf-train] step  1550/4000   train 5.3905   lr 3.60e-04   grad 2.30   gamma=0.117   elapsed 10628s
+[parf-train] step  1600/4000   train 5.5409   lr 3.51e-04   grad 2.15   gamma=0.116   elapsed 10964s
+[parf-train] >>> eval @ 1600: train 5.4670   val 5.8868   ppl 360.26
+[parf-train] step  1650/4000   train 5.4606   lr 3.41e-04   grad 2.92   gamma=0.114   elapsed 11344s
+[parf-train] step  1700/4000   train 5.4386   lr 3.31e-04   grad 2.68   gamma=0.113   elapsed 11678s
+[parf-train] step  1750/4000   train 5.3444   lr 3.22e-04   grad 1.39   gamma=0.112   elapsed 12011s
+[parf-train] step  1800/4000   train 5.2808   lr 3.12e-04   grad 2.39   gamma=0.110   elapsed 12343s
+[parf-train] >>> eval @ 1800: train 5.2938   val 5.7971   ppl 329.35
+[parf-train] step  1850/4000   train 5.2544   lr 3.02e-04   grad 1.39   gamma=0.109   elapsed 12707s
+[parf-train] step  1900/4000   train 5.2237   lr 2.91e-04   grad 2.65   gamma=0.108   elapsed 13038s
+[parf-train] step  1950/4000   train 5.2536   lr 2.81e-04   grad 1.90   gamma=0.107   elapsed 13375s
+[parf-train] step  2000/4000   train 5.1391   lr 2.71e-04   grad 1.83   gamma=0.106   elapsed 13716s
+[parf-train] >>> eval @ 2000: train 5.1224   val 5.6847   ppl 294.31
+[parf-train] step  2050/4000   train 5.1284   lr 2.61e-04   grad 2.31   gamma=0.105   elapsed 14103s
+[parf-train] step  2100/4000   train 5.1226   lr 2.50e-04   grad 1.28   gamma=0.104   elapsed 14466s
+[parf-train] step  2150/4000   train 5.0214   lr 2.40e-04   grad 1.48   gamma=0.103   elapsed 14807s
+[parf-train] step  2200/4000   train 4.9900   lr 2.30e-04   grad 1.89   gamma=0.102   elapsed 15148s
+[parf-train] >>> eval @ 2200: train 5.0005   val 5.5347   ppl 253.34
+[parf-train] step  2250/4000   train 5.0083   lr 2.19e-04   grad 1.52   gamma=0.102   elapsed 15522s
+[parf-train] step  2300/4000   train 4.9894   lr 2.09e-04   grad 1.27   gamma=0.101   elapsed 15851s
+[parf-train] step  2350/4000   train 4.9555   lr 1.99e-04   grad 1.98   gamma=0.100   elapsed 16184s
+[parf-train] step  2400/4000   train 4.9667   lr 1.89e-04   grad 1.55   gamma=0.100   elapsed 16516s
+[parf-train] >>> eval @ 2400: train 4.9606   val 5.5357   ppl 253.59
+[parf-train] step  2450/4000   train 4.8909   lr 1.79e-04   grad 1.90   gamma=0.099   elapsed 16905s
+[parf-train] step  2500/4000   train 4.9249   lr 1.69e-04   grad 1.60   gamma=0.099   elapsed 17240s
+[parf-train] step  2550/4000   train 4.9130   lr 1.59e-04   grad 1.58   gamma=0.098   elapsed 17581s
+[parf-train] step  2600/4000   train 4.8954   lr 1.50e-04   grad 1.58   gamma=0.098   elapsed 17918s
+[parf-train] >>> eval @ 2600: train 4.8544   val 5.4755   ppl 238.78
+[parf-train] step  2650/4000   train 4.8066   lr 1.40e-04   grad 1.55   gamma=0.097   elapsed 18289s
+[parf-train] step  2700/4000   train 4.8745   lr 1.31e-04   grad 1.40   gamma=0.097   elapsed 18620s
+[parf-train] step  2750/4000   train 4.8706   lr 1.22e-04   grad 1.93   gamma=0.097   elapsed 18952s
+[parf-train] step  2800/4000   train 4.8303   lr 1.13e-04   grad 1.91   gamma=0.096   elapsed 19281s
+[parf-train] >>> eval @ 2800: train 4.8384   val 5.4098   ppl 223.58
+[parf-train] step  2850/4000   train 4.8582   lr 1.05e-04   grad 1.51   gamma=0.096   elapsed 19647s
+[parf-train] step  2900/4000   train 4.8292   lr 9.66e-05   grad 2.05   gamma=0.096   elapsed 19974s
+[parf-train] step  2950/4000   train 4.8095   lr 8.86e-05   grad 1.97   gamma=0.096   elapsed 20308s
+[parf-train] step  3000/4000   train 4.7953   lr 8.08e-05   grad 2.20   gamma=0.095   elapsed 20637s
+[parf-train] >>> eval @ 3000: train 4.8101   val 5.3913   ppl 219.50
+[parf-train] step  3050/4000   train 4.8162   lr 7.34e-05   grad 2.09   gamma=0.095   elapsed 20999s
+[parf-train] step  3100/4000   train 4.8120   lr 6.62e-05   grad 1.53   gamma=0.095   elapsed 21334s
+[parf-train] step  3150/4000   train 4.7484   lr 5.94e-05   grad 1.70   gamma=0.095   elapsed 21663s
+[parf-train] step  3200/4000   train 4.7751   lr 5.28e-05   grad 1.26   gamma=0.095   elapsed 21995s
+[parf-train] >>> eval @ 3200: train 4.7879   val 5.4265   ppl 227.35
+[parf-train] step  3250/4000   train 4.7542   lr 4.67e-05   grad 1.68   gamma=0.095   elapsed 22361s
+[parf-train] step  3300/4000   train 4.7391   lr 4.08e-05   grad 1.59   gamma=0.094   elapsed 22698s
+[parf-train] step  3350/4000   train 4.7914   lr 3.53e-05   grad 1.65   gamma=0.094   elapsed 23035s
+[parf-train] step  3400/4000   train 4.7996   lr 3.02e-05   grad 1.84   gamma=0.094   elapsed 23367s
+[parf-train] >>> eval @ 3400: train 4.8081   val 5.4177   ppl 225.35
+[parf-train] step  3450/4000   train 4.7701   lr 2.55e-05   grad 1.48   gamma=0.094   elapsed 23736s
+[parf-train] step  3500/4000   train 4.7333   lr 2.11e-05   grad 1.51   gamma=0.094   elapsed 24068s
+[parf-train] step  3550/4000   train 4.7940   lr 1.72e-05   grad 1.85   gamma=0.094   elapsed 24405s
+[parf-train] step  3600/4000   train 4.8174   lr 1.36e-05   grad 1.42   gamma=0.094   elapsed 24744s
+[parf-train] >>> eval @ 3600: train 4.7518   val 5.4200   ppl 225.88
+[parf-train] step  3650/4000   train 4.7782   lr 1.05e-05   grad 1.53   gamma=0.094   elapsed 25113s
+[parf-train] step  3700/4000   train 4.7555   lr 7.70e-06   grad 1.54   gamma=0.094   elapsed 25442s
+[parf-train] step  3750/4000   train 4.7795   lr 5.36e-06   grad 1.35   gamma=0.094   elapsed 25771s
+[parf-train] step  3800/4000   train 4.7846   lr 3.44e-06   grad 1.29   gamma=0.094   elapsed 26103s
+[parf-train] >>> eval @ 3800: train 4.7189   val 5.3539   ppl 211.43
+[parf-train] step  3850/4000   train 4.7540   lr 1.95e-06   grad 1.36   gamma=0.094   elapsed 26472s
+[parf-train] step  3900/4000   train 4.7543   lr 8.71e-07   grad 1.71   gamma=0.094   elapsed 26802s
+[parf-train] step  3950/4000   train 4.7714   lr 2.22e-07   grad 1.51   gamma=0.094   elapsed 27134s
+[parf-train] step  4000/4000   train 4.7862   lr 8.54e-11   grad 1.64   gamma=0.094   elapsed 27470s
+[parf-train] >>> eval @ 4000: train 4.7726   val 5.3355   ppl 207.58
+[parf-train] done in 27502s
+[parf-train] saved checkpoint -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/parf/results/parf_structural_vphi128_shakespeare_seed0_ckpt_latest.pt
+[parf-train] saved loss curve -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/parf/results/parf_structural_vphi128_shakespeare_seed0_loss_curve.png
+[parf-train] saved summary -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/parf/results/parf_structural_vphi128_shakespeare_seed0_summary.md
