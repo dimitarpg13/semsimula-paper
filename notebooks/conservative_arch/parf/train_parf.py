@@ -55,6 +55,7 @@ from data_module import get_batch, load_tiny_shakespeare  # noqa: E402
 
 sys.path.insert(0, str(SCRIPT_DIR))
 from model_parf import PARFConfig, PARFLM  # noqa: E402
+from model_parf_sparse import SparsePARFConfig, SparsePARFLM  # noqa: E402
 # `model_parf` re-inserts PARENT_DIR at sys.path[0] when it loads,
 # which would shadow this directory's local `causal_probe_parf` if a
 # similarly named module exists upstream.  Re-assert SCRIPT_DIR so the
@@ -79,6 +80,11 @@ def build_config(
     v_hidden_arg: int | None = None,
     v_phi_hidden_arg: int | None = None,
     use_grad_checkpoint: bool = False,
+    sparse_top_k: int | None = None,
+    sparse_score_head_hidden: int = 32,
+    sparse_gumbel_tau_init: float = 1.0,
+    sparse_gumbel_tau_min: float = 0.1,
+    sparse_gumbel_noise: bool = True,
 ) -> Tuple[PARFConfig, dict, str]:
     """Return (model_cfg, train_cfg, tag).
 
@@ -88,6 +94,10 @@ def build_config(
                         For 'structural' it sets `v_phi_phi_hidden` and
                         `v_phi_theta_hidden` jointly; for 'mlp' it sets
                         `v_phi_mlp_hidden`.
+    `sparse_top_k`   : if not None, build a SparsePARFConfig (Stage 1.5
+                       Gumbel-softmax sparse routing) with this top-k.
+                       Cell tag gains a `_sparse_k{N}` suffix and the
+                       returned cfg is a SparsePARFConfig instance.
     """
 
     base_kw = dict(
@@ -153,9 +163,26 @@ def build_config(
 
     gc_tag = "_gc" if use_grad_checkpoint else ""
 
-    cfg = PARFConfig(**base_kw)
+    if sparse_top_k is not None:
+        # Stage 1.5: Gumbel-softmax sparse routing on top of the dense
+        # PARF backbone.  All shared knobs are forwarded; the
+        # SparsePARFConfig adds the score head + Gumbel-softmax + STE
+        # parameters on top.  See model_parf_sparse.py for semantics.
+        cfg = SparsePARFConfig(
+            **base_kw,
+            top_k=int(sparse_top_k),
+            score_head_hidden=int(sparse_score_head_hidden),
+            gumbel_tau_init=float(sparse_gumbel_tau_init),
+            gumbel_tau_min=float(sparse_gumbel_tau_min),
+            gumbel_noise=bool(sparse_gumbel_noise),
+        )
+        sparse_tag = f"_sparse_k{sparse_top_k}"
+    else:
+        cfg = PARFConfig(**base_kw)
+        sparse_tag = ""
+
     fg_tag = "" if fixed_gamma_arg is None else f"_g{fixed_gamma_arg:.3f}"
-    tag = f"parf_{v_phi_kind}{vh_tag}{vph_tag}{gc_tag}{fg_tag}"
+    tag = f"parf_{v_phi_kind}{vh_tag}{vph_tag}{gc_tag}{fg_tag}{sparse_tag}"
     return cfg, train_cfg, tag
 
 
@@ -164,6 +191,31 @@ def lr_schedule(step: int, lr: float, warmup: int, total: int) -> float:
         return lr * (step + 1) / warmup
     progress = (step - warmup) / max(total - warmup, 1)
     return lr * 0.5 * (1.0 + math.cos(math.pi * min(progress, 1.0)))
+
+
+def tau_schedule(
+    step: int,
+    tau_init: float,
+    tau_min: float,
+    total_steps: int,
+    anneal_fraction: float = 0.8,
+) -> float:
+    """Linear anneal of the Gumbel-softmax temperature.
+
+    For step < (1 - anneal_fraction) * total_steps    -> hold at tau_init.
+    Then linearly decay to tau_min by `total_steps`.
+    `anneal_fraction = 0.8` matches the design-doc default in
+    `On_Gumbel_softmax_sparsity_applied_to_V_phi.md`: 20% warm-up at
+    the high temperature so the score head finds a stable ranking
+    before the discrete partition pressure kicks in.
+    """
+    warm = int((1.0 - anneal_fraction) * total_steps)
+    if step < warm:
+        return tau_init
+    if step >= total_steps:
+        return tau_min
+    progress = (step - warm) / max(total_steps - warm, 1)
+    return tau_init + (tau_min - tau_init) * min(progress, 1.0)
 
 
 @torch.no_grad()
@@ -228,6 +280,47 @@ def main():
              "model leaks future-position information (see "
              "`parf/causal_probe_parf.py` for the test definition).",
     )
+    # ----- Stage 1.5: Gumbel-softmax sparsity (P5) -----
+    ap.add_argument(
+        "--top-k", type=int, default=None, dest="top_k",
+        help="If set (Stage 1.5 / P5), enable Gumbel-softmax sparse "
+             "routing with top-k pair selection per query per layer.  "
+             "Capped at T-1 internally.  When set, the trainer "
+             "instantiates SparsePARFLM and the output tag gains a "
+             "`_sparse_k{N}` suffix.",
+    )
+    ap.add_argument(
+        "--score-head-hidden", type=int, default=32,
+        dest="score_head_hidden",
+        help="Hidden width of the per-pair score MLP (Stage 1.5 only).",
+    )
+    ap.add_argument(
+        "--gumbel-tau-init", type=float, default=1.0,
+        dest="gumbel_tau_init",
+        help="Initial Gumbel-softmax temperature (Stage 1.5 only).",
+    )
+    ap.add_argument(
+        "--gumbel-tau-min", type=float, default=0.1,
+        dest="gumbel_tau_min",
+        help="Minimum (annealed) Gumbel-softmax temperature "
+             "(Stage 1.5 only).",
+    )
+    ap.add_argument(
+        "--gumbel-anneal-fraction", type=float, default=0.8,
+        dest="gumbel_anneal_fraction",
+        help="Fraction of total steps over which tau anneals "
+             "from tau_init to tau_min (Stage 1.5 only).  The first "
+             "(1 - anneal_fraction) of steps holds at tau_init "
+             "(score-head warm-up).",
+    )
+    ap.add_argument(
+        "--no-gumbel-noise", action="store_false", dest="gumbel_noise",
+        default=True,
+        help="Disable the Gumbel(0, 1) perturbation on the score logits "
+             "(Stage 1.5 only).  Useful for ablating the noise channel "
+             "or for deterministic inference; not recommended for "
+             "training the discrete-selection policy.",
+    )
     args = ap.parse_args()
 
     device = args.device or _pick_device()
@@ -243,9 +336,16 @@ def main():
         v_hidden_arg=args.v_hidden,
         v_phi_hidden_arg=args.v_phi_hidden,
         use_grad_checkpoint=args.grad_checkpoint,
+        sparse_top_k=args.top_k,
+        sparse_score_head_hidden=args.score_head_hidden,
+        sparse_gumbel_tau_init=args.gumbel_tau_init,
+        sparse_gumbel_tau_min=args.gumbel_tau_min,
+        sparse_gumbel_noise=args.gumbel_noise,
     )
     full_tag = f"{tag}_{args.mode}_seed{args.seed}"
-    print(f"[parf-train] device={device}  tag={full_tag}")
+    is_sparse = isinstance(cfg, SparsePARFConfig)
+    print(f"[parf-train] device={device}  tag={full_tag}  "
+          f"variant={'Q9c-sparse-stage1.5' if is_sparse else 'Q9c-dense-stage1'}")
     print(f"[parf-train] tokens: train={len(train_ids):,}  "
           f"val={len(val_ids):,}")
     print(f"[parf-train] arch: V_phi={cfg.v_phi_kind!r}  L={cfg.L}  "
@@ -256,14 +356,28 @@ def main():
           f"causal_force={cfg.causal_force}, "
           f"ln_after_step={cfg.ln_after_step}, "
           f"use_grad_checkpoint={cfg.use_grad_checkpoint}")
+    if is_sparse:
+        print(f"[parf-train] sparse: top_k={cfg.top_k}  "
+              f"score_head_hidden={cfg.score_head_hidden}  "
+              f"gumbel_tau {cfg.gumbel_tau_init} -> {cfg.gumbel_tau_min}  "
+              f"anneal_fraction={args.gumbel_anneal_fraction}  "
+              f"gumbel_noise={cfg.gumbel_noise}")
 
-    model = PARFLM(cfg).to(device)
+    if is_sparse:
+        model = SparsePARFLM(cfg).to(device)
+    else:
+        model = PARFLM(cfg).to(device)
     n_params = sum(p.numel() for p in model.parameters())
     n_v_phi = sum(p.numel() for p in model.V_phi.parameters())
     n_v_theta = sum(p.numel() for p in model.V_theta.parameters())
+    n_score = (
+        sum(p.numel() for p in model.score_head.parameters())
+        if is_sparse else 0
+    )
+    score_str = f"  score_head={n_score:,}" if is_sparse else ""
     print(f"[parf-train] params: {n_params:,}  "
           f"(target ~8.0 M, delta {(n_params - 8_000_000) / 1e6:+.3f} M)  "
-          f"V_theta={n_v_theta:,}  V_phi={n_v_phi:,}")
+          f"V_theta={n_v_theta:,}  V_phi={n_v_phi:,}{score_str}")
 
     # Causal-violation probe.  Runs perturbation + gradient-Jacobian on
     # the actual on-device model BEFORE any optimisation step.  Aborts
@@ -308,6 +422,16 @@ def main():
         for g in optim.param_groups:
             g["lr"] = lr_now
 
+        if is_sparse:
+            tau_now = tau_schedule(
+                step,
+                tau_init=cfg.gumbel_tau_init,
+                tau_min=cfg.gumbel_tau_min,
+                total_steps=train_cfg["steps"],
+                anneal_fraction=args.gumbel_anneal_fraction,
+            )
+            model.set_gumbel_tau(tau_now)
+
         xb, yb = get_batch(train_ids, train_cfg["batch_size"],
                            train_cfg["block_size"], rng)
         x = torch.from_numpy(xb).to(device)
@@ -328,17 +452,22 @@ def main():
             avg = running / n_run
             running, n_run = 0.0, 0
             elapsed = time.time() - t0
+            tau_str = (f"   tau={model.gumbel_tau:.3f}"
+                       if is_sparse else "")
             print(f"[parf-train] step {step+1:5d}/{train_cfg['steps']}   "
                   f"train {avg:.4f}   lr {lr_now:.2e}   "
                   f"grad {grad_norm:.2f}   "
-                  f"gamma={model.gamma.item():.3f}   "
+                  f"gamma={model.gamma.item():.3f}{tau_str}   "
                   f"elapsed {elapsed:.0f}s")
-            log_f.write(json.dumps({
+            log_record = {
                 "step": step + 1, "train_loss": avg,
                 "lr": lr_now, "grad_norm": float(grad_norm),
                 "gamma": model.gamma.item(),
                 "elapsed_s": elapsed,
-            }) + "\n")
+            }
+            if is_sparse:
+                log_record["gumbel_tau"] = model.gumbel_tau
+            log_f.write(json.dumps(log_record) + "\n")
             log_f.flush()
 
         if ((step + 1) % train_cfg["eval_interval"] == 0
@@ -367,19 +496,23 @@ def main():
     print(f"[parf-train] done in {elapsed:.0f}s")
 
     ckpt_path = RESULTS_DIR / f"{full_tag}_ckpt_latest.pt"
-    torch.save({
+    ckpt = {
         "model_state_dict": model.state_dict(),
         "model_cfg": asdict(cfg),
         "train_cfg": train_cfg,
         "loss_history": loss_history,
         "final_gamma": float(model.gamma.item()),
-        "variant": "parf_q9c",
+        "variant": "parf_q9c_sparse_stage1.5" if is_sparse else "parf_q9c",
         "v_phi_kind": cfg.v_phi_kind,
         "tag": full_tag,
         "n_params": n_params,
         "n_v_theta_params": n_v_theta,
         "n_v_phi_params": n_v_phi,
-    }, ckpt_path)
+    }
+    if is_sparse:
+        ckpt["n_score_head_params"] = n_score
+        ckpt["final_gumbel_tau"] = model.gumbel_tau
+    torch.save(ckpt, ckpt_path)
     print(f"[parf-train] saved checkpoint -> {ckpt_path}")
 
     if loss_history:
@@ -407,18 +540,32 @@ def main():
         f.write(f"- Tag: `{full_tag}`\n")
         f.write(f"- V_phi kind: `{cfg.v_phi_kind}` "
                 f"(structural = §5.1-faithful; mlp = unstructured ablation)\n")
-        f.write(f"- Architecture: PARF-augmented SPLM (Q9c) -- single shared "
-                f"V_theta (4-layer MLP) plus single shared V_phi pair "
-                f"interaction with causal reduction (past tokens = fixed "
-                f"external sources via .detach()), velocity-Verlet damped "
-                f"Euler-Lagrange step at every layer, Algorithm A "
-                f"(NTP-only backprop, no Gumbel sparsity).\n")
+        if is_sparse:
+            f.write(
+                f"- Architecture: PARF-augmented SPLM (Q9c) **Stage 1.5 "
+                f"(Gumbel-softmax sparse routing)** -- single shared V_theta "
+                f"(4-layer MLP) + single shared V_phi pair interaction + "
+                f"score-head MLP for top-k pair selection over past tokens, "
+                f"causal reduction (.detach() on xi-pool and pair source), "
+                f"velocity-Verlet damped Euler-Lagrange step at every layer, "
+                f"NTP-only backprop with straight-through Gumbel-softmax mask "
+                f"(top_k={cfg.top_k}, gumbel_tau {cfg.gumbel_tau_init} -> "
+                f"{cfg.gumbel_tau_min}).\n"
+            )
+        else:
+            f.write(f"- Architecture: PARF-augmented SPLM (Q9c) -- single "
+                    f"shared V_theta (4-layer MLP) plus single shared V_phi "
+                    f"pair interaction with causal reduction (past tokens = "
+                    f"fixed external sources via .detach()), velocity-Verlet "
+                    f"damped Euler-Lagrange step at every layer, Algorithm A "
+                    f"(NTP-only backprop, no Gumbel sparsity).\n")
         f.write(f"- L (depth): {cfg.L}\n")
         f.write(f"- Device: `{device}`\n")
         f.write(f"- Parameters: **{n_params:,}** "
                 f"(target ~8.0 M, delta "
                 f"{(n_params - 8_000_000) / 1e6:+.3f} M; "
-                f"V_theta={n_v_theta:,}, V_phi={n_v_phi:,})\n")
+                f"V_theta={n_v_theta:,}, V_phi={n_v_phi:,}"
+                f"{f', score_head={n_score:,}' if is_sparse else ''})\n")
         f.write(f"- Model config: `{asdict(cfg)}`\n")
         f.write(f"- Train config: `{train_cfg}`\n")
         f.write(f"- Tokens: train={len(train_ids):,}, val={len(val_ids):,}\n")
@@ -429,6 +576,8 @@ def main():
             f.write(f"- Final val loss: {final_val:.4f} "
                     f"(ppl {math.exp(final_val):.2f})\n")
         f.write(f"- Final gamma: {model.gamma.item():.4f}\n")
+        if is_sparse:
+            f.write(f"- Final Gumbel tau: {model.gumbel_tau:.4f}\n")
         f.write(f"- Loss curve: `{full_tag}_loss_curve.png`\n")
         f.write(f"- Checkpoint: `{full_tag}_ckpt_latest.pt`\n")
     print(f"[parf-train] saved summary -> {summary_path}")
