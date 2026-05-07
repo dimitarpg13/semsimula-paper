@@ -285,7 +285,7 @@ Run completed 2026-05-02 05:45 EDT. Configuration: `train_splm_em_ln_multixi_sca
 |  3800 | 2.7026 |  14.92 |
 |  4000 | 2.6934 | **14.78** |
 
-Smooth monotone descent, no plateau, no instability. The curve is still trending downward at the LR floor (`lr 8.54e-11` at step 4000), suggesting more steps would extract further gains — see §A2 in `Restructuring_paper_v3_after_causal_leak_bug.md` for the full-budget re-run plan.
+Smooth monotone descent, no plateau, no instability. The curve is still trending downward at the LR floor (`lr 8.54e-11` at step 4000), suggesting more steps would extract further gains — the full-budget re-run is captured as a follow-up item.
 
 **Learnable α_k stayed near initialisation** (init → final, drift):
 
@@ -336,7 +336,7 @@ Result: under the buggy integrator, the future-info injection is *destructive no
 Prediction B (28–32 PPL range, modest improvement over single-ξ's 33.55) was *too pessimistic*. The leak-free K = 4 multi-ξ lands at **14.78** — roughly **half** the single-ξ PPL on the same corpus, integrator, and step budget. Three takeaways:
 
 1. **Multi-channel context summarisation is a genuine architectural win**, not just an artefact of the leak. The lift survives — and is in fact larger than expected — once the integrator is causal. The honest single-ξ → multi-ξ improvement is `33.55 / 14.78 ≈ 2.27×`.
-2. **The pre-fix gain was a *mixture* of real lift and leak amplification, but the decomposition is not directly measurable** from the runs we have: the buggy multi-ξ collapsed to PPL 1.05 by step 2000 and was halted, while the buggy single-ξ at matched step count was never re-run after the bug was discovered. What we can say cleanly is that *both* the multi-channel architecture *and* the leak channel contributed; pinning down their relative contribution would require a buggy single-ξ matched-budget control, which is intentionally excluded from the restructured paper plan (see `Restructuring_paper_v3_after_causal_leak_bug.md` §5 P3).
+2. **The pre-fix gain was a *mixture* of real lift and leak amplification, but the decomposition is not directly measurable** from the runs we have: the buggy multi-ξ collapsed to PPL 1.05 by step 2000 and was halted, while the buggy single-ξ at matched step count was never re-run after the bug was discovered. What we can say cleanly is that *both* the multi-channel architecture *and* the leak channel contributed; pinning down their relative contribution would require a buggy single-ξ matched-budget control, which is intentionally excluded from the v4 paper plan.
 3. **MatchedGPT (7.81) is still the head of the field** at ~½ the multi-ξ PPL on TinyStories at this token budget. The gap is honest and is the right baseline for the paper's separator argument: SPLM and MatchedGPT differ in their inductive biases, and the gap is now reportable as architecture-vs-architecture rather than as architecture-vs-leak-amplified-architecture.
 
 This result is the strongest argument yet for keeping multi-channel ξ as a **§A1 architectural appendix** in the restructured `paper_v3` — it earns its keep and motivates the HiPPO / S4 generalisation discussed in `Reducing_Information_Bottleneck_In_Multi-Channel_Xi_SPLM.md`.

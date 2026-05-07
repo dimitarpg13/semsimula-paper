@@ -197,8 +197,7 @@ Outcome A is withdrawn, and §15 of `paper_v3` is updated accordingly.
 
 ## 7. Reporting plan
 
-Per the §12.5 strategy of `docs/Restructuring_paper_v3_after_causal_leak_bug.md`,
-this result triggers:
+This result triggers:
 
 - (a) This `RESULTS_LEAKFREE.md` is committed alongside the per-cell training
   logs, checkpoints, and figures under

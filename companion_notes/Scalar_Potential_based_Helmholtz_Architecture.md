@@ -361,6 +361,5 @@ The recommended v4 deposit positioning: **Q9(c) PARF-augmented SPLM is the presc
 
 *Companion notes referenced:*
 *— `Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`*
-*— `Restructuring_paper_v3_after_causal_leak_bug.md`*
 *— `Reducing_Information_Bottleneck_In_Multi-Channel_Xi_SPLM.md`*
 *— `Evidence_for_second_order_ODE_governing_evolution.md`*

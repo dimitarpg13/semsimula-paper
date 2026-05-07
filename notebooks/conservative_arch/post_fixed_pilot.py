@@ -44,7 +44,6 @@ forensic settings used on the buggy multi-ξ ckpt for direct comparison.
 References
 ----------
   - docs/Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md
-  - docs/Restructuring_paper_v3_after_causal_leak_bug.md  §5
   - notebooks/conservative_arch/causal_probe.py
   - notebooks/conservative_arch/eval_ppl_under_fix.py
 """

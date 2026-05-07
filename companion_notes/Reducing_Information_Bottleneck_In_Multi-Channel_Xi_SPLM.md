@@ -5,7 +5,6 @@
 > **Companion documents.**
 > - [`Multi-Channel_vs_Single_Channel_Xi_SPLM_Design.md`](Multi-Channel_vs_Single_Channel_Xi_SPLM_Design.md) — original design rationale and forward-pass expressivity argument for K-channel ξ.
 > - [`Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`](Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md) — anti-causal autograd leak that corrupted the pre-fix K = 4 measurement (PPL 1.05, inflation 389×); §4.6 will hold the leak-corrected K = 4 baseline this document compares against.
-> - [`Restructuring_paper_v3_after_causal_leak_bug.md`](Restructuring_paper_v3_after_causal_leak_bug.md) — paper-restructure plan; §A1 of the rewritten paper is the natural home for any architectural improvements derived in this document.
 
 ---
 
@@ -366,7 +365,7 @@ This is one of the cleaner quantitative arguments for moving to K = 8 with log-s
 
 ## 7. Recommended order of implementation
 
-Sorted by return-on-effort, taking into account the experimental queue in [`Restructuring_paper_v3_after_causal_leak_bug.md`](Restructuring_paper_v3_after_causal_leak_bug.md) §5:
+Sorted by return-on-effort:
 
 | step | change | implementation cost | compute cost | gating condition |
 |---|---|---|---|---|

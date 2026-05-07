@@ -5,7 +5,6 @@
 > **Companion documents.**
 >
 > - [`Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`](Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md) — the bug, the mechanism, the fix, and the per-run §4.x deep dives that this report aggregates.
-> - [`Restructuring_paper_v3_after_causal_leak_bug.md`](Restructuring_paper_v3_after_causal_leak_bug.md) — paper-restructure plan; this report is the empirical evidence backing the restructure.
 > - [`Multi-Channel_vs_Single_Channel_Xi_SPLM_Design.md`](Multi-Channel_vs_Single_Channel_Xi_SPLM_Design.md) — the multi-ξ architecture rationale, now annotated with §0 about how the leak corrupted prior measurements.
 > - [`Reducing_Information_Bottleneck_In_Multi-Channel_Xi_SPLM.md`](Reducing_Information_Bottleneck_In_Multi-Channel_Xi_SPLM.md) — information-theoretic case for HiPPO/S4 as the foundational generalisation of K-channel ξ.
 >
@@ -51,7 +50,7 @@ All five tracked runs share corpus (TinyStories, 5 M train tokens), block size 5
 
 **Notes on asymmetries.**
 
-- **Step budgets.** The leak-free SPLM runs were truncated at 4000 steps to fit within the post-bug schedule. MatchedGPT was already trained to 8000 steps before the bug was discovered. To do a strict apples-to-apples PPL comparison the SPLM runs would need to be re-launched at 8000 steps; this is captured as P1 in `Restructuring_paper_v3_after_causal_leak_bug.md` §5. The 4000-step val PPL trajectory below shows that single-ξ has plateaued by step 2000 (gain of ≤ 2 PPL points expected from doubling budget) while multi-ξ is **still descending** at step 4000 (gain of perhaps 2–4 PPL points expected from doubling budget). The current gap of `14.78 / 7.81 ≈ 1.9×` is therefore likely an *upper bound* on the honest multi-ξ-vs-MatchedGPT gap.
+- **Step budgets.** The leak-free SPLM runs were truncated at 4000 steps to fit within the post-bug schedule. MatchedGPT was already trained to 8000 steps before the bug was discovered. To do a strict apples-to-apples PPL comparison the SPLM runs would need to be re-launched at 8000 steps; this is captured as a follow-up P1 item. The 4000-step val PPL trajectory below shows that single-ξ has plateaued by step 2000 (gain of ≤ 2 PPL points expected from doubling budget) while multi-ξ is **still descending** at step 4000 (gain of perhaps 2–4 PPL points expected from doubling budget). The current gap of `14.78 / 7.81 ≈ 1.9×` is therefore likely an *upper bound* on the honest multi-ξ-vs-MatchedGPT gap.
 - **Parameter counts.** MatchedGPT has 19.45 M params (extra 2.9 M vs. multi-ξ's 16.54 M). This is the standard "matched-attention" baseline used throughout E9; the slight excess is intentional and was set during the pre-bug protocol so that MatchedGPT is *favoured* by a small margin. We retain that asymmetry here and flag it explicitly.
 - **Wall-clock.** SPLM step time is ~6.4 s/step on MPS for single-ξ and ~8.3 s/step for multi-ξ; MatchedGPT is ~3.0 s/step. So MatchedGPT runs roughly 2.7× faster per step and 2× cheaper per training-token at this scale on MPS. This is consistent with the architectural FLOP analysis in `notebooks/conservative_arch/inference_efficiency/` and is unaffected by the leak (the leak is in the autograd graph of the integrator update, not in the per-step compute).
 
@@ -220,7 +219,7 @@ The K = 4 multi-ξ pre-fix paper narrative ("the optimiser learns task-appropria
 
 - MatchedGPT is roughly **2.7× faster per step** on MPS at this scale, primarily because its forward+backward pass does not include the autograd-derived integrator update (`V.sum().backward()` inside `integrate()`). This is a structural property of SPLM, not an optimisation issue.
 - The leak-free multi-ξ uses **4.5% more params** than single-ξ for the K = 4 EMA bank and **+30% wall time per training token** (985 vs 1270 tokens/sec), but achieves **2.27× lower PPL**. The trade-off is favourable.
-- All SPLM compute budgets here are *below* what MatchedGPT received (4000 vs 8000 steps; 32.8 M vs 65.5 M tokens). Closing the budget gap is the first item on the P1 re-run list (`Restructuring_paper_v3_after_causal_leak_bug.md` §5 P1).
+- All SPLM compute budgets here are *below* what MatchedGPT received (4000 vs 8000 steps; 32.8 M vs 65.5 M tokens). Closing the budget gap is the first item on the P1 re-run list.
 
 ---
 
@@ -242,9 +241,9 @@ The architectural FLOP advantages of SPLM (asymptotic $O(L \cdot d)$ per token v
 
 ---
 
-## 9. Implications for `paper_v3`
+## 9. Implications for the paper
 
-This section ties the results above to the restructure plan in `Restructuring_paper_v3_after_causal_leak_bug.md`.
+This section ties the results above to the v4 restructure of the paper.
 
 ### 9.1 What survives
 
@@ -272,7 +271,7 @@ With the four leak-free numbers in hand, the following downstream documents can 
 
 ### 9.4 What still needs to be measured
 
-The minimal P1 re-run list (per `Restructuring_paper_v3_after_causal_leak_bug.md` §5) is now:
+The minimal P1 re-run list is now:
 
 1. **Leak-free single-ξ at 8000 steps** — extends `pilot_splm_fixed` to MatchedGPT's training budget. Predicted gain: ≤ 2 PPL points beyond 33.55, since the curve plateaued by step 2000. Cost: ~7 h MPS.
 2. **Leak-free multi-ξ at 8000 steps** — extends `multixi_pilot_fixed`. Predicted gain: 2–4 PPL points (to the 11–13 range). Cost: ~9 h MPS.
