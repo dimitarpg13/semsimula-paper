@@ -125,7 +125,7 @@ Fixed design choices (matching Q9d / Variant A where possible):
 | variant | shape | params (em-ln cell) | role |
 |---------------|----------------------------------------------------------------------------------------------------------------------------------------------|--------------------:|-------------------------------------------------------------------|
 | `structural` | $-C \cdot \Theta_\phi(\theta(h_t), \theta(h_s)) \cdot \Phi_\phi(l(h_t), l(h_s)) / \sqrt{\lVert h_t - h_s \rVert^2 + \varepsilon^2}$ | 4,002 | **§5.1-faithful pair potential** (default; the framework prior) |
-| `mlp` | learned MLP on $\mathrm{concat}(h_t, h_s, h_t - h_s)$ at hidden $H = \texttt{mlp\_h}$ | 28,865 | **unstructured ablation** (the design-doc OQ-1 comparator) |
+| `mlp` | learned MLP on $\mathrm{concat}(h_t, h_s, h_t - h_s)$ at hidden $H$ = `mlp_h` | 28,865 | **unstructured ablation** (the design-doc OQ-1 comparator) |
 
 Both variants share the SAME outer machinery (single shared
 $V_\theta$, velocity-Verlet step, causal reduction, logfreq mass,
