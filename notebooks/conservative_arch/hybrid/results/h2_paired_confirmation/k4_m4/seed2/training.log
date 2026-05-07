@@ -1,0 +1,108 @@
+[hybrid-train] device=mps  tag=hybrid_k4_m4_shakespeare_seed2
+[hybrid-train] tokens: train=321,124  val=16,901
+[hybrid-train] arch: n_attn=4, n_splm=4, d=128, v_hidden=512, v_depth=3, n_head=4, fixed_gamma=None, causal_force=True, ln_after_step=True
+[hybrid-train] params: 7,916,420  (target ~8.0 M, delta -0.084 M)
+[hybrid-train] step    50/4000   train 10.4685   lr 1.25e-04   grad 1.71   gamma=0.150   elapsed 20s
+[hybrid-train] step   100/4000   train 9.2714   lr 2.50e-04   grad 1.69   gamma=0.149   elapsed 38s
+[hybrid-train] step   150/4000   train 7.5295   lr 3.75e-04   grad 1.44   gamma=0.149   elapsed 59s
+[hybrid-train] step   200/4000   train 6.3559   lr 5.00e-04   grad 1.74   gamma=0.149   elapsed 82s
+[hybrid-train] >>> eval @ 200: train 6.0546   val 6.2275   ppl 506.47
+[hybrid-train] step   250/4000   train 5.8430   lr 5.00e-04   grad 0.90   gamma=0.149   elapsed 120s
+[hybrid-train] step   300/4000   train 5.4966   lr 4.99e-04   grad 0.98   gamma=0.149   elapsed 146s
+[hybrid-train] step   350/4000   train 5.2682   lr 4.98e-04   grad 0.78   gamma=0.150   elapsed 170s
+[hybrid-train] step   400/4000   train 5.0871   lr 4.97e-04   grad 0.96   gamma=0.150   elapsed 193s
+[hybrid-train] >>> eval @ 400: train 5.0649   val 5.4260   ppl 227.24
+[hybrid-train] step   450/4000   train 4.9902   lr 4.95e-04   grad 1.18   gamma=0.150   elapsed 228s
+[hybrid-train] step   500/4000   train 4.8861   lr 4.92e-04   grad 0.84   gamma=0.150   elapsed 251s
+[hybrid-train] step   550/4000   train 4.8296   lr 4.90e-04   grad 1.18   gamma=0.150   elapsed 276s
+[hybrid-train] step   600/4000   train 4.7209   lr 4.87e-04   grad 1.26   gamma=0.150   elapsed 300s
+[hybrid-train] >>> eval @ 600: train 4.7110   val 5.2333   ppl 187.42
+[hybrid-train] step   650/4000   train 4.6911   lr 4.83e-04   grad 1.39   gamma=0.150   elapsed 336s
+[hybrid-train] step   700/4000   train 4.6239   lr 4.79e-04   grad 1.18   gamma=0.150   elapsed 359s
+[hybrid-train] step   750/4000   train 4.5564   lr 4.75e-04   grad 1.20   gamma=0.150   elapsed 383s
+[hybrid-train] step   800/4000   train 4.5131   lr 4.70e-04   grad 1.10   gamma=0.151   elapsed 407s
+[hybrid-train] >>> eval @ 800: train 4.4796   val 5.1566   ppl 173.57
+[hybrid-train] step   850/4000   train 4.4667   lr 4.65e-04   grad 2.08   gamma=0.151   elapsed 442s
+[hybrid-train] step   900/4000   train 4.4330   lr 4.59e-04   grad 1.32   gamma=0.151   elapsed 467s
+[hybrid-train] step   950/4000   train 4.4156   lr 4.54e-04   grad 1.22   gamma=0.151   elapsed 491s
+[hybrid-train] step  1000/4000   train 4.3532   lr 4.47e-04   grad 1.25   gamma=0.151   elapsed 515s
+[hybrid-train] >>> eval @ 1000: train 4.3341   val 5.0671   ppl 158.71
+[hybrid-train] step  1050/4000   train 4.3516   lr 4.41e-04   grad 1.25   gamma=0.151   elapsed 549s
+[hybrid-train] step  1100/4000   train 4.3116   lr 4.34e-04   grad 1.09   gamma=0.151   elapsed 573s
+[hybrid-train] step  1150/4000   train 4.3400   lr 4.27e-04   grad 1.10   gamma=0.152   elapsed 596s
+[hybrid-train] step  1200/4000   train 4.2878   lr 4.19e-04   grad 1.43   gamma=0.152   elapsed 620s
+[hybrid-train] >>> eval @ 1200: train 4.2465   val 5.0321   ppl 153.25
+[hybrid-train] step  1250/4000   train 4.2202   lr 4.12e-04   grad 1.34   gamma=0.152   elapsed 654s
+[hybrid-train] step  1300/4000   train 4.2554   lr 4.04e-04   grad 1.14   gamma=0.152   elapsed 678s
+[hybrid-train] step  1350/4000   train 4.1792   lr 3.95e-04   grad 1.83   gamma=0.152   elapsed 702s
+[hybrid-train] step  1400/4000   train 4.1592   lr 3.87e-04   grad 1.21   gamma=0.152   elapsed 725s
+[hybrid-train] >>> eval @ 1400: train 4.1931   val 5.1114   ppl 165.91
+[hybrid-train] step  1450/4000   train 4.1475   lr 3.78e-04   grad 1.02   gamma=0.152   elapsed 760s
+[hybrid-train] step  1500/4000   train 4.1348   lr 3.69e-04   grad 1.29   gamma=0.153   elapsed 783s
+[hybrid-train] step  1550/4000   train 4.1368   lr 3.60e-04   grad 1.47   gamma=0.153   elapsed 807s
+[hybrid-train] step  1600/4000   train 4.0884   lr 3.51e-04   grad 1.21   gamma=0.153   elapsed 831s
+[hybrid-train] >>> eval @ 1600: train 4.1042   val 5.0591   ppl 157.44
+[hybrid-train] step  1650/4000   train 4.0813   lr 3.41e-04   grad 1.41   gamma=0.153   elapsed 865s
+[hybrid-train] step  1700/4000   train 4.0745   lr 3.31e-04   grad 1.11   gamma=0.153   elapsed 889s
+[hybrid-train] step  1750/4000   train 4.0937   lr 3.22e-04   grad 1.33   gamma=0.153   elapsed 914s
+[hybrid-train] step  1800/4000   train 4.0572   lr 3.12e-04   grad 1.11   gamma=0.153   elapsed 937s
+[hybrid-train] >>> eval @ 1800: train 4.0503   val 5.0921   ppl 162.74
+[hybrid-train] step  1850/4000   train 3.9766   lr 3.02e-04   grad 1.23   gamma=0.153   elapsed 972s
+[hybrid-train] step  1900/4000   train 3.9977   lr 2.91e-04   grad 1.39   gamma=0.153   elapsed 995s
+[hybrid-train] step  1950/4000   train 3.9638   lr 2.81e-04   grad 1.23   gamma=0.153   elapsed 1019s
+[hybrid-train] step  2000/4000   train 3.9930   lr 2.71e-04   grad 1.26   gamma=0.153   elapsed 1043s
+[hybrid-train] >>> eval @ 2000: train 3.9395   val 4.9863   ppl 146.39
+[hybrid-train] step  2050/4000   train 3.9522   lr 2.61e-04   grad 1.16   gamma=0.154   elapsed 1077s
+[hybrid-train] step  2100/4000   train 3.9550   lr 2.50e-04   grad 1.19   gamma=0.154   elapsed 1101s
+[hybrid-train] step  2150/4000   train 3.9659   lr 2.40e-04   grad 1.24   gamma=0.154   elapsed 1125s
+[hybrid-train] step  2200/4000   train 3.9187   lr 2.30e-04   grad 1.67   gamma=0.154   elapsed 1148s
+[hybrid-train] >>> eval @ 2200: train 3.9242   val 4.9943   ppl 147.57
+[hybrid-train] step  2250/4000   train 3.9203   lr 2.19e-04   grad 1.26   gamma=0.154   elapsed 1183s
+[hybrid-train] step  2300/4000   train 3.8939   lr 2.09e-04   grad 1.62   gamma=0.154   elapsed 1206s
+[hybrid-train] step  2350/4000   train 3.8915   lr 1.99e-04   grad 1.57   gamma=0.154   elapsed 1230s
+[hybrid-train] step  2400/4000   train 3.8964   lr 1.89e-04   grad 1.48   gamma=0.154   elapsed 1254s
+[hybrid-train] >>> eval @ 2400: train 3.8722   val 5.0136   ppl 150.45
+[hybrid-train] step  2450/4000   train 3.8582   lr 1.79e-04   grad 1.21   gamma=0.154   elapsed 1288s
+[hybrid-train] step  2500/4000   train 3.8596   lr 1.69e-04   grad 1.28   gamma=0.154   elapsed 1312s
+[hybrid-train] step  2550/4000   train 3.8616   lr 1.59e-04   grad 1.31   gamma=0.154   elapsed 1338s
+[hybrid-train] step  2600/4000   train 3.8475   lr 1.50e-04   grad 1.35   gamma=0.154   elapsed 1359s
+[hybrid-train] >>> eval @ 2600: train 3.8575   val 4.9747   ppl 144.71
+[hybrid-train] step  2650/4000   train 3.8456   lr 1.40e-04   grad 1.72   gamma=0.154   elapsed 1390s
+[hybrid-train] step  2700/4000   train 3.8733   lr 1.31e-04   grad 1.56   gamma=0.154   elapsed 1411s
+[hybrid-train] step  2750/4000   train 3.8277   lr 1.22e-04   grad 1.45   gamma=0.154   elapsed 1433s
+[hybrid-train] step  2800/4000   train 3.8223   lr 1.13e-04   grad 1.75   gamma=0.154   elapsed 1456s
+[hybrid-train] >>> eval @ 2800: train 3.8433   val 4.9901   ppl 146.95
+[hybrid-train] step  2850/4000   train 3.8275   lr 1.05e-04   grad 1.41   gamma=0.154   elapsed 1487s
+[hybrid-train] step  2900/4000   train 3.8423   lr 9.66e-05   grad 1.50   gamma=0.154   elapsed 1509s
+[hybrid-train] step  2950/4000   train 3.7984   lr 8.86e-05   grad 1.38   gamma=0.154   elapsed 1531s
+[hybrid-train] step  3000/4000   train 3.8112   lr 8.08e-05   grad 1.46   gamma=0.154   elapsed 1553s
+[hybrid-train] >>> eval @ 3000: train 3.8182   val 5.0205   ppl 151.49
+[hybrid-train] step  3050/4000   train 3.8173   lr 7.34e-05   grad 1.42   gamma=0.154   elapsed 1585s
+[hybrid-train] step  3100/4000   train 3.7961   lr 6.62e-05   grad 1.56   gamma=0.154   elapsed 1606s
+[hybrid-train] step  3150/4000   train 3.7947   lr 5.94e-05   grad 1.99   gamma=0.154   elapsed 1628s
+[hybrid-train] step  3200/4000   train 3.7648   lr 5.28e-05   grad 1.47   gamma=0.154   elapsed 1650s
+[hybrid-train] >>> eval @ 3200: train 3.8069   val 4.9741   ppl 144.62
+[hybrid-train] step  3250/4000   train 3.7961   lr 4.67e-05   grad 1.63   gamma=0.154   elapsed 1681s
+[hybrid-train] step  3300/4000   train 3.7770   lr 4.08e-05   grad 1.39   gamma=0.154   elapsed 1703s
+[hybrid-train] step  3350/4000   train 3.7634   lr 3.53e-05   grad 1.57   gamma=0.154   elapsed 1725s
+[hybrid-train] step  3400/4000   train 3.7553   lr 3.02e-05   grad 1.64   gamma=0.154   elapsed 1746s
+[hybrid-train] >>> eval @ 3400: train 3.7810   val 5.0490   ppl 155.87
+[hybrid-train] step  3450/4000   train 3.7536   lr 2.55e-05   grad 1.40   gamma=0.154   elapsed 1777s
+[hybrid-train] step  3500/4000   train 3.7577   lr 2.11e-05   grad 1.38   gamma=0.154   elapsed 1799s
+[hybrid-train] step  3550/4000   train 3.7650   lr 1.72e-05   grad 1.56   gamma=0.154   elapsed 1820s
+[hybrid-train] step  3600/4000   train 3.7577   lr 1.36e-05   grad 1.42   gamma=0.154   elapsed 1842s
+[hybrid-train] >>> eval @ 3600: train 3.7395   val 4.9905   ppl 147.01
+[hybrid-train] step  3650/4000   train 3.7839   lr 1.05e-05   grad 1.34   gamma=0.154   elapsed 1873s
+[hybrid-train] step  3700/4000   train 3.7684   lr 7.70e-06   grad 1.40   gamma=0.154   elapsed 1894s
+[hybrid-train] step  3750/4000   train 3.7840   lr 5.36e-06   grad 1.55   gamma=0.154   elapsed 1916s
+[hybrid-train] step  3800/4000   train 3.7726   lr 3.44e-06   grad 1.43   gamma=0.154   elapsed 1938s
+[hybrid-train] >>> eval @ 3800: train 3.7549   val 4.9457   ppl 140.57
+[hybrid-train] step  3850/4000   train 3.7748   lr 1.95e-06   grad 1.34   gamma=0.154   elapsed 1970s
+[hybrid-train] step  3900/4000   train 3.7695   lr 8.71e-07   grad 1.46   gamma=0.154   elapsed 1992s
+[hybrid-train] step  3950/4000   train 3.7962   lr 2.22e-07   grad 1.61   gamma=0.154   elapsed 2014s
+[hybrid-train] step  4000/4000   train 3.8155   lr 8.54e-11   grad 1.28   gamma=0.154   elapsed 2036s
+[hybrid-train] >>> eval @ 4000: train 3.7352   val 5.0246   ppl 152.10
+[hybrid-train] done in 2046s
+[hybrid-train] saved checkpoint -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/hybrid/results/hybrid_k4_m4_shakespeare_seed2_ckpt_latest.pt
+[hybrid-train] saved loss curve -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/hybrid/results/hybrid_k4_m4_shakespeare_seed2_loss_curve.png
+[hybrid-train] saved summary -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/hybrid/results/hybrid_k4_m4_shakespeare_seed2_summary.md

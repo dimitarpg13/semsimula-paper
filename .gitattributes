@@ -111,3 +111,43 @@ notebooks/conservative_arch/scaleup/results/**/*.pkl filter=lfs diff=lfs merge=l
 notebooks/conservative_arch/scaleup/results/**/*.png filter=lfs diff=lfs merge=lfs -text
 notebooks/conservative_arch/scaleup/results/**/*.npz filter=lfs diff=lfs merge=lfs -text
 notebooks/conservative_arch/scaleup/results/**/*.npy filter=lfs diff=lfs merge=lfs -text
+
+# v4 hybrid + Helmholtz + PARF SPLM trees (May 2026). The
+# `notebooks/conservative_arch/{hybrid,helmholtz,parf}/` directories
+# host the v4 hybrid-SPLM programme: Variant A two-stage hybrid
+# (`hybrid/`), the layer-type Helmholtz hybrid Q9d (`helmholtz/`),
+# and the PARF-augmented SPLM Q9c (`parf/`). Each `results/`
+# subtree ships per-cell training-log JSONL, summary markdown,
+# loss-curve PNG, and (for the Helmholtz substack-separator)
+# per-checkpoint NPZ archives. Model checkpoints (`*.pt`),
+# trajectory dumps (`*.trajectories.pkl`), and any tokenised data
+# (`*.parquet`) are NOT committed; the `*.pt` and `*.pkl`
+# patterns are still LFS-tracked for future-proofing. The `**/...`
+# and direct `*` patterns are listed so files at either depth are
+# covered regardless of the git version's `**` matching behaviour.
+notebooks/conservative_arch/hybrid/results/*.pt    filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/hybrid/results/*.pkl   filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/hybrid/results/*.png   filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/hybrid/results/*.npz   filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/hybrid/results/**/*.pt    filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/hybrid/results/**/*.pkl   filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/hybrid/results/**/*.png   filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/hybrid/results/**/*.npz   filter=lfs diff=lfs merge=lfs -text
+
+notebooks/conservative_arch/helmholtz/results/*.pt    filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/helmholtz/results/*.pkl   filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/helmholtz/results/*.png   filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/helmholtz/results/*.npz   filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/helmholtz/results/**/*.pt    filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/helmholtz/results/**/*.pkl   filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/helmholtz/results/**/*.png   filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/helmholtz/results/**/*.npz   filter=lfs diff=lfs merge=lfs -text
+
+notebooks/conservative_arch/parf/results/*.pt    filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/parf/results/*.pkl   filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/parf/results/*.png   filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/parf/results/*.npz   filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/parf/results/**/*.pt    filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/parf/results/**/*.pkl   filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/parf/results/**/*.png   filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/parf/results/**/*.npz   filter=lfs diff=lfs merge=lfs -text

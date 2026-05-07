@@ -1,0 +1,110 @@
+[helm-train] device=mps  tag=helm_AAAASSSS_shakespeare_seed0
+[helm-train] tokens: train=321,124  val=16,901
+[helm-train] arch: schedule='AAAASSSS'  (n_S=4, n_A=4, L=8)  d=128, v_hidden=512, v_depth=3, n_head=4, fixed_gamma=None, causal_force=True, ln_after_s_step=True
+[helm-train] params: 7,916,164  (target ~8.0 M, delta -0.084 M)
+[helm-train] running causal-violation probe...
+[helm-train] causal probe PASSED (perturbation + gradient-Jacobian, both modes < 1e-6)
+[helm-train] step    50/4000   train 10.4577   lr 1.25e-04   grad 1.66   gamma=0.150   elapsed 19s
+[helm-train] step   100/4000   train 9.2841   lr 2.50e-04   grad 1.67   gamma=0.149   elapsed 33s
+[helm-train] step   150/4000   train 7.5608   lr 3.75e-04   grad 1.45   gamma=0.149   elapsed 49s
+[helm-train] step   200/4000   train 6.3799   lr 5.00e-04   grad 1.15   gamma=0.150   elapsed 65s
+[helm-train] >>> eval @ 200: train 6.0538   val 6.2151   ppl 500.27
+[helm-train] step   250/4000   train 5.8764   lr 5.00e-04   grad 1.01   gamma=0.150   elapsed 87s
+[helm-train] step   300/4000   train 5.5184   lr 4.99e-04   grad 0.88   gamma=0.150   elapsed 101s
+[helm-train] step   350/4000   train 5.3094   lr 4.98e-04   grad 1.06   gamma=0.151   elapsed 119s
+[helm-train] step   400/4000   train 5.1547   lr 4.97e-04   grad 1.12   gamma=0.151   elapsed 137s
+[helm-train] >>> eval @ 400: train 5.0304   val 5.4572   ppl 234.43
+[helm-train] step   450/4000   train 5.0242   lr 4.95e-04   grad 0.89   gamma=0.151   elapsed 168s
+[helm-train] step   500/4000   train 4.9024   lr 4.92e-04   grad 1.01   gamma=0.152   elapsed 191s
+[helm-train] step   550/4000   train 4.8615   lr 4.90e-04   grad 1.12   gamma=0.152   elapsed 210s
+[helm-train] step   600/4000   train 4.7377   lr 4.87e-04   grad 1.12   gamma=0.153   elapsed 230s
+[helm-train] >>> eval @ 600: train 4.7271   val 5.2536   ppl 191.26
+[helm-train] step   650/4000   train 4.6485   lr 4.83e-04   grad 1.34   gamma=0.154   elapsed 258s
+[helm-train] step   700/4000   train 4.6713   lr 4.79e-04   grad 1.24   gamma=0.154   elapsed 277s
+[helm-train] step   750/4000   train 4.5575   lr 4.75e-04   grad 1.50   gamma=0.155   elapsed 296s
+[helm-train] step   800/4000   train 4.5415   lr 4.70e-04   grad 1.58   gamma=0.156   elapsed 316s
+[helm-train] >>> eval @ 800: train 4.5444   val 5.1979   ppl 180.90
+[helm-train] step   850/4000   train 4.5140   lr 4.65e-04   grad 1.52   gamma=0.157   elapsed 346s
+[helm-train] step   900/4000   train 4.4609   lr 4.59e-04   grad 1.19   gamma=0.158   elapsed 366s
+[helm-train] step   950/4000   train 4.4470   lr 4.54e-04   grad 1.19   gamma=0.158   elapsed 385s
+[helm-train] step  1000/4000   train 4.3676   lr 4.47e-04   grad 1.44   gamma=0.159   elapsed 404s
+[helm-train] >>> eval @ 1000: train 4.4134   val 5.1245   ppl 168.10
+[helm-train] step  1050/4000   train 4.3076   lr 4.41e-04   grad 1.22   gamma=0.159   elapsed 431s
+[helm-train] step  1100/4000   train 4.2542   lr 4.34e-04   grad 1.16   gamma=0.160   elapsed 450s
+[helm-train] step  1150/4000   train 4.2734   lr 4.27e-04   grad 1.37   gamma=0.161   elapsed 469s
+[helm-train] step  1200/4000   train 4.2575   lr 4.19e-04   grad 1.26   gamma=0.161   elapsed 489s
+[helm-train] >>> eval @ 1200: train 4.2955   val 5.0686   ppl 158.94
+[helm-train] step  1250/4000   train 4.2614   lr 4.12e-04   grad 1.45   gamma=0.162   elapsed 518s
+[helm-train] step  1300/4000   train 4.2195   lr 4.04e-04   grad 1.36   gamma=0.163   elapsed 538s
+[helm-train] step  1350/4000   train 4.2200   lr 3.95e-04   grad 1.15   gamma=0.163   elapsed 558s
+[helm-train] step  1400/4000   train 4.1784   lr 3.87e-04   grad 1.12   gamma=0.163   elapsed 577s
+[helm-train] >>> eval @ 1400: train 4.1723   val 4.9998   ppl 148.39
+[helm-train] step  1450/4000   train 4.1408   lr 3.78e-04   grad 1.30   gamma=0.164   elapsed 604s
+[helm-train] step  1500/4000   train 4.1260   lr 3.69e-04   grad 1.34   gamma=0.164   elapsed 624s
+[helm-train] step  1550/4000   train 4.0896   lr 3.60e-04   grad 1.17   gamma=0.164   elapsed 645s
+[helm-train] step  1600/4000   train 4.0977   lr 3.51e-04   grad 1.28   gamma=0.165   elapsed 665s
+[helm-train] >>> eval @ 1600: train 4.0459   val 4.9955   ppl 147.75
+[helm-train] step  1650/4000   train 4.0951   lr 3.41e-04   grad 1.38   gamma=0.165   elapsed 694s
+[helm-train] step  1700/4000   train 4.0894   lr 3.31e-04   grad 1.49   gamma=0.165   elapsed 714s
+[helm-train] step  1750/4000   train 4.0931   lr 3.22e-04   grad 1.34   gamma=0.166   elapsed 734s
+[helm-train] step  1800/4000   train 4.0316   lr 3.12e-04   grad 1.44   gamma=0.166   elapsed 754s
+[helm-train] >>> eval @ 1800: train 4.0344   val 5.0459   ppl 155.38
+[helm-train] step  1850/4000   train 3.9971   lr 3.02e-04   grad 1.35   gamma=0.166   elapsed 784s
+[helm-train] step  1900/4000   train 3.9870   lr 2.91e-04   grad 1.21   gamma=0.166   elapsed 806s
+[helm-train] step  1950/4000   train 4.0292   lr 2.81e-04   grad 1.18   gamma=0.166   elapsed 827s
+[helm-train] step  2000/4000   train 3.9754   lr 2.71e-04   grad 1.80   gamma=0.166   elapsed 850s
+[helm-train] >>> eval @ 2000: train 3.9716   val 5.0649   ppl 158.36
+[helm-train] step  2050/4000   train 3.9845   lr 2.61e-04   grad 1.34   gamma=0.166   elapsed 883s
+[helm-train] step  2100/4000   train 3.9815   lr 2.50e-04   grad 1.31   gamma=0.166   elapsed 906s
+[helm-train] step  2150/4000   train 3.9290   lr 2.40e-04   grad 1.39   gamma=0.166   elapsed 929s
+[helm-train] step  2200/4000   train 3.9067   lr 2.30e-04   grad 1.59   gamma=0.166   elapsed 950s
+[helm-train] >>> eval @ 2200: train 3.9182   val 4.9906   ppl 147.02
+[helm-train] step  2250/4000   train 3.9264   lr 2.19e-04   grad 1.39   gamma=0.166   elapsed 982s
+[helm-train] step  2300/4000   train 3.9284   lr 2.09e-04   grad 1.68   gamma=0.166   elapsed 1004s
+[helm-train] step  2350/4000   train 3.8698   lr 1.99e-04   grad 2.06   gamma=0.166   elapsed 1026s
+[helm-train] step  2400/4000   train 3.9051   lr 1.89e-04   grad 1.67   gamma=0.166   elapsed 1050s
+[helm-train] >>> eval @ 2400: train 3.8980   val 5.0026   ppl 148.80
+[helm-train] step  2450/4000   train 3.8493   lr 1.79e-04   grad 1.46   gamma=0.166   elapsed 1081s
+[helm-train] step  2500/4000   train 3.8862   lr 1.69e-04   grad 1.51   gamma=0.166   elapsed 1104s
+[helm-train] step  2550/4000   train 3.8603   lr 1.59e-04   grad 1.42   gamma=0.165   elapsed 1126s
+[helm-train] step  2600/4000   train 3.8608   lr 1.50e-04   grad 1.45   gamma=0.165   elapsed 1146s
+[helm-train] >>> eval @ 2600: train 3.8243   val 4.9926   ppl 147.31
+[helm-train] step  2650/4000   train 3.7797   lr 1.40e-04   grad 1.35   gamma=0.165   elapsed 1175s
+[helm-train] step  2700/4000   train 3.8457   lr 1.31e-04   grad 1.63   gamma=0.165   elapsed 1194s
+[helm-train] step  2750/4000   train 3.8576   lr 1.22e-04   grad 1.72   gamma=0.165   elapsed 1214s
+[helm-train] step  2800/4000   train 3.8089   lr 1.13e-04   grad 1.38   gamma=0.165   elapsed 1233s
+[helm-train] >>> eval @ 2800: train 3.8359   val 4.9708   ppl 144.15
+[helm-train] step  2850/4000   train 3.8491   lr 1.05e-04   grad 1.50   gamma=0.164   elapsed 1261s
+[helm-train] step  2900/4000   train 3.8173   lr 9.66e-05   grad 1.50   gamma=0.164   elapsed 1282s
+[helm-train] step  2950/4000   train 3.8078   lr 8.86e-05   grad 1.56   gamma=0.164   elapsed 1301s
+[helm-train] step  3000/4000   train 3.7832   lr 8.08e-05   grad 1.55   gamma=0.164   elapsed 1320s
+[helm-train] >>> eval @ 3000: train 3.8067   val 4.9654   ppl 143.36
+[helm-train] step  3050/4000   train 3.8113   lr 7.34e-05   grad 1.59   gamma=0.164   elapsed 1348s
+[helm-train] step  3100/4000   train 3.8104   lr 6.62e-05   grad 1.49   gamma=0.164   elapsed 1368s
+[helm-train] step  3150/4000   train 3.7445   lr 5.94e-05   grad 1.46   gamma=0.163   elapsed 1389s
+[helm-train] step  3200/4000   train 3.7677   lr 5.28e-05   grad 1.78   gamma=0.163   elapsed 1409s
+[helm-train] >>> eval @ 3200: train 3.7939   val 5.0164   ppl 150.86
+[helm-train] step  3250/4000   train 3.7591   lr 4.67e-05   grad 1.51   gamma=0.163   elapsed 1439s
+[helm-train] step  3300/4000   train 3.7309   lr 4.08e-05   grad 1.42   gamma=0.163   elapsed 1461s
+[helm-train] step  3350/4000   train 3.7862   lr 3.53e-05   grad 1.43   gamma=0.163   elapsed 1481s
+[helm-train] step  3400/4000   train 3.7967   lr 3.02e-05   grad 1.42   gamma=0.163   elapsed 1501s
+[helm-train] >>> eval @ 3400: train 3.7930   val 4.9995   ppl 148.33
+[helm-train] step  3450/4000   train 3.7539   lr 2.55e-05   grad 1.66   gamma=0.163   elapsed 1530s
+[helm-train] step  3500/4000   train 3.7290   lr 2.11e-05   grad 1.56   gamma=0.163   elapsed 1551s
+[helm-train] step  3550/4000   train 3.7776   lr 1.72e-05   grad 1.48   gamma=0.163   elapsed 1572s
+[helm-train] step  3600/4000   train 3.8072   lr 1.36e-05   grad 1.61   gamma=0.163   elapsed 1593s
+[helm-train] >>> eval @ 3600: train 3.7353   val 5.0209   ppl 151.55
+[helm-train] step  3650/4000   train 3.7762   lr 1.05e-05   grad 1.50   gamma=0.163   elapsed 1622s
+[helm-train] step  3700/4000   train 3.7561   lr 7.70e-06   grad 1.70   gamma=0.163   elapsed 1642s
+[helm-train] step  3750/4000   train 3.7652   lr 5.36e-06   grad 1.73   gamma=0.163   elapsed 1662s
+[helm-train] step  3800/4000   train 3.7720   lr 3.44e-06   grad 1.36   gamma=0.163   elapsed 1684s
+[helm-train] >>> eval @ 3800: train 3.7087   val 4.9352   ppl 139.10
+[helm-train] step  3850/4000   train 3.7488   lr 1.95e-06   grad 1.47   gamma=0.163   elapsed 1715s
+[helm-train] step  3900/4000   train 3.7491   lr 8.71e-07   grad 1.61   gamma=0.163   elapsed 1735s
+[helm-train] step  3950/4000   train 3.7707   lr 2.22e-07   grad 1.49   gamma=0.163   elapsed 1755s
+[helm-train] step  4000/4000   train 3.7685   lr 8.54e-11   grad 1.46   gamma=0.163   elapsed 1776s
+[helm-train] >>> eval @ 4000: train 3.7685   val 4.9055   ppl 135.03
+[helm-train] done in 1785s
+[helm-train] saved checkpoint -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/helmholtz/results/helm_AAAASSSS_shakespeare_seed0_ckpt_latest.pt
+[helm-train] saved loss curve -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/helmholtz/results/helm_AAAASSSS_shakespeare_seed0_loss_curve.png
+[helm-train] saved summary -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/helmholtz/results/helm_AAAASSSS_shakespeare_seed0_summary.md
