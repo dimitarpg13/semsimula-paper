@@ -1,6 +1,6 @@
 # Multi-Channel vs Single-Channel ξ in SPLM — Design Analysis
 
-> **Status.** Drafted **April 30, 2026**, by Dimitar Gueorguiev with Claude. Companion to the E11 pre-registration (`SPLM_multichannel_xi_pre-registered_protocol.md`). The aim is to make the architectural choice fully self-contained: anyone reading this note should understand *why* the move from single-channel ξ to multi-channel ξ is the most natural follow-up to E9, *what* the design buys and costs, *where* the implementation pays attention to numerical and computational pitfalls, and *what* falsifiable predictions follow from it.
+> **Status.** Drafted **April 30, 2026**, by Dimitar Gueorguiev with Claude. Companion to the E11 pre-registration ([`SPLM_multichannel_xi_pre-registered_protocol.md`](SPLM_multichannel_xi_pre-registered_protocol.md)). The aim is to make the architectural choice fully self-contained: anyone reading this note should understand *why* the move from single-channel ξ to multi-channel ξ is the most natural follow-up to E9, *what* the design buys and costs, *where* the implementation pays attention to numerical and computational pitfalls, and *what* falsifiable predictions follow from it.
 >
 > **Update — 2026-05-01: causal-leak correction.** A project-wide anti-causal autograd leak was discovered in every per-step `integrate()` site of the SPLM family (including the multi-channel ξ implementation in this document). The empirical anchor and falsifiability predictions in this document were written **before** the fix; they presume training under the buggy integrator and they predict materiality against the leak-driven E9 baseline of val_ppl $\approx 8.85$. Section 0 below documents what the fix changes, both for the design rationale and for the experimental program. Sections 2–11 are otherwise preserved unchanged for archival reasons. See [`Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`](Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md) for the bug, the fix, and the forensic results.
 >
@@ -9,7 +9,7 @@
 > - **Paper restructuring after the fix:** `Restructuring_paper_v3_after_causal_leak_bug.md`
 > - **Theoretical foundation:** [`Evidence_for_second_order_ODE_governing_evolution.md`](Evidence_for_second_order_ODE_governing_evolution.md), [`Determining_optimal_gamma_for_SPLM.md`](Determining_optimal_gamma_for_SPLM.md)
 > - **Empirical anchor:** [`notebooks/conservative_arch/scaleup/results/RESULTS.md`](../notebooks/conservative_arch/scaleup/results/RESULTS.md) (E9 Phase 1 outcome — pre-fix; under the leak-free integrator the same checkpoint evaluates to $6843$ PPL)
-> - **Pre-registration:** `SPLM_multichannel_xi_pre-registered_protocol.md` (E11)
+> - **Pre-registration:** [`SPLM_multichannel_xi_pre-registered_protocol.md`](SPLM_multichannel_xi_pre-registered_protocol.md) (E11)
 > - **Code:** [`notebooks/conservative_arch/multixi/model_multixi.py`](../notebooks/conservative_arch/multixi/model_multixi.py) — now with `causal_force=True` default
 > - **Causal regression test:** [`notebooks/conservative_arch/causal_probe.py`](../notebooks/conservative_arch/causal_probe.py)
 
