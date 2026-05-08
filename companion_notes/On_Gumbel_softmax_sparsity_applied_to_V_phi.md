@@ -92,7 +92,7 @@ $\lbrace s_1, \ldots, s_k\rbrace \subset \lbrace s : s \lt t\rbrace$
 ranked by force magnitude
 
 $$
-\sigma^{(\ell)}_{ts} \;\equiv\; \bigl\lVert \nabla_{h_t} V_\phi(h_t, h_s) \bigr\rVert,
+\sigma^{(\ell)}_{ts} \equiv \bigl\lVert \nabla_{h_t} V_\phi(h_t, h_s) \bigr\rVert,
 $$
 
 and absorb the dropped contribution into the dissipation budget. The
@@ -110,7 +110,7 @@ contribution; the quantile cutoff is the framework's prescription for
 The *decisional* form of the prescription is
 
 $$
-m^{(\ell)}_{ts} \;=\;
+m^{(\ell)}_{ts} =
 \begin{cases}
 1, & \sigma^{(\ell)}_{ts} \in \text{top-}k\text{ at }(t, \ell), \\
 0, & \text{otherwise},
@@ -120,7 +120,7 @@ $$
 with the per-token effective energy
 
 $$
-U^{(\ell)}_t \;=\; V_\theta\bigl(\xi^{(\ell)}_t, h^{(\ell)}_t\bigr) \;+\; \sum_{s \lt t} m^{(\ell)}_{ts} \cdot V_\phi\bigl(h^{(\ell)}_t, h^{(\ell)}_s\bigr).
+U^{(\ell)}_t = V_\theta\bigl(\xi^{(\ell)}_t, h^{(\ell)}_t\bigr) + \sum_{s \lt t} m^{(\ell)}_{ts} \cdot V_\phi\bigl(h^{(\ell)}_t, h^{(\ell)}_s\bigr).
 $$
 
 The mask $m^{(\ell)}_{ts}$ is *categorical*: at each $(t, \ell)$ it
@@ -137,7 +137,7 @@ sampling routine. The **Gumbel-Max trick**
 gives an alternative reparameterisation:
 
 $$
-i^{\ast} \;=\; \arg\max_{i \in \lbrace 1, \ldots, n\rbrace} \bigl( \log \pi_i + g_i \bigr), \qquad g_i \stackrel{\mathrm{i.i.d.}}{\sim} \mathrm{Gumbel}(0, 1),
+i^{\ast} = \arg\max_{i \in \lbrace 1, \ldots, n\rbrace} \bigl( \log \pi_i + g_i \bigr), \qquad g_i \stackrel{\mathrm{i.i.d.}}{\sim} \mathrm{Gumbel}(0, 1),
 $$
 
 where $\mathrm{Gumbel}(0, 1)$ has CDF $F(x) = \exp(-\exp(-x))$ and is
@@ -159,7 +159,7 @@ Replacing the $\arg\max$ with a tempered $\mathrm{softmax}$ yields the
 **Gumbel-softmax** (or **Concrete**) distribution:
 
 $$
-y_i(\tau) \;=\; \frac{\exp\bigl((\log \pi_i + g_i) / \tau\bigr)}{\sum_j \exp\bigl((\log \pi_j + g_j) / \tau\bigr)}, \qquad i \in \lbrace 1, \ldots, n\rbrace.
+y_i(\tau) = \frac{\exp\bigl((\log \pi_i + g_i) / \tau\bigr)}{\sum_j \exp\bigl((\log \pi_j + g_j) / \tau\bigr)}, \qquad i \in \lbrace 1, \ldots, n\rbrace.
 $$
 
 The vector $\boldsymbol{y}(\tau) \in \Delta^{n-1}$ lives on the
@@ -196,7 +196,7 @@ mask (so gradients flow into the score logits). The
 provides this:
 
 $$
-\tilde m^{(\ell)}_{ts} \;=\; \mathrm{stop\_grad}\bigl(m^{\mathrm{hard}}_{ts} - y_{ts}(\tau)\bigr) + y_{ts}(\tau),
+\tilde m^{(\ell)}_{ts} = \mathrm{stop\_grad}\bigl(m^{\mathrm{hard}}_{ts} - y_{ts}(\tau)\bigr) + y_{ts}(\tau),
 $$
 
 where $m^{\mathrm{hard}}_{ts}$ is the hard top-$k$ indicator and
@@ -250,19 +250,19 @@ Given per-pair logits $\pi^{(\ell)}_{ts}$, the per-pair Gumbel-perturbed
 score is
 
 $$
-z^{(\ell)}_{ts}(\tau) \;=\; \frac{\log \pi^{(\ell)}_{ts} + g^{(\ell)}_{ts}}{\tau}, \qquad g^{(\ell)}_{ts} \stackrel{\mathrm{i.i.d.}}{\sim} \mathrm{Gumbel}(0, 1).
+z^{(\ell)}_{ts}(\tau) = \frac{\log \pi^{(\ell)}_{ts} + g^{(\ell)}_{ts}}{\tau}, \qquad g^{(\ell)}_{ts} \stackrel{\mathrm{i.i.d.}}{\sim} \mathrm{Gumbel}(0, 1).
 $$
 
 The soft mask is the row-wise softmax over past tokens:
 
 $$
-y^{(\ell)}_{ts}(\tau) \;=\; \frac{\exp\bigl(z^{(\ell)}_{ts}(\tau)\bigr)}{\sum_{s' \lt t} \exp\bigl(z^{(\ell)}_{ts'}(\tau)\bigr)}.
+y^{(\ell)}_{ts}(\tau) = \frac{\exp\bigl(z^{(\ell)}_{ts}(\tau)\bigr)}{\sum_{s' \lt t} \exp\bigl(z^{(\ell)}_{ts'}(\tau)\bigr)}.
 $$
 
 The hard top-$k$ mask is
 
 $$
-m^{\mathrm{hard},(\ell)}_{ts} \;=\;
+m^{\mathrm{hard},(\ell)}_{ts} =
 \begin{cases}
 1, & s \in \mathrm{topk}_k\bigl(\lbrace z^{(\ell)}_{ts'}(\tau)\rbrace_{s' \lt t}\bigr), \\
 0, & \text{otherwise},
@@ -272,7 +272,7 @@ $$
 and the straight-through composite mask is
 
 $$
-\tilde m^{(\ell)}_{ts}(\tau) \;=\; \mathrm{stop\_grad}\bigl(m^{\mathrm{hard},(\ell)}_{ts} - k \cdot y^{(\ell)}_{ts}(\tau)\bigr) + k \cdot y^{(\ell)}_{ts}(\tau).
+\tilde m^{(\ell)}_{ts}(\tau) = \mathrm{stop\_grad}\bigl(m^{\mathrm{hard},(\ell)}_{ts} - k \cdot y^{(\ell)}_{ts}(\tau)\bigr) + k \cdot y^{(\ell)}_{ts}(\tau).
 $$
 
 The $k$ factor on $y$ keeps the *scale* of $\tilde m$ in the
@@ -363,7 +363,7 @@ The Stage 1.5 training loss is the standard NTP cross-entropy plus
 optional auxiliary terms:
 
 $$
-\mathcal{L}_{\mathrm{Stage\ 1.5}}(\theta, \phi, \psi) \;=\; \mathcal{L}_{\mathrm{NTP}} \;+\; \lambda_{\mathrm{sparsity}} \cdot \mathcal{L}_{\mathrm{sparsity}} \;+\; \lambda_{\mathrm{entropy}} \cdot \mathcal{L}_{\mathrm{entropy}},
+\mathcal{L}_{\mathrm{Stage\ 1.5}}(\theta, \phi, \psi) = \mathcal{L}_{\mathrm{NTP}} + \lambda_{\mathrm{sparsity}} \cdot \mathcal{L}_{\mathrm{sparsity}} + \lambda_{\mathrm{entropy}} \cdot \mathcal{L}_{\mathrm{entropy}},
 $$
 
 where $\psi$ are the score-head parameters and:
@@ -388,7 +388,7 @@ The classical Gumbel-softmax annealing schedule is geometric in the
 training step:
 
 $$
-\tau(t) \;=\; \max\bigl(\tau_{\min}, \tau_0 \cdot \exp(-r \cdot t)\bigr),
+\tau(t) = \max\bigl(\tau_{\min}, \tau_0 \cdot \exp(-r \cdot t)\bigr),
 $$
 
 with $\tau_0 = 1.0$, $\tau_{\min} = 0.1$ (or $0.01$ for sharper hard-mask
@@ -510,7 +510,7 @@ At inference, the Gumbel noise is **disabled** ($g_{ts} \equiv 0$) and
 the hard top-$k$ is taken on the pure logits $\pi_{ts}$:
 
 $$
-m^{\mathrm{infer},(\ell)}_{ts} \;=\;
+m^{\mathrm{infer},(\ell)}_{ts} =
 \begin{cases}
 1, & s \in \mathrm{topk}_k\bigl(\lbrace \pi^{(\ell)}_{ts'}\rbrace_{s' \lt t}\bigr), \\
 0, & \text{otherwise}.
@@ -615,7 +615,7 @@ $U^{(\ell)}_t$ and the force is an `autograd.grad` of $U$.
 Stage 1.5 introduces a subtlety: the masked sum
 
 $$
-\tilde U^{(\ell)}_t \;=\; V_\theta(\xi_t, h_t) \;+\; \sum_{s \lt t} \tilde m^{(\ell)}_{ts} \cdot V_\phi(h_t, h_s)
+\tilde U^{(\ell)}_t = V_\theta(\xi_t, h_t) + \sum_{s \lt t} \tilde m^{(\ell)}_{ts} \cdot V_\phi(h_t, h_s)
 $$
 
 is **still a scalar**, and the force $-\nabla_{h_t} \tilde U^{(\ell)}_t$
