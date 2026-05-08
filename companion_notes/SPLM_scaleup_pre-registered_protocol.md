@@ -4,7 +4,7 @@
 > Companion to:
 > *Semantic Simulation: A Prescriptive Lagrangian Framework for Efficient Semantic Inference* (Gueorguiev, 2026), v3.
 > Companion experiments:
-> - E1 multi-seed (small-scale matched-parameter comparison): [`notebooks/conservative_arch/multi_seed/results/E1_shakespeare/E1_report.md`](../notebooks/conservative_arch/multi_seed/results/E1_shakespeare/E1_report.md) — Outcome: `splm_em_ln` 95.33 ± 4.44 PPL beats `matched_baseline` 149.80 ± 7.21 PPL by $\overline{\Delta} = +54.47$ PPL across $S=5$ seeds (Welch $t=14.4$, $p<10^{-5}$).
+> - E1 multi-seed (small-scale matched-parameter comparison): [`notebooks/conservative_arch/multi_seed/results/E1_shakespeare/E1_report.md`](../notebooks/conservative_arch/multi_seed/results/E1_shakespeare/E1_report.md) — Outcome: `splm_em_ln` 95.33 ± 4.44 PPL beats `matched_baseline` 149.80 ± 7.21 PPL by $\overline{\Delta} = +54.47$ PPL across $S=5$ seeds (Welch $t=14.4$, $p\lt10^{-5}$).
 > - E5 LN-after-step damping sweep: [`notebooks/conservative_arch/ln_damping_sweep/results/RESULTS.md`](../notebooks/conservative_arch/ln_damping_sweep/results/RESULTS.md) — establishes $\gamma^{\ast} \approx 0.30$ at small scale.
 > - SPLM-1 first-order ablation: [`notebooks/conservative_arch/first_order_ablation/results/RESULTS.md`](../notebooks/conservative_arch/first_order_ablation/results/RESULTS.md) — Outcome A confirms training-time value of the inertial term.
 
@@ -101,12 +101,12 @@ Define the matched-parameter quality gap
 
 $$\Delta = P_B - P_A,$$
 
-so $\Delta > 0$ means SPLM beats matched-attention.
+so $\Delta \gt 0$ means SPLM beats matched-attention.
 
 | Hypothesis | Operational form | Theoretical reading |
 |---|---|---|
 | $H_1$ (the paper's claim survives scale-up) | $\Delta \ge +\Delta_{\min}$, sign-consistent across all seeds run | The matched-parameter SPLM-vs-attention quality ranking established in E1 generalises to a 2.2× param / 16× token / 4× context-length scale-up |
-| $H_0$ (gap shrinks to ambiguous) | $\lvert \Delta \rvert < \Delta_{\min}$, or sign-inconsistent across seeds | The SPLM advantage at small scale is regime-dependent; at scale-up the two architectures are quality-comparable. The paper's headline narrows from "SPLM beats matched-attention" to "SPLM exhibits the predicted dynamical signatures and is competitive with matched-attention at small scale" |
+| $H_0$ (gap shrinks to ambiguous) | $\lvert \Delta \rvert \lt \Delta_{\min}$, or sign-inconsistent across seeds | The SPLM advantage at small scale is regime-dependent; at scale-up the two architectures are quality-comparable. The paper's headline narrows from "SPLM beats matched-attention" to "SPLM exhibits the predicted dynamical signatures and is competitive with matched-attention at small scale" |
 | $H_{-1}$ (gap inverts) | $\Delta \le -\Delta_{\min}$, sign-consistent across all seeds run | Matched-attention overtakes SPLM at the scale-up regime. The paper's empirical PPL-win is restricted to the small-scale window; the architectural / dynamical-systems contributions (E4, E5, E7, E8 efficiency) remain valid claims, but the headline "SPLM beats matched-attention" cannot be made without a "at the small-corpus scale" qualifier |
 
 ---
@@ -129,7 +129,7 @@ Single-seed scale-up runs on the reference hardware are expensive (${\sim}9.5$ h
 
 **Phase 2 trigger — locked at pre-registration.**
 - **If $\lvert \Delta^{(0)} \rvert \ge 20$ PPL** (clearly decisive in either direction, well above E1's seed-induced PPL uncertainty), **the protocol terminates at $S=1$**. The headline is reported with an explicit single-seed disclaimer of "${\pm 5}$ PPL inherited uncertainty from E1" and the outcome (A / B / C) is locked.
-- **If $\lvert \Delta^{(0)} \rvert < 20$ PPL** (within the ambiguous zone), run **two additional seeds** at `seed = 1` and `seed = 2` for a $S=3$ paired band. The outcome is then determined from the per-seed mean $\overline{\Delta}$ as in §5.3.
+- **If $\lvert \Delta^{(0)} \rvert \lt 20$ PPL** (within the ambiguous zone), run **two additional seeds** at `seed = 1` and `seed = 2` for a $S=3$ paired band. The outcome is then determined from the per-seed mean $\overline{\Delta}$ as in §5.3.
 
 The rationale for the $\lvert \Delta^{(0)} \rvert \ge 20$ threshold is that, at small scale, E1 had a $+54$ PPL gap with $\sigma_A = 4.44$ — i.e., the small-scale signal is roughly $12\sigma$ above noise. Even a $20$-PPL gap at scale-up would be ${\sim}4\sigma$ if noise scales linearly with PPL, which is far enough from the threshold that two additional seeds would not change the qualitative outcome. A gap inside ${\pm}20$ PPL is genuinely ambiguous at $S=1$ and *does* warrant additional seeds.
 
@@ -140,11 +140,11 @@ The rationale for the $\lvert \Delta^{(0)} \rvert \ge 20$ threshold is that, at 
 Let $\overline{\Delta}$ denote $\Delta^{(0)}$ (Phase-1-only termination) or the per-seed mean $\tfrac{1}{3}\sum_{s=0}^{2} \Delta^{(s)}$ (Phase-2 termination), with the per-seed sign function $\mathrm{sgn}(\Delta^{(s)})$ defined for each.
 
 - **Outcome A ($H_1$ confirmed; SPLM beats matched-attention at scale-up):**
-  $\overline{\Delta} \ge +5.0$ **and** all per-seed signs are $> 0$ (sign-consistency across whichever seeds were run).
+  $\overline{\Delta} \ge +5.0$ **and** all per-seed signs are $\gt 0$ (sign-consistency across whichever seeds were run).
 - **Outcome B ($H_0$; ambiguous / scale-dependent):**
-  $\lvert \overline{\Delta} \rvert < 5.0$, *or* per-seed signs are inconsistent.
+  $\lvert \overline{\Delta} \rvert \lt 5.0$, *or* per-seed signs are inconsistent.
 - **Outcome C ($H_{-1}$; gap inverts; matched-attention beats SPLM at scale-up):**
-  $\overline{\Delta} \le -5.0$ **and** all per-seed signs are $< 0$ (sign-consistency).
+  $\overline{\Delta} \le -5.0$ **and** all per-seed signs are $\lt 0$ (sign-consistency).
 
 The outcome (A / B / C) is determined **only** from $\overline{\Delta}$ and the per-seed sign-consistency on the seeds that completed, with the seed count locked by §5.2. No post-hoc threshold adjustment, training-budget adjustment, learning-rate retuning, or per-seed exclusion is permitted.
 
@@ -178,7 +178,7 @@ The author assigns the following subjective probabilities to the three outcomes,
 | Outcome | Probability (subjective, pre-registered) |
 |---|---:|
 | A — $\Delta \ge +5$, gap survives | $0.65$ |
-| B — $\lvert\Delta\rvert < 5$ or sign-inconsistent | $0.25$ |
+| B — $\lvert\Delta\rvert \lt 5$ or sign-inconsistent | $0.25$ |
 | C — $\Delta \le -5$, gap inverts | $0.10$ |
 
 ---

@@ -125,7 +125,7 @@ $$\Delta_{\gamma^{\ast}} = P_{\mathrm{TS}}^{(0)}(\gamma=0.30) - P_{\mathrm{TS}}^
 | Hypothesis | Operational form | Reading |
 |---|---|---|
 | $H_Q$ (γ\* gives a material PPL improvement) | $\Delta_{\gamma^{\ast}} \ge +0.5$ PPL | Re-tuning produces a defensible PPL improvement worth re-running E9 Phase 2. |
-| $H_{¬Q}$ (γ\* gives no material PPL improvement) | $\Delta_{\gamma^{\ast}} < +0.5$ PPL | The γ-transfer assumption was harmless in practice; E9 result stands as-is. |
+| $H_{¬Q}$ (γ\* gives no material PPL improvement) | $\Delta_{\gamma^{\ast}} \lt +0.5$ PPL | The γ-transfer assumption was harmless in practice; E9 result stands as-is. |
 
 The 0.5-PPL threshold is justified by the per-seed standard deviation of E1 (`splm_em_ln` $\sigma_A=4.44$ rescaled by ~$8.85/95.33 \approx 0.09$ to the new PPL regime gives $\sigma_A^{\mathrm{TS}} \approx 0.4$ as a coarse single-seed estimate). A 0.5-PPL improvement is just above this single-seed noise floor.
 
@@ -162,7 +162,7 @@ If $\hat{\gamma}^{\ast}_{\mathrm{TS}} = 0.60$ (high boundary), run **one additio
 **Output:** $P_{\mathrm{TS}}^{(0)}(\hat{\gamma}^{\ast}_{\mathrm{TS}})$ at step 8000, single seed. Compute $\Delta_{\gamma^{\ast}} = 8.85 - P_{\mathrm{TS}}^{(0)}(\hat{\gamma}^{\ast}_{\mathrm{TS}})$.
 
 **Decision:**
-- If $\Delta_{\gamma^{\ast}} < 0.5$ PPL: $H_T$ effectively holds (the γ-shift is real but immaterial in PPL). Conclusion: $H_T$ + $H_{¬Q}$. **Stage 3 is NOT triggered.**
+- If $\Delta_{\gamma^{\ast}} \lt 0.5$ PPL: $H_T$ effectively holds (the γ-shift is real but immaterial in PPL). Conclusion: $H_T$ + $H_{¬Q}$. **Stage 3 is NOT triggered.**
 - If $\Delta_{\gamma^{\ast}} \ge 0.5$ PPL: γ-transfer fails materially. Conclusion: $H_{¬T}$ + $H_Q$. **Stage 3 is triggered.**
 
 ### 5.3 Stage 3 — multi-seed paired band at γ\*
@@ -172,7 +172,7 @@ If $\hat{\gamma}^{\ast}_{\mathrm{TS}} = 0.60$ (high boundary), run **one additio
 **Action:** run SPLM em_ln at $\hat{\gamma}^{\ast}_{\mathrm{TS}}$, **seeds 1 and 2**, 8000 steps each. Wall-clock ${\sim}26.2$ h total.
 
 **Matched-baseline reference for the paired Δ comparison:**
-- If E9 Phase 2 was triggered (i.e. E9's Phase 1 returned $|\Delta^{(0)}|<20$ PPL), reuse the matched-baseline values at seeds 0 / 1 / 2 from E9 Phase 2 directly. **Do NOT re-train them.**
+- If E9 Phase 2 was triggered (i.e. E9's Phase 1 returned $|\Delta^{(0)}|\lt20$ PPL), reuse the matched-baseline values at seeds 0 / 1 / 2 from E9 Phase 2 directly. **Do NOT re-train them.**
 - If E9 Phase 2 was *not* triggered (E9's Phase 1 returned $|\Delta^{(0)}|\ge 20$ PPL), then run matched-baseline at seeds 1 + 2 as part of Stage 3. Wall-clock ${\sim}13.4$ h additional (matched-baseline runs at $\sim 3.05$ s/step × 8000 = $\sim 6.7$ h per seed).
 
 **Output:** $\overline{\Delta}_{\gamma^{\ast}} = \frac{1}{3}\sum_{s=0}^{2}\bigl(P_B^{(s)} - P_A^{(s)}(\hat{\gamma}^{\ast}_{\mathrm{TS}})\bigr)$, where $P_A^{(s)}(\hat{\gamma}^{\ast}_{\mathrm{TS}})$ is the SPLM em_ln val PPL at seed $s$ and γ = γ\*, and $P_B^{(s)}$ is the matched-baseline val PPL at seed $s$ (reused from E9 if available).
@@ -184,7 +184,7 @@ The realised outcome is one of:
 | Outcome | Stage(s) reached | Operational form | Reading |
 |---|---|---|---|
 | **T0** | Stage 1 only | All three γ values within 0.5 PPL at step 4000, OR $\hat{\gamma}^{\ast}_{\mathrm{TS}}=0.30$. | γ-transfer holds (in the weak sense that 0.30 is indistinguishable from the optimum). E9 stands. |
-| **T1** | Stages 1 + 2, $\Delta_{\gamma^{\ast}} < 0.5$ | $\hat{\gamma}^{\ast}_{\mathrm{TS}}\neq 0.30$ but PPL gap is <0.5. | γ-transfer technically fails but the E9 number is within the single-seed noise floor of the optimum. E9 stands. |
+| **T1** | Stages 1 + 2, $\Delta_{\gamma^{\ast}} \lt 0.5$ | $\hat{\gamma}^{\ast}_{\mathrm{TS}}\neq 0.30$ but PPL gap is <0.5. | γ-transfer technically fails but the E9 number is within the single-seed noise floor of the optimum. E9 stands. |
 | **NT-material** | Stages 1 + 2 + 3, $\Delta_{\gamma^{\ast}} \ge 0.5$ | $\hat{\gamma}^{\ast}_{\mathrm{TS}}\neq 0.30$ and PPL improvement $\ge 0.5$ PPL. | γ-transfer fails materially. E9's pre-registered conclusion is *augmented* (not overwritten — E9's Phase-1 result is at γ=0.30, the pre-registered γ; an updated Phase-1 result at γ\* is reported as a separate, complementary finding). |
 | **NT-boundary** | Stages 1 + boundary expansion + 2 + 3 | Stage-1 boundary-expanded grid still has γ\* at boundary | γ\* lies outside the explored bracket; reported as a qualitative finding requiring follow-up. |
 

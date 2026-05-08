@@ -127,7 +127,7 @@ We pre-register **Δ\_min = 0.30 PPL** as the materiality threshold against the 
 ### 5.2 Outcomes
 
 - **Outcome A — material lift over E9.** $\Delta^{(0)}\_\text{vsE9} \ge +0.30$ PPL. Multi-channel ξ is the structural improvement. Trigger Stage 2 (multi-seed paired band). Update `docs/CoT_modeled_via_Semantic_Simulation.md` and `Determining_optimal_gamma_for_SPLM.md` to reflect the new baseline.
-- **Outcome B — no material lift.** $|\Delta^{(0)}\_\text{vsE9}| < 0.30$ PPL. Multi-channel ξ at this configuration does not move the gap. Move to T3 (state-dependent γ, `docs/Finding_optimal_gamma_for_SPLM.md` §4.2) as the next architectural test. Stage 2 not triggered.
+- **Outcome B — no material lift.** $|\Delta^{(0)}\_\text{vsE9}| \lt 0.30$ PPL. Multi-channel ξ at this configuration does not move the gap. Move to T3 (state-dependent γ, `docs/Finding_optimal_gamma_for_SPLM.md` §4.2) as the next architectural test. Stage 2 not triggered.
 - **Outcome C — material *regression*.** $\Delta^{(0)}\_\text{vsE9} \le -0.30$ PPL. The added V_θ-input width hurts at this training budget (under-trained, capacity-mismatch) and/or multi-channel ξ harms the energy landscape. Investigate (Q2 diagnostic on learned $\alpha_k$) before any further architectural extension.
 - **Outcome D — gap-closure milestone.** Conditional on Outcome A, additionally check: $\Delta^{(0)}\_\text{vsMatched} \ge 0$ at any seed in Stage 2 ⇒ "E11 matches MatchedGPT on at least one seed" — promotion-tier headline.
 
@@ -136,7 +136,7 @@ We pre-register **Δ\_min = 0.30 PPL** as the materiality threshold against the 
 If Stage 1 fires Outcome A, run **two additional seeds (seeds 1 and 2)** of the E11 arm at the same configuration. Compute the paired band $\bar\Delta\_\text{vsE9} \pm s_\Delta / \sqrt{n}$ across $n=3$ seeds.
 
 - $\bar\Delta\_\text{vsE9} - s\_\Delta/\sqrt{3} \ge 0.30$ ⇒ confirmed material lift; promote.
-- $\bar\Delta\_\text{vsE9} - s\_\Delta/\sqrt{3} < 0.30$ ⇒ Stage 1 lift was a single-seed artefact; do **not** promote.
+- $\bar\Delta\_\text{vsE9} - s\_\Delta/\sqrt{3} \lt 0.30$ ⇒ Stage 1 lift was a single-seed artefact; do **not** promote.
 
 Stage 2 cost: 2 × ~13 h ≈ 26 h on MPS. Trigger only if Stage 1 fires Outcome A.
 

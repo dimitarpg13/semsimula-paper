@@ -25,10 +25,10 @@ $$
 f_t = -\frac{\partial}{\partial h_t}\Big[\sum_{s} V_\theta\big(\xi_s, h_s\big)\Big]
 $$
 
-with $\xi_s$ a *causal* but *autograd-live* function of $\{h_1, \dots, h_s\}$. Because $\xi_s$ for $s > t$ depends on $h_t$ through `causal_cumulative_mean` (or, in the multi-channel case, through the K-channel weighted EMA), differentiating the *summed* $V$ picked up off-diagonal terms
+with $\xi_s$ a *causal* but *autograd-live* function of $\{h_1, \dots, h_s\}$. Because $\xi_s$ for $s \gt t$ depends on $h_t$ through `causal_cumulative_mean` (or, in the multi-channel case, through the K-channel weighted EMA), differentiating the *summed* $V$ picked up off-diagonal terms
 
 $$
-\sum_{s > t} \frac{\partial V_s}{\partial \xi_s} \cdot \frac{\partial \xi_s}{\partial h_t},
+\sum_{s \gt t} \frac{\partial V_s}{\partial \xi_s} \cdot \frac{\partial \xi_s}{\partial h_t},
 $$
 
 i.e. an anti-causal gradient channel from future hidden states $h_s$ back into the force on past tokens $h_t$. Trained $V_\theta$ then learned to route prediction signal through this channel. The fix (`xi_input = h.detach() if cfg.causal_force else h` before computing the EMA / cumulative mean) severs that path.
@@ -41,7 +41,7 @@ What changes is the **expected magnitude** of the empirical lift and the **inter
 
 The leak path is *strictly more powerful* in the multi-channel architecture than in the single-channel baseline:
 
-- The single-channel cumulative mean $\xi_t = \frac{1}{t}\sum_{s=1}^{t} h_s$ has a *fixed* dependence on the future positions: each future position $s > t$ contributes weight $\frac{1}{s} - \frac{1}{s+1} \le \frac{1}{t(t+1)}$ to $\partial \xi_s / \partial h_t$ in expectation. The leak channel is real but bandwidth-limited.
+- The single-channel cumulative mean $\xi_t = \frac{1}{t}\sum_{s=1}^{t} h_s$ has a *fixed* dependence on the future positions: each future position $s \gt t$ contributes weight $\frac{1}{s} - \frac{1}{s+1} \le \frac{1}{t(t+1)}$ to $\partial \xi_s / \partial h_t$ in expectation. The leak channel is real but bandwidth-limited.
 - The multi-channel architecture has $K = 4$ EMAs at decay rates $\{\alpha_k\}$, all *learnable*. Optimisation can drive any $\alpha_k$ toward $0$ to maximise the per-position weight on a specific $h_t$; the trained model then has $K$ near-orthogonal information channels back from any future position. Empirically (2026-05-01 forensic run), the buggy multi-ξ training does precisely this: the smallest $\alpha_k$ drifts further toward 0 over training, yielding a high-fidelity short-horizon leak.
 
 Quantitatively (2026-05-01 forensic run, 2000 max-steps, gamma 0.30, otherwise E9-identical configuration; final values from the completed run):
@@ -131,7 +131,7 @@ $$v_{l+1} = \frac{v_l + \Delta t \cdot f_l / m}{1 + \Delta t \cdot \gamma}, \qqu
 
 where $f_l = -\nabla_h V_{\theta}(\xi_l, h_l)$ is the conservative force from the energy potential, $m$ is per-token semantic mass (logfreq mode in E9/E11), and $\gamma$ is the damping coefficient.
 
-The vector $\xi_l \in \mathbb{R}^d$ is the **per-token semantic context**: at each layer step, V_θ sees both the *current* hidden state $h_l$ and a *summary of past hidden states* $\xi_l$. ξ is the only mechanism by which information from token $s < t$ reaches layer-$l$'s computation at token $t$.
+The vector $\xi_l \in \mathbb{R}^d$ is the **per-token semantic context**: at each layer step, V_θ sees both the *current* hidden state $h_l$ and a *summary of past hidden states* $\xi_l$. ξ is the only mechanism by which information from token $s \lt t$ reaches layer-$l$'s computation at token $t$.
 
 ```mermaid
 flowchart TD
@@ -459,7 +459,7 @@ The pre-registration locks $\Delta_{\min} = 0.30$ PPL as the materiality thresho
 | Outcome | Trigger | Prior probability |
 |---|---|---:|
 | A — material lift | $\Delta_{\text{vsE9}} \ge +0.30$ PPL | 0.55 |
-| B — no material lift | $|\Delta| < 0.30$ | 0.30 |
+| B — no material lift | $\lvert\Delta\rvert \lt 0.30$ | 0.30 |
 | C — material regression | $\Delta_{\text{vsE9}} \le -0.30$ | 0.10 |
 | D — gap closure to MatchedGPT | $\Delta_{\text{vsMatched}} \ge 0$ at any seed (conditional on A) | 0.20 |
 
@@ -469,9 +469,9 @@ The 0.55 prior on A reflects the strength of the rank-1-bottleneck argument: ran
 
 We pre-register four falsifiable predictions about the learned α_k:
 
-1. **Spread, not collapse.** Final α_k will remain spread across horizons; we predict $\alpha_4^{\text{final}} > 0.9$ (long-range channel persists), $\alpha_1^{\text{final}} < 0.3$ (instant channel persists).
-2. **Modest drift.** $|\alpha_k^{\text{final}} - \alpha_k^{\text{init}}| < 0.2$ for all $k$; large migration would suggest the init was wrong rather than the architecture being wrong.
-3. **Monotone ordering preserved.** $\alpha_1^{\text{final}} < \alpha_2^{\text{final}} < \alpha_3^{\text{final}} < \alpha_4^{\text{final}}$ throughout training.
+1. **Spread, not collapse.** Final α_k will remain spread across horizons; we predict $\alpha_4^{\text{final}} \gt 0.9$ (long-range channel persists), $\alpha_1^{\text{final}} \lt 0.3$ (instant channel persists).
+2. **Modest drift.** $|\alpha_k^{\text{final}} - \alpha_k^{\text{init}}| \lt 0.2$ for all $k$; large migration would suggest the init was wrong rather than the architecture being wrong.
+3. **Monotone ordering preserved.** $\alpha_1^{\text{final}} \lt \alpha_2^{\text{final}} \lt \alpha_3^{\text{final}} \lt \alpha_4^{\text{final}}$ throughout training.
 4. **No degeneracy.** No two α_k will converge within 0.05 of each other (avoiding redundant channels).
 
 If predictions 1–4 hold, the multi-resolution prior was the right shape and only the scale was learnable. If 1–4 fail, the geometry of language at this scale needs a different decay parameterisation (e.g., a learnable kernel rather than an EMA).
