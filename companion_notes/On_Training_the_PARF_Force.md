@@ -6,11 +6,11 @@ concrete issues in the prototype code, and the recommended path forward.
 
 Companion to:
 
-- Design doc: [`PARF_Augmented_SPLM_Architecture.md`](PARF_Augmented_SPLM_Architecture.md)
-- Implementation: [`notebooks/conservative_arch/parf/`](../notebooks/conservative_arch/parf/) (model, causal probe, trainer, smoke test)
-- Sibling architecture (Q9d, layer-type Helmholtz hybrid): [`Scalar_Potential_based_Helmholtz_Architecture.md`](Scalar_Potential_based_Helmholtz_Architecture.md)
-- SPLM family causal-leak bug & fix (the inherited `causal_force` invariant): [`Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`](Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md)
-- Anchor experiments: [`Helmholtz-HSPLM_Path_Forward_and_Experiments.md`](Helmholtz-HSPLM_Path_Forward_and_Experiments.md)
+- Design doc: [`companion_notes/PARF_Augmented_SPLM_Architecture_v2.md`](../PARF_Augmented_SPLM_Architecture_v2.md)
+- Implementation: [`notebooks/conservative_arch/parf/`](../../notebooks/conservative_arch/parf/) (model, causal probe, trainer, smoke test)
+- Sibling architecture (Q9d, layer-type Helmholtz hybrid): [`companion_notes/Scalar_Potential_based_Helmholtz_Architecture_v2.md`](../Scalar_Potential_based_Helmholtz_Architecture_v2.md)
+- SPLM family causal-leak bug & fix (the inherited `causal_force` invariant): [`companion_notes/Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`](../Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md)
+- Anchor experiments: [`companion_notes/Helmholtz-HSPLM_Path_Forward_and_Experiments.md`](../Helmholtz-HSPLM_Path_Forward_and_Experiments.md)
 
 ---
 
@@ -85,7 +85,7 @@ $$
 
 where $m$ is a per-token mass and $\gamma$ a learned global damping. This
 is the form documented in
-[`PARF_Augmented_SPLM_Architecture.md`](PARF_Augmented_SPLM_Architecture.md)
+[`companion_notes/PARF_Augmented_SPLM_Architecture_v2.md`](../PARF_Augmented_SPLM_Architecture_v2.md)
 §§2-3.
 
 The training problem is: given a corpus of text, learn the parameters of
@@ -182,7 +182,7 @@ Three machinery details matter:
 After all $L$ layers, the model produces logits and a standard cross-entropy
 loss; `train_parf.py` then calls `loss.backward()` once per step:
 
-```316:322:notebooks/conservative_arch/parf/train_parf.py
+```283:299:notebooks/conservative_arch/parf/train_parf.py
         _, loss = model(x, y)
 
         optim.zero_grad(set_to_none=True)
@@ -291,7 +291,7 @@ support double differentiation.
 We measured the structural and MLP variants on Apple MPS at the prototype
 shape ($d = 128$, $L = 8$, $T = 128$, $B = 16$, $v_{\text{hidden}} = 128$).
 The full survey is in
-[`notebooks/conservative_arch/parf/README.md`](../notebooks/conservative_arch/parf/README.md);
+[`notebooks/conservative_arch/parf/README.md`](../../notebooks/conservative_arch/parf/README.md);
 here are the binding numbers.
 
 ### 5.1 Wall-clock breakdown
@@ -808,13 +808,13 @@ Order of attack on a CUDA box (when we get there):
 
 ### Internal documents
 
-- [`PARF_Augmented_SPLM_Architecture.md`](PARF_Augmented_SPLM_Architecture.md) — the design doc; §3 (causal reduction), §5.1 (structural V_phi), §7 (Algorithm A vs Algorithm B vs Stage 1.5).
-- [`Scalar_Potential_based_Helmholtz_Architecture.md`](Scalar_Potential_based_Helmholtz_Architecture.md) — Q9d, the layer-type Helmholtz hybrid; sibling architecture sharing $V_\theta$.
-- [`Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`](Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md) — the inherited `causal_force` invariant; why both `.detach()` points exist.
-- [`Helmholtz-HSPLM_Path_Forward_and_Experiments.md`](Helmholtz-HSPLM_Path_Forward_and_Experiments.md) — anchor experiments (all-attn 5-seed E1 baseline, em-ln SPLM, Q9d, Variant A).
-- [`notebooks/conservative_arch/parf/README.md`](../notebooks/conservative_arch/parf/README.md) — implementation README with the full MPS memory + wall-clock survey table.
-- [`notebooks/conservative_arch/parf/model_parf.py`](../notebooks/conservative_arch/parf/model_parf.py) — the model code.
-- [`notebooks/conservative_arch/parf/causal_probe_parf.py`](../notebooks/conservative_arch/parf/causal_probe_parf.py) — the perturbation + gradient-Jacobian causal probe.
+- [`companion_notes/PARF_Augmented_SPLM_Architecture_v2.md`](../PARF_Augmented_SPLM_Architecture_v2.md) — the design doc; §3 (causal reduction), §5.1 (structural V_phi), §7 (Algorithm A vs Algorithm B vs Stage 1.5).
+- [`companion_notes/Scalar_Potential_based_Helmholtz_Architecture_v2.md`](../Scalar_Potential_based_Helmholtz_Architecture_v2.md) — Q9d, the layer-type Helmholtz hybrid; sibling architecture sharing $V_\theta$.
+- [`companion_notes/Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`](../Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md) — the inherited `causal_force` invariant; why both `.detach()` points exist.
+- [`companion_notes/Helmholtz-HSPLM_Path_Forward_and_Experiments.md`](../Helmholtz-HSPLM_Path_Forward_and_Experiments.md) — anchor experiments (all-attn 5-seed E1 baseline, em-ln SPLM, Q9d, Variant A).
+- [`notebooks/conservative_arch/parf/README.md`](../../notebooks/conservative_arch/parf/README.md) — implementation README with the full MPS memory + wall-clock survey table.
+- [`notebooks/conservative_arch/parf/model_parf.py`](../../notebooks/conservative_arch/parf/model_parf.py) — the model code.
+- [`notebooks/conservative_arch/parf/causal_probe_parf.py`](../../notebooks/conservative_arch/parf/causal_probe_parf.py) — the perturbation + gradient-Jacobian causal probe.
 
 ### External literature
 
@@ -824,4 +824,4 @@ Order of attack on a CUDA box (when we get there):
 - Chen, T. *et al.*, **Training Deep Nets with Sublinear Memory Cost**, 2016. arXiv:[1604.06174](https://arxiv.org/abs/1604.06174). The classic gradient checkpointing reference; PyTorch's `torch.utils.checkpoint` is a direct descendant.
 - Hyvärinen, A., **Estimation of Non-Normalized Statistical Models by Score Matching**, JMLR 2005. [JMLR link](https://www.jmlr.org/papers/v6/hyvarinen05a.html). The score-matching principle; flagged in §7.3.2 as inapplicable to PARF proper but relevant for distillation experiments.
 - Jang, E. *et al.*, **Categorical Reparameterization with Gumbel-Softmax**, ICLR 2017. arXiv:[1611.01144](https://arxiv.org/abs/1611.01144). The Gumbel-softmax estimator used by Stage 1.5 sparsity (§7.5).
-- PyTorch documentation, [`torch.utils.checkpoint`](https://pytorch.org/docs/stable/checkpoint.html). The non-reentrant variant (`use_reentrant=False`) is what makes our gradient-checkpointed PARF compatible with the inner `autograd.grad(create_graph=True)` call.
+- PyTorch documentation, [`torch.utils.checkpoint`](https://pytorch.org/companion_notes/stable/checkpoint.html). The non-reentrant variant (`use_reentrant=False`) is what makes our gradient-checkpointed PARF compatible with the inner `autograd.grad(create_graph=True)` call.

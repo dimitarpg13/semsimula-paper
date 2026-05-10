@@ -8,7 +8,7 @@
 
 **Dependencies**:
 - Current sparse PARF: `notebooks/conservative_arch/parf/model_parf_sparse.py` (Stage-1.5a, dense eval).
-- Reference design: `docs/parf/On_Gumbel_softmax_sparsity_applied_to_V_phi.md` §4.3 (gathered form).
+- Reference design: `companion_notes/parf/On_Gumbel_softmax_sparsity_applied_to_V_phi.md` §4.3 (gathered form).
 - Pilot results: `notebooks/conservative_arch/scaleup/results/parf_structural_vphi16_sparse_k4_*` (the H=16 / grad-accum=2 pilot run that motivated this work).
 
 ---
@@ -232,7 +232,7 @@ def forward_gathered(
     materialises only (B, T, k, H) intermediates instead of (B, T, T, H).
 
     This is the Stage-1.5b optimisation; see
-    docs/PARF_Stage_1_5b_design.md for the equivalence proof and
+    companion_notes/PARF_Stage_1_5b_design.md for the equivalence proof and
     memory math.
     """
     B, T, d = h.shape
@@ -351,7 +351,7 @@ class SparsePARFConfig(PARFConfig):
     (`forward_gathered`).  Memory drops O(T/k) per layer; gradients
     are equivalent to Stage-1.5a in the limit gumbel_tau -> 0 and
     near-equivalent at finite tau when routing has converged.
-    See docs/PARF_Stage_1_5b_design.md.
+    See companion_notes/PARF_Stage_1_5b_design.md.
     """
 ```
 
@@ -460,7 +460,7 @@ Add an explicit assertion to the smoke test that the Stage-1.5b path passes the 
 - [ ] Update Arm 5 cell in `colab_pilot.ipynb` to use Stage-1.5b: bump V_φ widths back to H=128, drop `--grad-accum`, expect wall-clock ~25 min instead of ~80 min.
 - [ ] Re-run Arm 5 on Colab with the new config and confirm the result matches (or improves on) the H=16 / Stage-1.5a baseline.
 - [ ] Update `paper_tmlr_1` discussion section to note Stage-1.5b as the standard form, with Stage-1.5a kept only as a reference implementation for the equivalence proof.
-- [ ] Update `docs/parf/On_Gumbel_softmax_sparsity_applied_to_V_phi.md` §4.3 to point at this design doc and the implementing commit.
+- [ ] Update `companion_notes/parf/On_Gumbel_softmax_sparsity_applied_to_V_phi.md` §4.3 to point at this design doc and the implementing commit.
 
 ### Stretch (Day 4 if needed)
 
@@ -503,7 +503,7 @@ Stage-1.5b doesn't change V_φ parameters (same `phi_c_net`, `theta_w_q/s/d/2`, 
 
 Stage-1.5b's value is not purely a memory and compute story — it also resolves a concrete training-time failure mode of Stage-1.5a observed during the small-scale P5 sparsity ladder.
 
-**Failure observation.** On 8 May 2026 the P5 sweep over `k ∈ {4, 8, 16, 32}` ran on local MPS (Tiny Shakespeare, d=128, L=8, V_φ widths H=128, all other hyperparameters held constant). Cells k=4 / k=8 / k=16 completed cleanly. The k=32 cell **diverged to NaN at step 50** — train loss, grad norm, γ all NaN — and stayed NaN for ~5 hours of continued training before being killed manually. No checkpoint or summary was produced; only `notebooks/conservative_arch/parf/results/structural_sparse/seed0_k32/training.log` was preserved as forensic evidence. Full hyperparameter set and trace recorded in `docs/PARF-SPLM_Path_Forward_and_Experiments.md` §4.8.
+**Failure observation.** On 8 May 2026 the P5 sweep over `k ∈ {4, 8, 16, 32}` ran on local MPS (Tiny Shakespeare, d=128, L=8, V_φ widths H=128, all other hyperparameters held constant). Cells k=4 / k=8 / k=16 completed cleanly. The k=32 cell **diverged to NaN at step 50** — train loss, grad norm, γ all NaN — and stayed NaN for ~5 hours of continued training before being killed manually. No checkpoint or summary was produced; only `notebooks/conservative_arch/parf/results/structural_sparse/seed0_k32/training.log` was preserved as forensic evidence. Full hyperparameter set and trace recorded in `companion_notes/PARF-SPLM_Path_Forward_and_Experiments.md` §4.8.
 
 **Mechanism.** With the score-head initialised at `score_head_init_scale=0.02` and `gumbel_tau_init=1.0`, the soft-mask `y = softmax(z/τ)` at step 0 is approximately uniform over all causal sources. The straight-through composite mask `~m = stop_grad(m_hard - k·y) + k·y` then has its *backward* term `k·y` scaled by `k=32`, distributed across ~32 active source positions per query. This makes the effective backward gradient on every score-head logit ~32× larger than the equivalent k=4 cell. In Stage-1.5a (dense V_φ eval) this gradient amplification multiplies through the *entire* (B, T, T) pair-potential field, including all the off-top-k entries that would otherwise contribute zero in forward. The first ~few AdamW steps under the 200-step linear warm-up (step 50 sits at `lr=1.25e-4` toward the `lr=5e-4` peak) are enough to drive `phi_c_net.softplus(c)` into a regime where `Phi = exp(-c · l_dist2)` underflows or `r = √(h_dist2 + ε²)` produces NaN downstream.
 
@@ -535,7 +535,7 @@ Stage-1.5a's sum is dominated at training start by the (T − k) "spurious" V_φ
 2. Anneal k upward (e.g. start at k=4, ramp to k=32 over 25% of training)
 3. `--score-head-init-scale 0.005` (4× smaller) — flatter initial logits
 
-These are documented in `docs/PARF-SPLM_Path_Forward_and_Experiments.md` §4.8 as "deferred — Stage-1.5b is the cleaner fix".
+These are documented in `companion_notes/PARF-SPLM_Path_Forward_and_Experiments.md` §4.8 as "deferred — Stage-1.5b is the cleaner fix".
 
 ### Open question: sparse autograd for the score head
 
@@ -563,6 +563,6 @@ Once Stage-1.5b lands, the `paper_tmlr_1` PARF arm story changes meaningfully:
 
 - `notebooks/conservative_arch/parf/model_parf.py` — dense PARF (Stage-1) and structural V_φ
 - `notebooks/conservative_arch/parf/model_parf_sparse.py` — current Stage-1.5a implementation
-- `docs/parf/On_Gumbel_softmax_sparsity_applied_to_V_phi.md` §4.3 — original Stage-1.5b sketch
+- `companion_notes/parf/On_Gumbel_softmax_sparsity_applied_to_V_phi.md` §4.3 — original Stage-1.5b sketch
 - Jang, Gu, Poole 2017, "Categorical Reparameterization with Gumbel-Softmax", §3.4 (straight-through estimator) — foundation of the τ → 0 equivalence argument
 - Maddison, Mnih, Teh 2017, "The Concrete Distribution" — companion result on continuous relaxations of categorical distributions

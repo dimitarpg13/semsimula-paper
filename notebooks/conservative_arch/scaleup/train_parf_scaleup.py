@@ -3,7 +3,7 @@ Training loop for the **paper_tmlr_1 scale-up pilot** (PARF-augmented SPLM arm).
 
 This trainer is a hard-fork of `parf/train_parf.py` adapted for the
 scale-up configuration locked by the existing E9 SPLM scale-up
-protocol (`docs/SPLM_scaleup_pre-registered_protocol.md`):
+protocol (`companion_notes/SPLM_scaleup_pre-registered_protocol.md`):
   - corpus      : TinyStories (~5 M GPT-2 BPE tokens)
   - max_len     : 1024
   - block_size  : 512

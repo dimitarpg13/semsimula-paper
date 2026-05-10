@@ -3,5 +3,5 @@
 Companion to the layer-type Helmholtz hybrid (Q9d) at
 notebooks/conservative_arch/helmholtz/.
 
-See docs/PARF_Augmented_SPLM_Architecture_v2.md for the design.
+See companion_notes/PARF_Augmented_SPLM_Architecture_v2.md for the design.
 """

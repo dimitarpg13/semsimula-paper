@@ -3,7 +3,7 @@
 **Path companion to** [`notebooks/conservative_arch/helmholtz/`](../helmholtz/)
 **(Q9d, the layer-type Helmholtz hybrid).**
 
-Design reference: [`docs/PARF_Augmented_SPLM_Architecture_v2.md`](../../../docs/PARF_Augmented_SPLM_Architecture_v2.md).
+Design reference: [`companion_notes/PARF_Augmented_SPLM_Architecture_v2.md`](../../../companion_notes/PARF_Augmented_SPLM_Architecture_v2.md).
 Workplan & decision log: this README + the design doc; the
 `Helmholtz-HSPLM_Path_Forward_and_Experiments.md` document is shared
 infrastructure but does NOT govern the PARF path.
@@ -79,7 +79,7 @@ training trace with and without grad-checkpoint is verified by
 ## Algorithm A — what's in, what's out
 
 This prototype implements **Algorithm A** from the design doc
-([`docs/PARF_Augmented_SPLM_Architecture_v2.md`](../../../docs/PARF_Augmented_SPLM_Architecture_v2.md)
+([`companion_notes/PARF_Augmented_SPLM_Architecture_v2.md`](../../../companion_notes/PARF_Augmented_SPLM_Architecture_v2.md)
 §7):
 
 - ✅ Single shared $V_\theta$ (4-layer GELU MLP, identical to em-ln
@@ -180,15 +180,15 @@ Per the design-doc Open Questions:
   the PARF arm yet (per user instruction; paper v4 is on hold pending
   H6, H2 n=5 power-up, and these PARF datapoints).
 - It is **not the RL outer loop**.  The PARF + RL paper draft
-  (`docs/Section_15_24_PARF_Augmented_SPLM_v4_draft_v2.docx`) is
+  (`companion_notes/Section_15_24_PARF_Augmented_SPLM_v4_draft_v2.docx`) is
   upstream of this prototype.  This codepath establishes the inner
   PARF dynamics and its quality baseline; the RL outer loop is a
   later commitment.
 
 ## Pointers
 
-- Design doc: [`docs/PARF_Augmented_SPLM_Architecture_v2.md`](../../../docs/PARF_Augmented_SPLM_Architecture_v2.md)
+- Design doc: [`companion_notes/PARF_Augmented_SPLM_Architecture_v2.md`](../../../companion_notes/PARF_Augmented_SPLM_Architecture_v2.md)
 - Companion path (Q9d, layer-type Helmholtz hybrid): [`notebooks/conservative_arch/helmholtz/`](../helmholtz/)
 - Companion path (Variant A two-stage SPLM): [`notebooks/conservative_arch/hybrid/`](../hybrid/)
-- Causality bug & fix history: [`docs/Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`](../../../docs/Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md)
-- Markdown LaTeX rendering rules: [`docs/GitHub_Markdown_LaTeX_Rendering_Cheatsheet.md`](../../../docs/GitHub_Markdown_LaTeX_Rendering_Cheatsheet.md)
+- Causality bug & fix history: [`companion_notes/Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`](../../../companion_notes/Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md)
+- Markdown LaTeX rendering rules: [`companion_notes/GitHub_Markdown_LaTeX_Rendering_Cheatsheet.md`](../../../companion_notes/GitHub_Markdown_LaTeX_Rendering_Cheatsheet.md)

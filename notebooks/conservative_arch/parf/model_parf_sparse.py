@@ -3,7 +3,7 @@ Sparse PARF-augmented SPLM (Q9c, Stage 1.5) — Gumbel-softmax top-k routing.
 
 Reference
 ---------
-docs/parf/On_Gumbel_softmax_sparsity_applied_to_V_phi.md
+companion_notes/On_Gumbel_softmax_sparsity_applied_to_V_phi.md
 
 Architecture (one-paragraph summary)
 ------------------------------------
@@ -209,7 +209,7 @@ class SparsePARFLM(PARFLM):
 
     This subclass adds a `ScoreHead` and overrides `_layer_step` to apply
     the straight-through Gumbel-softmax mask described in
-    `docs/parf/On_Gumbel_softmax_sparsity_applied_to_V_phi.md` §3-§4.
+    `companion_notes/On_Gumbel_softmax_sparsity_applied_to_V_phi.md` §3-§4.
     All other layers (embedding, V_theta, V_phi, mass head, etc.) are
     inherited unchanged from `PARFLM`.
 

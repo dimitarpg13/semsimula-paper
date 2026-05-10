@@ -7,10 +7,10 @@ right matters for the dynamics it induces.
 
 Companion to:
 
-- Design doc: [`PARF_Augmented_SPLM_Architecture.md`](PARF_Augmented_SPLM_Architecture.md) (esp. §3 causal reduction, §5 PARF law, §5.1 structural form, §17 OQ-1).
-- Implementation: [`notebooks/conservative_arch/parf/model_parf.py`](../notebooks/conservative_arch/parf/model_parf.py) (`MLPVPhi`, `StructuralVPhi`).
-- Training-pipeline deep dive: [`On_Training_the_PARF_Force.md`](On_Training_the_PARF_Force.md).
-- Prototype README and benchmarks: [`notebooks/conservative_arch/parf/README.md`](../notebooks/conservative_arch/parf/README.md).
+- Design doc: [`companion_notes/PARF_Augmented_SPLM_Architecture_v2.md`](../PARF_Augmented_SPLM_Architecture_v2.md) (esp. §3 causal reduction, §5 PARF law, §5.1 structural form, §17 OQ-1).
+- Implementation: [`notebooks/conservative_arch/parf/model_parf.py`](../../notebooks/conservative_arch/parf/model_parf.py) (`MLPVPhi`, `StructuralVPhi`).
+- Training-pipeline deep dive: [`companion_notes/parf/On_Training_the_PARF_Force.md`](./On_Training_the_PARF_Force.md).
+- Prototype README and benchmarks: [`notebooks/conservative_arch/parf/README.md`](../../notebooks/conservative_arch/parf/README.md).
 
 ---
 
@@ -589,7 +589,7 @@ Consequence: the MLP is **safer** in early training when hidden
 states may be poorly separated. The structural variant can produce
 very large forces if two consecutive token states happen to be
 close in $h$-space and the Plummer $\varepsilon$ is too small (see
-[`On_Training_the_PARF_Force.md`](On_Training_the_PARF_Force.md)
+[`On_Training_the_PARF_Force.md`](./On_Training_the_PARF_Force.md)
 §6.2). The MLP would simply produce a moderate, learned-bandwidth
 response.
 
@@ -811,13 +811,13 @@ not the first thing to try.
 
 ### Internal documents
 
-- [`PARF_Augmented_SPLM_Architecture.md`](PARF_Augmented_SPLM_Architecture.md) — design doc; §5.1 (structural form), §17 (OQ-1 framing), §3 (causal reduction).
-- [`On_Training_the_PARF_Force.md`](On_Training_the_PARF_Force.md) — Algorithm A pipeline, the second-order autograd graph, gradient checkpointing.
-- [`notebooks/conservative_arch/parf/README.md`](../notebooks/conservative_arch/parf/README.md) — full MPS wall-clock + memory survey for both variants.
-- [`notebooks/conservative_arch/parf/model_parf.py`](../notebooks/conservative_arch/parf/model_parf.py) — `MLPVPhi`, `StructuralVPhi`, `PARFLM`.
-- [`notebooks/conservative_arch/parf/causal_probe_parf.py`](../notebooks/conservative_arch/parf/causal_probe_parf.py) — causal-violation probe; both V_phi variants pass.
-- [`Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`](Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md) — the inherited `causal_force` invariant, both `.detach()` points.
-- [`Helmholtz-HSPLM_Path_Forward_and_Experiments.md`](Helmholtz-HSPLM_Path_Forward_and_Experiments.md) — anchor experiments and val-PPL baselines.
+- [`companion_notes/PARF_Augmented_SPLM_Architecture_v2.md`](../PARF_Augmented_SPLM_Architecture_v2.md) — design doc; §5.1 (structural form), §17 (OQ-1 framing), §3 (causal reduction).
+- [`companion_notes/parf/On_Training_the_PARF_Force.md`](./On_Training_the_PARF_Force.md) — Algorithm A pipeline, the second-order autograd graph, gradient checkpointing.
+- [`notebooks/conservative_arch/parf/README.md`](../../notebooks/conservative_arch/parf/README.md) — full MPS wall-clock + memory survey for both variants.
+- [`notebooks/conservative_arch/parf/model_parf.py`](../../notebooks/conservative_arch/parf/model_parf.py) — `MLPVPhi`, `StructuralVPhi`, `PARFLM`.
+- [`notebooks/conservative_arch/parf/causal_probe_parf.py`](../../notebooks/conservative_arch/parf/causal_probe_parf.py) — causal-violation probe; both V_phi variants pass.
+- [`companion_notes/Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`](../Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md) — the inherited `causal_force` invariant, both `.detach()` points.
+- [`companion_notes/Helmholtz-HSPLM_Path_Forward_and_Experiments.md`](../Helmholtz-HSPLM_Path_Forward_and_Experiments.md) — anchor experiments and val-PPL baselines.
 
 ### External literature
 
@@ -828,4 +828,4 @@ not the first thing to try.
 - Cranmer, M. *et al.*, **Lagrangian Neural Networks**, ICLR 2020 workshop. arXiv:[2003.04630](https://arxiv.org/abs/2003.04630). HNN's generalisation; pair-interaction forces are the natural extension covered here.
 - Schütt, K. T. *et al.*, **SchNet: A continuous-filter convolutional neural network for modeling quantum interactions**, NeurIPS 2017. arXiv:[1706.08566](https://arxiv.org/abs/1706.08566). Pair-interaction networks for quantum chemistry; explicit symmetry-baked-in pair filters; closest external precedent for the structural variant.
 - Battaglia, P. *et al.*, **Relational inductive biases, deep learning, and graph networks**, 2018. arXiv:[1806.01261](https://arxiv.org/abs/1806.01261). General framework on inductive biases vs unstructured MLPs in pair-interaction settings; useful for OQ-1 framing.
-- PyTorch documentation, [`torch.utils.checkpoint`](https://pytorch.org/docs/stable/checkpoint.html). The non-reentrant variant used for the MLP V_phi grad-ckpt path.
+- PyTorch documentation, [`torch.utils.checkpoint`](https://pytorch.org/companion_notes/stable/checkpoint.html). The non-reentrant variant used for the MLP V_phi grad-ckpt path.

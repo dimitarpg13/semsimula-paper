@@ -79,6 +79,26 @@ def _download_hf_parquet(repo_id: str, filename: str, local_name: str) -> Path:
     return dest
 
 
+def _resolve_tinystories_shard(prefix: str) -> str:
+    """Return the actual repo path for a TinyStories shard.
+
+    The HF dataset stores parquet shards under names like
+        data/train-00001-of-00004-<hash>.parquet
+    where the hash suffix can change across uploads.  This helper looks
+    up the live file list and returns the unique shard whose name starts
+    with `prefix` (e.g. ``data/train-00001-of-00004``).
+    """
+    from huggingface_hub import HfApi
+    files = HfApi().list_repo_files("roneneldan/TinyStories", repo_type="dataset")
+    matches = [f for f in files if f.startswith(prefix) and f.endswith(".parquet")]
+    if len(matches) != 1:
+        raise FileNotFoundError(
+            f"TinyStories shard prefix {prefix!r} resolved to "
+            f"{len(matches)} files (expected exactly 1): {matches!r}"
+        )
+    return matches[0]
+
+
 def load_tiny_stories(
     n_train_files: int = 1,
     val_frac: float = 0.01,
@@ -104,16 +124,19 @@ def load_tiny_stories(
     # Fetch train parquet shard(s) and a separate validation shard.
     train_texts: list[str] = []
     for i in range(n_train_files):
-        fname = f"data/train-{i:05d}-of-00004.parquet"
+        fname = _resolve_tinystories_shard(
+            f"data/train-{i:05d}-of-00004"
+        )
         p = _download_hf_parquet("roneneldan/TinyStories", fname,
                                  f"tinystories_train_{i:05d}.parquet")
         print(f"[data_module] Reading {p}")
         table = pq.read_table(p, columns=["text"])
         train_texts.extend(table["text"].to_pylist())
 
+    val_fname = _resolve_tinystories_shard("data/validation-00000-of-00001")
     p = _download_hf_parquet(
         "roneneldan/TinyStories",
-        "data/validation-00000-of-00001.parquet",
+        val_fname,
         "tinystories_val.parquet",
     )
     print(f"[data_module] Reading {p}")

@@ -104,6 +104,10 @@ replacement.
 | `results/sharedV_em_ln_leakfree_*` + `*.trajectories.pkl`     | Leak-free shared-potential separator regression on a leak-corrected `em_ln` checkpoint (Tier 0.6 of the leak-correction pass; the leak-free counterpart of §14.7 of the v2 paper). Median per-layer test $R^{2} = 0.949$, range $[0.925, 0.960]$, uniform layer profile — *higher* than the v2 buggy $R^{2} = 0.90$. Used to fill the placeholders in TMLR1 §A.3.3. |
 | `attractor_analysis/results/attractors_em_ln_leakfree_*`     | Leak-free dynamical-mode attractor extractions (Tiers 1 + 2b of the leak-correction pass). `attractors_em_ln_leakfree_gamma0p10_seed0_*` (Tier 1, fixed $\gamma = 0.10$, $K^{\ast} = (4, 4, 11, 8, 12)$ — F3 multi-basin structure survives the leak fix). `attractors_em_ln_leakfree_freegamma_seed0_*` (Tier 2b, freely-trained $\gamma = 0.958$, $K^{\ast} = (2, 4, 2, 3, 2)$ — free-γ trades attractor diversity for $\sim5-7$ PPL of LM quality). |
 | `energetic_minima/scripts/`, `results/leakfree_tiers_2_3_*`  | Leak-free retrains of the three energetic-minima alternatives (Tiers 2a, 3a, 3b): `em_ln` (LN-after-step, val\_ppl 173.59, $\gamma_{\mathrm{nat}} = 0.958$), `em_sg` (scale-gauge, val\_ppl 244.84, $\gamma_{\mathrm{nat}} = 0.863$, attractor diversity rescued: $K^{\ast} = (7, 5, 4, 5, 5)$, content frac. 0.52), `em_gm` (Gaussian-mixture, val\_ppl 542.65, $\gamma_{\mathrm{nat}} = 0.668$, still fails). Canonical synthesis report: `results/leakfree_tiers_2_3_summary.md`. Launchers: `scripts/run_leakfree_tiers_2_3.sh` (Tier 2a + 3a + 3b orchestrator) and `scripts/run_tier2b_attractor.sh` (Tier 2b standalone). |
+| `helmholtz/`                                                 | **Helmholtz-SPLM hybrid** (Q9d): layer-type Helmholtz augmentation of SPLM with Dyck-language falsifiers. Implements `model_helmholtz.py` (`HelmholtzSPLM`), per-depth sweep scripts, aggregate analysis (`aggregate_h1.py`, `aggregate_h1p5.py`, `aggregate_h2.py`), causal probe, and decode-FLOPs Pareto analysis. Results under `results/` with per-depth summaries. Design doc: [`companion_notes/Helmholtz-HSPLM_Path_Forward_and_Experiments.md`](companion_notes/Helmholtz-HSPLM_Path_Forward_and_Experiments.md). |
+| `hybrid/`                                                    | **Hybrid two-stage SPLM** (Variant A): a two-stage SPLM architecture combining a frozen-ξ stage with a SARF-faithful second stage. Implements `model_hybrid.py`, `train_splm_hybrid.py`, aggregate analysis, and decode-FLOPs Pareto. Results under `results/`. Design doc: [`companion_notes/HSPLM_Path_Forward_and_Experiments.md`](companion_notes/HSPLM_Path_Forward_and_Experiments.md). |
+| `parf/`                                                      | **PARFLM** (Property-Attractive-Repulsive Force Language Model): the Q9c branch augmenting SPLM with a learnable pairwise-interaction force $V_\phi$. Core modules: `model_parf.py` (PARFLM with structural/MLP V\_φ), `model_parf_sparse.py` (Gumbel-softmax top-k sparse routing — P5 winner), `model_fock_parf.py` (**FockPARFLM**: Fock-space augmentation with latent register pool for v2 expressivity), `train_parf.py` (Shakespeare trainer), `train_fock_parf.py` (unified Dyck + TinyStories FockPARFLM trainer), `dyck_data.py` (synthetic Dyck\_n data generator for expressivity falsification), `causal_probe_parf.py`, `smoke_test*.py`, and `diagnostics/diagnose_v_phi_channels.py` (P6 per-layer V\_φ channel diagnostic). Shakespeare results: `results/structural/`, `results/structural_sparse/`, `results/mlp/`. FockPARFLM Dyck₂ falsifier results: `results/fock/`. Colab notebooks: `scripts/p8_cell_a100_h100.ipynb` (P8 composite cell), `scripts/p10_tinystories_a100_h100.ipynb` (P10 TinyStories ladder — P10a through P10h). Design docs: [`companion_notes/PARF_Augmented_SPLM_Architecture_v2.md`](companion_notes/PARF_Augmented_SPLM_Architecture_v2.md), [`companion_notes/PARF-SPLM_Path_Forward_and_Experiments.md`](companion_notes/PARF-SPLM_Path_Forward_and_Experiments.md), [`companion_notes/Augmenting_PARFLM_to_handle_MCS_Languages.md`](companion_notes/Augmenting_PARFLM_to_handle_MCS_Languages.md). |
+| `scaleup/results/semsimula_parflm/`                          | **PARFLM P10 TinyStories results** (P10e–P10g): training logs, val-PPL plots, per-layer-scale profiles, and P6 channel diagnostics for the P10 scale-up ladder. P10e (V\_φ capacity ablation, best PPL 31.12), P10f (V\_θ ceiling test, best PPL 28.67), P10g (training-budget disambiguator, best PPL 26.42). P10h (corpus scale-up to 20M tokens) planned. |
 
 The new entries above are described in detail in the
 [`companion_notes/`](#companion_notes--2026-companion-notes-work-in-progress)
@@ -826,6 +830,54 @@ for the full list):
     The aggregate per-cell `val_ppl` table and the
     information-theoretic-diagnostic table that drive §14 of the paper
     are reconstructible from these files alone.
+  - **`helmholtz/`** — Helmholtz-SPLM hybrid architecture (Q9d path):
+    layer-type Helmholtz augmentation of the SPLM for Dyck-language
+    expressivity falsification. Implements `model_helmholtz.py`
+    (`HelmholtzSPLM`), per-depth sweep scripts, aggregate analysis
+    (`aggregate_h1.py`, `aggregate_h1p5.py`, `aggregate_h2.py`),
+    a causal probe, and decode-FLOPs Pareto analysis. Per-depth
+    training logs and summaries ship under `results/`.
+  - **`hybrid/`** — Hybrid two-stage SPLM (Variant A path):
+    combines a frozen-ξ first stage with a SARF-faithful second
+    stage. `model_hybrid.py`, `train_splm_hybrid.py`, aggregate
+    analysis, and decode-FLOPs Pareto. Results under `results/`.
+  - **`parf/`** — **PARFLM** (Property-Attractive-Repulsive Force
+    Language Model) and **FockPARFLM** (Fock-space augmented PARFLM).
+    The Q9c path augmenting SPLM with a learnable pairwise-interaction
+    force $V_\phi$ on top of the single-particle $V_\theta$. Core:
+    - `model_parf.py` — `PARFLM` with structural / MLP $V_\phi$
+    - `model_parf_sparse.py` — `SparsePARFLM` with Gumbel-softmax
+      top-k sparse routing (P5 winner: k=4)
+    - `model_fock_parf.py` — **`FockPARFLM`**: Fock-space augmentation
+      with a latent register pool implementing creation/annihilation
+      operators for v2 (context-free) expressivity
+    - `dyck_data.py` — synthetic Dyck\_n data generator for
+      expressivity falsification experiments
+    - `train_parf.py` — Shakespeare-scale PARF trainer
+    - `train_fock_parf.py` — unified Dyck + TinyStories FockPARFLM
+      trainer supporting both `parflm` (baseline) and `fock` (FockPARFLM)
+      architectures
+    - `causal_probe_parf.py` — PARF-specific causality probe
+    - `diagnostics/diagnose_v_phi_channels.py` — P6 per-layer V\_φ
+      channel diagnostic (R(ℓ), s\_ℓ, |Θ| profiles)
+    - `scripts/p8_cell_a100_h100.ipynb` — P8 composite cell (A100/H100)
+    - `scripts/p10_tinystories_a100_h100.ipynb` — **P10 TinyStories
+      ladder** (P10a–P10h): the progressive scale-up from 33.55 PPL
+      (SPLM em\_ln wall) toward val PPL ≤ 20. Results:
+      - P10a: 32.60 PPL (broke the SPLM wall)
+      - P10e: 31.12 PPL (V\_φ capacity ablation)
+      - P10f: 28.67 PPL (V\_θ ceiling test)
+      - P10g: 26.42 PPL (training-budget disambiguator)
+      - P10h: 20–24 PPL predicted (corpus scale-up to 20M tokens)
+    - `results/fock/` — FockPARFLM Phase 1 Dyck₂ falsifier results
+      (LIFO-stack +1.3 pp deep-test accuracy over baseline)
+    - `results/structural*/`, `results/mlp/` — Shakespeare-scale
+      ablation results (P1–P5 progression)
+    - TinyStories P10e/f/g result logs and P6 diagnostics ship under
+      `scaleup/results/semsimula_parflm/p10_tinystories/`.
+    - Design docs: `companion_notes/PARF_Augmented_SPLM_Architecture_v2.md`,
+      `companion_notes/PARF-SPLM_Path_Forward_and_Experiments.md`,
+      `companion_notes/Augmenting_PARFLM_to_handle_MCS_Languages.md`.
 
 ---
 
@@ -1272,6 +1324,66 @@ of the paper. Steps 5–10 land their own report markdowns
 [`leakfree_tiers_2_3_summary.md`](notebooks/conservative_arch/energetic_minima/results/leakfree_tiers_2_3_summary.md))
 that the v3 paper's §15 leak-free addenda and the prospective TMLR1
 paper's §A.3 leak-correction note cite directly.
+
+---
+
+### §17 — PARFLM and FockPARFLM experiments
+
+The PARFLM (Property-Attractive-Repulsive Force Language Model) adds a
+learnable pairwise potential $V_\phi$ on top of the SPLM's single-particle
+$V_\theta$. The FockPARFLM further augments this with Fock-space
+creation/annihilation registers to reach context-free expressivity.
+
+```bash
+cd notebooks/conservative_arch
+
+# --- Shakespeare-scale PARF prototyping (P1–P5, ~5 min each on CPU/MPS) ---
+# P1 dense structural V_phi:
+python parf/train_parf.py --v-phi-kind structural --seed 0
+# P5 winner — Gumbel-softmax sparse k=4:
+python parf/train_parf.py --v-phi-kind structural --sparse-top-k 4 --seed 0
+
+# --- P6 V_phi channel diagnostic on any trained PARF checkpoint ---
+python parf/diagnostics/diagnose_v_phi_channels.py \
+    --ckpt parf/results/structural_sparse/seed0_k4/ckpt.pt
+
+# --- P10 TinyStories ladder (A100/H100 on Google Colab) ---
+# Open parf/scripts/p10_tinystories_a100_h100.ipynb, set CELL='P10h',
+# and run all cells.  Artefacts route to GDrive under
+# semsimula_parflm/p10_tinystories/P10h/seed0/.
+
+# --- FockPARFLM: Dyck_2 expressivity falsifier (Phase 1, local MPS/CPU) ---
+OMP_NUM_THREADS=1 python parf/train_fock_parf.py \
+    --corpus dyck --arch fock --discipline stack \
+    --d 64 --L 4 --M 16 --steps 4000 --seed 0
+# Baseline comparison (same scale, no registers):
+OMP_NUM_THREADS=1 python parf/train_fock_parf.py \
+    --corpus dyck --arch parflm \
+    --d 64 --L 4 --steps 4000 --seed 0
+```
+
+**P10 results (committed training logs):**
+
+| Cell | Val PPL (best) | What it tests |
+| ---- | -------------- | ------------- |
+| P10a | 32.60 | Anchor — broke the SPLM em\_ln 33.55 wall |
+| P10e | 31.12 | V\_φ capacity ablation (4× wider V\_φ) |
+| P10f | 28.67 | V\_θ ceiling test (v\_hidden 1024 → 2048) |
+| P10g | 26.42 | Training-budget disambiguator (16k steps) |
+| P10h | 20–24 (predicted) | Corpus scale-up (5M → 20M tokens) |
+
+**FockPARFLM Dyck₂ falsifier (Phase 1, seed 0):**
+
+| Arm | Val PPL | Deep-test acc. (depth 5–12) |
+| --- | ------- | --------------------------- |
+| PARFLM baseline (no registers) | 3.50 | 37.9% |
+| FockPARFLM (bag, M=16) | 3.57 | 37.4% |
+| FockPARFLM (LIFO stack, M=16) | **3.43** | **39.2%** |
+
+Design documents:
+[`companion_notes/PARF_Augmented_SPLM_Architecture_v2.md`](companion_notes/PARF_Augmented_SPLM_Architecture_v2.md),
+[`companion_notes/PARF-SPLM_Path_Forward_and_Experiments.md`](companion_notes/PARF-SPLM_Path_Forward_and_Experiments.md),
+[`companion_notes/Augmenting_PARFLM_to_handle_MCS_Languages.md`](companion_notes/Augmenting_PARFLM_to_handle_MCS_Languages.md).
 
 ---
 

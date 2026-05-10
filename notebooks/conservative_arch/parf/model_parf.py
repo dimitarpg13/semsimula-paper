@@ -3,7 +3,7 @@ PARF-augmented SPLM (Q9c) — Algorithm-A reference prototype.
 
 Reference
 ---------
-docs/PARF_Augmented_SPLM_Architecture_v2.md
+companion_notes/PARF_Augmented_SPLM_Architecture_v2.md
 
 Architecture (one-paragraph summary)
 ------------------------------------

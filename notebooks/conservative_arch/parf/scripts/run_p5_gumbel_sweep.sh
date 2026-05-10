@@ -36,7 +36,7 @@
 # Default top_k in {4, 8, 16, 32}.  Set TOP_KS env var to override.
 # The framework's §5.2 prescription expects a flat-then-decreasing
 # curve identifying the empirical relevance threshold; the design doc
-# (`docs/parf/On_Gumbel_softmax_sparsity_applied_to_V_phi.md`) recommends
+# (`companion_notes/On_Gumbel_softmax_sparsity_applied_to_V_phi.md`) recommends
 # sweeping at fixed score-head width and fixed Gumbel anneal schedule
 # to isolate the k-dependence.
 #
