@@ -1,10 +1,10 @@
 # PARF-SPLM (Q9c, PARF-augmented SPLM) — Path Forward and Experiments
 
 **Status:** Live experiment record · started 6 May 2026 · *no quality cells run yet*
-**Scope paper:** `paper_v3/main.tex` (Q9(c) follow-up branch of §17.3) and the v4 carve-out `companion_notes/Section_15_24_PARF_Augmented_SPLM_v4_draft_v2.docx`
-**Design doc:** [`companion_notes/PARF_Augmented_SPLM_Architecture_v2.md`](PARF_Augmented_SPLM_Architecture_v2.md)
-**Sibling path (Q9d, layer-type Helmholtz hybrid):** [`companion_notes/Helmholtz-HSPLM_Path_Forward_and_Experiments.md`](Helmholtz-HSPLM_Path_Forward_and_Experiments.md)
-**Sibling path (Variant A two-stage SPLM):** [`companion_notes/HSPLM_Path_Forward_and_Experiments.md`](HSPLM_Path_Forward_and_Experiments.md)
+**Scope paper:** `paper_v3/main.tex` (Q9(c) follow-up branch of §17.3) and the v4 carve-out `docs/Section_15_24_PARF_Augmented_SPLM_v4_draft_v2.docx`
+**Design doc:** [`docs/PARF_Augmented_SPLM_Architecture_v2.md`](PARF_Augmented_SPLM_Architecture_v2.md)
+**Sibling path (Q9d, layer-type Helmholtz hybrid):** [`docs/Helmholtz-HSPLM_Path_Forward_and_Experiments.md`](Helmholtz-HSPLM_Path_Forward_and_Experiments.md)
+**Sibling path (Variant A two-stage SPLM):** [`docs/HSPLM_Path_Forward_and_Experiments.md`](HSPLM_Path_Forward_and_Experiments.md)
 **Code root:** `notebooks/conservative_arch/parf/`
 
 This document tracks the design, experiments, results, and outstanding
@@ -32,7 +32,7 @@ the per-token force strictly causal, in the same sense as the
 v3 leak-fix invariant for $V_\theta$.
 
 The pre-registered title-justification rule from
-[`companion_notes/Paper_Title_Discussion_post_causal_leak.md`](Paper_Title_Discussion_post_causal_leak.md)
+[`docs/Paper_Title_Discussion_post_causal_leak.md`](Paper_Title_Discussion_post_causal_leak.md)
 §6.5 applies unchanged at the Q9c quality arm:
 
 > **"Efficient" is justified iff** some hybrid achieves val PPL
@@ -100,7 +100,7 @@ Fixed design choices (matching Q9d / Variant A where possible):
   - `mlp` — unstructured MLP on
     $\mathrm{concat}(h_t, h_s, h_t - h_s)$ (the OQ-1 comparator).
 - **Velocity-Verlet step** — same damped position-Verlet form as Q9d
-  S-blocks; see [`companion_notes/On_Velocity-Verlet_Integrator.md`](On_Velocity-Verlet_Integrator.md).
+  S-blocks; see [`docs/On_Velocity-Verlet_Integrator.md`](On_Velocity-Verlet_Integrator.md).
 - **Combined `autograd.grad` on $V_\theta + V_\phi$** — a single
   scalar `U` is summed and the force is recovered with one
   `torch.autograd.grad(U, h_in, create_graph=self.training)` call,
@@ -598,7 +598,7 @@ Per the P1.6 verdict, **P5 is the decision-relevant next experiment**:
 
 P5's first cell is written up at §4.7 below. The design doc for the
 sparse model is at
-[`companion_notes/parf/On_Gumbel_softmax_sparsity_applied_to_V_phi.md`](parf/On_Gumbel_softmax_sparsity_applied_to_V_phi.md).
+[`docs/parf/On_Gumbel_softmax_sparsity_applied_to_V_phi.md`](parf/On_Gumbel_softmax_sparsity_applied_to_V_phi.md).
 
 ### 4.7. P5 — Stage 1.5 Gumbel-softmax sparsity, top-k=4 cell — completed 8 May 2026
 
@@ -817,7 +817,7 @@ under the 200-step linear warmup to peak `lr=5e-4`).
    `0.02`) so initial logits are even closer to zero — but this
    trades initial routing variance for slower routing convergence.
 4. **Stage-1.5b gathered V_φ**: in the gathered form (see
-   `companion_notes/PARF_Stage_1_5b_design.md`) the V_φ contribution to the
+   `docs/PARF_Stage_1_5b_design.md`) the V_φ contribution to the
    score-head gradient at non-top-k positions vanishes by
    construction. The k=32 NaN cascade *should not* reproduce in
    Stage-1.5b because the dominant gradient amplification path is
@@ -1433,7 +1433,7 @@ P7 and P8 should be measured **in isolation first**. If both win individually, t
 
 ## 9.6. P10 — TinyStories scale-up to ≤ 20 PPL (added 9 May 2026)
 
-The Tiny Shakespeare runs (P1 → P5) settled the architectural questions; the v3 paper's headline gap, however, lives on **TinyStories**, where the leak-fixed SPLM single-ξ baseline plateaus at **val PPL 33.55** (`companion_notes/Restructuring_paper_v3_after_causal_leak_bug.md` §1) and the parameter-matched attention reference (MatchedGPT) trains to **val PPL 7.81** (8000 steps). The "old PARF-augmented SPLM" was failing to surpass the 33.55 wall on Tiny Shakespeare's analogue (P1 dense at val PPL 210.54 > SPLM em_ln 173.59). P5 sparse k=4 closed the Shakespeare-scale gap. **P10 ports the new PARFLM (P5 + P7 + P8) to the TinyStories scale-up cell shape and pre-registers a target of val PPL ≤ 20.**
+The Tiny Shakespeare runs (P1 → P5) settled the architectural questions; the v3 paper's headline gap, however, lives on **TinyStories**, where the leak-fixed SPLM single-ξ baseline plateaus at **val PPL 33.55** (`docs/Restructuring_paper_v3_after_causal_leak_bug.md` §1) and the parameter-matched attention reference (MatchedGPT) trains to **val PPL 7.81** (8000 steps). The "old PARF-augmented SPLM" was failing to surpass the 33.55 wall on Tiny Shakespeare's analogue (P1 dense at val PPL 210.54 > SPLM em_ln 173.59). P5 sparse k=4 closed the Shakespeare-scale gap. **P10 ports the new PARFLM (P5 + P7 + P8) to the TinyStories scale-up cell shape and pre-registers a target of val PPL ≤ 20.**
 
 ### 9.6.1. Cell shape and bookend baselines
 
@@ -1454,7 +1454,7 @@ All four P10 cells share the v3 scale-up cell shape so the comparison is apples-
 
 | Bookend | Val PPL | Source |
 | --- | --- | --- |
-| **SPLM em_ln (single-ξ leak-fixed) — the wall** | **33.55** | `companion_notes/Restructuring_paper_v3_after_causal_leak_bug.md` line 22; `companion_notes/Multi-Channel_vs_Single_Channel_Xi_SPLM_Design.md` line 84. |
+| **SPLM em_ln (single-ξ leak-fixed) — the wall** | **33.55** | `docs/Restructuring_paper_v3_after_causal_leak_bug.md` line 22; `docs/Multi-Channel_vs_Single_Channel_Xi_SPLM_Design.md` line 84. |
 | MatchedGPT (param-matched attention) | 7.81 | `notebooks/conservative_arch/scaleup/results/seed0_attn/matched_baseline_scaleup_scaleup_seed0_summary.md` (8000 steps, leak-free). |
 
 **Pre-registered target:** val PPL ≤ 20 on the P10d cell (full P5 + P7 + P8 stack). Secondary acceptable: ≤ 25. Minimum non-trivial: < 33.55.
@@ -1546,6 +1546,32 @@ The risk in this analysis is that the three mechanisms might not compose constru
 
 The 20 PPL target is **ambitious but pre-registered**. It represents a 0.52-nat / 41% relative PPL improvement over the SPLM em_ln wall — substantial but not unprecedented for a four-mechanism architectural change at the same training budget. If P10d lands at, e.g., 24 PPL, that is still a major result (closes 30% of the remaining gap to MatchedGPT) and triggers P10e for the last 4 PPL. If P10d lands above 33.55, that is a regression and the failure-mode taxonomy must be reopened. The notebook's dashboard makes the verdict reading mechanical.
 
+### 9.6.9. P10 results summary (completed 10 May 2026)
+
+| Cell | Composition | Steps | Corpus | Best val PPL | Step@best | Final val PPL | ΔP10d |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| **P10d** | Full P5+P7+P8 | 8000 | 5M (1 shard) | 28.67 | 8000 | 28.67 | — |
+| **P10f** | P10d + `v_hidden=2048` | 8000 | 5M (1 shard) | 28.50 | 7600 | 28.56 | −0.11 |
+| **P10g** | P10f + 16k steps (longer training) | 16000 | 5M (1 shard) | 26.42 | 14800 | 26.98 | −2.25 |
+| **P10h** | P10g + 20M tokens (4× corpus) | 16000 | 20M (4 shards) | **26.43** | 14800 | 27.07 | −2.24 |
+
+**Key findings:**
+
+1. **P10d → P10f** (V_θ widening 1024→2048): marginal gain (−0.11 PPL). Confirms the V_θ-ceiling hypothesis is only partially binding; most capacity is already saturated at `v_hidden=1024`.
+2. **P10f → P10g** (training budget 8k→16k steps): significant gain (−2.25 PPL). Longer training unlocks hidden capacity; the training budget was the dominant binding constraint at P10f.
+3. **P10g → P10h** (corpus 5M→20M tokens): **zero gain** (−0.01 PPL). Quadrupling the training corpus produces no improvement. Train-val gap at P10h best = 0.027 nats (no overfitting). The architecture is the sole binding constraint.
+
+**Architectural ceiling verdict:**
+
+PARFLM (22M params, $d=256$, $L=8$, full P5+P7+P8 stack) reaches a hard ceiling at **val PPL ≈ 26.4** on TinyStories regardless of corpus size or training budget. This ceiling is consistent with the v0 expressivity bound of §`ssec:parf-expressivity`: a fixed-dimensional deterministic system (however enriched the force law) can model only regular-language patterns, and the statistical depth of TinyStories prose exceeds the reach of such a system.
+
+**Implications — segue to FockPARFLM and the dynamical simulation programme:**
+
+- The P10 ladder has **extracted the maximum information** that Algorithm A (NTP backpropagation) can encode into the v0-class PARFLM potentials $V_\theta$ and $V_\phi$.
+- These pretrained potentials are not wasted — they serve as **warm-start initialization** for the RL-calibrated EOM simulator of §8/§9 (see `companion_notes/Augmenting_PARFLM_to_handle_MCS_Languages.md`).
+- To push PPL below 26 requires **architectural augmentation**: the Fock-space register pool (FockPARFLM, §`ssec:fock-parf`) adds creation/destruction operators that escape the v0 bound. Preliminary Dyck₂ experiments (see `companion_notes/Augmenting_PARFLM_to_handle_MCS_Languages.md` §3) confirm the register mechanism is functional.
+- The full dynamical simulation programme (v0+v1.5+v2+v3, RL-calibrated EOM) is the ultimate target and will be developed in **paper v5**. The PARFLM-trained potentials from P10g/P10h provide the initialization; FockPARFLM provides the v2 creation/destruction operators.
+
 ---
 
 ## 10. Code inventory
@@ -1572,9 +1598,9 @@ Supporting documents:
 
 | File                                                                        | Status   | Purpose                                                          |
 |-----------------------------------------------------------------------------|----------|------------------------------------------------------------------|
-| `companion_notes/parf/On_Training_the_PARF_Force.md`                                   | ✅ done  | Algorithm A backprop pipeline, second-order graph, optimisation options |
-| `companion_notes/parf/On_the_MLP_Layer_modeling_pairwise_potential.md`                 | ✅ done  | `MLPVPhi` deep dive: architecture, OQ-1 framing, accuracy vs smoothness |
-| `companion_notes/On_Velocity-Verlet_Integrator.md`                                     | ✅ done  | velocity-Verlet integrator: derivation, stability, integrator inventory |
+| `docs/parf/On_Training_the_PARF_Force.md`                                   | ✅ done  | Algorithm A backprop pipeline, second-order graph, optimisation options |
+| `docs/parf/On_the_MLP_Layer_modeling_pairwise_potential.md`                 | ✅ done  | `MLPVPhi` deep dive: architecture, OQ-1 framing, accuracy vs smoothness |
+| `docs/On_Velocity-Verlet_Integrator.md`                                     | ✅ done  | velocity-Verlet integrator: derivation, stability, integrator inventory |
 
 ---
 
@@ -1620,7 +1646,7 @@ Supporting documents:
    damped position-Verlet step that Q9d uses is used here. At very
    long context the pair-sum dominates wall-clock, but the integrator
    stability is unchanged. No new analysis is needed; see
-   [`companion_notes/On_Velocity-Verlet_Integrator.md`](On_Velocity-Verlet_Integrator.md).
+   [`docs/On_Velocity-Verlet_Integrator.md`](On_Velocity-Verlet_Integrator.md).
 
 ---
 
@@ -1661,15 +1687,15 @@ Supporting documents:
 
 ## 13. Pointers
 
-- Design doc: [`companion_notes/PARF_Augmented_SPLM_Architecture_v2.md`](PARF_Augmented_SPLM_Architecture_v2.md)
+- Design doc: [`docs/PARF_Augmented_SPLM_Architecture_v2.md`](PARF_Augmented_SPLM_Architecture_v2.md)
   - **§10 (added 9 May 2026):** Eq. (131) tuning programme — failure-mode catalogue (F1–F5), six tuning levers, P7 (Lever 3) full design with predictions and smoke-test invariants.
   - **§10.9 (added 9 May 2026):** P8 composite cell from the post-P6 findings — four minimal-drift patches (LN-before-distance, per-layer V_φ scale, softsign Θ, bilinear Θ), pre-registered predictions, decision rule, byte-identity smoke.
-- v4 carve-out: `companion_notes/Section_15_24_PARF_Augmented_SPLM_v4_draft_v2.docx`
+- v4 carve-out: `docs/Section_15_24_PARF_Augmented_SPLM_v4_draft_v2.docx`
 - PARF-specific deep dives:
-  - [`companion_notes/parf/On_Training_the_PARF_Force.md`](parf/On_Training_the_PARF_Force.md) — Algorithm A pipeline, optimisation options
-  - [`companion_notes/parf/On_the_MLP_Layer_modeling_pairwise_potential.md`](parf/On_the_MLP_Layer_modeling_pairwise_potential.md) — `MLPVPhi` deep dive, OQ-1 framing
-  - [`companion_notes/parf/On_Gumbel_softmax_sparsity_applied_to_V_phi.md`](parf/On_Gumbel_softmax_sparsity_applied_to_V_phi.md) — Stage 1.5 sparse-routing design (P5)
-  - [`companion_notes/On_Velocity-Verlet_Integrator.md`](On_Velocity-Verlet_Integrator.md) — integrator derivation + stability + inventory
+  - [`docs/parf/On_Training_the_PARF_Force.md`](parf/On_Training_the_PARF_Force.md) — Algorithm A pipeline, optimisation options
+  - [`docs/parf/On_the_MLP_Layer_modeling_pairwise_potential.md`](parf/On_the_MLP_Layer_modeling_pairwise_potential.md) — `MLPVPhi` deep dive, OQ-1 framing
+  - [`docs/parf/On_Gumbel_softmax_sparsity_applied_to_V_phi.md`](parf/On_Gumbel_softmax_sparsity_applied_to_V_phi.md) — Stage 1.5 sparse-routing design (P5)
+  - [`docs/On_Velocity-Verlet_Integrator.md`](On_Velocity-Verlet_Integrator.md) — integrator derivation + stability + inventory
 - P6 / P7 / P8 / P10 deliverables (see §9.5 + §9.6 above):
   - Diagnostic: `notebooks/conservative_arch/parf/diagnostics/diagnose_v_phi_channels.py` (P8-aware)
   - Lever-3 model class: `notebooks/conservative_arch/parf/model_parf.py` → `StructuralCompetitiveVPhi`
@@ -1678,15 +1704,15 @@ Supporting documents:
   - **Trainer dispatch (TinyStories scale-up):** the same flags in `notebooks/conservative_arch/scaleup/train_parf_scaleup.py` (P10 ladder)
   - P8 A100 / H100 notebook: `notebooks/conservative_arch/parf/scripts/p8_cell_a100_h100.ipynb` (TF32 disabled, end-to-end smoke verified)
   - **P10 A100 / H100 notebook:** `notebooks/conservative_arch/parf/scripts/p10_tinystories_a100_h100.ipynb` (TinyStories ladder with `CELL` switch, TF32 disabled, dashboard, end-to-end smoke verified)
-- Sibling Q9d Helmholtz path: [`companion_notes/Helmholtz-HSPLM_Path_Forward_and_Experiments.md`](Helmholtz-HSPLM_Path_Forward_and_Experiments.md)
-- Sibling Variant A two-stage path: [`companion_notes/HSPLM_Path_Forward_and_Experiments.md`](HSPLM_Path_Forward_and_Experiments.md)
-- Title-discussion master record: [`companion_notes/Paper_Title_Discussion_post_causal_leak.md`](Paper_Title_Discussion_post_causal_leak.md)
+- Sibling Q9d Helmholtz path: [`docs/Helmholtz-HSPLM_Path_Forward_and_Experiments.md`](Helmholtz-HSPLM_Path_Forward_and_Experiments.md)
+- Sibling Variant A two-stage path: [`docs/HSPLM_Path_Forward_and_Experiments.md`](HSPLM_Path_Forward_and_Experiments.md)
+- Title-discussion master record: [`docs/Paper_Title_Discussion_post_causal_leak.md`](Paper_Title_Discussion_post_causal_leak.md)
 - Pre-registered title-justification rule: §6.5 of the title-discussion record
 - Prototype root: `notebooks/conservative_arch/parf/`
 - Prototype README (wall-clock survey + sanity checks + reproduce instructions): `notebooks/conservative_arch/parf/README.md`
-- Causality bug & fix history: [`companion_notes/Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`](Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md)
-- Markdown LaTeX rendering rules: [`companion_notes/GitHub_Markdown_LaTeX_Rendering_Cheatsheet.md`](GitHub_Markdown_LaTeX_Rendering_Cheatsheet.md)
+- Causality bug & fix history: [`docs/Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`](Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md)
+- Markdown LaTeX rendering rules: [`docs/GitHub_Markdown_LaTeX_Rendering_Cheatsheet.md`](GitHub_Markdown_LaTeX_Rendering_Cheatsheet.md)
 
 ---
 
-*Last updated: 9 May 2026 (Eq. (131) tuning programme opened; P6 channel diagnostic implemented and smoke-tested on P1 / P5 ckpts; P7 `StructuralCompetitiveVPhi` (Lever 3) committed to `model_parf.py` with trainer wiring and pre-registered predictions in design-doc §10. **P8 composite cell committed** (LN-before-distance, per-layer V_φ scale, softsign Θ, bilinear Θ) across `model_parf.py`, `model_parf_sparse.py`, `train_parf.py`, `diagnose_v_phi_channels.py`; Tiny Shakespeare A100 / H100 notebook `parf/scripts/p8_cell_a100_h100.ipynb`. **P10 TinyStories milestone opened** (target ≤ 20 PPL vs SPLM em_ln 33.55 wall): `scaleup/train_parf_scaleup.py` extended with the P7 + P8 flags; A100 / H100 ladder notebook `parf/scripts/p10_tinystories_a100_h100.ipynb` with `CELL = P10a..P10d` selector and dashboard; pre-registered predictions, decision rule and budget in path-forward §9.6. P6 / P7 / P8 / P10 quality cells awaiting wall-clock allocation; P5 paired-n=5 confirmation remains the immediate v4-submission priority.).*
+*Last updated: 10 May 2026 (P10 ladder completed through P10h. **Architectural ceiling confirmed at val PPL ≈ 26.4** — 4× corpus scale-up (P10h, 20M tokens) yields zero improvement over P10g (5M tokens, 16k steps). PARFLM at 22M params has exhausted its v0-class representational capacity on TinyStories. The learned potentials $V_\theta$, $V_\phi$ serve as warm-start initialization for the EOM simulator programme (paper v5). Next: FockPARFLM scale-up and the dynamical simulation programme.).*

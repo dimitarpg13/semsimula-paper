@@ -2,7 +2,7 @@
 
 ## Status
 
-**Draft plan** — May 2026. Pre-experimental design stage.
+**Active** — May 2026. PARFLM P10 ladder completed (architectural ceiling confirmed at val PPL ≈ 26.4). FockPARFLM Phase 1 Dyck₂ falsifier seed 0 complete. Next: FockPARFLM scale-up on TinyStories, then EOM simulator programme (paper v5).
 
 ## Motivation
 
@@ -16,6 +16,10 @@ Consequently, PARFLM is at most a finite automaton (regular languages). It canno
 - Recognise $\text{Dyck}_n$ beyond the predicted collapse depth $D^*$
 - Handle cross-serial dependencies ($a^n b^n c^n$)
 - Reach the mildly context-sensitive (MCS) class
+
+**Empirical confirmation (P10 ladder, 10 May 2026):** The P10h experiment (20M tokens, 16k steps, full P5+P7+P8 stack) achieves val PPL **26.43** — identical to P10g (5M tokens, 16k steps, PPL 26.42). Quadrupling the corpus produces zero improvement, confirming the v0 architectural ceiling. The 22M-parameter PARFLM has exhausted its representational capacity on TinyStories at ≈ 26.4 PPL. The gap to MatchedGPT (7.81 PPL) can only be closed by escaping the expressivity class.
+
+The pretrained potentials $V_\theta$ and $V_\phi$ from P10g/P10h are not wasted — they serve as **warm-start initialization** for the RL-calibrated EOM simulator (§8/§9 of paper v4; dynamical simulation programme planned for paper v5).
 
 To escape this ceiling, the framework requires **v2 (creation/destruction)** mapped to **Fock space and second quantisation** (§9.4.2), plus eventually **v3 (execution)** mapped to **Lie groups and non-abelian gauge theory** (§9.4.3). This document plans the augmentation to v2.
 
@@ -359,5 +363,5 @@ python train_fock_parf.py \
 - Paper v4, §17.6: PARF does not escape the v0 ceiling
 - Doi (1976): Second quantisation for stochastic processes
 - Peliti (1985): Path integral for classical reaction-diffusion
-- `docs/PARF-SPLM_Path_Forward_and_Experiments.md`: P10 ladder context
-- `docs/PARF_Stage_1_5b_design.md`: PARF sparsity and scale-up design
+- `companion_notes/PARF-SPLM_Path_Forward_and_Experiments.md`: P10 ladder context
+- `companion_notes/PARF_Stage_1_5b_design.md`: PARF sparsity and scale-up design

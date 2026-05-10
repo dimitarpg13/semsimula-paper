@@ -107,7 +107,7 @@ replacement.
 | `helmholtz/`                                                 | **Helmholtz-SPLM hybrid** (Q9d): layer-type Helmholtz augmentation of SPLM with Dyck-language falsifiers. Implements `model_helmholtz.py` (`HelmholtzSPLM`), per-depth sweep scripts, aggregate analysis (`aggregate_h1.py`, `aggregate_h1p5.py`, `aggregate_h2.py`), causal probe, and decode-FLOPs Pareto analysis. Results under `results/` with per-depth summaries. Design doc: [`companion_notes/Helmholtz-HSPLM_Path_Forward_and_Experiments.md`](companion_notes/Helmholtz-HSPLM_Path_Forward_and_Experiments.md). |
 | `hybrid/`                                                    | **Hybrid two-stage SPLM** (Variant A): a two-stage SPLM architecture combining a frozen-ξ stage with a SARF-faithful second stage. Implements `model_hybrid.py`, `train_splm_hybrid.py`, aggregate analysis, and decode-FLOPs Pareto. Results under `results/`. Design doc: [`companion_notes/HSPLM_Path_Forward_and_Experiments.md`](companion_notes/HSPLM_Path_Forward_and_Experiments.md). |
 | `parf/`                                                      | **PARFLM** (Property-Attractive-Repulsive Force Language Model): the Q9c branch augmenting SPLM with a learnable pairwise-interaction force $V_\phi$. Core modules: `model_parf.py` (PARFLM with structural/MLP V\_φ), `model_parf_sparse.py` (Gumbel-softmax top-k sparse routing — P5 winner), `model_fock_parf.py` (**FockPARFLM**: Fock-space augmentation with latent register pool for v2 expressivity), `train_parf.py` (Shakespeare trainer), `train_fock_parf.py` (unified Dyck + TinyStories FockPARFLM trainer), `dyck_data.py` (synthetic Dyck\_n data generator for expressivity falsification), `causal_probe_parf.py`, `smoke_test*.py`, and `diagnostics/diagnose_v_phi_channels.py` (P6 per-layer V\_φ channel diagnostic). Shakespeare results: `results/structural/`, `results/structural_sparse/`, `results/mlp/`. FockPARFLM Dyck₂ falsifier results: `results/fock/`. Colab notebooks: `scripts/p8_cell_a100_h100.ipynb` (P8 composite cell), `scripts/p10_tinystories_a100_h100.ipynb` (P10 TinyStories ladder — P10a through P10h). Design docs: [`companion_notes/PARF_Augmented_SPLM_Architecture_v2.md`](companion_notes/PARF_Augmented_SPLM_Architecture_v2.md), [`companion_notes/PARF-SPLM_Path_Forward_and_Experiments.md`](companion_notes/PARF-SPLM_Path_Forward_and_Experiments.md), [`companion_notes/Augmenting_PARFLM_to_handle_MCS_Languages.md`](companion_notes/Augmenting_PARFLM_to_handle_MCS_Languages.md). |
-| `scaleup/results/semsimula_parflm/`                          | **PARFLM P10 TinyStories results** (P10e–P10g): training logs, val-PPL plots, per-layer-scale profiles, and P6 channel diagnostics for the P10 scale-up ladder. P10e (V\_φ capacity ablation, best PPL 31.12), P10f (V\_θ ceiling test, best PPL 28.67), P10g (training-budget disambiguator, best PPL 26.42). P10h (corpus scale-up to 20M tokens) planned. |
+| `scaleup/results/semsimula_parflm/`                          | **PARFLM P10 TinyStories results** (P10e–P10h): training logs, val-PPL plots, per-layer-scale profiles, and P6 channel diagnostics for the P10 scale-up ladder. P10e (V\_φ capacity ablation, best PPL 31.12), P10f (V\_θ ceiling test, best PPL 28.67), P10g (training-budget disambiguator, best PPL 26.42), **P10h (corpus scale-up 5M→20M tokens, best PPL 26.43 — confirms architectural ceiling)**. |
 
 The new entries above are described in detail in the
 [`companion_notes/`](#companion_notes--2026-companion-notes-work-in-progress)
@@ -868,7 +868,8 @@ for the full list):
       - P10e: 31.12 PPL (V\_φ capacity ablation)
       - P10f: 28.67 PPL (V\_θ ceiling test)
       - P10g: 26.42 PPL (training-budget disambiguator)
-      - P10h: 20–24 PPL predicted (corpus scale-up to 20M tokens)
+      - **P10h: 26.43 PPL** (corpus scale-up 5M→20M tokens — confirms
+        architectural ceiling; zero improvement over P10g)
     - `results/fock/` — FockPARFLM Phase 1 Dyck₂ falsifier results
       (LIFO-stack +1.3 pp deep-test accuracy over baseline)
     - `results/structural*/`, `results/mlp/` — Shakespeare-scale
@@ -1370,7 +1371,7 @@ OMP_NUM_THREADS=1 python parf/train_fock_parf.py \
 | P10e | 31.12 | V\_φ capacity ablation (4× wider V\_φ) |
 | P10f | 28.67 | V\_θ ceiling test (v\_hidden 1024 → 2048) |
 | P10g | 26.42 | Training-budget disambiguator (16k steps) |
-| P10h | 20–24 (predicted) | Corpus scale-up (5M → 20M tokens) |
+| **P10h** | **26.43** | **Corpus scale-up (5M → 20M tokens) — architectural ceiling confirmed** |
 
 **FockPARFLM Dyck₂ falsifier (Phase 1, seed 0):**
 
