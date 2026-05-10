@@ -114,7 +114,7 @@ The two operands cost 128 KiB each; their broadcast sum costs 16384× more, beca
 **Per-layer budget:**
 
 $$
-\text{V}\_\phi^{(\ell)}\_{\text{fwd}} = 4 \cdot B \cdot T^2 \cdot H \cdot 4~\text{bytes} = 8.0~\text{GiB at } H=128.
+V_{\phi,\text{fwd}}^{(\ell)} = 4 \cdot B \cdot T^2 \cdot H \cdot 4~\text{bytes} = 8.0~\text{GiB at } H=128.
 $$
 
 Multiply by L=8 and you get 64 GiB just from V_φ — already over the A100's budget by 24 GiB.
@@ -188,7 +188,7 @@ flowchart LR
 **Working-set arithmetic at H=32:**
 
 $$
-M\_{\text{V}\_\phi\text{-layer}} \approx \underbrace{4 \cdot B \cdot T^2 \cdot H \cdot 4}\_{\text{fwd intermediates}} + \underbrace{4 \cdot B \cdot T^2 \cdot H \cdot 4}\_{\text{grad buffers}} + \underbrace{B \cdot T^2 \cdot H \cdot 4}\_{\text{output buffer}} \approx 9 \cdot B T^2 H \cdot 4.
+M_{V_\phi\text{-layer}} \approx \underbrace{4 \cdot B \cdot T^2 \cdot H \cdot 4}_{\text{fwd intermediates}} + \underbrace{4 \cdot B \cdot T^2 \cdot H \cdot 4}_{\text{grad buffers}} + \underbrace{B \cdot T^2 \cdot H \cdot 4}_{\text{output buffer}} \approx 9 \cdot B T^2 H \cdot 4.
 $$
 
 At $H=32$: $9 \cdot 512~\text{MiB} = 4.5~\text{GiB}$ per layer; across 8 layers, $\sim 36$ GiB — leaving no room for V_θ state, optimiser state, or model weights.
@@ -293,7 +293,7 @@ The diagnostic is striking: 94 GiB *used*, only 843 MiB free, allocation request
 **Corrected memory math at H=128 single-pass:**
 
 $$
-M\_{\text{H100}}^{\text{single-pass}} \approx \underbrace{L \cdot 4 \cdot B T^2 H \cdot 4}\_{\text{V}\_\phi\text{ intermediates: } 64~\text{GiB}} + \underbrace{|G\_2|}\_{\text{2nd-order graph: } \sim 32~\text{GiB}} + \underbrace{M\_{\text{rest}}}\_{\text{state and optim: } \sim 10~\text{GiB}} \approx 106~\text{GiB}.
+M_{\text{H100}}^{\text{single-pass}} \approx \underbrace{L \cdot 4 \cdot B T^2 H \cdot 4}_{V_\phi\text{ intermediates: } 64~\text{GiB}} + \underbrace{|G_2|}_{\text{2nd-order graph: } \sim 32~\text{GiB}} + \underbrace{M_{\text{rest}}}_{\text{state and optim: } \sim 10~\text{GiB}} \approx 106~\text{GiB}.
 $$
 
 That is 10 GiB over the 96 GB H100 SXM5 budget. The actual run reported 94 GiB used + 2 GiB request = 96 GiB exactly, validating the corrected model.
@@ -354,7 +354,7 @@ The pair term $\sum\_{s \lt t} V\_\phi(h\_t, h\_s)$ is the unique source of $(B,
 
 ### 3.4 The path forward: Stage-1.5b gathered V_φ
 
-The architectural fix that retires this entire OOM catalogue is the **gathered top-k V_φ** form documented in `PARF_Stage_1_5b_design.md`. By evaluating V_φ only at the top-k indices selected by the Gumbel score head, each intermediate becomes $(B, T, k, H)$ instead of $(B, T, T, H)$ — a $T/k = 128$x memory reduction at the production $k=4$. Once Stage-1.5b lands, we expect to:
+The architectural fix that retires this entire OOM catalogue is the **gathered top-k V_φ** form documented in `docs/PARF_Stage_1_5b_design.md`. By evaluating V_φ only at the top-k indices selected by the Gumbel score head, each intermediate becomes $(B, T, k, H)$ instead of $(B, T, T, H)$ — a $T/k = 128$x memory reduction at the production $k=4$. Once Stage-1.5b lands, we expect to:
 
 - run Arm 5 at full V_φ capacity (H=128) on a 40 GB A100 single-pass (no `--grad-accum`),
 - run Arm 5b on H100 with the same ~6x wall-clock speedup,
@@ -366,9 +366,9 @@ Until then, this document is the survival guide.
 
 ## 4. References
 
-- `GitHub_Markdown_LaTeX_Rendering_Cheatsheet.md` — used to format this document.
-- `PARF_Stage_1_5b_design.md` §1, §6 — corrected memory accounting and the architectural fix.
-- `PARF-SPLM_Path_Forward_and_Experiments.md` §4.8 — the related k=32 NaN failure (a different failure class than OOM, but same V_φ surface).
+- `docs/GitHub_Markdown_LaTeX_Rendering_Cheatsheet.md` — used to format this document.
+- `docs/PARF_Stage_1_5b_design.md` §1, §6 — corrected memory accounting and the architectural fix.
+- `docs/PARF-SPLM_Path_Forward_and_Experiments.md` §4.8 — the related k=32 NaN failure (a different failure class than OOM, but same V_φ surface).
 - `notebooks/conservative_arch/parf/model_parf.py:280-323` — structural V_φ forward.
 - `notebooks/conservative_arch/parf/model_parf_sparse.py:381-395` — sparse PARF layer step with the inner `autograd.grad(create_graph=True)` call.
 - `notebooks/conservative_arch/scaleup/train_parf_scaleup.py` — scaleup trainer with all five fixes.

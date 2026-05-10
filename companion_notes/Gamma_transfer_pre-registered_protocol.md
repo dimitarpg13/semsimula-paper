@@ -6,7 +6,7 @@
 > Companion experiments:
 > - **E4** plain Euler damping sweep: [`notebooks/conservative_arch/damping_sweep/results/RESULTS.md`](../notebooks/conservative_arch/damping_sweep/results/RESULTS.md) — Tiny Shakespeare optimum at $\gamma^{\ast}=0.30$ (val PPL 18.8).
 > - **E5** LN-after-step damping sweep: [`notebooks/conservative_arch/ln_damping_sweep/results/RESULTS.md`](../notebooks/conservative_arch/ln_damping_sweep/results/RESULTS.md) — Tiny Shakespeare LN-after-step optimum at $\gamma^{\ast}=0.30$ (val PPL 87.06; clean parabolic shape, $\gamma=0.10$ at 91.33, $\gamma=0.85$ at 93.93).
-> - **E9** scale-up de-risking pre-registration: [`SPLM_scaleup_pre-registered_protocol.md`](SPLM_scaleup_pre-registered_protocol.md) — locks the TinyStories scale-up configuration; E9 Phase 1 SPLM arm result at the *transferred* $\gamma=0.30$: val PPL **8.85** at step 8 000 (single seed).
+> - **E9** scale-up de-risking pre-registration: [`docs/SPLM_scaleup_pre-registered_protocol.md`](SPLM_scaleup_pre-registered_protocol.md) — locks the TinyStories scale-up configuration; E9 Phase 1 SPLM arm result at the *transferred* $\gamma=0.30$: val PPL **8.85** at step 8 000 (single seed).
 
 > **Status.** Pre-registered, not yet executed. This document fixes the experimental design, the analysis pipeline, and the decision rule **before** any γ-sweep training is launched. All γ values, step counts, decision thresholds, and stage triggers are locked at pre-registration. The committing commit hash is the timestamp of pre-registration.
 >
