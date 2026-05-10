@@ -141,11 +141,10 @@ flowchart TD
     H --> O[Peak memory unchanged]
 ```
 
-**Equation summary:** if $G_2$ is the second-order graph and $\mathcal{I}\_\ell = \lbrace I^{(\ell)}\_1, \dots, I^{(\ell)}\_4 \rbrace$ are the four V_φ intermediates per layer, then
+**Equation summary:** if $G_2$ is the second-order graph and $\mathcal{I}\_\ell = \lbrace I^{(\ell)}\_1, \dots, I^{(\ell)}\_4 \rbrace$ are the four V_φ intermediates per layer, then the peak memory under checkpoint + `create_graph=True` is:
 
 $$
-\text{peak}(\text{checkpoint} + \text{create\_graph})
-  = \text{peak}\left( \bigcup\_{\ell=1}^{L} \mathcal{I}\_\ell \right) + |G\_2|,
+\text{peak} = \text{peak}\bigl( \bigcup_{\ell=1}^{L} \mathcal{I}_\ell \bigr) + |G_2|,
 $$
 
 which is **the same** peak you would have had without checkpointing — checkpoint trades forward-time memory for backward-time recompute, but `create_graph=True` keeps the forward-time memory alive anyway.
