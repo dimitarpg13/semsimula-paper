@@ -353,7 +353,7 @@ The pair term $\sum\_{s \lt t} V\_\phi(h\_t, h\_s)$ is the unique source of $(B,
 
 ### 3.4 The path forward: Stage-1.5b gathered V_φ
 
-The architectural fix that retires this entire OOM catalogue is the **gathered top-k V_φ** form documented in `docs/PARF_Stage_1_5b_design.md`. By evaluating V_φ only at the top-k indices selected by the Gumbel score head, each intermediate becomes $(B, T, k, H)$ instead of $(B, T, T, H)$ — a $T/k = 128$x memory reduction at the production $k=4$. Once Stage-1.5b lands, we expect to:
+The architectural fix that retires this entire OOM catalogue is the **gathered top-k V_φ** form documented in `companion_notes/PARF_Stage_1_5b_design.md`. By evaluating V_φ only at the top-k indices selected by the Gumbel score head, each intermediate becomes $(B, T, k, H)$ instead of $(B, T, T, H)$ — a $T/k = 128$x memory reduction at the production $k=4$. Once Stage-1.5b lands, we expect to:
 
 - run Arm 5 at full V_φ capacity (H=128) on a 40 GB A100 single-pass (no `--grad-accum`),
 - run Arm 5b on H100 with the same ~6x wall-clock speedup,
@@ -365,9 +365,9 @@ Until then, this document is the survival guide.
 
 ## 4. References
 
-- `docs/GitHub_Markdown_LaTeX_Rendering_Cheatsheet.md` — used to format this document.
-- `docs/PARF_Stage_1_5b_design.md` §1, §6 — corrected memory accounting and the architectural fix.
-- `docs/PARF-SPLM_Path_Forward_and_Experiments.md` §4.8 — the related k=32 NaN failure (a different failure class than OOM, but same V_φ surface).
+- `companion_notes/GitHub_Markdown_LaTeX_Rendering_Cheatsheet.md` — used to format this document.
+- `companion_notes/PARF_Stage_1_5b_design.md` §1, §6 — corrected memory accounting and the architectural fix.
+- `companion_notes/PARF-SPLM_Path_Forward_and_Experiments.md` §4.8 — the related k=32 NaN failure (a different failure class than OOM, but same V_φ surface).
 - `notebooks/conservative_arch/parf/model_parf.py:280-323` — structural V_φ forward.
 - `notebooks/conservative_arch/parf/model_parf_sparse.py:381-395` — sparse PARF layer step with the inner `autograd.grad(create_graph=True)` call.
 - `notebooks/conservative_arch/scaleup/train_parf_scaleup.py` — scaleup trainer with all five fixes.
