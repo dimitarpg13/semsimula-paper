@@ -34,7 +34,23 @@ GPT-2 attention baseline on Tiny Shakespeare at ~7-8 M params survive a
 | `compute_unigram_frequencies_tinystories.py` | One-off: precompute -log p_hat(v) over the GPT-2 BPE vocabulary using the TinyStories train split. Saves to `results/logfreq_surprisal_tinystories.npy`. |
 | `train_splm_em_ln_scaleup.py`              | Adapted SPLM em_ln trainer: single TinyStories scale-up mode, fixed γ, MPS-friendly.          |
 | `train_matched_baseline_scaleup.py`        | Adapted MatchedGPT trainer: single TinyStories scale-up mode, MPS-friendly.                   |
+| `train_helmholtz_scaleup.py`               | Pilot-extension: Helmholtz Q9d (AAAASSSS) at the E9 scale-up config. Used by `paper_tmlr_1`.  |
+| `train_hybrid_scaleup.py`                  | Pilot-extension: Hybrid Variant A (k=4, m=4) at the E9 scale-up config. Used by `paper_tmlr_1`. |
+| `train_parf_scaleup.py`                    | Pilot-extension: PARF Q9c sparse top-k=4 at the E9 scale-up config. Used by `paper_tmlr_1`.   |
+| `aggregate_pilot_results.py`               | Aggregator: writes `PILOT_RESULTS.md`, `pilot_loss_curves.png`, `pilot_pareto.png` from per-arm artifacts. |
+| `colab_pilot.ipynb`                        | Colab driver notebook for the 5-cell pilot (mount Drive, clone repo, smoke + full pilot, aggregate). |
+| `PILOT_README.md`                          | Pilot-specific README: configuration, decision rule, wall-clock estimates, Colab usage.       |
 | `results/`                                 | Per-arm training logs, checkpoints, loss curves, summary md.                                  |
+
+## `paper_tmlr_1` 5-cell pilot extension
+
+A focused 5-cell pilot extending E9 with three additional architectural arms
+(Helmholtz Q9d, Hybrid Variant A, PARF Q9c sparse k=4) at the **same** E9
+scale-up configuration (d=256, L=8, max_len=1024, TinyStories, 8000 steps).
+Designed to run end-to-end in one Colab Pro+ A100 session (~18 h total).
+
+See [`PILOT_README.md`](./PILOT_README.md) for full details and
+[`colab_pilot.ipynb`](./colab_pilot.ipynb) for the Colab driver notebook.
 
 ## Decision rule (locked at pre-registration)
 

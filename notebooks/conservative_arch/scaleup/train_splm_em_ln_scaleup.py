@@ -180,6 +180,18 @@ def main():
     ap.add_argument(
         "--results-dir", dest="results_dir", type=str, default=None,
     )
+    ap.add_argument(
+        "--allow-tf32", dest="allow_tf32", action="store_true",
+        default=False,
+        help=(
+            "Leave TF32 enabled (CUDA default) instead of forcing real "
+            "fp32 matmuls.  Defaults to False (TF32 disabled) because "
+            "the SPLM forward uses torch.autograd.grad(create_graph=True) "
+            "and we want a clean numerical reference.  Pass --allow-tf32 "
+            "only to produce the precision-artifact reference cell that "
+            "complements the default TF32-off run."
+        ),
+    )
     args = ap.parse_args()
 
     device = args.device or _pick_device()
@@ -188,6 +200,28 @@ def main():
         if args.results_dir is not None else RESULTS_DIR
     )
     results_dir.mkdir(parents=True, exist_ok=True)
+
+    # Disable TF32 for SPLM-family models on CUDA by default: the forward
+    # pass uses torch.autograd.grad to compute -grad V_theta(h), and that
+    # second-order path is more sensitive to TF32's 10-bit-mantissa
+    # reduction than a single attention forward.  Disabling TF32 forces
+    # real fp32 matmuls (23-bit mantissa) at the cost of ~2x slower matmul.
+    # Pass --allow-tf32 to leave it enabled (only used to produce the
+    # precision-artifact reference cell that complements the default run).
+    if torch.cuda.is_available():
+        if args.allow_tf32:
+            torch.backends.cuda.matmul.allow_tf32 = True
+            torch.backends.cudnn.allow_tf32 = True
+            print("[scaleup-splm] TF32 ENABLED (--allow-tf32): producing "
+                  "precision-artifact reference run; expect numerical "
+                  "drift in the autograd.grad path")
+        else:
+            torch.backends.cuda.matmul.allow_tf32 = False
+            torch.backends.cudnn.allow_tf32 = False
+            print("[scaleup-splm] TF32 disabled (default) for SPLM "
+                  "autograd.grad numerical stability "
+                  "(CUDA matmuls in true fp32)")
+
     print(f"[scaleup-splm] device={device}  mode={args.mode}  "
           f"fixed_gamma={args.fixed_gamma!r}  seed={args.seed}  "
           f"results_dir={results_dir}")

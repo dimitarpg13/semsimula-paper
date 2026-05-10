@@ -6,7 +6,7 @@
 >
 > **Companion documents:**
 > - **The leak bug and its fix:** [`Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`](Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md)
-> - **Paper restructuring after the fix:** `Restructuring_paper_v3_after_causal_leak_bug.md`
+> - **Paper restructuring after the fix:** [`Restructuring_paper_v3_after_causal_leak_bug.md`](Restructuring_paper_v3_after_causal_leak_bug.md)
 > - **Theoretical foundation:** [`Evidence_for_second_order_ODE_governing_evolution.md`](Evidence_for_second_order_ODE_governing_evolution.md), [`Determining_optimal_gamma_for_SPLM.md`](Determining_optimal_gamma_for_SPLM.md)
 > - **Empirical anchor:** [`notebooks/conservative_arch/scaleup/results/RESULTS.md`](../notebooks/conservative_arch/scaleup/results/RESULTS.md) (E9 Phase 1 outcome — pre-fix; under the leak-free integrator the same checkpoint evaluates to $6843$ PPL)
 > - **Pre-registration:** [`SPLM_multichannel_xi_pre-registered_protocol.md`](SPLM_multichannel_xi_pre-registered_protocol.md) (E11)
@@ -101,7 +101,7 @@ The summary below states two outcome scenarios for E11: (A) "physics-grounded ar
 
 ### 0.6 Pointers to the rest of the documentation system
 
-For the full bug forensic, the empirical inflation table, the regression test, and the recovery plan, see [`Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`](Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md). For the broader implications on `paper_v3`'s narrative and journal-strategy, see `Restructuring_paper_v3_after_causal_leak_bug.md`. Sections 1–11 of *this* document are preserved verbatim from the pre-fix design analysis; they should be read as the *architectural argument*, not as the empirical narrative.
+For the full bug forensic, the empirical inflation table, the regression test, and the recovery plan, see [`Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`](Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md). For the broader implications on `paper_v3`'s narrative and journal-strategy, see [`Restructuring_paper_v3_after_causal_leak_bug.md`](Restructuring_paper_v3_after_causal_leak_bug.md). Sections 1–11 of *this* document are preserved verbatim from the pre-fix design analysis; they should be read as the *architectural argument*, not as the empirical narrative.
 
 ---
 
@@ -513,7 +513,7 @@ These are *not* resolved by E11 and are explicit follow-ups.
 |---|---|
 | Is $K=4$ optimal? | Ablation over $K \in \{2, 4, 6, 8\}$ at the final config |
 | Are decays better as **layer-dependent** (different α_k per integration layer)? | $L \times K$ alphas; ~$L \times K$ extra params; small ablation |
-| Should α_k be **token-dependent** (the "T3 friction tensor" lift, see `Finding_optimal_gamma_for_SPLM.md` §4.3)? | Adds a small MLP head; conceptually closer to attention; tested in T3 |
+| Should α_k be **token-dependent** (the "T3 friction tensor" lift, see [`Finding_optimal_gamma_for_SPLM.md`](Finding_optimal_gamma_for_SPLM.md) §4.3)? | Adds a small MLP head; conceptually closer to attention; tested in T3 |
 | Does the wider V_θ benefit from **deeper** (depth 4 instead of 3)? | One ablation; standard |
 | Do the α_k change **during inference** if we bake γ-conditioning in? | Concept piece; depends on E11 outcome |
 | Is the **logarithmic init grid** the right shape? | Compare against linear grid (0.0, 0.33, 0.67, 0.99); small ablation |

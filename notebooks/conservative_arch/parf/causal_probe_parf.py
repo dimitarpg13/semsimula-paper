@@ -15,7 +15,7 @@ slice {h_s} when forming the pair-potential matrix.  If the .detach()
 is missing or inverted, the gradient of the loss at any future
 position can flow backward through the pair sum and contaminate the
 prediction at past positions, just like the historical SPLM ξ-pool
-leak (`companion_notes/Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`).
+leak (`docs/Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`).
 
 There are TWO independent .detach() points in the production model
 that this probe exercises:

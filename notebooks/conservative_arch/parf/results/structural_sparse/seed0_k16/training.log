@@ -1,0 +1,111 @@
+[parf-train] device=mps  tag=parf_structural_vphi128_sparse_k16_shakespeare_seed0  variant=Q9c-sparse-stage1.5
+[parf-train] tokens: train=321,124  val=16,901
+[parf-train] arch: V_phi='structural'  L=8  d=128, v_hidden=128, v_depth=3, v_phi_d_type=16, v_phi_d_angle=8, fixed_gamma=None, causal_force=True, ln_after_step=True, use_grad_checkpoint=False
+[parf-train] sparse: top_k=16  score_head_hidden=32  gumbel_tau 1.0 -> 0.1  anneal_fraction=0.8  gumbel_noise=True
+[parf-train] params: 6,550,855  (target ~8.0 M, delta -1.449 M)  V_theta=66,049  V_phi=6,786  score_head=12,353
+[parf-train] running causal-violation probe...
+[parf-train] causal probe PASSED (perturbation + gradient-Jacobian, both V_phi paths, both modes < 1e-6)
+[parf-train] step    50/4000   train 10.7043   lr 1.25e-04   grad 9.51   gamma=0.150   tau=1.000   elapsed 356s
+[parf-train] step   100/4000   train 9.6987   lr 2.50e-04   grad 17.68   gamma=0.149   tau=1.000   elapsed 703s
+[parf-train] step   150/4000   train 8.6424   lr 3.75e-04   grad 12.73   gamma=0.148   tau=1.000   elapsed 1033s
+[parf-train] step   200/4000   train 10.8381   lr 5.00e-04   grad 21.67   gamma=0.146   tau=1.000   elapsed 1376s
+[parf-train] >>> eval @ 200: train 10.7002   val 10.5441   ppl 37953.01
+[parf-train] step   250/4000   train 7.4483   lr 5.00e-04   grad 1.38   gamma=0.145   tau=1.000   elapsed 1769s
+[parf-train] step   300/4000   train 6.3863   lr 4.99e-04   grad 0.56   gamma=0.145   tau=1.000   elapsed 2114s
+[parf-train] step   350/4000   train 6.3552   lr 4.98e-04   grad 1.35   gamma=0.141   tau=1.000   elapsed 2451s
+[parf-train] step   400/4000   train 6.3653   lr 4.97e-04   grad 0.53   gamma=0.140   tau=1.000   elapsed 2801s
+[parf-train] >>> eval @ 400: train 6.2901   val 6.4731   ppl 647.49
+[parf-train] step   450/4000   train 6.2911   lr 4.95e-04   grad 0.99   gamma=0.138   tau=1.000   elapsed 3194s
+[parf-train] step   500/4000   train 6.0994   lr 4.92e-04   grad 0.86   gamma=0.136   tau=1.000   elapsed 3537s
+[parf-train] step   550/4000   train 6.0047   lr 4.90e-04   grad 0.64   gamma=0.134   tau=1.000   elapsed 3875s
+[parf-train] step   600/4000   train 5.8977   lr 4.87e-04   grad 1.39   gamma=0.132   tau=1.000   elapsed 4214s
+[parf-train] >>> eval @ 600: train 5.9910   val 6.2786   ppl 533.06
+[parf-train] step   650/4000   train 5.8364   lr 4.83e-04   grad 0.99   gamma=0.129   tau=1.000   elapsed 4602s
+[parf-train] step   700/4000   train 5.8277   lr 4.79e-04   grad 1.11   gamma=0.126   tau=1.000   elapsed 4940s
+[parf-train] step   750/4000   train 5.7434   lr 4.75e-04   grad 1.38   gamma=0.124   tau=1.000   elapsed 5282s
+[parf-train] step   800/4000   train 5.7136   lr 4.70e-04   grad 1.56   gamma=0.121   tau=1.000   elapsed 5630s
+[parf-train] >>> eval @ 800: train 5.8535   val 6.1092   ppl 449.96
+[parf-train] step   850/4000   train 5.6657   lr 4.65e-04   grad 1.52   gamma=0.119   tau=0.986   elapsed 6014s
+[parf-train] step   900/4000   train 5.5830   lr 4.59e-04   grad 2.50   gamma=0.117   tau=0.972   elapsed 6347s
+[parf-train] step   950/4000   train 5.5449   lr 4.54e-04   grad 2.54   gamma=0.115   tau=0.958   elapsed 6678s
+[parf-train] step  1000/4000   train 5.4493   lr 4.47e-04   grad 3.21   gamma=0.113   tau=0.944   elapsed 7026s
+[parf-train] >>> eval @ 1000: train 5.6197   val 5.9475   ppl 382.79
+[parf-train] step  1050/4000   train 5.3924   lr 4.41e-04   grad 3.96   gamma=0.111   tau=0.930   elapsed 7423s
+[parf-train] step  1100/4000   train 5.2642   lr 4.34e-04   grad 2.95   gamma=0.109   tau=0.916   elapsed 7755s
+[parf-train] step  1150/4000   train 5.1874   lr 4.27e-04   grad 4.01   gamma=0.107   tau=0.902   elapsed 8087s
+[parf-train] step  1200/4000   train 5.1144   lr 4.19e-04   grad 2.46   gamma=0.105   tau=0.888   elapsed 8402s
+[parf-train] >>> eval @ 1200: train nan   val 5.5494   ppl 257.09
+[parf-train] step  1250/4000   train 5.0538   lr 4.12e-04   grad 5.25   gamma=0.104   tau=0.873   elapsed 8788s
+[parf-train] step  1300/4000   train 4.9820   lr 4.04e-04   grad 3.45   gamma=0.102   tau=0.859   elapsed 9130s
+[parf-train] step  1350/4000   train 4.9501   lr 3.95e-04   grad 1.89   gamma=0.101   tau=0.845   elapsed 9478s
+[parf-train] step  1400/4000   train 4.8781   lr 3.87e-04   grad 2.74   gamma=0.100   tau=0.831   elapsed 9820s
+[parf-train] >>> eval @ 1400: train 4.8574   val 5.4186   ppl 225.56
+[parf-train] step  1450/4000   train 4.8196   lr 3.78e-04   grad 4.07   gamma=0.099   tau=0.817   elapsed 10204s
+[parf-train] step  1500/4000   train 4.7906   lr 3.69e-04   grad 3.74   gamma=0.098   tau=0.803   elapsed 10563s
+[parf-train] step  1550/4000   train 4.7369   lr 3.60e-04   grad 4.22   gamma=0.097   tau=0.789   elapsed 10898s
+[parf-train] step  1600/4000   train 4.7228   lr 3.51e-04   grad 3.36   gamma=0.096   tau=0.775   elapsed 11231s
+[parf-train] >>> eval @ 1600: train 4.6892   val 5.3740   ppl 215.73
+[parf-train] step  1650/4000   train 4.7147   lr 3.41e-04   grad 4.16   gamma=0.095   tau=0.761   elapsed 11616s
+[parf-train] step  1700/4000   train 4.7093   lr 3.31e-04   grad 11.88   gamma=0.095   tau=0.747   elapsed 11956s
+[parf-train] step  1750/4000   train 4.7031   lr 3.22e-04   grad 4.75   gamma=0.094   tau=0.733   elapsed 12320s
+[parf-train] step  1800/4000   train 4.6288   lr 3.12e-04   grad 3.17   gamma=0.093   tau=0.719   elapsed 12675s
+[parf-train] >>> eval @ 1800: train 4.6277   val 5.3909   ppl 219.39
+[parf-train] step  1850/4000   train 4.5993   lr 3.02e-04   grad 2.83   gamma=0.093   tau=0.705   elapsed 13048s
+[parf-train] step  1900/4000   train 4.5831   lr 2.91e-04   grad 3.19   gamma=0.092   tau=0.691   elapsed 13391s
+[parf-train] step  1950/4000   train 4.6336   lr 2.81e-04   grad 2.97   gamma=0.092   tau=0.677   elapsed 13724s
+[parf-train] step  2000/4000   train 4.5683   lr 2.71e-04   grad 2.64   gamma=0.091   tau=0.663   elapsed 14058s
+[parf-train] >>> eval @ 2000: train 4.5513   val 5.4235   ppl 226.67
+[parf-train] step  2050/4000   train 4.5734   lr 2.61e-04   grad 3.05   gamma=0.091   tau=0.649   elapsed 14417s
+[parf-train] step  2100/4000   train 4.5711   lr 2.50e-04   grad 3.75   gamma=0.090   tau=0.634   elapsed 14749s
+[parf-train] step  2150/4000   train 4.5072   lr 2.40e-04   grad 4.25   gamma=0.090   tau=0.620   elapsed 15074s
+[parf-train] step  2200/4000   train 4.4969   lr 2.30e-04   grad 2.20   gamma=0.089   tau=0.606   elapsed 15395s
+[parf-train] >>> eval @ 2200: train 4.5156   val 5.3797   ppl 216.96
+[parf-train] step  2250/4000   train 4.5230   lr 2.19e-04   grad 35.71   gamma=0.089   tau=0.592   elapsed 15771s
+[parf-train] step  2300/4000   train 4.5161   lr 2.09e-04   grad 3.16   gamma=0.089   tau=0.578   elapsed 16095s
+[parf-train] step  2350/4000   train 4.4775   lr 1.99e-04   grad 3.88   gamma=0.088   tau=0.564   elapsed 16432s
+[parf-train] step  2400/4000   train 4.4983   lr 1.89e-04   grad 2.19   gamma=0.088   tau=0.550   elapsed 16778s
+[parf-train] >>> eval @ 2400: train 4.4949   val 5.3763   ppl 216.22
+[parf-train] step  2450/4000   train 4.4446   lr 1.79e-04   grad 10.43   gamma=0.088   tau=0.536   elapsed 17154s
+[parf-train] step  2500/4000   train 4.4781   lr 1.69e-04   grad 3.74   gamma=0.088   tau=0.522   elapsed 17510s
+[parf-train] step  2550/4000   train 4.4597   lr 1.59e-04   grad 3.00   gamma=0.087   tau=0.508   elapsed 17849s
+[parf-train] step  2600/4000   train 4.4571   lr 1.50e-04   grad 3.03   gamma=0.087   tau=0.494   elapsed 18181s
+[parf-train] >>> eval @ 2600: train 4.4238   val 5.3891   ppl 219.00
+[parf-train] step  2650/4000   train 4.3769   lr 1.40e-04   grad 3.69   gamma=0.087   tau=0.480   elapsed 18551s
+[parf-train] step  2700/4000   train 4.4432   lr 1.31e-04   grad 4.06   gamma=0.087   tau=0.466   elapsed 18895s
+[parf-train] step  2750/4000   train 4.4566   lr 1.22e-04   grad 3.30   gamma=0.087   tau=0.452   elapsed 19237s
+[parf-train] step  2800/4000   train 4.4206   lr 1.13e-04   grad 3.76   gamma=0.086   tau=0.438   elapsed 19589s
+[parf-train] >>> eval @ 2800: train 4.4387   val 5.3681   ppl 214.46
+[parf-train] step  2850/4000   train 4.4495   lr 1.05e-04   grad 3.88   gamma=0.086   tau=0.424   elapsed 19992s
+[parf-train] step  2900/4000   train 4.4224   lr 9.66e-05   grad 3.60   gamma=0.086   tau=0.410   elapsed 20358s
+[parf-train] step  2950/4000   train 4.4114   lr 8.86e-05   grad 2.72   gamma=0.086   tau=0.396   elapsed 20699s
+[parf-train] step  3000/4000   train 4.3991   lr 8.08e-05   grad 3.06   gamma=0.086   tau=0.381   elapsed 21081s
+[parf-train] >>> eval @ 3000: train 4.4231   val 5.3678   ppl 214.40
+[parf-train] step  3050/4000   train 4.4290   lr 7.34e-05   grad 3.36   gamma=0.086   tau=0.367   elapsed 21552s
+[parf-train] step  3100/4000   train 4.4263   lr 6.62e-05   grad 3.54   gamma=0.086   tau=0.353   elapsed 21907s
+[parf-train] step  3150/4000   train 4.3664   lr 5.94e-05   grad 3.14   gamma=0.086   tau=0.339   elapsed 22273s
+[parf-train] step  3200/4000   train 4.3889   lr 5.28e-05   grad 3.05   gamma=0.086   tau=0.325   elapsed 22634s
+[parf-train] >>> eval @ 3200: train 4.4116   val 5.4252   ppl 227.06
+[parf-train] step  3250/4000   train 4.3734   lr 4.67e-05   grad 2.34   gamma=0.085   tau=0.311   elapsed 23085s
+[parf-train] step  3300/4000   train 4.3569   lr 4.08e-05   grad 5.68   gamma=0.085   tau=0.297   elapsed 23468s
+[parf-train] step  3350/4000   train 4.4075   lr 3.53e-05   grad 3.53   gamma=0.085   tau=0.283   elapsed 23807s
+[parf-train] step  3400/4000   train 4.4190   lr 3.02e-05   grad 3.66   gamma=0.085   tau=0.269   elapsed 24143s
+[parf-train] >>> eval @ 3400: train 4.4212   val 5.4022   ppl 221.89
+[parf-train] step  3450/4000   train 4.3837   lr 2.55e-05   grad 3.45   gamma=0.085   tau=0.255   elapsed 24587s
+[parf-train] step  3500/4000   train 4.3528   lr 2.11e-05   grad 3.77   gamma=0.085   tau=0.241   elapsed 24939s
+[parf-train] step  3550/4000   train 4.4071   lr 1.72e-05   grad 2.65   gamma=0.085   tau=0.227   elapsed 25269s
+[parf-train] step  3600/4000   train 4.4329   lr 1.36e-05   grad 2.54   gamma=0.085   tau=0.213   elapsed 25598s
+[parf-train] >>> eval @ 3600: train 4.3712   val 5.4309   ppl 228.36
+[parf-train] step  3650/4000   train 4.4013   lr 1.05e-05   grad 2.85   gamma=0.085   tau=0.199   elapsed 25993s
+[parf-train] step  3700/4000   train 4.3824   lr 7.70e-06   grad 2.78   gamma=0.085   tau=0.185   elapsed 26324s
+[parf-train] step  3750/4000   train 4.4006   lr 5.36e-06   grad 6.49   gamma=0.085   tau=0.171   elapsed 26663s
+[parf-train] step  3800/4000   train 4.4071   lr 3.44e-06   grad 2.61   gamma=0.085   tau=0.157   elapsed 27006s
+[parf-train] >>> eval @ 3800: train 4.3433   val 5.3431   ppl 209.15
+[parf-train] step  3850/4000   train 4.3809   lr 1.95e-06   grad 6.09   gamma=0.085   tau=0.142   elapsed 27408s
+[parf-train] step  3900/4000   train 4.3790   lr 8.71e-07   grad 4.73   gamma=0.085   tau=0.128   elapsed 27759s
+[parf-train] step  3950/4000   train 4.3951   lr 2.22e-07   grad 2.44   gamma=0.085   tau=0.114   elapsed 28112s
+[parf-train] step  4000/4000   train 4.4014   lr 8.54e-11   grad 5.18   gamma=0.085   tau=0.100   elapsed 28480s
+[parf-train] >>> eval @ 4000: train 4.4053   val 5.3242   ppl 205.25
+[parf-train] done in 28522s
+[parf-train] saved checkpoint -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/parf/results/parf_structural_vphi128_sparse_k16_shakespeare_seed0_ckpt_latest.pt
+[parf-train] saved loss curve -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/parf/results/parf_structural_vphi128_sparse_k16_shakespeare_seed0_loss_curve.png
+[parf-train] saved summary -> /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/parf/results/parf_structural_vphi128_sparse_k16_shakespeare_seed0_summary.md

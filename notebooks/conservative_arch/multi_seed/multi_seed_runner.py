@@ -44,6 +44,7 @@ RESULTS_ROOT = SCRIPT_DIR / "results"
 RESULTS_ROOT.mkdir(exist_ok=True)
 
 CONSERVATIVE_ARCH_DIR = SCRIPT_DIR.parent
+SARF_DIR = CONSERVATIVE_ARCH_DIR / "sarf_variant"
 SARF_MASS_DIR = CONSERVATIVE_ARCH_DIR / "sarf_mass_variant"
 EM_DIR = CONSERVATIVE_ARCH_DIR / "energetic_minima"
 
@@ -67,6 +68,32 @@ class ModelSpec:
 
 
 MODEL_SPECS: Dict[str, ModelSpec] = {
+    "splm_baseline": ModelSpec(
+        label="splm_baseline",
+        trainer_dir=CONSERVATIVE_ARCH_DIR,
+        trainer_script="train_splm.py",
+        extra_args=tuple(),
+        artefact_tag="splm_{mode}",
+        preflight=None,
+    ),
+    "splm_sarf": ModelSpec(
+        label="splm_sarf",
+        trainer_dir=SARF_DIR,
+        trainer_script="train_splm_sarf.py",
+        extra_args=tuple(),
+        artefact_tag="splm_sarf_{mode}",
+        preflight=None,
+    ),
+    "splm_sarfmass_embed_head": ModelSpec(
+        label="splm_sarfmass_embed_head",
+        trainer_dir=SARF_MASS_DIR,
+        trainer_script="train_splm_sarf_mass.py",
+        extra_args=("--mass-mode", "embed_head"),
+        artefact_tag="splm_sarfmass_embed_head_{mode}",
+        preflight=("python3", "compute_unigram_frequencies.py"),
+        preflight_cwd=SARF_MASS_DIR,
+        preflight_marker=LOGFREQ_MARKER,
+    ),
     "splm_sarfmass_logfreq": ModelSpec(
         label="splm_sarfmass_logfreq",
         trainer_dir=SARF_MASS_DIR,

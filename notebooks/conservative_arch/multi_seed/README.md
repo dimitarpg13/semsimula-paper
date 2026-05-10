@@ -30,28 +30,54 @@ statistically meaningful". The harness here closes that gap.
 
 ## Supported model specs
 
-The harness understands three model specs at v0:
+The harness understands six model specs (the original three plus the
+three Scope-3 cells added 2026-05-09):
 
+- `splm_baseline` — the §1 fixed-$\xi$ SPLM (no SARF $\xi$
+  recomputation, single global mass scalar). v2 single-seed val ppl
+  287.43; leak-immune by construction. Trainer:
+  `notebooks/conservative_arch/train_splm.py`.
+- `splm_sarf` — SARF-faithful SPLM with $\xi$ recomputed per layer
+  and a single global mass scalar. v2 single-seed val ppl 192.21.
+  Trainer: `notebooks/conservative_arch/sarf_variant/train_splm_sarf.py`.
+- `splm_sarfmass_embed_head` — SARF-faithful SPLM with per-token mass
+  from a learned linear head over the token embedding (variant A of the
+  per-token mass ablation). v2 single-seed val ppl 222.91. Trainer:
+  `notebooks/conservative_arch/sarf_mass_variant/train_splm_sarf_mass.py --mass-mode embed_head`.
+- `splm_sarfmass_logfreq` — SARF-faithful SPLM with per-token mass
+  from the Shannon-surprisal prior (variant B). v2 single-seed val
+  ppl 160.55. Trainer:
+  `notebooks/conservative_arch/sarf_mass_variant/train_splm_sarf_mass.py --mass-mode logfreq`.
 - `splm_em_ln` — SPLM with LayerNorm-after-step (variant `ln` in
   `notebooks/conservative_arch/energetic_minima/`). Each semi-implicit
   damped step is followed by an affine-free LayerNorm projection back
   to the unit shell, which gives $V_\theta$ a finite minimum on a
   compact manifold. **The strongest Tiny Shakespeare result in the
-  repo so far: val ppl 88.63 at seed=0** (vs 160.55 for the
-  SARF+logfreq baseline). Trainer:
-  `notebooks/conservative_arch/energetic_minima/train.py --variant ln`.
-- `splm_sarfmass_logfreq` — SPLM with SARF-faithful $\xi$ re-pooling and
-  per-token Shannon-surprisal mass (val ppl 160.55 at seed=0). The
-  paper's currently-stated headline configuration. Trainer:
-  `notebooks/conservative_arch/sarf_mass_variant/train_splm_sarf_mass.py`.
+  repo so far: val ppl 88.63 at seed=0** (under the v2 buggy
+  integrator; v4 leak-free 5-seed mean is ~178–181 PPL at fixed
+  $\gamma \in [0.10, 0.20]$, see
+  [`../ln_damping_sweep/results/leakfree_5seed_confirmation/`](../ln_damping_sweep/results/leakfree_5seed_confirmation/)).
+  Trainer: `notebooks/conservative_arch/energetic_minima/train.py --variant ln`.
 - `matched_baseline` — 8 M-param tiny GPT-2-style decoder matched to
-  SPLM on $d$, $L$, $V$, data budget. Trainer:
-  `notebooks/conservative_arch/train_matched.py`.
+  SPLM on $d$, $L$, $V$, data budget. v2 5-seed mean val ppl
+  149.80 ± 7.21; leak-immune by construction (no SPLM integrator).
+  Trainer: `notebooks/conservative_arch/train_matched.py`.
 
-Adding more specs (e.g., the §1 SPLM, the SARF variant without mass,
-the `energetic_minima` `sg` / `gm` variants) is a 5-line entry in
-`MODEL_SPECS` of [`multi_seed_runner.py`](multi_seed_runner.py); the
-harness itself is model-agnostic.
+Adding more specs is a 10-line entry in `MODEL_SPECS` of
+[`multi_seed_runner.py`](multi_seed_runner.py); the harness itself is
+model-agnostic.
+
+## Scope-3 retrain (paper\_v4)
+
+The first four `splm_*` specs above plus `matched_baseline` are
+collectively the **Scope-3 retrain** of `paper_v4`: the v2 SPLM-family
+experiments rerun under the leak-free integrator
+(`cfg.causal_force = True`, the post-fix default). See
+[`SCOPE3_README.md`](SCOPE3_README.md) for the full story; the
+turn-key driver is [`colab_scope3.ipynb`](colab_scope3.ipynb), which
+runs all 5 cells × 5 seeds in 2–4 h on a Colab GPU and emits both the
+standard multi-seed report and a Scope-3-specific
+v2-vs-v4 headline table via [`scope3_comparison.py`](scope3_comparison.py).
 
 ## Quick reference
 

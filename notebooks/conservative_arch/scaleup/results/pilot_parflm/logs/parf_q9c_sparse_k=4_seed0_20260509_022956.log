@@ -1,0 +1,195 @@
+[scaleup-parf] TF32 disabled for PARF autograd.grad numerical stability (CUDA matmuls in true fp32)
+[scaleup-parf] tokens: train=5,000,000  val=4,787,906
+[scaleup-parf] device=cuda  tag=parf_structural_vphi16_sparse_k4_scaleup_scaleup_seed0  variant=Q9c-sparse-stage1.5
+[scaleup-parf] arch: V_phi='structural'  L=8  d=256  v_hidden=1024  v_depth=3  max_len=1024  fixed_gamma=None  use_grad_checkpoint=False
+[scaleup-parf] V_phi widths: phi_hidden=16  theta_hidden=16  mlp_hidden=32  d_type=32  d_angle=16
+[scaleup-parf] sparse: top_k=4  gumbel_tau 1.0 -> 0.1  anneal_fraction=0.8
+[scaleup-parf] params: 15,791,255  V_theta=2,625,537  V_phi=13,138  score_head=24,641
+[scaleup-parf] running causal-violation probe...
+[scaleup-parf] causal probe PASSED
+[scaleup-parf] grad-accum: 2 micro-batches of size 8 per optim step (effective batch = 16)
+[scaleup-parf] step    50/8000   train 10.7340   lr 6.25e-05   grad 2.29   gamma=0.150   tau=1.000   elapsed 31s
+[scaleup-parf] step   100/8000   train 9.3943   lr 1.25e-04   grad 1.83   gamma=0.149   tau=1.000   elapsed 62s
+[scaleup-parf] step   150/8000   train 7.5232   lr 1.88e-04   grad 1.47   gamma=0.149   tau=1.000   elapsed 92s
+[scaleup-parf] step   200/8000   train 6.1289   lr 2.50e-04   grad 0.56   gamma=0.150   tau=1.000   elapsed 123s
+[scaleup-parf] step   250/8000   train 5.8995   lr 3.13e-04   grad 0.59   gamma=0.149   tau=1.000   elapsed 153s
+[scaleup-parf] step   300/8000   train 5.6435   lr 3.75e-04   grad 2.56   gamma=0.148   tau=1.000   elapsed 184s
+[scaleup-parf] step   350/8000   train 5.3175   lr 4.38e-04   grad 1.49   gamma=0.148   tau=1.000   elapsed 215s
+[scaleup-parf] step   400/8000   train 4.9953   lr 5.00e-04   grad 1.78   gamma=0.148   tau=1.000   elapsed 245s
+[scaleup-parf] >>> eval @ 400: val 4.9112   ppl 135.81
+[scaleup-parf] step   450/8000   train 4.7506   lr 5.00e-04   grad 5.45   gamma=0.148   tau=1.000   elapsed 282s
+[scaleup-parf] step   500/8000   train 4.5943   lr 5.00e-04   grad 3.45   gamma=0.148   tau=1.000   elapsed 313s
+[scaleup-parf] step   550/8000   train 4.4158   lr 5.00e-04   grad 1.75   gamma=0.147   tau=1.000   elapsed 343s
+[scaleup-parf] step   600/8000   train 4.2591   lr 4.99e-04   grad 1.77   gamma=0.147   tau=1.000   elapsed 374s
+[scaleup-parf] step   650/8000   train 4.1589   lr 4.99e-04   grad 1.54   gamma=0.147   tau=1.000   elapsed 404s
+[scaleup-parf] step   700/8000   train 4.0598   lr 4.98e-04   grad 1.33   gamma=0.147   tau=1.000   elapsed 435s
+[scaleup-parf] step   750/8000   train 3.9969   lr 4.97e-04   grad 0.95   gamma=0.147   tau=1.000   elapsed 465s
+[scaleup-parf] step   800/8000   train 3.9531   lr 4.97e-04   grad 1.21   gamma=0.147   tau=1.000   elapsed 496s
+[scaleup-parf] >>> eval @ 800: val 3.9677   ppl 52.86
+[scaleup-parf] step   850/8000   train 3.9199   lr 4.96e-04   grad 0.84   gamma=0.147   tau=1.000   elapsed 533s
+[scaleup-parf] step   900/8000   train 3.8796   lr 4.95e-04   grad 1.66   gamma=0.147   tau=1.000   elapsed 564s
+[scaleup-parf] step   950/8000   train 3.8528   lr 4.94e-04   grad 0.80   gamma=0.146   tau=1.000   elapsed 594s
+[scaleup-parf] step  1000/8000   train 3.8108   lr 4.92e-04   grad 0.91   gamma=0.146   tau=1.000   elapsed 625s
+[scaleup-parf] step  1050/8000   train 3.8017   lr 4.91e-04   grad 0.77   gamma=0.146   tau=1.000   elapsed 655s
+[scaleup-parf] step  1100/8000   train 3.7939   lr 4.90e-04   grad 1.06   gamma=0.146   tau=1.000   elapsed 686s
+[scaleup-parf] step  1150/8000   train 3.7570   lr 4.88e-04   grad 0.59   gamma=0.146   tau=1.000   elapsed 717s
+[scaleup-parf] step  1200/8000   train 3.7625   lr 4.86e-04   grad 0.84   gamma=0.146   tau=1.000   elapsed 747s
+[scaleup-parf] >>> eval @ 1200: val 3.7718   ppl 43.46
+[scaleup-parf] step  1250/8000   train 3.7326   lr 4.85e-04   grad 0.78   gamma=0.145   tau=1.000   elapsed 784s
+[scaleup-parf] step  1300/8000   train 3.7186   lr 4.83e-04   grad 0.86   gamma=0.145   tau=1.000   elapsed 815s
+[scaleup-parf] step  1350/8000   train 3.7067   lr 4.81e-04   grad 0.78   gamma=0.145   tau=1.000   elapsed 845s
+[scaleup-parf] step  1400/8000   train 3.6964   lr 4.79e-04   grad 0.71   gamma=0.145   tau=1.000   elapsed 876s
+[scaleup-parf] step  1450/8000   train 3.6674   lr 4.77e-04   grad 0.84   gamma=0.145   tau=1.000   elapsed 907s
+[scaleup-parf] step  1500/8000   train 3.6917   lr 4.75e-04   grad 0.67   gamma=0.145   tau=1.000   elapsed 937s
+[scaleup-parf] step  1550/8000   train 3.6822   lr 4.72e-04   grad 0.77   gamma=0.145   tau=1.000   elapsed 968s
+[scaleup-parf] step  1600/8000   train 3.6657   lr 4.70e-04   grad 0.73   gamma=0.145   tau=1.000   elapsed 998s
+[scaleup-parf] >>> eval @ 1600: val 3.6916   ppl 40.11
+[scaleup-parf] step  1650/8000   train 3.6641   lr 4.67e-04   grad 0.64   gamma=0.145   tau=0.993   elapsed 1035s
+[scaleup-parf] step  1700/8000   train 3.6343   lr 4.65e-04   grad 0.80   gamma=0.145   tau=0.986   elapsed 1066s
+[scaleup-parf] step  1750/8000   train 3.6366   lr 4.62e-04   grad 0.76   gamma=0.145   tau=0.979   elapsed 1097s
+[scaleup-parf] step  1800/8000   train 3.6382   lr 4.59e-04   grad 0.87   gamma=0.144   tau=0.972   elapsed 1127s
+[scaleup-parf] step  1850/8000   train 3.6171   lr 4.56e-04   grad 1.09   gamma=0.144   tau=0.965   elapsed 1158s
+[scaleup-parf] step  1900/8000   train 3.6223   lr 4.54e-04   grad 0.74   gamma=0.144   tau=0.958   elapsed 1188s
+[scaleup-parf] step  1950/8000   train 3.6189   lr 4.50e-04   grad 0.64   gamma=0.144   tau=0.951   elapsed 1219s
+[scaleup-parf] step  2000/8000   train 3.5964   lr 4.47e-04   grad 0.63   gamma=0.144   tau=0.944   elapsed 1250s
+[scaleup-parf] >>> eval @ 2000: val 3.6563   ppl 38.72
+[scaleup-parf] step  2050/8000   train 3.5995   lr 4.44e-04   grad 0.74   gamma=0.144   tau=0.937   elapsed 1287s
+[scaleup-parf] step  2100/8000   train 3.5896   lr 4.41e-04   grad 0.78   gamma=0.144   tau=0.930   elapsed 1317s
+[scaleup-parf] step  2150/8000   train 3.6127   lr 4.37e-04   grad 0.70   gamma=0.145   tau=0.923   elapsed 1348s
+[scaleup-parf] step  2200/8000   train 3.5944   lr 4.34e-04   grad 0.67   gamma=0.144   tau=0.916   elapsed 1378s
+[scaleup-parf] step  2250/8000   train 3.5925   lr 4.30e-04   grad 0.59   gamma=0.145   tau=0.909   elapsed 1409s
+[scaleup-parf] step  2300/8000   train 3.5838   lr 4.27e-04   grad 0.91   gamma=0.144   tau=0.902   elapsed 1440s
+[scaleup-parf] step  2350/8000   train 3.5767   lr 4.23e-04   grad 0.71   gamma=0.144   tau=0.895   elapsed 1470s
+[scaleup-parf] step  2400/8000   train 3.5773   lr 4.19e-04   grad 0.78   gamma=0.145   tau=0.888   elapsed 1501s
+[scaleup-parf] >>> eval @ 2400: val 3.6233   ppl 37.46
+[scaleup-parf] step  2450/8000   train 3.5651   lr 4.16e-04   grad 0.65   gamma=0.145   tau=0.880   elapsed 1538s
+[scaleup-parf] step  2500/8000   train 3.5728   lr 4.12e-04   grad 0.78   gamma=0.145   tau=0.873   elapsed 1569s
+[scaleup-parf] step  2550/8000   train 3.5529   lr 4.08e-04   grad 0.63   gamma=0.145   tau=0.866   elapsed 1599s
+[scaleup-parf] step  2600/8000   train 3.5655   lr 4.04e-04   grad 0.74   gamma=0.145   tau=0.859   elapsed 1630s
+[scaleup-parf] step  2650/8000   train 3.5495   lr 4.00e-04   grad 0.92   gamma=0.145   tau=0.852   elapsed 1660s
+[scaleup-parf] step  2700/8000   train 3.5424   lr 3.95e-04   grad 0.70   gamma=0.145   tau=0.845   elapsed 1691s
+[scaleup-parf] step  2750/8000   train 3.5398   lr 3.91e-04   grad 0.66   gamma=0.145   tau=0.838   elapsed 1722s
+[scaleup-parf] step  2800/8000   train 3.5276   lr 3.87e-04   grad 0.79   gamma=0.145   tau=0.831   elapsed 1752s
+[scaleup-parf] >>> eval @ 2800: val 3.6000   ppl 36.60
+[scaleup-parf] step  2850/8000   train 3.5390   lr 3.82e-04   grad 0.67   gamma=0.145   tau=0.824   elapsed 1789s
+[scaleup-parf] step  2900/8000   train 3.5336   lr 3.78e-04   grad 0.73   gamma=0.145   tau=0.817   elapsed 1820s
+[scaleup-parf] step  2950/8000   train 3.5285   lr 3.74e-04   grad 0.65   gamma=0.145   tau=0.810   elapsed 1850s
+[scaleup-parf] step  3000/8000   train 3.5348   lr 3.69e-04   grad 0.74   gamma=0.145   tau=0.803   elapsed 1881s
+[scaleup-parf] step  3050/8000   train 3.5123   lr 3.65e-04   grad 0.67   gamma=0.145   tau=0.796   elapsed 1912s
+[scaleup-parf] step  3100/8000   train 3.5006   lr 3.60e-04   grad 0.62   gamma=0.145   tau=0.789   elapsed 1942s
+[scaleup-parf] step  3150/8000   train 3.5134   lr 3.55e-04   grad 0.85   gamma=0.145   tau=0.782   elapsed 1973s
+[scaleup-parf] step  3200/8000   train 3.5004   lr 3.51e-04   grad 0.73   gamma=0.145   tau=0.775   elapsed 2003s
+[scaleup-parf] >>> eval @ 3200: val 3.5557   ppl 35.01
+[scaleup-parf] step  3250/8000   train 3.5066   lr 3.46e-04   grad 0.81   gamma=0.146   tau=0.768   elapsed 2041s
+[scaleup-parf] step  3300/8000   train 3.4996   lr 3.41e-04   grad 0.78   gamma=0.146   tau=0.761   elapsed 2071s
+[scaleup-parf] step  3350/8000   train 3.5060   lr 3.36e-04   grad 0.70   gamma=0.146   tau=0.754   elapsed 2102s
+[scaleup-parf] step  3400/8000   train 3.4880   lr 3.31e-04   grad 0.80   gamma=0.146   tau=0.747   elapsed 2132s
+[scaleup-parf] step  3450/8000   train 3.4980   lr 3.26e-04   grad 0.74   gamma=0.146   tau=0.740   elapsed 2163s
+[scaleup-parf] step  3500/8000   train 3.4844   lr 3.21e-04   grad 0.78   gamma=0.146   tau=0.733   elapsed 2193s
+[scaleup-parf] step  3550/8000   train 3.4961   lr 3.16e-04   grad 0.71   gamma=0.146   tau=0.726   elapsed 2224s
+[scaleup-parf] step  3600/8000   train 3.4855   lr 3.11e-04   grad 0.94   gamma=0.146   tau=0.719   elapsed 2255s
+[scaleup-parf] >>> eval @ 3600: val 3.5420   ppl 34.54
+[scaleup-parf] step  3650/8000   train 3.4696   lr 3.06e-04   grad 0.86   gamma=0.146   tau=0.712   elapsed 2292s
+[scaleup-parf] step  3700/8000   train 3.4929   lr 3.01e-04   grad 0.74   gamma=0.146   tau=0.705   elapsed 2322s
+[scaleup-parf] step  3750/8000   train 3.4828   lr 2.96e-04   grad 0.82   gamma=0.146   tau=0.698   elapsed 2353s
+[scaleup-parf] step  3800/8000   train 3.4632   lr 2.91e-04   grad 0.96   gamma=0.147   tau=0.691   elapsed 2383s
+[scaleup-parf] step  3850/8000   train 3.4694   lr 2.86e-04   grad 0.94   gamma=0.147   tau=0.684   elapsed 2414s
+[scaleup-parf] step  3900/8000   train 3.4642   lr 2.81e-04   grad 0.95   gamma=0.147   tau=0.677   elapsed 2445s
+[scaleup-parf] step  3950/8000   train 3.4708   lr 2.76e-04   grad 0.90   gamma=0.147   tau=0.670   elapsed 2475s
+[scaleup-parf] step  4000/8000   train 3.4523   lr 2.71e-04   grad 0.86   gamma=0.147   tau=0.663   elapsed 2506s
+[scaleup-parf] >>> eval @ 4000: val 3.5423   ppl 34.55
+[scaleup-parf] step  4050/8000   train 3.4516   lr 2.66e-04   grad 1.09   gamma=0.147   tau=0.656   elapsed 2543s
+[scaleup-parf] step  4100/8000   train 3.4571   lr 2.60e-04   grad 0.91   gamma=0.147   tau=0.648   elapsed 2573s
+[scaleup-parf] step  4150/8000   train 3.4459   lr 2.55e-04   grad 0.82   gamma=0.147   tau=0.641   elapsed 2604s
+[scaleup-parf] step  4200/8000   train 3.4556   lr 2.50e-04   grad 0.90   gamma=0.147   tau=0.634   elapsed 2635s
+[scaleup-parf] step  4250/8000   train 3.4603   lr 2.45e-04   grad 0.91   gamma=0.147   tau=0.627   elapsed 2665s
+[scaleup-parf] step  4300/8000   train 3.4550   lr 2.40e-04   grad 0.95   gamma=0.147   tau=0.620   elapsed 2696s
+[scaleup-parf] step  4350/8000   train 3.4606   lr 2.35e-04   grad 0.96   gamma=0.148   tau=0.613   elapsed 2726s
+[scaleup-parf] step  4400/8000   train 3.4410   lr 2.29e-04   grad 1.13   gamma=0.148   tau=0.606   elapsed 2757s
+[scaleup-parf] >>> eval @ 4400: val 3.5262   ppl 33.99
+[scaleup-parf] step  4450/8000   train 3.4643   lr 2.24e-04   grad 0.84   gamma=0.148   tau=0.599   elapsed 2794s
+[scaleup-parf] step  4500/8000   train 3.4509   lr 2.19e-04   grad 0.97   gamma=0.148   tau=0.592   elapsed 2825s
+[scaleup-parf] step  4550/8000   train 3.4368   lr 2.14e-04   grad 0.98   gamma=0.148   tau=0.585   elapsed 2855s
+[scaleup-parf] step  4600/8000   train 3.4386   lr 2.09e-04   grad 1.33   gamma=0.148   tau=0.578   elapsed 2886s
+[scaleup-parf] step  4650/8000   train 3.4436   lr 2.04e-04   grad 1.26   gamma=0.148   tau=0.571   elapsed 2916s
+[scaleup-parf] step  4700/8000   train 3.4469   lr 1.99e-04   grad 0.95   gamma=0.148   tau=0.564   elapsed 2947s
+[scaleup-parf] step  4750/8000   train 3.4259   lr 1.94e-04   grad 1.08   gamma=0.148   tau=0.557   elapsed 2977s
+[scaleup-parf] step  4800/8000   train 3.4444   lr 1.89e-04   grad 1.04   gamma=0.148   tau=0.550   elapsed 3008s
+[scaleup-parf] >>> eval @ 4800: val 3.4849   ppl 32.62
+[scaleup-parf] step  4850/8000   train 3.4222   lr 1.84e-04   grad 1.01   gamma=0.148   tau=0.543   elapsed 3045s
+[scaleup-parf] step  4900/8000   train 3.4251   lr 1.79e-04   grad 1.18   gamma=0.148   tau=0.536   elapsed 3076s
+[scaleup-parf] step  4950/8000   train 3.4185   lr 1.74e-04   grad 1.21   gamma=0.148   tau=0.529   elapsed 3106s
+[scaleup-parf] step  5000/8000   train 3.4333   lr 1.69e-04   grad 1.15   gamma=0.148   tau=0.522   elapsed 3137s
+[scaleup-parf] step  5050/8000   train 3.4169   lr 1.64e-04   grad 1.31   gamma=0.148   tau=0.515   elapsed 3167s
+[scaleup-parf] step  5100/8000   train 3.4145   lr 1.59e-04   grad 0.91   gamma=0.148   tau=0.508   elapsed 3198s
+[scaleup-parf] step  5150/8000   train 3.4087   lr 1.54e-04   grad 1.20   gamma=0.148   tau=0.501   elapsed 3229s
+[scaleup-parf] step  5200/8000   train 3.4201   lr 1.50e-04   grad 1.23   gamma=0.149   tau=0.494   elapsed 3259s
+[scaleup-parf] >>> eval @ 5200: val 3.4969   ppl 33.01
+[scaleup-parf] step  5250/8000   train 3.4050   lr 1.45e-04   grad 1.34   gamma=0.149   tau=0.487   elapsed 3296s
+[scaleup-parf] step  5300/8000   train 3.4227   lr 1.40e-04   grad 1.34   gamma=0.149   tau=0.480   elapsed 3327s
+[scaleup-parf] step  5350/8000   train 3.4021   lr 1.36e-04   grad 1.43   gamma=0.149   tau=0.473   elapsed 3357s
+[scaleup-parf] step  5400/8000   train 3.4179   lr 1.31e-04   grad 1.43   gamma=0.149   tau=0.466   elapsed 3388s
+[scaleup-parf] step  5450/8000   train 3.4168   lr 1.27e-04   grad 1.54   gamma=0.149   tau=0.459   elapsed 3419s
+[scaleup-parf] step  5500/8000   train 3.4092   lr 1.22e-04   grad 1.35   gamma=0.149   tau=0.452   elapsed 3449s
+[scaleup-parf] step  5550/8000   train 3.3920   lr 1.18e-04   grad 1.38   gamma=0.149   tau=0.445   elapsed 3480s
+[scaleup-parf] step  5600/8000   train 3.3848   lr 1.13e-04   grad 1.66   gamma=0.149   tau=0.438   elapsed 3510s
+[scaleup-parf] >>> eval @ 5600: val 3.4834   ppl 32.57
+[scaleup-parf] step  5650/8000   train 3.3975   lr 1.09e-04   grad 1.62   gamma=0.149   tau=0.431   elapsed 3547s
+[scaleup-parf] step  5700/8000   train 3.3974   lr 1.05e-04   grad 1.62   gamma=0.149   tau=0.424   elapsed 3578s
+[scaleup-parf] step  5750/8000   train 3.3961   lr 1.01e-04   grad 1.79   gamma=0.149   tau=0.416   elapsed 3609s
+[scaleup-parf] step  5800/8000   train 3.3864   lr 9.65e-05   grad 1.72   gamma=0.149   tau=0.409   elapsed 3639s
+[scaleup-parf] step  5850/8000   train 3.3771   lr 9.25e-05   grad 1.64   gamma=0.149   tau=0.402   elapsed 3670s
+[scaleup-parf] step  5900/8000   train 3.3821   lr 8.85e-05   grad 1.65   gamma=0.149   tau=0.395   elapsed 3700s
+[scaleup-parf] step  5950/8000   train 3.3934   lr 8.46e-05   grad 1.80   gamma=0.149   tau=0.388   elapsed 3731s
+[scaleup-parf] step  6000/8000   train 3.3853   lr 8.08e-05   grad 1.67   gamma=0.149   tau=0.381   elapsed 3761s
+[scaleup-parf] >>> eval @ 6000: val 3.4591   ppl 31.79
+[scaleup-parf] step  6050/8000   train 3.3906   lr 7.70e-05   grad 1.65   gamma=0.149   tau=0.374   elapsed 3798s
+[scaleup-parf] step  6100/8000   train 3.3789   lr 7.33e-05   grad 1.45   gamma=0.149   tau=0.367   elapsed 3829s
+[scaleup-parf] step  6150/8000   train 3.3780   lr 6.97e-05   grad 2.03   gamma=0.149   tau=0.360   elapsed 3860s
+[scaleup-parf] step  6200/8000   train 3.3760   lr 6.61e-05   grad 1.76   gamma=0.150   tau=0.353   elapsed 3890s
+[scaleup-parf] step  6250/8000   train 3.3650   lr 6.27e-05   grad 1.43   gamma=0.150   tau=0.346   elapsed 3921s
+[scaleup-parf] step  6300/8000   train 3.3843   lr 5.93e-05   grad 1.35   gamma=0.150   tau=0.339   elapsed 3951s
+[scaleup-parf] step  6350/8000   train 3.3811   lr 5.60e-05   grad 1.99   gamma=0.150   tau=0.332   elapsed 3982s
+[scaleup-parf] step  6400/8000   train 3.3858   lr 5.28e-05   grad 1.90   gamma=0.150   tau=0.325   elapsed 4012s
+[scaleup-parf] >>> eval @ 6400: val 3.4514   ppl 31.55
+[scaleup-parf] step  6450/8000   train 3.3765   lr 4.96e-05   grad 1.73   gamma=0.150   tau=0.318   elapsed 4050s
+[scaleup-parf] step  6500/8000   train 3.3670   lr 4.66e-05   grad 1.46   gamma=0.150   tau=0.311   elapsed 4080s
+[scaleup-parf] step  6550/8000   train 3.3855   lr 4.36e-05   grad 1.75   gamma=0.150   tau=0.304   elapsed 4111s
+[scaleup-parf] step  6600/8000   train 3.3795   lr 4.08e-05   grad 2.32   gamma=0.150   tau=0.297   elapsed 4141s
+[scaleup-parf] step  6650/8000   train 3.3659   lr 3.80e-05   grad 1.65   gamma=0.150   tau=0.290   elapsed 4172s
+[scaleup-parf] step  6700/8000   train 3.3648   lr 3.53e-05   grad 1.56   gamma=0.150   tau=0.283   elapsed 4202s
+[scaleup-parf] step  6750/8000   train 3.3880   lr 3.27e-05   grad 1.72   gamma=0.150   tau=0.276   elapsed 4233s
+[scaleup-parf] step  6800/8000   train 3.3646   lr 3.02e-05   grad 1.63   gamma=0.150   tau=0.269   elapsed 4263s
+[scaleup-parf] >>> eval @ 6800: val 3.4621   ppl 31.88
+[scaleup-parf] step  6850/8000   train 3.3870   lr 2.78e-05   grad 2.04   gamma=0.150   tau=0.262   elapsed 4301s
+[scaleup-parf] step  6900/8000   train 3.3978   lr 2.54e-05   grad 1.81   gamma=0.150   tau=0.255   elapsed 4331s
+[scaleup-parf] step  6950/8000   train 3.3965   lr 2.32e-05   grad 1.85   gamma=0.150   tau=0.248   elapsed 4362s
+[scaleup-parf] step  7000/8000   train 3.3926   lr 2.11e-05   grad 1.51   gamma=0.150   tau=0.241   elapsed 4392s
+[scaleup-parf] step  7050/8000   train 3.3916   lr 1.91e-05   grad 1.83   gamma=0.150   tau=0.234   elapsed 4423s
+[scaleup-parf] step  7100/8000   train 3.3935   lr 1.71e-05   grad 1.82   gamma=0.150   tau=0.227   elapsed 4453s
+[scaleup-parf] step  7150/8000   train 3.3763   lr 1.53e-05   grad 2.04   gamma=0.150   tau=0.220   elapsed 4484s
+[scaleup-parf] step  7200/8000   train 3.4056   lr 1.36e-05   grad 2.10   gamma=0.150   tau=0.213   elapsed 4515s
+[scaleup-parf] >>> eval @ 7200: val 3.4798   ppl 32.45
+[scaleup-parf] step  7250/8000   train 3.4000   lr 1.20e-05   grad 1.72   gamma=0.150   tau=0.206   elapsed 4552s
+[scaleup-parf] step  7300/8000   train 3.3856   lr 1.04e-05   grad 1.69   gamma=0.150   tau=0.199   elapsed 4582s
+[scaleup-parf] step  7350/8000   train 3.3727   lr 9.00e-06   grad 1.78   gamma=0.150   tau=0.192   elapsed 4613s
+[scaleup-parf] step  7400/8000   train 3.3875   lr 7.68e-06   grad 2.02   gamma=0.150   tau=0.185   elapsed 4643s
+[scaleup-parf] step  7450/8000   train 3.3783   lr 6.46e-06   grad 2.08   gamma=0.150   tau=0.177   elapsed 4674s
+[scaleup-parf] step  7500/8000   train 3.3784   lr 5.34e-06   grad 2.39   gamma=0.150   tau=0.170   elapsed 4705s
+[scaleup-parf] step  7550/8000   train 3.3904   lr 4.33e-06   grad 2.38   gamma=0.150   tau=0.163   elapsed 4735s
+[scaleup-parf] step  7600/8000   train 3.3931   lr 3.43e-06   grad 2.10   gamma=0.150   tau=0.156   elapsed 4766s
+[scaleup-parf] >>> eval @ 7600: val 3.4527   ppl 31.59
+[scaleup-parf] step  7650/8000   train 3.3800   lr 2.63e-06   grad 2.16   gamma=0.150   tau=0.149   elapsed 4803s
+[scaleup-parf] step  7700/8000   train 3.4010   lr 1.93e-06   grad 1.80   gamma=0.150   tau=0.142   elapsed 4833s
+[scaleup-parf] step  7750/8000   train 3.3852   lr 1.34e-06   grad 1.95   gamma=0.150   tau=0.135   elapsed 4864s
+[scaleup-parf] step  7800/8000   train 3.4030   lr 8.62e-07   grad 2.75   gamma=0.150   tau=0.128   elapsed 4895s
+[scaleup-parf] step  7850/8000   train 3.4161   lr 4.87e-07   grad 2.47   gamma=0.150   tau=0.121   elapsed 4925s
+[scaleup-parf] step  7900/8000   train 3.3867   lr 2.18e-07   grad 2.27   gamma=0.150   tau=0.114   elapsed 4956s
+[scaleup-parf] step  7950/8000   train 3.4027   lr 5.56e-08   grad 1.95   gamma=0.150   tau=0.107   elapsed 4986s
+[scaleup-parf] step  8000/8000   train 3.3934   lr 2.14e-11   grad 2.94   gamma=0.150   tau=0.100   elapsed 5017s
+[scaleup-parf] >>> eval @ 8000: val 3.4790   ppl 32.43
+
+[scaleup-parf] DONE  val_loss=3.4842  val_ppl=32.60  gamma=0.1500  elapsed=5030s
+[scaleup-parf] saved checkpoint -> /content/drive/MyDrive/semsimula_pilot/results/parf_structural_vphi16_sparse_k4_scaleup_scaleup_seed0_ckpt_latest.pt
+[scaleup-parf] saved loss curve -> /content/drive/MyDrive/semsimula_pilot/results/parf_structural_vphi16_sparse_k4_scaleup_scaleup_seed0_loss_curve.png
+[scaleup-parf] summary written to /content/drive/MyDrive/semsimula_pilot/results/parf_structural_vphi16_sparse_k4_scaleup_scaleup_seed0_summary.md

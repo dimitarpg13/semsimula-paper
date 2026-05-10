@@ -63,16 +63,46 @@ class CausalSelfAttention(nn.Module):
         self.proj   = nn.Linear(cfg.d, cfg.d, bias=True)
         self.drop   = nn.Dropout(cfg.dropout)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self,
+        x: torch.Tensor,
+        kv_cache: Optional[Tuple[torch.Tensor, torch.Tensor]] = None,
+        use_cache: bool = False,
+    ) -> Tuple[torch.Tensor, Optional[Tuple[torch.Tensor, torch.Tensor]]]:
+        """Causal self-attention with optional KV-cache.
+
+        Args:
+            x:         (B, T_new, D)
+            kv_cache:  optional (K_cached, V_cached) of shape
+                       (B, H, T_past, D_h); pass None for the first
+                       step of decode mode (new_cache will still be
+                       returned).
+            use_cache: if True, return new_cache; if False, return None
+                       (training-style behaviour).
+        Returns:
+            out:           (B, T_new, D)
+            new_kv_cache:  updated KV cache, or None if use_cache=False.
+        """
         B, T, D = x.shape
-        qkv = self.qkv(x)                                          # (B,T,3D)
+        qkv = self.qkv(x)
         q, k, v = qkv.split(D, dim=-1)
-        q = q.view(B, T, self.n_head, self.d_head).transpose(1, 2)  # (B,H,T,Dh)
+        q = q.view(B, T, self.n_head, self.d_head).transpose(1, 2)
         k = k.view(B, T, self.n_head, self.d_head).transpose(1, 2)
         v = v.view(B, T, self.n_head, self.d_head).transpose(1, 2)
-        out = F.scaled_dot_product_attention(q, k, v, is_causal=True)
+
+        if kv_cache is not None:
+            K_past, V_past = kv_cache
+            k = torch.cat([K_past, k], dim=2)
+            v = torch.cat([V_past, v], dim=2)
+            out = F.scaled_dot_product_attention(q, k, v, is_causal=False)
+        elif use_cache:
+            out = F.scaled_dot_product_attention(q, k, v, is_causal=True)
+        else:
+            out = F.scaled_dot_product_attention(q, k, v, is_causal=True)
+
+        new_cache = (k, v) if use_cache else None
         out = out.transpose(1, 2).contiguous().view(B, T, D)
-        return self.drop(self.proj(out))
+        return self.drop(self.proj(out)), new_cache
 
 
 class MLP(nn.Module):
@@ -95,10 +125,17 @@ class Block(nn.Module):
         self.ln2 = nn.LayerNorm(cfg.d)
         self.mlp = MLP(cfg)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = x + self.attn(self.ln1(x))
+    def forward(
+        self,
+        x: torch.Tensor,
+        kv_cache: Optional[Tuple[torch.Tensor, torch.Tensor]] = None,
+        use_cache: bool = False,
+    ) -> Tuple[torch.Tensor, Optional[Tuple[torch.Tensor, torch.Tensor]]]:
+        attn_out, new_cache = self.attn(self.ln1(x), kv_cache=kv_cache,
+                                        use_cache=use_cache)
+        x = x + attn_out
         x = x + self.mlp(self.ln2(x))
-        return x
+        return x, new_cache
 
 
 # ---------------------------------------------------------------------------
@@ -139,28 +176,47 @@ class MatchedGPT(nn.Module):
             pass
         return n
 
-    # -----------------------------------------------------------------------
     def forward(
         self,
         x: torch.Tensor,                          # (B, T) int64
         targets: Optional[torch.Tensor] = None,   # (B, T) int64
         return_trajectory: bool = False,
+        kv_caches: Optional[list] = None,
+        position_offset: int = 0,
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
-        B, T = x.shape
-        h = self.drop(self.E(x) + self.P[:T])
+        """Forward.
 
+        Args:
+            x:               (B, T_new) integer token ids.
+            targets:         optional (B, T_new) for loss.
+            return_trajectory: if True, return per-layer hidden states.
+            kv_caches:       optional list of length n_layer of (K, V)
+                             cached pairs from previous decode steps.
+                             If provided, the position embedding starts
+                             at `position_offset` and the new KV is
+                             concatenated to the cache; the function
+                             returns the updated cache as a third tuple
+                             element. This is the AR-decode mode.
+            position_offset: position offset for the position embedding
+                             (used with kv_caches to index P[T_past:T_past+T_new]).
+        """
+        B, T = x.shape
+        pos = self.P[position_offset:position_offset + T]
+        h = self.drop(self.E(x) + pos)
+
+        use_cache = kv_caches is not None
         traj = [h] if return_trajectory else None
-        for block in self.blocks:
-            h = block(h)
+        new_caches: list = [] if use_cache else None
+        for i, block in enumerate(self.blocks):
+            cache_in = kv_caches[i] if use_cache else None
+            h, new_cache = block(h, kv_cache=cache_in, use_cache=use_cache)
+            if new_caches is not None:
+                new_caches.append(new_cache)
             if traj is not None:
                 traj.append(h)
 
         h = self.ln_f(h)
-
-        if self.cfg.tie_embeddings:
-            logits = h @ self.E.weight.T
-        else:
-            logits = h @ self.E.weight.T    # (fallback: still tied since no lm_head was defined)
+        logits = h @ self.E.weight.T
 
         loss = None
         if targets is not None:
@@ -169,7 +225,14 @@ class MatchedGPT(nn.Module):
                 targets.reshape(-1),
             )
 
-        return (logits, loss) if traj is None else (logits, loss, traj)
+        out = [logits, loss]
+        if traj is not None:
+            out.append(traj)
+        if new_caches is not None:
+            out.append(new_caches)
+        if len(out) == 2:
+            return tuple(out)
+        return tuple(out)
 
 
 # ---------------------------------------------------------------------------

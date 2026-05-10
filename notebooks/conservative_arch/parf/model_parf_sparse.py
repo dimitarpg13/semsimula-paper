@@ -339,6 +339,7 @@ class SparsePARFLM(PARFLM):
         m_b: torch.Tensor,
         gamma: torch.Tensor,
         dt: float,
+        layer_idx: int = 0,
     ) -> torch.Tensor:
         """One velocity-Verlet step with Gumbel-softmax sparse routing.
 
@@ -385,6 +386,10 @@ class SparsePARFLM(PARFLM):
         else:
             P = self.V_phi(h_in, h_src)                          # (B, T, T)
         P_masked = (P * tilde_m).masked_fill(~causal, 0.0)
+        # P8 patch B: per-layer V_φ scale (carries through to sparse PARF too).
+        s_ell = self.per_layer_scale(layer_idx)
+        if s_ell is not None:
+            P_masked = P_masked * s_ell
         U = V_th_per_token.sum() + P_masked.sum()
 
         grad_U, = torch.autograd.grad(

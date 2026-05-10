@@ -85,6 +85,13 @@ def build_config(
     sparse_gumbel_tau_init: float = 1.0,
     sparse_gumbel_tau_min: float = 0.1,
     sparse_gumbel_noise: bool = True,
+    competitive_temp: float = 1.0,
+    competitive_scale: str = "row",
+    ln_before_distance: bool = False,
+    per_layer_v_phi_scale: bool = False,
+    per_layer_scale_init: float = -3.0,
+    theta_activation: str = "tanh",
+    theta_form: str = "mlp",
 ) -> Tuple[PARFConfig, dict, str]:
     """Return (model_cfg, train_cfg, tag).
 
@@ -110,6 +117,13 @@ def build_config(
         ln_after_step=True,
         fixed_gamma=fixed_gamma_arg,
         use_grad_checkpoint=use_grad_checkpoint,
+        v_phi_competitive_temp=competitive_temp,
+        v_phi_competitive_scale=competitive_scale,
+        ln_before_distance=ln_before_distance,
+        per_layer_v_phi_scale=per_layer_v_phi_scale,
+        per_layer_scale_init=per_layer_scale_init,
+        theta_activation=theta_activation,
+        theta_form=theta_form,
     )
 
     if mode == "smoke":
@@ -161,7 +175,32 @@ def build_config(
     else:
         vph_tag = ""
 
+    if v_phi_kind == "structural_competitive":
+        # Encode the competitive knobs in the run tag so swept runs are
+        # disambiguated on disk.  τ defaults to 1.0 and scale to 'row';
+        # only annotate when departing from the defaults.
+        ct_tag = (
+            f"_ct{competitive_temp:g}".rstrip("0").rstrip(".")
+            if abs(competitive_temp - 1.0) > 1e-9 else ""
+        )
+        cs_tag = "" if competitive_scale == "row" else f"_cs-{competitive_scale}"
+        comp_tag = ct_tag + cs_tag
+    else:
+        comp_tag = ""
+
     gc_tag = "_gc" if use_grad_checkpoint else ""
+
+    # ----- P8 cell tag suffixes (composable, alphabetical for stability) -----
+    p8_parts = []
+    if ln_before_distance:
+        p8_parts.append("lnD")
+    if per_layer_v_phi_scale:
+        p8_parts.append("pls")
+    if str(theta_activation).lower() == "softsign":
+        p8_parts.append("\u03B8ss")  # 'θss' — softsign Θ
+    if str(theta_form).lower() == "bilinear":
+        p8_parts.append("\u03B8bl")  # 'θbl' — bilinear Θ
+    p8_tag = ("_" + "-".join(p8_parts)) if p8_parts else ""
 
     if sparse_top_k is not None:
         # Stage 1.5: Gumbel-softmax sparse routing on top of the dense
@@ -182,7 +221,10 @@ def build_config(
         sparse_tag = ""
 
     fg_tag = "" if fixed_gamma_arg is None else f"_g{fixed_gamma_arg:.3f}"
-    tag = f"parf_{v_phi_kind}{vh_tag}{vph_tag}{gc_tag}{fg_tag}{sparse_tag}"
+    tag = (
+        f"parf_{v_phi_kind}{vh_tag}{vph_tag}{comp_tag}"
+        f"{p8_tag}{gc_tag}{fg_tag}{sparse_tag}"
+    )
     return cfg, train_cfg, tag
 
 
@@ -241,11 +283,27 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--mode", choices=["smoke", "shakespeare"],
                     default="shakespeare")
-    ap.add_argument("--v-phi-kind", choices=["structural", "mlp"],
+    ap.add_argument("--v-phi-kind",
+                    choices=["structural", "structural_competitive", "mlp"],
                     default="structural", dest="v_phi_kind",
                     help="Inner shape of V_phi: 'structural' is the "
-                         "§5.1-faithful pair potential (default); 'mlp' "
-                         "is the unstructured MLP ablation.")
+                         "§5.1-faithful pair potential (default); "
+                         "'structural_competitive' is the Lever-3 "
+                         "softmax-normalised type-gate variant (P7); "
+                         "'mlp' is the unstructured MLP ablation.")
+    ap.add_argument("--v-phi-competitive-temp", type=float, default=1.0,
+                    dest="v_phi_competitive_temp",
+                    help="Softmax temperature τ for the competitive Φ̃_φ "
+                         "(only consulted when --v-phi-kind="
+                         "structural_competitive).")
+    ap.add_argument("--v-phi-competitive-scale",
+                    choices=["row", "mean", "none"], default="row",
+                    dest="v_phi_competitive_scale",
+                    help="Post-softmax rescale of Φ̃_φ: 'row' multiplies "
+                         "by per-row causal count (default; preserves the "
+                         "scale of the unnormalised dense sum); 'mean' "
+                         "leaves Σ Φ̃ = 1 per row; 'none' is the diagnostic-"
+                         "only no-rescale case.")
     ap.add_argument("--fixed-gamma", type=float, default=None,
                     dest="fixed_gamma",
                     help="If set, use this fixed gamma for the integrator. "
@@ -321,9 +379,58 @@ def main():
              "or for deterministic inference; not recommended for "
              "training the discrete-selection policy.",
     )
+    # ----- P8 cell knobs (compose with structural / structural_competitive) -----
+    ap.add_argument(
+        "--ln-before-distance", action="store_true",
+        dest="ln_before_distance",
+        help="P8 patch A: replace ‖h_t-h_s‖ with ‖LN(h_t)-LN(h_s)‖ inside "
+             "V_phi.  Decouples 1/r from per-layer ‖h‖ growth and removes "
+             "the F-Layer1 R≈3 force imbalance.  Output tag gains 'lnD'.",
+    )
+    ap.add_argument(
+        "--per-layer-v-phi-scale", action="store_true",
+        dest="per_layer_v_phi_scale",
+        help="P8 patch B: introduce a learnable scalar s_ℓ = softplus(σ_ℓ) "
+             "per integrator layer that multiplies the V_phi contribution "
+             "to U.  Lets the optimiser down-weight Layer 1 and up-weight "
+             "middle layers freely.  Output tag gains 'pls'.",
+    )
+    ap.add_argument(
+        "--per-layer-scale-init", type=float, default=-3.0,
+        dest="per_layer_scale_init",
+        help="Initial logit σ_ℓ for the per-layer V_phi scale "
+             "(softplus(-3.0) ≈ 0.0486 ⇒ V_phi enters as a ~5%% "
+             "perturbation).  Only consulted with --per-layer-v-phi-scale.",
+    )
+    ap.add_argument(
+        "--theta-activation", choices=["tanh", "softsign"],
+        default="tanh", dest="theta_activation",
+        help="P8 patch C: bounded activation for Θ_φ.  'tanh' (default) "
+             "saturates exponentially; 'softsign' x/(1+|x|) saturates "
+             "polynomially with ~1000× larger gradient at logit "
+             "magnitude 5.  Output tag gains 'θss' for softsign.",
+    )
+    ap.add_argument(
+        "--theta-form", choices=["mlp", "bilinear"],
+        default="mlp", dest="theta_form",
+        help="P8 patch D: parameterisation of Θ_φ.  'mlp' (default) is "
+             "the 3K→H→1 GELU MLP; 'bilinear' is θ_t^T W θ_s + b — "
+             "K^2+1 params, gradient-bounded, recovers the §5.2 "
+             "canonical Θ = -sin(θ_t-θ_s) at K=2 with W skew-symmetric.  "
+             "Output tag gains 'θbl' for bilinear.",
+    )
     args = ap.parse_args()
 
     device = args.device or _pick_device()
+    # Disable TF32 (TensorFloat-32) on Ampere/Hopper.  PARF uses
+    # autograd.grad through a chained 1/r kernel and a tanh/softsign
+    # bounded Θ — both have fragile numerics in the saturation /
+    # near-singular zones, and the ~10-bit mantissa of TF32 is too
+    # coarse for reproducible second-order autograd.  We keep cuDNN
+    # and matmul on full FP32 throughout training and diagnostics.
+    if device == "cuda":
+        torch.backends.cuda.matmul.allow_tf32 = False
+        torch.backends.cudnn.allow_tf32 = False
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
     rng = np.random.default_rng(args.seed)
@@ -341,6 +448,13 @@ def main():
         sparse_gumbel_tau_init=args.gumbel_tau_init,
         sparse_gumbel_tau_min=args.gumbel_tau_min,
         sparse_gumbel_noise=args.gumbel_noise,
+        competitive_temp=args.v_phi_competitive_temp,
+        competitive_scale=args.v_phi_competitive_scale,
+        ln_before_distance=args.ln_before_distance,
+        per_layer_v_phi_scale=args.per_layer_v_phi_scale,
+        per_layer_scale_init=args.per_layer_scale_init,
+        theta_activation=args.theta_activation,
+        theta_form=args.theta_form,
     )
     full_tag = f"{tag}_{args.mode}_seed{args.seed}"
     is_sparse = isinstance(cfg, SparsePARFConfig)

@@ -151,3 +151,19 @@ notebooks/conservative_arch/parf/results/**/*.pt    filter=lfs diff=lfs merge=lf
 notebooks/conservative_arch/parf/results/**/*.pkl   filter=lfs diff=lfs merge=lfs -text
 notebooks/conservative_arch/parf/results/**/*.png   filter=lfs diff=lfs merge=lfs -text
 notebooks/conservative_arch/parf/results/**/*.npz   filter=lfs diff=lfs merge=lfs -text
+
+# PARF channel-diagnostic outputs (P6, May 2026) -- per-checkpoint
+# {channels,gradient_ratio}.png and summary.{md,json} for the dense
+# structural P1, sparse top-k=4 P5, and TinyStories scale-up P10a
+# pilot. These back paper §17 and the §10 V_phi tuning programme in
+# `companion_notes/PARF_Augmented_SPLM_Architecture.md`.
+notebooks/conservative_arch/parf/diagnostics/results/**/*.png filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/parf/diagnostics/results/**/*.npz filter=lfs diff=lfs merge=lfs -text
+
+# First-order ablation extension (n=5 leakfree confirmation, §15.x).
+# Extends the SPLM-1 first-order ablation from n=3 to n=5 seeds; the
+# new seeds 3/4 ship loss-curve PNG + summary + jsonl + train-stdout
+# log. Paired with `notebooks/conservative_arch/ln_damping_sweep/
+# results/leakfree_5seed_confirmation/`.
+notebooks/conservative_arch/first_order_ablation/results/**/*.png filter=lfs diff=lfs merge=lfs -text
+notebooks/conservative_arch/first_order_ablation/results/**/*.npz filter=lfs diff=lfs merge=lfs -text

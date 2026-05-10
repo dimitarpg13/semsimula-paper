@@ -11,7 +11,7 @@
 The v3 paper closes a precise theoretical statement (§15.5, §15.6, Appendix A): trained attention transformers are *outside* the autonomous Helmholtz decomposition class. The full phase-space force on a hidden-state trajectory admits the canonical decomposition
 
 $$
-F(h, \dot h) = -\nabla \phi(h) + F_{\mathrm{sol}}(h) + B(h) \dot h + D(h) \dot h,
+F(h, \dot h) = -\nabla \phi(h) + F_{\mathrm{sol}}(h) + B(h) \dot h + D(h) \dot h ,
 $$
 
 where $\phi$ is a scalar potential, $F_{\mathrm{sol}}$ is solenoidal in position ($\nabla\cdot F_{\mathrm{sol}}=0$ but $\nabla \times F_{\mathrm{sol}} \neq 0$), $B$ is skew (gyroscopic / electromagnetic-analogue), and $D$ is symmetric (Rayleigh damping, absorbed into $\gamma$). Experiments E1–E5 of §15.5 closed the autonomous menu by testing each of these terms — at constant, affine-rank-1, and affine-rank-2 dependence on $h$ — and finding that every fitted addition either ties the static-null floor or shrinks to zero under TRAIN-optimal calibration. Appendix A explains the negative outcome: the *correct* governing equation in trained attention is Eq. (A.130),
@@ -37,7 +37,7 @@ The architectural claim is precise: the hybrid is the *first* language model in 
 Let $\mathcal{F}_S$ denote the autonomous, conservative force class
 
 $$
-\mathcal{F}_S = \lbrace F: \mathbb{R}^d \times \mathbb{R}^d \to \mathbb{R}^d \mid F(h,\dot h) = -\nabla_h V_\theta(\xi, h), V_\theta \text{ shared across all } \ell \rbrace,
+\mathcal{F}_S = \lbrace F : \mathbb{R}^d \times \mathbb{R}^d \to \mathbb{R}^d \mid F(h,\dot h) = -\nabla_h V_\theta(\xi, h), V_\theta \text{ shared across all } \ell \rbrace,
 $$
 
 and $\mathcal{F}_A$ the non-autonomous Hopfield class derived from §A.2,
@@ -50,7 +50,7 @@ The two classes differ in exactly two structural axes: $\mathcal{F}\_S$ has $\th
 
 ### 2.2 The architectural commitment
 
-The Helmholtz architecture is the language model whose forward update applies $\mathcal{F}\_S$-type and $\mathcal{F}\_A$-type forces in alternation at the *block* level. Concretely, fix a depth schedule $\sigma: \{0,1,\dots,L-1\} \to \{S, A\}$ that assigns each layer index a block type. The update rule at layer $\ell$ is then
+The Helmholtz architecture is the language model whose forward update applies $\mathcal{F}\_S$-type and $\mathcal{F}\_A$-type forces in alternation at the *block* level. Concretely, fix a depth schedule $\sigma : \{0,1,\dots,L-1\} \to \{S, A\}$ that assigns each layer index a block type. The update rule at layer $\ell$ is then
 
 $$
 h^{(\ell+1)}_t = \begin{cases}
@@ -138,7 +138,7 @@ $$
 For the hybrid, the curvature $F_\ell$ vanishes identically on every $S$-block (because $\partial_\ell V \equiv 0$ there) and is generically non-zero on every $A$-block. The total holonomy is therefore a sum of $L_A$ contributions:
 
 $$
-\mathrm{Hol}_{\mathrm{hybrid}}[\gamma] = \sum_{\ell: \sigma(\ell)=A} \oint_\gamma A_\ell \cdot dh \le \frac{L_A}{L} \mathrm{Hol}_{\mathrm{attn}}[\gamma],
+\mathrm{Hol}_{\mathrm{hybrid}}[\gamma] = \sum_{\ell : \sigma(\ell)=A} \oint_\gamma A_\ell \cdot dh \le \frac{L_A}{L} \mathrm{Hol}_{\mathrm{attn}}[\gamma],
 $$
 
 with equality in the limit where the $A$-blocks are pulled from a fully-attention reference model. The hybrid's holonomy is therefore *budgeted*: the architect chooses $L_A/L$ and pays for routing in proportion. This is a quantitative refinement of the SPLM-vs-attention comparison: instead of "no routing" vs. "routing everywhere," one tunes the routing budget continuously.
@@ -248,7 +248,7 @@ The third configuration is the cleanest for the paper's narrative: it identifies
 
 ## 7. Training: standard backpropagation, with optional RL for schedule search
 
-The layer-type Helmholtz architecture is **fully differentiable end-to-end** by construction. Every $S$-block is differentiable through the symplectic Euler integrator (smooth $V_\theta$, smooth chain rule across $L_S$ steps under the §15.20 $\gamma$-damping resonance condition); every $A$-block is differentiable through standard softmax attention plus residual MLP; the schedule $\sigma: \{0, \dots, L-1\} \to \{S, A\}$ is a *fixed design-time hyperparameter* rather than a learned quantity. Training therefore reduces to standard NTP cross-entropy backpropagation through the unrolled stack, with no special infrastructure required beyond what trains a vanilla decoder.
+The layer-type Helmholtz architecture is **fully differentiable end-to-end** by construction. Every $S$-block is differentiable through the symplectic Euler integrator (smooth $V_\theta$, smooth chain rule across $L_S$ steps under the §15.20 $\gamma$-damping resonance condition); every $A$-block is differentiable through standard softmax attention plus residual MLP; the schedule $\sigma : \{0, \dots, L-1\} \to \{S, A\}$ is a *fixed design-time hyperparameter* rather than a learned quantity. Training therefore reduces to standard NTP cross-entropy backpropagation through the unrolled stack, with no special infrastructure required beyond what trains a vanilla decoder.
 
 ### 7.1 Why standard backpropagation suffices here, in contrast to PARF-augmented SPLM
 
@@ -361,5 +361,6 @@ The recommended v4 deposit positioning: **Q9(c) PARF-augmented SPLM is the presc
 
 *Companion notes referenced:*
 *— `Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`*
+*— `Restructuring_paper_v3_after_causal_leak_bug.md`*
 *— `Reducing_Information_Bottleneck_In_Multi-Channel_Xi_SPLM.md`*
 *— `Evidence_for_second_order_ODE_governing_evolution.md`*

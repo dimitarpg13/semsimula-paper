@@ -1,0 +1,13 @@
+===========================================================
+ PARF Q9c -- P5 Stage 1.5 Gumbel-softmax sparse k-sweep
+ top_ks:        4 8 16 32
+ seeds:         0
+ gumbel_tau:    1.0 -> 0.1
+ anneal_frac:   0.8
+ score_head_h:  32
+ V_phi_hidden:  128  (matches P1.6 wider-structural)
+===========================================================
+[wrap] RUN  k=4 seed=0  ->  /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/parf/results/structural_sparse/seed0_k4
+[wrap] RUN  k=8 seed=0  ->  /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/parf/results/structural_sparse/seed0_k8
+[wrap] RUN  k=16 seed=0  ->  /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/parf/results/structural_sparse/seed0_k16
+[wrap] RUN  k=32 seed=0  ->  /Users/dimitargueorguiev/git/ml/semsimula/notebooks/conservative_arch/parf/results/structural_sparse/seed0_k32

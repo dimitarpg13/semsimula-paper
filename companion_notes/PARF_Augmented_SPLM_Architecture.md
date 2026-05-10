@@ -34,7 +34,7 @@ $$
 U^{(\ell)}_t = V_\theta\left(\xi^{(\ell)}_t, h^{(\ell)}_t\right) + \sum_{s < t} V_\phi\left(h^{(\ell)}_t, h^{(\ell)}_s\right),
 $$
 
-where $V_\theta: \mathbb{R}^d \times \mathbb{R}^d \to \mathbb{R}$ is the SPLM single-particle external scalar (the bounded attractive Gaussian well, parameterised as a four-layer MLP with hidden $d_V$ and GELU as in §15.12) and $V_\phi: \mathbb{R}^d \times \mathbb{R}^d \to \mathbb{R}$ is the pair-interaction scalar. Both are shared across all layers $\ell$ and all token positions $t$. The per-token update is
+where $V_\theta : \mathbb{R}^d \times \mathbb{R}^d \to \mathbb{R}$ is the SPLM single-particle external scalar (the bounded attractive Gaussian well, parameterised as a four-layer MLP with hidden $d_V$ and GELU as in §15.12) and $V_\phi : \mathbb{R}^d \times \mathbb{R}^d \to \mathbb{R}$ is the pair-interaction scalar. Both are shared across all layers $\ell$ and all token positions $t$. The per-token update is
 
 $$
 h^{(\ell+1)}_t = h^{(\ell)}_t + \frac{\Delta t}{1+\gamma}\bigl(h^{(\ell)}_t - h^{(\ell-1)}_t\bigr) - \frac{\Delta t^2}{(1+\gamma) m} \nabla_{h_t} U^{(\ell)}_t,
@@ -53,7 +53,7 @@ The first term is the SPLM single-particle force, unchanged. The second term is 
 The framework prescribes a specific functional form for the pair potential. Lifting the §5.1 PARF to the hidden-state level, define small learned projections
 
 $$
-l(h):= W_l h, \qquad \theta(h):= W_\theta h,
+l(h) := W_l h, \qquad \theta(h) := W_\theta h,
 $$
 
 extracting the type vector $l(h) \in \mathbb{R}^{d_l}$ and value angles $\theta(h) \in \mathbb{R}^{K}$ from the hidden state. Then parameterise
@@ -128,7 +128,7 @@ A symmetric variant — applying the back-reaction force to past tokens during t
 
 ### 4.1 What the v3 single-scalar test cannot detect
 
-The §15.8 strict shared-$V_\psi$ test fits, jointly across all layers, a single learned scalar $V_\psi: \mathbb{R}^d \to \mathbb{R}$ satisfying
+The §15.8 strict shared-$V_\psi$ test fits, jointly across all layers, a single learned scalar $V_\psi : \mathbb{R}^d \to \mathbb{R}$ satisfying
 
 $$
 \Delta h^{(\ell)}_t \approx \alpha_\ell h^{(\ell)}_t - \beta_\ell \nabla V_\psi\left(h^{(\ell)}_t\right),
@@ -148,7 +148,7 @@ This is not a flaw of the test; it is a consequence of the v3 architecture. SPLM
 
 ### 4.2 The generalisation
 
-The natural generalisation lifts the diagnostic to a *pair* of learned scalars: $V_\psi^{(1)}: \mathbb{R}^d \to \mathbb{R}$ for the single-particle component and $V_\psi^{(2)}: \mathbb{R}^d \times \mathbb{R}^d \to \mathbb{R}$ for the pair-interaction component. The joint fit jointly minimises
+The natural generalisation lifts the diagnostic to a *pair* of learned scalars: $V_\psi^{(1)}: \mathbb{R}^d \to \mathbb{R}$ for the single-particle component and $V_\psi^{(2)} : \mathbb{R}^d \times \mathbb{R}^d \to \mathbb{R}$ for the pair-interaction component. The joint fit jointly minimises
 
 $$
 \mathcal{L}_{\mathrm{pair}} = \sum_{\ell, t} \Big\lVert h^{(\ell+1)}_t - \alpha_\ell h^{(\ell)}_t + \beta_\ell \nabla V_\psi^{(1)}(h^{(\ell)}_t) + \delta_\ell \sum_{s\lt t} \nabla_{h_t} V_\psi^{(2)}(h^{(\ell)}_t, h^{(\ell)}_s) \Big\rVert^2,
@@ -420,7 +420,513 @@ The §16 Jacobi metric is induced by the bounded attractive scalar potential $V_
 
 ---
 
-## 9. Summary
+## 10. Tuning the structural $V_\phi$ — design space for Eq. (131)
+
+### 10.1 Problem statement
+
+Stage 1 of the empirical programme has produced a definite, reproducible signal:
+
+| Cell | $V_\phi$ regime | val PPL | $\Delta$ vs SPLM em-ln |
+|---|---|---|---|
+| SPLM em-ln (no $V_\phi$) | — | 173.6 | — |
+| **P1** dense structural | $-C\,\Theta_\phi\,\Phi_\phi/r$, all $s<t$ | 210.5 | **+36.9** worse |
+| **P1.5a** dense MLP $h{=}16$ | unstructured MLP, all $s<t$ | 297.2 | +123.6 worse |
+| **P1.6** dense structural $\phi{=}\theta{=}128$ | wider structural, all $s<t$ | 207.6 | +34.0 worse |
+| **P5** sparse structural $k{=}4$ | structural, top-$k$ Gumbel routing | **176.7** | **+3.1** (within seed noise) |
+
+The §5.2 quantile cutoff (P5) closes the gap; the dense regime (P1, P1.6) does not, even at $7\times$ wider $V_\phi$ capacity. **The architectural binding constraint is therefore not the per-pair functional form of $V_\phi$ — it is the dense aggregation regime under which $V_\phi$ is applied.** The remaining question is: *what specifically about the dense aggregation under Eq. (131) is hostile to learning, and which of the available levers in $V_\phi$'s functional form is the highest-leverage point of intervention?*
+
+This section catalogues the design space, the failure modes the diagnostic script (§10.5) is built to localise, and the ladder of architectural levers that follow from each failure mode. Lever 3 — competitive (softmax-normalised) $\Phi_\phi$ — is then deposited in full as the structural-architectural P7 cell, with predictions, code, and falsifiable claims (§10.6).
+
+### 10.2 Anatomy of Eq. (131) — the four channels
+
+The §5.1-faithful structural $V_\phi$ is
+
+$$
+V_\phi^{\mathrm{struct}}(h_t, h_s) \;=\; -\,\underbrace{C}_{\text{strength}} \cdot \underbrace{\Theta_\phi(\theta(h_t), \theta(h_s))}_{\text{value-aligner} \in [-1, 1]} \cdot \underbrace{\Phi_\phi(l(h_t), l(h_s))}_{\text{type-gate} \in [0, 1]} \cdot \underbrace{\frac{1}{\sqrt{\lVert h_t - h_s \rVert^2 + \varepsilon^2}}}_{\text{distance kernel}\,\sim 1/r}.
+\tag{131}
+$$
+
+Four multiplicative channels carry independent semantic content:
+
+| Channel | Symbol | Codomain | What it controls |
+|---|---|---|---|
+| Strength | $C$ | $\mathbb{R}_{>0}$ | Global scale of the pair force vs $V_\theta$. Currently a fixed config float. |
+| Value-aligner | $\Theta_\phi$ | $[-1, 1]$ | The **sign** of the interaction (attractive vs repulsive — the "AR" in PARF). |
+| Type-gate | $\Phi_\phi$ | $[0, 1]$ | **Which pairs interact**: a Gaussian gate $\exp(-c\,\lVert l_t - l_s\rVert^2)$. Currently independent across pairs. |
+| Distance kernel | $1/r$ | $\mathbb{R}_{>0}$ | The spatial falloff: gravity-like Plummer-softened $1/r$. |
+
+```mermaid
+flowchart LR
+    h_t[/"h_t (query)"/] --> Wl_t[W_l]
+    h_t --> Wtheta_t[W_θ]
+    h_s[/"h_s (source, detached)"/] --> Wl_s[W_l]
+    h_s --> Wtheta_s[W_θ]
+    Wl_t --> l_t[l_t ∈ R^dl]
+    Wl_s --> l_s[l_s ∈ R^dl]
+    Wtheta_t --> th_t[θ_t ∈ R^K]
+    Wtheta_s --> th_s[θ_s ∈ R^K]
+    l_t --> l_dist["||l_t − l_s||²"]
+    l_s --> l_dist
+    l_dist --> Phi["Φ_φ = exp(−c · ||l_t − l_s||²)"]
+    th_t --> Theta_in["[θ_t, θ_s, θ_t − θ_s]"]
+    th_s --> Theta_in
+    Theta_in --> Theta["Θ_φ = tanh(MLP(·)) ∈ [−1, 1]"]
+    h_t --> r["r = √(||h_t − h_s||² + ε²)"]
+    h_s --> r
+    Phi --> mul((×))
+    Theta --> mul
+    r --> div((÷))
+    mul --> div
+    C[/"C (scalar)"/] --> mul
+    div --> Vphi["V_φ = − C · Θ · Φ / r"]
+```
+
+The architectural commitment is that *all four channels are independent*: $\Theta$, $\Phi$, $r$, and $C$ are factorised as a product, with no cross-channel coupling beyond the shared input pair $(h_t, h_s)$. This factorisation is what gives the PARF prescription its prescriptive content (§5.1 of the v3 paper) — but it is also the source of the dense-regime difficulty, because the *same* per-pair Gaussian gate $\Phi_\phi$ is multiplied independently across all $T-1$ source positions, with no normalisation.
+
+### 10.3 Failure modes per channel
+
+The diagnostic script `notebooks/conservative_arch/parf/diagnostics/diagnose_v_phi_channels.py` is built to localise five distinct failure modes. Each failure mode has a per-layer signature in the channel distributions and a corresponding lever in §10.4.
+
+| # | Failure mode | Per-layer signature in the diagnostic | Lever |
+|---|---|---|---|
+| F1 | **$\Phi_\phi$ saturates near 1** (no per-pair selectivity in $d{=}128$ type-projection space) | $\mathrm{median}(\Phi) > 0.85$ AND $p_{95}(\Phi) > 0.95$ at most layers | Lever 3 (competitive $\Phi$) |
+| F2 | **$\Theta_\phi$ collapses to 0** (value-aligner trains to "no opinion") | $\mathrm{median}\lvert\Theta\rvert < 0.05$ at most layers | Lever 4 + Lever 6 |
+| F3 | **Concentration of measure on $\lVert h_t - h_s\rVert$** (high-dim hidden states are nearly equidistant; $1/r$ barely varies) | $(p_{95}-p_{05})/\mathrm{median} < 0.3$ for $\lVert h_t-h_s\rVert$ | Lever 1 (kernel) + Lever 2 (metric) |
+| F4 | **Destructive cancellation across $s$** (signed pair-sum $\ll$ per-pair magnitude $\times$ pair count) | $\langle \lvert\sum_s V_\phi\rvert\rangle_t \ll T\cdot\mathrm{median}\lvert V_\phi\rvert$ | Lever 3 + Lever 5 |
+| F5 | **Force imbalance vs $V_\theta$** ($V_\phi$ dominates or is negligible) | $R(\ell) = \lVert\nabla V_\phi\rVert / \lVert\nabla V_\theta\rVert$ outside $[0.05, 1.5]$ | Lever 6 (curriculum on $C$) |
+
+The five failure modes are not mutually exclusive; the dense P1 / P1.6 cells very plausibly suffer from F1 + F2 + F4 jointly, with the diagnostic narrowing down which of those is dominant per layer.
+
+### 10.4 Six tuning levers — the design space
+
+#### Lever 1 — Distance-kernel replacement
+
+Replace the Plummer-softened $1/r$ with a kernel that falls off faster (Yukawa) or has a learned exponent:
+
+$$
+\frac{1}{r}\;\;\longrightarrow\;\;\frac{e^{-r/\lambda}}{r}\quad\text{(Yukawa, range }\lambda\text{)}\qquad\text{or}\qquad\frac{1}{r^{p_\phi}}\quad\text{(learned exponent }p_\phi \in (0, 2)\text{)}.
+$$
+
+**Predicts:** wins on F3 (concentration of measure) by giving the kernel a non-trivial dynamic range across the empirical $r$-spread. Smallest architectural change; smallest predicted PPL impact. Worth running as a sanity-check ablation against P7 (Lever 3) to confirm the §5.1 $1/r$ form is not the binding constraint.
+
+#### Lever 2 — Distance-metric decoupling
+
+Replace the *direct* hidden-state distance $\lVert h_t - h_s\rVert$ with a learned projection $\lVert M(h_t) - M(h_s)\rVert$, $M : \mathbb{R}^d \to \mathbb{R}^{d_r}$ with $d_r < d$. Decouples the *spatial* axis from the full hidden state.
+
+**Predicts:** wins on F3 in a *learned* way, but adds parameters; compute cost is dominated by the $M$ MLP per token. Less prescriptive than Lever 1 because the learned projection does not preserve the §5.1 functional form.
+
+#### Lever 3 — Competitive (softmax-normalised) $\Phi_\phi$
+
+Replace the unnormalised Gaussian gate $\Phi_\phi(l_t, l_s) = \exp(-c\,\lVert l_t-l_s\rVert^2)$ with a row-softmax over the causal sources:
+
+$$
+\Phi_\phi(l_t, l_s) \;\;\longrightarrow\;\; \tilde\Phi_\phi(l_t, l_s) \;=\; \mathrm{scale}(t)\,\cdot\,\frac{\exp(-c\,\lVert l_t-l_s\rVert^2 / \tau)}{\sum_{s' < t}\exp(-c\,\lVert l_t-l_{s'}\rVert^2 / \tau)}.
+$$
+
+This imports softmax attention's competitive-and-zero-sum selectivity ($\sum_{s} w_{ts} = 1$) into the structural $V_\phi$ while preserving (i) the AR sign decomposition through $\Theta_\phi \in [-1, 1]$ and (ii) the gravity-like $1/r$ distance kernel. The result is a "PARF-attention hybrid":
+
+$$
+F_t \;=\; -\nabla_{h_t}\sum_{s < t} V_\phi(h_t, h_s)\;\;\propto\;\;\sum_{s < t}\Theta_\phi(t, s)\cdot\tilde\Phi_\phi(t, s)\cdot\frac{1}{r(t, s)}\cdot\hat r_{ts},
+$$
+
+with a row-stochastic $\tilde\Phi_\phi$ playing the role of attention weights and $\Theta_\phi/r$ playing the role of the attention value vector projected onto the radial direction.
+
+**Predicts:** wins jointly on F1 (saturation — softmax forces dynamic range), F4 (cancellation — competitive selection biases the sum away from balanced positive/negative pairs), F5 (force balance — softmax bounds the per-token sum at $\mathrm{scale}(t)\cdot\mathrm{median}(\Theta/r)$ regardless of $T$). **This is the deposited P7 cell — see §10.6 for the full design.** Highest a-priori leverage; smallest architectural drift from §5.1 (the $\Theta_\phi$, $1/r$, $C$ channels are unchanged).
+
+#### Lever 4 — $C$ and $\Theta_\phi$ parameterisation
+
+Make $C$ a learnable parameter (softplus-positive); make $\Theta_\phi$ bilinear ($\Theta = \tanh(\theta_t^\top W \theta_s)$) instead of MLP-on-$[θ_t, θ_s, θ_t-θ_s]$, recovering the §5.2 canonical $\Theta = -\sin(\theta_t - \theta_s)$ at $K{=}2$ and $W$ skew-symmetric.
+
+**Predicts:** wins on F2 (collapse — bilinear $\Theta$ has a cleaner gradient signal at $\Theta\approx 0$ than the MLP variant) and F5 (force balance — learnable $C$ adapts to whatever scale the optimiser converges to). Modest leverage on its own; expected to compound with Lever 3.
+
+#### Lever 5 — Per-layer $V_\phi$ (relax the global-shared commitment)
+
+Drop the "single shared $V_\phi$ across all layers" architectural commitment in favour of one $V_\phi^{(\ell)}$ per layer. Doubles the per-layer parameter count but lets early layers learn coarse-grained pair structure and late layers learn fine-grained pair structure independently.
+
+**Predicts:** wins on F4 (cancellation — per-layer $V_\phi$ can specialise to the dominant sign convention at each layer's scale of $r$). **Significant** architectural drift from §5.1's "single energy field" prescription; should only be run if Levers 1–4 fail.
+
+#### Lever 6 — Curriculum on $C$ and Stage-0 warm-up
+
+Keep $V_\phi$ frozen at zero contribution for the first $W$ optimiser steps (anneal $C$ from $0$ to $C_{\max}$ across $W$ steps), so $V_\theta$ trains to its SPLM-floor first and $V_\phi$ enters the dynamics as a perturbation.
+
+**Predicts:** wins on F5 (force balance — explicit anneal eliminates the pair-force-overwhelming-V_\theta failure mode at random init) and indirectly on F2 (collapse — gives $\Theta_\phi$ a stable target $\xi$-pool to align against). Cheapest possible intervention (no parameter changes); should always be combined with whichever architectural lever is selected.
+
+#### Summary table
+
+| Lever | Targets | Architectural drift from §5.1 | Predicted leverage | Implementation cost |
+|---|---|---|---|---|
+| 1 (kernel) | F3 | minimal (replace $1/r$ form) | low | ~10 lines |
+| 2 (metric) | F3 | moderate (adds learned $M$) | low–moderate | ~30 lines + params |
+| 3 (competitive $\Phi$) | F1, F4, F5 | minimal ($\Phi$ form change) | **highest** | ~40 lines (deposited as P7) |
+| 4 (bilinear $\Theta$, learnable $C$) | F2, F5 | minimal (param change only) | moderate | ~20 lines |
+| 5 (per-layer $V_\phi$) | F4 | **substantial** (breaks single-shared) | moderate | ~50 lines |
+| 6 (curriculum on $C$) | F5 | none (training-only) | combinatorial multiplier | ~10 lines in trainer |
+
+### 10.5 The diagnostic-first protocol
+
+Architectural levers are cheap to *propose* and expensive to *evaluate* — each Stage-1 cell is ~6–8 hours of MPS wall-clock per seed, and the v4 submission window is finite. The discipline is therefore: **diagnose first, then pull the lever the data points at**.
+
+The diagnostic deliverable lives at `notebooks/conservative_arch/parf/diagnostics/diagnose_v_phi_channels.py` and emits, per layer, the empirical distributions of all four channels of Eq. (131) plus the gradient-magnitude ratio $R(\ell)$. The protocol is:
+
+1. Run the diagnostic against the latest dense PARF checkpoint (currently P1.6).
+2. Read off the failure modes from the per-layer table and the channel histograms.
+3. Pull the lever (or combination of levers) the failure-mode pattern points at.
+4. Run the resulting Stage-1.7 cell; re-diagnose; iterate.
+
+```mermaid
+flowchart TD
+    A[Latest dense PARF ckpt] --> B[diagnose_v_phi_channels.py]
+    B --> C{Per-layer signatures}
+    C -->|F1: Φ saturated| D1[Lever 3 — competitive Φ]
+    C -->|F2: Θ collapsed| D2[Lever 4 + Lever 6]
+    C -->|F3: r concentrated| D3[Lever 1 / Lever 2]
+    C -->|F4: dest. cancellation| D4[Lever 3 + Lever 5]
+    C -->|F5: force imbalance| D5[Lever 6]
+    D1 --> E[Stage-1.7 cell]
+    D2 --> E
+    D3 --> E
+    D4 --> E
+    D5 --> E
+    E --> B
+```
+
+The script's signature failure-mode read-off block (excerpted from `_diagnose_failure_modes`):
+
+```python
+phi_saturated = (phi_med.mean() > 0.85) and (phi_p95.mean() > 0.95)
+theta_collapsed = abs_theta_med.mean() < 0.05
+concentration = rel_spread.mean() < 0.3   # (p95-p05)/median for ||h_t-h_s||
+cancellation = (abs_sum < 0.2 * 64.0 * abs_v_med).mean() > 0.5
+pair_dominates = grad_ratio.mean() > 1.5
+pair_negligible = grad_ratio.mean() < 0.05
+```
+
+The thresholds are deliberately conservative; the histograms are always available for manual inspection when the heuristic flags are ambiguous.
+
+### 10.6 Lever 3 (P7) — `StructuralCompetitiveVPhi`, the deposited code
+
+Lever 3 is selected as the leading P7 candidate on three independent grounds:
+
+1. **A-priori leverage**: targets three failure modes (F1, F4, F5) simultaneously, of which two (F1 and F4) are the most plausible Stage-1 culprits given the P5-vs-P1 sparsity verdict.
+2. **Minimal architectural drift**: changes only $\Phi_\phi$'s normalisation scheme; $\Theta_\phi$, $1/r$, $C$ and the parameter count are byte-identical to dense PARF (verified by the parameter-parity assertion in §10.7's smoke test).
+3. **Framework alignment**: the resulting force law is a clean PARF-attention hybrid — softmax is the routing primitive of the v3 layer-type Helmholtz hybrid (Q9d), and importing it into the *structural* $V_\phi$ unifies the two architectures' selectivity machinery.
+
+#### 10.6.1 Mathematical specification
+
+Given the same per-pair logit $-c(t, s)\cdot\lVert l_t - l_s\rVert^2$ as the unnormalised $\Phi_\phi$, the competitive variant computes
+
+$$
+\boxed{\;
+\tilde\Phi_\phi(t, s)\;=\;\mathrm{scale}(t)\,\cdot\,\mathrm{softmax}_{s' < t}\!\left(\,-\,\frac{c(t, s)\,\lVert l_t - l_{s}\rVert^2}{\tau}\,\right),
+\;}
+$$
+
+with $\mathrm{scale}(t) \in \{t,\;1,\;\text{none}\}$ controlled by `cfg.v_phi_competitive_scale`:
+
+- `'row'` (default): $\mathrm{scale}(t) = t$, the per-row causal count. Preserves the magnitude of the unnormalised dense pair sum, so the existing $C$, $\gamma$ and learning-rate schedules transfer with minimal retuning.
+- `'mean'`: $\mathrm{scale}(t) = 1$, $\sum_s \tilde\Phi_\phi = 1$ per row. Forces the model to learn a $\sim T$-larger $C$; exposes the average-pair-strength interpretation cleanly.
+- `'none'`: no rescale. Diagnostic-only; expect very small forces at $T$ large.
+
+The temperature $\tau \in \mathbb{R}_{>0}$ controls sharpness: $\tau \to 0$ recovers a one-hot top-1 selection; $\tau \to \infty$ recovers a uniform $1/t$ selection. The default $\tau = 1.0$ matches softmax attention's unscaled-dot-product convention.
+
+The full pair potential under Lever 3 is
+
+$$
+V_\phi^{\text{comp}}(h_t, h_s) \;=\; -\,C\cdot\Theta_\phi(\theta_t, \theta_s)\cdot\tilde\Phi_\phi(l_t, l_s)\cdot\frac{1}{r(t, s)}.
+$$
+
+The per-token pair force becomes
+
+$$
+-\nabla_{h_t}\sum_{s < t} V_\phi^{\text{comp}}(h_t, h_s)\;\propto\;\sum_{s < t}\,\underbrace{\Theta_\phi(t, s)}_{\in [-1, 1],\,\text{sign}}\,\cdot\,\underbrace{\tilde\Phi_\phi(t, s)}_{\text{row-stochastic, routing}}\,\cdot\,\underbrace{\frac{1}{r(t, s)}\hat r_{ts}}_{\text{gravity-like attractor}},
+$$
+
+which reads cleanly as a *signed weighted average* of inverse-distance attractors, with $\tilde\Phi_\phi$ playing the role of attention weights.
+
+#### 10.6.2 Causality
+
+The strict-causal mask ($s < t$) is enforced *inside* `V_phi.forward`, **before** the softmax, by setting non-causal logits to $-10^9$ (a large finite negative; $-\infty$ would NaN the backward through an all-$(-\infty)$ row at $t = 0$). The outer `_layer_step` of `PARFLM` re-applies the same mask multiplicatively, so the contract $P[b, t, s] = 0$ for $s \ge t$ is preserved end-to-end. This is the same defensive double-mask pattern used in `model_parf_sparse.py`'s `_sparse_mask`.
+
+The two `.detach()` points of the dense PARF causal reduction are *unchanged*: $\xi$ is computed from `h.detach()` and `h_src = h.detach()`. The competitive variant inherits the same back-reaction-free per-token force as dense PARF — softmax normalisation is an internal $\Phi$-form change, not a new causality commitment.
+
+#### 10.6.3 Code excerpt
+
+```python
+class StructuralCompetitiveVPhi(StructuralVPhi):
+    """Lever 3: row-softmax competitive type-gate, otherwise §5.1-faithful."""
+
+    def __init__(self, cfg: PARFConfig):
+        super().__init__(cfg)
+        self.competitive_temp = cfg.v_phi_competitive_temp
+        self.competitive_scale = cfg.v_phi_competitive_scale
+
+    def forward(self, h, h_src):
+        B, T, _ = h.shape
+        l_q, l_s = self.W_l(h), self.W_l(h_src)
+        th_q, th_s = self.W_theta(h), self.W_theta(h_src)
+
+        # ----- competitive Φ̃_φ -----
+        l_dist2 = self._pair_dist2(l_q, l_s)
+        c = F.softplus(self.phi_c_net(l_dist2.unsqueeze(-1)).squeeze(-1))
+        logit = -(c * l_dist2) / max(self.competitive_temp, 1e-6)
+        causal = self._causal_mask(T, logit.device)
+        logit = logit.masked_fill(~causal[None, ...], -1e9)
+        Phi_norm = torch.softmax(logit, dim=-1)
+        row_has_valid = causal.any(dim=-1)
+        Phi_norm = Phi_norm * row_has_valid[None, :, None].to(Phi_norm.dtype)
+        if self.competitive_scale == "row":
+            row_count = causal.sum(dim=-1).to(Phi_norm.dtype)
+            Phi_norm = Phi_norm * row_count[None, :, None]
+
+        # ----- Θ_φ value-aligner (unchanged from base class) -----
+        proj_q, proj_s = self.theta_w_q(th_q), self.theta_w_s(th_s)
+        proj_qd, proj_sd = self.theta_w_d(th_q), self.theta_w_d(th_s)
+        proj_t = proj_q + proj_qd + self.theta_b1
+        proj_u = proj_s - proj_sd
+        hidden = F.gelu(proj_t.unsqueeze(2) + proj_u.unsqueeze(1))
+        Theta = torch.tanh(self.theta_w2(hidden).squeeze(-1))
+
+        # ----- distance kernel (unchanged) -----
+        h_dist2 = self._pair_dist2(h, h_src)
+        r = torch.sqrt(h_dist2 + self.eps2)
+
+        return -self.C * Theta * Phi_norm / r
+```
+
+Full source: [`notebooks/conservative_arch/parf/model_parf.py`](../notebooks/conservative_arch/parf/model_parf.py) (class `StructuralCompetitiveVPhi`).
+
+#### 10.6.4 Side-by-side dataflow (vs dense structural)
+
+```mermaid
+flowchart TB
+    subgraph Dense_Structural_P1
+        d_h[h] --> d_phi["Φ_φ = exp(−c·||l_t−l_s||²)"]
+        d_phi --> d_mul((×))
+        d_theta["Θ_φ ∈ [−1, 1]"] --> d_mul
+        d_r[1/r] --> d_mul
+        d_C[C] --> d_mul
+        d_mul --> d_V["V_φ (B, T, T)"]
+        d_V --> d_mask["mask s ≥ t → 0"]
+        d_mask --> d_sum["Σ_s V_φ — unnormalised"]
+    end
+    subgraph Competitive_Structural_P7
+        c_h[h] --> c_logit["−c·||l_t−l_s||²/τ"]
+        c_logit --> c_softmax["softmax_{s<t}(·)"]
+        c_softmax --> c_phi["Φ̃_φ — row stochastic"]
+        c_phi --> c_scale["× row_count(t)"]
+        c_scale --> c_mul((×))
+        c_theta["Θ_φ ∈ [−1, 1]"] --> c_mul
+        c_r[1/r] --> c_mul
+        c_C[C] --> c_mul
+        c_mul --> c_V["V_φ (B, T, T)"]
+        c_V --> c_mask["mask s ≥ t → 0"]
+        c_mask --> c_sum["Σ_s V_φ — competitively-weighted"]
+    end
+```
+
+The architectural *delta* is one block — the softmax-normalisation step on $\Phi_\phi$. Everything else is byte-identical. This is what makes Lever 3 the deposit-worthy P7 candidate: the predicted PPL improvement is structurally attributable to the single architectural choice "competitive vs unnormalised type-gate", which is the cleanest possible scientific contribution.
+
+#### 10.6.5 Predictions and falsifiable claims
+
+| Prediction | Magnitude | Falsifier |
+|---|---|---|
+| **P7-A1**: P7 (competitive, $\tau=1$, scale=`row`) val PPL strictly below P1.6 (207.6) | $\Delta \ge 5$ PPL | $\Delta < 5$ PPL ⇒ Lever 3 alone does not close F1/F4/F5; need to combine with Lever 4/6. |
+| **P7-A2**: P7 val PPL within seed-noise of P5 sparse $k{=}4$ (176.7) | $\Delta \le 5$ PPL | $\Delta > 5$ PPL ⇒ explicit sparsity (top-$k$ Gumbel routing) carries information that softmax-normalised gating does not — the §5.2 quantile cutoff's *discreteness* matters, not just its competitive-selection structure. |
+| **P7-B1**: post-training diagnostic shows median $\tilde\Phi$ $\le 0.3$ at most layers (no F1 saturation) | — | Sustained F1 ⇒ softmax temperature too low; sweep $\tau \in \{0.3, 1.0, 3.0\}$. |
+| **P7-B2**: post-training diagnostic shows $R(\ell) \in [0.1, 1.0]$ for all layers | — | $R(\ell) > 1.5$ ⇒ Lever 6 (warm-up curriculum) needed; $R(\ell) < 0.05$ ⇒ scale='row' insufficient, try 'mean' with manual $C$ retuning. |
+| **P7-C1**: at $\tau \to 0^+$, P7 collapses to a "soft top-1" structural variant; PPL strictly between P5 sparse $k{=}1$ (TBD) and P5 sparse $k{=}4$ | — | If $\tau \to 0^+$ underperforms hard top-1, the competitive-gating-over-content-vs-position-routing distinction matters and motivates a separate Lever-3$\times$Lever-5 cell. |
+
+#### 10.6.6 Cost analysis
+
+The competitive variant adds **zero parameters** vs dense structural (verified: 522 V_φ params either way at the smoke shape). Per-pair compute adds two ops over dense:
+
+1. one row-softmax: $O(T)$ per query, $O(T^2)$ per layer per batch element — negligible vs the $O(T^2 \cdot d_\phi)$ MLP evaluations already in $V_\phi$.
+2. one row-count multiplication: $O(T)$ per layer — negligible.
+
+Wall-clock impact: $< 1\%$ vs dense structural at the prototype shape (B=16, T=128, L=8, d=128). Memory impact: zero — the softmax operates on the same $(B, T, T)$ tensor that already exists.
+
+The aggregate structure is still $O(B\cdot T^2\cdot d_\phi)$ at training and decode; competitive normalisation is *not* a sparsity primitive (P7 does not give the long-context decode-FLOP win that P5's top-$k$ does). This is a deliberate scope choice: Lever 3 is about *selectivity*, not *cost*. The P5 + P7 combination — top-$k$ Gumbel routing on a competitive-$\Phi$ backbone — is a scheduled follow-up cell (see [`PARF-SPLM_Path_Forward_and_Experiments.md`](PARF-SPLM_Path_Forward_and_Experiments.md) §15 for the timing).
+
+### 10.7 Smoke-test invariants
+
+The deposited Lever 3 implementation passes three architectural-correctness invariants, verified in `notebooks/conservative_arch/parf/diagnostics/` and in the snapshot below:
+
+1. **Parameter-count parity vs dense structural:** identical, by construction.
+
+   ```text
+   V_phi params -- structural: 522, competitive: 522, delta: 0
+   ```
+
+2. **Forward + backward end-to-end:** no NaN gradients, finite loss.
+
+   ```text
+   [smoke] V_phi type: StructuralCompetitiveVPhi
+   [smoke] forward OK: logits (2, 16, 257) loss 5.5675
+   [smoke] backward OK
+   [smoke] total NaN grads: 0
+   ```
+
+3. **Row-scale invariant under `scale='row'`:** for query position $t$, $\sum_{s<t}\tilde\Phi_\phi(t, s) = t$ exactly (modulo fp32 rounding).
+
+   ```text
+   row counts:    [0, 1, 2, 3, 4, 5, 6, 7]
+   Phi row-sums:  [0, 1, 2, 3, 4, 5, 6, 7]   # 4.0 measured as 3.9999995 on MPS
+   ```
+
+The trainer's `--v-phi-kind structural_competitive` knob, with optional `--v-phi-competitive-temp` and `--v-phi-competitive-scale` overrides, is wired through `notebooks/conservative_arch/parf/train_parf.py`'s argparse and `build_config`. The output run tag gains a `_ct{τ}` and/or `_cs-{mean,none}` suffix when the defaults are overridden.
+
+### 10.8 Decision deferred to the diagnostic
+
+The recommended order of operations is:
+
+1. **Diagnose first** (§10.5) — run `diagnose_v_phi_channels.py` against P1.6 *and* P5 sparse $k{=}4$ checkpoints. The cross-checkpoint comparison is the most informative single artefact: P5 closes the PPL gap without architectural change, so the *delta* in the channel signatures between P1.6 and P5 is what localises which channel the sparsity primitive is implicitly fixing.
+2. **Run P7** (Lever 3) as the leading architectural candidate, regardless of the diagnostic outcome — the predictions in §10.6.5 are clean enough that running P7 settles whether competitive normalisation alone closes the gap.
+3. **Read the post-P7 diagnostic** to decide between continuation paths:
+   - P7 closes the gap ⇒ schedule the P5 + P7 combination cell (Lever 3 $\times$ §5.2 sparsity).
+   - P7 does not close the gap ⇒ the diagnostic localises which of Levers 4 / 5 / 6 to compose with Lever 3 next.
+
+The §10.4 lever catalogue is intentionally over-complete: it is a forward-looking design space, not a sequential plan. The committed scheduled work is P6 (diagnostic), P7 (Lever 3) and now P8 (composite of Levers 4 + 5 + a small Lever 1.5 pre-step) — see §10.9; everything else is reserved for the v4-companion journal paper or for the post-v4 reviewer-feedback window.
+
+---
+
+### 10.9 P8 — composite cell from the post-P6 diagnostic findings
+
+The first P6 deliverable (smoke-checked on the P1 dense `structural` checkpoint) returned two unanticipated channel signatures:
+
+* **F-Layer1** — $R(\ell{=}1) \approx 3$. The pair force *dominates* the SPLM external-field force at the embedding-adjacent layer, because $\lVert h_t - h_s \rVert$ is $\approx 1.6$ there (versus $\approx 9$ at deeper layers) and the Plummer softening $\varepsilon = 10^{-2}$ is irrelevant: $1/r$ is large by absolute scale, and there is no per-layer compensation.
+* **F-Θsat** — $\lvert \Theta_\phi \rvert$ saturates at $\pm 1$ in layers $\ell \in \{2, \dots, 8\}$. This is the boundary-saturation form of F2 (not zero-collapse): the optimiser pushes the $\tanh$-bounded value-aligner to its rails to amplify the now-small per-pair $1/r$ contribution.
+
+Both reduce to a single underlying mechanism: **the composite $V_\phi$ has no per-layer scale knob, and its radial channel is tied to the absolute scale of $h$**. Below we propose the minimal-drift composite cell that targets these mechanisms simultaneously, while preserving (i) the §5.1 Eq. (131) functional form and (ii) byte-identity to the P1 baseline when all flags are off.
+
+#### 10.9.1 The four patches (compose into one cell)
+
+| Patch | CLI flag | Mathematical effect | Targeted finding |
+| --- | --- | --- | --- |
+| **A** LN-before-distance | `--ln-before-distance` | $r \to \sqrt{\lVert\mathrm{LN}(h_t) - \mathrm{LN}(h_s)\rVert^2 + \varepsilon^2}$ | F-Layer1 |
+| **B** per-layer V_φ scale | `--per-layer-v-phi-scale` | $U^{(\ell)}_t = V_\theta + s_\ell \cdot \sum_s V_\phi$, $s_\ell = \mathrm{softplus}(\sigma_\ell)$ | F-Layer1 + F-Θsat (joint) |
+| **C** softsign Θ | `--theta-activation softsign` | $\Theta_\phi = \mathrm{softsign}(\cdot)$, gradient $1/(1+\lvert\cdot\rvert)^2$ | F-Θsat |
+| **D** bilinear Θ | `--theta-form bilinear` | $\Theta_\phi = \mathrm{act}(\theta_t^\top W \theta_s + b)$, $K^2 + 1$ params | F-Θsat (parameter-economy + Lever 4) |
+
+* Patch A is a small Lever 1.5 (distance-side preprocessor; not in the §10.4 enumeration, but compatible with all six). It removes the dependence of $1/r$ on the absolute hidden-state norm, so the radial channel becomes a *shape* signal rather than a *scale* signal.
+* Patch B is **Lever 5** (per-layer relaxation), realised with the lightest possible parameterisation: one scalar per layer. Initialised at $\sigma_\ell = -3$, so $s_\ell = \mathrm{softplus}(-3) \approx 0.0486$, i.e. $V_\phi$ enters every layer as a 5%-scale perturbation on $V_\theta$. The optimiser is then free to up-weight middle layers and down-weight Layer 1.
+* Patch C is the saturation-resilient activation swap. Both $\tanh$ and $\mathrm{softsign}$ are bounded in $[-1, 1]$, but at logit magnitude 5 the gradient ratio is $\frac{1/(1+5)^2}{1 - \tanh^2(5)} \approx \frac{0.0278}{9.1\times10^{-5}} \approx 305$. At magnitude 8 the ratio is $\sim 10^4$. The bound is preserved; the gradient is not lost.
+* Patch D is **Lever 4** (Θ-parameterisation): replace the 3K→H→1 GELU MLP with a bilinear form. Parameter count drops from $(3K+1)H + H + 1$ to $K^2 + 1$ (e.g. $K{=}8, H{=}32$: 169 → 65). The §5.2 canonical $\Theta = -\sin(\theta_t - \theta_s)$ is recovered exactly at $K{=}2$ with $W$ skew-symmetric, anchoring the patch in the design-doc theory.
+
+#### 10.9.2 Dataflow — what the P8 cell computes
+
+```mermaid
+flowchart TD
+    h_t[h_t] -- W_l --> l_t
+    h_s[h_s] -- W_l --> l_s
+    h_t -- W_θ --> th_t[θ_t]
+    h_s -- W_θ --> th_s[θ_s]
+    h_t -- LN (Patch A) --> hLN_t[LN_h_t]
+    h_s -- LN (Patch A) --> hLN_s[LN_h_s]
+    l_t -- "‖.‖² + softplus·MLP" --> Phi[Φ_φ]
+    th_t -- "θ_t^T W θ_s + b (Patch D)" --> Theta_score
+    th_s --> Theta_score
+    Theta_score -- "softsign (Patch C)" --> Theta[Θ_φ]
+    hLN_t -- "‖.‖² + ε² (Patch A)" --> r["r = sqrt(‖LN(h_t)-LN(h_s)‖²+ε²)"]
+    hLN_s --> r
+    Theta --> Vphi
+    Phi --> Vphi
+    r --> Vphi[V_φ = -C·Θ·Φ/r]
+    Vphi -- "× s_ℓ (Patch B)" --> Vphi_scaled
+    Vphi_scaled --> sumS[Σ_s<t V_φ]
+    Vth[V_θ] --> sumU[U = V_θ + s_ℓ·Σ V_φ]
+    sumS --> sumU
+    sumU -- "−∇_h U" --> F_total[F per token]
+```
+
+#### 10.9.3 Code excerpt — the patched `forward`
+
+The base structural class now factorises the activation, Θ-form and distance-channel into three small helpers, all gated by config flags. Lever-3 (`StructuralCompetitiveVPhi`) inherits and composes for free.
+
+```startLine:264:307:notebooks/conservative_arch/parf/model_parf.py
+    def forward(self, h: torch.Tensor, h_src: torch.Tensor) -> torch.Tensor:
+        B, T, d = h.shape
+        # Type and angle projections for both sides.
+        l_q = self.W_l(h)             # (B, T, dl)
+        l_s = self.W_l(h_src)         # (B, T, dl)
+        th_q = self.W_theta(h)        # (B, T, K)
+        th_s = self.W_theta(h_src)    # (B, T, K)
+
+        # Pairwise type distance (squared) -> Φ_φ Gaussian gate.
+        # Squared-norm expansion avoids the (B, T, T, dl) intermediate.
+        l_dist2 = self._pair_dist2(l_q, l_s)             # (B, T, T)
+        # Per-pair inverse bandwidth c via a small MLP on d^2.
+        c = F.softplus(
+            self.phi_c_net(l_dist2.unsqueeze(-1)).squeeze(-1)
+        )                                                # (B, T, T), positive
+        Phi = torch.exp(-c * l_dist2)                    # (B, T, T)
+
+        # Θ_φ value-aligner — MLP (default) or bilinear (Patch D),
+        # bounded by tanh (default) or softsign (Patch C).
+        Theta = self._compute_theta(th_q, th_s)          # (B, T, T)
+
+        # Distance kernel with Plummer softening; optional LN-before-
+        # distance (Patch A) decouples r from ‖h‖ growth.
+        r = self._radial_distance(h, h_src)              # (B, T, T)
+
+        # V_φ = -C · Θ · Φ / r  (sign matches the design doc convention:
+        # the negative sign makes attractive Θ·Φ = +1 a binding well).
+        return -self.C * Theta * Phi / r
+```
+
+The per-layer scale $s_\ell$ lives on `PARFLM` (and `SparsePARFLM`), not on $V_\phi$, because one $V_\phi$ instance is shared across all $L$ layers:
+
+```startLine:702:712:notebooks/conservative_arch/parf/model_parf.py
+        mask = self._pair_mask_for(T, h_in.device)
+        P_masked = P.masked_fill(~mask, 0.0)
+        # ----- P8 patch B: per-layer scale on the V_φ contribution -----
+        s_ell = self.per_layer_scale(layer_idx)
+        if s_ell is not None:
+            P_masked = P_masked * s_ell
+        U = V_th_per_token.sum() + P_masked.sum()
+```
+
+#### 10.9.4 Predictions, decision rule, smoke invariants
+
+**Quantitative pre-registered predictions** (against the post-P6 P1 baseline):
+
+| Quantity | P1 (baseline) | P8 prediction (composite ON) |
+| --- | --- | --- |
+| $R(\ell)$ at $\ell{=}1$ | $\approx 3$ | $\lesssim 1.2$ (after Patch A) and $\lesssim 0.5$ (after Patch B converges) |
+| $R(\ell)$ flatness ratio $\max R / \min R$ | $\sim 30\times$ | $\lesssim 3\times$ |
+| $\Pr[\lvert \Theta_\phi \rvert > 0.95]$ in $\ell \in \{2..8\}$ | $\gtrsim 70\%$ | $\lesssim 30\%$ |
+| Optimised $s_\ell$ profile | (n/a) | $s_1 < s_3, s_4, s_5$ (Layer 1 down-weighted; mid-stack up-weighted) |
+| Final val PPL | $X_{\mathrm{P1}}$ | $\le X_{\mathrm{P1}}$ if any of A–D is causally responsible |
+
+**Decision rule**:
+
+```mermaid
+flowchart TD
+    A[Run P8 cell] --> B{val_ppl P8 ≤ val_ppl P1?}
+    B -- No --> C[Reject P8 as composite; keep P1; reopen the §10.4 failure-mode taxonomy]
+    B -- Yes --> D{R ℓ flat AND Θ-saturation drop ≥ 50%?}
+    D -- No --> E[P8 wins on PPL but not on the predicted mechanism — find the load-bearing patch via single-flag ablation]
+    D -- Yes --> F[Commit P8 as new structural baseline; ablate Patches A,B,C,D one-at-a-time to identify the load-bearing one]
+```
+
+**Parameter / FLOP cost**: Patches A and B are cost-free at forward (LN is $O(B T d)$, scale is one multiplication). Patch C swaps `tanh` for `softsign` (both $O(B T^2)$, identical asymptotic). Patch D *reduces* parameter count when $K^2 + 1 < (3K+1)H + H + 1$ — true at the H1.5 cell-shape ($K{=}8, H{=}32$: 169 → 65). The composite is therefore **not larger** than the P1 baseline; if anything, marginally smaller.
+
+**Byte-identity smoke**: with all four flags OFF, P8 must reproduce the base structural cell to the bit. We verified this on a controlled harness — `loss_diff = 0.00e+00`, `logits_max_abs_diff = 0.00e+00`, identical parameter count.
+
+#### 10.9.5 Composing P8 with Lever 3 (P7) and §5.2 sparsity (P5)
+
+The four P8 patches are orthogonal to Lever 3 — `StructuralCompetitiveVPhi` inherits the same `_compute_theta` / `_radial_distance` helpers and consumes the same `per_layer_scale(ℓ)` from `PARFLM`. The composition order of operations is:
+
+1. **Run P7 alone** (Lever 3, no P8 patches) — pre-registered in §10.6.
+2. **Run P8 alone** — this section.
+3. If both win individually → schedule **P9 = P7 + P8** (single composite cell, single training run).
+4. If only one wins → keep that one; do not stack until the loser's failure mode is understood.
+
+Eventually all three (P5 sparsity + Lever 3 competitive + P8 composite) should compose into a single cell — but only after each has been measured in isolation. The decision tree above gates the schedule.
+
+---
+
+## 11. Summary
 
 PARF-augmented SPLM is the framework-native answer to the v3 paper's residual SPLM-vs-attention val-PPL gap. The construction inserts the §5 pair force law directly into the §15.12 SPLM equation of motion, with past tokens treated as fixed external sources to preserve causality. The result preserves SPLM's global single-scalar property in the natural many-body sense — the per-token force at every layer is the gradient of a single effective scalar $U^{(\ell)}_t = V_\theta(\xi, h) + \sum_{s\lt t} V_\phi(h_t, h_s)$ — and admits a generalised pair-shared-potential test that passes at R² = 1 by construction (Theorem 54). The architecture sharpens v3's three-way single-scalar separator into a four-way pair-test separator, with PARF-augmented SPLM at the new oracle ceiling and the three v3 classes at their existing positions. The selectivity, sparsity, and computational-cost stories are all framework-native: bounded multiplicative gates from §5.1, quantile cutoffs from §5.2, explicit residual bounds from the force law.
 

@@ -3,7 +3,7 @@ PARF-augmented SPLM (Q9c) — Algorithm-A reference prototype.
 
 Reference
 ---------
-companion_notes/PARF_Augmented_SPLM_Architecture.md
+docs/PARF_Augmented_SPLM_Architecture_v2.md
 
 Architecture (one-paragraph summary)
 ------------------------------------
@@ -136,7 +136,7 @@ class PARFConfig:
     fixed_gamma: Optional[float] = None
 
     # PARF (V_φ) parameters.
-    v_phi_kind: str = "structural"      # 'structural' | 'mlp'
+    v_phi_kind: str = "structural"      # 'structural' | 'mlp' | 'structural_competitive'
     v_phi_d_type: int = 16               # d_l in design doc
     v_phi_d_angle: int = 8               # K in design doc
     v_phi_phi_hidden: int = 32           # Φ_φ inverse-bandwidth MLP width
@@ -146,6 +146,63 @@ class PARFConfig:
     v_phi_eps: float = 1e-2              # Plummer softening for 1/r
     v_phi_init_scale: float = 0.02       # init weights small so V_φ starts
                                          # as a perturbation on V_θ dynamics
+
+    # ----- Lever 3: competitive (softmax-normalised) Φ_φ -----
+    # Active only when v_phi_kind == "structural_competitive".
+    # Replaces the unnormalised Gaussian type-gate
+    #     Φ_φ(l_t, l_s) = exp(-c · ||l_t - l_s||²)
+    # with a row-softmax over the causal sources s < t:
+    #     Φ̃_φ(l_t, l_s) = scale(t) · softmax_{s<t}(-c · ||l_t - l_s||² / τ),
+    # so Σ_{s<t} Φ̃_φ = scale(t) per query token t.  This imports
+    # softmax attention's competitive selectivity into the structural
+    # V_φ while preserving (i) the AR sign decomposition through Θ_φ
+    # and (ii) the gravity-like 1/r distance kernel.  See design doc
+    # PARF_Augmented_SPLM_Architecture_v2.md §10 (Lever 3).
+    v_phi_competitive_temp: float = 1.0   # τ in the softmax denominator;
+                                          # smaller τ ⇒ sharper selectivity.
+    v_phi_competitive_scale: str = "row"  # 'row' | 'mean' | 'none':
+                                          #   'row'  : multiply by row-causal-count
+                                          #            (Σ Φ̃ ≈ unnormalised sum scale).
+                                          #   'mean' : leave Σ Φ̃ = 1 (mean-of-pairs scale).
+                                          #   'none' : skip post-softmax rescale.
+
+    # ----- P8 patches: scale-balance + saturation-resilient Θ -----
+    # Motivated by the diagnostic findings on the P1 dense ckpt:
+    #   F-Layer1: R(ℓ=1) ≈ 3 (V_φ dominates V_θ at the embedding-adjacent
+    #             layer because ‖h_t-h_s‖ is small there, the Plummer
+    #             softening ε=1e-2 is irrelevant, and 1/r blows up).
+    #   F-Θsat:   |Θ_φ| saturated at ±1 in layers 2–8 because deep
+    #             layers have small 1/r per pair, so the optimiser drives
+    #             the value-aligner to its tanh rails to amplify V_φ.
+    # All four flags default OFF so the existing `structural` baseline
+    # is byte-identical when none are set.  See design-doc §10.9 (P8
+    # cell) for predictions and decision rules.
+    ln_before_distance: bool = False     # Patch A: replace ‖h_t-h_s‖ with
+                                         # ‖LN(h_t)-LN(h_s)‖ inside V_φ.
+                                         # Equalises the radial scale across
+                                         # layers, kills the Layer-1 1/r
+                                         # blowup driven by ‖h‖ growth.
+    per_layer_v_phi_scale: bool = False  # Patch B: add a learnable scalar
+                                         # s_ℓ = softplus(σ_ℓ) per layer that
+                                         # multiplies the V_φ contribution to
+                                         # U.  Init σ_ℓ = per_layer_scale_init
+                                         # so s_ℓ starts ~ 0.05 ⇒ V_φ enters
+                                         # as a perturbation; the optimiser
+                                         # may down-weight Layer 1 and
+                                         # up-weight middle layers freely.
+    per_layer_scale_init: float = -3.0   # softplus(-3) ≈ 0.0486
+    theta_activation: str = "tanh"       # Patch C: 'tanh' (default) or
+                                         # 'softsign'.  softsign(x) = x/(1+|x|)
+                                         # has codomain [-1, 1] like tanh but
+                                         # saturates polynomially, so the
+                                         # saturation-zone gradient is ~1000×
+                                         # larger at logit magnitude 5.
+    theta_form: str = "mlp"              # Patch D: 'mlp' (default 3K→H→1
+                                         # MLP) or 'bilinear' (θ_t^T W θ_s + b).
+                                         # Bilinear has gradient-bounded
+                                         # backward and recovers the §5.2
+                                         # canonical Θ = -sin(θ_t-θ_s) when
+                                         # K=2 and W is skew-symmetric.
 
     # Per-token mass.
     mass_mode: str = "logfreq"           # 'logfreq' | 'global'
@@ -216,6 +273,21 @@ class StructuralVPhi(nn.Module):
         self.K = K
         self.theta_hidden = cfg.v_phi_theta_hidden
 
+        # ----- P8 patch flags (read once, stashed as instance attrs) -----
+        self.ln_before_distance = bool(cfg.ln_before_distance)
+        self.theta_activation = str(cfg.theta_activation).lower()
+        self.theta_form = str(cfg.theta_form).lower()
+        if self.theta_activation not in {"tanh", "softsign"}:
+            raise ValueError(
+                f"theta_activation must be 'tanh' or 'softsign'; "
+                f"got {self.theta_activation!r}."
+            )
+        if self.theta_form not in {"mlp", "bilinear"}:
+            raise ValueError(
+                f"theta_form must be 'mlp' or 'bilinear'; "
+                f"got {self.theta_form!r}."
+            )
+
         self.W_l = nn.Linear(d, dl, bias=False)
         self.W_theta = nn.Linear(d, K, bias=False)
         # Φ_φ inverse bandwidth: a small MLP that maps the squared type
@@ -224,22 +296,31 @@ class StructuralVPhi(nn.Module):
             nn.Linear(1, cfg.v_phi_phi_hidden), nn.GELU(),
             nn.Linear(cfg.v_phi_phi_hidden, 1),
         )
-        # Θ_φ value-aligner.  Conceptually a small MLP on
-        # cat([θ_t, θ_s, θ_t-θ_s]) ∈ R^{3K} -> R^{theta_hidden} -> R^1.
-        # We split the first linear into separate query, source and
-        # difference weight blocks so we can apply them BEFORE the
-        # (T, T) outer-product broadcast — this avoids the (B, T, T, 3K)
-        # intermediate that otherwise dominates the structural V_φ
-        # wall-clock under autograd.  The second layer (theta_hidden -> 1)
-        # is a vanilla Linear applied to the (B, T, T, theta_hidden)
-        # post-broadcast hidden; that intermediate is unavoidable
-        # because the GELU non-linearity in between is not bilinear.
-        H = cfg.v_phi_theta_hidden
-        self.theta_w_q = nn.Linear(K, H, bias=False)
-        self.theta_w_s = nn.Linear(K, H, bias=False)
-        self.theta_w_d = nn.Linear(K, H, bias=False)
-        self.theta_b1  = nn.Parameter(torch.zeros(H))
-        self.theta_w2  = nn.Linear(H, 1)
+        if self.theta_form == "mlp":
+            # Θ_φ value-aligner.  Conceptually a small MLP on
+            # cat([θ_t, θ_s, θ_t-θ_s]) ∈ R^{3K} -> R^{theta_hidden} -> R^1.
+            # We split the first linear into separate query, source and
+            # difference weight blocks so we can apply them BEFORE the
+            # (T, T) outer-product broadcast — this avoids the (B, T, T, 3K)
+            # intermediate that otherwise dominates the structural V_φ
+            # wall-clock under autograd.  The second layer (theta_hidden -> 1)
+            # is a vanilla Linear applied to the (B, T, T, theta_hidden)
+            # post-broadcast hidden; that intermediate is unavoidable
+            # because the GELU non-linearity in between is not bilinear.
+            H = cfg.v_phi_theta_hidden
+            self.theta_w_q = nn.Linear(K, H, bias=False)
+            self.theta_w_s = nn.Linear(K, H, bias=False)
+            self.theta_w_d = nn.Linear(K, H, bias=False)
+            self.theta_b1  = nn.Parameter(torch.zeros(H))
+            self.theta_w2  = nn.Linear(H, 1)
+        else:  # 'bilinear' — Patch D
+            # Θ_φ(θ_t, θ_s) = act(θ_t^T W θ_s + b), implemented as
+            #   score[b, t, s] = (θ_q @ W) @ θ_s.transpose(-2, -1) + b.
+            # K^2 + 1 params instead of (3K+1)·H + H + 1 of the MLP variant
+            # (e.g. K=8, H=32 → 65 vs 169).  Recovers the §5.2 canonical
+            # Θ = -sin(θ_t-θ_s) at K=2, W skew-symmetric, exactly.
+            self.theta_W = nn.Parameter(torch.zeros(K, K))
+            self.theta_b = nn.Parameter(torch.zeros(()))
 
         self.eps2 = cfg.v_phi_eps ** 2
         self.C = cfg.v_phi_C
@@ -251,6 +332,10 @@ class StructuralVPhi(nn.Module):
                 nn.init.normal_(m.weight, std=cfg.v_phi_init_scale)
                 if m.bias is not None:
                     nn.init.zeros_(m.bias)
+        if self.theta_form == "bilinear":
+            # Match the per-element scale of the MLP path so initial Θ
+            # logits are O(init_scale · K).  Bias starts at 0.
+            nn.init.normal_(self.theta_W, std=cfg.v_phi_init_scale)
 
     @staticmethod
     def _pair_dist2(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
@@ -270,6 +355,63 @@ class StructuralVPhi(nn.Module):
         # clamp to >= 0 to defend against fp negatives near zero.
         return (a2 + b2 - 2.0 * ab).clamp_min(0.0)
 
+    def _theta_act(self, x: torch.Tensor) -> torch.Tensor:
+        """Bounded value-aligner activation.
+
+        'tanh' (default): exponential approach to ±1; gradient (1-tanh²)
+        vanishes exponentially fast in the saturation zone.
+
+        'softsign' (Patch C): x / (1+|x|); polynomial approach to ±1;
+        gradient 1/(1+|x|)² vanishes only polynomially, ~1000× larger
+        than tanh' at logit magnitude 5.  Targets the F-Θsat finding
+        that Θ_φ saturates at ±1 in deep PARF layers.
+        """
+        if self.theta_activation == "tanh":
+            return torch.tanh(x)
+        return F.softsign(x)
+
+    def _compute_theta(
+        self, th_q: torch.Tensor, th_s: torch.Tensor,
+    ) -> torch.Tensor:
+        """Θ_φ in either MLP form (default) or bilinear form (Patch D)."""
+        if self.theta_form == "mlp":
+            # Pre-broadcast linear blocks (avoids the (B, T, T, 3K) intermediate).
+            proj_q = self.theta_w_q(th_q)             # (B, T, H)
+            proj_s = self.theta_w_s(th_s)             # (B, T, H)
+            proj_qd = self.theta_w_d(th_q)            # (B, T, H)
+            proj_sd = self.theta_w_d(th_s)            # (B, T, H)
+            proj_t = proj_q + proj_qd + self.theta_b1     # (B, T, H)
+            proj_u = proj_s - proj_sd                     # (B, T, H)
+            hidden = proj_t.unsqueeze(2) + proj_u.unsqueeze(1)   # (B, T, T, H)
+            hidden = F.gelu(hidden)
+            score = self.theta_w2(hidden).squeeze(-1)            # (B, T, T)
+        else:  # 'bilinear'
+            # score[b, t, s] = θ_q[b, t, :] @ W @ θ_s[b, s, :]^T + b
+            tmp = th_q @ self.theta_W                            # (B, T, K)
+            score = tmp @ th_s.transpose(-2, -1) + self.theta_b  # (B, T, T)
+        return self._theta_act(score)
+
+    def _radial_distance(
+        self, h: torch.Tensor, h_src: torch.Tensor,
+    ) -> torch.Tensor:
+        """Compute r = sqrt(‖h_t − h_s‖² + ε²), with optional LN-before-distance.
+
+        When `ln_before_distance` (Patch A) is on, the inputs to the
+        squared-norm expansion are LN-normalised first (no affine).  This
+        equalises the radial scale across layers and removes the strong
+        dependence of 1/r on the absolute hidden-state norm — the
+        mechanism behind the F-Layer1 finding (R(ℓ=1) ≈ 3 in the
+        diagnostic).
+        """
+        if self.ln_before_distance:
+            h_for_dist = F.layer_norm(h, (h.shape[-1],))
+            hs_for_dist = F.layer_norm(h_src, (h_src.shape[-1],))
+        else:
+            h_for_dist = h
+            hs_for_dist = h_src
+        h_dist2 = self._pair_dist2(h_for_dist, hs_for_dist)   # (B, T, T)
+        return torch.sqrt(h_dist2 + self.eps2)
+
     def forward(self, h: torch.Tensor, h_src: torch.Tensor) -> torch.Tensor:
         B, T, d = h.shape
         # Type and angle projections for both sides.
@@ -287,36 +429,13 @@ class StructuralVPhi(nn.Module):
         )                                                # (B, T, T), positive
         Phi = torch.exp(-c * l_dist2)                    # (B, T, T)
 
-        # Pairwise angle vectors -> Θ_φ bounded-tanh MLP.
-        # The first linear layer of the (3K -> H) MLP has been split
-        # into per-input weight blocks (theta_w_q, theta_w_s, theta_w_d)
-        # so we can apply each before the (T, T) outer-product
-        # broadcast.  This avoids materialising the (B, T, T, 3K)
-        # intermediate that the naive cat-then-Linear formulation would
-        # otherwise dominate the structural V_φ wall-clock with.
-        # Mathematical equivalence:
-        #   Linear_3K->H( cat([θ_q, θ_s, θ_d]) )
-        #     = θ_q W_q + θ_s W_s + θ_d W_d + b
-        #   where W = [W_q; W_s; W_d] is the original block-rows split.
-        proj_q = self.theta_w_q(th_q)             # (B, T, H)
-        proj_s = self.theta_w_s(th_s)             # (B, T, H)
-        proj_qd = self.theta_w_d(th_q)            # (B, T, H)  (θ_q part of θ_d)
-        proj_sd = self.theta_w_d(th_s)            # (B, T, H)  (θ_s part)
-        # Broadcast-add to (B, T, T, H):
-        #   hidden[b, t, s, h] = proj_q[b, t, h] + proj_s[b, s, h]
-        #                      + proj_qd[b, t, h] - proj_sd[b, s, h]
-        #                      + b[h]
-        proj_t = proj_q + proj_qd + self.theta_b1     # (B, T, H)
-        proj_u = proj_s - proj_sd                     # (B, T, H)
-        hidden = proj_t.unsqueeze(2) + proj_u.unsqueeze(1)   # (B, T, T, H)
-        hidden = F.gelu(hidden)
-        Theta = torch.tanh(self.theta_w2(hidden).squeeze(-1))  # (B, T, T)
+        # Θ_φ value-aligner — MLP (default) or bilinear (Patch D),
+        # bounded by tanh (default) or softsign (Patch C).
+        Theta = self._compute_theta(th_q, th_s)          # (B, T, T)
 
-        # Distance kernel with Plummer softening (avoids singularity).
-        # Squared-norm expansion again to keep the (B, T, T, d) diff
-        # tensor out of the autograd graph.
-        h_dist2 = self._pair_dist2(h, h_src)             # (B, T, T)
-        r = torch.sqrt(h_dist2 + self.eps2)              # (B, T, T)
+        # Distance kernel with Plummer softening; optional LN-before-
+        # distance (Patch A) decouples r from ‖h‖ growth.
+        r = self._radial_distance(h, h_src)              # (B, T, T)
 
         # V_φ = -C · Θ · Φ / r  (sign matches the design doc convention:
         # the negative sign makes attractive Θ·Φ = +1 a binding well).
@@ -363,6 +482,128 @@ class MLPVPhi(nn.Module):
 
 
 # ---------------------------------------------------------------------------
+# V_φ — Lever 3: competitive (softmax-normalised) structural V_φ
+# ---------------------------------------------------------------------------
+class StructuralCompetitiveVPhi(StructuralVPhi):
+    """Structural V_φ with a softmax-competitive type-gate (Lever 3).
+
+    Replaces the unnormalised Gaussian gate
+        Φ_φ(l_t, l_s) = exp(-c · ||l_t - l_s||²)
+    with a row-softmax across the causal sources s < t:
+        Φ̃_φ(l_t, l_s) = scale(t) · softmax_{s<t}(-c · ||l_t - l_s||² / τ)
+
+    Motivation
+    ----------
+    The diagnostic on the dense P1.6 cell (see
+    parf/diagnostics/diagnose_v_phi_channels.py) localises the
+    binding constraint on dense PARF to two failure modes:
+      (a) Φ_φ saturates near 1 in d=128 type-projection space, i.e.
+          the type-gate provides no per-pair selectivity, and
+      (b) the dense aggregation across O(T²) pairs interferes
+          destructively (signed sum << per-pair magnitude × pair
+          count), washing out the directional pair force.
+
+    Lever 3 imports softmax attention's competitive-and-zero-sum
+    selectivity (Σ_s w_ts = 1) into the structural V_φ, while
+    preserving (i) the AR sign decomposition through Θ_φ ∈ [-1, 1]
+    and (ii) the gravity-like 1/r distance kernel.  The result is a
+    "PARF-attention hybrid" whose force law is
+
+        F_t  =  -∇_h_t  Σ_{s<t} V_φ(h_t, h_s)
+             ∝   Σ_{s<t}  Θ_φ(t, s) · Φ̃_φ(t, s) · (1/r(t, s)) · r̂_{ts}
+
+    with Φ̃_φ a row-stochastic gate.  The architecture remains
+    framework-native (every layer is still a velocity-Verlet step
+    under a single shared scalar U = V_θ + Σ V_φ); the only change
+    is how Φ_φ allocates its mass across past tokens.
+
+    Causality
+    ---------
+    The strict-causal mask (s < t) is enforced inside V_φ.forward,
+    BEFORE the softmax, by setting non-causal logits to -1e9 (a
+    large finite negative; -inf would NaN the backward through an
+    all-(-inf) row at t = 0).  The outer _layer_step of PARFLM
+    re-applies the same mask multiplicatively, so the contract
+    "P[b, t, s] = 0 for s ≥ t" is preserved end-to-end.
+
+    Scale options
+    -------------
+    cfg.v_phi_competitive_scale ∈ {'row', 'mean', 'none'}:
+      'row'  : multiply Φ̃ by the per-row causal count t (so Σ Φ̃ ≈ t).
+               Approximates the magnitude of the unnormalised dense
+               sum, lets the existing C and learning-rate schedules
+               transfer with minimal retuning.  This is the default.
+      'mean' : leave Σ Φ̃ = 1 per row (mean-of-pairs scale).  Forces
+               the model to learn a larger C; exposes the average-
+               pair-strength interpretation cleanly.
+      'none' : no rescale.  Diagnostic only; expect very small forces.
+    """
+
+    def __init__(self, cfg: PARFConfig):
+        super().__init__(cfg)
+        self.competitive_temp = cfg.v_phi_competitive_temp
+        self.competitive_scale = cfg.v_phi_competitive_scale
+        if self.competitive_scale not in {"row", "mean", "none"}:
+            raise ValueError(
+                f"v_phi_competitive_scale must be 'row', 'mean' or 'none'; "
+                f"got {self.competitive_scale!r}."
+            )
+
+    @staticmethod
+    def _causal_mask(T: int, device: torch.device) -> torch.Tensor:
+        """Bool mask of shape (T, T) with True for s < t (the causal pair slots)."""
+        return torch.tril(
+            torch.ones(T, T, device=device, dtype=torch.bool), diagonal=-1
+        )
+
+    def forward(self, h: torch.Tensor, h_src: torch.Tensor) -> torch.Tensor:
+        B, T, _ = h.shape
+        # ----- type and angle projections (unchanged from base class) -----
+        l_q = self.W_l(h)
+        l_s = self.W_l(h_src)
+        th_q = self.W_theta(h)
+        th_s = self.W_theta(h_src)
+
+        # ----- competitive Φ̃_φ via causal row-softmax of -c · ||l_t-l_s||² -----
+        l_dist2 = self._pair_dist2(l_q, l_s)             # (B, T, T)
+        c = F.softplus(
+            self.phi_c_net(l_dist2.unsqueeze(-1)).squeeze(-1)
+        )                                                # (B, T, T), positive
+        # logit = -c · d² / τ  (negative of the squared-distance penalty,
+        # which is the Gaussian-gate analogue of an attention score).
+        logit = -(c * l_dist2) / max(self.competitive_temp, 1e-6)
+        # Causal mask: replace s >= t with a large finite negative so
+        # softmax assigns ~0 to those positions AND the backward stays
+        # finite (cf. the Gumbel-sparse module's same trick).
+        causal = self._causal_mask(T, logit.device)      # (T, T) bool
+        logit = logit.masked_fill(~causal[None, ...], -1e9)
+        Phi_norm = torch.softmax(logit, dim=-1)          # (B, T, T)
+
+        # Optional rescale.  At t=0 the row is all-(-inf) so softmax
+        # returns uniform 1/T; row_has_valid zeros that out cleanly.
+        row_has_valid = causal.any(dim=-1)               # (T,)
+        Phi_norm = Phi_norm * row_has_valid[None, :, None].to(Phi_norm.dtype)
+        if self.competitive_scale == "row":
+            # row_count[t] = number of valid causal sources for query t
+            #              = t  (because s ranges in [0, t-1])
+            row_count = causal.sum(dim=-1).to(Phi_norm.dtype)  # (T,)
+            Phi_norm = Phi_norm * row_count[None, :, None]
+        elif self.competitive_scale == "mean":
+            pass  # Σ Φ̃ = 1 per row; nothing to do.
+        else:  # 'none'
+            pass
+
+        # ----- Θ_φ value-aligner (P8-aware via base-class helper) -----
+        Theta = self._compute_theta(th_q, th_s)          # (B, T, T)
+
+        # ----- distance kernel (P8-aware via base-class helper) -----
+        r = self._radial_distance(h, h_src)              # (B, T, T)
+
+        # V_φ = -C · Θ · Φ̃ / r  with the competitive Φ̃ in place of Φ.
+        return -self.C * Theta * Phi_norm / r
+
+
+# ---------------------------------------------------------------------------
 # PARF model
 # ---------------------------------------------------------------------------
 class PARFLM(nn.Module):
@@ -393,12 +634,14 @@ class PARFLM(nn.Module):
         # ----- Single shared V_phi -----
         if cfg.v_phi_kind == "structural":
             self.V_phi: nn.Module = StructuralVPhi(cfg)
+        elif cfg.v_phi_kind == "structural_competitive":
+            self.V_phi = StructuralCompetitiveVPhi(cfg)
         elif cfg.v_phi_kind == "mlp":
             self.V_phi = MLPVPhi(cfg)
         else:
             raise ValueError(
                 f"unknown v_phi_kind={cfg.v_phi_kind!r}; "
-                "expected 'structural' or 'mlp'."
+                "expected 'structural', 'structural_competitive', or 'mlp'."
             )
 
         # ----- Per-token mass + global gamma -----
@@ -417,6 +660,22 @@ class PARFLM(nn.Module):
                 requires_grad=cfg.learn_mgamma,
             )
             self._gamma_value = None
+
+        # ----- P8 patch B: per-layer learnable V_φ scale -----
+        # When enabled, U^(ℓ)_t = V_θ + s_ℓ · Σ_s V_φ with
+        # s_ℓ = softplus(σ_ℓ).  Init σ_ℓ = per_layer_scale_init so
+        # s_ℓ ≈ 0.05 ⇒ V_φ enters every layer as a perturbation,
+        # eliminating the Layer-1 R≈3 force imbalance at random init.
+        if cfg.per_layer_v_phi_scale:
+            self.raw_v_phi_scale: Optional[nn.Parameter] = nn.Parameter(
+                torch.full(
+                    (cfg.L,),
+                    float(cfg.per_layer_scale_init),
+                    dtype=torch.float32,
+                )
+            )
+        else:
+            self.raw_v_phi_scale = None
 
         if cfg.mass_mode == "logfreq":
             if cfg.logfreq_path is None:
@@ -491,6 +750,16 @@ class PARFLM(nn.Module):
             )
         return self._pair_mask
 
+    def per_layer_scale(self, layer_idx: int) -> Optional[torch.Tensor]:
+        """Return softplus(σ_ℓ) at this layer, or None if Patch B is off.
+
+        Used by both `PARFLM._layer_step` and `SparsePARFLM._layer_step`
+        to apply a single per-layer multiplier to the V_φ contribution.
+        """
+        if self.raw_v_phi_scale is None:
+            return None
+        return F.softplus(self.raw_v_phi_scale[layer_idx])
+
     def _layer_step(
         self,
         h: torch.Tensor,
@@ -498,6 +767,7 @@ class PARFLM(nn.Module):
         m_b: torch.Tensor,
         gamma: torch.Tensor,
         dt: float,
+        layer_idx: int = 0,
     ) -> torch.Tensor:
         """One velocity-Verlet step of the PARF dynamics.
 
@@ -550,6 +820,10 @@ class PARFLM(nn.Module):
             P = self.V_phi(h_in, h_src)                          # (B, T, T)
         mask = self._pair_mask_for(T, h_in.device)
         P_masked = P.masked_fill(~mask, 0.0)
+        # ----- P8 patch B: per-layer scale on the V_φ contribution -----
+        s_ell = self.per_layer_scale(layer_idx)
+        if s_ell is not None:
+            P_masked = P_masked * s_ell
         U = V_th_per_token.sum() + P_masked.sum()
 
         grad_U, = torch.autograd.grad(
@@ -585,8 +859,8 @@ class PARFLM(nn.Module):
         if return_trajectory:
             traj = [h.detach().cpu()]
 
-        for _ in range(cfg.L):
-            h_new = self._layer_step(h, h_prev, m_b, gamma, dt)
+        for ell in range(cfg.L):
+            h_new = self._layer_step(h, h_prev, m_b, gamma, dt, layer_idx=ell)
             h_prev = h
             h = h_new
             if traj is not None:
