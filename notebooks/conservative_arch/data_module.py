@@ -122,7 +122,10 @@ def load_tiny_stories(
         return z["train"], z["val"]
 
     # Fetch train parquet shard(s) and a separate validation shard.
-    train_texts: list[str] = []
+    # Tokenize shard-by-shard to keep peak memory manageable (avoids
+    # joining ~1 GB of text into a single string for multi-shard loads).
+    train_id_chunks: list[np.ndarray] = []
+    n_stories = 0
     for i in range(n_train_files):
         fname = _resolve_tinystories_shard(
             f"data/train-{i:05d}-of-00004"
@@ -131,7 +134,21 @@ def load_tiny_stories(
                                  f"tinystories_train_{i:05d}.parquet")
         print(f"[data_module] Reading {p}")
         table = pq.read_table(p, columns=["text"])
-        train_texts.extend(table["text"].to_pylist())
+        shard_texts = table["text"].to_pylist()
+        n_stories += len(shard_texts)
+        del table
+        print(f"[data_module]   tokenising shard {i} "
+              f"({len(shard_texts):,} stories) ...")
+        chunk = _gpt2_tokenize("\n\n".join(shard_texts))
+        del shard_texts
+        train_id_chunks.append(chunk)
+        # Early exit if we already have enough tokens.
+        if (max_train_tokens is not None
+                and sum(len(c) for c in train_id_chunks) >= max_train_tokens):
+            break
+
+    train_ids = np.concatenate(train_id_chunks)
+    del train_id_chunks
 
     val_fname = _resolve_tinystories_shard("data/validation-00000-of-00001")
     p = _download_hf_parquet(
@@ -142,10 +159,10 @@ def load_tiny_stories(
     print(f"[data_module] Reading {p}")
     val_texts = pq.read_table(p, columns=["text"])["text"].to_pylist()
 
-    print(f"[data_module] Tokenising {len(train_texts):,} train + "
+    print(f"[data_module] Tokenising {n_stories:,} train + "
           f"{len(val_texts):,} val stories with GPT-2 BPE ...")
-    train_ids = _gpt2_tokenize("\n\n".join(train_texts))
-    val_ids   = _gpt2_tokenize("\n\n".join(val_texts))
+    val_ids = _gpt2_tokenize("\n\n".join(val_texts))
+    del val_texts
     if max_train_tokens is not None and len(train_ids) > max_train_tokens:
         train_ids = train_ids[:max_train_tokens]
 
