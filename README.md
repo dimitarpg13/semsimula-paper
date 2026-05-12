@@ -5,11 +5,11 @@ Companion repository for the paper
 > **Semantic Simulation: A Prescriptive Lagrangian Framework for Efficient Semantic Inference**
 > *A Conservative-by-Construction Language Model and the Shared-Potential Separator, with a Correspondence to Joint Embedding Predictive Architectures.*
 > Dimitar P. Gueorguiev (Independent Researcher), 2026.
-> Zenodo preprint (v5, May 10 2026): [10.5281/zenodo.20114821](https://doi.org/10.5281/zenodo.20114821). Supersedes v4 ([10.5281/zenodo.20014411](https://doi.org/10.5281/zenodo.20014411), May 3 2026).
+> Zenodo preprint (v5.1, May 12 2026): [10.5281/zenodo.20138055](https://doi.org/10.5281/zenodo.20138055). Supersedes v5 ([10.5281/zenodo.20114821](https://doi.org/10.5281/zenodo.20114821), May 10 2026).
 > Companion code latest release: **v4.1-zenodo** (May 12, 2026) — adds [`AI_Assisted_Collaborative_Research_Disclosure.md`](AI_Assisted_Collaborative_Research_Disclosure.md). Supersedes v4-zenodo (May 10, 2026).
 
-[![DOI — paper](https://zenodo.org/badge/DOI/10.5281/zenodo.20114821.svg)](https://doi.org/10.5281/zenodo.20114821)
-[![DOI — companion code](https://zenodo.org/badge/DOI/10.5281/zenodo.20114898.svg)](https://doi.org/10.5281/zenodo.20114898)
+[![DOI — paper](https://zenodo.org/badge/DOI/10.5281/zenodo.20138055.svg)](https://doi.org/10.5281/zenodo.20138055)
+[![DOI — companion code](https://zenodo.org/badge/DOI/10.5281/zenodo.20138172.svg)](https://doi.org/10.5281/zenodo.20138172)
 
 This repository collects the **reproducibility artifacts** and the **unpublished
 background manuscripts** cited in the paper. Its scope is deliberately narrow:
@@ -1469,7 +1469,8 @@ When reusing any material from this repository, please cite the paper (see
 
 | Release | Date | Paper DOI | Code DOI | Notes |
 |---|---|---|---|---|
-| **v4-zenodo** | **May 10, 2026** | [10.5281/zenodo.20114821](https://doi.org/10.5281/zenodo.20114821) | [10.5281/zenodo.20114898](https://doi.org/10.5281/zenodo.20114898) | **PARFLM P10 ladder complete** (architectural ceiling at PPL ≈ 26.4 confirmed); FockPARFLM with Phase 1 Dyck₂ falsifier; warm-start bridge to EOM simulator; attention expressivity limits discussion; table of contents; incremental shard tokenization. |
+| **v4.1-zenodo** | **May 12, 2026** | [10.5281/zenodo.20138055](https://doi.org/10.5281/zenodo.20138055) | [10.5281/zenodo.20138172](https://doi.org/10.5281/zenodo.20138172) | **AI disclosure update.** Added dedicated "Statement on AI-Assisted Research" section to paper v4 with explicit enumeration of AI contribution domains; added `AI_Assisted_Collaborative_Research_Disclosure.md` to companion repo; updated README with disclosure callout. |
+| v4-zenodo | May 10, 2026 | [10.5281/zenodo.20114821](https://doi.org/10.5281/zenodo.20114821) | [10.5281/zenodo.20114898](https://doi.org/10.5281/zenodo.20114898) | PARFLM P10 ladder complete (architectural ceiling at PPL ≈ 26.4 confirmed); FockPARFLM with Phase 1 Dyck₂ falsifier; warm-start bridge to EOM simulator; attention expressivity limits discussion; table of contents; incremental shard tokenization. |
 | v3 | May 3, 2026 | [10.5281/zenodo.20014411](https://doi.org/10.5281/zenodo.20014411) | [10.5281/zenodo.20014131](https://doi.org/10.5281/zenodo.20014131) | Causal-leak audit, leak-corrected re-evaluation of every v2 SPLM result, multi-channel-ξ R6 information-bottleneck programme, reframing of SPLM as a Lagrangian counterfactual. See the *v3 update* block at the top of this README. |
 | v2 | April 27, 2026 | [10.5281/zenodo.19819861](https://doi.org/10.5281/zenodo.19819861) | — | Multi-seed E1 release of the paper (also uploaded to SSRN). **Note:** every SPLM perplexity number in this version is an empirical casualty of the causal-leak bug discovered after release; the descriptive findings on pretrained GPT-2 / Pythia survive the fix unchanged. v2 is preserved as a historical record; new readers should land on v3. |
 | v1.0-arxiv | April 2026 | — | [10.5281/zenodo.19708205](https://doi.org/10.5281/zenodo.19708205) | First publicly archived snapshot of this companion repository. Superseded by v3 code archive above; the v1.0 record remains accessible as a historical reference. |
