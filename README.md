@@ -6,6 +6,7 @@ Companion repository for the paper
 > *A Conservative-by-Construction Language Model and the Shared-Potential Separator, with a Correspondence to Joint Embedding Predictive Architectures.*
 > Dimitar P. Gueorguiev (Independent Researcher), 2026.
 > Zenodo preprint (v5, May 10 2026): [10.5281/zenodo.20114821](https://doi.org/10.5281/zenodo.20114821). Supersedes v4 ([10.5281/zenodo.20014411](https://doi.org/10.5281/zenodo.20014411), May 3 2026).
+> Companion code latest release: **v4.1-zenodo** (May 12, 2026) — adds [`AI_Assisted_Collaborative_Research_Disclosure.md`](AI_Assisted_Collaborative_Research_Disclosure.md). Supersedes v4-zenodo (May 10, 2026).
 
 [![DOI — paper](https://zenodo.org/badge/DOI/10.5281/zenodo.20114821.svg)](https://doi.org/10.5281/zenodo.20114821)
 [![DOI — companion code](https://zenodo.org/badge/DOI/10.5281/zenodo.20114898.svg)](https://doi.org/10.5281/zenodo.20114898)
