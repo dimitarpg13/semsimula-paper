@@ -46,6 +46,12 @@ separator).
 
 > **Rendering note.** Several markdown files under `companion_notes/` in this repository contain LaTeX math (inline `$...$` and display `$$...$$` blocks, with macros such as `\mathfrak{...}`, `\boldsymbol{...}`, `\mathcal{...}`, etc.). The math has been verified to render correctly in **Safari**. In **Chrome** some symbols — notably calligraphic and fraktur letters, e.g. `\mathfrak{C}` rendering as a plain `C` instead of $\mathfrak{C}$ — appear to render incorrectly. **Firefox** has not been tested. If symbols look wrong while viewing a companion note on GitHub, please open the file in Safari or consult the main paper's PDF, where the same symbols are typeset by LaTeX directly. Each affected companion note repeats this warning in its own header.
 
+> **AI-assisted research disclosure.** This work was developed through an
+> extensive human--AI collaborative workflow using Anthropic's Claude. A full
+> disclosure of the domains of AI contribution and the boundaries of human
+> scientific judgment is provided in
+> [`AI_Assisted_Collaborative_Research_Disclosure.md`](AI_Assisted_Collaborative_Research_Disclosure.md).
+
 ---
 
 ## v3 update (May 2026): causal-leak audit, leak-corrected re-evaluation, and the information-bottleneck programme
