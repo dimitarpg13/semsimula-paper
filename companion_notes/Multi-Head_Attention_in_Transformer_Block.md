@@ -558,7 +558,7 @@ This asymmetry has a striking consequence: the stream's *norm* grows monotonical
 
 ```mermaid
 flowchart LR
-    E["Embedding + PE<br>H^(0)"] --> S0(("Residual stream"))
+    E["Embedding + PE<br>H^(0)"] --> S0("Residual stream")
     S0 --> MHA1["MHA-1"]
     MHA1 -->|write| S0
     S0 --> FFN1["FFN-1"]
@@ -567,7 +567,7 @@ flowchart LR
     MHA2 -->|write| S0
     S0 --> FFN2["FFN-2"]
     FFN2 -->|write| S0
-    S0 -.->|"... L blocks ..."| SL(("H^(L)"))
+    S0 -.->|"... L blocks ..."| SL("H^(L)")
     SL --> Unembed["W_U"]
     Unembed --> Logits["logits"]
 ```

@@ -457,9 +457,9 @@ Four multiplicative channels carry independent semantic content:
 
 ```mermaid
 flowchart LR
-    h_t[/"h_t (query)"/] --> Wl_t[W_l]
+    h_t["h_t (query)"] --> Wl_t[W_l]
     h_t --> Wtheta_t[W_theta]
-    h_s[/"h_s (source, detached)"/] --> Wl_s[W_l]
+    h_s["h_s (source, detached)"] --> Wl_s[W_l]
     h_s --> Wtheta_s[W_theta]
     Wl_t --> l_t["l_t in R^dl"]
     Wl_s --> l_s["l_s in R^dl"]
@@ -473,11 +473,11 @@ flowchart LR
     Theta_in --> Theta["Theta = tanh(MLP) in -1..1"]
     h_t --> r["r = sqrt(norm(h_t - h_s)^2 + eps^2)"]
     h_s --> r
-    Phi --> mul(("x"))
+    Phi --> mul("x")
     Theta --> mul
-    r --> div(("/"))
+    r --> div("/")
     mul --> div
-    C[/"C (scalar)"/] --> mul
+    C["C (scalar)"] --> mul
     div --> Vphi["V_phi = -C * Theta * Phi / r"]
 ```
 
@@ -577,11 +577,11 @@ The diagnostic deliverable lives at `notebooks/conservative_arch/parf/diagnostic
 flowchart TD
     A[Latest dense PARF ckpt] --> B[diagnose_v_phi_channels.py]
     B --> C{Per-layer signatures}
-    C -->|F1: Phi saturated| D1[Lever 3 -- competitive Phi]
-    C -->|F2: Theta collapsed| D2[Lever 4 + Lever 6]
-    C -->|F3: r concentrated| D3[Lever 1 / Lever 2]
-    C -->|F4: dest. cancellation| D4[Lever 3 + Lever 5]
-    C -->|F5: force imbalance| D5[Lever 6]
+    C -->|F1: Phi saturated| D1["Lever 3 -- competitive Phi"]
+    C -->|F2: Theta collapsed| D2["Lever 4 + Lever 6"]
+    C -->|F3: r concentrated| D3["Lever 1 / Lever 2"]
+    C -->|F4: dest. cancellation| D4["Lever 3 + Lever 5"]
+    C -->|F5: force imbalance| D5["Lever 6"]
     D1 --> E[Stage-1.7 cell]
     D2 --> E
     D3 --> E
@@ -699,7 +699,7 @@ Full source: [`notebooks/conservative_arch/parf/model_parf.py`](../notebooks/con
 flowchart TB
     subgraph Dense_Structural_P1 [Dense Structural P1]
         d_h[h] --> d_phi["Phi = exp(-c * norm_l^2)"]
-        d_phi --> d_mul(("x"))
+        d_phi --> d_mul("x")
         d_theta["Theta in -1..1"] --> d_mul
         d_r[1/r] --> d_mul
         d_C[C] --> d_mul
@@ -712,7 +712,7 @@ flowchart TB
         c_logit --> c_softmax["softmax over s < t"]
         c_softmax --> c_phi["Phi_tilde -- row stochastic"]
         c_phi --> c_scale["x row_count(t)"]
-        c_scale --> c_mul(("x"))
+        c_scale --> c_mul("x")
         c_theta["Theta in -1..1"] --> c_mul
         c_r[1/r] --> c_mul
         c_C[C] --> c_mul

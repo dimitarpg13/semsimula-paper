@@ -174,21 +174,21 @@ mass concentrated in $W_1$.
 
 ```mermaid
 flowchart TD
-    h[h shape B T d -- query side -- requires_grad]
-    h_src[h_src shape B T d -- detached source side]
+    h["h shape B T d -- query side -- requires_grad"]
+    h_src["h_src shape B T d -- detached source side"]
 
-    h_q[h_q shape B T T d -- broadcast h along source axis]
-    h_k[h_k shape B T T d -- broadcast h_src along query axis]
+    h_q["h_q shape B T T d -- broadcast h along source axis"]
+    h_k["h_k shape B T T d -- broadcast h_src along query axis"]
     h_d[h_q minus h_k shape B T T d]
 
-    feats[feats shape B T T 3d -- concat h_q h_k h_d -- THE BIG TENSOR]
+    feats["feats shape B T T 3d -- concat h_q h_k h_d -- THE BIG TENSOR"]
 
-    L1[Linear 3d to H -- W_1 b_1]
+    L1["Linear 3d to H -- W_1 b_1"]
     A1[GELU]
-    L2[Linear H to H -- W_2 b_2]
+    L2["Linear H to H -- W_2 b_2"]
     A2[GELU]
-    L3[Linear H to 1 -- W_3 b_3]
-    P[P shape B T T -- pair potential matrix]
+    L3["Linear H to 1 -- W_3 b_3"]
+    P["P shape B T T -- pair potential matrix"]
 
     h --> h_q
     h_src --> h_k
@@ -367,17 +367,17 @@ flowchart TD
     Loss[NTP cross-entropy loss]
     Logits[logits]
     HL[h_L]
-    Step[L times -- velocity Verlet step]
+    Step["L times -- velocity Verlet step"]
     Force[force f equals minus grad U via inner autograd.grad create_graph True]
     U_layer[U at this layer = V_theta term + P sum over s less than t]
-    P[P shape B T T -- pair potential matrix]
-    Net[3-layer GELU MLP -- W_1 W_2 W_3]
-    Feats[feats shape B T T 3d -- THE BIG TENSOR]
-    H_q[h_q shape B T T d -- broadcast h]
-    H_k[h_k shape B T T d -- broadcast h_src]
+    P["P shape B T T -- pair potential matrix"]
+    Net["3-layer GELU MLP -- W_1 W_2 W_3"]
+    Feats["feats shape B T T 3d -- THE BIG TENSOR"]
+    H_q["h_q shape B T T d -- broadcast h"]
+    H_k["h_k shape B T T d -- broadcast h_src"]
     H_d[h_q minus h_k]
-    HSrc[h_src shape B T d -- detached]
-    HIn[h_in shape B T d -- requires grad]
+    HSrc["h_src shape B T d -- detached"]
+    HIn["h_in shape B T d -- requires grad"]
 
     HIn --> H_q
     HSrc --> H_k

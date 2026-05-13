@@ -450,6 +450,47 @@ These are not confirmed-fatal on every GitHub Mermaid version, but each one has 
 
 ---
 
+## 20. Advanced Mermaid node shapes — avoid `(("text"))` and `[/"text"/]`
+
+GitHub's Mermaid renderer does **not** reliably support several advanced node shapes introduced in newer Mermaid versions:
+
+| Shape syntax | Intended shape | Problem |
+| ------------ | -------------- | ------- |
+| `(("text"))` | double circle | parser crashes: "Cannot read properties of undefined (reading 'render')" |
+| `[/"text"/]` | parallelogram (lean-right) | same crash — the `/` inside brackets is mis-parsed |
+| `[\"text"\]` | parallelogram (lean-left) | same crash |
+| `{{"text"}}` | hexagon | intermittent failures when combined with quotes |
+
+**Fix:** replace with a universally supported shape:
+
+```
+# Instead of double-circle:
+mul(("x"))          -->   mul("x")       # rounded rectangle (stadium)
+
+# Instead of parallelogram:
+h_t[/"h_t (query)"/]  -->   h_t["h_t (query)"]   # plain rectangle
+```
+
+Supported shapes on GitHub Mermaid: `[text]` (rectangle), `["text"]` (rectangle, quoted), `(text)` / `("text")` (rounded/stadium), `{text}` (rhombus), `>text]` (asymmetric).
+
+---
+
+## 21. `--` inside unquoted Mermaid node labels — always quote
+
+A double-dash `--` inside an unquoted `[...]` node label is parsed as an edge connector, not as text. This corrupts the graph definition and produces the same "Cannot read properties of undefined (reading 'render')" crash.
+
+```
+# Broken — Mermaid sees "Lever 3" as text, then "--" as a new edge:
+D1[Lever 3 -- competitive Phi]
+
+# Fixed — quoted label treats everything as a literal string:
+D1["Lever 3 -- competitive Phi"]
+```
+
+**Rule:** any node label that contains `--`, `---`, `-->`, or `-.` must be wrapped in double quotes inside its shape delimiters: `["text with -- in it"]`.
+
+---
+
 ## Quick reference card
 
 ### KaTeX (Part I)
@@ -484,3 +525,5 @@ These are not confirmed-fatal on every GitHub Mermaid version, but each one has 
 | `<br/>` (self-closing) in label | intermittent render error | use `<br>` |
 | `?` in label | intermittent render error | drop it or replace with a word |
 | Unicode / Greek in label | intermittent render error on some versions | spell out as ASCII (`alpha`, `xi`, `grad`, `->`, `approx`, ...) |
+| `(("text"))` double-circle or `[/"text"/]` parallelogram | "Cannot read properties of undefined (reading 'render')" | use `("text")` (stadium) or `["text"]` (rectangle) instead |
+| `--` inside unquoted node label, e.g. `[Lever 3 -- X]` | same render error — `--` parsed as edge | quote the label: `["Lever 3 -- X"]` |
