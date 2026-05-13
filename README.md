@@ -1409,17 +1409,17 @@ See [`CITATION.bib`](CITATION.bib) for the full BibTeX file. The short form:
                Predictive Architectures},
   year      = {2026},
   publisher = {Zenodo},
-  doi       = {10.5281/zenodo.20114821},
-  url       = {https://doi.org/10.5281/zenodo.20114821},
-  note      = {Version v5 (May 10, 2026); supersedes v4
-               (DOI 10.5281/zenodo.20014411, May 3, 2026).
-               Companion code repository (DOI 10.5281/zenodo.20114898):
+  doi       = {10.5281/zenodo.20138055},
+  url       = {https://doi.org/10.5281/zenodo.20138055},
+  note      = {Version v5.1 (May 12, 2026); supersedes v5
+               (DOI 10.5281/zenodo.20114821, May 10, 2026).
+               Companion code repository (DOI 10.5281/zenodo.20138172):
                \url{https://github.com/dimitarpg13/semsimula-paper}}
 }
 ```
 
-The companion code archive at the v4-zenodo release has its own citable DOI:
-[10.5281/zenodo.20114898](https://doi.org/10.5281/zenodo.20114898).
+The companion code archive at the v4.1-zenodo release has its own citable DOI:
+[10.5281/zenodo.20138172](https://doi.org/10.5281/zenodo.20138172).
 If you re-run the experiments or build on the code specifically, please cite
 both DOIs.
 
@@ -1455,8 +1455,8 @@ When reusing any material from this repository, please cite the paper (see
 ## Open items (to resolve before public release)
 
 1. **arXiv identifier.** The paper is currently available as a Zenodo preprint
-   ([10.5281/zenodo.20114821](https://doi.org/10.5281/zenodo.20114821), v5,
-   May 10, 2026). Once submitted to arXiv, fill in the arXiv identifier and
+   ([10.5281/zenodo.20138055](https://doi.org/10.5281/zenodo.20138055), v5.1,
+   May 12, 2026). Once submitted to arXiv, fill in the arXiv identifier and
    propagate to both `README.md` and `CITATION.bib`.
 2. **Forthcoming-work EOM stubs.** `companion_notes/Semantic_Simulator_v15_EOM.md`,
    `Semantic_Simulator_v2_EOM.md`, and `Semantic_Simulator_v3_EOM.md` are
