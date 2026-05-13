@@ -7,7 +7,7 @@ right matters for the dynamics it induces.
 
 Companion to:
 
-- Design doc: [`companion_notes/PARF_Augmented_SPLM_Architecture_v2.md`](../PARF_Augmented_SPLM_Architecture_v2.md) (esp. §3 causal reduction, §5 PARF law, §5.1 structural form, §17 OQ-1).
+- Design doc: [`companion_notes/PARF_Augmented_SPLM_Architecture.md`](../PARF_Augmented_SPLM_Architecture.md) (esp. §3 causal reduction, §5 PARF law, §5.1 structural form, §17 OQ-1).
 - Implementation: [`notebooks/conservative_arch/parf/model_parf.py`](../../notebooks/conservative_arch/parf/model_parf.py) (`MLPVPhi`, `StructuralVPhi`).
 - Training-pipeline deep dive: [`companion_notes/parf/On_Training_the_PARF_Force.md`](./On_Training_the_PARF_Force.md).
 - Prototype README and benchmarks: [`notebooks/conservative_arch/parf/README.md`](../../notebooks/conservative_arch/parf/README.md).
@@ -393,12 +393,12 @@ flowchart TD
     Force --> Step
     Step --> HL --> Logits --> Loss
 
-    Loss -. loss.backward .-> Logits
-    Logits -. via output head .-> HL
-    HL -. d Loss / d h_L .-> Step
-    Step -. through Verlet .-> Force
-    Force -. through 2nd-order graph .-> Net
-    Force -. through 2nd-order graph .-> HIn
+    Loss -.->|loss backward| Logits
+    Logits -.->|via output head| HL
+    HL -.->|d Loss / d h_L| Step
+    Step -.->|through Verlet| Force
+    Force -.->|through 2nd-order graph| Net
+    Force -.->|through 2nd-order graph| HIn
 ```
 
 Two implications:
@@ -811,7 +811,7 @@ not the first thing to try.
 
 ### Internal documents
 
-- [`companion_notes/PARF_Augmented_SPLM_Architecture_v2.md`](../PARF_Augmented_SPLM_Architecture_v2.md) — design doc; §5.1 (structural form), §17 (OQ-1 framing), §3 (causal reduction).
+- [`companion_notes/PARF_Augmented_SPLM_Architecture.md`](../PARF_Augmented_SPLM_Architecture.md) — design doc; §5.1 (structural form), §17 (OQ-1 framing), §3 (causal reduction).
 - [`companion_notes/parf/On_Training_the_PARF_Force.md`](./On_Training_the_PARF_Force.md) — Algorithm A pipeline, the second-order autograd graph, gradient checkpointing.
 - [`notebooks/conservative_arch/parf/README.md`](../../notebooks/conservative_arch/parf/README.md) — full MPS wall-clock + memory survey for both variants.
 - [`notebooks/conservative_arch/parf/model_parf.py`](../../notebooks/conservative_arch/parf/model_parf.py) — `MLPVPhi`, `StructuralVPhi`, `PARFLM`.
