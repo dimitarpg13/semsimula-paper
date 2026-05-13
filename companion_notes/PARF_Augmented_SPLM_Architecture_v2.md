@@ -31,7 +31,7 @@ The mathematical content of these three factors is precisely the *which-particle
 The construction is the direct insertion of PARF as a pair-interaction term into the §15.12 Definition 54 update rule. Define the per-token effective potential
 
 $$
-U^{(\ell)}_t = V_\theta\left(\xi^{(\ell)}_t, h^{(\ell)}_t\right) + \sum_{s < t} V_\phi\left(h^{(\ell)}_t, h^{(\ell)}_s\right),
+U^{(\ell)}_t = V_\theta\left(\xi^{(\ell)}_t, h^{(\ell)}_t\right) + \sum_{s \lt t} V_\phi\left(h^{(\ell)}_t, h^{(\ell)}_s\right),
 $$
 
 where $V_\theta : \mathbb{R}^d \times \mathbb{R}^d \to \mathbb{R}$ is the SPLM single-particle external scalar (the bounded attractive Gaussian well, parameterised as a four-layer MLP with hidden $d_V$ and GELU as in §15.12) and $V_\phi : \mathbb{R}^d \times \mathbb{R}^d \to \mathbb{R}$ is the pair-interaction scalar. Both are shared across all layers $\ell$ and all token positions $t$. The per-token update is
@@ -86,7 +86,7 @@ satisfying Newton's third law and conserving total ensemble momentum. This is th
 
 ### 3.2 The resolution: test particles in a frozen field
 
-The reconciliation is the standard *test-particle limit* of classical many-body mechanics. When a subset of degrees of freedom is held fixed and another evolves under the gradient of the joint potential, the dynamical subset feels a conservative force whose generator is the joint scalar evaluated at the frozen configuration. Symbolically, for a many-body potential $U(h_1, \dots, h_T)$, freezing $\{h_s\}_{s < t}$ and allowing $h_t$ to evolve produces the dynamics
+The reconciliation is the standard *test-particle limit* of classical many-body mechanics. When a subset of degrees of freedom is held fixed and another evolves under the gradient of the joint potential, the dynamical subset feels a conservative force whose generator is the joint scalar evaluated at the frozen configuration. Symbolically, for a many-body potential $U(h_1, \dots, h_T)$, freezing $\lbrace h_s \rbrace_{s \lt t}$ and allowing $h_t$ to evolve produces the dynamics
 
 $$
 m \ddot h_t = -\nabla_{h_t} U\left(h_1, \dots, h_t, \dots, h_T\right)\Big|_{\{h_s\}_{s\lt t}\text{ fixed}}.
@@ -233,7 +233,7 @@ This is the *framework-native* sparsity primitive. It contrasts with attention's
 
 Three regimes interpolate the cost structure.
 
-**Regime A — no cutoff.** Per layer, the cost of computing $\sum_{s < t} \nabla_{h_t} V_\phi(h_t, h_s)$ for all $t$ is $O(T^2 \cdot d_\phi)$, where $d_\phi$ is the per-pair evaluation cost. This matches attention's $O(T^2 \cdot d)$ scaling.
+**Regime A — no cutoff.** Per layer, the cost of computing $\sum_{s \lt t} \nabla_{h_t} V_\phi(h_t, h_s)$ for all $t$ is $O(T^2 \cdot d_\phi)$, where $d_\phi$ is the per-pair evaluation cost. This matches attention's $O(T^2 \cdot d)$ scaling.
 
 **Regime B — top-$k$ relevant aspect pairs.** Per layer, the cost is $O(T \cdot k \cdot d_\phi)$ for $k$ a small constant, recovering linear scaling in the prefix length and an SPLM-comparable decoding cost. The top-$k$ selection itself is $O(T \log k)$ per token using a partial-sort, dominated by the $k \cdot d_\phi$ pair evaluations.
 
@@ -429,9 +429,9 @@ Stage 1 of the empirical programme has produced a definite, reproducible signal:
 | Cell | $V_\phi$ regime | val PPL | $\Delta$ vs SPLM em-ln |
 |---|---|---|---|
 | SPLM em-ln (no $V_\phi$) | — | 173.6 | — |
-| **P1** dense structural | $-C\,\Theta_\phi\,\Phi_\phi/r$, all $s<t$ | 210.5 | **+36.9** worse |
-| **P1.5a** dense MLP $h{=}16$ | unstructured MLP, all $s<t$ | 297.2 | +123.6 worse |
-| **P1.6** dense structural $\phi{=}\theta{=}128$ | wider structural, all $s<t$ | 207.6 | +34.0 worse |
+| **P1** dense structural | $-C \Theta_\phi \Phi_\phi/r$, all $s\lt t$ | 210.5 | **+36.9** worse |
+| **P1.5a** dense MLP $h{=}16$ | unstructured MLP, all $s\lt t$ | 297.2 | +123.6 worse |
+| **P1.6** dense structural $\phi{=}\theta{=}128$ | wider structural, all $s\lt t$ | 207.6 | +34.0 worse |
 | **P5** sparse structural $k{=}4$ | structural, top-$k$ Gumbel routing | **176.7** | **+3.1** (within seed noise) |
 
 The §5.2 quantile cutoff (P5) closes the gap; the dense regime (P1, P1.6) does not, even at $7\times$ wider $V_\phi$ capacity. **The architectural binding constraint is therefore not the per-pair functional form of $V_\phi$ — it is the dense aggregation regime under which $V_\phi$ is applied.** The remaining question is: *what specifically about the dense aggregation under Eq. (131) is hostile to learning, and which of the available levers in $V_\phi$'s functional form is the highest-leverage point of intervention?*
@@ -443,8 +443,7 @@ This section catalogues the design space, the failure modes the diagnostic scrip
 The §5.1-faithful structural $V_\phi$ is
 
 $$
-V_\phi^{\mathrm{struct}}(h_t, h_s) \;=\; -\,\underbrace{C}_{\text{strength}} \cdot \underbrace{\Theta_\phi(\theta(h_t), \theta(h_s))}_{\text{value-aligner} \in [-1, 1]} \cdot \underbrace{\Phi_\phi(l(h_t), l(h_s))}_{\text{type-gate} \in [0, 1]} \cdot \underbrace{\frac{1}{\sqrt{\lVert h_t - h_s \rVert^2 + \varepsilon^2}}}_{\text{distance kernel}\,\sim 1/r}.
-\tag{131}
+V_\phi^{\mathrm{struct}}(h_t, h_s) = -\underbrace{C}_{\text{strength}} \cdot \underbrace{\Theta_\phi(\theta(h_t), \theta(h_s))}_{\text{value-aligner} \in [-1, 1]} \cdot \underbrace{\Phi_\phi(l(h_t), l(h_s))}_{\text{type-gate} \in [0, 1]} \cdot \underbrace{\frac{1}{\sqrt{\lVert h_t - h_s \rVert^2 + \varepsilon^2}}}_{\text{distance kernel} \sim 1/r}.
 $$
 
 Four multiplicative channels carry independent semantic content:
@@ -453,33 +452,33 @@ Four multiplicative channels carry independent semantic content:
 |---|---|---|---|
 | Strength | $C$ | $\mathbb{R}_{>0}$ | Global scale of the pair force vs $V_\theta$. Currently a fixed config float. |
 | Value-aligner | $\Theta_\phi$ | $[-1, 1]$ | The **sign** of the interaction (attractive vs repulsive — the "AR" in PARF). |
-| Type-gate | $\Phi_\phi$ | $[0, 1]$ | **Which pairs interact**: a Gaussian gate $\exp(-c\,\lVert l_t - l_s\rVert^2)$. Currently independent across pairs. |
+| Type-gate | $\Phi_\phi$ | $[0, 1]$ | **Which pairs interact**: a Gaussian gate $\exp(-c \lVert l_t - l_s\rVert^2)$. Currently independent across pairs. |
 | Distance kernel | $1/r$ | $\mathbb{R}_{>0}$ | The spatial falloff: gravity-like Plummer-softened $1/r$. |
 
 ```mermaid
 flowchart LR
     h_t[/"h_t (query)"/] --> Wl_t[W_l]
-    h_t --> Wtheta_t[W_θ]
+    h_t --> Wtheta_t[W_theta]
     h_s[/"h_s (source, detached)"/] --> Wl_s[W_l]
-    h_s --> Wtheta_s[W_θ]
-    Wl_t --> l_t[l_t ∈ R^dl]
-    Wl_s --> l_s[l_s ∈ R^dl]
-    Wtheta_t --> th_t[θ_t ∈ R^K]
-    Wtheta_s --> th_s[θ_s ∈ R^K]
-    l_t --> l_dist["||l_t − l_s||²"]
+    h_s --> Wtheta_s[W_theta]
+    Wl_t --> l_t["l_t in R^dl"]
+    Wl_s --> l_s["l_s in R^dl"]
+    Wtheta_t --> th_t["theta_t in R^K"]
+    Wtheta_s --> th_s["theta_s in R^K"]
+    l_t --> l_dist["norm(l_t - l_s)^2"]
     l_s --> l_dist
-    l_dist --> Phi["Φ_φ = exp(−c · ||l_t − l_s||²)"]
-    th_t --> Theta_in["[θ_t, θ_s, θ_t − θ_s]"]
+    l_dist --> Phi["Phi = exp(-c * norm(l_t - l_s)^2)"]
+    th_t --> Theta_in["(theta_t, theta_s, theta_t - theta_s)"]
     th_s --> Theta_in
-    Theta_in --> Theta["Θ_φ = tanh(MLP(·)) ∈ [−1, 1]"]
-    h_t --> r["r = √(||h_t − h_s||² + ε²)"]
+    Theta_in --> Theta["Theta = tanh(MLP) in -1..1"]
+    h_t --> r["r = sqrt(norm(h_t - h_s)^2 + eps^2)"]
     h_s --> r
-    Phi --> mul((×))
+    Phi --> mul(("x"))
     Theta --> mul
-    r --> div((÷))
+    r --> div(("/"))
     mul --> div
     C[/"C (scalar)"/] --> mul
-    div --> Vphi["V_φ = − C · Θ · Φ / r"]
+    div --> Vphi["V_phi = -C * Theta * Phi / r"]
 ```
 
 The architectural commitment is that *all four channels are independent*: $\Theta$, $\Phi$, $r$, and $C$ are factorised as a product, with no cross-channel coupling beyond the shared input pair $(h_t, h_s)$. This factorisation is what gives the PARF prescription its prescriptive content (§5.1 of the v3 paper) — but it is also the source of the dense-regime difficulty, because the *same* per-pair Gaussian gate $\Phi_\phi$ is multiplied independently across all $T-1$ source positions, with no normalisation.
@@ -505,7 +504,7 @@ The five failure modes are not mutually exclusive; the dense P1 / P1.6 cells ver
 Replace the Plummer-softened $1/r$ with a kernel that falls off faster (Yukawa) or has a learned exponent:
 
 $$
-\frac{1}{r}\;\;\longrightarrow\;\;\frac{e^{-r/\lambda}}{r}\quad\text{(Yukawa, range }\lambda\text{)}\qquad\text{or}\qquad\frac{1}{r^{p_\phi}}\quad\text{(learned exponent }p_\phi \in (0, 2)\text{)}.
+\frac{1}{r} \longrightarrow \frac{e^{-r/\lambda}}{r}\quad\text{(Yukawa, range }\lambda\text{)}\qquad\text{or}\qquad\frac{1}{r^{p_\phi}}\quad\text{(learned exponent }p_\phi \in (0, 2)\text{)}.
 $$
 
 **Predicts:** wins on F3 (concentration of measure) by giving the kernel a non-trivial dynamic range across the empirical $r$-spread. Smallest architectural change; smallest predicted PPL impact. Worth running as a sanity-check ablation against P7 (Lever 3) to confirm the §5.1 $1/r$ form is not the binding constraint.
@@ -518,16 +517,16 @@ Replace the *direct* hidden-state distance $\lVert h_t - h_s\rVert$ with a learn
 
 #### Lever 3 — Competitive (softmax-normalised) $\Phi_\phi$
 
-Replace the unnormalised Gaussian gate $\Phi_\phi(l_t, l_s) = \exp(-c\,\lVert l_t-l_s\rVert^2)$ with a row-softmax over the causal sources:
+Replace the unnormalised Gaussian gate $\Phi_\phi(l_t, l_s) = \exp(-c \lVert l_t-l_s\rVert^2)$ with a row-softmax over the causal sources:
 
 $$
-\Phi_\phi(l_t, l_s) \;\;\longrightarrow\;\; \tilde\Phi_\phi(l_t, l_s) \;=\; \mathrm{scale}(t)\,\cdot\,\frac{\exp(-c\,\lVert l_t-l_s\rVert^2 / \tau)}{\sum_{s' < t}\exp(-c\,\lVert l_t-l_{s'}\rVert^2 / \tau)}.
+\Phi_\phi(l_t, l_s) \longrightarrow \tilde\Phi_\phi(l_t, l_s) = \mathrm{scale}(t) \cdot \frac{\exp(-c \lVert l_t-l_s\rVert^2 / \tau)}{\sum_{s' \lt t}\exp(-c \lVert l_t-l_{s'}\rVert^2 / \tau)}.
 $$
 
 This imports softmax attention's competitive-and-zero-sum selectivity ($\sum_{s} w_{ts} = 1$) into the structural $V_\phi$ while preserving (i) the AR sign decomposition through $\Theta_\phi \in [-1, 1]$ and (ii) the gravity-like $1/r$ distance kernel. The result is a "PARF-attention hybrid":
 
 $$
-F_t \;=\; -\nabla_{h_t}\sum_{s < t} V_\phi(h_t, h_s)\;\;\propto\;\;\sum_{s < t}\Theta_\phi(t, s)\cdot\tilde\Phi_\phi(t, s)\cdot\frac{1}{r(t, s)}\cdot\hat r_{ts},
+F_t = -\nabla_{h_t}\sum_{s \lt t} V_\phi(h_t, h_s) \propto \sum_{s \lt t}\Theta_\phi(t, s)\cdot\tilde\Phi_\phi(t, s)\cdot\frac{1}{r(t, s)}\cdot\hat r_{ts},
 $$
 
 with a row-stochastic $\tilde\Phi_\phi$ playing the role of attention weights and $\Theta_\phi/r$ playing the role of the attention value vector projected onto the radial direction.
@@ -578,8 +577,8 @@ The diagnostic deliverable lives at `notebooks/conservative_arch/parf/diagnostic
 flowchart TD
     A[Latest dense PARF ckpt] --> B[diagnose_v_phi_channels.py]
     B --> C{Per-layer signatures}
-    C -->|F1: Φ saturated| D1[Lever 3 — competitive Φ]
-    C -->|F2: Θ collapsed| D2[Lever 4 + Lever 6]
+    C -->|F1: Phi saturated| D1[Lever 3 -- competitive Phi]
+    C -->|F2: Theta collapsed| D2[Lever 4 + Lever 6]
     C -->|F3: r concentrated| D3[Lever 1 / Lever 2]
     C -->|F4: dest. cancellation| D4[Lever 3 + Lever 5]
     C -->|F5: force imbalance| D5[Lever 6]
@@ -617,12 +616,10 @@ Lever 3 is selected as the leading P7 candidate on three independent grounds:
 Given the same per-pair logit $-c(t, s)\cdot\lVert l_t - l_s\rVert^2$ as the unnormalised $\Phi_\phi$, the competitive variant computes
 
 $$
-\boxed{\;
-\tilde\Phi_\phi(t, s)\;=\;\mathrm{scale}(t)\,\cdot\,\mathrm{softmax}_{s' < t}\!\left(\,-\,\frac{c(t, s)\,\lVert l_t - l_{s}\rVert^2}{\tau}\,\right),
-\;}
+\boxed{ \tilde\Phi_\phi(t, s) = \mathrm{scale}(t) \cdot \mathrm{softmax}_{s' \lt t}\Big(-\frac{c(t, s) \lVert l_t - l_{s}\rVert^2}{\tau}\Big) }
 $$
 
-with $\mathrm{scale}(t) \in \{t,\;1,\;\text{none}\}$ controlled by `cfg.v_phi_competitive_scale`:
+with $\mathrm{scale}(t) \in \lbrace t, 1, \text{none} \rbrace$ controlled by `cfg.v_phi_competitive_scale`:
 
 - `'row'` (default): $\mathrm{scale}(t) = t$, the per-row causal count. Preserves the magnitude of the unnormalised dense pair sum, so the existing $C$, $\gamma$ and learning-rate schedules transfer with minimal retuning.
 - `'mean'`: $\mathrm{scale}(t) = 1$, $\sum_s \tilde\Phi_\phi = 1$ per row. Forces the model to learn a $\sim T$-larger $C$; exposes the average-pair-strength interpretation cleanly.
@@ -633,20 +630,20 @@ The temperature $\tau \in \mathbb{R}_{>0}$ controls sharpness: $\tau \to 0$ reco
 The full pair potential under Lever 3 is
 
 $$
-V_\phi^{\text{comp}}(h_t, h_s) \;=\; -\,C\cdot\Theta_\phi(\theta_t, \theta_s)\cdot\tilde\Phi_\phi(l_t, l_s)\cdot\frac{1}{r(t, s)}.
+V_\phi^{\text{comp}}(h_t, h_s) = -C\cdot\Theta_\phi(\theta_t, \theta_s)\cdot\tilde\Phi_\phi(l_t, l_s)\cdot\frac{1}{r(t, s)}.
 $$
 
 The per-token pair force becomes
 
 $$
--\nabla_{h_t}\sum_{s < t} V_\phi^{\text{comp}}(h_t, h_s)\;\propto\;\sum_{s < t}\,\underbrace{\Theta_\phi(t, s)}_{\in [-1, 1],\,\text{sign}}\,\cdot\,\underbrace{\tilde\Phi_\phi(t, s)}_{\text{row-stochastic, routing}}\,\cdot\,\underbrace{\frac{1}{r(t, s)}\hat r_{ts}}_{\text{gravity-like attractor}},
+-\nabla_{h_t}\sum_{s \lt t} V_\phi^{\text{comp}}(h_t, h_s) \propto \sum_{s \lt t} \underbrace{\Theta_\phi(t, s)}_{\in [-1, 1], \text{sign}} \cdot \underbrace{\tilde\Phi_\phi(t, s)}_{\text{row-stochastic, routing}} \cdot \underbrace{\frac{1}{r(t, s)}\hat r_{ts}}_{\text{gravity-like attractor}},
 $$
 
 which reads cleanly as a *signed weighted average* of inverse-distance attractors, with $\tilde\Phi_\phi$ playing the role of attention weights.
 
 #### 10.6.2 Causality
 
-The strict-causal mask ($s < t$) is enforced *inside* `V_phi.forward`, **before** the softmax, by setting non-causal logits to $-10^9$ (a large finite negative; $-\infty$ would NaN the backward through an all-$(-\infty)$ row at $t = 0$). The outer `_layer_step` of `PARFLM` re-applies the same mask multiplicatively, so the contract $P[b, t, s] = 0$ for $s \ge t$ is preserved end-to-end. This is the same defensive double-mask pattern used in `model_parf_sparse.py`'s `_sparse_mask`.
+The strict-causal mask ($s \lt t$) is enforced *inside* `V_phi.forward`, **before** the softmax, by setting non-causal logits to $-10^9$ (a large finite negative; $-\infty$ would NaN the backward through an all-$(-\infty)$ row at $t = 0$). The outer `_layer_step` of `PARFLM` re-applies the same mask multiplicatively, so the contract $P[b, t, s] = 0$ for $s \ge t$ is preserved end-to-end. This is the same defensive double-mask pattern used in `model_parf_sparse.py`'s `_sparse_mask`.
 
 The two `.detach()` points of the dense PARF causal reduction are *unchanged*: $\xi$ is computed from `h.detach()` and `h_src = h.detach()`. The competitive variant inherits the same back-reaction-free per-token force as dense PARF — softmax normalisation is an internal $\Phi$-form change, not a new causality commitment.
 
@@ -700,28 +697,28 @@ Full source: [`notebooks/conservative_arch/parf/model_parf.py`](../notebooks/con
 
 ```mermaid
 flowchart TB
-    subgraph Dense_Structural_P1
-        d_h[h] --> d_phi["Φ_φ = exp(−c·||l_t−l_s||²)"]
-        d_phi --> d_mul((×))
-        d_theta["Θ_φ ∈ [−1, 1]"] --> d_mul
+    subgraph Dense_Structural_P1 [Dense Structural P1]
+        d_h[h] --> d_phi["Phi = exp(-c * norm_l^2)"]
+        d_phi --> d_mul(("x"))
+        d_theta["Theta in -1..1"] --> d_mul
         d_r[1/r] --> d_mul
         d_C[C] --> d_mul
-        d_mul --> d_V["V_φ (B, T, T)"]
-        d_V --> d_mask["mask s ≥ t → 0"]
-        d_mask --> d_sum["Σ_s V_φ — unnormalised"]
+        d_mul --> d_V["V_phi (B, T, T)"]
+        d_V --> d_mask["mask s >= t -> 0"]
+        d_mask --> d_sum["sum_s V_phi -- unnormalised"]
     end
-    subgraph Competitive_Structural_P7
-        c_h[h] --> c_logit["−c·||l_t−l_s||²/τ"]
-        c_logit --> c_softmax["softmax_{s<t}(·)"]
-        c_softmax --> c_phi["Φ̃_φ — row stochastic"]
-        c_phi --> c_scale["× row_count(t)"]
-        c_scale --> c_mul((×))
-        c_theta["Θ_φ ∈ [−1, 1]"] --> c_mul
+    subgraph Competitive_Structural_P7 [Competitive Structural P7]
+        c_h[h] --> c_logit["-c * norm_l^2 / tau"]
+        c_logit --> c_softmax["softmax over s < t"]
+        c_softmax --> c_phi["Phi_tilde -- row stochastic"]
+        c_phi --> c_scale["x row_count(t)"]
+        c_scale --> c_mul(("x"))
+        c_theta["Theta in -1..1"] --> c_mul
         c_r[1/r] --> c_mul
         c_C[C] --> c_mul
-        c_mul --> c_V["V_φ (B, T, T)"]
-        c_V --> c_mask["mask s ≥ t → 0"]
-        c_mask --> c_sum["Σ_s V_φ — competitively-weighted"]
+        c_mul --> c_V["V_phi (B, T, T)"]
+        c_V --> c_mask["mask s >= t -> 0"]
+        c_mask --> c_sum["sum_s V_phi -- competitively-weighted"]
     end
 ```
 
@@ -767,7 +764,7 @@ The deposited Lever 3 implementation passes three architectural-correctness inva
    [smoke] total NaN grads: 0
    ```
 
-3. **Row-scale invariant under `scale='row'`:** for query position $t$, $\sum_{s<t}\tilde\Phi_\phi(t, s) = t$ exactly (modulo fp32 rounding).
+3. **Row-scale invariant under `scale='row'`:** for query position $t$, $\sum_{s\lt t}\tilde\Phi_\phi(t, s) = t$ exactly (modulo fp32 rounding).
 
    ```text
    row counts:    [0, 1, 2, 3, 4, 5, 6, 7]
@@ -819,24 +816,24 @@ Both reduce to a single underlying mechanism: **the composite $V_\phi$ has no pe
 flowchart TD
     h_t[h_t] -- W_l --> l_t
     h_s[h_s] -- W_l --> l_s
-    h_t -- W_θ --> th_t[θ_t]
-    h_s -- W_θ --> th_s[θ_s]
-    h_t -- LN (Patch A) --> hLN_t[LN_h_t]
-    h_s -- LN (Patch A) --> hLN_s[LN_h_s]
-    l_t -- "‖.‖² + softplus·MLP" --> Phi[Φ_φ]
-    th_t -- "θ_t^T W θ_s + b (Patch D)" --> Theta_score
+    h_t -- W_theta --> th_t[theta_t]
+    h_s -- W_theta --> th_s[theta_s]
+    h_t -- LN Patch A --> hLN_t[LN_h_t]
+    h_s -- LN Patch A --> hLN_s[LN_h_s]
+    l_t -- "norm^2 + softplus MLP" --> Phi[Phi_phi]
+    th_t -- "theta_t^T W theta_s + b Patch D" --> Theta_score
     th_s --> Theta_score
-    Theta_score -- "softsign (Patch C)" --> Theta[Θ_φ]
-    hLN_t -- "‖.‖² + ε² (Patch A)" --> r["r = sqrt(‖LN(h_t)-LN(h_s)‖²+ε²)"]
+    Theta_score -- "softsign Patch C" --> Theta[Theta_phi]
+    hLN_t -- "norm^2 + eps^2 Patch A" --> r["r = sqrt(norm(LN_h_t - LN_h_s)^2 + eps^2)"]
     hLN_s --> r
     Theta --> Vphi
     Phi --> Vphi
-    r --> Vphi[V_φ = -C·Θ·Φ/r]
-    Vphi -- "× s_ℓ (Patch B)" --> Vphi_scaled
-    Vphi_scaled --> sumS[Σ_s<t V_φ]
-    Vth[V_θ] --> sumU[U = V_θ + s_ℓ·Σ V_φ]
+    r --> Vphi["V_phi = -C * Theta * Phi / r"]
+    Vphi -- "x s_ell Patch B" --> Vphi_scaled
+    Vphi_scaled --> sumS["sum over s < t of V_phi"]
+    Vth[V_theta] --> sumU["U = V_theta + s_ell * sum V_phi"]
     sumS --> sumU
-    sumU -- "−∇_h U" --> F_total[F per token]
+    sumU -- "-grad_h U" --> F_total[F per token]
 ```
 
 #### 10.9.3 Code excerpt — the patched `forward`
@@ -902,11 +899,11 @@ The per-layer scale $s_\ell$ lives on `PARFLM` (and `SparsePARFLM`), not on $V_\
 
 ```mermaid
 flowchart TD
-    A[Run P8 cell] --> B{val_ppl P8 ≤ val_ppl P1?}
-    B -- No --> C[Reject P8 as composite; keep P1; reopen the §10.4 failure-mode taxonomy]
-    B -- Yes --> D{R ℓ flat AND Θ-saturation drop ≥ 50%?}
-    D -- No --> E[P8 wins on PPL but not on the predicted mechanism — find the load-bearing patch via single-flag ablation]
-    D -- Yes --> F[Commit P8 as new structural baseline; ablate Patches A,B,C,D one-at-a-time to identify the load-bearing one]
+    A[Run P8 cell] --> B{"val_ppl P8 <= val_ppl P1"}
+    B -- No --> C["Reject P8; keep P1; reopen failure-mode taxonomy"]
+    B -- Yes --> D{"R(ell) flat AND Theta-saturation drop >= 50%"}
+    D -- No --> E["P8 wins on PPL but not on predicted mechanism -- single-flag ablation"]
+    D -- Yes --> F["Commit P8 as baseline; ablate A,B,C,D one-at-a-time"]
 ```
 
 **Parameter / FLOP cost**: Patches A and B are cost-free at forward (LN is $O(B T d)$, scale is one multiplication). Patch C swaps `tanh` for `softsign` (both $O(B T^2)$, identical asymptotic). Patch D *reduces* parameter count when $K^2 + 1 < (3K+1)H + H + 1$ — true at the H1.5 cell-shape ($K{=}8, H{=}32$: 169 → 65). The composite is therefore **not larger** than the P1 baseline; if anything, marginally smaller.
