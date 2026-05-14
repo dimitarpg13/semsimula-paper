@@ -48,7 +48,7 @@ Quantitatively (2026-05-01 forensic run, 2000 max-steps, gamma 0.30, otherwise E
 
 | step | val_ppl (buggy-mode eval) |
 |---:|---:|
-|  100 | $\sim$50 |
+|  100 | ~50 |
 |  400 | $2.54$ |
 |  600 | $1.26$ |
 | 1200 | $1.06$ |
@@ -206,7 +206,7 @@ $$\text{Attn}^{(h)}_t = \sum_{s \le t} \alpha^{(h)}_{t,s}(h, x) \cdot V^{(h)} h_
 
 then concatenates the $H$ heads to form an output of dimension $d$ (or $H \cdot d_h$ with $d_h \cdot H = d$).
 
-Information-theoretically, the same per-vector dimension bound holds for one attention output: $H \cdot d_h \cdot \log_2(L_M/\epsilon)$ bits. But *crucially*, the attention weights $\alpha^{(h)}_{t,s}$ are **content-conditioned**: they vary with the actual prefix. So attention picks, **per query token**, *which* projection of the prefix is most useful for the subsequent computation. The ξ in baseline SPLM is fixed in advance to be the uniform mean — no content conditioning.
+Information-theoretically, the same per-vector dimension bound holds for one attention output: $H \cdot d_h \cdot \log_2(L_M/\epsilon)$ bits. But crucially, the attention weights $\alpha^{(h)}_{t,s}$ are **content-conditioned**: they vary with the actual prefix. So attention picks, **per query token**, which projection of the prefix is most useful for the subsequent computation. The ξ in baseline SPLM is fixed in advance to be the uniform mean — no content conditioning.
 
 The structural bet of E11 is: even *without* learnable content-dependent weights $\alpha^{(h)}_{t,s}(h, x)$, just adding **multi-resolution coverage** (with K hand-picked decay scales, learnable globally but not per-token) closes most of the gap because the energy potential V_θ can *itself* select which scale matters at each query token.
 

@@ -30,9 +30,9 @@ The ScalarPotentialLM (SPLM) implements the Euler–Lagrange equations of a sing
 scalar potential $V_\theta(\xi_t, h)$ via a **damped symplectic Euler integrator** at each
 layer $\ell$:
 
-$$h_t^{(\ell+1)} = h_t^{(\ell)} - \beta_\ell \,\nabla_h V_\theta\!\left(\xi_t,\, h_t^{(\ell)}\right) - \gamma\, v_t^{(\ell)} \tag{1}$$
+$$h_t^{(\ell+1)} = h_t^{(\ell)} - \beta_\ell \nabla_h V_\theta\left(\xi_t, h_t^{(\ell)}\right) - \gamma v_t^{(\ell)}$$
 
-$$v_t^{(\ell+1)} = \nabla_h V_\theta\!\left(\xi_t,\, h_t^{(\ell)}\right) \tag{2}$$
+$$v_t^{(\ell+1)} = \nabla_h V_\theta\left(\xi_t, h_t^{(\ell)}\right)$$
 
 where:
 - $\xi_t = \frac{1}{t}\sum_{s \leq t} h_s$ is the causal cumulative-mean context vector
@@ -43,7 +43,7 @@ where:
 
 The per-layer operator satisfies:
 
-$$M_\ell(h) = -\beta_\ell\, \nabla^2_h V_\theta(\xi_t, h_\ell)$$
+$$M_\ell(h) = -\beta_\ell \nabla^2_h V_\theta(\xi_t, h_\ell)$$
 
 for the **same** $V_\theta$ at every layer, making SPLM conservative by construction.
 This is empirically confirmed by the shared-$V_\psi$ test: $R^2 = 0.90$ for SPLM
@@ -60,15 +60,15 @@ prescription is maintained.
 
 The damped second-order ODE that equations (1)–(2) discretize is:
 
-$$\ddot{h} + \gamma\, \dot{h} + \beta\, \nabla_h V_\theta(\xi, h) = 0 \tag{3}$$
+$$\ddot{h} + \gamma \dot{h} + \beta \nabla_h V_\theta(\xi, h) = 0$$
 
 This is second-order in $h$. However, by introducing the augmented state
 $\mathbf{z} = (h, v)^\top \in \mathbb{R}^{2d}$, equation (3) is exactly equivalent to
 the **first-order system in phase space**:
 
 $$\frac{d}{d\ell}\begin{pmatrix} h \\ v \end{pmatrix}
-= \begin{pmatrix} v \\ -\gamma\, v - \beta\, \nabla_h V_\theta(\xi, h) \end{pmatrix}
-\tag{4}$$
+= \begin{pmatrix} v \\ -\gamma v - \beta \nabla_h V_\theta(\xi, h) \end{pmatrix}
+$$
 
 In this sense, SPLM is already a first-order ODE — just in the **doubled state space**
 $\mathbb{R}^{2d}$ tracking both position $h$ and velocity $v$. The question of whether
@@ -85,11 +85,11 @@ The natural first-order reduction is obtained by taking the **overdamped limit**
 $\gamma \to \infty$, where inertia $\ddot{h}$ becomes negligible relative to damping.
 Equation (3) reduces to:
 
-$$\gamma\, \dot{h} = -\beta\, \nabla_h V_\theta(\xi, h)$$
+$$\gamma \dot{h} = -\beta \nabla_h V_\theta(\xi, h)$$
 
 Absorbing $\gamma$ into a rescaled step size $\tilde{\beta} = \beta / \gamma$:
 
-$$\boxed{\dot{h} = -\tilde{\beta}\, \nabla_h V_\theta(\xi, h)} \tag{5}$$
+$$\boxed{\dot{h} = -\tilde{\beta} \nabla_h V_\theta(\xi, h)}$$
 
 This is **gradient flow** — the continuous-time steepest descent on the energy landscape
 $V_\theta(\xi, h)$.
@@ -99,7 +99,7 @@ $V_\theta(\xi, h)$.
 Discretizing equation (5) with step size $\beta_\ell$ gives the layer-wise update rule
 for **SPLM-1** (the first-order variant):
 
-$$\boxed{h_t^{(\ell+1)} = h_t^{(\ell)} - \beta_\ell\, \nabla_h V_\theta\!\left(\xi_t,\, h_t^{(\ell)}\right)} \tag{6}$$
+$$\boxed{h_t^{(\ell+1)} = h_t^{(\ell)} - \beta_\ell \nabla_h V_\theta\left(\xi_t, h_t^{(\ell)}\right)}$$
 
 SPLM-1 retains:
 - The scalar potential $V_\theta(\xi_t, h)$ as architectural primitive
@@ -121,7 +121,7 @@ SPLM-1 still uses $V_\theta(\xi_t, h)$ as its sole governing function. Every lay
 computes $-\beta_\ell \nabla_h V_\theta$ from the **same** shared potential. The
 shared-$V_\psi$ test argument survives:
 
-$$M_\ell(h) = -\beta_\ell\, \nabla^2_h V_\theta(\xi_t, h_\ell) \quad \forall\, \ell$$
+$$M_\ell(h) = -\beta_\ell \nabla^2_h V_\theta(\xi_t, h_\ell) \quad \forall \ell$$
 
 The $R^2$ metric from the shared-$V_\psi$ test should remain high, since the geometric
 structure of the energy landscape is unchanged.
@@ -146,7 +146,7 @@ order of the integrator.
 Gradient flow always moves $h$ in the direction of steepest descent of $V_\theta$.
 The restoring force:
 
-$$\mathbf{F}_\text{restore} = -\beta_\ell\, \nabla_h V_\theta(\xi_t, h_t^{(\ell)})$$
+$$\mathbf{F}_\text{restore} = -\beta_\ell \nabla_h V_\theta(\xi_t, h_t^{(\ell)})$$
 
 is preserved and is in fact the **only** force in SPLM-1 (no damping term to compete
 with). For perturbations that move $h$ away from a minimum of $V_\theta$, the restoring
@@ -157,7 +157,7 @@ can actually fight the gradient near the minimum.
 
 In SPLM-1, the divergence of the gradient flow vector field is:
 
-$$\nabla_h \cdot \mathbf{f} = -\beta_\ell\, \text{tr}\!\left(\nabla^2_h V_\theta(\xi_t, h)\right)$$
+$$\nabla_h \cdot \mathbf{f} = -\beta_\ell \text{tr}\left(\nabla^2_h V_\theta(\xi_t, h)\right)$$
 
 For a locally convex $V_\theta$ (positive definite Hessian), this is strictly negative —
 SPLM-1 is **strictly dissipative** at the layer level. Layer-wise perturbations are
@@ -177,7 +177,7 @@ result reflects this balance.
 
 SPLM-1 (pure gradient flow) is **strictly dissipative** everywhere:
 
-$$\nabla_h \cdot \mathbf{f}_\text{SPLM-1} < 0 \quad \forall\, h$$
+$$\nabla_h \cdot \mathbf{f}_\text{SPLM-1} < 0 \quad \forall h$$
 
 There is no tunable $\gamma$ to recover the conservative limit. The trajectory is always
 attracted strictly downhill — the system cannot orbit a minimum, only converge to it.
@@ -210,7 +210,7 @@ $$\nabla_h V_\theta(\xi_t, h) \approx 0$$
 
 Concretely, the layer-$\ell$ contraction factor for a perturbation $\delta h$ in SPLM-1 is:
 
-$$\|\delta h^{(\ell+1)}\|_2 \approx \left\|\left(I - \beta_\ell\, \nabla^2_h V_\theta\right) \delta h^{(\ell)}\right\|_2$$
+$$\|\delta h^{(\ell+1)}\|_2 \approx \left\|\left(I - \beta_\ell \nabla^2_h V_\theta\right) \delta h^{(\ell)}\right\|_2$$
 
 When $\nabla^2_h V_\theta \approx 0$ (flat region), this approaches $\lVert \delta h^{(\ell)}\rVert_2$
 — no suppression. The full SPLM always has $\gamma \lVert \delta v^{(\ell)}\rVert$ as an
@@ -240,9 +240,9 @@ parameterized by $\gamma$:
 
 ```mermaid
 flowchart LR
-    A["$$\\gamma \\to 0$$\nHamiltonian\nConservative\n$$\\nabla \\cdot F = 0$$\nPhase-volume preserved\nOscillatory / symplectic"]
-    --> B["$$\\gamma = 0.961$$\nCurrent SPLM\nNear-underdamped\nConservative–dissipative\nbalance\nOscillatory decay"]
-    --> C["$$\\gamma \\to \\infty$$\nSPLM-1 / Gradient flow\nOverdamped\nPurely dissipative\n$$\\nabla \\cdot F < 0$$\nMonotone convergence"]
+    A["gamma -> 0\nHamiltonian\nConservative\ndiv F = 0\nPhase-volume preserved\nOscillatory / symplectic"]
+    --> B["gamma = 0.961\nCurrent SPLM\nNear-underdamped\nConservative-dissipative\nbalance\nOscillatory decay"]
+    --> C["gamma -> infty\nSPLM-1 / Gradient flow\nOverdamped\nPurely dissipative\ndiv F < 0\nMonotone convergence"]
 ```
 
 | Parameter | Hamiltonian ($\gamma = 0$) | SPLM ($\gamma = 0.961$) | SPLM-1 ($\gamma \to \infty$) |
@@ -360,7 +360,7 @@ include SPLM-1 as a third architecture alongside GPT-2 and full SPLM.
 
 **Testable predictions for SPLM-1:**
 
-$$\|h_t - h_t^*\|_2 \propto \sigma\, t^\alpha$$
+$$\|h_t - h_t^*\|_2 \propto \sigma t^\alpha$$
 
 with $\alpha$ predicted to satisfy:
 
@@ -381,10 +381,10 @@ independent of the integrator order.
 
 ```mermaid
 flowchart TD
-    E1["Experiment 1\nSPLM-1 Ablation\nDrop velocity buffer entirely\nCompare perplexity +\nshared-Vψ R² with full SPLM"]
-    E2["Experiment 2\nγ Sweep\nγ ∈ {0, 0.1, 0.5, 0.961, 2.0, 10.0}\nMap perplexity and R² vs γ\nLocate optimal balance"]
-    E3["Experiment 3\nHessian Curvature Diagnostic\nCompute λ_min, κ, tr(∇²V_θ)\nalong SPLM trajectories\nIdentify flat regions"]
-    E4["Experiment 4\nSequence Length Sweep\nTest α_GPT2 > α_SPLM-1 > α_SPLM\nConfirm context pool\nO(1/√t) independence\nof integrator order"]
+    E1["Experiment 1\nSPLM-1 Ablation\nDrop velocity buffer entirely\nCompare perplexity +\nshared-Vpsi R^2 with full SPLM"]
+    E2["Experiment 2\ngamma Sweep\ngamma in {0, 0.1, 0.5, 0.961, 2.0, 10.0}\nMap perplexity and R^2 vs gamma\nLocate optimal balance"]
+    E3["Experiment 3\nHessian Curvature Diagnostic\nCompute lambda_min, kappa, tr(grad^2 V_theta)\nalong SPLM trajectories\nIdentify flat regions"]
+    E4["Experiment 4\nSequence Length Sweep\nTest alpha_GPT2 > alpha_SPLM-1 > alpha_SPLM\nConfirm context pool\nO(1/sqrt t) independence\nof integrator order"]
 
     E1 --> C1["Quantifies value\nof inertial term"]
     E2 --> C2["Maps conservative–\ndissipative trade-off"]

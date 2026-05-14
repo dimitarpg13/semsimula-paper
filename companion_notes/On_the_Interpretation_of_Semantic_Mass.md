@@ -484,7 +484,7 @@ graph LR
 1. Compute unweighted action $\mathcal{S} = \sum_t (\frac{1}{2}\omega_t^2 - V_t)$ (as in current experiments).
 2. Compute mass-weighted action $\mathcal{S}_w = \sum_t w_t (\frac{1}{2}\omega_t^2 - V_t)$.
 3. Compute STP loss for each trajectory.
-4. Compare $|r|(\mathcal{L}_{STP}, \mathcal{S})$ with $|r|(\mathcal{L}_{STP}, \mathcal{S}_w)$.
+4. Compare $|r|(\mathcal{L}\_{STP}, \mathcal{S})$ with $|r|(\mathcal{L}\_{STP}, \mathcal{S}\_w)$.
 
 **Success criterion**: $|r|(\mathcal{L}_{STP}, \mathcal{S}_w) > |r|(\mathcal{L}_{STP}, \mathcal{S})$, with $p < 0.05$.
 

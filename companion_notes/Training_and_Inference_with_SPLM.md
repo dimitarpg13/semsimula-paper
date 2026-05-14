@@ -64,22 +64,22 @@ step the optimiser. The loop in
 
 ```mermaid
 flowchart TD
-    A["Start<br/>torch.manual_seed · pick device"] --> B["Build SPLMConfig · train_cfg<br/>(mode = smoke / shakespeare / tinystories)"]
-    B --> C["Load Tiny Shakespeare / Tiny Stories<br/>GPT-2-BPE-encoded uint32 ids"]
-    C --> D["Instantiate ScalarPotentialLM<br/>Instantiate AdamW(lr, betas = 0.9, 0.95, wd)"]
+    A["Start<br>torch.manual_seed * pick device"] --> B["Build SPLMConfig * train_cfg<br>(mode = smoke / shakespeare / tinystories)"]
+    B --> C["Load Tiny Shakespeare / Tiny Stories<br>GPT-2-BPE-encoded uint32 ids"]
+    C --> D["Instantiate ScalarPotentialLM<br>Instantiate AdamW(lr, betas = 0.9, 0.95, wd)"]
     D --> E["for step in 0..N-1"]
     E --> F["Cosine-decayed LR with warm-up"]
     F --> G["Sample batch (x, y) of shape (B, T)"]
-    G --> H["logits, loss = model(x, y)  ← forward + CE"]
-    H --> I["optim.zero_grad()<br/>loss.backward()  ← classic backprop"]
+    G --> H["logits, loss = model(x, y)  <- forward + CE"]
+    H --> I["optim.zero_grad()<br>loss.backward()  <- classic backprop"]
     I --> J["nn.utils.clip_grad_norm_(1.0)"]
     J --> K["optim.step()"]
     K --> L{"eval_interval?"}
-    L -- yes --> M["evaluate(train) · evaluate(val)"]
+    L -- yes --> M["evaluate(train) * evaluate(val)"]
     L -- no  --> E
     M --> E
     E --> N{"done?"}
-    N -- yes --> O["Save checkpoint · loss curve · summary.md"]
+    N -- yes --> O["Save checkpoint * loss curve * summary.md"]
 ```
 
 Nothing in this loop is SPLM-specific; it is the same pattern you would use
@@ -121,13 +121,13 @@ damped flow for `L` steps, tie-weight-unembed into vocabulary logits.
 flowchart TD
     subgraph E["model.forward(x, y)"]
       direction TB
-      X["x: (B, T) token ids"] --> EMB["E(x) + P[:T]  →  emb: (B, T, d)"]
-      EMB --> POOL["causal cumulative mean<br/>xi_t = (1/t) · sum_{s≤t} emb_s<br/>xi: (B, T, d)"]
-      EMB --> H0["h_0 := emb  (initial position)<br/>v_0 := 0         (initial velocity)"]
+      X["x: (B, T) token ids"] --> EMB["E(x) + P[:T]  ->  emb: (B, T, d)"]
+      EMB --> POOL["causal cumulative mean<br>xi_t = (1/t) * sum_{s<=t} emb_s<br>xi: (B, T, d)"]
+      EMB --> H0["h_0 := emb  (initial position)<br>v_0 := 0         (initial velocity)"]
       POOL --> INT
       H0 --> INT
-      INT["<b>integrate(emb, xi)</b><br/>L damped Euler–Lagrange steps"] --> HL["h_L: (B, T, d)"]
-      HL --> LOG["logits = h_L @ E^T   ← tied-embedding head<br/>logits: (B, T, V)"]
+      INT["<b>integrate(emb, xi)</b><br>L damped Euler–Lagrange steps"] --> HL["h_L: (B, T, d)"]
+      HL --> LOG["logits = h_L @ E^T   <- tied-embedding head<br>logits: (B, T, V)"]
       LOG --> CE["loss = CE(logits.reshape(-1, V), y.reshape(-1))"]
     end
 ```
@@ -176,11 +176,11 @@ $$f = -\nabla_{h} V_\theta(\xi, h_{i-1}), \quad v_i = \frac{v_{i-1} + dt \cdot f
 ```mermaid
 flowchart TD
     S[["h_{i-1}, v_{i-1}, xi"]] --> REQ["h_in = h_{i-1}.requires_grad_(True)"]
-    REQ --> V["V = V_θ(xi, h_in).sum()"]
-    V --> GRAD["grad_V = torch.autograd.grad(V, h_in,<br/>create_graph=training,<br/>retain_graph=True)"]
+    REQ --> V["V = V_theta(xi, h_in).sum()"]
+    V --> GRAD["grad_V = torch.autograd.grad(V, h_in,<br>create_graph=training,<br>retain_graph=True)"]
     GRAD --> F["f = -grad_V"]
-    F --> VEL["v_i = (v_{i-1} + dt · f / m) / (1 + dt · γ)"]
-    VEL --> POS["h_i = h_{i-1} + dt · v_i"]
+    F --> VEL["v_i = (v_{i-1} + dt * f / m) / (1 + dt * gamma)"]
+    VEL --> POS["h_i = h_{i-1} + dt * v_i"]
     POS --> OUT[["h_i, v_i"]]
     OUT -. "L times" .-> S
 ```
@@ -234,31 +234,31 @@ force. The picture:
 flowchart LR
     subgraph FWD["Forward graph (black)"]
       direction LR
-      X[x] --> EMB["E · P"]
+      X[x] --> EMB["E * P"]
       EMB --> H0[h_0]
       EMB --> XI["xi (cumulative mean)"]
-      H0 --> STEP1["step 1: h_0 → h_1"]
+      H0 --> STEP1["step 1: h_0 -> h_1"]
       XI -.-> STEP1
-      STEP1 --> STEP2["step 2: h_1 → h_2"]
+      STEP1 --> STEP2["step 2: h_1 -> h_2"]
       XI -.-> STEP2
-      STEP2 --> DOTS["⋯"]
-      DOTS --> STEPL["step L: h_{L-1} → h_L"]
+      STEP2 --> DOTS["..."]
+      DOTS --> STEPL["step L: h_{L-1} -> h_L"]
       XI -.-> STEPL
-      STEPL --> LOGITS["logits = h_L · E^T"]
+      STEPL --> LOGITS["logits = h_L * E^T"]
       LOGITS --> LOSS["CE loss"]
     end
 
-    subgraph INNER["Inner autograd (blue) — create_graph=True"]
+    subgraph INNER["Inner autograd (blue) -- create_graph=True"]
       direction LR
-      STEP1 -. "V_θ, ∇_h V_θ" .-> INNER1["∇V at step 1"]
-      STEP2 -. "V_θ, ∇_h V_θ" .-> INNER2["∇V at step 2"]
-      STEPL -. "V_θ, ∇_h V_θ" .-> INNERL["∇V at step L"]
+      STEP1 -. "V_theta, grad_h V_theta" .-> INNER1["grad V at step 1"]
+      STEP2 -. "V_theta, grad_h V_theta" .-> INNER2["grad V at step 2"]
+      STEPL -. "V_theta, grad_h V_theta" .-> INNERL["grad V at step L"]
     end
 
-    LOSS -. "loss.backward()<br/>d loss / d θ" .-> THETA["update:<br/>E, P, V_θ weights, raw_m, raw_γ"]
-    INNER1 -. "d²V / dh dθ" .-> THETA
-    INNER2 -. "d²V / dh dθ" .-> THETA
-    INNERL -. "d²V / dh dθ" .-> THETA
+    LOSS -.->|"loss backward<br>d loss / d theta"| THETA["update:<br>E, P, V_theta weights, raw_m, raw_gamma"]
+    INNER1 -. "d^2 V / dh d theta" .-> THETA
+    INNER2 -. "d^2 V / dh d theta" .-> THETA
+    INNERL -. "d^2 V / dh d theta" .-> THETA
 ```
 
 In words:
@@ -397,9 +397,9 @@ flowchart TD
     S["prompt x0: (1, T0)"] --> L0{"new tokens left?"}
     L0 -- no --> RET["return x"]
     L0 -- yes --> WIN["x_cond = x[:, -max_len:]"]
-    WIN --> FWD["logits, _ = self.forward(x_cond)<br/>(full L-step SPLM pass)"]
+    WIN --> FWD["logits, _ = self.forward(x_cond)<br>(full L-step SPLM pass)"]
     FWD --> LAST["logits = logits[:, -1, :] / temperature"]
-    LAST --> TK{"top_k ≠ None?"}
+    LAST --> TK{"top_k != None?"}
     TK -- yes --> MASK["mask logits < k-th largest to -inf"]
     TK -- no --> PROB
     MASK --> PROB["probs = softmax(logits)"]

@@ -359,7 +359,7 @@ lands at $0.958$ — *essentially unchanged from* $\gamma_{\mathrm{init}} = 1.0$
 the *opposite* of the v2 buggy regime in which free-γ landed at $\gamma
 \approx 0.65$. The leak-free val\_ppl of $173.59$ at $\gamma = 0.958$ is
 $\sim5-7$ PPL **below** the leak-free fixed-γ basin at $\gamma \in
-[0.10, 0.15]$ (S=5 confirmation sweep mean SPLM-2 val\_ppl $\sim 178\!-\!181$;
+[0.10, 0.15]$ (S=5 confirmation sweep mean SPLM-2 val\_ppl $\sim 178-181$;
 [`leakfree_5seed_confirmation/RESULTS_CONFIRMATION_S5.md`](../notebooks/conservative_arch/ln_damping_sweep/results/leakfree_5seed_confirmation/RESULTS_CONFIRMATION_S5.md)).
 The qualitative direction of the v2 buggy LN result — "ppl is
 *not* essentially unchanged" — therefore survives the leak fix and is in

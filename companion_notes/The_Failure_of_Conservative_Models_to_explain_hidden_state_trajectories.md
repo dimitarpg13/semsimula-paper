@@ -1101,8 +1101,7 @@ Report:
 - [`docs/P-rot-6_transformer_dynamics.md`][prot6] --- the *theoretical*
   predecessor to §1.5 of this document. Derives, from first principles,
   why $W_K\neq W_V$ in scaled dot-product attention produces a non-zero
-  skew operator $\Omega(x) = \tfrac{\beta}{2}\sum_\mu s_\mu(\beta Kx)\,
-  (V_\mu\otimes K_\mu - K_\mu\otimes V_\mu)$ on the hidden state, and
+  skew operator $\Omega(x) = \tfrac{\beta}{2}\sum_\mu s_\mu(\beta Kx)  (V_\mu\otimes K_\mu - K_\mu\otimes V_\mu)$ on the hidden state, and
   gives the zero-free-parameter linearised prediction
   $B_{\text{theory}} = \Omega(\bar x)$ that the constant- and
   affine-in-$x$ skew fits of §1.5 were implicitly testing. Read it

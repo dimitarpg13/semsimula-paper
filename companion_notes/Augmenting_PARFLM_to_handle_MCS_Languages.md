@@ -2,7 +2,7 @@
 
 ## Status
 
-**Active** — May 2026. PARFLM P10 ladder completed (architectural ceiling confirmed at val PPL ≈ 26.4). FockPARFLM Phase 1 Dyck₂ falsifier seed 0 complete. Next: FockPARFLM scale-up on TinyStories, then EOM simulator programme (paper v5).
+**Draft plan** — May 2026. Pre-experimental design stage.
 
 ## Motivation
 
@@ -16,10 +16,6 @@ Consequently, PARFLM is at most a finite automaton (regular languages). It canno
 - Recognise $\text{Dyck}_n$ beyond the predicted collapse depth $D^*$
 - Handle cross-serial dependencies ($a^n b^n c^n$)
 - Reach the mildly context-sensitive (MCS) class
-
-**Empirical confirmation (P10 ladder, 10 May 2026):** The P10h experiment (20M tokens, 16k steps, full P5+P7+P8 stack) achieves val PPL **26.43** — identical to P10g (5M tokens, 16k steps, PPL 26.42). Quadrupling the corpus produces zero improvement, confirming the v0 architectural ceiling. The 22M-parameter PARFLM has exhausted its representational capacity on TinyStories at ≈ 26.4 PPL. The gap to MatchedGPT (7.81 PPL) can only be closed by escaping the expressivity class.
-
-The pretrained potentials $V_\theta$ and $V_\phi$ from P10g/P10h are not wasted — they serve as **warm-start initialization** for the RL-calibrated EOM simulator (§8/§9 of paper v4; dynamical simulation programme planned for paper v5).
 
 To escape this ceiling, the framework requires **v2 (creation/destruction)** mapped to **Fock space and second quantisation** (§9.4.2), plus eventually **v3 (execution)** mapped to **Lie groups and non-abelian gauge theory** (§9.4.3). This document plans the augmentation to v2.
 
@@ -273,77 +269,18 @@ The modest result suggests that at $d = 64$, $M = 16$, and 4000 steps, the gate 
 
 ### Completed
 
-1. **`FockPARFConfig`** dataclass (`parf/model_fock_parf.py`) — extends `SparsePARFConfig` with v2 knobs.
+1. **`FockPARFConfig`** dataclass — extends `SparsePARFConfig` with v2 knobs.
 2. **`FockPARFLM`** model class — latent register pool with creation/destruction gates, LIFO stack discipline, per-layer lifecycle management.
-3. **`dyck_data.py`** — Dyck_n data generator with depth-controlled dataset generation for falsifier experiments.
-4. **`train_fock_parf.py`** — unified trainer supporting both Dyck falsifier and TinyStories corpora, with baseline PARFLM arm for comparison.
+3. **Dyck data generator** — depth-controlled dataset generation for falsifier experiments.
+4. **Unified trainer** — supports both Dyck falsifier and TinyStories corpora, with baseline PARFLM arm for comparison.
 5. **Phase 1 seed 0 run** — all 3 arms complete; LIFO stack wins by +1.3pp.
 
 ### Verified
 
 - Forward + backward pass on CPU/MPS (smoke tests pass).
 - Parameter budget at P10f scale: **288,520 overhead** (2.16% of 13.35M total).
-- Training loop runs correctly for both `--arch fock` and `--arch parflm` on Dyck data.
+- Training loop runs correctly for both PARFLM baseline and FockPARFLM on Dyck data.
 - LIFO stack discipline is the active mechanism (bag ≈ baseline < LIFO).
-
-## Concrete Experiment Commands
-
-### Phase 1: Dyck Falsifier (F1 experiments)
-
-Run from `notebooks/conservative_arch/parf/`:
-
-```bash
-# F1-baseline: plain PARFLM (should collapse at depth D* ≈ 3-6)
-python train_fock_parf.py \
-  --corpus dyck --arch parflm \
-  --dyck-n-types 2 --dyck-max-depth 12 \
-  --dyck-test-depth-min 5 --dyck-test-depth-max 12 \
-  --steps 4000 --seed 0
-
-# F1-fock-nostack: FockPARFLM without LIFO (bag discipline)
-python train_fock_parf.py \
-  --corpus dyck --arch fock --no-stack \
-  --n-registers 16 \
-  --dyck-n-types 2 --dyck-max-depth 12 \
-  --dyck-test-depth-min 5 --dyck-test-depth-max 12 \
-  --steps 4000 --seed 0
-
-# F1-fock-stack: FockPARFLM with LIFO stack discipline
-python train_fock_parf.py \
-  --corpus dyck --arch fock \
-  --n-registers 16 \
-  --dyck-n-types 2 --dyck-max-depth 12 \
-  --dyck-test-depth-min 5 --dyck-test-depth-max 12 \
-  --steps 4000 --seed 0
-
-# Repeat each with --seed 1, --seed 2 for 3-seed consistency
-```
-
-**Key metric**: Deep-test accuracy at depth > D*. Success = FockPARFLM (stack) achieves > 90% accuracy at depth 8+ where baseline collapses.
-
-### Phase 2: TinyStories (P11 experiments)
-
-Requires GPU (A100/H100 recommended for P10f scale):
-
-```bash
-# P11a: FockPARFLM with M=16 registers (matches P10f otherwise)
-python train_fock_parf.py \
-  --corpus tinystories --arch fock \
-  --n-registers 16 --v-hidden 1024 \
-  --steps 8000 --seed 0
-
-# P11b: FockPARFLM with M=32, LIFO stack
-python train_fock_parf.py \
-  --corpus tinystories --arch fock \
-  --n-registers 32 --v-hidden 1024 \
-  --steps 8000 --seed 0
-
-# P11c: FockPARFLM M=32, 16k steps (post-P10g result)
-python train_fock_parf.py \
-  --corpus tinystories --arch fock \
-  --n-registers 32 --v-hidden 1024 \
-  --steps 16000 --seed 0
-```
 
 ## Implementation Priority
 
@@ -363,5 +300,7 @@ python train_fock_parf.py \
 - Paper v4, §17.6: PARF does not escape the v0 ceiling
 - Doi (1976): Second quantisation for stochastic processes
 - Peliti (1985): Path integral for classical reaction-diffusion
-- `companion_notes/PARF-SPLM_Path_Forward_and_Experiments.md`: P10 ladder context
-- `companion_notes/PARF_Stage_1_5b_design.md`: PARF sparsity and scale-up design
+- [PARF-SPLM Path Forward and Experiments](companion_notes/PARF-SPLM_Path_Forward_and_Experiments.md): P10 ladder context
+- [PARF Stage 1.5b Design](companion_notes/PARF_Stage_1_5b_design.md): PARF sparsity and scale-up design
+- [Expressivity Bounds for v0 Simulator](companion_notes/Expressivity_Bounds_For_v0_Simulator.md): v0 ceiling formal details
+- [MCS Reduction for v3 Composite](companion_notes/MCS_Reduction_For_v3_Composite.md): Full MCS system design

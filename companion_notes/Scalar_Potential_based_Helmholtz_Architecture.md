@@ -72,13 +72,13 @@ flowchart TB
     subgraph stack [Hybrid Helmholtz Stack - depth L = L_S + L_A]
         direction TB
         emb["Token embedding h₀"] --> b1
-        b1["S-block: hℓ₊₁ = hℓ + (dt/1+γ)Δh − (dt²/m(1+γ))∇V_θ(ξ,h)"]
-        b1 --> b2["A-block: hℓ₊₁ = hℓ + Attn_θℓ(h≤t) + MLP_θℓ(h)"]
-        b2 --> b3["S-block: same shared V_θ as b1"]
-        b3 --> b4["A-block: independent θℓ, own V_ℓ"]
+        b1["S-block: hl₊₁ = hl + (dt/1+gamma)Deltah - (dt^2/m(1+gamma))gradV_theta(xi,h)"]
+        b1 --> b2["A-block: hl₊₁ = hl + Attn_thetal(h<=t) + MLP_thetal(h)"]
+        b2 --> b3["S-block: same shared V_theta as b1"]
+        b3 --> b4["A-block: independent thetal, own V_l"]
         b4 --> bdots["⋮"]
-        bdots --> bL["final block (S or A per σ schedule)"]
-        bL --> readout["Tied readout: π(w | h_L) ∝ exp⟨e_w, h_L⟩"]
+        bdots --> bL["final block (S or A per sigma schedule)"]
+        bL --> readout["Tied readout: π(w | h_L) prop_to exp⟨e_w, h_L⟩"]
     end
 
     classDef sblock fill:#dbeafe,stroke:#1e40af,color:#1e3a8a
@@ -95,15 +95,15 @@ The colour code carries through the rest of the document: blue = $\mathcal{F}\_S
 
 ```mermaid
 flowchart LR
-    F["Total force F(h, ḣ)"] --> grad["−∇φ(h)<br>scalar gradient"]
+    F["Total force F(h, ḣ)"] --> grad["-gradphi(h)<br>scalar gradient"]
     F --> sol["F_sol(h)<br>position-coupled curl"]
-    F --> gyro["B(h)·ḣ<br>velocity-coupled skew"]
-    F --> drag["D(h)·ḣ<br>symmetric drag"]
+    F --> gyro["B(h)*ḣ<br>velocity-coupled skew"]
+    F --> drag["D(h)*ḣ<br>symmetric drag"]
 
-    grad --> sblk["S-blocks: V_θ shared<br>θ_ℓ ≡ θ, Ω ≡ 0"]
-    sol  --> ablk["A-blocks: Ω_ℓ(h) from K≠V<br>(Track B, secondary)"]
+    grad --> sblk["S-blocks: V_theta shared<br>theta_l ≡ theta, Omega ≡ 0"]
+    sol  --> ablk["A-blocks: Omega_l(h) from K!=V<br>(Track B, secondary)"]
     gyro --> ablk
-    drag --> sblkdamp["explicit γ in S-update<br>(both block types)"]
+    drag --> sblkdamp["explicit gamma in S-update<br>(both block types)"]
 
     classDef sblk fill:#dbeafe,stroke:#1e40af,color:#1e3a8a
     classDef ablk fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d
@@ -234,7 +234,7 @@ The depth schedule $\sigma$ is the design space. Five canonical patterns are wor
 | **Top-A** | $S^{L_S} A^{L_A}$ | Conservative early processing, late routing. |
 | **Bottom-A** | $A^{L_A} S^{L_S}$ | Early routing, late conservative integration. |
 
-The §A.5 K = V boundary case offers a pre-registered prediction: the *anomalous layer-11 recovery* of pretrained GPT-2 to $R^2 \approx 0.99$ arises because the final pre-logit layer ties keys to values. In a hybrid, *placing an $S$-block at the readout position* should be the natural analogue — the readout-adjacent layer is forced into the autonomous-conservative limit by construction, replicating the boundary-case mechanism on a chosen layer rather than relying on it to emerge from training.
+The §A.5 K = V boundary case offers a pre-registered prediction: the *anomalous layer-11 recovery* of pretrained GPT-2 to $R^2 \approx 0.99$ arises because the final pre-logit layer ties keys to values. In a hybrid, placing an $S$-block at the readout position should be the natural analogue — the readout-adjacent layer is forced into the autonomous-conservative limit by construction, replicating the boundary-case mechanism on a chosen layer rather than relying on it to emerge from training.
 
 The minimum viable empirical programme is therefore:
 
@@ -323,7 +323,7 @@ The v3 paper's strategic move was to position SPLM as a *maximally-structured co
 The trajectory $\{h^{(\ell)}_t\}_\ell$ is smooth within each block type (verified for SPLM in §15.20's Decision-$\beta$ analysis, for attention in §14). At a $S\to A$ or $A\to S$ boundary the *governing equation* changes. Whether the trajectory inherits a measurable discontinuity in $\lVert \dot h \rVert$ or $\lVert a_\perp \rVert$ at the boundary is an open empirical question. The §13 STP–acceleration identity is layer-local and continues to hold; the prediction for the framework's deceleration statistics (§14: 97.9 % of triplets decelerate) at boundaries is unclear and worth measuring.
 
 **OQ-5. Should the $S$-block's $V_\theta$ depend on the most recent $A$-block's output?**
-Three options: (i) share one $V_\theta$ across all $S$-blocks regardless of attention output (cleanest, current proposal); (ii) make $V_\theta(\xi, h, c)$ where $c$ is a learned pooled summary of intermediate attention outputs (richer, but may break the strict shared-potential test on the $S$-substack); (iii) use a small $V_\theta$ family indexed by *position relative to the last $A$-block* (a middle ground). Option (i) is the right starting point because it preserves the §4.1 separator prediction. Options (ii) and (iii) are the natural follow-ups if (i) underperforms.
+Three options: (i) share one $V_\theta$ across all $S$-blocks regardless of attention output (cleanest, current proposal); (ii) make $V_\theta(\xi, h, c)$ where $c$ is a learned pooled summary of intermediate attention outputs (richer, but may break the strict shared-potential test on the $S$-substack); (iii) use a small $V_\theta$ family indexed by position relative to the last $A$-block (a middle ground). Option (i) is the right starting point because it preserves the §4.1 separator prediction. Options (ii) and (iii) are the natural follow-ups if (i) underperforms.
 
 ---
 
@@ -333,7 +333,7 @@ The Helmholtz architecture is a strict **specialisation** of the framework's pre
 
 - The *autonomous Helmholtz decomposition class* as the architectural target (the paper's named object).
 - A *finite, measurable budget of non-autonomy* allocated to a designated subset of layers, with a quantitative cost-benefit measured by the substack-restricted separator and the holonomy decomposition.
-- The *single shared $V_\theta$* on the conservative substack — the original SPLM commitment, retained at full strength on $L_S$ blocks instead of $L$ blocks.
+- The single shared $V_\theta$ on the conservative substack — the original SPLM commitment, retained at full strength on $L_S$ blocks instead of $L$ blocks.
 
 The contribution to the framework is therefore not a retreat from SPLM but the construction of an **architectural Helmholtz decomposition** in which the four phase-space force components of (A.130) are carried by physically distinct architectural carriers, with each carrier admitting an independent diagnostic and a cost-budget knob. This converts the v3 paper's negative result on the autonomous Helmholtz class — that no autonomous gradient-plus-curl combination fits attention trajectories — into a positive constructive procedure: build the decomposition explicitly, with one half autonomous-by-construction and the other half non-autonomous-by-construction, and measure the trade-off.
 

@@ -71,17 +71,17 @@ flowchart TD
     Start[Run PARF Q9c at scaleup<br>B=16, T=512, H=128, L=8]
 
     Start --> O1[OOM 1: V_phi forward<br>2.0 GiB at proj_t plus proj_u<br>2026-05-08]
-    O1 --> F1[Fix 1: --grad-checkpoint<br>commit f06a37e]
+    O1 --> F1["Fix 1: --grad-checkpoint<br>commit f06a37e"]
     F1 -. defeated by create_graph .-> O2[OOM 2: V_phi forward still<br>checkpoint and create_graph do not compose]
     O2 --> F2[Fix 2: V_phi widths 128 to 32<br>commit abf89b2]
     F2 --> O3[OOM 3: inner autograd.grad backward<br>~512 MiB short]
     O3 --> F3[Fix 3: V_phi widths 32 to 16<br>plus expandable_segments<br>commit 1e7457f]
     F3 --> O4[OOM 4: outer loss.backward<br>1.54 GiB short<br>logits gradient]
-    O4 --> F4[Fix 4: --grad-accum 2<br>commit 519f4b5]
+    O4 --> F4["Fix 4: --grad-accum 2<br>commit 519f4b5"]
     F4 --> Done[Arm 5 trains on A100 40 GB]
     Done --> A5b[Arm 5b: full V_phi H=128 on H100 96 GB<br>commit af547a3]
     A5b --> O5[OOM 5: 94 GiB used<br>2.0 GiB allocation fails<br>4x intermediates not 2x]
-    O5 --> F5[Fix 5: --grad-accum 2 on H100 too<br>commit 840a824]
+    O5 --> F5["Fix 5: --grad-accum 2 on H100 too<br>commit 840a824"]
     F5 --> Done2[Arm 5b trains on H100]
 ```
 

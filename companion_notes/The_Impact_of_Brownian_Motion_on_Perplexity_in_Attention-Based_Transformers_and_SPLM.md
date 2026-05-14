@@ -186,13 +186,13 @@ By Donsker's theorem, $\frac{1}{\sqrt{t}} \sum_{s \leq t} \epsilon_s \sim \mathc
 
 ```mermaid
 flowchart TD
-    A["Teacher forcing removed at inference"] --> B["ε_t propagates forward\ninto h_{t+1}"]
-    B --> C["Infinite-width limit / NTK\n(Yang & Littwin 2021)\nε_t ~ i.i.d. N(0, σ²I)"]
+    A["Teacher forcing removed at inference"] --> B["eps_t propagates forward\ninto h_{t+1}"]
+    B --> C["Infinite-width limit / NTK\n(Yang & Littwin 2021)\neps_t ~ i.i.d. N(0, sigma^2 I)"]
     C --> D["Gaussian noise remains Gaussian\nthrough frozen NTK network"]
-    D --> E["Accumulation:\nh_t - h*_t = Σ_{s≤t} ε_s\nrandom walk in R^d"]
-    E --> F["Donsker's Theorem:\n(1/√t) Σ ε_s → N(0,Σ)\nas t → ∞"]
-    F --> G["Brownian motion term σ_t dW_t\nin inference SDE"]
-    G --> H["Inference Cone:\n‖h_t - h*_t‖₂ ∝ σ√t"]
+    D --> E["Accumulation:\nh_t - h*_t = sum_{s<=t} eps_s\nrandom walk in R^d"]
+    E --> F["Donsker's Theorem:\n(1/sqrt t) sum eps_s -> N(0,sum)\nas t -> inf"]
+    F --> G["Brownian motion term sigma_t dW_t\nin inference SDE"]
+    G --> H["Inference Cone:\nnorm h_t - h*_t norm_2 prop_to sigma sqrt t"]
     H --> I["Mode collapse when\ncones of distinct prompts collide"]
 ```
 
@@ -294,7 +294,7 @@ flowchart LR
     end
     subgraph Layer_Depth [Layer-Depth Axis ell]
         direction TB
-        L1["ℓ=1"] --> L2["ℓ=2"] --> L3["ℓ=3"] --> L4["...\nℓ=L"]
+        L1["l=1"] --> L2["l=2"] --> L3["l=3"] --> L4["...\nl=L"]
     end
     Token_Position -- "STP / SDE axis\nBrownian accumulation" --- Layer_Depth
     Layer_Depth -- "SPLM / ODE axis\nEuler-Lagrange integrator" --- Token_Position
@@ -340,18 +340,18 @@ Because SPLM's forward pass is governed by $-\beta_\ell \nabla_h V_\theta(\xi_t,
 ```mermaid
 flowchart TD
     subgraph StandardTransformer [Standard Attention Transformer - Inference]
-        ST1["Token error ε_t"] --> ST2["Accumulates freely\nh_t - h*_t = Σε_s"]
-        ST2 --> ST3["Brownian cone grows\n∝ σ√t"]
-        ST3 --> ST4["Attention score corruption\nq̃·k̃ = q·k + noise(σ√t)"]
+        ST1["Token error eps_t"] --> ST2["Accumulates freely\nh_t - h*_t = sum eps_s"]
+        ST2 --> ST3["Brownian cone grows\nprop_to sigma sqrt t"]
+        ST3 --> ST4["Attention score corruption\nq_tilde*k_tilde = q*k + noise(sigma sqrt t)"]
         ST4 --> ST5["Causal attention\nre-mixes all prior errors"]
         ST5 --> ST6["Mode collapse when\ncones collide"]
     end
 
     subgraph SPLM_ [SPLM - Inference]
-        SP1["Token error ε_t"] --> SP2["Same Brownian accumulation\nh_t - h*_t = Σε_s ∝ σ√t"]
-        SP2 --> SP3["Layer damping -γv_t\nDissipates perturbations\nthrough depth"]
-        SP3 --> SP4["Gradient restoring force\n-β∇V_θ pulls toward\nenergy minimum"]
-        SP4 --> SP5["Context pool averaging\nξ̃_t noise ∝ σ/√t\n(shrinks with t)"]
+        SP1["Token error eps_t"] --> SP2["Same Brownian accumulation\nh_t - h*_t = sum eps_s prop_to sigma sqrt t"]
+        SP2 --> SP3["Layer damping -gamma v_t\nDissipates perturbations\nthrough depth"]
+        SP3 --> SP4["Gradient restoring force\n-beta grad V_theta pulls toward\nenergy minimum"]
+        SP4 --> SP5["Context pool averaging\nxi_tilde_t noise prop_to sigma/sqrt t\n(shrinks with t)"]
         SP5 --> SP6["Attenuated mode collapse\nSelf-correcting dynamics"]
     end
 ```
@@ -364,9 +364,9 @@ This analysis constitutes a **third pillar** of evidence for SPLM's advantages o
 
 ```mermaid
 flowchart LR
-    P1["Pillar 1 — Geometric (static)\nSPLM satisfies Euler-Lagrange\nprescription by construction.\nshared-Vψ: R²=0.90 vs R²=0.19\nfor GPT-2"]
-    P2["Pillar 2 — Empirical (training)\nSARF SPLM narrows perplexity gap\n(192 vs 287 baseline)\nwhile maintaining conservative\ngeometry"]
-    P3["Pillar 3 — Dynamical (inference)\nSPLM has structural inference-time\nadvantages:\n(a) layer-space dissipation\n(b) context noise ∝ 1/√t\n(c) restoring force from ∇V_θ"]
+    P1["Pillar 1 -- Geometric (static)\nSPLM satisfies Euler-Lagrange\nprescription by construction.\nshared-Vpsi: R^2=0.90 vs R^2=0.19\nfor GPT-2"]
+    P2["Pillar 2 -- Empirical (training)\nSARF SPLM narrows perplexity gap\n(192 vs 287 baseline)\nwhile maintaining conservative\ngeometry"]
+    P3["Pillar 3 -- Dynamical (inference)\nSPLM has structural inference-time\nadvantages:\n(a) layer-space dissipation\n(b) context noise prop_to 1/sqrt t\n(c) restoring force from grad V_theta"]
 
     P1 --> SPLM_["SPLM Design\nJustification"]
     P2 --> SPLM_

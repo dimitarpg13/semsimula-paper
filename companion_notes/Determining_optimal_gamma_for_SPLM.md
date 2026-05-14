@@ -68,7 +68,7 @@ $$\boxed{\gamma^{\ast}_{\text{depth}} = \frac{m}{L \Delta t} \ln(1/\rho).}$$
 
 Under the **buggy v2 anchor**, the E4 / E5 empirical optimum of $\gamma^{\ast} = 0.30$ falls squarely in the $\rho \in [0.15, 0.20]$ band — i.e., the integrator empirically prefers to retain 15–20 % of initial kinetic energy at the final layer. Under the **leak-free anchor** (May 4, 2026 reanchoring; full detail in §2.5 below), the E5 empirical optimum shifts to $\gamma^{\ast} = 0.10$ (3-seed retrain) / $\gamma^{\ast} \in [0.10, 0.15]$ (S=5 confirmation flat-bottom basin), corresponding to $\rho \approx 0.565$ — i.e., the leak-corrected integrator prefers to retain $\sim56\%$ of initial kinetic energy at the final layer. The same closed form predicts both operating points to four decimal places with only $\rho$ shifting, which we read as **structural validation of the resonance methodology that does not depend on either single empirical anchor**: the framework's depth-scaling closed form is the *predictor*, $\rho$ is its single empirical calibration constant, and the leak fix has shifted the constant without breaking the predictor.
 
-**Falsifiable extrapolation:** at $L = 16$ (depth-doubled SPLM), the depth-scaling formula predicts $\gamma^{\ast}_{\text{depth}} \approx 0.20$ at $\rho = 0.18$. At $L = 4$ (depth-halved), $\gamma^{\ast}_{\text{depth}} \approx 0.80$. **Future E11 / E12 depth-sweep would test this.**
+**Falsifiable extrapolation:** at $L = 16$ (depth-doubled SPLM), the depth-scaling formula predicts $\gamma^{\ast}\_{\text{depth}} \approx 0.20$ at $\rho = 0.18$. At $L = 4$ (depth-halved), $\gamma^{\ast}\_{\text{depth}} \approx 0.80$. **Future E11 / E12 depth-sweep would test this.**
 
 **Caveat.** The exponential-decay model assumes a *constant* effective Hessian eigenvalue across layers; in reality $\nabla^2 V_{\theta}$ varies layer-by-layer because $V_{\theta}$ is shared but $h_l, \xi_l$ change. Estimator §2.2 makes this explicit.
 
@@ -112,7 +112,7 @@ In both pre- and post-leak operating points the §2.2 sub-estimators substantial
 - Empirical-optimum γ corresponds to *partial* damping: heavy modes are over-damped (acceptable, they converge fast anyway), gentle modes are under-damped (acceptable, they barely move and don't dominate the loss).
 - The framework's §2.2 *top* estimate therefore acts as an **upper bound** on the optimal γ, and the §2.2 *average* estimate as a **typical-mode bound** that still overshoots.
 
-**Practical interpretation.** Use §2.1 / §2.3 as the *primary* γ\* predictors. Use §2.2 as a *consistency check*: $\gamma^{\ast}_{\text{depth}} \le \gamma^{\ast}_{\text{Hessian,avg}} \le \gamma^{\ast}_{\text{Hessian,top}}$ is a healthy ordering. Reverse ordering would indicate the framework is failing.
+**Practical interpretation.** Use §2.1 / §2.3 as the *primary* γ\* predictors. Use §2.2 as a *consistency check*: $\gamma^{\ast}\_{\text{depth}} \le \gamma^{\ast}\_{\text{Hessian,avg}} \le \gamma^{\ast}\_{\text{Hessian,top}}$ is a healthy ordering. Reverse ordering would indicate the framework is failing.
 
 **Open question (calibration).** Is there a principled scaling (e.g., γ\*\_emp = γ\*\_Hessian / $\sqrt{d_{\text{eff}}}$ for some "effective dimension" $d_{\text{eff}}$) that maps the §2.2 number to the empirical optimum directly? If so, §2.2 becomes a single-eval γ\* predictor without needing §2.1 / §2.3 as anchors.
 
@@ -152,11 +152,11 @@ $$\boxed{\frac{\gamma^{\ast}_{\text{TS}}}{\gamma^{\ast}_{\text{E5}}} = \sqrt{\fr
 
 $$\gamma^{\ast}_{\text{TS}}/\gamma^{\ast}_{\text{E5}} \approx \sqrt{(\bar S_{\text{TS}}/\bar m_{\text{TS}}) / (\bar S_{\text{E5}}/\bar m_{\text{E5}})} \approx \sqrt{8.55/9.1} \approx 0.97.$$
 
-Combined with the **leak-free** $\gamma^{\ast}_{\text{E5}} = 0.10$ (3-seed retrain) / $\gamma^{\ast}_{\text{E5}} \in [0.10, 0.15]$ (S=5 confirmation flat-bottom basin):
+Combined with the **leak-free** $\gamma^{\ast}\_{\text{E5}} = 0.10$ (3-seed retrain) / $\gamma^{\ast}\_{\text{E5}} \in [0.10, 0.15]$ (S=5 confirmation flat-bottom basin):
 
 $$\gamma^{\ast}_{\text{surprisal}}({\text{TS, leak-free}}) \approx 0.10 \times 0.97 \approx \mathbf{0.097}.$$
 
-(Under the **buggy v2 anchor** $\gamma^{\ast}_{\text{E5}} = 0.30$ the same scaling delivered $\gamma^{\ast}_{\text{surprisal}}(\text{TS}) \approx 0.30 \times 0.858 \approx 0.26$ at the originally-assumed $\bar S_{\text{TS}} = 7.0$ bits; the v3 update revises both the anchor and the surprisal ratio.)
+(Under the **buggy v2 anchor** $\gamma^{\ast}\_{\text{E5}} = 0.30$ the same scaling delivered $\gamma^{\ast}\_{\text{surprisal}}(\text{TS}) \approx 0.30 \times 0.858 \approx 0.26$ at the originally-assumed $\bar S_{\text{TS}} = 7.0$ bits; the v3 update revises both the anchor and the surprisal ratio.)
 
 **Falsifiable prediction (post-leak):** the interpolated leak-free optimum on TinyStories should sit at $\gamma \approx 0.10$, very close to the leak-free Tiny Shakespeare optimum, because the surprisal contrast between the two corpora is much smaller than the original $9.5/7.0 \approx 1.36$ ratio suggested. **The full leak-free TinyStories sweep is one of the open follow-ups in the v3 paper's `subsec:cba-open` (F1 SPLM scale sweep).**
 
@@ -206,7 +206,7 @@ What is *not* affected by the leak: the four closed forms in §2.1, §2.2, §2.3
 
 **Resonance-predictor double success.** The same depth-scaling closed form, with the *same* dataset-probed $\bar m \approx 1.4$–$1.47$ and the same $L = 8$, $\Delta t = 1$, predicts **both** empirical $\gamma^{\ast}$ values to three decimal places, with only $\rho$ shifting:
 
-| operating point | $\rho$ | $\gamma^{\ast}_{\text{depth, pred}}$ | $\gamma^{\ast}_{\text{empirical}}$ | match |
+| operating point | $\rho$ | $\gamma^{\ast}\_{\text{depth, pred}}$ | $\gamma^{\ast}\_{\text{empirical}}$ | match |
 |---|---:|---:|---:|---|
 | Buggy v2, E4 / E5 | $0.18$ | $0.299$ | $0.30$ | 4 dp |
 | Leak-free, May 4, 2026, S=5 | $0.565$ | $0.105$ | $0.10$ (3-seed) / $0.10-0.15$ (S=5) | 3 dp |
@@ -217,7 +217,7 @@ This double match across the leak fix is structurally stronger evidence than eit
 
 **Updated practical default rule.** The Appendix A rule "$\gamma = (m / (L \Delta t)) \ln(1/\rho)$ with $\rho = 0.18$" is **superseded** for leak-corrected SPLM training. The post-fix recommended default is $\rho = 0.565$, which gives the table at the bottom of Appendix A (also updated below).
 
-**S=5 confirmation sweep canonical numbers.** Beyond the resonance-predictor double match, the second-order architectural lift was at $S = 3$ borderline-but-suggestive ($\overline{\Delta}_{0.10} = +4.71$~PPL, $0.29$~PPL short of the pre-registered $\Delta_{\min} = 5.0$~PPL); the $S = 5$ confirmation sweep at $\gamma \in \{0.05, 0.10, 0.15, 0.20\}$ confirms it at all four pre-registered decision criteria simultaneously: $\overline{\Delta}_{0.10} = +5.09$~PPL ($p = 0.006$, $d_z = +2.37$, sign $5/5$, all four ✓) and the largest paired effect at $\overline{\Delta}_{0.15} = +7.03$~PPL ($p = 0.013$, $d_z = +1.89$, sign $5/5$, all four ✓). The full table is at `notebooks/conservative_arch/ln_damping_sweep/results/leakfree_5seed_confirmation/RESULTS_CONFIRMATION_S5.md`.
+**S=5 confirmation sweep canonical numbers.** Beyond the resonance-predictor double match, the second-order architectural lift was at $S = 3$ borderline-but-suggestive ($\overline{\Delta}\_{0.10} = +4.71$~PPL, $0.29$~PPL short of the pre-registered $\Delta\_{\min} = 5.0$~PPL); the $S = 5$ confirmation sweep at $\gamma \in \{0.05, 0.10, 0.15, 0.20\}$ confirms it at all four pre-registered decision criteria simultaneously: $\overline{\Delta}\_{0.10} = +5.09$~PPL ($p = 0.006$, $d\_z = +2.37$, sign $5/5$, all four ✓) and the largest paired effect at $\overline{\Delta}\_{0.15} = +7.03$~PPL ($p = 0.013$, $d\_z = +1.89$, sign $5/5$, all four ✓). The full table is at `notebooks/conservative_arch/ln_damping_sweep/results/leakfree_5seed_confirmation/RESULTS_CONFIRMATION_S5.md`.
 
 ---
 
@@ -234,17 +234,17 @@ Given a corpus + architecture, we have *up to four* numbers for $\gamma^{\ast}$:
 
 **Reconciliation rule.** The four numbers should agree to within ~10–20 % if the framework is consistent. Specifically:
 
-- If $\gamma^{\ast}_{\text{Hessian}}$ disagrees with $\gamma^{\ast}_{\text{depth}}$ by > 30 %, the depth-scaling assumption (uniform-Hessian decay model) is violated → diagnostic for layer-by-layer Hessian inhomogeneity.
-- If $\gamma^{\ast}_{\text{surprisal}}$ disagrees with $\gamma^{\ast}_{\text{Hessian}}$ by > 20 %, the corpus-driven Hessian assumption is violated → the trained $V_{\theta}$ has a strong corpus-independent component.
+- If $\gamma^{\ast}\_{\text{Hessian}}$ disagrees with $\gamma^{\ast}\_{\text{depth}}$ by > 30 %, the depth-scaling assumption (uniform-Hessian decay model) is violated → diagnostic for layer-by-layer Hessian inhomogeneity.
+- If $\gamma^{\ast}\_{\text{surprisal}}$ disagrees with $\gamma^{\ast}\_{\text{Hessian}}$ by > 20 %, the corpus-driven Hessian assumption is violated → the trained $V_{\theta}$ has a strong corpus-independent component.
 - If $\gamma^{\ast}_{\text{empirical}}$ disagrees with all three predictors by > 30 %, the framework is *itself* broken at this regime → flag for theoretical revisit.
 
 **Joint use.** The cheapest workflow on a *new* corpus or architecture:
 
 1. Compute $\gamma^{\ast}_{\text{depth}}$ (instant).
 2. Compute $\gamma^{\ast}_{\text{surprisal}}$ from the corpus's unigram entropy (instant).
-3. Train at $\overline{\gamma^{\ast}_{\text{depth}}, \gamma^{\ast}_{\text{surprisal}}}$ for one full training run.
+3. Train at $\overline{\gamma^{\ast}\_{\text{depth}},\ \gamma^{\ast}\_{\text{surprisal}}}$ for one full training run.
 4. Compute $\gamma^{\ast}_{\text{Hessian}}$ from the resulting checkpoint (~ minutes).
-5. If $|\gamma^{\ast}_{\text{Hessian}} - \gamma_{\text{step 3}}| / \gamma_{\text{step 3}} > 20\%$, retrain once at $\gamma^{\ast}_{\text{Hessian}}$.
+5. If $|\gamma^{\ast}\_{\text{Hessian}} - \gamma\_{\text{step 3}}| / \gamma\_{\text{step 3}} > 20\%$, retrain once at $\gamma^{\ast}\_{\text{Hessian}}$.
 6. Otherwise, declare $\gamma^{\ast} = \gamma^{\ast}_{\text{Hessian}}$ done.
 
 This compresses the typical ~3 days of γ-grid sweep into 1× single run + a minute of post-hoc analysis. **For the E10 use case, we can run §2.2 in parallel with E10 Stage 1's training and treat the outputs as independent corroborating evidence.**

@@ -2,8 +2,6 @@
 
 **Work in progress — last updated April 2026**
 
-> **Rendering note.** This document contains LaTeX math (inline `$...$` and display `$$...$$` blocks, with macros such as `\mathfrak{...}`, `\boldsymbol{...}`, `\mathcal{...}`, etc.). The math has been verified to render correctly in **Safari**. In **Chrome** some symbols — notably calligraphic and fraktur letters, e.g. `\mathfrak{C}` rendering as a plain `C` instead of $\mathfrak{C}$ — appear to render incorrectly. **Firefox** has not been tested. If symbols look wrong, please view the document in Safari or consult the main paper's PDF, where the same symbols are typeset by LaTeX directly.
-
 ---
 
 ## Abstract
@@ -188,13 +186,13 @@ The conjecture from [6, Section 2.4] therefore acquires a precise physical meani
 
 The derivation above shows that the STP loss captures exclusively normal acceleration (curvature) while being blind to tangential acceleration (speed changes along a straight line). This raises a critical question: **does tangential acceleration exist in hidden state trajectories?** If it does, it constitutes evidence for a potential-driven dynamics that the STP framework does not model and cannot suppress.
 
-**Why tangential acceleration must exist under the Gaussian well.** Consider a property traveling toward the well center along a straight radial path. The restoring force $F(x) = -2\mathfrak{m}\upsilon^2\kappa^2 x e^{-\kappa^2 x^2}$ is directed along the path — it is entirely tangential. The property accelerates inward (gaining speed) as it approaches the inflection point, then decelerates as it nears the center (where $F \to 0$). Throughout this radial trajectory, $\vec{a}_\perp = 0$ and $\vec{a}_\parallel \neq 0$. The STP loss would be exactly zero, yet the trajectory is undergoing strong acceleration. This is not a pathological edge case — it is the expected behavior for a property approaching its bound state along the well axis.
+**Why tangential acceleration must exist under the Gaussian well.** Consider a property traveling toward the well center along a straight radial path. The restoring force $F(x) = -2\mathfrak{m}\upsilon^2\kappa^2 x e^{-\kappa^2 x^2}$ is directed along the path — it is entirely tangential. The property accelerates inward (gaining speed) as it approaches the inflection point, then decelerates as it nears the center (where $F \to 0$). Throughout this radial trajectory, $\vec{a}\_\perp = 0$ and $\vec{a}\_\parallel \neq 0$. The STP loss would be exactly zero, yet the trajectory is undergoing strong acceleration. This is not a pathological edge case — it is the expected behavior for a property approaching its bound state along the well axis.
 
 **Evidence from the GPT-2 experiments.** Three independent observations in the experimental data [6, Sections 7–8] confirm the presence of tangential acceleration:
 
 *Evidence 1: Kinetic energy varies along trajectories.* In the Euclidean experiment [6, Figure 7], the kinetic energy $T_t = \frac{1}{2}v_t^2$ varies wildly across token positions — the profiles show large spikes and dips rather than a flat line. In the cosine experiment [6, Figure 12], the angular kinetic energy $T_t = \frac{1}{2}\omega_t^2$ shows the same effect at a smaller scale: steady potential energy ($V \approx 3.7$) with "occasional small perturbations" in kinetic energy ($T \approx 0.01$ with fluctuations). Since kinetic energy is proportional to the square of velocity, varying kinetic energy means varying speed, which is tangential acceleration. If the speed were constant, $T_t$ would be a horizontal line — and it is not, in either experiment.
 
-Evidence 2: The angular velocity $\omega_t$ spans a 10x range. The cosine experiment reported angular steps of $\omega \sim 0.01$–$0.1$ radians per token [6, Section 8.2.4]. When consecutive angular velocities differ — say $\omega_t = 0.02$ and $\omega_{t+1} = 0.08$ — the tangential acceleration is $\Delta\omega = 0.06$, a factor of 4 speed change in a single step. The STP loss registers none of this: it measures the angle between displacement vectors, not the ratio of their magnitudes.
+**Evidence 2: The angular velocity $\omega_t$ spans a 10x range.** The cosine experiment reported angular steps of $\omega \sim 0.01$–$0.1$ radians per token [6, Section 8.2.4]. When consecutive angular velocities differ — say $\omega_t = 0.02$ and $\omega_{t+1} = 0.08$ — the tangential acceleration is $\Delta\omega = 0.06$, a factor of 4 speed change in a single step. The STP loss registers none of this: it measures the angle between displacement vectors, not the ratio of their magnitudes.
 
 *Evidence 3: Structured kinetic energy variation across domains.* The action distribution differs systematically across semantic domains [6, Figures 6 and 11], and the trajectory profiles show domain-dependent kinetic energy patterns. If tangential acceleration were absent (constant speed), all trajectories would have the same kinetic energy profile regardless of content. The observed domain dependence indicates that the speed variations are driven by the semantic content of the sequence — tokens encounter varying "predictive difficulty" (NTP loss) as the sequence unfolds, and the velocity responds.
 
@@ -265,11 +263,11 @@ The three resolutions are not mutually exclusive. Together they form a coherent 
 ```mermaid
 graph TB
     subgraph "Underlying Theory (Second-Order)"
-        L["Lagrangian: L = T - V<br>Euler-Lagrange: m·ẍ = F(x)"]
-        D["Damping field γ<br>(from H_i in Semantic Simulation)"]
+        L["Lagrangian: L = T - V<br>Euler-Lagrange: m*ẍ = F(x)"]
+        D["Damping field gamma<br>(from H_i in Semantic Simulation)"]
     end
     subgraph "Effective Description (First-Order)"
-        G["Gradient flow: γ·ẋ = -∇V<br>(overdamped limit)"]
+        G["Gradient flow: gamma*ẋ = -grad V<br>(overdamped limit)"]
         STP["STP geodesic: locally linear<br>(Huang et al.)"]
     end
     subgraph "Observable"
@@ -277,7 +275,7 @@ graph TB
     end
     
     L -->|"+ strong damping"| G
-    D -->|"γ >> mω₀"| G
+    D -->|"gamma >> mω₀"| G
     G -->|"approximately"| STP
     L -->|"acceleration F/m"| R
     STP -->|"deviation from linearity"| R
@@ -309,7 +307,7 @@ $$\vec{a}_t = h_{t+1} - 2h_t + h_{t-1} = \vec{v}_{t+1} - \vec{v}_t$$
 
 **Angular velocity**:
 
-$$\omega_t = \arccos\left(\frac{h_t \cdot h_{t-1}}{\lVerth_t\rVert\lVerth_{t-1}\rVert}\right)$$
+$$\omega_t = \arccos\left(\frac{h_t \cdot h_{t-1}}{\lVert h_t\rVert\lVert h_{t-1}\rVert}\right)$$
 
 **Angular acceleration**:
 
@@ -378,7 +376,7 @@ If the system is strongly overdamped ($\gamma \gg w_t \omega_0$), then $\gamma_t
 **Procedure**:
 
 1. For each trajectory, identify the trajectory center $c$ (final hidden state $h_T$, or attention-weighted centroid).
-2. Compute the "radial" direction at each position: $\hat{r}_t = (c - h_t) / \lVertc - h_t\rVert$.
+2. Compute the "radial" direction at each position: $\hat{r}\_t = (c - h\_t) / \lVert c - h\_t\rVert$.
 3. Compute the **radial component** of acceleration: $a_{r,t} = \vec{a}\_t \cdot \hat{r}\_t$.
 4. If the acceleration is a restoring force, $a_{r,t}$ should be **positive** (pointing toward center) for positions away from center, and near zero at the center.
 5. Fit the radial acceleration profile $a_{r,t}$ vs. cosine distance $d_t$ to:
@@ -546,7 +544,7 @@ $$\mathcal{L}_{STP} = 1 - \sqrt{1 - \frac{|\vec{a}_\perp|^2}{|\vec{d}_2|^2}}$$
 
 - **Step 2(a) — Mathematical (conformal invariance): COMPLETED.** The proposition that the STP loss is invariant under the conformal rescaling $g \mapsto \Omega^2 g$ has been proved and absorbed into the paper as §14.2 "Conformal invariance of the STP loss" (proposition `prop:stp-conformal-invariance`, with a three-line proof and three named consequences). This closes the rhetorical loop between §12 (STP = normal acceleration in flat coordinates) and §14.3 (Jacobi-geodesic test).
 
-- **Step 2(b) — Computational (Jacobi-geodesic test): PENDING, blocked on Step 3.** The §14 framework (Christoffel symbols, predicted acceleration $\vec{a}^{\text{Jacobi}}$, Jacobi residual $R_t$, three outcomes) is fully set up in the paper but the comparison $\vec{a}_{pred}$ vs.\ $\vec{a}_{obs}$ cannot be executed until a Gaussian well has actually been fitted (Step 3).
+- **Step 2(b) — Computational (Jacobi-geodesic test): PENDING, blocked on Step 3.** The §14 framework (Christoffel symbols, predicted acceleration $\vec{a}^{\text{Jacobi}}$, Jacobi residual $R_t$, three outcomes) is fully set up in the paper but the comparison $\vec{a}\_{pred}$ vs.\ $\vec{a}\_{obs}$ cannot be executed until a Gaussian well has actually been fitted (Step 3).
 
 **Cost**: Very low — primarily a mathematical analysis, with a small computational test.
 
@@ -688,7 +686,7 @@ In physical terms: Huang et al. showed that planets move in approximately straig
 |---|---|---|---|---|---|
 | 1 | 2.1 | Very low | None (existing GPT-2 data) | **COMPLETED** | $a_\perp$–STP equivalence confirmed to machine precision; $a_\parallel$ dominates. See Section 10 and paper §13. |
 | 2(a) | 2.2 (conformal invariance, mathematical) | Very low | None | **COMPLETED** | Conformal invariance proposition in paper §14.2. |
-| 2(b) | 2.2 (Jacobi geodesic test, computational) | Low | Step 3b | Pending | Comparison of $\vec{a}_{pred}$ vs. $\vec{a}_{obs}$. Framework in paper §14.3–14.5. |
+| 2(b) | 2.2 (Jacobi geodesic test, computational) | Low | Step 3b | Pending | Comparison of $\vec{a}\_{pred}$ vs. $\vec{a}\_{obs}$. Framework in paper §14.3–14.5. |
 | 3a | 2.2 (anisotropic) + enables 2.3 | Hours | Existing GPT-2 data | **NEXT** | Dress-rehearsal PCA + per-phrase fits on GPT-2; methodology validation with decision gate. |
 | 3b | 2.2 (anisotropic) + enables 2.3 | Moderate | Step 3a green signal, Llama-3.2-1B, parses | Pending | Production PCA + per-phrase fits on Llama-3.2-1B. |
 | 4 | 2.3 | Low | Steps 1, 3b (or 3a if sufficient) | Pending | Damping ratio $\zeta$; overdamped/underdamped regime. |
@@ -697,7 +695,7 @@ In physical terms: Huang et al. showed that planets move in approximately straig
 
 **Prioritization.** Step 1 and Step 2(a) are closed and fully absorbed into the paper (§13 and §14.2 respectively). The next experimental action is **Step 3a** — the GPT-2 dress rehearsal. Its decision gate determines whether the production Step 3b on Llama-3.2-1B is worth the infrastructure investment. Step 2(b) and Steps 4–6 all follow from a successful well fit and cannot be meaningfully attempted until Step 3a or 3b succeeds.
 
-**Timing relative to the arXiv v1 submission.** Step 3a should not be started before the unified paper is posted to arXiv. Step 3a/3b outcomes will also inform the eventual split of the unified manuscript into separate JMLR submissions; the detailed splitting plan is maintained separately and is not part of this repository.
+**Timing relative to the arXiv v1 submission.** Step 3a should not be started before the unified paper is posted to arXiv. See `docs/Splitting_the_Simulation_Paper_in_Two_Parts_for_JMLR.md` for the submission timeline and for how Step 3a/3b outcomes feed into the eventual JMLR split.
 
 ---
 
@@ -727,7 +725,19 @@ The existence of the metric is automatic. Three claims require experimental evid
 
 **Claim A: The Gaussian well potential exists in the hidden state space.**
 
-This is the most basic claim. It asserts that the per-token NTP loss (as an energy proxy) follows the Gaussian well profile as a function of distance from the trajectory center. The current experiments [6, Sections 7–8] show a degenerate fit ($R^2 \approx 0$) for the aggregate distance, suggesting either the wrong distance metric, the wrong center, or anisotropy that hides the well in aggregate. The PCA projection and per-phrase fitting (Step 3) are designed to resolve this.
+This is the most basic claim. It asserts that the per-token NTP loss (as an energy proxy) follows the Gaussian well profile as a function of distance from the trajectory center.
+
+**Status: partially confirmed.** Subsequent experiments have substantially advanced the evidence for Claim A beyond the original degenerate-fit observation:
+
+1. *Binned-median radial fits (E1–E3, GPT-2 small).* When the raw per-token $(\\|x\\|, \text{NTP loss})$ scatter is binned into 15 equal-count radial bins and medians are taken, the deterministic radial trend is clearly recovered: $R^2 \approx 0.82\text{–}0.90$ at middle layers (3–7) across all seven tested functional forms (Gaussian, harmonic, Morse, rational, log-saturation, Weibull, power law). The forms are indistinguishable at four decimal places — confirming that a well-defined attractive potential governs the radial-NTP relationship. The original $R^2 \approx 0$ on raw scatter was dominated by per-token noise masking the underlying signal.
+
+2. *SPLM positive control (d=64, L=4, smoke test).* On a conservative-by-construction scalar-potential LM, the E-init validation protocol beats the static null on held-out data: best TEST residual 0.0201 vs null 0.1281 ($\Delta = -0.108$), confirming that a scalar-potential integrator can predict SPLM trajectories from initial conditions alone. This is the first positive-control result for the E-init pipeline.
+
+3. *Shared-$V\_\psi$ separator.* Fitting a single shared neural scalar $V\_\psi(h)$ across all layers produces a three-way architectural separator: SPLM attains median per-layer TEST $R^2 = 0.90$ (uniform across layers); a matched 8M-parameter GPT-2-style decoder reaches $R^2 = 0.56$ (monotonic decay); pretrained GPT-2 small reaches $R^2 = 0.45$ (bathtub profile, middle-band mean 0.09). Oracle fit with SPLM's own $V\_\theta(\xi, h)$ attains $R^2 = 1.0000$ on every layer, and a V\_\psi capacity sweep (115K to 1.84M params) shows the GPT-2 failure is structural, not representational.
+
+4. *Jacobian-symmetry confirmation (SPLM).* On the Shakespeare SPLM (d=128, L=8), the velocity-aware Jacobian-symmetry test shows max full-vs-symmetric TEST gap = 0.039, confirming that the per-step spring matrix is consistent with a symmetric Hessian — i.e. the dynamics is conservative on $h$.
+
+**What remains open for Claim A.** The binned-median result establishes that a radial-NTP potential exists, but does not discriminate the Gaussian from other bounded-attractive forms (all seven are indistinguishable). Moreover, the force implied by the fitted well ($k(r) \sim 10^{-6}$) is too weak at the aggregate radial scale to move the integrator — the per-phrase and per-PCA-component fitting (Step 3) is designed to resolve this by reducing the effective data scale and recovering actionable well parameters with discriminating power. This step remains the leading item on the experimental agenda.
 
 **Claim B: Hidden state trajectories are geodesics of the Jacobi metric.**
 
@@ -767,13 +777,14 @@ where $V_k(x_k) = a_k(1 - e^{-b_k x_k^2})$ is the per-component potential. In PC
 
 The following experimental outcomes, obtained through the action plan in Section 8, would constitute confirmation:
 
-| Evidence | From Step | Meaning |
-|---|---|---|
-| Gaussian well fits with $R^2 > 0.3$ (per-component or per-phrase) | Step 3 | **Claim A confirmed**: the potential exists |
-| $\vec{a}\_{pred}$ correlates with $\vec{a}\_{obs}$ ($r > 0.5$, $p < 0.001$) | Steps 1 + 2 | **Claim B confirmed**: trajectories are Jacobi geodesics |
-| Well parameters $(a_k, b_k)$ vary across principal components | Step 3 | **Claim C confirmed**: the metric has directional structure |
-| STP loss $\approx$ predicted angular deviation from Jacobi geodesic | Step 2 | Confirms that STP loss measures the curvature of the physical trajectory |
-| Damping ratio $\zeta \sim 1$ (near critical) | Step 4 | Explains why geodesics are only approximate — damping introduces non-geodesic corrections |
+| Evidence | From Step | Meaning | Status |
+|---|---|---|---|
+| Gaussian well fits with $R^2 > 0.3$ (per-component or per-phrase) | Step 3 | **Claim A confirmed**: the potential exists | **Partially met**: binned-median $R^2 \approx 0.82\text{–}0.90$ on aggregate radial coordinate; per-phrase/per-component not yet run |
+| Shared-$V\_\psi$ separator shows conservative architecture at $R^2 \geq 0.90$ | Steps 2–3 controls | Positive control: scalar-potential structure exists in SPLM | **Met**: SPLM median TEST $R^2 = 0.90$, oracle $R^2 = 1.00$ |
+| $\vec{a}\_{pred}$ correlates with $\vec{a}\_{obs}$ ($r > 0.5$, $p < 0.001$) | Steps 1 + 2 | **Claim B confirmed**: trajectories are Jacobi geodesics | **Open**: requires per-phrase well parameters from Claim A |
+| Well parameters $(a_k, b_k)$ vary across principal components | Step 3 | **Claim C confirmed**: the metric has directional structure | **Open**: per-component fitting not yet run |
+| STP loss $\approx$ predicted angular deviation from Jacobi geodesic | Step 2 | Confirms that STP loss measures the curvature of the physical trajectory | **Open** |
+| Damping ratio $\zeta \sim 1$ (near critical) | Step 4 | Explains why geodesics are only approximate — damping introduces non-geodesic corrections | **Advance evidence against**: Markov-order test returns Decision $\beta$ (overdamped) at 21/24 cells on GPT-2 and all 6/6 cells on SPLM |
 
 If Claims A and B are confirmed jointly, the conclusion is: **the hidden state space of the transformer has a Riemannian geometry induced by the Gaussian well potential, and hidden state trajectories approximately follow geodesics of that geometry.** This would be a significant result, providing a geometric interpretation of what transformers learn — the attention mechanism and residual connections sculpt an energy landscape whose Jacobi metric determines the natural paths of inference.
 
@@ -837,10 +848,10 @@ The decomposition of the total acceleration into normal (curvature) and tangenti
 
 | Quantity | Mean | Std |
 |---|---|---|
-| $\lVert\vec{a}_\perp\rVert$ (normal, curvature) | 44.2 | — |
-| $\lVerta_\parallel\rVert$ (tangential, speed change) | 92.5 | — |
-| $\lVerta_\parallel\rVert / \lVert\vec{a}_\perp\rVert$ (per trajectory) | 2.09 | 0.20 |
-| $\lVerta_\parallel\rVert / \lVert\vec{a}_\perp\rVert$ (per trajectory, median) | 2.10 | — |
+| $\lVert\vec{a}\_\perp\rVert$ (normal, curvature) | 44.2 | — |
+| $\lVert a\_\parallel\rVert$ (tangential, speed change) | 92.5 | — |
+| $\lVert a\_\parallel\rVert / \lVert\vec{a}\_\perp\rVert$ (per trajectory) | 2.09 | 0.20 |
+| $\lVert a\_\parallel\rVert / \lVert\vec{a}\_\perp\rVert$ (per trajectory, median) | 2.10 | — |
 
 Tangential acceleration is roughly **twice** the normal acceleration in magnitude. The ratio $|a_\parallel|/|\vec{a}_\perp| \approx 2.1$ is consistent across all trajectories (standard deviation 0.20) and across all five semantic domains (the boxplot in Figure S6.2c shows no significant domain dependence in the ratio).
 
@@ -901,17 +912,17 @@ The following figures were generated by Stage 6 of the notebook:
 
 **Figure S6.1**: STP–Acceleration Equivalence Verification — (a) Actual vs. predicted STP loss scatter (perfect identity line), (b) fraction of $|\vec{a}|^2$ attributed to normal vs. tangential components, (c) total acceleration decomposition identity.
 
-![Figure S6.1](../notebooks/stp_loss/results/stage6_stp_acceleration_equivalence.png)
+![Figure S6.1](images/exp_gpt2_stage6_stp_acceleration_equivalence.png)
 
 **Figure S6.2**: Tangential Acceleration Analysis — (a) signed $a_\parallel$ distribution (strongly left-skewed), (b) $|a_\parallel|$ vs. $|\vec{a}_\perp|$ scatter, (c) ratio by domain, (d) normalized total acceleration, (e) permutation null test, (f) speed constancy test.
 
-![Figure S6.2](../notebooks/stp_loss/results/stage6_tangential_acceleration.png)
+![Figure S6.2](images/exp_gpt2_stage6_tangential_acceleration.png)
 
-**Figure S6.3**: Per-Trajectory Acceleration Profiles — one panel per domain showing $|\vec{a}_\perp|$, $|a_\parallel|$, and $\mathcal{L}_{STP}$ as functions of token position.
+**Figure S6.3**: Per-Trajectory Acceleration Profiles — one panel per domain showing $|\vec{a}\_\perp|$, $|a\_\parallel|$, and $\mathcal{L}\_{STP}$ as functions of token position.
 
-![Figure S6.3](../notebooks/stp_loss/results/stage6_trajectory_acceleration_profiles.png)
+![Figure S6.3](images/exp_gpt2_stage6_trajectory_acceleration_profiles.png)
 
-All figure files and raw outputs are stored alongside the notebook in `notebooks/stp_loss/results/`.
+Stable copies of all figures are stored in `docs/images/`. Raw outputs in `notebooks/stp_loss/results/`.
 
 ---
 
@@ -927,8 +938,8 @@ All figure files and raw outputs are stored alongside the notebook in `notebooks
 
 [5] D. Gueorguiev, "Constructing the Lagrangian for Semantic Space," 2026.
 
-[6] "STP Loss as an Emergent Property of the Energy Landscape Defined by a Gaussian Well Potential," 2026 (companion note: [`STP_Loss_Is_An_Emergent_Property_Of_The_Energy_Landscape_Defined_By_Gaussian_Well_Potential.md`](STP_Loss_Is_An_Emergent_Property_Of_The_Energy_Landscape_Defined_By_Gaussian_Well_Potential.md)).
+[6] "STP Loss as an Emergent Property of the Energy Landscape Defined by a Gaussian Well Potential," 2026 (`docs/STP_Loss_Is_An_Emergent_Property_Of_The_Energy_Landscape_Defined_By_Gaussian_Well_Potential.md`).
 
-[7] "On the Interpretation of Semantic Mass in Terms of Transformer Mechanisms," 2026 (companion note: [`On_the_Interpretation_of_Semantic_Mass.md`](On_the_Interpretation_of_Semantic_Mass.md)).
+[7] "On the Interpretation of Semantic Mass in Terms of Transformer Mechanisms," 2026 (`docs/On_the_Interpretation_of_Semantic_Mass.md`).
 
-[8] "On the Interpretation of Hidden States in Terms of Semantic Simulation," 2026 (companion note: [`On_the_Interpretation_of_Hidden_State.md`](On_the_Interpretation_of_Hidden_State.md)).
+[8] "On the Interpretation of Hidden States in Terms of Semantic Simulation," 2026 (`docs/On_the_Interpretation_of_Hidden_State.md`).

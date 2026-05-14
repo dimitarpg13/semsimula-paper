@@ -20,10 +20,10 @@ The pre-registered E9 SPLM arm used $\gamma = 0.30$, fixed at small-scale's E4 /
 
 The question this experiment answers, in two parts:
 
-1. **Q1 (γ-transfer).** Does the E5 optimum $\gamma^{\ast}_{\mathrm{E5}}=0.30$ remain the optimum on TinyStories at the E9 scale-up configuration? Equivalently: where is the TinyStories $\gamma^{\ast}_{\mathrm{TS}}$?
+1. **Q1 (γ-transfer).** Does the E5 optimum $\gamma^{\ast}\_{\mathrm{E5}}=0.30$ remain the optimum on TinyStories at the E9 scale-up configuration? Equivalently: where is the TinyStories $\gamma^{\ast}\_{\mathrm{TS}}$?
 2. **Q2 (quality).** At $\gamma^{\ast}_{\mathrm{TS}}$, is the SPLM em_ln scale-up val PPL materially better (smaller) than E9's $\gamma=0.30$ result of $8.85$?
 
-These questions are *independent* of the E9 outcome (Outcomes A / B / C of the SPLM-vs-matched comparison): even if E9 lands as Outcome A, finding a better $\gamma^{\ast}_{\mathrm{TS}}$ would *strengthen* the SPLM ranking; even if E9 lands as Outcome B or C, finding a better $\gamma^{\ast}_{\mathrm{TS}}$ might invert the verdict.
+These questions are *independent* of the E9 outcome (Outcomes A / B / C of the SPLM-vs-matched comparison): even if E9 lands as Outcome A, finding a better $\gamma^{\ast}\_{\mathrm{TS}}$ would *strengthen* the SPLM ranking; even if E9 lands as Outcome B or C, finding a better $\gamma^{\ast}\_{\mathrm{TS}}$ might invert the verdict.
 
 ---
 
@@ -147,19 +147,19 @@ The protocol is a **three-stage adaptive plan**:
 
 #### 5.1.1 Boundary expansion (locked, contingent)
 
-If $\hat{\gamma}^{\ast}_{\mathrm{TS}} = 0.10$ (low boundary), run **one additional pilot at $\gamma = 0.05$**, 4000 steps, seed 0. Update $\hat{\gamma}^{\ast}_{\mathrm{TS}}$ to the new argmin over $\{0.05, 0.10, 0.30, 0.60\}$.
+If $\hat{\gamma}^{\ast}\_{\mathrm{TS}} = 0.10$ (low boundary), run **one additional pilot at $\gamma = 0.05$**, 4000 steps, seed 0. Update $\hat{\gamma}^{\ast}\_{\mathrm{TS}}$ to the new argmin over $\{0.05, 0.10, 0.30, 0.60\}$.
 
-If $\hat{\gamma}^{\ast}_{\mathrm{TS}} = 0.60$ (high boundary), run **one additional pilot at $\gamma = 0.85$**, 4000 steps, seed 0. Update $\hat{\gamma}^{\ast}_{\mathrm{TS}}$ to the new argmin over $\{0.10, 0.30, 0.60, 0.85\}$.
+If $\hat{\gamma}^{\ast}\_{\mathrm{TS}} = 0.60$ (high boundary), run **one additional pilot at $\gamma = 0.85$**, 4000 steps, seed 0. Update $\hat{\gamma}^{\ast}\_{\mathrm{TS}}$ to the new argmin over $\{0.10, 0.30, 0.60, 0.85\}$.
 
-**No further boundary expansion is permitted.** If even after one boundary expansion $\hat{\gamma}^{\ast}_{\mathrm{TS}}$ is still at the (extended) boundary, the experiment is reported as boundary-saturated ($H_{¬T,\mathrm{boundary}}$) and a separate follow-on protocol is required to extend further.
+**No further boundary expansion is permitted.** If even after one boundary expansion $\hat{\gamma}^{\ast}\_{\mathrm{TS}}$ is still at the (extended) boundary, the experiment is reported as boundary-saturated ($H\_{¬T,\mathrm{boundary}}$) and a separate follow-on protocol is required to extend further.
 
 ### 5.2 Stage 2 — confirmation at full schedule
 
 **Trigger:**
-- If $\hat{\gamma}^{\ast}_{\mathrm{TS}} = 0.30$ and the Stage-1 sanity check passed: **skip Stage 2 entirely.** The E9 Phase 1 SPLM result (val PPL 8.85) *is* the $\gamma^{\ast}_{\mathrm{TS}}$ confirmation. Conclusion: $H_T$ + $H_{¬Q}$.
-- If $\hat{\gamma}^{\ast}_{\mathrm{TS}} \neq 0.30$: run **one full 8000-step training at $\hat{\gamma}^{\ast}_{\mathrm{TS}}$, seed 0**. Wall-clock ${\sim}13.1$ h.
+- If $\hat{\gamma}^{\ast}\_{\mathrm{TS}} = 0.30$ and the Stage-1 sanity check passed: **skip Stage 2 entirely.** The E9 Phase 1 SPLM result (val PPL 8.85) *is* the $\gamma^{\ast}\_{\mathrm{TS}}$ confirmation. Conclusion: $H\_T$ + $H\_{¬Q}$.
+- If $\hat{\gamma}^{\ast}\_{\mathrm{TS}} \neq 0.30$: run **one full 8000-step training at $\hat{\gamma}^{\ast}\_{\mathrm{TS}}$, seed 0**. Wall-clock ${\sim}13.1$ h.
 
-**Output:** $P_{\mathrm{TS}}^{(0)}(\hat{\gamma}^{\ast}_{\mathrm{TS}})$ at step 8000, single seed. Compute $\Delta_{\gamma^{\ast}} = 8.85 - P_{\mathrm{TS}}^{(0)}(\hat{\gamma}^{\ast}_{\mathrm{TS}})$.
+**Output:** $P\_{\mathrm{TS}}^{(0)}(\hat{\gamma}^{\ast}\_{\mathrm{TS}})$ at step 8000, single seed. Compute $\Delta\_{\gamma^{\ast}} = 8.85 - P\_{\mathrm{TS}}^{(0)}(\hat{\gamma}^{\ast}\_{\mathrm{TS}})$.
 
 **Decision:**
 - If $\Delta_{\gamma^{\ast}} \lt 0.5$ PPL: $H_T$ effectively holds (the γ-shift is real but immaterial in PPL). Conclusion: $H_T$ + $H_{¬Q}$. **Stage 3 is NOT triggered.**
@@ -175,7 +175,7 @@ If $\hat{\gamma}^{\ast}_{\mathrm{TS}} = 0.60$ (high boundary), run **one additio
 - If E9 Phase 2 was triggered (i.e. E9's Phase 1 returned $|\Delta^{(0)}|\lt20$ PPL), reuse the matched-baseline values at seeds 0 / 1 / 2 from E9 Phase 2 directly. **Do NOT re-train them.**
 - If E9 Phase 2 was *not* triggered (E9's Phase 1 returned $|\Delta^{(0)}|\ge 20$ PPL), then run matched-baseline at seeds 1 + 2 as part of Stage 3. Wall-clock ${\sim}13.4$ h additional (matched-baseline runs at $\sim 3.05$ s/step × 8000 = $\sim 6.7$ h per seed).
 
-**Output:** $\overline{\Delta}_{\gamma^{\ast}} = \frac{1}{3}\sum_{s=0}^{2}\bigl(P_B^{(s)} - P_A^{(s)}(\hat{\gamma}^{\ast}_{\mathrm{TS}})\bigr)$, where $P_A^{(s)}(\hat{\gamma}^{\ast}_{\mathrm{TS}})$ is the SPLM em_ln val PPL at seed $s$ and γ = γ\*, and $P_B^{(s)}$ is the matched-baseline val PPL at seed $s$ (reused from E9 if available).
+**Output:** $\overline{\Delta}\_{\gamma^{\ast}} = \frac{1}{3}\sum\_{s=0}^{2}\bigl(P\_B^{(s)} - P\_A^{(s)}(\hat{\gamma}^{\ast}\_{\mathrm{TS}})\bigr)$, where $P\_A^{(s)}(\hat{\gamma}^{\ast}\_{\mathrm{TS}})$ is the SPLM em_ln val PPL at seed $s$ and γ = γ\*, and $P_B^{(s)}$ is the matched-baseline val PPL at seed $s$ (reused from E9 if available).
 
 ### 5.4 Outcomes (locked)
 
@@ -246,7 +246,7 @@ Regardless of which outcome is realised, the experiment is written up as follows
 - **Code lives at:** `notebooks/conservative_arch/scaleup/gamma_transfer/`. The directory contains:
   - `train_splm_em_ln_gamma_sweep.py` — re-uses the SPLM em_ln scaleup model & data path; adds modes `pilot` (4000-step truncated) and `confirmation` (8000-step full-schedule) with a required `--fixed-gamma` argument.
   - `run_stage1.sh` — driver that launches the three Stage-1 pilots sequentially.
-  - `run_stage2.sh` — driver that runs the Stage-2 confirmation at $\hat{\gamma}^{\ast}_{\mathrm{TS}}$ (no-op if $\hat{\gamma}^{\ast}_{\mathrm{TS}}=0.30$).
+  - `run_stage2.sh` — driver that runs the Stage-2 confirmation at $\hat{\gamma}^{\ast}\_{\mathrm{TS}}$ (no-op if $\hat{\gamma}^{\ast}\_{\mathrm{TS}}=0.30$).
   - `run_stage3.sh` — driver that runs Stage-3 multi-seed confirmation, including matched-baseline replication if E9 Phase 2 was not triggered.
   - `README.md` — short experiment overview.
   - `results/` — per-stage, per-γ subdirectories with checkpoints (`*.pt`), training logs (`*.jsonl`), summary `.md`, loss-curves, plus the canonical `RESULTS.md` write-up.

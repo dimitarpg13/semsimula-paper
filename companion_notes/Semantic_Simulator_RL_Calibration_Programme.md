@@ -421,8 +421,7 @@ Encodes non-commutative composition (essential for
 verb-argument structure).
 
 **Mathematical infrastructure already in place.** Lie-group
-machinery cited in the paper (`Gueorguiev2025LieGroups`,
-`BaezMuniain1994`, `Nakahara2003`) is the natural toolkit. The
+machinery cited in the paper (`BaezMuniain1994`, `Nakahara2003`) is the natural toolkit. The
 framework inherits a half-century of operator-algebra mathematics
 once it goes this route.
 

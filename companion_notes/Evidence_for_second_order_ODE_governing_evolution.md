@@ -156,9 +156,9 @@ makes explicit that any nonzero STP loss implies acceleration — specifically n
 
 ### Resolution of the Geodesic Paradox
 
-A natural objection: *"if trajectories are geodesics, then $\mathcal{L}_{\text{STP}} = 0$, and there is no acceleration."* Theorem 49 resolves this: $\mathcal{L}_{\text{STP}} = 0$ forces only $\vec{a}_\perp = 0$. The tangential acceleration $a_\parallel$ is **unconstrained by STP**.
+A natural objection: "if trajectories are geodesics, then $\mathcal{L}\_{\text{STP}} = 0$, and there is no acceleration." Theorem 49 resolves this: $\mathcal{L}\_{\text{STP}} = 0$ forces only $\vec{a}\_\perp = 0$. The tangential acceleration $a\_\parallel$ is **unconstrained by STP**.
 
-A hidden-state trajectory with $\mathcal{L}_{\text{STP}} \approx 0$ can still exhibit rich **tangential deceleration** — exactly what the Gaussian well predicts for a particle falling into an attractive potential. STP regularization neither detects this nor suppresses it; the two quantities ($\mathcal{L}_{\text{STP}}$ and $a_\parallel$) are **algebraically orthogonal**.
+A hidden-state trajectory with $\mathcal{L}\_{\text{STP}} \approx 0$ can still exhibit rich **tangential deceleration** — exactly what the Gaussian well predicts for a particle falling into an attractive potential. STP regularization neither detects this nor suppresses it; the two quantities ($\mathcal{L}\_{\text{STP}}$ and $a\_\parallel$) are **algebraically orthogonal**.
 
 ---
 
@@ -169,8 +169,8 @@ The paper validates the second-order reading with four results on GPT-2 last-lay
 | Result | Finding |
 |---|---|
 | STP–acceleration identity | Holds to **machine precision** (exact verification of Theorem 49) |
-| Tangential vs. normal acceleration | $\lVert a_\parallel \rVert$ is approximately **twice** $\lVert a_\perp \rVert$ on average |
-| Sign of $a_\parallel$ | Negative (deceleration) on **97.9%** of triplets — consistent with Gaussian well attraction |
+| Tangential vs. normal acceleration | $\lVert a\_\parallel \rVert$ is approximately **twice** $\lVert a\_\perp \rVert$ on average |
+| Sign of $a\_\parallel$ | Negative (deceleration) on **97.9%** of triplets — consistent with Gaussian well attraction |
 | Permutation null test | Natural token orderings produce **significantly less acceleration** than random permutations, quantifying the near-geodesic character of learned trajectories |
 
 Results 2–4 are empirical support for the second-order dynamical reading — these kinematics signatures (tangential dominance, systematic deceleration, permutation null) are consistent with and motivated by the second-order framework.

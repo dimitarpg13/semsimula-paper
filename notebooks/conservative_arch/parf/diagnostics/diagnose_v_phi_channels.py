@@ -626,7 +626,7 @@ def _diagnose_failure_modes(summary: dict) -> str:
     """Heuristic narrative interpretation of the per-layer table.
 
     The five hypotheses below correspond to the levers in
-    `companion_notes/PARF_Augmented_SPLM_Architecture_v2.md` §10.  They are
+    `companion_notes/PARF_Augmented_SPLM_Architecture.md` §10.  They are
     pattern-matched on the per-layer statistics; the script is honest
     about which signals are weak (so the user knows when to inspect
     the histograms manually).

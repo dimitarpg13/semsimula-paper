@@ -128,7 +128,7 @@ where the $\alpha_i$ are the concatenation/permutation patterns determined by $\
 
 **Finite rule set.** The rule set is finite because $G$ is finite-dimensional with finite rank, hence the orbit of any single particle state under $G$ is a finite-dimensional manifold parameterised by finitely many group elements; up to the equivalence relation that identifies operators with the same string-action, $G$ has only finitely many distinct rules.
 
-The constructed $\mathcal{G}_\mathcal{S}$ is therefore a bounded LCFRS. Its language $\mathcal{L}(\mathcal{G}_\mathcal{S})$ equals $\mathcal{L}(\mathcal{S})$ by construction.
+The constructed $\mathcal{G}\_\mathcal{S}$ is therefore a bounded LCFRS. Its language $\mathcal{L}(\mathcal{G}\_\mathcal{S})$ equals $\mathcal{L}(\mathcal{S})$ by construction.
 
 ---
 
@@ -318,7 +318,7 @@ This reduction is sketched at the level of the *composite-simulator language* �
 
 **Q1. The v2 EOM specification.** The Doi–Peliti formalism named in §5.2 of `Advancing_The_Dynamic_Simulation_Model.md` provides the appropriate Fock-space starting point. The unresolved design choices are: (i) the exact dimension $d$ per particle type (and whether $d$ is shared across types or per-type), (ii) the boson vs fermion choice for the (anti-)commutation relations of $a^\dagger_v$, and (iii) the precise form of the creation/annihilation reaction terms in the v0 Hamiltonian. These are the topics of the deferred milestone `docs/Semantic_Simulator_v2_EOM.md`.
 
-**Q2. The v3 operator-rank constraint.** The reduction assumes $G$ is finite-dimensional and finite-rank. The natural choices in the framework's lineage are $\mathrm{SU}(N)$ or $\mathrm{SO}(N)$ for some bounded $N$, building on the gauge-theory analyses in `companion_notes/P-rot-6_transformer_dynamics.md` and `geometric_deep_learning/docs/Lie_Groups_for_Gauge_Theory_Tutorial.md`. The *binding* between Lie-group rank and LCFRS fan-out is what determines whether the simulator stops at TAG-equivalent expressivity (rank-2, fan-out-2) or moves up to fan-out-3 expressivity. Empirical evidence from the F4/F5 falsifiers will guide the choice.
+**Q2. The v3 operator-rank constraint.** The reduction assumes $G$ is finite-dimensional and finite-rank. The natural choices in the framework's lineage are $\mathrm{SU}(N)$ or $\mathrm{SO}(N)$ for some bounded $N$, building on the gauge-theory analyses in `companion_notes/P-rot-6_transformer_dynamics.md` and standard Lie-group textbooks (Hall, 2015). The *binding* between Lie-group rank and LCFRS fan-out is what determines whether the simulator stops at TAG-equivalent expressivity (rank-2, fan-out-2) or moves up to fan-out-3 expressivity. Empirical evidence from the F4/F5 falsifiers will guide the choice.
 
 **Q3. Empirical confirmation of the reduction.** The reduction is constructive at the language level but does not yet account for finite-precision dynamics, integrator step-size $\Delta t$, or salience-decay rate $\tau$. Whether the *implemented* simulator at finite resolution $\epsilon$ — under the standard v0 EOM with a chosen integrator — actually realises $a^n b^n c^n$ up to depth $D^\ast_{\mathrm{MCS}}$ (the MCS-class analogue of the v0 collapse depth) is the empirical question of falsifiers F4 and F5.
 

@@ -3,7 +3,7 @@ PARF-augmented SPLM (Q9c) — Algorithm-A reference prototype.
 
 Reference
 ---------
-companion_notes/PARF_Augmented_SPLM_Architecture_v2.md
+companion_notes/PARF_Augmented_SPLM_Architecture.md
 
 Architecture (one-paragraph summary)
 ------------------------------------
@@ -157,7 +157,7 @@ class PARFConfig:
     # softmax attention's competitive selectivity into the structural
     # V_φ while preserving (i) the AR sign decomposition through Θ_φ
     # and (ii) the gravity-like 1/r distance kernel.  See design doc
-    # PARF_Augmented_SPLM_Architecture_v2.md §10 (Lever 3).
+    # PARF_Augmented_SPLM_Architecture.md §10 (Lever 3).
     v_phi_competitive_temp: float = 1.0   # τ in the softmax denominator;
                                           # smaller τ ⇒ sharper selectivity.
     v_phi_competitive_scale: str = "row"  # 'row' | 'mean' | 'none':

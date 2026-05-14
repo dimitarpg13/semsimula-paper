@@ -355,7 +355,7 @@ The table below collects the formal identifications:
 | $H^{\ast}$: radius of feasibility sphere | $\lVert\tilde{H}\rVert_F$: total representation spread | $H^{\ast} \leftrightarrow \lVert\tilde{H}\rVert_F$ |
 | $\mathfrak{S}^{\ast}$: feasibility ellipsoid | $\mathcal{E}_{PCA}$: covariance ellipsoid | $\sigma_i^{\ast} \leftrightarrow \sigma_{H,i}$ |
 | Effective rank of $P$ | $k^{\ast}$: optimal PCA dimensionality for well fit | Effective rank $\leftrightarrow k^{\ast}$ |
-| $\vec{v}_1$: principal axis of property | $\vec{v}_{H,1}$: principal axis of trajectory | Should align with well axis |
+| $\vec{v}\_1$: principal axis of property | $\vec{v}\_{H,1}$: principal axis of trajectory | Should align with well axis |
 
 The correspondence is not merely analogical — it is structural. Both decompositions perform the same mathematical operation (SVD of a centered data matrix), and the quantities they produce (singular values, singular vectors, entropy, effective rank, feasibility ellipsoid) have the same functional form. What the Semantic Simulation framework axiomatizes for semantic properties, the PCA of hidden states measures empirically in the transformer's representations. If the conjecture is correct, the transformer *learns* representations whose SVD structure mirrors the SVD structure that the Signature Matrix *defines* — and the PCA experiment proposed in Section 9.1.1 is the direct test of this identification.
 
@@ -705,7 +705,7 @@ The experiments in Sections 7–8 extracted hidden states only from the last tra
 
 ### 9.4 Phase 4 — STP Fine-Tuning Comparison (Priority: Medium)
 
-The strongest test of the conjecture is Prediction 3 (Section 3.3): fine-tune the same base model with $\mathcal{L}_{NTP}$ only and with $\mathcal{L}_{NTP} + \lambda \cdot \mathcal{L}_{STP}$, then compare the Gaussian well fit quality. If the conjecture holds, the STP-trained model should exhibit:
+The strongest test of the conjecture is Prediction 3 (Section 3.3): fine-tune the same base model with $\mathcal{L}\_{NTP}$ only and with $\mathcal{L}\_{NTP} + \lambda \cdot \mathcal{L}\_{STP}$, then compare the Gaussian well fit quality. If the conjecture holds, the STP-trained model should exhibit:
 
 - Higher $R^2$ for the Gaussian well fit
 - Deeper wells (larger $a$)
@@ -817,7 +817,7 @@ Both tightenings preserve every conclusion of Sections 2, 3, 5, 7, 8, and 9. The
 
 The conjecture stated in Section 2.1 is unchanged. The four predictions of Section 3 are unchanged. The Signature-Matrix–PCA correspondence of Section 5.3 is unchanged. The two GPT-2 experiments of Sections 7–8 are leak-immune and stand verbatim. The action plan of Section 9 is unchanged in its primary thrust (Llama-3.2-1B as the next test subject, PCA projection as the next methodological refinement) and is augmented by Criterion 6 above.
 
-The single most important consequence of the v3 leak-free retrain pass for *this* document is the addition of a mechanism: STP is now identifiable as the overdamped ($\gamma \to \infty$) reduction of the second-order Lagrangian dynamics whose conservative core is captured by the Gaussian-well-shaped scalar potential. Section 2.1 conjecture point 4 ("$\mathcal{L}_{STP}$ is a proxy for the deviation from action-minimising trajectories") becomes, under this mechanism, the precise claim that $\mathcal{L}_{STP} \to 0$ enforces the overdamped limit of the same Euler-Lagrange equations whose underdamped variant is what trained SPLM-2 actually solves.
+The single most important consequence of the v3 leak-free retrain pass for *this* document is the addition of a mechanism: STP is now identifiable as the overdamped ($\gamma \to \infty$) reduction of the second-order Lagrangian dynamics whose conservative core is captured by the Gaussian-well-shaped scalar potential. Section 2.1 conjecture point 4 ("$\mathcal{L}\_{STP}$ is a proxy for the deviation from action-minimising trajectories") becomes, under this mechanism, the precise claim that $\mathcal{L}\_{STP} \to 0$ enforces the overdamped limit of the same Euler-Lagrange equations whose underdamped variant is what trained SPLM-2 actually solves.
 
 ### 10.7 Pointers to canonical sources
 

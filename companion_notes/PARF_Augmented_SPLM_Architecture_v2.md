@@ -262,7 +262,7 @@ Both constructions:
 
 **Where the routing happens.** PARF-augmented routes within every block (every layer feels the pair force from past tokens); the Helmholtz hybrid routes only at $A$-blocks (every $S$-block has no token-token interaction). The PARF-augmented architecture is therefore "routing-distributed" while the Helmholtz hybrid is "routing-localised."
 
-**Single-scalar property.** PARF-augmented preserves a *generalised* single-scalar property: the per-token force is the gradient of a single effective scalar $U^{(\ell)}_t = V_\theta + \sum_{s\lt t} V_\phi$, and the global architectural commitment is to the *pair* of shared scalars $(V_\theta, V_\phi)$. The Helmholtz hybrid preserves SPLM's strict single-scalar property *only on the $S$-blocks*; the $A$-blocks operate under per-layer Hopfield potentials with no shared scalar.
+**Single-scalar property.** PARF-augmented preserves a *generalised* single-scalar property: the per-token force is the gradient of a single effective scalar $U^{(\ell)}_t = V_\theta + \sum_{s\lt t} V_\phi$, and the global architectural commitment is to the *pair* of shared scalars $(V_\theta, V_\phi)$. The Helmholtz hybrid preserves SPLM's strict single-scalar property only on the $S$-blocks; the $A$-blocks operate under per-layer Hopfield potentials with no shared scalar.
 
 **Diagnostic profile.** PARF-augmented predicts a *uniform* high-R² profile in the joint pair test (because every layer is an SPLM-type block with the same dynamics). The Helmholtz hybrid predicts a *block-type-indexed step function* in the v3 single-scalar test (high R² on $S$-blocks, GPT-2-like on $A$-blocks).
 
@@ -310,7 +310,7 @@ $$
 \mathcal{L}_{\mathrm{aux}}(\theta, \phi) = \mathcal{L}_{\mathrm{NTP}} + \lambda_1 \mathcal{L}_{\mathrm{pair\text{-}fit}} + \lambda_2 \mathcal{L}_{\mathrm{sparsity}},
 $$
 
-with $\mathcal{L}_{\mathrm{NTP}}$ the standard cross-entropy, $\mathcal{L}_{\mathrm{pair\text{-}fit}}$ a numerical-stability regulariser derived from Theorem 54 (essentially zero on a faithful integrator), and $\mathcal{L}_{\mathrm{sparsity}}$ a Gumbel-softmax approximation to the §5.2 cutoff:
+with $\mathcal{L}\_{\mathrm{NTP}}$ the standard cross-entropy, $\mathcal{L}\_{\mathrm{pair\text{-}fit}}$ a numerical-stability regulariser derived from Theorem 54 (essentially zero on a faithful integrator), and $\mathcal{L}\_{\mathrm{sparsity}}$ a Gumbel-softmax approximation to the §5.2 cutoff:
 
 $$
 \tilde m^{(\ell)}_{ts}(\tau) = \mathrm{softmax}_\tau\left(\log\lVert F^{(\ell)}_{ts} \rVert + g_{ts}\right),\quad g_{ts} \sim \mathrm{Gumbel}(0,1),

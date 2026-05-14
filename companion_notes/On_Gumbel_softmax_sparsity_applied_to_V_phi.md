@@ -11,7 +11,7 @@ are.
 
 Companion to:
 
-- Design doc: [`companion_notes/PARF_Augmented_SPLM_Architecture_v2.md`](../PARF_Augmented_SPLM_Architecture_v2.md) (esp. §5.2 quantile cutoff, §7.2 Algorithm A sparsity component, §15.24.7 deposit).
+- Design doc: [`companion_notes/PARF_Augmented_SPLM_Architecture.md`](../PARF_Augmented_SPLM_Architecture.md) (esp. §5.2 quantile cutoff, §7.2 Algorithm A sparsity component, §15.24.7 deposit).
 - Implementation roadmap: [`companion_notes/PARF-SPLM_Path_Forward_and_Experiments.md`](../PARF-SPLM_Path_Forward_and_Experiments.md) (P5 row).
 - Algorithm A training pipeline: [`companion_notes/parf/On_Training_the_PARF_Force.md`](./On_Training_the_PARF_Force.md).
 - $V_\phi$ functional form (structural and MLP): [`companion_notes/parf/On_the_MLP_Layer_modeling_pairwise_potential.md`](./On_the_MLP_Layer_modeling_pairwise_potential.md).
@@ -377,7 +377,7 @@ where $\psi$ are the score-head parameters and:
   soft mask is grossly miscalibrated.
 - $\mathcal{L}_{\mathrm{entropy}} = -\sum_{ts} y_{ts}(\tau) \log y_{ts}(\tau)$
   is an entropy regulariser that *prevents* mask collapse onto a single
-  $s$. The framework's §5.2 prescription is *top-$k$*, not *top-$1$*;
+  $s$. The framework's §5.2 prescription is top-$k$, not top-$1$;
   a small positive $\lambda_{\mathrm{entropy}} \sim 10^{-3}$ ensures the
   soft mask retains $k$-class support during training rather than
   greedily collapsing to the single best partner.
@@ -869,7 +869,7 @@ doc.
 
 ### Internal documents
 
-- [`companion_notes/PARF_Augmented_SPLM_Architecture_v2.md`](../PARF_Augmented_SPLM_Architecture_v2.md) — design doc; §5.1 (structural form), §5.2 (quantile cutoff), §7.2 (Algorithm A sparsity component), §15.24.7 (deposit, three algorithms, Theorem 56).
+- [`companion_notes/PARF_Augmented_SPLM_Architecture.md`](../PARF_Augmented_SPLM_Architecture.md) — design doc; §5.1 (structural form), §5.2 (quantile cutoff), §7.2 (Algorithm A sparsity component), §15.24.7 (deposit, three algorithms, Theorem 56).
 - [`companion_notes/PARF-SPLM_Path_Forward_and_Experiments.md`](../PARF-SPLM_Path_Forward_and_Experiments.md) — P5 row (Stage 1.5 Gumbel-softmax sparsity).
 - [`companion_notes/parf/On_Training_the_PARF_Force.md`](./On_Training_the_PARF_Force.md) — Algorithm A pipeline, second-order autograd graph, gradient checkpointing.
 - [`companion_notes/parf/On_the_MLP_Layer_modeling_pairwise_potential.md`](./On_the_MLP_Layer_modeling_pairwise_potential.md) — `MLPVPhi` deep dive; relevant for the MLP-variant cost analysis here.

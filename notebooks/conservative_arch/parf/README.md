@@ -3,7 +3,7 @@
 **Path companion to** [`notebooks/conservative_arch/helmholtz/`](../helmholtz/)
 **(Q9d, the layer-type Helmholtz hybrid).**
 
-Design reference: [`companion_notes/PARF_Augmented_SPLM_Architecture_v2.md`](../../../companion_notes/PARF_Augmented_SPLM_Architecture_v2.md).
+Design reference: [`companion_notes/PARF_Augmented_SPLM_Architecture.md`](../../../companion_notes/PARF_Augmented_SPLM_Architecture.md).
 Workplan & decision log: this README + the design doc; the
 `Helmholtz-HSPLM_Path_Forward_and_Experiments.md` document is shared
 infrastructure but does NOT govern the PARF path.
@@ -79,7 +79,7 @@ training trace with and without grad-checkpoint is verified by
 ## Algorithm A — what's in, what's out
 
 This prototype implements **Algorithm A** from the design doc
-([`companion_notes/PARF_Augmented_SPLM_Architecture_v2.md`](../../../companion_notes/PARF_Augmented_SPLM_Architecture_v2.md)
+([`companion_notes/PARF_Augmented_SPLM_Architecture.md`](../../../companion_notes/PARF_Augmented_SPLM_Architecture.md)
 §7):
 
 - ✅ Single shared $V_\theta$ (4-layer GELU MLP, identical to em-ln
@@ -187,7 +187,7 @@ Per the design-doc Open Questions:
 
 ## Pointers
 
-- Design doc: [`companion_notes/PARF_Augmented_SPLM_Architecture_v2.md`](../../../companion_notes/PARF_Augmented_SPLM_Architecture_v2.md)
+- Design doc: [`companion_notes/PARF_Augmented_SPLM_Architecture.md`](../../../companion_notes/PARF_Augmented_SPLM_Architecture.md)
 - Companion path (Q9d, layer-type Helmholtz hybrid): [`notebooks/conservative_arch/helmholtz/`](../helmholtz/)
 - Companion path (Variant A two-stage SPLM): [`notebooks/conservative_arch/hybrid/`](../hybrid/)
 - Causality bug & fix history: [`companion_notes/Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`](../../../companion_notes/Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md)

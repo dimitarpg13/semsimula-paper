@@ -227,13 +227,13 @@ flowchart TD
     HL --> Logits
     Logits --> Loss
 
-    Loss -. loss.backward .-> Logits
-    Logits -. via E.T .-> HL
-    HL -. d Loss / d h_L .-> Step
-    Step -. through Verlet .-> Force
-    Force -. through 2nd-order graph .-> Vparams
-    Force -. through 2nd-order graph .-> HIn
-    HIn -. through embed .-> Embed
+    Loss -.->|loss backward| Logits
+    Logits -.->|via E T| HL
+    HL -.->|d Loss / d h_L| Step
+    Step -.->|through Verlet| Force
+    Force -.->|through 2nd-order graph| Vparams
+    Force -.->|through 2nd-order graph| HIn
+    HIn -.->|through embed| Embed
 ```
 
 The two arrows from `Force` to `Vparams` and `HIn` are exactly what

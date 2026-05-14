@@ -517,7 +517,7 @@ In Lagrangian terms:
 - **The trajectory $\{h_t^{(\ell)}\}_{\ell=0}^{L}$ is the path of the particle.** Its endpoint $h_t^{(L)}$ is the boundary condition that the unembedding reads out.
 - **The loss is a boundary functional, not a bulk one.** The cross-entropy loss $\mathcal{L}_{\text{NTP}}$ depends only on $h_t^{(L)}$ (and $W_U$), not on the intermediate states. This is structurally identical to a least-action problem with a fixed-endpoint variational principle: the bulk dynamics are determined by the architectural Lagrangian, the endpoint is constrained by the loss.
 
-The **STP loss** (Huang–LeCun–Balestriero), by contrast, is a regularizer that *does* act in the bulk — but along the *token axis* $t$ at fixed depth $\ell = L$, not along the depth axis. It penalizes curvature of the trajectory $\{h_t^{(L)}\}_{t=1}^{T}$, complementing the boundary-only $\mathcal{L}_{\text{NTP}}$.
+The **STP loss** (Huang–LeCun–Balestriero), by contrast, is a regularizer that *does* act in the bulk — but along the *token axis* $t$ at fixed depth $\ell = L$, not along the depth axis. It penalizes curvature of the trajectory $\{h\_t^{(L)}\}\_{t=1}^{T}$, complementing the boundary-only $\mathcal{L}\_{\text{NTP}}$.
 
 The descriptive Lagrangian framework, sitting on the *depth* axis, is therefore orthogonal to STP's *token* axis — and the two together cover both axes of the residual stream tensor.
 
@@ -605,7 +605,7 @@ Three substantial consequences:
 
 The residual-stream view is the natural setting for the Lagrangian framework because:
 
-- **The state space is fixed and Euclidean.** $\mathcal{R}_t = \mathbb{R}^d$ is the same at every layer. The trajectory $\{h_t^{(\ell)}\}_{\ell=0}^{L}$ is a literal discrete-time path in a single 768-dimensional space (for GPT-2 small).
+- **The state space is fixed and Euclidean.** $\mathcal{R}\_t = \mathbb{R}^d$ is the same at every layer. The trajectory $\{h\_t^{(\ell)}\}\_{\ell=0}^{L}$ is a literal discrete-time path in a single 768-dimensional space (for GPT-2 small).
 - **The update equation is a discrete dynamical system in obvious form.** Schematically, $h_t^{(\ell+1)} - h_t^{(\ell)} = \Delta_t^{\text{MHA}} + \Delta_t^{\text{FFN}}$, which is exactly the discrete analog of $\dot h = F(h, \ell)$. In the continuum limit (Neural ODE / continuous-depth Transformer), the stream becomes a literal solution to an ODE in $\mathbb{R}^d$, parameterized by depth.
 - **Attention provides the only cross-row coupling on the stream.** The non-local term in the equation of motion comes entirely from MHA; FFN is per-position. The interaction kernel is the attention pattern $A^{(\ell)}_{t, t'}$. FFN contributes only single-particle potential terms.
 - **The shared-potential question is naturally a residual-stream statement.** Asking whether all rows obey the same single-particle dynamics is asking whether the same potential governs all rows of the residual stream. The R² separator measures how cleanly the dynamics decompose — high R² means per-row trajectories are well-approximated as independent particles in a shared field; low R² means many-body coupling (attention's state-dependent kernel) is doing essential work.
@@ -648,10 +648,10 @@ $W_U$ is one of the **two largest matrices in any modern transformer** (the othe
 
 | Model | $d$ | $V$ | $W_U$ params |
 |---|---|---|---|
-| GPT-2 small | 768 | 50{,}257 | $\sim$ 38.6M |
-| GPT-2 large | 1{,}280 | 50{,}257 | $\sim$ 64.3M |
-| Llama 3 8B | 4{,}096 | 128{,}256 | $\sim$ 525M |
-| Llama 3 70B | 8{,}192 | 128{,}256 | $\sim$ 1.05B |
+| GPT-2 small | 768 | 50,257 | ~38.6M |
+| GPT-2 large | 1,280 | 50,257 | ~64.3M |
+| Llama 3 8B | 4,096 | 128,256 | ~525M |
+| Llama 3 70B | 8,192 | 128,256 | ~1.05B |
 
 For GPT-2 small the 38.6M parameters in $W_U$ are about 30% of the model's total $\sim 124$M parameters.
 

@@ -35,7 +35,7 @@ The motivation for sharpening the argument now, before any of v1.5 / v2 / v3 is 
 
 ## 2. Formal class of the v0 simulator
 
-The v0 state $s_\ell$ — with components position $x_\ell$, velocity $\dot{x}_\ell$, context $\xi_\ell$, mass $\mathfrak{m}_\ell$, and parameters $\theta_\ell$ — lives in a fixed manifold $M \subseteq \mathbb{R}^{\dim M}$ of bounded volume, where $\dim M = O(d) + O(K) + O(N_S) + O(P)$ with all dimensions fixed at calibration time. The vector field $F$ on $M$ — the right-hand side of (1) — is $C^\infty$ and a sum of fixed-form smooth functions: Gaussian potential wells, anisotropic SARF terms with bounded gradients, bilinear context coupling $\frac{1}{2}(x-\xi)^\top\Lambda(x-\xi)$, and linear PARF couplings (see `Semantic_Simulator_EOM.md` for the full expressions). In particular:
+The v0 state $s\_\ell$ — with components position $x\_\ell$, velocity $\dot{x}\_\ell$, context $\xi\_\ell$, mass $\mathfrak{m}\_\ell$, and parameters $\theta\_\ell$ — lives in a fixed manifold $M \subseteq \mathbb{R}^{\dim M}$ of bounded volume, where $\dim M = O(d) + O(K) + O(N_S) + O(P)$ with all dimensions fixed at calibration time. The vector field $F$ on $M$ — the right-hand side of (1) — is $C^\infty$ and a sum of fixed-form smooth functions: Gaussian potential wells, anisotropic SARF terms with bounded gradients, bilinear context coupling $\frac{1}{2}(x-\xi)^\top\Lambda(x-\xi)$, and linear PARF couplings (see `Semantic_Simulator_EOM.md` for the full expressions). In particular:
 
 - $\dim M$ is fixed and does not grow with input length.
 - The cast of particles is fixed at the vocabulary $V$ plus the calibration-time anchors; no inference-time mechanism creates or destroys particles.
@@ -254,7 +254,7 @@ For execution we want particles that carry transformation operators which act on
 
 The non-commutativity is exactly what verb-argument structure requires: "John gave Mary a book" $\neq$ "Mary gave John a book", even though the sets of participants are identical. Operator composition order is meaning-bearing.
 
-The mature apparatus is **non-abelian gauge theory** — fibre bundles, principal $G$-bundles, connections, curvature tensors, holonomy. The companion notes `companion_notes/P-rot-6_transformer_dynamics.md`, `geometric_deep_learning/docs/Lie_Groups_for_Gauge_Theory_Tutorial.md`, and `geometric_deep_learning/docs/Gauge_Theory_Tutorial.md` (cited in the SPLM paper's bibliography) already lay this groundwork in the context of attention transformers. Re-using the apparatus for v3 is a one-step inheritance: instead of "the gauge field $B(x)$ is implicit in attention", we have "each particle carries an explicit $G$-valued tag, and the gauge field is the manifest interaction operator". The connection between the two readings is one of the more interesting unifications the framework makes available.
+The mature apparatus is **non-abelian gauge theory** — fibre bundles, principal $G$-bundles, connections, curvature tensors, holonomy. The companion notes `companion_notes/P-rot-6_transformer_dynamics.md` and standard textbooks on Lie groups and gauge theory (Hall, 2015; Baez & Muniain, 1994; Nakahara, 2003) already lay this groundwork in the context of attention transformers. Re-using the apparatus for v3 is a one-step inheritance: instead of "the gauge field $B(x)$ is implicit in attention", we have "each particle carries an explicit $G$-valued tag, and the gauge field is the manifest interaction operator". The connection between the two readings is one of the more interesting unifications the framework makes available.
 
 The principal theorems that become available include the **Yang–Mills equations** (governing the dynamics of the gauge field itself), **Wilson-loop holonomy** (path-dependent transformations of state along trajectories — exactly the right object for "the meaning of a sentence depends on the order of words"), and **gauge equivariance** (the simulator is invariant under a class of meaning-preserving relabellings). All of these have well-developed mathematical theory at varying levels of sophistication.
 
@@ -540,8 +540,6 @@ The qualitative case for v1.5 / v2 / v3 in the programme memo is replaced by a s
 - Vijay-Shanker, K., Weir, D. J., and Joshi, A. K. (1987). Characterizing structural descriptions produced by various grammatical formalisms. In *Proceedings of ACL*.
 - Wolfram, S. (2002). *A New Kind of Science.* Wolfram Media.
 - Yao, S., Peng, B., Papadimitriou, C., and Steinhardt, J. (2021). Self-attention networks can process bounded hierarchical languages. *ACL*.
-- Gueorguiev, D. P. (2025). *Lie Groups for Gauge Theory — A Graduate Tutorial from Matrix Groups to the Structure of U(1), SU(2), SU(3).*
-- Gueorguiev, D. P. (2026a). *A Full Tutorial on Gauge Theory — From First Principles to Non-Abelian Fields and Transformer Connections.*
 - Gueorguiev, D. P. (2026b). *Semantic Simulator EOM* (`docs/Semantic_Simulator_EOM.md`).
 - Gueorguiev, D. P. (2026c). *Semantic Simulator with RL-calibrated Force Fields: a programme memo* (`docs/Semantic_Simulator_RL_Calibration_Programme.md`).
 - Gueorguiev, D. P. (2026d). *MCS Reduction for the v0+v1.5+v2+v3 composite simulator* (`docs/MCS_Reduction_For_v3_Composite.md`).

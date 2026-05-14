@@ -71,7 +71,7 @@ Everything not in the table — initialisation scheme, loss function (cross-entr
 
 At the locked configuration, total token-passes $= 8000\cdot 16 \cdot 512 = 65.5\text{ M}$, which is
 
-$$\frac{\text{tokens seen}}{\text{params}} \in \left\{\frac{65.5\,\text{M}}{15.75\,\text{M}},\ \frac{65.5\,\text{M}}{19.45\,\text{M}}\right\} \approx \{4.2,\,3.4\} \text{ tokens / param}.$$
+$$\frac{\text{tokens seen}}{\text{params}} \in \left\{\frac{65.5\text{M}}{15.75\text{M}},\ \frac{65.5\text{M}}{19.45\text{M}}\right\} \approx \{4.2,3.4\} \text{ tokens / param}.$$
 
 This is **deliberately below** the Chinchilla optimal of $\sim 20$ tokens / param. **The protocol is intentionally training-budget-limited rather than data-limited.** This is appropriate for a relative comparison (both arms see the same token budget; the comparison is unbiased), but it means absolute PPL numbers are *not* in the high-quality / well-converged regime. Reporting will explicitly acknowledge this.
 
@@ -164,7 +164,7 @@ The following are **not** part of the locked decision rule but are recorded for 
 
 The author predicts **Outcome A** (the gap survives scale-up), with a substantially smaller numerical effect size than at small scale, written before any scale-up training is run:
 
-$$\Delta_{\mathrm{predicted}} \in [+10,\,+30] \text{ PPL}, \qquad \text{with most likely value } \overline{\Delta} \approx +20 \text{ PPL}.$$
+$$\Delta_{\mathrm{predicted}} \in [+10,+30] \text{ PPL}, \qquad \text{with most likely value } \overline{\Delta} \approx +20 \text{ PPL}.$$
 
 **Reasoning.** Three considerations narrow the prediction band:
 1. The small-scale gap of $+54$ PPL was at a regime where the matched-attention arm is severely under-parameterised relative to the corpus complexity (8 M params on Tiny Shakespeare — within the memorisation-vs-generalisation transition zone). At 19 M params on 5 M tokens, both arms are still well below Chinchilla but the matched-attention disadvantage from the small-corpus regime should weaken.

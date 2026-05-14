@@ -39,25 +39,21 @@
 
 ### 1.1 Setup
 
-Hidden states `h_t^(ℓ) ∈ ℝᵈ` are extracted across token positions `t = 1,...,T` at each
-layer `ℓ = 1,...,L` of a decoder-only transformer (GPT-2 small, d=768, L=12). The
+Hidden states $h_t^{(\ell)} \in \mathbb{R}^d$ are extracted across token positions $t = 1,\ldots,T$ at each
+layer $\ell = 1,\ldots,L$ of a decoder-only transformer (GPT-2 small, d=768, L=12). The
 fundamental question is whether the layer-to-layer evolution:
 
-```
-h_t^(ℓ+1) = h_t^(ℓ) + Δh_t^(ℓ)
-```
+$$h_t^{(\ell+1)} = h_t^{(\ell)} + \Delta h_t^{(\ell)}$$
 
 admits a compact dynamical description as a second-order ODE in the layer index:
 
-```
-m ḧ = F(h, ḣ; θ_ℓ) - mγḣ
-```
+$$m \ddot{h} = F(h, \dot{h}; \theta_\ell) - m\gamma\dot{h}$$
 
-where `θ_ℓ` denotes layer-specific parameters and `F` is a force to be determined.
+where $\theta_\ell$ denotes layer-specific parameters and $F$ is a force to be determined.
 
 ### 1.2 The Static Null Baseline
 
-The null model predicts `h_{t+1} = h_t` (zero dynamics). The static null residual:
+The null model predicts $h_{t+1} = h_t$ (zero dynamics). The static null residual:
 
 ```
 GPT-2:  0.1773   (relative displacement norm, averaged across corpus)
@@ -82,25 +78,27 @@ the entire program, is eliminated at this stage.
 ## 2. The Full Model Class Hierarchy Considered
 
 The systematic search through candidate force fields is organized by the Helmholtz
-decomposition of the force `F(h, ḣ)` in phase space `(h, ḣ)`:
+decomposition of the force $F(h, \dot{h})$ in phase space $(h, \dot{h})$:
 
-```
-F(h, ḣ) = -∇φ(h)           ← curl-free, position only
-         + F_sol(h)         ← solenoidal, position only (curl ≠ 0)
-         + B(h) · ḣ        ← gyroscopic / magnetic (velocity coupled)
-         + D(h) · ḣ        ← symmetric dissipation (drag, absorbed into γ)
-```
+$$
+\begin{aligned}
+F(h, \dot{h}) &= -\nabla\phi(h) && \leftarrow \text{curl-free, position only} \\
+&+ F_{\text{sol}}(h) && \leftarrow \text{solenoidal, position only (curl} \neq 0\text{)} \\
+&+ B(h) \cdot \dot{h} && \leftarrow \text{gyroscopic / magnetic (velocity coupled)} \\
+&+ D(h) \cdot \dot{h} && \leftarrow \text{symmetric dissipation (drag, absorbed into } \gamma\text{)}
+\end{aligned}
+$$
 
 The systematic hierarchy of model classes:
 
 | Class | Force | Status | Section |
 |---|---|---|---|
-| A | `F = -∇V(x)`, any V | **Tested, fails** | §3 |
-| B | `F = -∇V + Ωx`, constant skew Ω | **Tested, fails** | §4 |
-| C | `F = -∇V + Bẋ`, constant skew B (P-rot-6) | **Candidate** | §5 |
-| D | `F = -∇V + B(x)ẋ`, position-dependent skew | **Candidate** | §6 |
+| A | $F = -\nabla V(x)$, any V | **Tested, fails** | §3 |
+| B | $F = -\nabla V + \Omega x$, constant skew $\Omega$ | **Tested, fails** | §4 |
+| C | $F = -\nabla V + B\dot{x}$, constant skew B (P-rot-6) | **Candidate** | §5 |
+| D | $F = -\nabla V + B(x)\dot{x}$, position-dependent skew | **Candidate** | §6 |
 | E | Riemannian geodesic / Jacobi metric | **Candidate** | §7 |
-| F | Non-autonomous conservative `V(h; θ_ℓ)` | **Emerging** | §8–14 |
+| F | Non-autonomous conservative $V(h; \theta_\ell)$ | **Emerging** | §8–14 |
 
 ---
 
@@ -108,17 +106,13 @@ The systematic hierarchy of model classes:
 
 ### 3.1 The Model
 
-```
-mḧ = -∇V(h) - mγḣ
+$$m\ddot{h} = -\nabla V(h) - m\gamma\dot{h}$$
 
-V(h) = any smooth scalar field on ℝᵈ
-```
+$$V(h) = \text{any smooth scalar field on } \mathbb{R}^d$$
 
 The specific implementation tested: Gaussian well per layer:
 
-```
-V_ℓ(r) = a_ℓ(1 - e^{-b_ℓ r²}),   r = ‖h - h₀‖
-```
+$$V_\ell(r) = a_\ell(1 - e^{-b_\ell r^2}), \quad r = \lVert h - h_0 \rVert$$
 
 fitted to (radial distance, potential-to-language) pairs, then integrated with symplectic
 Euler + damping.
@@ -126,43 +120,40 @@ Euler + damping.
 ### 3.2 The Physical Motivation
 
 A scalar potential is the simplest conservative model. It assumes:
-- A fixed attractor `h₀` per layer (the semantic centroid)
+- A fixed attractor $h_0$ per layer (the semantic centroid)
 - A radially symmetric restoring force
 - Energy is conserved (up to damping)
 - All force field structure is captured by the gradient of one function
 
 The Gaussian well was chosen because it satisfies three physically motivated desiderata:
-(1) bounded total binding energy (V → mυ² as r → ∞), (2) locally quadratic near
+(1) bounded total binding energy ($V \to mv^2$ as $r \to \infty$), (2) locally quadratic near
 equilibrium (harmonic oscillator limit), (3) smooth and single-scale.
 
 ### 3.3 What the Helmholtz Decomposition Says
 
 A pure scalar potential models 100% of the force with the curl-free (irrotational) component:
 
-```
-F = -∇V   →   curl F = 0 everywhere
-```
+$$F = -\nabla V \implies \nabla \times F = 0 \text{ everywhere}$$
 
-By the Helmholtz decomposition theorem, any smooth force field on ℝᵈ decomposes as:
+By the Helmholtz decomposition theorem, any smooth force field on $\mathbb{R}^d$ decomposes as:
 
-```
-F(h) = -∇φ(h)  +  ∇×A(h)
-        curl-free    solenoidal
-```
+$$F(h) = \underbrace{-\nabla\phi(h)}_{\text{curl-free}} + \underbrace{\nabla \times A(h)}_{\text{solenoidal}}$$
 
-If the true force has non-zero solenoidal component `∇×A ≠ 0`, then no scalar potential
+If the true force has non-zero solenoidal component $\nabla \times A \neq 0$, then no scalar potential
 — regardless of shape, depth, or number of parameters — can represent it. This is a
 structural impossibility, not a fitting failure.
 
 The Jacobian of the force field:
 
-```
-JF(h) = S(h) + Ω(h)
-S(h) = (JF + JFᵀ)/2    ← symmetric  → curl-free component
-Ω(h) = (JF - JFᵀ)/2    ← antisymm.  → solenoidal component
-```
+$$
+\begin{aligned}
+J_F(h) &= S(h) + \Omega(h) \\
+S(h) &= (J_F + J_F^\top)/2 && \leftarrow \text{symmetric} \to \text{curl-free component} \\
+\Omega(h) &= (J_F - J_F^\top)/2 && \leftarrow \text{antisymm.} \to \text{solenoidal component}
+\end{aligned}
+$$
 
-Conservative iff Ω(h) = 0 everywhere.
+Conservative iff $\Omega(h) = 0$ everywhere.
 
 ### 3.4 Result and Diagnosis
 
@@ -197,21 +188,19 @@ Despite failing, the Gaussian well test was the correct first experiment because
 
 ### 4.1 The Model
 
-```
-mḧ = -∇V(h) + Ωh - mγḣ,     Ω = -Ωᵀ ∈ ℝᵈˣᵈ   (constant skew-symmetric)
-```
+$$m\ddot{h} = -\nabla V(h) + \Omega h - m\gamma\dot{h}, \quad \Omega = -\Omega^\top \in \mathbb{R}^{d \times d} \quad \text{(constant skew-symmetric)}$$
 
-This augments the conservative potential with a position-coupled solenoidal term. Ω acts
+This augments the conservative potential with a position-coupled solenoidal term. $\Omega$ acts
 on position h directly, adding a constant rotational bias to the force field.
 
 ### 4.2 Physical Motivation
 
 The Helmholtz decomposition requires both curl-free and solenoidal components. The
-simplest solenoidal extension of a scalar potential is a linear solenoidal field: `F_sol = Ωh`
-with constant antisymmetric Ω. This adds a "magnetic-like" rotation to the force that:
-- Is divergence-free: `∇·(Ωh) = 0` (solenoidal)
-- Has constant curl: `∇×(Ωh) = 2Ω` (uniform rotation rate)
-- Does work on trajectories: `∮ Ωh·dh ≠ 0` (non-conservative)
+simplest solenoidal extension of a scalar potential is a linear solenoidal field: $F_{\text{sol}} = \Omega h$
+with constant antisymmetric $\Omega$. This adds a "magnetic-like" rotation to the force that:
+- Is divergence-free: $\nabla \cdot (\Omega h) = 0$ (solenoidal)
+- Has constant curl: $\nabla \times (\Omega h) = 2\Omega$ (uniform rotation rate)
+- Does work on trajectories: $\oint \Omega h \cdot dh \neq 0$ (non-conservative)
 
 ### 4.3 Result and Diagnosis
 
@@ -220,101 +209,92 @@ explain the observed trajectory variance.
 
 **What the failure reveals:**
 
-The constant-Ω model assumes the rotation rate is uniform across all of semantic space.
+The constant-$\Omega$ model assumes the rotation rate is uniform across all of semantic space.
 This is too restrictive for two reasons:
 
 1. **Attention weights are position-dependent:** The solenoidal component of transformer
-   force arises from the K≠V antisymmetry:
-   ```
-   Ω(h) = β/2 · Σ_μ softmax_μ(βKh) · (Vᵘ⊗Kᵘ - Kᵘ⊗Vᵘ)
-   ```
+   force arises from the $K \neq V$ antisymmetry:
+   $$\Omega(h) = \frac{\beta}{2} \sum_\mu \text{softmax}_\mu(\beta K h) \cdot (V^\mu \otimes K^\mu - K^\mu \otimes V^\mu)$$
+
    The softmax weights change with h — the rotation rate is a function of position, not
    a constant.
 
-2. **The force is velocity-independent at this level:** Ωh acts on position. The true
-   solenoidal contribution from the K≠V structure is better modeled as velocity-coupled
-   (Bẋ) rather than position-coupled (Ωh) — see §5.
+2. **The force is velocity-independent at this level:** $\Omega h$ acts on position. The true
+   solenoidal contribution from the $K \neq V$ structure is better modeled as velocity-coupled
+   ($B\dot{x}$) rather than position-coupled ($\Omega h$) — see §5.
 
 ---
 
-## 5. Candidate Class C — P-rot-6: Velocity-Coupled Constant Skew (B·ẋ)
+## 5. Candidate Class C — P-rot-6: Velocity-Coupled Constant Skew ($B \cdot \dot{x}$)
 
 ### 5.1 The Model
 
-```
-mẍ = -∇V(x) + Bₗẋ - mγẋ,     Bₗ = -Bₗᵀ ∈ ℝᵏˣᵏ   (skew-symmetric)
-```
+$$m\ddot{x} = -\nabla V(x) + B_\ell\dot{x} - m\gamma\dot{x}, \quad B_\ell = -B_\ell^\top \in \mathbb{R}^{k \times k} \quad \text{(skew-symmetric)}$$
 
 The name encodes its position in the hierarchy:
-- **P**: potential-augmented (includes -∇V term)
+- **P**: potential-augmented (includes $-\nabla V$ term)
 - **rot**: rotational/solenoidal extension present
 - **6**: sixth variant — velocity-coupling with position-independent skew matrix
 
 ### 5.2 Physical Motivation: The Lorentz Force Analogy
 
-The B·ẋ term is the direct analog of the Lorentz magnetic force on a charged particle:
+The $B \cdot \dot{x}$ term is the direct analog of the Lorentz magnetic force on a charged particle:
 
-```
-F_magnetic = q(ẋ × B)
-```
+$$F_{\text{magnetic}} = q(\dot{x} \times B)$$
 
-In the matrix form appropriate for ℝᵈ: `F = Bẋ` with `B = -Bᵀ`. The key properties:
+In the matrix form appropriate for $\mathbb{R}^d$: $F = B\dot{x}$ with $B = -B^\top$. The key properties:
 
 **Zero work:** Because B is skew-symmetric:
-```
-ẋᵀBẋ = 0   for all ẋ   iff   B = -Bᵀ
-```
+
+$$\dot{x}^\top B\dot{x} = 0 \quad \text{for all } \dot{x} \quad \text{iff} \quad B = -B^\top$$
+
 The gyroscopic force does zero work — it curves trajectories without changing kinetic energy.
 This is why B must be skew-symmetric: the symmetric part is additional damping (absorbed
-into γ), only the skew part is structurally new.
+into $\gamma$), only the skew part is structurally new.
 
 **Energy conservation:**
-```
-dE/dt = ẋᵀBẋ - mγ‖ẋ‖² = 0 - mγ‖ẋ‖² = -mγ‖ẋ‖²
-```
-The modified energy `E = ½m‖ẋ‖² + V(x)` decreases only through damping, never through
+
+$$\frac{dE}{dt} = \dot{x}^\top B\dot{x} - m\gamma\lVert\dot{x}\rVert^2 = 0 - m\gamma\lVert\dot{x}\rVert^2 = -m\gamma\lVert\dot{x}\rVert^2$$
+
+The modified energy $E = \tfrac{1}{2}m\lVert\dot{x}\rVert^2 + V(x)$ decreases only through damping, never through
 the gyroscopic term.
 
 **Curvature without speed change:** Like a magnetic field deflecting a charged particle,
-B·ẋ changes the direction of motion without changing its magnitude. This generates
+$B \cdot \dot{x}$ changes the direction of motion without changing its magnitude. This generates
 precisely the kind of trajectory curvature the Gaussian well alone cannot produce.
 
-### 5.3 The K≠V Theoretical Derivation
+### 5.3 The $K \neq V$ Theoretical Derivation
 
 The theoretical motivation for P-rot-6 comes from the Modern Hopfield / attention
-force field decomposition. For K≠V attention (every real transformer):
+force field decomposition. For $K \neq V$ attention (every real transformer):
 
-```
-F(h) = Vᵀ softmax(βKh) - h
-```
+$$F(h) = V^\top \text{softmax}(\beta K h) - h$$
 
 The Jacobian:
 
-```
-JF(h) = β Vᵀ [diag(s) - ssᵀ] K  -  I
-```
+$$J_F(h) = \beta V^\top [\text{diag}(s) - ss^\top] K - I$$
 
-where `s = softmax(βKh)`. The antisymmetric part:
+where $s = \text{softmax}(\beta K h)$. The antisymmetric part:
 
-```
-Ω(h) = (JF - JFᵀ)/2 = β/2 · Σ_μ softmax_μ(βKh) · (Vᵘ⊗Kᵘ - Kᵘ⊗Vᵘ)
-```
+$$\Omega(h) = (J_F - J_F^\top)/2 = \frac{\beta}{2} \sum_\mu \text{softmax}_\mu(\beta K h) \cdot (V^\mu \otimes K^\mu - K^\mu \otimes V^\mu)$$
 
-This is non-zero whenever `Vᵘ ≠ Kᵘ` — which holds generically since `W_K ≠ W_V` by
+This is non-zero whenever $V^\mu \neq K^\mu$ — which holds generically since $W_K \neq W_V$ by
 design in every transformer.
 
 **The linearization argument for P-rot-6:** For a locally quasi-straight trajectory near
-reference `x̄(t)` over short time `δt`:
+reference $\bar{x}(t)$ over short time $\delta t$:
 
-```
-δx(t) ≈ ẋ(t) · δt
-Ω(x̄)·δx ≈ Ω(x̄) · ẋ · δt
-```
+$$
+\begin{aligned}
+\delta x(t) &\approx \dot{x}(t) \cdot \delta t \\
+\Omega(\bar{x}) \cdot \delta x &\approx \Omega(\bar{x}) \cdot \dot{x} \cdot \delta t
+\end{aligned}
+$$
 
-This gives an effective velocity coupling `B_eff ≈ Ω(x̄) · δt`, valid when:
-1. Trajectory is locally straight: `‖ẍ‖ · δt ≪ ‖ẋ‖`
-2. Attention weights are frozen: `‖∂s/∂h‖ · ‖δh‖ ≪ ‖s‖`
-3. Time step is small: `δt ≪ 1/β‖K‖`
+This gives an effective velocity coupling $B_{\text{eff}} \approx \Omega(\bar{x}) \cdot \delta t$, valid when:
+1. Trajectory is locally straight: $\lVert\ddot{x}\rVert \cdot \delta t \ll \lVert\dot{x}\rVert$
+2. Attention weights are frozen: $\lVert\partial s/\partial h\rVert \cdot \lVert\delta h\rVert \ll \lVert s\rVert$
+3. Time step is small: $\delta t \ll 1/\beta\lVert K\rVert$
 
 **The zero-parameter theoretical B matrix:**
 
@@ -336,7 +316,7 @@ It can be tested as a pure theoretical prediction.
 
 ### 5.4 Parameter Count
 
-`B ∈ ℝᵏˣᵏ` skew-symmetric has `k(k-1)/2` free parameters:
+$B \in \mathbb{R}^{k \times k}$ skew-symmetric has $k(k-1)/2$ free parameters:
 
 | Subspace dim k | Free parameters |
 |---|---|
@@ -350,30 +330,28 @@ estimating B via skew-projected least squares.
 
 ### 5.5 The Structural Distinction from Class B
 
-The critical difference between P-rot-6 (B·ẋ) and constant-Ω (Ωh):
+The critical difference between P-rot-6 ($B \cdot \dot{x}$) and constant-$\Omega$ ($\Omega h$):
 
-```
-P-rot-6 gyroscopic (velocity-coupled):
-  B·ẋ acts on VELOCITY → lives in the gyroscopic sector of the force decomposition
-  Does zero work: ẋᵀBẋ = 0
-  Physically: trajectory curvature scales with SPEED
+**P-rot-6 gyroscopic (velocity-coupled):**
+- $B \cdot \dot{x}$ acts on VELOCITY $\to$ lives in the gyroscopic sector of the force decomposition
+- Does zero work: $\dot{x}^\top B\dot{x} = 0$
+- Physically: trajectory curvature scales with SPEED
 
-Constant-Ω position force (position-coupled):
-  Ωh acts on POSITION → lives in the solenoidal sector of position-force decomposition
-  Does work on closed loops: ∮ Ωh·dh ≠ 0
-  Physically: rotation rate is fixed, independent of speed
-```
+**Constant-$\Omega$ position force (position-coupled):**
+- $\Omega h$ acts on POSITION $\to$ lives in the solenoidal sector of position-force decomposition
+- Does work on closed loops: $\oint \Omega h \cdot dh \neq 0$
+- Physically: rotation rate is fixed, independent of speed
 
 These occupy **different sectors of the full force decomposition** and are not equivalent.
-The K≠V antisymmetry primarily generates a position-dependent solenoidal force, which
-maps onto B·ẋ only under the linearization conditions described in §5.3.
+The $K \neq V$ antisymmetry primarily generates a position-dependent solenoidal force, which
+maps onto $B \cdot \dot{x}$ only under the linearization conditions described in §5.3.
 
 ### 5.6 Empirical Status After Step 2
 
-Step 2's shared-V_ψ test reveals that the **dominant non-conservativity in GPT-2 is
-between-layer** (Mechanism 1: layer-varying θ_ℓ), not within-layer solenoidal. The
+Step 2's shared-$V_\psi$ test reveals that the **dominant non-conservativity in GPT-2 is
+between-layer** (Mechanism 1: layer-varying $\theta_\ell$), not within-layer solenoidal. The
 Jacobian symmetry gap (0.079 GPT-2 vs 0.040 SPLM floor) shows the within-layer
-K≠V solenoidal term is real but secondary. P-rot-6 addresses the secondary mechanism.
+$K \neq V$ solenoidal term is real but secondary. P-rot-6 addresses the secondary mechanism.
 
 ```
 Within-layer K≠V solenoidal (P-rot-6):     ~0.04 above SPLM floor
@@ -382,45 +360,45 @@ Between-layer non-autonomy (Mechanism 1):   dominant — causes shared-V failure
 
 ---
 
-## 6. Candidate Class D — Position-Dependent Gauge Field B(x)ẋ
+## 6. Candidate Class D — Position-Dependent Gauge Field $B(x)\dot{x}$
 
 ### 6.1 The Model
 
-```
-mẍ = -∇V(x) + B(x)ẋ - mγẋ,     B(x) = -B(x)ᵀ   ∀x
-```
+$$
+m\ddot{x} = -\nabla V(x) + B(x)\dot{x} - m\gamma\dot{x}, \quad B(x) = -B(x)^\top \quad \forall x
+$$
 
 This is a **full Yang-Mills / gauge field** formulation. The skew-symmetric coupling
 matrix is a field — it varies smoothly with position in hidden state space.
 
 ### 6.2 Physical Motivation
 
-The constant-B (P-rot-6) model assumes the K≠V vortex structure is uniform across
-semantic space. In reality, the attention weights `softmax_μ(βKh)` depend on h:
+The constant-B (P-rot-6) model assumes the $K \neq V$ vortex structure is uniform across
+semantic space. In reality, the attention weights $\text{softmax}_\mu(\beta K h)$ depend on $h$:
 
-```
-B(h) = β/2 · Σ_μ softmax_μ(βKh) · (Vᵘ⊗Kᵘ - Kᵘ⊗Vᵘ)
-```
+$$
+B(h) = \frac{\beta}{2} \sum_\mu \text{softmax}_\mu(\beta K h) \cdot (V^\mu \otimes K^\mu - K^\mu \otimes V^\mu)
+$$
 
-As h changes, different context tokens dominate the attention, shifting which vortices
+As $h$ changes, different context tokens dominate the attention, shifting which vortices
 are active. This generates a **spatially inhomogeneous magnetic field** whose local
 structure depends on where in semantic space the hidden state currently is.
 
 ### 6.3 The Gauge Field Structure
 
-The connection 1-form `A_μ(h) = B_μ(h)` defines a connection on a vector bundle
+The connection 1-form $A_\mu(h) = B_\mu(h)$ defines a connection on a vector bundle
 over semantic space. The **curvature tensor** of this connection:
 
-```
-F_μν(h) = ∂_μ B_ν(h) - ∂_ν B_μ(h) + [B_μ(h), B_ν(h)]
-```
+$$
+F_{\mu\nu}(h) = \partial_\mu B_\nu(h) - \partial_\nu B_\mu(h) + [B_\mu(h), B_\nu(h)]
+$$
 
-If `F_μν = 0` everywhere: the connection is **pure gauge** — all rotation is a coordinate
-artifact, no physical torque. If `F_μν ≠ 0`: genuine topological structure in semantic space.
+If $F_{\mu\nu} = 0$ everywhere: the connection is **pure gauge** — all rotation is a coordinate
+artifact, no physical torque. If $F_{\mu\nu} \neq 0$: genuine topological structure in semantic space.
 
 ### 6.4 The Spatial Variation Diagnostic
 
-Before committing to B(x), measure how much Ω(h) varies along trajectories:
+Before committing to $B(x)$, measure how much $\Omega(h)$ varies along trajectories:
 
 ```python
 def spatial_variation_diagnostic(W_K, W_V, H, beta):
@@ -443,8 +421,8 @@ def spatial_variation_diagnostic(W_K, W_V, H, beta):
 ### 6.5 Empirical Status
 
 Not yet tested directly. Step 2 reveals that the dominant non-conservativity is
-Mechanism 1 (layer-varying θ_ℓ), not the within-layer solenoidal term that B(x) addresses.
-B(x) remains the correct next step within the within-layer dynamics track (Track B in §13),
+Mechanism 1 (layer-varying $\theta_\ell$), not the within-layer solenoidal term that $B(x)$ addresses.
+$B(x)$ remains the correct next step within the within-layer dynamics track (Track B in §13),
 but it is secondary to the non-autonomous conservative framework (Track A).
 
 ---
@@ -453,11 +431,11 @@ but it is secondary to the non-autonomous conservative framework (Track A).
 
 ### 7.1 The Model
 
-```
-ḧᵏ + Γᵏᵢⱼ(h) ḣⁱ ḣʲ = -γḣᵏ
-```
+$$
+\ddot{h}^k + \Gamma^k_{ij}(h) \dot{h}^i \dot{h}^j = -\gamma \dot{h}^k
+$$
 
-where `Γᵏᵢⱼ` are the Christoffel symbols of a Riemannian metric g on hidden state space.
+where $\Gamma^k_{ij}$ are the Christoffel symbols of a Riemannian metric $g$ on hidden state space.
 There is no potential, no gauge field — only geometry. The "force" is curvature.
 
 ### 7.2 Physical Motivation
@@ -466,15 +444,15 @@ If the hidden state space has a non-Euclidean geometry — an implicit Riemannia
 induced by the attention kernel — then hidden states follow geodesics in this curved space.
 Transformer attention computes inner products in a learned metric:
 
-```
-g_ij(h) = E_y[∂log p(y|h)/∂hᵢ · ∂log p(y|h)/∂hⱼ]   (Fisher metric)
-```
+$$
+g_{ij}(h) = \mathbb{E}_y\left[\frac{\partial \log p(y|h)}{\partial h_i} \cdot \frac{\partial \log p(y|h)}{\partial h_j}\right] \quad \text{(Fisher metric)}
+$$
 
 In the Semantic Simulation framework, this is the Jacobi metric:
 
-```
-g̃_ij(h) = 2(E - V(h)) g_ij   (Jacobi metric induced by Gaussian well)
-```
+$$
+\tilde{g}_{ij}(h) = 2(E - V(h)) g_{ij} \quad \text{(Jacobi metric induced by Gaussian well)}
+$$
 
 ### 7.3 The Geodesic Hypothesis and STP
 
@@ -482,9 +460,9 @@ The STP paper (Huang, LeCun, Balestriero 2026) proposes that token-space traject
 are geodesics on a smooth semantic manifold. The Semantic Simulation paper's Theorem 42
 proves:
 
-```
-L_STP = 1 - √(1 - |a⊥|²/‖d₂‖²)
-```
+$$
+L_{\text{STP}} = 1 - \sqrt{1 - \frac{|a_\perp|^2}{\lVert d_2 \rVert^2}}
+$$
 
 The STP loss measures only the **normal acceleration** — trajectory curvature. The
 **tangential acceleration** (deceleration toward bound state) is invisible to STP. The
@@ -493,8 +471,8 @@ Gaussian well predicts both components; STP regularization captures only one.
 ### 7.4 The Jacobi Metric Connection to Candidate Class F
 
 Under the Semantic Simulation framework, the Riemannian geodesic formulation and the
-non-autonomous conservative system are unified: Euler-Lagrange trajectories of `L = T - V`
-are geodesics of the Jacobi metric `g̃ = 2(E-V)g`. Class E is therefore not separate from
+non-autonomous conservative system are unified: Euler-Lagrange trajectories of $L = T - V$
+are geodesics of the Jacobi metric $\tilde{g} = 2(E-V)g$. Class E is therefore not separate from
 Class F — it is the geometric language in which Class F's dynamics are expressed.
 
 ---
@@ -503,63 +481,72 @@ Class F — it is the geometric language in which Class F's dynamics are express
 
 ### 8.1 The Candidate Equation
 
-```
-mẍ = -∇_x V(x; θ_ℓ) - mγẋ
-```
+$$
+m\ddot{x} = -\nabla_x V(x; \theta_\ell) - m\gamma\dot{x}
+$$
 
-where `θ_ℓ = {W_Q^ℓ, W_K^ℓ, W_V^ℓ, W_MLP^ℓ}` are layer-specific parameters.
+where $\theta_\ell = \{W_Q^\ell, W_K^\ell, W_V^\ell, W_{\text{MLP}}^\ell\}$ are layer-specific parameters.
 
-At each individual layer ℓ, the force `-∇_x V(x; θ_ℓ)` is the gradient of a scalar
+At each individual layer $\ell$, the force $-\nabla_x V(x; \theta_\ell)$ is the gradient of a scalar
 potential — hence the Jacobian is **symmetric by construction** at every layer. This
 directly explains the Jacobian symmetry finding (both SPLM and GPT-2 pass local
 symmetry test with gaps ≤ 0.079).
 
-Globally, because `V(x; θ_ℓ) ≠ V(x; θ_{ℓ+1})` when layer parameters change, the work
+Globally, because $V(x; \theta_\ell) \neq V(x; \theta_{\ell+1})$ when layer parameters change, the work
 done along a path spanning multiple layers is path-dependent:
 
-```
-∮ F·dh = ∮ -∇V(h; θ_ℓ(t))·dh ≠ 0   when θ_ℓ drifts along the loop
-```
+$$
+\oint F \cdot dh = \oint -\nabla V(h; \theta_\ell(t)) \cdot dh \neq 0 \quad \text{when } \theta_\ell \text{ drifts along the loop}
+$$
 
 This is **parametric non-conservativity** — not solenoidal, but structural.
 
 ### 8.2 The Architecture Specializations
 
-```
-SPLM:   V(h; θ_ℓ) = V_θ(h, ξ)         θ_ℓ = θ (constant), globally integrable
-        → globally conservative in h (given ξ fixed)
-        → single shared V_ψ should succeed ✓
+**SPLM:**
 
-GPT-2:  V(h; θ_ℓ) = V_Hopfield(h; K_ℓ, V_ℓ) = -1/β · log Σ_μ exp(βK_ℓh) + ½‖h‖²
-        → θ_ℓ varies per layer, globally non-integrable
-        → single shared V_ψ should fail in middle layers ✓
-```
+$$
+V(h; \theta_\ell) = V_\theta(h, \xi), \quad \theta_\ell = \theta \text{ (constant), globally integrable}
+$$
+
+- globally conservative in $h$ (given $\xi$ fixed)
+- single shared $V_\psi$ should succeed
+
+**GPT-2:**
+
+$$
+V(h; \theta_\ell) = V_{\text{Hopfield}}(h; K_\ell, V_\ell) = -\frac{1}{\beta} \log \sum_\mu \exp(\beta K_\ell h) + \tfrac{1}{2}\lVert h \rVert^2
+$$
+
+- $\theta_\ell$ varies per layer, globally non-integrable
+- single shared $V_\psi$ should fail in middle layers
 
 ### 8.3 The Fiber Bundle Geometry
 
-In the extended space `(h, ℓ)` — hidden state crossed with layer index — the dynamics
+In the extended space $(h, \ell)$ — hidden state crossed with layer index — the dynamics
 trace a curve on a fiber bundle:
 
-```
-Base manifold:   {ℓ = 0, 1, ..., L}   (layer index — discrete)
-Fiber:           ℝᵈ                   (hidden state space)
-Connection form: A_ℓ = -∇V(·; θ_ℓ)   (per-layer force as connection)
-```
+- Base manifold: $\{\ell = 0, 1, \ldots, L\}$ (layer index — discrete)
+- Fiber: $\mathbb{R}^d$ (hidden state space)
+- Connection form: $A_\ell = -\nabla V(\cdot; \theta_\ell)$ (per-layer force as connection)
 
-The **holonomy** of this connection around a closed loop in `(h, ℓ)` space measures
+The **holonomy** of this connection around a closed loop in $(h, \ell)$ space measures
 the global non-conservativity:
 
-```
-Holonomy = ∮ A_ℓ · dh  ≠ 0  for GPT-2  (K_ℓ varies → curvature nonzero)
-                          = 0  for SPLM   (θ_ℓ = θ constant → flat connection)
-```
+$$
+\text{Holonomy} = \oint A_\ell \cdot dh \neq 0 \quad \text{for GPT-2 } (K_\ell \text{ varies} \to \text{curvature nonzero})
+$$
+
+$$
+\text{Holonomy} = \oint A_\ell \cdot dh = 0 \quad \text{for SPLM } (\theta_\ell = \theta \text{ constant} \to \text{flat connection})
+$$
 
 The **curvature of this connection** quantifies how rapidly the attractor landscape is
 being reorganized by layer depth:
 
-```
-F_ℓ = ∂_ℓ A_ℓ = -∂_ℓ ∇V(h; θ_ℓ) = -∇_h (∂_ℓ V)
-```
+$$
+F_\ell = \partial_\ell A_\ell = -\partial_\ell \nabla V(h; \theta_\ell) = -\nabla_h (\partial_\ell V)
+$$
 
 ---
 
@@ -574,7 +561,7 @@ Prediction 3: Both pass per-layer Jacobian test    → confirmed ✓ (Step 1)
 Prediction 4: GPT-2 failure is uniform across layers → WRONG ✗
 ```
 
-Prediction 4 is the key failure. The non-autonomous candidate with layer-varying θ_ℓ
+Prediction 4 is the key failure. The non-autonomous candidate with layer-varying $\theta_\ell$
 predicted GPT-2 should fail uniformly. Instead:
 
 ```
@@ -623,26 +610,30 @@ non-conservativity into **two independent mechanisms**:
 
 ### 9.3 The Refined Candidate Equation
 
-```
-mẍ = -∇_x V(x; θ_ℓ, ξ_t)  +  Ω_ℓ(x; θ_ℓ) ẋ  -  mγẋ
-      ─────────────────────    ────────────────
-      doubly non-autonomous    within-layer K≠V
-      conservative dominant    solenoidal correction
-      (Mechanisms 1+2)         (P-rot-6 residual, small)
-```
+$$
+m\ddot{x} = \underbrace{-\nabla_x V(x; \theta_\ell, \xi_t)}_{\substack{\text{doubly non-autonomous} \\ \text{conservative dominant} \\ \text{(Mechanisms 1+2)}}} + \underbrace{\Omega_\ell(x; \theta_\ell) \dot{x}}_{\substack{\text{within-layer } K \neq V \\ \text{solenoidal correction} \\ \text{(P-rot-6 residual, small)}}} - m\gamma\dot{x}
+$$
 
 With architecture-specific specializations:
 
-```
-SPLM:   V(h; θ_ℓ, ξ_t) = V_θ(h, ξ_t)                  θ_ℓ = θ constant
-        Mechanism 1 absent  →  globally conservative given ξ
-        Mechanism 2 present →  layer-4 dip when ξ dropped
+**SPLM:**
 
-GPT-2:  V(h; θ_ℓ, ξ_t) = V_Hopfield(h; K_ℓ, ξ_t)      θ_ℓ varies per layer
-        Mechanism 1 dominant in middle layers (structural failure)
-        Mechanism 2 present in boundary layers (context gap)
-        K=V at layer 11 → Mechanism 1 vanishes → R²=0.99
-```
+$$
+V(h; \theta_\ell, \xi_t) = V_\theta(h, \xi_t), \quad \theta_\ell = \theta \text{ constant}
+$$
+
+- Mechanism 1 absent → globally conservative given $\xi$
+- Mechanism 2 present → layer-4 dip when $\xi$ dropped
+
+**GPT-2:**
+
+$$
+V(h; \theta_\ell, \xi_t) = V_{\text{Hopfield}}(h; K_\ell, \xi_t), \quad \theta_\ell \text{ varies per layer}
+$$
+
+- Mechanism 1 dominant in middle layers (structural failure)
+- Mechanism 2 present in boundary layers (context gap)
+- $K = V$ at layer 11 → Mechanism 1 vanishes → $R^2 = 0.99$
 
 ---
 
@@ -706,42 +697,41 @@ Physical:       Middle layers implement task-specific circuits — induction hea
 
 ### 10.3 Pre-Logit Layer (11): Conservative by Theorem
 
-```
-Observed:       R² ≈ 0.99
+**Observed:** $R^2 \approx 0.99$
 
-Explanation:    Layer 11 projects to vocabulary space via the LM head W_E.
-                W_E serves as BOTH key and value: K_11 ≈ V_11 ≈ W_E.
-                By the K=V conservativity theorem:
-                  Ω_11(h) = β/2 Σ_μ softmax_μ(βKh)(Vᵘ⊗Kᵘ - Kᵘ⊗Vᵘ) ≈ 0
-                The effective potential at layer 11 is exactly:
-                  V_11(h) = -1/β log Σ_v exp(β W_E[v]·h) + ½‖h‖²
-                — a fixed scalar for all tokens. V_ψ captures it to R²=0.99.
+**Explanation:** Layer 11 projects to vocabulary space via the LM head $W_E$.
+$W_E$ serves as BOTH key and value: $K_{11} \approx V_{11} \approx W_E$.
+By the $K{=}V$ conservativity theorem:
 
-Internal check: This is the strongest single-layer confirmation in the experiment.
-                The one layer where architecture GUARANTEES conservativity by
-                weight-tying is exactly the one where shared-V_ψ achieves near-
-                perfect fit. The theory predicts this; the experiment confirms it.
-```
+$$\Omega_{11}(h) = \frac{\beta}{2} \sum_\mu \text{softmax}_\mu(\beta K h)(V^\mu \otimes K^\mu - K^\mu \otimes V^\mu) \approx 0$$
 
-### 10.4 SPLM Layer 4 Dip (R²=0.28)
+The effective potential at layer 11 is exactly:
 
-```
-Observed:       R² drops from plateau (0.90–0.97) to 0.28 at layer 4
+$$V_{11}(h) = -\frac{1}{\beta} \log \sum_v \exp(\beta W_E[v] \cdot h) + \tfrac{1}{2}\lVert h \rVert^2$$
 
-Explanation:    SPLM's true potential is V_θ(ξ_t, h) — context-conditioned.
-                V_ψ(h) has no access to ξ_t.
-                At layer 4, the context vector ξ_t has accumulated 3 full
-                integration steps of contextual influence → ξ_t matters most.
+— a fixed scalar for all tokens. $V_\psi$ captures it to $R^2 = 0.99$.
 
-Oracle test:    Plug SPLM's own V_θ(ξ_t, h) into the evaluation.
-                Prediction: layer-4 R² recovers to ~0.90.
-                This would quantify the cost of context omission exactly.
+**Internal check:** This is the strongest single-layer confirmation in the experiment.
+The one layer where architecture GUARANTEES conservativity by
+weight-tying is exactly the one where shared $V_\psi$ achieves near-perfect fit. The theory predicts this; the experiment confirms it.
 
-Implication:    For GPT-2, any attempt to fit V_ψ(h) alone (context-free) will
-                underestimate the true potential quality. A fair comparison needs
-                V_ψ(h, z) where z is a sentence-level context vector extracted
-                from GPT-2's own representations, making context access symmetric.
-```
+### 10.4 SPLM Layer 4 Dip ($R^2 = 0.28$)
+
+**Observed:** $R^2$ drops from plateau (0.90–0.97) to 0.28 at layer 4.
+
+**Explanation:** SPLM's true potential is $V_\theta(\xi_t, h)$ — context-conditioned.
+$V_\psi(h)$ has no access to $\xi_t$.
+At layer 4, the context vector $\xi_t$ has accumulated 3 full
+integration steps of contextual influence, so $\xi_t$ matters most.
+
+**Oracle test:** Plug SPLM's own $V_\theta(\xi_t, h)$ into the evaluation.
+Prediction: layer-4 $R^2$ recovers to ~0.90.
+This would quantify the cost of context omission exactly.
+
+**Implication:** For GPT-2, any attempt to fit $V_\psi(h)$ alone (context-free) will
+underestimate the true potential quality. A fair comparison needs
+$V_\psi(h, z)$ where $z$ is a sentence-level context vector extracted
+from GPT-2's own representations, making context access symmetric.
 
 ---
 
@@ -751,19 +741,19 @@ Implication:    For GPT-2, any attempt to fit V_ψ(h) alone (context-free) will
 flowchart TD
     subgraph SHARED [Shared T x L x d Hidden State Tensor]
         direction TB
-        TENSOR["h[token t][layer ℓ][dimension i]"]
+        TENSOR["h[token t][layer l][dimension i]"]
     end
 
     subgraph LAYERSPACE [Layer-Space Dynamics - YOUR EXPERIMENTS]
         direction TB
-        LS_SLICE["Fixed token t*, vary ℓ = 1..L\nh[t*][1], h[t*][2], ..., h[t*][L]"]
+        LS_SLICE["Fixed token t*, vary l = 1..L\nh[t*][1], h[t*][2], ..., h[t*][L]"]
         LS_Q["Asks: How does a single token's\nrepresentation transform through depth?"]
-        LS_EXP["Step 1: Gaussian well, Jacobian symmetry\nStep 2: Shared-V_ψ test"]
+        LS_EXP["Step 1: Gaussian well, Jacobian symmetry\nStep 2: Shared-V_psi test"]
     end
 
     subgraph TOKENSPACE [Token-Space Dynamics - STP PAPER]
         direction TB
-        TS_SLICE["Fixed layer ℓ*, vary t = 1..T\nh[1][ℓ*], h[2][ℓ*], ..., h[T][ℓ*]"]
+        TS_SLICE["Fixed layer l*, vary t = 1..T\nh[1][l*], h[2][l*], ..., h[T][l*]"]
         TS_Q["Asks: How do successive token\nrepresentations relate at fixed depth?"]
         TS_EXP["STP geodesic hypothesis\nL_STP = 1 - cos(d1, d2)\n97.9% deceleration (paper §13)"]
     end
@@ -773,29 +763,29 @@ flowchart TD
 
     subgraph SPLM_BOX [SPLM Architecture]
         direction TB
-        SPLM_ARCH["θ_ℓ = θ (constant across layers)\nV_θ(ξ_t, h) same at every ℓ\nMechanism 1 ABSENT by design"]
-        SPLM_M2["Mechanism 2 present:\nξ_t omission → layer-4 dip R²=0.28"]
-        SPLM_RESULT["Shared-V_ψ: R²=0.90 median\n6/7 layers above 0.5 ✓"]
+        SPLM_ARCH["theta_l = theta (constant across layers)\nV_theta(xi_t, h) same at every l\nMechanism 1 ABSENT by design"]
+        SPLM_M2["Mechanism 2 present:\nxi_t omission -> layer-4 dip R^2=0.28"]
+        SPLM_RESULT["Shared-V_psi: R^2=0.90 median\n6/7 layers above 0.5 ✓"]
     end
 
     subgraph GPT2_BOX [GPT-2 Architecture]
         direction TB
-        GPT2_BOUNDARY["Boundary layers 1–4\nK_ℓ curvature compatible\nMechanism 2 dominant\nR² ≈ 0.72–0.79"]
-        GPT2_MIDDLE["Middle layers 5–10\nK_ℓ curvature incompatible\nMechanism 1 dominant\nR² ≈ 0.04–0.20 (structural)"]
-        GPT2_PRELOGIT["Pre-logit layer 11\nK ≈ V (tied embeddings)\nK=V theorem → conservative\nR² = 0.99 ✓"]
+        GPT2_BOUNDARY["Boundary layers 1–4\nK_l curvature compatible\nMechanism 2 dominant\nR^2 approx 0.72–0.79"]
+        GPT2_MIDDLE["Middle layers 5–10\nK_l curvature incompatible\nMechanism 1 dominant\nR^2 approx 0.04–0.20 (structural)"]
+        GPT2_PRELOGIT["Pre-logit layer 11\nK approx V (tied embeddings)\nK=V theorem -> conservative\nR^2 = 0.99 ✓"]
     end
 
     subgraph MECHANISMS [Non-Autonomy Mechanisms]
         direction LR
-        MECH1["Mechanism 1\nLayer-varying θ_ℓ\nK_ℓ rotates Hessian directions\nStructural — cannot be cured\nby context conditioning\nDominant: GPT-2 layers 5–10"]
-        MECH2["Mechanism 2\nToken-varying context ξ_t\nV_ψ(h) misses prefix info\nCurable: condition on z=f(prefix)\nActive: SPLM layer 4\nGPT-2 boundary layers"]
+        MECH1["Mechanism 1\nLayer-varying theta_l\nK_l rotates Hessian directions\nStructural — cannot be cured\nby context conditioning\nDominant: GPT-2 layers 5–10"]
+        MECH2["Mechanism 2\nToken-varying context xi_t\nV_psi(h) misses prefix info\nCurable: condition on z=f(prefix)\nActive: SPLM layer 4\nGPT-2 boundary layers"]
     end
 
     subgraph GOVERNING [Governing Equation - Refined]
         direction TB
-        EOM["mẍ = -∇_x V(x; θ_ℓ, ξ_t)  +  Ω_ℓ(x; θ_ℓ)ẋ  -  mγẋ"]
+        EOM["mẍ = -grad_x V(x; theta_l, xi_t)  +  Omega_l(x; theta_l)ẋ  -  m*gamma*ẋ"]
         TERM1["Term 1: Doubly non-autonomous\nconservative (dominant)\nMechanisms 1+2"]
-        TERM2["Term 2: Within-layer K≠V\nsolenoidal correction\n(P-rot-6, secondary)"]
+        TERM2["Term 2: Within-layer K!=V\nsolenoidal correction\n(P-rot-6, secondary)"]
         TERM3["Term 3: Rayleigh damping\n(isotropic, dominant dissipation)"]
         EOM --> TERM1
         EOM --> TERM2
@@ -805,8 +795,8 @@ flowchart TD
     subgraph SEPARATOR [The Prescriptive Separator]
         direction TB
         SEP_Q["Is the architecture\narchitecturally committed\nto a single shared V?"]
-        SEP_YES["YES → SPLM\nθ_ℓ = θ constant\nMechanism 1 absent\nShared-V_ψ R²=0.90"]
-        SEP_NO["NO → GPT-2\nθ_ℓ varies per layer\nMechanism 1 dominant\nShared-V_ψ R²=0.19"]
+        SEP_YES["YES -> SPLM\ntheta_l = theta constant\nMechanism 1 absent\nShared-V_psi R^2=0.90"]
+        SEP_NO["NO -> GPT-2\ntheta_l varies per layer\nMechanism 1 dominant\nShared-V_psi R^2=0.19"]
         SEP_Q --> SEP_YES
         SEP_Q --> SEP_NO
     end
@@ -820,8 +810,8 @@ flowchart TD
 
     subgraph PROT6_TRACK [Track B - P-rot-6 Programme]
         direction TB
-        PROT6_STATUS["Status: Secondary correction\nJacobian gap: 0.079 (GPT-2)\nvs 0.040 (SPLM floor)\nΔ ≈ 0.039 = within-layer solenoidal"]
-        PROT6_TEST["Zero-parameter test:\nB_theory = Ω(x̄) from W_K, W_V\nFit B_empirical by skew LSQ\nMeasure alignment"]
+        PROT6_STATUS["Status: Secondary correction\nJacobian gap: 0.079 (GPT-2)\nvs 0.040 (SPLM floor)\nDelta approx 0.039 = within-layer solenoidal"]
+        PROT6_TEST["Zero-parameter test:\nB_theory = Omega(x̄) from W_K, W_V\nFit B_empirical by skew LSQ\nMeasure alignment"]
         PROT6_WHEN["When to test:\nAfter Track A (non-autonomy)\nis fully characterized"]
     end
 
@@ -842,33 +832,29 @@ flowchart TD
 
 ### 12.1 The Equation
 
-```
-mẍ = -∇_x V(x; θ_ℓ, ξ_t)  +  Ω_ℓ(x; θ_ℓ) ẋ  -  mγẋ
-```
+$$m\ddot{x} = -\nabla_x V(x; \theta_\ell, \xi_t) + \Omega_\ell(x; \theta_\ell) \dot{x} - m\gamma\dot{x}$$
 
 ### 12.2 Term-by-Term Empirical Status
 
 | Term | Form | Empirical Status After Step 2 |
 |---|---|---|
-| `-∇_x V(x; θ_ℓ, ξ_t)` | Conservative, doubly non-autonomous | **Confirmed dominant.** R²=0.90 (SPLM), partial GPT-2 boundary layers. The θ_ℓ-variation of this term is the primary non-conservativity source for GPT-2 middle layers. |
-| `θ_ℓ = θ` (SPLM) | Constant potential | **Confirmed.** Single V_ψ succeeds at median R²=0.90. Layer-4 residual is ξ_t omission. |
-| `θ_ℓ varies` (GPT-2) | Layer-varying Hopfield energy | **Confirmed structurally.** Hessian incompatibility across layers 5–10 prevents any shared V_ψ from fitting. |
-| `ξ_t dependence` | Context-conditioned potential | **Partially confirmed.** SPLM layer-4 dip is the quantitative signature. Oracle test will confirm. |
-| `Ω_ℓ(x; θ_ℓ) ẋ` | Within-layer K≠V solenoidal (P-rot-6) | **Small but present.** Jacobian gap 0.079 (GPT-2) vs 0.040 (SPLM floor). Secondary to Mechanism 1. |
-| `-mγẋ` | Rayleigh damping | **Confirmed.** m=0.98, γ=0.96 learned by SPLM. GPT-2 effective γ absorbed by per-layer β_ℓ scalars. |
+| $-\nabla_x V(x; \theta_\ell, \xi_t)$ | Conservative, doubly non-autonomous | **Confirmed dominant.** $R^2 = 0.90$ (SPLM), partial GPT-2 boundary layers. The $\theta_\ell$-variation of this term is the primary non-conservativity source for GPT-2 middle layers. |
+| $\theta\_\ell = \theta$ (SPLM) | Constant potential | **Confirmed.** Single $V_\psi$ succeeds at median $R^2 = 0.90$. Layer-4 residual is $\xi_t$ omission. |
+| $\theta\_\ell$ varies (GPT-2) | Layer-varying Hopfield energy | **Confirmed structurally.** Hessian incompatibility across layers 5–10 prevents any shared $V_\psi$ from fitting. |
+| $\xi_t$ dependence | Context-conditioned potential | **Partially confirmed.** SPLM layer-4 dip is the quantitative signature. Oracle test will confirm. |
+| $\Omega\_\ell(x; \theta\_\ell) \dot{x}$ | Within-layer $K \neq V$ solenoidal (P-rot-6) | **Small but present.** Jacobian gap 0.079 (GPT-2) vs 0.040 (SPLM floor). Secondary to Mechanism 1. |
+| $-m\gamma\dot{x}$ | Rayleigh damping | **Confirmed.** $m = 0.98$, $\gamma = 0.96$ learned by SPLM. GPT-2 effective $\gamma$ absorbed by per-layer $\beta\_\ell$ scalars. |
 
 ### 12.3 The Integrability Condition
 
-For the shared-V_ψ to exist, the per-layer Hessians must satisfy:
+For the shared $V_\psi$ to exist, the per-layer Hessians must satisfy:
 
-```
-M_ℓ(h) = -β_ℓ · ∇²V_ψ(h)   for all ℓ
+$$M_\ell(h) = -\beta_\ell \cdot \nabla^2 V_\psi(h) \quad \text{for all } \ell$$
 
-→ M_ℓ / β_ℓ  =  M_{ℓ'} / β_{ℓ'}   for all ℓ, ℓ'
+$$\Rightarrow \frac{M_\ell}{\beta_\ell} = \frac{M_{\ell'}}{\beta_{\ell'}} \quad \text{for all } \ell, \ell'$$
 
-→ Principal curvature directions of M_ℓ must align across all layers
-  (only magnitudes scaled by β_ℓ are allowed to differ)
-```
+Principal curvature directions of $M_\ell$ must align across all layers
+(only magnitudes scaled by $\beta_\ell$ are allowed to differ).
 
 In plain language: the energy landscape must have a fixed shape (fixed hills, valleys,
 ridge directions) with only the steepness changing per layer. GPT-2's middle layers
@@ -876,12 +862,10 @@ violate this by rotating the shape itself.
 
 The third-order integrability condition:
 
-```
-∂_k (M_ℓ)_ij = ∂_j (M_ℓ)_ik   for all i, j, k, ℓ
-```
+$$\partial_k (M_\ell)_{ij} = \partial_j (M_\ell)_{ik} \quad \text{for all } i, j, k, \ell$$
 
-For SPLM: holds by construction (V_θ is smooth, mixed partials commute).
-For GPT-2 middle layers: fails because K_ℓ generates structurally incompatible
+For SPLM: holds by construction ($V_\theta$ is smooth, mixed partials commute).
+For GPT-2 middle layers: fails because $K_\ell$ generates structurally incompatible
 Hessians across layers.
 
 ### 12.4 The Two Research Tracks
@@ -964,10 +948,10 @@ def theoretical_B(W_K, W_V, context, x_ref, beta, d_head=64):
 
 | Outcome | Interpretation |
 |---|---|
-| B_theory ≈ B_empirical, both beat null | K≠V antisymmetry drives within-layer solenoidal; linearization valid |
-| B_fit beats null, B_theory doesn't | Velocity coupling real but linearization inaccurate; need B(x) |
-| Neither beats null | Solenoidal dynamics are position-driven (pure F_sol), not velocity-coupled |
-| B_fit beats null, orthogonal to B_theory | Wrong vortex structure; examine MLP/LayerNorm contributions |
+| $B_\text{theory} \approx B_\text{empirical}$, both beat null | $K \neq V$ antisymmetry drives within-layer solenoidal; linearization valid |
+| $B_\text{fit}$ beats null, $B_\text{theory}$ doesn't | Velocity coupling real but linearization inaccurate; need $B(x)$ |
+| Neither beats null | Solenoidal dynamics are position-driven (pure $F_\text{sol}$), not velocity-coupled |
+| $B_\text{fit}$ beats null, orthogonal to $B_\text{theory}$ | Wrong vortex structure; examine MLP/LayerNorm contributions |
 
 ### 13.3 The Correct Research Sequencing
 
@@ -992,9 +976,10 @@ Week 5+:   Track B — P-rot-6 within-layer test
 
 The P-rot-6 investigation produced three enduring results:
 
-1. **The K≠V non-conservativity theorem** — proved that attention with K≠V is
+1. **The $K \neq V$ non-conservativity theorem** — proved that attention with $K \neq V$ is
    structurally non-conservative, the Jacobian antisymmetric part is exactly
-   Ω(h) = β/2 Σ_μ softmax_μ(βKh)(Vᵘ⊗Kᵘ - Kᵘ⊗Vᵘ)
+
+$$\Omega(h) = \frac{\beta}{2} \sum_\mu \text{softmax}_\mu(\beta K h)(V^\mu \otimes K^\mu - K^\mu \otimes V^\mu)$$
 
 2. **The Helmholtz decomposition framework** — established the correct language for
    classifying all force field candidates (curl-free, solenoidal, gyroscopic)
@@ -1011,58 +996,49 @@ The P-rot-6 investigation produced three enduring results:
 
 **Mathematical form:**
 
-```
-∂V/∂ℓ ≠ 0   (potential changes with layer index)
+$$\frac{\partial V}{\partial \ell} \neq 0 \quad \text{(potential changes with layer index)}$$
 
-Hessian incompatibility:
-  ∃ ℓ, ℓ' such that principal eigenvectors of M_ℓ and M_{ℓ'} are misaligned
-  → integrability condition fails
-  → no single V of any capacity can explain all layers simultaneously
-```
+Hessian incompatibility: there exist $\ell, \ell'$ such that principal eigenvectors of $M_\ell$ and $M_{\ell'}$ are misaligned — the integrability condition fails, and no single $V$ of any capacity can explain all layers simultaneously.
 
 **Transformer source:**
 
-```
-V_ℓ(h) = -1/β log Σ_μ exp(βK_ℓh) + ½‖h‖²
+$$V_\ell(h) = -\frac{1}{\beta} \log \sum_\mu \exp(\beta K_\ell h) + \tfrac{1}{2}\lVert h \rVert^2$$
 
-∇²V_ℓ = β K_ℓᵀ [diag(s_ℓ) - s_ℓs_ℓᵀ] K_ℓ + I
+$$\nabla^2 V_\ell = \beta K_\ell^\top [\text{diag}(s_\ell) - s_\ell s_\ell^\top] K_\ell + I$$
 
-As K_ℓ changes per layer, the principal curvature directions rotate.
-Layers 5–10 of GPT-2 have K_ℓ matrices that are structurally different
+As $K_\ell$ changes per layer, the principal curvature directions rotate.
+Layers 5–10 of GPT-2 have $K_\ell$ matrices that are structurally different
 from each other — implementing different semantic computations — so their
 Hessians are mutually incompatible.
-```
 
-**Empirical signature:** Monotonically decaying R² across layers 5–10, from ~0.15 to ~0.04.
+**Empirical signature:** Monotonically decaying $R^2$ across layers 5–10, from ~0.15 to ~0.04.
 
-**Cure:** Architectural commitment to `θ_ℓ = θ` (SPLM). Cannot be cured by:
-- Increasing V_ψ capacity
-- Adding context conditioning to V_ψ
+**Cure:** Architectural commitment to $\theta_\ell = \theta$ (SPLM). Cannot be cured by:
+- Increasing $V_\psi$ capacity
+- Adding context conditioning to $V_\psi$
 - Running P-rot-6
 
 ### 14.2 Mechanism 2: Token-Varying Context
 
 **Mathematical form:**
 
-```
-∂V/∂t ≠ 0 along token dimension   (potential changes with token position)
-V(h; θ_ℓ, ξ_t) depends on ξ_t, which varies per token
-```
+$$\frac{\partial V}{\partial t} \neq 0 \quad \text{along token dimension (potential changes with token position)}$$
+
+$V(h; \theta_\ell, \xi_t)$ depends on $\xi_t$, which varies per token.
 
 **Transformer source:**
 
-```
-For GPT-2: ξ_t is implicit — encoded in the attention-weighted prefix
-  V_ℓ(h; ξ_t) = -1/β log Σ_μ softmax_μ(βK_ℓh | ξ_t) · exp(...) + ½‖h‖²
+For GPT-2: $\xi_t$ is implicit — encoded in the attention-weighted prefix
 
-For SPLM: ξ_t is explicit — the causal cumulative-mean context pool
-  V_θ(h; ξ_t) directly conditions on the sentence context
-```
+$$V_\ell(h; \xi_t) = -\frac{1}{\beta} \log \sum_\mu \text{softmax}_\mu(\beta K_\ell h \mid \xi_t) \cdot \exp(\ldots) + \tfrac{1}{2}\lVert h \rVert^2$$
 
-**Empirical signature:** SPLM layer-4 dip to R²=0.28 when V_ψ(h) drops ξ_t.
+For SPLM: $\xi_t$ is explicit — the causal cumulative-mean context pool.
+$V_\theta(h; \xi_t)$ directly conditions on the sentence context.
+
+**Empirical signature:** SPLM layer-4 dip to $R^2 = 0.28$ when $V_\psi(h)$ drops $\xi_t$.
 GPT-2 boundary layer gap from 0.90 to 0.72–0.79.
 
-**Cure:** Condition V_ψ on a context vector:
+**Cure:** Condition $V_\psi$ on a context vector:
 ```
 V_ψ(h, z)   where z = sentence-level context vector
 
@@ -1075,21 +1051,21 @@ For GPT-2:  z = mean-pool over prefix hidden states at layer ℓ
 The non-autonomous candidate's validity requires that the potential changes **slowly**
 relative to the relaxation time:
 
-```
 Adiabaticity condition:
-  ‖∂V/∂ℓ‖ / ‖∇²V · ẋ‖ ≪ 1   (Mechanism 1)
-  ‖∂V/∂t‖ / ‖∇²V · ḣ‖ ≪ 1   (Mechanism 2)
-```
 
-When the ratio ≫ 1: the trajectory cannot track the moving minimum →
+$$\frac{\lVert \partial V / \partial \ell \rVert}{\lVert \nabla^2 V \cdot \dot{x} \rVert} \ll 1 \quad \text{(Mechanism 1)}$$
+
+$$\frac{\lVert \partial V / \partial t \rVert}{\lVert \nabla^2 V \cdot \dot{h} \rVert} \ll 1 \quad \text{(Mechanism 2)}$$
+
+When the ratio $\gg 1$: the trajectory cannot track the moving minimum →
 non-adiabatic regime → need full non-autonomous treatment.
 
-When the ratio ≪ 1: trajectory approximately follows instantaneous minimum →
+When the ratio $\ll 1$: trajectory approximately follows instantaneous minimum →
 adiabatic regime → simpler effective description possible.
 
 For GPT-2 middle layers (Mechanism 1 dominant), the adiabaticity ratio is likely
-large — the K_ℓ rotation between layers is comparable to or larger than the
-decay rate of the Hopfield potential. This is why a single V_ψ cannot track the
+large — the $K_\ell$ rotation between layers is comparable to or larger than the
+decay rate of the Hopfield potential. This is why a single $V_\psi$ cannot track the
 dynamics even approximately.
 
 ---
@@ -1136,34 +1112,34 @@ TRACK B: Within-layer solenoidal correction (P-rot-6) — SECONDARY
 flowchart TD
     START["Start: Both architectures pass\nlocal Jacobian symmetry test\n(Step 1 confirmed)"]
     
-    START --> SHARED_V["Shared-V_ψ test\n(Step 2 completed)"]
+    START --> SHARED_V["Shared-V_psi test\n(Step 2 completed)"]
     
-    SHARED_V --> SPLM_PASS["SPLM: R²=0.90 ✓\n→ Conservative prescription\n  is achievable"]
-    SHARED_V --> GPT2_FAIL["GPT-2 middle: R²=0.04–0.20 ✗\n→ Structural non-conservativity\n  confirmed"]
-    SHARED_V --> GPT2_PASS["GPT-2 layer 11: R²=0.99 ✓\n→ K=V theorem confirmed"]
+    SHARED_V --> SPLM_PASS["SPLM: R^2=0.90 ✓\n-> Conservative prescription\n  is achievable"]
+    SHARED_V --> GPT2_FAIL["GPT-2 middle: R^2=0.04–0.20 ✗\n-> Structural non-conservativity\n  confirmed"]
+    SHARED_V --> GPT2_PASS["GPT-2 layer 11: R^2=0.99 ✓\n-> K=V theorem confirmed"]
     
     GPT2_FAIL --> INTEG["Integrability violation test\n(Track A, Test A1)"]
     
-    INTEG --> INTEG_FAIL["Hessians incompatible\n(angles 45–90°)\n→ Mechanism 1 confirmed\n→ structural, not capacity"]
-    INTEG --> INTEG_PASS["Hessians compatible\n(angles near 0°)\n→ V_ψ capacity issue\n→ run capacity sweep (Q8)"]
+    INTEG --> INTEG_FAIL["Hessians incompatible\n(angles 45–90°)\n-> Mechanism 1 confirmed\n-> structural, not capacity"]
+    INTEG --> INTEG_PASS["Hessians compatible\n(angles near 0°)\n-> V_psi capacity issue\n-> run capacity sweep (Q8)"]
     
     INTEG_FAIL --> ORACLE["Oracle reference for SPLM\n(Track A, Test A2)"]
     INTEG_FAIL --> MATCHED["Matched GPT-2 baseline\n(Track A, Test A3)"]
     
-    ORACLE --> ORACLE_RESULT["Layer-4 R² recovers to ~0.90?\n→ Mechanism 2 confirmed\n→ context-conditioning is fix"]
-    MATCHED --> MATCHED_RESULT["Separator persists under\nmatched parameters?\n→ Separation is architectural\n→ framework is prescriptive"]
+    ORACLE --> ORACLE_RESULT["Layer-4 R^2 recovers to ~0.90?\n-> Mechanism 2 confirmed\n-> context-conditioning is fix"]
+    MATCHED --> MATCHED_RESULT["Separator persists under\nmatched parameters?\n-> Separation is architectural\n-> framework is prescriptive"]
     
     MATCHED_RESULT --> PROT6["P-rot-6 within-layer test\n(Track B, Test B1–B3)"]
     
-    PROT6 --> PROT6_SPATIAL["Spatial variation diagnostic\nIs Ω(h) approximately constant?"]
+    PROT6 --> PROT6_SPATIAL["Spatial variation diagnostic\nIs Omega(h) approximately constant?"]
     
-    PROT6_SPATIAL --> CONST_B["Low variation → constant B\n→ P-rot-6 is valid\n→ test B_theory alignment"]
-    PROT6_SPATIAL --> FULL_BX["High variation → B(x) needed\n→ full gauge field model\n→ test curvature tensor F_μν"]
+    PROT6_SPATIAL --> CONST_B["Low variation -> constant B\n-> P-rot-6 is valid\n-> test B_theory alignment"]
+    PROT6_SPATIAL --> FULL_BX["High variation -> B(x) needed\n-> full gauge field model\n-> test curvature tensor F_mu_nu"]
     
     CONST_B --> B_THEORY["B_theory from W_K, W_V\n(zero free parameters)\nMeasure alignment with B_fit"]
     
-    B_THEORY --> CONFIRM["K≠V antisymmetry drives\nwithin-layer solenoidal\n→ P-rot-6 mechanistically\n   confirmed"]
-    B_THEORY --> REJECT["B_theory orthogonal to B_fit\n→ MLP/LayerNorm\n   contributions dominant\n→ need augmented model"]
+    B_THEORY --> CONFIRM["K!=V antisymmetry drives\nwithin-layer solenoidal\n-> P-rot-6 mechanistically\n   confirmed"]
+    B_THEORY --> REJECT["B_theory orthogonal to B_fit\n-> MLP/LayerNorm\n   contributions dominant\n-> need augmented model"]
 
     style SPLM_PASS fill:#1a3d1a,stroke:#3fb950,color:#e6edf3
     style GPT2_FAIL fill:#3d1a1a,stroke:#f78166,color:#e6edf3
@@ -1178,13 +1154,13 @@ flowchart TD
 
 | Candidate | Equation | Physical Interpretation | Tested? | Result | What Failure Reveals |
 |---|---|---|---|---|---|
-| **A: Gaussian well** | `mḧ = -∇V(h) - mγḣ`, V radial Gaussian | Single point attractor per layer, radially symmetric restoring force | ✓ Yes | **Fails** equally on SPLM and GPT-2 (R²≈null) | Functional form (radial, 2-param) is wrong; granularity (sentence) is wrong; under-training produces spurious signal |
-| **B: Constant skew position** | `mḧ = -∇V + Ωh - mγḣ`, Ω constant | Uniform rotational bias in position space, constant curl | ✓ Yes | **Fails** — residual at null | Rotation rate is not uniform; it is position-dependent (attention-weighted) and velocity-coupled, not position-coupled |
-| **C: P-rot-6 (constant B·ẋ)** | `mḧ = -∇V + Bẋ - mγḣ`, B constant skew | Lorentz-force analogy: curvature without energy change, uniform magnetic field | ✗ Not yet | **Candidate** | If fails: velocity coupling is not position-independent, or dominant non-conservativity is between-layer (Mechanism 1), not within-layer |
-| **D: Position-dependent gauge B(x)ẋ** | `mḧ = -∇V + B(x)ẋ - mγḣ`, B(x) skew field | Spatially inhomogeneous magnetic field, attention-weighted vortex superposition | ✗ Not yet | **Candidate** | If fails: full within-layer dynamics not velocity-linear; Riemannian geodesic formulation needed |
-| **E: Riemannian geodesic** | `ḧᵏ + Γᵏᵢⱼẋⁱẋʲ = -γẋᵏ` | Curvature IS the force; curved geometry of semantic space | ✗ Not yet | **Candidate** | Would imply no Newtonian inertial frame; geometry is the only description |
-| **F: Non-autonomous conservative** | `mḧ = -∇V(h; θ_ℓ, ξ_t) - mγḣ` | Layer-varying + context-varying potential; fiber bundle geometry | ✓ **Step 2** | **Dominant mechanism confirmed** | — |
-| **F+C: Full refined candidate** | `mḧ = -∇V(h; θ_ℓ, ξ_t) + Ω_ℓ(x)ẋ - mγḣ` | Non-autonomous conservative dominant + within-layer solenoidal correction | Partially | **Best current candidate** | Step 2 confirms Term 1 dominant; Jacobian gap confirms Term 2 real but secondary |
+| **A: Gaussian well** | $m\ddot{h} = -\nabla V(h) - m\gamma\dot{h}$, $V$ radial Gaussian | Single point attractor per layer, radially symmetric restoring force | ✓ Yes | **Fails** equally on SPLM and GPT-2 ($R^2 \approx \text{null}$) | Functional form (radial, 2-param) is wrong; granularity (sentence) is wrong; under-training produces spurious signal |
+| **B: Constant skew position** | $m\ddot{h} = -\nabla V + \Omega h - m\gamma\dot{h}$, $\Omega$ constant | Uniform rotational bias in position space, constant curl | ✓ Yes | **Fails** — residual at null | Rotation rate is not uniform; it is position-dependent (attention-weighted) and velocity-coupled, not position-coupled |
+| **C: P-rot-6 (constant $B \cdot \dot{x}$)** | $m\ddot{h} = -\nabla V + B\dot{x} - m\gamma\dot{h}$, $B$ constant skew | Lorentz-force analogy: curvature without energy change, uniform magnetic field | ✗ Not yet | **Candidate** | If fails: velocity coupling is not position-independent, or dominant non-conservativity is between-layer (Mechanism 1), not within-layer |
+| **D: Position-dependent gauge $B(x)\dot{x}$** | $m\ddot{h} = -\nabla V + B(x)\dot{x} - m\gamma\dot{h}$, $B(x)$ skew field | Spatially inhomogeneous magnetic field, attention-weighted vortex superposition | ✗ Not yet | **Candidate** | If fails: full within-layer dynamics not velocity-linear; Riemannian geodesic formulation needed |
+| **E: Riemannian geodesic** | $\ddot{h}^k + \Gamma^k_{ij}\dot{x}^i\dot{x}^j = -\gamma\dot{x}^k$ | Curvature IS the force; curved geometry of semantic space | ✗ Not yet | **Candidate** | Would imply no Newtonian inertial frame; geometry is the only description |
+| **F: Non-autonomous conservative** | $m\ddot{h} = -\nabla V(h; \theta_\ell, \xi_t) - m\gamma\dot{h}$ | Layer-varying + context-varying potential; fiber bundle geometry | ✓ **Step 2** | **Dominant mechanism confirmed** | — |
+| **F+C: Full refined candidate** | $m\ddot{h} = -\nabla V(h; \theta_\ell, \xi_t) + \Omega_\ell(x)\dot{x} - m\gamma\dot{h}$ | Non-autonomous conservative dominant + within-layer solenoidal correction | Partially | **Best current candidate** | Step 2 confirms Term 1 dominant; Jacobian gap confirms Term 2 real but secondary |
 
 ### The Mechanism Resolution
 

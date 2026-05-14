@@ -5,7 +5,7 @@ A reference for writing LaTeX math **and** Mermaid diagrams in Markdown files th
 The cheatsheet has two parts:
 
 - **Part I — KaTeX math rendering** (rules §1–§13, §19): inline `$...$` and display `$$...$$` math.
-- **Part II — Mermaid diagram rendering** (rules §14–§18): ` ```mermaid ` fenced blocks.
+- **Part II — Mermaid diagram rendering** (rules §14–§18, §20–§22): ` ```mermaid ` fenced blocks.
 
 ---
 
@@ -417,21 +417,29 @@ end
 
 ---
 
-## 17. Dotted edge with label — use `-. text .->`, never `-.text.-`
+## 17. Dotted edge with label — use pipe syntax when the label contains a dot
 
 Mermaid supports a *dotted* edge with optional label, but the label form is strict: there must be **a space on each side of the label**, and the arrow must close with `.->` (or `.-` for no arrowhead). The compact form `-.text.-` (no spaces, no arrowhead) is non-standard and triggers a render failure.
+
+**Additional pitfall:** if the label text itself contains a `.` (e.g. `loss.backward`), the inline form `-. loss.backward .->` fails because the parser reads the `.` inside the label as the closing delimiter. Use the **pipe-based label syntax** `-.->|text|` instead, which is immune to dots in the label.
 
 ```text
 %% Bad — non-standard dotted edge label form
 MultiXi -.contrasts with.- FullAttn["Full attention"]
+
+%% Bad — dot inside label breaks the inline form
+Loss -. loss.backward .-> Logits
 ```
 
 ```text
-%% Good — space-bounded label, .-> closing
+%% Good — space-bounded label, .-> closing (when label has no dots)
 MultiXi -. contrasts with .-> FullAttn["Full attention"]
+
+%% Good — pipe-based label (safe for any label text, including dots)
+Loss -.->|loss backward| Logits
 ```
 
-**Rule:** dotted edges with labels must be written as `A -. text .-> B` (or `A -. text .- B` for no arrowhead). Always include the spaces around the label.
+**Rule:** dotted edges with labels must be written as `A -. text .-> B` (or `A -. text .- B` for no arrowhead) with spaces around the label. If the label contains a `.` character, switch to the pipe form `A -.->|text| B` to avoid a lexical error.
 
 ---
 
@@ -491,6 +499,26 @@ D1["Lever 3 -- competitive Phi"]
 
 ---
 
+## 22. `$$...$$` math delimiters inside Mermaid node labels — use plain ASCII text
+
+GitHub's Mermaid renderer attempts to parse `$$...$$` inside node labels as KaTeX math, but the interaction between the Mermaid lexer and KaTeX's parser is unreliable. The typical failure message is:
+
+> **KaTeX parse error: Can't use function '$' in math mode at position 13: \gamma \to 0$$**
+
+The closing `$$` is mis-parsed: once KaTeX enters math mode at the opening `$$`, it interprets the second `$` of the closing delimiter as an attempt to invoke the TeX `$` command inside an already-open math context.
+
+```
+# Broken — $$...$$ inside node label:
+A["$$\\gamma \\to 0$$\nHamiltonian\nConservative\n$$\\nabla \\cdot F = 0$$"]
+
+# Fixed — plain ASCII, no math delimiters:
+A["gamma -> 0\nHamiltonian\nConservative\ndiv F = 0"]
+```
+
+**Rule:** never use `$$...$$` (or `$...$`) math delimiters inside Mermaid node labels. Replace math symbols with their ASCII equivalents (e.g., `gamma` for $\gamma$, `->` for $\to$, `infty` for $\infty$, `div F` for $\nabla \cdot F$, `grad V` for $\nabla V$). Keep the real LaTeX math in the surrounding prose where KaTeX renders it correctly.
+
+---
+
 ## Quick reference card
 
 ### KaTeX (Part I)
@@ -521,9 +549,10 @@ D1["Lever 3 -- competitive Phi"]
 | `{...}` inside a quoted node label, e.g. `["v_{l+1}"]` | "Cannot read properties of undefined (reading 'render')" | remove braces; rephrase as `(l+1)` or words |
 | `[...]` nested inside a quoted node label, e.g. `["E[x_t]"]` | same render error | replace nested brackets with parens or spaces |
 | `subgraph ID ["Title"]` (quotes inside brackets) | same render error | use `subgraph ID [Plain Title]` (no quotes) |
-| `-.text.-` dotted-edge label | same render error | use `-. text .->` (spaces around label, `.->` closing) |
+| `-.text.-` dotted-edge label | same render error | use `-. text .->` (spaces around label, `.->` closing); if label contains `.`, use `-.->|text|` pipe form |
 | `<br/>` (self-closing) in label | intermittent render error | use `<br>` |
 | `?` in label | intermittent render error | drop it or replace with a word |
 | Unicode / Greek in label | intermittent render error on some versions | spell out as ASCII (`alpha`, `xi`, `grad`, `->`, `approx`, ...) |
 | `(("text"))` double-circle or `[/"text"/]` parallelogram | "Cannot read properties of undefined (reading 'render')" | use `("text")` (stadium) or `["text"]` (rectangle) instead |
 | `--` inside unquoted node label, e.g. `[Lever 3 -- X]` | same render error — `--` parsed as edge | quote the label: `["Lever 3 -- X"]` |
+| `$$...$$` or `$...$` math inside node label | "KaTeX parse error: Can't use function '$' in math mode" | remove math delimiters; use ASCII (`gamma`, `->`, `div F`, `grad V`) |
