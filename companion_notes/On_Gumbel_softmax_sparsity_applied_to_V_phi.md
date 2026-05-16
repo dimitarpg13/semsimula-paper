@@ -11,12 +11,13 @@ are.
 
 Companion to:
 
-- Design doc: [`companion_notes/PARF_Augmented_SPLM_Architecture.md`](../PARF_Augmented_SPLM_Architecture.md) (esp. §5.2 quantile cutoff, §7.2 Algorithm A sparsity component, §15.24.7 deposit).
-- Implementation roadmap: [`companion_notes/PARF-SPLM_Path_Forward_and_Experiments.md`](../PARF-SPLM_Path_Forward_and_Experiments.md) (P5 row).
-- Algorithm A training pipeline: [`companion_notes/parf/On_Training_the_PARF_Force.md`](./On_Training_the_PARF_Force.md).
-- $V_\phi$ functional form (structural and MLP): [`companion_notes/parf/On_the_MLP_Layer_modeling_pairwise_potential.md`](./On_the_MLP_Layer_modeling_pairwise_potential.md).
-- Implementation: [`notebooks/conservative_arch/parf/model_parf.py`](../../notebooks/conservative_arch/parf/model_parf.py) (`PARFLM`, `StructuralVPhi`, `MLPVPhi`).
-- Causal probe: [`notebooks/conservative_arch/parf/causal_probe_parf.py`](../../notebooks/conservative_arch/parf/causal_probe_parf.py).
+- Design doc: [`PARF_Augmented_SPLM_Architecture_v2.md`](./PARF_Augmented_SPLM_Architecture_v2.md) (esp. §5.2 quantile cutoff, §7.2 Algorithm A sparsity component, §15.24.7 deposit).
+- Implementation roadmap: [`PARF-SPLM_Path_Forward_and_Experiments.md`](./PARF-SPLM_Path_Forward_and_Experiments.md) (P5 row).
+- Algorithm A training pipeline: [`On_Training_the_PARF_Force.md`](./On_Training_the_PARF_Force.md).
+- $V_\phi$ functional form (structural and MLP): [`On_the_MLP_Layer_modeling_pairwise_potential.md`](./On_the_MLP_Layer_modeling_pairwise_potential.md).
+- Implementation: `notebooks/conservative_arch/parf/model_parf.py` (`PARFLM`, `StructuralVPhi`, `MLPVPhi`) — in the main repo.
+- Causal probe: `notebooks/conservative_arch/parf/causal_probe_parf.py` — in the main repo.
+- Pedagogical explainer (intuition, bandit analogy, empirical results): [`Gumbel_sparsity_method.md`](./Gumbel_sparsity_method.md).
 
 ---
 
@@ -415,7 +416,7 @@ ranking, then begin annealing.
 ### 4.3 Code sketch
 
 The Stage 1.5 forward computation slots into the existing
-`PARFLM._layer_step` ([`notebooks/conservative_arch/parf/model_parf.py`](../../notebooks/conservative_arch/parf/model_parf.py))
+`PARFLM._layer_step` (`notebooks/conservative_arch/parf/model_parf.py` in the main repo)
 between the $V_\phi$ evaluation and the sum:
 
 ```python
@@ -484,7 +485,7 @@ requires a `forward_indexed` variant of `StructuralVPhi` /
 `MLPVPhi` that takes pre-indexed pairs rather than the full $(B, T, T)$
 broadcast.
 
-4. **The causal probe ([`notebooks/conservative_arch/parf/causal_probe_parf.py`](../../notebooks/conservative_arch/parf/causal_probe_parf.py)) must still pass.** Adding the score head and the Gumbel-softmax mask preserves causality structurally (the $\tilde m_{ts} = 0$ for $s \ge t$ constraint is enforced by `masked_fill(~causal, -inf)` before the top-$k$), but the second-order autograd graph through the score head must be exercised by the probe and the existing $0.0$ leak floor must hold.
+4. **The causal probe (`notebooks/conservative_arch/parf/causal_probe_parf.py` in the main repo) must still pass.** Adding the score head and the Gumbel-softmax mask preserves causality structurally (the $\tilde m_{ts} = 0$ for $s \ge t$ constraint is enforced by `masked_fill(~causal, -inf)` before the top-$k$), but the second-order autograd graph through the score head must be exercised by the probe and the existing $0.0$ leak floor must hold.
 5. **`create_graph=True` on the inner `autograd.grad`** is unchanged — the sparse pair sum still flows into the force, so the second-order graph requirement is the same as for dense Stage 1.
 
 ### 4.4 Initialisation of the score head
@@ -838,7 +839,7 @@ $\sim 4$ h MPS for the gathered-eval form once that variant is built.
 
 ### 10.4 Add to the pre-registered protocol
 
-The P5 row in [`companion_notes/PARF-SPLM_Path_Forward_and_Experiments.md`](../PARF-SPLM_Path_Forward_and_Experiments.md)
+The P5 row in [`PARF-SPLM_Path_Forward_and_Experiments.md`](./PARF-SPLM_Path_Forward_and_Experiments.md)
 should be expanded with a P5a / P5b / P5c sub-grid:
 
 - **P5a:** dense-eval Gumbel-sparse, $k = 16$, S=1. The first cell.
@@ -869,14 +870,14 @@ doc.
 
 ### Internal documents
 
-- [`companion_notes/PARF_Augmented_SPLM_Architecture.md`](../PARF_Augmented_SPLM_Architecture.md) — design doc; §5.1 (structural form), §5.2 (quantile cutoff), §7.2 (Algorithm A sparsity component), §15.24.7 (deposit, three algorithms, Theorem 56).
-- [`companion_notes/PARF-SPLM_Path_Forward_and_Experiments.md`](../PARF-SPLM_Path_Forward_and_Experiments.md) — P5 row (Stage 1.5 Gumbel-softmax sparsity).
-- [`companion_notes/parf/On_Training_the_PARF_Force.md`](./On_Training_the_PARF_Force.md) — Algorithm A pipeline, second-order autograd graph, gradient checkpointing.
-- [`companion_notes/parf/On_the_MLP_Layer_modeling_pairwise_potential.md`](./On_the_MLP_Layer_modeling_pairwise_potential.md) — `MLPVPhi` deep dive; relevant for the MLP-variant cost analysis here.
-- [`companion_notes/Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`](../Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md) — the inherited `causal_force` invariant; both `.detach()` points must be preserved by Stage 1.5.
-- [`notebooks/conservative_arch/parf/model_parf.py`](../../notebooks/conservative_arch/parf/model_parf.py) — `PARFLM`, `StructuralVPhi`, `MLPVPhi`; the implementation surface for Stage 1.5.
-- [`notebooks/conservative_arch/parf/causal_probe_parf.py`](../../notebooks/conservative_arch/parf/causal_probe_parf.py) — perturbation + gradient-Jacobian causal probe; must still pass after Stage 1.5 lands.
-- [`notebooks/conservative_arch/parf/README.md`](../../notebooks/conservative_arch/parf/README.md) — implementation README; will need a Stage 1.5 section once P5a lands.
+- [`PARF_Augmented_SPLM_Architecture_v2.md`](./PARF_Augmented_SPLM_Architecture_v2.md) — design doc; §5.1 (structural form), §5.2 (quantile cutoff), §7.2 (Algorithm A sparsity component), §15.24.7 (deposit, three algorithms, Theorem 56).
+- [`PARF-SPLM_Path_Forward_and_Experiments.md`](./PARF-SPLM_Path_Forward_and_Experiments.md) — P5 row (Stage 1.5 Gumbel-softmax sparsity).
+- [`On_Training_the_PARF_Force.md`](./On_Training_the_PARF_Force.md) — Algorithm A pipeline, second-order autograd graph, gradient checkpointing.
+- [`On_the_MLP_Layer_modeling_pairwise_potential.md`](./On_the_MLP_Layer_modeling_pairwise_potential.md) — `MLPVPhi` deep dive; relevant for the MLP-variant cost analysis here.
+- [`Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`](./Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md) — the inherited `causal_force` invariant; both `.detach()` points must be preserved by Stage 1.5.
+- `notebooks/conservative_arch/parf/model_parf.py` — `PARFLM`, `StructuralVPhi`, `MLPVPhi`; the implementation surface for Stage 1.5 (in the main repo).
+- `notebooks/conservative_arch/parf/causal_probe_parf.py` — perturbation + gradient-Jacobian causal probe; must still pass after Stage 1.5 lands (in the main repo).
+- `notebooks/conservative_arch/parf/README.md` — implementation README; will need a Stage 1.5 section once P5a lands (in the main repo).
 
 ### External literature
 

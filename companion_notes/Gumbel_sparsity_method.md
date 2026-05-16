@@ -4,8 +4,8 @@
 
 This document describes the **Stage 1.5 Gumbel-softmax sparsity method** applied to the pair-interaction potential $V_\phi$ in the PARF-augmented SPLM (SparsePARFLM). The method solves a fundamental problem: the dense pair sum $\sum_{s \lt t} V_\phi(h_t, h_s)$ aggregates $O(T^2)$ pair contributions per layer, most of which are uninformative or destructively interfering. The quantile cutoff hypothesis predicts that only a few high-affinity pairs carry the useful signal. This method implements that cutoff as a differentiable top-$k$ selection with principled exploration.
 
-**Implementation:** `notebooks/conservative_arch/parf/model_parf_sparse.py`
-**Design doc:** `docs/parf/On_Gumbel_softmax_sparsity_applied_to_V_phi.md`
+**Implementation:** `notebooks/conservative_arch/parf/model_parf_sparse.py` — in the main repo.
+**Design doc (implementation-focused):** [`On_Gumbel_softmax_sparsity_applied_to_V_phi.md`](./On_Gumbel_softmax_sparsity_applied_to_V_phi.md) — covers cost analysis, code sketches, framework-internal theory, and engineering risks.
 **Key result:** Stage 1.5 at $k = 4$ closed the gap from dense PARFLM (207 PPL) to the SPLM em_ln baseline (173.59 PPL), reaching 176.65 PPL — a $-30.93$ PPL improvement at ~1.6% of the dense pair compute.
 
 ---
@@ -297,8 +297,8 @@ This is the bandit analogue of **catastrophic over-exploration**: when the explo
 - Even-Dar, E., Mannor, S., and Mansour, Y. (2006). Action Elimination and Stopping Conditions for the Multi-Armed Bandit and Reinforcement Learning Problems. JMLR.
 - Paper v4, section 5.2: Quantile cutoff hypothesis (the theoretical basis for sparse routing).
 - Paper v4, section 17: PARF-augmented SPLM experiments (P1 through P10 ladder).
-- `docs/parf/On_Gumbel_softmax_sparsity_applied_to_V_phi.md`: Full Stage 1.5 design document.
-- `notebooks/conservative_arch/parf/model_parf_sparse.py`: Implementation.
+- [`On_Gumbel_softmax_sparsity_applied_to_V_phi.md`](./On_Gumbel_softmax_sparsity_applied_to_V_phi.md): Full Stage 1.5 design document.
+- `notebooks/conservative_arch/parf/model_parf_sparse.py`: Implementation (in the main repo).
 
 ---
 
