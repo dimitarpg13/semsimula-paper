@@ -455,6 +455,8 @@ The Stage 0 literature check ([`SP_HSPLM_Stage_0_Literature_Check.md`](./SP_HSPL
 
 ### 9.1 Stage 1: Leak-fixed E1-E5 rerun (per-token classes B, C, D)
 
+**Pre-registered protocol:** [`SP_HSPLM_Stage_1_pre-registered_protocol.md`](./SP_HSPLM_Stage_1_pre-registered_protocol.md). Implementation lives in the main repo under the non-conservative SPLM module path.
+
 **Goal:** confirm whether the v3 paper's E1-E5 negative result on per-token non-conservative additions reproduces under the leak-fixed v3 codebase. This establishes the empirical floor that Q9(e) must beat to justify the pair-skew construction.
 
 **Cells:**
