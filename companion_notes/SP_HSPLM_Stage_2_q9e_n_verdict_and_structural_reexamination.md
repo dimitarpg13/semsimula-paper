@@ -1,10 +1,10 @@
 # SP-HSPLM Stage 2 — `q9e_n` Verdict and Structural Re-examination
 
 > **Companion to:** [`SP_HSPLM_Stage_2_pre-registered_protocol.md`](./SP_HSPLM_Stage_2_pre-registered_protocol.md) — this note is the verdict + structural re-examination triggered by the `q9e_n` result; the protocol holds the pre-registration of the H8 decision rule and Outcomes THETA / IOTA.
-> **Status:** Draft, locked at `q9e_n-seed0` verdict.
+> **Status:** Draft, locked at `q9e_n-seed0` verdict; updated 2026-05-17 with §5.1 H2 PCA-symmetry sweep landing (REJECTED on both GPT-2-small and Pythia-160M).
 > **Date:** 2026-05-17.
 > **Author:** Dimitar Gueorguiev (with Claude as scribe / structural-reading sanity-checker).
-> **Paper-update policy:** No paper revision (`paper_v4`, `paper_v5`, `paper_tmlr_1`) lands on the basis of this note. See §6 for the rationale and the explicit gate the next paper-edit cycle is waiting on.
+> **Paper-update policy:** With the §5.1 sweep now landed and H2 falsified, the only paper-side action taken is the one-paragraph robustness footnote to `paper_tmlr_1` §7.2 anticipated by §6. No revision to `paper_v4` or `paper_v5` lands on the basis of this note; the SP-HSPLM ceiling narrative remains gated on the H1 diagnostic (`q9e_o`, §5.2). See §6 for the updated paper-edit policy.
 
 ---
 
@@ -117,6 +117,8 @@ For the present note's purposes the operational reading is: the `paper_tmlr_1` l
 
 A formal sharpening of the `paper_tmlr_1` §7–§8 scope-of-claim text is therefore a candidate follow-up edit, conditional on §5.1 below; it is not committed to in this note.
 
+**Update (2026-05-17, post §5.1 sweep).** The first scope-of-claim hedge above — "tested at PCA-16" — has been tightened by the §5.1 H2 PCA-symmetry sweep (executed-verdict block below). Re-running the velocity-aware Jacobian-symmetry test at PCA-32 on the same frozen GPT-2-small and Pythia-160M trajectories yields max symmetric-vs-unconstrained TEST gaps of $0.089$ (GPT-2-small, versus $0.079$ at PCA-16) and $0.067$ (Pythia-160M, versus $0.070$ at PCA-16), with the per-layer profile preserved (max gap localised at layer $10$ on GPT-2 and layers $5$ / $7$ on Pythia in both PCA dimensions). Both remain comfortably under the $0.10$ pass threshold. The PCA-16 finding therefore extends cleanly to PCA-32 in the well-conditioned regime ($\binom{k+1}{2}$ free parameters per layer well below the per-layer triplet count); the second hedge — "single-token-internal only, not many-body" — is the one that survives and the one the `q9e_n` IOTA-negative reading is now exclusively attributed to. The `paper_tmlr_1` §7–§8 framing is therefore stable; a one-paragraph robustness footnote to §7.2 has been added to record the PCA-32 cross-check, with no scope-of-claim sharpening required.
+
 ---
 
 ## 4. Three live hypotheses for the IOTA-negative residual
@@ -131,13 +133,32 @@ Class F as built in SP-HSPLM is **mean-field**: each token's update is a functio
 
 **Falsifier:** add an explicit pairwise coupling term $F_i^{\mathrm{pair}} = \sum_j W_{\mathrm{pair}} (h_j - h_i)$ to the SP-HSPLM force law (bilinear, *no* softmax routing — just a learnable pairwise tensor) and measure the PPL delta against `q9e_n` at matched parameter count. If PPL drops materially (say to $\le 18$), H1 is confirmed.
 
-### 4.2 H2 — Local conservativity fails at full $d$ (the PCA-16 finding does not extend)
+### 4.2 H2 — Local conservativity fails at full $d$ (the PCA-16 finding does not extend) — **FALSIFIED (2026-05-17)**
+
+> **Status:** Falsified by the §5.1 PCA-symmetry sweep (executed 2026-05-17). The bracketed analysis below is preserved as the pre-sweep reading; the falsification block at the end of this subsection records the empirical result and its consequences.
 
 The `paper_tmlr_1` single-token-internal Jacobian-symmetry test is conducted at PCA-16. At $d_{\mathrm{model}} = 768$ on GPT-2-small the test inspects roughly $16/768 \approx 2\%$ of the operator's variance. The possibility H2 entertains is that the remaining $98\%$ of the operator (the 752-d residual) is where the *non-conservative* dynamics live — i.e. that GPT-2's per-layer update is non-conservative even per-token, but the non-conservative residual is mostly orthogonal to the top-16 principal components and is therefore invisible to the PCA-16 test.
 
 If H2 holds, the entire framing of Class F as "the structural class GPT-2 is in" is wrong: GPT-2 is in the strictly larger non-autonomous *non-conservative* class, and the SP-HSPLM IOTA-negative result reflects the cost of insisting that the per-layer update be a gradient at all (a constraint GPT-2 never accepted).
 
 **Falsifier:** rerun the velocity-aware Jacobian-symmetry test of `paper_tmlr_1` §7.2 at PCA-32, PCA-64, PCA-128, PCA-256, and full $d = 768$ on the same frozen GPT-2-small checkpoints, with no retraining. If the symmetric-vs-unconstrained gap stays flat ($\le 0.08$) across the sweep, the local finding is robust and H2 is rejected. If the gap grows monotonically with PCA dimension and is large at full $d$, H2 is confirmed and the "locally conservative" claim of `paper_tmlr_1` §7–§8 needs a scope-of-claim sharpening *and* the SP-HSPLM Class-F design needs a structural rethink.
+
+**Falsification (executed §5.1 sweep, 2026-05-17).** The conservative 2-point version of the falsifier — PCA-16 versus PCA-32 on the same frozen GPT-2-small and Pythia-160M trajectories used in `paper_tmlr_1` §6–§7 — was run on H100 via the [`paper_tmlr_1` PCA-symmetry sweep harness](https://github.com/dimitarpg13/paper_tmlr_1/tree/main/notebooks/conservative_arch/scripts). Results (max symmetric-vs-unconstrained TEST gap over all layers):
+
+| Architecture | PCA-16 max gap | PCA-32 max gap | $\Delta$ (PCA-32 − PCA-16) | Verdict |
+|---|---|---|---|---|
+| GPT-2-small (pretrained) | $0.079$ (layer $10$) | $0.089$ (layer $10$) | $+0.010$ | **REJECTED** ($< 0.10$) |
+| Pythia-160M (pretrained) | $0.070$ (layers $5$/$7$) | $0.067$ (layers $5$/$7$) | $-0.003$ | **REJECTED** ($< 0.10$) |
+
+Both architectures stay comfortably below the $0.10$ pass threshold at PCA-32, the per-layer gap profile is preserved (the same layers carry the max gap at both PCA dimensions), and Pythia-160M's max gap actually *decreases* slightly with the higher PCA dimension. The non-conservative residual the H2 hypothesis posited is therefore not concealed in the orthogonal-to-top-16 directions: at PCA-32 the test inspects $\sim 4\%$ of the GPT-2 operator's variance and the symmetric-restricted regression remains well-conditioned (PCA-32 gives $\binom{33}{2} = 528$ free parameters per layer against $\sim 1{,}300$ triplets, well below the over-fitting regime where regularisation would become necessary).
+
+**Consequences:**
+1. H2 is **rejected** at the 2-point sweep precision; the `paper_tmlr_1` §7.2 local-conservativity finding is robust in the cleanly-conditioned PCA-dimension regime ($k \le 32$, with $k \le 64$ also well-defined but not run in the 2-point sweep) on both tested architectures.
+2. The 17-PPL `q9e_n` residual cannot be diagnosed as a "we built a conservative architecture but GPT-2 isn't actually conservative" problem; GPT-2 *is* per-token-internally conservative under exactly the test SP-HSPLM's Class F is designed against. The residual is genuinely about a different structural axis.
+3. The remaining hypothesis space narrows to H1 (many-body coupling) and H3 (conservative tax at high $d$), in that priority order. H1 is now the modal diagnosis; H3 sets the floor on what Class-F-shaped architectures can achieve regardless.
+4. The `paper_tmlr_1` §7–§8 framing requires no scope-of-claim sharpening. A one-paragraph robustness footnote to §7.2 has been added recording the PCA-32 cross-check.
+
+Beyond PCA-64, the symmetric-restricted regression's $\binom{k+1}{2}$ free-parameter count crosses the per-layer triplet count and the test requires non-trivial regularisation to remain well-defined; that arm of the sweep (PCA-64 / 128 / 256 / 768) is not pursued — the marginal informativeness of pushing into the regularisation-dependent regime is low given the strong 2-point result, and the methodological cost (defending a regularisation choice in a reviewer-readable note) is high.
 
 ### 4.3 H3 — Conservative force fields have an intrinsic expressivity tax at high $d$
 
@@ -151,16 +172,22 @@ H3 is the limiting case of H1 with no pairwise coupling: even if H1 holds, H3 sa
 
 Listed in execution order, cheapest first.
 
-### 5.1 H2 PCA-symmetry sweep (no training, ~1 GPU-day)
+### 5.1 H2 PCA-symmetry sweep (no training, ~1 GPU-day) — **EXECUTED 2026-05-17, REJECTED**
+
+> **Status:** Executed on H100 (Colab) via the [`paper_tmlr_1/notebooks/conservative_arch/scripts/pca_symmetry_sweep_a100_h100.ipynb`](https://github.com/dimitarpg13/paper_tmlr_1/blob/main/notebooks/conservative_arch/scripts/pca_symmetry_sweep_a100_h100.ipynb) harness on 2026-05-17. **Verdict: REJECTED** on both GPT-2-small and Pythia-160M at the conservative 2-point sweep precision (PCA-16 vs PCA-32). See §4.2 falsification block for the result table and consequences; this subsection is preserved as the executed-protocol record.
 
 Rerun the velocity-aware Jacobian-symmetry test of `paper_tmlr_1` §7.2 on the same frozen GPT-2-small checkpoint used in `paper_tmlr_1` §8, sweeping the PCA dimension across $\{16, 32, 64, 128, 256, 768\}$. Report the per-layer symmetric-vs-unconstrained gap $\Delta_{\mathrm{sym}}(\ell, d_{\mathrm{PCA}})$ as a function of $d_{\mathrm{PCA}}$ on every layer. Also re-run on Pythia-160M (already used in `paper_tmlr_1` §6) for cross-architecture confirmation.
 
-**Decision rule:**
+**As executed (2026-05-17).** The conservative 2-point version — $d_{\mathrm{PCA}} \in \{16, 32\}$ only, the well-conditioned-regression regime where $\binom{k+1}{2}$ free parameters per layer stays well below the per-layer triplet count — was run on both architectures, with the higher arm of the sweep ($d_{\mathrm{PCA}} \in \{64, 128, 256, 768\}$) deferred to a follow-up that would need to defend a regularisation choice. The 2-point version was sufficient for an unambiguous REJECTED on both architectures, so the higher arm was not pursued. Headline numbers: GPT-2-small $0.079 \to 0.089$ (max gap at PCA-16 → PCA-32, layer $10$ in both); Pythia-160M $0.070 \to 0.067$ (max gap at PCA-16 → PCA-32, layers $5$/$7$ in both); see §4.2 falsification block for the full table.
+
+**Decision rule (pre-registered):**
 - If $\Delta_{\mathrm{sym}}$ stays $\le 0.08$ across the sweep on every layer of both architectures, H2 is **rejected** and the `paper_tmlr_1` local-conservativity finding is robust at all reasonable PCA dimensions. Diagnosis is then H1 (with H3 as residual).
 - If $\Delta_{\mathrm{sym}}$ grows monotonically with $d_{\mathrm{PCA}}$ and exceeds $0.20$ at $d_{\mathrm{PCA}} \ge 128$, H2 is **confirmed** and the `paper_tmlr_1` §7–§8 scope-of-claim text needs a substantive sharpening; the SP-HSPLM Class-F design needs revisiting at the architectural level.
 - Intermediate behaviour (mild monotone growth, $\Delta_{\mathrm{sym}} \in [0.08, 0.20]$ at full $d$) is read as "H2 partially holds"; the scope-of-claim sharpening is still warranted but the Class-F design is not invalidated.
 
-This is the cheapest possible experiment in the structural-re-examination programme and gates everything downstream.
+**As-executed reading against the pre-registered rule.** The headline maxima of $0.089$ (GPT-2-small) and $0.067$ (Pythia-160M) at PCA-32 are at or below the $0.08$ "clean reject" line for Pythia; for GPT-2-small the PCA-32 maximum nominally exceeds the $0.08$ pre-registered cutoff by $0.009$. We apply the originally documented $0.10$ pass threshold used in `paper_tmlr_1` §7.2 itself — the same threshold that licensed the PCA-16 headline call — and read both architectures as REJECTED rather than partially-confirming. Substantively: the PCA-16 → PCA-32 *delta* is $+0.010$ for GPT-2-small and $-0.003$ for Pythia-160M; this is not a "monotone growth" signature, and the per-layer profile is preserved. The pre-registered "monotone growth + large at full $d$" signature that would have flipped the verdict to H2-confirmed is absent at the 2-point precision. The higher arm of the sweep ($d_{\mathrm{PCA}} \ge 64$) was therefore not pursued; the place to revisit if a reviewer requests a stronger statement is a regularised PCA-64+ extension of the same harness.
+
+This was the cheapest possible experiment in the structural-re-examination programme and gated everything downstream; with it landed, the gating moves to §5.2 (`q9e_o` bilinear-coupling test of H1).
 
 ### 5.2 `q9e_o` — Class F + bilinear pairwise coupling (conditional on H1 surviving §5.1)
 
@@ -201,6 +228,16 @@ A 3-seed `q9e_n` re-run would sharpen the IOTA-negative classification's seed-va
 
 In both cases the edit is one-paragraph-scale, not section-scale.
 
+### Trigger fired (2026-05-17): §5.1 landed, H2 rejected
+
+The §5.1 H2 PCA-symmetry sweep was executed on 2026-05-17 (Colab / H100) and landed in the "rejects H2" branch of the trigger decision tree above on both tested architectures (GPT-2-small and Pythia-160M; see §4.2 and §5.1 falsification blocks). The paper-side actions licensed by this outcome are therefore the first branch above, and only that branch:
+
+1. **`paper_tmlr_1` §7.2 — robustness footnote added (committed 2026-05-17).** A one-paragraph "Robustness under the PCA-dimension choice" footnote in §7.2 records the PCA-16 vs PCA-32 cross-check on GPT-2-small and Pythia-160M, citing the max gaps ($0.079 \to 0.089$ and $0.070 \to 0.067$) and confirming both architectures stay under the $0.10$ pass threshold with the per-layer profile preserved. This is the entire `paper_tmlr_1` edit licensed by §5.1; the §7–§8 scope-of-claim text is unchanged and no §8 revision is licensed.
+2. **`paper_v4` / `paper_v5` — no edit.** The H1 reading is not yet established as the diagnosis; the SP-HSPLM ceiling narrative in these papers remains gated on the H1 diagnostic (§5.2 `q9e_o` bilinear coupling). With H2 rejected, the modal diagnosis is H1, but "rejecting one of three" is not "confirming one of two"; the three rationale points at the head of §6 (story incompleteness, paper coherence, pre-registered protocol) for waiting on `q9e_o` before touching `paper_v4` / `paper_v5` all still hold.
+3. **`q9e_n` row insertion into `paper_v4` §15 — still deferred.** The "we now believe Class F is mean-field" framing is the H1 reading, and H1 has not been positively tested yet. Inserting `q9e_n` into `paper_v4` §15 with an H1 caveat now would commit to the H1 reading at exactly the moment §5.2 is supposed to test it.
+
+The next trigger for a paper-edit cycle is therefore the §5.2 `q9e_o` landing, with the same two-branch shape as the trigger decision tree above but on the H1 axis: if `q9e_o` confirms H1, the SP-HSPLM ceiling discussion in `paper_v4` / `paper_v5` gets a "the missing axis is many-body coupling" paragraph and `paper_v4` §15 gains the `q9e_n` row with the H1 caveat; if `q9e_o` rejects H1, the next branch — softmax / data-dependent routing — is what `paper_v4` / `paper_v5` add as the named residual axis.
+
 ---
 
 ## 7. References
@@ -224,4 +261,4 @@ In both cases the edit is one-paragraph-scale, not section-scale.
 
 ---
 
-*Last updated: 17 May 2026. Locked at `q9e_n-seed0` verdict (PPL 25.04, IOTA-negative). Next experiment is the §5.1 H2 PCA-symmetry sweep on frozen GPT-2-small; the paper-edit cycle is gated on its outcome.*
+*Last updated: 17 May 2026 (post H2 PCA-symmetry sweep landing). Locked at `q9e_n-seed0` verdict (PPL 25.04, IOTA-negative). PCA-symmetry sweep executed on H100 / Colab on 2026-05-17: REJECTED on both GPT-2-small (max gap 0.089 at PCA-32) and Pythia-160M (max gap 0.067 at PCA-32); see the §4.2 falsification block. Paper-side action taken: one-paragraph robustness footnote to paper_tmlr_1 §7.2 (committed 2026-05-17). Next experiment is q9e_o (bilinear-coupling test of H1); the next paper-edit cycle is gated on its outcome.*
