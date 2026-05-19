@@ -936,5 +936,4 @@ The v4 deposit should include both Q9(c) and Q9(d) as parallel architectural ext
 ---
 
 *Companion documents:*
-*— `Section_15_24_PARF_Augmented_SPLM_v4_draft.docx` — the paper-register v4 section text with native OMML equations, including §15.24.7 Training and Theorem 56.*
 *— `Scalar_Potential_based_Helmholtz_Architecture.md` — the layer-type Helmholtz hybrid (Q9(d)).*

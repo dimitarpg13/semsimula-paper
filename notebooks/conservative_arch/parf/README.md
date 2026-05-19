@@ -180,8 +180,7 @@ Per the design-doc Open Questions:
   the PARF arm yet (per user instruction; paper v4 is on hold pending
   H6, H2 n=5 power-up, and these PARF datapoints).
 - It is **not the RL outer loop**.  The PARF + RL paper draft
-  (`companion_notes/Section_15_24_PARF_Augmented_SPLM_v4_draft_v2.docx`) is
-  upstream of this prototype.  This codepath establishes the inner
+  is upstream of this prototype.  This codepath establishes the inner
   PARF dynamics and its quality baseline; the RL outer loop is a
   later commitment.
 

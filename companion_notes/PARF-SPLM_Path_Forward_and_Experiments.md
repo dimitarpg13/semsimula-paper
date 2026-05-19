@@ -1,7 +1,7 @@
 # PARF-SPLM (Q9c, PARF-augmented SPLM) — Path Forward and Experiments
 
 **Status:** Live experiment record · started 6 May 2026 · *no quality cells run yet*
-**Scope paper:** `paper_v3/main.tex` (Q9(c) follow-up branch of §17.3) and the v4 carve-out `Section_15_24_PARF_Augmented_SPLM_v4_draft.docx`
+**Scope paper:** `paper_v4/main.tex` (§17, PARF-Augmented SPLM)
 **Design doc:** [`PARF_Augmented_SPLM_Architecture.md`](PARF_Augmented_SPLM_Architecture.md)
 **Sibling path (Q9d, layer-type Helmholtz hybrid):** [`Helmholtz-HSPLM_Path_Forward_and_Experiments.md`](Helmholtz-HSPLM_Path_Forward_and_Experiments.md)
 **Sibling path (Variant A two-stage SPLM):** [`HSPLM_Path_Forward_and_Experiments.md`](HSPLM_Path_Forward_and_Experiments.md)
@@ -1664,7 +1664,6 @@ Supporting documents:
 - Design doc: [`PARF_Augmented_SPLM_Architecture.md`](PARF_Augmented_SPLM_Architecture.md)
   - **§10 (added 9 May 2026):** Eq. (131) tuning programme — failure-mode catalogue (F1–F5), six tuning levers, P7 (Lever 3) full design with predictions and smoke-test invariants.
   - **§10.9 (added 9 May 2026):** P8 composite cell from the post-P6 findings — four minimal-drift patches (LN-before-distance, per-layer V_φ scale, softsign Θ, bilinear Θ), pre-registered predictions, decision rule, byte-identity smoke.
-- v4 carve-out: `Section_15_24_PARF_Augmented_SPLM_v4_draft.docx`
 - PARF-specific deep dives:
   - [`parf/On_Training_the_PARF_Force.md`](parf/On_Training_the_PARF_Force.md) — Algorithm A pipeline, optimisation options
   - [`parf/On_the_MLP_Layer_modeling_pairwise_potential.md`](parf/On_the_MLP_Layer_modeling_pairwise_potential.md) — `MLPVPhi` deep dive, OQ-1 framing
