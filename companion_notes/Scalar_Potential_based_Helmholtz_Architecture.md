@@ -357,7 +357,6 @@ The recommended v4 deposit positioning: **Q9(c) PARF-augmented SPLM is the presc
 
 *Companion documents:*
 *— `PARF_Augmented_SPLM_Architecture.md` — Q9(c), the prescriptive primary, including the §7 framework-native RL training story.*
-*— `Section_15_24_PARF_Augmented_SPLM_v4_draft.docx` — the paper-register v4 deposit text for Q9(c).*
 
 *Companion notes referenced:*
 *— `Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`*
