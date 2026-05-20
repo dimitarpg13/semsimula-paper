@@ -519,6 +519,83 @@ A["gamma -> 0\nHamiltonian\nConservative\ndiv F = 0"]
 
 ---
 
+## 23. Chained arrows and inline-defined targets of dotted edges — declare every node on its own line
+
+Two patterns are **valid in upstream Mermaid** but **trigger the generic "Cannot read properties of undefined (reading 'render')" crash** on GitHub:
+
+**Pattern A — chained arrows on a single line.** A chain of four or more nodes connected by repeated `-->` on the same source line tokenises ambiguously in GitHub's parser, particularly in `flowchart LR` layouts. The diagram silently fails with the standard render-undefined error.
+
+```text
+%% Bad — chained arrows of length >= 4
+Hop1982 --> HopCont --> DenseHop --> Attn --> Transformer --> SemSimula
+```
+
+**Pattern B — inline node definition as the target of a dotted-edge label.** When a dotted edge of the form `A -. text .-> B` is closed by a target node whose label is being defined inline on the same line (`B["label text"]`), the parser tries to match `.->` against the inline label content and gets confused once the target's label brackets appear. The same diagram crashes.
+
+```text
+%% Bad — Lyap is defined inline at the end of a dotted edge with an inline label
+Hop1982 -. derives from energy .-> Lyap["Lyapunov function E"]
+```
+
+**Mechanism (best guess):** GitHub's Mermaid version uses a parser that:
+
+- treats each line as a single statement and tokenises it greedily; long arrow chains and dotted-edge labels both push it into a code path that fails when the line is "too rich",
+- builds the node table from declarations encountered in lexical order, so an inline label declaration appearing after a dotted-edge label on the same line is not registered correctly.
+
+**Fix — the robust pattern:**
+
+1. **Declare every node on its own line first** at the top of the diagram. Each declaration is `NodeId["label"]` (or `NodeId(("label"))`, etc.) on a line by itself.
+2. **Write one edge per line.** Never chain `A --> B --> C` on a single line.
+3. **Use pipe-form labels for all dotted edges**: `A -.->|text| B` instead of `A -. text .-> B`. The pipe form is immune to label content (it already handles dots in labels per §17) and to the inline-target-definition failure mode of this rule.
+4. **Subgraphs reference pre-declared nodes** — they should not define nodes inline. Move every `NodeId["label"]` outside the `subgraph ... end` block; inside the subgraph, list only the bare `NodeId`.
+
+```text
+%% Good — pre-declare nodes, one edge per line, pipe-form dotted edges
+flowchart LR
+    Hop1982["Classical Hopfield 1982<br>binary states<br>Hebbian weights"]
+    HopCont["Continuous Hopfield 1984<br>tanh neurons"]
+    DenseHop["Dense Hopfield 2020<br>logsumexp energy"]
+    Attn["Scaled dot product attention"]
+    Transformer["Transformer block"]
+    SemSimula["SemSimula trajectory dynamics"]
+    Lyap["Lyapunov function E"]
+
+    Hop1982 --> HopCont
+    HopCont --> DenseHop
+    DenseHop --> Attn
+    Attn --> Transformer
+    Transformer --> SemSimula
+    Hop1982 -.->|derives from energy| Lyap
+    DenseHop -.->|derives from energy| Lyap
+    SemSimula -.->|derives from energy| Lyap
+```
+
+```text
+%% Good — subgraph with pre-declared nodes (declarations outside, references inside)
+flowchart TB
+    H["Hopfield network"]
+    R["Restricted Boltzmann Machine"]
+    DH["Dense Hopfield 2020"]
+    AT["Scaled dot product attention"]
+
+    subgraph CLAS [Classical energy based models]
+        H
+        R
+    end
+    subgraph DENSE [Modern dense Hopfield]
+        DH
+        AT
+    end
+
+    H -->|adds hidden layer| R
+    H --> DH
+    DH --> AT
+```
+
+**Rule:** for any non-trivial flowchart (≥ 4 nodes, or any subgraph, or any dotted edge), apply all four parts of the robust pattern above. The cost is a slightly longer source listing; the benefit is that the diagram renders on every GitHub version observed to date. The patterns this rule replaces (chained arrows, inline-target dotted edges, subgraphs with inline node definitions) work fine in standalone Mermaid editors and in some older GitHub renderer versions, but are not robust across the versions GitHub currently serves.
+
+---
+
 ## Quick reference card
 
 ### KaTeX (Part I)
@@ -556,3 +633,6 @@ A["gamma -> 0\nHamiltonian\nConservative\ndiv F = 0"]
 | `(("text"))` double-circle or `[/"text"/]` parallelogram | "Cannot read properties of undefined (reading 'render')" | use `("text")` (stadium) or `["text"]` (rectangle) instead |
 | `--` inside unquoted node label, e.g. `[Lever 3 -- X]` | same render error — `--` parsed as edge | quote the label: `["Lever 3 -- X"]` |
 | `$$...$$` or `$...$` math inside node label | "KaTeX parse error: Can't use function '$' in math mode" | remove math delimiters; use ASCII (`gamma`, `->`, `div F`, `grad V`) |
+| Chained arrows ≥ 4 on one line, e.g. `A --> B --> C --> D --> E` | "Cannot read properties of undefined (reading 'render')" | one edge per line |
+| Inline node definition as target of dotted-edge label, e.g. `A -. text .-> B["label"]` | same render error | pre-declare `B["label"]` on its own line; use pipe form `A -.->\|text\| B` |
+| Subgraph with inline node definitions inside the block | intermittent render error | declare nodes outside the `subgraph ... end` block; reference bare `NodeId` inside |
