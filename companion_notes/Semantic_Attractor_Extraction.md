@@ -88,7 +88,7 @@ converges.  Across all five prompts and 384 seeds:
 - $\langle V\rangle$ at step 300 reaches $\approx -2500$
   (real trajectory: $\approx -260$).
 - $\langle V\rangle$ at step 1500 reaches $\approx -50000$.
-- $\lVerth\rVert$ grows from 25 to 2200.
+- $\lVert h\rVert$ grows from 25 to 2200.
 - 0 of 384 seeds satisfy $\lVert\nabla V\rVert < 0.05$.
 
 This is a structural property of how SPLM is trained, not a quirk of
@@ -112,10 +112,7 @@ is not -- a critical point of $V_\theta$.
 To check whether the unboundedness is "merely" a missing prior, we
 add a Gaussian anchor on the data manifold,
 
-$$
- \mathcal{L}_\text{anchored}(h) = V_\theta(\xi, h)
- + \frac{\lambda}{2}\bigg\lVert \frac{h - h_\text{c}}{h_\text{s}}\bigg\rVert^2,
-$$
+$$\mathcal{L}_\text{anchored}(h) = V_\theta(\xi, h) + \frac{\lambda}{2}\Big\lVert \frac{h - h_\text{c}}{h_\text{s}}\Big\rVert^2$$
 
 where $h_\text{c}, h_\text{s}$ are the empirical mean and per-dimension
 std of real $h_L$ over a held-out batch.  The minima of
@@ -188,7 +185,7 @@ shows the three runs side by side for all five prompts.
 
 Running the same dynamical experiment with $n_\text{sim} = 200$ steps
 ($\gg L_\text{train} = 16$) reproduces the gradient-descent runaway:
-$\lVerth\rVert$ grows to $\sim 2300$, $V$ falls to $-50000$, and the
+$\lVert h\rVert$ grows to $\sim 2300$, $V$ falls to $-50000$, and the
 \"attractors\" decode to subword fragments (`ARD`, `ICH`, `WARD`, `INC`)
 which are simply the directions of the largest tied embeddings.
 
@@ -280,15 +277,15 @@ For a given model, prompt, and fixed $\xi$:
 
 1. simulate the SPLM damped integrator from $N=288$ random $h$ seeds
    for exactly $L_\text{train}$ steps, **keeping the full trajectory**
-   (shape $(N, L_\text{train}{+}1, d)$);
+   (shape $(N, L_\text{train}+1, d)$);
 2. fit a 2D PCA on the union of the real trajectory and the
-   $N(L_\text{train}{+}1)$ intermediate points;
+   $N(L_\text{train}+1)$ intermediate points;
 3. grid-sample the PCA plane and lift each 2D point back to
    $\mathbb R^d$ via the affine PCA inverse;
 4. evaluate $V_\theta(\xi, \cdot)$ on the grid -- this gives the
    *height* of the surface;
 5. overlay each trajectory as a 3D curve
-   $\{(\text{PCA}_2(h_l), V_\theta(\xi, h_l))\}_{l=0}^{L}$,
+   $\lbrace(\text{PCA}\_2(h\_l),\, V\_\theta(\xi, h\_l))\rbrace\_{l=0}^{L}$,
    coloured by the basin its endpoint lands in (silhouette-optimal
    K-means on endpoints).
 
