@@ -1,7 +1,7 @@
 # PARF-Augmented SPLM: A Framework-Native Routing Architecture
 
 **Status:** working note, post-v3 of *Semantic Simulation: A Prescriptive Lagrangian Framework for Efficient Semantic Inference* (Gueorguiev, 2026).
-**Position:** sharper formulation of §17.3 Q9(c), proposed as the prescriptive primary of the hybrid programme. Companion to *Scalar_Potential_based_Helmholtz_Architecture_v2.md*.
+**Position:** sharper formulation of §17.3 Q9(c), proposed as the prescriptive primary of the hybrid programme. Companion to *Scalar_Potential_based_Helmholtz_Architecture.md*.
 **Audience:** internal — collaborators, reviewers, companion-notes track.
 
 ---
@@ -245,7 +245,7 @@ Regime B is the framework-native option (the §5.2 quantile cutoff). Regime C is
 
 ## 6. Position vis-à-vis the layer-type Helmholtz architecture
 
-The companion document *Scalar_Potential_based_Helmholtz_Architecture_v2.md* proposes a different hybrid: a stack of alternating SPLM blocks (carrying the autonomous gradient component of (A.130) under one shared $V_\theta$) and attention blocks (carrying the non-autonomous Hopfield + small-skew components). The two proposals occupy adjacent points in the design space, and it's worth being explicit about how they relate.
+The companion document *Scalar_Potential_based_Helmholtz_Architecture.md* proposes a different hybrid: a stack of alternating SPLM blocks (carrying the autonomous gradient component of (A.130) under one shared $V_\theta$) and attention blocks (carrying the non-autonomous Hopfield + small-skew components). The two proposals occupy adjacent points in the design space, and it's worth being explicit about how they relate.
 
 ### 6.1 Where they agree
 
@@ -936,5 +936,4 @@ The v4 deposit should include both Q9(c) and Q9(d) as parallel architectural ext
 ---
 
 *Companion documents:*
-*— `Section_15_24_PARF_Augmented_SPLM_v4_draft.docx` — the paper-register v4 section text with native OMML equations, including §15.24.7 Training and Theorem 56.*
-*— `Scalar_Potential_based_Helmholtz_Architecture_v2.md` — the layer-type Helmholtz hybrid (Q9(d)).*
+*— `Scalar_Potential_based_Helmholtz_Architecture.md` — the layer-type Helmholtz hybrid (Q9(d)).*
