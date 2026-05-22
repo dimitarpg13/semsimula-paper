@@ -1,7 +1,7 @@
 # PARF-Augmented SPLM: A Framework-Native Routing Architecture
 
 **Status:** working note, post-v3 of *Semantic Simulation: A Prescriptive Lagrangian Framework for Efficient Semantic Inference* (Gueorguiev, 2026).
-**Position:** sharper formulation of §17.3 Q9(c), proposed as the prescriptive primary of the hybrid programme. Companion to *Scalar_Potential_based_Helmholtz_Architecture.md*.
+**Position:** sharper formulation of §17.3 Q9(c), proposed as the prescriptive primary of the hybrid programme. Companion to *Scalar_Potential_based_Helmholtz_Architecture_v2.md*.
 **Audience:** internal — collaborators, reviewers, companion-notes track.
 
 ---
@@ -245,7 +245,7 @@ Regime B is the framework-native option (the §5.2 quantile cutoff). Regime C is
 
 ## 6. Position vis-à-vis the layer-type Helmholtz architecture
 
-The companion document *Scalar_Potential_based_Helmholtz_Architecture.md* proposes a different hybrid: a stack of alternating SPLM blocks (carrying the autonomous gradient component of (A.130) under one shared $V_\theta$) and attention blocks (carrying the non-autonomous Hopfield + small-skew components). The two proposals occupy adjacent points in the design space, and it's worth being explicit about how they relate.
+The companion document *Scalar_Potential_based_Helmholtz_Architecture_v2.md* proposes a different hybrid: a stack of alternating SPLM blocks (carrying the autonomous gradient component of (A.130) under one shared $V_\theta$) and attention blocks (carrying the non-autonomous Hopfield + small-skew components). The two proposals occupy adjacent points in the design space, and it's worth being explicit about how they relate.
 
 ### 6.1 Where they agree
 
@@ -262,7 +262,7 @@ Both constructions:
 
 **Where the routing happens.** PARF-augmented routes within every block (every layer feels the pair force from past tokens); the Helmholtz hybrid routes only at $A$-blocks (every $S$-block has no token-token interaction). The PARF-augmented architecture is therefore "routing-distributed" while the Helmholtz hybrid is "routing-localised."
 
-**Single-scalar property.** PARF-augmented preserves a *generalised* single-scalar property: the per-token force is the gradient of a single effective scalar $U^{(\ell)}_t = V_\theta + \sum_{s\lt t} V_\phi$, and the global architectural commitment is to the *pair* of shared scalars $(V_\theta, V_\phi)$. The Helmholtz hybrid preserves SPLM's strict single-scalar property only on the $S$-blocks; the $A$-blocks operate under per-layer Hopfield potentials with no shared scalar.
+**Single-scalar property.** PARF-augmented preserves a *generalised* single-scalar property: the per-token force is the gradient of a single effective scalar $U^{(\ell)}\_t = V\_\theta + \sum\_{s\lt t} V\_\phi$, and the global architectural commitment is to the *pair* of shared scalars $(V_\theta, V_\phi)$. The Helmholtz hybrid preserves SPLM's strict single-scalar property only on the $S$-blocks; the $A$-blocks operate under per-layer Hopfield potentials with no shared scalar.
 
 **Diagnostic profile.** PARF-augmented predicts a *uniform* high-R² profile in the joint pair test (because every layer is an SPLM-type block with the same dynamics). The Helmholtz hybrid predicts a *block-type-indexed step function* in the v3 single-scalar test (high R² on $S$-blocks, GPT-2-like on $A$-blocks).
 
@@ -801,7 +801,7 @@ Both reduce to a single underlying mechanism: **the composite $V_\phi$ has no pe
 | Patch | CLI flag | Mathematical effect | Targeted finding |
 | --- | --- | --- | --- |
 | **A** LN-before-distance | `--ln-before-distance` | $r \to \sqrt{\lVert\mathrm{LN}(h_t) - \mathrm{LN}(h_s)\rVert^2 + \varepsilon^2}$ | F-Layer1 |
-| **B** per-layer V_φ scale | `--per-layer-v-phi-scale` | $U^{(\ell)}_t = V_\theta + s_\ell \cdot \sum_s V_\phi$, $s_\ell = \mathrm{softplus}(\sigma_\ell)$ | F-Layer1 + F-Θsat (joint) |
+| **B** per-layer V_φ scale | `--per-layer-v-phi-scale` | $U^{(\ell)}\_t = V\_\theta + s\_\ell \cdot \sum\_s V\_\phi$, $s\_\ell = \mathrm{softplus}(\sigma\_\ell)$ | F-Layer1 + F-Θsat (joint) |
 | **C** softsign Θ | `--theta-activation softsign` | $\Theta_\phi = \mathrm{softsign}(\cdot)$, gradient $1/(1+\lvert\cdot\rvert)^2$ | F-Θsat |
 | **D** bilinear Θ | `--theta-form bilinear` | $\Theta_\phi = \mathrm{act}(\theta_t^\top W \theta_s + b)$, $K^2 + 1$ params | F-Θsat (parameter-economy + Lever 4) |
 
@@ -925,7 +925,7 @@ Eventually all three (P5 sparsity + Lever 3 competitive + P8 composite) should c
 
 ## 11. Summary
 
-PARF-augmented SPLM is the framework-native answer to the v3 paper's residual SPLM-vs-attention val-PPL gap. The construction inserts the §5 pair force law directly into the §15.12 SPLM equation of motion, with past tokens treated as fixed external sources to preserve causality. The result preserves SPLM's global single-scalar property in the natural many-body sense — the per-token force at every layer is the gradient of a single effective scalar $U^{(\ell)}_t = V_\theta(\xi, h) + \sum_{s\lt t} V_\phi(h_t, h_s)$ — and admits a generalised pair-shared-potential test that passes at R² = 1 by construction (Theorem 54). The architecture sharpens v3's three-way single-scalar separator into a four-way pair-test separator, with PARF-augmented SPLM at the new oracle ceiling and the three v3 classes at their existing positions. The selectivity, sparsity, and computational-cost stories are all framework-native: bounded multiplicative gates from §5.1, quantile cutoffs from §5.2, explicit residual bounds from the force law.
+PARF-augmented SPLM is the framework-native answer to the v3 paper's residual SPLM-vs-attention val-PPL gap. The construction inserts the §5 pair force law directly into the §15.12 SPLM equation of motion, with past tokens treated as fixed external sources to preserve causality. The result preserves SPLM's global single-scalar property in the natural many-body sense — the per-token force at every layer is the gradient of a single effective scalar $U^{(\ell)}\_t = V\_\theta(\xi, h) + \sum\_{s\lt t} V\_\phi(h\_t, h\_s)$ — and admits a generalised pair-shared-potential test that passes at R² = 1 by construction (Theorem 54). The architecture sharpens v3's three-way single-scalar separator into a four-way pair-test separator, with PARF-augmented SPLM at the new oracle ceiling and the three v3 classes at their existing positions. The selectivity, sparsity, and computational-cost stories are all framework-native: bounded multiplicative gates from §5.1, quantile cutoffs from §5.2, explicit residual bounds from the force law.
 
 The training story is equally framework-native. Three algorithms span the design space (§7): auxiliary-loss backpropagation as the practical baseline (Algorithm A), PPO with framework-native four-component reward as the prescriptive primary that makes the §8.6–§8.7 executive substrate empirically active for the first time at LM scale (Algorithm B), and Pair-Selective PARF via REINFORCE as the §5.2-faithful realisation in which the discrete quantile cutoff is sampled exactly with no approximation (Algorithm C). Theorem 56 establishes unbiasedness of the PS-PARF gradient estimator. Two-timescale alternation handles the variance asymmetry between routing and conservative-dynamics learning. With the §15.24.7 training algorithms in place, PARF-augmented SPLM realises the framework's complete §1–§17 prescriptive content — semantic space, the energy field, PARF, the Lagrangian, the executive substrate, and the SPLM construction — jointly and empirically active for the first time.
 
@@ -936,4 +936,5 @@ The v4 deposit should include both Q9(c) and Q9(d) as parallel architectural ext
 ---
 
 *Companion documents:*
-*— `Scalar_Potential_based_Helmholtz_Architecture.md` — the layer-type Helmholtz hybrid (Q9(d)).*
+*— `Section_15_24_PARF_Augmented_SPLM_v4_draft.docx` — the paper-register v4 section text with native OMML equations, including §15.24.7 Training and Theorem 56.*
+*— `Scalar_Potential_based_Helmholtz_Architecture_v2.md` — the layer-type Helmholtz hybrid (Q9(d)).*

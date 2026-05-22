@@ -226,41 +226,41 @@ corpus.  This is a concrete, mechanistic explanation for the slight
 PPL regression observed in the symplectic experiments
 (`docs/Symplectic_Integration_for_SPLM.md`).
 
-## 9.  Technical findings and implications
+## 9.  What this means for the paper
 
-1. **Basins of the damped flow, not minima of $V_\theta$.**
-   The empirical attractor structure arises from the damped
-   Euler / Verlet flow at $L = L_\text{train}$ layers, not from
-   gradient descent on $V_\theta$ alone.  The dynamical formulation
-   is empirically supported; the static-minima formulation is not.
+1. **Replace "minima of $V_\theta$" with "basins of the damped flow at
+   $L = L_\text{train}$"** in the introduction's promissory text.
+   The minima formulation is empirically false; the dynamical
+   formulation is empirically supported.
 
-2. **Interpretability artefact: `attractors_comparison.png`.**
-   The 5×3 grid (Euler dynamics, Verlet dynamics, $V_\theta$ gradient
-   descent) is the first concrete interpretability result produced
-   by SPLM that has no direct transformer counterpart.  The Euler
-   column alone shows 10 distinct content-bearing basins per prompt,
-   constituting qualitative evidence that SPLM exposes structure
-   that standard attention analysis does not surface.
+2. **Add a figure** (`attractors_comparison.png`) showing the 5x3
+   grid -- Euler dynamics, Verlet dynamics, $V_\theta$ gradient
+   descent.  This is the first concrete interpretability artefact
+   the paper has that has no transformer counterpart.  The Euler
+   column alone -- 10 distinct content-bearing basins per prompt --
+   is the strongest qualitative evidence we have so far that SPLM
+   exposes interpretable structure that attention does not.
 
-3. **Gauge symmetry of $V_\theta$.**  The training loss is invariant
-   under $V_\theta \mapsto V_\theta + c$ and (modulo
-   $\gamma, m, \Delta t$) under positive rescaling of $V_\theta$.
-   This invariance explains why gradient descent on $V_\theta$ alone
-   is ill-posed and establishes that the damped-flow reading is the
-   correct interpretation of the attractor structure.
+3. **State the gauge symmetry of $V_\theta$ explicitly**.  The
+   training loss is invariant under $V_\theta \mapsto V_\theta + c$
+   and (modulo $\gamma, m, \Delta t$) under positive rescaling of
+   $V_\theta$.  This explains why gradient descent on $V_\theta$
+   alone is ill-posed and motivates the damped-flow reading.
 
-4. **Open question: $V_\theta$ regularisation.**  An explicit penalty
-   $\lambda_V \lVert V_\theta \rVert_2^2$ on the network's own scalar
-   output (not its weights) would break the gauge and give an
-   actually bounded-below potential.  Whether that recovers genuine
-   $V_\theta$-minima attractors — and at what perplexity cost — is
-   a sharp, testable hypothesis for future work.
+4. **$V_\theta$ regularisation (now tested -- see §11).**  An
+   explicit penalty $\lambda_V \lVert V_\theta\rVert_2^2$ on the network's
+   own scalar output (not its weights) breaks the gauge and gives an
+   actually bounded-below potential.  The sweep in §11 confirms that
+   genuine $V_\theta$-minima attractors appear at $\lambda_V \ge 10^{-4}$,
+   the landscape remains multi-modal, and the PPL cost is quantified.
 
-5. **Integrator-accuracy and expressivity trade-off.**  The Verlet
-   result demonstrates that integrator accuracy can reduce model
-   expressivity when the underlying continuous system has no
-   equilibria.  This is a simulation-framework finding that arises
-   naturally from the SPLM formulation.
+5. **Re-frame the symplectic study.**  The Verlet result is no
+   longer "an interesting tangential experiment that slightly
+   regressed".  It is a clean demonstration that *integrator
+   accuracy can hurt model expressivity* when the underlying
+   continuous system has no equilibria -- which is itself a
+   simulation-framework insight that attention-based papers cannot
+   make.
 
 ## 10.  Visualising the landscape in 3D
 
@@ -358,7 +358,129 @@ Two observations stand out:
   subsequent ten-fold expansion in $V$ range is almost entirely about
   depth, not topology.
 
-## 11.  Files
+## 11.  V_θ regularisation sweep
+
+Section 9 item 4 identified $V_\theta$ regularisation as a sharp,
+testable hypothesis.  This section reports the results of a six-cell
+sweep that answers three questions.
+
+### 11.1  Experimental setup
+
+We add a single loss term to the standard NTP cross-entropy:
+
+$$\mathcal{L} = \mathcal{L}\_{\text{NTP}} + \lambda\_V \cdot \frac{1}{BT}\sum\_{b,t} V\_\theta(\xi\_{b,t},\, h\_{b,t})^2$$
+
+This penalises large absolute values of $V_\theta$, anchoring the
+potential near zero and breaking the additive/multiplicative gauge
+symmetry (§9 item 3).
+
+Six cells sweep $\lambda_V$ and integrator choice on TinyShakespeare
+with the SARF-mass Euler $L{=}8$ baseline (d=128, v\_hidden=512,
+4000 steps, batch 16, block 256):
+
+| Cell | $\lambda\_V$ | Integrator | What it tests |
+|------|-------------|------------|---------------|
+| VR0 | 0 | Euler L=8 | Unregularised baseline |
+| VR1 | $10^{-6}$ | Euler L=8 | Weakest regularisation |
+| VR2 | $10^{-4}$ | Euler L=8 | Moderate regularisation |
+| VR3 | $10^{-2}$ | Euler L=8 | Strong regularisation |
+| VR4 | $1$ | Euler L=8 | Very strong regularisation |
+| VR5 | $10^{-4}$ | Verlet L=16 | Verlet regression test (Q3) |
+
+Post-training, each checkpoint undergoes attractor extraction using
+the same three protocols as §5--6: pure GD on $V_\theta$, anchored
+descent, and damped dynamics at $L\_{\text{train}}$ steps.
+
+The notebook is at
+`notebooks/conservative_arch/parf/scripts/vreg_sweep_v_theta_regularisation.ipynb`
+(Colab-ready; outputs to `semsimula_vreg/vreg_sweep/` on GDrive).
+
+### 11.2  Results
+
+| Cell | $\lambda\_V$ | Integ. | Best PPL | Final PPL | $V\_\theta$ range | $V\_\theta$ std | GD conv% | avg $K^\ast$(GD) |
+|------|-------------|--------|----------|-----------|------------------|----------------|----------|-----------------|
+| VR0 | 0 | Euler | 249.5 | 250.7 | 1808 | 350 | 2% | 3.4 |
+| VR1 | $10^{-6}$ | Euler | 256.4 | 260.8 | 893 | 75 | 0% | 2.4 |
+| VR2 | $10^{-4}$ | Euler | 315.1 | 358.4 | 332 | 6.8 | 27% | 2.6 |
+| VR3 | $10^{-2}$ | Euler | 318.9 | 452.6 | 70 | 0.6 | 70% | 2.8 |
+| VR4 | $1$ | Euler | 342.6 | 437.5 | 13 | 0.1 | 100% | 3.8 |
+| VR5 | $10^{-4}$ | Verlet | 275.4 | 275.4 | 204 | 7.2 | 0% | 2.0 |
+
+"GD conv%" = fraction of 384 seeds with $\lVert\nabla V\rVert < 0.05$
+after 1500 Adam steps, averaged across 5 prompts.  "$K^\ast$(GD)" =
+silhouette-optimal cluster count from gradient-descent endpoints.
+Damped-dynamics $K^\ast$ is uniformly 2 across all cells.
+
+### 11.3  Answering the three questions
+
+**Q1: Is there a $\lambda_V$ where $V_\theta$ is bounded below AND
+the attractor landscape remains multi-modal?**
+
+Yes.  VR4 ($\lambda_V = 1$) achieves 100% GD convergence across all
+5 prompts with $K^\ast = 3{-}4$ basins each (average 3.8).  The
+$V_\theta$ range collapses from 1808 to 13 — the potential is
+genuinely bounded — and the mean potential at the converged points is
+$\langle V \rangle \approx -14$, shallow finite minima rather than
+$-5600$ escape directions.  VR3 ($\lambda_V = 10^{-2}$) also converges
+70% of seeds and uniquely produces compact attractors with
+$\lVert h\rVert \approx 89$ (vs. 670--720 for all other cells).
+
+VR4's $K^\ast = 3.8$ is actually higher than VR0's 3.4 — the bounded
+potential has *more* distinguishable basins, not fewer.
+
+**Q2: At what $\lambda_V$ does perplexity degrade measurably?**
+
+The cliff is between $10^{-6}$ and $10^{-4}$:
+
+- VR0 $\to$ VR1: +7 PPL (249.5 $\to$ 256.4) — marginal
+- VR1 $\to$ VR2: +59 PPL (256.4 $\to$ 315.1) — the onset
+- VR2 $\to$ VR3 $\to$ VR4: +4 $\to$ +24 further — diminishing
+
+The cost of breaking the gauge is approximately 60--90 PPL (~25--35%
+relative increase).  Substantial but not catastrophic.
+
+**Q3: Does the Verlet PPL regression disappear in the regularised
+regime?**
+
+Partially confirmed.  VR5 (Verlet L=16, $\lambda_V = 10^{-4}$)
+achieves 275.4 PPL — 40 PPL better than VR2 (Euler, same $\lambda_V$)
+at 315.1.  The Verlet integrator goes from harmful (unregularised, §8)
+to helpful once $V_\theta$ has some structure.  However, the
+regularisation cost means VR5 is still 26 PPL worse than VR0
+(unregularised Euler at 249.5).  The regression *reverses direction*
+but the net budget remains non-zero.
+
+### 11.4  Structural takeaways
+
+1. **The gauge symmetry is real and testable.**  Breaking it costs PPL
+   but creates genuine energetic structure.  $\lambda_V$ continuously
+   interpolates between "pure dynamical attractors" ($\lambda_V = 0$)
+   and "genuine energy minima" ($\lambda_V \ge 10^{-2}$).
+
+2. **Multi-modal structure survives regularisation.**  VR4's
+   $K^\ast = 3.8$ exceeds VR0's 3.4 — the bounded potential has more
+   distinguishable basins, not fewer.
+
+3. **Two attractor regimes.**  VR3 ($\lambda_V = 10^{-2}$) finds
+   compact attractors near the origin ($\lVert h\rVert \approx 89$),
+   while VR4 ($\lambda_V = 1$) finds attractors at large norm
+   ($\lVert h\rVert \approx 708$).  The stronger penalty forces
+   $V_\theta$ to be flatter, migrating equilibria to where the MLP's
+   nonlinearity naturally creates structure.
+
+4. **Prompt sensitivity at moderate $\lambda_V$.**  VR2 shows 91%
+   convergence for the narrative prompt but 0% for scientific/code.
+   The V-landscape is easier to regularise for some semantic domains
+   than others.
+
+5. **The Verlet result is nuanced.**  The §8 hypothesis
+   ("integrator accuracy is harmful specifically because the unbounded
+   potential has no equilibria") is directionally correct — Verlet
+   beats Euler at $\lambda_V = 10^{-4}$.  But the full picture is
+   richer: the regularisation + Verlet combination explores a
+   different part of parameter space than regularisation + Euler.
+
+## 12.  Files
 
 - `notebooks/conservative_arch/attractor_analysis/`
   - `attractor_extraction.py` -- main script (gradient + dynamical modes)
@@ -371,160 +493,9 @@ Two observations stand out:
   - `results/`      -- per-prompt PNGs, GIFs, JSONs, summary markdowns,
     plus `attractors_comparison.png`,
     `landscape3d_*.png`, `training_evolution_*.png`
-
-## 12. v3 leak-free attractor pass (May 4-5, 2026; companion result)
-
-> **Context.** Sections 1–11 of this document report the v2 buggy
-> attractor pipeline run (the integrator's `xi <- causal_cumulative_mean(h)`
-> step had a missing `h.detach()`, closing an anti-causal channel; full
-> diagnosis at
-> [`Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`](Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md)).
-> The leak-free retrain produces *different* trajectories from a
-> *different* trained $V_{\theta}$, so this section reports the
-> attractor-extraction repeat on leak-corrected SPLM-2 checkpoints.
-> **Sections 1–11 above are preserved verbatim as the v2 buggy reading;
-> Section 12 reports the leak-free repeat.** F3 (prompt-dependent
-> multi-basin structure) is the structural prediction at stake; F1/F2
-> (no finite stationary points; anchored descent unimodal/prompt-
-> independent) are leak-immune by construction (they do not depend on
-> the trained $V_{\theta}$).
-
-### 12.1 Tier 1: leak-free fixed-γ=0.10 attractor extraction
-
-Re-ran `attractor_extraction.py --mode dynamical` on the leak-free
-`leakfree_3seed/gamma0p10/seed0` SPLM-2 checkpoint (`cfg.causal_force =
-True`, $\gamma^{\ast} = 0.10$, the inference-optimal damping per the S=5
-confirmation sweep at
-[`leakfree_5seed_confirmation/RESULTS_CONFIRMATION_S5.md`](../notebooks/conservative_arch/ln_damping_sweep/results/leakfree_5seed_confirmation/RESULTS_CONFIRMATION_S5.md)),
-with N = 768 initial states (256 Gaussian + 256 token-embedding + 256
-real-$h_L$ perturbed), 128 damped-dynamics steps at trained γ.
-
-| prompt domain | $K^{\ast}$ (v2 buggy) | $K^{\ast}$ (leak-free fixed γ=0.10) | top decoded basin token |
-|---|---:|---:|---|
-| narrative ("The old king sat on the") | $10$ | $4$ | `:`, `\n`, `,`, `\n` |
-| mathematics ("The theorem states... for every") | $2$ | $4$ | `A`, `\n`, `'s`, `\n` |
-| scientific ("Photosynthesis converts...") | $10$ | $11$ | `O`, `\n`, `is`, `to`, ... |
-| dialogue ("She whispered: I love") | $10$ | $8$ | `\n`, `.`, `io`, `alt`, ... |
-| code ("def fibonacci(n):...") | $10$ | $12$ | `ings`, `\n`, `'`, `s`, ... |
-
-**F3 verdict (leak-free fixed γ).** Prompt-dependent multi-basin
-structure **survives the leak fix** at the inference-optimal damping
-$\gamma = 0.10$: $K^{\ast} \in [4, 12]$ across the five prompts (vs
-$K^{\ast} \in [2, 10]$ in v2 buggy), all prompts multi-basin with
-$K^{\ast} \geq 4$. The basin content remains heavily punctuation /
-morpheme-dominated (top decoded token per basin is one of $\{
-\mathtt{:}, \mathtt{A}, \mathtt{'s}, \mathtt{O}, \mathtt{.},
-\mathtt{io}, \mathtt{alt}, \mathtt{ings}, \ldots \}$ for every basin
-in every prompt, content-basin fraction comparable to v2 LN's $0.23$),
-so the leak fix does **not** improve the basin-content question (which
-is an architectural limitation of the SPLM-2 family at this scale,
-flagged in §15-cba-open of the v3 paper). The qualitative direction of
-F3 — basins live in the combined potential-plus-damping-plus-horizon
-system and are prompt-dependent — is preserved.
-
-Source: `attractors_em_ln_leakfree_gamma0p10_seed0_*` in
-`notebooks/conservative_arch/attractor_analysis/results/`.
-
-### 12.2 Tier 2b: leak-free freely-trained-γ attractor extraction
-
-Re-ran `attractor_extraction.py --mode dynamical` on the leak-free
-`em_ln_shakespeare_ckpt_latest.pt` SPLM-2 checkpoint produced by Tier 2a
-(`cfg.causal_force = True`, freely-trained γ from $\gamma_{\mathrm{init}}
-= 1.0$, settled at $\gamma_{\mathrm{natural}} = 0.958$, val\_ppl 173.59;
-see `Energetic_Minima_Alternatives.md` §8 for the training pass). Same
-extraction parameters as §12.1.
-
-| prompt | $K^{\ast}$ | top decoded basin token (largest basin) | content-basin fraction |
-|---|---:|---|---:|
-| narrative | $2$ | `\n` (1.00) | $0.00$ |
-| mathematics | $4$ | `\n` (1.00) | $0.00$ |
-| scientific | $2$ | `\n` (1.00) | $0.00$ |
-| dialogue | $3$ | `\n` (1.00) | $0.00$ |
-| code | $2$ | `\n` (0.97) | $0.00$ |
-
-**F3 verdict (leak-free free-γ).** F3 is **partially weakened** under
-freely-trained γ: $K^{\ast} \in [2, 4]$, content-basin fraction $0.00$
-(every dominant basin decodes to a newline token; the fixed-γ regime
-above had basins decoding to non-newline punctuation/morphemes).
-Mathematics is the only prompt that retains $K^{\ast} \geq 4$;
-narrative, scientific, dialogue, and code all collapse to a single
-dominant newline-emitting basin. **The leak-corrected free-γ regime
-trades attractor diversity for $\sim 5-7$ PPL of LM quality versus
-the leak-corrected fixed-γ regime.** This is a striking single-seed
-observation that needs a paired-seed validation (the leak-free fixed-γ
-result is a 5-seed mean, the free-γ here is 1 seed) before reading it
-as a robust trade-off; that paired-seed validation is one of the open
-follow-ups in v3 paper §15.cba-open.
-
-Source: `attractors_em_ln_leakfree_freegamma_seed0_*` in
-`notebooks/conservative_arch/attractor_analysis/results/`.
-
-### 12.3 What changed about the attractor framework under the leak fix
-
-**Leak-immune** (mathematical form unchanged):
-
-- F1: $V_{\theta}$ has no finite local minima under pure Adam descent
-  (architectural fact about the unbounded-below MLP head; survives leak fix
-  unchanged).
-- F2: anchored descent is unimodal and prompt-independent (mathematical
-  fact about the data-manifold-prior composite landscape; survives).
-- The basin-as-pullback-of-damped-flow reinterpretation of §6 (the
-  "framework has attractors but they are time-bounded basins of the
-  damped flow, not energetic minima"): unchanged.
-
-**Leak-affected** (numerical values shift, qualitative direction held):
-
-- F3: prompt-dependent multi-basin structure under fixed-γ training
-  *survives* with shifted $K^{\ast}$ tuple ($(10, 2, 10, 10, 10) \to
-  (4, 4, 11, 8, 12)$ at γ\* shift $0.30 \to 0.10$); under free-γ
-  training F3 is *partially weakened* ($K^{\ast} \to (2, 4, 2, 3, 2)$,
-  newline-dominated basins).
-- The 3D-landscape rendering (§6 figure) on leak-free SPLM-2 looks
-  qualitatively similar to the buggy v2 rendering: a shallow funnel
-  with prompt-dependent saddles, no finite minima, basins as pullback
-  catchments of the damped trajectory ensemble.
-
-### 12.4 Updated reading of §11 files
-
-In addition to the v2 buggy artefacts listed in §11, the leak-free pass
-produces:
-
-- `attractors_em_ln_leakfree_gamma0p10_seed0_*` (Tier 1, fixed γ=0.10,
-  n\_sim\_steps=128): 5 PNGs + JSON + summary
-- `attractors_em_ln_leakfree_freegamma_seed0_*` (Tier 2b, free γ=0.958,
-  n\_sim\_steps=128): 5 PNGs + JSON + summary
-- `attractors_em_ln_*`, `attractors_em_sg_*`, `attractors_em_gm_*` were
-  *overwritten in-place* by the leak-free `run_attractor_pipeline.sh`
-  rerun (n\_sim\_steps=L\_train=8); the v2 buggy versions live in
-  earlier git revisions for archival
-- `landscape3d_landscape3d_em_*_dialogue.png`: leak-free 3D landscape
-  rendering for em\_ln, em\_sg, em\_gm
-
-### 12.5 Reproducing the v3 leak-free attractor pass
-
-```bash
-cd notebooks/conservative_arch/attractor_analysis
-
-# Tier 1: leak-free fixed-γ=0.10 attractor extraction
-python3 attractor_extraction.py \
-  --ckpt ../ln_damping_sweep/results/leakfree_3seed/gamma0p10/seed0/splm_em_ln_shakespeare_gamma0p10_seed0_ckpt_latest.pt \
-  --tag em_ln_leakfree_gamma0p10_seed0 \
-  --mode dynamical --device cpu --seed 0
-
-# Tier 2b: leak-free free-γ attractor extraction (after Tier 2a retrain)
-python3 attractor_extraction.py \
-  --ckpt ../energetic_minima/results/em_ln_shakespeare_ckpt_latest.pt \
-  --tag em_ln_leakfree_freegamma_seed0 \
-  --mode dynamical --device cpu --seed 0
-```
-
-Each invocation takes $\sim 4$–$5$ min on a single CPU core. Note: the
-checkpoint `splm_em_ln_shakespeare_gamma0p10_seed0_ckpt_latest.pt` is
-not committed to the companion repo (per the no-checkpoints policy);
-reproduce it from the leak-free 3-seed γ-sweep launcher
-[`run_gamma_sweep_leakfree.sh`](../notebooks/conservative_arch/ln_damping_sweep/scripts/run_gamma_sweep_leakfree.sh)
-or the cell launcher
-[`run_confirmation_5seed_sweep.sh`](../notebooks/conservative_arch/ln_damping_sweep/scripts/run_confirmation_5seed_sweep.sh).
+- `notebooks/conservative_arch/parf/scripts/`
+  - `vreg_sweep_v_theta_regularisation.ipynb` -- §11 V_θ regularisation sweep
+    (Colab-ready; outputs to `semsimula_vreg/vreg_sweep/` on GDrive)
 
 ## References
 
