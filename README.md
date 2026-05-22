@@ -5,11 +5,11 @@ Companion repository for the paper
 > **Semantic Simulation: A Prescriptive Lagrangian Framework for Efficient Semantic Inference**
 > *A Conservative-by-Construction Language Model and the Shared-Potential Separator, with a Correspondence to Joint Embedding Predictive Architectures.*
 > Dimitar P. Gueorguiev (Independent Researcher), 2026.
-> Zenodo preprint (v7, May 19 2026): [10.5281/zenodo.20289294](https://doi.org/10.5281/zenodo.20289294). Supersedes v5.1 ([10.5281/zenodo.20138055](https://doi.org/10.5281/zenodo.20138055), May 12 2026).
+> Zenodo preprint (v8, May 22 2026): [10.5281/zenodo.20347855](https://doi.org/10.5281/zenodo.20347855). Supersedes v7 ([10.5281/zenodo.20289294](https://doi.org/10.5281/zenodo.20289294), May 19 2026).
 > Companion code latest release: **v4.3-zenodo** (May 22, 2026) — condensed abstract (~500 words, down from 2,584); expanded keyword list (35 → Zenodo/SSRN discoverable terms covering energy-based models, state-space models, physics-informed ML, attention alternatives); all `\path{}` references in paper v4/v5 audited and resolved against the companion repo; `Augmenting_PARFLM_to_handle_MCS_Languages.md` synced to latest version. Supersedes v4.2-zenodo (May 19, 2026).
 
-[![DOI — paper](https://zenodo.org/badge/DOI/10.5281/zenodo.20289294.svg)](https://doi.org/10.5281/zenodo.20289294)
-[![DOI — companion code](https://zenodo.org/badge/DOI/10.5281/zenodo.20289174.svg)](https://doi.org/10.5281/zenodo.20289174)
+[![DOI — paper](https://zenodo.org/badge/DOI/10.5281/zenodo.20347855.svg)](https://doi.org/10.5281/zenodo.20347855)
+[![DOI — companion code](https://zenodo.org/badge/DOI/10.5281/zenodo.20347828.svg)](https://doi.org/10.5281/zenodo.20347828)
 
 This repository collects the **reproducibility artifacts** and the **unpublished
 background manuscripts** cited in the paper. Its scope is deliberately narrow:
@@ -1409,17 +1409,17 @@ See [`CITATION.bib`](CITATION.bib) for the full BibTeX file. The short form:
                Predictive Architectures},
   year      = {2026},
   publisher = {Zenodo},
-  doi       = {10.5281/zenodo.20289294},
-  url       = {https://doi.org/10.5281/zenodo.20289294},
-  note      = {Version v7 (May 19, 2026); supersedes v5.1
-               (DOI 10.5281/zenodo.20138055, May 12, 2026).
-               Companion code repository (DOI 10.5281/zenodo.20289174):
+  doi       = {10.5281/zenodo.20347855},
+  url       = {https://doi.org/10.5281/zenodo.20347855},
+  note      = {Version v8 (May 22, 2026); supersedes v7
+               (DOI 10.5281/zenodo.20289294, May 19, 2026).
+               Companion code repository (DOI 10.5281/zenodo.20347828):
                \url{https://github.com/dimitarpg13/semsimula-paper}}
 }
 ```
 
-The companion code archive at the v4.2-zenodo release has its own citable DOI:
-[10.5281/zenodo.20289174](https://doi.org/10.5281/zenodo.20289174).
+The companion code archive at the v4.3-zenodo release has its own citable DOI:
+[10.5281/zenodo.20347828](https://doi.org/10.5281/zenodo.20347828).
 If you re-run the experiments or build on the code specifically, please cite
 both DOIs.
 
@@ -1455,8 +1455,8 @@ When reusing any material from this repository, please cite the paper (see
 ## Open items (to resolve before public release)
 
 1. **arXiv identifier.** The paper is currently available as a Zenodo preprint
-   ([10.5281/zenodo.20289294](https://doi.org/10.5281/zenodo.20289294), v7,
-   May 19, 2026). Once submitted to arXiv, fill in the arXiv identifier and
+   ([10.5281/zenodo.20347855](https://doi.org/10.5281/zenodo.20347855), v8,
+   May 22, 2026). Once submitted to arXiv, fill in the arXiv identifier and
    propagate to both `README.md` and `CITATION.bib`.
 2. **Forthcoming-work EOM stubs.** `companion_notes/Semantic_Simulator_v15_EOM.md`,
    `Semantic_Simulator_v2_EOM.md`, and `Semantic_Simulator_v3_EOM.md` are
@@ -1469,7 +1469,7 @@ When reusing any material from this repository, please cite the paper (see
 
 | Release | Date | Paper DOI | Code DOI | Notes |
 |---|---|---|---|---|
-| **v4.3-zenodo** | **May 22, 2026** | [10.5281/zenodo.20289294](https://doi.org/10.5281/zenodo.20289294) | *(pending Zenodo)* | **Abstract condensation, keyword expansion, and reference audit.** Condensed the 2,584-word release-log abstract to ~500 words (4 focused paragraphs: framework, descriptive validation, prescriptive contribution, v4 summary). Expanded keyword list from 13 to 35 terms covering energy-based models, state-space models, physics-informed ML, attention alternatives, mechanistic interpretability, and key acronyms (SPLM, PARF, JEPA, STP, HiPPO, S4D). Full audit of all 73 `\path{}` references in paper v4/v5 — 2 stale `docs/` paths corrected to `companion_notes/`; `Augmenting_PARFLM_to_handle_MCS_Languages.md` synced to latest 367-line active version. Added `zenodo_keywords_v4.txt` and `zenodo_keywords_v5.txt` for copy/paste into Zenodo/SSRN upload forms. |
+| **v4.3-zenodo** | **May 22, 2026** | [10.5281/zenodo.20347855](https://doi.org/10.5281/zenodo.20347855) | [10.5281/zenodo.20347828](https://doi.org/10.5281/zenodo.20347828) | **Abstract condensation, keyword expansion, and reference audit.** Condensed the 2,584-word release-log abstract to ~500 words (4 focused paragraphs: framework, descriptive validation, prescriptive contribution, v4 summary). Expanded keyword list from 13 to 35 terms covering energy-based models, state-space models, physics-informed ML, attention alternatives, mechanistic interpretability, and key acronyms (SPLM, PARF, JEPA, STP, HiPPO, S4D). Full audit of all 73 `\path{}` references in paper v4/v5 — 2 stale `docs/` paths corrected to `companion_notes/`; `Augmenting_PARFLM_to_handle_MCS_Languages.md` synced to latest 367-line active version. Added `zenodo_keywords_v4.txt` and `zenodo_keywords_v5.txt` for copy/paste into Zenodo/SSRN upload forms. |
 | **v4.2-zenodo** | **May 19, 2026** | [10.5281/zenodo.20289294](https://doi.org/10.5281/zenodo.20289294) | [10.5281/zenodo.20289174](https://doi.org/10.5281/zenodo.20289174) | **Companion-notes cleanup and paper audit.** Removed stale `.docx` files (`Section_15_24_PARF_Augmented_SPLM_v4_draft.docx`, `SPLM_Experiments.docx`); cleaned dangling markdown cross-references in 4 companion notes/READMEs; updated `PARF-SPLM_Path_Forward_and_Experiments.md` scope pointer to `paper_v4/main.tex §17`; rebuilt `semsimula_paper.pdf` from audited paper v4 source with leak-free R² numbers, Pareto-frontier hybrid narrative, and corrected companion-repo paths. |
 | **v4.1-zenodo** | **May 12, 2026** | [10.5281/zenodo.20138055](https://doi.org/10.5281/zenodo.20138055) | [10.5281/zenodo.20138172](https://doi.org/10.5281/zenodo.20138172) | **AI disclosure update.** Added dedicated "Statement on AI-Assisted Research" section to paper v4 with explicit enumeration of AI contribution domains; added `AI_Assisted_Collaborative_Research_Disclosure.md` to companion repo; updated README with disclosure callout. |
 | v4-zenodo | May 10, 2026 | [10.5281/zenodo.20114821](https://doi.org/10.5281/zenodo.20114821) | [10.5281/zenodo.20114898](https://doi.org/10.5281/zenodo.20114898) | PARFLM P10 ladder complete (architectural ceiling at PPL ≈ 26.4 confirmed); FockPARFLM with Phase 1 Dyck₂ falsifier; warm-start bridge to EOM simulator; attention expressivity limits discussion; table of contents; incremental shard tokenization. |
