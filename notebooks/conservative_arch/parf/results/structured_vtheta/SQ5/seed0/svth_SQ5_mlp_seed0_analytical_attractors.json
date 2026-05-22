@@ -1,0 +1,22 @@
+{
+  "narrative": {
+    "K": null,
+    "method": "mlp_needs_gd"
+  },
+  "mathematics": {
+    "K": null,
+    "method": "mlp_needs_gd"
+  },
+  "scientific": {
+    "K": null,
+    "method": "mlp_needs_gd"
+  },
+  "dialogue": {
+    "K": null,
+    "method": "mlp_needs_gd"
+  },
+  "code": {
+    "K": null,
+    "method": "mlp_needs_gd"
+  }
+}

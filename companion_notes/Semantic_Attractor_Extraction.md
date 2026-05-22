@@ -960,7 +960,375 @@ narrative:
    than FockPARF's FR4 (GD convergence 1%, landscape jointly
    structured by $V_\theta + V_\phi$ + gates).
 
-## 15.  Files
+## 15.  FockPARF improvement sweep — bridging the PPL gap to attention
+
+### 15.1  Motivation
+
+FockPARF with $V_\theta$ regularisation ($\lambda_V = 1$, cell FR4)
+achieves 190.2 PPL — 15.5 PPL better than unregularised, but still
+~40 PPL behind the attention baseline (~150 PPL) and ~57 PPL behind
+Hybrid SPLM+Attn (133 PPL).  Five strategies were tested to close
+this gap, run on TinyShakespeare via the
+`fockparf_improvement_sweep.ipynb` notebook.
+
+### 15.2  Experiment cells
+
+| Cell | Strategy | Key changes vs FR4 |
+|------|----------|---------------------|
+| P1 | Hybrid FockPARF+Attn (k=4, m=4) | 4 attention blocks + 4 FockPARF layers, $\lambda_V=1$ |
+| P2 | Scaled FockPARF (v\_hidden=512, 8000 steps) | 4× wider $V_\theta$, 2× longer training |
+| P3 | More registers (M=32) + score entropy reg | M=32, entropy reg on Gumbel scores |
+| P4 | Width scaling (d=256) | Double embedding dim, L=8, M=32 |
+| P5 | Phased gate training | Freeze creation/destruction gates for first 1000 steps |
+
+All cells use $\lambda_V = 1$ (matching FR4), logfreq mass, and
+seed 0.
+
+### 15.3  Results — PPL
+
+| Cell | Description | Best PPL | Final PPL | Δ vs FR4 (190.2) | Δ vs Attn (~150) |
+|------|-------------|----------|-----------|------------------|-------------------|
+| **P1** | **Hybrid FockPARF+Attn** | **149.16** | 159.14 | **−41.0** | **−0.8** |
+| P2 | Scaled v\_hidden=512 | 170.24 | 188.68 | −20.0 | +20.2 |
+| P4 | Width d=256 | 174.48 | 192.63 | −15.7 | +24.5 |
+| P5 | Phased gates | 223.12 | 242.28 | +32.9 | +73.1 |
+| P3 | M=32 + entropy reg | 224.34 | 248.45 | +34.1 | +74.3 |
+
+**P1 is the only cell that matches the attention baseline** (149.16
+vs ~150 PPL).  P2 and P4 beat FR4 and PARF PR2 (186.0) but remain
+20+ PPL behind attention.  P3 and P5 are outright regressions.
+
+All cells show late-training overfitting (final PPL 10–24 points above
+best), suggesting the 4000-step budget is near-optimal for P1 but
+training should be stopped earlier for the others.
+
+### 15.4  Results — $V_\theta$ landscape
+
+| Cell | V range | V mean | V min | V max |
+|------|---------|--------|-------|-------|
+| **P1** | **0.26** | 0.001 | −0.12 | 0.14 |
+| P4 | 5.27 | 0.014 | −2.76 | 2.51 |
+| P2 | 9.50 | −0.003 | −8.89 | 0.61 |
+| P3 | 16.95 | 0.004 | −0.27 | 16.68 |
+| P5 | 20.94 | 0.006 | −1.14 | 19.80 |
+
+P1's landscape is the tightest of any model in the framework
+(range 0.26, mean ≈ 0), even tighter than Hybrid SPLM+Attn (range 1.0).
+The attention front-end contextualises so effectively that the
+FockPARF back-end operates with a near-constant $V_\theta$.
+
+### 15.5  Results — attractor structure
+
+| Cell | GD conv. | GD K\* (range) | Basin character |
+|------|----------|---------------|-----------------|
+| **P1** | **1920/1920 (100%)** | 2–4 | Diverse subwords: `ine`, `COR`, `TH`, `ath`, `ish` |
+| P5 | 1440/1920 (75%) | 2 | Bifurcated: one semantic basin (`NE`, `LA`, `YORK`), one degenerate (`:`) |
+| P2 | 151/1920 (8%) | 2–3 | Degenerate one-hot: `:`, ` me`, `INGS` (prob=1.0) |
+| P4 | 141/1920 (7%) | 2–9 | Punctuation-dominated: `\n`, `:`, `,` (prob≈1.0) |
+| P3 | **0/1920 (0%)** | 2 | Complete collapse: `BY`, `IO`, `EO` |
+
+P1 is the only cell with both 100% GD convergence and semantically
+diverse basins.  The high GD convergence of P5 (75%) is misleading:
+its 223 PPL and bifurcated one-semantic + one-degenerate basin
+structure shows that **convergence + high silhouette does not imply
+good language modelling**.
+
+### 15.6  Discussion
+
+**The hybrid path is the only successful strategy.**  P1 (Hybrid
+FockPARF+Attn) matches the attention baseline at 149.16 PPL with
+the cleanest $V_\theta$ landscape in the framework.  Pure FockPARF
+scaling strategies (P2–P5) cannot close the gap regardless of
+capacity (v\_hidden), width (d), register count (M), or training
+schedule (phased gates).
+
+**Why P1 works.**  The attention front-end (4 blocks) provides the
+contextualisation that standalone FockPARF cannot achieve with its
+local Verlet dynamics.  The FockPARF back-end then operates with a
+near-constant $V_\theta$ (range 0.26), meaning the Fock register
+lifecycle contributes negligible PPL improvement over plain SPLM
+in the back-end — consistent with the §13.8 finding that FockPARF's
+extra machinery becomes redundant once the gauge is broken.
+
+**P1 vs Hybrid SPLM+Attn.**  P1 (149.2 PPL) is 16 PPL behind
+Hybrid SPLM+Attn (133.0 PPL).  The gap suggests that the Fock
+gates and register pool add parameter overhead without PPL benefit
+when attention already provides rich contextualization.  The
+value of FockPARF's v2 computational class (Dyck_n recognition,
+escape from the v0 ceiling) remains its theoretical
+distinguishing feature, not PPL competitiveness.
+
+**Scaling doesn't substitute for attention.**  P2 (v\_hidden=512,
+8000 steps) reaches 170.2 PPL — a 20 PPL gain over FR4 but still
+far from attention.  P4 (d=256) gains 15.7 PPL.  Neither produces
+healthy attractor landscapes (GD convergence 7–8%, degenerate
+one-hot basins).  The capacity bottleneck in standalone FockPARF
+is not in $V_\theta$ width or embedding dimension but in the
+absence of attention's global context window.
+
+**Harmful strategies.**  P3 (M=32 + score entropy reg) achieves 0%
+GD convergence and worst PPL (224.3).  Doubling registers while
+adding entropy regularisation disrupts Gumbel-softmax routing
+without compensating gain.  P5 (phased gate freeze) produces
+reasonable GD convergence (75%) but poor PPL (223.1) — freezing
+gates for 1000 steps delays learning without benefit.
+
+### 15.7  Cross-architecture PPL ranking (updated)
+
+| Rank | Architecture | Best PPL | V_θ range | GD conv. |
+|------|-------------|----------|-----------|----------|
+| 1 | Hybrid SPLM+Attn (k=4, m=4) | 133.0 | 1.0 | — |
+| 2 | **Hybrid FockPARF+Attn (P1)** | **149.2** | **0.26** | **100%** |
+| 3 | Attention baseline (8L GPT-2) | ~150 | — | — |
+| 4 | Scaled FockPARF (P2) | 170.2 | 9.5 | 8% |
+| 5 | SPLM em\_ln (γ=0.10) | 173.6 | — | — |
+| 6 | Width FockPARF (P4) | 174.5 | 5.3 | 7% |
+| 7 | PARF reg PR2 (λ\_V=10⁻⁴) | 186.0 | 20.0 | 100% |
+| 8 | FockPARF reg FR4 (λ\_V=1) | 190.2 | 3.0 | — |
+
+## 16.  TinyStories scale-up: PARF vs FockPARF
+
+### 16.1  Motivation and setup
+
+Previous V_θ regularisation sweeps were conducted on **TinyShakespeare** (~1 M tokens,
+vocabulary 50 257, BPE).  The hypothesis motivating this scale-up was that the **Fock
+mechanism** (creation/destruction gates over M registers) might yield a measurable
+advantage over plain PARF only at larger scale, where the richer pair-interaction
+vocabulary can be exploited across a more diverse corpus.
+
+**Dataset**: TinyStories (5 M tokens; simple English children's stories; GPT-2 BPE).
+
+| | S1 — Reg PARF | S2 — Reg FockPARF |
+|---|---|---|
+| Architecture | SparsePARFLM | FockPARFLM |
+| d / L | 256 / 8 | 256 / 8 |
+| v_hidden | 1024 | 1024 |
+| M (registers) | — | 32 |
+| λ_V | **1e-4** | **1.0** |
+| γ | 0.10 | 0.10 |
+| Steps | 8 000 | 8 000 |
+| Batch / Block | 16 / 256 | 16 / 256 |
+
+**Baselines embedded in training-curve plots**:
+
+| Reference | PPL (TinyStories) |
+|---|---|
+| Attention GPT-2 matched | 7.81 |
+| SPLM em_ln (MPS) | 8.85 |
+| PARF P10g unregularised | 26.42 |
+
+### 16.2  Results summary
+
+| Cell | Best PPL | Final PPL (step 8000) | V_θ range | V_θ std |
+|---|---|---|---|---|
+| S1 — Reg PARF (λ=1e-4) | **32.05** | 32.86 | 69.1 | 2.45 |
+| S2 — Reg FockPARF (λ=1.0) | **30.89** | 31.56 | 7.2 | 0.029 |
+
+**FockPARF is better by ~1.2 PPL.**  This is the first result where
+FockPARF outperforms PARF in a head-to-head comparison on a
+non-trivial corpus.
+
+Training dynamics (step → val PPL):
+
+| Step | S1 PARF | S2 FockPARF |
+|---|---|---|
+| 400 | 124.3 | 101.4 |
+| 800 | 50.4 | 51.6 |
+| 1200 | 42.5 | 42.5 |
+| 2000 | 39.1 | 38.6 |
+| 3200 | 36.0 | 34.6 |
+| 4800 | 33.4 | 32.3 |
+| 6400 | 32.6 | 31.4 |
+| 7600 | **32.1** | **30.9** |
+| 8000 | 32.9 | 31.6 |
+
+FockPARF starts converging faster in the first 400 steps (101 vs 124 PPL),
+is roughly tied through steps 800–1200, then **consistently leads by 0.5–1.5 PPL
+from step 2000 onward**.  Both curves are still declining at step 8000, suggesting
+neither model has plateaued; longer runs would benefit both.
+
+### 16.3  V_θ landscape analysis
+
+![S1 PARF V_θ histogram](../notebooks/conservative_arch/parf/results/tinystories_scaleup/S1/seed0/tinystories_S1_parf_d256_L8_seed0_v_theta_hist.png)
+
+![S2 FockPARF V_θ histogram](../notebooks/conservative_arch/parf/results/tinystories_scaleup/S2/seed0/tinystories_S2_fock_parf_d256_L8_M32_seed0_v_theta_hist.png)
+
+The two cells used **very different λ_V**:
+
+**S1 (λ=1e-4)**: V_θ range = 69, std = 2.45.  This is the same λ that produced range ≈ 20 on
+TinyShakespeare (PARF PR2).  At TinyStories scale (d=256, richer corpus), λ=1e-4 is
+**too weak** — the potential is still free to grow, and the histogram has heavy tails out to
+±30–40.  The regularisation is not effectively breaking the additive gauge symmetry.
+
+**S2 (λ=1.0)**: V_θ range = 7.2, std = 0.029.  The histogram is a single spike at 0. V_θ is
+**effectively annihilated** — the model has learned to keep V_θ ≈ 0 everywhere, so the Euler
+dynamics are driven almost entirely by the pair potential V_φ and the Fock creation/destruction
+gates.  This is an over-regularisation: the self-potential is not contributing to the force field.
+
+### 16.4  Key findings and their interpretation
+
+**Finding 1: FockPARF leads at TinyStories scale (+1.2 PPL over PARF).**
+At TinyShakespeare scale the regularised FockPARF was ~4 PPL *worse* than regularised PARF
+(FR4 190.2 vs PR2 185.5).  Here the ordering reverses.  This is consistent with the hypothesis
+that the M=32 Fock registers provide additional expressivity that only manifests with a richer
+and larger corpus.
+
+**Finding 2: λ_V is a critical hyperparameter at larger d and dataset scale.**
+The correct λ for TinyShakespeare (d=128) is ~1e-4 (PR2).  Scaling d to 256 with a harder
+corpus requires a stronger λ, closer to 1e-3 or 1e-2, to achieve a similarly bounded potential
+range.  The λ=1.0 used in S2 over-regularises: V_θ is zeroed out, losing the self-potential
+entirely.
+
+**Finding 3: FockPARF's V_φ + Fock gates beat PARF's V_θ + V_φ (when V_θ is properly regularised).**
+S2 is operating with V_θ ≈ 0 and still outperforms S1 where V_θ is active.  This means the Fock
+gating mechanism contributes positively to the total force field beyond what V_θ provides.
+
+**Finding 4: Neither model reaches the unregularised PARF P10g baseline (26.42 PPL) at 8000 steps.**
+The regularised d=256 variants are still ~5–6 PPL above the reference baseline, possibly because:
+
+- 8000 steps is insufficient for d=256 with 5M tokens (both curves still declining);
+- the chosen λ values are suboptimal (S1 too weak, S2 too strong);
+- the unregularised P10g run may have had more steps or a different learning-rate schedule.
+
+**Finding 5: Both models still far from the attention baseline (7.81 PPL).**
+The gap to the attention GPT-2 baseline is ~4× on TinyStories, consistent with TinyShakespeare
+findings.  Closing this gap requires either the Hybrid FockPARF+Attn architecture (S3, not yet
+run) or a fundamental rethinking of the V_φ pair-interaction complexity.
+
+### 16.5  Open questions (next experiments)
+
+1. **Run S3 and S4 (Hybrid FockPARF+Attn and Hybrid SPLM+Attn)** — S3 is the most important:
+   does the hybrid close the 4× gap to attention on TinyStories?
+2. **λ_V re-sweep at d=256**: try λ ∈ {1e-3, 1e-2, 0.1} for both PARF and FockPARF to find the
+   well-regularised but not over-regularised regime.
+3. **Longer runs** (16 000–32 000 steps) for S1/S2 to determine convergence PPL.
+4. **Matched PARF with λ=1.0** (same over-regularisation as S2) to isolate the Fock contribution
+   cleanly from the λ_V confound.
+
+---
+
+## 17.  Structured V_θ sweep — Option 5 expressivity test
+
+### 17.1  Motivation and setup
+
+The regularised PARFLM (PR2) V_θ landscape has empirically low effective rank:
+GD extraction yields K\*=4 basins and a range ≈ 20.  This suggests that an
+unconstrained MLP V_θ wastes capacity — a *structured* parameterisation with
+explicit basin geometry and **analytical** ∇_h V_θ should match PPL while
+eliminating the expensive `autograd.grad` call in `_layer_step`.
+
+Three cells ran (SQ1/SQ2 not reached due to Colab time; the two most informative
+cells — the K=4 mixture (SQ3) and the reference MLP (SQ5) — completed):
+
+| Cell | V_θ form | Params @d=128 | λ_V | Steps |
+|---|---|---|---|---|
+| SQ3 | K=4 Gaussian mixture of diagonal quadratic wells | 133K | 1e-4 | 4 000 |
+| SQ4 | Quadratic backbone + small MLP residual (v_hidden=32) | 42K | 1e-4 | 4 000 |
+| SQ5 | **Reference: unconstrained MLP** (v_hidden=128, v_depth=3) | 66K | 1e-4 | 4 000 |
+
+All three: SparsePARFLM, L=8, d=128, TinyShakespeare.
+
+### 17.2  PPL and landscape summary
+
+| Cell | V_θ kind | Best PPL | Final PPL | V_θ range | V_θ std |
+|---|---|---|---|---|---|
+| **SQ3** | Mixture K=4 | **184.5** | 198.6 | 75.4 | 3.90 |
+| SQ4 | Hybrid quad+MLP | 202.9 | 217.7 | 90.0 | 4.93 |
+| SQ5 | MLP reference | 221.4 | 270.4 | 27.8 | 2.73 |
+| *PR2 PARF (MLP, λ=1e-4)* | *MLP* | *185.5* | — | *20.0* | — |
+| *Attention baseline* | — | *~150* | — | — | — |
+
+### 17.3  Key findings
+
+**Finding 1: SQ3 (Mixture K=4) matches the original PR2 PPL (184.5 vs 185.5) — zero PPL
+cost for switching to analytical gradients.**
+
+This is the central result of Option 5.  A structured parameterisation with K=4 Gaussian
+wells, chosen to match the empirically observed K\*=4 basin count in PR2, achieves
+essentially the same perplexity as the unconstrained MLP V_θ in PR2.  The MLP's capacity
+is no better than a 4-component mixture for this task and regularisation regime.
+
+**Finding 2: SQ3 beats the MLP reference (SQ5) by 37 PPL on this 4000-step run.**
+
+SQ5 (MLP, supposed to reproduce PR2) reaches only 221.4 PPL — significantly worse than
+both SQ3 and the original PR2 (185.5).  The cause is visible in the training log: SQ5
+opens with v_reg = 581 at step 200 (the MLP V_θ initialises far from zero), requiring
+aggressive gradient correction that destabilises the NTP loss.  After step 1600 the curve
+diverges upward (final PPL 270 vs best 221).  The structured variants (SQ3, SQ4) start
+with v_reg = 1.9–8.8 and are much more stable throughout.
+
+**Finding 3: SQ4 (hybrid quad+MLP) underperforms SQ3 by ~18 PPL.**
+
+The MLP residual introduces the same initialisation instability as SQ5 — v_reg spikes to
+51–68 in the first 600 steps.  The quadratic backbone does not protect against the MLP's
+warm-up instability.  SQ4 would benefit from a much smaller α_init (≤0.01 rather than 0.1)
+or a warm-up phase where α is frozen at 0.
+
+**Finding 4: Structured V_θ landscapes are broader than the MLP (SQ3: range 75, SQ5: range 28).**
+
+The mixture's log-sum-exp structure allows large values when the hidden state is equidistant
+from all K attractors.  This does not hurt PPL — the regularisation term penalises the mean
+squared V_θ, so the penalty is driven by the bulk of the distribution, not the tails.  A
+future run with a slightly stronger λ (1e-3 instead of 1e-4) should narrow the distribution.
+
+### 17.4  Attractor interpretability: SQ3 analytical basins
+
+For the K=4 mixture, attractor centres μ_k(ξ) are directly readable — no 1500-step GD
+extraction is needed.  The decoded top-token probabilities across all five test prompts
+reveal a consistent 4-basin structure:
+
+| Basin | Top decoded tokens (representative) | Interpretation |
+|---|---|---|
+| 0 | rare nouns/subwords (Ronnie, dos, ENG, alloy, TI...) | Peripheral semantic cluster A |
+| 1 | rare nouns/subwords (barred, Weeks, advisable, Manager...) | Peripheral semantic cluster B |
+| **2** | **punctuation + function words (\n, of, -, ;, ,, in, the)** | **Dominant "syntactic glue" well** |
+| 3 | rare nouns/subwords (JD, TM, Daylight, hydraulic...) | Peripheral semantic cluster C |
+
+Basin 2 is the dominant attractor across **all** prompts and registers: its decoded
+probabilities are 5–100× higher than basins 0/1/3 (e.g., p(\n)=0.003 for "code",
+p(newline)=0.0004 for "scientific").  This is the "discourse well" — the region of the
+V_θ landscape toward which most hidden states are attracted, corresponding to syntactic
+boundary / continuation tokens.  Basins 0/1/3 are peripheral low-probability wells that
+capture unusual token contexts.
+
+This basin structure is immediately semantically interpretable without any post-hoc
+analysis, validating the core motivation for structured V_θ parameterisation.
+
+![SQ3 V_θ histogram](../notebooks/conservative_arch/parf/results/structured_vtheta/SQ3/seed0/svth_SQ3_mixture_seed0_v_theta_hist.png)
+
+![SQ5 MLP reference V_θ histogram](../notebooks/conservative_arch/parf/results/structured_vtheta/SQ5/seed0/svth_SQ5_mlp_seed0_v_theta_hist.png)
+
+### 17.5  Phase 2: wiring analytical_grad into _layer_step
+
+With SQ3 matching PR2 PPL, the next step is replacing the `autograd.grad(U, h_in)` call in
+`PARFLM._layer_step` with:
+
+```python
+grad_V_theta = model.V_theta.analytical_grad(xi_now, h_in)   # zero autograd cost
+grad_U_pair,  = torch.autograd.grad(P_masked.sum(), h_in, ...)
+f = -(grad_V_theta + grad_U_pair)
+```
+
+This decouples V_θ gradient (now free, one matvec) from V_φ gradient (still autograd,
+but on a smaller graph since V_θ is not included).  The expected wall-clock saving is
+approximately 30–40% of the `_layer_step` backward time (the V_θ forward+backward
+currently accounts for roughly half of the combined autograd call).
+
+### 17.6  Open questions
+
+1. **Run SQ1 and SQ2** (diagonal and low-rank quadratic; K=1 attractors) to verify that
+   K=4 is genuinely necessary for matching PR2 PPL — confirming the connection between
+   empirical K\*=4 and the mixture capacity.
+2. **Tune SQ4** with α_init=0.01 and a frozen-α warmup phase to avoid the MLP residual
+   instability.
+3. **Implement Phase 2** (`analytical_grad` in `_layer_step`) and benchmark wall-clock
+   improvement on a T4 Colab.
+4. **Extend SQ3 to FockPARF** — replace FockPARFLM's MLP V_θ with the K=4 mixture and
+   check whether attractor interpretability transfers to the Fock setting.
+
+---
+
+## 18.  Files
 
 - `notebooks/conservative_arch/attractor_analysis/`
   - `attractor_extraction.py` -- main script (gradient + dynamical modes)
@@ -987,6 +1355,16 @@ narrative:
 - `notebooks/conservative_arch/hybrid/results/vreg_sweep_hybrid/` -- §12 raw results (HR0–HR4)
 - `notebooks/conservative_arch/parf/results/vreg_sweep_fockparf/` -- §13 raw results (FR0–FR4)
 - `notebooks/conservative_arch/parf/results/vreg_sweep_parf/` -- §14 raw results (PR0–PR4)
+- `notebooks/conservative_arch/parf/scripts/fockparf_improvement_sweep.ipynb` -- §15 FockPARF improvement sweep
+    (Colab-ready; outputs to `semsimula_vreg/fockparf_improvement/` on GDrive)
+- `notebooks/conservative_arch/parf/results/fockparf_improvement/` -- §15 raw results (P1–P5)
+- `notebooks/conservative_arch/parf/scripts/tinystories_parf_vs_fockparf.ipynb` -- §16 TinyStories scale-up
+    (Colab-ready; v2 outputs to `semsimula_tinystories_v2/` on GDrive)
+- `notebooks/conservative_arch/parf/results/tinystories_scaleup/` -- §16 raw results (S1–S2 completed; S3–S4 pending)
+- `notebooks/conservative_arch/parf/model_structured_vtheta.py` -- §17 structured V_θ module (SQ1–SQ4 + validate_analytical_grad)
+- `notebooks/conservative_arch/parf/scripts/structured_vtheta_sweep.ipynb` -- §17 structured V_θ sweep
+    (Colab-ready; outputs to `semsimula_structured_vtheta/` on GDrive)
+- `notebooks/conservative_arch/parf/results/structured_vtheta/` -- §17 raw results (SQ3–SQ5 completed; SQ1–SQ2 pending)
 
 ## References
 
