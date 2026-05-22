@@ -480,7 +480,318 @@ but the net budget remains non-zero.
    richer: the regularisation + Verlet combination explores a
    different part of parameter space than regularisation + Euler.
 
-## 12.  Files
+## 12.  Hybrid SPLM+Attention V_θ regularisation sweep
+
+Section 11 showed that regularising $V_\theta$ in standalone SPLM costs
+60–90 PPL but creates genuine bounded energy minima.  A natural
+follow-up: does the hybrid architecture (attention front-end + SPLM
+tail) absorb that cost?
+
+### 12.1  Experimental setup
+
+The hybrid uses $n_{\text{attn}} = 4$ attention blocks followed by
+$n_{\text{splm}} = 4$ shared-$V_\theta$ integration steps (Variant A,
+`model_hybrid.py`).  We sweep
+$\lambda_V \in \{0, 10^{-6}, 10^{-4}, 10^{-2}, 1\}$ on TinyShakespeare
+with the same training recipe as §11 (d=128, v\_hidden=512, 4000 steps,
+batch 16, block 128).
+
+The notebook is at
+`notebooks/conservative_arch/hybrid/scripts/vreg_sweep_hybrid.ipynb`
+(Colab-ready; outputs to `semsimula_vreg/vreg_sweep_hybrid/` on GDrive).
+
+### 12.2  Results
+
+| Cell | $\lambda\_V$ | Best PPL | Final PPL | $V\_\theta$ range | $V\_\theta$ std |
+|------|-------------|----------|-----------|------------------|----------------|
+| HR0 | 0 | 140.4 | 150.0 | 1.01 | 0.22 |
+| HR1 | $10^{-6}$ | 141.0 | 151.1 | 0.88 | 0.19 |
+| HR2 | $10^{-4}$ | 140.1 | 150.5 | 7.77 | 0.86 |
+| HR3 | $10^{-2}$ | 142.0 | 152.6 | 0.79 | 0.07 |
+| HR4 | $1$ | 141.1 | 151.4 | — | — |
+
+For comparison, the standalone SPLM sweep (§11):
+
+| Cell | $\lambda\_V$ | Best PPL | Final PPL | $V\_\theta$ range |
+|------|-------------|----------|-----------|------------------|
+| VR0 | 0 | 249.5 | 250.7 | 1808 |
+| VR2 | $10^{-4}$ | 315.1 | 358.4 | 332 |
+| VR4 | $1$ | 342.6 | 437.5 | 13 |
+
+### 12.3  The headline finding: regularisation is free
+
+The hybrid's PPL is **flat across the entire $\lambda_V$ range**.
+Best-seen val PPL varies by less than 2 PPL points (140.1 to 142.0)
+from $\lambda_V = 0$ to $\lambda_V = 1$.  This is noise-level variation.
+In standalone SPLM the same sweep caused a 93 PPL degradation.
+
+### 12.4  The V_θ landscape is already shallow
+
+Even without regularisation (HR0), the hybrid's $V_\theta$ output
+range is **1.01** — three orders of magnitude smaller than standalone
+SPLM's 1808.  The attention stack is doing the primary language
+modelling work, and $V_\theta$ has learned to be a near-constant
+function.  Adding regularisation simply formalises what the model
+already wanted to do.
+
+### 12.5  Attractor structure
+
+| Cell | $\lambda\_V$ | GD conv% | $K^\ast$(GD) | $\langle V\rangle$ | $\lVert h\rVert$ |
+|------|-------------|----------|-------------|-------------------|------------------|
+| HR0 | 0 | 0% | 2.0 | −39.7 | 749.8 |
+| HR1 | $10^{-6}$ | **100%** | 2.0 | −21.7 | 717.7 |
+| HR2 | $10^{-4}$ | **97%** | **2.4** | −32.7 | 685.1 |
+| HR3 | $10^{-2}$ | 58% | 2.0 | −43.5 | 367.8 |
+| HR4 | $1$ | **100%** | 2.0 | −0.04 | 145.8 |
+
+1. **Even $\lambda_V = 10^{-6}$ gives 100% GD convergence** (HR1).
+   The hybrid's $V_\theta$ is already so shallow that the tiniest
+   nudge creates genuine minima.
+
+2. **HR2 shows the richest structure** — $K^\ast = 3$ for narrative
+   and mathematics prompts with 96–98% convergence.  This is
+   multi-modal basin structure in a bounded potential at no PPL cost.
+
+3. **HR3 exhibits a bimodal regime** — scientific/code prompts
+   converge 367–379/384 seeds with compact attractors
+   ($\lVert h\rVert \approx 50{-}74$), while narrative/mathematics
+   partially fail (55/384, 37/384) with large-norm endpoints.
+   The regularisation reshapes some semantic domains but not others.
+
+4. **HR4 achieves total convergence with near-zero potential** —
+   $\langle V\rangle \approx -0.04$, $\lVert h\rVert \approx 146$.
+   The potential is flat, yet the model still achieves 141 PPL.
+
+### 12.6  Do the SPLM layers actually contribute?
+
+The flat PPL under regularisation raises a natural question: if the
+attention layers do all the language modelling, what is the SPLM
+component for?
+
+The H1 layer-split sweep (§12 in the paper, `hybrid/results/h1_sweep/`)
+answers this directly:
+
+| Architecture | PPL |
+|---|---|
+| All-attention (k=8, m=0) | ~150 |
+| Hybrid (k=4, m=4) | **133.0** |
+| Hybrid (k=6, m=2) | 135.1 |
+| All-SPLM (k=0, m=8) | 173.6 |
+
+The (4,4) hybrid **beats 8 pure attention layers by 17 PPL**.  The
+SPLM layers are contributing something that additional attention
+layers cannot.  Three mechanisms explain how:
+
+1. **The gradient direction matters, not the magnitude.**  Even though
+   $|V_\theta|$ is small (range ~1 vs ~1800 in standalone),
+   $\nabla_h V_\theta$ can still point in a useful direction.  The
+   attention stack produces an $h_k$ that is "almost right"; the SPLM
+   steps nudge it along the gradient of $V_\theta$ — a deterministic
+   refinement that is systematically better than random.
+
+2. **LayerNorm after each SPLM step acts as implicit regularisation.**
+   Each step applies $h \leftarrow \text{LN}(h + dt \cdot v)$.  Even
+   if the force is small, repeated normalisation reshapes the
+   hidden-state distribution in a way that is independent of
+   $V_\theta$'s magnitude.
+
+3. **Efficiency at long context.**  At T=4096, replacing 4 attention
+   layers with 4 SPLM steps saves decode FLOPs because SPLM is
+   $O(d^2)$ per token (no KV-cache lookup), while attention is
+   $O(T \cdot d)$.
+
+### 12.7  Structural takeaways
+
+1. **V_θ regularisation is free in the hybrid.**  PPL is invariant
+   across $\lambda_V \in [0, 1]$.  This makes the hybrid the ideal
+   setting for regularisation: genuine bounded energy structure at
+   zero cost.
+
+2. **The SPLM layers contribute through gradient direction, not
+   magnitude.**  The V_θ output is three orders of magnitude smaller
+   than in standalone SPLM, yet the layers provide a 17 PPL
+   improvement over all-attention.  The scalar potential is a weak
+   but directionally precise refinement signal.
+
+3. **The "gauge symmetry problem" is irrelevant in the hybrid.**
+   In standalone SPLM the unbounded gauge is a genuine obstacle to
+   interpretability (§9 item 3).  In the hybrid the attention layers
+   pin $V_\theta$ to a near-constant regardless, so the gauge degree
+   of freedom is naturally suppressed.
+
+4. **Scaling hypothesis.**  At 4000 steps on TinyShakespeare the
+   attention layers dominate because they learn faster.  At scale
+   (longer training, larger data, bigger $d$), the SPLM component's
+   continuous-dynamics bias may become more valuable — especially for
+   tasks where trajectory structure (basins, attractors) maps to
+   semantic structure that attention cannot represent as compactly.
+
+## 13.  FockPARF V_θ regularisation sweep
+
+FockPARF extends PARF with learned creation/destruction gates for
+latent register particles (Fock space, §9.4.2 of the paper).  These
+gates, together with the sparse pair interactions $V_\phi$, provide
+two additional expressivity channels beyond $V_\theta$.  The prediction
+was that FockPARF would be more tolerant of regularisation than
+standalone SPLM but less indifferent than the hybrid.
+
+The actual result is more interesting than that.
+
+### 13.1  Experimental setup
+
+FockPARF on TinyShakespeare with d=128, L=8, M=16 registers,
+top\_k=16, stack discipline, structural $V_\phi$.  Same
+$\lambda_V \in \{0, 10^{-6}, 10^{-4}, 10^{-2}, 1\}$ sweep, 4000
+steps, batch 16, block 128.
+
+The notebook is at
+`notebooks/conservative_arch/parf/scripts/vreg_sweep_fockparf.ipynb`
+(Colab-ready; outputs to `semsimula_vreg/vreg_sweep_fockparf/` on
+GDrive).
+
+### 13.2  Results
+
+| Cell | $\lambda\_V$ | Best PPL | Final PPL | $V\_\theta$ range | $V\_\theta$ std |
+|------|-------------|----------|-----------|------------------|----------------|
+| FR0 | 0 | 205.7 | 222.9 | 97.1 | 14.2 |
+| FR1 | $10^{-6}$ | **337.4** | **356.8** | 309.5 | 40.5 |
+| FR2 | $10^{-4}$ | 206.7 | 222.8 | 42.1 | 2.4 |
+| FR3 | $10^{-2}$ | 196.8 | 211.3 | 8.1 | 0.8 |
+| FR4 | $1$ | **190.2** | **203.4** | 3.0 | 0.07 |
+
+### 13.3  Regularisation *helps* FockPARF
+
+This is the opposite of the standalone SPLM pattern and different
+from the hybrid's flat profile:
+
+- **FR4 ($\lambda_V = 1$) achieves the best PPL at 190.2** — a
+  15.5 PPL improvement over unregularised FR0 (205.7).
+- **FR3 ($\lambda_V = 10^{-2}$) is second best at 196.8** — 9 PPL
+  better than baseline.
+- **FR2 ($\lambda_V = 10^{-4}$) matches baseline** at 206.7.
+- **FR1 ($\lambda_V = 10^{-6}$) is catastrophically worse at
+  337.4** — a pathological intermediate regime (see §13.4).
+
+Regularisation does not just avoid a cost — it actively improves
+training.  The best FockPARF (FR4, 190.2) is also 60 PPL better
+than the best standalone SPLM (VR0, 249.5).
+
+### 13.4  The FR1 anomaly: pathological weak regularisation
+
+FR1's final `v_reg = 1880.8` means $V_\theta^2$ values are enormous
+despite $\lambda_V = 10^{-6}$.  The penalty is too weak to actually
+bound $V_\theta$ but strong enough to inject a competing gradient
+signal into the Gumbel-softmax routing and Fock gate gradients.
+The sparse top-k routing creates a complex loss landscape; the tiny
+conflicting gradient pushes the model into a bad basin during early
+training (PPL = 497 at step 800) from which it never recovers.
+
+This does not occur in standalone SPLM (VR1 is only +7 PPL over VR0)
+or the hybrid (HR1 matches HR0) because those architectures have
+simpler gradient flows.  FockPARF's multi-component gradient
+($V_\theta$ + sparse $V_\phi$ + Gumbel scores + creation gates +
+destruction gates) is uniquely sensitive to small perturbations
+during the critical early-training phase.
+
+### 13.5  V_θ landscape: the middle ground
+
+| Architecture | $\lambda\_V = 0$ range | $\lambda\_V = 1$ range |
+|---|---|---|
+| Standalone SPLM | 1808 | 12.6 |
+| **FockPARF** | **97.1** | **3.0** |
+| Hybrid SPLM+Attn | 1.01 | — |
+
+FockPARF's unregularised V_θ range (97.1) sits between standalone
+SPLM (1808) and the hybrid (1.01).  The pair interactions and Fock
+gates are already sharing the energy-representation load, reducing
+$V_\theta$'s need for extreme dynamic range — but unlike the hybrid,
+$V_\theta$ is still doing meaningful work.
+
+### 13.6  Attractor structure
+
+| Cell | $\lambda\_V$ | GD conv% | avg $K^\ast$(GD) | $\langle V\rangle$ | $\lVert h\rVert$ |
+|------|-------------|----------|-----------------|-------------------|------------------|
+| FR0 | 0 | 0% | 5.0 | −2767 | 777.4 |
+| FR1 | $10^{-6}$ | 0% | 2.0 | −1598 | 702.7 |
+| FR2 | $10^{-4}$ | 0% | 5.0 | −1150 | 737.1 |
+| FR3 | $10^{-2}$ | 2% | 5.6 | −181 | 622.4 |
+| FR4 | $1$ | 1% | 6.4 | −356 | 779.0 |
+
+Key observations:
+
+1. **GD convergence remains near zero** across all cells, even at
+   $\lambda_V = 1$ where the V_θ range is only 3.0.  This is because
+   pure $V_\theta$-gradient descent ignores the pair potential
+   $V_\phi$, which in FockPARF creates a complex landscape that
+   $V_\theta$-only descent cannot navigate.  The attractor structure
+   is genuinely a *joint* property of $V_\theta + V_\phi$.
+
+2. **$K^\ast$ is high and increasing with regularisation** — FR0
+   averages 5.0 basins, FR4 averages 6.4.  FockPARF produces the
+   richest multi-modal structure of any architecture.  FR2 achieves
+   $K^\ast = 10$ for the dialogue prompt — the highest single-prompt
+   basin count in the entire sweep programme.
+
+3. **Anchored descent shows independent structure** — anchored $K^\ast$
+   reaches 4–5 at FR0, dropping to 2 with regularisation.  This
+   suggests the anchoring prior and $V_\theta$ regularisation are
+   partially redundant: both suppress escape directions, but they
+   do so differently.
+
+### 13.7  Why regularisation helps: the stabilisation mechanism
+
+Bounding $V_\theta$ improves FockPARF training through three
+mechanisms:
+
+1. **Gradient variance reduction.**  The total potential
+   $U = V_\theta + \sum V_\phi$ enters the dynamics via
+   $f = -\nabla_h U$.  When $V_\theta$ is unbounded, one term can
+   dominate $\nabla U$, causing high gradient variance that
+   destabilises the Gumbel-softmax routing.  Bounding $V_\theta$
+   keeps the two terms comparable, giving $V_\phi$ a cleaner
+   gradient signal.
+
+2. **Creation/destruction gate training.**  The Fock gates are
+   conditioned on the mean token field and individual register
+   states.  When $V_\theta$'s gradient sends hidden states on wild
+   trajectories (range 97 at FR0 vs 3 at FR4), the gate inputs
+   are noisier, making it harder for the gates to learn selective
+   activation patterns.
+
+3. **Implicit curriculum.**  At $\lambda_V = 1$ the model cannot
+   rely on $V_\theta$ for early-training loss reduction; it must
+   learn to use $V_\phi$ and the register lifecycle from the start.
+   This forces the sparse routing and Fock gates to develop earlier,
+   creating a richer interaction structure by the time $V_\theta$
+   is needed for fine-grained refinement.
+
+### 13.8  Cross-architecture summary
+
+| Architecture | $\lambda\_V = 0$ PPL | $\lambda\_V = 1$ PPL | $\Delta$ PPL | Effect |
+|---|---|---|---|---|
+| Standalone SPLM | 249.5 | 342.6 | **+93.1** | Harmful |
+| FockPARF | 205.7 | **190.2** | **−15.5** | **Beneficial** |
+| Hybrid SPLM+Attn | 140.4 | 141.1 | **−0.7** | Neutral |
+
+The three architectures occupy three qualitatively different regimes:
+
+- **Standalone SPLM**: $V_\theta$ is the *only* expressivity channel;
+  regularisation costs PPL because there is nothing to compensate.
+- **FockPARF**: $V_\phi$ + Fock gates *can* compensate, and
+  regularisation actively *helps* by stabilising the multi-component
+  gradient flow.
+- **Hybrid**: attention layers absorb everything; $V_\theta$ is
+  already near-constant, so regularisation is invisible.
+
+This ordering — harmful → beneficial → neutral — was not predicted
+*a priori*.  The expected ordering (from the §11 analysis) was
+harmful → smaller cost → near-zero cost.  That FockPARF actually
+*improves* under regularisation is a structural finding about
+multi-component energy models: bounding the self-energy forces the
+interaction and lifecycle components to develop earlier and more
+robustly.
+
+## 14.  Files
 
 - `notebooks/conservative_arch/attractor_analysis/`
   - `attractor_extraction.py` -- main script (gradient + dynamical modes)
@@ -496,6 +807,14 @@ but the net budget remains non-zero.
 - `notebooks/conservative_arch/parf/scripts/`
   - `vreg_sweep_v_theta_regularisation.ipynb` -- §11 V_θ regularisation sweep
     (Colab-ready; outputs to `semsimula_vreg/vreg_sweep/` on GDrive)
+- `notebooks/conservative_arch/hybrid/scripts/`
+  - `vreg_sweep_hybrid.ipynb` -- §12 Hybrid V_θ regularisation sweep
+    (Colab-ready; outputs to `semsimula_vreg/vreg_sweep_hybrid/` on GDrive)
+- `notebooks/conservative_arch/parf/scripts/vreg_sweep_fockparf.ipynb` -- §13 FockPARF V_θ regularisation sweep
+    (Colab-ready; outputs to `semsimula_vreg/vreg_sweep_fockparf/` on GDrive)
+- `notebooks/conservative_arch/parf/results/vreg_sweep/` -- §11 raw results (VR0–VR5)
+- `notebooks/conservative_arch/hybrid/results/vreg_sweep_hybrid/` -- §12 raw results (HR0–HR4)
+- `notebooks/conservative_arch/parf/results/vreg_sweep_fockparf/` -- §13 raw results (FR0–FR4)
 
 ## References
 
