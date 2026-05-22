@@ -3,7 +3,7 @@ Sparse PARF-augmented SPLM (Q9c, Stage 1.5) — Gumbel-softmax top-k routing.
 
 Reference
 ---------
-companion_notes/On_Gumbel_softmax_sparsity_applied_to_V_phi.md
+docs/parf/On_Gumbel_softmax_sparsity_applied_to_V_phi.md
 
 Architecture (one-paragraph summary)
 ------------------------------------
@@ -85,6 +85,7 @@ from model_parf import (  # noqa: E402
     PARFConfig,
     PARFLM,
     causal_cumulative_mean,
+    _has_analytical_grad,
 )
 
 
@@ -209,7 +210,7 @@ class SparsePARFLM(PARFLM):
 
     This subclass adds a `ScoreHead` and overrides `_layer_step` to apply
     the straight-through Gumbel-softmax mask described in
-    `companion_notes/On_Gumbel_softmax_sparsity_applied_to_V_phi.md` §3-§4.
+    `docs/parf/On_Gumbel_softmax_sparsity_applied_to_V_phi.md` §3-§4.
     All other layers (embedding, V_theta, V_phi, mass head, etc.) are
     inherited unchanged from `PARFLM`.
 
@@ -390,14 +391,28 @@ class SparsePARFLM(PARFLM):
         s_ell = self.per_layer_scale(layer_idx)
         if s_ell is not None:
             P_masked = P_masked * s_ell
-        U = V_th_per_token.sum() + P_masked.sum()
 
-        grad_U, = torch.autograd.grad(
-            U, h_in,
-            create_graph=self.training,
-            retain_graph=True,
-        )
-        f = -grad_U
+        # ── Phase-2 force computation ────────────────────────────────────
+        # Mirrors the identical block in PARFLM._layer_step (see model_parf.py).
+        # When V_theta has analytical_grad, split force into analytical
+        # V_theta term + autograd-only V_phi term (no create_graph on V_theta).
+        if _has_analytical_grad(self.V_theta):
+            f_theta = -self.V_theta.analytical_grad(xi_now, h_in)  # (B, T, d)
+            U_phi = P_masked.sum()
+            grad_phi, = torch.autograd.grad(
+                U_phi, h_in,
+                create_graph=self.training,
+                retain_graph=True,
+            )
+            f = f_theta - grad_phi
+        else:
+            U = V_th_per_token.sum() + P_masked.sum()
+            grad_U, = torch.autograd.grad(
+                U, h_in,
+                create_graph=self.training,
+                retain_graph=True,
+            )
+            f = -grad_U
 
         denom = 1.0 + dt * gamma
         h_new = h_in + delta / denom + (dt * dt / (m_b * denom)) * f

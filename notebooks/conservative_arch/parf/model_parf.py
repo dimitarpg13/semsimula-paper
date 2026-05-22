@@ -3,7 +3,7 @@ PARF-augmented SPLM (Q9c) — Algorithm-A reference prototype.
 
 Reference
 ---------
-companion_notes/PARF_Augmented_SPLM_Architecture.md
+docs/PARF_Augmented_SPLM_Architecture_v2.md
 
 Architecture (one-paragraph summary)
 ------------------------------------
@@ -74,6 +74,12 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Tuple
+
+# Structured V_theta support (Phase 2): imported lazily so that the base
+# model_parf.py does not hard-depend on model_structured_vtheta.py.
+# _has_analytical_grad(m) returns True when m implements analytical_grad.
+def _has_analytical_grad(module: "nn.Module") -> bool:
+    return callable(getattr(module, "analytical_grad", None))
 
 import numpy as np
 import torch
@@ -157,7 +163,7 @@ class PARFConfig:
     # softmax attention's competitive selectivity into the structural
     # V_φ while preserving (i) the AR sign decomposition through Θ_φ
     # and (ii) the gravity-like 1/r distance kernel.  See design doc
-    # PARF_Augmented_SPLM_Architecture.md §10 (Lever 3).
+    # PARF_Augmented_SPLM_Architecture_v2.md §10 (Lever 3).
     v_phi_competitive_temp: float = 1.0   # τ in the softmax denominator;
                                           # smaller τ ⇒ sharper selectivity.
     v_phi_competitive_scale: str = "row"  # 'row' | 'mean' | 'none':
@@ -824,14 +830,37 @@ class PARFLM(nn.Module):
         s_ell = self.per_layer_scale(layer_idx)
         if s_ell is not None:
             P_masked = P_masked * s_ell
-        U = V_th_per_token.sum() + P_masked.sum()
 
-        grad_U, = torch.autograd.grad(
-            U, h_in,
-            create_graph=self.training,
-            retain_graph=True,
-        )
-        f = -grad_U
+        # ── Phase-2 force computation ────────────────────────────────────
+        # When V_theta implements analytical_grad (i.e. is a structured
+        # StructuredVThetaBase subclass), we compute ∇_h V_theta analytically
+        # and call autograd.grad only on U_phi = V_phi.sum() — a much
+        # smaller graph that does NOT require create_graph on V_theta.
+        # This eliminates the dominant create_graph overhead in training.
+        #
+        # When V_theta is the legacy MLP (no analytical_grad), we fall
+        # back to the original single-call autograd.grad(U_total, h_in),
+        # preserving full backward compatibility.
+        if _has_analytical_grad(self.V_theta):
+            # Analytical ∇_h V_theta (one matvec, no autograd)
+            f_theta = -self.V_theta.analytical_grad(xi_now, h_in)  # (B, T, d)
+            # autograd only on the V_phi graph (cheaper: no V_theta terms)
+            U_phi = P_masked.sum()
+            grad_phi, = torch.autograd.grad(
+                U_phi, h_in,
+                create_graph=self.training,
+                retain_graph=True,
+            )
+            f = f_theta - grad_phi
+        else:
+            # Legacy path: single joint autograd.grad over U_total
+            U = V_th_per_token.sum() + P_masked.sum()
+            grad_U, = torch.autograd.grad(
+                U, h_in,
+                create_graph=self.training,
+                retain_graph=True,
+            )
+            f = -grad_U
 
         denom = 1.0 + dt * gamma
         h_new = h_in + delta / denom + (dt * dt / (m_b * denom)) * f
