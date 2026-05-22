@@ -1,0 +1,54 @@
+Zenodo / SSRN keywords for paper v5 (Semantic Simulation mega-paper, v5)
+========================================================================
+
+39 keywords, one per line. Paste into the Zenodo "Keywords" field
+(each line becomes one keyword tag) or the SSRN "Keywords" field
+(SSRN accepts a comma-separated list; convert with `paste -sd, -`).
+
+v5 adds four entries on top of the v4 list, all covering §20
+(Direct Dynamical Simulator and the STP-aware BAOAB Langevin
+integrator).
+
+Both surfaces tokenise on hyphens, so dash-stripped variants
+("Scalar Potential Language Model" vs "Scalar-Potential Language
+Model") are NOT included — they add no discoverability gain.
+
+Semantic Simulation
+Scalar-Potential Language Model
+SPLM
+Prescriptive Lagrangian Framework
+Conservative-by-Construction Language Models
+Shared-Potential Separator
+Helmholtz Decomposition
+Lagrangian Mechanics
+Energy-Based Language Models
+Energy-Based Models
+Physics-Informed Language Models
+Dynamical Systems Language Modeling
+Hopfield Networks
+Joint Embedding Predictive Architectures
+JEPA
+Semantic Tube Prediction
+STP
+Property-Attractive–Repulsive Forces
+PARF
+Fock-Space Language Model
+Verlet Integrator
+Symplectic Integrator
+Damped Euler–Lagrange Flow
+State Space Models
+HiPPO
+S4D
+Attention Alternatives
+Long-Context Language Modeling
+Efficient Inference
+Transformer Representations
+Riemannian Geometry
+Geodesic Hypothesis
+Semantic Energy Well
+Causal Language Modeling
+Mechanistic Interpretability
+Direct Dynamical Simulator
+Langevin Dynamics
+BAOAB Integrator
+Stochastic Differential Equations
