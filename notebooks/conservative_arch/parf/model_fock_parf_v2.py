@@ -77,8 +77,8 @@ class FockPARFConfig_v2(SparsePARFConfig):
     """
     n_registers: int = 16
     d_k: int = 64
-    register_salience_decay: float = 0.9
-    register_salience_threshold: float = 0.1
+    register_salience_decay: float = 0.5
+    register_salience_threshold: float = 0.005
     register_init_scale: float = 0.02
     stack_discipline: bool = True
     destruction_gate_hidden: int = 64
@@ -311,8 +311,14 @@ class FockPARFLM_v2(SparsePARFLM):
             self.reverse_ch = ReverseChannel(
                 d, cfg.d_k, init_scale=cfg.register_init_scale
             )
+            # Learnable gate on the reverse channel magnitude, initialised to
+            # zero so the force starts fully off.  The model learns when to
+            # open it.  Applied as tanh(scale) ∈ (-1, +1), keeping training
+            # stable while all registers fire from step 0.
+            self.reverse_channel_scale = nn.Parameter(torch.zeros(1))
         else:
             self.reverse_ch = None
+            self.reverse_channel_scale = None
 
     # ------------------------------------------------------------------
     def _init_registers(
@@ -321,7 +327,11 @@ class FockPARFLM_v2(SparsePARFLM):
         """Initialise register states and salience for a new forward pass."""
         M, d = self.cfg.n_registers, self.cfg.d
         r = self.register_embed.unsqueeze(0).expand(B, M, d).clone()
-        salience = torch.zeros(B, M, device=device)
+        # Start fully active (salience=1) so registers fire from step 0
+        # and the destruction gate learns when to annihilate them.
+        # This avoids the cold-start problem at short-sequence scale where
+        # max_j(alpha_kj) ~ 1/T is too small to build salience from zero.
+        salience = torch.ones(B, M, device=device)
         return r, salience
 
     # ------------------------------------------------------------------
@@ -414,7 +424,10 @@ class FockPARFLM_v2(SparsePARFLM):
         # --- 6. Reverse channel (non-conservative force Q_i) ---
         if self.reverse_ch is not None and active.any():
             Q_force = self.reverse_ch(h_new, r_new, active)
-            h_new = h_new + (dt * dt / m_b) * Q_force
+            # Gate the reverse force by a learnable scalar initialised to 0:
+            # tanh(0)=0 → force off at init; the model learns to open it.
+            scale = torch.tanh(self.reverse_channel_scale)
+            h_new = h_new + (dt * dt / m_b) * scale * Q_force
 
             if cfg.ln_after_step:
                 h_new = self._project(h_new)
@@ -467,6 +480,7 @@ class FockPARFLM_v2(SparsePARFLM):
             overhead += sum(p.numel() for p in gate.parameters())
         if self.reverse_ch is not None:
             overhead += sum(p.numel() for p in self.reverse_ch.parameters())
+            overhead += self.reverse_channel_scale.numel()  # 1 scalar gate
         return overhead
 
 
