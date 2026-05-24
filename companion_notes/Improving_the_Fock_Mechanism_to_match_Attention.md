@@ -157,16 +157,22 @@ $$e^- \xrightarrow{\text{emit}} \gamma_\text{virtual} \xrightarrow{\text{propaga
 
 The Feynman vertex factor at the source (emission), the propagator (what is carried), and the vertex factor at the receiver (absorption) are **three separate objects** — exactly the Q/K/V decoupling.
 
-```mermaid
-graph LR
-    subgraph "QED Interaction"
-        A["e- (source j)"] -->|"emit gamma, vertex: k_j = W_K h_j"| P["virtual photon gamma<br>payload: v_j = W_V h_j"]
-        P -->|"absorb gamma, vertex: alpha_ij ~ exp(q_i k_j)"| B["e- (receiver i)<br>delta_h_i += alpha_ij v_j"]
-    end
-    subgraph "Attention"
-        C["Token j"] -->|"create virtual particle, key: k_j = W_K h_j"| Q["semantic photon<br>value: v_j = W_V h_j"]
-        Q -->|"annihilate at i, coupling: softmax(q_i k_j / sqrt d)"| D["Token i<br>y_i = sum_j alpha_ij v_j"]
-    end
+```
+    ┌─────────────────────────────────────────────────────────────────────────┐
+    │                          QED Interaction                               │
+    │                                                                       │
+    │   e⁻ (source j) ──emit γ──▶ virtual photon γ ──absorb γ──▶ e⁻ (i)   │
+    │                   vertex:     payload:          vertex:      Δhᵢ +=   │
+    │                   kⱼ = Wₖhⱼ  vⱼ = Wᵥhⱼ        αᵢⱼ·vⱼ     αᵢⱼ·vⱼ  │
+    └─────────────────────────────────────────────────────────────────────────┘
+    ┌─────────────────────────────────────────────────────────────────────────┐
+    │                       Attention (same structure)                       │
+    │                                                                       │
+    │   Token j ─────create────▶ semantic photon ──annihilate──▶ Token i    │
+    │               key: kⱼ      value: vⱼ = Wᵥhⱼ  coupling:    yᵢ =     │
+    │               = Wₖhⱼ      (virtual particle)  softmax      Σⱼαᵢⱼvⱼ │
+    │                                                (qᵢ·kⱼ/√d)           │
+    └─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### 5.2 Correspondence Table
@@ -286,19 +292,22 @@ is conditioned on the **mean of all tokens** — a single undifferentiated globa
 | Q/K/V decoupling | Gate determines both whether to create AND what content register holds | Coupling and content are fused |
 | Competitive normalization | $M$ sigmoid gates are independent | No budget constraint; creation of register $k$ does not affect register $k'$ |
 
-```mermaid
-graph TD
-    subgraph "Current FockPARFLM - Structural Gaps"
-        A["mean(h_1..T)<br>(symmetric, global)"] --> G["MLP sigmoid gates<br>(independent, no budget)"]
-        G -->|"activate register j"| R["r_j starts from<br>learnable embedding<br>(not from input content)"]
-        R -->|"participates in V_phi<br>(symmetric pair force)"| D["PARF dynamics"]
-    end
-    subgraph "What Attention Does"
-        B["q_i = W_Q h_i<br>(asymmetric: per-token query)"] --> S["softmax(q_i k_j / sqrt d)<br>(competitive budget)"]
-        K["k_j = W_K h_j<br>(per-token key)"] --> S
-        S -->|"weighted sum"| V["v_j = W_V h_j<br>(decoupled content)"]
-        V --> U["delta_h_i = sum_j alpha_ij v_j"]
-    end
+```
+ Current FockPARFLM — Structural Gaps        What Attention Does
+ ─────────────────────────────────────        ────────────────────────────────────
+                                              qᵢ = Wqhᵢ ─┐
+    mean(h₁..T) ──▶ MLP sigmoid gates        (per-token   │
+    (symmetric,      (independent,             query)      ├──▶ softmax(qᵢ·kⱼ/√d)
+     global)          no budget)                           │    (competitive budget)
+         │                                    kⱼ = Wₖhⱼ ─┘           │
+         ▼                                    (per-token key)         ▼
+    activate register j                                      vⱼ = Wᵥhⱼ
+    rⱼ starts from learnable embedding                       (decoupled content)
+    (NOT from input content)                                         │
+         │                                                           ▼
+         ▼                                               Δhᵢ = Σⱼ αᵢⱼ vⱼ
+    participates in Vφ
+    (symmetric pair force)
 ```
 
 The current FockPARFLM therefore uses creation/destruction to implement **auxiliary persistent memory** — registers are additional hidden states that persist across layers. This is computationally useful (it escapes the v0 ceiling via Dyck₂) but it does not implement **directed information exchange** — the mechanism that drives attention's language-modelling power.
@@ -309,17 +318,25 @@ The current FockPARFLM therefore uses creation/destruction to implement **auxili
 
 The current FockPARFLM creates and destroys **input particles** (register slots as additional hidden states). The QFT analysis in Section 5 identifies that attention creates and destroys **virtual mediating particles** — semantic photons $\gamma$ that carry information from source $j$ to receiver $i$.
 
-```mermaid
-graph LR
-    subgraph "Current: Creates Input Particles"
-        V1["Vacuum state"] -->|"creation gate, mean-conditioned"| R1["Register r_k<br>(real particle, persistent)"]
-        R1 -->|"V_phi pair force, symmetric"| R1
-        R1 -->|"destruction gate"| V2["Vacuum state"]
-    end
-    subgraph "Proposed: Creates Virtual Exchange Particles"
-        J["Token j"] -->|"emit semantic photon<br>a_dagger(k_j) vac<br>payload: v_j = W_V h_j"| G["virtual gamma<br>(lifetime ~1/(1-lambda) layers)"]
-        G -->|"absorbed by token i<br>coupling: softmax(q_i k_j)<br>annihilate at i"| I["Token i<br>delta_h_i += alpha_ij v_j"]
-    end
+```
+ Current: Creates Input Particles
+ ─────────────────────────────────────────────────────────────────────
+   Vacuum ──creation gate──▶ Register rₖ ◀──Vφ pair force──▶ rₖ
+   state    (mean-cond.)     (real particle,    (symmetric)
+                              persistent)
+                                  │
+                          destruction gate
+                                  │
+                                  ▼
+                             Vacuum state
+
+ Proposed: Creates Virtual Exchange Particles
+ ─────────────────────────────────────────────────────────────────────
+   Token j ──emit semantic──▶ virtual γ ──absorb at i──▶ Token i
+              photon           (lifetime                  Δhᵢ +=
+              a†(kⱼ)|0⟩       ≈ 1/(1-λ)                  αᵢⱼ·vⱼ
+              payload:          layers)    coupling:
+              vⱼ = Wᵥhⱼ                   softmax(qᵢ·kⱼ)
 ```
 
 | | Current FockPARFLM | Proposed FockPARFLM v2 |
@@ -427,61 +444,48 @@ class FockPARFLM_v2(SparsePARFLM):
 
 ### 9.5 Full Forward Pass
 
-```mermaid
-flowchart TD
-    A["Input tokens h_1..T"]
-    WK["W_K projection: k_j  T x d_k"]
-    WV["W_V projection: v_j  T x d"]
-    RK["r_k current state"]
-    WQ["W_Q^k: q_k  d_k"]
-    DOT["q_k dot k_j / sqrt d_k  T scores"]
-    SM["softmax over j: alpha_kj  T weights sum=1"]
-    WS["sum_j alpha_kj v_j: new r_k"]
-    MX["max_j alpha_kj: salience signal"]
-    SAL["s_k = s_k times lambda + signal times (1-lambda)"]
-    ACT{"s_k above threshold"}
-    ACTIVE["Register k active<br>(participates in PARF)"]
-    INACTIVE["Register k inactive"]
-    PARF["PARF dynamics<br>V_theta + V_phi + non-conservative Q_i + damped Verlet"]
-    DG["Destruction gate<br>g_destroy = sigmoid(MLP(r_k))"]
-    DSAL["s_k = s_k times (1 - g_destroy)"]
-    OUT["Updated h_1..T to LM head"]
-    NEXT["Updated r_k to next layer l+1"]
-
-    A --> WK
-    A --> WV
-
-    subgraph QKV [Per-register k: Q/K/V Creation Event]
-        RK
-        WQ
-        DOT
-        SM
-        WS
-        MX
-    end
-
-    RK --> WQ
-    WQ --> DOT
-    WK --> DOT
-    DOT --> SM
-    SM --> WS
-    WV --> WS
-    SM --> MX
-
-    MX --> SAL
-    SAL --> ACT
-    ACT -->|"Yes: created"| ACTIVE
-    ACT -->|"No: vacuum"| INACTIVE
-
-    A --> PARF
-    ACTIVE --> PARF
-
-    PARF --> DG
-    DG --> DSAL
-
-    PARF --> OUT
-    DSAL --> NEXT
-    WS --> NEXT
+```
+                          Input tokens h₁..T
+                          ┌───────┴───────┐
+                          ▼               ▼
+                    Wₖ: kⱼ (T×d_k)   Wᵥ: vⱼ (T×d)
+                          │               │
+    ┌─────────────────────┼───────────────┼──────────────────────────┐
+    │ Per-register k:     │               │  Q/K/V Creation Event   │
+    │                     │               │                          │
+    │  rₖ current ──▶ W_Q^k ──▶ qₖ       │                          │
+    │  state              │               │                          │
+    │                     ▼               │                          │
+    │              qₖ · kⱼ / √d_k        │                          │
+    │              (T scores)             │                          │
+    │                     │               │                          │
+    │                     ▼               │                          │
+    │              softmax over j ────────┤                          │
+    │              αₖⱼ (Σⱼ=1)            │                          │
+    │              ┌──────┴──────┐        │                          │
+    │              ▼             ▼        ▼                          │
+    │        max_j(αₖⱼ)    Σⱼ αₖⱼ · vⱼ = new rₖ                   │
+    │        (salience)                                              │
+    └─────────┼────────────────────────────┼─────────────────────────┘
+              ▼                            │
+    σₖ = σₖ·λ + signal·(1-λ)              │
+              │                            │
+              ▼                            │
+        σₖ > threshold?                    │
+         ╱          ╲                      │
+       Yes           No                    │
+        │         (inactive)               │
+        ▼                                  │
+    Register k active ──────┐              │
+                            ▼              │
+    h₁..T ──────────▶ PARF dynamics        │
+                       Vθ + Vφ + Qᵢ       │
+                       + damped Verlet     │
+                       ┌──────┴──────┐     │
+                       ▼             ▼     ▼
+                  h₁..T (out)    Destruction gate ──▶ rₖ (next layer)
+                  → LM head      g = σ(MLP(rₖ))
+                                 σₖ ← σₖ·(1-g)
 ```
 
 ---
@@ -553,19 +557,21 @@ The proposed mechanism has one structural advantage over standard attention: cro
 
 ## 12. Proposed Experiments
 
-```mermaid
-gantt
-    title FockPARFLM v2 Experimental Programme
-    dateFormat  YYYY-MM-DD
-    section Phase 1 - Dyck_2 Falsifier
-    F2-qkv-creation (d=64, M=16)         :active, f1, 2026-05-22, 7d
-    F2-scale-up (d=128, M=32, 8k steps)  :f2, after f1, 7d
-    3-seed consistency check              :f3, after f2, 5d
-    section Phase 2 - TinyStories
-    P11-qkv (M=16, P10f scale)           :p1, after f3, 10d
-    P11-qkv-32 (M=32, 16k steps)        :p2, after p1, 10d
-    section Phase 3 - Cross-serial
-    a^n b^n c^n falsifier (v3 required)  :p3, after p2, 14d
+```
+FockPARFLM v2 Experimental Programme
+═══════════════════════════════════════════════════════════════════════════
+
+Phase 1 — Dyck₂ Falsifier
+  F2-qkv-creation (d=64, M=16)        ████████  May 22 – May 29
+  F2-scale-up (d=128, M=32, 8k steps)          ████████  May 29 – Jun 5
+  3-seed consistency check                               █████  Jun 5 – Jun 10
+
+Phase 2 — TinyStories
+  P11-qkv (M=16, P10f scale)                                  ██████████  Jun 10 – Jun 20
+  P11-qkv-32 (M=32, 16k steps)                                           ██████████  Jun 20 – Jun 30
+
+Phase 3 — Cross-serial
+  aⁿbⁿcⁿ falsifier (v3 required)                                                    ██████████████  Jun 30 – Jul 14
 ```
 
 ### 12.1 F2-qkv-creation: Dyck₂ Falsifier with Q/K/V Creation
@@ -630,18 +636,50 @@ where $\hat{\phi}(x) = \sum_j v_j \delta(x - k_j)$ is the semantic photon field 
 
 ### 13.3 The Expressivity Hierarchy
 
-```mermaid
-graph TD
-    V0["v0: SPLM<br>Conservative dynamics<br>Regular languages (finite automaton)"]
-    V0 -->|"+ V_phi pair force"| PARF["PARFLM<br>Still v0 (Theorem v0-ceiling)<br>PPL ceiling: 26.4 on TinyStories"]
-    V0 -->|"+ mean-conditioned registers"| FOCK1["FockPARFLM v1<br>v0 + v2 partial<br>Dyck_2: +1.3pp (modest)"]
-    FOCK1 -->|"+ Q/K/V creation (this report)"| FOCK2["FockPARFLM v2<br>v0 + v2 full<br>CF class (predicted)<br>PPL: TBD"]
-    FOCK2 -->|"+ Lie group operator actions"| MCS["v0 + v2 + v3<br>Full MCS (LCFRS)<br>= Attention expressivity class"]
-
-    style PARF fill:#ffcccc,stroke:#cc0000
-    style FOCK1 fill:#ffffcc,stroke:#aaaa00
-    style FOCK2 fill:#ccffcc,stroke:#00aa00
-    style MCS fill:#ccccff,stroke:#0000aa
+```
+                    ┌───────────────────────────────────┐
+                    │  v0: SPLM                         │
+                    │  Conservative dynamics             │
+                    │  Regular languages (finite aut.)   │
+                    └──────────┬──────────┬──────────────┘
+                               │          │
+                  + Vφ pair    │          │  + mean-conditioned
+                    force      │          │    registers
+                               ▼          │
+                    ┌──────────────────┐   │
+                    │  PARFLM          │   │
+                    │  Still v0        │   │
+                    │  PPL ceiling:    │   │
+                    │  26.4 TinyStories│   │
+                    └──────────────────┘   │
+                                          ▼
+                              ┌───────────────────────┐
+                              │  FockPARFLM v1        │
+                              │  v0 + v2 partial      │
+                              │  Dyck₂: +1.3pp        │
+                              └───────────┬───────────┘
+                                          │
+                               + Q/K/V creation
+                               (this report)
+                                          │
+                                          ▼
+                              ┌───────────────────────┐
+                              │  FockPARFLM v2        │
+                              │  v0 + v2 full         │
+                              │  CF class (predicted) │
+                              │  PPL: TBD             │
+                              └───────────┬───────────┘
+                                          │
+                              + Lie group operator
+                                actions
+                                          │
+                                          ▼
+                              ┌───────────────────────┐
+                              │  v0 + v2 + v3         │
+                              │  Full MCS (LCFRS)     │
+                              │  = Attention           │
+                              │    expressivity class  │
+                              └───────────────────────┘
 ```
 
 ### 13.4 The Separator Remains Diagnostic
