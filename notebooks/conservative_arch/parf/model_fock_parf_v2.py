@@ -74,9 +74,16 @@ class FockPARFConfig_v2(SparsePARFConfig):
                                 force Q_i (tokens read from active registers
                                 via attention-like coupling).  §10 of the
                                 design doc.
+      tau_create_init         : float — Initial value for the learnable
+                                creation-attention temperature τ.  Scores
+                                are divided by τ instead of √d_k.  Small τ
+                                → peaked (selective) attention; the model
+                                learns to relax it if needed.  None means
+                                fall back to the fixed 1/√d_k scaling.
     """
     n_registers: int = 16
     d_k: int = 64
+    tau_create_init: Optional[float] = 0.1
     register_salience_decay: float = 0.5
     register_salience_threshold: float = 0.005
     register_init_scale: float = 0.02
@@ -100,7 +107,14 @@ class QKVCreationGate(nn.Module):
     budget constraint that independent sigmoid gates lack.
     """
 
-    def __init__(self, d: int, d_k: int, M: int, init_scale: float = 0.02):
+    def __init__(
+        self,
+        d: int,
+        d_k: int,
+        M: int,
+        init_scale: float = 0.02,
+        tau_create_init: Optional[float] = None,
+    ):
         super().__init__()
         self.M = M
         self.d_k = d_k
@@ -111,6 +125,13 @@ class QKVCreationGate(nn.Module):
 
         nn.init.normal_(self.W_K.weight, std=init_scale)
         nn.init.normal_(self.W_V.weight, std=init_scale)
+
+        if tau_create_init is not None:
+            self.log_tau = nn.Parameter(
+                torch.tensor(tau_create_init).log()
+            )
+        else:
+            self.log_tau = None
 
     def forward(
         self,
@@ -145,7 +166,13 @@ class QKVCreationGate(nn.Module):
         scores = torch.bmm(
             Q.reshape(B * M, 1, self.d_k),
             K.unsqueeze(1).expand(B, M, T, self.d_k).reshape(B * M, self.d_k, T),
-        ).reshape(B, M, T) / (self.d_k ** 0.5)
+        ).reshape(B, M, T)
+
+        if self.log_tau is not None:
+            tau = self.log_tau.exp().clamp(min=1e-4)
+            scores = scores / tau
+        else:
+            scores = scores / (self.d_k ** 0.5)
 
         alpha = F.softmax(scores, dim=-1)  # (B, M, T), sums to 1 over j
 
@@ -296,7 +323,9 @@ class FockPARFLM_v2(SparsePARFLM):
         # from the evolving register state, so layer-specificity is
         # implicit in the register content).
         self.creation_gate = QKVCreationGate(
-            d, cfg.d_k, M, init_scale=cfg.register_init_scale
+            d, cfg.d_k, M,
+            init_scale=cfg.register_init_scale,
+            tau_create_init=cfg.tau_create_init,
         )
 
         # Per-layer destruction gates.
@@ -475,7 +504,7 @@ class FockPARFLM_v2(SparsePARFLM):
     def get_fock_v2_overhead(self) -> int:
         """Count parameters specific to the Fock v2 augmentation."""
         overhead = self.register_embed.numel()
-        overhead += sum(p.numel() for p in self.creation_gate.parameters())
+        overhead += sum(p.numel() for p in self.creation_gate.parameters())  # includes log_tau
         for gate in self.destruction_gates:
             overhead += sum(p.numel() for p in gate.parameters())
         if self.reverse_ch is not None:
