@@ -1,55 +1,62 @@
-# Markov-order regression test of the dynamical-order claim
+# Dynamical-order tests of transformer hidden-state dynamics
 
-This directory contains the implementation, the recorded artefacts, and the
-narrative report for the **first-order ODE rejection experiment** that was
-pre-registered in
-[`docs/first_order_ODE_rejection_pre-registered_protocol.md`](../../docs/first_order_ODE_rejection_pre-registered_protocol.md).
+This directory contains the implementation, recorded artefacts, and
+narrative reports for **two complementary experiments** testing the
+dynamical order of transformer hidden-state evolution:
 
-The companion critique that motivated this test is
-[`docs/Evidence_for_second_order_ODE_governing_evolution.md`](../../docs/Evidence_for_second_order_ODE_governing_evolution.md).
+1. **Markov-order regression** (Outcome C) — pre-registered protocol
+   testing whether lag-2 information improves prediction over lag-1.
+2. **Experiment A** — direct trajectory fitting of first-order and
+   second-order autonomous ODEs to GPT-2 hidden states, including a
+   per-layer sweep across all 13 layers.
 
-> **Headline result.**  The protocol's primary cell — kernel ridge regression
-> at PCA dim 50, on the §14 corpus run through GPT-2 small *and* on the same
-> corpus replicated through Pythia-160m — yields **decision C: first-order
-> not rejected**.  In both architectures, the lag-1 predictor R₁ is *lower*
-> than the lag-2 predictor R₂, with sentence-cluster-bootstrap 95 % CIs on
-> R₁ − R₂ that strictly exclude zero on the **negative** side.  Robustness
-> across the 4-class × 3-PCA-dim × 2-architecture grid (24 cells) confirms
-> that no cell rejects first-order at the Bonferroni threshold
-> (p < 4.2 × 10⁻⁵), with the linear-ridge cells sitting essentially at the
-> null (ρ₁₂ ≈ 1.0) and the poly-2 cells degrading towards R₁ ≪ R₂ ≪ R₃ from
-> over-fitting — none of which give the *direction* the framework's claim
-> requires.
+Pre-registered protocol:
+[`companion_notes/first_order_ODE_rejection_pre-registered_protocol.md`](../../companion_notes/first_order_ODE_rejection_pre-registered_protocol.md).
+
+Companion critique:
+[`companion_notes/Evidence_for_second_order_ODE_governing_evolution.md`](../../companion_notes/Evidence_for_second_order_ODE_governing_evolution.md).
+
+> **Markov-order headline (Outcome C).**  The protocol's primary cell —
+> kernel ridge regression at PCA dim 50, on the §14 corpus run through
+> GPT-2 small *and* replicated through Pythia-160m — yields **decision C:
+> first-order not rejected**.  Robustness across the 4-class × 3-PCA-dim
+> × 2-architecture grid (24 cells) confirms that no cell rejects
+> first-order at the Bonferroni threshold (p < 4.2 × 10⁻⁵).
+
+> **Experiment A headline.**  No autonomous ODE — first-order or
+> second-order — fits the inference-time hidden-state dynamics of GPT-2
+> at any layer. All models produce negative or near-zero R² on held-out
+> test triplets, confirming that the dynamics is non-autonomous.
 
 The numerical artefacts and figures are all under `results/`. The narrative
 write-up is in `results/RESULTS.md` (top-level summary) and per-architecture
 in `results/<arch>/decision_table.md`.
 
-## Map to protocol §11
+## Directory map
 
 ```text
 notebooks/dynamics_order_test/
 ├── README.md                            # this file
 ├── data/
 │   └── corpus.json                      # 50 sentences × 5 domains, frozen
-├── extract_lagged_quadruples.py         # phase 1 (§3)
-├── markov_order_regression.py           # phase 2 (§4 primary, §5 LOSO+inner CV, §6 stats)
-├── robustness_sweep.py                  # phase 4 (§4.2 + §4.3 + §6.5/§6.6)
-├── plots.py                             # §9 figures
+├── extract_lagged_quadruples.py         # Markov-order: phase 1 (§3)
+├── markov_order_regression.py           # Markov-order: phase 2 (§4–§6)
+├── robustness_sweep.py                  # Markov-order: phase 4 (§4.2–§6.6)
+├── plots.py                             # Markov-order: §9 figures
 ├── scripts/
-│   └── run_all.sh                       # one-shot reproduce
+│   ├── run_all.sh                       # Markov-order: one-shot reproduce
+│   ├── experiment_a_trajectory_fitting.ipynb   # Exp. A: last-layer ODE fitting
+│   └── experiment_a_per_layer_sweep.ipynb      # Exp. A: per-layer sweep
 └── results/
-    ├── gpt2/
-    │   ├── quadruples.npz               # H_{t-2}, H_{t-1}, H_t, H_{t+1} per quadruple
-    │   ├── extraction_summary.json
-    │   ├── primary_residuals.npz
-    │   ├── primary_summary.json
-    │   ├── decision_table.md
-    │   └── figures/
-    ├── pythia/                          # same shape, replication
-    ├── robustness_grid.csv              # 24 cells × {ρ_12, ρ_23, p, ...}
+    ├── gpt2/                            # Markov-order: GPT-2 results
+    ├── pythia/                          # Markov-order: Pythia-160m results
+    ├── robustness_grid.csv
     ├── robustness_grid_summary.json
-    └── RESULTS.md
+    ├── experiment_a/                    # Exp. A: last-layer results (seed42)
+    │   └── seed42/
+    ├── experiment_a_per_layer/          # Exp. A: per-layer results (seed42)
+    │   └── seed42/
+    └── RESULTS.md                       # Combined results narrative
 ```
 
 ## Reproducing

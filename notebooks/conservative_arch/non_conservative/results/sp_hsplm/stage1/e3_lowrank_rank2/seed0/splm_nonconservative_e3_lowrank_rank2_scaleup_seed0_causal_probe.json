@@ -1,0 +1,20 @@
+[
+  {
+    "step": 1,
+    "label": "init",
+    "max_logit_delta_past": 0.0,
+    "n_pairs": 4
+  },
+  {
+    "step": 8000,
+    "label": "mid",
+    "max_logit_delta_past": 0.0,
+    "n_pairs": 4
+  },
+  {
+    "step": 16000,
+    "label": "final",
+    "max_logit_delta_past": 0.0,
+    "n_pairs": 4
+  }
+]
