@@ -1,0 +1,12 @@
+{
+  "M1_first_order_physics": {
+    "alpha": 1.6975419521331787
+  },
+  "M2_second_order_physics": {
+    "alpha": 1.6793177127838135,
+    "gamma": 2.40134859085083,
+    "velocity_retention": 0.2940010332048486
+  },
+  "M3_general_lag1_mlp": {},
+  "M4_general_lag2_mlp": {}
+}
