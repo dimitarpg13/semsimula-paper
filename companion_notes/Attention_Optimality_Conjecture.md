@@ -95,14 +95,18 @@ $C^1$ assumption already verified for attention in
 
 ### 2.3 Optimality Criteria
 
-For any SCN-admissible $\mathcal{R}$ define:
+For any SCN-admissible $\mathcal{R}$, define the four objective quantities:
 
-| Symbol | Quantity | Meaning |
-| --- | --- | --- |
-| $H(\mathcal{R})$ | $\mathbb{E}_i\big[ -\sum_j \alpha_{ij} \log \alpha_{ij} \big]$ | **routing entropy** — capacity for soft selection |
-| $\mathcal{T}(\mathcal{R})$ | $\mathbb{E}_i\big[ \sum_j \alpha_{ij} \cdot s(h_i, h_j) \big]$ | **expected score** under fixed similarity functional $s$ |
-| $\mathcal{C}(\mathcal{R})$ | FLOPs per token | computational cost (in matmul-equivalents) |
-| $\mathcal{S}(\mathcal{R})$ | extra slots beyond $\mathcal{H}$ | auxiliary state required |
+$$H(\mathcal{R}) = \mathbb{E}_i[ -\sum_j \alpha_{ij} \log \alpha_{ij} ]$$
+
+$$\mathcal{T}(\mathcal{R}) = \mathbb{E}_i[ \sum_j \alpha_{ij} \cdot s(h_i, h_j) ]$$
+
+| Symbol | Meaning |
+| --- | --- |
+| $H(\mathcal{R})$ | **routing entropy** — average per-query Shannon entropy of $\alpha_{ij}$; capacity for soft selection |
+| $\mathcal{T}(\mathcal{R})$ | **expected score** — average per-query weighted score under fixed similarity functional $s$ |
+| $\mathcal{C}(\mathcal{R})$ | **compute cost** — FLOPs per token (in matmul-equivalents) |
+| $\mathcal{S}(\mathcal{R})$ | **auxiliary state** — extra slots beyond $\mathcal{H}$ |
 
 The bilinear similarity is fixed at $s(h_i, h_j) = \langle W_Q h_i, W_K h_j\rangle / \sqrt{d_k}$.
 
@@ -118,7 +122,7 @@ The bilinear similarity is fixed at $s(h_i, h_j) = \langle W_Q h_i, W_K h_j\rang
 > four-objective problem
 >
 > $$
-> \max\, H \cdot \mathcal{T} \quad \text{subject to} \quad \mathcal{C} \le c_0, \;\; \mathcal{S} = 0,
+> \max H \cdot \mathcal{T} \quad \text{subject to} \quad \mathcal{C} \le c_0, \quad \mathcal{S} = 0,
 > $$
 >
 > with equality at the unique pair $(H, \mathcal{T})$ achievable by any
