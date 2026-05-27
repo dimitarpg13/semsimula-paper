@@ -1,0 +1,27 @@
+{
+  "cell": "Q4",
+  "seed": 0,
+  "recipe": {
+    "desc": "Q0 + canonical destruction (attention-derived, no MLP)",
+    "use_fock_v2": true,
+    "n_registers": 16,
+    "d_k": 64,
+    "register_salience_decay": 0.5,
+    "register_salience_threshold": 0.005,
+    "destruction_gate_hidden": 64,
+    "reverse_channel": true,
+    "per_layer_creation": false,
+    "blend_scale": 1.0,
+    "gumbel_creation": false,
+    "per_register_keys": false,
+    "orthogonal_query_init": false,
+    "canonical_destruction": true,
+    "tau_create_init": null
+  },
+  "applied_patches": [
+    "canonical_destruction: hook captures alpha_max peakedness; MLP gates replaced with g=0.1+0.4*(1-log(alpha_max*T)/log(T))"
+  ],
+  "best_ppl": 55.88885225607766,
+  "elapsed_s": 588.9982120990753,
+  "total_steps": 2000
+}

@@ -1,0 +1,56 @@
+[
+  {
+    "cell": "Q0",
+    "desc": "FockPARF v2 baseline (D1 replica, shared W_K, deterministic, Gaussian init, MLP destroy)",
+    "best_ppl": 58.84120819929799,
+    "final_ppl": 59.16430989482659
+  },
+  {
+    "cell": "Q1",
+    "desc": "Q0 + Gumbel-Softmax creation (stochastic virtual particle emission)",
+    "best_ppl": 58.829092740027264,
+    "final_ppl": 59.113858496625305
+  },
+  {
+    "cell": "Q2",
+    "desc": "Q0 + per-register key subspaces (independent interaction channels)",
+    "best_ppl": 59.3826545597737,
+    "final_ppl": 59.59977513188961
+  },
+  {
+    "cell": "Q3",
+    "desc": "Q0 + orthogonal W_Q initialisation (maximally spread probes)",
+    "best_ppl": 56.351439330082904,
+    "final_ppl": 56.81080403850718
+  },
+  {
+    "cell": "Q4",
+    "desc": "Q0 + canonical destruction (attention-derived, no MLP)",
+    "best_ppl": 55.88885225607766,
+    "final_ppl": 56.60057647818834
+  },
+  {
+    "cell": "Q5",
+    "desc": "Full QFT v2.1: Gumbel + per-reg keys + ortho init + canonical destroy",
+    "best_ppl": 58.47669920829091,
+    "final_ppl": 58.819790063850085
+  },
+  {
+    "cell": "Q6",
+    "desc": "Q5 + learnable temperature tau_0=1.0",
+    "best_ppl": 53.47218542662459,
+    "final_ppl": 53.66531888470474
+  },
+  {
+    "cell": "Q7",
+    "desc": "Q5 + M=32 (double registers, scaling interaction channels)",
+    "best_ppl": 122.24106759933392,
+    "final_ppl": 122.79638034408322
+  },
+  {
+    "cell": "Q8",
+    "desc": "PARFLM baseline (no registers, P10g recipe)",
+    "best_ppl": 56.42961601166283,
+    "final_ppl": 56.79052574806663
+  }
+]

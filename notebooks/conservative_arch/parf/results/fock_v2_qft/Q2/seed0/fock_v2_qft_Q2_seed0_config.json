@@ -1,0 +1,28 @@
+{
+  "cell": "Q2",
+  "seed": 0,
+  "recipe": {
+    "desc": "Q0 + per-register key subspaces (independent interaction channels)",
+    "use_fock_v2": true,
+    "n_registers": 16,
+    "d_k": 64,
+    "register_salience_decay": 0.5,
+    "register_salience_threshold": 0.005,
+    "destruction_gate_hidden": 64,
+    "reverse_channel": true,
+    "per_layer_creation": false,
+    "blend_scale": 1.0,
+    "gumbel_creation": false,
+    "per_register_keys": true,
+    "orthogonal_query_init": false,
+    "canonical_destruction": false,
+    "tau_create_init": null
+  },
+  "applied_patches": [
+    "per_register_keys: added per_reg_W_K (262,144 params)",
+    "per_register_keys: creation forward uses per_reg_W_K"
+  ],
+  "best_ppl": 59.3826545597737,
+  "elapsed_s": 588.7868292331696,
+  "total_steps": 2000
+}

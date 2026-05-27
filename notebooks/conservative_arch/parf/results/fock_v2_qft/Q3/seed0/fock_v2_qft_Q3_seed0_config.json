@@ -1,0 +1,27 @@
+{
+  "cell": "Q3",
+  "seed": 0,
+  "recipe": {
+    "desc": "Q0 + orthogonal W_Q initialisation (maximally spread probes)",
+    "use_fock_v2": true,
+    "n_registers": 16,
+    "d_k": 64,
+    "register_salience_decay": 0.5,
+    "register_salience_threshold": 0.005,
+    "destruction_gate_hidden": 64,
+    "reverse_channel": true,
+    "per_layer_creation": false,
+    "blend_scale": 1.0,
+    "gumbel_creation": false,
+    "per_register_keys": false,
+    "orthogonal_query_init": true,
+    "canonical_destruction": false,
+    "tau_create_init": null
+  },
+  "applied_patches": [
+    "orthogonal_query_init: W_Q re-initialised with orthogonal modes"
+  ],
+  "best_ppl": 56.351439330082904,
+  "elapsed_s": 583.9587769508362,
+  "total_steps": 2000
+}

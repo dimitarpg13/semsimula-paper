@@ -1,0 +1,31 @@
+{
+  "cell": "Q6",
+  "seed": 0,
+  "recipe": {
+    "desc": "Q5 + learnable temperature tau_0=1.0",
+    "use_fock_v2": true,
+    "n_registers": 16,
+    "d_k": 64,
+    "register_salience_decay": 0.5,
+    "register_salience_threshold": 0.005,
+    "destruction_gate_hidden": 64,
+    "reverse_channel": true,
+    "per_layer_creation": false,
+    "blend_scale": 1.0,
+    "gumbel_creation": true,
+    "per_register_keys": true,
+    "orthogonal_query_init": true,
+    "canonical_destruction": true,
+    "tau_create_init": 1.0
+  },
+  "applied_patches": [
+    "per_register_keys: added per_reg_W_K (262,144 params)",
+    "orthogonal_query_init: W_Q re-initialised with orthogonal modes",
+    "gumbel_creation: Gumbel(0,1) noise added to scores at train time",
+    "per_register_keys: creation forward uses per_reg_W_K",
+    "canonical_destruction: hook captures alpha_max peakedness; MLP gates replaced with g=0.1+0.4*(1-log(alpha_max*T)/log(T))"
+  ],
+  "best_ppl": 53.47218542662459,
+  "elapsed_s": 589.27024269104,
+  "total_steps": 2000
+}

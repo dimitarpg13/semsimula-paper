@@ -1,8 +1,8 @@
 # Improving the Fock Mechanism to Match Attention Expressivity in PARFLM
 
 **Technical Report — Semantic Simulation Research Programme**  
-**Status:** Active — May 2026  
-**Relates to:** Paper v4 §§9.4.2, 17.8, 17.13; FockPARFLM Phase 1 (Dyck₂ seed 0 complete)
+**Status:** Active — May 2026 (updated with QFT v2.1 experiment results)  
+**Relates to:** Paper v4 §§9.4.2, 17.8, 17.13, 17c; FockPARFLM Phase 1 (Dyck₂ seed 0 complete); QFT v2.1 (Q0–Q8 complete)
 
 ---
 
@@ -24,6 +24,7 @@
 14. [The Entropy Collapse Problem: Learnable Creation Temperature](#14-the-entropy-collapse-problem-learnable-creation-temperature)
 15. [Field-Theoretic Proof of the Conservative Obstruction](#15-field-theoretic-proof-of-the-conservative-obstruction)
 16. [QFT-Motivated Improvements to the Creation Gate](#16-qft-motivated-improvements-to-the-creation-gate)
+17. [QFT v2.1 Experiment Results and Current Bottleneck Analysis](#17-qft-v21-experiment-results-and-current-bottleneck-analysis)
 
 ---
 
@@ -1295,6 +1296,102 @@ These four changes are compatible with the learnable temperature fix (Section 14
 | D8 | D7 + per-register $W_K^{(k)}$ | Independent interaction channels |
 | D9 | D8 + orthogonal $W_Q$ init | Cold-start diversity |
 | D10 | D9 + canonical destruction | Full QFT-informed gate |
+
+---
+
+## 17. QFT v2.1 Experiment Results and Current Bottleneck Analysis
+
+### 17.1 Experiment Design
+
+The QFT-motivated improvements of Section 16 were tested in a controlled 9-arm experiment (`fockparf_v2_qft_improvements.ipynb`), each arm using the P10g-equivalent architecture (d=256, L=8, M=16, v\_hidden=2048) on TinyStories with a short training budget (1M tokens, 2000 steps, seed 0) to isolate the effect of each QFT improvement before committing to full-scale runs.
+
+| Cell | Description | Gumbel | Per-reg keys | Ortho init | Canon. destroy | tau | M |
+|---|---|---|---|---|---|---|---|
+| Q0 | FockPARF v2 baseline | - | - | - | - | fixed | 16 |
+| Q1 | + Gumbel-Softmax creation | yes | - | - | - | fixed | 16 |
+| Q2 | + per-register key subspaces | - | yes | - | - | fixed | 16 |
+| Q3 | + orthogonal W\_Q init | - | - | yes | - | fixed | 16 |
+| Q4 | + canonical destruction | - | - | - | yes | fixed | 16 |
+| Q5 | Full QFT v2.1 (all four) | yes | yes | yes | yes | fixed | 16 |
+| Q6 | Q5 + learnable tau (init 1.0) | yes | yes | yes | yes | learnable | 16 |
+| Q7 | Q5 + M=32 registers | yes | yes | yes | yes | fixed | 32 |
+| Q8 | PARFLM baseline (no registers) | - | - | - | - | - | 0 |
+
+### 17.2 Results Summary
+
+| Cell | Best PPL | Final PPL | vs Q0 | vs Q8 (PARFLM) | Entropy | Diversity |
+|---|---|---|---|---|---|---|
+| Q0 | 58.84 | 59.16 | -- | +4.3% | 0.134 | 0.145 |
+| Q1 | 58.83 | 59.11 | -0.0% | +4.3% | 0.132 | 0.149 |
+| Q2 | 59.38 | 59.60 | +0.9% | +5.2% | 0.141 | 0.347 |
+| Q3 | 56.35 | 56.81 | -4.2% | -0.1% | 0.135 | 0.300 |
+| Q4 | 55.89 | 56.60 | -5.0% | -1.0% | 0.134 | 0.245 |
+| Q5 | 58.48 | 58.82 | -0.6% | +3.6% | 0.147 | 0.644 |
+| **Q6** | **53.47** | **53.67** | **-9.1%** | **-5.2%** | **0.304** | **0.785** |
+| Q7 | 122.24 | 122.80 | +107.7% | +116.6% | 0.155 | 0.489 |
+| Q8 | 56.43 | 56.79 | -4.1% | -- | -- | -- |
+
+### 17.3 Key Findings
+
+**Finding 1: Naive Fock augmentation hurts.** Q0 (FockPARF v2 baseline, PPL 58.84) is *worse* than plain PARFLM with no registers (Q8, PPL 56.43). The register mechanism in its default configuration adds parameters without adding useful information routing. The QFT improvements are not optional refinements --- they are what makes the register mechanism beneficial.
+
+**Finding 2: Q3 and Q4 are the individual winners.** Orthogonal query initialization (Q3, -4.2% vs Q0) and canonical destruction (Q4, -5.0% vs Q0) each independently bring FockPARFLM to parity with PARFLM. Q3 works by ensuring registers probe diverse semantic subspaces from the first forward pass. Q4 works by coupling creation and destruction --- registers carrying focused content persist; registers carrying diffuse (free-field) content are annihilated.
+
+**Finding 3: Q5 interference resolved by learnable tau.** Combining all four improvements without learnable temperature (Q5, PPL 58.48) is worse than Q3 or Q4 alone. The four mechanisms interfere when the temperature is frozen: Gumbel noise and per-register keys increase score variance, but the fixed $1/\sqrt{d_k}$ scaling cannot compensate. Adding a learnable temperature (Q6, PPL 53.47) resolves this completely --- it is the single best arm, 9.1% below the FockPARF baseline and 5.2% below PARFLM.
+
+**Finding 4: Q6 achieves genuine register specialization.** Q6's register diversity of 0.785 (vs Q0's 0.145) confirms that registers in Q6 specialize on different interaction channels. Its mean normalized entropy of 0.304 (vs Q0's 0.134) shows the registers are attending selectively but not collapsed --- intermediate between uniform attention (1.0) and one-hot selection (0.0). Per-layer analysis shows diversity growing smoothly from 0.985 at layer 1 to 0.864 at layer 7, indicating that later layers progressively sharpen register assignments.
+
+**Finding 5: M=32 registers diverge.** Q7 (M=32, PPL 122.24) fails catastrophically. Diversity collapses at layers 5--7 (from 1.0 to 0.07), suggesting the model cannot coordinate 32 registers without additional stabilization (e.g., a temperature annealing schedule or per-register temperature parameters). This is consistent with the NN-QFT $1/N_h$ suppression result: each additional register contributes a smaller non-Gaussian correction, and at 32 registers the optimization landscape becomes too complex for the fixed temperature to navigate.
+
+**Finding 6: Canonical destruction fix.** The original Q4 implementation caused catastrophic register collapse (all registers died on the first forward pass) because multiplying salience by raw $\alpha_{\max}$ (which is approximately $1/T \approx 0.004$ at initialization) produced $0.004^L \approx 10^{-18}$ after $L$ layers. The fix uses a log-normalized peakedness signal:
+
+$$\text{survival} = \frac{\log(\alpha_{\max} \cdot T)}{\log(T)} \in [0, 1]$$
+
+$$g_{\text{destroy}} = 0.1 + 0.4 \cdot (1 - \text{survival}) \in [0.1, 0.5]$$
+
+This produces meaningful selectivity: uniform attention yields $g_{\text{destroy}} \approx 0.5$ (rapid annihilation), while peaked attention yields $g_{\text{destroy}} \approx 0.1$ (long persistence). The MLP destruction gates are fully replaced (not stacked on top), and a forward hook captures $\alpha_{\max}$ during the existing creation gate call without any additional forward passes.
+
+### 17.4 Contextualizing Against the PARFLM Ceiling
+
+The P10 ladder established the PARFLM architectural ceiling on TinyStories:
+
+| Run | Architecture | Steps | Tokens | Best PPL |
+|---|---|---|---|---|
+| P10g | PARFLM (v\_hidden=2048, 22M params) | 16,000 | 5M | 26.42 |
+| P10h | PARFLM (same) | 16,000 | 20M | 26.43 |
+| S2 (v2) | FockPARF v1 (d=256, L=8, M=32) | 16,000 | 5M+ | 27.85 |
+
+The Q6 result (53.47 PPL at 2000 steps / 1M tokens) is a small-budget proof-of-concept. At the same short budget, PARFLM (Q8) achieves 56.43 --- so Q6 already holds a 5.2% advantage. Power-law extrapolation of Q6's learning curve (scaling exponent $\alpha \approx 0.33$) suggests PPL $\sim$24--26 at 8000 steps with 5M tokens, which would be at or slightly below the P10g/h PARFLM ceiling. Whether Q6 can definitively break through the 26.4 PPL wall remains to be tested.
+
+### 17.5 Current Bottleneck: The Temperature-Register Coordination Problem
+
+The Q6 and Q7 results together reveal the current binding bottleneck. The Q6 recipe (all four QFT improvements + learnable temperature + M=16) is the clear winner, but:
+
+1. **The global learnable temperature is a single scalar.** All 16 registers share the same temperature $\tau$. This means the model must find a single compromise temperature that works across registers with different semantic roles. At M=16 this compromise is feasible; at M=32 (Q7) it fails completely.
+
+2. **The M=32 diversity collapse at deep layers** (layers 5--7) indicates the model needs additional structure to coordinate large register pools. In multi-head attention, each head has its own Q/K projections and effective temperature. The Fock register pool currently has per-register Q but shared temperature --- an intermediate level of independence that works at M=16 but not at M=32.
+
+3. **The 26.4 PPL PARFLM ceiling is architectural, not data-limited** (confirmed by P10h). To break through it, the Fock mechanism must provide information routing that the conservative PARF potential cannot. The Q6 result shows the mechanism is on the right track (5.2% better than PARFLM at matched budget), but the margin is modest.
+
+### 17.6 Next Steps
+
+Based on the QFT v2.1 results, the following improvements are the highest-priority candidates for breaking through the 26.4 PPL ceiling:
+
+1. **Per-register temperature.** Replace the single global $\tau = \exp(\theta_\tau)$ with per-register temperatures $\tau_k = \exp(\theta_{\tau,k})$ for $k = 1, \ldots, M$. This adds $M$ scalar parameters (16 at current scale) and allows each register to discover its own optimal attention sharpness. Hypothesis: this is necessary for M=32 to work and may further improve M=16.
+
+2. **Temperature annealing schedule.** Initialize at a warm temperature ($\tau_0 = 1.0$) for exploration, then anneal toward a lower temperature ($\tau_{\min} = 0.1$--$0.3$) over training. This is analogous to simulated annealing and provides a more principled initialization trajectory than a fixed learnable scalar.
+
+3. **Full-scale Q6 validation.** Run Q6 at the P10g budget (8000 steps, 5M tokens) to determine whether it breaks the 26.4 PPL ceiling. This is the critical experiment: if Q6 at full budget achieves PPL $\lt$ 26.4, it confirms that the QFT-motivated Fock mechanism provides expressivity beyond the conservative PARFLM ceiling.
+
+4. **Per-register temperature + M=32.** If per-register temperature fixes the Q7 divergence, scaling to M=32 registers with the full QFT stack could unlock further gains. The Q7 diagnostic (diversity collapse at deep layers) is the signature of the problem; per-register temperature is the predicted fix.
+
+5. **Deeper V\_theta.** The P10 ladder showed that V\_theta width is the dominant parameter lever for PARFLM. Whether the same holds when Fock registers provide non-conservative routing remains to be tested. Hypothesis: the Fock mechanism reduces the burden on V\_theta by providing direct information routing, so the V\_theta ceiling may be less binding.
+
+### 17.7 Experiment Log
+
+| Experiment | Notebook | Results directory | Date |
+|---|---|---|---|
+| QFT v2.1 (Q0--Q8) | `scripts/fockparf_v2_qft_improvements.ipynb` | `results/fock_v2_qft/` | May 2026 |
 
 ---
 

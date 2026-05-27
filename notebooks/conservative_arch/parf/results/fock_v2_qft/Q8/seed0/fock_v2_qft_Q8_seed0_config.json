@@ -1,0 +1,13 @@
+{
+  "cell": "Q8",
+  "seed": 0,
+  "recipe": {
+    "desc": "PARFLM baseline (no registers, P10g recipe)",
+    "use_fock_v2": false,
+    "n_registers": 0
+  },
+  "applied_patches": [],
+  "best_ppl": 56.42961601166283,
+  "elapsed_s": 500.17153692245483,
+  "total_steps": 2000
+}
