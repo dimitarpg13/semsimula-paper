@@ -252,9 +252,17 @@ At inference time, the mask is what makes **KV-caching** work: once the keys and
 
 $$A^{(i)} = \mathrm{softmax}_{\text{row}}\big(S^{(i)}\big), \qquad A^{(i)} \in \mathbb{R}^{T \times T}$$
 
-Explicitly, for row $t$:
+Given the prior node, $S^{(i)}$ has shape $(T, T)$ with $S^{(i)} = Q^{(i)}(K^{(i)})^\top / \sqrt{d_k}$. The `_row` qualifier means softmax is applied along the **last axis** (the key/column index) independently for each query row. So for a single head $i$, with query index $t$ and key index $t'$:
 
-$$A^{(i)}_{t,t'} = \frac{\exp\big(S^{(i)}_{t,t'}\big)}{\sum_{u=1}^{T} \exp\big(S^{(i)}_{t,u}\big)}$$
+$$A^{(i)}_{t,t'} = \mathrm{softmax}_{\text{row}}(S^{(i)})_{t,t'} = \frac{\exp\big(S^{(i)}_{t,t'}\big)}{\sum_{u=1}^{T} \exp\big(S^{(i)}_{t,u}\big)}$$
+
+Each row $t$ is normalized over $u = 1, \dots, T$, so every row of $A^{(i)}$ sums to 1 and $A^{(i)}$ keeps shape $(T, T)$. In practice it is the numerically stable form with the per-row max subtracted:
+
+$$A^{(i)}_{t,t'} = \frac{\exp\big(S^{(i)}_{t,t'} - m_t\big)}{\sum_{u=1}^{T} \exp\big(S^{(i)}_{t,u} - m_t\big)}, \qquad m_t = \max_{u} S^{(i)}_{t,u}$$
+
+which is mathematically identical but avoids overflow.
+
+One thing worth flagging given the diagram ordering: the **optional causal mask** sits *before* this node, so the masking is applied to $S^{(i)}$ (setting $S^{(i)}_{t,t'} = -\infty$ for $t' \gt t$) prior to the exp. Those entries then map to exactly 0 in $A^{(i)}$, and the normalization denominator only runs over the unmasked keys $u \le t$. The formula above defines `softmax_row` with the sum over all $u = 1, \dots, T$ — this is consistent only because the masked logits have already been driven to $-\infty$ upstream, so their $\exp$ terms contribute exactly zero to both numerator and denominator.
 
 Each row of $A^{(i)}$ is a probability distribution over the $T$ key positions. This matrix is the **attention pattern** — the object interpretability researchers stare at to understand what a head is doing. Recurring motifs include:
 
