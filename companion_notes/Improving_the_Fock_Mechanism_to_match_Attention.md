@@ -72,13 +72,7 @@ This is **identical** to P10g (5M tokens, 16k steps, PPL = 26.42). Quadrupling t
 
 The gap to the matched attention baseline (MatchedGPT, val PPL = 7.81) is therefore **18.6 PPL** and can only be closed by escaping the expressivity class — not by scaling data, compute, or the conservative force law.
 
-```
-Architecture ladder (TinyStories, matched scale):
-
-  MatchedGPT-2 (8-layer attention)     →   7.81 PPL   ████████████████████████████████████████
-  PARFLM best (P10h, 20M tokens)        →  26.43 PPL   ████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░
-  SPLM baseline (no PARF)               →  ~287 PPL    █░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
-```
+![Architecture Ladder: TinyStories PPL](images/fock_ppl_ladder.png)
 
 ---
 
@@ -160,23 +154,7 @@ $$e^- \xrightarrow{\text{emit}} \gamma_\text{virtual} \xrightarrow{\text{propaga
 
 The Feynman vertex factor at the source (emission), the propagator (what is carried), and the vertex factor at the receiver (absorption) are **three separate objects** — exactly the Q/K/V decoupling.
 
-```
-    ┌─────────────────────────────────────────────────────────────────────────┐
-    │                          QED Interaction                               │
-    │                                                                       │
-    │   e⁻ (source j) ──emit γ──▶ virtual photon γ ──absorb γ──▶ e⁻ (i)   │
-    │                   vertex:     payload:          vertex:      Δhᵢ +=   │
-    │                   kⱼ = Wₖhⱼ  vⱼ = Wᵥhⱼ        αᵢⱼ·vⱼ     αᵢⱼ·vⱼ  │
-    └─────────────────────────────────────────────────────────────────────────┘
-    ┌─────────────────────────────────────────────────────────────────────────┐
-    │                       Attention (same structure)                       │
-    │                                                                       │
-    │   Token j ─────create────▶ semantic photon ──annihilate──▶ Token i    │
-    │               key: kⱼ      value: vⱼ = Wᵥhⱼ  coupling:    yᵢ =     │
-    │               = Wₖhⱼ      (virtual particle)  softmax      Σⱼαᵢⱼvⱼ │
-    │                                                (qᵢ·kⱼ/√d)           │
-    └─────────────────────────────────────────────────────────────────────────┘
-```
+![Attention as Virtual Particle Exchange: QED analogy](images/fock_qed_attention_analogy.png)
 
 ### 5.2 Correspondence Table
 
@@ -221,28 +199,7 @@ Registers start in a "vacuum" state (inactive). A learned creation gate activate
 
 ### 6.2 Forward Pass per Layer $\ell$
 
-```
-1. Creation gate:   g_create^(ℓ) = σ( MLP( mean(h_{1:T}) ) )  ∈ [0,1]^M
-
-2. Salience update:
-   σ_j ← σ_j · λ + g_j · (1 - λ),    λ = 0.9
-   active_j = (σ_j > τ_thresh)
-
-3. Concatenate active registers:
-   h_full = [h_1, ..., h_T, r_{j₁}, ..., r_{j_k}]  ∈ ℝ^{(T+k)×d}
-
-4. PARF dynamics on h_full:
-   - V_θ restoring force on all particles
-   - Sparse V_φ pair force (top-k selection)
-   - Damped Verlet integration step
-
-5. Destruction gate (per active register j):
-   g_destroy_j = σ( MLP(r_j) )
-   σ_j ← σ_j · (1 - g_destroy_j)
-
-6. Split: extract updated h_{1:T} for LM head;
-   store updated r_j states for next layer.
-```
+![FockPARFLM v1: Forward Pass per Layer](images/fock_forward_pass_v1.png)
 
 Parameter budget at P10f scale ($d = 256$, $L = 8$, $M = 32$): **~288K overhead** (<2% of the ~13M base PARFLM).
 
@@ -295,23 +252,7 @@ is conditioned on the **mean of all tokens** — a single undifferentiated globa
 | Q/K/V decoupling | Gate determines both whether to create AND what content register holds | Coupling and content are fused |
 | Competitive normalization | $M$ sigmoid gates are independent | No budget constraint; creation of register $k$ does not affect register $k'$ |
 
-```
- Current FockPARFLM — Structural Gaps        What Attention Does
- ─────────────────────────────────────        ────────────────────────────────────
-                                              qᵢ = Wqhᵢ ─┐
-    mean(h₁..T) ──▶ MLP sigmoid gates        (per-token   │
-    (symmetric,      (independent,             query)      ├──▶ softmax(qᵢ·kⱼ/√d)
-     global)          no budget)                           │    (competitive budget)
-         │                                    kⱼ = Wₖhⱼ ─┘           │
-         ▼                                    (per-token key)         ▼
-    activate register j                                      vⱼ = Wᵥhⱼ
-    rⱼ starts from learnable embedding                       (decoupled content)
-    (NOT from input content)                                         │
-         │                                                           ▼
-         ▼                                               Δhᵢ = Σⱼ αᵢⱼ vⱼ
-    participates in Vφ
-    (symmetric pair force)
-```
+![Current FockPARFLM vs Attention: Structural Gaps](images/fock_structural_gaps.png)
 
 The current FockPARFLM therefore uses creation/destruction to implement **auxiliary persistent memory** — registers are additional hidden states that persist across layers. This is computationally useful (it escapes the v0 ceiling via Dyck₂) but it does not implement **directed information exchange** — the mechanism that drives attention's language-modelling power.
 
@@ -321,26 +262,7 @@ The current FockPARFLM therefore uses creation/destruction to implement **auxili
 
 The current FockPARFLM creates and destroys **input particles** (register slots as additional hidden states). The QFT analysis in Section 5 identifies that attention creates and destroys **virtual mediating particles** — semantic photons $\gamma$ that carry information from source $j$ to receiver $i$.
 
-```
- Current: Creates Input Particles
- ─────────────────────────────────────────────────────────────────────
-   Vacuum ──creation gate──▶ Register rₖ ◀──Vφ pair force──▶ rₖ
-   state    (mean-cond.)     (real particle,    (symmetric)
-                              persistent)
-                                  │
-                          destruction gate
-                                  │
-                                  ▼
-                             Vacuum state
-
- Proposed: Creates Virtual Exchange Particles
- ─────────────────────────────────────────────────────────────────────
-   Token j ──emit semantic──▶ virtual γ ──absorb at i──▶ Token i
-              photon           (lifetime                  Δhᵢ +=
-              a†(kⱼ)|0⟩       ≈ 1/(1-λ)                  αᵢⱼ·vⱼ
-              payload:          layers)    coupling:
-              vⱼ = Wᵥhⱼ                   softmax(qᵢ·kⱼ)
-```
+![FockPARFLM: Current vs Proposed mechanism](images/fock_current_vs_proposed.png)
 
 | | Current FockPARFLM | Proposed FockPARFLM v2 |
 |---|---|---|
@@ -447,49 +369,7 @@ class FockPARFLM_v2(SparsePARFLM):
 
 ### 9.5 Full Forward Pass
 
-```
-                          Input tokens h₁..T
-                          ┌───────┴───────┐
-                          ▼               ▼
-                    Wₖ: kⱼ (T×d_k)   Wᵥ: vⱼ (T×d)
-                          │               │
-    ┌─────────────────────┼───────────────┼──────────────────────────┐
-    │ Per-register k:     │               │  Q/K/V Creation Event   │
-    │                     │               │                          │
-    │  rₖ current ──▶ W_Q^k ──▶ qₖ       │                          │
-    │  state              │               │                          │
-    │                     ▼               │                          │
-    │              qₖ · kⱼ / √d_k        │                          │
-    │              (T scores)             │                          │
-    │                     │               │                          │
-    │                     ▼               │                          │
-    │              softmax over j ────────┤                          │
-    │              αₖⱼ (Σⱼ=1)            │                          │
-    │              ┌──────┴──────┐        │                          │
-    │              ▼             ▼        ▼                          │
-    │        max_j(αₖⱼ)    Σⱼ αₖⱼ · vⱼ = new rₖ                   │
-    │        (salience)                                              │
-    └─────────┼────────────────────────────┼─────────────────────────┘
-              ▼                            │
-    σₖ = σₖ·λ + signal·(1-λ)              │
-              │                            │
-              ▼                            │
-        σₖ > threshold?                    │
-         ╱          ╲                      │
-       Yes           No                    │
-        │         (inactive)               │
-        ▼                                  │
-    Register k active ──────┐              │
-                            ▼              │
-    h₁..T ──────────▶ PARF dynamics        │
-                       Vθ + Vφ + Qᵢ       │
-                       + damped Verlet     │
-                       ┌──────┴──────┐     │
-                       ▼             ▼     ▼
-                  h₁..T (out)    Destruction gate ──▶ rₖ (next layer)
-                  → LM head      g = σ(MLP(rₖ))
-                                 σₖ ← σₖ·(1-g)
-```
+![FockPARFLM v2: Full Forward Pass](images/fock_full_forward_pass.png)
 
 ---
 
@@ -560,22 +440,7 @@ The proposed mechanism has one structural advantage over standard attention: cro
 
 ## 12. Proposed Experiments
 
-```
-FockPARFLM v2 Experimental Programme
-═══════════════════════════════════════════════════════════════════════════
-
-Phase 1 — Dyck₂ Falsifier
-  F2-qkv-creation (d=64, M=16)        ████████  May 22 – May 29
-  F2-scale-up (d=128, M=32, 8k steps)          ████████  May 29 – Jun 5
-  3-seed consistency check                               █████  Jun 5 – Jun 10
-
-Phase 2 — TinyStories
-  P11-qkv (M=16, P10f scale)                                  ██████████  Jun 10 – Jun 20
-  P11-qkv-32 (M=32, 16k steps)                                           ██████████  Jun 20 – Jun 30
-
-Phase 3 — Cross-serial
-  aⁿbⁿcⁿ falsifier (v3 required)                                                    ██████████████  Jun 30 – Jul 14
-```
+![FockPARFLM v2 Experimental Programme](images/fock_experiment_gantt.png)
 
 ### 12.1 F2-qkv-creation: Dyck₂ Falsifier with Q/K/V Creation
 
@@ -639,51 +504,7 @@ where $\hat{\phi}(x) = \sum_j v_j \delta(x - k_j)$ is the semantic photon field 
 
 ### 13.3 The Expressivity Hierarchy
 
-```
-                    ┌───────────────────────────────────┐
-                    │  v0: SPLM                         │
-                    │  Conservative dynamics             │
-                    │  Regular languages (finite aut.)   │
-                    └──────────┬──────────┬──────────────┘
-                               │          │
-                  + Vφ pair    │          │  + mean-conditioned
-                    force      │          │    registers
-                               ▼          │
-                    ┌──────────────────┐   │
-                    │  PARFLM          │   │
-                    │  Still v0        │   │
-                    │  PPL ceiling:    │   │
-                    │  26.4 TinyStories│   │
-                    └──────────────────┘   │
-                                          ▼
-                              ┌───────────────────────┐
-                              │  FockPARFLM v1        │
-                              │  v0 + v2 partial      │
-                              │  Dyck₂: +1.3pp        │
-                              └───────────┬───────────┘
-                                          │
-                               + Q/K/V creation
-                               (this report)
-                                          │
-                                          ▼
-                              ┌───────────────────────┐
-                              │  FockPARFLM v2        │
-                              │  v0 + v2 full         │
-                              │  CF class (predicted) │
-                              │  PPL: TBD             │
-                              └───────────┬───────────┘
-                                          │
-                              + Lie group operator
-                                actions
-                                          │
-                                          ▼
-                              ┌───────────────────────┐
-                              │  v0 + v2 + v3         │
-                              │  Full MCS (LCFRS)     │
-                              │  = Attention           │
-                              │    expressivity class  │
-                              └───────────────────────┘
-```
+![FockPARFLM Expressivity Hierarchy](images/fock_expressivity_hierarchy.png)
 
 ### 13.4 The Separator Remains Diagnostic
 
@@ -880,22 +701,7 @@ This section provides a self-contained, detailed account of the **field-theoreti
 
 The Conservative Obstruction Theorem (Section 4) works "from the inside" — it examines the force law $F_i = -\nabla_{h_i} V$ and shows that gradient structure imposes three constraints (Jacobian symmetry, gradient entanglement, force growth) that are individually violated by attention. The field-theoretic proof works "from the outside" — it examines the statistical correlations produced by a layer of dynamics and shows that conservative potentials produce free (Gaussian) field statistics while attention produces interacting (non-Gaussian) field statistics, and the two classes are separated by a sharp boundary.
 
-```
-Conservative Obstruction            Field-Theoretic Proof
-(dynamical-systems side)            (statistical / QFT side)
-------------------------------      ----------------------------------
-Force law: F = -grad V              Correlation functions of the field
-Schwarz symmetry of Hessian         Wick's theorem (Isserlis' theorem)
-  => Jacobian symmetry (P1)           => G_c^(4) = 0 for free fields
-  => gradient entanglement (P2)       => all n-point factorize via 2-point
-  => force growth (P3)                => no virtual exchange
-
-Attention violates P1-P3            Attention has G_c^(4) != 0
-  => no scalar V exists               => attention is an interacting QFT
-                                       => virtual particle exchange required
-
-Conclusion: conservative dynamics cannot replicate attention
-```
+![Two Proofs of the Conservative Obstruction](images/fock_two_proofs.png)
 
 The two proofs are logically independent but mutually reinforcing. The dynamical-systems proof tells us WHY (which structural properties fail); the field-theoretic proof tells us that the failure is IRREDUCIBLE (no reparameterisation, resummation, or mean-field reduction can bridge the gap).
 
@@ -1244,39 +1050,7 @@ $$\sigma_k \leftarrow \sigma_k \cdot \lambda + \max_j(\alpha_{kj}) \cdot (1 - \l
 
 $$\sigma_k \leftarrow \sigma_k \cdot \max_j(\alpha_{kj})$$
 
-```
-QFT-Informed FockPARFLM v2.1 Creation Gate
---------------------------------------------
-                h_1 .. h_T (input tokens)
-                    |
-        +-----------+-----------+
-        |                       |
-   W_K^(k) per-register   W_V shared
-   key projections         value projection
-        |                       |
-   k_j^(k) (per-register  v_j (shared content)
-    key space)                  |
-        |                       |
-   q_k = W_Q^(k) r_k           |
-   (orthogonal init)            |
-        |                       |
-   s_kj = q_k . k_j^(k)        |
-        |                       |
-   s_kj + g_j  (Gumbel noise)  |
-        |                       |
-   softmax(s_kj / tau)         |
-   tau = exp(theta_tau)         |
-   (learnable temperature)      |
-        |                       |
-   alpha_kj ---+                |
-        |      |                |
-        v      v                v
-   max_j(alpha_kj)     sum_j alpha_kj . v_j = r_k (new)
-   = creation signal
-        |
-   sigma_k update
-   (creation + canonical destruction)
-```
+![QFT-Informed FockPARFLM v2.1 Creation Gate](images/fock_creation_gate_v21.png)
 
 ### 16.7 Summary: QFT-Motivated Design Principles
 
