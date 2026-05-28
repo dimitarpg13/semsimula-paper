@@ -39,6 +39,8 @@ to the backward pass.
 
 ## 2. The actual OOM source: V_φ and `create_graph=True`
 
+![V_phi outer-product tensor creation inside the score-head](images/vphi_outer_product_memory.png)
+
 Each `_layer_step` also computes the V_φ force — the pair-interaction term
 that distinguishes PARF from plain SPLM:
 
@@ -78,6 +80,8 @@ At the default training config (`B=16, T=512, H_score=32`):
 ---
 
 ## 3. Why `create_graph=True` prevents early freeing
+
+![Memory lifecycle: normal backprop vs create_graph=True](images/memory_lifecycle_comparison.png)
 
 In normal backprop, PyTorch frees each layer's intermediates as soon as the
 backward pass processes that layer. Peak memory equals the full-forward
@@ -123,6 +127,8 @@ V_φ's backward, including additional (B,T,T,H)-shaped objects.
 
 ## 4. Why structured V_θ does not help
 
+![Two independent force paths in _layer_step](images/layer_step_force_paths.png)
+
 Structured V_θ eliminates `create_graph` overhead only for the V_θ branch.
 The two force computations are fully independent code paths:
 
@@ -142,6 +148,8 @@ with `B=16, T=512`.
 ---
 
 ## 5. The fix: micro-batch + gradient accumulation
+
+![A100 memory breakdown: B=16 (OOM) vs B=8+GRAD_ACCUM=2 (fix)](images/parf_memory_breakdown.png)
 
 Halving `B` halves every `(B, T, T, H_score)` tensor:
 
