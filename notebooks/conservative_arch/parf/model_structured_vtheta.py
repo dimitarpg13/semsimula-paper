@@ -369,16 +369,25 @@ def validate_analytical_grad(
     batch_shape: tuple = (3, 5),
     seed: int = 0,
     tol: float = 1e-5,
+    device=None,
 ) -> tuple:
     """Compare analytical_grad against torch.autograd.grad on V.sum().
 
     Returns (max_abs_diff, max_rel_diff).  Both should be ~< 1e-5
     for the structured variants (floating-point noise) and ~< 1e-4
     for the hybrid (autograd through the MLP).
+
+    `device` defaults to the device of the module's first parameter so that
+    the validation tensors are always co-located with the module weights.
     """
+    if device is None:
+        try:
+            device = next(module.parameters()).device
+        except StopIteration:
+            device = torch.device('cpu')
     torch.manual_seed(seed)
-    xi = torch.randn(*batch_shape, d)
-    h = torch.randn(*batch_shape, d, requires_grad=True)
+    xi = torch.randn(*batch_shape, d, device=device)
+    h = torch.randn(*batch_shape, d, requires_grad=True, device=device)
     V = module(xi, h)
     assert V.shape == (*batch_shape, 1), \
         f"Expected V shape {(*batch_shape, 1)}, got {V.shape}"
