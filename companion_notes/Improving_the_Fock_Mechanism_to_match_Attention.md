@@ -177,8 +177,8 @@ $$\mathcal{F}(\mathcal{H}) = \bigoplus_{n=0}^{\infty} \mathcal{H}^{\otimes n}$$
 
 | v2 mechanism | Fock-space object |
 |---|---|
-| Introduce an entity into discourse | Creation operator $a^\dagger_v |\psi\rangle$ |
-| Entity drops out of discourse | Annihilation operator $a_v |\psi\rangle$ |
+| Introduce an entity into discourse | Creation operator $a^\dagger_v \lvert\psi\rangle$ |
+| Entity drops out of discourse | Annihilation operator $a_v \lvert\psi\rangle$ |
 | Count of currently-live entities | Number operator $\hat{N} = \sum_v a^\dagger_v a_v$ |
 | Field at semantic position $x$ | $\hat{\phi}(x) = \sum_v \phi_v(x) a_v$ |
 
