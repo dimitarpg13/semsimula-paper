@@ -191,6 +191,55 @@ CUDA step-timing benchmark and cross-cell comparison dashboard.
 
 ---
 
+## PARFLM Scaling Optimisations
+
+Proof-of-concept notebooks validating engineering techniques to reduce
+PARFLM's GPU memory footprint.  These address the V_φ `create_graph=True`
+memory bottleneck catalogued in the paper's OOM forensics table (§17,
+Table 28).  Both notebooks are self-contained (no Colab clone cell) and
+auto-detect CUDA/MPS/CPU.
+
+| Notebook | Path | Description |
+|----------|------|-------------|
+| [gradient_checkpoint_poc](#grad_ckpt_poc) | `notebooks/conservative_arch/parf/scripts/gradient_checkpoint_poc.ipynb` | Level 2 per-layer-step gradient checkpointing POC |
+| [gradient_checkpoint_gathered_vphi_poc](#grad_ckpt_gathered_poc) | `notebooks/conservative_arch/parf/scripts/gradient_checkpoint_gathered_vphi_poc.ipynb` | Integrated Level 2 checkpointing + Stage-1.5b gathered V_φ POC |
+
+### grad_ckpt_poc
+
+Validates that per-layer-step checkpointing with `use_reentrant=False`
+produces correct parameter gradients for a PARF-like model whose
+`_layer_step` contains `autograd.grad(create_graph=True)`.  Three modes
+tested: no checkpointing (baseline), Level 1 V_φ-only checkpoint, and
+Level 2 full layer-step checkpoint.  Compares parameter gradients across
+all modes (< 10⁻⁵ relative error) and measures peak GPU memory.
+
+Level 2 reduces peak V_φ activation memory from O(L·B·T²·H) to
+O(B·T²·H) — constant in the number of layers L — at ~50% wall-clock
+overhead per training step.
+
+- **Experiments:** Gradient correctness validation + GPU memory measurement
+- **Design doc:** `companion_notes/Gradient_Checkpointing_for_PARF.md`
+- **GPU:** Any CUDA for correctness; A100/H100 for meaningful memory numbers
+
+### grad_ckpt_gathered_poc
+
+Validates the compound effect of Level 2 checkpointing **and** Stage-1.5b
+gathered V_φ (top-k source gathering before V_φ forward).  Four modes
+tested in a 2×2 grid: (dense vs gathered) × (no checkpoint vs layer
+checkpoint).  Includes a minimal score head for Gumbel top-k routing.
+
+The integrated design reduces peak V_φ activation memory from
+O(L·B·T²·H) to O(B·T·k·H) — constant in L, linear in T, proportional
+to k rather than T.  At B=16, T=512, L=8, k=4: ~10–14 GB → ~8 MB
+(~1000× reduction).
+
+- **Experiments:** 4-mode gradient correctness + 4-mode GPU memory comparison
+- **Design docs:** `companion_notes/Gradient_Checkpointing_for_PARF.md`,
+  `companion_notes/PARF_Stage_1_5b_design.md`
+- **GPU:** Any CUDA for correctness; A100/H100 for meaningful memory numbers
+
+---
+
 ## FockPARF v2 Development
 
 | Notebook | Path | Description |
