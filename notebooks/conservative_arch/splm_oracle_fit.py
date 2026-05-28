@@ -48,16 +48,73 @@ from model import ScalarPotentialLM, SPLMConfig
 from e_init_corpus import CORPUS
 
 
+# ---------------------------------------------------------------------------
+def causal_cumulative_mean(h: torch.Tensor) -> torch.Tensor:
+    """Causal (left-to-right) cumulative mean along the token axis (dim 1).
+
+    For position t, returns the mean of h[:, 0:t+1, :].  This is the
+    leak-free xi computation: xi_t depends only on h_0 .. h_t, never on
+    future positions.
+    """
+    cumsum = h.cumsum(dim=1)
+    T = h.shape[1]
+    denom = torch.arange(1, T + 1, device=h.device,
+                         dtype=h.dtype).view(1, T, 1)
+    return cumsum / denom
+
+
 SCRIPT_DIR  = Path(__file__).parent
 RESULTS_DIR = SCRIPT_DIR / "results"
 
 
 # ---------------------------------------------------------------------------
-def load_splm(ckpt_path: Path, device: str) -> ScalarPotentialLM:
+def load_splm(ckpt_path: Path, device: str):
+    """Load an SPLM checkpoint.
+
+    Tries the base ScalarPotentialLM first.  If the checkpoint's variant tag
+    or state-dict indicates a SARF-mass variant, falls back to the appropriate
+    subclass loaded from sarf_mass_variant/.
+    """
+    import sys
     raw = torch.load(ckpt_path, map_location=device, weights_only=False)
-    cfg = SPLMConfig(**raw["model_cfg"])
+    variant = raw.get("variant", "")
+    cfg_dict = raw["model_cfg"]
+    state_dict = raw["model_state_dict"]
+
+    # Try base model first.
+    if not variant or variant == "splm":
+        try:
+            cfg = SPLMConfig(**{k: v for k, v in cfg_dict.items()
+                                if k in SPLMConfig.__dataclass_fields__})
+            model = ScalarPotentialLM(cfg).to(device)
+            model.load_state_dict(state_dict)
+            model.eval()
+            return model
+        except Exception:
+            pass  # fall through to SARF variants
+
+    # Try SARF-mass variants (single-xi and multi-xi).
+    sarf_dir = Path(__file__).parent / "sarf_mass_variant"
+    if str(sarf_dir) not in sys.path:
+        sys.path.insert(0, str(sarf_dir))
+    try:
+        from model_sarf_mass import (  # type: ignore
+            ScalarPotentialLMSARFMass, SPLMSARFMassConfig,
+        )
+        cfg = SPLMSARFMassConfig(**{k: v for k, v in cfg_dict.items()
+                                    if k in SPLMSARFMassConfig.__dataclass_fields__})
+        model = ScalarPotentialLMSARFMass(cfg).to(device)
+        model.load_state_dict(state_dict)
+        model.eval()
+        return model
+    except Exception:
+        pass
+
+    # Final fallback: plain base model, let errors surface naturally.
+    cfg = SPLMConfig(**{k: v for k, v in cfg_dict.items()
+                        if k in SPLMConfig.__dataclass_fields__})
     model = ScalarPotentialLM(cfg).to(device)
-    model.load_state_dict(raw["model_state_dict"])
+    model.load_state_dict(state_dict)
     model.eval()
     return model
 
@@ -70,12 +127,12 @@ def tokenize(sentence: str, max_len: int) -> np.ndarray:
     return np.asarray(ids, dtype=np.int64)
 
 
-def extract_oracle_tuples(model: ScalarPotentialLM, sentence: str, device: str) \
+def extract_oracle_tuples(model, sentence: str, device: str) \
         -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """For a single sentence, re-run SPLM and return
        H   : (L+1, T, d)  raw hidden states  h_l
        GV  : (L,   T, d)  grad_h V_theta(xi, h_l)  for l = 0..L-1
-       XI  : (T, d)  the constant context vector
+       XI  : (T, d)  the context vector (first-step xi_now)
 
     The dynamics equation is
 
@@ -83,33 +140,72 @@ def extract_oracle_tuples(model: ScalarPotentialLM, sentence: str, device: str) 
        v_{l+1} = (v_l + dt*f_l/m) / (1 + dt*gamma),  f_l = -grad_h V_theta(xi, h_l)
 
     so Delta h_l := h_{l+1} - h_l depends on (v_l, grad_V at h_l).
+
+    Handles both the base ScalarPotentialLM (fixed xi from _embed_and_pool)
+    and ScalarPotentialLMSARFMass[LN] variants (per-step xi via
+    causal_cumulative_mean on h.detach(), per-token mass, optional LN
+    projection).
+
+    Causal-leak-free by construction: for SARF models xi_now is computed
+    from h.detach() so autograd never sees the xi->h dependency that caused
+    the anti-causal leak described in
+    docs/Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md.
     """
+    # Detect model variant without requiring a hard import of the SARF class.
+    is_sarf = hasattr(model, 'compute_mass')
+    has_ln = hasattr(model, '_project') and getattr(model.cfg, 'ln_after_step', False)
+
     max_len = model.cfg.max_len
     ids = tokenize(sentence, max_len)
     x = torch.from_numpy(ids).unsqueeze(0).to(device)
+    cfg = model.cfg
 
     with torch.enable_grad():
-        emb, xi = model._embed_and_pool(x)
-        h = emb
+        if is_sarf:
+            emb = model._embed(x)
+            m_b = model.compute_mass(x, emb)
+            gamma = model.gamma
+            h = model._project(emb) if has_ln else emb
+        else:
+            emb, xi_fixed = model._embed_and_pool(x)
+            m_b = model.m
+            gamma = model.gamma
+            h = emb
+
         v = torch.zeros_like(h)
-        dt, m, gamma = model.cfg.dt, model.m, model.gamma
+        dt = cfg.dt
 
         H  = [h.detach().cpu().numpy()[0]]
         GV = []
-        for _ in range(model.cfg.L):
+        xi_out = None
+        for _ in range(cfg.L):
+            if is_sarf:
+                # Causal-leak-free: detach h before computing xi so autograd
+                # cannot route future-token signal back through xi.
+                xi_now = causal_cumulative_mean(h.detach())
+            else:
+                xi_now = xi_fixed  # base model: xi fixed from initial embeddings
+
             h_in = h.detach().requires_grad_(True)
-            V_out = model.V_theta(xi, h_in).sum()
+            V_out = model.V_theta(xi_now, h_in).sum()
             grad_V, = torch.autograd.grad(V_out, h_in)
             GV.append(grad_V.detach().cpu().numpy()[0])
             f = -grad_V
-            v = (v + dt * f / m) / (1.0 + dt * gamma)
-            h = h_in + dt * v
+            v = (v + dt * f / m_b) / (1.0 + dt * gamma)
+            h_new = h_in + dt * v
+            if has_ln:
+                h_new = model._project(h_new)
+            h = h_new
             H.append(h.detach().cpu().numpy()[0])
+            if xi_out is None:
+                xi_out = xi_now
 
-    return (np.stack(H, axis=0).astype(np.float32),         # (L+1, T, d)
-            np.stack(GV, axis=0).astype(np.float32),        # (L, T, d)
-            xi.detach().cpu().numpy()[0].astype(np.float32) # (T, d)
-            )
+    if xi_out is None:
+        xi_out = xi_fixed  # zero-layer model: return initial xi
+    xi_np = xi_out.detach().cpu().numpy()[0].astype(np.float32)
+    return (np.stack(H, axis=0).astype(np.float32),   # (L+1, T, d)
+            np.stack(GV, axis=0).astype(np.float32),  # (L, T, d)
+            xi_np)                                     # (T, d)
 
 
 # ---------------------------------------------------------------------------
