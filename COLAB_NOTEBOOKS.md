@@ -5,6 +5,11 @@ Google Drive for persistent output, and auto-detect the available GPU (CUDA pref
 MPS/CPU fallback). Each notebook is designed to run **one cell (experiment arm) per
 Colab session** — set the `CELL` variable at the top and execute all cells sequentially.
 
+> **Looking up an experiment code from the paper?** See
+> [EXPERIMENTS.md](EXPERIMENTS.md) for a master index mapping every
+> designation (P10g, SQ3, VR2, etc.) to its paper section, notebook,
+> and result artefacts.
+
 ---
 
 ## Scale-Up Pilot and Confirmation
