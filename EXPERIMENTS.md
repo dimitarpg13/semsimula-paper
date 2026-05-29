@@ -28,7 +28,7 @@ run instructions.
 | [E8](#inference-efficiency-benchmark-e8) | App A2, Tab 38–40 | Pre-registered inference benchmark (quality, wall-clock, Pareto) | completed |
 | [E9](#splm-scale-up-on-h100-e9) | §15.14, Tab 24 | SPLM scale-up validation on H100 (TinyStories d=256, L=8) | completed |
 | [E10](#-transfer-diagnostic-e10) | §15.14.2, Tab 25 | γ-transfer diagnostic: γ* at scale-up | completed |
-| [F1–F6](#f1f6-falsifier-programme) | §9.7 | Six-falsifier programme testing v0 staircase and MCS bounds | planned |
+| [F1–F6](#f1f6-falsifier-programme) | §9.7 | Six-falsifier programme testing v0 staircase and MCS bounds | partial |
 | [F2-baseline / F2-fock-v1 / F2-fock-v2](#dyck-2-falsifier-f2) | §17c.2, Tab 32 | FockPARF v2 Dyck-2 controlled comparison | completed |
 | [FR0–FR4](#fockparf-v_theta-regularisation-fr0fr4) | §17b, Tab 26 | FockPARF V_theta regularisation sweep | completed |
 | [G1–G3](#planned-confound-resolution-sweeps-g1g3) | §17b | Planned PARF γ / d_V / em_ln confound sweeps | planned |
@@ -58,7 +58,8 @@ run instructions.
 | [S1–S4](#architecture-comparison-s1s4) | — | TinyStories v3: PARF vs FockPARF vs Hybrids with SQ3 V_theta | completed |
 | [Scope 3](#scope-3-leak-free-multi-seed-retrain) | §15.11, Tab 15–17 | Leak-free S=5 retrain of v2 SPLM experiments | completed |
 | [SQ1–SQ5](#structured-v_theta-sweep-sq1sq5) | §17.10, Tab 27 | Structured V_theta expressivity test on TinyShakespeare | completed |
-| [Stage-1.5a / Stage-1.5b](#stage-15a-stage-15b-v_phi-memory-variants) | §17.9, Tab 29 | Dense vs gathered V_phi memory/design variants | design only |
+| [Stage-1.5a](#stage-15a-stage-15b-v_phi-memory-variants) | §17.9, Tab 29 | Dense V_phi forward with post-masking | completed |
+| [Stage-1.5b](#stage-15a-stage-15b-v_phi-memory-variants) | §17.9 | Gathered V_phi (top-k source gathering) | design only |
 | [VR0–VR5](#splm-v_theta-regularisation-vr0vr5) | §17b, Tab 26 | Standalone SPLM V_theta regularisation sweep | completed |
 | [e0–e5 (SP-HSPLM Stage 1)](#sp-hsplm-stage-1-e0e5) | — | Per-token non-conservative force experiment (Class B/C) | completed |
 | [q9e_a–q9e_n (SP-HSPLM Stage 2)](#sp-hsplm-stage-2-q9e_aq9e_n) | — | Q9(e) pair-skew cell ladder | completed |
