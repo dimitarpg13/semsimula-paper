@@ -60,7 +60,7 @@ run instructions.
 | [SQ1–SQ5](#structured-v_theta-sweep-sq1sq5) | §17.10, Tab 27 | Structured V_theta expressivity test on TinyShakespeare | completed |
 | [MXP-H16](#multi-xi-parf-h16-pilot) | §17 | Multi-ξ PARF pilot at H=16 (pre-memory-fix) — 3 arms | completed |
 | [MXP-H128](#multi-xi-parf-h128-scaleup) | §17 | Multi-ξ PARF at H=128 (Level-2 ckpt + gathered V_φ) — 6 arms | completed |
-| [FMXP-H128](#fock-multi-xi-parf-h128-scaleup) | §17 | Fock Multi-ξ PARF at H=128 (v1/v2 gates, register sweep) — 10 arms | planned |
+| [FMXP-H128](#fock-multi-xi-parf-h128-scaleup) | §17 | Fock Multi-ξ PARF at H=128 (v1/v2 gates, register sweep) — 12 arms | planned |
 | [Stage-1.5a](#stage-15a-stage-15b-v_phi-memory-variants) | §17.9, Tab 29 | Dense V_phi forward with post-masking | completed |
 | [Stage-1.5b](#stage-15a-stage-15b-v_phi-memory-variants) | §17.9 | Gathered V_phi (top-k source gathering) | design only |
 | [VR0–VR5](#splm-v_theta-regularisation-vr0vr5) | §17b, Tab 26 | Standalone SPLM V_theta regularisation sweep | completed |
@@ -409,23 +409,26 @@ routing density (k=4, 8), and V_φ kind (competitive, structural).
 ### Fock Multi-Xi PARF H=128 scaleup
 
 Adds Fock-space latent register pools (v1 and v2 gates) on top of the
-multi-ξ PARF H=128 architecture. Ten arms sweep Fock version (v1/v2),
-register count (M=8, 16, 32), activation discipline (LIFO vs free),
+multi-ξ PARF H=128 architecture. Twelve arms sweep Fock version (v1/v2),
+register count (M=4, 8, 16, 32), activation discipline (LIFO vs free),
 reverse channel (on/off), routing density (k=4, 8), V_φ kind
-(competitive, structural), and channel count (K=2, 4).
+(competitive, structural), channel count (K=2, 4), and training schedule
+(8k vs 16k steps).
 
-| Arm | Fock | K | M | Disc | Rev | k | V_φ |
-|-----|------|---|---|------|-----|---|-----|
-| **v1_K4_M16_lifo** | v1 | 4 | 16 | LIFO | — | 8 | competitive |
-| **v1_K4_M32_lifo** | v1 | 4 | 32 | LIFO | — | 8 | competitive |
-| **v1_K4_M16_free** | v1 | 4 | 16 | free | — | 8 | competitive |
-| **v2_K4_M16_lifo** | v2 | 4 | 16 | LIFO | ✓ | 8 | competitive |
-| **v2_K4_M16_no_rev** | v2 | 4 | 16 | LIFO | ✗ | 8 | competitive |
-| **v2_K4_M32_lifo** | v2 | 4 | 32 | LIFO | ✓ | 8 | competitive |
-| **v2_K2_M16_lifo** | v2 | 2 | 16 | LIFO | ✓ | 8 | competitive |
-| **v2_K4_M16_k4** | v2 | 4 | 16 | LIFO | ✓ | 4 | competitive |
-| **v1_K4_M16_struct** | v1 | 4 | 16 | LIFO | — | 8 | structural |
-| **v2_K4_M8_lifo** | v2 | 4 | 8 | LIFO | ✓ | 8 | competitive |
+| Arm | Fock | K | M | Disc | Rev | k | V_φ | Steps |
+|-----|------|---|---|------|-----|---|-----|-------|
+| **v1_K4_M16_lifo** | v1 | 4 | 16 | LIFO | — | 8 | competitive | 8k |
+| **v1_K4_M32_lifo** | v1 | 4 | 32 | LIFO | — | 8 | competitive | 8k |
+| **v1_K4_M16_free** | v1 | 4 | 16 | free | — | 8 | competitive | 8k |
+| **v2_K4_M16_lifo** | v2 | 4 | 16 | LIFO | ✓ | 8 | competitive | 8k |
+| **v2_K4_M16_no_rev** | v2 | 4 | 16 | LIFO | ✗ | 8 | competitive | 8k |
+| **v2_K4_M32_lifo** | v2 | 4 | 32 | LIFO | ✓ | 8 | competitive | 8k |
+| **v2_K2_M16_lifo** | v2 | 2 | 16 | LIFO | ✓ | 8 | competitive | 8k |
+| **v2_K4_M16_k4** | v2 | 4 | 16 | LIFO | ✓ | 4 | competitive | 8k |
+| **v1_K4_M16_struct** | v1 | 4 | 16 | LIFO | — | 8 | structural | 8k |
+| **v2_K4_M8_lifo** | v2 | 4 | 8 | LIFO | ✓ | 8 | competitive | 8k |
+| **v2_K4_M4_lifo** | v2 | 4 | 4 | LIFO | ✓ | 8 | competitive | 8k |
+| **v2_K4_M16_lifo_16k** | v2 | 4 | 16 | LIFO | ✓ | 8 | competitive | **16k** |
 
 - **Paper:** §17 (planned — pending results)
 - **Model:** [`notebooks/conservative_arch/parf/model_fock_parf_multixi.py`](notebooks/conservative_arch/parf/model_fock_parf_multixi.py)
