@@ -110,7 +110,7 @@ count (K=2, 4, 8), α-init strategy (hand-picked, log-spaced), top-k
 Adds Fock-space latent register pools (v1 and v2 gates) on top of the
 multi-ξ PARF H=128 architecture. Tests whether M latent register particles
 with creation/destruction gates can close the remaining PPL gap between
-multi-ξ PARF (12.47 PPL) and the attention baseline (7.81 PPL).
+multi-ξ PARF (12.06 PPL) and the attention baseline (7.81 PPL).
 
 Two gate variants are swept:
 - **v1**: Mean-conditioned creation gate (one MLP per layer)

@@ -396,15 +396,15 @@ routing density (k=4, 8), and V_φ kind (competitive, structural).
 |-----|---|--------|-----|---|-----|
 | **comp_K4_best_alpha** | 4 | [0.25,0.50,0.75,0.95] | competitive | 8 | 13.19 |
 | **comp_K4_k4** | 4 | [0.25,0.50,0.75,0.95] | competitive | 4 | 13.11 |
-| **comp_K4_log_spaced** | 4 | log_spaced | competitive | 8 | **12.47** |
+| **comp_K4_log_spaced** | 4 | log_spaced | competitive | 8 | 12.47 |
 | **comp_K2** | 2 | [0.50,0.95] | competitive | 8 | 13.48 |
-| **comp_K8** | 8 | log_spaced | competitive | 8 | — |
+| **comp_K8** | 8 | log_spaced | competitive | 8 | **12.06** |
 | **struct_K4** | 4 | [0.25,0.50,0.75,0.95] | structural | 8 | — |
 
 - **Paper:** §17 (multi-ξ results subsection, Table `tab:parf-multixi-h128`)
 - **Notebook:** [`notebooks/conservative_arch/scaleup/colab_parf_multixi_h128.ipynb`](notebooks/conservative_arch/scaleup/colab_parf_multixi_h128.ipynb)
 - **Results:** GDrive `semsimula_parf_multixi_h128/`
-- **Key finding:** Log-spaced α (K=4, k=8) achieves 12.47 PPL — closing half the gap between multi-ξ SPLM (14.69) and attention (7.81). H=128 unlocks ~3 PPL improvement over H=16 runs, confirming V_φ capacity was the binding constraint.
+- **Key finding:** K=8 log-spaced α achieves **12.06 PPL** — within 1.55× of attention (7.81), closing 77% of the single-ξ-to-attention gap. The K=2→4→8 progression (13.48→12.47→12.06) shows clear diminishing returns, confirming the remaining gap is not addressable by widening ξ alone. The 2.80-PPL improvement over multi-ξ SPLM (14.86) is the first direct evidence that the pair force actively helps beyond multi-ξ V_θ.
 
 ### Fock Multi-Xi PARF H=128 scaleup
 
@@ -432,7 +432,7 @@ reverse channel (on/off), routing density (k=4, 8), V_φ kind
 - **Training script:** [`notebooks/conservative_arch/scaleup/train_fock_multixi_scaleup.py`](notebooks/conservative_arch/scaleup/train_fock_multixi_scaleup.py)
 - **Notebook:** [`notebooks/conservative_arch/scaleup/colab_fock_multixi_h128.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_multixi_h128.ipynb)
 - **Results:** GDrive `semsimula_fock_multixi_h128/` (pending)
-- **Key question:** Can Fock registers close the remaining gap between multi-ξ PARF (12.47 PPL) and attention (7.81 PPL)?
+- **Key question:** Can Fock registers close the remaining gap between multi-ξ PARF (12.06 PPL) and attention (7.81 PPL)?
 - **Status:** planned — model and notebook ready, awaiting A100 runs
 
 ### Scale-up PARF OOM picture
