@@ -51,6 +51,61 @@ matched-attention baseline, Helmholtz Q9d, Hybrid VA.
 
 ---
 
+## Multi-Channel ξ and PARF Memory Scaling
+
+| Notebook | Path | Description |
+|----------|------|-------------|
+| [colab_alpha_init_sweep](#colab_alpha_init_sweep) | `notebooks/conservative_arch/scaleup/colab_alpha_init_sweep.ipynb` | K-EMA α-initialisation sweep for multi-channel ξ SPLM |
+| [colab_parf_multixi](#colab_parf_multixi) | `notebooks/conservative_arch/scaleup/colab_parf_multixi.ipynb` | Multi-ξ PARF hybrid at H=16 (pre-memory-fix baseline) |
+| [colab_parf_multixi_h128](#colab_parf_multixi_h128) | `notebooks/conservative_arch/scaleup/colab_parf_multixi_h128.ipynb` | Multi-ξ PARF at full V_φ capacity (H=128) with Level-2 checkpointing + gathered V_φ |
+
+### colab_alpha_init_sweep
+
+Sweeps K-EMA α-initialisation strategies for the multi-channel ξ SPLM
+(no PARF). Tests hand-picked, log-spaced, uniform, and learned-from-X
+strategies at K=4 channels. Winner (`learned_from_uniform`, α≈[0.25,
+0.50, 0.75, 0.95]) achieved 14.69 PPL at 4000 steps — the multi-ξ
+SPLM baseline.
+
+- **Dataset:** TinyStories (5M tokens)
+- **GPU:** A100 40GB (~45 min per arm, 8000 steps)
+
+### colab_parf_multixi
+
+Three-arm pilot combining multi-channel K-EMA ξ with sparse PARF pair
+forces (MultiXiPARFLM). Tests competitive V_φ (k=8, k=4) and plain
+structural V_φ (k=8), all at H=16 and grad-accum=2 due to V_φ memory
+constraints. Best arm reached 15.44 PPL — better than single-ξ PARF
+(28 PPL) but above multi-ξ SPLM (14.69), suggesting V_φ capacity is
+the binding constraint.
+
+- **Arms:** competitive k=8, competitive k=4, structural k=8
+- **Dataset:** TinyStories (5M tokens)
+- **GPU:** A100 40GB (~1h per arm, pilot 4000 steps, grad-accum=2)
+
+### colab_parf_multixi_h128
+
+Re-runs multi-ξ PARF at full V_φ capacity (H=128) enabled by two
+memory optimisations:
+- **Level-2 per-layer checkpointing** (`--use-layer-checkpoint`):
+  wraps each `_layer_step` in `checkpoint(use_reentrant=False)`,
+  reducing peak V_φ memory from O(L) to O(1) layers.
+- **Stage-1.5b gathered V_φ** (`--use-gathered-v-phi`): evaluates
+  V_φ only at top-k indices, reducing intermediates from O(T²) to
+  O(T·k) — 128× at k=4, T=512.
+
+Combined effect: peak V_φ activation memory drops from ~8 GB to ~8 MB,
+enabling H=128 without grad-accum on A100 40GB. Six arms sweep channel
+count (K=2, 4, 8), α-init strategy (hand-picked, log-spaced), top-k
+(4, 8), and V_φ kind (competitive, structural).
+
+- **Arms:** comp_K4_best_alpha, comp_K4_k4, comp_K4_log_spaced,
+  comp_K2, comp_K8, struct_K4
+- **Dataset:** TinyStories (5M tokens)
+- **GPU:** A100 40GB (~2-3h per arm, pilot 4000 steps, no grad-accum)
+
+---
+
 ## Multi-Seed Retrain
 
 | Notebook | Path | Description |
