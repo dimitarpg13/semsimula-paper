@@ -55,6 +55,7 @@ from model_fock_parf_multixi import (  # noqa: E402
     FockMultiXiPARFConfig,
     FockMultiXiPARFLM,
 )
+from causal_probe_multixi import assert_causal  # noqa: E402
 
 DEFAULT_LOGFREQ_PATH = SCRIPT_DIR / "results" / "logfreq_surprisal_tinystories.npy"
 
@@ -409,6 +410,9 @@ def main():
     ap.add_argument("--no-reverse-channel", action="store_false",
                     dest="reverse_channel",
                     help="Disable reverse channel (v2 only).")
+    ap.add_argument("--skip-causal-check", dest="skip_causal_check",
+                    action="store_true", default=False,
+                    help="Skip pre-training causal-violation probe.")
     args = ap.parse_args()
 
     device = args.device or _pick_device()
@@ -514,6 +518,14 @@ def main():
     print(f"[fock-multixi-parf] schedule: {args.mode}  "
           f"steps={train_cfg['steps']}  batch={train_cfg['batch_size']}  "
           f"block={train_cfg['block_size']}")
+
+    if not args.skip_causal_check:
+        print("[fock-multixi-parf] running causal-violation probe ...")
+        assert_causal(model, vocab_size=cfg.vocab_size, T=32, t_pert=20)
+        print("[fock-multixi-parf] causal probe passed.")
+    else:
+        print("[fock-multixi-parf] causal probe SKIPPED "
+              "(--skip-causal-check).")
 
     optim = torch.optim.AdamW(
         model.parameters(), lr=train_cfg["lr"],

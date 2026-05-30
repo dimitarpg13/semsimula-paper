@@ -63,6 +63,7 @@ from model_parf_multixi import (  # noqa: E402
     MultiXiPARFConfig,
     MultiXiPARFLM,
 )
+from causal_probe_multixi import assert_causal  # noqa: E402
 
 DEFAULT_LOGFREQ_PATH = SCRIPT_DIR / "results" / "logfreq_surprisal_tinystories.npy"
 
@@ -350,6 +351,9 @@ def main():
                     choices=["explicit", "log_spaced"], default="explicit")
     ap.add_argument("--xi-tau-max", dest="xi_tau_max", type=float,
                     default=100.0)
+    ap.add_argument("--skip-causal-check", dest="skip_causal_check",
+                    action="store_true", default=False,
+                    help="Skip pre-training causal-violation probe.")
     args = ap.parse_args()
 
     device = args.device or _pick_device()
@@ -433,6 +437,13 @@ def main():
     print(f"[multixi-parf] schedule: {args.mode}  "
           f"steps={train_cfg['steps']}  batch={train_cfg['batch_size']}  "
           f"block={train_cfg['block_size']}")
+
+    if not args.skip_causal_check:
+        print("[multixi-parf] running causal-violation probe ...")
+        assert_causal(model, vocab_size=cfg.vocab_size, T=32, t_pert=20)
+        print("[multixi-parf] causal probe passed.")
+    else:
+        print("[multixi-parf] causal probe SKIPPED (--skip-causal-check).")
 
     optim = torch.optim.AdamW(
         model.parameters(), lr=train_cfg["lr"],
