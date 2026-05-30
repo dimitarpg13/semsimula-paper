@@ -20,7 +20,10 @@
       "top_k": 8,
       "xi_channels": 4,
       "xi_alpha_init_mode": "log_spaced",
+      "max_steps": 8000,
       "final_ppl": 14.21487960379299,
+      "best_ppl": 13.76,
+      "best_ppl_step": 7600,
       "final_alphas": [
         2.044131861111964e-06,
         0.6157070994377136,
@@ -31,10 +34,35 @@
       "n_v_phi_params": 19074,
       "n_fock_params": 578570,
       "elapsed_sec": 6858.378786325455
+    },
+    "v2_K4_M16_lifo_16k": {
+      "fock_version": "v2",
+      "n_registers": 16,
+      "stack_discipline": true,
+      "reverse_channel": true,
+      "v_phi_kind": "structural_competitive",
+      "top_k": 8,
+      "xi_channels": 4,
+      "xi_alpha_init_mode": "log_spaced",
+      "max_steps": 16000,
+      "final_ppl": 12.31,
+      "best_ppl": 12.00,
+      "best_ppl_step": 14400,
+      "final_alphas": [
+        2.7182766189071117e-06,
+        0.6030459403991699,
+        0.88425612449646,
+        0.9737665057182312
+      ],
+      "n_params": 17162205,
+      "n_v_phi_params": 19074,
+      "n_fock_params": 578570,
+      "elapsed_sec": 13715
     }
   },
   "baselines": {
-    "Multi-\u03be PARF H=128 (best)": 12.47,
+    "Multi-\u03be PARF H=128 (best, K=8)": 12.06,
+    "Multi-\u03be PARF H=128 (K=4)": 12.47,
     "Multi-\u03be SPLM (no PARF)": 14.69,
     "Multi-\u03be PARF H=16 (old)": 15.44,
     "Attention baseline": 7.81

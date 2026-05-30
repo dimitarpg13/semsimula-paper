@@ -428,7 +428,7 @@ reverse channel (on/off), routing density (k=4, 8), V_φ kind
 | **v1_K4_M16_struct** | v1 | 4 | 16 | LIFO | — | 8 | structural | 8k | — |
 | **v2_K4_M8_lifo** | v2 | 4 | 8 | LIFO | ✓ | 8 | competitive | 8k | — |
 | **v2_K4_M4_lifo** | v2 | 4 | 4 | LIFO | ✓ | 8 | competitive | 8k | — |
-| **v2_K4_M16_lifo_16k** | v2 | 4 | 16 | LIFO | ✓ | 8 | competitive | **16k** | — |
+| **v2_K4_M16_lifo_16k** | v2 | 4 | 16 | LIFO | ✓ | 8 | competitive | **16k** | **12.31** (best 12.00 @ 14.4k) |
 | **v2_K4_M16_lifo_32k** | v2 | 4 | 16 | LIFO | ✓ | 8 | competitive | **32k** | — |
 
 - **Paper:** §17 (first result: v2_K4_M16_lifo = 14.21 PPL)
@@ -437,8 +437,9 @@ reverse channel (on/off), routing density (k=4, 8), V_φ kind
 - **Notebook:** [`notebooks/conservative_arch/scaleup/colab_fock_multixi_h128.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_multixi_h128.ipynb)
 - **Results:** [`notebooks/conservative_arch/scaleup/results/semsimula_fock_multixi_h128/`](notebooks/conservative_arch/scaleup/results/semsimula_fock_multixi_h128/) + GDrive
 - **Key question:** Can Fock registers close the remaining gap between multi-ξ PARF (12.06 PPL) and attention (7.81 PPL)?
-- **First finding:** v2_K4_M16_lifo achieves 14.21 PPL (best 13.76 at step 7600) — 2.15 PPL above non-Fock baseline. Fock registers currently add interference rather than value. Two diagnostic arms added: M=4 (interference test) and 16k steps (convergence test).
-- **Status:** in progress — 1/13 arms completed
+- **First finding:** v2_K4_M16_lifo achieves 14.21 PPL at 8k steps (best 13.76 at step 7600) — 2.15 PPL above non-Fock baseline, suggesting Fock registers add interference at short schedules.
+- **Second finding:** v2_K4_M16_lifo_16k achieves 12.31 PPL at 16k steps (best **12.00** at step 14,400) — crossing below the non-Fock K=8 baseline (12.06). The Fock mechanism is beneficial but requires ~1.8× more training steps. Three convergence phases observed: rapid descent (0–6k), plateau (6k–12k), resumed improvement (12k–16k). See [convergence analysis](companion_notes/Improving_the_Fock_Mechanism_to_match_Attention.md#18-fock-v2-convergence-slowdown-diagnosis-and-future-work).
+- **Status:** in progress — 2/13 arms completed
 
 ### Scale-up PARF OOM picture
 

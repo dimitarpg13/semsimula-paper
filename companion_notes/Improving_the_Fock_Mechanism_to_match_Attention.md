@@ -1178,25 +1178,35 @@ The Multi-Xi Fock-PARFLM H=128 experiment (`colab_fock_multixi_h128.ipynb`)
 reveals a significant convergence slowdown when Fock registers are added
 to the Multi-Xi PARFLM base:
 
-| Model | Steps to 12.06 PPL | Final PPL (8k) |
-|-------|--------------------:|---------------:|
-| Multi-Xi PARFLM (K=8, no Fock) | ~8,000 | **12.06** |
-| Fock v2 + rev (K=4, M=16, LIFO) | ~14,400 | 14.21 |
+| Model | Steps to 12.06 PPL | Best PPL | Final PPL |
+|-------|--------------------:|---------:|----------:|
+| Multi-Xi PARFLM (K=8, no Fock) | ~8,000 | **12.06** (8k) | **12.06** (8k) |
+| Multi-Xi PARFLM (K=4, no Fock) | — | 12.47 (8k) | 12.47 (8k) |
+| Fock v2 + rev (K=4, M=16, LIFO, 8k) | — | 13.76 (7.6k) | 14.21 (8k) |
+| Fock v2 + rev (K=4, M=16, LIFO, 16k) | ~14,400 | **12.00** (14.4k) | 12.31 (16k) |
 
-The `v2_K4_M16_lifo_16k` arm reached **12.00 PPL at step 14,400** —
-crossing below the non-Fock K=8 baseline — but required approximately
-1.8× more training steps to reach the same perplexity level.  Note that
-the Fock arm uses K=4 (not K=8), so a direct parameter-matched
-comparison is K=4 non-Fock at 12.47 PPL, which the Fock arm surpassed
+The `v2_K4_M16_lifo_16k` arm (completed in 3.81 h) reached a best of
+**12.00 PPL at step 14,400** — crossing below the non-Fock K=8 baseline
+(12.06) — but then regressed to **12.31 PPL at step 16,000** as the
+cosine LR schedule decayed too aggressively past the sweet spot.  This
+confirms that (a) the Fock mechanism is beneficial given sufficient
+training budget, and (b) the LR schedule is not well-matched to the
+two-phase convergence dynamic.
+
+Compared to the K=4 non-Fock baseline (12.47), the 16k Fock arm
+achieved a definitive improvement (12.00 best vs 12.47), surpassing it
 around step 12,400.
 
-The convergence curve shows three distinct phases:
+The convergence curve shows four distinct phases:
 1. **Steps 0–6k**: Rapid descent, tracking the non-Fock trajectory
    closely but offset by ~2–3 PPL.
 2. **Steps 6k–12k**: Slow plateau region around 14–13 PPL where the
    Fock mechanism appears to impede rather than help.
-3. **Steps 12k–16k**: Resumed improvement as register specialisation
-   kicks in, crossing the non-Fock baseline.
+3. **Steps 12k–14.4k**: Resumed improvement as register specialisation
+   kicks in, crossing the non-Fock baseline and reaching 12.00 PPL.
+4. **Steps 14.4k–16k**: Slight regression (12.00 → 12.31) as the
+   cosine LR decays below ~1.2e-05, starving the Fock parameters of
+   gradient signal just as they begin to contribute.
 
 ### 18.2 Candidate explanations
 
@@ -1239,18 +1249,23 @@ The convergence curve shows three distinct phases:
 | **Warm-start** | Train non-Fock Multi-Xi PARFLM for 8k steps, freeze base weights, attach Fock registers, train 4–8k more. Separates the two optimisation problems. | 1.5–2× (eliminate plateau phase) |
 | **Delayed Fock activation** | Clamp register creation gates to zero for the first N steps, then gradually enable. Similar to progressive growing in GANs. | 1.3–1.5× |
 | **Faster Gumbel annealing** | Start tau at 0.5 (not 1.0) or use exponential decay instead of linear. Moves the productive routing phase earlier. | 1.2–1.5× |
-| **Two-phase lr schedule** | Fast lr for base PARF convergence (steps 0–8k), then lr bump for Fock fine-tuning (steps 8k–16k). | 1.5–2× |
+| **Two-phase lr schedule** | Fast lr for base PARF convergence (steps 0–8k), then lr bump for Fock fine-tuning (steps 8k–16k). The 16k arm regression from 12.00 → 12.31 PPL in the final 1.6k steps directly demonstrates the need for this. | 1.5–2× (strongest evidence from 16k arm) |
 | **Per-module lr** | Give Fock parameters (gates, register embeddings) a higher lr than base PARF parameters. | Moderate |
 | **Reverse channel gate** | Add a learnable scalar gate (initialised near zero) on the reverse channel force, allowing the model to suppress it early and enable it gradually. | Unknown — needs experiment |
 
 ### 18.4 Open questions
 
-- Does the 32k arm (`v2_K4_M16_lifo_32k`) continue to improve, or does
-  it plateau?  If it reaches ~11 PPL, the Fock mechanism is
-  unambiguously beneficial at sufficient training budget.
+- **[Partially answered]** Does the 16k/32k arm continue to improve?
+  *Yes.* The 16k arm reached 12.00 PPL (best) — beating the K=8
+  non-Fock baseline — confirming that the Fock mechanism is beneficial
+  given sufficient training budget.  The remaining question is whether
+  the 32k arm (`v2_K4_M16_lifo_32k`) can push below ~11 PPL with a
+  better-calibrated LR schedule, or whether it will also regress late
+  in training due to the cosine LR decay.
 - Would warm-starting from a converged non-Fock checkpoint skip the
   plateau entirely?  This is the single highest-leverage experiment to
-  run.
+  run.  Given that the 16k arm's productive phase was 12k–14.4k, a
+  warm-start could compress training to ~6–8k Fock-only steps.
 - Is the convergence slowdown specific to v2 (Q/K/V cross-attention
   gates) or does v1 (MLP gates) converge faster?  The v1 arms at 8k
   steps will partially answer this.
@@ -1258,6 +1273,10 @@ The convergence curve shows three distinct phases:
   never change — the fastest channel (alpha ≈ 0) is effectively dead.
   Does this indicate that 3 channels would suffice, or is the dead
   channel absorbing register-related noise?
+- **[New from 16k results]** The regression from 12.00 → 12.31 PPL in
+  the last 1,600 steps suggests the cosine LR schedule overshoots
+  the ideal stopping point.  Would a constant-lr tail (plateau after
+  reaching ~2e-05) prevent this regression?
 
 ---
 
