@@ -1,0 +1,42 @@
+{
+  "experiment": "fock_parf_multixi_h128_gathered",
+  "memory_mode": "Level-2 checkpoint + Stage-1.5b gathered V_phi",
+  "v_phi_hidden": 128,
+  "config": {
+    "mode": "scaleup",
+    "fixed_gamma": 0.3,
+    "seed": 0,
+    "grad_accum": 1,
+    "use_layer_checkpoint": true,
+    "use_gathered_v_phi": true
+  },
+  "arms": {
+    "v2_K4_M16_lifo": {
+      "fock_version": "v2",
+      "n_registers": 16,
+      "stack_discipline": true,
+      "reverse_channel": true,
+      "v_phi_kind": "structural_competitive",
+      "top_k": 8,
+      "xi_channels": 4,
+      "xi_alpha_init_mode": "log_spaced",
+      "final_ppl": 14.21487960379299,
+      "final_alphas": [
+        2.044131861111964e-06,
+        0.6157070994377136,
+        0.9008195996284485,
+        0.9781937599182129
+      ],
+      "n_params": 17162205,
+      "n_v_phi_params": 19074,
+      "n_fock_params": 578570,
+      "elapsed_sec": 6858.378786325455
+    }
+  },
+  "baselines": {
+    "Multi-\u03be PARF H=128 (best)": 12.47,
+    "Multi-\u03be SPLM (no PARF)": 14.69,
+    "Multi-\u03be PARF H=16 (old)": 15.44,
+    "Attention baseline": 7.81
+  }
+}
