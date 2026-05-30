@@ -79,7 +79,7 @@ classDiagram
         +m_global : Parameter
         +compute_mass(x, emb) Tensor
         +_embed(x) Tensor
-        +_layer_step(h, h_prev, m, γ, dt) Tensor
+        +_layer_step(h, h_prev, m, gamma, dt) Tensor
         +_stack_forward(h0, x) h_L, traj
         +forward(x, targets) logits, loss
         +generate(x, max_new_tokens) Tensor
@@ -116,7 +116,7 @@ classDiagram
         <<extends SPLMSARFMassLNConfig>>
     }
     class ScalarPotentialLMFirstOrder {
-        +_layer_step(h, h_prev, m, γ, dt) Tensor
+        +_layer_step(h, h_prev, m, gamma, dt) Tensor
     }
 
     class SPLMSymplecticConfig {
@@ -135,7 +135,7 @@ classDiagram
     class ScalarPotentialLMSARFMassLNMultiXi {
         +xi_module : MultiChannelXi
         +V_theta : ScalarPotentialMultiXi
-        +_layer_step(h, h_prev, m, γ, dt) Tensor
+        +_layer_step(h, h_prev, m, gamma, dt) Tensor
     }
 
     class SPLMSARFMassLNMultiS4DConfig {
@@ -188,7 +188,7 @@ classDiagram
     }
     class ScalarPotentialLMNonConservative {
         +nc_force : NonConservativeForce
-        +_layer_step(h, h_prev, m, γ, dt) Tensor
+        +_layer_step(h, h_prev, m, gamma, dt) Tensor
     }
 
     class SPHSPLMConfig {
@@ -197,7 +197,7 @@ classDiagram
     class ScalarPotentialLMSPHSPLM {
         +skew_kernel : SkewKernelLowRank
         +gyro_kernel : PerTokenGyroKernel
-        +_layer_step(h, h_prev, m, γ, dt) Tensor
+        +_layer_step(h, h_prev, m, gamma, dt) Tensor
     }
 
     SPLMConfig <|-- SPLMSARFMassConfig
@@ -259,7 +259,7 @@ classDiagram
         +compute_mass(x) Tensor
         +_embed(x) Tensor
         +_project(h) Tensor
-        +_layer_step(h, h_prev, m, γ, dt, ℓ) Tensor
+        +_layer_step(h, h_prev, m, gamma, dt, l) Tensor
         +_stack_forward(h0, x) h_L, traj
         +forward(x, targets) logits, loss
         +generate(x, max_new) Tensor
@@ -283,10 +283,10 @@ classDiagram
     class SparsePARFLM {
         +score_head : ScoreHead
         +_gumbel_tau : Buffer
-        +set_gumbel_tau(τ) void
-        +_sparse_mask(π, causal, T) Tensor
-        +_sparse_topk_indices(π, causal, T) idx, m_g
-        +_layer_step(h, h_prev, m, γ, dt, ℓ) Tensor
+        +set_gumbel_tau(tau) void
+        +_sparse_mask(pi, causal, T) Tensor
+        +_sparse_topk_indices(pi, causal, T) idx, m_g
+        +_layer_step(h, h_prev, m, gamma, dt, l) Tensor
     }
 
     class MultiXiPARFConfig {
@@ -300,7 +300,7 @@ classDiagram
     class MultiXiPARFLM {
         +xi_module : MultiChannelXi
         +V_theta : ScalarPotentialMultiXi
-        +_layer_step(h, h_prev, m, γ, dt, ℓ) Tensor
+        +_layer_step(h, h_prev, m, gamma, dt, l) Tensor
         +xi_alpha_values() List~float~
     }
 
@@ -342,7 +342,7 @@ classDiagram
         +register_embed : Parameter
         +creation_gates | creation_gate_qkv
         +destruction_gates : ModuleList
-        +reverse_ch : ReverseChannel?
+        +reverse_ch : ReverseChannel (optional)
         +_init_registers(B, device) r, salience
         +_active_mask(salience) Tensor
         +_fock_layer_step(...) h, h_prev, r, sal
@@ -407,19 +407,19 @@ classDiagram
     class ScalarPotential_SPLM {
         <<model.py>>
         +layers : Sequential
-        +forward(ξ, h) Tensor~B,T,1~
+        +forward(xi, h) Tensor~B,T,1~
     }
 
     class ScalarPotential_SARF {
         <<model_sarf_mass.py>>
         +layers : Sequential
-        +forward(ξ, h) Tensor~B,T,1~
+        +forward(xi, h) Tensor~B,T,1~
     }
 
     class ScalarPotential_PARF {
         <<model_parf.py, MLP>>
         +layers : Sequential
-        +forward(ξ, h) Tensor~B,T,1~
+        +forward(xi, h) Tensor~B,T,1~
     }
 
     class ScalarPotentialMultiXi {
@@ -432,39 +432,39 @@ classDiagram
         <<model_gm.py>>
         +mu_list : ParameterList
         +kappa_raw : Parameter
-        +forward(ξ, h) Tensor~B,T,1~
+        +forward(xi, h) Tensor~B,T,1~
     }
 
     class StructuredVThetaBase {
         <<abstract>>
-        +forward(ξ, h) Tensor~B,T,1~
-        +analytical_grad(ξ, h) Tensor~B,T,d~
+        +forward(xi, h) Tensor~B,T,1~
+        +analytical_grad(xi, h) Tensor~B,T,d~
     }
 
     class QuadraticWellVTheta {
         +W_mu : Linear
-        +forward(ξ, h) Tensor
-        +analytical_grad(ξ, h) Tensor
+        +forward(xi, h) Tensor
+        +analytical_grad(xi, h) Tensor
     }
 
     class LowRankQuadraticVTheta {
         +W_A : Linear
-        +forward(ξ, h) Tensor
-        +analytical_grad(ξ, h) Tensor
+        +forward(xi, h) Tensor
+        +analytical_grad(xi, h) Tensor
     }
 
     class MixtureQuadraticVTheta {
         +W_mu_list : ParameterList
         +gate : Linear
-        +forward(ξ, h) Tensor
-        +analytical_grad(ξ, h) Tensor
+        +forward(xi, h) Tensor
+        +analytical_grad(xi, h) Tensor
     }
 
     class HybridQuadraticVTheta {
         +quadratic : LowRankQuadraticVTheta
         +mlp_residual : Sequential
-        +forward(ξ, h) Tensor
-        +analytical_grad(ξ, h) Tensor
+        +forward(xi, h) Tensor
+        +analytical_grad(xi, h) Tensor
     }
 
     StructuredVThetaBase <|-- QuadraticWellVTheta
@@ -472,7 +472,7 @@ classDiagram
     StructuredVThetaBase <|-- MixtureQuadraticVTheta
     StructuredVThetaBase <|-- HybridQuadraticVTheta
 
-    note for ScalarPotentialMultiXi "Input is (B, T, K, d) multi-ξ\nconcatenated with h → (B, T, (K+1)d)"
+    note for ScalarPotentialMultiXi "Input is (B, T, K, d) multi-xi\nconcatenated with h -> (B, T, (K+1)d)"
 ```
 
 ---
@@ -510,9 +510,9 @@ classDiagram
 
     StructuralVPhi <|-- StructuralCompetitiveVPhi
 
-    note for StructuralVPhi "V_φ = Φ(||l_t - l_s||²) · Θ(θ_t · θ_s)\nBilinear type × angular decomposition"
+    note for StructuralVPhi "V_phi = Phi(||l_t - l_s||^2) * Theta(theta_t * theta_s)\nBilinear type x angular decomposition"
     note for StructuralCompetitiveVPhi "Adds a repulsive per-type bias\nfor competitive specialisation"
-    note for MLPVPhi "Legacy unstructured MLP\nV_φ = MLP(h_t ⊕ h_s)"
+    note for MLPVPhi "Legacy unstructured MLP\nV_phi = MLP(cat(h_t, h_s))"
 ```
 
 ---
@@ -545,7 +545,7 @@ classDiagram
         +W_k : Linear
         +W_v : Linear
         +tau_create : Parameter
-        +forward(h, r) r_new, α_max
+        +forward(h, r) r_new, alpha_max
     }
 
     class DestructionGate_v2 {
@@ -562,7 +562,7 @@ classDiagram
         +forward(h, r, active) Q_force~B,T,d~
     }
 
-    note for CreationGate "σ(MLP(h̄)) → per-register\ncreation probability"
+    note for CreationGate "sigma(MLP(h_bar)) -> per-register\ncreation probability"
     note for QKVCreationGate "Cross-attention: tokens query\nregisters to produce new content\nand salience update"
     note for ReverseChannel "Non-conservative force Q_i on\ntokens from active registers\n(scaled by learnable tanh gate)"
 ```
@@ -599,12 +599,12 @@ classDiagram
 
     class MultiChannelHiPPO {
         <<model_multixi_hippo.py>>
-        +A : Buffer (N×N HiPPO matrix)
+        +A : Buffer (N x N HiPPO matrix)
         +B : Parameter
         +forward(h) Tensor~B,T,K,d~
     }
 
-    note for MultiChannelXi "K learnable EMA channels\nα_k = sigmoid(raw_alpha_k)\nξ_k[t] = α_k · ξ_k[t-1] + (1-α_k) · h[t]"
+    note for MultiChannelXi "K learnable EMA channels\nalpha_k = sigmoid(raw_alpha_k)\nxi_k[t] = alpha_k * xi_k[t-1] + (1-alpha_k) * h[t]"
     note for MultiChannelS4D "Diagonal SSM with complex\neigenvalues (S4D kernel)"
     note for MultiChannelHiPPO "HiPPO-LegS polynomial\nprojection basis"
 ```
@@ -632,7 +632,7 @@ classDiagram
 
     class causal_probe_helmholtz {
         <<helmholtz/causal_probe.py>>
-        +perturbation_probe(model, ...) pre, post, Δ
+        +perturbation_probe(model, ...) pre, post, Delta
         +gradient_probe(model, ...) post, pre, norms
         +assert_causal(model, ...) void | RuntimeError
         +probe_one_schedule(sched, ...) ok, details
@@ -641,7 +641,7 @@ classDiagram
 
     class causal_probe_parf {
         <<parf/causal_probe_parf.py>>
-        +perturbation_probe(model, ...) pre, post, Δ
+        +perturbation_probe(model, ...) pre, post, Delta
         +gradient_probe(model, ...) post, pre, norms
         +assert_causal(model, ...) void | RuntimeError
         +probe_one_variant(vphi, ...) ok, details
@@ -650,7 +650,7 @@ classDiagram
 
     class causal_probe_multixi {
         <<parf/causal_probe_multixi.py>>
-        +perturbation_probe(model, ...) pre, post, Δ
+        +perturbation_probe(model, ...) pre, post, Delta
         +gradient_probe(model, ...) post, pre, norms
         +assert_causal(model, ...) void | RuntimeError
         +probe_one_variant(key, ...) ok, details
@@ -659,8 +659,8 @@ classDiagram
 
     note for causal_probe "Gen-1: covers vanilla SPLM,\nSARF-Mass, EM-LN variants"
     note for causal_probe_helmholtz "Gen-2: covers HelmholtzLM\n(all schedules)"
-    note for causal_probe_parf "Gen-3a: covers dense PARFLM\n(structural + MLP V_φ)"
-    note for causal_probe_multixi "Gen-3b: covers MultiXiPARFLM (K=2,4)\nand FockMultiXiPARFLM (v1, v2±rev)"
+    note for causal_probe_parf "Gen-3a: covers dense PARFLM\n(structural + MLP V_phi)"
+    note for causal_probe_multixi "Gen-3b: covers MultiXiPARFLM (K=2,4)\nand FockMultiXiPARFLM (v1, v2+/-rev)"
 ```
 
 **Two causal-probe conventions are used in the codebase:**
@@ -674,27 +674,39 @@ classDiagram
 
 ```mermaid
 graph LR
+    A1[ScalarPotentialLM]
+    A2[SPLM SARF-Mass]
+    A3[SPLM EM-LN]
+    A4[Multi-Xi SPLM]
+    B1[HelmholtzLM]
+    C1[PARFLM dense]
+    D1[MultiXiPARFLM K=2]
+    D2[MultiXiPARFLM K=4]
+    D3[FockMultiXiPARFLM v1]
+    D4[FockMultiXiPARFLM v2+rev]
+    D5[FockMultiXiPARFLM v2-rev]
+
     subgraph "causal_probe.py (Gen-1)"
-        A1[ScalarPotentialLM]
-        A2[SPLM SARF-Mass]
-        A3[SPLM EM-LN]
-        A4[Multi-Xi SPLM]
+        A1
+        A2
+        A3
+        A4
     end
 
     subgraph "causal_probe_helmholtz (Gen-2)"
-        B1[HelmholtzLM]
+        B1
     end
 
     subgraph "causal_probe_parf (Gen-3a)"
-        C1[PARFLM dense]
+        C1
     end
 
     subgraph "causal_probe_multixi (Gen-3b)"
-        D1[MultiXiPARFLM K=2]
-        D2[MultiXiPARFLM K=4]
-        D3[FockMultiXiPARFLM v1]
-        D4[FockMultiXiPARFLM v2+rev]
-        D5[FockMultiXiPARFLM v2−rev]
+        D1
+        D2
+        D3
+        D4
+        D5
     end
 ```
 
@@ -704,37 +716,58 @@ graph LR
 
 ```mermaid
 graph TB
+    TS1["train_splm.py<br>-> ScalarPotentialLM"]
+    TS2["train_splm_sarf_mass.py<br>-> SPLM SARF-Mass"]
+    TS3["train_splm_em_ln.py<br>-> SPLM EM-LN"]
+    TS4["train_helmholtz.py<br>-> HelmholtzLM"]
+    TS5["train_splm_hybrid.py<br>-> HybridSPLM"]
+    TS6["train_parf.py<br>-> PARFLM (dense)"]
+    TS7["train_fock_parf.py<br>-> FockPARFLM v1/v2"]
+    SS1["train_splm_em_ln_scaleup.py<br>-> SPLM EM-LN H=128"]
+    SS2["train_splm_em_ln_multixi_scaleup.py<br>-> Multi-Xi SPLM H=128"]
+    SS3["train_splm_em_ln_multixi_s4d_scaleup.py<br>-> Multi-S4D SPLM"]
+    SS4["train_splm_em_ln_multixi_hippo_scaleup.py<br>-> Multi-HiPPO SPLM"]
+    SS5["train_helmholtz_scaleup.py<br>-> HelmholtzLM H=128"]
+    SS6["train_hybrid_scaleup.py<br>-> HybridSPLM H=128"]
+    SS7["train_matched_baseline_scaleup.py<br>-> MatchedGPT (attention)"]
+    SS8["train_parf_scaleup.py<br>-> SparsePARFLM H=128"]
+    SS9["train_parf_multixi_scaleup.py<br>-> MultiXiPARFLM H=128"]
+    SS10["train_fock_multixi_scaleup.py<br>-> FockMultiXiPARFLM H=128"]
+    NB1["colab_parf_multixi_h128.ipynb<br>5 arms: comp_K2..comp_K8"]
+    NB2["colab_fock_multixi_h128.ipynb<br>8 arms: v1/v2 x M x discipline"]
+    CP1["causal_probe_multixi<br>assert_causal()"]
+
     subgraph "Training Scripts"
-        TS1["train_splm.py\n→ ScalarPotentialLM"]
-        TS2["train_splm_sarf_mass.py\n→ SPLM SARF-Mass"]
-        TS3["train_splm_em_ln.py\n→ SPLM EM-LN"]
-        TS4["train_helmholtz.py\n→ HelmholtzLM"]
-        TS5["train_splm_hybrid.py\n→ HybridSPLM"]
-        TS6["train_parf.py\n→ PARFLM (dense)"]
-        TS7["train_fock_parf.py\n→ FockPARFLM v1/v2"]
+        TS1
+        TS2
+        TS3
+        TS4
+        TS5
+        TS6
+        TS7
     end
 
     subgraph "Scaleup Training Scripts"
-        SS1["train_splm_em_ln_scaleup.py\n→ SPLM EM-LN H=128"]
-        SS2["train_splm_em_ln_multixi_scaleup.py\n→ Multi-Xi SPLM H=128"]
-        SS3["train_splm_em_ln_multixi_s4d_scaleup.py\n→ Multi-S4D SPLM"]
-        SS4["train_splm_em_ln_multixi_hippo_scaleup.py\n→ Multi-HiPPO SPLM"]
-        SS5["train_helmholtz_scaleup.py\n→ HelmholtzLM H=128"]
-        SS6["train_hybrid_scaleup.py\n→ HybridSPLM H=128"]
-        SS7["train_matched_baseline_scaleup.py\n→ MatchedGPT (attention)"]
-        SS8["train_parf_scaleup.py\n→ SparsePARFLM H=128"]
-        SS9["train_parf_multixi_scaleup.py\n→ MultiXiPARFLM H=128"]
-        SS10["train_fock_multixi_scaleup.py\n→ FockMultiXiPARFLM H=128"]
+        SS1
+        SS2
+        SS3
+        SS4
+        SS5
+        SS6
+        SS7
+        SS8
+        SS9
+        SS10
     end
 
     subgraph "Colab Notebooks"
-        NB1["colab_parf_multixi_h128.ipynb\n5 arms: comp_K2..comp_K8"]
-        NB2["colab_fock_multixi_h128.ipynb\n8 arms: v1/v2 × M × discipline"]
+        NB1
+        NB2
     end
 
     NB1 -->|subprocess| SS9
     NB2 -->|subprocess| SS10
-    SS9 -->|import| CP1["causal_probe_multixi\nassert_causal()"]
+    SS9 -->|import| CP1
     SS10 -->|import| CP1
 ```
 
@@ -744,22 +777,36 @@ graph TB
 
 ```mermaid
 graph LR
+    D1["load_tiny_shakespeare()"]
+    D2["load_tiny_stories()"]
+    D3["get_batch(ids, B, T)"]
+    T1["np.ndarray<br>(train_ids, val_ids)"]
+    B1["(x, y) batches<br>shape (B, T)"]
+    FP["compute_unigram_frequencies<br>_tinystories.py"]
+    LF["logfreq_surprisal<br>_tinystories.npy"]
+    MASS["compute_mass(x)"]
+
     subgraph "data_module.py"
-        D1["load_tiny_shakespeare()"] --> D3["get_batch(ids, B, T)"]
-        D2["load_tiny_stories()"] --> D3
+        D1
+        D2
+        D3
     end
 
     subgraph "Tokenisation"
-        D2 -->|"HuggingFace parquet\n→ GPT-2 BPE"| T1["np.ndarray\n(train_ids, val_ids)"]
+        T1
     end
-
-    D3 -->|"random slicing\n+ device transfer"| B1["(x, y) batches\nshape (B, T)"]
 
     subgraph "Frequency Prior"
-        FP["compute_unigram_frequencies\n_tinystories.py"] --> LF["logfreq_surprisal\n_tinystories.npy"]
+        FP
+        LF
     end
 
-    LF -->|"mass_mode=\n'logfreq_surprisal'"| MASS["compute_mass(x)"]
+    D1 --> D3
+    D2 --> D3
+    D2 -->|"HuggingFace parquet<br>-> GPT-2 BPE"| T1
+    D3 -->|"random slicing<br>+ device transfer"| B1
+    FP --> LF
+    LF -->|"mass_mode=<br>'logfreq_surprisal'"| MASS
 ```
 
 ---
@@ -860,7 +907,7 @@ classDiagram
     NonConservativeForce <|-- LowRankSkewForce
     NonConservativeForce <|-- LowRankSolenoidalForce
 
-    note for NonConservativeForce "f_nc is added to the conservative\nforce f = −∇U inside _layer_step"
+    note for NonConservativeForce "f_nc is added to the conservative\nforce f = -grad U inside _layer_step"
 ```
 
 ---
@@ -892,17 +939,17 @@ sequenceDiagram
     Main->>Optim: AdamW(model.parameters(), lr, wd)
 
     loop step = 0 .. steps-1
-        Main->>Sched: lr_schedule(step) → lr_now
+        Main->>Sched: lr_schedule(step) -> lr_now
         Main->>DM: get_batch(train_ids, B, T)
         DM-->>Main: x, y
 
         Main->>Model: forward(x, targets=y)
         activate Model
-        Model->>Model: _embed(x) → h0
-        Model->>Model: compute_mass(x) → m_b
-        loop ℓ = 0 .. L-1
-            Model->>Model: _layer_step(h, h_prev, m, γ, dt, ℓ)
-            Note right of Model: ξ = causal_cumul_mean(h.detach())<br/>U = V_θ(ξ, h)<br/>f = −∇_h U<br/>h_new = Verlet(h, f, m, γ, dt)
+        Model->>Model: _embed(x) -> h0
+        Model->>Model: compute_mass(x) -> m_b
+        loop l = 0 .. L-1
+            Model->>Model: _layer_step(h, h_prev, m, gamma, dt, l)
+            Note right of Model: xi = causal_cumul_mean(h.detach())<br>U = V_theta(xi, h)<br>f = -grad_h U<br>h_new = Verlet(h, f, m, gamma, dt)
         end
         Model->>Model: logits = h_L @ E.weight.T
         Model->>Model: loss = cross_entropy(logits, y)
@@ -951,13 +998,13 @@ sequenceDiagram
     Main->>Probe: assert_causal(model, vocab_size)
     Probe->>Model: perturbation_probe()
     Probe->>Model: gradient_probe()
-    Probe-->>Main: passed ✓
+    Probe-->>Main: passed yes
 
     Main->>Optim: AdamW(model.parameters())
 
     loop step = 0 .. steps-1
         Main->>Main: lr_schedule(step), tau_schedule(step)
-        Main->>Model: set_gumbel_tau(τ)
+        Main->>Model: set_gumbel_tau(tau)
         Main->>DM: get_batch(train_ids, B, T)
         DM-->>Main: x, y
 
@@ -966,15 +1013,15 @@ sequenceDiagram
         Model->>Model: h0 = _embed(x)
         Model->>Model: m_b = compute_mass(x)
 
-        loop ℓ = 0 .. L-1
-            Model->>Xi: xi_module(h.detach()) → xis (B,T,K,d)
-            Model->>VT: V_theta(xis, h_in) → V_θ per token
-            Model->>SH: score_head(h, h_src) → π (B,T,T)
-            Model->>Model: sparse_topk_indices(π) → idx, m_g
+        loop l = 0 .. L-1
+            Model->>Xi: xi_module(h.detach()) -> xis (B,T,K,d)
+            Model->>VT: V_theta(xis, h_in) -> V_theta per token
+            Model->>SH: score_head(h, h_src) -> pi (B,T,T)
+            Model->>Model: sparse_topk_indices(pi) -> idx, m_g
             Model->>VP: V_phi.forward_gathered(h, h_src_g)
-            Model->>Model: U = V_θ.sum() + (V_φ · m_g).sum()
-            Model->>Model: f = −∇_h U   (autograd.grad)
-            Model->>Model: h_new = Verlet(h, f, m, γ, dt)
+            Model->>Model: U = V_theta.sum() + (V_phi * m_g).sum()
+            Model->>Model: f = -grad_h U   (autograd.grad)
+            Model->>Model: h_new = Verlet(h, f, m, gamma, dt)
             Model->>Model: _project(h_new)  [LayerNorm]
         end
 
@@ -1005,7 +1052,7 @@ sequenceDiagram
 
     Note over Main,Probe: Pre-training causal audit
     Main->>Probe: assert_causal(model, vocab_size)
-    Probe-->>Main: passed ✓
+    Probe-->>Main: passed yes
 
     Main->>Model: forward(x, targets=y)
     activate Model
@@ -1013,25 +1060,25 @@ sequenceDiagram
     Model->>Model: r, salience = _init_registers(B, device)
     Model->>Model: h = h0, h_prev = h0
 
-    loop ℓ = 0 .. L-1
+    loop l = 0 .. L-1
         Note over Model,CG: Register Creation
         alt fock_version == "v1"
-            Model->>CG: creation_gates[ℓ](h.mean(dim=1))
+            Model->>CG: creation_gates[l](h.mean(dim=1))
             CG-->>Model: g_create (B, M)
-            Model->>Model: salience = decay · sal + g_create · (1−decay)
+            Model->>Model: salience = decay * sal + g_create * (1-decay)
         else fock_version == "v2"
             Model->>CG: creation_gate_qkv(h, r)
-            CG-->>Model: r_new_content, α_max
+            CG-->>Model: r_new_content, alpha_max
             Model->>Model: blend r, update salience
         end
 
         Model->>Model: active = _active_mask(salience)
-        Model->>Model: h_ext = cat([h, r·active], dim=1)
-        Model->>Model: h_prev_ext = cat([h_prev, r·active], dim=1)
+        Model->>Model: h_ext = cat([h, r*active], dim=1)
+        Model->>Model: h_prev_ext = cat([h_prev, r*active], dim=1)
 
         Note over Model,Super: Multi-Xi PARF Dynamics on Extended State
-        Model->>Super: _layer_step(h_ext, h_prev_ext, m_ext, γ, dt, ℓ)
-        Note right of Super: K-EMA ξ channels<br/>V_θ(xis, h) + V_φ sparse routing<br/>f = −∇U, Verlet step
+        Model->>Super: _layer_step(h_ext, h_prev_ext, m_ext, gamma, dt, l)
+        Note right of Super: K-EMA xi channels<br>V_theta(xis, h) + V_phi sparse routing<br>f = -grad U, Verlet step
         Super-->>Model: h_ext_new
 
         Model->>Model: h_new = h_ext_new[:, :T, :]
@@ -1041,13 +1088,13 @@ sequenceDiagram
             Note over Model,RC: Reverse Channel Force
             Model->>RC: reverse_ch(h_new, r_new, active)
             RC-->>Model: Q_force (B, T, d)
-            Model->>Model: h_new += (dt²/m) · tanh(scale) · Q_force
+            Model->>Model: h_new += (dt^2/m) * tanh(scale) * Q_force
         end
 
         Note over Model,DG: Register Destruction
-        Model->>DG: destruction_gates[ℓ](r_new)
+        Model->>DG: destruction_gates[l](r_new)
         DG-->>Model: g_destroy (B, M)
-        Model->>Model: salience *= (1 − g_destroy · active)
+        Model->>Model: salience *= (1 - g_destroy * active)
 
         Model->>Model: h_prev = h, h = h_new
     end
@@ -1081,15 +1128,15 @@ sequenceDiagram
         Note over Probe,Model: Test 1: Perturbation Probe
         Probe->>Probe: x_a = random tokens (1, 32)
         Probe->>Probe: x_b = x_a with x[20] changed
-        Probe->>Model: model(x_a) → logits_a
-        Probe->>Model: model(x_b) → logits_b
-        Probe->>Probe: Δ = |logits_a − logits_b| per position
-        Probe->>Probe: assert Δ[:20].max() < 1e-6
+        Probe->>Model: model(x_a) -> logits_a
+        Probe->>Model: model(x_b) -> logits_b
+        Probe->>Probe: Delta = |logits_a - logits_b| per position
+        Probe->>Probe: assert Delta[:20].max() < 1e-6
 
         Note over Probe,AG: Test 2: Gradient-Jacobian Probe
-        Probe->>Model: _embed(x) → emb
+        Probe->>Model: _embed(x) -> emb
         Probe->>Probe: emb_in = emb.detach().requires_grad_(True)
-        Probe->>Model: _stack_forward(emb_in, x) → h_L
+        Probe->>Model: _stack_forward(emb_in, x) -> h_L
         Probe->>Probe: target = (h_L @ E.weight.T)[0, 20, :].sum()
         Probe->>AG: autograd.grad(target, emb_in)
         AG-->>Probe: gradient norms per position
@@ -1121,7 +1168,7 @@ sequenceDiagram
     participant Model as *LM.generate()
     participant Embed as _embed()
     participant Stack as _stack_forward()
-    participant Layer as _layer_step() × L
+    participant Layer as _layer_step() x L
 
     User->>Model: generate(x_prompt, max_new_tokens=N)
 
@@ -1131,15 +1178,15 @@ sequenceDiagram
         Embed-->>Stack: h0
 
         Stack->>Stack: m_b = compute_mass(x_ctx)
-        loop ℓ = 0 .. L-1
-            Stack->>Layer: _layer_step(h, h_prev, m, γ, dt, ℓ)
-            Note right of Layer: Conservative force dynamics<br/>(no create_graph needed)
+        loop l = 0 .. L-1
+            Stack->>Layer: _layer_step(h, h_prev, m, gamma, dt, l)
+            Note right of Layer: Conservative force dynamics<br>(no create_graph needed)
             Layer-->>Stack: h_new
         end
         Stack-->>Model: h_L
 
         Model->>Model: logits = h_L[:, -1, :] @ E.weight.T
-        Model->>Model: next_token = sample(softmax(logits / τ))
+        Model->>Model: next_token = sample(softmax(logits / tau))
         Model->>Model: x = cat([x, next_token])
     end
 
