@@ -58,6 +58,9 @@ run instructions.
 | [S1–S4](#architecture-comparison-s1s4) | — | TinyStories v3: PARF vs FockPARF vs Hybrids with SQ3 V_theta | completed |
 | [Scope 3](#scope-3-leak-free-multi-seed-retrain) | §15.11, Tab 15–17 | Leak-free S=5 retrain of v2 SPLM experiments | completed |
 | [SQ1–SQ5](#structured-v_theta-sweep-sq1sq5) | §17.10, Tab 27 | Structured V_theta expressivity test on TinyShakespeare | completed |
+| [MXP-H16](#multi-xi-parf-h16-pilot) | §17 | Multi-ξ PARF pilot at H=16 (pre-memory-fix) — 3 arms | completed |
+| [MXP-H128](#multi-xi-parf-h128-scaleup) | §17 | Multi-ξ PARF at H=128 (Level-2 ckpt + gathered V_φ) — 6 arms | completed |
+| [FMXP-H128](#fock-multi-xi-parf-h128-scaleup) | §17 | Fock Multi-ξ PARF at H=128 (v1/v2 gates, register sweep) — 10 arms | planned |
 | [Stage-1.5a](#stage-15a-stage-15b-v_phi-memory-variants) | §17.9, Tab 29 | Dense V_phi forward with post-masking | completed |
 | [Stage-1.5b](#stage-15a-stage-15b-v_phi-memory-variants) | §17.9 | Gathered V_phi (top-k source gathering) | design only |
 | [VR0–VR5](#splm-v_theta-regularisation-vr0vr5) | §17b, Tab 26 | Standalone SPLM V_theta regularisation sweep | completed |
@@ -364,6 +367,73 @@ structural improvements.
 - **Design doc:** [`companion_notes/PARF_Stage_1_5b_design.md`](companion_notes/PARF_Stage_1_5b_design.md)
 - **POC notebook:** [`notebooks/conservative_arch/parf/scripts/gradient_checkpoint_gathered_vphi_poc.ipynb`](notebooks/conservative_arch/parf/scripts/gradient_checkpoint_gathered_vphi_poc.ipynb)
 - **Key finding:** Stage-1.5b reduces V_phi intermediates from O(T²) to O(T·k); combined with Level 2 checkpointing, peak V_phi activation memory drops from O(L·B·T²·H) to O(B·T·k·H).
+
+### Multi-Xi PARF H=16 pilot
+
+Three-arm pilot combining multi-channel K-EMA ξ (K=4) with sparse PARF
+pair forces (MultiXiPARFLM) at the memory-constrained setting (H=16,
+grad-accum=2).
+
+| Arm | V_φ kind | k | PPL |
+|-----|----------|---|-----|
+| **competitive_k8** | structural_competitive | 8 | 15.44 |
+| **competitive_k4** | structural_competitive | 4 | 16.03 |
+| **structural_k8** | structural | 8 | — |
+
+- **Paper:** §17 (multi-ξ results subsection)
+- **Notebook:** [`notebooks/conservative_arch/scaleup/colab_parf_multixi.ipynb`](notebooks/conservative_arch/scaleup/colab_parf_multixi.ipynb)
+- **Results:** GDrive `semsimula_parf_multixi/`
+- **Key finding:** Multi-ξ dramatically improves PARF (15.44 vs 28 PPL with single ξ) but V_φ at H=16 adds ~0.75 PPL overhead vs multi-ξ SPLM alone (14.69). V_φ capacity is the binding constraint.
+
+### Multi-Xi PARF H=128 scaleup
+
+Re-runs multi-ξ PARF at full V_φ capacity (H=128) enabled by Level-2
+per-layer checkpointing + Stage-1.5b gathered V_φ. Six arms sweep
+channel count (K=2, 4, 8), α-init strategy (hand-picked, log-spaced),
+routing density (k=4, 8), and V_φ kind (competitive, structural).
+
+| Arm | K | α-init | V_φ | k | PPL |
+|-----|---|--------|-----|---|-----|
+| **comp_K4_best_alpha** | 4 | [0.25,0.50,0.75,0.95] | competitive | 8 | 13.19 |
+| **comp_K4_k4** | 4 | [0.25,0.50,0.75,0.95] | competitive | 4 | 13.11 |
+| **comp_K4_log_spaced** | 4 | log_spaced | competitive | 8 | **12.47** |
+| **comp_K2** | 2 | [0.50,0.95] | competitive | 8 | 13.48 |
+| **comp_K8** | 8 | log_spaced | competitive | 8 | — |
+| **struct_K4** | 4 | [0.25,0.50,0.75,0.95] | structural | 8 | — |
+
+- **Paper:** §17 (multi-ξ results subsection, Table `tab:parf-multixi-h128`)
+- **Notebook:** [`notebooks/conservative_arch/scaleup/colab_parf_multixi_h128.ipynb`](notebooks/conservative_arch/scaleup/colab_parf_multixi_h128.ipynb)
+- **Results:** GDrive `semsimula_parf_multixi_h128/`
+- **Key finding:** Log-spaced α (K=4, k=8) achieves 12.47 PPL — closing half the gap between multi-ξ SPLM (14.69) and attention (7.81). H=128 unlocks ~3 PPL improvement over H=16 runs, confirming V_φ capacity was the binding constraint.
+
+### Fock Multi-Xi PARF H=128 scaleup
+
+Adds Fock-space latent register pools (v1 and v2 gates) on top of the
+multi-ξ PARF H=128 architecture. Ten arms sweep Fock version (v1/v2),
+register count (M=8, 16, 32), activation discipline (LIFO vs free),
+reverse channel (on/off), routing density (k=4, 8), V_φ kind
+(competitive, structural), and channel count (K=2, 4).
+
+| Arm | Fock | K | M | Disc | Rev | k | V_φ |
+|-----|------|---|---|------|-----|---|-----|
+| **v1_K4_M16_lifo** | v1 | 4 | 16 | LIFO | — | 8 | competitive |
+| **v1_K4_M32_lifo** | v1 | 4 | 32 | LIFO | — | 8 | competitive |
+| **v1_K4_M16_free** | v1 | 4 | 16 | free | — | 8 | competitive |
+| **v2_K4_M16_lifo** | v2 | 4 | 16 | LIFO | ✓ | 8 | competitive |
+| **v2_K4_M16_no_rev** | v2 | 4 | 16 | LIFO | ✗ | 8 | competitive |
+| **v2_K4_M32_lifo** | v2 | 4 | 32 | LIFO | ✓ | 8 | competitive |
+| **v2_K2_M16_lifo** | v2 | 2 | 16 | LIFO | ✓ | 8 | competitive |
+| **v2_K4_M16_k4** | v2 | 4 | 16 | LIFO | ✓ | 4 | competitive |
+| **v1_K4_M16_struct** | v1 | 4 | 16 | LIFO | — | 8 | structural |
+| **v2_K4_M8_lifo** | v2 | 4 | 8 | LIFO | ✓ | 8 | competitive |
+
+- **Paper:** §17 (planned — pending results)
+- **Model:** [`notebooks/conservative_arch/parf/model_fock_parf_multixi.py`](notebooks/conservative_arch/parf/model_fock_parf_multixi.py)
+- **Training script:** [`notebooks/conservative_arch/scaleup/train_fock_multixi_scaleup.py`](notebooks/conservative_arch/scaleup/train_fock_multixi_scaleup.py)
+- **Notebook:** [`notebooks/conservative_arch/scaleup/colab_fock_multixi_h128.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_multixi_h128.ipynb)
+- **Results:** GDrive `semsimula_fock_multixi_h128/` (pending)
+- **Key question:** Can Fock registers close the remaining gap between multi-ξ PARF (12.47 PPL) and attention (7.81 PPL)?
+- **Status:** planned — model and notebook ready, awaiting A100 runs
 
 ### Scale-up PARF OOM picture
 
