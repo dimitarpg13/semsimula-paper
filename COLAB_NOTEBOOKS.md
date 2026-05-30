@@ -58,7 +58,7 @@ matched-attention baseline, Helmholtz Q9d, Hybrid VA.
 | [colab_alpha_init_sweep](#colab_alpha_init_sweep) | `notebooks/conservative_arch/scaleup/colab_alpha_init_sweep.ipynb` | K-EMA α-initialisation sweep for multi-channel ξ SPLM |
 | [colab_parf_multixi](#colab_parf_multixi) | `notebooks/conservative_arch/scaleup/colab_parf_multixi.ipynb` | Multi-ξ PARF hybrid at H=16 (pre-memory-fix baseline) |
 | [colab_parf_multixi_h128](#colab_parf_multixi_h128) | `notebooks/conservative_arch/scaleup/colab_parf_multixi_h128.ipynb` | Multi-ξ PARF at full V_φ capacity (H=128) with Level-2 checkpointing + gathered V_φ |
-| [colab_fock_multixi_h128](#colab_fock_multixi_h128) | `notebooks/conservative_arch/scaleup/colab_fock_multixi_h128.ipynb` | Fock Multi-ξ PARF at full V_φ capacity (H=128) — 12-arm sweep over Fock v1/v2, register count, discipline, reverse channel, and schedule |
+| [colab_fock_multixi_h128](#colab_fock_multixi_h128) | `notebooks/conservative_arch/scaleup/colab_fock_multixi_h128.ipynb` | Fock Multi-ξ PARF at full V_φ capacity (H=128) — 13-arm sweep over Fock v1/v2, register count, discipline, reverse channel, and schedule |
 
 ### colab_alpha_init_sweep
 
@@ -117,10 +117,10 @@ Two gate variants are swept:
 - **v2**: Q/K/V cross-attention creation + optional non-conservative
   reverse channel force Q_i on tokens
 
-Twelve arms cover a full sweep over Fock version (v1/v2), register count
+Thirteen arms cover a full sweep over Fock version (v1/v2), register count
 (M=4, 8, 16, 32), activation discipline (LIFO vs free), reverse channel
 (on/off), routing density (k=4, 8), V_φ kind (competitive, structural),
-channel count (K=2, 4), and training schedule (8k vs 16k steps).
+channel count (K=2, 4), and training schedule (8k / 16k / 32k steps).
 
 All arms use the same memory optimisations as `colab_parf_multixi_h128`:
 Level-2 per-layer checkpointing + Stage-1.5b gathered V_φ, H=128,
@@ -129,7 +129,7 @@ no grad-accum.
 - **Arms:** v1_K4_M16_lifo, v1_K4_M32_lifo, v1_K4_M16_free,
   v2_K4_M16_lifo, v2_K4_M16_no_rev, v2_K4_M32_lifo, v2_K2_M16_lifo,
   v2_K4_M16_k4, v1_K4_M16_struct, v2_K4_M8_lifo, v2_K4_M4_lifo,
-  v2_K4_M16_lifo_16k
+  v2_K4_M16_lifo_16k, v2_K4_M16_lifo_32k
 - **Dataset:** TinyStories (5M tokens)
 - **GPU:** A100 40GB (~2-4h per arm, scaleup 8000 steps, no grad-accum)
 

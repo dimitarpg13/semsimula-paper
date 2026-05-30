@@ -60,7 +60,7 @@ run instructions.
 | [SQ1–SQ5](#structured-v_theta-sweep-sq1sq5) | §17.10, Tab 27 | Structured V_theta expressivity test on TinyShakespeare | completed |
 | [MXP-H16](#multi-xi-parf-h16-pilot) | §17 | Multi-ξ PARF pilot at H=16 (pre-memory-fix) — 3 arms | completed |
 | [MXP-H128](#multi-xi-parf-h128-scaleup) | §17 | Multi-ξ PARF at H=128 (Level-2 ckpt + gathered V_φ) — 6 arms | completed |
-| [FMXP-H128](#fock-multi-xi-parf-h128-scaleup) | §17 | Fock Multi-ξ PARF at H=128 (v1/v2 gates, register sweep) — 12 arms | planned |
+| [FMXP-H128](#fock-multi-xi-parf-h128-scaleup) | §17 | Fock Multi-ξ PARF at H=128 (v1/v2 gates, register sweep) — 13 arms | in progress |
 | [Stage-1.5a](#stage-15a-stage-15b-v_phi-memory-variants) | §17.9, Tab 29 | Dense V_phi forward with post-masking | completed |
 | [Stage-1.5b](#stage-15a-stage-15b-v_phi-memory-variants) | §17.9 | Gathered V_phi (top-k source gathering) | design only |
 | [VR0–VR5](#splm-v_theta-regularisation-vr0vr5) | §17b, Tab 26 | Standalone SPLM V_theta regularisation sweep | completed |
@@ -409,11 +409,11 @@ routing density (k=4, 8), and V_φ kind (competitive, structural).
 ### Fock Multi-Xi PARF H=128 scaleup
 
 Adds Fock-space latent register pools (v1 and v2 gates) on top of the
-multi-ξ PARF H=128 architecture. Twelve arms sweep Fock version (v1/v2),
+multi-ξ PARF H=128 architecture. Thirteen arms sweep Fock version (v1/v2),
 register count (M=4, 8, 16, 32), activation discipline (LIFO vs free),
 reverse channel (on/off), routing density (k=4, 8), V_φ kind
 (competitive, structural), channel count (K=2, 4), and training schedule
-(8k vs 16k steps).
+(8k / 16k / 32k steps).
 
 | Arm | Fock | K | M | Disc | Rev | k | V_φ | Steps | PPL |
 |-----|------|---|---|------|-----|---|-----|-------|-----|
@@ -429,6 +429,7 @@ reverse channel (on/off), routing density (k=4, 8), V_φ kind
 | **v2_K4_M8_lifo** | v2 | 4 | 8 | LIFO | ✓ | 8 | competitive | 8k | — |
 | **v2_K4_M4_lifo** | v2 | 4 | 4 | LIFO | ✓ | 8 | competitive | 8k | — |
 | **v2_K4_M16_lifo_16k** | v2 | 4 | 16 | LIFO | ✓ | 8 | competitive | **16k** | — |
+| **v2_K4_M16_lifo_32k** | v2 | 4 | 16 | LIFO | ✓ | 8 | competitive | **32k** | — |
 
 - **Paper:** §17 (first result: v2_K4_M16_lifo = 14.21 PPL)
 - **Model:** [`notebooks/conservative_arch/parf/model_fock_parf_multixi.py`](notebooks/conservative_arch/parf/model_fock_parf_multixi.py)
@@ -437,7 +438,7 @@ reverse channel (on/off), routing density (k=4, 8), V_φ kind
 - **Results:** [`notebooks/conservative_arch/scaleup/results/semsimula_fock_multixi_h128/`](notebooks/conservative_arch/scaleup/results/semsimula_fock_multixi_h128/) + GDrive
 - **Key question:** Can Fock registers close the remaining gap between multi-ξ PARF (12.06 PPL) and attention (7.81 PPL)?
 - **First finding:** v2_K4_M16_lifo achieves 14.21 PPL (best 13.76 at step 7600) — 2.15 PPL above non-Fock baseline. Fock registers currently add interference rather than value. Two diagnostic arms added: M=4 (interference test) and 16k steps (convergence test).
-- **Status:** in progress — 1/12 arms completed
+- **Status:** in progress — 1/13 arms completed
 
 ### Scale-up PARF OOM picture
 

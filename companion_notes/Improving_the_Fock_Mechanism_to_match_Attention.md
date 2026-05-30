@@ -1166,6 +1166,98 @@ Based on the QFT v2.1 results, the following improvements are the highest-priori
 | Experiment | Notebook | Results directory | Date |
 |---|---|---|---|
 | QFT v2.1 (Q0--Q8) | `scripts/fockparf_v2_qft_improvements.ipynb` | `results/fock_v2_qft/` | May 2026 |
+| Fock Multi-Xi H=128 (13-arm) | `scaleup/colab_fock_multixi_h128.ipynb` | `scaleup/results/semsimula_fock_multixi_h128/` | May 2026 |
+
+---
+
+## 18. Fock v2 Convergence Slowdown: Diagnosis and Future Work
+
+### 18.1 Empirical evidence
+
+The Multi-Xi Fock-PARFLM H=128 experiment (`colab_fock_multixi_h128.ipynb`)
+reveals a significant convergence slowdown when Fock registers are added
+to the Multi-Xi PARFLM base:
+
+| Model | Steps to 12.06 PPL | Final PPL (8k) |
+|-------|--------------------:|---------------:|
+| Multi-Xi PARFLM (K=8, no Fock) | ~8,000 | **12.06** |
+| Fock v2 + rev (K=4, M=16, LIFO) | ~14,400 | 14.21 |
+
+The `v2_K4_M16_lifo_16k` arm reached **12.00 PPL at step 14,400** —
+crossing below the non-Fock K=8 baseline — but required approximately
+1.8× more training steps to reach the same perplexity level.  Note that
+the Fock arm uses K=4 (not K=8), so a direct parameter-matched
+comparison is K=4 non-Fock at 12.47 PPL, which the Fock arm surpassed
+around step 12,400.
+
+The convergence curve shows three distinct phases:
+1. **Steps 0–6k**: Rapid descent, tracking the non-Fock trajectory
+   closely but offset by ~2–3 PPL.
+2. **Steps 6k–12k**: Slow plateau region around 14–13 PPL where the
+   Fock mechanism appears to impede rather than help.
+3. **Steps 12k–16k**: Resumed improvement as register specialisation
+   kicks in, crossing the non-Fock baseline.
+
+### 18.2 Candidate explanations
+
+1. **Optimization landscape interference.**  The Fock mechanism adds
+   578K parameters (creation/destruction gates, register embeddings,
+   reverse channel projections) on top of the converged PARF field.
+   Early in training, register gates fire at random positions, adding
+   gradient noise to V\_theta and V\_phi updates.  The base PARF
+   components that would converge in 8k steps are slowed because they
+   must co-adapt with a randomly-initialised register routing system.
+
+2. **Gumbel temperature schedule mismatch.**  The Gumbel-Softmax
+   temperature tau anneals from 1.0 → 0.1 over the full training run.
+   At high tau (early training), routing is nearly uniform — every
+   register is created everywhere — so the Fock mechanism consumes
+   gradient budget without contributing useful information routing.
+   Useful discrete routing behaviour only emerges once tau drops below
+   ~0.3, which occurs around step 10–12k in the 16k run.  The
+   productive phase of Fock training is therefore compressed into the
+   last ~25% of the schedule.
+
+3. **Learning rate schedule mismatch.**  The cosine lr schedule is
+   calibrated for the total step count.  By the time the Fock mechanism
+   begins contributing (step 10–12k), the lr has decayed to ~3e-05 —
+   too low for rapid register specialisation.  The registers need to
+   learn *after* the base model settles, but by then the lr provides
+   insufficient signal for fast adaptation.
+
+4. **Reverse channel gradient competition.**  The reverse channel sends
+   non-conservative forces from registers to tokens.  Early in training,
+   these forces are random and actively fight the conservative V\_theta
+   gradient.  The model must learn to suppress the reverse channel
+   initially and then gradually enable it, but the current architecture
+   has no mechanism for staged activation.
+
+### 18.3 Proposed speedup strategies (future work)
+
+| Strategy | Description | Expected speedup |
+|----------|-------------|-----------------|
+| **Warm-start** | Train non-Fock Multi-Xi PARFLM for 8k steps, freeze base weights, attach Fock registers, train 4–8k more. Separates the two optimisation problems. | 1.5–2× (eliminate plateau phase) |
+| **Delayed Fock activation** | Clamp register creation gates to zero for the first N steps, then gradually enable. Similar to progressive growing in GANs. | 1.3–1.5× |
+| **Faster Gumbel annealing** | Start tau at 0.5 (not 1.0) or use exponential decay instead of linear. Moves the productive routing phase earlier. | 1.2–1.5× |
+| **Two-phase lr schedule** | Fast lr for base PARF convergence (steps 0–8k), then lr bump for Fock fine-tuning (steps 8k–16k). | 1.5–2× |
+| **Per-module lr** | Give Fock parameters (gates, register embeddings) a higher lr than base PARF parameters. | Moderate |
+| **Reverse channel gate** | Add a learnable scalar gate (initialised near zero) on the reverse channel force, allowing the model to suppress it early and enable it gradually. | Unknown — needs experiment |
+
+### 18.4 Open questions
+
+- Does the 32k arm (`v2_K4_M16_lifo_32k`) continue to improve, or does
+  it plateau?  If it reaches ~11 PPL, the Fock mechanism is
+  unambiguously beneficial at sufficient training budget.
+- Would warm-starting from a converged non-Fock checkpoint skip the
+  plateau entirely?  This is the single highest-leverage experiment to
+  run.
+- Is the convergence slowdown specific to v2 (Q/K/V cross-attention
+  gates) or does v1 (MLP gates) converge faster?  The v1 arms at 8k
+  steps will partially answer this.
+- The alpha channels freeze at [0.000, 0.603, 0.884, 0.974] early and
+  never change — the fastest channel (alpha ≈ 0) is effectively dead.
+  Does this indicate that 3 channels would suffice, or is the dead
+  channel absorbing register-related noise?
 
 ---
 
