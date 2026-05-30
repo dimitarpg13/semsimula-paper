@@ -190,27 +190,35 @@ class MultiXiPARFLM(SparsePARFLM):
         # ── V_theta on multi-channel ξ ──
         V_th_per_token = self.V_theta(xis, h_in)                # (B, T, 1)
 
-        # ── Score head → straight-through composite mask ──
+        # ── Score head → routing ──
         pi = self.score_head(h_in, h_src_for_score)              # (B, T, T)
         causal = self._pair_mask_for(T, h_in.device)
-        tilde_m = self._sparse_mask(pi, causal, T)               # (B, T, T)
 
-        # ── Pair potential (dense eval, sparse aggregation) ──
-        if cfg.use_grad_checkpoint and self.training:
-            P = torch.utils.checkpoint.checkpoint(
-                self.V_phi, h_in, h_src, use_reentrant=False,
-            )
+        # ── Pair potential — Stage-1.5b (gathered) or Stage-1.5a (dense) ──
+        if cfg.use_gathered_v_phi:
+            idx, m_g = self._sparse_topk_indices(pi, causal, T)  # (B,T,k), (B,T,k)
+            idx_for_gather = idx.unsqueeze(-1).expand(-1, -1, -1, d)
+            h_src_g = h_src.unsqueeze(1).expand(-1, T, -1, -1).gather(
+                2, idx_for_gather,
+            )                                                    # (B, T, k, d)
+            V_phi_g = self.V_phi.forward_gathered(h_in, h_src_g) # (B, T, k)
+            U_pair = (V_phi_g * m_g).sum()
         else:
-            P = self.V_phi(h_in, h_src)                          # (B, T, T)
-        P_masked = (P * tilde_m).masked_fill(~causal, 0.0)
+            tilde_m = self._sparse_mask(pi, causal, T)           # (B, T, T)
+            if cfg.use_grad_checkpoint and self.training:
+                P = torch.utils.checkpoint.checkpoint(
+                    self.V_phi, h_in, h_src, use_reentrant=False,
+                )
+            else:
+                P = self.V_phi(h_in, h_src)                      # (B, T, T)
+            U_pair = (P * tilde_m).masked_fill(~causal, 0.0).sum()
+
         s_ell = self.per_layer_scale(layer_idx)
         if s_ell is not None:
-            P_masked = P_masked * s_ell
+            U_pair = U_pair * s_ell
 
         # ── Force computation ──
-        # ScalarPotentialMultiXi does not implement analytical_grad,
-        # so the legacy joint-autograd path is always used here.
-        U = V_th_per_token.sum() + P_masked.sum()
+        U = V_th_per_token.sum() + U_pair
         grad_U, = torch.autograd.grad(
             U, h_in,
             create_graph=self.training,
@@ -235,41 +243,51 @@ class MultiXiPARFLM(SparsePARFLM):
 # ---------------------------------------------------------------------------
 def _smoke():
     """Minimal round-trip on CPU."""
-    cfg = MultiXiPARFConfig(
-        vocab_size=257, d=16, max_len=64, L=4,
-        v_hidden=32, v_depth=2,
-        v_phi_d_type=4, v_phi_d_angle=2,
-        v_phi_phi_hidden=8, v_phi_theta_hidden=8,
-        v_phi_mlp_hidden=16,
-        mass_mode="global",
-        top_k=8,
-        score_head_hidden=8,
-        xi_channels=4,
-        xi_alpha_inits=[0.0, 0.5, 0.9, 0.99],
-        xi_learnable=True,
-    )
-    torch.manual_seed(0)
-    net = MultiXiPARFLM(cfg)
-    n = net.num_params()
-    alpha_str = ", ".join(f"{a:.3f}" for a in net.xi_alpha_values())
-    print(f"[multixi-parf-smoke] params: {n:,}")
-    print(f"[multixi-parf-smoke] K={cfg.xi_channels}  α=[{alpha_str}]")
-    print(f"[multixi-parf-smoke] top_k={cfg.top_k}  tau={net.gumbel_tau:.3f}")
+    for layer_ckpt in (False, True):
+        for gathered in (False, True):
+            tag_parts = []
+            if layer_ckpt:
+                tag_parts.append("layer_ckpt")
+            if gathered:
+                tag_parts.append("gathered")
+            tag = "+".join(tag_parts) or "baseline"
+            cfg = MultiXiPARFConfig(
+                vocab_size=257, d=16, max_len=64, L=4,
+                v_hidden=32, v_depth=2,
+                v_phi_d_type=4, v_phi_d_angle=2,
+                v_phi_phi_hidden=8, v_phi_theta_hidden=8,
+                v_phi_mlp_hidden=16,
+                mass_mode="global",
+                top_k=8,
+                score_head_hidden=8,
+                xi_channels=4,
+                xi_alpha_inits=[0.0, 0.5, 0.9, 0.99],
+                xi_learnable=True,
+                use_layer_checkpoint=layer_ckpt,
+                use_gathered_v_phi=gathered,
+            )
+            torch.manual_seed(0)
+            net = MultiXiPARFLM(cfg)
+            n = net.num_params()
+            alpha_str = ", ".join(f"{a:.3f}" for a in net.xi_alpha_values())
+            print(f"[multixi-parf-smoke/{tag}] params: {n:,}")
+            print(f"[multixi-parf-smoke/{tag}] K={cfg.xi_channels}  "
+                  f"\u03b1=[{alpha_str}]")
 
-    x = torch.randint(0, cfg.vocab_size, (2, 16))
-    y = torch.randint(0, cfg.vocab_size, (2, 16))
+            x = torch.randint(0, cfg.vocab_size, (2, 16))
+            y = torch.randint(0, cfg.vocab_size, (2, 16))
 
-    net.train()
-    logits, loss = net(x, targets=y)
-    print(f"[multixi-parf-smoke] forward: logits {tuple(logits.shape)} "
-          f"loss {loss.item():.4f}")
-    loss.backward()
+            net.train()
+            logits, loss = net(x, targets=y)
+            print(f"[multixi-parf-smoke/{tag}] forward: logits "
+                  f"{tuple(logits.shape)} loss {loss.item():.4f}")
+            loss.backward()
 
-    alpha_grad = net.xi_module.raw_alpha.grad
-    assert alpha_grad is not None, "raw_alpha got no gradient"
-    print(f"[multixi-parf-smoke] raw_α grad norm: "
-          f"{alpha_grad.norm().item():.3e}")
-    print("[multixi-parf-smoke] backward OK.")
+            alpha_grad = net.xi_module.raw_alpha.grad
+            assert alpha_grad is not None, "raw_alpha got no gradient"
+            print(f"[multixi-parf-smoke/{tag}] raw_\u03b1 grad norm: "
+                  f"{alpha_grad.norm().item():.3e}")
+            print(f"[multixi-parf-smoke/{tag}] backward OK.")
 
 
 if __name__ == "__main__":

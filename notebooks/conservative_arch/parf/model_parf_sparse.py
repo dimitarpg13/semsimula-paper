@@ -136,6 +136,14 @@ class SparsePARFConfig(PARFConfig):
     # Causality / parity.
     score_head_use_detached_h_src: bool = True
 
+    # Stage-1.5b gathered V_phi: evaluate V_phi only at the top-k
+    # indices instead of densely at all O(T^2) pairs.  Reduces V_phi
+    # intermediates from (B,T,T,H) to (B,T,k,H) — a T/k reduction.
+    # Gradients are bit-identical to Stage-1.5a for V_phi params and
+    # h_in, and equivalent for score-head params in the limit tau->0.
+    # See companion_notes/PARF_Stage_1_5b_design.md.
+    use_gathered_v_phi: bool = False
+
 
 # ---------------------------------------------------------------------------
 # Score head
@@ -333,6 +341,51 @@ class SparsePARFLM(PARFLM):
         return (m_hard - kf * y).detach() + kf * y
 
     # ------------------------------------------------------------------
+    def _sparse_topk_indices(
+        self,
+        pi: torch.Tensor,        # (B, T, T) — score logits
+        causal: torch.Tensor,    # (B, T, T) — strict-causal bool mask
+        T: int,
+    ) -> tuple:
+        """Top-k Gumbel-softmax routing in gathered form.
+
+        Returns
+        -------
+        idx  : (B, T, k_eff) int64  — index of each top-k source per query
+        m_g  : (B, T, k_eff) float  — straight-through STE composite mask
+                                       gathered at the top-k positions
+        """
+        cfg = self.cfg
+        k_eff = max(1, min(cfg.top_k, T - 1))
+        tau = float(self._gumbel_tau)
+
+        if self.training and cfg.gumbel_noise:
+            u = torch.rand_like(pi).clamp_min_(1e-9)
+            g = -torch.log(-torch.log(u))
+            z_unmasked = (pi + g) / tau
+        else:
+            z_unmasked = pi / tau
+
+        z_topk = z_unmasked.masked_fill(~causal, float("-inf"))
+        _, idx = z_topk.topk(k_eff, dim=-1)                   # (B, T, k_eff)
+
+        m_hard_g = torch.ones_like(idx, dtype=pi.dtype)        # (B, T, k_eff)
+
+        z_soft = z_unmasked.masked_fill(~causal, -1e9)
+        y = torch.softmax(z_soft, dim=-1)                      # (B, T, T)
+        y_g = y.gather(-1, idx)                                # (B, T, k_eff)
+
+        causal_exp = causal.unsqueeze(0).expand_as(y) if causal.dim() == 2 else causal
+        causal_g = causal_exp.gather(-1, idx)                  # (B, T, k_eff)
+        m_hard_g = m_hard_g * causal_g.to(m_hard_g.dtype)
+        y_g = y_g * causal_g.to(y_g.dtype)
+
+        kf = float(k_eff)
+        m_g = (m_hard_g - kf * y_g).detach() + kf * y_g       # (B, T, k_eff)
+
+        return idx, m_g
+
+    # ------------------------------------------------------------------
     def _layer_step(
         self,
         h: torch.Tensor,
@@ -371,42 +424,45 @@ class SparsePARFLM(PARFLM):
         # 1. V_theta evaluation (unchanged from dense PARF).
         V_th_per_token = self.V_theta(xi_now, h_in)              # (B, T, 1)
 
-        # 2. Score head -> straight-through composite mask.
+        # 2. Score head -> routing.
         pi = self.score_head(h_in, h_src_for_score)              # (B, T, T)
         causal = self._pair_mask_for(T, h_in.device)             # (B, T, T) bool
-        tilde_m = self._sparse_mask(pi, causal, T)               # (B, T, T)
 
-        # 3. Pair potential (dense eval, sparse aggregation).
-        # Stage-1.5a prototype evaluates V_phi at all O(T^2) pairs and
-        # then masks; the Stage-1.5b optimisation gathers V_phi only at
-        # the top-k indices.  See design doc §4.3 for the gathered form.
-        if cfg.use_grad_checkpoint and self.training:
-            P = torch.utils.checkpoint.checkpoint(
-                self.V_phi, h_in, h_src, use_reentrant=False,
-            )
+        # 3. Pair potential — Stage-1.5b (gathered) or Stage-1.5a (dense).
+        if cfg.use_gathered_v_phi:
+            idx, m_g = self._sparse_topk_indices(pi, causal, T)  # (B,T,k), (B,T,k)
+            idx_for_gather = idx.unsqueeze(-1).expand(-1, -1, -1, d)
+            h_src_g = h_src.unsqueeze(1).expand(-1, T, -1, -1).gather(
+                2, idx_for_gather,
+            )                                                    # (B, T, k, d)
+            V_phi_g = self.V_phi.forward_gathered(h_in, h_src_g) # (B, T, k)
+            U_pair = (V_phi_g * m_g).sum()
         else:
-            P = self.V_phi(h_in, h_src)                          # (B, T, T)
-        P_masked = (P * tilde_m).masked_fill(~causal, 0.0)
-        # P8 patch B: per-layer V_φ scale (carries through to sparse PARF too).
+            tilde_m = self._sparse_mask(pi, causal, T)           # (B, T, T)
+            if cfg.use_grad_checkpoint and self.training:
+                P = torch.utils.checkpoint.checkpoint(
+                    self.V_phi, h_in, h_src, use_reentrant=False,
+                )
+            else:
+                P = self.V_phi(h_in, h_src)                      # (B, T, T)
+            U_pair = (P * tilde_m).masked_fill(~causal, 0.0).sum()
+
+        # P8 patch B: per-layer V_φ scale.
         s_ell = self.per_layer_scale(layer_idx)
         if s_ell is not None:
-            P_masked = P_masked * s_ell
+            U_pair = U_pair * s_ell
 
         # ── Phase-2 force computation ────────────────────────────────────
-        # Mirrors the identical block in PARFLM._layer_step (see model_parf.py).
-        # When V_theta has analytical_grad, split force into analytical
-        # V_theta term + autograd-only V_phi term (no create_graph on V_theta).
         if _has_analytical_grad(self.V_theta):
             f_theta = -self.V_theta.analytical_grad(xi_now, h_in)  # (B, T, d)
-            U_phi = P_masked.sum()
             grad_phi, = torch.autograd.grad(
-                U_phi, h_in,
+                U_pair, h_in,
                 create_graph=self.training,
                 retain_graph=True,
             )
             f = f_theta - grad_phi
         else:
-            U = V_th_per_token.sum() + P_masked.sum()
+            U = V_th_per_token.sum() + U_pair
             grad_U, = torch.autograd.grad(
                 U, h_in,
                 create_graph=self.training,
@@ -427,32 +483,38 @@ class SparsePARFLM(PARFLM):
 # ---------------------------------------------------------------------------
 def _smoke():
     """Minimal one-step round-trip on CPU.  Not the real smoke test."""
-    cfg = SparsePARFConfig(
-        vocab_size=257, d=16, max_len=64, L=4,
-        v_hidden=32, v_depth=2,
-        v_phi_d_type=4, v_phi_d_angle=2,
-        v_phi_phi_hidden=8, v_phi_theta_hidden=8,
-        v_phi_mlp_hidden=16,
-        mass_mode="global",
-        top_k=8,
-        score_head_hidden=8,
-    )
-    torch.manual_seed(0)
-    net = SparsePARFLM(cfg)
-    print(f"[parf-sparse-smoke] params: "
-          f"{sum(p.numel() for p in net.parameters()):,}  "
-          f"(score_head={sum(p.numel() for p in net.score_head.parameters()):,}, "
-          f"V_phi={sum(p.numel() for p in net.V_phi.parameters()):,})")
-    print(f"[parf-sparse-smoke] tau={net.gumbel_tau:.3f}  "
-          f"top_k={cfg.top_k}")
-    x = torch.randint(0, cfg.vocab_size, (2, 16))
-    y = torch.randint(0, cfg.vocab_size, (2, 16))
-    net.train()
-    logits, loss = net(x, targets=y)
-    print(f"[parf-sparse-smoke] forward: logits {tuple(logits.shape)} "
-          f"loss {loss.item():.4f}")
-    loss.backward()
-    print("[parf-sparse-smoke] backward OK; no exceptions.")
+    for layer_ckpt in (False, True):
+        for gathered in (False, True):
+            tag_parts = []
+            if layer_ckpt:
+                tag_parts.append("layer_ckpt")
+            if gathered:
+                tag_parts.append("gathered")
+            tag = "+".join(tag_parts) or "baseline"
+            cfg = SparsePARFConfig(
+                vocab_size=257, d=16, max_len=64, L=4,
+                v_hidden=32, v_depth=2,
+                v_phi_d_type=4, v_phi_d_angle=2,
+                v_phi_phi_hidden=8, v_phi_theta_hidden=8,
+                v_phi_mlp_hidden=16,
+                mass_mode="global",
+                top_k=8,
+                score_head_hidden=8,
+                use_layer_checkpoint=layer_ckpt,
+                use_gathered_v_phi=gathered,
+            )
+            torch.manual_seed(0)
+            net = SparsePARFLM(cfg)
+            print(f"[parf-sparse-smoke/{tag}] params: "
+                  f"{sum(p.numel() for p in net.parameters()):,}")
+            x = torch.randint(0, cfg.vocab_size, (2, 16))
+            y = torch.randint(0, cfg.vocab_size, (2, 16))
+            net.train()
+            logits, loss = net(x, targets=y)
+            print(f"[parf-sparse-smoke/{tag}] forward: logits "
+                  f"{tuple(logits.shape)} loss {loss.item():.4f}")
+            loss.backward()
+            print(f"[parf-sparse-smoke/{tag}] backward OK.")
 
 
 if __name__ == "__main__":

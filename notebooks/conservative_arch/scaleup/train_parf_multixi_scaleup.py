@@ -102,6 +102,8 @@ def build_config(
     *,
     fixed_gamma: float | None = None,
     use_grad_checkpoint: bool = False,
+    use_layer_checkpoint: bool = False,
+    use_gathered_v_phi: bool = False,
     sparse_top_k: int = 4,
     score_head_hidden: int = 32,
     gumbel_tau_init: float = 1.0,
@@ -133,6 +135,7 @@ def build_config(
         ln_after_step=True,
         fixed_gamma=fixed_gamma,
         use_grad_checkpoint=use_grad_checkpoint,
+        use_layer_checkpoint=use_layer_checkpoint,
         v_phi_competitive_temp=competitive_temp,
         v_phi_competitive_scale=competitive_scale,
         ln_before_distance=ln_before_distance,
@@ -146,6 +149,7 @@ def build_config(
         gumbel_tau_init=gumbel_tau_init,
         gumbel_tau_min=gumbel_tau_min,
         gumbel_noise=gumbel_noise,
+        use_gathered_v_phi=use_gathered_v_phi,
         # Multi-xi knobs
         xi_channels=xi_channels,
         xi_learnable=xi_learnable,
@@ -231,8 +235,11 @@ def build_config(
 
     fg_tag = "" if fixed_gamma is None else f"_g{fixed_gamma:.3f}"
     gc_tag = "_gc" if use_grad_checkpoint else ""
+    lc_tag = "_lc" if use_layer_checkpoint else ""
+    gv_tag = "_gv" if use_gathered_v_phi else ""
     tag = (f"parf_multixi_K{xi_channels}_{v_phi_kind}_vphi{phi_hidden}"
-           f"{gc_tag}{fg_tag}{p8_tag}_sparse_k{sparse_top_k}_{mode}")
+           f"{gc_tag}{lc_tag}{gv_tag}{fg_tag}{p8_tag}"
+           f"_sparse_k{sparse_top_k}_{mode}")
     return cfg, train_cfg, tag
 
 
@@ -284,6 +291,12 @@ def main():
                     dest="fixed_gamma")
     ap.add_argument("--grad-checkpoint", action="store_true",
                     dest="grad_checkpoint")
+    ap.add_argument("--use-layer-checkpoint", action="store_true",
+                    dest="use_layer_checkpoint",
+                    help="Level-2 per-layer-step gradient checkpointing.")
+    ap.add_argument("--use-gathered-v-phi", action="store_true",
+                    dest="use_gathered_v_phi",
+                    help="Stage-1.5b gathered V_phi (O(T*k) instead of O(T^2)).")
     ap.add_argument("--logfreq-path", dest="logfreq_path",
                     default=str(DEFAULT_LOGFREQ_PATH))
     ap.add_argument("--device", default=None)
@@ -372,6 +385,8 @@ def main():
         args.mode, args.v_phi_kind, logfreq_path,
         fixed_gamma=args.fixed_gamma,
         use_grad_checkpoint=args.grad_checkpoint,
+        use_layer_checkpoint=args.use_layer_checkpoint,
+        use_gathered_v_phi=args.use_gathered_v_phi,
         sparse_top_k=args.top_k,
         score_head_hidden=args.score_head_hidden,
         gumbel_tau_init=args.gumbel_tau_init,

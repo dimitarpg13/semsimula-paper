@@ -100,6 +100,8 @@ def build_config(
     theta_form: str = "mlp",
     v_hidden: int | None = None,
     v_depth: int | None = None,
+    use_layer_checkpoint: bool = False,
+    use_gathered_v_phi: bool = False,
 ) -> tuple[PARFConfig | SparsePARFConfig, dict, str]:
     # ------------------------------------------------------------------
     # V_phi memory budget (read this before changing scaleup defaults!)
@@ -146,6 +148,7 @@ def build_config(
         ln_after_step=True,
         fixed_gamma=fixed_gamma,
         use_grad_checkpoint=use_grad_checkpoint,
+        use_layer_checkpoint=use_layer_checkpoint,
         # ----- P7 (Lever 3) and P8 (Levers 1.5/4/5) knobs -----
         # All default OFF/identity so a `--v-phi-kind structural --top-k 4`
         # command (P10a) is byte-identical to the pre-P7/P8 trainer.
@@ -216,6 +219,8 @@ def build_config(
         base_kw["v_depth"] = int(v_depth)
 
     gc_tag = "_gc" if use_grad_checkpoint else ""
+    lc_tag = "_lc" if use_layer_checkpoint else ""
+    gv_tag = "_gv" if use_gathered_v_phi else ""
 
     # ----- P7 competitive-Φ tag -----
     if v_phi_kind == "structural_competitive":
@@ -248,6 +253,7 @@ def build_config(
             gumbel_tau_init=float(sparse_gumbel_tau_init),
             gumbel_tau_min=float(sparse_gumbel_tau_min),
             gumbel_noise=bool(sparse_gumbel_noise),
+            use_gathered_v_phi=use_gathered_v_phi,
         )
         sparse_tag = f"_sparse_k{sparse_top_k}"
     else:
@@ -255,7 +261,7 @@ def build_config(
         sparse_tag = ""
 
     fg_tag = "" if fixed_gamma is None else f"_g{fixed_gamma:.3f}"
-    tag = (f"parf_{v_phi_kind}_vphi{phi_hidden}{gc_tag}"
+    tag = (f"parf_{v_phi_kind}_vphi{phi_hidden}{gc_tag}{lc_tag}{gv_tag}"
            f"{fg_tag}{comp_tag}{p8_tag}{sparse_tag}_scaleup_{mode}")
     return cfg, train_cfg, tag
 
@@ -311,6 +317,16 @@ def main():
     ap.add_argument("--grad-checkpoint", action="store_true",
                     dest="grad_checkpoint",
                     help="Gradient-checkpoint the V_phi pair sum.")
+    ap.add_argument("--use-layer-checkpoint", action="store_true",
+                    dest="use_layer_checkpoint",
+                    help="Level-2 per-layer-step gradient checkpointing. "
+                         "Wraps each _layer_step in checkpoint(use_reentrant=False), "
+                         "reducing peak V_phi memory from O(L) to O(1) layers.")
+    ap.add_argument("--use-gathered-v-phi", action="store_true",
+                    dest="use_gathered_v_phi",
+                    help="Stage-1.5b gathered V_phi: evaluate V_phi only at "
+                         "top-k indices, O(T*k) memory and compute instead "
+                         "of O(T^2). Requires --top-k > 0.")
     ap.add_argument("--logfreq-path", dest="logfreq_path",
                     default=str(DEFAULT_LOGFREQ_PATH))
     ap.add_argument("--device", default=None)
@@ -467,6 +483,8 @@ def main():
         theta_form=args.theta_form,
         v_hidden=args.v_hidden,
         v_depth=args.v_depth,
+        use_layer_checkpoint=args.use_layer_checkpoint,
+        use_gathered_v_phi=args.use_gathered_v_phi,
     )
     tag = base_tag
     if args.tag_suffix:

@@ -234,6 +234,15 @@ class PARFConfig:
     # memory is not the binding constraint) keeps the cheaper path.
     use_grad_checkpoint: bool = False
 
+    # Level-2 per-layer-step checkpointing: wraps each _layer_step call
+    # in checkpoint(use_reentrant=False), discarding ALL per-layer
+    # intermediates (V_φ forward activations AND 2nd-order graph from
+    # create_graph=True) and recomputing them one layer at a time during
+    # backward.  Reduces peak V_φ activation memory from O(L) to O(1).
+    # Wall-clock cost: ~50% slower per step.  Requires PyTorch >= 2.0.
+    # See companion_notes/Gradient_Checkpointing_for_PARF.md.
+    use_layer_checkpoint: bool = False
+
 
 def _load_npy(p: str) -> np.ndarray:
     return np.load(p)
@@ -447,6 +456,68 @@ class StructuralVPhi(nn.Module):
         # the negative sign makes attractive Θ·Φ = +1 a binding well).
         return -self.C * Theta * Phi / r
 
+    # ---- Stage-1.5b gathered form ----------------------------------------
+    def forward_gathered(
+        self,
+        h: torch.Tensor,           # (B, T, d)
+        h_src_g: torch.Tensor,     # (B, T, k, d)
+    ) -> torch.Tensor:
+        """Gathered-eval V_φ: intermediates are (B,T,k,H) not (B,T,T,H).
+
+        Mathematically identical to ``forward(h, h_src).gather(-1, idx)``
+        where idx produced h_src_g, but uses O(T·k) memory instead of O(T²).
+        See companion_notes/PARF_Stage_1_5b_design.md for the equivalence
+        proof and memory analysis.
+        """
+        B, T, d = h.shape
+        k = h_src_g.shape[2]
+
+        # ---- type projections ----
+        l_q = self.W_l(h)                                      # (B, T, dl)
+        l_s = self.W_l(h_src_g)                                # (B, T, k, dl)
+
+        # ---- Φ_φ: Gaussian type-gate (gathered) ----
+        diff_l = l_q.unsqueeze(2) - l_s                        # (B, T, k, dl)
+        l_dist2 = (diff_l * diff_l).sum(dim=-1)               # (B, T, k)
+        c = F.softplus(
+            self.phi_c_net(l_dist2.unsqueeze(-1)).squeeze(-1)
+        )                                                      # (B, T, k)
+        Phi = torch.exp(-c * l_dist2)                          # (B, T, k)
+
+        # ---- Θ_φ: value-aligner (gathered) ----
+        th_q = self.W_theta(h)                                 # (B, T, K)
+        th_s = self.W_theta(h_src_g)                           # (B, T, k, K)
+
+        if self.theta_form == "mlp":
+            H = self.theta_hidden
+            proj_q = self.theta_w_q(th_q)                      # (B, T, H)
+            proj_s = self.theta_w_s(th_s)                      # (B, T, k, H)
+            proj_qd = self.theta_w_d(th_q)                     # (B, T, H)
+            proj_sd = self.theta_w_d(th_s)                     # (B, T, k, H)
+            proj_t = (proj_q + proj_qd + self.theta_b1).unsqueeze(2)  # (B,T,1,H)
+            proj_u = proj_s - proj_sd                          # (B, T, k, H)
+            hidden = F.gelu(proj_t + proj_u)                   # (B, T, k, H)
+            Theta = self._theta_act(
+                self.theta_w2(hidden).squeeze(-1)              # (B, T, k)
+            )
+        else:  # 'bilinear'
+            tmp = th_q @ self.theta_W                          # (B, T, K)
+            score = (tmp.unsqueeze(2) * th_s).sum(-1) + self.theta_b  # (B, T, k)
+            Theta = self._theta_act(score)
+
+        # ---- distance kernel (gathered), with optional LN-before (Patch A) ----
+        if self.ln_before_distance:
+            h_for_dist = F.layer_norm(h, (d,))
+            hs_for_dist = F.layer_norm(h_src_g, (d,))
+        else:
+            h_for_dist = h
+            hs_for_dist = h_src_g
+        h_diff = h_for_dist.unsqueeze(2) - hs_for_dist        # (B, T, k, d)
+        h_dist2 = (h_diff * h_diff).sum(dim=-1)               # (B, T, k)
+        r = torch.sqrt(h_dist2 + self.eps2)                    # (B, T, k)
+
+        return -self.C * Theta * Phi / r                       # (B, T, k)
+
 
 # ---------------------------------------------------------------------------
 # V_φ — unstructured MLP ablation
@@ -607,6 +678,20 @@ class StructuralCompetitiveVPhi(StructuralVPhi):
 
         # V_φ = -C · Θ · Φ̃ / r  with the competitive Φ̃ in place of Φ.
         return -self.C * Theta * Phi_norm / r
+
+    def forward_gathered(
+        self,
+        h: torch.Tensor,           # (B, T, d)
+        h_src_g: torch.Tensor,     # (B, T, k, d)
+    ) -> torch.Tensor:
+        """Gathered-eval of the competitive V_φ.
+
+        In the gathered form the Gumbel-softmax routing has already
+        performed competitive source selection, so the per-row softmax
+        normalization of the dense forward() is redundant.  We fall back
+        to the base-class (unnormalized Gaussian Φ) gathered evaluation.
+        """
+        return super().forward_gathered(h, h_src_g)
 
 
 # ---------------------------------------------------------------------------
@@ -889,7 +974,16 @@ class PARFLM(nn.Module):
             traj = [h.detach().cpu()]
 
         for ell in range(cfg.L):
-            h_new = self._layer_step(h, h_prev, m_b, gamma, dt, layer_idx=ell)
+            if cfg.use_layer_checkpoint and self.training:
+                h_new = torch.utils.checkpoint.checkpoint(
+                    self._layer_step,
+                    h, h_prev, m_b, gamma, dt, ell,
+                    use_reentrant=False,
+                )
+            else:
+                h_new = self._layer_step(
+                    h, h_prev, m_b, gamma, dt, layer_idx=ell,
+                )
             h_prev = h
             h = h_new
             if traj is not None:
@@ -930,25 +1024,29 @@ class PARFLM(nn.Module):
 # ---------------------------------------------------------------------------
 def _smoke():
     """Minimal one-step round-trip on CPU.  Not the real smoke_test.py."""
-    cfg = PARFConfig(
-        vocab_size=257, d=16, max_len=64, L=4,
-        v_hidden=32, v_depth=2,
-        v_phi_d_type=4, v_phi_d_angle=2,
-        v_phi_phi_hidden=8, v_phi_theta_hidden=8,
-        v_phi_mlp_hidden=16,
-        mass_mode="global",
-    )
-    torch.manual_seed(0)
-    net = PARFLM(cfg)
-    print(f"[parf-smoke] params: {sum(p.numel() for p in net.parameters()):,}")
-    x = torch.randint(0, cfg.vocab_size, (2, 16))
-    y = torch.randint(0, cfg.vocab_size, (2, 16))
-    net.train()
-    logits, loss = net(x, targets=y)
-    print(f"[parf-smoke] forward: logits {tuple(logits.shape)} "
-          f"loss {loss.item():.4f}")
-    loss.backward()
-    print("[parf-smoke] backward OK; no exceptions.")
+    for layer_ckpt in (False, True):
+        tag = "layer_ckpt" if layer_ckpt else "no_ckpt"
+        cfg = PARFConfig(
+            vocab_size=257, d=16, max_len=64, L=4,
+            v_hidden=32, v_depth=2,
+            v_phi_d_type=4, v_phi_d_angle=2,
+            v_phi_phi_hidden=8, v_phi_theta_hidden=8,
+            v_phi_mlp_hidden=16,
+            mass_mode="global",
+            use_layer_checkpoint=layer_ckpt,
+        )
+        torch.manual_seed(0)
+        net = PARFLM(cfg)
+        print(f"[parf-smoke/{tag}] params: "
+              f"{sum(p.numel() for p in net.parameters()):,}")
+        x = torch.randint(0, cfg.vocab_size, (2, 16))
+        y = torch.randint(0, cfg.vocab_size, (2, 16))
+        net.train()
+        logits, loss = net(x, targets=y)
+        print(f"[parf-smoke/{tag}] forward: logits {tuple(logits.shape)} "
+              f"loss {loss.item():.4f}")
+        loss.backward()
+        print(f"[parf-smoke/{tag}] backward OK.")
 
 
 if __name__ == "__main__":

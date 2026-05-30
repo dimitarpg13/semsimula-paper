@@ -299,6 +299,124 @@ def check_bit_identity_to_dense(
 
 
 # ---------------------------------------------------------------------------
+# Check 4 -- Stage-1.5a vs 1.5b equivalence at low tau
+# ---------------------------------------------------------------------------
+def check_stage_1_5_equivalence(
+    *,
+    seed: int = 0,
+    verbose: bool = True,
+    tol: float = 5e-4,
+) -> bool:
+    """Stage-1.5a and Stage-1.5b produce near-identical loss + parameter
+    gradients when gumbel_tau is small (hard one-hot routing).
+
+    Tolerance is 5e-4 (not 1e-5) to accommodate the numerical difference
+    between the dense _pair_dist2 (squared-norm expansion) and the
+    gathered forward's explicit (a-b)^2 form — see PARF_Stage_1_5b_design.md
+    Risk 3.  Real architectural bugs produce differences of O(1) or larger.
+    """
+    from dataclasses import replace
+
+    cfg_a = _smoke_sparse_config(
+        v_phi_kind="structural",
+        gumbel_noise=False,
+        top_k=8,
+    )
+    cfg_a = replace(cfg_a, use_gathered_v_phi=False, gumbel_tau_init=0.01)
+    cfg_b = replace(cfg_a, use_gathered_v_phi=True)
+
+    torch.manual_seed(seed)
+    model_a = SparsePARFLM(cfg_a)
+    torch.manual_seed(seed)
+    model_b = SparsePARFLM(cfg_b)
+
+    x = torch.randint(0, cfg_a.vocab_size, (2, 16))
+    y = torch.randint(0, cfg_a.vocab_size, (2, 16))
+
+    model_a.train()
+    model_b.train()
+    _, loss_a = model_a(x, targets=y)
+    _, loss_b = model_b(x, targets=y)
+
+    loss_diff = abs(loss_a.item() - loss_b.item())
+    loss_ok = loss_diff < tol
+
+    loss_a.backward()
+    loss_b.backward()
+
+    grad_mismatches = []
+    for (n_a, p_a), (n_b, p_b) in zip(
+        model_a.named_parameters(), model_b.named_parameters()
+    ):
+        assert n_a == n_b
+        if p_a.grad is None and p_b.grad is None:
+            continue
+        if p_a.grad is None or p_b.grad is None:
+            grad_mismatches.append(n_a)
+            continue
+        if not torch.allclose(p_a.grad, p_b.grad, atol=tol):
+            grad_mismatches.append(n_a)
+
+    grads_ok = len(grad_mismatches) == 0
+    ok = loss_ok and grads_ok
+    if verbose:
+        verdict = "OK" if ok else "FAIL"
+        mismatch_str = (f"  grad_mismatches={grad_mismatches}"
+                        if grad_mismatches else "")
+        print(f"  [{verdict:>4}] 1.5a vs 1.5b      "
+              f"loss_diff={loss_diff:.2e}  tol={tol:.0e}"
+              f"{mismatch_str}")
+    return ok
+
+
+# ---------------------------------------------------------------------------
+# Check 5 -- all four mode combinations
+# ---------------------------------------------------------------------------
+def check_all_four_modes(
+    *,
+    seed: int = 0,
+    verbose: bool = True,
+) -> bool:
+    """Forward+backward with all 4 combos of (layer_ckpt, gathered)."""
+    all_ok = True
+    for layer_ckpt in (False, True):
+        for gathered in (False, True):
+            tag_parts = []
+            if layer_ckpt:
+                tag_parts.append("lc")
+            if gathered:
+                tag_parts.append("gv")
+            tag = "+".join(tag_parts) or "base"
+            cfg = _smoke_sparse_config(
+                v_phi_kind="structural",
+                gumbel_noise=False,
+            )
+            from dataclasses import replace
+            cfg = replace(
+                cfg,
+                use_layer_checkpoint=layer_ckpt,
+                use_gathered_v_phi=gathered,
+            )
+            torch.manual_seed(seed)
+            net = SparsePARFLM(cfg)
+            x = torch.randint(0, cfg.vocab_size, (2, 16))
+            y = torch.randint(0, cfg.vocab_size, (2, 16))
+            net.train()
+            try:
+                _, loss = net(x, targets=y)
+                loss.backward()
+                ok = bool(torch.isfinite(loss).item())
+            except Exception as exc:
+                ok = False
+                if verbose:
+                    print(f"  [FAIL] {tag}: {exc}")
+            if verbose and ok:
+                print(f"  [  OK] {tag:>8s}  loss={loss.item():.4f}")
+            all_ok = all_ok and ok
+    return all_ok
+
+
+# ---------------------------------------------------------------------------
 # Driver
 # ---------------------------------------------------------------------------
 def main() -> int:
@@ -344,6 +462,14 @@ def main() -> int:
             v_phi_kind=kind, seed=args.seed,
         )
         results.append((f"bit_identity[{kind}]", ok))
+
+    print("\n[4/5] Stage-1.5a vs 1.5b bit-identity at low tau")
+    ok = check_stage_1_5_equivalence(seed=args.seed)
+    results.append(("stage_1.5a_vs_1.5b_equivalence", ok))
+
+    print("\n[5/5] All four mode combinations (ckpt x gathered)")
+    ok = check_all_four_modes(seed=args.seed)
+    results.append(("four_mode_combos", ok))
 
     n_total = len(results)
     n_ok = sum(1 for _, ok in results if ok)
