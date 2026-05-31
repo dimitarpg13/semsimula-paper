@@ -132,6 +132,7 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
                 f"got {type(cfg)!r}."
             )
         super().__init__(cfg)
+        self._fock_cfg = cfg
         M, d, L = cfg.n_registers, cfg.d, cfg.L
 
         self.register_embed = nn.Parameter(
@@ -337,6 +338,23 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
                 traj.append(h.detach().cpu())
 
         return h, traj
+
+    # ------------------------------------------------------------------
+    @torch.no_grad()
+    def fock_diagnostics(self) -> dict:
+        """Return a dict of Fock-specific diagnostic scalars for logging."""
+        diag: dict = {}
+        cfg = self._fock_cfg
+        if cfg.fock_version == "v2" and self.creation_gate_qkv is not None:
+            log_tau = self.creation_gate_qkv.log_tau
+            if log_tau is not None:
+                tau_val = log_tau.exp().clamp(min=1e-4).item()
+                diag["fock_tau_create"] = tau_val
+        if cfg.fock_version == "v2" and self.reverse_channel_scale is not None:
+            diag["fock_rev_scale"] = torch.tanh(
+                self.reverse_channel_scale
+            ).item()
+        return diag
 
     # ------------------------------------------------------------------
     def get_register_overhead(self) -> int:

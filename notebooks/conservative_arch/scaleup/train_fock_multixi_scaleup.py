@@ -410,6 +410,9 @@ def main():
     ap.add_argument("--no-reverse-channel", action="store_false",
                     dest="reverse_channel",
                     help="Disable reverse channel (v2 only).")
+    ap.add_argument("--fock-grad-clip", dest="fock_grad_clip",
+                    type=float, default=None,
+                    help="Separate (tighter) grad clip for Fock-specific params.")
     ap.add_argument("--skip-causal-check", dest="skip_causal_check",
                     action="store_true", default=False,
                     help="Skip pre-training causal-violation probe.")
@@ -519,6 +522,21 @@ def main():
           f"steps={train_cfg['steps']}  batch={train_cfg['batch_size']}  "
           f"block={train_cfg['block_size']}")
 
+    fock_grad_clip = args.fock_grad_clip
+    _fock_param_set: set[int] = set()
+    _fock_param_list: list[nn.Parameter] = []
+    for name, param in model.named_parameters():
+        if any(k in name for k in (
+            "register_embed", "creation_gate", "destruction_gate",
+            "reverse_ch", "reverse_channel_scale",
+        )):
+            _fock_param_set.add(id(param))
+            _fock_param_list.append(param)
+    _vphi_param_list = [p for p in model.V_phi.parameters()]
+    if fock_grad_clip is not None:
+        print(f"[fock-multixi-parf] fock-grad-clip: {fock_grad_clip} "
+              f"({len(_fock_param_list)} params)")
+
     if not args.skip_causal_check:
         print("[fock-multixi-parf] running causal-violation probe ...")
         assert_causal(model, vocab_size=cfg.vocab_size, T=32, t_pert=20)
@@ -578,8 +596,21 @@ def main():
             (loss / grad_accum).backward()
             accum_loss += loss.item()
 
+        _pre_clip_fock_gn = nn.utils.clip_grad_norm_(
+            [p for p in _fock_param_list if p.grad is not None],
+            float("inf"),
+        ).item() if _fock_param_list else 0.0
+        _pre_clip_vphi_gn = nn.utils.clip_grad_norm_(
+            [p for p in _vphi_param_list if p.grad is not None],
+            float("inf"),
+        ).item() if _vphi_param_list else 0.0
+
         grad_norm = nn.utils.clip_grad_norm_(model.parameters(),
                                              train_cfg["grad_clip"])
+        if fock_grad_clip is not None and fock_grad_clip < train_cfg["grad_clip"]:
+            fock_params = [p for p in _fock_param_list if p.grad is not None]
+            if fock_params:
+                nn.utils.clip_grad_norm_(fock_params, fock_grad_clip)
         optim.step()
 
         running += accum_loss / grad_accum
@@ -591,23 +622,38 @@ def main():
             elapsed = time.time() - t0
             alphas = model.xi_alpha_values()
             alpha_log_str = ",".join(f"{a:.3f}" for a in alphas)
+
+            fock_diag = model.fock_diagnostics()
+            fock_tau_str = ""
+            if "fock_tau_create" in fock_diag:
+                fock_tau_str = f"   fock_tau={fock_diag['fock_tau_create']:.4f}"
+            rev_str = ""
+            if "fock_rev_scale" in fock_diag:
+                rev_str = f"   rev_s={fock_diag['fock_rev_scale']:.3f}"
+
             print(
                 f"[fock-multixi-parf] step {step+1:5d}/{train_cfg['steps']}   "
                 f"train {avg:.4f}   lr {lr_now:.2e}   "
-                f"grad {grad_norm:.2f}   "
+                f"grad {grad_norm:.2f}  "
+                f"(fock={_pre_clip_fock_gn:.2f} vphi={_pre_clip_vphi_gn:.2f})   "
                 f"gamma={model.gamma.item():.3f}   "
-                f"tau={model.gumbel_tau:.3f}   "
+                f"tau={model.gumbel_tau:.3f}"
+                f"{fock_tau_str}{rev_str}   "
                 f"\u03b1=[{alpha_log_str}]   "
                 f"elapsed {elapsed:.0f}s"
             )
-            log_f.write(json.dumps({
+            log_entry = {
                 "step": step + 1, "train_loss": avg,
                 "lr": lr_now, "grad_norm": float(grad_norm),
+                "grad_norm_fock": _pre_clip_fock_gn,
+                "grad_norm_vphi": _pre_clip_vphi_gn,
                 "gamma": model.gamma.item(),
                 "gumbel_tau": model.gumbel_tau,
                 "xi_alphas": alphas,
                 "elapsed_s": elapsed,
-            }) + "\n")
+            }
+            log_entry.update(fock_diag)
+            log_f.write(json.dumps(log_entry) + "\n")
             log_f.flush()
 
         if ((step + 1) % train_cfg["eval_interval"] == 0
