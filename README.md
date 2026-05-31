@@ -5,11 +5,11 @@ Companion repository for the paper
 > **Semantic Simulation: A Prescriptive Lagrangian Framework for Efficient Semantic Inference**
 > *A Conservative-by-Construction Language Model and the Shared-Potential Separator, with a Correspondence to Joint Embedding Predictive Architectures.*
 > Dimitar P. Gueorguiev (Independent Researcher), 2026.
-> Zenodo preprint (v11, May 27 2026): [10.5281/zenodo.20421901](https://doi.org/10.5281/zenodo.20421901). Supersedes v10 ([10.5281/zenodo.20370417](https://doi.org/10.5281/zenodo.20370417), May 24 2026).
-> Companion code latest release: **v4.6-zenodo** (May 27, 2026) — Pre-release audit and remediation: six-priority systematic cleanup of the 287-page paper v4 (consistency, structural flow, version-framing, notation, LaTeX quality, housekeeping); rebuilt `semsimula_paper.pdf` (287 pages) and `semsimula_paper_source.zip`. Supersedes v4.5-zenodo (May 24, 2026).
+> Zenodo preprint (v12, May 30 2026): [10.5281/zenodo.20469626](https://doi.org/10.5281/zenodo.20469626). Supersedes v11 ([10.5281/zenodo.20421901](https://doi.org/10.5281/zenodo.20421901), May 27 2026).
+> Companion code latest release: **v4.7-zenodo** (May 30, 2026) — Fock-PARFLM section and caption fix: added cache-free inference motivation to the introduction; fixed fragile `\hyperlink` in caption that caused 15 undefined references; rebuilt `semsimula_paper.pdf` (291 pages, 0 undefined references) and `semsimula_paper_source.zip`. Supersedes v4.6-zenodo (May 27, 2026).
 
-[![DOI — paper](https://zenodo.org/badge/DOI/10.5281/zenodo.20421901.svg)](https://doi.org/10.5281/zenodo.20421901)
-[![DOI — companion code](https://zenodo.org/badge/DOI/10.5281/zenodo.20421845.svg)](https://doi.org/10.5281/zenodo.20421845)
+[![DOI — paper](https://zenodo.org/badge/DOI/10.5281/zenodo.20469626.svg)](https://doi.org/10.5281/zenodo.20469626)
+[![DOI — companion code](https://zenodo.org/badge/DOI/10.5281/zenodo.20469618.svg)](https://doi.org/10.5281/zenodo.20469618)
 
 This repository collects the **reproducibility artifacts** and the **unpublished
 background manuscripts** cited in the paper. Its scope is deliberately narrow:
@@ -1409,17 +1409,17 @@ See [`CITATION.bib`](CITATION.bib) for the full BibTeX file. The short form:
                Predictive Architectures},
   year      = {2026},
   publisher = {Zenodo},
-  doi       = {10.5281/zenodo.20370417},
-  url       = {https://doi.org/10.5281/zenodo.20370417},
-  note      = {Version v10 (May 24, 2026); supersedes v9
-               (DOI 10.5281/zenodo.20368349, May 24, 2026).
-               Companion code repository (DOI 10.5281/zenodo.20370370):
+  doi       = {10.5281/zenodo.20469626},
+  url       = {https://doi.org/10.5281/zenodo.20469626},
+  note      = {Version v12 (May 30, 2026); supersedes v11
+               (DOI 10.5281/zenodo.20421901, May 27, 2026).
+               Companion code repository (DOI 10.5281/zenodo.20469618):
                \url{https://github.com/dimitarpg13/semsimula-paper}}
 }
 ```
 
-The companion code archive at the v4.5-zenodo release has its own citable DOI:
-[10.5281/zenodo.20370370](https://doi.org/10.5281/zenodo.20370370).
+The companion code archive at the v4.7-zenodo release has its own citable DOI:
+[10.5281/zenodo.20469618](https://doi.org/10.5281/zenodo.20469618).
 If you re-run the experiments or build on the code specifically, please cite
 both DOIs.
 
@@ -1455,8 +1455,8 @@ When reusing any material from this repository, please cite the paper (see
 ## Open items (to resolve before public release)
 
 1. **arXiv identifier.** The paper is currently available as a Zenodo preprint
-   ([10.5281/zenodo.20370417](https://doi.org/10.5281/zenodo.20370417), v10,
-   May 24, 2026). Once submitted to arXiv, fill in the arXiv identifier and
+   ([10.5281/zenodo.20469626](https://doi.org/10.5281/zenodo.20469626), v12,
+   May 30, 2026). Once submitted to arXiv, fill in the arXiv identifier and
    propagate to both `README.md` and `CITATION.bib`.
 2. **Forthcoming-work EOM stubs.** `companion_notes/Semantic_Simulator_v15_EOM.md`,
    `Semantic_Simulator_v2_EOM.md`, and `Semantic_Simulator_v3_EOM.md` are
@@ -1469,7 +1469,8 @@ When reusing any material from this repository, please cite the paper (see
 
 | Release | Date | Paper DOI | Code DOI | Notes |
 |---|---|---|---|---|
-| **v4.6-zenodo** | **May 27, 2026** | [10.5281/zenodo.20421901](https://doi.org/10.5281/zenodo.20421901) | [10.5281/zenodo.20421845](https://doi.org/10.5281/zenodo.20421845) | **Pre-release audit and remediation.** Six-priority systematic audit of the 287-page paper v4: fixed critical consistency issues (C-item ranges, orphan refs, edition history, deferred-scope narrowing, section bridges, wrong crefs); added roadmap coverage for sections 16–17c and a sixth intro movement; cleaned ~35 version-specific framing instances; normalised notation (`vh`→`d_V`, bare code identifiers wrapped in `\texttt{}`); fixed LaTeX quality (running header overflow, severe body overflows, table widths, BibTeX entry type); grammar typo. Rebuilt `semsimula_paper.pdf` (287 pages, 0 undefined references) and `semsimula_paper_source.zip`. Supersedes v4.5-zenodo. |
+| **v4.7-zenodo** | **May 30, 2026** | [10.5281/zenodo.20469626](https://doi.org/10.5281/zenodo.20469626) | [10.5281/zenodo.20469618](https://doi.org/10.5281/zenodo.20469618) | **Fock-PARFLM section and caption fix.** Added cache-free inference paragraph to the introduction motivating Fock registers from a KV-cache-free linear-time decoding perspective. Fixed fragile `\hyperlink` inside `\caption{}` in `17c_fock_parflm.tex` that was corrupting the `.aux` file and causing 15 labels to appear undefined. Both paper v4 and v5 now build with exit code 0 and 0 undefined references. Rebuilt `semsimula_paper.pdf` (291 pages) and `semsimula_paper_source.zip`. Supersedes v4.6-zenodo. |
+| v4.6-zenodo | May 27, 2026 | [10.5281/zenodo.20421901](https://doi.org/10.5281/zenodo.20421901) | [10.5281/zenodo.20421845](https://doi.org/10.5281/zenodo.20421845) | Pre-release audit and remediation. Six-priority systematic audit of the 287-page paper v4: fixed critical consistency issues (C-item ranges, orphan refs, edition history, deferred-scope narrowing, section bridges, wrong crefs); added roadmap coverage for sections 16–17c and a sixth intro movement; cleaned ~35 version-specific framing instances; normalised notation (`vh`→`d_V`, bare code identifiers wrapped in `\texttt{}`); fixed LaTeX quality (running header overflow, severe body overflows, table widths, BibTeX entry type); grammar typo. Rebuilt `semsimula_paper.pdf` (287 pages, 0 undefined references) and `semsimula_paper_source.zip`. Supersedes v4.5-zenodo. |
 | v4.5-zenodo | May 24, 2026 | [10.5281/zenodo.20370417](https://doi.org/10.5281/zenodo.20370417) | [10.5281/zenodo.20370370](https://doi.org/10.5281/zenodo.20370370) | Second-order framing audit and Experiment A integration. Experiment A (direct trajectory fitting of first-order vs. second-order autonomous ODEs to GPT-2 hidden states) confirms that inference-time dynamics is non-autonomous and effectively first-order at every layer. Systematic audit of 21 passages across 12 LaTeX files to distinguish prescriptive second-order claims (SPLM/PARFLM by construction) from descriptive claims about attention transformers. SP-HSPLM Stage 1 and Stage 2 notebooks and results synced. 3 missing companion notes and 3 missing notebooks added. Rebuilt `semsimula_paper.pdf` (268 pages). Supersedes v4.4-zenodo. |
 | v4.4-zenodo | May 24, 2026 | [10.5281/zenodo.20368349](https://doi.org/10.5281/zenodo.20368349) | [10.5281/zenodo.20368266](https://doi.org/10.5281/zenodo.20368266) | Comprehensive source audit and post-audit paper release. Full audit of paper v4: 498 labels, 320 cross-references, 44 figures, 89 citations — all clean (0 unresolved, 0 duplicates, 0 missing). Three typo fixes applied to both paper v4 and v5. Rebuilt `semsimula_paper.pdf` (260 pages) and `semsimula_paper_source.zip` (82 files, build artifacts excluded). |
 | **v4.3-zenodo** | **May 22, 2026** | [10.5281/zenodo.20347855](https://doi.org/10.5281/zenodo.20347855) | [10.5281/zenodo.20347828](https://doi.org/10.5281/zenodo.20347828) | **Abstract condensation, keyword expansion, and reference audit.** Condensed the 2,584-word release-log abstract to ~500 words (4 focused paragraphs: framework, descriptive validation, prescriptive contribution, v4 summary). Expanded keyword list from 13 to 35 terms covering energy-based models, state-space models, physics-informed ML, attention alternatives, mechanistic interpretability, and key acronyms (SPLM, PARF, JEPA, STP, HiPPO, S4D). Full audit of all 73 `\path{}` references in paper v4/v5 — 2 stale `docs/` paths corrected to `companion_notes/`; `Augmenting_PARFLM_to_handle_MCS_Languages.md` synced to latest 367-line active version. Added `zenodo_keywords_v4.txt` and `zenodo_keywords_v5.txt` for copy/paste into Zenodo/SSRN upload forms. |
