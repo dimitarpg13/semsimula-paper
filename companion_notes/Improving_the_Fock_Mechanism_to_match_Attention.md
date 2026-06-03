@@ -1338,6 +1338,61 @@ The convergence curve shows four distinct phases:
   the ideal stopping point.  Would a constant-lr tail (plateau after
   reaching ~2e-05) prevent this regression?
 
+### 18.5 Routing vs Capacity, and the Ceiling-Mismatch Caveat
+
+§18.1 concludes that "the Fock mechanism is beneficial given sufficient
+training budget" (12.00 best, beating the K=8 non-Fock baseline of 12.06).
+That conclusion is correct as stated, but it carries two caveats that the
+convergence analysis above does not address — and that bear directly on how
+much of the result is genuine **directed routing** versus simply **extra
+capacity**.
+
+**Caveat 1 — the gain is the size of a free conservative gain.** The Fock
+block adds **578K parameters** to the K=4 base and moves it 12.47 → 12.00
+(best). But adding conservative ξ-channels (K=4 → K=8) moves the same base
+12.47 → 12.06 for **essentially zero added parameters** (K-EMA channels are
+learnable α scalars). So 578K register parameters buy roughly the same
+improvement that a few extra conservative memory channels buy for free, and
+the Fock arm lands **tied** with the register-free K=8 frontier (12.00 vs
+12.06). If the registers were supplying a genuinely new, attention-like
+routing primitive, Fock-on-K=4 should have decisively beaten the conservative
+K=8 frontier, not matched it. The parsimonious reading is that on this strong
+base the registers may be acting mostly as capacity that is **largely
+redundant with the conservative ξ-memory** — i.e. the free-field / mean-pool
+regime of §16.1 — rather than as a new exchange channel. (The opposite reading
+is also admissible: the conservative base is already so good that real routing
+has little PPL headroom left to show. The two cannot be distinguished from PPL
+alone.)
+
+**Caveat 2 — the ceiling-mismatch with §§11.1 and 15.11.** Those sections
+argue that the conservative–attention gap "is almost entirely attributable to
+the absence of directed routing, not to any inadequacy in the conservative
+force law itself." That conclusion was drawn in the **single-ξ** regime (the
+26.4 PPL ceiling, the P1 hybrid diagnostic). On the **multi-ξ** base it does
+not survive intact: the conservative K-EMA channels alone close roughly **14 of
+the 18.6 PPL gap** (26.4 → ~12.1) with **no non-conservative routing
+whatsoever**. The strong claim that the gap is "almost entirely" a routing
+deficit should therefore be read as **specific to the single-ξ regime**; on the
+multi-ξ base, most of that gap is closed conservatively, and the Fock
+registers' genuine marginal contribution is the small 12.47 → 12.00 nudge.
+
+**The decisive diagnostic (not yet run).** This report already defines the
+instrument that separates routing from capacity — the **register diversity**
+and **per-layer normalized entropy** metrics of §17.2 (Finding 4):
+
+- genuine specialization (Q6): diversity ≈ **0.785**, mean entropy ≈ **0.304**
+- inert / mean-pool (Q0): diversity ≈ **0.145**, entropy ≈ **1.0**
+
+These were **not logged** in the Multi-Xi scale-up run (its training log records
+only loss, `gumbel_tau`, and `xi_alphas`). The single most informative next step
+is to compute the §17.2 diversity/entropy diagnostics on the trained checkpoint
+(an eval pass — no retraining): diversity in the ~0.7–0.8 band confirms genuine
+routing on the strong base; diversity near ~0.15 confirms the capacity reading.
+A complementary control settles it via PPL alone: add ~578K **conservative**
+parameters to the K=4 base (wider $V_\phi$ or an extra ξ-channel) with **no
+registers** — if that control also lands ~12.0, the registers are confirmed as
+capacity rather than routing.
+
 ---
 
 ## References
