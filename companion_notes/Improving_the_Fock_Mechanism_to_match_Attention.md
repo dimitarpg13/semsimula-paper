@@ -72,7 +72,7 @@ This is **identical** to P10g (5M tokens, 16k steps, PPL = 26.42). Quadrupling t
 
 The gap to the matched attention baseline (MatchedGPT, val PPL = 7.81) is therefore **18.6 PPL** and can only be closed by escaping the expressivity class — not by scaling data, compute, or the conservative force law.
 
-![Architecture Ladder: TinyStories PPL](images/fock_ppl_ladder.png)
+<img src="images/fock_ppl_ladder.png" alt="Architecture Ladder: TinyStories PPL" width="600">
 
 ---
 
@@ -154,7 +154,7 @@ $$e^- \xrightarrow{\text{emit}} \gamma_\text{virtual} \xrightarrow{\text{propaga
 
 The Feynman vertex factor at the source (emission), the propagator (what is carried), and the vertex factor at the receiver (absorption) are **three separate objects** — exactly the Q/K/V decoupling.
 
-![Attention as Virtual Particle Exchange: QED analogy](images/fock_qed_attention_analogy.png)
+<img src="images/fock_qed_attention_analogy.png" alt="Attention as Virtual Particle Exchange: QED analogy" width="600">
 
 ### 5.2 Correspondence Table
 
@@ -199,7 +199,7 @@ Registers start in a "vacuum" state (inactive). A learned creation gate activate
 
 ### 6.2 Forward Pass per Layer $\ell$
 
-![FockPARFLM v1: Forward Pass per Layer](images/fock_forward_pass_v1.png)
+<img src="images/fock_forward_pass_v1.png" alt="FockPARFLM v1: Forward Pass per Layer" width="600">
 
 Parameter budget at P10f scale ($d = 256$, $L = 8$, $M = 32$): **~288K overhead** (<2% of the ~13M base PARFLM).
 
@@ -252,7 +252,7 @@ is conditioned on the **mean of all tokens** — a single undifferentiated globa
 | Q/K/V decoupling | Gate determines both whether to create AND what content register holds | Coupling and content are fused |
 | Competitive normalization | $M$ sigmoid gates are independent | No budget constraint; creation of register $k$ does not affect register $k'$ |
 
-![Current FockPARFLM vs Attention: Structural Gaps](images/fock_structural_gaps.png)
+<img src="images/fock_structural_gaps.png" alt="Current FockPARFLM vs Attention: Structural Gaps" width="600">
 
 The current FockPARFLM therefore uses creation/destruction to implement **auxiliary persistent memory** — registers are additional hidden states that persist across layers. This is computationally useful (it escapes the v0 ceiling via Dyck₂) but it does not implement **directed information exchange** — the mechanism that drives attention's language-modelling power.
 
@@ -262,7 +262,7 @@ The current FockPARFLM therefore uses creation/destruction to implement **auxili
 
 The current FockPARFLM creates and destroys **input particles** (register slots as additional hidden states). The QFT analysis in Section 5 identifies that attention creates and destroys **virtual mediating particles** — semantic photons $\gamma$ that carry information from source $j$ to receiver $i$.
 
-![FockPARFLM: Current vs Proposed mechanism](images/fock_current_vs_proposed.png)
+<img src="images/fock_current_vs_proposed.png" alt="FockPARFLM: Current vs Proposed mechanism" width="600">
 
 | | Current FockPARFLM | Proposed FockPARFLM v2 |
 |---|---|---|
@@ -431,7 +431,7 @@ $$F_{r_k} = -\nabla_{r_k} V_{\text{create}} = \underbrace{\sum_j \alpha_{kj} v_j
 
 The register feels a single restoring force that pulls it toward the $\alpha$-weighted average of the token contents, with each token's pull gated by how well its key aligns with the register's query. **That is the deposit:** the tokens collectively generate a force field that drags the register particle toward the content they emit. The softmax does two physical jobs — it makes the stiffness alignment-dependent (the coupling–content decoupling of §4.2) and it normalises the total stiffness budget, $\sum_j \alpha_{kj} = 1$ (the competitive budget of §4.3).
 
-![Token to register content transfer as an alignment-gated spring bundle](images/fock_token_register_transfer.png)
+<img src="images/fock_token_register_transfer.png" alt="Token to register content transfer as an alignment-gated spring bundle" width="600">
 
 **Figure 10.1.** The creation vertex as a spring bundle. Each token $j$ contributes one alignment-gated spring (stiffness $\alpha_{kj}$, rest position $v_j$) that pulls the virtual register particle $r_k$ toward the weighted content. The reverse vertex (red) is a **separately parameterised** spring (stiffness $\beta_{ik}$) that pulls tokens back from the register. Because the forward and backward springs come from different projections, no single elastic potential generates both — the resulting coupling is non-conservative and asymmetric.
 
@@ -500,7 +500,7 @@ The proposed mechanism has one structural advantage over standard attention: cro
 
 ## 12. Proposed Experiments
 
-![FockPARFLM v2 Experimental Programme](images/fock_experiment_gantt.png)
+<img src="images/fock_experiment_gantt.png" alt="FockPARFLM v2 Experimental Programme" width="600">
 
 ### 12.1 F2-qkv-creation: Dyck₂ Falsifier with Q/K/V Creation
 
@@ -564,7 +564,7 @@ where $\hat{\phi}(x) = \sum_j v_j \delta(x - k_j)$ is the semantic photon field 
 
 ### 13.3 The Expressivity Hierarchy
 
-![FockPARFLM Expressivity Hierarchy](images/fock_expressivity_hierarchy.png)
+<img src="images/fock_expressivity_hierarchy.png" alt="FockPARFLM Expressivity Hierarchy" width="600">
 
 ### 13.4 The Separator Remains Diagnostic
 
@@ -761,7 +761,7 @@ This section provides a self-contained, detailed account of the **field-theoreti
 
 The Conservative Obstruction Theorem (Section 4) works "from the inside" — it examines the force law $F_i = -\nabla_{h_i} V$ and shows that gradient structure imposes three constraints (Jacobian symmetry, gradient entanglement, force growth) that are individually violated by attention. The field-theoretic proof works "from the outside" — it examines the statistical correlations produced by a layer of dynamics and shows that conservative potentials produce free (Gaussian) field statistics while attention produces interacting (non-Gaussian) field statistics, and the two classes are separated by a sharp boundary.
 
-![Two Proofs of the Conservative Obstruction](images/fock_two_proofs.png)
+<img src="images/fock_two_proofs.png" alt="Two Proofs of the Conservative Obstruction" width="600">
 
 The two proofs are logically independent but mutually reinforcing. The dynamical-systems proof tells us WHY (which structural properties fail); the field-theoretic proof tells us that the failure is IRREDUCIBLE (no reparameterisation, resummation, or mean-field reduction can bridge the gap).
 
@@ -1110,7 +1110,7 @@ $$\sigma_k \leftarrow \sigma_k \cdot \lambda + \max_j(\alpha_{kj}) \cdot (1 - \l
 
 $$\sigma_k \leftarrow \sigma_k \cdot \max_j(\alpha_{kj})$$
 
-![QFT-Informed FockPARFLM v2.1 Creation Gate](images/fock_creation_gate_v21.png)
+<img src="images/fock_creation_gate_v21.png" alt="QFT-Informed FockPARFLM v2.1 Creation Gate" width="600">
 
 ### 16.7 Summary: QFT-Motivated Design Principles
 
