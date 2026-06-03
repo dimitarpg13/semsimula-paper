@@ -75,6 +75,10 @@ from model_fock_parf_multixi import (  # noqa: E402
     FockMultiXiPARFConfig,
     FockMultiXiPARFLM,
 )
+from model_fock_attention import (  # noqa: E402
+    FockAttentionConfig,
+    FockAttentionPARFLM,
+)
 
 TOL_PRE: float = 1e-6
 TOL_BUGGY_FLOOR: float = 1e-6
@@ -100,6 +104,33 @@ def _multixi_config(causal_force: bool, K: int = 2) -> MultiXiPARFConfig:
         xi_learnable=True,
         use_layer_checkpoint=False,
         use_gathered_v_phi=True,
+    )
+
+
+def _attention_config(
+    causal_force: bool,
+    K: int = 2,
+    n_heads: int = 1,
+) -> FockAttentionConfig:
+    return FockAttentionConfig(
+        vocab_size=257,
+        d=16, max_len=64, L=4,
+        v_hidden=32, v_depth=2,
+        v_phi_kind="structural_competitive",
+        v_phi_d_type=4, v_phi_d_angle=2,
+        v_phi_phi_hidden=8, v_phi_theta_hidden=8,
+        mass_mode="global",
+        ln_after_step=True,
+        causal_force=causal_force,
+        top_k=4,
+        xi_channels=K,
+        xi_alpha_init_mode="log_spaced",
+        xi_learnable=True,
+        use_layer_checkpoint=False,
+        use_gathered_v_phi=True,
+        exchange_n_heads=n_heads,
+        exchange_d_k=8,
+        exchange_scale_init=0.0,
     )
 
 
@@ -283,6 +314,10 @@ VARIANT_BUILDERS = {
                                 "FockMultiXiPARFLM v2 (+ reverse ch)"),
     "fock_v2_norev": lambda cf: (FockMultiXiPARFLM(_fock_config(cf, "v2", False)),
                                   "FockMultiXiPARFLM v2 (no reverse ch)"),
+    "fock_attention_h1": lambda cf: (FockAttentionPARFLM(_attention_config(cf, K=2, n_heads=1)),
+                                      "FockAttentionPARFLM 1-head"),
+    "fock_attention_h4": lambda cf: (FockAttentionPARFLM(_attention_config(cf, K=2, n_heads=4)),
+                                      "FockAttentionPARFLM 4-head"),
 }
 
 
