@@ -255,8 +255,9 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
             h_mean = h.mean(dim=1)
             g_create = self.creation_gates[layer_idx](h_mean)
             salience = salience * decay + g_create * (1.0 - decay)
+            r_causal = None
         else:
-            r_new_content, alpha_max = self.creation_gate_qkv(h, r)
+            r_new_content, r_causal, alpha_max = self.creation_gate_qkv(h, r)
             blend = salience.unsqueeze(-1)
             r = blend * r + (1.0 - blend) * r_new_content
             salience = salience * decay + alpha_max * (1.0 - decay)
@@ -292,7 +293,10 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
             and self.reverse_ch is not None
             and active.any()
         ):
-            Q_force = self.reverse_ch(h_new, r_new, active)
+            # Use position-dependent causal register content so that
+            # the force on token t only reflects tokens 1…t (no leak).
+            r_rev = r_causal if r_causal is not None else r_new
+            Q_force = self.reverse_ch(h_new, r_rev, active)
             scale = torch.tanh(self.reverse_channel_scale)
             h_new = h_new + (dt * dt / m_b) * scale * Q_force
             if cfg.ln_after_step:

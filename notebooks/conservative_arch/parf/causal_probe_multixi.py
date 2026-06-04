@@ -140,6 +140,10 @@ def _fock_config(
     reverse_channel: bool = True,
     K: int = 2,
     M: int = 4,
+    per_register_tau: bool = False,
+    per_register_keys: bool = False,
+    ortho_register_init: bool = False,
+    tau_create_init: float = 0.1,
 ) -> FockMultiXiPARFConfig:
     return FockMultiXiPARFConfig(
         vocab_size=257,
@@ -166,8 +170,11 @@ def _fock_config(
         stack_discipline=(fock_version == "v1"),
         register_init_scale=0.02,
         d_k=8,
-        tau_create_init=0.1,
+        tau_create_init=tau_create_init,
         reverse_channel=reverse_channel,
+        per_register_tau=per_register_tau,
+        per_register_keys=per_register_keys,
+        ortho_register_init=ortho_register_init,
     )
 
 
@@ -314,6 +321,20 @@ VARIANT_BUILDERS = {
                                 "FockMultiXiPARFLM v2 (+ reverse ch)"),
     "fock_v2_norev": lambda cf: (FockMultiXiPARFLM(_fock_config(cf, "v2", False)),
                                   "FockMultiXiPARFLM v2 (no reverse ch)"),
+    "fock_v21_tau_only": lambda cf: (
+        FockMultiXiPARFLM(_fock_config(
+            cf, "v2", True, per_register_tau=True, tau_create_init=8.0,
+        )),
+        "FockMultiXiPARFLM v2.1 (τ only + rev ch)",
+    ),
+    "fock_v21_tau_perK_ortho": lambda cf: (
+        FockMultiXiPARFLM(_fock_config(
+            cf, "v2", True,
+            per_register_tau=True, per_register_keys=True,
+            ortho_register_init=True, tau_create_init=8.0,
+        )),
+        "FockMultiXiPARFLM v2.1 (τ+K+ortho + rev ch)",
+    ),
     "fock_attention_h1": lambda cf: (FockAttentionPARFLM(_attention_config(cf, K=2, n_heads=1)),
                                       "FockAttentionPARFLM 1-head"),
     "fock_attention_h4": lambda cf: (FockAttentionPARFLM(_attention_config(cf, K=2, n_heads=4)),

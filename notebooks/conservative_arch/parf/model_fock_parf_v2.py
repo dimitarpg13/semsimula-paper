@@ -54,6 +54,52 @@ from model_parf import causal_cumulative_mean  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
+# Causal creation readout — shared by QKVCreationGate and QKVCreationGate_v21
+# ---------------------------------------------------------------------------
+def _causal_creation_readout(
+    scores: torch.Tensor,
+    V: torch.Tensor,
+) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Position-dependent register content via cumulative softmax.
+
+    The creation gate's attention scores are position-independent (the
+    register query does not depend on token position), but the causal
+    constraint requires that register content seen by position t only
+    reflects tokens 1…t.  This is computed efficiently as a cumulative
+    softmax: at position t, the normaliser is the prefix-sum of
+    exp-scores up to t.
+
+    Args:
+        scores: (B, M, T) — temperature-scaled attention scores.
+        V:      (B, T, d) — token values.
+
+    Returns:
+        r_new:     (B, M, d)    — register content at the last position
+                                   (equivalent to full-sequence softmax).
+        r_causal:  (B, T, M, d) — position-dependent register content.
+        alpha_max: (B, M)       — max attention weight (from the full-
+                                   sequence softmax, for salience update).
+    """
+    s_max = scores.max(dim=-1, keepdim=True).values          # (B, M, 1)
+    exp_s = torch.exp(scores - s_max)                        # (B, M, T)
+    Z = torch.cumsum(exp_s, dim=-1)                          # (B, M, T)
+
+    # Cumulative weighted sum of V: Σ_{j≤t} exp_s[j] · V[j]
+    weighted_V = exp_s.unsqueeze(-1) * V.unsqueeze(1)        # (B, M, T, d)
+    numerator = torch.cumsum(weighted_V, dim=2)              # (B, M, T, d)
+    r_causal_mt = numerator / Z.unsqueeze(-1).clamp(min=1e-8)  # (B, M, T, d)
+
+    r_new = r_causal_mt[:, :, -1, :]                         # (B, M, d)
+    r_causal = r_causal_mt.permute(0, 2, 1, 3)               # (B, T, M, d)
+
+    # Full-sequence alpha for salience (= causal alpha at last position)
+    alpha = exp_s / Z[:, :, -1:].clamp(min=1e-8)             # (B, M, T)
+    alpha_max = alpha.max(dim=-1).values                     # (B, M)
+
+    return r_new, r_causal, alpha_max
+
+
+# ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
 @dataclass
@@ -138,8 +184,8 @@ class QKVCreationGate(nn.Module):
         self,
         h_tokens: torch.Tensor,
         register_states: torch.Tensor,
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
-        """Q/K/V-structured creation event.
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Q/K/V-structured creation event with causal readout.
 
         Args:
             h_tokens: (B, T, d) — current token hidden states.
@@ -147,8 +193,9 @@ class QKVCreationGate(nn.Module):
                              (used to derive per-register queries).
 
         Returns:
-            r_new: (B, M, d) — new register content from attention readout.
-            alpha_max: (B, M) — max attention weight per register (salience signal).
+            r_new:     (B, M, d)    — register content (full-sequence).
+            r_causal:  (B, T, M, d) — position-dependent causal content.
+            alpha_max: (B, M)       — max attention weight (salience signal).
         """
         B, T, d = h_tokens.shape
         M = self.M
@@ -156,14 +203,8 @@ class QKVCreationGate(nn.Module):
         K = self.W_K(h_tokens)     # (B, T, d_k)
         V = self.W_V(h_tokens)     # (B, T, d)
 
-        # Per-register query via batched matmul:
-        # register_states: (B, M, d), W_Q: (M, d, d_k)
-        # q_k = register_states[:, k, :] @ W_Q[k]  for each k
-        # Expand register_states to (B, M, 1, d) and W_Q to (1, M, d, d_k)
-        # then batched matmul gives (B, M, 1, d_k), squeeze to (B, M, d_k)
         Q = torch.einsum("bmd,mdk->bmk", register_states, self.W_Q)  # (B, M, d_k)
 
-        # Scaled dot-product attention scores: (B, M, T)
         scores = torch.bmm(
             Q.reshape(B * M, 1, self.d_k),
             K.unsqueeze(1).expand(B, M, T, self.d_k).reshape(B * M, self.d_k, T),
@@ -175,19 +216,7 @@ class QKVCreationGate(nn.Module):
         else:
             scores = scores / (self.d_k ** 0.5)
 
-        alpha = F.softmax(scores, dim=-1)  # (B, M, T), sums to 1 over j
-
-        # Content: r_k_new = Σ_j α_kj · v_j
-        # alpha: (B, M, T), V: (B, T, d) → r_new: (B, M, d)
-        r_new = torch.bmm(
-            alpha.reshape(B * M, 1, T),
-            V.unsqueeze(1).expand(B, M, T, d).reshape(B * M, T, d),
-        ).reshape(B, M, d)
-
-        # Salience signal: max attention weight per register
-        alpha_max = alpha.max(dim=-1).values  # (B, M)
-
-        return r_new, alpha_max
+        return _causal_creation_readout(scores, V)
 
 
 # ---------------------------------------------------------------------------
@@ -251,7 +280,7 @@ class QKVCreationGate_v21(nn.Module):
         self,
         h_tokens: torch.Tensor,
         register_states: torch.Tensor,
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Q/K/V-structured creation with per-register temperature and keys.
 
         Args:
@@ -259,8 +288,9 @@ class QKVCreationGate_v21(nn.Module):
             register_states: (B, M, d)
 
         Returns:
-            r_new: (B, M, d) — new register content.
-            alpha_max: (B, M) — max attention weight per register.
+            r_new:     (B, M, d)    — register content (full-sequence).
+            r_causal:  (B, T, M, d) — position-dependent causal content.
+            alpha_max: (B, M)       — max attention weight per register.
         """
         B, T, d = h_tokens.shape
         M = self.M
@@ -270,9 +300,7 @@ class QKVCreationGate_v21(nn.Module):
         Q = torch.einsum("bmd,mdk->bmk", register_states, self.W_Q)  # (B, M, d_k)
 
         if self.per_register_keys:
-            # Per-register keys: (B, M, T, d_k)
             K = torch.einsum("btd,mdk->bmtk", h_tokens, self.W_K)
-            # Scores: (B, M, T) via batched dot product
             scores = torch.einsum("bmk,bmtk->bmt", Q, K)
         else:
             K = self.W_K(h_tokens)  # (B, T, d_k)
@@ -281,23 +309,13 @@ class QKVCreationGate_v21(nn.Module):
                 K.unsqueeze(1).expand(B, M, T, self.d_k).reshape(B * M, self.d_k, T),
             ).reshape(B, M, T)
 
-        # Temperature scaling
         if self.log_tau is not None:
             tau = self.log_tau.exp().clamp(min=1e-4)  # (M,)
             scores = scores / tau.unsqueeze(0).unsqueeze(-1)  # (B, M, T)
         else:
             scores = scores / (self.d_k ** 0.5)
 
-        alpha = F.softmax(scores, dim=-1)  # (B, M, T)
-
-        r_new = torch.bmm(
-            alpha.reshape(B * M, 1, T),
-            V.unsqueeze(1).expand(B, M, T, d).reshape(B * M, T, d),
-        ).reshape(B, M, d)
-
-        alpha_max = alpha.max(dim=-1).values  # (B, M)
-
-        return r_new, alpha_max
+        return _causal_creation_readout(scores, V)
 
 
 # ---------------------------------------------------------------------------
@@ -334,36 +352,52 @@ class ReverseChannel(nn.Module):
     ) -> torch.Tensor:
         """Compute the non-conservative force on each token.
 
+        Accepts either global registers (B, M, d) or position-dependent
+        causal registers (B, T, M, d).  The causal variant ensures that
+        the force applied to token t only reflects register content
+        derived from tokens 1…t, preventing future-token information
+        from leaking through the reverse channel.
+
         Args:
-            h_tokens: (B, T, d) — token hidden states (queries).
-            r_active: (B, M, d) — register states (keys/values).
-            active_mask: (B, M) — boolean mask; inactive registers zeroed.
+            h_tokens:    (B, T, d)           — token hidden states.
+            r_active:    (B, M, d)           — global register states, OR
+                         (B, T, M, d)        — position-dependent causal registers.
+            active_mask: (B, M)              — boolean; inactive registers masked.
 
         Returns:
-            Q_force: (B, T, d) — non-conservative Fock exchange force per token.
+            Q_force: (B, T, d) — non-conservative Fock exchange force.
         """
         B, T, d = h_tokens.shape
-        M = r_active.shape[1]
+        q = self.W_Q_rev(h_tokens)                    # (B, T, d_k)
 
-        q = self.W_Q_rev(h_tokens)   # (B, T, d_k)
-        k = self.W_K_rev(r_active)   # (B, M, d_k)
-        v = self.W_V_rev(r_active)   # (B, M, d)
+        position_dependent = r_active.dim() == 4
 
-        # Attention scores: (B, T, M)
-        scores = torch.matmul(q, k.transpose(-2, -1)) / (self.d_k ** 0.5)
+        if position_dependent:
+            M = r_active.shape[2]
+            k = self.W_K_rev(r_active)                # (B, T, M, d_k)
+            v = self.W_V_rev(r_active)                # (B, T, M, d)
+            scores = torch.einsum(
+                "btk,btmk->btm", q, k,
+            ) / (self.d_k ** 0.5)                     # (B, T, M)
+        else:
+            M = r_active.shape[1]
+            k = self.W_K_rev(r_active)                # (B, M, d_k)
+            v = self.W_V_rev(r_active)                # (B, M, d)
+            scores = torch.matmul(
+                q, k.transpose(-2, -1),
+            ) / (self.d_k ** 0.5)                     # (B, T, M)
 
-        # Mask inactive registers with large negative before softmax
-        mask_expanded = active_mask.unsqueeze(1).expand(B, T, M)  # (B, T, M)
+        mask_expanded = active_mask.unsqueeze(1).expand(B, T, M)
         scores = scores.masked_fill(~mask_expanded, -1e9)
 
-        # If no registers are active, skip the computation
-        has_active = active_mask.any(dim=-1, keepdim=True).unsqueeze(1)  # (B, 1, 1)
-
-        alpha = F.softmax(scores, dim=-1)  # (B, T, M)
+        has_active = active_mask.any(dim=-1, keepdim=True).unsqueeze(1)
+        alpha = F.softmax(scores, dim=-1)             # (B, T, M)
         alpha = alpha * has_active.float()
 
-        # Force: Q_i = Σ_k α_ik · v_k^reg
-        Q_force = torch.matmul(alpha, v)  # (B, T, d)
+        if position_dependent:
+            Q_force = torch.einsum("btm,btmd->btd", alpha, v)
+        else:
+            Q_force = torch.matmul(alpha, v)          # (B, T, d)
 
         return Q_force
 
@@ -521,17 +555,11 @@ class FockPARFLM_v2(SparsePARFLM):
         decay = cfg.register_salience_decay
 
         # --- 1. Q/K/V creation gate ---
-        r_new_content, alpha_max = self.creation_gate(h, r)
+        r_new_content, r_causal, alpha_max = self.creation_gate(h, r)
 
-        # Blend new content into existing register state.
-        # Registers that are already active get their content refreshed;
-        # inactive registers receive fresh content from the readout.
-        # Use salience-weighted blending: high-salience registers keep
-        # more of their existing state (temporal persistence).
         blend = salience.unsqueeze(-1)  # (B, M, 1), in [0, ~1]
         r = blend * r + (1.0 - blend) * r_new_content
 
-        # Salience update: exponential decay + creation signal
         salience = salience * decay + alpha_max * (1.0 - decay)
 
         # --- 2. Active mask ---
@@ -563,9 +591,9 @@ class FockPARFLM_v2(SparsePARFLM):
 
         # --- 6. Reverse channel (non-conservative force Q_i) ---
         if self.reverse_ch is not None and active.any():
-            Q_force = self.reverse_ch(h_new, r_new, active)
-            # Gate the reverse force by a learnable scalar initialised to 0:
-            # tanh(0)=0 → force off at init; the model learns to open it.
+            # Use position-dependent causal register content so that
+            # the force on token t only reflects tokens 1…t.
+            Q_force = self.reverse_ch(h_new, r_causal, active)
             scale = torch.tanh(self.reverse_channel_scale)
             h_new = h_new + (dt * dt / m_b) * scale * Q_force
 
