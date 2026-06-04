@@ -33,6 +33,7 @@ cross-layer working memory.  Standard attention is λ=0 (instantaneous).
 
 from __future__ import annotations
 
+import math
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -184,6 +185,116 @@ class QKVCreationGate(nn.Module):
         ).reshape(B, M, d)
 
         # Salience signal: max attention weight per register
+        alpha_max = alpha.max(dim=-1).values  # (B, M)
+
+        return r_new, alpha_max
+
+
+# ---------------------------------------------------------------------------
+# Q/K/V-structured creation gate v2.1 — fixes temperature collapse
+# ---------------------------------------------------------------------------
+class QKVCreationGate_v21(nn.Module):
+    """Improved creation gate addressing the temperature collapse diagnostic.
+
+    Three fixes over QKVCreationGate (v2):
+
+      B1 — Per-register learnable temperature: each register k has its own
+           log_tau[k], allowing the model to learn different selectivity
+           levels per register.  Initialised at tau_init (default sqrt(d_k))
+           for standard-scale attention.
+
+      B2 — Per-register key subspaces: W_K is (M, d, d_k) instead of
+           (d, d_k).  Each register projects tokens into a different key
+           space, encouraging diverse attention patterns (analogous to
+           per-head K projections in multi-head attention).
+
+      B3 — (External) Orthogonal register embedding init is handled in
+           FockMultiXiPARFLM.__init__, not here.
+
+    Backward-compatible: when per_register_keys=False and M=1, this
+    reduces to the original QKVCreationGate behaviour.
+    """
+
+    def __init__(
+        self,
+        d: int,
+        d_k: int,
+        M: int,
+        init_scale: float = 0.02,
+        tau_create_init: Optional[float] = None,
+        per_register_keys: bool = False,
+    ):
+        super().__init__()
+        self.M = M
+        self.d_k = d_k
+        self.per_register_keys = per_register_keys
+
+        self.W_Q = nn.Parameter(torch.randn(M, d, d_k) * init_scale)
+        self.W_V = nn.Linear(d, d, bias=False)
+        nn.init.normal_(self.W_V.weight, std=init_scale)
+
+        if per_register_keys:
+            self.W_K = nn.Parameter(torch.randn(M, d, d_k) * init_scale)
+        else:
+            self.W_K = nn.Linear(d, d_k, bias=False)
+            nn.init.normal_(self.W_K.weight, std=init_scale)
+
+        # Per-register learnable temperature (B1)
+        if tau_create_init is not None:
+            self.log_tau = nn.Parameter(
+                torch.full((M,), math.log(tau_create_init))
+            )
+        else:
+            self.log_tau = None
+
+    def forward(
+        self,
+        h_tokens: torch.Tensor,
+        register_states: torch.Tensor,
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """Q/K/V-structured creation with per-register temperature and keys.
+
+        Args:
+            h_tokens: (B, T, d)
+            register_states: (B, M, d)
+
+        Returns:
+            r_new: (B, M, d) — new register content.
+            alpha_max: (B, M) — max attention weight per register.
+        """
+        B, T, d = h_tokens.shape
+        M = self.M
+
+        V = self.W_V(h_tokens)  # (B, T, d)
+
+        Q = torch.einsum("bmd,mdk->bmk", register_states, self.W_Q)  # (B, M, d_k)
+
+        if self.per_register_keys:
+            # Per-register keys: (B, M, T, d_k)
+            K = torch.einsum("btd,mdk->bmtk", h_tokens, self.W_K)
+            # Scores: (B, M, T) via batched dot product
+            scores = torch.einsum("bmk,bmtk->bmt", Q, K)
+        else:
+            K = self.W_K(h_tokens)  # (B, T, d_k)
+            scores = torch.bmm(
+                Q.reshape(B * M, 1, self.d_k),
+                K.unsqueeze(1).expand(B, M, T, self.d_k).reshape(B * M, self.d_k, T),
+            ).reshape(B, M, T)
+
+        # Temperature scaling
+        if self.log_tau is not None:
+            tau = self.log_tau.exp().clamp(min=1e-4)  # (M,)
+            scores = scores / tau.unsqueeze(0).unsqueeze(-1)  # (B, M, T)
+        else:
+            scores = scores / (self.d_k ** 0.5)
+
+        alpha = F.softmax(scores, dim=-1)  # (B, M, T)
+
+        r_new = torch.bmm(
+            alpha.reshape(B * M, 1, T),
+            V.unsqueeze(1).expand(B, M, T, d).reshape(B * M, T, d),
+        ).reshape(B, M, d)
+
         alpha_max = alpha.max(dim=-1).values  # (B, M)
 
         return r_new, alpha_max

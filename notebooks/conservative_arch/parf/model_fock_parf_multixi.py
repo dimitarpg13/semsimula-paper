@@ -55,6 +55,7 @@ from model_fock_parf import (  # noqa: E402
 )
 from model_fock_parf_v2 import (  # noqa: E402
     QKVCreationGate,
+    QKVCreationGate_v21,
     ReverseChannel,
     DestructionGate_v2,
 )
@@ -100,6 +101,10 @@ class FockMultiXiPARFConfig(MultiXiPARFConfig):
     tau_create_init: Optional[float] = 0.1
     destruction_gate_hidden: int = 64
     reverse_channel: bool = True
+    # v2.1 creation gate improvements (§6 of Fock-PARFLM_Next_Steps.md)
+    per_register_tau: bool = False      # B1: per-register learnable temperature
+    per_register_keys: bool = False     # B2: per-register key subspaces
+    ortho_register_init: bool = False   # B3: orthogonal register embed init
 
 
 # ---------------------------------------------------------------------------
@@ -135,9 +140,17 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
         self._fock_cfg = cfg
         M, d, L = cfg.n_registers, cfg.d, cfg.L
 
-        self.register_embed = nn.Parameter(
-            torch.randn(M, d) * cfg.register_init_scale
-        )
+        if cfg.ortho_register_init and M <= d:
+            U, _, _ = torch.linalg.svd(torch.randn(d, d))
+            self.register_embed = nn.Parameter(
+                U[:M] * cfg.register_init_scale
+            )
+        else:
+            self.register_embed = nn.Parameter(
+                torch.randn(M, d) * cfg.register_init_scale
+            )
+
+        use_v21_gate = cfg.per_register_tau or cfg.per_register_keys
 
         if cfg.fock_version == "v1":
             self.creation_gates = nn.ModuleList([
@@ -152,12 +165,20 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
             self.reverse_ch = None
             self.reverse_channel_scale = None
         elif cfg.fock_version == "v2":
-            self.creation_gates = nn.ModuleList()  # unused for v2
-            self.creation_gate_qkv = QKVCreationGate(
-                d, cfg.d_k, M,
-                init_scale=cfg.register_init_scale,
-                tau_create_init=cfg.tau_create_init,
-            )
+            self.creation_gates = nn.ModuleList()  # unused for v2/v2.1
+            if use_v21_gate:
+                self.creation_gate_qkv = QKVCreationGate_v21(
+                    d, cfg.d_k, M,
+                    init_scale=cfg.register_init_scale,
+                    tau_create_init=cfg.tau_create_init,
+                    per_register_keys=cfg.per_register_keys,
+                )
+            else:
+                self.creation_gate_qkv = QKVCreationGate(
+                    d, cfg.d_k, M,
+                    init_scale=cfg.register_init_scale,
+                    tau_create_init=cfg.tau_create_init,
+                )
             self.destruction_gates = nn.ModuleList([
                 DestructionGate_v2(
                     d, cfg.destruction_gate_hidden,
@@ -348,8 +369,13 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
         if cfg.fock_version == "v2" and self.creation_gate_qkv is not None:
             log_tau = self.creation_gate_qkv.log_tau
             if log_tau is not None:
-                tau_val = log_tau.exp().clamp(min=1e-4).item()
-                diag["fock_tau_create"] = tau_val
+                tau_vals = log_tau.exp().clamp(min=1e-4)
+                if tau_vals.dim() == 0:
+                    diag["fock_tau_create"] = tau_vals.item()
+                else:
+                    diag["fock_tau_create_mean"] = tau_vals.mean().item()
+                    diag["fock_tau_create_min"] = tau_vals.min().item()
+                    diag["fock_tau_create_max"] = tau_vals.max().item()
         if cfg.fock_version == "v2" and self.reverse_channel_scale is not None:
             diag["fock_rev_scale"] = torch.tanh(
                 self.reverse_channel_scale

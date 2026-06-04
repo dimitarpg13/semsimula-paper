@@ -128,6 +128,10 @@ def build_config(
     tau_create_init: float | None = 0.1,
     destruction_gate_hidden: int = 64,
     reverse_channel: bool = True,
+    # v2.1 creation gate improvements
+    per_register_tau: bool = False,
+    per_register_keys: bool = False,
+    ortho_register_init: bool = False,
 ) -> tuple[FockMultiXiPARFConfig, dict, str]:
 
     if register_salience_decay is None:
@@ -175,6 +179,9 @@ def build_config(
         tau_create_init=tau_create_init,
         destruction_gate_hidden=destruction_gate_hidden,
         reverse_channel=reverse_channel,
+        per_register_tau=per_register_tau,
+        per_register_keys=per_register_keys,
+        ortho_register_init=ortho_register_init,
     )
 
     if xi_alpha_init_mode == "explicit":
@@ -259,9 +266,17 @@ def build_config(
     gv_tag = "_gv" if use_gathered_v_phi else ""
     disc_tag = "_lifo" if stack_discipline else "_free"
     rev_tag = "_rev" if (fock_version == "v2" and reverse_channel) else ""
+    v21_parts = []
+    if per_register_tau:
+        v21_parts.append("prtau")
+    if per_register_keys:
+        v21_parts.append("prK")
+    if ortho_register_init:
+        v21_parts.append("ortho")
+    v21_tag = ("_" + "-".join(v21_parts)) if v21_parts else ""
     tag = (f"fock{fock_version}_multixi_K{xi_channels}_{v_phi_kind}_vphi{phi_hidden}"
            f"{gc_tag}{lc_tag}{gv_tag}{fg_tag}{p8_tag}"
-           f"_sparse_k{sparse_top_k}_M{n_registers}{disc_tag}{rev_tag}_{mode}")
+           f"_sparse_k{sparse_top_k}_M{n_registers}{disc_tag}{rev_tag}{v21_tag}_{mode}")
     return cfg, train_cfg, tag
 
 
@@ -410,6 +425,16 @@ def main():
     ap.add_argument("--no-reverse-channel", action="store_false",
                     dest="reverse_channel",
                     help="Disable reverse channel (v2 only).")
+    # v2.1 creation gate improvements
+    ap.add_argument("--per-register-tau", dest="per_register_tau",
+                    action="store_true", default=False,
+                    help="B1: per-register learnable temperature (v2.1).")
+    ap.add_argument("--per-register-keys", dest="per_register_keys",
+                    action="store_true", default=False,
+                    help="B2: per-register key subspaces (v2.1).")
+    ap.add_argument("--ortho-register-init", dest="ortho_register_init",
+                    action="store_true", default=False,
+                    help="B3: orthogonal register embedding initialisation (v2.1).")
     ap.add_argument("--fock-grad-clip", dest="fock_grad_clip",
                     type=float, default=None,
                     help="Separate (tighter) grad clip for Fock-specific params.")
@@ -484,6 +509,9 @@ def main():
         tau_create_init=args.tau_create_init,
         destruction_gate_hidden=args.destruction_gate_hidden,
         reverse_channel=args.reverse_channel,
+        per_register_tau=args.per_register_tau,
+        per_register_keys=args.per_register_keys,
+        ortho_register_init=args.ortho_register_init,
     )
     if args.max_steps is not None:
         train_cfg["steps"] = args.max_steps
@@ -515,9 +543,17 @@ def main():
           f"decay={cfg.register_salience_decay}  "
           f"thresh={cfg.register_salience_threshold}")
     if cfg.fock_version == "v2":
+        v21_flags = []
+        if cfg.per_register_tau:
+            v21_flags.append("per_reg_tau")
+        if cfg.per_register_keys:
+            v21_flags.append("per_reg_keys")
+        if cfg.ortho_register_init:
+            v21_flags.append("ortho_init")
+        v21_str = f"  v2.1=[{','.join(v21_flags)}]" if v21_flags else ""
         print(f"[fock-multixi-parf] fock-v2: d_k={cfg.d_k}  "
               f"reverse_channel={cfg.reverse_channel}  "
-              f"tau_create_init={cfg.tau_create_init}")
+              f"tau_create_init={cfg.tau_create_init}{v21_str}")
     print(f"[fock-multixi-parf] schedule: {args.mode}  "
           f"steps={train_cfg['steps']}  batch={train_cfg['batch_size']}  "
           f"block={train_cfg['block_size']}")
@@ -627,6 +663,12 @@ def main():
             fock_tau_str = ""
             if "fock_tau_create" in fock_diag:
                 fock_tau_str = f"   fock_tau={fock_diag['fock_tau_create']:.4f}"
+            elif "fock_tau_create_mean" in fock_diag:
+                fock_tau_str = (
+                    f"   fock_tau={fock_diag['fock_tau_create_mean']:.3f}"
+                    f"[{fock_diag['fock_tau_create_min']:.3f},"
+                    f"{fock_diag['fock_tau_create_max']:.3f}]"
+                )
             rev_str = ""
             if "fock_rev_scale" in fock_diag:
                 rev_str = f"   rev_s={fock_diag['fock_rev_scale']:.3f}"
@@ -769,9 +811,17 @@ def main():
                 f"decay={cfg.register_salience_decay}  "
                 f"thresh={cfg.register_salience_threshold}\n")
         if cfg.fock_version == "v2":
+            v21_flags = []
+            if cfg.per_register_tau:
+                v21_flags.append("per_reg_tau")
+            if cfg.per_register_keys:
+                v21_flags.append("per_reg_keys")
+            if cfg.ortho_register_init:
+                v21_flags.append("ortho_init")
+            v21_str = f"  v2.1=[{','.join(v21_flags)}]" if v21_flags else ""
             f.write(f"- fock-v2: d_k={cfg.d_k}  "
                     f"reverse_channel={cfg.reverse_channel}  "
-                    f"tau_create_init={cfg.tau_create_init}\n")
+                    f"tau_create_init={cfg.tau_create_init}{v21_str}\n")
         f.write(f"- block_size: {train_cfg['block_size']}  "
                 f"batch_size: {train_cfg['batch_size']}  "
                 f"steps: {train_cfg['steps']}\n")
