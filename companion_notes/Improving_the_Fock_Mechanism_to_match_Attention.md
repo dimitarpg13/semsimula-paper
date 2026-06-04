@@ -1403,51 +1403,44 @@ The register diversity/entropy eval pass (§18.5) has been completed, and the Fo
 
 ### 19.1 Updated PPL Ladder
 
-| Architecture | PPL | Memory (T-dependence) | Params |
-|---|---|---|---|
-| Single-ξ PARFLM ceiling (P10h) | 26.4 | O(1) | — |
-| Multi-ξ K=4 conservative base | 12.47 | O(1) | ~16.6M |
-| Conservative Fock registers (K=4, M=16, v2) | 12.00 | O(1) | ~17.2M (+578K Fock) |
-| Conservative K=8 no registers | ~12.06 | O(1) | ~16.6M |
-| **Fock Attention 1-head (K=4, direct exchange)** | **11.48** | **O(T²)** | **16.6M (+66K exchange)** |
-| **Fock Attention 4-head (K=4, direct exchange)** | **10.93** | **O(T²)** | **16.7M (+131K exchange)** |
-| **Matched attention baseline (MatchedGPT)** | **7.81** | **O(T²)** | — |
+| Architecture | PPL | Steps | Memory | Params |
+|---|---|---|---|---|
+| Single-ξ PARFLM ceiling (P10h) | 26.4 | 16k | O(1) | — |
+| Multi-ξ K=4 conservative base | 12.47 | 8k | O(1) | ~16.6M |
+| Conservative Fock registers (K=4, M=16, v2) | 12.00 | 16k | O(1) | ~17.2M (+578K Fock) |
+| Conservative K=8 no registers | ~12.06 | 8k | O(1) | ~16.6M |
+| Fock Attention K=8 4-head | 11.65 | 8k | O(T²) | 17.8M (+131K exchange) |
+| Fock Attention K=4 1-head | 11.48 | 8k | O(T²) | 16.6M (+66K exchange) |
+| Fock Attention K=4 4-head | 10.93 | 8k | O(T²) | 16.7M (+131K exchange) |
+| **Fock Attention K=4 4-head** | **9.42** | **16k** | **O(T²)** | **16.7M (+131K exchange)** |
+| **Matched attention baseline (MatchedGPT)** | **7.81** | **8k** | **O(T²)** | — |
 
-The residual gap after the conservative multi-ξ base is **4.66 PPL** (12.47 → 7.81). The Fock register mechanism closes only 0.47 PPL (12.47 → 12.00), while the direct attention exchange force closes 1.54 PPL (12.47 → 10.93 with 4 heads). The 1.07 PPL gap between registers (12.00) and attention (10.93) — despite registers using 4.4× more additional parameters (578K vs 131K) — confirms a genuine structural routing deficit, not a capacity effect.
+The residual gap after the conservative multi-ξ base is **4.66 PPL** (12.47 → 7.81). The Fock register mechanism closes only 0.47 PPL of this (12.47 → 12.00), while the direct attention exchange force closes **3.05 PPL** (12.47 → 9.42 at 16k steps, 65.5% of the gap). The **2.58 PPL gap** between registers (12.00) and attention (9.42) — despite registers using 4.4× more additional parameters (578K vs 131K) — confirms a substantial structural routing deficit, not a capacity effect.
 
 ### 19.2 Fock Attention Experiment Results
 
-`FockAttentionPARFLM` (defined in `model_fock_attention.py`) injects the §5.1 Feynman diagram exchange force directly into the conservative Verlet dynamics as a post-Verlet correction. Two arms completed at 8,000 steps:
+`FockAttentionPARFLM` (defined in `model_fock_attention.py`) injects the §5.1 Feynman diagram exchange force directly into the conservative Verlet dynamics as a post-Verlet correction. Four arms completed:
 
-**Arm: direct_K4_h1_8k (1-head, d_k=64)**
-
-| Metric | Value |
-|---|---|
-| Final val PPL | 11.48 |
-| Exchange overhead | 65,537 params |
-| Final exchange_scale | −0.2547 (tanh = −0.249) |
-| Final α_k | [0.000, 0.597, 0.891, 0.975] |
-| Training time | 6,044 s (1.68 h) |
-
-**Arm: direct_K4_h4_8k (4-head, d_k=32)**
-
-| Metric | Value |
-|---|---|
-| Final val PPL | 10.93 |
-| Exchange overhead | 131,073 params |
-| Final exchange_scale | −0.2712 (tanh = −0.264) |
-| Final α_k | [0.000, 0.593, 0.882, 0.975] |
-| Training time | 6,287 s (1.75 h) |
+| Arm | K | Heads | d_k | Steps | PPL | exchange_scale | Exchange OH | Time |
+|-----|---|-------|-----|-------|-----|----------------|-------------|------|
+| direct_K4_h1_8k | 4 | 1 | 64 | 8k | 11.48 | −0.255 | 66K | 1.68 h |
+| direct_K4_h4_8k | 4 | 4 | 32 | 8k | 10.93 | −0.271 | 131K | 1.75 h |
+| direct_K8_h4_8k | 8 | 4 | 32 | 8k | 11.65 | −0.141 | 131K | 1.99 h |
+| **direct_K4_h4_16k** | **4** | **4** | **32** | **16k** | **9.42** | **−0.318** | **131K** | **3.41 h** |
 
 **Key findings:**
 
 1. **Multi-head helps**: 4 heads with d_k=32 outperforms 1 head with d_k=64 by 0.55 PPL (10.93 vs 11.48), consistent with the standard Transformer finding that multi-head > single-head.
 
-2. **Negative exchange scale**: Both arms learned `exchange_scale < 0`, meaning `tanh(exchange_scale) ≈ −0.26`. The model chose a **repulsive** exchange force — pushing tokens apart in representation space rather than blending them. This is physically meaningful: the conservative Verlet dynamics already handles attractive clustering; the exchange provides the complementary dispersive/discriminative pressure.
+2. **Negative exchange scale — repulsive force**: All arms learned `exchange_scale < 0`. The model chose a **repulsive** exchange force — pushing tokens apart in representation space rather than blending them. This is physically meaningful: the conservative Verlet dynamics already handles attractive clustering; the exchange provides the complementary dispersive/discriminative pressure. The scale deepened from −0.27 at 8k to **−0.32** at 16k, indicating the model continues increasing the repulsive force magnitude without saturation.
 
-3. **Dead α channel persists**: The fastest EMA channel (α ≈ 0) freezes at essentially zero in both arms, identical to the register experiments. This channel acts as a cumulative running sum with no decay — it may be absorbing positional information that the other channels don't need.
+3. **K=4 beats K=8**: The K=8 arm (11.65 PPL) performed worse than K=4 (10.93 PPL) despite 1M more parameters. With more conservative EMA channels, the model relied less on the exchange force (|scale| = 0.14 vs 0.27). This suggests K=4 is the sweet spot: K=8 over-regularises the conservative dynamics, leaving less room for the exchange to contribute.
 
-4. **Moderate force magnitude**: `|tanh(exchange_scale)| ≈ 0.26` is far from saturation (1.0). The conservative dynamics constrains how much exchange force can be absorbed. The `dt²/(m_b·(1+dt·γ))` prefactor in the Verlet injection further limits effective force magnitude compared to a clean residual path.
+4. **16k steps breaks 10 PPL**: Extending the best K=4 4-head arm to 16k steps yielded **9.42 PPL**, closing 65.5% of the gap to MatchedGPT. Unlike the Fock v2 register run which regressed from 12.00 to 12.31 in the tail, the Fock Attention arm kept improving cleanly — no cosine-LR overshoot problem.
+
+5. **Dead α channel persists**: The fastest EMA channel (α ≈ 0) freezes at essentially zero in all arms, identical to the register experiments. This channel acts as a cumulative running sum with no decay — it may be absorbing positional information that the other channels don't need.
+
+6. **Moderate force magnitude**: Even at 16k steps, `|tanh(exchange_scale)| ≈ 0.31` is far from saturation (1.0). The conservative dynamics constrains how much exchange force can be absorbed. The `dt²/(m_b·(1+dt·γ))` prefactor in the Verlet injection further limits effective force magnitude compared to a clean residual path.
 
 ### 19.3 Register Diagnostics: Temperature Collapse
 
@@ -1491,19 +1484,22 @@ Combining the Fock Attention and Register Diagnostics results:
 
 | Question | Answer | Implication |
 |----------|--------|-------------|
-| Q1: Does Fock Attention reach < 10 PPL? | Not yet (10.93 at 8k steps, likely < 10 at 16k) | Routing deficit confirmed: 1.07 PPL gap to registers despite 4.4× fewer params |
-| Q2: Does exchange_scale saturate at 1.0? | No, stabilises at ~0.26 (repulsive) | Post-Verlet injection geometry constrains force magnitude |
+| Q1: Does Fock Attention reach < 10 PPL? | **Yes — 9.42 PPL at 16k steps** | Routing deficit confirmed: **2.58 PPL gap** to registers (12.00) despite 4.4× fewer params |
+| Q2: Does exchange_scale saturate at 1.0? | No, reaches −0.32 at 16k (repulsive, still growing) | Post-Verlet injection geometry constrains force magnitude but doesn't prevent sub-10 PPL |
 | Q3: Are registers routing or mean-pooling? | **Neither — temperature collapse** (entropy 0.04, diversity 0.37) | Step 1 (fix creation gate) is the active bottleneck |
 | Q4: Dead α channel? | Yes, α₀ ≈ 0 in all experiments | One of K=4 channels is redundant; K=3 may suffice |
+| Q5: Does K=8 help with exchange? | **No** — K=8 (11.65) worse than K=4 (10.93) | Extra conservative channels over-regularise; K=4 is the sweet spot |
 
-**Resolution hierarchy branch: Step 1** — fix the creation gate before scaling M or adding iterative refinement.
+**Resolution hierarchy branch: Step 1** — fix the creation gate before scaling M or adding iterative refinement. The 9.42 PPL ceiling makes the potential payoff even larger than initially estimated (2.58 PPL recoverable vs the earlier 1.07 estimate).
 
 ### 19.5 Resolution Hierarchy
 
 **Step 0 — Establish the deficit ✅ COMPLETE**
 
-- Fock Attention PPL: 10.93 (4-head, 8k steps)
+- Fock Attention PPL: **9.42** (K=4, 4-head, 16k steps) — breaks 10 PPL
 - Register diversity/entropy: 0.37 / 0.04 (temperature collapse)
+- Routing deficit: **2.58 PPL** (registers 12.00 vs attention 9.42)
+- K=8 is worse (11.65), confirming K=4 is the sweet spot
 - Branch condition: Step 1 (fix routing quality)
 
 **Step 1 — Fix routing quality (ACTIVE)**
@@ -1565,11 +1561,11 @@ All arms use τ_create_init = √d_k = 8.0 (for v2.1 arms) instead of the origin
 
 ### 19.7 Open Questions
 
-**[Q1 — Fock Attention 16k]** Running the 4-head arm to 16k steps will determine whether Fock Attention breaks 10 PPL, tightening the ceiling estimate.
+**[Q1 — Fock Attention 16k] ✅ RESOLVED.** The 4-head K=4 arm reached **9.42 PPL** at 16k steps, confirming Fock Attention breaks 10 PPL. The routing deficit is 2.58 PPL (registers 12.00 vs attention 9.42). The remaining gap to MatchedGPT (7.81) is 1.61 PPL, likely attributable to the post-Verlet injection geometry constraint.
 
-**[Q2 — Step 1 outcome]** Does fixing the creation gate temperature raise diversity from 0.37 toward the Q6 reference of 0.78? If so, what PPL does the improved routing achieve?
+**[Q2 — Step 1 outcome]** Does fixing the creation gate temperature raise diversity from 0.37 toward the Q6 reference of 0.78? If so, what PPL does the improved routing achieve? With a 2.58 PPL ceiling now established, even partial improvement in routing quality could yield significant gains.
 
-**[Q3 — Dead α channel]** Is K=3 sufficient? Removing the frozen α₀ ≈ 0 channel and retraining would establish whether it contributes anything.
+**[Q3 — Dead α channel]** Is K=3 sufficient? Removing the frozen α₀ ≈ 0 channel and retraining would establish whether it contributes anything. The K=8 result (11.65 > K=4's 10.93) suggests fewer channels may indeed be better.
 
 **[Q4 — Warm-start]** If Step 1 brings routing quality to Q6 level but PPL remains > 11.5, warm-starting from the converged conservative base (Step 2) is the next highest-leverage experiment.
 
