@@ -4,7 +4,7 @@
 - model: FockMultiXiPARFLM (v2 gates + K-EMA ξ + sparse PARF)
 - v_phi_kind: structural_competitive
 - top_k: 8
-- gumbel_tau: 1.0 -> 0.1
+- gumbel_tau: 1.0 -> 0.3
 - mode: scaleup
 - corpus: TinyStories (cap 5,000,000 train tokens)
 - fixed_gamma: 0.3
@@ -15,8 +15,8 @@
 - fock-v2: d_k=64  reverse_channel=True  tau_create_init=0.1
 - block_size: 512  batch_size: 16  steps: 16000
 - seed: 0
-- elapsed: 13715 s (3.81 h)
+- elapsed: 15357 s (4.27 h)
 
-Final val loss: 2.510496 (ppl 12.31)
+Final val loss: 2.430730 (ppl 11.37)
 Final gamma: 0.3000
-Final α_k: [2.7182766189071117e-06, 0.6030459403991699, 0.88425612449646, 0.9737665057182312]
+Final α_k: [2.9038346838206053e-06, 0.5830682516098022, 0.8870828747749329, 0.9738650918006897]

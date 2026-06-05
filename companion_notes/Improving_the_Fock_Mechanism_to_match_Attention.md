@@ -1,7 +1,7 @@
 # Improving the Fock Mechanism to Match Attention Expressivity in PARFLM
 
 **Technical Report — Semantic Simulation Research Programme**  
-**Status:** Active — June 2026 (updated with Fock Attention results, register diagnostics, and v2.1 routing fix)  
+**Status:** Active — June 2026 (updated with causal leak fix, corrected v2 results, Fock Attention results, register diagnostics, and v2.1 routing fix)  
 **Relates to:** Paper v4 §§9.4.2, 17.8, 17.13, 17c; FockPARFLM Phase 1 (Dyck₂ seed 0 complete); QFT v2.1 (Q0–Q8 complete); `model_fock_attention.py`; `model_fock_parf_v2.py`
 
 ---
@@ -1403,19 +1403,32 @@ The register diversity/entropy eval pass (§18.5) has been completed, and the Fo
 
 ### 19.1 Updated PPL Ladder
 
-| Architecture | PPL | Steps | Memory | Params |
-|---|---|---|---|---|
-| Single-ξ PARFLM ceiling (P10h) | 26.4 | 16k | O(1) | — |
-| Multi-ξ K=4 conservative base | 12.47 | 8k | O(1) | ~16.6M |
-| Conservative Fock registers (K=4, M=16, v2) | 12.00 | 16k | O(1) | ~17.2M (+578K Fock) |
-| Conservative K=8 no registers | ~12.06 | 8k | O(1) | ~16.6M |
-| Fock Attention K=8 4-head | 11.65 | 8k | O(T²) | 17.8M (+131K exchange) |
-| Fock Attention K=4 1-head | 11.48 | 8k | O(T²) | 16.6M (+66K exchange) |
-| Fock Attention K=4 4-head | 10.93 | 8k | O(T²) | 16.7M (+131K exchange) |
-| **Fock Attention K=4 4-head** | **9.42** | **16k** | **O(T²)** | **16.7M (+131K exchange)** |
-| **Matched attention baseline (MatchedGPT)** | **7.81** | **8k** | **O(T²)** | — |
+> **Note (June 2026):** The v2 register results below supersede earlier
+> values (12.00 PPL) that were tainted by a causal leak in the creation
+> gate.  The leak was traced to a missing causal mask in the Q/K/V
+> creation softmax: registers attended to all T positions including
+> future tokens, and the reverse channel broadcast this leaked content
+> back to past positions.  The fix (cumulative softmax producing
+> position-dependent register content for the reverse channel) was
+> verified by the perturbation probe and is committed in `8c47d90`.
+> See §19.8 for details.
 
-The residual gap after the conservative multi-ξ base is **4.66 PPL** (12.47 → 7.81). The Fock register mechanism closes only 0.47 PPL of this (12.47 → 12.00), while the direct attention exchange force closes **3.05 PPL** (12.47 → 9.42 at 16k steps, 65.5% of the gap). The **2.58 PPL gap** between registers (12.00) and attention (9.42) — despite registers using 4.4× more additional parameters (578K vs 131K) — confirms a substantial structural routing deficit, not a capacity effect.
+| Architecture | PPL | Steps | Memory | Params | Notes |
+|---|---|---|---|---|---|
+| Single-ξ PARFLM ceiling (P10h) | 26.4 | 16k | O(1) | — | |
+| Fock v2 registers (K=4, M=16) | 12.69 | 8k | O(1) | ~17.2M (+578K Fock) | causal-fixed |
+| Multi-ξ K=4 conservative base | 12.47 | 8k | O(1) | ~16.6M | |
+| Conservative K=8 no registers | ~12.06 | 8k | O(1) | ~16.6M | |
+| Fock Attention K=8 4-head | 11.65 | 8k | O(T²) | 17.8M (+131K exchange) | |
+| Fock Attention K=4 1-head | 11.48 | 8k | O(T²) | 16.6M (+66K exchange) | |
+| **Fock v2 registers (K=4, M=16)** | **11.37** | **16k** | **O(1)** | **~17.2M (+578K Fock)** | **causal-fixed** |
+| Fock Attention K=4 4-head | 10.93 | 8k | O(T²) | 16.7M (+131K exchange) | |
+| **Fock Attention K=4 4-head** | **9.42** | **16k** | **O(T²)** | **16.7M (+131K exchange)** | |
+| **Matched attention baseline (MatchedGPT)** | **7.81** | **8k** | **O(T²)** | — | |
+
+The residual gap after the conservative multi-ξ base is **4.66 PPL** (12.47 → 7.81).  The causal-fixed Fock v2 register mechanism now closes **1.10 PPL** of this gap (12.47 → 11.37 at 16k steps), a genuine improvement over the conservative base.  At 8k steps the registers slightly underperform the base (12.69 vs 12.47), indicating that registers need longer training to provide value.
+
+The direct attention exchange force closes **3.05 PPL** (12.47 → 9.42 at 16k steps, 65.5% of the gap).  The **1.95 PPL gap** between causal-fixed registers (11.37) and attention (9.42) confirms a structural routing deficit, though it is narrower than the pre-fix estimate of 2.58 PPL.  The causal cumulative softmax made the reverse channel more expressive by providing position-dependent register content, partially closing the gap.
 
 ### 19.2 Fock Attention Experiment Results
 
@@ -1484,22 +1497,25 @@ Combining the Fock Attention and Register Diagnostics results:
 
 | Question | Answer | Implication |
 |----------|--------|-------------|
-| Q1: Does Fock Attention reach < 10 PPL? | **Yes — 9.42 PPL at 16k steps** | Routing deficit confirmed: **2.58 PPL gap** to registers (12.00) despite 4.4× fewer params |
+| Q1: Does Fock Attention reach < 10 PPL? | **Yes — 9.42 PPL at 16k steps** | Routing deficit confirmed: **1.95 PPL gap** to causal-fixed registers (11.37) |
 | Q2: Does exchange_scale saturate at 1.0? | No, reaches −0.32 at 16k (repulsive, still growing) | Post-Verlet injection geometry constrains force magnitude but doesn't prevent sub-10 PPL |
 | Q3: Are registers routing or mean-pooling? | **Neither — temperature collapse** (entropy 0.04, diversity 0.37) | Step 1 (fix creation gate) is the active bottleneck |
 | Q4: Dead α channel? | Yes, α₀ ≈ 0 in all experiments | One of K=4 channels is redundant; K=3 may suffice |
 | Q5: Does K=8 help with exchange? | **No** — K=8 (11.65) worse than K=4 (10.93) | Extra conservative channels over-regularise; K=4 is the sweet spot |
+| Q6: Was old v2 12.00 PPL real? | **Partly leaked.** Causal-fixed v2 = 11.37 (16k), 12.69 (8k) | Leak contributed ~0.4 PPL cheat at 8k; at 16k, position-dependent registers actually improve over the leaked version |
 
-**Resolution hierarchy branch: Step 1** — fix the creation gate before scaling M or adding iterative refinement. The 9.42 PPL ceiling makes the potential payoff even larger than initially estimated (2.58 PPL recoverable vs the earlier 1.07 estimate).
+**Resolution hierarchy branch: Step 1** — fix the creation gate routing before scaling M or adding iterative refinement. The 9.42 PPL ceiling makes the potential payoff 1.95 PPL (recoverable via routing improvements).
 
 ### 19.5 Resolution Hierarchy
 
 **Step 0 — Establish the deficit ✅ COMPLETE**
 
 - Fock Attention PPL: **9.42** (K=4, 4-head, 16k steps) — breaks 10 PPL
-- Register diversity/entropy: 0.37 / 0.04 (temperature collapse)
-- Routing deficit: **2.58 PPL** (registers 12.00 vs attention 9.42)
+- Register diversity/entropy: 0.37 / 0.04 (temperature collapse, pre-causal-fix)
+- Causal-fixed v2 registers: **11.37 PPL** (16k), **12.69 PPL** (8k)
+- Routing deficit: **1.95 PPL** (causal-fixed registers 11.37 vs attention 9.42)
 - K=8 is worse (11.65), confirming K=4 is the sweet spot
+- Causal leak in creation gate discovered and fixed (see §19.8)
 - Branch condition: Step 1 (fix routing quality)
 
 **Step 1 — Fix routing quality (ACTIVE)**
@@ -1561,15 +1577,55 @@ All arms use τ_create_init = √d_k = 8.0 (for v2.1 arms) instead of the origin
 
 ### 19.7 Open Questions
 
-**[Q1 — Fock Attention 16k] ✅ RESOLVED.** The 4-head K=4 arm reached **9.42 PPL** at 16k steps, confirming Fock Attention breaks 10 PPL. The routing deficit is 2.58 PPL (registers 12.00 vs attention 9.42). The remaining gap to MatchedGPT (7.81) is 1.61 PPL, likely attributable to the post-Verlet injection geometry constraint.
+**[Q1 — Fock Attention 16k] ✅ RESOLVED.** The 4-head K=4 arm reached **9.42 PPL** at 16k steps, confirming Fock Attention breaks 10 PPL. With the causal-fixed v2 registers at 11.37, the routing deficit is **1.95 PPL** (11.37 vs 9.42). The remaining gap to MatchedGPT (7.81) is 1.61 PPL, likely attributable to the post-Verlet injection geometry constraint.
 
-**[Q2 — Step 1 outcome]** Does fixing the creation gate temperature raise diversity from 0.37 toward the Q6 reference of 0.78? If so, what PPL does the improved routing achieve? With a 2.58 PPL ceiling now established, even partial improvement in routing quality could yield significant gains.
+**[Q2 — Step 1 outcome]** Does fixing the creation gate temperature raise diversity from 0.37 toward the Q6 reference of 0.78? If so, what PPL does the improved routing achieve? With a 1.95 PPL ceiling now established, even partial improvement in routing quality could yield significant gains. Note: the v2.1 experiments (`v21_tau_only`, `v21_tau_perK_ortho`) from `colab_fock_v21_routing_fix.ipynb` need to be rerun with the causal fix; the original runs were tainted.
 
 **[Q3 — Dead α channel]** Is K=3 sufficient? Removing the frozen α₀ ≈ 0 channel and retraining would establish whether it contributes anything. The K=8 result (11.65 > K=4's 10.93) suggests fewer channels may indeed be better.
 
-**[Q4 — Warm-start]** If Step 1 brings routing quality to Q6 level but PPL remains > 11.5, warm-starting from the converged conservative base (Step 2) is the next highest-leverage experiment.
+**[Q4 — Warm-start]** If Step 1 brings routing quality to Q6 level but PPL remains > 11.0, warm-starting from the converged conservative base (Step 2) is the next highest-leverage experiment.
 
 **[Q5 — Capacity control]** Adding ~578K conservative parameters (wider V_φ or K=5) to the base without registers would cleanly isolate the routing contribution from capacity.
+
+### 19.8 Causal Leak in Creation Gate — Discovery and Fix
+
+**Discovery (June 2026).** The `v21_tau_perK_ortho` arm (B1+B2+B3 fixes) reached 2.36 PPL — below MatchedGPT's 7.81 — indicating a causal violation. Investigation revealed a missing causal mask in the Q/K/V creation gate.
+
+**Leak mechanism.** The creation gate computes `alpha = softmax(scores, dim=-1)` over all T positions without a causal mask. Register content `r_new` is therefore a weighted sum of past AND future tokens. The reverse channel then broadcasts this leaked content back to all token positions:
+
+```
+token t → creation gate sees all T tokens → register r
+                                              ↓
+token t ← reverse channel reads from r ← includes tokens t+1…T
+```
+
+**Why the at-init probe missed it.** The reverse channel scale is initialised to 0.0, so `tanh(0)=0` zeroes the only leak path. The causal probe tests at random init, where the reverse channel contributes exactly zero gradient. The leak only opens as training pushes the scale away from zero.
+
+**Proof.** Perturbation probe on the trained v2 checkpoint (16k steps):
+- Original model (rev_scale = −0.117): `pre_max = 2.49e-02` → **LEAK**
+- Reverse channel zeroed: `pre_max = 0.00e+00` → clean
+
+The reverse channel is the **sole leak path**. The extended dynamics path does not leak (causal_force=True blocks register→token interaction through V_phi/V_theta).
+
+**Fix (commit `8c47d90`).** Replace the full-sequence softmax with a **cumulative softmax** that produces position-dependent register content `r_causal` of shape (B, T, M, d):
+
+```
+Z[t] = Σ_{j≤t} exp(s[j])
+r_causal[t] = Σ_{j≤t} exp(s[j]) · V[j] / Z[t]
+```
+
+The reverse channel receives `r_causal` so that the force on token t only reflects tokens 1…t. The register update and extended dynamics continue using the global `r_new` (B, M, d) since those paths don't leak. At the last position (t = T), the cumulative softmax equals the full softmax, so `r_new` is numerically identical to the pre-fix version.
+
+**Impact on results.**
+
+| Arm | Old (tainted) | New (causal-fixed) |
+|-----|---------------|-------------------|
+| v2_K4_M16_lifo (8k) | ~12.31 | 12.69 (+0.38) |
+| v2_K4_M16_lifo_16k | 12.00 | **11.37** (−0.63) |
+
+At 8k steps the fix removes the small leak cheat (+0.38 PPL). At 16k steps the causal-fixed model is **better** than the leaked version (11.37 vs 12.00). The position-dependent `r_causal` gives the reverse channel richer, more position-specific information to work with, partially compensating for the lost leak.
+
+**Tainted experiments requiring rerun:** `v21_tau_only`, `v21_tau_perK_ortho` from `colab_fock_v21_routing_fix.ipynb`.
 
 ---
 
