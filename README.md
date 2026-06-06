@@ -82,50 +82,8 @@ channel count K_eff), and a reframing of SPLM as a maximally-structured
 Lagrangian counterfactual to attention rather than as a competitive
 replacement.
 
-**New v3 markdowns** (under [`companion_notes/`](companion_notes/)):
+The new v3 companion notes, experiment code, and leak-free retrain artefacts are catalogued in the [`companion_notes/`](#companion_notes--2026-companion-notes-work-in-progress) and [`notebooks/`](#notebooks--reproducibility) sections below. The paper-level reading is the v3 status footnote at the start of §1 of the PDF, and §14 / §16 Q9 (the hybrid programme) of the conclusion.
 
-| File                                                            | Cited around                                                                  |
-| --------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| `Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`                  | §1 (v3 status footnote), §14, §16 (C5)                                        |
-| `Causal_Leak_Empirical_Comparison_Report.md`                    | §1 (v3 status footnote), §14                                                  |
-| `Reducing_Information_Bottleneck_In_Multi-Channel_Xi_SPLM.md`   | §1 (v3 status footnote), §14 (R6 ladder), §16 (C7)                            |
-| `Determining_optimal_gamma_for_SPLM.md`                         | §1 (v3 status footnote), §15 — the four-estimator γ*-prediction framework (depth-scaling, Hessian-spectrum, corpus-surprisal, conditional-γ) and the leak-correction calibration: ρ shifts 0.18 → 0.565, the same closed form predicts both buggy γ* = 0.30 and leak-free γ* = 0.10 to three decimal places (resonance-predictor double success). |
-| `Energetic_Minima_Alternatives.md` (§8 leak-free retrain pass)  | §15.10 leak-free retrain — leak-corrected `em_ln` / `em_sg` / `em_gm` retrains; flagship recommendation shifts from LN-after-step to scale-gauge when attractor diversity matters (see §8 of this companion note). |
-| `Semantic_Attractor_Extraction.md` (§12 leak-free attractor pass) | §15.cba-attractors leak-free retrain — Tier 1 fixed-γ=0.10 (K\* = (4, 4, 11, 8, 12)) and Tier 2b free-γ (K\* = (2, 4, 2, 3, 2)) attractor extractions on leak-corrected `em_ln` checkpoints. |
-| `Semantic_Simulator_v15_EOM.md` *(forthcoming stub)*            | §9 / §16 Q8 — equation-of-motion specification for the v1.5 dynamics          |
-| `Semantic_Simulator_v2_EOM.md`  *(forthcoming stub)*            | §9 / §16 Q8 — equation-of-motion specification for the v2 dynamics            |
-| `Semantic_Simulator_v3_EOM.md`  *(forthcoming stub)*            | §9 / §16 Q8 — equation-of-motion specification for the v3 dynamics            |
-
-**New v3 experiment code** (under [`notebooks/conservative_arch/`](notebooks/conservative_arch/)):
-
-| File or directory                                            | Role                                                                                                                         |
-| ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| `causal_probe.py`                                            | Regression-test framework verifying that ∂loss\_t / ∂h\_s = 0 for s>t at every model registration. Cited 4× in §1, §14, §16. |
-| `eval_ppl_under_fix.py`                                      | Closed-loop leak-free re-evaluation of v2 SPLM checkpoints — the source of the `777×` inflation factor.                       |
-| `post_fixed_pilot.py`                                        | Driver for leak-corrected single-channel SPLM pilot training.                                                                |
-| `multixi/`                                                   | Multi-channel-ξ model implementations (K-EMA / HiPPO-LegT / S4D) + channel-correlation diagnostics for the R6 ladder.        |
-| `scaleup/`                                                   | Training scripts and per-pilot result logs for the R6 ladder on TinyStories at the `~16M`-parameter pilot scale.             |
-| `first_order_ablation/`                                      | SPLM-1 first-order ablation: pre-registered v2 baseline (`results/RESULTS.md`), leak-free 3-seed retrain (`results/RESULTS_LEAKFREE.md`), and forensic re-eval of the buggy ckpts (`splm1_leakfree_re_eval.py` / `results/LEAKFREE_RE_EVAL.md`). |
-| `ln_damping_sweep/`                                          | Controlled-$\gamma$ damping sweep on LayerNorm-after-step SPLM: pre-registered v2 6-cell sweep (`results/RESULTS.md`), leak-free 3-seed 4-point U-curve (`results/RESULTS_LEAKFREE_GAMMA_SWEEP.md`), and **5-seed S=5 confirmation sweep** narrowed to $\gamma \in \{0.05, 0.10, 0.15, 0.20\}$ (`aggregate_confirmation_5seed.py` / `results/leakfree_5seed_confirmation/RESULTS_CONFIRMATION_S5.md`) which **confirms** the leak-free SPLM-2 vs SPLM-1 lift at all four pre-registered decision criteria simultaneously: paired $\Delta = +5.09$ PPL at $\gamma = 0.10$ (paired-$t = +5.30$, $d_{z} = +2.37$, $p = 0.006$, sign 5/5) and the strongest single result at $\gamma = 0.15$ at paired $\Delta = +7.03$ PPL (paired-$t = +4.23$, $d_{z} = +1.89$, $p = 0.013$, sign 5/5).                                |
-| `scaleup/gamma_transfer/`                                    | $\gamma^{\ast}$-prediction calibration site (Tier 0.5 of the leak-correction pass). `predict_gamma_hessian.py` evaluates the four-estimator framework of `Determining_optimal_gamma_for_SPLM.md` on a trained checkpoint; per-checkpoint output dirs under `results/<tag>/predict_gamma_summary.md`. The leak-free $\rho \approx 0.565$ depth-scaling anchor and the resonance-predictor double success live in `results/leakfree_gamma0p10_seed0/`. |
-| `results/sharedV_em_ln_leakfree_*` + `*.trajectories.pkl`     | Leak-free shared-potential separator regression on a leak-corrected `em_ln` checkpoint (Tier 0.6 of the leak-correction pass; the leak-free counterpart of §14.7 of the v2 paper). Median per-layer test $R^{2} = 0.949$, range $[0.925, 0.960]$, uniform layer profile — *higher* than the v2 buggy $R^{2} = 0.90$. Used to fill the placeholders in TMLR1 §A.3.3. |
-| `attractor_analysis/results/attractors_em_ln_leakfree_*`     | Leak-free dynamical-mode attractor extractions (Tiers 1 + 2b of the leak-correction pass). `attractors_em_ln_leakfree_gamma0p10_seed0_*` (Tier 1, fixed $\gamma = 0.10$, $K^{\ast} = (4, 4, 11, 8, 12)$ — F3 multi-basin structure survives the leak fix). `attractors_em_ln_leakfree_freegamma_seed0_*` (Tier 2b, freely-trained $\gamma = 0.958$, $K^{\ast} = (2, 4, 2, 3, 2)$ — free-γ trades attractor diversity for $\sim5-7$ PPL of LM quality). |
-| `energetic_minima/scripts/`, `results/leakfree_tiers_2_3_*`  | Leak-free retrains of the three energetic-minima alternatives (Tiers 2a, 3a, 3b): `em_ln` (LN-after-step, val\_ppl 173.59, $\gamma_{\mathrm{nat}} = 0.958$), `em_sg` (scale-gauge, val\_ppl 244.84, $\gamma_{\mathrm{nat}} = 0.863$, attractor diversity rescued: $K^{\ast} = (7, 5, 4, 5, 5)$, content frac. 0.52), `em_gm` (Gaussian-mixture, val\_ppl 542.65, $\gamma_{\mathrm{nat}} = 0.668$, still fails). Canonical synthesis report: `results/leakfree_tiers_2_3_summary.md`. Launchers: `scripts/run_leakfree_tiers_2_3.sh` (Tier 2a + 3a + 3b orchestrator) and `scripts/run_tier2b_attractor.sh` (Tier 2b standalone). |
-| `helmholtz/`                                                 | **Helmholtz-SPLM hybrid** (Q9d): layer-type Helmholtz augmentation of SPLM with Dyck-language falsifiers. Implements `model_helmholtz.py` (`HelmholtzSPLM`), per-depth sweep scripts, aggregate analysis (`aggregate_h1.py`, `aggregate_h1p5.py`, `aggregate_h2.py`), causal probe, and decode-FLOPs Pareto analysis. Results under `results/` with per-depth summaries. Design doc: [`companion_notes/Helmholtz-HSPLM_Path_Forward_and_Experiments.md`](companion_notes/Helmholtz-HSPLM_Path_Forward_and_Experiments.md). |
-| `hybrid/`                                                    | **Hybrid two-stage SPLM** (Variant A): a two-stage SPLM architecture combining a frozen-ξ stage with a SARF-faithful second stage. Implements `model_hybrid.py`, `train_splm_hybrid.py`, aggregate analysis, and decode-FLOPs Pareto. Results under `results/`. Design doc: [`companion_notes/HSPLM_Path_Forward_and_Experiments.md`](companion_notes/HSPLM_Path_Forward_and_Experiments.md). |
-| `parf/`                                                      | **PARFLM** (Property-Attractive-Repulsive Force Language Model): the Q9c branch augmenting SPLM with a learnable pairwise-interaction force $V_\phi$. Core modules: `model_parf.py` (PARFLM with structural/MLP V\_φ), `model_parf_sparse.py` (Gumbel-softmax top-k sparse routing — P5 winner), `model_fock_parf.py` (**FockPARFLM**: Fock-space augmentation with latent register pool for v2 expressivity), `train_parf.py` (Shakespeare trainer), `train_fock_parf.py` (unified Dyck + TinyStories FockPARFLM trainer), `dyck_data.py` (synthetic Dyck\_n data generator for expressivity falsification), `causal_probe_parf.py`, `smoke_test*.py`, and `diagnostics/diagnose_v_phi_channels.py` (P6 per-layer V\_φ channel diagnostic). Shakespeare results: `results/structural/`, `results/structural_sparse/`, `results/mlp/`. FockPARFLM Dyck₂ falsifier results: `results/fock/`. Colab notebooks: `scripts/p8_cell_a100_h100.ipynb` (P8 composite cell), `scripts/p10_tinystories_a100_h100.ipynb` (P10 TinyStories ladder — P10a through P10h). Design docs: [`companion_notes/PARF_Augmented_SPLM_Architecture_v2.md`](companion_notes/PARF_Augmented_SPLM_Architecture_v2.md), [`companion_notes/PARF-SPLM_Path_Forward_and_Experiments.md`](companion_notes/PARF-SPLM_Path_Forward_and_Experiments.md), [`companion_notes/Augmenting_PARFLM_to_handle_MCS_Languages.md`](companion_notes/Augmenting_PARFLM_to_handle_MCS_Languages.md). |
-| `scaleup/results/semsimula_parflm/`                          | **PARFLM P10 TinyStories results** (P10e–P10h): training logs, val-PPL plots, per-layer-scale profiles, and P6 channel diagnostics for the P10 scale-up ladder. P10e (V\_φ capacity ablation, best PPL 31.12), P10f (V\_θ ceiling test, best PPL 28.67), P10g (training-budget disambiguator, best PPL 26.42), **P10h (corpus scale-up 5M→20M tokens, best PPL 26.43 — confirms architectural ceiling)**. |
-
-The new entries above are described in detail in the
-[`companion_notes/`](#companion_notes--2026-companion-notes-work-in-progress)
-and
-[`notebooks/conservative_arch/`](#notebooksconservative_arch--the-splm-prototype-and-the-three-way-separator)
-sections below; the paper-level reading is the v3 status footnote at
-the start of §1 of the PDF, and §14 / §16 Q9 (the hybrid programme)
-of the conclusion. Forensic detail, the R6 ladder data, and the
-strategic reframing are in the four `companion_notes/Causal_Leak_*`,
-`companion_notes/Reducing_Information_Bottleneck_*`, and
-`companion_notes/Restructuring_*` files listed above.
 
 ---
 
@@ -180,712 +138,90 @@ provided in [`manuscripts/PROVENANCE.md`](manuscripts/PROVENANCE.md).
 
 ### `companion_notes/` — 2026 companion notes (work in progress)
 
-These are informal companion notes and living documents developed alongside
-the paper. They capture material that the paper **does not subsume** but that
-is either summarized briefly in the main text (with a pointer here for the
-detailed treatment) or is the target of explicit deferral to future work.
-They are **not** peer-reviewable standalone artifacts; they are included so
-that readers of the paper can trace the reasoning behind claims that are
-summarized (but not fully developed) in the main text.
+Working notes developed alongside the paper. They capture material the paper does not subsume — either summarised briefly in the main text with a pointer here, or deferred to future work. Each note's header identifies the paper sections it backs.
 
-| BibTeX key                       | File                                                                                             | Cited around                |
-| -------------------------------- | ------------------------------------------------------------------------------------------------ | --------------------------- |
-| `SemSimNotes2026Mass`            | `On_the_Interpretation_of_Semantic_Mass.md`                                                      | §11                         |
-| `SemSimNotes2026Hidden`          | `On_the_Interpretation_of_Hidden_State.md`                                                       | §10                         |
-| `SemSimNotes2026Accel`           | `On_The_Existence_of_Acceleration_in_Semantic_Structures.md`                                     | §12                         |
-| `SemSimNotes2026Emergent`        | `STP_Loss_Is_An_Emergent_Property_Of_The_Energy_Landscape_Defined_By_Gaussian_Well_Potential.md` | §12                         |
-| `Gueorguiev2026ExecutionProblem` | `The_Execution_Problem.md`                                                                       | §8.6 (deferred to companion)|
+#### Notes cited by BibTeX key
 
-In addition, the following three living documents back the §14 / Appendix A
-discussion of attention-transformer conservativity and the conservative-by-
-construction language model. They are not cited by BibTeX key in the paper's
-bibliography (the paper develops their content in-line) but are included
-here as the author's working notes for readers who want the longer
-exposition:
+| File | Role |
+|------|------|
+| `On_the_Interpretation_of_Semantic_Mass.md` | §11 — physical interpretation of per-token mass in the Lagrangian framework. |
+| `On_the_Interpretation_of_Hidden_State.md` | §10 — hidden-state ontology: phase-space coordinates vs. latent features. |
+| `On_The_Existence_of_Acceleration_in_Semantic_Structures.md` | §12 — empirical evidence for deceleration and the STP–acceleration identity. |
+| `STP_Loss_Is_An_Emergent_Property_Of_The_Energy_Landscape_Defined_By_Gaussian_Well_Potential.md` | §12 — STP loss as an emergent property of the Gaussian-well energy landscape. |
+| `The_Execution_Problem.md` | §8.6 — deferred treatment of structure execution in semantic simulation. |
 
-| File                                                                                | Cited around                              |
-| ----------------------------------------------------------------------------------- | ----------------------------------------- |
-| `The_Failure_of_Conservative_Models_to_explain_hidden_state_trajectories.md`        | §14.1 (negative results)                  |
-| `P-rot-6_transformer_dynamics.md`                                                   | §14.1 (theoretical motivation for the velocity-coupled gauge fit: derives the zero-free-parameter prediction $B_{\text{theory}} = \Omega(\bar x)$ from the K$\ne$V antisymmetry in scaled dot-product attention that the E5 experiment in `notebooks/e_init/velocity_coupled_gauge.py` empirically tests) |
-| `Conservative_by_Construction_Language_Models.md`                                   | §14 (motivation for SPLM)                 |
-| `Considered_Non-Autonomous_Conservative_Mechanisms.md`                              | Appendix A (non-autonomous framework)     |
-| `Addendum_Non_Autonomous_Fields_For_Appendix_A.md`                                  | Appendix A, §14 (short reader’s guide: Class F equation, Hopfield / Tracks A–B, integrability; points to the full appendix in the PDF) |
-| `On_Modeling_Semantic_Energy_Field_into_SPLM.md`                                    | §14.2 (mapping framework energy field onto $V_\theta$, $\xi$, $m_t$; candidate Q11–Q13) |
-| `On_The_Smoothness_of_Scaled_Dot_Product_Attention.md`                              | §14, Theorem 46 (smoothness of attention in $h$; Poincaré prerequisites; $\Omega^{\mathrm{att}}$; LayerNorm / ReLU / mask caveats) |
-| `Training_and_Inference_with_SPLM.md`                                               | §14.2, §14.13, §14.14 (training loop, nested-autograd force computation, inference pipeline, and summary of the fixed-$\xi$ / SARF-faithful / per-token-mass ablations) |
+#### Notes backing §14 / Appendix A (not BibTeX-cited)
 
-#### Forthcoming-work planning artifacts (deferred to a future companion paper)
+| File | Role |
+|------|------|
+| `The_Failure_of_Conservative_Models_to_explain_hidden_state_trajectories.md` | §14.1 — why conservative models fail on pretrained transformer trajectories. |
+| `P-rot-6_transformer_dynamics.md` | §14.1 — derives the E5 zero-parameter prediction from K≠V antisymmetry. |
+| `Conservative_by_Construction_Language_Models.md` | §14 — motivation and design rationale for SPLM. |
+| `Considered_Non-Autonomous_Conservative_Mechanisms.md` | Appendix A — non-autonomous conservative framework alternatives. |
+| `Addendum_Non_Autonomous_Fields_For_Appendix_A.md` | Appendix A — Class F equation, Hopfield / Tracks A–B, integrability guide. |
+| `On_Modeling_Semantic_Energy_Field_into_SPLM.md` | §14.2 — mapping the framework energy field onto V_θ, ξ, m_t. |
+| `On_The_Smoothness_of_Scaled_Dot_Product_Attention.md` | §14, Theorem 46 — smoothness of attention; Poincaré prerequisites. |
+| `Training_and_Inference_with_SPLM.md` | §14.2, §14.13 — training loop, nested-autograd forces, inference pipeline. |
 
-The two documents below are categorically different from the working
-notes above. They do **not** support a claim made in the present paper;
-they specify a separate, deliberately deferred research programme — a
-direct, RL-calibrated particle-mechanics simulator in semantic space —
-that the paper points to as forthcoming work at the end of the theory
-chapter (§8.8, "Salience and destruction of semantic structures",
-formalising the (D1)–(D5) framework requirements), with a bridging
-sentence in §14.17 (Open follow-ups) and a final empirical-scope
-forward-pointer in §16 ("Empirical scope: the structure lifecycle").
-They are included here so that readers who follow the paper's
-`\path{...}` pointers can locate them; they are explicitly **not** part
-of the SPLM/conservative-architectures experimental record of §14, and
-a self-contained future companion paper covering this branch is the
-natural home for the empirical validation of their content.
+#### Forthcoming-work planning and expressivity bounds
 
-| File                                              | Pointed to from                                                                                                                                 |
-| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Semantic_Simulator_RL_Calibration_Programme.md`  | §8.8 ((D1)–(D5) destruction requirements), §14.17 (Open follow-ups bridge), §16 ("Empirical scope: the structure lifecycle") — programme-level memo, milestones M0–M6 + v1.5/v2/v3 lifecycle extensions |
-| `Semantic_Simulator_EOM.md`                       | §8.8 ((D1)–(D5) destruction requirements), §14.17 (Open follow-ups bridge), §16 ("Empirical scope: the structure lifecycle") — v0 equations of motion, parameter classification, pseudocode |
-
-#### Dynamical-simulation expressivity programme — formal proofs and prioritised catalogue
-
-The four documents below extend the v0 dynamical-simulation programme of
-`Semantic_Simulator_RL_Calibration_Programme.md` and
-`Semantic_Simulator_EOM.md` with **formal expressivity bounds** that pin
-the framework on both sides of the Chomsky hierarchy and a **prioritised
-experimental catalogue** that operationalises them. Two are short
-technical notes that prove specific theorems; two are longer planning
-documents that organise the staged research programme. Together they
-back the §16 ("Empirical scope: the structure lifecycle") forward-pointer
-and motivate the multi-seed (E1) and energy-drift (E3) experiments
-catalogued under
-[`notebooks/conservative_arch/multi_seed/`](notebooks/conservative_arch/multi_seed/)
-and
-[`notebooks/conservative_arch/energy_drift/`](notebooks/conservative_arch/energy_drift/)
-below.
-
-| File                                              | Role                                                                                                                                                                                                                                                                              |
-| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Expressivity_Bounds_For_v0_Simulator.md`         | Formal short note: the v0 simulator class accepts **at most regular languages**, by a four-step argument (phase-space-capacity bound $\dim M \cdot \log_2(L/\epsilon)$ bits, exponential information contraction at damping rate $\gamma$, smooth non-chaotic $V$ ruling out the Siegelmann–Sontag continuous-flow construction, and consequent acceptance class $\subseteq$ REG). Derives the predicted $\mathrm{Dyck}\_n$ collapse depth $D^\ast$ in closed form; supplies one-paragraph mathematical-apparatus sketches for the v1.5 / v2 / v3 extensions. |
-| `MCS_Reduction_For_v3_Composite.md`               | Formal proof of the framework's *upper* expressivity boundary: the composite v0+v1.5+v2+v3 simulator, under explicit boundedness assumptions on its operator algebra, generates **exactly** the **mildly context-sensitive** class — equivalently LCFRS / MCFG of bounded fan-out and bounded rank, the empirically established class for human language (Joshi 1985, Shieber 1985). The reduction is constructive in both directions and verifies the four classical MCS criteria of Joshi (1985); §5.5 catalogues the structural and architectural reasons v3 cannot be eliminated. |
-| `Advancing_The_Dynamic_Simulation_Model.md`       | Conceptual scaffold for the v1.5 / v2 / v3 extensions: maps each onto a mature mathematical apparatus (salient decay → dissipative semigroups and discounted MDPs; creation/destruction → Fock space and the canonical creation/annihilation algebra; execution → Lie groups acting via non-abelian gauge fields), specifies the falsifying-experiment battery ($\mathrm{Dyck}\_n$ + topic-shift, $\mathrm{Dyck}\_n$ + let-binding, cross-serial $a^n b^n c^n$, bounded copy $ww$, 2-counter), and identifies the composite as a classical-mechanical analogue of a Haag–Kastler-style local operator algebra. |
-| `Next_Model_Experiments_for_SPLM.md`              | Prioritised, actionable catalogue of experiments that either strengthen the framework's applicability (sections A–F: multi-seed variance, scaling, integrator ablation, expressivity falsifiers, capacity sweeps, energy-drift diagnostic) or measurably improve SPLM's performance. Each item is concrete (what to run, what to measure, why it matters). The source of truth for the **E1** multi-seed harness and the **E3** energy-drift diagnostic shipped under `notebooks/conservative_arch/`. |
-
-`Expressivity_Bounds_For_v0_Simulator.md` and
-`MCS_Reduction_For_v3_Composite.md` are formal proofs whose claims
-directly back the framework's expressivity statements;
-`Advancing_The_Dynamic_Simulation_Model.md` and
-`Next_Model_Experiments_for_SPLM.md` are programme-level planning
-artifacts in the same family as the two notes immediately above and are
-included so that readers who follow the paper's `\path{...}` pointers,
-or want to trace the design rationale of the experiments shipped under
-[`notebooks/conservative_arch/multi_seed/`](notebooks/conservative_arch/multi_seed/)
-and
-[`notebooks/conservative_arch/energy_drift/`](notebooks/conservative_arch/energy_drift/),
-can locate them.
+| File | Role |
+|------|------|
+| `Semantic_Simulator_RL_Calibration_Programme.md` | Programme-level memo for the deferred RL-calibrated simulator (§8.8, §16). |
+| `Semantic_Simulator_EOM.md` | v0 equations of motion, parameter classification, pseudocode (§8.8, §16). |
+| `Expressivity_Bounds_For_v0_Simulator.md` | Formal proof: v0 simulator accepts at most regular languages (§16). |
+| `MCS_Reduction_For_v3_Composite.md` | Formal proof: v0+v1.5+v2+v3 composite generates exactly the MCS class (§16). |
+| `Advancing_The_Dynamic_Simulation_Model.md` | Conceptual scaffold mapping v1.5/v2/v3 onto mature mathematical apparatus. |
+| `Next_Model_Experiments_for_SPLM.md` | Prioritised experiment catalogue; source of truth for the E1 and E3 programmes. |
+| `Semantic_Simulator_v15_EOM.md` | Forthcoming — v1.5 dynamics (dissipative semigroups). |
+| `Semantic_Simulator_v2_EOM.md` | Forthcoming — v2 dynamics (Fock-space second quantisation). |
+| `Semantic_Simulator_v3_EOM.md` | Forthcoming — v3 dynamics (non-abelian gauge theory). |
 
 #### v3 leak-correction and information-bottleneck programme (May 2026)
 
-The four documents below back the **v3** revision of the paper after
-the causal-leak audit (see the *v3 update* block above). They are
-written as standalone working notes; the paper summarises them in the
-§1 v3 status footnote, §14 (the leak-corrected experimental record),
-§16 (C5)–(C7) of the conclusion, and §16 Q9 (the hybrid programme).
+| File | Role |
+|------|------|
+| `Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md` | Forensic detail of the v2 anti-causal autograd path, the `h.detach()` fix, and the `causal_probe.py` regression-test framework. |
+| `Causal_Leak_Empirical_Comparison_Report.md` | Closed-loop leak-free re-evaluation of every v2 SPLM checkpoint (headline: 777× inflation for TinyStories `splm_em_ln_multixi`). |
+| `Reducing_Information_Bottleneck_In_Multi-Channel_Xi_SPLM.md` | The R6 information-bottleneck programme: K-EMA / HiPPO-LegT / S4D basis experiments and four information-theoretic diagnostics. |
+| `Determining_optimal_gamma_for_SPLM.md` | Four-estimator γ*-prediction framework and the resonance-predictor double success across the leak-correction boundary. |
+| `Energetic_Minima_Alternatives.md` | Leak-free retrains of the three energetic-minima alternatives (LN / SG / GM); recommendation shift from LN to scale-gauge when attractor diversity matters. |
+| `Semantic_Attractor_Extraction.md` | Leak-free dynamical-mode attractor extractions (Tiers 1 + 2b); F3 multi-basin structure survives the fix. |
 
-| File                                                            | Cited around                                                                                                                                                                                                                                                        |
-| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`                  | §1, §14, §16 (C5) — forensic detail of the anti-causal autograd path: closed-loop Jacobian analysis, the `h.detach()` fix, the `causal_probe.py` regression-test framework, and an audit checklist for any future autoregressive-integrator construction in the framework.                                                                          |
-| `Causal_Leak_Empirical_Comparison_Report.md`                    | §1, §14 — closed-loop leak-free re-evaluation of every v2 SPLM checkpoint in the repository: per-model `(PPL_buggy, PPL_fixed)` pairs, inflation factors (the headline `777×` for TinyStories `splm_em_ln_multixi`), and the methodology of the closed-loop fixed-graph re-eval.                                                                                  |
-| `Reducing_Information_Bottleneck_In_Multi-Channel_Xi_SPLM.md`   | §1, §14 (R6 ladder), §16 (C7) — the *information-bottleneck programme*: theory and experiments narrowing the SPLM-vs-attention val\_ppl gap by varying the multi-channel-ξ basis (K-EMA / log-spaced K-EMA / HiPPO-LegT / learnable-Δ HiPPO / S4D), with four information-theoretic diagnostics on the integrator-final ξ trajectory and the V_θ-fit-difficulty synthesis. |
+#### PARFLM and FockPARFLM programme
 
-The four documents above are the v3 strategic / forensic record. The
-*empirical* leak-free retrain artefacts that they motivate live
-inside [`notebooks/conservative_arch/`](notebooks/conservative_arch/):
-the SPLM-1 first-order ablation 3-seed retrain plus its forensic
-re-evaluation
-([`first_order_ablation/results/RESULTS_LEAKFREE.md`](notebooks/conservative_arch/first_order_ablation/results/RESULTS_LEAKFREE.md),
-[`first_order_ablation/results/LEAKFREE_RE_EVAL.md`](notebooks/conservative_arch/first_order_ablation/results/LEAKFREE_RE_EVAL.md)),
-the leak-free 3-seed 4-point $\gamma$-sweep
-([`ln_damping_sweep/results/RESULTS_LEAKFREE_GAMMA_SWEEP.md`](notebooks/conservative_arch/ln_damping_sweep/results/RESULTS_LEAKFREE_GAMMA_SWEEP.md)),
-and the **5-seed S=5 confirmation sweep** that refines the
-$\gamma$-grid to $\gamma \in \{0.05, 0.10, 0.15, 0.20\}$
-([`ln_damping_sweep/results/leakfree_5seed_confirmation/RESULTS_CONFIRMATION_S5.md`](notebooks/conservative_arch/ln_damping_sweep/results/leakfree_5seed_confirmation/RESULTS_CONFIRMATION_S5.md)).
+| File | Role |
+|------|------|
+| `PARF_Augmented_SPLM_Architecture_v2.md` | Architecture design for the PARFLM V_φ augmentation (Q9c path). |
+| `PARF-SPLM_Path_Forward_and_Experiments.md` | Experiment plan for the P1–P10 PARF scale-up ladder. |
+| `Augmenting_PARFLM_to_handle_MCS_Languages.md` | Fock-space augmentation design for v2 (context-free) expressivity. |
+| `Improving_the_Fock_Mechanism_to_match_Attention.md` | Fock Attention experiments, register diagnostics, causal leak discovery and fix, routing resolution hierarchy. |
 
-Headline finding of the retrains plus the S=5 confirmation:
-
-* The v2 $\gamma^{\ast} = 0.30$ identity does *not* survive the
-  leak-fix — at S=5 the absolute-PPL minimum of the leak-free
-  $\gamma$-sweep sits in the basin $\gamma^{\ast} \in [0.10, 0.15]$,
-  and the $\gamma$-vs-PPL bowl flattens by $\sim3.7\times$.
-* The published $+23.18$-PPL second-order architectural lift over the
-  structurally first-order ablation collapses but **survives**: the
-  3-seed retrain alone reported a suggestive $+4.71$ PPL, $0.29$ PPL
-  short of the pre-registered minimum effect size $\Delta_{\min} = 5.0$
-  PPL; the S=5 confirmation sweep **confirms the lift at all four
-  pre-registered decision criteria simultaneously**: paired
-  $\Delta = +5.09$ PPL at $\gamma = 0.10$ (paired-$t = +5.30$,
-  $d_{z} = +2.37$, $p = 0.006$, sign 5/5), with the strongest single
-  result at $\gamma = 0.15$ at $\Delta = +7.03$ PPL ($t = +4.23$,
-  $d_{z} = +1.89$, $p = 0.013$, sign 5/5). Sign-consistency is 5/5 at
-  every $\gamma$ in $\{0.05, 0.10, 0.15, 0.20\}$, paired $\bar\Delta$
-  exceeds $\Delta_{\min}$ at $\gamma \in \{0.10, 0.15\}$ and is just
-  below it (`+4.16` / `+4.43` PPL respectively) at the basin shoulders
-  $\gamma \in \{0.05, 0.20\}$.
-
-The S=5 confirmation also unblocks four further leak-free experiments
-(Tiers 0.5 / 0.6 / 1 / 2a–b / 3a–b in the v3 retrain pass), all of
-which ship under
-[`notebooks/conservative_arch/`](notebooks/conservative_arch/) at this
-release:
-
-* **Tier 0.5 — γ\*-prediction reanchored.** The four-estimator
-  framework of [`Determining_optimal_gamma_for_SPLM.md`](companion_notes/Determining_optimal_gamma_for_SPLM.md)
-  re-run on a leak-corrected SPLM-2 checkpoint (`predict_gamma_hessian.py`
-  in `scaleup/gamma_transfer/`; outputs at
-  [`scaleup/gamma_transfer/results/leakfree_gamma0p10_seed0/predict_gamma_summary.md`](notebooks/conservative_arch/scaleup/gamma_transfer/results/leakfree_gamma0p10_seed0/predict_gamma_summary.md)).
-  The same depth-scaling closed form, with the same dataset-probed
-  mass, predicts both empirical $\gamma^{\ast}$ values to three
-  decimal places, with only the kinetic-energy retention factor
-  $\rho$ shifting from the v2 buggy $0.18$ to the leak-free $0.565$
-  (the *resonance-predictor double success*).
-* **Tier 0.6 — shared-potential separator on leak-free SPLM.** Re-fit
-  on a leak-corrected `em_ln` checkpoint (Tier-0.5's same checkpoint),
-  median per-layer test $R^{2} = 0.949$, range $[0.925, 0.960]$,
-  uniform layer profile — *higher* than the v2 buggy $R^{2} = 0.90$.
-  Source: [`results/sharedV_em_ln_leakfree_gamma0p10_seed0_summary.md`](notebooks/conservative_arch/results/sharedV_em_ln_leakfree_gamma0p10_seed0_summary.md);
-  trajectory pickle + NPZ + figure shipped under the same prefix.
-* **Tier 1 — leak-free fixed-γ=0.10 attractor extraction.** F3
-  (prompt-dependent multi-basin structure) survives the leak fix at
-  the inference-optimal $\gamma$: $K^{\ast} = (4, 4, 11, 8, 12)$
-  across the five prompt domains. Source:
-  [`attractor_analysis/results/attractors_em_ln_leakfree_gamma0p10_seed0_summary.md`](notebooks/conservative_arch/attractor_analysis/results/attractors_em_ln_leakfree_gamma0p10_seed0_summary.md).
-* **Tiers 2a + 2b — `em_ln` free-γ retrain + attractor pipeline.**
-  Freely-trained $\gamma$ settles at $0.958$ (essentially unchanged
-  from $\gamma_{\mathrm{init}} = 1.0$, opposite of the v2 buggy regime
-  where free-γ collapsed to $\gamma \approx 0.65$). val\_ppl $= 173.59$
-  is $\sim5-7$ PPL *below* the leak-free fixed-γ basin at $\gamma
-  \in [0.10, 0.15]$, but at the cost of attractor-diversity collapse:
-  $K^{\ast} = (2, 4, 2, 3, 2)$ with newline-only basins. Source:
-  [`energetic_minima/results/em_ln_shakespeare_summary.md`](notebooks/conservative_arch/energetic_minima/results/em_ln_shakespeare_summary.md)
-  + [`attractor_analysis/results/attractors_em_ln_leakfree_freegamma_seed0_summary.md`](notebooks/conservative_arch/attractor_analysis/results/attractors_em_ln_leakfree_freegamma_seed0_summary.md).
-* **Tiers 3a + 3b — `em_sg` + `em_gm` leak-free retrains.** Scale-gauge
-  is **rescued by the leak fix**: val\_ppl $244.84$ at $\gamma = 0.863$
-  with $K^{\ast} = (7, 5, 4, 5, 5)$ and content-basin fraction $0.52$
-  (every prompt multi-basin, content recovered). Gaussian-mixture
-  **continues to fail**: val\_ppl $542.65$ at $\gamma = 0.668$ with
-  $K^{\ast} = (2, 2, 2, 2, 2)$ and content-basin fraction $0.00$.
-  Cross-variant synthesis: [`energetic_minima/results/leakfree_tiers_2_3_summary.md`](notebooks/conservative_arch/energetic_minima/results/leakfree_tiers_2_3_summary.md).
-  Updated reading of §14.17 / §15.10 of the paper, including the
-  flagship recommendation shift LN → SG when attractor diversity
-  matters: [`companion_notes/Energetic_Minima_Alternatives.md`](companion_notes/Energetic_Minima_Alternatives.md)
-  §8 (v2 buggy reading sections 1–7 preserved verbatim).
-
-The retrain artefacts (per-cell training logs, summary `.md`s, and
-loss-curve PNGs; per-cell `*.pt` checkpoints kept local-only by
-`.gitignore`) are exposed via the
-[**v3 — leak-correction audit and the R6 ladder**](#v3--leak-correction-audit-and-the-r6-ladder)
-reproduction section below (steps 5–10).
-
-#### Forthcoming-work EOM stubs for the v1.5 / v2 / v3 dynamics
-
-The three stubs below are intentionally short placeholders pointed to
-from §9 (Expressivity, mechanism justification, and the MCS reach)
-and §16 Q8 of the paper. Each one names the formal home of its
-dynamics — dissipative semigroups (v1.5), Fock-space second
-quantisation (v2), Lie groups / non-abelian gauge theory (v3) — and
-sketches the equation-of-motion specification a future companion
-note will fill in.
-
-| File                                | Status      | Pointed to from                                                                                |
-| ----------------------------------- | ----------- | ---------------------------------------------------------------------------------------------- |
-| `Semantic_Simulator_v15_EOM.md`     | Forthcoming | §9, §16 Q8 — v1.5 dynamics (salient decay / dissipative semigroups)                            |
-| `Semantic_Simulator_v2_EOM.md`      | Forthcoming | §9, §16 Q8 — v2 dynamics (structure creation / Fock-space second quantisation)                 |
-| `Semantic_Simulator_v3_EOM.md`      | Forthcoming | §9, §16 Q8 — v3 dynamics (structure execution / non-abelian gauge theory)                      |
+See [EXPERIMENTS.md](EXPERIMENTS.md) for detailed discussion of each experiment and its results.
 
 ### `notebooks/` — reproducibility
 
-#### `notebooks/stp_loss/energy_landscape_validation.ipynb`
+Each notebook or folder below is summarised in one or two sentences. See [COLAB_NOTEBOOKS.md](COLAB_NOTEBOOKS.md) for full descriptions, Colab links, and runtime estimates. See [EXPERIMENTS.md](EXPERIMENTS.md) for per-experiment methodology and results.
 
-The notebook behind the GPT-2 STP-acceleration analysis reported in §13 of the
-paper. It loads a pretrained GPT-2 checkpoint, extracts last-layer hidden
-states over a corpus of natural-language text, computes discrete
-displacement/acceleration triplets, and evaluates the relationships predicted
-by the Gaussian-well / Lagrangian model of §§4–7 and the STP–acceleration
-identity of §12.
-
-An `energy_landscape_validation_executed.ipynb` is provided with all cell
-outputs intact for reviewers who prefer a static rendering. The
-`results/` subfolder contains the serialized outputs (`experiment_results.json`)
-and rendered figures (`stage2–stage6_*.png`) that back the corresponding
-figures in §13 of the paper.
-
-#### `notebooks/cross_model/pythia_tangential_acceleration.ipynb`
-
-The notebook behind the cross-architecture replication reported as
-**Result 5** in §13 of the paper. It runs the tangential / normal
-acceleration analysis on **both** GPT-2 small and Pythia-160M, extracting
-last-layer hidden-state trajectories, decomposing discrete acceleration
-into tangential and normal components, and comparing the observed
-distribution against a token-swap permutation null. The result is that
-both architectures exhibit the same qualitative signature --- net
-deceleration on essentially every triplet (≈ 98% for GPT-2, 100% for
-Pythia-160M), with $|\vec a_{\parallel}|$ and $|\vec a_{\perp}|$ both
-significantly smaller than the permutation null --- showing that the
-"bounded attractive well plus deceleration" picture is not an idiosyncrasy
-of GPT-2's specific training trajectory.
-
-The `results/` subfolder contains the serialized summary
-(`cross_model_summary.json`), the raw per-triplet samples
-(`cross_model_samples.npz`), and the two figures used in §13 of the paper
-(`cross_model_obs_vs_null_bars.png`, `cross_model_a_par_hist.png`).
-
-#### `notebooks/e_init/` — scalar, Helmholtz, and gauge-field fits on GPT-2
-
-The **negative-results chain** of §14.1 ("Retrospective: five negative
-experiments on scalar, linear Helmholtz, and velocity-coupled gauge fits").
-This folder closes the natural classical-Lagrangian menu on pretrained
-GPT-2 small hidden-state trajectories over the 50-sentence, five-domain
-E-init corpus and shows that every ansatz considered ties or loses to the
-static-null baseline on held-out data. Contents:
-
-- `e_init_validation.ipynb` — the reference run (§1 Gaussian-well fit,
-  per-sentence per-layer centered, produces the `e_init_results*.npz` and
-  `well_params*.json` artefacts consumed by the follow-up scripts);
-- `extended_gamma_and_first_order.py` — E1 (extended damping sweep
-  $\gamma \in \{0,\ldots,50\}$) and E2 (first-order overdamped gradient
-  flow, $\eta \in \{10^{-4},\ldots,10^{-1}\}$);
-- `well_functional_form_comparison.py` — E3 (seven scalar-well functional
-  forms: harmonic, Gaussian, Morse, Lorentzian-saturation, log-saturation,
-  Weibull, power);
-- `helmholtz_curl_augmented.py` — E4 (linear Helmholtz augmentation with a
-  position-coupled skew term $\Omega x$);
-- `velocity_coupled_gauge.py` — E5 (velocity-coupled gauge
-  $F(x)\dot{x}$ with constant, affine-rank-1, and affine-rank-2 $F$).
-
-Each script writes a markdown summary, an `.npz` of numerical results, and
-one or more `.png` figures to `results/`. See
-[`notebooks/e_init/README.md`](notebooks/e_init/README.md) for the full
-catalogue and the reproduction commands.
-
-#### `notebooks/conservative_arch/` — the SPLM prototype and the three-way separator
-
-The **prescriptive experiments** of §14.2 ff. and Appendix A. This folder
-implements the scalar-potential language model (SPLM), trains it and a
-scale-matched attention baseline on Tiny Shakespeare, extracts hidden-
-state trajectories from SPLM / matched GPT-2 / pretrained GPT-2 small on
-the identical corpus, and runs the strict shared-potential fit, the
-velocity-aware Jacobian-symmetry test, the $V_{\psi}$ capacity sweep, the
-SPLM oracle fit, and the token-direction replication. Contents (see
-[`notebooks/conservative_arch/README.md`](notebooks/conservative_arch/README.md)
-for the full list):
-
-- **Models.** `model.py` (SPLM), `matched_baseline_model.py` (matched GPT-2);
-- **Training.** `train_splm.py`, `train_matched.py` (Tiny Shakespeare
-  loaders in `data_module.py`, BPE-tokenised in `data/`);
-- **Trajectory extraction.** `trajectory_extraction.py`,
-  `extract_gpt2_baseline.py`, `extract_matched_baseline.py`;
-- **Diagnostics.** `e_init_validation.py` (Gaussian-well E-init on SPLM),
-  `jacobian_symmetry.py` (velocity-aware PCA-16 test),
-  `shared_potential_fit.py` (strict shared-$V_{\psi}$ across all layers),
-  `sharedV_capacity_sweep.py` (6-config $V_{\psi}$ capacity band),
-  `splm_oracle_fit.py` (oracle upper bound using SPLM's own $V_{\theta}$),
-  `token_direction_fit.py` (token-axis replication);
-- **Plots.** `plot_sharedV_comparison.py`,
-  `plot_three_way_comparison.py`,
-  `plot_token_vs_layer_three_way.py`;
-- **Pipeline driver.** `run_full_pipeline.py`;
-- **`results/`.** `.npz` result archives, markdown summaries, training
-  logs, loss-curve PNGs, and rendered figures — the raw material
-  behind the separator plot (Fig. 8, "SPLM vs.\ matched GPT-2 vs.\
-  pretrained GPT-2"), the capacity-sweep saturation plot, the oracle
-  ceiling, and the token-direction robustness check. As of the v3
-  release, model checkpoints (`*.pt`) and hidden-state trajectory
-  pickles (`*.pkl`) are *not* shipped here (see the *Checkpoint
-  policy* notice at the top of this README); rerun
-  `train_splm.py`/`train_matched.py` and the trajectory-extraction
-  scripts to regenerate them.
-- **`sarf_variant/`.** Controlled ablation of §14.13: a SARF-faithful
-  SPLM that recomputes the reinforcement-field pool $\xi^{(\ell)}$ at
-  every integration step instead of freezing it at the input layer.
-  Ships its own `model_sarf.py`, `train_splm_sarf.py`,
-  `trajectory_extraction_sarf.py`, `compare.py`, comparison plots, and
-  [`comparison_report.md`](notebooks/conservative_arch/sarf_variant/comparison_report.md);
-  the parent `shared_potential_fit.py` and `token_direction_fit.py`
-  diagnostics are reused verbatim and their SARF outputs
-  (`sharedV_sarf_*`, `tokdir_sarf_*`) live alongside the baseline
-  results in `results/`. Headline finding: a single-line change to the
-  context pool yields a **33 % Tiny-Shakespeare perplexity
-  reduction** at identical parameter count, wall-clock, and compute,
-  while preserving the shared-potential separator.
-- **`sarf_mass_variant/`.** Follow-up ablation of §14.14 stacking
-  per-token semantic mass on top of the SARF-faithful $\xi$ of
-  §14.13 --- the first paper experiment that directly targets
-  Open Question Q10 (the prescribed per-token mass of §7). Ships a
-  `model_sarf_mass.py` that exposes three mass modes
-  (`global`, `embed_head`, `logfreq`), a
-  `compute_unigram_frequencies.py` that builds the frozen
-  Shannon-surprisal lookup $-\log\hat p(x_t)$ on the Tiny
-  Shakespeare training split, a `train_splm_sarf_mass.py` selecting
-  the mass mode via `--mass-mode`, a
-  `trajectory_extraction_sarf_mass.py`, a four-way `compare.py`
-  covering fixed-$\xi$ / SARF / SARF+embed-head / SARF+logfreq, and
-  [`comparison_report.md`](notebooks/conservative_arch/sarf_mass_variant/comparison_report.md);
-  the parent `shared_potential_fit.py` and `token_direction_fit.py`
-  diagnostics are reused verbatim and their mass-variant outputs
-  (`sharedV_sarfmass_*`, `tokdir_sarfmass_*`) live alongside the
-  baseline and SARF results in `results/`. Headline finding: the
-  framework-prescribed surprisal mass
-  $m_t \propto -\log\hat p(x_t)$ (variant (B)) yields a
-  **44 % Tiny-Shakespeare perplexity reduction** vs. fixed-$\xi$
-  SPLM (and **17 % vs. SARF-faithful SPLM**) at the cost of a
-  single extra scalar parameter and a frozen vocabulary-sized
-  surprisal tensor, and *simultaneously* raises the depth-axis
-  pooled shared-$V_\psi$ $R^2$ from $+0.79$ (fixed-$\xi$) to
-  $+0.84$ — the first configuration in which LM perplexity and
-  strict shared-potential fidelity improve in the same direction.
-  A free learned linear head (variant (A)) underperforms variant
-  (B) by ~27 % val ppl at this scale, an inductive-bias-vs-data-
-  efficiency result flagged as the Q10 open follow-up in §14.17 and
-  §16. All four training logs and per-layer diagnostic tables live
-  under `sarf_mass_variant/results/`; `comparison_*.png` are mirrored
-  at the folder root for direct figure inclusion in the paper.
-  Checkpoints and trajectory pickles are not shipped (v3 release;
-  see the *Checkpoint policy* notice at the top of this README).
-- **`attractor_analysis/`.** Direct test of one of the load-bearing
-  predictions of the *Semantic Simulation* framework, reported in
-  §14.15 (`subsec:cba-attractors`): that a trained scalar potential
-  $V_\theta(\xi, h)$ exhibits prompt-dependent localised basins
-  corresponding to coherent semantic configurations. Attention
-  transformers have no analogue of this prediction. Ships
-  `attractor_extraction.py` (two modes — `gradient`: Adam descent on
-  $V_\theta(\xi, h)$ plus a data-manifold anchor
-  $\tfrac{\lambda}{2}\lVert(h - h_c)/h_s\rVert^2$; `dynamical`: SPLM's own
-  semi-implicit damped Euler from random $h$ seeds at fixed $\xi$ for
-  exactly $L_\text{train}$ steps), `landscape_3d.py` and
-  `compare_landscapes_3d.py` (3D rendering of $V_\theta$ as a surface
-  over the 2D PCA plane of trajectory data, with damped-flow
-  trajectories overlaid; Euler-vs-Verlet side-by-side comparison
-  including
-  [`landscape3d_compare_dialogue.png`](notebooks/conservative_arch/attractor_analysis/results/landscape3d_compare_dialogue.png)
-  and rotating 360° GIFs), and the during-training pair
-  `train_with_snapshots.py` + `render_training_evolution.py` (retrain
-  SARF+mass SPLM with checkpoints at log-spaced steps
-  $\{0, 50, 200, 500, 1000, 2000, 4000\}$, render the seven-panel
-  landscape-evolution grid showing how $V_\theta$ carves a basin from
-  flat). Headline findings: (1) pure Adam descent on $V_\theta$ runs
-  $h$ off to infinity ($\langle V\rangle = -2500$ at step 300 vs.
-  $-260$ on the real trajectory) — $V_\theta$ is **unbounded below**
-  along multiple directions because training only ever sees its
-  gradient; (2) anchored descent (any $\lambda \in [10, 10^3]$)
-  collapses to **one prompt-independent attractor** decoding to the
-  same five stopwords (`,`, `\n`, `the`, `a`, `-`); (3) the **damped
-  dynamics at $L = L_\text{train}$** *does* exhibit prompt-dependent
-  multi-basin structure with silhouette-optimal
-  $K^\ast \in \{2, \dots, 10\}$ basins decoding to real tokens
-  (`the`, `I`, `to`, `\n`, `:`, `,`). The "semantic attractors" of
-  SPLM are therefore **time-bounded basins of the damped flow**, not
-  minima of $V_\theta$ — consistent with the framework's
-  pullback-attractor mathematics but distinct from the narrower
-  energetic reading. The Verlet $L = 16$ ablation produces fewer,
-  more punctuation-dominated basins, which tracks its slight
-  perplexity regression: more accurate but heavier-damped integrators
-  concentrate probability mass on the global "punctuation manifold"
-  of Tiny Shakespeare. The consolidated paper-style write-up is
-  [`companion_notes/Semantic_Attractor_Extraction.md`](companion_notes/Semantic_Attractor_Extraction.md);
-  the in-folder
-  [`attractor_analysis/README.md`](notebooks/conservative_arch/attractor_analysis/README.md)
-  documents the per-prompt JSON/PNG/MD outputs.
-- **`energetic_minima/`.** Three falsification experiments motivated
-  by the §14.15 design rationale (R1–R6) and reported as Q11 of
-  §14.17: structural alternatives to a free $V_\theta$ that *should*
-  buy a finite energetic minimum at zero or modest expressivity cost,
-  if R5/R6 are correctly framed. Implements all three in a unified
-  pipeline: `model_ln.py` (LayerNorm-after-step — project $h_{l+1}$
-  back onto the unit-LayerNorm shell after every damped step;
-  compactness of $S^{d-1}$ guarantees a finite minimum without
-  changing $V_\theta$ itself), `model_gm.py` (Gaussian-mixture head
-  $V\_\theta(\xi,h) = \sum\_{k=1}^{K} \mathrm{amp}\_k (1 - e^{-\kappa\_k^2 \lVert z - c\_k \rVert^2})$,
-  the **honest test** of the framework's prescribed well form at
-  full SPLM scale), a unified `train.py --variant {ln, sg, gm}` (the
-  scale-gauge `sg` is a loss-side regulariser
-  $\lambda\_{V\_0} \mathbb{E}\_{b,t} V\_\theta(\xi\_0, h\_0)^2$ on the
-  baseline model, anchoring $V_\theta$ at the input embedding),
-  `run_attractor_pipeline.sh` driving `attractor_analysis/` over all
-  four checkpoints (baseline + three alternatives), `compare.py`
-  building [`results/comparison_report.md`](notebooks/conservative_arch/energetic_minima/results/comparison_report.md),
-  and `make_compare_figure.py` assembling
-  [`results/landscape3d_compare_four_variants_dialogue.png`](notebooks/conservative_arch/energetic_minima/results/landscape3d_compare_four_variants_dialogue.png).
-  Headline findings:
-  **(i) LayerNorm-after-step** drops val ppl from baseline's
-  $160.55$ to **$88.63$** — a 45 % relative improvement at
-  zero additional parameters — and narrows the $V$ range from
-  $[-1916, +1445]$ to $[-84, -60]$ (about $30\times$ narrower)
-  while keeping $K^\ast$ prompt-dependent; the neutrality prediction
-  is **refuted in the positive direction**, R6 ("unbounded below is
-  a gauge, not a pathology") is **strengthened by a second witness**,
-  and the cost is a shift toward punctuation-dominated attractors
-  (content-basin fraction drops from $0.58$ to $0.23$).
-  **(ii) Scale-gauge** at $\lambda_{V_0} = 10^{-3}$ gives val ppl
-  $191.0$ (+19 % vs. baseline), $V$ range $[-2332, -186]$ (not
-  narrower), and $K^\ast$ collapse to $2$ on four of five prompts —
-  neither a useful regulariser nor a decisive falsifier at this
-  $\lambda$; full $\lambda_{V_0}$ sweep noted but not promising
-  given the basin-collapse signal.
-  **(iii) Gaussian-mixture head** ($K = 64$) plateaus at val ppl
-  **$677.67$** ($4.2 \times$ worse), the $V$ range collapses to a
-  $0.05$-wide spike at $\approx +60.3$, $196$ of $288$ seeds
-  structurally converge to the same two basins for **every one of
-  the five prompts**, and both basins decode to the Tiny-Shakespeare
-  unigram distribution (content-basin fraction $0.00$) — the model
-  has collapsed to a context-free unigram predictor. The
-  pre-registered falsification criterion (a Gaussian-mixture SPLM
-  matching the SARF-faithful val ppl $160.6$) **fails by a factor of
-  four**; **R5** ("structurally bounded $V$ is expressivity-limited
-  at this scale") is **vindicated both statically and dynamically**.
-  Net effect: R5 must be *sharpened* from "structurally bounded
-  scalar potentials are expressivity-limited" to "structurally
-  bounded $V_\theta$ (GM) is expressivity-limited; compactifying the
-  state space while keeping $V_\theta$ a free MLP (LN) is not." The
-  consolidated paper-style write-up is
-  [`companion_notes/Energetic_Minima_Alternatives.md`](companion_notes/Energetic_Minima_Alternatives.md);
-  the in-folder
-  [`energetic_minima/README.md`](notebooks/conservative_arch/energetic_minima/README.md)
-  documents the variant flags, training schedule, and full attractor
-  pipeline.
-- **`multi_seed/`.** Multi-seed variance harness — the **E1** experiment
-  of the
-  [`Next_Model_Experiments_for_SPLM.md`](companion_notes/Next_Model_Experiments_for_SPLM.md)
-  programme — that closes the *"no error bars"* gap inherited by every
-  earlier single-seed SPLM perplexity number. Re-runs three trainers
-  (the matched GPT-2-micro baseline `matched_baseline`, the previous
-  SPLM flagship `splm_sarfmass_logfreq`, and the new
-  LayerNorm-after-step variant `splm_em_ln`) at five distinct random
-  seeds each on Tiny Shakespeare and aggregates per-seed training logs
-  into a curated multi-seed report with mean ± std, pairwise Welch
-  t-tests with 95 % CIs, per-seed loss-curve overlays, and a
-  divergence-rate diagnostic that stratifies architectures by
-  gradient-norm trajectory. Ships
-  [`multi_seed_runner.py`](notebooks/conservative_arch/multi_seed/multi_seed_runner.py)
-  (subprocess-driven N-seed launcher; one model spec per row in
-  `MODEL_SPECS`, model-agnostic — adding a variant is a 5-line entry),
-  [`multi_seed_aggregator.py`](notebooks/conservative_arch/multi_seed/multi_seed_aggregator.py)
-  (NaN-aware mean / std / min / max + Welch's t-test + overlay plots
-  that draw diverged seeds as dotted exclusions from the mean), and
-  [`e1_divergence_diagnostic.py`](notebooks/conservative_arch/multi_seed/e1_divergence_diagnostic.py)
-  (per-seed first-NaN step + grad-norm trajectory tabulation, with a
-  stratified figure overlaying training NLL and grad-norm for all three
-  architectures). Headline finding (`results/E1_shakespeare/`,
-  N = 5 seeds): `splm_em_ln` reaches val ppl **$95.33 \pm 4.44$**
-  versus `matched_baseline` **$149.80 \pm 7.21$** — a **36.4 %**
-  relative improvement at **11.5 %** fewer parameters
-  ($7.12$ M vs $8.05$ M), Welch's $t = 14.4$, two-sided p-value
-  $< 10^{-5}$, with 95 % CI on the gap **$[+45.4,+63.5]$ ppl**
-  (well-separated from zero); the worst `em_ln` seed (98.78) still
-  beats the best baseline seed (141.80) by ~30 %. The previous
-  flagship `splm_sarfmass_logfreq` is **structurally falsified** at this
-  corpus scale: 2 of 3 seeds NaN-diverge at training steps 1250 and
-  3250 with *modest* gradient norms (5–13), which together with the
-  stable LN-after-step run-mate establishes that the failure mode is
-  **integrator-side state-space drift**, not gradient blow-up, and that
-  the LayerNorm-after-step projection onto $S^{d-1}$ is the minimal
-  intervention that restores stability without sacrificing perplexity.
-  The curated narrative report
-  [`results/E1_shakespeare/E1_report.md`](notebooks/conservative_arch/multi_seed/results/E1_shakespeare/E1_report.md)
-  is the canonical write-up; the auto-generated machine-friendly
-  companion `E1_shakespeare_report.md` is regenerable from per-seed
-  logs in ~20 seconds. The in-folder
-  [`multi_seed/README.md`](notebooks/conservative_arch/multi_seed/README.md)
-  documents the runner / aggregator / diagnostic interface and is the
-  template for adding additional model specs (E2 width sweep,
-  E3 integrator ablation, etc.). All 13 per-seed training logs and
-  loss curves (11 finite + 2 NaN-diverged seeds — the latter retained
-  because they are themselves the falsifying evidence for the
-  divergence-rate diagnostic) are committed so that the aggregator
-  and diagnostic steps alone reproduce the headline table from
-  shipped artifacts. The 13 per-seed `*.pt` checkpoints (~28 MB each,
-  ~370 MB total) are *not* shipped as of the v3 release (see the
-  *Checkpoint policy* notice at the top of this README); rerun
-  `multi_seed_runner.py` to regenerate them — the aggregator
-  / diagnostic only reads the per-seed JSONL training logs and
-  loss-curve PNGs, both of which remain committed.
-- **`energy_drift/`.** Eval-only diagnostic that opens a new
-  *architecture-discriminating* axis for the SPLM — the **E3**
-  experiment of the
-  [`Next_Model_Experiments_for_SPLM.md`](companion_notes/Next_Model_Experiments_for_SPLM.md)
-  programme (section C2). Computes the SPLM Hamiltonian energy
-  $H\_\ell = \tfrac{1}{2}\mathfrak{m}\lVert v\_\ell \rVert^{2} + V\_\theta(\xi\_\ell, h\_\ell)$
-  at every layer of an SPLM forward pass and reports the linear drift
-  slope $\partial H/\partial \ell$ across depth and the oscillation
-  bandwidth $\max\_\ell H\_\ell - \min\_\ell H\_\ell$ around the layer-mean.
-  The expectation, derived directly from the integrator class, is
-  three-way separable: a **velocity-Verlet** flow ($L=16,\Delta t=0.5$)
-  is symplectic at $\gamma = 0$ and $O(\Delta t^4)$-bounded in energy
-  at finite damping, so $H_\ell$ should oscillate around an
-  exponentially-damped envelope; an **explicit Euler** flow ($L=8$) is
-  first-order and should exhibit a systematic drift growing linearly
-  with depth; a **transformer** is not derived from any potential and
-  should show no structure at all when its hidden-state flow is forced
-  through the same diagnostic with a fitted $V_\psi$ proxy. Ships
-  [`extract_energy_states.py`](notebooks/conservative_arch/energy_drift/extract_energy_states.py)
-  (re-runs the SPLM forward pass on the §1 e-init test corpus and
-  saves $(h\_\ell, v\_\ell, V\_\theta(\xi\_\ell, h\_\ell), \tfrac{1}{2}m\lVert v\_\ell \rVert^2)$
-  per layer for one checkpoint at a time; supports parent-SPLM Euler,
-  `sarf_mass_variant` Euler + per-token mass, `symplectic_variant`
-  velocity-Verlet, and the production `energetic_minima/model_ln.py`
-  Euler + per-token mass + LayerNorm-after-step) and
-  [`energy_drift_diagnostic.py`](notebooks/conservative_arch/energy_drift/energy_drift_diagnostic.py)
-  (per-variant linear drift fit with 95 % CI, oscillation-bandwidth
-  tabulation, overlay plots of $H_\ell$, $\tfrac{1}{2}m\lVert v \rVert^2$ and
-  $V_\theta$, and a markdown comparison report). The diagnostic is
-  forward-pass-only on existing checkpoints and complements the
-  *fixed-point* analysis of [`attractor_analysis/`](notebooks/conservative_arch/attractor_analysis/)
-  (where are the basins of $V_\theta$?) and the *depth-axis existence*
-  question of `shared_potential_fit.py` (is there *some* scalar
-  potential whose gradient explains the layer updates?) with a
-  *flow-conservation* analysis (does the *learned* $V_\theta$ obey the
-  conservation law it was designed to?). The in-folder
-  [`energy_drift/README.md`](notebooks/conservative_arch/energy_drift/README.md)
-  documents the variant flags, the comparison output layout, and the
-  expected energy-drift signatures for each integrator. The production
-  E3 run ships under
-  [`energy_drift/results/E3_splm_em_ln_compare/`](notebooks/conservative_arch/energy_drift/results/E3_splm_em_ln_compare/)
-  and is a 3-way comparison `parent_euler_L8` × `verlet_L16_dt05` ×
-  `em_ln_L8_seed0` (the LayerNorm-after-step production SPLM, val ppl
-  88.63 at seed 0). The originally-planned `sarfmass logfreq` (no-LN)
-  column was dropped because the multi-seed E1 sweep falsified its
-  stability (2/3 NaN-divergent seeds at modest gradient norms); using a
-  single-seed energy trace from a model the rest of the repo has
-  invalidated would not be informative. The headline finding is that
-  `em_ln` uses the explicit-Euler integrator yet exhibits a Verlet-like
-  energy-conservation signature: bandwidth-to-scale ratio $7.0 / 10.0 =
-  70\%$, versus $145.7 / 76.6 = 190\%$ for the bare Euler model and
-  $91.4 / 205.5 = 45\%$ for the genuine Verlet integrator. The
-  mechanism is the LayerNorm projection
-  $h\_{l+1} \leftarrow \mathrm{LN}(h\_l + \Delta tv\_{l+1})$, which clips
-  the trajectory's dynamic range without contributing any potential
-  gradient; the production SPLM is consequently *not* a clean
-  Hamiltonian flow but a "cheating" symplectic integrator whose
-  stability comes from compactification of the state space rather than
-  from symplectic structure of the integrator. See
-  [`E3_splm_em_ln_compare_report.md`](notebooks/conservative_arch/energy_drift/results/E3_splm_em_ln_compare/E3_splm_em_ln_compare_report.md)
-  for the full per-variant table, overlay figures, and caveats.
-- **v3 leak-correction and R6 ladder additions (May 2026).**
-  The v3 paper revision (see the *v3 update* block at the top of this
-  README) ships three new top-level Python files and two new
-  subdirectories under `notebooks/conservative_arch/`. They cover the
-  causal-leak audit framework, the leak-corrected re-evaluation, the
-  leak-corrected pilot, and the multi-channel-ξ information-bottleneck
-  programme (the R6 ladder).
-  - **`causal_probe.py`** — regression-test framework that, at every
-    model registration, builds a tiny instance, runs a forward pass
-    on a probe input, and verifies that
-    `∂loss_t / ∂h_s = 0 for s > t` by closed-loop autograd. Catches
-    any future re-introduction of the
-    [`Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`](companion_notes/Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md)
-    bug. Cited 4× in the paper (§1, §14, §16).
-  - **`eval_ppl_under_fix.py`** — closed-loop, fixed-graph re-evaluation
-    harness: loads a v2 SPLM checkpoint trained under the leaky
-    integrator and computes its leak-free val\_ppl by running the
-    corrected closed-loop integrator over the same validation tokens.
-    The source of the headline `777×` inflation factor reported in
-    [`companion_notes/Causal_Leak_Empirical_Comparison_Report.md`](companion_notes/Causal_Leak_Empirical_Comparison_Report.md).
-  - **`post_fixed_pilot.py`** — driver for leak-corrected
-    single-channel SPLM pilot training on TinyStories at the v2
-    LayerNorm-after-step configuration. The reference single-channel
-    leak-free SPLM ceiling (val\_ppl ≈ 30) reported in the v3 paper.
-  - **`multixi/`** — multi-channel-ξ model implementations and
-    diagnostics for the R6 ladder. Five files:
-    `__init__.py`,
-    `model_multixi.py` (K-EMA bank with optional log-spaced α
-    initialisation; the v2 default and R6.h.0 / R6.h.1 cells),
-    `model_multixi_hippo.py` (HiPPO-LegT translated-Legendre basis
-    with bilinear / Tustin discretisation, fixed and learnable Δt
-    variants — R6.a / R6.e cells),
-    `model_multixi_s4d.py` (diagonal state-space substitute with
-    learnable diagonal complex `A`, `B`, and Δt; LegT and S4D-Lin
-    initialisations — R6.i cell), and
-    `diagnose_xi_channel_correlations.py` (the four
-    information-theoretic diagnostics: pairwise Pearson correlation
-    matrix, mean off-diagonal `|corr|`, total correlation
-    `TC(c) = -½ log det R`, entropy-power effective-channel count
-    `K_eff = exp(H(λ̃))`). All R6-ladder val\_ppl numbers in §14 of the
-    paper are produced by these files, and the `K_eff/K` and total
-    correlation numbers in §16 (C7) and the R6 table are produced by
-    `diagnose_xi_channel_correlations.py`. The full programme,
-    cell-by-cell, is documented in
-    [`companion_notes/Reducing_Information_Bottleneck_In_Multi-Channel_Xi_SPLM.md`](companion_notes/Reducing_Information_Bottleneck_In_Multi-Channel_Xi_SPLM.md).
-  - **`scaleup/`** — training scripts and per-pilot result logs for
-    the R6 ladder on TinyStories at the `~16M`-parameter pilot scale.
-    Top-level scripts:
-    `train_splm_em_ln_scaleup.py` (single-channel SPLM baseline),
-    `train_splm_em_ln_multixi_scaleup.py` (K-EMA driver — R6.h.0,
-    R6.h.1),
-    `train_splm_em_ln_multixi_hippo_scaleup.py` (HiPPO-LegT driver —
-    R6.a, R6.e),
-    `train_splm_em_ln_multixi_s4d_scaleup.py` (S4D driver — R6.i),
-    `train_matched_baseline_scaleup.py` (budget-matched attention
-    baseline — the val\_ppl `~8` reference number), and
-    `compute_unigram_frequencies_tinystories.py` (TinyStories
-    surprisal-prior precomputation, mirroring the Tiny-Shakespeare
-    version under `sarf_mass_variant/`). The
-    `gamma_transfer/` subdir houses the leak-corrected `γ`-sweep
-    follow-up (planned). All per-pilot training logs, loss curves,
-    summaries, and channel-correlation `.json` artefacts ship under
-    `scaleup/results/`:
-    `multihippo_pilot_fixed/` (R6.a),
-    `multihippo_pilot_learndt/` (R6.e),
-    `multihippo_smoke/` (HiPPO smoke test),
-    `multis4d_pilot_legtinit/` (R6.i),
-    `multixi_pilot_fixed/` (R6.h.0 K-EMA hand-picked α),
-    `multixi_pilot_logspaced_taumax100/` (R6.h.1 K-EMA log-spaced α,
-    in flight),
-    `multixi_buggy_2k/` (the v2 buggy-integrator reference run),
-    `pilot_splm_fixed/` (single-channel leak-free pilot),
-    `seed0_attn` / `seed0_splm` / `seed0_multixi` (seed-0 baselines),
-    and the `smoke_*` smoke-test pilots. Model checkpoints (`.pt`) are
-    not committed (`~63 MB` each, fully reproducible from the scripts);
-    every training log and summary that the paper cites *is* committed.
-    The aggregate per-cell `val_ppl` table and the
-    information-theoretic-diagnostic table that drive §14 of the paper
-    are reconstructible from these files alone.
-  - **`helmholtz/`** — Helmholtz-SPLM hybrid architecture (Q9d path):
-    layer-type Helmholtz augmentation of the SPLM for Dyck-language
-    expressivity falsification. Implements `model_helmholtz.py`
-    (`HelmholtzSPLM`), per-depth sweep scripts, aggregate analysis
-    (`aggregate_h1.py`, `aggregate_h1p5.py`, `aggregate_h2.py`),
-    a causal probe, and decode-FLOPs Pareto analysis. Per-depth
-    training logs and summaries ship under `results/`.
-  - **`hybrid/`** — Hybrid two-stage SPLM (Variant A path):
-    combines a frozen-ξ first stage with a SARF-faithful second
-    stage. `model_hybrid.py`, `train_splm_hybrid.py`, aggregate
-    analysis, and decode-FLOPs Pareto. Results under `results/`.
-  - **`parf/`** — **PARFLM** (Property-Attractive-Repulsive Force
-    Language Model) and **FockPARFLM** (Fock-space augmented PARFLM).
-    The Q9c path augmenting SPLM with a learnable pairwise-interaction
-    force $V_\phi$ on top of the single-particle $V_\theta$. Core:
-    - `model_parf.py` — `PARFLM` with structural / MLP $V_\phi$
-    - `model_parf_sparse.py` — `SparsePARFLM` with Gumbel-softmax
-      top-k sparse routing (P5 winner: k=4)
-    - `model_fock_parf.py` — **`FockPARFLM`**: Fock-space augmentation
-      with a latent register pool implementing creation/annihilation
-      operators for v2 (context-free) expressivity
-    - `dyck_data.py` — synthetic Dyck\_n data generator for
-      expressivity falsification experiments
-    - `train_parf.py` — Shakespeare-scale PARF trainer
-    - `train_fock_parf.py` — unified Dyck + TinyStories FockPARFLM
-      trainer supporting both `parflm` (baseline) and `fock` (FockPARFLM)
-      architectures
-    - `causal_probe_parf.py` — PARF-specific causality probe
-    - `diagnostics/diagnose_v_phi_channels.py` — P6 per-layer V\_φ
-      channel diagnostic (R(ℓ), s\_ℓ, |Θ| profiles)
-    - `scripts/p8_cell_a100_h100.ipynb` — P8 composite cell (A100/H100)
-    - `scripts/p10_tinystories_a100_h100.ipynb` — **P10 TinyStories
-      ladder** (P10a–P10h): the progressive scale-up from 33.55 PPL
-      (SPLM em\_ln wall) toward val PPL ≤ 20. Results:
-      - P10a: 32.60 PPL (broke the SPLM wall)
-      - P10e: 31.12 PPL (V\_φ capacity ablation)
-      - P10f: 28.67 PPL (V\_θ ceiling test)
-      - P10g: 26.42 PPL (training-budget disambiguator)
-      - **P10h: 26.43 PPL** (corpus scale-up 5M→20M tokens — confirms
-        architectural ceiling; zero improvement over P10g)
-    - `results/fock/` — FockPARFLM Phase 1 Dyck₂ falsifier results
-      (LIFO-stack +1.3 pp deep-test accuracy over baseline)
-    - `results/structural*/`, `results/mlp/` — Shakespeare-scale
-      ablation results (P1–P5 progression)
-    - TinyStories P10e/f/g result logs and P6 diagnostics ship under
-      `scaleup/results/semsimula_parflm/p10_tinystories/`.
-    - Design docs: `companion_notes/PARF_Augmented_SPLM_Architecture_v2.md`,
-      `companion_notes/PARF-SPLM_Path_Forward_and_Experiments.md`,
-      `companion_notes/Augmenting_PARFLM_to_handle_MCS_Languages.md`.
+| Notebook / folder | Role |
+|-------------------|------|
+| `stp_loss/energy_landscape_validation.ipynb` | §13 — GPT-2 STP–acceleration analysis and Gaussian-well validation. A pre-executed version with all outputs is included. |
+| `cross_model/pythia_tangential_acceleration.ipynb` | §13 Result 5 — cross-architecture deceleration replication on GPT-2 small and Pythia-160M. |
+| `e_init/` | §14.1 — five negative experiments (E1–E5) on scalar, Helmholtz, and gauge-field fits on pretrained GPT-2 trajectories. See [`e_init/README.md`](notebooks/e_init/README.md). |
+| `conservative_arch/` | §14.2 ff. and Appendix A — SPLM prototype, three-way shared-potential separator, and all prescriptive experiments. See [`conservative_arch/README.md`](notebooks/conservative_arch/README.md). |
+| `conservative_arch/sarf_variant/` | §14.13 — SARF-faithful SPLM ablation (33% perplexity reduction via single-line context-pool change). |
+| `conservative_arch/sarf_mass_variant/` | §14.14 — per-token semantic mass ablation (44% perplexity reduction with framework-prescribed surprisal mass). |
+| `conservative_arch/attractor_analysis/` | §14.15 — prompt-dependent semantic attractor extraction via damped dynamics and gradient descent. |
+| `conservative_arch/energetic_minima/` | §14.17 Q11 — three structural alternatives to free V_θ (LN-after-step, scale-gauge, Gaussian-mixture). |
+| `conservative_arch/multi_seed/` | E1 multi-seed variance harness — 5-seed runs of three architectures on Tiny Shakespeare with Welch t-tests. |
+| `conservative_arch/energy_drift/` | E3 energy-drift diagnostic — per-layer Hamiltonian energy and conservation-bandwidth analysis across integrator types. |
+| `conservative_arch/multixi/` | R6 ladder — multi-channel-ξ model implementations (K-EMA / HiPPO-LegT / S4D) and channel-correlation diagnostics. |
+| `conservative_arch/scaleup/` | R6 TinyStories scale-up — ~16M-parameter training scripts and per-pilot result logs for the R6 ladder. |
+| `conservative_arch/first_order_ablation/` | SPLM-1 first-order ablation — pre-registered v2 baseline and leak-free 3-seed retrain with forensic re-eval. |
+| `conservative_arch/ln_damping_sweep/` | Controlled-γ damping sweep — v2 6-cell sweep, leak-free 4-point U-curve, and 5-seed S=5 confirmation sweep. |
+| `conservative_arch/helmholtz/` | Q9d — Helmholtz-SPLM hybrid architecture with Dyck-language expressivity falsification. |
+| `conservative_arch/hybrid/` | Variant A — hybrid two-stage SPLM combining frozen-ξ first stage with SARF-faithful second stage. |
+| `conservative_arch/parf/` | §17 — PARFLM and FockPARFLM: V_φ pairwise-interaction augmentation with Gumbel-softmax sparse routing and Fock-space registers. Includes the P10 TinyStories ladder (PPL 26.4 architectural ceiling) and Phase 1 Dyck₂ falsifier. |
 
 ---
 
