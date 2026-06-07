@@ -65,18 +65,18 @@ author's 2021–2026 work on Semantic Simulation, whose material is subsumed and
 extended by the paper. Both PDF and Word (`.docx`) versions are provided where
 available.
 
-| BibTeX key                      | File                                                                                             | Paper section(s) where subsumed |
-| ------------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------- |
-| `Gueorguiev2021TreeOps`         | `Semantic_Tree_Operations.{pdf,docx}`                                                            | §8                              |
-| `Gueorguiev2022Foundations`     | `The_Foundations_of_Semantic_Simulation.{pdf,docx}`                                              | §§1–2                           |
-| `Gueorguiev2022PARF`            | `Modeling_Attractive_and_Repulsive_Forces_in_Semantic_Properties.{pdf,docx}`                     | §5                              |
-| `Gueorguiev2022DynSim`          | `On_The_Need_of_Dynamic_Simulation_when_Modeling_Interactions_of_Semantic_Structures.{pdf,docx}` | §6                              |
-| `Gueorguiev2022Signature`       | `On_the_Signature_Matrix_of_Semantic_Property.{pdf,docx}`                                        | §3                              |
-| `Gueorguiev2022SARF`            | `Modeling_Attractive_and_Repulsive_Forces_between_Semantic_Structures.{pdf,docx}`                | §6                              |
-| `Gueorguiev2022Well`            | `On_Gaussian_Inverse_Semantic_Energy_Well.{pdf,docx}`                                            | §4                              |
-| `Gueorguiev2022Execution`       | `Execution_Of_Semantic_Structures.{pdf,docx}`                                                    | §8.6 (summary only)             |
-| `Gueorguiev2024SemSim`          | `Semantic_Simulation.{pdf,docx}`                                                                 | §§1–2                           |
-| `Gueorguiev2026Lagrangian`      | `Constructing_Langrangian_for_Semantic_Space.{pdf,docx}`                                         | §7                              |
+| BibTeX key | Title | §§ subsumed |
+|------------|-------|-------------|
+| `Gueorguiev2021TreeOps` | Semantic Tree Operations | §8 |
+| `Gueorguiev2022Foundations` | Foundations of Semantic Simulation | §§1–2 |
+| `Gueorguiev2022PARF` | Attractive and Repulsive Forces in Semantic Properties | §5 |
+| `Gueorguiev2022DynSim` | Need for Dynamic Simulation in Semantic Structures | §6 |
+| `Gueorguiev2022Signature` | Signature Matrix of Semantic Property | §3 |
+| `Gueorguiev2022SARF` | Attractive and Repulsive Forces between Semantic Structures | §6 |
+| `Gueorguiev2022Well` | Gaussian Inverse Semantic Energy Well | §4 |
+| `Gueorguiev2022Execution` | Execution of Semantic Structures | §8.6 (summary only) |
+| `Gueorguiev2024SemSim` | Semantic Simulation | §§1–2 |
+| `Gueorguiev2026Lagrangian` | Constructing the Lagrangian for Semantic Space | §7 |
 
 These manuscripts are the **historical record** of the work. The paper is the
 canonical statement of the framework as of 2026; the notes above are preserved
@@ -110,61 +110,61 @@ Working notes developed alongside the paper. They capture material the paper doe
 
 #### Notes cited by BibTeX key
 
-| File | Role |
+| Note | Role |
 |------|------|
-| `On_the_Interpretation_of_Semantic_Mass.md` | §11 — physical interpretation of per-token mass in the Lagrangian framework. |
-| `On_the_Interpretation_of_Hidden_State.md` | §10 — hidden-state ontology: phase-space coordinates vs. latent features. |
-| `On_The_Existence_of_Acceleration_in_Semantic_Structures.md` | §12 — empirical evidence for deceleration and the STP–acceleration identity. |
-| `STP_Loss_Is_An_Emergent_Property_Of_The_Energy_Landscape_Defined_By_Gaussian_Well_Potential.md` | §12 — STP loss as an emergent property of the Gaussian-well energy landscape. |
-| `The_Execution_Problem.md` | §8.6 — deferred treatment of structure execution in semantic simulation. |
+| [Semantic Mass interpretation](companion_notes/On_the_Interpretation_of_Semantic_Mass.md) | §11 — physical interpretation of per-token mass in the Lagrangian framework. |
+| [Hidden State interpretation](companion_notes/On_the_Interpretation_of_Hidden_State.md) | §10 — hidden-state ontology: phase-space coordinates vs. latent features. |
+| [Acceleration in Semantic Structures](companion_notes/On_The_Existence_of_Acceleration_in_Semantic_Structures.md) | §12 — empirical evidence for deceleration and the STP–acceleration identity. |
+| [STP loss and Gaussian-well energy landscape](companion_notes/STP_Loss_Is_An_Emergent_Property_Of_The_Energy_Landscape_Defined_By_Gaussian_Well_Potential.md) | §12 — STP loss as an emergent property of the Gaussian-well energy landscape. |
+| [The Execution Problem](companion_notes/The_Execution_Problem.md) | §8.6 — deferred treatment of structure execution in semantic simulation. |
 
 #### Notes backing §14 / Appendix A (not BibTeX-cited)
 
-| File | Role |
+| Note | Role |
 |------|------|
-| `The_Failure_of_Conservative_Models_to_explain_hidden_state_trajectories.md` | §14.1 — why conservative models fail on pretrained transformer trajectories. |
-| `P-rot-6_transformer_dynamics.md` | §14.1 — derives the E5 zero-parameter prediction from K≠V antisymmetry. |
-| `Conservative_by_Construction_Language_Models.md` | §14 — motivation and design rationale for SPLM. |
-| `Considered_Non-Autonomous_Conservative_Mechanisms.md` | Appendix A — non-autonomous conservative framework alternatives. |
-| `Addendum_Non_Autonomous_Fields_For_Appendix_A.md` | Appendix A — Class F equation, Hopfield / Tracks A–B, integrability guide. |
-| `On_Modeling_Semantic_Energy_Field_into_SPLM.md` | §14.2 — mapping the framework energy field onto V_θ, ξ, m_t. |
-| `On_The_Smoothness_of_Scaled_Dot_Product_Attention.md` | §14, Theorem 46 — smoothness of attention; Poincaré prerequisites. |
-| `Training_and_Inference_with_SPLM.md` | §14.2, §14.13 — training loop, nested-autograd forces, inference pipeline. |
+| [Failure of conservative models on transformer trajectories](companion_notes/The_Failure_of_Conservative_Models_to_explain_hidden_state_trajectories.md) | §14.1 — why conservative models fail on pretrained transformer trajectories. |
+| [P-rot-6 transformer dynamics](companion_notes/P-rot-6_transformer_dynamics.md) | §14.1 — derives the E5 zero-parameter prediction from K≠V antisymmetry. |
+| [Conservative-by-construction language models](companion_notes/Conservative_by_Construction_Language_Models.md) | §14 — motivation and design rationale for SPLM. |
+| [Non-autonomous conservative mechanisms](companion_notes/Considered_Non-Autonomous_Conservative_Mechanisms.md) | Appendix A — non-autonomous conservative framework alternatives. |
+| [Non-autonomous fields addendum](companion_notes/Addendum_Non_Autonomous_Fields_For_Appendix_A.md) | Appendix A — Class F equation, Hopfield / Tracks A–B, integrability guide. |
+| [Semantic energy field in SPLM](companion_notes/On_Modeling_Semantic_Energy_Field_into_SPLM.md) | §14.2 — mapping the framework energy field onto V_θ, ξ, m_t. |
+| [Smoothness of scaled-dot-product attention](companion_notes/On_The_Smoothness_of_Scaled_Dot_Product_Attention.md) | §14, Theorem 46 — smoothness of attention; Poincaré prerequisites. |
+| [Training and inference with SPLM](companion_notes/Training_and_Inference_with_SPLM.md) | §14.2, §14.13 — training loop, nested-autograd forces, inference pipeline. |
 
 #### Forthcoming-work planning and expressivity bounds
 
-| File | Role |
+| Note | Role |
 |------|------|
-| `Semantic_Simulator_RL_Calibration_Programme.md` | Programme-level memo for the deferred RL-calibrated simulator (§8.8, §16). |
-| `Semantic_Simulator_EOM.md` | v0 equations of motion, parameter classification, pseudocode (§8.8, §16). |
-| `Expressivity_Bounds_For_v0_Simulator.md` | Formal proof: v0 simulator accepts at most regular languages (§16). |
-| `MCS_Reduction_For_v3_Composite.md` | Formal proof: v0+v1.5+v2+v3 composite generates exactly the MCS class (§16). |
-| `Advancing_The_Dynamic_Simulation_Model.md` | Conceptual scaffold mapping v1.5/v2/v3 onto mature mathematical apparatus. |
-| `Next_Model_Experiments_for_SPLM.md` | Prioritised experiment catalogue; source of truth for the E1 and E3 programmes. |
-| `Semantic_Simulator_v15_EOM.md` | Forthcoming — v1.5 dynamics (dissipative semigroups). |
-| `Semantic_Simulator_v2_EOM.md` | Forthcoming — v2 dynamics (Fock-space second quantisation). |
-| `Semantic_Simulator_v3_EOM.md` | Forthcoming — v3 dynamics (non-abelian gauge theory). |
+| [RL calibration programme](companion_notes/Semantic_Simulator_RL_Calibration_Programme.md) | Programme-level memo for the deferred RL-calibrated simulator (§8.8, §16). |
+| [Simulator v0 EOM](companion_notes/Semantic_Simulator_EOM.md) | v0 equations of motion, parameter classification, pseudocode (§8.8, §16). |
+| [v0 expressivity bounds](companion_notes/Expressivity_Bounds_For_v0_Simulator.md) | Formal proof: v0 simulator accepts at most regular languages (§16). |
+| [MCS reduction for v3 composite](companion_notes/MCS_Reduction_For_v3_Composite.md) | Formal proof: v0+v1.5+v2+v3 composite generates exactly the MCS class (§16). |
+| [Advancing the simulation model](companion_notes/Advancing_The_Dynamic_Simulation_Model.md) | Conceptual scaffold mapping v1.5/v2/v3 onto mature mathematical apparatus. |
+| [Next model experiments for SPLM](companion_notes/Next_Model_Experiments_for_SPLM.md) | Prioritised experiment catalogue; source of truth for the E1 and E3 programmes. |
+| [Simulator v1.5 EOM](companion_notes/Semantic_Simulator_v15_EOM.md) | Forthcoming — v1.5 dynamics (dissipative semigroups). |
+| [Simulator v2 EOM](companion_notes/Semantic_Simulator_v2_EOM.md) | Forthcoming — v2 dynamics (Fock-space second quantisation). |
+| [Simulator v3 EOM](companion_notes/Semantic_Simulator_v3_EOM.md) | Forthcoming — v3 dynamics (non-abelian gauge theory). |
 
 #### v3 leak-correction and information-bottleneck programme (May 2026)
 
-| File | Role |
+| Note | Role |
 |------|------|
-| `Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md` | Forensic detail of the v2 anti-causal autograd path, the `h.detach()` fix, and the `causal_probe.py` regression-test framework. |
-| `Causal_Leak_Empirical_Comparison_Report.md` | Closed-loop leak-free re-evaluation of every v2 SPLM checkpoint (headline: 777× inflation for TinyStories `splm_em_ln_multixi`). |
-| `Reducing_Information_Bottleneck_In_Multi-Channel_Xi_SPLM.md` | The R6 information-bottleneck programme: K-EMA / HiPPO-LegT / S4D basis experiments and four information-theoretic diagnostics. |
-| `Determining_optimal_gamma_for_SPLM.md` | Four-estimator γ*-prediction framework and the resonance-predictor double success across the leak-correction boundary. |
-| `Energetic_Minima_Alternatives.md` | Leak-free retrains of the three energetic-minima alternatives (LN / SG / GM); recommendation shift from LN to scale-gauge when attractor diversity matters. |
-| `Semantic_Attractor_Extraction.md` | Leak-free dynamical-mode attractor extractions (Tiers 1 + 2b); F3 multi-basin structure survives the fix. |
+| [Causal leak: bug and fix](companion_notes/Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md) | Forensic detail of the v2 anti-causal autograd path, the `h.detach()` fix, and the `causal_probe.py` regression-test framework. |
+| [Causal leak empirical comparison report](companion_notes/Causal_Leak_Empirical_Comparison_Report.md) | Closed-loop leak-free re-evaluation of every v2 SPLM checkpoint (headline: 777× inflation for TinyStories `splm_em_ln_multixi`). |
+| [R6 information-bottleneck programme](companion_notes/Reducing_Information_Bottleneck_In_Multi-Channel_Xi_SPLM.md) | K-EMA / HiPPO-LegT / S4D basis experiments and four information-theoretic diagnostics. |
+| [Determining optimal γ for SPLM](companion_notes/Determining_optimal_gamma_for_SPLM.md) | Four-estimator γ*-prediction framework and the resonance-predictor double success across the leak-correction boundary. |
+| [Energetic minima alternatives](companion_notes/Energetic_Minima_Alternatives.md) | Leak-free retrains of the three energetic-minima alternatives (LN / SG / GM); recommendation shift from LN to scale-gauge when attractor diversity matters. |
+| [Semantic attractor extraction](companion_notes/Semantic_Attractor_Extraction.md) | Leak-free dynamical-mode attractor extractions (Tiers 1 + 2b); F3 multi-basin structure survives the fix. |
 
 #### PARFLM and FockPARFLM programme
 
-| File | Role |
+| Note | Role |
 |------|------|
-| `PARF_Augmented_SPLM_Architecture_v2.md` | Architecture design for the PARFLM V_φ augmentation (Q9c path). |
-| `PARF-SPLM_Path_Forward_and_Experiments.md` | Experiment plan for the P1–P10 PARF scale-up ladder. |
-| `Augmenting_PARFLM_to_handle_MCS_Languages.md` | Fock-space augmentation design for v2 (context-free) expressivity. |
-| `Improving_the_Fock_Mechanism_to_match_Attention.md` | Fock Attention experiments, register diagnostics, causal leak discovery and fix, routing resolution hierarchy. |
-| `Fock_PARFLM_Conservativity_Diagnostic.md` | Five-arm diagnostic battery proving the conservative-by-construction property of FockPARFLM v2.1: Jacobian symmetry, ablation R², energy budget decomposition, conservativity dial, four-way separator. |
+| [PARFLM architecture v2](companion_notes/PARF_Augmented_SPLM_Architecture_v2.md) | Architecture design for the PARFLM V_φ augmentation (Q9c path). |
+| [PARF-SPLM path and experiments](companion_notes/PARF-SPLM_Path_Forward_and_Experiments.md) | Experiment plan for the P1–P10 PARF scale-up ladder. |
+| [Augmenting PARFLM for MCS languages](companion_notes/Augmenting_PARFLM_to_handle_MCS_Languages.md) | Fock-space augmentation design for v2 (context-free) expressivity. |
+| [Improving Fock to match attention](companion_notes/Improving_the_Fock_Mechanism_to_match_Attention.md) | Fock Attention experiments, register diagnostics, causal leak discovery and fix, routing resolution hierarchy. |
+| [FockPARFLM conservativity diagnostic](companion_notes/Fock_PARFLM_Conservativity_Diagnostic.md) | Five-arm diagnostic battery proving the conservative-by-construction property of FockPARFLM v2.1: Jacobian symmetry, ablation R², energy budget decomposition, conservativity dial, four-way separator. |
 
 See [EXPERIMENTS.md](EXPERIMENTS.md) for detailed discussion of each experiment and its results.
 
