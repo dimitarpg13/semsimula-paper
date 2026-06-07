@@ -170,27 +170,19 @@ See [EXPERIMENTS.md](EXPERIMENTS.md) for detailed discussion of each experiment 
 
 ### `notebooks/` — reproducibility
 
-Each notebook or folder below is summarised in one or two sentences. See [COLAB_NOTEBOOKS.md](COLAB_NOTEBOOKS.md) for full descriptions, Colab links, and runtime estimates. See [EXPERIMENTS.md](EXPERIMENTS.md) for per-experiment methodology and results.
+The experiments are organised into five categories. See
+[EXPERIMENTS.md](EXPERIMENTS.md) for per-experiment methodology, result
+tables, and key findings. See [COLAB_NOTEBOOKS.md](COLAB_NOTEBOOKS.md)
+for Colab-ready notebook descriptions, GPU requirements, and runtime
+estimates.
 
-| Notebook / folder | Role |
-|-------------------|------|
-| `stp_loss/energy_landscape_validation.ipynb` | §13 — GPT-2 STP–acceleration analysis and Gaussian-well validation. A pre-executed version with all outputs is included. |
-| `cross_model/pythia_tangential_acceleration.ipynb` | §13 Result 5 — cross-architecture deceleration replication on GPT-2 small and Pythia-160M. |
-| `e_init/` | §14.1 — five negative experiments (E1–E5) on scalar, Helmholtz, and gauge-field fits on pretrained GPT-2 trajectories. See [`e_init/README.md`](notebooks/e_init/README.md). |
-| `conservative_arch/` | §14.2 ff. and Appendix A — SPLM prototype, three-way shared-potential separator, and all prescriptive experiments. See [`conservative_arch/README.md`](notebooks/conservative_arch/README.md). |
-| `conservative_arch/sarf_variant/` | §14.13 — SARF-faithful SPLM ablation (33% perplexity reduction via single-line context-pool change). |
-| `conservative_arch/sarf_mass_variant/` | §14.14 — per-token semantic mass ablation (44% perplexity reduction with framework-prescribed surprisal mass). |
-| `conservative_arch/attractor_analysis/` | §14.15 — prompt-dependent semantic attractor extraction via damped dynamics and gradient descent. |
-| `conservative_arch/energetic_minima/` | §14.17 Q11 — three structural alternatives to free V_θ (LN-after-step, scale-gauge, Gaussian-mixture). |
-| `conservative_arch/multi_seed/` | E1 multi-seed variance harness — 5-seed runs of three architectures on Tiny Shakespeare with Welch t-tests. |
-| `conservative_arch/energy_drift/` | E3 energy-drift diagnostic — per-layer Hamiltonian energy and conservation-bandwidth analysis across integrator types. |
-| `conservative_arch/multixi/` | R6 ladder — multi-channel-ξ model implementations (K-EMA / HiPPO-LegT / S4D) and channel-correlation diagnostics. |
-| `conservative_arch/scaleup/` | R6 TinyStories scale-up, Fock v2.1 routing-fix (PPL **9.30**, best SPLM-family result), and Fock Attention direct exchange (PPL 9.42). Training scripts and per-pilot result logs. |
-| `conservative_arch/first_order_ablation/` | SPLM-1 first-order ablation — pre-registered v2 baseline and leak-free 3-seed retrain with forensic re-eval. |
-| `conservative_arch/ln_damping_sweep/` | Controlled-γ damping sweep — v2 6-cell sweep, leak-free 4-point U-curve, and 5-seed S=5 confirmation sweep. |
-| `conservative_arch/helmholtz/` | Q9d — Helmholtz-SPLM hybrid architecture with Dyck-language expressivity falsification. |
-| `conservative_arch/hybrid/` | Variant A — hybrid two-stage SPLM combining frozen-ξ first stage with SARF-faithful second stage. |
-| `conservative_arch/parf/` | §17 — PARFLM and FockPARFLM: V_φ pairwise-interaction augmentation with Gumbel-softmax sparse routing and Fock-space registers. Includes the P10 TinyStories ladder (PPL 26.4 ceiling), Phase 1 Dyck₂ falsifier, QFT v2.1 creation-gate ablation, and the CONS1–5 controlled-conservativity diagnostic. |
+| Category | Paper §§ | Scope | Key folders |
+|----------|----------|-------|-------------|
+| **Descriptive validation** | §13 | STP–acceleration identity, Gaussian-well validation, and cross-architecture (GPT-2 / Pythia-160M) deceleration replication. | `stp_loss/`, `cross_model/` |
+| **Negative-results chain** | §14.1 | Five scalar, Helmholtz, and gauge-field fits (E1–E5) on pretrained GPT-2 trajectories — all fail, motivating the prescriptive programme. | `e_init/` |
+| **Conservative SPLM programme** | §§14–16 | SPLM prototype, SARF / mass ablations, attractor analysis, energetic-minima alternatives, multi-seed E1, energy-drift E3, controlled-γ damping sweep, v3 leak-correction audit, R6 multi-channel-ξ ladder (K-EMA / HiPPO / S4D), Helmholtz Q9d, Hybrid VA, and TinyStories scale-up pilots. | `conservative_arch/` and subfolders |
+| **PARFLM / FockPARFLM programme** | §17, §17b–c | V_φ pairwise-interaction augmentation (P1–P10 ladder, PPL 26.4 ceiling), V_θ regularisation sweeps, structured V_θ (SQ1–SQ5), Fock-space registers (v1/v2 gates, QFT v2.1 creation-gate ablation, Dyck₂ falsifier), multi-ξ PARF at H=128, **Fock v2.1 routing fix (PPL 9.30)**, **Fock Attention direct exchange (PPL 9.42)**, and **CONS1–5 controlled-conservativity diagnostic**. | `conservative_arch/parf/`, `conservative_arch/scaleup/` |
+| **Non-conservative / SP-HSPLM** | — | Per-token gyroscopic and solenoidal forces (Stage 1, Class B/C), Q9(e) pair-skew cell ladder (Stage 2). | `conservative_arch/non_conservative/`, `conservative_arch/sphsplm/` |
 
 ---
 
