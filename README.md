@@ -5,11 +5,11 @@ Companion repository for the paper
 > **Semantic Simulation: A Prescriptive Lagrangian Framework for Efficient Semantic Inference**
 > *A Conservative-by-Construction Language Model and the Shared-Potential Separator, with a Correspondence to Joint Embedding Predictive Architectures.*
 > Dimitar P. Gueorguiev (Independent Researcher), 2026.
-> Zenodo preprint (v13, May 31 2026): [10.5281/zenodo.20478543](https://doi.org/10.5281/zenodo.20478543). Supersedes v12 ([10.5281/zenodo.20469626](https://doi.org/10.5281/zenodo.20469626), May 30 2026).
-> Companion code latest release: **v4.8** (May 31, 2026) — §17c FockPARFLM paragraph reordering for logical flow: creation protocol → asymmetric non-conservative reverse channel → transfer mechanism → controlled non-conservatism → novelty. Light de-duplication of closing sentences. Both paper v4 and v5 build with exit code 0 and 0 undefined references. Rebuilt `semsimula_paper.pdf` (291 pages) and `semsimula_paper_source.zip`. Supersedes v4.7-zenodo (May 30, 2026).
+> Zenodo preprint (v14, Jun 7 2026): [10.5281/zenodo.20531415](https://doi.org/10.5281/zenodo.20531415). Supersedes v13 ([10.5281/zenodo.20478543](https://doi.org/10.5281/zenodo.20478543), May 31 2026).
+> Companion code latest release: **v4.9** (Jun 7, 2026) — Fock v2.1 routing-fix results (B1+B2+B3 = PPL 9.30, new best, surpasses Fock Attention 9.42 at O(1) memory). Adds B1/B2/B3 mechanism illustrations; rewrites §19.5 with full per-fix intuition and super-additivity analysis; adds §19.9 with complete v2.1 results table and 7 key findings; routing deficit → routing surplus confirmed. Rebuilt `semsimula_paper.pdf` (298 pages) and `semsimula_paper_source.zip`. Supersedes v4.8 (May 31, 2026).
 
-[![DOI — paper](https://zenodo.org/badge/DOI/10.5281/zenodo.20478543.svg)](https://doi.org/10.5281/zenodo.20478543)
-[![DOI — companion code](https://zenodo.org/badge/DOI/10.5281/zenodo.20478517.svg)](https://doi.org/10.5281/zenodo.20478517)
+[![DOI — paper](https://zenodo.org/badge/DOI/10.5281/zenodo.20531415.svg)](https://doi.org/10.5281/zenodo.20531415)
+[![DOI — companion code](https://zenodo.org/badge/DOI/10.5281/zenodo.20577388.svg)](https://doi.org/10.5281/zenodo.20577388)
 
 This repository collects the **reproducibility artifacts** and the **unpublished
 background manuscripts** cited in the paper. Its scope is deliberately narrow:
@@ -242,17 +242,17 @@ See [`CITATION.bib`](CITATION.bib) for the full BibTeX file. The short form:
                Predictive Architectures},
   year      = {2026},
   publisher = {Zenodo},
-  doi       = {10.5281/zenodo.20478543},
-  url       = {https://doi.org/10.5281/zenodo.20478543},
-  note      = {Version v13 (May 31, 2026); supersedes v12
-               (DOI 10.5281/zenodo.20469626, May 30, 2026).
-               Companion code repository (DOI 10.5281/zenodo.20478517):
+  doi       = {10.5281/zenodo.20531415},
+  url       = {https://doi.org/10.5281/zenodo.20531415},
+  note      = {Version v14 (Jun 7, 2026); supersedes v13
+               (DOI 10.5281/zenodo.20478543, May 31, 2026).
+               Companion code repository (DOI 10.5281/zenodo.20577388):
                \url{https://github.com/dimitarpg13/semsimula-paper}}
 }
 ```
 
-The companion code archive at the v4.8 release has its own citable DOI:
-[10.5281/zenodo.20478517](https://doi.org/10.5281/zenodo.20478517).
+The companion code archive at the v4.9 release has its own citable DOI:
+[10.5281/zenodo.20577388](https://doi.org/10.5281/zenodo.20577388).
 If you re-run the experiments or build on the code specifically, please cite
 both DOIs.
 
@@ -288,8 +288,8 @@ When reusing any material from this repository, please cite the paper (see
 ## Open items (to resolve before public release)
 
 1. **arXiv identifier.** The paper is currently available as a Zenodo preprint
-   ([10.5281/zenodo.20478543](https://doi.org/10.5281/zenodo.20478543), v13,
-   May 31, 2026). Once submitted to arXiv, fill in the arXiv identifier and
+   ([10.5281/zenodo.20531415](https://doi.org/10.5281/zenodo.20531415), v14,
+   Jun 7, 2026). Once submitted to arXiv, fill in the arXiv identifier and
    propagate to both `README.md` and `CITATION.bib`.
 2. **Forthcoming-work EOM stubs.** `companion_notes/Semantic_Simulator_v15_EOM.md`,
    `Semantic_Simulator_v2_EOM.md`, and `Semantic_Simulator_v3_EOM.md` are
@@ -302,6 +302,7 @@ When reusing any material from this repository, please cite the paper (see
 
 | Release | Date | Paper DOI | Code DOI | Notes |
 |---|---|---|---|---|
+| **v4.9** | **Jun 7, 2026** | [10.5281/zenodo.20531415](https://doi.org/10.5281/zenodo.20531415) | [10.5281/zenodo.20577388](https://doi.org/10.5281/zenodo.20577388) | **Fock v2.1 routing-fix results and §19 update.** B1 (per-register temperature), B2 (per-register key subspaces), B3 (orthogonal init) mechanism illustrations added to `companion_notes/images/`. §19.5 rewritten with full intuition for each fix, super-additivity analysis, and embedded diagrams including creation gate overview. §19.9 added with complete v2.1 routing-fix results table (PPL 9.30 with B1+B2+B3, new best — surpasses Fock Attention 9.42 at O(1) memory) and 7 key findings; Q2 and tainted-experiment reruns marked RESOLVED; PPL ladder updated: routing deficit → routing surplus confirmed. Rebuilt `semsimula_paper.pdf` (298 pages) and `semsimula_paper_source.zip`. Supersedes v4.8. |
 | **v4.8** | **May 31, 2026** | [10.5281/zenodo.20478543](https://doi.org/10.5281/zenodo.20478543) | [10.5281/zenodo.20478517](https://doi.org/10.5281/zenodo.20478517) | **§17c paragraph reordering for logical flow.** Reordered the five key paragraphs of `17c_fock_parflm.tex` in both paper v4 and v5 to eliminate forward references: (1) Q/K/V creation protocol → (2) asymmetric non-conservative reverse channel (now defines `eq:fock-eom` and $Q_i$ before first use) → (3) transfer mechanism (spring-bundle / force-field picture, refers backward to `eq:fock-eom`) → (4) controlled non-conservatism capstone (shape / magnitude / localisation) → (5) novelty beyond attention (memory lifetime). Light de-duplication of closing sentences. Both paper v4 and v5 build with exit code 0 and 0 undefined references. Rebuilt `semsimula_paper.pdf` (291 pages) and `semsimula_paper_source.zip`. Supersedes v4.7-zenodo. |
 | **v4.7-zenodo** | **May 30, 2026** | [10.5281/zenodo.20469626](https://doi.org/10.5281/zenodo.20469626) | [10.5281/zenodo.20469618](https://doi.org/10.5281/zenodo.20469618) | **Fock-PARFLM section and caption fix.** Added cache-free inference paragraph to the introduction motivating Fock registers from a KV-cache-free linear-time decoding perspective. Fixed fragile `\hyperlink` inside `\caption{}` in `17c_fock_parflm.tex` that was corrupting the `.aux` file and causing 15 labels to appear undefined. Both paper v4 and v5 now build with exit code 0 and 0 undefined references. Rebuilt `semsimula_paper.pdf` (291 pages) and `semsimula_paper_source.zip`. Supersedes v4.6-zenodo. |
 | v4.6-zenodo | May 27, 2026 | [10.5281/zenodo.20421901](https://doi.org/10.5281/zenodo.20421901) | [10.5281/zenodo.20421845](https://doi.org/10.5281/zenodo.20421845) | Pre-release audit and remediation. Six-priority systematic audit of the 287-page paper v4: fixed critical consistency issues (C-item ranges, orphan refs, edition history, deferred-scope narrowing, section bridges, wrong crefs); added roadmap coverage for sections 16–17c and a sixth intro movement; cleaned ~35 version-specific framing instances; normalised notation (`vh`→`d_V`, bare code identifiers wrapped in `\texttt{}`); fixed LaTeX quality (running header overflow, severe body overflows, table widths, BibTeX entry type); grammar typo. Rebuilt `semsimula_paper.pdf` (287 pages, 0 undefined references) and `semsimula_paper_source.zip`. Supersedes v4.5-zenodo. |
