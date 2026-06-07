@@ -337,6 +337,8 @@ to k rather than T.  At B=16, T=512, L=8, k=4: ~10–14 GB → ~8 MB
 | [fockparf_v2_qft_improvements](#fock_qft) | `notebooks/conservative_arch/parf/scripts/fockparf_v2_qft_improvements.ipynb` | QFT-motivated FockPARF v2.1 creation-gate ablation |
 | [fockparf_v2_dyck2_falsifier](#fock_dyck2) | `notebooks/conservative_arch/parf/scripts/fockparf_v2_dyck2_falsifier.ipynb` | FockPARF v2 falsifier on synthetic Dyck-2 |
 | [fockparf_improvement_sweep](#fock_improvement) | `notebooks/conservative_arch/parf/scripts/fockparf_improvement_sweep.ipynb` | FockPARF improvement sweep to close the PPL gap vs attention |
+| [colab_fock_v21_routing_fix](#fock_v21_routing_fix) | `notebooks/conservative_arch/scaleup/colab_fock_v21_routing_fix.ipynb` | Fock v2.1 routing-fix arms (B1, B1+B2+B3) — PPL **9.30** |
+| [colab_fock_attention_h128](#fock_attention_h128) | `notebooks/conservative_arch/scaleup/colab_fock_attention_h128.ipynb` | Fock Attention direct exchange — 4 arms, best PPL 9.42 |
 
 ### fock_debug
 
@@ -381,6 +383,34 @@ and G-series gamma/v_hidden confound resolution (G1-G3).
 - **Cells:** P1-P5, G1-G3
 - **Dataset:** TinyShakespeare
 - **GPU:** Any CUDA (4k-8k steps per arm)
+
+### fock_v21_routing_fix
+
+Two-arm routing-fix experiment for FockPARFLM v2.1, addressing the
+creation-gate routing collapse diagnosed in the FMXP-H128 sweep.
+Three fixes are tested: B1 (per-register learnable temperature τ),
+B2 (per-register key subspaces), B3 (orthogonal register init).
+
+- **Arm `v21_tau_only`:** B1 only (τ per register). PPL: **11.18**
+- **Arm `v21_tau_perK_ortho`:** B1+B2+B3 (full fix). PPL: **9.30** —
+  best SPLM-family result without an attention primitive
+- **Dataset:** TinyStories (5M tokens)
+- **GPU:** A100 40GB (~3-4h per arm, 16k steps, no grad-accum)
+- **Design doc:** [`companion_notes/Improving_the_Fock_Mechanism_to_match_Attention.md`](companion_notes/Improving_the_Fock_Mechanism_to_match_Attention.md)
+
+### fock_attention_h128
+
+Four-arm Fock Attention experiment (Route 2 of §17c). Injects a direct
+token-to-token non-conservative exchange force — the M=0 limit of the
+register mechanism. Sweeps head count (h=1, 4), channel count (K=4, 8),
+and training schedule (8k, 16k).
+
+- **Arms:** direct_K4_h1_8k, direct_K4_h4_8k, direct_K8_h4_8k,
+  direct_K4_h4_16k
+- **Best result:** direct_K4_h4_16k at **9.42 PPL** — both routes
+  (mediated and direct) cross below 10 PPL
+- **Dataset:** TinyStories (5M tokens)
+- **GPU:** A100 40GB (~2-4h per arm, scaleup 8k/16k steps)
 
 ---
 

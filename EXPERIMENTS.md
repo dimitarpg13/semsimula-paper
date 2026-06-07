@@ -60,7 +60,10 @@ run instructions.
 | [SQ1–SQ5](#structured-v_theta-sweep-sq1sq5) | §17.10, Tab 27 | Structured V_theta expressivity test on TinyShakespeare | completed |
 | [MXP-H16](#multi-xi-parf-h16-pilot) | §17 | Multi-ξ PARF pilot at H=16 (pre-memory-fix) — 3 arms | completed |
 | [MXP-H128](#multi-xi-parf-h128-scaleup) | §17 | Multi-ξ PARF at H=128 (Level-2 ckpt + gathered V_φ) — 6 arms | completed |
-| [FMXP-H128](#fock-multi-xi-parf-h128-scaleup) | §17 | Fock Multi-ξ PARF at H=128 (v1/v2 gates, register sweep) — 13 arms | in progress |
+| [FMXP-H128](#fock-multi-xi-parf-h128-scaleup) | §17c | Fock Multi-ξ PARF at H=128 (v1/v2 gates, register sweep) — 13 arms | completed |
+| [FMXP-v21](#fock-v21-routing-fix) | §17c, Tab 34 | Fock v2.1 routing-fix arms (B1, B1+B2+B3) — PPL **9.30** | completed |
+| [FATTN-H128](#fock-attention-h128) | §17c, Tab 34 | Fock Attention direct exchange — 4 arms, best PPL 9.42 | completed |
+| [CONS1–5](#conservativity-diagnostic-cons15) | §17c (§18.8) | Controlled-conservativity 5-arm diagnostic on trained v2.1 checkpoint | completed |
 | [Stage-1.5a](#stage-15a-stage-15b-v_phi-memory-variants) | §17.9, Tab 29 | Dense V_phi forward with post-masking | completed |
 | [Stage-1.5b](#stage-15a-stage-15b-v_phi-memory-variants) | §17.9 | Gathered V_phi (top-k source gathering) | design only |
 | [VR0–VR5](#splm-v_theta-regularisation-vr0vr5) | §17b, Tab 26 | Standalone SPLM V_theta regularisation sweep | completed |
@@ -439,7 +442,68 @@ reverse channel (on/off), routing density (k=4, 8), V_φ kind
 - **Key question:** Can Fock registers close the remaining gap between multi-ξ PARF (12.06 PPL) and attention (7.81 PPL)?
 - **First finding:** v2_K4_M16_lifo achieves 14.21 PPL at 8k steps (best 13.76 at step 7600) — 2.15 PPL above non-Fock baseline, suggesting Fock registers add interference at short schedules.
 - **Second finding:** v2_K4_M16_lifo_16k achieves 12.31 PPL at 16k steps (best **12.00** at step 14,400) — crossing below the non-Fock K=8 baseline (12.06). The Fock mechanism is beneficial but requires ~1.8× more training steps. Three convergence phases observed: rapid descent (0–6k), plateau (6k–12k), resumed improvement (12k–16k). See [convergence analysis](companion_notes/Improving_the_Fock_Mechanism_to_match_Attention.md#18-fock-v2-convergence-slowdown-diagnosis-and-future-work).
-- **Status:** in progress — 2/13 arms completed
+- **Status:** completed (2/13 arms ran at this scale; superseded by the v2.1 routing fix below)
+
+### Fock v2.1 routing fix
+
+The v2.1 routing fix addresses the creation-gate routing collapse diagnosed
+in §17c.4 via three fixes: B1 (per-register learnable temperature),
+B2 (per-register key subspaces), and B3 (orthogonal register init).
+
+| Arm | Fixes | K | M | Steps | PPL |
+|-----|-------|---|---|-------|-----|
+| **v21_tau_only** | B1 | 4 | 16 | 16k | 11.18 |
+| **v21_tau_perK_ortho** | B1+B2+B3 | 4 | 16 | 16k | **9.30** |
+
+- **Paper:** §17c.5, Table 34
+- **Model:** [`notebooks/conservative_arch/parf/model_fock_parf_multixi.py`](notebooks/conservative_arch/parf/model_fock_parf_multixi.py), [`notebooks/conservative_arch/parf/model_fock_parf_v2.py`](notebooks/conservative_arch/parf/model_fock_parf_v2.py)
+- **Training script:** [`notebooks/conservative_arch/scaleup/train_fock_multixi_scaleup.py`](notebooks/conservative_arch/scaleup/train_fock_multixi_scaleup.py)
+- **Notebook:** [`notebooks/conservative_arch/scaleup/colab_fock_v21_routing_fix.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_v21_routing_fix.ipynb)
+- **Results:** [`notebooks/conservative_arch/scaleup/results/semsimula_fock_v21_routing_fix/`](notebooks/conservative_arch/scaleup/results/semsimula_fock_v21_routing_fix/) + GDrive
+- **Key finding:** The full B1+B2+B3 routing fix achieves **9.30 PPL** — the best result in the SPLM programme without an attention primitive. B1 alone gives only 0.19 PPL improvement (11.37 → 11.18); adding B2+B3 drops a further 1.88. The routing diagnostics confirm the mechanism: normalised entropy rises from 0.04 to 0.45, cross-register diversity from 0.37 to 0.58. The learned reverse-channel scale converges to tanh(s_ex) = −0.227 (repulsive).
+- **Design doc:** [`companion_notes/Improving_the_Fock_Mechanism_to_match_Attention.md`](companion_notes/Improving_the_Fock_Mechanism_to_match_Attention.md)
+
+### Fock Attention (H=128)
+
+Direct token-to-token exchange force (Route 2 of §17c), injecting the
+bare non-conservative force with no register mediator and no
+cross-layer persistence. The $\lambda=0$, $M=0$ limit of the register
+mechanism.
+
+| Arm | K | Heads | d_k | Steps | PPL |
+|-----|---|-------|-----|-------|-----|
+| **direct_K4_h1_8k** | 4 | 1 | 64 | 8k | 11.48 |
+| **direct_K4_h4_8k** | 4 | 4 | 32 | 8k | 10.93 |
+| **direct_K8_h4_8k** | 8 | 4 | 32 | 8k | 11.65 |
+| **direct_K4_h4_16k** | 4 | 4 | 32 | 16k | **9.42** |
+
+- **Paper:** §17c.5, Table 34
+- **Model:** [`notebooks/conservative_arch/parf/model_fock_attention.py`](notebooks/conservative_arch/parf/model_fock_attention.py)
+- **Training script:** [`notebooks/conservative_arch/scaleup/train_fock_attention_scaleup.py`](notebooks/conservative_arch/scaleup/train_fock_attention_scaleup.py)
+- **Notebook:** [`notebooks/conservative_arch/scaleup/colab_fock_attention_h128.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_attention_h128.ipynb)
+- **Results:** [`notebooks/conservative_arch/scaleup/results/semsimula_fock_attention_h128/`](notebooks/conservative_arch/scaleup/results/semsimula_fock_attention_h128/)
+- **Key finding:** The direct route reaches **9.42 PPL** at 16k steps — both routes cross below 10 PPL. The mediated route (9.30) slightly outperforms the direct route, confirming that once routing is solved, the register mechanism's cross-layer persistence is an advantage. The learned exchange scale is repulsive (tanh(s_ex) ∈ [−0.14, −0.32]), independently confirming the same sign discovered by the mediated route (−0.227). Costs $O(T^2)$ per layer (vs $O(1)$ for registers).
+
+### Conservativity diagnostic (CONS1–5)
+
+Five-arm empirical verification of FockPARFLM v2.1 controlled
+conservativity, run on the trained 9.30 PPL checkpoint
+(`v21_tau_perK_ortho`). Validates the three-axis "design knob" claim
+of §17c (shape, magnitude, localisation).
+
+| Arm | Test | Result |
+|-----|------|--------|
+| **CONS1** | Jacobian symmetry — conservative channel curl-free | antisymmetry 1.4% (PASS), Q_i curl 25.8% (PASS) |
+| **CONS2** | Conservative ablation — Q_i=0 recovers high R² | deep-layer R² +0.43 with Q_i disabled |
+| **CONS3** | Energy budget — ΔH = W_damp + W_Q + residual | all named sources accounted for |
+| **CONS4** | Conservativity dial — sweep tanh(s_ex) 0 → −0.227 | PPL 15.95 → 11.46 (28% improvement) |
+| **CONS5** | Architectural separator — extend §15 R² diagnostic | GPT-2 0.46 < Fock 0.62 < Fock(Q=0) 0.74 < SPLM 0.96 |
+
+- **Paper:** §17c (§18.8 in the compiled book), Figure 38
+- **Script:** [`notebooks/conservative_arch/parf/conservativity_diagnostic.py`](notebooks/conservative_arch/parf/conservativity_diagnostic.py)
+- **Results:** [`notebooks/conservative_arch/parf/results/conservativity_v21/`](notebooks/conservative_arch/parf/results/conservativity_v21/) (5 PNGs, JSON report, summary)
+- **Companion note:** [`companion_notes/Fock_PARFLM_Conservativity_Diagnostic.md`](companion_notes/Fock_PARFLM_Conservativity_Diagnostic.md)
+- **Key finding:** The conservative channel is curl-free at trained weights (Hessian antisymmetry 1.4%, vs 25.8% for the reverse-channel force Q_i). Disabling Q_i recovers high R² at all layers (Arm 2). The conservativity dial (Arm 4) quantifies the central trade: a 28% PPL reduction is bought by controlled non-conservatism, while R² stays above 0.97 throughout the sweep. FockPARFLM sits at R² = 0.615 on the architectural separator — between unconstrained GPT-2 (0.46) and fully conservative SPLM (0.957), exactly where its hybrid architecture predicts.
 
 ### Scale-up PARF OOM picture
 
@@ -1369,6 +1433,41 @@ Design documents:
 [`companion_notes/PARF_Augmented_SPLM_Architecture_v2.md`](companion_notes/PARF_Augmented_SPLM_Architecture_v2.md),
 [`companion_notes/PARF-SPLM_Path_Forward_and_Experiments.md`](companion_notes/PARF-SPLM_Path_Forward_and_Experiments.md),
 [`companion_notes/Augmenting_PARFLM_to_handle_MCS_Languages.md`](companion_notes/Augmenting_PARFLM_to_handle_MCS_Languages.md).
+
+**Fock v2.1 routing-fix (B1+B2+B3) — best SPLM-family result (PPL 9.30):**
+
+```bash
+# Open colab_fock_v21_routing_fix.ipynb, set CELL to the desired arm,
+# and run all cells.  Artefacts route to GDrive under
+# semsimula_fock_v21_routing_fix/<arm_tag>/.
+# Locally: results land under
+# notebooks/conservative_arch/scaleup/results/semsimula_fock_v21_routing_fix/
+```
+
+**Fock Attention direct exchange (Route 2):**
+
+```bash
+# Open colab_fock_attention_h128.ipynb, set CELL to the desired arm,
+# and run all cells.  Artefacts route to GDrive under
+# semsimula_fock_attention_h128/<arm_tag>/.
+# Locally: results land under
+# notebooks/conservative_arch/scaleup/results/semsimula_fock_attention_h128/
+```
+
+**Controlled-conservativity diagnostic (CONS1–5):**
+
+```bash
+cd notebooks/conservative_arch/parf
+
+# Run the 5-arm diagnostic on the trained v2.1 checkpoint.
+# Replace <CHECKPOINT_PATH> with the path to the
+# v21_tau_perK_ortho ckpt_latest.pt file.
+python conservativity_diagnostic.py \
+    --checkpoint <CHECKPOINT_PATH> \
+    --output-dir results/conservativity_v21
+# Produces: arm{1..5}_*.png, conservativity_report.json,
+#           conservativity_summary.md
+```
 
 ---
 
