@@ -164,6 +164,7 @@ Working notes developed alongside the paper. They capture material the paper doe
 | `PARF-SPLM_Path_Forward_and_Experiments.md` | Experiment plan for the P1–P10 PARF scale-up ladder. |
 | `Augmenting_PARFLM_to_handle_MCS_Languages.md` | Fock-space augmentation design for v2 (context-free) expressivity. |
 | `Improving_the_Fock_Mechanism_to_match_Attention.md` | Fock Attention experiments, register diagnostics, causal leak discovery and fix, routing resolution hierarchy. |
+| `Fock_PARFLM_Conservativity_Diagnostic.md` | Five-arm diagnostic battery proving the conservative-by-construction property of FockPARFLM v2.1: Jacobian symmetry, ablation R², energy budget decomposition, conservativity dial, four-way separator. |
 
 See [EXPERIMENTS.md](EXPERIMENTS.md) for detailed discussion of each experiment and its results.
 
