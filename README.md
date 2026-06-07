@@ -185,12 +185,12 @@ Each notebook or folder below is summarised in one or two sentences. See [COLAB_
 | `conservative_arch/multi_seed/` | E1 multi-seed variance harness — 5-seed runs of three architectures on Tiny Shakespeare with Welch t-tests. |
 | `conservative_arch/energy_drift/` | E3 energy-drift diagnostic — per-layer Hamiltonian energy and conservation-bandwidth analysis across integrator types. |
 | `conservative_arch/multixi/` | R6 ladder — multi-channel-ξ model implementations (K-EMA / HiPPO-LegT / S4D) and channel-correlation diagnostics. |
-| `conservative_arch/scaleup/` | R6 TinyStories scale-up — ~16M-parameter training scripts and per-pilot result logs for the R6 ladder. |
+| `conservative_arch/scaleup/` | R6 TinyStories scale-up, Fock v2.1 routing-fix (PPL **9.30**, best SPLM-family result), and Fock Attention direct exchange (PPL 9.42). Training scripts and per-pilot result logs. |
 | `conservative_arch/first_order_ablation/` | SPLM-1 first-order ablation — pre-registered v2 baseline and leak-free 3-seed retrain with forensic re-eval. |
 | `conservative_arch/ln_damping_sweep/` | Controlled-γ damping sweep — v2 6-cell sweep, leak-free 4-point U-curve, and 5-seed S=5 confirmation sweep. |
 | `conservative_arch/helmholtz/` | Q9d — Helmholtz-SPLM hybrid architecture with Dyck-language expressivity falsification. |
 | `conservative_arch/hybrid/` | Variant A — hybrid two-stage SPLM combining frozen-ξ first stage with SARF-faithful second stage. |
-| `conservative_arch/parf/` | §17 — PARFLM and FockPARFLM: V_φ pairwise-interaction augmentation with Gumbel-softmax sparse routing and Fock-space registers. Includes the P10 TinyStories ladder (PPL 26.4 architectural ceiling) and Phase 1 Dyck₂ falsifier. |
+| `conservative_arch/parf/` | §17 — PARFLM and FockPARFLM: V_φ pairwise-interaction augmentation with Gumbel-softmax sparse routing and Fock-space registers. Includes the P10 TinyStories ladder (PPL 26.4 ceiling), Phase 1 Dyck₂ falsifier, QFT v2.1 creation-gate ablation, and the CONS1–5 controlled-conservativity diagnostic. |
 
 ---
 
