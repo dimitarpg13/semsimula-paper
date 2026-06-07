@@ -1,0 +1,34 @@
+{
+  "experiment": "fock_v21_routing_fix",
+  "motivation": "Fix temperature collapse in Fock v2 creation gate (entropy 0.04, target 0.30)",
+  "config": {
+    "mode": "scaleup",
+    "max_steps": 16000,
+    "fixed_gamma": 0.3,
+    "seed": 0
+  },
+  "arms": {
+    "v21_tau_only": {
+      "per_register_tau": true,
+      "per_register_keys": false,
+      "ortho_register_init": false,
+      "tau_create_init": 8.0,
+      "final_ppl": 11.178234965300662
+    },
+    "v21_tau_perK_ortho": {
+      "per_register_tau": true,
+      "per_register_keys": true,
+      "ortho_register_init": true,
+      "tau_create_init": 8.0,
+      "final_ppl": 9.304749891753929,
+      "entropy": 0.44940057396888733,
+      "diversity": 0.5807295715436339
+    }
+  },
+  "baselines": {
+    "Multi-\u03be K=4 conservative": 12.47,
+    "Fock v2 M=16 (original)": 12.0,
+    "Fock Attention 4h": 10.93,
+    "Attention baseline": 7.81
+  }
+}
