@@ -56,6 +56,7 @@ matched-attention baseline, Helmholtz Q9d, Hybrid VA.
 | Notebook | Path | Description |
 |----------|------|-------------|
 | [colab_alpha_init_sweep](#colab_alpha_init_sweep) | `notebooks/conservative_arch/scaleup/colab_alpha_init_sweep.ipynb` | K-EMA α-initialisation sweep for multi-channel ξ SPLM |
+| [colab_splm_multixi_rerun](#colab_splm_multixi_rerun) | `notebooks/conservative_arch/scaleup/colab_splm_multixi_rerun.ipynb` | Multi-ξ SPLM full training rerun (8k/16k steps) — PPL **11.51** |
 | [colab_parf_multixi](#colab_parf_multixi) | `notebooks/conservative_arch/scaleup/colab_parf_multixi.ipynb` | Multi-ξ PARF hybrid at H=16 (pre-memory-fix baseline) |
 | [colab_parf_multixi_h128](#colab_parf_multixi_h128) | `notebooks/conservative_arch/scaleup/colab_parf_multixi_h128.ipynb` | Multi-ξ PARF at full V_φ capacity (H=128) with Level-2 checkpointing + gathered V_φ |
 | [colab_fock_multixi_h128](#colab_fock_multixi_h128) | `notebooks/conservative_arch/scaleup/colab_fock_multixi_h128.ipynb` | Fock Multi-ξ PARF at full V_φ capacity (H=128) — 13-arm sweep over Fock v1/v2, register count, discipline, reverse channel, and schedule |
@@ -65,11 +66,33 @@ matched-attention baseline, Helmholtz Q9d, Hybrid VA.
 Sweeps K-EMA α-initialisation strategies for the multi-channel ξ SPLM
 (no PARF). Tests hand-picked, log-spaced, uniform, and learned-from-X
 strategies at K=4 channels. Winner (`learned_from_uniform`, α≈[0.25,
-0.50, 0.75, 0.95]) achieved 14.69 PPL at 4000 steps — the multi-ξ
-SPLM baseline.
+0.50, 0.75, 0.95]) achieved 14.69 PPL at 4000 steps (pilot). The
+full-training rerun below extends this to 11.51 PPL at 16k steps.
 
 - **Dataset:** TinyStories (5M tokens)
 - **GPU:** A100 40GB (~45 min per arm, 8000 steps)
+
+### colab_splm_multixi_rerun
+
+Re-runs the α-sweep winner (`learned_from_uniform`, α=[0.25, 0.50,
+0.75, 0.95]) at full 8k and 16k schedules to determine the converged
+Multi-Xi SPLM PPL.
+
+| Arm | Steps | PPL |
+|-----|-------|-----|
+| scaleup_8k | 8,000 | 12.49 |
+| extended_16k | 16,000 | **11.51** |
+
+The 16k run closes the gap from the pilot's 14.69 to **11.51** — a
+3.18 PPL improvement from training alone. The model now sits within
+3.70 PPL of the attention baseline (7.81) despite using no pairwise
+token interactions.
+
+![SPLM family comparison](notebooks/conservative_arch/scaleup/results/splm_multixi_rerun/splm_multixi_rerun_comparison.png)
+
+- **Dataset:** TinyStories (5M tokens)
+- **Results:** [`notebooks/conservative_arch/scaleup/results/splm_multixi_rerun/`](notebooks/conservative_arch/scaleup/results/splm_multixi_rerun/)
+- **GPU:** A100 40GB (~35 min for 8k, ~66 min for 16k)
 
 ### colab_parf_multixi
 
@@ -77,8 +100,8 @@ Three-arm pilot combining multi-channel K-EMA ξ with sparse PARF pair
 forces (MultiXiPARFLM). Tests competitive V_φ (k=8, k=4) and plain
 structural V_φ (k=8), all at H=16 and grad-accum=2 due to V_φ memory
 constraints. Best arm reached 15.44 PPL — better than single-ξ PARF
-(28 PPL) but above multi-ξ SPLM (14.69), suggesting V_φ capacity is
-the binding constraint.
+(28 PPL) but above multi-ξ SPLM (11.51 at 16k steps), suggesting V_φ
+capacity is the binding constraint.
 
 - **Arms:** competitive k=8, competitive k=4, structural k=8
 - **Dataset:** TinyStories (5M tokens)

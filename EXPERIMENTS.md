@@ -386,7 +386,27 @@ grad-accum=2).
 - **Paper:** §17 (multi-ξ results subsection)
 - **Notebook:** [`notebooks/conservative_arch/scaleup/colab_parf_multixi.ipynb`](notebooks/conservative_arch/scaleup/colab_parf_multixi.ipynb)
 - **Results:** GDrive `semsimula_parf_multixi/`
-- **Key finding:** Multi-ξ dramatically improves PARF (15.44 vs 28 PPL with single ξ) but V_φ at H=16 adds ~0.75 PPL overhead vs multi-ξ SPLM alone (14.69). V_φ capacity is the binding constraint.
+- **Key finding:** Multi-ξ dramatically improves PARF (15.44 vs 28 PPL with single ξ) but V_φ at H=16 adds ~0.75 PPL overhead vs multi-ξ SPLM alone (14.69 pilot; 11.51 at 16k). V_φ capacity is the binding constraint.
+
+### Multi-Xi SPLM full training rerun (8k / 16k)
+
+Full training rerun of the α-sweep winner (`learned_from_uniform`,
+α=[0.25, 0.50, 0.75, 0.95]) at the standard 8k scaleup and extended
+16k schedules, to determine the converged Multi-Xi SPLM PPL for the
+HuggingFace model card.
+
+| Arm | Steps | PPL |
+|-----|-------|-----|
+| **scaleup_8k** | 8,000 | 12.49 |
+| **extended_16k** | 16,000 | **11.51** |
+
+- **Paper:** §17 (multi-ξ results subsection)
+- **Model:** `ScalarPotentialLMSARFMassLNMultiXi` (16.5M params)
+- **Training script:** [`notebooks/conservative_arch/scaleup/train_splm_em_ln_multixi_scaleup.py`](notebooks/conservative_arch/scaleup/train_splm_em_ln_multixi_scaleup.py)
+- **Notebook:** [`notebooks/conservative_arch/scaleup/colab_splm_multixi_rerun.ipynb`](notebooks/conservative_arch/scaleup/colab_splm_multixi_rerun.ipynb)
+- **Results:** [`notebooks/conservative_arch/scaleup/results/splm_multixi_rerun/`](notebooks/conservative_arch/scaleup/results/splm_multixi_rerun/)
+- **Key finding:** Extended training from the pilot's 4000 steps (14.69 PPL) to 16,000 steps closes 3.18 PPL, reaching **11.51** — within 3.70 PPL of the attention baseline (7.81) despite no pairwise token interactions. The α channels converge to similar values regardless of training length: [0.25, 0.60, 0.81, 0.96] at 16k.
+- **HuggingFace:** Both checkpoints uploaded to [`dimitarpg13/semsimula-splm-multixi`](https://huggingface.co/dimitarpg13/semsimula-splm-multixi)
 
 ### Multi-Xi PARF H=128 scaleup
 

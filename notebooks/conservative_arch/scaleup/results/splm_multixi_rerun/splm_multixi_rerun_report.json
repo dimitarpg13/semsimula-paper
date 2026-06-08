@@ -1,0 +1,57 @@
+{
+  "experiment": "splm_multixi_rerun_8k_16k",
+  "motivation": "Full training of best pilot \u03b1-init at 8k and 16k steps",
+  "model": "ScalarPotentialLMSARFMassLNMultiXi (em_ln + multi-\u03be)",
+  "config": {
+    "fixed_gamma": 0.3,
+    "seed": 0,
+    "max_train_tokens": 5000000,
+    "d": 256,
+    "L": 8,
+    "v_hidden": 1024,
+    "v_depth": 3,
+    "xi_channels": 4,
+    "xi_alpha_inits": [
+      0.25,
+      0.5,
+      0.75,
+      0.95
+    ],
+    "xi_learnable": true,
+    "causal_force": true
+  },
+  "arms": {
+    "scaleup_8k": {
+      "max_steps": 8000,
+      "final_ppl": 12.488247452000936,
+      "final_alphas": [
+        0.23349103331565857,
+        0.5611025094985962,
+        0.781069278717041,
+        0.9583898186683655
+      ],
+      "final_gamma": 0.30000001192092896,
+      "elapsed_sec": 1997.0117774009705
+    },
+    "extended_16k": {
+      "max_steps": 16000,
+      "final_ppl": 11.510380692734374,
+      "final_alphas": [
+        0.24926145374774933,
+        0.5983831286430359,
+        0.8079418540000916,
+        0.9606558084487915
+      ],
+      "final_gamma": 0.30000001192092896,
+      "elapsed_sec": 3978.58300280571
+    }
+  },
+  "baselines": {
+    "Multi-\u03be SPLM pilot (4k)": 14.69,
+    "Multi-\u03be PARFLM (8k)": 12.06,
+    "Fock v2.1 (16k)": 9.3,
+    "Fock Attention (16k)": 9.42,
+    "Hybrid SPLM+Attn (16k)": 8.01,
+    "Attention baseline (8k)": 7.81
+  }
+}
