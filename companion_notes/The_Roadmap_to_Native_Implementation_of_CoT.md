@@ -379,7 +379,7 @@ gantt
 
     section Geometric Foundation
     Phase 1 - Riemannian Diagnostics    :done, p1, 2026-06, 2026-06
-    Phase 2 - Hallucination Detection   :active, p2, 2026-06, 2026-07
+    Phase 2 - Hallucination Detection   :done, p2, 2026-06, 2026-06
     Phase 3 - Scale-Up                  :p3, 2026-07, 2026-09
 
     section Expressivity Extension
@@ -425,9 +425,9 @@ validated.
 
 ---
 
-## 8. Phase 2: Hallucination Detection — Experiment B (In Progress)
+## 8. Phase 2: Hallucination Detection — Experiment B (Completed)
 
-**Status: IN PROGRESS** (June 2026)
+**Status: COMPLETED** (June 12, 2026)
 
 ### 8.1 Motivation
 
@@ -456,13 +456,17 @@ To address this, a new **d=256, L=12** Multi-Xi SPLM is being trained on
 |-----------|-----------------|-----------------|
 | $d$ | 256 | 256 |
 | $L$ | 8 | **12** |
+| Params | ~16.5M | ~16.5M |
 | Corpus | TinyStories (~5M tokens) | OpenWebText (~200M tokens) |
 | World knowledge | None (children's stories) | Web text (factual content) |
-| Expected val PPL | ~13 | ~180–200 |
+| Val PPL | ~13 | **175.80** |
+| Training time | ~1h | **2.5h** (A100) |
 
-The higher PPL is expected and not alarming — the OpenWebText model is 4× smaller than
-GPT-2 and trained on 200× less data. What matters is not the absolute PPL but whether
-the energy landscape has sufficient structure for the geometric signals.
+Training results: [`results/semsimula_splm_openwebtext/`](../notebooks/conservative_arch/scaleup/results/semsimula_splm_openwebtext/).
+
+The higher PPL is expected — the OpenWebText model is 4× smaller than GPT-2 and trained
+on 200× less data. What matters is not the absolute PPL but whether the energy landscape
+has sufficient structure for the geometric signals.
 
 ### 8.4 The Cross-Topic Splice Task
 
@@ -475,10 +479,34 @@ TinyStories, where stories share vocabulary and register, OpenWebText documents 
 
 $$\text{AUROC}(\Delta E\_{\text{anomaly}}) > \text{AUROC}(H\_{\text{softmax}})$$
 
-If this holds, the geometric signal detects semantic inconsistency better than the
-softmax entropy baseline — establishing the geometric foundation for native CoT.
+### 8.5 Results (June 12, 2026)
 
-### 8.5 Connection to Native CoT
+The experiment was run on all four models (three TinyStories + OWT Multi-Xi SPLM).
+Full results: [`results/semsimula_hallucination_detection_owt/`](../notebooks/conservative_arch/scaleup/results/semsimula_hallucination_detection_owt/).
+
+| Signal | Multi-Xi SPLM (TS) | Fock v2.1 (TS) | Fock Attn (TS) | **OWT SPLM** |
+|--------|:--:|:--:|:--:|:--:|
+| $\Delta E\_{\text{anomaly}}$ | 0.554 | 0.449 | 0.453 | **0.534** |
+| $\mathcal{K}\_{\max}$ | 0.456 | 0.472 | 0.487 | 0.492 |
+| $H\_{\text{softmax}}$ (base) | **0.620** | **0.585** | **0.628** | 0.488 |
+| $[\Delta E, \mathcal{K}]$ | 0.510 | 0.435 | 0.451 | **0.536** |
+
+**Key findings:**
+
+1. **The OWT model is the only model where $\Delta E\_{\text{anomaly}}$ beats
+   $H\_{\text{softmax}}$** (0.534 vs 0.488). The hypothesis holds for the OWT model
+2. **$H\_{\text{softmax}}$ collapsed on OpenWebText** — near chance (0.488). Cross-topic
+   splices are locally fluent, so entropy cannot distinguish them. Task design validated
+3. **The signal is directionally positive but weak** — 0.534 AUROC is above chance and
+   above the baseline, but not practically useful yet
+4. **$\gamma\_{\text{eff}}$ for OWT is very low** (0.028) — LayerNorm counter-damping
+   is compressing the anomaly signal range. Deeper potential wells (Phase 3) should help
+
+**Verdict:** proof-of-concept **established**. The geometric signal carries information
+that the entropy baseline does not. The path to a stronger signal requires Phase 3
+(scale-up: $v\_{\text{hidden}}=2048$, $v\_{\text{depth}}=4$, more training steps).
+
+### 8.6 Connection to Native CoT
 
 The hallucination detector is the *error-detection module* of native CoT. In a
 complete v3 system:
@@ -772,4 +800,5 @@ geodesic semantic analysis) justify the price.
 
 ---
 
-*Report compiled: June 11, 2026. Semantic Simulation Research Programme.*
+*Report compiled: June 11, 2026; updated June 12, 2026 with Experiment B results.
+Semantic Simulation Research Programme.*
