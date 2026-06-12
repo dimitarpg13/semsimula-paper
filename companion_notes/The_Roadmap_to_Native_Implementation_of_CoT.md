@@ -380,7 +380,7 @@ gantt
     section Geometric Foundation
     Phase 1 - Riemannian Diagnostics    :done, p1, 2026-06, 2026-06
     Phase 2 - Hallucination Detection   :done, p2, 2026-06, 2026-06
-    Phase 3 - Scale-Up                  :p3, 2026-07, 2026-09
+    Phase 3 - Scale-Up                  :active, p3, 2026-06, 2026-08
 
     section Expressivity Extension
     Phase 4 - v3 Operator Algebra       :p4, 2026-08, 2026-11
@@ -521,7 +521,7 @@ Experiment B validates step (3) — the system's ability to *detect* reasoning e
 
 ## 9. Phase 3: Scale-Up — Deeper Potential Wells
 
-**Status: PLANNED**
+**Status: IN PROGRESS** (June 2026)
 
 ### 9.1 Why Scale Matters for Geometry
 
@@ -532,19 +532,36 @@ attractor basins. For hallucination detection and native CoT, deeper wells mean:
 - **Sharper curvature** → more precise $\mathcal{K}\_{\max}$ trigger for reasoning
 - **Richer compositional structure** → more nuanced operator-target surfaces
 
-### 9.2 Recommended Scale-Up Path
+### 9.2 Scale-Up Configuration
 
 The V_\theta MLP is where all semantic structure lives. Scaling it is the
 highest-leverage change:
 
-| Config | V_\theta params | Expected impact |
-|--------|----------------|-----------------|
-| Current: $v\_{\text{hidden}}=1024$, $v\_{\text{depth}}=3$ | ~3M | Baseline |
-| **$v\_{\text{hidden}}=2048$, $v\_{\text{depth}}=4$** | ~16M | Richer landscape, deeper basins |
+| Config | V_\theta params | Total model params | Expected impact |
+|--------|----------------|-------------------|-----------------|
+| Phase 2: $v\_{\text{hidden}}=1024$, $v\_{\text{depth}}=3$ | ~2.4M | ~16.5M | Baseline (AUROC 0.534) |
+| **Phase 3: $v\_{\text{hidden}}=2048$, $v\_{\text{depth}}=4$** | **~11M** | **~25M** | Deeper basins, stronger signal |
+
+Full Phase 3 configuration:
+
+| Parameter | Phase 2 | **Phase 3** |
+|-----------|---------|-------------|
+| $d$ | 256 | 256 |
+| $L$ | 12 | 12 |
+| $v\_{\text{hidden}}$ | 1024 | **2048** |
+| $v\_{\text{depth}}$ | 3 | **4** |
+| $\xi\_{\text{channels}}$ | 4 | 4 |
+| $\gamma\_{\text{fixed}}$ | 0.30 | 0.30 |
+| Total steps | 50,000 | **100,000** |
+| Checkpoints | 10k/25k/50k | 25k/50k/75k/100k |
+| Corpus | OpenWebText (~200M tokens) | OpenWebText (~200M tokens) |
+| Est. wall time | ~2.5h (A100) | **~7-8h (A100)** |
 
 **Integration depth:** Increasing $L$ from 12 to 16 adds compute linearly without adding
 parameters. More layers = longer geodesics = more opportunity for $\Delta E\_{\text{anomaly}}$
-to accumulate detectable signal.
+to accumulate detectable signal. This is reserved for a potential Phase 3b.
+
+Training notebook: [`colab_splm_openwebtext_scaleup.ipynb`](../notebooks/conservative_arch/scaleup/colab_splm_openwebtext_scaleup.ipynb).
 
 ### 9.3 Training Scale
 
@@ -553,7 +570,7 @@ could plausibly reach **PPL 40–60**. This is achievable via:
 
 - 3 overnight sessions on Colab Pro+ A100 (using checkpoint resume)
 - Total wall time: ~50 hours
-- Infrastructure: already in place (`colab_splm_openwebtext.ipynb` with resume support)
+- Infrastructure: already in place (with resume support)
 
 ### 9.4 PPL Target for CoT Readiness
 
@@ -563,8 +580,8 @@ signals to be reliably above chance:
 
 $$\text{PPL}\_{\text{target}} \lesssim 60 \quad \Longrightarrow \quad \text{AUROC}(\Delta E\_{\text{anomaly}}) \gg 0.5$$
 
-The exact threshold is an empirical question — Phase 2 will establish the relationship
-between model quality and geometric signal strength.
+Phase 2 established the baseline relationship: AUROC 0.534 at PPL ~166. The Phase 3
+scale-up should improve both PPL and AUROC simultaneously.
 
 ---
 
@@ -800,5 +817,6 @@ geodesic semantic analysis) justify the price.
 
 ---
 
-*Report compiled: June 11, 2026; updated June 12, 2026 with Experiment B results.
+*Report compiled: June 11, 2026; updated June 12, 2026 with Experiment B results;
+updated June 12, 2026 with Phase 3 scale-up configuration.
 Semantic Simulation Research Programme.*
