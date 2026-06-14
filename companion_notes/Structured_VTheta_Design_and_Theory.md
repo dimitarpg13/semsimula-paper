@@ -24,7 +24,8 @@
 9. [Cost analysis and speedup](#9-cost-analysis-and-speedup)
 10. [Integration into SPLM, PARFLM, and Fock-PARFLM](#10-integration-into-splm-parflm-and-fock-parflm)
 11. [Recommendations](#11-recommendations)
-12. [References](#12-references)
+12. [Selecting the optimal mixture count $K_{\mathrm{mix}}$](#12-selecting-the-optimal-mixture-count-k_mix)
+13. [References](#13-references)
 
 ---
 
@@ -579,7 +580,248 @@ flowchart TD
 
 ---
 
-## 12. References
+## 12. Selecting the optimal mixture count $K_{\mathrm{mix}}$
+
+The SQ3 mixture of quadratic wells introduces a critical hyperparameter: the number of mixture components $K_{\mathrm{mix}}$. The TinyStories SPLM results show that doubling $K_{\mathrm{mix}}$ from 4 to 8 closes 0.77 PPL (14.10 → 13.33), but the A2 attractor decoding reveals that ~3 of the 8 basins are near-uniform (unused). This section surveys five approaches for selecting $K_{\mathrm{mix}}$ and provides practical implementation algorithms for each.
+
+### 12.1 Approach 1: Attractor extraction from a trained MLP
+
+**Idea.** Train a standard MLP $V_\theta$, extract its attractor basins using gradient descent, and count the number of distinct basins $K^*$. Use $K^* $ as $K_{\mathrm{mix}}$ for the structured replacement.
+
+**When to use.** When an MLP baseline is already available and the goal is to match its landscape structure exactly.
+
+**Algorithm:**
+
+```
+Input: trained MLP V_theta, representative prompts P, seeds S
+Output: K* (optimal mixture count)
+
+1. For each prompt p in P:
+   a. Compute xi_p = causal_context(p)
+   b. For each seed s in S (e.g. 384 seeds):
+      - Initialise h_0 ~ N(0, sigma^2 I)
+      - Run gradient descent: h_{t+1} = h_t - lr * grad_h V_theta(xi_p, h_t)
+        for 1,500 steps with lr = 0.01
+      - Record converged h* (check |grad V| < epsilon)
+   c. Cluster converged points using DBSCAN(eps=0.5, min_samples=5)
+   d. Record K_p = number of clusters for prompt p
+
+2. K* = round(mean(K_p across all prompts))
+   Confidence: report std(K_p) and the per-prompt distribution
+```
+
+**Practical notes:**
+- The 1,500-step GD extraction is expensive (~3 minutes per prompt on GPU for $d = 128$)
+- Not all seeds converge; report convergence rate (the VR0--VR4 sweep shows rates from 2% to 100% depending on regularisation)
+- DBSCAN `eps` must be tuned to the $V_\theta$ scale; a good heuristic is $\epsilon = 0.5 \times \text{median pairwise distance of converged } h^*$
+- The PR2 experiments found $K^* \approx 4$ at $d = 128$ on TinyShakespeare
+
+**Limitations:**
+- Requires a trained MLP (circular if the goal is to avoid training one)
+- GD-based extraction may miss shallow basins
+- Seed-dependent: reported $K^*$ depends on initialisation distribution
+
+### 12.2 Approach 2: Validation sweep over $K_{\mathrm{mix}}$
+
+**Idea.** Train SQ3 with multiple values of $K_{\mathrm{mix}}$ and select the $K$ that minimises validation PPL.
+
+**When to use.** When compute budget allows multiple runs. Most reliable but most expensive.
+
+**Algorithm:**
+
+```
+Input: dataset D, K_candidates = [2, 4, 8, 16], model config C
+Output: K_opt
+
+1. For each K in K_candidates:
+   a. Build SQ3(K=K, d=C.d, tau=1.0)
+   b. Train for N steps on D_train
+   c. Evaluate PPL on D_val
+   d. Record (K, PPL_val, K_eff)
+      where K_eff = #{k : max_t w_k(h_t, xi_t) > 0.01}
+
+2. K_opt = argmin_K PPL_val
+   Secondary criterion: prefer smaller K if PPL difference < 0.5
+
+3. Plot:
+   - PPL_val vs K (expect diminishing returns)
+   - K_eff vs K (expect saturation: K_eff << K for large K)
+```
+
+**Practical notes:**
+- Geometric spacing (2, 4, 8, 16) is sufficient; finer grids rarely help
+- Each run can be shortened to ~1/3 of full training (PPL ranking stabilises early)
+- Track $K_{\mathrm{eff}}$ during training to detect early if $K$ is over-provisioned
+- The SPLM TinyStories results suggest $K_{\mathrm{opt}} \approx 8$ for $d = 256$
+
+**Limitations:**
+- Linear cost in the number of candidates
+- Optimal $K$ may depend on dataset, $d$, and architecture (SPLM vs PARFLM vs Fock)
+
+### 12.3 Approach 3: Over-provision and prune
+
+**Idea.** Initialise with a large $K_{\mathrm{max}}$ (e.g. 16 or 32), train normally, and let the model self-select the effective number of basins. Inactive basins are identified post-training and optionally pruned.
+
+**When to use.** The recommended default approach --- requires only a single training run and yields $K_{\mathrm{eff}}$ as a byproduct.
+
+**Algorithm:**
+
+```
+Input: dataset D, K_max (e.g. 16 or 32), model config C
+       Optional: L1 penalty weight lambda_prune
+Output: K_eff, pruned model
+
+1. Build SQ3(K=K_max, d=C.d, tau=1.0)
+
+2. (Optional) Add L1 penalty to accelerate pruning:
+   L_prune = lambda_prune * sum(softplus(alpha_k))
+   where alpha_k are the pre-softmax mixing logits
+   Recommended: lambda_prune = 1e-4 to 1e-3
+
+3. Train for N steps on D_train
+
+4. Count active basins on D_val:
+   For each validation batch (h, xi):
+     w_k = softmax(-E_k / tau) * pi_k   (responsibility weights)
+     activity[k] += (max_t w_k > epsilon)
+   K_eff = #{k : activity[k] / n_batches > delta}
+   Recommended: epsilon = 0.01, delta = 0.05
+
+5. (Optional) Prune inactive basins:
+   active_indices = {k : activity[k] / n_batches > delta}
+   new_mu = mu[active_indices]
+   new_a  = a[active_indices]
+   new_pi = renormalise(pi[active_indices])
+   Return SQ3(K=K_eff) with transplanted parameters
+
+6. (Optional) Fine-tune pruned model for M << N steps
+   to recover any minor PPL regression from pruning
+```
+
+**Practical notes:**
+- The A2 TinyStories result ($K_{\mathrm{max}} = 8$, $K_{\mathrm{eff}} \approx 5$) validates this approach empirically
+- The $L_1$ penalty on mixing logits drives unused $\alpha_k \to -\infty$, making $\pi_k \to 0$ and deactivating the basin cleanly
+- This is analogous to the Dirichlet-process stick-breaking prior in Bayesian GMMs, where the concentration parameter $\alpha_0$ controls the effective number of components
+- Monitoring $K_{\mathrm{eff}}$ during training provides an early stopping signal: if $K_{\mathrm{eff}}$ has stabilised for 20% of training, the run can be shortened
+- The over-provisioning cost is modest: $K_{\mathrm{max}} = 32$ vs $K = 4$ increases $V_\theta$ parameter count by 8x, but $V_\theta$ is a small fraction of total model parameters
+
+**Limitations:**
+- The initial training run has higher parameter count (and memory) than necessary
+- Pruning may introduce a small PPL regression (~0.1--0.3 PPL in preliminary tests); fine-tuning recovers this
+- The activity threshold $\epsilon$ requires calibration
+
+### 12.4 Approach 4: Information-theoretic selection (BIC/AIC)
+
+**Idea.** Treat the structured $V_\theta$ as a density model (via the Gaussian well equivalence) and use Bayesian Information Criterion (BIC) or Akaike Information Criterion (AIC) to select $K$.
+
+**When to use.** When a principled model-selection criterion is desired and the Gaussian well interpretation is central to the analysis.
+
+**Algorithm:**
+
+```
+Input: trained SQ3 models for K in K_candidates, validation set D_val
+Output: K_opt
+
+1. For each K in K_candidates:
+   a. Compute log-likelihood under the GMM interpretation:
+      LL(K) = sum_t log( sum_k pi_k * N(h_t; mu_k(xi_t), tau * diag(1/a_k(xi_t))) )
+      where the sum is over all validation tokens t
+
+   b. Count effective parameters:
+      p(K) = K * (d + d + 1)   [mu_k projections + a_k projections + mixing logits]
+            + K * d_xi * (2d + 1)  [the linear maps from xi]
+
+   c. Compute BIC and AIC:
+      BIC(K) = -2 * LL(K) + p(K) * log(n)
+      AIC(K) = -2 * LL(K) + 2 * p(K)
+      where n = number of validation tokens
+
+2. K_opt = argmin_K BIC(K)   [BIC preferred for large n]
+```
+
+**Practical notes:**
+- The Gaussian well equivalence (Section 4.3) makes the likelihood computation well-defined: $V_\theta = -\tau \log \sum_k \pi_k \exp(-E_k / \tau)$ is the negative log marginal of a GMM
+- BIC penalises complexity more heavily than AIC and is preferred when $n$ (number of tokens) is large (which it always is for language modelling)
+- The log-likelihood can be computed as a byproduct of the forward pass with negligible additional cost
+- BIC tends to select smaller $K$ than validation-PPL sweeps because it penalises unused parameters even when they don't hurt PPL
+
+**Limitations:**
+- The BIC/AIC framework assumes the Gaussian well interpretation is exact, but the actual $V_\theta$ landscape is modified by training dynamics and regularisation
+- Requires multiple trained models (same cost as Approach 2)
+- Does not account for the interaction between $K_{\mathrm{mix}}$ and other hyperparameters ($\tau$, $\lambda_V$)
+
+### 12.5 Approach 5: Spectral analysis of MLP Hessian
+
+**Idea.** Compute the Hessian $H = \nabla^2_h V_\theta$ of the trained MLP at each attractor and analyse its spectrum. The number of significant eigenvalue clusters indicates the intrinsic dimensionality of the basin structure, guiding $K_{\mathrm{mix}}$.
+
+**When to use.** For detailed landscape analysis when understanding the basin geometry (not just the count) is important.
+
+**Algorithm:**
+
+```
+Input: trained MLP V_theta, extracted attractors {h*_k}, context xi
+Output: K* and per-basin curvature profiles
+
+1. For each attractor h*_k:
+   a. Compute Hessian H_k = d^2 V / dh^2 at (xi, h*_k)
+      - For d <= 512: full Hessian via torch.autograd.functional.hessian()
+      - For d > 512: top-r eigenvalues via Lanczos iteration
+        (scipy.sparse.linalg.eigsh or torch stochastic Lanczos)
+
+   b. Eigendecompose: H_k = U_k Lambda_k U_k^T
+      - Sort eigenvalues: lambda_1 >= lambda_2 >= ... >= lambda_d
+
+   c. Classify basin geometry:
+      - If all lambda_i > 0: genuine minimum (attractor)
+      - If some lambda_i < 0: saddle point (not a true basin)
+      - If lambda_i ~ 0 for i > r: effective rank r
+        (the basin has r "stiff" directions and d-r "flat" directions)
+
+   d. Compute effective rank:
+      r_k = #{i : lambda_i > epsilon * lambda_1}
+      where epsilon = 0.01 (1% of leading eigenvalue)
+
+2. K* = number of attractors with all-positive eigenvalues
+   Report per-basin r_k to guide SQ2 rank parameter
+
+3. (Optional) Fit SQ2 rank:
+   r_opt = median(r_k) across all basins
+   This tells you whether diagonal (SQ1/SQ3) or low-rank (SQ2)
+   precision is needed
+```
+
+**Practical notes:**
+- Full Hessian at $d = 128$ costs $O(d^3) \approx 2M$ FLOPs per attractor; feasible on GPU
+- At $d = 4096$ (scale-up), the Lanczos method with $r = 32$ iterations is necessary ($O(r \cdot d^2)$ FLOPs)
+- The eigenvalue spectrum also reveals whether the SQ3 diagonal precision assumption is adequate: if the Hessian is far from diagonal, SQ2's low-rank factor is needed
+- This approach provides the richest information but is the most computationally expensive
+
+**Limitations:**
+- Requires a trained MLP and extracted attractors (combines the cost of Approach 1 + Hessian computation)
+- Hessian computation is expensive at large $d$
+- Saddle points may be misidentified as attractors if GD doesn't fully converge
+
+### 12.6 Comparison of approaches
+
+| Approach | Runs required | Cost | Output | Recommended for |
+|----------|---------------|------|--------|-----------------|
+| 1. Attractor extraction | 1 (MLP) | High (GD extraction) | $K^*$ count | When MLP baseline exists |
+| 2. Validation sweep | $|K_{\mathrm{candidates}}|$ | High (multiple runs) | PPL-optimal $K$ | Final tuning |
+| 3. Over-provision/prune | 1 | Low | $K_{\mathrm{eff}}$ + pruned model | **Default recommendation** |
+| 4. BIC/AIC | $|K_{\mathrm{candidates}}|$ | Medium | Information-theoretic $K$ | When GMM interpretation matters |
+| 5. Spectral analysis | 1 (MLP) | Very high | $K^*$ + curvature profiles | Detailed landscape understanding |
+
+**Recommended workflow:**
+
+1. **Start with Approach 3** (over-provision/prune) as the default. Set $K_{\mathrm{max}} = 2 \times K_{\mathrm{guess}}$ where $K_{\mathrm{guess}}$ is your best prior (e.g. 8 based on the SPLM TinyStories result).
+2. If $K_{\mathrm{eff}}$ is close to $K_{\mathrm{max}}$, double $K_{\mathrm{max}}$ and retrain.
+3. For final papers/releases, validate with **Approach 2** (sweep) using $K \in \{K_{\mathrm{eff}}/2, K_{\mathrm{eff}}, 2 K_{\mathrm{eff}}\}$ around the pruning result.
+4. Use **Approach 4** (BIC) if the Gaussian well interpretation is the theoretical focus.
+5. Use **Approach 5** (Hessian spectral) only for deep-dive analysis of specific prompts/basins.
+
+---
+
+## 13. References
 
 ### Internal documents
 
@@ -603,4 +845,4 @@ flowchart TD
 
 ---
 
-*Last updated: 14 June 2026. Phase 1 implementation complete; Phase 2 (analytical gradient wiring) queued pending sweep results.*
+*Last updated: 14 June 2026. Phase 1 implementation complete; Section 12 ($K_{\mathrm{mix}}$ selection) added with five approaches and practical algorithms. Phase 2 (analytical gradient wiring) queued pending sweep results.*
