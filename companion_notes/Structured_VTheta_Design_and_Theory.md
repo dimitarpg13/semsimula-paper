@@ -24,7 +24,7 @@
 9. [Cost analysis and speedup](#9-cost-analysis-and-speedup)
 10. [Integration into SPLM, PARFLM, and Fock-PARFLM](#10-integration-into-splm-parflm-and-fock-parflm)
 11. [Recommendations](#11-recommendations)
-12. [Selecting the optimal mixture count $K_{\mathrm{mix}}$](#12-selecting-the-optimal-mixture-count-k_mix)
+12. [Selecting the optimal mixture count K_mix](#12-selecting-the-optimal-mixture-count-k_mix)
 13. [References](#13-references)
 
 ---
@@ -580,7 +580,7 @@ flowchart TD
 
 ---
 
-## 12. Selecting the optimal mixture count $K_{\mathrm{mix}}$
+## 12. Selecting the optimal mixture count K_mix
 
 The SQ3 mixture of quadratic wells introduces a critical hyperparameter: the number of mixture components $K_{\mathrm{mix}}$. The TinyStories SPLM results show that doubling $K_{\mathrm{mix}}$ from 4 to 8 closes 0.77 PPL (14.10 → 13.33), but the A2 attractor decoding reveals that ~3 of the 8 basins are near-uniform (unused). This section surveys five approaches for selecting $K_{\mathrm{mix}}$ and provides practical implementation algorithms for each.
 
