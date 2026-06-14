@@ -586,7 +586,7 @@ The SQ3 mixture of quadratic wells introduces a critical hyperparameter: the num
 
 ### 12.1 Approach 1: Attractor extraction from a trained MLP
 
-**Idea.** Train a standard MLP $V_\theta$, extract its attractor basins using gradient descent, and count the number of distinct basins $K^{\ast}$. Use $K^{\ast} $ as $K_{\mathrm{mix}}$ for the structured replacement.
+**Idea.** Train a standard MLP $V_\theta$, extract its attractor basins using gradient descent, and count the number of distinct basins $K^{\ast}$. Use $K^{\ast}$ as $K_{\mathrm{mix}}$ for the structured replacement.
 
 **When to use.** When an MLP baseline is already available and the goal is to match its landscape structure exactly.
 
