@@ -131,7 +131,7 @@ At $\lambda_V = 1$ (VR4), $V_\theta$ collapses to a range of just 13 with std 0.
 
 ### 3.2 The information-theoretic argument
 
-If the trained $V_\theta$ is nearly constant (range 0.26--3.0 under regularisation), the information content of the landscape is low. A quadratic form with $O(d)$ parameters can represent a single-well landscape exactly; a mixture of $K$ quadratics with $O(Kd)$ parameters can represent the empirically observed $K^* \approx 4$ basin structure. Both are orders of magnitude below the MLP's parameter budget.
+If the trained $V_\theta$ is nearly constant (range 0.26--3.0 under regularisation), the information content of the landscape is low. A quadratic form with $O(d)$ parameters can represent a single-well landscape exactly; a mixture of $K$ quadratics with $O(Kd)$ parameters can represent the empirically observed $K^{\ast} \approx 4$ basin structure. Both are orders of magnitude below the MLP's parameter budget.
 
 ---
 
@@ -244,7 +244,7 @@ The force at each point $h$ is a responsibility-weighted average of the per-basi
 
 **Attractors:** the $K$ minima are at $h_k^* = \mu_k(\xi)$, all readable directly from the parameters.
 
-**Parameter count at $d = 128$, $K = 4$:** 4 sets of ($\mu$, $a$) projections plus mixing weights = **133K** (2x the MLP baseline, but with $K = 4$ explicit attractors matching the empirically observed $K^* = 4$ basin structure from the PR2 experiments).
+**Parameter count at $d = 128$, $K = 4$:** 4 sets of ($\mu$, $a$) projections plus mixing weights = **133K** (2x the MLP baseline, but with $K = 4$ explicit attractors matching the empirically observed $K^{\ast} = 4$ basin structure from the PR2 experiments).
 
 ### 4.4 SQ4: Hybrid Quadratic + Small MLP Residual
 
@@ -373,7 +373,7 @@ $$
 
 The mixture potential $V_\theta = -\tau \log \sum_k \pi_k \exp(-E_k / \tau)$ is the negative log marginal of this mixture. The learned $\mu_k(\xi)$ are the **semantic attractor centres** -- the $\xi$-dependent locations in hidden-state space toward which the dynamics naturally converge.
 
-The PR2 regularisation experiments found $K^* \approx 4$ distinguishable basins per prompt, matching the SQ3 default of $K = 4$.
+The PR2 regularisation experiments found $K^{\ast} \approx 4$ distinguishable basins per prompt, matching the SQ3 default of $K = 4$.
 
 ---
 
@@ -416,7 +416,7 @@ The core tension: **regularisation makes $V_\theta$ interpretable as an energy l
 The VR4 result ($\lambda_V = 1$) resolves this tension positively:
 
 - **100% GD convergence** across all 5 prompts (384/384 seeds each)
-- $K^* = 3.8$ basins per prompt -- actually **higher** than VR0's $K^* = 3.4$
+- $K^{\ast} = 3.8$ basins per prompt -- actually **higher** than VR0's $K^{\ast} = 3.4$
 - The bounded potential has **more distinguishable basins**, not fewer
 
 This is the key result that enables structured $V_\theta$: if the regularised landscape is still multi-modal, then a structured parameterisation (SQ3 with $K = 4$) can capture it by construction.
@@ -440,7 +440,7 @@ All structured $V_\theta$ experiments use the same baseline recipe as the PR2 PA
 |------|-----------------|--------------|---------|
 | SQ1 | Diagonal quadratic | ~190--210 (1 attractor may underfit) | 2x |
 | SQ2 | Low-rank ($r = 8$) | ~185--195 | 2x |
-| SQ3 | **Mixture $K = 4$** | **~180--190** (matches PR2 $K^* = 4$) | 2x |
+| SQ3 | **Mixture $K = 4$** | **~180--190** (matches PR2 $K^{\ast} = 4$) | 2x |
 | SQ4 | Hybrid quadratic + MLP | ~185 (safety net) | 1.3x |
 | SQ5 | MLP (reference) | 186 | 1x |
 
@@ -575,7 +575,7 @@ flowchart TD
 ### 11.3 Open questions
 
 1. **Does the SQ3 mixture log-sum-exp numerics remain stable at $d = 256$ or $d = 4096$?** The softmax responsibilities $q_k$ involve exponentials of quadratic forms in high dimensions. Numerical overflow/underflow may require careful temperature scheduling.
-2. **Should $K$ adapt to $d$?** At $d = 4096$ (Phase 4 scale-up), $K = 4$ may be insufficient. The PR2 $K^* = 4$ observation is at $d = 128$; scaling laws for $K^*$ vs $d$ are unknown.
+2. **Should $K$ adapt to $d$?** At $d = 4096$ (Phase 4 scale-up), $K = 4$ may be insufficient. The PR2 $K^{\ast} = 4$ observation is at $d = 128$; scaling laws for $K^{\ast}$ vs $d$ are unknown.
 3. **Can structured $V_\theta$ enable Verlet at scale?** The regularisation results (VR5) show Verlet beating Euler by 40 PPL when $V_\theta$ is bounded. Structured $V_\theta$ is bounded by construction -- does it unlock the Verlet advantage without explicit regularisation?
 
 ---
@@ -586,7 +586,7 @@ The SQ3 mixture of quadratic wells introduces a critical hyperparameter: the num
 
 ### 12.1 Approach 1: Attractor extraction from a trained MLP
 
-**Idea.** Train a standard MLP $V_\theta$, extract its attractor basins using gradient descent, and count the number of distinct basins $K^*$. Use $K^* $ as $K_{\mathrm{mix}}$ for the structured replacement.
+**Idea.** Train a standard MLP $V_\theta$, extract its attractor basins using gradient descent, and count the number of distinct basins $K^{\ast}$. Use $K^{\ast} $ as $K_{\mathrm{mix}}$ for the structured replacement.
 
 **When to use.** When an MLP baseline is already available and the goal is to match its landscape structure exactly.
 
@@ -614,12 +614,12 @@ Output: K* (optimal mixture count)
 - The 1,500-step GD extraction is expensive (~3 minutes per prompt on GPU for $d = 128$)
 - Not all seeds converge; report convergence rate (the VR0--VR4 sweep shows rates from 2% to 100% depending on regularisation)
 - DBSCAN `eps` must be tuned to the $V_\theta$ scale; a good heuristic is $\epsilon = 0.5 \times \text{median pairwise distance of converged } h^*$
-- The PR2 experiments found $K^* \approx 4$ at $d = 128$ on TinyShakespeare
+- The PR2 experiments found $K^{\ast} \approx 4$ at $d = 128$ on TinyShakespeare
 
 **Limitations:**
 - Requires a trained MLP (circular if the goal is to avoid training one)
 - GD-based extraction may miss shallow basins
-- Seed-dependent: reported $K^*$ depends on initialisation distribution
+- Seed-dependent: reported $K^{\ast}$ depends on initialisation distribution
 
 ### 12.2 Approach 2: Validation sweep over $K_{\mathrm{mix}}$
 
@@ -805,11 +805,11 @@ Output: K* and per-basin curvature profiles
 
 | Approach | Runs required | Cost | Output | Recommended for |
 |----------|---------------|------|--------|-----------------|
-| 1. Attractor extraction | 1 (MLP) | High (GD extraction) | $K^*$ count | When MLP baseline exists |
+| 1. Attractor extraction | 1 (MLP) | High (GD extraction) | $K^{\ast}$ count | When MLP baseline exists |
 | 2. Validation sweep | $|K_{\mathrm{candidates}}|$ | High (multiple runs) | PPL-optimal $K$ | Final tuning |
 | 3. Over-provision/prune | 1 | Low | $K_{\mathrm{eff}}$ + pruned model | **Default recommendation** |
 | 4. BIC/AIC | $|K_{\mathrm{candidates}}|$ | Medium | Information-theoretic $K$ | When GMM interpretation matters |
-| 5. Spectral analysis | 1 (MLP) | Very high | $K^*$ + curvature profiles | Detailed landscape understanding |
+| 5. Spectral analysis | 1 (MLP) | Very high | $K^{\ast}$ + curvature profiles | Detailed landscape understanding |
 
 **Recommended workflow:**
 
