@@ -18,6 +18,9 @@ run instructions.
 |------|-----------|---------------------|--------|
 | [A1–A10](#structured-v_theta-tinystories-sweep-a1a10-b1b2) | §17.10, Tab 27 | Structured V_theta TinyStories sweep (SQ1–SQ4 + MLP variants) | completed |
 | [B1–B2](#structured-v_theta-tinystories-sweep-a1a10-b1b2) | §17.10, Tab 27 | MLP V_theta baselines for structured V_theta comparison | completed |
+| [SPLM-SVT-A1–A5](#multi-xi-splm-structured-vtheta-a1a5) | §17d, Tab 29 | Structured V_theta (SQ3) sweep on Multi-Xi SPLM — 5 arms, best A2 **13.33 PPL** | completed |
+| [PARF-SVT-A2](#multi-xi-parflm-structured-vtheta-a2) | §17d, Tab 29 | Structured V_theta (SQ3) on Multi-Xi PARFLM — A2 arm, **12.27 PPL**, 0.17 PPL gap | completed |
+| [Fock-SVT-A2](#fock-parflm-structured-vtheta-a2) | §17d, Tab 29 | Structured V_theta (SQ3) on Fock-PARFLM v2.1 — A2 arm, **10.36 PPL**, Fock paradox | completed |
 | [D1–D9](#fockparf-v2-debug-d1d9) | §17c | FockPARF v2 debug cells on TinyStories | completed |
 | [D6–D10](#qft-v21-planned-series-d6d10) | §17c.4 | Planned QFT v2.1 incremental tests | planned |
 | [E-init / E15](#e-init-mass-validation-e15) | §12.7 | Forward integration of Euler–Lagrange from GPT-2 initial conditions | completed |
@@ -654,6 +657,68 @@ Systematic comparison at TinyStories scale. Fixed SparsePARFLM backbone
 - **Notebook:** [`notebooks/conservative_arch/parf/scripts/structured_vtheta_tinystories_sweep.ipynb`](notebooks/conservative_arch/parf/scripts/structured_vtheta_tinystories_sweep.ipynb)
 - **Key finding:** SQ3 matches the MLP reference at TinyStories scale. SQ5 (MLP rerun) diverges due to large initial ‖V_theta‖² destabilising next-token loss.
 
+
+### Multi-Xi SPLM structured V_theta (A1–A5)
+
+Five-arm SQ3 hyperparameter sweep on the Multi-Xi SPLM, replacing the MLP V_theta
+with `StructuredVThetaMultiXiAdapter(MixtureQuadraticVTheta(...))`. Arms vary K_mix
+(4 or 8), tau (1.0 or 0.5), and K_xi (4 or 8), all with lambda_V=0.01. Run at the
+standard scaleup config (d=256, L=8, 16k steps, TinyStories 5M tokens).
+
+| Arm | K_mix | tau | K_xi | PPL | V_theta params |
+|-----|-------|-----|------|-----|----------------|
+| A1 | 4 | 1.0 | 4 | 14.10 | 2.1M |
+| **A2** | **8** | **1.0** | **4** | **13.33** | **4.2M** |
+| A3 | 4 | 0.5 | 4 | 14.10 | 2.1M |
+| A4 | 4 | 1.0 | 8 | 14.16 | 4.2M |
+| A5 | 8 | 1.0 | 8 | 14.25 | 8.4M |
+| B1 (MLP ref.) | — | — | 4 | 11.51 | — |
+
+- **Paper:** §17d (structured scalar potential), Table 29
+- **Notebook:** [`notebooks/conservative_arch/scaleup/colab_splm_multixi_structured_vtheta.ipynb`](notebooks/conservative_arch/scaleup/colab_splm_multixi_structured_vtheta.ipynb)
+- **Model file:** [`notebooks/conservative_arch/parf/model_structured_vtheta_multixi.py`](notebooks/conservative_arch/parf/model_structured_vtheta_multixi.py)
+- **Results:** GDrive `semsimula_splm_multixi_structured_vtheta/`
+- **HuggingFace (A2):** [`dimitarpg13/semsimula-splm-multixi-structured-vtheta`](https://huggingface.co/dimitarpg13/semsimula-splm-multixi-structured-vtheta)
+- **Key finding:** A2 (K_mix=8, K_xi=4) achieves **13.33 PPL** — a 1.82 PPL expressivity gap vs the MLP reference (11.51). Six of eight attractor basins are active at convergence. V_theta landscape: mean 0.31, range 47.2. Learned xi-channel alphas: [0.25, 0.60, 0.81, 0.96].
+
+### Multi-Xi PARFLM structured V_theta (A2)
+
+Single-arm structured V_theta experiment on the Multi-Xi PARFLM using the SPLM
+winner configuration (A2: SQ3, K_mix=8, tau=1.0, K_xi=4, lambda_V=0.01). Reveals
+V_theta landscape compression: the pairwise V_phi potential absorbs the bulk of the
+nonlinear force budget, leaving V_theta operating as a near-flat bias field and
+drastically shrinking the structured-vs-MLP PPL gap.
+
+| Arm | K_mix | K_xi | PPL | PPL gap vs MLP |
+|-----|-------|------|-----|----------------|
+| **A2** | **8** | **4** | **12.27** | **0.17 PPL (0.6%)** |
+| MLP ref. | — | 4 | 12.10 | — |
+
+- **Paper:** §17d (structured scalar potential), Table 29
+- **Notebook:** [`notebooks/conservative_arch/scaleup/colab_parf_multixi_structured_vtheta.ipynb`](notebooks/conservative_arch/scaleup/colab_parf_multixi_structured_vtheta.ipynb)
+- **Model file:** [`notebooks/conservative_arch/parf/model_structured_vtheta_multixi.py`](notebooks/conservative_arch/parf/model_structured_vtheta_multixi.py)
+- **Results:** GDrive `semsimula_parf_multixi_structured_vtheta/`
+- **HuggingFace (A2):** [`dimitarpg13/semsimula-parflm-multixi-structured-vtheta`](https://huggingface.co/dimitarpg13/semsimula-parflm-multixi-structured-vtheta)
+- **Key finding:** V_phi in PARFLM compresses the V_theta landscape (mean 0.02, range 31.4 vs 47.2 in SPLM), reducing the expressivity gap from 1.82 PPL (SPLM) to just 0.17 PPL (0.6%). Learned xi-channel alphas: [0.24, 0.49, 0.74, 0.95].
+
+### Fock-PARFLM structured V_theta (A2)
+
+Structured V_theta experiment on Fock-PARFLM v2.1 (`FockMultiXiPARFLM`, d=256, L=8,
+M=16 registers, LIFO, reverse channel, per-register learnable temperature, per-register
+key subspaces, orthogonal init). Uses the A2 arm (SQ3, K_mix=8, K_xi=4, lambda_V=0.01)
+from the same hyperparameter sweep as SPLM and PARFLM experiments.
+
+| Arm | K_mix | K_xi | PPL | PPL gap vs MLP |
+|-----|-------|------|-----|----------------|
+| **A2** | **8** | **4** | **10.36** | **1.06 PPL (11.4%)** |
+| MLP ref. (B1) | — | 4 | 9.30 | — |
+
+- **Paper:** §17d (structured scalar potential), Table 29
+- **Notebook:** [`notebooks/conservative_arch/scaleup/colab_fock_multixi_structured_vtheta.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_multixi_structured_vtheta.ipynb)
+- **Model file:** [`notebooks/conservative_arch/parf/model_structured_vtheta_multixi.py`](notebooks/conservative_arch/parf/model_structured_vtheta_multixi.py)
+- **Results:** GDrive `semsimula_fock_multixi_structured_vtheta/`
+- **HuggingFace (A2):** [`dimitarpg13/semsimula-fock-parflm-structured-vtheta`](https://huggingface.co/dimitarpg13/semsimula-fock-parflm-structured-vtheta)
+- **Key finding:** The "Fock precision paradox" — despite the most compressed V_theta landscape of all three architectures (mean 0.008, range 19.1), the structured-vs-MLP PPL gap is *larger* than PARFLM's (1.06 PPL vs 0.17 PPL). Attributed to the Fock model operating closer to the TinyStories entropy floor, where residual V_theta imprecision has amplified marginal impact. Learned xi-channel alphas: [0.24, 0.51, 0.76, 0.97].
 ---
 
 ## FockPARF v2 / QFT (§17c)

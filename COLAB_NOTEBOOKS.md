@@ -276,6 +276,9 @@ whether attention layers absorb the PPL cost of V_theta reg, making it effective
 |----------|------|-------------|
 | [structured_vtheta_sweep](#svtheta_sweep) | `notebooks/conservative_arch/parf/scripts/structured_vtheta_sweep.ipynb` | Structured V_theta expressivity test (SQ1-SQ5) on TinyShakespeare |
 | [structured_vtheta_tinystories_sweep](#svtheta_tinystories) | `notebooks/conservative_arch/parf/scripts/structured_vtheta_tinystories_sweep.ipynb` | Structured V_theta landscape sweep (SQ1-SQ4 + MLP) on TinyStories |
+| [colab_splm_multixi_structured_vtheta](#svtheta_splm_multixi) | `notebooks/conservative_arch/scaleup/colab_splm_multixi_structured_vtheta.ipynb` | SQ3 V_theta sweep on Multi-Xi SPLM (TinyStories) — 5 arms, best **13.33 PPL** |
+| [colab_parf_multixi_structured_vtheta](#svtheta_parf_multixi) | `notebooks/conservative_arch/scaleup/colab_parf_multixi_structured_vtheta.ipynb` | SQ3 V_theta on Multi-Xi PARFLM (TinyStories) — A2 arm, **12.27 PPL** |
+| [colab_fock_multixi_structured_vtheta](#svtheta_fock_multixi) | `notebooks/conservative_arch/scaleup/colab_fock_multixi_structured_vtheta.ipynb` | SQ3 V_theta sweep on Fock-PARFLM v2.1 (TinyStories) — A2 arm, **10.36 PPL** |
 
 ### svtheta_sweep
 
@@ -300,6 +303,75 @@ CUDA step-timing benchmark and cross-cell comparison dashboard.
 - **Cells:** A1-A10, B1, B2
 - **Dataset:** TinyStories (5M tokens)
 - **GPU:** Any CUDA (16k steps each)
+
+### svtheta_splm_multixi
+
+Five-arm SQ3 hyperparameter sweep on the Multi-Xi SPLM (`ScalarPotentialLMSARFMassLNMultiXi`,
+d=256, L=8, logfreq mass). The MLP V_theta is replaced by
+`StructuredVThetaMultiXiAdapter(MixtureQuadraticVTheta(...))` before training. Arms
+vary K_mix (4 or 8), tau (1.0 or 0.5), and K_xi (4 or 8), all with lambda_V=0.01.
+Includes training-curve logging, V_theta landscape statistics, and analytical attractor
+basin decoding for 5 prompt types. The adapter code is in
+`notebooks/conservative_arch/parf/model_structured_vtheta_multixi.py`.
+
+| Arm | K_mix | tau | K_xi | Best PPL | V_theta params |
+|-----|-------|-----|------|----------|----------------|
+| A1 | 4 | 1.0 | 4 | 14.10 | 2.1M |
+| **A2** | **8** | **1.0** | **4** | **13.33** | **4.2M** |
+| A3 | 4 | 0.5 | 4 | 14.10 | 2.1M |
+| A4 | 4 | 1.0 | 8 | 14.16 | 4.2M |
+| A5 | 8 | 1.0 | 8 | 14.25 | 8.4M |
+| B1 (MLP ref.) | — | — | 4 | 11.51 | — |
+
+- **Dataset:** TinyStories (5M tokens)
+- **GPU:** A100 40GB (~2-3h per arm, 16k steps)
+- **Model:** [`notebooks/conservative_arch/parf/model_structured_vtheta_multixi.py`](notebooks/conservative_arch/parf/model_structured_vtheta_multixi.py)
+- **HuggingFace (A2 checkpoint):** [`dimitarpg13/semsimula-splm-multixi-structured-vtheta`](https://huggingface.co/dimitarpg13/semsimula-splm-multixi-structured-vtheta)
+- **Key finding:** A2 (K_mix=8) achieves **13.33 PPL** — 1.82 PPL above the MLP reference (11.51), confirming the SQ3 structured expressivity ceiling for SPLM. Six of eight attractor basins are active at convergence (mean activation 0.84); the landscape spans mean 0.31, range 47.2.
+
+### svtheta_parf_multixi
+
+Single-arm structured V_theta experiment on Multi-Xi PARFLM (`MultiXiPARFLM`, d=256,
+L=8, competitive V_phi hidden=128, top-k=8, Gumbel routing). Uses the SPLM winner
+configuration (A2: SQ3, K_mix=8, tau=1.0, K_xi=4, lambda_V=0.01) trained from
+scratch. Demonstrates the "V_theta landscape compression" phenomenon: with V_phi
+carrying the bulk of the force budget, the structured V_theta collapses to a near-flat
+bias field (mean 0.02, range 31.4) and the structured-vs-MLP PPL gap shrinks from
+1.82 PPL in SPLM to just 0.17 PPL (0.6%) in PARFLM.
+
+| Arm | K_mix | tau | K_xi | Best PPL | PPL gap vs MLP |
+|-----|-------|-----|------|----------|----------------|
+| **A2** | **8** | **1.0** | **4** | **12.27** | **0.17 PPL (0.6%)** |
+| MLP ref. | — | — | 4 | 12.10 | — |
+
+- **Dataset:** TinyStories (5M tokens)
+- **GPU:** A100 40GB (~3h, 16k steps)
+- **Model:** [`notebooks/conservative_arch/parf/model_structured_vtheta_multixi.py`](notebooks/conservative_arch/parf/model_structured_vtheta_multixi.py)
+- **HuggingFace (A2 checkpoint):** [`dimitarpg13/semsimula-parflm-multixi-structured-vtheta`](https://huggingface.co/dimitarpg13/semsimula-parflm-multixi-structured-vtheta)
+- **Key finding:** V_phi in PARFLM absorbs the bulk of the nonlinear force budget, compressing the V_theta landscape dramatically (range 31.4 vs 47.2 in SPLM) and reducing the expressivity gap to near-zero. Learned xi-channel alphas: [0.24, 0.49, 0.74, 0.95].
+
+### svtheta_fock_multixi
+
+Multi-arm structured V_theta experiment on Fock-PARFLM v2.1 (`FockMultiXiPARFLM`,
+d=256, L=8, M=16 registers, LIFO discipline, reverse channel, per-register learnable
+temperature, per-register key subspaces, orthogonal register init). Arm A2 (SQ3,
+K_mix=8, K_xi=4) is the primary comparator, matching the SPLM/PARFLM winner
+configuration. Reveals the "Fock precision paradox": Fock-PARFLM produces the most
+compressed V_theta landscape (mean 0.008, range 19.1) of all three architectures, yet
+yields a *larger* PPL gap (1.06 PPL, 11.4% vs MLP) than PARFLM (0.17 PPL, 0.6%)
+because the model operates near the dataset entropy floor where residual V_theta
+precision carries more weight.
+
+| Arm | V_theta | K_mix | Best PPL | PPL gap vs MLP |
+|-----|---------|-------|----------|----------------|
+| **A2** | **SQ3 K=8** | **8** | **10.36** | **1.06 PPL (11.4%)** |
+| MLP ref. (B1) | MLP | — | 9.30 | — |
+
+- **Dataset:** TinyStories (5M tokens)
+- **GPU:** A100 40GB (~3h per arm, 16k steps)
+- **Model:** [`notebooks/conservative_arch/parf/model_structured_vtheta_multixi.py`](notebooks/conservative_arch/parf/model_structured_vtheta_multixi.py)
+- **HuggingFace (A2 checkpoint):** [`dimitarpg13/semsimula-fock-parflm-structured-vtheta`](https://huggingface.co/dimitarpg13/semsimula-fock-parflm-structured-vtheta)
+- **Key finding:** The "Fock precision paradox" — despite the most compressed V_theta landscape (V_theta landscape mean 0.008, range 19.1), the expressivity gap is larger than in PARFLM. This is attributed to the Fock model operating at a higher baseline (9.30 PPL) closer to the TinyStories entropy floor, where even small V_theta imprecisions have amplified marginal impact on perplexity.
 
 ---
 

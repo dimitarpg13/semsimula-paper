@@ -427,12 +427,13 @@ This is the key result that enables structured $V_\theta$: if the regularised la
 
 ### 8.1 Overview
 
-Two full-scale structured $V_\theta$ experiments have been completed on TinyStories, using the SQ3 (mixture of quadratic wells) variant:
+Three full-scale structured $V_\theta$ experiments have been completed on TinyStories, using the SQ3 (mixture of quadratic wells) variant:
 
 1. **Multi-Xi SPLM** — a 5-arm hyperparameter sweep varying $K_{\mathrm{mix}}$, $\tau$, and $K_\xi$
 2. **Multi-Xi PARFLM** — a single arm (A2) replicating the best SPLM configuration with pairwise forces ($V_\phi$) enabled
+3. **Multi-Xi Fock-PARFLM v2.1** — a single arm (A2) with the full Fock v2.1 configuration (16 registers, stack discipline, reverse channel, per-register $\tau$/keys)
 
-Both experiments train from scratch on TinyStories (~5M tokens, GPT-2 BPE, vocab 50,257) with $d = 256$, $L = 8$, AdamW, cosine-decay LR = 5e-4, and 16,000 training steps.
+All experiments train from scratch on TinyStories (~5M tokens, GPT-2 BPE, vocab 50,257) with $d = 256$, $L = 8$, AdamW, cosine-decay LR = 5e-4, and 16,000 training steps.
 
 ### 8.2 Experiment 1: Multi-Xi SPLM with structured $V_\theta$
 
@@ -516,16 +517,47 @@ The $V_\theta$ landscape undergoes **drastic compression** in PARFLM: the mean d
 
 **Learned $\xi$-channel decay rates (PARFLM A2):** $[\alpha_1, \ldots, \alpha_4] = [0.11, 0.55, 0.81, 0.97]$ — nearly identical to the SPLM A2 values $[0.12, 0.59, 0.84, 0.97]$, confirming that the causal EMA context structure is robust to both the $V_\theta$ parameterisation and the presence of $V_\phi$.
 
-### 8.5 Summary: the expressivity ceiling and the role of $V_\phi$
+### 8.5 Experiment 3: Multi-Xi Fock-PARFLM v2.1 with structured $V_\theta$
 
-| Architecture | Structured $V_\theta$ PPL | MLP $V_\theta$ PPL | Gap | Gap (%) |
-|--------------|--------------------------|---------------------|-----|---------|
-| Multi-Xi SPLM | 13.33 | 11.51 | 1.82 | 5.5% |
-| Multi-Xi PARFLM | 12.27 | 12.10 | 0.17 | 0.6% |
+**Configuration.** The base architecture is the Multi-Xi Fock-PARFLM v2.1 (`FockMultiXiPARFLM`) — extending PARFLM with 16 Fock registers, per-register $\tau$ and keys, orthogonal initialisation, stack discipline, and a reverse channel. The same $V_\theta$ replacement is applied: SQ3 with $K_{\mathrm{mix}} = 8$, $\tau = 1.0$, $K_\xi = 4$, $\lambda_V = 0.01$. Trained from scratch for 16,000 steps.
 
-The 1.82 PPL gap in SPLM reflects a fundamental **expressivity ceiling** of the quadratic-well family: each well produces a linear restoring force, whereas the MLP can generate arbitrary nonlinear force fields (see Section 6). However, the introduction of $V_\phi$ in PARFLM essentially **eliminates** this ceiling. The pairwise potential absorbs the nonlinear structure that quadratic wells cannot express, reducing the $V_\theta$ landscape to a near-flat bias field whose exact parameterisation barely matters.
+**Result:**
 
-This finding has a critical practical implication: **structured $V_\theta$ is essentially free in PARFLM** — 0.17 PPL is well within noise for a 0.6% excess cross-entropy, while the interpretability (explicit attractor centres) and speed (analytical gradients) benefits are retained in full.
+| Arm | $K_{\mathrm{mix}}$ | $\tau$ | $K_\xi$ | Best PPL | Best step | PPL gap vs MLP | Gap (%) |
+|-----|-----|------|------|----------|-----------|----------------|---------|
+| **A2** | **8** | **1.0** | **4** | **10.36** | **14,400** | **1.06** | **11.4%** |
+
+**MLP baseline (Fock-PARFLM v2.1, 16k steps): 9.30 PPL.**
+
+**$V_\theta$ landscape statistics (Fock-PARFLM A2):**
+
+| Metric | Fock-PARFLM structured $V_\theta$ | PARFLM structured $V_\theta$ | SPLM structured $V_\theta$ |
+|--------|----------------------------------|------------------------------|----------------------------|
+| Mean $V_\theta$ | 0.008 | 0.02 | 99.8 |
+| Std $V_\theta$ | 0.26 | 0.51 | 26.3 |
+| Min | -5.49 | -2.69 | 9.0 |
+| Max | 13.6 | 28.7 | 653.9 |
+| Range | 19.1 | 31.4 | 644.9 |
+
+**The Fock paradox: maximal compression, moderate gap.** The Fock-PARFLM exhibits the most compressed $V_\theta$ landscape across all three architectures (mean 0.008, range 19.1), yet the expressivity gap (1.06 PPL, 11.4%) is **six times larger** than PARFLM's (0.17 PPL, 0.6%). This paradox has a clear explanation: at 9.30 PPL, the Fock model operates closer to the dataset's entropy floor, where the marginal value of each nat of $V_\theta$ precision is higher. The Fock register mechanism (creation/destruction operators, stack discipline, reverse channel) creates a more structured dynamical regime where even a near-flat $V_\theta$ must provide fine-grained corrections that the diagonal quadratic parameterisation cannot match.
+
+**Learned $\xi$-channel decay rates (Fock-PARFLM A2):** $[\alpha_1, \ldots, \alpha_4] = [0.14, 0.56, 0.79, 0.95]$ — again stable and consistent with SPLM ($[0.12, 0.59, 0.84, 0.97]$) and PARFLM ($[0.11, 0.55, 0.81, 0.97]$), confirming that the causal EMA context structure is invariant to the $V_\theta$ parameterisation, the presence of $V_\phi$, and the Fock dynamics.
+
+### 8.6 Summary: the expressivity ceiling across three architectures
+
+| Architecture | Structured $V_\theta$ PPL | MLP $V_\theta$ PPL | Gap | Gap (%) | Mean $V_\theta$ | Range |
+|--------------|--------------------------|---------------------|-----|---------|-----------------|-------|
+| Multi-Xi SPLM | 13.33 | 11.51 | 1.82 | 5.5% | 99.8 | 644.9 |
+| Multi-Xi Fock-PARFLM v2.1 | 10.36 | 9.30 | 1.06 | 11.4% | 0.008 | 19.1 |
+| Multi-Xi PARFLM | 12.27 | 12.10 | 0.17 | 0.6% | 0.02 | 31.4 |
+
+Three key findings emerge from the cross-architecture comparison:
+
+1. **Landscape compression is monotonic:** SPLM $\to$ PARFLM $\to$ Fock-PARFLM shows monotonically decreasing $V_\theta$ dynamic range as additional modelling capacity ($V_\phi$, then Fock registers) progressively marginalises $V_\theta$'s role.
+
+2. **The expressivity gap is non-monotonic with respect to landscape compression.** PARFLM achieves the smallest gap (0.17 PPL) despite having a less compressed landscape than Fock-PARFLM. The Fock model's richer dynamics demand higher-precision $V_\theta$ corrections at its lower absolute PPL, creating a regime where even tiny $V_\theta$ signals carry disproportionate information.
+
+3. **Structured $V_\theta$ remains practical across all three architectures.** The cost ranges from negligible (PARFLM: 0.6% excess CE) through moderate (SPLM: 5.5%) to meaningful but manageable (Fock-PARFLM: 11.4%). In all cases, the interpretability (explicit attractor centres) and speed (analytical gradients) benefits are retained in full.
 
 ---
 
@@ -600,9 +632,9 @@ This eliminates the second-order computation graph for the $V_\theta$ contributi
 |-------|-----------------|----------------|----------------|
 | Multi-Xi SPLM | sole force | 1.82 PPL (5.5%) | use when interpretability > raw PPL |
 | Multi-Xi PARFLM | one of two forces ($V_\theta + V_\phi$) | **0.17 PPL (0.6%)** | **recommended default** |
-| Fock-PARFLM v2.1 | one of two forces ($V_\theta + V_\phi$) | not yet tested | expected similar to PARFLM |
+| Fock-PARFLM v2.1 | one of two forces ($V_\theta + V_\phi$) + Fock registers | 1.06 PPL (11.4%) | use when interpretability justifies the gap |
 
-The critical empirical insight is that the expressivity ceiling depends entirely on whether $V_\phi$ is present. In SPLM, $V_\theta$ is the sole force and must carry all nonlinear structure; in PARFLM, $V_\phi$ absorbs it, compressing $V_\theta$'s landscape to near-zero dynamic range (see Section 8.4).
+The critical empirical insight is that the expressivity ceiling depends on two factors: (1) whether $V_\phi$ is present, and (2) how close the model operates to the dataset's entropy floor. In SPLM, $V_\theta$ is the sole force and must carry all nonlinear structure. In PARFLM, $V_\phi$ absorbs it, compressing $V_\theta$'s landscape to near-zero dynamic range (see Section 8.4). In Fock-PARFLM, the landscape is even flatter, but the richer dynamics demand higher-precision $V_\theta$ corrections at the lower absolute PPL, leading to a moderate gap despite maximal landscape compression (see Section 8.5).
 
 ### 10.4 Applicability summary
 
@@ -610,7 +642,7 @@ The critical empirical insight is that the expressivity ceiling depends entirely
 |-------|---------------|---------------|----------------------|
 | SPLM / Multi-Xi SPLM | full 2x on force | moderate (5.5%) | 8 explicit attractor centres |
 | PARFLM / Multi-Xi PARFLM | ~2x on $V_\theta$ only ($V_\phi$ dominates) | **negligible (0.6%)** | 8 explicit attractor centres |
-| Fock-PARFLM v2.1 | ~2x on $V_\theta$ only | expected negligible | 8 explicit attractor centres |
+| Fock-PARFLM v2.1 | ~2x on $V_\theta$ only ($V_\phi$ + Fock dominate) | meaningful (11.4%) | 8 explicit attractor centres |
 
 ---
 
@@ -618,13 +650,15 @@ The critical empirical insight is that the expressivity ceiling depends entirely
 
 ### 11.1 Architecture-specific guidance
 
-**For PARFLM / Fock-PARFLM:** structured $V_\theta$ is the **recommended default**. The empirical results (Section 8.4) show a negligible 0.17 PPL gap (0.6% excess CE) while providing full analytical gradients and explicit attractor readout. The pairwise $V_\phi$ absorbs all nonlinear structure, making the MLP's expressivity advantage irrelevant.
+**For PARFLM:** structured $V_\theta$ is the **recommended default**. The empirical results (Section 8.4) show a negligible 0.17 PPL gap (0.6% excess CE) while providing full analytical gradients and explicit attractor readout. The pairwise $V_\phi$ absorbs all nonlinear structure, making the MLP's expressivity advantage irrelevant.
+
+**For Fock-PARFLM v2.1:** structured $V_\theta$ is a **viable option when interpretability is valued**. The Fock experiment (Section 8.5) shows a 1.06 PPL gap (11.4% excess CE) — larger than PARFLM despite even greater landscape compression. At the Fock model's lower absolute PPL (9.30), the remaining $V_\theta$ signal carries higher-precision information that the quadratic parameterisation cannot match. Users should weigh this cost against the analytical-gradient and attractor-readout benefits.
 
 **For SPLM (no $V_\phi$):** structured $V_\theta$ is recommended when **interpretability or inference speed** is valued over the last ~1.8 PPL points. The 5.5% excess cross-entropy is the cost of a fully transparent, analytically differentiable potential.
 
 ### 11.2 Which variant to use
 
-- **SQ3 with $K_{\mathrm{mix}} = 8$** is the validated best choice. At $d = 256$, $K_\xi = 4$, this configuration achieves the best PPL in both SPLM (13.33) and PARFLM (12.27). The model self-prunes to $K_{\text{eff}} \approx 5$ active basins.
+- **SQ3 with $K_{\mathrm{mix}} = 8$** is the validated best choice. At $d = 256$, $K_\xi = 4$, this configuration achieves the best PPL across all three architectures: SPLM (13.33), PARFLM (12.27), and Fock-PARFLM (10.36). The model self-prunes to $K_{\text{eff}} \approx 5$ active basins.
 - **$K_\xi = 4$ is sufficient.** Increasing to $K_\xi = 8$ did not improve PPL in the SPLM sweep (A4: 14.16, A5: 14.25), despite doubling the $V_\theta$ parameter count. The four-channel EMA structure captures the necessary context variation.
 - **$\tau = 1.0$ is the correct temperature.** Lowering to $\tau = 0.5$ had no effect (A1 = A3 = 14.10 PPL). The Gaussian-mixture interpretation ($\tau = 1$) is both theoretically motivated and empirically optimal.
 - **SQ1 (single quadratic)** remains an option when parameter budget is tight, but is untested at the TinyStories scale.
@@ -636,13 +670,15 @@ The critical empirical insight is that the expressivity ceiling depends entirely
 2. **Train with $\lambda_V = 0.01$.** This regularisation keeps the $V_\theta$ landscape bounded without interfering with convergence.
 3. **Decode attractors post-training.** Project each $\mu_k(\xi)$ through the LM head to verify basin specialisation and count $K_{\text{eff}}$.
 4. **For PARFLM: adopt structured $V_\theta$ as the default.** The 0.6% PPL cost is negligible; the analytical gradient and explicit attractor centres are free benefits.
+5. **For Fock-PARFLM: evaluate the cost-benefit.** The 11.4% excess CE is non-negligible. Adopt structured $V_\theta$ when attractor readout or analytical-gradient inference is needed; retain MLP $V_\theta$ when maximising PPL is the priority.
 
 ### 11.4 Open questions
 
 1. **Scaling laws for $K_{\mathrm{mix}}$.** At $d = 256$ the model uses $K_{\text{eff}} \approx 5$ of $K_{\mathrm{mix}} = 8$. How does $K_{\text{eff}}$ scale with $d$, vocab size, and dataset complexity? The OpenWebText scale-up experiments will provide the first data point.
-2. **Structured $V_\theta$ for Fock-PARFLM v2.1.** The Fock extension introduces additional operators but retains the same $V_\theta + V_\phi$ force structure. The PARFLM results predict a similarly negligible expressivity gap, but this has not yet been verified experimentally.
-3. **Verlet integration with structured $V_\theta$.** The regularisation results (VR5) show Verlet beating Euler by 40 PPL when $V_\theta$ is bounded. Structured $V_\theta$ is bounded by construction — does it unlock the Verlet advantage without explicit regularisation? This is particularly promising given that the $V_\theta$ landscape in PARFLM is already near-flat.
-4. **Log-sum-exp numerics at $d = 4096$.** The softmax responsibilities $q_k$ involve exponentials of quadratic forms in high dimensions. At the OpenWebText scale ($d = 4096$), numerical overflow/underflow may require careful temperature scheduling or log-domain computation.
+2. **The Fock precision paradox.** Why does Fock-PARFLM exhibit a 6x larger expressivity gap than PARFLM despite a flatter $V_\theta$ landscape? The leading hypothesis is that at lower absolute PPL ($9.30$ vs $12.10$), the model operates closer to the dataset's entropy floor, making the marginal value of each nat of $V_\theta$ precision higher. Can this be characterised quantitatively, e.g. by measuring the sensitivity of Fock-PARFLM's loss to small perturbations of $V_\theta$'s output?
+3. **Higher $K_{\mathrm{mix}}$ for Fock-PARFLM.** The Fock notebook includes an A3 arm with $K_{\mathrm{mix}} = 16$. If the 1.06 PPL gap is driven by the quadratic wells' limited precision rather than their limited expressivity, increasing $K_{\mathrm{mix}}$ may help by providing finer-grained partitioning of the residual $V_\theta$ signal.
+4. **Verlet integration with structured $V_\theta$.** The regularisation results (VR5) show Verlet beating Euler by 40 PPL when $V_\theta$ is bounded. Structured $V_\theta$ is bounded by construction — does it unlock the Verlet advantage without explicit regularisation? This is particularly promising given that the $V_\theta$ landscape in PARFLM and Fock-PARFLM is already near-flat.
+5. **Log-sum-exp numerics at $d = 4096$.** The softmax responsibilities $q_k$ involve exponentials of quadratic forms in high dimensions. At the OpenWebText scale ($d = 4096$), numerical overflow/underflow may require careful temperature scheduling or log-domain computation.
 
 ---
 
