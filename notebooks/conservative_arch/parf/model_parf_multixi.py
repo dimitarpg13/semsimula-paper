@@ -88,6 +88,10 @@ class MultiXiPARFConfig(SparsePARFConfig):
     xi_alpha_init_mode: str = "explicit"   # "explicit" | "log_spaced"
     xi_tau_max: float = 100.0
 
+    # Stability: force clamping and LN-before-V_theta.
+    force_clamp_max: Optional[float] = None   # clamp force to [-F, F] per dim
+    ln_before_vtheta: bool = False            # LN(h) before V_theta evaluation
+
 
 # ---------------------------------------------------------------------------
 # Model
@@ -148,6 +152,12 @@ class MultiXiPARFLM(SparsePARFLM):
             learnable=cfg.xi_learnable,
         )
 
+        # ── Optional LN before V_theta (bounds force input range) ──
+        if cfg.ln_before_vtheta:
+            self.ln_before_v = nn.LayerNorm(cfg.d, eps=cfg.ln_eps)
+        else:
+            self.ln_before_v = None
+
     # ------------------------------------------------------------------
     @torch.no_grad()
     def xi_alpha_values(self) -> List[float]:
@@ -187,8 +197,9 @@ class MultiXiPARFLM(SparsePARFLM):
             h_in.detach() if cfg.score_head_use_detached_h_src else h_in
         )
 
-        # ── V_theta on multi-channel ξ ──
-        V_th_per_token = self.V_theta(xis, h_in)                # (B, T, 1)
+        # ── V_theta on multi-channel ξ (optional LN on h before eval) ──
+        h_for_v = self.ln_before_v(h_in) if self.ln_before_v is not None else h_in
+        V_th_per_token = self.V_theta(xis, h_for_v)             # (B, T, 1)
 
         # ── Score head → routing ──
         pi = self.score_head(h_in, h_src_for_score)              # (B, T, T)
@@ -225,6 +236,9 @@ class MultiXiPARFLM(SparsePARFLM):
             retain_graph=True,
         )
         f = -grad_U
+
+        if cfg.force_clamp_max is not None:
+            f = f.clamp(-cfg.force_clamp_max, cfg.force_clamp_max)
 
         denom = 1.0 + dt * gamma
         h_new = h_in + delta / denom + (dt * dt / (m_b * denom)) * f
