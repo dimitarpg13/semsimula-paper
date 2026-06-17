@@ -50,7 +50,8 @@ class MixtureGaussianVTheta(StructuredVThetaBase):
 
     def __init__(self, d: int, K: int = 8, w_scale: float = 1.0,
                  xi_d: Optional[int] = None,
-                 init_log_precision: Optional[float] = None):
+                 init_log_precision: Optional[float] = None,
+                 precision_max: Optional[float] = None):
         """
         Parameters
         ----------
@@ -72,12 +73,22 @@ class MixtureGaussianVTheta(StructuredVThetaBase):
             Set this to ``-math.log(d)`` so that ``sigma_eff ≈ sqrt(d)``
             and the wells are active from step 1.
             None keeps the default (``softplus(0) ≈ 0.693``, very narrow).
+        precision_max : float or None
+            Hard upper bound on per-dimension precision ``a_k``.  Equivalent
+            to a floor on ``sigma_k = 1/sqrt(a_k)``.  Without this cap the
+            optimizer can drive ``a_k → ∞``, collapsing wells into
+            delta-function spikes whose force diverges (same instability
+            mechanism as SQ3 Blowup 2, arriving via precision).
+            Recommended value: ``1.0 / d`` → ``sigma_min = sqrt(d)``.
+            A looser ``2.0 / d`` allows sigma down to ``sqrt(d/2)``.
+            None disables the constraint.
         """
         super().__init__()
         self.d = d
         self.K = K
         self.w_scale = w_scale
         self._init_log_precision = init_log_precision
+        self._precision_max: Optional[float] = precision_max
         in_d = xi_d if xi_d is not None else d
         self.mu_proj = nn.Linear(in_d, K * d)
         self.a_proj = nn.Linear(in_d, K * d)
@@ -103,6 +114,8 @@ class MixtureGaussianVTheta(StructuredVThetaBase):
         lead = xi.shape[:-1]
         mu = self.mu_proj(xi).view(*lead, self.K, self.d)
         a = (F.softplus(self.a_proj(xi)) + 1e-4).view(*lead, self.K, self.d)
+        if self._precision_max is not None:
+            a = a.clamp(max=self._precision_max)
         w = F.softmax(self.w_proj(xi), dim=-1) * self.w_scale   # (..., K)
         return mu, a, w
 

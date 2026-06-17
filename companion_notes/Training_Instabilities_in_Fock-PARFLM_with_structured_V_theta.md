@@ -19,6 +19,8 @@
 9. [Architectural Path Forward: Gaussian Wells with SARF Anchors](#9-architectural-path-forward-gaussian-wells-with-sarf-anchors)
    - 9.9 [Connection to the Reinforcement Field and the Paper's SARF Dynamics](#99-connection-to-the-reinforcement-field-and-the-papers-sarf-dynamics-section-6-equation-48)
 10. [Implementation Diagnostic: SARF Well Deactivation by `ln_after_step` Scale Mismatch](#10-implementation-diagnostic-sarf-well-deactivation-by-ln_after_step-scale-mismatch)
+11. [G3 Sigma Drift: Well Deactivation During Training](#11-g3-sigma-drift-well-deactivation-during-training)
+12. [G1 Precision Explosion: Blowup 2 Revisited via Unbounded Gaussian Precision](#12-g1-precision-explosion-blowup-2-revisited-via-unbounded-gaussian-precision)
 
 ---
 
@@ -1498,6 +1500,304 @@ V_phi routing during the warmup ramp.
 | Gaussian exponent | $\exp(-128) \approx 0$ | $\exp(-0.99) \approx 0.37$ |
 | `v_reg` at step 1 | 0.0000 | 0.1356 |
 | Wells active? | No | Yes |
+
+---
+
+## 11. G3 Sigma Drift: Well Deactivation During Training
+
+### 11.1. Context
+
+After the scale-mismatch fix (Section 10), the G3 arm (SARF Gaussian wells,
+`N_S=64` frozen PMI-peak anchors, `init_log_sigma=2.77`) trained successfully
+on TinyStories with non-zero `v_reg` from step 1 and stable gradient norms
+(1–5 throughout). The training curve showed healthy convergence through the
+first ~7000 steps.
+
+### 11.2. Symptom: PPL Plateau at 18.67
+
+The val PPL trajectory showed rapid initial descent followed by a hard plateau:
+
+| Step | val\_ppl | v\_reg |
+|------|---------|--------|
+| 400 | 147.34 | 0.108 |
+| 2000 | 41.88 | 0.020 |
+| 4000 | 29.75 | 0.018 |
+| 7600 | 21.21 | 0.006 |
+| 9200 | 20.41 | 0.006 |
+| **11600** | **18.67** | **0.006** |
+| 12000 | 19.22 | 0.007 |
+| 13200 | 18.76 | 0.006 |
+
+The model plateaued at 18.67 PPL — far above the SQ3 reference (10.36 PPL)
+and MLP baseline (8.95 PPL). The subsequent 4400 steps produced no
+improvement.
+
+### 11.3. Root Cause: Unconstrained $\log\sigma$ Growth
+
+The `log_sigma` parameter for each anchor is a learned `nn.Parameter`. As
+training progressed, the optimizer pushed $\log\sigma$ upward, widening
+every well:
+
+| Step | Typical v\_reg | Implied well state |
+|------|---------------|-------------------|
+| 1 | 0.136 | Wells engaged, restoring force active |
+| 1000 | 0.038 | Wells weakening |
+| 5000 | 0.008 | Wells nearly flat |
+| 11000 | 0.006 | Wells effectively inactive |
+
+With $\sigma$ growing without bound, the Gaussian well widens until it is
+virtually flat. The potential evaluates to approximately $-w_j$ everywhere
+(a constant), producing near-zero force:
+
+$$
+F_j = \frac{w_j}{\sigma_j^2}(a_j - h)\exp\Bigl(-\frac{\lVert h - a_j \rVert^2}{2\sigma_j^2}\Bigr)
+$$
+
+When $\sigma_j \gg \lVert h - a_j \rVert$, the exponential $\approx 1$ but
+the $1/\sigma_j^2$ prefactor drives $F_j \to 0$.
+
+The model discovered that minimising NTP loss is easier without the V_theta
+structural constraint. Since $\log\sigma$ is free to grow, the optimizer
+simply deactivated V_theta by widening all wells into flatness, leaving
+V_phi (structural competitive routing) as the sole driver of learning.
+The 18.67 PPL plateau is V_phi's capacity ceiling for this architecture.
+
+### 11.4. Fix: `log_sigma_max` — Projected Gradient Constraint
+
+Two enforcement points prevent $\sigma$ from escaping:
+
+**Forward-pass clamp** in the `sigma` property:
+
+```python
+@property
+def sigma(self) -> torch.Tensor:
+    ls = self.log_sigma
+    if self._log_sigma_max is not None:
+        ls = ls.clamp(max=self._log_sigma_max)
+    return ls.exp().clamp(min=1e-3)
+```
+
+**Post-step projection** via `clamp_params()`, called after every
+`optimizer.step()`:
+
+```python
+def clamp_params(self) -> None:
+    if self._log_sigma_max is not None:
+        self.log_sigma.data.clamp_(max=self._log_sigma_max)
+```
+
+Both are needed: the forward-pass clamp ensures the effective sigma is always
+bounded, and the post-step projection prevents Adam's momentum from
+accumulating past the boundary (which would cause the optimizer to see a
+flat gradient surface and waste capacity updating a parameter that has no
+effect).
+
+**Recommended value:**
+
+$$
+\log\sigma_{\max} = \tfrac{1}{2}\log d + 1.0 \approx 3.77 \quad\Longrightarrow\quad \sigma_{\max} = e \cdot \sqrt{d} \approx 43.5
+$$
+
+This allows $\sigma$ to grow by one e-fold beyond $\sqrt{d}$, giving the
+wells room to adapt while preventing the flat-well collapse. The minimum
+force at the boundary:
+
+$$
+F_{\min} = \frac{w_j}{\sigma_{\max}} e^{-1/2} \approx \frac{0.607}{64 \times 43.5} \approx 2.2 \times 10^{-4}
+$$
+
+Small but non-zero — the wells remain structurally present as soft
+attractors rather than vanishing entirely.
+
+### 11.5. Architectural Lesson
+
+This failure reveals a fundamental tension in the Gaussian well architecture:
+**bounded potential does not imply bounded expressiveness**. The potential
+$V \in [-\sum w_j, 0]$ is always bounded, but the optimizer can trivially
+satisfy the regulariser $\mathcal{R} = \mathrm{mean}(V^2)$ by making the
+potential uniformly close to $-\sum w_j$ everywhere (wide flat wells),
+rather than by creating structured force landscapes.
+
+The constraint hierarchy for stable, expressive Gaussian wells is:
+
+1. **Bounded potential** (architectural, from the Gaussian form) — prevents
+   Blowup 1.
+2. **Bounded force** (via `precision_max` or `log_sigma_max`) — prevents
+   Blowup 2.
+3. **Bounded sigma** (via `log_sigma_max`) — prevents well deactivation.
+
+All three are necessary. Section 9 established (1); Section 10 fixed the
+scale mismatch so the wells could engage; this section establishes (3).
+Section 12 below addresses (2) for learned-centre wells.
+
+---
+
+## 12. G1 Precision Explosion: Blowup 2 Revisited via Unbounded Gaussian Precision
+
+### 12.1. Context
+
+The G1 arm (`MixtureGaussianVTheta`, K=8 learned centres, `init_log_precision
+= -log(D)`) was expected to be the direct SQ3 replacement: same parameter
+count, same functional role, but with bounded potential. It trained with non-zero
+`v_reg` from step 1 (the init-precision fix from Section 10 worked), but
+exhibited a qualitatively different failure from G3.
+
+### 12.2. Symptom: Gradient Explosion Without PPL Collapse
+
+Unlike the SQ3 blowups (which caused loss spikes and divergence) or the G3
+drift (which caused silent deactivation), G1 showed **sustained, escalating
+gradient norms** throughout training while PPL continued to improve slowly:
+
+| Step range | Typical grad (pre-clip) | val\_ppl at end |
+|-----------|------------------------|----------------|
+| 1–400 | 1–36 | 126.35 |
+| 400–2400 | 5–63 | 28.34 |
+| 2400–6000 | 10–190 | 25.12 |
+| 6000–10000 | 30–1328 | 23.06 |
+| 10000–14800 | 50–1328 | 20.82 |
+
+Final result: **20.82 PPL** — worse than G3 (18.67 PPL) despite having
+far more V_theta parameters and learnable centres. The gradient spikes
+consumed optimiser capacity and prevented the model from reaching its
+potential.
+
+### 12.3. Root Cause: Unbounded Per-Dimension Precision $a_k$
+
+For `MixtureGaussianVTheta`, the per-dimension precision is:
+
+$$
+a_k(\xi) = \mathrm{softplus}(a\_\mathrm{proj}(\xi)) + 10^{-4}
+$$
+
+The `softplus` function is unbounded above: as the linear projection
+$a\_\mathrm{proj}(\xi)$ produces larger values, $a_k \to \infty$ without
+limit. This makes the effective per-dimension width:
+
+$$
+\sigma_{k,\mathrm{eff}} = 1/\sqrt{a_k} \to 0
+$$
+
+The Gaussian well collapses to a delta-function spike. The **potential**
+remains bounded (the Gaussian bumps are always in $[-w_k, 0]$), but the
+**force** (negative gradient of V) diverges:
+
+$$
+F_{\max} = \frac{0.607 \cdot w_k}{\sigma_{k,\mathrm{eff}}} \to \infty
+\quad \text{as} \quad \sigma_{k,\mathrm{eff}} \to 0
+$$
+
+This is the same instability mechanism as SQ3 Blowup 2 (Section 3),
+arriving via a different route: the SQ3 quadratic potential is unbounded
+in value, causing the force to diverge through $\lVert h - \mu_k \rVert$
+growth. The Gaussian potential is bounded in value, but its force diverges
+through precision growth. In both cases the fundamental issue is the same:
+**the force is not structurally bounded**.
+
+### 12.4. Why G1 Did Not Diverge (Unlike SQ3)
+
+Despite gradient norms reaching 1328, the training did not diverge because:
+
+1. **Gradient clipping** (`GRAD_CLIP=1.0`) truncated every update to unit
+   norm. The massive pre-clip gradients indicate wasted computation —
+   the optimizer computed precise gradients only to throw away >99% of
+   the information.
+
+2. **Bounded potential** meant the `v_reg` penalty could not dominate the
+   loss. Unlike SQ3 where $V^2 \to \infty$ caused Blowup 1, the Gaussian
+   `v_reg = mean(V^2)` is bounded by $(\sum w_k)^2$.
+
+3. **Context-dependent centres** ($\mu_k(\xi)$ from a linear projection)
+   partially adapted to the hidden-state distribution, keeping some wells
+   in useful positions even as others collapsed.
+
+The result was a "soft failure" — the model trained but was chronically
+impaired by the instability, spending most of its gradient budget on
+clipped, uninformative updates rather than useful learning.
+
+### 12.5. Comparison: G3 vs G1
+
+| Property | G3 (SARF, sigma-clamped) | G1 (learned, no precision cap) |
+|----------|------------------------|-------------------------------|
+| V\_theta params | 65,664 (0.5%) | ~201k (~1.4%) |
+| Well centres | Frozen PMI anchors | Learned $\mu_k(\xi)$ |
+| Width control | $\log\sigma$ capped | $a_k$ uncapped |
+| Best val\_ppl | 18.67 | 20.82 |
+| Gradient range | 1–5 (clean) | 30–1328 (chaotic) |
+| Training stability | Completely stable | Chronic gradient spikes |
+
+G3 **outperformed** G1 despite having 3x fewer V_theta parameters and frozen
+centres. The reason: G3's sigma was clamped (preventing force explosion),
+while G1's effective sigma could shrink without limit.
+
+### 12.6. Fix: `precision_max` — Upper Bound on Per-Dimension $a_k$
+
+The fix is the exact analogue of `log_sigma_max` for SARF: clamp $a_k$ in the
+forward pass so the effective width cannot shrink below $\sigma_{\min}$:
+
+```python
+def _components(self, xi: torch.Tensor):
+    lead = xi.shape[:-1]
+    mu = self.mu_proj(xi).view(*lead, self.K, self.d)
+    a = (F.softplus(self.a_proj(xi)) + 1e-4).view(*lead, self.K, self.d)
+    if self._precision_max is not None:
+        a = a.clamp(max=self._precision_max)
+    w = F.softmax(self.w_proj(xi), dim=-1) * self.w_scale
+    return mu, a, w
+```
+
+**Recommended value:**
+
+$$
+a_{\max} = \frac{2}{d} \quad\Longrightarrow\quad \sigma_{\min} = \sqrt{d/2} \approx 11.3 \quad\text{(for } d = 256\text{)}
+$$
+
+This is slightly looser than $1/d$ (which gives $\sigma_{\min} = \sqrt{d} = 16$),
+allowing the wells to sharpen modestly below the LN-scale norm while keeping
+the force bounded:
+
+$$
+F_{\max} = \frac{0.607 \cdot w_k}{\sigma_{\min}} = \frac{0.607}{K \cdot \sqrt{d/2}} \approx \frac{0.607}{8 \times 11.3} \approx 0.0067
+$$
+
+Unlike the SARF `log_sigma_max` fix, no post-step `clamp_params()` is
+needed. The precision $a_k$ is recomputed from `a_proj(xi)` on every forward
+pass — it is a function output, not a stored parameter. The clamp acts on the
+function output directly, and the optimizer receives correct gradients through
+the clamp (zero gradient when $a_k$ hits the ceiling, normal gradient
+otherwise).
+
+### 12.7. The Unifying Principle: Bounded Force, Not Just Bounded Potential
+
+Sections 9–12 collectively establish a critical architectural insight:
+
+**Bounding the potential value is necessary but not sufficient for training
+stability. The force (negative gradient of V) must also be structurally
+bounded.**
+
+| Architecture | V bounded? | F bounded? | Stable? |
+|-------------|-----------|-----------|---------|
+| SQ3 (log-sum-exp) | No | No | No (Blowups 1-3) |
+| Gaussian (no precision cap) | Yes | **No** | Partial (grad spikes, plateau) |
+| Gaussian + precision\_max | Yes | **Yes** | Yes (predicted) |
+| SARF Gaussian (no sigma cap) | Yes | Drifts to **No** | Partial (well deactivation) |
+| SARF Gaussian + log\_sigma\_max | Yes | **Yes** | Yes (confirmed) |
+
+The Gaussian functional form provides bounded V by construction (Section 9).
+But as Sections 11 and 12 demonstrate, the optimizer can exploit two separate
+loopholes to circumvent the force bound:
+
+1. **Sigma drift** (G3): widen wells until force $\to 0$ (deactivation).
+2. **Precision explosion** (G1): narrow wells until force $\to \infty$
+   (delta-spike instability).
+
+Both loopholes are closed by explicit constraints on the effective well
+width: `log_sigma_max` for SARF anchors and `precision_max` for learned
+centres. Together with the bounded potential, these constraints complete
+the stability triad:
+
+$$
+\underbrace{V \in [-\sum w_k, 0]}_{\text{bounded potential}} \quad + \quad \underbrace{\sigma_{\min} \le \sigma_k \le \sigma_{\max}}_{\text{bounded force}} \quad \Longrightarrow \quad \text{stable training}
+$$
 
 ---
 
