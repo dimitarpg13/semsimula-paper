@@ -1714,20 +1714,34 @@ The result was a "soft failure" — the model trained but was chronically
 impaired by the instability, spending most of its gradient budget on
 clipped, uninformative updates rather than useful learning.
 
-### 12.5. Comparison: G3 vs G1
+### 12.5. Comparison: G3 vs G1 (Before and After Fix)
 
-| Property | G3 (SARF, sigma-clamped) | G1 (learned, no precision cap) |
-|----------|------------------------|-------------------------------|
-| V\_theta params | 65,664 (0.5%) | ~201k (~1.4%) |
-| Well centres | Frozen PMI anchors | Learned $\mu_k(\xi)$ |
-| Width control | $\log\sigma$ capped | $a_k$ uncapped |
-| Best val\_ppl | 18.67 | 20.82 |
-| Gradient range | 1–5 (clean) | 30–1328 (chaotic) |
-| Training stability | Completely stable | Chronic gradient spikes |
+| Property | G3 (sigma-clamped) | G1 — no precision cap | G1 — precision\_max fix |
+|----------|--------------------|----------------------|------------------------|
+| V\_theta params | 65,664 (0.5%) | ~201k (~1.4%) | ~201k (~1.4%) |
+| Well centres | Frozen PMI anchors | Learned $\mu_k(\xi)$ | Learned $\mu_k(\xi)$ |
+| Width control | $\log\sigma$ capped | $a_k$ uncapped | $a_k \le 2/d$ |
+| Best val\_ppl | 18.67 | 20.82 | **15.95** |
+| Gradient range | 1–5 | 30–1328 (chaotic) | **1–27** (transient) |
+| v\_reg at end | 0.006 (near-zero) | 0.043 (declining) | **0.015 (stable)** |
+| Training stability | Stable | Chronic spikes | **Completely stable** |
 
-G3 **outperformed** G1 despite having 3x fewer V_theta parameters and frozen
-centres. The reason: G3's sigma was clamped (preventing force explosion),
-while G1's effective sigma could shrink without limit.
+G3 **outperformed** the unfixed G1 despite having 3x fewer V_theta
+parameters and frozen centres — the sigma clamp was the decisive factor,
+not the centre expressiveness. Once G1's precision was clamped, it
+**outperformed G3 by 2.72 PPL** (15.95 vs 18.67, a 14.6% relative
+improvement), confirming that learned centres offer genuine additional
+expressiveness when the force is properly bounded.
+
+Additional observations from the full post-fix G1 run:
+
+- Mixture weights (alpha values) drifted substantially: `alpha[0]` dropped
+  from 0.250 to 0.074, indicating the K=8 centres actively specialised
+  and redistributed coverage rather than staying symmetric.
+- Best checkpoint at step 14400, with mild regression in the cosine
+  tail (LR < 1e-5) — expected and harmless.
+- `v_reg` held in the 0.01–0.08 band from step 2000 to step 16000,
+  confirming sustained well engagement throughout training.
 
 ### 12.6. Fix: `precision_max` — Upper Bound on Per-Dimension $a_k$
 
@@ -1774,13 +1788,13 @@ Sections 9–12 collectively establish a critical architectural insight:
 stability. The force (negative gradient of V) must also be structurally
 bounded.**
 
-| Architecture | V bounded? | F bounded? | Stable? |
-|-------------|-----------|-----------|---------|
-| SQ3 (log-sum-exp) | No | No | No (Blowups 1-3) |
-| Gaussian (no precision cap) | Yes | **No** | Partial (grad spikes, plateau) |
-| Gaussian + precision\_max | Yes | **Yes** | Yes (predicted) |
-| SARF Gaussian (no sigma cap) | Yes | Drifts to **No** | Partial (well deactivation) |
-| SARF Gaussian + log\_sigma\_max | Yes | **Yes** | Yes (confirmed) |
+| Architecture | V bounded? | F bounded? | Stable? | Best val\_ppl |
+|-------------|-----------|-----------|---------|--------------|
+| SQ3 (log-sum-exp) | No | No | No (Blowups 1-3) | — |
+| SARF Gaussian (no sigma cap) | Yes | Drifts to **No** | Partial (well deactivation) | 18.67 (plateau) |
+| SARF Gaussian + log\_sigma\_max | Yes | **Yes** | **Confirmed** | 18.67 |
+| Gaussian + no precision cap | Yes | **No** | Partial (grad spikes) | 20.82 |
+| Gaussian + precision\_max | Yes | **Yes** | **Confirmed** | **15.95** |
 
 The Gaussian functional form provides bounded V by construction (Section 9).
 But as Sections 11 and 12 demonstrate, the optimizer can exploit two separate
