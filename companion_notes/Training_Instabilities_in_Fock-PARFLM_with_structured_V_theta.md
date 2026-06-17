@@ -21,6 +21,7 @@
 10. [Implementation Diagnostic: SARF Well Deactivation by `ln_after_step` Scale Mismatch](#10-implementation-diagnostic-sarf-well-deactivation-by-ln_after_step-scale-mismatch)
 11. [G3 Sigma Drift: Well Deactivation During Training](#11-g3-sigma-drift-well-deactivation-during-training)
 12. [G1 Precision Explosion: Blowup 2 Revisited via Unbounded Gaussian Precision](#12-g1-precision-explosion-blowup-2-revisited-via-unbounded-gaussian-precision)
+13. [Phase 5 Blowup: LR-Induced Instability Beyond the Bounded Potential](#13-phase-5-blowup-lr-induced-instability-beyond-the-bounded-potential)
 
 ---
 
@@ -1812,6 +1813,258 @@ the stability triad:
 $$
 \underbrace{V \in [-\sum w_k, 0]}_{\text{bounded potential}} \quad + \quad \underbrace{\sigma_{\min} \le \sigma_k \le \sigma_{\max}}_{\text{bounded force}} \quad \Longrightarrow \quad \text{stable training}
 $$
+
+---
+
+## 13. Phase 5 Blowup: LR-Induced Instability Beyond the Bounded Potential
+
+### 13.1. Context
+
+Phase 5 scaled the TinyStories-validated G1 architecture (Gaussian
+`MixtureGaussianVTheta`, K=8, `precision_max=2/d`) to OpenWebText with
+a larger model: $d=384$, $L=16$, $M=32$ Fock registers, 31.5M parameters.
+The initial configuration used `LR=2e-4` (higher than Phase 4's `1.2e-4`),
+based on the assumption that bounded V_theta would tolerate a more
+aggressive learning rate.
+
+### 13.2. Symptom: Doom Loop at LR Peak
+
+Training proceeded normally through warmup but became unstable as the
+learning rate approached its peak:
+
+| Step | LR | grad (pre-clip) | v\_reg | val\_ppl |
+|------|----|----------------|--------|---------|
+| 2000 | 5.0e-5 | 3.6 | 0.017 | 1893.58 |
+| 4000 | 1.0e-4 | 2.4 | 0.099 | 933.30 |
+| 6000 | 1.5e-4 | 1.9 | 0.138 | 583.91 |
+| 6200 | 1.55e-4 | **31.1** | 0.132 | — |
+| 6600 | 1.65e-4 | **26.2** | 0.130 | — |
+| 7800 | 1.95e-4 | **39.9** | 0.159 | — |
+| 8000 | **2.0e-4** (peak) | 13.8 | 0.174 | 492.72 |
+| 8702 | 2.0e-4 | watchdog trigger (EMA=34.7) | — | — |
+| 8800 | 2.0e-4 | **459.5** | 0.165 | — |
+| 8910 | 2.0e-4 | EMA=**9898** | — | — |
+
+The EMA watchdog reloaded the best checkpoint (step 8000) at step 8702,
+but the peak LR immediately pushed the model back into instability.
+The gradient EMA reached 9898 within 208 steps of the reload — a
+classic doom loop where the recovery checkpoint is itself at the edge
+of the unstable region.
+
+![Phase 5 gradient explosion trajectory](phase5_gradient_explosion_trajectory.png)
+
+### 13.3. Root Cause: Bounded V_theta Does Not Bound the Full Gradient
+
+The Gaussian well architecture guarantees:
+
+$$
+V(\mathbf{h}) \in \Bigl[-\sum_k w_k, 0\Bigr], \qquad \lVert \mathbf{F} \rVert = \lVert -\nabla_h V \rVert \le \frac{0.607 \cdot w_k}{\sigma_{\min}}
+$$
+
+However, the total gradient norm $\lVert \nabla_\theta \mathcal{L} \rVert$
+is computed over **all** 31.5M parameters, most of which lie outside V_theta.
+The gradient flows through an unbounded computational chain:
+
+$$
+\mathcal{L} = \underbrace{-\log \mathrm{softmax}(\underbrace{h_L \cdot E^\top}_{\text{logits}})}_{\text{cross-entropy}}
+$$
+
+where $h_L$ is produced by the Verlet integration stack:
+
+$$
+h_{l+1} = \mathrm{LN}\Bigl(h_l + \Delta t \cdot v_l + \Delta t^2 \cdot \bigl(\underbrace{F_{V_\theta}}_{\text{bounded}} + \underbrace{F_{V_\phi}}_{\text{unbounded}}\bigr)\Bigr)
+$$
+
+The backward pass computes:
+
+$$
+\frac{\partial \mathcal{L}}{\partial \theta_i} =
+\frac{\partial \mathcal{L}}{\partial h_L} \cdot
+\prod_{l=1}^{L} \frac{\partial h_{l+1}}{\partial h_l} \cdot
+\frac{\partial h_1}{\partial \theta_i}
+$$
+
+Each factor in this product involves:
+
+| Component | Bounded? | Gradient contribution |
+|-----------|---------|----------------------|
+| $V_\theta$ (Gaussian wells) | **Yes** | Force $\le 0.607 w_k / \sigma_{\min}$ |
+| $V_\phi$ (competitive routing) | No | Gumbel-softmax, attention scores |
+| Fock registers (creation/annihilation) | No | Gating, salience thresholding |
+| LayerNorm | Normalises $h$, but **amplifies** $\partial h$ | Jacobian has $1/\sigma$ terms |
+| Embedding $E$ ($50257 \times d$) | No | Gradient scales with vocabulary |
+| Logit projection $h_L \cdot E^\top$ | No | Linear in $\lVert h_L \rVert$ |
+
+The bounded V_theta contributes a small, well-behaved fraction of the
+total gradient. The dominant terms come from V_phi, the Fock register
+machinery, and the embedding layer — none of which benefit from the
+Gaussian boundedness.
+
+![Gradient flow: bounded vs unbounded components](gradient_flow_bounded_vs_unbounded.png)
+
+### 13.4. Why d=384 Is More Sensitive Than d=256
+
+On TinyStories ($d=256$, 14M params), G1 trained stably at `LR=5e-4` —
+four times higher than the Phase 5 peak that caused the blowup. Three
+factors explain the scale dependence:
+
+**1. Parameter count scales as $O(d^2)$.** The embedding layer alone
+has $50257 \times d$ parameters. At $d=384$ this is 19.3M vs 12.9M at
+$d=256$. The gradient norm $\lVert \nabla_\theta \mathcal{L} \rVert$
+grows with the square root of the parameter count even for i.i.d.
+gradient components:
+
+$$
+\lVert \nabla_\theta \mathcal{L} \rVert \approx \bar{g} \cdot \sqrt{P}
+$$
+
+where $\bar{g}$ is the per-parameter gradient scale and $P$ is the
+parameter count. The ratio $\sqrt{31.5\text{M} / 14\text{M}} \approx 1.5$
+means that the same per-parameter gradient produces a 1.5x larger
+total gradient norm at $d=384$.
+
+**2. LayerNorm Jacobian amplification.** With `ln_after_step=True`, each
+layer applies LayerNorm after the Verlet update. The Jacobian of
+LayerNorm with respect to its input has terms proportional to $1/\sigma$,
+where $\sigma$ is the standard deviation of the input. At larger $d$,
+the variance is better estimated (law of large numbers) but the
+centering operation interacts with more dimensions, creating
+correlated gradient directions that can align constructively.
+
+**3. Fock register interactions.** With $M=32$ registers (vs 16 on
+TinyStories), the register attention mechanism has $32 \times d$ key/query
+parameters per layer. The creation/annihilation gating involves softmax
+over 32 positions, and the salience computation scales with $M$. More
+registers create a richer but more fragile attention landscape.
+
+The net effect is that the **maximum stable learning rate** decreases
+with model scale. Empirically:
+
+$$
+\text{LR}_{\max}(d=256) \approx 5 \times 10^{-4}, \qquad
+\text{LR}_{\max}(d=384) < 2 \times 10^{-4}
+$$
+
+Phase 4 (SQ3 on OpenWebText, $d=384$) used `LR=1.2e-4` and was stable
+(apart from V_theta-specific blowups). This confirms that `1.2e-4` is
+within the stable region for the non-V_theta components at this scale.
+
+### 13.5. The Stability Hierarchy: Four Independent Constraints
+
+Sections 9–13 collectively establish that stable training requires
+**four independent constraints**, not just bounded potential:
+
+$$
+\underbrace{V \in [-\sum w_k, 0]}_{\text{(1) bounded potential}} \quad + \quad \underbrace{\sigma_{\min} \le \sigma_k \le \sigma_{\max}}_{\text{(2) bounded force}} \quad + \quad \underbrace{\text{LR} \le \text{LR}_{\max}(d, L, M)}_{\text{(3) scale-appropriate LR}} \quad \Longrightarrow \quad \text{stable training}
+$$
+
+| Constraint | What it prevents | Where it acts |
+|-----------|-----------------|--------------|
+| (1) Bounded potential | Blowup 1 (penalty dominance) | V_theta only |
+| (2) Bounded force | Blowup 2 (delta spikes), well deactivation | V_theta only |
+| (3) Scale-appropriate LR | Full-model gradient explosion | All parameters |
+
+Constraints (1) and (2) are **architectural** — they are enforced by the
+Gaussian well design and hold regardless of hyperparameters. Constraint
+(3) is **optimiser-dependent** — it depends on the learning rate, the
+model scale, and the optimiser's update rule.
+
+### 13.6. Fix: Reduce Peak LR to Phase 4 Baseline
+
+The immediate fix matches the Phase 4 hyperparameters that were stable
+at $d=384$:
+
+| Parameter | Phase 5 v1 (blew up) | Phase 5 v2 (fix) |
+|-----------|---------------------|-----------------|
+| Peak LR | 2e-4 | **1.2e-4** |
+| Warmup steps | 8000 | **4000** |
+| Grad clip | 0.5 | **1.0** |
+
+The shorter warmup (4000 steps) reflects the lower peak LR: the model
+reaches `1.2e-4` at step 4000 with the old warmup rate, so there is no
+benefit to extending the ramp further. The looser grad clip (`1.0` vs
+`0.5`) preserves more gradient information per step — at `0.5`, the
+clip was discarding gradient direction information even during stable
+training (most pre-clip norms were 1–6, so a clip of 0.5 was truncating
+the majority of updates).
+
+### 13.7. Alternative Optimisers: Could They Prevent This?
+
+The LR sensitivity arises because AdamW applies a **uniform learning
+rate** to all parameter groups, regardless of their gradient scale or
+the boundedness of their associated module. Several alternative
+optimisers address this in different ways:
+
+**LAMB (Layer-wise Adaptive Moments for Batch training).**
+LAMB normalises each layer's update by the ratio of the parameter norm
+to the gradient norm:
+
+$$
+\Delta \theta_l = -\eta \cdot \frac{\lVert \theta_l \rVert}{\lVert \hat{m}_l / (\hat{v}_l^{1/2} + \epsilon) \rVert} \cdot \frac{\hat{m}_l}{\hat{v}_l^{1/2} + \epsilon}
+$$
+
+This automatically reduces the effective LR for layers with large
+gradient norms (e.g. V_phi, embedding) while preserving it for
+well-behaved layers (e.g. V_theta). LAMB was designed for large-batch
+training of BERT and would likely tolerate higher peak LR without
+blowing up.
+
+**Adafactor.**
+Adafactor uses row/column factorised second-moment estimates and
+includes relative step sizing:
+
+$$
+\rho_t = \min\bigl(\rho_{\max}, 1/\sqrt{t}\bigr)
+$$
+
+This provides automatic LR decay without a manual schedule. The
+factorised second moments also reduce memory (important at 31.5M
+params).
+
+**Gradient centralisation.**
+A simple modification to any optimiser: subtract the mean from each
+gradient tensor before the update:
+
+$$
+\hat{g} = g - \mathrm{mean}(g)
+$$
+
+This removes the "DC component" of the gradient, which is often the
+dominant contributor to large gradient norms (especially for the
+embedding layer where all vocab entries share a common gradient shift).
+Gradient centralisation can be added to AdamW with a single line and
+has been shown to improve training stability at no computational cost.
+
+**Per-module learning rate groups.**
+The simplest approach: assign different learning rates to different
+parameter groups in the optimiser. For example:
+
+```python
+param_groups = [
+    {'params': model.V_theta.parameters(), 'lr': LR},
+    {'params': model.V_phi_params(),       'lr': LR * 0.5},
+    {'params': [model.E.weight],           'lr': LR * 0.3},
+    {'params': other_params,               'lr': LR},
+]
+```
+
+This is the most transparent approach — it makes the per-module LR
+scaling explicit rather than relying on the optimiser to discover it
+adaptively. Phase 4 used a version of this (separate LR for V_theta
+parameters) as Fix B.
+
+### 13.8. Recommendation
+
+For Phase 5, the conservative approach is `LR=1.2e-4` with AdamW,
+matching the validated Phase 4 configuration. This avoids introducing
+a new optimiser (and its own hyperparameter tuning surface) while
+staying within the empirically stable region.
+
+If future experiments require higher effective LR for faster convergence,
+LAMB or per-module LR groups are the recommended next steps. Both
+directly address the root cause (non-uniform gradient scale across
+modules) rather than relying on global LR reduction as a blunt
+instrument.
 
 ---
 
