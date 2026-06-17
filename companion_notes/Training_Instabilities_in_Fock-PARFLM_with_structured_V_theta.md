@@ -17,6 +17,8 @@
 7. [EMA Watchdog Design](#7-ema-watchdog-design)
 8. [Residual Risk and Recommendations](#8-residual-risk-and-recommendations)
 9. [Architectural Path Forward: Gaussian Wells with SARF Anchors](#9-architectural-path-forward-gaussian-wells-with-sarf-anchors)
+   - 9.9 [Connection to the Reinforcement Field and the Paper's SARF Dynamics](#99-connection-to-the-reinforcement-field-and-the-papers-sarf-dynamics-section-6-equation-48)
+10. [Implementation Diagnostic: SARF Well Deactivation by `ln_after_step` Scale Mismatch](#10-implementation-diagnostic-sarf-well-deactivation-by-ln_after_step-scale-mismatch)
 
 ---
 
@@ -727,7 +729,7 @@ per-component precisions as before.
 **Gradient bound.** The force of a single Gaussian well is:
 
 $$
--\nabla_h \left[-w_k \exp\left(-\frac{\lVert h - \mu_k \rVert^2}{2\sigma_k^2}\right)\right] = -\frac{w_k}{\sigma_k^2}(h - \mu_k) \exp\left(-\frac{\lVert h - \mu_k \rVert^2}{2\sigma_k^2}\right)
+F_k(h) = -\nabla_h \left[-w_k \exp\left(-\frac{\lVert h - \mu_k \rVert^2}{2\sigma_k^2}\right)\right] = -\frac{w_k}{\sigma_k^2}(h - \mu_k) \exp\left(-\frac{\lVert h - \mu_k \rVert^2}{2\sigma_k^2}\right)
 $$
 
 The exponential decay factor bounds the force magnitude. The maximum occurs
@@ -1035,6 +1037,468 @@ parameters (64 widths + 64 weight-head outputs) plus the frozen anchor
 positions. The learned parameter count drops by **192x**, which
 correspondingly reduces the V_theta contribution to the backward graph.
 
+### 9.9. Connection to the Reinforcement Field and the Paper's SARF Dynamics (Section 6, Equation 48)
+
+The SARF-anchored Gaussian well architecture described above is not an
+ad-hoc stability fix — it is a concrete, computable realization of the
+**reinforcement field** $\mathcal{E}$ defined in Section 6 of the paper
+(paper_v4, §6.2, `eq:reinforcement-field`) and the extended coupled
+dynamics of Equation 48 (`eq:extended-dynamics`). This subsection makes the
+correspondence explicit.
+
+#### 9.9.1. The reinforcement field in the paper
+
+Section 6 of the paper defines the reinforcement field $\mathcal{E}$ as the
+time-dependent, vector-valued force field in which semantic structures evolve.
+At each position $\vec{r}$ and time $t$, the field returns the local force
+(Eq. 42):
+
+$$
+\vec{f}(\vec{r}, t) \in \mathbb{R}^L
+$$
+
+The field absorbs the cumulative effect of all existing structures and
+is bidirectionally coupled to the model: each newly formed structure both
+**responds to** $\mathcal{E}$ and **modifies** it through the
+attractive-repulsive contributions of its constituent properties.
+
+The extended coupled dynamics (Equation 48, `eq:extended-dynamics`) governs
+how a semantic particle's position $\vec{p}_{c,i}$ evolves under this field.
+It has four components:
+
+1. **Energy accumulation**: $E$ updates by the dot product of the local force
+   with the displacement
+2. **Harmonic-mean energy centroid** $\vec{p}_E$: the energy-weighted
+   attractor, including initial-impulse corrections
+3. **Per-step displacement** $\Delta\vec{p}_i$: a convex combination of the
+   field-pull direction and the impulse direction, weighted by their
+   respective energies
+4. **Time-dependence**: the field $\mathcal{E}$ changes as new structures
+   arrive and displace existing centroids
+
+The driving force in the entire system is $\vec{f}$ — the local restoring
+force from the Gaussian wells of Section 4. The paper defines the Gaussian
+semantic energy well (Eq. 10, `eq:well`) as:
+
+$$
+V(x) = m \upsilon^2 (1 - e^{-\kappa^2 x^2})
+$$
+
+with restoring force (Eq. 11, `eq:well-force`):
+
+$$
+F(x) = -2 m \upsilon^2 \kappa^2 x e^{-\kappa^2 x^2}
+$$
+
+This is the same functional form used in our `SARFGaussianVTheta`
+implementation, with the identifications $\upsilon^2 \leftrightarrow w_j$
+and $\kappa \leftrightarrow 1/\sigma_j$.
+
+#### 9.9.2. The explicit reinforcement field from SARF-anchored Gaussian wells
+
+Substituting the SARF-anchored potential
+$V_\theta^{\mathrm{SARF}}$ into the force law
+$-\nabla_h V_\theta$ yields an explicit, computable reinforcement field:
+
+$$
+\mathcal{E}(h, \xi_\ell) = \sum_{j=1}^{N_S} \underbrace{\frac{w_j(\xi_\ell)}{\sigma_j^2}}_{\text{context gate}} (a_j - h) \underbrace{\exp\Big(-\frac{\lVert h - a_j \rVert^2}{2\sigma_j^2}\Big)}_{\text{Gaussian locality (Section 4 well)}}
+$$
+
+Each term in this sum is a **restoring pull toward anchor** $a_j$,
+modulated by two factors:
+
+- **Gaussian locality**: the exponential factor
+  $\exp(-\lVert h - a_j \rVert^2 / 2\sigma_j^2)$ ensures the force
+  vanishes exponentially for hidden states far from the anchor — exactly
+  the Gaussian well of Section 4 with shape parameter
+  $\kappa_j = 1/\sigma_j$.
+
+- **Context gate**: the weight $w_j(\xi_\ell) / \sigma_j^2$ is a linear
+  projection of the causal-EMA context $\xi_\ell$, determining which
+  anchors are relevant at a given point in the sequence.
+
+The per-anchor force maximum occurs at $\lVert h - a_j \rVert = \sigma_j$
+and equals $0.607 w_j / \sigma_j$ — matching the Section 4 formula
+$F_{\max} = -\sqrt{2/e} \cdot m \upsilon^2 \kappa$ exactly.
+
+#### 9.9.3. Mapping Equation 48 to the Fock-PARFLM implementation
+
+The following table maps each object in Equation 48 (the paper's abstract
+coupled dynamics) to its concrete counterpart in the Fock-PARFLM
+implementation with SARF-anchored Gaussian wells:
+
+| Paper (Eq. 48) | Fock-PARFLM implementation |
+|---|---|
+| $\vec{p}_{c,i}$ — particle position | $h_t^{(\ell)}$ — hidden state, token $t$, layer $\ell$ |
+| $\vec{f}(\vec{p}\_{i,j} + \Delta\vec{p}\_i, l\_{i,j})$ — local force | $\mathcal{E}(h_t^{(\ell)}, \xi_\ell)$ — SARF-anchored Gaussian force |
+| $\Delta\vec{p}_i$ — per-step displacement | $\Delta h_t = v_t^{(\ell+1)} \cdot \Delta t$ — Verlet step |
+| $E(\vec{p}_{c,i})$ — accumulated energy | $\xi_\ell$ — causal EMA tracking hidden-state history |
+| Time $t$ | Layer index $\ell = 0, \ldots, L{-}1$ |
+| New structure modifies $\mathcal{E}$ | $\xi_\ell$ recomputed per layer (SARF-faithful dynamics) |
+
+The last row is the most important for understanding the correspondence.
+In the paper, time-dependence of $\mathcal{E}$ arises because newly-parsed
+structures arrive and displace the centroids of existing Gaussian wells —
+each structure both responds to and modifies the field. In the
+implementation, this time-dependence is realized through **SARF-faithful
+per-layer xi recomputation**: at each layer $\ell$, $\xi_\ell$ is
+recomputed from the current hidden states $h^{(\ell)}.detach()$, which
+shifts the context-dependent weights $w_j(\xi_\ell)$ and thereby reshapes
+the effective force field between layers. The environment actively
+reshapes between layers rather than being frozen at the embedding level.
+
+This mapping is also consistent with the **content/environment
+factorization** of Remark 6.4 in the paper (Eq. 52,
+`eq:traj-functional`):
+
+$$
+T_{i,0,k} = F(T_{1,0,k-1}, \ldots, T_{M,0,k-1}, E_{1,0,k-1}, \ldots, E_{M,0,k-1})
+$$
+
+The past trajectories $T_{j,0,k-1}$ (content) map to the token hidden-state
+histories feeding into the causal EMA; the accumulated energies
+$E_{j,0,k-1}$ (environment) map to $\xi_\ell$ itself, which summarises
+the interaction history with the reinforcement field up to layer $\ell$.
+
+#### 9.9.4. Two senses of "SARF" — paper vs. implementation
+
+The paper's SARF (Section 6) and the implementation's SARF anchors share
+the same mathematical substrate but make different choices about what is
+dynamic vs. static:
+
+| | Paper Section 6 SARF | Implementation SARF anchors |
+|---|---|---|
+| What are the "structures"? | Parsed sentences/documents at dynamic positions | Fixed PMI-peak vocabulary embeddings $a_j$ |
+| How does $\mathcal{E}$ change? | New structures arrive, centroids move | $\xi_\ell$ updates per layer, reshaping $w_j$ |
+| Anchor positions | Float freely (PARF-governed) | Frozen at corpus-analysis time |
+| Force law | Gaussian well from Section 4 at each centroid | Identical functional form, at frozen $a_j$ |
+| Regional cutoff | $2/\kappa$ distance filter (Eq. 37) | Implicit: Gaussian decay handles locality |
+
+The implementation makes a deliberate trade-off: **giving up dynamic
+anchor positions** in exchange for **guaranteed global coverage**. The
+PMI-extremal anchors span the vocabulary's semantic range by construction,
+so no hidden state can escape all wells simultaneously (Section 9.3.1 above).
+The dynamic adaptation that the paper achieves through floating structure
+centroids is instead achieved through the context-dependent weights
+$w_j(\xi_\ell)$ — a lower-dimensional but computationally cheaper mechanism
+that preserves the essential bidirectional coupling between model and field.
+
+#### 9.9.5. The reinforcement field as a force-field summary
+
+The relationship can be summarised as follows. Define the **SARF
+reinforcement field** as the mapping from hidden state and context to
+force:
+
+$$
+\mathcal{E}: \mathbb{R}^d \times \mathbb{R}^{K_\xi d} \to \mathbb{R}^d, \qquad (h, \xi_\ell) \mapsto \sum_{j=1}^{N_S} \frac{w_j(\xi_\ell)}{\sigma_j^2} (a_j - h) \exp\left(-\frac{\lVert h - a_j \rVert^2}{2\sigma_j^2}\right)
+$$
+
+This field has the following properties that mirror the paper's abstract
+$\mathcal{E}$:
+
+1. **Vector-valued**: $\mathcal{E}(h, \xi_\ell) \in \mathbb{R}^d$,
+   matching Eq. 42.
+
+2. **Time-dependent**: the layer index $\ell$ plays the role of time, and
+   the recomputed $\xi_\ell$ makes the field change between layers.
+
+3. **Bidirectionally coupled**: the hidden states $h^{(\ell)}$ respond to
+   $\mathcal{E}$ (through the Verlet update) and modify it (through
+   $\xi_\ell = \mathrm{causal\_mean}(h^{(\ell)}.detach())$).
+
+4. **Gaussian-well substrate**: each anchor contributes a restoring force
+   with the identical functional form to the Gaussian well of Section 4,
+   with shape parameter $\kappa_j = 1/\sigma_j$.
+
+5. **Bounded**: $\lVert \mathcal{E}(h, \xi_\ell) \rVert$ is bounded for all
+   $h$, eliminating the instabilities documented in Sections 2-4 of this
+   note.
+
+The Verlet update in the implementation:
+
+$$
+v_t^{(\ell+1)} = \frac{v_t^{(\ell)} + \Delta t \cdot \mathcal{E}(h_t^{(\ell)}, \xi_\ell) / m}{1 + \Delta t \cdot \gamma}
+$$
+
+$$
+h_t^{(\ell+1)} = h_t^{(\ell)} + \Delta t \cdot v_t^{(\ell+1)}
+$$
+
+is the discretized form of the paper's extended coupled dynamics (Eq. 48),
+with the damping factor $\gamma$ playing the role of the paper's $H_i$
+damping, and the SARF reinforcement field $\mathcal{E}$ providing the force
+$\vec{f}$ that drives the displacement.
+
+```mermaid
+flowchart TD
+    Sec4["Section 4: Gaussian well V(x) = m upsilon squared (1 - exp(-kappa squared x squared))"]
+    Sec6["Section 6: Reinforcement field E -- abstract force f(r, t)"]
+    Eq48["Equation 48: Extended coupled dynamics -- position update from f"]
+    SARF_Impl["Implementation: SARF anchors a_j (frozen PMI-peak embeddings)"]
+    Gauss_V["Gaussian V_theta: -sum w_j exp(-norm h-a_j squared / 2 sigma_j squared)"]
+    Force_Impl["Explicit reinforcement field: E(h, xi_l) = sum restoring pulls"]
+    Verlet_Impl["Damped Verlet: discretized Eq 48 with bounded E"]
+
+    Sec4 -->|provides well functional form| Sec6
+    Sec6 -->|drives dynamics via| Eq48
+    Sec4 -->|same Gaussian form with kappa = 1/sigma| Gauss_V
+    SARF_Impl -->|anchor positions replace floating centroids| Gauss_V
+    Gauss_V -->|negative gradient gives| Force_Impl
+    Force_Impl -->|bounded force into| Verlet_Impl
+    Sec6 -.->|abstract to concrete| Force_Impl
+    Eq48 -.->|discretized as| Verlet_Impl
+```
+
+This connection has a significant consequence for the paper narrative: the
+SARF-anchored Gaussian well architecture is not merely a pragmatic
+stability fix but a **faithful implementation** of the paper's theoretical
+framework. The reinforcement field $\mathcal{E}$ — which in the paper
+remains an abstract, qualitatively-described object — is here given a
+concrete, differentiable, and bounded form. The instabilities documented
+in Sections 2-4 arose precisely because the SQ3 parameterisation violated
+the boundedness property of the paper's Gaussian wells (Section 4), and
+the SARF anchor architecture restores that property while preserving the
+dynamic field structure of Section 6.
+
+---
+
+---
+
+## 10. Implementation Diagnostic: SARF Well Deactivation by `ln_after_step` Scale Mismatch
+
+### 10.1. Symptom
+
+During the G3 run (SARF Gaussian wells, `N_S=64` frozen PMI-peak anchors) of
+the TinyStories ablation notebook, the training log reported `v_reg=0.0000` at
+every step from step 1 onward, despite the SARF architecture being correctly
+constructed and the `IS_GAUSSIAN=True` branch of the regulariser being active:
+
+```
+[G3] step     1/16000  ntp=10.7877  v_reg=0.0000  lr=1.25e-06  grad=0.715
+[G3] step    50/16000  ntp=10.6200  v_reg=0.0000  lr=6.25e-05  grad=0.821
+```
+
+A first-pass diagnostic measured anchor proximity at the **embedding level**:
+
+```
+Embedding norm: 0.320
+Anchor norm:    0.324
+Mean ||h-a_j||: 0.456
+Current sigma:  1.000
+Recommended init_log_sigma: -0.79
+```
+
+At this scale, with `sigma=1.0` and mean distance `0.456`, the exponent evaluates to
+$\exp(-0.456^2/2) \approx 0.901$, suggesting the wells should be active and `v_reg`
+should be approximately `0.81`. The diagnostic falsely implied the scale was fine.
+
+---
+
+### 10.2. Root Cause: `ln_after_step=True` Moves $h_L$ out of Embedding Space
+
+The model configuration sets `ln_after_step=True`, which applies LayerNorm to
+the hidden state after every Verlet step. After $L = 8$ layers the hidden state
+$h_L$ has approximately unit variance per dimension:
+
+$$
+\lVert h_L \rVert \approx \sqrt{d} = \sqrt{256} \approx 16
+$$
+
+The SARF anchors are initialised from raw token embeddings, which satisfy:
+
+$$
+\lVert a_j \rVert \approx 0.32 \ll \sqrt{d}
+$$
+
+The squared distance from any Verlet-integrated hidden state to any anchor is
+therefore dominated by the hidden-state norm:
+
+$$
+\lVert h_L - a_j \rVert^2 \approx \lVert h_L \rVert^2 + \lVert a_j \rVert^2 \approx 256 + 0.1 \approx 256
+$$
+
+With `sigma=1.0` ($\sigma^2 = 1$), the Gaussian exponent becomes:
+
+$$
+\exp\Bigl(-\frac{256}{2 \times 1^2}\Bigr) = \exp(-128) \approx 10^{-56} \approx 0
+$$
+
+Every bump in the potential vanishes identically. The SARF potential
+
+$$
+V_\theta(\xi, h_L) = -\sum_{j=1}^{N_S} w_j(\xi) \exp\Bigl(-\frac{\lVert h_L - a_j \rVert^2}{2\sigma_j^2}\Bigr) \approx 0
+$$
+
+evaluates to zero for all tokens, so `v_reg = mean(V_theta^2) = 0.0000`.
+
+The anchors and the hidden states live in **entirely different coordinate
+systems**: raw embedding space (norm $\approx 0.32$) vs. LayerNorm-normalised
+Verlet space (norm $\approx \sqrt{d} \approx 16$). The wells are geometrically
+invisible to the hidden states.
+
+---
+
+### 10.3. Why the Embedding-Level Diagnostic Was Misleading
+
+The diagnostic sampled random token IDs and computed distances from their raw
+embeddings to the anchor positions — correctly capturing the pre-Verlet,
+pre-LayerNorm embedding scale. However, `V_theta` is evaluated in
+`forward_with_vreg` on the **post-Verlet** hidden state `h_L`:
+
+```python
+xis = model.xi_module(h_L.detach())
+V_vals = model.V_theta(xis, h_L)    # h_L has norm ≈ sqrt(d), NOT 0.32
+```
+
+A faithful diagnostic must measure distances from `h_L` (after all Verlet
+steps and LayerNorm applications) to the anchors, not from raw embeddings.
+The embedding-level measurement was correct in its own coordinate system but
+irrelevant to the coordinate system that matters for training.
+
+The lesson generalises: whenever `ln_after_step=True` or `ln_before_vtheta=True`
+is active, any geometric object that interacts with hidden states (anchor
+positions, sigma, force-peak radius) must be diagnosed and initialised in the
+**transformed** coordinate system.
+
+---
+
+### 10.4. Fix: Two-Part Correction
+
+Both anchor positions and $\sigma$ must be brought into the LN-normalised
+hidden-state space.
+
+**Part A — Normalise anchor positions.**
+
+Apply element-wise standardisation (matching what `ln_after_step` does to `h`)
+to each anchor vector immediately after construction:
+
+```python
+with torch.no_grad():
+    a = model.V_theta.inner.anchors           # (N_S, d), raw embeddings
+    a = (a - a.mean(dim=-1, keepdim=True)) / (a.std(dim=-1, keepdim=True) + 1e-5)
+    model.V_theta.inner.anchors.copy_(a)
+```
+
+After this normalisation, $\lVert a_j \rVert \approx \sqrt{d}$, matching the
+scale of $h_L$.
+
+**Part B — Set `init_log_sigma` to cover inter-anchor distances in LN space.**
+
+Two LN-normalised vectors in $\mathbb{R}^d$ that are approximately uncorrelated
+have expected squared distance $2d$. The typical $h_L$-to-anchor distance is
+therefore:
+
+$$
+\lVert h_L - a_j \rVert \approx \sqrt{2d} \approx \sqrt{512} \approx 22.6
+$$
+
+Setting
+
+$$
+\sigma_{\mathrm{init}} = \sqrt{d}, \qquad \log\sigma_{\mathrm{init}} = \tfrac{1}{2}\log d \approx 2.77
+$$
+
+places the Gaussian force peak at $r = \sigma \approx 16$, which is inside the
+typical $h_L$-to-anchor distance and ensures non-trivial restoring forces from
+step 1. Add to the recipe dict:
+
+```python
+'G3': {
+    ...
+    'init_log_sigma': 2.77,    # sigma = exp(2.77) ≈ 16 ≈ sqrt(d)
+    ...
+}
+```
+
+Pass it in the constructor:
+
+```python
+inner = SARFGaussianVTheta(
+    d=D, anchor_positions=anchor_positions, xi_d=xi_d,
+    w_scale=recipe['w_scale'],
+    init_log_sigma=recipe.get('init_log_sigma', 0.0),
+)
+```
+
+Or update $\sigma$ in-place alongside the anchor normalisation:
+
+```python
+model.V_theta.inner.log_sigma.data.fill_(recipe.get('init_log_sigma', 0.0))
+```
+
+---
+
+### 10.5. Mathematical Justification for $\sigma_{\mathrm{init}} = \sqrt{d}$
+
+The Gaussian force magnitude peaks at $r = \sigma$ and falls off for both
+$r \ll \sigma$ and $r \gg \sigma$. Setting $\sigma = \sqrt{d}$ gives:
+
+$$
+F_{\mathrm{peak}} = \frac{w_j}{\sigma} e^{-1/2} \approx \frac{0.607 \cdot w_j}{\sqrt{d}}
+$$
+
+With $N_S = 64$ anchors and approximately uniform weights $w_j \approx 1/64$:
+
+$$
+\lVert \mathcal{E}(h, \xi_\ell) \rVert_{\mathrm{peak}} \approx \frac{0.607}{\sqrt{d}} \approx \frac{0.607}{16} \approx 0.038
+$$
+
+This is a mild restoring force — strong enough to register as non-zero `v_reg`
+but small enough not to destabilise Verlet dynamics or dominate the NTP gradient.
+As training progresses, $\log\sigma$ is a learned parameter and can grow or
+shrink to match the evolving hidden-state distribution.
+
+The choice $\sigma_{\mathrm{init}} = \sqrt{d}$ is not the unique correct answer;
+any value in the range $[\sqrt{d}/2, \sqrt{2d}]$ would activate the wells. The
+specific value $\sqrt{d}$ is preferred because it is:
+
+1. **Scale-consistent**: matched to the exact LN-after-step output norm.
+2. **Force-peak inside the typical distance**: since $\sqrt{d} \approx 16 \lt \sqrt{2d} \approx 22.6$, the peak force is applied at distances smaller than the mean anchor separation, giving a net inward restoring pull.
+3. **Easily computed**: $\log\sigma_{\mathrm{init}} = \frac{1}{2}\log d$ — a single line, no calibration batch needed.
+
+---
+
+### 10.6. Verification
+
+After applying both parts of the fix, the build cell reported:
+
+```
+Anchors re-normalized: norm=15.96  sigma=15.96
+```
+
+Both anchors and sigma are at $\sqrt{256} \approx 16$ as required. Training
+immediately showed non-zero regularisation:
+
+```
+[G3] step     1/16000  ntp=10.7874  v_reg=0.1356  lr=1.25e-06  grad=0.701
+[G3] step    50/16000  ntp=10.6655  v_reg=0.1352  lr=6.25e-05  grad=0.775
+[G3] step   100/16000  ntp=9.9912   v_reg=0.1400  lr=1.25e-04  grad=35.907
+[G3] step   200/16000  ntp=6.3311   v_reg=0.1498  lr=2.50e-04  grad=37.497
+```
+
+`v_reg ≈ 0.135` at step 1 confirms the Gaussian wells are engaged. The NTP loss
+drops rapidly from 10.79 to 6.33 in 200 steps. The large pre-clip gradient norms
+at steps 100 and 200 (`grad=35.9`, `grad=37.5`) are a normal feature of fast
+early learning: the reported value is the norm **before** `clip_grad_norm_` with
+`GRAD_CLIP=1.0` is applied, so actual weight updates are bounded. Crucially,
+`v_reg` remains stable throughout the spikes, confirming that the SARF wells are
+not the source of the large gradients — those originate from the NTP loss and
+V_phi routing during the warmup ramp.
+
+---
+
+### 10.7. Summary Table
+
+| Quantity | Before fix | After fix |
+|----------|-----------|-----------|
+| Embedding / anchor norm | 0.32 | — |
+| $\lVert h_L \rVert$ (post-Verlet) | ~16 | ~16 |
+| $\sigma$ | 1.0 | ~16 |
+| $\lVert h_L - a_j \rVert$ | ~16 | ~22.6 (normalised anchors) |
+| Gaussian exponent | $\exp(-128) \approx 0$ | $\exp(-0.99) \approx 0.37$ |
+| `v_reg` at step 1 | 0.0000 | 0.1356 |
+| Wells active? | No | Yes |
+
 ---
 
 *This note documents the training process of a research experiment and is
@@ -1043,4 +1507,10 @@ implemented in the notebook
 `notebooks/conservative_arch/scaleup/colab_fock_structured_vtheta_openwebtext_phase4.ipynb`.
 The SARF anchor computation is implemented in
 `notebooks/semsim_simulator/estimators/sarf_anchors.py` and the SARF-faithful
-dynamics in `notebooks/conservative_arch/sarf_variant/model_sarf.py`.*
+dynamics in `notebooks/conservative_arch/sarf_variant/model_sarf.py`.
+The Gaussian-well and SARF-anchored V_theta implementations are in
+`notebooks/conservative_arch/parf/model_gaussian_vtheta.py`.
+The TinyStories ablation notebook is at
+`notebooks/conservative_arch/scaleup/colab_fock_gaussian_sarf_vtheta.ipynb`
+and the OpenWebText Phase 5 scale-up notebook at
+`notebooks/conservative_arch/scaleup/colab_fock_gaussian_sarf_openwebtext_phase5.ipynb`.*

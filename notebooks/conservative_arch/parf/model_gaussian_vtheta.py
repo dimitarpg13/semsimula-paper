@@ -49,7 +49,8 @@ class MixtureGaussianVTheta(StructuredVThetaBase):
     """
 
     def __init__(self, d: int, K: int = 8, w_scale: float = 1.0,
-                 xi_d: Optional[int] = None):
+                 xi_d: Optional[int] = None,
+                 init_log_precision: Optional[float] = None):
         """
         Parameters
         ----------
@@ -62,11 +63,21 @@ class MixtureGaussianVTheta(StructuredVThetaBase):
         xi_d : int or None
             Context input dimension.  Defaults to d.  Set to K_xi * d
             when used with the multi-xi adapter.
+        init_log_precision : float or None
+            Initial value for the log-precision bias of ``a_proj``.
+            Controls the initial effective well width:
+            ``sigma_eff = 1 / sqrt(softplus(init_log_precision))``.
+            When ``ln_after_step=True`` is active, hidden states live in
+            a LayerNorm-normalised space with ``||h_L|| ≈ sqrt(d)``.
+            Set this to ``-math.log(d)`` so that ``sigma_eff ≈ sqrt(d)``
+            and the wells are active from step 1.
+            None keeps the default (``softplus(0) ≈ 0.693``, very narrow).
         """
         super().__init__()
         self.d = d
         self.K = K
         self.w_scale = w_scale
+        self._init_log_precision = init_log_precision
         in_d = xi_d if xi_d is not None else d
         self.mu_proj = nn.Linear(in_d, K * d)
         self.a_proj = nn.Linear(in_d, K * d)
@@ -77,7 +88,13 @@ class MixtureGaussianVTheta(StructuredVThetaBase):
         nn.init.normal_(self.mu_proj.weight, std=0.02)
         nn.init.zeros_(self.mu_proj.bias)
         nn.init.normal_(self.a_proj.weight, std=0.02)
-        nn.init.zeros_(self.a_proj.bias)
+        if self._init_log_precision is not None:
+            # Bias initialised so softplus(bias) ≈ exp(bias) ≈ exp(init_log_precision),
+            # giving sigma_eff = 1/sqrt(a_k) ≈ 1/sqrt(exp(init_log_precision)).
+            # For init_log_precision = -log(d): sigma_eff ≈ sqrt(d).
+            nn.init.constant_(self.a_proj.bias, self._init_log_precision)
+        else:
+            nn.init.zeros_(self.a_proj.bias)
         nn.init.normal_(self.w_proj.weight, std=0.02)
         nn.init.zeros_(self.w_proj.bias)
 
@@ -136,6 +153,7 @@ class SARFGaussianVTheta(StructuredVThetaBase):
         xi_d: int,
         w_scale: float = 1.0,
         init_log_sigma: float = 0.0,
+        log_sigma_max: Optional[float] = None,
     ):
         """
         Parameters
@@ -150,12 +168,18 @@ class SARFGaussianVTheta(StructuredVThetaBase):
             Scale factor for softmax weights.
         init_log_sigma : float
             Initial log(sigma) for per-anchor widths.
+        log_sigma_max : float or None
+            Hard upper bound on log(sigma).  Prevents wells from widening
+            into flatness during training.  Recommended value:
+            ``0.5 * math.log(d) + 1.0``  (one e-fold above sqrt(d)).
+            None disables the constraint.
         """
         super().__init__()
         self.d = d
         N_S = anchor_positions.shape[0]
         self.N_S = N_S
         self.w_scale = w_scale
+        self._log_sigma_max: Optional[float] = log_sigma_max
 
         self.register_buffer('anchors', anchor_positions.detach().clone())
 
@@ -168,7 +192,23 @@ class SARFGaussianVTheta(StructuredVThetaBase):
 
     @property
     def sigma(self) -> torch.Tensor:
-        return self.log_sigma.exp().clamp(min=1e-3)
+        """Effective sigma, clamped to [1e-3, exp(log_sigma_max)] if set."""
+        ls = self.log_sigma
+        if self._log_sigma_max is not None:
+            ls = ls.clamp(max=self._log_sigma_max)
+        return ls.exp().clamp(min=1e-3)
+
+    def clamp_params(self) -> None:
+        """Project log_sigma into the feasible set after each optimizer step.
+
+        Call this immediately after ``optimizer.step()`` to enforce the
+        log_sigma_max constraint via projected gradient descent.  Without this,
+        Adam can push log_sigma past log_sigma_max even though the effective
+        sigma is clamped in the forward pass (the optimizer sees a flat gradient
+        surface and keeps accumulating momentum past the constraint boundary).
+        """
+        if self._log_sigma_max is not None:
+            self.log_sigma.data.clamp_(max=self._log_sigma_max)
 
     def forward(self, xi: torch.Tensor, h: torch.Tensor) -> torch.Tensor:
         sigma = self.sigma                                       # (N_S,)
