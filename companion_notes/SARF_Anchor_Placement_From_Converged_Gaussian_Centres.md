@@ -215,7 +215,7 @@ Figure: `notebooks/conservative_arch/scaleup/results/well_centre_rule_scores.png
 
 The decision rule, to be applied once §6 is populated:
 
-- **If a token-based rule (R1 or R4) matches or beats R0 PMI on Chamfer and coverage**, then a frequency- or information-based law is the better corpus-informed anchor placement, and it is as cheap to compute as PMI (a single `bincount`) while avoiding the $O(\text{top\_v}^2)$ co-occurrence matrix.
+- **If a token-based rule (R1 or R4) matches or beats R0 PMI on Chamfer and coverage**, then a frequency- or information-based law is the better corpus-informed anchor placement, and it is as cheap to compute as PMI (a single `bincount`) while avoiding the $O(V_{\mathrm{top}}^2)$ co-occurrence matrix.
 - **If the geometric rule (R3 PCA shell) dominates**, then the learned centres are organised by the principal axes of their own distribution rather than by any token identity; the anchors should be placed analytically from the cloud covariance, and the choice of $N_S$ becomes a question of how many principal axes carry mass.
 - **If R2 hidden-manifold modes win**, then the wells simply track the data manifold, and anchors should be $k$-means centroids of $h_L$ -- decoupling anchor placement from the potential entirely.
 - **If R0 PMI remains best**, the current heuristic is validated, and the contribution is the validation methodology plus a quantitative justification.
