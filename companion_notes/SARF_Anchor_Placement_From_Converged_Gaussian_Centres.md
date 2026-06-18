@@ -76,7 +76,7 @@ to every vector (cloud, modes, and all candidate anchors) before any geometric m
 Let the held-out corpus produce contexts $\xi_t$ for token positions $t = 1, \dots, T$. The **centre cloud** is
 
 $$
-\mathcal{C} = \big\{ \big(\mu_k(\xi_t), w_k(\xi_t)\big) : t = 1, \dots, T, \quad k = 1, \dots, K \big\},
+\mathcal{C} = \lbrace \big(\mu_k(\xi_t), w_k(\xi_t)\big) : t = 1, \dots, T, \quad k = 1, \dots, K \rbrace,
 \qquad
 w_k(\xi) = \text{softmax}_k\big(W_w \xi\big),
 $$
