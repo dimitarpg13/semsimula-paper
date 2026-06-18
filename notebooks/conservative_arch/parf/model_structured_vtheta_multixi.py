@@ -16,7 +16,7 @@ Usage
     from model_structured_vtheta import MixtureQuadraticVTheta
     from model_structured_vtheta_multixi import StructuredVThetaMultiXiAdapter
 
-    inner = MixtureQuadraticVTheta(d=K*d_model, K=8, tau=1.0)
+    inner = MixtureQuadraticVTheta(d=256, K=8, tau=1.0, xi_d=4*256)
     V_theta = StructuredVThetaMultiXiAdapter(inner, K=4, d=256)
     model.V_theta = V_theta  # drop-in replacement
 """
@@ -72,7 +72,7 @@ def _smoke():
     K_mix = 4
     xi_d = K_xi * d
 
-    inner = MixtureQuadraticVTheta(d=xi_d, K=K_mix, tau=1.0)
+    inner = MixtureQuadraticVTheta(d=d, K=K_mix, tau=1.0, xi_d=xi_d)
     adapter = StructuredVThetaMultiXiAdapter(inner, K=K_xi, d=d)
 
     B, T = 2, 8
@@ -86,8 +86,8 @@ def _smoke():
     assert grad.shape == (B, T, d), f"Expected (B,T,d), got {grad.shape}"
 
     centres = adapter.attractor_centres(xis)
-    assert centres.shape == (B, T, K_mix, xi_d), \
-        f"Expected (B,T,K_mix,xi_d), got {centres.shape}"
+    assert centres.shape == (B, T, K_mix, d), \
+        f"Expected (B,T,K_mix,d), got {centres.shape}"
 
     print(f"StructuredVThetaMultiXiAdapter smoke test passed.")
     print(f"  V shape: {tuple(V.shape)}")

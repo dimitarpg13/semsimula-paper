@@ -230,15 +230,16 @@ class MixtureQuadraticVTheta(StructuredVThetaBase):
     """
 
     def __init__(self, d: int, K: int = 4, tau: float = 1.0,
-                 init_a_bias: float = 0.0):
+                 init_a_bias: float = 0.0, xi_d: int | None = None):
         super().__init__()
         self.d = d
         self.K = K
         self.tau = tau
-        self.mu_proj = nn.Linear(d, K * d)
-        self.a_proj = nn.Linear(d, K * d)
-        self.pi_proj = nn.Linear(d, K)
-        self.b_proj = nn.Linear(d, 1)
+        in_d = xi_d if xi_d is not None else d
+        self.mu_proj = nn.Linear(in_d, K * d)
+        self.a_proj = nn.Linear(in_d, K * d)
+        self.pi_proj = nn.Linear(in_d, K)
+        self.b_proj = nn.Linear(in_d, 1)
         self._init_weights(init_a_bias)
 
     def _init_weights(self, init_a_bias: float) -> None:
