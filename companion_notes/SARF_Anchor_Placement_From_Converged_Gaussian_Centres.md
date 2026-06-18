@@ -66,7 +66,7 @@ Consequently, "the converged Gaussian well centres" is **not** a fixed set of $K
 **Shared basis.** The model uses tied embeddings, $\text{logits} = h_L E^\top$, so token embeddings $E[v]$ and the learned centres $\mu_k(\xi)$ live in the *same* $\mathbb{R}^d$ basis. Comparing token-embedding anchors to learned centres geometrically is therefore well-posed, provided both are placed on a common scale. Because `ln_after_step=True` keeps hidden states on the shell $\lVert h_L \rVert \approx \sqrt{d}$, and the Phase-5 SARF builder row-standardises its anchors to the same shell, we apply the identical row-standardisation
 
 $$
-\mathrm{std}(v) = \frac{v - \bar{v}\,\mathbf{1}}{\operatorname{sd}(v) + \varepsilon}, \qquad \lVert \mathrm{std}(v) \rVert \approx \sqrt{d},
+\mathrm{std}(v) = \frac{v - \bar{v}\mathbf{1}}{\text{sd}(v) + \varepsilon}, \qquad \lVert \mathrm{std}(v) \rVert \approx \sqrt{d},
 $$
 
 to every vector (cloud, modes, and all candidate anchors) before any geometric metric.
@@ -76,9 +76,9 @@ to every vector (cloud, modes, and all candidate anchors) before any geometric m
 Let the held-out corpus produce contexts $\xi_t$ for token positions $t = 1, \dots, T$. The **centre cloud** is
 
 $$
-\mathcal{C} = \big\{ \big(\mu_k(\xi_t),\, w_k(\xi_t)\big) : t = 1, \dots, T,\; k = 1, \dots, K \big\},
+\mathcal{C} = \big\{ \big(\mu_k(\xi_t), w_k(\xi_t)\big) : t = 1, \dots, T, \quad k = 1, \dots, K \big\},
 \qquad
-w_k(\xi) = \operatorname{softmax}_k\!\big(W_w \xi\big),
+w_k(\xi) = \text{softmax}_k\big(W_w \xi\big),
 $$
 
 where the responsibilities $w_k(\xi)$ are read from the same `w_proj` head the model uses at inference. Flattening over $(t, k)$ gives weighted points $\{(c_i, w_i)\}_{i=1}^{TK}$.
@@ -86,7 +86,7 @@ where the responsibilities $w_k(\xi)$ are read from the same `w_proj` head the m
 The **empirical target modes** $M = \{m_1, \dots, m_{N_S}\}$ are the centroids of a responsibility-weighted $k$-means on the cloud:
 
 $$
-M = \operatorname*{arg\,min}_{\{m_j\}} \sum_{i} w_i \,\min_j \lVert c_i - m_j \rVert^2 .
+M = \arg\min_{\{m_j\}} \sum_{i} w_i \min_j \lVert c_i - m_j \rVert^2 .
 $$
 
 These $N_S$ modes are the ground truth: they are where the converged Gaussian model concentrates its attractor mass. A good anchor rule reproduces $M$.
@@ -100,15 +100,15 @@ Each rule produces $N_S$ anchors in the shared $\mathbb{R}^d$ basis. All are imp
 **R0 -- PMI peak (current baseline).** Anchors are the embeddings of the $N_S$ tokens with the largest PMI co-occurrence peak:
 
 $$
-\operatorname{PMI}_{\max}(v) = \max_{u \neq v} \log \frac{p(u, v)}{p(u)\,p(v)},
+\text{PMI}_{\max}(v) = \max_{u \neq v} \log \frac{p(u, v)}{p(u) p(v)},
 \qquad
-a_j = E\big[v_j\big],\quad v_j \in \operatorname{top\text{-}}N_S \operatorname{PMI}_{\max}.
+a_j = E\big[v_j\big],\quad v_j \in \text{top-}N_S\ \text{PMI}_{\max}.
 $$
 
 **R1 -- Unigram frequency.** Anchors are the embeddings of the $N_S$ most frequent tokens:
 
 $$
-a_j = E\big[v_j\big],\quad v_j \in \operatorname{top\text{-}}N_S\, n(v),
+a_j = E\big[v_j\big],\quad v_j \in \text{top-}N_S\ n(v),
 $$
 
 with $n(v)$ the corpus count. Motivated by the §8.3 observation that learned basins decode to frequent tokens.
@@ -116,19 +116,19 @@ with $n(v)$ the corpus count. Motivated by the §8.3 observation that learned ba
 **R2 -- Hidden-manifold modes.** Anchors are the (uniformly weighted) $k$-means centroids of the sampled final hidden states $\{h_L\}$ -- i.e. the modes of the data manifold itself, independent of the potential:
 
 $$
-\{a_j\} = \operatorname{kmeans}_{N_S}\big(\{h_L\}\big).
+\{a_j\} = \text{k-means}_{N_S}\big(\{h_L\}\big).
 $$
 
 **R3 -- Principal-axis (PCA) shell.** Anchors are placed symmetrically along the leading principal axes of the weighted centre cloud. With weighted mean $\bar{c}$ and weighted covariance
 
 $$
-\Sigma = \sum_i w_i\,(c_i - \bar{c})(c_i - \bar{c})^\top = \sum_i \lambda_i\, v_i v_i^\top,
+\Sigma = \sum_i w_i(c_i - \bar{c})(c_i - \bar{c})^\top = \sum_i \lambda_i v_i v_i^\top,
 $$
 
 emit a $\pm$ pair per leading eigenpair:
 
 $$
-a_i^{\pm} = \bar{c} \pm c\,\sqrt{\lambda_i}\; v_i,
+a_i^{\pm} = \bar{c} \pm c\sqrt{\lambda_i} v_i,
 \qquad i = 1, \dots, \big\lceil N_S / 2 \big\rceil,
 $$
 
@@ -137,7 +137,7 @@ with shell scale $c$ (default $1$). This is a purely geometric, token-free rule.
 **R4 -- Surprisal-weighted information.** Anchors are the embeddings of the $N_S$ tokens that contribute the most total cross-entropy mass, tying the placement to the log-frequency mass mode:
 
 $$
-a_j = E\big[v_j\big],\quad v_j \in \operatorname{top\text{-}}N_S\,\big[\, n(v)\, s(v) \,\big],
+a_j = E\big[v_j\big],\quad v_j \in \text{top-}N_S\big[n(v) s(v)\big],
 \qquad s(v) = -\log \hat{p}(v).
 $$
 
@@ -160,18 +160,18 @@ $$
 **Mass coverage** (does the rule blanket where the model puts mass; higher is better):
 
 $$
-\operatorname{Cov}_\sigma(A) = \frac{\sum_i w_i\,\mathbf{1}\!\left[\,\min_j \lVert c_i - a_j \rVert \le \sigma \,\right]}{\sum_i w_i},
+\text{Cov}_\sigma(A) = \frac{\sum_i w_i \mathbf{1}\left[\min_j \lVert c_i - a_j \rVert \le \sigma \right]}{\sum_i w_i},
 $$
 
 with the threshold $\sigma$ fixed once as the median nearest-mode distance of the cloud,
 
 $$
-\sigma = \operatorname{median}_i \, \min_j \lVert c_i - m_j \rVert,
+\sigma = \text{median}_i \min_j \lVert c_i - m_j \rVert,
 $$
 
 so the coverage criterion is identical across all candidate rules.
 
-**Decode Jaccard** (semantic agreement through the LM head; higher is better). Let $T_1(\cdot)$ map a set of vectors to the set of their top-1 decoded tokens under $v \mapsto \operatorname{argmax} (v E^\top)$. Then
+**Decode Jaccard** (semantic agreement through the LM head; higher is better). Let $T_1(\cdot)$ map a set of vectors to the set of their top-1 decoded tokens under $v \mapsto \arg\max(v E^\top)$. Then
 
 $$
 J(A, M) = \frac{\lvert T_1(A) \cap T_1(M) \rvert}{\lvert T_1(A) \cup T_1(M) \rvert}.
