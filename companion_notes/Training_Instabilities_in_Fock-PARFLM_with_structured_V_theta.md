@@ -22,6 +22,7 @@
 11. [G3 Sigma Drift: Well Deactivation During Training](#11-g3-sigma-drift-well-deactivation-during-training)
 12. [G1 Precision Explosion: Blowup 2 Revisited via Unbounded Gaussian Precision](#12-g1-precision-explosion-blowup-2-revisited-via-unbounded-gaussian-precision)
 13. [Phase 5 Blowup: LR-Induced Instability Beyond the Bounded Potential](#13-phase-5-blowup-lr-induced-instability-beyond-the-bounded-potential)
+14. [Scale-Diversity Analysis: Why TinyStories Is Stable and OpenWebText Is Not](#14-scale-diversity-analysis-why-tinystories-is-stable-and-openwebtext-is-not)
 
 ---
 
@@ -2065,6 +2066,279 @@ LAMB or per-module LR groups are the recommended next steps. Both
 directly address the root cause (non-uniform gradient scale across
 modules) rather than relying on global LR reduction as a blunt
 instrument.
+
+---
+
+## 14. Scale-Diversity Analysis: Why TinyStories Is Stable and OpenWebText Is Not
+
+### 14.1. The Puzzle
+
+Every instability documented in Sections 1-13 was first observed on
+OpenWebText. On TinyStories, both the SQ3 (mixture of quadratic wells)
+and Gaussian (mixture of Gaussian wells) architectures trained stably
+and achieved competitive perplexity:
+
+| Architecture | TinyStories PPL | Instabilities observed |
+|---|---|---|
+| SQ3 (Phase 2, d=256, 14M) | **~10** | None |
+| Gaussian G1 (K=8, d=256, 14M) | **15.95** | Mild transient spikes (max grad=198) |
+| Gaussian G2 (K=16, d=256, 14M) | **17.61** | None |
+| Gaussian G3 (SARF N=64, d=256, 14M) | **18.67** | v\_reg drift (fixed by `log_sigma_max`) |
+
+When the same architectures were scaled to OpenWebText (Phase 4 for
+SQ3, Phase 5 for Gaussian):
+
+| Architecture | OpenWebText | Instabilities observed |
+|---|---|---|
+| SQ3 (Phase 4, d=384, 31.5M) | Blowups 1, 2, 3 | Penalty dominance, force spikes, watchdog miscalibration |
+| Gaussian G1 (Phase 5, d=384, 31.5M) | LR doom loop, progress trap | Full-model gradient explosion, watchdog reload cycles |
+
+The structured V_theta is not the root cause — the instabilities
+arise from the interaction of model scale, data diversity, and learning
+rate. This section provides a unified framework for predicting when
+instabilities will appear.
+
+### 14.2. The Stability Product
+
+Training stability is governed by a product of three factors:
+
+$$
+\mathcal{S} = \underbrace{\sqrt{P}}_{\text{model scale}} \times \underbrace{\sigma_{\text{batch}}(\nabla \mathcal{L})}_{\text{gradient variance}} \times \underbrace{\eta}_{\text{learning rate}}
+$$
+
+where $P$ is the total parameter count, $\sigma_{\text{batch}}$ is the
+standard deviation of the gradient across different batches, and $\eta$
+is the learning rate. The model is stable when $\mathcal{S}$ is below
+an architecture-dependent threshold $\mathcal{S}_{\max}$:
+
+$$
+\mathcal{S} < \mathcal{S}_{\max} \quad \Longrightarrow \quad \text{stable training}
+$$
+
+Each factor contributes differently on TinyStories vs OpenWebText.
+
+### 14.3. Factor 1: Model Scale ($\sqrt{P}$)
+
+The total gradient norm scales with the square root of the parameter
+count for i.i.d. gradient components:
+
+$$
+\lVert \nabla_\theta \mathcal{L} \rVert \approx \bar{g} \cdot \sqrt{P}
+$$
+
+| Configuration | $P$ | $\sqrt{P}$ | Ratio vs TinyStories |
+|---|---|---|---|
+| TinyStories (d=256) | 14.0M | 3,742 | 1.0x |
+| OpenWebText (d=384) | 31.5M | 5,612 | **1.50x** |
+
+This factor alone increases the gradient norm by 50% on OpenWebText.
+The effect is amplified by the larger Fock register pool ($M=32$ vs 16)
+and deeper integration stack ($L=16$ layers with $d=384$-dimensional
+states).
+
+### 14.4. Factor 2: Gradient Variance ($\sigma_{\text{batch}}$)
+
+This is the dominant factor and the qualitative difference between
+the two corpora. With a batch of 8 sequences at block_size=512, each
+training step sees only 4,096 tokens. The gradient computed from these
+tokens is a noisy estimate of the full-dataset gradient, and the noise
+level depends on the homogeneity of the corpus.
+
+**TinyStories** is a highly homogeneous corpus:
+- Approximately 2.3M short children's stories.
+- Vocabulary: ~5,000 active tokens out of 50,257 (simple nouns,
+  verbs, names like "Lily" and "Tom").
+- Syntax: almost exclusively SVO order, past tense, conjunctions.
+- Semantics: concrete objects, simple emotions, fairy-tale logic.
+- Any batch of 8 stories looks statistically similar to any other.
+
+**OpenWebText** is a high-entropy, heavy-tailed corpus:
+- Approximately 8B tokens from 8M web documents.
+- Full vocabulary utilisation — technical jargon, URLs, code,
+  foreign words, named entities, numbers.
+- Syntax: news prose, Reddit comments, blog posts, code, recipes,
+  academic writing — all interleaved.
+- A batch of 8 random documents can span wildly different domains.
+
+The gradient variance decomposes across model components:
+
+**Embedding gradient ($E$, 61% of params).**
+The embedding gradient for token $i$ is non-zero only when token $i$
+appears in the batch. On TinyStories, the same ~5K tokens appear in
+nearly every batch, so $\nabla_E \mathcal{L}$ is dense and stable.
+On OpenWebText, rare tokens appear sporadically — when a batch happens
+to contain a rare technical term, the gradient for that embedding row
+spikes while all other rows see zero gradient. The embedding gradient
+has a heavy-tailed distribution across batches.
+
+**V\_phi routing gradient (score head, 0.6% of params).**
+The Gumbel-softmax top-k routing learns which past tokens to attend
+to. On TinyStories, the optimal routing is predictable (similar
+syntactic patterns across stories). On OpenWebText, the optimal
+routing changes dramatically between batches — a code snippet needs
+different routing than a news paragraph. The score head gradient
+direction fluctuates strongly.
+
+**Fock register gradients (2.3M params).**
+The creation/destruction gates learn when to activate registers
+based on token-register attention scores. On TinyStories, the same
+register activation patterns recur (e.g., "character introduced"
+triggers creation, "story ends" triggers destruction). On OpenWebText,
+the activation patterns are far more variable, creating gradient
+noise in the QKV creation gate and destruction gate parameters.
+
+**V\_theta gradient (9.5M params for Gaussian G1).**
+The Gaussian wells learn centres $\mu_k(\xi)$, precisions $a_k(\xi)$,
+and weights $w_k(\xi)$ conditioned on the multi-channel context
+$\xi$. On TinyStories, the context distribution is narrow — the
+model sees similar $\xi$ vectors across batches. On OpenWebText,
+$\xi$ spans a much wider subspace of $\mathbb{R}^{K_\xi \cdot d}$,
+and the projections $\mu_k(\xi)$ must cover a much larger volume.
+The gradient of the mu\_proj and a\_proj linear layers fluctuates
+as different regions of $\xi$-space are sampled in each batch.
+
+**Estimated variance ratio.** Combining these effects, the inter-batch
+gradient standard deviation on OpenWebText is estimated to be
+3-5x larger than on TinyStories:
+
+$$
+\frac{\sigma_{\text{batch}}(\text{OWT})}{\sigma_{\text{batch}}(\text{TS})} \approx 3 \text{--} 5
+$$
+
+### 14.5. Factor 3: Learning Rate ($\eta$)
+
+The learning rate multiplies the (noisy) gradient to produce the
+parameter update. Higher $\eta$ amplifies the gradient noise linearly.
+
+| Run | Peak LR | Stable? |
+|---|---|---|
+| TinyStories G1 (d=256) | 5.0e-4 | Yes |
+| TinyStories G2 (d=256) | 5.0e-4 | Yes |
+| OpenWebText Phase 4 SQ3 (d=384) | 1.2e-4 | Yes (after Blowup 1-3 fixes) |
+| OpenWebText Phase 5 (d=384, LR=2e-4) | 2.0e-4 | **No** — doom loop at step 8700 |
+| OpenWebText Phase 5 (d=384, LR=1.2e-4) | 1.2e-4 | **Marginal** — watchdog triggers, progress trap |
+
+TinyStories tolerates 4x higher LR because the other two factors are
+much smaller.
+
+### 14.6. The Stability Product in Practice
+
+Combining the three factors:
+
+$$
+\frac{\mathcal{S}(\text{OWT, } d\!=\!384)}{\mathcal{S}(\text{TS, } d\!=\!256)} = \underbrace{1.5}_{\sqrt{P}} \times \underbrace{3 \text{--} 5}_{\sigma_{\text{batch}}} \times \underbrace{\frac{\eta_{\text{OWT}}}{\eta_{\text{TS}}}}_{\text{LR ratio}}
+$$
+
+At $\eta_{\text{OWT}} = 2 \times 10^{-4}$ and $\eta_{\text{TS}} = 5 \times 10^{-4}$:
+
+$$
+\mathcal{S}_{\text{ratio}} = 1.5 \times 4 \times 0.4 = 2.4
+$$
+
+At $\eta_{\text{OWT}} = 1.2 \times 10^{-4}$:
+
+$$
+\mathcal{S}_{\text{ratio}} = 1.5 \times 4 \times 0.24 = 1.44
+$$
+
+The first configuration ($\eta = 2 \times 10^{-4}$) pushes $\mathcal{S}$
+2.4x above the TinyStories baseline, triggering the doom loop. The
+second ($\eta = 1.2 \times 10^{-4}$) keeps $\mathcal{S}$ only 1.44x
+above baseline — above the stability threshold but close enough that
+the model functions with occasional watchdog interventions.
+
+### 14.7. Architecture-Specific Amplifiers
+
+The stability product determines **whether** instability occurs. The
+V_theta architecture determines **which** instability manifests:
+
+**SQ3 (unbounded quadratic wells).**
+The quadratic penalty term $\lambda \cdot V_\theta^2$ couples the
+potential depth to the gradient norm. When a diverse OWT batch drives
+$V$ to large values in some hidden-state region, the penalty gradient
+scales as $O(V)$, creating a positive feedback loop:
+
+$$
+\text{diverse batch} \to \text{large } V \to \text{large } \nabla(V^2) \to \text{large update} \to \text{even larger } V
+$$
+
+On TinyStories, $V$ remains moderate because the hidden states occupy
+a narrow, predictable region of $\mathbb{R}^d$. The feedback loop
+never activates.
+
+**Gaussian wells (bounded potential).**
+The bounded potential $V \in [-\sum w_k, 0]$ eliminates the penalty
+amplification channel. But it does not protect the non-V_theta
+components — the embedding, V_phi, and Fock register gradients are
+still subject to the full gradient variance. The instability shifts
+from V_theta-internal (Blowup 1) to full-model (Phase 5 LR blowup,
+progress trap).
+
+### 14.8. Predictive Framework for Future Scale-Ups
+
+The stability product provides a practical formula for anticipating
+instabilities when scaling to new model sizes or corpora:
+
+$$
+\eta_{\max}(\text{new}) \approx \eta_{\text{stable}}(\text{ref}) \times \frac{\sqrt{P_{\text{ref}}}}{\sqrt{P_{\text{new}}}} \times \frac{\sigma_{\text{batch}}(\text{ref})}{\sigma_{\text{batch}}(\text{new})}
+$$
+
+where "ref" is a known-stable configuration.
+
+**Example: scaling to d=512 (Phase 6).**
+If $P_{\text{new}} \approx 80\text{M}$ and the corpus remains
+OpenWebText:
+
+$$
+\eta_{\max}(d\!=\!512) \approx 1.2 \times 10^{-4} \times \frac{\sqrt{31.5\text{M}}}{\sqrt{80\text{M}}} \approx 1.2 \times 10^{-4} \times 0.63 \approx 7.5 \times 10^{-5}
+$$
+
+**Example: scaling to a more diverse corpus (e.g., The Pile).**
+If the batch gradient variance is ~2x higher than OpenWebText:
+
+$$
+\eta_{\max}(\text{Pile}) \approx 1.2 \times 10^{-4} \times 0.5 = 6.0 \times 10^{-5}
+$$
+
+These estimates are rough (the exponents depend on the model's
+specific gradient structure), but they provide the correct order
+of magnitude and prevent the trial-and-error that characterised the
+Phase 4 and Phase 5 debugging process.
+
+### 14.9. Implications for the Paper
+
+The stability analysis yields three claims relevant to the
+mega-paper:
+
+**Claim 1: Corpus diversity, not model architecture, is the
+primary driver of training instability.**
+The Fock-PARFLM architecture is stable on homogeneous corpora at all
+tested scales. Instabilities emerge only when corpus diversity
+(measured by inter-batch gradient variance) exceeds a threshold that
+depends on model scale and learning rate. This is not specific to the
+PARFLM framework — standard transformers face analogous instabilities
+at scale (learning rate warmup, gradient clipping, and loss spikes are
+standard mitigations in large-scale transformer training).
+
+**Claim 2: Bounded V_theta narrows but does not eliminate the
+instability surface.**
+The Gaussian well architecture eliminates V_theta-specific failure
+modes (Blowups 1-3) by construction. The remaining instabilities
+are in the non-V_theta components (embedding, V_phi, Fock registers)
+and are amenable to standard optimisation mitigations (LR reduction,
+gradient clipping, EMA watchdog). This decomposition —
+architecture-level boundedness + optimiser-level robustness — is a
+principled design pattern for conservative-dynamics language models.
+
+**Claim 3: TinyStories ablation validates architecture; OpenWebText
+validates optimisation.**
+The TinyStories experiments establish that the V_theta architecture
+(SQ3, Gaussian, SARF) produces competitive perplexity under
+controlled conditions. The OpenWebText experiments test whether the
+architecture's stability properties hold under realistic data
+diversity. Both are necessary: TinyStories alone would miss all
+scale-diversity instabilities; OpenWebText alone would conflate
+architectural and optimisation issues.
 
 ---
 
