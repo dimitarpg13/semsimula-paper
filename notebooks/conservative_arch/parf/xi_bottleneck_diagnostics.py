@@ -143,6 +143,9 @@ def xi_sensitivity(
     """Compute ||dV/d(xi_k)|| per channel.
 
     Runs one forward pass with gradients enabled on xi only.
+    Safe to call from within a torch.no_grad() context because the
+    entire leaf-creation and autograd computation are wrapped in
+    torch.enable_grad().
 
     Parameters
     ----------
@@ -156,38 +159,41 @@ def xi_sensitivity(
     dict with 'per_channel_grad_norm' (list of K_xi floats),
     'dominant_channel' index, 'dominance_ratio'.
     """
-    model.eval()
-    with torch.no_grad():
-        h0 = model._embed(x)
-        h_L, _ = model._stack_forward(h0, x, return_trajectory=False)
-        h_det = h_L.detach()
-
-    xi_input = h_det
-    with torch.no_grad():
-        xis_det = model.xi_module(xi_input)  # (B, T, K_xi, d)
-
-    xis = xis_det.detach().clone().requires_grad_(True)
-    B, T, _K, _d = xis.shape
-    xi_flat = xis.reshape(B, T, K_xi * d)
-
     inner = _get_inner_gaussian(model)
     if inner is None:
         return {'error': 'V_theta has no _components method'}
 
+    model.eval()
+
+    # Compute h and xis without grad (cheap), then build a fresh leaf
+    # tensor *inside* enable_grad so autograd tracks it regardless of
+    # any outer no_grad context.
+    with torch.no_grad():
+        h0 = model._embed(x)
+        h_L, _ = model._stack_forward(h0, x, return_trajectory=False)
+        h_det = h_L.detach()
+        raw_xis = model.xi_module(h_det)   # (B, T, K_xi, d)
+
     with torch.enable_grad():
-        V = inner(xi_flat, h_det)  # (B, T, 1)
+        # Create a fresh leaf inside enable_grad — this is the key fix.
+        xis = raw_xis.detach().clone().requires_grad_(True)
+        B, T, _K, _d = xis.shape
+        xi_flat = xis.reshape(B, T, K_xi * d)
+
+        V = inner(xi_flat, h_det)           # (B, T, 1)
         V_sum = V.sum()
         grad_xis = torch.autograd.grad(V_sum, xis, create_graph=False)[0]
 
     per_channel_norms = []
     for k in range(K_xi):
-        gk = grad_xis[:, :, k, :]  # (B, T, d)
+        gk = grad_xis[:, :, k, :]          # (B, T, d)
         norm_k = gk.norm(dim=-1).mean().item()
         per_channel_norms.append(round(norm_k, 6))
 
     max_norm = max(per_channel_norms)
     dominant = per_channel_norms.index(max_norm)
-    min_norm = min(n for n in per_channel_norms if n > 0) if any(n > 0 for n in per_channel_norms) else 1e-12
+    min_norm = (min(n for n in per_channel_norms if n > 0)
+                if any(n > 0 for n in per_channel_norms) else 1e-12)
     dominance_ratio = round(max_norm / max(min_norm, 1e-12), 2)
 
     return {
