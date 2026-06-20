@@ -284,6 +284,79 @@ class GaussianVThetaMultiXiAdapter(nn.Module):
 
 
 # ---------------------------------------------------------------------------
+# Multi-context Gaussian V_theta (Bottleneck-2 cure)
+# ---------------------------------------------------------------------------
+class MultiContextGaussianVTheta(nn.Module):
+    """Per-context Gaussian well banks: V = sum_m V^(m)(xi^(m), h).
+
+    The concat baseline (``MixtureGaussianVTheta`` + ``GaussianVThetaMultiXiAdapter``)
+    flattens the K multi-resolution xi-channels into one ``K*d`` summary and
+    feeds a *single* well bank, so the model cannot resolve which horizon a
+    given attractor responds to.  This variant instead gives **each xi-channel
+    (context view) its own Gaussian well bank** and sums their potentials:
+
+        V(xis, h) = sum_{m=1}^{n_ctx}  V_m(xi^(m), h),
+        V_m(xi^(m), h) = -sum_k w_k^m(xi^(m)) exp(-0.5 a_k^m (h - mu_k^m)^2)
+
+    Properties
+    ----------
+    - Parameter-neutral vs the concat baseline: each bank's projection is
+      ``d -> K*d`` and there are ``n_ctx`` banks, i.e. the same total
+      ``(n_ctx*d) -> (n_ctx*K*d)`` mapping as one ``K*d -> K*d`` bank, but now
+      block-diagonal by horizon instead of dense.
+    - Bounded: V in ``[-n_ctx * sum_k w_k, 0]`` (sum of bounded banks).
+    - Conservative: ``-grad_h V`` is the gradient of a scalar.
+    - Expressivity: ``n_ctx * K`` distinct attractors, each conditioned on a
+      single resolution, instead of ``K`` attractors on a blurred summary.
+
+    Interface matches ``GaussianVThetaMultiXiAdapter``:
+        forward(xis: (B,T,n_ctx,d), h: (B,T,d)) -> V: (B,T,1)
+    """
+
+    def __init__(
+        self,
+        d: int,
+        K: int,
+        n_ctx: int,
+        w_scale: float = 1.0,
+        init_log_precision: Optional[float] = None,
+        precision_max: Optional[float] = None,
+    ):
+        super().__init__()
+        self.d = d
+        self.K = K
+        self.n_ctx = n_ctx
+        self.banks = nn.ModuleList(
+            MixtureGaussianVTheta(
+                d=d, K=K, w_scale=w_scale, xi_d=d,
+                init_log_precision=init_log_precision,
+                precision_max=precision_max,
+            )
+            for _ in range(n_ctx)
+        )
+
+    def forward(self, xis: torch.Tensor, h: torch.Tensor) -> torch.Tensor:
+        out = self.banks[0](xis[..., 0, :], h)
+        for m in range(1, self.n_ctx):
+            out = out + self.banks[m](xis[..., m, :], h)
+        return out
+
+    def analytical_grad(self, xis: torch.Tensor, h: torch.Tensor) -> torch.Tensor:
+        out = self.banks[0].analytical_grad(xis[..., 0, :], h)
+        for m in range(1, self.n_ctx):
+            out = out + self.banks[m].analytical_grad(xis[..., m, :], h)
+        return out
+
+    def attractor_centres(self, xis: torch.Tensor) -> torch.Tensor:
+        """Per-context attractor centres concatenated: (B, T, n_ctx*K, d)."""
+        cs = [
+            self.banks[m].attractor_centres(xis[..., m, :])
+            for m in range(self.n_ctx)
+        ]
+        return torch.cat(cs, dim=-2)
+
+
+# ---------------------------------------------------------------------------
 # Smoke test
 # ---------------------------------------------------------------------------
 def _smoke():

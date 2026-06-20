@@ -153,6 +153,34 @@ class PARFConfig:
     v_phi_init_scale: float = 0.02       # init weights small so V_φ starts
                                          # as a perturbation on V_θ dynamics
 
+    # ----- Multi-head V_φ (Bottleneck-1 cure: V_φ starvation) -----
+    # V_φ(h_i, h_j) = Σ_{m=1}^{H} V^(m)(h_i, h_j): H independent scalar pair
+    # sub-potentials of kind ``v_phi_kind``, summed.  A sum of scalar
+    # potentials is itself a scalar potential, so the force
+    #     F_i = -∇_{h_i} Σ_m V^(m)
+    # remains conservative (symmetric Jacobian preserved — Arm 1 of the
+    # conservativity diagnostic still passes).  Each head owns an independent
+    # d_type / d_angle interaction subspace, so H heads give the model an
+    # effective H·d_type-dim type space and H distinct radial force directions
+    # at O(H) parameter cost and unchanged O(T·k) sparse-routing cost (heads
+    # share the single score-head top-k selection).  ``1`` reproduces the
+    # original single-head V_φ exactly.
+    v_phi_n_heads: int = 1
+
+    # ----- Bilinear value-transport V_φ (Bottleneck-1 cure B) -----
+    # When True, a ValueTransportVPhi term is ADDED to the (single- or
+    # multi-head) base V_φ:
+    #     V_φ(h_i, h_j) += -Σ_m g(r_ij)·(U_m h_i)·(W_m h_j)
+    # Its force writes the W_m-transformed source content into the query along
+    # a LEARNED direction (vs the radial-only ±(h_i-h_j) of the structural
+    # gate), giving attention-like content routing.  It is summed into the same
+    # shared scalar U, so the force stays -∇U (conservative).  Adds
+    # 2·d·(vt_n_heads·vt_d_head) parameters; sparse routing cost unchanged.
+    v_phi_add_value_transport: bool = False
+    v_phi_vt_n_heads: int = 4             # bilinear heads
+    v_phi_vt_d_head: int = 32             # per-head projection dim
+    v_phi_vt_sigma: float = 1.0          # distance-gate bandwidth σ
+
     # ----- Lever 3: competitive (softmax-normalised) Φ_φ -----
     # Active only when v_phi_kind == "structural_competitive".
     # Replaces the unnormalised Gaussian type-gate
@@ -695,6 +723,166 @@ class StructuralCompetitiveVPhi(StructuralVPhi):
 
 
 # ---------------------------------------------------------------------------
+# Multi-head V_φ wrapper
+# ---------------------------------------------------------------------------
+def _make_single_vphi(cfg: PARFConfig) -> nn.Module:
+    """Instantiate one V_φ sub-module of the configured kind."""
+    if cfg.v_phi_kind == "structural":
+        return StructuralVPhi(cfg)
+    if cfg.v_phi_kind == "structural_competitive":
+        return StructuralCompetitiveVPhi(cfg)
+    if cfg.v_phi_kind == "mlp":
+        return MLPVPhi(cfg)
+    raise ValueError(
+        f"unknown v_phi_kind={cfg.v_phi_kind!r}; "
+        "expected 'structural', 'structural_competitive', or 'mlp'."
+    )
+
+
+class MultiHeadVPhi(nn.Module):
+    """Sum of ``H`` independent scalar pair sub-potentials (Bottleneck-1 cure).
+
+        V_φ(h_i, h_j) = Σ_{m=1}^{H} V^(m)(h_i, h_j)
+
+    Each head ``V^(m)`` is an independent instance of the configured V_φ kind
+    (structural / structural_competitive / mlp), with its own type-projection
+    ``W_l^(m)`` (dim ``v_phi_d_type``) and angle-projection ``W_θ^(m)`` (dim
+    ``v_phi_d_angle``).  Because a sum of scalar potentials is a scalar
+    potential, the induced force
+
+        F_i = -∇_{h_i} Σ_m V^(m)(h_i, h_j)
+
+    is the gradient of a scalar and therefore conservative (the per-pair
+    Jacobian stays symmetric — Arm 1 of the conservativity diagnostic passes).
+
+    The H heads share the *single* Gumbel-softmax top-k routing performed in
+    the parent ``_layer_step``; only the pair potential is replicated.  The
+    interaction cost therefore stays O(T·k); only the per-pair scalar
+    evaluation is H× wider, lifting the d_type / radial-direction expressivity
+    ceiling that starved the single-head V_φ.
+
+    Interface matches the single-head V_φ so it is a drop-in replacement:
+        forward(h, h_src)              -> (B, T, T)   dense
+        forward_gathered(h, h_src_g)   -> (B, T, k)   sparse / gathered
+    """
+
+    def __init__(self, cfg: PARFConfig):
+        super().__init__()
+        n_heads = int(cfg.v_phi_n_heads)
+        if n_heads < 1:
+            raise ValueError(f"v_phi_n_heads must be >= 1, got {n_heads}.")
+        self.heads = nn.ModuleList(
+            _make_single_vphi(cfg) for _ in range(n_heads)
+        )
+
+    def forward(self, h: torch.Tensor, h_src: torch.Tensor) -> torch.Tensor:
+        out = self.heads[0](h, h_src)
+        for head in self.heads[1:]:
+            out = out + head(h, h_src)
+        return out
+
+    def forward_gathered(
+        self, h: torch.Tensor, h_src_g: torch.Tensor,
+    ) -> torch.Tensor:
+        out = self.heads[0].forward_gathered(h, h_src_g)
+        for head in self.heads[1:]:
+            out = out + head.forward_gathered(h, h_src_g)
+        return out
+
+
+class ValueTransportVPhi(nn.Module):
+    """Bilinear, multi-head, distance-gated scalar pair potential
+    (Bottleneck-1 cure B: directional / content-routing pair forces).
+
+        V_φ(h_i, h_j) = -Σ_{m=1}^{H} g(r_ij) · (U_m h_i)·(W_m h_j),
+        g(r) = exp(-‖h_i - h_j‖² / 2σ²)
+
+    The structural V_φ produces a strictly *radial* force (along ±(h_i-h_j)).
+    The gradient of this bilinear term instead writes the W_m-transformed
+    *source content* into the query along a LEARNED direction:
+
+        -∂V/∂h_i = Σ_m [ g · U_mᵀ(W_m h_j)
+                         + (U_m h_i · W_m h_j) · g · (h_j - h_i)/σ² ]
+
+    The first term is the attention-like value-transport that the radial gate
+    cannot express.  Because the result is summed into the same shared scalar
+    U as every other potential and the force is taken as -∇_{h_i}U, the
+    dynamics remain conservative.
+
+    Interface matches the single-head V_φ (drop-in component):
+        forward(h, h_src)            -> (B, T, T)   dense
+        forward_gathered(h, h_src_g) -> (B, T, k)   sparse / gathered
+    """
+
+    def __init__(
+        self,
+        d: int,
+        n_heads: int = 4,
+        d_head: int = 32,
+        sigma: float = 1.0,
+        init_scale: float = 0.02,
+    ):
+        super().__init__()
+        self.n_heads = int(n_heads)
+        self.d_head = int(d_head)
+        self.sigma = float(sigma)
+        self.U = nn.Linear(d, self.n_heads * self.d_head, bias=False)
+        self.W = nn.Linear(d, self.n_heads * self.d_head, bias=False)
+        # Small init so the term enters as a perturbation on the existing
+        # V_θ + structural-V_φ dynamics.
+        nn.init.normal_(self.U.weight, std=init_scale)
+        nn.init.normal_(self.W.weight, std=init_scale)
+
+    def forward(self, h: torch.Tensor, h_src: torch.Tensor) -> torch.Tensor:
+        B, T, _ = h.shape
+        r2 = ((h.unsqueeze(2) - h_src.unsqueeze(1)) ** 2).sum(-1)   # (B,T,T)
+        g = torch.exp(-r2 / (2.0 * self.sigma ** 2))               # (B,T,T)
+        uq = self.U(h).view(B, T, self.n_heads, self.d_head)
+        ks = self.W(h_src).view(B, T, self.n_heads, self.d_head)
+        bil = torch.einsum("bnhe,bmhe->bnm", uq, ks)               # (B,T,T)
+        return -(g * bil)
+
+    def forward_gathered(
+        self, h: torch.Tensor, h_src_g: torch.Tensor,
+    ) -> torch.Tensor:
+        B, T, k, _ = h_src_g.shape
+        r2 = ((h.unsqueeze(2) - h_src_g) ** 2).sum(-1)             # (B,T,k)
+        g = torch.exp(-r2 / (2.0 * self.sigma ** 2))              # (B,T,k)
+        uq = self.U(h).view(B, T, self.n_heads, self.d_head)       # (B,T,nh,dh)
+        ws = self.W(h_src_g).view(B, T, k, self.n_heads, self.d_head)
+        bil = (uq.unsqueeze(2) * ws).sum(-1).sum(-1)              # (B,T,k)
+        return -(g * bil)
+
+
+class CompositeVPhi(nn.Module):
+    """Sum of heterogeneous scalar pair sub-potentials.
+
+    Used to combine the structural (single/multi-head) V_φ with the bilinear
+    ValueTransportVPhi.  A sum of scalar potentials is a scalar potential, so
+    the induced force -∇_{h_i} Σ_c V_c is conservative.  Each component must
+    expose ``forward`` and ``forward_gathered``.
+    """
+
+    def __init__(self, components):
+        super().__init__()
+        self.components = nn.ModuleList(components)
+
+    def forward(self, h: torch.Tensor, h_src: torch.Tensor) -> torch.Tensor:
+        out = self.components[0](h, h_src)
+        for c in self.components[1:]:
+            out = out + c(h, h_src)
+        return out
+
+    def forward_gathered(
+        self, h: torch.Tensor, h_src_g: torch.Tensor,
+    ) -> torch.Tensor:
+        out = self.components[0].forward_gathered(h, h_src_g)
+        for c in self.components[1:]:
+            out = out + c.forward_gathered(h, h_src_g)
+        return out
+
+
+# ---------------------------------------------------------------------------
 # PARF model
 # ---------------------------------------------------------------------------
 class PARFLM(nn.Module):
@@ -722,18 +910,28 @@ class PARFLM(nn.Module):
         # ----- Single shared V_theta -----
         self.V_theta = ScalarPotential(cfg.d, cfg.v_hidden, cfg.v_depth)
 
-        # ----- Single shared V_phi -----
-        if cfg.v_phi_kind == "structural":
-            self.V_phi: nn.Module = StructuralVPhi(cfg)
-        elif cfg.v_phi_kind == "structural_competitive":
-            self.V_phi = StructuralCompetitiveVPhi(cfg)
-        elif cfg.v_phi_kind == "mlp":
-            self.V_phi = MLPVPhi(cfg)
+        # ----- Single shared V_phi (optionally multi-head + value-transport) --
+        # v_phi_n_heads > 1 sums H independent scalar pair sub-potentials
+        # (still conservative; see MultiHeadVPhi).  n_heads == 1 reproduces
+        # the original single-head V_phi exactly.  When
+        # v_phi_add_value_transport is set, a bilinear ValueTransportVPhi term
+        # is summed onto the base V_phi via CompositeVPhi (still conservative).
+        if getattr(cfg, "v_phi_n_heads", 1) > 1:
+            base_v_phi: nn.Module = MultiHeadVPhi(cfg)
         else:
-            raise ValueError(
-                f"unknown v_phi_kind={cfg.v_phi_kind!r}; "
-                "expected 'structural', 'structural_competitive', or 'mlp'."
+            base_v_phi = _make_single_vphi(cfg)
+
+        if getattr(cfg, "v_phi_add_value_transport", False):
+            value_transport = ValueTransportVPhi(
+                d=cfg.d,
+                n_heads=cfg.v_phi_vt_n_heads,
+                d_head=cfg.v_phi_vt_d_head,
+                sigma=cfg.v_phi_vt_sigma,
+                init_scale=cfg.v_phi_init_scale,
             )
+            self.V_phi: nn.Module = CompositeVPhi([base_v_phi, value_transport])
+        else:
+            self.V_phi = base_v_phi
 
         # ----- Per-token mass + global gamma -----
         self.raw_m_bias = nn.Parameter(
