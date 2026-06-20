@@ -380,11 +380,13 @@ $$
    is small wherever the new well is not active — i.e., everywhere except the new well's own
    geodesic neighborhood. This is the precise, defensible form of the "locality" claim.
 
-An optional **unnormalized variant** (replace the softmax by independent positive gates
-$w_k(\xi) = \mathrm{softplus}((W_w \xi)_k)$) makes spawning interference-free in both senses, at the
-cost of losing the partition-of-unity interpretation and requiring an explicit amplitude budget to
-keep $V_\theta$ bounded. We retain the softmax form to stay consistent with the deployed model and
-instead bound the interference as above.
+An optional **unnormalized variant** replaces the softmax by independent positive gates,
+
+$$w_k(\xi) = \mathrm{softplus}\big((W_w \xi)_k\big),$$
+
+making spawning interference-free in both senses, at the cost of losing the partition-of-unity
+interpretation and requiring an explicit amplitude budget to keep $V_\theta$ bounded. We retain the
+softmax form to stay consistent with the deployed model and instead bound the interference as above.
 
 ### 4.2 Placing a New Well: the h-Space Center and the xi-State Address
 
@@ -392,7 +394,7 @@ A new well's center lives in **hidden-state space**, $\mu_{\text{new}} \in \math
 $V_\theta$ is evaluated on $h$. The streaming $\xi$-state does **not** live in the same space:
 $\xi \in \mathbb{R}^{K_\xi d}$ is the concatenation of $K_\xi$ causal-EMA channels and is used to
 *parameterize* wells, not to position them. The earlier draft's shorthand
-"$\mu_{\text{new}} = \xi_t$" therefore type-mismatched the two spaces and is corrected here.
+`mu_new = xi_t` therefore type-mismatched the two spaces and is corrected here.
 
 The correct construction uses the current hidden state and the shared-basis treatment of the SARF
 anchor-placement companion note. Because the model uses tied embeddings,
@@ -413,9 +415,8 @@ to anchors in the Phase-5 SARF builder, guaranteeing $\lVert \mu_{\text{new}} \r
 encodes the specificity of the new knowledge and $A_{\text{new}}$ its (bounded) strength. The role
 of the $\xi$-state is to (a) supply the *context address* used by the mixing head $w_\cdot(\xi)$ so
 the well activates in the right discourse contexts, and (b) provide, through its trajectory, the
-geodesic neighborhood over which the well's influence is felt. Operationally the interaction says:
-*hidden-state trajectories arriving in this region of the* $\sqrt{d}$ *shell, in contexts resembling
-the current* $\xi_t$*, should be attracted here.*
+geodesic neighborhood over which the well's influence is felt. In short: hidden-state trajectories
+arriving in this region of the $\sqrt{d}$ shell, in contexts resembling the current $\xi_t$, are attracted here.
 
 Importantly, the $O(1)$ inference memory property of SPLM — achieved via the streaming
 cumulative-mean $\xi$-state, which eliminates the KV cache — is unaffected by well spawning, as long
@@ -474,7 +475,7 @@ the property that distinguishes SPLM from *all* the transformer methods, includi
 parameter-isolation: their locality is in a parameter partition, not in input/semantic space.
 
 **Interpretability.** Each well has a semantic address ($\mu_k$ decoded through the LM head), a
-specificity ($\sigma_k$), a strength ($A_k$), and a utilization history ($\text{hit}_k$). The
+specificity ($\sigma_k$), a strength ($A_k$), and a utilization history ($\text{hit}\_k$). The
 learned potential landscape is inspectable in a way that transformer weight matrices and low-rank
 adapters are not.
 
@@ -532,11 +533,11 @@ architectures below has yet been trained at scale (Section 10, Experiment G5).
 ### 6.1 Formal Setup
 
 **Well state.** Each active well $k$ is characterized by the tuple of its $h$-space center
-$\mu_k \in \mathbb{R}^d$ (Section 4.2), width $\sigma_k \in \mathbb{R}_+$, amplitude
-$A_k \in \mathbb{R}_+$, age $\text{age}_k \in \mathbb{N}$, hit count
-$\text{hit}_k \in \mathbb{N}$, and salience $\text{sal}_k \in \mathbb{R}_+$. Here $\text{age}_k$
-counts inference steps since spawn, $\text{hit}_k$ counts $\xi$-trajectories that have passed within
-geodesic radius $\sigma_k$ of $\mu_k$ (the utilization metric), and $\text{sal}_k$ is the salience
+$\mu_k \in \mathbb{R}^d$ (Section 4.2), width $\sigma_k \in \mathbb{R}\_+$, amplitude
+$A_k \in \mathbb{R}\_+$, age $\text{age}\_k \in \mathbb{N}$, hit count
+$\text{hit}\_k \in \mathbb{N}$, and salience $\text{sal}\_k \in \mathbb{R}\_+$. Here $\text{age}\_k$
+counts inference steps since spawn, $\text{hit}\_k$ counts $\xi$-trajectories that have passed within
+geodesic radius $\sigma_k$ of $\mu_k$ (the utilization metric), and $\text{sal}\_k$ is the salience
 score (Section 7).
 
 **MDP formulation.**
@@ -545,10 +546,10 @@ score (Section 7).
 - **Reward**:
 
 $$
-R_t = \alpha \cdot \Delta\text{accuracy}_t - \beta \cdot |\text{wells}|_t - \gamma \cdot \Delta\mathrm{KL}_t,
+R_t = \alpha \cdot \Delta\text{accuracy}_t - \beta \cdot |\text{wells}|_t - \gamma \cdot \Delta\mathrm{KL}\_t,
 $$
 
-  where $\Delta\mathrm{KL}_t$ measures how much existing trajectory distributions shifted after the
+  where $\Delta\mathrm{KL}\_t$ measures how much existing trajectory distributions shifted after the
   action (landscape stability penalty).
 
 **Key structural challenge.** The state $s_t$ is a *set* over wells — permutation-invariant and
@@ -611,7 +612,7 @@ L_{\text{CLIP}} = \mathbb{E}\big[ \min\big( r_t(\theta)  \hat{A}_t,  \mathrm{cli
 $$
 
 This conservatism tends to prevent drastic management actions that would destabilize existing well
-basins. The PPO policy-KL trust region and the $\Delta\mathrm{KL}_t$ landscape-stability penalty are
+basins. The PPO policy-KL trust region and the $\Delta\mathrm{KL}\_t$ landscape-stability penalty are
 *different* KL divergences (one over action distributions, one over trajectory distributions); the
 analogy is heuristic and we do not claim they coincide.
 
@@ -693,7 +694,7 @@ $$
 
 **Low-level options (fast, reactive):** each option $O_k$ has an initiation set $I_k$, a policy
 $\pi_k$, and a termination condition $\beta_k$. For example, $O_{\text{prune}}$ initiates when
-$\text{sal}_k$ falls below threshold $\tau$, executes the prune primitive, and terminates when the
+$\text{sal}\_k$ falls below threshold $\tau$, executes the prune primitive, and terminates when the
 well has entered the dormant registry.
 
 **Why hierarchy is not just a preference here:** the two timescales correspond to different
@@ -742,9 +743,9 @@ diagram, not math:
 - Merge criterion: $d_G(\mu_k, \mu_j) \lt \varepsilon$ **and**
   $\cos(\nabla V_k, \nabla V_j) \gt \delta$ (similar in both position and semantic gradient
   direction).
-- Pruning criterion: $\text{sal}_k \lt \tau$ **and** $Q_k(\text{prune}) \gt Q_k(\text{keep})$ for
+- Pruning criterion: $\text{sal}\_k \lt \tau$ **and** $Q_k(\text{prune}) \gt Q_k(\text{keep})$ for
   $N$ consecutive evaluations.
-- Dormancy: pruned wells enter a dormant registry; $\text{sal}_k$ can recover if future
+- Dormancy: pruned wells enter a dormant registry; $\text{sal}\_k$ can recover if future
   $\xi$-trajectories pass near $\mu_k$.
 - Split replaced by prune + 2×spawn sequence (B2 compliance — see Section 8.2).
 
@@ -898,8 +899,8 @@ $x_A \in \mathbb{R}^{k_A d}$ with $k_A$ a fixed positive integer (the particle's
 global state-dimension constant.
 
 **Analysis for well spawning.** Each spawned well is a v2 particle with state
-$(\mu_k, \sigma_k, A_k)$ where $\mu_k \in \mathbb{R}^d$, $\sigma_k \in \mathbb{R}_+$,
-$A_k \in \mathbb{R}_+$. The fan-out is $k_A = 1$ (the well contributes a scalar value to $V_\theta$
+$(\mu_k, \sigma_k, A_k)$ where $\mu_k \in \mathbb{R}^d$, $\sigma_k \in \mathbb{R}\_+$,
+$A_k \in \mathbb{R}\_+$. The fan-out is $k_A = 1$ (the well contributes a scalar value to $V_\theta$
 regardless of $d$). The dimension $d$ is fixed by the architecture as the hidden-state ($h$-space)
 dimension.
 
@@ -958,7 +959,7 @@ that decomposes into these three B2-compliant primitives.
 finite-dimensional with finite rank.
 
 **Analysis (plausibility argument).** We *posit* a set of management generators — spawn
-$\hat{a}^\dagger_k$, prune $\hat{a}_k$, merge $\hat{m}_{k,j}$, update $\hat{u}_k$ (Section 8.4) —
+$\hat{a}^\dagger_k$, prune $\hat{a}\_k$, merge $\hat{m}\_{k,j}$, update $\hat{u}\_k$ (Section 8.4) —
 and ask whether the structure they generate is finite-dimensional. If the active well count $K_t$
 can grow without bound, the number of candidate generators grows without bound, which would push
 the system outside MCS. Bounding $K$ bounds the generator count.
@@ -969,7 +970,7 @@ active wells. Then the number of *independent* management generators is at most 
 close into a finite-dimensional algebra* — its rank is finite and B3 is satisfied.
 
 **Caveat (the missing closure step).** This is not yet a theorem. It is *not* established here that
-the posited generators close: the bracket $[\hat{m}_{k,j}, \hat{m}_{j,l}]$ (Section 8.4) produces
+the posited generators close: the bracket $[\hat{m}\_{k,j}, \hat{m}_{j,l}]$ (Section 8.4) produces
 new elements, and we have not shown they remain within the span of finitely many generators. The
 bound "$\mathrm{rank}(G) \le c \cdot K_{\max}^2$" should therefore be read as a *generator-count*
 upper bound, not a proven Lie-group rank. A rigorous version requires either (i) proving closure of
@@ -1000,9 +1001,9 @@ We do **not** claim these satisfy canonical bosonic relations; the relations bel
 the management interpretation and require justification.
 
 Define, acting on the Fock-space description of the active well set: $\hat{a}^\dagger_k$ (spawn well
-$k$), $\hat{a}_k$ (prune well $k$), the occupancy/salience number operator
-$\hat{N}_k = \hat{a}^\dagger_k \hat{a}_k$, the merge operator $\hat{m}_{k,j}$ (merge well $k$ into
-well $j$), and the update operator $\hat{u}_k$.
+$k$), $\hat{a}\_k$ (prune well $k$), the occupancy/salience number operator
+$\hat{N}\_k = \hat{a}^\dagger_k \hat{a}\_k$, the merge operator $\hat{m}\_{k,j}$ (merge well $k$ into
+well $j$), and the update operator $\hat{u}\_k$.
 
 **Posited relations (subject to formal verification).** Adopting the standard ladder convention as
 a working hypothesis,
@@ -1010,27 +1011,27 @@ a working hypothesis,
 $$
 \begin{aligned}
 [\hat{a}^\dagger_k, \hat{a}^\dagger_j] &= 0 \quad\text{(spawning two distinct wells commutes)} \\
-[\hat{a}_k, \hat{a}_j] &= 0 \quad\text{(pruning two distinct wells commutes)} \\
-[\hat{a}_k, \hat{a}^\dagger_j] &= \delta_{kj}  I \quad\text{(canonical relation; nontrivial only for the same well)} \\
-\hat{N}_k &= \hat{a}^\dagger_k \hat{a}_k \quad\text{(number operator; not itself a commutator)}.
+[\hat{a}\_k, \hat{a}\_j] &= 0 \quad\text{(pruning two distinct wells commutes)} \\
+[\hat{a}\_k, \hat{a}^\dagger_j] &= \delta_{kj}  I \quad\text{(canonical relation; nontrivial only for the same well)} \\
+\hat{N}\_k &= \hat{a}^\dagger_k \hat{a}\_k \quad\text{(number operator; not itself a commutator)}.
 \end{aligned}
 $$
 
 The corrected reading of the earlier draft is that spawn and prune of the *same* well fail to
 commute because pruning a not-yet-spawned well is undefined; the canonical bracket
-$[\hat{a}_k, \hat{a}^\dagger_k] = I$ encodes exactly this occupancy bookkeeping, and $\hat{N}_k$
-tracks the resulting count. (The earlier draft's "$[\hat{a}^\dagger_k, \hat{a}_k] = \hat{N}_k$" was
+$[\hat{a}\_k, \hat{a}^\dagger_k] = I$ encodes exactly this occupancy bookkeeping, and $\hat{N}\_k$
+tracks the resulting count. (The earlier draft's "$[\hat{a}^\dagger_k, \hat{a}\_k] = \hat{N}\_k$" was
 an error and is withdrawn.)
 
 **Non-commutativity of merge campaigns (the interesting, but still informal, part).** Merge uses the
 Riemannian Fréchet mean to compute the merged center,
-$\mu_{\text{merged}} = \mathrm{FrechetMean}_G(\lbrace \mu_k, \mu_j \rbrace)$, so iterated merges are
+$\mu_{\text{merged}} = \mathrm{FrechetMean}\_G(\lbrace \mu_k, \mu_j \rbrace)$, so iterated merges are
 order-dependent in curved space:
 
 $$
 \begin{aligned}
-\text{merge}(\text{merge}(k, j), l):\quad \mu &= \mathrm{FrechetMean}_G\big(\lbrace \mathrm{FrechetMean}_G(\lbrace \mu_k, \mu_j \rbrace),  \mu_l \rbrace\big), \\
-\text{merge}(k, \text{merge}(j, l)):\quad \mu &= \mathrm{FrechetMean}_G\big(\lbrace \mu_k,  \mathrm{FrechetMean}_G(\lbrace \mu_j, \mu_l \rbrace) \rbrace\big).
+\text{merge}(\text{merge}(k, j), l):\quad \mu &= \mathrm{FrechetMean}\_G\big(\lbrace \mathrm{FrechetMean}\_G(\lbrace \mu_k, \mu_j \rbrace),  \mu_l \rbrace\big), \\
+\text{merge}(k, \text{merge}(j, l)):\quad \mu &= \mathrm{FrechetMean}\_G\big(\lbrace \mu_k,  \mathrm{FrechetMean}\_G(\lbrace \mu_j, \mu_l \rbrace) \rbrace\big).
 \end{aligned}
 $$
 
@@ -1050,7 +1051,7 @@ policy satisfying:
 - **(C1)** Each spawned well has state in $\mathbb{R}^d$ with $d$ fixed and fan-out $k_A = 1$
   (B1 compliance).
 - **(C2)** No split primitive; splits decompose into Prune + Spawn + Spawn (B2 compliance).
-- **(C3)** $|\text{wells}_{\text{active}}|_t \le K_{\max}$ enforced as a hard action-space
+- **(C3)** The active well count $K_t \le K_{\max}$ at all times, enforced as a hard action-space
   constraint (B3 compliance, in the bounded-configuration sense of Section 8.3).
 
 Then $(M, \pi_{\text{WMP}})$ satisfies B1 ∧ B2 ∧ B3 and is conjectured to land at **Mildly
@@ -1110,7 +1111,7 @@ Let wells $k$ and $j$ be merged under $d_G(\mu_k, \mu_j) \lt \varepsilon$. Defin
 
 $$
 \begin{aligned}
-\mu_{k \cup j} &= \mathrm{FrechetMean}_G(\lbrace \mu_k, \mu_j \rbrace), \\
+\mu_{k \cup j} &= \mathrm{FrechetMean}\_G(\lbrace \mu_k, \mu_j \rbrace), \\
 A_{k \cup j} &= \min( A_k + A_j,  A_{\max} ), \\
 \sigma_{k \cup j} &= \max(\sigma_k, \sigma_j) + d_G(\mu_k, \mu_j)/2.
 \end{aligned}
