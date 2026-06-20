@@ -804,6 +804,73 @@ wasted-context bottleneck are confirmed and largely cured. Confirm Arm 1 of
 
 ---
 
+## 14. Parameter budget of the multi-head architecture
+
+A natural concern before launching the multi-head experiment is whether the new
+modules change the model size significantly, invalidating any PPL comparison with
+the baseline Xi=5 run.  The answer — verified by instantiating every module at the
+exact config used for Phase 5 — is **no: the total parameter count increases by
+less than 0.5 %** for even the most aggressive variant.
+
+### 14.1 Where the parameters actually live (baseline, d=384, K=8, Xi=5)
+
+The baseline Fock-PARFLM v2.1 with Gaussian wells carries ~33 M parameters at the
+first architecture tier (d=384, L=12, M=16, Xi=5, K\_MIX=8):
+
+| Component | Params | Share |
+|---|---|---|
+| Token + position embeddings | 19,691,904 | 60 % |
+| V\_theta (Gaussian wells, K=8) | 11,817,992 | 36 % |
+| Fock registers / gates / reverse channel / Xi module | 1,470,065 | 4 % |
+| V\_phi (single structural-competitive head) | 12,930 | 0.04 % |
+| **Total** | **32,992,891** | |
+
+V\_phi is a rounding error in the overall budget — roughly 13 K parameters.
+Multiplying it by four heads costs only ~39 K extra, which is invisible at model scale.
+
+### 14.2 Exact deltas per experiment variant
+
+All counts below are at d=384, L=12, M=16, Xi=5, K\_MIX=8 — the actual Phase 5 tier.
+
+| Variant | Total params | Delta vs baseline |
+|---|---|---|
+| Baseline — 1 head, single V\_theta (Phase 5 current) | 32,992,891 | — |
+| Multi-head V\_phi (4 heads) | 33,031,681 | +38,790 (+0.12 %) |
+| Directional (4-head V\_phi + value-transport + multi-context V\_theta) | 33,154,593 | +161,702 (+0.49 %) |
+
+Per-component breakdown of each new lever:
+
+- **Multi-head V\_phi, 4 heads (+38,790).**  Each additional head adds one copy of
+  the structural-competitive module: `W_l` ($d \times 16$), `W_theta` ($d \times 8$),
+  plus the small $\Phi$ bandwidth MLP and the $\Theta$ two-layer MLP
+  (~12,930 params each at d=384).  Four heads in total = 4 × 12,930 = 51,720 params
+  for V\_phi vs. the original 12,930.
+
+- **Value-transport V\_phi (+98,304).**  Two linear maps `U` and `W` of shape
+  $d \to n\_heads \times d\_head$ = $384 \to 128$.  Each has $384 \times 128 = 49152$
+  parameters, totalling 98,304.
+
+- **Multi-context V\_theta (+24,608).**  Restructuring the single flattened
+  MixtureGaussianVTheta (xi\_d = 5d) into five independent banks (each xi\_d = d)
+  barely changes the parameter count because the majority of V\_theta's budget lives
+  in the per-well projection weights that are proportional to $K \times d^2$ —
+  unchanged whether the context is flattened or split.
+
+### 14.3 Implications for the comparison
+
+Because all three variants remain within 0.5 % of the baseline parameter count, any
+PPL improvement (or lack thereof) between runs is attributable to **better inductive
+structure** — more expressive force directions, per-context well specialisation — not
+to inflated capacity.  This is exactly the design intent of the remediation ladder
+in §12: expressivity improvements that cost essentially nothing in parameters, so that
+the comparison is fair and any gain is not a statistical artefact of a larger model.
+
+Note: the "~31 M" figure from earlier notes referred to the Xi=4 configuration;
+the Xi=5 run sits at ~33 M because the larger xi\_d = 5d grows V\_theta's
+context-projection weights.
+
+---
+
 *The Fock-PARFLM figures in Part I are now anchored to the actual Xi=5 run
 through step 56K (PPL 209.7), not the original early-only fit. The 200K
 endpoint (~150--175 PPL) remains a projection pending run completion. The
