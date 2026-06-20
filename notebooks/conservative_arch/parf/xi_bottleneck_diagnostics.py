@@ -163,6 +163,7 @@ def xi_sensitivity(
     if inner is None:
         return {'error': 'V_theta has no _components method'}
 
+    was_training = model.training
     model.eval()
 
     # Compute h and xis without grad (cheap), then build a fresh leaf
@@ -195,6 +196,9 @@ def xi_sensitivity(
     min_norm = (min(n for n in per_channel_norms if n > 0)
                 if any(n > 0 for n in per_channel_norms) else 1e-12)
     dominance_ratio = round(max_norm / max(min_norm, 1e-12), 2)
+
+    if was_training:
+        model.train()
 
     return {
         'per_channel_grad_norm': per_channel_norms,
@@ -278,19 +282,25 @@ def run_xi_diagnostics(
     dict with keys 'well_collapse', 'xi_sensitivity', 'weight_entropy',
     and a formatted 'summary' string.
     """
+    was_training = model.training
     model.eval()
+    try:
+        with torch.no_grad():
+            h0 = model._embed(x)
+            h_L, _ = model._stack_forward(h0, x, return_trajectory=False)
+            h_det = h_L.detach()
+            xis = model.xi_module(h_det)  # (B, T, K_xi, d)
 
-    with torch.no_grad():
-        h0 = model._embed(x)
-        h_L, _ = model._stack_forward(h0, x, return_trajectory=False)
-        h_det = h_L.detach()
-        xis = model.xi_module(h_det)  # (B, T, K_xi, d)
+        wc = well_collapse(model, xis, h_det, embedding_weight, tokenizer)
+        ws = xi_sensitivity(model, x, K_xi, d)
+        we = weight_entropy(model, xis, K_xi, d)
 
-    wc = well_collapse(model, xis, h_det, embedding_weight, tokenizer)
-    ws = xi_sensitivity(model, x, K_xi, d)
-    we = weight_entropy(model, xis, K_xi, d)
-
-    alphas = model.xi_alpha_values()
+        alphas = model.xi_alpha_values()
+    finally:
+        # Always restore the original training mode so a diagnostics failure
+        # cannot leave the model locked in eval() mode.
+        if was_training:
+            model.train()
     horizons = [round(1.0 / (1.0 - a), 1) if a < 1.0 else float('inf') for a in alphas]
 
     lines = [
