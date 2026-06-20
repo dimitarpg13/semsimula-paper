@@ -1852,7 +1852,7 @@ The gradient EMA reached 9898 within 208 steps of the reload — a
 classic doom loop where the recovery checkpoint is itself at the edge
 of the unstable region.
 
-![Phase 5 gradient explosion trajectory](phase5_gradient_explosion_trajectory.png)
+![Phase 5 gradient explosion trajectory](figures/phase5_gradient_explosion_trajectory.png)
 
 ### 13.3. Root Cause: Bounded V_theta Does Not Bound the Full Gradient
 
@@ -1901,7 +1901,7 @@ total gradient. The dominant terms come from V_phi, the Fock register
 machinery, and the embedding layer — none of which benefit from the
 Gaussian boundedness.
 
-![Gradient flow: bounded vs unbounded components](gradient_flow_bounded_vs_unbounded.png)
+![Gradient flow: bounded vs unbounded components](figures/gradient_flow_bounded_vs_unbounded.png)
 
 ### 13.4. Why d=384 Is More Sensitive Than d=256
 
