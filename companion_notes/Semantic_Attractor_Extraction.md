@@ -112,11 +112,11 @@ is not -- a critical point of $V_\theta$.
 To check whether the unboundedness is "merely" a missing prior, we
 add a Gaussian anchor on the data manifold,
 
-$$\mathcal{L}_\text{anchored}(h) = V_\theta(\xi, h) + \frac{\lambda}{2}\Big\lVert \frac{h - h_\text{c}}{h_\text{s}}\Big\rVert^2$$
+$$\mathcal{L}\_\text{anchored}(h) = V_\theta(\xi, h) + \frac{\lambda}{2}\Big\lVert \frac{h - h_\text{c}}{h_\text{s}}\Big\rVert^2$$
 
 where $h_\text{c}, h_\text{s}$ are the empirical mean and per-dimension
 std of real $h_L$ over a held-out batch.  The minima of
-$\mathcal{L}_\text{anchored}$ are the modes of the posterior
+$\mathcal{L}\_\text{anchored}$ are the modes of the posterior
 $\pi(h\mid\xi) \propto \exp(-V_\theta(\xi, h))$ tempered by an
 isotropic prior at $h_\text{c}$.
 
@@ -285,7 +285,7 @@ For a given model, prompt, and fixed $\xi$:
 4. evaluate $V_\theta(\xi, \cdot)$ on the grid -- this gives the
    *height* of the surface;
 5. overlay each trajectory as a 3D curve
-   $\lbrace(\text{PCA}\_2(h\_l),\, V\_\theta(\xi, h\_l))\rbrace\_{l=0}^{L}$,
+   $\lbrace(\text{PCA}\_2(h\_l), V\_\theta(\xi, h\_l))\rbrace\_{l=0}^{L}$,
    coloured by the basin its endpoint lands in (silhouette-optimal
    K-means on endpoints).
 
@@ -368,7 +368,7 @@ sweep that answers three questions.
 
 We add a single loss term to the standard NTP cross-entropy:
 
-$$\mathcal{L} = \mathcal{L}\_{\text{NTP}} + \lambda\_V \cdot \frac{1}{BT}\sum\_{b,t} V\_\theta(\xi\_{b,t},\, h\_{b,t})^2$$
+$$\mathcal{L} = \mathcal{L}\_{\text{NTP}} + \lambda\_V \cdot \frac{1}{BT}\sum\_{b,t} V\_\theta(\xi\_{b,t}, h\_{b,t})^2$$
 
 This penalises large absolute values of $V_\theta$, anchoring the
 potential near zero and breaking the additive/multiplicative gauge
