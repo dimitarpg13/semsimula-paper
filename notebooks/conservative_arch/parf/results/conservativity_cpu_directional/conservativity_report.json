@@ -1,0 +1,32 @@
+{
+  "meta": {
+    "device": "cpu",
+    "checkpoint": null,
+    "smoke_variant": "directional"
+  },
+  "arm1": {
+    "arm": 1,
+    "description": "Jacobian symmetry",
+    "gradient_verification": {
+      "f_scale": 0.006939845489810251,
+      "max_abs_error": 1.0915226721823837e-08,
+      "mean_normalised_error": 3.080082432784202e-07,
+      "eps": 0.0005,
+      "pass": true
+    },
+    "conservative_hessian": {
+      "frob_J": 0.4914994400229654,
+      "frob_antisym": 9.894442285489077e-05,
+      "antisymmetry_ratio": 0.00020131136436303218,
+      "n_probes": 64,
+      "pass": true
+    },
+    "Q_force_curl": {
+      "frob_J": 0.027910492530647646,
+      "frob_antisym": 0.01980263420799312,
+      "antisymmetry_ratio": 0.7095050073207757,
+      "n_probes": 64,
+      "pass": true
+    }
+  }
+}

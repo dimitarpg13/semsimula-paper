@@ -130,10 +130,36 @@ def build_v21_config(
     )
 
 
-def build_smoke_config() -> FockMultiXiPARFConfig:
-    """Tiny config for structural tests that don't need a trained model."""
+SMOKE_VARIANTS = ("baseline", "multihead", "directional")
+
+# Tiny smoke dimensions reused by the multi-context V_theta swap.
+_SMOKE_D = 32
+_SMOKE_XI_CHANNELS = 2
+_SMOKE_K_MIX = 4          # wells per Gaussian bank (small for the smoke model)
+
+
+def build_smoke_config(variant: str = "baseline") -> FockMultiXiPARFConfig:
+    """Tiny config for structural tests that don't need a trained model.
+
+    Parameters
+    ----------
+    variant : {"baseline", "multihead", "directional"}
+        - "baseline":    single-head structural V_phi (the original gate).
+        - "multihead":   v_phi_n_heads=4 -> MultiHeadVPhi (sum of 4 heads).
+        - "directional": v_phi_n_heads=4 + ValueTransportVPhi (bilinear,
+                         distance-gated) summed via CompositeVPhi.  The
+                         V_theta swap to MultiContextGaussianVTheta is done
+                         in ``build_smoke_model`` (it is not a config field).
+    """
+    if variant not in SMOKE_VARIANTS:
+        raise ValueError(f"variant must be one of {SMOKE_VARIANTS}, got {variant!r}.")
+
+    # V_phi expressivity knobs that differ across variants.
+    n_heads = 4 if variant in ("multihead", "directional") else 1
+    add_value_transport = variant == "directional"
+
     return FockMultiXiPARFConfig(
-        vocab_size=257, d=32, max_len=64, L=4,
+        vocab_size=257, d=_SMOKE_D, max_len=64, L=4,
         v_hidden=64, v_depth=2,
         dt=1.0,
         init_m=1.0, init_gamma=0.15,
@@ -148,6 +174,12 @@ def build_smoke_config() -> FockMultiXiPARFConfig:
         v_phi_mlp_hidden=16,
         v_phi_competitive_temp=1.0,
         v_phi_competitive_scale="row",
+        # --- new V_phi expressivity levers under test ---
+        v_phi_n_heads=n_heads,
+        v_phi_add_value_transport=add_value_transport,
+        v_phi_vt_n_heads=2,
+        v_phi_vt_d_head=4,
+        v_phi_vt_sigma=math.sqrt(_SMOKE_D),
         ln_before_distance=False,
         per_layer_v_phi_scale=False,
         theta_activation="tanh",
@@ -160,7 +192,7 @@ def build_smoke_config() -> FockMultiXiPARFConfig:
         use_grad_checkpoint=False,
         use_layer_checkpoint=False,
         use_gathered_v_phi=False,
-        xi_channels=2,
+        xi_channels=_SMOKE_XI_CHANNELS,
         xi_alpha_inits=[0.0, 0.9],
         xi_learnable=True,
         xi_alpha_init_mode="explicit",
@@ -179,6 +211,56 @@ def build_smoke_config() -> FockMultiXiPARFConfig:
         per_register_keys=True,
         ortho_register_init=True,
     )
+
+
+def build_smoke_model(variant: str, device: str) -> FockMultiXiPARFLM:
+    """Build a random-init smoke model wired for the requested variant.
+
+    For the ``directional`` variant the one-body V_theta is swapped for
+    ``MultiContextGaussianVTheta`` (one bounded Gaussian bank per xi-channel),
+    matching ``build_structured_vtheta`` in the directional Colab notebook so
+    Arm 1 exercises the same module stack that will be trained.
+    """
+    cfg = build_smoke_config(variant)
+    torch.manual_seed(42)
+    model = FockMultiXiPARFLM(cfg).to(device)
+
+    if variant == "directional":
+        from model_gaussian_vtheta import MultiContextGaussianVTheta
+        d = cfg.d
+        model.V_theta = MultiContextGaussianVTheta(
+            d=d, K=_SMOKE_K_MIX, n_ctx=cfg.xi_channels, w_scale=1.0,
+            init_log_precision=-math.log(d),   # sigma_eff ~ sqrt(d)
+            precision_max=2.0 / d,             # cap a_k to avoid delta spikes
+        ).to(device)
+
+    # Run the structural smoke test in double precision.  The finite-difference
+    # gradient check (Test A) differences U at h +/- eps; for the sharp
+    # directional potential the force is O(1e-3) while U is O(1), so float32
+    # rounding noise causes catastrophic cancellation (~7% spurious residual).
+    # float64 removes it without changing any structural property.
+    model = model.double()
+    model.eval()
+
+    # Report exactly which new modules are now active.
+    from model_parf import MultiHeadVPhi, ValueTransportVPhi, CompositeVPhi
+    v_phi = model.V_phi
+    pieces = []
+    if isinstance(v_phi, CompositeVPhi):
+        for c in v_phi.components:
+            if isinstance(c, MultiHeadVPhi):
+                pieces.append(f"MultiHeadVPhi(n_heads={len(c.heads)})")
+            elif isinstance(c, ValueTransportVPhi):
+                pieces.append(f"ValueTransportVPhi(n_heads={c.n_heads}, d_head={c.d_head})")
+            else:
+                pieces.append(type(c).__name__)
+    elif isinstance(v_phi, MultiHeadVPhi):
+        pieces.append(f"MultiHeadVPhi(n_heads={len(v_phi.heads)})")
+    else:
+        pieces.append(type(v_phi).__name__)
+    print(f"[conservativity] variant={variant!r}: "
+          f"V_phi = {' + '.join(pieces)}; V_theta = {type(model.V_theta).__name__}")
+    return model
 
 
 def load_model(
@@ -308,17 +390,25 @@ def arm1_jacobian_symmetry(
     U_base = _compute_U_fixed_context(model, h_in, xi_frozen, h_src_frozen, layer_idx=0)
     grad_U, = torch.autograd.grad(U_base, h_in, retain_graph=True)
     f_autograd = -grad_U.detach()
-    U_base_val = U_base.item()
 
-    f_fd = torch.zeros(B, T, d, device=device)
-    for t_idx in range(T):
-        for d_idx in range(d):
-            h_pert = h0.clone().requires_grad_(True)
-            h_pert_data = h_pert.data.clone()
-            h_pert_data[0, t_idx, d_idx] += eps
-            h_pert2 = h_pert_data.requires_grad_(True)
-            U_pert = _compute_U_fixed_context(model, h_pert2, xi_frozen, h_src_frozen, layer_idx=0)
-            f_fd[0, t_idx, d_idx] = -(U_pert.item() - U_base_val) / eps
+    # Central difference (second-order accurate): truncation error O(eps^2 U''')
+    # instead of O(eps U'') for a one-sided difference.  The directional
+    # variant's bilinear + Gaussian potential has ~40x larger curvature than
+    # the baseline, so a forward difference at eps=5e-4 leaves a spurious ~10%
+    # residual that a central difference removes.
+    f_fd = torch.zeros(B, T, d, device=device, dtype=h0.dtype)
+    with torch.no_grad():
+        for t_idx in range(T):
+            for d_idx in range(d):
+                h_plus = h0.clone()
+                h_plus[0, t_idx, d_idx] += eps
+                U_plus = _compute_U_fixed_context(
+                    model, h_plus, xi_frozen, h_src_frozen, layer_idx=0)
+                h_minus = h0.clone()
+                h_minus[0, t_idx, d_idx] -= eps
+                U_minus = _compute_U_fixed_context(
+                    model, h_minus, xi_frozen, h_src_frozen, layer_idx=0)
+                f_fd[0, t_idx, d_idx] = -(U_plus.item() - U_minus.item()) / (2.0 * eps)
 
     abs_err = (f_autograd - f_fd).abs()
     f_scale = f_autograd.abs().max().item()
@@ -347,7 +437,7 @@ def arm1_jacobian_symmetry(
     torch.manual_seed(123)
     probe_indices = torch.randperm(T * d)[:n_probe].tolist()
 
-    J_cons = torch.zeros(T * d, n_probe, device=device)
+    J_cons = torch.zeros(T * d, n_probe, device=device, dtype=h0.dtype)
     for col, i in enumerate(probe_indices):
         h_pert = h0.clone().requires_grad_(True)
         h_pert_data = h_pert.data.clone()
@@ -390,7 +480,7 @@ def arm1_jacobian_symmetry(
         Q_base = _compute_Q_force_raw(model, h0, r, salience, active).detach()
         Q_base_flat = Q_base.reshape(-1)
 
-        J_Q = torch.zeros(T * d, n_probe, device=device)
+        J_Q = torch.zeros(T * d, n_probe, device=device, dtype=h0.dtype)
         for col, i in enumerate(probe_indices):
             h_pert = h0.clone()
             h_pert[0, i // d, i % d] += eps
@@ -1175,6 +1265,14 @@ def main():
     ap = argparse.ArgumentParser(description="Fock-PARFLM conservativity diagnostic")
     ap.add_argument("--arm", type=str, default="all",
                     help="Which arm(s) to run: 1,2,3,4,5 or 'all'")
+    ap.add_argument("--variant", type=str, default="baseline",
+                    choices=list(SMOKE_VARIANTS),
+                    help="Smoke-model variant for Arm 1 without a checkpoint: "
+                         "'baseline' (single-head V_phi), 'multihead' "
+                         "(MultiHeadVPhi, 4 heads), or 'directional' "
+                         "(MultiHeadVPhi + ValueTransportVPhi + "
+                         "MultiContextGaussianVTheta). Ignored when "
+                         "--checkpoint is given.")
     ap.add_argument("--checkpoint", type=str, default=None,
                     help="Path to trained FockMultiXiPARFLM checkpoint (.pt)")
     ap.add_argument("--output-dir", type=str, default="results/conservativity",
@@ -1203,12 +1301,12 @@ def main():
     print(f"Output directory: {output_dir}")
 
     has_checkpoint = args.checkpoint is not None
+    if 1 in arms_to_run and not has_checkpoint:
+        print(f"Arm 1 smoke variant: {args.variant}")
 
     # Arm 1 uses a smoke model; Arms 2-5 need a real model
     if 1 in arms_to_run and not has_checkpoint:
-        cfg_smoke = build_smoke_config()
-        torch.manual_seed(42)
-        model_smoke = FockMultiXiPARFLM(cfg_smoke).to(device).eval()
+        model_smoke = build_smoke_model(args.variant, device)
     else:
         model_smoke = None
 
@@ -1231,7 +1329,13 @@ def main():
                 print(f"WARNING: Could not load TinyStories: {e}")
                 print("  Using random tokens for evaluation.")
 
-    all_results: Dict[str, Any] = {}
+    all_results: Dict[str, Any] = {
+        "meta": {
+            "device": device,
+            "checkpoint": args.checkpoint,
+            "smoke_variant": None if has_checkpoint else args.variant,
+        }
+    }
 
     if 1 in arms_to_run:
         m = model if has_checkpoint else model_smoke

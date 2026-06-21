@@ -1,0 +1,27 @@
+{
+  "arm1": {
+    "arm": 1,
+    "description": "Jacobian symmetry",
+    "gradient_verification": {
+      "f_scale": 0.0011479996610432863,
+      "max_abs_error": 9.664800018072128e-07,
+      "mean_normalised_error": 0.0002212427934864536,
+      "eps": 0.0005,
+      "pass": true
+    },
+    "conservative_hessian": {
+      "frob_J": 0.012459419667720795,
+      "frob_antisym": 3.575770097086206e-05,
+      "antisymmetry_ratio": 0.0028699331045595397,
+      "n_probes": 64,
+      "pass": true
+    },
+    "Q_force_curl": {
+      "frob_J": 0.027231620624661446,
+      "frob_antisym": 0.017978882417082787,
+      "antisymmetry_ratio": 0.6602208022882254,
+      "n_probes": 64,
+      "pass": true
+    }
+  }
+}
