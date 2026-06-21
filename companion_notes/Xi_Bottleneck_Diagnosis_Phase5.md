@@ -21,6 +21,20 @@
 5. [Experimental arms](#5-experimental-arms)
 6. [Decision framework](#6-decision-framework)
 7. [Expected outcomes and next steps](#7-expected-outcomes-and-next-steps)
+8. [D0 free-diagnostics: measured results (Xi=5, step 78k)](#8-d0-free-diagnostics-measured-results-xi5-step-78k)
+
+---
+
+> **Update (2026-06-21).** The Xi-specific battery of §4 (well collapse / Xi
+> sensitivity / weight entropy) was **disabled before it produced data** — the
+> `run_xi_diagnostics` call left the model in `eval()` mode on failure, collapsing
+> `v_reg`, so it was removed from the training loop. Instead, the **free D0
+> battery** (loss-vs-position, effective rank, per-Verlet-step displacement,
+> loss-by-frequency) was run read-only on the Xi=5 best checkpoint. Its results
+> (§8) **partly overturn** the H1/H2 ranking below: the binding constraint is an
+> output/embedding-head long-tail problem, not well count or Xi horizon. Read §8
+> together with §15 of
+> [`Fock-PARFLM_vs_GPT-2_on_OpenWebText_Next_Steps.md`](./Fock-PARFLM_vs_GPT-2_on_OpenWebText_Next_Steps.md).
 
 ---
 
@@ -379,6 +393,113 @@ Each arm is a full 200k-step run on a single H100. At ~22 seconds per 200-step b
 | K=16+xi5 (K=16, xi5) | +5.9M | ~55h | Conditional |
 
 The xi5 arm is the cheapest intervention and the most diagnostic: if it improves PPL without increasing K, the Xi horizon was the dominant bottleneck. If it does not, the next step is clear (increase K).
+
+## 8. D0 free-diagnostics: measured results (Xi=5, step 78k)
+
+The Xi-specific battery of §4 never produced data (disabled; see the update
+banner). The **free D0 battery** was run instead — four read-only probes that
+need no extra training, defined in §13 of the Next-Steps companion. They were
+executed on the Xi=5 arm's best checkpoint
+`fock_gaussian_sarf_owt_phase5_xi5_step78000_best.pt` (val PPL 190.73,
+$d=384$, $L=16$, $K=8$, $K_\xi=5$). The four probes refine — and in two places
+overturn — the H1/H2/H3 ranking of §3.
+
+### 8.1 D0.1 — Loss vs. position
+
+![D0.1 per-token cross-entropy versus position in the 512-token block (Xi=5 best)](./assets/d0_loss_vs_position.png)
+
+| Position bin | Mean CE (nats) |
+|--------------|----------------|
+| 0–63 | 5.4393 |
+| 64–127 | 5.1153 |
+| 128–191 | 5.2589 |
+| 192–255 | 5.1952 |
+| 256–319 | 5.1911 |
+| 320–383 | 5.2616 |
+| 384–447 | 5.2236 |
+| 448–511 | 5.3312 |
+
+early(8–63) = 5.3695, late(256+) = 5.2519, **total drop = 0.12 nats**. The curve
+is essentially flat past ~64 tokens: long-range context is barely exploited.
+This is the direct, falsifiable signature anticipated for **H2 (Xi horizon)** and
+for V_phi starvation — but the *absolute* range is tiny, so context modelling is
+not where most of the loss lives (see §8.4).
+
+### 8.2 D0.2 — Effective rank (participation ratio)
+
+Participation ratio of the final-layer $h_L$ = **229.6** out of $d = 384$, far
+above $K = 8$. The representation is **high-rank, not collapsed toward the well
+count**. This **refutes the "output attractor ceiling" reading of H1**: there is
+no collapse to $K$ directions, so adding wells ($K \to 16$) does not relieve a
+binding constraint. (No plot — this probe is a single scalar.)
+
+### 8.3 D0.3 — Per-Verlet-step displacement
+
+![D0.3 mean per-step displacement of the hidden state across the 16 Verlet layers (Xi=5 best)](./assets/d0_per_step_displacement.png)
+
+$\lVert \Delta h \rVert$ is **U-shaped** across the 16 steps: large at step 0→1
+(17.6), a minimum near step 8→9 (1.75), then rising again to ~5.6 at steps
+13→14. early(0–2) = 10.57, late(last 3) = 5.00, late/early = **0.47**. Late
+layers do substantial work, so **depth is used, not wasted** — contradicting the
+auto-heuristic's "depth wasted" message (which only applies below 0.01) and
+removing any case for untying $V_\theta$ across layer groups to rescue dead depth.
+
+### 8.4 D0.4 — Loss stratified by token-frequency quintile
+
+![D0.4 mean cross-entropy by token-frequency quintile, rarest (Q0) to most frequent (Q4) (Xi=5 best)](./assets/d0_loss_by_freq_quintile.png)
+
+Uniform-prior loss is $\ln V = \ln 50257 \approx 10.83$ nats. Measured:
+
+| Quintile | Mean CE (nats) | Occurrences | Reading |
+|----------|----------------|-------------|---------|
+| Q4 most-freq | 4.541 | 37086 | the bulk (~90.5% of tokens) |
+| Q3 frequent | 10.545 | 1982 | ≈ uniform |
+| Q2 mid | 11.906 | 1041 | > uniform |
+| Q1 rare | 12.541 | 622 | > uniform |
+| Q0 rarest | 13.162 | 229 | ≫ uniform |
+
+Everything outside the top quintile is **at or above the uniform-prior loss** —
+the model assigns rare targets *less* than uniform probability. The cause is
+structural: the read-out is a **tied head with no output bias**
+(`logits = h_L @ E.weight.T` in `model_parf.py`), so the network must encode the
+entire unigram log-prior as a *direction* in $h_L$ space — impossible for the
+whole vocabulary at once, so rare-target positions default to the frequent-token
+direction. This is a brand-new finding, **outside the original H1/H2/H3 set**,
+and it is the single largest mis-calibration.
+
+### 8.5 Synthesis and revised conclusion
+
+Occurrence-weighted, the ~5.2-nat aggregate (PPL ≈ 180–190) splits into two
+additive gaps versus a parameter-matched GPT-2 (CE ≈ 3.4–3.9):
+
+| Component | Share of loss | Probe | Nature | Cure |
+|-----------|---------------|-------|--------|------|
+| Head (Q4) | ~79% | D0.1, D0.4 | context-mixing gap (CE 4.54 not benefiting from context) | multi-head `V_phi` + `top_k` 8→16/32 |
+| Tail (Q0–Q3) | ~21% | D0.4 | output/embedding head (worse than uniform) | output bias init to log-freq; untie LM head |
+
+This **reframes the §6 decision tree and the §7 prediction** (which expected a
+joint H1+H2 bottleneck → the `k16_xi5` arm):
+
+- **H1 (well count) — refuted** as a binding constraint by D0.2 (PR 229.6/384, no
+  collapse). Increasing $K$ is demoted.
+- **H2 (Xi horizon) — partially supported** by the flat D0.1 curve, but the small
+  absolute drop means it is secondary to the head/tail gaps; subsumed into the
+  multi-head `V_phi` cure rather than a standalone `xi5`/`k16_xi5` arm.
+- **Depth — healthy** (D0.3); no V_theta layer-group untie needed.
+- **New lead — the output read-out head** (D0.4), which none of H1/H2/H3 covered.
+
+**Implemented response.** `model_parf.PARFConfig` gained `use_output_bias` (a
+learned logit bias initialised to log-unigram-frequency via
+`PARFLM.init_output_bias_from_logfreq`) and now honours `tie_embeddings=False`
+to allocate a dedicated $W_{out}$ read-out; both flow through
+`PARFLM.compute_logits`. Because the read-out is a pure post-dynamics projection
+of $h_L$, **neither knob touches $V_\theta$ or $V_\phi$, so conservativity is
+preserved**. Both knobs are wired into `colab_fock_multihead_openwebtext.ipynb`
+(`USE_OUTPUT_BIAS`, `TIE_EMBEDDINGS`) alongside the multi-head `V_phi` cure, so a
+single run attacks both the tail (D0.4) and the frequent-token context gap
+(D0.1). Recommended sequencing: bias-only first (nearly free), then untie the
+head if Q0–Q3 do not recover. The full revised remediation ladder is in §15 of
+[`Fock-PARFLM_vs_GPT-2_on_OpenWebText_Next_Steps.md`](./Fock-PARFLM_vs_GPT-2_on_OpenWebText_Next_Steps.md).
 
 ---
 

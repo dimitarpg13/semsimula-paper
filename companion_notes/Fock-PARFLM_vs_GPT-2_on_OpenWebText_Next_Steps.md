@@ -744,6 +744,13 @@ Two secondary contributors, listed for completeness:
 
 ## 12. Remediation Ladder (Prioritised)
 
+> **Update (post-D0).** The ranking below was the *a priori* prediction. The D0
+> probes have now been run on the Xi=5 step-78k checkpoint and they **re-order
+> the priorities**: the dominant loss term is an output/embedding-head
+> long-tail problem, while two predicted bottlenecks (output-attractor collapse,
+> wasted depth) are **not** binding. See §15 for the measured results and the
+> revised ladder. Treat §15 as superseding the table immediately below.
+
 All entries preserve conservativity by construction (§8.2) and keep the
 $O(Tk)$ memory advantage.
 
@@ -868,6 +875,97 @@ the comparison is fair and any gain is not a statistical artefact of a larger mo
 Note: the "~31 M" figure from earlier notes referred to the Xi=4 configuration;
 the Xi=5 run sits at ~33 M because the larger xi\_d = 5d grows V\_theta's
 context-projection weights.
+
+---
+
+## 15. D0 measured results (Xi=5 step-78k) and revised priority
+
+The four free probes of §13 were run on the actual best checkpoint
+(`fock_gaussian_sarf_owt_phase5_xi5_step78000_best.pt`, val PPL 190.73,
+$d=384$, $L=16$, $K_{MIX}=8$). The results sharpen — and in two places
+overturn — the *a priori* ranking of §12.
+
+### 15.1 What each probe measured
+
+**D0.1 — Loss vs. position.** Per-token CE drops from early(8–63) = 5.37 to
+late(256+) = 5.25, a total drop of only 0.12 nats; the curve is essentially
+flat past ~64 tokens. Long-range context is barely exploited (consistent with
+V_phi starvation), but the small absolute range means context modelling is not
+where most of the loss lives.
+
+**D0.2 — Effective rank.** Participation ratio = 229.6 out of $d=384$, far above
+$K_{MIX}=8$. The final-layer representation is **high-rank, not collapsed**.
+There is **no output-attractor ceiling** — so adding wells ($K_{MIX}$) or
+per-context well banks does not target a binding constraint.
+
+**D0.3 — Per-Verlet-step displacement.** $\lVert \Delta h \rVert$ is **U-shaped**
+across the 16 steps: large at step 0→1 (17.6), a minimum near step 8–9 (~1.75),
+then rising again to ~5.6 at steps 13–14 (late/early = 0.47). Late layers do
+substantial work. **Depth is used, not wasted** — untying V_theta across layer
+groups to "rescue" dead depth is unwarranted.
+
+**D0.4 — Loss by token-frequency quintile.** This is the dominant signal.
+Uniform loss is $\ln V = \ln 50257 \approx 10.83$ nats. Measured per-token CE:
+
+| Quintile | Mean CE (nats) | Occurrences | Reading |
+|----------|----------------|-------------|---------|
+| Q4 most-freq | 4.54 | 37086 | the bulk (~90.5% of tokens) |
+| Q3 frequent | 10.55 | 1982 | ≈ uniform |
+| Q2 mid | 11.91 | 1041 | > uniform |
+| Q1 rare | 12.54 | 622 | > uniform |
+| Q0 rarest | 13.16 | 229 | ≫ uniform |
+
+Everything outside the top quintile is **at or above the uniform-prior loss** —
+the model assigns rare targets *less* than uniform probability. With a tied
+read-out head and **no output bias**, the network must encode the entire unigram
+log-prior as a direction in $h_L$ space, which it cannot do for the whole vocab
+at once, so rare-target positions default to the frequent-token direction.
+
+### 15.2 Occurrence-weighted decomposition
+
+Weighting by occurrence reproduces the ~5.2-nat aggregate (PPL ≈ 180–190) and
+splits it into two additive gaps versus a parameter-matched GPT-2 (CE ≈ 3.4–3.9):
+
+- **Head (Q4):** ~79% of the loss, at CE 4.54 — still ~0.6–1.1 nats above GPT-2,
+  and D0.1 shows it is not benefiting from context. This is the **V_phi
+  context-mixing gap** (the multi-head cure of §9).
+- **Tail (Q0–Q3):** ~21% of the loss from ~9.5% of tokens, at or worse than
+  uniform. This is an **output/embedding-head problem**, addressable cheaply and
+  independently of the force field.
+
+### 15.3 Revised remediation ladder
+
+| # | Fix | Targets (probe) | Conservativity | Param cost | Priority |
+|---|-----|-----------------|----------------|------------|----------|
+| 1 | Output bias init to log-freq (§15.4) | tail mis-calibration (D0.4) | read-out, outside force field: safe | ~V (negligible) | highest |
+| 2 | Untie LM head (dedicated W_out) (§15.4) | tail, undertrained rare embeddings (D0.4) | read-out, outside force field: safe | ~V·d | high |
+| 3 | Multi-head `V_phi` + widen subspaces + `top_k` 8→16/32 (§9.3, §9.6) | frequent-token context gap (D0.1, Q4) | sum of scalars: safe | low | high |
+| 4 | Bilinear value-transport V_phi (§9.4) | radial-only force (D0.1) | scalar bilinear: safe | low–medium | medium |
+| 5 | Multi-context V_theta heads (§10) | functional diversity | sum of scalars: safe | ~neutral | demoted (D0.2: PR healthy) |
+| 6 | Increase K_MIX (§11) | attractor ceiling | unchanged form: safe | low | dropped (D0.2: no collapse) |
+| 7 | Untie V_theta across layer groups (§11) | depth-as-refinement | per-step: safe | high | dropped (D0.3: depth used) |
+
+The decisive change from §12: **multi-context V_theta and K_MIX increases are
+demoted/dropped** (D0.2 shows no representational collapse and D0.3 shows depth
+is already productive), and a brand-new **output-head tier (#1–#2)** now leads,
+because D0.4 isolates the single largest mis-calibration outside the dynamics.
+
+### 15.4 The output-head fix (implemented)
+
+`model_parf.PARFConfig` gains `use_output_bias` (a learned logit bias $b_v$,
+initialised to $\log$ unigram frequency via
+`PARFLM.init_output_bias_from_logfreq`) and honours the existing
+`tie_embeddings` flag to allocate a dedicated $W_{out}$ read-out when set to
+`False`. Both paths flow through `PARFLM.compute_logits`, so diagnostics and the
+training `forward_with_vreg` use the same read-out. Because the read-out is a
+pure post-dynamics projection of $h_L$, **neither knob touches $V_\theta$ or
+$V_\phi$ and conservativity is preserved** (no re-run of the Arm 1 gate needed).
+
+Recommended sequencing: run the **bias-only** variant first (nearly free), then
+add the **untied head** if the tail (Q0–Q3) does not recover. Both knobs are
+wired into `colab_fock_multihead_openwebtext.ipynb` (`USE_OUTPUT_BIAS`,
+`TIE_EMBEDDINGS`) alongside the multi-head V_phi cure, so a single run attacks
+both the tail (D0.4) and the frequent-token context gap (D0.1).
 
 ---
 
