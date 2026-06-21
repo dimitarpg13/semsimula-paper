@@ -249,6 +249,22 @@ class PARFConfig:
     causal_force: bool = True            # ξ.detach() AND pair-source.detach()
     tie_embeddings: bool = True
 
+    # ----- Output (read-out) head -----------------------------------------
+    # D0.4 diagnostic finding: with a tied head and NO output bias the model
+    # must encode the entire unigram log-prior as a *direction* in h_L space,
+    # which it cannot do for all V tokens at once → rare-target positions
+    # default to the frequent-token direction and the per-token CE on the
+    # long tail exceeds ln(V) (worse than uniform).  Two cheap, conservativity-
+    # preserving read-out fixes (the read-out is OUTSIDE the force field):
+    #   use_output_bias : add a learned bias b_v on the logits.  Initialise to
+    #       log-unigram-frequency via init_output_bias_from_logfreq() so the
+    #       network stops spending hidden capacity on the frequency prior.
+    #   tie_embeddings=False : allocate a SEPARATE W_out (vocab×d) read-out
+    #       matrix instead of reusing E^T, giving rare tokens a dedicated
+    #       output direction decoupled from their (undertrained) input
+    #       embedding.  Costs ~V·d extra params.
+    use_output_bias: bool = False
+
     # Performance: gradient-checkpoint the V_φ pair sum.  When True,
     # the V_φ forward at each layer is wrapped in
     # torch.utils.checkpoint.checkpoint(use_reentrant=False), which
@@ -901,11 +917,28 @@ class PARFLM(nn.Module):
         super().__init__()
         self.cfg = cfg
 
-        # Embeddings (token + position), tied output.
+        # Embeddings (token + position).
         self.E = nn.Embedding(cfg.vocab_size, cfg.d)
         self.P = nn.Parameter(torch.zeros(cfg.max_len, cfg.d))
         nn.init.normal_(self.E.weight, mean=0.0, std=0.02)
         nn.init.normal_(self.P, mean=0.0, std=0.02)
+
+        # ----- Output (read-out) head (see PARFConfig.use_output_bias) -----
+        # The read-out is a pure post-dynamics projection of h_L and lives
+        # OUTSIDE the conservative force field (V_θ/V_φ), so neither knob
+        # affects conservativity.  tie_embeddings=True reuses E^T (default,
+        # backward-compatible); False allocates a dedicated W_out.
+        if cfg.tie_embeddings:
+            self.lm_head: Optional[nn.Linear] = None
+        else:
+            self.lm_head = nn.Linear(cfg.d, cfg.vocab_size, bias=False)
+            nn.init.normal_(self.lm_head.weight, mean=0.0, std=0.02)
+        if getattr(cfg, "use_output_bias", False):
+            self.out_bias: Optional[nn.Parameter] = nn.Parameter(
+                torch.zeros(cfg.vocab_size)
+            )
+        else:
+            self.register_parameter("out_bias", None)
 
         # ----- Single shared V_theta -----
         self.V_theta = ScalarPotential(cfg.d, cfg.v_hidden, cfg.v_depth)
@@ -1026,6 +1059,50 @@ class PARFLM(nn.Module):
         B, T = x.shape
         pos = self.P[position_offset:position_offset + T].unsqueeze(0)
         return self.E(x) + pos
+
+    # ------------------------------------------------------------------
+    def compute_logits(self, h_L: torch.Tensor) -> torch.Tensor:
+        """Project final hidden state to vocab logits via the read-out head.
+
+        Uses the dedicated W_out when untied, else the tied E^T, and adds the
+        optional learned output bias.  Diagnostics that reconstruct logits by
+        hand should call this (rather than ``h_L @ E.weight.T``) so the bias /
+        untied head are respected.
+        """
+        if self.lm_head is not None:
+            logits = self.lm_head(h_L)
+        else:
+            logits = h_L @ self.E.weight.T
+        if self.out_bias is not None:
+            logits = logits + self.out_bias
+        return logits
+
+    # ------------------------------------------------------------------
+    @torch.no_grad()
+    def init_output_bias_from_logfreq(
+        self,
+        token_counts: torch.Tensor,
+        smoothing: float = 1.0,
+    ) -> None:
+        """Initialise the output bias to the log unigram frequency.
+
+        b_v <- log( (count_v + s) / Σ_v (count_v + s) ).  This hands the
+        frequency prior to the bias so the hidden dynamics no longer have to
+        encode it, directly addressing the D0.4 long-tail mis-calibration
+        (CE > ln(V) on rare targets).  No-op when use_output_bias is False.
+        """
+        if self.out_bias is None:
+            return
+        counts = torch.as_tensor(
+            token_counts, dtype=torch.float32, device=self.out_bias.device
+        ).reshape(-1)
+        if counts.numel() != self.out_bias.numel():
+            raise ValueError(
+                f"token_counts length {counts.numel()} != vocab "
+                f"{self.out_bias.numel()}"
+            )
+        probs = (counts + smoothing) / (counts + smoothing).sum()
+        self.out_bias.copy_(probs.log().to(self.out_bias.dtype))
 
     # ------------------------------------------------------------------
     def _pair_mask_for(self, T: int, device: torch.device) -> torch.Tensor:
@@ -1202,7 +1279,7 @@ class PARFLM(nn.Module):
             h0, x, return_trajectory=return_trajectory,
         )
 
-        logits = h_L @ self.E.weight.T
+        logits = self.compute_logits(h_L)
 
         loss = None
         if targets is not None:
