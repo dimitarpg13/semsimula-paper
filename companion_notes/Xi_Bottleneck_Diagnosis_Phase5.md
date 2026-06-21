@@ -22,6 +22,7 @@
 6. [Decision framework](#6-decision-framework)
 7. [Expected outcomes and next steps](#7-expected-outcomes-and-next-steps)
 8. [D0 free-diagnostics: measured results (Xi=5, step 78k)](#8-d0-free-diagnostics-measured-results-xi5-step-78k)
+9. [Read-out head fixes: code walkthrough](#9-read-out-head-fixes-code-walkthrough)
 
 ---
 
@@ -52,12 +53,12 @@ The gradient spike pattern is the key signal. Spikes that grow in magnitude whil
 
 | Parameter | Value |
 |-----------|-------|
-| $d$ (hidden dim) | 384 |
-| $L$ (layers) | 16 |
-| $M$ (Fock registers) | 32 |
-| $K$ (Gaussian wells) | 8 |
-| $K\_\xi$ (Xi channels) | 4 |
-| $\alpha$ inits | [0.25, 0.50, 0.75, 0.95] |
+| d (hidden dim) | 384 |
+| L (layers) | 16 |
+| M (Fock registers) | 32 |
+| K (Gaussian wells) | 8 |
+| K_xi (Xi channels) | 4 |
+| α inits | [0.25, 0.50, 0.75, 0.95] |
 | Total params | 31.5M |
 | block\_size | 512 |
 
@@ -141,12 +142,12 @@ A healthy model has collapse ratio near 0. A bottlenecked model approaches $1 - 
 
 The current Xi channel configuration provides effective lookback horizons of:
 
-| Channel | $\alpha$ | Horizon ($\tau$ tokens) |
+| Channel | α | Horizon (τ tokens) |
 |---------|----------|------------------------|
-| $\xi^{(1)}$ | 0.25 | ~1.3 |
-| $\xi^{(2)}$ | 0.50 | ~2.0 |
-| $\xi^{(3)}$ | 0.75 | ~4.0 |
-| $\xi^{(4)}$ | 0.95 | ~20.0 |
+| ξ¹ | 0.25 | ~1.3 |
+| ξ² | 0.50 | ~2.0 |
+| ξ³ | 0.75 | ~4.0 |
+| ξ⁴ | 0.95 | ~20.0 |
 
 For TinyStories (short narratives, small vocabulary), 20 tokens of context captures most of the relevant structure. For OpenWebText with `block_size=512`, **the longest Xi channel sees only 3.9% of the available context window** (20 / 512). The model literally cannot condition its well positions on paragraph-level or document-level topic.
 
@@ -230,7 +231,7 @@ $$
 $$
 
 Report:
-- **Mean entropy** $\bar{H}$ and **max entropy** $\log K$.
+- Mean entropy $\bar{H}$ and max entropy $\log K$.
 - **Entropy ratio** $\bar{H} / \log K$ in [0, 1].
 - **Per-component mean weight** $\bar{w}\_k = \tfrac{1}{BT}\sum_t w_k(\xi_t)$.
 
@@ -266,9 +267,9 @@ At every `DIAG_INTERVAL` step (default: 10,000), the training loop prints a form
 
 | Knob | Value |
 |------|-------|
-| $K$ | 8 |
-| $K_\xi$ | 4 |
-| $\alpha$ inits | [0.25, 0.50, 0.75, 0.95] |
+| K | 8 |
+| K_xi | 4 |
+| α inits | [0.25, 0.50, 0.75, 0.95] |
 | Variant tag | (none) |
 
 This is the run currently at step ~76k. The diagnostics will produce the first data point at the next `DIAG_INTERVAL` crossing (step 80k).
@@ -277,9 +278,9 @@ This is the run currently at step ~76k. The diagnostics will produce the first d
 
 | Knob | Value |
 |------|-------|
-| $K$ | 8 |
-| $K_\xi$ | 5 |
-| $\alpha$ inits | [0.25, 0.50, 0.75, 0.95, **0.99**] |
+| K | 8 |
+| K_xi | 5 |
+| α inits | [0.25, 0.50, 0.75, 0.95, **0.99**] |
 | Variant tag | `xi5` |
 
 Set `XI_OVERRIDE = 5` in Cell 0. This adds a 5th channel with ~100-token horizon, providing 5x the lookback of the current longest channel. The additional parameter cost is modest (~0.6M in `mu_proj` and `a_proj` due to the wider `xi_d = 5d = 1920`).
@@ -290,9 +291,9 @@ Isolated directory: `semsimula_fock_gaussian_sarf_openwebtext_phase5_xi5/`.
 
 | Knob | Value |
 |------|-------|
-| $K$ | 16 |
-| $K_\xi$ | 4 |
-| $\alpha$ inits | [0.25, 0.50, 0.75, 0.95] |
+| K | 16 |
+| K_xi | 4 |
+| α inits | [0.25, 0.50, 0.75, 0.95] |
 | Variant tag | `k16` |
 
 Set `K_MIX = 16` in Cell 0. This doubles the number of Gaussian wells while keeping the Xi configuration unchanged.
@@ -303,9 +304,9 @@ Isolated directory: `semsimula_fock_gaussian_sarf_openwebtext_phase5_k16/`.
 
 | Knob | Value |
 |------|-------|
-| $K$ | 16 |
-| $K_\xi$ | 5 |
-| $\alpha$ inits | [0.25, 0.50, 0.75, 0.95, **0.99**] |
+| K | 16 |
+| K_xi | 5 |
+| α inits | [0.25, 0.50, 0.75, 0.95, **0.99**] |
 | Variant tag | `k16_xi5` |
 
 Set both `K_MIX = 16` and `XI_OVERRIDE = 5`. This is the definitive arm if the diagnostics indicate a joint H1+H2 bottleneck.
@@ -341,11 +342,11 @@ flowchart TB
 
 **Reading the decision tree:**
 
-1. **High collapse ratio ($\gt 0.2$) + dominant longest channel**: the joint H1+H2 bottleneck. Wells are collapsing because they cannot specialise, and the model is stretching the longest Xi channel. Run the combined K=16, xi5 arm.
+1. **High collapse ratio (> 0.2) + dominant longest channel**: the joint H1+H2 bottleneck. Wells are collapsing because they cannot specialise, and the model is stretching the longest Xi channel. Run the combined K=16, xi5 arm.
 
 2. **High collapse ratio + dominant is NOT the longest channel**: pure well-count bottleneck (H1). The model has enough context to differentiate but not enough wells. Run K=16.
 
-3. **Low collapse ratio + high entropy ratio ($\gt 0.85$) + dominant longest channel**: the context bottleneck (H2). Wells are geometrically distinct but the model cannot modulate weights because context is too short. Run xi5.
+3. **Low collapse ratio + high entropy ratio (> 0.85) + dominant longest channel**: the context bottleneck (H2). Wells are geometrically distinct but the model cannot modulate weights because context is too short. Run xi5.
 
 4. **Low collapse ratio + low entropy ratio**: the model is healthy at this capacity level. Continue the baseline and monitor for later-stage plateaus.
 
@@ -353,9 +354,9 @@ flowchart TB
 
 | Metric | Healthy | Warning | Bottleneck |
 |--------|---------|---------|------------|
-| Collapse ratio | $\lt 0.1$ | 0.1--0.25 | $\gt 0.25$ |
-| Entropy ratio | $\lt 0.7$ | 0.7--0.85 | $\gt 0.85$ |
-| Dominance ratio | $\lt 2$ | 2--5 | $\gt 5$ |
+| Collapse ratio | < 0.1 | 0.1--0.25 | > 0.25 |
+| Entropy ratio | < 0.7 | 0.7--0.85 | > 0.85 |
+| Dominance ratio | < 2 | 2--5 | > 5 |
 
 These thresholds are initial calibration points. After the first diagnostic run at step 80k, they may be refined based on the actual distribution of values.
 
@@ -369,7 +370,7 @@ Based on the training log analysis, the most likely diagnostic profile at step 8
 |--------|-----------------|-------|
 | Collapse ratio | 0.15--0.35 | The 8.3 TinyStories decode showed wells converging to frequent/function tokens; OWT diversity will worsen this |
 | Entropy ratio | 0.80--0.95 | With only ~20-token context, the model cannot sharply select wells per topic |
-| Dominant channel | ch3 ($\alpha$ = 0.95) | The longest channel carries the most V-relevant information |
+| Dominant channel | ch3 (α = 0.95) | The longest channel carries the most V-relevant information |
 | Dominance ratio | 3--10x | The horizon gap between ch3 (20 tok) and ch2 (4 tok) is large |
 
 If confirmed, this places Phase 5 squarely in the **joint bottleneck region** (H1+H2), indicating that the combined K=16, xi5 arm is the correct next experiment.
@@ -500,6 +501,292 @@ single run attacks both the tail (D0.4) and the frequent-token context gap
 (D0.1). Recommended sequencing: bias-only first (nearly free), then untie the
 head if Q0–Q3 do not recover. The full revised remediation ladder is in §15 of
 [`Fock-PARFLM_vs_GPT-2_on_OpenWebText_Next_Steps.md`](./Fock-PARFLM_vs_GPT-2_on_OpenWebText_Next_Steps.md).
+
+## 9. Read-out head fixes: code walkthrough
+
+This section explains the two fixes — output bias (`Fix 1`) and untied LM head
+(`Fix 2`) — at the code level, with excerpts from
+[`notebooks/conservative_arch/parf/model_parf.py`](../notebooks/conservative_arch/parf/model_parf.py)
+and the corresponding notebook knobs in
+[`notebooks/conservative_arch/scaleup/colab_fock_multihead_openwebtext.ipynb`](../notebooks/conservative_arch/scaleup/colab_fock_multihead_openwebtext.ipynb).
+
+Both changes live entirely in the **read-out layer** — the projection from the
+final hidden state $h_L$ to vocabulary logits. They are **downstream of the
+conservative force field** ($V_\theta$, $V_\phi$) and do not affect any gradient
+that flows back into those modules, so **conservativity is preserved with no
+changes to the Arm-1 diagnostic gate**.
+
+### 9.1 Root cause: the tied-head forced h_L to encode the frequency prior
+
+![Root cause: tied head forces h_L to encode the unigram frequency prior; rare tokens get worse-than-uniform CE](./assets/tied_head_root_cause.png)
+
+In the Phase-5 baseline the logit for token $v$ at position $t$ was computed
+purely as a dot product between the final hidden state and the token's **input
+embedding** $e_v$:
+
+```python
+# model_parf.py — Phase-5 baseline (PARFLM.forward)
+logits = h_L @ self.E.weight.T   # (B, T, V)
+```
+
+This one line creates two intertwined problems.
+
+**Problem 1 — the frequency prior must live in h_L.**
+For the model to predict frequent tokens more often than rare ones (as the corpus
+demands), the token distribution $P(v \mid h_L) = \text{softmax}(h_L \cdot
+E^T)$ must be skewed toward frequent tokens. With no explicit bias the only way
+to do this is to steer $h_L$ toward the subspace of frequent-token embeddings.
+The training signal pulls $h_L$ into that subspace at every step, leaving less
+room for the semantic content the dynamics are supposed to encode. At PPL 190 the
+model has clearly found a local equilibrium where $h_L$ encodes **frequency + partial
+semantics**, but cannot do both perfectly simultaneously.
+
+**Problem 2 — rare tokens have undertrained input embeddings serving double duty.**
+The same matrix $E$ is used both to look up the input representation of token $v$
+and to score $h_L$ against it in the output. Rare tokens appear infrequently in
+the training data, so their rows $e_v \in E$ receive very few gradient updates.
+The model therefore cannot distinguish rare token $v$ from a semantically
+different but equally rare token $u$ in the output direction — they both have
+poorly defined $e_v$ and $e_u$. The D0.4 result (Q0 CE = 13.16 > ln V = 10.83)
+is a direct signature: the model's output distribution on rare targets is *worse
+than uniform*.
+
+### 9.2 Fix 1 — Output bias initialised to log-unigram-frequency
+
+![Three read-out head designs: baseline (broken), Fix 1 output bias (cheap), Fix 2 untied head (deeper)](./assets/output_head_fixes_architecture.png)
+
+**Idea.** Add a learned scalar $b_v$ per vocabulary token to the logits. Initialise
+$b_v = \log p_{\text{unigram}}(v)$ so that at step 0 the model's output
+distribution is exactly the corpus unigram distribution — for free, without the
+dynamics having to encode it. From that point the dynamics can focus entirely on
+encoding *contextual deviation* from the prior.
+
+**Data flow after Fix 1:**
+
+```mermaid
+flowchart LR
+    hL["h_L  (B, T, d)"]
+    ET["E^T  (d, V)  tied weight"]
+    logits_raw["h_L @ E^T  (B, T, V)"]
+    bias["out_bias  (V,)  b_v = log p_unigram(v)"]
+    logits["logits = h_L @ E^T + b_v  (B, T, V)"]
+    loss["cross_entropy loss"]
+
+    hL --> logits_raw
+    ET --> logits_raw
+    logits_raw --> logits
+    bias --> logits
+    logits --> loss
+```
+
+**Config flag** (`model_parf.py`, `PARFConfig`):
+
+```python
+# PARFConfig dataclass  (model_parf.py, line ~266)
+use_output_bias: bool = False   # set True to activate Fix 1
+```
+
+**Parameter construction** (`PARFLM.__init__`):
+
+```python
+# model_parf.py — PARFLM.__init__
+if getattr(cfg, "use_output_bias", False):
+    self.out_bias: Optional[nn.Parameter] = nn.Parameter(
+        torch.zeros(cfg.vocab_size)   # initialised to zero; overwritten below
+    )
+else:
+    self.register_parameter("out_bias", None)   # not present → no extra params
+```
+
+**Log-frequency initialisation** (`PARFLM.init_output_bias_from_logfreq`):
+
+```python
+# model_parf.py
+@torch.no_grad()
+def init_output_bias_from_logfreq(
+    self,
+    token_counts: torch.Tensor,
+    smoothing: float = 1.0,
+) -> None:
+    """b_v <- log( (count_v + s) / sum_v (count_v + s) )"""
+    if self.out_bias is None:
+        return                          # no-op when fix is disabled
+    counts = torch.as_tensor(
+        token_counts, dtype=torch.float32, device=self.out_bias.device
+    ).reshape(-1)
+    probs = (counts + smoothing) / (counts + smoothing).sum()
+    self.out_bias.copy_(probs.log().to(self.out_bias.dtype))
+```
+
+The `smoothing=1.0` (add-1 Laplace) prevents $-\infty$ for tokens that appear
+zero times in the training slice, which would cause gradient explosions.
+
+**Notebook trigger** (`colab_fock_multihead_openwebtext.ipynb`, Cell 0 + Cell 4):
+
+```python
+# Cell 0 — Configuration
+USE_OUTPUT_BIAS = True   # D0.4 fix: log-freq output bias (recommended)
+
+# Cell 4 — after model is built
+if USE_OUTPUT_BIAS:
+    _ob_counts = np.bincount(train_ids.astype(np.int64), minlength=VOCAB_SIZE)
+    model.init_output_bias_from_logfreq(_ob_counts)
+    print(f'Output bias <- log-unigram-freq  '
+          f'(b range [{model.out_bias.min().item():.2f}, '
+          f'{model.out_bias.max().item():.2f}])')
+```
+
+**Parameter cost.** Exactly $V = 50257$ scalar parameters ($\approx 0.05$% of the
+33 M total). Effectively free.
+
+**What it fixes.** $b_v$ absorbs the global frequency prior, so the logit for
+token $v$ becomes $h_L \cdot e_v + \log p(v)$. Rare tokens start at a
+calibrated baseline instead of being dominated by $h_L$'s frequency-skewed
+direction. Because the bias is learned, it can also drift from the pure unigram
+prior during training to reflect token-conditional frequency effects.
+
+### 9.3 Fix 2 — Untied LM head (dedicated W_out)
+
+**Idea.** Allocate a completely separate weight matrix $W_{out} \in
+\mathbb{R}^{V \times d}$ for the output projection. The input embedding matrix
+$E$ is kept for the token lookup `h_0 = E(x) + P`, but the output path uses
+$W_{out}$ instead of $E^T$. Their gradients are now independent: $E$ is updated
+by the path $x \to h_0 \to \ldots \to h_L \to \text{loss}$ while $W_{out}$ is
+updated only by $h_L \to \text{logits} \to \text{loss}$.
+
+**Data flow after Fix 2:**
+
+```mermaid
+flowchart LR
+    x["x  input tokens  (B, T)"]
+    E["E  (V, d)  input embedding"]
+    h0["h_0 = E(x) + P"]
+    dynamics["Verlet dynamics  L layers"]
+    hL["h_L  (B, T, d)"]
+    Wout["W_out  (V, d)  dedicated read-out  grad independent of E"]
+    bias["out_bias  (V,)"]
+    logits["logits = h_L @ W_out^T + b_v  (B, T, V)"]
+    loss["cross_entropy loss"]
+
+    x --> E
+    E --> h0
+    h0 --> dynamics
+    dynamics --> hL
+    hL --> logits
+    Wout --> logits
+    bias --> logits
+    logits --> loss
+```
+
+**Parameter construction** (`PARFLM.__init__`):
+
+```python
+# model_parf.py — PARFLM.__init__
+# tie_embeddings=True  →  no separate W_out, reuse E^T  (default, Phase-5 compat)
+# tie_embeddings=False →  allocate a dedicated nn.Linear read-out head
+if cfg.tie_embeddings:
+    self.lm_head: Optional[nn.Linear] = None
+else:
+    self.lm_head = nn.Linear(cfg.d, cfg.vocab_size, bias=False)
+    nn.init.normal_(self.lm_head.weight, mean=0.0, std=0.02)
+```
+
+**Unified logit computation** (`PARFLM.compute_logits`):
+
+```python
+# model_parf.py — called from forward() and from forward_with_vreg() in the notebook
+def compute_logits(self, h_L: torch.Tensor) -> torch.Tensor:
+    if self.lm_head is not None:
+        logits = self.lm_head(h_L)          # uses W_out  (untied path)
+    else:
+        logits = h_L @ self.E.weight.T      # uses E^T   (tied path)
+    if self.out_bias is not None:
+        logits = logits + self.out_bias      # Fix 1 bias, if enabled
+    return logits
+```
+
+This single method is the **single source of truth** for the read-out: both
+`forward()` and the notebook's `forward_with_vreg` call it, so neither can
+silently bypass the bias or the untied weight. (The previous bug — `forward_with_vreg`
+hard-coding `h_L @ model.E.weight.T` — was exactly this bypass and was fixed
+simultaneously.)
+
+**Notebook knob** (`colab_fock_multihead_openwebtext.ipynb`, Cell 0):
+
+```python
+# Cell 0 — Configuration
+TIE_EMBEDDINGS  = True   # False = allocate dedicated W_out read-out head
+```
+
+The config kwarg `tie_embeddings=TIE_EMBEDDINGS` is forwarded to `FockMultiXiPARFConfig`
+in `make_config()` (Cell 4), which propagates to `PARFLM.__init__` via
+the inheritance chain `FockMultiXiPARFLM → MultiXiPARFLM → SparsePARFLM → PARFLM`.
+
+**Parameter cost.** $V \times d = 50257 \times 384 \approx 19.3$ M additional
+parameters — roughly a 58% increase on the 33 M baseline. This is why Fix 2 is
+applied second (only if the bias-only Fix 1 does not cure Q0–Q3), and why it
+warrants a fresh training run rather than fine-tuning: the gradient flow through
+$E$ changes qualitatively.
+
+**What it fixes.** Rare tokens' output representations are no longer constrained
+by their undertrained input embeddings. $W_{out}$ can develop a well-conditioned
+output direction for token $v$ even if $v$ has been seen only 229 times, because
+$W_{out}[v]$ only needs to point in the direction of $h_L$ when the context
+predicts $v$ — it does not also have to serve as the initial representation
+of $v$ when $v$ appears as an input.
+
+### 9.4 Data-flow summary and conservativity argument
+
+```mermaid
+flowchart TB
+    x["x  input tokens"]
+    E["E  input embedding  (V, d)"]
+    P["P  positional embedding  (max_len, d)"]
+    h0["h_0 = E(x) + P"]
+
+    subgraph Force_Field [Conservative force field - UNCHANGED by both fixes]
+        Vt["V_theta  one-body potential"]
+        Vp["V_phi  pair potential"]
+        Verlet["Verlet integrator  L layers"]
+    end
+
+    hL["h_L  final hidden state"]
+
+    subgraph Readout [Read-out head - MODIFIED by fixes]
+        Wout["W_out or E^T  Fix 2 toggle"]
+        bias["out_bias b_v  Fix 1"]
+        logits["logits (B, T, V)"]
+    end
+
+    loss["cross_entropy loss"]
+
+    x --> E
+    E --> h0
+    P --> h0
+    h0 --> Force_Field
+    Force_Field --> hL
+    hL --> Wout
+    Wout --> logits
+    bias --> logits
+    logits --> loss
+```
+
+The force field subgraph is entirely upstream of the read-out. Gradients from
+the loss flow back through the read-out and into $h_L$, but $h_L$ is a **leaf of
+the force-field graph** — the gradient `dL/dh_L` is used by the Verlet integrator's
+backward pass, not by any $V_\theta$/$V_\phi$ structural computation. So changing
+the read-out head **does not alter** which scalar potential generates the forces,
+and the Jacobian-symmetry / curl-free property checked by Arm 1 of
+`conservativity_diagnostic.py` is unaffected. No re-run of the diagnostic gate
+is needed before launching.
+
+### 9.5 Recommended sequencing
+
+| Step | Config | Rationale |
+|------|--------|-----------|
+| **Run 1 (current)** | `USE_OUTPUT_BIAS=True`, `TIE_EMBEDDINGS=True` | Bias-only: nearly free, directly fixes D0.4 calibration; run with multi-head V_phi |
+| **Run 2 (if Q0–Q3 tail persists)** | `USE_OUTPUT_BIAS=True`, `TIE_EMBEDDINGS=False` | Untied head: deeper fix for undertrained rare-token output directions; trains from scratch |
+| **Ablation** | `USE_OUTPUT_BIAS=False`, `TIE_EMBEDDINGS=False` | Isolates the untied-head effect alone (no freq-prior term) |
 
 ---
 

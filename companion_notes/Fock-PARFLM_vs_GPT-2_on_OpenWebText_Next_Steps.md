@@ -898,7 +898,7 @@ $K_{MIX}=8$. The final-layer representation is **high-rank, not collapsed**.
 There is **no output-attractor ceiling** — so adding wells ($K_{MIX}$) or
 per-context well banks does not target a binding constraint.
 
-**D0.3 — Per-Verlet-step displacement.** $\lVert \Delta h \rVert$ is **U-shaped**
+**D0.3 — Per-Verlet-step displacement.** $\lVert \Delta h \rVert$ is U-shaped
 across the 16 steps: large at step 0→1 (17.6), a minimum near step 8–9 (~1.75),
 then rising again to ~5.6 at steps 13–14 (late/early = 0.47). Late layers do
 substantial work. **Depth is used, not wasted** — untying V_theta across layer
@@ -966,6 +966,260 @@ add the **untied head** if the tail (Q0–Q3) does not recover. Both knobs are
 wired into `colab_fock_multihead_openwebtext.ipynb` (`USE_OUTPUT_BIAS`,
 `TIE_EMBEDDINGS`) alongside the multi-head V_phi cure, so a single run attacks
 both the tail (D0.4) and the frequent-token context gap (D0.1).
+
+---
+
+## 16. Read-out head fixes: code walkthrough
+
+This section explains the two fixes at the code level, with excerpts from
+[`notebooks/conservative_arch/parf/model_parf.py`](../notebooks/conservative_arch/parf/model_parf.py)
+and the notebook knobs in
+[`notebooks/conservative_arch/scaleup/colab_fock_multihead_openwebtext.ipynb`](../notebooks/conservative_arch/scaleup/colab_fock_multihead_openwebtext.ipynb).
+For the companion discussion see §9 of
+[`Xi_Bottleneck_Diagnosis_Phase5.md`](./Xi_Bottleneck_Diagnosis_Phase5.md).
+
+Both fixes live entirely in the **read-out layer** — the projection from the
+final hidden state $h_L$ to vocabulary logits. They are downstream of the
+conservative force field ($V_\theta$, $V_\phi$) and do not affect any gradient
+that flows back into those modules, so **conservativity is preserved** and no
+re-run of Arm 1 of `conservativity_diagnostic.py` is needed.
+
+### 16.1 Root cause: the tied head forced h_L to encode the frequency prior
+
+![Root cause: tied head forces h_L to encode the unigram frequency prior; rare tokens get worse-than-uniform CE](./assets/tied_head_root_cause.png)
+
+In the Phase-5 baseline every token logit was:
+
+```python
+# model_parf.py — PARFLM.forward (Phase-5 baseline)
+logits = h_L @ self.E.weight.T   # (B, T, V)
+```
+
+This creates two intertwined problems.
+
+**Problem 1 — the frequency prior must live in h_L.**
+For the model to predict frequent tokens more often than rare ones,
+$P(v \mid h_L) = \text{softmax}(h_L \cdot E^T)$ must be skewed toward
+frequent-token embeddings. With no explicit bias, the training signal
+steers $h_L$ into the subspace of frequent-token embeddings at every step,
+leaving less room for the semantic content the conservative dynamics are
+supposed to encode. The D0.4 result (CE on Q4 = 4.54 nats, still ~1 nat
+above GPT-2) is a direct consequence.
+
+**Problem 2 — rare tokens have undertrained input embeddings serving double duty.**
+The same matrix $E$ is used for the input lookup $h_0 = E(x) + P$ and for
+the output scoring $h_L \cdot e_v$. Rare tokens appear infrequently, so their
+rows $e_v$ receive very few gradient updates. The D0.4 finding that Q0
+CE = 13.16 nats **exceeds** $\ln V = \ln 50257 \approx 10.83$ nats (worse than
+uniform) is the signature: the model's output distribution on rare targets has
+been pushed below the uniform baseline.
+
+### 16.2 Fix 1 — output bias initialised to log-unigram-frequency
+
+![Three read-out head designs: baseline (broken), Fix 1 output bias (cheap), Fix 2 untied head (deeper)](./assets/output_head_fixes_architecture.png)
+
+Add a learned scalar $b_v$ per vocabulary token. Initialise it to
+$\log p_{\text{unigram}}(v)$ so that at step 0 the model's output distribution
+is exactly the corpus unigram prior — for free, without the dynamics having to
+encode it. The dynamics then only need to encode contextual *deviation* from the
+prior.
+
+**Data flow (Fix 1):**
+
+```mermaid
+flowchart LR
+    hL["h_L  (B, T, d)"]
+    ET["E^T  (d, V)  tied weight"]
+    raw["h_L @ E^T  (B, T, V)"]
+    bv["out_bias  (V,)  b_v = log p_unigram(v)"]
+    logits["logits = h_L @ E^T + b_v"]
+    loss["cross_entropy loss"]
+
+    hL --> raw
+    ET --> raw
+    raw --> logits
+    bv --> logits
+    logits --> loss
+```
+
+**Config flag** in `PARFConfig` (`model_parf.py`):
+
+```python
+use_output_bias: bool = False   # set True to activate Fix 1
+```
+
+**Parameter construction** in `PARFLM.__init__` (`model_parf.py`):
+
+```python
+if getattr(cfg, "use_output_bias", False):
+    self.out_bias: Optional[nn.Parameter] = nn.Parameter(
+        torch.zeros(cfg.vocab_size)   # zero-init; overwritten by init_output_bias_from_logfreq
+    )
+else:
+    self.register_parameter("out_bias", None)   # absent → no extra params
+```
+
+**Log-frequency initialiser** `PARFLM.init_output_bias_from_logfreq` (`model_parf.py`):
+
+```python
+@torch.no_grad()
+def init_output_bias_from_logfreq(self, token_counts, smoothing=1.0):
+    """b_v <- log( (count_v + s) / sum_v (count_v + s) )"""
+    if self.out_bias is None:
+        return
+    counts = torch.as_tensor(token_counts, dtype=torch.float32,
+                              device=self.out_bias.device).reshape(-1)
+    probs = (counts + smoothing) / (counts + smoothing).sum()
+    self.out_bias.copy_(probs.log().to(self.out_bias.dtype))
+```
+
+The `smoothing=1.0` (add-1 Laplace) prevents $-\infty$ for zero-count tokens,
+which would cause gradient explosions on the first backward pass.
+
+**Notebook trigger** in `colab_fock_multihead_openwebtext.ipynb` (Cell 0 + Cell 4):
+
+```python
+# Cell 0 — Configuration
+USE_OUTPUT_BIAS = True   # D0.4 fix: log-freq output bias (recommended)
+
+# Cell 4 — after model is selected and V_theta is swapped in
+if USE_OUTPUT_BIAS:
+    _ob_counts = np.bincount(train_ids.astype(np.int64), minlength=VOCAB_SIZE)
+    model.init_output_bias_from_logfreq(_ob_counts)
+    print(f'Output bias <- log-unigram-freq  '
+          f'(b range [{model.out_bias.min().item():.2f}, '
+          f'{model.out_bias.max().item():.2f}])')
+```
+
+**Parameter cost.** Exactly $V = 50257$ parameters (~0.05% of the 33 M total).
+Effectively free. On checkpoint resume, `load_state_dict(strict=False)` loads
+the trained bias; on a fresh run the log-freq init is called once.
+
+### 16.3 Fix 2 — untied LM head (dedicated W_out)
+
+Allocate a separate weight matrix $W_{out} \in \mathbb{R}^{V \times d}$ for the
+output projection. The input embedding $E$ is kept for the lookup
+$h_0 = E(x) + P$, but the output path uses $W_{out}$ instead of $E^T$.
+Their gradients are now independent: $E$ is updated via
+$x \to h_0 \to \ldots \to h_L \to \text{loss}$, while $W_{out}$ is updated
+only via $h_L \to \text{logits} \to \text{loss}$.
+
+**Data flow (Fix 2):**
+
+```mermaid
+flowchart LR
+    x["x  input tokens"]
+    E["E  (V, d)  input embedding"]
+    h0["h_0 = E(x) + P"]
+    dyn["Verlet dynamics  L layers"]
+    hL["h_L  (B, T, d)"]
+    Wout["W_out  (V, d)  dedicated read-out"]
+    bv["out_bias  (V,)"]
+    logits["logits = h_L @ W_out^T + b_v"]
+    loss["cross_entropy loss"]
+
+    x --> E
+    E --> h0
+    h0 --> dyn
+    dyn --> hL
+    hL --> logits
+    Wout --> logits
+    bv --> logits
+    logits --> loss
+```
+
+**Parameter construction** in `PARFLM.__init__` (`model_parf.py`):
+
+```python
+if cfg.tie_embeddings:
+    self.lm_head: Optional[nn.Linear] = None   # reuse E^T (default)
+else:
+    self.lm_head = nn.Linear(cfg.d, cfg.vocab_size, bias=False)
+    nn.init.normal_(self.lm_head.weight, mean=0.0, std=0.02)
+```
+
+**Unified logit computation** `PARFLM.compute_logits` (`model_parf.py`) — the
+single source of truth for the read-out, called by both `forward()` and the
+notebook's `forward_with_vreg`:
+
+```python
+def compute_logits(self, h_L: torch.Tensor) -> torch.Tensor:
+    if self.lm_head is not None:
+        logits = self.lm_head(h_L)          # untied W_out path
+    else:
+        logits = h_L @ self.E.weight.T      # tied E^T path (default)
+    if self.out_bias is not None:
+        logits = logits + self.out_bias     # Fix 1 bias (if enabled)
+    return logits
+```
+
+This consolidation also fixed a latent bug: `forward_with_vreg` in Phase-5 was
+hard-coding `h_L @ model.E.weight.T`, silently bypassing any bias or untied
+weight. It now calls `model.compute_logits(h_L)`.
+
+**Notebook knob** in `colab_fock_multihead_openwebtext.ipynb` (Cell 0):
+
+```python
+TIE_EMBEDDINGS = True   # False = allocate dedicated W_out (+V*d params)
+```
+
+The flag propagates through `make_config()` into `FockMultiXiPARFConfig`,
+then through the inheritance chain
+`FockMultiXiPARFLM → MultiXiPARFLM → SparsePARFLM → PARFLM.__init__`.
+
+**Parameter cost.** $V \times d = 50257 \times 384 \approx 19.3$ M additional
+parameters — roughly a 58% increase on the 33 M baseline. This is why Fix 2 is
+run second (only if bias-only does not cure Q0–Q3), and why it requires a fresh
+training run: the gradient flow through $E$ changes qualitatively.
+
+### 16.4 Full data-flow and conservativity argument
+
+```mermaid
+flowchart TB
+    x["x  input tokens"]
+    E["E  input embedding  (V, d)"]
+    P["P  positional embedding"]
+    h0["h_0 = E(x) + P"]
+
+    subgraph FF [Conservative force field - UNCHANGED by both fixes]
+        Vt["V_theta  one-body potential"]
+        Vp["V_phi  pair potential"]
+        VL["Verlet integrator  L layers"]
+    end
+
+    hL["h_L  final hidden state"]
+
+    subgraph RO [Read-out head - MODIFIED by fixes]
+        Wout["W_out or E^T  Fix 2 toggle"]
+        bv["out_bias b_v  Fix 1"]
+        logits["logits (B, T, V)"]
+    end
+
+    loss["cross_entropy loss"]
+
+    x --> E
+    E --> h0
+    P --> h0
+    h0 --> FF
+    FF --> hL
+    hL --> Wout
+    Wout --> logits
+    bv --> logits
+    logits --> loss
+```
+
+The force-field subgraph is entirely upstream of the read-out. Changing
+$W_{out}$ or $b_v$ does not alter which scalar potential generates the forces,
+so the Jacobian-symmetry property checked by Arm 1 of `conservativity_diagnostic.py`
+is unaffected. No re-run of the gate is needed before launching.
+
+### 16.5 Recommended sequencing
+
+| Step | Config | Rationale |
+|------|--------|-----------|
+| Run 1 (current) | `USE_OUTPUT_BIAS=True`, `TIE_EMBEDDINGS=True` | Bias-only: nearly free; directly fixes D0.4 calibration; run with multi-head V_phi |
+| Run 2 (if tail persists) | `USE_OUTPUT_BIAS=True`, `TIE_EMBEDDINGS=False` | Untied head: deeper fix for undertrained rare-token output directions |
+| Ablation | `USE_OUTPUT_BIAS=False`, `TIE_EMBEDDINGS=False` | Isolates untied-head effect without the freq-prior bias |
 
 ---
 
