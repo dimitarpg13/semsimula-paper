@@ -23,6 +23,7 @@
 12. [G1 Precision Explosion: Blowup 2 Revisited via Unbounded Gaussian Precision](#12-g1-precision-explosion-blowup-2-revisited-via-unbounded-gaussian-precision)
 13. [Phase 5 Blowup: LR-Induced Instability Beyond the Bounded Potential](#13-phase-5-blowup-lr-induced-instability-beyond-the-bounded-potential)
 14. [Scale-Diversity Analysis: Why TinyStories Is Stable and OpenWebText Is Not](#14-scale-diversity-analysis-why-tinystories-is-stable-and-openwebtext-is-not)
+15. [Multi-Head Experiment: 1/r Gradient Explosion at Step 43K](#15-multi-head-experiment-1r-gradient-explosion-at-step-43k)
 
 ---
 
@@ -339,7 +340,7 @@ additional instability sources:
 
 | Component | SPLM | Fock-PARFLM v2.1 | Instability mechanism |
 |-----------|------|------------------|-----------------------|
-| V_θ force | $-\nabla_h V_\theta$ | same | quadratic, unbounded |
+| V_θ force | −∇_h V_θ | same | quadratic, unbounded |
 | V_φ routing | — | Gumbel-softmax top-k | stochastic routes add gradient noise; wrong routes persist for a full Verlet step |
 | Fock registers | — | M=32 register particles | 32 extra hidden states through L=16 backward graph; register creation/destruction gates add non-differentiable-like switching |
 | Per-register τ | — | learnable temperature | τ drift can make routing sharper mid-training, amplifying the Gumbel noise |
@@ -723,12 +724,12 @@ per-component precisions as before.
 
 | Property | SQ3 (log-sum-exp) | Gaussian wells (mixture PDF) |
 |----------|-------------------|------------------------------|
-| Range | $(-\infty, +\infty)$ | $[-\sum_k w_k, 0]$ |
-| Asymptotic behaviour | $V \to +\infty$ quadratically | $V \to 0$ (bounded) |
+| Range | (−∞, +∞) | [−Σ w_k, 0] |
+| Asymptotic behaviour | V → +∞ quadratically | V → 0 (bounded) |
 | Force outside wells | linear restoring, grows with displacement | exponential decay to zero |
 | Maximum force | unbounded | bounded per well |
-| Penalty $V^2$ | unbounded $\to$ Blowup 1 | bounded by $(\sum_k w_k)^2$ |
-| Jacobi metric | degenerate at $V = E$ boundary | valid everywhere ($V$ bounded below) |
+| Penalty V² | unbounded → Blowup 1 | bounded by (Σ w_k)² |
+| Jacobi metric | degenerate at V = E boundary | valid everywhere (V bounded below) |
 
 **Gradient bound.** The force of a single Gaussian well is:
 
@@ -916,7 +917,7 @@ potential rather than as a post-hoc normalisation.
 
 | Blowup | Root cause | Gaussian wells | SARF anchors | SARF dynamics |
 |--------|-----------|---------------|-------------|--------------|
-| 1 (penalty dominance) | $V_\theta^2 \to \infty$ | **Prevented**: $V^2 \le (\sum w_k)^2$ | neutral | neutral |
+| 1 (penalty dominance) | V_θ² → ∞ | **Prevented**: V² ≤ (Σ w_k)² | neutral | neutral |
 | 2 (directional instability) | deep backward graph | **Partially mitigated**: bounded force | neutral | neutral (same depth) |
 | 3 (slow escalation) | sustained moderate gradients | **Partially mitigated**: lower gradient ceiling | **Mitigated**: no dead zones between wells | **Mitigated**: per-layer ratchet prevents sustained drift |
 
@@ -1030,10 +1031,10 @@ weights:
 
 | Component | SQ3 (current) | Gaussian + SARF |
 |-----------|-------------|-----------------|
-| Well centres $\mu_k$ | $K \times K_\xi \times d$ (learned) | $N_S \times d$ (frozen PMI anchors) |
-| Precisions $a_k$ | $K \times K_\xi \times d$ (learned) | $N_S$ (learned $\sigma_j$) |
-| Weights | $K$ (softmax logits from $\xi$) | $N_S$ (linear head from $\xi$) |
-| Total V_theta params | $2K K_\xi d + K$ | $N_S + N_S$ (only widths + weight head) |
+| Well centres μ_k | K × K_ξ × d (learned) | N_S × d (frozen PMI anchors) |
+| Precisions a_k | K × K_ξ × d (learned) | N_S (learned σ_j) |
+| Weights | K (softmax logits from ξ) | N_S (linear head from ξ) |
+| Total V_theta params | 2K·K_ξ·d + K | N_S + N_S (only widths + weight head) |
 
 With $K = 8$, $K_\xi = 4$, $d = 384$: SQ3 has $24577$ learned V_theta
 parameters. With $N_S = 64$ SARF anchors: Gaussian+SARF has $128$ learned
@@ -1133,12 +1134,12 @@ implementation with SARF-anchored Gaussian wells:
 
 | Paper (Eq. 48) | Fock-PARFLM implementation |
 |---|---|
-| $\vec{p}_{c,i}$ — particle position | $h_t^{(\ell)}$ — hidden state, token $t$, layer $\ell$ |
-| $\vec{f}(\vec{p}\_{i,j} + \Delta\vec{p}\_i, l\_{i,j})$ — local force | $\mathcal{E}(h_t^{(\ell)}, \xi_\ell)$ — SARF-anchored Gaussian force |
-| $\Delta\vec{p}_i$ — per-step displacement | $\Delta h_t = v_t^{(\ell+1)} \cdot \Delta t$ — Verlet step |
-| $E(\vec{p}_{c,i})$ — accumulated energy | $\xi_\ell$ — causal EMA tracking hidden-state history |
-| Time $t$ | Layer index $\ell = 0, \ldots, L{-}1$ |
-| New structure modifies $\mathcal{E}$ | $\xi_\ell$ recomputed per layer (SARF-faithful dynamics) |
+| p_{c,i} — particle position | h_t^(ℓ) — hidden state, token t, layer ℓ |
+| f(p_{i,j} + Δp_i, l_{i,j}) — local force | E(h_t^(ℓ), ξ_ℓ) — SARF-anchored Gaussian force |
+| Δp_i — per-step displacement | Δh_t = v_t^(ℓ+1) · Δt — Verlet step |
+| E(p_{c,i}) — accumulated energy | ξ_ℓ — causal EMA tracking hidden-state history |
+| Time t | Layer index ℓ = 0, …, L−1 |
+| New structure modifies E | ξ_ℓ recomputed per layer (SARF-faithful dynamics) |
 
 The last row is the most important for understanding the correspondence.
 In the paper, time-dependence of $\mathcal{E}$ arises because newly-parsed
@@ -1172,11 +1173,11 @@ dynamic vs. static:
 
 | | Paper Section 6 SARF | Implementation SARF anchors |
 |---|---|---|
-| What are the "structures"? | Parsed sentences/documents at dynamic positions | Fixed PMI-peak vocabulary embeddings $a_j$ |
-| How does $\mathcal{E}$ change? | New structures arrive, centroids move | $\xi_\ell$ updates per layer, reshaping $w_j$ |
+| What are the "structures"? | Parsed sentences/documents at dynamic positions | Fixed PMI-peak vocabulary embeddings a_j |
+| How does E change? | New structures arrive, centroids move | ξ_ℓ updates per layer, reshaping w_j |
 | Anchor positions | Float freely (PARF-governed) | Frozen at corpus-analysis time |
-| Force law | Gaussian well from Section 4 at each centroid | Identical functional form, at frozen $a_j$ |
-| Regional cutoff | $2/\kappa$ distance filter (Eq. 37) | Implicit: Gaussian decay handles locality |
+| Force law | Gaussian well from Section 4 at each centroid | Identical functional form, at frozen a_j |
+| Regional cutoff | 2/κ distance filter (Eq. 37) | Implicit: Gaussian decay handles locality |
 
 The implementation makes a deliberate trade-off: **giving up dynamic
 anchor positions** in exchange for **guaranteed global coverage**. The
@@ -1496,10 +1497,10 @@ V_phi routing during the warmup ramp.
 | Quantity | Before fix | After fix |
 |----------|-----------|-----------|
 | Embedding / anchor norm | 0.32 | — |
-| $\lVert h_L \rVert$ (post-Verlet) | ~16 | ~16 |
-| $\sigma$ | 1.0 | ~16 |
-| $\lVert h_L - a_j \rVert$ | ~16 | ~22.6 (normalised anchors) |
-| Gaussian exponent | $\exp(-128) \approx 0$ | $\exp(-0.99) \approx 0.37$ |
+| ‖h_L‖ (post-Verlet) | ~16 | ~16 |
+| σ | 1.0 | ~16 |
+| ‖h_L − a_j‖ | ~16 | ~22.6 (normalised anchors) |
+| Gaussian exponent | exp(−128) ≈ 0 | exp(−0.99) ≈ 0.37 |
 | `v_reg` at step 1 | 0.0000 | 0.1356 |
 | Wells active? | No | Yes |
 
@@ -1721,8 +1722,8 @@ clipped, uninformative updates rather than useful learning.
 | Property | G3 (sigma-clamped) | G1 — no precision cap | G1 — precision\_max fix |
 |----------|--------------------|----------------------|------------------------|
 | V\_theta params | 65,664 (0.5%) | ~201k (~1.4%) | ~201k (~1.4%) |
-| Well centres | Frozen PMI anchors | Learned $\mu_k(\xi)$ | Learned $\mu_k(\xi)$ |
-| Width control | $\log\sigma$ capped | $a_k$ uncapped | $a_k \le 2/d$ |
+| Well centres | Frozen PMI anchors | Learned μ_k(ξ) | Learned μ_k(ξ) |
+| Width control | log σ capped | a_k uncapped | a_k ≤ 2/d |
 | Best val\_ppl | 18.67 | 20.82 | **15.95** |
 | Gradient range | 1–5 | 30–1328 (chaotic) | **1–27** (transient) |
 | v\_reg at end | 0.006 (near-zero) | 0.043 (declining) | **0.015 (stable)** |
@@ -1889,12 +1890,12 @@ Each factor in this product involves:
 
 | Component | Bounded? | Gradient contribution |
 |-----------|---------|----------------------|
-| $V_\theta$ (Gaussian wells) | **Yes** | Force $\le 0.607 w_k / \sigma_{\min}$ |
-| $V_\phi$ (competitive routing) | No | Gumbel-softmax, attention scores |
+| V_θ (Gaussian wells) | **Yes** | Force ≤ 0.607 w_k / σ_min |
+| V_ϕ (competitive routing) | No | Gumbel-softmax, attention scores |
 | Fock registers (creation/annihilation) | No | Gating, salience thresholding |
-| LayerNorm | Normalises $h$, but **amplifies** $\partial h$ | Jacobian has $1/\sigma$ terms |
-| Embedding $E$ ($50257 \times d$) | No | Gradient scales with vocabulary |
-| Logit projection $h_L \cdot E^\top$ | No | Linear in $\lVert h_L \rVert$ |
+| LayerNorm | Normalises h, but **amplifies** ∂h | Jacobian has 1/σ terms |
+| Embedding E (50257 × d) | No | Gradient scales with vocabulary |
+| Logit projection h_L · E^T | No | Linear in ‖h_L‖ |
 
 The bounded V_theta contributes a small, well-behaved fraction of the
 total gradient. The dominant terms come from V_phi, the Fock register
@@ -2126,7 +2127,7 @@ $$
 \lVert \nabla_\theta \mathcal{L} \rVert \approx \bar{g} \cdot \sqrt{P}
 $$
 
-| Configuration | $P$ | $\sqrt{P}$ | Ratio vs TinyStories |
+| Configuration | P | √P | Ratio vs TinyStories |
 |---|---|---|---|
 | TinyStories (d=256) | 14.0M | 3,742 | 1.0x |
 | OpenWebText (d=384) | 31.5M | 5,612 | **1.50x** |
@@ -2339,6 +2340,258 @@ architecture's stability properties hold under realistic data
 diversity. Both are necessary: TinyStories alone would miss all
 scale-diversity instabilities; OpenWebText alone would conflate
 architectural and optimisation issues.
+
+---
+
+## 15. Multi-Head Experiment: 1/r Gradient Explosion at Step 43K
+
+### 15.1. Context
+
+The multi-head experiment (`colab_fock_multihead_openwebtext.ipynb`) was the
+first run incorporating the D0-driven remediations from
+[`Xi_Bottleneck_Diagnosis_Phase5.md`](./Xi_Bottleneck_Diagnosis_Phase5.md)
+and [`Fock-PARFLM_vs_GPT-2_on_OpenWebText_Next_Steps.md`](./Fock-PARFLM_vs_GPT-2_on_OpenWebText_Next_Steps.md):
+
+| Component | Configuration |
+|-----------|---------------|
+| V\_phi | `structural_competitive` x 4 heads (`MultiHeadVPhi`) |
+| V\_theta | Gaussian wells, K=8, learned centres |
+| Xi channels | 5 (alpha inits: 0.25, 0.50, 0.75, 0.95, 0.99) |
+| Output bias | Enabled, init to log-unigram-frequency |
+| LM head | Tied (E^T) |
+| d, L, M | 384, 16, 32 |
+| Total params | 33,973,355 |
+| LR | 1.2e-4 (cosine decay) |
+| Grad clip | 1.0 |
+| Plummer eps | 0.01 (default) |
+| Watchdog | EMA alpha=0.05, threshold=40, patience=200 |
+
+The multi-head V\_phi sums four independent
+`StructuralCompetitiveVPhi` sub-potentials, each computing:
+
+$$
+V_\phi^{(m)}(h_t, h_s) = -C \cdot \Theta^{(m)} \cdot \Phi^{(m)} \;/\; r
+$$
+
+where $r = \sqrt{\lVert h_t - h_s \rVert^2 + \varepsilon^2}$ is the
+Plummer-softened distance and $\varepsilon = 0.01$ is the softening
+parameter.
+
+### 15.2. Training trajectory: healthy descent then oscillating progress
+
+The run showed clean descent through the first 16K steps, with every
+eval setting a new best. After step 16K the descent became intermittent,
+alternating between near-stalls and breakthroughs:
+
+| Step | Val PPL | Note |
+|------|---------|------|
+| 2K | 1042.5 | first eval |
+| 8K | 469.4 | smooth descent |
+| 16K | 342.9 | last smooth eval |
+| 18K | 331.0 | |
+| 20K | 329.6 | near-stall (delta = -1.4) |
+| 22K | 300.4 | breakthrough |
+| 24K | 300.9 | stall (no new best) |
+| 26K | 281.2 | breakthrough, new best |
+| 28K | 297.3 | stall |
+| 30K | 273.4 | new best |
+| 32K | **266.6** | **last new best** |
+| 34K | 282.6 | regression |
+| 36K | 290.1 | regression |
+| 38K | 286.7 | regression |
+| 40K | 290.4 | regression |
+| 42K | 283.9 | regression |
+
+### 15.3. Gradient escalation timeline
+
+The gradient norm (pre-clip) showed a clear escalation pattern starting
+around step 16K and accelerating after step 30K:
+
+| Step range | Max grad (pre-clip) | Frequency of spikes > 50 |
+|-----------|--------------------|-----------------------|
+| 0 -- 16K | 19.7 | 0 |
+| 16K -- 26K | 113.8 | 3 events |
+| 26K -- 32K | 72.1 | 2 events |
+| 32K -- 38K | 142.0 | 5 events |
+| 38K -- 43K | **17,543** | 8 events, then explosion |
+
+The critical sequence:
+
+```
+step 33200  grad=142.03
+step 35800  grad=92.67
+step 37200  grad=52.72
+
+[watchdog] EMA grad_norm=50.1 > 40.0 for 200 steps at step 38294
+[watchdog] Reloaded best: step 32,000 PPL 266.61
+
+step 38600  grad=81.39     ← post-reload, instability returns
+step 41600  grad=101.24
+step 43000  grad=228.35
+step 43400  grad=17,543.63  ← EXPLOSION
+```
+
+### 15.4. Root cause: Plummer softening too small for converging hidden states
+
+The `StructuralCompetitiveVPhi` potential contains a $1/r$ radial
+kernel:
+
+$$
+V_\phi(h_t, h_s) \propto \frac{1}{\sqrt{\lVert h_t - h_s \rVert^2 + \varepsilon^2}}
+$$
+
+The gradient of $1/r$ with respect to $h_t$ grows as $r^{-2}$. With
+$\varepsilon = 0.01$, the softening only bounds the gradient when
+$\lVert h_t - h_s \rVert \lesssim 0.01$. As training progresses, hidden
+states of semantically similar tokens converge in embedding space,
+and token pairs routinely satisfy $\lVert h_t - h_s \rVert < 0.1$,
+placing them in the steep $r^{-2}$ gradient region.
+
+With 4 independent V\_phi heads, each contributing its own $1/r$ term,
+the gradient contributions sum. A single batch containing several
+close-distance token pairs can produce:
+
+$$
+\lVert \nabla_{h_t} V_\phi \rVert \sim 4 \times \frac{C}{\varepsilon^2} \approx \frac{4}{10^{-4}} = 40{,}000
+$$
+
+This is consistent with the observed explosion to grad = 17,543 at
+step 43,400.
+
+### 15.5. Why the watchdog reload did not prevent the explosion
+
+The EMA watchdog correctly detected the instability at step 38,294
+(EMA = 50.1 > threshold 40) and reloaded the step-32K best checkpoint.
+However, the reload only restored the model weights and optimiser state
+-- it did not change the hyperparameters that caused the instability.
+
+The root cause is architectural ($\varepsilon$ too small) and
+hyperparameter-related (LR too high for the gradient scale). Reloading
+the checkpoint simply placed the model back at the edge of the unstable
+region with the same LR and the same $\varepsilon$. Within 5,000 steps
+the instability returned, because the training dynamics that caused the
+hidden-state convergence (which triggered the $1/r$ spikes) are
+deterministic given the same data stream.
+
+```mermaid
+flowchart TD
+    A["Step 32K: PPL 266.6 -- checkpoint"]
+    B["Steps 32K-38K: grad spikes escalate"]
+    C["Step 38,294: watchdog fires, reloads step 32K"]
+    D["Steps 38K-43K: same trajectory replays"]
+    E["Step 43,400: grad=17,543 -- full explosion"]
+    F["Root cause unchanged: eps=0.01, LR=1.2e-4"]
+
+    A --> B
+    B --> C
+    C --> A
+    C -.-> F
+    F -.-> D
+    D --> E
+```
+
+### 15.6. Comparison with prior blowups
+
+This instability shares features with several prior blowups but has a
+distinct mechanism:
+
+| Property | Blowup 2 (SQ3) | Blowup 3 (SQ3) | Phase 5 LR doom loop | **Multi-head 1/r** |
+|----------|----------------|-----------------|---------------------|-------------------|
+| Source | V_θ force | V_θ force | Full model | **V_ϕ distance kernel** |
+| Mechanism | Unbounded potential | Sustained moderate grads | LR above stability threshold | **1/r singularity at close pairs** |
+| Onset | Sudden spike | Slow escalation | Warmup peak | **Slow escalation then explosion** |
+| Bounded V? | No | No | Yes | Yes |
+| Bounded F? | No | No | Partially | **No (1/r unbounded)** |
+| Watchdog effective? | N/A (pre-watchdog) | No (miscalibrated) | Yes (reloaded, but doom loop) | **No (root cause architectural)** |
+
+The key insight is that this blowup originates in $V_\phi$, not
+$V_\theta$. All prior instabilities in this document (Sections 2--14)
+involved the one-body potential. The multi-head experiment is the first
+case where the **pair potential** is the instability source. The
+stability hierarchy of Section 13.5 must be extended to include a
+fifth constraint:
+
+$$
+\varepsilon \gg \min_{t,s} \lVert h_t - h_s \rVert_{\text{typical}}
+$$
+
+### 15.7. Fix applied: reduced LR + tighter clip + increased Plummer softening
+
+Three changes were applied to the notebook for the restart from the
+step-32K checkpoint:
+
+| Parameter | Before (blew up) | After (fix) | Rationale |
+|-----------|-----------------|-------------|-----------|
+| LR | 1.2e-4 | **5e-5** | Below the stability threshold for the multi-head 1/r gradient scale |
+| GRAD\_CLIP | 1.0 | **0.3** | Caps the per-step displacement even when pre-clip norms are large |
+| `v_phi_eps` | 0.01 | **0.1** | Plummer softening 10x larger; bounds gradient at close pairs by 100x |
+| Watchdog threshold | 40.0 | **20.0** | Matches the tighter gradient regime |
+
+The Plummer softening change is the structural fix. With
+$\varepsilon = 0.1$, the maximum gradient contribution from a single
+pair per head is:
+
+$$
+\frac{C}{\varepsilon^2} = \frac{1}{0.01} = 100 \quad\text{(vs. }10{,}000\text{ at }\varepsilon = 0.01\text{)}
+$$
+
+For 4 heads: worst-case total $\approx 400$, which is within the range
+that `GRAD_CLIP=0.3` can absorb without persistent directional damage.
+
+The LR reduction (5e-5 vs 1.2e-4) provides additional safety margin.
+The maximum per-step displacement is:
+
+$$
+\lVert \Delta\theta_{\max} \rVert = \eta \times C = 5 \times 10^{-5} \times 0.3 = 1.5 \times 10^{-5}
+$$
+
+This is 8x smaller than the original ($1.2 \times 10^{-4} \times 1.0 = 1.2 \times 10^{-4}$).
+
+### 15.8. The extended stability hierarchy
+
+Incorporating this blowup, the full constraint set for stable training
+of Fock-PARFLM with structured potentials is:
+
+$$
+\underbrace{V \in [-\sum w_k, 0]}_{\text{(1) bounded potential}} + \underbrace{\sigma_{\min} \le \sigma_k \le \sigma_{\max}}_{\text{(2) bounded V}_\theta\text{ force}} + \underbrace{\eta \le \eta_{\max}(d, L, M)}_{\text{(3) scale-appropriate LR}} + \underbrace{\varepsilon \gg \min \lVert h_t - h_s \rVert}_{\text{(4) Plummer softening}}
+$$
+
+| Constraint | What it prevents | Where it acts |
+|-----------|-----------------|--------------|
+| (1) Bounded potential | Blowup 1 (penalty dominance) | V\_theta only |
+| (2) Bounded V\_theta force | Blowup 2 (delta spikes), well deactivation | V\_theta only |
+| (3) Scale-appropriate LR | Full-model gradient explosion | All parameters |
+| (4) Plummer softening | 1/r singularity at close token pairs | V\_phi only |
+
+Constraints (1)-(3) were established in Sections 9-13 for the one-body
+potential. Constraint (4) is new and specific to the pair-potential $V_\phi$.
+The multi-head architecture amplifies the Plummer sensitivity by a factor
+of `n_heads` because each head independently evaluates $1/r$ at the same
+close pair.
+
+### 15.9. Implications for future experiments
+
+1. **Default `v_phi_eps` should be 0.1, not 0.01.** The original default was
+   set during TinyStories experiments where hidden states occupied a wider
+   distribution and close-pair events were rare. At OpenWebText scale with
+   multi-head V\_phi, close-pair events are common enough to trigger
+   instability within ~40K steps.
+
+2. **Multi-head V\_phi amplifies 1/r sensitivity linearly.** With $n$ heads,
+   the worst-case gradient scales as $n / \varepsilon^2$. Future experiments
+   with more heads should verify that $\varepsilon$ is large enough:
+   $\varepsilon \ge 0.1 \sqrt{n/4}$ is a conservative rule of thumb.
+
+3. **The watchdog cannot fix architectural root causes.** Reloading a
+   checkpoint without changing the hyperparameters that caused the instability
+   is at best a delay. The watchdog should be augmented with an
+   LR-reduction policy on reload (e.g. halve LR on each watchdog trigger).
+
+4. **`ln_before_distance=True` (Patch A) helps but is insufficient.** The
+   notebook already had this enabled, which normalises the inputs to the
+   distance computation. This reduces the variance of $\lVert h_t - h_s \rVert$
+   but does not prevent it from becoming small when two tokens are genuinely
+   similar in the normalised space.
 
 ---
 
