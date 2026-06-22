@@ -166,10 +166,10 @@ $$
 The vector $\boldsymbol{y}(\tau) \in \Delta^{n-1}$ lives on the
 $(n-1)$-simplex and has two limits of interest:
 
-| limit | $\boldsymbol{y}(\tau)$ behaviour | property |
+| limit | y(τ) behaviour | property |
 |-------|-----------------------------------|----------|
-| $\tau \to \infty$ | uniform on the simplex | maximum-entropy, no information about $\boldsymbol{\pi}$ |
-| $\tau \to 0$ | one-hot at $\arg\max_i (\log \pi_i + g_i)$ | exact Gumbel-Max draw |
+| τ → ∞ | uniform on the simplex | maximum-entropy, no information about π |
+| τ → 0 | one-hot at argmax_i (log π_i + g_i) | exact Gumbel-Max draw |
 
 For finite $\tau$, $\boldsymbol{y}(\tau)$ is a smooth, fully
 differentiable function of $\boldsymbol{\pi}$ — gradients flow through
@@ -230,11 +230,11 @@ The score function $\sigma^{(\ell)}_{ts}$ is the per-pair scalar that
 ranks past tokens by their relevance to the current token. Three
 candidates, in increasing order of capacity:
 
-| variant | logits $\pi^{(\ell)}_{ts}$ | parameters | comment |
+| variant | logits π^(ℓ)_ts | parameters | comment |
 |---------|----------------------------|------------|---------|
-| **norm-of-force**       | $\log \lVert \nabla_{h_t} V_\phi(h_t, h_s) \rVert$            | $0$        | the §5.2 prescription verbatim; requires an inner pre-evaluation of $V_\phi$, partially defeating the cost win |
-| **norm-of-energy**      | $\log \lvert V_\phi(h_t, h_s) \rvert$                          | $0$        | cheaper proxy; one inner $V_\phi$ pre-evaluation; valid because $\nabla_{h_t} V_\phi \propto V_\phi$ for the §5.1 form up to the $1/r$ factor |
-| **dedicated score MLP** | $\mathrm{MLP}_{\mathrm{score}}\bigl([h_t, h_s, h_t - h_s]\bigr)$ | $\sim 8\text{k}$–$16\text{k}$ | learned; standalone forward; closest to attention's $QK^{\top}$ but framework-justified as the §5.2 score function |
+| **norm-of-force**       | log ‖∇_{h_t} V_ϕ(h_t, h_s)‖ | 0 | the §5.2 prescription verbatim; requires an inner pre-evaluation of V_ϕ, partially defeating the cost win |
+| **norm-of-energy**      | log |V_ϕ(h_t, h_s)| | 0 | cheaper proxy; one inner V_ϕ pre-evaluation; valid because ∇_{h_t} V_ϕ ∝ V_ϕ for the §5.1 form up to the 1/r factor |
+| **dedicated score MLP** | MLP_score([h_t, h_s, h_t − h_s]) | ~8k–16k | learned; standalone forward; closest to attention's QK^T but framework-justified as the §5.2 score function |
 
 The recommended starting variant is the **dedicated score MLP** with
 hidden width $H_{\mathrm{score}} = 32$ (small, doesn't dominate the
@@ -336,12 +336,12 @@ to the force.
 
 | stage | operation | shape | cost |
 |-------|-----------|-------|------|
-| score head | $\mathrm{MLP}([h_t, h_s, h_t - h_s])$        | $(B, T, T, H_s) \to (B, T, T)$ | $O(B \cdot T^2 \cdot d \cdot H_s)$ |
-| Gumbel sample | element-wise transform of $\mathrm{Uniform}$  | $(B, T, T)$                    | $O(B \cdot T^2)$ |
-| top-$k$ argmax | row-wise top-$k$                              | $(B, T, T) \to (B, T, k)$       | $O(B \cdot T^2 \log k)$ (PyTorch `torch.topk`) |
-| $V_\phi$ pair eval | structural or MLP $V_\phi$ on the masked subset | $(B, T, k, \cdot) \to (B, T, k)$ | $O(B \cdot T \cdot k \cdot d_\phi)$ |
-| pair sum | $\sum_s \tilde m_{ts} \cdot V_\phi$            | $(B, T, k) \to (B, T)$          | $O(B \cdot T \cdot k)$ |
-| force | inner $\mathrm{autograd.grad}(U, h_{\mathrm{in}})$ | $(B, T, d)$                  | $O(B \cdot T \cdot d \cdot k \cdot d_\phi)$ |
+| score head | MLP([h_t, h_s, h_t − h_s]) | (B, T, T, H_s) → (B, T, T) | O(B · T² · d · H_s) |
+| Gumbel sample | element-wise transform of Uniform | (B, T, T) | O(B · T²) |
+| top-k argmax | row-wise top-k | (B, T, T) → (B, T, k) | O(B · T² log k) (PyTorch `torch.topk`) |
+| V_ϕ pair eval | structural or MLP V_ϕ on the masked subset | (B, T, k, ·) → (B, T, k) | O(B · T · k · d_ϕ) |
+| pair sum | Σ_s m̃_ts · V_ϕ | (B, T, k) → (B, T) | O(B · T · k) |
+| force | inner autograd.grad(U, h_in) | (B, T, d) | O(B · T · d · k · d_ϕ) |
 
 The $O(T^2)$ score-head cost is the **same asymptotic cost as
 attention's $QK^{\top}$**. The Stage 1.5 win is *not* in the score
@@ -542,11 +542,11 @@ empirical bias. Two mitigations are standard:
 
 ### 6.1 Per-layer pair-sum cost
 
-| variant | score-head cost | $V_\phi$ pair cost | force cost | total per layer |
+| variant | score-head cost | V_ϕ pair cost | force cost | total per layer |
 |---------|-----------------|---------------------|------------|-----------------|
-| Dense Stage 1 PARF (current) | none | $O(B T^2 d_\phi)$ | $O(B T^2 d \cdot d_\phi)$ via 2nd-order graph | $O(B T^2 d \cdot d_\phi)$ |
-| Stage 1.5 dense-eval-then-mask | $O(B T^2 d H_s)$ | $O(B T^2 d_\phi)$ | $O(B T k d \cdot d_\phi)$ via 2nd-order graph (sparse pair sum) | $O(B T^2 \cdot \max(d_\phi, d H_s))$ |
-| Stage 1.5 gathered-eval | $O(B T^2 d H_s)$ | $O(B T k d_\phi)$ | $O(B T k d \cdot d_\phi)$ | $O(B T^2 d H_s) + O(B T k d \cdot d_\phi)$ |
+| Dense Stage 1 PARF (current) | none | O(BT²d_ϕ) | O(BT²d·d_ϕ) via 2nd-order graph | O(BT²d·d_ϕ) |
+| Stage 1.5 dense-eval-then-mask | O(BT²dH_s) | O(BT²d_ϕ) | O(BTkd·d_ϕ) via 2nd-order graph (sparse pair sum) | O(BT²·max(d_ϕ, dH_s)) |
+| Stage 1.5 gathered-eval | O(BT²dH_s) | O(BTkd_ϕ) | O(BTkd·d_ϕ) | O(BT²dH_s) + O(BTkd·d_ϕ) |
 
 The **gathered-eval variant** is the regime where the cost win actually
 lands. At $k \ll T$ the dominant term shifts from $O(T^2 \cdot d \cdot d_\phi)$
@@ -561,11 +561,11 @@ For the prototype configuration ($d = 128$, $L = 8$, $B = 16$,
 $d_\phi = 32$ for structural, $d_\phi = 64$ for MLP), at three sequence
 lengths:
 
-| $T$    | Dense Stage 1 (FLOPs/layer) | Stage 1.5 dense-eval | Stage 1.5 gathered ($k = 16$) | Gathered speedup vs Dense |
+| T | Dense Stage 1 (FLOPs/layer) | Stage 1.5 dense-eval | Stage 1.5 gathered (k = 16) | Gathered speedup vs Dense |
 |--------|---------------------------:|---------------------:|------------------------------:|--------------------------:|
-| $128$  | $\sim 2.1 \times 10^9$    | $\sim 2.6 \times 10^9$ | $\sim 4.3 \times 10^8$       | $\sim 4.9\times$         |
-| $1024$ | $\sim 1.3 \times 10^{11}$ | $\sim 1.7 \times 10^{11}$ | $\sim 3.4 \times 10^9$       | $\sim 38\times$          |
-| $4096$ | $\sim 2.1 \times 10^{12}$ | $\sim 2.7 \times 10^{12}$ | $\sim 1.4 \times 10^{10}$    | $\sim 150\times$         |
+| 128 | ~2.1 × 10⁹ | ~2.6 × 10⁹ | ~4.3 × 10⁸ | ~4.9× |
+| 1024 | ~1.3 × 10¹¹ | ~1.7 × 10¹¹ | ~3.4 × 10⁹ | ~38× |
+| 4096 | ~2.1 × 10¹² | ~2.7 × 10¹² | ~1.4 × 10¹⁰ | ~150× |
 
 The dense-eval Stage 1.5 form does **not** save FLOPs (the score-head
 $O(T^2)$ sweep is on top of the dense $V_\phi$ pair sum), so the
@@ -770,16 +770,16 @@ characterised.
 
 | dimension                              | Dense PARF (Stage 1)                         | Gumbel-sparse PARF (Stage 1.5)                      | Self-attention                          |
 |----------------------------------------|----------------------------------------------|------------------------------------------------------|-----------------------------------------|
-| routing primitive                      | none — dense pair sum                         | learned top-$k$ via Gumbel-softmax                   | learned softmax-weighted aggregation    |
-| routing parameters                     | $0$                                          | $\sim 8\text{k}$–$16\text{k}$ (score head)           | $3 d^2$ ($Q$, $K$, $V$ projections)     |
-| aggregation operator                   | $-\nabla_{h_t} \sum_{s \lt t} V_\phi$         | $-\nabla_{h_t} \sum_{s \lt t} \tilde m_{ts} V_\phi$   | $\sum_s \mathrm{softmax}(QK^\top)_{ts} V_s$ |
-| conservativity                         | strict (single scalar)                       | strict if score head detaches $h_t$ in the mask path | non-conservative                        |
-| pair-evaluation cost (per layer)       | $O(T^2 d_\phi)$                              | $O(T k d_\phi)$ + $O(T^2 d H_s)$ for the score head  | $O(T^2 d)$                              |
-| decode-time KV-cache                   | not applicable                                | not applicable                                        | $O(T d)$ per step                       |
-| memory footprint (per layer)           | $O(B T^2 H_\phi)$ or $O(B T^2 \cdot 3d)$      | $O(B T k H_\phi) + O(B T^2 H_s)$                      | $O(B T^2)$                              |
-| 2nd-order autograd graph required?     | yes (force is `autograd.grad` of $U$)        | yes (force is `autograd.grad` of $\tilde U$)         | no                                      |
-| gradient-of-gradient bias              | none                                          | $O(\tau)$ from STE                                    | none                                    |
-| training-inference mismatch            | none                                          | $\tau \to 0$ floor controls the mismatch              | none                                    |
+| routing primitive | none — dense pair sum | learned top-k via Gumbel-softmax | learned softmax-weighted aggregation |
+| routing parameters | 0 | ~8k–16k (score head) | 3d² (Q, K, V projections) |
+| aggregation operator | −∇_{h_t} Σ_{s<t} V_ϕ | −∇_{h_t} Σ_{s<t} m̃_ts V_ϕ | Σ_s softmax(QKᵀ)_ts V_s |
+| conservativity | strict (single scalar) | strict if score head detaches h_t in the mask path | non-conservative |
+| pair-evaluation cost (per layer) | O(T²d_ϕ) | O(Tkd_ϕ) + O(T²dH_s) for score head | O(T²d) |
+| decode-time KV-cache | not applicable | not applicable | O(Td) per step |
+| memory footprint (per layer) | O(BT²H_ϕ) or O(BT²·3d) | O(BTkH_ϕ) + O(BT²H_s) | O(BT²) |
+| 2nd-order autograd graph required? | yes (force is `autograd.grad` of U) | yes (force is `autograd.grad` of Ũ) | no |
+| gradient-of-gradient bias | none | O(τ) from STE | none |
+| training-inference mismatch | none | τ → 0 floor controls the mismatch | none |
 | framework-prescribed                   | partly (§5.1 only)                            | yes (§5.1 + §5.2)                                     | no                                      |
 | attention-derived                      | no                                            | superficially; framework-justified internally          | yes                                     |
 
@@ -822,17 +822,17 @@ Recommended first-cell configuration:
 
 | parameter             | value                  | rationale                                                                                       |
 |-----------------------|------------------------|-------------------------------------------------------------------------------------------------|
-| $V_\phi$ variant       | structural             | Stage 1 baseline lives at structural; comparison is apples-to-apples                            |
-| $H_\phi$               | $128$                  | matches the P1.6 anchor width                                                                   |
-| $T$                   | $128$                  | Tiny Shakespeare protocol                                                                        |
-| $k$                   | $16$                   | $T/k = 8 \times$ pair-eval reduction; large enough to avoid the $k = 1$ pathology               |
-| score-head $H_s$       | $32$                   | small relative to $V_\phi$ width; doesn't dominate parameter count                              |
-| $\tau_0$              | $1.0$                  | warm-up softness                                                                                |
-| $\tau_{\min}$          | $0.1$                  | conservative late-training floor; $0.01$ is the more aggressive variant                         |
-| schedule              | warm-up $400$ steps + geometric decay to $\tau_{\min}$ at $2400$ | $10\%$ warm-up + $50\%$ decay + $40\%$ floor                                                    |
-| $\lambda_{\mathrm{entropy}}$ | $10^{-3}$         | mask-collapse insurance; small enough not to dominate the NTP loss                              |
-| seeds                 | $1$ (S=1)              | first-cell exploration; multi-seed is P5b after the first verdict                                |
-| budget                | $4000$ steps           | matches the P1 / P1.6 protocol                                                                   |
+| V_ϕ variant | structural | Stage 1 baseline lives at structural; comparison is apples-to-apples |
+| H_ϕ | 128 | matches the P1.6 anchor width |
+| T | 128 | Tiny Shakespeare protocol |
+| k | 16 | T/k = 8× pair-eval reduction; large enough to avoid the k = 1 pathology |
+| score-head H_s | 32 | small relative to V_ϕ width; doesn't dominate parameter count |
+| τ₀ | 1.0 | warm-up softness |
+| τ_min | 0.1 | conservative late-training floor; 0.01 is the more aggressive variant |
+| schedule | warm-up 400 steps + geometric decay to τ_min at 2400 | 10% warm-up + 50% decay + 40% floor |
+| λ_entropy | 10⁻³ | mask-collapse insurance; small enough not to dominate the NTP loss |
+| seeds | 1 (S=1) | first-cell exploration; multi-seed is P5b after the first verdict |
+| budget | 4000 steps | matches the P1 / P1.6 protocol |
 
 Expected wall-clock: $\sim 5$ h MPS for the dense-eval form;
 $\sim 4$ h MPS for the gathered-eval form once that variant is built.
