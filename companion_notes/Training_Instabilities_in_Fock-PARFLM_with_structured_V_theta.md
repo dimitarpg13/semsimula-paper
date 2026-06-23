@@ -24,6 +24,7 @@
 13. [Phase 5 Blowup: LR-Induced Instability Beyond the Bounded Potential](#13-phase-5-blowup-lr-induced-instability-beyond-the-bounded-potential)
 14. [Scale-Diversity Analysis: Why TinyStories Is Stable and OpenWebText Is Not](#14-scale-diversity-analysis-why-tinystories-is-stable-and-openwebtext-is-not)
 15. [Multi-Head Experiment: 1/r Gradient Explosion at Step 43K](#15-multi-head-experiment-1r-gradient-explosion-at-step-43k)
+16. [Gradient-Management Refinements: Per-Module Clipping, Centralisation, and Optimizer Choice](#16-gradient-management-refinements-per-module-clipping-centralisation-and-optimizer-choice)
 
 ---
 
@@ -2593,6 +2594,263 @@ close pair.
    but does not prevent it from becoming small when two tokens are genuinely
    similar in the normalised space.
 
+## 16. Gradient-Management Refinements: Per-Module Clipping, Centralisation, and Optimizer Choice
+
+Sections 13 and 15 diagnosed two sources of gradient imbalance in
+Fock-PARFLM at OpenWebText scale:
+
+1. **V\_phi 1/r spikes** — close token pairs produce extreme per-step
+   gradients that dominate the global norm and starve every other module
+   of learning signal when a single global `grad_clip` is applied.
+2. **Cross-module scale mismatch** — even outside spike events, the
+   embedding layer, V\_theta, xi channels, and V\_phi operate at
+   naturally different gradient scales, yet AdamW's per-element adaptive
+   scaling does not normalise across layers.
+
+The uniform `grad_clip=0.3` applied in Section 15.7 stopped the blowup
+but was a blunt instrument: it kept V\_phi stable while shrinking every
+other module's effective step size to ~30% of what it could safely use.
+The refinements below address that overcorrection surgically.
+
+### 16.1. Per-module gradient clipping
+
+The core observation is that V\_phi is the only module whose gradients
+exhibit 1/r spikes. Clipping it separately before the global clip lets
+the rest of the model retain a larger gradient budget.
+
+**Implementation** (training loop, after `backward()`, before
+`optim.step()`):
+
+```python
+# 1. Pre-clip V_phi — its 1/r kernel is the spike source.
+nn.utils.clip_grad_norm_(model.V_phi.parameters(), GRAD_CLIP_VPHI)
+
+# 2. Global clip — applies to all params (incl. already-clipped V_phi).
+grad_norm = nn.utils.clip_grad_norm_(
+    [p for p in model.parameters() if p.requires_grad], GRAD_CLIP,
+)
+```
+
+With `GRAD_CLIP_VPHI = 0.3` and `GRAD_CLIP = 1.0`, V\_phi's worst-case
+contribution to the global norm is capped at 0.3 (same as before), but
+the embedding, V\_theta, and xi channels now see a budget of 1.0 —
+roughly 3x more learning signal per step.
+
+**Why two-stage clipping works.** Let $g_\phi$ and $g_\text{rest}$
+denote the gradient sub-vectors for V\_phi and everything else. After
+stage 1:
+
+$$
+\lVert g_\phi' \rVert \le C_\phi = 0.3
+$$
+
+The global norm presented to stage 2 is:
+
+$$
+\lVert g \rVert = \sqrt{\lVert g_\phi' \rVert^2 + \lVert g_\text{rest} \rVert^2} \le \sqrt{0.09 + \lVert g_\text{rest} \rVert^2}
+$$
+
+If $\lVert g_\text{rest} \rVert \le 0.95$, then
+$\lVert g \rVert \le 1.0$ and the global clip is a no-op — every module
+keeps its full learning signal. In the old single-clip regime, a V\_phi
+spike of 50+ would trigger the global clip and shrink $g_\text{rest}$
+by a factor of $0.3 / 50 \approx 0.006$.
+
+| Regime | V\_phi effective clip | Rest-of-model effective clip | V\_phi spike impact on rest |
+|--------|---------------------|----------------------------|---------------------------|
+| Single global clip = 0.3 | 0.3 | 0.3 | Severe — rest is shrunk proportionally |
+| Per-module pre-clip + global 1.0 | 0.3 | 1.0 | Negligible — spike is absorbed before global |
+
+### 16.2. Gradient centralisation
+
+Gradient centralisation (Yong et al. 2020, arXiv:2004.01461) subtracts
+the per-tensor mean from every gradient before the optimizer update.
+For a weight matrix $W \in \mathbb{R}^{m \times n}$, the centralised
+gradient is:
+
+$$
+\hat{g}_{i,:} = g_{i,:} - \frac{1}{n} \sum_{j=1}^{n} g_{i,j}
+$$
+
+applied row-wise (i.e. along all dimensions except the output
+dimension). The operation projects out the DC component — the uniform
+shift that only translates all activations by a constant and carries
+no useful learning signal.
+
+**Why it helps Fock-PARFLM specifically.**
+
+1. **Embedding layer.** All vocabulary entries share a common gradient
+   shift from the cross-entropy loss (tokens that did not appear in the
+   batch contribute a near-identical gradient through the softmax
+   normaliser). Removing this DC component can cut the embedding
+   gradient norm by 30-50%, making it less likely to trigger global
+   clipping.
+
+2. **V\_phi MLPs.** The bounded MLP value-aligner inside
+   `StructuralCompetitiveVPhi` has weight matrices whose gradients
+   include a DC offset from the constant (type-independent) background
+   interaction. Centralising removes this offset, making the gradient
+   more aligned with the type-discriminative signal.
+
+3. **Composability.** Centralisation is a pre-processing step on the
+   raw gradients. It composes cleanly with per-module clipping (applied
+   after centralisation) and with any optimizer choice.
+
+**Implementation.** Applied after `backward()`, before clipping.
+Only tensors with `dim >= 2` are centralised — 1-D parameters (biases,
+LayerNorm weights/biases) are excluded because their mean IS the
+learning signal:
+
+```python
+if GRAD_CENTRALIZATION:
+    for p in model.parameters():
+        if p.grad is not None and p.grad.dim() >= 2:
+            p.grad.sub_(p.grad.mean(
+                dim=tuple(range(1, p.grad.dim())), keepdim=True))
+```
+
+**Computational cost:** negligible — one mean and subtraction per
+parameter tensor. No additional memory. No new hyperparameters.
+
+### 16.3. Optimizer choice: AdamW, LAMB, and Lion
+
+Section 13.7 discussed alternative optimizers theoretically. The
+notebook now implements three choices as a single `OPTIMIZER` knob.
+
+#### 16.3.1. AdamW (default)
+
+Standard Adam with decoupled weight decay (Loshchilov & Hutter, 2019).
+Per-element adaptive scaling via second-moment estimates:
+
+$$
+\theta_{t+1} = \theta_t - \eta \left( \frac{\hat{m}_t}{\sqrt{\hat{v}_t} + \epsilon} + \lambda \theta_t \right)
+$$
+
+**Strength:** well-understood, stable baseline, extensive community
+tooling (LR schedules, warmup strategies).
+
+**Weakness for Fock-PARFLM:** adaptive scaling is per-element, not
+per-layer. A large gradient on one element of V\_phi does not
+automatically reduce the effective LR for V\_phi as a whole. This is
+why per-module clipping (Section 16.1) is needed as a complement.
+
+#### 16.3.2. LAMB (Layer-wise Adaptive Moments)
+
+LAMB (You et al., 2020) wraps Adam's per-element update with a
+per-layer trust ratio:
+
+$$
+\Delta\theta_l = -\eta \cdot \frac{\lVert \theta_l \rVert}{\lVert r_l \rVert} \cdot r_l, \quad r_l = \frac{\hat{m}_l}{\sqrt{\hat{v}_l} + \epsilon} + \lambda \theta_l
+$$
+
+The ratio $\lVert \theta_l \rVert / \lVert r_l \rVert$ gives each
+layer its own effective learning rate, automatically shrinking steps
+for layers with large gradient norms and expanding them for
+well-behaved layers.
+
+**Expected benefit for Fock-PARFLM:** V\_phi parameters (small norm,
+large gradient) would get a naturally smaller step, while the embedding
+(large norm, moderate gradient) retains a larger step — without manual
+per-module clipping. LAMB was designed for large-batch BERT training
+where similar cross-module imbalances arise.
+
+**Trade-offs:**
+- Introduces the trust ratio as an implicit hyperparameter (though it
+  is self-tuning).
+- Requires `torch_optimizer` package (auto-installed if missing).
+- Less community experience in the language-modelling setting compared
+  to AdamW.
+- Checkpoint compatibility: switching from AdamW to LAMB resets
+  optimizer state (momentum/variance buffers have different semantics),
+  so a switch mid-run is effectively a warm restart.
+
+#### 16.3.3. Lion (EvoLved Sign Momentum)
+
+Lion (Chen et al., 2024) is a sign-based optimizer discovered through
+program search:
+
+$$
+\theta_{t+1} = \theta_t - \eta \bigl(\text{sign}(\beta_1 m_t + (1 - \beta_1) g_t) + \lambda \theta_t\bigr)
+$$
+
+$$
+m_{t+1} = \beta_2 m_t + (1 - \beta_2) g_t
+$$
+
+The `sign()` operation makes the update magnitude exactly 1 per
+element, regardless of gradient scale. This means a V\_phi spike of
+17,000 and a V\_theta gradient of 0.01 produce identical step sizes.
+
+**Expected benefit for Fock-PARFLM:** natural immunity to gradient
+scale spikes. No clipping of any kind should be needed — the sign
+function is the ultimate normaliser. Also uses less memory than Adam
+(one momentum buffer instead of two).
+
+**Trade-offs:**
+- Typically requires 3-10x **lower** learning rate than AdamW because
+  the effective step is larger (every element moves by exactly
+  $\eta$, not $\eta \cdot g / \sqrt{v}$).
+- Less exploration of loss landscape — sign-based updates cannot
+  express the magnitude of the gradient, so the optimizer may miss
+  shallow directions.
+- Requires `lion-pytorch` package (auto-installed if missing).
+- Even less community experience than LAMB for language modelling.
+
+### 16.4. Interaction matrix
+
+The three refinements are orthogonal and can be combined freely. The
+following table summarises which combinations are sensible:
+
+| Configuration | Per-module clip | Centralisation | Optimizer | Notes |
+|--------------|----------------|---------------|-----------|-------|
+| Current default | Yes | No | AdamW | Surgical fix for V\_phi spikes |
+| Conservative + | Yes | Yes | AdamW | Centralisation further lowers baseline norm |
+| LAMB experiment | Optional | Optional | LAMB | LAMB's trust ratio handles per-layer scaling natively |
+| Lion experiment | Not needed | Not needed | Lion | Sign function eliminates gradient scale entirely |
+| Full stack | Yes | Yes | LAMB | Maximum protection — LAMB + GC + pre-clip |
+
+When LAMB or Lion is selected, per-module clipping is still compatible
+(it cannot hurt) but may be unnecessary. The recommendation is:
+
+1. **First experiment:** add `GRAD_CENTRALIZATION = True` to the current
+   AdamW + per-module-clip setup. Zero risk, zero new hyperparameters,
+   composable.
+2. **Second experiment:** switch to `OPTIMIZER = 'lamb'` with the same
+   LR. LAMB's trust ratio should make per-module clipping redundant,
+   but keep it enabled initially as a safety net.
+3. **Third experiment:** switch to `OPTIMIZER = 'lion'` with LR reduced
+   to ~1e-5. Most disruptive change — new hyperparameter regime.
+
+### 16.5. Variant isolation
+
+Each non-default optimizer or centralisation choice automatically
+appends to the checkpoint variant tag (`lamb`, `lion`, `gc`), creating
+a **separate checkpoint directory**. This ensures that:
+
+- Optimizer state incompatibilities do not corrupt existing checkpoints.
+- Different optimiser runs can be compared side-by-side without manual
+  checkpoint management.
+- The hyperparameter dict logged with each checkpoint records both
+  `optimizer` and `grad_centralization` for full reproducibility.
+
+### 16.6. Connection to the stability hierarchy
+
+Section 15.8 established four constraints for stable training. The
+refinements in this section do not add new constraints; they improve
+how existing constraints are enforced:
+
+| Constraint | Original enforcement | Refinement |
+|-----------|---------------------|-----------|
+| (4) Plummer softening | `v_phi_eps = 0.1` | Unchanged — structural fix |
+| (3) Scale-appropriate LR | Global `LR = 5e-5` | LAMB/Lion auto-scale per layer; GC reduces norm |
+| Global gradient clip | `GRAD_CLIP = 0.3` (all params) | Per-module: V\_phi at 0.3, rest at 1.0 |
+
+The per-module clip and gradient centralisation are **enforcement
+improvements** — they make the existing gradient clip constraint more
+precise, not more restrictive. LAMB and Lion are **architectural
+alternatives** to manual clipping that achieve the same goal (bounded
+per-step displacement) through different mechanisms.
+
 ---
 
 *This note documents the training process of a research experiment and is
@@ -2606,5 +2864,8 @@ The Gaussian-well and SARF-anchored V_theta implementations are in
 `notebooks/conservative_arch/parf/model_gaussian_vtheta.py`.
 The TinyStories ablation notebook is at
 `notebooks/conservative_arch/scaleup/colab_fock_gaussian_sarf_vtheta.ipynb`
-and the OpenWebText Phase 5 scale-up notebook at
-`notebooks/conservative_arch/scaleup/colab_fock_gaussian_sarf_openwebtext_phase5.ipynb`.*
+the OpenWebText Phase 5 scale-up notebook at
+`notebooks/conservative_arch/scaleup/colab_fock_gaussian_sarf_openwebtext_phase5.ipynb`,
+and the multi-head V\_phi experiment with per-module clipping, gradient
+centralisation, and optimizer choice at
+`notebooks/conservative_arch/scaleup/colab_fock_multihead_openwebtext.ipynb`.*
