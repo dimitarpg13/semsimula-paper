@@ -327,7 +327,7 @@ cd sarf_variant && python3 compare.py
 Follow-up ablation on top of the SARF-faithful variant above: promote
 the semantic mass $m$ from a single global scalar to a per-token
 quantity $m_t$, keeping the force $-\nabla_h V_\theta(\xi, h)$
-pointwise-conservative and only the kinetic-term prefactor of the
+pointwise-conservative and only the inertial mass term of the
 Euler--Lagrange integrator position-dependent.  This is the first
 paper experiment that directly targets Open Question **Q10** (the
 per-token mass prescription of §7).

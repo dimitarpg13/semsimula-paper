@@ -25,7 +25,8 @@
 10. [Integration into SPLM, PARFLM, and Fock-PARFLM](#10-integration-into-splm-parflm-and-fock-parflm)
 11. [Recommendations](#11-recommendations)
 12. [Selecting the optimal mixture count K_mix](#12-selecting-the-optimal-mixture-count-k_mix)
-13. [References](#13-references)
+13. [Hybrid structured potentials: Gaussian wells + quadratic background](#13-hybrid-structured-potentials-gaussian-wells--quadratic-background)
+14. [References](#14-references)
 
 ---
 
@@ -921,9 +922,107 @@ Output: K* and per-basin curvature profiles
 4. Use **Approach 4** (BIC) if the Gaussian well interpretation is the theoretical focus.
 5. Use **Approach 5** (Hessian spectral) only for deep-dive analysis of specific prompts/basins.
 
+## 13. Hybrid structured potentials: Gaussian wells + quadratic background
+
+The SQ3 (log-sum-exp quadratic) parameterisation achieves the best
+PPL across all three architectures on TinyStories (§8) but suffers
+from **structurally unbounded force** that causes repeated blowups on
+OpenWebText (documented in [`Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`](./Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md), §2–§4, §13). The Gaussian mixture-PDF alternative
+(MixtureGaussianVTheta, §12.4) is bounded by construction
+($V \in [-\Sigma w_k, 0]$) and trains stably on OpenWebText, but
+sacrifices ~5.6 PPL on TinyStories (15.95 vs 10.36 for Fock A2).
+
+The **hybrid Gaussian + quadratic background** potential bridges this
+gap by combining both:
+
+$$
+V_{\text{hybrid}}(\xi, h) = -\sum_k w_k(\xi)\,\exp\!\left(-\tfrac{1}{2}\,a_k(\xi)^{\!\top}(h - \mu_k(\xi))^2\right) + \varepsilon\,\lVert h \rVert^2
+$$
+
+### 13.1 Design rationale
+
+The Gaussian wells provide local attractor structure (bounded force,
+learned centres, context-dependent weights), while the quadratic
+background provides **global coercivity**: the potential grows as
+$\varepsilon \lVert h \rVert^2$ far from all wells, generating a
+restoring force $f_{\text{bg}} = -2\varepsilon h$ that prevents hidden
+states from drifting into regions where no Gaussian well is active.
+
+This directly addresses the fundamental limitation of pure Gaussian
+wells identified in §9.3 of the instabilities document: the absence of
+far-field force leaves "escape routes" between wells.  SQ3 closes
+those escape routes via its unbounded far-field potential — but at the
+cost of unbounded force.  The quadratic background closes them with a
+**bounded, controllable** force whose magnitude scales linearly with
+$\lVert h \rVert$.
+
+### 13.2 Structural properties
+
+| Property | SQ3 | Pure Gaussian | Hybrid |
+|----------|-----|---------------|--------|
+| V range | $(-\infty, +\infty)$ | $[-\Sigma w_k, 0]$ | $[-\Sigma w_k, +\varepsilon \lVert h \rVert^2]$ |
+| Coercive ($V \to +\infty$) | yes | no | **yes** |
+| Force bound | unbounded | $0.607\,w_k / \sigma_k$ | $\max(0.607\,w_k/\sigma_k,\; 2\varepsilon\lVert h\rVert)$ |
+| OpenWebText stable | no (§2–§4) | yes | **expected yes** |
+
+The combined force is the sum of the Gaussian well forces (bounded,
+local) and the background restoring force (unbounded but slow-growing,
+global).  At typical hidden-state scales ($\lVert h \rVert \approx \sqrt{d}$
+under `ln_after_step=True`), the background force is
+$2\varepsilon\sqrt{d}$, which for $\varepsilon = 10^{-4}$ and $d = 256$
+is $\approx 0.003$ — negligible compared to Gaussian well forces near
+centres ($\sim 0.1$) but sufficient to prevent unbounded escape.
+
+### 13.3 The $\varepsilon$ selection problem
+
+The background strength $\varepsilon$ controls the trade-off:
+
+- $\varepsilon = 0$: pure Gaussian (no global restoring, escape risk)
+- $\varepsilon \ll 1/d$: wells dominate locally, background acts only
+  far from all centres — expected optimal regime
+- $\varepsilon \gg 1/d$: background dominates, landscape collapses to
+  a single global attractor — over-constrained
+
+The transition threshold can be estimated from force balance.  At a
+well centre $\mu_k$, the Gaussian force vanishes and the background
+force is $2\varepsilon\mu_k$.  In the neighbouring basin, the Gaussian
+peak force is $\sim 0.6 w_k / \sigma_k$.  The background should be a
+small perturbation: $2\varepsilon\lVert\mu_k\rVert \ll 0.6 w_k / \sigma_k$.
+For $w_k \sim 1/K$, $\sigma_k \sim \sqrt{d}$, $\lVert\mu_k\rVert \sim \sqrt{d}$,
+this gives $\varepsilon \ll 0.6 / (2Kd)$.  At $K = 8$, $d = 256$:
+$\varepsilon \ll 1.5 \times 10^{-4}$.
+
+### 13.4 Evaluation notebook
+
+The systematic evaluation is implemented in
+[`colab_hybrid_gaussian_quad_vtheta.ipynb`](../notebooks/conservative_arch/scaleup/colab_hybrid_gaussian_quad_vtheta.ipynb)
+with the following sweep:
+
+| Cells | Base model | $\varepsilon$ values | $K$ |
+|-------|-----------|---------------------|-----|
+| H1–H6 | FockPARFLM v2.1 | 0, $10^{-5}$, $5{\times}10^{-5}$, $10^{-4}$, $5{\times}10^{-4}$, $10^{-3}$ | 8 |
+| H7 | FockPARFLM v2.1 | $10^{-4}$ | 16 |
+| P1–P6 | PARFLM | 0, $10^{-5}$, $5{\times}10^{-5}$, $10^{-4}$, $5{\times}10^{-4}$, $10^{-3}$ | 8 |
+| P7 | PARFLM | $10^{-4}$ | 16 |
+
+All cells share the same architecture as the existing structured
+$V_\theta$ experiments (§8): d=256, L=8, $K_\xi = 4$,
+`structural_competitive` $V_\phi$, 16k steps on TinyStories.
+Reference baselines: Fock SQ3 A2 (10.36 PPL), Fock Gaussian G1
+(15.95 PPL), PARF SQ3 A2 (12.27 PPL).
+
+### 13.5 Connection to the broader architecture
+
+If the hybrid $V_\theta$ successfully closes the SQ3–Gaussian gap on
+TinyStories while remaining structurally bounded, the natural next step
+is an OpenWebText scale-up. The hybrid would then serve as a **unified
+structured $V_\theta$** that works at both scales — replacing the
+current situation where SQ3 is used on TinyStories and Gaussian on
+OpenWebText.
+
 ---
 
-## 13. References
+## 14. References
 
 ### Internal documents
 
@@ -937,7 +1036,9 @@ Output: K* and per-basin curvature profiles
 ### Implementation
 
 - [`notebooks/conservative_arch/parf/model_structured_vtheta.py`](../notebooks/conservative_arch/parf/model_structured_vtheta.py) -- all four structured $V_\theta$ classes with validation harness.
+- [`notebooks/conservative_arch/parf/model_gaussian_vtheta.py`](../notebooks/conservative_arch/parf/model_gaussian_vtheta.py) -- MixtureGaussianVTheta and SARFGaussianVTheta implementations.
 - [`notebooks/conservative_arch/parf/scripts/structured_vtheta_sweep.ipynb`](../notebooks/conservative_arch/parf/scripts/structured_vtheta_sweep.ipynb) -- Colab notebook for the SQ1--SQ5 comparison sweep.
+- [`notebooks/conservative_arch/scaleup/colab_hybrid_gaussian_quad_vtheta.ipynb`](../notebooks/conservative_arch/scaleup/colab_hybrid_gaussian_quad_vtheta.ipynb) -- hybrid Gaussian + quadratic background $\varepsilon$-sweep (§13).
 
 ### External literature
 
@@ -947,4 +1048,4 @@ Output: K* and per-basin curvature profiles
 
 ---
 
-*Last updated: 14 June 2026. Phase 1 implementation complete; Section 12 ($K_{\mathrm{mix}}$ selection) added with five approaches and practical algorithms. Phase 2 (analytical gradient wiring) queued pending sweep results.*
+*Last updated: 24 June 2026. Section 13 added: hybrid Gaussian + quadratic background structured potential, the $\varepsilon$-sweep evaluation notebook, and the stability–expressivity analysis. Phase 2 (analytical gradient wiring) queued pending sweep results.*

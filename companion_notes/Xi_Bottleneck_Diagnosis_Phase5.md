@@ -23,6 +23,7 @@
 7. [Expected outcomes and next steps](#7-expected-outcomes-and-next-steps)
 8. [D0 free-diagnostics: measured results (Xi=5, step 78k)](#8-d0-free-diagnostics-measured-results-xi5-step-78k)
 9. [Read-out head fixes: code walkthrough](#9-read-out-head-fixes-code-walkthrough)
+10. [Observed alpha-channel redundancy and long-horizon refinements](#10-observed-alpha-channel-redundancy-and-long-horizon-refinements)
 
 ---
 
@@ -787,6 +788,133 @@ is needed before launching.
 | **Run 1 (current)** | `USE_OUTPUT_BIAS=True`, `TIE_EMBEDDINGS=True` | Bias-only: nearly free, directly fixes D0.4 calibration; run with multi-head V_phi |
 | **Run 2 (if Q0–Q3 tail persists)** | `USE_OUTPUT_BIAS=True`, `TIE_EMBEDDINGS=False` | Untied head: deeper fix for undertrained rare-token output directions; trains from scratch |
 | **Ablation** | `USE_OUTPUT_BIAS=False`, `TIE_EMBEDDINGS=False` | Isolates the untied-head effect alone (no freq-prior term) |
+
+## 10. Observed alpha-channel redundancy and long-horizon refinements
+
+### 10.1. Empirical evidence: the shortest channel is redundant
+
+The multi-head Xi=5 experiment (steps 62K–118K) provides ~56K steps of
+learned alpha evolution. The five channels, initialised at
+`[0.25, 0.50, 0.75, 0.95, 0.99]`, evolved as follows:
+
+| Channel | Init | Step 62K | Step 100K | Step 118K | Trend |
+|---------|------|----------|-----------|-----------|-------|
+| 0 | 0.25 | 0.041 | 0.030 | 0.026 | Steadily decreasing toward 0 |
+| 1 | 0.50 | 0.436 | 0.425 | 0.420 | Slow decrease |
+| 2 | 0.75 | 0.605 | 0.592 | 0.588 | Slow decrease |
+| 3 | 0.95 | 0.859 | 0.857 | 0.857 | Stable |
+| 4 | 0.99 | 0.973 | 0.974 | 0.974 | Stable |
+
+Channel 0 at alpha = 0.026 computes:
+
+$$
+\xi_{t,0}^{(\ell)} = 0.026 \cdot \xi_{t-1,0}^{(\ell)} + 0.974 \cdot h_t^{(\ell)} \approx h_t^{(\ell)}
+$$
+
+This is 97.4% the current hidden state — effectively a copy of
+$h_t^{(\ell)}$, which the model already has direct access to in every
+force computation. The optimizer has been progressively eliminating this
+channel's contribution since the start of training.
+
+### 10.2. The long-horizon gap
+
+Meanwhile, the longest channel (alpha = 0.974) has an effective horizon
+of ~38 tokens, covering less than 8% of the 512-token context window.
+This is substantially shorter than the ~100-token horizon intended by
+the initial alpha = 0.99 (which learned *down* to 0.974).
+
+The fact that channel 4 stabilised at 0.974 rather than continuing
+toward 0.99 or higher may indicate that the model found an optimal
+trade-off at ~38 tokens — or it may indicate that the optimizer cannot
+easily push alpha above ~0.97 because the EMA becomes too smooth and
+gradients with respect to alpha vanish. This ambiguity motivates
+explicitly initialising a channel at a longer horizon.
+
+### 10.3. New XI_OVERRIDE presets
+
+Two new presets have been added to
+`colab_fock_multihead_openwebtext.ipynb`:
+
+**`'5long'` — reallocate the wasted channel to long-range context:**
+
+| Channel | Alpha | Horizon (tokens) | Role |
+|---------|-------|------------------|------|
+| 0 | 0.50 | ~2 | Very recent context |
+| 1 | 0.75 | ~4 | Short-range context |
+| 2 | 0.95 | ~20 | Medium-range context |
+| 3 | 0.99 | ~100 | Long-range context |
+| 4 | 0.995 | ~200 | Very-long-range context (39% of block) |
+
+Same channel count as `XI_OVERRIDE=5`, so the parameter count is
+unchanged. The near-instantaneous channel (alpha = 0.25, which learned
+to ~0.026) is dropped and replaced by alpha = 0.995, which covers ~200
+tokens — 5x the coverage of the current longest channel.
+
+**`'4long'` — drop the redundant channel entirely:**
+
+| Channel | Alpha | Horizon (tokens) | Role |
+|---------|-------|------------------|------|
+| 0 | 0.50 | ~2 | Very recent context |
+| 1 | 0.75 | ~4 | Short-range context |
+| 2 | 0.95 | ~20 | Medium-range context |
+| 3 | 0.995 | ~200 | Very-long-range context |
+
+Four channels instead of five. This reduces the xi-derived input
+dimension from `5d = 1920` to `4d = 1536`, saving ~0.6M parameters in
+the V\_theta projections (`mu_proj`, `a_proj`, `w_proj`). The
+alpha = 0.99 (~100-token) channel is also dropped — if the model needs
+an intermediate long-range horizon, it can learn one of the remaining
+alphas toward that value.
+
+### 10.4. Summary of all XI_OVERRIDE options
+
+| Preset | Channels | Alpha inits | Horizons (tokens) | Variant tag |
+|--------|----------|-------------|-------------------|-------------|
+| `None` | 4 | [0.25, 0.50, 0.75, 0.95] | [1.3, 2, 4, 20] | (none) |
+| `5` | 5 | [0.25, 0.50, 0.75, 0.95, 0.99] | [1.3, 2, 4, 20, 100] | `xi5` |
+| `'5long'` | 5 | [0.50, 0.75, 0.95, 0.99, 0.995] | [2, 4, 20, 100, 200] | `xi5long` |
+| `'4long'` | 4 | [0.50, 0.75, 0.95, 0.995] | [2, 4, 20, 200] | `xi4long` |
+
+Each preset creates an isolated checkpoint directory, so experiments
+never collide.
+
+### 10.5. Experimental recommendation
+
+1. **Complete the current `xi5` run** through 200K steps (or until
+   the PPL envelope stops improving). The learned alpha values and
+   final PPL serve as the baseline.
+
+2. **Start a fresh `'5long'` run** to test whether the model is
+   starved for long-range context. Because the channel count is
+   unchanged, parameter count is identical and PPL comparisons at
+   matched step counts are fair.
+
+3. **If `'5long'` shows faster early convergence or lower final PPL,**
+   consider `'4long'` as a follow-up to test whether four channels
+   with a wider spread are sufficient, or whether the fifth channel
+   (alpha = 0.99, ~100 tokens) provides value that the jump from
+   20 to 200 tokens cannot cover alone.
+
+### 10.6. Connection to H2 (Xi channel horizon)
+
+Section 3 hypothesised that the longest Xi channel's ~20-token horizon
+(in the original 4-channel configuration) was too short for OpenWebText.
+The Xi=5 experiment partially addressed this by adding a ~100-token
+channel. The results in Section 10.1 show that:
+
+- The model **did** push channel 4 toward a long horizon (0.99 → 0.974,
+  ~38 tokens), confirming that long-range context carries learning
+  signal.
+- The model **did not** push any channel above 0.974, leaving a gap
+  between the longest learned horizon (~38 tokens) and the context
+  window (512 tokens).
+- The model **abandoned** the shortest channel entirely (0.25 → 0.026),
+  confirming it adds no value beyond the raw hidden state $h_t$.
+
+The `'5long'` and `'4long'` presets directly test whether explicitly
+providing a ~200-token channel — well beyond what the optimizer
+discovered on its own — unlocks additional learning signal from the
+long-range structure of OpenWebText.
 
 ---
 

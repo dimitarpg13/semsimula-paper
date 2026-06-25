@@ -34,7 +34,11 @@ the natural complexity class of human language. The central speculative result i
 rigorous — would elevate the maximum well count $K_{\max}$ from an engineering hyperparameter to a
 formal architectural constant determined by the operator algebra of well management. We emphasize
 throughout that this is an early-stage theoretical program: the algebraic results in Section 8 are
-stated as conjectures, and all propositions require formal proof development.
+stated as conjectures, and all propositions require formal proof development. Section 4.5 separately
+extends the spawning analysis from the one-body attractor potential $V_\theta$ to the **pairwise
+relational potential** $V_\phi$, and shows — provably, and with a machine-precision numerical check —
+that the continuous-learning guarantees survive if and only if $V_\phi$ is kept structured; an
+unstructured MLP $V_\phi$ confines continuous learning to the attractor channel alone.
 
 ---
 
@@ -54,6 +58,7 @@ stated as conjectures, and all propositions require formal proof development.
    - 4.2 Placing a New Well: the h-Space Center and the xi-State Address
    - 4.3 The Fock Gate Interpretation
    - 4.4 Advantages — and Their Precise Scope
+   - 4.5 The Relational Channel: Continuous Learning in V_phi
 5. [Systematic Comparison](#5-systematic-comparison)
 6. [Well Management Strategies](#6-well-management-strategies)
    - 6.1 Formal Setup
@@ -482,6 +487,148 @@ adapters are not.
 **Computational cost.** Spawning appends a bounded set of parameters to $V_\theta$ — $O(d)$ for the
 center plus $O(1)$ for width/amplitude — with no backward pass and no gradient computation.
 Evaluation of $V_\theta$ at each forward step scales as $O(K d)$ for $K$ active wells.
+
+### 4.5 The Relational Channel: Continuous Learning in V_phi
+
+Everything in Sections 4.1–4.4 concerns $V_\theta$, the **one-body** potential — the *attractor*
+knowledge of "where, in hidden-state space, do trajectories want to settle." But the PARF arm of the
+model carries a second, distinct kind of knowledge in the **pairwise** potential $V_\phi$: the
+*relational* knowledge of "how does token $t$ interact with an earlier token $s$." Well spawning
+says nothing about this channel. If relational knowledge is to be learned continually, we must ask
+the same three questions of $V_\phi$ that Section 4 answered for $V_\theta$ — is it additively
+extensible, is it semantically addressed, and is the interference of an extension bounded? This
+subsection shows the answers depend sharply on whether $V_\phi$ is **structured** or an
+**unstructured MLP**, and — unlike Sections 7–8 — most of the analysis here is provable or directly
+measurable rather than conjectural.
+
+**The two implemented forms.** In the deployed model the structured pair potential is
+
+$$
+V_\phi^{\text{struct}}(h_t, h_s) = - C \cdot \Theta_\phi\big(\theta(h_t), \theta(h_s)\big) \cdot \Phi_\phi\big(l(h_t), l(h_s)\big) \cdot \frac{1}{\sqrt{\lVert h_t - h_s \rVert^2 + \varepsilon^2}},
+$$
+
+with a **Gaussian type-gate** $\Phi_\phi(l_t, l_s) = \exp(-c \lVert l_t - l_s \rVert^2)$ on a
+low-rank type projection $l = W_l h$, a bounded value-aligner $\Theta_\phi \in [-1, 1]$, and a
+Plummer-softened $1/r$ kernel (see `StructuralVPhi` / `StructuralCompetitiveVPhi` in
+`notebooks/conservative_arch/parf/model_parf.py`, and the companion note
+[`On_the_MLP_Layer_modeling_pairwise_potential.md`](./On_the_MLP_Layer_modeling_pairwise_potential.md)).
+The unstructured ablation `MLPVPhi` collapses all three channels into one network,
+$V_\phi^{\text{mlp}}(h_t, h_s) = \mathrm{MLP}([h_t, h_s, h_t - h_s])$, with roughly $7\times$ the
+parameters and no factorisation.
+
+**The structured form is a spawnable object; the MLP is not.** The key observation is that the
+type-gate $\Phi_\phi$ is a **localised, addressable** unit in type-space, structurally identical to a
+Gaussian well — only it lives in the *pair*-type space rather than in $h$-space. The natural
+continuous-learning generalisation makes the single gate a sum of $M$ addressable **relational
+components**, each with its own type-center $\nu_m$ in the type projection,
+
+$$
+V_\phi(h_t, h_s) = - \sum_{m=1}^{M} C_m \, \Theta_m(h_t, h_s) \, \Phi_m(l_t, l_s) \, \frac{1}{r}, \qquad \Phi_m(l_t, l_s) = \exp\!\big( -c \lVert \tfrac{1}{2}(l_t + l_s) - \nu_m \rVert^2 \big),
+$$
+
+which is exactly the addressable-center version of the already-implemented `MultiHeadVPhi` (a sum of
+independent structural heads — see `model_parf.py`). A *relation* is then the spawnable unit, and the
+propositions of Section 4.1 transfer verbatim.
+
+**Proposition 6 (Parameter non-interference of relational spawning).** Spawning relational component
+$M{+}1$ leaves the parameters $(\nu_m, C_m, \Theta_m\text{-weights})$ of every existing component
+$m \le M$ unchanged:
+
+$$
+\frac{\partial (\nu_m, C_m)}{\partial (\text{spawn of } M{+}1)} = 0 \qquad \text{for all } m = 1, \ldots, M.
+$$
+
+This is exact and holds for **both** the additive form (the current `MultiHeadVPhi`, where heads are
+summed) and the softmax-competitive form. In the additive form, spawning is interference-free in
+*both* the parameter and the responsibility senses, at the cost of needing an explicit amplitude
+budget $\sum_m C_m \le C_{\max}$ to keep $V_\phi$ bounded (the same trade-off as the unnormalised
+$V_\theta$ variant in Section 4.1).
+
+**Proposition 7 (Bounded responsibility interference and geometric locality).** Under a softmax over
+the $M$ component gates (the competitive form), spawning component $M{+}1$ rescales every existing
+responsibility by the common factor $\rho = 1 - w_{M+1}$, preserving relative responsibilities
+exactly and bounding the absolute perturbation by
+
+$$
+\big| w_m^{(M+1)} - w_m^{(M)} \big| = w_m^{(M)} \, w_{M+1} \le w_{M+1} \le \exp\!\big( -c\,(d_m^2 - d_{\text{near}}^2) \big),
+$$
+
+where $d_m$ is the query's type-distance to the new center and $d_{\text{near}}$ its distance to the
+nearest existing center. So interference is zero in relative terms and **decays exponentially with
+type-space distance** — a new relation perturbs only pairs whose type-projection is near its center.
+This is identical in form to Proposition 1′ for wells.
+
+These two propositions are validated numerically in
+`notebooks/conservative_arch/parf/diagnostics/vphi_spawn_interference_demo.py`, which exercises the
+exact gate arithmetic on synthetic type vectors. The bound of Proposition 7 holds to machine
+precision (max violation of $|\Delta w_m| - w_{M+1}$ is $1.4 \times 10^{-16}$; max relative-weight
+drift $3.3 \times 10^{-16}$), and in a controlled sweep with the partition function held fixed the
+interference log-slope recovers the predicted $-c$ to three figures ($-0.999$ versus a target of
+$-1.0$).
+
+**Proposition 8 (MLP V_phi is not spawnable — global entanglement).** The unstructured
+$V_\phi^{\text{mlp}}$ admits no decomposition into addressable units. Adding or revising relational
+knowledge can only be done by a gradient step $\delta W$ on its shared weights, which perturbs the
+pair potential at **every** pair,
+
+$$
+\delta V_\phi^{\text{mlp}}(h_t, h_s) = \big\langle \nabla_W V_\phi^{\text{mlp}}(h_t, h_s), \, \delta W \big\rangle,
+$$
+
+a quantity that is non-negligible for essentially all $(h_t, h_s)$ and carries no decay in
+type-distance. The same demo confirms this: a single fixed-norm weight step moves $99.5\%$ of all
+pairs, and the magnitude of the perturbation is flat in pair distance (normalised distance-slope
+$\approx 0.1$, versus the exponential decay of the structured gate). This is precisely the
+catastrophic-forgetting signature of entangled parameter spaces — the property that makes relational
+continuous learning hard in transformers (Sections 3.3–3.4). **The cost of an MLP $V_\phi$ for
+continuous learning is therefore categorical, not incremental: it removes the relational channel from
+the spawnable-knowledge budget entirely**, leaving only $V_\theta$ wells learnable at deployment and
+freezing all relational knowledge behind a retraining wall.
+
+**How much is at stake? The relational fraction.** Whether any of this matters for a *given* model
+is an empirical question with a directly measurable answer. Define the relational fraction
+
+$$
+\varphi_{\text{rel}} = \frac{L(V_\phi = 0) - L(\text{full})}{L(\text{full})},
+$$
+
+the fractional cross-entropy increase when the pair potential is ablated to zero (the $V_\theta$ +
+Verlet dynamics still run). $\varphi_{\text{rel}} \approx 0$ means the model barely uses $V_\phi$ and
+relational CL is low-value; a large $\varphi_{\text{rel}}$ means the relational channel carries real
+predictive knowledge and the structured-vs-MLP choice is decisive for continuous learning. This is
+read-only and runs against a saved checkpoint in a separate runtime (it does not disturb a live
+training run) via
+`notebooks/conservative_arch/parf/diagnostics/measure_relational_fraction.py`.
+
+**Experiment G6 (relational continuous-learning ablation).** The propositions above are exact
+statements about *interference*; the *downstream* CL behaviour is a prediction to be tested. G6 trains
+two models to matched perplexity — one with mixture-structured (spawnable) $V_\phi$, one with MLP
+$V_\phi$ — then injects $N$ relational facts sequentially (by component spawning for the structured
+model, by gradient fine-tuning for the MLP, which has no other mechanism) and measures retention on a
+held-out "old-relations" probe. The pre-registered functional forms, with analytically-derived
+behaviour, are the falsifiable content. Table cells use plain Unicode per the rendering conventions.
+
+| Observable | Structured (spawnable) prediction | MLP (gradient) prediction | Discriminating statistic |
+|---|---|---|---|
+| Old-relation CE after N injections, ΔL(N) | a·(1 − ρ^N), saturating at a; ρ = E[1 − w_new] | b·N + e·N² (linear-to-superlinear), unbounded | finite asymptote vs divergent |
+| Interference vs type-distance | ≤ exp(−c·(d² − d²_near)) — exponential decay | ≈ constant — flat | log-slope ≈ −c vs ≈ 0 |
+| New-relation acquisition | one-shot at the injection step | only after several gradient steps | steps-to-acquire: 1 vs many |
+| Compute per injected fact | O(d) append, no backward pass | O(\|φ\|) backward pass(es) | wall-clock per fact |
+
+The discriminators — bounded versus divergent retention asymptote, and negative versus zero
+distance-slope — both have closed-form predictions, so the regression fits are genuinely falsifiable
+rather than descriptive.
+
+**Honest scope.** Three things are settled and need no further experiment: the interference bounds
+(Propositions 6–7, validated to machine precision), the non-spawnability of the MLP form
+(Proposition 8), and the measurability of $\varphi_{\text{rel}}$. Two things remain open: the
+*mixture-structured spawnable* $V_\phi$ with addressable per-component type-centers is a proposed
+architecture — the current Phase-5 run uses the additive `MultiHeadVPhi` *without* a spawning policy,
+so it establishes only that the additive structural form trains stably, not that relational spawning
+works at scale; and the G6 retention curves are predictions, not results. The defensible claim for
+the paper is therefore narrow and strong: *the continuous-learning argument extends to relational
+knowledge if and only if $V_\phi$ is kept structured; an MLP $V_\phi$ confines continuous learning to
+the attractor channel alone.*
 
 ---
 
@@ -1132,6 +1279,20 @@ satisfies B2 (each primitive produces at most one output particle) and approxima
 attractor mass: $A_A + A_B \approx A_k$ (subject to the amplitude bound) with
 $\mu_A, \mu_B \in \mathrm{basin}(k)$.
 
+**Proposition 6 (Parameter Non-Interference of Relational Spawning).** For the mixture-structured
+pair potential $V_\phi = -\sum_m C_m \Theta_m \Phi_m / r$, spawning relational component $M{+}1$
+leaves the parameters of every existing component unchanged. Full statement and the additive-versus-
+competitive distinction in Section 4.5.
+
+**Proposition 7 (Bounded Responsibility Interference for Structured V_phi).** Under softmax-competitive
+mixing of relational components, $|\Delta w_m| = w_m w_{M+1} \le w_{M+1} \le \exp(-c(d_m^2 -
+d_{\text{near}}^2))$, so relational interference decays exponentially in type-space distance.
+Validated to machine precision in `vphi_spawn_interference_demo.py` (Section 4.5).
+
+**Proposition 8 (MLP V_phi Non-Locality).** The unstructured $V_\phi^{\text{mlp}}$ admits no
+addressable decomposition; a single gradient step perturbs essentially all pairs with no distance
+decay, so relational knowledge is globally entangled and not spawnable (Section 4.5).
+
 **Conjecture 4 (MCS-Preserving Continuous Learning — speculative).** Under conditions C1–C3 of
 Section 8.5, the deployed system $(M, \pi_{\text{WMP}})$ is conjectured to achieve runtime
 expressivity class v1.5 ∪ v2 while maintaining MCS membership across all inference steps. The system
@@ -1164,6 +1325,17 @@ detection, asymmetric geodesic distance, and entailment directionality). G5 woul
 on held-out interactions as a function of the number of spawned wells, comparing against
 frozen-weight SPLM, fine-tuned SPLM, parameter-isolation (LoRA/adapter) transformer baselines, and
 TTT-Layers.
+
+**G6: Relational continuous learning — structured vs. MLP V_phi.** Section 4.5 shows that the
+spawnability of the *relational* channel hinges on $V_\phi$ being structured (Propositions 6–8). G6
+operationalises this: train matched-perplexity models with mixture-structured (spawnable) $V_\phi$ and
+with MLP $V_\phi$, inject $N$ relational facts sequentially, and fit the pre-registered retention and
+interference regressors (Section 4.5 table). The discriminators — bounded versus divergent retention
+asymptote, and exponential versus flat interference-vs-distance — have closed-form predictions. A
+prerequisite measurement, the relational fraction $\varphi_{\text{rel}} = (L(V_\phi{=}0) -
+L(\text{full})) / L(\text{full})$, is available now as a read-only diagnostic
+(`measure_relational_fraction.py`) and quantifies how much knowledge the relational channel even
+carries before G6 is run.
 
 **Resolve the softmax-vs-unnormalized weighting choice empirically.** Section 4.1 bounds the
 softmax renormalization interference; an unnormalized-gate variant removes it entirely but

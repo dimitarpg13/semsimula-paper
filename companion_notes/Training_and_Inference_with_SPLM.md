@@ -606,7 +606,7 @@ lives in
 [`notebooks/conservative_arch/sarf_mass_variant/model_sarf_mass.py`](../notebooks/conservative_arch/sarf_mass_variant/model_sarf_mass.py)
 under `mass_mode ∈ {global, embed_head, logfreq}`. Both preserve
 conservativity — the force is still $-\nabla_h V_\theta(\xi, h)$, and
-only the kinetic-term prefactor in the integrator becomes
+only the inertial mass term in the integrator becomes
 position-dependent.
 
 **Variant (A) — learned linear head on the token embedding** (minimal
