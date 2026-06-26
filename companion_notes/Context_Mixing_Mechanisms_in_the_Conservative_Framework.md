@@ -17,6 +17,7 @@
 1. [Introduction](#1-introduction)
 2. [Background: conservative dynamics and the force law](#2-background-conservative-dynamics-and-the-force-law)
 3. [Current mechanism: sparse pairwise V_phi with multi-channel xi EMA](#3-current-mechanism-sparse-pairwise-v_phi-with-multi-channel-xi-ema)
+   - 3.6 [Prior art: FockAttentionPARFLM (non-conservative exchange force)](#36-prior-art-fockattentionparflm-non-conservative-exchange-force)
 4. [Alternative A: xi-routed conservative attention](#4-alternative-a-xi-routed-conservative-attention)
 5. [Alternative B: latent field interactions](#5-alternative-b-latent-field-interactions)
 6. [Alternative C: symmetric kernel V_phi](#6-alternative-c-symmetric-kernel-v_phi)
@@ -216,11 +217,67 @@ When $V_\theta$ is a structured variant (Gaussian, SARF, SQ3), the gradient is c
 - **No all-to-all mixing**: unlike attention, there is no mechanism for every token to influence every other token (even softly).
 - **Shared $V_\theta$ across layers**: the same potential governs all layers, limiting the model's ability to perform different computations at different depths.
 
+### 3.6 Prior art: FockAttentionPARFLM (non-conservative exchange force)
+
+Before describing conservative alternatives, it is important to document an existing implementation that already introduces attention-like O(T^2) mixing into the PARFLM dynamics: `FockAttentionPARFLM` (defined in `model_fock_attention.py`).
+
+**Architecture.** FockAttentionPARFLM extends MultiXiPARFLM with a **non-conservative exchange force** modelled on Section 5.1 of the paper ("Attention as Virtual Particle Exchange"). Each token $j$ emits a virtual photon carrying a key $k_j = W_K h_j$ and payload $v_j = W_V h_j$; each token $i$ absorbs with query $q_i = W_Q h_i$. The coupling is:
+
+$$
+\alpha_{ij} = \mathrm{softmax}_j(q_i \cdot k_j / \sqrt{d_k})
+$$
+
+The exchange force on token $i$ is:
+
+$$
+F_i^{\mathrm{ex}} = W_O \sum_{j \le i} \alpha_{ij} \cdot v_j
+$$
+
+This force is injected **post-Verlet** as an additive correction:
+
+$$
+h_\mathrm{new} \leftarrow h_\mathrm{new} + \frac{\mathrm{dt}^2}{w_t(1 + \mathrm{dt} \cdot \gamma)} \cdot \tanh(s) \cdot F^{\mathrm{ex}}
+$$
+
+where $s$ is a learnable scalar gate initialised to 0.
+
+**Code excerpt** (from `model_fock_attention.py`):
+
+```python
+# Conservative dynamics (MultiXi PARF Verlet step)
+h_new = super()._layer_step(
+    h, h_prev, m_b, gamma, dt, layer_idx=layer_idx,
+)
+
+# Non-conservative exchange force (§5.1 Feynman diagram)
+F_ex = self.exchange_force(h_new)
+scale = torch.tanh(self.exchange_scale)
+denom = 1.0 + dt * gamma
+h_new = h_new + (dt * dt / (m_b * denom)) * scale * F_ex
+```
+
+**Key finding: the exchange force is explicitly non-conservative.** The force $F_i^{\mathrm{ex}}$ cannot be written as $-\nabla_h V$ for any scalar potential $V$ because:
+
+1. **Asymmetric coupling**: $\alpha_{ij} \neq \alpha_{ji}$ in general (the softmax normalisation is over columns for each row independently).
+2. **Vector-valued output**: the force $W_O \sum_j \alpha_{ij} v_j$ is a linear map of a value-weighted sum, not a gradient of a scalar.
+3. **$h$-dependent routing**: both $\alpha_{ij}$ and $v_j$ depend on the current hidden state $h$, creating a non-integrable force field.
+
+**Experimental results** (from the TinyStories experiments documented in `Improving_the_Fock_Mechanism_to_match_Attention.md`):
+
+- FockAttentionPARFLM with 4 heads reached **9.42 PPL** at 16k steps, closing 65.5% of the gap to MatchedGPT (7.81 PPL).
+- The model learned a **negative** (repulsive) exchange scale, pushing tokens apart rather than blending them.
+- The conservative dynamics already handles attractive clustering; the exchange provides the complementary dispersive pressure.
+- K=4 EMA channels outperformed K=8, suggesting over-regularisation in the conservative dynamics leaves less room for the exchange.
+
+**Implication for this report.** FockAttentionPARFLM demonstrates that attention-like mixing dramatically improves PPL, but it breaks the conservativity guarantee. The alternatives proposed in this report (Sections 4--7) seek to achieve similar benefits **while preserving the gradient-of-a-potential force law**. Section 4 in particular proposes a conservative reformulation of the same attention mechanism.
+
 ---
 
 ## 4. Alternative A: $\xi$-routed conservative attention
 
 ### 4.1 Motivation
+
+The FockAttentionPARFLM experiment (Section 3.6) demonstrates that O(T^2) attention-like mixing closes 65.5% of the PPL gap to transformers but sacrifices conservativity. The question is: **can we achieve similar mixing without breaking the potential-derived force law?**
 
 Standard scaled dot-product attention computes:
 
@@ -228,7 +285,7 @@ $$
 \mathrm{Attn}(Q, K, V) = \mathrm{softmax}(QK^\top / \sqrt{d_k}) V
 $$
 
-This is **not** conservative: it directly defines a transformation of $h_t$ (an additive update) rather than deriving a force from a scalar potential. To import attention's all-to-all mixing into the conservative framework, we must reformulate it as a potential.
+This is **not** conservative: it directly defines a transformation of $h_t$ (an additive update) rather than deriving a force from a scalar potential. The existing FockAttentionPARFLM confirms this non-conservativity empirically (it learns repulsive forces with no potential interpretation). To import attention's all-to-all mixing into the conservative framework, we must reformulate it as a potential.
 
 ### 4.2 The scalar attention potential
 
