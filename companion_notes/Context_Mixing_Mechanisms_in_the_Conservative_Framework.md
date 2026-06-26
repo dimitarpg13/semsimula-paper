@@ -110,13 +110,13 @@ The current context-mixing architecture in Fock-PARFLM v2.1 has two components:
 
 ```mermaid
 flowchart LR
-    H["h_t (hidden state)"]
-    XI["xi_1..xi_K (K-EMA channels)"]
-    VT["V_theta(xi, h)"]
-    SC["Score head pi(h_t, h_s)"]
+    H["h hidden state"]
+    XI["xi 1..K EMA channels"]
+    VT["V theta"]
+    SC["Score head pi"]
     TK["Top-k routing"]
-    VP["V_phi(h_t, h_s_k)"]
-    FRC["f = -grad U"]
+    VP["V phi pair potential"]
+    FRC["f = neg grad U"]
 
     H --> XI
     H --> VT
@@ -524,11 +524,11 @@ This is exact for quadratic potentials (where the mean field is sufficient) and 
 
 ```mermaid
 flowchart TB
-    PSI["psi(h_t) feature extraction"]
-    AGG["z_t = causal prefix sum of psi"]
-    COUP["V_couple = -psi(h_t)^T z_t"]
-    FRC["f_t = -grad V_couple"]
-    H["h_t (hidden state)"]
+    PSI["psi feature extraction"]
+    AGG["z = causal prefix sum"]
+    COUP["V couple potential"]
+    FRC["f = neg grad V couple"]
+    H["h hidden state"]
 
     H --> PSI
     PSI --> AGG
@@ -743,13 +743,13 @@ where $\phi: \mathbb{R}^d \to \mathbb{R}$ is a scalar function of the displaceme
 
 ```mermaid
 flowchart LR
-    H["h_t tokens"]
-    XI["xi_t (EMA context)"]
-    SCORE["Score function a(xi_t, xi_s)"]
-    ADJ["Adjacency A_ts = sigma(score)"]
-    LAP["Laplacian L = D - A"]
-    POT["U = 0.5 tr(H^T L H)"]
-    FRC["f_t = -grad U"]
+    H["h tokens"]
+    XI["xi EMA context"]
+    SCORE["Score function a"]
+    ADJ["Adjacency A = sigmoid of score"]
+    LAP["Laplacian L = D minus A"]
+    POT["U = 0.5 tr H^T L H"]
+    FRC["f = neg grad U"]
 
     H --> XI
     XI --> SCORE
@@ -874,13 +874,13 @@ A practical hybrid could use:
 
 ```mermaid
 flowchart TB
-    H["h_t (hidden state)"]
-    FIELD["Latent field z_t"]
-    SPARSE["Sparse V_phi (top-k)"]
+    H["h hidden state"]
+    FIELD["Latent field z"]
+    SPARSE["Sparse V phi top-k"]
     GRAPH["Graph potential"]
-    VT["V_theta(xi, h)"]
-    UTOT["U_total = V_theta + U_field + U_sparse + U_graph"]
-    FRC["f = -grad U_total"]
+    VT["V theta single-particle"]
+    UTOT["U total = V theta + U field + U sparse + U graph"]
+    FRC["f = neg grad U total"]
 
     H --> FIELD
     H --> SPARSE
@@ -921,17 +921,17 @@ flowchart TB
 
 ```mermaid
 flowchart TB
-    START["PPL plateaus at ~170"]
-    MLP["Exp 1: MLP V_phi"]
+    START["PPL plateaus around 170"]
+    MLP["Exp 1: MLP V phi"]
     TOPK["Exp 2: increase top-k"]
-    PPL1["PPL improves past 170?"]
-    PPL2["PPL improves past 170?"]
+    PPL1{"Improves past 170?"}
+    PPL2{"Improves past 170?"}
     FIELD["Exp 3: add latent field"]
     ATTN["Exp 4: conservative attention"]
     GRAPH["Long-term: graph potential"]
     HYBRID["Long-term: hybrid field + sparse"]
     DONE["Context mixing is NOT the bottleneck"]
-    NEXT["Investigate V_theta or depth"]
+    NEXT["Investigate V theta or depth"]
 
     START --> MLP
     START --> TOPK
