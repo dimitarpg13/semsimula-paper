@@ -111,12 +111,12 @@ The current context-mixing architecture in Fock-PARFLM v2.1 has two components:
 ```mermaid
 flowchart LR
     H["h hidden state"]
-    XI["xi 1..K EMA channels"]
+    XI["xi K EMA channels"]
     VT["V theta"]
     SC["Score head pi"]
-    TK["Top-k routing"]
+    TK["top k routing"]
     VP["V phi pair potential"]
-    FRC["f = neg grad U"]
+    FRC["force neg grad U"]
 
     H --> XI
     H --> VT
@@ -524,11 +524,11 @@ This is exact for quadratic potentials (where the mean field is sufficient) and 
 
 ```mermaid
 flowchart TB
-    PSI["psi feature extraction"]
-    AGG["z = causal prefix sum"]
-    COUP["V couple potential"]
-    FRC["f = neg grad V couple"]
     H["h hidden state"]
+    PSI["psi feature extraction"]
+    AGG["z causal prefix sum"]
+    COUP["V couple potential"]
+    FRC["force neg grad V couple"]
 
     H --> PSI
     PSI --> AGG
@@ -745,11 +745,11 @@ where $\phi: \mathbb{R}^d \to \mathbb{R}$ is a scalar function of the displaceme
 flowchart LR
     H["h tokens"]
     XI["xi EMA context"]
-    SCORE["Score function a"]
-    ADJ["Adjacency A = sigmoid of score"]
-    LAP["Laplacian L = D minus A"]
-    POT["U = 0.5 tr H^T L H"]
-    FRC["f = neg grad U"]
+    SCORE["score function a"]
+    ADJ["adjacency A sigmoid"]
+    LAP["Laplacian L"]
+    POT["graph potential U"]
+    FRC["force neg grad U"]
 
     H --> XI
     XI --> SCORE
@@ -875,12 +875,12 @@ A practical hybrid could use:
 ```mermaid
 flowchart TB
     H["h hidden state"]
-    FIELD["Latent field z"]
-    SPARSE["Sparse V phi top-k"]
-    GRAPH["Graph potential"]
-    VT["V theta single-particle"]
-    UTOT["U total = V theta + U field + U sparse + U graph"]
-    FRC["f = neg grad U total"]
+    FIELD["latent field z"]
+    SPARSE["sparse V phi"]
+    GRAPH["graph potential"]
+    VT["V theta"]
+    UTOT["U total combined"]
+    FRC["force neg grad U"]
 
     H --> FIELD
     H --> SPARSE
@@ -922,15 +922,15 @@ flowchart TB
 ```mermaid
 flowchart TB
     START["PPL plateaus around 170"]
-    MLP["Exp 1: MLP V phi"]
-    TOPK["Exp 2: increase top-k"]
-    PPL1{"Improves past 170?"}
-    PPL2{"Improves past 170?"}
-    FIELD["Exp 3: add latent field"]
-    ATTN["Exp 4: conservative attention"]
-    GRAPH["Long-term: graph potential"]
-    HYBRID["Long-term: hybrid field + sparse"]
-    DONE["Context mixing is NOT the bottleneck"]
+    MLP["Exp 1 MLP V phi"]
+    TOPK["Exp 2 increase top k"]
+    PPL1{"PPL improves"}
+    PPL2{"PPL improves"}
+    FIELD["Exp 3 add latent field"]
+    ATTN["Exp 4 conservative attention"]
+    GRAPH["Long-term graph potential"]
+    HYBRID["Long-term hybrid field plus sparse"]
+    DONE["Context mixing is not the bottleneck"]
     NEXT["Investigate V theta or depth"]
 
     START --> MLP
