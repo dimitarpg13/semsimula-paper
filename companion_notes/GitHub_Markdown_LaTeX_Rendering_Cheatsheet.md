@@ -451,6 +451,10 @@ These are not confirmed-fatal on every GitHub Mermaid version, but each one has 
 | ------- | ------------ | --- |
 | `<br/>` (self-closing XHTML) | `<br>` | older Mermaid lexers occasionally trip on `/` inside the tag; `<br>` is universally accepted |
 | `?` inside any label, e.g. `Xi["ξ_l = ?"]` | drop it, or use `unknown`, or use a word | the question mark interacts badly with some grammar rules in older parser versions |
+| `..` inside any label, e.g. `A["xi 1..K"]` | spell out as words, e.g. `A["xi K"]` | the double-dot sequence is tokenised as a range operator in GitHub's Mermaid version and triggers a silent render failure |
+| hyphen (`-`) immediately followed by a letter inside a label, e.g. `A["top-k"]` | replace with a space, e.g. `A["top k"]` | the `-letter` pattern resembles the start of a dotted edge and can corrupt tokenisation |
+| `=` inside labels, e.g. `A["f = grad V"]` | replace with a word, e.g. `A["f neg grad V"]` | `=` is safe in most renderers but triggers crashes in GitHub's stricter parser when combined with certain label content |
+| `_` inside quoted node labels, e.g. `A["h_t"]` | replace with a space or remove, e.g. `A["h"]` | even inside `["..."]`, GitHub's Mermaid lexer can treat `_` as a Markdown italic delimiter, corrupting the label and crashing the diagram |
 | Unicode operators in labels (`−`, `∇`, `Σ`, `∈`, `→`, `≈`, `∞`) | ASCII spell-out (`-`, `grad`, `sum`, `in`, `->`, `approx`, `infty`) | confirmed-safe in 100 % of GitHub Mermaid versions; Unicode works on most but not all |
 | Greek letters in labels (`α`, `β`, `γ`, `θ`, `ξ`) | ASCII spell-out (`alpha`, `beta`, `gamma`, `theta`, `xi`) | same as above; also makes the source readable in non-Unicode terminals |
 
@@ -629,6 +633,10 @@ flowchart TB
 | `-.text.-` dotted-edge label | same render error | use `-. text .->` (spaces around label, `.->` closing); if label contains `.`, use `-.->|text|` pipe form |
 | `<br/>` (self-closing) in label | intermittent render error | use `<br>` |
 | `?` in label | intermittent render error | drop it or replace with a word |
+| `..` in label, e.g. `"xi 1..K"` | silent render failure | spell out as words, e.g. `"xi K"` |
+| `-letter` in label, e.g. `"top-k"` | silent render failure | replace hyphen with space: `"top k"` |
+| `=` in label, e.g. `"f = grad V"` | silent render failure | replace with a word: `"f neg grad V"` |
+| `_` in quoted label, e.g. `["h_t"]` | silent render failure | remove or replace with space: `["h"]` |
 | Unicode / Greek in label | intermittent render error on some versions | spell out as ASCII (`alpha`, `xi`, `grad`, `->`, `approx`, ...) |
 | `(("text"))` double-circle or `[/"text"/]` parallelogram | "Cannot read properties of undefined (reading 'render')" | use `("text")` (stadium) or `["text"]` (rectangle) instead |
 | `--` inside unquoted node label, e.g. `[Lever 3 -- X]` | same render error — `--` parsed as edge | quote the label: `["Lever 3 -- X"]` |
