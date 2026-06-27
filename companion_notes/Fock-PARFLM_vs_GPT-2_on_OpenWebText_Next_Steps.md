@@ -4,9 +4,12 @@ Comparison of the Multi-Xi Fock-PARFLM v2.1 with Gaussian wells against
 a parameter-matched standard GPT-2 transformer on OpenWebText.
 
 **Document structure.** Part I (§1–§6) is the quantitative prediction and
-the measured gap. Part II (§7–§13) is the next-steps analysis: it diagnoses
+the measured gap. Part II (§7–§16) is the next-steps analysis: it diagnoses
 *what is starving the current design*, ranks the bottlenecks, and gives
-concrete, conservativity-preserving remediations. Throughout Part II,
+concrete, conservativity-preserving remediations. Part III (§17) describes
+the **four-experiment controlled study** on OpenWebText that tests the
+remediated architecture at scale and isolates the contribution of each
+context-mixing mechanism. Throughout Parts II and III,
 **retaining conservativity is treated as a hard constraint** (§8) that every
 proposed fix must satisfy.
 
@@ -477,18 +480,18 @@ terms, never as a direct non-conservative readout.
 
 ```mermaid
 flowchart TB
-    Vth["V_theta one-body wells"]
-    Vph["V_phi pair potential"]
-    MH["Multi-head: sum of scalar sub-potentials"]
-    MC["Multi-context: sum over xi channels"]
-    VT["Bilinear value-transport potential"]
-    HOP["Top-k log-sum-exp Hopfield energy"]
-    U["Scalar potential U(h)"]
-    F["Conservative force F = -grad U"]
-    Q["Direct softmax value readout W_V h_j"]
-    REV["Lands in reverse channel Q_i: gated, non-conservative"]
+    Vth["V theta one body wells"]
+    Vph["V phi pair potential"]
+    MH["Multi head sum of scalar sub potentials"]
+    MC["Multi context sum over xi channels"]
+    VT["Bilinear value transport potential"]
+    HOP["Top k log sum exp Hopfield energy"]
+    U["Scalar potential U of h"]
+    F["Conservative force F neg grad U"]
+    Q["Direct softmax value readout"]
+    REV["Lands in reverse channel, gated, non conservative"]
 
-    subgraph ADM [Admissible - must be the gradient of a scalar]
+    subgraph ADM [Admissible must be the gradient of a scalar]
         Vth
         Vph
         MH
@@ -726,7 +729,7 @@ powers multi-head processing."
 
 Two secondary contributors, listed for completeness:
 
-- **Shared $V_\theta$ across 16 Verlet steps.** Repeated application of one
+- **Shared** $V_\theta$ **across 16 Verlet steps.** Repeated application of one
   potential refines a trajectory along the *same* vector field (the Neural-ODE
   parameter-efficiency penalty). Remedy: untie $V_\theta$ across layer groups.
   This makes the potential **non-autonomous** $V_\theta^{(\ell)}$ — still
@@ -767,12 +770,12 @@ $O(Tk)$ memory advantage.
 ```mermaid
 flowchart TB
     D0["D0 free diagnostics on current ckpt"]
-    MC["Multi-context V_theta heads (param-neutral)"]
-    MH["Multi-head plus value-transport V_phi"]
-    TK["Widen subspaces, top_k 8 to 32"]
-    HOP["Top-k Hopfield V_phi (endgame)"]
-    K["Increase K_MIX 8 to 24"]
-    UT["Untie V_theta across layer groups"]
+    MC["Multi context V theta heads, param neutral"]
+    MH["Multi head plus value transport V phi"]
+    TK["Widen subspaces, top k 8 to 32"]
+    HOP["Top k Hopfield V phi, endgame"]
+    K["Increase K MIX 8 to 24"]
+    UT["Untie V theta across layer groups"]
 
     D0 --> MC
     D0 --> TK
@@ -794,9 +797,9 @@ the culprit. Run all of these on the current `step56000_best.pt` checkpoint:
    context-mixer's per-token loss keeps dropping as position grows; if `V_phi`
    is starved (§9), the Fock curve flattens early and stays high past
    ~128 tokens — a direct, falsifiable signature of the radial/top-k limit.
-2. **Effective rank (participation ratio) of the final-layer $h$.** Collapse
+2. **Effective rank (participation ratio) of the final-layer** $h$**.** Collapse
    toward ~$K$ directions is the output attractor ceiling (§11).
-3. **Per-Verlet-step $\lVert \Delta h \rVert$.** If late steps barely move
+3. **Per-Verlet-step** $\lVert \Delta h \rVert$**.** If late steps barely move
    $h$, the 16 shared steps have converged and depth is wasted (§11).
 4. **Loss stratified by token frequency.** Uniformly bad → capacity; bad only
    on rare tokens → output/embedding bottleneck.
@@ -1028,12 +1031,12 @@ prior.
 
 ```mermaid
 flowchart LR
-    hL["h_L  (B, T, d)"]
-    ET["E^T  (d, V)  tied weight"]
-    raw["h_L @ E^T  (B, T, V)"]
-    bv["out_bias  (V,)  b_v = log p_unigram(v)"]
-    logits["logits = h_L @ E^T + b_v"]
-    loss["cross_entropy loss"]
+    hL["hL  B T d"]
+    ET["ET  d V  tied weight"]
+    raw["hL at ET  B T V"]
+    bv["out bias  V  bv from log p unigram"]
+    logits["logits from hL at ET plus bv"]
+    loss["cross entropy loss"]
 
     hL --> raw
     ET --> raw
@@ -1109,14 +1112,14 @@ only via $h_L \to \text{logits} \to \text{loss}$.
 ```mermaid
 flowchart LR
     x["x  input tokens"]
-    E["E  (V, d)  input embedding"]
-    h0["h_0 = E(x) + P"]
+    E["E  V d  input embedding"]
+    h0["h0 from E of x plus P"]
     dyn["Verlet dynamics  L layers"]
-    hL["h_L  (B, T, d)"]
-    Wout["W_out  (V, d)  dedicated read-out"]
-    bv["out_bias  (V,)"]
-    logits["logits = h_L @ W_out^T + b_v"]
-    loss["cross_entropy loss"]
+    hL["hL  B T d"]
+    Wout["W out  V d  dedicated read out"]
+    bv["out bias  V"]
+    logits["logits from hL at W out T plus bv"]
+    loss["cross entropy loss"]
 
     x --> E
     E --> h0
@@ -1177,25 +1180,29 @@ training run: the gradient flow through $E$ changes qualitatively.
 ```mermaid
 flowchart TB
     x["x  input tokens"]
-    E["E  input embedding  (V, d)"]
+    E["E  input embedding  V d"]
     P["P  positional embedding"]
-    h0["h_0 = E(x) + P"]
+    h0["h0 from E of x plus P"]
+    Vt["V theta  one body potential"]
+    Vp["V phi  pair potential"]
+    VL["Verlet integrator  L layers"]
+    hL["hL  final hidden state"]
+    Wout["W out or ET  Fix 2 toggle"]
+    bv["out bias bv  Fix 1"]
+    logits["logits B T V"]
+    loss["cross entropy loss"]
 
-    subgraph FF [Conservative force field - UNCHANGED by both fixes]
-        Vt["V_theta  one-body potential"]
-        Vp["V_phi  pair potential"]
-        VL["Verlet integrator  L layers"]
+    subgraph FF [Conservative force field UNCHANGED by both fixes]
+        Vt
+        Vp
+        VL
     end
 
-    hL["h_L  final hidden state"]
-
-    subgraph RO [Read-out head - MODIFIED by fixes]
-        Wout["W_out or E^T  Fix 2 toggle"]
-        bv["out_bias b_v  Fix 1"]
-        logits["logits (B, T, V)"]
+    subgraph RO [Read out head MODIFIED by fixes]
+        Wout
+        bv
+        logits
     end
-
-    loss["cross_entropy loss"]
 
     x --> E
     E --> h0
@@ -1232,3 +1239,226 @@ OpenWebText tokenisation — once under the matched low-LR/small-batch recipe
 (expected ~38--50 PPL) and once well-tuned (LR ~6e-4, large batch; expected
 ~30--35 PPL). The Part II remediations are tracked here so that any new design
 is checked against the conservativity constraint of §8 before training.*
+
+---
+
+# Part III — The Four-Experiment Controlled Study on OpenWebText
+
+The remediations of Part II have been implemented.  The question now is
+whether the remediated conservative architecture can compete with attention
+at scale.  This part describes a self-contained experimental matrix that
+isolates each context-mixing mechanism on OpenWebText under identical
+conditions.
+
+---
+
+## 17. The Four-Experiment Controlled Study on OpenWebText
+
+### 17.1. Motivation: a self-contained experiment matrix
+
+Parts I and II diagnosed what was starving the early Fock-PARFLM and proposed
+a ladder of conservativity-preserving fixes.  The remediation ladder has since
+been implemented: multi-context V_theta heads (§10), multi-head V_phi (§9.3),
+wider subspaces (§9.6), output bias (§15.4), untied W_out (§16.3), and —
+critically — the depth-conditioning of §10.2 that gives each Verlet layer its
+own effective potential via learned depth codes, at negligible parameter cost.
+
+With those fixes in place, a new question supersedes the old:
+
+> **Where does the conservative dynamics architecture stand at scale on
+> real-world text, and which context-mixing mechanism — if any — closes the
+> gap to attention?**
+
+To answer this rigorously, we need a controlled study that **isolates one
+mechanism per comparison** while holding everything else identical.  This
+section describes four experiments that are designed to be **self-contained**:
+they share a single backbone, a single dataset, a single training recipe, and
+a single hardware target, so that every pairwise difference is attributable to
+exactly one architectural choice.
+
+### 17.2. The shared backbone (held constant across all four experiments)
+
+Every experiment uses the same configuration for everything outside the
+context-mixing mechanism under test:
+
+| Component | Configuration |
+|---|---|
+| Self-energy V_theta | Depth-conditioned multi-context Gaussian (`DepthConditionedMultiContextGaussianVTheta`): 5 heads × 8 wells = 40 attractors, shared bank + per-layer depth codes (init_std = 0.02). Conservative. |
+| Xi channels | 5-channel K-EMA, `'5long'` preset: α = [0.50, 0.75, 0.95, 0.99, 0.995], horizons ~[2, 4, 20, 100, 200] tokens |
+| Mass | Log-frequency mass (`mass_mode='logfreq'`, init_alpha = 0.1) |
+| Integration | Velocity-Verlet, fixed γ = 0.30, dt = 1.0, L = 16, `causal_force=True`, LN after step |
+| Read-out | Output bias (log-freq init), untied W_out (`TIE_EMBEDDINGS=False`) |
+| Architecture tier | d = 384, L = 16 (first tier; falls back to smaller if OOM) |
+| Dataset | OpenWebText, 1B train + 2M val tokens |
+| Schedule | WSD: 5% warmup, 60% stable at peak LR = 3e-4, 35% cosine decay to floor = 1.5e-5 |
+| Optimizer | AdamW (β1=0.9, β2=0.95), weight decay = 0.01 |
+| Batch | 16 × block 512 = 8,192 tokens/step, grad_accum = 1 |
+| Steps | 100,000 |
+| Seed | 0 |
+| Gradient clipping | Global = 1.0, V_phi = 0.3 |
+| Watchdog | EMA grad-norm threshold = 50, patience = 200 |
+
+### 17.3. The four experiments
+
+Each notebook adds **one** context-mixing mechanism on top of the shared
+backbone.  The table below summarises the four arms and the mechanism each
+isolates:
+
+| # | Notebook | Model class | Context mixing | Conservative? | Fock registers? |
+|---|---|---|---|---|---|
+| **E1** | `colab_vanilla_parf_openwebtext.ipynb` | `MultiXiPARFLM` | Sparse top-k V_phi pair potential **only** | Yes | No |
+| **E2** | `colab_fock_depthcond_vtheta_openwebtext.ipynb` | `FockMultiXiPARFLM` | Sparse V_phi **+** Fock v2.1 register pool (M=32) | Yes | Yes |
+| **E3** | `colab_xi_attention_openwebtext.ipynb` | `XiAttnPARFLM` | Dense ξ-routed conservative attention potential | Yes | No |
+| **E4** | `colab_fock_attention_openwebtext.ipynb` | `FockAttentionPARFLM` | Sparse V_phi **+** non-conservative exchange force | No | No |
+
+**E2** is currently running.  **E1**, **E3**, and **E4** are staged and ready
+to launch.
+
+```mermaid
+flowchart TB
+    VT["Depth conditioned V theta<br>5 heads x 8 wells, per layer codes"]
+    XI["5 channel K EMA xi<br>5long preset"]
+    MASS["Log freq mass, Verlet integration"]
+    HEAD["Untied W out plus output bias"]
+    E1["E1 Vanilla PARF<br>V phi only<br>conservative YES  Fock NO"]
+    E2["E2 Fock v2.1 PARF<br>V phi plus registers M32<br>conservative YES  Fock YES"]
+    E3["E3 Xi Attention PARF<br>dense attention potential<br>conservative YES  Fock NO"]
+    E4["E4 Fock Attention<br>V phi plus exchange force<br>conservative NO  Fock NO"]
+
+    subgraph SHARED [Shared backbone identical in all 4 experiments]
+        VT
+        XI
+        MASS
+        HEAD
+    end
+
+    SHARED --> E1
+    SHARED --> E2
+    SHARED --> E3
+    SHARED --> E4
+```
+
+### 17.4. Pairwise contrasts and what each isolates
+
+Because only one mechanism differs per pair, every pairwise PPL comparison
+answers one clean question:
+
+| Comparison | What differs | Question answered |
+|---|---|---|
+| **E1 vs E2** | Fock registers (M=32) | Does the Fock mechanism help, hurt, or leave PPL unchanged? |
+| **E1 vs E3** | Conservative attention vs sparse V_phi | Can dense conservative attention outperform sparse pair potentials? |
+| **E1 vs E4** | Non-conservative exchange vs nothing | Does breaking conservativity with an exchange force help? |
+| **E2 vs E3** | Fock registers vs conservative attention | Which conservative context-mixing mechanism is more effective? |
+| **E3 vs E4** | Conservative vs non-conservative attention | What does the model gain (or lose) by breaking conservativity? |
+| **E2 vs E4** | Fock registers vs non-conservative exchange | Registers vs exchange: which context-mixing strategy wins? |
+
+The E1 baseline is the linchpin: without it, no two-experiment comparison can
+isolate the Fock mechanism (E2 vs E3 confounds Fock with V_phi, and E2 vs E4
+confounds Fock with conservativity).  The vanilla run closes every
+triangulation.
+
+### 17.5. The argument: why these four experiments are sufficient
+
+**Claim.** The four experiments above, taken together, are a sufficient basis
+for answering whether the conservative dynamics architecture is a viable
+alternative to attention for next-token prediction at scale.
+
+**Argument.**
+
+1. **The backbone is fair.** Every experiment invests the same parameter
+   budget into the same depth-conditioned V_theta, mass module, read-out head,
+   embedding, and position encoding.  The only free variables are the
+   context-mixing parameters (V_phi, Fock registers, attention heads, exchange
+   projections), which are a small fraction of total params.  Any PPL
+   difference is therefore attributable to the context-mixing mechanism, not
+   to raw capacity.
+
+2. **The conservative mechanisms are each represented by their strongest
+   current version.**
+   - V_phi (E1) uses multi-head structural-competitive pair potentials with
+     widened subspaces (d_type=32, d_angle=16) and top-k=16 — the full
+     remediation of §9.3 and §9.6.
+   - The Fock registers (E2) use v2.1 with per-register τ, per-register keys,
+     orthogonal init, and the reverse channel — the most capable version,
+     incorporating the routing fixes of §5.1 in the companion note
+     `Improving_the_Fock_Mechanism_to_match_Attention.md`.
+   - The conservative attention (E3) implements xi-routed conservative
+     attention from `model_xi_attention.py`, where all attention weights are
+     derived from detached EMA context (not live h) and the entire attention
+     map is the gradient of a scalar potential.
+
+3. **The non-conservative baseline is the fairest possible.**  E4 keeps the
+   conservative backbone intact (V_theta, V_phi) and **adds** a gated
+   non-conservative exchange force on top, starting at zero
+   (`exchange_scale_init=0.0`).  The model begins as the pure conservative
+   PARF and learns how far to open the non-conservative channel.  This is
+   the cleanest way to measure the marginal value of breaking conservativity.
+
+4. **The comparison to attention is embedded in the matrix.**
+   - E3 is a form of attention (dense, all-to-all, softmax-weighted) that
+     preserves conservativity.  Its PPL relative to E1 tells us whether
+     dense conservative attention outperforms sparse conservative V_phi.
+   - E4 is literal softmax attention (Q/K/V from live h) used as a
+     non-conservative force.  Its PPL relative to E3 tells us what
+     conservativity costs.
+   - The existing nanoGPT reference (well-tuned GPT-2 at d=384, ~30–35 PPL)
+     provides the external anchor.  If any experiment approaches this range,
+     the conservative framework is viable for NTP; if none do, the gap
+     quantifies the conservativity price at scale.
+
+5. **The study is complete in the Bayesian sense.**  After observing four PPL
+   values on the same data and backbone, we can rank:
+   - conservative + sparse (E1) vs conservative + Fock (E2) vs
+     conservative + dense attention (E3) vs non-conservative (E4);
+   - and the absolute values place all four against the external attention
+     baseline (~30–35 PPL).
+
+   No fifth experiment is needed to resolve any ambiguity — the four pairwise
+   comparisons span the full 2×2 design space
+   (conservative/non-conservative × sparse/dense context mixing).
+
+### 17.6. What each outcome would mean
+
+| Outcome pattern | Interpretation |
+|---|---|
+| E3 ≈ E4 ≪ E1 ≈ E2 | Dense attention dominates; conservativity is not the cost, sparsity is. The conservative framework is viable **if** attention is the context mixer. |
+| E4 ≪ E3 < E1 ≈ E2 | Non-conservative exchange is essential; conservativity is the binding constraint. The framework must relax conservativity to compete. |
+| E3 < E4, E3 ≈ external GPT-2 | Conservative dense attention matches or beats non-conservative exchange — the conservative obstruction of §8 is not as tight as the proof suggests. This is the optimistic case for the programme. |
+| E2 < E1 (Fock hurts) | The Fock register mechanism costs more than it delivers at M=32 on OWT. Registers should be reduced or removed. |
+| E2 ≈ E1 < E3 | Fock registers are neutral; conservative attention is the winning mechanism.  Future work should focus on scaling xi-routed attention. |
+| E1 ≈ E2 ≈ E3 ≈ E4, all ≫ GPT-2 | The bottleneck is upstream of context mixing (V_theta capacity, integration scheme, or the Verlet framework itself). |
+
+### 17.7. Status and timeline
+
+| Experiment | Status | Notes |
+|---|---|---|
+| **E2** (Fock depth-cond) | **Running** | d=384, L=16, M=32; ~53.4M params; first 50 steps logged |
+| **E1** (Vanilla PARF) | Staged | Ready to launch; identical to E2 minus Fock registers |
+| **E3** (Xi attention) | Staged | Ready to launch; passes conservativity finite-diff check |
+| **E4** (Fock attention) | Staged | Ready to launch; exchange gate starts at 0 |
+
+All four notebooks share the same OpenWebText tokenisation cache (1B train
+tokens) and checkpoint/results paths that never collide (each has a distinct
+`_gdrive_name` and `CKPT_PREFIX`).  They can run in parallel on separate GPU
+sessions or sequentially on the same machine.
+
+### 17.8. Relationship to earlier TinyStories evidence
+
+The TinyStories experiments (§3 and the `semsimula_fock_multixi_h128` and
+`semsimula_parf_multixi_h128` results) showed that the Fock v2.1 mechanism
+(M=16) improves PPL over vanilla PARF by ~25% given sufficient training (PPL
+9.30 vs 12.47), and the v2.1 routing fixes (per-register τ, per-register
+keys, orthogonal init) were responsible for the majority of that gain.
+
+However, TinyStories is a data-limited regime (§7.2): its low intrinsic
+entropy flatters the conservative design.  The four OpenWebText experiments
+above are the first capacity-limited test at scale, where the models are
+separated by **architectural efficiency** rather than the data ceiling.  If
+the Fock mechanism's TinyStories advantage transfers to OpenWebText, E2
+should beat E1 by a material margin.  If it does not, the advantage was
+specific to the data-limited regime and the mechanism's parameter overhead is
+not justified at scale.
+
+Either outcome is informative.  The point of this study is not to confirm a
+hypothesis but to **measure** — and the four-arm design ensures the
+measurement is clean.
