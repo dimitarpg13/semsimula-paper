@@ -26,7 +26,8 @@
 11. [Recommendations](#11-recommendations)
 12. [Selecting the optimal mixture count K_mix](#12-selecting-the-optimal-mixture-count-k_mix)
 13. [Hybrid structured potentials: Gaussian wells + quadratic background](#13-hybrid-structured-potentials-gaussian-wells--quadratic-background)
-14. [References](#14-references)
+14. [Depth-conditioned multi-context V_theta: cheap per-layer untying](#14-depth-conditioned-multi-context-v_theta-cheap-per-layer-untying)
+15. [References](#15-references)
 
 ---
 
@@ -1022,7 +1023,182 @@ OpenWebText.
 
 ---
 
-## 14. References
+## 14. Depth-conditioned multi-context V_theta: cheap per-layer untying
+
+The Gaussian and multi-context banks of §12 and §13 are **shared across all
+$L$ Verlet layers**: a single $V_\theta$ module is invoked at every
+integration step, so the same well landscape acts on the embedding-near
+states of early layers and the output-near states of late layers. This
+section analyses *untying* the potential per layer, shows that a full untie
+is dominated by the well-bank projections, and derives a compression —
+**depth-conditioning** — that recovers most of the per-layer benefit at
+roughly $1/L$ of the cost. The implementation is documented in
+[`Xi_Bottleneck_Diagnosis_Phase5.md`](./Xi_Bottleneck_Diagnosis_Phase5.md) §11.
+
+### 14.1 The layer-sharing constraint
+
+The model walks $L$ layers in `model._stack_forward`, each layer calling the
+*same* `self.V_theta`. With the multi-context bank (MultiContextGaussianVTheta,
+one Gaussian well bank per $\xi$ channel) the per-layer energy is
+
+$$
+U^{(\ell)}_t = V_\theta(\xi^{(\ell)}_t, h^{(\ell)}_t) + \sum_{s \lt t} V_\phi(h^{(\ell)}_t, h^{(\ell)}_s),
+$$
+
+where $V_\theta$ is the **identical function** at every depth $\ell$. Only the
+*input* $(\xi^{(\ell)}, h^{(\ell)})$ changes; the mapping that turns context
+into wells (centres, precisions, weights) is tied across the stack. Early and
+late layers are forced to share one attractor landscape.
+
+### 14.2 Full per-layer untying and its cost
+
+The direct fix is $G = L$ independent banks (one $V_\theta$ per layer group).
+The cost is set by a single MixtureGaussianVTheta bank with `xi_d = d`, whose
+parameters are the two dense projections plus the weight head:
+
+$$
+P_{\text{bank}} = \underbrace{2\,(K d^2 + K d)}_{\mu\text{-proj},\ a\text{-proj}} + \underbrace{(K d + K)}_{w\text{-proj}} = 2 K d^2 + 3 K d + K \approx 2 K d^2.
+$$
+
+Almost the entire bank lives in the two `d -> K*d` projections. The
+multi-context bank is $n_{\text{ctx}}$ such banks, and full untying multiplies
+by the layer count:
+
+$$
+P_{\text{mc}} = n_{\text{ctx}}\, P_{\text{bank}} \approx 2\, n_{\text{ctx}} K d^2, \qquad P_{\text{untie}}(G) = G\, P_{\text{mc}}.
+$$
+
+At the production scale (d = 384, K = 8, n_ctx = 5, L = 16) this grows quickly.
+(Non-V_theta parts of the model are ~41.5M; total = non-V_theta + V_theta.)
+
+| G (layer groups) | V_theta params | Total model | Nearest GPT-2 reference |
+|---|---|---|---|
+| 1 (shared, current) | 11.8M | 53M | below GPT-2 Small |
+| 2 | 23.7M | 65M | below GPT-2 Small |
+| 4 | 47.4M | 89M | below GPT-2 Small |
+| 8 | 94.7M | 136M | above GPT-2 Small (117M) |
+| 16 (per-layer) | 189.5M | 231M | between Small and Medium (345M) |
+
+**The comparison caveat.** The extra ~178M at G = 16 is *entirely self-energy
+shape* — Gaussian centres, precisions, and weights per layer. It adds no
+token-to-token mixing capacity: the context-mixing expressivity of G = 16 is
+identical to G = 1. A 231M depth-untied V_theta is therefore **not** comparable
+to a 231M GPT-2, whose parameters fund attention and FFN mixing. This is the
+central reason to compress rather than replicate.
+
+### 14.3 Depth-conditioning (option A)
+
+Keep a **single shared** multi-context bank and give each layer a small learned
+**depth code** $e_g \in \mathbb{R}^{n_{\text{ctx}} \times d}$ added to the
+per-channel context before the bank projections:
+
+$$
+\xi_g^{(m)} = \xi^{(m)} + e_g^{(m)}, \qquad V_g(\text{xis}, h) = \sum_{m=1}^{n_{\text{ctx}}} V_m\big(\xi_g^{(m)}, h\big).
+$$
+
+Layer $g$ sees a *shifted* view of the same wells, yielding a distinct
+effective potential per layer. The cost is one bank plus a tiny code table:
+
+$$
+P_{\text{depth}} = P_{\text{mc}} + L\, n_{\text{ctx}}\, d \approx 2\, n_{\text{ctx}} K d^2 + L\, n_{\text{ctx}}\, d.
+$$
+
+At the production scale: 11.84M + (16 × 5 × 384) = 11.84M + 30,720 ≈ **11.87M**.
+The code table is 0.26% of the bank. The compression vs full untying is
+
+$$
+\frac{P_{\text{untie}}(L)}{P_{\text{depth}}} = \frac{L \cdot 2 n_{\text{ctx}} K d^2}{2 n_{\text{ctx}} K d^2 + L\, n_{\text{ctx}} d} = \frac{L}{1 + \dfrac{L}{2 K d}} \approx L \quad \text{for } K d \gg L.
+$$
+
+At d = 384, K = 8 the correction $L/(2Kd) = 16/6144$ is negligible, so the
+reduction is ≈ 15.96×: V_theta drops from 189.5M back to ~11.9M, holding the
+total model at GPT-2-Small class (~53M) while still differentiating layers.
+
+### 14.4 Conservativity
+
+**Claim.** Depth-conditioning preserves per-step conservativity exactly.
+
+**Proof.** The code $e_g$ is a parameter, constant in $h$. For a fixed layer
+$g$, $V_g(\cdot, h)$ is a scalar function of $h$ — a finite sum of bounded
+Gaussian bumps evaluated at the shifted contexts $\xi_g^{(m)}$. The per-step
+force is $f = -\nabla_h V_g$, taken by autograd on the scalar $V_g$ in
+`model_parf_multixi._layer_step`. An additive constant shift of the *context
+input* leaves $V_g$ a genuine scalar potential of $h$, so the force is the
+exact gradient of a scalar. Boundedness is inherited unchanged:
+$V_g \in [-n_{\text{ctx}} \sum_k w_k, 0]$, identical to the multi-context
+bank. $\square$
+
+**What is not preserved** (and this is shared with *any* per-layer untying,
+including full $G = L$): a single global Lyapunov function across the whole
+stack. With a different effective potential per layer there is no single $U$
+whose gradient generates all $L$ steps. But this global property is *already*
+absent in the production model — per-layer LayerNorm projection (`_project`),
+per-layer $V_\phi$ scales $s_\ell$, and the Fock register lifecycle all break
+it — so depth-conditioning costs nothing additional on this axis. The property
+the diagnostics actually verify (per-step force-is-a-gradient,
+`conservativity_diagnostic.py`) holds exactly.
+
+### 14.5 Feasibility: the compression ladder
+
+Depth-conditioning is the cheapest rung on a ladder of per-layer specialisation
+schemes. All preserve per-step conservativity (none make the centres,
+precisions, or weights depend on $h$ outside the bank itself). G = 16 V_theta
+cost at d = 384, K = 8, n_ctx = 5:
+
+| Scheme | Per-layer specialisation | G=16 V_theta params | Mechanism |
+|---|---|---|---|
+| Full untying (G = L copies) | independent well shapes | 189M | L independent banks |
+| Static centres + precisions | weights only | ~1M | fixed well dictionary, only w(xi) learned |
+| Depth-conditioning (option A) | shift-only | ~11.9M | shared bank + per-layer code (implemented) |
+| LoRA-across-depth (r = 16) | independent well shapes | ~21M | shared backbone + per-layer rank-r delta |
+| Low-rank projections (r = 64) | independent, rank-limited | ~35M | factor each d to r to K*d projection |
+| Share banks across channels | per-horizon weights only | ~38M | one mu/a projection, per-channel w |
+| Static centres (mu constant) | weights and precisions | ~95M | drop mu-proj; halves the bank |
+
+Because the two big projections carry ~99.9% of bank parameters, every
+effective scheme targets them. The natural **next rung** above depth-conditioning
+is LoRA-across-depth: replace each shared projection $W$ by
+$W_g = W_{\text{base}} + B_g A_g$ with rank $r$. A rank-r delta of a
+`d -> K*d` map costs $d r + r K d = r d (1 + K)$, so
+
+$$
+P_{\text{lora}} = P_{\text{mc}} + 2\, n_{\text{ctx}} L\, r\, d\, (1 + K).
+$$
+
+At r = 16: 11.84M + (2 × 5 × 16 × 16 × 384 × 9) ≈ 11.84M + 8.85M ≈ 20.7M. This
+buys *independent* per-layer well shapes (not shift-only) at ~9× reduction vs
+full untying.
+
+### 14.6 Expressivity trade-off and recommendation
+
+Depth-conditioning modulates the *input context* to a shared bank, so the well
+*shapes* — the maps that turn $\xi$ into centres, precisions, and weights — are
+tied across layers; only the conditioning shifts. This is strictly less
+expressive than full untying, which learns $L$ independent shape maps. The
+hypothesis it tests is that the per-layer *specialisation* implied by a
+slow-grind PPL curve is reachable by re-pointing a shared bank rather than
+re-learning one per layer.
+
+Recommended sequence:
+
+1. **Depth-conditioning (option A)** — implemented; a parameter-neutral test of
+   the per-layer hypothesis at GPT-2-Small scale.
+2. **LoRA-across-depth (r = 16)** — if shift-only proves too weak; full
+   per-layer shapes at ~21M.
+3. **Full untying** — only if (2) shows a per-layer-shape gain that justifies
+   189M, with the comparison caveat of §14.2 stated explicitly.
+
+Implementation: `DepthConditionedMultiContextGaussianVTheta` and
+`install_depth_routing` in
+[`model_gaussian_vtheta.py`](../notebooks/conservative_arch/parf/model_gaussian_vtheta.py);
+training notebook
+[`colab_fock_depthcond_vtheta_openwebtext.ipynb`](../notebooks/conservative_arch/scaleup/colab_fock_depthcond_vtheta_openwebtext.ipynb).
+Code walkthrough and gradient-checkpointing safety:
+[`Xi_Bottleneck_Diagnosis_Phase5.md`](./Xi_Bottleneck_Diagnosis_Phase5.md) §11.
+
+---
+
+## 15. References
 
 ### Internal documents
 
@@ -1036,9 +1212,10 @@ OpenWebText.
 ### Implementation
 
 - [`notebooks/conservative_arch/parf/model_structured_vtheta.py`](../notebooks/conservative_arch/parf/model_structured_vtheta.py) -- all four structured $V_\theta$ classes with validation harness.
-- [`notebooks/conservative_arch/parf/model_gaussian_vtheta.py`](../notebooks/conservative_arch/parf/model_gaussian_vtheta.py) -- MixtureGaussianVTheta and SARFGaussianVTheta implementations.
+- [`notebooks/conservative_arch/parf/model_gaussian_vtheta.py`](../notebooks/conservative_arch/parf/model_gaussian_vtheta.py) -- MixtureGaussianVTheta, SARFGaussianVTheta, MultiContextGaussianVTheta, and DepthConditionedMultiContextGaussianVTheta (with `install_depth_routing`, §14).
 - [`notebooks/conservative_arch/parf/scripts/structured_vtheta_sweep.ipynb`](../notebooks/conservative_arch/parf/scripts/structured_vtheta_sweep.ipynb) -- Colab notebook for the SQ1--SQ5 comparison sweep.
 - [`notebooks/conservative_arch/scaleup/colab_hybrid_gaussian_quad_vtheta.ipynb`](../notebooks/conservative_arch/scaleup/colab_hybrid_gaussian_quad_vtheta.ipynb) -- hybrid Gaussian + quadratic background $\varepsilon$-sweep (§13).
+- [`notebooks/conservative_arch/scaleup/colab_fock_depthcond_vtheta_openwebtext.ipynb`](../notebooks/conservative_arch/scaleup/colab_fock_depthcond_vtheta_openwebtext.ipynb) -- depth-conditioned multi-context $V_\theta$ OpenWebText scale-up with the dcvt/mcvt A/B toggle (§14).
 
 ### External literature
 
@@ -1048,4 +1225,4 @@ OpenWebText.
 
 ---
 
-*Last updated: 24 June 2026. Section 13 added: hybrid Gaussian + quadratic background structured potential, the $\varepsilon$-sweep evaluation notebook, and the stability–expressivity analysis. Phase 2 (analytical gradient wiring) queued pending sweep results.*
+*Last updated: 27 June 2026. Section 14 added: depth-conditioned multi-context V_theta (cheap per-layer untying) with the parameter accounting, conservativity proof, the compression ladder, and the expressivity trade-off. Section 13 (24 June 2026): hybrid Gaussian + quadratic background structured potential, the epsilon-sweep evaluation notebook, and the stability-expressivity analysis.*

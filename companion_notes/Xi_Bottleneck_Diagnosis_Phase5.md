@@ -24,6 +24,7 @@
 8. [D0 free-diagnostics: measured results (Xi=5, step 78k)](#8-d0-free-diagnostics-measured-results-xi5-step-78k)
 9. [Read-out head fixes: code walkthrough](#9-read-out-head-fixes-code-walkthrough)
 10. [Observed alpha-channel redundancy and long-horizon refinements](#10-observed-alpha-channel-redundancy-and-long-horizon-refinements)
+11. [Depth-conditioned multi-context V_theta: implementation](#11-depth-conditioned-multi-context-v_theta-implementation)
 
 ---
 
@@ -918,9 +919,175 @@ long-range structure of OpenWebText.
 
 ---
 
+## 11. Depth-conditioned multi-context V_theta: implementation
+
+The theory and parameter accounting for depth-conditioning live in
+[`Structured_VTheta_Design_and_Theory.md`](./Structured_VTheta_Design_and_Theory.md) §14.
+This section is the **code walkthrough** for the implementation in
+[`model_gaussian_vtheta.py`](../notebooks/conservative_arch/parf/model_gaussian_vtheta.py)
+and the training notebook
+[`colab_fock_depthcond_vtheta_openwebtext.ipynb`](../notebooks/conservative_arch/scaleup/colab_fock_depthcond_vtheta_openwebtext.ipynb).
+
+The goal is per-layer specialisation of $V_\theta$ without replicating the
+~12M-parameter Gaussian well bank $L$ times. One shared multi-context bank is
+kept, and each Verlet layer adds a small learned **depth code** to the context
+$\xi$ before the bank projections (option A of §14.3). The code table is
+$(L, n_{\text{ctx}}, d) \approx 31$k parameters, vs ~178M for full per-layer
+untying.
+
+### 11.1 The module: `DepthConditionedMultiContextGaussianVTheta`
+
+The class wraps a single `MultiContextGaussianVTheta` bank plus a depth-code
+parameter table, and exposes the standard `(xis, h)` interface so it is a
+drop-in for the other $V_\theta$ variants.
+
+```python
+# model_gaussian_vtheta.py
+class DepthConditionedMultiContextGaussianVTheta(nn.Module):
+    def __init__(self, d, K, n_ctx, n_layers, w_scale=1.0,
+                 init_log_precision=None, precision_max=None,
+                 code_init_std=0.02):
+        super().__init__()
+        self.d, self.K, self.n_ctx, self.n_layers = d, K, n_ctx, n_layers
+        self.bank = MultiContextGaussianVTheta(
+            d=d, K=K, n_ctx=n_ctx, w_scale=w_scale,
+            init_log_precision=init_log_precision,
+            precision_max=precision_max,
+        )
+        # Per-layer context shift: (L, n_ctx, d).  Small init so the model
+        # starts ~tied and learns to differentiate layers.
+        self.depth_code = nn.Parameter(
+            torch.randn(n_layers, n_ctx, d) * code_init_std
+        )
+        self._active_layer = 0          # mutable routing pointer (not a buffer)
+
+    @property
+    def banks(self):                    # clamp_params() compatibility
+        return self.bank.banks
+
+    def _shift(self, xis):
+        code = self.depth_code[self._active_layer]          # (n_ctx, d)
+        lead = xis.dim() - 2
+        return xis + code.view(*([1] * lead), self.n_ctx, self.d)
+
+    def forward(self, xis, h):
+        return self.bank(self._shift(xis), h)
+```
+
+The depth code is added to the *context* (`xis`), not to `h`, so it is a
+constant with respect to the hidden state and does not change the
+force-is-a-gradient property (the conservativity proof is §14.4). `forward`
+and `analytical_grad` both apply the same shift; the model's multi-xi training
+path takes the force by autograd on `forward`, so `analytical_grad` is needed
+only by diagnostics.
+
+### 11.2 Layer routing under gradient checkpointing
+
+The standard $V_\theta$ interface is `forward(xis, h)` with **no layer
+argument**, but the depth code must be selected by the current layer index. The
+model walks layers in `_stack_forward`, calling `_fock_layer_step(..., layer_idx=ell)`,
+which in turn invokes `self.V_theta` inside `super()._layer_step`. The pointer
+is broadcast by monkey-patching the per-layer step:
+
+```python
+# model_gaussian_vtheta.py
+def install_depth_routing(model):
+    """Set model.V_theta._active_layer at the start of every layer step."""
+    vt = getattr(model, "V_theta", None)
+    if not isinstance(vt, DepthConditionedMultiContextGaussianVTheta):
+        return
+    _orig = model._fock_layer_step.__func__        # unbound original
+    def _routed(self, h, h_prev, r, salience, m_b, gamma, dt,
+                layer_idx, *args, **kwargs):
+        if isinstance(self.V_theta, DepthConditionedMultiContextGaussianVTheta):
+            self.V_theta.set_active_layer(layer_idx)
+        return _orig(self, h, h_prev, r, salience, m_b, gamma, dt,
+                     layer_idx, *args, **kwargs)
+    model._fock_layer_step = types.MethodType(_routed, model)
+    model._depth_routing_installed = True
+```
+
+**Why this is safe under gradient checkpointing.** With
+`use_layer_checkpoint=True`, each layer's `_fock_layer_step` is re-executed
+during the backward recomputation pass. Because `_active_layer` is set at the
+*start* of the same call that consumes it — and `V_theta` is invoked
+synchronously inside that call via `super()._layer_step` — the pointer is always
+correct on both the forward and the recompute pass, regardless of layer
+ordering. A direct test confirms the active-layer sequence is `[0,1,2,3]`
+without checkpointing and `[0,0,1,1,2,2,3,3]` with it (the non-reentrant
+checkpoint recomputes each step once during forward); every index is set
+correctly before use, and `depth_code.grad` is populated for all layers.
+
+### 11.3 Notebook wiring
+
+The notebook adds two knobs to Cell 0 and routes the build in Cell 4.
+
+```python
+# Cell 0 — Configuration
+# A/B toggle for the controlled study:
+#   True  -> Arm A (treatment): depth-conditioned (tag 'dcvt...')
+#   False -> Arm B (control):   plain multi-context bank (tag 'mcvt...')
+V_THETA_DEPTH_CONDITION     = True   # per-layer depth codes on a shared bank
+V_THETA_DEPTH_CODE_INIT_STD = 0.02   # init std of the (L, n_ctx, d) code table
+```
+
+```python
+# Cell 4 — build_structured_vtheta (gaussian branch)
+if V_THETA_N_HEADS > 1 and V_THETA_DEPTH_CONDITION:
+    model.V_theta = DepthConditionedMultiContextGaussianVTheta(
+        d=d, K=V_THETA_WELLS_PER_HEAD, n_ctx=V_THETA_N_HEADS,
+        n_layers=model.cfg.L, w_scale=W_SCALE,
+        init_log_precision=-math.log(d), precision_max=2.0 / d,
+        code_init_std=V_THETA_DEPTH_CODE_INIT_STD,
+    ).to(device)
+    install_depth_routing(model)        # broadcast layer_idx to the shared bank
+```
+
+The post-step `clamp_params()` loop in the training cell iterates
+`model.V_theta.banks`, which the class exposes as a property delegating to the
+shared bank's per-channel banks — so no training-loop change is needed when the
+depth-conditioned variant is swapped in.
+
+### 11.4 The A/B comparison
+
+The single flag `V_THETA_DEPTH_CONDITION` selects the arm; everything else
+(xi channels, K wells, WSD schedule, $V_\phi$ widths, batch/accum, steps, seed)
+is held identical.
+
+| Flag | Arm | V_theta | Variant tag |
+|---|---|---|---|
+| True | A (treatment) | depth-conditioned shared bank + per-layer codes | dcvt... |
+| False | B (control) | plain shared multi-context bank | mcvt... |
+
+The variant tag (`dcvt...` vs `mcvt...`) is baked into the Drive folder name,
+the checkpoint prefix, and the local results directory, so the two arms write
+to **distinct** paths and never clobber each other. The checkpoint metadata
+records `v_theta_depth_condition` and `v_theta_depth_code_init_std` for
+provenance.
+
+### 11.5 Validation summary
+
+- **Unit (smoke test in `model_gaussian_vtheta.py`):** different layers produce
+  different potentials; `analytical_grad` matches autograd to ~1.5e-08; the
+  shared-bank-plus-code count is ~16× smaller than $L$ untied copies at the
+  production shape (5.9× at the small smoke shape L = 6).
+- **Integration (full Fock-PARFLM):** forward and backward run; `depth_code.grad`
+  is nonzero for every layer; the routing sets the correct per-layer index under
+  both checkpoint modes (§11.2).
+
+### 11.6 The regularisation term
+
+The notebook's `forward_with_vreg` computes the $V_\theta$ penalty on the final
+state `h_L`, calling `model.V_theta(xis, h_L)` *after* `_stack_forward`. At that
+point `_active_layer` holds the last layer index (`L-1`), so the regulariser
+uses the final layer's depth code — a deliberate, consistent choice, since the
+penalty acts on the output-near state that the last layer's potential governs.
+
+---
+
 **References:**
 
 - Gueorguiev, D. (2026). *Semantic Simulation: A Prescriptive Lagrangian Framework for Efficient Semantic Inference.*
-- [`Structured_VTheta_Design_and_Theory.md`](./Structured_VTheta_Design_and_Theory.md) -- structured $V_\theta$ derivations, attractor interpretability, and $K_{\text{mix}}$ selection.
+- [`Structured_VTheta_Design_and_Theory.md`](./Structured_VTheta_Design_and_Theory.md) -- structured $V_\theta$ derivations, attractor interpretability, $K_{\text{mix}}$ selection, and §14 depth-conditioning theory.
 - [`Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`](./Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md) -- stability fixes applied in Phase 5.
 - [`SARF_Anchor_Placement_From_Converged_Gaussian_Centres.md`](./SARF_Anchor_Placement_From_Converged_Gaussian_Centres.md) -- anchor-placement methodology (uses converged centres from the winning arm).
