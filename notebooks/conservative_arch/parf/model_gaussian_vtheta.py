@@ -357,6 +357,157 @@ class MultiContextGaussianVTheta(nn.Module):
 
 
 # ---------------------------------------------------------------------------
+# Depth-conditioned multi-context Gaussian V_theta (cheap per-layer untying)
+# ---------------------------------------------------------------------------
+class DepthConditionedMultiContextGaussianVTheta(nn.Module):
+    """One shared multi-context well bank + a learned per-layer code.
+
+    Motivation
+    ----------
+    Fully untying ``V_theta`` across the ``L`` Verlet layers (``G=L``
+    independent ``MultiContextGaussianVTheta`` copies) gives each layer its
+    own potential landscape but multiplies the (already dominant) well-bank
+    parameter count by ``L`` — e.g. ~12M -> ~190M at ``L=16``.  Almost all of
+    that cost lives in the two dense ``d -> K*d`` projections of every bank.
+
+    This module keeps a *single* shared ``MultiContextGaussianVTheta`` bank and
+    instead gives each layer a small learned **depth code** ``e_g in R^{n_ctx x d}``
+    that is added to the per-channel context ``xi`` before the bank projections:
+
+        xi_g^(m) = xi^(m) + e_g^(m),
+        V_g(xis, h) = sum_m V_m(xi_g^(m), h).
+
+    Each layer therefore sees a *shifted* view of the same well bank, producing
+    a distinct effective potential per layer at the cost of only
+    ``L * n_ctx * d`` extra parameters (e.g. 16*5*384 ~ 31k) instead of ~178M.
+
+    Properties
+    ----------
+    - Conservative: ``e_g`` is constant w.r.t. ``h``, so the per-step force is
+      still ``-grad_h V`` of a scalar potential (the gradient is unchanged by
+      the additive constant shift of the *input* context).
+    - Parameter cost: shared bank (~12M at L=16, d=384, K=8, n_ctx=5) plus a
+      tiny ``(L, n_ctx, d)`` code table.
+    - Per-layer specialisation: shift-only (the well *shapes* are tied; only
+      the conditioning differs).  Use full per-layer untying / LoRA-across-depth
+      if shift-only conditioning proves too weak.
+
+    Layer routing
+    -------------
+    The bank is invoked once per Verlet layer.  Because the standard interface
+    is ``forward(xis, h)`` with no layer argument, the *current* layer index is
+    read from the mutable ``_active_layer`` attribute, which the model's
+    per-layer step is expected to set immediately before the call (see
+    ``install_depth_routing`` below).  This is safe under gradient checkpointing
+    because the attribute is set synchronously within the same layer-step call
+    that consumes it, on both the forward pass and the recomputation pass.
+
+    Interface matches ``MultiContextGaussianVTheta`` / the adapters:
+        forward(xis: (B,T,n_ctx,d), h: (B,T,d)) -> V: (B,T,1)
+    """
+
+    def __init__(
+        self,
+        d: int,
+        K: int,
+        n_ctx: int,
+        n_layers: int,
+        w_scale: float = 1.0,
+        init_log_precision: Optional[float] = None,
+        precision_max: Optional[float] = None,
+        code_init_std: float = 0.02,
+    ):
+        super().__init__()
+        self.d = d
+        self.K = K
+        self.n_ctx = n_ctx
+        self.n_layers = n_layers
+        self.bank = MultiContextGaussianVTheta(
+            d=d, K=K, n_ctx=n_ctx, w_scale=w_scale,
+            init_log_precision=init_log_precision,
+            precision_max=precision_max,
+        )
+        # Per-layer context shift: (n_layers, n_ctx, d).  Small init so the
+        # model starts ~tied (all layers share one bank) and learns to
+        # differentiate.
+        self.depth_code = nn.Parameter(
+            torch.randn(n_layers, n_ctx, d) * code_init_std
+        )
+        # Mutable routing pointer set by the model's layer step.  Not a
+        # buffer/parameter: it carries no state to persist.
+        self._active_layer: int = 0
+
+    @property
+    def banks(self) -> nn.ModuleList:
+        """Expose the underlying per-channel banks (clamp_params compat)."""
+        return self.bank.banks
+
+    def set_active_layer(self, layer_idx: int) -> None:
+        self._active_layer = int(layer_idx)
+
+    def _shift(self, xis: torch.Tensor) -> torch.Tensor:
+        """Add the active layer's depth code to xis: (..., n_ctx, d)."""
+        g = self._active_layer
+        if not (0 <= g < self.n_layers):
+            g = g % self.n_layers
+        code = self.depth_code[g]                                # (n_ctx, d)
+        # Broadcast over all leading (batch/time) dims of xis.
+        lead = xis.dim() - 2
+        code = code.view(*([1] * lead), self.n_ctx, self.d)
+        return xis + code
+
+    def forward(self, xis: torch.Tensor, h: torch.Tensor) -> torch.Tensor:
+        return self.bank(self._shift(xis), h)
+
+    def analytical_grad(self, xis: torch.Tensor, h: torch.Tensor) -> torch.Tensor:
+        # The depth code is constant w.r.t. h, so grad_h is the bank's grad
+        # evaluated at the shifted context.
+        return self.bank.analytical_grad(self._shift(xis), h)
+
+    def attractor_centres(self, xis: torch.Tensor) -> torch.Tensor:
+        return self.bank.attractor_centres(self._shift(xis))
+
+
+def install_depth_routing(model) -> None:
+    """Monkey-patch ``model._fock_layer_step`` to broadcast the layer index.
+
+    The depth-conditioned ``V_theta`` reads its active layer from
+    ``model.V_theta._active_layer``.  This wrapper sets that attribute at the
+    start of every per-layer step so the shared bank receives the correct
+    depth code, including during gradient-checkpoint recomputation (the
+    attribute is set inside the same call that consumes it).
+
+    No-op if ``model.V_theta`` is not depth-conditioned.
+    """
+    import types
+
+    vt = getattr(model, "V_theta", None)
+    if not isinstance(vt, DepthConditionedMultiContextGaussianVTheta):
+        return
+    if getattr(model, "_depth_routing_installed", False):
+        return
+
+    if not hasattr(model, "_fock_layer_step"):
+        raise AttributeError(
+            "install_depth_routing expects model._fock_layer_step "
+            "(FockMultiXiPARFLM)."
+        )
+
+    _orig = model._fock_layer_step.__func__   # unbound original
+
+    def _routed_fock_layer_step(self, h, h_prev, r, salience, m_b, gamma,
+                                dt, layer_idx, *args, **kwargs):
+        vt_local = getattr(self, "V_theta", None)
+        if isinstance(vt_local, DepthConditionedMultiContextGaussianVTheta):
+            vt_local.set_active_layer(layer_idx)
+        return _orig(self, h, h_prev, r, salience, m_b, gamma, dt,
+                     layer_idx, *args, **kwargs)
+
+    model._fock_layer_step = types.MethodType(_routed_fock_layer_step, model)
+    model._depth_routing_installed = True
+
+
+# ---------------------------------------------------------------------------
 # Smoke test
 # ---------------------------------------------------------------------------
 def _smoke():
@@ -413,6 +564,38 @@ def _smoke():
         n = sum(p.numel() for p in m.parameters())
         n_buf = sum(b.numel() for b in m.buffers())
         print(f"  {name:<20}: {n:>8,} params  {n_buf:>6,} buffer")
+
+    print(f"\n--- Depth-conditioned multi-context V_theta ---")
+    n_ctx, L = 4, 6
+    dcv = DepthConditionedMultiContextGaussianVTheta(
+        d=d, K=8, n_ctx=n_ctx, n_layers=L,
+    )
+    mcv = MultiContextGaussianVTheta(d=d, K=8, n_ctx=n_ctx)
+    xis = torch.randn(2, 8, n_ctx, d)
+    h = torch.randn(2, 8, d, requires_grad=True)
+    # Different layers must produce different potentials.
+    dcv.set_active_layer(0)
+    V0 = dcv(xis, h)
+    dcv.set_active_layer(L - 1)
+    VL = dcv(xis, h)
+    assert V0.shape == (2, 8, 1)
+    assert not torch.allclose(V0, VL), "depth code did not differentiate layers"
+    # analytical_grad must match autograd at the shifted context.
+    dcv.set_active_layer(2)
+    g_ana = dcv.analytical_grad(xis, h)
+    V = dcv(xis, h).sum()
+    g_auto, = torch.autograd.grad(V, h)
+    max_err = (g_ana - g_auto).abs().max().item()
+    print(f"  depth code differentiates layers: V0!=VL  OK")
+    print(f"  analytical_grad vs autograd max_err: {max_err:.2e}")
+    assert max_err < 1e-4, f"analytical_grad mismatch: {max_err}"
+    n_dcv = sum(p.numel() for p in dcv.parameters())
+    n_mcv = sum(p.numel() for p in mcv.parameters())
+    n_code = dcv.depth_code.numel()
+    print(f"  shared-bank+code params: {n_dcv:,}  "
+          f"(bank {n_mcv:,} + code {n_code:,})")
+    print(f"  vs {L} untied copies:    {n_mcv * L:,}  "
+          f"({n_mcv * L / max(n_dcv,1):.1f}x more)")
 
     print("\nAll smoke tests passed.")
 
