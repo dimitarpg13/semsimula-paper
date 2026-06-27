@@ -1057,7 +1057,7 @@ The cost is set by a single MixtureGaussianVTheta bank with `xi_d = d`, whose
 parameters are the two dense projections plus the weight head:
 
 $$
-P_{\text{bank}} = \underbrace{2\,(K d^2 + K d)}_{\mu\text{-proj},\ a\text{-proj}} + \underbrace{(K d + K)}_{w\text{-proj}} = 2 K d^2 + 3 K d + K \approx 2 K d^2.
+P_{\text{bank}} = \underbrace{2(K d^2 + K d)}_{\mu\text{-proj and } a\text{-proj}} + \underbrace{(K d + K)}_{w\text{-proj}} = 2 K d^2 + 3 K d + K \approx 2 K d^2.
 $$
 
 Almost the entire bank lives in the two `d -> K*d` projections. The
@@ -1065,7 +1065,7 @@ multi-context bank is $n_{\text{ctx}}$ such banks, and full untying multiplies
 by the layer count:
 
 $$
-P_{\text{mc}} = n_{\text{ctx}}\, P_{\text{bank}} \approx 2\, n_{\text{ctx}} K d^2, \qquad P_{\text{untie}}(G) = G\, P_{\text{mc}}.
+P_{\text{mc}} = n_{\text{ctx}} \cdot P_{\text{bank}} \approx 2 n_{\text{ctx}} K d^2, \qquad P_{\text{untie}}(G) = G \cdot P_{\text{mc}}.
 $$
 
 At the production scale (d = 384, K = 8, n_ctx = 5, L = 16) this grows quickly.
@@ -1100,14 +1100,14 @@ Layer $g$ sees a *shifted* view of the same wells, yielding a distinct
 effective potential per layer. The cost is one bank plus a tiny code table:
 
 $$
-P_{\text{depth}} = P_{\text{mc}} + L\, n_{\text{ctx}}\, d \approx 2\, n_{\text{ctx}} K d^2 + L\, n_{\text{ctx}}\, d.
+P_{\text{depth}} = P_{\text{mc}} + L \cdot n_{\text{ctx}} \cdot d \approx 2 n_{\text{ctx}} K d^2 + L \cdot n_{\text{ctx}} \cdot d.
 $$
 
 At the production scale: 11.84M + (16 × 5 × 384) = 11.84M + 30,720 ≈ **11.87M**.
 The code table is 0.26% of the bank. The compression vs full untying is
 
 $$
-\frac{P_{\text{untie}}(L)}{P_{\text{depth}}} = \frac{L \cdot 2 n_{\text{ctx}} K d^2}{2 n_{\text{ctx}} K d^2 + L\, n_{\text{ctx}} d} = \frac{L}{1 + \dfrac{L}{2 K d}} \approx L \quad \text{for } K d \gg L.
+\frac{P_{\text{untie}}(L)}{P_{\text{depth}}} = \frac{L \cdot 2 n_{\text{ctx}} K d^2}{2 n_{\text{ctx}} K d^2 + L \cdot n_{\text{ctx}} d} = \frac{L}{1 + \dfrac{L}{2 K d}} \approx L \quad \text{for } K d \gg L.
 $$
 
 At d = 384, K = 8 the correction $L/(2Kd) = 16/6144$ is negligible, so the
@@ -1162,7 +1162,7 @@ $W_g = W_{\text{base}} + B_g A_g$ with rank $r$. A rank-r delta of a
 `d -> K*d` map costs $d r + r K d = r d (1 + K)$, so
 
 $$
-P_{\text{lora}} = P_{\text{mc}} + 2\, n_{\text{ctx}} L\, r\, d\, (1 + K).
+P_{\text{lora}} = P_{\text{mc}} + 2 n_{\text{ctx}} L r d (1 + K).
 $$
 
 At r = 16: 11.84M + (2 × 5 × 16 × 16 × 384 × 9) ≈ 11.84M + 8.85M ≈ 20.7M. This
