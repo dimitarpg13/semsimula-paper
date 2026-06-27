@@ -64,17 +64,31 @@ Consequently, PARFLM is **at most a finite automaton** (regular languages). It c
 - Handle cross-serial dependencies ($a^n b^n c^n$)
 - Reach the mildly context-sensitive (MCS) class
 
-### 2.2 Empirical Confirmation: The P10 Ladder
+### 2.2 Empirical Confirmation: The Architecture Ladder
 
-The P10 ladder experiment (10 May 2026) provides decisive empirical confirmation of the ceiling. The P10h experiment — 20M tokens, 16k steps, full P5+P7+P8 stack — achieves:
+**Updated June 2026 — multi-xi stack results replace the v0 P10 ladder.**
 
-$$\text{val PPL} = 26.43$$
+The v0 ceiling described in §2.1 (val PPL = 26.43, P10h) remains valid for single-channel PARFLM. The multi-xi remediation programme has since broken through it decisively. The table below records the best validated result for each architecture on TinyStories (5M tokens, seed 0, d=256, L=8; all results from summary files in `semsimula_{experiment}_h128`):
 
-This is **identical** to P10g (5M tokens, 16k steps, PPL = 26.42). Quadrupling the corpus produces **zero improvement**, confirming the v0 architectural ceiling. The 22M-parameter PARFLM has exhausted its representational capacity on TinyStories at approximately 26.4 PPL.
+| Architecture | Val PPL | Steps | Key change |
+|---|---|---|---|
+| MatchedGPT-2 (8-layer attention, matched params) | **7.81** | — | External baseline |
+| Fock v2.1 PARFLM (B1+B2+B3, M=16) | **9.30** | 16k | Per-register τ + per-register keys + ortho init |
+| Fock Attention PARFLM (n\_heads=4) | **9.42** | 16k | Non-conservative exchange force (§10) |
+| Fock v2 PARFLM (M=16, pre-routing-fix) | 11.37 | 16k | Fock gates + reverse channel, shared routing |
+| Multi-xi SPLM (K=4, log-spaced α) | 11.51 | 16k | Multi-channel EMA context, no PARF |
+| Multi-xi PARFLM (K=8, best α) | 12.06 | 8k | Multi-channel EMA + sparse V\_phi |
+| v0 PARFLM ceiling (P10h, 20M tokens) | 26.43 | 16k | Single-channel V\_theta, no multi-xi |
 
-The gap to the matched attention baseline (MatchedGPT, val PPL = 7.81) is therefore **18.6 PPL** and can only be closed by escaping the expressivity class — not by scaling data, compute, or the conservative force law.
+Three observations stand out:
 
-<img src="images/fock_ppl_ladder.png" alt="Architecture Ladder: TinyStories PPL" width="600">
+1. **The v0 ceiling has been broken.** Multi-xi context alone reduces PPL from 26.4 to 12.1 (a 54% reduction); adding Fock v2.1 routing fixes further reduces it to 9.30.
+
+2. **The gap to attention has narrowed from 18.6 to 1.5 PPL.** The matched attention baseline (7.81) is now within 1.5 PPL of the best conservative model (Fock v2.1, 9.30). The remaining gap corresponds to the conservative obstruction proven in §15 — it can only be reduced, not eliminated, within a purely conservative force law.
+
+3. **Conservative and non-conservative models are now statistically tied.** Fock v2.1 (9.30) slightly outperforms Fock Attention (9.42), confirming that the QFT-motivated v2.1 routing improvements are sufficient to match a direct non-conservative exchange force on this corpus.
+
+<img src="images/fock_ppl_ladder.png" alt="Architecture Ladder: TinyStories PPL" width="700">
 
 ---
 
