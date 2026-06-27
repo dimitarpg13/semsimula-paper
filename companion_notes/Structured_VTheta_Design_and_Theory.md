@@ -909,9 +909,9 @@ Output: K* and per-basin curvature profiles
 | Approach | Runs required | Cost | Output | Recommended for |
 |----------|---------------|------|--------|-----------------|
 | 1. Attractor extraction | 1 (MLP) | High (GD extraction) | $K^{\ast}$ count | When MLP baseline exists |
-| 2. Validation sweep | $|K_{\mathrm{candidates}}|$ | High (multiple runs) | PPL-optimal $K$ | Final tuning |
+| 2. Validation sweep | # K values | High (multiple runs) | PPL-optimal $K$ | Final tuning |
 | 3. Over-provision/prune | 1 | Low | $K_{\mathrm{eff}}$ + pruned model | **Default recommendation** |
-| 4. BIC/AIC | $|K_{\mathrm{candidates}}|$ | Medium | Information-theoretic $K$ | When GMM interpretation matters |
+| 4. BIC/AIC | # K values | Medium | Information-theoretic $K$ | When GMM interpretation matters |
 | 5. Spectral analysis | 1 (MLP) | Very high | $K^{\ast}$ + curvature profiles | Detailed landscape understanding |
 
 **Recommended workflow:**
@@ -936,7 +936,7 @@ The **hybrid Gaussian + quadratic background** potential bridges this
 gap by combining both:
 
 $$
-V_{\text{hybrid}}(\xi, h) = -\sum_k w_k(\xi)\,\exp\!\left(-\tfrac{1}{2}\,a_k(\xi)^{\!\top}(h - \mu_k(\xi))^2\right) + \varepsilon\,\lVert h \rVert^2
+V_{\text{hybrid}}(\xi, h) = -\sum_k w_k(\xi) \exp\left(-\frac{1}{2} a_k(\xi)^\top (h - \mu_k(\xi))^2\right) + \varepsilon \lVert h \rVert^2
 $$
 
 ### 13.1 Design rationale
@@ -962,7 +962,7 @@ $\lVert h \rVert$.
 |----------|-----|---------------|--------|
 | V range | $(-\infty, +\infty)$ | $[-\Sigma w_k, 0]$ | $[-\Sigma w_k, +\varepsilon \lVert h \rVert^2]$ |
 | Coercive ($V \to +\infty$) | yes | no | **yes** |
-| Force bound | unbounded | $0.607\,w_k / \sigma_k$ | $\max(0.607\,w_k/\sigma_k,\; 2\varepsilon\lVert h\rVert)$ |
+| Force bound | unbounded | $0.607 w_k / \sigma_k$ | $\max(0.607 w_k/\sigma_k, 2\varepsilon \lVert h \rVert)$ |
 | OpenWebText stable | no (§2–§4) | yes | **expected yes** |
 
 The combined force is the sum of the Gaussian well forces (bounded,
