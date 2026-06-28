@@ -31,9 +31,7 @@ This both severs the back-reaction force on past tokens and makes
 the per-token force strictly causal, in the same sense as the
 v3 leak-fix invariant for $V_\theta$.
 
-The pre-registered title-justification rule from
-[`Paper_Title_Discussion_post_causal_leak.md`](Paper_Title_Discussion_post_causal_leak.md)
-§6.5 applies unchanged at the Q9c quality arm:
+The pre-registered title-justification rule (§6.5) applies unchanged at the Q9c quality arm:
 
 > **"Efficient" is justified iff** some hybrid achieves val PPL
 > within **+5 PPL** of the all-attention baseline (~150 on Tiny
@@ -1679,8 +1677,7 @@ Supporting documents:
   - **P10 A100 / H100 notebook:** `notebooks/conservative_arch/parf/scripts/p10_tinystories_a100_h100.ipynb` (TinyStories ladder with `CELL` switch, TF32 disabled, dashboard, end-to-end smoke verified)
 - Sibling Q9d Helmholtz path: [`Helmholtz-HSPLM_Path_Forward_and_Experiments.md`](Helmholtz-HSPLM_Path_Forward_and_Experiments.md)
 - Sibling Variant A two-stage path: [`HSPLM_Path_Forward_and_Experiments.md`](HSPLM_Path_Forward_and_Experiments.md)
-- Title-discussion master record: [`Paper_Title_Discussion_post_causal_leak.md`](Paper_Title_Discussion_post_causal_leak.md)
-- Pre-registered title-justification rule: §6.5 of the title-discussion record
+- Pre-registered title-justification rule: §6.5 (title-discussion record removed; rule inlined above)
 - Prototype root: `notebooks/conservative_arch/parf/`
 - Prototype README (wall-clock survey + sanity checks + reproduce instructions): `notebooks/conservative_arch/parf/README.md`
 - Causality bug & fix history: [`Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md`](Causal_Leak_in_SPLM_Integrate_Bug_and_Fix.md)
