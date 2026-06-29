@@ -331,11 +331,38 @@ class ReverseChannel(nn.Module):
       - It depends on relative inner products across all registers (softmax)
       - Q_i ≠ Q_j in general (asymmetry)
       - No scalar potential can generate it
+
+    Stabilised variant (``stable=True``, §10.12 of the design doc / E5c)
+    -------------------------------------------------------------------
+    The vanilla readout is prone to gradient blow-ups because it feeds raw,
+    unbounded hidden/register states into an unnormalised attention readout
+    and injects an unnormalised force.  ``stable=True`` adds three bounding
+    devices that preserve the directed/asymmetric routing (and hence the
+    non-conservativity) while removing the explosion pathways:
+
+      1. QK-normalisation — queries and keys are L2-normalised and the
+         logits are scaled by a learnable temperature ``logit_scale``
+         (clamped), so logits stay bounded regardless of ‖q‖, ‖k‖ and the
+         softmax cannot saturate into spiky-gradient regimes.
+      2. Output RMS-normalisation — the force ``Q_force`` is RMS-normalised
+         per token, so its magnitude is bounded by construction (only its
+         *direction* is learned), capping ∂L/∂W_V_rev.
+      3. Optional pre-LayerNorm (``pre_ln=True``) — q/k/v inputs are
+         LayerNorm-ed, bounding magnitudes at the source.
     """
 
-    def __init__(self, d: int, d_k: int, init_scale: float = 0.02):
+    def __init__(
+        self,
+        d: int,
+        d_k: int,
+        init_scale: float = 0.02,
+        stable: bool = False,
+        pre_ln: bool = True,
+    ):
         super().__init__()
         self.d_k = d_k
+        self.stable = stable
+        self.pre_ln = bool(stable and pre_ln)
         self.W_Q_rev = nn.Linear(d, d_k, bias=False)
         self.W_K_rev = nn.Linear(d, d_k, bias=False)
         self.W_V_rev = nn.Linear(d, d, bias=False)
@@ -343,6 +370,21 @@ class ReverseChannel(nn.Module):
         nn.init.normal_(self.W_Q_rev.weight, std=init_scale)
         nn.init.normal_(self.W_K_rev.weight, std=init_scale)
         nn.init.normal_(self.W_V_rev.weight, std=init_scale)
+
+        if self.pre_ln:
+            self.ln_h = nn.LayerNorm(d)
+            self.ln_r = nn.LayerNorm(d)
+        else:
+            self.ln_h = None
+            self.ln_r = None
+
+        if self.stable:
+            # CLIP-style learnable, clamped logit temperature for QK-norm.
+            self.logit_scale = nn.Parameter(torch.tensor(math.log(1.0 / 0.07)))
+            self.logit_scale_max = 100.0
+        else:
+            self.logit_scale = None
+            self.logit_scale_max = None
 
     def forward(
         self,
@@ -368,24 +410,37 @@ class ReverseChannel(nn.Module):
             Q_force: (B, T, d) — non-conservative Fock exchange force.
         """
         B, T, d = h_tokens.shape
-        q = self.W_Q_rev(h_tokens)                    # (B, T, d_k)
-
         position_dependent = r_active.dim() == 4
 
+        # (Optional) pre-LayerNorm bounds magnitudes at the source.
+        h_in = self.ln_h(h_tokens) if self.pre_ln else h_tokens
+        r_in = self.ln_r(r_active) if self.pre_ln else r_active
+
+        q = self.W_Q_rev(h_in)                        # (B, T, d_k)
         if position_dependent:
             M = r_active.shape[2]
-            k = self.W_K_rev(r_active)                # (B, T, M, d_k)
-            v = self.W_V_rev(r_active)                # (B, T, M, d)
-            scores = torch.einsum(
-                "btk,btmk->btm", q, k,
-            ) / (self.d_k ** 0.5)                     # (B, T, M)
+            k = self.W_K_rev(r_in)                    # (B, T, M, d_k)
+            v = self.W_V_rev(r_in)                    # (B, T, M, d)
         else:
             M = r_active.shape[1]
-            k = self.W_K_rev(r_active)                # (B, M, d_k)
-            v = self.W_V_rev(r_active)                # (B, M, d)
-            scores = torch.matmul(
-                q, k.transpose(-2, -1),
-            ) / (self.d_k ** 0.5)                     # (B, T, M)
+            k = self.W_K_rev(r_in)                    # (B, M, d_k)
+            v = self.W_V_rev(r_in)                    # (B, M, d)
+
+        if self.stable:
+            # QK-norm: unit-normalise q, k and use a clamped learnable
+            # temperature so logits cannot grow with ‖q‖, ‖k‖.
+            q = F.normalize(q, dim=-1)
+            k = F.normalize(k, dim=-1)
+            logit_scale = self.logit_scale.exp().clamp(max=self.logit_scale_max)
+            if position_dependent:
+                scores = torch.einsum("btk,btmk->btm", q, k) * logit_scale
+            else:
+                scores = torch.matmul(q, k.transpose(-2, -1)) * logit_scale
+        else:
+            if position_dependent:
+                scores = torch.einsum("btk,btmk->btm", q, k) / (self.d_k ** 0.5)
+            else:
+                scores = torch.matmul(q, k.transpose(-2, -1)) / (self.d_k ** 0.5)
 
         mask_expanded = active_mask.unsqueeze(1).expand(B, T, M)
         scores = scores.masked_fill(~mask_expanded, -1e9)
@@ -398,6 +453,13 @@ class ReverseChannel(nn.Module):
             Q_force = torch.einsum("btm,btmd->btd", alpha, v)
         else:
             Q_force = torch.matmul(alpha, v)          # (B, T, d)
+
+        if self.stable:
+            # Output RMS-norm: bound the injected force magnitude per token;
+            # only its direction is learned.  Zero force on tokens with no
+            # active register stays exactly zero (has_active gate above).
+            rms = Q_force.pow(2).mean(dim=-1, keepdim=True).add(1e-6).sqrt()
+            Q_force = Q_force / rms
 
         return Q_force
 

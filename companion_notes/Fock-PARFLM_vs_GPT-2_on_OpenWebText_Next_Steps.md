@@ -1483,9 +1483,21 @@ of the instability.
 
 | Arm | Config (vs E2, all else identical) | What it isolates |
 |---|---|---|
-| **E2** | Fock v2.1 with reverse channel ON | full mechanism (reference) |
+| **E2** | Fock v2.1 with reverse channel ON (vanilla readout) | full mechanism (reference) |
 | **E5a** | `reverse_channel = False` | benefit and stability cost of the channel |
 | **E5b** | reverse channel ON but gated: scalar init 0, slow warm-up | whether a staged gate keeps the benefit at lower instability |
+| **E5c** | reverse channel ON but **stabilised**: QK-norm + output RMS-norm + pre-LN + warmup | whether the instability is an implementation artifact, not intrinsic to non-conservativity |
+
+The **E5c stabilised reverse channel** is implemented and toggled by config flags
+`reverse_channel_stable`, `reverse_channel_pre_ln`, and
+`reverse_channel_warmup_steps` on `FockMultiXiPARFConfig` (see §10.12 of
+`Improving_the_Fock_Mechanism_to_match_Attention.md` for the mathematics). It
+bounds the force magnitude (output RMS-norm), bounds the attention logits
+(QK-norm with a clamped learnable temperature), normalises the q/k/v inputs
+(pre-LN), and ramps the non-conservative gate over the warmup window — all
+**without symmetrising the coupling**, so the directed-routing benefit is
+preserved. E5c is the highest-upside arm: if it is both stable and PPL-neutral
+(or better) versus E2, the reverse channel can be kept essentially for free.
 
 **Pre-registered predictions** (derived in §10.11 of the companion note):
 
@@ -1503,11 +1515,18 @@ of the instability.
    warmed scalar gate while the early-training instability — when the channel
    fires at random and fights the conservative gradient (§18.3 of the
    companion note) — is suppressed.
+4. **Artifact, not principle.**  E5c tests the strongest hypothesis: that the
+   spikes are an implementation artifact (unnormalised readout) rather than an
+   intrinsic cost of non-conservativity.  If the QK-norm + output RMS-norm +
+   pre-LN + warmup readout is stable *and* PPL-neutral-or-better versus E2, the
+   directed-routing benefit is retained essentially for free.
 
-**Decision rule.**  Keep the reverse channel ON (E2) if its NTP benefit over
-E5a exceeds the optimisation budget (per-group clipping, watchdog reloads) it
-costs; adopt the gated variant (E5b) if it recovers most of the benefit at a
-materially lower instability tax; drop it (E5a) only if the benefit is within
-noise.  Quantitative grounding, the loss decomposition, and the supporting
-figure live in §10.8–§10.11 of
+**Decision rule.**  Prefer the stabilised channel (E5c) if it is stable and
+matches or beats E2 — this is the best of both worlds.  Otherwise: keep the
+vanilla channel ON (E2) only if its NTP benefit over E5a exceeds the
+optimisation budget (per-group clipping, watchdog reloads) it costs; fall back
+to the gated variant (E5b) if it recovers most of the benefit at a materially
+lower instability tax; drop it (E5a) only if the benefit is within noise.
+Quantitative grounding, the loss decomposition, and the supporting figure live
+in §10.8–§10.12 of
 `Improving_the_Fock_Mechanism_to_match_Attention.md`.

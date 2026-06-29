@@ -105,6 +105,12 @@ class FockMultiXiPARFConfig(MultiXiPARFConfig):
     per_register_tau: bool = False      # B1: per-register learnable temperature
     per_register_keys: bool = False     # B2: per-register key subspaces
     ortho_register_init: bool = False   # B3: orthogonal register embed init
+    # Reverse-channel stabilisation (§10.12 of
+    # Improving_the_Fock_Mechanism_to_match_Attention.md; experiment E5c)
+    reverse_channel_stable: bool = False   # QK-norm + output RMS-norm readout
+    reverse_channel_pre_ln: bool = True    # pre-LayerNorm on q/k/v (stable only)
+    reverse_channel_warmup_steps: int = 0  # linear gate warmup over this many
+                                           # training forward passes; 0 = off
 
 
 # ---------------------------------------------------------------------------
@@ -188,7 +194,9 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
             ])
             if cfg.reverse_channel:
                 self.reverse_ch = ReverseChannel(
-                    d, cfg.d_k, init_scale=cfg.register_init_scale
+                    d, cfg.d_k, init_scale=cfg.register_init_scale,
+                    stable=cfg.reverse_channel_stable,
+                    pre_ln=cfg.reverse_channel_pre_ln,
                 )
                 self.reverse_channel_scale = nn.Parameter(torch.zeros(1))
             else:
@@ -198,6 +206,15 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
             raise ValueError(
                 f"fock_version must be 'v1' or 'v2', got {cfg.fock_version!r}"
             )
+
+        # Warmup counter for the reverse-channel gate (incremented once per
+        # training forward pass in _stack_forward).  Persisted so resumed
+        # runs continue the schedule.
+        self.register_buffer(
+            "reverse_warmup_step",
+            torch.zeros((), dtype=torch.long),
+            persistent=True,
+        )
 
     # ------------------------------------------------------------------
     def _init_registers(
@@ -298,6 +315,15 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
             r_rev = r_causal if r_causal is not None else r_new
             Q_force = self.reverse_ch(h_new, r_rev, active)
             scale = torch.tanh(self.reverse_channel_scale)
+            if cfg.reverse_channel_warmup_steps > 0:
+                # Linear gate warmup: open the non-conservative force only as
+                # the conservative backbone settles, avoiding the early-training
+                # regime where it fires at random and fights V_theta/V_phi.
+                warm = (
+                    self.reverse_warmup_step.float()
+                    / float(cfg.reverse_channel_warmup_steps)
+                ).clamp(max=1.0)
+                scale = scale * warm
             h_new = h_new + (dt * dt / m_b) * scale * Q_force
             if cfg.ln_after_step:
                 h_new = self._project(h_new)
@@ -324,6 +350,16 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
         B, T, d = h0.shape
         gamma, dt = self.gamma, cfg.dt
         m_b = self.compute_mass(x)
+
+        # Advance the reverse-channel warmup once per training forward pass
+        # (kept outside the per-layer checkpoint so it counts forwards, not
+        # recomputations).
+        if (
+            self.training
+            and self.reverse_channel_scale is not None
+            and cfg.reverse_channel_warmup_steps > 0
+        ):
+            self.reverse_warmup_step += 1
 
         r, salience = self._init_registers(B, h0.device)
 
@@ -384,6 +420,17 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
             diag["fock_rev_scale"] = torch.tanh(
                 self.reverse_channel_scale
             ).item()
+            if cfg.reverse_channel_warmup_steps > 0:
+                diag["fock_rev_warmup"] = min(
+                    1.0,
+                    float(self.reverse_warmup_step)
+                    / float(cfg.reverse_channel_warmup_steps),
+                )
+            rc = self.reverse_ch
+            if rc is not None and getattr(rc, "logit_scale", None) is not None:
+                diag["fock_rev_logit_scale"] = (
+                    rc.logit_scale.exp().clamp(max=rc.logit_scale_max).item()
+                )
         return diag
 
     # ------------------------------------------------------------------

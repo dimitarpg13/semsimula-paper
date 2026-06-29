@@ -562,6 +562,41 @@ The clean measurement is a single pre-registered ablation: set `reverse_channel 
 
 The decision rule is then explicit: **retain the reverse channel iff its NTP benefit exceeds the optimisation budget (tighter per-group clipping, watchdog reloads) it costs.** On TinyStories, where training is stable, the channel is essentially free upside and should stay on. On OpenWebText, where it dominates the spikes, the ablation tells us whether the directed routing is worth the stability tax or whether a *gated* reverse channel (a near-zero-initialised scalar with a slow warm-up, §18.3) captures most of the benefit at a fraction of the instability — the recommended follow-up. The OpenWebText realisation of this ablation is registered as experiment **E5** in `Fock-PARFLM_vs_GPT-2_on_OpenWebText_Next_Steps.md`.
 
+### 10.12 Stabilising the Reverse Channel: Bounding the Force Without Symmetrising It
+
+The decision rule above frames the reverse channel as a benefit-vs-instability trade. But the instability is not intrinsic to non-conservativity — it is an **implementation artifact**. The OpenWebText spike debugger (the `override:reverse_ch` group) showed the channel's pre-clip gradient *escalating* layer after layer (229 → 7,039 → 36,692 over a few hundred steps), while NTP stayed flat. That is a runaway in the forward activations, not random noise. Four properties of the vanilla readout cause it, none of which standard attention has:
+
+1. **No input normalisation.** The queries read raw token states $q_i = W_Q h_i$ and the keys/values read raw register states $k_k, v_k = W_K r_k, W_V r_k$. As $\lVert h \rVert$ and $\lVert r \rVert$ drift upward during training, every downstream quantity drifts with them.
+2. **Unbounded value magnitude.** The softmax weights $\alpha$ are bounded (they sum to one), but $v_k = W_V r_k$ is not, so $\lVert Q_i \rVert \propto \lVert r \rVert$. The injected force has no norm cap.
+3. **Fixed temperature and softmax saturation.** With $s_{ik} = q_i \cdot k_k / \sqrt{d}$ and growing $\lVert q \rVert, \lVert k \rVert$, the logits grow, the softmax saturates toward one-hot, and the softmax Jacobian enters its spiky-gradient regime.
+4. **A creation-reverse feedback loop.** Content flows $h \to r$ through the creation gate and $r \to h$ through the reverse channel, every layer. This recurrent coupling is a positive-feedback path that amplifies any magnitude growth.
+
+The **stabilised reverse channel** (config `reverse_channel_stable=True`) adds three bounding devices that attack each pathway while leaving the directed, asymmetric routing — the only thing that makes the channel useful (§10.9) — fully intact. Crucially, **none of them symmetrise the coupling**: the token query and the register key/value still come from independent projections, so $A_{ij} \neq A_{ji}$ and the force remains non-conservative. It is now simply a *bounded* non-conservative force.
+
+**1. QK-normalisation** (kills pathway 3, helps 1). Unit-normalise the query and key and use a learnable, clamped temperature in place of the fixed $1/\sqrt{d}$:
+
+$$s_{ik} = \tau \cdot \frac{q_i}{\lVert q_i \rVert} \cdot \frac{k_k}{\lVert k_k \rVert}, \qquad \tau = \min(e^{\theta}, \tau_{\max}).$$
+
+Logits are now confined to $[-\tau, \tau]$ regardless of $\lVert q \rVert, \lVert k \rVert$, so the softmax can never saturate into a spiky-gradient regime. This is the same fix that tamed attention-logit blow-ups in ViT-22B and many large language models.
+
+**2. Output RMS-normalisation** (kills pathway 2). Normalise the force per token before it is injected:
+
+$$\hat{Q}_i = \frac{Q_i}{\sqrt{\tfrac{1}{d}\lVert Q_i \rVert^2 + \epsilon}}.$$
+
+The force now has unit RMS magnitude by construction — only its **direction** is learned — which caps $\partial \mathcal{L} / \partial W_V$ and removes the $\lVert r \rVert$-driven explosion. A bounded non-conservative force is the discrete analogue of a **saturating** exchange interaction, which is far better behaved than a linear one.
+
+**3. Optional pre-LayerNorm** (kills pathway 1 at the source). With `reverse_channel_pre_ln=True`, the $q$-input and the $r$-input are LayerNorm-ed before projection, bounding magnitudes where they originate.
+
+**4. A warmup gate** (defuses pathway 4 during the fragile early phase). The scalar gate is multiplied by a linear ramp,
+
+$$h_i \leftarrow h_i + \frac{\Delta t^2}{m_i} \cdot w(t) \tanh(s) \hat{Q}_i, \qquad w(t) = \min\left(1, \frac{t}{T_{\text{warm}}}\right),$$
+
+so the non-conservative force opens only as the conservative backbone settles, avoiding the regime (§18.3) where the channel fires at random and fights the $V_\theta / V_\phi$ gradient. The ramp counter is a persisted buffer, so a resumed run continues the schedule.
+
+A local smoke test confirms the intended effect: with the gate forced open, the stabilised readout keeps the global gradient norm bounded and finite across repeated forward/backward passes, and the warmup ramp reduces the early-training gradient norm by roughly an order of magnitude relative to a cold, fully-open gate.
+
+**The hypothesis this tests (experiment E5c).** If the stabilised channel is *both* stable (no `reverse_ch` spikes) *and* matches or beats the E2 PPL, then the instability was an artifact of missing normalisation — not a fundamental cost of breaking conservativity — and the directed-routing benefit of §10.9 can be kept essentially for free. This is the optimistic resolution of the trade in §10.11, and it sharpens the framework's central claim: conservativity buys stability, but a *well-normalised* non-conservative force recovers most of that stability while retaining the expressivity attention needs. E5c is registered alongside E5a (off) and E5b (gated) in `Fock-PARFLM_vs_GPT-2_on_OpenWebText_Next_Steps.md`.
+
 ---
 
 ## 11. Why This Could Improve Perplexity
