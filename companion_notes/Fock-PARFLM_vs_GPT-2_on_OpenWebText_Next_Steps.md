@@ -1462,3 +1462,52 @@ not justified at scale.
 Either outcome is informative.  The point of this study is not to confirm a
 hypothesis but to **measure** — and the four-arm design ensures the
 measurement is clean.
+
+### 17.9. Follow-on diagnostic: the reverse-channel ablation (E5)
+
+The four-arm matrix of §17.3 spans the 2×2 design space and needs no fifth
+*corner*.  E5 is not a new corner — it is a **within-E2 decomposition** that
+isolates a single mechanism inside the Fock register pool: the
+non-conservative **reverse channel** (the gated force $Q_i$ by which tokens
+read back from active registers; see §10 of
+`Improving_the_Fock_Mechanism_to_match_Attention.md`).
+
+**Why it earns its own run.**  The per-group gradient-spike debugger added to
+`colab_fock_depthcond_vtheta_openwebtext.ipynb` identified the
+`override:reverse_ch` parameter group as the **overwhelming and consistent
+source** of the OpenWebText gradient spikes — the same module is, by
+construction, the only non-conservative force in the token sector.  This makes
+the reverse channel the highest-value ablation in the programme: it is at once
+the suspected engine of the directed-routing benefit and the suspected engine
+of the instability.
+
+| Arm | Config (vs E2, all else identical) | What it isolates |
+|---|---|---|
+| **E2** | Fock v2.1 with reverse channel ON | full mechanism (reference) |
+| **E5a** | `reverse_channel = False` | benefit and stability cost of the channel |
+| **E5b** | reverse channel ON but gated: scalar init 0, slow warm-up | whether a staged gate keeps the benefit at lower instability |
+
+**Pre-registered predictions** (derived in §10.11 of the companion note):
+
+1. **Predictive cost.**  E5a is expected to regress in PPL relative to E2 —
+   the directed (asymmetric) coupling component $D$ becomes unrepresentable,
+   reinstating the induction/copy floor.  TinyStories evidence bands the
+   effect at roughly $+0.05$ to $+0.20$ nats NTP for the strongly
+   reverse-reliant configuration; the OpenWebText magnitude is what E5a
+   measures.
+2. **Stability dividend.**  E5a should remove the dominant spike source,
+   allowing a looser global clip and fewer (or zero) watchdog reloads.  The
+   ablation thus reads benefit and instability **on the same axis**.
+3. **Gated middle ground.**  E5b tests the hypothesis that most of the
+   reverse-channel PPL benefit survives a near-zero-initialised, slowly
+   warmed scalar gate while the early-training instability — when the channel
+   fires at random and fights the conservative gradient (§18.3 of the
+   companion note) — is suppressed.
+
+**Decision rule.**  Keep the reverse channel ON (E2) if its NTP benefit over
+E5a exceeds the optimisation budget (per-group clipping, watchdog reloads) it
+costs; adopt the gated variant (E5b) if it recovers most of the benefit at a
+materially lower instability tax; drop it (E5a) only if the benefit is within
+noise.  Quantitative grounding, the loss decomposition, and the supporting
+figure live in §10.8–§10.11 of
+`Improving_the_Fock_Mechanism_to_match_Attention.md`.

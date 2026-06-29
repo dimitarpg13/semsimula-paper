@@ -483,6 +483,85 @@ $$\ddot{h}_i = -\nabla_{h_i}(V_\theta + V_\phi) - \gamma \dot{h}_i,$$
 
 and its intrinsic Jacobi metric; only the token-register exchange is non-conservative. This is precisely why the Fock extension can escape the obstruction without sacrificing the geometric structure of the base model.
 
+### 10.8 Quantifying the Reverse-Channel Benefit: an NTP-Loss Decomposition
+
+The previous subsections establish *what* the reverse channel does (breaks reciprocity, injects a directed force). This subsection asks the operational question the experiments must answer: **how much next-token-prediction (NTP) loss does it actually buy, and what is forfeited if it is switched off?**
+
+Write the per-token NTP loss as the standard cross-entropy decomposition,
+
+$$\mathcal{L}_{\text{NTP}}(\theta) = H(p^\star) + \mathbb{E}_{x}\big[ D_{\text{KL}}\big( p^\star(\cdot \mid x) \ \Vert \ p_\theta(\cdot \mid x) \big) \big],$$
+
+where $p^\star$ is the true conditional distribution and $H(p^\star)$ is the irreducible data entropy. The model can only act on the second term — the average KL gap between the truth and what the model can represent. Define the **reverse-channel benefit** as the loss the disabled model pays in excess of the enabled model:
+
+$$\Delta\mathcal{L}_{\text{rev}} = \mathcal{L}_{\text{NTP}}(\theta_{\text{rev=off}}) - \mathcal{L}_{\text{NTP}}(\theta_{\text{rev=on}}) \ge 0.$$
+
+The inequality is structural, not empirical. The reverse-channel scale $s$ (the learnable scalar `reverse_channel_scale`, initialised at $0$) makes the disabled model an **exact nested special case** of the enabled model at $s = 0$. Any optimiser that can reach $s = 0$ can do no worse with the channel than without it, so $\Delta\mathcal{L}_{\text{rev}} \ge 0$ up to optimisation error. The scientific content is therefore entirely in the **magnitude** of $\Delta\mathcal{L}_{\text{rev}}$ and in the **stability price** paid to obtain it (§10.11).
+
+### 10.9 The Expressivity Source: Directed vs Undirected Coupling
+
+To localise where $\Delta\mathcal{L}_{\text{rev}}$ comes from, integrate the registers out of one layer and read off the effective token-to-token influence matrix $A$, where $A_{ij}$ measures how strongly the update of token $i$ depends on token $j$.
+
+**Without the reverse channel.** The only token force is the back-reaction of the creation spring bundle $V_{\text{create}}$ of §10.5. Because it is the gradient of a single scalar potential, its cross-Jacobian is symmetric (§10.7), so the effective coupling is **symmetric**:
+
+$$A^{\text{(no rev)}}_{ij} = A^{\text{(no rev)}}_{ji}.$$
+
+**With the reverse channel.** The separately parameterised force of §10.7 adds a product of two *different* stiffness matrices,
+
+$$A_{ij} \sim \sum_{k} \beta_{ik} \alpha_{kj}, \qquad A_{ij} \neq A_{ji}.$$
+
+Split any coupling into its symmetric and antisymmetric parts,
+
+$$A = \underbrace{\tfrac{1}{2}(A + A^{\mathsf{T}})}_{S \ \text{(undirected)}} + \underbrace{\tfrac{1}{2}(A - A^{\mathsf{T}})}_{D \ \text{(directed)}}.$$
+
+The conservative core can represent $S$ to arbitrary accuracy; it can **never** produce $D \neq 0$. The directed component $D$ is the sole property the reverse channel adds. Counting degrees of freedom on a length-$T$ context, the symmetric part carries $T(T+1)/2$ parameters and the directed part adds another $T(T-1)/2$ — the channel **roughly doubles** the representable interaction structure, and the half it adds is precisely the directed half.
+
+This is not an abstract gain. The canonical NTP primitive that requires $D \neq 0$ is the **induction / copy** operation: *find a previous occurrence of the current token and copy the token that followed it.* This map sends position $i$ to a strictly earlier, content-selected source $j < i$ with no reciprocal $j \to i$ term, so its coupling is purely directed. A short argument makes the cost concrete.
+
+> **Proposition (directed floor).** Let $\rho$ be the fraction of positions whose optimal predictor is an induction/copy of an earlier token, and suppose the copy target is unpredictable from the symmetric (undirected) statistics alone with residual entropy $\ge \delta$ nats. Then any model with symmetric effective coupling satisfies
+>
+> $$\mathcal{L}_{\text{NTP}}(\theta_{\text{rev=off}}) - H(p^\star) \ \ge \ \rho \delta,$$
+>
+> a floor the reverse channel can remove. Hence $\Delta\mathcal{L}_{\text{rev}}$ is lower-bounded by the copy-predictable mass of the corpus times its directed residual entropy.
+
+The figure makes the contrast visual: a symmetric coupling (panel A) is a mirror image across the diagonal; the reverse channel adds the off-diagonal directed band (panel B) that carries copy and induction.
+
+![Reverse-channel benefit: directed routing the conservative core cannot represent](images/reverse_channel_benefit.png)
+
+**Figure 10.2.** **(A)** Without the reverse channel the effective token coupling is symmetric ($A = A^{\mathsf{T}}$): only undirected, reciprocal associations are representable. **(B)** With the reverse channel the coupling becomes asymmetric, $A_{ij} \sim \sum_k \beta_{ik}\alpha_{kj}$, and a directed induction/copy band appears below the diagonal — a routing pattern no symmetric matrix can express. **(C)** Empirical anchor: across the two causal-fixed v2.1 runs, the better-performing configuration invests a far larger reverse-channel scale (real numbers from the training logs), consistent with the channel doing real predictive work.
+
+### 10.10 A Curvature Estimate from the Learned Scale
+
+Even before a clean ablation, the trained checkpoints already report how hard the model *chooses* to lean on the channel. Treat the scalar gate $s$ as the control variable and expand the loss around the disabled point $s = 0$:
+
+$$\mathcal{L}(s) = \mathcal{L}(0) + s \mathcal{L}'(0) + \tfrac{1}{2} s^2 \mathcal{L}''(0) + \mathcal{O}(s^3).$$
+
+The optimiser settles at $s^\star = \arg\min_s \mathcal{L}(s)$. For a locally quadratic basin with minimum at $s^\star$ the realised benefit is
+
+$$\Delta\mathcal{L}_{\text{rev}} = \mathcal{L}(0) - \mathcal{L}(s^\star) \approx \tfrac{1}{2} \mathcal{L}''(s^\star) (s^\star)^2,$$
+
+so **benefit scales with $(s^\star)^2$** — the curvature-weighted reliance the figure plots. The two causal-fixed v2.1 runs give:
+
+| Configuration | learned scale s* | reliance (s*)^2 | TinyStories PPL | NTP = ln(PPL) nats |
+|---|---|---|---|---|
+| v2.1 tau-only | +0.056 | 3.1e-3 | 11.18 | 2.414 |
+| v2.1 tau+perK+ortho | -0.227 | 5.2e-2 | 9.30 | 2.230 |
+
+Two observations follow. First, the stronger model invests about $(0.227/0.056)^2 \approx 16\times$ more curvature-weighted reliance on the reverse channel, and is the one that lands lower (9.30 vs 11.18 PPL, a $0.184$ nat NTP gap). Second, the sign it converges to is **negative** (dispersive / repulsive), matching the independent $-0.14$ to $-0.32$ range that Fock Attention learns (§19.9) — two different mechanisms discovering the same complementary role: the conservative Verlet supplies attractive clustering, the reverse channel supplies the directed, dispersive discrimination that separates competing continuations.
+
+The caveat is honest: this cross-run comparison conflates the reverse-channel scale with the per-register-keys and orthogonal-init changes, so the $16\times$ figure is **correlational, not a controlled effect**. The $0.184$ nat NTP gap is an upper band on the reverse-channel contribution, not an attribution. The controlled number requires the ablation of §10.11.
+
+### 10.11 What Is Lost If the Reverse Channel Is Disabled
+
+The clean measurement is a single pre-registered ablation: set `reverse_channel = False` (equivalently freeze $s = 0$) with **every other hyperparameter fixed**, and compare NTP loss head-to-head. Three predictions, falsifiable:
+
+1. **Predictive cost (PPL up).** Disabling forfeits the directed component $D$ of §10.9, so the induction/copy floor of the Proposition reappears. Magnitude is bounded below by zero and above by the full Fock-on/off gap; using the learned reliance as a guide, the regression should be **larger for the tau+perK+ortho config** (it leans on the channel $\sim 16\times$ harder) than for tau-only. Pre-registered band: roughly $+0.05$ to $+0.20$ nats NTP (about $+5\%$ to $+22\%$ PPL) for the perK+ortho configuration on TinyStories, and noticeably smaller for tau-only.
+
+2. **Stability dividend (spikes down).** The reverse channel is the **sole non-conservative force** in the token sector (§10.7) and was the dominant gradient-spike source flagged by the per-group spike debugger on OpenWebText (the `override:reverse_ch` group). Disabling it is therefore predicted to remove the watchdog-triggering spikes and let the run proceed with a looser global clip. The ablation thus measures benefit and instability cost **simultaneously and on the same axis**.
+
+3. **Geometric reversion (diagnostic).** With $D \to 0$ the effective coupling becomes reciprocal, so the shared-potential $R^2$ separator (§10.3) should swing from the attention quadrant back toward the conservative quadrant — a mechanistic confirmation that the separator tracks the reverse channel specifically, not the Fock machinery as a whole.
+
+The decision rule is then explicit: **retain the reverse channel iff its NTP benefit exceeds the optimisation budget (tighter per-group clipping, watchdog reloads) it costs.** On TinyStories, where training is stable, the channel is essentially free upside and should stay on. On OpenWebText, where it dominates the spikes, the ablation tells us whether the directed routing is worth the stability tax or whether a *gated* reverse channel (a near-zero-initialised scalar with a slow warm-up, §18.3) captures most of the benefit at a fraction of the instability — the recommended follow-up. The OpenWebText realisation of this ablation is registered as experiment **E5** in `Fock-PARFLM_vs_GPT-2_on_OpenWebText_Next_Steps.md`.
+
 ---
 
 ## 11. Why This Could Improve Perplexity
