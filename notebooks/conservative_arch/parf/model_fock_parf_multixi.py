@@ -109,6 +109,9 @@ class FockMultiXiPARFConfig(MultiXiPARFConfig):
     # Improving_the_Fock_Mechanism_to_match_Attention.md; experiment E5c)
     reverse_channel_stable: bool = False   # QK-norm + output RMS-norm readout
     reverse_channel_pre_ln: bool = True    # pre-LayerNorm on q/k/v (stable only)
+    reverse_channel_soft_norm: bool = False  # soft-floored output norm (eps=1.0)
+                                           # instead of hard unit-RMS (eps=1e-6);
+                                           # removes the 1/‖Q‖ Jacobian blow-up
     reverse_channel_warmup_steps: int = 0  # linear gate warmup over this many
                                            # training forward passes; 0 = off
 
@@ -197,6 +200,7 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
                     d, cfg.d_k, init_scale=cfg.register_init_scale,
                     stable=cfg.reverse_channel_stable,
                     pre_ln=cfg.reverse_channel_pre_ln,
+                    soft_norm=cfg.reverse_channel_soft_norm,
                 )
                 self.reverse_channel_scale = nn.Parameter(torch.zeros(1))
             else:

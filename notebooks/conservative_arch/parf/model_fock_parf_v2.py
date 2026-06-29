@@ -346,7 +346,11 @@ class ReverseChannel(nn.Module):
          softmax cannot saturate into spiky-gradient regimes.
       2. Output RMS-normalisation — the force ``Q_force`` is RMS-normalised
          per token, so its magnitude is bounded by construction (only its
-         *direction* is learned), capping ∂L/∂W_V_rev.
+         *direction* is learned), capping ∂L/∂W_V_rev.  With ``soft_norm=True``
+         the hard floor (eps=1e-6) is replaced by a soft floor (eps=1.0):
+         ``Q / sqrt(mean(Q²)+1)``.  This is the identity for small forces
+         (backward Jacobian ~1, no 1/‖Q‖ blow-up) and a soft cap at ~unit RMS
+         for large ones, so the *pre-clip* projection gradient stays O(1).
       3. Optional pre-LayerNorm (``pre_ln=True``) — q/k/v inputs are
          LayerNorm-ed, bounding magnitudes at the source.
     """
@@ -358,11 +362,19 @@ class ReverseChannel(nn.Module):
         init_scale: float = 0.02,
         stable: bool = False,
         pre_ln: bool = True,
+        soft_norm: bool = False,
     ):
         super().__init__()
         self.d_k = d_k
         self.stable = stable
         self.pre_ln = bool(stable and pre_ln)
+        # Output normalisation floor.  Hard RMS-norm (eps=1e-6) pins the force to
+        # unit RMS but its 1/‖Q‖ Jacobian blows up the *pre-clip* gradient when
+        # the natural force is small.  Soft-floored norm (eps=1.0) divides by
+        # sqrt(mean(Q²)+1): identity for small forces (Jacobian ~1, no blow-up)
+        # and a soft cap at ~unit RMS for large ones.
+        self.soft_norm = bool(stable and soft_norm)
+        self.out_norm_eps = 1.0 if self.soft_norm else 1e-6
         self.W_Q_rev = nn.Linear(d, d_k, bias=False)
         self.W_K_rev = nn.Linear(d, d_k, bias=False)
         self.W_V_rev = nn.Linear(d, d, bias=False)
@@ -455,10 +467,13 @@ class ReverseChannel(nn.Module):
             Q_force = torch.matmul(alpha, v)          # (B, T, d)
 
         if self.stable:
-            # Output RMS-norm: bound the injected force magnitude per token;
-            # only its direction is learned.  Zero force on tokens with no
-            # active register stays exactly zero (has_active gate above).
-            rms = Q_force.pow(2).mean(dim=-1, keepdim=True).add(1e-6).sqrt()
+            # Output norm: bound the injected force magnitude per token.  With
+            # the hard floor (eps=1e-6) this is unit-RMS (direction only); with
+            # the soft floor (eps=1.0) small forces pass through ~unchanged and
+            # only large ones are capped, keeping the backward Jacobian O(1).
+            # Zero force on tokens with no active register stays exactly zero
+            # (has_active gate above).
+            rms = Q_force.pow(2).mean(dim=-1, keepdim=True).add(self.out_norm_eps).sqrt()
             Q_force = Q_force / rms
 
         return Q_force
