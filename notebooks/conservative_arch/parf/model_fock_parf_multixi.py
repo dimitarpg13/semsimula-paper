@@ -123,6 +123,14 @@ class FockMultiXiPARFConfig(MultiXiPARFConfig):
                                            # removes the 1/‖Q‖ Jacobian blow-up
     reverse_channel_warmup_steps: int = 0  # linear gate warmup over this many
                                            # training forward passes; 0 = off
+    reverse_channel_per_layer: bool = False  # one gate scalar per layer instead of
+                                             # a single global gate.  A shared scalar
+                                             # aggregates gradients across all L
+                                             # layers, so once the channel is load-
+                                             # bearing it becomes a high-variance
+                                             # knob that drives E/P divergence (see
+                                             # §10.12 note).  Per-layer gates
+                                             # decouple that aggregation.
 
 
 # ---------------------------------------------------------------------------
@@ -211,7 +219,8 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
                     pre_ln=cfg.reverse_channel_pre_ln,
                     soft_norm=cfg.reverse_channel_soft_norm,
                 )
-                self.reverse_channel_scale = nn.Parameter(torch.zeros(1))
+                n_gate = cfg.L if cfg.reverse_channel_per_layer else 1
+                self.reverse_channel_scale = nn.Parameter(torch.zeros(n_gate))
             else:
                 self.reverse_ch = None
                 self.reverse_channel_scale = None
@@ -350,7 +359,15 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
             # the force on token t only reflects tokens 1…t (no leak).
             r_rev = r_causal if r_causal is not None else r_new
             Q_force = self.reverse_ch(h_new, r_rev, active)
-            scale = torch.tanh(self.reverse_channel_scale)
+            # Per-layer gate (shape (L,)) indexes by layer; global gate (shape
+            # (1,)) is shared.  Selecting a 0-dim slice keeps the increment
+            # broadcast and the _cap_rev_scale readout identical for both.
+            rev_raw = (
+                self.reverse_channel_scale[layer_idx]
+                if self.reverse_channel_scale.numel() > 1
+                else self.reverse_channel_scale
+            )
+            scale = torch.tanh(rev_raw)
             if cfg.reverse_channel_warmup_steps > 0:
                 # Linear gate warmup: open the non-conservative force only as
                 # the conservative backbone settles, avoiding the early-training
@@ -523,7 +540,7 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
         if cfg.fock_version == "v2" and self.reverse_channel_scale is not None:
             diag["fock_rev_scale"] = torch.tanh(
                 self.reverse_channel_scale
-            ).item()
+            ).mean().item()
             if cfg.reverse_channel_warmup_steps > 0:
                 diag["fock_rev_warmup"] = min(
                     1.0,
