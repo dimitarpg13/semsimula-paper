@@ -28,6 +28,7 @@
 18. [Fock v2 Convergence Slowdown: Diagnosis and Future Work](#18-fock-v2-convergence-slowdown-diagnosis-and-future-work)
 19. [Resolving the Conservative–Attention Gap](#19-resolving-the-conservativeattention-gap)
 20. [Register-Content Collapse: Geometry, Information Cost, and the Repulsion Force](#20-register-content-collapse-geometry-information-cost-and-the-repulsion-force)
+21. [Per-Layer Reverse-Channel Gate: Decoupling the Global Scalar Bottleneck](#21-per-layer-reverse-channel-gate-decoupling-the-global-scalar-bottleneck)
 
 ---
 
@@ -2037,6 +2038,190 @@ Recommended order of operations:
 
 ---
 
+## 21. Per-Layer Reverse-Channel Gate: Decoupling the Global Scalar Bottleneck
+
+### 21.1 Recap: the stabilised reverse channel and the remaining failure mode
+
+Section 10.12 introduced the **stabilised reverse channel** (E5c): QK-normalisation, output RMS-normalisation, optional pre-LayerNorm, and a linear warmup gate. These fixes close the four local blow-up pathways (unbounded logits, unbounded force magnitude, un-normalised inputs, and cold-start feedback) and were validated empirically: E5c co-adapted from scratch reached PPL 96.52, outperforming E2 (150.46) by a wide margin.
+
+However, E5c subsequently entered a divergence/reload loop beyond step 25,500. The spike debugger revealed that the gradient groups responsible for the late divergence were **not** `override:reverse_ch` (the channel projections) but rather `E` and `P` (the embedding and positional parameters). The reverse channel's projections stayed bounded; its **scalar gate** $s$ was the transmitter of instability to the rest of the model.
+
+### 21.2 The shared-gate gradient accumulation problem
+
+The reverse-channel force is injected at every layer $\ell = 0, \ldots, L-1$:
+
+$$h_i^{(\ell)} \leftarrow h_i^{(\ell)} + \frac{\Delta t^2}{m_i} \tanh(s) w(t) \hat{Q}_i^{(\ell)}$$
+
+where $s$ is a **single learned scalar** shared across all layers. The NTP loss gradient with respect to $s$ therefore aggregates contributions from every layer and every token:
+
+$$\frac{\partial \mathcal{L}}{\partial s} = \sum_{\ell=0}^{L-1} \sum_{i=1}^{T} \frac{\partial \mathcal{L}}{\partial h_i^{(\ell)}} \cdot \frac{\Delta t^2}{m_i} w(t) \mathrm{sech}^2(s) \hat{Q}_i^{(\ell)}$$
+
+This is a sum of $L \times T$ terms. Since the per-layer force directions $\hat{Q}_i^{(\ell)}$ are in general **not orthogonal** across layers (the same register bank is read by every layer), the contributions can reinforce constructively. In the worst case, the variance scales as:
+
+$$\mathrm{Var}\left(\frac{\partial \mathcal{L}}{\partial s}\right) \propto L^2 \sigma_Q^2$$
+
+where $\sigma_Q^2$ is the per-layer, per-token gradient variance. Compare this with the per-layer parameters $W_Q, W_K, W_V$ of the reverse channel, each of which sees only its own layer's contribution. The scalar gate receives an $L$-fold noisier signal.
+
+Once the channel becomes load-bearing (large $\lvert \tanh(s) \rvert$), the optimizer updates $s$ with a step whose magnitude is controlled by AdamW's second-moment estimate of this aggregated gradient. A single large spike in any layer inflates the estimate; subsequent steps over-correct; the oscillation feeds back through the $h \to r$ creation and $r \to h$ reverse path, producing the observed divergence in $E$ and $P$.
+
+### 21.3 Per-layer gates: decoupling the gradient aggregation
+
+The fix is conceptually simple: replace the single scalar $s$ with an independent gate per layer:
+
+$$h_i^{(\ell)} \leftarrow h_i^{(\ell)} + \frac{\Delta t^2}{m_i} \tanh(s_\ell) w(t) \hat{Q}_i^{(\ell)}$$
+
+Each gate $s_\ell$ now sees only its own layer's gradient:
+
+$$\frac{\partial \mathcal{L}}{\partial s_\ell} = \sum_{i=1}^{T} \frac{\partial \mathcal{L}}{\partial h_i^{(\ell)}} \cdot \frac{\Delta t^2}{m_i} w(t) \mathrm{sech}^2(s_\ell) \hat{Q}_i^{(\ell)}$$
+
+The variance reduction is immediate:
+
+$$\mathrm{Var}\left(\frac{\partial \mathcal{L}}{\partial s_\ell}\right) \propto \sigma_Q^2 \quad \text{(no } L^2 \text{ factor)}$$
+
+Moreover, the optimizer maintains a **separate second-moment estimate** for each $s_\ell$, so a spike in layer 3 does not corrupt the step size of layer 12. This is the critical decoupling: each layer can learn its own coupling strength to the register bank independently.
+
+### 21.4 Expressivity gain: depth-dependent coupling profile
+
+Beyond stability, per-layer gates add a **structural degree of freedom** that the global gate cannot express. In a Transformer, each layer serves a distinct function (early layers: local syntax; middle layers: relational binding; late layers: output projection). The optimal reverse-channel coupling strength is unlikely to be uniform across this hierarchy.
+
+With per-layer gates, the model can learn a **depth-dependent coupling profile**:
+
+$$c(\ell) = \tanh(s_\ell), \qquad \ell = 0, \ldots, L-1$$
+
+This profile expresses how much non-conservative directed routing each depth needs. A plausible learned profile might have:
+- **Early layers** ($\ell \lt 4$): small $\lvert c(\ell) \rvert$, since syntactic structure is local and does not benefit much from the global register readout.
+- **Middle layers** ($4 \le \ell \lt 12$): large $\lvert c(\ell) \rvert$, where relational binding across distant tokens benefits most from directed register-to-token exchange.
+- **Late layers** ($\ell \ge 12$): moderate $\lvert c(\ell) \rvert$, balancing output projection with final register readout.
+
+This is analogous to the per-head temperature that CLIP (Radford et al. 2021) and ViT-22B use for contrastive logits: a single temperature is too coarse; per-head temperatures improve both stability and downstream accuracy.
+
+### 21.5 Parameter and memory cost
+
+The cost of per-layer gates is negligible:
+
+| Component | Global gate | Per-layer gate |
+| --------- | ----------- | -------------- |
+| Parameters | 1 scalar | L scalars |
+| Memory | 4 bytes | 4L bytes |
+| Gradient entries per step | 1 | L |
+
+For $L = 16$, the per-layer gate adds 15 parameters (60 bytes). This is insignificant relative to the reverse channel's projection weights ($3 d d_k + d d \approx 3 \times 384 \times 64 + 384^2 \approx 221\text{k}$ parameters).
+
+### 21.6 Interaction with warmup and per-group clipping
+
+The linear warmup ramp $w(t) = \min(1, t / T_{\text{warm}})$ multiplies each gate identically, so all gates start at zero and open together. Each layer's gate still receives its own gradient once $w(t) \gt 0$, so the decoupling is fully active during the stable and decay phases where the divergence occurs.
+
+Per-group gradient clipping assigns the reverse-channel gate(s) to the `override:reverse_channel_scale` clip group. With per-layer gates, the clip norm is computed over the $L$-dimensional vector $\nabla_{\mathbf{s}} \mathcal{L}$ rather than a single scalar gradient. The per-group clip therefore applies as before, but now the individual $\partial \mathcal{L} / \partial s_\ell$ components have lower variance, so the clip binds less frequently. The clip threshold can remain at the current 0.1 without adjustment.
+
+### 21.7 Checkpoint compatibility
+
+A checkpoint saved with a global gate has `reverse_channel_scale` of shape $(1,)$. A model built with `reverse_channel_per_layer=True` expects shape $(L,)$. These shapes are incompatible under `strict=True` loading.
+
+The recommended approach: train from scratch with per-layer gates. Do not retrofit. This is the same recommendation as the original E5c co-adaptation: the channel must co-adapt with the conservative backbone from step 0 so the optimizer builds correct second-moment estimates.
+
+### 21.8 Implementation
+
+The implementation adds a single config flag and touches three code sites:
+
+**Config** (`FockMultiXiPARFConfig`):
+
+```python
+reverse_channel_per_layer: bool = False
+```
+
+**Initialisation** (gate creation):
+
+```python
+n_gate = cfg.L if cfg.reverse_channel_per_layer else 1
+self.reverse_channel_scale = nn.Parameter(torch.zeros(n_gate))
+```
+
+**Layer step** (gate indexing):
+
+```python
+rev_raw = (
+    self.reverse_channel_scale[layer_idx]
+    if self.reverse_channel_scale.numel() > 1
+    else self.reverse_channel_scale
+)
+scale = torch.tanh(rev_raw)
+```
+
+The diagnostic readout (`fock_rev_scale` in the summary dict) reports `.mean().item()` so it remains a single number for logging; the per-layer structural report already captures each layer's `rev_scale` via the existing `_cap_rev_scale` field, so no new diagnostic code is needed.
+
+### 21.9 Causal chain: per-layer gate to lower NTP loss
+
+The per-layer gate improves NTP loss through two independent mechanisms:
+
+1. **Stability extension**: The divergence/reload loop that E5c entered at step 25,500 consumed training budget and prevented further PPL improvement. Decoupled gates remove the $L^2$ variance factor, extending the stable training horizon and allowing the model to reach lower PPL.
+
+2. **Depth-dependent coupling**: The global gate forces all layers to share the same coupling strength, which is suboptimal. Per-layer gates allow the model to allocate more non-conservative force where it helps (mid-depth relational binding) and less where it hurts (early syntactic layers). This is a strict superset of the global gate's expressivity.
+
+### 21.10 Summary of the full reverse-channel stabilisation stack
+
+The table below collects all reverse-channel fixes and their targets:
+
+| Fix | Config flag | Targets | Status |
+| --- | ----------- | ------- | ------ |
+| QK-normalisation | `reverse_channel_stable` | Logit blow-up (pathway 3) | Validated (E5c) |
+| Output RMS-norm | `reverse_channel_stable` | Force magnitude (pathway 2) | Validated (E5c) |
+| Soft-floored norm | `reverse_channel_soft_norm` | Backward Jacobian blow-up | Validated (E5c) |
+| Pre-LayerNorm | `reverse_channel_pre_ln` | Input drift (pathway 1) | Validated (E5c) |
+| Linear warmup | `reverse_channel_warmup_steps` | Cold-start feedback (pathway 4) | Validated (E5c) |
+| Per-layer gate | `reverse_channel_per_layer` | Gradient aggregation across depth | Implemented; awaiting experimental validation |
+
+```mermaid
+flowchart TB
+    P1["pathway 1<br>input drift"]
+    P2["pathway 2<br>force magnitude"]
+    P3["pathway 3<br>logit blow up"]
+    P4["pathway 4<br>cold start feedback"]
+    P5["pathway 5<br>gate gradient aggregation across L layers"]
+
+    F1["pre LayerNorm"]
+    F2["output RMS norm + soft floor"]
+    F3["QK norm + clamped temperature"]
+    F4["linear warmup ramp"]
+    F5["per layer gate s(l)"]
+
+    E5c["E5c validated<br>PPL 96.52"]
+    E6["next experiment<br>per layer gate + B4 repulsion"]
+
+    F1 --> P1
+    F2 --> P2
+    F3 --> P3
+    F4 --> P4
+    F5 --> P5
+
+    F1 --> E5c
+    F2 --> E5c
+    F3 --> E5c
+    F4 --> E5c
+    F5 --> E6
+    E5c -.->|diverged at 25.5k due to P5| E6
+```
+
+### 21.11 Experimental plan
+
+The per-layer gate is tested on top of the B4 register-repulsion baseline (which provides healthy, non-collapsed registers for the reverse channel to attend to). The configuration:
+
+- `REVERSE_CHANNEL = True`
+- `REVERSE_CHANNEL_STABLE = True`
+- `REVERSE_CHANNEL_SOFT_NORM = True`
+- `REVERSE_CHANNEL_WARMUP_STEPS = 4000`
+- `REVERSE_CHANNEL_PER_LAYER = True`
+- `REGISTER_REPULSION = True`, coefficient 0.05, kind `gram`
+- `ortho_register_init = True`, `per_register_keys = True`
+- Train from scratch (variant tag `e5c_plgate_rep0.05`)
+
+**Success criteria:**
+1. No gradient spikes in `override:reverse_channel_scale` beyond the per-group clip (0.1).
+2. Training extends past step 25,500 without entering a divergence/reload loop.
+3. PPL matches or beats E5c's 96.52 and continues to improve.
+4. The learned coupling profile $c(\ell)$ shows non-trivial depth variation (at least 2x range between min and max), confirming that the extra degrees of freedom are used.
+
+---
+
 ## References
 
 - **Gueorguiev, D.** (2026). *Semantic Simulation: A Prescriptive Lagrangian Framework for Efficient Semantic Inference* (v4). arXiv / SSRN.
@@ -2074,4 +2259,4 @@ Recommended order of operations:
 
 ---
 
-*Report compiled: May 2026. Updated June 2026 with §19 (Fock Attention results, register diagnostics, v2.1 routing fix). Semantic Simulation Research Programme.*
+*Report compiled: May 2026. Updated June 2026 with §19 (Fock Attention results, register diagnostics, v2.1 routing fix), §20 (register collapse and repulsion), §21 (per-layer reverse-channel gate). Semantic Simulation Research Programme.*
