@@ -220,6 +220,12 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
             persistent=True,
         )
 
+        # Diagnostic capture buffer.  When not None, _fock_layer_step appends
+        # one dict of per-layer health scalars per layer per forward pass.
+        # Left None (and sub-module capture off) during normal training so it
+        # is exactly zero cost; a probe flips it on for a single eval forward.
+        self._fock_capture: Optional[List[dict]] = None
+
     # ------------------------------------------------------------------
     def _init_registers(
         self, B: int, device: torch.device,
@@ -272,6 +278,7 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
         decay = cfg.register_salience_decay
 
         # --- Creation ---
+        alpha_max = None
         if cfg.fock_version == "v1":
             h_mean = h.mean(dim=1)
             g_create = self.creation_gates[layer_idx](h_mean)
@@ -309,6 +316,8 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
         r_new = torch.where(active_float.bool(), r_new, r)
 
         # --- Reverse channel (v2 only) ---
+        _cap_qforce_ratio = 0.0
+        _cap_rev_scale = 0.0
         if (
             cfg.fock_version == "v2"
             and self.reverse_ch is not None
@@ -328,7 +337,15 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
                     / float(cfg.reverse_channel_warmup_steps)
                 ).clamp(max=1.0)
                 scale = scale * warm
-            h_new = h_new + (dt * dt / m_b) * scale * Q_force
+            increment = (dt * dt / m_b) * scale * Q_force
+            if self._fock_capture is not None:
+                with torch.no_grad():
+                    h_rms = h_new.pow(2).mean().sqrt().clamp(min=1e-8)
+                    _cap_qforce_ratio = float(
+                        increment.pow(2).mean().sqrt() / h_rms
+                    )
+                    _cap_rev_scale = float(scale.reshape(-1)[0])
+            h_new = h_new + increment
             if cfg.ln_after_step:
                 h_new = self._project(h_new)
 
@@ -336,7 +353,67 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
         g_destroy = self.destruction_gates[layer_idx](r_new)
         salience = salience * (1.0 - g_destroy * active.float())
 
+        if self._fock_capture is not None:
+            self._fock_capture.append(
+                self._fock_layer_stats(
+                    layer_idx, r_new, active, salience, g_destroy,
+                    alpha_max, _cap_qforce_ratio, _cap_rev_scale,
+                )
+            )
+
         return h_new, h, r_new, salience
+
+    # ------------------------------------------------------------------
+    @torch.no_grad()
+    def _fock_layer_stats(
+        self,
+        layer_idx: int,
+        r_new: torch.Tensor,
+        active: torch.Tensor,
+        salience: torch.Tensor,
+        g_destroy: torch.Tensor,
+        alpha_max: Optional[torch.Tensor],
+        qforce_ratio: float,
+        rev_scale: float,
+    ) -> dict:
+        """Snapshot per-layer Fock health scalars for the diagnostic probe.
+
+        All quantities are cheap reductions over the batch; only called when
+        ``self._fock_capture`` is not None (i.e. during a diagnostic forward).
+        """
+        active_f = active.float()
+        active_frac = float(active_f.mean())
+
+        # Register content diversity: mean pairwise cosine similarity among the
+        # ACTIVE registers.  ~1.0 => registers have collapsed to one direction
+        # (wasted capacity); ~0.0 => a diverse, well-used register bank.
+        r_norm = F.normalize(r_new, dim=-1)                 # (B, M, d)
+        gram = torch.bmm(r_norm, r_norm.transpose(1, 2))    # (B, M, M)
+        M = gram.shape[-1]
+        eye = torch.eye(M, device=gram.device).bool()
+        pair_mask = active.unsqueeze(2) & active.unsqueeze(1) & ~eye  # (B,M,M)
+        n_pairs = pair_mask.float().sum().clamp(min=1.0)
+        reg_diversity = float((gram * pair_mask.float()).sum() / n_pairs)
+
+        stats = {
+            "layer": layer_idx,
+            "active_frac": active_frac,
+            "salience_mean": float(salience.mean()),
+            "salience_std": float(salience.std()),
+            "reg_cos_sim": reg_diversity,
+            "destroy_mean": float((g_destroy * active_f).sum()
+                                  / active_f.sum().clamp(min=1.0)),
+            "qforce_ratio": qforce_ratio,
+            "rev_scale": rev_scale,
+        }
+        if alpha_max is not None:
+            stats["create_alpha_max"] = float(alpha_max.mean())
+        if self.creation_gate_qkv is not None:
+            stats["create_entropy"] = self.creation_gate_qkv.last_entropy
+        if self.reverse_ch is not None:
+            stats["rev_entropy"] = self.reverse_ch.last_entropy
+            stats["rev_alpha_max"] = self.reverse_ch.last_alpha_max
+        return stats
 
     # ------------------------------------------------------------------
     def _stack_forward(
@@ -436,6 +513,110 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
                     rc.logit_scale.exp().clamp(max=rc.logit_scale_max).item()
                 )
         return diag
+
+    # ------------------------------------------------------------------
+    def set_fock_capture(self, enabled: bool) -> None:
+        """Toggle per-layer Fock health capture on the model and sub-modules.
+
+        When enabled, the next forward pass records one stats dict per layer
+        into ``self._fock_capture`` (cleared here on each enable).  Keep it on
+        for a single eval forward, then read ``fock_component_report()`` and
+        turn it off — it adds a small amount of work and memory per layer.
+        """
+        self._fock_capture = [] if enabled else None
+        for mod in (self.creation_gate_qkv, self.reverse_ch):
+            if mod is not None:
+                mod.capture_stats = enabled
+
+    # ------------------------------------------------------------------
+    def fock_component_report(self, reset: bool = True) -> dict:
+        """Aggregate captured per-layer stats into a component-health report.
+
+        Returns a dict with:
+          - ``per_layer``: list of the raw per-layer stat dicts.
+          - ``summary``:   mean of each scalar across layers, plus derived
+                           health flags that point at the weakest link.
+
+        Run a diagnostic forward with ``set_fock_capture(True)`` first.
+        """
+        cap = self._fock_capture or []
+        report: dict = {"per_layer": list(cap), "summary": {}}
+        if not cap:
+            if reset:
+                self.set_fock_capture(False)
+            return report
+
+        keys = [
+            "active_frac", "salience_mean", "salience_std", "reg_cos_sim",
+            "destroy_mean", "qforce_ratio", "rev_scale", "create_alpha_max",
+            "create_entropy", "rev_entropy", "rev_alpha_max",
+        ]
+        summ = {}
+        for k in keys:
+            vals = [d[k] for d in cap if d.get(k) is not None]
+            if vals:
+                summ[k] = sum(vals) / len(vals)
+        report["summary"] = summ
+
+        # Derived, decision-oriented health flags (heuristic thresholds).
+        import math as _m
+        flags = []
+        M = self.cfg.n_registers
+        T_hint = getattr(self.cfg, "max_len", None)
+        if summ.get("reg_cos_sim", 0.0) > 0.6:
+            flags.append(
+                f"register bank COLLAPSING (cos_sim={summ['reg_cos_sim']:.2f}"
+                f" > 0.6): registers are redundant -> B2 per-register keys /"
+                f" B3 orthogonal init / stronger repulsion may add capacity"
+            )
+        if summ.get("active_frac", 1.0) < 1.5 / max(M, 1):
+            flags.append(
+                f"register UTILISATION low (active_frac={summ['active_frac']:.2f}"
+                f", ~{summ['active_frac']*M:.1f}/{M} active): most of the pool"
+                f" is idle -> raise salience_threshold headroom / rebalance"
+                f" creation vs destruction, or M is oversized"
+            )
+        if summ.get("create_entropy") is not None and T_hint:
+            frac = summ["create_entropy"] / _m.log(max(T_hint, 2))
+            if frac > 0.85:
+                flags.append(
+                    f"creation attention near-UNIFORM (entropy"
+                    f"={summ['create_entropy']:.2f}, {frac*100:.0f}% of max):"
+                    f" registers aren't selecting tokens -> lower tau_create /"
+                    f" per-register tau (B1) may sharpen routing"
+                )
+            elif frac < 0.15:
+                flags.append(
+                    f"creation attention near-DEGENERATE (entropy"
+                    f"={summ['create_entropy']:.2f}, {frac*100:.0f}% of max):"
+                    f" each register locks to ~1 token -> temperature may have"
+                    f" collapsed; raise tau_create floor"
+                )
+        if summ.get("rev_scale") is not None and abs(summ["rev_scale"]) < 1e-3:
+            flags.append(
+                f"reverse channel effectively OFF (|scale|"
+                f"={abs(summ['rev_scale']):.1e}): the non-conservative force is"
+                f" not being used -> either it has no headroom here, or warmup"
+                f" is still ramping / gate init needs help"
+            )
+        if summ.get("qforce_ratio") is not None and summ["qforce_ratio"] > 0.5:
+            flags.append(
+                f"reverse force DOMINATES token update (qforce_ratio"
+                f"={summ['qforce_ratio']:.2f}): the exchange force is large vs"
+                f" the conservative step -> watch for instability / tighten gate"
+            )
+        if summ.get("destroy_mean") is not None and summ["destroy_mean"] > 0.5:
+            flags.append(
+                f"destruction AGGRESSIVE (destroy_mean="
+                f"{summ['destroy_mean']:.2f}): registers are annihilated fast,"
+                f" shortening cross-layer memory -> lower destruction or raise"
+                f" salience decay lambda for longer-lived memory"
+            )
+        report["flags"] = flags
+
+        if reset:
+            self.set_fock_capture(False)
+        return report
 
     # ------------------------------------------------------------------
     def get_register_overhead(self) -> int:

@@ -180,6 +180,10 @@ class QKVCreationGate(nn.Module):
         else:
             self.log_tau = None
 
+        # Diagnostic capture (zero cost when off).
+        self.capture_stats = False
+        self.last_entropy = None   # mean creation-attention entropy (nats)
+
     def forward(
         self,
         h_tokens: torch.Tensor,
@@ -215,6 +219,11 @@ class QKVCreationGate(nn.Module):
             scores = scores / tau
         else:
             scores = scores / (self.d_k ** 0.5)
+
+        if self.capture_stats:
+            with torch.no_grad():
+                a = F.softmax(scores, dim=-1).clamp(min=1e-9)   # (B, M, T)
+                self.last_entropy = float(-(a * a.log()).sum(dim=-1).mean())
 
         return _causal_creation_readout(scores, V)
 
@@ -276,6 +285,10 @@ class QKVCreationGate_v21(nn.Module):
         else:
             self.log_tau = None
 
+        # Diagnostic capture (zero cost when off).
+        self.capture_stats = False
+        self.last_entropy = None   # mean creation-attention entropy (nats)
+
     def forward(
         self,
         h_tokens: torch.Tensor,
@@ -314,6 +327,11 @@ class QKVCreationGate_v21(nn.Module):
             scores = scores / tau.unsqueeze(0).unsqueeze(-1)  # (B, M, T)
         else:
             scores = scores / (self.d_k ** 0.5)
+
+        if self.capture_stats:
+            with torch.no_grad():
+                a = F.softmax(scores, dim=-1).clamp(min=1e-9)   # (B, M, T)
+                self.last_entropy = float(-(a * a.log()).sum(dim=-1).mean())
 
         return _causal_creation_readout(scores, V)
 
@@ -398,6 +416,14 @@ class ReverseChannel(nn.Module):
             self.logit_scale = None
             self.logit_scale_max = None
 
+        # Diagnostic capture (zero cost when off).  When capture_stats is True
+        # the forward pass stashes the reverse-attention entropy and peak
+        # weight so a probe can attribute how focused / diffuse the token->
+        # register readout is without changing the return signature.
+        self.capture_stats = False
+        self.last_entropy = None      # mean readout entropy (nats)
+        self.last_alpha_max = None    # mean peak attention weight
+
     def forward(
         self,
         h_tokens: torch.Tensor,
@@ -460,6 +486,17 @@ class ReverseChannel(nn.Module):
         has_active = active_mask.any(dim=-1, keepdim=True).unsqueeze(1)
         alpha = F.softmax(scores, dim=-1)             # (B, T, M)
         alpha = alpha * has_active.float()
+
+        if self.capture_stats:
+            with torch.no_grad():
+                valid = has_active.squeeze(-1).squeeze(1).float()  # (B,) 1 if any active
+                denom = valid.sum().clamp(min=1.0) * float(T)
+                a = alpha.clamp(min=1e-9)
+                ent = -(a * a.log()).sum(dim=-1)          # (B, T)
+                amax = alpha.max(dim=-1).values           # (B, T)
+                w = valid.unsqueeze(-1)                    # (B, 1)
+                self.last_entropy = float((ent * w).sum() / denom)
+                self.last_alpha_max = float((amax * w).sum() / denom)
 
         if position_dependent:
             Q_force = torch.einsum("btm,btmd->btd", alpha, v)
