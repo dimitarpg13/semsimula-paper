@@ -27,6 +27,7 @@
 17. [QFT v2.1 Experiment Results and Current Bottleneck Analysis](#17-qft-v21-experiment-results-and-current-bottleneck-analysis)
 18. [Fock v2 Convergence Slowdown: Diagnosis and Future Work](#18-fock-v2-convergence-slowdown-diagnosis-and-future-work)
 19. [Resolving the Conservative–Attention Gap](#19-resolving-the-conservativeattention-gap)
+20. [Register-Content Collapse: Geometry, Information Cost, and the Repulsion Force](#20-register-content-collapse-geometry-information-cost-and-the-repulsion-force)
 
 ---
 
@@ -1852,6 +1853,187 @@ Both arms from the Step 1 resolution hierarchy were rerun with the causal-fixed 
 6. **α channels:** [0.000, 0.581, 0.869, 0.970]. The dead α₀ ≈ 0 channel persists, consistent with all previous experiments. The three active channels are similar to the v2 baseline values.
 
 7. **Remaining gap to MatchedGPT: 1.49 PPL** (9.30 vs 7.81). This gap is now attributable to the conservative constraint itself — the O(1) state bottleneck, the Verlet discretisation, and the post-Verlet injection geometry — rather than to routing quality. Closing it will require either relaxing the conservative constraint (e.g., deeper exchange heads) or fundamental architectural innovations beyond the current register mechanism.
+
+---
+
+## 20. Register-Content Collapse: Geometry, Information Cost, and the Repulsion Force
+
+Sections 14 and 16 derived the v2.1 fixes (B1, B2, B3) from the **attention-entropy** view of collapse: each register's *creation attention* over tokens flattened (near-uniform) or froze (one-hot), so registers absorbed identical content. The runtime component probe (`fock_component_report` in `model_fock_parf_multixi.py`) exposes a second, tightly related failure mode measured **directly on the register content itself**: the mean pairwise cosine similarity of the active registers, `reg_cos_sim`, drifts toward 1. The register bank collapses onto a low-dimensional subspace regardless of how selective the attention looks.
+
+This section gives a geometric and information-theoretic account of that content collapse, quantifies why it raises the next-token-prediction (NTP) loss, and derives the three complementary fixes — per-register keys (B2), orthogonal init (B3), and an explicit **repulsion term** (new) — as acting on three *different* parts of the collapse dynamics: the boundary condition, the invariant manifold, and a restoring force.
+
+<img src="images/register_collapse_repulsion.png" width="960" alt="Three panels: (A) effective register count N_eff versus mean pairwise cosine similarity rho, the closed form M/(1+(M-1)rho^2), collapsing to 1 as rho grows, for M=16 and M=32; (B) geometry of the fix — collapsed near-parallel registers versus a spread bank held apart by orthogonal init, per-register keys, and a pairwise repulsion force; (C) achievable NTP floor decreasing as the effective register rank grows, from a collapsed r_eff=1 to a healthy r_eff around 9">
+
+### 20.1 Formalising collapse: the register Gram matrix and effective rank
+
+Let the active register content at a given layer be the rows of $R \in \mathbb{R}^{M \times d}$, and let $\hat r_k = r_k / \lVert r_k \rVert$ be the unit-normalised rows. The register Gram matrix and the diagnostic scalar are
+
+$$G = \hat R \hat R^\top, \qquad G_{kl} = \frac{r_k \cdot r_l}{\lVert r_k \rVert \lVert r_l \rVert}, \qquad \texttt{reg-cos-sim} = \frac{1}{M(M-1)} \sum_{k \ne l} G_{kl}.$$
+
+The right measure of "how many registers are we actually using" is the **participation ratio** of the Gram spectrum,
+
+$$N_{\mathrm{eff}} = \frac{\left(\sum_i \lambda_i\right)^2}{\sum_i \lambda_i^2} = \frac{(\mathrm{tr}(G))^2}{\lVert G \rVert_F^2},$$
+
+where $\lambda_i$ are the eigenvalues of $G$. To connect this to the single scalar the probe reports, take the **equicorrelation** approximation in which every off-diagonal equals $\rho$:
+
+$$G = (1-\rho) I + \rho \mathbf{1}\mathbf{1}^\top.$$
+
+Then $\mathrm{tr}(G) = M$ and $\lVert G \rVert_F^2 = M + M(M-1)\rho^2$ (the $M$ unit diagonal entries plus $M(M-1)$ off-diagonal entries each equal to $\rho$), so
+
+$$\boxed{ N_{\mathrm{eff}} = \frac{M^2}{M + M(M-1)\rho^2} = \frac{M}{1 + (M-1)\rho^2}. }$$
+
+This is Panel (A). At $\rho = 0$ the pool spans $N_{\mathrm{eff}} = M$ independent directions; at $\rho \to 1$ it collapses to $N_{\mathrm{eff}} \to 1$. The dependence is quadratic in $\rho$ and is amplified by the pool size $M$: for $M = 32$ even a modest $\rho = 0.3$ already gives $N_{\mathrm{eff}} \approx 10$, which is exactly why the empirical $M = 32$ run (Q7, §17) collapsed where $M = 16$ survived — larger pools are more fragile to the same per-pair correlation.
+
+### 20.2 Why collapse raises the NTP loss: an information-bottleneck bound
+
+The register pool is the model's only **cross-layer, content-addressable memory channel**: a token's update reads register content through the reverse channel and the extended dynamics, and everything it can read lies in $\mathrm{span}(R)$, a subspace of dimension at most $N_{\mathrm{eff}}$. Model that channel as $N_{\mathrm{eff}}$ parallel Gaussian sub-channels; the information a token can recover about its context through the registers is bounded by
+
+$$I_{\mathrm{reg}} \leq \frac{1}{2} \sum_{i=1}^{N_{\mathrm{eff}}} \log_2(1 + \mathrm{SNR}_i).$$
+
+Now decompose the NTP loss. With $y$ the next token and $\mathrm{ctx}$ the causal context, the cross-entropy the model minimises satisfies
+
+$$\mathcal{L}_{\mathrm{NTP}} = H(y) - I(y ; \mathrm{ctx}) \geq H(y) - I_{\mathrm{sc}} - I_{\mathrm{reg}},$$
+
+where $I_{\mathrm{sc}}$ is the context information available through the conservative backbone directly (the "short-cut" path). By the data-processing inequality, whatever the registers contribute to predicting $y$ is capped by $I_{\mathrm{reg}}$. Collapsing the pool from $N_{\mathrm{eff}}$ modes to a single mode therefore **raises the achievable NTP floor** by the discarded channel capacity,
+
+$$\Delta \mathcal{L}_{\mathrm{NTP}} \approx \frac{1}{2} \sum_{i=2}^{N_{\mathrm{eff}}} \log_2(1 + \mathrm{SNR}_i).$$
+
+This is Panel (C): the reducible loss the registers *could* deliver grows with $N_{\mathrm{eff}}$ (with diminishing returns as the weaker modes carry less SNR). A collapsed bank leaves this capacity on the table; the three fixes recover it by keeping $N_{\mathrm{eff}}$ high.
+
+### 20.3 Collapse is an attractor of the NTP gradient
+
+Why does the bank collapse at all, and why is a good initialisation not enough on its own? Because the collapsed configuration is a **dynamically invariant, early-attracting manifold** of the NTP gradient flow when the creation machinery is permutation-symmetric across registers.
+
+Consider the "diagonal" manifold $D = \lbrace R : r_1 = \dots = r_M \rbrace$. With a **shared** key/value projection, the creation content of register $k$ is $c_k = \sum_j \mathrm{softmax}_j(q_k \cdot W_K h_j / \tau) v_j$ with $q_k = W_Q^{(k)} r_k$. If $r_k = r$ for all $k$ and the query map is also symmetric, then $q_k = q$, hence $c_k = c$ is identical across registers. The loss depends on the registers symmetrically, so the gradient is the **same** vector $g$ for every register:
+
+$$\left.\frac{\partial \mathcal{L}_{\mathrm{NTP}}}{\partial r_k}\right|_{R \in D} = g \quad \text{for all } k \quad\Rightarrow\quad \text{a gradient step keeps } R \in D.$$
+
+So $D$ is invariant under gradient descent, and early in training it is *attracting*: the shared NTP gradient pulls every register toward the single currently-most-useful direction. This is the key structural fact: **any fix that only sets the initial condition will decay back into $D$.** Escaping collapse durably requires either breaking the invariance of $D$ or adding a force that pushes off it.
+
+### 20.4 B3 — orthogonal initialisation as the boundary condition
+
+Orthogonal init (§16.3) sets $\rho(0) = 0$ exactly: $R(0)$ has orthonormal rows, so $N_{\mathrm{eff}}(0) = M$. It is free (zero parameters) and gives gradient descent a maximally-differentiated starting point. But by §20.3, if the creation dynamics keep $D$ invariant and attracting, $\rho$ climbs back toward 1 over training. B3 is a **boundary condition, not a restoring force** — necessary for a clean start, insufficient alone.
+
+### 20.5 B2 — per-register keys break the invariant manifold
+
+Per-register keys (§16.2) give each register its own $W_K^{(k)} \in \mathbb{R}^{d \times d_k}$. Now, even on the collapsed manifold $D$ (all $r_k$ equal), the scores differ because the projections differ:
+
+$$s^{(k)}_j = q \cdot W_K^{(k)} h_j \quad \text{differ across } k \text{ even when } q_k = q.$$
+
+The creation map is no longer permutation-symmetric, so $D$ is **no longer invariant**: the collapsed configuration stops being a fixed point and the gradient naturally carries the registers off it. This is why B2 is the dominant empirical contributor (the 1.88 PPL of the B2+B3 step over B1 alone): it converts collapse from an attractor into a saddle. B2 changes the *model*; B3 changes the *start*.
+
+### 20.6 The repulsion term — an explicit restoring force
+
+The third lever adds an explicit penalty that makes register similarity **costly**, i.e. a continuous restoring force that holds $\rho$ low throughout training rather than relying on the dynamics to stay off $D$. Two forms, cheapest first.
+
+**Form 1 — Gram / orthogonality penalty.** Penalise the squared off-diagonal similarity directly (this is exactly the quantity the probe measures):
+
+$$\mathcal{L}_{\mathrm{rep}} = \frac{1}{M(M-1)} \sum_{k \ne l} (\hat r_k \cdot \hat r_l)^2 = \frac{\lVert G \rVert_F^2 - M}{M(M-1)}.$$
+
+Its gradient on register $k$ is a pure **rotation away from its neighbours** (the normalisation removes any radial part):
+
+$$\frac{\partial \mathcal{L}_{\mathrm{rep}}}{\partial r_k} = \frac{4}{M(M-1)\lVert r_k \rVert} \sum_{l \ne k} s_{kl}\left(\hat r_l - s_{kl} \hat r_k\right), \qquad s_{kl} = \hat r_k \cdot \hat r_l,$$
+
+where $\hat r_l - s_{kl}\hat r_k$ is the component of $\hat r_l$ orthogonal to $\hat r_k$. The force vanishes if and only if every $s_{kl} = 0$, so (for $M \leq d$) the unique minimiser is a mutually orthogonal bank, $N_{\mathrm{eff}} = M$.
+
+**Form 2 — Coulomb potential (physics-native).** Because the surrounding model is a conservative particle system, the natural form is a genuine repulsive pairwise potential — registers as like charges:
+
+$$V_{\mathrm{rep}} = \sum_{k \lt l} \frac{1}{\lVert r_k - r_l \rVert^2 + \varepsilon}, \qquad F_k = -\nabla_{r_k} V_{\mathrm{rep}} = \sum_{l \ne k} \frac{2(r_k - r_l)}{\left(\lVert r_k - r_l \rVert^2 + \varepsilon\right)^2}.$$
+
+This slots directly into the Hamiltonian framing as a register-register term $V_{\mathrm{total}} \leftarrow V_{\mathrm{total}} + V_{\mathrm{rep}}$: it is the **repulsive complement** to the softmax's attractive budget in creation, and its $1/r^2$ profile pushes hardest on the most-collapsed pairs — exactly where the diagnostic flags the problem.
+
+**The balance that sets equilibrium.** Training minimises
+
+$$\mathcal{L} = \mathcal{L}_{\mathrm{NTP}} + \lambda_{\mathrm{rep}} \mathcal{L}_{\mathrm{rep}}.$$
+
+The NTP gradient has a *collapsing* component (it rewards registers for aligning to the currently-useful direction, §20.3); the repulsion supplies an *expanding* component. Equilibrium similarity $\rho^\star$ is where they cancel:
+
+$$\lambda_{\mathrm{rep}} \frac{d\mathcal{L}_{\mathrm{rep}}}{d\rho} = -\frac{d\mathcal{L}_{\mathrm{NTP}}}{d\rho} \quad \Rightarrow \quad \lambda_{\mathrm{rep}}^\star = -\frac{\mathcal{L}_{\mathrm{NTP}}'(\rho^\star)}{\mathcal{L}_{\mathrm{rep}}'(\rho^\star)}.$$
+
+This makes the trade-off explicit: too small a $\lambda_{\mathrm{rep}}$ and collapse wins; too large and the bank is forced orthogonal even where *sharing* would have lowered NTP, so PPL regresses. The repulsion is a soft nudge tuned so $\rho^\star$ settles in a healthy band (roughly 0.1 to 0.3), not a hard constraint.
+
+### 20.7 Net effect on the NTP loss
+
+Chaining the three results gives a clean causal path from the fixes to the loss:
+
+$$\text{fix} \quad\Rightarrow\quad \rho \downarrow \quad\Rightarrow\quad N_{\mathrm{eff}} = \frac{M}{1 + (M-1)\rho^2} \uparrow \quad\Rightarrow\quad \text{more channel modes} \quad\Rightarrow\quad \mathcal{L}_{\mathrm{NTP}} \downarrow.$$
+
+The magnitudes are order-consistent with the measured results. At $M = 16$, moving from a collapsed $\rho \approx 0.7$ to a healthy $\rho \approx 0.05$ raises $N_{\mathrm{eff}}$ from about 1.9 to about 15.4 — roughly an 8x increase in usable modes. Using the working identification $\texttt{diversity} \approx 1 - \texttt{reg-cos-sim}$, the causal-fixed rerun's diversity gain from 0.37 to 0.58 corresponds to $\rho$ falling from about 0.63 to about 0.42, i.e. $N_{\mathrm{eff}}$ rising from about 2.3 to about 4.4 (a ~1.9x gain), alongside the observed 1.88 PPL improvement from B2+B3. This is an order-of-magnitude sanity check, not a fit — the exact SNR spectrum is unknown — but the sign and scale match: recovered effective rank tracks recovered perplexity.
+
+### 20.8 How the three fixes relate
+
+The three levers are complementary because they act on three distinct parts of the same collapse dynamics.
+
+| Fix | Acts on | Role in the collapse dynamics | Extra params | Persistent on its own |
+|-----|---------|-------------------------------|:------------:|:---------------------:|
+| B3 orthogonal init | initial condition | sets rho(0)=0, N_eff(0)=M | 0 | No — decays if D is attracting |
+| B2 per-register keys | model capacity | breaks permutation symmetry; D stops being invariant | M x d x d_k | Yes — collapse becomes a saddle |
+| Repulsion term | objective / force | continuous restoring force holding rho low | 0 | Yes — actively tunable via lambda |
+
+The dynamical-systems reading: **B3 places the particles apart, B2 gives each an independent handle so they need not move together, and the repulsion is the force field that keeps them apart.** A boundary condition alone relaxes back; broken symmetry makes collapse non-attracting but does not actively separate; an explicit force separates but wastes capacity if the start is degenerate and the handles are shared. Only the combination robustly guarantees a high, sustained $N_{\mathrm{eff}}$.
+
+```mermaid
+flowchart TB
+    Init["Register bank R with M rows in dimension d"]
+    Shared["Shared keys plus Gaussian init"]
+    Collapse["Collapsed manifold rho toward 1 (N eff toward 1)"]
+    Floor["High NTP floor (few channel modes)"]
+    B3["B3 orthogonal init: rho zero at the start"]
+    B2["B2 per register keys: breaks permutation symmetry"]
+    Rep["Repulsion term: continuous restoring force"]
+    Healthy["Spread bank rho low (N eff high)"]
+    Low["Low NTP floor (many channel modes)"]
+
+    Init --> Shared
+    Shared --> Collapse
+    Collapse --> Floor
+    B3 --> Healthy
+    B2 --> Healthy
+    Rep --> Healthy
+    Healthy --> Low
+```
+
+### 20.9 Diagnostic signatures and when each fix pays
+
+The runtime probe (`fock_component_report`) makes the choice data-driven. Read the `reg_cos_sim` signal together with the `− registers` ablation ΔPPL:
+
+| Diagnostic reading | Interpretation | Recommended lever |
+|--------------------|----------------|-------------------|
+| reg_cos_sim high (> 0.6), − registers ΔPPL ~ 0 | used but redundant: dead capacity (the target case) | B2 + B3 first; add repulsion if rho stays high |
+| reg_cos_sim high, − registers ΔPPL large | collapsed yet still load-bearing | B2 + B3 (unlock more); repulsion likely helps |
+| reg_cos_sim low already | bank is diverse | do nothing — repulsion would only add noise |
+| active_frac much below 1/M | most registers idle (a utilisation problem, not collapse) | rebalance creation vs destruction; repulsion does not fix idleness |
+| − registers ΔPPL large, reg_cos_sim low | healthy and contributing | leave as is |
+
+The signature that specifically calls for the repulsion term is **high `reg_cos_sim` that persists after B2 + B3** — i.e. structure and initialisation are in place but the NTP gradient still drives the bank together, so a standing restoring force is needed.
+
+### 20.10 Proposed configuration and practical recipe
+
+B2 and B3 are already implemented (`per_register_keys`, `ortho_register_init` in `FockMultiXiPARFConfig`). The repulsion term is **proposed**; a minimal, diagnostic-gated wiring:
+
+```python
+# FockMultiXiPARFConfig additions (proposed)
+register_repulsion: bool = False
+register_repulsion_kind: str = "gram"     # "gram" (Form 1) or "coulomb" (Form 2)
+register_repulsion_target: str = "bank"   # "bank" (static register_embed) or "content" (dynamic r)
+lambda_register_repulsion: float = 3e-3   # same order as lambda_v; tune to rho* in [0.1, 0.3]
+
+# in forward_with_vreg, alongside the existing v_reg penalty:
+if REGISTER_REPULSION:
+    R = model.register_embed if TARGET == "bank" else r_active   # (M, d)
+    Rn = F.normalize(R, dim=-1)
+    G = Rn @ Rn.t()
+    off = G - torch.diag(torch.diag(G))
+    rep = off.pow(2).sum() / (M * (M - 1))                        # Form 1 (gram)
+    loss = loss + LAMBDA_REP * rep
+```
+
+Recommended order of operations:
+
+1. Run the component probe on the current checkpoint; confirm `reg_cos_sim` is high **and** `− registers` ΔPPL is small (the used-but-redundant signature).
+2. Turn on **B3 + B2** first (structural, no new loss to tune). Re-probe: `reg_cos_sim` should fall and `− registers` ΔPPL should rise.
+3. Only if `reg_cos_sim` remains high, add **Form 1 repulsion** on the static bank at `lambda ≈ 3e-3`; warm it in over the early stable phase and decay it later (collapse is an early-training pathology). Escalate to **Form 2 (Coulomb)** or to `target="content"` only if the static-bank penalty is insufficient.
+4. After each change, verify with the probe: the intervention is working only if higher effective rank is accompanied by a lower val PPL. If `reg_cos_sim` falls but PPL does not improve, collapse was not the bottleneck — back the term out.
 
 ---
 
