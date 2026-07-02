@@ -105,6 +105,15 @@ class FockMultiXiPARFConfig(MultiXiPARFConfig):
     per_register_tau: bool = False      # B1: per-register learnable temperature
     per_register_keys: bool = False     # B2: per-register key subspaces
     ortho_register_init: bool = False   # B3: orthogonal register embed init
+    # B4: explicit repulsion penalty on the register bank (§20.6 of
+    # Improving_the_Fock_Mechanism_to_match_Attention.md).  B3 only sets the
+    # initial pairwise similarity to zero and B2 makes the collapsed manifold a
+    # saddle; neither supplies a restoring force, so register rows drift back
+    # together under NTP gradients (reg_cos_sim stays high).  This adds a
+    # continuous penalty that keeps the bank rows separated during training.
+    register_repulsion: bool = False        # enable the repulsion penalty
+    register_repulsion_coeff: float = 0.0   # penalty weight lambda_rep
+    register_repulsion_kind: str = "gram"   # "gram" (sq off-diag cosine) | "coulomb"
     # Reverse-channel stabilisation (§10.12 of
     # Improving_the_Fock_Mechanism_to_match_Attention.md; experiment E5c)
     reverse_channel_stable: bool = False   # QK-norm + output RMS-norm readout
@@ -226,6 +235,12 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
         # is exactly zero cost; a probe flips it on for a single eval forward.
         self._fock_capture: Optional[List[dict]] = None
 
+        # B4 register-repulsion: per-layer differentiable penalty terms on the
+        # *dynamic* active register states, accumulated during a training
+        # forward and drained by pop_repulsion_loss() before backward().  Reset
+        # at layer 0 of each forward; only populated when training + enabled.
+        self._repulsion_terms: List[torch.Tensor] = []
+
     # ------------------------------------------------------------------
     def _init_registers(
         self, B: int, device: torch.device,
@@ -277,6 +292,9 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
         M = cfg.n_registers
         decay = cfg.register_salience_decay
 
+        if layer_idx == 0 and self.training and getattr(cfg, "register_repulsion", False):
+            self._repulsion_terms = []
+
         # --- Creation ---
         alpha_max = None
         if cfg.fock_version == "v1":
@@ -314,6 +332,11 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
         h_new = h_ext_new[:, :T, :]
         r_new = h_ext_new[:, T:, :]
         r_new = torch.where(active_float.bool(), r_new, r)
+
+        # --- Register repulsion (B4): differentiable anti-collapse penalty on
+        #     the dynamic active register states (mirrors the reg_cos_sim probe).
+        if self.training and getattr(cfg, "register_repulsion", False):
+            self._repulsion_terms.append(self._dynamic_repulsion(r_new, active))
 
         # --- Reverse channel (v2 only) ---
         _cap_qforce_ratio = 0.0
@@ -617,6 +640,47 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
         if reset:
             self.set_fock_capture(False)
         return report
+
+    # ------------------------------------------------------------------
+    def _dynamic_repulsion(
+        self, r_new: torch.Tensor, active: torch.Tensor,
+    ) -> torch.Tensor:
+        """Per-layer repulsion penalty on the ACTIVE dynamic register states.
+
+        Mirrors the ``reg_cos_sim`` diagnostic (mean pairwise cosine among
+        active registers) but differentiable, so its gradient pushes the
+        evolved register content apart.  ``gram`` penalises the mean squared
+        off-diagonal cosine; ``coulomb`` applies a short-range 1/(1-cos) force.
+        """
+        cfg = self._fock_cfg
+        coeff = getattr(cfg, "register_repulsion_coeff", 0.0)
+        r = F.normalize(r_new, dim=-1)                     # (B, M, d)
+        gram = torch.bmm(r, r.transpose(1, 2))            # (B, M, M)
+        M = gram.shape[-1]
+        eye = torch.eye(M, dtype=torch.bool, device=gram.device)
+        pair = (active.unsqueeze(2) & active.unsqueeze(1)) & ~eye  # (B, M, M)
+        pmask = pair.to(gram.dtype)
+        n = pmask.sum().clamp(min=1.0)
+        if getattr(cfg, "register_repulsion_kind", "gram") == "coulomb":
+            cos = (gram * pmask).clamp(-0.999, 0.999)
+            penalty = ((1.0 / (1.0 - cos + 1e-3)) * pmask).sum() / n
+        else:  # "gram": mean squared off-diagonal cosine
+            penalty = (gram.pow(2) * pmask).sum() / n
+        return coeff * penalty
+
+    # ------------------------------------------------------------------
+    def pop_repulsion_loss(self) -> torch.Tensor:
+        """Drain the accumulated per-layer repulsion terms into one scalar.
+
+        Call once immediately after a training forward and before backward()
+        (the terms hold live graph references).  Returns the mean penalty over
+        layers, or a zero scalar when disabled / no active registers.  Keeping
+        this out of ``forward`` guarantees the term never enters the eval PPL.
+        """
+        terms, self._repulsion_terms = self._repulsion_terms, []
+        if not terms:
+            return self.register_embed.new_zeros(())
+        return torch.stack(terms).mean()
 
     # ------------------------------------------------------------------
     def get_register_overhead(self) -> int:
