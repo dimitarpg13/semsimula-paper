@@ -2201,7 +2201,108 @@ flowchart TB
     E5c -.->|diverged at 25.5k due to P5| E6
 ```
 
-### 21.11 Experimental plan
+### 21.11 Interaction with B4 register repulsion
+
+The per-layer gate and the B4 repulsion penalty (§20) operate on **different objects** — the gate controls the coupling scalar $s_\ell$ while repulsion acts on the register states $r_k^{(\ell)}$ — but they meet inside the same layer step and interact through three well-defined channels. This subsection traces the interaction precisely, grounded in the forward-pass execution order.
+
+![Per-layer gate and B4 repulsion interaction](images/perlayer_repulsion_interaction.png)
+
+**Figure 8.** Interaction between the per-layer reverse-channel gate and B4 register repulsion. (A) Execution order inside `_fock_layer_step`: repulsion diversifies registers at stage 5, then the reverse channel reads the diversified content at stage 6 through per-layer gates. (B) Gradient flow: two independent paths from the loss converge on the register states. (C) Variance reduction: per-layer gates cut the gate gradient variance by a factor of $L$ relative to the global scalar. (D) Complementarity matrix: each fix is the primary lever for one failure mode and provides indirect benefit to the other. (E) Combined causal chain from B4 repulsion through to lower PPL.
+
+### 21.12 Execution order and the diversify-then-read invariant
+
+Inside each call to `_fock_layer_step`, the seven stages execute in strict order:
+
+1. **Creation** — token content is deposited into registers via the QKV creation gate.
+2. **Active mask** — salience determines which registers are alive.
+3. **Conservative dynamics** — the extended $[h; r]$ state evolves under PARF ($V_\theta$, $V_\phi$).
+4. **Split** — token states $h^{(\ell)}$ and register states $r^{(\ell)}$ are separated.
+5. **Repulsion (B4)** — the penalty $\mathcal{L}_{\mathrm{rep}}^{(\ell)}$ is computed on the active registers:
+
+$$\mathcal{L}_{\mathrm{rep}}^{(\ell)} = \lambda_{\mathrm{rep}} \frac{\sum_{k \ne l} \cos^2(r_k^{(\ell)}, r_l^{(\ell)}) \mathbf{1}[k,l \text{ active}]}{\sum_{k \ne l} \mathbf{1}[k,l \text{ active}]}$$
+
+6. **Reverse channel** — the stabilised directed force is injected using the per-layer gate:
+
+$$h_i^{(\ell)} \leftarrow h_i^{(\ell)} + \frac{\Delta t^2}{m_i} \tanh(s_\ell) w(t) \hat{Q}_i^{(\ell)}$$
+
+7. **Destruction** — register salience decays.
+
+The critical invariant is that **stage 5 (repulsion) precedes stage 6 (reverse channel)**. During `backward()`, the NTP loss gradient at stage 6 flows through $\hat{Q}_i^{(\ell)}$ into the register states $r_k^{(\ell)}$ used to compute the force, and the repulsion gradient at stage 5 also flows into the same $r_k^{(\ell)}$. Both gradients are computed on the same graph, so their contributions **add** on the shared parameters (creation gate projections, register embed, V_theta/V_phi). There is no conflict or double-counting: the NTP gradient says where the registers should be to predict the next token; the repulsion gradient says how spread-out they should be.
+
+### 21.13 Gradient decomposition on the register states
+
+At the register states $r_k^{(\ell)}$, the total gradient decomposes cleanly:
+
+$$\frac{\partial \mathcal{L}_{\mathrm{total}}}{\partial r_k^{(\ell)}} = \underbrace{\frac{\partial \mathcal{L}_{\mathrm{NTP}}}{\partial r_k^{(\ell)}}}_{\text{content alignment}} + \underbrace{\frac{\partial \mathcal{L}_{\mathrm{rep}}^{(\ell)}}{\partial r_k^{(\ell)}}}_{\text{diversity pressure}}$$
+
+The NTP gradient (first term) flows through the reverse channel readout and through the creation gate, pulling $r_k$ toward content that lowers the next-token prediction loss. Without repulsion, all $M$ registers converge toward the same useful direction (the dominant principal component of the token-to-register gradient), producing the collapse signature $\rho \to 1$.
+
+The repulsion gradient (second term) is the explicit restoring force derived in §20.6. For the Gram penalty:
+
+$$\frac{\partial \mathcal{L}_{\mathrm{rep}}^{(\ell)}}{\partial r_k^{(\ell)}} = \frac{2\lambda_{\mathrm{rep}}}{N_{\mathrm{pairs}}} \sum_{l \ne k} \cos(r_k, r_l) \frac{\partial \cos(r_k, r_l)}{\partial r_k}$$
+
+This gradient pushes each active register **away** from its nearest neighbours in cosine space. The net effect is that the register bank maintains high effective rank $N_{\mathrm{eff}}$ throughout training, rather than collapsing as the NTP gradient alone would cause.
+
+### 21.14 How repulsion improves the per-layer gate signal
+
+The interaction between the two fixes is not merely additive. Repulsion **improves the quality** of the gradient that each per-layer gate $s_\ell$ receives, through the following mechanism.
+
+The per-layer gate gradient is (from §21.3):
+
+$$\frac{\partial \mathcal{L}}{\partial s_\ell} = \sum_{i=1}^{T} \frac{\partial \mathcal{L}}{\partial h_i^{(\ell)}} \cdot \frac{\Delta t^2}{m_i} w(t) \mathrm{sech}^2(s_\ell) \hat{Q}_i^{(\ell)}$$
+
+The force $\hat{Q}_i^{(\ell)}$ depends on the register content through the reverse-channel attention:
+
+$$\hat{Q}_i^{(\ell)} = \mathrm{RMSnorm}\left(\sum_k \alpha_{ik}^{(\ell)} v_k^{(\ell)}\right), \qquad \alpha_{ik}^{(\ell)} = \mathrm{softmax}_k\left(\tau \frac{q_i}{\lVert q_i \rVert} \cdot \frac{k_k}{\lVert k_k \rVert}\right)$$
+
+When registers are collapsed ($\rho \approx 1$), all keys $k_k / \lVert k_k \rVert$ point in roughly the same direction, so:
+
+- The attention weights $\alpha_{ik}$ become near-uniform: $\alpha_{ik} \approx 1/M$ for all $k$.
+- The value sum $\sum_k \alpha_{ik} v_k \approx \bar{v}$ (the mean value) regardless of the query $q_i$.
+- The force $\hat{Q}_i$ is nearly **token-independent**: every token receives the same push.
+
+A token-independent force carries almost no information about which tokens should be pushed where. The gate gradient $\partial \mathcal{L} / \partial s_\ell$ therefore has **low signal-to-noise ratio**: the useful signal (which tokens benefit from the force) is drowned in the noise of applying the same force everywhere.
+
+With repulsion maintaining $\rho \ll 1$ and $N_{\mathrm{eff}} \gg 1$:
+
+- The keys $k_k / \lVert k_k \rVert$ span multiple directions, so the attention $\alpha_{ik}$ is **query-selective**: different tokens attend to different registers.
+- The force $\hat{Q}_i$ varies meaningfully across tokens: it carries information about the specific register content relevant to each token position.
+- The gate gradient $\partial \mathcal{L} / \partial s_\ell$ is a sum of **informative, non-degenerate** terms, so AdamW's second-moment estimate converges faster and the learned $\tanh(s_\ell)$ reflects the true optimal coupling at layer $\ell$.
+
+In information-theoretic terms, the mutual information between the force and the token identity satisfies:
+
+$$I(\hat{Q}_i; i) \ge \log_2 N_{\mathrm{eff}} - \log_2 M \cdot (1 - \rho^2) \cdot (\text{const})$$
+
+When $N_{\mathrm{eff}} \to 1$ (collapse), $I \to 0$ and the gate gradient is pure noise. When $N_{\mathrm{eff}} \to M$ (orthogonal bank), $I$ is maximised and each gate $s_\ell$ receives a clean signal.
+
+### 21.15 The combined loss landscape
+
+The total training loss with both fixes active is:
+
+$$\mathcal{L}_{\mathrm{total}} = \mathcal{L}_{\mathrm{NTP}} + \lambda_{\mathrm{vreg}} \mathcal{L}_{\mathrm{vreg}} + \frac{1}{L} \sum_{\ell=0}^{L-1} \mathcal{L}_{\mathrm{rep}}^{(\ell)}$$
+
+The repulsion coefficient $\lambda_{\mathrm{rep}} = 0.05$ is small relative to the NTP loss (~4.5 at initialisation), so it acts as a mild regulariser that biases the bank toward diversity without overwhelming the primary objective. The repulsion terms are accumulated during the forward pass and drained by `pop_repulsion_loss()` before `backward()`, ensuring they never affect eval PPL.
+
+The per-layer gates $s_\ell$ appear only in the NTP loss path (the force injection at stage 6). They do not interact with the repulsion penalty at all during the forward pass — the repulsion penalty is computed on the register states before the reverse channel fires. During `backward()`, the repulsion gradient flows through stages 5, 4, 3, 2, 1 into the creation gate and register embed; the per-layer gate gradient flows through stage 6 into the reverse channel projections and the gate scalar. These gradient paths share upstream parameters but do not interfere: they supply independent, complementary learning signals.
+
+```mermaid
+flowchart LR
+    REP["B4 repulsion<br>acts on r(l)"]
+    DIV["diverse register bank<br>high N eff"]
+    RICH["rich selective<br>reverse ch readout"]
+    GATE["per layer gate s(l)<br>clean gradient"]
+    STABLE["stable training<br>past 25.5k steps"]
+    PPL["lower PPL"]
+
+    REP --> DIV
+    DIV --> RICH
+    RICH --> GATE
+    GATE --> STABLE
+    STABLE --> PPL
+    DIV -.->|more capacity for NTP| PPL
+```
+
+### 21.16 Experimental plan
 
 The per-layer gate is tested on top of the B4 register-repulsion baseline (which provides healthy, non-collapsed registers for the reverse channel to attend to). The configuration:
 
@@ -2219,6 +2320,7 @@ The per-layer gate is tested on top of the B4 register-repulsion baseline (which
 2. Training extends past step 25,500 without entering a divergence/reload loop.
 3. PPL matches or beats E5c's 96.52 and continues to improve.
 4. The learned coupling profile $c(\ell)$ shows non-trivial depth variation (at least 2x range between min and max), confirming that the extra degrees of freedom are used.
+5. The `reg_cos_sim` diagnostic stays below 0.6 throughout training (confirming repulsion is holding the bank open while the reverse channel reads from it).
 
 ---
 
