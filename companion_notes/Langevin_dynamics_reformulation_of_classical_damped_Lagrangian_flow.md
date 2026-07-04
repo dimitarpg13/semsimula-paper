@@ -28,9 +28,10 @@
 5. [Temperature: why it is unavoidable and where it already lives](#5-temperature-why-it-is-unavoidable-and-where-it-already-lives)
 6. [Calibrating the stochastic model from deterministic experiments](#6-calibrating-the-stochastic-model-from-deterministic-experiments)
 7. [Discretisation: BAOAB and the exact O-step](#7-discretisation-baoab-and-the-exact-o-step)
-8. [Generalisations and caveats](#8-generalisations-and-caveats)
-9. [Cross-reference map to paper v4/v5 and companion notes](#9-cross-reference-map-to-paper-v4v5-and-companion-notes)
-10. [Summary](#10-summary)
+8. [Applying the O-step to Fock-PARFLM: retrofit versus the exact simulator](#8-applying-the-o-step-to-fock-parflm-retrofit-versus-the-exact-simulator)
+9. [Generalisations and caveats](#9-generalisations-and-caveats)
+10. [Cross-reference map to paper v4/v5 and companion notes](#10-cross-reference-map-to-paper-v4v5-and-companion-notes)
+11. [Summary](#11-summary)
 - [Appendix A: Notation](#appendix-a-notation)
 - [References](#references)
 
@@ -46,7 +47,7 @@ This report answers three questions in order.
 2. **Can we calibrate the stochastic reformulation from the current deterministic results?** Yes, and cheaply: the deterministic fit already pins the entire **drift** (potential, mass, damping); the stochastic upgrade adds essentially **one** new scalar, the temperature, which must be fit against a fluctuation observable rather than a mean trajectory (§6).
 3. **Do we need a temperature?** Yes — an effective temperature is inescapable if the noise is to have a principled amplitude and the dynamics a well-defined stationary law. Remarkably, that temperature is already present as the **readout inverse temperature** $\beta$ (§5).
 
-The practical payoff, developed throughout and summarised in §10, is that switching Verlet to a thermostatted BAOAB step (paper Eqs. `eq:baoab-flow`, `eq:af-ostep`) is a low-cost, high-leverage accuracy lever whose only genuinely new degree of freedom is a temperature that can even be tied to a quantity already trained.
+The practical payoff, developed throughout and summarised in §11, is that switching Verlet to a thermostatted BAOAB step (paper Eqs. `eq:baoab-flow`, `eq:af-ostep`) is a low-cost, high-leverage accuracy lever whose only genuinely new degree of freedom is a temperature that can even be tied to a quantity already trained.
 
 ![Deterministic trajectory as the most-probable path with a temperature-controlled fluctuation tube](figures/langevin_mode_and_tube.png)
 
@@ -142,12 +143,12 @@ This alignment is the reason the stochastic reformulation is not cosmetic. The d
 
 ```mermaid
 flowchart TB
-    DET["Deterministic damped Lagrangian<br>m xddot neg grad V minus gamma xdot"]
-    ADD["Add stochastic force sigma eta t<br>amplitude fixed by FDT"]
-    SDE["Underdamped Langevin SDE<br>same drift plus noise"]
-    GIBBS["Gibbs stationary measure<br>rho propto exp minus beta energy"]
-    MARG["Configurational marginal<br>rho of x propto exp minus beta V"]
-    READ["Readout softmax<br>p of v propto exp beta score"]
+    DET["Deterministic damped Lagrangian<br>conservative force minus friction"]
+    ADD["Add the stochastic force<br>amplitude set by fluctuation dissipation"]
+    SDE["Underdamped Langevin equation<br>same drift plus thermal noise"]
+    GIBBS["Gibbs stationary distribution<br>canonical NVT ensemble"]
+    MARG["Configurational marginal<br>Boltzmann weight of the potential"]
+    READ["Readout softmax<br>Boltzmann weight of the score"]
 
     DET --> ADD
     ADD --> SDE
@@ -159,7 +160,7 @@ flowchart TB
 
 ### 3.3 Uniqueness and the role of the bath
 
-Given the Markovian (white-noise) assumption and the requirement of Gibbs stationarity, the completion in §3.1 is **unique up to the single scalar $T$**. Any other choice of noise amplitude either breaks detailed balance (no equilibrium) or silently redefines the temperature (see §5.1). The physical content is that the deterministic damped model already committed to a specific bath the moment it fixed $\gamma$; the FDT simply reads off the matching fluctuations. Non-Markovian baths (memory) relax this uniqueness and are treated in §8.2.
+Given the Markovian (white-noise) assumption and the requirement of Gibbs stationarity, the completion in §3.1 is **unique up to the single scalar $T$**. Any other choice of noise amplitude either breaks detailed balance (no equilibrium) or silently redefines the temperature (see §5.1). The physical content is that the deterministic damped model already committed to a specific bath the moment it fixed $\gamma$; the FDT simply reads off the matching fluctuations. Non-Markovian baths (memory) relax this uniqueness and are treated in §9.2.
 
 ---
 
@@ -292,7 +293,7 @@ flowchart TB
     OSTEP --> CALT
     CALT --> REFIT
     REFIT --> DONE
-    CALT -.->|or tie T to one over kB beta readout| DONE
+    CALT -.->|or tie temperature to the readout beta| DONE
 ```
 
 1. **Fit the drift deterministically** (already done): obtain $V$, $m$, $\gamma$.
@@ -342,11 +343,93 @@ flowchart TB
     AF --> NVT
 ```
 
+### 7.1 The O-step as the operational atom of the reformulation
+
+The reformulation of §3–§4 is a statement in continuous time: the deterministic damped Lagrangian is the drift of a Langevin SDE, and the fluctuating half of the bath coupling — locked to the friction by the FDT — is what upgrades it to a thermal system. BAOAB makes this decomposition **operational**, and it localises the entire upgrade in a single substep. The A and B steps carry only the deterministic, conservative mechanics (position drift and the conservative force kick $F = -\nabla_x V$); the O step carries the **whole** system–bath coupling — both the dissipation $-\gamma p$ and the fluctuation $\sigma \eta$ — as one exact Ornstein–Uhlenbeck unit.
+
+| Substep | Continuous piece it integrates | Role | Contains temperature? |
+| ------- | ------------------------------ | ---- | --------------------- |
+| A | position drift, xdot = inverse-mass times p | conservative mechanics | no |
+| B | force kick, pdot = minus grad V | conservative mechanics | no |
+| O | Ornstein-Uhlenbeck, pdot = minus gamma p plus sigma noise | full bath coupling (both FDT halves) | yes (via sigma) |
+
+Two consequences follow, and together they say the O-step *is* the reformulation in executable form.
+
+**The O-step is the sole carrier of temperature.** The noise amplitude in O is the only place $\sigma$ (hence $T$, via $\sigma^2 = 2\gamma m/\beta$) appears in the whole integrator. Everything the report says about temperature (§5) and its calibration (§6) is physically the tuning of this one substep. "Enable the O-step" and "instantiate the Langevin reformulation numerically" are the same act.
+
+**Switching the O-step off collapses back to the deterministic starting point, in two stages.** Sending the noise to zero while keeping friction leaves the O-step as a pure dissipative contraction,
+
+$$
+\sigma \to 0 \quad\Longrightarrow\quad \text{O:}\ \ p \leftarrow e^{-\gamma h} p,
+$$
+
+so BAOAB reduces to a deterministic damped velocity-Verlet integrator — exactly the damped Rayleigh–Lagrangian flow of §2, which is the $T \to 0$ most-probable path (mode) of the stochastic action of §4. Sending the friction to zero as well removes the O-step entirely,
+
+$$
+\gamma \to 0,\ \sigma \to 0 \quad\Longrightarrow\quad \text{O:}\ \ p \leftarrow p,
+\qquad
+\Phi_h^{\text{BAOAB}} \to \Phi_h^{\text{velocity-Verlet}},
+$$
+
+leaving the conservative, symplectic NVE core. The three regimes — symplectic core, deterministic damped flow, and thermal Langevin — are therefore *one* integrator read at three settings of the O-step, and moving between them changes exactly one substep. This is the discrete-time image of the friction/temperature dial that the continuous reformulation describes, and it is why the Verlet-versus-BAOAB choice discussed in `Lessons_from_AlphaFold.md` is precisely the presence or absence of this single atom.
+
 ---
 
-## 8. Generalisations and caveats
+## 8. Applying the O-step to Fock-PARFLM: retrofit versus the exact simulator
 
-### 8.1 Anisotropic / state-dependent damping
+The reformulation was derived for the transformer-free Direct Dynamical Simulator, but the practical question is whether it can be retrofitted into the neural **Fock-PARFLM** model already trained on OpenWebText, or whether a new simulator is required. The answer is: the O-step drops into Fock-PARFLM cheaply, but it yields an **approximate** Langevin, not the exact reformulation. The exact realisation remains the Direct Dynamical Simulator (paper §20, `sec:dynamical-simulator`). It is therefore not "Fock-PARFLM **or** a from-scratch simulator" but **Fock-PARFLM = the cheap approximate test runnable now on OpenWebText; the simulator = the exact realisation already available.** This retrofit is exactly the open "Verlet to Langevin" lever recorded in `Lessons_from_AlphaFold.md`.
+
+### 8.1 Why the retrofit drops in (three enablers)
+
+1. **The velocity state already exists.** Fock-PARFLM is a damped velocity-Verlet stack (paper §17c, `sec:fock-parflm`), so a velocity is carried across layers. The O-step is a drop-in stochastic update on that existing state, applied per layer with step $h = \Delta t$:
+
+$$
+v \leftarrow e^{-\gamma \Delta t} v + \sqrt{ \frac{\sigma^2}{2\gamma}(1 - e^{-2\gamma \Delta t}) } R,
+\qquad R \sim \mathcal{N}(0, I).
+$$
+
+No new state and no re-architecture are required.
+
+2. **It stays differentiable.** The O-step is already in reparameterised form: $R$ is drawn independently of the parameters, and gradients flow through the decay $e^{-\gamma \Delta t} v$ and the amplitude. Back-propagation through the unrolled layers is unaffected; this is exactly variational / stochastic-depth-style noise.
+
+3. **The amplitude is free.** The FDT fixes $\sigma^2 = 2\gamma m/\beta$, and tying $T = 1/(k\_B \beta\_{\text{readout}})$ (§5.2) adds **zero** new parameters. Fold the *existing* Rayleigh damping into the O generator (which already contains the friction term) so the model is not damped twice.
+
+![Retrofitting the O-step into one Fock-PARFLM Verlet layer as a BAOAB step](figures/fock_parflm_ostep_retrofit_layer.png)
+
+### 8.2 Why it is an approximate reformulation (three mismatches)
+
+1. **The Fock force is non-conservative.** The exchange force $Q$ is a post-Verlet correction that is *not* a scalar gradient (paper §7 and §17c). The clean Gibbs law $\rho_x \propto \exp(-\beta V)$ (§3.2) holds only for the conservative sector (the well and pairwise potentials). With $Q$ switched on, the O-step thermostats a system whose drift is not a pure gradient, so the invariant law is a **non-equilibrium steady state**, not exact Gibbs. It is still useful — it breaks the "commits harder / punctuation-dominated basin" collapse observed in the Verlet ablation — but the exact canonical-sampling claim is lost.
+
+2. **Finite, small depth is not equilibration.** The simulator runs many integration steps per token; Fock-PARFLM has only $L$ layers (of order 8 to 24). A handful of O-steps acts as **stochastic regularisation / exploration**, not convergence to the stationary measure — the "samples $\rho_x$" guarantee is asymptotic in the number of steps.
+
+3. **Train-versus-inference noise is a new design axis.** One must choose whether to inject noise at training time (a regulariser), at inference time (sample diversity), or both, and whether to anneal it. Because each output position carries its own particle, the ensemble interpretation is per-position.
+
+### 8.3 A minimal retrofit recipe
+
+- Split each Verlet layer into the palindromic order B–A–O–A–B, folding the existing $-\gamma v$ damping into the O-step.
+- Set the amplitude by FDT; tie $T = 1/(k\_B \beta\_{\text{readout}})$ or expose a single scalar $T$ for a sweep (§6).
+- Keep $Q$ as the post-Verlet correction unchanged; accept the non-equilibrium steady state.
+- Draw $R$ fresh per layer and per position (reparameterised), preserving differentiability.
+- Run a small joint $(\gamma, T)$ sweep. The scale-up notebook currently uses a fixed damping with no noise, so this is a clean one-factor addition.
+- Instrument validation perplexity, predictive entropy, and the basin-coarseness diagnostic of `Lessons_from_AlphaFold.md`.
+
+### 8.4 Staged plan: the retrofit tests the lever, the simulator tests the theory
+
+| Stage | Vehicle | What it tests | Cost |
+| ----- | ------- | ------------- | ---- |
+| 1 | O-step retrofit into Fock-PARFLM (OpenWebText) | Does thermostat noise cure the Verlet commits-harder collapse and move val perplexity? | near free (drop-in) |
+| 2 | Joint (gamma, T) sweep on the retrofit | Is the residual gap a sampling problem or a capacity problem? | small |
+| 3 | Direct Dynamical Simulator with STP-BAOAB | The exact reformulation: conservative closed-form forces, long horizon, true Gibbs sampling | already built |
+
+The honest framing is that Stage 1 tells you whether stochastic dynamics helps the production model at near-zero cost, while only Stage 3 realises the reformulation exactly. The retrofit tests the *lever*; the simulator tests the *theory*.
+
+![Two vehicles for the O-step reformulation: the approximate Fock-PARFLM retrofit versus the exact Direct Dynamical Simulator](figures/ostep_retrofit_vs_exact_simulator.png)
+
+---
+
+## 9. Generalisations and caveats
+
+### 9.1 Anisotropic / state-dependent damping
 
 If $\gamma$ is promoted to a matrix or made state-dependent (the framework contemplates $\gamma\_t = \gamma\_0/m\_t$, `Semantic_Simulator_EOM.md`), the FDT becomes a matrix identity: the diffusion tensor must match the friction tensor,
 
@@ -356,7 +439,7 @@ $$
 
 otherwise there is no single Gibbs stationary state (detailed balance fails). State-dependent damping is admissible but not free.
 
-### 8.2 Non-Markovian (generalised Langevin) baths
+### 9.2 Non-Markovian (generalised Langevin) baths
 
 If the coarse-grained bath has memory — plausible, since demoted particles persist as a low-mass background field rather than vanishing — the honest object is the **generalised Langevin equation** with a friction kernel $K$ and coloured noise tied by the *second* FDT (Zwanzig; Kubo):
 
@@ -368,13 +451,13 @@ $$
 
 White noise with constant $\gamma$ is the memoryless special case $K(\tau) = 2\gamma \delta(\tau)$ and is the correct first move; memory kernels are a v2+ refinement.
 
-### 8.3 Multiplicative noise and the Itô-Stratonovich choice
+### 9.3 Multiplicative noise and the Itô-Stratonovich choice
 
 If the noise amplitude depends on state (for example through a state-dependent $\gamma$ feeding the FDT), the SDE has multiplicative noise and the Itô versus Stratonovich convention matters: a spurious-drift correction term must be added to preserve $\exp(-\beta V)$ as the stationary law. For the additive, constant-$\sigma$ model of §3 this subtlety does not arise.
 
 ---
 
-## 9. Cross-reference map to paper v4/v5 and companion notes
+## 10. Cross-reference map to paper v4/v5 and companion notes
 
 The table maps each concept in this report to its home in the paper and the companion notes. (Equation and section labels are the LaTeX `\label` keys; they resolve in both `paper_v4` and `paper_v5` unless noted.)
 
@@ -389,6 +472,7 @@ The table maps each concept in this report to its home in the paper and the comp
 | BAOAB splitting and exact O-step | §20, Eqs. eq:splitting, eq:baoab-flow; §18f Eq. eq:af-ostep | Modified_BAOAB_with_STP_identity_Detailed_Analysis.md |
 | STP-BAOAB amortisation | §20 ssec:stp-baoab, Eq. eq:stp-identity; §13 sec:accel | Modified_BAOAB_with_STP_identity_Detailed_Analysis.md |
 | NVE vs NVT and the AlphaFold3 precedent | §18f sec:relation-alphafold, tab:af-design-space | Lessons_from_AlphaFold.md |
+| O-step retrofit into Fock-PARFLM | §17c sec:fock-parflm; §7 (Rayleigh damping) | Lessons_from_AlphaFold.md |
 | Conservation axis / metriplectic reading | §18e sec:relation-liquid-nn | Parallels_and_Lessons_from_Liquid_Neural_Networks.md |
 | RL calibration of force fields | §20 (roadmap) | Semantic_Simulator_RL_Calibration_Programme.md |
 
@@ -396,7 +480,7 @@ The table maps each concept in this report to its home in the paper and the comp
 
 ---
 
-## 10. Summary
+## 11. Summary
 
 - **Reformulation (yes).** The deterministic damped Rayleigh–Lagrangian flow is the zero-noise **drift** of an underdamped Langevin system and the $T \to 0$ **mode** of the Onsager–Machlup stochastic action. Restoring the fluctuating half of the bath, with amplitude locked to $\gamma$ by the FDT $\sigma^2 = 2\gamma m k_B T$, yields a system whose Gibbs marginal $\exp(-\beta V)$ is exactly what the readout softmax samples.
 - **Calibration (yes, cheaply).** The deterministic experiments pin the entire drift $(V, m, \gamma)$; the stochastic upgrade adds a single orthogonal scalar, the temperature, which must be fit against a fluctuation observable (perplexity, entropy, diversity), followed by a light joint $(\gamma, T)$ refit.
