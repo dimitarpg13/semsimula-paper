@@ -143,19 +143,17 @@ This alignment is the reason the stochastic reformulation is not cosmetic. The d
 
 ```mermaid
 flowchart TB
-    DET["Deterministic damped Lagrangian<br>conservative force minus friction"]
-    ADD["Add the stochastic force<br>amplitude set by fluctuation dissipation"]
-    SDE["Underdamped Langevin equation<br>same drift plus thermal noise"]
-    GIBBS["Gibbs stationary distribution<br>canonical NVT ensemble"]
-    MARG["Configurational marginal<br>Boltzmann weight of the potential"]
-    READ["Readout softmax<br>Boltzmann weight of the score"]
-
+    DET["Deterministic damped Lagrangian (conservative force minus friction)"]
+    ADD["Add the stochastic force (amplitude set by fluctuation dissipation)"]
+    SDE["Underdamped Langevin equation (same drift plus thermal noise)"]
+    GIBBS["Gibbs stationary distribution (canonical NVT ensemble)"]
+    MARG["Configurational marginal (Boltzmann weight of the potential)"]
+    READ["Readout softmax (Boltzmann weight of the score)"]
     DET --> ADD
     ADD --> SDE
     SDE --> GIBBS
     GIBBS --> MARG
     MARG --> READ
-    DET -.->|zero noise limit recovers drift| SDE
 ```
 
 ### 3.3 Uniqueness and the role of the bath
@@ -281,19 +279,20 @@ The deterministic $\gamma$ was fit as *pure* dissipation to reproduce observed r
 
 ```mermaid
 flowchart TB
-    EXP["Deterministic experiments<br>fit potential mass and gamma"]
-    FREEZE["Freeze the drift<br>warm start the potentials"]
-    OSTEP["Enable exact O step<br>Verlet becomes BAOAB"]
-    CALT["Calibrate one scalar T<br>match a fluctuation observable"]
-    REFIT["Light joint gamma and T refit<br>absorb the back reaction"]
-    DONE["Thermal Langevin model<br>samples the Gibbs measure"]
-
+    EXP["Deterministic experiments (fit potential, mass, gamma)"]
+    FREEZE["Freeze the drift (warm start the potentials)"]
+    OSTEP["Enable the exact O step (Verlet becomes BAOAB)"]
+    CALT["Calibrate one scalar T (match a fluctuation observable)"]
+    TIE["Or tie temperature to the readout beta (zero new parameters)"]
+    REFIT["Light joint gamma and T refit (absorb the back reaction)"]
+    DONE["Thermal Langevin model (samples the Gibbs measure)"]
     EXP --> FREEZE
     FREEZE --> OSTEP
     OSTEP --> CALT
     CALT --> REFIT
     REFIT --> DONE
-    CALT -.->|or tie temperature to the readout beta| DONE
+    CALT --> TIE
+    TIE --> DONE
 ```
 
 1. **Fit the drift deterministically** (already done): obtain $V$, $m$, $\gamma$.
@@ -334,10 +333,9 @@ The **STP-BAOAB** variant (paper §20, `ssec:stp-baoab`; Eq. `eq:stp-identity`) 
 ```mermaid
 flowchart TB
     OBJ["Object of inference is a distribution"]
-    NVE["velocity Verlet<br>NVE energy conserving<br>collapses onto attractors"]
-    NVT["BAOAB with exact O step<br>NVT samples the Gibbs measure<br>correct configurational marginal"]
-    AF["AlphaFold3 diffusion module<br>external precedent in protein space"]
-
+    NVE["velocity Verlet (NVE, energy conserving, collapses onto attractors)"]
+    NVT["BAOAB with exact O step (NVT, samples the Gibbs measure)"]
+    AF["AlphaFold3 diffusion module (external precedent in protein space)"]
     OBJ --> NVE
     OBJ --> NVT
     AF --> NVT
