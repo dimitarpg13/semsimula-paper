@@ -15,7 +15,7 @@
 - `Parallels_and_Lessons_from_Liquid_Neural_Networks.md` — the conservation axis and the metriplectic reading.
 - `GitHub_Markdown_LaTeX_Rendering_Cheatsheet.md` — the rendering rules this document was validated against.
 
-**Last updated:** 3 July 2026.
+**Last updated:** 5 July 2026.
 
 ---
 
@@ -422,6 +422,81 @@ No new state and no re-architecture are required.
 The honest framing is that Stage 1 tells you whether stochastic dynamics helps the production model at near-zero cost, while only Stage 3 realises the reformulation exactly. The retrofit tests the *lever*; the simulator tests the *theory*.
 
 ![Two vehicles for the O-step reformulation: the approximate Fock-PARFLM retrofit versus the exact Direct Dynamical Simulator](figures/ostep_retrofit_vs_exact_simulator.png)
+
+### 8.5 The assumptions the retrofit makes explicit
+
+The shipped retrofit (`install_ostep` in `colab_fock_ostep_langevin_openwebtext.ipynb`) turns each Fock-PARFLM Verlet layer into a single thermostatted step. It is exact where it can be and approximate everywhere else, and the approximations are all downstream of a short, explicit list of assumptions. Naming them is what makes the flaws in §8.6 predictable rather than mysterious.
+
+- **A1 — Velocity proxy.** The model stores position $h$ and the previous position $h\_{\text{prev}}$, not an explicit momentum. The retrofit reads the implicit velocity $v = (h\_{\text{new}} - h)/\Delta t$ from one conservative half-update and thermostats *that*. It assumes this finite difference is a faithful momentum.
+- **A2 — Damping is friction, and only the O-step carries it.** The parent layer's learned denominator damping $1/(1+\gamma \Delta t)$ is folded out (gamma is set to zero for the drift call) so the exact Ornstein–Uhlenbeck contraction $c\_1 = e^{-\gamma \Delta t}$ is the sole friction. It assumes the learned damping and the OU friction are the same physical channel.
+- **A3 — One layer equals one unit-time step.** $\Delta t = 1$ and the number of integration steps equals the network depth $L$ (about 16). It assumes a single large step per layer is an acceptable integrator.
+- **A4 — Frozen local potential.** Within a layer step the potential $V\_\theta, V\_\phi$ is treated as static: the force is read once and held for the whole move.
+- **A5 — Temperature lives in the readout.** $k\_B T$ is tied to the readout inverse temperature, $T = 1/(k\_B \beta\_{\text{readout}})$, or exposed as a single scalar; there is no separately learned thermodynamic temperature (§5).
+- **A6 — Mass sets the noise scale.** Per-token mass $m\_b$ enters the FDT amplitude $\sqrt{(k\_B T/m\_b)(1 - c\_1^2)}$. It assumes the learned mass is the inertial mass of the Langevin particle.
+- **A7 — Noise is a training-time regulariser.** Fresh reparameterised noise is drawn per layer and per position during training and switched off at evaluation by default. It assumes we want the deterministic *mode* at inference and the stochastic *tube* only for learning (§4, §7.1).
+- **A8 — The non-conservative force is left alone.** The reverse-channel / Fock creation–destruction force $Q$ stays as the post-Verlet correction and is OFF by default. It assumes we may study the thermostat on the conservative skeleton first.
+
+One honest discrepancy sits inside this list. The ideal recipe of §8.3 is the palindromic B–A–O–A–B step with the FDT amplitude; the shipped retrofit uses a single conservative drift followed by one O-step per layer — a first-order splitting with a single force evaluation, chosen for one force call and gradient-checkpoint compatibility. That gap is error #3 below.
+
+### 8.6 From assumptions to error: the inaccuracy taxonomy
+
+Each assumption is reasonable *locally*, but together they make the retrofit **locally faithful and globally approximate**. There is no single $\epsilon$ that bounds the gap to the full reformulation; instead there is a small set of distinct error channels. The figure ranks them for the default configuration, and the table maps each back to the assumption that causes it and the lever that reduces it.
+
+![Sources of inaccuracy in the O-step retrofit, ranked by severity and colour-coded by how each is addressed](figures/ostep_retrofit_error_taxonomy.png)
+
+| Source of error | From assumption | What it costs | How to reduce it |
+| --------------- | --------------- | ------------- | ---------------- |
+| Finite depth is not equilibration | A3 | ~16 O-steps cannot relax to the stationary measure; the sampler never reaches Gibbs | more steps / exact simulator (§8.7) |
+| Inhomogeneous potential | A4 + depth-conditioning | each layer is a different V, so there is no single measure to converge to | exact simulator: one shared V, many steps |
+| First-order splitting, single force eval | A3, A4 | dt=1 with one force call loses the second-order accuracy of palindromic BAOAB | inner O-steps / smaller dt (§8.7) |
+| Uncalibrated (gamma, T), spread double-counted | A2, A5, A6 | the learned drift already reproduces the observed spread; adding noise at kT=1 double-counts it | (gamma, T) sweep (§8.8) |
+| Velocity-proxy + LayerNorm distortion | A1 | the projection LayerNorm after each step warps the finite-difference velocity and the re-encoded previous position | smaller dt; second-order effect |
+| Non-conservative Q gives a NESS, not Gibbs | A8 | if the reverse channel is on, the steady state is a non-equilibrium steady state | keep Q off, or use the metriplectic simulator (§9) |
+
+Reading the ranking honestly: the top two errors are **structural** — only the exact, homogeneous, many-step simulator removes them. Error #4 is **removed by a sweep**. Errors #3 and #5 are **discretisation** and shrink with smaller steps. Error #6 is **inactive by default**. Crucially, every one of them vanishes as the noise amplitude goes to zero: in that limit the retrofit and the full reformulation collapse onto the same deterministic damped flow (the $\sigma \to 0$ mode of §7.1). This is why the retrofit is a safe probe — its worst case is the model we already have.
+
+### 8.7 Will increasing the integration steps help, and how?
+
+"Increase the steps" is ambiguous, and the ambiguity matters because the three axes fix different errors. Only one of them fixes the structural pair.
+
+- **Inner O-steps per layer (frozen potential).** Replace the single kick with $n\_{\text{inner}}$ short sub-steps that thermalise the *local* frozen potential. This drives the per-layer conditional toward its local stationary law geometrically,
+
+$$
+\text{KL}_n \approx \text{KL}_0 e^{-c n_{\text{inner}}} + \text{floor},
+$$
+
+  attacking error #1 (local non-equilibration) at a cost linear in $n\_{\text{inner}}$, as a drop-in. But it cannot cross the floor set by error #2 (inhomogeneity), and if $Q$ is on, error #6 (NESS) raises that floor.
+- **More layers L (depth).** Adding depth raises capacity and lets each frozen potential be gentler, but a deeper stack is still a sequence of *different* potentials. It buys representational capacity, not sampling fidelity, and — because depth-conditioning introduces more distinct potentials — it can even *worsen* the inhomogeneity error.
+- **Many small steps of one homogeneous potential (the exact simulator).** This is the theoretically correct reading: one shared conservative potential, small $\Delta t$, and hundreds of STP-BAOAB steps. It removes errors #1 and #2 together and is the only axis that realises true Gibbs sampling (§7; paper v5 §20 `sec:dynamical-simulator`; `Modified_BAOAB_with_STP_identity_Detailed_Analysis.md`).
+
+![The three step axes: inner O-steps buy local equilibration up to a floor, depth buys capacity, only the homogeneous simulator buys both](figures/ostep_steps_scaling.png)
+
+The practical diagnostic is cheap. Add a handful of inner O-steps and watch validation perplexity and predictive entropy. If they improve and then **saturate**, the residual gap is capacity / inhomogeneity (error #2), which points at the simulator or at more capacity. If they keep improving, the retrofit was simply under-equilibrated and the linear cost of inner steps is worth paying.
+
+### 8.8 Will a (gamma, T) sweep help, and how?
+
+Yes — for a specific, bounded purpose. A sweep calibrates the **regulariser optimum** and removes the double-counting bias (error #4). It does not touch the structural errors #1 and #2.
+
+- **Temperature T (the clean axis).** $T$ sets the noise amplitude through the FDT, $\sigma^2 \propto k\_B T (1-c\_1^2)$. It is orthogonal to the drift, which the deterministic experiments already fixed (§6), so it is the safe first sweep. Too cold ($T \to 0$) recovers the Verlet "commits harder" collapse: low predictive entropy, punctuation-dominated basins (the `Lessons_from_AlphaFold.md` symptom). Too hot and the noise swamps the drift, so loss rises and entropy drifts toward uniform. Expect a U-shaped val-perplexity curve with a basin near the tied value $T = 1/\beta\_{\text{readout}}$, and predictive entropy rising monotonically with $T$.
+- **Friction gamma (the coupled axis).** $\gamma$ controls both the OU contraction $c\_1 = e^{-\gamma \Delta t}$ *and*, through the FDT, the per-step noise variance $(k\_B T/m)(1-c\_1^2)$. Low $\gamma$ is underdamped: momentum persists across layers (ballistic, exploratory transport, weak noise per step). High $\gamma$ is overdamped: each step is nearly an independent draw from the local kick (fast local mixing, slow long-range transport). Because $\gamma$ moves damping and noise together it is not a pure knob, so a *joint* $(\gamma, T)$ refit is what actually removes the double-counting: it lets the model hand some deterministic damping back to the thermostat without changing the total observed spread.
+- **What the sweep cannot do.** It optimises *within* the regulariser regime. It cannot make ~16 inhomogeneous steps sample a measure that does not exist. If the best $(\gamma, T)$ still leaves a gap to target, that gap is sampling structure or capacity, not calibration — and the answer is inner steps or the exact simulator.
+
+![Schematic (gamma, T) validation-perplexity landscape with a sweet-spot basin, plus the 1-D temperature slice showing the U-shaped loss and monotone entropy](figures/ostep_gamma_temperature_sweep.png)
+
+The recommended order follows the staged plan of §8.4: (1) tie $T = 1$ with $\gamma$ warm-started at 0.30 and confirm the thermostat moves perplexity and entropy at all; (2) sweep $T$ over a decade at fixed $\gamma$ (the cleanest axis); (3) apply a small joint $(\gamma, T)$ refinement around the basin.
+
+### 8.9 Reading the outcome: a decision guide
+
+The retrofit is the cheapest possible probe of the reformulation, and each of its inaccuracies points at the specific richer vehicle that removes it. The table turns the diagnostics above into a decision.
+
+| Observation | Diagnosis | Action |
+| ----------- | --------- | ------ |
+| Retrofit lowers val perplexity and entropy rises into a healthy band | the thermostat cures the Verlet collapse; the lever works | proceed to the (gamma, T) sweep (§8.8) |
+| Inner O-steps improve, then saturate above target | local equilibration achieved; residual is inhomogeneity / capacity | move to the exact simulator (§8.7) or add capacity |
+| (gamma, T) sweep is monotone-worse for any noise | drift is already well-calibrated, or the model is too shallow to benefit | keep noise as mild regularisation only; invest in capacity or the simulator |
+| Turning the reverse channel on raises the floor | the non-conservative Q pushes the system to a NESS | keep Q off for sampling, or move to the metriplectic simulator (§9; paper v5 §20) |
+
+The single-sentence summary: the retrofit answers "does stochasticity help *this* model?" at near-zero cost, and it is faithful enough to trust that answer, while being explicit enough about its assumptions that a "no" or a "not enough" tells you exactly which of the three vehicles (inner steps, a sweep, or the exact simulator) to reach for next.
 
 ---
 
