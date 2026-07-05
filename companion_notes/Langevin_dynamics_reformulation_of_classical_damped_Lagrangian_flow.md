@@ -29,9 +29,10 @@
 6. [Calibrating the stochastic model from deterministic experiments](#6-calibrating-the-stochastic-model-from-deterministic-experiments)
 7. [Discretisation: BAOAB and the exact O-step](#7-discretisation-baoab-and-the-exact-o-step)
 8. [Applying the O-step to Fock-PARFLM: retrofit versus the exact simulator](#8-applying-the-o-step-to-fock-parflm-retrofit-versus-the-exact-simulator)
-9. [Generalisations and caveats](#9-generalisations-and-caveats)
-10. [Cross-reference map to paper v4/v5 and companion notes](#10-cross-reference-map-to-paper-v4v5-and-companion-notes)
-11. [Summary](#11-summary)
+9. [Improving accuracy: warm-start curricula for the retrofit and the simulator](#9-improving-accuracy-warm-start-curricula-for-the-retrofit-and-the-simulator)
+10. [Generalisations and caveats](#10-generalisations-and-caveats)
+11. [Cross-reference map to paper v4/v5 and companion notes](#11-cross-reference-map-to-paper-v4v5-and-companion-notes)
+12. [Summary](#12-summary)
 - [Appendix A: Notation](#appendix-a-notation)
 - [References](#references)
 
@@ -47,7 +48,7 @@ This report answers three questions in order.
 2. **Can we calibrate the stochastic reformulation from the current deterministic results?** Yes, and cheaply: the deterministic fit already pins the entire **drift** (potential, mass, damping); the stochastic upgrade adds essentially **one** new scalar, the temperature, which must be fit against a fluctuation observable rather than a mean trajectory (§6).
 3. **Do we need a temperature?** Yes — an effective temperature is inescapable if the noise is to have a principled amplitude and the dynamics a well-defined stationary law. Remarkably, that temperature is already present as the **readout inverse temperature** $\beta$ (§5).
 
-The practical payoff, developed throughout and summarised in §11, is that switching Verlet to a thermostatted BAOAB step (paper Eqs. `eq:baoab-flow`, `eq:af-ostep`) is a low-cost, high-leverage accuracy lever whose only genuinely new degree of freedom is a temperature that can even be tied to a quantity already trained.
+The practical payoff, developed throughout and summarised in §12, is that switching Verlet to a thermostatted BAOAB step (paper Eqs. `eq:baoab-flow`, `eq:af-ostep`) is a low-cost, high-leverage accuracy lever whose only genuinely new degree of freedom is a temperature that can even be tied to a quantity already trained.
 
 ![Deterministic trajectory as the most-probable path with a temperature-controlled fluctuation tube](figures/langevin_mode_and_tube.png)
 
@@ -158,7 +159,7 @@ flowchart TB
 
 ### 3.3 Uniqueness and the role of the bath
 
-Given the Markovian (white-noise) assumption and the requirement of Gibbs stationarity, the completion in §3.1 is **unique up to the single scalar $T$**. Any other choice of noise amplitude either breaks detailed balance (no equilibrium) or silently redefines the temperature (see §5.1). The physical content is that the deterministic damped model already committed to a specific bath the moment it fixed $\gamma$; the FDT simply reads off the matching fluctuations. Non-Markovian baths (memory) relax this uniqueness and are treated in §9.2.
+Given the Markovian (white-noise) assumption and the requirement of Gibbs stationarity, the completion in §3.1 is **unique up to the single scalar $T$**. Any other choice of noise amplitude either breaks detailed balance (no equilibrium) or silently redefines the temperature (see §5.1). The physical content is that the deterministic damped model already committed to a specific bath the moment it fixed $\gamma$; the FDT simply reads off the matching fluctuations. Non-Markovian baths (memory) relax this uniqueness and are treated in §10.2.
 
 ---
 
@@ -451,7 +452,7 @@ Each assumption is reasonable *locally*, but together they make the retrofit **l
 | First-order splitting, single force eval | A3, A4 | dt=1 with one force call loses the second-order accuracy of palindromic BAOAB | inner O-steps / smaller dt (§8.7) |
 | Uncalibrated (gamma, T), spread double-counted | A2, A5, A6 | the learned drift already reproduces the observed spread; adding noise at kT=1 double-counts it | (gamma, T) sweep (§8.8) |
 | Velocity-proxy + LayerNorm distortion | A1 | the projection LayerNorm after each step warps the finite-difference velocity and the re-encoded previous position | smaller dt; second-order effect |
-| Non-conservative Q gives a NESS, not Gibbs | A8 | if the reverse channel is on, the steady state is a non-equilibrium steady state | keep Q off, or use the metriplectic simulator (§9) |
+| Non-conservative Q gives a NESS, not Gibbs | A8 | if the reverse channel is on, the steady state is a non-equilibrium steady state | keep Q off, or use the metriplectic simulator (§10) |
 
 Reading the ranking honestly: the top two errors are **structural** — only the exact, homogeneous, many-step simulator removes them. Error #4 is **removed by a sweep**. Errors #3 and #5 are **discretisation** and shrink with smaller steps. Error #6 is **inactive by default**. Crucially, every one of them vanishes as the noise amplitude goes to zero: in that limit the retrofit and the full reformulation collapse onto the same deterministic damped flow (the $\sigma \to 0$ mode of §7.1). This is why the retrofit is a safe probe — its worst case is the model we already have.
 
@@ -494,15 +495,82 @@ The retrofit is the cheapest possible probe of the reformulation, and each of it
 | Retrofit lowers val perplexity and entropy rises into a healthy band | the thermostat cures the Verlet collapse; the lever works | proceed to the (gamma, T) sweep (§8.8) |
 | Inner O-steps improve, then saturate above target | local equilibration achieved; residual is inhomogeneity / capacity | move to the exact simulator (§8.7) or add capacity |
 | (gamma, T) sweep is monotone-worse for any noise | drift is already well-calibrated, or the model is too shallow to benefit | keep noise as mild regularisation only; invest in capacity or the simulator |
-| Turning the reverse channel on raises the floor | the non-conservative Q pushes the system to a NESS | keep Q off for sampling, or move to the metriplectic simulator (§9; paper v5 §20) |
+| Turning the reverse channel on raises the floor | the non-conservative Q pushes the system to a NESS | keep Q off for sampling, or move to the metriplectic simulator (§10; paper v5 §20) |
 
 The single-sentence summary: the retrofit answers "does stochasticity help *this* model?" at near-zero cost, and it is faithful enough to trust that answer, while being explicit enough about its assumptions that a "no" or a "not enough" tells you exactly which of the three vehicles (inner steps, a sweep, or the exact simulator) to reach for next.
 
 ---
 
-## 9. Generalisations and caveats
+## 9. Improving accuracy: warm-start curricula for the retrofit and the simulator
 
-### 9.1 Anisotropic / state-dependent damping
+Section 8 established that the retrofit is locally faithful but globally approximate: its structural errors (#1 non-equilibration, #2 inhomogeneity) are removed only by the exact simulator, while the calibration error (#4) is removed by a sweep. This section turns those diagnostics into a concrete accuracy programme and evaluates a specific proposal — sweep $(\gamma, T)$, rerun the Phase-1 retrofit on OpenWebText, harvest the learned structured potentials $V\_\theta$ and $V\_\phi$, then warm-start a second phase from those potentials at the chosen $(\gamma, T)$. The short answer is that this is a sound, well-motivated curriculum: it is the AlphaFold "condition on a prior, never fold from scratch" lesson (`Lessons_from_AlphaFold.md`, §5) fused with structured-potential harvesting (ibid. §3) and the $(\gamma, T)$ calibration of §8.8. A few improvements and pitfalls are worth stating up front.
+
+### 9.1 What "accuracy" means for each vehicle
+
+The two vehicles have different ceilings, so "improve accuracy" means different things.
+
+- **The retrofit** is a fixed-depth amortiser; it cannot sample the measure exactly (errors #1 and #2 are structural). Its accuracy budget has two clean components: fix the calibration (#4) with the sweep, and shape a **better-conditioned force terrain** so that the deterministic inference mode sits in wide, well-separated basins instead of the coarse, punctuation-dominated basins of the Verlet collapse (`Lessons_from_AlphaFold.md`, §2.3). Its ceiling is capacity, not sampling.
+- **The simulator** already samples the Gibbs measure correctly given the forces; its accuracy is bounded by force-field fidelity, temperature calibration, and step count. AlphaFold's lesson is that a learned endpoint map beats time-stepping on raw accuracy, so the simulator justifies itself on transparency — and reaches its best accuracy by **importing the best learned forces**.
+
+The link between them is the whole point of this section: the retrofit curriculum is the cheap stage that **shapes and calibrates** the force field, and the simulator is the exact sampler that **consumes** it.
+
+### 9.2 The proposed two-phase warm-start curriculum, evaluated
+
+Read the proposal as an explore -> harvest -> exploit curriculum.
+
+![The explore-harvest-exploit accuracy curriculum: Phase A sweeps and shapes the terrain, harvest captures the structured potentials, Phase B warm-starts and commits, and the same forces optionally feed the exact simulator](figures/accuracy_curriculum_pipeline.png)
+
+- **Phase A (explore).** Turn the O-step on and run a small $(\gamma, T)$ sweep (Stages 1–2 of §8.4). The injected noise is not only a diagnostic: during training it acts as a graduated-optimisation / annealing regulariser that smooths the landscape and carves wider, better-separated basins, avoiding the "commits harder" collapse of a deterministic energy-conserving flow. Select $(\gamma^{\star}, T^{\star})$ by validation perplexity, a healthy predictive-entropy band, and gradient stability.
+- **Harvest.** Capture the learned structured potentials — the well-bank weights $w\_k(\xi)$, centres $\mu\_k(\xi)$, precisions $\sigma\_k$ of $V\_\theta$, and the routing keys and gates of the pairwise $V\_\phi$ — from the selected checkpoint (preferably its EMA). Because these are already bounded analytic wells rather than a raw MLP, they are directly reusable and STP-clean (ibid. §3).
+- **Phase B (exploit).** Warm-start a new run from those potentials — no reinitialisation — keeping the O-step at $(\gamma^{\star}, T^{\star})$, and run a fresh (second) WSD cycle. Optionally anneal $T \to 0$ toward the end so inference commits to a clean deterministic mode (evaluation already runs noise-off by default, §8.5 A7).
+
+**Verdict: reasonable, and for concrete reasons.** It should raise accuracy because (1) it removes the calibration error (#4) *before* spending the long-run compute, so Phase B trains under a correctly-tempered thermostat rather than an arbitrary one; (2) warm-starting means Phase B does not re-pay the early-basin-formation cost — it starts on a terrain the noise already smoothed (the potential-harvesting / continual-learning win, ibid. §3, §5); and (3) the explore-then-commit temperature profile is itself a curriculum — high noise early to escape shallow basins, low noise late to sharpen — the same philosophy as AlphaFold3's diffusion noise schedule and classical simulated annealing.
+
+### 9.3 A concrete protocol
+
+1. **Phase A grid.** Hold seed, data, and schedule fixed; enable the O-step (`noise_train=True`). Sweep a small grid, for example $\gamma$ in {0.15, 0.30, 0.60} against $T$ tied at 1 and then a decade around it, following the §8.8 order (tie $T = 1$ first, sweep $T$ at fixed $\gamma$, then a small joint refine). Keep Phase A short — a fraction of the full budget.
+2. **Selection.** Pick $(\gamma^{\star}, T^{\star})$ by a stability *band* on validation perplexity and entropy over several eval batches (not a single-point minimum), plus gradient-norm health.
+3. **Harvest.** Save the potential submodules' parameters (the $V\_\theta$ well bank and the $V\_\phi$ routing) from the EMA weights of the selected run. Keep them as structured bounded wells plus, if needed, a thin AD-only residual (ibid. §3.1) so capacity is not distilled away.
+4. **Phase B.** Initialise the new model's potential submodules from the harvested parameters; reinitialise the optimiser and start a fresh WSD cycle; keep $(\gamma^{\star}, T^{\star})$; optionally schedule $T$ downward through the decay phase.
+5. **Attribution guard.** Confirm the head is not the bottleneck (untied `W_out` and unigram bias are already in, so this is largely discharged — ibid. §4.2) before crediting or blaming the dynamics.
+6. **Fair-compute baseline.** Compare Phase A + Phase B against a single run of matched total steps (a plain "second WSD cycle" without harvest warm-start), so any gain is attributable to the curriculum rather than to more compute.
+
+### 9.4 Alternatives and improvements
+
+![Two improvements: a continuous single-run temperature anneal instead of two hard phases, and transferring only the run-invariant part of the potential](figures/warm_start_vs_anneal_schedule.png)
+
+- **Anneal continuously instead of two hard phases.** A single run with a temperature schedule $T(t)$ — high early, decayed late (cosine / diffusion-style) — realises the same explore-then-commit curriculum without a phase boundary, and so avoids the risk that Phase B forgets or over-writes the harvested terrain. This is often the cleaner form of the same idea; the two-phase form is preferable mainly when you want to reuse potentials across *different* data or model sizes.
+- **Transfer only the run-invariant part.** Per `Lessons_from_AlphaFold.md` §3.2, the pairwise $V\_\phi$ kernel encodes how properties attract and repel — run-independent physics, the genuine cross-run invariant — whereas $\xi$-routed context coupling and depth-conditioning are data-specific. Warm-start (or lightly freeze) $V\_\phi$ hard; let the $V\_\theta$ context heads and routing stay plastic. This dominates a blanket warm-start.
+- **Harvest from EMA, or average a soup.** Warm-start from the EMA of Phase-A weights (near-free, ibid. §5), or average the potentials of several good sweep points into a "soup" for a flatter, more transferable terrain (average only compatible parametrisations).
+- **Add inner O-steps in Phase B.** If the Phase-A sweep shows noise helps but saturates, buy more *local* equilibration cheaply with a few inner O-steps per layer (§8.7) rather than adding depth.
+- **Promote to the exact simulator for the top accuracy rung.** Import the harvested, calibrated structured forces into the Direct Dynamical Simulator (STP-BAOAB, many small homogeneous steps): this removes the structural errors #1 and #2 the retrofit cannot. The curriculum thus doubles as the force-field-preparation stage for the simulator.
+
+### 9.5 Pitfalls to watch for
+
+- **The moving-target / non-clean-sweep problem.** If the potentials are retrained at each $(\gamma, T)$, the sweep is not a clean one-factor study — each point is a different model whose terrain adapted to its own noise. That is fine for *selection*, but do not read the sweep as an isolated $\gamma$ effect. For a clean one-factor read, hold the potentials fixed and vary only the thermostat post hoc (cheaper, but then the potentials were not trained under that noise).
+- **Selection on a noisy metric.** Under stochastic training, validation perplexity and entropy carry real variance; picking the single best sweep point risks selecting noise. Select by a band over multiple batches or seeds.
+- **Ossification / early-basin lock-in.** Reusing potentials compounds fitting error and can freeze early basins, misleading OWT-novel contexts (ibid. §3.3, the machine-learned-interatomic-potential extrapolation-failure analogue). Mitigate with an OOD-gated spawn — spawn a well or fall back to the residual when the state is far from every centre — and by keeping Phase B partly plastic rather than hard-freezing everything.
+- **Temperature mismatch between phases.** If Phase A carved basins at $T\_A$ and Phase B runs at $T\_B \neq T\_A$, the harvested terrain is calibrated to the wrong noise level. Keep $(\gamma, T)$ consistent across the boundary, or anneal smoothly.
+- **Velocity-proxy re-scaling at warm-start.** The retrofit reads velocity as $(h\_{\text{new}} - h)/\Delta t$ after a LayerNorm projection (§8.5 A1). If warm-starting shifts the h-scale, that proxy and the re-encoded previous position are momentarily miscalibrated; a short re-warm-up fixes it.
+- **Harvesting a non-conservative terrain.** If the reverse-channel force $Q$ is on, the steady state is a NESS and the "potential" is not a pure gradient field (§8.6, error #6). Harvest only the conservative $V\_\theta$ and $V\_\phi$; keep $Q$ learned fresh or off during the curriculum.
+- **Attribution to the wrong subsystem.** A null result from the dynamics can be a masked readout ceiling; confirm the head first (ibid. §4.2).
+
+### 9.6 Improving the full dynamical simulator
+
+Because the simulator already samples the target measure, its accuracy levers differ from the retrofit's:
+
+- **Force-field fidelity.** Import the harvested structured potentials (structured bulk plus a thin residual) as the simulator's force field; this is where the retrofit curriculum pays off for the simulator.
+- **Temperature calibration.** Tie $T = 1/(k\_B \beta\_{\text{readout}})$ (§5), then apply a light $(\gamma, T)$ refine (§6.2); exact sampling makes temperature the dominant remaining knob.
+- **Integrator budget.** Use enough small STP-BAOAB steps of the single homogeneous potential (§7, §8.7); this is the axis that actually realises Gibbs sampling.
+- **Damping model.** Start with additive constant-$\sigma$ white noise; promote to state-dependent / anisotropic damping (matrix FDT, §10.1) or memory kernels (§10.2) only once the constant-$\sigma$ model is calibrated.
+
+The division of labour is clean: the retrofit curriculum shapes and calibrates a good, bounded force field cheaply, and the simulator then samples it exactly. Neither alone reaches both goals; together they climb from "does noise help?" to "sample the right measure on the right terrain."
+
+---
+
+## 10. Generalisations and caveats
+
+### 10.1 Anisotropic / state-dependent damping
 
 If $\gamma$ is promoted to a matrix or made state-dependent (the framework contemplates $\gamma\_t = \gamma\_0/m\_t$, `Semantic_Simulator_EOM.md`), the FDT becomes a matrix identity: the diffusion tensor must match the friction tensor,
 
@@ -512,7 +580,7 @@ $$
 
 otherwise there is no single Gibbs stationary state (detailed balance fails). State-dependent damping is admissible but not free.
 
-### 9.2 Non-Markovian (generalised Langevin) baths
+### 10.2 Non-Markovian (generalised Langevin) baths
 
 If the coarse-grained bath has memory — plausible, since demoted particles persist as a low-mass background field rather than vanishing — the honest object is the **generalised Langevin equation** with a friction kernel $K$ and coloured noise tied by the *second* FDT (Zwanzig; Kubo):
 
@@ -524,13 +592,13 @@ $$
 
 White noise with constant $\gamma$ is the memoryless special case $K(\tau) = 2\gamma \delta(\tau)$ and is the correct first move; memory kernels are a v2+ refinement.
 
-### 9.3 Multiplicative noise and the Itô-Stratonovich choice
+### 10.3 Multiplicative noise and the Itô-Stratonovich choice
 
 If the noise amplitude depends on state (for example through a state-dependent $\gamma$ feeding the FDT), the SDE has multiplicative noise and the Itô versus Stratonovich convention matters: a spurious-drift correction term must be added to preserve $\exp(-\beta V)$ as the stationary law. For the additive, constant-$\sigma$ model of §3 this subtlety does not arise.
 
 ---
 
-## 10. Cross-reference map to paper v4/v5 and companion notes
+## 11. Cross-reference map to paper v4/v5 and companion notes
 
 The table maps each concept in this report to its home in the paper and the companion notes. (Equation and section labels are the LaTeX `\label` keys; they resolve in both `paper_v4` and `paper_v5` unless noted.)
 
@@ -553,7 +621,7 @@ The table maps each concept in this report to its home in the paper and the comp
 
 ---
 
-## 11. Summary
+## 12. Summary
 
 - **Reformulation (yes).** The deterministic damped Rayleigh–Lagrangian flow is the zero-noise **drift** of an underdamped Langevin system and the $T \to 0$ **mode** of the Onsager–Machlup stochastic action. Restoring the fluctuating half of the bath, with amplitude locked to $\gamma$ by the FDT $\sigma^2 = 2\gamma m k_B T$, yields a system whose Gibbs marginal $\exp(-\beta V)$ is exactly what the readout softmax samples.
 - **Calibration (yes, cheaply).** The deterministic experiments pin the entire drift $(V, m, \gamma)$; the stochastic upgrade adds a single orthogonal scalar, the temperature, which must be fit against a fluctuation observable (perplexity, entropy, diversity), followed by a light joint $(\gamma, T)$ refit.
