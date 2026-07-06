@@ -122,6 +122,36 @@ context $\xi_\ell$, mass $\mathfrak{m}_\ell$, and parameters $\theta_\ell$ — l
 
 ---
 
+## 5a. A lone `*` (superscript/optimality star) inside math — use `\ast` instead
+
+The same pre-processing GitHub applies for `_` (rule 5, rule 12) also applies to a literal `*`: GitHub's Markdown parser pairs single `*` characters as italic delimiters **before** KaTeX ever sees the content, and it does this across the whole paragraph, not just within one `$...$`/`$$...$$` span. A pattern like `R^{*}` used twice in nearby text or equations — e.g. once in `$$R^{*} = \arg\min_{R \in O(d)} \dots$$` and again a few lines later in `$x_C = R^{*} x_P$` — gives the parser two lone `*` characters to pair as an italic open/close span. Everything between them (including the intervening display equation) gets swallowed by the emphasis pass, and KaTeX receives mangled/truncated input, typically failing with:
+
+> **Extra close brace or missing open brace**
+
+**Symptom:** the equation renders as a pink error box, and the "raw" fallback text GitHub shows underneath has the `*` characters silently replaced by `_` (a visible fingerprint that the Markdown emphasis pass — not KaTeX — is what actually broke the input).
+
+```latex
+% Bad — two lone "*" characters (one per R^{*}) let the Markdown parser
+% pair them as italic delimiters across the whole span between them
+$$
+R^{*} = \arg\min_{R \in O(d)} \lVert R E_P - E_C\rVert_F = U V^\top,
+\qquad
+x_C = R^{*} x_P.
+$$
+
+% Good — \ast is a first-class KaTeX command, renders identically,
+% and contains no literal "*" for the Markdown parser to pair
+$$
+R^{\ast} = \arg\min_{R \in O(d)} \lVert R E_P - E_C\rVert_F = U V^\top,
+\qquad
+x_C = R^{\ast} x_P.
+$$
+```
+
+**Rule:** never use a bare `*` inside `$...$` or `$$...$$` math (common in optimality notation like `R^*`, `w^*`, `\theta^*`, or swept-value notation like `\gamma^*`). Always write `\ast` (or `\star` if the five-pointed-star glyph is intended instead of the asterisk glyph). This is safe even when only one `*` appears in the whole document, but it is *mandatory* whenever the same starred symbol is reused more than once, since a single unpaired `*` will happily pair with any other lone `*` anywhere later in the rendered page.
+
+---
+
 ## 6. `\|...\|` (double-bar norm) inside inline math — avoid in prose
 
 `\|` in Markdown source looks like `\|` to the Markdown parser. Even in prose (not tables), a `\|...\|` norm like `\|x - x_{c,k}\|^2` can break the math context because `\` escapes the `|` character, making the math parser see unbalanced delimiters.
@@ -612,6 +642,7 @@ flowchart TB
 | `$\sim$` in table cell | shows raw `$\sim$` | use `~` |
 | Italic block or inline `*clause*` + math | math renders as raw literal text | remove `*...*`; use plain text or bold for emphasis |
 | Many `_` in one `$...$` | subscripts disappear | break into shorter expressions |
+| Lone `*` in math (e.g. `R^{*}`), reused later in the doc | "Extra close brace or missing open brace"; fallback text shows `_` where `*` was | use `\ast` (or `\star`) instead of a literal `*` |
 | `\|...\|` in inline math | math context broken | use `\lVert...\rVert` or display block |
 | Display line starts with `- ` | becomes bullet point | collapse to one line |
 | `\boxed{...}` multiline with `-` | bullet inside box | single-line `\boxed{...}` |

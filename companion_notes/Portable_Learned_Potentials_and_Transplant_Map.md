@@ -460,12 +460,12 @@ flowchart TD
 - **Case B (independent embeddings, even if both tied):** recover the orthogonal map by Procrustes on the shared-vocabulary rows. With cross-covariance $M = E_C[\text{shared}]^\top E_P[\text{shared}]$ and its SVD $M = U S V^\top$,
 
 $$
-R^{*} = \arg\min_{R \in O(d)} \lVert R E_P - E_C\rVert_F = U V^\top,
+R^{\ast} = \arg\min_{R \in O(d)} \lVert R E_P - E_C\rVert_F = U V^\top,
 \qquad
-x_C = R^{*} x_P.
+x_C = R^{\ast} x_P.
 $$
 
-Apply $x_C = R^{*} x_P$ to every producer coordinate (well centres $\mu$, anchors $a$, $V_\phi$ type axes). Scalar widths and precisions are rotation-invariant and pass through untouched. The gauge-breaker (ln-after-step, $\lVert V_\theta\rVert^2$, or attention-norm) must match; alignment fixes orientation, not the additive-constant scale.
+Apply $x_C = R^{\ast} x_P$ to every producer coordinate (well centres $\mu$, anchors $a$, $V_\phi$ type axes). Scalar widths and precisions are rotation-invariant and pass through untouched. The gauge-breaker (ln-after-step, $\lVert V_\theta\rVert^2$, or attention-norm) must match; alignment fixes orientation, not the additive-constant scale.
 
 ### 12.2 Step 2 — $d$-change re-projection
 
@@ -480,7 +480,7 @@ $$
 a_{\max}^C = \frac{2}{d_C}\ \text{(re-cap; do not inherit } a_{\max}^P).
 $$
 
-- **Projection matrices** compose with the pseudo-inverse of the centre map so type-space and $\xi$-space stay invariant, with $\Pi \in \lbrace R^{*}, U_C R_r U_P^\top\rbrace$:
+- **Projection matrices** compose with the pseudo-inverse of the centre map so type-space and $\xi$-space stay invariant, with $\Pi \in \lbrace R^{\ast}, U_C R_r U_P^\top\rbrace$:
 
 $$
 W_l^C = W_l^P \Pi^{+}.
@@ -578,7 +578,7 @@ flowchart TD
 
 **Phase 1 — harvest and sweep.** Keep the learned $V_\theta$ (the depth-conditioned multi-context bank) and $V_\phi$; scan the two new O-step degrees of freedom $(\gamma, T)$ on a short proxy budget with `colab_fock_ostep_gammaT_sweep_openwebtext.ipynb`, which reuses the exact model build via `fock_ostep_setup.py` so the swept optimum transfers verbatim. This is Step 5b (occupancy re-fit) implemented as a grid search rather than a per-well solve — appropriate here because the depth-conditioned bank has too many coupled wells for an independent 1-D solve per well.
 
-**Phase 2 — transplant and exploit.** Initialise the O-step Langevin consumer (c) from the harvested $(V_\theta, V_\phi)$ at the selected $(\gamma^{*}, T^{*})$ (`colab_fock_ostep_langevin_openwebtext.ipynb`, `install_ostep`), and run with a high-$\gamma$ warmup annealed to $\gamma^{*}$. Run gates 1 (init-scale), 3 (adiabaticity, since the depth-conditioned bank is a free-centre variant), 4 (NVT energy), and 5 (occupancy). Because the noise supplies the two-timescale averaging (§9.2), the free-centre centres may be released earlier than a pure-Verlet consumer would allow — but only once the adiabaticity ratio is small and stable.
+**Phase 2 — transplant and exploit.** Initialise the O-step Langevin consumer (c) from the harvested $(V_\theta, V_\phi)$ at the selected $(\gamma^{\ast}, T^{\ast})$ (`colab_fock_ostep_langevin_openwebtext.ipynb`, `install_ostep`), and run with a high-$\gamma$ warmup annealed to $\gamma^{\ast}$. Run gates 1 (init-scale), 3 (adiabaticity, since the depth-conditioned bank is a free-centre variant), 4 (NVT energy), and 5 (occupancy). Because the noise supplies the two-timescale averaging (§9.2), the free-centre centres may be released earlier than a pure-Verlet consumer would allow — but only once the adiabaticity ratio is small and stable.
 
 **When the consumer is (a) or (e).** If the target carries a directed non-conservative channel, transplant only the conservative core from (b), then warm the reverse channel / Fock attention from near-zero under a gated schedule (`reverse_channel_stable=True`, warmup ramp; `Improving_the_Fock_Mechanism_to_match_Attention.md`, §10.12). Do not attempt to seed the directed component from any harvested scalar — it is not the gradient of one. Add the register-assignment-entropy and NESS-occupancy diagnostics of §13.
 
