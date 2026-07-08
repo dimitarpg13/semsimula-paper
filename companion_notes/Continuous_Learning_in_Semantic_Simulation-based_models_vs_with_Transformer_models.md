@@ -1502,6 +1502,14 @@ $V_\theta$ enrichment.
 - Pennec, X., Fillard, P., & Ayache, N. (2006). *A Riemannian framework for tensor computing.*
   International Journal of Computer Vision, 66(1), 41–66.
 
+**Stability theory:**
+
+- Gueorguiev, D. P. (2026). *Structural Stability of Learned Potentials in Semantic Simulation.*
+  [Companion note: gauge equivalence of the learned potential under $O(d) \rtimes S\_K$,
+  first-order perturbation theory under data shifts, three-zone impact structure, topological
+  protection of basins, and cross-$d$ stability regimes.  Provides the theoretical foundation
+  for the non-interference guarantees discussed in Section 4.4 of this report.]
+
 **SemSimula / SPLM (internal references):**
 
 - Gueorguiev, D. P. (2026). *Semantic Simulation: A Prescriptive Lagrangian Framework for

@@ -617,6 +617,9 @@ flowchart TD
 - `Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md` — the init-scale pathology.
 - `Lessons_from_AlphaFold.md` — the "never fold from scratch" harvesting analogue.
 
+**Stability theory.**
+- `Structural_Stability_of_Learned_Potentials_in_Semantic_Simulation.md` — gauge equivalence, perturbation theory under data shifts, topological protection of basins, and cross-$d$ stability regimes.  Provides the theoretical foundation for why transplanted potentials remain valid under compatible perturbations.
+
 **Tooling (OpenWebText).**
 - `notebooks/conservative_arch/scaleup/colab_fock_depthcond_vtheta_openwebtext.ipynb` — the conservative producer (b).
 - `notebooks/conservative_arch/scaleup/colab_fock_ostep_gammaT_sweep_openwebtext.ipynb` — the $(\gamma, T)$ sweep (Phase 1).
