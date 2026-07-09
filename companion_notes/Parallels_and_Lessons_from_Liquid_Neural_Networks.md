@@ -325,7 +325,13 @@ flowchart LR
 
 ---
 
-## 10. References
+## 10. Related notes
+
+- [Closed-Form and Hybrid Integration Strategies for Fock-PARFLM](Closed_Form_and_Hybrid_Integration_Strategies_for_Fock-PARFLM.md) --- develops Lessons 1 and 2 of this report into three concrete propagator strategies (harmonic cache, blended CfC propagator, Strang splitting) with PyTorch pseudocode, error bounds, and an implementation roadmap.
+
+---
+
+## 11. References
 
 1. R. Hasani, M. Lechner, A. Amini, D. Rus, R. Grosu. *Liquid Time‑constant Networks.* AAAI 2021, 35(9):7657–7666. arXiv:2006.04439 (Jun 2020).
 2. M. Lechner, R. Hasani, et al. *Neural Circuit Policies Enabling Auditable Autonomy.* Nature Machine Intelligence, 2020.

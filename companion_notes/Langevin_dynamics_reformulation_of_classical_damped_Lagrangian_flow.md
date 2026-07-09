@@ -616,6 +616,7 @@ The table maps each concept in this report to its home in the paper and the comp
 | O-step retrofit into Fock-PARFLM | §17c sec:fock-parflm; §7 (Rayleigh damping) | Lessons_from_AlphaFold.md |
 | Conservation axis / metriplectic reading | §18e sec:relation-liquid-nn | Parallels_and_Lessons_from_Liquid_Neural_Networks.md |
 | RL calibration of force fields | §20 (roadmap) | Semantic_Simulator_RL_Calibration_Programme.md |
+| Closed-form propagator for V\_theta | (proposed) | Closed_Form_and_Hybrid_Integration_Strategies_for_Fock-PARFLM.md |
 
 **Suggested paper insertion.** The natural home for a condensed version of this report is a short subsection either in §20 (`sec:dynamical-simulator`, right after `ssec:eom-langevin`) titled "From the damped Lagrangian to a thermal Langevin completion: FDT and temperature calibration", or adjacent to §18f (`sec:relation-alphafold`) where the O-step lever is already introduced. It would carry the FDT relation, the O-step in $T$-form (§6.2), and the tie-to-$\beta$ recipe (§5.2), citing this note for the Onsager–Machlup derivation and the calibration protocol.
 
