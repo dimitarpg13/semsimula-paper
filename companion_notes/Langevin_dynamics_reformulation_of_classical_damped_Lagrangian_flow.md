@@ -474,6 +474,10 @@ $$
 
 The practical diagnostic is cheap. Add a handful of inner O-steps and watch validation perplexity and predictive entropy. If they improve and then **saturate**, the residual gap is capacity / inhomogeneity (error #2), which points at the simulator or at more capacity. If they keep improving, the retrofit was simply under-equilibrated and the linear cost of inner steps is worth paying.
 
+**A note on STP-awareness.** The three step axes above are complementary to, but distinct from, the question of whether the B-step force evaluation is STP-aware. The current Fock-PARFLM O-step retrofit is **not** STP-aware: it uses an ordinary force evaluation (trained potential + non-conservative Fock exchange $Q$) rather than the STP acceleration identity. This is because (a) the STP identity is defined for the homogeneous, purely conservative simulator setup (one shared potential, many steps), not the heterogeneous $L$-layer neural model; (b) the exchange force $Q$ is not a scalar gradient and thus falls outside STP's scope; and (c) "STP-aware" is a property of the B-step, not the O-step --- even in the Direct Dynamical Simulator (paper SS20, `ssec:stp-baoab`), the O-step itself is force-free.
+
+An intermediate path exists between the plain retrofit and the full STP-BAOAB simulator: replacing the numerical B-step force on $V\_\theta$ with the **closed-form CfC propagator** of `Closed_Form_and_Hybrid_Integration_Strategies_for_Fock-PARFLM.md` (SS10). This is a stronger amortisation than STP for the structured Gaussian $V\_\theta$ (it skips the stepping entirely rather than just replacing the gradient), while keeping the trained model's weights and the non-conservative Fock force as a numerical residual. The three rungs --- (0) plain retrofit, (1) CfC propagator on the trained model, (2) full STP-BAOAB simulator --- form a graduated upgrade path detailed in that companion note (SS10.7).
+
 ### 8.8 Will a (gamma, T) sweep help, and how?
 
 Yes — for a specific, bounded purpose. A sweep calibrates the **regulariser optimum** and removes the double-counting bias (error #4). It does not touch the structural errors #1 and #2.

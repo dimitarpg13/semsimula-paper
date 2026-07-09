@@ -609,6 +609,7 @@ flowchart TD
 - `Langevin_dynamics_reformulation_of_classical_damped_Lagrangian_flow.md` — the O-step, the FDT amplitude, the accuracy curriculum, and the Fock-PARFLM retrofit.
 - `Modified_BAOAB_with_STP_identity_Detailed_Analysis.md` — the forward contraction the O-step runs inside.
 - `The_Overdamped_Limit_and_The_Position_of_The_2nd_Order_Lagrangian_Framework.md` — the overdamped guardrail on $\gamma$.
+- `Closed_Form_and_Hybrid_Integration_Strategies_for_Fock-PARFLM.md` — the CfC-analog closed-form propagator for the Gaussian well; consumes the same well parameters that the transplant procedure ports.
 
 **Fock mechanism and conservativity.**
 - `Improving_the_Fock_Mechanism_to_match_Attention.md` — the reverse channel, its non-conservativity, the stabilised and per-layer gate variants, and the conservative-vs-Fock-attention comparison.

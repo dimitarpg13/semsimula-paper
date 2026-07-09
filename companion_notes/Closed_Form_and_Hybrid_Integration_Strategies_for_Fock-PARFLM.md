@@ -659,6 +659,30 @@ The three tiers from §9 apply unchanged, with one simplification at each tier:
 
 The recommendation is to implement the BAOAB + CfC combination directly rather than implementing CfC on bare Verlet first and then migrating to BAOAB later. The BAOAB version is simpler (undamped propagator), has cleaner error bounds, and delivers the Langevin thermostat simultaneously.
 
+### 10.7 STP-awareness: current status and upgrade path
+
+A clarification on **STP-awareness** is important, because the terms "STP-BAOAB" and "O-step Langevin for Fock-PARFLM" describe different vehicles that are easy to conflate.
+
+**The O-step retrofit that runs in the trained Fock-PARFLM is not STP-aware.** The retrofit uses an ordinary force evaluation per layer --- the model's own trained potential plus the non-conservative Fock exchange force $Q$ --- computed through the standard forward/backward path. The STP acceleration identity (Theorem 49, paper SS13 `sec:accel`) replaces the per-step gradient with a forward algebraic contraction; it is a property of the **B-step** in the Direct Dynamical Simulator (paper SS20, `ssec:stp-baoab`), not of the neural retrofit.
+
+Three reasons make this distinction structural:
+
+1. **STP is a conservative-force amortisation; the Fock force is not purely conservative.** The exchange force $Q$ is a post-Verlet correction that is not a scalar gradient (paper SS7 and SS17c). STP replaces $-\nabla\_x V$ for the homogeneous structured potential; it has no purchase on $Q$.
+2. **STP is defined for the homogeneous simulator setup** where one shared conservative potential is stepped many times. The retrofit's purpose is to be a cheap drop-in on the already-trained heterogeneous $L$-layer neural model --- a different regime.
+3. **"STP-aware" and "O-step" describe orthogonal substeps.** The O-step is force-free: it is the pure Ornstein-Uhlenbeck friction+noise update on velocity (SS7.1 of `Langevin_dynamics_reformulation_of_classical_damped_Lagrangian_flow.md`). STP-awareness is a property of the **B-step** (the force kick). Even in the simulator, the O-step itself is not "STP-aware"; it is the surrounding B-steps whose force evaluation STP amortises.
+
+**The upgrade path toward STP-awareness has three rungs:**
+
+| Rung | Vehicle | B-step force | STP-aware? |
+|---|---|---|---|
+| 0 (current) | Fock-PARFLM O-step retrofit | Ordinary forward eval (trained potential + Q) | No |
+| 1 | Fock-PARFLM + CfC propagator (this note, SS10.3-10.5) | Analytical harmonic propagator for V\_theta; numerical for Q | Partially --- CfC is a *stronger* amortisation than STP for the Gaussian V\_theta (exact vs algebraic contraction) |
+| 2 | Direct Dynamical Simulator (STP-BAOAB) | STP identity on shared V\_theta; no Q | Yes --- full STP-BAOAB as specified in paper SS20 |
+
+The CfC propagator of this note (Rung 1) is in fact a **stronger amortisation** than STP for the structured Gaussian $V\_\theta$: STP replaces the backward-AD gradient with a forward contraction, while the CfC propagator replaces the **stepping itself** with a closed-form matrix exponential. However, STP is more general (it applies to any potential where the STP identity holds, not only Gaussian wells), so the two are complementary and may coexist in the same integrator stack --- CfC for the Gaussian sector, STP for any non-Gaussian conservative forces that a future architecture might introduce.
+
+For the current Fock-PARFLM architecture and its O-step Langevin retrofit, the practical recommendation is to target Rung 1 (CfC propagator) rather than Rung 2 (full STP-BAOAB simulator), since the former keeps the trained model's weights and depth while analytically eliminating the V\_theta stepping cost. The promotion to Rung 2 is the "exact simulator" discussed in `Langevin_dynamics_reformulation_of_classical_damped_Lagrangian_flow.md` SS8.7.
+
 ---
 
 ## 11. Relation to the LNN trajectory
