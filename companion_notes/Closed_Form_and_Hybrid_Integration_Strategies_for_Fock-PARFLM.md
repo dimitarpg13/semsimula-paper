@@ -113,7 +113,7 @@ $$
 In matrix form, writing $\tilde{h} = h - \mu\_k$:
 
 $$
-\frac{d}{dt}\begin{pmatrix}\tilde{h}\\v\end{pmatrix} = \underbrace{\begin{pmatrix}0 & I\\-\omega\_k^2 I & -\gamma I\end{pmatrix}}\_{A\_k}\begin{pmatrix}\tilde{h}\\v\end{pmatrix}
+\frac{d}{dt}\begin{pmatrix}\tilde{h}\\ v\end{pmatrix} = \underbrace{\begin{pmatrix}0 & I\\ -\omega\_k^2 I & -\gamma I\end{pmatrix}}\_{A\_k}\begin{pmatrix}\tilde{h}\\ v\end{pmatrix}
 $$
 
 This has the **exact solution** $\Phi\_k(\Delta t) = \exp(A\_k \Delta t)$.
@@ -210,7 +210,7 @@ The key insight: the Gaussian envelope $\alpha\_k(h) = \exp(-\kappa\_k^2 \lVert 
 For a multi-well potential with $K$ wells, the CfC-analog propagator is:
 
 $$
-\begin{pmatrix}h'\\v'\end{pmatrix} = \sum\_{k=1}^{K} \alpha\_k(h) \Phi\_k(\Delta t) \begin{pmatrix}h - \mu\_k\\v\end{pmatrix} + \Bigl(1 - \textstyle\sum\_{k=1}^{K} \alpha\_k(h)\Bigr) \begin{pmatrix}h + v \Delta t\\v e^{-\gamma \Delta t}\end{pmatrix}
+\begin{pmatrix}h'\\ v'\end{pmatrix} = \sum\_{k=1}^{K} \alpha\_k(h) \Phi\_k(\Delta t) \begin{pmatrix}h - \mu\_k\\ v\end{pmatrix} + \Bigl(1 - \textstyle\sum\_{k=1}^{K} \alpha\_k(h)\Bigr) \begin{pmatrix}h + v \Delta t\\ v\, e^{-\gamma \Delta t}\end{pmatrix}
 $$
 
 This is the direct CfC analog that Lesson 2 of the LNN companion note calls "the single highest-leverage bridge." It is:
