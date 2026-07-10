@@ -7,7 +7,7 @@ with force-field parameters calibrated by reinforcement learning
 rather than learned end-to-end inside a neural network.
 
 Written 2026-04-24, parallel in role to
-`docs/SPLM_Path_Toward_SOTA.md` but for the simulator branch of the
+`companion_notes/SPLM_Path_Toward_SOTA.md` but for the simulator branch of the
 research programme. The two branches are complementary, not
 substitutes.
 
@@ -122,7 +122,7 @@ Specific parametric forms (a starting point, to be refined):
   $\frac{1}{2}(x-\xi)^\top \Lambda (x-\xi)$ with learnable $\Lambda$.
 
 The integrator is fixed to **damped semi-implicit Euler** at the
-training step size; the velocity-Verlet finding of §14.15 (better
+training step size; the velocity-Verlet finding of §15.19 (better
 integrator → coarser, less content-bearing attractors) is a *prior*
 that says we should not over-engineer the integrator.
 
@@ -252,7 +252,7 @@ Four distinct RL substrates, in order of recommended deployment:
    paper argues should hold: trajectory predictability, energy
    conservation modulo damping, attractor-stability at the training
    horizon, low residual STP loss. This directly calibrates the
-   simulator to satisfy R1–R6 of §14.8 as explicit reward signals.
+   simulator to satisfy R1–R6 of §15.19 as explicit reward signals.
 
 3. **Task-reward RL (M4).** Define reward as task performance
    (next-token NLL on held-out, classification accuracy on linguistic
@@ -320,7 +320,7 @@ term, observe predictable behaviour change).
 
 - Attractor decomposition: for each prompt, list the basins reached
   by the damped flow at horizon $L$, decoded through the readout.
-  This should reproduce the §14.15 finding that prompt-dependent
+  This should reproduce the §15.19 finding that prompt-dependent
   multi-basin structure exists.
 - Force-decomposition: at each step, report the contribution of
   each named force term to the gradient. A well-calibrated
@@ -377,7 +377,7 @@ v0's known expressivity ceiling does not get mistaken for the
 framework's ceiling.
 
 The full specification of each mechanism lives in
-`docs/Semantic_Simulator_EOM.md` §13.
+`companion_notes/Semantic_Simulator_EOM.md` §13.
 
 ### 10.1 v1.5 — Destruction / salience decay (cheapest, prototype-first)
 
@@ -572,7 +572,7 @@ The submission strategy is:
 
 ## 13. First action
 
-**M0 is done.** `docs/Semantic_Simulator_EOM.md` exists; it contains
+**M0 is done.** `companion_notes/Semantic_Simulator_EOM.md` exists; it contains
 the complete v0 equations of motion as one block of equations and
 pseudocode, separate from the paper's prose. The act of writing it
 surfaced seven under-specifications (§12 of that document) that the
@@ -594,7 +594,7 @@ perplexity, or not — is the first programme-level decision gate.
 ---
 
 *End of programme memo. The v0 EOM is specified in
-`docs/Semantic_Simulator_EOM.md` (M0, complete). Next action:
+`companion_notes/Semantic_Simulator_EOM.md` (M0, complete). Next action:
 M1 — verify the parameter-classification table on a small corpus
 (~1–2 days). The structure-lifecycle extensions (v1.5 / v2 / v3) of
 §10 are on record as deferred-but-planned milestones, not

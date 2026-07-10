@@ -5,11 +5,11 @@
 **Scope:** Component-by-component analysis, EOM coupling, RL calibration integration, theoretical properties, trade-offs, and implementation strategy
 
 Companion to:
-- `docs/Semantic_Simulator_EOM.md` — v0 Equations of Motion
-- `docs/Semantic_Simulator_RL_Calibration_Programme.md` — RL calibration programme memo
-- `docs/Efficient_Numerical_Algorithm_on_GPU_for_Dynamical_System_based_Models.md` — integrator design report
-- `docs/Expressivity_Bounds_For_v0_Simulator.md` — v0 expressivity ceiling
-- `docs/Advancing_The_Dynamic_Simulation_Model.md` — v0 through v3 staging
+- `companion_notes/Semantic_Simulator_EOM.md` — v0 Equations of Motion
+- `companion_notes/Semantic_Simulator_RL_Calibration_Programme.md` — RL calibration programme memo
+- `companion_notes/Efficient_Numerical_Algorithm_on_GPU_for_Dynamical_System_based_Models.md` — integrator design report
+- `companion_notes/Expressivity_Bounds_For_v0_Simulator.md` — v0 expressivity ceiling
+- `companion_notes/Advancing_The_Dynamic_Simulation_Model.md` — v0 through v3 staging
 
 Last updated: 11 May 2026.
 
@@ -27,7 +27,7 @@ $$
 
 where $\mathfrak{m}\_t$ is the per-position semantic mass, $\gamma$ the damping coefficient, and $V = V\_{\text{wells}} + V\_{\text{SARF}} + V\_{\text{PARF}} + V\_{\text{ctx}}$ the composite potential with four named force terms.
 
-The current v0 EOM specification (`Semantic_Simulator_EOM.md` §5) uses a **damped semi-implicit Euler** integrator — a first-order, non-symplectic scheme chosen because the SPLM attractor-extraction experiments (paper §14.15) showed that lower-order integrators produce richer content-bearing attractors than higher-order ones. This was the right prior for the descriptive SPLM programme, where the integrator is an approximation to a transformer's actual computation.
+The current v0 EOM specification (`Semantic_Simulator_EOM.md` §5) uses a **damped semi-implicit Euler** integrator — a first-order, non-symplectic scheme chosen because the SPLM attractor-extraction experiments (paper §15.19) showed that lower-order integrators produce richer content-bearing attractors than higher-order ones. This was the right prior for the descriptive SPLM programme, where the integrator is an approximation to a transformer's actual computation.
 
 But the dynamical-system simulator is a different regime. Here the integrator **is the model**: there is no transformer underneath, no hidden-state surrogate. The quality of the integrator directly determines:
 
@@ -36,7 +36,7 @@ But the dynamical-system simulator is a different regime. Here the integrator **
 3. **Computational cost** — the per-step FLOP budget sets the wall-clock time of the RL calibration loop across $B \times N \times T$ rollout axes.
 4. **Reproducibility** — whether the trajectory is deterministic given the parameters and the seed.
 
-The STP-BAOAB integrator addresses all four by combining the BAOAB splitting scheme (Leimkuhler-Matthews 2013) — the gold-standard integrator for underdamped Langevin dynamics — with the Semantic Tensor Product (STP) algebraic identity (Theorem 49 of the framework), which replaces the gradient evaluation with a forward algebraic contraction.
+The STP-BAOAB integrator addresses all four by combining the BAOAB splitting scheme (Leimkuhler-Matthews 2013) — the gold-standard integrator for underdamped Langevin dynamics — with the Semantic Tensor Product (STP) algebraic identity (Theorem 54 of the framework), which replaces the gradient evaluation with a forward algebraic contraction.
 
 ### 1.2 Why BAOAB and not semi-implicit Euler
 
@@ -249,7 +249,7 @@ The structural change: momenta are explicit, the OU step handles damping and sto
 
 ## 4. The STP Modification: Replacing Gradients with Algebra
 
-### 4.1 The STP algebraic identity (Theorem 49)
+### 4.1 The STP algebraic identity (Theorem 54)
 
 The Semantic Tensor Product identity provides a closed-form expression for the acceleration field:
 
@@ -490,7 +490,7 @@ Both channels reduce sample complexity at M4, which the programme memo identifie
 
 1. **Simplicity.** Two lines of code versus the five-substep BAOAB sequence. Debugging, profiling, and mental modelling are simpler.
 
-2. **Attractor richness prior.** The SPLM §14.15 finding that lower-order integrators produce richer attractors. This is an empirical prior, not a theorem, and it applies to the descriptive (transformer-backed) setting. It may not transfer to the direct simulator, but it is worth testing.
+2. **Attractor richness prior.** The SPLM §15.19 finding that lower-order integrators produce richer attractors. This is an empirical prior, not a theorem, and it applies to the descriptive (transformer-backed) setting. It may not transfer to the direct simulator, but it is worth testing.
 
 3. **No momentum storage.** Semi-implicit Euler needs only $x$ and $v$; BAOAB explicitly tracks momenta $p$. At $d=64$ this is negligible; at $d=256$ with large batch sizes it is a 2x memory increase for the state tensor.
 
@@ -601,7 +601,7 @@ flowchart TD
 | Configurational measure | Error suppressed by $\gamma^{-2}$ | Leimkuhler-Matthews 2013 |
 | OU step | Exact in distribution | Ornstein-Uhlenbeck process |
 | Time reversibility | Palindromic splitting | BAOAB construction |
-| Acceleration bias | Zero (STP exact) | Theorem 49 |
+| Acceleration bias | Zero (STP exact) | Theorem 54 |
 | AD overhead | Zero (forward contraction) | STP algebraic identity |
 | Stability | $h \lesssim 2 / \sqrt{\lambda_{\max}}$ | Velocity-Verlet stability |
 | Reproducibility | Bitwise (counter-based PRNG) | Philox/threefry |
@@ -826,8 +826,8 @@ The modification is incremental, not disruptive: the existing codebase gains a `
 - Leimkuhler, B., Matthews, C. (2013). *Rational construction of stochastic numerical methods for molecular sampling*. AMRX.
 - Leimkuhler, B., Matthews, C. (2015). *Molecular Dynamics with Deterministic and Stochastic Numerical Methods*. Springer.
 - Huang, LeCun, Balestriero. *Semantic Tensor Product*. arXiv:2602.22617.
-- Gueorguiev, D. P. (2026a). *Semantic Simulator EOM* (`docs/Semantic_Simulator_EOM.md`).
-- Gueorguiev, D. P. (2026b). *Semantic Simulator with RL-calibrated Force Fields: a programme memo* (`docs/Semantic_Simulator_RL_Calibration_Programme.md`).
-- Gueorguiev, D. P. (2026c). *Efficient Numerical Algorithms on CUDA-Enabled GPUs for Dynamical-System–Based Semantic Simulation* (`docs/Efficient_Numerical_Algorithm_on_GPU_for_Dynamical_System_based_Models.md`).
-- Gueorguiev, D. P. (2026d). *Expressivity Bounds for the v0 Simulator* (`docs/Expressivity_Bounds_For_v0_Simulator.md`).
-- Gueorguiev, D. P. (2026e). *Advancing the Dynamic Simulation Model* (`docs/Advancing_The_Dynamic_Simulation_Model.md`).
+- Gueorguiev, D. P. (2026a). *Semantic Simulator EOM* (`companion_notes/Semantic_Simulator_EOM.md`).
+- Gueorguiev, D. P. (2026b). *Semantic Simulator with RL-calibrated Force Fields: a programme memo* (`companion_notes/Semantic_Simulator_RL_Calibration_Programme.md`).
+- Gueorguiev, D. P. (2026c). *Efficient Numerical Algorithms on CUDA-Enabled GPUs for Dynamical-System–Based Semantic Simulation* (`companion_notes/Efficient_Numerical_Algorithm_on_GPU_for_Dynamical_System_based_Models.md`).
+- Gueorguiev, D. P. (2026d). *Expressivity Bounds for the v0 Simulator* (`companion_notes/Expressivity_Bounds_For_v0_Simulator.md`).
+- Gueorguiev, D. P. (2026e). *Advancing the Dynamic Simulation Model* (`companion_notes/Advancing_The_Dynamic_Simulation_Model.md`).

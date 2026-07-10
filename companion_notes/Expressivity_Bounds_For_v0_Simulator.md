@@ -1,14 +1,14 @@
 # Expressivity Bounds for the v0 Dynamic-Simulation Model
 
-Formal companion to `docs/Advancing_The_Dynamic_Simulation_Model.md`. Provides the four-step argument that the v0 simulator class is at most a finite automaton, derives the predicted $\mathrm{Dyck}_n$ collapse depth $D^\ast$ in closed form, and gives one-paragraph mathematical-apparatus sketches for the three structural extensions v1.5 / v2 / v3.
+Formal companion to `companion_notes/Advancing_The_Dynamic_Simulation_Model.md`. Provides the four-step argument that the v0 simulator class is at most a finite automaton, derives the predicted $\mathrm{Dyck}_n$ collapse depth $D^\ast$ in closed form, and gives one-paragraph mathematical-apparatus sketches for the three structural extensions v1.5 / v2 / v3.
 
-Drafted 2026-04-26. Cross-referenced from `docs/Semantic_Simulator_RL_Calibration_Programme.md` §10.
+Drafted 2026-04-26. Cross-referenced from `companion_notes/Semantic_Simulator_RL_Calibration_Programme.md` §10.
 
 ---
 
 ## 1. Setup
 
-The v0 simulator (`docs/Semantic_Simulator_EOM.md`) integrates the damped Euler–Lagrange flow
+The v0 simulator (`companion_notes/Semantic_Simulator_EOM.md`) integrates the damped Euler–Lagrange flow
 
 $$
 \mathfrak{m}_\ell \ddot{x}_\ell = -\nabla_x V(\xi_\ell, x_\ell) - \gamma \dot{x}_\ell,
@@ -275,7 +275,7 @@ Augment particles with a Lie-group element $g_i \in G$, a non-abelian Lie group 
 
 ### 8.4 Composite formalism
 
-The composite v0+v1.5+v2+v3 system is **a dissipative classical Hamiltonian dynamics on a Fock space, with non-abelian gauge action on the underlying single-particle Hilbert space, and a salience-weighted local operator algebra on the Fock space itself.** This is a classical-mechanical analogue of an **algebraic quantum field theory** in the Haag–Kastler tradition (Haag and Kastler 1964). The framework's commitment to "semantic structures are particles" is the non-quantum reading of the same formal apparatus used for elementary-particle physics. The composite system inherits exact and approximate conservation laws, mean-field limits, renormalisation-group reasoning, and gauge-invariance theorems. A subsequent companion document (`docs/Semantic_Simulator_v2_EOM.md`, deferred per `Semantic_Simulator_RL_Calibration_Programme.md` §10) will specify the v2 EOM in this apparatus; v1.5 and v3 specifications follow analogously.
+The composite v0+v1.5+v2+v3 system is **a dissipative classical Hamiltonian dynamics on a Fock space, with non-abelian gauge action on the underlying single-particle Hilbert space, and a salience-weighted local operator algebra on the Fock space itself.** This is a classical-mechanical analogue of an **algebraic quantum field theory** in the Haag–Kastler tradition (Haag and Kastler 1964). The framework's commitment to "semantic structures are particles" is the non-quantum reading of the same formal apparatus used for elementary-particle physics. The composite system inherits exact and approximate conservation laws, mean-field limits, renormalisation-group reasoning, and gauge-invariance theorems. A subsequent companion document (`companion_notes/Semantic_Simulator_v2_EOM.md`, deferred per `companion_notes/Semantic_Simulator_RL_Calibration_Programme.md` §10) will specify the v2 EOM in this apparatus; v1.5 and v3 specifications follow analogously.
 
 ---
 

@@ -6,7 +6,7 @@ every parameter classified as static (corpus statistics),
 RL-calibrated, or a hyperparameter.
 
 This is **M0** of the programme defined in
-`docs/Semantic_Simulator_RL_Calibration_Programme.md`. The purpose of
+`companion_notes/Semantic_Simulator_RL_Calibration_Programme.md`. The purpose of
 this document is to translate the framework's narrative description
 (paper §2–§8 plus §11–§12) into a single block of unambiguous
 equations and pseudocode, so that every under-specification surfaces
@@ -592,7 +592,7 @@ the v0 specification doesn't read as if it were the final
 architecture.
 
 Each mechanism has a v# milestone in the broader programme document
-(`docs/Semantic_Simulator_RL_Calibration_Programme.md`, §10).
+(`companion_notes/Semantic_Simulator_RL_Calibration_Programme.md`, §10).
 
 ### 13.1 Destruction / retirement (v1.5: simplest, prototype-first)
 
