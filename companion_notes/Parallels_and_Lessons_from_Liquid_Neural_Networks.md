@@ -253,7 +253,47 @@ Three of these deserve emphasis. The **integration variable** differs in *meanin
 
 ---
 
-## 7. Lessons from the LNN trajectory
+## 7. Application domains and competitive landscape
+
+### 7.1 Where LNNs are deployed
+
+The LNN program found its production niche in domains where first‑order dissipative dynamics are a natural fit:
+
+- **Autonomous driving and robotics.** The headline demonstration was autonomous lane‑keeping with ~19 neurons — orders of magnitude smaller than CNN baselines. Input‑dependent $\tau_{\text{sys}}$ naturally allocates more computation to complex scenes.
+- **Irregularly‑sampled time series.** Medical sensors, financial telemetry, IoT. Because the integration variable is real clock time, LNNs handle variable‑rate inputs natively without resampling — a structural advantage over fixed‑step architectures.
+- **Edge and embedded deployment.** Extremely compact representations (sub‑1,000 parameters for some control tasks). Liquid AI's commercial partnerships center on latency‑critical enterprise and on‑device use cases.
+- **General language modeling (recent).** Liquid Foundation Models (LFM, Sep 2024; LFM2, 2025) at 1B–40B scale compete directly in the LLM space, with benchmarks reported against LLaMA‑ and Mistral‑class models. This marks the transition from niche to general‑purpose, though the production LFM2 architecture is several steps removed from a pure LTC ODE (see Lesson 1 below).
+
+### 7.2 Are LNNs competitors to SemSimula?
+
+The two programs occupy different maturity levels and different competitive axes, but the overlap is growing as both target language modeling.
+
+**Where they do not compete (today):**
+
+- LNNs are productized with optimized CUDA kernels, scaling recipes, and five years of engineering. SemSimula is at research scale (53M parameters, OpenWebText).
+- LNNs own the edge / efficiency axis. SemSimula has not targeted deployment.
+- The "good enough" barrier: if LFMs at 3B match LLaMA‑3B on standard benchmarks, the practical question becomes whether SemSimula's richer physics buys something *measurable* that justifies the engineering investment.
+
+**Where SemSimula has structural advantages (in principle):**
+
+1. **Information preservation.** A purely dissipative system always loses information — it relaxes toward attractors. A conservative core preserves information by construction and adds dissipation only where the designer chooses. This is a fundamentally richer dynamical vocabulary, particularly relevant for long‑context tasks where the model must maintain coherence over many integration steps.
+2. **Natively many‑body structure.** LNNs treat the hidden state as one vector in $\mathbb{R}^{n}$ evolving under a single‑body ODE. SemSimula's second‑quantized Fock structure lets different semantic content interact through creation–annihilation operators — closer to how attention naturally operates as a many‑body interaction. LFMs needed to graft attention blocks externally (sparse GQA in LFM2); SemSimula derives attention‑like behavior from the mechanics.
+3. **Attention re‑derivation vs. attention grafting.** LFM2 admits sparse GQA blocks for pragmatic reasons — the core liquid dynamics lack global mixing. SemSimula's Fock‑routed, $\xi$‑selected attention emerges from the conservative mechanics itself. If this pans out at scale, the architecture avoids the two‑system overhead (ODE dynamics + bolted‑on attention) that LFM2 carries.
+
+### 7.3 Open competitive questions
+
+The decisive questions are empirical and currently unanswered:
+
+- **Sample efficiency.** Does the conservative + Fock structure learn more from fewer tokens? The current e5c\_plgate run (53M params, ~0.8B tokens, PPL ~70 on OpenWebText) needs to be benchmarked against an LFM of similar size on the same data and tokenizer.
+- **Long‑context generalization.** Conservative dynamics preserve information across long sequences by construction. Dissipative dynamics forget — which is exactly why LFMs needed attention blocks. If SemSimula's symplectic core maintains coherence at longer contexts without attention, that is a measurable structural advantage.
+- **Structured reasoning.** If the multi‑well potential + geodesic structure imposes useful geometric constraints on the representation space, it may generalize better on compositional or reasoning tasks where flat‑space dynamics offer no inductive bias.
+- **Scaling laws.** Whether SemSimula's Chinchilla‑optimal ratio differs from standard transformers (and from LNNs) due to the constrained hypothesis space. A conservative architecture with stronger inductive biases might need fewer tokens — or more, if the constraints make early learning harder.
+
+These questions define the research program's next phase: not whether SemSimula's physics is more elegant (it provably occupies a richer dynamical regime — Section 5), but whether that richness translates to measurable quality or efficiency advantages at matched scale.
+
+---
+
+## 8. Lessons from the LNN trajectory
 
 The LNN program is a five‑year natural experiment in taking an elegant continuous‑dynamics idea to production. Its arc carries several transferable lessons.
 
@@ -296,7 +336,7 @@ Every LFM release was reported against a size‑matched transformer. SemSimula's
 
 ---
 
-## 8. Recommendations
+## 9. Recommendations
 
 1. **Write the metriplectic bridge as a standalone result.** Position the Conservative Obstruction Theorem explicitly against the LTC bounded‑state / expressivity theorems as complementary statements within the GENERIC framework. This is a clean, citable contribution that stands on its own and gives the megapaper an external anchor.
 2. **Prototype a closed‑form conservative propagator** (the CfC analog) and measure it against stepped Verlet on the OpenWebText run — cost and energy‑drift as the two axes.
@@ -307,7 +347,7 @@ Every LFM release was reported against a size‑matched transformer. SemSimula's
 
 ---
 
-## 9. At‑a‑glance timeline
+## 10. At‑a‑glance timeline
 
 ```mermaid
 flowchart LR
@@ -325,13 +365,13 @@ flowchart LR
 
 ---
 
-## 10. Related notes
+## 11. Related notes
 
 - [Closed-Form and Hybrid Integration Strategies for Fock-PARFLM](Closed_Form_and_Hybrid_Integration_Strategies_for_Fock-PARFLM.md) --- develops Lessons 1 and 2 of this report into three concrete propagator strategies (harmonic cache, blended CfC propagator, Strang splitting) with PyTorch pseudocode, error bounds, and an implementation roadmap.
 
 ---
 
-## 11. References
+## 12. References
 
 1. R. Hasani, M. Lechner, A. Amini, D. Rus, R. Grosu. *Liquid Time‑constant Networks.* AAAI 2021, 35(9):7657–7666. arXiv:2006.04439 (Jun 2020).
 2. M. Lechner, R. Hasani, et al. *Neural Circuit Policies Enabling Auditable Autonomy.* Nature Machine Intelligence, 2020.
