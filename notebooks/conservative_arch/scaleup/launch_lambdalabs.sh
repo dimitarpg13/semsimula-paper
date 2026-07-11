@@ -1,0 +1,136 @@
+#!/usr/bin/env bash
+#
+# Launch FockPARFLM or GPT-2 baseline training on a LambdaLabs instance.
+#
+# Usage:
+#   1. Spin up a LambdaLabs GPU instance (1x or 2x H100/A100).
+#   2. SSH in and run:
+#        curl -sL https://raw.githubusercontent.com/dimitarpg13/semsimula-paper/main/notebooks/conservative_arch/scaleup/launch_lambdalabs.sh | bash -s -- d768
+#      Or clone the repo first and run locally:
+#        bash launch_lambdalabs.sh d768
+#
+#   Available presets: d384, d768, d1024, gpt2-small, gpt2-medium
+#
+#   For multi-GPU (2x GPUs):
+#        bash launch_lambdalabs.sh d768 --multi-gpu
+#
+#   For Google Drive sync (checkpoints + logs pushed after each save):
+#        bash launch_lambdalabs.sh d768 --gdrive
+#        bash launch_lambdalabs.sh d768 --multi-gpu --gdrive
+#
+#   First time --gdrive: you'll be prompted to authorize rclone.
+#   On repeat runs the token is cached in ~/.config/rclone/rclone.conf.
+#
+set -euo pipefail
+
+PRESET="${1:-d768}"
+MULTI_GPU=""
+GDRIVE=""
+
+shift || true
+for arg in "$@"; do
+    case "$arg" in
+        --multi-gpu) MULTI_GPU="yes" ;;
+        --gdrive)    GDRIVE="yes" ;;
+        *)           echo "Unknown arg: $arg"; exit 1 ;;
+    esac
+done
+
+echo "=================================================="
+echo "  FockPARFLM Training — LambdaLabs Setup"
+echo "  Preset: $PRESET"
+echo "=================================================="
+
+# ── 1. Clone repo if not present ──
+REPO_DIR="$HOME/semsimula-paper"
+if [ ! -d "$REPO_DIR/.git" ]; then
+    echo "[1/6] Cloning repository..."
+    git clone --depth 1 https://github.com/dimitarpg13/semsimula-paper.git "$REPO_DIR"
+else
+    echo "[1/6] Repository already cloned, pulling latest..."
+    cd "$REPO_DIR" && git pull --ff-only || true
+fi
+
+# ── 2. Install Python dependencies ──
+echo "[2/6] Installing Python dependencies..."
+cd "$REPO_DIR"
+pip install -q torch numpy transformers tokenizers datasets huggingface_hub pyarrow
+
+# ── 3. Set up output directory ──
+SCRIPT_DIR="$REPO_DIR/notebooks/conservative_arch/scaleup"
+OUTPUT_DIR="$HOME/runs/${PRESET}_$(date +%Y%m%d_%H%M%S)"
+DATA_DIR="$HOME/data"
+mkdir -p "$OUTPUT_DIR/checkpoints" "$DATA_DIR"
+
+echo "[3/6] Output: $OUTPUT_DIR"
+echo "       Data:   $DATA_DIR"
+
+# ── 4. GPU info ──
+echo "[4/6] GPU info:"
+nvidia-smi --query-gpu=name,memory.total --format=csv,noheader 2>/dev/null || echo "  No GPU detected"
+NUM_GPUS=$(nvidia-smi -L 2>/dev/null | wc -l || echo "0")
+echo "  GPUs available: $NUM_GPUS"
+
+# ── 5. Google Drive setup via rclone ──
+SYNC_REMOTE=""
+if [ "$GDRIVE" = "yes" ]; then
+    echo "[5/6] Setting up Google Drive sync via rclone..."
+    if ! command -v rclone &>/dev/null; then
+        echo "  Installing rclone..."
+        curl -sL https://rclone.org/install.sh | sudo bash
+    fi
+    if ! rclone listremotes 2>/dev/null | grep -q "^gdrive:"; then
+        echo ""
+        echo "  ┌──────────────────────────────────────────────────┐"
+        echo "  │  rclone needs a one-time Google Drive auth.      │"
+        echo "  │  Since LambdaLabs has no browser, use:           │"
+        echo "  │                                                  │"
+        echo "  │  Option A (headless / recommended):              │"
+        echo "  │    On your LOCAL machine run:                    │"
+        echo "  │      rclone authorize \"drive\"                    │"
+        echo "  │    Copy the resulting token, then on this        │"
+        echo "  │    server run:                                   │"
+        echo "  │      rclone config                               │"
+        echo "  │    and paste the token when prompted.            │"
+        echo "  │                                                  │"
+        echo "  │  Option B (pre-copy config):                     │"
+        echo "  │    scp ~/.config/rclone/rclone.conf to this      │"
+        echo "  │    server's ~/.config/rclone/rclone.conf         │"
+        echo "  │                                                  │"
+        echo "  └──────────────────────────────────────────────────┘"
+        echo ""
+        rclone config
+    fi
+    SYNC_REMOTE="gdrive:semsimula_runs/${PRESET}_$(date +%Y%m%d_%H%M%S)"
+    echo "  Sync target: $SYNC_REMOTE"
+else
+    echo "[5/6] Google Drive sync: disabled (use --gdrive to enable)"
+fi
+
+# ── 6. Launch training ──
+echo "[6/6] Starting training..."
+echo ""
+
+cd "$SCRIPT_DIR"
+
+SYNC_ARG=""
+if [ -n "$SYNC_REMOTE" ]; then
+    SYNC_ARG="--sync_remote $SYNC_REMOTE"
+fi
+
+if [ "$MULTI_GPU" = "yes" ] && [ "$NUM_GPUS" -gt 1 ]; then
+    echo ">>> Multi-GPU mode: $NUM_GPUS GPUs via torchrun"
+    torchrun --nproc_per_node="$NUM_GPUS" \
+        train_fock.py \
+        --preset "$PRESET" \
+        --output_dir "$OUTPUT_DIR" \
+        --data_dir "$DATA_DIR" \
+        $SYNC_ARG
+else
+    echo ">>> Single-GPU mode"
+    python3 train_fock.py \
+        --preset "$PRESET" \
+        --output_dir "$OUTPUT_DIR" \
+        --data_dir "$DATA_DIR" \
+        $SYNC_ARG
+fi
