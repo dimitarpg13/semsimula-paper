@@ -18,6 +18,11 @@
 #        bash launch_lambdalabs.sh d768 --gdrive
 #        bash launch_lambdalabs.sh d768 --multi-gpu --gdrive
 #
+#   GAMMA SWEEP (run before full training at a new d):
+#        bash launch_lambdalabs.sh sweep-d768 --gamma-sweep
+#        bash launch_lambdalabs.sh sweep-d1024 --gamma-sweep
+#        bash launch_lambdalabs.sh sweep-d768 --gamma-sweep --sweep-steps 5000
+#
 #   First time --gdrive: you'll be prompted to authorize rclone.
 #   On repeat runs the token is cached in ~/.config/rclone/rclone.conf.
 #
@@ -26,19 +31,34 @@ set -euo pipefail
 PRESET="${1:-d768}"
 MULTI_GPU=""
 GDRIVE=""
+GAMMA_SWEEP=""
+SWEEP_STEPS="3000"
 
 shift || true
 for arg in "$@"; do
     case "$arg" in
-        --multi-gpu) MULTI_GPU="yes" ;;
-        --gdrive)    GDRIVE="yes" ;;
-        *)           echo "Unknown arg: $arg"; exit 1 ;;
+        --multi-gpu)    MULTI_GPU="yes" ;;
+        --gdrive)       GDRIVE="yes" ;;
+        --gamma-sweep)  GAMMA_SWEEP="yes" ;;
+        --sweep-steps)  SWEEP_STEPS_NEXT="yes" ;;
+        *)
+            if [ "${SWEEP_STEPS_NEXT:-}" = "yes" ]; then
+                SWEEP_STEPS="$arg"
+                SWEEP_STEPS_NEXT=""
+            else
+                echo "Unknown arg: $arg"; exit 1
+            fi
+            ;;
     esac
 done
 
+MODE="Training"
+[ "$GAMMA_SWEEP" = "yes" ] && MODE="Gamma Sweep"
+
 echo "=================================================="
-echo "  FockPARFLM Training — LambdaLabs Setup"
+echo "  FockPARFLM $MODE — LambdaLabs Setup"
 echo "  Preset: $PRESET"
+[ "$GAMMA_SWEEP" = "yes" ] && echo "  Sweep steps: $SWEEP_STEPS per candidate"
 echo "=================================================="
 
 # ── 1. Clone repo if not present ──
@@ -58,7 +78,11 @@ pip install -q torch numpy transformers tokenizers datasets huggingface_hub pyar
 
 # ── 3. Set up output directory ──
 SCRIPT_DIR="$REPO_DIR/notebooks/conservative_arch/scaleup"
-OUTPUT_DIR="$HOME/runs/${PRESET}_$(date +%Y%m%d_%H%M%S)"
+if [ "$GAMMA_SWEEP" = "yes" ]; then
+    OUTPUT_DIR="$HOME/runs/sweep_${PRESET}_$(date +%Y%m%d_%H%M%S)"
+else
+    OUTPUT_DIR="$HOME/runs/${PRESET}_$(date +%Y%m%d_%H%M%S)"
+fi
 DATA_DIR="$HOME/data"
 mkdir -p "$OUTPUT_DIR/checkpoints" "$DATA_DIR"
 
@@ -107,8 +131,8 @@ else
     echo "[5/6] Google Drive sync: disabled (use --gdrive to enable)"
 fi
 
-# ── 6. Launch training ──
-echo "[6/6] Starting training..."
+# ── 6. Launch ──
+echo "[6/6] Starting $MODE..."
 echo ""
 
 cd "$SCRIPT_DIR"
@@ -118,7 +142,12 @@ if [ -n "$SYNC_REMOTE" ]; then
     SYNC_ARG="--sync_remote $SYNC_REMOTE"
 fi
 
-if [ "$MULTI_GPU" = "yes" ] && [ "$NUM_GPUS" -gt 1 ]; then
+SWEEP_ARGS=""
+if [ "$GAMMA_SWEEP" = "yes" ]; then
+    SWEEP_ARGS="--gamma_sweep --sweep_steps $SWEEP_STEPS"
+fi
+
+if [ "$MULTI_GPU" = "yes" ] && [ "$NUM_GPUS" -gt 1 ] && [ "$GAMMA_SWEEP" != "yes" ]; then
     echo ">>> Multi-GPU mode: $NUM_GPUS GPUs via torchrun"
     torchrun --nproc_per_node="$NUM_GPUS" \
         train_fock.py \
@@ -127,10 +156,15 @@ if [ "$MULTI_GPU" = "yes" ] && [ "$NUM_GPUS" -gt 1 ]; then
         --data_dir "$DATA_DIR" \
         $SYNC_ARG
 else
-    echo ">>> Single-GPU mode"
+    if [ "$GAMMA_SWEEP" = "yes" ]; then
+        echo ">>> Gamma sweep mode (single-GPU)"
+    else
+        echo ">>> Single-GPU mode"
+    fi
     python3 train_fock.py \
         --preset "$PRESET" \
         --output_dir "$OUTPUT_DIR" \
         --data_dir "$DATA_DIR" \
-        $SYNC_ARG
+        $SYNC_ARG \
+        $SWEEP_ARGS
 fi

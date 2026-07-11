@@ -129,6 +129,10 @@ class TrainConfig:
     register_repulsion_coeff: float = 0.05
     register_repulsion_kind: str = "gram"
 
+    # Integrator
+    fixed_gamma: float = 0.30
+    init_gamma: float = 1.0
+
     # Output
     use_output_bias: bool = True
     tie_embeddings: bool = False
@@ -282,6 +286,27 @@ PRESETS: Dict[str, Dict[str, Any]] = {
         "lambda_v": 0.0,
         "per_group_clip": False,
     },
+    # Gamma sweep presets — use with --gamma_sweep.
+    # Inherits all arch from the base preset but is sized for
+    # a quick 3K-step sweep.
+    "sweep-d768": {
+        "model_type": "fock",
+        "d": 768, "L": 12, "n_registers": 32,
+        "d_k": 192,
+        "tie_embeddings": False,
+        "use_output_bias": True,
+        "lr": 2e-4,
+        "batch_size": 8, "grad_accum": 4,
+    },
+    "sweep-d1024": {
+        "model_type": "fock",
+        "d": 1024, "L": 24, "n_registers": 32,
+        "d_k": 256,
+        "tie_embeddings": False,
+        "use_output_bias": True,
+        "lr": 1.5e-4,
+        "batch_size": 4, "grad_accum": 8,
+    },
 }
 
 
@@ -322,8 +347,8 @@ def build_fock_model(cfg: TrainConfig, device: str, logfreq_path: str):
         mass_mode="logfreq",
         logfreq_path=logfreq_path,
         logfreq_init_alpha=0.1,
-        init_gamma=1.0,
-        fixed_gamma=0.30,
+        init_gamma=cfg.init_gamma,
+        fixed_gamma=cfg.fixed_gamma,
         causal_force=True,
         ln_after_step=True,
         xi_channels=cfg.xi_channels,
@@ -1054,10 +1079,98 @@ def train(cfg: TrainConfig):
 
 
 # ---------------------------------------------------------------------------
+# Gamma sweep: short training runs to find optimal gamma for a given d
+# ---------------------------------------------------------------------------
+
+GAMMA_CANDIDATES = [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.40, 0.50]
+
+def gamma_sweep(base_cfg: TrainConfig, gammas: List[float],
+                sweep_steps: int = 3000, sweep_eval_interval: int = 500):
+    """Run short training for each gamma candidate, return ranked results."""
+    import copy
+    import json as _json
+
+    print(f"\n{'='*60}")
+    print(f"  GAMMA SWEEP  d={base_cfg.d}  L={base_cfg.L}")
+    print(f"  Candidates: {gammas}")
+    print(f"  Steps per candidate: {sweep_steps}")
+    print(f"{'='*60}\n")
+
+    results = []
+    sweep_dir = Path(base_cfg.output_dir) / "gamma_sweep"
+    sweep_dir.mkdir(parents=True, exist_ok=True)
+
+    for gi, g in enumerate(gammas):
+        cfg = copy.deepcopy(base_cfg)
+        cfg.fixed_gamma = g
+        cfg.total_steps = sweep_steps
+        cfg.eval_interval = sweep_eval_interval
+        cfg.ckpt_interval = sweep_steps + 1  # no periodic checkpoints
+        cfg.log_interval = 100
+        cfg.grad_spike_debug = False
+        cfg.sync_remote = ""
+        cfg.output_dir = str(sweep_dir / f"gamma_{g:.3f}")
+        Path(cfg.output_dir).mkdir(parents=True, exist_ok=True)
+        (Path(cfg.output_dir) / "checkpoints").mkdir(parents=True, exist_ok=True)
+
+        print(f"\n--- Sweep {gi+1}/{len(gammas)}: gamma={g:.3f} ---")
+        try:
+            train(cfg)
+        except Exception as e:
+            print(f"  FAILED: {e}")
+            results.append({"gamma": g, "best_ppl": float("inf"),
+                            "final_ppl": float("inf"), "error": str(e)})
+            continue
+
+        log_path = Path(cfg.output_dir) / "train_log.jsonl"
+        best_ppl = float("inf")
+        final_ppl = float("inf")
+        if log_path.exists():
+            for line in open(log_path):
+                entry = _json.loads(line)
+                if "val_ppl" in entry:
+                    final_ppl = entry["val_ppl"]
+                    if entry["val_ppl"] < best_ppl:
+                        best_ppl = entry["val_ppl"]
+
+        results.append({"gamma": g, "best_ppl": best_ppl,
+                        "final_ppl": final_ppl})
+        print(f"  gamma={g:.3f}  best_ppl={best_ppl:.2f}  final_ppl={final_ppl:.2f}")
+
+    results.sort(key=lambda r: r["best_ppl"])
+
+    print(f"\n{'='*60}")
+    print(f"  GAMMA SWEEP RESULTS  (d={base_cfg.d}, L={base_cfg.L})")
+    print(f"{'='*60}")
+    print(f"  {'gamma':>8s}  {'best_ppl':>10s}  {'final_ppl':>10s}")
+    print(f"  {'-----':>8s}  {'--------':>10s}  {'---------':>10s}")
+    for r in results:
+        marker = " <-- BEST" if r == results[0] else ""
+        err = f"  ERROR: {r['error']}" if "error" in r else ""
+        print(f"  {r['gamma']:8.3f}  {r['best_ppl']:10.2f}  "
+              f"{r['final_ppl']:10.2f}{marker}{err}")
+
+    summary_path = sweep_dir / "sweep_summary.json"
+    with open(summary_path, "w") as f:
+        _json.dump({"d": base_cfg.d, "L": base_cfg.L,
+                    "sweep_steps": sweep_steps, "results": results}, f, indent=2)
+    print(f"\n  Summary saved to: {summary_path}")
+
+    if results and results[0]["best_ppl"] < float("inf"):
+        best_g = results[0]["gamma"]
+        print(f"\n  >>> Recommended gamma for d={base_cfg.d}: {best_g:.3f}")
+        print(f"  >>> Run full training with:  --preset d{base_cfg.d} "
+              f"--fixed_gamma {best_g}")
+    print()
+
+    return results
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
-def parse_args() -> TrainConfig:
+def parse_args():
     parser = argparse.ArgumentParser(
         description="Train FockPARFLM v2.1 or matched GPT-2 baseline")
 
@@ -1065,6 +1178,15 @@ def parse_args() -> TrainConfig:
                         choices=["", *PRESETS.keys()],
                         help="Load a preset config (d384, d768, d1024, "
                              "gpt2-small, gpt2-medium)")
+
+    # Gamma sweep mode
+    parser.add_argument("--gamma_sweep", action="store_true",
+                        help="Run gamma sweep instead of full training")
+    parser.add_argument("--sweep_gammas", type=str, default="",
+                        help="Comma-separated gamma values to sweep "
+                             "(default: 0.05,0.10,...,0.50)")
+    parser.add_argument("--sweep_steps", type=int, default=3000,
+                        help="Steps per gamma candidate (default: 3000)")
 
     # Allow overriding any TrainConfig field
     for f in TrainConfig.__dataclass_fields__.values():
@@ -1092,10 +1214,16 @@ def parse_args() -> TrainConfig:
         if val is not None:
             setattr(cfg, f, val)
 
-    return cfg
+    return cfg, args
 
 
 if __name__ == "__main__":
     setup_ddp()
-    cfg = parse_args()
-    train(cfg)
+    cfg, args = parse_args()
+
+    if args.gamma_sweep:
+        gammas = ([float(x) for x in args.sweep_gammas.split(",")]
+                  if args.sweep_gammas else GAMMA_CANDIDATES)
+        gamma_sweep(cfg, gammas, sweep_steps=args.sweep_steps)
+    else:
+        train(cfg)
