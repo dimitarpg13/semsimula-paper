@@ -105,7 +105,11 @@ $$
 \mathcal{R}_{\mathrm{quad}}(V_\theta) = \mathbb{E}_{x,h}\bigl[V_\theta(\xi, h)^2\bigr]
 $$
 
-This is computed as a batch mean. A **single token** whose hidden state
+where $x$ is an input sequence drawn from the training corpus and $h = h_L(x, t)$
+is the final-layer hidden state at token position $t$ within that sequence.
+The expectation is over both the data distribution and all token positions;
+in practice it is computed as a simple batch mean over every token in the
+current minibatch. A **single token** whose hidden state
 $h$ drifts far from every well centre produces:
 
 $$
