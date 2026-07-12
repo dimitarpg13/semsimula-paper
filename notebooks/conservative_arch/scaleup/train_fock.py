@@ -1167,15 +1167,24 @@ GAMMA_CANDIDATES = [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.40, 0.50]
 
 def gamma_sweep(base_cfg: TrainConfig, gammas: List[float],
                 sweep_steps: int = 3000, sweep_eval_interval: int = 500):
-    """Run short training for each gamma candidate, return ranked results."""
+    """Run short training for each gamma candidate, return ranked results.
+
+    Safe to call under multi-GPU DDP (torchrun): each candidate's
+    train(cfg) call already handles DDP internally, but the sweep-level
+    bookkeeping below (console banners, results list, summary file) is
+    not per-rank-partitioned, so it is gated on is_main() to avoid
+    duplicated output / redundant (harmless but wasteful) file writes
+    from non-main ranks.
+    """
     import copy
     import json as _json
 
-    print(f"\n{'='*60}")
-    print(f"  GAMMA SWEEP  d={base_cfg.d}  L={base_cfg.L}")
-    print(f"  Candidates: {gammas}")
-    print(f"  Steps per candidate: {sweep_steps}")
-    print(f"{'='*60}\n")
+    if is_main():
+        print(f"\n{'='*60}")
+        print(f"  GAMMA SWEEP  d={base_cfg.d}  L={base_cfg.L}")
+        print(f"  Candidates: {gammas}")
+        print(f"  Steps per candidate: {sweep_steps}")
+        print(f"{'='*60}\n")
 
     results = []
     sweep_dir = Path(base_cfg.output_dir) / "gamma_sweep"
@@ -1194,13 +1203,15 @@ def gamma_sweep(base_cfg: TrainConfig, gammas: List[float],
         Path(cfg.output_dir).mkdir(parents=True, exist_ok=True)
         (Path(cfg.output_dir) / "checkpoints").mkdir(parents=True, exist_ok=True)
 
-        print(f"\n--- Sweep {gi+1}/{len(gammas)}: gamma={g:.3f} ---")
+        if is_main():
+            print(f"\n--- Sweep {gi+1}/{len(gammas)}: gamma={g:.3f} ---")
         err_msg = None
         try:
             train(cfg)
         except Exception as e:
             err_msg = str(e)
-            print(f"  FAILED: {err_msg}")
+            if is_main():
+                print(f"  FAILED: {err_msg}")
         finally:
             # Ensure the previous candidate's model/optimizer/activations
             # are fully released before the next candidate builds a new
@@ -1228,33 +1239,37 @@ def gamma_sweep(base_cfg: TrainConfig, gammas: List[float],
 
         results.append({"gamma": g, "best_ppl": best_ppl,
                         "final_ppl": final_ppl})
-        print(f"  gamma={g:.3f}  best_ppl={best_ppl:.2f}  final_ppl={final_ppl:.2f}")
+        if is_main():
+            print(f"  gamma={g:.3f}  best_ppl={best_ppl:.2f}  "
+                  f"final_ppl={final_ppl:.2f}")
 
     results.sort(key=lambda r: r["best_ppl"])
 
-    print(f"\n{'='*60}")
-    print(f"  GAMMA SWEEP RESULTS  (d={base_cfg.d}, L={base_cfg.L})")
-    print(f"{'='*60}")
-    print(f"  {'gamma':>8s}  {'best_ppl':>10s}  {'final_ppl':>10s}")
-    print(f"  {'-----':>8s}  {'--------':>10s}  {'---------':>10s}")
-    for r in results:
-        marker = " <-- BEST" if r == results[0] else ""
-        err = f"  ERROR: {r['error']}" if "error" in r else ""
-        print(f"  {r['gamma']:8.3f}  {r['best_ppl']:10.2f}  "
-              f"{r['final_ppl']:10.2f}{marker}{err}")
+    if is_main():
+        print(f"\n{'='*60}")
+        print(f"  GAMMA SWEEP RESULTS  (d={base_cfg.d}, L={base_cfg.L})")
+        print(f"{'='*60}")
+        print(f"  {'gamma':>8s}  {'best_ppl':>10s}  {'final_ppl':>10s}")
+        print(f"  {'-----':>8s}  {'--------':>10s}  {'---------':>10s}")
+        for r in results:
+            marker = " <-- BEST" if r == results[0] else ""
+            err = f"  ERROR: {r['error']}" if "error" in r else ""
+            print(f"  {r['gamma']:8.3f}  {r['best_ppl']:10.2f}  "
+                  f"{r['final_ppl']:10.2f}{marker}{err}")
 
-    summary_path = sweep_dir / "sweep_summary.json"
-    with open(summary_path, "w") as f:
-        _json.dump({"d": base_cfg.d, "L": base_cfg.L,
-                    "sweep_steps": sweep_steps, "results": results}, f, indent=2)
-    print(f"\n  Summary saved to: {summary_path}")
+        summary_path = sweep_dir / "sweep_summary.json"
+        with open(summary_path, "w") as f:
+            _json.dump({"d": base_cfg.d, "L": base_cfg.L,
+                        "sweep_steps": sweep_steps, "results": results},
+                       f, indent=2)
+        print(f"\n  Summary saved to: {summary_path}")
 
-    if results and results[0]["best_ppl"] < float("inf"):
-        best_g = results[0]["gamma"]
-        print(f"\n  >>> Recommended gamma for d={base_cfg.d}: {best_g:.3f}")
-        print(f"  >>> Run full training with:  --preset d{base_cfg.d} "
-              f"--fixed_gamma {best_g}")
-    print()
+        if results and results[0]["best_ppl"] < float("inf"):
+            best_g = results[0]["gamma"]
+            print(f"\n  >>> Recommended gamma for d={base_cfg.d}: {best_g:.3f}")
+            print(f"  >>> Run full training with:  --preset d{base_cfg.d} "
+                  f"--fixed_gamma {best_g}")
+        print()
 
     return results
 

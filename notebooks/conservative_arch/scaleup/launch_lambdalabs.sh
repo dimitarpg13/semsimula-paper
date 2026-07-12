@@ -23,6 +23,16 @@
 #        bash launch_lambdalabs.sh sweep-d1024 --gamma-sweep
 #        bash launch_lambdalabs.sh sweep-d768 --gamma-sweep --sweep-steps 5000
 #
+#   MULTI-GPU GAMMA SWEEP (sweep-d1024 only — see companion_notes/
+#   Fock-PARFLM_Scale-Up_Comparative_Experiments.md §6.4/§6.5):
+#   sweep-d1024's batch_size=1/grad_accum=32 preset makes each 3000-step
+#   candidate ~20-30h on 1 GPU; --multi-gpu splits grad_accum across
+#   GPUs via DDP (torchrun) for a ~2x wall-clock speedup at the same
+#   effective batch. sweep-d768 stays single-GPU-only even with
+#   --multi-gpu (its candidates are already fast enough that DDP sync
+#   overhead isn't worth it):
+#        bash launch_lambdalabs.sh sweep-d1024 --gamma-sweep --multi-gpu
+#
 #   First time --gdrive: you'll be prompted to authorize rclone.
 #   On repeat runs the token is cached in ~/.config/rclone/rclone.conf.
 #
@@ -151,14 +161,38 @@ if [ "$GAMMA_SWEEP" = "yes" ]; then
     SWEEP_ARGS="--gamma_sweep --sweep_steps $SWEEP_STEPS"
 fi
 
-if [ "$MULTI_GPU" = "yes" ] && [ "$NUM_GPUS" -gt 1 ] && [ "$GAMMA_SWEEP" != "yes" ]; then
+# Multi-GPU gamma sweep is only enabled for sweep-d1024: at
+# batch_size=1/grad_accum=32 each d=1024 candidate is ~20-30h
+# single-GPU, so splitting grad_accum across GPUs via DDP is worth
+# the added complexity. sweep-d768 candidates are fast enough
+# single-GPU that DDP sync overhead isn't worth it, so it stays
+# excluded (same as before) to keep that path unchanged.
+USE_MULTI_GPU="no"
+EFFBATCH_ARG=""
+if [ "$MULTI_GPU" = "yes" ] && [ "$NUM_GPUS" -gt 1 ]; then
+    if [ "$GAMMA_SWEEP" != "yes" ]; then
+        USE_MULTI_GPU="yes"
+    elif [ "$PRESET" = "sweep-d1024" ]; then
+        USE_MULTI_GPU="yes"
+        # effective_batch = batch_size * grad_accum * world_size, and
+        # world_size just went from 1 to $NUM_GPUS. Divide grad_accum
+        # by $NUM_GPUS so the effective batch (32) — and thus the LR /
+        # gradient-noise regime each gamma candidate is evaluated under
+        # — stays identical to the single-GPU sweep-d1024 preset.
+        EFFBATCH_ARG="--grad_accum $((32 / NUM_GPUS))"
+    fi
+fi
+
+if [ "$USE_MULTI_GPU" = "yes" ]; then
     echo ">>> Multi-GPU mode: $NUM_GPUS GPUs via torchrun"
     torchrun --nproc_per_node="$NUM_GPUS" \
         train_fock.py \
         --preset "$PRESET" \
         --output_dir "$OUTPUT_DIR" \
         --data_dir "$DATA_DIR" \
-        $SYNC_ARG
+        $SYNC_ARG \
+        $SWEEP_ARGS \
+        $EFFBATCH_ARG
 else
     if [ "$GAMMA_SWEEP" = "yes" ]; then
         echo ">>> Gamma sweep mode (single-GPU)"
