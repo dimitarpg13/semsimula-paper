@@ -38,6 +38,7 @@ import os
 import shutil
 import sys
 import time
+import typing
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -1188,17 +1189,24 @@ def parse_args():
     parser.add_argument("--sweep_steps", type=int, default=3000,
                         help="Steps per gamma candidate (default: 3000)")
 
-    # Allow overriding any TrainConfig field
+    # Allow overriding any TrainConfig field.
+    # NOTE: this module uses `from __future__ import annotations`, which
+    # makes dataclass field.type a *string* (e.g. "str") rather than the
+    # actual type object (PEP 563). Resolve real types via get_type_hints
+    # instead of comparing f.type directly, or every field comparison
+    # below would silently fail and no CLI overrides would be registered.
+    resolved_types = typing.get_type_hints(TrainConfig)
     for f in TrainConfig.__dataclass_fields__.values():
         name = f"--{f.name}"
-        if f.type == bool:
+        ftype = resolved_types.get(f.name, f.type)
+        if ftype == bool:
             parser.add_argument(name, type=lambda x: x.lower() == "true",
                                 default=None)
-        elif f.type == int:
+        elif ftype == int:
             parser.add_argument(name, type=int, default=None)
-        elif f.type == float:
+        elif ftype == float:
             parser.add_argument(name, type=float, default=None)
-        elif f.type == str:
+        elif ftype == str:
             parser.add_argument(name, type=str, default=None)
 
     args = parser.parse_args()
