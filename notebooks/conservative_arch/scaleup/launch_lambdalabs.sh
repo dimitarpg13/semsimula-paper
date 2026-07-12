@@ -23,6 +23,18 @@
 #        bash launch_lambdalabs.sh sweep-d1024 --gamma-sweep
 #        bash launch_lambdalabs.sh sweep-d768 --gamma-sweep --sweep-steps 5000
 #
+#   SPLIT GAMMA SWEEP ACROSS MULTIPLE INSTANCES (--sweep-gammas):
+#   Run a disjoint subset of the 8 default candidates on each instance
+#   so two (or more) machines finish the full sweep in parallel instead
+#   of one machine running all 8 sequentially:
+#        # instance A:
+#        bash launch_lambdalabs.sh sweep-d1024 --gamma-sweep --multi-gpu \
+#            --sweep-gammas 0.05,0.10,0.15,0.20
+#        # instance B:
+#        bash launch_lambdalabs.sh sweep-d1024 --gamma-sweep --multi-gpu \
+#            --sweep-gammas 0.25,0.30,0.40,0.50
+#   See companion_notes/Fock-PARFLM_Scale-Up_Comparative_Experiments.md §6.6.
+#
 #   MULTI-GPU GAMMA SWEEP (sweep-d1024 only — see companion_notes/
 #   Fock-PARFLM_Scale-Up_Comparative_Experiments.md §6.4/§6.5):
 #   sweep-d1024's batch_size=1/grad_accum=32 preset makes each 3000-step
@@ -47,18 +59,23 @@ MULTI_GPU=""
 GDRIVE=""
 GAMMA_SWEEP=""
 SWEEP_STEPS="3000"
+SWEEP_GAMMAS=""
 
 shift || true
 for arg in "$@"; do
     case "$arg" in
-        --multi-gpu)    MULTI_GPU="yes" ;;
-        --gdrive)       GDRIVE="yes" ;;
-        --gamma-sweep)  GAMMA_SWEEP="yes" ;;
-        --sweep-steps)  SWEEP_STEPS_NEXT="yes" ;;
+        --multi-gpu)      MULTI_GPU="yes" ;;
+        --gdrive)         GDRIVE="yes" ;;
+        --gamma-sweep)    GAMMA_SWEEP="yes" ;;
+        --sweep-steps)    SWEEP_STEPS_NEXT="yes" ;;
+        --sweep-gammas)   SWEEP_GAMMAS_NEXT="yes" ;;
         *)
             if [ "${SWEEP_STEPS_NEXT:-}" = "yes" ]; then
                 SWEEP_STEPS="$arg"
                 SWEEP_STEPS_NEXT=""
+            elif [ "${SWEEP_GAMMAS_NEXT:-}" = "yes" ]; then
+                SWEEP_GAMMAS="$arg"
+                SWEEP_GAMMAS_NEXT=""
             else
                 echo "Unknown arg: $arg"; exit 1
             fi
@@ -73,6 +90,7 @@ echo "=================================================="
 echo "  FockPARFLM $MODE — LambdaLabs Setup"
 echo "  Preset: $PRESET"
 [ "$GAMMA_SWEEP" = "yes" ] && echo "  Sweep steps: $SWEEP_STEPS per candidate"
+[ -n "$SWEEP_GAMMAS" ] && echo "  Sweep gammas (subset): $SWEEP_GAMMAS"
 echo "=================================================="
 
 # ── 1. Clone repo if not present ──
@@ -159,6 +177,9 @@ fi
 SWEEP_ARGS=""
 if [ "$GAMMA_SWEEP" = "yes" ]; then
     SWEEP_ARGS="--gamma_sweep --sweep_steps $SWEEP_STEPS"
+    if [ -n "$SWEEP_GAMMAS" ]; then
+        SWEEP_ARGS="$SWEEP_ARGS --sweep_gammas $SWEEP_GAMMAS"
+    fi
 fi
 
 # Multi-GPU gamma sweep is only enabled for sweep-d1024: at

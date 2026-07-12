@@ -414,6 +414,82 @@ submodule diverges.
 
 **Status:** proposed, not yet implemented in `train_fock.py`.
 
+### 6.6. Parallelising the sweep itself across instances (horizontal scaling)
+
+§6.4/§6.5's `--multi-gpu` flag speeds up *one* gamma candidate by
+splitting its `grad_accum` across the 2 GPUs on a single node via DDP —
+useful, but it does not shrink the *sweep's* total wall-clock much
+below `n_candidates x candidate_time`, because DDP already keeps both
+GPUs on that node ~100% busy on the one candidate that's currently
+running. Measured on a `d=1024`, 2xH100 node: ~22.9 s/step, so a
+3000-step candidate takes ~19.1 h, and the default 8-candidate sweep
+takes `8 x 19.1h ≈ 153h ≈ 6.4 days` end to end on a single node.
+
+Gamma-sweep candidates are **embarrassingly parallel across each
+other** (each is an independent short training run), unlike the
+DDP split *within* one candidate. The only way to actually shrink
+sweep wall-clock without touching the training code is to add more
+GPU-nodes and give each a disjoint subset of the candidate list.
+`train_fock.py`'s `--sweep_gammas` CLI flag (comma-separated, overrides
+the 8-value `GAMMA_CANDIDATES` default) and `launch_lambdalabs.sh`'s
+matching `--sweep-gammas` passthrough exist for exactly this:
+
+```bash
+# Instance A (2xH100) — first 4 candidates:
+bash launch_lambdalabs.sh sweep-d1024 --gamma-sweep --multi-gpu \
+    --sweep-gammas 0.05,0.10,0.15,0.20
+
+# Instance B (2xH100) — last 4 candidates:
+bash launch_lambdalabs.sh sweep-d1024 --gamma-sweep --multi-gpu \
+    --sweep-gammas 0.25,0.30,0.40,0.50
+```
+
+With 2 nodes x 2 GPUs each (4 GPUs total, double the single-node
+GPU count), the two 4-candidate sweeps run concurrently and the full
+8-candidate sweep finishes in `4 x 19.1h ≈ 76.4h ≈ 3.2 days` instead
+of ~6.4 days — a real ~2x wall-clock reduction because it doubles the
+total GPU count in use, not because it rearranges the existing 2 GPUs.
+Each additional 2xH100 node given a disjoint quarter/eighth of the
+candidate list scales this further (e.g. 4 nodes -> 2 candidates/node
+-> ~38h).
+
+**Avoiding wasted data-prep time on the second node:** each node
+independently streams+tokenises OpenWebText into
+`openwebtext_train_{tokens_in_M}M.npy` /
+`openwebtext_val_{tokens_in_M}M.npy` under `--data_dir` (default
+`~/data`) on first run, which for the 4B-token cache takes real wall
+time on top of training. If a first node already has the cache from an
+earlier run, copy it directly to the new node instead of re-streaming:
+
+```bash
+# from your local machine, relaying through node A's cache:
+scp -i ~/.ssh/id_ed25519_lambda \
+    ubuntu@<node-A-ip>:~/data/openwebtext_train_4000M.npy \
+    ubuntu@<node-A-ip>:~/data/openwebtext_val_2M.npy \
+    /tmp/
+scp -i ~/.ssh/id_ed25519_lambda /tmp/openwebtext_train_4000M.npy \
+    /tmp/openwebtext_val_2M.npy \
+    ubuntu@<node-B-ip>:~/data/
+```
+
+(or `rsync`/direct node-to-node `scp` if the LambdaLabs instances can
+reach each other's public IPs — check with `ssh -A` agent forwarding
+so node A can `scp` straight to node B without round-tripping through
+the local machine). Run this **before** launching training on node B
+so `train_fock.py` finds the cache and skips straight to training.
+
+**Caveat — restarting a node mid-candidate loses that candidate's
+progress.** `gamma_sweep()` sets `ckpt_interval = sweep_steps + 1`
+(no periodic checkpoints within a candidate; see
+[train_fock.py](https://github.com/dimitarpg13/semsimula-paper/blob/main/notebooks/conservative_arch/scaleup/train_fock.py)
+`gamma_sweep()`), so killing a running sweep to relaunch with a
+`--sweep-gammas` subset discards whatever fraction of the *current*
+candidate had completed (the next candidate in the original 8-value
+list has not started yet and loses nothing). This is cheap early in a
+candidate (e.g. discarding ~40 min out of a ~19h candidate) but should
+be done promptly once the decision to split is made, not after a
+candidate is mostly finished.
+
 ---
 
 ## 7. Relation to other companion notes
