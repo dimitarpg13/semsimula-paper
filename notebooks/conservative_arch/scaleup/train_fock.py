@@ -241,6 +241,9 @@ PRESETS: Dict[str, Dict[str, Any]] = {
     # long-tail pathology where rare tokens get worse-than-uniform CE
     # (D0.4 diagnostic in Xi_Bottleneck_Diagnosis_Phase5.md §8.4).
     # Fock ~137M params vs GPT-2 ~124M (tied) at same d and L.
+    # batch_size=4 (was 8) — d=768 OOMs at bs=8 on 80 GB H100;
+    # auto-probe would find 4 anyway, but starting there saves a
+    # failed-step and the VRAM churn.
     "d768": {
         "model_type": "fock",
         "d": 768, "L": 12, "n_registers": 32,
@@ -249,11 +252,15 @@ PRESETS: Dict[str, Dict[str, Any]] = {
         "use_output_bias": True,
         "total_steps": 100_000,
         "lr": 2e-4,
-        "batch_size": 8, "grad_accum": 4,
+        "batch_size": 4, "grad_accum": 8,
     },
     # Strategy 1: same d=1024, same L=24 as GPT-2 Medium.
     # Same untied rationale as d768.
     # Fock ~209M params vs GPT-2 ~355M (tied) at same d and L.
+    # batch_size=1 (was 4) — d=1024 L=24 activation memory is ~3.5x
+    # that of d=768 L=12.  bs=2 (~65 GB) is borderline on 80 GB H100
+    # and will OOM once optimizer state + gradient buffers are counted;
+    # bs=1 (~33 GB) is safe.  grad_accum=32 keeps eff_batch=32.
     "d1024": {
         "model_type": "fock",
         "d": 1024, "L": 24, "n_registers": 32,
@@ -262,17 +269,20 @@ PRESETS: Dict[str, Dict[str, Any]] = {
         "use_output_bias": True,
         "total_steps": 100_000,
         "lr": 1.5e-4,
-        "batch_size": 4, "grad_accum": 8,
+        "batch_size": 1, "grad_accum": 32,
     },
     # Matched GPT-2 Small baseline (d=768, L=12, 12 heads).
     # Always tied (MatchedGPT hardcodes weight tying).
+    # GPT-2 has ~2x fewer activations per layer vs Fock (no V_theta
+    # sub-network), so bs=8 may fit, but we start at 4 for parity
+    # and let the probe bump it up if headroom exists.
     "gpt2-small": {
         "model_type": "gpt2",
         "d": 768, "L": 12, "gpt2_n_head": 12,
         "tie_embeddings": True,
         "total_steps": 100_000,
         "lr": 2e-4,
-        "batch_size": 8, "grad_accum": 4,
+        "batch_size": 4, "grad_accum": 8,
         "lambda_v": 0.0,
         "per_group_clip": False,
     },
@@ -283,7 +293,7 @@ PRESETS: Dict[str, Dict[str, Any]] = {
         "tie_embeddings": True,
         "total_steps": 100_000,
         "lr": 1.5e-4,
-        "batch_size": 4, "grad_accum": 8,
+        "batch_size": 2, "grad_accum": 16,
         "lambda_v": 0.0,
         "per_group_clip": False,
     },
@@ -297,7 +307,7 @@ PRESETS: Dict[str, Dict[str, Any]] = {
         "tie_embeddings": False,
         "use_output_bias": True,
         "lr": 2e-4,
-        "batch_size": 8, "grad_accum": 4,
+        "batch_size": 4, "grad_accum": 8,
     },
     "sweep-d1024": {
         "model_type": "fock",
@@ -306,7 +316,7 @@ PRESETS: Dict[str, Dict[str, Any]] = {
         "tie_embeddings": False,
         "use_output_bias": True,
         "lr": 1.5e-4,
-        "batch_size": 4, "grad_accum": 8,
+        "batch_size": 1, "grad_accum": 32,
     },
 }
 
@@ -624,6 +634,62 @@ def forward_gpt2(model, x, targets, cfg: TrainConfig):
 
 
 # ---------------------------------------------------------------------------
+# Auto batch-size probing (OOM-aware) — mirrors the Colab notebook's
+# probe, which was never carried over into this standalone script.
+# Without this, a fixed preset batch_size can silently OOM on hardware
+# with less headroom than whatever the preset was tuned against.
+# ---------------------------------------------------------------------------
+
+def probe_batch_size(model, model_cfg, forward_fn, cfg: TrainConfig,
+                     train_ids: np.ndarray, device: str) -> int:
+    """Try decreasing batch sizes with a real forward+backward microstep
+    until one fits in GPU memory. Returns the largest that worked (or
+    cfg.batch_size unchanged on CPU / if the first probe already fits).
+    """
+    if device == "cpu":
+        return cfg.batch_size
+
+    vram_gb = torch.cuda.get_device_properties(0).total_memory / 1e9
+    ceiling = cfg.batch_size
+    candidates = sorted({b for b in
+                        [ceiling, 16, 12, 8, 6, 4, 2, 1] if b <= ceiling},
+                        reverse=True)
+
+    raw_model = model.module if hasattr(model, "module") else model
+    rng = np.random.default_rng(cfg.seed)
+
+    for bs in candidates:
+        try:
+            xb, yb = get_batch(train_ids, bs, cfg.block_size, rng)
+            x = torch.from_numpy(xb).to(device)
+            y = torch.from_numpy(yb).to(device)
+            if cfg.model_type == "fock":
+                loss, _, _ = forward_fn(raw_model, model_cfg, x, y, cfg)
+            else:
+                loss, _, _ = forward_fn(raw_model, x, y, cfg)
+            loss.backward()
+            raw_model.zero_grad(set_to_none=True)
+            del x, y, xb, yb, loss
+            torch.cuda.empty_cache()
+            if is_main() and bs != ceiling:
+                print(f"  Auto batch-size probe: {ceiling} -> {bs} "
+                      f"(OOM at higher sizes on this GPU, {vram_gb:.0f} GB)")
+            return bs
+        except RuntimeError as e:
+            if "out of memory" in str(e).lower():
+                raw_model.zero_grad(set_to_none=True)
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+                if is_main():
+                    print(f"  OOM probe at batch={bs} — trying smaller ...")
+                continue
+            raise
+    raise RuntimeError(
+        f"All batch-size candidates {candidates} OOMed on this GPU "
+        f"({vram_gb:.0f} GB) for d={cfg.d} L={cfg.L} block={cfg.block_size}.")
+
+
+# ---------------------------------------------------------------------------
 # Checkpoint
 # ---------------------------------------------------------------------------
 
@@ -829,6 +895,20 @@ def train(cfg: TrainConfig):
         if cfg.model_type == "fock":
             n_vt = sum(p.numel() for p in model.V_theta.parameters())
             print(f"  V_theta: {n_vt:,}")
+
+    # ── Auto batch-size probe (OOM-aware) ──
+    # Preserves the requested effective batch by scaling grad_accum up
+    # if the probe has to shrink batch_size to fit on this GPU.
+    orig_bs, orig_accum = cfg.batch_size, cfg.grad_accum
+    safe_bs = probe_batch_size(model, model_cfg, forward_fn, cfg,
+                               train_ids, device)
+    if safe_bs != orig_bs:
+        cfg.grad_accum = max(1, round(orig_accum * orig_bs / safe_bs))
+        cfg.batch_size = safe_bs
+        if is_main():
+            print(f"  Adjusted: batch={orig_bs}x{orig_accum} -> "
+                  f"{cfg.batch_size}x{cfg.grad_accum} "
+                  f"(eff {orig_bs*orig_accum} -> {cfg.effective_batch})")
 
     # ── DDP wrap ──
     if is_ddp():
@@ -1115,15 +1195,27 @@ def gamma_sweep(base_cfg: TrainConfig, gammas: List[float],
         (Path(cfg.output_dir) / "checkpoints").mkdir(parents=True, exist_ok=True)
 
         print(f"\n--- Sweep {gi+1}/{len(gammas)}: gamma={g:.3f} ---")
+        err_msg = None
         try:
             train(cfg)
         except Exception as e:
-            print(f"  FAILED: {e}")
+            err_msg = str(e)
+            print(f"  FAILED: {err_msg}")
+        finally:
+            # Ensure the previous candidate's model/optimizer/activations
+            # are fully released before the next candidate builds a new
+            # model — otherwise GPU memory (and any OOM) carries over
+            # and every subsequent candidate fails identically.
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+
+        if err_msg is not None:
             results.append({"gamma": g, "best_ppl": float("inf"),
-                            "final_ppl": float("inf"), "error": str(e)})
+                            "final_ppl": float("inf"), "error": err_msg})
             continue
 
-        log_path = Path(cfg.output_dir) / "train_log.jsonl"
+        log_path = Path(cfg.output_dir) / "training_log.jsonl"
         best_ppl = float("inf")
         final_ppl = float("inf")
         if log_path.exists():

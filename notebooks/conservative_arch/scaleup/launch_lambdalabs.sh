@@ -28,6 +28,10 @@
 #
 set -euo pipefail
 
+# Reduces CUDA allocator fragmentation on long multi-candidate runs
+# (gamma sweep trains 8 models sequentially in one process).
+export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}"
+
 PRESET="${1:-d768}"
 MULTI_GPU=""
 GDRIVE=""
