@@ -272,7 +272,151 @@ behaviour) but worth remembering if extending this baseline.
 
 ---
 
-## 6. Relation to other companion notes
+## 6. GPU memory / OOM considerations for `d=768` and `d=1024` scale-up (LambdaLabs H100)
+
+This section documents the VRAM ceiling encountered when moving the
+`d=768`/`d=1024` tiers of §2 from a single-GPU Colab pilot to full
+OpenWebText scale-up runs on LambdaLabs single-H100 (80 GB) nodes, the
+fixes applied to `train_fock.py`, and the levers still on the table.
+Unlike the PARF Q9c OOM catalogue in
+[CUDA_Memory_Errors_with_SPLM_Designs.md](CUDA_Memory_Errors_with_SPLM_Designs.md),
+none of these events involve `torch.autograd.grad(..., create_graph=True)`
+or a $(B, T, T, H)$ pair-interaction term — the plain Fock-PARFLM causal-LM
+training path in `train_fock.py` has neither. The mechanism here is
+simpler: ordinary forward-activation memory growing faster than linearly
+in `d` and `L`.
+
+### 6.1. The incident: `d=1024` OOMs at `batch_size=2` on a single 80 GB H100
+
+Running the `d1024` preset (`d=1024, L=24`) at its original
+`batch_size=4` (and even at `batch_size=2`) reliably OOM'd on a single
+H100 80 GB, while `d=768` was comfortably stable at `batch_size=4` (and
+ran fine even at `batch_size=2` when swept). Approximate activation-memory
+scaling across the three tiers, normalised to the `d=384` baseline:
+
+| Tier | `d` | `L` | Relative activation cost (approx.) | Est. peak VRAM at `batch_size=2` |
+|------|-----|-----|---:|---:|
+| `d=384` | 384 | 16 | 1.0x (baseline) | ~5 GB |
+| `d=768` | 768 | 12 | ~3.0x | ~19 GB |
+| `d=1024` | 1024 | 24 | ~10.7x | ~65 GB |
+
+At `d=1024`, `batch_size=2` (~65 GB of activations alone) leaves no
+headroom once model weights, AdamW optimiser state (2x fp32 moments +
+fp32 master weights), and the cross-entropy logits gradient
+($B \cdot T \cdot V \cdot 4$ bytes, ~unavoidable) are added on top of an
+80 GB budget. `batch_size=1` (~33 GB activations) is the largest that
+reliably fits.
+
+### 6.2. Fix: updated presets in `train_fock.py`
+
+All six presets that instantiate Fock-PARFLM or the matched GPT-2
+baseline at `d=768`/`d=1024` were revised to conservative, empirically
+safe `(batch_size, grad_accum)` pairs, holding the effective batch
+(`batch_size x grad_accum x world_size`) fixed at 32:
+
+| Preset | `batch_size` (was) | `grad_accum` (was) | `effective_batch` |
+|---|---:|---:|---:|
+| `d768` | 4 (was 8) | 8 (was 4) | 32 |
+| `d1024` | **1** (was 4) | **32** (was 8) | 32 |
+| `gpt2-small` | 4 (was 8) | 8 (was 4) | 32 |
+| `gpt2-medium` | 2 (was 4) | 16 (was 8) | 32 |
+| `sweep-d768` | 4 (was 8) | 8 (was 4) | — |
+| `sweep-d1024` | **1** (was 4) | **32** (was 8) | — |
+
+At `batch_size=1, grad_accum=32` for `d=1024`, each optimiser step
+requires 32 sequential micro-steps, so wall-clock per step is roughly
+4x that of a hypothetical `batch_size=4` run — the price of fitting on
+a single 80 GB card.
+
+### 6.3. Safety net already in place: auto batch-size probing
+
+`train_fock.py` (`probe_batch_size()`, defined immediately before the
+main training loop) runs a real forward+backward micro-step at the
+preset's `batch_size` before training starts and halves it on OOM until
+one fits, scaling `grad_accum` up to preserve the requested effective
+batch:
+
+```python
+orig_bs, orig_accum = cfg.batch_size, cfg.grad_accum
+safe_bs = probe_batch_size(model, model_cfg, forward_fn, cfg, train_ids, device)
+if safe_bs != orig_bs:
+    cfg.grad_accum = max(1, round(orig_accum * orig_bs / safe_bs))
+    cfg.batch_size = safe_bs
+```
+
+This means the §6.2 preset values are a *starting point tuned to avoid
+wasted OOM retries*, not a hard requirement — a smaller/larger GPU than
+the reference 80 GB H100 will self-adjust. `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`
+is also exported in `launch_lambdalabs.sh` as defence-in-depth against
+allocator fragmentation (same rationale as
+[CUDA_Memory_Errors_with_SPLM_Designs.md §3.1](CUDA_Memory_Errors_with_SPLM_Designs.md#31-what-every-splm-family-scaleup-configuration-must-check)).
+
+### 6.4. Why a second GPU does not raise the per-GPU ceiling
+
+`train_fock.py` already supports multi-GPU via plain
+`torch.nn.parallel.DistributedDataParallel` (DDP). It is tempting to
+read "OOM at `batch_size=2`" as an argument for a 2xH100 node, but plain
+DDP is *data*-parallel only: every GPU holds a full replica of the
+model, optimiser state, and its own activations. Adding a second H100
+does not shrink what any single GPU must hold — `batch_size=1` per GPU
+is still the ceiling for `d=1024` with 2 GPUs, just as with 1.
+
+| | 1xH100 (`bs=1`, `accum=32`) | 2xH100 DDP (`bs=1`, `accum=16` each) |
+|---|---|---|
+| Per-GPU VRAM ceiling | unchanged | unchanged |
+| Effective batch | 32 | 32, in **half the wall-clock time** |
+
+So a second GPU (via plain DDP) is a **throughput** lever, not a
+**memory** lever. Raising the actual per-GPU ceiling would require
+sharding optimiser state / gradients / parameters across GPUs (FSDP or
+DeepSpeed ZeRO-2/3) — not yet implemented in `train_fock.py`.
+
+### 6.5. Proposed fix (not yet implemented): bf16 mixed precision
+
+`train_fock.py` currently trains in pure fp32 — no `torch.autocast`,
+`bfloat16`, or `GradScaler` anywhere in the file. This is the largest
+unclaimed memory/speed lever on an H100:
+
+- Switching the forward/backward to `torch.autocast(device_type="cuda", dtype=torch.bfloat16)`
+  (AdamW master weights and optimiser state stay fp32) typically cuts
+  activation memory by ~40–50% and gives a real speedup from the H100's
+  bf16 tensor cores, on top of whatever DDP throughput gain is available.
+  Plausibly enough to move `d=1024` from `batch_size=1` to
+  `batch_size=2-3` on a single GPU.
+- **bf16, not fp16:** bf16 keeps fp32's 8-bit exponent (same dynamic
+  range) and only shrinks the mantissa (7 bits vs fp32's 23), so it does
+  not need loss scaling / `GradScaler` and does not carry fp16's
+  overflow/underflow failure mode. `torch.autocast`'s default op policy
+  already keeps softmax, layer-norm reductions, and the cross-entropy
+  loss in fp32; only matmul/conv-heavy ops are downcast.
+- **Fock-PARFLM-specific caveat.** This architecture has more
+  numerically sharp components than a vanilla transformer — Gumbel-softmax
+  creation gates (`gumbel_noise`, `gumbel_tau_init`/`gumbel_tau_min`),
+  register salience decay/threshold (`register_salience_decay`,
+  `register_salience_threshold`), and `tau_create_init` — plus a
+  documented gradient-spike history on the `reverse_channel_scale`
+  parameter group (see
+  [Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md §20](Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md#20-remediation-per-group-clipping-vs-global-norm-clipping)).
+  None of these are in `autocast`'s default fp32-forced op list, so if
+  any turn out to be precision-sensitive under bf16, the fix is to wrap
+  just those submodules in `torch.autocast(..., enabled=False)` to force
+  local fp32 while leaving the large matmuls (`V_theta`, the projection
+  stacks) in bf16.
+
+**Recommended validation protocol before rolling out:** run one
+gamma-sweep candidate (e.g. `gamma=0.2`, 3000 steps, fixed seed) once in
+fp32 and once in bf16, and compare (a) the `val_ppl` trajectory — should
+overlay within noise — and (b) per-group gradient norms, especially
+`reverse_channel_scale`, watching for any *new* spike pattern introduced
+by the reduced mantissa. If both match, roll bf16 out to the full
+`d768`/`d1024` presets; if not, force fp32 locally around whichever
+submodule diverges.
+
+**Status:** proposed, not yet implemented in `train_fock.py`.
+
+---
+
+## 7. Relation to other companion notes
 
 - [Fock-PARFLM_vs_GPT-2_on_OpenWebText_Next_Steps.md](Fock-PARFLM_vs_GPT-2_on_OpenWebText_Next_Steps.md) —
   the original `d=384`, 31.5M-parameter comparative study (pre-scale-up,
@@ -287,3 +431,14 @@ behaviour) but worth remembering if extending this baseline.
 - [Xi_Bottleneck_Diagnosis_Phase5.md](Xi_Bottleneck_Diagnosis_Phase5.md) §8.4 —
   the D0.4 diagnostic that first identified the tied-embedding failure
   mode.
+- [CUDA_Memory_Errors_with_SPLM_Designs.md](CUDA_Memory_Errors_with_SPLM_Designs.md) —
+  a forensic OOM catalogue for a different failure mechanism (PARF Q9c's
+  $(B, T, T, H)$ pair-interaction V_φ term composed with
+  `torch.autograd.grad(create_graph=True)`). §6 above documents a
+  simpler, more common mechanism — ordinary forward-activation growth
+  with `d` and `L` — that applies to the plain Fock-PARFLM causal-LM
+  training path in `train_fock.py`, which has no second-order autograd
+  graph in scope.
+- [Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md](Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md) §20 —
+  per-group gradient clipping and the `reverse_channel_scale` spike
+  history referenced in §6.5's bf16 precision-sensitivity discussion.

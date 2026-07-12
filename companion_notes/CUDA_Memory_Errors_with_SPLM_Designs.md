@@ -4,6 +4,14 @@
 **Scope:** All five events occurred on the **PARF-augmented SPLM (Q9c)** Arm 5 / Arm 5b cells of `notebooks/conservative_arch/scaleup/colab_pilot.ipynb`. The four other arms (matched-attention baseline, all-SPLM `em_ln`, Helmholtz Q9d, Hybrid Variant A) never OOMed.
 **Common substrate:** every event traces back to the interaction between **structural V_φ** and **`torch.autograd.grad(..., create_graph=True)`** — the second-order autograd path that the velocity-Verlet damped Euler–Lagrange integrator requires.
 **Reading guide:** §1 establishes the shared mechanism; §2 walks the five events in chronological order; §3 distils the lessons.
+**Related but distinct:** for OOMs on the plain Fock-PARFLM causal-LM
+scale-up path (`train_fock.py`, `d=768`/`d=1024` on LambdaLabs H100),
+which has no `create_graph=True` second-order graph and no
+$(B, T, T, H)$ pair term in scope, see
+[Fock-PARFLM_Scale-Up_Comparative_Experiments.md §6](Fock-PARFLM_Scale-Up_Comparative_Experiments.md#6-gpu-memory--oom-considerations-for-d768-and-d1024-scale-up-lambdalabs-h100)
+instead — the mechanism there is ordinary forward-activation growth
+with `d` and `L`, not the second-order-autograd retention pathology
+catalogued below.
 
 ---
 
