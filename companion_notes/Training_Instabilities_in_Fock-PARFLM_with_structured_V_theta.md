@@ -30,6 +30,7 @@
 19. [Comparison with Embedding Spikes in Classic Attention-Based Transformers](#19-comparison-with-embedding-spikes-in-classic-attention-based-transformers)
 20. [Remediation: Per-Group Clipping vs Global Norm Clipping](#20-remediation-per-group-clipping-vs-global-norm-clipping)
 21. [Scaling Outlook and Hardening Recommendations](#21-scaling-outlook-and-hardening-recommendations)
+22. [Tied vs. Untied Embeddings: A Distinct Instability Mode](#22-tied-vs-untied-embeddings-a-distinct-instability-mode)
 
 ---
 
@@ -3485,6 +3486,78 @@ cross-entropy loss through softmax over a large vocabulary.  They are
 not caused by the structured potential $V\_\theta$, the Fock mechanism,
 or the conservative dynamics, although these introduce a secondary
 amplification channel that contributes less than 5% of spike energy.
+
+## 22. Tied vs. Untied Embeddings: A Distinct Instability Mode
+
+Separately from the gradient-spike phenomenology of §§18–21, tied
+input/output embeddings (`tie_embeddings=True`) were found to cause a
+**structural** — not merely transient — instability in Fock-PARFLM,
+distinct from all the blowup modes catalogued above. This section
+summarises the finding and states the resulting policy for scale-up
+runs.
+
+### 22.1 The failure mode: long-tail cross-entropy collapse
+
+Diagnostic D0.4 (per-token-frequency-quintile loss stratification, run
+on the Xi=5 baseline at step 78k; full derivation in
+[Xi_Bottleneck_Diagnosis_Phase5.md](Xi_Bottleneck_Diagnosis_Phase5.md)
+§8.4–§9.1) found that with **tied** embeddings the rarest-token quintile
+(Q0) received a mean cross-entropy of **13.16 nats**, *worse* than the
+uniform-distribution baseline of $\ln V \approx 10.83$ nats. In other
+words, for the rarest ~20% of the vocabulary, the tied read-out head was
+making predictions actively worse than chance.
+
+The root cause (§9.1 of the referenced note) is that the tied head
+forces the same embedding vector $e_v$ to serve two conflicting roles:
+(1) an *input* representation that must be well-conditioned for the
+dynamics to operate on, and (2) an *output* direction that must separate
+$v$ from all other tokens in logit space. For frequent tokens these two
+objectives are compatible (the input representation is trained often
+enough to satisfy both). For rare tokens, gradient signal is too sparse
+to jointly satisfy both roles, and the read-out direction degrades below
+the quality of a uniform prior.
+
+### 22.2 Fixes applied
+
+Two fixes were adopted together (§9.2 of the referenced note):
+
+1. **Output bias initialised to log-unigram frequency**
+   (`use_output_bias=True`, `USE_OUTPUT_BIAS = True` in the notebooks) —
+   gives every token a frequency-informed floor on its logit before any
+   dynamics-derived signal is added, largely fixing the *frequent*-token
+   context-mixing gap.
+2. **Untied embeddings** (`tie_embeddings=False`) — decouples the input
+   representation from the output read-out direction entirely, removing
+   the structural conflict that caused the Q0 collapse. This is the fix
+   that directly addresses the long-tail pathology.
+
+### 22.3 Policy for scale-up runs (`d=768`, `d=1024`)
+
+All scale-up presets (`d768`, `d1024` in `train_fock.py`) use
+`tie_embeddings=False` and `use_output_bias=True` as **non-negotiable
+defaults** for Fock-PARFLM, carried forward from the `d=384` findings
+above. The matched GPT-2 baselines (`gpt2-small`, `gpt2-medium`) are
+unaffected by this policy since `MatchedGPT` always ties embeddings by
+construction (canonical GPT-2 design) and was never observed to exhibit
+the D0.4 pathology — the failure mode above appears specific to how
+Fock-PARFLM's dynamics reshape the embedding space, not a generic
+consequence of weight tying.
+
+The parameter cost of untying (one extra `d x vocab_size` matrix per
+tier) is quantified exactly in
+[Fock-PARFLM_Scale-Up_Comparative_Experiments.md](Fock-PARFLM_Scale-Up_Comparative_Experiments.md) —
+it accounts for the majority of Fock-PARFLM's total-parameter excess over
+parameter-matched GPT-2 baselines at `d=384` and `d=768`.
+
+### 22.4 Relationship to §§1–21
+
+| Property | V\_theta blowups / embedding spikes (§§1–21) | Tied-embedding long-tail collapse (§22) |
+|---|---|---|
+| Manifestation | Transient gradient-norm spikes or divergence | Persistent elevated loss on a token subset |
+| Detectability | Visible in per-step gradient/loss logs | Requires frequency-stratified evaluation (D0.4) |
+| Fix | Clipping, bounded potentials, watchdog | Architectural (untie embeddings) + output bias |
+| Cost of fix | None (no extra parameters) | +1 embedding-sized matrix per model |
+| Scale sensitivity | Grows with $d$, mitigated by per-group clipping | Present at all scales tested; policy is scale-invariant |
 
 The per-group clipping strategy used in Fock-PARFLM is **strictly
 superior** to the global norm clipping used in classic transformers
