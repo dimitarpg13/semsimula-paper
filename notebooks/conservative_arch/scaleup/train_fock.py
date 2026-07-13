@@ -163,6 +163,7 @@ class TrainConfig:
     grad_accum: int = 2
     block_size: int = 512
     lambda_v: float = 1e-2
+    bf16: bool = False
 
     # Data
     max_train_tokens: int = 4_000_000_000
@@ -257,10 +258,17 @@ PRESETS: Dict[str, Dict[str, Any]] = {
     # Strategy 1: same d=1024, same L=24 as GPT-2 Medium.
     # Same untied rationale as d768.
     # Fock ~209M params vs GPT-2 ~355M (tied) at same d and L.
-    # batch_size=1 (was 4) — d=1024 L=24 activation memory is ~3.5x
-    # that of d=768 L=12.  bs=2 (~65 GB) is borderline on 80 GB H100
-    # and will OOM once optimizer state + gradient buffers are counted;
-    # bs=1 (~33 GB) is safe.  grad_accum=32 keeps eff_batch=32.
+    # batch_size=2 — probe ceiling.  DDP does NOT pool VRAM across GPUs
+    # (each rank holds a full model replica), so this must fit on a
+    # SINGLE 80 GB H100.  With use_layer_checkpoint=True the per-layer
+    # activation footprint is O(1) instead of O(L), which should make
+    # bs=2 feasible (~35-45 GB estimated).  The probe will fall back to
+    # bs=1 / grad_accum=16 if it still OOMs (eff_batch preserved).
+    # grad_clip=0.5 (was 1.0) — L=24 produces steeper gradient cascades
+    # than L=12; the d=1024 gamma sweep showed grad spikes of O(10^3)
+    # that triggered the watchdog repeatedly.  Tighter clipping dampens
+    # these without hurting convergence (the WSD warmup is 5000 steps at
+    # total_steps=100K, much gentler than the sweep's 150-step warmup).
     "d1024": {
         "model_type": "fock",
         "d": 1024, "L": 24, "n_registers": 32,
@@ -269,7 +277,8 @@ PRESETS: Dict[str, Dict[str, Any]] = {
         "use_output_bias": True,
         "total_steps": 100_000,
         "lr": 1.5e-4,
-        "batch_size": 1, "grad_accum": 32,
+        "batch_size": 2, "grad_accum": 16,
+        "grad_clip": 0.5,
     },
     # Matched GPT-2 Small baseline (d=768, L=12, 12 heads).
     # Always tied (MatchedGPT hardcodes weight tying).
@@ -608,16 +617,20 @@ def per_group_grad_norms(model: nn.Module, default_clip: float):
 
 def forward_fock_with_vreg(model, model_cfg, x, targets, cfg: TrainConfig):
     """FockPARFLM forward: NTP loss + V_theta regulariser."""
-    h0 = model._embed(x)
-    h_L, _ = model._stack_forward(h0, x, return_trajectory=False)
-    logits = model.compute_logits(h_L)
+    with torch.autocast(device_type="cuda", dtype=torch.bfloat16,
+                        enabled=cfg.bf16):
+        h0 = model._embed(x)
+        h_L, _ = model._stack_forward(h0, x, return_trajectory=False)
+        logits = model.compute_logits(h_L)
     loss_ntp = F.cross_entropy(
-        logits.reshape(-1, cfg.vocab_size), targets.reshape(-1))
+        logits.float().reshape(-1, cfg.vocab_size), targets.reshape(-1))
     v_reg = torch.tensor(0.0, device=x.device)
     if cfg.lambda_v > 0:
-        xis = model.xi_module(h_L.detach())
-        V_vals = model.V_theta(xis, h_L)
-        v_reg = (V_vals ** 2).mean()
+        with torch.autocast(device_type="cuda", dtype=torch.bfloat16,
+                            enabled=cfg.bf16):
+            xis = model.xi_module(h_L.detach())
+            V_vals = model.V_theta(xis, h_L)
+        v_reg = (V_vals.float() ** 2).mean()
         loss = loss_ntp + cfg.lambda_v * v_reg
     else:
         loss = loss_ntp
@@ -626,9 +639,11 @@ def forward_fock_with_vreg(model, model_cfg, x, targets, cfg: TrainConfig):
 
 def forward_gpt2(model, x, targets, cfg: TrainConfig):
     """GPT-2 forward: simple NTP loss."""
-    logits, _ = model(x)
+    with torch.autocast(device_type="cuda", dtype=torch.bfloat16,
+                        enabled=cfg.bf16):
+        logits, _ = model(x)
     loss_ntp = F.cross_entropy(
-        logits.reshape(-1, cfg.vocab_size), targets.reshape(-1))
+        logits.float().reshape(-1, cfg.vocab_size), targets.reshape(-1))
     v_reg = torch.tensor(0.0, device=x.device)
     return loss_ntp, loss_ntp, v_reg
 
@@ -780,9 +795,11 @@ def evaluate(model, model_cfg, val_ids, cfg: TrainConfig, device: str):
                     raw_model, model_cfg, x, y, cfg)
             losses.append(loss_ntp.item())
         else:
-            logits, _ = raw_model(x)
+            with torch.autocast(device_type="cuda", dtype=torch.bfloat16,
+                                enabled=cfg.bf16):
+                logits, _ = raw_model(x)
             loss = F.cross_entropy(
-                logits.reshape(-1, cfg.vocab_size), y.reshape(-1))
+                logits.float().reshape(-1, cfg.vocab_size), y.reshape(-1))
             losses.append(loss.item())
     raw_model.train()
     val_loss = float(np.mean(losses))
@@ -864,7 +881,8 @@ def train(cfg: TrainConfig):
         props = torch.cuda.get_device_properties(0) if device != "cpu" else None
         if props:
             print(f"GPU: {props.name}  ({props.total_memory / 1e9:.1f} GB)")
-        print(f"\nConfig: model={cfg.model_type}  d={cfg.d}  L={cfg.L}")
+        print(f"\nConfig: model={cfg.model_type}  d={cfg.d}  L={cfg.L}"
+              + (f"  [bf16]" if cfg.bf16 else ""))
         print(f"  output_dir: {cfg.output_dir}")
         print(f"  lr={cfg.lr}  schedule={cfg.lr_schedule}  "
               f"batch={cfg.batch_size}x{cfg.grad_accum}x{world_size()} "

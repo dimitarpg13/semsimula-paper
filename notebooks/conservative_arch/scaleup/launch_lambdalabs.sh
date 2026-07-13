@@ -35,6 +35,10 @@
 #            --sweep-gammas 0.25,0.30,0.40,0.50
 #   See companion_notes/Fock-PARFLM_Scale-Up_Comparative_Experiments.md §6.6.
 #
+#   BF16 MIXED PRECISION (recommended for d=1024):
+#        bash launch_lambdalabs.sh d1024 --multi-gpu --bf16
+#        bash launch_lambdalabs.sh sweep-d1024 --gamma-sweep --multi-gpu --bf16
+#
 #   MULTI-GPU GAMMA SWEEP (sweep-d1024 only — see companion_notes/
 #   Fock-PARFLM_Scale-Up_Comparative_Experiments.md §6.4/§6.5):
 #   sweep-d1024's batch_size=1/grad_accum=32 preset makes each 3000-step
@@ -60,6 +64,7 @@ GDRIVE=""
 GAMMA_SWEEP=""
 SWEEP_STEPS="3000"
 SWEEP_GAMMAS=""
+BF16=""
 
 shift || true
 for arg in "$@"; do
@@ -67,6 +72,7 @@ for arg in "$@"; do
         --multi-gpu)      MULTI_GPU="yes" ;;
         --gdrive)         GDRIVE="yes" ;;
         --gamma-sweep)    GAMMA_SWEEP="yes" ;;
+        --bf16)           BF16="yes" ;;
         --sweep-steps)    SWEEP_STEPS_NEXT="yes" ;;
         --sweep-gammas)   SWEEP_GAMMAS_NEXT="yes" ;;
         *)
@@ -91,6 +97,7 @@ echo "  FockPARFLM $MODE — LambdaLabs Setup"
 echo "  Preset: $PRESET"
 [ "$GAMMA_SWEEP" = "yes" ] && echo "  Sweep steps: $SWEEP_STEPS per candidate"
 [ -n "$SWEEP_GAMMAS" ] && echo "  Sweep gammas (subset): $SWEEP_GAMMAS"
+[ "$BF16" = "yes" ] && echo "  Precision: bf16 mixed"
 echo "=================================================="
 
 # ── 1. Clone repo if not present ──
@@ -182,6 +189,11 @@ if [ "$GAMMA_SWEEP" = "yes" ]; then
     fi
 fi
 
+BF16_ARG=""
+if [ "$BF16" = "yes" ]; then
+    BF16_ARG="--bf16 true"
+fi
+
 # Multi-GPU gamma sweep is only enabled for sweep-d1024: at
 # batch_size=1/grad_accum=32 each d=1024 candidate is ~20-30h
 # single-GPU, so splitting grad_accum across GPUs via DDP is worth
@@ -213,7 +225,8 @@ if [ "$USE_MULTI_GPU" = "yes" ]; then
         --data_dir "$DATA_DIR" \
         $SYNC_ARG \
         $SWEEP_ARGS \
-        $EFFBATCH_ARG
+        $EFFBATCH_ARG \
+        $BF16_ARG
 else
     if [ "$GAMMA_SWEEP" = "yes" ]; then
         echo ">>> Gamma sweep mode (single-GPU)"
@@ -225,5 +238,6 @@ else
         --output_dir "$OUTPUT_DIR" \
         --data_dir "$DATA_DIR" \
         $SYNC_ARG \
-        $SWEEP_ARGS
+        $SWEEP_ARGS \
+        $BF16_ARG
 fi

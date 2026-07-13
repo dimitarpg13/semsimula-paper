@@ -228,13 +228,19 @@ class MultiXiPARFLM(SparsePARFLM):
         if s_ell is not None:
             U_pair = U_pair * s_ell
 
-        # ── Force computation ──
+        # ── Force computation (fp32-guarded for bf16 stability) ──
+        # Under bf16 autocast the potential U may be bf16. Cast to fp32
+        # before computing the conservative force so the gradient (which
+        # compounds across L layers) stays in full precision. The cast is
+        # in-graph, so autograd still traces back through the bf16 V_theta
+        # and V_phi ops to their parameters. No-op when already fp32.
         U = V_th_per_token.sum() + U_pair
-        grad_U, = torch.autograd.grad(
-            U, h_in,
-            create_graph=self.training,
-            retain_graph=True,
-        )
+        with torch.autocast(device_type="cuda", enabled=False):
+            grad_U, = torch.autograd.grad(
+                U.float(), h_in,
+                create_graph=self.training,
+                retain_graph=True,
+            )
         f = -grad_U
 
         if cfg.force_clamp_max is not None:
