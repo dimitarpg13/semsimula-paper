@@ -31,6 +31,18 @@
 20. [Remediation: Per-Group Clipping vs Global Norm Clipping](#20-remediation-per-group-clipping-vs-global-norm-clipping)
 21. [Scaling Outlook and Hardening Recommendations](#21-scaling-outlook-and-hardening-recommendations)
 22. [Tied vs. Untied Embeddings: A Distinct Instability Mode](#22-tied-vs-untied-embeddings-a-distinct-instability-mode)
+23. [d=1024 Universal Instability: The Second-Order Gradient Cascade](#23-d1024-universal-instability-the-second-order-gradient-cascade)
+    - 23.1 [Phenomenology](#231-phenomenology)
+    - 23.2 [Root Cause: Exponential Amplification in the Force Cascade](#232-root-cause-exponential-amplification-in-the-force-cascade)
+    - 23.3 [Mitigation Tier 1: Config-Only (No Architecture Change)](#233-mitigation-tier-1-config-only-no-architecture-change)
+    - 23.4 [Mitigation Tier 2: Moderate Architectural Changes](#234-mitigation-tier-2-moderate-architectural-changes)
+    - 23.5 [Mitigation Tier 3: Structural Refactors](#235-mitigation-tier-3-structural-refactors)
+    - 23.6 [Diagnostic Experiment Plan](#236-diagnostic-experiment-plan)
+24. [BAOAB + CfC Propagator: Eliminating the Force Cascade at Source](#24-baoab--cfc-propagator-eliminating-the-force-cascade-at-source)
+    - 24.1 [Why the O-Step Alone Does Not Help](#241-why-the-o-step-alone-does-not-help)
+    - 24.2 [The CfC Propagator Removes the Second-Order Chain](#242-the-cfc-propagator-removes-the-second-order-chain)
+    - 24.3 [Residual Cascade from V_phi](#243-residual-cascade-from-v_phi)
+    - 24.4 [Relationship to §23 Mitigations](#244-relationship-to-23-mitigations)
 
 ---
 
@@ -3570,6 +3582,268 @@ superior** to the global norm clipping used in classic transformers
 
 This advantage becomes increasingly important at scale, where the cost
 of wasted steps and manual restarts grows linearly with compute budget.
+
+---
+
+## 23. d=1024 Universal Instability: The Second-Order Gradient Cascade
+
+### 23.1 Phenomenology
+
+The gamma sweep at $d=1024$, $L=24$ (split across two LambdaLabs 2×H100 instances, 8 gamma candidates in $[0.05, 0.50]$) revealed a **qualitatively new instability regime** not observed at $d=384$ ($L=16$) or $d=768$ ($L=12$).
+
+**Every** gamma candidate exhibited catastrophic gradient spikes and required watchdog reloads:
+
+| $\gamma$ | Best PPL | Watchdog reloads | Worst instant grad | Primary spike groups |
+|:---------:|:--------:|:----------------:|-------------------:|----------------------|
+| 0.050 | 342.00 | 3 | 180.53 | `creation_gate`=110, `register`=25 |
+| **0.100** | **327.33** | 1 | 651.50 | `P`=417, `E`=98, `creation_gate`=26 |
+| 0.250 | 337.47 | 2 | 7,870.94 | `P`=5,023, `creation_gate`=18 |
+| 0.300 | 376.19 | 1+ | 536.27 | `creation_gate`=311, `E`=47 |
+
+This is qualitatively different from $d=768$ ($L=12$), where all 8 candidates ran clean with gradient norms under 1.0 and zero watchdog triggers:
+
+| | $d=768$ ($L=12$) | $d=1024$ ($L=24$) |
+|---|---|---|
+| Max grad\_norm across all candidates | ~0.6 | 7,870 |
+| Watchdog reloads (total) | 0 | 7+ |
+| Candidates with spikes > 100 | 0 / 7 | 4 / 4 |
+| Top spike group | `reverse_channel_scale` (mild) | `P`, `E`, `creation_gate` (catastrophic) |
+
+The spike sources at $d=1024$ are **systemic** — they come from multiple parameter groups across all gamma values:
+
+- **`P` (positional embedding):** The worst offender overall (norm up to 5,023 at $\gamma=0.25$). This component had no dedicated per-group clip in the sweep preset (remedied in §23.3).
+- **`E` (input embedding):** Sustained elevated norms (40–98), especially at $\gamma=0.10$ and $\gamma=0.30$. Also lacked a dedicated per-group clip.
+- **`creation_gate`:** Occasional catastrophic spikes (norm 110–311), seen at every gamma tested.
+- **`reverse_channel_scale`:** Relatively mild at $d=1024$ (norm up to 19.3), in contrast to $d=768$ where it was the dominant (but non-catastrophic) group.
+- **`register`:** Elevated at $\gamma=0.05$ (norm up to 24.5).
+
+**The sweep results are unreliable** as a guide to optimal gamma. The fact that $\gamma=0.05$ scored worse than $\gamma=0.10$ is confounded by watchdog reload counts: $\gamma=0.05$ lost ~1,500 training steps to 3 reloads, while $\gamma=0.10$ lost ~500 steps to 1 reload. The relative ranking reflects which candidate was disrupted least, not which damping coefficient is optimal.
+
+### 23.2 Root Cause: Exponential Amplification in the Force Cascade
+
+The instability traces to a single line in `model_parf_multixi.py`'s `_layer_step`:
+
+```python
+grad_U, = torch.autograd.grad(
+    U.float(), h_in,
+    create_graph=self.training,
+    retain_graph=True,
+)
+```
+
+The `create_graph=True` flag is necessary so that the backpropagation through the training loss can differentiate through the force computation — the force $f_\ell = -\nabla_h U$ is part of the forward pass, and the loss must propagate gradients through it to update $V\_\theta$ and $V\_\phi$ parameters.
+
+**The consequence:** at each layer $\ell$, the computational graph records not just the force value but the **entire Jacobian** $\partial f\_\ell / \partial h\_\ell$, which is the Hessian $\nabla^2\_h U$ of the potential. When backward() runs, it must differentiate through a chain of these Hessians — one per layer — creating a **compound second-order derivative chain** $L$ layers deep.
+
+The per-layer Jacobian of the Verlet update with respect to the hidden state is:
+
+$$J\_\ell = \frac{\partial h\_{\ell+1}}{\partial h\_\ell} = I + \frac{I}{1 + \Delta t \gamma} + \frac{\Delta t^2}{m(1 + \Delta t \gamma)} \nabla^2\_h U(h\_\ell)$$
+
+The total backward Jacobian over the layer stack is the product $\prod\_{\ell=1}^{L} J\_\ell$. When $L=12$ ($d=768$), this product stays well-conditioned — gradient norms remain O(1). When $L=24$ ($d=1024$), the product exhibits **exponential amplification**: the spectral radius of each $J\_\ell$ slightly exceeds 1 due to the Hessian contribution, and the product of 24 such matrices produces gradient norms of O($10^4$).
+
+This is not a linear scaling with $L$ — the observed ratio of gradient magnitudes at $L=24$ vs $L=12$ is $\sim 10^4$, far exceeding the $2\times$ that simple linear scaling would predict. The exponential character is the signature of a product of near-unit-spectral-radius matrices.
+
+**Key structural point:** this instability is specific to the `create_graph=True` force computation in the Verlet-style integrator. Standard transformers use only first-order gradients (no `autograd.grad` in the forward pass), so their gradient chain is the ordinary backpropagation chain, which is well-understood and manageable with LayerNorm + gradient clipping. Fock-PARFLM's conservative dynamics introduce a fundamentally different gradient topology — a **second-order** chain — whose amplification properties scale differently with depth.
+
+### 23.3 Mitigation Tier 1: Config-Only (No Architecture Change)
+
+These are immediately testable with existing code (as of July 14, 2026, `train_fock.py` supports all of them via CLI arguments):
+
+**1. Per-group gradient clipping for `P` and `E`**
+
+`P` (positional embedding) and `E` (input embedding) were the two worst offenders at $d=1024$ but previously had **no dedicated per-group clip** — they fell through to the default `grad_clip`. Since July 14, 2026, `GRAD_CLIP_OVERRIDES` in `train_fock.py` includes exact-match entries for `P` and `E` at threshold 0.3:
+
+```python
+GRAD_CLIP_OVERRIDES = {
+    "=P": 0.3,           # positional embedding (exact match)
+    "=E": 0.3,           # input embedding (exact match)
+    "V_phi": 0.3,
+    "creation_gate": 0.3,
+    "destruction_gate": 0.3,
+    "reverse_channel_scale": 0.1,
+    "reverse_ch": 0.1,
+    "register": 0.3,
+    "depth_code": 0.5,
+}
+```
+
+The `=` prefix uses exact top-level name matching (via `_assign_clip_group`) rather than substring matching, since single-letter keys like `"P"` would otherwise match `"V_phi"`, `"depth_code"`, etc.
+
+**2. Force clamping (`force_clamp_max`)**
+
+The model already supports direct force clamping via `cfg.force_clamp_max`. When set, the conservative force is clamped element-wise after computation:
+
+```python
+if cfg.force_clamp_max is not None:
+    f = f.clamp(-cfg.force_clamp_max, cfg.force_clamp_max)
+```
+
+This limits the force magnitude **at the source**, before it cascades through subsequent layers' `create_graph=True` chains. Unlike gradient clipping (which acts on the parameter gradients at the optimizer step), force clamping acts on the **dynamics** — it prevents any single layer from injecting an excessively large displacement into the hidden state.
+
+Since July 14, 2026, `force_clamp_max` is exposed as a CLI-overridable field in `TrainConfig` (default 0.0 = disabled, positive value = active). Recommended starting value for $d=1024$: `force_clamp_max=5.0`.
+
+**3. Tighter global `grad_clip`**
+
+The sweep used `grad_clip=1.0` (default). The full `d1024` training preset already uses `grad_clip=0.5`. For the Tier 1 diagnostic, `grad_clip=0.3` is recommended to maximally attenuate the cascade.
+
+**Combined Tier 1 command:**
+
+```bash
+python3 train_fock.py --preset sweep-d1024 --gamma_sweep --sweep_gammas 0.10 \
+    --sweep_steps 3000 --grad_clip 0.3 --force_clamp_max 5.0 \
+    --output_dir ~/runs/d1024_tier1_test --data_dir ~/data
+```
+
+If Tier 1 produces a clean 3K-step run (grad norms < 2.0, zero watchdog triggers), the instability is a clipping/clamping problem and $L=24$ is viable.
+
+### 23.4 Mitigation Tier 2: Moderate Architectural Changes
+
+These require changing the model configuration but not the model code:
+
+**4. Reduce $L$ from 24 to 16 or 18**
+
+This is the most direct intervention — it literally halves the cascade depth. $L=16$ matches $d=384$'s depth and would give a clean cross-scale comparison. $L=18$ is a compromise that retains more expressivity while still significantly shortening the cascade.
+
+The downside: this breaks the GPT-2 Medium $L$-matching. However, that matching was always approximate (Fock ~209M params vs GPT-2 ~355M params at the same $d$ and $L$), so depth-matching is less important than stability. The parameter count reduction from $L=24$ to $L=16$ is modest (most parameters are in the embeddings and $V\_\theta$ bank, not in the per-layer components).
+
+**5. Reduce integration step size $\Delta t$**
+
+Currently $\Delta t = 1.0$. The force contribution to the Verlet update scales as $\Delta t^2 / m$:
+
+$$h\_{\ell+1} = h\_\ell + \frac{\delta\_\ell}{1 + \Delta t\,\gamma} + \frac{\Delta t^2}{m\_b(1 + \Delta t\,\gamma)}\,f\_\ell$$
+
+Halving $\Delta t$ to $0.5$ quarters the per-layer force impact ($\Delta t^2 = 0.25$ vs $1.0$). This is the classical ODE-integrator response to stiffness: smaller steps for stability. The trade-off: the model needs more layers to cover the same "distance" in hidden-state space, partially defeating the purpose. Best used in combination with reducing $L$ (e.g., $L=18$, $\Delta t=0.5$).
+
+**6. Increase effective mass**
+
+Currently `mass_mode=logfreq` with mean $m \approx 1.4$. The force-to-acceleration coupling is $\Delta t^2 / m$, so doubling mass halves the force impact. A global mass of 3.0 or 4.0 (via a config override) would provide heavier "inertia" for each token, making the trajectory less sensitive to large forces. This is a less invasive alternative to reducing $\Delta t$.
+
+### 23.5 Mitigation Tier 3: Structural Refactors
+
+These require changes to the model code or the integration architecture:
+
+**7. Detach boundaries every $K$ layers**
+
+Instead of one continuous $L$-layer `create_graph=True` chain, break it into segments. At every $K$-th layer, insert `h = h.detach().requires_grad_(True)` to restart the computation graph. With $K=8$ and $L=24$, this creates 3 segments of 8 layers each. Each segment's force computation has a cascade depth of at most 8 — the same as the stable $d=384$ model at $L=8$ (SPLM).
+
+The cost: force fields in layers 9–16 cannot backprop through the force fields of layers 1–8, limiting cross-depth coordination of the conservative force. The model can still learn forces that coherently shape the trajectory, but the gradient signal for early-layer $V\_\theta$ parameters is truncated. This is analogous to the truncated BPTT used in RNNs and may be acceptable given that the depth-scaling analysis (§5 of [Fock-PARFLM\_Scale-Up\_Gamma\_Sweep\_Results\_and\_Damping\_Regime\_Analysis.md](Fock-PARFLM_Scale-Up_Gamma_Sweep_Results_and_Damping_Regime_Analysis.md)) shows that information transport is primarily via momentum, not via the gradient chain.
+
+**8. BAOAB + CfC propagator (see §24)**
+
+Replace the Verlet-style force evaluation with the blended CfC propagator from [Closed\_Form\_and\_Hybrid\_Integration\_Strategies\_for\_Fock-PARFLM.md](Closed_Form_and_Hybrid_Integration_Strategies_for_Fock-PARFLM.md). This eliminates the `autograd.grad(create_graph=True)` call for $V\_\theta$ entirely, replacing it with a forward-mode analytical matrix-exponential propagator whose backward pass is standard first-order backpropagation. This is the only mitigation that removes the cascade **at its source** rather than limiting its consequence. See §24 for a detailed analysis.
+
+**9. Reduce $V\_\theta$ / $V\_\phi$ complexity**
+
+Fewer `wells_per_head`, fewer xi channels, or a smaller score head would reduce the force field's expressivity and thus the Hessian's spectral radius. This is a last resort — it reduces model capacity to buy stability.
+
+### 23.6 Diagnostic Experiment Plan
+
+A three-run diagnostic session on a single LambdaLabs 2×H100 instance, all at $\gamma=0.10$ (the sweep's least-unstable candidate), 3K steps:
+
+| Run | Changes from sweep baseline | What it tests | Estimated time |
+|-----|---------------------------|---------------|:--------------:|
+| A | P/E per-group clip (0.3) + `force_clamp_max=5.0` + `grad_clip=0.3` | Can Tier 1 tame $L=24$? | ~20h |
+| B | `L=16`, sweep defaults | Is depth the bottleneck? | ~14h |
+| C | `L=18` + P/E per-group clip + `grad_clip=0.3` | Compromise: shallower + clipped | ~16h |
+
+**Decision tree after diagnostics:**
+
+- **Run A clean, B and C also clean:** Keep $L=24$ with Tier 1 settings. The instability was a clipping problem.
+- **Run A still spikes, Run B clean:** Depth is the root cause. Adopt $L=16$ for $d=1024$.
+- **Run A still spikes, Run C clean:** $L=18$ is the minimum viable depth. Adopt $L=18$ with Tier 1 clipping.
+- **All three spike:** The problem is deeper than depth or clipping alone. Escalate to Tier 3 (detach boundaries or CfC propagator).
+
+The per-group clips for `P` and `E` are **always active** (they are in the global `GRAD_CLIP_OVERRIDES` dict), so all three runs benefit from them. The log output will show `top[override:P]=xxx` or `top[override:E]=xxx` when those groups are dominant.
+
+Runs A and B can be parallelised across the two GPUs in single-GPU mode (one per `CUDA_VISIBLE_DEVICES`), reducing the total wall-clock from ~50h to ~36h (~1.5 days).
+
+---
+
+## 24. BAOAB + CfC Propagator: Eliminating the Force Cascade at Source
+
+This section analyses how replacing the Verlet-style integrator with the BAOAB + CfC propagator (from [Closed\_Form\_and\_Hybrid\_Integration\_Strategies\_for\_Fock-PARFLM.md](Closed_Form_and_Hybrid_Integration_Strategies_for_Fock-PARFLM.md) §10) would address the $d=1024$ instability — not merely limit it (as the Tier 1–2 mitigations do) but **structurally eliminate** the second-order gradient cascade.
+
+### 24.1 Why the O-Step Alone Does Not Help
+
+The O-step in BAOAB is the Ornstein-Uhlenbeck friction/noise step:
+
+$$p \leftarrow e^{-\gamma \Delta t}\, p + \sigma \sqrt{1 - e^{-2\gamma \Delta t}}\, \xi$$
+
+This is the **exact closed-form solution** of the velocity damping equation. It is already perfectly stable by construction and contains **no force evaluation** — it simply rescales the momentum and adds noise.
+
+In the current Verlet implementation, friction enters as the implicit factor $1/(1 + \Delta t \gamma)$ in the denominator:
+
+$$h\_{\ell+1} = h\_\ell + \frac{\delta\_\ell}{1 + \Delta t \gamma} + \frac{\Delta t^2}{m(1 + \Delta t \gamma)} f\_\ell$$
+
+This is a first-order approximation to $e^{-\gamma \Delta t}$. The difference is negligible: at $\gamma = 0.05$, $1/(1+0.05) = 0.952$ vs $e^{-0.05} = 0.951$. **The O-step upgrade is essentially cosmetic for stability.**
+
+The instability lives in the **B-steps** (force kicks), not the O-step. Any intervention that targets only the friction/noise handling leaves the cascade untouched.
+
+### 24.2 The CfC Propagator Removes the Second-Order Chain
+
+The CfC (Closed-form Continuous-time) propagator replaces the B-step force evaluation with an analytical matrix-exponential propagator. Near each Gaussian well centroid $\mu\_k$, the potential is well-approximated by a harmonic oscillator with frequency $\omega\_k = \sqrt{2 V\_0 \kappa\_k^2}$. The exact solution for the undamped harmonic oscillator (the B-step in BAOAB is purely conservative, with damping handled by the O-step) is:
+
+$$\Phi\_k^{\text{B}}(\Delta t) = \begin{pmatrix}\cos(\omega\_k \Delta t) & \frac{\sin(\omega\_k \Delta t)}{\omega\_k}\\[4pt] -\omega\_k \sin(\omega\_k \Delta t) & \cos(\omega\_k \Delta t)\end{pmatrix}$$
+
+The blended CfC propagator uses the Gaussian envelope $\alpha\_k(h) = \exp(-\kappa\_k^2 \lVert h - \mu\_k \rVert^2)$ to interpolate between the harmonic propagator (near centroids) and a free-particle ballistic step (far from all wells).
+
+**The key point for stability:** this propagator is a **forward-mode analytical computation**. It requires no `autograd.grad` call and no `create_graph=True`. The well parameters ($\mu\_k$, $\kappa\_k$, $V\_0$) enter through $\omega\_k$ and $\alpha\_k$ in a standard differentiable computation graph. PyTorch's first-order autograd handles parameter gradients naturally via the chain rule through $\Phi\_k$.
+
+The consequence for the gradient chain:
+
+| | Verlet (current) | BAOAB + CfC |
+|---|---|---|
+| $V\_\theta$ force computation | `autograd.grad(U, h, create_graph=True)` | Analytical propagator $\Phi\_k$ (forward pass) |
+| Gradient chain through $V\_\theta$ | **Second-order** ($\nabla^2 U$ at every layer) | **First-order** (standard backprop through $\Phi\_k$) |
+| Spectral radius of per-layer Jacobian | Contains $\nabla^2 U$ — can be $> 1$ | Propagator $\Phi\_k$ has spectral radius $\leq 1$ |
+| Cascade over $L$ layers | Exponential amplification of Hessian eigenvalues | Bounded (norm-contractive propagator) |
+
+The $V\_\theta$ second-order cascade is **eliminated entirely** — replaced by first-order backprop through a norm-bounded matrix. This is not tweaking a coefficient; it is removing the structural source of the exponential amplification.
+
+The propagator $\Phi\_k$ is norm-bounded because the undamped harmonic propagator is a rotation matrix (spectral radius exactly 1), and the blending weights $\alpha\_k \in [0, 1]$ ensure the convex combination preserves this bound. Over $L=24$ layers, a product of norm-1 matrices remains norm-1 — in stark contrast to the product of Hessian-containing Jacobians that grows exponentially.
+
+### 24.3 Residual Cascade from $V\_\phi$
+
+The current force computation combines $V\_\theta$ and $V\_\phi$ in a single `autograd.grad` call:
+
+```python
+U = V_th_per_token.sum() + U_pair
+grad_U, = torch.autograd.grad(U.float(), h_in, create_graph=True, ...)
+```
+
+In the BAOAB + CfC framework, $V\_\theta$'s contribution is handled analytically, but $V\_\phi$ (the pairwise register interaction) still requires a numerical force evaluation via `autograd.grad`. The question is whether $V\_\phi$ alone — without $V\_\theta$ amplifying the cascade — can produce the O($10^4$) gradient norms observed at $d=1024$.
+
+**Assessment: probably not.** Several structural facts suggest $V\_\phi$'s cascade contribution is much smaller:
+
+1. **Simpler function:** $V\_\phi$ is a pairwise interaction between token–register pairs (MLP-based or attention-based), without $V\_\theta$'s multi-well Gaussian bank with exponential envelopes and depth conditioning. The Hessian of $V\_\phi$ w.r.t. $h$ is correspondingly smaller.
+
+2. **Sparse routing:** the top-$k$ gathered $V\_\phi$ evaluation (`use_gathered_v_phi=True`) restricts the pairwise computation to $k$ neighbours, limiting the rank of the Hessian.
+
+3. **Per-layer scaling:** `per_layer_v_phi_scale` provides a learned attenuation factor $s\_\ell$ that reduces the pair potential's contribution in early layers (where the registers are not yet populated), partially decoupling the cascade.
+
+4. **Strang splitting:** the BAOAB + CfC Strang splitting (§10.3 of the companion note) puts $V\_\phi$'s numerical kicks in half-step sub-intervals, further limiting their cascade contribution.
+
+If empirical testing confirms that $V\_\phi$-only cascades are manageable, the BAOAB + CfC propagator would **fully resolve** the $d=1024$ instability.
+
+### 24.4 Relationship to §23 Mitigations
+
+The Tier 1–3 mitigations of §23 and the BAOAB + CfC propagator attack the same problem from opposite ends:
+
+| Approach | Strategy | What it does to the cascade | Invasiveness |
+|---|---|---|---|
+| Tier 1 (§23.3) | **Clip the consequence** | Limits parameter gradients after the cascade amplifies | Config-only |
+| Tier 2 (§23.4) | **Shorten the cascade** | Reduces $L$, $\Delta t$, or increases $m$ | Config change |
+| Tier 3 (§23.5, items 7 & 9) | **Segment the cascade** | Detach boundaries every $K$ layers | Code change |
+| **CfC propagator** (this section) | **Remove the cascade at source** | Replaces second-order force chain with first-order analytical propagator | Architectural refactor |
+
+The recommended strategy is **sequential**: apply Tier 1 immediately (already implemented), test whether it stabilises $L=24$, and pursue the CfC propagator as the long-term solution — both for stability and for the inference-speed gains documented in [Closed\_Form\_and\_Hybrid\_Integration\_Strategies\_for\_Fock-PARFLM.md](Closed_Form_and_Hybrid_Integration_Strategies_for_Fock-PARFLM.md) §12.
+
+If Tier 1 succeeds, the CfC propagator remains valuable for its inference benefits (~16× reduction in $V\_\theta$ FLOP cost, unconditional stability enabling larger $\Delta t$ and thus fewer layers) but is no longer an urgent stability fix. If Tier 1 fails, the CfC propagator becomes the **only mitigation that addresses the root cause** without reducing model capacity ($L$, wells, xi channels).
+
+**Cross-references:**
+- [Closed\_Form\_and\_Hybrid\_Integration\_Strategies\_for\_Fock-PARFLM.md](Closed_Form_and_Hybrid_Integration_Strategies_for_Fock-PARFLM.md) — full derivation of the CfC propagator, blending weights, error bounds, and BAOAB integration (§10).
+- [Fock-PARFLM\_Scale-Up\_Gamma\_Sweep\_Results\_and\_Damping\_Regime\_Analysis.md](Fock-PARFLM_Scale-Up_Gamma_Sweep_Results_and_Damping_Regime_Analysis.md) §4.5 — the empirical evidence that motivated this analysis.
+- [Blended\_CfC\_BAOAB\_Deep\_Dive.md](Blended_CfC_BAOAB_Deep_Dive.md) — fully worked-out construction of the 7-sub-step B̃AOAB̃ scheme.
 
 ---
 

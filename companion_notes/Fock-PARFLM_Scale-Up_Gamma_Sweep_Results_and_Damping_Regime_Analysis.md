@@ -143,13 +143,19 @@ The universal instability at L=24 raises the question of whether L=24 is fundame
 - The force $f_\ell = -\nabla_h U$ is computed via `autograd.grad` at each layer, and the `create_graph=True` flag means the backward graph through the force compounds across all L layers — at L=24, this is a 24-deep second-order gradient chain
 - The gradient magnitudes at L=24 (up to 7,870) are O($10^4$) larger than at L=12 (<1.0), far exceeding the 2× ratio that a simple linear scaling with L would predict
 
-**Possible mitigations (from least to most invasive):**
-1. **Tighter per-group clipping** for `P` and `E` in the d1024 preset (quick win, no architecture change)
-2. **Lower `grad_clip`** (0.3 or even 0.1 instead of 0.5)
-3. **Reduce L from 24 to 16–18** (architectural change — breaks GPT-2 Medium L-matching but may be necessary for stable training)
-4. **Gradient checkpointing with detach boundaries** every K layers (limits the force cascade depth without changing L)
+**Mitigation tiers (detailed analysis in [Training\_Instabilities\_in\_Fock-PARFLM\_with\_structured\_V\_theta.md](Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md) §§23–24):**
 
-A quick diagnostic experiment at L=16 or L=18 with gamma=0.10 (3K sweep steps) would directly test whether the instability is fundamentally a depth problem vs. a clipping problem, and could be run on the existing LambdaLabs instance as a single candidate in ~19h.
+| Tier | Strategy | Key levers | Invasiveness |
+|:----:|----------|-----------|:------------:|
+| 1 | **Clip the consequence** | Per-group clip for `P` and `E` (0.3), `force_clamp_max=5.0`, `grad_clip=0.3` | Config-only |
+| 2 | **Shorten the cascade** | Reduce $L$ from 24 to 16–18, reduce $\Delta t$, increase mass | Config change |
+| 3 | **Segment or remove the cascade** | Detach boundaries every $K$ layers; **BAOAB + CfC propagator** (replaces second-order force chain with first-order analytical propagator) | Code / arch refactor |
+
+The Tier 1 interventions are implemented as of July 14, 2026: `P` and `E` now have dedicated per-group clip overrides in `GRAD_CLIP_OVERRIDES`, and `force_clamp_max` is exposed as a CLI-overridable field in `TrainConfig`.
+
+The BAOAB + CfC propagator (Tier 3) is the only intervention that **removes the cascade at its source** rather than limiting its downstream consequence. It replaces the `autograd.grad(create_graph=True)` force evaluation with an analytical matrix-exponential propagator whose backward pass is standard first-order backpropagation — the per-layer Jacobian spectral radius drops from $> 1$ (Hessian-containing) to $\leq 1$ (rotation matrix), eliminating exponential amplification entirely. See §24 of the Training Instabilities note and §10 of [Closed\_Form\_and\_Hybrid\_Integration\_Strategies\_for\_Fock-PARFLM.md](Closed_Form_and_Hybrid_Integration_Strategies_for_Fock-PARFLM.md) for the full analysis.
+
+**Diagnostic experiment plan:** A three-run session (Run A: Tier 1 at L=24; Run B: L=16 at defaults; Run C: L=18 + Tier 1) at gamma=0.10, 3K steps each, estimated ~50h sequential or ~36h parallelised across 2 GPUs. The results will determine whether Tier 1 suffices or whether depth reduction / CfC propagator is necessary. Full protocol in §23.6 of the Training Instabilities note.
 
 ---
 
