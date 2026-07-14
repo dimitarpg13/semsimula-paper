@@ -133,6 +133,7 @@ class TrainConfig:
     # Integrator
     fixed_gamma: float = 0.30
     init_gamma: float = 1.0
+    force_clamp_max: float = 0.0  # 0 = disabled; positive value clamps force per dim
 
     # Output
     use_output_bias: bool = True
@@ -369,6 +370,7 @@ def build_fock_model(cfg: TrainConfig, device: str, logfreq_path: str):
         logfreq_init_alpha=0.1,
         init_gamma=cfg.init_gamma,
         fixed_gamma=cfg.fixed_gamma,
+        force_clamp_max=cfg.force_clamp_max if cfg.force_clamp_max > 0 else None,
         causal_force=True,
         ln_after_step=True,
         xi_channels=cfg.xi_channels,
@@ -556,6 +558,8 @@ def lr_schedule(step: int, cfg: TrainConfig) -> float:
 # ---------------------------------------------------------------------------
 
 GRAD_CLIP_OVERRIDES = {
+    "=P": 0.3,
+    "=E": 0.3,
     "V_phi": 0.3,
     "creation_gate": 0.3,
     "destruction_gate": 0.3,
@@ -569,10 +573,15 @@ WATCHDOG_EXCLUDE_GROUPS = {"override:reverse_channel_scale", "override:reverse_c
 
 def _assign_clip_group(pname: str, default_clip: float):
     low = pname.lower()
+    prefix = low.split(".", 1)[0]
     for sub, thr in GRAD_CLIP_OVERRIDES.items():
-        if sub.lower() in low:
-            return f"override:{sub}", thr
-    return pname.split(".", 1)[0], default_clip
+        if sub.startswith("="):
+            if prefix == sub[1:].lower():
+                return f"override:{sub[1:]}", thr
+        else:
+            if sub.lower() in low:
+                return f"override:{sub}", thr
+    return prefix, default_clip
 
 
 def clip_grads_per_group(model: nn.Module, default_clip: float):
@@ -1003,6 +1012,9 @@ def train(cfg: TrainConfig):
             print(f"  WSD: warmup 0->{warmup_end}  stable ->{stable_end}  "
                   f"decay ->{cfg.total_steps}")
             print(f"  LR: {cfg.lr} -> floor {cfg.wsd_lr_floor}")
+        print(f"  grad_clip={cfg.grad_clip}  per_group_clip={cfg.per_group_clip}")
+        if cfg.force_clamp_max > 0:
+            print(f"  force_clamp_max={cfg.force_clamp_max}")
         print(f"  resume_step={resume_step}  best_ppl={best_val_ppl:.2f}")
         print(f"{'='*60}\n")
 
