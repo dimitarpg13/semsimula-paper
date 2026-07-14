@@ -256,30 +256,25 @@ PRESETS: Dict[str, Dict[str, Any]] = {
         "lr": 2e-4,
         "batch_size": 4, "grad_accum": 8,
     },
-    # Strategy 1: same d=1024, same L=24 as GPT-2 Medium.
-    # Same untied rationale as d768.
-    # Fock ~209M params vs GPT-2 ~355M (tied) at same d and L.
-    # batch_size=2 — probe ceiling.  DDP does NOT pool VRAM across GPUs
-    # (each rank holds a full model replica), so this must fit on a
-    # SINGLE 80 GB H100.  With use_layer_checkpoint=True the per-layer
-    # activation footprint is O(1) instead of O(L), which should make
-    # bs=2 feasible (~35-45 GB estimated).  The probe will fall back to
-    # bs=1 / grad_accum=16 if it still OOMs (eff_batch preserved).
-    # grad_clip=0.5 (was 1.0) — L=24 produces steeper gradient cascades
-    # than L=12; the d=1024 gamma sweep showed grad spikes of O(10^3)
-    # that triggered the watchdog repeatedly.  Tighter clipping dampens
-    # these without hurting convergence (the WSD warmup is 5000 steps at
-    # total_steps=100K, much gentler than the sweep's 150-step warmup).
+    # d=1024, L=16.  Originally L=24 to match GPT-2 Medium, but the
+    # d=1024 gamma sweep showed universal instability at L=24: every
+    # gamma candidate had catastrophic gradient spikes (up to 7,870)
+    # and watchdog reloads, caused by the 24-deep second-order gradient
+    # cascade from autograd.grad(create_graph=True).  L=16 matches the
+    # stable d=384 depth and eliminates the cascade problem.  See
+    # Training_Instabilities §23 for the full analysis.
+    # The GPT-2 baseline (gpt2-medium) is also set to L=16 for a fair
+    # comparison — no longer canonical GPT-2 Medium but a matched
+    # custom baseline at the same (d, L).
     "d1024": {
         "model_type": "fock",
-        "d": 1024, "L": 24, "n_registers": 32,
+        "d": 1024, "L": 16, "n_registers": 32,
         "d_k": 256,
         "tie_embeddings": False,
         "use_output_bias": True,
         "total_steps": 100_000,
         "lr": 1.5e-4,
         "batch_size": 2, "grad_accum": 16,
-        "grad_clip": 0.5,
     },
     # Matched GPT-2 Small baseline (d=768, L=12, 12 heads).
     # Always tied (MatchedGPT hardcodes weight tying).
@@ -296,10 +291,11 @@ PRESETS: Dict[str, Dict[str, Any]] = {
         "lambda_v": 0.0,
         "per_group_clip": False,
     },
-    # Matched GPT-2 Medium baseline (d=1024, L=24, 16 heads).
+    # GPT-2 baseline at d=1024, L=16, 16 heads — matched to the Fock
+    # d1024 preset (L=16) rather than canonical GPT-2 Medium (L=24).
     "gpt2-medium": {
         "model_type": "gpt2",
-        "d": 1024, "L": 24, "gpt2_n_head": 16,
+        "d": 1024, "L": 16, "gpt2_n_head": 16,
         "tie_embeddings": True,
         "total_steps": 100_000,
         "lr": 1.5e-4,
@@ -321,7 +317,7 @@ PRESETS: Dict[str, Dict[str, Any]] = {
     },
     "sweep-d1024": {
         "model_type": "fock",
-        "d": 1024, "L": 24, "n_registers": 32,
+        "d": 1024, "L": 16, "n_registers": 32,
         "d_k": 256,
         "tie_embeddings": False,
         "use_output_bias": True,
