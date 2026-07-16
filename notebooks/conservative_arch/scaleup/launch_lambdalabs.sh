@@ -42,6 +42,11 @@
 #            --sweep-dir ~/runs/sweep_sweep-d768_.../gamma_sweep --controls
 #   See docs/geodesic_preservation_experiment_proposal.md for theory.
 #
+#   TRAIN_FOCK.PY OVERRIDES (any TrainConfig field):
+#        bash launch_lambdalabs.sh d1024 --multi-gpu --fixed_gamma 0.05
+#        bash launch_lambdalabs.sh d768 --total_steps 200000
+#   Unknown flags are forwarded directly to train_fock.py as CLI overrides.
+#
 #   BF16 MIXED PRECISION (recommended for d=1024):
 #        bash launch_lambdalabs.sh d1024 --multi-gpu --bf16
 #        bash launch_lambdalabs.sh sweep-d1024 --gamma-sweep --multi-gpu --bf16
@@ -75,6 +80,7 @@ BF16=""
 GEODESIC=""
 SWEEP_DIR=""
 GEODESIC_CONTROLS=""
+EXTRA_ARGS=()
 
 shift || true
 for arg in "$@"; do
@@ -99,7 +105,7 @@ for arg in "$@"; do
                 SWEEP_DIR="$arg"
                 SWEEP_DIR_NEXT=""
             else
-                echo "Unknown arg: $arg"; exit 1
+                EXTRA_ARGS+=("$arg")
             fi
             ;;
     esac
@@ -117,6 +123,7 @@ echo "  Preset: $PRESET"
 [ "$BF16" = "yes" ] && echo "  Precision: bf16 mixed"
 [ "$GEODESIC" = "yes" ] && echo "  Sweep dir: $SWEEP_DIR"
 [ "$GEODESIC_CONTROLS" = "yes" ] && echo "  Controls: shuffled-Gamma + random-v nulls"
+[ "${#EXTRA_ARGS[@]}" -gt 0 ] && echo "  Extra args: ${EXTRA_ARGS[*]}"
 echo "=================================================="
 
 # ── 1. Clone repo if not present ──
@@ -263,7 +270,8 @@ if [ "$USE_MULTI_GPU" = "yes" ]; then
         $SYNC_ARG \
         $SWEEP_ARGS \
         $EFFBATCH_ARG \
-        $BF16_ARG
+        $BF16_ARG \
+        ${EXTRA_ARGS[@]+"${EXTRA_ARGS[@]}"}
 else
     if [ "$GAMMA_SWEEP" = "yes" ]; then
         echo ">>> Gamma sweep mode (single-GPU)"
@@ -276,5 +284,6 @@ else
         --data_dir "$DATA_DIR" \
         $SYNC_ARG \
         $SWEEP_ARGS \
-        $BF16_ARG
+        $BF16_ARG \
+        ${EXTRA_ARGS[@]+"${EXTRA_ARGS[@]}"}
 fi
