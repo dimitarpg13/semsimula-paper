@@ -306,6 +306,14 @@ PRESETS: Dict[str, Dict[str, Any]] = {
     # Gamma sweep presets — use with --gamma_sweep.
     # Inherits all arch from the base preset but is sized for
     # a quick 3K-step sweep.
+    "sweep-d384": {
+        "model_type": "fock",
+        "d": 384, "L": 16, "n_registers": 32,
+        "tie_embeddings": False,
+        "use_output_bias": True,
+        "lr": 3e-4,
+        "batch_size": 8, "grad_accum": 4,
+    },
     "sweep-d768": {
         "model_type": "fock",
         "d": 768, "L": 12, "n_registers": 32,

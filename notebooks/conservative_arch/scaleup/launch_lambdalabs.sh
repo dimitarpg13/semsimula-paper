@@ -35,6 +35,13 @@
 #            --sweep-gammas 0.25,0.30,0.40,0.50
 #   See companion_notes/Fock-PARFLM_Scale-Up_Comparative_Experiments.md §6.6.
 #
+#   GEODESIC RESIDUAL ANALYSIS (inference-only, on existing sweep checkpoints):
+#        bash launch_lambdalabs.sh sweep-d768 --geodesic-residual \
+#            --sweep-dir ~/runs/sweep_sweep-d768_20260712_045606/gamma_sweep
+#        bash launch_lambdalabs.sh sweep-d768 --geodesic-residual \
+#            --sweep-dir ~/runs/sweep_sweep-d768_.../gamma_sweep --controls
+#   See docs/geodesic_preservation_experiment_proposal.md for theory.
+#
 #   BF16 MIXED PRECISION (recommended for d=1024):
 #        bash launch_lambdalabs.sh d1024 --multi-gpu --bf16
 #        bash launch_lambdalabs.sh sweep-d1024 --gamma-sweep --multi-gpu --bf16
@@ -65,16 +72,22 @@ GAMMA_SWEEP=""
 SWEEP_STEPS="3000"
 SWEEP_GAMMAS=""
 BF16=""
+GEODESIC=""
+SWEEP_DIR=""
+GEODESIC_CONTROLS=""
 
 shift || true
 for arg in "$@"; do
     case "$arg" in
-        --multi-gpu)      MULTI_GPU="yes" ;;
-        --gdrive)         GDRIVE="yes" ;;
-        --gamma-sweep)    GAMMA_SWEEP="yes" ;;
-        --bf16)           BF16="yes" ;;
-        --sweep-steps)    SWEEP_STEPS_NEXT="yes" ;;
-        --sweep-gammas)   SWEEP_GAMMAS_NEXT="yes" ;;
+        --multi-gpu)            MULTI_GPU="yes" ;;
+        --gdrive)               GDRIVE="yes" ;;
+        --gamma-sweep)          GAMMA_SWEEP="yes" ;;
+        --bf16)                 BF16="yes" ;;
+        --geodesic-residual)    GEODESIC="yes" ;;
+        --controls)             GEODESIC_CONTROLS="yes" ;;
+        --sweep-steps)          SWEEP_STEPS_NEXT="yes" ;;
+        --sweep-gammas)         SWEEP_GAMMAS_NEXT="yes" ;;
+        --sweep-dir)            SWEEP_DIR_NEXT="yes" ;;
         *)
             if [ "${SWEEP_STEPS_NEXT:-}" = "yes" ]; then
                 SWEEP_STEPS="$arg"
@@ -82,6 +95,9 @@ for arg in "$@"; do
             elif [ "${SWEEP_GAMMAS_NEXT:-}" = "yes" ]; then
                 SWEEP_GAMMAS="$arg"
                 SWEEP_GAMMAS_NEXT=""
+            elif [ "${SWEEP_DIR_NEXT:-}" = "yes" ]; then
+                SWEEP_DIR="$arg"
+                SWEEP_DIR_NEXT=""
             else
                 echo "Unknown arg: $arg"; exit 1
             fi
@@ -91,6 +107,7 @@ done
 
 MODE="Training"
 [ "$GAMMA_SWEEP" = "yes" ] && MODE="Gamma Sweep"
+[ "$GEODESIC" = "yes" ] && MODE="Geodesic Residual Analysis"
 
 echo "=================================================="
 echo "  FockPARFLM $MODE — LambdaLabs Setup"
@@ -98,6 +115,8 @@ echo "  Preset: $PRESET"
 [ "$GAMMA_SWEEP" = "yes" ] && echo "  Sweep steps: $SWEEP_STEPS per candidate"
 [ -n "$SWEEP_GAMMAS" ] && echo "  Sweep gammas (subset): $SWEEP_GAMMAS"
 [ "$BF16" = "yes" ] && echo "  Precision: bf16 mixed"
+[ "$GEODESIC" = "yes" ] && echo "  Sweep dir: $SWEEP_DIR"
+[ "$GEODESIC_CONTROLS" = "yes" ] && echo "  Controls: shuffled-Gamma + random-v nulls"
 echo "=================================================="
 
 # ── 1. Clone repo if not present ──
@@ -113,11 +132,13 @@ fi
 # ── 2. Install Python dependencies ──
 echo "[2/6] Installing Python dependencies..."
 cd "$REPO_DIR"
-pip install -q torch numpy transformers tokenizers datasets huggingface_hub pyarrow
+pip install -q torch numpy transformers tokenizers datasets huggingface_hub pyarrow matplotlib
 
 # ── 3. Set up output directory ──
 SCRIPT_DIR="$REPO_DIR/notebooks/conservative_arch/scaleup"
-if [ "$GAMMA_SWEEP" = "yes" ]; then
+if [ "$GEODESIC" = "yes" ]; then
+    OUTPUT_DIR="$HOME/runs/geodesic_${PRESET}_$(date +%Y%m%d_%H%M%S)"
+elif [ "$GAMMA_SWEEP" = "yes" ]; then
     OUTPUT_DIR="$HOME/runs/sweep_${PRESET}_$(date +%Y%m%d_%H%M%S)"
 else
     OUTPUT_DIR="$HOME/runs/${PRESET}_$(date +%Y%m%d_%H%M%S)"
@@ -214,6 +235,22 @@ if [ "$MULTI_GPU" = "yes" ] && [ "$NUM_GPUS" -gt 1 ]; then
         # — stays identical to the single-GPU sweep-d1024 preset.
         EFFBATCH_ARG="--grad_accum $((32 / NUM_GPUS))"
     fi
+fi
+
+# ── Geodesic residual analysis (inference-only, no training) ──
+if [ "$GEODESIC" = "yes" ]; then
+    if [ -z "$SWEEP_DIR" ]; then
+        echo "ERROR: --geodesic-residual requires --sweep-dir <path>"
+        echo "  e.g.: --sweep-dir ~/runs/sweep_sweep-d768_.../gamma_sweep"
+        exit 1
+    fi
+    echo ">>> Geodesic residual analysis (inference-only)"
+    GEODESIC_ARGS="--sweep_dir $SWEEP_DIR --preset $PRESET --data_dir $DATA_DIR --output_dir $OUTPUT_DIR"
+    if [ "$GEODESIC_CONTROLS" = "yes" ]; then
+        GEODESIC_ARGS="$GEODESIC_ARGS --controls"
+    fi
+    python3 geodesic_residual.py $GEODESIC_ARGS $BF16_ARG
+    exit 0
 fi
 
 if [ "$USE_MULTI_GPU" = "yes" ]; then
