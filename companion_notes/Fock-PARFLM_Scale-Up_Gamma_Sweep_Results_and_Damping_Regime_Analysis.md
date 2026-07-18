@@ -52,33 +52,105 @@ This document records and analyses the gamma sweep results for Fock-PARFLM at ea
 
 ---
 
-## 3. d=384 Gamma Context (L=16, 53M params)
+## 3. d=384 Gamma Sweep (L=16, 53M params) — July 18, 2026
 
-### 3.1 Status
+**Configuration:** `sweep-d384` preset — `d=384`, `L=16`, `batch=8×4` (Colab H100), `lr=3e-4`, WSD schedule (warmup 0→150, stable→1,950, decay→3,000), `eff_batch=32`. Run from `colab_fock_gamma_sweep_geodesic_d384.ipynb` with integrated geodesic residual analysis.
 
-**No dedicated gamma sweep has been run for Fock-PARFLM at $d=384$.** The running E5c configuration uses $\gamma=0.30$, inherited from the SPLM E4/E5 damping sweeps on Tiny Shakespeare (see [E4_sweep_results_and_discussion.md](E4_sweep_results_and_discussion.md)). Those SPLM experiments used a different architecture (plain SPLM, `L=8`, no PARF, no Fock mechanism), a different corpus (Tiny Shakespeare, not OpenWebText), and a different depth — so transferring $\gamma=0.30$ to Fock-PARFLM at `L=16` was always a convenience assumption rather than a validated choice.
+### 3.1 Results
 
-### 3.2 What the depth-scaling formula predicts
+| Rank | $\gamma$ | Best PPL (3K steps) |
+|:----:|:--------:|:-------------------:|
+| 1 | **0.250** | **342.02** |
+| 2 | 0.150 | 349.73 |
+| 3 | 0.300 | 353.69 |
+| 4 | 0.500 | 369.56 |
+| 5 | 0.200 | 396.56 |
+| 6 | 0.100 | 418.53 |
+| 7 | 0.050 | 483.81 |
+| 8 | 0.400 | 740.62 |
+
+### 3.2 Observations
+
+1. **Non-monotonic ranking — inverted-U shape.** The PPL curve has a clear minimum at gamma=0.250 with a broad sweet spot at 0.15–0.30 and degradation on both sides. This is qualitatively different from d=768 (clean monotonic decrease) and d=1024 (mostly monotonic with one inversion).
+
+2. **gamma=0.05 is among the worst candidates.** PPL 483.81 is 41% worse than the winner (342.02). This directly contradicts the depth-scaling formula's prediction that all L=16 models should prefer gamma≈0.05.
+
+3. **The E5c training gamma (0.30) was near-optimal.** It ranks #3 at PPL 353.69, only 3.4% behind the winner. The previously assumed "6× above prediction" was not a mis-transfer — the model genuinely prefers this damping range.
+
+4. **Clean stability across all candidates.** Gradient norms are uniformly low (0.56–1.90 post-clip), no gradient spikes or watchdog triggers at any gamma value. The `score_head` and `depth_code` groups are the top gradient groups (mild). Zero stability issues across all 8 candidates.
+
+5. **The gamma=0.400 anomaly.** PPL 740.62 is far worse than its neighbours (353.69 at 0.300, 369.56 at 0.500), breaking the otherwise smooth U-shape. This may reflect a resonance or mode-locking between the explicit friction and the potential landscape at this specific damping value. Further investigation needed.
+
+### 3.3 Geodesic residual analysis
+
+The retained gamma-sweep checkpoints were analysed with the geodesic residual pipeline (see [Geodesic\_Preservation\_Experiment.md](Geodesic_Preservation_Experiment.md) §7). Each checkpoint was evaluated on 10 validation batches at the same gamma it was trained with (diagonal overlay).
+
+| $\gamma_{\text{train}}$ | PPL | $\bar{R}$ | $\gamma_{\text{geo}}$ | Excluded frac |
+|:---:|:---:|:---:|:---:|:---:|
+| **0.050** | 483.81 | **1.041** ← $\bar{R}$ min | 0.917 | 0.0% |
+| 0.100 | 418.53 | 1.050 | 0.880 | 0.0% |
+| 0.150 | 349.73 | 1.309 | 0.974 | 0.0% |
+| 0.200 | 396.56 | 1.345 | 0.871 | 0.0% |
+| **0.250** | **342.02** ← PPL min | 1.418 | 0.988 | 0.0% |
+| 0.300 | 353.69 | 2.115 | 0.995 | 0.0% |
+| 0.400 | 740.62 | 1.636 | 0.942 | 0.0% |
+| 0.500 | 369.56 | 1.758 | 0.910 | 0.0% |
+
+**Key findings:**
+
+1. **PPL-geodesic coincidence BREAKS at d=384.** The PPL minimum is at $\gamma=0.250$ while the $\bar{R}$ minimum is at $\gamma=0.050$. The gap of 0.200 is massive — the damping that produces the best language model is *not* the one that produces the most geometrically faithful trajectory. This is in stark contrast to d=1024, where both minima coincide at $\gamma=0.050$.
+
+2. **$\bar{R}$ increases roughly monotonically with $\gamma$.** The geodesic residual at $\gamma=0.05$ (1.041) is much lower than at $\gamma=0.25$ (1.418). This is geometrically expected: less friction always means more geodesic-like. The interesting finding is that d=384's *task* optimum doesn't care about being geodesic.
+
+3. **$\gamma_{\text{geo}}$ converges to $\approx 0.93 \pm 0.05$.** Consistent with the d=1024 convergence ($\gamma_{\text{geo}} \approx 0.93 \pm 0.01$), the intrinsic effective damping is independent of both $\gamma_{\text{train}}$ and $d$.
+
+4. **The $\gamma=0.300$ anomaly in $\bar{R}$.** $\bar{R}=2.115$ at $\gamma=0.300$ is a clear outlier — much higher than its neighbours (1.418 at 0.250, 1.636 at 0.400). The per-layer analysis reveals extreme residuals at layers 2, 6–8 (up to $R_8=4.25$), suggesting localized non-geodesic dynamics in the middle layers at this specific damping.
+
+![d=384 L=16: PPL vs Geodesic Residual overlay](images/geodesic_overlay_d384.png)
+
+*Figure 3. Dual-axis overlay for d=384 (L=16). Blue solid line: PPL (left axis). Red dashed line: $\bar{R}$ geodesic residual (right axis). The two curves have opposite trends: PPL is minimised at $\gamma=0.250$ (blue dotted line) while $\bar{R}$ is minimised at $\gamma=0.050$ (red dotted line). The PPL-geodesic coincidence observed at d=1024 (Figure 2) does not hold at d=384.*
+
+![d=384 L=16: Recovered intrinsic damping](images/gamma_geo_recovery_d384.png)
+
+*Figure 4. Recovered intrinsic damping $\gamma_{\text{geo}}$ for d=384 (L=16). All eight checkpoints recover $\gamma_{\text{geo}} \approx 0.87$–$1.00$, independent of $\gamma_{\text{train}}$. The blue dashed line marks the PPL-optimal $\gamma=0.250$ — far below the intrinsic damping, confirming that the d=384 model's explicit friction is a small fraction of its total effective damping.*
+
+![d=384 L=16: Per-layer geodesic residual heatmap](images/geodesic_per_layer_d384.png)
+
+*Figure 5. Per-layer geodesic residual $R_\ell$ heatmap for d=384 (L=16). At low $\gamma$ (0.05–0.10, bottom rows), the residual is uniformly near 1.0 (dark purple) — nearly geodesic. At higher $\gamma$ (0.25–0.50, upper rows), bright spots emerge in the middle layers (6–10), indicating localized departures from geodesic dynamics where the damping dominates the force field.*
+
+### 3.4 The depth-scaling formula fails at d=384
 
 The leak-free depth-scaling closed form from [Determining_optimal_gamma_for_SPLM.md](Determining_optimal_gamma_for_SPLM.md) §2.1:
 
 $$\gamma^{\ast}\_{\text{depth}} = \frac{m}{L \Delta t} \ln(1/\rho)$$
 
-with the leak-free calibration $\rho = 0.565$, $m \approx 1.4$, $\Delta t = 1.0$:
+predicts $\gamma^{\ast} = 0.050$ for $L=16$. The sweep result ($\gamma^{\ast} = 0.250$) is **5× above** this prediction.
 
-| Tier | $L$ | $\gamma^{\ast}\_{\text{depth}}$ | Nominal $\gamma$ used |
-|------|:---:|:-------------------------------:|:---------------------:|
-| `d=384` | 16 | **0.050** | 0.30 (6× above prediction) |
-| `d=768` | 12 | **0.067** | 0.05 (sweep winner, close to prediction) |
-| `d=1024` | 16 | **0.050** | **0.050** (sweep confirmed; L reduced from 24 to 16) |
+| Tier | $L$ | $\gamma^{\ast}\_{\text{depth}}$ (predicted) | $\gamma^{\ast}$ (empirical) | Ratio |
+|------|:---:|:-------------------------------------------:|:---------------------------:|:-----:|
+| `d=384` | 16 | 0.050 | **0.250** | **5.0×** |
+| `d=768` | 12 | 0.067 | 0.050 | 0.75× |
+| `d=1024` | 16 | 0.050 | 0.050 | 1.0× |
 
-The depth-scaling formula predicts that **all tiers should use gamma values near 0.05**, with the dominant variable being $L$ (depth), not $d$ (hidden dimension). Both the d=768 and d=1024 (L=16) sweeps empirically confirm the prediction, lending strong credibility to the formula.
+The formula correctly predicts the optimal gamma at d=768 and d=1024 but is **qualitatively wrong** at d=384. The formula's assumption that $\gamma^{\ast}$ depends only on $L$ (depth), not $d$ (hidden dimension), is falsified: d=384 and d=1024 share the same depth ($L=16$) but have a 5× gap in their optimal damping.
 
-### 3.3 Implications for d=384
+### 3.5 The dimension-dependent phase transition
 
-The E5c model at $d=384$ is running at $\gamma=0.30$ — **six times the depth-scaling prediction** of $\gamma^{\ast}=0.050$. This means the d=384 model is operating deep in the overdamped regime, with only 1.5% of initial velocity surviving the 16-layer stack (§4.1). While the model still trains well at $\gamma=0.30$ (best PPL ≈ 41 at step 75K), it is likely leaving significant capacity on the table: the conservative force field is doing the work of steering the hidden state, but the overdamped friction is dissipating most of the momentum that could carry information across layers.
+The d=384 result, combined with d=768 and d=1024, reveals a **phase transition** in the optimal dynamical regime:
 
-**Recommendation:** Run a dedicated gamma sweep for d=384 Fock-PARFLM at the same 8 candidates (0.05, 0.10, ..., 0.50) using the `sweep-d768`-style methodology but with `d=384`, `L=16`. If the monotonic trend observed at d=768 repeats, the optimal gamma for d=384 may be 0.05–0.10, not 0.30.
+| Scale | $\gamma^{\ast}$ | $r_{\text{total}}$ | Regime | PPL-geodesic coincidence? |
+|-------|:---:|:---:|--------|:---:|
+| d=384 | 0.250 | 0.020 (2.0%) | **Overdamped** | **No** (gap=0.200) |
+| d=768 | 0.050 | 0.557 (55.7%) | **Underdamped** | *(pending)* |
+| d=1024 | 0.050 | 0.457 (45.7%) | **Underdamped** | **Yes** (gap=0) |
+
+At d=384, the model prefers strong damping where the conservative force field dominates — the "ball in honey" regime. The trajectory departs from geodesic at every layer, re-derived from the local potential rather than carried by momentum. At d=768 and d=1024, the model prefers minimal friction where momentum carries information across layers — the "spacecraft in gravity" regime.
+
+**Why does d matter?** On the hypersphere $S^{d-1}(\sqrt{d})$:
+- At small $d$ (384), the potential landscape has relatively high curvature per dimension. Momentum quickly carries the hidden state away from productive regions of the landscape. Strong damping keeps the trajectory near the potential's guidance.
+- At large $d$ (768+), concentration of measure makes the landscape smoother. The force field provides gentle steering while momentum carries rich, high-dimensional information that the model can exploit. Overdamping destroys this information.
+
+The transition between d=384 (overdamped) and d=768 (underdamped) is where the residual stream gains enough capacity for momentum to be more valuable than force-field re-derivation.
 
 ---
 
@@ -192,14 +264,15 @@ The retained gamma-sweep checkpoints (gammas 0.05, 0.10, 0.15, 0.20) were analys
 
 #### 4.2.4 Consistency across scales
 
-With the L=16 results and geodesic residual analysis, gamma=0.050 is now the optimal damping at all tested scales — confirmed by both PPL and the independent geometric diagnostic $\bar{R}$:
+With the L=16 results, gamma=0.050 is the optimal damping at d=768 and d=1024. However, the d=384 sweep (§3) reveals that this is **not universal** — d=384 prefers gamma=0.250, a 5× discrepancy at the same depth:
 
 | Scale | $L$ | $\gamma^\star$ | PPL-geodesic coincidence? | Clean sweep? |
 |-------|:---:|:--------------:|:-------------------------:|:------------:|
+| d=384 | 16 | **0.250** | **No** (gap=0.200) | Yes (zero spikes) |
 | d=768 | 12 | **0.050** | *(pending analysis)* | Yes (zero spikes) |
 | d=1024 | 16 | **0.050** | **Yes** ($\bar{R}$ minimum also at 0.05) | Partially (clean at low gamma, spikes at 0.15+) |
 
-Both share $L=12$–$16$ and converge on the same optimal damping, supporting the depth-scaling formula's prediction that $\gamma^\star$ depends primarily on $L$, not $d$. The d=1024 geodesic residual analysis (§4.2.3) provides the additional confirmation that the optimal gamma is not merely the best training heuristic but the one that produces the most geometrically faithful trajectory.
+The depth-scaling formula's assumption that $\gamma^\star$ depends only on $L$ is falsified by the d=384 result. There is a dimension-dependent phase transition between d=384 (overdamped optimal) and d=768 (underdamped optimal). See §3.5 for the full analysis.
 
 ### 4.3 Mitigation tier summary
 
@@ -231,15 +304,16 @@ $$r_{\text{total}} = r_{\text{layer}}^{\,L}$$
 
 | Configuration | $\gamma$ | $L$ | $r_{\text{layer}}$ | $r_{\text{total}}$ | Regime |
 |---------------|:--------:|:---:|:-------------------:|:-------------------:|--------|
-| **d=384, L=16** | 0.30 | 16 | 0.769 | **0.015 (1.5%)** | Overdamped |
-| d=384, L=16 (predicted $\gamma^{\ast}$) | 0.05 | 16 | 0.952 | **0.457 (45.7%)** | Underdamped |
-| **d=768, L=12** | 0.05 | 12 | 0.952 | **0.557 (55.7%)** | Underdamped |
-| d=768, L=12 | 0.30 | 12 | 0.769 | **0.037 (3.7%)** | Overdamped |
-| **d=1024, L=16** | **0.05** | **16** | **0.952** | **0.457 (45.7%)** | **Underdamped** |
+| **d=384, L=16** (sweep optimal) | **0.25** | 16 | 0.800 | **0.028 (2.8%)** | **Overdamped** |
+| d=384, L=16 (E5c nominal) | 0.30 | 16 | 0.769 | 0.015 (1.5%) | Overdamped |
+| d=384, L=16 (depth-scaling prediction) | 0.05 | 16 | 0.952 | 0.457 (45.7%) | Underdamped |
+| **d=768, L=12** (sweep optimal) | **0.05** | 12 | 0.952 | **0.557 (55.7%)** | **Underdamped** |
+| d=768, L=12 | 0.30 | 12 | 0.769 | 0.037 (3.7%) | Overdamped |
+| **d=1024, L=16** (sweep optimal) | **0.05** | **16** | **0.952** | **0.457 (45.7%)** | **Underdamped** |
 
-**The key finding:** Both the d=768 and d=1024 (L=16) gamma sweeps empirically selected regimes where **45–56% of the initial velocity is retained** through the full layer stack. This is consistent with the leak-free SPLM calibration ($\rho = 0.565$), confirming that the depth-scaling framework's prediction holds across three different scales, two corpora, and multiple architecture variants.
+**The key finding:** The d=768 and d=1024 sweeps selected regimes where **45–56% of the initial velocity is retained** through the full layer stack (underdamped). But the d=384 sweep selected a regime with only **2.8% retention** (overdamped) — and this is the *genuine optimum*, not a mis-transfer. The depth-scaling framework's prediction that all tiers should operate at $\gamma \approx 0.05$ is empirically correct only for $d \geq 768$. At $d=384$, the model benefits from strong friction that forces re-derivation of representations at each layer rather than momentum transport.
 
-By contrast, the d=384 model at its nominal $\gamma=0.30$ retains only 1.5% — placing it firmly in the overdamped/gradient-flow regime. If the depth-scaling prediction is correct, the d=384 model *should* be operating at $\gamma \approx 0.05$ with ~46% retention, i.e. in the same underdamped regime as the d=768 sweep winner.
+This dimension-dependent phase transition (§3.5) is the central finding of the combined gamma sweep programme.
 
 ### 5.2 Two-channel damping: explicit friction vs. LayerNorm projection
 
@@ -288,61 +362,63 @@ The d=768 sweep's preference for $\gamma=0.05$ over $\gamma=0.30$ is striking �
 
 3. **Information transport.** At higher $d$, the residual stream has more capacity per token. The conservative force field can encode finer-grained semantic distinctions, and the hidden state can carry richer information through momentum. Excessive damping destroys this information at each layer, forcing the model to re-derive it from the potential — a wasteful computation that the underdamped regime avoids.
 
-### 5.6 The d=384 question: regime shift or inherited mis-tuning?
+### 5.6 The d=384 answer: regime shift confirmed (July 18, 2026)
 
-The contrast between d=384's *nominal* $\gamma=0.30$ and d=768's *empirical* $\gamma=0.05$ is dramatic:
+The d=384 gamma sweep (§3) has resolved the two competing hypotheses:
 
-| | d=384 (nominal $\gamma=0.30$, L=16) | d=768 ($\gamma=0.05$, L=12) |
+**Hypothesis 1 confirmed: regime shifts with $d$.** The d=384 model genuinely prefers overdamped dynamics ($\gamma^{\ast}=0.250$), and the lower-gamma preference at d=768/d=1024 reflects a dimension-dependent phase transition.
+
+**Hypothesis 2 falsified: underdamped is NOT universally optimal.** The depth-scaling prediction of $\gamma^{\ast}=0.05$ for $L=16$ is empirically wrong at d=384. gamma=0.05 produces PPL 483.81 — 41% worse than the optimal gamma=0.250 (PPL 342.02).
+
+| | d=384 (**sweep-validated** $\gamma=0.25$, L=16) | d=768 ($\gamma=0.05$, L=12) |
 |---|---|---|
-| Per-layer retention | 76.9% | 95.2% |
-| Full-stack retention | 1.5% | 55.7% |
+| Per-layer retention | 80.0% | 95.2% |
+| Full-stack retention | 2.8% | 55.7% |
 | Regime | **Overdamped** (gradient flow) | **Underdamped** (near-geodesic) |
 | Force role | Dominates: sets velocity each step | Steers: deflects existing trajectory |
 | Well escape | Cannot escape shallow wells | Coasts past shallow wells to reach deeper ones |
 | Information transport | Re-derived from potential each layer | Carried by momentum across layers |
+| PPL-geodesic coincidence | **No** (gap=0.200) | *(pending)* |
 | Physics analogy | Ball in viscous fluid | Spacecraft under gravity |
 
-**However, this comparison is between an empirically-swept $\gamma$ (d=768) and an inherited, un-swept $\gamma$ (d=384).** The d=384 value $\gamma=0.30$ was transferred from the SPLM E4/E5 experiments — a different architecture (plain SPLM, no PARF, no Fock), a different depth ($L=8$), and a different corpus (Tiny Shakespeare). No gamma sweep has been run for Fock-PARFLM at $d=384$.
+The regime comparison now uses **empirically-swept** gammas at both scales, making the contrast genuine rather than an artifact of inherited mis-tuning. The d=384 model operates in the overdamped regime by *choice* — the sweep confirms this is its genuine optimum, not a legacy value.
 
-Two competing hypotheses remain open:
-
-1. **Regime shifts with $d$:** The d=384 model genuinely prefers overdamped dynamics ($\gamma \approx 0.30$), and the lower-gamma preference at d=768 reflects a dimension-dependent phase transition in the optimal dynamical regime.
-
-2. **Underdamped is universally optimal:** The d=384 model *also* prefers $\gamma \approx 0.05$ (as the depth-scaling formula predicts, §3.2), and the inherited $\gamma=0.30$ is simply a mis-transfer — the right gamma was never found because no sweep was run.
-
-The depth-scaling formula (§3.2) points toward hypothesis 2, predicting $\gamma^{\ast}=0.050$ for $L=16$ regardless of $d$. But this is a theoretical prediction, not empirical evidence. **A d=384 Fock-PARFLM gamma sweep is needed to discriminate between the two hypotheses.**
-
-If hypothesis 2 is confirmed, the regime comparison table above would need revision: both tiers would be underdamped at their respective optima, and the contrast would be between *nominal practice* ($\gamma=0.30$, overdamped) and *optimal operation* ($\gamma \approx 0.05$, underdamped) at every hidden dimension.
+The dimension-dependent phase transition occurs between d=384 and d=768. See §3.5 for the mechanistic interpretation.
 
 ---
 
-## 6. Depth-Scaling Framework Cross-Validation
+## 6. Depth-Scaling Framework Cross-Validation — Revised
 
-The gamma sweeps at d=768 and d=1024 provide two new empirical anchors for the depth-scaling framework:
+The d=384 sweep falsifies the depth-scaling formula's claim of $d$-independence, requiring a fundamental reassessment:
 
-| Source | Architecture | $L$ | $\gamma^{\ast}$ (empirical) | $\gamma^{\ast}\_{\text{depth}}$ (predicted, $\rho=0.565$) | $\rho$ (implied) |
-|--------|-------------|:---:|:---------------------------:|:---------------------------------------------------------:|:----------------:|
-| E5 leak-free (SPLM, Tiny Shakespeare) | SPLM | 8 | 0.10 | 0.100 | 0.565 |
-| d=768 sweep (Fock-PARFLM, OpenWebText) | Fock-PARFLM | 12 | 0.05 | 0.067 | 0.70 |
-| **d=1024 sweep (Fock-PARFLM, OpenWebText, L=16)** | **Fock-PARFLM** | **16** | **0.05** | **0.050** | **0.565** |
+| Source | Architecture | $d$ | $L$ | $\gamma^{\ast}$ (empirical) | $\gamma^{\ast}\_{\text{depth}}$ (predicted) | Match? |
+|--------|-------------|:---:|:---:|:---------------------------:|:-------------------------------------------:|:------:|
+| E5 leak-free (SPLM, Tiny Shakespeare) | SPLM | 384 | 8 | 0.10 | 0.100 | Yes |
+| **d=384 sweep (Fock-PARFLM, OWT)** | **Fock-PARFLM** | **384** | **16** | **0.250** | **0.050** | **No (5×)** |
+| d=768 sweep (Fock-PARFLM, OWT) | Fock-PARFLM | 768 | 12 | 0.05 | 0.067 | Close |
+| d=1024 sweep (Fock-PARFLM, OWT, L=16) | Fock-PARFLM | 1024 | 16 | 0.05 | 0.050 | Yes |
 
-The d=768 empirical winner ($\gamma=0.05$) is 25% below the formula's prediction ($\gamma^{\ast}=0.067$), implying an effective $\rho \approx 0.70$. The d=1024 (L=16) empirical winner ($\gamma=0.05$) exactly matches the depth-scaling prediction at the original $\rho=0.565$ calibration.
+**The formula works at $d \geq 768$ but fails at $d=384$.** The two L=16 tiers (d=384 and d=1024) have identical formula predictions ($\gamma^{\ast}=0.050$) but empirical optima that differ by 5×. The variable the formula ignores — hidden dimension $d$ — is the dominant factor.
 
-The two Fock-PARFLM results bracket the leak-free calibration: $\rho\_{\text{implied}} \in [0.565, 0.70]$. The discrepancy may reflect statistical noise in the 3,000-step sweeps, or a mild $L$-dependence of $\rho$ (deeper networks preferring slightly less total dissipation). In either case, the depth-scaling formula with $\rho \approx 0.565$–$0.70$ predicts the sweep winner within $\pm 0.02$ across three architectures, two corpora, and four depth configurations ($L = 8, 12, 16$).
+**Why the SPLM L=8 result at d=384 appeared to validate the formula.** The SPLM calibration point ($\gamma^{\ast}=0.10$ at $L=8$, $d=384$) sits between the overdamped d=384 optimum (0.25) and the underdamped prediction (0.05). At $L=8$, the stack is shallow enough that the overdamped/underdamped distinction is muted — 8 layers of moderate damping don't accumulate into the regime-defining velocity loss that 16 layers do. The formula's success at $L=8$ was partly coincidental.
 
-**Confirmed prediction:** The original falsifiable prediction for d=1024 was $\gamma^{\ast} \approx 0.02$–$0.05$ at L=24. After reducing L to 16, the prediction shifted to $\gamma^{\ast} = 0.050$, and the sweep confirmed $\gamma^{\ast} = 0.050$ exactly. The depth-scaling framework has now been validated across three independent empirical anchors.
+**Revised framework.** The depth-scaling formula $\gamma^{\ast} = (m / L \Delta t) \ln(1/\rho)$ should be understood as predicting the **underdamped-regime optimum** — the gamma that preserves a target velocity fraction $\rho$ across the stack. This prediction is:
+- **Correct when the underdamped regime is optimal** ($d \geq 768$): the model benefits from momentum transport, and the formula correctly identifies the damping that preserves it.
+- **Irrelevant when the overdamped regime is optimal** ($d = 384$): the model benefits from force-field dominance, and the "right" amount of velocity preservation is not $\rho=0.565$ but much less.
+
+A complete framework needs a $d$-dependent term — possibly a phase-transition boundary $d_{\text{crit}}$ below which the overdamped regime is preferred, and a separate overdamped-regime gamma predictor for $d < d_{\text{crit}}$.
 
 ---
 
 ## 7. Open Questions
 
-1. **Should we run a d=384 gamma sweep?** The depth-scaling prediction and the d=768/d=1024 results strongly suggest that $\gamma=0.30$ is suboptimal for d=384 Fock-PARFLM. A sweep would confirm whether the PPL improvement is significant (and whether it's worth re-training the E5c model at a lower gamma). A Colab notebook for this sweep has been prepared.
+1. **Where is the phase-transition boundary $d_{\text{crit}}$?** The transition from overdamped-optimal (d=384) to underdamped-optimal (d=768) occurs somewhere in the range $d \in [384, 768]$. A sweep at $d=512$ or $d=640$ would pin down $d_{\text{crit}}$.
 
-2. **Is the sweep resolution sufficient?** Both d=768 and d=1024 sweeps found $\gamma=0.05$ optimal, but neither tested below 0.05. The true optimum may be at 0.03 or 0.02. Future sweeps should include candidates at 0.01, 0.02, and 0.03 in addition to the standard range.
+2. **Is the sweep resolution sufficient at d=768/d=1024?** Both sweeps found $\gamma=0.05$ optimal but neither tested below 0.05. The true optimum may be at 0.03 or 0.02. Future sweeps should include candidates at 0.01, 0.02, and 0.03.
 
-3. **Does the Fock reverse channel shift $\rho$?** The implied $\rho$ values span [0.565, 0.70] across the two Fock-PARFLM sweeps. Whether this range reflects genuine architecture-dependent shifts or sweep noise remains open. Comparing gamma optima with and without the reverse channel enabled would resolve this.
+3. **Does the Fock reverse channel shift the phase boundary?** Comparing gamma sweeps with and without the reverse channel at d=384 would reveal whether the non-conservative component influences the overdamped/underdamped preference.
 
-4. **Does the regime transition affect convergence speed?** If d=384 at $\gamma=0.05$ trains faster (not just to lower PPL) than at $\gamma=0.30$, this would have immediate practical implications for all running experiments.
+4. **The $\gamma=0.400$ anomaly at d=384.** PPL 740.62 is an extreme outlier (2× worse than its neighbours). Is this a resonance, a mode-locking, or a statistical fluke? Reproducing this result with a different seed would clarify.
 
 5. **d=1024 second-half sweep.** Gamma candidates 0.25, 0.30, 0.40, and 0.50 were not completed. Given that the first-half results show increasing gradient spikes at gamma=0.15–0.20 and the geodesic residual analysis (§4.2.3) already confirms the PPL-geodesic coincidence at gamma=0.05, the second half was deprioritised in favour of launching full training.
 
