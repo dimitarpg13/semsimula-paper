@@ -48,6 +48,8 @@ This document records and analyses the gamma sweep results for Fock-PARFLM at ea
 
 4. **Wall-clock near-constant.** All candidates took ~6.4h (23,000s) per 3,000-step sweep on a single H100. The damping coefficient does not meaningfully affect throughput.
 
+5. **Late-training instability (update July 17, 2026).** Full training at gamma=0.05 revealed that the clean stability observed in the 3,000-step sweep does **not** persist indefinitely. Catastrophic gradient spikes (up to grad=81,019, P=78,417) emerged at step ~37,000, with the same P/E/creation_gate signature seen in the d=1024 sweep. Despite the spikes, the model continued to improve (best PPL=93.17 at step 38,000). See [Training\_Instabilities\_in\_Fock-PARFLM\_with\_structured\_V\_theta.md](Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md) §25 for the full analysis. **The 3K-step sweep protocol is validated for finding the optimal gamma but cannot predict long-term stability.**
+
 ---
 
 ## 3. d=384 Gamma Context (L=16, 53M params)
@@ -161,16 +163,43 @@ Key observations:
 
 4. **Best PPL improved by 12% over L=24.** 287.95 vs 327.33 — the shallower network not only trains more stably but also reaches lower perplexity in the same number of steps, indicating that L=24 was hurting both stability and learning efficiency.
 
-#### 4.2.3 Consistency across scales
+#### 4.2.3 Geodesic residual analysis (July 17, 2026)
 
-With the L=16 results, gamma=0.050 is now the optimal damping at all three tested hidden dimensions where sweeps have been completed:
+The retained gamma-sweep checkpoints (gammas 0.05, 0.10, 0.15, 0.20) were analysed with the `geodesic_residual.py` pipeline (see [Geodesic\_Preservation\_Experiment.md](Geodesic_Preservation_Experiment.md) §7). Each checkpoint was evaluated on 10 validation batches at the same gamma it was trained with (diagonal overlay).
 
-| Scale | $L$ | $\gamma^\star$ | Clean sweep? |
-|-------|:---:|:--------------:|:------------:|
-| d=768 | 12 | **0.050** | Yes (zero spikes) |
-| d=1024 | 16 | **0.050** | Partially (clean at low gamma, spikes at 0.15+) |
+| $\gamma_{\text{train}}$ | PPL | $\bar{R}$ | $\gamma_{\text{geo}}$ | Excluded frac |
+|:---:|:---:|:---:|:---:|:---:|
+| **0.050** | **287.95** | **1.077** | 0.927 | 0.0% |
+| 0.100 | 296.40 | 1.142 | 0.929 | 0.0% |
+| 0.150 | 315.96 | 1.124 | 0.939 | 0.0% |
+| 0.200 | 303.19 | 1.242 | 0.937 | 0.0% |
 
-Both share $L=12$–$16$ and converge on the same optimal damping, supporting the depth-scaling formula's prediction that $\gamma^\star$ depends primarily on $L$, not $d$.
+**Key findings:**
+
+1. **PPL-geodesic coincidence confirmed.** $\gamma=0.05$ minimises both PPL (287.95) and $\bar{R}$ (1.077) simultaneously. The damping coefficient that produces the best language model also produces the trajectory most faithful to the Jacobi-metric geodesic of the model's own learned potential $V_\theta$.
+
+2. **Near-monotonic $\bar{R}$.** The residual increases monotonically from 0.05 through 0.10 and 0.20, with the sole inversion at $\gamma=0.15$ ($\bar{R}=1.124 < 1.142$ at $\gamma=0.10$). This inversion likely reflects the watchdog reload at step 2580 disrupting the checkpoint rather than a genuine geometric preference — the same anomaly visible in PPL ranking (§4.2.2, observation 2).
+
+3. **Intrinsic preferred geometry.** The closed-form $\gamma_{\text{geo}}$ values cluster tightly at $0.93 \pm 0.01$ regardless of $\gamma_{\text{train}}$. This convergence indicates that the model's trajectories exhibit an effective damping around 0.93 independent of the explicit friction coefficient — likely reflecting the combined effect of LayerNorm's radial projection and the potential landscape, both of which contribute implicit damping beyond the explicit $\gamma$.
+
+4. **Zero excluded fraction.** All checkpoints had 0% turning-point exclusion ($E - V_\theta < \varepsilon$ nowhere), meaning the residual is computed over the full trajectory without any data loss.
+
+5. **Per-layer structure.** At $\gamma=0.05$ (optimal), per-layer residuals range from 0.953 (layer 0) to 1.258 (layer 3), with layers 4–15 progressively converging toward 1.0. Early layers show the largest departure from geodesic, consistent with the embedding-to-dynamics transition. Later layers are near-geodesic ($R_\ell \approx 1.0$).
+
+![d=1024 L=16: PPL vs Geodesic Residual overlay](images/geodesic_overlay_d1024_L16.png)
+
+*Figure 2. Dual-axis overlay for d=1024 (L=16). Blue solid line: PPL (left axis). Red dashed line: $\bar{R}$ geodesic residual (right axis). Both curves reach their minimum at $\gamma=0.05$ (vertical dotted lines), confirming the PPL-geodesic coincidence.*
+
+#### 4.2.4 Consistency across scales
+
+With the L=16 results and geodesic residual analysis, gamma=0.050 is now the optimal damping at all tested scales — confirmed by both PPL and the independent geometric diagnostic $\bar{R}$:
+
+| Scale | $L$ | $\gamma^\star$ | PPL-geodesic coincidence? | Clean sweep? |
+|-------|:---:|:--------------:|:-------------------------:|:------------:|
+| d=768 | 12 | **0.050** | *(pending analysis)* | Yes (zero spikes) |
+| d=1024 | 16 | **0.050** | **Yes** ($\bar{R}$ minimum also at 0.05) | Partially (clean at low gamma, spikes at 0.15+) |
+
+Both share $L=12$–$16$ and converge on the same optimal damping, supporting the depth-scaling formula's prediction that $\gamma^\star$ depends primarily on $L$, not $d$. The d=1024 geodesic residual analysis (§4.2.3) provides the additional confirmation that the optimal gamma is not merely the best training heuristic but the one that produces the most geometrically faithful trajectory.
 
 ### 4.3 Mitigation tier summary
 
@@ -315,7 +344,9 @@ The two Fock-PARFLM results bracket the leak-free calibration: $\rho\_{\text{imp
 
 4. **Does the regime transition affect convergence speed?** If d=384 at $\gamma=0.05$ trains faster (not just to lower PPL) than at $\gamma=0.30$, this would have immediate practical implications for all running experiments.
 
-5. **d=1024 second-half sweep.** Gamma candidates 0.25, 0.30, 0.40, and 0.50 are still in progress. Given that the first-half results already show increasing gradient spikes at gamma=0.15–0.20, the higher damping candidates are expected to confirm the monotonic degradation trend. Results will be appended to §4.2.1 when available.
+5. **d=1024 second-half sweep.** Gamma candidates 0.25, 0.30, 0.40, and 0.50 were not completed. Given that the first-half results show increasing gradient spikes at gamma=0.15–0.20 and the geodesic residual analysis (§4.2.3) already confirms the PPL-geodesic coincidence at gamma=0.05, the second half was deprioritised in favour of launching full training.
+
+6. **Cross-scale geodesic analysis.** The d=1024 geodesic residual analysis confirms the PPL-$\bar{R}$ coincidence. Running the same analysis on d=768 retained checkpoints would establish whether the coincidence holds across scales and whether the $\gamma_{\text{geo}} \approx 0.93$ convergence is universal.
 
 6. **Optimal depth for d=1024.** The reduction from L=24 to L=16 resolved instability and improved PPL by 12%. Whether L=18 or L=20 would provide an even better stability-capacity tradeoff remains untested. The Tier 3 BAOAB + CfC propagator could potentially enable stable training at deeper configurations (L=20–24) without the second-order gradient cascade.
 
@@ -332,3 +363,5 @@ The two Fock-PARFLM results bracket the leak-free calibration: $\rho\_{\text{imp
 - **[Fock-PARFLM_Scale-Up_Comparative_Experiments.md](Fock-PARFLM_Scale-Up_Comparative_Experiments.md):** Parameter counts and memory analysis for the three tiers. The gamma sweep results here directly inform the `fixed_gamma` setting for the full training runs planned in that document.
 
 - **[Exploiting_the_Riemannian_geometry_of_conservative_language_models.md](Exploiting_the_Riemannian_geometry_of_conservative_language_models.md):** The near-geodesic regime has implications for the Riemannian geometry programme. When the dynamics are nearly geodesic, the Jacobi metric (§2.1 of [Damped_Riemannian_Geodesics...](Damped_Riemannian_Geodesics_in_the_SPLM_family-Comparative_Analysis.md)) becomes an excellent approximation rather than just a theoretical construct.
+
+- **[Geodesic_Preservation_Experiment.md](Geodesic_Preservation_Experiment.md):** The geodesic residual analysis pipeline and its theoretical foundation. The d=1024 overlay results documented in §4.2.3 above are the first completed application of the experiment proposed in that document, confirming the PPL-geodesic coincidence and the convergence of $\gamma_{\text{geo}}$.

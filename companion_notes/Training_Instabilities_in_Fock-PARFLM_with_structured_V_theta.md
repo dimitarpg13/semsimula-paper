@@ -3836,14 +3836,99 @@ The Tier 1–3 mitigations of §23 and the BAOAB + CfC propagator attack the sam
 | Tier 3 (§23.5, items 7 & 9) | **Segment the cascade** | Detach boundaries every $K$ layers | Code change |
 | **CfC propagator** (this section) | **Remove the cascade at source** | Replaces second-order force chain with first-order analytical propagator | Architectural refactor |
 
-The recommended strategy is **sequential**: apply Tier 1 immediately (already implemented), test whether it stabilises $L=24$, and pursue the CfC propagator as the long-term solution — both for stability and for the inference-speed gains documented in [Closed\_Form\_and\_Hybrid\_Integration\_Strategies\_for\_Fock-PARFLM.md](Closed_Form_and_Hybrid_Integration_Strategies_for_Fock-PARFLM.md) §12.
+The recommended strategy is **sequential**: apply Tier 1 immediately (already implemented), test whether it stabilises training, and pursue the CfC propagator as the long-term solution — both for stability and for the inference-speed gains documented in [Closed\_Form\_and\_Hybrid\_Integration\_Strategies\_for\_Fock-PARFLM.md](Closed_Form_and_Hybrid_Integration_Strategies_for_Fock-PARFLM.md) §12.
 
-If Tier 1 succeeds, the CfC propagator remains valuable for its inference benefits (~16× reduction in $V\_\theta$ FLOP cost, unconditional stability enabling larger $\Delta t$ and thus fewer layers) but is no longer an urgent stability fix. If Tier 1 fails, the CfC propagator becomes the **only mitigation that addresses the root cause** without reducing model capacity ($L$, wells, xi channels).
+**Update (July 17, 2026):** Full training runs at both d=768 (L=12) and d=1024 (L=16) demonstrated that Tier 1 (per-group clipping) and Tier 2 (reduce $L$) **delay but do not prevent** the cascade from emerging. The d=768 model, which was perfectly stable during the 3,000-step sweep and the first 33,000 steps, developed catastrophic spikes (up to grad=81,019) at step ~37,000. See §25 for the full analysis. The CfC propagator is now the **only known mitigation that addresses the root cause** and is needed for any training run exceeding ~30K steps at scale.
 
 **Cross-references:**
 - [Closed\_Form\_and\_Hybrid\_Integration\_Strategies\_for\_Fock-PARFLM.md](Closed_Form_and_Hybrid_Integration_Strategies_for_Fock-PARFLM.md) — full derivation of the CfC propagator, blending weights, error bounds, and BAOAB integration (§10).
 - [Fock-PARFLM\_Scale-Up\_Gamma\_Sweep\_Results\_and\_Damping\_Regime\_Analysis.md](Fock-PARFLM_Scale-Up_Gamma_Sweep_Results_and_Damping_Regime_Analysis.md) §4.5 — the empirical evidence that motivated this analysis.
 - [Blended\_CfC\_BAOAB\_Deep\_Dive.md](Blended_CfC_BAOAB_Deep_Dive.md) — fully worked-out construction of the 7-sub-step B̃AOAB̃ scheme.
+
+## 25. Late-Training Spike Emergence: The Cascade is Universal, Not Depth-Specific
+
+### 25.1 Background
+
+Sections 23–24 attributed the catastrophic gradient spikes at d=1024 to the depth of the second-order gradient cascade: L=24 produced a 24-deep chain of `autograd.grad(create_graph=True)` calls, with exponential amplification causing gradient norms up to 7,870 (L=24) and 63,949 (L=16 at lr=1.5e-4). The working hypothesis was that reducing $L$ would proportionally reduce the cascade severity.
+
+### 25.2 d=768 at L=12: The delayed cascade
+
+Full training of d=768 (L=12, 137M params, gamma=0.05) at lr=2e-4 on a single H100 revealed that **the same catastrophic spike pattern emerges after ~37,000 steps** — despite L=12 producing zero spikes during the 3,000-step gamma sweep and the first ~33,000 steps of full training.
+
+#### Observed spikes (step 37,576–38,070):
+
+| Step | Pre-clip grad | Top groups |
+|:----:|:------------:|------------|
+| 37,700 | 128.9 | P=91, E=91 |
+| 37,715 | 785.0 | P=534, E=534, creation_gate=207 |
+| 37,763 | **14,988.6** | P=10,049, E=10,042, creation_gate=4,738 |
+| 37,766 | **20,704.2** | P=14,281, E=14,280, register=3,355 |
+| 37,829 | **4,697.9** | E=3,181, P=3,181, reverse_channel_scale=2,089 |
+| 37,840 | **81,019.2** | **P=78,417**, E=16,547, creation_gate=9,928 |
+| 37,975 | 1,265.5 | P=1,237, E=220, creation_gate=113 |
+| 38,054 | 1,159.1 | P=761, E=761, destruction_gate=325 |
+| 38,070 | **9,378.7** | P=6,463, E=6,456, creation_gate=2,035 |
+
+**The worst spike at d=768 (grad=81,019 at step 37,840) exceeds the worst spike at d=1024 (grad=63,949 at step 10,041).** The same parameter groups dominate: `P` (positional embedding), `E` (input embedding), and `creation_gate`.
+
+#### Key comparison:
+
+| | d=768 (L=12) | d=1024 (L=16, lr=1.5e-4) |
+|---|---|---|
+| Spike onset | Step ~37,000 | Step ~4,000 |
+| Worst spike | **81,019** | 63,949 |
+| Top spike group | `P` = 78,417 | `E` = 42,247 |
+| PPL at onset | ~93 | ~260 |
+| Model still learning? | Yes (PPL improving) | Stalling |
+| Watchdog reloads | 0 (as of step 38,000) | 1 |
+
+### 25.3 Revised understanding
+
+The original framing — that L=24 is "too deep" while L=12 is stable — was **correct for short sweeps but wrong for full training**. The second-order gradient cascade is a function of both depth ($L$) and training duration:
+
+1. **Early training:** The force field $-\nabla_h U$ is weak (the potential surface is approximately flat) and the Hessian eigenvalues are small. The cascade amplification factor is close to 1.0 per layer, so even L=24 would be stable.
+
+2. **Mid training:** As the potential landscape develops sharper features (deeper wells, steeper barriers), the Hessian eigenvalues grow. The per-layer amplification factor exceeds 1.0, and the cascade begins to compound. Deeper models ($L=24$) reach this threshold first ($\sim$step 4K) because the cascade compounds over more layers.
+
+3. **Late training:** Even shallower models ($L=12$) eventually develop potential landscapes with large enough Hessian eigenvalues that the 12-layer cascade amplifies to catastrophic levels ($\sim$step 37K). The cascade is **delayed, not prevented**, by reducing $L$.
+
+This can be expressed as a rough scaling law for the cascade onset step:
+
+$$\text{step}\_{\text{onset}} \propto \frac{1}{L} \cdot \frac{1}{\lambda\_{\max}(H_0)}$$
+
+where $\lambda\_{\max}(H_0)$ is the initial rate of Hessian eigenvalue growth, which depends on $d$, the learning rate, and the corpus difficulty.
+
+### 25.4 Implications for the mitigation tiers
+
+The finding invalidates the **Tier 2 mitigation (reduce $L$)** as a long-term solution. The updated assessment:
+
+| Tier | Strategy | Short-term | Long-term | Status |
+|:----:|----------|:----------:|:---------:|:------:|
+| 1 | Per-group clip + force clamp | Effective | **Degrades** (clip fraction grows) | Implemented |
+| 2 | Reduce $L$ | **Delays onset** | Does not prevent | Applied (L=24→16) |
+| 3 | CfC propagator | N/A | **Only root-cause fix** | Not yet implemented |
+| — | Reduce LR | **Delays onset** | Delays but does not prevent | Being tested (d=1024) |
+
+The **BAOAB + CfC propagator (§24)** is now the only known mitigation that can prevent the cascade from emerging at any training length, because it removes the `create_graph=True` chain entirely.
+
+### 25.5 Why the models survive (for now)
+
+Despite spikes reaching 81,019 at d=768 and 63,949 at d=1024, both models continue to learn (d=768 PPL=93.17, still improving). This is because:
+
+1. **Spikes are intermittent**, not sustained — perhaps 1 in 20 steps triggers a spike, and the remaining steps receive clean gradients.
+2. **Per-group clipping** truncates the spike direction but preserves some gradient signal. The clipped gradient is not zero — it points in a direction that still has a component of the true gradient.
+3. **AdamW's momentum** smooths out spike steps. A single spike step has limited impact on the exponential moving averages of the first and second moments.
+4. **The watchdog** rolls back to the best checkpoint if sustained instability is detected, preventing catastrophic divergence.
+
+However, as training progresses and the potential landscape sharpens further, the spike fraction is expected to grow. At some point, the fraction of useful (non-clipped) gradient steps will drop below the threshold needed for continued learning, and PPL will stall. This is likely what happened to d=1024 at lr=1.5e-4, where PPL stalled at ~258 between steps 6,500 and 9,000.
+
+### 25.6 Practical recommendations
+
+1. **For ongoing runs (d=768, d=1024):** Reduce LR when spikes become frequent. The current d=1024 run resumed from step 9,000 with lr=5e-5 (3× reduction) and grad_clip=0.5. The d=768 run may need a similar LR reduction if PPL stalls.
+
+2. **For the paper:** The spike onset timing and severity should be documented as empirical evidence that the `create_graph=True` force computation has a fundamental scalability limit. This motivates the CfC propagator as a necessary architectural evolution, not just an optional optimization.
+
+3. **For future architectures:** The CfC propagator should be implemented before attempting scale-ups beyond d=1024 or training runs beyond ~50K steps at any scale. The 3,000-step gamma sweep protocol is validated for finding the optimal $\gamma$ but cannot predict whether a full training run will be stable.
 
 ---
 
