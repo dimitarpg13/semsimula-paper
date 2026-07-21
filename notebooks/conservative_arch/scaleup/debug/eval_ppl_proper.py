@@ -63,6 +63,7 @@ Or import and call run_eval(...) directly from a notebook cell.
 """
 
 import argparse
+import gc
 import math
 import os
 import sys
@@ -308,6 +309,11 @@ def run_eval(model, tokens, context=512, stride=256, batch=16,
             else:
                 scored = nll[i, -stride:]            # only the new tokens
             all_nll.append(scored.detach().float().cpu())
+
+        # Free the computation graph built by the grad-enabled forward.
+        # Without this, dead graph nodes accumulate and OOM the session.
+        del logits, nll, x, xb
+        gc.collect()
 
         done = min(bstart + batch, len(starts))
         print(f"\r[eval] windows {done}/{len(starts)}", end="", flush=True)
