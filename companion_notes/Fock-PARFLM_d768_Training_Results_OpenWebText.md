@@ -2,7 +2,7 @@
 
 **Author:** Dimitar P. Gueorguiev
 **Date:** July 2026
-**Status:** In progress — Phase 1 (100K steps) running on LambdaLabs 1×H100; step 52,950 / 100,000
+**Status:** In progress — Phase 1 (100K steps) running on LambdaLabs 1×H100; step 65,500 / 100,000 (WSD decay phase active)
 
 ---
 
@@ -14,12 +14,12 @@ This document records the training history of the Fock-PARFLM v2.1 model at d=76
 |---|:---:|
 | Steps | 100,000 |
 | Token pool | 4B |
-| Tokens consumed (so far) | ~0.87B |
-| Wall time (so far) | 36.5 h |
-| Best PPL (so far) | **90.50** (step 52,500) |
+| Tokens consumed (so far) | ~1.07B |
+| Wall time (so far) | ~62 h |
+| Best PPL (so far) | **89.72** (step 55,500) |
 | Hardware | LambdaLabs 1×H100 |
 
-The model is currently at step 52,950 in the WSD stable-LR phase (decay begins at step 65,000). PPL continues to improve slowly despite escalating gradient spikes (including a catastrophic grad=5.16M at step 51,898 and a watchdog reload at step 52,064). The new best of 90.50 was set *after* the watchdog reload, confirming the model is still learning. The main PPL gains are expected during the WSD decay phase (steps 65K–100K), consistent with the d=384 training pattern where the decay phase delivered a 37% PPL reduction.
+The model has entered the **WSD decay phase** (step 65,000+), the critical window where the d=384 model achieved a 37% PPL reduction. It survived two watchdog reloads (step 52,064 and step 65,076) and multiple catastrophic gradient spikes (worst: grad=5.16M at step 51,898). The best PPL of 89.72 was set at step 55,500. The most recent evaluation at step 65,500 shows PPL=91.87, a mild post-watchdog-reload regression. Spike magnitudes in the 53K–65K window (worst: ~48K) are substantially lower than the 5.16M catastrophe at step 52K, which may indicate moderating spike severity as training progresses. With 34,500 steps of decay remaining and the LR actively declining, the major PPL compression is expected ahead.
 
 ---
 
@@ -134,9 +134,22 @@ Since the d=384 model was trained via Colab notebooks (`colab_fock_depthcond_vth
 
 ---
 
+## 3A. Evaluation Protocol
+
+All validation perplexity numbers reported in this document are computed on a **held-out 2M-token slice** of OpenWebText that is **physically disjoint** from the training data:
+
+- **Split mechanism:** When OpenWebText is first streamed and tokenised (GPT-2 BPE, vocab 50,257), the code requests `MAX_TRAIN_TOKENS + 2,000,000` total tokens. The **last 2M tokens** are sliced off as the validation set; the **first N tokens** become the training set. The two are cached as separate files (`openwebtext_val_2M.npy` and `openwebtext_train_{N}M.npy`).
+- **No overlap:** The validation tokens are from distinct documents at the tail of the stream. There is zero token-level overlap between training and validation.
+- **Fixed across phases:** When the token budget changes between phases, the training pool grows but the validation set remains the **same 2M-token held-out slice**. All PPL numbers across phases are therefore directly comparable.
+- **Evaluation procedure:** At each evaluation step, 5 random batches of length 512 are drawn from the validation set, the model computes cross-entropy loss in inference mode, and the mean loss is exponentiated to produce PPL: $\text{PPL} = \exp(\bar{\mathcal{L}}_{\text{val}})$.
+
+This is identical to the protocol used for d=384 (see [Fock-PARFLM\_d384\_Training\_Results\_OpenWebText.md](Fock-PARFLM_d384_Training_Results_OpenWebText.md) §3A) and standard held-out evaluation practice.
+
+---
+
 ## 4. Learning Curve
 
-### 4.1 Phase 1: 100K steps on 4B tokens (in progress — step 52,950)
+### 4.1 Phase 1: 100K steps on 4B tokens (in progress — step 65,500)
 
 | Step | PPL | Notes |
 |-----:|----:|-------|
@@ -153,26 +166,38 @@ Since the d=384 model was trained via Colab notebooks (`colab_fock_depthcond_vth
 | 35,000 | 93.33 | |
 | 40,000 | 92.50 | Plateau begins |
 | 45,000 | 91.46 | |
-| 45,500 | 90.66 | Previous best |
+| 45,500 | 90.66 | |
 | 48,000 | 90.85 | |
 | 48,500 | 92.98 | Spike-induced regression |
 | 50,000 | 91.49 | |
 | 51,000 | 91.27 | |
-| 52,000 | 90.93 | Post-watchdog-reload recovery |
-| 52,500 | **90.50** | **Current best — NEW BEST after watchdog reload** |
+| 52,000 | 90.93 | Post-watchdog-reload #1 recovery |
+| 52,500 | 90.50 | Previous best after watchdog reload #1 |
+| 53,000 | 90.38 | |
+| 53,500 | 90.32 | |
+| 55,500 | **89.72** | **Current best** |
+| 63,000 | 90.95 | |
+| 63,500 | 90.32 | |
+| 64,000 | 91.05 | |
+| 64,500 | 90.23 | |
+| 65,000 | 91.68 | WSD decay phase begins |
+| 65,500 | 91.87 | Post-watchdog-reload #2 regression |
 
-**Phase 1 observations (interim, step 52,950):**
+**Phase 1 observations (interim, step 65,500):**
 1. **Rapid initial descent:** PPL drops from 1379 to 186 in the first 5K steps, consistent with d=384 Phase 1 (1482 → 252 at 5K steps).
-2. **Stable-phase plateau:** PPL has been oscillating between 90–93 for the last ~10K steps. This is expected behaviour during the WSD stable-LR phase — the model is at a steady learning rate and has extracted most of the signal available at this LR. The same pattern was observed at d=384, where the stable phase (steps ~5K–65K) saw progressively slower gains.
-3. **Resilience through catastrophic spikes:** Despite a grad=5.16M spike at step 51,898 and a watchdog reload at step 52,064 (reverting to step 45,500 checkpoint), the model recovered and set a new best PPL of 90.50 just 436 steps later at step 52,500. This confirms the watchdog mechanism works as designed and the model's learning capacity is not exhausted.
-4. **WSD decay phase (steps 65K–100K) is the critical window:** At d=384, the decay phase reduced PPL by 37% (from ~101 to ~64). Applying a similar reduction factor to d=768's current ~90.5 PPL projects a Phase 1 final PPL of **~57–65**.
-5. **Throughput:** 7.53 sec/step on 1×H100, with an estimated ~98 hours remaining for Phase 1.
+2. **Stable-phase plateau (steps 40K–65K):** PPL oscillated between 89–93 for ~25K steps. This is expected behaviour during the WSD stable-LR phase — the model has extracted most of the signal available at this LR. The same pattern was observed at d=384.
+3. **Resilience through catastrophic spikes and two watchdog reloads:**
+   - **Watchdog reload #1** (step 52,064): grad=5.16M at step 51,898 triggered EMA breach; reverted to step 45,500 (PPL 90.66). Model recovered and improved to 89.72 by step 55,500.
+   - **Watchdog reload #2** (step 65,076): EMA grad_norm=82.5 > 50.0 for 200 sustained steps; reverted to step 55,500 (PPL 89.72). This was triggered by sustained elevated gradient EMA, not a single catastrophic event. Post-reload PPL at step 65,500 is 91.87 — a mild 2.4% regression from best.
+4. **Decay phase entry:** The model has crossed step 65,000 and entered the WSD decay phase. At d=384, the decay phase reduced PPL by 37% (from ~101 to ~64). Applying a similar reduction factor from the current best of 89.72 projects a Phase 1 final PPL of **~57–67**. Even a more conservative 20–25% reduction gives ~67–72.
+5. **Spike magnitude moderation:** The worst spike in the 53K–65K window (~48K at step 64,877) is two orders of magnitude below the run record (5.16M at step 51,898). This may indicate that the cascade partially resets after watchdog reloads and moderates as the LR begins to decay.
+6. **Throughput:** ~3.4 sec/step on 1×H100, ~72 hours remaining for Phase 1.
 
 ---
 
 ## 5. Gradient Health
 
-### 5.1 Spike profile (steps 0–52,950)
+### 5.1 Spike profile (steps 0–65,500)
 
 The JSONL training log records one entry per 50 steps, capturing the grad norm at those periodic checkpoints. However, the terminal output reveals many additional spikes between logged steps. The full picture combines both sources:
 
@@ -180,21 +205,29 @@ The JSONL training log records one entry per 50 steps, capturing the grad norm a
 
 | Metric | Value |
 |--------|:-----:|
-| Spikes (grad > 100) in logged steps | 69 |
+| Spikes (grad > 100) in logged steps | ~110 |
 | Maximum gradient norm (logged) | 1,409.1 |
 
-**From terminal output (every step, steps 49K–53K):**
+**From terminal output (every step):**
 
 | Metric | Value |
 |--------|:-----:|
-| Maximum gradient norm | **5,158,336** (step 51,898) |
+| Maximum gradient norm (run record) | **5,158,336** (step 51,898) |
 | Second-worst spike | 54,818 (step 52,818) |
-| Spikes > 10,000 | 3 (steps 50,051, 50,343, 52,818) |
+| Worst spike in 53K–65K window | ~48,740 (step 64,877) |
+| Spikes > 10,000 | 4+ (steps 50,051, 50,343, 52,818, 64,877) |
 | Spikes > 1,000 | frequent |
-| Watchdog triggers | 1 (step 52,064, EMA=85.9 > 50.0 for 200 steps) |
-| Watchdog reloads | 1 (reverted to step 45,500, PPL 90.66) |
+| Watchdog triggers | 2 |
+| Watchdog reloads | 2 |
 
-The JSONL log significantly underreports spike severity because it samples only every 50 steps, missing the between-step catastrophic events. The terminal output reveals that the spike regime has escalated to catastrophic levels (grad > 5M), confirming the onset of the late-training second-order gradient cascade documented in [Training\_Instabilities\_in\_Fock-PARFLM\_with\_structured\_V\_theta.md](Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md) §23–25.
+**Watchdog reload events:**
+
+| Event | Step | Trigger | Reverted to | Reverted PPL |
+|-------|-----:|---------|------------:|-------------:|
+| Reload #1 | 52,064 | EMA grad_norm=85.9 > 50.0 for 200 steps | 45,500 | 90.66 |
+| Reload #2 | 65,076 | EMA grad_norm=82.5 > 50.0 for 200 steps | 55,500 | 89.72 |
+
+The JSONL log significantly underreports spike severity because it samples only every 50 steps, missing the between-step catastrophic events. The terminal output reveals that the spike regime escalated to catastrophic levels (grad > 5M) around step 52K, then partially moderated in the 53K–65K window (worst ~48K). The watchdog mechanism has now triggered twice, both times successfully preserving the model's learning trajectory by reverting to a recent best checkpoint. Both reloads were triggered by sustained elevated EMA — not single catastrophic spikes — suggesting the cascade builds cumulatively before triggering the watchdog.
 
 ### 5.2 Spike escalation by training phase
 
@@ -205,9 +238,11 @@ The JSONL log significantly underreports spike severity because it samples only 
 | 20K–30K | 10 | 2,773 | — | Moderate onset |
 | 30K–40K | 27 | 3,843 | — | Escalating |
 | 40K–50K | 21 | 1,270 | 15,848 (step 50,051) | Catastrophic spikes emerging |
-| 50K–53K | 8 | 1,409 | **5,158,336** (step 51,898) | Catastrophic; watchdog reload |
+| 50K–53K | 8 | 1,409 | **5,158,336** (step 51,898) | Catastrophic; watchdog reload #1 |
+| 53K–60K | ~15 | ~800 | — | **Moderation** after reload |
+| 60K–65.5K | ~15 | ~1,100 | ~48,740 (step 64,877) | Re-escalating; watchdog reload #2 |
 
-The escalation is clear: spike frequency peaks around steps 30K–40K, while spike *magnitude* continues to climb, with the truly catastrophic events (grad > 10K) appearing only after step 50K.
+The escalation shows a distinctive pattern: spike frequency peaks around steps 30K–40K, while spike *magnitude* climbs to a catastrophic peak at step 52K (5.16M). After watchdog reload #1, spike magnitudes moderated significantly — the worst spike in the 53K–65K window (~48K) is **two orders of magnitude** below the run record. This partial reset suggests the watchdog reload breaks the second-order gradient cascade, though it re-accumulates over the subsequent ~10K steps until triggering reload #2. With the LR now actively declining in the decay phase, spikes may further moderate.
 
 ### 5.3 Top spike groups (from terminal output)
 
@@ -223,10 +258,20 @@ The pattern is consistent with the second-order gradient cascade: the `create_gr
 
 ### 5.4 Post-watchdog recovery
 
-The watchdog reload at step 52,064 reverted the model to its best checkpoint (step 45,500, PPL 90.66). Remarkably, the model recovered and set a **new best PPL of 90.50** just 436 steps later at step 52,500. This demonstrates:
+Both watchdog reloads demonstrate rapid recovery:
+
+| Reload | Reverted to | Reverted PPL | Recovery PPL | Recovery step | Steps to recover |
+|:------:|:----------:|:------------:|:------------:|:-------------:|:----------------:|
+| #1 (step 52,064) | 45,500 | 90.66 | 89.72 | 55,500 | ~3,436 |
+| #2 (step 65,076) | 55,500 | 89.72 | 91.87* | 65,500 | 424 (early) |
+
+*Post-reload #2 PPL is still slightly regressed at step 65,500 (91.87 vs 89.72 best). This is expected — the model has only had 424 steps of recovery, and is now running under a declining LR in the WSD decay phase.
+
+These recoveries demonstrate:
 1. The watchdog mechanism works as designed — it prevents permanent damage from catastrophic spikes
-2. The model's learning capacity is not exhausted despite the instability
-3. The gradient cascade is a transient phenomenon: the reloaded weights break the cascade, and the model can resume productive learning
+2. The model's learning capacity is not exhausted despite repeated instabilities
+3. The gradient cascade is a transient phenomenon: reloaded weights break the cascade, allowing productive learning to resume
+4. Post-reload #1, the model not only recovered but *improved beyond its pre-spike best* (89.72 < 90.66), confirming that the spikes do not represent a capacity ceiling
 
 ### 5.5 Cross-scale comparison
 
@@ -234,11 +279,11 @@ The watchdog reload at step 52,064 reverted the model to its best checkpoint (st
 |-------|-------|:--------:|:------------:|:----------------:|--------|
 | d=384, L=16 | Phase 1 (100K) | 757 | 15 | 0 | Manageable |
 | d=384, L=16 | Phase 2 (150K) | 1,703 | 14 | 0 | Manageable |
-| **d=768, L=12** | **Phase 1 (53K/100K)** | **5,158,336** | **69+ (logged)** | **1** | **Catastrophic (onset ~50K)** |
+| **d=768, L=12** | **Phase 1 (65.5K/100K)** | **5,158,336** | **~110 (logged)** | **2** | **Catastrophic (onset ~50K)** |
 | d=768, L=12 | Prior run (late) | 81,019 | many | 1+ | Catastrophic |
 | d=1024, L=16 | Full run | 63,949 | frequent | multiple | Catastrophic |
 
-The d=768 run confirms that the catastrophic spike regime is a universal late-training phenomenon at d ≥ 768, not specific to a particular depth (L=12 here vs L=16 in prior runs). The onset at ~50K steps (of 100K) aligns with the prior d=768 run's timing, suggesting the cascade triggers when the model's representations reach a critical level of refinement.
+The d=768 run confirms that the catastrophic spike regime is a universal late-training phenomenon at d ≥ 768, not specific to a particular depth (L=12 here vs L=16 in prior runs). The onset at ~50K steps (of 100K) aligns with the prior d=768 run's timing. A notable finding from this run is that spike magnitudes **partially moderate** after a watchdog reload — the 53K–65K window's worst spike (~48K) is two orders of magnitude below the 5.16M catastrophe at step 52K. This suggests the reload breaks the second-order gradient cascade, though it re-accumulates over subsequent ~10K-step windows.
 
 ---
 
@@ -259,8 +304,10 @@ The d=768 run confirms that the catastrophic spike regime is a universal late-tr
 | 40,000 | 0.0019 |
 | 45,000 | 0.0014 |
 | 50,000 | 0.0017 |
+| 52,000 | 0.0028 |
+| 52,500 | 0.0021 |
 
-$v_{\text{reg}}$ remains stable in a narrow range (~0.001–0.002) throughout training, including through the catastrophic spike regime (steps 49K–53K). This indicates that the hidden-state velocities are well-controlled even when the gradient cascade produces extreme gradient norms — the cascade affects the parameter updates, not the forward-pass dynamics. The lower magnitude compared to d=384 Phase 1 (which reached 0.006 by step 100K) may reflect d=768's smaller $\gamma$ (0.05 vs 0.30) — the weaker damping produces smoother, near-geodesic dynamics with inherently smaller velocity fluctuations.
+$v_{\text{reg}}$ remains stable in a narrow range (~0.001–0.003) throughout training, including through the catastrophic spike regime (steps 49K–53K) and subsequent watchdog reloads. A brief elevation to ~0.003 around step 52K coincided with the cascade buildup before the first watchdog reload but returned to baseline immediately after. This indicates that the hidden-state velocities are well-controlled even when the gradient cascade produces extreme gradient norms — the cascade affects the parameter updates, not the forward-pass dynamics. The lower magnitude compared to d=384 Phase 1 (which reached 0.006 by step 100K) may reflect d=768's smaller $\gamma$ (0.05 vs 0.30) — the weaker damping produces smoother, near-geodesic dynamics with inherently smaller velocity fluctuations.
 
 ### 6.2 $\xi$ channel utilisation ($\alpha$ trajectory)
 
@@ -301,9 +348,9 @@ No checkpoints have been exported yet. Phase 1 completion checkpoints will be ar
 
 | Phase | Pool | Consumed (so far) | Pool coverage | Notes |
 |-------|-----:|---------:|--------------:|-------|
-| Phase 1 (in progress) | 4B | ~0.87B | ~22% | No repetition risk |
+| Phase 1 (in progress) | 4B | ~1.07B | ~27% | No repetition risk |
 
-With a 4B token pool and 100K steps at effective batch 32 × sequence length 512 = 16,384 tokens/step, the full Phase 1 will consume ~1.64B tokens — only 41% of the pool. This ensures no data repetition during Phase 1.
+With a 4B token pool and 100K steps at effective batch 32 × sequence length 512 = 16,384 tokens/step, the full Phase 1 will consume ~1.64B tokens — only 41% of the pool. At step 65,500, approximately 1.07B tokens have been consumed (65,500 × 16,384), well within the pool.
 
 ---
 
