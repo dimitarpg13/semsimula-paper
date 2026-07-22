@@ -3932,6 +3932,245 @@ However, as training progresses and the potential landscape sharpens further, th
 
 ---
 
+## 26. The Damping Hypothesis: Is Low γ the Dominant Cause of the Cascade?
+
+### 26.1 Observation
+
+Sections 23–25 attributed the catastrophic gradient spikes at d≥768 to the `create_graph=True` second-order chain through $L$ layers of force computation. However, a striking confound has been overlooked: **the two stable runs and the two unstable runs differ not only in $d$ and $L$, but also in γ**.
+
+| Run | $d$ | $L$ | $\gamma$ | Max grad | Watchdog reloads | Regime |
+|-----|:---:|:---:|:--------:|:--------:|:----------------:|--------|
+| d=384 Phase 1 | 384 | 16 | **0.30** | 757 | 0 | Stable |
+| d=384 Phase 2 | 384 | 16 | **0.30** | 1,703 | 0 | Stable |
+| d=384 Phase 3 | 384 | 16 | **0.30** | 7,427 | 0 | Stable |
+| d=768 | 768 | **12** | **0.05** | 5,158,336 | 2 | Catastrophic |
+| d=1024 | 1024 | 16 | **0.05** | 63,949 | multiple | Catastrophic |
+
+Crucially, d=768 has **fewer layers** ($L=12$) than d=384 ($L=16$) — yet its worst spike is **7 orders of magnitude** larger. If the cascade depth $L$ were the primary driver, d=384 should be worse, not better. This points to $\gamma$ as the dominant variable.
+
+### 26.2 Mechanistic argument: damping controls cascade amplification
+
+The Velocity-Verlet integrator with Langevin friction updates each layer as:
+
+$$v_{l+1} = (1 - \gamma \, dt) \, v_l + F(h_l) \, dt, \qquad h_{l+1} = h_l + v_{l+1} \, dt$$
+
+The training gradient $\partial \mathcal{L}/\partial \theta$ must differentiate through the force $F = -\nabla_h V$ via `create_graph=True`, producing second-order terms $\partial^2 V / \partial h \, \partial \theta$. The severity of this cascade depends on how far perturbations in $h$ propagate across layers — which is controlled by the **per-layer velocity attenuation factor** $(1 - \gamma)$:
+
+| Property | Low $\gamma$ (0.05) | High $\gamma$ (0.30) |
+|----------|:-------------------:|:--------------------:|
+| Per-layer velocity attenuation | $(1 - 0.05) = 0.95$ | $(1 - 0.30) = 0.70$ |
+| Residual velocity after $L=12$ | $(0.95)^{12} \approx 0.54$ | $(0.70)^{12} \approx 0.014$ |
+| Residual velocity after $L=16$ | $(0.95)^{16} \approx 0.44$ | $(0.70)^{16} \approx 0.003$ |
+| Effective memory horizon | ~20 layers | ~3 layers |
+| Dynamical regime | Nearly conservative (ballistic) | Overdamped (gradient-descent-like) |
+| Jacobian spectral radius | $\approx 1$ (perturbations persist) | $\ll 1$ (perturbations decay) |
+
+**The key number: at $\gamma=0.05$, a velocity perturbation retains 54% of its magnitude after 12 layers. At $\gamma=0.30$, it retains only 1.4%.** This is a **38× difference** in how much perturbation energy survives to compound in the backward pass.
+
+The backward pass through `autograd.grad(create_graph=True)` computes the chain:
+
+$$\frac{\partial \mathcal{L}}{\partial \theta} = \sum_{l=1}^{L} \frac{\partial \mathcal{L}}{\partial h_L} \cdot \prod_{k=l}^{L-1} J_k \cdot \frac{\partial F_l}{\partial \theta}$$
+
+where $J_k = \partial(h_{k+1}, v_{k+1}) / \partial(h_k, v_k)$ is the per-layer Jacobian. The spectral radius $\rho(J_k)$ determines whether the product $\prod J_k$ grows or decays:
+
+- **$\gamma = 0.05$:** $\rho(J_k) \approx 1 - 0.05 + \mathcal{O}(\lambda_{\max}(H_V))$. When the Hessian eigenvalue $\lambda_{\max}(H_V)$ exceeds $\gamma/dt$, the spectral radius exceeds 1.0 and the product grows exponentially with $L$. This is the **cascade onset condition**.
+
+- **$\gamma = 0.30$:** $\rho(J_k) \approx 1 - 0.30 + \mathcal{O}(\lambda_{\max}(H_V))$. The Hessian eigenvalue must exceed a **6× larger threshold** before the spectral radius exceeds 1.0. This dramatically raises the bar for cascade onset.
+
+In other words, **$\gamma$ sets the stability margin**: the gap between the current Hessian eigenvalues and the critical threshold for exponential gradient amplification. Low $\gamma$ leaves almost no margin; high $\gamma$ provides a large buffer.
+
+### 26.3 Why the gamma sweep missed this
+
+The 3,000-step gamma sweep correctly identified $\gamma = 0.05$ as the PPL-optimal value at that horizon. But the catastrophic spike regime does not onset until step ~50K at d=768 (§25.2) — the sweep runs for only 6% of that window.
+
+This is a **short-horizon optimisation trap**:
+
+| Training stage | Low $\gamma$ (0.05) | High $\gamma$ (0.20–0.30) |
+|:--------------:|:-------------------:|:-------------------------:|
+| Steps 0–3K (sweep window) | ✅ Best PPL (ballistic exploration is aggressive) | ❌ Slightly worse PPL (dynamics are more conservative) |
+| Steps 3K–50K | ✅ Still fine (Hessian eigenvalues below threshold) | ✅ Fine |
+| Steps 50K+ | ❌ **Catastrophic spikes** (Hessian exceeds stability margin) | ✅ Likely stable (large stability margin) |
+| Steps 65K–100K (WSD decay) | ❌ **Watchdog reloads**, wasted steps, regression | ✅ Smooth decay, full PPL compression |
+
+The sweep selects $\gamma$ that is optimal **conditional on the dynamics remaining stable**, which they do not. The long-run optimal $\gamma$ may be substantially higher.
+
+### 26.4 The confound with $d$
+
+One might argue that the instability is driven by $d$ (larger hidden dimension → sharper potential landscape → larger Hessian eigenvalues), not $\gamma$. This is partially true: the Hessian eigenvalue growth rate $\lambda_{\max}(H_V)$ almost certainly increases with $d$ as the model develops more refined representations. However, $\gamma$ controls the **tolerance** for those eigenvalues:
+
+- At $\gamma = 0.30$, the stability margin is large enough to absorb the Hessian growth at d=384 across 500K steps without a single cascade event.
+- At $\gamma = 0.05$, the stability margin is so thin that even the moderate Hessian growth at d=768 triggers catastrophic cascades by step 50K.
+
+**The hypothesis is not that $d$ is irrelevant, but that $\gamma$ modulates the cascade severity multiplicatively**, and the gamma sweep inadvertently selected a $\gamma$ that minimises the stability margin.
+
+### 26.5 Expected effect of $\gamma = 0.20$ at d=768
+
+At $\gamma = 0.20$, the per-layer attenuation is $(1 - 0.20) = 0.80$, giving:
+
+| Metric | $\gamma = 0.05$ | $\gamma = 0.20$ | Ratio |
+|--------|:---------------:|:---------------:|:-----:|
+| Residual velocity ($L=12$) | $(0.95)^{12} = 0.54$ | $(0.80)^{12} = 0.069$ | 7.8× more damping |
+| Stability margin ($\gamma / dt$) | 0.05 | 0.20 | 4× higher threshold |
+| Jacobian product decay | Near-neutral | Exponentially decaying | Qualitatively different |
+
+The 7.8× increase in velocity damping and 4× increase in stability margin should:
+
+1. **Prevent the exponential cascade**: Hessian eigenvalues that trigger cascades at $\gamma = 0.05$ remain safely below threshold at $\gamma = 0.20$.
+2. **Eliminate or drastically reduce spike severity**: The multiplicative amplification across 12 layers is cut from near-neutral to strongly decaying.
+3. **Produce d=384-like training stability**: The dynamical regime at $\gamma = 0.20$ is qualitatively similar to d=384's $\gamma = 0.30$ — overdamped, with rapid perturbation decay.
+
+**The cost** is some PPL sacrifice in early training (the gamma sweep showed higher $\gamma$ → higher short-run PPL). However, the **net long-run PPL** may actually be *better* because:
+
+- No watchdog reloads wasting ~10K effective steps each
+- No post-reload regression and multi-thousand-step recovery periods
+- Smooth WSD decay phase delivering full PPL compression
+- No risk of cascade re-escalation during the critical decay window
+
+### 26.6 Hints at a γ–d scaling law
+
+The optimal-stable $\gamma$ may follow a dimension-dependent pattern:
+
+| $d$ | $\gamma$ (PPL-sweep optimal) | $\gamma$ (geodesic-optimal) | $\gamma$ (training-stable, empirical) |
+|:---:|:----------------------------:|:---------------------------:|:-------------------------------------:|
+| 384 | 0.25 | 0.05 | 0.30 ✓ (500K steps, zero reloads) |
+| 768 | 0.05 | 0.05 | 0.05 ✗ (catastrophic at 50K) |
+| 1024 | 0.05 | — | 0.05 ✗ (catastrophic at 4K) |
+
+At d=384, the training-stable $\gamma$ (0.30) is **close to the PPL-optimal** (0.25) and far above the geodesic-optimal (0.05). At d≥768, the PPL-sweep optimal and geodesic-optimal happen to **coincide** at 0.05 — but this value is training-unstable.
+
+The PPL-geodesic coincidence at d=768 (documented in the gamma sweep analysis) may be a red herring for training: it selects a $\gamma$ that produces beautiful near-geodesic dynamics in the short run but catastrophic gradient cascades in the long run. The **training-stable $\gamma$ at d=768 likely lies in the range 0.15–0.25**, similar to d=384 — in the overdamped regime where PPL and geodesic optimality diverge.
+
+### 26.7 Experimental plan
+
+The validation strategy is designed around **information-efficient sequencing**: spend the minimum compute to resolve the key uncertainty before committing to expensive full runs.
+
+#### Why Phase 1a (fresh-init comparison) was dropped
+
+An earlier version of this plan included a 10K-step fresh-init run at $\gamma = 0.20$ to compare gradient profiles against the $\gamma = 0.05$ Phase 1 logs. This was abandoned for two reasons:
+
+1. **No baseline data:** The d=768 $\gamma = 0.05$ training log (JSONL) records `grad_norm` every 50 steps as a point sample, but does not capture the maximum gradient norm within each window. The terminal output showing between-step catastrophic spikes (e.g., grad=5.16M at step 51,898) is not persisted — early-step terminal output is lost to scrollback. There is no reliable gradient-norm baseline to compare against.
+
+2. **The first 10K steps are not discriminating:** Even at $\gamma = 0.05$, the first 10K steps were clean (JSONL max grad ~395–482, only 1 spike > 100). The cascade does not onset until step ~37K–50K, when the Hessian eigenvalues exceed the thin stability margin. A 10K fresh-init comparison would show **both** runs looking clean — it cannot distinguish the two $\gamma$ values.
+
+Both problems are solved by the **cross-gamma Phase 2 test** (below), which starts from a checkpoint whose Hessian has *already* exceeded the $\gamma = 0.05$ stability margin.
+
+#### Prerequisite: Improved gradient logging
+
+Before running the validation, `train_fock.py` should be patched to log `max_grad_in_window` — the maximum gradient norm seen across all steps within each 50-step JSONL logging interval. This ensures that future runs capture spike severity at full resolution, enabling fair cross-run comparisons. See `train_fock.py` for the implementation.
+
+#### Step 1: Complete d=768 Phase 1 at $\gamma = 0.05$ (~18 hours remaining)
+
+The current run is at step 81,500 / 100,000. The WSD decay is actively compressing PPL (best 84.04 at step 81,500, with 4 consecutive new bests). Let it finish — every remaining step is valuable, and the final Phase 1 PPL at $\gamma = 0.05$ becomes the **baseline** for comparison.
+
+**Deliverable:** Phase 1 best checkpoint and final PPL at $\gamma = 0.05$.
+
+#### Step 2: Cross-gamma Phase 2 test (10K steps, ~10 hours) — THE CRITICAL EXPERIMENT
+
+Run 10K steps of Phase 2 starting from the **$\gamma = 0.05$ Phase 1 best checkpoint** but using $\gamma = 0.20$ (with `FRESH_SCHEDULE=True`, `SKIP_OPTIMIZER_STATE=True`).
+
+**Why this is the most discriminating test:** The Phase 1 best checkpoint contains a model at PPL ~65–70, whose potential landscape is sharp enough that $\gamma = 0.05$ produced catastrophic spikes (grad > 5M) in the second half of Phase 1. By resuming from this checkpoint at $\gamma = 0.20$, we test the hypothesis at the exact model state where it matters — a model whose Hessian has **already exceeded** the $\gamma = 0.05$ stability margin. If $\gamma = 0.20$ tames it, the hypothesis is confirmed. If it doesn't, the hypothesis is wrong.
+
+This is analogous to the d=384 Phase 2→3 transition, which changed peak LR by 2× (from $3 \times 10^{-4}$ to $1.5 \times 10^{-4}$) — a similarly dramatic dynamics change — and the model adapted within ~500 steps. Switching $\gamma$ may be equally recoverable.
+
+| Metric | Expected at $\gamma = 0.05$ (Phase 2) | Expected at $\gamma = 0.20$ (cross-gamma) |
+|--------|:--:|:--:|
+| Gradient profile (steps 0–10K) | Catastrophic spikes within 5–10K steps (Hessian already above $\gamma = 0.05$ margin) | Clean (if hypothesis correct) |
+| Warm-restart regression depth | ~15% (based on d=384) | Possibly deeper (regime change) |
+| Recovery time to Phase 1 best PPL | ~25K steps (based on d=384) | ? |
+| `max_grad_in_window` (from improved logging) | Expect > 10,000 | Expect < 1,000 |
+
+**Decision gate:**
+
+| Outcome | Recommended path |
+|---------|-----------------|
+| Cross-gamma works (PPL recovering, clean gradients) | **Continue this run as Phase 2** — no Phase 1 rerun needed (Path A) |
+| Cross-gamma PPL stalls (regime mismatch) | **Full Phase 1 rerun at $\gamma = 0.20$**, then Phases 2+3 (Path B) |
+| Cross-gamma still spiky (hypothesis wrong) | **Continue with $\gamma = 0.05$ Phase 2**, accept instabilities (Path C) |
+
+#### Step 3: Commit to full Phase 2 (140K remaining steps)
+
+Based on Step 2 results, commit to one of three paths:
+
+| Path | Scenario | Total H100 time (from now) | Expected outcome |
+|:----:|----------|:----------------:|-----------------|
+| **A** | Cross-gamma works | 18h (finish P1) + 10h (test) + 130h (P2 remainder) = **158h** | Best efficiency — preserves all Phase 1 compute |
+| **B** | Regime mismatch | 18h + 10h + 93h (P1 rerun at $\gamma = 0.20$) + 140h (P2) = **261h** | Clean foundation, higher cost |
+| **C** | Hypothesis wrong | 18h + 10h + 140h (P2 at $\gamma = 0.05$) = **168h** | Accept instabilities |
+
+**Path A is the most attractive:** a single 10-hour experiment either preserves all Phase 1 compute and stabilises Phases 2+3, or fails cheaply.
+
+#### Step 4: d=1024 validation (contingent on Step 2 success)
+
+If $\gamma = 0.20$ stabilises d=768, extend the validation to d=1024:
+
+1. **10K steps at d=1024, $\gamma = 0.20$** — the $\gamma = 0.05$ run had catastrophic spikes by step 4K, so 10K steps is a decisive test.
+2. **10K steps at d=1024, $\gamma = 0.25$** — given the earlier cascade onset at d=1024 (step ~4K vs ~50K at d=768), a higher $\gamma$ may be needed. $\gamma = 0.25$ provides a 5× stability margin increase and is closest to d=384's proven-stable regime.
+
+| Metric | $\gamma = 0.05$ (from prior run) | $\gamma = 0.20$ | $\gamma = 0.25$ |
+|--------|:--:|:--:|:--:|
+| Cascade onset | Step ~4K | ? (expect > 10K if hypothesis correct) | ? (expect > 10K) |
+| Max gradient (0–10K) | 63,949 | ? | ? |
+| PPL at 10K | ~260 (stalled) | ? | ? |
+
+If either value produces clean training, commit to a full 100K-step Phase 1 at d=1024 (~350M params, directly comparable to GPT-2 Medium). This would transform the d=1024 narrative from "unstable, cannot train" to "stability resolved via damping hypothesis."
+
+**Cost:** ~20 hours for both 10K-step tests. If successful, a full d=1024 Phase 1 would cost ~130–160 hours on 1×H100 (slower per step due to larger model).
+
+#### Future scales: Stability-aware gamma sweep protocol
+
+For d=2048 and beyond, replace the current 3K-step PPL-only gamma sweep with a **20K–30K-step stability-aware sweep** that monitors both PPL *and* gradient norm statistics. The selection criterion becomes:
+
+$$\gamma^* = \arg\min_\gamma \text{PPL}_{20K} \quad \text{subject to} \quad \max_{t \leq 20K} \| g_t \| < \tau_{\text{spike}}$$
+
+where $\tau_{\text{spike}}$ is a spike severity threshold (e.g., 10,000). This trades sweep cost (7× longer per candidate) for much higher confidence that the selected $\gamma$ will remain stable through full training.
+
+#### Summary timeline
+
+Assuming a single LambdaLabs 1×H100 instance:
+
+```
+Day 1       (18h):  Finish d=768 Phase 1 at γ=0.05 → bank checkpoint
+Day 2       (10h):  Step 2 — 10K steps cross-gamma Phase 2 test (γ=0.20 from γ=0.05 ckpt)
+Day 2              Decision gate: commit to Path A, B, or C
+Day 2–3     (20h):  Step 4 — d=1024 validation (γ=0.20 and γ=0.25, 10K each)
+Day 3+             Full Phase 2 (d=768) and/or Phase 1 (d=1024) at validated γ
+```
+
+**Total validation cost before any full-run commitment: ~28 hours (~1 day).** This resolves the damping hypothesis at the most informative model state (post-Phase 1 checkpoint where $\gamma = 0.05$ was already catastrophically unstable), at minimal compute cost.
+
+### 26.8 Implications for the mitigation tier table
+
+The damping hypothesis adds a new mitigation tier — potentially more practical than the CfC propagator (§24) because it requires zero code changes:
+
+| Tier | Strategy | Mechanism | Long-term | Status |
+|:----:|----------|-----------|:---------:|:------:|
+| 1 | Per-group clip + force clamp | Truncate spike direction | Degrades | Implemented |
+| 2 | Reduce $L$ | Shorten cascade chain | Delays onset | Applied |
+| 3 | CfC propagator | Remove `create_graph` chain | **Root-cause fix** | Not implemented |
+| **4** | **Increase $\gamma$ (overdamped regime)** | **Raise stability margin** | **May prevent onset entirely** | **Proposed** |
+| — | Reduce LR | Slow Hessian eigenvalue growth | Delays onset | Being tested |
+
+**Tier 4 is uniquely attractive** because:
+- It is a single hyperparameter change (no code modification)
+- It has a clear mechanistic justification (exponential perturbation damping)
+- It can be validated cheaply (10K-step comparison run)
+- It may render Tiers 1–2 unnecessary if the stability margin is large enough
+- It works within the existing Velocity-Verlet framework, unlike the CfC propagator which requires a new integrator
+
+The main risk is that overdamped dynamics ($\gamma \gg \gamma_{\text{geodesic}}$) sacrifice some modelling capacity — the ballistic regime captures long-range token interactions that the overdamped regime may miss. This would manifest as a higher *floor* PPL even with unlimited training steps. However, d=384's excellent PPL results at $\gamma = 0.30$ (well into the overdamped regime, far from the geodesic-optimal $\gamma = 0.05$) demonstrate that the overdamped regime retains substantial modelling power at least up to d=384.
+
+### 26.9 Open questions
+
+1. **Is there a sweet spot?** Can we find a $\gamma$ at d=768 that is stable *and* retains some ballistic character — e.g., $\gamma = 0.15$ — or does stability require full overdamping?
+
+2. **Does the stability threshold shift with training?** The Hessian eigenvalues grow throughout training. A $\gamma$ that is stable at step 50K may become unstable at step 200K. If so, an **annealing schedule** for $\gamma$ (increasing $\gamma$ during training) might be needed.
+
+3. **Interaction with LR:** Both $\gamma$ and LR affect the stability margin. The current d=768 run uses LR $= 2 \times 10^{-4}$ (vs d=384's $3 \times 10^{-4}$). A combined ($\gamma$, LR) stability sweep would map the full stable region.
+
+4. **Does the CfC propagator become unnecessary?** If overdamped $\gamma$ stabilises training at all scales, the CfC propagator may be an overengineered solution. However, the CfC propagator also has efficiency benefits (no `create_graph` memory overhead), so it may still be desirable for memory-constrained scale-ups.
+
+---
+
 *This note documents the training process of a research experiment and is
 intended for internal diagnostic use. The fixes described here are all
 implemented in the notebook
@@ -3954,4 +4193,4 @@ and the depth-conditioned multi-context Gaussian with per-layer reverse
 channel at
 `notebooks/conservative_arch/scaleup/colab_fock_depthcond_vtheta_openwebtext.ipynb`.*
 
-*Last updated: July 2026*
+*Last updated: 21 July 2026*
