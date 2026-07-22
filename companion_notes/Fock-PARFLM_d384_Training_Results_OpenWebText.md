@@ -2,7 +2,7 @@
 
 **Author:** Dimitar P. Gueorguiev
 **Date:** July 2026
-**Status:** In progress — Phase 3 (250K steps) running on Colab; step 52,350 / 250,000. Best PPL **21.96** (step 49,500)
+**Status:** In progress — Phase 3 (250K steps) running on Colab; step ~80,000 / 250,000. Best PPL **16.65** (step 77,500)
 
 ---
 
@@ -14,14 +14,22 @@ This document records the training history of the Fock-PARFLM v2.1 model at d=38
 |---|:---:|:---:|:---:|:---:|
 | Steps | 100,000 | 150,000 | 250,000 | 500,000 |
 | Token pool | 1B | 2B | 4B | — |
-| Tokens consumed | 0.82B | 1.23B | ~0.43B (so far) | ~2.48B |
-| Wall time | 5.8 h | 20.8 h | ~21 h (so far) | ~48 h |
-| Best PPL | 63.69 (step 99K) | 27.23 (step 150K) | **21.96** (step 49,500) | **21.96** |
+| Tokens consumed | 0.82B | 1.23B | ~0.66B (so far) | ~2.71B |
+| Wall time | 5.8 h | 20.8 h | ~33 h (so far) | ~60 h |
+| Best PPL | 63.69 (step 99K) | 27.23 (step 150K) | **16.65** (step 77,500) | **16.65** |
 | Hardware | Colab A100 / H100 | Colab A100 / H100 | Colab H100 | — |
 
-Phase 3 has already achieved **PPL 21.96** at step 49,500 — a 19% improvement over Phase 2's best — and is **still in the WSD stable-LR phase**. The WSD decay phase does not begin until step 175,000, leaving 123K steps of active LR decay. Based on prior phases, the decay typically delivers a 30–37% PPL reduction, projecting a Phase 3 final PPL of **~14–17**.
+### 1.1 Cumulative Token Budget by Phase
 
-This would make the 53M-parameter Fock-PARFLM competitive with YuriiFormer Small (124M params, 14.75B tokens, PPL ~18.5) and GPT-2 Medium (354M params, PPL ~17.1) — at **less than half the parameters** and a **fraction of the training data**.
+| Phase | Steps | Token Pool | Cumulative Token Pool | Tokens Consumed | Cumulative Consumed |
+|:-----:|------:|:----------:|:---------------------:|:---------------:|:-------------------:|
+| 1 | 100,000 | 1B | 1B | 0.82B | 0.82B |
+| 2 | 150,000 | 2B | 3B | 1.23B | 2.05B |
+| 3 | 250,000 | 4B | **7B** | ~2.05B (projected) | **~4.1B** |
+
+Phase 3 has achieved **PPL 16.65** at step 77,500 — a 39% improvement over Phase 2's best (27.23) — and is **still in the WSD stable-LR phase**. The WSD decay phase does not begin until step 175,000, leaving ~95K steps of stable LR and then 75K steps of active LR decay. Based on prior phases, the decay typically delivers a 30–37% PPL reduction, projecting a Phase 3 final PPL of **~12–15**.
+
+This would make the 53M-parameter Fock-PARFLM competitive with or superior to GPT-2 Medium (354M params, PPL ~17.1) — at **less than half the parameters** and a **fraction of the training data**. A proper full-validation-set PPL evaluation is in progress to verify the 16.65 figure (see `debug/eval_ppl_debug.ipynb`).
 
 ---
 

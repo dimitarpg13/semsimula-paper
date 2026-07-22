@@ -2,7 +2,7 @@
 
 **Author:** Dimitar P. Gueorguiev
 **Date:** July 2026
-**Status:** In progress — Phase 1 (100K steps) running on LambdaLabs 1×H100; step 65,500 / 100,000 (WSD decay phase active)
+**Status:** In progress — Phase 1 (100K steps) running on LambdaLabs 1×H100; step 81,500 / 100,000 (WSD decay phase active)
 
 ---
 
@@ -14,12 +14,22 @@ This document records the training history of the Fock-PARFLM v2.1 model at d=76
 |---|:---:|
 | Steps | 100,000 |
 | Token pool | 4B |
-| Tokens consumed (so far) | ~1.07B |
-| Wall time (so far) | ~62 h |
-| Best PPL (so far) | **89.72** (step 55,500) |
+| Tokens consumed (so far) | ~1.34B |
+| Wall time (so far) | ~93 h |
+| Best PPL (so far) | **84.04** (step 81,500) |
 | Hardware | LambdaLabs 1×H100 |
 
-The model has entered the **WSD decay phase** (step 65,000+), the critical window where the d=384 model achieved a 37% PPL reduction. It survived two watchdog reloads (step 52,064 and step 65,076) and multiple catastrophic gradient spikes (worst: grad=5.16M at step 51,898). The best PPL of 89.72 was set at step 55,500. The most recent evaluation at step 65,500 shows PPL=91.87, a mild post-watchdog-reload regression. Spike magnitudes in the 53K–65K window (worst: ~48K) are substantially lower than the 5.16M catastrophe at step 52K, which may indicate moderating spike severity as training progresses. With 34,500 steps of decay remaining and the LR actively declining, the major PPL compression is expected ahead.
+The model is deep into the **WSD decay phase** (step 81,500 / 100,000). After surviving two watchdog reloads (step 52,064 and step 65,076) and catastrophic gradient spikes (worst: grad=5.16M at step 51,898), the model has entered a regime of confident, monotonic PPL descent with 4 consecutive NEW BEST records in the latest 2K steps (85.21 → 84.77 → 84.06 → 84.04). The LR has decayed from 1.34e-4 to 1.14e-4. With ~18.5K steps of decay remaining, substantial further PPL compression is expected.
+
+### 1.1 Cumulative Token Budget by Phase (Planned)
+
+| Phase | Steps | Token Pool | Cumulative Token Pool | Tokens Consumed (est.) | Cumulative Consumed |
+|:-----:|------:|:----------:|:---------------------:|:----------------------:|:-------------------:|
+| 1 | 100,000 | 4B | 4B | ~1.64B | 1.64B |
+| 2 | 150,000 | 6B | 10B | ~2.46B | 4.10B |
+| 3 | 250,000 | 8B | **18B** | ~4.10B | **~8.20B** |
+
+Token consumption per phase is estimated as steps × effective_batch_size (32) × sequence_length (512) = 16,384 tokens/step. The graduated pool strategy (4B → 6B → 8B) ensures no repetition risk: even Phase 3's ~4.1B consumed tokens represents only 51% of the 8B pool.
 
 ---
 
@@ -348,9 +358,9 @@ No checkpoints have been exported yet. Phase 1 completion checkpoints will be ar
 
 | Phase | Pool | Consumed (so far) | Pool coverage | Notes |
 |-------|-----:|---------:|--------------:|-------|
-| Phase 1 (in progress) | 4B | ~1.07B | ~27% | No repetition risk |
+| Phase 1 (in progress) | 4B | ~1.34B | ~33% | No repetition risk |
 
-With a 4B token pool and 100K steps at effective batch 32 × sequence length 512 = 16,384 tokens/step, the full Phase 1 will consume ~1.64B tokens — only 41% of the pool. At step 65,500, approximately 1.07B tokens have been consumed (65,500 × 16,384), well within the pool.
+With a 4B token pool and 100K steps at effective batch 32 × sequence length 512 = 16,384 tokens/step, the full Phase 1 will consume ~1.64B tokens — only 41% of the pool. At step 81,500, approximately 1.34B tokens have been consumed (81,500 × 16,384), well within the pool.
 
 ---
 
@@ -361,12 +371,12 @@ Following the graduated extension strategy established with d=384:
 | | Phase 2 (planned) | Phase 3 (planned) |
 |---|:---:|:---:|
 | Steps | 150,000 | 250,000 |
-| Token pool | 4B | 4B (or 8B) |
+| Token pool | 6B | 8B |
 | Resume from | Phase 1 best checkpoint | Phase 2 best checkpoint |
 | `FRESH_SCHEDULE` | True | True |
 | Projected final PPL | ~40–55 | ~25–35 |
 
-PPL projections are based on the d=384 phase-over-phase reduction pattern (Phase 1→2: 37% reduction, Phase 2→3: TBD), adjusted for the larger model's higher capacity.
+PPL projections are based on the d=384 phase-over-phase reduction pattern (Phase 1→2: 57% reduction, Phase 2→3: 39% so far), adjusted for the larger model's higher capacity. The total tokens seen across all three phases will be ~8.2B (see §1.1).
 
 ---
 
