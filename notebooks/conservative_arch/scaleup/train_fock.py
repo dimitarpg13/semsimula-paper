@@ -1000,6 +1000,7 @@ def train(cfg: TrainConfig):
     grad_norm_above_thresh = 0
     last_spike_step = -10**9
     last_pg_norms: Dict[str, float] = {}
+    max_grad_in_window = 0.0  # tracks max grad_norm between JSONL writes
 
     ckpt_steps = set(range(cfg.ckpt_interval,
                            cfg.total_steps + 1,
@@ -1059,6 +1060,9 @@ def train(cfg: TrainConfig):
         else:
             last_pg_norms = {}
             grad_norm = nn.utils.clip_grad_norm_(trainable, cfg.grad_clip)
+
+        # ── Track max gradient norm within logging window ──
+        max_grad_in_window = max(max_grad_in_window, float(grad_norm))
 
         # ── Spike debugger ──
         if cfg.grad_spike_debug and is_main():
@@ -1141,16 +1145,20 @@ def train(cfg: TrainConfig):
             print(
                 f"step {step+1:7d}/{cfg.total_steps}  "
                 f"ntp={avg_ntp:.4f}  v_reg={avg_vreg:.4f}  lr={lr_now:.2e}  "
-                f"grad={float(grad_norm):.2f}  {rep_str}{top_grp}"
+                f"grad={float(grad_norm):.2f}  "
+                f"max_grad={max_grad_in_window:.2f}  "
+                f"{rep_str}{top_grp}"
                 f"{extra}  "
                 f"{elapsed:.0f}s  (~{remaining/3600:.1f}h remaining)"
             )
             log_write({
                 "step": step + 1, "train_loss": avg_ntp, "v_reg": avg_vreg,
                 "lr": lr_now, "grad_norm": float(grad_norm),
+                "max_grad_in_window": max_grad_in_window,
                 "reg_repulsion": accum_rep,
                 "elapsed_sec": elapsed, "sec_per_step": sec_per_step,
             })
+            max_grad_in_window = 0.0  # reset for next window
 
         # ── Evaluation ──
         if (step + 1) % cfg.eval_interval == 0:
