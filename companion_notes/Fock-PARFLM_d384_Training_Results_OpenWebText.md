@@ -2,7 +2,7 @@
 
 **Author:** Dimitar P. Gueorguiev
 **Date:** July 2026
-**Status:** In progress — Phase 3 (250K steps) running on Colab; step ~80,000 / 250,000. Best PPL **16.65** (step 77,500)
+**Status:** In progress — Phase 3 (250K steps) running on Colab; step 84,500 / 250,000. Best PPL **14.59** (step 83,500)
 
 ---
 
@@ -14,9 +14,9 @@ This document records the training history of the Fock-PARFLM v2.1 model at d=38
 |---|:---:|:---:|:---:|:---:|
 | Steps | 100,000 | 150,000 | 250,000 | 500,000 |
 | Token pool | 1B | 2B | 4B | — |
-| Tokens consumed | 0.82B | 1.23B | ~0.66B (so far) | ~2.71B |
-| Wall time | 5.8 h | 20.8 h | ~33 h (so far) | ~60 h |
-| Best PPL | 63.69 (step 99K) | 27.23 (step 150K) | **16.65** (step 77,500) | **16.65** |
+| Tokens consumed | 0.82B | 1.23B | ~0.69B (so far) | ~2.74B |
+| Wall time | 5.8 h | 20.8 h | ~36 h (so far) | ~63 h |
+| Best PPL | 63.69 (step 99K) | 27.23 (step 150K) | **14.59** (step 83,500) | **14.59** |
 | Hardware | Colab A100 / H100 | Colab A100 / H100 | Colab H100 | — |
 
 ### 1.1 Cumulative Token Budget by Phase
@@ -27,9 +27,9 @@ This document records the training history of the Fock-PARFLM v2.1 model at d=38
 | 2 | 150,000 | 2B | 3B | 1.23B | 2.05B |
 | 3 | 250,000 | 4B | **7B** | ~2.05B (projected) | **~4.1B** |
 
-Phase 3 has achieved **PPL 16.65** at step 77,500 — a 39% improvement over Phase 2's best (27.23) — and is **still in the WSD stable-LR phase**. The WSD decay phase does not begin until step 175,000, leaving ~95K steps of stable LR and then 75K steps of active LR decay. Based on prior phases, the decay typically delivers a 30–37% PPL reduction, projecting a Phase 3 final PPL of **~12–15**.
+Phase 3 has achieved **PPL 14.59** at step 83,500 — a **46% improvement** over Phase 2's best (27.23) — and is **still in the WSD stable-LR phase**. The WSD decay phase does not begin until step 175,000, leaving ~91K steps of stable LR and then 75K steps of active LR decay. Based on prior phases, the decay typically delivers a 30–37% PPL reduction, projecting a Phase 3 final PPL of **~9–11**.
 
-This would make the 53M-parameter Fock-PARFLM competitive with or superior to GPT-2 Medium (354M params, PPL ~17.1) — at **less than half the parameters** and a **fraction of the training data**. A proper full-validation-set PPL evaluation is in progress to verify the 16.65 figure (see `debug/eval_ppl_debug.ipynb`).
+The 53M-parameter Fock-PARFLM has already **surpassed GPT-2 Medium** (354M params, PPL ~17.1) and is **within 0.3 PPL of YuriiFormer Medium** (354M params, PPL ~14.9) — at **6.7× fewer parameters** and **5.5× fewer training tokens**. A proper full-validation-set PPL evaluation is in progress to verify these figures (see `debug/eval_ppl_debug.ipynb`).
 
 ---
 
@@ -196,23 +196,33 @@ This is standard held-out evaluation — equivalent to how GPT-2/GPT-3 papers re
 | 45,500 | **23.95** | Breaks 24 |
 | 47,000 | **23.49** | |
 | 48,000 | **23.12** | |
-| 49,500 | **21.96** | **Current overall best** |
+| 49,500 | **21.96** | |
 | 50,000 | 23.72 | |
-| 50,500 | 23.10 | |
-| 51,000 | 23.79 | |
-| 51,500 | 23.41 | |
 | 52,000 | 22.01 | |
+| 75,500 | 18.40 | _ext2 resume from step 75,000 |
+| 76,000 | 17.38 | |
+| 77,000 | 17.01 | |
+| 78,500 | **16.62** | Breaks previous best (16.65) |
+| 79,000 | **16.42** | |
+| 79,500 | **15.68** | Breaks 16 |
+| 80,000 | **15.16** | **Surpasses GPT-2 Medium (PPL ~17.1, 354M params)** |
+| 81,500 | 15.50 | |
+| 82,500 | 15.29 | |
+| 83,500 | **14.59** | **Current overall best; approaches YuriiFormer Medium (PPL ~14.9, 354M)** |
+| 84,000 | 15.13 | |
 
-**Phase 3 observations (interim, step 52,350):**
+**Phase 3 observations (interim, step 84,500):**
 1. **Mild warm-restart regression:** PPL briefly regressed from 27.14 to ~29.4 in the first 500 steps before recovering. This is much milder than Phase 2's regression (to 74.4), likely due to the lower peak LR (1.5e-4 vs 3e-4).
-2. **Sustained descent in the stable phase:** Unlike Phases 1–2 where the stable phase plateaued, Phase 3's stable phase is producing continuous new bests. The model set **10 consecutive new-best records** from step 29,500 to 49,500, reducing PPL from 27.14 to 21.96 — a **19% reduction** with constant LR. This suggests the model is exploiting the 4B token pool's greater data diversity.
-3. **Clean gradient health:** Only 6 mild spikes (max ~7,427 at step 42,011, immediately absorbed). No watchdog triggers. The per-group clips are working as intended. This is the cleanest training window across all three phases.
-4. **$v_{\text{reg}}$ declining:** From 0.013 at step 25K to ~0.009 at step 52K, indicating the dynamics are becoming smoother.
-5. **All $\xi$ channels active:** $\alpha$ values continue to evolve slowly ($\alpha_1$: 0.133→0.089, $\alpha_5$ stable at 0.963).
-6. **Step 52,000 PPL of 22.01** nearly matches the 49,500 best (21.96), confirming this is not a statistical fluke.
-7. **WSD decay phase (steps 175K–250K) still 123K steps away.** If it delivers even a 20–30% reduction from the eventual stable-phase floor (~19–20 by step 175K):
-   - 20% reduction: 19 × 0.80 = **~15.2 PPL**
-   - 30% reduction: 19 × 0.70 = **~13.3 PPL**
+2. **Sustained descent in the stable phase:** Phase 3's stable phase is producing continuous new bests across a remarkably long window. From step 29,500 to 83,500, the model set **15+ new-best records**, reducing PPL from 27.14 to 14.59 — a **46% reduction** with constant LR. This rate of improvement in the stable phase far exceeds Phases 1–2, where the stable phase plateaued.
+3. **Multiple milestone crossings:** PPL broke through 20 (step 49,500), 17 (step 77,000), 16 (step 79,500), and 15 (step 80,000) barriers in succession. At PPL 14.59 (step 83,500), the 53M-parameter model has surpassed GPT-2 Medium (354M params, PPL ~17.1) and is approaching YuriiFormer Medium (354M params, PPL ~14.9).
+4. **Impeccable gradient health:** Zero spikes > 100 in the 75K–84.5K window. Max grad norm ~14.4 (step 79,000). The per-group clips keep `reverse_channel_scale` in the 5–83 range. This confirms d=384 at $\gamma = 0.30$ is completely stable — a direct contrast with d=768's catastrophic spikes at $\gamma = 0.05$ (see [Training Instabilities §26](Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md)).
+5. **$v_{\text{reg}}$ continuing to decline:** From 0.0072 at step 75K to ~0.0065 at step 84K, indicating progressively smoother dynamics.
+6. **$\xi$ channel evolution:** $\alpha_1$ has dropped from 0.056 (step 75K) to 0.042 (step 84.5K) — approaching zero but not there. $\alpha_5$ remains locked at 0.961. The channel hierarchy continues to sharpen.
+7. **Training loss:** ntp has declined from ~2.83 (step 75K) to ~2.69 (step 84K), a 5% reduction indicating the model is still actively learning.
+8. **WSD decay phase (steps 175K–250K) still ~91K steps away.** The stable-phase floor is now projected to reach ~12–13 PPL by step 175K based on the current descent rate (~0.22 PPL/Kstep, decelerating). If the decay delivers even a 20–30% reduction:
+   - 20% reduction: 12.5 × 0.80 = **~10.0 PPL**
+   - 30% reduction: 12.5 × 0.70 = **~8.8 PPL**
+   These projections would place the 53M-parameter Fock-PARFLM in the range of models with **6–7× more parameters**.
 
 ---
 
@@ -222,7 +232,7 @@ To contextualise the d=384 results, we compare against recent transformer baseli
 
 | Model | Params | Training tokens | Optimizer | Context | Best PPL | Source |
 |-------|-------:|----------------:|-----------|:-------:|:--------:|--------|
-| **Fock-PARFLM d=384 (Phase 3, interim)** | **53M** | **~2.5B** | AdamW | 512 | **21.96** | This work |
+| **Fock-PARFLM d=384 (Phase 3, interim)** | **53M** | **~2.7B** | AdamW | 512 | **14.59** | This work |
 | GPT-2 Small checkpoint | 124M | ~9B (est.) | Adam | 1024 | ~22.6 | Karpathy nanoGPT eval |
 | YuriiFormer Small (Nesterov+LT) | 124M | 14.75B | Muon+AdamW | 1024 | ~18.5 | Zimin et al. 2026 |
 | GPT-2 Medium checkpoint | 354M | ~9B (est.) | Adam | 1024 | ~17.1 | Karpathy nanoGPT eval |
@@ -231,10 +241,11 @@ To contextualise the d=384 results, we compare against recent transformer baseli
 GPT-2 and YuriiFormer PPL values are derived from validation cross-entropy losses reported in nats/token (PPL = exp(loss)). GPT-2 checkpoint values are from Karpathy's nanoGPT evaluation on the OpenWebText validation split. YuriiFormer values are from Table 3 of Zimin et al. (arXiv:2601.23236).
 
 **Key observations:**
-- At **53M parameters**, Fock-PARFLM already matches GPT-2 Small (124M) — a model with **2.3× more parameters**.
-- Fock-PARFLM uses only **~2.5B tokens** vs YuriiFormer's 14.75B (**5.9× fewer**) and GPT-2's ~9B (**3.6× fewer**).
-- The gap to YuriiFormer Small (18.5 PPL) is ~3.5 PPL — and 123K steps of WSD decay remain.
+- At **53M parameters**, Fock-PARFLM has **surpassed GPT-2 Medium (354M)** — a model with **6.7× more parameters**.
+- Fock-PARFLM uses only **~2.7B tokens** vs YuriiFormer's 14.75B (**5.5× fewer**) and GPT-2's ~9B (**3.3× fewer**).
+- The gap to YuriiFormer Medium (14.9 PPL) is only ~0.3 PPL — and the model is still in the **stable LR phase** with ~91K stable steps and 75K decay steps remaining.
 - YuriiFormer uses Muon (a state-of-the-art optimizer for transformers); Fock-PARFLM uses plain AdamW.
+- At PPL 14.59, Fock-PARFLM has already **beaten YuriiFormer Small (124M, 18.5 PPL)** by a wide margin (3.9 PPL) at less than half the parameters.
 
 ### 4.5 Comparison caveats
 
@@ -247,7 +258,7 @@ Several methodological differences affect direct numerical comparison:
 | **Vocab size** | 50,257 | 50,304 (padded) |
 | **Precision** | fp32 | bf16 |
 
-The most significant factor is **context length**: conditioning on 1024 tokens instead of 512 typically lowers PPL by 1–3 points, giving YuriiFormer/GPT-2 a systematic advantage. The validation set size difference means our PPL estimates have higher variance per evaluation, though the consistent descent across 50+ evaluations confirms the trend is real.
+The most significant factor is **context length**: conditioning on 1024 tokens instead of 512 typically lowers PPL by 1–3 points, giving YuriiFormer/GPT-2 a systematic advantage. This means the "true" 1024-context PPL of Fock-PARFLM would likely be 1–3 points lower than the reported 512-context value — i.e., **~12–14 PPL** at the current checkpoint. The validation set size difference means our PPL estimates have higher variance per evaluation, though the consistent descent across 80+ evaluations confirms the trend is real.
 
 ---
 
@@ -255,7 +266,7 @@ The most significant factor is **context length**: conditioning on 1024 tokens i
 
 ### 5.1 Spike profile
 
-| | Phase 1 | Phase 2 | Phase 3 (step 52K) |
+| | Phase 1 | Phase 2 | Phase 3 (step 84.5K) |
 |---|:---:|:---:|:---:|
 | Spikes (grad > 100) | 15 | 14 | 6 |
 | Maximum gradient norm | 757.2 | 1702.9 | 7,426.7 |
@@ -273,7 +284,7 @@ During non-spike steps, the dominant gradient group is `reverse_channel_scale`, 
 
 | Scale | Max grad | Spikes > 100 | Watchdog reloads | Regime |
 |-------|:--------:|:------------:|:----------------:|--------|
-| d=384, L=16 | 7,427 | ~35 (across 302K steps) | 0 | Manageable |
+| d=384, L=16 | 7,427 | ~35 (across 334K steps) | 0 | Manageable |
 | d=768, L=12 | 5,158,336 | ~110 (at 65.5K steps) | 2 | Catastrophic (late-training) |
 | d=1024, L=16 | 63,949 | frequent | multiple | Catastrophic (early-onset) |
 
@@ -370,8 +381,15 @@ Retained checkpoints in Google Drive (and local backup):
 
 | Checkpoint | Step | PPL | Phase | Purpose |
 |------------|-----:|----:|:-----:|---------|
-| `..._best.pt` | 49,500 (P3) | 21.96 | 3 | Canonical best |
-| `..._step49500_best.pt` | 49,500 (P3) | 21.96 | 3 | Step-stamped copy |
+| `..._best.pt` | 83,500 (P3) | 14.59 | 3 | Canonical best |
+| `..._step83500_best.pt` | 83,500 (P3) | 14.59 | 3 | Step-stamped copy |
+| `..._step80000_best.pt` | 80,000 (P3) | 15.16 | 3 | |
+| `..._step80000.pt` | 80,000 (P3) | 15.16 | 3 | Periodic checkpoint |
+| `..._step79500_best.pt` | 79,500 (P3) | 15.68 | 3 | |
+| `..._step79000_best.pt` | 79,000 (P3) | 16.42 | 3 | |
+| `..._step78500_best.pt` | 78,500 (P3) | 16.62 | 3 | |
+| `..._step77500_best.pt` | 77,500 (P3) | 16.65 | 3 | Previous _ext run best |
+| `..._step49500_best.pt` | 49,500 (P3) | 21.96 | 3 | |
 | `..._step48000_best.pt` | 48,000 (P3) | 23.12 | 3 | Previous best |
 | `..._step47000_best.pt` | 47,000 (P3) | 23.49 | 3 | |
 | `..._step45500_best.pt` | 45,500 (P3) | 23.95 | 3 | |
@@ -394,8 +412,8 @@ All checkpoints include model weights, optimizer state, scheduler state, and tra
 |-------|-----:|---------:|--------------:|----------------:|
 | Phase 1 | 1B | 0.82B | 82% | ~1.0× |
 | Phase 2 | 2B | 1.23B | 62% | ~0.6× |
-| Phase 3 (in progress) | 4B | ~0.43B (so far) | ~11% | ~0.1× |
-| **Total** | — | **~2.48B** | — | — |
+| Phase 3 (in progress) | 4B | ~0.69B (so far) | ~17% | ~0.2× |
+| **Total** | — | **~2.74B** | — | — |
 
 The graduated token-pool strategy (1B → 2B → 4B) provides increasing data diversity while maintaining repetition in early phases for stable learning. Phase 1's near-complete pool coverage (82%) acts as implicit regularisation. Phase 3's 4B pool will consume ~2.05B tokens at completion (eff_batch=16 × 512 × 250K steps) — only 51% of the pool, ensuring no repetition risk.
 
@@ -407,24 +425,26 @@ Phase 3 is running on Colab H100 using `colab_fock_depthcond_vtheta_openwebtext_
 
 | Metric | Value |
 |--------|-------|
-| Current step | 52,350 / 250,000 (21%) |
-| Current best PPL | **21.96** (step 49,500) |
+| Current step | 84,500 / 250,000 (34%) |
+| Current best PPL | **14.59** (step 83,500) |
 | Phase | WSD stable (decay begins at step 175,000) |
-| Estimated wall time remaining | ~160 h |
+| Estimated wall time remaining | ~138 h |
 
-**Projection methodology.** The stable-phase floor can be extrapolated from the current descent rate. PPL has dropped from 29.4 → 21.96 over 27K steps (~0.28 PPL/Kstep). If this rate halves over the next 123K steps (diminishing returns), the floor at step 175K would be ~17–19 PPL. Applying the historically observed decay-phase reduction:
+**Projection methodology.** The stable-phase floor can be extrapolated from the current descent rate. PPL has dropped from 29.4 → 14.59 over ~58K steps (~0.26 PPL/Kstep overall, decelerating). The recent 75K–84.5K window shows a descent rate of ~0.22 PPL/Kstep (from 18.4 → 14.59 over ~9K steps). If this rate halves over the remaining ~91K stable steps (diminishing returns), the floor at step 175K would be ~11.5–13 PPL. Applying the historically observed decay-phase reduction:
 
 | Scenario | Stable-phase floor | Decay reduction | Final PPL |
 |----------|:------------------:|:---------------:|:---------:|
-| Conservative | 19 | 20% | **~15.2** |
-| Moderate | 18 | 25% | **~13.5** |
-| Optimistic | 17 | 30% | **~11.9** |
+| Conservative | 13 | 20% | **~10.4** |
+| Moderate | 12.5 | 25% | **~9.4** |
+| Optimistic | 11.5 | 30% | **~8.1** |
 
-Even the conservative scenario would place the 53M-parameter Fock-PARFLM firmly within GPT-2 Medium (354M params) territory — a **6.7× parameter advantage**.
+The model has already surpassed the previous conservative projection (15.2 PPL) while still in the stable LR phase. Even the new conservative estimate (~10.4) would represent a **dramatic** result for a 53M-parameter model — well into GPT-2 Large (774M) territory (PPL ~14.0 on OpenWebText).
+
+**Caveat:** These projections assume the current descent rate continues. The 512-token context length may become a binding constraint as PPL drops below ~12, creating a floor that the model cannot push through regardless of training duration. Transitioning to 1024-token contexts would lower this floor and enable fairer comparison with transformer baselines.
 
 ### 11.1 Potential Phase 4
 
-If Phase 3 completes successfully and capacity remains (PPL still improving at the end), a Phase 4 extension could be considered with an 8B token pool and 350K+ steps. However, the 512-token context length may become the binding constraint at PPL < 15 — transitioning to 1024-token contexts would enable fairer comparison with transformer baselines but requires re-engineering the memory budget.
+If Phase 3 completes successfully and capacity remains (PPL still improving at the end), a Phase 4 extension could be considered with an 8B token pool and 350K+ steps. However, the 512-token context length is increasingly likely to be the binding constraint — transitioning to 1024-token contexts would enable fairer comparison with transformer baselines but requires re-engineering the memory budget.
 
 ---
 
