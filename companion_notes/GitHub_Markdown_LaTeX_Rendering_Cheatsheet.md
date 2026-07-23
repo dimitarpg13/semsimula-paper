@@ -492,29 +492,6 @@ These are not confirmed-fatal on every GitHub Mermaid version, but each one has 
 
 ---
 
-## 19. `(...)` (and other brackets) inside pipe-form edge labels — remove them
-
-Parentheses behave *asymmetrically* between node labels and edge labels, which makes this an easy trap:
-
-- Inside a **quoted node label** `Node["... (text) ..."]`, parentheses are literal text and render fine.
-- Inside a **pipe-form edge label** `A -->|... (text) ...| B` (or the dotted form `A -.->|...(text)...| B`), an opening `(` is **confirmed-fatal** on GitHub. The pipe label is *not* a quoted string, so the lexer tries to parse `(` as the start of a rounded-node shape and aborts.
-
-The failure surfaces as a `Parse error on line N` pointing at the edge, with an `Expecting 'SQE', 'DOUBLECIRCLEEND', 'PE', ... got 'PS'` message (`PS` is the `(` token).
-
-```
-%% Bad — parentheses inside a pipe-form edge label
-Fut -.->|direct NDE (should be zero)| Logit
-
-%% Good — drop the parentheses (rephrase as plain words)
-Fut -.->|direct NDE should be zero| Logit
-```
-
-The same applies to `[`, `]`, `{`, `}` inside pipe labels — none are quoted, so all are parsed as shape/grammar tokens.
-
-**Rule:** edge labels (both `-->|text|` and `-.->|text|`) must contain **plain words only** — no `(`, `)`, `[`, `]`, `{`, `}`. If you need to qualify a label, use a comma or a dash-with-space (`direct NDE, zero` or `direct NDE - zero`), or move the parenthetical into the surrounding prose. Parentheses are only safe inside *quoted node* labels.
-
----
-
 ## 20. Advanced Mermaid node shapes — avoid `(("text"))` and `[/"text"/]`
 
 GitHub's Mermaid renderer does **not** reliably support several advanced node shapes introduced in newer Mermaid versions:
