@@ -23,14 +23,6 @@ stack (DoWhy, EconML, causal-learn).
 
 **Last updated:** 23 July 2026.
 
-![SCAF as a diagnostic scanner for models: a layered model on a scanner platform, an internal red pathway revealed as a detected causal leak, and a scorecard with a risk score.](images/scaf_hero_scanner.png)
-
-*Figure 1. SCAF in one picture. The framework treats a trained model like a
-patient in a CT scanner: it drives interventions through the network, recovers
-the internal information-flow graph, and surfaces any pathway that carries
-future information into a past prediction — with an effect size, a confidence
-interval, and a component attribution.*
-
 ---
 
 ## 1. Why a framework, and why now
@@ -195,9 +187,9 @@ Holding $x_{\le t}$ fixed is exactly backdoor adjustment for the confounder —
 here achieved by construction rather than by statistical control, because we
 own the data-generating process.
 
-![Observation versus intervention: on the left, past and future look correlated through hidden confounders and the cause is ambiguous; on the right, a scalpel freezes the past and a dial resamples the future, isolating the true causal effect.](images/scaf_observational_vs_interventional.png)
+<p align="center"><img src="images/scaf_observational_vs_interventional.png" alt="Observation versus intervention: past and future look correlated through hidden confounders, versus a scalpel freezing the past and a dial resampling the future to isolate the true causal effect." width="600"></p>
 
-*Figure 2. Why SCAF is interventional, not observational. Freezing the causal
+*Figure 1. Why SCAF is interventional, not observational. Freezing the causal
 prefix and resampling only the future is a do-operation that removes the
 confounding a purely correlational probe would mistake for a leak (or that
 would mask a real one).*
@@ -270,7 +262,7 @@ flowchart TB
 
     Fut -->|indirect NIE| Med
     Med -->|indirect NIE| Logit
-    Fut -.->|direct NDE (should be zero)| Logit
+    Fut -.->|direct NDE should be zero| Logit
 ```
 
 Decompose the total leak effect into a natural direct effect (NDE, through
@@ -603,9 +595,9 @@ The leak grew silently over 100k+ steps. SCAF's monitor runs a cheap AILE proxy
 `aile_proxy`, `tau_leak_proxy`, and the reverse-gate magnitude, so the valve
 opening is visible in real time and a threshold trips an alarm.
 
-![A leak-monitor dashboard: a gauge reading from safe green to leak red with the needle in the red zone, and a curve of leak magnitude rising over training steps past a dashed alarm threshold.](images/scaf_continuous_monitor.png)
+<p align="center"><img src="images/scaf_continuous_monitor.png" alt="A leak-monitor dashboard: a gauge reading from safe green to leak red with the needle in the red zone, and a curve of leak magnitude rising over training steps past a dashed alarm threshold." width="600"></p>
 
-*Figure 3. Continuous auditing. A per-eval AILE proxy turns the post-hoc
+*Figure 2. Continuous auditing. A per-eval AILE proxy turns the post-hoc
 forensic probe into a live gauge; when leak magnitude crosses the threshold the
 run is flagged before more compute is spent on a leaky objective.*
 

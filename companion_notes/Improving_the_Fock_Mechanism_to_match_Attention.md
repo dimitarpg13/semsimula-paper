@@ -2,6 +2,7 @@
 
 **Technical Report — Semantic Simulation Research Programme**  
 **Status:** Active — June 2026 (updated with causal leak fix, corrected v2 results, Fock Attention results, register diagnostics, v2.1 routing fix, and causal-fixed v2.1 rerun results: B1+B2+B3 = **9.30 PPL**, surpassing Fock Attention)  
+> ⚠ **Re-certification notice (July 2026):** a *second, deeper* causal leak was found after this report was written. The `8c47d90` cumulative-softmax fix was incomplete, and the **9.30 PPL** result and every "causal-fixed" number below are certified only by a probe now known to be blind. They are **pending re-certification** with `prefix_causal_registers=True`. See the banner in §19.8 and [`Fock-PARFLM_Causal_Leak_Audit_Results.md`](Fock-PARFLM_Causal_Leak_Audit_Results.md).  
 **Relates to:** Paper v4 §§9.4.2, 17.8, 17.13, 17c; FockPARFLM Phase 1 (Dyck₂ seed 0 complete); QFT v2.1 (Q0–Q8 complete); `model_fock_attention.py`; `model_fock_parf_v2.py`
 
 ---
@@ -1542,6 +1543,15 @@ The register diversity/entropy eval pass (§18.5) has been completed, and the Fo
 > position-dependent register content for the reverse channel) was
 > verified by the perturbation probe and is committed in `8c47d90`.
 > See §19.8 for details.
+>
+> **⚠ Update (July 2026) — this fix was incomplete.** A *second, deeper*
+> leak survived `8c47d90`: a residual **within-window / next-token** leak
+> through the global register state, invisible to the source-perturbation
+> probe cited above. A trained-checkpoint **honest-PPL (target-relocation)**
+> test measured it at **+3.51 nats (≈33× PPL inflation)**; the true fix is
+> the `prefix_causal_registers` register lifecycle. Every "causal-fixed"
+> label in the ladder below is therefore **pending re-certification**. See
+> §19.8 and [`Fock-PARFLM_Causal_Leak_Audit_Results.md`](Fock-PARFLM_Causal_Leak_Audit_Results.md).
 
 | Architecture | PPL | Steps | Memory | Params | Notes |
 |---|---|---|---|---|---|
@@ -1557,6 +1567,13 @@ The register diversity/entropy eval pass (§18.5) has been completed, and the Fo
 | **Fock Attention K=4 4-head** | **9.42** | **16k** | **O(T²)** | **16.7M (+131K exchange)** | |
 | **Fock v2.1 B1+B2+B3 (all fixes)** | **9.30** | **16k** | **O(1)** | **~17.4M (+824K Fock)** | **causal-fixed, new best** |
 | **Matched attention baseline (MatchedGPT)** | **7.81** | **8k** | **O(T²)** | — | |
+
+> **‡ Pending re-certification (July 2026).** Every row tagged *causal-fixed*
+> above — including the **9.30 PPL** best — is certified only by the
+> source-perturbation probe, which the later audit proved blind to the
+> within-window leak. These PPLs must be re-run with
+> `prefix_causal_registers=True` before they can be trusted or published.
+> See §19.8 and [`Fock-PARFLM_Causal_Leak_Audit_Results.md`](Fock-PARFLM_Causal_Leak_Audit_Results.md).
 
 The residual gap after the conservative multi-ξ base is **4.66 PPL** (12.47 → 7.81).  The causal-fixed Fock v2 register mechanism closes **1.10 PPL** of this gap (12.47 → 11.37 at 16k steps), a genuine improvement over the conservative base.  At 8k steps the registers slightly underperform the base (12.69 vs 12.47), indicating that registers need longer training to provide value.
 
@@ -1777,6 +1794,32 @@ All arms use τ_create_init = √d_k = 8.0 (for v2.1 arms) instead of the origin
 
 ### 19.8 Causal Leak in Creation Gate — Discovery and Fix
 
+> **⚠ SUPERSEDED — this section describes only the *first* leak (pending re-certification, July 2026).**
+>
+> A **second, deeper causal leak** was discovered *after* this section was
+> written. The `8c47d90` cumulative-softmax fix closed only the
+> reverse-channel **creation readout**; a residual **within-window /
+> next-token** leak through the **global register state** (the `r_new`
+> register-update and extended-dynamics paths this section asserts "don't
+> leak") survived, and was **invisible to the source-perturbation probe**
+> used as the "Proof" below — that probe holds the measured target fixed and
+> so cannot see an in-window next-token copy.
+>
+> A trained-checkpoint **honest-PPL (target-relocation)** test later measured
+> the residual leak at **+3.51 nats — a ≈33× perplexity inflation**. The
+> genuine fix is the **`prefix_causal_registers`** register lifecycle
+> (per-position registers, diagonal queries, registers decoupled from the
+> extended Verlet state, bit-exact causal readout), verified to give
+> **bit-exact zero** leak in float64.
+>
+> **Consequence:** every "causal-fixed" result in §19.1 and §19.9 — including
+> the **9.30 PPL** best that "surpasses Fock Attention" — is certified only
+> by the now-known-blind probe and is **pending re-run/re-certification with
+> `prefix_causal_registers=True`**.
+>
+> Full analysis: [`Fock-PARFLM_Causal_Leak_Audit_Results.md`](Fock-PARFLM_Causal_Leak_Audit_Results.md).
+> Generalized auditing protocol: [`Framework_for_Causal_Analysis_SemSimula_Models.md`](Framework_for_Causal_Analysis_SemSimula_Models.md).
+
 **Discovery (June 2026).** The `v21_tau_perK_ortho` arm (B1+B2+B3 fixes) reached 2.36 PPL — below MatchedGPT's 7.81 — indicating a causal violation. Investigation revealed a missing causal mask in the Q/K/V creation gate.
 
 **Leak mechanism.** The creation gate computes `alpha = softmax(scores, dim=-1)` over all T positions without a causal mask. Register content `r_new` is therefore a weighted sum of past AND future tokens. The reverse channel then broadcasts this leaked content back to all token positions:
@@ -1817,6 +1860,13 @@ At 8k steps the fix removes the small leak cheat (+0.38 PPL). At 16k steps the c
 
 ### 19.9 Fock v2.1 Routing Fix Results (Causal-Fixed Rerun)
 
+> **⚠ PENDING RE-CERTIFICATION (July 2026).** The "causal-fixed" runs below
+> (including the **9.30 PPL** headline) predate the discovery of the second,
+> deeper leak and were certified only by the source-perturbation probe now
+> known to be blind (see the §19.8 banner). Treat these PPLs as **provisional
+> upper-bounded-by-leak** until re-run with `prefix_causal_registers=True` and
+> re-verified by the honest-PPL (target-relocation) test.
+
 **Date:** June 7, 2026.
 **Notebook:** `colab_fock_v21_routing_fix.ipynb`
 **Results:** `notebooks/conservative_arch/scaleup/results/semsimula_fock_v21_routing_fix/`
@@ -1827,6 +1877,14 @@ Both arms from the Step 1 resolution hierarchy were rerun with the causal-fixed 
 |-----|-------|-----|-----------|------------|---------|-----------|--------|------|
 | v21_tau_only | B1 (per-reg τ) | 11.18 | — | — | — | — | 17.16M | 4.02h |
 | **v21_tau_perK_ortho** | **B1+B2+B3** | **9.30** | **−0.227** | **7.77 [7.26, 8.53]** | **0.449** | **0.581** | **17.41M** | **4.09h** |
+
+> **‡ Provisional (July 2026).** The 11.18 and 9.30 PPLs above are **pending
+> re-certification**: they were verified only by the source-perturbation probe
+> and predate the `prefix_causal_registers` fix. The honest-PPL test on a
+> leaky trained checkpoint showed **+3.51 nats** of hidden inflation, so the
+> leak-free values may differ materially. Re-run required before use in the
+> paper's cross-model comparison. See §19.8 and
+> [`Fock-PARFLM_Causal_Leak_Audit_Results.md`](Fock-PARFLM_Causal_Leak_Audit_Results.md).
 
 **Baselines for comparison:**
 
