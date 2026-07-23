@@ -6,6 +6,36 @@
 
 ---
 
+> **⚠ CAUSAL LEAK — all d=768 results are compromised, regardless of scale (audit, July 2026).**
+>
+> Every PPL in this document (best **84.04** and the whole descent) comes from
+> the **same leaky Fock-PARFLM v2.1 architecture** as d=384: a reverse channel
+> reading from a shared full-window register state, trained **without** the
+> `prefix_causal_registers` fix. This leak is **architectural, not
+> dimension-dependent** — it lets past-token predictions access future tokens in
+> *every* configuration that enables the reverse channel (`reverse_channel=True`,
+> `fock_version=v2`; see §3.2), independent of hidden dimension `d`, depth `L`, or
+> damping `γ`. **Changing the hidden state dimension does not remove the leak;
+> every model in the family that uses this reverse channel is leaky and its
+> perplexities are compromised.**
+>
+> The leak was measured directly on the d=384 checkpoint: **honest PPL ≈258 vs
+> reported ≈7.69 — +3.51 nats/token, ≈33× inflation** — carried entirely by the
+> reverse channel (zeroing its gate returns bit-exact 0.0 future→past
+> sensitivity). Because d=768 shares that *exact* mechanism, **its reported
+> perplexities are inflated by the same leak and are not valid language-modeling
+> results.** They cannot be compared to leak-free transformer baselines, and the
+> cross-scale comparisons in §5.5 compare one leaky model to another.
+>
+> All d=768 numbers are **pending re-certification**: re-training with
+> `prefix_causal_registers=True` plus the honest-PPL (target-relocation) test is
+> required. Full analysis:
+> [`Fock-PARFLM_Causal_Leak_Audit_Results.md`](Fock-PARFLM_Causal_Leak_Audit_Results.md);
+> d=384 probe results:
+> [`Fock-PARFLM_d384_Training_Results_OpenWebText.md`](Fock-PARFLM_d384_Training_Results_OpenWebText.md) §7.2.
+
+---
+
 ## 1. Summary
 
 This document records the training history of the Fock-PARFLM v2.1 model at d=768, L=12 on OpenWebText, driven by the standalone `train_fock.py` script (preset `d768`) on a LambdaLabs 1×H100 instance. This is the first scale-up beyond the d=384 baseline.
@@ -265,6 +295,14 @@ During catastrophic spikes, the gradient energy is concentrated in the embedding
 | 50,051 | 15,848 | P=10,878, E=10,878, creation_gate=2,825, register=2,535 |
 
 The pattern is consistent with the second-order gradient cascade: the `create_graph=True` backward pass amplifies gradients through the embedding matrices and Fock gates, with the cascade magnitude growing as the model's internal representations become more refined.
+
+> **⚠ Causal-leak note.** `reverse_channel_scale` appears among the top spike
+> groups here (e.g. 1,206,437 at step 51,898). Beyond its role in the gradient
+> cascade, this scalar is the **carrier of the causal leak** (see the
+> top-of-document banner): gradient descent persistently drives it open because
+> peeking at future tokens lowers the training loss. Its large sustained gradient
+> is therefore both a stability signal and a leak signal — identical in kind to
+> the d=384 case, confirming the leak is present at this scale too.
 
 ### 5.4 Post-watchdog recovery
 

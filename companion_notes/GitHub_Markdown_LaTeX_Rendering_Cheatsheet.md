@@ -5,7 +5,7 @@ A reference for writing LaTeX math **and** Mermaid diagrams in Markdown files th
 The cheatsheet has two parts:
 
 - **Part I — KaTeX math rendering** (rules §1–§13, §19): inline `$...$` and display `$$...$$` math.
-- **Part II — Mermaid diagram rendering** (rules §14–§18, §20–§22): ` ```mermaid ` fenced blocks.
+- **Part II — Mermaid diagram rendering** (rules §14–§18, §20–§24): ` ```mermaid ` fenced blocks.
 
 ---
 
@@ -627,6 +627,29 @@ flowchart TB
 ```
 
 **Rule:** for any non-trivial flowchart (≥ 4 nodes, or any subgraph, or any dotted edge), apply all four parts of the robust pattern above. The cost is a slightly longer source listing; the benefit is that the diagram renders on every GitHub version observed to date. The patterns this rule replaces (chained arrows, inline-target dotted edges, subgraphs with inline node definitions) work fine in standalone Mermaid editors and in some older GitHub renderer versions, but are not robust across the versions GitHub currently serves.
+
+---
+
+## 24. `(...)` (and other brackets) inside pipe-form edge labels — remove them
+
+Parentheses behave *asymmetrically* between node labels and edge labels, which makes this an easy trap:
+
+- Inside a **quoted node label** `Node["... (text) ..."]`, parentheses are literal text and render fine.
+- Inside a **pipe-form edge label** `A -->|... (text) ...| B` (or the dotted form `A -.->|...(text)...| B`), an opening `(` is **confirmed-fatal** on GitHub. The pipe label is *not* a quoted string, so the lexer tries to parse `(` as the start of a rounded-node shape and aborts.
+
+The failure surfaces as a `Parse error on line N` pointing at the edge, with an `Expecting 'SQE', 'DOUBLECIRCLEEND', 'PE', ... got 'PS'` message (`PS` is the `(` token).
+
+```text
+%% Bad — parentheses inside a pipe-form edge label
+Fut -.->|direct NDE (should be zero)| Logit
+
+%% Good — drop the parentheses (rephrase as plain words)
+Fut -.->|direct NDE should be zero| Logit
+```
+
+The same applies to `[`, `]`, `{`, `}` inside pipe labels — none are quoted, so all are parsed as shape / grammar tokens.
+
+**Rule:** edge labels (both `-->|text|` and `-.->|text|`) must contain **plain words only** — no `(`, `)`, `[`, `]`, `{`, `}`. If you need to qualify a label, use a comma or a dash-with-space (`direct NDE, zero` or `direct NDE - zero`), or move the parenthetical into the surrounding prose. Parentheses are only safe inside *quoted node* labels (§20 lists the node shapes that accept them).
 
 ---
 

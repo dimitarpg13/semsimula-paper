@@ -6,6 +6,30 @@
 
 ---
 
+> **⚠ CAUSAL LEAK — the reported PPLs are invalid (audit, July 2026).**
+>
+> A trained-checkpoint causal audit of the canonical best checkpoint
+> (`step103500_best.pt`, reported PPL **9.50**) found that this model's
+> perplexity is **inflated ≈33× by a causal leak**: past-token predictions can
+> read future tokens through the reverse channel's shared full-window register
+> state. On the **same checkpoint and the same tokens**, the leak-free (honest)
+> perplexity is **≈258** where the standard full-window protocol reports
+> **≈7.69** — a paired gap of **+3.51 ± 0.09 nats/token (~41σ)**. The leak flows
+> **entirely through the reverse channel** (zeroing its gate returns bit-exact
+> 0.0 future→past sensitivity).
+>
+> **Consequences:** the "broken the PPL 10 barrier" headline below and **every
+> cross-model comparison in §4.4** (surpassing GPT-2 XL / YuriiFormer, etc.) are
+> **void** — those baselines are leak-free and this model is not. The Phase 3
+> descent below Phase 2 levels is the leak opening, not genuine learning. Probe
+> details are in **§7.2**; full analysis in
+> [`Fock-PARFLM_Causal_Leak_Audit_Results.md`](Fock-PARFLM_Causal_Leak_Audit_Results.md).
+> The fix (`prefix_causal_registers`) drives the leak to bit-exact zero but is
+> incompatible with these checkpoints — **re-training is required** for
+> trustworthy PPLs.
+
+---
+
 ## 1. Summary
 
 This document records the training history of the Fock-PARFLM v2.1 model at d=384, L=16 on OpenWebText (run tag: `e5c_plgate`). Training uses a graduated token-pool strategy across three phases:
@@ -30,6 +54,13 @@ This document records the training history of the Fock-PARFLM v2.1 model at d=38
 Phase 3 has achieved **PPL 9.50** at step 103,500 — a **65% improvement** over Phase 2's best (27.23) — and is **still in the WSD stable-LR phase**. The WSD decay phase does not begin until step 175,000, leaving ~71K steps of stable LR and then 75K steps of active LR decay.
 
 The 53M-parameter Fock-PARFLM has **broken the PPL 10 barrier** — surpassing GPT-2 XL (1.5B params, PPL ~18), GPT-2 Large (774M, PPL ~14), and YuriiFormer Medium (354M, PPL ~14.9) by wide margins at **6.7–28× fewer parameters**. These numbers require independent validation on the full held-out set and a cross-corpus check (WikiText-103); see `debug/eval_ppl_debug.ipynb`.
+
+> **⚠ Update (July 2026): that validation was run and the result does not hold.**
+> The causal audit showed the sub-10 PPL is an artifact of a reverse-channel
+> causal leak — the **honest (leak-free) perplexity of the best checkpoint is
+> ≈258, not 9.50** (+3.51 nats/token, ≈33× inflation). The parameter-efficiency
+> claims in this paragraph are **withdrawn** pending a leak-free re-train. See the
+> banner above and §7.2.
 
 ---
 
@@ -263,6 +294,7 @@ GPT-2 and YuriiFormer PPL values are derived from validation cross-entropy losse
 - Fock-PARFLM uses only **~2.9B tokens** vs YuriiFormer's 14.75B (**5.1× fewer**) and GPT-2's ~9B (**3.1× fewer**).
 - YuriiFormer uses Muon (a state-of-the-art optimizer for transformers); Fock-PARFLM uses plain AdamW.
 - **⚠️ These numbers are extraordinary and potentially too good to be true.** The in-training PPL is based on only 5 validation batches. Full-set evaluation and cross-corpus checks are essential before any claims can be made. See §4.3 observation 10.
+- **⚠ RESOLVED (July 2026) — it was too good to be true.** The trained-checkpoint audit traced the sub-10 PPL to a reverse-channel causal leak: the honest, leak-free perplexity is **≈258** (+3.51 nats/token, ≈33× inflation). Every comparison in this table and the observations above are **withdrawn**. See §7.2 and [`Fock-PARFLM_Causal_Leak_Audit_Results.md`](Fock-PARFLM_Causal_Leak_Audit_Results.md).
 
 ### 4.5 Comparison caveats
 
@@ -386,6 +418,35 @@ The structural health probe at step 150,000 (PPL 27.23) confirms a well-function
 | Without registers | 2085.50 | +2053.29 |
 
 Removing either the reverse channel or the registers produces catastrophic failure (PPL → 2085). This confirms the Fock mechanism is not merely helpful but architecturally essential. See [Fock\_Mechanism\_Ablation\_Study\_d384\_OpenWebText.md](Fock_Mechanism_Ablation_Study_d384_OpenWebText.md) for the detailed ablation analysis, including comparison with the e5a run (reverse channel disabled from scratch, plateau at PPL 125.94).
+
+### 7.2 Causal Leak Probe (Trained-Checkpoint Certification)
+
+> **⚠ This probe invalidates the headline PPLs of this document.** See the banner at the top.
+
+A trained-checkpoint causal audit of the canonical best checkpoint (`step103500_best.pt`, reported PPL 9.50) established that the model's perplexity is inflated by a **causal leak in the reverse channel**. Because the registers summarise the *entire* window (including future tokens) and the reverse channel feeds that shared state back onto earlier positions, a past-token prediction can peek at future tokens. Two independent float64 measurements were made on the trained checkpoint.
+
+**Part 1 — future perturbation** (freeze the prefix, resample the future half; context 512, split at the midpoint, position 256):
+
+| Quantity | Value |
+|----------|:-----:|
+| max \|Δlogit\| on past positions (trained) | ≈ **37** |
+| max \|Δlogit\| reference (at initialisation) | 1.1e-5 |
+| control — reverse-channel gate zeroed | **0.000** (exactly) |
+
+The raw sensitivity of past logits to future tokens grew by **more than six orders of magnitude** during training, and zeroing the reverse channel returns *exactly* zero — identifying it as the **sole leak carrier**. (The `active_frac`/`salience` structural-health metrics in §7 are perfectly compatible with a wide-open leak; they measure register usage, not causality.)
+
+**Part 2 — honest (leak-free) PPL** (score the *same* target tokens in-window vs at the last position, so the honest arm cannot see the future):
+
+| Protocol | Target index | Sees future? | NLL | PPL |
+|----------|:---:|:---:|:---:|:---:|
+| A — standard (mid-window) | 256 | yes (+ future) | 2.0394 | **7.69** |
+| B — honest (last-position) | 511 | no | 5.5532 | **258.07** |
+
+The paired difference is **B − A = +3.5138 ± 0.0852 nats/token (~41σ)**; the honest-to-reported ratio is $e^{3.51} \approx 33.6$.
+
+**Interpretation.** The leak-free perplexity of the "PPL 9.50" checkpoint is on the order of **~250–260** — worse than Phase 2's honest level and nowhere near the transformer baselines. The dramatic Phase 3 descent (§4.3) and the "too good to be true" comparisons (§4.4) are the leak *progressively opening* — gradient descent is rewarded for widening the reverse channel because peeking lowers the training loss — not genuine language-modelling gains. This also retroactively explains the puzzling full-set-vs-in-training discrepancy and the atypical *acceleration* of log-PPL descent flagged in §4.3.
+
+**Status.** The fix (`prefix_causal_registers`, which makes registers strictly prefix-causal) drives the future→past sensitivity to **bit-exact zero**, but it changes the register lifecycle and is **incompatible with these pre-fix checkpoints**. Trustworthy PPLs for this configuration require **re-training** with the fix enabled. Full analysis, the causality proof, and the empirical verification table are in [`Fock-PARFLM_Causal_Leak_Audit_Results.md`](Fock-PARFLM_Causal_Leak_Audit_Results.md); the generalized auditing protocol is in [`Framework_for_Causal_Analysis_SemSimula_Models.md`](Framework_for_Causal_Analysis_SemSimula_Models.md).
 
 ---
 
