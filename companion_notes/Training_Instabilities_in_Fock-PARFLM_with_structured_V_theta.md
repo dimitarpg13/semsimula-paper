@@ -6,6 +6,39 @@
 
 ---
 
+> **⚠ Causal-leak relationship (added July 2026).**
+>
+> **Every experiment in this note used the pre-fix, leaky Fock architecture** —
+> the reverse channel reading from a shared/global full-window register state,
+> *before* the `prefix_causal_registers` fix. A later trained-checkpoint audit
+> proved this architecture leaks future-token information into past-token
+> predictions: a **within-window / next-token causal leak** measured at
+> **+3.51 nats (≈33× perplexity inflation)** on a `d=384` OpenWebText
+> checkpoint. Three consequences for this document:
+>
+> 1. **The stability findings stand.** The gradient-explosion analysis (`V_θ`
+>    unboundedness, the second-order force cascade, embedding/`P`/`E` spikes,
+>    and the clipping/watchdog/optimizer remedies) concerns *optimization
+>    dynamics* and is **not invalidated** by the leak.
+> 2. **All PPL numbers here are leak-contaminated (optimistically low).** Every
+>    val-PPL reported below — TinyStories (e.g. 15.95, 18.67, 20.82) and
+>    OpenWebText alike — was produced with the reverse channel active, so it is
+>    **pending re-certification** with `prefix_causal_registers=True` and the
+>    honest-PPL (target-relocation) test. Do not use these values for
+>    cross-model comparison as-is.
+> 3. **The reverse channel has a second identity.** Where this note treats it
+>    purely as a *non-conservative stability liability* (§5, §18.8, §19.3,
+>    §23.1), the audit shows it is also the **sole carrier of the causal
+>    leak**. The persistent, dominant `reverse_channel_scale` gradient recorded
+>    here (the top spike group at `d=768`, §23.1) is the training-time
+>    *signature* of the leak: gradient descent kept forcing that scale open
+>    because peeking at the future lowered the training loss.
+>
+> Full analysis: [`Fock-PARFLM_Causal_Leak_Audit_Results.md`](Fock-PARFLM_Causal_Leak_Audit_Results.md).
+> Generalized auditing protocol: [`Framework_for_Causal_Analysis_SemSimula_Models.md`](Framework_for_Causal_Analysis_SemSimula_Models.md).
+
+---
+
 ## Table of Contents
 
 1. [Background](#1-background)
@@ -368,6 +401,14 @@ additional instability sources:
 | Fock registers | — | M=32 register particles | 32 extra hidden states through L=16 backward graph; register creation/destruction gates add non-differentiable-like switching |
 | Per-register τ | — | learnable temperature | τ drift can make routing sharper mid-training, amplifying the Gumbel noise |
 | Reverse channel | — | non-conservative Q_i | no energy conservation guarantee; small errors in Q_i can compound across layers |
+
+> **⚠ Causal-leak note.** The reverse channel is not only the *non-conservative*
+> force tabled above — it is the **causal-leak carrier** identified in the audit.
+> Its ability to inject a directed force from the shared full-window register
+> state back onto earlier tokens is precisely what lets future tokens influence
+> past predictions. The "small errors compound across layers" stability concern
+> and the leak are two faces of the same unconstrained pathway. See the
+> top-of-document banner.
 
 ### Effective backward graph depth
 
@@ -3263,6 +3304,13 @@ over a conservative potential, meaning spike gradients flow through:
 - **Reverse channel scale**: per-layer learnable parameters that see the
   full gradient.
 
+> **⚠ Causal-leak note.** The reverse-channel-scale gradient discussed here is
+> doubly significant. Beyond its spike behavior, the audit shows this scalar is
+> what *opens the causal leak*: as training drives it away from zero, past
+> predictions gain access to future tokens through the shared register state. Its
+> persistent nonzero gradient is therefore simultaneously a stability signal and
+> a leak signal. See the top-of-document banner.
+
 Despite these architectural differences, the **primary spike source**
 ($P$ and $E$) and the **primary mitigation** (clipping) are identical.
 
@@ -3616,6 +3664,14 @@ The spike sources at $d=1024$ are **systemic** — they come from multiple param
 - **`creation_gate`:** Occasional catastrophic spikes (norm 110–311), seen at every gamma tested.
 - **`reverse_channel_scale`:** Relatively mild at $d=1024$ (norm up to 19.3), in contrast to $d=768$ where it was the dominant (but non-catastrophic) group.
 - **`register`:** Elevated at $\gamma=0.05$ (norm up to 24.5).
+
+> **⚠ Causal-leak note.** The observation that `reverse_channel_scale` was *the
+> dominant spike group at d=768* is, in hindsight, a fingerprint of the causal
+> leak. The audit shows gradient descent persistently drives this scalar open
+> because the leak (future→past information flow) lowers the training loss; the
+> large sustained gradient recorded here is that pressure made visible. The best
+> PPLs in the table above were produced with the leak active and are pending
+> re-certification (see the top-of-document banner).
 
 **The sweep results are unreliable** as a guide to optimal gamma. The fact that $\gamma=0.05$ scored worse than $\gamma=0.10$ is confounded by watchdog reload counts: $\gamma=0.05$ lost ~1,500 training steps to 3 reloads, while $\gamma=0.10$ lost ~500 steps to 1 reload. The relative ranking reflects which candidate was disrupted least, not which damping coefficient is optimal.
 
