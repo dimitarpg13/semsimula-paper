@@ -21,12 +21,18 @@ gumbel noise).
 
 Tests
 -----
+  Legacy architecture (prefix_causal_registers=False):
   T0  determinism        same input twice                        -> delta == 0
   T1  rev channel OFF    perturb future, scale=0 (init)          -> delta == 0 ?
   T2  rev channel ON     perturb future, scale=1, warmup done    -> quantify
   T3  positive control   causal_force=False (detach removed)     -> delta > 0
   T4  past sensitivity   perturb PAST token                      -> delta > 0
   T5  train-mode STE     same as T2 but training path + seeded   -> quantify
+
+  Fixed architecture (prefix_causal_registers=True, the new default):
+  T6  rev channel ON     perturb future, scale=1, warmup done    -> delta == 0
+  T7  train-mode STE     same as T6 but training path + seeded   -> delta == 0
+  T8  past sensitivity   perturb PAST token                      -> delta > 0
 """
 
 import math
@@ -63,7 +69,7 @@ LOGFREQ = Path("/tmp/probe_logfreq.npy")
 np.save(LOGFREQ, np.full(VOCAB, 5.0, dtype=np.float32))
 
 
-def build(causal_force=True):
+def build(causal_force=True, prefix_causal=False):
     cfg = FockMultiXiPARFConfig(
         vocab_size=VOCAB, d=D, max_len=64, L=L,
         v_hidden=64, v_depth=3, dt=1.0,
@@ -102,6 +108,7 @@ def build(causal_force=True):
         per_register_tau=True, per_register_keys=True,
         ortho_register_init=True,
         register_repulsion=False,
+        prefix_causal_registers=prefix_causal,
     )
     torch.manual_seed(1234)  # identical weights across builds
     m = FockMultiXiPARFLM(cfg)
@@ -204,6 +211,36 @@ def main():
     report("T5 future perturb, train mode + gumbel (seeded), rev ON",
            (lt_a[:, :t_p] - lt_b[:, :t_p]).abs().max().item(),
            expect_zero=True)
+
+    # ================================================================
+    # Fixed architecture: prefix-causal register lifecycle
+    # ================================================================
+    print("\n-- prefix_causal_registers=True (fixed architecture) --")
+    m_fix = build(causal_force=True, prefix_causal=True)
+    with torch.no_grad():
+        m_fix.reverse_channel_scale.fill_(1.0)      # channel fully open
+        m_fix.reverse_warmup_step.fill_(4000)       # warmup complete
+
+    lf_a = logits_of(m_fix, x1)
+    lf_b = logits_of(m_fix, x2)
+    d6 = report("T6 future perturb, reverse channel ON, prefix-causal",
+                (lf_a[:, :t_p] - lf_b[:, :t_p]).abs().max().item(),
+                expect_zero=True)
+    if d6 != 0.0:
+        print("      *** T6 MUST be exactly 0.0 — fix is NOT leak-free ***")
+
+    lft_a = logits_of(m_fix, x1, train_mode=True, seed=99)
+    lft_b = logits_of(m_fix, x2, train_mode=True, seed=99)
+    d7 = report("T7 future perturb, train mode + gumbel (seeded), prefix-causal",
+                (lft_a[:, :t_p] - lft_b[:, :t_p]).abs().max().item(),
+                expect_zero=True)
+    if d7 != 0.0:
+        print("      *** T7 MUST be exactly 0.0 — fix is NOT leak-free ***")
+
+    lf_c = logits_of(m_fix, x3)
+    report("T8 past perturb (position 3) affects later logits, prefix-causal",
+           (lf_a[:, 4:t_p] - lf_c[:, 4:t_p]).abs().max().item(),
+           expect_zero=False)
 
     print("\ndone.")
 

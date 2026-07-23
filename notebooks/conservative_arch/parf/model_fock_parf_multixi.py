@@ -131,6 +131,19 @@ class FockMultiXiPARFConfig(MultiXiPARFConfig):
                                              # knob that drives E/P divergence (see
                                              # §10.12 note).  Per-layer gates
                                              # decouple that aggregation.
+    # Prefix-causal register lifecycle (fix for the cross-layer causal leak,
+    # see Fock-PARFLM_Causal_Leak_Audit_Results.md).  When True (default),
+    # the cross-layer register state is per position (B, T, M, d): the
+    # register bank consumed at position t is built exclusively from tokens
+    # 1…t (diagonal creation queries + constant-shift cumulative softmax),
+    # salience/active-mask/destruction are per position, and registers no
+    # longer join the extended Verlet state (that channel was full-window
+    # and never token-visible, so token dynamics are unchanged).  False
+    # reproduces the legacy (leaky) architecture, needed only for loading
+    # and probing pre-fix checkpoints.  v2-only; ignored for fock_version
+    # 'v1'.  No parameters are added or removed, so state_dicts remain
+    # compatible in both directions.
+    prefix_causal_registers: bool = True
 
 
 # ---------------------------------------------------------------------------
@@ -255,6 +268,15 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
         self, B: int, device: torch.device,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         M, d = self.cfg.n_registers, self.cfg.d
+        if (
+            self.cfg.fock_version == "v2"
+            and getattr(self.cfg, "prefix_causal_registers", False)
+        ):
+            # Per-position causal state, initialised position-independent
+            # (Tr=1 broadcasts to T at the first blend).
+            r = self.register_embed.view(1, 1, M, d).expand(B, 1, M, d)
+            salience = torch.ones(B, 1, M, device=device)
+            return r, salience
         r = self.register_embed.unsqueeze(0).expand(B, M, d).clone()
         if self.cfg.fock_version == "v1":
             salience = torch.zeros(B, M, device=device)
@@ -275,7 +297,7 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
         sorted_active = torch.cumprod(sorted_above.float(), dim=-1).bool()
 
         active = torch.zeros_like(sorted_active)
-        active.scatter_(1, sort_idx, sorted_active)
+        active.scatter_(-1, sort_idx, sorted_active)
         return active
 
     # ------------------------------------------------------------------
@@ -295,11 +317,26 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
         Dispatches to v1 or v2 creation protocol based on cfg.fock_version.
         The inner dynamics call super()._layer_step which is the multi-xi
         version (K-EMA ξ + widened V_θ + gathered V_φ).
+
+        When ``cfg.prefix_causal_registers`` is True (v2 only), the register
+        state carried across layers is PER POSITION — ``r`` is (B, Tr, M, d)
+        and ``salience`` (B, Tr, M) with Tr in {1, T} — so the register bank
+        consumed at position t is built exclusively from tokens 1…t.  In
+        this mode registers do NOT join the extended Verlet state: in the
+        legacy step tokens never received force from register rows anyway
+        (strict lower-triangular pair mask + detached h_src), so the token
+        dynamics are unchanged; what is removed is the registers' own
+        full-window evolution — the cross-layer leak channel identified in
+        Fock-PARFLM_Causal_Leak_Audit_Results.md.
         """
         cfg = self.cfg
         B, T, d = h.shape
         M = cfg.n_registers
         decay = cfg.register_salience_decay
+        prefix_causal = (
+            cfg.fock_version == "v2"
+            and getattr(cfg, "prefix_causal_registers", False)
+        )
 
         if layer_idx == 0 and self.training and getattr(cfg, "register_repulsion", False):
             self._repulsion_terms = []
@@ -311,6 +348,15 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
             g_create = self.creation_gates[layer_idx](h_mean)
             salience = salience * decay + g_create * (1.0 - decay)
             r_causal = None
+        elif prefix_causal:
+            # Diagonal creation queries: token t is scored by the register
+            # bank as of position t; constant-shift cumulative softmax makes
+            # the readout bit-exactly prefix-causal.
+            readout, alpha_max = self.creation_gate_qkv.forward_prefix(h, r)
+            blend = salience.unsqueeze(-1)                     # (B, Tr, M, 1)
+            r = blend * r + (1.0 - blend) * readout            # (B, T, M, d)
+            salience = salience * decay + alpha_max * (1.0 - decay)  # (B,T,M)
+            r_causal = None
         else:
             r_new_content, r_causal, alpha_max = self.creation_gate_qkv(h, r)
             blend = salience.unsqueeze(-1)
@@ -318,34 +364,51 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
             salience = salience * decay + alpha_max * (1.0 - decay)
 
         # --- Active mask ---
-        active = self._active_mask(salience)
-        active_float = active.float().unsqueeze(-1)
-        r_gated = r * active_float
+        active = self._active_mask(salience)  # (B, M) or (B, T, M)
 
-        # --- Extend state ---
-        h_ext = torch.cat([h, r_gated], dim=1)
-        h_prev_ext = torch.cat([h_prev, r_gated], dim=1)
-
-        if isinstance(m_b, torch.Tensor) and m_b.dim() >= 2:
-            m_reg = self.m_global.expand(B, M, 1)
-            m_ext = torch.cat([m_b, m_reg], dim=1)
+        if prefix_causal:
+            # --- Token dynamics only (registers not concatenated) ---
+            h_new = super()._layer_step(
+                h, h_prev, m_b, gamma, dt, layer_idx=layer_idx,
+            )
+            r_new = r
         else:
-            m_ext = m_b
+            active_float = active.float().unsqueeze(-1)
+            r_gated = r * active_float
 
-        # --- Multi-xi PARF dynamics on extended state ---
-        h_ext_new = super()._layer_step(
-            h_ext, h_prev_ext, m_ext, gamma, dt, layer_idx=layer_idx,
-        )
+            # --- Extend state ---
+            h_ext = torch.cat([h, r_gated], dim=1)
+            h_prev_ext = torch.cat([h_prev, r_gated], dim=1)
 
-        # --- Split back ---
-        h_new = h_ext_new[:, :T, :]
-        r_new = h_ext_new[:, T:, :]
-        r_new = torch.where(active_float.bool(), r_new, r)
+            if isinstance(m_b, torch.Tensor) and m_b.dim() >= 2:
+                m_reg = self.m_global.expand(B, M, 1)
+                m_ext = torch.cat([m_b, m_reg], dim=1)
+            else:
+                m_ext = m_b
+
+            # --- Multi-xi PARF dynamics on extended state ---
+            h_ext_new = super()._layer_step(
+                h_ext, h_prev_ext, m_ext, gamma, dt, layer_idx=layer_idx,
+            )
+
+            # --- Split back ---
+            h_new = h_ext_new[:, :T, :]
+            r_new = h_ext_new[:, T:, :]
+            r_new = torch.where(active_float.bool(), r_new, r)
 
         # --- Register repulsion (B4): differentiable anti-collapse penalty on
         #     the dynamic active register states (mirrors the reg_cos_sim probe).
+        #     Loss-only term — never enters the forward logits, so the
+        #     last-position (full-prefix) bank is causally fine here.
         if self.training and getattr(cfg, "register_repulsion", False):
-            self._repulsion_terms.append(self._dynamic_repulsion(r_new, active))
+            if prefix_causal:
+                self._repulsion_terms.append(
+                    self._dynamic_repulsion(r_new[:, -1], active[:, -1])
+                )
+            else:
+                self._repulsion_terms.append(
+                    self._dynamic_repulsion(r_new, active)
+                )
 
         # --- Reverse channel (v2 only) ---
         _cap_qforce_ratio = 0.0
@@ -357,7 +420,12 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
         ):
             # Use position-dependent causal register content so that
             # the force on token t only reflects tokens 1…t (no leak).
-            r_rev = r_causal if r_causal is not None else r_new
+            # prefix_causal mode: r_new IS the per-position causal state
+            # and `active` the per-position mask.
+            if prefix_causal:
+                r_rev = r_new
+            else:
+                r_rev = r_causal if r_causal is not None else r_new
             Q_force = self.reverse_ch(h_new, r_rev, active)
             # Per-layer gate (shape (L,)) indexes by layer; global gate (shape
             # (1,)) is shared.  Selecting a 0-dim slice keeps the increment
@@ -390,16 +458,28 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
                 h_new = self._project(h_new)
 
         # --- Destruction ---
-        g_destroy = self.destruction_gates[layer_idx](r_new)
+        g_destroy = self.destruction_gates[layer_idx](r_new)  # (B,M) | (B,T,M)
         salience = salience * (1.0 - g_destroy * active.float())
 
         if self._fock_capture is not None:
-            self._fock_capture.append(
-                self._fock_layer_stats(
-                    layer_idx, r_new, active, salience, g_destroy,
-                    alpha_max, _cap_qforce_ratio, _cap_rev_scale,
+            if prefix_causal:
+                # Report the last-position (full-prefix) slice, which matches
+                # the legacy global-state semantics.
+                self._fock_capture.append(
+                    self._fock_layer_stats(
+                        layer_idx, r_new[:, -1], active[:, -1],
+                        salience[:, -1], g_destroy[:, -1],
+                        alpha_max[:, -1] if alpha_max is not None else None,
+                        _cap_qforce_ratio, _cap_rev_scale,
+                    )
                 )
-            )
+            else:
+                self._fock_capture.append(
+                    self._fock_layer_stats(
+                        layer_idx, r_new, active, salience, g_destroy,
+                        alpha_max, _cap_qforce_ratio, _cap_rev_scale,
+                    )
+                )
 
         return h_new, h, r_new, salience
 
@@ -726,11 +806,14 @@ def _smoke():
     for version in ("v1", "v2"):
         for layer_ckpt in (False, True):
             for gathered in (False, True):
+              for prefix_causal in ((False,) if version == "v1" else (False, True)):
                 tag_parts = [version]
                 if layer_ckpt:
                     tag_parts.append("lc")
                 if gathered:
                     tag_parts.append("gv")
+                if prefix_causal:
+                    tag_parts.append("pc")
                 tag = "+".join(tag_parts) or version
 
                 cfg = FockMultiXiPARFConfig(
@@ -762,6 +845,7 @@ def _smoke():
                     d_k=16,
                     destruction_gate_hidden=16,
                     reverse_channel=(version == "v2"),
+                    prefix_causal_registers=prefix_causal,
                 )
                 torch.manual_seed(0)
                 net = FockMultiXiPARFLM(cfg)

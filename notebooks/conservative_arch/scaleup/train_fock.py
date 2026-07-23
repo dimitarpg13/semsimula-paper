@@ -129,6 +129,11 @@ class TrainConfig:
     register_repulsion: bool = True
     register_repulsion_coeff: float = 0.05
     register_repulsion_kind: str = "gram"
+    # Prefix-causal register lifecycle (causal-leak fix; see
+    # Fock-PARFLM_Causal_Leak_Audit_Results.md).  True = leak-free (the only
+    # trustworthy setting for training); False reproduces the legacy leaky
+    # architecture and exists solely for loading pre-fix checkpoints.
+    prefix_causal_registers: bool = True
 
     # Integrator
     fixed_gamma: float = 0.30
@@ -420,7 +425,12 @@ def build_fock_model(cfg: TrainConfig, device: str, logfreq_path: str):
         register_repulsion=cfg.register_repulsion,
         register_repulsion_coeff=cfg.register_repulsion_coeff,
         register_repulsion_kind=cfg.register_repulsion_kind,
+        prefix_causal_registers=cfg.prefix_causal_registers,
     )
+    if is_main():
+        state = "ON (leak-free)" if cfg.prefix_causal_registers else \
+            "OFF (LEGACY LEAKY ARCHITECTURE — do not train with this)"
+        print(f"[build_fock_model] prefix_causal_registers: {state}")
 
     model = FockMultiXiPARFLM(model_cfg).to(device)
 

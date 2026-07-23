@@ -74,6 +74,8 @@ def build(L):
         reverse_channel_warmup_steps=4000, reverse_channel_per_layer=True,
         per_register_tau=True, per_register_keys=True,
         ortho_register_init=True, register_repulsion=False,
+        # This script decomposes the LEGACY leak; keep the leaky lifecycle.
+        prefix_causal_registers=False,
     )
     torch.manual_seed(1234)
     m = FockMultiXiPARFLM(cfg)

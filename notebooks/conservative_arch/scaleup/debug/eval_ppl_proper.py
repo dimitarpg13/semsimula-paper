@@ -160,6 +160,12 @@ def build_model(ckpt_state, device, logfreq_path='/content/dummy_logfreq.npy'):
         register_repulsion=True,
         register_repulsion_coeff=0.05,
         register_repulsion_kind='gram',
+        # Legacy (leaky) register lifecycle: the checkpoints this script
+        # evaluates were trained BEFORE the prefix-causal fix.  The model
+        # default is now True; pin False so the forward semantics match
+        # the trained weights.  Do NOT flip this for post-fix checkpoints
+        # trained with prefix_causal_registers=True.
+        prefix_causal_registers=False,
     )
     model = FockMultiXiPARFLM(config)
 

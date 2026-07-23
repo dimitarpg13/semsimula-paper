@@ -100,6 +100,56 @@ def _causal_creation_readout(
 
 
 # ---------------------------------------------------------------------------
+# Prefix-causal creation readout — bit-exactly causal cross-layer registers
+# ---------------------------------------------------------------------------
+def _prefix_causal_creation_readout(
+    scores: torch.Tensor,
+    V: torch.Tensor,
+    clamp: float = 40.0,
+) -> Tuple[torch.Tensor, torch.Tensor]:
+    """Prefix-causal cumulative-softmax readout with per-position salience.
+
+    Differs from ``_causal_creation_readout`` in two load-bearing ways:
+
+      1. Numerical stabilisation uses a CONSTANT shift (``clamp``) instead of
+         the full-sequence max.  The full-sequence max cancels analytically,
+         but in floating point it makes outputs at position t depend on the
+         rounding induced by future scores.  A constant shift makes every
+         output at position t a bit-exact function of positions <= t, so the
+         causality probe returns literal 0.0.
+      2. ``alpha_max`` is returned PER POSITION via a prefix cummax
+         (``alpha_max[t]`` = peak prefix attention weight at t), so salience
+         and the active mask can be maintained causally per position.
+
+    Internals run in float32 regardless of autocast (exp/cumsum of tiny
+    values lose too much precision in bf16); the readout is cast back to
+    the input dtype.
+
+    Args:
+        scores: (B, M, T) — temperature-scaled attention scores.
+        V:      (B, T, d) — token values.
+
+    Returns:
+        readout:   (B, T, M, d) — position-dependent register content
+                                   (prefix softmax readout at each t).
+        alpha_max: (B, T, M)    — per-position peak prefix attention weight.
+    """
+    in_dtype = V.dtype
+    s32 = scores.float().clamp(max=clamp) - clamp             # <= 0
+    exp_s = torch.exp(s32)                                    # (B, M, T), <= 1
+    Z = torch.cumsum(exp_s, dim=-1).clamp(min=1e-30)          # (B, M, T)
+
+    weighted_V = exp_s.unsqueeze(-1) * V.float().unsqueeze(1)  # (B, M, T, d)
+    numerator = torch.cumsum(weighted_V, dim=2)                # (B, M, T, d)
+    r_mt = numerator / Z.unsqueeze(-1)                         # (B, M, T, d)
+
+    alpha_max = exp_s.cummax(dim=-1).values / Z                # (B, M, T)
+
+    readout = r_mt.permute(0, 2, 1, 3).to(in_dtype)            # (B, T, M, d)
+    return readout, alpha_max.permute(0, 2, 1).to(in_dtype)    # (B, T, M)
+
+
+# ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
 @dataclass
@@ -127,6 +177,20 @@ class FockPARFConfig_v2(SparsePARFConfig):
                                 → peaked (selective) attention; the model
                                 learns to relax it if needed.  None means
                                 fall back to the fixed 1/√d_k scaling.
+      prefix_causal_registers : bool — When True (default), the cross-layer
+                                register state is PER POSITION (B, T, M, d):
+                                the register bank consumed at position t is
+                                built exclusively from tokens 1…t, closing
+                                the future-token leak of the global-state
+                                lifecycle (see
+                                Fock-PARFLM_Causal_Leak_Audit_Results.md).
+                                Registers no longer join the Verlet dynamics
+                                (that channel is inherently full-window and
+                                was never token-visible); creation queries
+                                become diagonal (token t is scored by the
+                                register state as of t).  False reproduces
+                                the legacy (leaky) architecture for loading
+                                pre-fix checkpoints.
     """
     n_registers: int = 16
     d_k: int = 64
@@ -137,6 +201,7 @@ class FockPARFConfig_v2(SparsePARFConfig):
     stack_discipline: bool = True
     destruction_gate_hidden: int = 64
     reverse_channel: bool = True
+    prefix_causal_registers: bool = True
 
 
 # ---------------------------------------------------------------------------
@@ -226,6 +291,53 @@ class QKVCreationGate(nn.Module):
                 self.last_entropy = float(-(a * a.log()).sum(dim=-1).mean())
 
         return _causal_creation_readout(scores, V)
+
+    def forward_prefix(
+        self,
+        h_tokens: torch.Tensor,
+        r_state: torch.Tensor,
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """Prefix-causal creation with per-position (diagonal) queries.
+
+        Token t is scored by the register state AS OF position t (built from
+        tokens <= t at earlier layers), so both the scores and the cumulative
+        readout are prefix-causal by construction.
+
+        Args:
+            h_tokens: (B, T, d)
+            r_state:  (B, Tr, M, d) with Tr in {1, T} — per-position causal
+                      register state (Tr=1: vacuum / position-independent).
+
+        Returns:
+            readout:   (B, T, M, d) — prefix-causal register content per t.
+            alpha_max: (B, T, M)    — per-position peak prefix attention.
+        """
+        B, T, d = h_tokens.shape
+        M = self.M
+
+        K = self.W_K(h_tokens)     # (B, T, d_k)
+        V = self.W_V(h_tokens)     # (B, T, d)
+
+        Q = torch.einsum("btmd,mdk->btmk", r_state, self.W_Q)  # (B, Tr, M, d_k)
+        if Q.shape[1] == 1:
+            Q = Q.expand(B, T, M, self.d_k)
+
+        scores = torch.einsum(
+            "btmk,btk->btm", Q, K,
+        ).permute(0, 2, 1)                                     # (B, M, T)
+
+        if self.log_tau is not None:
+            tau = self.log_tau.exp().clamp(min=1e-4)
+            scores = scores / tau
+        else:
+            scores = scores / (self.d_k ** 0.5)
+
+        if self.capture_stats:
+            with torch.no_grad():
+                a = F.softmax(scores, dim=-1).clamp(min=1e-9)   # (B, M, T)
+                self.last_entropy = float(-(a * a.log()).sum(dim=-1).mean())
+
+        return _prefix_causal_creation_readout(scores, V)
 
 
 # ---------------------------------------------------------------------------
@@ -335,6 +447,55 @@ class QKVCreationGate_v21(nn.Module):
 
         return _causal_creation_readout(scores, V)
 
+    def forward_prefix(
+        self,
+        h_tokens: torch.Tensor,
+        r_state: torch.Tensor,
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """Prefix-causal creation with per-position (diagonal) queries.
+
+        Same contract as ``QKVCreationGate.forward_prefix`` but with the
+        v2.1 per-register temperature (B1) and per-register keys (B2).
+
+        Args:
+            h_tokens: (B, T, d)
+            r_state:  (B, Tr, M, d) with Tr in {1, T}.
+
+        Returns:
+            readout:   (B, T, M, d)
+            alpha_max: (B, T, M)
+        """
+        B, T, d = h_tokens.shape
+        M = self.M
+
+        V = self.W_V(h_tokens)  # (B, T, d)
+
+        Q = torch.einsum("btmd,mdk->btmk", r_state, self.W_Q)  # (B, Tr, M, d_k)
+        if Q.shape[1] == 1:
+            Q = Q.expand(B, T, M, self.d_k)
+
+        if self.per_register_keys:
+            K = torch.einsum("btd,mdk->btmk", h_tokens, self.W_K)  # (B,T,M,d_k)
+            scores = (Q * K).sum(-1).permute(0, 2, 1)              # (B, M, T)
+        else:
+            K = self.W_K(h_tokens)                                  # (B, T, d_k)
+            scores = torch.einsum(
+                "btmk,btk->btm", Q, K,
+            ).permute(0, 2, 1)                                      # (B, M, T)
+
+        if self.log_tau is not None:
+            tau = self.log_tau.exp().clamp(min=1e-4)                # (M,)
+            scores = scores / tau.view(1, M, 1)
+        else:
+            scores = scores / (self.d_k ** 0.5)
+
+        if self.capture_stats:
+            with torch.no_grad():
+                a = F.softmax(scores, dim=-1).clamp(min=1e-9)   # (B, M, T)
+                self.last_entropy = float(-(a * a.log()).sum(dim=-1).mean())
+
+        return _prefix_causal_creation_readout(scores, V)
+
 
 # ---------------------------------------------------------------------------
 # Reverse-channel: non-conservative force Q_i (§10)
@@ -442,7 +603,9 @@ class ReverseChannel(nn.Module):
             h_tokens:    (B, T, d)           — token hidden states.
             r_active:    (B, M, d)           — global register states, OR
                          (B, T, M, d)        — position-dependent causal registers.
-            active_mask: (B, M)              — boolean; inactive registers masked.
+            active_mask: (B, M)              — boolean; inactive registers masked,
+                         OR (B, T, M)        — per-position active mask (prefix-
+                                               causal register lifecycle).
 
         Returns:
             Q_force: (B, T, d) — non-conservative Fock exchange force.
@@ -480,21 +643,26 @@ class ReverseChannel(nn.Module):
             else:
                 scores = torch.matmul(q, k.transpose(-2, -1)) / (self.d_k ** 0.5)
 
-        mask_expanded = active_mask.unsqueeze(1).expand(B, T, M)
+        if active_mask.dim() == 3:
+            # Per-position mask (prefix-causal lifecycle): token t only reads
+            # registers active AT position t.
+            mask_expanded = active_mask                                # (B, T, M)
+            has_active = active_mask.any(dim=-1, keepdim=True)         # (B, T, 1)
+        else:
+            mask_expanded = active_mask.unsqueeze(1).expand(B, T, M)
+            has_active = active_mask.any(dim=-1, keepdim=True).unsqueeze(1)  # (B,1,1)
         scores = scores.masked_fill(~mask_expanded, -1e9)
 
-        has_active = active_mask.any(dim=-1, keepdim=True).unsqueeze(1)
         alpha = F.softmax(scores, dim=-1)             # (B, T, M)
         alpha = alpha * has_active.float()
 
         if self.capture_stats:
             with torch.no_grad():
-                valid = has_active.squeeze(-1).squeeze(1).float()  # (B,) 1 if any active
-                denom = valid.sum().clamp(min=1.0) * float(T)
+                w = has_active.float().expand(B, T, 1)     # (B, T, 1)
+                denom = w.sum().clamp(min=1.0)
                 a = alpha.clamp(min=1e-9)
-                ent = -(a * a.log()).sum(dim=-1)          # (B, T)
-                amax = alpha.max(dim=-1).values           # (B, T)
-                w = valid.unsqueeze(-1)                    # (B, 1)
+                ent = -(a * a.log()).sum(dim=-1, keepdim=True)   # (B, T, 1)
+                amax = alpha.max(dim=-1, keepdim=True).values    # (B, T, 1)
                 self.last_entropy = float((ent * w).sum() / denom)
                 self.last_alpha_max = float((amax * w).sum() / denom)
 
@@ -614,6 +782,12 @@ class FockPARFLM_v2(SparsePARFLM):
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """Initialise register states and salience for a new forward pass."""
         M, d = self.cfg.n_registers, self.cfg.d
+        if getattr(self.cfg, "prefix_causal_registers", False):
+            # Per-position causal state, initialised position-independent
+            # (Tr=1 broadcasts to T at the first blend).
+            r = self.register_embed.view(1, 1, M, d).expand(B, 1, M, d)
+            salience = torch.ones(B, 1, M, device=device)
+            return r, salience
         r = self.register_embed.unsqueeze(0).expand(B, M, d).clone()
         # Start fully active (salience=1) so registers fire from step 0
         # and the destruction gate learns when to annihilate them.
@@ -637,7 +811,7 @@ class FockPARFLM_v2(SparsePARFLM):
         sorted_active = torch.cumprod(sorted_above.float(), dim=-1).bool()
 
         active = torch.zeros_like(sorted_active)
-        active.scatter_(1, sort_idx, sorted_active)
+        active.scatter_(-1, sort_idx, sorted_active)
         return active
 
     # ------------------------------------------------------------------
@@ -667,6 +841,11 @@ class FockPARFLM_v2(SparsePARFLM):
         B, T, d = h.shape
         M = cfg.n_registers
         decay = cfg.register_salience_decay
+
+        if getattr(cfg, "prefix_causal_registers", False):
+            return self._fock_v2_layer_step_prefix_causal(
+                h, h_prev, r, salience, m_b, gamma, dt, layer_idx,
+            )
 
         # --- 1. Q/K/V creation gate ---
         r_new_content, r_causal, alpha_max = self.creation_gate(h, r)
@@ -716,6 +895,68 @@ class FockPARFLM_v2(SparsePARFLM):
 
         # --- 7. Destruction gate ---
         g_destroy = self.destruction_gates[layer_idx](r_new)  # (B, M)
+        salience = salience * (1.0 - g_destroy * active.float())
+
+        return h_new, h, r_new, salience
+
+    # ------------------------------------------------------------------
+    def _fock_v2_layer_step_prefix_causal(
+        self,
+        h: torch.Tensor,
+        h_prev: torch.Tensor,
+        r: torch.Tensor,
+        salience: torch.Tensor,
+        m_b: torch.Tensor,
+        gamma: torch.Tensor,
+        dt: float,
+        layer_idx: int,
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Prefix-causal register lifecycle: one layer step.
+
+        The register state carried across layers is PER POSITION:
+        ``r`` is (B, Tr, M, d) and ``salience`` (B, Tr, M) with Tr in
+        {1, T}; slot t only ever aggregates tokens 1…t.  Consequences vs
+        the legacy step:
+
+          * Creation queries are diagonal — token t is scored by the
+            register bank as of position t (streaming semantics).
+          * Blend, salience, active mask and destruction are per position.
+          * Registers do NOT join the extended Verlet state.  In the legacy
+            step tokens never received force from register rows anyway
+            (strict lower-triangular pair mask + detached h_src), so the
+            token dynamics are unchanged; what is removed is the registers'
+            own full-window evolution — the cross-layer leak channel.
+          * The reverse channel consumes the per-position state, which is
+            already its causal calling convention.
+        """
+        cfg = self.cfg
+        decay = cfg.register_salience_decay
+
+        # --- 1. Prefix-causal creation (diagonal queries) ---
+        readout, alpha_max = self.creation_gate.forward_prefix(h, r)
+        blend = salience.unsqueeze(-1)                    # (B, Tr, M, 1)
+        r_new = blend * r + (1.0 - blend) * readout       # (B, T, M, d)
+        salience = salience * decay + alpha_max * (1.0 - decay)  # (B, T, M)
+
+        # --- 2. Per-position active mask ---
+        active = self._active_mask(salience)              # (B, T, M) bool
+
+        # --- 3. Token dynamics (registers not concatenated) ---
+        h_new = super()._layer_step(
+            h, h_prev, m_b, gamma, dt, layer_idx=layer_idx,
+        )
+
+        # --- 4. Reverse channel (per-position causal registers) ---
+        if self.reverse_ch is not None and active.any():
+            Q_force = self.reverse_ch(h_new, r_new, active)
+            scale = torch.tanh(self.reverse_channel_scale)
+            h_new = h_new + (dt * dt / m_b) * scale * Q_force
+
+            if cfg.ln_after_step:
+                h_new = self._project(h_new)
+
+        # --- 5. Destruction gate (per position) ---
+        g_destroy = self.destruction_gates[layer_idx](r_new)  # (B, T, M)
         salience = salience * (1.0 - g_destroy * active.float())
 
         return h_new, h, r_new, salience
