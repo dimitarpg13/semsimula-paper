@@ -200,7 +200,7 @@ flowchart TB
     Force --> Logit
 ```
 
-![Root cause of the reverse-channel causal leak: a shared full-window register memory pools information from every token — including the future (amber) — and a reverse-channel force feeds it back onto an earlier token's prediction (red arrow).](images/fock_leak_rootcause.png)
+<p align="center"><img src="images/fock_leak_rootcause.png" alt="Root cause of the reverse-channel causal leak: a shared full-window register memory pools information from every token including the future, and a reverse-channel force feeds it back onto an earlier token's prediction." width="600"></p>
 
 *Figure 1. The leak in one picture. Every token (including the amber future
 tokens) writes into a single shared register memory that spans the whole
@@ -295,13 +295,6 @@ Summary: trained-scale `max|Δlogit|` ≈ **37**, versus the init-scale referenc
 of **1.1e-5** — the raw sensitivity of past logits to future tokens grew by
 **more than six orders of magnitude** during training. The gate-zeroed control
 returns exactly 0, re-confirming the reverse channel is the sole carrier.
-
-![The same leak channel measured before and after training: a barely-open valve leaking a single detectable droplet at initialization, versus a wide-open valve flooding the beaker after training.](images/fock_init_vs_trained_leak.png)
-
-*Figure 2. Why an init-scale bound is worthless here. The channel that leaks a
-hard-to-detect trickle at initialization (max\|Δlogit\| ≈ 1e-5) becomes a flood
-after training (max\|Δlogit\| ≈ 37). Gradient descent spent 100k+ steps opening
-this valve because it lowers the training loss.*
 
 Notice, though, that the mean ΔNLL of the true past targets is small
 (+0.0121 nats averaged over pairs, and negative for two pairs). **This number
@@ -461,9 +454,9 @@ Per layer, the changes are:
 5. The reverse channel consumes the per-position state with a per-position
    active mask (already its causal calling convention).
 
-![The prefix-causal fix: each position carries its own register notebook that only draws from tokens at or before it, forming a triangular causal staircase; no future token reaches an earlier position.](images/fock_fix_prefix_causal.png)
+<p align="center"><img src="images/fock_fix_prefix_causal.png" alt="The prefix-causal fix: each position carries its own register notebook that only draws from tokens at or before it, forming a triangular causal staircase; no future token reaches an earlier position." width="600"></p>
 
-*Figure 3. The fix. Instead of one shared memory spanning the whole window,
+*Figure 2. The fix. Instead of one shared memory spanning the whole window,
 each position carries its own register state that only ever reads its causal
 prefix (the rising staircase of blue beams). No beam runs from an amber future
 token back to an earlier position, so there is no red backward arrow to draw.*
@@ -542,9 +535,9 @@ The proof relies on the constant-shift stabilizer for the *bit-exact* part:
 without it the claim holds analytically but a float64 probe would see rounding
 noise, not a literal zero. With it, "causal" means bit-exact zero.
 
-![Causal-cone comparison: the legacy architecture admits an arrow from a future position back to a past one (causality violated); the fixed architecture admits only forward arrows (causality preserved).](images/fock_causal_cone_before_after.png)
+<p align="center"><img src="images/fock_causal_cone_before_after.png" alt="Causal-cone comparison: the legacy architecture admits an arrow from a future position back to a past one (causality violated); the fixed architecture admits only forward arrows (causality preserved)." width="600"></p>
 
-*Figure 4. Space-time view. Left: the legacy reverse channel admits an
+*Figure 3. Space-time view. Left: the legacy reverse channel admits an
 information arrow from a future position back into an earlier one — outside the
 past light cone of that prediction. Right: after the fix, every arrow points
 forward in time; each prediction draws only from its own past light cone.*
