@@ -1,84 +1,100 @@
-# Fock-PARFLM v2.1 — Causal Leak Audit Results
+# Fock-PARFLM v2.1 — Causal Leak: Root-Cause Analysis, Magnitude, and Fix
 
 **Artifact under audit:** the Fock-PARFLM v2.1 model as instantiated by
 `notebooks/conservative_arch/scaleup/colab_fock_depthcond_vtheta_openwebtext_ext2.ipynb`
-(d=384, L=16, M=32 registers, xi=5long, top-k=16, reverse channel ON, depth-conditioned Gaussian V_theta).
+(d=384, L=16, M=32 registers, xi=5long, top-k=16, reverse channel ON,
+depth-conditioned Gaussian V_theta), checkpoint `step103500_best.pt`.
 
-**Motivation:** the d=384 run reached validation PPL 14.59 at 53M parameters on OpenWebText — strong enough that a hidden causal leak (future tokens influencing past predictions) must be ruled out before the number is trusted or published.
+**Bottom line up front.** The reported perplexity of this architecture was
+**inflated by roughly 33×** by a causal leak. A leak-free measurement of the
+same checkpoint on the same tokens gives PPL ≈ **258** where the standard
+full-window protocol reported PPL ≈ **7.69** — a paired difference of
+**+3.51 ± 0.09 nats/token**. The leak flows entirely through the **reverse
+channel** reading a **global, full-window register summary** that contains the
+very token being predicted. The fix — a **prefix-causal register lifecycle**
+(config flag `prefix_causal_registers`, default `True`) — closes it exactly:
+the future-perturbation probe returns **0.0 (bit-exact, float64)** with the
+reverse channel fully open.
 
-**Method:** a two-track audit. Track 1 is a static line-by-line review of every information pathway in the computation graph, across the full inheritance chain (`PARFLM` → `SparsePARFLM` → `MultiXiPARFLM` → `FockMultiXiPARFLM` plus the v2 gate modules and the depth-conditioned V_theta). Track 2 is an empirical falsification probe: perturb future tokens and measure, in float64 on deterministic CPU kernels, whether any logit at an earlier position moves. The probe scripts are committed at `notebooks/conservative_arch/scaleup/debug/fock_causality_probe.py` and `notebooks/conservative_arch/scaleup/debug/fock_leak_decompose.py`.
-
-**Last updated:** 22 July 2026.
-
----
-
-## 1. Executive summary
-
-| # | Pathway | Static verdict | Empirical verdict |
-|---|---------|----------------|-------------------|
-| 1 | Embedding, positional table, per-token mass, read-out head | clean | clean |
-| 2 | Multi-channel xi (causal EMA context) | clean | clean |
-| 3 | V_theta (depth-conditioned Gaussian bank) | clean | clean |
-| 4 | V_phi pair potential + score head + top-k routing | clean | clean |
-| 5 | Force computation via `autograd.grad` (back-reaction severed by detach) | clean | clean (positive control confirms probe power) |
-| 6 | Register creation gate (cumulative causal softmax) | clean in values | clean |
-| 7 | Registers inside the Verlet dynamics (extended state) | clean toward tokens | clean |
-| 8 | **Reverse channel + cross-layer register state** | **weights-only acausality found** | **confirmed: ~1e-5 logit shift at init scale** |
-
-**Bottom line.** The conservative backbone of Fock-PARFLM is **exactly causal** — not approximately, exactly: with the reverse channel disabled, perturbing future tokens changes past logits by 0.0 in float64. One genuine acausal pathway exists, and it flows exclusively through the reverse channel: the global register state carries a full-window summary across layers, and at the next layer it modulates the **weights** (never the values) of the causal creation readout that feeds the reverse-channel force. The measured effect at initialization scale is a relative logit shift of about 9e-5, which first-order-bounds the PPL impact at roughly 3e-4 PPL points. The channel is low-bandwidth by construction (position-independent, weights-only, mediated by M=32 register vectors per window). It cannot plausibly explain a PPL of 14.59, but it should be measured on the trained checkpoint and disclosed in the paper. Sections 9–11 give the quantitative argument and the recommended certification protocol.
+**Last updated:** 23 July 2026.
 
 ---
 
-## 2. Scope and audit protocol
+## 0. How to read this document
 
-### 2.1 What counts as a causal leak
+This note has been restructured around the *life cycle of the bug*: it was
+found, mis-sized, then correctly sized, then fixed. The three acts map to the
+three questions a reader will have.
 
-The model is trained and evaluated with next-token cross-entropy over full windows: the loss at position t is computed from `logits[:, t]`, which must be a function of tokens $x_0 \ldots x_t$ only. A causal leak is any dependency
+| Act | Question | Where |
+|-----|----------|-------|
+| I | Where does the leak come from, mechanically? | Part A (§§2–4) |
+| II | How big is it, and why did the first audit get the size wrong? | Part B (§§5–7) |
+| III | What is the fix and how do we know it is exactly causal? | Part C (§§8–10) |
+
+The very short version, as a timeline:
+
+```mermaid
+flowchart LR
+    A["Static audit finds the pathway"]
+    B["Init scale probe 1e-5 shift"]
+    C["Judged negligible 3e-4 PPL"]
+    D["Trained checkpoint probe"]
+    E["Honest PPL 258 vs reported 7.69"]
+    F["Prefix causal fix"]
+    G["Probe returns exactly 0.0"]
+
+    A --> B
+    B --> C
+    C -->|the mistake| D
+    D --> E
+    E --> F
+    F --> G
+```
+
+---
+
+# Part A — Anatomy of the leak
+
+## 1. What counts as a causal leak
+
+The model is trained and evaluated with next-token cross-entropy over full
+windows. The loss at position t is computed from `logits[:, t]`, which for a
+causal model must be a function of tokens $x_0 \ldots x_t$ only. A causal leak
+is any dependency
 
 $$
-\frac{\partial \mathrm{logits}[:, t]}{\partial x_s} \neq 0 \quad \text{for some } s \gt t.
+\frac{\partial \mathrm{logits}[:, t]}{\partial x_s} \neq 0 \quad \text{for some } s \gt t
 $$
 
-Both training and the in-notebook `evaluate()` score all positions of each 512-token window, so a leak at any position inflates the reported PPL benchmark.
+(read: no future token $x_s$ may move a past logit).
 
-### 2.2 Files audited
+Both training and the in-notebook `evaluate()` score **all** positions of each
+512-token window, so a leak at any interior position inflates the reported PPL.
+Crucially, "interior position" includes the case $s = t{+}1, t{+}2, \ldots$
+**inside the same window** — the leak we will find is dominated by this
+short-range, same-window case, not by long-range lookahead.
 
-| File | Role | Key classes / functions |
-|------|------|------------------------|
-| `notebooks/conservative_arch/parf/model_parf.py` | Base PARF LM | `PARFLM`, `StructuralVPhi`, `StructuralCompetitiveVPhi`, `MultiHeadVPhi`, `_pair_mask_for`, `_layer_step` |
-| `notebooks/conservative_arch/parf/model_parf_sparse.py` | Sparse top-k routing | `SparsePARFLM`, `ScoreHead`, `_sparse_topk_indices`, `_sparse_mask` |
-| `notebooks/conservative_arch/parf/model_parf_multixi.py` | Multi-channel xi | `MultiXiPARFLM._layer_step` |
-| `notebooks/conservative_arch/multixi/model_multixi.py` | EMA context | `MultiChannelXi`, `causal_ema_weights` |
-| `notebooks/conservative_arch/parf/model_fock_parf_multixi.py` | Fock registers on multi-xi | `FockMultiXiPARFLM`, `_fock_layer_step`, `_active_mask`, `_stack_forward` |
-| `notebooks/conservative_arch/parf/model_fock_parf_v2.py` | v2 gates | `QKVCreationGate_v21`, `ReverseChannel`, `DestructionGate_v2`, `_causal_creation_readout` |
-| `notebooks/conservative_arch/parf/model_gaussian_vtheta.py` | Depth-conditioned V_theta | `DepthConditionedMultiContextGaussianVTheta`, `install_depth_routing` |
+## 2. Information-flow map of one layer
 
-### 2.3 Exact configuration audited
-
-Pinned from the notebook's `make_config` (cell defining `ARCH_TIERS = [(384, 16, 32), ...]`): `fock_version='v2'`, `causal_force=True`, `v_phi_kind='structural_competitive'` with `v_phi_n_heads=4` and `use_gathered_v_phi=True`, `top_k=16`, `xi_alpha_inits=[0.50, 0.75, 0.95, 0.99, 0.995]` (5 channels), `mass_mode='logfreq'`, `fixed_gamma=0.30`, `n_registers=32`, `stack_discipline=True`, `per_register_keys=True`, `tau_create_init=8.0`, `reverse_channel=True` with `stable`, `pre_ln`, `soft_norm`, `per_layer` gates and 4000-step warmup, `register_salience_decay=0.5`, `register_salience_threshold=0.005`, untied embeddings with log-frequency output bias, `BLOCK_SIZE=512`. V_theta is swapped post-construction for `DepthConditionedMultiContextGaussianVTheta` (5 heads x 8 wells, shared bank + per-layer depth codes) and `install_depth_routing` monkey-patches `_fock_layer_step`.
-
-One incidental observation (not causality-related): with `use_gathered_v_phi=True`, `StructuralCompetitiveVPhi.forward_gathered` deliberately falls back to the base-class unnormalized Gaussian gate (`model_parf.py` lines 726–738), because the Gumbel top-k routing already provides the competition. The competitive row-softmax path is only exercised in dense mode.
-
----
-
-## 3. Information-flow map
-
-One Fock v2 layer step (`FockMultiXiPARFLM._fock_layer_step`, `model_fock_parf_multixi.py` lines 282–404) moves information as follows. Solid arrows are the conservative backbone; dotted arrows belong to the Fock register machinery.
+One Fock v2 layer step (`FockMultiXiPARFLM._fock_layer_step`) moves information
+as follows. Solid edges are the conservative backbone (exactly causal); dotted
+edges are the Fock register machinery (the audit surface).
 
 ```mermaid
 flowchart TB
-    Tokens["token states h at layer l (causal)"]
+    Tokens["token states h at layer l"]
     Registers["global register state r from layer l minus 1"]
-    Creation["creation gate QKV v21"]
-    RCausal["r causal per position (values from prefix only)"]
-    RContent["r new content (full window readout)"]
-    Salience["salience update via alpha max (full window)"]
-    Extended["extended state concat of tokens then gated registers"]
-    Verlet["Verlet step with V theta plus V phi forces"]
-    NewTokens["new token states (strictly causal)"]
-    NewRegisters["new register states (see all tokens)"]
+    Creation["creation gate QKV"]
+    RCausal["r causal per position (prefix values)"]
+    RContent["r new content (LAST position readout, full window)"]
+    Salience["salience via alpha max (full window)"]
+    Extended["extended state concat tokens then registers"]
+    Verlet["Verlet step V theta plus V phi"]
+    NewTokens["new token states"]
+    NewRegisters["new register states (saw all tokens)"]
     Reverse["reverse channel force on tokens"]
-    NextLayer["register state passed to layer l plus 1"]
+    NextLayer["register state to layer l plus 1"]
 
     Tokens --> Creation
     Registers -.-> Creation
@@ -97,325 +113,514 @@ flowchart TB
     Salience -.-> NextLayer
 ```
 
-The audit question reduces to: which of the dotted register paths can move future-token information into `NewTokens` at a position earlier than the future token? Sections 4–6 walk each path; section 7 shows the one that does.
+The audit question reduces to: **which dotted path can move future-token
+information into `NewTokens` at a position earlier than that future token?**
 
----
+## 3. The conservative backbone is exactly causal
 
-## 4. Static audit — the conservative backbone
+Everything except the register machinery is causal by construction, enforced
+redundantly. This is not a hopeful claim — with the reverse channel disabled,
+perturbing future tokens moves past logits by **exactly 0.0 in float64**
+(§5, test T1). The guarantees:
 
-### 4.1 Per-position modules (embedding, mass, projection, read-out)
+- **Strict pair mask.** `PARFLM._pair_mask_for` caches
+  `tril(ones(T, T), diagonal=-1)`: the source set for query t is exactly
+  $s \in \lbrace 0, \ldots, t-1 \rbrace$.
+- **Causal EMA context.** `causal_ema_weights` builds a lower-triangular
+  weight matrix $W[t, s] = \alpha^{t-s}/Z_t$ for $s \le t$ and $0$ otherwise.
+- **Back-reaction severed.** The force is one `autograd.grad(U, h)` call.
+  Differentiating the masked pair potential w.r.t. a source $h_s$ yields a
+  Newton back-reaction term $\sum_{t \gt s} \partial_{h_s} V_\phi(h_t, h_s)$
+  through which every future query would push its past source. The code
+  detaches the source slice (`h_src = h_in.detach()` when `causal_force=True`),
+  zeroing exactly this term. The positive control (§5, T3) confirms the detach
+  is load-bearing.
+- **Registers are invisible to tokens inside the dynamics.** The extended
+  state concatenates registers *after* the T tokens
+  (`h_ext = cat([h, r_gated], dim=1)`), then applies the strict mask on
+  $T{+}M$ positions. Every register sits at index $\ge T$, every token query at
+  index $\lt T$, so token queries can select only token sources. Registers are
+  **pure observers** in the Verlet step: they absorb token information but exert
+  no conservative force on tokens.
 
-All four are position-local and trivially causal:
+The consequence is sharp and worth stating plainly: **the registers may absorb
+the entire window, including the future, and this is harmless — as long as that
+absorbed information is never read back onto an earlier token.** The one place
+it *is* read back is the reverse channel.
 
-- `PARFLM._embed` (`model_parf.py` lines 1058–1061): `E(x) + P[t]` — token embedding plus positional row, no cross-position mixing.
-- `PARFLM.compute_mass` (lines 1043–1052): with `mass_mode='logfreq'`, the mass at position t is `softplus(raw_m_bias + alpha * surprisal[x_t])` — a lookup on the token id at position t only.
-- `PARFLM._project` (line 1055): `F.layer_norm(h, (d,))` — normalizes over the feature dimension only; per-token statistics, no sequence mixing.
-- `PARFLM.compute_logits` (lines 1064–1078): `W_out @ h_t + b` per position.
+## 4. The finding: the reverse channel reads a full-window summary
 
-**Verdict: clean.**
+### 4.1 The mechanism
 
-### 4.2 The xi context field
-
-`MultiXiPARFLM._layer_step` (`model_parf_multixi.py` lines 187–189) computes the context as K causal EMAs:
-
-```python
-# model_parf_multixi.py, lines 187-189
-xi_input = h.detach() if cfg.causal_force else h
-xis = self.xi_module(xi_input)                           # (B, T, K, d)
-```
-
-`causal_ema_weights` (`model_multixi.py` lines 97–127) builds the weight matrix
-
-$$
-W[t, s] = \frac{\alpha^{t-s}}{Z_t} \quad \text{for } s \le t, \qquad W[t, s] = 0 \quad \text{otherwise},
-$$
-
-which is lower-triangular by construction: `diffs = s_idx.view(T,1) - s_idx.view(1,T)` and `causal = (diffs >= 0)`. Position t aggregates positions 0..t only. Additionally the input is detached (`causal_force=True`), so the force gradient cannot flow back through xi into other positions at all.
-
-**Verdict: clean.**
-
-### 4.3 V_theta — depth-conditioned Gaussian bank
-
-`DepthConditionedMultiContextGaussianVTheta` (`model_gaussian_vtheta.py` lines 362–468) evaluates a shared multi-context well bank at each position, with a learned per-layer depth code added to the xi input. Two facts matter for causality:
-
-1. The bank is evaluated per position: `forward(xis, h)` maps `(B, T, n_ctx, d), (B, T, d)` to `(B, T, 1)` with no cross-position term.
-2. The depth codes `e_g` are learned parameters, constant with respect to the data, so `install_depth_routing` (lines 471–507) — which sets `_active_layer` before each layer step — cannot transport token information.
-
-**Verdict: clean.**
-
-### 4.4 V_phi, the score head, and top-k routing
-
-Three independent layers of causal enforcement protect the pair interaction.
-
-**(a) The strict pair mask.** `PARFLM._pair_mask_for` (`model_parf.py` lines 1108–1117) caches `torch.tril(ones(T, T), diagonal=-1)` — strictly lower-triangular, diagonal excluded, so the source set for query t is exactly s in 0..t-1.
-
-**(b) Top-k selection under the mask.** `SparsePARFLM._sparse_topk_indices` (`model_parf_sparse.py` lines 344–386) masks non-causal score logits to negative infinity **before** the top-k:
-
-```python
-# model_parf_sparse.py, lines 369-381
-z_topk = z_unmasked.masked_fill(~causal, float("-inf"))
-_, idx = z_topk.topk(k_eff, dim=-1)                   # (B, T, k_eff)
-...
-causal_g = causal_exp.gather(-1, idx)                  # (B, T, k_eff)
-m_hard_g = m_hard_g * causal_g.to(m_hard_g.dtype)
-y_g = y_g * causal_g.to(y_g.dtype)
-```
-
-A non-causal source can never be selected, and even if a row has fewer than k valid sources the residual slots are zeroed by the second multiplication. The straight-through gradient flows through `y_g`, itself computed from a softmax whose non-causal logits were set to a large negative number — the STE backward path is causal too.
-
-**(c) Gathered V_phi evaluation.** `StructuralVPhi.forward_gathered` (`model_parf.py` lines 504–563) only ever sees the gathered source tensor `h_src_g`, which was indexed by the causally-restricted `idx`. The multi-head wrapper `MultiHeadVPhi.forward_gathered` (lines 800–806) sums per-head evaluations of the same gathered sources.
-
-**Verdict: clean.**
-
-### 4.5 The force computation — why detach is load-bearing
-
-This is the most physics-specific part of the audit and deserves the full argument. The per-layer potential is
+There is exactly one non-conservative force on tokens: the reverse channel,
 
 $$
-U = \sum_t V_\theta\big(\xi_t, h_t\big) + \sum_t \sum_{s \lt t} \tilde{m}_{ts} \cdot V_\phi\big(h_t, h_s\big)
+Q_i = \sum_{k \in \text{active}} \mathrm{softmax}_k\big( q_i \cdot k_k^{\text{reg}} \big) v_k^{\text{reg}} ,
 $$
 
-and the force on every token is a single `autograd.grad(U, h)` call (`model_parf_multixi.py` lines 237–244). Here is the subtlety: **the causal mask alone is not sufficient in a force-based architecture.** Differentiating the masked potential with respect to $h_s$ gives two terms:
+injected as an additive update to the token state:
 
 $$
-\frac{\partial U}{\partial h_s} = \underbrace{\frac{\partial}{\partial h_s} \sum_{u \lt s} V_\phi(h_s, h_u)}_{\text{query side: causal}} + \underbrace{\sum_{t \gt s} \frac{\partial}{\partial h_s} V_\phi(h_t, h_s)}_{\text{source side: back reaction}}
+h_t \leftarrow h_t + \frac{dt^2}{m} \tanh(\text{gate}) Q_t .
 $$
 
-The second term is Newton's third law: every future query $h_t$ exerts a reaction force on its past sources. Through it, the force on token s — and hence the next-layer state and logits at position s — would depend on all future tokens. The code severs exactly this term by detaching the source slice before the pair potential is built:
+Its keys and values come from the register bank. In the legacy lifecycle the
+register bank $r$ carried across layers is a **single global object per window**,
+updated two ways, both of which see the whole window:
 
-```python
-# model_parf_multixi.py, lines 188-198
-xi_input = h.detach() if cfg.causal_force else h
-...
-h_src = h_in.detach() if cfg.causal_force else h_in
-h_src_for_score = (
-    h_in.detach() if cfg.score_head_use_detached_h_src else h_in
-)
-```
+1. the creation blend `r = blend * r + (1 - blend) * r_new_content`, where
+   `r_new_content` is the readout at the **last** window position (a
+   full-window summary), and
+2. the register rows of the Verlet output, which attend to **every** token as a
+   source.
 
-With `causal_force=True` (the production setting, confirmed in the notebook config), `autograd.grad(U, h_in)` sees $h_s$ as source only through a detached copy: the back-reaction gradient is identically zero and the force on token t is a function of $h_0 \ldots h_t$ alone. The empirical probe validates both directions: with the detach in place the past-logit delta is exactly 0.0; flipping `causal_force=False` (test T3, section 8) produces an immediate measurable leak — confirming both that the mechanism matters and that the probe has the power to detect a leak of this kind.
-
-**Verdict: clean, and empirically load-tested.**
-
----
-
-## 5. Static audit — the Fock register machinery
-
-### 5.1 Geometry of the extended state: tokens cannot see registers
-
-`_fock_layer_step` concatenates the M gated registers **after** the T tokens:
-
-```python
-# model_fock_parf_multixi.py, lines 326-327
-h_ext = torch.cat([h, r_gated], dim=1)        # positions 0..T-1 tokens, T..T+M-1 registers
-h_prev_ext = torch.cat([h_prev, r_gated], dim=1)
-```
-
-The inner Verlet step then applies the strict mask `tril(ones(T+M, T+M), diagonal=-1)`. Because every register sits at a position index greater than or equal to T, and every token query t satisfies t < T:
-
-- token queries can select only sources s < t < T — **all tokens, never registers**;
-- register queries (positions T+k) can select every token and lower-indexed registers.
-
-The same geometry governs the score head and the xi EMA on the extended sequence: for a token position t, the lower-triangular EMA aggregates positions 0..t, which are all tokens. Registers therefore act as **pure observers** inside the conservative dynamics — they absorb token information but exert no force on tokens. After the step the states are split back (`model_fock_parf_multixi.py` lines 341–343) and inactive register rows are restored from the pre-step state.
-
-**Verdict: clean toward tokens.** (The registers themselves absorb full-window information — that is their job — and section 6 tracks where that information is allowed to go.)
-
-### 5.2 The creation gate: causal values, cumulative softmax
-
-`QKVCreationGate_v21.forward` (`model_fock_parf_v2.py` lines 292–336) computes per-register attention scores over all tokens, then delegates to `_causal_creation_readout` (lines 59–99), which is the heart of the causal design:
-
-```python
-# model_fock_parf_v2.py, lines 83-97
-s_max = scores.max(dim=-1, keepdim=True).values          # (B, M, 1)
-exp_s = torch.exp(scores - s_max)                        # (B, M, T)
-Z = torch.cumsum(exp_s, dim=-1)                          # (B, M, T)
-weighted_V = exp_s.unsqueeze(-1) * V.unsqueeze(1)        # (B, M, T, d)
-numerator = torch.cumsum(weighted_V, dim=2)              # (B, M, T, d)
-r_causal_mt = numerator / Z.unsqueeze(-1).clamp(min=1e-8)  # (B, M, T, d)
-
-r_new = r_causal_mt[:, :, -1, :]                         # (B, M, d)
-...
-alpha = exp_s / Z[:, :, -1:].clamp(min=1e-8)             # (B, M, T)
-alpha_max = alpha.max(dim=-1).values                     # (B, M)
-```
-
-The position-dependent register content is a prefix-normalized softmax readout:
-
-$$
-r^{\mathrm{causal}}_{m,t} = \frac{\sum_{j \le t} e^{s_{m,j}} \cdot V_j}{\sum_{j \le t} e^{s_{m,j}}}
-$$
-
-Only values $V_j$ with $j \le t$ enter the readout at position t, with weights normalized over the same prefix. (The full-sequence `s_max` subtraction cancels exactly in the ratio; it is a numerical stabilizer, not an information channel.) Two of the three outputs, however, are **full-window quantities by design**: `r_new` is the readout at the last position, and `alpha_max` is the peak weight of the full-sequence softmax. They are meant to update the persistent register bank and its salience. Whether that is safe depends entirely on where they flow — which is the subject of section 6.
-
-### 5.3 The reverse channel: causal values, one global gate
-
-`ReverseChannel.forward` (`model_fock_parf_v2.py` lines 427–516) supports both a global `(B, M, d)` register input and the position-dependent `(B, T, M, d)` causal variant. The Fock layer passes the causal variant:
-
-```python
-# model_fock_parf_multixi.py, lines 358-361
-# Use position-dependent causal register content so that
-# the force on token t only reflects tokens 1..t (no leak).
-r_rev = r_causal if r_causal is not None else r_new
-Q_force = self.reverse_ch(h_new, r_rev, active)
-```
-
-Inside, keys and values at position t are projections of `r_causal[:, t]` (prefix-only content), the query is the token's own state, and the softmax runs over the M registers. The force injected into token t is therefore built from causal values. Two non-value inputs enter the computation: the **active mask** (from salience — a full-window quantity) and, indirectly, the score distribution shaped by the register-derived queries of the creation gate at this layer (whose Q came from the cross-layer register state). Both are weights-only modulators.
-
-### 5.4 Salience, active mask, destruction
-
-`_active_mask` (`model_fock_parf_multixi.py` lines 266–279) thresholds salience and applies stack discipline via a sorted cumulative product. Salience itself is updated with `alpha_max` (full-window) and decayed by the destruction gate applied to the post-dynamics register states (full-window). These are scalar, per-register, per-window quantities — no position dependence, but data dependence on the whole window including the future of any interior position.
-
----
-
-## 6. The finding: a weights-only cross-layer register channel
-
-### 6.1 The pathway
-
-Assembling the pieces from section 5, exactly one route lets future-token information touch a past position's logits, and it requires **at least two layers** plus the reverse channel:
+At the next layer this global $r$ produces the creation queries
+$Q = \mathrm{einsum}(r, W_Q)$, which reshape the attention **weights** of the
+prefix-normalized readout at every position t, and the reweighted (but
+prefix-valued) content feeds the reverse-channel force on token t. The result
+is a path from future tokens to an earlier token's logits:
 
 ```mermaid
 flowchart TB
     Future["future tokens x at positions greater than t"]
-    RNew["register content update at layer l (full window readout and register dynamics)"]
-    RState["global register state r entering layer l plus 1"]
-    Query["creation queries Q from r at layer l plus 1"]
-    Scores["creation attention scores over tokens"]
-    Weights["cumulative softmax weights at position t (prefix values only)"]
-    RCausalT["r causal at position t (shifted mixture of prefix values)"]
+    Summary["global register summary at layer l (sees whole window)"]
+    RState["register state r into layer l plus 1"]
+    Query["creation queries Q from r"]
+    Weights["readout weights at position t"]
+    RCausalT["r causal at position t (prefix values, future reweighted)"]
     Force["reverse channel force on token t"]
-    Logit["logits at position t"]
-    SalPath["salience and active mask (full window scalars)"]
+    Logit["logit at position t"]
 
-    Future --> RNew
-    RNew --> RState
+    Future --> Summary
+    Summary --> RState
     RState --> Query
-    Query --> Scores
-    Scores --> Weights
+    Query --> Weights
     Weights --> RCausalT
     RCausalT --> Force
     Force --> Logit
-    Future -.-> SalPath
-    SalPath -.-> Force
 ```
 
-In words: at layer $\ell$, the persistent register state absorbs a full-window summary through two mechanisms — the creation-gate blend `r = blend * r + (1 - blend) * r_new_content` (`model_fock_parf_multixi.py` lines 315–318, with `r_new_content` being the last-position readout) and the register rows of the Verlet dynamics output (registers attend to every token as sources). At layer $\ell + 1$, that state produces the creation queries `Q = einsum(register_states, W_Q)` (`model_fock_parf_v2.py` line 313). The queries shift the attention scores; the scores shift the **weights** of the prefix-normalized cumulative softmax at every position t; the reweighted (but still prefix-valued) `r_causal[:, t]` feeds the reverse-channel force on token t; the force shifts the logits.
+![Root cause of the reverse-channel causal leak: a shared full-window register memory pools information from every token — including the future (amber) — and a reverse-channel force feeds it back onto an earlier token's prediction (red arrow).](images/fock_leak_rootcause.png)
 
-A parallel, lower-order route runs through salience: `alpha_max` is a full-window scalar per register, salience blends and gates with it, and the active mask enters the reverse-channel softmax masking.
+*Figure 1. The leak in one picture. Every token (including the amber future
+tokens) writes into a single shared register memory that spans the whole
+window. The reverse channel then reads that memory back onto an earlier token's
+prediction (red arrow). Because the shared memory already contains the future,
+the earlier prediction can peek at it.*
 
-### 6.2 Why the channel is weights-only and position-independent
+### 4.2 The critical subtlety: the summary contains the token being predicted
 
-Three structural facts bound what this channel can transmit:
+The most damaging case is not long-range lookahead. It is **local**. In a
+teacher-forced full-window forward that scores position t, the global register
+summary is built from all of $x_0 \ldots x_{T-1}$ — which **includes $x_{t+1}$,
+the very token the model is trying to predict at position t**, and its
+neighborhood. The reverse channel can therefore route a digest of "the answer"
+back onto position t. This is the dominant channel, and §6 shows it is worth
+about 3.5 nats.
 
-1. **Values stay causal everywhere.** At no point does a token value $V_j$ with $j \gt t$ enter any quantity consumed at position t. The future can only change **how the prefix is mixed**, never **what is in the mix**.
-2. **The carrier is position-independent.** The register state r, the creation queries, salience, and the active mask are all shared across every position of the window. The channel physically cannot address "position t should expect token X"; it can only broadcast one global signal per window (M vectors of dimension d, further squeezed through weight-softmax modulation).
-3. **The gate is bounded.** The reverse force passes through tanh gates, an RMS soft-norm, and the `(dt^2 / m)` scaling before touching token states, and the whole channel was measured at roughly 22 percent of the conservative force magnitude in the training diagnostics (`qforce_ratio`).
+### 4.3 Why "weights-only and position-independent" is NOT low-bandwidth
 
-The closest analogy: the leak is like letting the model glimpse a blurry **topic vector** of the whole 512-token window while predicting each token — not like letting it read ahead.
+The legacy audit (see §7) argued that because the future can only change *how*
+the causal prefix is mixed (the values stay causal) and because the carrier is
+a single per-window object, the channel must be low-bandwidth. Both halves of
+that intuition are structurally true and jointly **wrong about magnitude**:
 
-### 6.3 The gradient does flow through the channel
+- A reweighting of a prefix mixture is still a function of the full window. If
+  the mixture weights can encode "position t should expect token X," a
+  prefix-valued readout can still surface X whenever X already occurred earlier
+  (extremely common in natural text: names, function words, repeated tokens).
+- "One per-window object" is $M = 32$ vectors of dimension $d = 384$, applied at
+  every one of 512 positions, refreshed at every one of $L = 16$ layers. That
+  is not a bottleneck; it is a broadband bus.
 
-One honest caveat for the training story: this is not a dead-end numerical artifact. `r_new_content` is in the autograd graph and the creation values `V = W_V(h_tokens)` are not detached, so the training loss at position t backpropagates through the reverse force into future-token states of the previous layer. The optimizer is therefore **able** to strengthen this channel if doing so lowers the loss. The bandwidth constraints of section 6.2 still apply — but the magnitude measured at initialization (section 8) is a lower bound on what a trained model might exhibit, which is why section 11 recommends re-running the probe on the trained checkpoint.
-
----
-
-## 7. Empirical probe — methodology
-
-Static analysis can miss what code actually does; the probe cannot. `fock_causality_probe.py` builds a scaled-down model (d=32, L=4, T=48, M=8, 3 xi channels) that preserves **every structural feature** of the audited config: `fock_version='v2'`, gathered structural-competitive V_phi with 2 heads, top-k routing, logfreq mass, per-register keys and temperatures, stable reverse channel with pre-LN and soft-norm and per-layer gates, depth-conditioned Gaussian V_theta with `install_depth_routing`, stack discipline. The model runs in **float64** on CPU with deterministic kernels, in eval mode (Gumbel noise is training-only: `gumbel_active = self.training and cfg.gumbel_noise`).
-
-The test statistic is
-
-$$
-\Delta_{\max} = \max_{b, t \lt t_p, v} \big| \mathrm{logits}(x)[b, t, v] - \mathrm{logits}(x')[b, t, v] \big|
-$$
-
-where $x'$ agrees with $x$ on positions $0 \ldots t_p - 1$ and is resampled on positions $t_p \ldots T-1$ (here $t_p = 24$, $T = 48$). For a strictly causal deterministic model, $\Delta_{\max} = 0$ exactly — float64 leaves no room for "small but real" ambiguity, since identical inputs produce bit-identical prefixes (verified by test T0).
-
-Design notes:
-
-- The reverse-channel gate initializes closed (`reverse_channel_scale` is zeros, tanh(0) = 0) and the warmup counter starts at 0. Tests T2 onward force the gate fully open (`scale = 1.0`, warmup complete) — a **worst-case** setting relative to the trained model.
-- T3 is a positive control: rebuild the model with `causal_force=False` (back-reaction detach removed, section 4.5) and confirm the probe detects that known acausality.
-- T4 is a sensitivity control: perturbing a **past** token must move later logits by a large margin.
-- T5 repeats the future perturbation in training mode with identical RNG seeds, exercising the Gumbel/STE routing path.
+The lesson: a *values-are-causal* guarantee bounds nothing about the predictive
+value of the weights path. Only measurement can size it — which is Part B.
 
 ---
 
-## 8. Empirical probe — results
+# Part B — Magnitude: init scale versus trained scale
 
-### 8.1 Main results (`fock_causality_probe.py`)
+## 5. Init-scale probe (what the first audit ran)
+
+`fock_causality_probe.py` builds a scaled-down model (d=32, L=4, T=48, M=8) that
+preserves every structural feature of the audited config, runs in **float64**
+on CPU in eval mode, and computes
+
+$$
+\Delta_{\max} = \max_{b,\ t \lt t_p,\ v} \big| \mathrm{logits}(x)[b,t,v] - \mathrm{logits}(x')[b,t,v] \big|
+$$
+
+where $x'$ agrees with $x$ on positions $0 \ldots t_p{-}1$ and is resampled on
+$t_p \ldots T{-}1$ ($t_p = 24$). For a strictly causal deterministic model this
+is exactly 0.
 
 | Test | Condition | Max past-logit delta | Verdict |
 |------|-----------|---------------------:|---------|
 | T0 | determinism: same input twice | 0.0 (exact) | deterministic |
 | T1 | future perturbed, reverse channel OFF | **0.0 (exact)** | **backbone exactly causal** |
-| T2 | future perturbed, reverse channel fully open | 1.08e-05 | leak confirmed, tiny |
-| T3 | positive control: `causal_force=False` | 4.86e-04 | probe detects known leak (45x larger) |
-| T4 | past token perturbed (sensitivity floor) | 7.94e-02 | normal signal (7000x larger) |
+| T2 | future perturbed, reverse channel fully open | 1.08e-05 | leak confirmed, tiny at init |
+| T3 | positive control: `causal_force=False` | 4.86e-04 | probe detects a known leak |
+| T4 | past token perturbed (sensitivity floor) | 7.94e-02 | normal signal |
 | T5 | as T2, training mode, seeded Gumbel | 1.09e-05 | STE path adds nothing |
 
-Context for T2: the logit RMS in the probe model is 0.116, so the relative shift is 9.3e-05. The delta is non-zero at all 24 past positions (mean 6.7e-06) — consistent with a broadcast, position-independent carrier rather than a targeted lookahead.
+T1 is the strongest single statement in the whole audit: with the reverse
+channel off, the entire remaining architecture transmits **exactly zero**
+future information to past logits. The leak lives only in the reverse channel.
 
-T1 is the strongest single statement in this audit: **with the reverse channel off, the entire remaining architecture — xi EMAs, depth-conditioned V_theta, 4-head gathered V_phi, score head, Gumbel top-k, logfreq mass, register creation, register dynamics, destruction, salience, stack discipline — transmits exactly zero future information to past logits**, even though registers are live and absorbing the full window at every layer. The mask geometry of section 5.1 (tokens can never see registers) does all of that work.
+But note what T2 reports: at **initialization scale**, the leak is
+$\sim 10^{-5}$. The first audit stopped here and reasoned about the size from
+init numbers. That was the mistake.
 
-### 8.2 Attribution (`fock_leak_decompose.py`)
+## 6. Trained-scale probe (the certification the first audit deferred)
 
-All runs: eval mode, float64, reverse gate fully open, future perturbation at $t_p = 24$.
+`fock_trained_leak_probe.py`, run from `eval_ppl_debug_d384.ipynb` on
+`step103500_best.pt`, makes two independent measurements on the **trained
+weights**.
 
-| Run | Intervention | Max past-logit delta | Reading |
-|-----|-------------|---------------------:|---------|
-| D1 | baseline, L=4 | 1.08e-05 | total leak |
-| D2 | active mask forced all-True | 1.08e-05 | mask flips contribute ~0 here |
-| D3 | salience pinned to 1.0 (blend never admits new content) | 5.74e-07 | ~95 percent of the leak removed |
-| D6 | salience pinned to 0.5 (constant blend, content flows) | 1.74e-05 | content channel alone reproduces (even exceeds) the leak |
-| D4 | L=1 (no cross-layer register reuse) | 1.1e-16 | float-epsilon: single layer is exactly causal |
-| D5 | L=1 plus pinned salience and mask | 1.1e-16 | consistency check |
+### 6.1 Part 1 — future perturbation at trained scale
 
-Interpretation:
+Reverse gate `tanh(scale)` per layer had mean magnitude 0.0226 (the gate is
+open). Perturbing the future half of real validation windows
+($\text{context}=512$, $t_p = 256$, float64):
 
-- **The leak requires layer-to-layer register carryover.** At L=1 it vanishes to one ulp of float64 (1.1e-16 is a single rounding step, not a signal), because the reverse channel at any single layer consumes only the position-dependent causal readout.
-- **The dominant carrier is register content, not salience gating.** Pinning the blend closed (D3) removes ~95 percent; holding the blend constant but open (D6) restores the full effect. The binary active mask contributed nothing in this configuration (D2), though it remains a potential (low-bandwidth) channel if salience were to hover near the threshold.
-- The residual 5.7e-07 in D3 is the register-dynamics route: register rows of the Verlet output (which attend to all tokens as sources) are carried to the next layer even when the creation blend is closed.
+| Pair | max\|Δlogit\| on past positions | mean ΔNLL of true past targets |
+|------|-------------------------------:|-------------------------------:|
+| 0 | 2.03e+01 | +0.0271 |
+| 1 | **3.72e+01** | −0.0042 |
+| 2 | 1.70e+01 | +0.0273 |
+| 3 | 3.38e+01 | −0.0017 |
+| control (gate zeroed) | **0.000e+00** | — |
+
+Summary: trained-scale `max|Δlogit|` ≈ **37**, versus the init-scale reference
+of **1.1e-5** — the raw sensitivity of past logits to future tokens grew by
+**more than six orders of magnitude** during training. The gate-zeroed control
+returns exactly 0, re-confirming the reverse channel is the sole carrier.
+
+![The same leak channel measured before and after training: a barely-open valve leaking a single detectable droplet at initialization, versus a wide-open valve flooding the beaker after training.](images/fock_init_vs_trained_leak.png)
+
+*Figure 2. Why an init-scale bound is worthless here. The channel that leaks a
+hard-to-detect trickle at initialization (max\|Δlogit\| ≈ 1e-5) becomes a flood
+after training (max\|Δlogit\| ≈ 37). Gradient descent spent 100k+ steps opening
+this valve because it lowers the training loss.*
+
+Notice, though, that the mean ΔNLL of the true past targets is small
+(+0.0121 nats averaged over pairs, and negative for two pairs). **This number
+is a red herring, and understanding why is the key to the whole story** (§7).
+
+### 6.2 Part 2 — honest (leak-free) PPL
+
+Score the **same** target tokens two ways:
+
+- **A — mid-window (standard protocol):** the target sits at in-window index
+  256; the forward window therefore **contains the target and its future**.
+  This is what the training loss, the in-loop eval, and the full-set sliding
+  eval all do.
+- **B — last-position (leak-free):** the input is exactly the 512 tokens
+  **before** the target; the target is read from the final position's logits
+  and never enters the forward. Causal by construction, and it gives the model
+  **more** left context (511 vs 256).
+
+| Protocol | Left context | Target in window? | NLL | PPL |
+|----------|-------------:|:-----------------:|----:|----:|
+| A mid-window (standard) | 256 | yes (+ future) | 2.0394 | **7.69** |
+| B last-position (honest) | 511 | no | 5.5532 | **258.07** |
+
+Paired difference $B - A = +3.5138 \pm 0.0852$ nats/token (≈ 41σ). For a causal
+model $B \le A$ must hold, because B has strictly more left context. Instead
+$B \gg A$. The only possible source of A's advantage is the in-window
+information (the target and its local future) that B removes. Therefore:
+
+$$
+\mathrm{PPL}_{\text{reported}} \approx 7.69, \qquad
+\mathrm{PPL}_{\text{honest}} \approx 258, \qquad
+\frac{\mathrm{PPL}_{\text{honest}}}{\mathrm{PPL}_{\text{reported}}} = e^{3.51} \approx 33.6 .
+$$
+
+### 6.3 The within-window NLL profile does not, by itself, reveal the leak
+
+The mean NLL as a function of in-window position (1024 windows) is:
+
+| Position band | mean NLL | Position band | mean NLL |
+|---------------|---------:|---------------|---------:|
+| 1–31 | 4.6280 | 249–279 | 2.0858 |
+| 32–62 | 2.6321 | 280–310 | 2.1049 |
+| 63–93 | 1.9322 | 311–341 | 2.3193 |
+| 94–124 | 2.3114 | 342–372 | 2.0635 |
+| 125–155 | 2.3066 | 373–403 | 1.9667 |
+| 156–186 | 2.1069 | 404–434 | 1.8475 |
+| 187–217 | 2.3321 | 435–465 | 1.7144 |
+| 218–248 | 1.9729 | 466–511 | **1.6525** |
+
+The profile **decreases** toward the window end — the naive "causal" signature
+(more left context should help). A reviewer scanning this column alone would
+conclude the model looks causal. It does not: the leak lowers NLL by a roughly
+**uniform** amount at every position (each position reads its own local
+neighborhood out of the summary), so it depresses the *level* of the curve
+while preserving its decreasing *shape*. The smoking gun is the **same
+position** scored two ways: at position ≈ 511 with 511 tokens of context, the
+in-window (leaky) NLL is 1.65, but the out-of-window (honest) NLL is 5.55 — a
+3.9-nat gap at the last position, fully consistent with the +3.51 average.
+
+## 7. Why the first audit under-sized the leak
+
+The original audit found the pathway (its §§5–8 correctly identified the
+reverse channel + cross-layer register state). It got the **magnitude** wrong
+by two compounding errors.
+
+### 7.1 Error 1 — reasoning from initialization scale
+
+The audit measured $\sim 10^{-5}$ at init and reasoned forward with a "bandwidth"
+argument to bound PPL impact at $\sim 3\times 10^{-4}$ points. But a channel that
+is negligible at init can be trained into a load-bearing one: the reverse gates
+open, `tau_create` sharpens, and $W_Q, W_K, W_V$ of both the creation and
+reverse modules reshape the "weights-only" carrier into a high-fidelity conduit.
+The audit even flagged that the gradient flows through the channel — then trusted
+the init-scale number anyway. Measured after training, the raw sensitivity had
+grown by $\gt 10^6$ times (§6.1). **Init-scale probing is structurally blind to learned
+exploits.**
+
+### 7.2 Error 2 — a perturbation design blind to the dominant (local) leak
+
+This is the subtle one, and it explains the apparent contradiction between the
+huge `max|Δlogit|` (37) and the tiny mean ΔNLL (+0.012) in §6.1.
+
+The future-perturbation probe perturbs positions $\ge t_p$ and measures targets
+at positions $\lt t_p$. **The measured target tokens are therefore never in the
+perturbed set.** It answers "does *far*-future text change my prediction of
+*earlier* targets?" — and the honest answer is "barely," because the dominant
+leak is not long-range. The dominant leak is that the same-window summary
+contains the **immediately following** token $x_{t+1}$ (the target itself) and
+its local neighborhood. The probe's own design excludes exactly that token from
+the perturbation, so it under-reports by two orders of magnitude on ΔNLL even
+while `max|Δlogit|` screams that the channel is wide open.
+
+The instrument that *does* expose it is the honest-vs-standard PPL protocol
+(§6.2), which moves the target **across the window boundary** — the one
+perturbation the swap probe never performs. This is precisely why running
+`eval_ppl_debug_d384.ipynb` (Part 2 of the trained probe) was necessary: no
+amount of future-swapping on the earlier positions could have revealed a leak
+whose payload is the next token itself.
+
+```mermaid
+flowchart TB
+    Swap["future swap probe perturbs positions after tp and measures before tp"]
+    Blind["target token is never in the perturbed set"]
+    Small["reports small delta NLL of 0.012 nats"]
+    Honest["honest PPL probe moves target across window boundary"]
+    Exposed["target leaves the readable window"]
+    Big["reveals the real gap of 3.51 nats"]
+
+    Swap --> Blind
+    Blind --> Small
+    Honest --> Exposed
+    Exposed --> Big
+```
+
+### 7.3 Lessons for future audits
+
+- Certify on **trained** checkpoints, never only at init, whenever a suspect
+  channel has a live gradient.
+- A future-perturbation probe that holds the measured targets fixed is blind to
+  same-window / next-token leaks. Always pair it with a **target-relocation**
+  protocol (score the same token both inside and outside the readable window).
+- "Values are causal" bounds nothing about a weights path's predictive value.
+- A monotone within-window NLL profile is **necessary but not sufficient** for
+  causality; a uniform level shift hides under a causal-looking shape.
 
 ---
 
-## 9. Magnitude analysis: what the leak can and cannot do to PPL
+# Part C — The fix and its causal proof
 
-Let $z$ be the logit vector at a past position and $\Delta z$ the leak-induced shift. The per-token NLL is $\mathrm{nll}(z) = \mathrm{logsumexp}(z) - z_y$, whose gradient $\big(\mathrm{softmax}(z) - e_y\big)$ has L1 norm at most 2. First order:
+## 8. The fix: a prefix-causal register lifecycle
+
+The fix is implemented as `prefix_causal_registers` in
+`FockMultiXiPARFConfig` (and `FockPARFConfig_v2`), **defaulting to `True`**. It
+makes the cross-layer register state **per position**: $r$ is a
+$(B, T, M, d)$ object, and slot $t$ only ever aggregates tokens
+$x_0 \ldots x_t$. No parameters are added or removed, so state dicts remain
+compatible in both directions.
+
+Per layer, the changes are:
+
+1. **Diagonal creation queries** (`forward_prefix` on both creation gates):
+   token t is scored by the register bank **as of position t** (streaming
+   semantics), keeping the score tensor at $O(M \cdot T)$ rather than the
+   $O(M \cdot T^2)$ a naive per-position query would cost.
+2. **Bit-exact causal readout** (`_prefix_causal_creation_readout`): the
+   cumulative softmax is stabilized with a **constant** shift instead of the
+   full-sequence max. The full-sequence max cancels analytically but not in
+   floating point, so it made position-t outputs depend on rounding induced by
+   future scores; a constant shift removes that dependence. Per-position
+   salience uses a prefix `cummax`. Internals run in float32 regardless of
+   autocast.
+3. **Per-position blend, salience, active mask, and destruction** — the entire
+   lifecycle is prefix-measurable.
+4. **Registers leave the extended Verlet state.** Tokens never received force
+   from register rows anyway (§3), so token dynamics are unchanged; what is
+   removed is the registers' own full-window evolution — the leak channel.
+5. The reverse channel consumes the per-position state with a per-position
+   active mask (already its causal calling convention).
+
+![The prefix-causal fix: each position carries its own register notebook that only draws from tokens at or before it, forming a triangular causal staircase; no future token reaches an earlier position.](images/fock_fix_prefix_causal.png)
+
+*Figure 3. The fix. Instead of one shared memory spanning the whole window,
+each position carries its own register state that only ever reads its causal
+prefix (the rising staircase of blue beams). No beam runs from an amber future
+token back to an earlier position, so there is no red backward arrow to draw.*
+
+## 9. The causal graph after the fix
+
+The backward edge of §4.1 no longer exists. Future tokens can still write into
+register slots — but only into slots at their own position or later, never into
+the slot read by an earlier token.
+
+```mermaid
+flowchart TB
+    PastTok["tokens x at positions up to t"]
+    FutureTok["future tokens x after t"]
+    RSlotT["register slot at position t (prefix only)"]
+    RSlotFuture["register slots at positions after t"]
+    QueryT["diagonal query at position t"]
+    ForceT["reverse force on token t"]
+    LogitT["logit at position t"]
+
+    PastTok --> RSlotT
+    FutureTok --> RSlotFuture
+    RSlotT --> QueryT
+    QueryT --> ForceT
+    ForceT --> LogitT
+    RSlotFuture -.->|no edge to earlier positions| LogitT
+```
+
+The dotted "no edge" annotation marks the arc that the legacy architecture had
+and the fixed one does not: nothing computed from `RSlotFuture` is ever consumed
+at position t.
+
+## 10. Formal proof of causality, and its empirical confirmation
+
+### 10.1 Inductive proof
+
+**Claim.** With `prefix_causal_registers=True`, for every layer $\ell$ and
+position t, both the token state $h_t^{(\ell)}$ and the register slot
+$r_t^{(\ell)}$ are functions of the input tokens $x_0 \ldots x_t$ only. Hence
+the past logit at t is insensitive to every future token ($s \gt t$).
+
+**Base case ($\ell = 0$).** $h_t^{(0)} = E(x_t) + P[t]$ depends only on $x_t$.
+The initial register state is the data-independent vacuum embedding.
+
+**Inductive step.** Assume $h_s^{(\ell)}$ depends only on $x_0 \ldots x_s$ for
+all $s$, and $r_t^{(\ell)}$ depends only on $x_0 \ldots x_t$. Then within layer
+$\ell$:
+
+- **Creation readout at t.** The query is $Q_t = f(r_t^{(\ell)})$, causal by
+  hypothesis. The prefix-normalized readout sums only over token indices
+  $j \le t$:
+  $$
+  \mathrm{readout}_t = \frac{\sum_{j \le t} e^{s_{t,j}} V_j}{\sum_{j \le t} e^{s_{t,j}}} ,
+  $$
+  and the constant-shift stabilizer keeps this a bit-exact function of
+  $\lbrace x_0, \ldots, x_t \rbrace$. The blend and salience updates at slot t
+  are pointwise in t, hence $r_t^{(\ell+1)}$ depends only on $x_0 \ldots x_t$.
+- **Token dynamics.** $h_t^{(\ell+1)}$ is the Verlet update driven by the
+  conservative backbone, which is causal (§3: strict mask + source detach), and
+  registers no longer enter the extended state. So $h_t^{(\ell+1)}$ depends only
+  on $x_0 \ldots x_t$.
+- **Reverse channel.** The force on token t uses the register slot at position t
+  and the active mask at position t, both causal by the previous bullet, so the
+  post-force $h_t^{(\ell+1)}$ remains a function of $x_0 \ldots x_t$.
+
+By induction $h_t^{(L)}$ depends only on $x_0 \ldots x_t$, and the read-out
+inherits the property:
 
 $$
-|\Delta \mathrm{nll}| \le 2 \lVert \Delta z \rVert_\infty
+\mathrm{logits}_t = W_{\text{out}} h_t^{(L)} + b .
 $$
 
-With the probe's worst-case gate and initialization-scale weights, $\lVert \Delta z \rVert_\infty \approx 1.1 \times 10^{-5}$, so $|\Delta \mathrm{nll}| \lesssim 2.2 \times 10^{-5}$ nats per token, and the PPL effect is
+$\blacksquare$
 
-$$
-\Delta \mathrm{PPL} \approx \mathrm{PPL} \cdot \Delta \mathrm{nll} \approx 14.59 \times 2.2 \times 10^{-5} \approx 3 \times 10^{-4}
-$$
+The proof relies on the constant-shift stabilizer for the *bit-exact* part:
+without it the claim holds analytically but a float64 probe would see rounding
+noise, not a literal zero. With it, "causal" means bit-exact zero.
 
-— three ten-thousandths of a PPL point. For the leak to account for even 0.1 PPL at 14.59 (a 0.7 percent NLL change of about 0.0069 nats), the trained model would need to amplify the initialization-scale coupling by roughly **300x** and, more importantly, convert it into *predictively useful* information under the constraints of section 6.2: position-independent, weights-only, M=32 registers per 512-token window. The realistic best case for such a channel is global topic conditioning — genuinely worth something, but small, and bounded by the same information bottleneck that makes the registers useful in the first place.
+![Causal-cone comparison: the legacy architecture admits an arrow from a future position back to a past one (causality violated); the fixed architecture admits only forward arrows (causality preserved).](images/fock_causal_cone_before_after.png)
 
-Two honest qualifications:
+*Figure 4. Space-time view. Left: the legacy reverse channel admits an
+information arrow from a future position back into an earlier one — outside the
+past light cone of that prediction. Right: after the fix, every arrow points
+forward in time; each prediction draws only from its own past light cone.*
 
-1. The 300x figure is not a proof — trained weights can differ qualitatively from initialization (the creation temperature `tau_create_init=8.0` sharpens during training, the reverse gates open to their tanh asymptotes, and section 6.3 showed the gradient actively flows through the channel). The bound must be checked on the trained checkpoint (section 11, step 1).
-2. A standard transformer baseline evaluated the same way has **no** such channel (strict causal attention only), so cross-architecture PPL comparisons carry this asymmetry until the certification of section 11 is run.
+### 10.2 Empirical confirmation
+
+`fock_causality_probe.py` tests T6–T8 build the fixed architecture with the
+reverse channel **fully open** (`reverse_channel_scale=1`, warmup complete):
+
+| Test | Condition | max\|Δlogit\| on past positions | Verdict |
+|------|-----------|-------------------------------:|---------|
+| T2 (legacy) | future perturb, reverse ON | 1.077e-05 | leak (unchanged) |
+| **T6 (fixed)** | future perturb, reverse ON, eval | **0.000e+00 (exact)** | leak-free |
+| **T7 (fixed)** | future perturb, train mode + seeded Gumbel | **0.000e+00 (exact)** | leak-free |
+| T8 (fixed) | past perturb sanity | 7.379e-02 | past sensitivity preserved |
+
+T6/T7 are bit-exact zero in float64 — the empirical face of the §10.1 proof.
+T8 confirms the model still responds normally to legitimate past context, so
+the fix removed the leak without lobotomizing the register mechanism.
+Additional checks passed: strict state-dict round-trip in both directions,
+forward/backward under layer checkpointing with gradient flow to
+`reverse_channel_scale`, the repulsion-loss drain, and the diagnostics capture
+path.
 
 ---
 
-## 10. Verdict on the reported PPL
+# Part D — Consequences and reference material
 
-**No hard causal leak exists.** Every value pathway is causal, enforced redundantly by (a) strict lower-triangular masks with negative-infinity pre-masking, (b) source detachment that severs the Newton back-reaction (and is confirmed load-bearing by the positive control), (c) prefix-normalized cumulative softmax readouts, and (d) an extended-state geometry in which registers are dynamically invisible to tokens.
+## 11. Consequences
 
-**One soft, weights-only leak exists**, flowing through the reverse channel via the cross-layer register state and salience. Measured at worst-case gate settings and initialization scale, it shifts past logits by about one part in ten thousand, bounding its PPL impact near 3e-4 points. It is a per-window global-context channel, structurally incapable of per-position lookahead.
+- **Every pre-fix PPL number is inflated by the same ~33× mechanism**, coherently
+  across in-loop `ntp`, the 40-batch eval, and the full-set sliding eval (they
+  are all full-window teacher-forced forwards). The inflation grows over
+  training as the gate opens, so early-checkpoint numbers are less inflated than
+  late ones — pre-fix training curves are not even internally comparable.
+- **The leak is architectural, not data contamination.** A WikiText-103
+  cross-check would not have caught it; the honest number depends only on the
+  scoring protocol, not the corpus.
+- **Pre-fix checkpoints are not usable with the fixed forward pass.** The
+  weights load (state dicts are compatible), but they were trained to exploit
+  the leaky lifecycle. All d384/d768 results must be regenerated by training
+  from scratch with `prefix_causal_registers=True`.
+- **Cross-architecture comparisons were unfair.** A standard transformer
+  baseline evaluated the same way has no such channel (strict causal attention),
+  so every prior Fock-vs-GPT-2 PPL gap was measured against a leak-inflated Fock
+  number.
 
-On current evidence, **PPL 14.59 is not an artifact of a causal leak.** The result stands, subject to one certification step on the trained checkpoint (below) that would close the remaining gap between "measured at init scale" and "measured on the published model".
+## 12. Where the fix is wired in
 
----
+| Entry point | Setting | Purpose |
+|-------------|---------|---------|
+| d384 notebooks `colab_fock_depthcond_vtheta_openwebtext*.ipynb` | `prefix_causal_registers=True` | leak-free training on re-run |
+| `colab_fock_gamma_sweep_geodesic_d384.ipynb` | `True` | leak-free sweeps |
+| `train_fock.py` / `launch_lambdalabs.sh` | `True` (config default + CLI + banner) | leak-free training |
+| `eval_ppl_proper.py`, `fock_leak_decompose.py`, `eval_ppl_debug*.ipynb`, `honest_ppl_sweep.ipynb` | `prefix_causal_registers=False` | forensic analysis of pre-fix checkpoints |
 
-## 11. Recommendations
+The eval/forensic path is deliberately pinned to `False` so the leaky forward
+semantics match the pre-fix trained weights. Do not flip it for post-fix
+checkpoints.
 
-1. **Run the probe on the trained checkpoint** (highest value, ~30 min on the CPU Colab already set up for `eval_ppl_proper.py`). Load the d=384 step-83500 best checkpoint via `build_model` from `notebooks/conservative_arch/scaleup/debug/eval_ppl_proper.py`, then apply the T2 perturbation test from `fock_causality_probe.py` at T=512 in float64. This directly measures the **trained** leak magnitude and replaces the 300x-amplification argument with a number.
-2. **Leak-free PPL certification.** Score every token as the **last position of its own window** (stride-1 sliding window, or stride equal to a small chunk with only trailing positions scored). At the last position the cumulative readout equals the full-sequence readout and no future exists inside the window, so this protocol is exactly leak-free by construction. Compare against the standard full-window PPL: the difference (after accounting for the longer average context, which works in the sliding protocol's favor) upper-bounds the leak's contribution on real data. `eval_ppl_proper.py` already implements strided evaluation and needs only a scoring-mask change.
-3. **Optional architectural hardening** (only if the paper wants to claim exact causality with the reverse channel on): pass the position-dependent `r_causal` forward as the cross-layer register state (making r a `(B, T, M, d)` object throughout) or, cheaper, stop-gradient and prefix-truncate the creation-blend update. Both close the channel at some memory or expressivity cost; given the measured magnitude, disclosure may be preferable to surgery.
-4. **Paper disclosure.** One sentence in the experimental section: the reverse channel introduces a weights-only, position-independent within-window coupling through the persistent register state; a future-token perturbation probe bounds its effect on past logits at the 1e-4 relative level (exactly zero with the reverse channel disabled), and the certification protocol of item 2 bounds its PPL contribution.
+## 13. Recommended next steps
+
+1. **Retrain d384 from scratch** with the fixed architecture and record the
+   honest training curve (in-loop eval is now leak-free, so it can be trusted
+   directly).
+2. **Re-run the honest-PPL probe** on a couple of new post-fix checkpoints as a
+   regression guard: with the fix, PPL_A and PPL_B must coincide (up to the
+   longer-context advantage of B), and the future-perturbation probe must return
+   0.0.
+3. **Regenerate all comparison tables** in
+   `Fock-PARFLM_Scale-Up_Comparative_Experiments.md` and the d384/d768 result
+   notes; annotate the old numbers as leak-inflated rather than deleting them
+   (they document the failure mode).
+4. **Paper disclosure.** Report the honest protocol as the primary metric and
+   describe the leak and fix in a short methods paragraph; the bit-exact probe
+   result (0.0 in float64) is the certification.
 
 ---
 
@@ -423,96 +628,67 @@ On current evidence, **PPL 14.59 is not an artifact of a causal leak.** The resu
 
 | Script | Purpose |
 |--------|---------|
-| `notebooks/conservative_arch/scaleup/debug/fock_causality_probe.py` | Main falsification probe: T0–T5 of section 8.1. Self-contained, CPU, ~7 s. |
-| `notebooks/conservative_arch/scaleup/debug/fock_leak_decompose.py` | Attribution runs D1–D6 of section 8.2 via targeted monkey-patches (`_active_mask` override, salience pinning, L ablation). |
+| `notebooks/conservative_arch/scaleup/debug/fock_causality_probe.py` | Falsification probe T0–T8; legacy leak (T2) and fixed-architecture certification (T6/T7 bit-exact 0.0). CPU, float64, ~4 s. |
+| `notebooks/conservative_arch/scaleup/debug/fock_trained_leak_probe.py` | Trained-checkpoint certification: Part 1 future-perturbation, Part 2 honest-vs-standard PPL. Run from `eval_ppl_debug_d384.ipynb`. |
+| `notebooks/conservative_arch/scaleup/debug/fock_leak_decompose.py` | Attribution of the legacy leak via targeted monkey-patches (mask override, salience pinning, L ablation). |
+| `notebooks/conservative_arch/scaleup/debug/honest_ppl_sweep.ipynb` | Honest-PPL trajectory across pre-fix checkpoints (pinned to the legacy architecture). |
 
-Both scripts seed all RNGs, build identical weights across variants (fixed `torch.manual_seed` before construction), and run in float64 so that "zero" means bit-exact zero.
+All scripts seed every RNG, build identical weights across variants (fixed
+`torch.manual_seed` before construction), and run in float64 so that "zero"
+means bit-exact zero.
 
-## Appendix B — quick reference: where each causal guarantee lives
+## Appendix B — where each causal guarantee lives
 
 | Guarantee | File | Location |
 |-----------|------|----------|
-| Strict pair mask (s < t) | `model_parf.py` | `_pair_mask_for`, lines 1108–1117 |
-| Back-reaction severed (source detach) | `model_parf_multixi.py` | lines 188–198 |
-| Top-k cannot select non-causal sources | `model_parf_sparse.py` | `_sparse_topk_indices`, lines 369–381 |
-| Causal EMA weights for xi | `model_multixi.py` | `causal_ema_weights`, lines 97–127 |
-| Registers invisible to token queries | `model_fock_parf_multixi.py` | `_fock_layer_step`, lines 326–343 (concat order) plus the strict mask |
-| Prefix-normalized creation readout | `model_fock_parf_v2.py` | `_causal_creation_readout`, lines 83–97 |
-| Reverse channel fed causal content | `model_fock_parf_multixi.py` | lines 358–361 |
-| Competitive V_phi causal pre-softmax mask | `model_parf.py` | lines 699–706 |
+| Strict pair mask (s ≤ t−1) | `model_parf.py` | `_pair_mask_for` |
+| Back-reaction severed (source detach) | `model_parf_multixi.py` | `_layer_step` (h_src detach) |
+| Top-k cannot select non-causal sources | `model_parf_sparse.py` | `_sparse_topk_indices` |
+| Causal EMA weights for xi | `model_multixi.py` | `causal_ema_weights` |
+| Registers invisible to token queries (legacy) | `model_fock_parf_multixi.py` | `_fock_layer_step` concat order + strict mask |
+| Prefix-normalized creation readout (legacy) | `model_fock_parf_v2.py` | `_causal_creation_readout` |
+| **Prefix-causal register lifecycle (fix)** | `model_fock_parf_multixi.py` | `_fock_layer_step` prefix-causal branch |
+| **Bit-exact prefix readout (fix)** | `model_fock_parf_v2.py` | `_prefix_causal_creation_readout`, `forward_prefix` |
 
-## Appendix C — known non-issues checked and cleared
+## Appendix C — exact configuration audited
 
-- **Full-sequence `s_max` in the cumulative softmax**: cancels exactly in the readout ratio; numerical stabilizer only.
-- **Gumbel noise at eval**: disabled (`gumbel_active = self.training and cfg.gumbel_noise`); eval-mode routing is deterministic top-k.
-- **Layer checkpointing**: recomputation replays the same layer step with the same inputs; `install_depth_routing` sets the active-layer index inside the same call that consumes it, so the depth code is correct on both passes.
-- **Batch mixing**: no cross-batch statistics anywhere in the forward pass (LayerNorm is per-token; diagnostics use `no_grad` and do not feed back).
-- **Positional embeddings beyond the trained range**: positions 512–1023 are untrained (training uses `BLOCK_SIZE=512`); an evaluation concern (documented in `eval_ppl_proper.py`) but not a causality concern.
-- **`reverse_warmup_step` buffer**: a training-progress counter; affects the gate magnitude, carries no token information.
+Pinned from the ext2 notebook: `fock_version='v2'`, `causal_force=True`,
+`v_phi_kind='structural_competitive'` with `v_phi_n_heads=4` and
+`use_gathered_v_phi=True`, `top_k=16`,
+`xi_alpha_inits=[0.50, 0.75, 0.95, 0.99, 0.995]` (5 channels),
+`mass_mode='logfreq'`, `fixed_gamma=0.30`, `n_registers=32`,
+`stack_discipline=True`, `per_register_keys=True`, `tau_create_init=8.0`,
+`reverse_channel=True` with `stable`, `pre_ln`, `soft_norm`, `per_layer` gates
+and 4000-step warmup, `register_salience_decay=0.5`,
+`register_salience_threshold=0.005`, untied embeddings with log-frequency output
+bias, `BLOCK_SIZE=512`. V_theta swapped post-construction for
+`DepthConditionedMultiContextGaussianVTheta` (5 heads × 8 wells, shared bank +
+per-layer depth codes); `install_depth_routing` monkey-patches
+`_fock_layer_step`.
 
----
+## Appendix D — known non-issues checked and cleared
 
-## 12. Fix implemented and verified (2026-07-23): prefix-causal register lifecycle
+- **Full-sequence `s_max` in the legacy cumulative softmax:** cancels
+  analytically in the readout ratio (a numerical stabilizer); it is *not* an
+  information channel. The fix replaces it with a constant shift only to make
+  the causal readout bit-exact under float64.
+- **Gumbel noise at eval:** disabled (`gumbel_active = self.training and
+  cfg.gumbel_noise`); eval routing is deterministic top-k.
+- **Layer checkpointing:** recomputation replays the same layer step with the
+  same inputs; `install_depth_routing` sets the active-layer index inside the
+  consuming call, correct on both passes.
+- **Batch mixing:** no cross-batch statistics in the forward (LayerNorm is
+  per-token; diagnostics use `no_grad`).
+- **Positional range:** positions 512–1023 are untrained (`BLOCK_SIZE=512`); an
+  evaluation concern, not a causality concern.
 
-The architectural fix of section 11 item 3 is now implemented as
-`prefix_causal_registers` in `FockMultiXiPARFConfig` (and `FockPARFConfig_v2`),
-**defaulting to `True`**. All training entry points — the d384 notebooks
-(`colab_fock_depthcond_vtheta_openwebtext*.ipynb`), `train_fock.py` /
-`launch_lambdalabs.sh`, and the gamma sweeps
-(`colab_fock_gamma_sweep_geodesic_d384.ipynb`) — now build the leak-free
-architecture on re-execution. Legacy (pre-fix) checkpoints remain loadable by
-pinning `prefix_causal_registers=False` (done in `eval_ppl_proper.py`,
-`fock_leak_decompose.py`, and the eval debug notebooks); no parameters were
-added or removed, so state_dicts are compatible in both directions.
+## Appendix E — changelog
 
-### What changed
-
-The cross-layer register state is now **per position**: `r` is
-\((B, T, M, d)\) and slot \(t\) only ever aggregates tokens \(1 \dots t\).
-Concretely, per layer:
-
-1. **Diagonal creation queries** (`forward_prefix` on both creation gates):
-   token \(t\) is scored by the register bank *as of position \(t\)*
-   (streaming semantics), keeping the score tensor at \(O(M \cdot T)\) instead
-   of the \(O(M \cdot T^2)\) a naive per-position query would cost.
-2. **Bit-exact causal readout** (`_prefix_causal_creation_readout`): the
-   cumulative softmax is stabilized with a *constant* shift instead of the
-   full-sequence max (which cancels analytically but not in floating point),
-   and per-position salience uses a prefix `cummax`. Internals run in float32
-   regardless of autocast.
-3. **Per-position blend, salience, active mask, and destruction** — the whole
-   lifecycle is prefix-measurable.
-4. **Registers no longer join the extended Verlet state.** Tokens never
-   received force from register rows in the legacy step (strict
-   lower-triangular pair mask + detached `h_src`), so token dynamics are
-   unchanged; what is removed is the registers' own full-window evolution —
-   exactly the cross-layer leak channel of section 9.
-5. The reverse channel consumes the per-position state with a per-position
-   active mask; this was already its causal calling convention.
-
-### Verification (`fock_causality_probe.py`, float64, CPU)
-
-New tests T6–T8 build the fixed architecture with the reverse channel **fully
-open** (`reverse_channel_scale=1`, warmup complete):
-
-| Test | Condition | max\|Δlogit\| on past positions | Verdict |
-|------|-----------|------------------------------|---------|
-| T2 (legacy) | future perturb, rev ON | 1.077e-05 | leak (unchanged, as expected) |
-| **T6 (fixed)** | future perturb, rev ON, eval | **0.000e+00 (exact)** | leak-free |
-| **T7 (fixed)** | future perturb, train mode + seeded Gumbel | **0.000e+00 (exact)** | leak-free |
-| T8 (fixed) | past perturb sanity | 7.379e-02 | past sensitivity preserved |
-
-Additional checks: strict state_dict round-trip in both directions,
-forward/backward under layer checkpointing with gradient flow to
-`reverse_channel_scale`, repulsion drain, and the diagnostics capture path
-(all in the model smoke tests and probe).
-
-### Consequences
-
-- **Pre-fix checkpoints are not usable with the fixed forward pass.** The
-  weights load, but they were trained to exploit the leaky lifecycle; all
-  d384/d768 numbers must be regenerated by training from scratch with
-  `prefix_causal_registers=True`.
-- The honest-PPL machinery (`fock_trained_leak_probe.py`,
-  `honest_ppl_sweep.ipynb`) remains pinned to the legacy architecture for
-  forensic analysis of old checkpoints.
+- **22 Jul 2026 (v1):** static two-track audit; found the reverse-channel
+  pathway; sized it at init scale (~1e-5, ~3e-4 PPL) and judged it negligible.
+- **23 Jul 2026 (v2):** trained-checkpoint certification via
+  `eval_ppl_debug_d384.ipynb` revealed honest PPL ≈ 258 vs reported ≈ 7.69
+  (+3.51 nats, ~33×). Root cause re-sized (same-window / next-token copy through
+  the global register summary). Prefix-causal fix implemented and verified
+  (T6/T7 = 0.0, float64). Document restructured around the found → mis-sized →
+  correctly-sized → fixed arc.
