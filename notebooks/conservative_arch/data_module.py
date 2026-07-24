@@ -37,14 +37,39 @@ def _ensure_shakespeare_text() -> str:
     return txt_path.read_text(encoding="utf-8")
 
 
+def _get_gpt2_tokenizer():
+    """Return cached GPT-2 tokenizer (loaded once per process)."""
+    if not hasattr(_get_gpt2_tokenizer, "_tok"):
+        from transformers import AutoTokenizer
+        _get_gpt2_tokenizer._tok = AutoTokenizer.from_pretrained("gpt2")
+    return _get_gpt2_tokenizer._tok
+
+
 def _gpt2_tokenize(text: str) -> np.ndarray:
     """GPT-2 BPE tokenise `text`; return uint16 numpy array of token ids."""
-    from transformers import AutoTokenizer
-
-    tok = AutoTokenizer.from_pretrained("gpt2")
+    tok = _get_gpt2_tokenizer()
     ids = tok.encode(text)
     ids = np.asarray(ids, dtype=np.uint16)
     return ids
+
+
+def _gpt2_tokenize_stories(stories: list[str],
+                           batch_size: int = 2000) -> np.ndarray:
+    """Tokenize a list of stories in batches to limit peak RAM.
+
+    Instead of joining all stories into one giant string (which can
+    exceed available RAM on Colab), we process small batches and
+    concatenate the resulting token arrays.
+    """
+    tok = _get_gpt2_tokenizer()
+    chunks: list[np.ndarray] = []
+    for start in range(0, len(stories), batch_size):
+        batch = stories[start:start + batch_size]
+        text = "\n\n".join(batch)
+        ids = tok.encode(text)
+        chunks.append(np.asarray(ids, dtype=np.uint16))
+        del text, ids, batch
+    return np.concatenate(chunks)
 
 
 def load_tiny_shakespeare(val_frac: float = 0.05) -> Tuple[np.ndarray, np.ndarray]:
@@ -118,7 +143,9 @@ def load_tiny_stories(
         + ".npz"
     )
     if cache.exists():
+        print(f"[data_module] Loading cached tokens from {cache}")
         z = np.load(cache)
+        print(f"[data_module]   train={len(z['train']):,}  val={len(z['val']):,}")
         return z["train"], z["val"]
 
     # Fetch train parquet shard(s) and a separate validation shard.
@@ -138,8 +165,8 @@ def load_tiny_stories(
         n_stories += len(shard_texts)
         del table
         print(f"[data_module]   tokenising shard {i} "
-              f"({len(shard_texts):,} stories) ...")
-        chunk = _gpt2_tokenize("\n\n".join(shard_texts))
+              f"({len(shard_texts):,} stories) in batches ...")
+        chunk = _gpt2_tokenize_stories(shard_texts)
         del shard_texts
         train_id_chunks.append(chunk)
         # Early exit if we already have enough tokens.
@@ -159,9 +186,9 @@ def load_tiny_stories(
     print(f"[data_module] Reading {p}")
     val_texts = pq.read_table(p, columns=["text"])["text"].to_pylist()
 
-    print(f"[data_module] Tokenising {n_stories:,} train + "
-          f"{len(val_texts):,} val stories with GPT-2 BPE ...")
-    val_ids = _gpt2_tokenize("\n\n".join(val_texts))
+    print(f"[data_module] Tokenising {len(val_texts):,} val stories "
+          f"with GPT-2 BPE in batches ...")
+    val_ids = _gpt2_tokenize_stories(val_texts)
     del val_texts
     if max_train_tokens is not None and len(train_ids) > max_train_tokens:
         train_ids = train_ids[:max_train_tokens]
