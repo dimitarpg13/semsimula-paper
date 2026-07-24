@@ -116,6 +116,8 @@ def build_config(
     xi_learnable: bool = True,
     xi_alpha_init_mode: str = "explicit",
     xi_tau_max: float = 100.0,
+    # Causal leak fix
+    prefix_causal_registers: bool = True,
     # Fock-specific
     fock_version: str = "v1",
     n_registers: int = 16,
@@ -182,6 +184,7 @@ def build_config(
         per_register_tau=per_register_tau,
         per_register_keys=per_register_keys,
         ortho_register_init=ortho_register_init,
+        prefix_causal_registers=prefix_causal_registers,
     )
 
     if xi_alpha_init_mode == "explicit":
@@ -435,6 +438,16 @@ def main():
     ap.add_argument("--ortho-register-init", dest="ortho_register_init",
                     action="store_true", default=False,
                     help="B3: orthogonal register embedding initialisation (v2.1).")
+    # Causal leak fix
+    ap.add_argument("--prefix-causal-registers", dest="prefix_causal_registers",
+                    action="store_true", default=True,
+                    help="Enable prefix-causal register lifecycle (leak fix, default ON).")
+    ap.add_argument("--no-prefix-causal-registers", dest="prefix_causal_registers",
+                    action="store_false",
+                    help="Disable prefix-causal registers (leaky, for reproduction only).")
+    ap.add_argument("--causal-probe-interval", dest="causal_probe_interval",
+                    type=int, default=0,
+                    help="Run architectural causal probe every N steps (0 = off).")
     ap.add_argument("--fock-grad-clip", dest="fock_grad_clip",
                     type=float, default=None,
                     help="Separate (tighter) grad clip for Fock-specific params.")
@@ -512,6 +525,7 @@ def main():
         per_register_tau=args.per_register_tau,
         per_register_keys=args.per_register_keys,
         ortho_register_init=args.ortho_register_init,
+        prefix_causal_registers=args.prefix_causal_registers,
     )
     if args.max_steps is not None:
         train_cfg["steps"] = args.max_steps
@@ -554,6 +568,8 @@ def main():
         print(f"[fock-multixi-parf] fock-v2: d_k={cfg.d_k}  "
               f"reverse_channel={cfg.reverse_channel}  "
               f"tau_create_init={cfg.tau_create_init}{v21_str}")
+    _pc_status = "ON (leak-free)" if getattr(cfg, 'prefix_causal_registers', False) else "OFF (leaky)"
+    print(f"[fock-multixi-parf] prefix_causal_registers: {_pc_status}")
     print(f"[fock-multixi-parf] schedule: {args.mode}  "
           f"steps={train_cfg['steps']}  batch={train_cfg['batch_size']}  "
           f"block={train_cfg['block_size']}")
@@ -581,6 +597,72 @@ def main():
         print("[fock-multixi-parf] causal probe SKIPPED "
               "(--skip-causal-check).")
 
+    # ── Periodic architectural causal probe ──
+    _causal_probe_interval = args.causal_probe_interval
+
+    def run_causal_probe(step_num: int, log_fn):
+        """Lightweight architectural causal probe on CPU in float64."""
+        _probe_cfg = FockMultiXiPARFConfig(
+            vocab_size=256, d=32, max_len=64, L=2,
+            v_hidden=64, v_depth=1, dt=0.1,
+            mass_mode='uniform', causal_force=True,
+            ln_after_step=True,
+            xi_channels=cfg.xi_channels,
+            xi_alpha_inits=[0.0] * cfg.xi_channels,
+            xi_learnable=False,
+            xi_alpha_init_mode='explicit',
+            fock_version='v2',
+            n_registers=4,
+            register_salience_decay=0.5,
+            register_salience_threshold=0.005,
+            creation_gate_hidden=16,
+            stack_discipline=True,
+            d_k=16,
+            tau_create_init=8.0,
+            reverse_channel=True,
+            prefix_causal_registers=getattr(cfg, 'prefix_causal_registers', True),
+            per_register_tau=True,
+            per_register_keys=True,
+            ortho_register_init=True,
+        )
+        _m = FockMultiXiPARFLM(_probe_cfg).double().cpu()
+        with torch.no_grad():
+            for p in _m.parameters():
+                if hasattr(_m, 'reverse_channel_scale'):
+                    pass
+            for n, p in _m.named_parameters():
+                if 'reverse_channel_scale' in n:
+                    p.fill_(5.0)
+
+        _ids = torch.randint(0, 256, (1, 32))
+        results = {}
+        for mode_name, use_train in [("eval", False), ("train", True)]:
+            if use_train:
+                _m.train()
+            else:
+                _m.eval()
+            with torch.no_grad():
+                logits_clean, _ = _m(_ids)
+            _ids_pert = _ids.clone()
+            _ids_pert[0, 20:] = torch.randint(0, 256, (12,))
+            with torch.no_grad():
+                logits_pert, _ = _m(_ids_pert)
+            delta = (logits_pert[0, :20] - logits_clean[0, :20]).abs().max().item()
+            results[mode_name] = delta
+
+        passed = results["eval"] == 0.0 and results["train"] == 0.0
+        status = "PASS" if passed else "FAIL"
+        print(f"[causal-probe] step {step_num}: {status}  "
+              f"eval_delta={results['eval']:.2e}  train_delta={results['train']:.2e}")
+        log_fn({
+            'step': step_num, 'event': 'causal_probe',
+            'eval_max_delta': results['eval'],
+            'train_max_delta': results['train'],
+            'passed': passed,
+        })
+        del _m
+        return passed
+
     optim = torch.optim.AdamW(
         model.parameters(), lr=train_cfg["lr"],
         weight_decay=train_cfg["weight_decay"], betas=(0.9, 0.95),
@@ -600,6 +682,15 @@ def main():
     log_path = results_dir / f"{tag}_training_log.jsonl"
     log_f = log_path.open("w")
     loss_history: list[tuple[int, float, float]] = []
+
+    def _log_write(record: dict):
+        log_f.write(json.dumps(record) + "\n")
+        log_f.flush()
+
+    # Spike detection config
+    _spike_threshold = 500.0  # high for TinyStories (rarely spikes)
+    _spike_cooldown = 20
+    _last_spike_step = -10**9
 
     t0 = time.time()
     model.train()
@@ -649,8 +740,30 @@ def main():
                 nn.utils.clip_grad_norm_(fock_params, fock_grad_clip)
         optim.step()
 
+        # ── Spike detection + JSONL logging ──
+        _tot_preclip = float(grad_norm)
+        if (_tot_preclip > _spike_threshold
+                and (step - _last_spike_step) >= _spike_cooldown):
+            _last_spike_step = step
+            _spike_top = {k: round(v, 2) for k, v in sorted(
+                [("fock", _pre_clip_fock_gn), ("vphi", _pre_clip_vphi_gn)],
+                key=lambda kv: kv[1], reverse=True)}
+            print(f"\n[spike] step {step+1}: pre-clip total grad={_tot_preclip:.1f}  "
+                  f"fock={_pre_clip_fock_gn:.1f}  vphi={_pre_clip_vphi_gn:.1f}")
+            _log_write({
+                'step': step + 1, 'event': 'grad_spike',
+                'pre_clip_grad_norm': round(_tot_preclip, 2),
+                'grad_norm_fock': round(_pre_clip_fock_gn, 2),
+                'grad_norm_vphi': round(_pre_clip_vphi_gn, 2),
+            })
+
         running += accum_loss / grad_accum
         n_run += 1
+
+        # ── Periodic causal probe ──
+        if (_causal_probe_interval > 0
+                and (step + 1) % _causal_probe_interval == 0):
+            run_causal_probe(step + 1, _log_write)
 
         if (step + 1) % train_cfg["log_interval"] == 0:
             avg = running / n_run

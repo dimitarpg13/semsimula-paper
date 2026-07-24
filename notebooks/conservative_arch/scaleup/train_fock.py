@@ -182,6 +182,10 @@ class TrainConfig:
     eval_iters: int = 40
     log_interval: int = 50
     ckpt_interval: int = 7500
+    causal_probe_interval: int = 20_000  # architectural probe; 0 = off
+    trained_leak_probe_interval: int = 20_000  # trained-scale leak + honest PPL; 0 = off
+    trained_leak_probe_k: int = 256  # honest-PPL target tokens (256 fast, 1024 thorough)
+    trained_leak_probe_pairs: int = 2  # future-perturbation window pairs
     output_dir: str = ""  # auto-resolved
     seed: int = 0
 
@@ -834,6 +838,162 @@ def evaluate(model, model_cfg, val_ids, cfg: TrainConfig, device: str):
 
 
 # ---------------------------------------------------------------------------
+# Causal-integrity probe (lightweight, runs on CPU in float64)
+# ---------------------------------------------------------------------------
+
+def run_causal_probe(step_num: int, cfg: TrainConfig) -> Tuple[bool, float]:
+    """Build a tiny model matching the Fock structural features, open the
+    reverse channel fully, and check that perturbing future tokens produces
+    exactly zero change in logits at earlier positions.
+
+    Returns (passed, max_delta).  Runs on CPU in float64 (~2-3 seconds).
+    """
+    from model_fock_parf_multixi import FockMultiXiPARFLM, FockMultiXiPARFConfig
+    from model_gaussian_vtheta import (
+        DepthConditionedMultiContextGaussianVTheta,
+        install_depth_routing,
+    )
+
+    _V, _D, _L, _T, _M, _XI, _K = 101, 32, 4, 48, 8, 3, 4
+
+    logfreq_tmp = Path("/tmp/causal_probe_logfreq.npy")
+    np.save(logfreq_tmp, np.full(_V, 5.0, dtype=np.float32))
+
+    probe_cfg = FockMultiXiPARFConfig(
+        vocab_size=_V, d=_D, max_len=64, L=_L,
+        v_hidden=64, v_depth=3, dt=1.0,
+        mass_mode="logfreq", logfreq_path=str(logfreq_tmp),
+        logfreq_init_alpha=0.1, init_gamma=1.0, fixed_gamma=0.30,
+        causal_force=True, ln_after_step=True,
+        xi_channels=_XI, xi_alpha_inits=[0.5, 0.9, 0.99],
+        xi_learnable=True, xi_alpha_init_mode="explicit",
+        v_phi_kind="structural_competitive",
+        v_phi_d_type=8, v_phi_d_angle=4, v_phi_eps=0.1,
+        v_phi_phi_hidden=16, v_phi_theta_hidden=16, v_phi_mlp_hidden=16,
+        top_k=8, v_phi_n_heads=2,
+        use_output_bias=True, tie_embeddings=False,
+        score_head_hidden=8,
+        gumbel_tau_init=1.0, gumbel_tau_min=0.3, gumbel_noise=True,
+        use_gathered_v_phi=True, use_layer_checkpoint=False,
+        ln_before_distance=True, per_layer_v_phi_scale=True,
+        fock_version="v2", n_registers=_M,
+        register_salience_decay=0.5, register_salience_threshold=0.005,
+        creation_gate_hidden=16, stack_discipline=True,
+        d_k=16, tau_create_init=8.0,
+        reverse_channel=True, reverse_channel_stable=True,
+        reverse_channel_pre_ln=True, reverse_channel_soft_norm=True,
+        reverse_channel_warmup_steps=4000, reverse_channel_per_layer=True,
+        per_register_tau=True, per_register_keys=True,
+        ortho_register_init=True, register_repulsion=False,
+        prefix_causal_registers=True,
+    )
+    torch.manual_seed(1234)
+    m = FockMultiXiPARFLM(probe_cfg)
+    m.V_theta = DepthConditionedMultiContextGaussianVTheta(
+        d=_D, K=_K, n_ctx=_XI, n_layers=_L,
+        w_scale=1.0, init_log_precision=-math.log(_D),
+        precision_max=2.0 / _D, code_init_std=0.02,
+    )
+    install_depth_routing(m)
+    m.double().eval()
+
+    with torch.no_grad():
+        m.reverse_channel_scale.fill_(1.0)
+        m.reverse_warmup_step.fill_(4000)
+
+    t_p = _T // 2
+    prng = np.random.default_rng(7)
+    x1 = torch.from_numpy(prng.integers(0, _V, (2, _T))).long()
+    x2 = x1.clone()
+    x2[:, t_p:] = torch.from_numpy(prng.integers(0, _V, (2, _T - t_p))).long()
+
+    with torch.enable_grad():
+        la = m(x1)[0].detach()
+        lb = m(x2)[0].detach()
+    max_delta = float((la[:, :t_p] - lb[:, :t_p]).abs().max().item())
+
+    m.train()
+    torch.manual_seed(99)
+    with torch.enable_grad():
+        lta = m(x1)[0].detach()
+    torch.manual_seed(99)
+    with torch.enable_grad():
+        ltb = m(x2)[0].detach()
+    max_delta_train = float((lta[:, :t_p] - ltb[:, :t_p]).abs().max().item())
+
+    max_delta = max(max_delta, max_delta_train)
+    passed = (max_delta == 0.0)
+
+    del m, la, lb, lta, ltb, x1, x2
+    gc.collect()
+
+    if is_main():
+        status = "PASS" if passed else "*** FAIL ***"
+        print(f"\n[causal probe] step {step_num:,}  "
+              f"max|dlogit|={max_delta:.3e}  [{status}]")
+        if not passed:
+            print("[causal probe] WARNING: nonzero future sensitivity detected!")
+    return passed, max_delta
+
+
+# ---------------------------------------------------------------------------
+# Trained-scale leak probe (Step 11: honest PPL on the live model)
+# ---------------------------------------------------------------------------
+
+def run_trained_leak_probe(model, val_ids, step_num: int,
+                           cfg: TrainConfig, device: str) -> dict:
+    """Run the trained-scale leak probe on the live model.
+
+    Part 1: future-perturbation effect on past logits/NLL (float32, GPU).
+    Part 2: honest PPL vs standard PPL (leak-free scoring).
+    Returns a dict with all results, suitable for JSONL logging.
+    """
+    script_dir = Path(__file__).resolve().parent
+    debug_dir = str(script_dir / "debug")
+    if debug_dir not in sys.path:
+        sys.path.insert(0, debug_dir)
+    from fock_trained_leak_probe import probe_trained_leak, honest_ppl_test
+
+    raw_model = model.module if hasattr(model, "module") else model
+
+    if is_main():
+        print(f"\n{'='*64}")
+        print(f"[trained leak probe] step {step_num:,} — running on live model")
+        print(f"{'='*64}")
+
+    probe_res = probe_trained_leak(
+        raw_model, val_ids, device=device, context=cfg.block_size,
+        n_pairs=cfg.trained_leak_probe_pairs, use_float64=False)
+
+    honest_res = honest_ppl_test(
+        raw_model, val_ids, k=cfg.trained_leak_probe_k,
+        context=cfg.block_size, batch=cfg.batch_size, device=device)
+
+    raw_model.train()
+
+    result = {
+        "step": step_num,
+        "probe_max_dlogit_past": probe_res["max_dlogit_past"],
+        "probe_mean_dnll_past_nats": round(probe_res["mean_dnll_past"], 6),
+        "probe_gate_zero_control": probe_res["gate_zero_control"],
+        "honest_k": honest_res["k"],
+        "ppl_mid_window_standard": round(honest_res["ppl_mid_window"], 4),
+        "ppl_last_pos_leak_free": round(honest_res["ppl_last_pos"], 4),
+        "paired_diff_nats": round(honest_res["paired_diff_nats"], 6),
+        "paired_diff_se": round(honest_res["paired_diff_se"], 6),
+    }
+
+    if is_main():
+        leak_status = ("CLEAN" if result["paired_diff_nats"] < 0.1
+                       else "LEAK DETECTED")
+        print(f"\n[trained leak probe] step {step_num:,}  "
+              f"honest_PPL={result['ppl_last_pos_leak_free']:.2f}  "
+              f"standard_PPL={result['ppl_mid_window_standard']:.2f}  "
+              f"diff={result['paired_diff_nats']:+.4f} nats  [{leak_status}]")
+    return result
+
+
+# ---------------------------------------------------------------------------
 # Watchdog: reload best checkpoint on sustained gradient divergence
 # ---------------------------------------------------------------------------
 
@@ -1091,6 +1251,12 @@ def train(cfg: TrainConfig):
                       f"v_reg={accum_vreg:.4f}")
                 if brk:
                     print(f"[spike]   top groups: {brk}")
+                log_write({
+                    'step': step + 1, 'event': 'grad_spike',
+                    'pre_clip_grad_norm': round(tot_preclip, 2),
+                    'ntp': round(accum_ntp, 4), 'v_reg': round(accum_vreg, 4),
+                    'top_groups': {k: round(v, 2) for k, v in top} if last_pg_norms else {},
+                })
 
         if torch.isfinite(grad_norm) and math.isfinite(accum_ntp):
             optimizer.step()
@@ -1117,6 +1283,19 @@ def train(cfg: TrainConfig):
                 print(f"\n[watchdog] EMA grad_norm={grad_norm_ema:.1f} > "
                       f"{cfg.grad_norm_ema_threshold} for "
                       f"{grad_norm_above_thresh} steps at step {step+1}.")
+                _wd_top = (
+                    {k: round(v, 2)
+                     for k, v in sorted(last_pg_norms.items(),
+                                        key=lambda kv: kv[1],
+                                        reverse=True)[:8]}
+                    if last_pg_norms else {}
+                )
+                log_write({
+                    'step': step + 1, 'event': 'watchdog_reload',
+                    'ema_grad_norm': round(grad_norm_ema, 2),
+                    'above_thresh_steps': grad_norm_above_thresh,
+                    'top_groups': _wd_top,
+                })
             reload_best(model, optimizer, cfg, device)
             grad_norm_ema = 0.0
             grad_norm_above_thresh = 0
@@ -1199,6 +1378,25 @@ def train(cfg: TrainConfig):
             save_checkpoint(model, optimizer, model_cfg, cfg,
                             step + 1, val_loss)
             sync_to_remote(cfg)
+
+        # ── Periodic causal-integrity probe ──
+        if (cfg.causal_probe_interval > 0
+                and cfg.model_type == "fock"
+                and (step + 1) % cfg.causal_probe_interval == 0):
+            cp_passed, cp_delta = run_causal_probe(step + 1, cfg)
+            log_write({
+                "step": step + 1,
+                "causal_probe_passed": cp_passed,
+                "causal_probe_max_delta": cp_delta,
+            })
+
+        # ── Periodic trained-scale leak probe ──
+        if (cfg.trained_leak_probe_interval > 0
+                and cfg.model_type == "fock"
+                and (step + 1) % cfg.trained_leak_probe_interval == 0):
+            tlp_result = run_trained_leak_probe(
+                model, val_ids, step + 1, cfg, device)
+            log_write(tlp_result)
 
     # ── Final sync ──
     sync_to_remote(cfg)
