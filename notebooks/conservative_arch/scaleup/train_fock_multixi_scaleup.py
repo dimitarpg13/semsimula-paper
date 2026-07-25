@@ -468,6 +468,20 @@ def main():
     ap.add_argument("--causal-probe-interval", dest="causal_probe_interval",
                     type=int, default=0,
                     help="Run architectural causal probe every N steps (0 = off).")
+    ap.add_argument("--trained-leak-probe-interval",
+                    dest="trained_leak_probe_interval",
+                    type=int, default=0,
+                    help="Run trained-scale leak probe + honest PPL every N "
+                         "steps (0 = off).")
+    ap.add_argument("--trained-leak-probe-k",
+                    dest="trained_leak_probe_k",
+                    type=int, default=256,
+                    help="Number of target tokens for honest PPL (256=fast, "
+                         "1024=thorough).")
+    ap.add_argument("--trained-leak-probe-pairs",
+                    dest="trained_leak_probe_pairs",
+                    type=int, default=2,
+                    help="Future-perturbation window pairs for trained probe.")
     ap.add_argument("--eval-micro-batch", dest="eval_micro_batch",
                     type=int, default=4,
                     help="Chunk eval batches to this size to bound peak VRAM "
@@ -696,6 +710,59 @@ def main():
         del _m
         return passed
 
+    # ── Periodic trained-scale leak probe + honest PPL ──
+    _trained_probe_interval = args.trained_leak_probe_interval
+    _trained_probe_k = args.trained_leak_probe_k
+    _trained_probe_pairs = args.trained_leak_probe_pairs
+
+    def run_trained_leak_probe(step_num: int, log_fn):
+        """Trained-scale leak probe (Stage 2) on the live model.
+
+        Uses the actual trained weights and validation data to measure:
+          Part 1: future-perturbation effect on past logits/NLL
+          Part 2: honest PPL vs standard PPL (leak-free scoring)
+        """
+        _debug_dir = str(SCRIPT_DIR / "debug")
+        if _debug_dir not in sys.path:
+            sys.path.insert(0, _debug_dir)
+        from fock_trained_leak_probe import probe_trained_leak, honest_ppl_test
+
+        print(f"\n{'='*64}")
+        print(f"[trained leak probe] step {step_num:,} — running on live model")
+        print(f"{'='*64}")
+
+        probe_res = probe_trained_leak(
+            model, val_ids, device=device,
+            context=train_cfg["block_size"],
+            n_pairs=_trained_probe_pairs, use_float64=False)
+
+        honest_res = honest_ppl_test(
+            model, val_ids, k=_trained_probe_k,
+            context=train_cfg["block_size"],
+            batch=micro_batch, device=device)
+
+        model.train()
+
+        result = {
+            'step': step_num,
+            'event': 'trained_leak_probe',
+            'probe_max_dlogit_past': probe_res['max_dlogit_past'],
+            'probe_mean_dnll_past_nats': round(probe_res['mean_dnll_past'], 6),
+            'probe_gate_zero_control': probe_res['gate_zero_control'],
+            'honest_k': honest_res['k'],
+            'ppl_mid_window_standard': round(honest_res['ppl_mid_window'], 4),
+            'ppl_last_pos_leak_free': round(honest_res['ppl_last_pos'], 4),
+            'paired_diff_nats': round(honest_res['paired_diff_nats'], 6),
+            'paired_diff_se': round(honest_res['paired_diff_se'], 6),
+        }
+
+        _leak_status = 'CLEAN' if result['paired_diff_nats'] < 0.1 else 'LEAK DETECTED'
+        print(f"\n[trained leak probe] step {step_num:,}  "
+              f"honest_PPL={result['ppl_last_pos_leak_free']:.2f}  "
+              f"standard_PPL={result['ppl_mid_window_standard']:.2f}  "
+              f"diff={result['paired_diff_nats']:+.4f} nats  [{_leak_status}]")
+        log_fn(result)
+
     optim = torch.optim.AdamW(
         model.parameters(), lr=train_cfg["lr"],
         weight_decay=train_cfg["weight_decay"], betas=(0.9, 0.95),
@@ -811,10 +878,14 @@ def main():
         running += accum_loss / grad_accum
         n_run += 1
 
-        # ── Periodic causal probe ──
+        # ── Periodic causal probes ──
         if (_causal_probe_interval > 0
                 and (step + 1) % _causal_probe_interval == 0):
             run_causal_probe(step + 1, _log_write)
+
+        if (_trained_probe_interval > 0
+                and (step + 1) % _trained_probe_interval == 0):
+            run_trained_leak_probe(step + 1, _log_write)
 
         if (step + 1) % train_cfg["log_interval"] == 0:
             avg = running / n_run
