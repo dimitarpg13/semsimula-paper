@@ -30,7 +30,7 @@ import time
 from dataclasses import asdict
 from pathlib import Path
 
-os.environ.setdefault("PYTORCH_ALLOC_CONF", "expandable_segments:True")
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 
 import matplotlib
 matplotlib.use("Agg")
@@ -304,16 +304,36 @@ def tau_schedule(step: int, tau_init: float, tau_min: float,
 @torch.no_grad()
 def evaluate(model, ids: np.ndarray, iters: int,
              batch_size: int, block_size: int,
-             rng: np.random.Generator, device: str) -> float:
+             rng: np.random.Generator, device: str,
+             eval_micro_batch: int | None = None) -> float:
+    """Note: despite the @torch.no_grad() decorator, the forward pass below
+    runs under torch.enable_grad() because the Fock/PARF physics simulation
+    computes internal forces via torch.autograd.grad (F = -grad V) as part
+    of the forward pass itself, not just for the training loss. This means
+    eval builds a full differentiable graph just like training, but WITHOUT
+    the memory relief that use_layer_checkpoint provides during an actual
+    .backward() call. To keep peak memory bounded regardless of the training
+    batch_size, we chunk each eval iteration into micro-batches (mirroring
+    the --grad-accum mechanism used in training) and explicitly release each
+    micro-batch's graph before starting the next one.
+    """
     model.eval()
+    micro = batch_size if eval_micro_batch is None else min(eval_micro_batch, batch_size)
+    n_micro = max(1, batch_size // micro)
     losses = []
     for _ in range(iters):
-        xb, yb = get_batch(ids, batch_size, block_size, rng)
-        x = torch.from_numpy(xb).to(device)
-        y = torch.from_numpy(yb).to(device)
-        with torch.enable_grad():
-            _, loss = model(x, y)
-        losses.append(loss.item())
+        micro_losses = []
+        for _m in range(n_micro):
+            xb, yb = get_batch(ids, micro, block_size, rng)
+            x = torch.from_numpy(xb).to(device)
+            y = torch.from_numpy(yb).to(device)
+            with torch.enable_grad():
+                _, loss = model(x, y)
+            micro_losses.append(loss.item())
+            del loss, x, y
+        losses.append(float(np.mean(micro_losses)))
+        if device == "cuda":
+            torch.cuda.empty_cache()
     model.train()
     return float(np.mean(losses))
 
@@ -448,6 +468,11 @@ def main():
     ap.add_argument("--causal-probe-interval", dest="causal_probe_interval",
                     type=int, default=0,
                     help="Run architectural causal probe every N steps (0 = off).")
+    ap.add_argument("--eval-micro-batch", dest="eval_micro_batch",
+                    type=int, default=4,
+                    help="Chunk eval batches to this size to bound peak VRAM "
+                         "(eval builds a full autograd graph without the "
+                         "memory relief of layer checkpointing).")
     ap.add_argument("--fock-grad-clip", dest="fock_grad_clip",
                     type=float, default=None,
                     help="Separate (tighter) grad clip for Fock-specific params.")
@@ -816,7 +841,7 @@ def main():
             val_loss = evaluate(
                 model, val_ids, train_cfg["eval_iters"],
                 train_cfg["batch_size"], train_cfg["block_size"],
-                rng, device,
+                rng, device, eval_micro_batch=args.eval_micro_batch,
             )
             ppl = math.exp(val_loss)
             print(f"[fock-multixi-parf] >>> eval @ {step+1}: "
@@ -832,7 +857,8 @@ def main():
     final_val = evaluate(model, val_ids,
                          train_cfg["eval_iters"],
                          train_cfg["batch_size"],
-                         train_cfg["block_size"], rng, device)
+                         train_cfg["block_size"], rng, device,
+                         eval_micro_batch=args.eval_micro_batch)
     final_ppl = math.exp(final_val)
     final_gamma = float(model.gamma.item())
     final_alphas = model.xi_alpha_values()
