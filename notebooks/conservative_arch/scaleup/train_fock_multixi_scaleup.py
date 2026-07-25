@@ -476,6 +476,12 @@ def main():
     ap.add_argument("--fock-grad-clip", dest="fock_grad_clip",
                     type=float, default=None,
                     help="Separate (tighter) grad clip for Fock-specific params.")
+    ap.add_argument("--checkpoint-interval", dest="checkpoint_interval",
+                    type=int, default=1000,
+                    help="Save a resumable checkpoint every N steps (0 = end only).")
+    ap.add_argument("--resume", dest="resume", action="store_true",
+                    default=False,
+                    help="Resume from the latest periodic checkpoint if one exists.")
     ap.add_argument("--skip-causal-check", dest="skip_causal_check",
                     action="store_true", default=False,
                     help="Skip pre-training causal-violation probe.")
@@ -704,8 +710,24 @@ def main():
         print(f"[fock-multixi-parf] grad-accum: {grad_accum} micro-batches "
               f"of size {micro_batch}")
 
+    # ── Resume from periodic checkpoint ──
+    _ckpt_interval = max(0, int(args.checkpoint_interval))
+    _periodic_ckpt_path = results_dir / f"{tag}_periodic_ckpt.pt"
+    _start_step = 0
+    if args.resume and _periodic_ckpt_path.exists():
+        _resume_ckpt = torch.load(_periodic_ckpt_path, map_location=device,
+                                  weights_only=False)
+        model.load_state_dict(_resume_ckpt["model_state_dict"])
+        optim.load_state_dict(_resume_ckpt["optim_state_dict"])
+        _start_step = _resume_ckpt["step"]
+        print(f"[fock-multixi-parf] RESUMED from step {_start_step} "
+              f"(checkpoint: {_periodic_ckpt_path.name})")
+    elif args.resume:
+        print(f"[fock-multixi-parf] --resume set but no checkpoint found, "
+              f"starting from scratch.")
+
     log_path = results_dir / f"{tag}_training_log.jsonl"
-    log_f = log_path.open("w")
+    log_f = log_path.open("a" if _start_step > 0 else "w")
     loss_history: list[tuple[int, float, float]] = []
 
     def _log_write(record: dict):
@@ -723,6 +745,8 @@ def main():
     n_run = 0
 
     for step in range(train_cfg["steps"]):
+        if step < _start_step:
+            continue
         lr_now = lr_schedule(step, train_cfg["lr"],
                              train_cfg["warmup_steps"], train_cfg["steps"])
         for g in optim.param_groups:
@@ -852,6 +876,17 @@ def main():
             }) + "\n")
             log_f.flush()
             loss_history.append((step + 1, avg, val_loss))
+
+        # ── Periodic checkpoint ──
+        if (_ckpt_interval > 0
+                and (step + 1) % _ckpt_interval == 0
+                and step + 1 < train_cfg["steps"]):
+            torch.save({
+                "step": step + 1,
+                "model_state_dict": model.state_dict(),
+                "optim_state_dict": optim.state_dict(),
+            }, _periodic_ckpt_path)
+            print(f"[fock-multixi-parf] checkpoint saved @ step {step+1}")
 
     log_f.close()
     final_val = evaluate(model, val_ids,
