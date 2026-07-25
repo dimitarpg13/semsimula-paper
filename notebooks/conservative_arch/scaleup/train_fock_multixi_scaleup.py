@@ -714,6 +714,11 @@ def main():
     _trained_probe_interval = args.trained_leak_probe_interval
     _trained_probe_k = args.trained_leak_probe_k
     _trained_probe_pairs = args.trained_leak_probe_pairs
+    if _causal_probe_interval > 0 or _trained_probe_interval > 0:
+        print(f"[fock-multixi-parf] periodic probes: "
+              f"architectural every {_causal_probe_interval} steps, "
+              f"trained-scale every {_trained_probe_interval} steps "
+              f"(k={_trained_probe_k}, pairs={_trained_probe_pairs})")
 
     def run_trained_leak_probe(step_num: int, log_fn):
         """Trained-scale leak probe (Stage 2) on the live model.
