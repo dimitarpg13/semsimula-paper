@@ -630,7 +630,7 @@ def main():
         _probe_cfg = FockMultiXiPARFConfig(
             vocab_size=256, d=32, max_len=64, L=2,
             v_hidden=64, v_depth=1, dt=0.1,
-            mass_mode='uniform', causal_force=True,
+            mass_mode='global', causal_force=True,
             ln_after_step=True,
             xi_channels=cfg.xi_channels,
             xi_alpha_inits=[0.0] * cfg.xi_channels,
