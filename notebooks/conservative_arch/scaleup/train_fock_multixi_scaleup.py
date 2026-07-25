@@ -672,12 +672,14 @@ def main():
                 _m.train()
             else:
                 _m.eval()
-            with torch.no_grad():
+            with torch.enable_grad():
                 logits_clean, _ = _m(_ids)
+                logits_clean = logits_clean.detach()
             _ids_pert = _ids.clone()
             _ids_pert[0, 20:] = torch.randint(0, 256, (12,))
-            with torch.no_grad():
+            with torch.enable_grad():
                 logits_pert, _ = _m(_ids_pert)
+                logits_pert = logits_pert.detach()
             delta = (logits_pert[0, :20] - logits_clean[0, :20]).abs().max().item()
             results[mode_name] = delta
 
