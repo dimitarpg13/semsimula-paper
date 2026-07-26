@@ -51,7 +51,8 @@ class MixtureGaussianVTheta(StructuredVThetaBase):
     def __init__(self, d: int, K: int = 8, w_scale: float = 1.0,
                  xi_d: Optional[int] = None,
                  init_log_precision: Optional[float] = None,
-                 precision_max: Optional[float] = None):
+                 precision_max: Optional[float] = None,
+                 force_norm_max: Optional[float] = None):
         """
         Parameters
         ----------
@@ -82,6 +83,14 @@ class MixtureGaussianVTheta(StructuredVThetaBase):
             Recommended value: ``1.0 / d`` → ``sigma_min = sqrt(d)``.
             A looser ``2.0 / d`` allows sigma down to ``sqrt(d/2)``.
             None disables the constraint.
+        force_norm_max : float or None
+            Per-well force magnitude cap.  When set, the analytical gradient
+            contribution from each well k is rescaled so that
+            ``||f_k||_2 <= force_norm_max`` before summing across wells.
+            This surgically clips only the offending well(s); well-behaved
+            wells pass through unmodified.  Preserves force direction.
+            Recommended: ``2.0 / sqrt(d)`` for d >= 384.
+            None disables per-well normalization.
         """
         super().__init__()
         self.d = d
@@ -89,6 +98,7 @@ class MixtureGaussianVTheta(StructuredVThetaBase):
         self.w_scale = w_scale
         self._init_log_precision = init_log_precision
         self._precision_max: Optional[float] = precision_max
+        self._force_norm_max: Optional[float] = force_norm_max
         in_d = xi_d if xi_d is not None else d
         self.mu_proj = nn.Linear(in_d, K * d)
         self.a_proj = nn.Linear(in_d, K * d)
@@ -137,6 +147,10 @@ class MixtureGaussianVTheta(StructuredVThetaBase):
         exponent = -0.5 * (a * diff * diff).sum(dim=-1)
         g = w * torch.exp(exponent)                              # (...,K)
         per_comp = a * diff * g.unsqueeze(-1)                    # (...,K,d)
+        if self._force_norm_max is not None:
+            norms = per_comp.norm(dim=-1, keepdim=True).clamp(min=1e-8)
+            scale = (self._force_norm_max / norms).clamp(max=1.0)
+            per_comp = per_comp * scale
         return per_comp.sum(dim=-2)                              # (...,d)
 
     def attractor_centres(self, xi: torch.Tensor) -> torch.Tensor:
@@ -167,6 +181,7 @@ class SARFGaussianVTheta(StructuredVThetaBase):
         w_scale: float = 1.0,
         init_log_sigma: float = 0.0,
         log_sigma_max: Optional[float] = None,
+        force_norm_max: Optional[float] = None,
     ):
         """
         Parameters
@@ -186,6 +201,9 @@ class SARFGaussianVTheta(StructuredVThetaBase):
             into flatness during training.  Recommended value:
             ``0.5 * math.log(d) + 1.0``  (one e-fold above sqrt(d)).
             None disables the constraint.
+        force_norm_max : float or None
+            Per-anchor force magnitude cap (see MixtureGaussianVTheta).
+            None disables per-anchor normalization.
         """
         super().__init__()
         self.d = d
@@ -193,6 +211,7 @@ class SARFGaussianVTheta(StructuredVThetaBase):
         self.N_S = N_S
         self.w_scale = w_scale
         self._log_sigma_max: Optional[float] = log_sigma_max
+        self._force_norm_max: Optional[float] = force_norm_max
 
         self.register_buffer('anchors', anchor_positions.detach().clone())
 
@@ -245,6 +264,10 @@ class SARFGaussianVTheta(StructuredVThetaBase):
         exponent = -dist_sq / (2.0 * sigma * sigma)
         g = w * torch.exp(exponent)                              # (..., N_S)
         per_anchor = diff * (g * inv_sigma_sq).unsqueeze(-1)     # (..., N_S, d)
+        if self._force_norm_max is not None:
+            norms = per_anchor.norm(dim=-1, keepdim=True).clamp(min=1e-8)
+            scale = (self._force_norm_max / norms).clamp(max=1.0)
+            per_anchor = per_anchor * scale
         return per_anchor.sum(dim=-2)
 
     def attractor_centres(self, xi: torch.Tensor) -> torch.Tensor:
@@ -321,6 +344,7 @@ class MultiContextGaussianVTheta(nn.Module):
         w_scale: float = 1.0,
         init_log_precision: Optional[float] = None,
         precision_max: Optional[float] = None,
+        force_norm_max: Optional[float] = None,
     ):
         super().__init__()
         self.d = d
@@ -331,6 +355,7 @@ class MultiContextGaussianVTheta(nn.Module):
                 d=d, K=K, w_scale=w_scale, xi_d=d,
                 init_log_precision=init_log_precision,
                 precision_max=precision_max,
+                force_norm_max=force_norm_max,
             )
             for _ in range(n_ctx)
         )
@@ -415,6 +440,7 @@ class DepthConditionedMultiContextGaussianVTheta(nn.Module):
         w_scale: float = 1.0,
         init_log_precision: Optional[float] = None,
         precision_max: Optional[float] = None,
+        force_norm_max: Optional[float] = None,
         code_init_std: float = 0.02,
     ):
         super().__init__()
@@ -426,6 +452,7 @@ class DepthConditionedMultiContextGaussianVTheta(nn.Module):
             d=d, K=K, n_ctx=n_ctx, w_scale=w_scale,
             init_log_precision=init_log_precision,
             precision_max=precision_max,
+            force_norm_max=force_norm_max,
         )
         # Per-layer context shift: (n_layers, n_ctx, d).  Small init so the
         # model starts ~tied (all layers share one bank) and learns to
@@ -596,6 +623,27 @@ def _smoke():
           f"(bank {n_mcv:,} + code {n_code:,})")
     print(f"  vs {L} untied copies:    {n_mcv * L:,}  "
           f"({n_mcv * L / max(n_dcv,1):.1f}x more)")
+
+    print(f"\n--- Per-well force normalization (force_norm_max) ---")
+    import math as _math
+    _fnm = 2.0 / _math.sqrt(d)
+    g_bounded = MixtureGaussianVTheta(d=d, K=4, force_norm_max=_fnm)
+    g_unbounded = MixtureGaussianVTheta(d=d, K=4)
+    g_bounded.load_state_dict(g_unbounded.state_dict())
+    _xi = torch.randn(2, 4, d)
+    _h = torch.randn(2, 4, d)
+    grad_ub = g_unbounded.analytical_grad(_xi, _h)
+    grad_bd = g_bounded.analytical_grad(_xi, _h)
+    print(f"  unbounded grad norm range: "
+          f"[{grad_ub.norm(dim=-1).min():.4f}, {grad_ub.norm(dim=-1).max():.4f}]")
+    print(f"  bounded   grad norm range: "
+          f"[{grad_bd.norm(dim=-1).min():.4f}, {grad_bd.norm(dim=-1).max():.4f}]")
+    print(f"  force_norm_max={_fnm:.4f}")
+
+    validate_analytical_grad(
+        MixtureGaussianVTheta(d=d, K=4, force_norm_max=_fnm), d=d,
+    )
+    print(f"  analytical_grad with force_norm_max: OK")
 
     print("\nAll smoke tests passed.")
 
