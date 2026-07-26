@@ -15,6 +15,12 @@ Reference values (from Q0/Q6 sweep on standalone FockPARFLM_v2):
   - Genuine routing (Q6):  diversity ~ 0.785, entropy ~ 0.304
   - Inert mean-pool (Q0):  diversity ~ 0.145, entropy ~ 1.0
 
+Under the prefix-causal register fix the creation gate holds one bank per
+position rather than one per sequence, so there is no single sequence-wide
+attention distribution to report.  The metrics are read at the final position,
+where the prefix window covers the whole sequence — that is the distribution
+the legacy path reported, so the reference values above still apply.
+
 Usage:
   python eval_fock_register_diagnostics.py --checkpoint /path/to/ckpt.pt
 """
@@ -22,6 +28,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import inspect
 import json
 import math
 import sys
@@ -47,8 +54,15 @@ from model_fock_parf_multixi import (  # noqa: E402
     FockMultiXiPARFConfig,
     FockMultiXiPARFLM,
 )
+from model_fock_parf_v2 import _prefix_causal_creation_readout  # noqa: E402
 
 DEFAULT_LOGFREQ_PATH = SCRIPT_DIR / "results" / "logfreq_surprisal_tinystories.npy"
+
+# Score ceiling used by the prefix-causal readout, read off the model so the
+# diagnostic cannot silently drift from the arithmetic it is measuring.
+PREFIX_SCORE_CLAMP = (
+    inspect.signature(_prefix_causal_creation_readout).parameters["clamp"].default
+)
 
 
 def _pick_device() -> str:
@@ -93,24 +107,48 @@ def compute_creation_alpha(
 
     Returns (alpha, r_new_content, alpha_max) where alpha is (B, M, T).
     Handles both v2 (shared W_K, scalar tau) and v2.1 (per-register W_K, per-register tau).
+
+    Two register layouts are supported:
+
+      * legacy — ``r`` is (B, M, d), one bank per sequence.  Every register
+        queries every token, giving the (B, M, T) score matrix directly.
+      * prefix-causal (``cfg.prefix_causal_registers``) — ``r`` is
+        (B, Tr, M, d) with Tr in {1, T}, one bank per position.  The gate
+        scores token t with the query as of position t, so the scores are
+        the DIAGONAL of the full matrix.  The prefix softmax at the final
+        position spans the whole sequence, which is what the legacy path
+        reports, so evaluating there keeps the metrics on the same scale as
+        the Q0/Q6 reference values.
     """
     gate = model.creation_gate_qkv
     B, T, d = h.shape
     M = cfg.n_registers
     d_k = cfg.d_k
 
-    Q = torch.einsum("bmd,mdk->bmk", r, gate.W_Q)  # (B, M, d_k)
-
     per_register_keys = getattr(gate, "per_register_keys", False)
-    if per_register_keys:
-        K = torch.einsum("btd,mdk->bmtk", h, gate.W_K)  # (B, M, T, d_k)
-        scores = torch.einsum("bmk,bmtk->bmt", Q, K)
+    prefix_causal = r.dim() == 4
+
+    if prefix_causal:
+        Q = torch.einsum("btmd,mdk->btmk", r, gate.W_Q)  # (B, Tr, M, d_k)
+        if Q.shape[1] == 1:
+            Q = Q.expand(B, T, M, d_k)
+        if per_register_keys:
+            K = torch.einsum("btd,mdk->btmk", h, gate.W_K)   # (B, T, M, d_k)
+            scores = (Q * K).sum(-1).permute(0, 2, 1)        # (B, M, T)
+        else:
+            K = gate.W_K(h)                                   # (B, T, d_k)
+            scores = torch.einsum("btmk,btk->btm", Q, K).permute(0, 2, 1)
     else:
-        K = gate.W_K(h)  # (B, T, d_k)
-        scores = torch.bmm(
-            Q.reshape(B * M, 1, d_k),
-            K.unsqueeze(1).expand(B, M, T, d_k).reshape(B * M, d_k, T),
-        ).reshape(B, M, T)
+        Q = torch.einsum("bmd,mdk->bmk", r, gate.W_Q)  # (B, M, d_k)
+        if per_register_keys:
+            K = torch.einsum("btd,mdk->bmtk", h, gate.W_K)  # (B, M, T, d_k)
+            scores = torch.einsum("bmk,bmtk->bmt", Q, K)
+        else:
+            K = gate.W_K(h)  # (B, T, d_k)
+            scores = torch.bmm(
+                Q.reshape(B * M, 1, d_k),
+                K.unsqueeze(1).expand(B, M, T, d_k).reshape(B * M, d_k, T),
+            ).reshape(B, M, T)
 
     if gate.log_tau is not None:
         tau = gate.log_tau.exp().clamp(min=1e-4)
@@ -121,9 +159,18 @@ def compute_creation_alpha(
     else:
         scores = scores / (d_k ** 0.5)
 
+    if prefix_causal:
+        # Mirror the saturating constant shift the model applies before the
+        # exp.  The shift itself cancels in the softmax, but the clamp does
+        # not: it ties scores above the ceiling, and that shows up as higher
+        # entropy exactly in the sharply-routed regime this eval is looking
+        # for.  Reporting the distribution the model really uses beats
+        # reporting a cleaner one it does not.
+        scores = scores.float().clamp(max=PREFIX_SCORE_CLAMP)
+
     alpha = F.softmax(scores, dim=-1)  # (B, M, T)
 
-    V = gate.W_V(h)  # (B, T, d)
+    V = gate.W_V(h).to(alpha.dtype)  # (B, T, d)
     r_new = torch.bmm(
         alpha.reshape(B * M, 1, T),
         V.unsqueeze(1).expand(B, M, T, d).reshape(B * M, T, d),
@@ -233,8 +280,15 @@ def print_summary(diag: dict, cfg: FockMultiXiPARFConfig) -> None:
     diversity = diag["diversity_per_layer"]
     L = cfg.L
 
+    prefix_causal = (
+        cfg.fock_version == "v2"
+        and getattr(cfg, "prefix_causal_registers", False)
+    )
+
     print("\n" + "=" * 78)
     print(" Fock v2 Register Diagnostics — Per-Layer Summary")
+    if prefix_causal:
+        print(" (prefix-causal registers: metrics read at the final position)")
     print("=" * 78)
     print(f"{'Layer':>6s}  {'Entropy':>10s}  {'alpha_max':>10s}  {'Diversity':>10s}")
     print("-" * 78)
@@ -309,6 +363,9 @@ def save_outputs(
             "fock_version": cfg.fock_version,
             "xi_channels": cfg.xi_channels,
             "d_k": cfg.d_k,
+            "prefix_causal_registers": bool(
+                getattr(cfg, "prefix_causal_registers", False)
+            ),
         }, f, indent=2)
     print(f"Saved: {json_path}")
 
