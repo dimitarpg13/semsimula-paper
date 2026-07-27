@@ -967,6 +967,28 @@ def main():
             print(f"[fock-multixi-parf] checkpoint saved @ step {step+1}")
 
     log_f.close()
+
+    # `loss_history` only covers evals since the last process start: on a
+    # resumed run (Colab timeout, OOM, etc.) it restarts empty because the
+    # periodic checkpoint carries model/optim state but not this list. The
+    # JSONL log is opened in append mode across resumes, though, so it holds
+    # every eval from step 0 regardless of how many times the run restarted.
+    # Rebuild from there (deduped by step, since a resume re-evaluates at
+    # its start step) so the final plot and checkpoint always cover the
+    # whole run, not just the last segment. The train-loss slot is not
+    # recoverable from an eval record and is unused by the plot below, so
+    # it is left as NaN rather than faked.
+    _val_by_step: dict[int, float] = {}
+    with log_path.open() as _lf:
+        for _line in _lf:
+            _rec = json.loads(_line)
+            if "val_ppl" in _rec:
+                _val_by_step[_rec["step"]] = _rec["val_loss"]
+    if _val_by_step:
+        loss_history = [
+            (s, float("nan"), _val_by_step[s]) for s in sorted(_val_by_step)
+        ]
+
     final_val = evaluate(model, val_ids,
                          train_cfg["eval_iters"],
                          train_cfg["batch_size"],
