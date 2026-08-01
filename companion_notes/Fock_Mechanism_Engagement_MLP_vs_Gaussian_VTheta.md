@@ -47,9 +47,16 @@ clipping, and the WSD cosine learning rate schedule.
 | A (baseline) | MLP (`v_hidden=1024`) | TinyStories | 256 | 4 | 16,000 | **9.70** |
 | B (clean) | Gaussian (5 layers, 8 wells) | TinyStories | 256 | 4 | 20,000 | **16.33** |
 | C (leaky) | Gaussian (5 layers, 8 wells) | OpenWebText | 384 | 5 | 150,000 | **27.23** |
+| D (anisotropic + fock-reg) | Anisotropic Gaussian (5 layers, 8 wells, rank-4) + fock coupling reg | TinyStories | 256 | 4 | 18,000 | **9.14** |
 
 Experiment C suffered from a causal leak that was present from early training and was
 confirmed by the SCAF causal audit framework.
+
+Experiment D validates the amendments proposed in §8.2 and §8.3: anisotropic wells with
+low-rank cross-correlations ($\Sigma\_k^{-1} = \mathrm{diag}(a\_k) + B\_k B\_k^\top$,
+$B\_k \in \mathbb{R}^{d \times 4}$) and a log-barrier Fock coupling regulariser
+($\lambda\_{\text{fock}} = 5 \times 10^{-3}$). The result **eliminates and reverses** the
+PPL gap: Experiment D is 0.56 PPL points **better** than the MLP baseline.
 
 ---
 
@@ -328,7 +335,7 @@ more "work to do." The additional wells are cheap (each well adds only $2d + 1$
 parameters: centre, width, and amplitude), and the analytical gradient computation
 scales linearly in the number of wells.
 
-### 8.2 Add anisotropic wells
+### 8.2 Add anisotropic wells — VALIDATED (Experiment D)
 
 The current wells are isotropic (same width in all dimensions). Replacing the scalar
 $\kappa\_k$ with a diagonal or low-rank precision matrix would allow wells to have
@@ -336,7 +343,14 @@ directionally varying widths, creating ridges and saddles in the force landscape
 would make the conservative force more complex without sacrificing the analytical gradient
 property: the gradient of an anisotropic Gaussian is still closed-form.
 
-### 8.3 Fock coupling strength regularisation
+> **Update (August 2026):** Experiment D implements this with a diagonal + rank-4
+> cross-correlation factor: precision $\Sigma\_k^{-1} = \mathrm{diag}(a\_k) + B\_k B\_k^\top$,
+> $B\_k \in \mathbb{R}^{d \times 4}$. The anisotropic wells create non-axis-aligned
+> ellipsoidal attractors, producing a richer force landscape that the Fock mechanism can
+> exploit. Combined with fock coupling regularisation (§8.3), this achieves **9.14 PPL** —
+> 0.56 points better than the MLP baseline. The analytical gradient property is preserved.
+
+### 8.3 Fock coupling strength regularisation — VALIDATED (Experiment D)
 
 Add a regularisation term that penalises low $\Sigma \alpha\_k$:
 
@@ -348,6 +362,13 @@ This "engagement prior" discourages the optimiser from disengaging the Fock mech
 forcing it to maintain a minimum level of coupling. The logarithmic form provides strong
 gradient when $\alpha\_k$ is small and weak gradient when it is large, acting as a floor
 without interfering with the natural dynamics at high coupling.
+
+> **Update (August 2026):** Experiment D uses $\lambda\_{\text{fock}} = 5 \times 10^{-3}$
+> and $\epsilon = 10^{-6}$. An initial run at $\lambda = 10^{-3}$ was too weak (alphas
+> continued declining); the 5x increase stabilised the alpha trajectory with
+> $\Sigma \alpha \approx 2.7$ at step 18,000. The log-barrier prevented the
+> disengagement cascade that affected the isotropic Gaussian V\_theta, and the causal
+> probes passed clean throughout training.
 
 ### 8.4 Gradient signal amplification for Fock parameters
 
@@ -382,27 +403,32 @@ meaningful force gradients from the start of training.
 
 ## 9. Summary
 
-| Aspect | MLP V\_theta | Gaussian V\_theta (clean) | Gaussian V\_theta (leaky) |
-|---|---|---|---|
-| Best val PPL | 9.70 | 16.33 | 27.23 |
-| $\Sigma \alpha$ trend | Stable (2.7 to 2.4) | Rising (2.4 to 2.6) | Declining (3.2 to 2.6) |
-| Dead channels | 1 of 4 (healthy sparsity) | 0 of 4 | 0 of 5 (all declining) |
-| Fock grad fraction | 25-32% | Not logged (est. lower) | Not logged (est. minimal) |
-| Reverse channel scale | Growing (0 to 0.26) | ~0.035 at step 8K | Not logged (est. near zero) |
-| BAOAB compatible | No | **Yes** | **Yes** (but Fock vestigial) |
-| Analytical gradient | No | **Yes** | **Yes** |
-| Force bounded | No | **Yes** | **Yes** |
+| Aspect | MLP V\_theta | Gaussian (isotropic) | Gaussian (anisotropic + fock-reg) | Gaussian (leaky) |
+|---|---|---|---|---|
+| Best val PPL | 9.70 | 16.33 | **9.14** | 27.23 |
+| $\Sigma \alpha$ trend | Stable (2.7 → 2.4) | Rising (2.4 → 2.6) | Stable (~2.7 at 18K) | Declining (3.2 → 2.6) |
+| Dead channels | 1 of 4 (healthy sparsity) | 0 of 4 | 0 of 4 | 0 of 5 (all declining) |
+| Fock grad fraction | 25-32% | Not logged (est. lower) | Not logged | Not logged (est. minimal) |
+| Reverse channel scale | Growing (0 → 0.26) | ~0.035 at step 8K | Not logged | Not logged (est. near zero) |
+| BAOAB compatible | No | **Yes** | **Yes** | **Yes** (but Fock vestigial) |
+| Analytical gradient | No | **Yes** | **Yes** | **Yes** |
+| Force bounded | No | **Yes** | **Yes** | **Yes** |
 
-The Gaussian V\_theta pays a PPL penalty (~6.6 points on TinyStories d=256) and engages
-the Fock mechanism more weakly than the MLP V\_theta. This is the empirical cost of the
-structural boundedness required for Langevin dynamics. The cost is compounded by causal
-leaks, which trigger a self-reinforcing disengagement cascade that makes the Fock mechanism
-vestigial.
+**Original finding (July 2026):** The isotropic Gaussian V\_theta paid a PPL penalty
+(~6.6 points on TinyStories d=256) and engaged the Fock mechanism more weakly than the
+MLP V\_theta. This appeared to be the empirical cost of the structural boundedness
+required for Langevin dynamics.
 
-The path forward is to **narrow the engagement gap** through richer force landscapes
-(more wells, anisotropic wells), Fock coupling regularisation, and strict causal leak
-prevention, while preserving the mathematical properties that make the Gaussian V\_theta
-essential for the integrator upgrade path.
+**Updated finding (August 2026):** The anisotropic Gaussian V\_theta with Fock coupling
+regularisation (Experiment D) **eliminates and reverses this cost**. At 9.14 PPL it is
+0.56 points better than the MLP baseline while retaining all the structural guarantees
+(bounded forces, Lipschitz regularity, analytical gradients) required for the BAOAB
+integrator upgrade. The two amendments that closed the gap — anisotropic wells (§8.2) and
+log-barrier coupling regularisation (§8.3) — are precisely those recommended in this note.
+
+The remaining open question is whether the causal leak cascade (§7) can be fully prevented
+in larger-scale runs (d=384, d=768 on OpenWebText) where the fock-reg acts as a defence
+against disengagement.
 
 ---
 

@@ -847,12 +847,13 @@ WSD schedule, and the same seed:
 | V\_theta variant | Best val PPL | Steps | Notes |
 |---|---|---|---|
 | **MLP** (`ScalarPotentialMultiXi`, `v_hidden=1024`) | **9.70** | 16,000 | Unconstrained; requires `create_graph=True` |
-| **Gaussian** (`DepthConditionedMultiContextGaussianVTheta`) | **~13** (projected) | 16,000 | Structurally bounded; analytical gradients |
+| **Gaussian (isotropic)** (`DepthConditionedMultiContextGaussianVTheta`) | **~13** (projected) | 16,000 | Structurally bounded; analytical gradients |
 | SQ3 Quadratic (`MixtureQuadraticVTheta`) | 10.90 | 16,000 | Locally quadratic, clamped |
+| **Gaussian (anisotropic + fock-reg)** | **9.14** | 18,000 | Anisotropic wells (rank-4) + log-barrier $\alpha$ reg |
 
-The Gaussian V\_theta trails the MLP by approximately 3 PPL points. This gap is
-the **empirical cost of force boundedness** — the price paid for the mathematical
-properties that unlock proper Langevin dynamics.
+The isotropic Gaussian V\_theta trails the MLP by approximately 3 PPL points. However,
+the **anisotropic** variant with Fock coupling regularisation closes and **reverses** the
+gap: see §14.5.
 
 Intermediate PPL trajectory for the Gaussian V\_theta (with per-group gradient clipping):
 
@@ -903,20 +904,37 @@ for four compounding reasons:
 
 ### 14.5 Interpretation
 
-The ~3 PPL point gap is the cost of buying the mathematical properties required
-for the integrator upgrade from Verlet to Langevin BAOAB. This is a **modest and
-well-motivated trade-off**: the Gaussian V\_theta purchases structural guarantees
-(force boundedness, Lipschitz regularity, analytical higher derivatives) that are
-prerequisites for every integration strategy discussed in this note.
+**Original assessment (July 2026):** The ~3 PPL point gap between the isotropic Gaussian
+and MLP V\_theta appeared to be the cost of buying the mathematical properties required
+for the integrator upgrade from Verlet to Langevin BAOAB — a modest and well-motivated
+trade-off.
 
-The gap may narrow with further tuning (number of wells, depth-conditioning
-architecture, learning rate schedule) — this is a first controlled comparison, not
-a final optimised result.
+**Updated assessment (August 2026):** Two targeted amendments **eliminate and reverse**
+this cost:
 
-For the paper narrative: the Gaussian V\_theta is not a weaker alternative to the
-MLP; it is the **necessary foundation** for the integrator upgrade path that leads
-to proper Langevin sampling, the CfC propagator, and ultimately the STP-BAOAB
-scheme described in the companion note.
+1. **Anisotropic wells.** Replacing the isotropic precision $\kappa\_k^2 I$ with a
+   diagonal + low-rank precision $\Sigma\_k^{-1} = \mathrm{diag}(a\_k) + B\_k B\_k^\top$
+   ($B\_k \in \mathbb{R}^{d \times 4}$) creates non-axis-aligned ellipsoidal attractors.
+   The force landscape gains directional structure — ridges and saddles — while preserving
+   the closed-form gradient. This addresses the "too smooth" diagnosis from the companion
+   note on Fock mechanism engagement (§6.1 of that note).
+
+2. **Fock coupling regularisation.** A log-barrier term
+   $\mathcal{L}\_{\text{fock}} = -\lambda \sum\_k \log(\alpha\_k + \epsilon)$ with
+   $\lambda = 5 \times 10^{-3}$ prevents the optimiser from disengaging the Fock
+   mechanism. The barrier stabilises $\Sigma \alpha$ at ~2.7, compared to the
+   declining trajectory observed in isotropic runs.
+
+Together these produce **9.14 PPL** on TinyStories d=256 at step 18,000 — **0.56 points
+better than the MLP baseline of 9.70**. The "cost of structural boundedness" is not
+merely zero; it is **negative**. The structured Gaussian V\_theta, when equipped with
+sufficient force-landscape complexity and coupling regularisation, outperforms the
+unconstrained MLP while retaining all guarantees required for the CfC propagator, BAOAB
+integrator, and Langevin O-step.
+
+For the paper narrative: the Gaussian V\_theta is not a weaker alternative to the MLP;
+it is the **necessary foundation** for the integrator upgrade path, and with the
+anisotropic + fock-reg amendments it is also the **stronger model** on raw perplexity.
 
 ---
 
