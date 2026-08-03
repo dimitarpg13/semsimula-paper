@@ -72,6 +72,12 @@ Under the **buggy v2 anchor**, the E4 / E5 empirical optimum of $\gamma^{\ast} =
 
 **Caveat.** The exponential-decay model assumes a *constant* effective Hessian eigenvalue across layers; in reality $\nabla^2 V_{\theta}$ varies layer-by-layer because $V_{\theta}$ is shared but $h_l, \xi_l$ change. Estimator §2.2 makes this explicit.
 
+**Important note on LayerNorm and effective damping.** The $\gamma$ in the formula above is the **explicit** (parametric) damping coefficient — the value set in `cfg.fixed_gamma` or learned via `raw_gamma`. When `cfg.ln_after_step = True` (the standard E5/E9/E10 configuration), LayerNorm re-projects $h$ to the sphere $\lVert h \rVert = \sqrt{d}$ after each Verlet step. This radial re-normalisation injects energy back into the system, acting as a **counter-damping** mechanism that substantially reduces the effective dissipation. The relationship between explicit and effective damping is (see §2.6 for full derivation):
+
+$$\gamma\_{\text{eff}} = \gamma - \frac{\delta V\_\ell}{2 T\_\ell \Delta t}$$
+
+where $\delta V\_\ell = V\_\theta(\mathrm{LN}(\tilde{h}\_\ell)) - V\_\theta(\tilde{h}\_\ell)$ is the per-layer energy injection and $T\_\ell = \frac{1}{2}m\lVert\delta\_\ell\rVert^2$ is the kinetic energy. Empirically, $\gamma\_{\text{eff}}$ is 5–7$\times$ smaller than the explicit $\gamma\_{\text{param}}$ in trained SPLM (e.g., $\gamma\_{\text{param}} = 0.93 \Rightarrow \gamma\_{\text{eff}} \approx 0.13$). The depth-scaling formula **implicitly absorbs** this counter-damping into the calibration constant $\rho$: because $\rho$ is anchored to empirical sweeps on models that already include LN-after-step, the formula correctly predicts the optimal **explicit** $\gamma$ without needing to model the LN effect separately. See §2.6 for the full discussion and companion note [`Damped_Riemannian_Geodesics_in_the_SPLM_family-Comparative_Analysis.md`](Damped_Riemannian_Geodesics_in_the_SPLM_family-Comparative_Analysis.md) for the derivation.
+
 **Pilot empirical validation (April 30, 2026, smoke run on the E9 SPLM checkpoint at γ = 0.30).** The depth formula at $\rho = 0.18$ predicts $\gamma^{\ast}_{\text{depth}} = 0.2987$, **agreeing with the trained γ = 0.30 to four decimal places**. This was the strongest a-priori validation of the framework prior to the leak fix.
 
 **Leak-free empirical validation (May 4, 2026, on the leak-free `leakfree_3seed/gamma0p10/seed0` SPLM-2 checkpoint).** The same depth formula at $\rho = 0.565$ predicts $\gamma^{\ast}_{\text{depth}} = 0.1051$, **agreeing with the trained γ = 0.10 to three decimal places** and falling firmly inside the S=5 confirmation flat-bottom basin $\gamma^{\ast} \in [0.10, 0.15]$. The closed form's *predictive content* therefore survives the leak fix as a structural double success at two distinct operating points; only the empirical calibration $\rho$ ($0.18 \to 0.565$) shifts. Source: `notebooks/conservative_arch/scaleup/gamma_transfer/results/leakfree_gamma0p10_seed0/predict_gamma_summary.md`.
@@ -219,6 +225,51 @@ This double match across the leak fix is structurally stronger evidence than eit
 
 **S=5 confirmation sweep canonical numbers.** Beyond the resonance-predictor double match, the second-order architectural lift was at $S = 3$ borderline-but-suggestive ($\overline{\Delta}\_{0.10} = +4.71$~PPL, $0.29$~PPL short of the pre-registered $\Delta\_{\min} = 5.0$~PPL); the $S = 5$ confirmation sweep at $\gamma \in \{0.05, 0.10, 0.15, 0.20\}$ confirms it at all four pre-registered decision criteria simultaneously: $\overline{\Delta}\_{0.10} = +5.09$~PPL ($p = 0.006$, $d\_z = +2.37$, sign $5/5$, all four ✓) and the largest paired effect at $\overline{\Delta}\_{0.15} = +7.03$~PPL ($p = 0.013$, $d\_z = +1.89$, sign $5/5$, all four ✓). The full table is at `notebooks/conservative_arch/ln_damping_sweep/results/leakfree_5seed_confirmation/RESULTS_CONFIRMATION_S5.md`.
 
+### 2.6 LayerNorm counter-damping and effective $\gamma$ (August 2, 2026)
+
+> **Cross-references:** [`Damped_Riemannian_Geodesics_in_the_SPLM_family-Comparative_Analysis.md`](Damped_Riemannian_Geodesics_in_the_SPLM_family-Comparative_Analysis.md) (full derivation), [`Determining_optimal_gamma_for_Fock-PARFLM.md`](Determining_optimal_gamma_for_Fock-PARFLM.md) (extended treatment for PARFLM/Fock).
+
+The four estimators above (§2.1–§2.4) all predict and discuss the **explicit** (parametric) $\gamma$ — the value that enters the Verlet denominator $1 + \Delta t \cdot \gamma$. However, when `cfg.ln_after_step = True` (the standard configuration for all E5+ experiments), the system experiences a substantially lower **effective** damping due to LayerNorm's energy injection. This subsection explains the mechanism, quantifies the effect, and clarifies why the depth-scaling formula remains valid despite this hidden counter-damping.
+
+**The mechanism.** After each damped Verlet step produces a candidate $\tilde{h}\_{\ell+1}$, LayerNorm re-normalises it to the sphere $\lVert h \rVert = \sqrt{d}$:
+
+$$h\_{\ell+1} = \mathrm{LN}(\tilde{h}\_{\ell+1}) = \sqrt{d} \cdot \frac{\tilde{h}\_{\ell+1} - \mu}{\sigma}$$
+
+where $\mu$ and $\sigma$ are the component-wise mean and standard deviation. This projection changes the potential energy without a corresponding change in velocity, introducing an energy injection:
+
+$$\delta V\_\ell = V\_\theta(\mathrm{LN}(\tilde{h}\_{\ell+1})) - V\_\theta(\tilde{h}\_{\ell+1})$$
+
+When the Verlet step moves $h$ away from a potential minimum (increasing $V$), LN's projection back toward the sphere typically reduces $V$, effectively "giving back" some of the potential energy that was spent as work against the particle's motion. This acts as a negative damping contribution.
+
+**The effective damping formula.** Accounting for this injection, the per-layer effective damping is (Equation 13 from the Riemannian geodesic analysis):
+
+$$\gamma\_{\text{eff}} = \gamma - \frac{\delta V\_\ell}{2 T\_\ell \Delta t}$$
+
+where $T\_\ell = \frac{1}{2} m \lVert \delta\_\ell \rVert^2$ is the per-layer kinetic energy (half-mass times velocity-squared). Since $\delta V\_\ell \gt 0$ in practice (LN almost always injects energy), $\gamma\_{\text{eff}} \lt \gamma$.
+
+**Empirical magnitude.** On a trained baseline SPLM with learned $\gamma\_{\text{param}} = 0.93$ (intended per-layer T-ratio $e^{-0.93} \approx 0.39$), the empirical T-ratio is $\approx 0.88$, giving $\gamma\_{\text{eff}} \approx 0.13$ — a **5–7$\times$ reduction**. The LayerNorm counter-damping accounts for $\sim85\%$ of the nominal friction, leaving the system effectively very lightly damped.
+
+This large discrepancy explains a recurring source of confusion: explicit $\gamma$ values of 0.10–0.30 might superficially appear to describe a "heavily damped" or "overdamped" system, but after LayerNorm counter-damping the effective dynamics are actually in the **lightly damped, near-geodesic** regime ($\gamma\_{\text{eff}} \approx 0.01\text{--}0.03$). The particle retains substantial momentum across layers, following nearly-great-circle arcs on the sphere with force-induced curvature providing directional changes for language modelling.
+
+**Why the depth-scaling formula (§2.1) is not invalidated.** The formula $\gamma^{\ast}\_{\text{depth}} = (m / L\Delta t) \ln(1/\rho)$ predicts the **explicit** $\gamma$ — and correctly so, because:
+
+1. The calibration constant $\rho$ is anchored to empirical sweeps on models with `ln_after_step = True`.
+2. Therefore $\rho$ implicitly incorporates the LN counter-damping: the "target KE retention" $\rho \approx 0.565$ is the retention under the *combined* system (friction + LN), not friction alone.
+3. As long as we apply the formula to architectures with the same LN configuration as the calibration sweep, the implicit absorption is exact.
+
+**When the implicit absorption breaks down.** The §2.1 formula (with its calibrated $\rho$) becomes unreliable when:
+
+- **LN is removed** (`cfg.ln_after_step = False`): the counter-damping channel disappears, and the same explicit $\gamma$ now produces much stronger effective damping. The calibration $\rho$ from LN-enabled sweeps no longer applies. (E4 = plain-Euler sweep without LN found a different optimal $\gamma$ than E5 = LN-after-step sweep.)
+- **Architecture changes the LN effect magnitude**: in PARFLM / Fock-PARFLM, the pair forces and reverse channel alter the kinetic energy budget, changing $T\_\ell$ and hence the LN counter-damping ratio $\delta V\_\ell / (2T\_\ell \Delta t)$. This is why the SPLM $\rho = 0.565$ does not transfer directly to Fock-PARFLM (see companion note `Determining_optimal_gamma_for_Fock-PARFLM.md` for the extended multi-channel predictor).
+- **Dimension $d$ changes significantly**: LN's radial projection injects energy proportional to the angular deviation, which scales with $1/\sqrt{d}$ relative to the sphere radius. At lower $d$, LN counter-damps more aggressively, demanding higher explicit $\gamma$ to compensate. The empirical evidence: Fock-PARFLM at $d = 384$ needs $\gamma = 0.25$, while $d = 768$ needs only $\gamma = 0.05$.
+
+**Practical implications.**
+
+1. **Do not interpret explicit $\gamma$ as the physical damping.** The system with $\gamma = 0.10$ and `ln_after_step = True` has effective damping $\gamma\_{\text{eff}} \approx 0.01\text{--}0.02$, not $0.10$.
+2. **Comparing $\gamma$ across architectures is only valid within the same LN regime.** The $\gamma^{\ast} = 0.10$ for SPLM (at $d = 256$, $L = 8$) and the $\gamma^{\ast} = 0.25$ for Fock-PARFLM (at $d = 384$, $L = 8$) converge to similar $\gamma\_{\text{eff}} \approx 0.02$ after accounting for their different LN counter-damping magnitudes.
+3. **The §2.1 formula remains the recommended predictor** for any architecture within the same LN regime. When crossing regimes (removing LN, changing $d$ substantially, adding new energy channels), use the extended formula from `Determining_optimal_gamma_for_Fock-PARFLM.md`.
+4. **Measuring $\gamma\_{\text{eff}}$ directly** is straightforward: run one eval batch with diagnostics, measure the T-ratio (kinetic energy at layer $\ell+1$ / kinetic energy at layer $\ell$), and compute $\gamma\_{\text{eff}} = -\ln(\text{T-ratio}) / \Delta t$. This is done automatically by the Riemannian geodesic diagnostic battery (Arm 2).
+
 ---
 
 ## 3. Reconciliation framework
@@ -275,6 +326,8 @@ This suggests $\gamma$ behaves like a **bias-variance regulariser parameter**: s
 3. **Question-type conditional $\gamma$ (§2.4).** Is the difference between recall- and generation-mode $\gamma^{\ast}$ large enough (≥ 0.1 on the Tiny-Shakespeare scale) to motivate the architectural lift?
 4. **Cross-architecture generalisability.** Do the four estimators predict $\gamma^{\ast}$ for SPLM-style modifications of *attention* transformers (e.g., inserting damped Euler steps between attention blocks)?
 5. **Connection to learning-rate $\eta$.** The damping $\gamma$ acts as a per-layer-step LR-like quantity. Is there a regime where $\gamma$ should track $\eta$ during training, rather than be fixed across the schedule?
+6. **LayerNorm counter-damping budget as a predictor.** Can $\gamma\_{\text{eff}}$ (measured from a short probe run via T-ratio diagnostics) be used directly as a calibration input for the depth-scaling formula? Specifically: if we define $\rho\_{\text{eff}} = e^{-\gamma\_{\text{eff}} L \Delta t / m}$ as the "effective retention", is there a universal target $\rho\_{\text{eff}}^{\ast}$ (independent of LN regime) that the trained model converges to? If so, the predictor becomes architecture-independent: measure $\gamma\_{\text{LN}}$ from one eval batch, then set $\gamma\_{\text{explicit}} = \gamma\_{\text{eff}}^{\ast} + \gamma\_{\text{LN}}$ where $\gamma\_{\text{eff}}^{\ast} = (m / L\Delta t) \ln(1/\rho\_{\text{eff}}^{\ast})$.
+7. **Dimension-dependence of LN counter-damping.** The LN energy injection $\delta V\_\ell$ depends on $d$ (higher $d$ = smaller angular deviation per normalisation step = less injection). Is there a closed-form scaling law $\gamma\_{\text{LN}} \propto d^{-\alpha}$ that can be calibrated from a small number of probes?
 
 ---
 
@@ -319,5 +372,7 @@ For the standard setup ($m \approx 1.47$, $\Delta t = 1$, leak-free):
 This is the §2.1 closed form at $\rho = 0.565$ (leak-free reanchoring; see §2.5 for derivation). It matches the leak-free E5 retrain at $L = 8$ to three decimal places and supersedes the buggy v2 default rule at $\rho = 0.18$ (right column, retained for diff-reading convenience).
 
 **Note on causal honesty.** Using the leak-free default rule on a *leak-trained* SPLM checkpoint is incoherent — the buggy integrator's $\rho \approx 0.18$ is a different operating point than the leak-corrected integrator's $\rho \approx 0.565$. The recommended pipeline is: (i) confirm `cfg.causal_force = True` in your training config, (ii) train at the leak-free default $\gamma$ above, (iii) optionally refine with the §2.2 Hessian estimator on the resulting checkpoint.
+
+**Note on explicit vs effective $\gamma$.** The values in the table above are **explicit** $\gamma$ (the value set in `cfg.fixed_gamma`). When `cfg.ln_after_step = True` (the standard configuration), the effective damping experienced by the hidden state is 5–7$\times$ smaller due to LayerNorm counter-damping (see §2.6). For example, the leak-free default $\gamma = 0.10$ at $L = 8$ produces an effective damping of only $\gamma\_{\text{eff}} \approx 0.01\text{--}0.02$ — the system is lightly damped in the near-geodesic regime, not moderately damped as the explicit value might suggest. When comparing across architectures or LN configurations, always account for this distinction (see companion note [`Determining_optimal_gamma_for_Fock-PARFLM.md`](Determining_optimal_gamma_for_Fock-PARFLM.md) for the multi-architecture treatment).
 
 If you have one trained checkpoint, run `predict_gamma_hessian.py --mode shakespeare --logfreq-path <your_logfreq>.npy` and use $\gamma^{\ast}_{\text{Hessian, avg}}$ as a *consistency check* — it will be an upper bound on the true optimum but will scale correctly with the corpus.
