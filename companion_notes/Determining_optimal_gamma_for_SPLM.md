@@ -84,7 +84,7 @@ where $\delta V\_\ell = V\_\theta(\mathrm{LN}(\tilde{h}\_\ell)) - V\_\theta(\til
 
 ### 2.2 Hessian-spectrum critical damping ($\gamma^{\ast}_{\text{Hessian}}$)
 
-**Idea.** Near each attractor, the layer-step is a damped harmonic oscillator with stiffness $\lambda_H = $ dominant Hessian eigenvalue of $V_{\theta}$ at the local hidden state. **Critical damping** (fastest convergence without oscillation) is
+**Idea.** Near each attractor, the layer-step is a damped harmonic oscillator with stiffness $\lambda_H =$ dominant Hessian eigenvalue of $V_{\theta}$ at the local hidden state. **Critical damping** (fastest convergence without oscillation) is
 
 $$\gamma_c = 2\sqrt{\lambda_H/m}.$$
 
