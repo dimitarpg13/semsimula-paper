@@ -303,7 +303,7 @@ rules approach the continuous flow and the ansatz is tight for
 both, or (b) upgrade the ansatz to a two-point form matching the
 integrator.
 
-### 5.3 The token-axis shared-$V_\psi$ fit is where the Verlet advantage shows up cleanly
+### 5.3 The token-axis shared- $V_\psi$ fit is where the Verlet advantage shows up cleanly
 
 The token axis is not touched by the integrator in the same way the
 depth axis is — the integrator does not generate a one-step map
