@@ -195,13 +195,13 @@ differing only in integrator settings:
 After training, we extracted trajectories for all checkpoints and ran
 both parent diagnostics used elsewhere in the paper:
 
-- **Depth-axis shared-$V_\psi$ fit** (paper §14.2).  Ansatz
+- **Depth-axis shared- $V_\psi$ fit** (paper §14.2).  Ansatz
   $\Delta h_\ell \approx \alpha_\ell v_\ell - \beta_\ell \nabla V_\psi(h_\ell)$
   pooled across every layer $\ell \geq 1$, every token, every
   training sentence; test on held-out sentences.  $R^2$ near 1 means
   "the trajectory really does behave like motion in a single scalar
   potential".
-- **Token-axis shared-$V_\psi$ fit.** Same ansatz but along the
+- **Token-axis shared- $V_\psi$ fit.** Same ansatz but along the
   autoregressive token axis at fixed layer.  This is the "natural time
   axis" of the decoder.
 
