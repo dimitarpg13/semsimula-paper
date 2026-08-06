@@ -269,7 +269,7 @@ artefacts of a particular integrator choice.
 
 ### 5.2 The depth-axis shared-$V_\psi$ fit has an integrator-bias artefact at coarse $\Delta t$
 
-This was the surprise of the study.  The paper's shared-$V_\psi$ fit
+This was the surprise of the study.  The paper's shared-$V_{\psi}$ fit
 asks: can a *single* scalar $V_\psi$ explain the layer-wise dynamics
 as $\Delta h_\ell = \alpha_\ell v_\ell - \beta_\ell \nabla V_\psi(h_\ell)$?
 This ansatz is **one-step pointwise in $h_\ell$**: it evaluates the
