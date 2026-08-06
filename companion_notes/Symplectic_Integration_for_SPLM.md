@@ -267,7 +267,7 @@ the parameter regime this paper uses.  This is a useful calibration
 — it means the perplexity numbers reported in the paper are not
 artefacts of a particular integrator choice.
 
-### 5.2 The depth-axis shared - $V_\psi$ fit has an integrator-bias artefact at coarse $\Delta t$
+### 5.2 The depth-axis shared \-$V_\psi$ fit has an integrator-bias artefact at coarse $\Delta t$
 
 This was the surprise of the study.  The paper's shared - $V_\psi$ fit
 asks: can a *single* scalar $V_\psi$ explain the layer-wise dynamics
