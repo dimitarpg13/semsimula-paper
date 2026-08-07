@@ -173,7 +173,7 @@ shortcut provides a cheaper route to low loss.
 The four-panel figure below shows the alpha evolution for all three experiments, plus the
 Fock gradient fraction and reverse channel scale for the MLP run:
 
-![Fock mechanism engagement: MLP vs Gaussian V_theta — four-panel comparison of per-channel alpha evolution, including the leaky Gaussian case and the MLP Fock gradient and reverse channel diagnostics](fock_engagement_mlp_vs_gaussian_vtheta.png)
+![Fock mechanism engagement: MLP vs Gaussian V_theta — four-panel comparison of per-channel alpha evolution, including the leaky Gaussian case and the MLP Fock gradient and reverse channel diagnostics](figures/fock_engagement_mlp_vs_gaussian_vtheta.png)
 
 The contrast between the top-right panel (clean Gaussian, rising alpha\_3) and the
 bottom-left panel (leaky Gaussian, all channels declining) illustrates the destructive
@@ -181,7 +181,7 @@ effect of a causal leak on Fock engagement.
 
 ### 5.2 PPL trajectories and aggregate coupling strength
 
-![PPL trajectories and sum-of-alpha comparison for MLP, Gaussian, and SQ3 V_theta variants, showing the PPL gap and the monotone decline of coupling strength in the leaky case](ppl_and_alpha_sum_comparison.png)
+![PPL trajectories and sum-of-alpha comparison for MLP, Gaussian, and SQ3 V_theta variants, showing the PPL gap and the monotone decline of coupling strength in the leaky case](figures/ppl_and_alpha_sum_comparison.png)
 
 The left panel shows the PPL gap between the V\_theta variants. The right panel shows the
 aggregate coupling strength $\Sigma \alpha\_k$: the clean MLP run (blue) maintains high
@@ -190,7 +190,7 @@ coupling, the clean Gaussian run (red) shows rising coupling, and the leaky Gaus
 
 ### 5.3 Capability trade-off matrix
 
-![Bar chart comparing MLP and Gaussian V_theta across eight capability dimensions: analytical gradients, force boundedness, Lipschitz regularity, cheap backprop, Hessian availability, Fock coupling strength, PPL performance, and BAOAB compatibility](vtheta_capability_tradeoff.png)
+![Bar chart comparing MLP and Gaussian V_theta across eight capability dimensions: analytical gradients, force boundedness, Lipschitz regularity, cheap backprop, Hessian availability, Fock coupling strength, PPL performance, and BAOAB compatibility](figures/vtheta_capability_tradeoff.png)
 
 The Gaussian V\_theta provides all the mathematical prerequisites for the Langevin/BAOAB
 integrator upgrade (left five bars), while the MLP V\_theta excels on the empirical metrics
@@ -198,7 +198,7 @@ integrator upgrade (left five bars), while the MLP V\_theta excels on the empiri
 
 ### 5.4 Causal leak impact on the Fock mechanism
 
-![Diagram and alpha comparison showing how a causal leak propagates through corrupted gradients to disengage the Fock reverse channel, resulting in monotone alpha decline](causal_leak_fock_impact.png)
+![Diagram and alpha comparison showing how a causal leak propagates through corrupted gradients to disengage the Fock reverse channel, resulting in monotone alpha decline](figures/causal_leak_fock_impact.png)
 
 ---
 
