@@ -560,10 +560,13 @@ dimension 1.
 ![Position-dependent gamma architecture](figures/position_dependent_gamma_architecture.png)
 
 **Figure 5.** Architecture diagram showing position-dependent gamma
-integrated into the velocity-Verlet layer stack. At each layer
-transition, the current hidden state $h^{(\ell)}$ feeds both the force
-computation and the gamma network. The gamma network output enters the
-Verlet denominator as a per-token damping factor.
+integrated into the velocity-Verlet layer stack. Each velocity-Verlet
+integrator step nests the gamma network, the three force terms
+(conservative, pair, damping), the summation, and the velocity/position
+updates. The state $(h^{(\ell)}, v^{(\ell)})$ passed between steps is a
+plain label, not a separate functional block. Each integrator step
+consumes
+$(h^{(\ell)}, v^{(\ell)})$ and produces $(h^{(\ell+1)}, v^{(\ell+1)})$.
 
 ---
 
