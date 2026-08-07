@@ -86,13 +86,13 @@ flowchart TB
     Tokens["token states h at layer l"]
     Registers["global register state r from layer l minus 1"]
     Creation["creation gate QKV"]
-    RCausal["r causal per position (prefix values)"]
-    RContent["r new content (LAST position readout, full window)"]
-    Salience["salience via alpha max (full window)"]
-    Extended["extended state concat tokens then registers"]
-    Verlet["Verlet step V theta plus V phi"]
+    RCausal["r causal per position — prefix values"]
+    RContent["r new content — LAST position readout, full window"]
+    Salience["salience via alpha max — full window"]
+    Extended["extended state: concat tokens then registers"]
+    Verlet["Verlet step: V theta + V phi"]
     NewTokens["new token states"]
-    NewRegisters["new register states (saw all tokens)"]
+    NewRegisters["new register states — saw all tokens"]
     Reverse["reverse channel force on tokens"]
     NextLayer["register state to layer l plus 1"]
 
@@ -183,11 +183,11 @@ is a path from future tokens to an earlier token's logits:
 ```mermaid
 flowchart TB
     Future["future tokens x at positions greater than t"]
-    Summary["global register summary at layer l (sees whole window)"]
+    Summary["global register summary at layer l — sees whole window"]
     RState["register state r into layer l plus 1"]
     Query["creation queries Q from r"]
     Weights["readout weights at position t"]
-    RCausalT["r causal at position t (prefix values, future reweighted)"]
+    RCausalT["r causal at position t — prefix values, future reweighted"]
     Force["reverse channel force on token t"]
     Logit["logit at position t"]
 
@@ -471,7 +471,7 @@ the slot read by an earlier token.
 flowchart TB
     PastTok["tokens x at positions up to t"]
     FutureTok["future tokens x after t"]
-    RSlotT["register slot at position t (prefix only)"]
+    RSlotT["register slot at position t — prefix only"]
     RSlotFuture["register slots at positions after t"]
     QueryT["diagonal query at position t"]
     ForceT["reverse force on token t"]
