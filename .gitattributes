@@ -154,3 +154,5 @@ companion_notes/Deep_Dive_in_the_SPLM_model_and_code.docx filter=lfs diff=lfs me
 companion_notes/Deep_Dive_in_the_SPLM_model_and_code.pdf filter=lfs diff=lfs merge=lfs -text
 companion_notes/figures/causal_leak_fock_impact.png filter=lfs diff=lfs merge=lfs -text
 companion_notes/figures/fock_engagement_mlp_vs_gaussian_vtheta.png filter=lfs diff=lfs merge=lfs -text
+companion_notes/figures/position_dependent_gamma_architecture.png filter=lfs diff=lfs merge=lfs -text
+companion_notes/figures/position_dependent_gamma_landscape.png filter=lfs diff=lfs merge=lfs -text
