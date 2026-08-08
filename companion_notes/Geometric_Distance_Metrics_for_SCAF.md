@@ -32,31 +32,31 @@ The Semantic Simulation framework equips the hidden-state space with a **Riemann
 
 ### 2.1 The Jacobi metric and conformal flatness
 
-The SPLM-family Lagrangian $\mathcal{L} = T - V = \frac{1}{2}m\|\dot h\|^2 - V_\theta(h)$ induces the Jacobi metric:
+The SPLM-family Lagrangian $\mathcal{L} = T - V = \frac{1}{2}m\lVert\dot h\rVert^2 - V_\theta(h)$ induces the Jacobi metric:
 
 $$\tilde g_{ij}(h) = 2(E - V_\theta(h)) \cdot m \cdot \delta_{ij}$$
 
 This is **conformally flat**: $\tilde g = \Omega^2 g$ where $g_{ij} = \delta_{ij}$ is the flat Euclidean metric and $\Omega^2(h) = 2(E - V_\theta(h))m$ is a scalar conformal factor that varies with position. In the damped case (the actual operating regime), the layer-dependent version uses kinetic energy:
 
-$$\Omega_\ell^2 = 2 T_\ell \cdot m = m^2 \|\dot h_\ell\|^2$$
+$$\Omega_\ell^2 = 2 T_\ell \cdot m = m^2 \lVert\dot h_\ell\rVert^2$$
 
 confirmed positive at 100% of positions by Diagnostic Battery Arm 1.
 
 ### 2.2 Why cosine similarity is the conformally correct angular metric
 
-For any conformal rescaling $\tilde g = \Omega^2 g$, the inner product and norms rescale as $\langle u,v\rangle_{\tilde g} = \Omega^2 \langle u,v\rangle_g$ and $\|u\|_{\tilde g} = \Omega\|u\|_g$. Therefore:
+For any conformal rescaling $\tilde g = \Omega^2 g$, the inner product and norms rescale as $\langle u,v\rangle_{\tilde g} = \Omega^2 \langle u,v\rangle_g$ and $\lVert u\rVert_{\tilde g} = \Omega\lVert u\rVert_g$. Therefore:
 
-$$\cos_{\tilde g}(u,v) = \frac{\Omega^2 \langle u,v\rangle_g}{\Omega\|u\|_g \cdot \Omega\|v\|_g} = \cos_g(u,v)$$
+$$\cos_{\tilde g}(u,v) = \frac{\Omega^2 \langle u,v\rangle_g}{\Omega\lVert u\rVert_g \cdot \Omega\lVert v\rVert_g} = \cos_g(u,v)$$
 
 The $\Omega$ factors cancel exactly. This is proven as Proposition `stp-conformal-invariance` in paper v5 §18. **Cosine similarity yields the same value in flat coordinates and in the curved Jacobi metric** — it is the unique angular metric that doesn't depend on where you are in the potential landscape.
 
-Conversely, Euclidean/L2 distance $\|u\|_{\tilde g} = \Omega(h)\|u\|_g$ depends on the local conformal factor. Two identical coordinate displacements at different positions in the potential map to different physical distances. **Raw L2 is not a well-defined geometric quantity in this space.**
+Conversely, Euclidean/L2 distance $\lVert u\rVert_{\tilde g} = \Omega(h)\lVert u\rVert_g$ depends on the local conformal factor. Two identical coordinate displacements at different positions in the potential map to different physical distances. **Raw L2 is not a well-defined geometric quantity in this space.**
 
 ### 2.3 Geodesic distance and its inherent asymmetry
 
 The true Riemannian distance between two hidden states is the arc length along the connecting geodesic:
 
-$$d_{\text{geo}}(h_A \to h_B) = \int_0^1 \sqrt{m\|\dot h_{\ell(t)}\|} \; \|\dot\gamma(t)\| \, \mathrm{d}t$$
+$$d_{\text{geo}}(h_A \to h_B) = \int_0^1 \sqrt{m\lVert\dot h_{\ell(t)}\rVert} \lVert\dot\gamma(t)\rVert \mathrm{d}t$$
 
 integrated along the damped geodesic $\gamma$ from $h_A$ to $h_B$ with the layer-dependent conformal factor.
 
@@ -74,9 +74,13 @@ $$d_{\text{Maha},k}^2(h) = (h - \mu_k)^\top \Sigma_k^{-1} (h - \mu_k)$$
 
 where $\Sigma_k^{-1} = \mathrm{diag}(a_k) + B_k B_k^\top$ is the anisotropic precision matrix (diagonal + low-rank). The **dominant well assignment** is:
 
-$$k^*(h) = \arg\min_k \, d_{\text{Maha},k}^2(h) - 2\log w_k$$
+$$k^{\ast}(h) = \arg\min_k \bigl[ d_{\text{Maha},k}^2(h) - 2\log w_k \bigr]$$
 
 (the well whose Gaussian bump contributes most to $V_\theta(h)$). This assignment is a discrete, structurally meaningful quantity: two hidden states in the same well are "semantically co-located" regardless of their raw coordinate distance.
+
+<p align="center"><img src="images/scaf_basin_crossing_conformal_landscape.png" alt="A topographic map of a two-well potential landscape showing a factual hidden state and two counterfactual displacements: a small within-basin move (low cosine deviation, no well reassignment) versus a large basin-crossing move into the neighboring well (high cosine deviation and well reassignment). An inset shows that the cosine angle between two directions is the same whether measured deep in a well or near the ridge, while their Euclidean length is not." width="700"></p>
+
+*Figure 1. Basin-crossing leaks vs. continuous perturbation. A future-token perturbation that keeps the past hidden state within its original attractor (top arrow) is a mild, within-basin deviation — nonzero cosine deviation but no change in dominant well. A perturbation that pushes the hidden state across the ridge into a different attractor (bottom arrow) is a basin-crossing leak — a qualitatively more severe corruption that logit-space metrics cannot distinguish from the mild case. The inset illustrates why cosine similarity, unlike raw Euclidean distance, gives the same reading regardless of the local depth of the potential (the conformal factor Omega), which is what makes it the geometrically correct choice for Tier A.*
 
 ---
 
@@ -88,7 +92,7 @@ $$k^*(h) = \arg\min_k \, d_{\text{Maha},k}^2(h) - 2\log w_k$$
 
 **Metric:**
 
-$$\Delta_{\cos}^{(\ell)}(t) = 1 - \cos\bigl(h_\ell^{(t)}[\text{factual}],\; h_\ell^{(t)}[\text{counterfactual}]\bigr)$$
+$$\Delta_{\cos}^{(\ell)}(t) = 1 - \cos\bigl(h_\ell^{(t)}[\text{factual}], h_\ell^{(t)}[\text{counterfactual}]\bigr)$$
 
 for each layer $\ell$ and causal-prefix position $t \le t_p$.
 
@@ -113,9 +117,9 @@ for each layer $\ell$ and causal-prefix position $t \le t_p$.
 
 **Metric:**
 
-$$\beta^{(\ell)}(t) = \mathbb{1}\bigl[k^*_\ell(h^{(t)}_\ell[\text{factual}]) \neq k^*_\ell(h^{(t)}_\ell[\text{counterfactual}}])\bigr]$$
+$$\beta^{(\ell)}(t) = \mathbb{1}\bigl[k^{\ast}_\ell(h^{(t)}_\ell[\text{factual}]) \neq k^{\ast}_\ell(h^{(t)}_\ell[\text{counterfactual}])\bigr]$$
 
-where $k^*_\ell(h)$ is the dominant well index at layer $\ell$ (§2.4).
+where $k^{\ast}_\ell(h)$ is the dominant well index at layer $\ell$ (§2.4).
 
 **Why it matters:** a basin-crossing leak is qualitatively more severe than a continuous perturbation. It means the future perturbation has moved the hidden state to a **different semantic attractor** — the model is computing a fundamentally different representation of the past, not just a slightly perturbed one. This is invisible to logit L∞ (which measures magnitude, not attractor structure) and to cosine similarity (which would show $\Delta_{\cos} > 0$ for both, without distinguishing the two cases).
 
@@ -133,7 +137,7 @@ $$d_{\to}^{(\ell)}(t) = d_{\text{geo}}\bigl(h_\ell^{(t)}[\text{factual}] \to h_\
 
 $$d_{\leftarrow}^{(\ell)}(t) = d_{\text{geo}}\bigl(h_\ell^{(t)}[\text{counterfactual}] \to h_\ell^{(t)}[\text{factual}]\bigr)$$
 
-$$r^{(\ell)}(t) = d_{\to}^{(\ell)}(t) \;/\; d_{\leftarrow}^{(\ell)}(t)$$
+$$r^{(\ell)}(t) = d_{\to}^{(\ell)}(t) / d_{\leftarrow}^{(\ell)}(t)$$
 
 **Computation:** requires shooting-method integration of the damped geodesic equation between the two hidden states, using the model's own $V_\theta$ for Christoffel symbols (closed-form for Gaussian $V_\theta$ via `analytical_grad`). This is expensive — $O(d \cdot n_{\text{steps}})$ per pair — and is intended for Tier-2 re-analysis of already-detected leaks, not for real-time monitoring.
 
@@ -145,11 +149,19 @@ $$r^{(\ell)}(t) = d_{\to}^{(\ell)}(t) \;/\; d_{\leftarrow}^{(\ell)}(t)$$
 | $r \approx 1.35$–$1.40$ | The leak propagates **through the model's normal dynamical pathway** (e.g., reverse channel). The asymmetry matches the architecture's measured Frobenius asymmetry ratio (Diagnostic Battery Arm 5), indicating the leaked information travels along the same force-field trajectories as legitimate semantic content. |
 | $r \gg 1.4$ or $r \ll 1.0$ | Anomalous — the leak follows a pathway with abnormal directional preference. This would indicate a new, previously uncharacterised leak mechanism distinct from both wiring bugs and reverse-channel leaks. |
 
+<p align="center"><img src="images/scaf_asymmetric_geodesic_leak_pathway.png" alt="A potential energy bowl showing a short, direct forward geodesic path from the factual to the counterfactual hidden state going downhill with the damping, versus a long, winding backward path going uphill against the damping. Below, a gauge bar maps the asymmetry ratio r to three diagnoses: wiring bypass near r equals 1.0, dynamical pathway near r equals 1.35 to 1.40, and anomalous outside that range." width="700"></p>
+
+*Figure 2. Asymmetric geodesic leak distance as a pathway diagnostic. Because the damped geodesic equation is not time-reversible, the forward path (factual to counterfactual, "with the flow") is systematically shorter than the backward path (counterfactual to factual, "against the flow"). The ratio between them is not just a number — it identifies the leak's mechanism: a ratio near 1.0 means the leak bypasses the dynamics entirely (a wiring bug), while a ratio matching the architecture's measured asymmetry of 1.35-1.40 means the leak rides the model's own force field (the reverse channel).*
+
 **Connection to Tversky's asymmetry:** the asymmetry ratio $r$ applied to the leak has the same structure as $d_{\text{geo}}(\text{specific} \to \text{general}) < d_{\text{geo}}(\text{general} \to \text{specific})$ from §18 of the paper. A leak with $r > 1$ flows "with the natural generalisation direction" (the future perturbation pushes the past state toward a broader basin), while $r < 1$ means the leak forces the past state toward a narrower, more specific basin — a qualitatively different semantic corruption.
 
 ---
 
 ## 4. SCAF integration architecture
+
+<p align="center"><img src="images/scaf_geometric_audit_tiers_architecture.png" alt="A pipeline diagram: a factual versus counterfactual input pair flows into forward_with_trajectory, which produces per-layer hidden states. These feed three nested tiers, from largest and cheapest to smallest and most expensive: Tier A cosine deviation, Tier B basin membership, and Tier C geodesic asymmetry, forming a refinement hierarchy where Tier A is a superset of Tier B, which is a superset of Tier C. The output feeds LeakFrame columns and CATE analysis." width="700"></p>
+
+*Figure 3. The three tiers as a SCAF pipeline. Every candidate pair of hidden-state trajectories passes through the cheap, conformally invariant Tier A check first. A subset that shows basin-crossing behaviour is escalated to Tier B, and only the most deviant pairs identified there are escalated further to the expensive Tier C geodesic integration. This mirrors the existing SCAF philosophy of cheap monitoring plus expensive post-hoc diagnosis.*
 
 ### 4.1 New adapter capability: hidden-state access
 
@@ -196,7 +208,7 @@ Requires `has_vtheta_wells` capability. For each (factual, counterfactual) pair:
 
 1. Extract per-layer hidden states via `forward_with_trajectory`
 2. Compute well parameters via `well_parameters(model, ell)` for each layer
-3. Assign dominant well $k^*$ for factual and counterfactual hidden states
+3. Assign dominant well $k^{\ast}$ for factual and counterfactual hidden states
 4. Record $\beta^{(\ell)}(t)$ for each position $t \le t_p$ and layer $\ell$
 
 Reports:
