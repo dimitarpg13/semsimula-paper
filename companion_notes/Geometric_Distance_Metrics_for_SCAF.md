@@ -76,7 +76,7 @@ where $\Sigma_k^{-1} = \mathrm{diag}(a_k) + B_k B_k^\top$ is the anisotropic pre
 
 $$k^{\ast}(h) = \arg\min_k \bigl[ d_{\text{Maha},k}^2(h) - 2\log w_k \bigr]$$
 
-(the well whose Gaussian bump contributes most to $V_\theta(h)$). This assignment is a discrete, structurally meaningful quantity: two hidden states in the same well are "semantically co-located" regardless of their raw coordinate distance.
+(the well whose Gaussian bump contributes most to $V_\theta\(h\)$). This assignment is a discrete, structurally meaningful quantity: two hidden states in the same well are "semantically co-located" regardless of their raw coordinate distance.
 
 <p align="center"><img src="images/scaf_basin_crossing_conformal_landscape.png" alt="A topographic map of a two-well potential landscape showing a factual hidden state and two counterfactual displacements: a small within-basin move (low cosine deviation, no well reassignment) versus a large basin-crossing move into the neighboring well (high cosine deviation and well reassignment). An inset shows that the cosine angle between two directions is the same whether measured deep in a well or near the ridge, while their Euclidean length is not." width="700"></p>
 
