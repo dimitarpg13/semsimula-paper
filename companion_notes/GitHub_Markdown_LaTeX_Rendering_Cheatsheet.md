@@ -268,6 +268,35 @@ $w_t\ddot{h}\_t + \gamma(h_t)\dot{h}\_t = -\nabla V(h_t)$
 
 ---
 
+## 12a. `\_` inside `\text{...}` breaks — it is a math-mode-only command
+
+Rule 12's `\_` escape is for a bare underscore acting as a **subscript operator** directly in math mode, such as `\dot{h}_t`. It must never be applied to an underscore that is already sitting inside `\text{...}` (or `\mathrm{...}`, `\mathbf{...}`, `\textbf{...}`, `\textrm{...}`) — for example writing a code-like identifier such as `refute_tol` as `\text{refute\_tol}`. GitHub's KaTeX defines `\_` as a command that requires math mode, and `\text{...}` switches into text mode internally, so the two are incompatible regardless of whether the surrounding expression is inline `$...$` or display `$$...$$`.
+
+**Symptom:** a pink error box reading exactly
+
+> **'\_' allowed only in math mode**
+
+appearing in place of the whole equation, anywhere a `\text{...}` (or similar) argument contains a backslash-escaped underscore.
+
+**Mechanism:** an author sees an underscore near math and reflexively applies the rule 12 fix to every occurrence, without checking whether that particular underscore is already inside a text-mode command. Inside `\text{...}`, the underscore is already inert — text mode does not parse `_` as a subscript operator at all, so it needs no escaping — and escaping it anyway introduces a command (`\_`) that is only defined for math mode, which is exactly the mode `\text{...}` just switched out of.
+
+```latex
+% Bad — \_ is math-mode-only; \text{...} is text mode, so this fails with
+% "'_' allowed only in math mode", in both inline and display math
+$$
+\text{band} = \text{refute\_tol} \times \max(|\text{original effect}|, 10^{-9})
+$$
+
+% Good — replace the underscore with a hyphen or a space; safe everywhere
+$$
+\text{band} = \text{refute-tol} \times \max(|\text{original effect}|, 10^{-9})
+$$
+```
+
+**Rule:** never write `\_` inside `\text{...}` or any other text-mode command. If a code-like identifier inside `\text{...}` needs to preserve the look of an underscore, prefer a hyphen or a space (`\text{refute-tol}`, `\text{refute tol}`) — safe in both inline and display math. A bare, unescaped `_` inside `\text{...}` is technically safe too since text mode does not treat it as an operator, but only rely on that inside a display `$$...$$` block per rule 5's mitigation; inside inline `$...$` math, GitHub's Markdown emphasis pass still runs on the raw source before KaTeX does and can still mis-pair a bare `_` there independently of which TeX mode it will end up in. The hyphen/space substitution avoids the ambiguity entirely and is the recommended default. When the exact underscored identifier matters (e.g. it names a real parameter), it is often clearest to state it once in surrounding prose with backticks (`` `refute_tol` ``) and keep the equation itself identifier-free.
+
+---
+
 ## 13. `<` and `>` inside math — replace with `\lt` and `\gt`
 
 GitHub's Markdown pipeline runs an **HTML sanitiser before KaTeX**. Whenever it sees `<` followed by an alphabetic character (e.g., `<k`, `<n`, `<j`), it treats the substring as the start of an HTML tag and consumes everything up to the next `>` — even if both characters live inside `$...$` or `$$...$$`.
@@ -672,6 +701,7 @@ The same applies to `[`, `]`, `{`, `}` inside pipe labels — none are quoted, s
 | `\tag{n}` in `$$...$$` | equation renders vertically | remove `\tag`, number in prose |
 | `\!` near `\left(` | parse failure or broken layout | remove `\!` entirely |
 | `}_x` in inline math (2+ on same line) | italic bleeds; subscript disappears | change `}_x` to `}\_x` |
+| `\_` inside `\text{...}` (or `\mathrm`/`\mathbf`/etc.) | "'\_' allowed only in math mode" pink error box | use a literal `_`, or better, a hyphen/space: `\text{refute-tol}` |
 | `<X` (alphabetic) in math, with later `>` on same line | "Extra open brace or missing close brace"; HTML sanitiser eats text | replace `<` with `\lt`, `>` with `\gt` |
 | `\left\{ ... \middle\| ... \right\}` set-builder | "Missing or unrecognized delimiter for \left" | use `\lbrace ... \mid ... \rbrace` |
 | `\left\lVert ... \right\rVert` over a long expression | same error | use `\Big\lVert ... \Big\rVert` or plain `\lVert ... \rVert` |
