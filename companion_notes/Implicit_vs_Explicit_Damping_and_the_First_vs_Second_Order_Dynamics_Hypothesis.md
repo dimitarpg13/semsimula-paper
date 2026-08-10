@@ -55,7 +55,7 @@ The last column is new here and worth dwelling on: converting every recovered $\
 
 ![Two damping channels — explicit gamma_train and implicit LayerNorm/curvature damping — combine into the total effective damping recovered as gamma_geo, with per-layer velocity retention of roughly 51 percent regardless of the explicit dial](images/damping_channels_explicit_vs_implicit.png)
 
-**Figure 1.** The explicit friction dial ($\gamma_{\text{train}}$, 0.05–0.50) and the implicit damping contributed by LayerNorm's radial re-projection and the potential's curvature are separate channels that sum into the total effective damping an already-trained model exhibits ($\gamma_{\text{geo}} \approx 0.9$–$0.98$). The bottom row illustrates why this still carries genuine cross-layer memory rather than reducing to a per-step force lookup: at the recovered $\gamma_{\text{geo}}$, roughly half the previous layer's displacement survives into the next layer at every step.
+**Figure 1.** The explicit friction dial ($\gamma_{\text{train}}$, 0.05–0.50) and the implicit damping contributed by LayerNorm's radial re-projection and the potential's curvature are separate channels that sum into the total effective damping an already-trained model exhibits ($\gamma_{\text{geo}} \approx 0.9–0.98$). The bottom row illustrates why this still carries genuine cross-layer memory rather than reducing to a per-step force lookup: at the recovered $\gamma_{\text{geo}}$, roughly half the previous layer's displacement survives into the next layer at every step.
 
 ---
 
