@@ -4,7 +4,7 @@ A reference for writing LaTeX math **and** Mermaid diagrams in Markdown files th
 
 The cheatsheet has two parts:
 
-- **Part I — KaTeX math rendering** (rules §1–§13, §19): inline `$...$` and display `$$...$$` math.
+- **Part I — KaTeX math rendering** (rules §1–§13, §19, §25): inline `$...$` and display `$$...$$` math.
 - **Part II — Mermaid diagram rendering** (rules §14–§18, §20–§24): ` ```mermaid ` fenced blocks.
 
 ---
@@ -403,6 +403,32 @@ Reserve `\left ... \right` for short, simple parenthetical groups like `\left( \
 
 ---
 
+## 25. `\\[Npt]` custom row spacing inside matrices — use plain `\\`
+
+Standard KaTeX supports an optional bracketed argument on the row-break command inside `pmatrix`/`bmatrix`/`array`/`aligned` environments, e.g. `\\[6pt]`, to add extra vertical padding between rows. On GitHub's renderer this bracketed argument is not reliably consumed as part of the row-break command — instead of producing a new row with extra spacing, the literal text `[Npt]` can leak into the preceding cell, and the matrix collapses onto a single malformed row.
+
+Confirmed reproduction:
+
+```latex
+% Bad — \\[4pt] leaks a literal "[4pt]" into the top-right cell instead of starting a new row
+$$
+\Phi(\Delta t) = \begin{pmatrix}\cos(\omega t) & \frac{\sin(\omega t)}{\omega}\\[4pt] -\omega \sin(\omega t) & \cos(\omega t)\end{pmatrix}
+$$
+
+% Good — plain \\ starts a new row with no leaked text
+$$
+\Phi(\Delta t) = \begin{pmatrix}\cos(\omega t) & \frac{\sin(\omega t)}{\omega}\\ -\omega \sin(\omega t) & \cos(\omega t)\end{pmatrix}
+$$
+```
+
+**Symptom:** the rendered matrix shows a stray `\[Npt]` (or `[Npt]`) token sitting inside a cell where a row break should have occurred, and the intended second row is missing or merged into the first.
+
+**Mechanism (best guess):** the same family of bracket-swallowing issues documented elsewhere in this cheatsheet (rules 13, 14, 15) — GitHub's Markdown/KaTeX pipeline does not reliably thread an optional `[...]` argument through a double-backslash command inside a math environment, and the bracket content is instead treated as literal text.
+
+**Rule:** never use `\\[Npt]` (or any other bracketed spacing argument after `\\`) inside a matrix or array environment in GitHub Markdown. Use a bare `\\` for every row break. The lost vertical padding between rows is imperceptible in the rendered output, and it avoids the leaked-literal-text failure entirely.
+
+---
+
 # Part II — Mermaid diagrams
 
 The symptom of a violated rule below is almost always the same red box from GitHub:
@@ -706,6 +732,7 @@ The same applies to `[`, `]`, `{`, `}` inside pipe labels — none are quoted, s
 | `\left\{ ... \middle\| ... \right\}` set-builder | "Missing or unrecognized delimiter for \left" | use `\lbrace ... \mid ... \rbrace` |
 | `\left\lVert ... \right\rVert` over a long expression | same error | use `\Big\lVert ... \Big\rVert` or plain `\lVert ... \rVert` |
 | `\underbrace{\left\{ X \right\}}_{...}` | same error | use `\underbrace{\lbrace X \rbrace}_{...}` |
+| `\\[Npt]` row spacing in a matrix/array | stray `[Npt]` text leaks into a cell; row break lost | use plain `\\` for row breaks, drop the bracketed argument |
 
 ### Mermaid (Part II)
 
