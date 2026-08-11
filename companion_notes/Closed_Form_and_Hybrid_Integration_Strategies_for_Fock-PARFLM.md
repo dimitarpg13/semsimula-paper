@@ -127,7 +127,7 @@ $$
 $$
 
 $$
-\Phi\_k(\Delta t) = e^{-\gamma \Delta t/2}\begin{pmatrix}\cos(\omega'\_k \Delta t) I + \frac{\gamma}{2\omega'\_k}\sin(\omega'\_k \Delta t) I & \frac{\sin(\omega'\_k \Delta t)}{\omega'\_k} I \\[6pt] -\omega'\_k \sin(\omega'\_k \Delta t) I & \cos(\omega'\_k \Delta t) I - \frac{\gamma}{2\omega'\_k}\sin(\omega'\_k \Delta t) I\end{pmatrix}
+\Phi\_k(\Delta t) = e^{-\gamma \Delta t/2}\begin{pmatrix}\cos(\omega'\_k \Delta t) I + \frac{\gamma}{2\omega'\_k}\sin(\omega'\_k \Delta t) I & \frac{\sin(\omega'\_k \Delta t)}{\omega'\_k} I \\ -\omega'\_k \sin(\omega'\_k \Delta t) I & \cos(\omega'\_k \Delta t) I - \frac{\gamma}{2\omega'\_k}\sin(\omega'\_k \Delta t) I\end{pmatrix}
 $$
 
 This is a **single-shot propagator** that replaces all $L$ Verlet steps for the $V\_\theta$ contribution with one matrix multiply. The cost is $O(d)$ per token (diagonal blocks), computed once at initialisation and reused throughout training.
@@ -537,7 +537,7 @@ In bare Verlet, the damping term $-\gamma v$ is entangled with the force evaluat
 This means the CfC propagator in the BAOAB context reduces to the **undamped** harmonic propagator:
 
 $$
-\Phi\_k^{\text{B}}(\Delta t) = \begin{pmatrix}\cos(\omega\_k \Delta t) & \frac{\sin(\omega\_k \Delta t)}{\omega\_k}\\[4pt] -\omega\_k \sin(\omega\_k \Delta t) & \cos(\omega\_k \Delta t)\end{pmatrix}
+\Phi\_k^{\text{B}}(\Delta t) = \begin{pmatrix}\cos(\omega\_k \Delta t) & \frac{\sin(\omega\_k \Delta t)}{\omega\_k}\\ -\omega\_k \sin(\omega\_k \Delta t) & \cos(\omega\_k \Delta t)\end{pmatrix}
 $$
 
 No $\gamma\_{\mathrm{eff}}$ anywhere. The propagator is simpler, numerically better conditioned (no competing exponential decays), and does not require knowledge of the effective damping coefficient.
