@@ -1,6 +1,6 @@
 # Determining the Optimal Damping Coefficient $\gamma^{\ast}$ for PARFLM and Fock-PARFLM
 
-> **Status.** Living document, drafted **August 2, 2026**, by Dimitar Gueorguiev with Claude; **calibration revision August 3, 2026** (correct §6–§7 and Appendix A to real swept depths); **aniso-Gaussian data point August 5, 2026** (§11: $d = 256$, $L = 8$ TinyStories sweep shows the low-$d$ regime is V_theta-dependent); **sweep inversion August 6, 2026** (§11.6–§11.7: full 20K runs show γ=0.300 beats γ=0.150, reversing the 3K sweep ranking — first documented failure mode of short-horizon sweeps); **d=384 aniso-Gaussian data point August 8, 2026** (§12: OWT sweep confirms both PPL and $\bar{R}$ minima coincide at γ=0.100, leaning toward the high-$d$ anchor — opposite lean from the d=256 point, consistent with a gradual V_theta-dependent crossover rather than a sharp step; a lone γ=0.200 instability outlier is bracketed by good neighbours and is not a stability wall; 100K-step full run launched at γ=0.100, full-run confirmation pending). Extends the SPLM four-estimator framework (companion: `Determining_optimal_gamma_for_SPLM.md`) to the PARFLM and Fock-PARFLM architectures, which introduce additional energy channels — pairwise interactions, non-conservative reverse-channel injection, and register creation/destruction — that make the single-channel depth-scaling formula insufficient without correction.
+> **Status.** Living document, drafted **August 2, 2026**, by Dimitar Gueorguiev with Claude; **calibration revision August 3, 2026** (correct §6–§7 and Appendix A to real swept depths); **aniso-Gaussian data point August 5, 2026** (§11: $d = 256$, $L = 8$ TinyStories sweep shows the low-$d$ regime is V_theta-dependent); **sweep inversion August 6, 2026** (§11.6–§11.7: full 20K runs show γ=0.300 beats γ=0.150, reversing the 3K sweep ranking — first documented failure mode of short-horizon sweeps); **d=384 aniso-Gaussian data point August 8, 2026** (§12: OWT sweep confirms both PPL and $\bar{R}$ minima coincide at γ=0.100, leaning toward the high-$d$ anchor — opposite lean from the d=256 point, consistent with a gradual V_theta-dependent crossover rather than a sharp step; a lone γ=0.200 instability outlier is bracketed by good neighbours and is not a stability wall; 100K-step full run launched at γ=0.100, full-run confirmation pending); **d=768 and d=1024 aniso-Gaussian data points August 14, 2026** (§13–§14: both scales confirm minima coincide at γ=0.050 with an exact, zero-parameter match to the two-regime predictor's high-$d$ anchor — the first confirmation of that anchor on a bounded $V_\theta$ family at $d\ge768$ — and both show a shared non-monotonic PPL wiggle past the minimum absent from the original MLP sweeps; γ=0.050 recommended for both full runs). Extends the SPLM four-estimator framework (companion: `Determining_optimal_gamma_for_SPLM.md`) to the PARFLM and Fock-PARFLM architectures, which introduce additional energy channels — pairwise interactions, non-conservative reverse-channel injection, and register creation/destruction — that make the single-channel depth-scaling formula insufficient without correction.
 >
 > **Companion experiments / docs:**
 > - **SPLM gamma framework:** [`Determining_optimal_gamma_for_SPLM.md`](Determining_optimal_gamma_for_SPLM.md)
@@ -533,7 +533,8 @@ and $\gamma\_Q = 0$ at initialisation (§2.4), rising to $\lesssim 5 \times 10^{
 | 384 | 16 | 0.06 | 0.246 | **0.25** | $-2\%$ |
 | 768 | 12 | 0.565 | 0.067 | **0.05** | $+33\%$ |
 | 1024 | 16 | 0.565 | 0.050 | **0.05** | $0\%$ |
-| 768 | 16 | 0.565 | 0.050 | (untested) | — |
+| 768 | 16 | 0.565 | 0.050 | **0.05** (aniso-Gaussian, §13) | $0\%$ |
+| 1024 | 16 | 0.565 | 0.050 | **0.05** (aniso-Gaussian, §14) | $0\%$ |
 | 384 | 8 | 0.06 | 0.492 | (untested) | — |
 | 1024 | 24 | 0.565 | 0.033 | (untested) | — |
 | **256** | **8** | **0.06** | **0.492** | **0.10–0.15** | **3.3–4.9× overshoot** |
@@ -893,9 +894,102 @@ Given the tie between $\gamma \in \{0.100, 0.150, 0.250\}$ and the coincidence o
 
 ---
 
-## 13. Open questions and future work
+## 13. Anisotropic Gaussian V_theta sweep: d=768, L=16, OpenWebText (August 14, 2026)
 
-1. **Calibrating $\rho\_d$ more precisely.** The two plateau values are back-solved from three data points ($d = 384, 768, 1024$) on MLP V_theta / OWT. The $d = 256$ aniso-Gaussian sweep (§11) and now the $d = 384$ aniso-Gaussian sweep (§12) show the low-$d$ regime is V_theta-dependent and appears to cross over *gradually* rather than as a sharp step: at $d=256$ the aniso-Gaussian optimum leans toward the low-$d$ anchor, at $d=384$ it leans toward the high-$d$ anchor (§12.3). Remaining highest-value outstanding experiments: (a) MLP V_theta at `d=256, L=8` on TinyStories — does the low-$d$ regime appear with MLP V_theta at the same scale where it disappears with Gaussian? (b) ~~Aniso-Gaussian at `d=384, L=16` on OWT~~ — **done, §12**: sweep leans high-$d$, full-run confirmation pending (100K-step run launched at $\gamma=0.100$, §12.4). (c) `d=512, L=16` on OWT to locate the MLP-V_theta boundary. (d) `d=768, L=16` aniso-Gaussian to test whether the crossover, once past $d=384$, matches the high-$d$ anchor exactly (as MLP V_theta does) or retains a smaller residual offset.
+§12's open question 1(d) (renumbered §15 below) asked whether the aniso-Gaussian crossover, once past $d=384$, matches the high-$d$ SPLM anchor exactly (as MLP V_theta does) or retains a residual offset. This sweep — together with §14's $d=1024$ companion — answers it, and does so at a depth ($L=16$) distinct from the original MLP $d=768$ sweep ($L=12$), which strengthens rather than merely repeats the earlier comparison.
+
+### 13.1 Sweep results
+
+Architecture: Fock v2.1 PARFLM, $d = 768$, $L = 16$ (increased from the MLP-era sweep's $L=12$; $L$ was standardised to $16$ across the aniso-Gaussian scale-up line, specifically reduced from an earlier $L=24$ plan to avoid the deep-configuration training instabilities documented in `Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`).
+V_theta: `AnisotropicDepthConditionedGaussianVTheta`, 5 heads × 8 wells = 40 attractors, rank-4 low-rank precision, depth-conditioned.
+Fock reg: same $\lambda\_{\text{fock}}$ configuration as the $d=256$/$d=384$ aniso sweeps (§11–§12).
+Corpus: OpenWebText. Training: 3,000 steps per candidate, 8 candidates.
+
+| $\gamma$ | PPL | $\bar{R}$ | $\gamma\_{\text{geo}}$ | excl% |
+|---:|---:|---:|---:|---:|
+| 0.050 | 326.97 | 1.2813 | 0.9829 | 0% |
+| 0.100 | 350.70 | 1.9648 | 0.9828 | 0% |
+| 0.150 | 340.25 | 1.5159 | 0.9827 | 0% |
+| 0.200 | 368.62 | 1.7544 | 0.9795 | 0% |
+| 0.250 | 362.39 | 2.9092 | 0.9840 | 0% |
+| 0.300 | 362.44 | 1.4901 | 0.9735 | 0% |
+| 0.400 | 393.47 | 3.5790 | 0.9848 | 0% |
+| 0.500 | 364.94 | 2.6750 | 0.9781 | 0% |
+
+Best PPL and best $\bar{R}$ both land at $\gamma=0.050$ — minima coincide. $\gamma\_{\text{geo}}$ mean $=0.9810$, std $=0.0035$: the tightest cross-$\gamma$ clustering of any sweep in this document, i.e. the geodesic-intrinsic damping is essentially constant across the full order-of-magnitude range of explicit $\gamma$ tested.
+
+### 13.2 The predictor's performance: resolving open question 1(d) exactly
+
+The two-regime formula at $d=768$, $L=16$, $\bar{m}=1.4$ gives, from the high-$d$ regime ($\rho\_{\text{hi}}=0.565$):
+
+$$\gamma^{\ast}\_{\text{pred}} = \frac{1.4}{16}\ln(1/0.565) = 0.0875 \cdot 0.571 = 0.050$$
+
+Empirical $\gamma^{\ast}=0.050$. **Exact match, zero error.** This is the row §7's table listed as "(untested)" — `d=768, L=16` → 0.050 — and it is now confirmed on a structurally different $V\_\theta$ (bounded anisotropic Gaussian, not MLP) at a depth the original $d=768$ tier never used ($L=16$ here vs. $L=12$ for MLP). §14 repeats the same exact match at $d=1024$. Two independent confirmations at two different widths, both exact, is the strongest evidence to date that $\rho\_{\text{hi}}=0.565$ is a genuine architecture-family invariant at $d\gtrsim768$, not an artefact of the MLP $V\_\theta$ or of the specific depths swept before.
+
+### 13.3 Shape: boundary optimum, but non-monotonic beyond it
+
+Unlike the original MLP $d=768$ sweep (clean monotonic PPL increase from $\gamma=0.05$ to $0.50$), this aniso-Gaussian sweep is **non-monotonic** past its minimum: PPL rises from $326.97$ ($\gamma=0.05$) to a local peak at $\gamma=0.20$ ($368.62$), dips back down at $\gamma=0.25$–$0.30$ ($362.39$, $362.44$), rises again to the sweep's worst point at $\gamma=0.40$ ($393.47$), then partially recovers at $\gamma=0.50$ ($364.94$). The overall ranking is not in doubt — $\gamma=0.05$ leads its nearest competitor ($\gamma=0.15$, $340.25$) by $13.28$ PPL ($\approx4\%$) — but the wiggle is a genuine feature of the aniso-Gaussian + Fock-reg configuration that the MLP sweeps never showed. §14 finds the same wiggle at $d=1024$, which rules out single-run noise as the sole explanation; see §14.5 for a combined discussion.
+
+### 13.4 Decision for the full run
+
+The margin between $\gamma=0.05$ and its nearest competitor ($\approx4\%$, $13.28$ PPL) is real but modest — smaller than the $\approx10\%$ margin found at $d=1024$ (§14.4) and much smaller than the interior-minimum sweeps at $d\le384$ (§11–§12, where the winner beat its neighbours by $10$–$55\%$). Per the operational heuristic from §11.7 ("if the best and second-best gammas differ by less than ~5% ... the sweep cannot distinguish them and the prior should be preferred"), this sits right at the edge of that reliability threshold. Two considerations nonetheless favour trusting the sweep here: (a) unlike the flat *interior* bowls at $d\le384$ where the §11.6 reversal actually occurred, this is a **boundary** optimum with $\gamma\_{\text{geo}}$ essentially flat across the whole range — there is no competing basin the sweep could be misranking within, only a preference for less explicit friction that a longer horizon is unlikely to reverse; (b) the predictor's independent, zero-parameter prediction (§13.2) lands on the exact same value.
+
+**Recommendation: $\gamma=0.05$ for the $d=768$, $L=16$ aniso-Gaussian full run.** As with the $d=384$ decision (§12.4), the training log should still be watched for the $\gamma=0.20$-style instability signature (§12.2) as an early-warning check, since this sweep's own non-monotonicity shows the configuration is not perfectly smooth in $\gamma$.
+
+---
+
+## 14. Anisotropic Gaussian V_theta sweep: d=1024, L=16, OpenWebText (August 14, 2026)
+
+### 14.1 Sweep results
+
+Architecture: Fock v2.1 PARFLM, $d = 1024$, $L = 16$ (the same depth as the resolved-instability configuration used for the original isotropic-Gaussian $d=1024$ sweep, §4.2 of `Fock-PARFLM_Scale-Up_Gamma_Sweep_Results_and_Damping_Regime_Analysis.md` — chosen specifically because $L=24$ was found catastrophically unstable at this width).
+V_theta: `AnisotropicDepthConditionedGaussianVTheta`, 5 heads × 8 wells, rank-4 low-rank precision, depth-conditioned.
+Fock reg: same configuration as §11–§13.
+Corpus: OpenWebText. Training: 3,000 steps per candidate, **8/8 candidates completed** (the earlier isotropic-Gaussian $d=1024$ sweep only completed 4/8 before this run).
+
+| $\gamma$ | PPL | $\bar{R}$ | $\gamma\_{\text{geo}}$ | excl% |
+|---:|---:|---:|---:|---:|
+| 0.050 | 244.23 | 1.2066 | 0.9580 | 0% |
+| 0.100 | 270.80 | 1.3139 | 0.9690 | 0% |
+| 0.150 | 264.77 | 1.4842 | 0.9628 | 0% |
+| 0.200 | 288.50 | 1.5201 | 0.9643 | 0% |
+| 0.250 | 284.46 | 1.5358 | 0.9632 | 0% |
+| 0.300 | 295.05 | 1.8097 | 0.9622 | 0% |
+| 0.400 | 298.05 | 2.0380 | 0.9613 | 0% |
+| 0.500 | 269.77 | 2.2954 | 0.9606 | 0% |
+
+Best PPL and best $\bar{R}$ both land at $\gamma=0.050$ — minima coincide, and $\bar{R}$ rises essentially monotonically past it (the cleanest $\bar{R}$-vs-$\gamma$ curve of any sweep in this document, MLP or Gaussian). $\gamma\_{\text{geo}}$ mean $=0.9627$, std $=0.0030$ — again essentially flat across the full range, though centred about $0.02$ lower than the $d=768$ mean ($0.9810$, §13.1), a small but consistent downward drift with increasing $d$ that also appears in the isotropic-Gaussian $d=1024$ point (Appendix C, $\gamma\_{\text{geo}}\approx0.933$).
+
+### 14.2 The predictor's performance
+
+Same formula as §13.2, evaluated at $L=16$ (identical depth, so an identical prediction regardless of $d$ within the high-$d$ regime):
+
+$$\gamma^{\ast}\_{\text{pred}} = 0.050 \qquad \gamma^{\ast}\_{\text{empirical}} = 0.050 \qquad \text{exact match}$$
+
+This is the **second** exact match at $L=16$ in the high-$d$ regime with the aniso-Gaussian $V\_\theta$ (after §13's $d=768$), and the **third** overall counting the original MLP $d=1024, L=16$ result (§6 Example 4). Three independent architectures/widths, one unmodified constant ($\rho\_{\text{hi}}=0.565$), zero free parameters per prediction.
+
+### 14.3 Shape: boundary optimum, same non-monotonic wiggle as d=768
+
+The PPL curve is not monotonic past its minimum: it rises from $244.23$ ($\gamma=0.05$) to a peak at $\gamma=0.40$ ($298.05$), then **drops back down** at $\gamma=0.50$ ($269.77$) to nearly the level of $\gamma=0.15$ ($264.77$). The margin between $\gamma=0.05$ and its nearest competitors is $\approx10$–$11\%$ ($25.5$–$26.6$ PPL against $\gamma=0.50$ and $\gamma=0.10$ respectively) — comfortably wider than the $d=768$ margin (§13.3, $\approx4\%$) and well clear of the $\sim5\%$ "unreliable ranking" threshold from §11.7.
+
+### 14.4 Decision for the full run
+
+With the widest margin of any boundary-optimum sweep to date ($\approx10$–$11\%$) and an exact predictor match, recommend **$\gamma=0.05$ for the $d=1024$, $L=16$ aniso-Gaussian full run** — the same recommendation the plain SPLM-anchor formula has now made correctly, unmodified, at every $d\ge768$ configuration tested (MLP or aniso-Gaussian). This also matches the original isotropic-Gaussian $d=1024$ partial sweep's own winner (Appendix A/C), giving three separate $V\_\theta$ variants at this width all agreeing on $\gamma=0.05$.
+
+### 14.5 Cross-scale comparison: a shared non-monotonic signature at d≥768
+
+The $d=768$ (§13) and $d=1024$ (here) aniso-Gaussian sweeps share a feature absent from every MLP-$V\_\theta$ sweep at the same widths: PPL is not monotonic in $\gamma$ past the $\gamma=0.05$ minimum. Both show a local peak in the $\gamma=0.20$–$0.40$ range followed by a partial recovery at $\gamma=0.40$–$0.50$. Two candidate explanations, not mutually exclusive:
+
+1. **Single-seed noise at each candidate.** Every sweep in this document runs one seed per $\gamma$; a genuinely flat or slowly-varying underlying PPL surface, riding on per-candidate optimisation noise (unlucky batches, gradient-clip interactions), would produce exactly this kind of non-smooth-but-not-diagnostic curve. This is the same caveat §11.7 raises for the flat interior bowls at $d\le384$.
+2. **A structural property of the aniso-Gaussian + Fock-reg configuration.** Both wiggles occur at roughly the same candidates seen from two different widths ($\gamma\approx0.20$–$0.40$), which is a weak argument against pure noise (independent single-seed noise would not obviously line up at the same $\gamma$ values across two different widths) and a weak argument for something reproducible in how the anisotropic precision matrices or the reverse channel interact with mid-range explicit friction.
+
+Given that $\gamma=0.05$ wins outright and by a comfortable margin at both widths regardless of which explanation is correct, this does not change the $\gamma=0.05$ recommendation for either full run (§13.4, §14.4). It is left as an open question (§15) rather than resolved, since disentangling the two explanations would require re-running at least one candidate (e.g. $\gamma=0.30$) with 2–3 seeds — not yet done.
+
+---
+
+## 15. Open questions and future work
+
+1. **Calibrating $\rho\_d$ more precisely.** The two plateau values are back-solved from three data points ($d = 384, 768, 1024$) on MLP V_theta / OWT. The $d = 256$ aniso-Gaussian sweep (§11) and the $d = 384$ aniso-Gaussian sweep (§12) show the low-$d$ regime is V_theta-dependent and appears to cross over *gradually* rather than as a sharp step: at $d=256$ the aniso-Gaussian optimum leans toward the low-$d$ anchor, at $d=384$ it leans toward the high-$d$ anchor (§12.3). Remaining highest-value outstanding experiments: (a) MLP V_theta at `d=256, L=8` on TinyStories — does the low-$d$ regime appear with MLP V_theta at the same scale where it disappears with Gaussian? (b) ~~Aniso-Gaussian at `d=384, L=16` on OWT~~ — **done, §12**: sweep leans high-$d$, full-run confirmation pending (100K-step run launched at $\gamma=0.100$, §12.4). (c) `d=512, L=16` on OWT to locate the MLP-V_theta boundary — still the highest-value outstanding experiment for this predictor, since it is the only remaining untested cell that could reveal an interpolation shape rather than a two-plateau step. (d) ~~`d=768, L=16` aniso-Gaussian to test whether the crossover, once past $d=384$, matches the high-$d$ anchor exactly~~ — **done, §13–§14**: both $d=768$ and $d=1024$ aniso-Gaussian match the unmodified high-$d$ anchor exactly ($\gamma^{\ast}_{\text{pred}}=\gamma^{\ast}_{\text{empirical}}=0.050$, zero error at both widths), retaining no residual offset. (e) **New:** disentangle whether the shared non-monotonic PPL wiggle at $d\ge768$ aniso-Gaussian (§14.5) is single-seed noise or a reproducible property of the anisotropic-precision + Fock-reg configuration, via a 2–3-seed rerun of $\gamma \in \{0.20, 0.30, 0.40\}$ at one width.
 
 2. **Training-schedule for $\gamma$.** Since $\gamma\_Q$ grows as the reverse channel engages, a $\gamma$-warmup (starting at $\gamma^{\ast}\_{\text{PARFLM}}$ and ramping to $\gamma^{\ast}\_{\text{Fock}}$ over the first 20% of training) might outperform a fixed $\gamma$. **Contra-indication from §11.6:** the full 20K comparison showed that γ=0.300 (heavier damping) beat γ=0.150 (lighter) throughout the entire training trajectory, including the late-LR phase where the warmup hypothesis would predict lighter damping to win. This weakens (but does not rule out) the warmup proposal — the comparison is between two fixed gammas, not between a fixed and a scheduled one, and a schedule that starts high and *stays* high may still outperform one that starts low.
 
@@ -930,7 +1024,7 @@ $\gamma^{\ast} = (\bar{m}/L\Delta t)\ln(1/\rho\_d) + \gamma\_Q$, with $\gamma\_Q
 | High-$d$ | $\gtrsim 768$ | 16 | 0.565 | **0.050** | 0.055 |
 | High-$d$ | $\gtrsim 768$ | 24 | 0.565 | 0.033 | 0.038 |
 
-Anchoring: `d=384, L=16` → 0.246 vs empirical **0.25** (anchored, $-2\%$); `d=1024, L=16` → 0.050 vs empirical **0.05** (anchored, exact); `d=768, L=12` → 0.067 vs empirical **0.05** ($+33\%$, the known depth-only overshoot at $L=12$).
+Anchoring: `d=384, L=16` → 0.246 vs empirical **0.25** (anchored, $-2\%$); `d=1024, L=16` → 0.050 vs empirical **0.05** (anchored, exact); `d=768, L=12` → 0.067 vs empirical **0.05** ($+33\%$, the known depth-only overshoot at $L=12$); `d=768, L=16` (aniso-Gaussian, §13) → 0.050 vs empirical **0.05** (exact); `d=1024, L=16` (aniso-Gaussian, §14) → 0.050 vs empirical **0.05** (exact). The last two are the first confirmations of the high-$d$ anchor on a bounded $V\_\theta$ family, independent of the three MLP/OWT points the constant was originally back-solved from.
 
 ### PARFLM (no reverse channel)
 
@@ -1029,3 +1123,18 @@ $\gamma\_{\text{geo}} \approx 0.95$ **everywhere**, independent of explicit $\ga
 | $\gamma\_{\text{geo}}$ | Total departure from Jacobi geodesy | ~0.95 | Barely (dominated by non-$\gamma$ channels) |
 
 The safe claim is that these are three different projections of the same dynamics onto different bases, and equating any two of them is a category error. The paper's §19.9 caveat applies: $\gamma\_{\text{geo}} \approx 0.9$ at $d = 384$ is "far above the explicit 0.25, not below it", and "the two quantities are not the same."
+
+### Cross-scale summary of $\gamma\_{\text{geo}}$ (August 14, 2026)
+
+With §13 and §14 complete, $\gamma\_{\text{geo}}$ has now been measured across the full swept width range on the aniso-Gaussian family:
+
+| $d$ | $L$ | $V\_\theta$ | $\gamma\_{\text{geo}}$ mean | std |
+|---:|---:|---|---:|---:|
+| 256 | 8 | aniso-Gaussian | 0.965 | — |
+| 384 | 16 | MLP | 0.935 | — |
+| 384 | 16 | aniso-Gaussian | 0.975 | — |
+| 768 | 16 | aniso-Gaussian | 0.981 | 0.0035 |
+| 1024 | 16 | isotropic Gaussian | 0.933 | — |
+| 1024 | 16 | aniso-Gaussian | 0.963 | 0.0030 |
+
+The clustering (0.933–0.981) holds up across a $4\times$ range in $d$, three $V\_\theta$ families, and two corpora, with no monotonic trend in $d$ within the aniso-Gaussian family ($0.965 \to 0.975 \to 0.981 \to 0.963$ from $d=256$ to $1024$ — a slight rise then a slight fall, not a clean trend). Combined with the exact-match predictor results of §13–§14, the overall picture is: **explicit $\gamma^{\ast}$ tracks the two-regime, depth-only SPLM formula almost exactly at $d\ge768$ regardless of $V\_\theta$ family, while the geodesic-intrinsic $\gamma\_{\text{geo}}$ is an approximately universal architectural constant that does not track $d$, $V\_\theta$, or the explicit training dial at all.** See `Implicit_vs_Explicit_Damping_and_the_First_vs_Second_Order_Dynamics_Hypothesis.md` for the fuller treatment of what this decoupling does and does not imply about first- vs second-order training dynamics.

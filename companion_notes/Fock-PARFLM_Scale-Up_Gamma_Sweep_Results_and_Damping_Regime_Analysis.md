@@ -50,6 +50,10 @@ This document records and analyses the gamma sweep results for Fock-PARFLM at ea
 
 5. **Late-training instability (update July 17, 2026).** Full training at gamma=0.05 revealed that the clean stability observed in the 3,000-step sweep does **not** persist indefinitely. Catastrophic gradient spikes (up to grad=81,019, P=78,417) emerged at step ~37,000, with the same P/E/creation_gate signature seen in the d=1024 sweep. Despite the spikes, the model continued to improve (best PPL=93.17 at step 38,000). See [Training\_Instabilities\_in\_Fock-PARFLM\_with\_structured\_V\_theta.md](Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md) §25 for the full analysis. **The 3K-step sweep protocol is validated for finding the optimal gamma but cannot predict long-term stability.**
 
+### 2.3 Independent confirmation with anisotropic Gaussian V_theta (August 14, 2026)
+
+This section's sweep uses the original MLP $V_\theta$ at $L=12$. A second, independent $d=768$ sweep — anisotropic Gaussian $V_\theta$ + Fock coupling regularisation, $L=16$ — was run on OpenWebText and reaches the same qualitative conclusion (best PPL at $\gamma=0.050$) with a different $V_\theta$ family and a different depth. See §13 of [`Determining_optimal_gamma_for_Fock-PARFLM.md`](Determining_optimal_gamma_for_Fock-PARFLM.md#13-anisotropic-gaussian-v_theta-sweep-d768-l16-openwebtext-august-14-2026) for the full sweep table, the exact zero-parameter match to the two-regime predictor's high-$d$ anchor, and a non-monotonic PPL wiggle past $\gamma=0.05$ not present in the MLP sweep above.
+
 ---
 
 ## 3. d=384 Gamma Sweep (L=16, 53M params) — July 18, 2026
@@ -284,6 +288,10 @@ The depth-scaling formula's assumption that $\gamma^\star$ depends only on $L$ i
 
 The BAOAB + CfC propagator (Tier 3) remains relevant for future attempts at deeper networks (L>16) but is not required for the current d=1024 configuration. See §24 of [Training\_Instabilities\_in\_Fock-PARFLM\_with\_structured\_V\_theta.md](Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md) and §10 of [Closed\_Form\_and\_Hybrid\_Integration\_Strategies\_for\_Fock-PARFLM.md](Closed_Form_and_Hybrid_Integration_Strategies_for_Fock-PARFLM.md) for the full analysis.
 
+### 4.4 Independent confirmation with anisotropic Gaussian V_theta (August 14, 2026)
+
+The sweep above (§4.2) uses isotropic Gaussian $V_\theta$ and only completed 4/8 candidates. A full 8/8-candidate $d=1024$, $L=16$ sweep with anisotropic Gaussian $V_\theta$ + Fock coupling regularisation, on OpenWebText, reaches the same optimum ($\gamma^\star=0.050$) with a wider margin over its nearest competitor ($\approx10$–$11\%$) than either the isotropic sweep here or the $d=768$ aniso-Gaussian sweep (§2.3). See §14 of [`Determining_optimal_gamma_for_Fock-PARFLM.md`](Determining_optimal_gamma_for_Fock-PARFLM.md#14-anisotropic-gaussian-v_theta-sweep-d1024-l16-openwebtext-august-14-2026) for the full sweep table and predictor check — this is now the **third** independent $V_\theta$ variant (isotropic Gaussian, anisotropic Gaussian, and the original MLP-at-$L=12$ result of §2) to confirm $\gamma^\star=0.05$ at $d\ge768$.
+
 ---
 
 ## 5. Damping Regime Analysis: The Overdamped-to-Underdamped Transition
@@ -307,11 +315,12 @@ $$r_{\text{total}} = r_{\text{layer}}^{\,L}$$
 | **d=384, L=16** (sweep optimal) | **0.25** | 16 | 0.800 | **0.028 (2.8%)** | **Overdamped** |
 | d=384, L=16 (E5c nominal) | 0.30 | 16 | 0.769 | 0.015 (1.5%) | Overdamped |
 | d=384, L=16 (depth-scaling prediction) | 0.05 | 16 | 0.952 | 0.457 (45.7%) | Underdamped |
-| **d=768, L=12** (sweep optimal) | **0.05** | 12 | 0.952 | **0.557 (55.7%)** | **Underdamped** |
+| **d=768, L=12** (MLP sweep optimal) | **0.05** | 12 | 0.952 | **0.557 (55.7%)** | **Underdamped** |
 | d=768, L=12 | 0.30 | 12 | 0.769 | 0.037 (3.7%) | Overdamped |
-| **d=1024, L=16** (sweep optimal) | **0.05** | **16** | **0.952** | **0.457 (45.7%)** | **Underdamped** |
+| **d=768, L=16** (aniso-Gaussian sweep optimal, §2.3) | **0.05** | **16** | **0.952** | **0.457 (45.7%)** | **Underdamped** |
+| **d=1024, L=16** (sweep optimal, both isotropic and aniso-Gaussian, §4.2/§4.4) | **0.05** | **16** | **0.952** | **0.457 (45.7%)** | **Underdamped** |
 
-**The key finding:** The d=768 and d=1024 sweeps selected regimes where **45–56% of the initial velocity is retained** through the full layer stack (underdamped). But the d=384 sweep selected a regime with only **2.8% retention** (overdamped) — and this is the *genuine optimum*, not a mis-transfer. The depth-scaling framework's prediction that all tiers should operate at $\gamma \approx 0.05$ is empirically correct only for $d \geq 768$. At $d=384$, the model benefits from strong friction that forces re-derivation of representations at each layer rather than momentum transport.
+**The key finding:** The d=768 and d=1024 sweeps selected regimes where **45–56% of the initial velocity is retained** through the full layer stack (underdamped). But the d=384 sweep selected a regime with only **2.8% retention** (overdamped) — and this is the *genuine optimum*, not a mis-transfer. The depth-scaling framework's prediction that all tiers should operate at $\gamma \approx 0.05$ is empirically correct only for $d \geq 768$. At $d=384$, the model benefits from strong friction that forces re-derivation of representations at each layer rather than momentum transport. Note that the $d=768$ and $d=1024$ rows at $L=16$ have **identical** $r_{\text{total}}$ by construction (same $\gamma$, same $L$) — the underdamped-optimal regime at $L=16$ is a fixed point of the explicit-friction retention formula independent of $d$, once $d\ge768$; the width-dependence documented in `Determining_optimal_gamma_for_Fock-PARFLM.md` lives entirely in $\rho_d$, not in $L$-driven retention.
 
 This dimension-dependent phase transition (§3.5) is the central finding of the combined gamma sweep programme.
 
