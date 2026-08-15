@@ -739,7 +739,84 @@ Each $\nabla V\_\theta$ evaluation (eliminated) required $Kd$ forward + $Kd$ bac
 
 ---
 
-## 12. Open questions and future work
+## 12. First-Order CfC Propagator (Overdamped Limit)
+
+*The Fock-G1 ablation ([Implicit vs. Explicit Damping, and the First-Order vs Second-Order Dynamics Hypothesis](Implicit_vs_Explicit_Damping_and_the_First_vs_Second_Order_Dynamics_Hypothesis.md), §6) strips the velocity memory from the Fock layer, collapsing the second-order damped-Verlet step to a first-order gradient flow. This section records the overdamped reduction of the CfC construction above — so the closed-form propagator for the first-order dynamics is on record alongside the second-order one — and states why it must **not** be substituted into the controlled ablation.*
+
+### 12.1 Which of the two ideas survives the overdamped limit
+
+The two ingredients of §§3–6 behave very differently once the velocity coordinate is removed.
+
+- **BAOAB does not carry over.** BAOAB is a phase-space Langevin splitting: its **B** step kicks the velocity, its **A** step drifts position by velocity, and its **O** step is an Ornstein–Uhlenbeck thermostat *acting on the velocity*. A first-order (overdamped) flow has **no velocity coordinate**, so there is nothing for B, A, or O to act on. The overdamped limit collapses the entire B–A–O–A–B sequence into a single position-only update, and the Fock-G1 layer update $h \leftarrow \mathrm{LN}(h + \beta f)$ is already exactly that — a deterministic overdamped Euler step (with no thermostat, since the ablation is noiseless). There is no splitting scheme left to add.
+
+- **CfC does carry over — and simplifies.** The closed-form-propagator idea (replace the numerical $\nabla V\_\theta$ evaluation and its backward-AD with an analytical map) is independent of the dynamics' order. In the overdamped limit the second-order phase-space **rotation** becomes a first-order scalar **relaxation**, which is strictly cheaper.
+
+### 12.2 The single-well first-order propagator
+
+The first-order (overdamped) flow driven by the Gaussian potential is
+
+$$
+\dot h = -\frac{1}{\mathfrak{m}\gamma}\nabla V\_\theta(h).
+$$
+
+Near well $k$ (harmonic zone, $\|h-\mu\_k\| \ll 1/\sqrt{\kappa\_k}$) the potential gradient is linear,
+
+$$
+\nabla V\_{\theta,k}(h) \approx \mathfrak{m}\omega\_k^2 (h - \mu\_k), \qquad \omega\_k^2 = \frac{V\_{0,k}\kappa\_k}{\mathfrak{m}},
+$$
+
+so the flow reduces to a linear relaxation toward the centroid,
+
+$$
+\dot h \approx -\lambda\_k (h - \mu\_k), \qquad \lambda\_k = \frac{\omega\_k^2}{\gamma} = \frac{V\_{0,k}\kappa\_k}{\mathfrak{m}\gamma}.
+$$
+
+This scalar linear ODE has an exact closed-form propagator over an interval $\tau$ — a pure exponential decay, with **no oscillation and no velocity component**:
+
+$$
+\boxed{h(\tau) = \mu\_k + (h\_0 - \mu\_k) e^{-\lambda\_k \tau}.}
+$$
+
+The contrast with the second-order propagator of §5.1 is the whole story:
+
+| Aspect | Second-order (underdamped, §5) | First-order (overdamped, here) |
+|---|---|---|
+| State | phase space $(h, v)$ | position $h$ only |
+| Single-well propagator | $2\times2$ rotation $\Phi\_k(\tau)$ | scalar decay $e^{-\lambda\_k \tau}$ |
+| Near-well behaviour | oscillation at frequency $\omega\_k$ | monotone relaxation at rate $\lambda\_k = \omega\_k^2/\gamma$ |
+| Far-field ("free") propagator | ballistic drift $h \leftarrow h + \tau v$ | **identity** ($h$ unchanged) |
+| Velocity update | required | none |
+| Harmonic-sector invariant | energy conserved | monotone descent (no conserved energy) |
+
+The far-field propagator degenerates to the identity because, with no velocity, a token far from every well (where $\nabla V\_\theta \to 0$) simply does not move under the $V\_\theta$ sector — the second-order ballistic-coasting term $h \leftarrow h + \tau v$ has no first-order counterpart.
+
+### 12.3 The blended first-order propagator
+
+Using the same Gaussian mixing weights $\alpha\_k(h) = \exp(-\tfrac{\kappa\_k}{2}\|h - \mu\_k\|^2)$ as §5.3, the blended first-order propagator is
+
+$$
+h' = \sum\_{k=1}^{K} \alpha\_k(h)\big[\mu\_k + (h - \mu\_k)e^{-\lambda\_k \tau}\big] + \Big(1 - \sum\_{k=1}^{K}\alpha\_k(h)\Big) h.
+$$
+
+The limit checks mirror §5.4: near a dominant well $j$ ($\alpha\_j \approx 1$) it is exact exponential relaxation toward $\mu\_j$; far from all wells ($\sum\_k \alpha\_k \approx 0$) it is the identity, which is exact since the $V\_\theta$ force vanishes there. A reduced Fock layer is then just a two-part composition — the analytical $V\_\theta$ relaxation above, followed by a **numerical** $V\_\phi + Q$ gradient step — with no velocity bookkeeping and no O-step.
+
+### 12.4 What it would buy
+
+The benefit is the same core win as §10.1, and slightly larger:
+
+- **Eliminates the backward-AD through $V\_\theta$.** The exponential map is analytical and differentiable in $(\mu\_k, \kappa\_k, V\_{0,k}, \gamma)$, so the per-layer `autograd.grad` evaluation of $\nabla V\_\theta$ — the dominant cost in the current implementation — disappears, exactly as in the second-order CfC case.
+- **Cheaper than the second-order propagator.** No trig constants (one $e^{-\lambda\_k \tau}$ per well instead of $\cos/\sin$), no velocity row, and no free-drift term — roughly half the element-wise work of §10.1.
+- **Unconditional stability.** $e^{-\lambda\_k \tau} \in (0, 1]$ for any step size and any well stiffness, so stiff wells (large $\kappa$) never destabilise the step; there is no CFL-like limit, permitting larger $\tau$ and fewer layers.
+
+### 12.5 Why it must **not** enter the controlled ablation
+
+Despite the speedup, the first-order CfC propagator must **not** be substituted into the Fock-G1 ablation as currently pre-registered. The ablation's validity rests on Fock-G1 differing from the second-order anchor in **exactly one** respect — the inertial term — with the numerical `autograd.grad` force evaluation held identical across both arms. Swapping the first-order arm to the closed-form surrogate introduces a **second** difference: analytical-versus-numerical force, the harmonic-approximation error $O(\kappa V\_0 \tau)$ of §8.2, and a different computational graph. A resulting PPL gap could then be attributed to "no inertia" *or* to "approximation error," and the two would be inseparable — defeating the single-difference discipline the controlled design depends on (§6.3 of the ablation protocol). The anchor's reference PPL was established with numerical $\nabla V\_\theta$, so it is a valid baseline **only** for a numerically-integrated Fock-G1.
+
+The correct way to obtain CfC speed **and** a clean comparison is to retrofit **both** arms: use the second-order rotation $\Phi\_k(\tau)$ (§5) for the anchor and the first-order relaxation $e^{-\lambda\_k \tau}$ (here) for Fock-G1, re-establish the anchor under CfC, and compare those. That path — appropriate only if CfC is being adopted as the production integrator (paper §18e, Lesson 2) — delivers the speedup while keeping the single-difference discipline intact, and as a bonus tests whether the closed-form family preserves whatever inertia effect the numerical family exhibits. Until then, speedup for the ablation itself should come from hardware, not from changing the integrator.
+
+---
+
+## 13. Open questions and future work
 
 1. **Multi-head $V\_\theta$**: the current Fock-PARFLM uses $H = 5$ heads, each with $K/H$ wells operating on a $d/H$-dimensional subspace. The CfC propagator applies independently per head — no cross-head coupling in the harmonic sector. This is a natural parallelism axis.
 
@@ -753,7 +830,7 @@ Each $\nabla V\_\theta$ evaluation (eliminated) required $Kd$ forward + $Kd$ bac
 
 ---
 
-## 13. References
+## 14. References
 
 1. B. Leimkuhler, C. Matthews. *Rational construction of stochastic numerical methods for molecular sampling.* Applied Mathematics Research eXpress, 2013.
 2. R. Hasani et al. *Closed-form Continuous-time Neural Networks.* Nature Machine Intelligence 4(11), 2022.
