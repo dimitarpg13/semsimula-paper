@@ -1178,7 +1178,7 @@ class PARFLM(nn.Module):
         # recover them.  `use_reentrant=False` is required so that the
         # inner `autograd.grad(U, h_in, create_graph=True)` call below
         # can build a 2nd-order graph through the recomputation.
-        if cfg.use_grad_checkpoint and self.training:
+        if cfg.use_grad_checkpoint and torch.is_grad_enabled():
             P = torch.utils.checkpoint.checkpoint(
                 self.V_phi, h_in, h_src, use_reentrant=False,
             )
@@ -1249,7 +1249,15 @@ class PARFLM(nn.Module):
             traj = [h.detach().cpu()]
 
         for ell in range(cfg.L):
-            if cfg.use_layer_checkpoint and self.training:
+            # Gate on grad-tracking, not on train/eval mode: `evaluate()`
+            # deliberately re-enables grad inside a `torch.no_grad()`
+            # context (the PARF/SARF force needs `autograd.grad` at every
+            # layer regardless of train/eval), so gating on `self.training`
+            # silently disables checkpointing during evaluation -- all L
+            # layers' activation graphs are then retained simultaneously
+            # instead of one at a time, inflating eval-time peak memory
+            # far above the training-time peak at the same batch size.
+            if cfg.use_layer_checkpoint and torch.is_grad_enabled():
                 h_new = torch.utils.checkpoint.checkpoint(
                     self._layer_step,
                     h, h_prev, m_b, gamma, dt, ell,
