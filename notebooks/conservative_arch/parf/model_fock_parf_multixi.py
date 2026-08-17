@@ -572,7 +572,12 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
             traj = [h.detach().cpu()]
 
         for ell in range(cfg.L):
-            if cfg.use_layer_checkpoint and self.training:
+            # Gate on grad-tracking, not train/eval mode: evaluate() runs
+            # this forward inside torch.enable_grad() (the PARF/SARF force
+            # needs autograd.grad at every layer regardless of train/eval),
+            # so gating on self.training silently disables checkpointing
+            # during evaluation.
+            if cfg.use_layer_checkpoint and torch.is_grad_enabled():
                 def _ckpt_step(
                     _h, _h_prev, _r, _sal, _m_b, _gamma,
                     _dt=dt, _ell=ell,

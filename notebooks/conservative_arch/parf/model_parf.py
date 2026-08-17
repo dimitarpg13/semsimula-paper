@@ -1206,10 +1206,21 @@ class PARFLM(nn.Module):
             f_theta = -self.V_theta.analytical_grad(xi_now, h_in)  # (B, T, d)
             # autograd only on the V_phi graph (cheaper: no V_theta terms)
             U_phi = P_masked.sum()
+            # retain_graph is only actually needed when create_graph=True:
+            # in that case grad_phi carries a grad_fn back into the U_phi
+            # graph, which the *outer* loss.backward() will walk a second
+            # time (the "second-order gradient cascade"), so PyTorch must
+            # not free those buffers after this call. When create_graph is
+            # False (eval), grad_phi is a plain detached tensor with no
+            # path back into this graph, no second traversal will ever
+            # happen, and retain_graph=True would just needlessly keep
+            # every layer's buffers alive with no autograd.backward() call
+            # in evaluate() ever around to consume (and thus free) them --
+            # across L=16 layers that is exactly the eval-time OOM.
             grad_phi, = torch.autograd.grad(
                 U_phi, h_in,
                 create_graph=self.training,
-                retain_graph=True,
+                retain_graph=self.training,
             )
             f = f_theta - grad_phi
         else:
@@ -1218,7 +1229,7 @@ class PARFLM(nn.Module):
             grad_U, = torch.autograd.grad(
                 U, h_in,
                 create_graph=self.training,
-                retain_graph=True,
+                retain_graph=self.training,
             )
             f = -grad_U
 

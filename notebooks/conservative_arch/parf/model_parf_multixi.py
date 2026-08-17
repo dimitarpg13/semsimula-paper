@@ -216,7 +216,7 @@ class MultiXiPARFLM(SparsePARFLM):
             U_pair = (V_phi_g * m_g).sum()
         else:
             tilde_m = self._sparse_mask(pi, causal, T)           # (B, T, T)
-            if cfg.use_grad_checkpoint and self.training:
+            if cfg.use_grad_checkpoint and torch.is_grad_enabled():
                 P = torch.utils.checkpoint.checkpoint(
                     self.V_phi, h_in, h_src, use_reentrant=False,
                 )
@@ -236,10 +236,19 @@ class MultiXiPARFLM(SparsePARFLM):
         # and V_phi ops to their parameters. No-op when already fp32.
         U = V_th_per_token.sum() + U_pair
         with torch.autocast(device_type="cuda", enabled=False):
+            # retain_graph is only needed when create_graph=True: only then
+            # does grad_U carry a grad_fn back into the U graph that the
+            # *outer* loss.backward() will walk a second time. In eval
+            # (create_graph=False), grad_U is a plain detached tensor with
+            # no path back into this graph, so retain_graph=True would just
+            # keep every layer's buffers alive with nothing (no outer
+            # backward ever runs in evaluate()) around to free them --
+            # across L layers that is exactly the eval-time OOM in
+            # forward_gathered/model_parf.py.
             grad_U, = torch.autograd.grad(
                 U.float(), h_in,
                 create_graph=self.training,
-                retain_graph=True,
+                retain_graph=self.training,
             )
         f = -grad_U
 
