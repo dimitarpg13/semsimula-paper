@@ -1,0 +1,394 @@
+{
+  "d=384, gamma=0.30 (OWT sweep)": {
+    "config": {
+      "label": "d=384, gamma=0.30 (OWT sweep)",
+      "d": "384",
+      "heads": "5",
+      "wells": "8",
+      "rank": "4",
+      "layers": "16",
+      "ckpt": "/Users/dimitargueorguiev/Downloads/semsimula_fock_gamma_sweep_aniso_gaussian_fockreg_d384/gamma_sweep/gamma_0.300/checkpoints/ckpt_best.pt"
+    },
+    "meta": {
+      "step": 3000,
+      "val_ppl": 334.14516755846364,
+      "best_val_ppl": null,
+      "gamma": 0.3,
+      "first_order": false,
+      "gamma_star": null,
+      "xi_alphas": null
+    },
+    "stats": {
+      "lambda_min": {
+        "mean": 0.0019439613679423928,
+        "std": 0.0003266980347689241,
+        "min": 0.0006765720900148153,
+        "max": 0.0031989652197808027
+      },
+      "lambda_max": {
+        "mean": 102.51219940185547,
+        "std": 52.25402069091797,
+        "min": 18.548580169677734,
+        "max": 497.5618896484375
+      },
+      "trace": {
+        "mean": 163.5750732421875,
+        "std": 55.271385192871094,
+        "min": 63.28132247924805,
+        "max": 567.1708984375
+      },
+      "anisotropy_ratio": {
+        "mean": 57408.37109375,
+        "std": 37926.99609375,
+        "min": 7815.609375,
+        "max": 410125.28125
+      },
+      "well_weight_entropy": {
+        "mean": 2.040656328201294,
+        "std": 0.05524710193276405,
+        "min": 1.4649217128753662,
+        "max": 2.078420639038086
+      },
+      "well_weight_entropy_max_possible": 2.0794415416798357,
+      "well_weight_entropy_frac_of_max": 0.9813482549515626,
+      "nearest_neighbour_centre_dist": {
+        "mean": 13.09695816040039,
+        "std": 0.6811062693595886,
+        "min": 11.117447853088379,
+        "max": 17.59141731262207
+      },
+      "depth_code_norm_per_layer": [
+        0.9829326868057251,
+        0.881583571434021,
+        0.8831908106803894,
+        0.8984325528144836,
+        0.8519003391265869,
+        0.8688815832138062,
+        0.8826861381530762,
+        0.885565996170044,
+        0.877038836479187,
+        0.8983365297317505,
+        0.8635973930358887,
+        0.8575834035873413,
+        0.8638649582862854,
+        0.8703627586364746,
+        0.8889056444168091,
+        0.8747454881668091
+      ],
+      "depth_code_norm_variation_across_layers": 0.02885509096773125
+    }
+  },
+  "d=768, gamma=0.30 (OWT sweep)": {
+    "config": {
+      "label": "d=768, gamma=0.30 (OWT sweep)",
+      "d": "768",
+      "heads": "5",
+      "wells": "8",
+      "rank": "4",
+      "layers": "16",
+      "ckpt": "/Users/dimitargueorguiev/Downloads/semsimula_fock_gamma_sweep_aniso_gaussian_fockreg_d768/gamma_sweep/gamma_0.300/checkpoints/ckpt_best.pt"
+    },
+    "meta": {
+      "step": 3000,
+      "val_ppl": 362.43671309822827,
+      "best_val_ppl": null,
+      "gamma": 0.3,
+      "first_order": false,
+      "gamma_star": null,
+      "xi_alphas": null
+    },
+    "stats": {
+      "lambda_min": {
+        "mean": 0.0012824088335037231,
+        "std": 0.00018771244504023343,
+        "min": 0.0002926423621829599,
+        "max": 0.0019287620671093464
+      },
+      "lambda_max": {
+        "mean": 215.79054260253906,
+        "std": 178.4371795654297,
+        "min": 56.940643310546875,
+        "max": 1445.850830078125
+      },
+      "trace": {
+        "mean": 450.3877258300781,
+        "std": 204.93609619140625,
+        "min": 207.97251892089844,
+        "max": 1689.7901611328125
+      },
+      "anisotropy_ratio": {
+        "mean": 188665.4375,
+        "std": 185731.953125,
+        "min": 37279.73828125,
+        "max": 2708481.25
+      },
+      "well_weight_entropy": {
+        "mean": 2.012479782104492,
+        "std": 0.10417614877223969,
+        "min": 0.9530512690544128,
+        "max": 2.077772617340088
+      },
+      "well_weight_entropy_max_possible": 2.0794415416798357,
+      "well_weight_entropy_frac_of_max": 0.9677982005104843,
+      "nearest_neighbour_centre_dist": {
+        "mean": 19.184646606445312,
+        "std": 1.2712218761444092,
+        "min": 16.620498657226562,
+        "max": 32.28660202026367
+      },
+      "depth_code_norm_per_layer": [
+        1.514208436012268,
+        1.2415714263916016,
+        1.2654094696044922,
+        1.210821270942688,
+        1.2314823865890503,
+        1.2377004623413086,
+        1.233953595161438,
+        1.255950689315796,
+        1.2126773595809937,
+        1.2104724645614624,
+        1.2280534505844116,
+        1.2304433584213257,
+        1.2297260761260986,
+        1.2385309934616089,
+        1.2116261720657349,
+        1.220465064048767
+      ],
+      "depth_code_norm_variation_across_layers": 0.0703110692222429
+    }
+  },
+  "d=1024, gamma=0.30 (OWT sweep)": {
+    "config": {
+      "label": "d=1024, gamma=0.30 (OWT sweep)",
+      "d": "1024",
+      "heads": "5",
+      "wells": "8",
+      "rank": "4",
+      "layers": "16",
+      "ckpt": "/Users/dimitargueorguiev/Downloads/semsimula_fock_gamma_sweep_aniso_gaussian_fockreg_d1024/gamma_sweep/gamma_0.300/ckpt_best.pt"
+    },
+    "meta": {
+      "step": 3000,
+      "val_ppl": 295.05030081526075,
+      "best_val_ppl": null,
+      "gamma": 0.3,
+      "first_order": false,
+      "gamma_star": null,
+      "xi_alphas": null
+    },
+    "stats": {
+      "lambda_min": {
+        "mean": 0.0010011037811636925,
+        "std": 7.397768058581278e-05,
+        "min": 0.0004730272921733558,
+        "max": 0.0012628288241103292
+      },
+      "lambda_max": {
+        "mean": 225.0189666748047,
+        "std": 89.731201171875,
+        "min": 101.6037826538086,
+        "max": 982.3865966796875
+      },
+      "trace": {
+        "mean": 569.7456665039062,
+        "std": 109.26837158203125,
+        "min": 374.28912353515625,
+        "max": 1525.857421875
+      },
+      "anisotropy_ratio": {
+        "mean": 229987.546875,
+        "std": 104843.6640625,
+        "min": 86720.4765625,
+        "max": 1337817.75
+      },
+      "well_weight_entropy": {
+        "mean": 2.036816358566284,
+        "std": 0.0808003768324852,
+        "min": 0.9816991090774536,
+        "max": 2.0789458751678467
+      },
+      "well_weight_entropy_max_possible": 2.0794415416798357,
+      "well_weight_entropy_frac_of_max": 0.9795016199016984,
+      "nearest_neighbour_centre_dist": {
+        "mean": 21.34911346435547,
+        "std": 0.7262997031211853,
+        "min": 19.270645141601562,
+        "max": 26.77835464477539
+      },
+      "depth_code_norm_per_layer": [
+        1.2348510026931763,
+        1.4102009534835815,
+        1.3977144956588745,
+        1.4254769086837769,
+        1.4350244998931885,
+        1.422210693359375,
+        1.4108332395553589,
+        1.4184218645095825,
+        1.4481685161590576,
+        1.4329379796981812,
+        1.413156270980835,
+        1.4292489290237427,
+        1.4144338369369507,
+        1.4262416362762451,
+        1.4206764698028564,
+        1.4112285375595093
+      ],
+      "depth_code_norm_variation_across_layers": 0.04655090236000491
+    }
+  },
+  "d=1024, gamma=0.05 (OWT sweep, preview)": {
+    "config": {
+      "label": "d=1024, gamma=0.05 (OWT sweep, preview)",
+      "d": "1024",
+      "heads": "5",
+      "wells": "8",
+      "rank": "4",
+      "layers": "16",
+      "ckpt": "/Users/dimitargueorguiev/Downloads/semsimula_fock_gamma_sweep_aniso_gaussian_fockreg_d1024/gamma_sweep/gamma_0.050/ckpt_best.pt"
+    },
+    "meta": {
+      "step": 3000,
+      "val_ppl": 244.2314842024734,
+      "best_val_ppl": null,
+      "gamma": 0.05,
+      "first_order": false,
+      "gamma_star": null,
+      "xi_alphas": null
+    },
+    "stats": {
+      "lambda_min": {
+        "mean": 0.0010113699827343225,
+        "std": 7.846900552976876e-05,
+        "min": 0.0004462326760403812,
+        "max": 0.0013358811847865582
+      },
+      "lambda_max": {
+        "mean": 229.27581787109375,
+        "std": 86.22150421142578,
+        "min": 102.13081359863281,
+        "max": 792.395263671875
+      },
+      "trace": {
+        "mean": 587.6302490234375,
+        "std": 111.28174591064453,
+        "min": 372.0075988769531,
+        "max": 1460.86328125
+      },
+      "anisotropy_ratio": {
+        "mean": 230583.40625,
+        "std": 95480.296875,
+        "min": 88504.125,
+        "max": 1091326.625
+      },
+      "well_weight_entropy": {
+        "mean": 2.0145785808563232,
+        "std": 0.08682187646627426,
+        "min": 1.3019522428512573,
+        "max": 2.0789737701416016
+      },
+      "well_weight_entropy_max_possible": 2.0794415416798357,
+      "well_weight_entropy_frac_of_max": 0.9688075093608478,
+      "nearest_neighbour_centre_dist": {
+        "mean": 21.479280471801758,
+        "std": 0.8048772215843201,
+        "min": 19.377973556518555,
+        "max": 27.077007293701172
+      },
+      "depth_code_norm_per_layer": [
+        0.9920758008956909,
+        1.4396308660507202,
+        1.42379629611969,
+        1.4347401857376099,
+        1.4347612857818604,
+        1.4023075103759766,
+        1.4127620458602905,
+        1.44992995262146,
+        1.4162403345108032,
+        1.4317755699157715,
+        1.4295955896377563,
+        1.4450743198394775,
+        1.4430502653121948,
+        1.4367491006851196,
+        1.3973504304885864,
+        1.4162330627441406
+      ],
+      "depth_code_norm_variation_across_layers": 0.10643910277429179
+    }
+  },
+  "d=256, gamma=0.30 (TinyStories anchor)": {
+    "config": {
+      "label": "d=256, gamma=0.30 (TinyStories anchor)",
+      "d": "256",
+      "heads": "4",
+      "wells": "8",
+      "rank": "4",
+      "layers": "8",
+      "ckpt": "/Users/dimitargueorguiev/Downloads/semsimula_fock_aniso_gaussian_fockreg_tinystories/results/seed0_gamma=0.3/ckpt_best.pt"
+    },
+    "meta": {
+      "step": 19200,
+      "val_ppl": 9.03710924200236,
+      "best_val_ppl": null,
+      "gamma": 0.30000001192092896,
+      "first_order": false,
+      "gamma_star": null,
+      "xi_alphas": [
+        0.41829222440719604,
+        0.6090365648269653,
+        0.7884927988052368,
+        0.9233148097991943
+      ]
+    },
+    "stats": {
+      "lambda_min": {
+        "mean": 0.0007240000413730741,
+        "std": 0.0006569020915776491,
+        "min": 6.759061216143891e-05,
+        "max": 0.007252496667206287
+      },
+      "lambda_max": {
+        "mean": 315.4341125488281,
+        "std": 109.69563293457031,
+        "min": 120.00640106201172,
+        "max": 1800.419189453125
+      },
+      "trace": {
+        "mean": 789.5469360351562,
+        "std": 195.6004180908203,
+        "min": 354.11053466796875,
+        "max": 2299.5927734375
+      },
+      "anisotropy_ratio": {
+        "mean": 762373.1875,
+        "std": 704743.9375,
+        "min": 41871.64453125,
+        "max": 12129558.0
+      },
+      "well_weight_entropy": {
+        "mean": 1.5726978778839111,
+        "std": 0.36680927872657776,
+        "min": 0.019858868792653084,
+        "max": 2.029679536819458
+      },
+      "well_weight_entropy_max_possible": 2.0794415416798357,
+      "well_weight_entropy_frac_of_max": 0.7563078097465717,
+      "nearest_neighbour_centre_dist": {
+        "mean": 16.16741180419922,
+        "std": 1.7683897018432617,
+        "min": 11.919431686401367,
+        "max": 26.717365264892578
+      },
+      "depth_code_norm_per_layer": [
+        0.8712795972824097,
+        0.6020008325576782,
+        0.6243269443511963,
+        0.6146498918533325,
+        0.6043397188186646,
+        0.5937943458557129,
+        0.6061928272247314,
+        0.6166635751724243
+      ],
+      "depth_code_norm_variation_across_layers": 0.08724581328162342
+    }
+  }
+}
