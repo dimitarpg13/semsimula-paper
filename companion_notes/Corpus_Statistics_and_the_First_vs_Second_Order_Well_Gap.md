@@ -170,9 +170,7 @@ where $\rho$ is the corpus distribution of contexts and $\mathcal{B}\_i$ the bas
 The **descriptor** metric is a distance on the natural coordinates of a Gaussian well, made scale-free by measuring displacements in units of the well's own curvature,
 
 $$
-\Delta_i^2 = \big\lVert P_i^{1/2}(\mu_1 - \mu_2) \big\rVert^2
-+ \big\lVert P_i^{-1/2}(P_1 - P_2) P_i^{-1/2} \big\rVert_F^2
-+ \left(\frac{w_1 - w_2}{w_i}\right)^2 ,
+\Delta_i^2 = \big\lVert P_i^{1/2}(\mu_1 - \mu_2) \big\rVert^2 + \big\lVert P_i^{-1/2}(P_1 - P_2) P_i^{-1/2} \big\rVert_F^2 + \left(\frac{w_1 - w_2}{w_i}\right)^2 ,
 $$
 
 averaged over $\xi \sim \rho$. This is the object one can actually compute, and it is close to what `compare_vtheta_profiles.py` already reports through the eigenvalue extremes, the anisotropy ratio, the well-weight entropy, and the nearest-neighbour centre distance.
