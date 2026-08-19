@@ -169,9 +169,25 @@ $\sum_k V_k \cdot (1 - e^{-\kappa_k^2 \lVert x - x_{c,k} \rVert^2})$  % use \lVe
 
 ---
 
-## 7. Display math lines starting with `-` become list items
+## 7. Display math lines starting with `-`, `+`, or `*` become list items
 
-Inside a `$$...$$` block, if any line starts with `- ` (hyphen + space), GitHub's Markdown parser converts it to a bullet list item, breaking the equation.
+Inside a `$$...$$` block, if any line starts with `- ` (hyphen + space), GitHub's Markdown parser converts it to a bullet list item, breaking the equation. **The same is true of `+ ` and `* `** — CommonMark defines all three characters as equally valid unordered-list bullet markers, and a bullet list is allowed to interrupt an open paragraph without a preceding blank line. This means the failure is not specific to `-`; a multi-term sum spread across lines with each continuation line starting `+ ...` breaks exactly the same way.
+
+Confirmed reproduction (this exact pattern rendered as a bulleted list of raw LaTeX source, with the leading `+` swallowed as a bullet marker, on a real document):
+
+```latex
+% Bad — the "+ \big\lVert ..." and second "+ \left(..." lines both start with "+"
+$$
+\Delta_i^2 = \big\lVert P_i^{1/2}(\mu_1 - \mu_2) \big\rVert^2
++ \big\lVert P_i^{-1/2}(P_1 - P_2) P_i^{-1/2} \big\rVert_F^2
++ \left(\frac{w_1 - w_2}{w_i}\right)^2 ,
+$$
+
+% Good — collapse to one line (or carry the "+" to the end of the previous line)
+$$
+\Delta_i^2 = \big\lVert P_i^{1/2}(\mu_1 - \mu_2) \big\rVert^2 + \big\lVert P_i^{-1/2}(P_1 - P_2) P_i^{-1/2} \big\rVert_F^2 + \left(\frac{w_1 - w_2}{w_i}\right)^2 ,
+$$
+```
 
 ```latex
 % Bad — the "- \frac{...}" line starts with "-"
@@ -189,7 +205,9 @@ $$
 $$
 ```
 
-**Rule:** never let a display-math line begin with `- `. Either put the whole expression on one line, or restructure so the minus sign is not the first character on the line (e.g. carry it to the end of the previous line).
+**Indentation caveat.** CommonMark only recognises a bullet marker as list-starting when it has **at most 3 leading spaces**; 4 or more spaces of indentation makes the line ordinary (safe) paragraph-continuation text instead. A continuation line indented 4+ spaces before its leading `+` or `-` is therefore not at risk from this rule — but relying on that margin is fragile across renderers, so collapsing to one line remains the more robust fix whenever the expression is short enough.
+
+**Rule:** never let a display-math continuation line begin with `- `, `+ `, or `* ` at 0-3 spaces of indentation. Either put the whole expression on one line, or restructure so the leading operator is not the first character on the line (e.g. carry it to the end of the previous line instead).
 
 ---
 
@@ -722,8 +740,8 @@ The same applies to `[`, `]`, `{`, `}` inside pipe labels — none are quoted, s
 | Many `_` in one `$...$` | subscripts disappear | break into shorter expressions |
 | Lone `*` in math (e.g. `R^{*}`), reused later in the doc | "Extra close brace or missing open brace"; fallback text shows `_` where `*` was | use `\ast` (or `\star`) instead of a literal `*` |
 | `\|...\|` in inline math | math context broken | use `\lVert...\rVert` or display block |
-| Display line starts with `- ` | becomes bullet point | collapse to one line |
-| `\boxed{...}` multiline with `-` | bullet inside box | single-line `\boxed{...}` |
+| Display line starts with `- `, `+ `, or `* ` (0-3 spaces indent) | becomes bullet point | collapse to one line, or carry the operator to the end of the previous line |
+| `\boxed{...}` multiline with `-` or `+` | bullet inside box | single-line `\boxed{...}` |
 | `\tag{n}` in `$$...$$` | equation renders vertically | remove `\tag`, number in prose |
 | `\!` near `\left(` | parse failure or broken layout | remove `\!` entirely |
 | `}_x` in inline math (2+ on same line) | italic bleeds; subscript disappears | change `}_x` to `}\_x` |
