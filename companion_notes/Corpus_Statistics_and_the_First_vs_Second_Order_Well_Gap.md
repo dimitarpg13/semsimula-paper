@@ -4,7 +4,7 @@
 **Date:** August 2026
 **Status:** Working Draft
 
-> **Scope.** This note answers a single question posed directly: given a second-order SPLM with anisotropic Gaussian $V\_\theta$ (call it **G2**) and its first-order ablation (**G1**), trained on the same corpus, what inequality ties the statistical properties of that corpus to the distance $d\_{i,j}$ between matched potential wells in the two learned well sets? The answer is a three-factor bound (§4) whose numerator is a depth-memory mismatch gated by an anharmonicity number, whose denominator is a corpus identifiability factor, and which is accompanied by a finite-sample noise floor. Two consequences are load-bearing for the experimental programme: the gap is controlled by the **realized** damping rather than the training dial, which suppresses it by roughly 26x at the settings already run (§6.4); and well occupancy **cancels** at the population optimum, which relocates the detectable signal to the head of the occupancy distribution rather than the tail (§7). §11 applies this to the executed Fock-G1 instance and argues that its null result is a power failure rather than evidence of absence, while §13 gives the measurements that would decide the matter.
+> **Scope.** This note answers a single question posed directly: given a second-order SPLM with anisotropic Gaussian $V\_\theta$ (call it **G2**) and its first-order ablation (**G1**), trained on the same corpus, what inequality ties the statistical properties of that corpus to the distance $d\_{i,j}$ between matched potential wells in the two learned well sets? The answer is a three-factor bound (§4) whose numerator is a depth-memory mismatch gated by an anharmonicity number, whose denominator is a corpus identifiability factor, and which is accompanied by a finite-sample noise floor. Two consequences are load-bearing for the experimental programme: the gap is controlled by the **realized** damping rather than the training dial, which suppresses it by roughly 26x at the settings already run (§6.4); and well occupancy **cancels** at the population optimum, which relocates the detectable signal to the head of the occupancy distribution rather than the tail (§7). §11 applies this to the executed Fock-G1 instance and argues that its null result is a power failure rather than evidence of absence, §12 packages the whole bound into a single first-order-sufficiency decision rule, §13 asks whether the same damping that governs the well gap also governs second-order training's own gradient-cascade instability — and finds that it does not, which sharpens rather than resolves the question of when first order is the pragmatic choice — while §15 gives the measurements that would decide the matter. This note is intended as the opening statement of a new section of the mega-paper on the conditions under which first-order dynamics can plausibly stand in for the second-order system.
 
 ---
 
@@ -21,12 +21,14 @@
 9. [The Noise Floor and the Detection Condition](#9-the-noise-floor-and-the-detection-condition)
 10. [The Converse Direction](#10-the-converse-direction)
 11. [Reconciliation with the Observed Null Result](#11-reconciliation-with-the-observed-null-result)
-12. [Testable Predictions](#12-testable-predictions)
-13. [Protocol Amendments](#13-protocol-amendments)
-14. [Limitations](#14-limitations)
-15. [Summary](#15-summary)
-16. [Related Notes](#16-related-notes)
-17. [References](#17-references)
+12. [The First-Order Sufficiency Criterion](#12-the-first-order-sufficiency-criterion)
+13. [A Second Axis: Does Training-Time Stability Track the Same Damping?](#13-a-second-axis-does-training-time-stability-track-the-same-damping)
+14. [Testable Predictions](#14-testable-predictions)
+15. [Protocol Amendments](#15-protocol-amendments)
+16. [Limitations](#16-limitations)
+17. [Summary](#17-summary)
+18. [Related Notes](#18-related-notes)
+19. [References](#19-references)
 
 ---
 
@@ -92,7 +94,7 @@ $$
 
 Three structural facts follow, and all three matter downstream.
 
-**Fact 1. A well is a field, not a point.** The object $V\_{1,i}$ is the map $\xi \mapsto (\mu\_i(\xi), P\_i(\xi), w\_i(\xi))$. Comparing wells therefore requires choosing a measure on context space. Choosing the isotropic Gaussian $\xi \sim \mathcal{N}(0, I)$ — as the current architecture-only probe in `compare_vtheta_profiles.py` does — is a legitimate choice, but it is not the corpus measure, and §13.5 quantifies what is lost.
+**Fact 1. A well is a field, not a point.** The object $V\_{1,i}$ is the map $\xi \mapsto (\mu\_i(\xi), P\_i(\xi), w\_i(\xi))$. Comparing wells therefore requires choosing a measure on context space. Choosing the isotropic Gaussian $\xi \sim \mathcal{N}(0, I)$ — as the current architecture-only probe in `compare_vtheta_profiles.py` does — is a legitimate choice, but it is not the corpus measure, and §15.5 quantifies what is lost.
 
 **Fact 2. The learnable parameters are the projection matrices.** The identifiability of well $i$ is therefore the identifiability of $W\_i^{\mu}, W\_i^{a}, W\_i^{B}, W\_i^{w}$ from the corpus distribution of $\xi$. This is what puts the **context Gram matrix** $\Sigma\_\xi = \mathbb{E}[\xi \xi^\top]$ at the centre of the denominator in §7.
 
@@ -694,7 +696,87 @@ If measurement shows $A\_i \ll 1$ for essentially all wells at the realized oper
 
 ---
 
-## 12. Testable Predictions
+## 12. The First-Order Sufficiency Criterion
+
+Everything above is a bound on a distance. Stated the other way around, it is a **decision procedure**: a way to certify, cheaply and before committing to a full training run, that first-order dynamics may be substituted for second-order without materially changing the learned potential. This section packages §4 through §11 into that single criterion, since it is the form in which the result is actually useful to a practitioner choosing an integrator, and it is the natural opening claim of a mega-paper section on when first order suffices.
+
+> **Criterion (first-order sufficiency).** Fix a tolerance $\tau$ on the well-descriptor metric of §3.2, read as the largest well displacement the downstream use of the model can tolerate without a meaningful change in behaviour. First-order dynamics is a certified substitute for second-order dynamics on corpus $\mathcal{D}$ and architecture instance $(\gamma\_{\text{train}}, p\_{\max}, m\_b)$ if either of the following holds:
+>
+> **(a) Structural sufficiency.** The anharmonicity histogram $\lbrace A\_i \rbrace$ computed per §15.2 satisfies $A\_i \ll 1$ for every well that matters for the downstream task. Then §6.2 applies directly: G1 and G2 are reparameterisations of each other up to a one-parameter rescaling of $m\_b$, the order gap is zero **in the population limit regardless of the corpus**, and no amount of data or training time changes the conclusion. This is the strong form of the criterion: a property of the architecture's operating point, not of any particular run.
+>
+> **(b) Statistical sufficiency.** If (a) fails for some wells, evaluate the master inequality of §4 at the measured $\gamma\_{\text{eff}}$, $A\_i$, $\kappa\_i$, and $N n\_i$ for those wells. If the resulting upper bound on $d\_{i,j}$ is below $\tau$, first order is sufficient **for this corpus and this token budget**, even though the two population optima are not identical. This is the weak form: a property of the specific training instance, and it must be re-certified if the corpus, the token budget, or $\tau$ changes.
+
+Two things follow immediately from the structure already derived, and both run against the naive intuition that "second order is more expressive, so it should be preferred whenever affordable."
+
+First, **the criterion is architecture-diagnosable before any comparison run**, because the anharmonicity histogram of (a) needs only the logged per-layer step norm $\bar s$ and the per-well precision eigenvalues, exactly the two quantities §15.2 asks to be computed first. A negative result there — $A\_i \ll 1$ everywhere — closes the question structurally and makes every subsequent comparison run redundant for that operating point.
+
+Second, **the criterion is dominated by $\gamma\_{\text{eff}}$ to the third power** (fourth counting the $\bar s$ inside $A\_i$), and §6.4 already establishes that the realized $\gamma\_{\text{eff}} = \gamma\_{\text{geo}}$ is pinned near 0.96 to 0.98 by LayerNorm in every measured configuration to date, independent of the training dial. Taken at face value, this means the sufficiency criterion is satisfied — in its weak, statistical form at least — almost everywhere in the region of hyperparameter space that has actually been explored. That reading is the entire content of §11's reconciliation. But it invites the question §13 takes up: is that pinning of $\gamma\_{\text{geo}}$ good news for training stability as well, or is it decoupled from it?
+
+---
+
+## 13. A Second Axis: Does Training-Time Stability Track the Same Damping?
+
+### 13.1 The question the criterion of §12 does not answer
+
+The sufficiency criterion answers "do the two **converged** potentials agree." It says nothing about whether second-order training itself is safe to run to convergence in the first place — and that second question is the one that actually motivates asking the first. `Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md` documents a recurring failure mode independent of everything derived above: gradient norms in the create_graph-based second-order force computation compound across the $L$-layer stack, producing intermittent catastrophic spikes (grad norms from $10^2$ up to $8 \times 10^4$–$5 \times 10^6$ at $d \ge 768$) that trigger EMA-watchdog reloads and, at worst, stall training entirely (§§23, 25 of that note). A $d=384$, $\gamma\_{\text{train}}=0.10$ run monitored during the drafting of this note reproduced the same pattern at smaller scale: two watchdog reloads roughly 1,770 steps apart, with `depth_code`, `E`, and `P` as the dominant spike groups and $V\_\theta$ itself the top offender in well under one percent of spikes. This is a training-time-stability question, and on its face it has nothing to do with the well-gap question of §4 through §11. It turns out to share a hyperparameter, but — this is the point of this section — not the mechanism.
+
+### 13.2 Two different Jacobians, not one
+
+Both phenomena are, at bottom, statements about how far a perturbation propagates across an $L$-layer stack, but they are perturbations propagating through **different computational paths**, and this section's claim is that they must be kept separate.
+
+The order gap of §6 is governed by the **realized, post-LayerNorm kinematic trajectory**: the momentum retention $\rho\_{\text{eff}}$ recovered by regressing the actual sequence of hidden states onto their predecessors, folding in every contraction channel including LayerNorm's radial re-projection (§6.4). This is $\gamma\_{\text{geo}}$, and §6.4's table shows it sitting at 0.96–0.98 in every sweep run to date, essentially independent of the dial.
+
+The gradient cascade of `Training_Instabilities...md` §§23 and 26 is governed by a different object: the **raw, pre-LayerNorm Jacobian** of the `create_graph=True` force computation, $J\_\ell = \partial h\_{\ell+1}/\partial h\_\ell$ evaluated on the un-normalized Verlet update, before LayerNorm's re-projection is applied. In this note's own notation, that source's §23.2 writes it as
+
+$$
+J_\ell \ \approx\ (1+\rho) I \ +\ \beta \nabla^2_h U(h_\ell),
+$$
+
+reusing exactly the $\rho$ and $\beta$ of §2.1 here, and its §26.2 analysis of the full $(h, v)$ block confirms the same qualitative dependence directly on $\gamma\_{\text{train}}$ rather than on $\gamma\_{\text{geo}}$: the per-layer retention there is read as $(1 - \Delta t \gamma\_{\text{train}})$, which agrees with $\rho = 1/(1+\Delta t\gamma\_{\text{train}})$ to first order in $\Delta t \gamma\_{\text{train}}$ but diverges from it once $\gamma\_{\text{train}}$ is not small. The backward pass through this raw Jacobian is what accumulates $\nabla^2\_h U$ across depth and produces the exponential-in-$L$ amplification once its spectral radius crosses one — a condition stated there directly in terms of $\gamma\_{\text{train}}$, not $\gamma\_{\text{geo}}$.
+
+**The two damping-sensitive quantities are therefore not the same number, measured two different ways — they are two different functions of the same dial, computed on two different paths through the layer stack.** $\gamma\_{\text{geo}}$ is a property of the forward, LayerNorm-corrected trajectory that the model actually occupies. The cascade margin is a property of the raw, uncorrected recursion that only ever exists inside the backward computational graph, because LayerNorm's own backward Jacobian is a separate factor that the existing cascade analysis has not yet folded in.
+
+### 13.3 The dissociation is already visible in data that has been collected for a different purpose
+
+Placing the two tables that already exist in this note-family side by side makes the dissociation concrete rather than hypothetical.
+
+| Run | d | L | gamma_train | gamma_geo (order-gap relevant, §6.4) | Full-training outcome (cascade relevant) |
+| --- | ---: | ---: | ---: | ---: | --- |
+| OpenWebText, TinyStories sweeps | 256-1024 | various | 0.05 to 0.50 | 0.96 to 0.98 throughout | not run to convergence at every dial value |
+| OpenWebText d=384 | 384 | 16 | 0.30 | ~0.975 | stable, zero watchdog reloads over 500K steps |
+| OpenWebText d=384 | 384 | 16 | 0.10 | not separately measured, expected ~0.97 by the pattern above | two watchdog reloads in ~14K monitored steps, override:depth_code / E / P dominant |
+| OpenWebText d=768 | 768 | 12 | 0.05 | 0.981 | catastrophic, spikes to 10^4-10^5, multiple reloads |
+| OpenWebText d=1024 | 1024 | 16-24 | 0.05 | 0.963 | catastrophic at every tested dial, spikes to 10^4 and above |
+
+Reading down the $\gamma\_{\text{geo}}$ column, there is essentially no signal: every row sits in the same narrow 0.96–0.98 band, exactly as §6.4 already documents. Reading down the outcome column, there is a strong, dial-tracking signal: stable at $\gamma\_{\text{train}}=0.30$, unstable at $\gamma\_{\text{train}}=0.10$, catastrophic at $\gamma\_{\text{train}}=0.05$. **The variable that predicts training-time stability is not the variable that predicts the order gap.**
+
+```mermaid
+flowchart TB
+    Dial["Training dial gamma_train"]
+    LN["Realized post LayerNorm kinematics<br>dominated by radial re-projection"]
+    Raw["Raw pre LayerNorm create_graph Jacobian<br>backward pass only"]
+    Geo["gamma_geo<br>pinned near 0.96 to 0.98 regardless of dial"]
+    Casc["Cascade spectral margin<br>tracks gamma_train directly"]
+    Order["Order gap d_ij, section 4<br>nearly flat across the sweep"]
+    Stab["Training time stability<br>watchdog reload frequency"]
+
+    Dial --> LN
+    Dial --> Raw
+    LN --> Geo
+    Raw --> Casc
+    Geo --> Order
+    Casc --> Stab
+```
+
+### 13.4 The consequence for the sufficiency criterion
+
+This dissociation, not a tradeoff, is what makes §12's criterion actionable rather than merely descriptive. Because $\gamma\_{\text{geo}}$ barely moves in response to $\gamma\_{\text{train}}$, **raising the dial to stabilize training, as `Training_Instabilities...md` §26.5–26.6 recommends, costs nothing in order-gap terms.** There is no dial-based tradeoff between "keep second order stable enough to train" and "keep it different enough from first order to matter" — the second quantity was already set by LayerNorm before the dial was chosen. Concretely: moving $\gamma\_{\text{train}}$ from 0.05 to 0.30 to eliminate the cascade (per the existing recommendation) is not expected to move $d\_{i,j}$ at all, because $\gamma\_{\text{geo}}$, the quantity that actually enters the master inequality, is expected to remain in the same 0.96–0.98 band regardless.
+
+This sharpens, rather than resolves, the mega-paper question of when first order can plausibly replace second order. The corner of hyperparameter space where second order would be **most worth keeping** — small $\gamma\_{\text{geo}}$, long kinematic momentum memory, a genuinely ballistic trajectory that first order cannot reproduce — is not reached by turning the training dial at all, because the dial's effect on $\gamma\_{\text{geo}}$ is second-order at best. Reaching it would require weakening the mechanism that pins $\gamma\_{\text{geo}}$ high in the first place, which §15.6 already identifies as the highest-leverage lever for **detecting** an order gap: a non-recentering norm, or a lighter residual path. That same lever is untested against the cascade, and the honest statement is that no data collected to date says whether weakening LayerNorm's implicit damping to make the order gap detectable would also remove whatever protection LayerNorm's backward pass currently affords against the create_graph cascade. Flagging this coupling — not resolving it — is the natural next question for the mega-paper section this note opens.
+
+---
+
+## 14. Testable Predictions
 
 Each prediction is stated with the term of the master inequality that produces it, so that a failure localises a specific factor.
 
@@ -703,38 +785,39 @@ Each prediction is stated with the term of the master inequality that produces i
 3. **Precision-cap dependence.** Raising $p\_{\max}$ should raise the measured gap, approximately as $\sqrt{p\_{\max}}$ through $A\_i$, until some other constraint binds. This is a one-line configuration change and the cleanest single test of the anharmonicity gate (§6.3).
 4. **Non-monotone occupancy profile.** The curve $d\_i$ against $n\_i$ should show three regimes: rising from near zero at the rare end, a plateau, and a rise into noise. A monotone curve falsifies the regime structure of §7.3.
 5. **Occupancy independence of the plateau.** Within the identified regime, the plateau height should not depend on $n\_i$. This is the most counter-intuitive prediction and the sharpest test of the cancellation in §7.1.
-6. **Probe-measure dependence.** Re-running the existing comparator with $\xi$ drawn from the corpus rather than from an isotropic Gaussian should change the measured distances by a factor related to the effective-rank ratio of $\Sigma\_\xi$, in the direction of improved signal-to-noise (§13.5).
+6. **Probe-measure dependence.** Re-running the existing comparator with $\xi$ drawn from the corpus rather than from an isotropic Gaussian should change the measured distances by a factor related to the effective-rank ratio of $\Sigma\_\xi$, in the direction of improved signal-to-noise (§15.5).
 7. **Head over tail.** Signal-to-noise should be highest for the most-visited wells. If an imprint is found anywhere, it is found there first.
+8. **Stability-margin dependence, not order-gap dependence.** Across the same damping sweep, watchdog reload frequency and worst-case gradient norm should track $\gamma\_{\text{train}}$ directly (through the raw pre-LayerNorm cascade Jacobian of §13.2), while the order-gap plateau tracks $\gamma\_{\text{geo}}$ and stays nearly flat. A run in which the two move together, rather than dissociating as predicted, falsifies the two-channel account of §13.
 
 ---
 
-## 13. Protocol Amendments
+## 15. Protocol Amendments
 
 Concrete changes to the pre-registered protocol, in priority order. The first three are diagnostics that can be run without training anything.
 
-### 13.1 Measure the realized damping of the momentum channel
+### 15.1 Measure the realized damping of the momentum channel
 
 Regress the realized per-layer displacement onto its predecessor to recover $\rho\_{\text{eff}}$, and hence $\gamma\_{\text{eff}} = (1 - \rho\_{\text{eff}})/(\Delta t \rho\_{\text{eff}})$, directly on the momentum channel. This is not the same fit as the global geodesic residual, and given the sixth-power leverage of §9.2 it is the highest-value single measurement in the programme. Report it alongside $\gamma\_{\text{geo}}$.
 
-### 13.2 Compute the anharmonicity histogram before running anything
+### 15.2 Compute the anharmonicity histogram before running anything
 
 For each well, form $A\_i = \bar s \sqrt{\lambda\_{\max}(P\_i)}$ from the logged per-layer step norm and the logged precision eigenvalues. If the histogram sits well below 1, the experiment is predicted null structurally, and the correct next action is to report the structural null and raise $p\_{\max}$, not to spend compute on a larger instance.
 
-### 13.3 Run the corpus-side pre-check
+### 15.3 Run the corpus-side pre-check
 
 Estimate the embedded token autocovariance $C\_e(\tau)$ and its spectrum $S\_e(\omega)$ on the candidate corpus, form the $C \times C$ filter-bank Gram matrix $G\_{cc'}$ of §8.2, and report $\kappa(G)$ and its effective rank. Estimate $I\_{\text{pred}}$ by a cheap proxy such as the perplexity gap against an n-gram baseline. This is a pure corpus computation, requires no training, and predicts whether a given corpus can support the experiment at all.
 
-### 13.4 Stratify by occupancy and report a curve
+### 15.4 Stratify by occupancy and report a curve
 
 Estimate per-well occupancy $n\_i$ from responsibilities on a corpus sample. Bin wells by $n\_i$, estimate the noise floor **per bin** from the existing same-order damping pair, and report $d\_i$ against $n\_i$ with the per-bin band. Retire the single aggregate mean, which is a mixture over three regimes.
 
-### 13.5 Sample probe contexts from the corpus
+### 15.5 Sample probe contexts from the corpus
 
 The current architecture-only probe evaluates well descriptors at $\xi \sim \mathcal{N}(0, I)$. Because the EMA channels are strongly collinear on real text, the effective rank of the corpus $\Sigma\_\xi$ is far below its ambient dimension, and an isotropic probe therefore spends most of its measurement budget on directions the corpus never excites — directions in which both models are determined only by weight decay and seed noise. The measured distance is consequently a mixture of the identified subspace with a much larger unidentified one, and the signal-to-noise loss is approximately the effective-rank ratio.
 
 Two fixes, either acceptable: draw $\xi$ from cached corpus activations, or keep the isotropic draw but whiten by the empirical $\widehat{\Sigma}\_\xi$ and restrict to its numerically supported subspace. This is the cheapest available improvement in statistical power and requires no retraining.
 
-### 13.6 If amplification is needed
+### 15.6 If amplification is needed
 
 Should the diagnostics show a real but sub-threshold effect, the levers are ordered by the exponent with which they enter:
 
@@ -747,9 +830,13 @@ Should the diagnostics show a real but sub-threshold effect, the levers are orde
 
 The ordering is itself a result: the experiment is far more sensitive to the architecture's realized damping than to the size of the corpus, which inverts the usual instinct to fix a null result by training longer.
 
+### 15.7 Track the cascade margin whenever the top lever is used
+
+Because §13 finds that $\gamma\_{\text{geo}}$ and the cascade stability margin are different functions of the dial, any attempt to invoke the top lever of §15.6 — weakening implicit damping to lower $\gamma\_{\text{geo}}$ and expose a detectable order gap — should log watchdog reload frequency and the per-group gradient-norm histogram alongside the well-descriptor comparison. A run that lowers $\gamma\_{\text{geo}}$ successfully but cannot complete training is not a null result; it is a missing data point, and it should be reported as such rather than silently excluded from the comparison.
+
 ---
 
-## 14. Limitations
+## 16. Limitations
 
 Stated plainly, since several of the conclusions above are strong.
 
@@ -760,10 +847,11 @@ Stated plainly, since several of the conclusions above are strong.
 5. **The Gauss-Newton approximation to the Hessian** of §7.1 discards a term that is not necessarily small near the boundary of the precision clamp, which is precisely the regime §6.3 identifies as the interesting one.
 6. **The information-transport bound of §8.1 is loose.** A sphere-packing argument on final states ignores that the readout is linear and that trajectories are not free paths. It gives the right functional form and a defensible direction of inequality, not a usable constant.
 7. **The converse requires an unverified non-degeneracy assumption** (§10), and that assumption is exactly what fails in the harmonic limit. The upper bound stands on its own; the lower bound does not.
+8. **The two-channel account of §13 is a dissociation drawn from tables collected for other purposes, not a single unified derivation.** The cascade-margin formula quoted from `Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md` §23.2 and §26.2 is itself acknowledged there as a heuristic, revised twice across that note's own §§23, 25, 26 as evidence accumulated. No run to date has measured $\gamma\_{\text{geo}}$ and the cascade margin on the **same** checkpoint at the **same** step, so the claim that they dissociate rests on comparing separate measurements taken under separate protocols, not a controlled joint measurement.
 
 ---
 
-## 15. Summary
+## 17. Summary
 
 The question was whether an inequality ties the statistical properties of the training corpus to the distance between matched potential wells of a second-order SPLM and its first-order ablation. It does, and the resulting relationship is:
 
@@ -780,26 +868,29 @@ The substantive findings, in the order they change what one would do next:
 3. **Well occupancy cancels at the population optimum.** A change of integrator is a global, non-sparse perturbation, so the occupancy factor appears identically in the driving gradient and in the curvature. What survives in the denominator is the **conditioning** of the conditional context Gram matrix, not its scale. This contradicts the sparsity-based stability argument that applies to data edits, and it relocates the detectable signal to the head of the occupancy distribution.
 4. **The corpus enters three times, twice through the same statistic.** Predictive information raises the step size and hence the anharmonicity; slow autocorrelation decay both raises the step size and degrades the conditioning of the EMA filter bank, so long-range dependence raises the gap through two channels at once; Zipfian occupancy sets the noise floor and the regime membership of each well, but not the plateau.
 5. **The measured curve has three regimes, and only the middle one is informative.** Rare wells agree because weight decay determines both; frequent wells agree or differ for physical reasons; and the noise floor scales as $(N n\_i)^{-1/2}$. Averaging over all wells mixes the three and produces a number that mostly reports the shape of the Zipf tail.
-6. **The executed null was predicted.** Seven independent factors at the settings of the completed Fock-G1 instance all suppress the effect, several of them by orders of magnitude. The result is a power failure rather than evidence of absence, and the train-cheap / infer-geometric inference drawn from it should wait for the diagnostics of §13.
+6. **The executed null was predicted.** Seven independent factors at the settings of the completed Fock-G1 instance all suppress the effect, several of them by orders of magnitude. The result is a power failure rather than evidence of absence, and the train-cheap / infer-geometric inference drawn from it should wait for the diagnostics of §15.
 7. **The ambiguity is resolvable cheaply.** Measuring the momentum channel's realized damping and the per-well anharmonicity histogram — neither of which requires new training — decides between a structural null, which is a positive and publishable claim about reparameterisation equivalence, and a statistical null, which is a call for a different operating point.
+8. **First-order sufficiency and training-time stability are governed by different channels of the same dial.** Packaging the bound as a decision criterion (§12) shows that the operating point explored to date satisfies it almost everywhere. Comparing it against the independently developed gradient-cascade analysis of second-order training (§13) shows this is not a coincidence to be traded away: $\gamma\_{\text{geo}}$, which sets the order gap, and the cascade margin, which sets training stability, respond to $\gamma\_{\text{train}}$ differently, so stabilising second-order training costs nothing in order-gap terms — but it also means the corner of hyperparameter space where second order would matter most is not reached by the dial at all. This is the opening question for the mega-paper section on when first-order dynamics can plausibly replace the second-order system.
 
 ---
 
-## 16. Related Notes
+## 18. Related Notes
 
 - `Implicit_vs_Explicit_Damping_and_the_First_vs_Second_Order_Dynamics_Hypothesis.md` — the parent note; supplies the two damping channels, the recovered $\gamma\_{\text{geo}}$ values used throughout, the Fock-G1 protocol, and the executed instance that §11 re-interprets.
 - `Structural_Stability_of_Learned_Potentials_in_Semantic_Simulation.md` — the gauge group $O(d) \rtimes S\_K$, the geometric invariants, and the perturbation theory for **data** shifts that §7.1 contrasts with the integrator shift analysed here.
 - `The_Overdamped_Limit_and_The_Position_of_The_2nd_Order_Lagrangian_Framework.md` — the formal overdamped reduction, of which §6.2's absorbable term is the discrete-time counterpart.
 - `Replacing_The_Conservative_Mechanism_of_SPLM_with_First_Order.md` — the first-order ablation design.
 - `Determining_optimal_gamma_for_Fock-PARFLM.md` and `Fock-PARFLM_Scale-Up_Gamma_Sweep_Results_and_Damping_Regime_Analysis.md` — the damping sweeps that supply the $\gamma\_{\text{geo}}$ invariance relied on in §6.4.
-- `Geodesic_Preservation_Experiment.md` — the geodesic residual pipeline, and the measurement §13.1 proposes to specialise to the momentum channel.
+- `Geodesic_Preservation_Experiment.md` — the geodesic residual pipeline, and the measurement §15.1 proposes to specialise to the momentum channel.
 - `Reducing_Information_Bottleneck_In_Multi-Channel_Xi_SPLM.md` — the multi-channel context construction whose spectral conditioning is Channel B of §8.2.
 - `Potential_Wells_Temperature_and_Boltzmann-Gibbs_Theory.md` — occupancy and Boltzmann weighting of wells, background for §7 and §8.3.
+- `Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md` — the gradient-cascade phenomenology (§§23, 25) and the damping hypothesis (§26) that §13 contrasts against the well-gap's own damping dependence; the source of the $J\_\ell$ formula quoted in §13.2.
+- `Closed_Form_and_Hybrid_Integration_Strategies_for_Fock-PARFLM.md` — the BAOAB / CfC propagator, the only mitigation identified to date that removes the create_graph cascade at its source, and therefore the natural candidate for reaching the low-$\gamma\_{\text{geo}}$ corner that §13.4 argues the training dial cannot reach.
 - `GitHub_Markdown_LaTeX_Rendering_Cheatsheet.md` — the rendering rules this note was checked against.
 
 ---
 
-## 17. References
+## 19. References
 
 1. Zipf, G. K. (1949). *Human Behavior and the Principle of Least Effort*. Addison-Wesley.
 2. Mandelbrot, B. (1953). An informational theory of the statistical structure of language. In W. Jackson (ed.), *Communication Theory*, Butterworth.
@@ -822,3 +913,4 @@ The substantive findings, in the order they change what one would do next:
 19. Ainsworth, S. K., Hayase, J., and Srinivasa, S. (2023). Git Re-Basin: merging models modulo permutation symmetries. *International Conference on Learning Representations*.
 20. Oppenheim, A. V., and Schafer, R. W. (2009). *Discrete-Time Signal Processing*, 3rd ed. Prentice Hall. (One-pole filter spectra, used in §8.2.)
 21. Eldan, R., and Li, Y. (2023). TinyStories: how small can language models be and still speak coherent English? *arXiv:2305.07759*.
+22. Pascanu, R., Mikolov, T., and Bengio, Y. (2013). On the difficulty of training recurrent neural networks. *Proceedings of the 30th International Conference on Machine Learning*, 1310-1318. (Classical account of exploding and vanishing gradients from a product of near-unit-spectral-radius Jacobians across depth, the same phenomenon §13.2 identifies in the create_graph cascade.)
