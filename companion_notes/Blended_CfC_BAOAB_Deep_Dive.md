@@ -199,9 +199,9 @@ For a multi-well potential with $K$ wells, the **blended CfC propagator** is
 $$
 \boxed{
 \begin{pmatrix}h'\\ v'\end{pmatrix}
-= \sum\_{k=1}^{K} \alpha\_k(h)\,\Phi\_k(\tau)\begin{pmatrix}h - \mu\_k\\ v\end{pmatrix}
-+ \Bigl(1 - \sum\_{k=1}^{K}\alpha\_k(h)\Bigr)\,\Phi\_{\text{free}}(\tau)\begin{pmatrix}h\\ v\end{pmatrix}
-+ \sum\_{k=1}^{K}\alpha\_k(h)\begin{pmatrix}\mu\_k\\ 0\end{pmatrix}.
+= \sum\_{k=1}^{K} \alpha\_k(h)\,\Phi\_k(\tau)\begin{pmatrix}h - \mu\_k\\ v\end{pmatrix} +
+\Bigl(1 - \sum\_{k=1}^{K}\alpha\_k(h)\Bigr)\,\Phi\_{\text{free}}(\tau)\begin{pmatrix}h\\ v\end{pmatrix} +
+\sum\_{k=1}^{K}\alpha\_k(h)\begin{pmatrix}\mu\_k\\ 0\end{pmatrix}.
 }
 $$
 

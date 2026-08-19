@@ -291,9 +291,7 @@ coupling. Almost certainly necessary for non-toy languages.
 $\Delta t$.
 
 $$
-\dot{x}_t^{(\ell+1)} =
- (1 - \gamma \Delta t) \dot{x}_t^{(\ell)}
- + \frac{\Delta t}{\mathfrak{m}_t} F\bigl(\xi_t, x_t^{(\ell)}\bigr),
+\dot{x}_t^{(\ell+1)} = (1 - \gamma \Delta t) \dot{x}_t^{(\ell)} + \frac{\Delta t}{\mathfrak{m}_t} F\bigl(\xi_t, x_t^{(\ell)}\bigr),
 $$
 
 $$

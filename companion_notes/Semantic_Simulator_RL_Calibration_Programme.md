@@ -96,10 +96,7 @@ $$
 with the potential decomposed into named force terms:
 
 $$
-V(\xi, x) = \underbrace{V_{\text{wells}}(x)}_{\text{lexical attractors}}
- + \underbrace{V_{\text{SARF}}(\xi, x)}_{\text{semantic attractor-repellor field}}
- + \underbrace{V_{\text{PARF}}(x)}_{\text{property field}}
- + \underbrace{V_{\text{ctx}}(\xi, x)}_{\text{context coupling}}.
+V(\xi, x) = \underbrace{V_{\text{wells}}(x)}_{\text{lexical attractors}} + \underbrace{V_{\text{SARF}}(\xi, x)}_{\text{semantic attractor-repellor field}} + \underbrace{V_{\text{PARF}}(x)}_{\text{property field}} + \underbrace{V_{\text{ctx}}(\xi, x)}_{\text{context coupling}}.
 $$
 
 Specific parametric forms (a starting point, to be refined):
