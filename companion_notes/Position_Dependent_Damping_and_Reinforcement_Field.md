@@ -10,6 +10,8 @@
 > - **Damping calibration:** [`Determining_optimal_gamma_for_Fock-PARFLM.md`](Determining_optimal_gamma_for_Fock-PARFLM.md)
 > - **SPLM gamma framework:** [`Determining_optimal_gamma_for_SPLM.md`](Determining_optimal_gamma_for_SPLM.md)
 > - **Fock mechanism engagement:** [`Fock_Mechanism_Engagement_MLP_vs_Gaussian_VTheta.md`](Fock_Mechanism_Engagement_MLP_vs_Gaussian_VTheta.md)
+> - **The well-gap / order-gap analysis and the three optimal dampings:** [`Corpus_Statistics_and_the_First_vs_Second_Order_Well_Gap.md`](Corpus_Statistics_and_the_First_vs_Second_Order_Well_Gap.md) (§13 and §9.5 below)
+> - **The gradient-cascade instability:** [`Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`](Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md)
 > - **Model code:** [`notebooks/conservative_arch/parf/model_parf.py`](../notebooks/conservative_arch/parf/model_parf.py)
 
 ---
@@ -722,6 +724,81 @@ compared to the attention computation (which is $O(T^2 d)$ per layer).
 The MLP parameterisation adds $O(T d^2 / 4)$ per layer, which is
 non-trivial at large $d$ but still much smaller than attention.
 
+### 9.5 Interaction with training-time stability: a spatially concentrated cascade risk
+
+Sections 9.1-9.4 above examine how $\gamma(h)$ interacts with the Jacobi
+metric, the learned-gamma flag, and compute -- but not with training-time
+stability, which is a separate axis developed after this note was
+drafted, in
+[`Corpus_Statistics_and_the_First_vs_Second_Order_Well_Gap.md`](Corpus_Statistics_and_the_First_vs_Second_Order_Well_Gap.md)
+§13 and
+[`Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`](Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md).
+Filling that gap surfaces a real tension, not just a missing
+cross-reference, and it is worth recording here because it bears directly
+on which parameterisation of §4 is actually safe to run.
+
+**The three targets a damping value can serve.** With a global scalar
+$\gamma_{\text{train}}$, three distinct optimisation targets compete for
+the same one number: the perplexity-optimal value (dimension-dependent,
+§8), the geodesic-optimal value (tracks the realized $\gamma_{\text{geo}}$
+of §9.1, pinned near 0.96-0.98 by LayerNorm regardless of the dial), and
+the stability-optimal value (governed by the raw, pre-LayerNorm Jacobian
+of the `create_graph` force computation, $J_\ell \approx (1+\rho)I +
+\beta \nabla^2_h U$, whose spectral radius the dial lowers directly as
+$\gamma_{\text{train}}$ rises). These three do not in general coincide,
+and they act through different computational paths -- the first two
+through the realized, post-LayerNorm kinematics, the third through the
+raw backward-pass Jacobian that only ever exists inside the
+`create_graph` graph.
+
+**Promoting $\gamma$ to $\gamma(h)$ promotes the cascade Jacobian too.**
+$\gamma(h)$ gives the model one damping value per token rather than one
+global number, which is exactly the extra degree of freedom the scalar
+dial lacks for resolving the perplexity- and geodesic-optimal split (§8.2)
+-- but the same promotion turns $J_\ell$ into a per-position quantity,
+$J_\ell(h) \approx (1 + \rho(h))I + \beta \nabla^2_h U(h)$. The
+potential-derived parameterisation of §4.1 sets the retained momentum
+$\rho(h)$ at its **highest** exactly where $\nabla^2_h U(h)$ is
+**largest**: at well centers, where an attractive Gaussian well's
+curvature $\nabla^2 V(h_c) = w_i P_i$ peaks. The parameterisation
+motivated by fine-grained settling therefore places the lowest damping
+exactly where the cascade is most dangerous, concentrating stability risk
+at well centers rather than diffusing it across the hidden-state
+manifold. This is the opposite of what the stability-optimal target
+wants: it wants damping to rise, not fall, wherever curvature is largest.
+
+**This concentration lands on the wells that matter most for the other
+question this note-family asks.** The well-gap analysis of
+`Corpus_Statistics_and_the_First_vs_Second_Order_Well_Gap.md` §7.3 shows
+the systematic order gap between first- and second-order dynamics is
+detectable only at high-occupancy **head** wells, because occupancy
+cancels in the systematic term but not in the noise floor. The wells most
+valuable for detecting a second-order imprint and the wells most exposed
+to a naive $\gamma(h)$'s stability risk are therefore the same wells.
+
+**Reading this constructively.** Position-dependent damping is the
+natural candidate lever for reaching the low-$\gamma_{\text{geo}}$ corner
+that §6.4 and §13 of the well-gap note show the scalar dial cannot reach
+on its own -- it can lower effective damping locally without lowering it
+everywhere. But it does not sidestep the coupling that note's §13.4
+flags between $\gamma_{\text{geo}}$ and the cascade margin; it
+**relocates** that coupling from a global statement to a per-well one,
+sharpening rather than removing it. Left unaddressed, the potential-derived
+parameterisation of §4.1 is arguably the *worst* choice from a stability
+standpoint precisely because it is the cheapest and most naturally
+motivated one.
+
+**A falsifiable prediction.** If the hybrid parameterisation of §4.4 is
+trained end to end, the learned $\gamma(h)$ should show damping **rising**
+with local curvature or anharmonicity wherever cascade pressure dominates
+the settling intuition that motivated §4.1 -- a sign reversal relative to
+the potential-derived design. The extent of that reversal is a direct
+empirical readout of how much weight training places on stability versus
+fine-grained settling, well by well, and it should be logged alongside
+watchdog reload frequency whenever any $\gamma(h)$ variant is actually
+run (extending the experimental sequence of §10.2 with exactly this
+diagnostic).
+
 ---
 
 ## 10. Summary and next steps
@@ -746,6 +823,16 @@ non-trivial at large $d$ but still much smaller than attention.
 
 5. The main **caveat** is the impact on the Jacobi metric and geodesic
    analysis, which assumes a fixed conformal factor.
+
+6. **Position-dependent damping does not resolve the three-way tension
+   between perplexity-, geodesic-, and stability-optimal damping -- it
+   relocates it from global to local** (§9.5). The potential-derived
+   parameterisation places the lowest damping exactly where the
+   `create_graph` cascade Jacobian is largest (well centers), which are
+   also the high-occupancy wells the well-gap analysis needs most for
+   detecting a second-order imprint. Any experiment that runs a
+   $\gamma(h)$ variant should log watchdog reload frequency alongside
+   the learned spatial profile, not just perplexity.
 
 ### 10.2 Recommended experimental sequence
 
@@ -797,9 +884,16 @@ Scale the winner to OpenWebText.
 - Spatial average of $\gamma(h)$ within 2x of the two-regime
   prediction (sanity check).
 - No training instability (gradient spikes, alpha collapse) beyond
-  what the constant-$\gamma$ baseline exhibits.
+  what the constant-$\gamma$ baseline exhibits, checked specifically at
+  well centers (high-occupancy head wells), not just in aggregate --
+  §9.5 predicts this is where any excess risk from $\gamma(h)$ would
+  concentrate.
 - Geodesic residual analysis remains interpretable (even if the
   interpretation changes).
+- Report whether the learned $\gamma(h)$ preserves or reverses the sign
+  of the potential-derived design (§9.5's falsifiable prediction), as a
+  direct readout of whether stability pressure dominates the
+  fine-settling intuition that motivated Section 4.1.
 
 ---
 
