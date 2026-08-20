@@ -4102,7 +4102,7 @@ The PPL-geodesic coincidence at d=768 (documented in the gamma sweep analysis) m
 
 ![Validation-PPL trajectory for the two d=384, L=16 aniso-Gaussian + Fock-reg full runs, gamma_train=0.10 versus gamma_train=0.30, with watchdog reload steps marked as vertical dashed lines](images/gamma_d384_ppl_comparison.png)
 
-Note the two red dashed lines (γ=0.30's watchdog reloads at steps 7,124 and 7,891) landing on a curve that has already gone flat, versus the green dashed lines (γ=0.10's reloads at 8,925 and 10,697) landing on a curve that is still descending — a visual restatement of "reloads that interrupt real progress" versus "reloads that interrupt a plateau nobody would have missed." The γ=0.30 run is currently held at ~step 8,039; see `Determining_optimal_gamma_for_Fock-PARFLM.md` §12.5's closing note for the plan to extend it to a matched ~11,000-step endpoint before terminating it.
+Note the two red dashed lines (γ=0.30's watchdog reloads at steps 7,124 and 7,891) landing on a curve that has already gone flat, versus the green dashed lines (γ=0.10's reloads at 8,925 and 10,697) landing on a curve that is still descending — a visual restatement of "reloads that interrupt real progress" versus "reloads that interrupt a plateau nobody would have missed." The γ=0.30 run's log was last pulled at ~step 8,039, but the run itself was left training rather than stopped there and is expected to reach ~step 11,000 overnight; see `Determining_optimal_gamma_for_Fock-PARFLM.md` §12.5's status update for the plan to re-pull the log at that matched endpoint.
 
 | Run | $d$ | $L$ | $\gamma$ | $V_\theta$ family | Watchdog reloads (by step 8,039) | Max pre-clip grad |
 |---|:---:|:---:|:---:|---|:---:|---:|
