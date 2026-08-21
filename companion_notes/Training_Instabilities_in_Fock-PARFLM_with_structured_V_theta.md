@@ -3901,6 +3901,75 @@ The recommended strategy is **sequential**: apply Tier 1 immediately (already im
 - [Fock-PARFLM\_Scale-Up\_Gamma\_Sweep\_Results\_and\_Damping\_Regime\_Analysis.md](Fock-PARFLM_Scale-Up_Gamma_Sweep_Results_and_Damping_Regime_Analysis.md) §4.5 — the empirical evidence that motivated this analysis.
 - [Blended\_CfC\_BAOAB\_Deep\_Dive.md](Blended_CfC_BAOAB_Deep_Dive.md) — fully worked-out construction of the 7-sub-step B̃AOAB̃ scheme.
 
+### 24.5 A second dividend: the propagator unlocks a *safe* position-dependent damping
+
+The propagator's justification in §24.1–24.4 is stability at scale. There
+is a second, less obvious payoff that becomes the anchor of a small
+implementation roadmap: **the BAOAB/CfC integrator is also the enabling
+step for position-dependent damping $\gamma(h)$**
+([Position\_Dependent\_Damping\_and\_Reinforcement\_Field.md](Position_Dependent_Damping_and_Reinforcement_Field.md) §9.7).
+
+The reasoning is a direct consequence of §24.1's own observation that
+"damping is handled by the O-step." In the current Verlet integrator
+friction is baked into the force coefficients $\rho, \beta$, so promoting
+$\gamma \to \gamma(h)$ contaminates the `create_graph=True` force step and
+adds a new position-dependent term to a backward pass already sitting near
+its spectral-radius margin. BAOAB moves all friction into the standalone
+O-step; CfC removes the `create_graph` chain from the B-step. Together they
+change $\gamma(h)$ from a term *inside* the second-order cascade into a
+plain first-order, elementwise rescaling of the momentum in the O-step:
+
+$$v \leftarrow e^{-\gamma(h)\Delta t}\,v + \sqrt{1-e^{-2\gamma(h)\Delta t}}\,\sigma\,\xi,$$
+
+with $\gamma(h)$ evaluated at the position held fixed within the sub-step.
+Three consequences follow, developed in full in the companion note's §9.7:
+
+1. **$\gamma(h)$ leaves the second-order chain.** Its backward pass is
+   ordinary first-order autograd, and with the $V_\theta$ cascade already
+   gone (§24.2) there is nothing left for it to amplify — dissolving the
+   "self-defeating" objection that makes $\gamma(h)$ risky on the Verlet
+   integrator.
+2. **The correct control signal comes for free.** A spike- or
+   curvature-aware $\gamma(h)$ wants the local curvature; CfC already
+   computes the local harmonic frequency $\omega_k = \sqrt{2V_0\kappa_k^2}$
+   (§24.2), so $\gamma(h)=\gamma_0 + \kappa\,\phi(\omega_k)$ is an analytic,
+   first-order-differentiable byproduct of the B-step.
+3. **Strong spatial variation is safe.** The O-step is the exact OU
+   solution for any $\gamma\ge0$, so a sharply varying $\gamma(h)$ never
+   destabilises the integrator.
+
+Deeper still: once CfC removes the cascade at source, the *reason* one
+would reach for $\gamma(h)$ changes. The whole tension flagged in
+`Corpus_Statistics...md` §13.5 — that the fine-settling parameterisation
+starves damping exactly where the cascade Jacobian is largest — assumes a
+cascade to be starved. Remove it and that danger evaporates, so $\gamma(h)$
+reverts from a *stability governor* (the §9.6 framing) to its original role
+as an inference-geometry / fine-settling knob.
+
+**Implementation roadmap (the ordering is causal).**
+
+| Step | Item | Why it must come first |
+| ---: | --- | --- |
+| 1 | **CfC/BAOAB propagator** (§24) | Removes the cascade at source; keeps second-order forward geodesics; stabilises turbulent corpora. Load-bearing on its own. |
+| 2 | **Position-dependent damping $\gamma(h)$** on top | Only *after* CfC: it removes the obstacle that makes $\gamma(h)$ dangerous, creates the O-step as its physically faithful home, supplies the $\omega_k$ control signal, and lets a constant-$\gamma$ CfC baseline de-risk attribution. |
+
+Verify a constant-$\gamma$ CfC run first (geodesics reproduced, spikes
+gone), then layer $\gamma(h)$ on and judge it by reload-and-geometry
+diagnostics rather than by spike suppression, which CfC already owns.
+
+**Mixed-corpus corollary.** This roadmap also answers how to run the
+turbulence-prone second-order corpora (e.g. OpenWebText) that cannot be
+reduced to first order without losing inference-time geodesic realism. The
+first-order-sufficiency analysis
+([Corpus\_Statistics\_and\_the\_First\_vs\_Second\_Order\_Well\_Gap.md](Corpus_Statistics_and_the_First_vs_Second_Order_Well_Gap.md) §12)
+lets a corpus be partitioned by its anharmonicity: where $A_i \ll 1$
+first-order dynamics is a certified substitute and carries no cascade;
+where it is not (high predictive information, long-range dependence), the
+CfC/BAOAB second-order propagator keeps the geodesics genuine while
+removing the spikes. The training process is therefore *corpus-partitioned*
+— first-order where sufficiency holds, CfC-second-order where it does not —
+rather than a single global integrator choice.
+
 ## 25. Late-Training Spike Emergence: The Cascade is Universal, Not Depth-Specific
 
 ### 25.1 Background

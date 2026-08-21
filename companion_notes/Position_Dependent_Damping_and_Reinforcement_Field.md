@@ -886,6 +886,118 @@ outer loop. The bet $\gamma(h)$ is making is that generating fewer spikes
 inside the forward dynamics beats catching them after the fact; it only
 pays off if it clears failure mode B.
 
+### 9.7 $\gamma(h)$ under a CfC/BAOAB integrator, and the implementation roadmap
+
+> **Priority note.** Unlike §9.6, this subsection *is* on the agenda,
+> because it fixes the order in which two already-planned pieces of work
+> should land. The CfC/BAOAB propagator
+> (`Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md` §24)
+> is the next major implementation item; this subsection records what it
+> changes for $\gamma(h)$ and why $\gamma(h)$ must come *after* it.
+
+Everything in §9.5 and §9.6 assumed the current damped-velocity-Verlet
+integrator, in which friction is baked into the force coefficients
+$\rho = 1/(1+\Delta t\gamma)$ and $\beta = \Delta t^2/(m_b(1+\Delta
+t\gamma))$. A BAOAB/CfC propagator changes the picture qualitatively,
+and almost entirely in $\gamma(h)$'s favour.
+
+**What changes: damping leaves the force step and becomes a standalone
+operator.** BAOAB splits each layer into $\mathrm{B}$-$\mathrm{A}$-$\mathrm{O}$-$\mathrm{A}$-$\mathrm{B}$
+sub-steps, and *all* friction is handled by the $\mathrm{O}$-step alone,
+which is the exact closed-form Ornstein-Uhlenbeck solution and contains
+**no force evaluation** (§24.1 of the instabilities note). Position-dependent
+damping is then implemented as one localized change to the $\mathrm{O}$-step,
+$$v \;\leftarrow\; e^{-\gamma(h)\Delta t}\,v \;+\; \sqrt{1-e^{-2\gamma(h)\Delta t}}\,\sigma_{\mathrm{th}}\,\zeta,$$
+with $\gamma(h)$ read off the position $h$ that is *frozen within that
+sub-step* by the Strang splitting. This is exactly the placement the
+Rayleigh dissipation function of §2 implies -- $\gamma$ is friction, and
+friction belongs in the $\mathrm{O}$-step -- so the integrator finally
+matches the physics instead of smearing $\gamma$ across the force
+coefficients of §4.5.
+
+**Why it helps -- three concrete gains.**
+
+1. **$\gamma(h)$ leaves the second-order `create_graph` chain, dissolving
+   failure mode B of §9.6.** The $\mathrm{O}$-step is a scalar elementwise
+   rescaling of $v$; its backward pass is ordinary first-order autograd.
+   Because the CfC substitution has already replaced the $V_\theta$ force
+   with a forward-mode analytical propagator (§24.2, no
+   `autograd.grad(create_graph=True)`), there is no second-order cascade
+   left for $\gamma(h)$ to feed into. The single biggest objection to
+   $\gamma(h)$ -- that it adds fresh curvature to its own cascade Jacobian
+   -- has nothing to attach to (modulo the residual $V_\phi$ chain of
+   §24.3).
+
+2. **CfC hands you the correct-sign control signal analytically, still
+   first-order.** §9.6 argued a spike-suppressing $\gamma(h)$ must key off
+   local curvature/force, not the potential value -- but reading $\lVert
+   \nabla V\rVert$ or $\lambda_{\max}(\nabla^2 V)$ in the Verlet world drags
+   a gradient into $\gamma$ and re-introduces a `create_graph` term. CfC
+   removes this obstacle too: the propagator already computes the local
+   harmonic frequency $\omega_k = \sqrt{2V_0\kappa_k^2}$ near each well,
+   which *is* the local curvature. A curvature-keyed governor
+   $\gamma(h) = \gamma_0 + \kappa\,\phi(\omega_k)$ is therefore available
+   as an analytic byproduct of the $\mathrm{B}$-step, differentiable by
+   first-order autograd -- CfC is what makes the "right" parameterization
+   cheap.
+
+3. **The $\mathrm{O}$-step is exact for any $\gamma\ge0$, so $\gamma(h)$
+   can vary hard.** In explicit/implicit Verlet a large local $\gamma$ can
+   push the update out of its stability region, which is why §7.2 needs a
+   smoothness regulariser on $\gamma(h)$. The OU $\mathrm{O}$-step is
+   unconditionally stable, so strong per-token variation never breaks the
+   integrator; the §7.2 smoothness constraint weakens from a stability
+   requirement to a mild regularization preference.
+
+**The deeper change: *why* you would use $\gamma(h)$ at all.** §9.5-§9.6
+and §13.5 of `Corpus_Statistics_and_the_First_vs_Second_Order_Well_Gap.md`
+frame $\gamma(h)$'s central tension this way: the §4.1 fine-settling sign
+(lowest damping at well centers) is dangerous *because* it starves damping
+exactly where the `create_graph` cascade Jacobian $\beta\nabla^2_h U$ is
+largest. Once CfC removes that cascade at its source, the danger
+evaporates -- there is no second-order backward blow-up to punish low
+damping at well centers, so the §4.1 sign becomes **safe again**. CfC
+therefore does not merely help implement $\gamma(h)$; it changes its job
+description:
+
+- In the Verlet world the tempting use of $\gamma(h)$ was as a **spike
+  governor** (§9.6), which forced the awkward sign reversal and the
+  wrong-channel problem.
+- Under BAOAB/CfC the cascade is already handled, so $\gamma(h)$ reverts
+  to its **original §4.1 purpose**: a per-token knob on the realized
+  $\gamma_{\mathrm{geo}}$ for fine-grained settling and for reaching the
+  low-$\gamma_{\mathrm{geo}}$ corner that §13.4 of the corpus note shows
+  the global dial cannot reach -- an *inference-geometry* knob decoupled
+  from training stability.
+
+This is the sense in which CfC **removes** rather than **relocates** the
+§13.5 tension: it severs the forward (geodesic) Jacobian from the backward
+(cascade) Jacobian so completely that $\gamma(h)$ acts on the former with
+no side effect on the latter.
+
+**The roadmap: CfC/BAOAB first, then $\gamma(h)$.** The ordering is
+causal, not merely convenient:
+
+1. **CfC/BAOAB removes the obstacle that makes $\gamma(h)$ dangerous.**
+   Building $\gamma(h)$ on the current Verlet integrator adds a new
+   position-dependent term to a backward pass already sitting near its
+   spectral-radius margin -- tuning a stability knob that is itself a
+   stability liability.
+2. **CfC/BAOAB creates the correct home for $\gamma(h)$.** The standalone
+   $\mathrm{O}$-step is the physically faithful site for a friction field;
+   without the splitting there is nowhere clean to put it.
+3. **CfC/BAOAB supplies the control signal $\gamma(h)$ needs** ($\omega_k$,
+   first-order-differentiable), per gain 2 above.
+4. **It de-risks attribution.** With CfC landed and a *constant* $\gamma$
+   first, one verifies the propagator reproduces the second-order forward
+   kinematics (geodesics intact) and kills the spikes; only then is
+   $\gamma(h)$ layered on, so any change is attributable to it alone.
+
+The nuance worth flagging: after step 1, $\gamma(h)$'s success criterion
+changes. It is no longer justified by spike suppression (CfC owns that)
+but by whether the geodesic/settling gains are real, evaluated by the
+§10.3 reload-and-geometry diagnostics rather than by aggregate PPL.
+
 ---
 
 ## 10. Summary and next steps
@@ -931,6 +1043,19 @@ pays off if it clears failure mode B.
    self-defeating second-order term $\gamma(h)$ adds to its own cascade
    Jacobian. The current, already-working stability lever remains
    per-group gradient clipping plus the EMA watchdog.
+
+8. **The implementation order is CfC/BAOAB first, then $\gamma(h)$**
+   (§9.7). A BAOAB/CfC propagator moves damping out of the force
+   coefficients into a standalone $\mathrm{O}$-step, takes $\gamma(h)$ out
+   of the second-order `create_graph` chain (dissolving §9.6's failure
+   mode B), and supplies the local curvature signal $\omega_k$
+   analytically and first-order-differentiably. Because it removes the
+   cascade at source, it also removes -- not merely relocates -- the §13.5
+   tension, and reverts $\gamma(h)$ from a stability governor to its
+   original §4.1 role as an inference-geometry / fine-settling knob. The
+   ordering is causal: CfC removes the obstacle, creates the correct home,
+   supplies the control signal, and de-risks attribution (verify a
+   constant-$\gamma$ CfC run first, then layer $\gamma(h)$ on top).
 
 ### 10.2 Recommended experimental sequence
 
