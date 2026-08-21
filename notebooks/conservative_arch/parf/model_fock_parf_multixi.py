@@ -368,7 +368,10 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
 
         if prefix_causal:
             # --- Token dynamics only (registers not concatenated) ---
-            h_new = super()._layer_step(
+            # _layer_step_ex also returns what the next layer should use as
+            # h_prev: the incoming h under Verlet, or the encoded outgoing
+            # velocity under the BAOAB/CfC integrators.
+            h_new, h_prev_out = super()._layer_step_ex(
                 h, h_prev, m_b, gamma, dt, layer_idx=layer_idx,
             )
             r_new = r
@@ -387,13 +390,14 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
                 m_ext = m_b
 
             # --- Multi-xi PARF dynamics on extended state ---
-            h_ext_new = super()._layer_step(
+            h_ext_new, h_prev_ext_out = super()._layer_step_ex(
                 h_ext, h_prev_ext, m_ext, gamma, dt, layer_idx=layer_idx,
             )
 
             # --- Split back ---
             h_new = h_ext_new[:, :T, :]
             r_new = h_ext_new[:, T:, :]
+            h_prev_out = h_prev_ext_out[:, :T, :]
             r_new = torch.where(active_float.bool(), r_new, r)
 
         # --- Register repulsion (B4): differentiable anti-collapse penalty on
@@ -481,7 +485,12 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
                     )
                 )
 
-        return h_new, h, r_new, salience
+        # h_prev_out is the incoming h under Verlet (unchanged behaviour) or
+        # the velocity-encoding h_new - dt*v_new under BAOAB/CfC.  Any later
+        # increment to h_new (the reverse channel) is therefore absorbed as
+        # the velocity change that force would produce, under either
+        # integrator.
+        return h_new, h_prev_out, r_new, salience
 
     # ------------------------------------------------------------------
     @torch.no_grad()

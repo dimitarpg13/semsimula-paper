@@ -64,6 +64,12 @@ from model_multixi import (  # noqa: E402
     ScalarPotentialMultiXi,
     log_spaced_alpha_inits,
 )
+from cfc_baoab import (  # noqa: E402
+    cfc_substep,
+    decode_velocity,
+    encode_velocity,
+    ou_step,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -91,6 +97,31 @@ class MultiXiPARFConfig(SparsePARFConfig):
     # Stability: force clamping and LN-before-V_theta.
     force_clamp_max: Optional[float] = None   # clamp force to [-F, F] per dim
     ln_before_vtheta: bool = False            # LN(h) before V_theta evaluation
+
+    # ── Integrator (see cfc_baoab.py) ────────────────────────────────
+    # 'verlet'     : damped velocity-Verlet, friction folded into the
+    #                1/(1+dt*gamma) coefficient.  The historical default;
+    #                bit-identical to every run before this option existed.
+    # 'baoab'      : palindromic splitting with an exact OU friction
+    #                substep, exp(-gamma*dt), and a genuine velocity.
+    # 'baoab_cfc'  : as 'baoab', but the stiff diagonal part of V_theta is
+    #                propagated by its closed-form harmonic solution
+    #                instead of an explicit kick -- unconditionally stable
+    #                however sharp the wells become.  Requires a V_theta
+    #                exposing ``harmonic_terms`` (anisotropic Gaussian).
+    integrator: str = "verlet"
+
+    # Compute -grad V_theta from its closed form instead of autograd.
+    # This is what removes V_theta from the second-order `create_graph`
+    # chain; orthogonal to the integrator choice, and forced on by the
+    # BAOAB family (which needs the force split).  Ignored when V_theta
+    # has no ``analytical_grad`` or when ln_before_vtheta is set.
+    vtheta_analytic_force: bool = False
+
+    # Thermostat temperature for the O-step.  0.0 = deterministic friction
+    # only, which keeps a BAOAB run directly comparable to a Verlet one.
+    langevin_T: float = 0.0
+    langevin_noise_eval: bool = False         # sample noise in eval too
 
 
 # ---------------------------------------------------------------------------
@@ -165,47 +196,42 @@ class MultiXiPARFLM(SparsePARFLM):
         return [float(a) for a in self.xi_module.alpha.detach().cpu().tolist()]
 
     # ------------------------------------------------------------------
-    def _layer_step(
-        self,
-        h: torch.Tensor,
-        h_prev: torch.Tensor,
-        m_b: torch.Tensor,
-        gamma: torch.Tensor,
-        dt: float,
-        layer_idx: int = 0,
-    ) -> torch.Tensor:
-        """One velocity-Verlet step with K-EMA ξ + sparse PARF routing.
+    def _use_analytic_vtheta(self) -> bool:
+        """Whether -∇V_theta can and should be taken from its closed form.
 
-        Identical to SparsePARFLM._layer_step except:
-          - causal_cumulative_mean(xi_input) → self.xi_module(xi_input)
-          - V_theta(xi_now, h_in) → V_theta(xis, h_in) with xis: (B, T, K, d)
+        Requires (a) the caller to have asked for it or an integrator that
+        needs the force split, (b) a V_theta that implements
+        ``analytical_grad``, and (c) no LayerNorm between h and V_theta
+        (``ln_before_vtheta``), whose Jacobian the closed form does not
+        include.
         """
         cfg = self.cfg
-        B, T, d = h.shape
-        delta = h - h_prev
+        wants = (
+            getattr(cfg, "vtheta_analytic_force", False)
+            or getattr(cfg, "integrator", "verlet") != "verlet"
+        )
+        return (
+            wants
+            and self.ln_before_v is None
+            and _has_analytical_grad(self.V_theta)
+        )
 
-        # ── Multi-channel ξ (replaces causal_cumulative_mean) ──
-        xi_input = h.detach() if cfg.causal_force else h
-        xis = self.xi_module(xi_input)                           # (B, T, K, d)
-
-        h_in = h
-        if not h_in.requires_grad:
-            h_in = h_in.requires_grad_(True)
+    # ------------------------------------------------------------------
+    def _pair_potential(
+        self, h_in: torch.Tensor, layer_idx: int,
+    ) -> torch.Tensor:
+        """Scalar V_φ pair sum at ``h_in`` (Stage-1.5b gathered or dense)."""
+        cfg = self.cfg
+        B, T, d = h_in.shape
 
         h_src = h_in.detach() if cfg.causal_force else h_in
         h_src_for_score = (
             h_in.detach() if cfg.score_head_use_detached_h_src else h_in
         )
 
-        # ── V_theta on multi-channel ξ (optional LN on h before eval) ──
-        h_for_v = self.ln_before_v(h_in) if self.ln_before_v is not None else h_in
-        V_th_per_token = self.V_theta(xis, h_for_v)             # (B, T, 1)
-
-        # ── Score head → routing ──
         pi = self.score_head(h_in, h_src_for_score)              # (B, T, T)
         causal = self._pair_mask_for(T, h_in.device)
 
-        # ── Pair potential — Stage-1.5b (gathered) or Stage-1.5a (dense) ──
         if cfg.use_gathered_v_phi:
             idx, m_g = self._sparse_topk_indices(pi, causal, T)  # (B,T,k), (B,T,k)
             idx_for_gather = idx.unsqueeze(-1).expand(-1, -1, -1, d)
@@ -227,33 +253,118 @@ class MultiXiPARFLM(SparsePARFLM):
         s_ell = self.per_layer_scale(layer_idx)
         if s_ell is not None:
             U_pair = U_pair * s_ell
+        return U_pair
 
-        # ── Force computation (fp32-guarded for bf16 stability) ──
-        # Under bf16 autocast the potential U may be bf16. Cast to fp32
-        # before computing the conservative force so the gradient (which
-        # compounds across L layers) stays in full precision. The cast is
-        # in-graph, so autograd still traces back through the bf16 V_theta
-        # and V_phi ops to their parameters. No-op when already fp32.
-        U = V_th_per_token.sum() + U_pair
-        with torch.autocast(device_type="cuda", enabled=False):
-            # retain_graph is only needed when create_graph=True: only then
-            # does grad_U carry a grad_fn back into the U graph that the
-            # *outer* loss.backward() will walk a second time. In eval
-            # (create_graph=False), grad_U is a plain detached tensor with
-            # no path back into this graph, so retain_graph=True would just
-            # keep every layer's buffers alive with nothing (no outer
-            # backward ever runs in evaluate()) around to free them --
-            # across L layers that is exactly the eval-time OOM in
-            # forward_gathered/model_parf.py.
-            grad_U, = torch.autograd.grad(
-                U.float(), h_in,
-                create_graph=self.training,
-                retain_graph=self.training,
+    # ------------------------------------------------------------------
+    def _layer_forces(
+        self,
+        h_in: torch.Tensor,
+        xis: torch.Tensor,
+        layer_idx: int,
+        *,
+        split: bool = False,
+    ):
+        """Conservative force ``f = -∇_h (V_theta + V_φ)`` evaluated at ``h_in``.
+
+        Returns ``f`` (default) or the pair ``(f_theta, f_phi)`` when
+        ``split=True``, which the BAOAB/CfC integrator needs so it can
+        route the two contributions through different substeps.
+
+        Force computation is fp32-guarded for bf16 stability: under bf16
+        autocast the potential may be bf16, so it is cast to fp32 before
+        differentiation, keeping the gradient (which compounds across L
+        layers) in full precision.  The cast is in-graph, so autograd
+        still traces back through the bf16 V_theta / V_φ ops to their
+        parameters.  No-op when already fp32.
+        """
+        cfg = self.cfg
+        U_pair = self._pair_potential(h_in, layer_idx)
+
+        if self._use_analytic_vtheta():
+            # Closed-form V_theta force: no autograd, so V_theta never
+            # enters the second-order create_graph chain at all.  Only the
+            # (much smaller) V_φ graph is differentiated twice.
+            f_theta = -self.V_theta.analytical_grad(xis, h_in)
+            with torch.autocast(device_type="cuda", enabled=False):
+                grad_phi, = torch.autograd.grad(
+                    U_pair.float(), h_in,
+                    create_graph=self.training,
+                    retain_graph=self.training,
+                )
+            f_phi = -grad_phi
+        else:
+            if split:
+                raise RuntimeError(
+                    "The BAOAB/CfC integrators need the V_theta force in "
+                    "closed form, but this V_theta has no analytical_grad "
+                    "(or ln_before_vtheta is set, whose Jacobian the "
+                    "closed form omits). Use integrator='verlet', or an "
+                    "anisotropic-Gaussian V_theta."
+                )
+            h_for_v = (
+                self.ln_before_v(h_in) if self.ln_before_v is not None else h_in
             )
-        f = -grad_U
+            V_th_per_token = self.V_theta(xis, h_for_v)           # (B, T, 1)
+            U = V_th_per_token.sum() + U_pair
+            with torch.autocast(device_type="cuda", enabled=False):
+                grad_U, = torch.autograd.grad(
+                    U.float(), h_in,
+                    create_graph=self.training,
+                    retain_graph=self.training,
+                )
+            f_theta, f_phi = None, -grad_U
 
+        if split:
+            return f_theta, f_phi
+
+        f = f_phi if f_theta is None else f_theta + f_phi
         if cfg.force_clamp_max is not None:
             f = f.clamp(-cfg.force_clamp_max, cfg.force_clamp_max)
+        return f
+
+    # ------------------------------------------------------------------
+    def _layer_step(
+        self,
+        h: torch.Tensor,
+        h_prev: torch.Tensor,
+        m_b: torch.Tensor,
+        gamma: torch.Tensor,
+        dt: float,
+        layer_idx: int = 0,
+    ) -> torch.Tensor:
+        """One damped velocity-Verlet step with K-EMA ξ + sparse PARF routing.
+
+        Identical to SparsePARFLM._layer_step except:
+          - causal_cumulative_mean(xi_input) → self.xi_module(xi_input)
+          - V_theta(xi_now, h_in) → V_theta(xis, h_in) with xis: (B, T, K, d)
+
+        The force itself is computed by :meth:`_layer_forces`, whose
+        ``autograd.grad`` call passes ``retain_graph=self.training``:
+        retain_graph is only needed when create_graph=True, because only
+        then does the gradient carry a grad_fn back into a graph that the
+        *outer* ``loss.backward()`` will walk a second time.  In eval
+        (create_graph=False) it would instead keep every layer's buffers
+        alive with no outer backward ever around to free them -- across L
+        layers that is exactly the eval-time OOM in forward_gathered.
+
+        This method integrates with the historical Verlet update and is
+        bit-identical to the pre-integrator-option behaviour.  The BAOAB /
+        CfC integrators live in :meth:`_layer_step_langevin` and are
+        reached through :meth:`_layer_step_ex`, because they need to
+        return an outgoing velocity as well as a position.
+        """
+        cfg = self.cfg
+        delta = h - h_prev
+
+        # ── Multi-channel ξ (replaces causal_cumulative_mean) ──
+        xi_input = h.detach() if cfg.causal_force else h
+        xis = self.xi_module(xi_input)                           # (B, T, K, d)
+
+        h_in = h
+        if not h_in.requires_grad:
+            h_in = h_in.requires_grad_(True)
+
+        f = self._layer_forces(h_in, xis, layer_idx)
 
         denom = 1.0 + dt * gamma
         h_new = h_in + delta / denom + (dt * dt / (m_b * denom)) * f
@@ -261,6 +372,118 @@ class MultiXiPARFLM(SparsePARFLM):
         if cfg.ln_after_step:
             h_new = self._project(h_new)
         return h_new
+
+    # ------------------------------------------------------------------
+    def _layer_step_langevin(
+        self,
+        h: torch.Tensor,
+        h_prev: torch.Tensor,
+        m_b: torch.Tensor,
+        gamma: torch.Tensor,
+        dt: float,
+        layer_idx: int = 0,
+    ) -> tuple:
+        """One BAOAB-family step, returning ``(h_new, h_prev_out)``.
+
+        Palindromic position-first (ABOBA) ordering, one force evaluation
+        per layer to match the cost of the Verlet step it replaces::
+
+            A  half substep   drift, or the exact harmonic flow under CfC
+            B  full kick      everything the A substep did not integrate
+            O  friction       exact exp(-gamma*dt) (+ FDT noise if T > 0)
+            A  half substep   drift / harmonic flow again
+
+        Under ``integrator='baoab_cfc'`` the A substeps propagate the
+        stiff diagonal part of V_theta *exactly* (see
+        ``cfc_baoab.cfc_substep``) and the B kick carries only the
+        remainder ``f_theta - f_harm + f_phi``.  The two parts sum to the
+        unmodified total force, so this changes how the dynamics is
+        integrated without changing the force field being integrated --
+        which is what makes a Verlet-vs-CfC comparison interpretable.
+
+        The outgoing velocity is encoded back into ``h_prev_out`` so the
+        ``(h, h_prev)`` state signature, the checkpoint layout and the
+        inference path are all unchanged.
+        """
+        cfg = self.cfg
+        use_cfc = cfg.integrator == "baoab_cfc"
+        half = 0.5 * dt
+
+        xi_input = h.detach() if cfg.causal_force else h
+        xis = self.xi_module(xi_input)                           # (B, T, K, d)
+
+        h_in = h
+        if not h_in.requires_grad:
+            h_in = h_in.requires_grad_(True)
+
+        v = decode_velocity(h_in, h_prev, dt)
+
+        if use_cfc:
+            if not hasattr(self.V_theta, "harmonic_terms"):
+                raise RuntimeError(
+                    "integrator='baoab_cfc' needs a V_theta exposing "
+                    "harmonic_terms(xis, h) -- e.g. the anisotropic "
+                    "Gaussian family in model_aniso_gaussian_vtheta.py. "
+                    "Use integrator='baoab' for other V_theta variants."
+                )
+            # Frozen over the layer step, as in any exponential
+            # integrator: the linearisation is taken once, at h.
+            k_diag, s_lin = self.V_theta.harmonic_terms(xis, h_in)
+            h_mid, v_mid = cfc_substep(
+                h_in, v, s_lin - k_diag * h_in, k_diag, m_b, half,
+            )
+        else:
+            k_diag = s_lin = None
+            h_mid, v_mid = h_in + half * v, v
+
+        if not h_mid.requires_grad:
+            h_mid = h_mid.requires_grad_(True)
+
+        # ── B: kick with whatever the A substeps did not already carry ──
+        f_theta, f_phi = self._layer_forces(h_mid, xis, layer_idx, split=True)
+        f_kick = f_theta + f_phi
+        if use_cfc:
+            f_kick = f_kick - (s_lin - k_diag * h_mid)
+        if cfg.force_clamp_max is not None:
+            f_kick = f_kick.clamp(-cfg.force_clamp_max, cfg.force_clamp_max)
+        v_mid = v_mid + (dt / m_b) * f_kick
+
+        # ── O: exact friction, optionally FDT-thermostatted ──
+        v_mid = ou_step(
+            v_mid, gamma, dt, m=m_b,
+            T=getattr(cfg, "langevin_T", 0.0),
+            training=self.training,
+            noise_eval=getattr(cfg, "langevin_noise_eval", False),
+        )
+
+        # ── A: second half substep ──
+        if use_cfc:
+            h_new, v_new = cfc_substep(
+                h_mid, v_mid, s_lin - k_diag * h_mid, k_diag, m_b, half,
+            )
+        else:
+            h_new, v_new = h_mid + half * v_mid, v_mid
+
+        if cfg.ln_after_step:
+            h_new = self._project(h_new)
+        return h_new, encode_velocity(h_new, v_new, dt)
+
+    # ------------------------------------------------------------------
+    def _layer_step_ex(
+        self,
+        h: torch.Tensor,
+        h_prev: torch.Tensor,
+        m_b: torch.Tensor,
+        gamma: torch.Tensor,
+        dt: float,
+        layer_idx: int = 0,
+    ) -> tuple:
+        """Dispatch to the configured integrator; see the base-class docstring."""
+        if getattr(self.cfg, "integrator", "verlet") == "verlet":
+            return self._layer_step(h, h_prev, m_b, gamma, dt, layer_idx), h
+        return self._layer_step_langevin(
+            h, h_prev, m_b, gamma, dt, layer_idx=layer_idx,
+        )
 
     # ------------------------------------------------------------------
     def num_params(self) -> int:

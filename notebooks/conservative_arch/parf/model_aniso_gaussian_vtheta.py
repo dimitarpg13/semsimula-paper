@@ -178,6 +178,56 @@ class AnisotropicMixtureGaussianVTheta(nn.Module):
 
         return per_comp.sum(dim=-2)
 
+    def harmonic_terms(
+        self, xi: torch.Tensor, h: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """Frozen-coefficient diagonal harmonic model of the force at ``h``.
+
+        The force of this potential is *exactly* a sum of linear springs
+        with state-dependent coefficients:
+
+            f(h) = -grad_h V = -sum_k g_k P_k (h - mu_k),
+            g_k  = w_k exp(-0.5 diff_k^T P_k diff_k) > 0,
+            P_k  = diag(a_k) + B_k B_k^T.
+
+        Keeping only the diagonal of each ``P_k`` gives a per-dimension
+        spring whose exact flow the CfC propagator can integrate
+        (``cfc_baoab.cfc_substep``):
+
+            k_diag = sum_k g_k diag(P_k),      diag(P_k) = a_k + rowsum(B_k^2)
+            s      = sum_k g_k diag(P_k) mu_k
+            f_harm(h') = s - k_diag * h'
+
+        At ``h' = h`` this reproduces the diagonal part of the true force
+        exactly, so the caller can form the residual
+        ``f - f_harm`` and integrate it numerically without changing the
+        total force field at all: the split is exact, only the *way the
+        two parts are propagated* differs.
+
+        Returns
+        -------
+        (k_diag, s) : both (..., d)
+            ``k_diag >= 0`` elementwise (all wells are attractive), so the
+            induced frequency ``sqrt(k_diag/m)`` is always real and the
+            propagator is always a bounded rotation.
+        """
+        mu, a, w, B = self._components(xi)
+        h_e = h.unsqueeze(-2)
+        diff = h_e - mu
+
+        diag_term = (a * diff * diff).sum(dim=-1)
+        Bt_diff = torch.einsum('...kd,...kdr->...kr', diff, B)
+        lr_term = (Bt_diff * Bt_diff).sum(dim=-1)
+
+        g = w * torch.exp(-0.5 * (diag_term + lr_term))          # (..., K)
+
+        p_diag = a + (B * B).sum(dim=-1)                          # (..., K, d)
+        gp = g.unsqueeze(-1) * p_diag                             # (..., K, d)
+
+        k_diag = gp.sum(dim=-2)                                   # (..., d)
+        s = (gp * mu).sum(dim=-2)                                 # (..., d)
+        return k_diag, s
+
     def attractor_centres(self, xi: torch.Tensor) -> torch.Tensor:
         lead = xi.shape[:-1]
         return self.mu_proj(xi).view(*lead, self.K, self.d)
@@ -229,6 +279,18 @@ class AnisotropicMultiContextGaussianVTheta(nn.Module):
         for m in range(1, self.n_ctx):
             out = out + self.banks[m].analytical_grad(xis[..., m, :], h)
         return out
+
+    def harmonic_terms(
+        self, xis: torch.Tensor, h: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """Sum the per-channel harmonic models (the potentials add, so do
+        their linearisations)."""
+        k_diag, s = self.banks[0].harmonic_terms(xis[..., 0, :], h)
+        for m in range(1, self.n_ctx):
+            k_m, s_m = self.banks[m].harmonic_terms(xis[..., m, :], h)
+            k_diag = k_diag + k_m
+            s = s + s_m
+        return k_diag, s
 
     def attractor_centres(self, xis: torch.Tensor) -> torch.Tensor:
         cs = [
@@ -303,6 +365,11 @@ class AnisotropicDepthConditionedGaussianVTheta(nn.Module):
     def analytical_grad(self, xis: torch.Tensor, h: torch.Tensor) -> torch.Tensor:
         return self.bank.analytical_grad(self._shift(xis), h)
 
+    def harmonic_terms(
+        self, xis: torch.Tensor, h: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        return self.bank.harmonic_terms(self._shift(xis), h)
+
     def attractor_centres(self, xis: torch.Tensor) -> torch.Tensor:
         return self.bank.attractor_centres(self._shift(xis))
 
@@ -365,6 +432,33 @@ def _smoke():
     V_r0 = bank_r0(xi, h)
     g_r0 = bank_r0.analytical_grad(xi, h)
     print(f"  rank=0 V shape={V_r0.shape}  grad shape={g_r0.shape}  OK")
+
+    print(f"\n--- harmonic_terms: exact diagonal linearisation of the force ---")
+    torch.manual_seed(0)
+    xi_h = torch.randn(3, 5, d)
+    h_h = torch.randn(3, 5, d)
+
+    # rank=0: the precision is exactly diagonal, so the harmonic model must
+    # reproduce the FULL analytical force, not just part of it.
+    bank_iso = AnisotropicMixtureGaussianVTheta(d=d, K=6, rank=0)
+    k_diag, s = bank_iso.harmonic_terms(xi_h, h_h)
+    f_harm = s - k_diag * h_h
+    f_true = -bank_iso.analytical_grad(xi_h, h_h)
+    err = (f_harm - f_true).abs().max().item()
+    print(f"  rank=0: |f_harm - f_true|_max = {err:.2e}  (must be ~0)")
+    assert err < 1e-5, err
+    assert (k_diag >= 0).all(), "stiffness must be non-negative (all wells attract)"
+
+    # rank>0: the harmonic model captures the diagonal; the residual is the
+    # off-diagonal low-rank coupling, which the caller integrates separately.
+    bank_aniso = AnisotropicMixtureGaussianVTheta(d=d, K=6, rank=4)
+    k_diag, s = bank_aniso.harmonic_terms(xi_h, h_h)
+    f_harm = s - k_diag * h_h
+    f_true = -bank_aniso.analytical_grad(xi_h, h_h)
+    resid = (f_true - f_harm).abs().max().item()
+    print(f"  rank=4: residual (off-diagonal) max = {resid:.2e}  "
+          f"(nonzero by design; total force is preserved by construction)")
+    assert (k_diag >= 0).all()
 
     print(f"\n--- Depth-conditioned anisotropic multi-context V_theta ---")
     n_ctx, K, L, rank = 4, 8, 6, 4

@@ -1241,6 +1241,33 @@ class PARFLM(nn.Module):
         return h_new
 
     # ------------------------------------------------------------------
+    def _layer_step_ex(
+        self,
+        h: torch.Tensor,
+        h_prev: torch.Tensor,
+        m_b: torch.Tensor,
+        gamma: torch.Tensor,
+        dt: float,
+        layer_idx: int = 0,
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """One layer step, returning ``(h_new, h_prev_out)``.
+
+        ``h_prev_out`` is what the *next* layer should receive as its
+        ``h_prev``, i.e. it carries the outgoing velocity.  For the
+        leapfrog/Verlet family that is simply the incoming ``h`` (velocity
+        is the finite difference of consecutive positions), so this
+        default is exactly the behaviour every caller had before this
+        method existed.
+
+        Integrators that evolve a genuine velocity -- the BAOAB / CfC
+        family in :class:`model_parf_multixi.MultiXiPARFLM` -- override
+        this to return ``h_new - dt*v_new`` instead, which encodes the
+        thermostatted velocity into the same two-tensor state without
+        changing any call signature, checkpoint layout, or inference path.
+        """
+        return self._layer_step(h, h_prev, m_b, gamma, dt, layer_idx), h
+
+    # ------------------------------------------------------------------
     def _stack_forward(
         self,
         h0: torch.Tensor,
@@ -1269,16 +1296,16 @@ class PARFLM(nn.Module):
             # instead of one at a time, inflating eval-time peak memory
             # far above the training-time peak at the same batch size.
             if cfg.use_layer_checkpoint and torch.is_grad_enabled():
-                h_new = torch.utils.checkpoint.checkpoint(
-                    self._layer_step,
+                h_new, h_prev_out = torch.utils.checkpoint.checkpoint(
+                    self._layer_step_ex,
                     h, h_prev, m_b, gamma, dt, ell,
                     use_reentrant=False,
                 )
             else:
-                h_new = self._layer_step(
+                h_new, h_prev_out = self._layer_step_ex(
                     h, h_prev, m_b, gamma, dt, layer_idx=ell,
                 )
-            h_prev = h
+            h_prev = h_prev_out
             h = h_new
             if traj is not None:
                 traj.append(h.detach().cpu())

@@ -236,6 +236,15 @@ def install_ostep(model, gamma=None, T=1.0, noise_train=True, noise_eval=False,
 
     if getattr(model, "_ostep_installed", False):
         return
+    _integ = getattr(model.cfg, "integrator", "verlet")
+    if _integ != "verlet":
+        raise RuntimeError(
+            f"install_ostep is a retrofit for the damped-Verlet step, but "
+            f"this model is configured with integrator={_integ!r}, which "
+            f"already applies an exact OU friction substep. Stacking them "
+            f"would damp twice. Use cfg.langevin_T to thermostat the "
+            f"built-in O-step instead."
+        )
     prev = model._fock_layer_step            # bound (may already be depth-routed)
     dt = float(model.cfg.dt)
     g = float(model.gamma) if gamma is None else float(gamma)
