@@ -140,8 +140,23 @@ class AnisotropicMixtureGaussianVTheta(nn.Module):
             B = mu.new_zeros(*mu.shape, 0)
         return mu, a, w, B
 
-    def forward(self, xi: torch.Tensor, h: torch.Tensor) -> torch.Tensor:
-        mu, a, w, B = self._components(xi)
+    def context_components(self, xi: torch.Tensor):
+        """Well parameters for ``xi``, reusable across several ``h``.
+
+        The well parameters depend only on the context, so a caller that
+        evaluates this bank at more than one position for the *same* xi
+        (the CfC integrator does: ``harmonic_terms`` at h and the force
+        at the drifted h_mid) can compute them once and pass them back
+        in via the ``comps`` argument.  ``B`` alone is
+        ``K * d * rank`` floats per token, so re-deriving it per
+        evaluation dominates the layer's activation footprint.
+        """
+        return self._components(xi)
+
+    def forward(
+        self, xi: torch.Tensor, h: torch.Tensor, *, comps=None,
+    ) -> torch.Tensor:
+        mu, a, w, B = self._components(xi) if comps is None else comps
         h_e = h.unsqueeze(-2)
         diff = h_e - mu
 
@@ -154,9 +169,9 @@ class AnisotropicMixtureGaussianVTheta(nn.Module):
         return -bumps.sum(dim=-1, keepdim=True)
 
     def analytical_grad(
-        self, xi: torch.Tensor, h: torch.Tensor,
+        self, xi: torch.Tensor, h: torch.Tensor, *, comps=None,
     ) -> torch.Tensor:
-        mu, a, w, B = self._components(xi)
+        mu, a, w, B = self._components(xi) if comps is None else comps
         h_e = h.unsqueeze(-2)
         diff = h_e - mu
 
@@ -167,9 +182,12 @@ class AnisotropicMixtureGaussianVTheta(nn.Module):
         exponent = -0.5 * (diag_term + lr_term)
         g = w * torch.exp(exponent)
 
-        grad_diag = a * diff
+        # Kept in this per-well form deliberately: contracting the well
+        # axis inside einsums looks leaner but measures ~40% *worse*,
+        # because autograd then has to save both einsum operands instead
+        # of reusing the buffers this expression already holds.
         grad_lr = torch.einsum('...kdr,...kr->...kd', B, Bt_diff)
-        per_comp = (grad_diag + grad_lr) * g.unsqueeze(-1)
+        per_comp = (a * diff + grad_lr) * g.unsqueeze(-1)
 
         if self._force_norm_max is not None:
             norms = per_comp.norm(dim=-1, keepdim=True).clamp(min=1e-8)
@@ -179,7 +197,7 @@ class AnisotropicMixtureGaussianVTheta(nn.Module):
         return per_comp.sum(dim=-2)
 
     def harmonic_terms(
-        self, xi: torch.Tensor, h: torch.Tensor,
+        self, xi: torch.Tensor, h: torch.Tensor, *, comps=None,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """Frozen-coefficient diagonal harmonic model of the force at ``h``.
 
@@ -211,7 +229,7 @@ class AnisotropicMixtureGaussianVTheta(nn.Module):
             induced frequency ``sqrt(k_diag/m)`` is always real and the
             propagator is always a bounded rotation.
         """
-        mu, a, w, B = self._components(xi)
+        mu, a, w, B = self._components(xi) if comps is None else comps
         h_e = h.unsqueeze(-2)
         diff = h_e - mu
 
@@ -231,6 +249,11 @@ class AnisotropicMixtureGaussianVTheta(nn.Module):
     def attractor_centres(self, xi: torch.Tensor) -> torch.Tensor:
         lead = xi.shape[:-1]
         return self.mu_proj(xi).view(*lead, self.K, self.d)
+
+
+def _ctx(comps, m):
+    """Select channel ``m`` from a cached component list, if there is one."""
+    return None if comps is None else comps[m]
 
 
 class AnisotropicMultiContextGaussianVTheta(nn.Module):
@@ -268,26 +291,45 @@ class AnisotropicMultiContextGaussianVTheta(nn.Module):
             for _ in range(n_ctx)
         )
 
-    def forward(self, xis: torch.Tensor, h: torch.Tensor) -> torch.Tensor:
-        out = self.banks[0](xis[..., 0, :], h)
+    def context_components(self, xis: torch.Tensor) -> list:
+        """Per-channel well parameters; see the per-bank docstring."""
+        return [
+            self.banks[m].context_components(xis[..., m, :])
+            for m in range(self.n_ctx)
+        ]
+
+    def forward(
+        self, xis: torch.Tensor, h: torch.Tensor, *, comps=None,
+    ) -> torch.Tensor:
+        out = self.banks[0](xis[..., 0, :], h, comps=_ctx(comps, 0))
         for m in range(1, self.n_ctx):
-            out = out + self.banks[m](xis[..., m, :], h)
+            out = out + self.banks[m](xis[..., m, :], h, comps=_ctx(comps, m))
         return out
 
-    def analytical_grad(self, xis: torch.Tensor, h: torch.Tensor) -> torch.Tensor:
-        out = self.banks[0].analytical_grad(xis[..., 0, :], h)
+    def analytical_grad(
+        self, xis: torch.Tensor, h: torch.Tensor, *, comps=None,
+    ) -> torch.Tensor:
+        out = self.banks[0].analytical_grad(
+            xis[..., 0, :], h, comps=_ctx(comps, 0),
+        )
         for m in range(1, self.n_ctx):
-            out = out + self.banks[m].analytical_grad(xis[..., m, :], h)
+            out = out + self.banks[m].analytical_grad(
+                xis[..., m, :], h, comps=_ctx(comps, m),
+            )
         return out
 
     def harmonic_terms(
-        self, xis: torch.Tensor, h: torch.Tensor,
+        self, xis: torch.Tensor, h: torch.Tensor, *, comps=None,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """Sum the per-channel harmonic models (the potentials add, so do
         their linearisations)."""
-        k_diag, s = self.banks[0].harmonic_terms(xis[..., 0, :], h)
+        k_diag, s = self.banks[0].harmonic_terms(
+            xis[..., 0, :], h, comps=_ctx(comps, 0),
+        )
         for m in range(1, self.n_ctx):
-            k_m, s_m = self.banks[m].harmonic_terms(xis[..., m, :], h)
+            k_m, s_m = self.banks[m].harmonic_terms(
+                xis[..., m, :], h, comps=_ctx(comps, m),
+            )
             k_diag = k_diag + k_m
             s = s + s_m
         return k_diag, s
@@ -359,16 +401,33 @@ class AnisotropicDepthConditionedGaussianVTheta(nn.Module):
         code = code.view(*([1] * lead), self.n_ctx, self.d)
         return xis + code
 
-    def forward(self, xis: torch.Tensor, h: torch.Tensor) -> torch.Tensor:
-        return self.bank(self._shift(xis), h)
+    def context_components(self, xis: torch.Tensor) -> list:
+        """Per-channel well parameters for the active layer's shifted xis."""
+        return self.bank.context_components(self._shift(xis))
 
-    def analytical_grad(self, xis: torch.Tensor, h: torch.Tensor) -> torch.Tensor:
-        return self.bank.analytical_grad(self._shift(xis), h)
+    def _maybe_shift(self, xis: torch.Tensor, comps):
+        """Skip the shift when components are supplied: xis is then unused,
+        and the shift would otherwise allocate a full copy of it."""
+        return xis if comps is not None else self._shift(xis)
+
+    def forward(
+        self, xis: torch.Tensor, h: torch.Tensor, *, comps=None,
+    ) -> torch.Tensor:
+        return self.bank(self._maybe_shift(xis, comps), h, comps=comps)
+
+    def analytical_grad(
+        self, xis: torch.Tensor, h: torch.Tensor, *, comps=None,
+    ) -> torch.Tensor:
+        return self.bank.analytical_grad(
+            self._maybe_shift(xis, comps), h, comps=comps,
+        )
 
     def harmonic_terms(
-        self, xis: torch.Tensor, h: torch.Tensor,
+        self, xis: torch.Tensor, h: torch.Tensor, *, comps=None,
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        return self.bank.harmonic_terms(self._shift(xis), h)
+        return self.bank.harmonic_terms(
+            self._maybe_shift(xis, comps), h, comps=comps,
+        )
 
     def attractor_centres(self, xis: torch.Tensor) -> torch.Tensor:
         return self.bank.attractor_centres(self._shift(xis))

@@ -263,12 +263,19 @@ class MultiXiPARFLM(SparsePARFLM):
         layer_idx: int,
         *,
         split: bool = False,
+        vtheta_comps=None,
     ):
         """Conservative force ``f = -∇_h (V_theta + V_φ)`` evaluated at ``h_in``.
 
         Returns ``f`` (default) or the pair ``(f_theta, f_phi)`` when
         ``split=True``, which the BAOAB/CfC integrator needs so it can
         route the two contributions through different substeps.
+
+        ``vtheta_comps`` optionally carries well parameters already
+        derived from ``xis`` by the caller (see
+        ``AnisotropicMixtureGaussianVTheta.context_components``), so the
+        CfC step does not re-derive them after having built them for its
+        harmonic linearisation.
 
         Force computation is fp32-guarded for bf16 stability: under bf16
         autocast the potential may be bf16, so it is cast to fp32 before
@@ -284,7 +291,12 @@ class MultiXiPARFLM(SparsePARFLM):
             # Closed-form V_theta force: no autograd, so V_theta never
             # enters the second-order create_graph chain at all.  Only the
             # (much smaller) V_φ graph is differentiated twice.
-            f_theta = -self.V_theta.analytical_grad(xis, h_in)
+            if vtheta_comps is None:
+                f_theta = -self.V_theta.analytical_grad(xis, h_in)
+            else:
+                f_theta = -self.V_theta.analytical_grad(
+                    xis, h_in, comps=vtheta_comps,
+                )
             with torch.autocast(device_type="cuda", enabled=False):
                 grad_phi, = torch.autograd.grad(
                     U_pair.float(), h_in,
@@ -426,21 +438,35 @@ class MultiXiPARFLM(SparsePARFLM):
                     "Gaussian family in model_aniso_gaussian_vtheta.py. "
                     "Use integrator='baoab' for other V_theta variants."
                 )
+            # The well parameters depend only on xis, so derive them once
+            # here and hand them to the force evaluation below: without
+            # this the bank (whose low-rank factor alone is K*d*rank
+            # floats per token) is built twice per layer, which is most of
+            # the CfC arm's activation footprint.
+            if hasattr(self.V_theta, "context_components"):
+                vtheta_comps = self.V_theta.context_components(xis)
+            else:
+                vtheta_comps = None
             # Frozen over the layer step, as in any exponential
             # integrator: the linearisation is taken once, at h.
-            k_diag, s_lin = self.V_theta.harmonic_terms(xis, h_in)
+            k_diag, s_lin = self.V_theta.harmonic_terms(
+                xis, h_in, comps=vtheta_comps,
+            )
             h_mid, v_mid = cfc_substep(
                 h_in, v, s_lin - k_diag * h_in, k_diag, m_b, half,
             )
         else:
             k_diag = s_lin = None
+            vtheta_comps = None
             h_mid, v_mid = h_in + half * v, v
 
         if not h_mid.requires_grad:
             h_mid = h_mid.requires_grad_(True)
 
         # ── B: kick with whatever the A substeps did not already carry ──
-        f_theta, f_phi = self._layer_forces(h_mid, xis, layer_idx, split=True)
+        f_theta, f_phi = self._layer_forces(
+            h_mid, xis, layer_idx, split=True, vtheta_comps=vtheta_comps,
+        )
         f_kick = f_theta + f_phi
         if use_cfc:
             f_kick = f_kick - (s_lin - k_diag * h_mid)
