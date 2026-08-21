@@ -799,6 +799,93 @@ watchdog reload frequency whenever any $\gamma(h)$ variant is actually
 run (extending the experimental sequence of §10.2 with exactly this
 diagnostic).
 
+### 9.6 Could $\gamma(h)$ be used *deliberately* as a gradient-spike governor? (deferred, August 20, 2026)
+
+> **Priority note.** This subsection records an idea raised in discussion,
+> not a planned experiment. It is a natural extension of §9.5 but is
+> **not on the current agenda** -- the immediate lever for the gradient
+> cascade remains the already-working combination of per-group gradient
+> clipping and the EMA watchdog
+> (`Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`).
+> It is written down here so the reasoning -- including two failure modes
+> §9.5 does not cover -- is not lost.
+
+§9.5 asks how a $\gamma(h)$ *motivated by fine-grained settling* interacts
+with the cascade, and answers that the potential-derived design of §4.1
+concentrates risk at well centers. The complementary question is whether
+$\gamma(h)$ could be turned around and used **on purpose** to suppress the
+training-time gradient spikes of
+`Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md` §26 and
+`Determining_optimal_gamma_for_Fock-PARFLM.md` §12.5. The tentative answer
+is *yes in principle, but not with any parameterisation §4 currently
+recommends, and only after clearing two failure modes*.
+
+**Why targeting could beat a global dial.** The cascade lives in the
+`create_graph` second-order backward pass, where each layer contributes a
+raw (pre-LayerNorm) Jacobian $J_\ell(h) \approx (1 + \rho(h))\,I + \beta
+\nabla^2_h U(h)$ and the run diverges when the spectral radius of
+$\prod_\ell J_\ell$ exceeds 1. A **global** $\gamma_{\mathrm{train}}$ can
+only lower the retained-momentum term $\rho$ everywhere at once; §12.5
+measured the cost of doing so on the aniso-Gaussian family (higher global
+$\gamma$ raised both perplexity, $211.63$ vs $184.11$, *and* reload count,
+$5$ vs $2$). $\gamma(h)$ is attractive because it could raise damping only
+at the tokens/layers where $(1+\rho) + \beta\,\lambda_{\max}(\nabla^2_h U)$
+is about to cross 1, keeping the per-layer spectral radius bounded
+*pointwise* while leaving the rest of the manifold underdamped for PPL.
+This is the same extra degree of freedom §8.2 invokes for the
+PPL/geodesic split, now aimed at stability; conceptually it is a
+differentiable, in-the-dynamics cousin of the per-group gradient clipping
+the model already uses.
+
+**Failure mode A -- the recommended sign is backwards, and the recommended
+signal is the wrong channel.** For spike suppression $\gamma(h)$ must
+**rise** with local curvature / force magnitude -- the sign reversal §9.5
+predicts -- whereas §4.1 makes it *fall* where $\nabla^2_h U$ is largest.
+Worse, in the run that actually spikes (the $d=384$ aniso-Gaussian
+$\gamma=0.30$ run of §12.5) the per-group spike attributions are dominated
+by the `E`, `P`, `depth_code`, `creation_gate`, and `register` groups,
+with `V_theta` consistently near the *bottom* of the contributor list. A
+$\gamma(h)$ keyed off $V_\theta$ (§4.1, §4.3) is therefore keyed to a
+channel that carries almost none of the spike energy. A spike-suppressing
+governor has to read a proxy that tracks the cascade directly -- local
+force magnitude $\lVert f(h)\rVert$, retained velocity
+$\lVert\delta(h)\rVert$, or an EMA of the per-token pre-clip gradient
+contribution -- not the potential value.
+
+**Failure mode B -- $\gamma(h)$ enters its own cascade Jacobian (not
+covered by §9.5).** Once $\gamma$ depends on $h$, the second-order
+backward pass must differentiate through it, and $J_\ell$ acquires a new
+term from
+$$\frac{\partial h^{(\ell+1)}}{\partial \gamma(h^{(\ell)})}\,\nabla_h\gamma(h^{(\ell)}) \;\propto\; -\frac{\Delta t^2}{(1+\gamma\Delta t)^2}\,\nabla_h\gamma(h)\otimes(\cdots).$$
+For a potential-derived $\gamma$, $\nabla_h\gamma \propto \nabla_h
+V_\theta$, so the term needed by `create_graph` re-injects $\nabla^2_h
+V_\theta$ -- the very curvature the governor is meant to tame -- back into
+the backward chain; for an MLP $\gamma$ it injects the MLP's own Jacobian.
+A naive $\gamma(h)$ can therefore be *self-defeating*: it smooths the
+forward trajectory while adding fresh second-order structure to the
+backward pass. Whether the net effect is stabilising is a genuine
+empirical question, which is the main reason not to expect a free win.
+
+**A design constraint that follows: don't leave it to NTP.** Gradient
+spikes are rare tail events, so an end-to-end $\gamma(h)$ trained only on
+$\mathcal{L}_{\mathrm{NTP}}$ gets almost no signal to grow damping in the
+configurations that precede a cascade and is unlikely to become a spike
+suppressor spontaneously. Deliberate spike suppression would need either
+(a) a **prescribed** (non-learned or lightly-learned) stability governor
+$\gamma(h) = \gamma_0 + \kappa\,\phi(\lVert f(h)\rVert\;\text{or}\;
+\lambda_{\max}(\nabla^2_h U))$ with $\phi$ monotone increasing, paired with
+the §7.2 smoothness regulariser so that $\gamma$-oscillation does not
+itself destabilise the integrator, or (b) an explicit auxiliary penalty on
+large per-token force / gradient norm added to the loss.
+
+**If it is ever run.** Evaluate it the way §10.3 already prescribes -- by
+watchdog-reload frequency at high-occupancy head wells, not aggregate PPL
+-- and benchmark it against the honest baseline of *keeping* per-group clip
+plus the watchdog, which already suppresses the cascade cheaply in the
+outer loop. The bet $\gamma(h)$ is making is that generating fewer spikes
+inside the forward dynamics beats catching them after the fact; it only
+pays off if it clears failure mode B.
+
 ---
 
 ## 10. Summary and next steps
@@ -833,6 +920,17 @@ diagnostic).
    detecting a second-order imprint. Any experiment that runs a
    $\gamma(h)$ variant should log watchdog reload frequency alongside
    the learned spatial profile, not just perplexity.
+
+7. **Using $\gamma(h)$ as a deliberate gradient-spike governor is a
+   plausible but deferred idea** (§9.6, not on the current agenda). It
+   could in principle raise damping pointwise only where the cascade
+   Jacobian is about to cross 1, but only after (a) reversing the §4.1
+   sign so damping *rises* with local curvature/force, (b) keying off the
+   channels that actually carry the spike energy (`E`, `P`, `depth_code`,
+   `creation_gate`, `register` -- not `V_theta`), and (c) clearing the
+   self-defeating second-order term $\gamma(h)$ adds to its own cascade
+   Jacobian. The current, already-working stability lever remains
+   per-group gradient clipping plus the EMA watchdog.
 
 ### 10.2 Recommended experimental sequence
 
