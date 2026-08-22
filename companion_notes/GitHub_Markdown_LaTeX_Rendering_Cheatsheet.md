@@ -557,11 +557,23 @@ These are not confirmed-fatal on every GitHub Mermaid version, but each one has 
 | `..` inside any label, e.g. `A["xi 1..K"]` | spell out as words, e.g. `A["xi K"]` | the double-dot sequence is tokenised as a range operator in GitHub's Mermaid version and triggers a silent render failure |
 | hyphen (`-`) immediately followed by a letter inside a label, e.g. `A["top-k"]` | replace with a space, e.g. `A["top k"]` | the `-letter` pattern resembles the start of a dotted edge and can corrupt tokenisation |
 | `=` inside labels, e.g. `A["f = grad V"]` | replace with a word, e.g. `A["f neg grad V"]` | `=` is safe in most renderers but triggers crashes in GitHub's stricter parser when combined with certain label content |
-| `_` inside quoted node labels, e.g. `A["h_t"]` | replace with a space or remove, e.g. `A["h"]` | even inside `["..."]`, GitHub's Mermaid lexer can treat `_` as a Markdown italic delimiter, corrupting the label and crashing the diagram |
+| `_` inside quoted node labels, e.g. `A["h_t"]` | `&#95;` HTML entity, e.g. `A["h&#95;t"]` (or a space if the underscore is not load-bearing) | even inside `["..."]`, GitHub's Mermaid lexer can treat a literal `_` as a Markdown italic delimiter, corrupting the label and crashing the diagram. A backslash `\_` does **not** work: Markdown may consume the `\`, and what remains is still a `_`. The numeric entity `&#95;` is decoded only after the lexer has finished, so the glyph renders as `_` with no italic pairing. Same idea as `&#123;` / `&#125;` for braces in §14. |
 | Unicode operators in labels (`−`, `∇`, `Σ`, `∈`, `→`, `≈`, `∞`) | ASCII spell-out (`-`, `grad`, `sum`, `in`, `->`, `approx`, `infty`) | confirmed-safe in 100 % of GitHub Mermaid versions; Unicode works on most but not all |
 | Greek letters in labels (`α`, `β`, `γ`, `θ`, `ξ`) | ASCII spell-out (`alpha`, `beta`, `gamma`, `theta`, `xi`) | same as above; also makes the source readable in non-Unicode terminals |
 
 **Rule:** when your KaTeX-rich document also contains Mermaid diagrams, prefer ASCII inside the diagram labels and keep the Greek / unicode in the surrounding KaTeX prose. The diagram is for structure; the math beside it is for symbols.
+
+**Underscores that must stay visible** (filenames, identifiers). Do not write a literal `_` and do not write `\_`. Use the HTML numeric entity, which GitHub's Mermaid decodes after the label has been lexed:
+
+```text
+%% Bad — literal underscore; GitHub may italic-pair it and crash the diagram
+A["cfc_baoab.py"]
+A["cfc\_baoab.py"]
+
+%% Good — entity renders as an underscore, lexer never sees "_"
+A["cfc&#95;baoab.py"]
+A["&#95;layer&#95;step"]
+```
 
 ---
 
@@ -765,7 +777,7 @@ The same applies to `[`, `]`, `{`, `}` inside pipe labels — none are quoted, s
 | `..` in label, e.g. `"xi 1..K"` | silent render failure | spell out as words, e.g. `"xi K"` |
 | `-letter` in label, e.g. `"top-k"` | silent render failure | replace hyphen with space: `"top k"` |
 | `=` in label, e.g. `"f = grad V"` | silent render failure | replace with a word: `"f neg grad V"` |
-| `_` in quoted label, e.g. `["h_t"]` | silent render failure | remove or replace with space: `["h"]` |
+| `_` in quoted label, e.g. `["h_t"]` | silent render failure (Markdown italic pairing) | `["h&#95;t"]` (HTML entity; `\_` does not work). A space is fine if the underscore is not load-bearing |
 | Unicode / Greek in label | intermittent render error on some versions | spell out as ASCII (`alpha`, `xi`, `grad`, `->`, `approx`, ...) |
 | `(("text"))` double-circle or `[/"text"/]` parallelogram | "Cannot read properties of undefined (reading 'render')" | use `("text")` (stadium) or `["text"]` (rectangle) instead |
 | `--` inside unquoted node label, e.g. `[Lever 3 -- X]` | same render error — `--` parsed as edge | quote the label: `["Lever 3 -- X"]` |
