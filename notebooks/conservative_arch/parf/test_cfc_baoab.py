@@ -261,6 +261,47 @@ def test_cfc_force_preservation():
 
 
 # ---------------------------------------------------------------------------
+# 4b. Backward pass must survive k_diag == 0 (a token far from every well)
+# ---------------------------------------------------------------------------
+def test_cfc_substep_zero_stiffness_no_nan():
+    """k_diag == 0 is a real, expected state, not a synthetic corner case.
+
+    ``model_aniso_gaussian_vtheta.harmonic_terms`` documents ``k_diag >= 0``
+    and the CfC forward pass handles ``omega -> 0`` exactly via
+    ``torch.sinc`` -- but before the ``_OMEGA_SQ_FLOOR`` fix, the
+    ``sqrt()`` that *produces* omega from ``k_diag`` had an infinite
+    derivative at 0.  Whenever the upstream gradient through
+    ``sinc``/``cos`` at that element was exactly 0 (the common case, since
+    ``sinc'(0) == 0``), the product ``0 * inf`` gave ``nan``, which then
+    poisons every parameter ``k_diag`` traces back to via the chain rule --
+    this is what showed up in a live OWT run as ``grad=nan`` starting
+    around step 2250 and growing more frequent as the wells sharpened
+    (more tokens landing in the ``g_k = w_k * exp(-0.5 * quad_form) == 0``
+    underflow regime).
+    """
+    B, T, d = 2, 3, 4
+    m = torch.ones(B, T, 1)
+    dt = 1.0
+    # Mix exact zeros with ordinary positive stiffness in the same tensor,
+    # exactly as a real per-token, per-dimension k_diag would.
+    k = torch.tensor([0.0, 3.0, 0.0, 5.0]).view(1, 1, d).expand(B, T, d).clone()
+    k.requires_grad_(True)
+    h = torch.randn(B, T, d, requires_grad=True)
+    v = torch.randn(B, T, d, requires_grad=True)
+    f_harm = torch.randn(B, T, d)
+
+    h_new, v_new = cfc_substep(h, v, f_harm, k, m, dt)
+    assert torch.isfinite(h_new).all() and torch.isfinite(v_new).all()
+    (h_new.pow(2).sum() + v_new.pow(2).sum()).backward()
+
+    assert torch.isfinite(k.grad).all(), f"nan/inf in k.grad: {k.grad}"
+    assert torch.isfinite(h.grad).all(), f"nan/inf in h.grad: {h.grad}"
+    assert torch.isfinite(v.grad).all(), f"nan/inf in v.grad: {v.grad}"
+    print("  [ok] backward through k_diag == 0 stays finite "
+          f"(k.grad at zero-stiffness dims: {k.grad[0, 0, [0, 2]].tolist()})")
+
+
+# ---------------------------------------------------------------------------
 # 5. The point of the exercise: stiffness immunity
 # ---------------------------------------------------------------------------
 def test_cfc_stiffness_immunity():
@@ -366,6 +407,7 @@ def main():
         test_analytic_vtheta_equivalence,
         test_verlet_formula_unchanged,
         test_cfc_force_preservation,
+        test_cfc_substep_zero_stiffness_no_nan,
         test_cfc_stiffness_immunity,
         test_velocity_encoding_roundtrip,
         test_end_to_end_all_integrators,

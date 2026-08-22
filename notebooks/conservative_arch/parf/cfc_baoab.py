@@ -95,6 +95,20 @@ from typing import Optional, Tuple
 
 import torch
 
+# `k_diag == 0` is a real, expected state (a token far from every well, see
+# `harmonic_terms`'s docstring) and grows more common as wells sharpen over
+# training.  `torch.sqrt` has an infinite derivative at 0, so clamping the
+# sqrt input to exactly 0.0 makes `omega`'s backward pass hit `0 * inf =
+# nan` at every such element -- forward is fine (sinc/psi/cos are smooth
+# through omega -> 0), only the sqrt node that *produces* omega is not.
+# Flooring at a tiny positive epsilon instead removes the singular point:
+# `clamp`'s own backward is exactly 0 below the floor, which is the correct
+# limit here anyway, since the upstream `g = w * exp(-0.5 * quad_form)` that
+# drove k_diag to (numerically) 0 has *already* lost its own gradient
+# sensitivity at that point (`d(exp)/dx = exp(x) -> 0` right alongside the
+# value). See `test_cfc_baoab.py::test_cfc_substep_zero_stiffness_no_nan`.
+_OMEGA_SQ_FLOOR = 1e-12
+
 
 # ---------------------------------------------------------------------------
 # Special functions (branch-free, exact through the omega -> 0 limit)
@@ -158,7 +172,7 @@ def cfc_substep(
         v_new = v + (dt / m) * f_harm
         return h_new, v_new
 
-    omega = (k_diag / m).clamp(min=0.0).sqrt()
+    omega = (k_diag / m).clamp(min=_OMEGA_SQ_FLOOR).sqrt()
     wt = omega * dt
 
     cos_wt = torch.cos(wt)
@@ -300,6 +314,23 @@ def _self_test() -> None:
     v_new = torch.randn(B, T, d)
     hp = encode_velocity(h_new, v_new, dt)
     assert (decode_velocity(h_new, hp, dt) - v_new).abs().max().item() < 1e-6
+
+    # 7) Backward pass through k_diag == 0 must not produce nan.  This is
+    #    the "token far from every well" case (see harmonic_terms), which
+    #    is a real, expected state that grows more common as wells sharpen
+    #    over training -- not an edge case that only shows up in synthetic
+    #    tests.  Before the _OMEGA_SQ_FLOOR fix, sqrt()'s infinite
+    #    derivative at 0 turned this into `0 * inf = nan` in the backward
+    #    pass, silently poisoning every parameter k_diag traces back to.
+    k_zero = torch.zeros(B, T, d, requires_grad=True)
+    h_z = torch.randn(B, T, d, requires_grad=True)
+    v_z = torch.randn(B, T, d, requires_grad=True)
+    f_z = torch.randn(B, T, d)
+    h_out, v_out = cfc_substep(h_z, v_z, f_z, k_zero, m, dt)
+    (h_out.pow(2).sum() + v_out.pow(2).sum()).backward()
+    assert torch.isfinite(k_zero.grad).all(), k_zero.grad
+    assert torch.isfinite(h_z.grad).all(), h_z.grad
+    assert torch.isfinite(v_z.grad).all(), v_z.grad
 
     print("cfc_baoab self-test: OK")
 
