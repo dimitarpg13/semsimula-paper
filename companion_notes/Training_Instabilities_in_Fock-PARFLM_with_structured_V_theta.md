@@ -76,6 +76,8 @@
     - 24.2 [The CfC Propagator Removes the Second-Order Chain](#242-the-cfc-propagator-removes-the-second-order-chain)
     - 24.3 [Residual Cascade from V_phi](#243-residual-cascade-from-v_phi)
     - 24.4 [Relationship to §23 Mitigations](#244-relationship-to-23-mitigations)
+    - 24.5 [A second dividend: the propagator unlocks a safe position-dependent damping](#245-a-second-dividend-the-propagator-unlocks-a-safe-position-dependent-damping)
+    - 24.6 [Is there a different explicit symplectic integrator that tolerates stiffer wells than Verlet?](#246-is-there-a-different-explicit-symplectic-integrator-that-tolerates-stiffer-wells-than-verlet)
 
 ---
 
@@ -3969,6 +3971,67 @@ CfC/BAOAB second-order propagator keeps the geodesics genuine while
 removing the spikes. The training process is therefore *corpus-partitioned*
 — first-order where sufficiency holds, CfC-second-order where it does not —
 rather than a single global integrator choice.
+
+### 24.6 Is there a different explicit symplectic integrator that tolerates stiffer wells than Verlet?
+
+Before committing to the CfC rewrite it is worth asking whether a
+smaller change — swapping Verlet for some other explicit,
+Euler-family, symplectic integrator — could push the
+$\omega\Delta t \lt 2$ bound of §24.2/§4.1 of
+[PyTorch Implementation of CfC/BAOAB](https://github.com/dimitarpg13/semantic_simulation/blob/main/docs/BAOAB/PyTorch_Implementation_of_CfC_BAOAB_in_Fock-PARFLM.md#41-the-verlet-stability-bound)
+higher and avoid the second-order-cascade removal described in
+§24.2 above. It cannot, for three separate reasons, each of which
+rules out one natural candidate:
+
+1. **Symplectic (semi-implicit) Euler has the identical bound.** One
+   step is $v \to v - \omega^2\Delta t h$ then $h \to h + \Delta t v$
+   using the updated $v$; as a $2\times2$ map this has $\det=1$ and
+   $\operatorname{tr}=2-\omega^2\Delta t^2$, giving the same
+   $\omega\Delta t \le 2$ threshold as Verlet's characteristic
+   equation. Not a coincidence — velocity-Verlet on the harmonic
+   oscillator is algebraically two symplectic-Euler half-steps glued
+   together, so both inherit the same bound.
+2. **Higher-order explicit symplectic composition (Yoshida,
+   Forest-Ruth) generally *shrinks* the bound, not raises it.**
+   Reaching 4th order via composed Verlet substeps requires at least
+   one negative substep (Suzuki-Sheng theorem, for any symmetric
+   composition of order $\ge3$), and a negative substep is a
+   destabilising direction for a stiff linear mode. Composing for
+   accuracy and composing for stability margin move in opposite
+   directions for exactly the linear-well regime that produces the
+   $d=768$/$1024$ spikes documented in §23–25.
+3. **General barrier: explicit stability functions are polynomials,
+   and polynomials are unbounded.** For the harmonic model, any
+   one-step method is $y\_{n+1}=R(i\omega\Delta t)y\_n$; any explicit
+   method (fixed number of force evaluations, no matrix inverse per
+   step) has $R$ polynomial in $i\omega\Delta t$, which cannot stay
+   bounded by 1 as $\omega\Delta t\to\infty$ — the imaginary-axis
+   specialisation of the standard fact that no explicit Runge-Kutta
+   method is A-stable. There is therefore no finite-stage, explicit,
+   Euler-family redesign that removes the crossing documented
+   empirically in §25.3-25.4's per-well curvature growth; the ceiling
+   is structural, not a Verlet-specific artefact.
+
+Two designs do escape the bound, and CfC (§24.2) is deliberately the
+second, not the first: **implicit midpoint** / Gauss-Legendre
+collocation makes $R$ a rational Padé approximant to $e^{z}$ —
+unconditionally stable, but a genuinely implicit nonlinear solve per
+layer for a non-quadratic $V\_\theta$, and wrong-phase at large
+$\omega\Delta t$ (right energy, wrong oscillation frequency); or
+**exact propagation of the locally-frozen linear part** — the
+$\Phi\_k$ rotation of §24.2 — which is both unconditionally stable
+and phase-exact, with no implicit solve because only $\omega\_k$
+itself changes step to step, not the equation being integrated
+within a step. Put plainly: the CfC/BAOAB rewrite is not one
+adequate fix chosen among several comparably good alternatives to
+Verlet — within "explicit, one global $\Delta t$" the bound in
+§24.2 is close to the ceiling, and CfC is the cheaper and more
+accurate of the only two ways past it.
+
+Full derivation of both the symplectic-Euler bound and the general
+polynomial-stability argument: [PyTorch Implementation of CfC/BAOAB, §4.3](https://github.com/dimitarpg13/semantic_simulation/blob/main/docs/BAOAB/PyTorch_Implementation_of_CfC_BAOAB_in_Fock-PARFLM.md#43-why-not-a-different-explicit-symplectic-integrator).
+Same argument in the SPLM tutorial framing:
+[Symplectic Integration for SPLM, §1.6](Symplectic_Integration_for_SPLM.md#16-how-far-can-an-explicit-symplectic-integrator-be-pushed).
 
 ## 25. Late-Training Spike Emergence: The Cascade is Universal, Not Depth-Specific
 

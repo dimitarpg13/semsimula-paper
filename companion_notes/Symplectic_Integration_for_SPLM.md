@@ -148,6 +148,89 @@ by construction.  So applying the Macaron/Strang fix to SPLM's
 *integrator* (not to an attention/FFN block) is the canonical
 physicist's thing to do.  That was the motivation to try it.
 
+### 1.6 How far can an *explicit* symplectic integrator be pushed?
+
+Velocity-Verlet's other headline property, not mentioned above, is a
+**stability bound**: applied to a local harmonic model
+$\ddot h = -\omega^2 h$ (curvature $K$, mass $\mathfrak m$,
+$\omega=\sqrt{K/\mathfrak m}$), the explicit step is stable only
+while $\omega\Delta t \lt 2$ — past that threshold, the state
+amplifies geometrically every step instead of oscillating. This is
+derived in full in
+[PyTorch Implementation of CfC/BAOAB, §4.1](https://github.com/dimitarpg13/semantic_simulation/blob/main/docs/BAOAB/PyTorch_Implementation_of_CfC_BAOAB_in_Fock-PARFLM.md#41-the-verlet-stability-bound),
+and is the mechanism behind the Fock-PARFLM gradient spikes analysed
+in
+[Training Instabilities §24](https://github.com/dimitarpg13/semsimula-paper/blob/main/companion_notes/Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md#24-baoab--cfc-propagator-eliminating-the-force-cascade-at-source).
+A natural question given this tutorial's own framing — "which of the
+three structures does the integrator preserve?" — is whether some
+*other* symmetric, symplectic, Euler-family integrator preserves the
+same structures while tolerating stiffer wells. It does not, and the
+reason is worth stating precisely because it explains why Fock-PARFLM
+eventually had to give up explicitness rather than pick a different
+explicit scheme:
+
+- **Symplectic Euler (§1.2) has the identical bound.** One step
+  first updates $v \to v - \omega^2\Delta t h$, then updates
+  $h \to h + \Delta t v$ using that new $v$. Writing that as a
+  matrix map on the old and new phase-space points,
+
+$$
+\begin{pmatrix} h_{\text{new}} \cr v_{\text{new}} \end{pmatrix} = M \begin{pmatrix} h_{\text{old}} \cr v_{\text{old}} \end{pmatrix}, \qquad M = \begin{pmatrix} 1-\omega^2\Delta t^2 & \Delta t \cr -\omega^2\Delta t & 1 \end{pmatrix},
+$$
+
+  gives $\det M = 1$ and $\operatorname{tr}M = 2-\omega^2\Delta t^2$; a
+  $2\times2$, $\det=1$ map keeps both eigenvalues on the unit circle
+  exactly while $\lvert\operatorname{tr}M\rvert\le2$, i.e.
+  $\omega\Delta t\le2$ — the same threshold, the same characteristic
+  equation shape, as velocity-Verlet. That is not a coincidence:
+  velocity-Verlet on the harmonic oscillator is algebraically two
+  symplectic-Euler half-steps glued together.
+- **Higher-order explicit symplectic composition (Yoshida,
+  Forest-Ruth) does not raise the bound — it usually lowers it.**
+  These methods reach 4th order by composing several Verlet substeps
+  with some negative sub-step lengths (the Suzuki-Sheng theorem: any
+  symmetric composition method of order $\ge3$ needs at least one
+  negative substep), and a negative substep is a destabilising
+  direction for a stiff mode. Composing for *order* and composing
+  for *stability margin* pull in opposite directions here.
+- **This is what "explicit" costs, in general.** For a one-step
+  method on $\ddot h=-\omega^2h$, one step is
+  $y_{n+1}=R(i\omega\Delta t)y_n$ for some stability function $R$.
+  Explicit methods (finitely many force evaluations, no matrix
+  inverse) always have $R$ a *polynomial*, and a polynomial is
+  unbounded on the imaginary axis — so $\lvert R(i\theta)\rvert$
+  exceeds 1 at some finite $\theta$ no matter the scheme, order, or
+  stage count. This is the imaginary-axis instance of the standard
+  fact that no explicit Runge-Kutta method is A-stable: A-stability
+  needs $\lvert R(z)\rvert\le1$ on the whole closed left half-plane,
+  which only a rational (implicit) $R$ can deliver.
+
+The two things that *do* escape the bound both give up explicitness:
+**implicit midpoint** (and the Gauss-Legendre family it generalises)
+makes $R$ a Padé[1/1] approximant to $e^z$ — unconditionally stable,
+but a genuinely implicit nonlinear solve per step for a general
+potential, and wrong-phase (right energy, wrong frequency) at large
+$\omega\Delta t$ — or **exact propagation of the locally-frozen
+linear part**, which replaces the Padé approximation with the true
+$\cos/\mathrm{sinc}$ solution and is both unconditionally stable and
+phase-exact, with no implicit solve because only $K$ itself moves
+from step to step. The latter is the **CfC propagator** built for
+Fock-PARFLM
+([Closed-Form and Hybrid Integration Strategies](https://github.com/dimitarpg13/semsimula-paper/blob/main/companion_notes/Closed_Form_and_Hybrid_Integration_Strategies_for_Fock-PARFLM.md),
+[PyTorch Implementation, §4.3](https://github.com/dimitarpg13/semantic_simulation/blob/main/docs/BAOAB/PyTorch_Implementation_of_CfC_BAOAB_in_Fock-PARFLM.md#43-why-not-a-different-explicit-symplectic-integrator)) —
+not one adequate fix chosen among several comparably good
+alternatives to Verlet, but close to the only way past
+$\omega\Delta t \lt 2$ that does not also introduce an implicit
+solve or a phase error.
+
+The empirical study in this document (§§2–6) never approached that
+regime — Tiny Shakespeare's wells stayed broad enough at $L=8$ or
+$L=16$ and $\gamma\approx0.85$ that $\omega\Delta t$ never crossed 2.
+The bound became load-bearing only at production scale ($d=768$ or
+$1024$, $L=16$ to $24$, tens of thousands of steps sharpening the
+wells) — see
+[Training Instabilities §§23–25](https://github.com/dimitarpg13/semsimula-paper/blob/main/companion_notes/Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md).
+
 ---
 
 ## 2. Why we tried it in SPLM
