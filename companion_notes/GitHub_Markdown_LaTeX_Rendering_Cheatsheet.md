@@ -4,7 +4,7 @@ A reference for writing LaTeX math **and** Mermaid diagrams in Markdown files th
 
 The cheatsheet has two parts:
 
-- **Part I — KaTeX math rendering** (rules §1–§13, §19, §25): inline `$...$` and display `$$...$$` math.
+- **Part I — KaTeX math rendering** (rules §1–§13, §19, §25–§26): inline `$...$` and display `$$...$$` math.
 - **Part II — Mermaid diagram rendering** (rules §14–§18, §20–§24): ` ```mermaid ` fenced blocks.
 
 ---
@@ -447,6 +447,65 @@ $$
 
 ---
 
+## 26. A bare `=` (or `-`) line inside a multiline `$$...$$` block — CommonMark reads it as a Setext heading
+
+A common way to lay out a display equation like $A = B\,C$ across several
+physical lines, for readability, is to put the left side, a lone `=`, and the
+right side on their own lines:
+
+```latex
+$$
+\begin{pmatrix} h_{n+1} \\ h_n \end{pmatrix}
+=
+\begin{pmatrix} 2-\theta & -1 \\ 1 & 0 \end{pmatrix}
+\begin{pmatrix} h_n \\ h_{n-1} \end{pmatrix}
+$$
+```
+
+GitHub's Markdown pass runs **before** the math renderer and does not treat
+`$$...$$` interiors as a protected/verbatim region for block-level
+constructs. CommonMark's **Setext heading** rule says: a line consisting
+*only* of `=` characters (or only `-` characters), with no blank line
+before it, converts the immediately preceding paragraph line into an
+`<h1>` (`=`) or `<h2>` (`-`). The lone `=` line above is exactly such a
+line. The renderer therefore does not see one four-line TeX expression; it
+sees a paragraph `\begin{pmatrix} h_{n+1} \\ h_n \end{pmatrix}` immediately
+followed by a Setext underline, and converts that paragraph into a giant
+bold heading — the `=` itself is consumed as heading-underline syntax and
+never reaches KaTeX at all. The remaining lines then form a second,
+ordinary paragraph that is not recognised as math either, since its
+opening `$$` was left behind in the (now-consumed) first line.
+
+**Symptom:** the left-hand side of the equation renders as a huge bold
+heading (with the `$$` and `\begin{pmatrix}...` visible as its literal
+text), the `=` sign disappears, and the right-hand side renders as a plain
+paragraph of raw TeX below it. Neighbouring display equations that do not
+contain a bare `=`/`-` line render fine, which makes this easy to
+misattribute to the matrix environment or to `\\` instead of to the lone
+`=` line — do not spend time on those before checking for this first.
+
+**Rule:** never let a line consist *solely* of `=` or `-` (or `==`, `--`,
+etc.) directly under a math/text line with no blank line separating them —
+anywhere in the document, not just inside `$$...$$`. For a multi-line
+display equation, keep the `=` on the same physical line as adjacent
+content instead of isolating it:
+
+```latex
+% Good — "=" is embedded in a line, never alone on its own line
+$$
+\begin{pmatrix} h_{n+1} \\ h_n \end{pmatrix} = \begin{pmatrix} 2-\theta & -1 \\ 1 & 0 \end{pmatrix} \begin{pmatrix} h_n \\ h_{n-1} \end{pmatrix}
+$$
+```
+
+Collapsing the whole display onto one physical source line (as done
+throughout this cheatsheet's other matrix examples) is the simplest fix,
+since it makes an isolated `=`/`-` line structurally impossible. This is
+unrelated to rule 25 (`\\[Npt]` row spacing) and to whether row breaks use
+`\\` or `\cr` — `\\` mid-line is fine once the bare `=`/`-` line is
+removed.
+
+---
+
 # Part II — Mermaid diagrams
 
 The symptom of a violated rule below is almost always the same red box from GitHub:
@@ -763,6 +822,7 @@ The same applies to `[`, `]`, `{`, `}` inside pipe labels — none are quoted, s
 | `\left\lVert ... \right\rVert` over a long expression | same error | use `\Big\lVert ... \Big\rVert` or plain `\lVert ... \rVert` |
 | `\underbrace{\left\{ X \right\}}_{...}` | same error | use `\underbrace{\lbrace X \rbrace}_{...}` |
 | `\\[Npt]` row spacing in a matrix/array | stray `[Npt]` text leaks into a cell; row break lost | use plain `\\` for row breaks, drop the bracketed argument |
+| `\\` row break in a **multiline** `$$` matrix | KaTeX fails; raw `\begin{pmatrix}...` dumps as large bold text | collapse the display to one source line and write every row break as `\cr` |
 
 ### Mermaid (Part II)
 
