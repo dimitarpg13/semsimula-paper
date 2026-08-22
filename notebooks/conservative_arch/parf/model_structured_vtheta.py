@@ -130,6 +130,20 @@ class QuadraticWellVTheta(StructuredVThetaBase):
         a = self._a(xi)
         return a * (h - mu)
 
+    def harmonic_terms(
+        self, xi: torch.Tensor, h: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """Exact global harmonic model.
+
+        This potential already *is* a single diagonal quadratic well, so
+        unlike the Gaussian-bump families there is no local-linearisation
+        approximation here: ``k_diag`` and ``s`` reproduce ``-grad_h V``
+        for *every* ``h``, not just at the point it was evaluated at.
+        """
+        mu = self._mu(xi)
+        a = self._a(xi)
+        return a, a * mu
+
     def attractor_centres(self, xi: torch.Tensor) -> torch.Tensor:
         return self._mu(xi).unsqueeze(-2)
 
@@ -198,6 +212,23 @@ class LowRankQuadraticVTheta(StructuredVThetaBase):
         ut_diff = torch.einsum('...dr,...d->...r', U, diff)
         u_ut_diff = torch.einsum('...dr,...r->...d', U, ut_diff)
         return u_ut_diff + lam * diff
+
+    def harmonic_terms(
+        self, xi: torch.Tensor, h: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """Diagonal part of this well's precision ``A = U U^T + diag(lam)``.
+
+        Exact for the diagonal contribution (``diag(A) = lam +
+        rowsum(U^2)``); the residual is the off-diagonal ``U U^T``
+        coupling -- exactly analogous to the anisotropic Gaussian
+        family's ``rank > 0`` residual
+        (``model_aniso_gaussian_vtheta.AnisotropicMixtureGaussianVTheta.harmonic_terms``).
+        """
+        mu = self._mu(xi)
+        lam = self._lam(xi)
+        U = self._U(xi)
+        k_diag = lam + (U * U).sum(dim=-1)
+        return k_diag, k_diag * mu
 
     def attractor_centres(self, xi: torch.Tensor) -> torch.Tensor:
         return self._mu(xi).unsqueeze(-2)
@@ -280,6 +311,28 @@ class MixtureQuadraticVTheta(StructuredVThetaBase):
         per_comp_grad = a * diff
         return (q * per_comp_grad).sum(dim=-2)
 
+    def harmonic_terms(
+        self, xi: torch.Tensor, h: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """Exact linearisation of the mixture force at ``h``.
+
+        Like the Gaussian-mixture families, the gradient is a convex
+        (softmax) combination of per-well linear springs, so ``k_diag``/
+        ``s`` reproduce ``-grad_h V`` exactly at ``h``. Unlike the
+        anisotropic Gaussian families this mixture has no low-rank term,
+        so there is no residual at all -- this is exact everywhere the
+        Gaussian ``rank=0`` case is, for the same reason.
+        """
+        mu, a, log_pi = self._components(xi)
+        h_e = h.unsqueeze(-2)
+        diff = h_e - mu
+        E = 0.5 * (a * diff * diff).sum(dim=-1)
+        q = F.softmax(-E / self.tau + log_pi, dim=-1).unsqueeze(-1)
+        qa = q * a                                                # (...,K,d)
+        k_diag = qa.sum(dim=-2)
+        s = (qa * mu).sum(dim=-2)
+        return k_diag, s
+
     def attractor_centres(self, xi: torch.Tensor) -> torch.Tensor:
         lead = xi.shape[:-1]
         return self.mu_proj(xi).view(*lead, self.K, self.d)
@@ -352,6 +405,20 @@ class HybridQuadraticVTheta(StructuredVThetaBase):
         )
         return grad_quad + self.alpha * grad_mlp
 
+    def harmonic_terms(
+        self, xi: torch.Tensor, h: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """Backbone-only linearisation.
+
+        This is the quadratic backbone's harmonic model, **not** an exact
+        linearisation of the full potential: the ``alpha * MLP`` residual
+        has no closed-form curvature and is not included. Any stiffness
+        read off this for a Hybrid checkpoint is therefore a lower bound,
+        not a ceiling -- the true ``omega*dt`` including the MLP's
+        contribution could be higher than what this reports.
+        """
+        return self.quad.harmonic_terms(xi, h)
+
     def attractor_centres(self, xi: torch.Tensor) -> torch.Tensor:
         return self.quad.attractor_centres(xi)
 
@@ -421,6 +488,60 @@ def _smoke():
     validate_analytical_grad(
         HybridQuadraticVTheta(d=d, v_hidden=32, v_depth=2), d=d, tol=1e-4,
     )
+    print()
+    print("--- harmonic_terms: exact linearisation (quadratic family) ---")
+    torch.manual_seed(0)
+    xi_h = torch.randn(3, 5, d)
+    h_h = torch.randn(3, 5, d)
+
+    for name, mod in [
+        ("QuadraticWellVTheta", QuadraticWellVTheta(d=d)),
+        ("MixtureQuadraticVTheta(K=6)", MixtureQuadraticVTheta(d=d, K=6)),
+    ]:
+        k_diag, s = mod.harmonic_terms(xi_h, h_h)
+        f_harm = s - k_diag * h_h
+        f_true = -mod.analytical_grad(xi_h, h_h)
+        err = (f_harm - f_true).abs().max().item()
+        print(f"  {name:<32}: |f_harm - f_true|_max = {err:.2e}  (must be ~0)")
+        assert err < 1e-5, err
+        assert (k_diag >= 0).all(), f"{name}: stiffness must be non-negative"
+
+    # rank>0 has a genuine off-diagonal U U^T residual by construction
+    # (documented in harmonic_terms' docstring), so it is NOT exact here --
+    # only report it, don't assert exactness.
+    lr4 = LowRankQuadraticVTheta(d=d, rank=4)
+    k_diag, s = lr4.harmonic_terms(xi_h, h_h)
+    f_harm = s - k_diag * h_h
+    f_true = -lr4.analytical_grad(xi_h, h_h)
+    resid4 = (f_true - f_harm).abs().max().item()
+    print(f"  {'LowRankQuadraticVTheta(rank=4)':<32}: residual "
+          f"(off-diagonal U U^T) max = {resid4:.2e}  (nonzero by design)")
+    assert (k_diag >= 0).all()
+
+    # LowRankQuadraticVTheta at rank=0 has no off-diagonal coupling either,
+    # so it should also be globally exact like the diagonal-only variants.
+    lr0 = LowRankQuadraticVTheta(d=d, rank=0)
+    k_diag, s = lr0.harmonic_terms(xi_h, h_h)
+    f_harm = s - k_diag * h_h
+    f_true = -lr0.analytical_grad(xi_h, h_h)
+    err0 = (f_harm - f_true).abs().max().item()
+    print(f"  {'LowRankQuadraticVTheta(rank=0)':<32}: "
+          f"|f_harm - f_true|_max = {err0:.2e}  (must be ~0)")
+    assert err0 < 1e-5, err0
+
+    hyb = HybridQuadraticVTheta(d=d, v_hidden=32, v_depth=2)
+    k_diag, s = hyb.harmonic_terms(xi_h, h_h)
+    f_harm = s - k_diag * h_h
+    f_true = -hyb.analytical_grad(xi_h, h_h)
+    resid = (f_true - f_harm).abs().max().item()
+    print(f"  {'HybridQuadraticVTheta':<32}: residual (MLP contribution) "
+          f"max = {resid:.2e}  (nonzero by design -- backbone-only, see "
+          f"docstring)")
+    assert (k_diag >= 0).all()
+    print(f"  harmonic_terms available for the whole structured-V_theta "
+          f"family: OK (needed by scaf_checkpoint_analysis.ipynb's "
+          f"stiffness audit for SQ1-4 recipes)")
+
     print()
     print("--- Attractor centres demo (Mixture K=3) ---")
     torch.manual_seed(0)

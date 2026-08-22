@@ -153,6 +153,39 @@ class MixtureGaussianVTheta(StructuredVThetaBase):
             per_comp = per_comp * scale
         return per_comp.sum(dim=-2)                              # (...,d)
 
+    def harmonic_terms(
+        self, xi: torch.Tensor, h: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """Frozen-coefficient diagonal harmonic model of the force at ``h``.
+
+        Isotropic counterpart of
+        ``model_aniso_gaussian_vtheta.AnisotropicMixtureGaussianVTheta.harmonic_terms``.
+        This well bank has no low-rank correction (there is no ``B_k``), so
+        the precision is *exactly* diagonal and this reproduces the full
+        analytical force, not just its diagonal part:
+
+            f(h) = -grad_h V = -sum_k g_k a_k (h - mu_k),
+            g_k  = w_k exp(-0.5 a_k^T diff_k^2) > 0,
+
+            k_diag = sum_k g_k a_k,      s = sum_k g_k a_k mu_k,
+            f_harm(h') = s - k_diag * h'
+
+        Returns
+        -------
+        (k_diag, s) : both (..., d)
+            ``k_diag >= 0`` elementwise (all wells are attractive), so
+            ``sqrt(k_diag/m)`` is always real.
+        """
+        mu, a, w = self._components(xi)
+        h_e = h.unsqueeze(-2)
+        diff = h_e - mu
+        exponent = -0.5 * (a * diff * diff).sum(dim=-1)
+        g = w * torch.exp(exponent)                              # (...,K)
+        ga = g.unsqueeze(-1) * a                                  # (...,K,d)
+        k_diag = ga.sum(dim=-2)                                   # (...,d)
+        s = (ga * mu).sum(dim=-2)                                 # (...,d)
+        return k_diag, s
+
     def attractor_centres(self, xi: torch.Tensor) -> torch.Tensor:
         lead = xi.shape[:-1]
         return self.mu_proj(xi).view(*lead, self.K, self.d)
@@ -372,6 +405,18 @@ class MultiContextGaussianVTheta(nn.Module):
             out = out + self.banks[m].analytical_grad(xis[..., m, :], h)
         return out
 
+    def harmonic_terms(
+        self, xis: torch.Tensor, h: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """Sum the per-channel harmonic models (the potentials add, so do
+        their linearisations)."""
+        k_diag, s = self.banks[0].harmonic_terms(xis[..., 0, :], h)
+        for m in range(1, self.n_ctx):
+            k_m, s_m = self.banks[m].harmonic_terms(xis[..., m, :], h)
+            k_diag = k_diag + k_m
+            s = s + s_m
+        return k_diag, s
+
     def attractor_centres(self, xis: torch.Tensor) -> torch.Tensor:
         """Per-context attractor centres concatenated: (B, T, n_ctx*K, d)."""
         cs = [
@@ -490,6 +535,11 @@ class DepthConditionedMultiContextGaussianVTheta(nn.Module):
         # The depth code is constant w.r.t. h, so grad_h is the bank's grad
         # evaluated at the shifted context.
         return self.bank.analytical_grad(self._shift(xis), h)
+
+    def harmonic_terms(
+        self, xis: torch.Tensor, h: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        return self.bank.harmonic_terms(self._shift(xis), h)
 
     def attractor_centres(self, xis: torch.Tensor) -> torch.Tensor:
         return self.bank.attractor_centres(self._shift(xis))
@@ -644,6 +694,47 @@ def _smoke():
         MixtureGaussianVTheta(d=d, K=4, force_norm_max=_fnm), d=d,
     )
     print(f"  analytical_grad with force_norm_max: OK")
+
+    print(f"\n--- harmonic_terms: exact linearisation (isotropic precision) ---")
+    torch.manual_seed(0)
+    xi_h = torch.randn(3, 5, d)
+    h_h = torch.randn(3, 5, d)
+
+    # This bank's precision is exactly diagonal (no B_k, unlike the
+    # anisotropic family), so the harmonic model must reproduce the FULL
+    # analytical force everywhere, not just its diagonal part.
+    bank_h = MixtureGaussianVTheta(d=d, K=6)
+    k_diag, s = bank_h.harmonic_terms(xi_h, h_h)
+    f_harm = s - k_diag * h_h
+    f_true = -bank_h.analytical_grad(xi_h, h_h)
+    err = (f_harm - f_true).abs().max().item()
+    print(f"  |f_harm - f_true|_max = {err:.2e}  (must be ~0)")
+    assert err < 1e-5, err
+    assert (k_diag >= 0).all(), "stiffness must be non-negative (all wells attract)"
+
+    n_ctx_h, L_h = 4, 6
+    mcv_h = MultiContextGaussianVTheta(d=d, K=6, n_ctx=n_ctx_h)
+    dcv_h = DepthConditionedMultiContextGaussianVTheta(d=d, K=6, n_ctx=n_ctx_h, n_layers=L_h)
+    xis_h = torch.randn(2, 4, n_ctx_h, d)
+    h2_h = torch.randn(2, 4, d)
+
+    k_mcv, s_mcv = mcv_h.harmonic_terms(xis_h, h2_h)
+    f_harm_mcv = s_mcv - k_mcv * h2_h
+    f_true_mcv = -mcv_h.analytical_grad(xis_h, h2_h)
+    err_mcv = (f_harm_mcv - f_true_mcv).abs().max().item()
+    print(f"  MultiContextGaussianVTheta: |f_harm - f_true|_max = {err_mcv:.2e}")
+    assert err_mcv < 1e-5, err_mcv
+
+    dcv_h.set_active_layer(3)
+    k_dcv, s_dcv = dcv_h.harmonic_terms(xis_h, h2_h)
+    f_harm_dcv = s_dcv - k_dcv * h2_h
+    f_true_dcv = -dcv_h.analytical_grad(xis_h, h2_h)
+    err_dcv = (f_harm_dcv - f_true_dcv).abs().max().item()
+    print(f"  DepthConditionedMultiContextGaussianVTheta: "
+          f"|f_harm - f_true|_max = {err_dcv:.2e}")
+    assert err_dcv < 1e-5, err_dcv
+    print(f"  harmonic_terms available for the isotropic family: OK "
+          f"(needed by scaf_checkpoint_analysis.ipynb's stiffness audit)")
 
     print("\nAll smoke tests passed.")
 
