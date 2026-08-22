@@ -379,11 +379,11 @@ $$
 Writing one step as $(h_{n+1}, v_{n+1})^{\top} = M(h_n, v_n)^{\top}$,
 
 $$
-M = \begin{pmatrix} 1-\omega^{2}\Delta t^{2} & \Delta t \cr -\omega^{2}\Delta t & 1 \end{pmatrix}, \qquad \det M = 1, \qquad \operatorname{tr}M = 2-\omega^{2}\Delta t^{2}.
+M = \begin{pmatrix} 1-\omega^{2}\Delta t^{2} & \Delta t \cr -\omega^{2}\Delta t & 1 \end{pmatrix}, \qquad \det M = 1, \qquad \mathrm{tr}(M) = 2-\omega^{2}\Delta t^{2}.
 $$
 
 For a $2\times2$ map with $\det M = 1$, both eigenvalues sit on the
-unit circle exactly while $\lvert\operatorname{tr}M\rvert \le 2$ —
+unit circle exactly while $\lvert\mathrm{tr}(M)\rvert \le 2$ —
 which is $\omega\Delta t \le 2$, the same characteristic equation
 shape and the same threshold as §4.1's Verlet recurrence. That is
 not a coincidence: velocity-Verlet applied to the harmonic
