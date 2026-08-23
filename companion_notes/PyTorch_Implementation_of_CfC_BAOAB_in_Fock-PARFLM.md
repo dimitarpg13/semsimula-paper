@@ -551,7 +551,7 @@ def cfc_substep(h, v, f_harm, k_diag, m, dt):
         v_new = v + (dt / m) * f_harm
         return h_new, v_new
 
-    omega = (k_diag / m).clamp(min=0.0).sqrt()
+    omega = (k_diag / m).clamp(min=_OMEGA_SQ_FLOOR).sqrt()
     wt = omega * dt
     cos_wt = torch.cos(wt)
     sinc_wt = _sinc(wt)
@@ -564,9 +564,9 @@ def cfc_substep(h, v, f_harm, k_diag, m, dt):
 Every arithmetic op here is elementwise and broadcasts over
 `(B, T, d)`. Stiffness is a **per-coordinate** tensor, not a
 scalar: anisotropic wells have a different $\omega$ on each axis.
-`.clamp(min=0)` before `.sqrt()` is the discrete counterpart of
-the theory statement that every Gaussian well is attractive, so
-$\omega$ is always real and the map is always a rotation
+`.clamp(min=_OMEGA_SQ_FLOOR)` before `.sqrt()` is the discrete
+counterpart of the theory statement that every Gaussian well is
+attractive, so $\omega$ is always real and the map is always a rotation
 ([Blended CfC, §5.1, properties of $\Phi_k$](Blended_CfC_BAOAB_Deep_Dive.md)).
 The Jacobian determinant of the $(h, v)$ map is
 
@@ -612,6 +612,65 @@ gradients. `torch.randn_like` is the FDT noise; it is a leaf, so
 it does not pollute parameter gradients. SCAF's deterministic
 context forces `langevin_noise_eval=False` so bit-exact causality
 probes still work.
+
+### 6.4 Production incident: the `k_diag == 0` NaN (fixed, confirmed live)
+
+`.clamp(min=0.0)` in §6.2's original version of `cfc_substep` was
+not just a theoretical rough edge — it produced real `grad=nan` /
+`top[P]=nan` lines in the live $d=384$ OWT $\gamma=0.1$ CfC/BAOAB
+run within a few hundred steps of the `step2500_best.pt`
+checkpoint. `k_diag = 0` is a real, expected state — a token far
+from every well (§8's `harmonic_terms` returns exactly this when
+every $g_k \approx 0$) — and it grows *more* common as training
+sharpens the wells, not less. `torch.sqrt` has an infinite
+derivative at $0$, so clamping `omega`'s input to exactly `0.0`
+turned every such element into `0 * inf = nan` in the backward
+pass — forward was fine (`sinc`/`psi`/`cos` are smooth through
+$\omega \to 0$), only the `sqrt` node that *produces* $\omega$ was
+not — poisoning every parameter `k_diag` traces back to (the
+well bank and the depth code).
+
+Commit
+[`dafae65`](https://github.com/dimitarpg13/semsimula-paper/commit/dafae65b946da53e4671d6e46971b213c7d78994)
+replaces the floor with a tiny positive epsilon instead of exact
+zero:
+
+```python
+_OMEGA_SQ_FLOOR = 1e-12
+...
+omega = (k_diag / m).clamp(min=_OMEGA_SQ_FLOOR).sqrt()
+```
+
+`clamp`'s own backward is exactly $0$ below the floor, which is
+the *correct* limit here anyway: the upstream
+$g = w\exp(-\tfrac12\,\text{quad\_form})$ that drove `k_diag` to
+(numerically) $0$ has already lost its own gradient sensitivity
+at that point, since $d(\exp)/dx \to 0$ right alongside the value.
+`test_cfc_baoab.py::test_cfc_substep_zero_stiffness_no_nan` pins
+this down synthetically: backward through `k_diag=0` must produce
+finite gradients everywhere.
+
+**Live confirmation.** The training run that surfaced the bug was
+resumed from that exact `step2500_best.pt` checkpoint (PPL
+$392.62$) after the fix landed:
+
+| | before the fix | after the fix |
+|---|---|---|
+| span observed | steps ≈2,250–2,800 | steps 2,501–6,200+ |
+| `grad=nan` occurrences | intermittent, every ~50–150 steps | **zero** |
+| worst grad-related event | silent NaN (optimizer step skipped) | one ordinary spike at step 5,925, pre-clip total grad $105.2$ (`GRAD_SPIKE_THRESHOLD=100`), driven by the `depth_code`/`register` groups' already-known volatility — clipped by their per-group overrides, no lasting effect |
+| val PPL | stalled (each NaN step is silently skipped, not applied) | new best every eval through step 5,500 ($171.15$), single 1% wobble at step 6,000 |
+
+The pre-fix NaNs never corrupted the model — `optim.step()` is
+gated on `torch.isfinite(grad_norm)`, so a NaN step is skipped
+rather than applied — but every skipped step is wasted compute
+and, at the observed cadence, would have meant a meaningful
+fraction of steps doing nothing at all over a 100k-step run. The
+resumed run's clean 3,700+ steps with no recurrence, alongside a
+genuine (and successfully clipped) large-gradient event from an
+unrelated cause, is direct production evidence — not just the
+synthetic unit test — that the fix addresses the actual failure
+mode and does not merely relocate it.
 
 ---
 
