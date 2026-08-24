@@ -4555,6 +4555,78 @@ family ever be run under an explicit integrator again, and (b) as a clean
 falsification test of the "unclamped $B_k$ is the curvature culprit"
 hypothesis. It is therefore documented now and deferred, rather than
 implemented, pending the outcome of the current CfC/BAOAB and $L=8$ runs.
+§28.6 below sharpens this: the diagonal/off-diagonal split means $B_k$ is not
+implicated in *causing* the current spikes, but it is a live candidate for
+*amplifying their severity* through the one channel CfC/BAOAB leaves
+unprotected — worth keeping in view rather than fully dismissing.
+
+### 28.6 Mechanism: why well curvature amplifies, rather than merely coexists with, the §27 spikes
+
+This connects §27's `depth_code` finding and §28.1-28.2's curvature finding
+into a single causal chain, and sharpens "recovery is deeper/slower" into a
+falsifiable, structural claim rather than an intuition.
+
+**The amplification is derivable, not just plausible.** The mixture force is
+
+$$f(h) = \sum_k g_k P_k (\mu_k - h), \qquad P_k = \mathrm{diag}(a_k) + B_k B_k^T,$$
+
+and every well centre is itself a function of the (possibly depth-shifted)
+context, $\mu_k = \mu_k(\xi)$. A perturbation to that context therefore
+propagates to a force perturbation in two multiplicative stages:
+
+$$\delta \mu_k = \frac{\partial \mu_k}{\partial \xi}\, \delta \xi
+\qquad \Longrightarrow \qquad
+\delta f \approx g_k\, P_k\, \delta \mu_k
+= g_k\, P_k \left(\frac{\partial \mu_k}{\partial \xi}\right) \delta \xi.$$
+
+The first stage's gain is fixed by `mu_proj`'s weights and has nothing to do
+with stiffness. The second stage is scaled by $P_k$ itself: **the same-sized
+upstream context perturbation is amplified into a state perturbation in
+direct proportion to the local curvature**, and that larger $\delta h$
+propagates straight through to the read-out logits as a larger PPL
+excursion. Crucially, for the depth-conditioned bank the context *is*
+literally $\xi = \xi_{\text{base}} + e_g$ (§14.3), so a `depth_code` step
+$\delta e_g$ **is** a $\delta \xi$ here — §27's finding and this section's
+finding are not two independent stories, they are two ends of the same
+mechanism: `depth_code` supplies the perturbation, $P_k$'s curvature sets
+its gain.
+
+**But the gain only bites through the channel CfC/BAOAB leaves explicit.**
+Splitting $P_k$ along the same diagonal/off-diagonal line as §28.1-§28.2:
+
+- On the **diagonal part** ($k_{\text{diag}}$, integrated by `cfc_substep`),
+  amplification does not translate into *slower recovery*: the A-substep is
+  an exact rotation (energy-conserving, `cos`/`sinc`, Jacobian determinant
+  exactly 1) and all damping comes from the O-step's $e^{-\gamma \Delta t}$
+  factor, which is independent of $\omega = \sqrt{k_{\text{diag}}/m}$ by
+  construction (`cfc_baoab.py` composes them as separate substeps
+  precisely so damping timescale does not depend on stiffness). A stiffer
+  diagonal well rotates the perturbed state faster; it does not, on its
+  own, leave it displaced longer.
+- On the **off-diagonal residual** ($f_{\text{kick}}$, carrying
+  $\sigma_{\max}(B_k)^2$ per §28.2), there is no such protection: it is an
+  ordinary explicit velocity kick (`v_mid = v_mid + (dt/m) * f_kick` in
+  `model_parf_multixi.py`), with none of the bounded-rotation structure
+  that makes the diagonal part immune to its own stiffness. A large,
+  depth-code-amplified perturbation routed through this residual can push
+  $h$ further away over a step with nothing structurally pulling it back
+  within that same step — this is the specific, falsifiable sense in which
+  "recovery is deeper/slower": not a property of CfC/BAOAB's core design,
+  but of the one piece ($B_k$'s off-diagonal contribution) that design
+  deliberately leaves outside it.
+
+**Net reading.** This does not overturn §27's conclusion that `depth_code`,
+`creation_gate`, `register`, and the embeddings are the *proximate* sources
+of the current burst — they are, by grad-norm rank, and the diagonal V_theta
+channel is provably not the bottleneck under CfC/BAOAB. What it adds is a
+concrete reason `V_theta`'s own group still appears mid-pack in every spike
+(§27.1's `V_theta=502.0` at the worst step): the off-diagonal residual gives
+`depth_code`/embedding perturbations a second-order route to amplify their
+own functional impact, gated by exactly the unclamped quantity §28.1-§28.2
+already flag. It is a plausible *severity multiplier* riding on top of §27's
+proximate causes, not an independent trigger — consistent with deferring
+§28.3's clamp, but a reason not to fully write it off as Verlet-only
+hardening.
 
 ---
 
@@ -4580,4 +4652,4 @@ and the depth-conditioned multi-context Gaussian with per-layer reverse
 channel at
 `notebooks/conservative_arch/scaleup/colab_fock_depthcond_vtheta_openwebtext.ipynb`.*
 
-*Last updated: 23 August 2026. Section 28 added (PROPOSED/DEFERRED): a spectral/norm clamp on the anisotropic well's low-rank precision factor `B_k` — the one term in the SCAF Weyl bound that is currently unclamped and the prime suspect for "curvature exceeding 2" — with an implementation sketch and a Phase 7b/7c validation protocol; documented but not implemented, deferred pending the current CfC/BAOAB and L=8 runs. Section 27 added: the first CfC/BAOAB grad-clip spike burst (gamma=0.10, step 6,297) and the two fixes applied (tightened `depth_code` clip, `GRAD_NORM_HARD_TRIGGER`), plus the empirical finding that `depth_code` growth concentrates in boundary layers (layer 0 and the last layer) rather than the middle of the stack, in both the Verlet and CfC/BAOAB integrators (full data in `Structured_VTheta_Design_and_Theory.md` §14.7).*
+*Last updated: 24 August 2026. Section 28.6 added: a derivation (`δf ≈ g_k P_k δμ_k`) showing well curvature amplifies, rather than merely coexists with, the §27 `depth_code`/embedding spikes, and a sharpened diagonal-vs-off-diagonal-residual distinction for when "recovery is deeper/slower" actually applies under CfC/BAOAB — the diagonal channel's damping is provably stiffness-independent, the off-diagonal residual is not. Section 28 added (PROPOSED/DEFERRED, 23 August 2026): a spectral/norm clamp on the anisotropic well's low-rank precision factor `B_k` — the one term in the SCAF Weyl bound that is currently unclamped and the prime suspect for "curvature exceeding 2" — with an implementation sketch and a Phase 7b/7c validation protocol; documented but not implemented, deferred pending the current CfC/BAOAB and L=8 runs. Section 27 added: the first CfC/BAOAB grad-clip spike burst (gamma=0.10, step 6,297) and the two fixes applied (tightened `depth_code` clip, `GRAD_NORM_HARD_TRIGGER`), plus the empirical finding that `depth_code` growth concentrates in boundary layers (layer 0 and the last layer) rather than the middle of the stack, in both the Verlet and CfC/BAOAB integrators (full data in `Structured_VTheta_Design_and_Theory.md` §14.7).*
