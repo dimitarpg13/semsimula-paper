@@ -78,6 +78,9 @@
     - 24.4 [Relationship to §23 Mitigations](#244-relationship-to-23-mitigations)
     - 24.5 [A second dividend: the propagator unlocks a safe position-dependent damping](#245-a-second-dividend-the-propagator-unlocks-a-safe-position-dependent-damping)
     - 24.6 [Is there a different explicit symplectic integrator that tolerates stiffer wells than Verlet?](#246-is-there-a-different-explicit-symplectic-integrator-that-tolerates-stiffer-wells-than-verlet)
+25. [Late-Training Spike Emergence: The Cascade is Universal, Not Depth-Specific](#25-late-training-spike-emergence-the-cascade-is-universal-not-depth-specific)
+26. [The Damping Hypothesis: Is Low γ the Dominant Cause of the Cascade?](#26-the-damping-hypothesis-is-low-γ-the-dominant-cause-of-the-cascade)
+27. [Empirical Depth-Code Growth: Boundary Layers Dominate in Both Integrators](#27-empirical-depth-code-growth-boundary-layers-dominate-in-both-integrators)
 
 ---
 
@@ -4377,6 +4380,83 @@ The main risk is that overdamped dynamics ($\gamma \gg \gamma_{\text{geodesic}}$
 
 ---
 
+## 27. Empirical Depth-Code Growth: Boundary Layers Dominate in Both Integrators
+
+### 27.1 Context
+
+The first CfC/BAOAB production run (gamma=0.10, d=384, $L=16$, `aniso_dcvt5x8`,
+same architecture as the Verlet runs in §23-§26) hit its first grad-clip spike
+burst at step 6,297 (pre-clip total grad up to 3,336.8 at step 6,676), and
+val_ppl visibly worsened over the corresponding eval window (176.88 -> 207.11
+between steps 6,000 and 6,500) before the watchdog's slow EMA (`alpha=0.05`,
+`patience=200`) caught it. The top contributing groups at every spike were
+`depth_code`, `creation_gate`, `E`/`P` (token/positional embeddings),
+`register`, and `reverse_ch` -- i.e. this is the same embedding-spike /
+force-cascade family documented in §18-§20 and §23, now reappearing under
+CfC/BAOAB despite §24 having removed the second-order force-cascade term the
+Verlet integrator was suffering from. Two fixes were applied in response
+(tightening `depth_code`'s per-group clip override from 0.5 to 0.25, and
+adding a `GRAD_NORM_HARD_TRIGGER=500.0` fast path that reloads immediately on
+any single-step raw grad norm above threshold, independent of the slow EMA);
+both are implemented in
+`colab_fock_cfc_baoab_aniso_gaussian_openwebtext_d384.ipynb`.
+
+`depth_code`'s prominence in every spike prompted a direct empirical check of
+what this parameter — the per-layer additive shift $e_g$ of
+[`Structured_VTheta_Design_and_Theory.md`](./Structured_VTheta_Design_and_Theory.md)
+§14.3 — actually does once trained, using six early CfC/BAOAB checkpoints
+(steps 500-5,500, i.e. before the burst) and a mid-run Verlet checkpoint
+(steps 9,000-15,000) from the sibling gamma=0.10 experiment.
+
+### 27.2 Finding: boundary layers ($g=0$, $g=L-1$) move; middle layers do not
+
+The full per-layer trajectories, numbers, and the tie-back to the §14.4
+conservativity proof are in
+[`Structured_VTheta_Design_and_Theory.md`](./Structured_VTheta_Design_and_Theory.md)
+§14.7. In summary, for both integrators layers $g=1,\dots,L-2$ stay
+statistically at their random-init norm throughout the windows checked, while
+the layer(s) adjacent to a boundary move in a clearly structured, non-random
+way:
+
+- **Verlet:** only $g=0$ deviates from init (shrinks to ≈0.66x at step 9,000,
+  recovers to ≈0.89x by step 15,000).
+- **CfC/BAOAB:** $g=15$ ($=L-1$) grows explosively in the first 2,500 steps
+  (1.14x -> 3.41x init) then plateaus (3.41x -> 3.65x over the next 3,000
+  steps); $g=1$ climbs more slowly and has not plateaued by step 5,500
+  (1.03x -> 1.91x); $g=0$ peaks at 1.72x (step 3,500) then relaxes back to
+  1.17x (step 5,500) -- non-monotonic, same as the Verlet run's $g=0$, but
+  with the opposite sign.
+
+Critically, $g=15$'s growth is already flat by step 2,500-3,500 -- more than
+2,500 steps before the step-6,297 spike burst -- and val_ppl improves
+smoothly and monotonically the entire time (1369 -> 171). So an elevated
+$\lVert e_{L-1}\rVert$ is not, by itself, sufficient to trigger the cascade;
+it establishes a *precondition* (per §14.7's argument, a large per-layer
+shift can move that layer's read of the shared well bank into a
+higher-curvature region than the bank's precision matrices were tuned for),
+consistent with §26's curvature-based reversal of the naive damping
+argument, but something else — plausibly continued drift in $g=1$, or in one
+of the other implicated groups (`creation_gate`, `destruction_gate`,
+`register`, `reverse_ch`) — has to change further before the burst itself
+fires. No checkpoint spanning the burst is available yet to settle this.
+
+### 27.3 Relationship to §23-§26
+
+This finding sits alongside, rather than replacing, the mitigation ladder of
+§23 and the damping/curvature discussion of §26: it identifies which
+*parameter group* inside the shared V_theta bank is the structural conduit
+for the boundary-layer sensitivity that both integrators exhibit, and gives
+a concrete, checkpoint-verifiable quantity (`depth_code` per-layer norm) to
+track alongside the Weyl-bound stiffness audit (SCAF `StiffnessProbe`, see
+the `semsimula-scaf` docs) when diagnosing future bursts. The pending $L=8$
+depth-probe run is the natural next test of whether the same boundary
+pattern reappears at $g=7$ ($=L-1$ for $L=8$) on a similar step-relative
+timeline, which would support an $L$-independent boundary effect, versus a
+markedly different timeline or magnitude, which would point to a
+depth-dependent mechanism instead.
+
+---
+
 *This note documents the training process of a research experiment and is
 intended for internal diagnostic use. The fixes described here are all
 implemented in the notebook
@@ -4399,4 +4479,4 @@ and the depth-conditioned multi-context Gaussian with per-layer reverse
 channel at
 `notebooks/conservative_arch/scaleup/colab_fock_depthcond_vtheta_openwebtext.ipynb`.*
 
-*Last updated: 21 July 2026*
+*Last updated: 23 August 2026. Section 27 added: the first CfC/BAOAB grad-clip spike burst (gamma=0.10, step 6,297) and the two fixes applied (tightened `depth_code` clip, `GRAD_NORM_HARD_TRIGGER`), plus the empirical finding that `depth_code` growth concentrates in boundary layers (layer 0 and the last layer) rather than the middle of the stack, in both the Verlet and CfC/BAOAB integrators (full data in `Structured_VTheta_Design_and_Theory.md` §14.7).*

@@ -1196,6 +1196,92 @@ training notebook
 Code walkthrough and gradient-checkpointing safety:
 [`Xi_Bottleneck_Diagnosis_Phase5.md`](./Xi_Bottleneck_Diagnosis_Phase5.md) §11.
 
+### 14.7 Empirical depth-code growth in trained checkpoints (Verlet vs. CfC/BAOAB, d=384 OWT)
+
+§14.3-§14.4 establish what $e_g$ *is* (a per-layer additive shift on a shared
+bank) and *why* growing it is architecturally safe (exact per-step
+conservativity, any magnitude). This subsection reports what $e_g$ actually
+does once trained, on the anisotropic-Gaussian, depth-conditioned V_theta
+production runs (`aniso_dcvt5x8`: $n_{\text{ctx}}=5$, $K=8$, $d=384$,
+$L=16$, `code_init_std`$=0.02$) behind the gamma=0.10 OpenWebText experiments
+discussed in
+[`Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`](./Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md).
+Values below are $\lVert e_g \rVert$ (the depth-code row's Frobenius norm
+over its $n_{\text{ctx}} \times d = 1{,}920$ entries), relative to the
+random-init expectation $\lVert e_g \rVert_{\text{init}} \approx
+\sigma_0 \sqrt{n_{\text{ctx}} d} \approx 0.02 \sqrt{1{,}920} \approx 0.876$.
+
+**Verlet, gamma=0.10, steps 9,000-15,000.** Layers $g=1,\dots,15$ stay within
+≈4% of $\lVert e_g \rVert_{\text{init}}$ throughout this window and are
+pairwise near-orthogonal (cosine similarity to $e_0$ in $[-0.04, 0.04]$) --
+statistically indistinguishable from an untrained random draw. Only $g=0$
+moves: it *shrinks* to ≈0.66x init at step 9,000 and recovers toward ≈0.89x
+by step 15,000.
+
+**CfC/BAOAB, gamma=0.10, steps 500-5,500 (same architecture, fresh run).**
+Every layer is already above init by step 500, and the growth is sharply
+uneven across depth:
+
+| step | $\lVert e_0\rVert$ / init | $\lVert e_1\rVert$ / init | $\lVert e_{15}\rVert$ / init | val_ppl |
+|---|---|---|---|---|
+| 500   | 1.04x | 1.03x | 1.14x | 1369.00 |
+| 1,500 | 1.43x | 1.28x | 2.50x |  519.58 |
+| 2,500 | 1.70x | 1.63x | 3.41x |  392.62 |
+| 3,500 | 1.72x | 1.84x | 3.53x |  284.05 |
+| 4,500 | 1.46x | 1.85x | 3.57x |  214.48 |
+| 5,500 | 1.17x | 1.91x | 3.65x |  171.15 |
+
+Two things stand out. First, layer 15 (the deepest layer) does almost all of
+its growth in the first 2,500 steps -- inside the WSD warmup window
+(0 -> 5,000) -- then **plateaus**: from step 2,500 to step 5,500 it only
+creeps from 3.41x to 3.65x (+7% over 3,000 steps), while val_ppl keeps
+improving smoothly and monotonically the entire time (1369 -> 171). An
+elevated $\lVert e_{15}\rVert$ therefore coexists with, and does not by
+itself disrupt, healthy training -- it is at most a necessary, not
+sufficient, precondition for the grad-clip spike burst this same run hits
+at step 6,297, which post-dates this plateau by >3,500 steps; see the
+instability notes linked above). Second, layer 0 is non-monotonic here too,
+but in the opposite direction from the Verlet run: it *overshoots* init
+(peaking at 1.72x by step 3,500) and is relaxing back down (to 1.17x by
+step 5,500), whereas the Verlet run's layer 0 *undershoots* init and
+recovers upward. Different integrator, opposite sign, same qualitative
+fact: $g=0$ has a distinct, non-monotonic dynamic that the middle layers
+never show, in both integrators.
+
+**Reading across both runs:** the layers that move in a structured
+(non-random) way are consistently the ones nearest the input boundary
+($g=0$) or, in the CfC/BAOAB run, additionally the output boundary
+($g=L-1=15$, with a slower secondary build-up at $g=1$); the middle layers
+stay statistically at init in both. This is consistent with boundary layers
+receiving more direct, less-diffused gradient signal from the loss than a
+layer buried in the middle of an $L$-deep stack -- a structural fact about
+depth, not obviously specific to $L=16$.
+
+**Link back to §14.4.** None of this growth violates the conservativity
+proof: $e_g$ remains constant in $h$ at every step regardless of its norm,
+so $V_g(\cdot, h)$ stays an exact scalar potential and $f = -\nabla_h V_g$
+a genuine gradient, however large $\lVert e_g \rVert$ gets. What the proof
+does *not* guarantee is that the resulting $\xi_g$ stays inside the region
+of context-space the shared bank's precision matrices (the rank-4
+low-rank correction of §12-§13) were effectively conditioned for. A shift
+this large plausibly moves layer 15's read of the bank into a
+higher-local-curvature region of the *same* wells that layers 2-14 read
+near their original (near-init) location -- the direct mechanical link
+between this per-layer shift mechanism and the SCAF Weyl-bound stiffness
+finding (curvature exceeding $\omega \Delta t \lt 2$ off-diagonal) reported
+for this same checkpoint family.
+
+**Caveats.** Single seed per integrator; no checkpoint spans the step-6,297
+burst itself, so it is not yet known whether $\lVert e_{15}\rVert$ (already
+flat) or $\lVert e_1\rVert$ (still climbing at step 5,500) does anything
+different once the spikes start, or whether the proximate trigger lies
+instead in `creation_gate`/`destruction_gate`/`register`/`reverse_ch` --
+the other groups implicated in that burst. The $L=8$ depth-probe run
+(same architecture, half the layers) is a natural next data point: whether
+its own last layer ($g=7$) reaches a similarly outsized plateau, and on a
+similar step-relative timeline, bears directly on whether this is an
+$L$-independent boundary effect or something that scales with depth.
+
 ---
 
 ## 15. References
@@ -1225,4 +1311,4 @@ Code walkthrough and gradient-checkpointing safety:
 
 ---
 
-*Last updated: 27 June 2026. Section 14 added: depth-conditioned multi-context V_theta (cheap per-layer untying) with the parameter accounting, conservativity proof, the compression ladder, and the expressivity trade-off. Section 13 (24 June 2026): hybrid Gaussian + quadratic background structured potential, the epsilon-sweep evaluation notebook, and the stability-expressivity analysis.*
+*Last updated: 23 August 2026. Section 14.7 added: empirical depth-code growth in trained Verlet and CfC/BAOAB checkpoints (gamma=0.10, d=384 OWT), tying the observed boundary-layer (g=0, g=L-1) growth pattern back to the §14.3 formula, the §14.4 conservativity proof, and the SCAF Weyl-bound stiffness finding. Section 14 added (27 June 2026): depth-conditioned multi-context V_theta (cheap per-layer untying) with the parameter accounting, conservativity proof, the compression ladder, and the expressivity trade-off. Section 13 (24 June 2026): hybrid Gaussian + quadratic background structured potential, the epsilon-sweep evaluation notebook, and the stability-expressivity analysis.*
