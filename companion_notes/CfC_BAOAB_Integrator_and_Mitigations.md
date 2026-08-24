@@ -1,4 +1,4 @@
-# CfC/BAOAB Propagator and Stiffness Mitigations for Fock-PARFLM with Structured V_theta
+# CfC/BAOAB Propagator and Stiffness Mitigations for Fock-PARFLM with Structured $V_{\theta}$
 
 Companion to `Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`.
 This note collects the CfC/BAOAB-integrator analysis, the empirical
