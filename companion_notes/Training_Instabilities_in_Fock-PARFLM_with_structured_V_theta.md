@@ -71,6 +71,7 @@
     - 23.4 [Mitigation Tier 2: Moderate Architectural Changes](#234-mitigation-tier-2-moderate-architectural-changes)
     - 23.5 [Mitigation Tier 3: Structural Refactors](#235-mitigation-tier-3-structural-refactors)
     - 23.6 [Diagnostic Experiment Plan](#236-diagnostic-experiment-plan)
+
 24–30. **[CfC/BAOAB Propagator and Stiffness Mitigations →](CfC_BAOAB_Integrator_and_Mitigations.md)** — moved to a dedicated companion note (BAOAB+CfC propagator, late-training/damping cascade analysis, empirical depth-code growth, the $B_k$ clamp, and principled mitigations). Section numbers preserved.
 
 ---
