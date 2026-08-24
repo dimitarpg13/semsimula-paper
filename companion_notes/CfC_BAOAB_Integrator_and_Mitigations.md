@@ -931,21 +931,38 @@ also connects to §24.6's result that no *explicit* second-order symplectic
 integrator beats $\omega \Delta t \lt 2$ — but *exact / exponential*
 integration of the linear part sidesteps the bound entirely.
 
-The structural fact that makes this affordable:
+**What is already exact, and what is not.** `harmonic_terms()` in
+`model_aniso_gaussian_vtheta.py` already folds the **diagonal** of each
+$B_k B_k^\top$ into the exactly-integrated spring: it returns
+$k_{\text{diag}} = \sum_k g_k \big(a_k + \mathrm{rowsum}(B_k^2)\big)$, i.e.
+$\sum_k g_k \mathrm{diag}(P_k)$. So the CfC substep exactly integrates
+$a_k$ **plus** $\mathrm{diag}(B_k B_k^\top)$; the explicit $f_{\text{kick}}$
+residual carries **only** the off-diagonal coupling of
+$\sum_k g_k B_k B_k^\top$ (plus the mild nonlinearity from $g_k$ varying with
+$h$). That off-diagonal coupling is the entire remaining stiff channel.
 
-> After the diagonal $a_k$ is clamped at `precision_max`, **all** remaining
-> stiffness lives in the rank-$r$ term $B_k B_k^\top$. The dangerous subspace
-> is therefore at most $r$-dimensional, with $r =$ `ANISO_RANK` (single
-> digits).
+The structural fact that makes absorbing it affordable:
 
-So no full $d \times d$ eigensolve is needed: take the SVD of the $d \times r$
-factor $B_k$ (cost $O(d r^2)$, negligible), identify the handful of modes
-whose $\omega_j \Delta t$ approaches 2, and integrate **exactly those modes**
-with the same harmonic propagator already in `cfc_substep`. Only the
-genuinely non-stiff, nonlinear mixture-coupling remains in the explicit kick.
-The result: the explicit stiff residual disappears, so the
+> The aggregate off-diagonal operator across all wells is
+> $\sum_k g_k B_k B_k^\top = G G^\top$ with
+> $G = [\sqrt{g_1} B_1, \dots, \sqrt{g_K} B_K] \in \mathbb{R}^{d \times Kr}$,
+> so its rank is at most $Kr$ — fixed by architecture ($K$ wells, rank
+> $r =$ `ANISO_RANK`), **independent of how large $\sigma_{\max}(B_k)$ grows**.
+> For the d=384 run $Kr \approx 8 \times 4 = 32 \ll d = 384$.
+
+So no full $d \times d$ eigensolve is needed: take the eigendecomposition of
+the $Kr \times Kr$ Gram matrix $G^\top G$ (cost $O(d (Kr)^2)$, negligible),
+keep the modes whose $\omega_j \Delta t$ approaches 2, and integrate **exactly
+those modes** with the same harmonic propagator already in `cfc_substep`. Only
+the genuinely non-stiff, nonlinear mixture-coupling stays in the explicit
+kick. The result: the explicit stiff residual disappears, so the
 amplification-into-blow-up channel is gone **by construction, for any
 $\sigma_{\max}(B_k)$** — clamped or not. §30 works this out concretely.
+
+Note the number of stiff modes ($\le Kr$) is fixed by architecture, **not**
+reduced by bounding curvature — so §29.3 below is not about keeping the mode
+count down. Its job is orthogonal (conditioning), which is why the two are
+genuine complements; see §29.7.
 
 ### 29.3 Bound the curvature by construction, smoothly (architectural)
 
@@ -957,8 +974,13 @@ parameterization** instead of something monitored:
 - Or parameterize the whole precision through a bounded spectral map (matrix-sigmoid / Cayley form) so $\mathrm{spec}(P_k) \subseteq [0, a_{\max}]$ is guaranteed, with the real CFL value $a_{\max} = 4m / \Delta t^2$ as the ceiling.
 
 This attacks "unbounded growth" directly (the §28.2b finding) and pairs
-naturally with §29.2: it keeps the number of stiff modes that must be
-exactly integrated small and stable.
+naturally with §29.2 — but **not** by reducing the mode count (that is fixed
+at $\le Kr$ regardless, per §29.2). Its role is to bound each mode's
+*magnitude* $\omega_j$, which keeps §29.2's exact-mode machinery
+well-conditioned: bounded singular values give a stable Gram
+eigendecomposition and backward pass, a bounded frozen-coefficient
+linearization error over $\Delta t$, and bounded backprop sensitivity
+$\partial R / \partial \omega_j$. See §29.7 for the division of labor.
 
 ### 29.4 Precondition the dynamics so stiffness is uniform (mass/metric)
 
@@ -992,44 +1014,77 @@ function space) rather than in parameter space. This limits the
 E/P/depth-code perturbations *by their effect on the dynamics*, which is
 exactly the quantity that matters, instead of by a unitless norm.
 
-### 29.7 Recommendation
+### 29.7 Recommendation: §29.2 + §29.3 together, staged
 
-- **§29.2 (low-rank exponential integration)** is the deepest and, arguably, the correct fix: it eliminates the explicit stiff channel entirely and is affordable precisely because the stiffness is rank-$r$ by construction. It is the natural continuation of what CfC/BAOAB already does for the diagonal.
-- **§29.3 (smooth bounded curvature)** as the architectural complement, so §29.2 never has many stiff modes to handle.
-- **§29.5 (Weyl soft-reg)** as a near-free immediate hedge that needs no integrator change.
+The preferred fix is **§29.2 and §29.3 combined**, because they do genuinely
+different jobs — one is not a weaker version of the other, and neither alone
+is sufficient:
+
+| | §29.2 low-rank exponential | §29.3 smooth bounded curvature |
+| --- | --- | --- |
+| Fixes | **stability** of forward integration: eliminates the explicit stiff channel; A-stable for any $\sigma_{\max}$ | **conditioning**: bounds each mode's $\omega_j$ |
+| Mechanism | exact rotation of the rank-$Kr$ stiff subspace of $G G^\top$, folded into the A-substep | spectral-normalize `B_proj` so $\mathrm{spec}(P_k) \subseteq [0, a_{\max}]$ |
+| Alone gives | stable, but linearization accuracy over $\Delta t$, backprop sensitivity, and the Gram eig backward all degrade as $\sigma_{\max}(B_k)$ runs away | a smooth ceiling — but the off-diagonal is **still integrated explicitly** (essentially §28.3's clamp made smooth) |
+| Cost | eig of $G^\top G$, $Kr \times Kr$ | eig of $B_k^\top B_k$, $r \times r$, then rescale |
+
+In words: **§29.2 alone** is stable but can become inaccurate and
+ill-conditioned under unbounded growth; **§29.3 alone** caps curvature but
+leaves the explicit channel in place; **§29.2 + §29.3** eliminates the
+channel *and* keeps the exact-mode machinery well-conditioned.
+
+**Suggested staging (de-risks the hard change): §29.3 first, then §29.2.**
+
+1. Land §29.3 first — a small, low-risk change: a smooth spectral bound in `_components` right after `B` is formed, mirroring the existing `precision_max` pattern and reusing the same $r \times r$ Gram eig the §28.3 "true spectral clamp" already specifies. It is immediately validatable through the SCAF Phase 7b/7c Weyl audit (`Weyl frac(>2)` should drop) and is effectively the smooth upgrade of the deferred §28.3 clamp.
+2. Then land §29.2 on the now-bounded landscape, so its Gram eigendecomposition never sees pathological or near-degenerate singular values.
+
+- **§29.5 (Weyl soft-reg)** remains a near-free immediate hedge that needs no integrator change and can run alongside either step.
 - **§29.4 / §29.6** are higher-risk research bets worth noting but not the first move.
+
+**Status: still DEFERRED.** This is a design decision recorded for when the
+mitigation work is un-deferred; no code has been changed and no run launched.
 
 ---
 
 ## 30. Concrete Sketch: The Low-Rank Exponential Substep
 
-This makes §29.2 precise enough to prototype. Consider a single well with
-quadratic potential $V(y) = \tfrac{1}{2} y^\top P_k y$, where $y = h - \mu_k$,
-$P_k = \mathrm{diag}(a_k) + B_k B_k^\top$, mass $m$, and damping $\gamma$. The
-BAOAB A-substep already integrates the undamped harmonic flow exactly; the
-O-substep handles damping separately (§24.2), which is why the damping
-timescale is independent of stiffness. The goal is to extend that exact
-A-substep from the per-dimension diagonal channel to the top stiff **modes**
-of the full $P_k$.
+This makes §29.2 precise enough to prototype, and follows the code's actual
+**aggregated-spring** structure: `harmonic_terms()` does not integrate each
+well separately — it returns one effective diagonal spring
+$k_{\text{diag}} = \sum_k g_k \mathrm{diag}(P_k)$ summed over wells, which
+`cfc_substep` advances exactly per dimension (§29.2). The task here is to add
+the **off-diagonal** part of that same aggregate, treating its stiff modes
+exactly rather than as an explicit kick.
 
-**Step 1 — expose the stiff subspace via SVD.** Compute
-$B_k = U S W^\top$ with $U \in \mathbb{R}^{d \times r}$, $S = \mathrm{diag}(s_1, \dots, s_r)$.
-The columns $u_j$ of $U$ span the entire off-diagonal curvature (everything
-$a_k$'s clamp does not already bound), and $s_j^2$ is that column's
-contribution to the precision.
+Freezing the coefficients $g_k, \mu_k, P_k$ at the current $h$ (the same
+frozen-coefficient model `harmonic_terms` already uses), the aggregate local
+force is $f(h') = s - H h'$ with the aggregate Hessian
+$H = \sum_k g_k P_k = \mathrm{diag}(k_{\text{diag}}) + G G^\top$, where the
+diagonal piece is exactly what is integrated today and the off-diagonal piece
+is the low-rank remainder to absorb.
+
+**Step 1 — expose the aggregate stiff subspace.** Stack the per-well factors,
+weighted by $\sqrt{g_k}$, into $G = [\sqrt{g_1} B_1, \dots, \sqrt{g_K} B_K] \in \mathbb{R}^{d \times Kr}$,
+so that $\sum_k g_k B_k B_k^\top = G G^\top$. Eigendecompose the small Gram
+matrix $G^\top G = W \Lambda W^\top$ ($Kr \times Kr$); the nonzero eigenvalues
+$\lambda_j$ and the reconstructed left vectors $u_j = G w_j / \sqrt{\lambda_j}$
+are the off-diagonal curvature modes. (Using the Gram eig rather than a raw
+SVD of $G$ is the numerically stable route, and is the same primitive §29.3
+and the §28.3 "true spectral clamp" use.)
 
 **Step 2 — exact per-mode curvature.** The true curvature along $u_j$ is the
-Rayleigh quotient
+Rayleigh quotient of the *full* aggregate Hessian,
 
-$$k_j = u_j^\top P_k u_j = u_j^\top \mathrm{diag}(a_k) u_j + s_j^2, \qquad \omega_j = \sqrt{k_j / m}.$$
+$$k_j = u_j^\top H u_j = u_j^\top \mathrm{diag}(k_{\text{diag}}) u_j + \lambda_j, \qquad \omega_j = \sqrt{k_j / m}.$$
 
 Flag mode $j$ as **stiff** iff $\omega_j \Delta t$ exceeds a safety margin
 (e.g. $\omega_j \Delta t \ge 1$, comfortably under the explicit bound 2).
-Because $a_k$ is clamped, only the $s_j^2$ term can make a mode stiff, so the
-flag fires on exactly the directions §28.2b showed are growing.
+Because the diagonal is bounded (via `precision_max`, and §29.3 for the
+off-diagonal), only the $\lambda_j$ term can make a mode stiff, so the flag
+fires on exactly the directions §28.2b showed are growing.
 
 **Step 3 — advance stiff modes exactly.** Project the state onto each stiff
-$u_j$: $\eta_j = u_j^\top y$, $\zeta_j = u_j^\top v$. Advance the pair with the
+$u_j$: $\eta_j = u_j^\top y$ and $\zeta_j = u_j^\top v$, with $y = h - h_\ast$
+about the frozen fixed point $h_\ast = H^{-1} s$. Advance the pair with the
 same exact undamped rotation `cfc_substep` uses per diagonal dimension,
 
 $$R(\omega_j \Delta t) = \begin{pmatrix} \cos(\omega_j \Delta t) & \sin(\omega_j \Delta t)/\omega_j \\ -\omega_j \sin(\omega_j \Delta t) & \cos(\omega_j \Delta t) \end{pmatrix},$$
@@ -1037,13 +1092,16 @@ $$R(\omega_j \Delta t) = \begin{pmatrix} \cos(\omega_j \Delta t) & \sin(\omega_j
 giving $(\eta_j', \zeta_j')^\top = R(\omega_j \Delta t) (\eta_j, \zeta_j)^\top$,
 then write the exact increments back:
 $y \leftarrow y + \sum_j (\eta_j' - \eta_j) u_j$ and
-$v \leftarrow v + \sum_j (\zeta_j' - \zeta_j) u_j$.
+$v \leftarrow v + \sum_j (\zeta_j' - \zeta_j) u_j$. In practice one avoids
+forming $h_\ast$ explicitly by rotating the increments directly, exactly as
+the diagonal channel already does.
 
 **Step 4 — demote only the non-stiff remainder to the explicit kick.**
-Subtract the part of $B_k B_k^\top y$ already carried by the exact modes, so
+Subtract the part of $G G^\top y$ already carried by the exact modes, so
 $f_{\text{kick}}$ retains only the non-stiff off-diagonal residual plus the
-genuinely nonlinear cross-well mixture coupling. Both have bounded curvature
-by construction, so neither is a blow-up channel.
+genuinely nonlinear part (the variation of $g_k, \mu_k, P_k$ with $h$ that the
+frozen-coefficient model omits). Both have bounded curvature by construction,
+so neither is a blow-up channel.
 
 **Why it is A-stable.** Each stiff mode is advanced by the exact
 damped-harmonic flow (the rotation $R$ composed with the O-step's
@@ -1055,15 +1113,15 @@ simply rotates faster, still stably. This is the same mechanism that already
 protects the diagonal channel, now extended to the off-diagonal stiff
 subspace.
 
-**Cost.** One SVD of a $d \times r$ matrix ($O(d r^2)$) plus a few rank-1
-projections per well; with $r$ single-digit and $d = 384$ this is negligible
-next to the forward pass, even summed over $K$ wells and $n_{\text{ctx}}$
-channels.
+**Cost.** One eig of the $Kr \times Kr$ Gram matrix ($O((Kr)^3)$, with the
+$O(d (Kr)^2)$ Gram formation dominating) plus a few rank-1 projections, per
+token per xi-channel; with $Kr \approx 32$ and $d = 384$ this is negligible
+next to the forward pass.
 
 **Caveats.**
 
-1. When $a_k$ is non-uniform, the $u_j$ are only approximate eigenvectors of $P_k$; the residual coupling within $\mathrm{span}(U)$ stays in the explicit kick. It is non-stiff (the stiff part has been removed), but for exactness within the subspace one can add a small $r \times r$ dense eigensolve on the compressed operator $U^\top P_k U$ — still $O(r^3)$, trivial.
-2. The mixture over wells makes the global force nonlinear; this substep is a per-well local exponential (Rosenbrock-type) step. The cross-well nonlinearity remains explicit, but it is non-stiff.
+1. Freezing $g_k, \mu_k, P_k$ at the current $h$ makes this a local exponential (Rosenbrock-type) step: it integrates the linearization exactly, and the leftover nonlinearity (Step 4's remainder) is what stays explicit. That remainder is non-stiff once the stiff modes are removed.
+2. The $u_j$ diagonalize $G G^\top$, not the full $H$; the diagonal $k_{\text{diag}}$ is not simultaneously diagonalized, so there is a small residual coupling between the exact modes and the diagonal channel. It is bounded (both pieces are individually bounded), and for exactness within $\mathrm{span}(U)$ one can add a dense eigensolve on the compressed $U^\top H U$ — still tiny.
 3. Fold the stiff-mode flow into the A (drift) substep and leave O (thermostat) and the non-stiff B (kick) unchanged, so the BAOAB splitting structure — and its $T=0$ sampling properties — are preserved.
 
 ---
@@ -1084,7 +1142,15 @@ content unchanged) for maintainability. Section 29 added: principled
 directions beyond the $B_k$ clamp (low-rank exponential integration,
 bounded-curvature reparameterization, mass/metric preconditioning, a Weyl
 soft-regularizer, and a functional trust region). Section 30 added: a concrete
-math sketch of the low-rank exponential substep (stiff-mode SVD plus the
-harmonic propagator already in `cfc_substep`), ready to prototype when the
-mitigation work is un-deferred. All of §29-§30 is documentation/design only —
-no code changed and no run launched.*
+math sketch of the low-rank exponential substep. Both were then grounded in
+the actual `AnisotropicMixtureGaussianVTheta` implementation and refined:
+§29.2 and §30 now use the aggregate rank-$Kr$ off-diagonal factor
+$G = [\sqrt{g_k} B_k]$ (not a per-well rank-$r$ SVD), matching that
+`harmonic_terms()` already integrates $\mathrm{diag}(P_k)$ exactly and leaves
+only the off-diagonal coupling as the residual; §29.7 records the
+§29.2 + §29.3 combined recommendation with an explicit division of labor
+(stability vs. conditioning) and a staged §29.3-then-§29.2 rollout, correcting
+the earlier imprecise claim that §29.3 reduces the stiff-mode *count* (the
+count is fixed at $\le Kr$ by architecture). All of §29-§30 is
+documentation/design only — no code changed and no run launched; the
+mitigation remains deferred.*
