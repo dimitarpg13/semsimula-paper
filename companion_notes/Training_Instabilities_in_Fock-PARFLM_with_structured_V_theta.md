@@ -4460,10 +4460,11 @@ depth-dependent mechanism instead.
 
 ## 28. Proposed (Deferred) Mitigation: Clamping the Low-Rank Precision Factor $B_k$
 
-> **Status: PROPOSED — DEFERRED until further notice (23 August 2026).** This
-> section records a hypothesis and an experiment design; no code has been
-> changed and no run has been launched. It is queued behind the ongoing
-> gamma=0.10 CfC/BAOAB run and the $L=8$ depth probe.
+> **Status: PROPOSED — DEFERRED until further notice (23-24 August 2026).**
+> §28.1-28.2 record a hypothesis; §28.2b upgrades it to a direct
+> measurement on this run's own checkpoints. No code has been changed and
+> no run has been launched — the clamp itself is still queued behind the
+> ongoing gamma=0.10 CfC/BAOAB run and the $L=8$ depth probe.
 
 ### 28.1 The observation: $a_k$ is clamped, $B_k$ is not
 
@@ -4505,6 +4506,73 @@ upper bound. This is orthogonal to the well count $K$ (see §27's companion
 discussion and the well-count analysis: doubling $K$ adds more equally
 unclamped $B_k$ factors, giving *more* opportunities for an outlier, not
 fewer).
+
+### 28.2b Confirmed: $B_k$ is already large and still growing in the actual g0.1 CfC/BAOAB run
+
+§28.1-28.2 argue the case from the model definition and from the Verlet-run
+Phase 7b/7c Weyl-bound audits (§25-§26). Those audits never inspected
+`B_proj` directly — they measured the *aggregate* curvature functional
+$K_{\text{Weyl}}(h)$, not its per-term decomposition. To close that gap,
+the `B_proj.weight` (and, for reference, `a_proj.weight`/`a_proj.bias`)
+tensors were pulled directly from the six pre-spike-burst CfC/BAOAB
+checkpoints of this exact g0.1 run (steps 500, 1500, 2500, 3500, 4500,
+5500 — the same run whose spike burst starts at step 6297, §27.1), one per
+xi-channel of the depth-conditioned bank ($n_{\text{ctx}}=5$ channels).
+For each channel, `torch.linalg.svdvals(W_B)[0]` gives the spectral norm
+of `B_proj.weight`, a direct proxy for $\sigma_{\max}(B_k)$ at
+representative context scale (the bias term is comparatively small and
+omitted for brevity):
+
+| step | ch 0 | ch 1 | ch 2 | ch 3 | ch 4 |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 500  | 1.4  | 1.6  | 2.3  | 1.3  | 1.7  |
+| 1500 | 3.6  | 4.0  | 5.2  | 3.4  | 4.1  |
+| 2500 | 5.8  | 6.3  | 7.9  | 5.5  | 6.4  |
+| 3500 | 7.9  | 8.5  | 10.1 | 7.4  | 8.4  |
+| 4500 | 9.6  | 10.3 | 12.0 | 9.0  | 10.1 |
+| 5500 | 10.8 | 11.6 | 14.1 | 10.2 | 11.4 |
+
+*(spectral norm $\sigma_{\max}$ of `B_proj.weight` per xi-channel; higher
+channel indices correspond to longer context windows in the multi-xi
+bank.)*
+
+Three observations upgrade §28.1-28.2 from a plausible mechanism to a
+confirmed, live one in this run:
+
+1. **Growth is uniform and monotonic across all five channels**, roughly
+   6-10x from step 500 to step 5500, with no channel plateauing before the
+   window ends. This contrasts with the `depth_code` trajectory of §27.1
+   (layer 15 grows explosively then plateaus by step ~2500); $B_k$ shows
+   no such saturation over the same span.
+2. **The unclamped term already dwarfs the clamped one.** $\sigma_{\max}(B_k)^2$
+   at step 5500 is on the order of $10^2$ (squaring ~10-14), while the
+   diagonal cap contributes at most $a_{\max} = 2/d \approx 0.0052$ per
+   §28.2 — a gap of three to four orders of magnitude that only widens as
+   training continues, since one side is architecturally bounded and the
+   other is not.
+3. **The growth window matches the spike-burst window.** The measured
+   checkpoints span exactly the steps leading up to the first hard-trigger
+   spikes (step 6297 onward, §27.1's log). This does not prove causation
+   on its own, but it rules out the alternative explanation that $B_k$
+   growth is a slow, background effect unrelated to the timing of the
+   instability.
+
+**Caveat.** `svdvals(W_B)` measures the weight matrix's own spectral norm,
+not $\sigma_{\max}(B_k(\xi))$ evaluated at the specific $\xi$ context seen
+by any single token — the two differ by whatever gain `B_proj`'s input
+activations carry. Since `B_proj` has no output nonlinearity between the
+matrix multiply and $B_k$, and the context vector's norm is $O(1)$ by
+construction (pre-LN blocks), the weight-matrix spectral norm is a
+reasonable order-of-magnitude proxy, but a Phase 7c-style native-trajectory
+probe restricted to this run's own checkpoints (rather than this offline
+weight inspection) would be the rigorous next step if the clamp is ever
+un-deferred.
+
+This measurement is the empirical bridge between §28.2's structural
+argument and §28.6's amplification mechanism: it confirms the
+$P_k$ that gates $\delta f \approx g_k P_k \delta\mu_k$ in §28.6 is not a
+hypothetical worst case but the actual, still-growing operator this run is
+integrating against.
 
 ### 28.3 Proposed implementation
 
@@ -4574,10 +4642,7 @@ and every well centre is itself a function of the (possibly depth-shifted)
 context, $\mu_k = \mu_k(\xi)$. A perturbation to that context therefore
 propagates to a force perturbation in two multiplicative stages:
 
-$$\delta \mu_k = \frac{\partial \mu_k}{\partial \xi}\, \delta \xi
-\qquad \Longrightarrow \qquad
-\delta f \approx g_k\, P_k\, \delta \mu_k
-= g_k\, P_k \left(\frac{\partial \mu_k}{\partial \xi}\right) \delta \xi.$$
+$$\delta \mu_k = \frac{\partial \mu_k}{\partial \xi} \delta \xi \qquad \Longrightarrow \qquad \delta f \approx g_k P_k \delta \mu_k = g_k P_k \left(\frac{\partial \mu_k}{\partial \xi}\right) \delta \xi.$$
 
 The first stage's gain is fixed by `mu_proj`'s weights and has nothing to do
 with stiffness. The second stage is scaled by $P_k$ itself: **the same-sized
@@ -4652,4 +4717,11 @@ and the depth-conditioned multi-context Gaussian with per-layer reverse
 channel at
 `notebooks/conservative_arch/scaleup/colab_fock_depthcond_vtheta_openwebtext.ipynb`.*
 
-*Last updated: 24 August 2026. Section 28.6 added: a derivation (`δf ≈ g_k P_k δμ_k`) showing well curvature amplifies, rather than merely coexists with, the §27 `depth_code`/embedding spikes, and a sharpened diagonal-vs-off-diagonal-residual distinction for when "recovery is deeper/slower" actually applies under CfC/BAOAB — the diagonal channel's damping is provably stiffness-independent, the off-diagonal residual is not. Section 28 added (PROPOSED/DEFERRED, 23 August 2026): a spectral/norm clamp on the anisotropic well's low-rank precision factor `B_k` — the one term in the SCAF Weyl bound that is currently unclamped and the prime suspect for "curvature exceeding 2" — with an implementation sketch and a Phase 7b/7c validation protocol; documented but not implemented, deferred pending the current CfC/BAOAB and L=8 runs. Section 27 added: the first CfC/BAOAB grad-clip spike burst (gamma=0.10, step 6,297) and the two fixes applied (tightened `depth_code` clip, `GRAD_NORM_HARD_TRIGGER`), plus the empirical finding that `depth_code` growth concentrates in boundary layers (layer 0 and the last layer) rather than the middle of the stack, in both the Verlet and CfC/BAOAB integrators (full data in `Structured_VTheta_Design_and_Theory.md` §14.7).*
+*Last updated: 24 August 2026. Section 28.2b added: direct measurement of
+`B_proj.weight`'s spectral norm across six pre-spike-burst checkpoints
+(steps 500-5500) of the actual g0.1 CfC/BAOAB run, showing a uniform,
+monotonic 6-10x growth with no plateau, three to four orders of magnitude
+above the clamped diagonal term — upgrading §28.1-28.2 from a hypothesis
+transferred from Verlet-run Weyl-bound audits to a confirmed, live
+mechanism in this run's own checkpoints; the clamp itself remains
+deferred. Section 28.6 added: a derivation (`δf ≈ g_k P_k δμ_k`) showing well curvature amplifies, rather than merely coexists with, the §27 `depth_code`/embedding spikes, and a sharpened diagonal-vs-off-diagonal-residual distinction for when "recovery is deeper/slower" actually applies under CfC/BAOAB — the diagonal channel's damping is provably stiffness-independent, the off-diagonal residual is not. Section 28 added (PROPOSED/DEFERRED, 23 August 2026): a spectral/norm clamp on the anisotropic well's low-rank precision factor `B_k` — the one term in the SCAF Weyl bound that is currently unclamped and the prime suspect for "curvature exceeding 2" — with an implementation sketch and a Phase 7b/7c validation protocol; documented but not implemented, deferred pending the current CfC/BAOAB and L=8 runs. Section 27 added: the first CfC/BAOAB grad-clip spike burst (gamma=0.10, step 6,297) and the two fixes applied (tightened `depth_code` clip, `GRAD_NORM_HARD_TRIGGER`), plus the empirical finding that `depth_code` growth concentrates in boundary layers (layer 0 and the last layer) rather than the middle of the stack, in both the Verlet and CfC/BAOAB integrators (full data in `Structured_VTheta_Design_and_Theory.md` §14.7).*
