@@ -4,7 +4,7 @@ A reference for writing LaTeX math **and** Mermaid diagrams in Markdown files th
 
 The cheatsheet has two parts:
 
-- **Part I — KaTeX math rendering** (rules §1–§13, §19, §25–§26): inline `$...$` and display `$$...$$` math.
+- **Part I — KaTeX math rendering** (rules §1–§13, §19, §25–§27): inline `$...$` and display `$$...$$` math.
 - **Part II — Mermaid diagram rendering** (rules §14–§18, §20–§24): ` ```mermaid ` fenced blocks.
 
 ---
@@ -506,6 +506,50 @@ removed.
 
 ---
 
+## 27. Two bare `~` on the same line — GitHub reads the pair as strikethrough
+
+Rule 3 above recommends writing `~5%` instead of `$\sim$5%` for a lone
+"approximately" sign outside math, since the KaTeX `$\sim$` command does
+not render inside a table cell. That fix is correct for a single `~` — but
+it silently breaks if the **same line or paragraph** contains a **second**
+bare `~` later on, e.g. two different approximate quantities compared in
+one sentence:
+
+```markdown
+<!-- Bad — the two single tildes pair up as a strikethrough delimiter -->
+...threshold (~5%) from the earlier analysis. The other sweep's margin (~10-11%) is comfortably wider.
+```
+
+GitHub's renderer supports GFM's `~~text~~` strikethrough, but — like many
+Markdown-it/marked-based renderers — it also accepts the **single**-tilde
+form `~text~` as a (non-standard, permissive) strikethrough delimiter. Two
+unrelated bare tildes anywhere in the same paragraph are read as an
+opening and closing delimiter pair, and **everything between them**
+(`5%) from the earlier analysis. The other sweep's margin (~10-11` in the
+example above) renders struck through, even though neither tilde was
+intended as strikethrough syntax and the two quantities are not adjacent.
+
+**Symptom:** a run of text in the middle of an otherwise normal sentence
+renders with a strikethrough line through it, with no `~~` anywhere in the
+source — easy to miss on a quick read since the sentence still looks
+superficially correct in the raw Markdown.
+
+**Rule:** never let a paragraph contain two or more bare (non-`~~`) `~`
+characters. If you need more than one "approximately" sign in the same
+sentence or paragraph, use the Unicode `≈` character (copy-paste it) for
+at least all but one of them instead of `~`:
+
+```markdown
+<!-- Good — no bare-tilde pair left to misfire -->
+...threshold (≈5%) from the earlier analysis. The other sweep's margin (≈10-11%) is comfortably wider.
+```
+
+This is unrelated to rule 3, which is still correct for the single-tilde,
+single-occurrence-per-paragraph case; it only becomes a problem once a
+second bare tilde appears anywhere later in the same paragraph.
+
+---
+
 # Part II — Mermaid diagrams
 
 The symptom of a violated rule below is almost always the same red box from GitHub:
@@ -817,6 +861,7 @@ The same applies to `[`, `]`, `{`, `}` inside pipe labels — none are quoted, s
 | `\!` near `\left(` | parse failure or broken layout | remove `\!` entirely |
 | `}_x` in inline math (2+ on same line) | italic bleeds; subscript disappears | change `}_x` to `}\_x` |
 | `\_` inside `\text{...}` (or `\mathrm`/`\mathbf`/etc.) | "'\_' allowed only in math mode" pink error box | use a literal `_`, or better, a hyphen/space: `\text{refute-tol}` |
+| Two bare `~` in one paragraph (e.g. `~5%` ... `~10%`) | text between them renders struck through | use `≈` for at least one of them |
 | `<X` (alphabetic) in math, with later `>` on same line | "Extra open brace or missing close brace"; HTML sanitiser eats text | replace `<` with `\lt`, `>` with `\gt` |
 | `\left\{ ... \middle\| ... \right\}` set-builder | "Missing or unrecognized delimiter for \left" | use `\lbrace ... \mid ... \rbrace` |
 | `\left\lVert ... \right\rVert` over a long expression | same error | use `\Big\lVert ... \Big\rVert` or plain `\lVert ... \rVert` |
