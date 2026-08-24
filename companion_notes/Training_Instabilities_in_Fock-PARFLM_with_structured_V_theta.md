@@ -1,4 +1,4 @@
-# Training Instabilities in Fock-PARFLM v2.1 with Structured V_θ
+# Training Instabilities in Fock-PARFLM v2.1 with Structured $V_{\theta}$
 
 **Status:** Internal working note — do not push to remote. 
 **Experiment:** OpenWebText Phase 4 scale-up, `d=384`, `L=16`, `M=32`, SQ3 `K_mix=8`. 
