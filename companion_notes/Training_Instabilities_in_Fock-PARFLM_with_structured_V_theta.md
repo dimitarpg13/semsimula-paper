@@ -81,6 +81,7 @@
 25. [Late-Training Spike Emergence: The Cascade is Universal, Not Depth-Specific](#25-late-training-spike-emergence-the-cascade-is-universal-not-depth-specific)
 26. [The Damping Hypothesis: Is Low γ the Dominant Cause of the Cascade?](#26-the-damping-hypothesis-is-low-γ-the-dominant-cause-of-the-cascade)
 27. [Empirical Depth-Code Growth: Boundary Layers Dominate in Both Integrators](#27-empirical-depth-code-growth-boundary-layers-dominate-in-both-integrators)
+28. [Proposed (Deferred) Mitigation: Clamping the Low-Rank Precision Factor $B_k$](#28-proposed-deferred-mitigation-clamping-the-low-rank-precision-factor-b_k)
 
 ---
 
@@ -4457,6 +4458,106 @@ depth-dependent mechanism instead.
 
 ---
 
+## 28. Proposed (Deferred) Mitigation: Clamping the Low-Rank Precision Factor $B_k$
+
+> **Status: PROPOSED — DEFERRED until further notice (23 August 2026).** This
+> section records a hypothesis and an experiment design; no code has been
+> changed and no run has been launched. It is queued behind the ongoing
+> gamma=0.10 CfC/BAOAB run and the $L=8$ depth probe.
+
+### 28.1 The observation: $a_k$ is clamped, $B_k$ is not
+
+The anisotropic well's precision is $P_k = \mathrm{diag}(a_k) + B_k B_k^T$
+with $B_k \in \mathbb{R}^{d \times r}$ ($r = 4$ in the production runs). Only
+the diagonal part is bounded. In
+[`model_aniso_gaussian_vtheta.py`](../notebooks/conservative_arch/parf/model_aniso_gaussian_vtheta.py),
+`_components` applies `precision_max` (set to $2/d \approx 0.0052$ at $d=384$)
+to $a_k$:
+
+```python
+a = (F.softplus(self.a_proj(xi)) + 1e-4).view(*lead, self.K, self.d)
+if self._precision_max is not None:
+    a = a.clamp(max=self._precision_max)
+...
+B = self.B_proj(xi).view(*lead, self.K, self.d, self.rank)  # no clamp
+```
+
+There is no corresponding bound on $B_k$, and — unlike the isotropic sibling
+`MixtureGaussianVTheta` in `model_gaussian_vtheta.py`, which defines a
+`clamp_params()` method — the anisotropic class defines none. The factor is
+initialised small (`nn.init.normal_(self.B_proj.weight, std=0.01)`) but is
+otherwise free to grow throughout training.
+
+### 28.2 Why this is the prime suspect for "curvature exceeding 2"
+
+The SCAF `StiffnessProbe` Weyl bound (Phase 7b/7c) is, per well,
+
+$$K_{\text{Weyl}}(h) = \sum_k g_k \left( \max_i a_k[i] + \sigma_{\max}(B_k)^2 \right),$$
+
+where $g_k = w_k \exp(-\tfrac{1}{2} \delta_k^T P_k \delta_k) > 0$ and $\delta_k = h - \mu_k$.
+The diagonal contribution $\max_i a_k[i]$ is capped at $2/d \approx 0.0052$,
+which is tiny; the only term in that per-well bracket that can plausibly push
+$\omega \Delta t$ past 2 is $\sigma_{\max}(B_k)^2$ — the squared largest
+singular value of the *unclamped* low-rank factor. In other words, the
+off-diagonal curvature the Phase 7b/7c audit flagged on the Verlet runs is,
+by construction, carried almost entirely by the one quantity that has no
+upper bound. This is orthogonal to the well count $K$ (see §27's companion
+discussion and the well-count analysis: doubling $K$ adds more equally
+unclamped $B_k$ factors, giving *more* opportunities for an outlier, not
+fewer).
+
+### 28.3 Proposed implementation
+
+Mirror the existing `precision_max` pattern with a `precision_lr_max`
+(spectral clamp on the low-rank contribution), applied in `_components`
+after `B` is formed, so it flows uniformly through `forward`,
+`analytical_grad`, `harmonic_terms`, and hence the Weyl bound. Two candidate
+forms, cheapest first:
+
+1. **Per-column norm clamp (cheap, elementwise):** rescale each of the $r$
+   columns of $B_k$ so its squared norm does not exceed the budget. Bounds
+   $\lVert B_k \rVert_F^2$ and therefore $\sigma_{\max}(B_k)^2 \le
+   \lVert B_k \rVert_F^2$, at $O(Kdr)$ cost with no eigensolve.
+2. **True spectral clamp (tighter, costlier):** clamp $\sigma_{\max}(B_k)$
+   directly via the $r \times r$ Gram eigenvalues (the same
+   `eigvalsh(B_k^T B_k)` the Weyl bound already computes), rescaling $B_k$
+   when the top singular value exceeds the budget.
+
+Both are pure functions of the freshly-projected $B_k$ (a per-forward
+activation, not an `nn.Parameter`), so this is a forward-pass clamp like
+`precision_max`, not a projected-gradient step on stored weights — no
+optimiser-state interaction, safe under gradient checkpointing.
+
+### 28.4 Validation protocol
+
+1. Add `precision_lr_max` (default `None` = current behaviour) to
+   `AnisotropicMixtureGaussianVTheta` / `...MultiContext...` /
+   `...DepthConditioned...` and thread it through the notebook config.
+2. Pick the budget so the intended max off-diagonal curvature lands safely
+   below the $\omega \Delta t = 2$ bound at the production $\Delta t$ and
+   mass; start from the observed Phase 7b `eig_max` distribution.
+3. Train a short segment (a few thousand steps) from a fixed init or a
+   pre-burst checkpoint, with and without the clamp.
+4. Re-run the SCAF stiffness audit (Phase 7b/7c) on the resulting
+   checkpoints and compare `Weyl frac(>2)`, `eig_max`, and
+   `frac_unstable_ci95`. Success = the clamped run's `Weyl frac(>2)` is
+   materially lower with no PPL regression attributable to the clamp.
+
+### 28.5 Why deferred, and why still worth queuing
+
+Under CfC/BAOAB the diagonal harmonic force is already integrated exactly
+regardless of stiffness (§24), so this clamp is **not** on the critical path
+for the current run's spikes (which come from `depth_code`, `creation_gate`,
+`destruction_gate`, `register`, `reverse_ch`, `E`/`P` — not the well
+curvature). Its value is (a) as a targeted, near-zero-cost hardening of the
+*Verlet* failure mode this whole note diagnoses, should the aniso-Gaussian
+family ever be run under an explicit integrator again, and (b) as a clean
+falsification test of the "unclamped $B_k$ is the curvature culprit"
+hypothesis. It is therefore documented now and deferred, rather than
+implemented, pending the outcome of the current CfC/BAOAB and $L=8$ runs.
+
+---
+
 *This note documents the training process of a research experiment and is
 intended for internal diagnostic use. The fixes described here are all
 implemented in the notebook
@@ -4479,4 +4580,4 @@ and the depth-conditioned multi-context Gaussian with per-layer reverse
 channel at
 `notebooks/conservative_arch/scaleup/colab_fock_depthcond_vtheta_openwebtext.ipynb`.*
 
-*Last updated: 23 August 2026. Section 27 added: the first CfC/BAOAB grad-clip spike burst (gamma=0.10, step 6,297) and the two fixes applied (tightened `depth_code` clip, `GRAD_NORM_HARD_TRIGGER`), plus the empirical finding that `depth_code` growth concentrates in boundary layers (layer 0 and the last layer) rather than the middle of the stack, in both the Verlet and CfC/BAOAB integrators (full data in `Structured_VTheta_Design_and_Theory.md` §14.7).*
+*Last updated: 23 August 2026. Section 28 added (PROPOSED/DEFERRED): a spectral/norm clamp on the anisotropic well's low-rank precision factor `B_k` — the one term in the SCAF Weyl bound that is currently unclamped and the prime suspect for "curvature exceeding 2" — with an implementation sketch and a Phase 7b/7c validation protocol; documented but not implemented, deferred pending the current CfC/BAOAB and L=8 runs. Section 27 added: the first CfC/BAOAB grad-clip spike burst (gamma=0.10, step 6,297) and the two fixes applied (tightened `depth_code` clip, `GRAD_NORM_HARD_TRIGGER`), plus the empirical finding that `depth_code` growth concentrates in boundary layers (layer 0 and the last layer) rather than the middle of the stack, in both the Verlet and CfC/BAOAB integrators (full data in `Structured_VTheta_Design_and_Theory.md` §14.7).*
