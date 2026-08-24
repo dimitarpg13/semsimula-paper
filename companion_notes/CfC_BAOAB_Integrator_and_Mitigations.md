@@ -922,65 +922,113 @@ source**.
 
 ### 29.2 Remove the unstable channel, don't shrink it — low-rank exponential integration
 
+> **Implemented** as `integrator='baoab_cfc_lowrank'`
+> (`cfc_baoab.lowrank_modes` / `lowrank_cfc_substep`, wired in
+> `model_parf_multixi._layer_step_langevin`; tests in `test_cfc_baoab.py`).
+> The construction below is the corrected, code-accurate version; two claims
+> in the original sketch turned out to be wrong and are flagged inline.
+
 This is the direction that eliminates the pathology rather than attenuating
 it. Recall *why* the diagonal part is safe under CfC/BAOAB (§24): it is
-integrated **exactly** by the harmonic propagator, which is A-stable and has
-no $\omega \Delta t \lt 2$ restriction at all. The off-diagonal is dangerous
-**only because it is demoted to an explicit $f_{\text{kick}}$** (§28.6). This
-also connects to §24.6's result that no *explicit* second-order symplectic
-integrator beats $\omega \Delta t \lt 2$ — but *exact / exponential*
-integration of the linear part sidesteps the bound entirely.
+integrated **exactly** by the harmonic propagator, which has no
+$\omega \Delta t \lt 2$ restriction *as a standalone flow*. The off-diagonal
+is dangerous **only because it is demoted to an explicit $f_{\text{kick}}$**
+(§28.6). This connects to §24.6's result that no *explicit* second-order
+symplectic integrator beats $\omega \Delta t \lt 2$ — but putting the stiff
+linear part in an *exact* flow moves the wall off the stiff frequency.
 
-**What is already exact, and what is not.** `harmonic_terms()` in
-`model_aniso_gaussian_vtheta.py` already folds the **diagonal** of each
-$B_k B_k^\top$ into the exactly-integrated spring: it returns
-$k_{\text{diag}} = \sum_k g_k \big(a_k + \mathrm{rowsum}(B_k^2)\big)$, i.e.
-$\sum_k g_k \mathrm{diag}(P_k)$. So the CfC substep exactly integrates
-$a_k$ **plus** $\mathrm{diag}(B_k B_k^\top)$; the explicit $f_{\text{kick}}$
-residual carries **only** the off-diagonal coupling of
-$\sum_k g_k B_k B_k^\top$ (plus the mild nonlinearity from $g_k$ varying with
-$h$). That off-diagonal coupling is the entire remaining stiff channel.
+**The correct split is PSD, not "off-diagonal".** The first instinct — "the
+diagonal is already exact, so rotate only the *off-diagonal* remainder
+$G G^\top - \mathrm{diag}(G G^\top)$" — **does not work**: that off-diagonal
+operator is **indefinite** (it has negative eigenvalues), and an indefinite
+"spring" gives a *hyperbolic* flow that amplifies, not a bounded rotation. Any
+exact rotation must act on a **positive semidefinite** operator. The clean
+split that keeps both parts PSD is
 
-The structural fact that makes absorbing it affordable:
+$$H = \underbrace{\mathrm{diag}\Big(\textstyle\sum_k g_k a_k\Big)}_{D_a,\ \text{diagonal precision, PSD}} + \underbrace{\textstyle\sum_k g_k B_k B_k^\top}_{L = G G^\top,\ \text{low-rank, PSD}},$$
 
-> The aggregate off-diagonal operator across all wells is
-> $\sum_k g_k B_k B_k^\top = G G^\top$ with
-> $G = [\sqrt{g_1} B_1, \dots, \sqrt{g_K} B_K] \in \mathbb{R}^{d \times Kr}$,
-> so its rank is at most $Kr$ — fixed by architecture ($K$ wells, rank
-> $r =$ `ANISO_RANK`), **independent of how large $\sigma_{\max}(B_k)$ grows**.
-> For the d=384 run $Kr \approx 8 \times 4 = 32 \ll d = 384$.
+with $G = [\sqrt{g_1} B_1, \dots, \sqrt{g_K} B_K] \in \mathbb{R}^{d \times Kr}$.
+Note $L$ is the **full** low-rank term including its own diagonal
+$\mathrm{diag}(G G^\top)$ — that diagonal is *removed* from the diagonal
+channel here (which now carries only $a_k$) so the two channels do not
+double-count. `harmonic_terms_lowrank()` returns exactly this
+$(D_a, s_a, G, G^\top\mu)$ split, and $f_{D_a}(h) + f_L(h) = -\nabla V(h)$ to
+machine precision (tested).
 
-So no full $d \times d$ eigensolve is needed: take the eigendecomposition of
-the $Kr \times Kr$ Gram matrix $G^\top G$ (cost $O(d (Kr)^2)$, negligible),
-keep the modes whose $\omega_j \Delta t$ approaches 2, and integrate **exactly
-those modes** with the same harmonic propagator already in `cfc_substep`. Only
-the genuinely non-stiff, nonlinear mixture-coupling stays in the explicit
-kick. The result: the explicit stiff residual disappears, so the
-amplification-into-blow-up channel is gone **by construction, for any
-$\sigma_{\max}(B_k)$** — clamped or not. §30 works this out concretely.
+The structural fact that makes absorbing $L$ affordable:
 
-Note the number of stiff modes ($\le Kr$) is fixed by architecture, **not**
-reduced by bounding curvature — so §29.3 below is not about keeping the mode
-count down. Its job is orthogonal (conditioning), which is why the two are
-genuine complements; see §29.7.
+> $L = G G^\top$ has rank at most $Kr$ — fixed by architecture ($K$ wells,
+> rank $r =$ `ANISO_RANK`), **independent of how large $\sigma_{\max}(B_k)$
+> grows**. For the d=384 run $Kr \approx 8 \times 4 = 32 \ll d = 384$ (and
+> $n_{\text{ctx}} Kr$ if the channels are aggregated).
+
+**Impulse / RESPA, not a second exact rotation composed with the diagonal.**
+The second wrong instinct is to flow $T + V_{D_a}$ exactly (the current
+`cfc_substep`) *and* $T + V_L$ exactly and compose them. That double-counts
+the kinetic term $T$ (each factor carries a full drift), integrating the wrong
+mass — an $O(1)$ error. Splitting the kinetic term ($\tfrac12 T$ each) fixes
+the mass but re-introduces a stability wall, because **composing two
+non-commuting harmonic rotations at large angles is itself hyperbolic** — this
+is exactly why Verlet has an $\omega \Delta t \lt 2$ wall (it *is* a splitting
+method). The working scheme is the **impulse / multiple-time-stepping (RESPA)**
+construction: put the *single* stiff operator $L$ in one exact fast flow that
+also carries the drift, and demote everything soft to the explicit kick:
+
+- **A-substep** $=$ exact flow of $T + V_L$ (`lowrank_cfc_substep`): free
+  drift on the whole state, plus an exact bounded rotation on the $\le Kr$
+  modes of $L$. No $\omega_L \Delta t \lt 2$ wall on those modes.
+- **B-kick** carries the clamped diagonal spring $D_a$ (bounded curvature —
+  `precision_max`, so safe explicitly), $V_\phi$, and the nonlinear V_theta
+  residual.
+
+The stiff channel is therefore integrated exactly, so the
+amplification-into-blow-up channel from §28.6 is gone for the low-rank modes
+**for any $\sigma_{\max}(B_k)$**, clamped or not. §30 works this out concretely.
+
+**Correction to the original A-stability claim.** The impulse scheme is *not*
+unconditionally A-stable end-to-end. The fast flow alone is a bounded rotation
+for any curvature, but the impulse method has known **isolated resonance
+instabilities** at $\omega_L \Delta t \approx k\pi$. Between resonances it is
+stable regardless of stiffness, and the O-step damping ($\gamma$) plus the
+nonlinear residual attenuate the resonances in practice — but "no wall at all"
+overstates it. The honest claim is: the *hard* $\omega \Delta t \lt 2$ wall on
+the stiff modes is replaced by *narrow, damped* resonance bands. This is a
+large improvement, not a total elimination, which is why §29.3 (bounding
+$\omega_L$) remains a genuine complement — see §29.7.
 
 ### 29.3 Bound the curvature by construction, smoothly (architectural)
 
+> **Implemented** as the `precision_lr_max` argument on the anisotropic
+> Gaussian V_theta classes (`model_aniso_gaussian_vtheta.py`,
+> `_bound_lowrank`), mirroring the existing `precision_max` pattern.
+
 The clamp is non-smooth and its threshold is somewhat arbitrary. The
-principled version makes $\omega \Delta t \lt 2$ an **invariant of the
+principled version makes the low-rank curvature bound an **invariant of the
 parameterization** instead of something monitored:
 
 - **Spectral-normalize `B_proj`** (SN-GAN style): $B_k = s \cdot B_{\text{raw}} / \sigma_{\max}(B_{\text{raw}})$ with $s$ a bounded learnable scale. Differentiable, no discontinuity.
 - Or parameterize the whole precision through a bounded spectral map (matrix-sigmoid / Cayley form) so $\mathrm{spec}(P_k) \subseteq [0, a_{\max}]$ is guaranteed, with the real CFL value $a_{\max} = 4m / \Delta t^2$ as the ceiling.
 
+**What was implemented (and its one caveat).** `precision_lr_max` uses a
+smooth **Frobenius** cap: it rescales each well's $B_k$ by
+$\mathrm{budget} \cdot \tanh(\lVert B_k \rVert_F / \mathrm{budget}) / \lVert B_k \rVert_F$
+with $\mathrm{budget} = \sqrt{\texttt{precision\_lr\_max}}$. Since
+$\sigma_{\max}(B_k) \le \lVert B_k \rVert_F$, this **guarantees**
+$\sigma_{\max}(B_k)^2 \lt \texttt{precision\_lr\_max}$ — differentiable, with
+no eigensolve (so no `eigvalsh`-backward degeneracy) and no division by zero.
+It is *conservative*: when the low-rank energy is spread across up to $r$
+singular values the true $\sigma_{\max}^2$ can be forced below the budget by
+up to a factor $r$, so tune `precision_lr_max` against the SCAF Phase 7b/7c
+Weyl audit rather than as a literal $\sigma_{\max}^2$ target. A tighter
+spectral (SN-style) variant is a natural follow-up.
+
 This attacks "unbounded growth" directly (the §28.2b finding) and pairs
 naturally with §29.2 — but **not** by reducing the mode count (that is fixed
 at $\le Kr$ regardless, per §29.2). Its role is to bound each mode's
-*magnitude* $\omega_j$, which keeps §29.2's exact-mode machinery
-well-conditioned: bounded singular values give a stable Gram
-eigendecomposition and backward pass, a bounded frozen-coefficient
-linearization error over $\Delta t$, and bounded backprop sensitivity
-$\partial R / \partial \omega_j$. See §29.7 for the division of labor.
+*magnitude* $\omega_L$, which (a) keeps §29.2's impulse resonances shallow and
+narrow by keeping $\omega_L \Delta t$ from running away, and (b) keeps the
+frozen-coefficient linearization error over $\Delta t$ bounded. See §29.7 for
+the division of labor.
 
 ### 29.4 Precondition the dynamics so stiffness is uniform (mass/metric)
 
@@ -1020,109 +1068,193 @@ The preferred fix is **§29.2 and §29.3 combined**, because they do genuinely
 different jobs — one is not a weaker version of the other, and neither alone
 is sufficient:
 
-| | §29.2 low-rank exponential | §29.3 smooth bounded curvature |
+| | §29.2 low-rank exponential (impulse/RESPA) | §29.3 smooth bounded curvature |
 | --- | --- | --- |
-| Fixes | **stability** of forward integration: eliminates the explicit stiff channel; A-stable for any $\sigma_{\max}$ | **conditioning**: bounds each mode's $\omega_j$ |
-| Mechanism | exact rotation of the rank-$Kr$ stiff subspace of $G G^\top$, folded into the A-substep | spectral-normalize `B_proj` so $\mathrm{spec}(P_k) \subseteq [0, a_{\max}]$ |
-| Alone gives | stable, but linearization accuracy over $\Delta t$, backprop sensitivity, and the Gram eig backward all degrade as $\sigma_{\max}(B_k)$ runs away | a smooth ceiling — but the off-diagonal is **still integrated explicitly** (essentially §28.3's clamp made smooth) |
-| Cost | eig of $G^\top G$, $Kr \times Kr$ | eig of $B_k^\top B_k$, $r \times r$, then rescale |
+| Fixes | **stability** of forward integration: moves the stiff $L$ into an exact fast flow, so the hard $\omega_L \Delta t \lt 2$ wall becomes narrow damped resonances at $\omega_L \Delta t \approx k\pi$ | **conditioning**: bounds each mode's $\omega_L$, keeping resonances shallow and the linearization error bounded |
+| Mechanism | exact flow of $T + V_L$ on the rank-$Kr$ PSD subspace of $G G^\top$, as the A-substep; $D_a$ + residual demoted to the explicit kick | Frobenius cap on $B_k$ so $\sigma_{\max}(B_k)^2 \lt$ `precision_lr_max` |
+| Alone gives | stiff modes stable, but resonances deepen and the frozen linearization degrades as $\sigma_{\max}(B_k)$ runs away | a smooth ceiling — but the off-diagonal is **still integrated explicitly** (essentially §28.3's clamp made smooth) |
+| Cost | eig of $G^\top G$, $Kr \times Kr$, per token | eltwise Frobenius rescale, no eigensolve |
 
-In words: **§29.2 alone** is stable but can become inaccurate and
-ill-conditioned under unbounded growth; **§29.3 alone** caps curvature but
-leaves the explicit channel in place; **§29.2 + §29.3** eliminates the
-channel *and* keeps the exact-mode machinery well-conditioned.
+In words: **§29.2 alone** keeps the stiff modes stable but its resonances
+deepen under unbounded growth; **§29.3 alone** caps curvature but leaves the
+explicit channel in place; **§29.2 + §29.3** moves the stiff channel into the
+exact flow *and* keeps $\omega_L \Delta t$ small enough that the impulse
+resonances stay shallow.
 
-**Suggested staging (de-risks the hard change): §29.3 first, then §29.2.**
+**Staging (both landed): §29.3 first, then §29.2.**
 
-1. Land §29.3 first — a small, low-risk change: a smooth spectral bound in `_components` right after `B` is formed, mirroring the existing `precision_max` pattern and reusing the same $r \times r$ Gram eig the §28.3 "true spectral clamp" already specifies. It is immediately validatable through the SCAF Phase 7b/7c Weyl audit (`Weyl frac(>2)` should drop) and is effectively the smooth upgrade of the deferred §28.3 clamp.
-2. Then land §29.2 on the now-bounded landscape, so its Gram eigendecomposition never sees pathological or near-degenerate singular values.
+1. §29.3 — a small, low-risk change: a smooth Frobenius spectral bound in `_components` right after `B` is formed, mirroring the existing `precision_max` pattern. Immediately validatable through the SCAF Phase 7b/7c Weyl audit (`Weyl frac(>2)` should drop), and the smooth upgrade of the deferred §28.3 clamp.
+2. §29.2 on the now-bounded landscape, so its Gram eigendecomposition never sees pathological or near-degenerate singular values.
 
 - **§29.5 (Weyl soft-reg)** remains a near-free immediate hedge that needs no integrator change and can run alongside either step.
 - **§29.4 / §29.6** are higher-risk research bets worth noting but not the first move.
 
-**Status: still DEFERRED.** This is a design decision recorded for when the
-mitigation work is un-deferred; no code has been changed and no run launched.
+**Status: IMPLEMENTED (opt-in), not yet run at scale.** Both §29.3
+(`precision_lr_max`) and §29.2 (`integrator='baoab_cfc_lowrank'`,
+`lowrank_max_modes`) are implemented and unit-tested; the pre-existing
+`baoab_cfc` path is byte-for-byte unchanged, so switching is opt-in via the
+notebook config. The next step is an OWT d=384 g0.1 run comparing
+`baoab_cfc_lowrank` (with a `precision_lr_max` tuned against the Weyl audit)
+to the current `baoab_cfc` baseline, watching whether the §27 E/P/depth-code
+spike bursts shrink.
 
 ---
 
 ## 30. Concrete Sketch: The Low-Rank Exponential Substep
 
-This makes §29.2 precise enough to prototype, and follows the code's actual
-**aggregated-spring** structure: `harmonic_terms()` does not integrate each
-well separately — it returns one effective diagonal spring
-$k_{\text{diag}} = \sum_k g_k \mathrm{diag}(P_k)$ summed over wells, which
-`cfc_substep` advances exactly per dimension (§29.2). The task here is to add
-the **off-diagonal** part of that same aggregate, treating its stiff modes
-exactly rather than as an explicit kick.
+This is the **as-built** description of `integrator='baoab_cfc_lowrank'`
+(`cfc_baoab.lowrank_modes` / `lowrank_cfc_substep`,
+`model_parf_multixi._layer_step_langevin`). It follows the code's
+**aggregated-spring** structure and the PSD/impulse corrections of §29.2.
 
 Freezing the coefficients $g_k, \mu_k, P_k$ at the current $h$ (the same
-frozen-coefficient model `harmonic_terms` already uses), the aggregate local
-force is $f(h') = s - H h'$ with the aggregate Hessian
-$H = \sum_k g_k P_k = \mathrm{diag}(k_{\text{diag}}) + G G^\top$, where the
-diagonal piece is exactly what is integrated today and the off-diagonal piece
-is the low-rank remainder to absorb.
+frozen-coefficient model `harmonic_terms` uses), the aggregate local force is
+$f(h') = s - H h'$ with $H = D_a + L$, $D_a = \mathrm{diag}(\sum_k g_k a_k)$
+(clamped diagonal precision) and $L = G G^\top$ the PSD low-rank part. Only
+$L$ is stiff (its $\sigma_{\max}$ is unbounded, §28.2b); $D_a$ is bounded by
+`precision_max`. So $L$ is the part to integrate exactly.
 
-**Step 1 — expose the aggregate stiff subspace.** Stack the per-well factors,
-weighted by $\sqrt{g_k}$, into $G = [\sqrt{g_1} B_1, \dots, \sqrt{g_K} B_K] \in \mathbb{R}^{d \times Kr}$,
-so that $\sum_k g_k B_k B_k^\top = G G^\top$. Eigendecompose the small Gram
-matrix $G^\top G = W \Lambda W^\top$ ($Kr \times Kr$); the nonzero eigenvalues
-$\lambda_j$ and the reconstructed left vectors $u_j = G w_j / \sqrt{\lambda_j}$
-are the off-diagonal curvature modes. (Using the Gram eig rather than a raw
-SVD of $G$ is the numerically stable route, and is the same primitive §29.3
-and the §28.3 "true spectral clamp" use.)
+### 30.1 Why the exactly-integrated operator must be PSD
 
-**Step 2 — exact per-mode curvature.** The true curvature along $u_j$ is the
-Rayleigh quotient of the *full* aggregate Hessian,
+This is the correctness point the earlier sketch glossed, and the reason the
+split is written the specific way it is. The frozen aggregate Hessian is
 
-$$k_j = u_j^\top H u_j = u_j^\top \mathrm{diag}(k_{\text{diag}}) u_j + \lambda_j, \qquad \omega_j = \sqrt{k_j / m}.$$
+$$H = \sum_k g_k P_k = \underbrace{\mathrm{diag}\Big(\textstyle\sum_k g_k a_k\Big)}_{\text{from the diagonal precision } a_k} + \underbrace{\sum_k g_k B_k B_k^\top}_{= G G^\top},\qquad g_k \ge 0,$$
 
-Flag mode $j$ as **stiff** iff $\omega_j \Delta t$ exceeds a safety margin
-(e.g. $\omega_j \Delta t \ge 1$, comfortably under the explicit bound 2).
-Because the diagonal is bounded (via `precision_max`, and §29.3 for the
-off-diagonal), only the $\lambda_j$ term can make a mode stiff, so the flag
-fires on exactly the directions §28.2b showed are growing.
+and $H$ is symmetric positive semidefinite (PSD): a nonnegative-weighted sum
+of the PSD terms $P_k = \mathrm{diag}(a_k) + B_k B_k^\top$. So *every mode of
+$H$ itself is a genuine oscillator* — the question is only how to **split**
+$H$ into pieces cheap enough to integrate exactly.
 
-**Step 3 — advance stiff modes exactly.** Project the state onto each stiff
-$u_j$: $\eta_j = u_j^\top y$ and $\zeta_j = u_j^\top v$, with $y = h - h_\ast$
-about the frozen fixed point $h_\ast = H^{-1} s$. Advance the pair with the
-same exact undamped rotation `cfc_substep` uses per diagonal dimension,
+**The tempting split, and why it is wrong.** `harmonic_terms` already
+integrates $\mathrm{diag}(H)$ exactly (per dimension) and demotes the rest to
+the kick, so the obvious next move is "also rotate the leftover off-diagonal."
+That leftover is
 
-$$R(\omega_j \Delta t) = \begin{pmatrix} \cos(\omega_j \Delta t) & \sin(\omega_j \Delta t)/\omega_j \\ -\omega_j \sin(\omega_j \Delta t) & \cos(\omega_j \Delta t) \end{pmatrix},$$
+$$H_{\text{off}} = H - \mathrm{diag}(H) = G G^\top - \mathrm{diag}(G G^\top),$$
 
-giving $(\eta_j', \zeta_j')^\top = R(\omega_j \Delta t) (\eta_j, \zeta_j)^\top$,
-then write the exact increments back:
-$y \leftarrow y + \sum_j (\eta_j' - \eta_j) u_j$ and
-$v \leftarrow v + \sum_j (\zeta_j' - \zeta_j) u_j$. In practice one avoids
-forming $h_\ast$ explicitly by rotating the increments directly, exactly as
-the diagonal channel already does.
+where the pure-$a$ diagonal has cancelled. One line of trace algebra kills the
+idea. A matrix and its diagonal have equal trace, so
 
-**Step 4 — demote only the non-stiff remainder to the explicit kick.**
-Subtract the part of $G G^\top y$ already carried by the exact modes, so
-$f_{\text{kick}}$ retains only the non-stiff off-diagonal residual plus the
-genuinely nonlinear part (the variation of $g_k, \mu_k, P_k$ with $h$ that the
-frozen-coefficient model omits). Both have bounded curvature by construction,
-so neither is a blow-up channel.
+$$\mathrm{tr}(H_{\text{off}}) = \mathrm{tr}(G G^\top) - \mathrm{tr}\big(\mathrm{diag}(G G^\top)\big) = 0.$$
 
-**Why it is A-stable.** Each stiff mode is advanced by the exact
-damped-harmonic flow (the rotation $R$ composed with the O-step's
-$e^{-\gamma \Delta t}$ factor), which is the matrix exponential of the mode's
-$2 \times 2$ generator. A matrix exponential carries no CFL-type step
-restriction, so there is no $\omega_j \Delta t \lt 2$ bound on the treated
-modes: $\sigma_{\max}(B_k)$ may grow arbitrarily and the corresponding mode
-simply rotates faster, still stably. This is the same mechanism that already
-protects the diagonal channel, now extended to the off-diagonal stiff
-subspace.
+A nonzero symmetric matrix whose eigenvalues sum to zero must have **both a
+strictly positive and a strictly negative eigenvalue** — so $H_{\text{off}}$
+is **indefinite** whenever the coupling is nonzero (i.e. whenever the wells are
+genuinely anisotropic). A minimal $2 \times 2$ witness with $G = (1, 1)^\top$:
+
+$$L = \begin{pmatrix} 1 & 1 \\ 1 & 1 \end{pmatrix},\ \mathrm{spec}(L) = \{2, 0\} \succeq 0 \quad\text{(PSD)};\qquad L_{\text{off}} = \begin{pmatrix} 0 & 1 \\ 1 & 0 \end{pmatrix},\ \mathrm{spec}(L_{\text{off}}) = \{+1, -1\}\quad\text{(indefinite)}.$$
+
+**Why an indefinite mode defeats the whole point.** A mode with curvature
+(eigenvalue) $\lambda$ obeys $m \ddot\eta = -\lambda \eta$:
+
+| mode curvature | equation of motion | exact solution | behaviour |
+| --- | --- | --- | --- |
+| $\lambda \gt 0$ | $m\ddot\eta = -\lambda \eta$ | $\eta_0 \cos(\omega t) + \dots,\ \omega = \sqrt{\lambda/m}$ | bounded rotation |
+| $\lambda \lt 0$ | $m\ddot\eta = \lvert\lambda\rvert \eta$ | $\eta_0 \cosh\big(t\sqrt{\lvert\lambda\rvert/m}\big) + \dots$ | exponential blow-up |
+
+So "exactly rotating" the modes of $H_{\text{off}}$ would *exactly integrate a
+repeller* on its negative eigenvalues — amplifying, not taming, precisely the
+failure CfC was built to avoid. In code the symptom is immediate:
+`omega = (kappa / m).sqrt()` with $\kappa \lt 0$ is a `NaN`, or, if floored to
+zero, silently mis-integrates a repeller as free drift.
+
+**The principle.** PSD-ness of the *sum* $H$ does **not** imply stability of a
+*split*. Once an indefinite factor is carved off and integrated on its own,
+the composition inherits that factor's hyperbolic growth. Integrating $H$
+*whole* would be unconditionally stable (all its modes are $\ge 0$), but that
+needs a full $d \times d$ eigendecomposition, $O(d^3)$ per token — infeasible.
+The low-rank structure only helps on $L = G G^\top$ (rank $\le Kr$, so the
+Gram eigendecomposition is $O((Kr)^3)$); a diagonal-plus-low-rank matrix has no
+cheap exact matrix function. Hence we must split — and **a split is stable
+only if every exactly-integrated factor is individually PSD.**
+
+**The PSD split (what the code does).** Keep both factors PSD:
+
+$$H = D' + L,\qquad D' = \mathrm{diag}\Big(\textstyle\sum_k g_k a_k\Big) \succeq 0,\qquad L = G G^\top \succeq 0.$$
+
+This moves the **entire** $B_k B_k^\top$ — *including its own diagonal*
+$\mathrm{diag}(G G^\top)$ — into $L$, and correspondingly removes that piece
+from the diagonal channel, which now carries only $a_k$. That is exactly why
+`harmonic_terms_lowrank` returns $k_{\text{diag}} = \sum_k g_k a_k$ (pure $a$),
+**not** the $\sum_k g_k\big(a_k + \mathrm{rowsum}(B_k^2)\big)$ that the
+diagonal-only `harmonic_terms` returns. The bookkeeping has two jobs and does
+both at once:
+
+- **No double-counting.** If the diagonal channel kept the full $\mathrm{diag}(H)$ *and* $L$ carried its own diagonal, $\mathrm{diag}(G G^\top)$ would be integrated twice. Giving that diagonal entirely to $L$ counts it exactly once.
+- **No indefinite remainder.** Because the off-diagonal is never separated from its stabilising diagonal, no indefinite operator is ever formed; each exactly-integrated factor ($D'$ diagonal-nonnegative, $L$ a Gram) is PSD, so each sub-flow is a bounded rotation.
+
+$D'$ is bounded (clamped by `precision_max`), so it is safe as the cheap
+explicit/diagonal channel; $L$ is the stiff part, integrated exactly on its
+$\le Kr$ modes. Both PSD, so the impulse composition (§29.2) has **no**
+hyperbolic factor — the only residual stability concern is the mild resonance
+effect discussed under "Stability" below, not blow-up.
+
+### 30.2 The four steps, as implemented
+
+**Step 1 — expose the low-rank subspace.** `harmonic_terms_lowrank()` stacks
+the per-well factors, weighted by $\sqrt{g_k}$, into
+$G = [\sqrt{g_1} B_1, \dots, \sqrt{g_K} B_K] \in \mathbb{R}^{d \times Kr}$ (all
+xi-channels aggregated), so $L = G G^\top$. `lowrank_modes` eigendecomposes
+the small Gram $G^\top G = W \Lambda W^\top$ ($Kr \times Kr$); the eigenvalues
+$\lambda_j$ **are** the curvatures of $L$ and the reconstructed left vectors
+$u_j = G w_j / \sqrt{\lambda_j}$ are its modes. (Gram-eig rather than a raw SVD
+of $G$ is the numerically stable route; the geometry $U, \kappa$ is
+**detached** — a frozen Jacobian — because a rank-deficient Gram has
+degenerate near-zero eigenvalues whose `eigh` backward is singular. The
+substep stays differentiable in $h, v$ and the frozen force.)
+
+**Step 2 — per-mode frequency.** Because $L$ (not the full $H$) is what the
+fast flow integrates, the mode stiffness is simply
+$\kappa_j = \lambda_j$, $\omega_j = \sqrt{\lambda_j / m}$ — **no** Rayleigh
+quotient of $H$ and **no** mixing of the diagonal into the mode curvature
+(that mixing was the "residual coupling" caveat of the original sketch; the
+PSD split removes it). `lowrank_max_modes` optionally keeps only the stiffest
+$q$ modes; modes with $\lambda_j$ below a floor are made inert.
+
+**Step 3 — the exact fast flow (A-substep).** `lowrank_cfc_substep` advances
+$T + V_L$ over the substep: a **free drift on the whole state** plus, on each
+mode, the exact undamped rotation the diagonal channel already uses,
+
+$$\begin{pmatrix} \eta_j' \\ \zeta_j' \end{pmatrix} = \begin{pmatrix} \cos(\omega_j \Delta t) & \sin(\omega_j \Delta t)/\omega_j \\ -\omega_j \sin(\omega_j \Delta t) & \cos(\omega_j \Delta t) \end{pmatrix} \begin{pmatrix} \eta_j \\ \zeta_j \end{pmatrix},$$
+
+with $\eta_j = u_j^\top h$, $\zeta_j = u_j^\top v$. The increments are written
+back force-based (via the frozen force $f_L = s_L - L h$, $s_L = G (G^\top\mu)$)
+so no fixed point $h_\ast = L^{-1} s_L$ or division by $L$ is formed —
+identical to `cfc_substep`'s treatment of the diagonal. The complement of
+$\mathrm{span}(U)$, where $L$ exerts no force, is left to the free drift.
+
+**Step 4 — everything soft goes to the explicit kick.** The B-kick carries
+$f_\theta + f_\phi - f_L(h_{\text{mid}})$: the full V_theta force **minus** the
+frozen low-rank force the A-substep already integrates. What remains is the
+clamped diagonal spring $D_a$, $V_\phi$, and the nonlinear V_theta residual
+(the variation of $g_k, \mu_k, P_k$ with $h$) — all of bounded curvature, so
+none is a blow-up channel. The total force field is preserved exactly (tested
+to $O(\Delta t^3)$ agreement with plain BAOAB).
+
+**Stability (impulse / RESPA, corrected).** The fast flow is a bounded
+rotation on the modes for any $\omega_j$ — as a *standalone* map there is no
+$\omega_j \Delta t \lt 2$ wall. But this is an **impulse / multiple-time-step**
+composition (fast flow $\Vert$ soft kick), so it is *not* unconditionally
+A-stable: it has narrow **resonance instabilities** at $\omega_j \Delta t
+\approx k\pi$. Between resonances it is stable at any stiffness; the O-step
+friction $e^{-\gamma \Delta t}$ and the nonlinear residual damp the resonances
+in practice. §29.3's `precision_lr_max` keeps $\omega_j \Delta t$ from running
+away, so the resonances stay shallow — the two mitigations are complementary
+for exactly this reason. A unit test (`test_cfc_baoab.py`) confirms the scheme
+survives a curvature that overflows the explicit step, at a non-resonant
+$\omega \Delta t = 4.7$.
 
 **Cost.** One eig of the $Kr \times Kr$ Gram matrix ($O((Kr)^3)$, with the
 $O(d (Kr)^2)$ Gram formation dominating) plus a few rank-1 projections, per
-token per xi-channel; with $Kr \approx 32$ and $d = 384$ this is negligible
-next to the forward pass.
+token; with $Kr \approx 32$ (or $n_{\text{ctx}} Kr$ aggregated) and $d = 384$
+this is small next to the forward pass. `lowrank_max_modes` bounds it further.
 
 **Caveats.**
 
-1. Freezing $g_k, \mu_k, P_k$ at the current $h$ makes this a local exponential (Rosenbrock-type) step: it integrates the linearization exactly, and the leftover nonlinearity (Step 4's remainder) is what stays explicit. That remainder is non-stiff once the stiff modes are removed.
-2. The $u_j$ diagonalize $G G^\top$, not the full $H$; the diagonal $k_{\text{diag}}$ is not simultaneously diagonalized, so there is a small residual coupling between the exact modes and the diagonal channel. It is bounded (both pieces are individually bounded), and for exactness within $\mathrm{span}(U)$ one can add a dense eigensolve on the compressed $U^\top H U$ — still tiny.
-3. Fold the stiff-mode flow into the A (drift) substep and leave O (thermostat) and the non-stiff B (kick) unchanged, so the BAOAB splitting structure — and its $T=0$ sampling properties — are preserved.
+1. Freezing $g_k, \mu_k, P_k$ at the current $h$ makes this a local exponential (Rosenbrock-type) step: it integrates the frozen linearization exactly, and the leftover nonlinearity (Step 4's residual) stays explicit but non-stiff.
+2. The frozen mode geometry ($U, \kappa$) is detached, so parameter gradients flow through the frozen *force* magnitude but not through the eigendecomposition. This is the standard exponential-integrator treatment and is why the `eigh`-degeneracy backward is never hit; the force field (and hence the loss) is still exact.
+3. The fast flow is the A (drift) substep and the O (thermostat) and B (kick) are unchanged, so the BAOAB splitting structure — and its $T=0$ sampling properties — are preserved.
 
 ---
 
@@ -1138,19 +1270,20 @@ SCAF stiffness audit (Phase 7b/7c Weyl bound) in the `stiffness_audit` branch
 of `semsimula-scaf` (`src/scaf/probes/stiffness.py`).*
 
 *Last updated: 24 August 2026. Split out of the parent note (former §24-§28,
-content unchanged) for maintainability. Section 29 added: principled
-directions beyond the $B_k$ clamp (low-rank exponential integration,
-bounded-curvature reparameterization, mass/metric preconditioning, a Weyl
-soft-regularizer, and a functional trust region). Section 30 added: a concrete
-math sketch of the low-rank exponential substep. Both were then grounded in
-the actual `AnisotropicMixtureGaussianVTheta` implementation and refined:
-§29.2 and §30 now use the aggregate rank-$Kr$ off-diagonal factor
-$G = [\sqrt{g_k} B_k]$ (not a per-well rank-$r$ SVD), matching that
-`harmonic_terms()` already integrates $\mathrm{diag}(P_k)$ exactly and leaves
-only the off-diagonal coupling as the residual; §29.7 records the
-§29.2 + §29.3 combined recommendation with an explicit division of labor
-(stability vs. conditioning) and a staged §29.3-then-§29.2 rollout, correcting
-the earlier imprecise claim that §29.3 reduces the stiff-mode *count* (the
-count is fixed at $\le Kr$ by architecture). All of §29-§30 is
-documentation/design only — no code changed and no run launched; the
-mitigation remains deferred.*
+content unchanged) for maintainability. Sections 29-30 record the principled
+directions beyond the $B_k$ clamp and the concrete low-rank exponential
+substep. This revision marks §29.2 (`integrator='baoab_cfc_lowrank'`) and
+§29.3 (`precision_lr_max`) as **implemented and unit-tested** (the pre-existing
+`baoab_cfc` path is byte-for-byte unchanged; both are opt-in via notebook
+config) and corrects two errors uncovered during implementation:
+(1) the exact rotation must act on the **PSD** low-rank $L = G G^\top$ with the
+diagonal precision $D_a$ split off, not on the **indefinite** off-diagonal
+$G G^\top - \mathrm{diag}$ (§30.1 proves the off-diagonal is indefinite via a
+zero-trace argument and shows why PSD-ness of the sum $H$ does not survive an
+indefinite split); and (2) the composed scheme is an **impulse / RESPA**
+multiple-time-step method, which is stable at any stiffness *between*
+resonances $\omega_L \Delta t \approx k\pi$ but is **not** unconditionally
+A-stable — replacing the earlier overstated "no wall at all" claim. §30 is now
+the as-built description (frozen/detached mode geometry, mode curvature
+$\kappa_j = \lambda_j$ of $L$ rather than a Rayleigh quotient of $H$, and the
+soft $D_a$ + nonlinear residual demoted to the explicit kick).*

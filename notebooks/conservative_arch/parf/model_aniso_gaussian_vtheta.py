@@ -71,6 +71,7 @@ class AnisotropicMixtureGaussianVTheta(nn.Module):
         xi_d: Optional[int] = None,
         init_log_precision: Optional[float] = None,
         precision_max: Optional[float] = None,
+        precision_lr_max: Optional[float] = None,
         force_norm_max: Optional[float] = None,
     ):
         """
@@ -93,6 +94,19 @@ class AnisotropicMixtureGaussianVTheta(nn.Module):
             ``sigma_eff`` derivation). ``None`` keeps the default.
         precision_max : float or None
             Hard upper bound on the diagonal precision ``a_k``.
+        precision_lr_max : float or None
+            Smooth upper bound on the low-rank precision contribution:
+            caps the curvature added by the off-diagonal factor at
+            ``sigma_max(B_k)^2 <= precision_lr_max``. Implemented as a
+            differentiable Frobenius-norm cap on ``B_k`` (mitigation
+            "#2 / smooth bounded curvature" of the CfC/BAOAB companion
+            note): since ``sigma_max(B_k) <= ||B_k||_F``, bounding
+            ``||B_k||_F <= sqrt(precision_lr_max)`` guarantees the
+            spectral bound. ``None`` (default) leaves ``B_k`` unbounded
+            (current behaviour). The bound is conservative by up to a
+            factor ``rank`` when the low-rank energy is spread across
+            singular values; tune it against the SCAF Phase 7b/7c Weyl
+            audit rather than as a literal ``sigma_max^2`` target.
         force_norm_max : float or None
             Per-well force magnitude cap.
         """
@@ -102,6 +116,7 @@ class AnisotropicMixtureGaussianVTheta(nn.Module):
         self.rank = rank
         self.w_scale = w_scale
         self._precision_max = precision_max
+        self._precision_lr_max = precision_lr_max
         self._force_norm_max = force_norm_max
         in_d = xi_d if xi_d is not None else d
 
@@ -136,9 +151,32 @@ class AnisotropicMixtureGaussianVTheta(nn.Module):
         w = F.softmax(self.w_proj(xi), dim=-1) * self.w_scale
         if self.B_proj is not None:
             B = self.B_proj(xi).view(*lead, self.K, self.d, self.rank)
+            B = self._bound_lowrank(B)
         else:
             B = mu.new_zeros(*mu.shape, 0)
         return mu, a, w, B
+
+    def _bound_lowrank(self, B: torch.Tensor) -> torch.Tensor:
+        """Smoothly cap the low-rank factor's spectral norm (mitigation #2).
+
+        Bounds ``sigma_max(B_k)^2 <= precision_lr_max`` by capping the
+        Frobenius norm of each well's factor at ``sqrt(precision_lr_max)``
+        with a ``tanh`` soft cap (identity for small norms, asymptotic to
+        the budget for large ones, strictly below it everywhere). Because
+        ``sigma_max(B_k) <= ||B_k||_F`` the spectral bound is guaranteed;
+        the cap is differentiable and never divides by zero.
+
+        No-op (returns ``B`` unchanged) when ``precision_lr_max`` is None
+        or ``rank == 0``.
+
+        ``B`` : (..., K, d, rank)
+        """
+        if self._precision_lr_max is None or self.rank == 0:
+            return B
+        budget = self._precision_lr_max ** 0.5
+        fro = B.flatten(-2, -1).norm(dim=-1).clamp(min=1e-12)     # (..., K)
+        scale = budget * torch.tanh(fro / budget) / fro          # (..., K)
+        return B * scale.unsqueeze(-1).unsqueeze(-1)
 
     def context_components(self, xi: torch.Tensor):
         """Well parameters for ``xi``, reusable across several ``h``.
@@ -246,6 +284,76 @@ class AnisotropicMixtureGaussianVTheta(nn.Module):
         s = (gp * mu).sum(dim=-2)                                 # (..., d)
         return k_diag, s
 
+    def harmonic_terms_lowrank(
+        self, xi: torch.Tensor, h: torch.Tensor, *, comps=None,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Split the frozen force into a pure-diagonal spring + a PSD low-rank part.
+
+        Unlike :meth:`harmonic_terms` (which keeps the *diagonal* of the
+        full precision and leaves everything off-diagonal to the explicit
+        kick), this returns the pieces of a split in which the entire
+        low-rank correction is integrated exactly.  The frozen-coefficient
+        force factors as
+
+            f(h') = (s_a - k_diag_a * h')  +  (G @ (G^T mu) - (G G^T) h')
+                  = f_a(h')                +  f_L(h'),
+
+        where the low-rank operator ``L = G G^T`` is symmetric PSD with
+
+            G = [sqrt(g_1) B_1, ..., sqrt(g_K) B_K]   (d x K*rank).
+
+        The diagonal spring ``f_a`` uses only the diagonal precision
+        ``a_k`` (never ``diag(B_k B_k^T)``, which now lives entirely in
+        ``L``), so the two channels do not double-count.  At ``h' = h`` the
+        sum reproduces the exact analytical force, i.e.
+        ``f_a(h) + f_L(h) == -analytical_grad(h)``.
+
+        This is mitigation "#1 / low-rank exponential integration": the
+        caller (``model_parf_multixi._layer_step_langevin`` under
+        ``integrator='baoab_cfc_lowrank'``) integrates ``f_a`` with the
+        per-dimension ``cfc_substep`` and ``f_L`` with ``lowrank_cfc_substep``
+        on the modes of ``L``, both unconditionally stable.
+
+        Returns
+        -------
+        (k_diag_a, s_a, G, Gmu) :
+            ``k_diag_a`` (..., d):  ``sum_k g_k a_k`` (diagonal precision).
+            ``s_a``      (..., d):  ``sum_k g_k a_k * mu_k``.
+            ``G``        (..., d, K*rank):  aggregate low-rank factor.
+            ``Gmu``      (..., K*rank):     ``G^T`` applied to the wells'
+                centres, so ``s_L = G @ Gmu``.
+            When ``rank == 0`` the last two are zero-width (no low-rank part).
+        """
+        mu, a, w, B = self._components(xi) if comps is None else comps
+        h_e = h.unsqueeze(-2)
+        diff = h_e - mu
+
+        diag_term = (a * diff * diff).sum(dim=-1)
+        Bt_diff = torch.einsum('...kd,...kdr->...kr', diff, B)
+        lr_term = (Bt_diff * Bt_diff).sum(dim=-1)
+
+        g = w * torch.exp(-0.5 * (diag_term + lr_term))           # (..., K)
+
+        # Diagonal-precision spring (excludes the B contribution).
+        ga = g.unsqueeze(-1) * a                                  # (..., K, d)
+        k_diag_a = ga.sum(dim=-2)                                 # (..., d)
+        s_a = (ga * mu).sum(dim=-2)                               # (..., d)
+
+        # Aggregate low-rank factor G with columns sqrt(g_k) * B_k[:, r].
+        lead = g.shape[:-1]
+        if self.rank == 0:
+            G = h.new_zeros(*lead, self.d, 0)
+            Gmu = h.new_zeros(*lead, 0)
+        else:
+            sqrt_g = g.clamp(min=0.0).sqrt()                      # (..., K)
+            Gk = sqrt_g[..., None, None] * B                      # (..., K, d, r)
+            G = Gk.movedim(-3, -2).reshape(*lead, self.d, self.K * self.rank)
+            Btmu = torch.einsum('...kd,...kdr->...kr', mu, B)     # (..., K, r)
+            Gmu = (sqrt_g[..., None] * Btmu).reshape(
+                *lead, self.K * self.rank,
+            )
+        return k_diag_a, s_a, G, Gmu
+
     def attractor_centres(self, xi: torch.Tensor) -> torch.Tensor:
         lead = xi.shape[:-1]
         return self.mu_proj(xi).view(*lead, self.K, self.d)
@@ -275,6 +383,7 @@ class AnisotropicMultiContextGaussianVTheta(nn.Module):
         w_scale: float = 1.0,
         init_log_precision: Optional[float] = None,
         precision_max: Optional[float] = None,
+        precision_lr_max: Optional[float] = None,
         force_norm_max: Optional[float] = None,
     ):
         super().__init__()
@@ -286,6 +395,7 @@ class AnisotropicMultiContextGaussianVTheta(nn.Module):
                 d=d, K=K, rank=rank, w_scale=w_scale, xi_d=d,
                 init_log_precision=init_log_precision,
                 precision_max=precision_max,
+                precision_lr_max=precision_lr_max,
                 force_norm_max=force_norm_max,
             )
             for _ in range(n_ctx)
@@ -334,6 +444,33 @@ class AnisotropicMultiContextGaussianVTheta(nn.Module):
             s = s + s_m
         return k_diag, s
 
+    def harmonic_terms_lowrank(
+        self, xis: torch.Tensor, h: torch.Tensor, *, comps=None,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Aggregate the per-channel split of :meth:`.harmonic_terms_lowrank`.
+
+        The channels' potentials add, so their diagonal springs add and
+        their low-rank operators add: ``L = sum_m G^(m) G^(m)T`` is exactly
+        ``G_agg G_agg^T`` with ``G_agg = [G^(1) | ... | G^(n_ctx)]``.  So
+        the aggregate factor is the *concatenation* of the per-channel
+        factors along the mode axis (and likewise for ``Gmu``).
+        """
+        k_diag_a, s_a, G0, Gmu0 = self.banks[0].harmonic_terms_lowrank(
+            xis[..., 0, :], h, comps=_ctx(comps, 0),
+        )
+        Gs, Gmus = [G0], [Gmu0]
+        for m in range(1, self.n_ctx):
+            k_m, s_m, G_m, Gmu_m = self.banks[m].harmonic_terms_lowrank(
+                xis[..., m, :], h, comps=_ctx(comps, m),
+            )
+            k_diag_a = k_diag_a + k_m
+            s_a = s_a + s_m
+            Gs.append(G_m)
+            Gmus.append(Gmu_m)
+        G = torch.cat(Gs, dim=-1)
+        Gmu = torch.cat(Gmus, dim=-1)
+        return k_diag_a, s_a, G, Gmu
+
     def attractor_centres(self, xis: torch.Tensor) -> torch.Tensor:
         cs = [
             self.banks[m].attractor_centres(xis[..., m, :])
@@ -363,6 +500,7 @@ class AnisotropicDepthConditionedGaussianVTheta(nn.Module):
         w_scale: float = 1.0,
         init_log_precision: Optional[float] = None,
         precision_max: Optional[float] = None,
+        precision_lr_max: Optional[float] = None,
         force_norm_max: Optional[float] = None,
         code_init_std: float = 0.02,
     ):
@@ -376,6 +514,7 @@ class AnisotropicDepthConditionedGaussianVTheta(nn.Module):
             d=d, K=K, n_ctx=n_ctx, rank=rank, w_scale=w_scale,
             init_log_precision=init_log_precision,
             precision_max=precision_max,
+            precision_lr_max=precision_lr_max,
             force_norm_max=force_norm_max,
         )
         self.depth_code = nn.Parameter(
@@ -426,6 +565,13 @@ class AnisotropicDepthConditionedGaussianVTheta(nn.Module):
         self, xis: torch.Tensor, h: torch.Tensor, *, comps=None,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         return self.bank.harmonic_terms(
+            self._maybe_shift(xis, comps), h, comps=comps,
+        )
+
+    def harmonic_terms_lowrank(
+        self, xis: torch.Tensor, h: torch.Tensor, *, comps=None,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        return self.bank.harmonic_terms_lowrank(
             self._maybe_shift(xis, comps), h, comps=comps,
         )
 
@@ -518,6 +664,66 @@ def _smoke():
     print(f"  rank=4: residual (off-diagonal) max = {resid:.2e}  "
           f"(nonzero by design; total force is preserved by construction)")
     assert (k_diag >= 0).all()
+
+    print(f"\n--- precision_lr_max: smooth spectral bound on B_k (#2) ---")
+    torch.manual_seed(0)
+    budget = 0.05
+    bank_capped = AnisotropicMixtureGaussianVTheta(
+        d=d, K=6, rank=4, precision_lr_max=budget,
+    )
+    # Drive B_proj to produce large low-rank factors, then check the bound.
+    with torch.no_grad():
+        bank_capped.B_proj.weight.mul_(50.0)
+        bank_capped.B_proj.bias.add_(5.0)
+    xi_c = torch.randn(4, 7, d, requires_grad=True)
+    _, _, _, B_c = bank_capped._components(xi_c)
+    # sigma_max(B_k) via the r x r Gram (small, only for the assertion).
+    gram = torch.einsum('...dr,...ds->...rs', B_c, B_c)
+    sig_max_sq = torch.linalg.eigvalsh(gram)[..., -1].max().item()
+    print(f"  sigma_max(B_k)^2 (max over wells/tokens) = {sig_max_sq:.4f}  "
+          f"(budget precision_lr_max = {budget})")
+    assert sig_max_sq <= budget + 1e-5, (sig_max_sq, budget)
+    # Differentiable: a scalar of B flows a finite grad back to the context.
+    B_c.pow(2).sum().backward()
+    assert torch.isfinite(xi_c.grad).all()
+    # No-op when precision_lr_max is None (default): B passes through raw.
+    torch.manual_seed(0)
+    bank_free = AnisotropicMixtureGaussianVTheta(d=d, K=6, rank=4)
+    with torch.no_grad():
+        bank_free.B_proj.weight.copy_(bank_capped.B_proj.weight)
+        bank_free.B_proj.bias.copy_(bank_capped.B_proj.bias)
+    _, _, _, B_free = bank_free._components(xi_c.detach())
+    gram_f = torch.einsum('...dr,...ds->...rs', B_free, B_free)
+    sig_free = torch.linalg.eigvalsh(gram_f)[..., -1].max().item()
+    assert sig_free > budget, "unbounded bank should exceed the budget here"
+    print(f"  unbounded bank sigma_max(B_k)^2 = {sig_free:.4f}  "
+          f"(> budget, as expected)  OK")
+
+    print(f"\n--- harmonic_terms_lowrank: exact diag + PSD low-rank split (#1) ---")
+    torch.manual_seed(0)
+    bank_lr = AnisotropicMixtureGaussianVTheta(d=d, K=6, rank=4)
+    xi_lr = torch.randn(3, 5, d)
+    h_lr_pt = torch.randn(3, 5, d)
+    k_diag_a, s_a, G, Gmu = bank_lr.harmonic_terms_lowrank(xi_lr, h_lr_pt)
+    # f_a(h) + f_L(h) must equal the exact analytical force at h.
+    f_a = s_a - k_diag_a * h_lr_pt
+    s_L = torch.einsum('...dp,...p->...d', G, Gmu)
+    Gt_h = torch.einsum('...dp,...d->...p', G, h_lr_pt)
+    f_L = s_L - torch.einsum('...dp,...p->...d', G, Gt_h)
+    f_true = -bank_lr.analytical_grad(xi_lr, h_lr_pt)
+    err = (f_a + f_L - f_true).abs().max().item()
+    print(f"  |(f_a + f_L) - f_true|_max = {err:.2e}  (must be ~0)")
+    assert err < 1e-4, err
+    # L = G G^T must be PSD (its Gram spectrum is non-negative).
+    Lmat = torch.einsum('...dp,...ep->...de', G, G)
+    eig_min = torch.linalg.eigvalsh(Lmat).min().item()
+    print(f"  min eigenvalue of L = G G^T: {eig_min:.2e}  (PSD, >= 0)")
+    assert eig_min > -1e-4, eig_min
+    # rank=0 must give a zero-width low-rank part (pure isotropic).
+    bank_lr0 = AnisotropicMixtureGaussianVTheta(d=d, K=6, rank=0)
+    _, _, G0, Gmu0 = bank_lr0.harmonic_terms_lowrank(xi_lr, h_lr_pt)
+    assert G0.shape[-1] == 0 and Gmu0.shape[-1] == 0
+    print(f"  rank=0: low-rank part is zero-width  OK")
 
     print(f"\n--- Depth-conditioned anisotropic multi-context V_theta ---")
     n_ctx, K, L, rank = 4, 8, 6, 4

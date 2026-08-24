@@ -239,25 +239,27 @@ def test_cfc_force_preservation():
     model.cfg.ln_after_step = False        # LN would mask the scaling law
     model.double()
 
-    devs, dts = [], (0.2, 0.1)
-    for dt in dts:
-        _, _, h_plain = _step_positions(model, cfg, "baoab", dt)
-        _, _, h_cfc = _step_positions(model, cfg, "baoab_cfc", dt)
-        devs.append((h_plain - h_cfc).abs().max().item())
+    dts = (0.2, 0.1)
+    for other in ("baoab_cfc", "baoab_cfc_lowrank"):
+        devs = []
+        for dt in dts:
+            _, _, h_plain = _step_positions(model, cfg, "baoab", dt)
+            _, _, h_other = _step_positions(model, cfg, other, dt)
+            devs.append((h_plain - h_other).abs().max().item())
 
-    # Normalise by dt^2 so the comparison is against the force term both
-    # schemes are supposed to share, not against the raw displacement.
-    rel = devs[0] / (dts[0] ** 2)
-    ratio = (devs[0] / dts[0] ** 2) / max(devs[1] / dts[1] ** 2, 1e-300)
+        # Normalise by dt^2 so the comparison is against the force term both
+        # schemes are supposed to share, not against the raw displacement.
+        rel = devs[0] / (dts[0] ** 2)
+        ratio = (devs[0] / dts[0] ** 2) / max(devs[1] / dts[1] ** 2, 1e-300)
 
-    assert rel < 1e-3, f"CfC force term deviates by {rel:.2e} (absolute)"
-    assert 1.6 < ratio < 2.6, (
-        f"force-term deviation scales as dt^{math.log2(ratio):.2f}, expected "
-        f"dt^1 after normalising (i.e. dt^3 raw); a flat ratio (~1) would "
-        f"mean the force field itself changed")
-    print(f"  [ok] CfC preserves the force field: raw deviation "
-          f"{devs[0]:.2e} -> {devs[1]:.2e} when dt halves "
-          f"(dt^{math.log2(devs[0]/devs[1]):.2f}, expect dt^3)")
+        assert rel < 1e-3, f"{other} force term deviates by {rel:.2e} (absolute)"
+        assert 1.6 < ratio < 2.6, (
+            f"{other} force-term deviation scales as dt^{math.log2(ratio):.2f}, "
+            f"expected dt^1 after normalising (i.e. dt^3 raw); a flat ratio "
+            f"(~1) would mean the force field itself changed")
+        print(f"  [ok] {other} preserves the force field: raw deviation "
+              f"{devs[0]:.2e} -> {devs[1]:.2e} when dt halves "
+              f"(dt^{math.log2(devs[0]/devs[1]):.2f}, expect dt^3)")
 
 
 # ---------------------------------------------------------------------------
@@ -353,7 +355,7 @@ def test_cfc_stiffness_immunity():
 def test_end_to_end_all_integrators():
     """Forward + backward through the full Fock stack, for each integrator."""
     results = {}
-    for integrator in ("verlet", "baoab", "baoab_cfc"):
+    for integrator in ("verlet", "baoab", "baoab_cfc", "baoab_cfc_lowrank"):
         for ckpt in (False, True):
             model, cfg = _make_model(integrator=integrator, analytic=True)
             model.cfg.use_layer_checkpoint = ckpt
@@ -379,6 +381,43 @@ def test_end_to_end_all_integrators():
     assert abs(results["verlet"] - results["baoab"]) > 1e-6, (
         "baoab produced a bit-identical result to verlet -- the integrator "
         "flag is probably not reaching the layer step")
+
+
+def test_lowrank_integrator_wired_and_finite():
+    """baoab_cfc_lowrank reaches the step, stays finite with a sharp
+    off-diagonal well, and produces dynamics distinct from baoab_cfc.
+
+    Sharpening ``B_proj`` blows up the off-diagonal curvature ``sigma_max(B_k)``:
+    under ``baoab_cfc`` that force sits in the explicit kick (the residual
+    channel with an ``omega dt < 2`` wall), whereas ``baoab_cfc_lowrank``
+    routes it through the exact low-rank rotation, so it must (a) stay
+    finite even with the force clamp off and (b) differ from the cfc path.
+    """
+    model, cfg = _make_model(integrator="baoab_cfc_lowrank", analytic=True)
+    model.cfg.ln_after_step = False
+    model.cfg.force_clamp_max = None
+    for bank in model.V_theta.banks:                # sharpen the off-diagonal
+        with torch.no_grad():
+            bank.B_proj.weight.mul_(30.0)
+            bank.B_proj.bias.add_(2.0)
+
+    h, v, m_b = _layer_inputs(model, cfg)
+    dt = cfg.dt
+    h_prev = (h - dt * v).detach()
+    model.V_theta.set_active_layer(0)
+
+    h_l, hp_l = model._layer_step_langevin(h, h_prev, m_b, model.gamma, dt, 0)
+    assert torch.isfinite(h_l).all() and torch.isfinite(hp_l).all(), (
+        "baoab_cfc_lowrank produced non-finite state with a sharp well")
+
+    model.cfg.integrator = "baoab_cfc"
+    h_c, _ = model._layer_step_langevin(h, h_prev, m_b, model.gamma, dt, 0)
+    assert not torch.allclose(h_l, h_c, atol=1e-5), (
+        "lowrank flag did not change the dynamics -- not reaching the step")
+    excursion_l = (h_l - h).abs().max().item()
+    excursion_c = (h_c - h).abs().max().item()
+    print(f"  [ok] baoab_cfc_lowrank wired + finite (sharp-well excursion "
+          f"{excursion_l:.3e} vs baoab_cfc {excursion_c:.3e}), distinct paths")
 
 
 def test_velocity_encoding_roundtrip():
@@ -409,6 +448,7 @@ def main():
         test_cfc_force_preservation,
         test_cfc_substep_zero_stiffness_no_nan,
         test_cfc_stiffness_immunity,
+        test_lowrank_integrator_wired_and_finite,
         test_velocity_encoding_roundtrip,
         test_end_to_end_all_integrators,
     ]

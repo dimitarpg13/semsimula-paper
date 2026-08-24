@@ -185,6 +185,150 @@ def cfc_substep(
 
 
 # ---------------------------------------------------------------------------
+# Low-rank exact substep: exact flow of a PSD low-rank harmonic force
+# ---------------------------------------------------------------------------
+#
+# Mitigation "#1 / low-rank exponential integration" of the CfC/BAOAB
+# companion note.  The diagonal ``cfc_substep`` above integrates the
+# per-dimension springs exactly, but leaves the *off-diagonal* coupling of
+# an anisotropic-Gaussian V_theta (the ``B_k B_k^T`` part) to the explicit
+# kick -- which reintroduces exactly the ``omega dt < 2`` stability wall the
+# CfC step was built to remove, now on the aggregate low-rank operator
+#
+#     L = sum_k g_k B_k B_k^T = G G^T,   G = [sqrt(g_1) B_1, ..., sqrt(g_K) B_K].
+#
+# ``L`` is symmetric PSD (a sum of PSD rank-r terms), so its eigenmodes are
+# genuine oscillators, never hyperbolic: rotating them is unconditionally
+# stable, exactly as for the diagonal case.  ``lowrank_modes`` extracts the
+# modes from the small ``P x P`` Gram of ``G`` (P = number of low-rank
+# columns, e.g. K*rank or n_ctx*K*rank), and ``lowrank_cfc_substep`` rotates
+# the state inside that subspace with the same closed-form propagator.
+#
+# The mode *geometry* (directions ``U`` and curvatures ``kappa``) is frozen
+# and detached: a rank-deficient Gram has degenerate near-zero eigenvalues
+# whose ``eigh`` backward is singular (the standard exponential-integrator
+# "frozen Jacobian" is detached for exactly this reason).  The substep stays
+# differentiable in ``h``, ``v`` and the frozen force, which is what carries
+# the gradient to the V_theta parameters.
+
+
+def lowrank_modes(
+    G: torch.Tensor,
+    max_modes: Optional[int] = None,
+    floor: float = 1e-10,
+) -> Tuple[torch.Tensor, torch.Tensor]:
+    """Eigenmodes of the PSD operator ``L = G G^T`` from its factor ``G``.
+
+    Parameters
+    ----------
+    G : (..., d, P)
+        Aggregate low-rank factor; ``L = G G^T`` has rank <= P.
+    max_modes : int or None
+        Keep only the ``max_modes`` stiffest (largest-eigenvalue) modes.
+        ``None`` keeps all ``P`` of them.
+    floor : float
+        Eigenvalues at or below this are treated as zero: the matching mode
+        direction is zeroed (made inert) and its curvature set to 0, which
+        both avoids the ``1/sqrt(lambda)`` blow-up when normalising a
+        vanishing mode and matches the true dynamics (``L`` exerts no force
+        along a null direction).
+
+    Returns
+    -------
+    U : (..., d, q)
+        Mode directions as orthonormal columns (zero columns are inert),
+        ``q = min(P, max_modes)``.  Detached from the graph.
+    kappa : (..., q)
+        Per-mode stiffness (eigenvalues of ``L``, ``>= 0``).  Detached.
+
+    Notes
+    -----
+    Uses the Gram trick: the nonzero spectrum of ``G G^T`` (d x d) equals
+    that of ``M = G^T G`` (P x P), and if ``M w = lambda w`` then
+    ``u = G w / sqrt(lambda)`` is the matching unit eigenvector of
+    ``G G^T``.  The ``P x P`` eigenproblem is cheap even when ``d`` is large.
+    """
+    Gd = G.detach()
+    P = Gd.shape[-1]
+    M = Gd.transpose(-1, -2) @ Gd                       # (..., P, P) Gram
+    lam, W = torch.linalg.eigh(M)                       # ascending eigenpairs
+
+    q = P if max_modes is None else min(int(max_modes), P)
+    lam = lam[..., -q:]                                 # (..., q) largest q
+    W = W[..., -q:]                                     # (..., P, q)
+
+    keep = lam > floor                                  # (..., q) bool
+    inv_sqrt = torch.where(
+        keep, lam.clamp(min=floor).rsqrt(), torch.zeros_like(lam),
+    )                                                   # 0 on dropped modes
+    U = (Gd @ W) * inv_sqrt.unsqueeze(-2)               # (..., d, q), unit cols
+    kappa = torch.where(keep, lam, torch.zeros_like(lam))
+    return U, kappa
+
+
+def lowrank_cfc_substep(
+    h: torch.Tensor,
+    v: torch.Tensor,
+    U: torch.Tensor,
+    kappa: torch.Tensor,
+    f_lr: torch.Tensor,
+    m: torch.Tensor,
+    dt: float,
+) -> Tuple[torch.Tensor, torch.Tensor]:
+    """Exact flow of ``T + V_L`` by ``dt``: free drift + PSD low-rank rotation.
+
+    This is the fast sub-flow of the impulse / RESPA multiple-time-stepping
+    scheme used by ``integrator='baoab_cfc_lowrank'``.  The low-rank spring
+    ``L = U diag(kappa) U^T`` acts only inside ``span(U)``; there the mode
+    coordinates rotate under the exact harmonic propagator, and on the
+    orthogonal complement (where ``L`` exerts no force) the motion is a free
+    drift ``h += dt v``.  Both together are the exact flow of the full-mass
+    kinetic term ``T`` plus the low-rank potential ``V_L``.
+
+    Parameters
+    ----------
+    h, v : (..., d)
+        Position and velocity at the start of the substep.
+    U : (..., d, q)
+        Mode directions (orthonormal columns), from :func:`lowrank_modes`.
+    kappa : (..., q)
+        Per-mode stiffness (eigenvalues of ``L``).
+    f_lr : (..., d)
+        The low-rank harmonic force *evaluated at* ``h``: ``s_L - L h``.
+        Its projection ``U^T f_lr`` is the mode-space force ``U^T s_L -
+        kappa * z`` the propagator expects.
+    m : (..., 1) or scalar
+        Per-token mass.
+    dt : float
+        Substep length.
+
+    Returns
+    -------
+    (h_new, v_new)
+
+    Notes
+    -----
+    The map is symplectic and, as a *standalone* flow, a bounded rotation on
+    ``span(U)`` for any ``kappa >= 0`` and any ``dt`` -- no ``omega dt < 2``
+    wall, however sharp the low-rank curvature becomes.  Passing ``f_lr``
+    (rather than ``s_L`` and a matvec) keeps this parallel to ``cfc_substep``
+    and lets the caller build the force once with gradient tracking while
+    ``U``/``kappa`` stay frozen and detached.
+    """
+    z = torch.einsum('...dq,...d->...q', U, h)
+    wz = torch.einsum('...dq,...d->...q', U, v)
+    fz = torch.einsum('...dq,...d->...q', U, f_lr)
+    z_new, wz_new = cfc_substep(z, wz, fz, kappa, m, dt)
+    # Free drift everywhere, then overwrite the span(U) drift with the exact
+    # harmonic mode solution (the complement keeps its free drift ``dt v``).
+    h_new = h + dt * v + torch.einsum(
+        '...dq,...q->...d', U, z_new - z - dt * wz,
+    )
+    v_new = v + torch.einsum('...dq,...q->...d', U, wz_new - wz)
+    return h_new, v_new
+
+
+# ---------------------------------------------------------------------------
 # O-step: exact Ornstein-Uhlenbeck friction (+ optional FDT-locked noise)
 # ---------------------------------------------------------------------------
 def ou_step(
@@ -331,6 +475,156 @@ def _self_test() -> None:
     assert torch.isfinite(k_zero.grad).all(), k_zero.grad
     assert torch.isfinite(h_z.grad).all(), h_z.grad
     assert torch.isfinite(v_z.grad).all(), v_z.grad
+
+    # 8) Low-rank modes reconstruct L = G G^T, and the low-rank substep
+    #    matches the analytic mode-space oscillator solution exactly.
+    torch.manual_seed(1)
+    d2, P = 6, 4
+    G = torch.randn(B, T, d2, P)
+    L = G @ G.transpose(-1, -2)                          # (B,T,d2,d2) PSD
+    U, kappa = lowrank_modes(G)
+    L_rec = (U * kappa.unsqueeze(-2)) @ U.transpose(-1, -2)
+    assert (L_rec - L).abs().max().item() < 1e-4, (L_rec - L).abs().max().item()
+
+    m2 = torch.ones(B, T, 1)
+    mu2 = torch.randn(B, T, d2)
+    s_L = torch.einsum('...ij,...j->...i', L, mu2)       # in range(L)
+    h2 = torch.randn(B, T, d2)
+    v2 = torch.randn(B, T, d2)
+    dt2 = 0.6
+    f_lr = s_L - torch.einsum('...ij,...j->...i', L, h2)
+    h_lr, v_lr = lowrank_cfc_substep(h2, v2, U, kappa, f_lr, m2, dt2)
+
+    z = torch.einsum('...dq,...d->...q', U, h2)
+    wz = torch.einsum('...dq,...d->...q', U, v2)
+    zmu = torch.einsum('...dq,...d->...q', U, mu2)       # U^T s_L = kappa * zmu
+    omega2 = (kappa / m2).clamp(min=_OMEGA_SQ_FLOOR).sqrt()
+    x = z - zmu
+    z_ex = zmu + x * torch.cos(omega2 * dt2) + (wz / omega2) * torch.sin(omega2 * dt2)
+    wz_ex = -omega2 * x * torch.sin(omega2 * dt2) + wz * torch.cos(omega2 * dt2)
+    # span(U): harmonic; complement: free drift dt*v.
+    h_ex = h2 + dt2 * v2 + torch.einsum('...dq,...q->...d', U, z_ex - z - dt2 * wz)
+    v_ex = v2 + torch.einsum('...dq,...q->...d', U, wz_ex - wz)
+    assert (h_lr - h_ex).abs().max().item() < 1e-4, (h_lr - h_ex).abs().max().item()
+    assert (v_lr - v_ex).abs().max().item() < 1e-4, (v_lr - v_ex).abs().max().item()
+
+    # complement of span(U) drifts freely (L exerts no force there): its new
+    # value must equal the old plus dt*v_perp.
+    def _perp(x_):
+        return x_ - torch.einsum(
+            '...dq,...q->...d', U, torch.einsum('...dq,...d->...q', U, x_),
+        )
+    assert (_perp(h_lr) - (_perp(h2) + dt2 * _perp(v2))).abs().max().item() < 1e-4
+
+    # 9) Stiffness immunity: a low-rank operator sharp enough to blow up an
+    #    explicit step still produces a bounded rotation on its modes.
+    torch.manual_seed(2)
+    G_stiff = torch.randn(B, T, d2, 2) * 1e3             # sigma_max(L) ~ 1e6
+    L_s = G_stiff @ G_stiff.transpose(-1, -2)
+    U_s, kappa_s = lowrank_modes(G_stiff)
+    assert kappa_s.max().item() > 1e5, kappa_s.max().item()
+    h3 = torch.randn(B, T, d2)
+    v3 = torch.zeros(B, T, d2)
+    f_lr3 = -torch.einsum('...ij,...j->...i', L_s, h3)   # mu = 0
+    hs, vs = lowrank_cfc_substep(h3, v3, U_s, kappa_s, f_lr3, m2, 1.0)
+    assert torch.isfinite(hs).all() and torch.isfinite(vs).all()
+    assert hs.abs().max().item() < 10.0, hs.abs().max().item()
+
+    # 10) max_modes keeps only the stiffest modes.
+    U_k, kappa_k = lowrank_modes(G, max_modes=2)
+    assert kappa_k.shape[-1] == 2
+    assert kappa_k.min().item() >= kappa.topk(2).values.min().item() - 1e-4
+
+    # 11) Impulse (RESPA) composition -- the scheme 'baoab_cfc_lowrank' uses:
+    #     A(dt/2) = exact fast flow (T + V_L), B = explicit soft kick (the
+    #     clamped diagonal spring V_diag), A(dt/2).  Second-order accurate:
+    #     the error against the exact *coupled* flow of T + V_diag + V_L
+    #     falls ~4x when dt halves.
+    torch.manual_seed(3)
+    Bs, Ts, d3, P3 = 2, 2, 6, 3
+    ms = torch.ones(Bs, Ts, 1)
+    k_a = torch.rand(Bs, Ts, d3) * 2.0 + 0.5
+    G3 = torch.randn(Bs, Ts, d3, P3) * 0.7
+    L3 = G3 @ G3.transpose(-1, -2)
+    Hmat = torch.diag_embed(k_a) + L3                    # (B,T,d,d) SPD
+    U3, kappa3 = lowrank_modes(G3)
+    mu3 = torch.randn(Bs, Ts, d3)
+    s_a = k_a * mu3
+    s_L = torch.einsum('...ij,...j->...i', L3, mu3)
+    h0 = torch.randn(Bs, Ts, d3)
+    v0 = torch.randn(Bs, Ts, d3)
+
+    def _exact_flow(t):
+        w, Q = torch.linalg.eigh(Hmat)                   # w>=0
+        Om = (w / ms).clamp(min=_OMEGA_SQ_FLOOR).sqrt()  # (B,T,d)
+        p0 = torch.einsum('...ji,...j->...i', Q, h0 - mu3)
+        q0 = torch.einsum('...ji,...j->...i', Q, v0)
+        pt = torch.cos(Om * t) * p0 + torch.sin(Om * t) / Om * q0
+        qt = -Om * torch.sin(Om * t) * p0 + torch.cos(Om * t) * q0
+        h_t = mu3 + torch.einsum('...ij,...j->...i', Q, pt)
+        v_t = torch.einsum('...ij,...j->...i', Q, qt)
+        return h_t, v_t
+
+    def _impulse_step(h, v, dt):
+        half = 0.5 * dt
+        f_L = s_L - torch.einsum('...ij,...j->...i', L3, h)
+        h, v = lowrank_cfc_substep(h, v, U3, kappa3, f_L, ms, half)
+        v = v + (dt / ms) * (s_a - k_a * h)              # soft diagonal kick
+        f_L = s_L - torch.einsum('...ij,...j->...i', L3, h)
+        h, v = lowrank_cfc_substep(h, v, U3, kappa3, f_L, ms, half)
+        return h, v
+
+    T_end = 1.0
+    h_ex, v_ex = _exact_flow(T_end)
+    errs = []
+    for N in (20, 40):
+        dt3 = T_end / N
+        hh, vv = h0.clone(), v0.clone()
+        for _ in range(N):
+            hh, vv = _impulse_step(hh, vv, dt3)
+        errs.append((hh - h_ex).abs().max().item())
+    order = math.log2(errs[0] / max(errs[1], 1e-300))
+    assert 1.7 < order < 2.3, (errs, order)
+
+    # 12) The impulse scheme survives a low-rank curvature that blows the
+    #     explicit step up outright.  A single rank-1 mode with a controlled,
+    #     *non-resonant* omega*dt (safely between the resonances k*pi) is
+    #     used so the test is deterministic; the explicit (all-forces-kick)
+    #     integrator with the same omega*dt >> 2 diverges.
+    d4 = 4
+    ms4 = torch.ones(1, 1, 1)
+    u_dir = torch.tensor([1.0, -2.0, 0.5, 1.5]).view(1, 1, d4, 1)
+    u_dir = u_dir / u_dir.norm(dim=-2, keepdim=True)
+    omega_L = 4.7                                        # in (pi, 2pi): stable
+    G4 = u_dir * omega_L                                 # kappa = omega_L^2
+    L4 = (G4 @ G4.transpose(-1, -2))
+    U4, kappa4 = lowrank_modes(G4)
+    ka4 = torch.full((1, 1, d4), 0.2)                    # soft diagonal
+    h4 = torch.randn(1, 1, d4)
+    v4 = torch.zeros(1, 1, d4)
+    dt4 = 1.0
+    hi, vi = h4.clone(), v4.clone()
+    for _ in range(200):
+        half = 0.5 * dt4
+        f_L = -torch.einsum('...ij,...j->...i', L4, hi)
+        hi, vi = lowrank_cfc_substep(hi, vi, U4, kappa4, f_L, ms4, half)
+        vi = vi + (dt4 / ms4) * (-ka4 * hi)
+        f_L = -torch.einsum('...ij,...j->...i', L4, hi)
+        hi, vi = lowrank_cfc_substep(hi, vi, U4, kappa4, f_L, ms4, half)
+    assert torch.isfinite(hi).all(), hi
+    assert hi.abs().max().item() < 100.0 * h4.abs().max().item(), hi.abs().max().item()
+
+    # explicit (velocity-Verlet with the full force) at the same omega*dt: dies
+    he, ve = h4.clone(), v4.clone()
+    for _ in range(200):
+        f = -torch.einsum('...ij,...j->...i', L4, he) - ka4 * he
+        ve = ve + (0.5 * dt4 / ms4) * f
+        he = he + dt4 * ve
+        f = -torch.einsum('...ij,...j->...i', L4, he) - ka4 * he
+        ve = ve + (0.5 * dt4 / ms4) * f
+    assert not torch.isfinite(he).all() or he.abs().max().item() > 1e6, (
+        f"explicit step should blow up at omega*dt={omega_L}, got "
+        f"{he.abs().max().item():.2e}")
 
     print("cfc_baoab self-test: OK")
 

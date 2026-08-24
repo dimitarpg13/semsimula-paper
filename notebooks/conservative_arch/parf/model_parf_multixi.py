@@ -68,6 +68,8 @@ from cfc_baoab import (  # noqa: E402
     cfc_substep,
     decode_velocity,
     encode_velocity,
+    lowrank_cfc_substep,
+    lowrank_modes,
     ou_step,
 )
 
@@ -109,7 +111,26 @@ class MultiXiPARFConfig(SparsePARFConfig):
     #                instead of an explicit kick -- unconditionally stable
     #                however sharp the wells become.  Requires a V_theta
     #                exposing ``harmonic_terms`` (anisotropic Gaussian).
+    # 'baoab_cfc_lowrank' : as 'baoab_cfc', but the anisotropic *off*-diagonal
+    #                coupling (the ``B_k B_k^T`` part) is ALSO integrated
+    #                exactly, on the modes of the aggregate PSD low-rank
+    #                operator ``L = sum_k g_k B_k B_k^T`` (mitigation "#1"
+    #                of the CfC/BAOAB companion note).  This removes the last
+    #                explicitly-integrated stiff channel, so an anisotropic
+    #                well no longer has an ``omega dt < 2`` wall on any axis.
+    #                Requires a V_theta exposing ``harmonic_terms_lowrank``.
+    #                An A-substep Strang-splits the diagonal spring and the
+    #                low-rank rotation (2nd order in their commutator, both
+    #                factors unconditionally stable).
     integrator: str = "verlet"
+
+    # Cap on the number of low-rank modes rotated exactly by the
+    # 'baoab_cfc_lowrank' A-substep: keep only the ``lowrank_max_modes``
+    # stiffest eigenmodes of ``L`` (the rest fall back to the explicit
+    # kick, which is fine for the soft modes).  ``None`` keeps all
+    # ``n_ctx * K * rank`` of them; a small cap bounds the per-token
+    # ``P x P`` eigensolve when that aggregate is large.
+    lowrank_max_modes: Optional[int] = None
 
     # Compute -grad V_theta from its closed form instead of autograd.
     # This is what removes V_theta from the second-order `create_graph`
@@ -419,6 +440,7 @@ class MultiXiPARFLM(SparsePARFLM):
         """
         cfg = self.cfg
         use_cfc = cfg.integrator == "baoab_cfc"
+        use_lowrank = cfg.integrator == "baoab_cfc_lowrank"
         half = 0.5 * dt
 
         xi_input = h.detach() if cfg.causal_force else h
@@ -430,8 +452,21 @@ class MultiXiPARFLM(SparsePARFLM):
 
         v = decode_velocity(h_in, h_prev, dt)
 
-        if use_cfc:
-            if not hasattr(self.V_theta, "harmonic_terms"):
+        # Cached, frozen linearisation of V_theta at h_in (reused by both A
+        # substeps and the kick subtraction below), and the well parameters
+        # so the force evaluation does not re-derive the bank.
+        k_diag = s_lin = None
+        lr_U = lr_kappa = lr_sL = lr_G = None
+        vtheta_comps = None
+        if use_cfc or use_lowrank:
+            if use_lowrank and not hasattr(self.V_theta, "harmonic_terms_lowrank"):
+                raise RuntimeError(
+                    "integrator='baoab_cfc_lowrank' needs a V_theta exposing "
+                    "harmonic_terms_lowrank(xis, h) -- e.g. the anisotropic "
+                    "Gaussian family in model_aniso_gaussian_vtheta.py. "
+                    "Use integrator='baoab_cfc' or 'baoab' otherwise."
+                )
+            if use_cfc and not hasattr(self.V_theta, "harmonic_terms"):
                 raise RuntimeError(
                     "integrator='baoab_cfc' needs a V_theta exposing "
                     "harmonic_terms(xis, h) -- e.g. the anisotropic "
@@ -445,8 +480,24 @@ class MultiXiPARFLM(SparsePARFLM):
             # the CfC arm's activation footprint.
             if hasattr(self.V_theta, "context_components"):
                 vtheta_comps = self.V_theta.context_components(xis)
-            else:
-                vtheta_comps = None
+
+        if use_lowrank:
+            # Impulse / RESPA scheme: the stiff PSD low-rank part L = G G^T
+            # is put in the exact fast flow (lowrank_cfc_substep), which
+            # carries the drift; the clamped diagonal spring, V_phi and the
+            # nonlinear V_theta residual are demoted to the explicit kick.
+            _, _, lr_G, lr_Gmu = self.V_theta.harmonic_terms_lowrank(
+                xis, h_in, comps=vtheta_comps,
+            )
+            lr_U, lr_kappa = lowrank_modes(
+                lr_G, max_modes=getattr(cfg, "lowrank_max_modes", None),
+            )
+            lr_sL = torch.einsum('...dp,...p->...d', lr_G, lr_Gmu)
+            f_L = lr_sL - self._lowrank_matvec(lr_G, h_in)
+            h_mid, v_mid = lowrank_cfc_substep(
+                h_in, v, lr_U, lr_kappa, f_L, m_b, half,
+            )
+        elif use_cfc:
             # Frozen over the layer step, as in any exponential
             # integrator: the linearisation is taken once, at h.
             k_diag, s_lin = self.V_theta.harmonic_terms(
@@ -456,8 +507,6 @@ class MultiXiPARFLM(SparsePARFLM):
                 h_in, v, s_lin - k_diag * h_in, k_diag, m_b, half,
             )
         else:
-            k_diag = s_lin = None
-            vtheta_comps = None
             h_mid, v_mid = h_in + half * v, v
 
         if not h_mid.requires_grad:
@@ -470,6 +519,8 @@ class MultiXiPARFLM(SparsePARFLM):
         f_kick = f_theta + f_phi
         if use_cfc:
             f_kick = f_kick - (s_lin - k_diag * h_mid)
+        elif use_lowrank:
+            f_kick = f_kick - (lr_sL - self._lowrank_matvec(lr_G, h_mid))
         if cfg.force_clamp_max is not None:
             f_kick = f_kick.clamp(-cfg.force_clamp_max, cfg.force_clamp_max)
         v_mid = v_mid + (dt / m_b) * f_kick
@@ -483,7 +534,12 @@ class MultiXiPARFLM(SparsePARFLM):
         )
 
         # ── A: second half substep ──
-        if use_cfc:
+        if use_lowrank:
+            f_L = lr_sL - self._lowrank_matvec(lr_G, h_mid)
+            h_new, v_new = lowrank_cfc_substep(
+                h_mid, v_mid, lr_U, lr_kappa, f_L, m_b, half,
+            )
+        elif use_cfc:
             h_new, v_new = cfc_substep(
                 h_mid, v_mid, s_lin - k_diag * h_mid, k_diag, m_b, half,
             )
@@ -493,6 +549,13 @@ class MultiXiPARFLM(SparsePARFLM):
         if cfg.ln_after_step:
             h_new = self._project(h_new)
         return h_new, encode_velocity(h_new, v_new, dt)
+
+    @staticmethod
+    def _lowrank_matvec(G: torch.Tensor, x: torch.Tensor) -> torch.Tensor:
+        """``(G G^T) x`` without forming the d x d operator: G @ (G^T x)."""
+        return torch.einsum(
+            '...dp,...p->...d', G, torch.einsum('...dp,...d->...p', G, x),
+        )
 
     # ------------------------------------------------------------------
     def _layer_step_ex(
