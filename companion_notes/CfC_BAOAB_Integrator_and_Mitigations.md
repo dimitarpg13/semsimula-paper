@@ -23,6 +23,7 @@ live in the same `companion_notes/` folder.
 28. [Proposed (Deferred) Mitigation: Clamping the Low-Rank Precision Factor $B_k$](#28-proposed-deferred-mitigation-clamping-the-low-rank-precision-factor-b_k)
 29. [Principled Directions Beyond the $B_k$ Clamp](#29-principled-directions-beyond-the-b_k-clamp)
 30. [Concrete Sketch: The Low-Rank Exponential Substep](#30-concrete-sketch-the-low-rank-exponential-substep)
+31. [SCAF Phase 7b/7c Audit Plan for Tuning precision_lr_max (L=16)](#31-scaf-phase-7b7c-audit-plan-for-tuning-precision_lr_max-l16)
 
 ---
 
@@ -106,6 +107,10 @@ The Tier 1–3 mitigations of §23 and the BAOAB + CfC propagator attack the sam
 The recommended strategy is **sequential**: apply Tier 1 immediately (already implemented), test whether it stabilises training, and pursue the CfC propagator as the long-term solution — both for stability and for the inference-speed gains documented in [Closed\_Form\_and\_Hybrid\_Integration\_Strategies\_for\_Fock-PARFLM.md](Closed_Form_and_Hybrid_Integration_Strategies_for_Fock-PARFLM.md) §12.
 
 **Update (July 17, 2026):** Full training runs at both d=768 (L=12) and d=1024 (L=16) demonstrated that Tier 1 (per-group clipping) and Tier 2 (reduce $L$) **delay but do not prevent** the cascade from emerging. The d=768 model, which was perfectly stable during the 3,000-step sweep and the first 33,000 steps, developed catastrophic spikes (up to grad=81,019) at step ≈37,000. See §25 for the full analysis. The CfC propagator is now the **only known mitigation that addresses the root cause** and is needed for any training run exceeding ≈30K steps at scale.
+
+**Update (August 23–24, 2026) — Tier 2 re-tested under `baoab_cfc`, on a different failure mode.** The July 17 update above is about the Verlet-era `create_graph=True` autograd chain — a mechanism `baoab_cfc` already removes (`vtheta_analytic_force=True`). But the g0.1/d=384/L=16 OWT run under `baoab_cfc` itself hit a burst of large, uncaught grad-clip spikes at steps 6,297–6,676 (pre-clip totals up to 3,337, dominated by `creation_gate`/`destruction_gate`/`register`/`reverse_ch`/`depth_code`/`V_theta`), moving val PPL from 176.88 to 207.11 across the 6,000→6,500 eval. Because `depth_code` is a per-layer `nn.Parameter` (shape `[L, n_ctx, d]`) and `creation_gate`/`destruction_gate` are per-layer `nn.ModuleList`s while `reverse_ch` is a single weight-tied module reused at every layer, a smaller $L$ shortens the chain a spike has to propagate through, both forward (activation state) and backward (Jacobian-product depth) — a **different** cascade mechanism than the July 17 one, so the "delays but does not prevent" verdict does not automatically transfer.
+
+A single-variable depth probe (same `d=384`, `dt=1`, `integrator=baoab_cfc`, identical V_theta bank/xi/V_phi/schedule/batch — only $L$: 16 → 8) ran **clean for the full 8,000-step slice tested**, including through the exact 6,297–6,676 window that broke the $L=16$ run: zero `[spike]` events, monotonically improving PPL (1,476.67 → 136.06). This supports depth $L$ itself as an **independent contributor** to this burst, on top of (not instead of) the $B_k$/off-diagonal curvature story that motivated §29's `baoab_cfc_lowrank` + `precision_lr_max`. Given the July 17 precedent, this 8,000-step window is **not yet enough to call it resolved rather than delayed**; the probe has been extended (`PROBE_MAX_STEPS: 8_000 -> None`) to run further and determine which it is. The $L=16$ curvature-side mitigation (§29) is being pursued independently and is not gated on this result.
 
 **Cross-references:**
 - [Closed\_Form\_and\_Hybrid\_Integration\_Strategies\_for\_Fock-PARFLM.md](Closed_Form_and_Hybrid_Integration_Strategies_for_Fock-PARFLM.md) — full derivation of the CfC propagator, blending weights, error bounds, and BAOAB integration (§10).
@@ -1258,6 +1263,125 @@ this is small next to the forward pass. `lowrank_max_modes` bounds it further.
 
 ---
 
+## 31. SCAF Phase 7b/7c Audit Plan for Tuning precision_lr_max (L=16)
+
+**Status: PLANNED, not yet run.** This section captures the audit
+methodology for choosing a `precision_lr_max` value on the live
+g0.1/d=384/**L=16** `baoab_cfc` run, ahead of the
+`baoab_cfc_lowrank` + `precision_lr_max` vs. `baoab_cfc` baseline A/B
+flagged as the next step in §29.7. It is independent of the depth-probe
+track in §24.4's August update: that track asks whether shortening $L$
+suppresses the burst; this track asks whether bounding $B_k$'s curvature
+suppresses it *without* touching $L$.
+
+### 31.1 Goal
+
+Pick a `precision_lr_max` value (the $\sigma^2$ budget on $B_k$'s
+spectral norm enforced by `_bound_lowrank()` in
+`model_aniso_gaussian_vtheta.py`, §29.3) from the *empirical*
+$\sigma_{\max}(B_k)^2$ distribution actually reached on the g0.1/L=16
+run, rather than guessing a number. Too tight a budget flattens the well
+geometry and costs modelling capacity; too loose a budget doesn't touch
+the runaway tail that caused the burst.
+
+### 31.2 Checkpoints to bracket: healthy vs. spike-regime
+
+A single checkpoint's stiffness distribution is not enough — the budget
+should sit **between** the healthy bulk and the runaway tail, so both
+ends need to be measured on the same run:
+
+- **Healthy end.** A checkpoint from before the burst — e.g. the
+  step-5,500/6,000 periodic or best checkpoint (val PPL 171–188, grad
+  norm 0.8–1.4 in `training_log.jsonl`).
+- **Spike-regime end.** A checkpoint from *during* the burst (steps
+  6,297–6,676). The ordinary "best" and periodic-grid checkpoints are
+  unreliable for this: `best_val_ppl` was regressing through that window
+  (176.88 → 207.11), so no new "best" checkpoint was written there, and
+  the periodic grid may not land inside a ~380-step window. The training
+  loop's `_prereload` snapshots (`_reload_best()` in the notebook's Cell
+  6, `tag_suffix='_prereload'`, capped by `PRERELOAD_SNAPSHOT_MAX_KEEP=5`)
+  exist for exactly this reason — `GRAD_NORM_HARD_TRIGGER=500.0` fires
+  unconditionally on any raw pre-clip grad norm above 500, and steps
+  6,407 / 6,435 / 6,676 (pre-clip totals 1,816 / 2,402 / 3,337) all cross
+  it — so the run's Drive `checkpoints/` folder should contain
+  `..._step64xx_prereload.pt` / `..._step66xx_prereload.pt` files
+  capturing the model state at (or immediately after) the worst moments
+  of the burst. **Check for these first**, before falling back to the
+  nearest periodic checkpoint.
+
+Audit both ends with the same `StiffnessProbe` configuration so the
+percentile ladders are directly comparable.
+
+### 31.3 Required SCAF change: raw sigma_max(B_k)^2 percentiles
+
+`StiffnessProbe` (`semsimula-scaf/src/scaf/probes/stiffness.py`,
+`stiffness_audit` branch) already computes what's needed internally, in
+`weyl_upper_bound()`: `sigma_max_sq = torch.linalg.eigvalsh(gram)[..., -1]`
+is the per-well, per-token $\sigma_{\max}(B_k)^2$. But it is only ever
+folded into the aggregate Weyl bound
+`k_weyl = sum_k g_k * (max_i a_k[i] + sigma_max_sq)` and reported as
+`eig_median` / `eig_p90` / `eig_p99` / `eig_p999` / `eig_max` **after**
+conversion to $\omega \Delta t$ — never as a raw, un-aggregated,
+un-converted $\sigma^2$ value. `precision_lr_max` is exactly that raw
+quantity, so the probe needs a small, additive change:
+
+1. In `weyl_upper_bound()` (or a sibling helper), also surface
+   `sigma_max_sq` itself (shape `(..., K)`, before the $g$-weighted
+   aggregation) — e.g. have `StiffnessProbe.run()` collect it into its
+   own `sigma_lr_blocks` list alongside `eig_omega_dt_blocks`.
+2. In the `detail` dict, emit `sigma_lr_p50` / `sigma_lr_p90` /
+   `sigma_lr_p99` / `sigma_lr_max` (reusing the existing `_quantiles()`
+   helper) — the same percentile ladder already used for `omega_dt` and
+   `eig_omega_dt`, just in raw $\sigma^2$ units instead of
+   $\omega \Delta t$ units.
+3. Extend `tests/test_stiffness_probe.py` with a synthetic-$B_k$ case
+   asserting `sigma_lr_p99` reproduces a known planted spectral norm.
+
+This is purely additive (new `detail` keys only) — no existing probe
+output changes, so nothing downstream (the OWT g0.1/g0.3 Phase 7b/7c
+reports already published on HF) needs re-validation.
+
+### 31.4 From percentiles to a precision_lr_max budget
+
+Once both checkpoints report `sigma_lr_*`:
+
+1. Confirm the qualitative story first: `sigma_lr_p99` / `sigma_lr_max`
+   should be visibly larger on the spike-regime checkpoint than the
+   healthy one, and the gap between `eig_p99` and `p99` (Weyl vs.
+   diagonal-only $\omega \Delta t$) should be the dominant contributor to
+   instability on the spike-regime side. If it isn't, $B_k$ growth isn't
+   actually the driver of *this particular* burst and `precision_lr_max`
+   is the wrong lever for it (the depth-cascade track of §24.4 would be
+   the more relevant explanation).
+2. Set the budget **above** the healthy checkpoint's `sigma_lr_p95`–`p99`
+   (not its median — clamping there would flatten the well geometry
+   every well relies on) and **below** the spike-regime checkpoint's
+   `sigma_lr_p99` / `max`.
+3. Remember the cap is on $\lVert B_k \rVert_F^2 \ge \sigma_{\max}(B_k)^2$
+   (conservative by up to a factor `rank` — 4 for this run's
+   `ANISO_RANK`), so the *effective* spectral cap achieved is somewhat
+   tighter than the nominal `precision_lr_max` number; bias the choice
+   slightly upward from step 2's interval to compensate.
+
+### 31.5 The A/B run
+
+With a `precision_lr_max` value in hand, run the comparison already
+flagged as the next step in §29.7's status line: `baoab_cfc_lowrank` +
+tuned `precision_lr_max` vs. the current `baoab_cfc` baseline, both at
+g0.1/d=384/**L=16** (the live config — not the L=8 depth probe, which is
+the separate, independently-tracked axis of §24.4's August update),
+watching whether the 6,297–6,676-style E/P/`depth_code` bursts shrink or
+disappear.
+
+### 31.6 Status
+
+**Not yet started.** §31.3's SCAF probe change (`sigma_lr_*`
+percentiles) is the first concrete task and has not been implemented;
+§31.2's checkpoint bracketing needs the g0.1/L=16 Drive folder inspected
+for `_prereload` snapshots in the 6,297–6,676 range.
+
+---
+
 *Companion note to `Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`.
 The CfC/BAOAB propagator is implemented in
 `notebooks/conservative_arch/parf/cfc_baoab.py` and wired into the layer step
@@ -1269,7 +1393,8 @@ The anisotropic Gaussian V_theta is in
 SCAF stiffness audit (Phase 7b/7c Weyl bound) in the `stiffness_audit` branch
 of `semsimula-scaf` (`src/scaf/probes/stiffness.py`).*
 
-*Last updated: 24 August 2026. Split out of the parent note (former §24-§28,
+*Last updated: 24 August 2026 (adds §24.4's depth-probe update and §31's
+SCAF audit plan). Split out of the parent note (former §24-§28,
 content unchanged) for maintainability. Sections 29-30 record the principled
 directions beyond the $B_k$ clamp and the concrete low-rank exponential
 substep. This revision marks §29.2 (`integrator='baoab_cfc_lowrank'`) and
