@@ -1269,16 +1269,43 @@ this is small next to the forward pass. `lowrank_max_modes` bounds it further.
 
 ---
 
-## 31. SCAF Phase 7b/7c Audit Plan for Tuning precision_lr_max (L=16)
+## 31. SCAF Phase 7b/7c Audit Plan for Tuning precision_lr_max (L=16, and now L=8)
 
-**Status: PLANNED, not yet run.** This section captures the audit
-methodology for choosing a `precision_lr_max` value on the live
-g0.1/d=384/**L=16** `baoab_cfc` run, ahead of the
-`baoab_cfc_lowrank` + `precision_lr_max` vs. `baoab_cfc` baseline A/B
+**Status: §31.3 IMPLEMENTED (27 August 2026); §31.2/§31.4/§31.5 not yet
+run.** This section captures the audit methodology for choosing a
+`precision_lr_max` value on the live g0.1/d=384 `baoab_cfc` runs, ahead of
+the `baoab_cfc_lowrank` + `precision_lr_max` vs. `baoab_cfc` baseline A/B
 flagged as the next step in §29.7. It is independent of the depth-probe
 track in §24.4's August update: that track asks whether shortening $L$
 suppresses the burst; this track asks whether bounding $B_k$'s curvature
 suppresses it *without* touching $L$.
+
+**Scope broadened to L=8.** §31 was originally scoped to the live L=16
+run only, treating the L=8 depth probe as a separate axis (§24.4). The
+L=8 probe has since produced its own escalating hard-watchdog evidence
+that the same mechanism is at work there too: a step-32,139 trigger
+(pre-clip grad norm 701.1; top groups `E`/`P`=413.2, `creation_gate`=259.0,
+`reverse_channel_scale`=243.3, `register`=200.9, `depth_code`=158.5) was
+followed, only ~2,000 steps after reload, by a step-34,091 trigger nearly
+an order of magnitude worse (5,864.9; `P`/`E`=3,106.9, `depth_code`=2,805.1,
+`reverse_channel_scale`=2,560.5, `creation_gate`=2,354.4, and — notably
+larger than the §27.1 "mid-pack" reference value of 502.0 — `V_theta`=1,073.0).
+Both reloaded to the step-27,000 checkpoint (PPL 100.47), with no net
+progress across the ~8,000 intervening steps. The escalating severity
+(701 → 5,865 at the *same* reload point) is the qualitative signature
+§28.6 predicts: `depth_code`/embedding perturbations get a second-order
+amplification route through $B_k$'s still-growing curvature, so the same
+proximate trigger produces a larger excursion the longer training
+continues past it. §31.2's bracketing protocol therefore now has a
+concrete L=8 candidate pair on hand: the step-27,000 best checkpoint
+(healthy) against the `..._step32139_prereload.pt` /
+`..._step34091_prereload.pt` snapshots (spike-regime) that the watchdog's
+`_reload_best()` already wrote to Drive — no separate capture run needed.
+A lighter-weight, no-`scaf`-dependency route to the same
+`sigma_max(B_k)^2` percentiles is now also available directly in the
+training notebook (`sigma_lr_report`, Cell 6b-2, added alongside
+`stiffness_report`), for a quick in-Colab check against these exact
+checkpoints ahead of, or instead of, the full offline SCAF audit below.
 
 ### 31.1 Goal
 
@@ -1320,32 +1347,45 @@ percentile ladders are directly comparable.
 
 ### 31.3 Required SCAF change: raw sigma_max(B_k)^2 percentiles
 
+> **Status: IMPLEMENTED (27 August 2026).** All three items below are
+> done, on the `stiffness_audit` branch of `semsimula-scaf`; the full
+> suite (188 passed, 7 skipped, including the new test) is green.
+
 `StiffnessProbe` (`semsimula-scaf/src/scaf/probes/stiffness.py`,
-`stiffness_audit` branch) already computes what's needed internally, in
+`stiffness_audit` branch) already computed what's needed internally, in
 `weyl_upper_bound()`: `sigma_max_sq = torch.linalg.eigvalsh(gram)[..., -1]`
-is the per-well, per-token $\sigma_{\max}(B_k)^2$. But it is only ever
+is the per-well, per-token $\sigma_{\max}(B_k)^2$. But it was only ever
 folded into the aggregate Weyl bound
 `k_weyl = sum_k g_k * (max_i a_k[i] + sigma_max_sq)` and reported as
 `eig_median` / `eig_p90` / `eig_p99` / `eig_p999` / `eig_max` **after**
 conversion to $\omega \Delta t$ — never as a raw, un-aggregated,
 un-converted $\sigma^2$ value. `precision_lr_max` is exactly that raw
-quantity, so the probe needs a small, additive change:
+quantity, so the probe needed a small, additive change, now made:
 
-1. In `weyl_upper_bound()` (or a sibling helper), also surface
-   `sigma_max_sq` itself (shape `(..., K)`, before the $g$-weighted
-   aggregation) — e.g. have `StiffnessProbe.run()` collect it into its
-   own `sigma_lr_blocks` list alongside `eig_omega_dt_blocks`.
-2. In the `detail` dict, emit `sigma_lr_p50` / `sigma_lr_p90` /
-   `sigma_lr_p99` / `sigma_lr_max` (reusing the existing `_quantiles()`
-   helper) — the same percentile ladder already used for `omega_dt` and
-   `eig_omega_dt`, just in raw $\sigma^2$ units instead of
+1. `weyl_upper_bound()` takes a new `return_sigma_lr: bool = False`
+   argument; when `True` it returns `(k_weyl, sigma_max_sq)` instead of
+   just `k_weyl`, exposing the per-well, pre-aggregation
+   $\sigma_{\max}(B_k)^2$ (shape `(..., K)`) alongside the existing
+   aggregate bound, with the default-`False` call site unchanged.
+   `StiffnessProbe.run()` now collects it into its own `sigma_lr_blocks`
+   list alongside `eig_omega_dt_blocks`.
+2. The `detail` dict now emits `sigma_lr_p50` / `sigma_lr_p90` /
+   `sigma_lr_p99` / `sigma_lr_p999` / `sigma_lr_max` (reusing the existing
+   `_quantiles()` helper) — the same percentile ladder already used for
+   `omega_dt` and `eig_omega_dt`, just in raw $\sigma^2$ units instead of
    $\omega \Delta t$ units.
-3. Extend `tests/test_stiffness_probe.py` with a synthetic-$B_k$ case
-   asserting `sigma_lr_p99` reproduces a known planted spectral norm.
+3. `tests/test_stiffness_probe.py` gained
+   `test_return_sigma_lr_reproduces_planted_spectral_norm`, a synthetic
+   two-well, rank-2 case with a diagonal Gram (so the top singular value
+   is exact by inspection: $\sigma_{\max}^2 = 25$ and $9$ for the two
+   wells) asserting `weyl_upper_bound(..., return_sigma_lr=True)`
+   reproduces both planted values and leaves the aggregate `k_weyl`
+   bit-for-bit unchanged from the non-`return_sigma_lr` call.
 
-This is purely additive (new `detail` keys only) — no existing probe
-output changes, so nothing downstream (the OWT g0.1/g0.3 Phase 7b/7c
-reports already published on HF) needs re-validation.
+This was purely additive (new `detail` keys and an opt-in return-value
+change only) — no existing probe output changed, so nothing downstream
+(the OWT g0.1/g0.3 Phase 7b/7c reports already published on HF) needs
+re-validation.
 
 ### 31.4 From percentiles to a precision_lr_max budget
 
@@ -1373,18 +1413,38 @@ Once both checkpoints report `sigma_lr_*`:
 
 With a `precision_lr_max` value in hand, run the comparison already
 flagged as the next step in §29.7's status line: `baoab_cfc_lowrank` +
-tuned `precision_lr_max` vs. the current `baoab_cfc` baseline, both at
-g0.1/d=384/**L=16** (the live config — not the L=8 depth probe, which is
-the separate, independently-tracked axis of §24.4's August update),
-watching whether the 6,297–6,676-style E/P/`depth_code` bursts shrink or
-disappear.
+tuned `precision_lr_max` vs. the current `baoab_cfc` baseline, at
+g0.1/d=384, watching whether the burst signature shrinks or disappears —
+the 6,297–6,676-style E/P/`depth_code` bursts on **L=16**, or the
+27,000-onward 32,139/34,091-style bursts on **L=8** (§31 preamble; no
+longer treated as a separate, independently-tracked axis from §24.4's
+depth-probe track now that it has produced its own escalating
+hard-watchdog evidence of the same mechanism).
 
 ### 31.6 Status
 
-**Not yet started.** §31.3's SCAF probe change (`sigma_lr_*`
-percentiles) is the first concrete task and has not been implemented;
-§31.2's checkpoint bracketing needs the g0.1/L=16 Drive folder inspected
-for `_prereload` snapshots in the 6,297–6,676 range.
+**§31.3 done; §31.2/§31.4/§31.5 not yet started.** The SCAF probe change
+(`sigma_lr_*` percentiles, §31.3) landed 27 August 2026, and an
+equivalent no-`scaf`-dependency diagnostic (`sigma_lr_report`) was added
+directly to the training notebook (Cell 6b-2) for a quicker in-Colab
+check. Remaining work is unchanged in kind, but now has two candidate
+runs to bracket rather than one:
+
+- **L=16** (the original scope): needs the g0.1/L=16 Drive folder
+  inspected for `_prereload` snapshots in the 6,297–6,676 range.
+- **L=8** (added this update, §31 preamble): the bracket pair is already
+  identified and does not need a separate capture run —
+  `..._best.pt` at step 27,000 (healthy) against
+  `..._step32139_prereload.pt` / `..._step34091_prereload.pt`
+  (spike-regime), all on the live `..._L8probe_..._g0.1_baoab_cfc` Drive
+  folder.
+
+Either pair can go through §31.4's bracketing logic to propose a
+`precision_lr_max` value, then §31.5's A/B (`baoab_cfc_lowrank` +
+that budget, vs. the `baoab_cfc` baseline) — both integrator paths are
+implemented and unit-tested (§29.7), so the A/B is an opt-in notebook
+config change (`INTEGRATOR`, `PRECISION_LR_MAX` in Cell 0), not a code
+change.
 
 ---
 
@@ -1399,8 +1459,13 @@ The anisotropic Gaussian V_theta is in
 SCAF stiffness audit (Phase 7b/7c Weyl bound) in the `stiffness_audit` branch
 of `semsimula-scaf` (`src/scaf/probes/stiffness.py`).*
 
-*Last updated: 24 August 2026 (adds §24.4's depth-probe update and §31's
-SCAF audit plan). Split out of the parent note (former §24-§28,
+*Last updated: 27 August 2026 (implements §31.3's SCAF `sigma_lr_*`
+percentiles and adds the equivalent `sigma_lr_report` notebook diagnostic;
+broadens §31's scope to the L=8 probe after its own escalating
+32,139/34,091 hard-watchdog bursts, with a bracket checkpoint pair already
+on hand). Previously updated 24 August 2026 (adds §24.4's depth-probe
+update and §31's SCAF audit plan). Split out of the parent note (former
+§24-§28,
 content unchanged) for maintainability. Sections 29-30 record the principled
 directions beyond the $B_k$ clamp and the concrete low-rank exponential
 substep. This revision marks §29.2 (`integrator='baoab_cfc_lowrank'`) and
