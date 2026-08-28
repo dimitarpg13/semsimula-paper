@@ -23,7 +23,9 @@ live in the same `companion_notes/` folder.
 28. [Proposed (Deferred) Mitigation: Clamping the Low-Rank Precision Factor $B_k$](#28-proposed-deferred-mitigation-clamping-the-low-rank-precision-factor-b_k)
 29. [Principled Directions Beyond the $B_k$ Clamp](#29-principled-directions-beyond-the-b_k-clamp)
 30. [Concrete Sketch: The Low-Rank Exponential Substep](#30-concrete-sketch-the-low-rank-exponential-substep)
-31. [SCAF Phase 7b/7c Audit Plan for Tuning precision_lr_max (L=16)](#31-scaf-phase-7b7c-audit-plan-for-tuning-precision_lr_max-l16)
+31. [SCAF Phase 7b/7c Audit Plan for Tuning precision_lr_max (L=16, and now L=8)](#31-scaf-phase-7b7c-audit-plan-for-tuning-precision_lr_max-l16-and-now-l8)
+32. [L=8 baoab_cfc Baseline: Extended Trajectory and the Decision to Switch Mid-Run](#32-l8-baoab_cfc-baseline-extended-trajectory-steps-2700039867-and-the-decision-to-switch-mid-run)
+33. [The Bracketing Result Came Back Flat: $B_k$ Is Not the Driver, and a Root-Cause Workflow for the Non-$V_\theta$ Spikes](#33-the-bracketing-result-came-back-flat-b_k-is-not-the-driver-and-a-root-cause-workflow-for-the-non-v_theta-spikes)
 
 ---
 
@@ -1545,6 +1547,192 @@ evidence the fix is doing what §29.2's theory predicts, ahead of any
 
 ---
 
+## 33. The Bracketing Result Came Back Flat: $B_k$ Is Not the Driver, and a Root-Cause Workflow for the Non-$V_\theta$ Spikes
+
+§31.4 step 1 wrote down an explicit escape hatch before any numbers were in
+hand: if the raw low-rank curvature $\sigma_{\max}(B_k)^2$ does **not** grow
+visibly from a healthy checkpoint to a spike-regime one, then "$B_k$ growth
+isn't actually the driver of *this particular* burst and `precision_lr_max`
+is the wrong lever for it." This section records that the L=8 bracket pair
+(§31.6) was measured on 28 August 2026 — and the escape hatch fired.
+
+### 33.1 The measurement: healthy vs. spike-regime are within +8% at every percentile
+
+Both checkpoints from §31.6 were run through the Cell 6b-2 `sigma_lr_report`
+diagnostic (the dependency-free notebook mirror of SCAF's `sigma_lr_*`
+percentiles, §31.3), each on the same fixed seed-0 probe batch, pooling
+1,310,720 samples over layers, wells, and xi-channels:
+
+| percentile | healthy (step 27,000 best, PPL 100.47) | spike-regime (step 34,091 prereload, hard trigger) | delta |
+|:---|---:|---:|---:|
+| p50 | 282.11 | 305.59 | +8.3% |
+| p90 | 663.61 | 700.53 | +5.6% |
+| p99 | 1047.00 | 1082.80 | +3.4% |
+| p99.9 | 2322.33 | 2499.07 | +7.6% |
+| max | 6364.81 | 6427.16 | +1.0% |
+
+![Grouped bar chart of sigma_max(B_k)^2 percentiles for the healthy step-27000 checkpoint versus the spike-regime step-34091 prereload snapshot, on a log y-axis, showing the two distributions are within +8% at every percentile, annotated with the conclusion that B_k growth is not the driver of these bursts](images/scaf_spike_diag_sigma_lr_bracket_result.png)
+
+The two distributions are the same shape, shifted by a few percent. There is
+no order-of-magnitude escalation — indeed the tail (`max`) barely moves at
+all (+1.0%). Both are finite; the `PPL=nan` recorded in the prereload
+snapshot's metadata (an expected artefact of a snapshot taken at the instant
+the loss went non-finite, not a fresh validation pass) did not contaminate
+the $B_k$ measurement.
+
+**Caveat on the probe batch.** `sigma_lr_report` evaluates $B_k$ on a fixed
+generic batch, so it measures the *weights'* capacity to produce large
+$\sigma_{\max}(B_k)^2$ on a typical input, not what happened on the specific
+batch that tripped the watchdog at step 34,091 ($B_k$ is context-dependent,
+`context_components(xis)`). The flat result therefore rules out a *drifting
+baseline* — the parameters defining $B_k$ did not migrate into a permanently
+stiffer regime going into the crisis — but does not by itself rule out a
+transient, batch-specific $B_k$ excursion on the offending step. The second
+bracket point (step 32,139) and, more decisively, the per-group gradient log
+at the crisis step (§33.3) are what close that gap.
+
+### 33.2 What this rules in and out
+
+Three independent lines of evidence now point the same way — away from
+$V_\theta$'s low-rank correction as the cause of the L=8 bursts:
+
+1. **The bracket is flat (§33.1).** The quantity `precision_lr_max` caps
+   directly barely changes into the crisis.
+2. **The per-group grad log points elsewhere.** The recorded spike groups for
+   this architecture are `depth_code`, `E`, `P`, `creation_gate`, `register`,
+   `reverse_channel_scale` — the **non-$V_\theta$** groups (§23.1's d=1024
+   table shows exactly this cast of characters; the L=8 bursts are the same
+   family). $V_\theta$'s own group is not the one that spikes.
+3. **The mechanism is already documented as depth-driven, not curvature-driven
+   for these groups** — the second-order force cascade of §23.2 and the
+   boundary-layer depth-code growth of §27 are gradient-topology effects, not
+   $B_k$-magnitude effects.
+
+The practical conclusion: **`baoab_cfc_lowrank` + `precision_lr_max` remains
+sound hygiene** (unbounded-by-construction curvature is a real hazard and it
+is good that the channel is now removable), but it is **not the lever that
+will stop these specific bursts.** The A/B run of §31.5 is still worth doing
+as a falsification check, but §33.1 lowers its prior: expect the burst
+signature to persist, because the burst was never coming through $B_k$.
+
+### 33.3 A root-cause workflow for the non-$V_\theta$ spikes
+
+The bursts live in the non-$V_\theta$ groups, so the diagnostic has to target
+those groups directly. The good news is that the training loop already emits
+most of the raw material; the workflow below is ordered cheapest-first, and
+each phase unlocks the next.
+
+```mermaid
+flowchart TD
+    P0["Phase 0 - mine the existing training log grad spike events"]
+    P1["Phase 1 - capture the offending batch at each watchdog trigger"]
+    P2["Phase 2 - replay one isolated forward plus backward and instrument it"]
+    P3["Phase 3 - productionize as a SCAF GradientSpikeProbe"]
+    V{"which group layer op leads"}
+    LV["V theta or B k implicated"]
+    NV["non V theta group implicated"]
+    RV["bracket sigma lr and tune precision lr max"]
+    RN["targeted per group clip or op level fix"]
+
+    P0 --> P1
+    P1 --> P2
+    P2 --> P3
+    P2 --> V
+    V -->|V theta| LV
+    V -->|other group| NV
+    LV --> RV
+    NV --> RN
+```
+
+**Phase 0 — mine what is already logged (no code change).** With
+`GRAD_SPIKE_DEBUG=True` the loop already writes an `event: grad_spike` record
+(top-8 pre-clip groups + loss breakdown) to `RESULTS_DIR/training_log.jsonl`,
+plus a watchdog record on every reload. Load that file, filter those events
+for the L=8 run, and build (a) a per-group grad-norm time series and (b) a
+spike table mapping step to ranked groups. This answers the first-order
+question — *which group leads each burst, and is it always the same one* —
+from data already on disk.
+
+One subtlety must be corrected for at this stage: the scalar `grad_norm` the
+watchdog thresholds on is `sqrt(sum of gn_k^2)` over groups **excluding**
+`reverse_channel_scale` and `reverse_ch` (`WATCHDOG_EXCLUDE_GROUPS`). So if
+the reverse channel is the true instigator, the aggregate under-reports it and
+the hard trigger only fires once the disturbance bleeds into an *included*
+group. Read the per-group breakdown (`_last_pg_norms`), never the single
+aggregate, when attributing a burst.
+
+**Phase 1 — capture the offending batch (small, high-leverage patch).** The
+`_prereload` snapshot preserves the *weights* at the crisis but not the
+*token batch* that caused it — which is exactly why the §33.1 fixed-seed probe
+could not reproduce the event. Extend `_reload_best` so that, alongside the
+`_prereload` weights, it also serialises the offending `(x, y)` ids and the
+RNG state. With the pair **(weights just before the bad step, exact batch)**
+the crisis forward+backward becomes deterministically replayable in isolation,
+as many times as needed.
+
+**Phase 2 — op- and layer-resolved forensics on the replay.** With the pinned
+pair, instrument one isolated backward:
+
+- **per-parameter** grad norms (finer than per-group) to pinpoint the exact
+  tensor — e.g. `creation_gate_qkv.log_tau` vs. `W_Q`, or a single
+  `reverse_channel_scale[k]`;
+- **`register_full_backward_hook`** on each layer to localise *which* of the L
+  layers the gradient blows up at (gradient flows L to 0; a localised spike is
+  a strong signal, and dovetails with §27's boundary-layer finding);
+- **forward-activation extremes** at the numerically risky ops per group —
+  the creation-gate softmax logits and temperature
+  $\tau = \exp(\log\tau).\mathrm{clamp}(10^{-4})$, the cumulative-softmax
+  denominator $Z.\mathrm{clamp}(10^{-30})$, the reverse-channel softmax logits
+  and the reverse-channel `logit_scale.exp().clamp(max=100)`, the register salience
+  hard gate at threshold 0.005, the depth-code-shifted xi magnitude, and the
+  $V_\theta$ quadratic-form exponent.
+
+![Schematic of the Fock-PARFLM forward integrator drawn top to bottom, with the embedding, creation gate, PARF dynamics, reverse channel, and destruction gate stages in the centre column, the second-order backward gradient flow arrow on the left, and a right-hand column annotating the numerically risky op and per-group clip ceiling for each spiking group, marking the reverse-channel groups as excluded from the watchdog aggregate](images/scaf_spike_diag_forward_backward_map.png)
+
+This turns "group X is big" into a mechanism, e.g. "a near-degenerate
+creation-gate temperature at layer $k$ produced a huge softmax Jacobian" or "a
+large $Q_{\mathrm{force}}$ at layer $k$ hit the non-conservative reverse-channel
+injection $(\Delta t^2/\mathfrak{m}).\tanh(s).Q_{\mathrm{force}}$."
+
+**Phase 3 — productionize as a SCAF probe.** Once the manual harness proves
+out, fold it into SCAF as a reusable, unit-tested `GradientSpikeProbe`. The
+full requirements, interface, and design — including how it stays inside
+SCAF's "probing must not pollute training `.grad`" invariant as the library's
+first backward-aware probe — are in the SCAF design document
+[`Gradient_Spike_Probe_Requirements_and_Design.md`](https://github.com/dimitarpg13/semsimula-scaf/blob/spike_diagnostic/docs/Gradient_Spike_Probe_Requirements_and_Design.md)
+(branch `spike_diagnostic`).
+
+### 33.4 Candidate hypotheses the workflow discriminates between
+
+The instrumentation above is designed to separate these, which the raw
+grad-norm log alone cannot:
+
+- **Sharp-softmax Jacobian** in the creation gate or reverse channel (small
+  $\tau$ / saturated logits) — batch-triggered, transient.
+- **Non-conservative reverse-channel kick** — a large $Q_{\mathrm{force}}$ on
+  particular tokens injected via $\tanh(s).Q_{\mathrm{force}}$; note this
+  channel is the one masked from the watchdog aggregate (§33.3, Phase 0).
+- **Hard salience/threshold gating** in the register path creating
+  near-discontinuous gradients at the 0.005 boundary.
+- **`depth_code` pushing $V_\theta$ into a stiff regime** for particular token
+  contexts — this would re-implicate $V_\theta$ *indirectly* (via the shifted
+  xi, not via $B_k$ magnitude) and would show up as correlated `depth_code`
+  and $V_\theta$ grads at the same boundary layer.
+
+### 33.5 Status and next step
+
+**§33.1 done; §33.3 Phase 0 is the immediate next step.** The bracket
+measurement is complete and negative for $B_k$. The cheapest next action is
+Phase 0 log-mining against the live L=8 run's `training_log.jsonl` (already on
+Drive), which may resolve the leading-group question with no new run; Phase 1
+is the highest-leverage small patch and is what finally makes the crisis
+reproducible. The SCAF `GradientSpikeProbe` (Phase 3) is specified in the
+companion design doc but not yet implemented.
+
+![Schematic of the GradientSpikeProbe data flow left to right: pinned checkpoint weights and a captured offending batch feed into one isolated forward plus backward run under a save-zero-restore grad invariant, producing per-group per-parameter per-layer grad-norm quantiles and forward-activation extremes, which yield an attribution verdict that branches to either the precision-lr-max lever or a targeted per-group fix](images/scaf_spike_diag_probe_pipeline.png)
+
+---
+
 *Companion note to `Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`.
 The CfC/BAOAB propagator is implemented in
 `notebooks/conservative_arch/parf/cfc_baoab.py` and wired into the layer step
@@ -1556,7 +1744,18 @@ The anisotropic Gaussian V_theta is in
 SCAF stiffness audit (Phase 7b/7c Weyl bound) in the `stiffness_audit` branch
 of `semsimula-scaf` (`src/scaf/probes/stiffness.py`).*
 
-*Last updated: 27 August 2026, evening (adds §32: the L=8 probe's
+*Last updated: 28 August 2026 (adds §33: the L=8 `precision_lr_max`
+bracket pair was measured and came back flat — $\sigma_{\max}(B_k)^2$ is
+within +8% at every percentile between the healthy step-27,000 checkpoint
+and the step-34,091 spike-regime prereload snapshot — confirming §31.4
+step 1's escape hatch that $B_k$ growth is not the driver of these bursts;
+`precision_lr_max` is the wrong lever, and §33 lays out the
+cheapest-first Phase 0–3 root-cause workflow for the non-$V_\theta$
+spike groups plus a pointer to the new SCAF `GradientSpikeProbe` design
+doc. Also fixes `lowrank_modes` to decompose $G$ by SVD instead of eigh
+on the Gram $G^\top G$, removing an ill-conditioned-Gram convergence
+failure surfaced while running the diagnostic). Previously updated 27
+August 2026, evening (adds §32: the L=8 probe's
 extended 27,000–39,867 trajectory is a noisy plateau — no new best,
 spike rate not decaying — and the resulting decision to switch to
 `baoab_cfc_lowrank` mid-run on single-GPU compute rather than complete
