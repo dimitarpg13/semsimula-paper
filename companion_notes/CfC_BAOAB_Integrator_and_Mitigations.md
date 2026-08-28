@@ -1724,14 +1724,72 @@ flowchart TD
     NV --> RN
 ```
 
-**Phase 0 — mine what is already logged (no code change).** With
-`GRAD_SPIKE_DEBUG=True` the loop already writes an `event: grad_spike` record
-(top-8 pre-clip groups + loss breakdown) to `RESULTS_DIR/training_log.jsonl`,
-plus a watchdog record on every reload. Load that file, filter those events
-for the L=8 run, and build (a) a per-group grad-norm time series and (b) a
-spike table mapping step to ranked groups. This answers the first-order
-question — *which group leads each burst, and is it always the same one* —
-from data already on disk.
+**Phase 0 — mine what is already logged. Status: DONE (28 August 2026),
+findings below.** With `GRAD_SPIKE_DEBUG=True` the loop already writes an
+`event: grad_spike` record (top-8 pre-clip groups + loss breakdown) to
+`RESULTS_DIR/training_log.jsonl`, plus a watchdog record on every reload.
+Mining the L=8 run's log (964 lines, steps 50–40,900, downloaded from
+Drive) answers the first-order question — *which group leads each burst,
+and is it always the same one* — with no new run, no code change, and no
+Phase 1/2 capture needed:
+
+| population | n | lead: `depth_code` | lead: E/P (tied) | other |
+|:---|---:|---:|---:|---:|
+| `grad_spike` events, pre-clip < 200 | 42 | 32 (76%) | 7 (17%) | 3 (7%) |
+| `grad_spike` events, pre-clip ≥ 200 | 9 | 4 (44%) | 5 (56%) | 0 |
+| `watchdog_hard_reload` events (32,139 / 34,091) | 2 | 0 (0%) | 2 (100%) | 0 |
+
+(51 `grad_spike` events total, threshold 100, plus the 2 hard triggers;
+zero EMA `watchdog_reload` events occurred in this run — every reload was
+a hard trigger, consistent with §32.1.) Two findings fall out of this:
+
+1. **`depth_code` dominates the small/frequent end** (76% lead-share
+   below pre-clip 200, and in the top-3 breakdown 94% of the time across
+   all 51 events) — it is the single most informative "leading indicator"
+   group for the run's baseline spikiness.
+2. **But at the severe end, leadership flips to `E`/`P`, and they are
+   *always* tied for first at both hard triggers** — `E`=413.24/`P`=413.24
+   at step 32,139, `P`=3106.93/`E`=3106.92 at step 34,091 (agreement to
+   4 significant figures at the larger of the two). This is not a
+   coincidence: `model_parf.py` defines
+   `h0 = self.E(x) + self.P[position_offset:position_offset+T]` — the
+   token embedding and the *additively combined* positional embedding.
+   Both receive gradient as different linear reductions
+   (scatter-by-token-id vs. sum-over-batch-at-each-position) of the exact
+   same upstream tensor $\partial L/\partial h_0$, which is why their
+   *norms* track so closely without the parameters being tied. (`E` is
+   *also* weight-tied to the output logits projection,
+   `logits = h_L @ self.E.weight.T`, so it has a second, direct gradient
+   source P entirely lacks — the fact that E and P still agree this
+   closely even so implies that direct output-side contribution is small
+   next to the embedding-boundary one, i.e. **the crisis signal reaching
+   `E`/`P` is overwhelmingly the one that has been backpropagated through
+   all $L$ layers back to $h_0$, not a locally-large output-layer
+   gradient.**)
+
+**Reading the two findings together points at a cascade, not two
+independent culprits.** The severity-band split (44%→56% for `depth_code`
+vs. E/P moving from the <200 to the ≥200 band, then 0%→100% at the two
+hard triggers) looks like a single mechanism crossing a threshold, not a
+population of unrelated causes: `depth_code`'s own gradient (present at
+every layer, per §33.4) is the visible signal while a disturbance is
+still small and local; once it is large enough, the same disturbance
+propagates backward through the $L=8$ stack and is amplified layer over
+layer (the second-order force cascade of §23.2, the boundary-layer
+`depth_code` growth of §27), arriving at the embedding boundary the
+*largest* it will ever be simply because that is the far end of the
+backward pass. This yields a sharp, falsifiable prediction for Phase 2,
+once it has a capture to work with: **the per-layer $h$-gradient-norm
+profile at a hard trigger should show growth from layer $L-1$ toward
+layer $0$ (cascade amplification), not an isolated spike confined to one
+interior layer** — and `depth_code`'s own per-layer grad norm should be
+large at whichever layer the amplification *starts*, even if it is no
+longer the largest single number by the time gradient reaches $E$/$P$.
+This refines candidate hypothesis 4 in §33.4 below: it is not necessarily
+that `depth_code` pushes $V_\theta$ into a stiff regime specifically, but
+that it (or something correlated with it) seeds a disturbance the
+existing $L$-layer cascade amplifies regardless of which downstream
+mechanism carries it.
 
 One subtlety must be corrected for at this stage: the scalar `grad_norm` the
 watchdog thresholds on is `sqrt(sum of gn_k^2)` over groups **excluding**
@@ -1739,7 +1797,10 @@ watchdog thresholds on is `sqrt(sum of gn_k^2)` over groups **excluding**
 the reverse channel is the true instigator, the aggregate under-reports it and
 the hard trigger only fires once the disturbance bleeds into an *included*
 group. Read the per-group breakdown (`_last_pg_norms`), never the single
-aggregate, when attributing a burst.
+aggregate, when attributing a burst. (`reverse_channel_scale` is in fact in
+the top-8 breakdown of 50 of the 53 events mined above, including both hard
+triggers — always behind `depth_code`/E/P, never masking a trigger outright
+in this run, but consistently present.)
 
 **Phase 1 — capture the offending batch. Status: IMPLEMENTED (28 August
 2026), notebook `Cell 6` (config block + training loop).** The `_prereload`
@@ -1850,26 +1911,49 @@ first backward-aware probe — are in the SCAF design document
 The instrumentation above is designed to separate these, which the raw
 grad-norm log alone cannot:
 
+- **Cascade amplification through the $L=8$ stack (favoured by §33.3
+  Phase 0's findings).** `depth_code` (or something correlated with it)
+  seeds a disturbance that is small and local while it is small, then
+  gets amplified layer-over-layer on the way back to $h_0$ (the
+  second-order force cascade of §23.2, the boundary-layer growth of
+  §27) — consistent with `depth_code` leading 76% of smaller spikes while
+  `E`/`P` (which only ever see the *cumulative* signal that has
+  backpropagated through every layer, §33.3 Phase 0) take over 100% of
+  the time at the two severe hard triggers. Predicts a per-layer
+  $h$-gradient-norm profile that *grows* from layer $L-1$ toward layer
+  $0$, not an isolated single-layer spike.
 - **Sharp-softmax Jacobian** in the creation gate or reverse channel (small
   $\tau$ / saturated logits) — batch-triggered, transient.
 - **Non-conservative reverse-channel kick** — a large $Q_{\mathrm{force}}$ on
   particular tokens injected via $\tanh(s).Q_{\mathrm{force}}$; note this
-  channel is the one masked from the watchdog aggregate (§33.3, Phase 0).
+  channel is the one masked from the watchdog aggregate (§33.3, Phase 0),
+  though the mined log shows it present (if never leading) in 50/53 events.
 - **Hard salience/threshold gating** in the register path creating
   near-discontinuous gradients at the 0.005 boundary.
 - **`depth_code` pushing $V_\theta$ into a stiff regime** for particular token
   contexts — this would re-implicate $V_\theta$ *indirectly* (via the shifted
   xi, not via $B_k$ magnitude) and would show up as correlated `depth_code`
-  and $V_\theta$ grads at the same boundary layer.
+  and $V_\theta$ grads at the same boundary layer. (A special case of the
+  cascade hypothesis above if $V_\theta$'s own layer-local amplification
+  turns out to be the specific mechanism carrying the disturbance forward;
+  a distinct, competing mechanism if the amplification instead runs
+  through the dynamics independent of $V_\theta$'s curvature.)
 
 ### 33.5 Status and next step
 
-**§33.1 done (both bracket points); §33.3 Phases 1 and 2 done (code
-landed, not yet run against a real crisis); Phase 0 log-mining and a fresh
-GRAD_NORM_HARD_TRIGGER event (to actually exercise Phases 1/2) are the
-immediate next steps.** The bracket measurement is complete: $B_k$ is
-modestly and non-monotonically elevated at both crises but far too small
-in magnitude to be the primary driver. Phase 1 (spike-batch capture) and
+**§33.1 done (both bracket points); §33.3 Phase 0 done — cascade
+hypothesis identified from the mined log; Phases 1 and 2 done (code
+landed, not yet run against a real crisis); a fresh GRAD_NORM_HARD_TRIGGER
+event (to actually exercise Phases 1/2 and test the per-layer growth
+prediction) is the immediate next step.** The bracket measurement is
+complete: $B_k$ is modestly and non-monotonically elevated at both crises
+but far too small in magnitude to be the primary driver. Phase 0 mining of
+the L=8 run's `training_log.jsonl` (downloaded from Drive, 964 lines,
+steps 50–40,900) found `depth_code` leading 76% of smaller (<200) spikes
+but `E`/`P` — tied, to 4 significant figures, at both severe events —
+leading 100% of the two hard triggers, which reads as a single
+cascade-amplification mechanism crossing a severity threshold rather than
+two unrelated culprits (§33.3, §33.4). Phase 1 (spike-batch capture) and
 Phase 2 (`replay_spike_batch`, per-parameter/per-layer/activation-extreme
 forensics) are implemented in the training notebook (`Cell 6`'s config
 and loop, and the new `Cell 6d`) — but they were added *after* the two
@@ -1900,7 +1984,18 @@ The anisotropic Gaussian V_theta is in
 SCAF stiffness audit (Phase 7b/7c Weyl bound) in the `stiffness_audit` branch
 of `semsimula-scaf` (`src/scaf/probes/stiffness.py`).*
 
-*Last updated: 28 August 2026, later night (implements §33.3 Phases 1 and
+*Last updated: 28 August 2026, latest (§33.3 Phase 0 done: mined the L=8
+run's `training_log.jsonl` (964 lines, steps 50-40,900, downloaded from
+Drive) for `grad_spike`/`watchdog_hard_reload` events. `depth_code` leads
+76% of smaller (pre-clip < 200) spikes but 0% of the two severe hard
+triggers, where `E`/`P` (token/positional embedding, tied via
+$h_0 = E(x) + P$) lead 100% of the time, agreeing to 4 significant figures
+at the larger trigger -- read together as one cascade-amplification
+mechanism crossing a severity threshold, not two independent culprits.
+§33.3/§33.4/§33.5 updated with the finding, the E/P mechanism (via
+`model_parf.py`), and the resulting per-layer-growth prediction for Phase
+2 to test against the run's next hard trigger). Previously updated 28
+August 2026, later night (implements §33.3 Phases 1 and
 2 in `colab_fock_cfc_baoab_aniso_gaussian_openwebtext_d384.ipynb`: `Cell 6`
 gains `CAPTURE_SPIKE_BATCH`/`SPIKEBATCH_SNAPSHOT_MAX_KEEP` plus a
 pre-`optim.step()` capture of RNG state, exact microbatches, and (only on a
