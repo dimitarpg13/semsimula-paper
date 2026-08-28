@@ -1448,6 +1448,103 @@ change.
 
 ---
 
+## 32. L=8 `baoab_cfc` Baseline: Extended Trajectory (steps 27,000–39,867) and the Decision to Switch Mid-Run
+
+This section records the L=8 probe's behaviour for ~13,000 further steps
+past the step-27,000 best (extending §31's preamble, which covered only
+the two hard-trigger events themselves), and the resulting decision to
+switch this run to `baoab_cfc_lowrank` before it reaches `TOTAL_STEPS`
+rather than let the plain-`baoab_cfc` arm run to completion.
+
+### 32.1 The extended trajectory is a noisy plateau, not a decreasing trend
+
+Across steps 30,000–39,867 (all still within the WSD **stable** phase,
+LR pinned at 3e-4 until step 65,000):
+
+- **No new best.** Every eval PPL from step 30,500 through 39,500 landed
+  in a 101–113 band; the running best has stayed frozen at 100.47 (step
+  27,000) the entire time.
+- **Spikes did not slow down.** 33 pre-clip spikes >100 occurred over
+  ~8,600 steps (steps 31,272–39,867) — one every ~260 steps on average —
+  and the rate is essentially unchanged before vs. after the second
+  hard-trigger (18 of the 33 in the 5,776 steps following step 34,091,
+  max 265.4). Two of the 33 (701.1 at step 32,139; 5,864.9 at step
+  34,091) were severe enough to trigger `GRAD_NORM_HARD_TRIGGER` and
+  force a full reload to the step-27,000 checkpoint, each discarding
+  several thousand steps of intervening optimizer state.
+- **A faint downward drift is visible underneath the noise, though.**
+  The five evals immediately after the second reload (34,500–36,500)
+  average 107.71; the five most recent at the time of this note
+  (37,500–39,500) average 103.48, briefly touching 101.46 at step 38,000
+  before another spike pushed it back up. So this is not simply frozen
+  noise around a fixed level — there is slow, bumpy net progress — but
+  it has not yet recovered past the pre-spike best, ~13,000 steps later.
+
+**Reading.** This is consistent with, and adds a second, independent
+line of evidence for, §28.6's amplification mechanism and §28.2b's
+"$B_k$ keeps growing, unbounded, no plateau" measurement: nothing in
+plain `baoab_cfc` bounds the off-diagonal channel, so there is no
+structural reason for the spike rate to decay on its own, and it hasn't,
+over an interval nearly 2.5x longer than the one analysed in §31's
+preamble.
+
+### 32.2 Will it converge below 100 PPL by step 100,000?
+
+Two effects pull in opposite directions, and neither is resolved by the
+data in hand:
+
+- **Against:** the driving mechanism (unbounded $B_k$ curvature) has no
+  reason to weaken with further training under plain `baoab_cfc` — if
+  anything §28.2b's measurements suggest it should compound, not fade.
+- **For:** the run has not yet reached the WSD **decay** phase
+  (65,000→100,000, LR 3e-4 → floor 1.5e-5). WSD-style schedules
+  typically produce much of their net improvement during this anneal —
+  a shrinking LR directly shrinks the magnitude of *every* gradient
+  step, spike or not — so both the instability and the underlying loss
+  could improve substantially once decay starts, independent of whether
+  the off-diagonal channel itself is ever fixed.
+
+Net: a soft landing somewhere near, but probably not dramatically below,
+100 PPL by step 100,000 is plausible; a clean, convincing win is not
+supported by the trend so far. Not enough of the stable-phase budget
+has gone to net progress (vs. fighting and recovering from spikes) to
+be confident either way from trend extrapolation alone.
+
+### 32.3 Decision: switch to `baoab_cfc_lowrank` now rather than complete this arm to 100,000
+
+**Decided 27 August 2026, given single-GPU compute (no parallel session
+available for a simultaneous baseline).** Reasoning:
+
+1. §32.1's ~13,000 steps already constitute a solid, well-characterized
+   "before" picture (frozen best, ~260-step average spike interval, two
+   forced reloads) — completing the remaining ~60,000 steps under the
+   same integrator mostly re-confirms this rather than adding new
+   information, since the driving mechanism is not expected to resolve
+   itself (§32.1's reading).
+2. The comparison that actually matters — whether `baoab_cfc_lowrank`
+   changes the trajectory — only requires resuming from the *same*
+   step-27,000 checkpoint under the new integrator; it does not require
+   first finishing the plain-`baoab_cfc` arm to `TOTAL_STEPS`.
+3. On a single GPU, finishing a run already showing this signature is a
+   worse use of the one available compute slot than testing the
+   implemented-and-ready fix (§29.2/§29.3, §29.7) sooner.
+4. Nothing here is destroyed: the plain-`baoab_cfc`-to-100,000 baseline
+   can still be run later from the same step-27,000 checkpoint whenever
+   a second GPU/session is available, using
+   `RESUME_VARIANT_TAG_OVERRIDE` (Cell 1b) to redirect back to this run's
+   own checkpoint folder.
+
+**Early read to watch for after switching:** compare the spike
+frequency/magnitude over the first 5,000–10,000 steps past 27,000 under
+`baoab_cfc_lowrank` against §32.1's ~260-step/spike, ≤265 (soft) /
+up to 5,865 (hard) baseline from the same step range under plain
+`baoab_cfc`. A visibly lower spike rate and/or the absence of a new
+hard-trigger over a comparable window would be the first concrete
+evidence the fix is doing what §29.2's theory predicts, ahead of any
+`precision_lr_max` tuning (§31).
+
+---
+
 *Companion note to `Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`.
 The CfC/BAOAB propagator is implemented in
 `notebooks/conservative_arch/parf/cfc_baoab.py` and wired into the layer step
@@ -1459,13 +1556,17 @@ The anisotropic Gaussian V_theta is in
 SCAF stiffness audit (Phase 7b/7c Weyl bound) in the `stiffness_audit` branch
 of `semsimula-scaf` (`src/scaf/probes/stiffness.py`).*
 
-*Last updated: 27 August 2026 (implements §31.3's SCAF `sigma_lr_*`
-percentiles and adds the equivalent `sigma_lr_report` notebook diagnostic;
-broadens §31's scope to the L=8 probe after its own escalating
-32,139/34,091 hard-watchdog bursts, with a bracket checkpoint pair already
-on hand). Previously updated 24 August 2026 (adds §24.4's depth-probe
-update and §31's SCAF audit plan). Split out of the parent note (former
-§24-§28,
+*Last updated: 27 August 2026, evening (adds §32: the L=8 probe's
+extended 27,000–39,867 trajectory is a noisy plateau — no new best,
+spike rate not decaying — and the resulting decision to switch to
+`baoab_cfc_lowrank` mid-run on single-GPU compute rather than complete
+the plain-`baoab_cfc` arm to 100,000). Earlier the same day: implements
+§31.3's SCAF `sigma_lr_*` percentiles and adds the equivalent
+`sigma_lr_report` notebook diagnostic; broadens §31's scope to the L=8
+probe after its own escalating 32,139/34,091 hard-watchdog bursts, with a
+bracket checkpoint pair already on hand. Previously updated 24 August
+2026 (adds §24.4's depth-probe update and §31's SCAF audit plan). Split
+out of the parent note (former §24-§28,
 content unchanged) for maintainability. Sections 29-30 record the principled
 directions beyond the $B_k$ clamp and the concrete low-rank exponential
 substep. This revision marks §29.2 (`integrator='baoab_cfc_lowrank'`) and
