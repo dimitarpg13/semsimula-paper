@@ -1425,28 +1425,78 @@ hard-watchdog evidence of the same mechanism).
 
 ### 31.6 Status
 
-**§31.3 done; §31.2/§31.4/§31.5 not yet started.** The SCAF probe change
-(`sigma_lr_*` percentiles, §31.3) landed 27 August 2026, and an
-equivalent no-`scaf`-dependency diagnostic (`sigma_lr_report`) was added
-directly to the training notebook (Cell 6b-2) for a quicker in-Colab
-check. Remaining work is unchanged in kind, but now has two candidate
-runs to bracket rather than one:
+**§31.3 done; L=8's §31.2/§31.4 done (§31.7); §31.5 and L=16's §31.2/§31.4
+not yet started.** The SCAF probe change (`sigma_lr_*` percentiles, §31.3)
+landed 27 August 2026, and an equivalent no-`scaf`-dependency diagnostic
+(`sigma_lr_report`) was added directly to the training notebook (Cell
+6b-2) for a quicker in-Colab check. Two candidate runs were in scope to
+bracket:
 
-- **L=16** (the original scope): needs the g0.1/L=16 Drive folder
+- **L=16** (the original scope): still needs the g0.1/L=16 Drive folder
   inspected for `_prereload` snapshots in the 6,297–6,676 range.
-- **L=8** (added this update, §31 preamble): the bracket pair is already
-  identified and does not need a separate capture run —
+- **L=8** (added this update, §31 preamble): the bracket pair was already
+  on hand and needed no separate capture run —
   `..._best.pt` at step 27,000 (healthy) against
   `..._step32139_prereload.pt` / `..._step34091_prereload.pt`
   (spike-regime), all on the live `..._L8probe_..._g0.1_baoab_cfc` Drive
-  folder.
+  folder. **This bracket has now been run through §31.4's logic — see
+  §31.7 — and the answer is "no valid budget window; leave
+  `PRECISION_LR_MAX = None`."**
 
-Either pair can go through §31.4's bracketing logic to propose a
-`precision_lr_max` value, then §31.5's A/B (`baoab_cfc_lowrank` +
-that budget, vs. the `baoab_cfc` baseline) — both integrator paths are
-implemented and unit-tested (§29.7), so the A/B is an opt-in notebook
-config change (`INTEGRATOR`, `PRECISION_LR_MAX` in Cell 0), not a code
-change.
+§31.5's A/B (`baoab_cfc_lowrank` + a tuned budget, vs. the `baoab_cfc`
+baseline) remains available as an opt-in notebook config change
+(`INTEGRATOR`, `PRECISION_LR_MAX` in Cell 0) once/if the L=16 bracket
+produces a workable window, or as a diagnostic falsification run on L=8
+using the non-binding value discussed in §31.7.
+
+### 31.7 L=8 budget selection: the recipe's own preconditions fail — leave `PRECISION_LR_MAX = None`
+
+Running the three checkpoints (§33.1) through §31.4's two-step recipe:
+
+**Step 1 (qualitative gate) fails.** §31.4 step 1 requires `sigma_lr_p99` /
+`sigma_lr_max` to be *visibly* larger on the spike-regime checkpoints than
+on the healthy one. They are not: the largest gap is +24% (p50, and only
+at step 32,139) and the *p99/max* gap that step 2 actually keys off is a
+near-flat +1.0% to +14.5% (§33.1's table). Per the recipe's own written
+rule, this means "$B_k$ growth isn't actually the driver of *this
+particular* burst and `precision_lr_max` is the wrong lever for it" — i.e.
+the recipe self-terminates here, matching §33's independent conclusion via
+the per-group grad log and the depth-cascade mechanism.
+
+**Step 2 (the interval) is vacuous even if forced.** Attempting it anyway
+for completeness: the lower bound ("above healthy's p95–p99") is
+$\approx 1{,}050$–$1{,}100$; the upper bound ("below spike-regime's
+p99/max") should be the *tighter* of the two spike checkpoints, and here
+is the decisive number — **the healthy checkpoint's own `max` (6,364.81)
+is essentially identical to spike_34091's `max` (6,427.16, +1.0%) and only
+14.5% below spike_32139's `max`.** The long tail of $\sigma_{\max}(B_k)^2$
+is not a spike-exclusive phenomenon; it is already present at the best
+checkpoint the run has ever produced (PPL 100.47). Any budget tight enough
+to bind on the spike tail (roughly below 6,400–7,300) necessarily clips
+the healthy checkpoint's own tail too — there is no interval that
+isolates "runaway" from "healthy," because on this evidence there isn't
+one.
+
+**Recommendation for the live L=8 run: leave `PRECISION_LR_MAX = None`.**
+Picking any value in the only mathematically available window
+(roughly 1,100–6,400, and recall §31.4 step 3: the true budget should be
+biased *upward* from a naive read of that window because the Frobenius
+cap is conservative by up to `rank`$=4$) would flatten well geometry that
+the healthy checkpoint is actively using — a real cost in modelling
+capacity — for a mechanism §33.2 has already shown is not the bottleneck.
+This is consistent with, and sharpens, §33.2's "sound hygiene but not the
+lever" framing: it isn't just that `precision_lr_max` is a weak lever
+here, it's that this particular run's data contains no value that would
+act as a *targeted* one.
+
+**If a falsification A/B (§31.5) is still wanted**, run it with the
+understanding that any chosen value is a blunt, non-targeted probe rather
+than a tuned fix — e.g. `PRECISION_LR_MAX` $\approx 2{,}500$ (comfortably
+above every checkpoint's `p99`, so the ordinary bulk is untouched, while
+still meaningfully compressing the `p99.9`/`max` tail on *all three*
+checkpoints, healthy included) — and expect, per §33, little to no change
+in the burst rate. A clean negative result there would be further
+confirmation, not a surprise.
 
 ---
 
@@ -1776,12 +1826,21 @@ The anisotropic Gaussian V_theta is in
 SCAF stiffness audit (Phase 7b/7c Weyl bound) in the `stiffness_audit` branch
 of `semsimula-scaf` (`src/scaf/probes/stiffness.py`).*
 
-*Last updated: 28 August 2026, evening (§33.1 revised with the second
-bracket point: the step-32,139 prereload snapshot came back +3% to +24%
-above healthy — more elevated than step-34,091, despite firing first — so
-the bracket is a modest, non-monotonic elevation rather than a perfectly
-flat null result. The magnitude ($\lesssim 1.1\times$ in $\omega$) still
-rules out $B_k$ as the primary driver of the $>100\times$ grad-norm spikes;
+*Last updated: 28 August 2026, night (adds §31.7: ran the L=8 bracket
+through §31.4's own budget-selection recipe and it self-terminates at
+step 1 — no valid `precision_lr_max` window exists, because the
+"runaway" tail is already present in the best/healthy checkpoint
+(`max` 6,364.81, within 1.0% of spike_34091's 6,427.16 and only 14.5%
+below spike_32139's 7,285.88). Recommendation: leave
+`PRECISION_LR_MAX = None` on the live run; a non-targeted diagnostic
+value (~2,500) is noted for §31.5's optional falsification A/B only.
+§31.6's status line updated to match). Previously updated 28 August
+2026, evening (§33.1 revised with the second bracket point: the
+step-32,139 prereload snapshot came back +3% to +24% above healthy —
+more elevated than step-34,091, despite firing first — so the bracket is
+a modest, non-monotonic elevation rather than a perfectly flat null
+result. The magnitude ($\lesssim 1.1\times$ in $\omega$) still rules out
+$B_k$ as the primary driver of the $>100\times$ grad-norm spikes;
 §33.1/§33.2 text, table, and figure updated accordingly). Previously
 updated 28 August 2026 (adds §33: the L=8 `precision_lr_max` bracket pair
 was measured — $\sigma_{\max}(B_k)^2$ was within +8% at every percentile
