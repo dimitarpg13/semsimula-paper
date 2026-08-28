@@ -243,25 +243,42 @@ def lowrank_modes(
 
     Notes
     -----
-    Uses the Gram trick: the nonzero spectrum of ``G G^T`` (d x d) equals
-    that of ``M = G^T G`` (P x P), and if ``M w = lambda w`` then
-    ``u = G w / sqrt(lambda)`` is the matching unit eigenvector of
-    ``G G^T``.  The ``P x P`` eigenproblem is cheap even when ``d`` is large.
+    Computed from the SVD ``G = U_full diag(S) V^T``: the left singular
+    vectors ``U_full`` are the eigenvectors of ``L = G G^T`` and ``S**2``
+    are its eigenvalues, so the leading ``q`` columns / squared singular
+    values give the stiffest modes directly.  This avoids forming the Gram
+    ``G^T G`` (which squares the condition number and can make eigh's
+    divide-and-conquer driver fail to converge on degenerate spectra),
+    while staying cheap: the thin SVD costs ``O(d P^2)`` with ``P`` small.
     """
     Gd = G.detach()
     P = Gd.shape[-1]
-    M = Gd.transpose(-1, -2) @ Gd                       # (..., P, P) Gram
-    lam, W = torch.linalg.eigh(M)                       # ascending eigenpairs
 
-    q = P if max_modes is None else min(int(max_modes), P)
-    lam = lam[..., -q:]                                 # (..., q) largest q
-    W = W[..., -q:]                                     # (..., P, q)
+    # Decompose G directly by SVD rather than eigh on the Gram M = G^T G.
+    # The left singular vectors of G are the eigenvectors of L = G G^T and
+    # the singular values squared are its eigenvalues, so this yields the
+    # same modes / stiffnesses -- but WITHOUT forming G^T G, which squares
+    # the condition number and, on degenerate or repeated-eigenvalue
+    # spectra, makes LAPACK/cusolver's divide-and-conquer driver fail to
+    # converge ("_LinAlgError ... error code: 161").  SVD is markedly
+    # steadier on exactly those pathological batches, and its columns come
+    # out already orthonormal, so no 1/sqrt(lambda) renormalisation is
+    # needed.
+    try:
+        U_full, S, _ = torch.linalg.svd(Gd, full_matrices=False)
+    except RuntimeError:
+        # Last-resort retry on the CPU LAPACK path (gesdd/gesvd), which is
+        # often steadier than the GPU driver on ill-conditioned inputs.
+        U_cpu, S_cpu, _ = torch.linalg.svd(Gd.cpu(), full_matrices=False)
+        U_full, S = U_cpu.to(Gd), S_cpu.to(Gd)          # back to G's device
+
+    k = S.shape[-1]                                     # = min(d, P), usually P
+    q = k if max_modes is None else min(int(max_modes), k)
+    lam = S[..., :q] ** 2                               # (..., q) largest q (desc)
+    U = U_full[..., :, :q]                              # (..., d, q), unit cols
 
     keep = lam > floor                                  # (..., q) bool
-    inv_sqrt = torch.where(
-        keep, lam.clamp(min=floor).rsqrt(), torch.zeros_like(lam),
-    )                                                   # 0 on dropped modes
-    U = (Gd @ W) * inv_sqrt.unsqueeze(-2)               # (..., d, q), unit cols
+    U = U * keep.unsqueeze(-2)                          # zero inert directions
     kappa = torch.where(keep, lam, torch.zeros_like(lam))
     return U, kappa
 
