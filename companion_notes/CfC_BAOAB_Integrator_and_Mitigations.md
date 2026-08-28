@@ -1705,8 +1705,8 @@ each phase unlocks the next.
 ```mermaid
 flowchart TD
     P0["Phase 0 - mine the existing training log grad spike events"]
-    P1["Phase 1 - capture the offending batch at each watchdog trigger"]
-    P2["Phase 2 - replay one isolated forward plus backward and instrument it"]
+    P1["Phase 1 (implemented) - capture the offending batch on a hard trigger"]
+    P2["Phase 2 (implemented) - replay one isolated forward plus backward and instrument it"]
     P3["Phase 3 - productionize as a SCAF GradientSpikeProbe"]
     V{"which group layer op leads"}
     LV["V theta or B k implicated"]
@@ -1741,31 +1741,94 @@ the hard trigger only fires once the disturbance bleeds into an *included*
 group. Read the per-group breakdown (`_last_pg_norms`), never the single
 aggregate, when attributing a burst.
 
-**Phase 1 — capture the offending batch (small, high-leverage patch).** The
-`_prereload` snapshot preserves the *weights* at the crisis but not the
-*token batch* that caused it — which is exactly why the §33.1 fixed-seed probe
-could not reproduce the event. Extend `_reload_best` so that, alongside the
-`_prereload` weights, it also serialises the offending `(x, y)` ids and the
-RNG state. With the pair **(weights just before the bad step, exact batch)**
-the crisis forward+backward becomes deterministically replayable in isolation,
-as many times as needed.
+**Phase 1 — capture the offending batch. Status: IMPLEMENTED (28 August
+2026), notebook `Cell 6` (config block + training loop).** The `_prereload`
+snapshot preserves the *weights* at the crisis but not the *token batch*
+that caused it — which is exactly why the §33.1 fixed-seed probe could not
+reproduce the event, and it is *not* the pre-step weights either: by the
+time `_reload_best` runs, `optim.step()` has already applied the crisis
+update (§33.1's own bracket measured that post-update state, which is
+useful for a different question — "how stiff did $B_k$ get" — but the
+wrong state for replaying the forward+backward that *produced* the
+gradient). The implemented fix does not touch `_reload_best` itself;
+instead it moves the capture *earlier*, into the training loop, right
+after `grad_norm` is computed but **before** the `optim.step()` call that
+would mutate the weights:
 
-**Phase 2 — op- and layer-resolved forensics on the replay.** With the pinned
-pair, instrument one isolated backward:
+- A new `CAPTURE_SPIKE_BATCH` / `SPIKEBATCH_SNAPSHOT_MAX_KEEP` config pair
+  (mirroring `PRERELOAD_SNAPSHOT_MAX_KEEP`'s rotation policy) guards a new
+  branch that fires exactly when `GRAD_NORM_HARD_TRIGGER` is about to.
+- Two cheap, *unconditional* per-step additions feed it: the torch CPU/CUDA
+  RNG state is captured right after `optim.zero_grad()` (the Langevin
+  thermostat noise draw inside the forward pass consumes it, so replay
+  needs it to reproduce that draw bit-for-bit), and each microbatch's raw
+  `(xb, yb)` arrays are appended to a per-step list inside the
+  `GRAD_ACCUM` loop (bypassing `get_batch`'s own RNG entirely — the saved
+  arrays are replayed directly, so nothing needs to reproduce *which*
+  windows `get_batch` would have drawn).
+- Only in the rare case the hard trigger is about to fire does the
+  (comparatively expensive) full `model.state_dict()` CPU clone happen,
+  bundled with the batches/RNG state into a new
+  `{CKPT_PREFIX}_step{step}_spikebatch.pt` sidecar — a new, additive
+  artifact alongside (not replacing) `_prereload.pt`.
+- **Scope decision: hard-trigger only.** The slow EMA-based watchdog path
+  is a sustained drift across ~200 steps, not a single anomalous step, so
+  there is no one well-defined "offending batch" for it — that path is
+  left to Phase 0 log-mining (the `grad_spike` time series) rather than
+  forced into a single-batch replay it doesn't fit. Both of the run's
+  documented crises (701.1 at step 32,139; 5,864.9 at step 34,091, §32.1)
+  are hard triggers, so this scope covers the evidence in hand.
+
+**Phase 2 — op- and layer-resolved forensics on the replay. Status:
+IMPLEMENTED (28 August 2026), new notebook `Cell 6d`
+(`replay_spike_batch(step_tag)`).** Given a `_spikebatch.pt` bundle, the
+cell loads the pinned pre-step weights and RNG state into the live model,
+replays every captured microbatch through one isolated `backward()`, and
+instruments it with:
 
 - **per-parameter** grad norms (finer than per-group) to pinpoint the exact
   tensor — e.g. `creation_gate_qkv.log_tau` vs. `W_Q`, or a single
   `reverse_channel_scale[k]`;
-- **`register_full_backward_hook`** on each layer to localise *which* of the L
-  layers the gradient blows up at (gradient flows L to 0; a localised spike is
-  a strong signal, and dovetails with §27's boundary-layer finding);
+- **per-layer** grad attribution via a tensor hook (`h_new.register_hook`)
+  installed by temporarily wrapping whatever `_fock_layer_step` is
+  currently bound to (composing with the aniso depth-routing patch rather
+  than clobbering it) — there is no per-layer `nn.Module` to attach
+  `register_full_backward_hook` to (the $L$ layers share most submodules
+  through a plain Python loop, routed by `layer_idx`), so a tensor hook on
+  $h$ at each layer boundary is the mechanism that actually applies here;
 - **forward-activation extremes** at the numerically risky ops per group —
-  the creation-gate softmax logits and temperature
-  $\tau = \exp(\log\tau).\mathrm{clamp}(10^{-4})$, the cumulative-softmax
-  denominator $Z.\mathrm{clamp}(10^{-30})$, the reverse-channel softmax logits
-  and the reverse-channel `logit_scale.exp().clamp(max=100)`, the register salience
-  hard gate at threshold 0.005, the depth-code-shifted xi magnitude, and the
-  $V_\theta$ quadratic-form exponent.
+  the creation-gate softmax temperature
+  $\tau = \exp(\log\tau).\mathrm{clamp}(10^{-4})$ and its cumulative-softmax
+  weight (a direct hook on `forward_prefix`, which bypasses `__call__` and
+  so cannot be reached by a standard forward hook), the reverse-channel
+  `logit_scale.exp().clamp(max=100)` and the $Q_{\mathrm{force}}$ it
+  injects (a standard forward hook on `reverse_ch`), the destruction-gate
+  output, and the $V_\theta$ quadratic-form exponent and the depth-code-shifted
+  xi norm (recomputed from each per-channel bank's own public
+  `_components()` on the exact `(xi, h)` the forward call saw, via a
+  `with_kwargs=True` forward hook — no source-file changes to
+  `model_fock_parf_v2.py` / `model_fock_parf_multixi.py` /
+  `model_aniso_gaussian_vtheta.py` were needed).
+- **A fidelity check is built in:** the replayed matching-groups total is
+  compared against the `pre_clip_grad_norm` recorded at capture time; a gap
+  under a few percent is the signal that the RNG-state/batch capture
+  actually reproduced the crisis bit-for-bit (or close to it), and a large
+  gap is a warning that something about the replay is not exact before any
+  attribution conclusions are drawn from it. The replay also reports the
+  matching-groups total *and* the all-groups total side by side, so the
+  reverse-channel contribution the watchdog aggregate is blind to (§33.3
+  Phase 0's caveat) is visible directly rather than inferred.
+- **Non-pollution:** the cell saves the live model's weights, every
+  parameter's `.grad`, and the RNG state up front and restores all three
+  in a `finally` block, so resuming the training loop afterward is safe —
+  mirroring the SCAF `GradientSpikeProbe` design's save/zero/restore
+  contract before that probe exists.
+- **Caveat.** (a) and (b) above only touch already-used, documented
+  training-loop machinery and are exact. (c)'s hooks were derived from
+  reading the three model source files, not exercised against the live
+  model yet; each is independently try/except-guarded, so a
+  `[replay][WARN] could not instrument ...` line for any one of them
+  narrows down what to fix without sinking the rest of the report.
 
 ![Schematic of the Fock-PARFLM forward integrator drawn top to bottom, with the embedding, creation gate, PARF dynamics, reverse channel, and destruction gate stages in the centre column, the second-order backward gradient flow arrow on the left, and a right-hand column annotating the numerically risky op and per-group clip ceiling for each spiking group, marking the reverse-channel groups as excluded from the watchdog aggregate](images/scaf_spike_diag_forward_backward_map.png)
 
@@ -1801,15 +1864,26 @@ grad-norm log alone cannot:
 
 ### 33.5 Status and next step
 
-**§33.1 done (both bracket points); §33.3 Phase 0 is the immediate next
-step.** The bracket measurement is complete: $B_k$ is modestly and
-non-monotonically elevated at both crises but far too small in magnitude to
-be the primary driver. The cheapest next action is Phase 0 log-mining against
-the live L=8 run's `training_log.jsonl` (already on Drive), which may resolve
-the leading-group question with no new run; Phase 1 is the highest-leverage
-small patch and is what finally makes the crisis reproducible. The SCAF
-`GradientSpikeProbe` (Phase 3) is specified in the companion design doc but
-not yet implemented.
+**§33.1 done (both bracket points); §33.3 Phases 1 and 2 done (code
+landed, not yet run against a real crisis); Phase 0 log-mining and a fresh
+GRAD_NORM_HARD_TRIGGER event (to actually exercise Phases 1/2) are the
+immediate next steps.** The bracket measurement is complete: $B_k$ is
+modestly and non-monotonically elevated at both crises but far too small
+in magnitude to be the primary driver. Phase 1 (spike-batch capture) and
+Phase 2 (`replay_spike_batch`, per-parameter/per-layer/activation-extreme
+forensics) are implemented in the training notebook (`Cell 6`'s config
+and loop, and the new `Cell 6d`) — but they were added *after* the two
+existing hard triggers (steps 32,139 / 34,091), which therefore have no
+`_spikebatch.pt` sidecar to replay; the harness needs the run to hit a
+*new* `GRAD_NORM_HARD_TRIGGER` (expected roughly every ~1,000–2,000 steps
+per §32.1's rate) before it has real data to run on. Phase 0 log-mining
+against the live L=8 run's `training_log.jsonl` (already on Drive) remains
+available immediately, with no new run needed, and may resolve the
+leading-group question before Phase 2 even gets a capture to work with.
+The SCAF `GradientSpikeProbe` (Phase 3) is specified in the companion
+design doc but not yet implemented; Phases 1/2 landing first in the
+notebook is intentional (§33.3's "manual harness proves out" precondition
+for productionising it).
 
 ![Schematic of the GradientSpikeProbe data flow left to right: pinned checkpoint weights and a captured offending batch feed into one isolated forward plus backward run under a save-zero-restore grad invariant, producing per-group per-parameter per-layer grad-norm quantiles and forward-activation extremes, which yield an attribution verdict that branches to either the precision-lr-max lever or a targeted per-group fix](images/scaf_spike_diag_probe_pipeline.png)
 
@@ -1826,7 +1900,22 @@ The anisotropic Gaussian V_theta is in
 SCAF stiffness audit (Phase 7b/7c Weyl bound) in the `stiffness_audit` branch
 of `semsimula-scaf` (`src/scaf/probes/stiffness.py`).*
 
-*Last updated: 28 August 2026, night (adds §31.7: ran the L=8 bracket
+*Last updated: 28 August 2026, later night (implements §33.3 Phases 1 and
+2 in `colab_fock_cfc_baoab_aniso_gaussian_openwebtext_d384.ipynb`: `Cell 6`
+gains `CAPTURE_SPIKE_BATCH`/`SPIKEBATCH_SNAPSHOT_MAX_KEEP` plus a
+pre-`optim.step()` capture of RNG state, exact microbatches, and (only on a
+`GRAD_NORM_HARD_TRIGGER`) a CPU clone of the pre-step weights, into a new
+`_spikebatch.pt` sidecar; new `Cell 6d` adds `replay_spike_batch(step_tag)`,
+a non-polluting isolated replay with per-parameter grad norms, a per-layer
+`h`-tensor hook composed with the existing depth-routing patch, best-effort
+forward-activation-extreme hooks on the creation gate/reverse
+channel/V_theta/destruction gates, and a built-in fidelity check against
+the originally recorded `pre_clip_grad_norm`. Scoped to hard triggers only
+— the EMA path has no single offending batch. §33.3/§33.5 text and the
+Phase-0-3 mermaid diagram updated to mark Phases 1/2 implemented; no
+`_spikebatch.pt` exists yet for the two already-passed hard triggers
+(32,139/34,091), so the harness awaits the run's next one). Previously
+updated 28 August 2026, night (adds §31.7: ran the L=8 bracket
 through §31.4's own budget-selection recipe and it self-terminates at
 step 1 — no valid `precision_lr_max` window exists, because the
 "runaway" tail is already present in the best/healthy checkpoint
