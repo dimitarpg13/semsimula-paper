@@ -25,7 +25,7 @@ live in the same `companion_notes/` folder.
 30. [Concrete Sketch: The Low-Rank Exponential Substep](#30-concrete-sketch-the-low-rank-exponential-substep)
 31. [SCAF Phase 7b/7c Audit Plan for Tuning precision_lr_max (L=16, and now L=8)](#31-scaf-phase-7b7c-audit-plan-for-tuning-precision_lr_max-l16-and-now-l8)
 32. [L=8 baoab_cfc Baseline: Extended Trajectory and the Decision to Switch Mid-Run](#32-l8-baoab_cfc-baseline-extended-trajectory-steps-2700039867-and-the-decision-to-switch-mid-run)
-33. [The Bracketing Result Came Back Flat: $B_k$ Is Not the Driver, and a Root-Cause Workflow for the Non-$V_\theta$ Spikes](#33-the-bracketing-result-came-back-flat-b_k-is-not-the-driver-and-a-root-cause-workflow-for-the-non-v_theta-spikes)
+33. [The Bracketing Result Is Modest and Non-Escalating: $B_k$ Is Not the Primary Driver, and a Root-Cause Workflow for the Non-$V_\theta$ Spikes](#33-the-bracketing-result-is-modest-and-non-escalating-b_k-is-not-the-primary-driver-and-a-root-cause-workflow-for-the-non-v_theta-spikes)
 
 ---
 
@@ -1547,7 +1547,7 @@ evidence the fix is doing what §29.2's theory predicts, ahead of any
 
 ---
 
-## 33. The Bracketing Result Came Back Flat: $B_k$ Is Not the Driver, and a Root-Cause Workflow for the Non-$V_\theta$ Spikes
+## 33. The Bracketing Result Is Modest and Non-Escalating: $B_k$ Is Not the Primary Driver, and a Root-Cause Workflow for the Non-$V_\theta$ Spikes
 
 §31.4 step 1 wrote down an explicit escape hatch before any numbers were in
 hand: if the raw low-rank curvature $\sigma_{\max}(B_k)^2$ does **not** grow
@@ -1556,26 +1556,50 @@ isn't actually the driver of *this particular* burst and `precision_lr_max`
 is the wrong lever for it." This section records that the L=8 bracket pair
 (§31.6) was measured on 28 August 2026 — and the escape hatch fired.
 
-### 33.1 The measurement: healthy vs. spike-regime are within +8% at every percentile
+### 33.1 The measurement: healthy vs. both spike-regime snapshots are elevated by +1% to +24%, non-monotonically
 
-Both checkpoints from §31.6 were run through the Cell 6b-2 `sigma_lr_report`
-diagnostic (the dependency-free notebook mirror of SCAF's `sigma_lr_*`
-percentiles, §31.3), each on the same fixed seed-0 probe batch, pooling
-1,310,720 samples over layers, wells, and xi-channels:
+All three checkpoints from §31.6 were run through the Cell 6b-2
+`sigma_lr_report` diagnostic (the dependency-free notebook mirror of SCAF's
+`sigma_lr_*` percentiles, §31.3), each on the same fixed seed-0 probe batch,
+pooling 1,310,720 samples over layers, wells, and xi-channels:
 
-| percentile | healthy (step 27,000 best, PPL 100.47) | spike-regime (step 34,091 prereload, hard trigger) | delta |
-|:---|---:|---:|---:|
-| p50 | 282.11 | 305.59 | +8.3% |
-| p90 | 663.61 | 700.53 | +5.6% |
-| p99 | 1047.00 | 1082.80 | +3.4% |
-| p99.9 | 2322.33 | 2499.07 | +7.6% |
-| max | 6364.81 | 6427.16 | +1.0% |
+| percentile | healthy (step 27,000 best, PPL 100.47) | spike-regime (step 32,139 prereload, 1st hard trigger) | delta vs. healthy | spike-regime (step 34,091 prereload, 2nd hard trigger) | delta vs. healthy |
+|:---|---:|---:|---:|---:|---:|
+| p50 | 282.11 | 350.07 | +24.1% | 305.59 | +8.3% |
+| p90 | 663.61 | 758.32 | +14.3% | 700.53 | +5.6% |
+| p99 | 1047.00 | 1145.95 | +9.5% | 1082.80 | +3.4% |
+| p99.9 | 2322.33 | 2514.92 | +8.3% | 2499.07 | +7.6% |
+| max | 6364.81 | 7285.88 | +14.5% | 6427.16 | +1.0% |
 
-![Grouped bar chart of sigma_max(B_k)^2 percentiles for the healthy step-27000 checkpoint versus the spike-regime step-34091 prereload snapshot, on a log y-axis, showing the two distributions are within +8% at every percentile, annotated with the conclusion that B_k growth is not the driver of these bursts](images/scaf_spike_diag_sigma_lr_bracket_result.png)
+![Grouped bar chart of sigma_max(B_k)^2 percentiles for the healthy step-27000 checkpoint versus both spike-regime prereload snapshots (step 32139 and step 34091), on a log y-axis, showing both spike checkpoints modestly and non-monotonically elevated above healthy, annotated with the conclusion that B_k is at most a weak correlate, not the driver, of these bursts](images/scaf_spike_diag_sigma_lr_bracket_result.png)
 
-The two distributions are the same shape, shifted by a few percent. There is
-no order-of-magnitude escalation — indeed the tail (`max`) barely moves at
-all (+1.0%). Both are finite; the `PPL=nan` recorded in the prereload
+With the second bracket point in hand, the picture is more nuanced than a
+flat null result, but the qualitative conclusion is unchanged. Both
+spike-regime snapshots sit consistently *above* healthy at every percentile
+(ten comparisons, ten positive deltas) — this is a real, repeatable effect,
+not measurement noise straddling zero. But two features argue against $B_k$
+being the driver of the bursts rather than a weak correlate of them:
+
+- **The magnitude is far too small.** The largest deltas (p50 +24%, max
+  +14–15%) correspond to at most a $\sqrt{1.24}\approx 1.11\times$ increase
+  in the well's own frequency $\omega\propto\sqrt{\kappa}$ — nowhere near
+  the scale of the recorded pre-clip grad-norms at these two hard triggers
+  (701.1 at step 32,139; 5,864.9 at step 34,091; §32.1), both an order of
+  magnitude or more above the `GRAD_NORM_HARD_TRIGGER=500.0` threshold and
+  far above the sub-100 norms typical of untroubled steps. A curvature
+  effect of at most $1.11\times$ cannot by itself produce spikes of that
+  size.
+- **It does not escalate monotonically.** Step 32,139 fired *first* and is
+  the *more* elevated of the two snapshots at four of five percentiles
+  (p50, p90, p99, max); step 34,091, which fired ~2,000 steps later, is
+  closer to healthy. If $B_k$ were progressively drifting toward the
+  crisis, later triggers should show more elevation than earlier ones, not
+  less. The pattern is consistent instead with each hard trigger being an
+  **independent excursion** from the same step-27,000 reload point — two
+  separate draws of "how large $B_k$'s bulk happens to be by the time some
+  other mechanism trips the watchdog," not a single escalating trend.
+
+Both snapshots are finite; the `PPL=nan` recorded in each prereload
 snapshot's metadata (an expected artefact of a snapshot taken at the instant
 the loss went non-finite, not a fresh validation pass) did not contaminate
 the $B_k$ measurement.
@@ -1583,21 +1607,24 @@ the $B_k$ measurement.
 **Caveat on the probe batch.** `sigma_lr_report` evaluates $B_k$ on a fixed
 generic batch, so it measures the *weights'* capacity to produce large
 $\sigma_{\max}(B_k)^2$ on a typical input, not what happened on the specific
-batch that tripped the watchdog at step 34,091 ($B_k$ is context-dependent,
-`context_components(xis)`). The flat result therefore rules out a *drifting
-baseline* — the parameters defining $B_k$ did not migrate into a permanently
-stiffer regime going into the crisis — but does not by itself rule out a
-transient, batch-specific $B_k$ excursion on the offending step. The second
-bracket point (step 32,139) and, more decisively, the per-group gradient log
-at the crisis step (§33.3) are what close that gap.
+batch that tripped the watchdog at each crisis step ($B_k$ is
+context-dependent, `context_components(xis)`). The modest-and-non-monotonic
+result therefore rules out a *drifting baseline* — the parameters defining
+$B_k$ did not migrate into a permanently, progressively stiffer regime going
+into the crisis — but does not by itself rule out a transient, batch-specific
+$B_k$ excursion on the offending step. The per-group gradient log at the
+crisis step (§33.3) is what closes that remaining gap.
 
 ### 33.2 What this rules in and out
 
 Three independent lines of evidence now point the same way — away from
-$V_\theta$'s low-rank correction as the cause of the L=8 bursts:
+$V_\theta$'s low-rank correction as the *primary driver* of the L=8 bursts:
 
-1. **The bracket is flat (§33.1).** The quantity `precision_lr_max` caps
-   directly barely changes into the crisis.
+1. **The bracket is elevated but not escalating, and far too small in
+   magnitude (§33.1).** Both crises sit +1% to +24% above healthy,
+   non-monotonically between the two triggers, versus the $>100\times$ scale
+   of the observed grad-norm spikes. `precision_lr_max` caps a real but
+   minor and non-escalating quantity.
 2. **The per-group grad log points elsewhere.** The recorded spike groups for
    this architecture are `depth_code`, `E`, `P`, `creation_gate`, `register`,
    `reverse_channel_scale` — the **non-$V_\theta$** groups (§23.1's d=1024
@@ -1609,11 +1636,14 @@ $V_\theta$'s low-rank correction as the cause of the L=8 bursts:
    $B_k$-magnitude effects.
 
 The practical conclusion: **`baoab_cfc_lowrank` + `precision_lr_max` remains
-sound hygiene** (unbounded-by-construction curvature is a real hazard and it
-is good that the channel is now removable), but it is **not the lever that
-will stop these specific bursts.** The A/B run of §31.5 is still worth doing
-as a falsification check, but §33.1 lowers its prior: expect the burst
-signature to persist, because the burst was never coming through $B_k$.
+sound hygiene** (unbounded-by-construction curvature is a real hazard, the
++24% bulk shift and +14% tail shift at the crisis are genuine and worth
+trimming, and it is good that the channel is now removable), but it is **not
+the primary lever that will stop these specific bursts** — a $\lesssim
+1.1\times$ frequency effect cannot explain a $>100\times$ gradient-norm
+spike. The A/B run of §31.5 is still worth doing as a falsification check,
+but §33.1 lowers its prior: expect the burst signature to largely persist,
+because the bulk of the burst was never coming through $B_k$.
 
 ### 33.3 A root-cause workflow for the non-$V_\theta$ spikes
 
@@ -1721,13 +1751,15 @@ grad-norm log alone cannot:
 
 ### 33.5 Status and next step
 
-**§33.1 done; §33.3 Phase 0 is the immediate next step.** The bracket
-measurement is complete and negative for $B_k$. The cheapest next action is
-Phase 0 log-mining against the live L=8 run's `training_log.jsonl` (already on
-Drive), which may resolve the leading-group question with no new run; Phase 1
-is the highest-leverage small patch and is what finally makes the crisis
-reproducible. The SCAF `GradientSpikeProbe` (Phase 3) is specified in the
-companion design doc but not yet implemented.
+**§33.1 done (both bracket points); §33.3 Phase 0 is the immediate next
+step.** The bracket measurement is complete: $B_k$ is modestly and
+non-monotonically elevated at both crises but far too small in magnitude to
+be the primary driver. The cheapest next action is Phase 0 log-mining against
+the live L=8 run's `training_log.jsonl` (already on Drive), which may resolve
+the leading-group question with no new run; Phase 1 is the highest-leverage
+small patch and is what finally makes the crisis reproducible. The SCAF
+`GradientSpikeProbe` (Phase 3) is specified in the companion design doc but
+not yet implemented.
 
 ![Schematic of the GradientSpikeProbe data flow left to right: pinned checkpoint weights and a captured offending batch feed into one isolated forward plus backward run under a save-zero-restore grad invariant, producing per-group per-parameter per-layer grad-norm quantiles and forward-activation extremes, which yield an attribution verdict that branches to either the precision-lr-max lever or a targeted per-group fix](images/scaf_spike_diag_probe_pipeline.png)
 
@@ -1744,17 +1776,24 @@ The anisotropic Gaussian V_theta is in
 SCAF stiffness audit (Phase 7b/7c Weyl bound) in the `stiffness_audit` branch
 of `semsimula-scaf` (`src/scaf/probes/stiffness.py`).*
 
-*Last updated: 28 August 2026 (adds §33: the L=8 `precision_lr_max`
-bracket pair was measured and came back flat — $\sigma_{\max}(B_k)^2$ is
-within +8% at every percentile between the healthy step-27,000 checkpoint
-and the step-34,091 spike-regime prereload snapshot — confirming §31.4
-step 1's escape hatch that $B_k$ growth is not the driver of these bursts;
-`precision_lr_max` is the wrong lever, and §33 lays out the
-cheapest-first Phase 0–3 root-cause workflow for the non-$V_\theta$
-spike groups plus a pointer to the new SCAF `GradientSpikeProbe` design
-doc. Also fixes `lowrank_modes` to decompose $G$ by SVD instead of eigh
-on the Gram $G^\top G$, removing an ill-conditioned-Gram convergence
-failure surfaced while running the diagnostic). Previously updated 27
+*Last updated: 28 August 2026, evening (§33.1 revised with the second
+bracket point: the step-32,139 prereload snapshot came back +3% to +24%
+above healthy — more elevated than step-34,091, despite firing first — so
+the bracket is a modest, non-monotonic elevation rather than a perfectly
+flat null result. The magnitude ($\lesssim 1.1\times$ in $\omega$) still
+rules out $B_k$ as the primary driver of the $>100\times$ grad-norm spikes;
+§33.1/§33.2 text, table, and figure updated accordingly). Previously
+updated 28 August 2026 (adds §33: the L=8 `precision_lr_max` bracket pair
+was measured — $\sigma_{\max}(B_k)^2$ was within +8% at every percentile
+between the healthy step-27,000 checkpoint and the step-34,091 spike-regime
+prereload snapshot — confirming §31.4 step 1's escape hatch that $B_k$
+growth is not the primary driver of these bursts; `precision_lr_max` is not
+the primary lever, and §33 lays out the cheapest-first Phase 0–3 root-cause
+workflow for the non-$V_\theta$ spike groups plus a pointer to the new SCAF
+`GradientSpikeProbe` design doc. Also fixes `lowrank_modes` to decompose $G$
+by SVD instead of eigh on the Gram $G^\top G$, removing an
+ill-conditioned-Gram convergence failure surfaced while running the
+diagnostic). Previously updated 27
 August 2026, evening (adds §32: the L=8 probe's
 extended 27,000–39,867 trajectory is a noisy plateau — no new best,
 spike rate not decaying — and the resulting decision to switch to
