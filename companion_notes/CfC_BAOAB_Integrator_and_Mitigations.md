@@ -28,6 +28,7 @@ live in the same `companion_notes/` folder.
 33. [The Bracketing Result Is Modest and Non-Escalating: $B_k$ Is Not the Primary Driver, and a Root-Cause Workflow for the Non-$V_\theta$ Spikes](#33-the-bracketing-result-is-modest-and-non-escalating-b_k-is-not-the-primary-driver-and-a-root-cause-workflow-for-the-non-v_theta-spikes)
 34. [`baoab_cfc_lowrank` at L=8 Scale: Correct and Stable, but Not Production-Feasible](#34-baoab_cfc_lowrank-at-l8-scale-correct-and-stable-but-not-production-feasible)
 35. [Phase 1/2 Validated: First `replay_spike_batch` Result (Step 37,763) and a Clean Cascade Signature](#35-phase-12-validated-first-replay_spike_batch-result-step-37763-and-a-clean-cascade-signature)
+36. [Decoupling Spike Capture from the Reload Trigger: the Plateau, Not Just the Rare Crisis, Is the Real Target](#36-decoupling-spike-capture-from-the-reload-trigger-the-plateau-not-just-the-rare-crisis-is-the-real-target)
 
 ---
 
@@ -2193,7 +2194,105 @@ the two-stage plan (§33.5). The next actionable step is unchanged from
 before: replay the next genuine `watchdog_hard_reload` (pre-clip ≥500, the
 `E`/`P`-dominated regime per §33.3 Phase 0) the same way, and check whether
 the per-layer growth profile holds or sharpens further, and whether `E`/`P`
-overtake `depth_code` at the top the way the mined log predicts.
+overtake `depth_code` at the top the way the mined log predicts. (See §36:
+the plan below is revised once more real training data came in.)
+
+---
+
+## 36. Decoupling Spike Capture from the Reload Trigger: the Plateau, Not Just the Rare Crisis, Is the Real Target
+
+### 36.1 A ~1,800-step window with zero hard triggers, still stuck on the plateau
+
+After §35's Stage-1 validation, `GRAD_NORM_HARD_TRIGGER` was restored to
+`500.0` and `baoab_cfc` production training resumed from step 37,500.
+Over the following ≈1,800 steps (37,501-39,350), evals came back 107.85 /
+105.59 / 105.84 -- no new best, still stuck on the §32 plateau -- while
+**zero** `watchdog_hard_reload` events fired. Four ordinary `[spike]`
+events did fire in that window (`GRAD_SPIKE_THRESHOLD=100`, pre-clip 198 to
+449), none of them close to the 500 reload line. This directly
+demonstrates that the rare ≥500 events are not what is capping this run's
+convergence -- whatever is stalling it at ~105 is happening through the far
+more frequent, individually-clipped 100-450 band instead (or through
+something unrelated to spikes at all, e.g. the WSD schedule not entering
+its decay phase until step 65,000 -- §36.4 flags this as still open).
+
+That reframes the diagnostic goal. §33-§35 were built to explain the rare
+catastrophic reloads (question A); the run's actual practical problem --
+what is capping convergence (question B) -- may have a different answer,
+and this window is evidence that (A) does not answer (B).
+
+### 36.2 Why Phase 1 could not see this band: capture and reload shared one knob
+
+Cell 6's Phase 1 capture condition was gated on the same variable as the
+watchdog-hard reload:
+
+```python
+# capture (old):
+if CAPTURE_SPIKE_BATCH and GRAD_NORM_HARD_TRIGGER is not None
+        and _raw_gn_pre > GRAD_NORM_HARD_TRIGGER: ...
+# reload:
+elif GRAD_NORM_HARD_TRIGGER is not None and _raw_gn > GRAD_NORM_HARD_TRIGGER:
+    _reload_best(step + 1)
+```
+
+Lowering that one threshold to harvest the frequent moderate band would
+also have made the watchdog reload on every one of those events --
+discarding progress constantly, which is the opposite of what a
+convergence-focused investigation wants. This coupling, not a deliberate
+choice, is the only reason Phase 1 had only ever captured rare, possibly
+unrepresentative catastrophic events.
+
+### 36.3 The fix: a separate `CAPTURE_SPIKE_THRESHOLD`, plus a batch-replay helper
+
+Three changes to
+`colab_fock_cfc_baoab_aniso_gaussian_openwebtext_d384.ipynb`:
+
+1. **New `CAPTURE_SPIKE_THRESHOLD = 200.0`** (Cell 6), independent of
+   `GRAD_NORM_HARD_TRIGGER = 500.0`. The capture condition now reads
+   `_raw_gn_pre > CAPTURE_SPIKE_THRESHOLD`; the reload condition is
+   untouched. Lowering the capture bar can no longer cause an extra
+   reload -- the two questions (A) and (B) from §36.1 now have
+   independently tunable instrumentation.
+2. **`SPIKEBATCH_SNAPSHOT_MAX_KEEP` raised 5 -> 12**, so the run
+   accumulates a small *library* of moderate-band captures to replay
+   across, rather than only ever holding the single latest one.
+3. **New `replay_all_captures()` in Cell 6d**, which replays every
+   `_spikebatch.pt` currently on disk and prints one summary table (step,
+   pre-clip norm, fidelity gap, leading group, next two groups) instead of
+   requiring a separate `replay_spike_batch(step_tag)` call per capture.
+   `verbose=True` still prints each individual replay's full per-parameter
+   / per-layer / activation-extreme report.
+
+### 36.4 What this buys, and the honest caveat
+
+A consistent leading-group and per-layer signature across many
+moderate-band replays is materially stronger evidence than the single
+step-37,763 data point in §35 -- and, being harvested every ~1-2K steps
+instead of waiting an unpredictable number of hours for a ≥500 event, it
+arrives fast enough to actually inform this run rather than only
+postmortem it.
+
+**Caveat.** It is not yet established that these moderate spikes (rather
+than, say, the stable-phase learning rate not having entered its WSD decay
+until step 65,000) are what is capping convergence -- each one is clipped,
+so any single update is bounded. `replay_all_captures()`'s output is what
+will discriminate this: a coherent, fixable mechanism across the library
+(the cascade profile sharpening, a specific gate saturating, etc.) argues
+for (B) being spike-driven; captures that look like benign clipped noise
+argue for the LR-schedule explanation instead.
+
+### 36.5 Status and next step
+
+**Implemented, not yet run against real data.** The notebook changes
+landed in this section; the live run has `CAPTURE_SPIKE_THRESHOLD=200.0`
+and `SPIKEBATCH_SNAPSHOT_MAX_KEEP=12` armed going forward, but no capture
+under the new, lower threshold has fired yet as of this writing. Next
+step: once several moderate-band captures accumulate, run
+`replay_all_captures()` and compare the resulting per-event leading-group
+column against §35's single depth_code-led data point and the severity
+trend noted after §35 (`depth_code` leading the smaller of a set of
+spikes, `E`/`P` overtaking it in the largest) -- looking specifically for
+whether that trend holds up over a larger n.
 
 ---
 
@@ -2208,7 +2307,22 @@ The anisotropic Gaussian V_theta is in
 SCAF stiffness audit (Phase 7b/7c Weyl bound) in the `stiffness_audit` branch
 of `semsimula-scaf` (`src/scaf/probes/stiffness.py`).*
 
-*Last updated: 30 August 2026, latest (adds §35: fixed a `TypeError` in
+*Last updated: 30 August 2026, latest (adds §36: after §35's fix,
+`GRAD_NORM_HARD_TRIGGER` was restored to 500.0 and production resumed --
+over the next ≈1,800 steps (37,501-39,350) zero hard reloads fired, yet
+the run stayed stuck on the same ~105 plateau, with four ordinary
+100-450 `[spike]` events in that window. Since Phase 1 capture had been
+gated on the same `GRAD_NORM_HARD_TRIGGER` as the reload, it could never
+harvest that far more frequent moderate band. Fix: a new, independent
+`CAPTURE_SPIKE_THRESHOLD=200.0` that gates capture without touching the
+reload condition, `SPIKEBATCH_SNAPSHOT_MAX_KEEP` raised 5->12, and a new
+`replay_all_captures()` helper in Cell 6d that replays every captured
+`_spikebatch.pt` and prints one summary attribution table instead of one
+call per capture. Reframes the diagnostic goal from "explain the rare
+catastrophic reload" to "explain the plateau," with the caveat that the
+moderate band's causal role vs. the not-yet-decayed WSD learning-rate
+schedule is still open, to be discriminated once captures accumulate).
+Previously updated 30 August 2026 (adds §35: fixed a `TypeError` in
 `replay_spike_batch` -- `torch.load`'s `map_location=DEVICE` was remapping
 `rng_state_cpu`/`rng_state_cuda` off the CPU, which `torch.set_rng_state()`
 rejects; fixed via `map_location='cpu'`. With the fix, the Stage-1 smoke
