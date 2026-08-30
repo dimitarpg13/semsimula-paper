@@ -345,7 +345,17 @@ class AnisotropicMixtureGaussianVTheta(nn.Module):
             G = h.new_zeros(*lead, self.d, 0)
             Gmu = h.new_zeros(*lead, 0)
         else:
-            sqrt_g = g.clamp(min=0.0).sqrt()                      # (..., K)
+            # sqrt(g) with a SMOOTH gradient.  g = w*exp(-0.5*e) underflows to
+            # exactly 0 for any well far from h (common), where g.sqrt() has an
+            # infinite derivative 1/(2 sqrt g); autograd then forms inf * (dg/de
+            # = g = 0) = NaN and poisons the whole backward, even though the
+            # forward is finite.  Computing sqrt(g) = sqrt(w) * exp(-0.25*e)
+            # directly is identical in value but analytic in e (no 1/sqrt(0)),
+            # so the low-rank arm's gradient stays finite.  (Plain harmonic_terms
+            # never hits this -- it uses g itself, not sqrt(g).)
+            sqrt_g = w.clamp(min=0.0).sqrt() * torch.exp(
+                -0.25 * (diag_term + lr_term)
+            )                                                     # (..., K)
             Gk = sqrt_g[..., None, None] * B                      # (..., K, d, r)
             G = Gk.movedim(-3, -2).reshape(*lead, self.d, self.K * self.rank)
             Btmu = torch.einsum('...kd,...kdr->...kr', mu, B)     # (..., K, r)
