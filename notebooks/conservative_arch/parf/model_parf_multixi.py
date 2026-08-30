@@ -520,7 +520,20 @@ class MultiXiPARFLM(SparsePARFLM):
         if use_cfc:
             f_kick = f_kick - (s_lin - k_diag * h_mid)
         elif use_lowrank:
-            f_kick = f_kick - (lr_sL - self._lowrank_matvec(lr_G, h_mid))
+            # Subtract only the retained-mode projection P_U f_L of the
+            # low-rank harmonic force -- exactly the part the A substeps
+            # integrate exactly.  With no truncation span(lr_U) = range(L),
+            # so P_U is the identity on f_L and this equals the full
+            # subtraction (the step is unchanged); with lowrank_max_modes
+            # set, the dropped soft modes stay in this explicit kick (stable,
+            # being the sub-threshold ones) instead of being silently
+            # cancelled out of the dynamics.
+            f_L_mid = lr_sL - self._lowrank_matvec(lr_G, h_mid)
+            f_L_mid = torch.einsum(
+                '...dq,...q->...d', lr_U,
+                torch.einsum('...dq,...d->...q', lr_U, f_L_mid),
+            )
+            f_kick = f_kick - f_L_mid
         if cfg.force_clamp_max is not None:
             f_kick = f_kick.clamp(-cfg.force_clamp_max, cfg.force_clamp_max)
         v_mid = v_mid + (dt / m_b) * f_kick

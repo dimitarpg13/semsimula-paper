@@ -109,6 +109,19 @@ import torch
 # value). See `test_cfc_baoab.py::test_cfc_substep_zero_stiffness_no_nan`.
 _OMEGA_SQ_FLOOR = 1e-12
 
+# Robustness / cost knobs for `lowrank_modes` (see its docstring).
+#
+# The jitter path keeps a single ill-conditioned batch element from dragging
+# the *entire* batched SVD onto the CPU LAPACK fallback -- which, called per
+# layer per step, is the dominant wall-clock cost of the `baoab_cfc_lowrank`
+# arm.  The seed is fixed so both the jitter and the randomised truncated SVD
+# are deterministic across replays; both use RNG that is isolated from the
+# global stream, which the Langevin thermostat and the Phase-1 spike-replay
+# rely on being reproducible.
+_LOWRANK_SVD_SEED = 1234567
+_LOWRANK_SVD_JITTER = 1e-6          # relative to the batch element's max |G_ij|
+_LOWRANK_SVD_MAX_TRIES = 3
+
 
 # ---------------------------------------------------------------------------
 # Special functions (branch-free, exact through the omega -> 0 limit)
@@ -212,10 +225,56 @@ def cfc_substep(
 # the gradient to the V_theta parameters.
 
 
+def _svd_stable(Gd: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    """Thin SVD ``G = U diag(S) V^T`` of a detached ``G``, robust to cusolver
+    convergence failures without the whole-batch CPU cliff.
+
+    ``torch.linalg.svd`` is a single *batched* call, so on GPU one
+    degenerate / repeated-spectrum batch element can make the entire call
+    raise (``_LinAlgError ... error code: N``).  The naive remedy -- retry
+    the whole batch on the CPU LAPACK driver -- is catastrophic when it runs
+    per layer per step, because it serialises thousands of small SVDs on the
+    CPU.  Instead we first retry on the GPU with a tiny rank-preserving
+    jitter added to ``G``: enough to unstick the Jacobi driver on the
+    offending element while leaving the stiff modes (the only ones the
+    integrator uses) unchanged to ~jitter relative precision.  The CPU path
+    stays only as a genuine last resort, now rarely reached.
+
+    The jitter is drawn from a *private* fixed-seed generator, so the global
+    RNG stream is never perturbed.
+    """
+    try:
+        U, S, _ = torch.linalg.svd(Gd, full_matrices=False)
+        return U, S
+    except RuntimeError:
+        pass
+    scale = Gd.abs().amax(dim=(-2, -1), keepdim=True).clamp_(min=1e-12)
+    gen = torch.Generator(device=Gd.device)
+    for _i in range(_LOWRANK_SVD_MAX_TRIES):
+        gen.manual_seed(_LOWRANK_SVD_SEED + _i)
+        eps = _LOWRANK_SVD_JITTER * (8.0 ** _i)         # escalate if it re-fails
+        noise = torch.randn(
+            Gd.shape, generator=gen, device=Gd.device, dtype=Gd.dtype,
+        )
+        try:
+            U, S, _ = torch.linalg.svd(Gd + eps * scale * noise,
+                                       full_matrices=False)
+            return U, S
+        except RuntimeError:
+            continue
+    # Genuine last resort: CPU LAPACK (gesdd/gesvd), steadier than the GPU
+    # driver on the truly pathological remainder.
+    U_cpu, S_cpu, _ = torch.linalg.svd(Gd.cpu(), full_matrices=False)
+    return U_cpu.to(Gd), S_cpu.to(Gd)
+
+
 def lowrank_modes(
     G: torch.Tensor,
     max_modes: Optional[int] = None,
     floor: float = 1e-10,
+    *,
+    niter: int = 2,
+    oversample: int = 4,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     """Eigenmodes of the PSD operator ``L = G G^T`` from its factor ``G``.
 
@@ -225,13 +284,17 @@ def lowrank_modes(
         Aggregate low-rank factor; ``L = G G^T`` has rank <= P.
     max_modes : int or None
         Keep only the ``max_modes`` stiffest (largest-eigenvalue) modes.
-        ``None`` keeps all ``P`` of them.
+        ``None`` keeps all ``P`` of them (exact full-SVD path).
     floor : float
         Eigenvalues at or below this are treated as zero: the matching mode
         direction is zeroed (made inert) and its curvature set to 0, which
         both avoids the ``1/sqrt(lambda)`` blow-up when normalising a
         vanishing mode and matches the true dynamics (``L`` exerts no force
         along a null direction).
+    niter, oversample : int
+        Randomised-SVD controls, used only on the truncated path: the
+        projection uses ``max_modes + oversample`` probes and ``niter``
+        subspace iterations.  Ignored when ``max_modes`` is ``None``.
 
     Returns
     -------
@@ -243,37 +306,56 @@ def lowrank_modes(
 
     Notes
     -----
-    Computed from the SVD ``G = U_full diag(S) V^T``: the left singular
-    vectors ``U_full`` are the eigenvectors of ``L = G G^T`` and ``S**2``
-    are its eigenvalues, so the leading ``q`` columns / squared singular
-    values give the stiffest modes directly.  This avoids forming the Gram
-    ``G^T G`` (which squares the condition number and can make eigh's
-    divide-and-conquer driver fail to converge on degenerate spectra),
-    while staying cheap: the thin SVD costs ``O(d P^2)`` with ``P`` small.
+    Full path (``max_modes is None``): computed from the SVD
+    ``G = U_full diag(S) V^T`` -- the left singular vectors are the
+    eigenvectors of ``L = G G^T`` and ``S**2`` are its eigenvalues.  This
+    avoids forming the Gram ``G^T G`` (which squares the condition number
+    and can make eigh's divide-and-conquer driver fail to converge on
+    degenerate spectra), and uses :func:`_svd_stable` so a single bad batch
+    element does not force the whole batch onto the CPU.
+
+    Truncated path (``max_modes = q < P``): the full ``P``-mode SVD is
+    wasteful when only the ``q`` *stiffest* modes threaten the
+    ``omega dt < 2`` stability wall and the rest are handled by the caller's
+    explicit kick.  A randomised truncated SVD (:func:`torch.svd_lowrank`
+    with ``q + oversample`` probes) returns just those modes at
+    ``O(d P q)`` rather than ``O(d P^2)`` cost, with a proportionally
+    smaller memory footprint.  The random projection is drawn under a
+    forked, fixed-seed RNG so it is deterministic across replays and never
+    disturbs the global RNG stream.
+
+    IMPORTANT: with truncation the caller MUST demote the dropped modes to
+    its explicit kick -- subtract only ``P_U f_L`` (the retained-mode
+    projection of the low-rank force), not the full ``f_L`` -- otherwise the
+    soft modes' restoring force is silently cancelled out of the dynamics.
+    See ``model_parf_multixi._layer_step_langevin``'s ``use_lowrank`` kick.
     """
     Gd = G.detach()
     P = Gd.shape[-1]
 
-    # Decompose G directly by SVD rather than eigh on the Gram M = G^T G.
-    # The left singular vectors of G are the eigenvectors of L = G G^T and
-    # the singular values squared are its eigenvalues, so this yields the
-    # same modes / stiffnesses -- but WITHOUT forming G^T G, which squares
-    # the condition number and, on degenerate or repeated-eigenvalue
-    # spectra, makes LAPACK/cusolver's divide-and-conquer driver fail to
-    # converge ("_LinAlgError ... error code: 161").  SVD is markedly
-    # steadier on exactly those pathological batches, and its columns come
-    # out already orthonormal, so no 1/sqrt(lambda) renormalisation is
-    # needed.
-    try:
-        U_full, S, _ = torch.linalg.svd(Gd, full_matrices=False)
-    except RuntimeError:
-        # Last-resort retry on the CPU LAPACK path (gesdd/gesvd), which is
-        # often steadier than the GPU driver on ill-conditioned inputs.
-        U_cpu, S_cpu, _ = torch.linalg.svd(Gd.cpu(), full_matrices=False)
-        U_full, S = U_cpu.to(Gd), S_cpu.to(Gd)          # back to G's device
+    if max_modes is not None and int(max_modes) < P:
+        q_req = int(max_modes)
+        q_over = min(q_req + max(0, oversample), Gd.shape[-2], Gd.shape[-1])
+        try:
+            # Isolate the randomised projection's RNG: a forked, fixed-seed
+            # stream keeps the modes reproducible (needed for spike-replay)
+            # and leaves the global generator -- and thus the thermostat
+            # noise draw -- exactly where it was.  (Single-GPU assumption:
+            # only the input's own device is forked.)
+            _fork = [Gd.device.index] if Gd.is_cuda else []
+            with torch.random.fork_rng(devices=_fork):
+                torch.manual_seed(_LOWRANK_SVD_SEED)
+                U_full, S, _ = torch.svd_lowrank(Gd, q=q_over, niter=niter)
+        except RuntimeError:
+            # Randomised path failed -> fall back to the stable full SVD.
+            U_full, S = _svd_stable(Gd)
+    else:
+        q_req = P if max_modes is None else min(int(max_modes), P)
+        U_full, S = _svd_stable(Gd)
 
-    k = S.shape[-1]                                     # = min(d, P), usually P
-    q = k if max_modes is None else min(int(max_modes), k)
+    # Both drivers return singular values in descending order, so the leading
+    # columns / values are already the stiffest modes.
+    q = min(q_req, S.shape[-1])
     lam = S[..., :q] ** 2                               # (..., q) largest q (desc)
     U = U_full[..., :, :q]                              # (..., d, q), unit cols
 
@@ -642,6 +724,97 @@ def _self_test() -> None:
     assert not torch.isfinite(he).all() or he.abs().max().item() > 1e6, (
         f"explicit step should blow up at omega*dt={omega_L}, got "
         f"{he.abs().max().item():.2e}")
+
+    # 13) Truncated modes (randomised svd_lowrank path) recover the stiffest q
+    #     modes of the full SVD, are deterministic across calls, and leave the
+    #     global RNG stream untouched -- the last two are what make the
+    #     baoab_cfc_lowrank arm reproducible for Phase-1 spike-replay.
+    torch.manual_seed(7)
+    Bt, Tt, dt_d, Pt = 2, 3, 12, 8
+    # Planted spectrum with a clean gap: 3 stiff modes, 5 soft ones.
+    Ug, _ = torch.linalg.qr(torch.randn(Bt, Tt, dt_d, Pt))       # orthonormal cols
+    svals = torch.tensor([10.0, 8.0, 6.0, 0.3, 0.2, 0.1, 0.05, 0.02])
+    Gt = Ug * svals                                              # (B,T,d,P)
+    _, kap_full = lowrank_modes(Gt)                              # exact full SVD
+    U_full3, _ = lowrank_modes(Gt)
+    q3 = 3
+    U_tr, kap_tr = lowrank_modes(Gt, max_modes=q3)
+    assert kap_tr.shape[-1] == q3, kap_tr.shape
+    # stiffest-3 curvatures match the full decomposition
+    assert (kap_tr - kap_full[..., :q3]).abs().max().item() < 1e-2, (
+        kap_tr[0, 0], kap_full[0, 0, :q3])
+    # retained subspace agrees with the full top-3 (clean gap -> no rotation
+    # ambiguity): each truncated column aligns with one full column.
+    olap = torch.einsum('...dq,...dr->...qr', U_tr, U_full3[..., :q3]).abs()
+    assert (olap.amax(dim=-1) > 0.99).all(), olap[0, 0]
+    # determinism: a second call is bit-identical (fixed-seed forked RNG)
+    U_tr2, kap_tr2 = lowrank_modes(Gt, max_modes=q3)
+    assert torch.equal(U_tr, U_tr2) and torch.equal(kap_tr, kap_tr2)
+    # global RNG untouched: the next global draw is exactly what it would have
+    # been had lowrank_modes never run (fork_rng must fully restore state).
+    torch.manual_seed(99)
+    ref = torch.randn(5)
+    torch.manual_seed(99)
+    _ = lowrank_modes(Gt, max_modes=q3)
+    got = torch.randn(5)
+    assert torch.equal(ref, got), (ref, got)
+
+    # 14) Truncated impulse step -- the RESPA scheme baoab_cfc_lowrank runs WITH
+    #     lowrank_max_modes set: retain only the stiff modes in the exact fast
+    #     flow and demote the rest to the explicit kick via the retained-mode
+    #     projection P_U f_L (exactly as model_parf_multixi's use_lowrank kick
+    #     now does).  This must stay 2nd-order accurate against the exact
+    #     coupled flow.  Subtracting the *full* f_L instead of P_U f_L would
+    #     cancel the dropped modes' restoring force and break this.
+    torch.manual_seed(4)
+    Bq, Tq, dq, Pq = 2, 2, 6, 5
+    msq = torch.ones(Bq, Tq, 1)
+    Uq0, _ = torch.linalg.qr(torch.randn(Bq, Tq, dq, Pq))        # orthonormal cols
+    sv = torch.tensor([3.0, 2.5, 0.4, 0.3, 0.2])                 # 2 stiff, 3 soft
+    Gq = Uq0 * sv                                                # (B,T,d,P)
+    Lq = Gq @ Gq.transpose(-1, -2)
+    ka_q = torch.rand(Bq, Tq, dq) * 0.5 + 0.2                    # soft diagonal
+    Hq = torch.diag_embed(ka_q) + Lq                            # SPD
+    muq = torch.randn(Bq, Tq, dq)
+    s_Lq = torch.einsum('...ij,...j->...i', Lq, muq)
+    s_aq = ka_q * muq
+    h0q = torch.randn(Bq, Tq, dq)
+    v0q = torch.randn(Bq, Tq, dq)
+    Uq, kapq = lowrank_modes(Gq, max_modes=2)                    # keep 2 stiff modes
+
+    def _exact_flow_q(t):
+        w, Q = torch.linalg.eigh(Hq)
+        Om = (w / msq).clamp(min=_OMEGA_SQ_FLOOR).sqrt()
+        p0 = torch.einsum('...ji,...j->...i', Q, h0q - muq)
+        q0 = torch.einsum('...ji,...j->...i', Q, v0q)
+        pt = torch.cos(Om * t) * p0 + torch.sin(Om * t) / Om * q0
+        return muq + torch.einsum('...ij,...j->...i', Q, pt)
+
+    def _impulse_trunc(h, v, dt):
+        half = 0.5 * dt
+        f_L = s_Lq - torch.einsum('...ij,...j->...i', Lq, h)
+        h, v = lowrank_cfc_substep(h, v, Uq, kapq, f_L, msq, half)
+        # kick: total force minus the retained-mode projection of f_L, so the
+        # soft (dropped) modes' force stays in the explicit kick.
+        f_L = s_Lq - torch.einsum('...ij,...j->...i', Lq, h)
+        PUf = torch.einsum('...dq,...q->...d', Uq,
+                           torch.einsum('...dq,...d->...q', Uq, f_L))
+        f_tot = (s_aq - ka_q * h) + f_L
+        v = v + (dt / msq) * (f_tot - PUf)
+        f_L = s_Lq - torch.einsum('...ij,...j->...i', Lq, h)
+        h, v = lowrank_cfc_substep(h, v, Uq, kapq, f_L, msq, half)
+        return h, v
+
+    h_exq = _exact_flow_q(1.0)
+    errs_q = []
+    for N in (20, 40):
+        dtq = 1.0 / N
+        hh, vv = h0q.clone(), v0q.clone()
+        for _ in range(N):
+            hh, vv = _impulse_trunc(hh, vv, dtq)
+        errs_q.append((hh - h_exq).abs().max().item())
+    order_q = math.log2(errs_q[0] / max(errs_q[1], 1e-300))
+    assert 1.7 < order_q < 2.3, (errs_q, order_q)
 
     print("cfc_baoab self-test: OK")
 
