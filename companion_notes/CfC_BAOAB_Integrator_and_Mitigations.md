@@ -27,6 +27,7 @@ live in the same `companion_notes/` folder.
 32. [L=8 baoab_cfc Baseline: Extended Trajectory and the Decision to Switch Mid-Run](#32-l8-baoab_cfc-baseline-extended-trajectory-steps-2700039867-and-the-decision-to-switch-mid-run)
 33. [The Bracketing Result Is Modest and Non-Escalating: $B_k$ Is Not the Primary Driver, and a Root-Cause Workflow for the Non-$V_\theta$ Spikes](#33-the-bracketing-result-is-modest-and-non-escalating-b_k-is-not-the-primary-driver-and-a-root-cause-workflow-for-the-non-v_theta-spikes)
 34. [`baoab_cfc_lowrank` at L=8 Scale: Correct and Stable, but Not Production-Feasible](#34-baoab_cfc_lowrank-at-l8-scale-correct-and-stable-but-not-production-feasible)
+35. [Phase 1/2 Validated: First `replay_spike_batch` Result (Step 37,763) and a Clean Cascade Signature](#35-phase-12-validated-first-replay_spike_batch-result-step-37763-and-a-clean-cascade-signature)
 
 ---
 
@@ -2089,6 +2090,113 @@ spikes.
 
 ---
 
+## 35. Phase 1/2 Validated: First `replay_spike_batch` Result (Step 37,763) and a Clean Cascade Signature
+
+### 35.1 A bug fixed first: `torch.load`'s `map_location=DEVICE` broke RNG restore
+
+Running `replay_spike_batch` for the first time against a real capture failed
+with `TypeError: RNG state must be a torch.ByteTensor`.
+`torch.load(path, map_location=DEVICE, weights_only=False)` remaps every
+tensor in the bundle to `DEVICE` (cuda) -- including `rng_state_cpu` and
+`rng_state_cuda`'s per-GPU tensors, which `torch.set_rng_state()` /
+`torch.cuda.set_rng_state_all()` both require to stay plain CPU
+`ByteTensor`s. The model-weights tensors never needed this either:
+`replay_spike_batch` already re-maps each one explicitly
+(`{k: v.to(DEVICE) for k, v in bundle['model_state_dict'].items()}`) a few
+lines later. Fixed by loading with `map_location='cpu'` instead.
+
+### 35.2 Fidelity check: 0.0012% -- bit-exact reproduction confirmed
+
+With the fix in place, the Stage-1 smoke test (`GRAD_NORM_HARD_TRIGGER=110.0`,
+§33.5/§34) produced its first `_spikebatch.pt` at step 37,763 (pre-clip total
+grad 160.4), and `replay_spike_batch(37763)` reproduced it with:
+
+```
+pre_clip_grad_norm_recorded  = 160.39
+pre_clip_grad_norm_replayed  = 160.39   (matching groups)
+fidelity_gap_pct             = 0.0012%
+```
+
+This settles the open question from §33.5: the RNG/microbatch/weight capture
+and the isolated replay reproduce a real training step's forward+backward
+essentially exactly, not just "close enough." Phase 1 and Phase 2 are
+validated end to end.
+
+### 35.3 The result: a clean cascade-amplification signature, not an isolated spike
+
+The per-layer hidden-state gradient norm (the gradient flowing into each
+layer boundary -- i.e. how much of the backward pass's magnitude has reached
+that point) is monotone across all 8 layers:
+
+| layer | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
+|---|---|---|---|---|---|---|---|---|
+| grad norm | 0.169 | 0.102 | 0.044 | 0.027 | 0.019 | 0.013 | 0.008 | 0.005 |
+
+That is roughly a 37x growth from layer 7 down to layer 0, with no bump or
+plateau anywhere in the middle. This is exactly the signature §33.4's
+cascade-amplification hypothesis predicted (a per-layer $h$-gradient-norm
+profile that grows from layer $L-1$ toward layer 0, not an isolated
+single-layer spike), and it argues against a single-layer localized cause
+(one bad gate or one saturated softmax firing at one specific depth).
+
+### 35.4 `depth_code`'s structural role
+
+The largest single per-parameter gradient at this event is
+`V_theta.depth_code` (88.3), narrowly ahead of `E.weight` (81.0) and `P`
+(80.9). `depth_code` is used at every layer, so it directly sums the
+disturbance from all 8 layers as it accumulates during backprop, rather than
+having to survive the full backward pass the way `E`/`P` do (both of which
+only see the *cumulative* post-cascade signal once it reaches $h_0$ --
+consistent with them landing close behind, not ahead). This is compatible
+with either reading: `depth_code` as the stack-wide cascade's natural
+aggregation point, or the more specific §33.4 variant where `depth_code`
+pushes $V_\theta$ into a locally stiff regime that itself carries the
+cascade forward.
+
+### 35.5 Secondary signals: mostly clean, nothing else implicated at this severity
+
+- `creation_gate.tau` sits at 5.6-7.5 (not small/sharp), so the
+  "sharp-softmax Jacobian" candidate does not look active here -- though
+  `creation_gate.alpha_max` reaching exactly 1.0 for at least one token in
+  the batch shows some individual token is winner-take-all even at this
+  $\tau$.
+- `reverse_ch.Q_force` stays inside [-9.4, 7.6], no outlier blow-up -- the
+  "non-conservative reverse-channel kick" candidate is not implicated in
+  this event either. `reverse_ch.logit_scale` is a fixed 17.93 across every
+  token (it is a single global scalar); worth a follow-up check on whether
+  that sits at or near its configured clamp ceiling.
+- Several `destruction_gates` swing from near 0 to near 1 across the batch
+  (e.g. banks 2, 4, 5, 6), consistent with -- but not confirming -- the
+  "hard salience/threshold gating" candidate.
+- `V_theta.bank[k].exponent` reaching into the $-10^4$ to $-2\times10^5$
+  range is the already-documented underflow regime (most wells are far from
+  most tokens); expected, not new information.
+
+### 35.6 Caveat: this event is not yet the target population
+
+Step 37,763's pre-clip total (160.4) sits in the "<200" severity band, where
+Phase 0's log-mining (§33.3) found `depth_code` leading 76% of the time --
+not the `E`/`P`-dominated severe (≥500) `watchdog_hard_reload` regime the
+whole investigation exists to explain. The three top groups here (88.3 /
+81.0 / 80.9) are close enough to read as a blend right at that boundary,
+which is itself informative (§34's Stage-1 design rationale), but §35.3's
+cascade signature and §35.4's `depth_code` attribution should be treated as
+a first bit-exact look, not a closed case, until a genuine severe event is
+replayed the same way.
+
+### 35.7 Status and next step
+
+**Phase 1/2 fully validated (§35.1-§35.2); one modest-severity replay
+analyzed (§35.3-§35.5), with a caveat (§35.6).** `GRAD_NORM_HARD_TRIGGER` is
+being restored to `500.0` and `baoab_cfc` production training resumed, per
+the two-stage plan (§33.5). The next actionable step is unchanged from
+before: replay the next genuine `watchdog_hard_reload` (pre-clip ≥500, the
+`E`/`P`-dominated regime per §33.3 Phase 0) the same way, and check whether
+the per-layer growth profile holds or sharpens further, and whether `E`/`P`
+overtake `depth_code` at the top the way the mined log predicts.
+
+---
+
 *Companion note to `Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`.
 The CfC/BAOAB propagator is implemented in
 `notebooks/conservative_arch/parf/cfc_baoab.py` and wired into the layer step
@@ -2100,7 +2208,20 @@ The anisotropic Gaussian V_theta is in
 SCAF stiffness audit (Phase 7b/7c Weyl bound) in the `stiffness_audit` branch
 of `semsimula-scaf` (`src/scaf/probes/stiffness.py`).*
 
-*Last updated: 30 August 2026 (adds §34: `baoab_cfc_lowrank` was run
+*Last updated: 30 August 2026, latest (adds §35: fixed a `TypeError` in
+`replay_spike_batch` -- `torch.load`'s `map_location=DEVICE` was remapping
+`rng_state_cpu`/`rng_state_cuda` off the CPU, which `torch.set_rng_state()`
+rejects; fixed via `map_location='cpu'`. With the fix, the Stage-1 smoke
+test's first capture (step 37,763, pre-clip 160.4) replayed with a
+0.0012% fidelity gap -- Phase 1/2 fully validated end to end. The
+per-layer $h$-gradient profile came back monotone across all 8 layers
+(≈37x growth from layer 7 to layer 0, no isolated bump), matching §33.4's
+cascade-amplification signature rather than a single-layer cause;
+`depth_code` led the per-parameter attribution narrowly ahead of `E`/`P`.
+Flagged as a first look, not a closed case, since this event sits in the
+"<200" band rather than the `E`/`P`-dominated severe regime; next step is
+the same replay against a genuine ≥500 `watchdog_hard_reload`).
+Previously updated 30 August 2026 (adds §34: `baoab_cfc_lowrank` was run
 end-to-end at the live L=8/$d$=384/OWT scale from the §32 checkpoint,
 surfacing and fixing three bugs — a `CheckpointError` from
 `torch.svd_lowrank`'s non-deterministic branching under gradient
