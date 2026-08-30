@@ -132,6 +132,22 @@ class MultiXiPARFConfig(SparsePARFConfig):
     # ``P x P`` eigensolve when that aggregate is large.
     lowrank_max_modes: Optional[int] = None
 
+    # Restrict the (expensive) 'baoab_cfc_lowrank' exact off-diagonal
+    # integration to a subset of layers -- the batched per-token SVD is the
+    # whole cost of this arm, so running it on only the stiffest layers cuts
+    # wall-clock roughly proportionally.  Layers not listed fall back to the
+    # diagonal CfC substep ('baoab_cfc'), which is cheap and unconditionally
+    # stable on its own diagonal spring.  ``None`` = every layer (original
+    # behaviour).  Accepts any container of 0-based layer indices.
+    lowrank_layers: Optional[frozenset] = None
+
+    # Randomised-SVD cost knobs for the low-rank modes (see cfc_baoab.lowrank_modes):
+    # subspace iterations and probe oversampling.  Fewer iterations / probes =
+    # cheaper but slightly less accurate top-modes; the demoted soft modes go
+    # to the (stable) explicit kick anyway, so modest values are safe.
+    lowrank_niter: int = 2
+    lowrank_oversample: int = 4
+
     # Compute -grad V_theta from its closed form instead of autograd.
     # This is what removes V_theta from the second-order `create_graph`
     # chain; orthogonal to the integrator choice, and forced on by the
@@ -441,6 +457,15 @@ class MultiXiPARFLM(SparsePARFLM):
         cfg = self.cfg
         use_cfc = cfg.integrator == "baoab_cfc"
         use_lowrank = cfg.integrator == "baoab_cfc_lowrank"
+        # Per-layer opt-out: run the costly exact off-diagonal integration only
+        # on the configured (stiffest) layers; elsewhere fall back to the cheap
+        # diagonal CfC substep.  The two share the same frozen-force split, so
+        # this only changes how the low-rank part is propagated on this layer.
+        if use_lowrank:
+            lr_layers = getattr(cfg, "lowrank_layers", None)
+            if lr_layers is not None and layer_idx not in lr_layers:
+                use_lowrank = False
+                use_cfc = True
         half = 0.5 * dt
 
         xi_input = h.detach() if cfg.causal_force else h
@@ -491,6 +516,8 @@ class MultiXiPARFLM(SparsePARFLM):
             )
             lr_U, lr_kappa = lowrank_modes(
                 lr_G, max_modes=getattr(cfg, "lowrank_max_modes", None),
+                niter=getattr(cfg, "lowrank_niter", 2),
+                oversample=getattr(cfg, "lowrank_oversample", 4),
             )
             lr_sL = torch.einsum('...dp,...p->...d', lr_G, lr_Gmu)
             f_L = lr_sL - self._lowrank_matvec(lr_G, h_in)

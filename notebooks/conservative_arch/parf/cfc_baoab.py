@@ -109,6 +109,11 @@ import torch
 # value). See `test_cfc_baoab.py::test_cfc_substep_zero_stiffness_no_nan`.
 _OMEGA_SQ_FLOOR = 1e-12
 
+# Bump this whenever the low-rank / checkpoint behaviour changes.  Print
+# ``cfc_baoab.__revision__`` in Colab to confirm the *loaded* module is the one
+# you think it is -- a stale import is the usual reason a "fixed" bug persists.
+__revision__ = "2026-08-30-randomised-svd-det-checkpoint-safe"
+
 # Robustness / cost knobs for `lowrank_modes` (see its docstring).
 #
 # The jitter path keeps a single ill-conditioned batch element from dragging
@@ -393,8 +398,17 @@ def lowrank_modes(
     lam = S[..., :q] ** 2                               # (..., q) largest q (desc)
     U = U_full[..., :, :q]                              # (..., d, q), unit cols
 
-    keep = lam > floor                                  # (..., q) bool
-    U = U * keep.unsqueeze(-2)                          # zero inert directions
+    # A fully degenerate token can make the GPU SVD/QR emit NaN singular
+    # values / vectors *without* raising.  ``lam > floor`` is then False, so
+    # the mode is meant to be dropped -- but ``U * keep`` would compute
+    # ``NaN * 0 = NaN`` and inject it into the differentiable substep,
+    # NaN-poisoning the whole gradient (seen only on CUDA; LAPACK stays
+    # clean).  Use ``torch.where`` (picks the zero branch regardless of the
+    # NaN) and a final scrub for any surviving NaN in a *kept* column.
+    keep = torch.isfinite(lam) & (lam > floor)         # (..., q) bool
+    zeros_U = torch.zeros_like(U)
+    U = torch.where(keep.unsqueeze(-2), U, zeros_U)     # zero inert directions
+    U = torch.nan_to_num(U, nan=0.0, posinf=0.0, neginf=0.0)
     kappa = torch.where(keep, lam, torch.zeros_like(lam))
     return U, kappa
 
