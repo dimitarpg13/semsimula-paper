@@ -268,6 +268,47 @@ def _svd_stable(Gd: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
     return U_cpu.to(Gd), S_cpu.to(Gd)
 
 
+def _randomised_svd_det(
+    Gd: torch.Tensor, q_over: int, niter: int,
+) -> Tuple[torch.Tensor, torch.Tensor]:
+    """Deterministic, branch-free, device-stable truncated SVD of a detached
+    ``G`` -- the top-``q_over`` left singular vectors / values of ``G``.
+
+    This exists because ``torch.svd_lowrank`` is NOT safe inside a
+    gradient-checkpointed region: it draws its projection from the *global*
+    RNG and wraps internal linalg in fallbacks, so the backward recompute can
+    take a different branch / device than the forward and trip
+    ``CheckpointError: recomputed values ... have different metadata`` (shape/
+    dtype/device).  ``torch.utils.checkpoint`` only requires the recompute to
+    match *metadata*, not values -- so the fix is a single code path that
+
+      * uses a *local* fixed-seed generator (never the global stream, so the
+        Langevin thermostat and Phase-1 replay stay reproducible), and
+      * has no ``try/except`` and never moves data to another device,
+
+    which guarantees identical output shapes/dtypes/device on every call,
+    forward or recompute.  It is the standard randomised range-finder
+    (Halko-Martinsson-Tropp): sketch the range of ``G`` with a random
+    projection, orthonormalise, refine with ``niter`` subspace iterations,
+    then take the SVD of the small projected factor.  Cost ``O(d P q_over)``,
+    the whole point of the truncation.
+    """
+    lead = Gd.shape[:-2]
+    d, P = Gd.shape[-2], Gd.shape[-1]
+    gen = torch.Generator(device=Gd.device)
+    gen.manual_seed(_LOWRANK_SVD_SEED)
+    omega = torch.randn(*lead, P, q_over, generator=gen,
+                        device=Gd.device, dtype=Gd.dtype)
+    q_basis, _ = torch.linalg.qr(Gd @ omega)            # (..., d, q_over)
+    g_t = Gd.transpose(-1, -2)
+    for _ in range(max(0, niter)):                      # subspace iterations
+        q_basis, _ = torch.linalg.qr(Gd @ (g_t @ q_basis))
+    small = q_basis.transpose(-1, -2) @ Gd              # (..., q_over, P)
+    u_small, s, _ = torch.linalg.svd(small, full_matrices=False)
+    u_full = q_basis @ u_small                          # (..., d, q_over)
+    return u_full, s
+
+
 def lowrank_modes(
     G: torch.Tensor,
     max_modes: Optional[int] = None,
@@ -317,12 +358,14 @@ def lowrank_modes(
     Truncated path (``max_modes = q < P``): the full ``P``-mode SVD is
     wasteful when only the ``q`` *stiffest* modes threaten the
     ``omega dt < 2`` stability wall and the rest are handled by the caller's
-    explicit kick.  A randomised truncated SVD (:func:`torch.svd_lowrank`
+    explicit kick.  A randomised truncated SVD (:func:`_randomised_svd_det`
     with ``q + oversample`` probes) returns just those modes at
     ``O(d P q)`` rather than ``O(d P^2)`` cost, with a proportionally
-    smaller memory footprint.  The random projection is drawn under a
-    forked, fixed-seed RNG so it is deterministic across replays and never
-    disturbs the global RNG stream.
+    smaller memory footprint.  It is deterministic, branch-free and
+    device-stable (a *local* fixed-seed generator, no ``try/except``, no CPU
+    fallback), so its output metadata is identical on the forward and on the
+    gradient-checkpoint backward recompute -- ``torch.svd_lowrank`` is not,
+    and trips ``CheckpointError`` when used here.
 
     IMPORTANT: with truncation the caller MUST demote the dropped modes to
     its explicit kick -- subtract only ``P_U f_L`` (the retained-mode
@@ -336,19 +379,10 @@ def lowrank_modes(
     if max_modes is not None and int(max_modes) < P:
         q_req = int(max_modes)
         q_over = min(q_req + max(0, oversample), Gd.shape[-2], Gd.shape[-1])
-        try:
-            # Isolate the randomised projection's RNG: a forked, fixed-seed
-            # stream keeps the modes reproducible (needed for spike-replay)
-            # and leaves the global generator -- and thus the thermostat
-            # noise draw -- exactly where it was.  (Single-GPU assumption:
-            # only the input's own device is forked.)
-            _fork = [Gd.device.index] if Gd.is_cuda else []
-            with torch.random.fork_rng(devices=_fork):
-                torch.manual_seed(_LOWRANK_SVD_SEED)
-                U_full, S, _ = torch.svd_lowrank(Gd, q=q_over, niter=niter)
-        except RuntimeError:
-            # Randomised path failed -> fall back to the stable full SVD.
-            U_full, S = _svd_stable(Gd)
+        # Deterministic, branch-free, device-stable randomised SVD -- safe to
+        # recompute inside a gradient-checkpointed layer step (torch.svd_lowrank
+        # is not; see _randomised_svd_det).
+        U_full, S = _randomised_svd_det(Gd, q_over, niter)
     else:
         q_req = P if max_modes is None else min(int(max_modes), P)
         U_full, S = _svd_stable(Gd)

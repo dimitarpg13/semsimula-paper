@@ -420,6 +420,36 @@ def test_lowrank_integrator_wired_and_finite():
           f"{excursion_l:.3e} vs baoab_cfc {excursion_c:.3e}), distinct paths")
 
 
+def test_truncated_lowrank_checkpoint_recompute():
+    """Truncated low-rank modes (``lowrank_max_modes`` set) must recompute
+    identically under gradient checkpointing.
+
+    The mode extractor runs inside the checkpointed layer step, so its output
+    metadata must match on the forward and on the backward recompute.  The old
+    ``torch.svd_lowrank`` path drew from the global RNG and had a ``try/except``
+    CPU fallback, so the recompute could take a different branch/device and
+    trip ``CheckpointError: recomputed values ... have different metadata``.
+    The deterministic, branch-free, device-stable randomised SVD must not.
+    """
+    for ckpt in (False, True):
+        model, cfg = _make_model(integrator="baoab_cfc_lowrank", analytic=True,
+                                 lowrank_max_modes=4)
+        model.cfg.use_layer_checkpoint = ckpt
+        model.train()
+        torch.manual_seed(11)
+        x = torch.randint(0, cfg.vocab_size, (2, 8))
+        y = torch.randint(0, cfg.vocab_size, (2, 8))
+        _, loss = model(x, y)
+        loss.backward()                             # CheckpointError before fix
+        assert torch.isfinite(loss), "truncated low-rank: non-finite loss"
+        n_grad = sum(1 for p in model.parameters()
+                     if p.grad is not None and torch.isfinite(p.grad).all())
+        assert n_grad > 0.8 * sum(1 for _ in model.parameters()), (
+            "truncated low-rank: too few finite grads")
+    print("  [ok] truncated low-rank modes recompute cleanly under "
+          "gradient checkpointing")
+
+
 def test_velocity_encoding_roundtrip():
     """The BAOAB step's h_prev_out really carries the outgoing velocity."""
     model, cfg = _make_model(integrator="baoab_cfc", analytic=True)
@@ -449,6 +479,7 @@ def main():
         test_cfc_substep_zero_stiffness_no_nan,
         test_cfc_stiffness_immunity,
         test_lowrank_integrator_wired_and_finite,
+        test_truncated_lowrank_checkpoint_recompute,
         test_velocity_encoding_roundtrip,
         test_end_to_end_all_integrators,
     ]
