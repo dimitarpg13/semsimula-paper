@@ -122,6 +122,18 @@ class MultiXiPARFConfig(SparsePARFConfig):
     #                An A-substep Strang-splits the diagonal spring and the
     #                low-rank rotation (2nd order in their commutator, both
     #                factors unconditionally stable).
+    #                STATUS (2026-08-30): mathematically correct and stable
+    #                (see cfc_baoab.py's module docstring for the three bugs
+    #                fixed getting it there), but NOT production-feasible at
+    #                L=8/d=384/OWT scale -- the batched per-token SVD costs
+    #                ~120 s/step at full width, ~50 s/step even restricted to
+    #                the 2 stiffest layers via ``lowrank_layers`` (vs.
+    #                ~10-15 s/step for 'baoab_cfc'), and the companion note's
+    #                stiffness bracket (S:33) shows the curvature it bounds,
+    #                sigma_max(B_k)^2, is only a weak correlate of the
+    #                observed gradient spikes, not their driver.  Retained
+    #                for completeness / smaller-scale future use; production
+    #                training uses 'baoab_cfc'.
     integrator: str = "verlet"
 
     # Cap on the number of low-rank modes rotated exactly by the

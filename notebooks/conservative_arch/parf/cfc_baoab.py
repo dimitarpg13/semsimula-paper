@@ -86,6 +86,58 @@ palindromic; BAOAB's known advantage over ABOBA is specific to
 configurational sampling accuracy at high friction with an active
 thermostat, which does not apply at the deterministic ``T = 0`` default
 used here.
+
+Low-rank exact off-diagonal arm (``baoab_cfc_lowrank``) -- status
+------------------------------------------------------------------
+
+``cfc_substep`` above only integrates the *diagonal* part of V_theta's
+local curvature exactly; ``harmonic_terms_lowrank`` + :func:`lowrank_modes`
++ :func:`lowrank_cfc_substep` extend this to the anisotropic Gaussian
+family's off-diagonal precision ``B_k B_k^T`` as well, via an
+impulse/RESPA split (see ``model_parf_multixi._layer_step_langevin``'s
+``use_lowrank`` branch).  Mathematically correct and unconditionally
+stable, as of 2026-08-30 (commits ``82e84ef``, ``e6445d2`` and the
+``harmonic_terms_lowrank`` fix below), after three bugs surfaced getting it
+running at the L=8, d=384 OWT scale:
+
+1. **``torch.svd_lowrank`` is not safe under gradient checkpointing.**  Its
+   global-RNG projection and internal ``try/except`` fallback let the
+   backward recompute take a different branch (and even a different
+   *device*, via the CPU last resort) than the forward, tripping
+   ``CheckpointError: recomputed values ... have different metadata``.
+   Fixed by :func:`_randomised_svd_det`: a local-generator, branch-free,
+   GPU-only randomised SVD whose output shape/dtype/device never varies.
+2. **NaN modes from a degenerate GPU SVD poisoned the whole gradient.**  A
+   fully degenerate token can make cusolver return NaN singular
+   vectors/values *without raising*; the old ``U * keep`` masking computed
+   ``NaN * 0 = NaN``.  Fixed with ``torch.where``-based masking (picks the
+   zero branch regardless of the NaN) plus a final ``nan_to_num`` scrub.
+3. **``sqrt(g)`` in ``harmonic_terms_lowrank`` had an infinite backward at
+   ``g = 0``** -- the same ``inf * 0`` class of bug as the
+   ``_OMEGA_SQ_FLOOR`` comment above, but for the well weight rather than
+   the stiffness: any well far enough from ``h`` underflows ``g -> 0``
+   (forward-safe), and ``g.sqrt()``'s ``1/(2 sqrt g)`` backward times
+   ``dg/de = g = 0`` gave NaN.  Fixed by computing ``sqrt(g) = sqrt(w) *
+   exp(-0.25*e)`` directly (identical value, analytic gradient).
+
+**Verdict: correct but not production-feasible at this scale.**  The
+batched per-token SVD is the entire extra cost over ``baoab_cfc``.
+Measured on the L=8, d=384, B=4 (block=512) OWT run: **~120 s/step** with
+all 8 layers exactly integrated (``lowrank_max_modes=16``), or **~50
+s/step** restricted to the 2 stiffest layers via ``lowrank_layers`` plus
+cheaper randomised-SVD knobs (``lowrank_niter=1``, ``lowrank_oversample=2``)
+-- vs. ``baoab_cfc``'s ~10-15 s/step.  Even the cheapest configuration is
+~3-4x too slow to finish a 100k-step run in practical time (the 2-layer
+figure alone is ~22 days for the last 62.5k steps).  It is also aimed at
+the wrong target: the companion note's stiffness-bracket result (see
+``semsimula-paper/companion_notes/CfC_BAOAB_Integrator_and_Mitigations.md``,
+S:33) already showed ``sigma_max(B_k)^2`` -- the very quantity this arm
+integrates exactly -- is only a weak correlate of the observed gradient
+spikes, not their driver (``E``, ``P`` and ``depth_code`` lead the hard
+triggers instead).  So this arm is **retained in the codebase for
+completeness and for future / smaller-scale use** (e.g. smaller ``d``/``L``,
+or once the batched-SVD cost is amortised differently), but production
+training uses ``integrator='baoab_cfc'``.
 """
 
 from __future__ import annotations

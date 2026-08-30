@@ -26,6 +26,7 @@ live in the same `companion_notes/` folder.
 31. [SCAF Phase 7b/7c Audit Plan for Tuning precision_lr_max (L=16, and now L=8)](#31-scaf-phase-7b7c-audit-plan-for-tuning-precision_lr_max-l16-and-now-l8)
 32. [L=8 baoab_cfc Baseline: Extended Trajectory and the Decision to Switch Mid-Run](#32-l8-baoab_cfc-baseline-extended-trajectory-steps-2700039867-and-the-decision-to-switch-mid-run)
 33. [The Bracketing Result Is Modest and Non-Escalating: $B_k$ Is Not the Primary Driver, and a Root-Cause Workflow for the Non-$V_\theta$ Spikes](#33-the-bracketing-result-is-modest-and-non-escalating-b_k-is-not-the-primary-driver-and-a-root-cause-workflow-for-the-non-v_theta-spikes)
+34. [`baoab_cfc_lowrank` at L=8 Scale: Correct and Stable, but Not Production-Feasible](#34-baoab_cfc_lowrank-at-l8-scale-correct-and-stable-but-not-production-feasible)
 
 ---
 
@@ -1973,6 +1974,121 @@ for productionising it).
 
 ---
 
+## 34. `baoab_cfc_lowrank` at L=8 Scale: Correct and Stable, but Not Production-Feasible
+
+While §33's Phase 1/2 harness was being built and awaiting a fresh
+`GRAD_NORM_HARD_TRIGGER` to fire against, the still-open §29.2/§30 low-rank
+exponential substep — `integrator='baoab_cfc_lowrank'`, which integrates
+the anisotropic Gaussian's off-diagonal $B_k B_k^\top$ coupling exactly
+rather than explicitly — was finally exercised end-to-end at the live
+L=8, $d=384$, OWT scale, resuming from the §32 `baoab_cfc` run's step
+37,500 checkpoint. It surfaced three implementation bugs (below), all now
+fixed and unit-tested, before landing on the negative verdict that gives
+this section its title.
+
+### 34.1 Three bugs surfaced getting it running at scale
+
+**1. `torch.svd_lowrank` is not safe under gradient checkpointing.**
+Re-running the training loop with `LOG_INTERVAL=1` after an in-session
+edit reproduced
+
+```
+CheckpointError: torch.utils.checkpoint: Recomputed values for the
+following tensors have different metadata than during the forward pass.
+```
+
+with dozens of shape/dtype/device mismatches. `torch.svd_lowrank`'s
+internal projection draws from the *global* RNG and silently falls back
+through several code paths (including a CPU last resort) depending on
+conditioning, so PyTorch's activation-checkpoint recompute — which must
+take the *same* branch the forward pass took, tensor-for-tensor — has no
+guarantee of doing so. `lowrank_modes` (`cfc_baoab.py`) was rewritten to
+call a new `_randomised_svd_det`: a local-`torch.Generator`, branch-free,
+GPU-resident randomised SVD whose output shape/dtype/device is a pure
+function of its inputs, with no internal fallback.
+
+**2. NaN modes from a degenerate GPU SVD poisoned the whole gradient.**
+Even after fix 1, `grad=nan` appeared from the very first training step.
+A fully degenerate token (all wells numerically zero-weight at that
+position) can make cusolver return `NaN` singular vectors/values
+*without raising an exception*; the old masking, `U * keep`, computed
+`NaN * 0 = NaN` and injected it into the differentiable substep. Fixed
+with `torch.where`-based masking, which picks the zero branch regardless
+of the NaN in the discarded branch, plus a final `nan_to_num` scrub on
+`U` and `kappa`.
+
+**3. `sqrt(g)` in `harmonic_terms_lowrank` had an infinite backward at
+$g=0$.** The same bug class as the `_OMEGA_SQ_FLOOR` fix already
+documented at the top of `cfc_baoab.py`, but for the per-well Gaussian
+weight $g = w\exp(-\tfrac12 e)$ rather than the stiffness: any well far
+enough from $h$ underflows $g\to0$ forward-safely, but
+`g.clamp(min=0).sqrt()`'s backward, $1/(2\sqrt g)$, times the upstream
+$dg/de = g = 0$, evaluates as $\infty \cdot 0 = \mathrm{NaN}$ in
+floating point. Fixed in `model_aniso_gaussian_vtheta.py` by computing
+
+$$\sqrt g = \sqrt w \cdot \exp\left(-\tfrac14\left(e_{\mathrm{diag}} + e_{\mathrm{lr}}\right)\right)$$
+
+directly — identical value to $\sqrt{w e^{-e/2}}$, but analytic in the
+exponent $e$, so it has no $1/\sqrt{\cdot}$ node to differentiate through.
+
+### 34.2 Cost controls added
+
+Two config knobs were added to `model_parf_multixi.PARFConfig` so the
+(now-correct) exact arm's cost could be tuned down before being measured:
+`lowrank_layers` (restrict the expensive path to a subset of layers,
+falling back to the cheap diagonal `baoab_cfc` substep elsewhere) and
+`lowrank_niter` / `lowrank_oversample` (subspace-iteration and
+probe-oversampling knobs for `_randomised_svd_det`, cheaper at the cost of
+slightly less accurate top modes — safe here because demoted modes still
+go to the stable explicit kick). `lowrank_max_modes` (§30, already
+existing) truncates to the $k$ stiffest modes per token via the same
+randomised path.
+
+### 34.3 Measured cost: 4-12x `baoab_cfc`, at any layer-count setting
+
+| Configuration | s/step (measured) | vs. `baoab_cfc` (≈10-15 s/step) |
+|---|---|---|
+| All 8 layers, `lowrank_max_modes=16`, `niter=2`, `oversample=4` | ≈120 s | ≈8-12x |
+| 2 stiffest layers only, `niter=1`, `oversample=2` | ≈50 s | ≈4-5x |
+
+The batched per-token SVD is the entire extra cost; it does not amortize
+with fewer layers as cheaply as hoped because the remaining SVDs are per
+*token* (not per layer) and dominate even a 2-layer configuration. At
+~50 s/step, the remaining 62,500 steps of a 100,000-step run would take
+roughly **36 days** of wall-clock on a single GPU — not a run that
+finishes.
+
+### 34.4 Verdict: retained for completeness, not used in production
+
+**`baoab_cfc_lowrank` is mathematically correct and unconditionally
+stable** (no NaNs, no divergence, in every configuration tested) **but is
+not production-feasible at L=8/$d$=384/OWT scale**, on cost grounds alone.
+It is also, independently, aimed at a target that §33's bracket
+measurement already showed to be a weak lever: $\sigma_{\max}(B_k)^2$ —
+the exact quantity this arm integrates without approximation — was found
+elevated by only +1% to +24%, non-monotonically, between the healthy
+checkpoint and both hard-trigger snapshots (§33.1), while `E`/`P` and
+`depth_code`, not $V_\theta$'s off-diagonal curvature, lead the actual
+gradient spikes (§33.3 Phase 0). Fixing the off-diagonal integration
+exactly, even if it were free, would not be expected to address the
+dominant spike mechanism.
+
+The code is kept in the repository — `cfc_baoab.py`'s module docstring
+now carries this status note alongside the three-bug writeup, and
+`model_parf_multixi.PARFConfig.integrator`'s docstring carries a shorter
+pointer — because the underlying idea (exact rather than explicit
+integration of stiff channels) remains architecturally sound and may
+become practical at smaller scale ($d$, $L$, or context length), or if the
+per-token batched SVD cost is amortized differently in the future (e.g.
+sharing a decomposition across nearby tokens, or a cheaper structured
+approximation to $B_k B_k^\top$). **Production training reverts to
+`integrator='baoab_cfc'`** — resuming the §32 trajectory from step 37,500
+— and the §33 root-cause workflow (Phases 1/2, already landed in the
+notebook) remains the active line of investigation for the non-$V_\theta$
+spikes.
+
+---
+
 *Companion note to `Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`.
 The CfC/BAOAB propagator is implemented in
 `notebooks/conservative_arch/parf/cfc_baoab.py` and wired into the layer step
@@ -1984,7 +2100,24 @@ The anisotropic Gaussian V_theta is in
 SCAF stiffness audit (Phase 7b/7c Weyl bound) in the `stiffness_audit` branch
 of `semsimula-scaf` (`src/scaf/probes/stiffness.py`).*
 
-*Last updated: 28 August 2026, latest (§33.3 Phase 0 done: mined the L=8
+*Last updated: 30 August 2026 (adds §34: `baoab_cfc_lowrank` was run
+end-to-end at the live L=8/$d$=384/OWT scale from the §32 checkpoint,
+surfacing and fixing three bugs — a `CheckpointError` from
+`torch.svd_lowrank`'s non-deterministic branching under gradient
+checkpointing (fixed via the new branch-free `_randomised_svd_det`), NaN
+modes from a degenerate GPU SVD poisoning the gradient (fixed via
+`torch.where` masking + `nan_to_num`), and an infinite backward in
+`harmonic_terms_lowrank`'s `sqrt(g)` at $g=0$ (fixed via the analytic
+$\sqrt w\exp(-e/4)$ form) — before measuring ≈120 s/step at full width and
+≈50 s/step even restricted to 2 layers (vs. ≈10-15 s/step for
+`baoab_cfc`), which would take ≈36 days to finish the run. Verdict: correct
+and stable but not production-feasible at this scale, and independently
+aimed at a quantity §33 already showed to be a weak driver; the code is
+retained for future/smaller-scale use but production reverts to
+`baoab_cfc`, resuming the §32 trajectory. `cfc_baoab.py`'s module
+docstring and `model_parf_multixi.PARFConfig.integrator`'s docstring now
+carry the same status note). Previously updated 28 August 2026, latest
+(§33.3 Phase 0 done: mined the L=8
 run's `training_log.jsonl` (964 lines, steps 50-40,900, downloaded from
 Drive) for `grad_spike`/`watchdog_hard_reload` events. `depth_code` leads
 76% of smaller (pre-clip < 200) spikes but 0% of the two severe hard
