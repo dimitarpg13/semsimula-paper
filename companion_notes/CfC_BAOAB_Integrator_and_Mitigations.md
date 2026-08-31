@@ -2587,6 +2587,95 @@ already-captured bundles and see whether either new signal (per-layer
 register/gate health, or offending-token degeneracy) separates from the
 five smooth-cascade replays.
 
+### 38.7 The deepened forensics discriminate nothing -- but a number already sitting in the Phase-0 data does
+
+§38.6's three additions were run against the two localized captures
+(39,983 / 41,837), then, for a genuine control group, against two of the
+five smooth-cascade captures (37,763 / 41,318). Both localized events
+replayed with the same 0.0% fidelity as before.
+
+**Negative result 1 -- token degeneracy, ruled out.** `inspect_spike_tokens`
+found nothing: across all 64 rows examined (32 per capture), every single
+row has `max_repeat_run = 2` -- the floor value for ordinary English text
+(no run of 3+ identical tokens anywhere) -- and unique-token ratios in the
+unremarkable 0.29-0.63 range. The decoded snippets are routine OpenWebText
+prose (and, incidentally, one Solidity smart-contract snippet mixed into
+the 41,837 batch, but that's normal corpus composition, not a cause --
+grad norms aggregate over the whole 32-row batch, so nothing here singles
+out *which* row would even matter). Boilerplate/degenerate input text is
+not the trigger.
+
+**Negative result 2 -- the layer-resolved activation extremes and
+`set_fock_capture` gate-health table, ruled out.** Comparing all four
+deep replays side by side, the numbers are essentially indistinguishable
+between modes. Layer 0's `create_alpha_max` mean is 0.0036-0.0041 and its
+`create_entropy` is 6.215-6.224 in *all four* events, localized or smooth
+-- to three significant figures, regardless of which failure mode
+happened. `V_theta.bank[*].exponent` is in the tens-of-thousands-negative
+range in all four. `reverse_ch.Q_force` and `destruction_gates[*].output`
+per-layer curves are likewise the same shape in all four. This appears to
+be a property of the current model weights at this point in training, not
+of the batch or the outcome -- so this round of instrumentation, while a
+useful sanity check, was measuring the wrong thing.
+
+**Correction to §38.6 item 1:** `V_theta` banks turned out *not* to share
+the per-layer-overwrite bug after all. Re-inspecting real replay output
+showed every `V_theta.bank[*]` stat reported at "layer 7" in *every*
+capture, localized or smooth -- because `V_theta` is called once per
+forward pass on the full depth-stacked `xi` tensor, not once per
+`_fock_layer_step`. `_record()` now takes an explicit `layer=-1` override
+for these three stats (matching the existing `reverse_ch.logit_scale`
+convention) instead of trusting `_current_layer`, which would otherwise
+report whichever layer happened to run last.
+
+**Positive result -- it was already sitting in the Phase-0 data,
+uncomputed.** Going back to the original 7-event `spike_replay_reports`
+JSON (no new replay needed) and computing one ratio per event --
+`override:depth_code`'s captured group norm divided by the next-largest
+group's norm ("`dc_ratio`") -- produces a clean split:
+
+| step | mode | pre-clip | `depth_code` | 2nd-largest group | `dc_ratio` | L0/L3 |
+|---|---|---|---|---|---|---|
+| 37,763 | smooth | 160.4 | 88.3 | E (81.0) | 1.09 | 6.2 |
+| 40,043 | smooth | 379.8 | 163.2 | reverse_channel_scale (274.9) | 0.59 | 3.2 |
+| 40,387 | smooth | 369.3 | 258.8 | P (144.8) | 1.79 | 3.9 |
+| 41,318 | smooth | 432.8 | 31.2 | E (266.7) | 0.12 | 2.6 |
+| 41,824 | smooth | 265.8 | 73.1 | register (231.8) | 0.32 | 2.7 |
+| 39,983 | **localized** | 235.5 | 208.9 | P (67.5) | **3.09** | 50.1 |
+| 41,837 | **localized** | 528.0 | 424.6 | E (190.7) | **2.23** | 177.6 |
+
+Every smooth-cascade event has `dc_ratio < 1.8`; both localized events
+have `dc_ratio > 2.2`. `dc_ratio` is computable straight from data the
+watchdog already gathers every step (`per_group_grad_norms`/
+`clip_grads_per_group`'s per-group breakdown) with zero replay cost, and
+it is mechanistically plausible as the actual signature of the localized
+mode: `depth_code` is what shifts `xi` per depth position, so a runaway
+gradient there concentrates in the early layers where that shift is
+applied, rather than spreading evenly like an ordinary cascade -- which
+is exactly the L0/L3 pattern that originally defined the split.
+
+**Caveat -- this cannot yet be validated as a *leading* indicator.**
+`training_log.jsonl`'s periodic entries only ever carried the aggregate
+`grad_norm`, never the per-group breakdown; the breakdown was only ever
+persisted to disk at the 7 spike-capture moments. So there is no way to
+retroactively check what `dc_ratio` looks like on ordinary, uneventful
+steps, or whether it climbs for several steps before a localized-mode
+hard-trigger (a real early-warning signal) versus jumping simultaneously
+with no lead time (useful for post hoc labeling, not prevention). Cell
+6's periodic `LOG_INTERVAL` log line now also writes `dc_ratio` (the
+per-group breakdown needed for it is already computed in memory every
+step when `PER_GROUP_CLIP` is on, for clipping itself -- this just
+persists one extra derived number, no new computation), so a future
+mining pass over an extended run has the data to answer this.
+
+**Status: negative results (token degeneracy, layer-resolved activation
+extremes) and the `dc_ratio` correlation established from the existing 7
+captures; `V_theta` layer-label correction and `dc_ratio` logging landed
+in Cell 6/6d; not yet validated against live per-step data.** Next step:
+let training accumulate steps with `dc_ratio` now being logged, then mine
+`training_log.jsonl` for its distribution on ordinary steps and its
+behavior in the run-up to any future hard-trigger.
+
 ---
 
 *Companion note to `Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`.
@@ -2600,7 +2689,21 @@ The anisotropic Gaussian V_theta is in
 SCAF stiffness audit (Phase 7b/7c Weyl bound) in the `stiffness_audit` branch
 of `semsimula-scaf` (`src/scaf/probes/stiffness.py`).*
 
-*Last updated: 30 August 2026, latest (adds §38.6: rather than waiting on
+*Last updated: 30 August 2026, latest (adds §38.7: the §38.6 deep-dive
+against the two localized captures, and a matching control-group replay
+of two smooth-cascade captures, found that the layer-resolved activation
+extremes and `set_fock_capture` gate-health table are statistically
+indistinguishable between modes (a property of current model weights, not
+batch/outcome) and token degeneracy is ruled out entirely -- but a number
+already present in the original 7-event Phase-0 data, `dc_ratio`
+(`depth_code`'s group norm over the next-largest group's), splits cleanly:
+<1.8 for every smooth-cascade event, >2.2 for both localized events.
+Corrects §38.6: `V_theta` banks don't share the per-layer-overwrite bug,
+they're called once per forward pass on the depth-stacked `xi` tensor, now
+reported at `layer=-1`. `dc_ratio` logging added to Cell 6's periodic log
+line so a future mining pass can check whether it leads a hard-trigger or
+only coincides with one).
+Previously updated the same day (adds §38.6: rather than waiting on
 new localized captures, Cell 6d's replay was deepened to re-interrogate
 the two already-on-disk localized bundles (steps 39,983/41,837) for free
 -- fixes a real bug where `activation_extremes` silently only ever
