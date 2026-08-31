@@ -31,6 +31,7 @@ live in the same `companion_notes/` folder.
 36. [Decoupling Spike Capture from the Reload Trigger: the Plateau, Not Just the Rare Crisis, Is the Real Target](#36-decoupling-spike-capture-from-the-reload-trigger-the-plateau-not-just-the-rare-crisis-is-the-real-target)
 37. [Making Cell 6 Resumable In-Place, and Extracting `grad_clip_utils.py`](#37-making-cell-6-resumable-in-place-and-extracting-grad_clip_utilspy)
 38. [Seven Replays In: Two Distinct Failure Modes, Not One -- and Only the Localized One Has Crossed 500](#38-seven-replays-in-two-distinct-failure-modes-not-one----and-only-the-localized-one-has-crossed-500)
+39. [The Token-Minority Conjecture Is Falsified Twice Over: the Localized Mode Is Batch-Wide, Not Batch-Specific](#39-the-token-minority-conjecture-is-falsified-twice-over-the-localized-mode-is-batch-wide-not-batch-specific)
 
 ---
 
@@ -2676,6 +2677,137 @@ let training accumulate steps with `dc_ratio` now being logged, then mine
 `training_log.jsonl` for its distribution on ordinary steps and its
 behavior in the run-up to any future hard-trigger.
 
+## 39. The Token-Minority Conjecture Is Falsified Twice Over: the Localized Mode Is Batch-Wide, Not Batch-Specific
+
+§38.4 established that nothing in the forward-activation breakdown
+discriminates the two modes, but flagged that *density*-style measurements
+(as opposed to the min/max/mean extremes already tried) had not been ruled
+out, and that comparing forward activations at matched layers between the
+two modes had not been done. Two such measurements were designed and run
+against all four Phase-1/2-instrumented events with a per-layer $h$-gradient
+profile on record (37,763 / 41,318 smooth; 39,983 / 41,837 localized). Both
+came back negative -- one of them decisively in the *opposite* direction
+from the working conjecture.
+
+### 39.1 The conjecture, stated before either result came back
+
+Per-group clipping caps `depth_code` at 0.25 on *every* step, quiet or
+spiking (§28's clamp, tightened 0.5 → 0.25 on 2026-08-23 precisely because
+`depth_code` was already saturating its old ceiling on every quiet step --
+see the `GRAD_CLIP_OVERRIDES` comment in Cell 6). So a localized event's
+*applied* `depth_code` update is exactly the same size as a quiet step's --
+0.25 either way, whether the pre-clip norm was 88 or 425. Its damage
+therefore cannot be magnitude; it has to be direction. The conjecture: the
+direction is dictated by a small minority of rows in the batch whose tokens
+land near a sharp `V_theta` well at layers 0-2 (the only layers carrying
+meaningful salience, §38.7), while the other ~30 rows contribute little.
+Two tests were designed to check this *before* either was run, so the
+result couldn't be retrofitted to the story:
+
+1. **Per-row gradient attribution** (`attribute_spike_rows`, new in Cell
+   6d): replay the captured batch one row at a time (RNG reset to the
+   capture's pinned state before every row, so all rows see an identical
+   noise draw and are comparable to each other) and measure what fraction
+   of the summed `depth_code` row-norms a single row accounts for. Flat
+   batch of 32 rows -> baseline 1/32 = 0.031; conjecture predicts the two
+   localized events sit well above that and the two smooth events sit near
+   it.
+2. **`V_theta` exponent occupancy histogram** (added to `replay_spike_batch`):
+   per-bank counts of how many token-slots have exponent > -10 (i.e.
+   `exp()` >= 4.5e-5, the well still contributes gradient) versus
+   underflowed to numerically dead. Conjecture predicts localized events
+   show a denser live band than smooth events.
+
+### 39.2 Result 1: per-row attribution -- concentration is *higher* in the smooth mode
+
+| step | mode | pre-clip | `depth_code` top-1-row share | top-3-rows share | layer-0 $h$-grad top-1 share |
+|---|---|---|---|---|---|
+| 37,763 | smooth | 160.4 | 0.292 | 0.558 | 0.238 |
+| 41,318 | smooth | 432.8 | **0.387** | 0.585 | **0.429** |
+| 39,983 | localized | 235.5 | 0.217 | 0.424 | 0.149 |
+| 41,837 | localized | 528.0 | **0.095** | 0.248 | **0.115** |
+
+(uniform-batch baseline for 32 rows: 0.031)
+
+This is the opposite ranking from the conjecture. The two localized events
+are the *flattest* of the four -- 41,837, the single most extreme event on
+record (layer0/layer3 $h$-gradient ratio 177x, the only one to cross the
+500 hard-trigger), has its `depth_code` gradient spread almost evenly
+across all 32 rows, barely 3x the flat-batch baseline. The two smooth
+events are the more row-concentrated ones, with 41,318 putting 58% of the
+`depth_code` gradient on three rows. There is also a clean monotonic
+anti-correlation: as layer-0-2 localization gets more severe (39,983's 50x
+-> 41,837's 177x layer0/layer3 ratio), the per-row concentration gets
+*less* severe (0.217 -> 0.095 top-1 share) in lockstep.
+
+### 39.3 Result 2: exponent occupancy -- no separation in either direction
+
+| bank | 37,763 (smooth) | 41,318 (smooth) | 39,983 (localized) | 41,837 (localized) |
+|---|---|---|---|---|
+| 0 | 7.6e-6 | 3.8e-5 | 3.1e-5 | 3.1e-5 |
+| 1 | 1.5e-5 | 3.1e-5 | 7.6e-6 | 2.3e-5 |
+| 2 | 1.4e-4 | 1.4e-4 | 1.4e-4 | 1.4e-4 |
+| 3 | 1.4e-3 | 8.8e-4 | 9.3e-4 | 8.7e-4 |
+| 4 | 2.4e-3 | 1.1e-3 | 1.6e-3 | 8.6e-4 |
+
+(`live_frac`: fraction of token-slots per bank with exponent > -10)
+
+Bank 2 is 1.4e-4 in all four events; the others are within the same order
+of magnitude across modes with no consistent direction. Worth noting on
+its own, independent of the mode question: **at every capture, regardless
+of mode, over 99.9% of token-well pairs are numerically dead** (exponent
+< -10, contributing exactly zero gradient) -- the anisotropic-Gaussian
+`V_theta` wells operate in this extremely sparse regime universally, not
+just during spikes.
+
+### 39.4 Revised picture: localized is layer-localized but batch-wide
+
+"Localized" in §38 was always a statement about *layers* (0-2 blow up, 3-7
+don't), never about *rows*. §39.2 shows those are not the same thing: the
+localized mode is layer-localized but **batch-wide** -- something makes
+nearly every row in the batch simultaneously hypersensitive at layers 0-2,
+rather than one bad token dominating. The smooth mode, perhaps counter to
+its name, is the one with real row-level structure.
+
+Combined with §38.4/§38.6/§38.7's prior negative results (token
+degeneracy, layer-resolved activation extremes, per-layer gate health all
+failed to discriminate the modes), the pattern is now consistent across
+five independent forward-pass-side measurements: **nothing about what is
+in this particular batch, on this particular forward pass, discriminates
+the two modes.** The only thing that ever has is a backward/parameter-
+magnitude quantity -- `dc_ratio` (§38.7) -- which is really a statement
+about where in *parameter* space the gradient concentrates
+(`depth_code`+`V_theta` vs. everywhere else), not about the data.
+
+A batch-wide effect that gets *more* uniform across rows as it gets *more*
+severe by layer smells like a property of the shared weights/dynamics
+state the model is in going into that step, not of which tokens happen to
+be present. This reopens, in sharper form, the `sigma_max(B_k)` /
+precision-matrix stiffness line from §28/§31 (previously bracketed and
+downgraded as "not the primary driver" for *overall* run stability, a
+different question). The sharper form: does a raw weight-space stiffness
+proxy -- e.g. `V_theta.bank.banks[k].B_proj`'s spectral or Frobenius norm,
+computed from the *parameters themselves*, not their per-token forward
+evaluation (which §39.3 just showed doesn't discriminate) -- drift upward
+over the steps immediately preceding a localized event, before any
+particular batch is even drawn? The `_spikebatch.pt` bundles are single-
+instant snapshots and cannot answer this; it needs a trajectory.
+
+### 39.5 Status
+
+**Two forward-pass hypotheses falsified (token-minority via per-row
+attribution; well-density via exponent occupancy), both tested against
+all four Phase-1/2-instrumented events with a recorded layer profile
+before either was run.** Sharpens rather than resolves the open question
+from §38.4: the discriminator is confirmed to live on the parameter side,
+not the data side. Next step, mirroring the `dc_ratio` pattern of §38.7:
+add a weight-space stiffness proxy for the `V_theta` low-rank precision
+factor to Cell 6's periodic `LOG_INTERVAL` logging, then mine it
+retroactively once more localized events accumulate, checking specifically
+whether it trends upward in the steps before a localized-mode hard-trigger
+(a real leading indicator) or only coincides with one (useful for labeling,
+not prevention).
+
 ---
 
 *Companion note to `Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`.
@@ -2689,7 +2821,23 @@ The anisotropic Gaussian V_theta is in
 SCAF stiffness audit (Phase 7b/7c Weyl bound) in the `stiffness_audit` branch
 of `semsimula-scaf` (`src/scaf/probes/stiffness.py`).*
 
-*Last updated: 30 August 2026, latest (adds §38.7: the §38.6 deep-dive
+*Last updated: 31 August 2026 (adds §39: two forward-pass hypotheses for
+the localized mode's mechanism -- a token-minority driving `depth_code`'s
+direction, and denser `V_theta` well occupancy -- were each designed
+before being tested and both came back falsified against all four
+Phase-1/2-instrumented events with a recorded layer profile; per-row
+attribution shows the localized events are the *flattest* across rows,
+the opposite of the conjecture, with a clean monotonic anti-correlation
+between layer-0-2 severity and row concentration; exponent occupancy
+shows no separation at all, and additionally reveals over 99.9% of
+token-well pairs are numerically dead in every capture regardless of
+mode. Revises the working picture: the localized mode is layer-localized
+but batch-wide, not batch-specific, reopening the `sigma_max(B_k)`
+precision-matrix stiffness line in sharper, trajectory-based form. Next
+step: add a weight-space stiffness proxy to Cell 6's periodic logging,
+same pattern as `dc_ratio`.)
+
+Previously updated 30 August 2026 (adds §38.7: the §38.6 deep-dive
 against the two localized captures, and a matching control-group replay
 of two smooth-cascade captures, found that the layer-resolved activation
 extremes and `set_fock_capture` gate-health table are statistically
