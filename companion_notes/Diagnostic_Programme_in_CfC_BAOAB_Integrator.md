@@ -70,21 +70,14 @@ Each context channel's scalar potential is a mixture of $K$ inverted Gaussian
 the per-layer `depth_code`) and hidden state $h\in\mathbb{R}^d$:
 
 $$
-V(h;\xi) \;=\; -\sum_{k=1}^{K} w_k \,
-\exp\!\Big(-\tfrac12\,(h-\mu_k)^{\top} P_k\,(h-\mu_k)\Big),
-\qquad
-P_k \;=\; \underbrace{\mathrm{diag}(a_k)}_{\text{diagonal}}
-        \;+\; \underbrace{B_k B_k^{\top}}_{\text{low-rank}} .
+V(h;\xi) = -\sum_{k=1}^{K} w_k \exp\Big(-\tfrac12(h-\mu_k)^{\top} P_k(h-\mu_k)\Big), \qquad P_k = \underbrace{\mathrm{diag}(a_k)}_{\text{diagonal}} + \underbrace{B_k B_k^{\top}}_{\text{low-rank}}.
 $$
 
 Every well parameter is a **linear projection of the context**, so the geometry
 of the well is data- and depth-dependent:
 
 $$
-\mu_k = W_\mu\,\xi,\quad
-a_k = \mathrm{softplus}(W_a\,\xi)+\varepsilon,\quad
-w = \mathrm{softmax}(W_w\,\xi)\cdot w_{\mathrm{scale}},\quad
-B_k = \mathrm{reshape}\!\big(W_B\,\xi\big)\in\mathbb{R}^{d\times r},\; r\ll d .
+\mu_k = W_\mu\xi,\quad a_k = \mathrm{softplus}(W_a\xi)+\varepsilon,\quad w = \mathrm{softmax}(W_w\xi)\cdot w_{\mathrm{scale}},\quad B_k = \mathrm{reshape}\big(W_B\xi\big)\in\mathbb{R}^{d\times r}, r \ll d.
 $$
 
 The two curvature contributions are qualitatively different objects:
@@ -129,16 +122,14 @@ the well centre.** The amber dots mark that shell.
 The potential is smooth, so the force is exact:
 
 $$
-\nabla_h V \;=\; \sum_{k=1}^{K} g_k\, P_k\,(h-\mu_k),
-\qquad
-g_k \;=\; w_k \exp\!\Big(-\tfrac12 (h-\mu_k)^{\top} P_k (h-\mu_k)\Big)\;>\;0 .
+\nabla_h V = \sum_{k=1}^{K} g_k P_k(h-\mu_k), \qquad g_k = w_k \exp\Big(-\tfrac12 (h-\mu_k)^{\top} P_k (h-\mu_k)\Big) > 0.
 $$
 
 *(this is exactly `analytical_grad`; the physical force is $f=-\nabla_h V$.)*
 Because $B_kB_k^{\top}$ is rank-$r$ PSD with eigenvalues $\sigma_i(B_k)^2$,
 
 $$
-\sigma_{\max}(P_k) \;\le\; \max_d a_{k,d} \;+\; \sigma_{\max}(B_k)^2 ,
+\sigma_{\max}(P_k) \le \max_d a_{k,d} + \sigma_{\max}(B_k)^2,
 $$
 
 and with `lr_term_share` $\approx 0.999$ the diagonal part is negligible, so we
@@ -152,16 +143,14 @@ and drop the soft directions (they contribute only $O(a)$). One well's
 along-$v$ force is
 
 $$
-\boxed{\;\phi(t)\;=\;\lambda\, t \,\exp\!\big(-\tfrac12\,\lambda t^2\big)\;}
+\boxed{\phi(t) = \lambda t \exp\big(-\tfrac12 \lambda t^2\big)}
 $$
 
 This little function is the whole story. It vanishes at the centre ($t=0$) and
 in the tail ($t\to\infty$), and peaks in between at
 
 $$
-t^{\star} \;=\; \frac{1}{\sqrt{\lambda}},
-\qquad
-\phi_{\max} \;=\; \sqrt{\lambda/e}\;\propto\;\sigma_{\max}(B_k).
+t^{\star} = \frac{1}{\sqrt{\lambda}}, \qquad \phi_{\max} = \sqrt{\lambda/e} \propto \sigma_{\max}(B_k).
 $$
 
 Two consequences, both visible in the figure below:
@@ -183,8 +172,7 @@ those parameters, so differentiating the along-$v$ force with respect to the
 parameter $\theta$ that controls $\lambda$ gives
 
 $$
-\frac{\partial}{\partial \lambda}\Big[\lambda\, t\, e^{-\lambda t^2/2}\Big]
-\;=\; t\,e^{-\lambda t^2/2}\Big(1-\tfrac12\lambda t^2\Big).
+\frac{\partial}{\partial \lambda}\Big[\lambda t e^{-\lambda t^2/2}\Big] = t e^{-\lambda t^2/2}\Big(1-\tfrac12\lambda t^2\Big).
 $$
 
 Evaluated on the peak-force shell $t=t^{\star}=\lambda^{-1/2}$ this is
@@ -194,12 +182,12 @@ upstream $h$-gradient, whose own magnitude scales as $\sqrt{\lambda}$
 per-token contribution to $\nabla_\theta$ scales as**
 
 $$
-\big\|\nabla_\theta \mathcal{L}\big\|_{\text{worst}} \;\sim\; \lambda \;=\; \sigma_{\max}(B_k)^2 .
+\big\lVert \nabla_\theta \mathcal{L} \big\rVert_{\text{worst}} \sim \lambda = \sigma_{\max}(B_k)^2.
 $$
 
 That single quadratic is exactly the quantity mitigation #2 was designed to
 cap. `_bound_lowrank` bounds $\sigma_{\max}(B_k)^2 \le$ `precision_lr_max` by a
-smooth Frobenius cap (using $\sigma_{\max}(B_k)\le\|B_k\|_F$):
+smooth Frobenius cap (using $\sigma_{\max}(B_k)\le\lVert B_k\rVert_F$):
 
 ```python
 def _bound_lowrank(self, B):                       # B: (..., K, d, rank)
@@ -245,27 +233,27 @@ expensive end reconstructs a single offending step bit-for-bit.
 
 ```mermaid
 flowchart LR
-    subgraph P0["Phase 0 — always on (near-zero cost)"]
-        A0["training_log.jsonl<br/>per-group grad norms"]
-        A1["dc_ratio<br/>(depth_code / next group)"]
-        A2["b_proj_sigma_max<br/>sigma_max(W_B) per bank"]
+    subgraph P0 [Phase 0 - always on, near zero cost]
+        A0["training&#95;log.jsonl<br>per group grad norms"]
+        A1["dc&#95;ratio<br>depth&#95;code vs next group"]
+        A2["b&#95;proj&#95;sigma&#95;max<br>sigma&#95;max of W&#95;B per bank"]
     end
-    subgraph P1["Phase 1 — on trigger (cheap)"]
-        B0["watchdog:<br/>CAPTURE=200, HARD=500"]
-        B1["*_spikebatch.pt<br/>batch + RNG + weights"]
+    subgraph P1 [Phase 1 - on trigger, cheap]
+        B0["watchdog<br>CAPTURE 200, HARD 500"]
+        B1["&#42;&#95;spikebatch.pt<br>batch + RNG + weights"]
     end
-    subgraph P2["Phase 2 — offline (expensive, exact)"]
-        C0["replay_spike_batch<br/>per-layer + per-well forensics"]
-        C1["inspect_spike_tokens<br/>token degeneracy"]
-        C2["attribute_spike_rows<br/>per-row concentration"]
+    subgraph P2 [Phase 2 - offline, expensive and exact]
+        C0["replay&#95;spike&#95;batch<br>per layer + per well forensics"]
+        C1["inspect&#95;spike&#95;tokens<br>token degeneracy"]
+        C2["attribute&#95;spike&#95;rows<br>per row concentration"]
     end
-    subgraph P3["Phase 3 — productionize"]
-        D0["SCAF GradientSpikeProbe<br/>InterventableModel / ProbeResult"]
+    subgraph P3 [Phase 3 - productionize]
+        D0["SCAF GradientSpikeProbe<br>InterventableModel or ProbeResult"]
     end
-    P0 -->|"threshold crossed"| P1
-    P1 -->|"ring buffer of bundles"| P2
-    P2 -->|"validated signal"| P3
-    P3 -.->|"feeds new scalar"| P0
+    P0 -->|threshold crossed| P1
+    P1 -->|ring buffer of bundles| P2
+    P2 -->|validated signal| P3
+    P3 -.->|feeds new scalar| P0
 ```
 
 Each phase answers a different question: Phase 0 asks *when and how often*;
@@ -285,7 +273,7 @@ writes two derived scalars into `training_log.jsonl` at `LOG_INTERVAL` cadence.
 V_phi`. Define
 
 $$
-\text{dc\_ratio} \;=\; \frac{\|\nabla_{\text{depth\_code}}\|}{\max_{g\neq\text{depth\_code}}\|\nabla_g\|}.
+\text{dc-ratio} = \frac{\lVert\nabla_{\text{depth-code}}\rVert}{\max_{g\neq\text{depth-code}}\lVert\nabla_g\rVert}.
 $$
 
 Mining the seven archived replay reports (`spike_replay_reports.json`) showed
@@ -334,7 +322,7 @@ _log_write(json.dumps({
 }) + '\n')
 ```
 
-An SVD of a $(K\,d\,r)\times d_{\text{in}}$ matrix is real compute, so — unlike
+An SVD of a $(K \cdot d \cdot r)\times d_{\text{in}}$ matrix is real compute, so — unlike
 `dc_ratio`, which only reads existing numbers — `b_proj_sigma_max` runs at
 `LOG_INTERVAL` cadence, not every step. Its promotion to a per-step guard is a
 Phase-3 decision, gated on whether the logged trajectory actually leads spikes.
@@ -407,13 +395,13 @@ pathological repeated-token sequence?" — and, per §9, it is not.
 ### 7.3 `attribute_spike_rows` — is one row driving the update?
 
 Re-runs the captured batch **one row at a time**, each scaled by
-$1/(\text{grad\_accum}\cdot\text{rows\_per\_mb})$ so its number is its own share
-of the aggregate, with the RNG reset to the pinned state before every row so all
+`1 / (grad_accum * rows_per_mb)` so its number is its own share of the
+aggregate, with the RNG reset to the pinned state before every row so all
 rows are compared under an identical noise draw. Because gradient norms do not
 add, the concentration metric is
 
 $$
-\text{top1\_share} \;=\; \frac{\max_i \|g_i\|}{\sum_i \|g_i\|},
+\text{top1-share} = \frac{\max_i \lVert g_i\rVert}{\sum_i \lVert g_i\rVert},
 $$
 
 which equals $1/n$ for a perfectly flat batch and tends to $1$ when a single row
@@ -431,8 +419,8 @@ captured event cleanly into two families.
 
 | Mode | Per-layer profile (L0 → L3) | `dc_ratio` | Crossed 500? | Reading |
 |---|---|---|---|---|
-| **Smooth cascade** | gentle, $2.6$–$6.3\times$ | $< 1.8$ | never | broad, well-conditioned; clipping is adequate |
-| **Localized blow-up** | cliff, $50$–$177\times$ within L0–2 | $> 2.2$ | **only mode that has** | sharp low-rank direction resonating at layers 0–2 |
+| **Smooth cascade** | gentle, 2.6-6.3x | < 1.8 | never | broad, well-conditioned; clipping is adequate |
+| **Localized blow-up** | cliff, 50-177x within L0-2 | > 2.2 | **only mode that has** | sharp low-rank direction resonating at layers 0-2 |
 
 The layers that blow up (0–2) are exactly the layers that carry meaningful
 `salience` ($\sim 0.32/0.14$–$0.22/0.06$–$0.15$ at L0–2 vs. $\sim 10^{-3}$–$10^{-4}$
@@ -441,14 +429,14 @@ layer failing; it is the **only layers where the well is doing work**.
 
 ```mermaid
 flowchart TD
-    S["captured spike<br/>(pre-clip norm > 200)"] --> Q1{"per-layer profile:<br/>L0/L3 ratio?"}
-    Q1 -->|"&lt; ~10 (gentle)"| SM["SMOOTH CASCADE"]
-    Q1 -->|"&gt; ~50 (cliff at L0-2)"| LO["LOCALIZED BLOW-UP"]
-    SM --> Q2{"dc_ratio &lt; 1.8 ?"}
-    LO --> Q3{"dc_ratio &gt; 2.2 ?"}
-    Q2 -->|yes| SMOK["clipping adequate<br/>monitor only"]
-    Q3 -->|yes| LOACT["the convergence-stalling mode<br/>-> weight-space remediation"]
-    LOACT --> R["check b_proj_sigma_max trajectory<br/>(is sigma_max(W_B) drifting up?)"]
+    S["captured spike<br>pre clip norm above 200"] --> Q1{"per layer profile<br>L0 to L3 ratio"}
+    Q1 -->|below 10, gentle| SM["SMOOTH CASCADE"]
+    Q1 -->|above 50, cliff at L0 to L2| LO["LOCALIZED BLOWUP"]
+    SM --> Q2{"dc&#95;ratio below 1.8"}
+    LO --> Q3{"dc&#95;ratio above 2.2"}
+    Q2 -->|yes| SMOK["clipping adequate<br>monitor only"]
+    Q3 -->|yes| LOACT["the convergence stalling mode<br>leads to weight space remediation"]
+    LOACT --> R["check b&#95;proj&#95;sigma&#95;max trajectory<br>is sigma&#95;max of W&#95;B drifting up"]
 ```
 
 ---
@@ -492,7 +480,7 @@ a targeted fix, with each verb owned by a specific instrument.
 |---|---|---|---|
 | **Categorize** | Phase-1 watchdog | pre-clip norm vs {200, 500} | is this worth a bundle? worth a reload? |
 | **Classify** | `replay_spike_batch` per-layer profile + Phase-0 `dc_ratio` | profile shape; group-norm ratio | smooth cascade vs localized blow-up |
-| **Diagnose** | `attribute_spike_rows`, exponent histogram, `b_proj_sigma_max` | row concentration; occupancy; $\sigma_{\max}(W_B)$ | batch-wide vs token-specific; weight drift |
+| **Diagnose** | `attribute_spike_rows`, exponent histogram, `b_proj_sigma_max` | row concentration; occupancy; `sigma_max(W_B)` | batch-wide vs token-specific; weight drift |
 | **Remediate** | targeted by class (below) | — | the smallest intervention that fits the mechanism |
 
 The remediation menu is deliberately **matched to the diagnosed mechanism**
@@ -500,12 +488,12 @@ rather than applied blanket:
 
 ```mermaid
 flowchart LR
-    C["classified event"] --> A{smooth or localized?}
-    A -->|smooth cascade| M1["per-group clip<br/>(already adequate)"]
-    A -->|localized| B{sigma_max&#40;W_B&#41; drifting?}
-    B -->|yes| M2["tighten precision_lr_max<br/>or weight-decay W_B"]
-    B -->|"no / spiky"| M3["baoab_cfc_lowrank<br/>exact low-rank substep<br/>(correct but costly, note §34)"]
-    M2 --> V["re-mine Phase-0 trajectory:<br/>did spikes drop?"]
+    C["classified event"] --> A{smooth or localized}
+    A -->|smooth cascade| M1["per group clip<br>already adequate"]
+    A -->|localized| B{"sigma&#95;max of W&#95;B drifting"}
+    B -->|yes| M2["tighten precision&#95;lr&#95;max<br>or weight decay on W&#95;B"]
+    B -->|no or spiky| M3["baoab&#95;cfc&#95;lowrank<br>exact low rank substep<br>correct but costly, note section 34"]
+    M2 --> V["re mine Phase 0 trajectory<br>did spikes drop"]
     M3 --> V
     M1 --> V
 ```
@@ -547,20 +535,20 @@ that all want the same forensics. The natural next step is a dedicated package.
 
 ```mermaid
 flowchart TB
-    subgraph repo["semsimula-diag (new repo)"]
+    subgraph repo [semsimula diag, new repo]
         direction TB
-        CAP["capture/<br/>watchdog thresholds,<br/>spikebatch writer,<br/>ring buffer"]
-        REP["replay/<br/>deterministic re-run,<br/>snapshot/restore invariant,<br/>RNG pinning"]
-        PROBE["probes/<br/>per_layer_hgrad,<br/>row_attribution,<br/>exponent_occupancy,<br/>bproj_spectrum"]
-        LOG["phase0/<br/>dc_ratio, b_proj_sigma_max,<br/>jsonl schema + readers"]
-        REPORT["report/<br/>ProbeResult dataclass,<br/>plots (dp_*.py),<br/>mode classifier"]
+        CAP["capture<br>watchdog thresholds,<br>spikebatch writer,<br>ring buffer"]
+        REP["replay<br>deterministic re run,<br>snapshot and restore invariant,<br>RNG pinning"]
+        PROBE["probes<br>per&#95;layer&#95;hgrad,<br>row&#95;attribution,<br>exponent&#95;occupancy,<br>bproj&#95;spectrum"]
+        LOG["phase0<br>dc&#95;ratio, b&#95;proj&#95;sigma&#95;max,<br>jsonl schema + readers"]
+        REPORT["report<br>ProbeResult dataclass,<br>plots dp&#95;&#42;.py,<br>mode classifier"]
     end
-    NB["training notebook<br/>(imports capture + phase0)"] --> CAP
+    NB["training notebook<br>imports capture + phase0"] --> CAP
     NB --> LOG
-    CLI["diag CLI / CI job<br/>(imports replay + probes)"] --> REP
+    CLI["diag CLI or CI job<br>imports replay + probes"] --> REP
     REP --> PROBE
     PROBE --> REPORT
-    SCAF["semsimula-scaf<br/>GradientSpikeProbe"] -. adopts .-> PROBE
+    SCAF["semsimula scaf<br>GradientSpikeProbe"] -. adopts .-> PROBE
 ```
 
 Concretely:
@@ -617,21 +605,20 @@ not rewriting them.
 
 ---
 
-*Provenance. The math in §2–§3 is the exact energy/force of
+Provenance. The math in §2-§3 is the exact energy/force of
 `notebooks/conservative_arch/parf/model_aniso_gaussian_vtheta.py`
 (`AnisotropicMixtureGaussianVTheta.forward` / `analytical_grad` /
-`_bound_lowrank`). The diagnostics in §5–§7 are the instruments added to
+`_bound_lowrank`). The diagnostics in §5-§7 are the instruments added to
 `notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_aniso_gaussian_openwebtext_d384.ipynb`
 and `grad_clip_utils.py`; their chronological derivation and the underlying data
-are companion note
-[`CfC_BAOAB_Integrator_and_Mitigations.md`](CfC_BAOAB_Integrator_and_Mitigations.md)
-§35–§39. All five figures are produced by
-`figures/_make_diagnostic_programme_figs.py`: the well and force panels are exact
-evaluations of the potential, and the mode-profile, per-row, and occupancy panels
-are the literal replay numbers from the four Phase-1/2-instrumented captures
-(steps 37,763 / 41,318 / 39,983 / 41,837).*
+are companion note `CfC_BAOAB_Integrator_and_Mitigations.md`
+(see [this link](CfC_BAOAB_Integrator_and_Mitigations.md)) §35-§39. All five
+figures are produced by `figures/_make_diagnostic_programme_figs.py`: the well
+and force panels are exact evaluations of the potential, and the mode-profile,
+per-row, and occupancy panels are the literal replay numbers from the four
+Phase-1/2-instrumented captures (steps 37,763 / 41,318 / 39,983 / 41,837).
 
-*Last updated: 31 August 2026 (initial version: consolidates the §35–§39
+Last updated: 31 August 2026 (initial version: consolidates the §35-§39
 diagnostic programme into a standalone strategy note with the low-rank
 spike-generation derivation, the four-phase pipeline, the two-mode taxonomy, and
-a proposed `semsimula-diag` library extraction).*
+a proposed `semsimula-diag` library extraction).
