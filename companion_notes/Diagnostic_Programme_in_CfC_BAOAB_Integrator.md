@@ -73,7 +73,7 @@ $$
 V(h;\xi) \;=\; -\sum_{k=1}^{K} w_k \,
 \exp\!\Big(-\tfrac12\,(h-\mu_k)^{\top} P_k\,(h-\mu_k)\Big),
 \qquad
-P_k \;=\; \underbrace{\operatorname{diag}(a_k)}_{\text{diagonal}}
+P_k \;=\; \underbrace{\mathrm{diag}(a_k)}_{\text{diagonal}}
         \;+\; \underbrace{B_k B_k^{\top}}_{\text{low-rank}} .
 $$
 
@@ -82,14 +82,14 @@ of the well is data- and depth-dependent:
 
 $$
 \mu_k = W_\mu\,\xi,\quad
-a_k = \operatorname{softplus}(W_a\,\xi)+\varepsilon,\quad
-w = \operatorname{softmax}(W_w\,\xi)\cdot w_{\mathrm{scale}},\quad
-B_k = \operatorname{reshape}\!\big(W_B\,\xi\big)\in\mathbb{R}^{d\times r},\; r\ll d .
+a_k = \mathrm{softplus}(W_a\,\xi)+\varepsilon,\quad
+w = \mathrm{softmax}(W_w\,\xi)\cdot w_{\mathrm{scale}},\quad
+B_k = \mathrm{reshape}\!\big(W_B\,\xi\big)\in\mathbb{R}^{d\times r},\; r\ll d .
 $$
 
 The two curvature contributions are qualitatively different objects:
 
-- $\operatorname{diag}(a_k)$ is an **axis-aligned** precision. It cannot make a
+- $\mathrm{diag}(a_k)$ is an **axis-aligned** precision. It cannot make a
   narrow ridge along an oblique direction; its stiffness in every coordinate is
   bounded and separately clamped (`precision_max`).
 - $B_k B_k^{\top}$ is a rank-$r$ **PSD, off-diagonal** precision. It adds
@@ -213,7 +213,7 @@ def _bound_lowrank(self, B):                       # B: (..., K, d, rank)
 *(`model_aniso_gaussian_vtheta.py`)*
 
 The catch — and the reason the programme exists — is that this cap acts on the
-**runtime output** $B_k=\operatorname{reshape}(W_B\xi)$. The **raw weight**
+**runtime output** $B_k=\mathrm{reshape}(W_B\xi)$. The **raw weight**
 $W_B$ (`B_proj.weight`) can keep drifting to larger spectral norm while the
 capped output stays flat, and $\sigma_{\max}(W_B)$ sets how hard the model is
 pushing against the cap for *any* unit-norm context. That is precisely why we
