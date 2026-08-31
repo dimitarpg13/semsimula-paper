@@ -29,6 +29,8 @@ live in the same `companion_notes/` folder.
 34. [`baoab_cfc_lowrank` at L=8 Scale: Correct and Stable, but Not Production-Feasible](#34-baoab_cfc_lowrank-at-l8-scale-correct-and-stable-but-not-production-feasible)
 35. [Phase 1/2 Validated: First `replay_spike_batch` Result (Step 37,763) and a Clean Cascade Signature](#35-phase-12-validated-first-replay_spike_batch-result-step-37763-and-a-clean-cascade-signature)
 36. [Decoupling Spike Capture from the Reload Trigger: the Plateau, Not Just the Rare Crisis, Is the Real Target](#36-decoupling-spike-capture-from-the-reload-trigger-the-plateau-not-just-the-rare-crisis-is-the-real-target)
+37. [Making Cell 6 Resumable In-Place, and Extracting `grad_clip_utils.py`](#37-making-cell-6-resumable-in-place-and-extracting-grad_clip_utilspy)
+38. [Seven Replays In: Two Distinct Failure Modes, Not One -- and Only the Localized One Has Crossed 500](#38-seven-replays-in-two-distinct-failure-modes-not-one----and-only-the-localized-one-has-crossed-500)
 
 ---
 
@@ -2294,6 +2296,297 @@ trend noted after §35 (`depth_code` leading the smaller of a set of
 spikes, `E`/`P` overtaking it in the largest) -- looking specifically for
 whether that trend holds up over a larger n.
 
+## 37. Making Cell 6 Resumable In-Place, and Extracting `grad_clip_utils.py`
+
+### 37.1 The problem: inspecting captures cost a full restart
+
+§36's `replay_all_captures()` needs Cell 6d's functions, which (before this
+section) required Cell 6 to have already run at least once, and running
+`replay_all_captures()` at all meant *interrupting* Cell 6's training loop.
+Two practical problems followed directly from Cell 6 being a bare
+top-level `for step in range(resume_step, TOTAL_STEPS):` loop:
+
+1. **Resuming training after an interrupt required a full restart.** Cell 5
+   unconditionally rebuilds `model` from scratch and Cell 6's own resume
+   block always reloads from whatever checkpoint is on disk, so continuing
+   training after an inspection break meant: force a manual checkpoint of
+   the in-memory state (`save_checkpoint(step + 1, ..., tag_suffix='_manual')`
+   from a scratch cell), restart the Colab runtime, re-run Cells 0-5, add a
+   one-off override cell to point the resume logic at the manual
+   checkpoint, then re-run Cell 6 -- several minutes of ceremony every time,
+   purely to look at a JSON file.
+2. **Interrupting reliably caused a `CUDA out of memory` on the very next
+   `replay_all_captures()` call.** A `KeyboardInterrupt` landing mid-step
+   left that iteration's `x`, `y`, `loss`, and the full forward/backward
+   graph alive as ordinary top-level notebook globals -- nothing ever went
+   out of scope, since there was no enclosing function frame to tear down.
+   On this run that pinned 78+ GiB of *allocated* (not just
+   reserved-but-cached) GPU memory until a manual
+   `gc.collect()`+`torch.cuda.empty_cache()` cell cleared it -- see the
+   error/fix pair earlier in this session's log; every one of the first
+   `replay_all_captures()` attempts against a freshly-interrupted run OOM'd
+   before that fix.
+
+### 37.2 The fix: `run_training()`, a real function instead of a bare loop
+
+The training loop in `colab_fock_cfc_baoab_aniso_gaussian_openwebtext_d384.ipynb`'s
+Cell 6 is now:
+
+```python
+def run_training(start_step, total_steps):
+    global run_ntp, run_vreg, run_fock_reg, n_run, n_skipped, best_val_ppl
+    global _grad_norm_ema, _grad_norm_above_thresh, steps_this_session
+    global _last_pg_norms, _last_spike_step, step
+    for step in range(start_step, total_steps):
+        ...  # unchanged body
+    _log_fh[0].close()
+    print(f'\nTraining complete. Best PPL: {best_val_ppl:.2f}')
+    return total_steps
+
+
+try:
+    next_step = run_training(resume_step, TOTAL_STEPS)
+except KeyboardInterrupt:
+    print(f'\n[run_training] interrupted at step {step + 1:,}. Call '
+          f'run_training({step + 1}, TOTAL_STEPS) to resume in-place ...')
+    next_step = step + 1
+```
+
+Two things fall out of this shape almost for free:
+
+* **Interrupting no longer OOMs the next replay.** `x`, `y`, `loss`, `xb`,
+  `yb`, and every other per-step temporary are now locals of
+  `run_training`'s stack frame. When a `KeyboardInterrupt` propagates out
+  of that frame to the `try/except` around the call, the frame is torn
+  down and those locals go with it -- the bare `except KeyboardInterrupt:`
+  (no `as e:`, nothing stored) means CPython drops the exception's
+  traceback, and every frame it referenced, as soon as the except block
+  finishes, typically well before the very next cell (a
+  `replay_all_captures()` call) runs.
+* **Resuming after an interrupt is just calling the function again.**
+  `run_ntp`, `best_val_ppl`, `_grad_norm_ema`, and friends are declared
+  `global` and initialized exactly once, outside and before the function
+  (unchanged from before); `run_training()` only mutates them, so a second
+  call picks up exactly where the first left off -- watchdog EMA state,
+  best-PPL tracking, and the open log file handle all carry over. The new
+  contract is:
+
+  ```python
+  next_step = run_training(next_step, TOTAL_STEPS)   # re-run this line to resume
+  ```
+
+  with no rebuild, no checkpoint reload, and no runtime restart, unless you
+  actually want to pick up new *code* (e.g. a fresh `git pull` of this
+  notebook) -- `save_manual_checkpoint(next_step)` (a thin wrapper over the
+  existing `save_checkpoint(..., tag_suffix='_manual')`) is still there for
+  that case.
+
+`evaluate()` got the same treatment for a narrower failure mode: its
+`model.eval()`/`model.train()` pair is now a `try/finally`, so an interrupt
+landing mid-eval can no longer leave `model` stuck in eval mode for
+whatever `run_training()` call resumes after it.
+
+### 37.3 `grad_clip_utils.py`: the first functionality actually pushed to a module
+
+`assign_clip_group`, `per_group_grad_norms`, and `clip_grads_per_group`
+moved out of Cell 6 into
+`notebooks/conservative_arch/scaleup/grad_clip_utils.py`, parameterized by
+a small `GradClipConfig` dataclass (`default_clip`, `overrides`,
+`watchdog_exclude_groups`) instead of reading Cell 6's globals directly.
+This was the one piece of Cell 6 judged low-risk enough to extract in this
+pass: the three functions are pure functions of `(model, config)` with no
+hidden state, and moving them fixes a real, pre-existing wart --
+Cell 6d's `replay_spike_batch`/`replay_all_captures` silently depended on
+Cell 6 having already executed at least once, purely so these three names
+existed as globals. `grad_clip_utils.py` ships with
+`test_grad_clip_utils.py` (4 CPU-only tests against a toy module, run via
+`python test_grad_clip_utils.py` or `pytest`), and Cell 6d now moves to
+*before* Cell 6 in the notebook's cell order, since its functions no
+longer need Cell 6 to have run first to be *defined* (only to be *called*,
+once `_GRAD_CLIP_CFG` and a handful of other Cell-6 config globals exist).
+
+**Deliberately not extracted in this pass:** `evaluate`, the two probes
+(`run_causal_probe`, `run_trained_leak_probe`), `save_checkpoint`,
+`forward_with_vreg`, and the watchdog/reload logic all stay inline in
+Cell 6. They are tightly coupled to `model`/`model_cfg` and several dozen
+live-tunable config constants, and there is no way to validate a full
+extraction against the actual GPU+OpenWebText pipeline outside Colab --
+moving them now would be a much larger, harder-to-verify change for
+comparatively little benefit to the actual pain point (§37.1). Candidate
+for a later, separate pass once this run's current phase is less
+time-critical.
+
+### 37.4 Corollary bug found the same day: `replay_all_captures()` had the identical leak
+
+Confirmed live on this run: interrupting Cell 6 to inspect the run's first
+genuine `watchdog-hard` reload (step 41,837, pre-clip 528.0 -- analysis
+pending, to be added as a future section once replayed) reproduced the
+exact §37.1 OOM symptom (`allocated` stuck near 80 GB even
+after the memory-cleanup cell) from *inside* `replay_all_captures()`
+itself, not just from interrupting Cell 6's training step. Root cause:
+`KeyboardInterrupt` derives from `BaseException`, not `Exception`, so
+`replay_all_captures`'s per-capture `except Exception as e:` never caught
+it -- an interrupt landing mid-replay propagated uncaught to IPython's
+top-level handler, which pins the interrupted replay's forward/backward
+graph via `sys.last_traceback` exactly like an interrupted training step
+does. Fixed by adding an explicit `except KeyboardInterrupt:` clause that
+stops the loop (keeping whatever reports already replayed) instead of
+letting the exception escape. `replay_spike_batch`'s own `finally` block
+was never affected by this -- `finally` runs for any `BaseException`, so
+the live model's weights/grads/hooks were always correctly restored even
+when this bug pinned memory; only the *cleanup of the replay's own
+temporaries* was missing.
+
+### 37.5 Status
+
+**Implemented, syntax-checked, not yet exercised against a live GPU
+session.** Every notebook cell was re-parsed with `ast.parse()` after the
+edit (no `SyntaxError`s), `grad_clip_utils.py`'s 4 unit tests pass, and the
+full CfC/BAOAB test suite (`test_cfc_baoab.py`) still passes unchanged.
+`git diff` on the notebook is limited to Cell 6d's relocation, Cell 6's
+edits, and a trailing-newline addition -- no unrelated cells were touched.
+Next real test is the first live interrupt-and-resume cycle on the running
+L=8 job.
+
+## 38. Seven Replays In: Two Distinct Failure Modes, Not One -- and Only the Localized One Has Crossed 500
+
+### 38.1 The first genuine `watchdog-hard` reload, replayed
+
+Step 41,837 (pre-clip 528.0) is this run's first `GRAD_NORM_HARD_TRIGGER`
+event since Phase 1/2 went live in §35, replayed alongside the also-newly-
+captured step 41,824 (265.8, under the reload line but over
+`CAPTURE_SPIKE_THRESHOLD`). Both replayed with the same excellent fidelity
+as the earlier five (all seven now <0.0013% gap), so the comparison below
+draws on n=7, not n=1:
+
+| step | pre-clip | leader (norm) | layer 0 -> 3 ($h$-grad) | layer0/layer3 | profile |
+|---|---|---|---|---|---|
+| 37,763 | 160.4 | `depth_code`=88.3 | 0.169, 0.102, 0.044, 0.027 | 6.3x | smooth cascade |
+| 40,043 | 379.8 | `reverse_channel_scale`=274.9 | 0.081, 0.064, 0.040, 0.025 | 3.2x | smooth cascade |
+| 40,387 | 369.3 | `depth_code`=258.8 | 0.082, 0.058, 0.033, 0.021 | 3.9x | smooth cascade |
+| 41,318 | 432.8 | `E`=266.7 | 0.054, 0.042, 0.028, 0.021 | 2.6x | smooth cascade |
+| 41,824 | 265.8 | `register`=231.8 | 0.087, 0.070, 0.047, 0.032 | 2.7x | smooth cascade |
+| 39,983 | 235.5 | `depth_code`=208.9 | 16.45, 12.20, 6.08, 0.33 | 50x | **localized** |
+| 41,837 | 528.0 | `depth_code`=424.6 | 31.07, 12.61, 1.46, 0.17 | 177x | **localized** |
+
+### 38.2 Two failure modes, discriminated cleanly by the per-layer profile
+
+Five of the seven replays reproduce the smooth, monotone cascade signature
+from §33.4/§35: layer 0's $h$-gradient is only 2.6-6.3x layer 3's, decaying
+gently across all 8 layers, consistent with a single gain compounding as
+it backpropagates the full stack. The other two -- 39,983 and 41,837 -- are
+categorically different: layers 0-2 are **50-300x larger** than the same
+layers in every one of the other five replays, with a sharp cliff by layer
+3, after which they rejoin the same gentle tail everyone else has. This is
+not a one-off artifact of a single replay (the possibility flagged when
+39,983 was first seen): it has now recurred, at roughly double the
+severity (layer 0: 16.45 -> 31.07; total: 235.5 -> 528.0), a second
+independent instance of the same distinctive shape.
+
+**Leadership does not predict the mode.** `depth_code` leads both localized
+events, but it also leads 40,387 (258.8, its second-largest reading of all
+seven) -- a perfectly smooth cascade, not localized. The per-layer profile,
+not which group tops the leaderboard, is the reliable discriminator between
+the two modes.
+
+**`register` leading 41,824 (231.8) is itself a new observation** -- no
+prior replay in this run had `register` anywhere near the top of the
+per-group breakdown; it is otherwise a normal smooth-cascade event.
+
+### 38.3 Working hypothesis: the localized mode is what actually forces a reload
+
+Of the five smooth-cascade events, none exceeds 432.8 pre-clip. The one
+event that has crossed `GRAD_NORM_HARD_TRIGGER=500` in this run's entire
+Phase-1/2-instrumented history is a localized event (41,837). Read
+together with 39,983 being the second-most-severe localized case and also
+comfortably under the reload line at the time, the working hypothesis is:
+the smooth cascade self-limits under per-group clipping (each group's own
+threshold caps its own contribution before the aggregate can compound much
+past ~400), while the layer-0-2 localized blowup does not follow the same
+per-group-clip-bounded dynamics and is the actual driver of this run's rare
+genuine reloads.
+
+**Caveat: this is n=2 for the localized mode.** It is a real, recurring,
+now-twice-confirmed signature, and the only one of the two modes to have
+reached the reload threshold so far -- but two events is not enough to
+rule out coincidence in which mode happens to cross 500 first. The
+falsification test is straightforward: keep harvesting captures via
+`replay_all_captures()`; if a *smooth-cascade* event eventually also
+crosses 500, or a third localized event stays comfortably under it, the
+hypothesis needs revising.
+
+### 38.4 What is not yet known
+
+Nothing in the per-parameter or activation-extreme breakdown (V_theta bank
+exponents, `xi_shifted_norm`, destruction-gate outputs, creation-gate tau)
+cleanly separates the two localized events from the five smooth-cascade
+ones on inspection so far -- the layer-0-2 $h$-gradient profile is the only
+discriminator found. What specifically differs about the forward pass at
+layers 0-2 on a localized-mode step (a particular token pattern, a
+register-creation event, a V_theta well boundary crossing, ...) is open;
+answering it would need comparing the *forward* activations (not just
+backward gradients) between a localized and a smooth-cascade capture at
+matched layers, which the current instrumentation does not yet do.
+
+### 38.5 Status
+
+**Descriptive finding, not yet a mitigation.** Documents the pattern
+across the 7 captures replayed to date; no code change proposed here.
+Next step: keep accumulating captures under `CAPTURE_SPIKE_THRESHOLD=200`
+and re-run this comparison at larger n to firm up (or break) both the
+mode-discrimination claim (§38.2) and the reload-driver hypothesis (§38.3).
+
+### 38.6 Deepening forensics on the two existing localized captures, without waiting for new ones
+
+§38.4 flagged that nothing in the *current* forward-activation breakdown
+discriminates the two modes. Before spending wall-clock time waiting for a
+third localized event, it's worth exploiting a fact already true today:
+every `_spikebatch.pt` bundle pins the exact pre-step weights, the exact
+offending microbatch tokens, and the RNG state, and Cell 6d's replay is
+already proven bit-exact (<0.0013% fidelity gap on all 7). That means
+steps 39,983 and 41,837 can be re-interrogated with *more* instrumentation
+right now, with zero new training time -- so Cell 6d gained three
+additions the same day, rather than waiting on more captures:
+
+1. **Fixed a real per-layer attribution bug.** `creation_gate_qkv`,
+   `reverse_ch`, and each `V_theta` bank are single shared modules called
+   once per `_fock_layer_step` invocation (i.e. once per layer, L times
+   per forward) -- unlike `destruction_gates`, a genuine per-layer
+   `ModuleList`. The old `_record()` hook overwrote the same dict key on
+   every layer's call, so `activation_extremes` silently only ever
+   reflected **layer 7's** values -- the layers *not* implicated in the
+   localized mode. `activation_extremes` is now `{name: {layer: stats}}`,
+   layer-resolved for every hooked op. This plausibly explains why §38.4
+   found "nothing" in the existing breakdown: it was looking at the wrong
+   layers the whole time.
+2. **Wired in the model's own per-layer diagnostic buffer.**
+   `FockMultiXiPARFLM.set_fock_capture(True)` (the same API the eval-time
+   causal/register diagnostics already use) makes `_fock_layer_step`
+   append a cheap `@torch.no_grad()` dict per layer per forward:
+   `active_frac`, `salience_mean/std`, `reg_cos_sim` (register-collapse
+   diagnostic), `destroy_mean`, `create_alpha_max`, `create_entropy`,
+   `rev_entropy`, `rev_alpha_max`, `rev_scale`, `qforce_ratio`. `replay_spike_batch`
+   now enables it for the replayed forward+backward and reports
+   `fock_capture_per_microbatch` (full per-layer table) in the returned
+   report, printed as a table in verbose mode.
+3. **Added `inspect_spike_tokens(step_tag)`**, pure CPU bookkeeping (no
+   model, GPU, or RNG state touched) that decodes the offending
+   microbatch's GPT-2 tokens via Cell 3's `tok`, ranks rows by longest
+   same-token repeat run and unique-token ratio, and prints a decoded
+   snippet of the most degenerate rows -- testing whether a boilerplate
+   OpenWebText passage (long whitespace/punctuation/header repeats) is
+   what triggers the localized layers-0-2 blowup, independent of anything
+   on the gradient side.
+
+**Status: implemented, syntax-checked (`ast.parse` on every notebook
+cell), existing `grad_clip_utils`/CfC-BAOAB test suites still pass
+unchanged, not yet run against a live GPU session.** Next step: run
+`replay_spike_batch(39983)` / `replay_spike_batch(41837)` and
+`inspect_spike_tokens(39983)` / `inspect_spike_tokens(41837)` against the
+already-captured bundles and see whether either new signal (per-layer
+register/gate health, or offending-token degeneracy) separates from the
+five smooth-cascade replays.
+
 ---
 
 *Companion note to `Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`.
@@ -2307,7 +2600,48 @@ The anisotropic Gaussian V_theta is in
 SCAF stiffness audit (Phase 7b/7c Weyl bound) in the `stiffness_audit` branch
 of `semsimula-scaf` (`src/scaf/probes/stiffness.py`).*
 
-*Last updated: 30 August 2026, latest (adds §36: after §35's fix,
+*Last updated: 30 August 2026, latest (adds §38.6: rather than waiting on
+new localized captures, Cell 6d's replay was deepened to re-interrogate
+the two already-on-disk localized bundles (steps 39,983/41,837) for free
+-- fixes a real bug where `activation_extremes` silently only ever
+reflected the LAST layer (7) for `creation_gate_qkv`/`reverse_ch`/`V_theta`
+banks, since they're shared modules called once per layer and the old hook
+overwrote its own dict key each time; wires in the model's own
+`set_fock_capture` per-layer register/gate health buffer; and adds
+`inspect_spike_tokens()` to decode and rank the offending microbatch's
+tokens by degeneracy, independent of the gradient side entirely).
+Previously updated the same day (adds §38: with 7 spike replays now
+on hand -- including this run's first genuine `watchdog-hard` reload,
+step 41,837 at 528.0 pre-clip -- the per-layer $h$-gradient profile splits
+cleanly into two failure modes, a smooth 8-layer cascade (5 of 7 events,
+layer0/layer3 ratio 2.6-6.3x) and a localized layer-0-2 blowup with a sharp
+cliff by layer 3 (2 of 7, ratio 50x and 177x); leadership by parameter
+group does not discriminate the two modes (`depth_code` leads one of each),
+but only the localized mode has crossed 500 so far, giving a working
+(n=2, not yet confirmed) hypothesis that it -- not the self-limiting smooth
+cascade -- is what actually forces this run's rare reloads. Previously
+updated the same day, earlier (adds §37: Cell 6's training loop is
+now a real function, `run_training(start_step, total_steps)`, instead of a
+bare top-level `for` loop -- interrupting it to inspect spike captures no
+longer OOMs the next `replay_all_captures()` call (per-step locals now die
+with the function's stack frame instead of lingering as notebook globals)
+and no longer requires a checkpoint-save/restart/override dance to resume
+(`run_training(next_step, TOTAL_STEPS)` just picks up where it left off,
+since its accumulator/watchdog state is `global` and initialized once
+outside the function). `evaluate()` got a `try/finally` so an interrupt
+mid-eval can't leave `model` stuck in eval mode. `assign_clip_group` /
+`per_group_grad_norms` / `clip_grads_per_group` moved out to a new
+`grad_clip_utils.py` module (with its own unit tests), the first
+Cell-6 functionality actually pushed to a module rather than left inline;
+Cell 6d moved before Cell 6 in the notebook's cell order now that its
+functions no longer need Cell 6 to have run first just to be defined.
+Same day, confirmed live on the run: `replay_all_captures()` had the
+identical leak for the identical reason -- `except Exception` doesn't
+catch `KeyboardInterrupt` (a `BaseException`), so an interrupt landing
+mid-replay pinned ~80GB via `sys.last_traceback` just like an interrupted
+training step did; fixed with an explicit `except KeyboardInterrupt:`
+that stops the loop instead of letting it escape uncaught).
+Previously updated 30 August 2026, later (adds §36: after §35's fix,
 `GRAD_NORM_HARD_TRIGGER` was restored to 500.0 and production resumed --
 over the next ≈1,800 steps (37,501-39,350) zero hard reloads fired, yet
 the run stayed stuck on the same ~105 plateau, with four ordinary
