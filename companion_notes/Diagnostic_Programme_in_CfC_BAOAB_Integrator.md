@@ -37,6 +37,8 @@ The thesis of the programme is a single sentence:
 10. [Categorize → classify → diagnose → remediate](#10-categorize--classify--diagnose--remediate)
 11. [Refactoring the diagnostics into a standalone library](#11-refactoring-the-diagnostics-into-a-standalone-library)
 12. [Status and open questions](#12-status-and-open-questions)
+13. [Testing the weight-space hypothesis directly: an integrator-ablation replay](#13-testing-the-weight-space-hypothesis-directly-an-integrator-ablation-replay)
+14. [Case study: three new replays confirm chronic low-rank dominance and expose a `dc_ratio` blind spot](#14-case-study-three-new-replays-confirm-chronic-low-rank-dominance-and-expose-a-dc_ratio-blind-spot)
 
 ---
 
@@ -605,6 +607,149 @@ not rewriting them.
 
 ---
 
+## 13. Testing the weight-space hypothesis directly: an integrator-ablation replay
+
+§9 leaves the localized mode pointing at the low-rank precision factor
+`sigma_max(B_k)`, and §3's derivation says exactly why: it is the quantity
+that sets both the peak force and the peak parameter gradient of a well.
+`baoab_cfc_lowrank` is the integrator variant that treats that exact
+quantity exactly rather than approximately (§3.3's derivation is about the
+*force*; the integrator choice is about *how that force gets propagated
+across a layer step*). That makes it the natural instrument to test the
+hypothesis directly, and this section sketches the offline version of that
+test -- full derivation and code in companion note
+`CfC_BAOAB_Integrator_and_Mitigations.md` §40.
+
+**Why an old negative result does not settle this.** An earlier bracket
+measurement (companion note §33) had already looked at `sigma_max(B_k)` and
+called it a weak lever, elevated only 1-24% between a healthy checkpoint and
+two hard-trigger snapshots -- far too small for the >100x grad-norm spikes
+it was measuring. But that measurement used a fixed generic probe batch
+(not the actual offending batches) against a crisis that, by its own
+description -- a cascade amplifying through all 8 layers, landing equally
+on the embedding groups `E`/`P` -- looks like the *smooth-cascade* mode of
+§8, not the *localized* L0-2-cliff mode this note's diagnostics were built
+to isolate. The two modes are not interchangeable evidence for or against
+one mechanism.
+
+**The test.** Load an existing localized-mode `*_spikebatch.pt` bundle
+(39,983 or 41,837), and replay it twice with weights, batch, and RNG state
+held bit-identical via the same snapshot/restore invariant `replay_spike_batch`
+already uses -- once under the recorded `baoab_cfc`, once under
+`baoab_cfc_lowrank` with `lowrank_layers` restricted to `{0, 1, 2}` (the
+layers §8's salience profile says the localized mode actually lives in).
+Compare the resulting pre-clip gradient norm and per-layer $h$-gradient
+profile. Both `cfg.integrator` and `cfg.lowrank_layers` are plain runtime
+attributes read per forward call in `model_parf_multixi.py`, so this is a
+config swap on an already-loaded model, not a new checkpoint or a
+retraining run:
+
+```python
+for label, integrator, layers in [
+    ('baoab_cfc as captured', 'baoab_cfc', None),
+    ('baoab_cfc_lowrank layers 0 1 2', 'baoab_cfc_lowrank', frozenset({0, 1, 2})),
+]:
+    model.cfg.integrator = integrator
+    model.cfg.lowrank_layers = layers
+    # ... reset RNG to the bundle's pinned state, zero grads, replay the
+    # bundle's microbatches, record pre-clip grad norm + per-layer h-grad ...
+```
+
+| Outcome | Reading |
+|---|---|
+| Exact arm's pre-clip norm drops toward the healthy range and loses the L0-2 cliff | confirms the mechanism for this mode; next step is measuring `lowrank_layers={0,1,2}`'s live per-step cost, which §34 never measured (it only tried all 8 layers and 2 generically-chosen layers) |
+| Exact arm reproduces the same norm and cliff | falsifies the weight-space-stiffness mechanism for the localized mode too; the search needs a non-`V_theta` explanation for a layer-0-2-concentrated cascade, mirroring companion note §33.3's workflow for the non-`V_theta` groups |
+
+This is deliberately framed as an offline test against bundles that already
+exist: it settles the mechanism question without touching the cost question
+in §11 (`baoab_cfc_lowrank` at full scale remains 4-12x `baoab_cfc`
+regardless of what this test finds), and without committing to a live
+retraining trial before there is a reason to.
+
+---
+
+## 14. Case study: three new replays confirm chronic low-rank dominance and expose a `dc_ratio` blind spot
+
+Full derivation, exact numbers, and code are in companion note
+`CfC_BAOAB_Integrator_and_Mitigations.md` §41; this section folds the
+findings back into the programme's own framework (§8-§10) as a worked
+example of the categorize -> classify -> diagnose -> remediate loop
+running on real captures, and records two follow-ups the programme's own
+tools now need.
+
+### 14.1 What the three replays did to §8's taxonomy
+
+Two things changed -- not the taxonomy's existence, just its edges.
+
+- **Severity is not a discriminator.** Step 47,116 (pre-clip 13,139.5,
+  the largest single-step gradient norm on record in this run) classifies
+  as smooth cascade by both existing discriminators (`dc_ratio` = 1.50,
+  L0/L3 h-gradient ratio = 2.27x, both inside the smooth band) -- so the
+  smooth mode is not, as §9's discussion implicitly assumed, self-limited
+  to the sub-500 range. It reached 26x the hard-trigger threshold while
+  keeping the smooth mode's shape throughout.
+- **`dc_ratio` has a blind spot.** Step 48,917's per-layer profile is
+  unambiguously localized (142x L0/L3 cliff, inside the 50-177x band),
+  but its leading group is `reverse_channel_scale`, not `depth_code`, so
+  `dc_ratio` -- which is defined relative to `depth_code` specifically --
+  reads 0.94, comfortably in the smooth range. The two discriminators
+  disagree for the first time since `dc_ratio` was found, and they
+  disagree exactly when the leading group changes identity.
+
+### 14.2 Two mechanisms, not one taxonomy
+
+Re-reading `lr_term_share` (§3) across all three new replays -- 0.995 to
+0.9999 in every bank, at pre-clip norms spanning 202 to 13,139 -- shows the
+low-rank channel is not something that switches on during a crisis; it is
+the dominant term in $V_\theta$'s exponent essentially all the time, on any
+batch severe enough to be captured at all. That reframes what "classify"
+in §10's table is actually separating:
+
+- **Mechanism A -- chronic $V_\theta$/low-rank stiffness.** Feeds
+  `depth_code`/`E`/`P`/`creation_gate` in rough proportion across every
+  capture to date, regardless of shape; what let 47,116 reach the largest
+  norm on record while still looking like an ordinary smooth cascade.
+- **Mechanism B -- an episodic reverse-channel-driven early-layer
+  cascade.** Real, large, structured h-boundary gradient at layers 0-2
+  (19.15/13.44/6.39, not the noise-level numbers mechanism-A events show
+  at the same layers), led by `reverse_channel_scale`/`W_V_rev.weight` --
+  plausibly what "localized" in §8 has actually been measuring all along.
+
+### 14.3 Diagnose and remediate: `precision_lr_max` graduates from theory to evidence
+
+§10's remediation menu already listed "tighten `precision_lr_max`" as the
+answer for a localized event with `sigma_max(W_B)` confirmed drifting.
+These three replays supply the missing evidence for mechanism A directly:
+`model_aniso_gaussian_vtheta.py`'s `_bound_lowrank` already implements a
+differentiable spectral cap on $B_k$, gated by `PRECISION_LR_MAX`, which
+this run has left at `None` (a no-op) throughout. Turning it on is now a
+concretely evidenced fix for mechanism A specifically -- companion note §41
+sketches the offline ablation (reusing the exact `*_spikebatch.pt`
+bundles, no live run needed) and a starting value tied to the `baoab_cfc`
+stability wall ($\omega \Delta t \lt 2$, §29 of the Mitigations note). It is not
+expected to touch mechanism B, which needs its own instrument (§14.4).
+
+### 14.4 Two follow-ups for the programme itself
+
+1. **Widen the Phase-0 leading indicator beyond `dc_ratio`.** Since
+   `dc_ratio` is blind to mechanism B whenever `reverse_channel_scale`
+   leads instead of `depth_code`, §5's cheap per-step logging needs a
+   second track -- e.g. `reverse_channel_scale`'s own group norm against
+   its post-warmup baseline, or a `reverse_ch`-side weight-space stiffness
+   proxy mirroring `b_proj_sigma_max`.
+2. **`attribute_spike_rows` (§7) is unreliable on mechanism-A events.**
+   Isolating one row to batch-size-1 reconstructed under 0.03 percent of
+   the true `depth_code` gradient at step 47,116 (2.35 versus 8,611.4) --
+   almost certainly because `V_phi`'s Gumbel-softmax routing draws noise
+   sized to the batch shape, so an isolated row lands in a different
+   regime than it did inside its real batch of 8, and the live-band
+   occupancy §3 describes is thin enough (as low as 3e-5) that this
+   matters a great deal. A surgical fix -- replay the full microbatch but
+   zero 7 of 8 rows' loss contribution before `.backward()`, rather than
+   isolating a row entirely -- is proposed but not yet built.
+
+---
+
 Provenance. The math in §2-§3 is the exact energy/force of
 `notebooks/conservative_arch/parf/model_aniso_gaussian_vtheta.py`
 (`AnisotropicMixtureGaussianVTheta.forward` / `analytical_grad` /
@@ -612,13 +757,25 @@ Provenance. The math in §2-§3 is the exact energy/force of
 `notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_aniso_gaussian_openwebtext_d384.ipynb`
 and `grad_clip_utils.py`; their chronological derivation and the underlying data
 are companion note `CfC_BAOAB_Integrator_and_Mitigations.md`
-(see [this link](CfC_BAOAB_Integrator_and_Mitigations.md)) §35-§39. All five
+(see [this link](CfC_BAOAB_Integrator_and_Mitigations.md)) §35-§41. All five
 figures are produced by `figures/_make_diagnostic_programme_figs.py`: the well
 and force panels are exact evaluations of the potential, and the mode-profile,
 per-row, and occupancy panels are the literal replay numbers from the four
 Phase-1/2-instrumented captures (steps 37,763 / 41,318 / 39,983 / 41,837).
+§14's case study (steps 47,116 / 48,507 / 48,917) is documented in full in
+companion note §41; no new figures were made for it.
 
-Last updated: 31 August 2026 (initial version: consolidates the §35-§39
-diagnostic programme into a standalone strategy note with the low-rank
-spike-generation derivation, the four-phase pipeline, the two-mode taxonomy, and
-a proposed `semsimula-diag` library extraction).
+Last updated: 31 August 2026 (adds §14: a case study folding companion note
+§41's three new replays -- steps 47,116, 48,507, 48,917 -- back into this
+note's own §8-§10 framework; records that severity alone does not
+discriminate the two failure modes, that `dc_ratio` has a blind spot for a
+second, reverse-channel-led mechanism, and that `precision_lr_max` now has
+direct evidence behind it as the mechanism-A remediation). Previously
+updated 31 August 2026 (adds §13: an offline integrator-ablation replay
+that tests the §9 weight-space-stiffness hypothesis directly against existing
+localized-mode spikebatch bundles, and reconciles it against companion note
+§33's earlier, differently-scoped negative result; full derivation and code
+in companion note §40). Previously updated 31 August 2026 (initial version:
+consolidates the §35-§39 diagnostic programme into a standalone strategy note
+with the low-rank spike-generation derivation, the four-phase pipeline, the
+two-mode taxonomy, and a proposed `semsimula-diag` library extraction).
