@@ -489,6 +489,119 @@ class AnisotropicMultiContextGaussianVTheta(nn.Module):
         return torch.cat(cs, dim=-2)
 
 
+class JointContextAnisotropicGaussianVTheta(nn.Module):
+    """Single anisotropic well bank whose wells are JOINT functions of all
+    context channels (option A of the analytic multi-channel integration
+    programme, see ``Analytic_Multi_Channel_Integration_in_Structured_Vtheta.md``).
+
+    Drop-in for :class:`AnisotropicMultiContextGaussianVTheta`: identical
+    constructor signature and identical public methods, so it slots into the
+    same call sites (``AnisotropicDepthConditionedGaussianVTheta`` selects
+    between the two via its ``coupling`` argument).
+
+    The additive variant keeps one bank per channel and *sums* the
+    per-channel potentials::
+
+        V(h; xi) = sum_m V^(m)(xi^(m), h)      # a mixture -> logical OR
+
+    whose channel-input Hessian is block-diagonal (no cross-horizon term).
+    This variant instead concatenates the channels and feeds a *single*
+    bank whose projections read all channels at once::
+
+        (mu_k, a_k, B_k, w_k) = proj([xi^(1); ...; xi^(n_ctx)])   # in_d = n_ctx*d
+        V(h; xi) = -sum_k w_k exp(-1/2 (h - mu_k)^T P_k (h - mu_k)),
+                    P_k = diag(a_k) + B_k B_k^T.
+
+    Now every well centre, precision and weight depends on *all* horizons
+    jointly, so the potential can represent cross-horizon conjunctions the
+    additive form cannot. Crucially the well parameters still depend only on
+    the context ``xi`` (never on ``h``), so the potential is still an exact
+    Gaussian in ``h``: the force ``-grad_h V``, the Hessian, and the CfC-BAOAB
+    harmonic split (:meth:`harmonic_terms`, :meth:`harmonic_terms_lowrank`)
+    are all still closed form. Every one of those methods is inherited by
+    delegating to a single :class:`AnisotropicMixtureGaussianVTheta` with
+    ``xi_d = n_ctx * d``.
+
+    Capacity note: with ``K`` wells this bank has ``K`` joint attractors and
+    a low-rank footprint of ``K * rank`` modes, versus the additive variant's
+    ``n_ctx * K`` attractors and ``n_ctx * K * rank`` modes at the same ``K``.
+    To match the additive attractor budget, construct with
+    ``K = n_ctx * K_additive``.
+
+    Interface: forward(xis: (B,T,n_ctx,d), h: (B,T,d)) -> V: (B,T,1)
+    """
+
+    def __init__(
+        self,
+        d: int,
+        K: int,
+        n_ctx: int,
+        rank: int = 4,
+        w_scale: float = 1.0,
+        init_log_precision: Optional[float] = None,
+        precision_max: Optional[float] = None,
+        precision_lr_max: Optional[float] = None,
+        force_norm_max: Optional[float] = None,
+    ):
+        super().__init__()
+        self.d = d
+        self.K = K
+        self.n_ctx = n_ctx
+        self.rank = rank
+        # A single bank reading the concatenated context (n_ctx*d -> wells).
+        # Wrapped in a ModuleList named ``banks`` so callers that iterate
+        # ``V_theta.banks`` (clamp_params, the precision-cap ablation) keep
+        # working -- here the list simply has length one.
+        self.banks = nn.ModuleList([
+            AnisotropicMixtureGaussianVTheta(
+                d=d, K=K, rank=rank, w_scale=w_scale, xi_d=n_ctx * d,
+                init_log_precision=init_log_precision,
+                precision_max=precision_max,
+                precision_lr_max=precision_lr_max,
+                force_norm_max=force_norm_max,
+            )
+        ])
+
+    @property
+    def bank(self) -> "AnisotropicMixtureGaussianVTheta":
+        return self.banks[0]
+
+    def _flatten(self, xis: torch.Tensor) -> torch.Tensor:
+        """(..., n_ctx, d) -> (..., n_ctx*d): the concatenation of channels."""
+        return xis.reshape(*xis.shape[:-2], self.n_ctx * self.d)
+
+    def context_components(self, xis: torch.Tensor):
+        """Joint well parameters (mu, a, w, B) for the concatenated context."""
+        return self.bank.context_components(self._flatten(xis))
+
+    def forward(
+        self, xis: torch.Tensor, h: torch.Tensor, *, comps=None,
+    ) -> torch.Tensor:
+        xi_in = self._flatten(xis) if comps is None else xis
+        return self.bank(xi_in, h, comps=comps)
+
+    def analytical_grad(
+        self, xis: torch.Tensor, h: torch.Tensor, *, comps=None,
+    ) -> torch.Tensor:
+        xi_in = self._flatten(xis) if comps is None else xis
+        return self.bank.analytical_grad(xi_in, h, comps=comps)
+
+    def harmonic_terms(
+        self, xis: torch.Tensor, h: torch.Tensor, *, comps=None,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        xi_in = self._flatten(xis) if comps is None else xis
+        return self.bank.harmonic_terms(xi_in, h, comps=comps)
+
+    def harmonic_terms_lowrank(
+        self, xis: torch.Tensor, h: torch.Tensor, *, comps=None,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        xi_in = self._flatten(xis) if comps is None else xis
+        return self.bank.harmonic_terms_lowrank(xi_in, h, comps=comps)
+
+    def attractor_centres(self, xis: torch.Tensor) -> torch.Tensor:
+        return self.bank.attractor_centres(self._flatten(xis))
+
+
 class AnisotropicDepthConditionedGaussianVTheta(nn.Module):
     """One shared anisotropic multi-context bank + a learned per-layer code.
 
@@ -513,6 +626,7 @@ class AnisotropicDepthConditionedGaussianVTheta(nn.Module):
         precision_lr_max: Optional[float] = None,
         force_norm_max: Optional[float] = None,
         code_init_std: float = 0.02,
+        coupling: str = "additive",
     ):
         super().__init__()
         self.d = d
@@ -520,7 +634,22 @@ class AnisotropicDepthConditionedGaussianVTheta(nn.Module):
         self.n_ctx = n_ctx
         self.n_layers = n_layers
         self.rank = rank
-        self.bank = AnisotropicMultiContextGaussianVTheta(
+        self.coupling = coupling
+        # ``coupling='additive'`` (default): one bank per channel, potentials
+        # summed -- the original behaviour (a mixture, logical-OR over
+        # horizons).  ``coupling='joint'``: a single bank whose wells are
+        # joint functions of the concatenated channels, restoring
+        # cross-horizon conjunctions while keeping the analytic force and
+        # CfC-BAOAB harmonic split (see the analytic-integration note).
+        if coupling == "additive":
+            bank_cls = AnisotropicMultiContextGaussianVTheta
+        elif coupling == "joint":
+            bank_cls = JointContextAnisotropicGaussianVTheta
+        else:
+            raise ValueError(
+                f"coupling={coupling!r} not in {{'additive', 'joint'}}"
+            )
+        self.bank = bank_cls(
             d=d, K=K, n_ctx=n_ctx, rank=rank, w_scale=w_scale,
             init_log_precision=init_log_precision,
             precision_max=precision_max,
