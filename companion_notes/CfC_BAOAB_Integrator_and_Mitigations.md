@@ -3671,19 +3671,37 @@ receive no gradient contribution through this path during eval's
 backward — harmless here, since every eval gradient is discarded
 immediately and never touches the optimiser.
 
-### 43.4 Status
+### 43.4 Status: validated live at the very next step-47,500 eval
 
 Patched in `Cell 6`'s `evaluate()` in
-`colab_fock_cfc_baoab_aniso_gaussian_openwebtext_d384.ipynb`. Not yet
-re-validated live (the session that surfaced the fourth OOM had already
-been interrupted at step 47,500 with no manual checkpoint saved, so the
-next `run_training(47500, TOTAL_STEPS)` call — or a fresh-session resume,
-which per §42.5/42.6 will resolve to the `_prereload`/`_manual` checkpoint
-at or near step 47,116/47,121 — is the first real test of this fix).
-Watch the first post-fix `evaluate()` call's `[evaluate] iter .../40
-mem_alloc=...` trend line: it should now stay flat near the pre-eval
-training baseline (`mem_alloc≈1.7GB` scale) rather than jumping to the
-`~47GB` scale at iteration 0.
+`colab_fock_cfc_baoab_aniso_gaussian_openwebtext_d384.ipynb`, then
+validated on the first eval call to reach step 47,500 after a fresh-session
+resume (which, per §42.5/42.6, resolved to the `_prereload` checkpoint at
+step 47,116 as expected):
+
+```
+[evaluate] iter 0/40  mem_alloc=2.22GB  mem_resv=2.46GB
+[evaluate] iter 10/40  mem_alloc=2.22GB  mem_resv=2.46GB
+[evaluate] iter 20/40  mem_alloc=2.22GB  mem_resv=2.46GB
+[evaluate] iter 30/40  mem_alloc=2.22GB  mem_resv=2.46GB
+[evaluate] iter 39/40  mem_alloc=2.22GB  mem_resv=2.46GB
+[evaluate] mem before=1.70GB  after=2.22GB  peak_during=55.04GB  trend=[2.22, 2.22, 2.22, 2.22, 2.22]GB
+>>> EVAL step 47,500  val_loss=4.7450  val_ppl=115.00  best=100.47  (3247s)
+```
+
+Exactly the predicted signature: `mem_alloc` stays pinned at `2.22GB`
+across every one of the 40 iterations instead of climbing unboundedly
+from the `47.47GB` seen at iteration 0 before the fix. `peak_during`
+still legitimately touches `55.04GB` — the same forward+backward-sized
+transient the training loop's own `mem_peak≈57.2GB` shows every step —
+confirming §43.2's account: that memory was never a leak, only ever a
+*peak* that training's per-microbatch `.backward()` was already reclaiming
+and eval's forward-only pass was not. Giving eval a real `.backward()`
+per iteration reclaims it the same way, and the eval call completes clean
+for the first time past this step. (`val_ppl=115.00` vs. the restored
+best of `100.47` reflects `PRECISION_LR_MAX=1.0` and the intervening
+spike/reload churn since step 47,116/47,121, not a new problem — a
+different question from the one this section is about.)
 
 ---
 
@@ -3698,7 +3716,14 @@ The anisotropic Gaussian V_theta is in
 SCAF stiffness audit (Phase 7b/7c Weyl bound) in the `stiffness_audit` branch
 of `semsimula-scaf` (`src/scaf/probes/stiffness.py`).
 
-Last updated: 6 September 2026 (adds §43: a fourth repeat of the
+Last updated: 6 September 2026, later (§43.4: the eval `.backward()`
+fix validated live on the first step-47,500 eval to run after the
+fresh-session resume -- `mem_alloc` held flat at 2.22GB across all 40
+iterations instead of climbing from 47.47GB, `peak_during=55.04GB`
+confirming the memory was always a reclaimable peak rather than a leak,
+and `evaluate()` completed cleanly for the first time past this step,
+reporting val_ppl=115.00 against the restored best of 100.47). Previously
+updated 6 September 2026 (adds §43: a fourth repeat of the
 step-47,500 eval-time OOM, this time *after* patching `evaluate()` to
 call `gc.collect()` every iteration, hit the identical `mem_alloc=47.47GB`
 at iteration 0, falsifying the "uncollected `create_graph=True` reference
@@ -3710,8 +3735,7 @@ checkpointed layers, which only gets torn down by an actual
 `.backward()` call -- exactly what training does every step and eval
 never does. Fix: give `evaluate()` a real, weight-inert
 `loss.backward()` + `zero_grad(set_to_none=True)` per iteration so
-PyTorch's own checkpoint-teardown machinery runs; not yet re-validated
-live). Previously updated 5 September 2026 (adds §42: the §41.7 item-1 ablation ran
+PyTorch's own checkpoint-teardown machinery runs). Previously updated 5 September 2026 (adds §42: the §41.7 item-1 ablation ran
 against all three captures and validates `precision_lr_max` at both
 1.0 and 4.0, and `baoab_cfc_lowrank`, against all of them -- including
 the reverse-channel-led 48,917, which implies mechanism B rides on
