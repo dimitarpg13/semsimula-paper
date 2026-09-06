@@ -35,6 +35,7 @@ live in the same `companion_notes/` folder.
 40. [Does `baoab_cfc_lowrank` Address the Localized Mode? Reconciling §33's Verdict, and a Targeted Ablation Test](#40-does-baoab_cfc_lowrank-address-the-localized-mode-reconciling-33s-verdict-and-a-targeted-ablation-test)
 41. [Chronic, Not Transient: Three New Replays Refine §33 and §38, and Motivate Turning On `precision_lr_max`](#41-chronic-not-transient-three-new-replays-refine-33-and-38-and-motivate-turning-on-precision_lr_max)
 42. [Step 1 Validated: `precision_lr_max` and `baoab_cfc_lowrank` Both Collapse All Three Replays, a Hook Bug and a Checkpoint-Loading Pitfall Found Along the Way, and the Cap Switched On](#42-step-1-validated-precision_lr_max-and-baoab_cfc_lowrank-both-collapse-all-three-replays-a-hook-bug-and-a-checkpoint-loading-pitfall-found-along-the-way-and-the-cap-switched-on)
+43. [Four Repeats of the Same Eval-Time OOM at Step 47,500: `gc.collect()` Was Never Going to Fix It, and Why](#43-four-repeats-of-the-same-eval-time-oom-at-step-47500-gccollect-was-never-going-to-fix-it-and-why)
 
 ---
 
@@ -3496,6 +3497,196 @@ in §42.7.
 
 ---
 
+## 43. Four Repeats of the Same Eval-Time OOM at Step 47,500: `gc.collect()` Was Never Going to Fix It, and Why
+
+Resuming training after §42.6 hit a **fourth** `CUDA OutOfMemoryError`, at
+the identical step (~47,500) and inside the identical call
+(`evaluate()`'s first iteration), across four independent attempts —
+including one made *after* patching `evaluate()` to call `gc.collect()` +
+`torch.cuda.empty_cache()` on every iteration (not just every 10, the
+weaker version that shipped first). The live per-iteration memory print
+added alongside that patch read:
+
+```
+[evaluate] iter 0/40  mem_alloc=47.47GB  mem_resv=48.12GB
+```
+
+bit-for-bit identical, to two decimal places, both before and after the
+`gc.collect()`-every-iteration change. That identity is the whole
+diagnosis: if `mem_alloc` were a garbage-collectible Python reference
+cycle (the theory the fix was built on), adding `gc.collect()` would have
+to change the number. It changed nothing, which means the memory was
+never Python garbage in the first place — it was live, validly
+referenced, un-freed CUDA tensor data that no amount of `del` +
+`gc.collect()` + `empty_cache()` was ever going to touch.
+
+### 43.1 The `create_graph=True`-in-eval theory was falsified by the code itself
+
+The fix that shipped with the original OOM patch assumed the CfC-BAOAB
+analytic $V_\theta$ force "almost certainly" builds a `create_graph=True`
+second-order graph even at eval time, and that `gc.collect()` is the
+documented remedy for the reference cycle such graphs leave behind. Both
+halves turn out to be checkable directly against `MultiXiPARFLM._layer_forces`
+in `model_parf_multixi.py` — the class this run actually instantiates
+(`FockMultiXiPARFLM` on top of it), *not* the superficially similar but
+structurally different, unused `model_parf.PARFLM._layer_forces` (§42's
+`Cell 5` regression guard exists specifically to catch that
+stale-reference trap). `MultiXiPARFLM._layer_forces` contains the *only*
+`torch.autograd.grad` call in the analytic-$V_\theta$ path (the one that
+recovers $\nabla_h V_\phi$, since $V_\phi$ has no closed form):
+
+```336:355:notebooks/conservative_arch/parf/model_parf_multixi.py
+        if self._use_analytic_vtheta():
+            # Closed-form V_theta force: no autograd, so V_theta never
+            # enters the second-order create_graph chain at all.  Only the
+            # (much smaller) V_φ graph is differentiated twice.
+            if vtheta_comps is None:
+                f_theta = -self.V_theta.analytical_grad(xis, h_in)
+            else:
+                f_theta = -self.V_theta.analytical_grad(
+                    xis, h_in, comps=vtheta_comps,
+                )
+            with torch.autocast(device_type="cuda", enabled=False):
+                grad_phi, = torch.autograd.grad(
+                    U_pair.float(), h_in,
+                    create_graph=self.training,
+                    retain_graph=self.training,
+                )
+            f_phi = -grad_phi
+```
+
+`evaluate()` calls `model.eval()` first, so `self.training` is `False`
+for the whole eval pass — `create_graph=False` for this call, exactly as
+the comment two lines above it says is the point ("V_theta never enters
+the second-order create_graph chain at all"). There is no hidden
+`create_graph=True` anywhere in this call. `gc.collect()` had nothing
+collectible to find, which is the direct, mechanical reason the number
+never moved.
+
+### 43.2 The real graph that survives eval: the analytic force itself, not the `V_phi` grad call
+
+`f_theta = -self.V_theta.analytical_grad(xis, h_in)` is **not** a discrete
+`autograd.grad()` call — it is ordinary differentiable tensor arithmetic
+(the closed-form Gaussian-well gradient, built from matmuls against
+$V_\theta$'s own parameters and against `h_in`). Ordinary tensor ops are
+never gated by a `create_graph` flag; they stay connected to whatever
+they were computed from — `h_in` and $V_\theta$'s parameters — for as
+long as grad-tracking is enabled, in train mode or eval mode alike. Since
+`h_new` of layer $\ell$ feeds `h_in` of layer $\ell+1$, this graph chains
+across all $L$ layers:
+
+```mermaid
+flowchart LR
+    H0["h in, layer 0"]
+    FT0["f theta, layer 0, closed form gradient"]
+    FP0["f phi, layer 0, detached since create graph is false"]
+    HN0["h new, layer 0"]
+    H1["h in, layer 1"]
+    FT1["f theta, layer 1"]
+    HN1["h new, layers 1 through 7"]
+    HL["h at layer L"]
+    LOSS["loss"]
+    STUCK["checkpoint segments never freed"]
+
+    subgraph EvalForward [One evaluate forward pass, grad enabled]
+        H0
+        FT0
+        FP0
+        HN0
+        H1
+        FT1
+        HN1
+        HL
+        LOSS
+    end
+
+    H0 --> FT0
+    H0 --> FP0
+    FT0 --> HN0
+    FP0 --> HN0
+    HN0 --> H1
+    H1 --> FT1
+    FT1 --> HN1
+    HN1 --> HL
+    HL --> LOSS
+    LOSS -->|no backward ever called| STUCK
+```
+
+`use_layer_checkpoint=True` (set in `Cell 5`'s `make_config`) wraps each
+layer in `torch.utils.checkpoint.checkpoint(..., use_reentrant=False)`,
+correctly gated on `torch.is_grad_enabled()` rather than `self.training`
+(§42's own regression guard in `Cell 5` checks exactly this, and it
+passed — this is *not* a repeat of that old bug). Checkpointing's promise
+is "discard intermediates now, recompute them later if a backward ever
+walks through here." During training, `loss.backward()` immediately
+follows the forward and that promise is redeemed layer by layer: each
+checkpoint segment is recomputed, differentiated, and freed as backward
+walks from layer $L-1$ down to layer $0$. That is exactly why the
+training loop's own periodic log line —
+
+```
+step 47500/100000  ...  mem_alloc=1.7GB  mem_resv=57.6GB  mem_peak=57.2GB  ...
+```
+
+— shows `mem_peak=57.2GB` (the transient forward+backward cost of one
+`batch=8` microbatch, before backward frees it) alongside
+`mem_alloc=1.7GB` (the steady-state cost of parameters + optimiser state
++ populated `.grad`, measured *after* backward has already run). Eval
+reaches the same order of peak — `47.47GB` at `batch=8`, comparable to
+training's `57.2GB` peak at the same microbatch size — for the same
+underlying reason (the same per-layer analytic-force graph, at the same
+batch size), but `evaluate()` never calls `.backward()`. The checkpoint
+segments' recompute obligation is never redeemed, the per-layer graph
+that chains all the way to `loss` is never walked, and the memory is
+simply never reclaimed. No Python object leaks; `del` + `gc.collect()`
+correctly find nothing to do, because from Python's perspective the
+graph rooted at `loss` is exactly as reachable, and exactly as intended
+to be reachable, as it always is until something actually backpropagates
+through it.
+
+### 43.3 Fix: give eval a real (but weight-inert) `backward()`
+
+The one-line fix is to let PyTorch's own teardown mechanism run, exactly
+as it does during training, then throw the resulting gradients away
+before they can do anything:
+
+```python
+with torch.enable_grad():
+    _, loss = model(x, y)
+    losses.append(loss.item())
+    loss.backward()
+model.zero_grad(set_to_none=True)   # discard; optimizer.step() is never called
+del loss, x, y
+gc.collect()
+torch.cuda.empty_cache()
+```
+
+`model.eval()` is still in effect (`self.training` stays `False`), so
+`create_graph`/`retain_graph` for the `V_phi` grad call are still `False`
+and nothing here is any more expensive than a normal training step's
+forward+backward at the same batch size — the exact regime the training
+loop already survives every step. One correctness footnote: because
+`grad_phi` is detached (`create_graph=False`), `V_\phi`'s own parameters
+receive no gradient contribution through this path during eval's
+backward — harmless here, since every eval gradient is discarded
+immediately and never touches the optimiser.
+
+### 43.4 Status
+
+Patched in `Cell 6`'s `evaluate()` in
+`colab_fock_cfc_baoab_aniso_gaussian_openwebtext_d384.ipynb`. Not yet
+re-validated live (the session that surfaced the fourth OOM had already
+been interrupted at step 47,500 with no manual checkpoint saved, so the
+next `run_training(47500, TOTAL_STEPS)` call — or a fresh-session resume,
+which per §42.5/42.6 will resolve to the `_prereload`/`_manual` checkpoint
+at or near step 47,116/47,121 — is the first real test of this fix).
+Watch the first post-fix `evaluate()` call's `[evaluate] iter .../40
+mem_alloc=...` trend line: it should now stay flat near the pre-eval
+training baseline (`mem_alloc≈1.7GB` scale) rather than jumping to the
+`~47GB` scale at iteration 0.
+
+---
+
 Companion note to `Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`.
 The CfC/BAOAB propagator is implemented in
 `notebooks/conservative_arch/parf/cfc_baoab.py` and wired into the layer step
@@ -3507,7 +3698,20 @@ The anisotropic Gaussian V_theta is in
 SCAF stiffness audit (Phase 7b/7c Weyl bound) in the `stiffness_audit` branch
 of `semsimula-scaf` (`src/scaf/probes/stiffness.py`).
 
-Last updated: 5 September 2026 (adds §42: the §41.7 item-1 ablation ran
+Last updated: 6 September 2026 (adds §43: a fourth repeat of the
+step-47,500 eval-time OOM, this time *after* patching `evaluate()` to
+call `gc.collect()` every iteration, hit the identical `mem_alloc=47.47GB`
+at iteration 0, falsifying the "uncollected `create_graph=True` reference
+cycle" theory behind that patch -- the code confirms `create_graph` is
+correctly gated `False` in eval. The real cause is the analytic
+$V_\theta$ force's ordinary (non-`autograd.grad`, hence
+create_graph-flag-immune) tensor graph chaining across all $L$
+checkpointed layers, which only gets torn down by an actual
+`.backward()` call -- exactly what training does every step and eval
+never does. Fix: give `evaluate()` a real, weight-inert
+`loss.backward()` + `zero_grad(set_to_none=True)` per iteration so
+PyTorch's own checkpoint-teardown machinery runs; not yet re-validated
+live). Previously updated 5 September 2026 (adds §42: the §41.7 item-1 ablation ran
 against all three captures and validates `precision_lr_max` at both
 1.0 and 4.0, and `baoab_cfc_lowrank`, against all of them -- including
 the reverse-channel-led 48,917, which implies mechanism B rides on
