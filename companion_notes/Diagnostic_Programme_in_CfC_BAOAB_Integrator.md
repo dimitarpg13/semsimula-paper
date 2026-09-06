@@ -39,6 +39,7 @@ The thesis of the programme is a single sentence:
 12. [Status and open questions](#12-status-and-open-questions)
 13. [Testing the weight-space hypothesis directly: an integrator-ablation replay](#13-testing-the-weight-space-hypothesis-directly-an-integrator-ablation-replay)
 14. [Case study: three new replays confirm chronic low-rank dominance and expose a `dc_ratio` blind spot](#14-case-study-three-new-replays-confirm-chronic-low-rank-dominance-and-expose-a-dc_ratio-blind-spot)
+15. [Closing the loop: the ablation validates remediation across both mechanisms, and two tooling lessons](#15-closing-the-loop-the-ablation-validates-remediation-across-both-mechanisms-and-two-tooling-lessons)
 
 ---
 
@@ -748,6 +749,82 @@ expected to touch mechanism B, which needs its own instrument (§14.4).
    zero 7 of 8 rows' loss contribution before `.backward()`, rather than
    isolating a row entirely -- is proposed but not yet built.
 
+## 15. Closing the loop: the ablation validates remediation across both mechanisms, and two tooling lessons
+
+§13 sketched the offline test; full derivation, exact numbers, and code
+are in companion note `CfC_BAOAB_Integrator_and_Mitigations.md` §42. This
+section folds the *result* back into the programme's own remediate step
+(§10) and records two lessons for the diagnostic tooling itself -- one
+about how instruments can silently fail, the other about how a diagnostic
+can silently measure the wrong thing.
+
+### 15.1 Remediate, closed: one lever suppresses both mechanisms
+
+`replay_precision_cap_ablation` (`precision_lr_max` at 1.0 and 4.0) and
+`replay_integrator_ablation` (`baoab_cfc_lowrank` restricted to layers
+0-2) were both run against all three §14 replays. Every arm collapses
+every capture from its recorded severity down to a pre-clip norm of
+roughly 1-4 -- including step 48,917, the mechanism-B event §14.1 found
+`dc_ratio` blind to. That is the significant part: neither intervention
+touches `reverse_channel_scale` or `reverse_ch` directly, yet both fully
+suppress the event those groups lead.
+
+**This revises §14.2's "two coexisting mechanisms" into one root cause
+with two symptoms.** `reverse_channel_scale`'s cascade collapses in
+lockstep with `depth_code`'s when only the $V_\theta$ low-rank term is
+capped (130.7 to 1.94, a 67x drop, versus depth_code's 122.8 to 0.87, a
+141x drop) -- consistent with `reverse_ch` amplifying the same sharp
+$V_\theta$ force mechanism A produces, rather than generating its own
+independent cascade. §10's remediation table needed only one lever after
+all; §14.4 item 1's proposed `reverse_ch`-side stiffness proxy is now a
+secondary confirmation instrument rather than a hunt for a second fix.
+
+A companion bracketing tool, `bracket_precision_lr_max`, measured
+$\sigma_{\max}(B_k)^2$ directly on a neutral batch across the healthy
+(step 27,000) and all three spike checkpoints, and found them
+statistically similar (p50 in the 280-310 range for all four). This
+confirms §3's diagnosis quantitatively but is a reminder that this
+particular instrument cannot itself discriminate healthy from
+spike-prone weights -- only the direct ablation (replaying the actual
+offending batch) can, because what matters is $\sigma_{\max}(B_k)^2$'s
+*product* with the specific batch's $\lVert h - \mu_k \rVert^2$, not
+$\sigma_{\max}(B_k)^2$ in isolation.
+
+### 15.2 Tooling lesson 1: a hook that returns a bookkeeping value crashes autograd
+
+Both new ablation helpers initially crashed with `TypeError: expected
+Variable, but hook returned 'float'`, because their per-layer hook used
+`dict.setdefault(...)` as the hook body's return expression --
+`setdefault` returns the resulting value, and PyTorch treats any
+non-`None` tensor-hook return as a proposed gradient replacement. Fixed
+by wrapping the call in a named function whose body discards the return
+value. Generalizes beyond this one instrument: any future hook added to
+this programme's toolkit must return `None` or an actual replacement
+`Tensor`, never a value used only for bookkeeping.
+
+### 15.3 Tooling lesson 2: verify the instrument is reading the state you think it is reading
+
+A second, more procedural failure surfaced while chasing an apparent
+contradiction between two readings of the same quantity on the same
+nominal checkpoint that differed by 400-600x. The cause was not the
+measurement -- it was that `Cell 5` never loads a checkpoint at all (the
+load is a top-level block inside `Cell 6`, run before `run_training()` is
+even called), and an over-eager interrupt on `Cell 6` can land before
+that load finishes, silently leaving the live model on random-init
+weights while the session otherwise looks normal.
+
+This generalizes to a standing rule for the programme, not just this one
+notebook: **a diagnostic that reads "whatever's currently loaded" is only
+as trustworthy as your certainty about what is currently loaded.**
+Diagnostics that reload their own state from a named checkpoint file each
+time they run (`replay_spike_batch`, `attribute_spike_rows`,
+`replay_precision_cap_ablation`, `replay_integrator_ablation`,
+`bracket_precision_lr_max`) are immune to this by construction. A bare
+live-model probe (`Cell 6b-2`'s own top-level `sigma_lr_report` call) is
+not, and should be preceded by a cheap parameter-norm sanity check against
+the checkpoint it is supposed to be reading whenever there is any doubt
+about how the session got into its current state.
+
 ---
 
 Provenance. The math in §2-§3 is the exact energy/force of
@@ -765,7 +842,15 @@ Phase-1/2-instrumented captures (steps 37,763 / 41,318 / 39,983 / 41,837).
 §14's case study (steps 47,116 / 48,507 / 48,917) is documented in full in
 companion note §41; no new figures were made for it.
 
-Last updated: 31 August 2026 (adds §14: a case study folding companion note
+Last updated: 5 September 2026 (adds §15: the §13 offline ablation ran
+against all three §14 captures and validates `precision_lr_max` (both
+1.0 and 4.0) and `baoab_cfc_lowrank` against all of them, including the
+mechanism-B event, revising §14.2's two-mechanism picture into one root
+cause with two symptoms; records two tooling lessons -- a hook-return-value
+bug that crashes autograd, and a checkpoint-loading pitfall where a bare
+live-model probe can silently read random-init weights; full derivation
+and numbers in companion note §42). Previously updated 31 August 2026
+(adds §14: a case study folding companion note
 §41's three new replays -- steps 47,116, 48,507, 48,917 -- back into this
 note's own §8-§10 framework; records that severity alone does not
 discriminate the two failure modes, that `dc_ratio` has a blind spot for a
