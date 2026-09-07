@@ -40,6 +40,7 @@ The thesis of the programme is a single sentence:
 13. [Testing the weight-space hypothesis directly: an integrator-ablation replay](#13-testing-the-weight-space-hypothesis-directly-an-integrator-ablation-replay)
 14. [Case study: three new replays confirm chronic low-rank dominance and expose a `dc_ratio` blind spot](#14-case-study-three-new-replays-confirm-chronic-low-rank-dominance-and-expose-a-dc_ratio-blind-spot)
 15. [Closing the loop: the ablation validates remediation across both mechanisms, and two tooling lessons](#15-closing-the-loop-the-ablation-validates-remediation-across-both-mechanisms-and-two-tooling-lessons)
+16. [Raw diagnostic tool outputs](#16-raw-diagnostic-tool-outputs)
 
 ---
 
@@ -279,7 +280,8 @@ $$
 \text{dc-ratio} = \frac{\lVert\nabla_{\text{depth-code}}\rVert}{\max_{g\neq\text{depth-code}}\lVert\nabla_g\rVert}.
 $$
 
-Mining the seven archived replay reports (`spike_replay_reports.json`) showed
+Mining the seven archived replay reports
+([`spike_replay_reports.json`](results/spike_replay_reports.json)) showed
 this ratio cleanly separates the two modes *from data the watchdog already
 collected*: smooth-cascade events sit at `dc_ratio` $< 1.8$, localized ones at
 $> 2.2$. Logging it every interval lets us ask the one thing the archived
@@ -514,11 +516,15 @@ prohibitive at production scale.
 ## 11. Refactoring the diagnostics into a standalone library
 
 Right now the diagnostics live in three places: (a) inline in the Colab notebook
-Cell 6/8, (b) a first extraction, `grad_clip_utils.py` (with unit tests
+Cell 6/6d, (b) a first extraction, `grad_clip_utils.py` (with unit tests
 `test_grad_clip_utils.py`), and (c) the SCAF probe framework in `semsimula-scaf`.
 This is fine for a single run but does not scale to the several model variants
 (isotropic vs anisotropic $V_\theta$, `L=8` vs `L=16`, Verlet vs `baoab_cfc`)
 that all want the same forensics. The natural next step is a dedicated package.
+This section was a one-paragraph sketch as of 31 August 2026; the module count
+has roughly doubled since (§13-§15's ablation helpers, and §45-§46 of the
+Mitigations note), which is exactly the pressure the sketch predicted, so this
+update replaces it with a concrete, function-by-function design.
 
 ### 11.1 Why extract at all
 
@@ -533,42 +539,91 @@ that all want the same forensics. The natural next step is a dedicated package.
   one) have different dependencies: capture must live inside the training loop;
   analysis wants to be a pure function of a `*_spikebatch.pt` file and a model
   factory.
+- **It already happened once, successfully.** `grad_clip_utils.py` (Mitigations
+  note §37.1-§37.3) is proof this pattern works on this exact codebase: pulling
+  `assign_clip_group` / `per_group_grad_norms` / `clip_grads_per_group` out of
+  Cell 6 into an importable, unit-tested module fixed a real ordering bug
+  (Cell 6d depending on Cell 6 having already run) and caught the
+  `replay_all_captures()` memory leak that a notebook cell never would have
+  surfaced. The design below is that same move, applied to everything Cell 6d
+  grew afterward.
 
-### 11.2 Proposed shape: `semsimula-diag`
+### 11.2 Every current notebook diagnostic, mapped to its target module
+
+The inventory below is exhaustive as of this note's last update — every
+`def` in the training notebook that is a diagnostic (not core training/eval
+code) or a piece of diagnostic-adjacent infrastructure it depends on.
+
+| Current location (notebook) | Function / config | Target module | Notes |
+|---|---|---|---|
+| Cell 6d | `_isolated_grad_snapshot`, `_isolated_grad_restore` | `semsimula_diag.replay` | the non-pollution invariant's primitives, used by every probe below |
+| Cell 6d | `replay_spike_batch` | `semsimula_diag.probes.layer_profile` | per-layer h-grad profile, activation extremes, exponent occupancy (§7.1) |
+| Cell 6d | `inspect_spike_tokens` | `semsimula_diag.probes.tokens` | token degeneracy check (§7.2) |
+| Cell 6d | `attribute_spike_rows` | `semsimula_diag.probes.row_attribution` | per-row concentration (§7.3); §14.4 item 2's unreliability-on-mechanism-A caveat travels with it |
+| Cell 6d | `replay_precision_cap_ablation` | `semsimula_diag.probes.precision_cap` | `precision_lr_max` budget sweep (Mitigations §41.7/§42) |
+| Cell 6d | `replay_clip_ablation` | `semsimula_diag.probes.clip_order` | `sum_then_clip` vs `clip_then_sum` (Mitigations §45) |
+| Cell 6d | `replay_integrator_ablation` | `semsimula_diag.probes.integrator` | `baoab_cfc` vs `baoab_cfc_lowrank` (§13, Mitigations §40) |
+| Cell 6d | `replay_all_captures` | `semsimula_diag.report` | batch-replays every `*_spikebatch.pt` on disk (§10's aggregate view) |
+| Cell 6b-2 | `sigma_lr_report` | `semsimula_diag.probes.stiffness` | single-checkpoint `sigma_max(B_k)^2` percentiles (§3.3, Mitigations §31.3) |
+| Cell 6b-2 | `stiffness_report` | `semsimula_diag.probes.stiffness` | `omega*dt` distribution against the `baoab_cfc` stability wall (Mitigations §29) |
+| Cell 6b-3 | `bracket_precision_lr_max` | `semsimula_diag.probes.stiffness` | multi-checkpoint `sigma_max(B_k)^2` bracket, healthy vs spike-regime (Mitigations §42.4) |
+| Cell 6 (inline) | `dc_ratio` / `b_proj_sigma_max` computation | `semsimula_diag.phase0` | §5's leading-indicator writers |
+| Cell 6 (inline) | `_log_write` | `semsimula_diag.phase0` | generic JSONL append used by every logging site |
+| Cell 6 (inline) | spike-bundle capture block (`CAPTURE_SPIKE_THRESHOLD`, `SPIKEBATCH_SNAPSHOT_MAX_KEEP` ring buffer) | `semsimula_diag.capture` | §6's Phase-1 sidecar writer |
+| Cell 6 (inline) | `_vm_uptime_seconds`, `AUTOSAVE_WALLCLOCK_HOURS` splice | `semsimula_diag.capture` | the wall-clock safety-net checkpoint (Mitigations §46) — not itself a spike diagnostic, but it shares `capture`'s "protect data that already happened" job and `save_manual_checkpoint`'s dependency |
+| Cell 6 (inline) | `save_manual_checkpoint`, `save_checkpoint`, `_reload_best` | `semsimula_diag.capture` | checkpoint I/O the rest of `capture` depends on |
+| Cell 6 (inline) | `CLIP_THEN_SUM_GROUPS` / per-microbatch clip-then-sum splice | `semsimula_diag.clipping` (extends `grad_clip_utils.py`) | Mitigations §45.4's live remediation, not a diagnostic, but it shares `clip_grads_per_group`'s grouping logic and belongs in the same already-extracted module rather than a new one |
+| `grad_clip_utils.py` (already extracted) | `GradClipConfig`, `assign_clip_group`, `per_group_grad_norms`, `clip_grads_per_group` | `semsimula_diag.clipping` | rename/move only — this module's existence and test suite is what §11.1 points to as precedent |
+
+### 11.3 Proposed shape: `semsimula-diag`
 
 ```mermaid
 flowchart TB
-    subgraph repo [semsimula diag, new repo]
-        direction TB
-        CAP["capture<br>watchdog thresholds,<br>spikebatch writer,<br>ring buffer"]
-        REP["replay<br>deterministic re run,<br>snapshot and restore invariant,<br>RNG pinning"]
-        PROBE["probes<br>per&#95;layer&#95;hgrad,<br>row&#95;attribution,<br>exponent&#95;occupancy,<br>bproj&#95;spectrum"]
-        LOG["phase0<br>dc&#95;ratio, b&#95;proj&#95;sigma&#95;max,<br>jsonl schema + readers"]
-        REPORT["report<br>ProbeResult dataclass,<br>plots dp&#95;&#42;.py,<br>mode classifier"]
-    end
-    NB["training notebook<br>imports capture + phase0"] --> CAP
+    NB["training notebook<br>imports capture, phase0, clipping"]
+    CLI["diag CLI or CI job<br>imports replay and probes"]
+    SCAF["semsimula scaf<br>GradientSpikeProbe"]
+    CAP["capture&#95;py<br>watchdog thresholds<br>spikebatch writer, ring buffer<br>checkpoint IO, wall clock autosave"]
+    REP["replay&#95;py<br>deterministic re run<br>snapshot restore invariant<br>RNG pinning"]
+    CLIPM["clipping&#95;py<br>per group clip config<br>clip then sum splice<br>renamed from grad&#95;clip&#95;utils"]
+    PROBE["probes package<br>layer&#95;profile, row&#95;attribution, tokens<br>precision&#95;cap, clip&#95;order<br>integrator, stiffness"]
+    LOG["phase0&#95;py<br>dc&#95;ratio, b&#95;proj&#95;sigma&#95;max<br>jsonl schema and readers"]
+    REPORT["report&#95;py<br>ProbeResult dataclasses<br>mode classifier, dp plot functions"]
+    TESTDATA["testdata package<br>golden spikebatch outputs"]
+
+    NB --> CAP
     NB --> LOG
-    CLI["diag CLI or CI job<br>imports replay + probes"] --> REP
+    NB --> CLIPM
+    CLI --> REP
     REP --> PROBE
     PROBE --> REPORT
-    SCAF["semsimula scaf<br>GradientSpikeProbe"] -. adopts .-> PROBE
+    SCAF -.->|adopts| PROBE
+    TESTDATA -.->|golden fixtures| PROBE
 ```
 
 Concretely:
 
 - `semsimula_diag.capture` — the Phase-1 machinery (thresholds, bundle writer,
-  ring buffer). The notebook imports this instead of inlining it.
+  ring buffer) plus the checkpoint I/O it and the wall-clock autosave both
+  depend on (`save_checkpoint`, `save_manual_checkpoint`, `_reload_best`,
+  `_vm_uptime_seconds`). The notebook imports this instead of inlining it.
 - `semsimula_diag.replay` — the deterministic re-run engine and the
-  snapshot/restore context manager, model-agnostic (takes a model + bundle).
-- `semsimula_diag.probes` — one function per instrument
-  (`per_layer_hgrad`, `row_attribution`, `exponent_occupancy`,
-  `bproj_spectrum`), each returning a plain dataclass so results are
-  serialisable and diffable across runs.
+  snapshot/restore context manager (`_isolated_grad_snapshot`/`_restore`),
+  model-agnostic (takes a model + bundle).
+- `semsimula_diag.probes` — one module per instrument family
+  (`layer_profile`, `row_attribution`, `tokens`, `precision_cap`,
+  `clip_order`, `integrator`, `stiffness`), each returning a plain dataclass
+  so results are serialisable and diffable across runs (§11.2's table maps
+  every current function to its module).
 - `semsimula_diag.phase0` — the JSONL schema, the `dc_ratio` /
-  `b_proj_sigma_max` writers, and readers that turn a log into a trajectory.
-- `semsimula_diag.report` — the mode classifier (§8 decision tree) and the
-  figure scripts (this note's `dp_*` plots would move here as reusable
-  functions).
+  `b_proj_sigma_max` writers, `_log_write`, and readers that turn a log into
+  a trajectory.
+- `semsimula_diag.clipping` — `grad_clip_utils.py` renamed in place (its
+  four functions and test suite move unchanged), extended with the
+  `clip_then_sum` splice so the two clip strategies live behind one
+  interface instead of one being a module and the other staying inline.
+- `semsimula_diag.report` — the mode classifier (§8 decision tree),
+  `replay_all_captures`, and the figure scripts (this note's `dp_*` plots
+  would move here as reusable functions).
 
 The alignment with SCAF is deliberate: `probes/` should return SCAF-compatible
 `ProbeResult` objects so the same instruments run both offline (against a
@@ -576,15 +631,85 @@ bundle) and online (as a `GradientSpikeProbe` on an `InterventableModel`). That
 makes Phase 3 (productionization) a matter of *adopting* the library's probes,
 not rewriting them.
 
-### 11.3 Migration order (low-risk first)
+### 11.4 `ProbeResult`: one dataclass shape, nine producers
 
-1. Lift `replay_spike_batch` / `attribute_spike_rows` into
-   `semsimula_diag.replay` + `probes/` with the notebook re-importing them
-   (pure move, behaviour-preserving, add tests for the invariant).
-2. Move the Phase-0 writers into `semsimula_diag.phase0` and have Cell 6 import
-   them (removes the most-duplicated code across notebook variants).
-3. Move the capture watchdog into `semsimula_diag.capture`.
-4. Fold the SCAF `GradientSpikeProbe` onto `probes/` so there is one
+Every probe in §11.2's table currently returns a bespoke `dict`/tuple and
+prints its own ad hoc table. A single shared shape removes that duplication
+and gives `report.py` one code path to render, diff, or serialize any of
+them:
+
+```python
+@dataclass
+class ProbeResult:
+    probe_name: str            # e.g. "layer_profile", "clip_order"
+    step_tag: int               # the *_spikebatch.pt step this ran against
+    fidelity_gap_pct: float | None   # None for probes that do not replay (phase0 readers)
+    metrics: dict[str, float]        # scalar outputs, e.g. {"L0_hgrad": 0.169, "dc_ratio": 1.09}
+    per_layer: dict[int, float] | None = None     # layer-indexed series, when applicable
+    per_group: dict[str, float] | None = None     # group-indexed series, when applicable
+    raw: dict | None = None           # the full original dict/report, for backward compatibility
+```
+
+`layer_profile` populates `per_layer`; `clip_order`/`precision_cap` populate
+`metrics` keyed by threshold/budget; `row_attribution` populates `metrics`
+with the top-1/top-3 shares. `report.py`'s mode classifier (§8's decision
+tree) becomes a pure function `classify(result: ProbeResult) -> str`
+instead of prose repeated at every call site.
+
+### 11.5 Testing strategy: the golden outputs already exist
+
+Every probe in §11.2's table has already been run at least once against a
+real captured bundle, and the exact printed output was saved (originally
+for the unrelated purpose of an eventual public release alongside
+checkpoints and model code — see the raw-output table in §16). That is,
+by accident, exactly the fixture set a safe migration needs:
+
+- **Regression, not new test design.** For each `(probe, step)` pair in
+  §16's table, a test loads the corresponding `*_spikebatch.pt` bundle,
+  calls the migrated `semsimula_diag.probes.*` function, and asserts the
+  returned `ProbeResult.metrics` match the archived `*_output.txt`/`.json`
+  numbers within the same tolerance the note already treats as "bit-exact"
+  (the fidelity-gap figures throughout §7/§13-§15 top out at 0.0019
+  percent) — i.e. the extraction is provably behavior-preserving, not just
+  "should be equivalent," the same standard Mitigations §45.4 held the
+  `clip_then_sum` implementation to before trusting it live.
+- **One dependency this creates:** the fixtures are the printed *outputs*;
+  reproducing them from scratch needs the corresponding `*_spikebatch.pt`
+  *inputs* (the pinned weights/batch/RNG bundles), which currently live
+  only on Google Drive, not in this results folder. If those bundles are
+  also uploaded (they are checkpoint-shaped `torch.save` files, so this
+  is a natural fit alongside the training checkpoints already planned for
+  release), the test suite above runs for free with zero new capture cost.
+  Without them, the archived outputs still serve as documentation-level
+  golden values and a manual cross-check, just not an automated CI gate.
+
+### 11.6 Migration order (low-risk first)
+
+1. ~~Extract per-group clipping into `grad_clip_utils.py`.~~ **Done**
+   (Mitigations §37.1-§37.3); this is the module `semsimula_diag.clipping`
+   renames in place, not new work.
+2. Lift `replay_spike_batch` / `attribute_spike_rows` / `inspect_spike_tokens`
+   into `semsimula_diag.replay` + `probes/layer_profile.py`,
+   `probes/row_attribution.py`, `probes/tokens.py`, with the notebook
+   re-importing them (pure move, behaviour-preserving) and §11.5's
+   regression tests added against whichever `*_spikebatch.pt` bundles are
+   available.
+3. Lift the three newer ablation helpers (`replay_precision_cap_ablation`,
+   `replay_clip_ablation`, `replay_integrator_ablation`) and the stiffness
+   family (`sigma_lr_report`, `stiffness_report`, `bracket_precision_lr_max`)
+   into their `probes/` modules the same way — these are the youngest code
+   (Mitigations §41-§45) and have the least test coverage today, so moving
+   them while the exact expected numbers are still fresh (§16) is the
+   highest-value-per-effort step.
+4. Move the Phase-0 writers (`dc_ratio`, `b_proj_sigma_max`, `_log_write`)
+   into `semsimula_diag.phase0` and have Cell 6 import them (removes the
+   most-duplicated code across notebook variants).
+5. Move the capture watchdog, checkpoint I/O, and the wall-clock autosave
+   into `semsimula_diag.capture`.
+6. Add the `clip_then_sum` splice to `semsimula_diag.clipping` alongside
+   the four functions moved in step 1, giving both clip strategies one
+   home instead of one being a module and the other inline in Cell 6.
+7. Fold the SCAF `GradientSpikeProbe` onto `probes/` so there is one
    implementation with two entry points.
 
 ---
@@ -825,6 +950,42 @@ not, and should be preceded by a cheap parameter-norm sanity check against
 the checkpoint it is supposed to be reading whenever there is any doubt
 about how the session got into its current state.
 
+## 16. Raw diagnostic tool outputs
+
+Every probe in §11.2's table has, at least once, produced a raw printed
+output that was saved to a text or JSON file rather than only quoted as
+numbers in prose. These are being uploaded to Hugging Face alongside this
+run's checkpoints and model code, under the same filenames used here, so
+the links below resolve once that upload lands (`results/` is a
+placeholder prefix for the eventual raw-content URL). This table is also
+the fixture inventory §11.5's testing strategy is built on.
+
+| Function(s) | Step(s) | File | Companion note reference |
+|---|---|---|---|
+| `replay_spike_batch` | 37,763 / 41,318 | [replay_spike_batch_37763_41318_output.txt](results/replay_spike_batch_37763_41318_output.txt) | §35, §38 |
+| `attribute_spike_rows` | 37,763 | [attributes_spike_batch_37763_output.txt](results/attributes_spike_batch_37763_output.txt) | §39.2 |
+| `replay_spike_batch` + `inspect_spike_tokens` | 39,983 / 41,837 | [replay_spike_batch_and_inspect_spike_tokens_39983_41837_output.txt](results/replay_spike_batch_and_inspect_spike_tokens_39983_41837_output.txt) | §38.6-§38.7 |
+| `replay_all_captures` (7-event aggregate) | 37,763 / 40,043 / 40,387 / 41,318 / 41,824 / 39,983 / 41,837 | [spike_replay_reports.json](results/spike_replay_reports.json) | §38.1, §38.7 |
+| `replay_spike_batch` | 47,116 | [replay_spike_batch_47116_output.txt](results/replay_spike_batch_47116_output.txt) | §41.1 |
+| `replay_spike_batch` | 48,507 | [replay_spike_batch_48507_output.txt](results/replay_spike_batch_48507_output.txt) | §41.1 |
+| `replay_spike_batch` | 48,917 | [replay_spike_batch_48917_output.txt](results/replay_spike_batch_48917_output.txt) | §41.1 |
+| `attribute_spike_rows` | 47,116 | [attribute_spike_rows_47116_output.txt](results/attribute_spike_rows_47116_output.txt) | §41.1 |
+| `replay_precision_cap_ablation` + `replay_integrator_ablation` | 47,116 / 48,507 / 48,917 | [replay_precision_cap_and_integration_ablations_47116_48507_48917_output.txt](results/replay_precision_cap_and_integration_ablations_47116_48507_48917_output.txt) | §14.3, §15.1 |
+| `bracket_precision_lr_max` | 47,116 / 48,507 / 48,917 (vs. healthy 27,000) | [bracket_precision_lr_max_47116_48507_48917_output.txt](results/bracket_precision_lr_max_47116_48507_48917_output.txt) | §15.1 |
+| `replay_spike_batch` + `attribute_spike_rows` | 52,940 | [replay_spike_batch_attribute_spike_rows_52940_output.txt](results/replay_spike_batch_attribute_spike_rows_52940_output.txt) | Mitigations §44 |
+| `replay_spike_batch` + `attribute_spike_rows` | 55,919 | [replay_spike_batch_attribute_spike_rows_55919_output.txt](results/replay_spike_batch_attribute_spike_rows_55919_output.txt) | Mitigations §44 |
+| `replay_clip_ablation` | 52,940 | [replay_clip_ablation_52940_output.txt](results/replay_clip_ablation_52940_output.txt) | Mitigations §45.3 |
+| `replay_clip_ablation` | 55,919 | [replay_clip_ablation_55919_output.txt](results/replay_clip_ablation_55919_output.txt) | Mitigations §45.3 |
+
+Three files from the same results folder are not included above:
+`sigma_lr_report_output.txt` (a single-checkpoint scratch run whose numbers
+do not match any table currently in either note — its provenance needs
+confirming before it can be cited against a specific finding),
+`logfreq_surprisal_openwebtext.npy` (a precomputed token-frequency data
+dependency, not a diagnostic tool's output), and `training_log.jsonl` (the
+raw per-step log underlying most of §5's Phase-0 discussion generally,
+rather than any one finding specifically).
+
 ---
 
 Provenance. The math in §2-§3 is the exact energy/force of
@@ -842,7 +1003,21 @@ Phase-1/2-instrumented captures (steps 37,763 / 41,318 / 39,983 / 41,837).
 §14's case study (steps 47,116 / 48,507 / 48,917) is documented in full in
 companion note §41; no new figures were made for it.
 
-Last updated: 5 September 2026 (adds §15: the §13 offline ablation ran
+Last updated: 7 September 2026 (adds §16, a table of every raw diagnostic
+tool output saved to date, mapped to its producing function(s), step(s),
+and companion-note reference -- these are being uploaded to Hugging Face
+alongside checkpoints and model code under the same filenames, and double
+as the fixture inventory for §11.5's testing strategy; substantially
+expands §11 from a one-paragraph sketch into a concrete design -- an
+exhaustive function-to-module inventory table (§11.2, now covering every
+diagnostic added through Mitigations §46, not just the original five),
+a `ProbeResult` dataclass sketch (§11.4) shared across all nine probe
+producers, a testing strategy built on §16's now-existing golden outputs
+(§11.5) rather than tests written from scratch, and an updated
+low-risk-first migration order (§11.6) that records `grad_clip_utils.py`'s
+extraction as already-done precedent and prioritizes the newest,
+least-tested ablation helpers next). Previously updated 5 September 2026
+(adds §15: the §13 offline ablation ran
 against all three §14 captures and validates `precision_lr_max` (both
 1.0 and 4.0) and `baoab_cfc_lowrank` against all of them, including the
 mechanism-B event, revising §14.2's two-mechanism picture into one root

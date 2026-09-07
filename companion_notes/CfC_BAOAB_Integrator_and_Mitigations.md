@@ -2128,6 +2128,9 @@ pre_clip_grad_norm_replayed  = 160.39   (matching groups)
 fidelity_gap_pct             = 0.0012%
 ```
 
+Raw `replay_spike_batch` output (this event and step 41,318, discussed
+together with it in §38-§39): [replay_spike_batch_37763_41318_output.txt](results/replay_spike_batch_37763_41318_output.txt).
+
 This settles the open question from §33.5: the RNG/microbatch/weight capture
 and the isolated replay reproduce a real training step's forward+backward
 essentially exactly, not just "close enough." Phase 1 and Phase 2 are
@@ -2600,7 +2603,9 @@ five smooth-cascade replays.
 §38.6's three additions were run against the two localized captures
 (39,983 / 41,837), then, for a genuine control group, against two of the
 five smooth-cascade captures (37,763 / 41,318). Both localized events
-replayed with the same 0.0% fidelity as before.
+replayed with the same 0.0% fidelity as before. Raw combined
+`replay_spike_batch` + `inspect_spike_tokens` output for 39,983/41,837:
+[replay_spike_batch_and_inspect_spike_tokens_39983_41837_output.txt](results/replay_spike_batch_and_inspect_spike_tokens_39983_41837_output.txt).
 
 **Negative result 1 -- token degeneracy, ruled out.** `inspect_spike_tokens`
 found nothing: across all 64 rows examined (32 per capture), every single
@@ -2638,7 +2643,8 @@ report whichever layer happened to run last.
 
 **Positive result -- it was already sitting in the Phase-0 data,
 uncomputed.** Going back to the original 7-event `spike_replay_reports`
-JSON (no new replay needed) and computing one ratio per event --
+JSON ([spike_replay_reports.json](results/spike_replay_reports.json), no
+new replay needed) and computing one ratio per event --
 `override:depth_code`'s captured group norm divided by the next-largest
 group's norm ("`dc_ratio`") -- produces a clean split:
 
@@ -2735,6 +2741,9 @@ result couldn't be retrofitted to the story:
 | 41,837 | localized | 528.0 | **0.095** | 0.248 | **0.115** |
 
 (uniform-batch baseline for 32 rows: 0.031)
+
+Raw `attribute_spike_rows` output for step 37,763 (one of the four
+events above): [attributes_spike_batch_37763_output.txt](results/attributes_spike_batch_37763_output.txt).
 
 This is the opposite ranking from the conjecture. The two localized events
 are the *flattest* of the four -- 41,837, the single most extreme event on
@@ -3032,6 +3041,13 @@ All three replayed at essentially perfect fidelity (worst case 0.0019
 percent), so every number below is a bit-exact reproduction of what
 actually happened at that step, not an approximation.
 
+Raw `replay_spike_batch` output per step:
+[replay_spike_batch_47116_output.txt](results/replay_spike_batch_47116_output.txt),
+[replay_spike_batch_48507_output.txt](results/replay_spike_batch_48507_output.txt),
+[replay_spike_batch_48917_output.txt](results/replay_spike_batch_48917_output.txt);
+plus `attribute_spike_rows(47116)`:
+[attribute_spike_rows_47116_output.txt](results/attribute_spike_rows_47116_output.txt).
+
 ### 41.2 Finding 1: the low-rank channel is chronically dominant, not a transient excursion -- closing §33.1's own caveat, but not the way it expected
 
 `lr_term_share` -- the fraction of $V_\theta$'s exponent contributed by
@@ -3311,7 +3327,9 @@ hook-based instrumentation in this notebook: a tensor hook must return
 
 All three "as trained" replays reproduce the recorded pre-clip norm within
 about 1 percent, so this is trustworthy, not an artefact of drift between
-capture and replay. Both `precision_lr_max` budgets and the low-rank
+capture and replay. Raw combined `replay_precision_cap_ablation` +
+`replay_integrator_ablation` output for all three steps:
+[replay_precision_cap_and_integration_ablations_47116_48507_48917_output.txt](results/replay_precision_cap_and_integration_ablations_47116_48507_48917_output.txt). Both `precision_lr_max` budgets and the low-rank
 integrator collapse every one of the three captures down to a pre-clip
 norm of about 1-4 -- squarely in quiet-step territory -- regardless of
 whether the starting severity was 202 or 13,139.5.
@@ -3377,6 +3395,9 @@ model afterward.
 | spike step 47,116 | 310.6 | 714.0 | 1136.1 | 2900.6 | 8065.6 |
 | spike step 48,507 | 284.2 | 683.4 | 1058.3 | 2305.3 | 6386.8 |
 | spike step 48,917 | 281.6 | 687.4 | 1054.9 | 2426.9 | 6682.8 |
+
+Raw `bracket_precision_lr_max` output:
+[bracket_precision_lr_max_47116_48507_48917_output.txt](results/bracket_precision_lr_max_47116_48507_48917_output.txt).
 
 **Finding: on a neutral batch, all four states look almost the same.**
 This refines §33's own bracket (which also found the shift between
@@ -3768,7 +3789,9 @@ was set. Alongside that, spike magnitudes crept upward: `441.9` at step
 Phase-0 summary and both within **6-9% of `hard_trigger=500`** — the
 closest this run has come to another `[watchdog-hard]` reload since
 resuming at 47,116. `replay_spike_batch` + `attribute_spike_rows` on both
-gives a fidelity-perfect (0.0% diff) forensic pair.
+gives a fidelity-perfect (0.0% diff) forensic pair. Raw combined output:
+[replay_spike_batch_attribute_spike_rows_52940_output.txt](results/replay_spike_batch_attribute_spike_rows_52940_output.txt),
+[replay_spike_batch_attribute_spike_rows_55919_output.txt](results/replay_spike_batch_attribute_spike_rows_55919_output.txt).
 
 ### 44.1 The watchdog's own aggregate undercounts the true total
 
@@ -3973,7 +3996,10 @@ would be the concrete case for preferring `clip_then_sum`.
 Both bundles replayed cleanly against the fresh, post-§46 session --
 neither hit the `CheckpointError` that had taken the previous session
 down, confirming that failure was session-level corruption rather than
-a reproducible bug in the model or the replay path itself.
+a reproducible bug in the model or the replay path itself. Raw
+`replay_clip_ablation` output:
+[replay_clip_ablation_52940_output.txt](results/replay_clip_ablation_52940_output.txt),
+[replay_clip_ablation_55919_output.txt](results/replay_clip_ablation_55919_output.txt).
 
 `replay_clip_ablation(52940)` (raw accumulated norm: E=261.20, P=261.12,
 1 param each, 4 microbatches):
