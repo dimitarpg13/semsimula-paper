@@ -38,6 +38,7 @@ live in the same `companion_notes/` folder.
 43. [Four Repeats of the Same Eval-Time OOM at Step 47,500: `gc.collect()` Was Never Going to Fix It, and Why](#43-four-repeats-of-the-same-eval-time-oom-at-step-47500-gccollect-was-never-going-to-fix-it-and-why)
 44. [Two Near-Trigger E/P-Led Replays: Layer-Profile Shape, Not Group Identity, Discriminates the Mechanisms, and the §39 Anti-Correlation Extends to This Regime](#44-two-near-trigger-ep-led-replays-layer-profile-shape-not-group-identity-discriminates-the-mechanisms-and-the-39-anti-correlation-extends-to-this-regime)
 45. [A `precision_lr_max`-Style Clip Ablation Doesn't Make Sense, and `replay_clip_ablation` Tests the Question That Does: Clip Order](#45-a-precision_lr_max-style-clip-ablation-doesnt-make-sense-and-replay_clip_ablation-tests-the-question-that-does-clip-order)
+46. [A Checkpoint-Recompute Divergence Took Down the Whole Session: 4,252 Steps Lost, and a Wall-Clock Autosave Added](#46-a-checkpoint-recompute-divergence-took-down-the-whole-session-4252-steps-lost-and-a-wall-clock-autosave-added)
 
 ---
 
@@ -3977,6 +3978,89 @@ a training-loop change, not just a config override, since it requires
 per-microbatch access to `E`/`P`'s gradient before the accumulation
 step -- more invasive than flipping a `GRAD_CLIP_OVERRIDES` entry).
 
+## 46. A Checkpoint-Recompute Divergence Took Down the Whole Session: 4,252 Steps Lost, and a Wall-Clock Autosave Added
+
+Attempting `replay_clip_ablation(52940)` (§45) hit
+`torch.utils.checkpoint`'s `CheckpointError` ("Recomputed values for the
+following tensors have different metadata than during the forward
+pass"). Ruling out `replay_clip_ablation` itself as the cause took one
+step: `replay_spike_batch(52940)`, an unrelated, already-working replay
+path, failed with the same error immediately after. Both walk the
+identical captured-bundle -> forward/backward-under-checkpoint code
+path, so the divergence lives in something shared -- most likely the
+gumbel-softmax top-`k` routing in `model_parf_sparse.py`, which draws
+fresh randomness on every call and sits inside nested
+`torch.utils.checkpoint` regions in `_fock_layer_step`
+(`model_fock_parf_multixi.py`): a checkpoint's recompute pass must
+retrace *exactly* the same control flow as its original forward, and a
+discrete routing decision that differs between the two (even from the
+same nominal RNG state, if consumed in a different order or count due to
+some other nondeterminism upstream) changes downstream tensor shapes --
+consistent with the actual mismatches observed (e.g. `[8,512]` int64 vs.
+`[8,512,384]` float32, a shape/dtype pair that looks like a routing
+index tensor being compared against a routed activation tensor).
+Attempting `torch.utils.checkpoint.set_checkpoint_debug_enabled(True)`
+to localize it further made the process hang instead of erroring, and a
+third, different bundle (`replay_spike_batch(55919)`) then also hung
+with no output at all -- at that point the working hypothesis shifted
+from "a latent model bug" to "this specific CUDA session/process is
+corrupted" (the debug-mode hang in particular is not explicable by a
+routing bug alone).
+
+### 46.1 The corrupted session compounded the loss
+
+Recovering from a corrupted session should just mean "disconnect and
+resume from the last checkpoint" -- costly (checkpoints save only every
+`EVAL_INTERVAL`-gated best-val-improvement events, not on a fixed step
+cadence, so the gap since the last one can be large) but bounded and
+recoverable. Two things made it worse here. First, interrupting the
+hung `replay_spike_batch(55919)` cell left the live training loop
+sitting at step 56,752 with no recent checkpoint, so a manual
+`save_manual_checkpoint(step + 1)` was attempted to avoid losing more
+than necessary -- but the same session corruption meant `torch.save`
+itself hung (1m50s with no completion), including for a bare
+optimizer-state save to local disk, i.e. this was not a Drive I/O issue
+but something wrong with the CUDA context itself (most likely: reading
+a tensor's data off a corrupted CUDA context blocks even when the write
+target is healthy local disk). Second, interrupting *that* hung save
+left a partially-written file, `_step56753_manual.pt`, on disk --
+`torch.load` verification later failed on it ("missing data file"),
+confirming the interruption had caught `torch.save` mid-write rather
+than after a slow-but-complete write. Net result: the file that was
+specifically created to avoid losing progress could not itself be
+trusted, and the actual last verified-good checkpoint was step 52,500 --
+a loss of 4,252 steps, not just "since the last periodic save" but
+inflated further by the failed manual-save attempt consuming the window
+during which the corruption was discovered.
+
+### 46.2 Mitigation: a wall-clock autosave independent of step count or val-improvement
+
+None of the existing checkpoint triggers (`EVAL_INTERVAL`-gated
+best-val-improvement, manual on-demand) are tied to wall-clock time, so
+none of them protect against Colab's hard ~24h runtime cutoff landing in
+an unlucky gap -- which is exactly what happened one session later: this
+one ran to the 24h limit and was torn down mid-session with no warning,
+independent of the corruption incident above. `AUTOSAVE_WALLCLOCK_HOURS
+= 23.5` (Cell 6, alongside the other interval configs) adds a
+per-process, fire-once safety net: every training step reads
+`/proc/uptime` (actual VM boot-relative uptime, read fresh from the
+kernel every call -- deliberately *not* `t0`/`time.time()`-based, since
+`t0` is local to a single `run_training()` call and resets on every
+interrupt-and-resume within the same still-alive session, which would
+make a `time.time()`-based check blind to elapsed wall-clock time across
+exactly the kind of interruption this feature exists to survive), and
+once uptime crosses the threshold, calls `save_manual_checkpoint(step +
+1)` exactly once for the rest of the process. The save is wrapped in a
+bare `try/except` that logs and continues rather than propagating: given
+§46.1's evidence that `torch.save` can itself hang or silently corrupt
+its output under session-level failure, a save-failure here must not be
+allowed to take an otherwise-healthy training loop down with it, and a
+printed traceback is enough to prompt a manual intervention if it ever
+fires. 23.5h (vs. the ~24h limit) is deliberately conservative -- it
+needs enough margin for the save itself to complete (observed up to
+~2min under healthy conditions, more under duress) plus whatever step
+happens to be running when the check trips.
+
 ---
 
 Companion note to `Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`.
@@ -3990,7 +4074,20 @@ The anisotropic Gaussian V_theta is in
 SCAF stiffness audit (Phase 7b/7c Weyl bound) in the `stiffness_audit` branch
 of `semsimula-scaf` (`src/scaf/probes/stiffness.py`).
 
-Last updated: 7 September 2026, latest (§45: a direct `precision_lr_max`
+Last updated: 7 September 2026, latest (§46: a `torch.utils.checkpoint`
+`CheckpointError` while replaying bundle 52940 turned out to affect
+every replay path in the session, not just the new one, pointing to
+either gumbel-softmax routing nondeterminism inside nested checkpoint
+regions or session-level CUDA corruption -- the latter confirmed when
+`torch.save` itself started hanging and a manual safety checkpoint was
+caught mid-write and left unloadable; net loss 4,252 steps, recovered
+from the last verified-good checkpoint at step 52,500. Added
+`AUTOSAVE_WALLCLOCK_HOURS = 23.5`, a fire-once-per-process wall-clock
+safety net (Cell 6) that saves a manual checkpoint based on
+`/proc/uptime` rather than `t0`/`time.time()`, specifically so it
+survives interrupt-and-resume within a session and isn't blind to
+elapsed wall-clock time the way a `run_training()`-local timer would
+be). Previously updated 7 September 2026 (§45: a direct `precision_lr_max`
 -style clip-threshold ablation turns out to be a non-experiment --
 `clip_grad_norm_` returns its pre-clip norm independent of the threshold
 passed in, so the "replayed" gradient is identical in every arm by
