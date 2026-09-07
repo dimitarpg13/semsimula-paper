@@ -36,6 +36,7 @@ live in the same `companion_notes/` folder.
 41. [Chronic, Not Transient: Three New Replays Refine §33 and §38, and Motivate Turning On `precision_lr_max`](#41-chronic-not-transient-three-new-replays-refine-33-and-38-and-motivate-turning-on-precision_lr_max)
 42. [Step 1 Validated: `precision_lr_max` and `baoab_cfc_lowrank` Both Collapse All Three Replays, a Hook Bug and a Checkpoint-Loading Pitfall Found Along the Way, and the Cap Switched On](#42-step-1-validated-precision_lr_max-and-baoab_cfc_lowrank-both-collapse-all-three-replays-a-hook-bug-and-a-checkpoint-loading-pitfall-found-along-the-way-and-the-cap-switched-on)
 43. [Four Repeats of the Same Eval-Time OOM at Step 47,500: `gc.collect()` Was Never Going to Fix It, and Why](#43-four-repeats-of-the-same-eval-time-oom-at-step-47500-gccollect-was-never-going-to-fix-it-and-why)
+44. [Two Near-Trigger E/P-Led Replays: Layer-Profile Shape, Not Group Identity, Discriminates the Mechanisms, and the §39 Anti-Correlation Extends to This Regime](#44-two-near-trigger-ep-led-replays-layer-profile-shape-not-group-identity-discriminates-the-mechanisms-and-the-39-anti-correlation-extends-to-this-regime)
 
 ---
 
@@ -3703,6 +3704,194 @@ best of `100.47` reflects `PRECISION_LR_MAX=1.0` and the intervening
 spike/reload churn since step 47,116/47,121, not a new problem — a
 different question from the one this section is about.)
 
+### 43.5 Multi-eval confirmation, and a clean step-50,000 leak-probe checkpoint
+
+The fix held on every subsequent eval through step 50,000, not just the
+first one — five consecutive clean calls, all with the identical flat
+`mem_alloc=2.22GB` / `peak_during≈55GB` signature:
+
+| eval step | val_ppl | best so far |
+|---|---|---|
+| 47,500 | 115.00 | 100.47 |
+| 48,000 | 114.05 | 100.47 |
+| 48,500 | 106.71 | 100.47 |
+| 49,000 | 100.56 | 100.47 |
+| 49,500 | 104.08 | 100.47 |
+| 50,000 | 109.84 | 100.47 |
+
+Noisy but not degrading -- consistent with the pre-existing §32/§36
+plateau, not a new symptom.
+
+Four ordinary `[spike]` captures landed in the same window (47,429 at
+102.3; 48,997 at 224.8, led by `reverse_channel_scale`; 49,026 at 137.9;
+49,640 at 261.8), none within reach of `hard_trigger=500` -- zero
+`[watchdog-hard]` reloads. Two of the four (224.8, 261.8) are visibly
+larger than anything seen since `PRECISION_LR_MAX=1.0` went on, and both
+are led by groups outside the capped low-rank $V_\theta$ channel
+(`reverse_channel_scale`, `E`/`P`) -- worth tracking as a possible slow
+drift rather than treated as resolved, but not yet an intervention
+trigger.
+
+Separately, the run's periodic causal-leak probe (see
+[`Fock-PARFLM_Causal_Leak_Audit_Results.md`](Fock-PARFLM_Causal_Leak_Audit_Results.md)
+for the architectural background and the original prefix-causal-register
+fix) fired at step 50,000 and came back clean on the *live, current*
+weights, despite the spike/reload churn since 47,116:
+
+```
+[trained leak probe] max|dlogit| at past positions = 0.000e+00  (init-scale reference ~1.1e-05)
+[honest-ppl] honest_PPL=68.83  standard_PPL=67.57  diff=+0.0186 nats  [CLEAN]
+```
+
+`diff` is small and in the causally-correct direction (honest ≥
+standard), so the apparent PPL improvement this run is chasing is not an
+artifact of the reverse-channel leak pathway re-opening under the new
+integrator/cap combination. The `torch.no_grad() forward failed ...
+falling back to grad-enabled forward with manual detach` message printed
+alongside it is expected, not a fault: the analytic $V_\theta$ force's
+internal `torch.autograd.grad()` call (§43.1) needs grad-tracking
+enabled, so a blanket `no_grad()` attempt inside the probe correctly
+raises and the probe's own fallback path (grad-enabled + manual detach)
+handles it, exactly as designed.
+
+---
+
+## 44. Two Near-Trigger E/P-Led Replays: Layer-Profile Shape, Not Group Identity, Discriminates the Mechanisms, and the §39 Anti-Correlation Extends to This Regime
+
+Training continued past §43's checkpoint and broke the §32/§36 plateau
+outright — two new bests, `val_ppl=98.57` at step 51,500 and `98.45` at
+step 52,500, the first genuine improvement on the 100.47 record since it
+was set. Alongside that, spike magnitudes crept upward: `441.9` at step
+52,940 and `446.3` at step 55,919, both nominally led by `E`/`P` in the
+Phase-0 summary and both within **6-9% of `hard_trigger=500`** — the
+closest this run has come to another `[watchdog-hard]` reload since
+resuming at 47,116. `replay_spike_batch` + `attribute_spike_rows` on both
+gives a fidelity-perfect (0.0% diff) forensic pair.
+
+### 44.1 The watchdog's own aggregate undercounts the true total
+
+Both replays report a gap between the matching-groups total (what the
+watchdog compares against `hard_trigger`) and the full total including
+the reverse-channel groups:
+
+| step | pre-clip (watched) | incl. reverse-channel | % of hard_trigger (watched) | % of hard_trigger (full) |
+|---|---|---|---|---|
+| 52,940 | 441.9 | 469.4 | 88.4% | 93.9% |
+| 55,919 | 446.3 | 457.1 | 89.3% | 91.4% |
+
+The watchdog aggregate is undercounting the true gradient norm by
+2.4-6.2% in both cases (a known gap since SS33.3 Phase 0, not new here,
+but the margin to `hard_trigger` is now small enough that it matters):
+the run is closer to its next reload than the printed `grad=` number
+alone would suggest.
+
+### 44.2 Same nominal leader, opposite layer-profile shape
+
+Both events show `E`/`P` (260-274 each) as the two largest *named*
+groups in the Phase-0 summary, which is architecturally expected — they
+feed `h_0` directly via the tied `h_0 = E(x) + P` sum (§33.3) and are
+always large in absolute terms whenever anything downstream amplifies.
+But the per-layer boundary-gradient profile — the actual discriminator
+established in §38 — is completely different between the two:
+
+| step | layer 0 | layer 1 | layer 2 | layer 3 | layer0/layer3 ratio | §38 mode match |
+|---|---|---|---|---|---|---|
+| 52,940 | 0.16 | 0.12 | 0.07 | 0.05 | 3.2x | smooth cascade (2.6-6.3x) |
+| 55,919 | 38.15 | 19.88 | 2.31 | 0.28 | 136x | localized blowup (50-177x) |
+
+52,940 is a textbook smooth cascade -- gentle, monotone decay across all
+8 layers, matching §35's original signature almost exactly. 55,919 is a
+textbook localized blowup -- a sharp cliff between layer 1 and layer 3,
+landing inside the same 50-177x range as the two original localized
+events from §38. Both are labelled "E/P-led" by the Phase-0 summary;
+only the layer profile tells them apart. **Named-group leadership does
+not discriminate mechanism shape** — it never did (§38 already noted
+`depth_code` leads one event of each mode), and this pair confirms the
+same is true for `E`/`P` leadership. The layer-profile shape from §38
+remains the only reliable discriminator found so far.
+
+```mermaid
+flowchart LR
+    S52940["step 52940, ratio 3.2x"]
+    S55919["step 55919, ratio 136x"]
+    Smooth["smooth cascade shape"]
+    Local["localized blowup shape"]
+    NamedEP["E and P lead the named-group summary"]
+
+    S52940 --> Smooth
+    S55919 --> Local
+    S52940 --> NamedEP
+    S55919 --> NamedEP
+    NamedEP -->|does not distinguish| Smooth
+    NamedEP -->|does not distinguish| Local
+```
+
+$V_\theta$'s own group norm stays modest in both events (47.3 at 52,940,
+38.0 at 55,919 -- smaller in the *steeper*, more localized-looking one)
+against `E`/`P` at 260-274. `precision_lr_max` continues doing exactly
+the job §42 validated: even as overall spike magnitude climbs toward the
+hard trigger, the low-rank $V_\theta$ channel's own contribution is not
+what is growing. Whatever is driving the localized-shaped blowup at
+55,919, it is not a resurgence of unbounded $B_k$ curvature -- it is
+happening through the same architectural cascade (`creation_gate`,
+`depth_code`, the reverse-channel overrides) that §38's smooth-cascade
+mechanism already implicated, just concentrated into the first two
+layers this time instead of spread across all eight.
+
+### 44.3 The §39 row-concentration anti-correlation extends to this regime
+
+§39 found a "clean monotonic anti-correlation between layer-0-2 severity
+and row concentration" for the original localized-vs-smooth pair: the
+more severe the early-layer cliff, the *flatter* (more batch-wide) the
+per-row attribution. `attribute_spike_rows` on this new pair points the
+same direction:
+
+| step | layer0/layer3 ratio | `total_grad_norm` top-1 row share | top-3 share | (uniform baseline 3.1%) |
+|---|---|---|---|---|
+| 52,940 (smooth) | 3.2x | 38.7% | 72.2% | -- |
+| 55,919 (localized) | 136x | 23.4% | 47.9% | -- |
+
+The smoother event (52,940) is the *more* row-concentrated one (nearly
+39% of the whole event sitting in a single row), and the sharper,
+more-localized-looking event (55,919) is comparatively flatter -- the
+same direction §39 already established, now confirmed in an `E`/`P`-led
+near-trigger regime rather than the original `V_theta`/`reverse_ch`-led
+one. One coincidental detail from 52,940 did **not** repeat: its two
+hottest rows both happened to land in the same microbatch (mb 3, rows 3
+and 6); 55,919's two hottest rows are in different microbatches (mb 2
+row 0, mb 1 row 6). At n=2 that same-microbatch clustering looks like
+noise, not a pattern -- worth remembering if a future capture repeats it,
+but not worth acting on yet.
+
+### 44.4 A persistent, and slightly worsening, side-observation on $V_\theta$ bank 3
+
+In both captures, bank 3 of the five $V_\theta$ context banks is the
+most saturated ("dead") of the group by a wide margin, and got worse
+between the two events:
+
+| step | bank 3 `live_frac` | next-lowest bank |
+|---|---|---|
+| 52,940 | 25.0% | bank 4 at 50.2% |
+| 55,919 | 7.7% | bank 4 at 46.3% |
+
+The other four banks stay in the 46-84% live range at both steps. This
+is not yet tied to either spike mechanism -- $V_\theta$'s own group norm
+is small and shrinking (47.3 -> 38.0) across the same two events, the
+opposite direction bank 3's death would suggest if it were the driver --
+but a bank going from one-quarter to one-thirteenth "live" in three
+thousand steps is a large enough swing to keep on the watch list
+alongside `b_proj_sigma_max`.
+
+### 44.5 Status
+
+Not acting on any of this yet -- both events remain under `hard_trigger`
+(91-94% including the reverse-channel gap from §44.1) and training is
+past its old plateau, not regressing. Documented here so the next
+near-trigger or actual `[watchdog-hard]` event has this pair as a
+baseline for comparison. If a hard reload does fire, `replay_spike_batch`
++ `attribute_spike_rows` on it should be compared against both rows of
+§44.2/§44.3's table rather than assumed to match either one.
+
 ---
 
 Companion note to `Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`.
@@ -3716,7 +3905,22 @@ The anisotropic Gaussian V_theta is in
 SCAF stiffness audit (Phase 7b/7c Weyl bound) in the `stiffness_audit` branch
 of `semsimula-scaf` (`src/scaf/probes/stiffness.py`).
 
-Last updated: 6 September 2026, later (§43.4: the eval `.backward()`
+Last updated: 7 September 2026 (adds §44: two E/P-led near-trigger
+replays -- 441.9 at step 52,940 and 446.3 at step 55,919, both 91-94% of
+`hard_trigger=500` once the reverse-channel gap is included -- show
+identical named-group leadership (`E`/`P`) but opposite layer-profile
+shapes (3.2x smooth cascade vs. 136x localized blowup), confirming
+layer-profile shape rather than group identity is the real discriminator
+from §38; extends §39's row-concentration anti-correlation into this new
+regime (the smoother event is the more row-concentrated one); flags a
+worsening $V_\theta$ bank-3 saturation side-observation; not yet acted
+on). Previously updated 6 September 2026, latest (§43.5: five consecutive clean
+evals through step 50,000 confirm the fix is durable, not a one-off; the
+run's periodic causal-leak probe also fired clean at step 50,000
+(diff=+0.0186 nats, `[CLEAN]`) on the live post-churn weights; flags two
+larger-than-recent `[spike]` events (224.8, 261.8) led by groups outside
+the capped low-rank $V_\theta$ channel as worth tracking, not yet acting
+on). Previously updated 6 September 2026, later (§43.4: the eval `.backward()`
 fix validated live on the first step-47,500 eval to run after the
 fresh-session resume -- `mem_alloc` held flat at 2.22GB across all 40
 iterations instead of climbing from 47.47GB, `peak_during=55.04GB`
