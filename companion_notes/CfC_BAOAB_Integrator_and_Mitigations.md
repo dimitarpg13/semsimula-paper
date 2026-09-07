@@ -4046,12 +4046,62 @@ than reusing `default_clip=1.0` as-is; the two orders are not
 interchangeable at a shared threshold value.
 
 Both bundles now replayed and analyzed; the direction-divergence finding
-is real and reproduces across both, but `clip_then_sum` is not yet
-implemented -- it is a training-loop change (per-microbatch access to
-`E`/`P`'s gradient before the `GRAD_ACCUM` accumulation step, not a
-`GRAD_CLIP_OVERRIDES` config flip), and any implementation needs an
-explicitly chosen threshold per the caveat above rather than reusing
-`default_clip=1.0`. Not yet acted on.
+is real and reproduces across both. Given the finding's consistency
+across two structurally different spikes, and that this session had only
+just resumed from the step-52,500 restore (§46) -- the cheapest possible
+point to take one more short interrupt-and-restart, versus doing this
+surgery on a training loop that's already hours deep into a run --
+`clip_then_sum` was implemented immediately rather than deferred:
+
+- `CLIP_THEN_SUM_GROUPS = {'E', 'P'}`, `CLIP_THEN_SUM_THRESHOLD = 0.3`
+  (Cell 6, next to `_GRAD_CLIP_CFG`). `0.3` chosen directly from §45.3's
+  table rather than by chasing exact magnitude parity with today's
+  `sum_then_clip(1.0)` output (the ratio isn't constant across
+  thresholds, so there's no single clean parity number anyway):
+  `clip_then_sum(0.3)` measured ~0.54 on both bundles, already smaller
+  than today's applied norm of 1.0 (satisfies the original "tighten the
+  clip" ask) while still solidly in the direction-divergent regime
+  (`cos~0.55`, i.e. a genuinely different, not just rescaled, direction).
+- Mechanism: `_CLIP_THEN_SUM_PARAMS` groups `model.named_parameters()` by
+  `assign_clip_group` once at setup (matching exactly how
+  `clip_grads_per_group` and `replay_clip_ablation` build their own
+  groupings, so "group E" always means the same parameters everywhere).
+  Inside the `GRAD_ACCUM` microbatch loop, right after each microbatch's
+  own `.backward()` and before the next one's accumulates on top,
+  `nn.utils.clip_grad_norm_(group_params, CLIP_THEN_SUM_THRESHOLD)` clips
+  that microbatch's own contribution jointly across the group (correct
+  even if a group ever holds more than one tensor, not just today's
+  single-param `E`/`P`), folds it into a running total keyed by
+  `id(param)`, then zeros `.grad` so the normal full-sum accumulation
+  every other group still relies on never sees it. After the microbatch
+  loop, the running total is spliced back into `.grad` for exactly these
+  params -- everything downstream (`GRAD_CENTRALIZATION`,
+  `clip_grads_per_group`'s existing post-hoc per-group safety clip, the
+  watchdog, spike-batch capture, logging) needs no other change; it just
+  now reads this group's already-outlier-bounded total instead of the
+  raw microbatch sum. `CLIP_THEN_SUM_GROUPS = None`/empty reverts to
+  `sum_then_clip` for every group, matching pre-SS45.3 behavior exactly.
+- Validated offline before trusting it live: a standalone numeric check
+  (synthetic two-tensor group, four microbatches with magnitudes spanning
+  50x to mimic the real one-dominant-microbatch pattern) confirmed the
+  live per-microbatch-clip-accumulate-zero-splice algorithm is
+  numerically identical (matches to float precision) to the closed-form
+  computation `replay_clip_ablation` already used to produce §45.3's
+  table -- i.e. what's now running live is provably the same arithmetic
+  that was validated offline, not just "should be equivalent."
+
+One expected side effect worth flagging for later: `E`/`P`'s reported
+pre-clip group norm (in `[spike]` log lines, the watchdog EMA/hard-
+trigger aggregate, and `CAPTURE_SPIKE_THRESHOLD`-gated bundle capture)
+will now reflect the post-clip_then_sum total (order ~0.5) rather than
+the previous raw sums (~260-275) whenever `E`/`P` would have led a spike
+-- this is the intended effect (it's the whole point), but it does mean
+future `E`/`P`-led events from before this change won't have a like-for-
+like comparison against events captured after it, and the
+`CAPTURE_SPIKE_THRESHOLD=100`-gated spikebatch harvesting may simply stop
+firing for this specific failure mode if it's genuinely fixed. Not yet
+observed running live -- next real signal is whether the `grad_norm` EMA
+and hard-trigger reload frequency drop after this deploys.
 
 ## 46. A Checkpoint-Recompute Divergence Took Down the Whole Session: 4,252 Steps Lost, and a Wall-Clock Autosave Added
 
@@ -4149,18 +4199,29 @@ The anisotropic Gaussian V_theta is in
 SCAF stiffness audit (Phase 7b/7c Weyl bound) in the `stiffness_audit` branch
 of `semsimula-scaf` (`src/scaf/probes/stiffness.py`).
 
-Last updated: 7 September 2026, latest (§45.3-45.4: `replay_clip_ablation`
-run against both live bundles (52940, 55919) -- clip order (`sum_then_clip`
-vs. `clip_then_sum`) already disagrees on `E`/`P`'s applied-update
-*direction* by ~46-47 degrees at the threshold currently used in
-production (`default_clip=1.0`), worsening to ~60 degrees once tightened,
-and the entire pattern reproduces near-identically across both bundles
-despite their opposite layer-profile shapes (§44) -- strong evidence it's
-a structural microbatch-outlier effect, not spike-specific noise. Caveat:
-`clip_then_sum` applies a 44-99% *larger* step than `sum_then_clip` at the
-same threshold today, so wiring it in needs a recalibrated threshold
-(~0.68 for magnitude parity), not a reuse of `default_clip=1.0`; not yet
-implemented). Previously updated 7 September 2026 (§46: a `torch.utils.checkpoint`
+Last updated: 7 September 2026, latest (§45.4: `clip_then_sum` implemented
+and wired live for `E`/`P` (`CLIP_THEN_SUM_GROUPS`, Cell 6, threshold=0.3
+chosen directly off §45.3's replay table rather than a magnitude-parity
+calculation), immediately rather than deferred, since the session had
+only just resumed from the step-52,500 restore (§46) -- the cheapest
+possible point to take one more short interrupt/restart. Implementation
+clips each microbatch's own `E`/`P` gradient jointly (via the same
+`nn.utils.clip_grad_norm_` mechanics `clip_grads_per_group` already uses
+post-hoc) before folding it into a running total, replacing the normal
+full-`GRAD_ACCUM`-sum accumulation for just these two groups; validated
+offline via a standalone numeric check confirming the live per-microbatch
+algorithm is bit-identical to the closed-form computation
+`replay_clip_ablation` used to produce §45.3's results, so what's running
+live is provably the same arithmetic already validated, not just an
+assumed equivalent). Previously updated 7 September 2026 (§45.3-45.4:
+`replay_clip_ablation` run against both live bundles (52940, 55919) --
+clip order (`sum_then_clip` vs. `clip_then_sum`) already disagrees on
+`E`/`P`'s applied-update *direction* by ~46-47 degrees at the threshold
+currently used in production (`default_clip=1.0`), worsening to ~60
+degrees once tightened, and the entire pattern reproduces near-
+identically across both bundles despite their opposite layer-profile
+shapes (§44) -- strong evidence it's a structural microbatch-outlier
+effect, not spike-specific noise). Previously updated 7 September 2026 (§46: a `torch.utils.checkpoint`
 `CheckpointError` while replaying bundle 52940 turned out to affect
 every replay path in the session, not just the new one, pointing to
 either gumbel-softmax routing nondeterminism inside nested checkpoint
