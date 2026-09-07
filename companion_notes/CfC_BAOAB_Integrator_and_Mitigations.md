@@ -3968,15 +3968,90 @@ cosmetic at that threshold, while a noticeably lower cosine means the
 two regimes disagree about which way `E`/`P` should actually move, which
 would be the concrete case for preferring `clip_then_sum`.
 
-### 45.3 Status
+### 45.3 Results: run against both live bundles, and the finding replicates
 
-Not yet run against the two live bundles (52940, 55919) -- next step is
-to call `replay_clip_ablation(52940)` and `replay_clip_ablation(55919)`
-and read off the ratio/cosine table before deciding whether
-`clip_then_sum` is worth wiring into the live training loop (it would be
-a training-loop change, not just a config override, since it requires
-per-microbatch access to `E`/`P`'s gradient before the accumulation
-step -- more invasive than flipping a `GRAD_CLIP_OVERRIDES` entry).
+Both bundles replayed cleanly against the fresh, post-§46 session --
+neither hit the `CheckpointError` that had taken the previous session
+down, confirming that failure was session-level corruption rather than
+a reproducible bug in the model or the replay path itself.
+
+`replay_clip_ablation(52940)` (raw accumulated norm: E=261.20, P=261.12,
+1 param each, 4 microbatches):
+
+| threshold | E ratio | E cos | P ratio | P cos |
+|---|---|---|---|---|
+| 1.0  | 1.453 | 0.691 | 1.441 | 0.693 |
+| 0.3  | 1.808 | 0.556 | 1.793 | 0.556 |
+| 0.1  | 1.992 | 0.504 | 1.988 | 0.500 |
+| 0.03 | 1.992 | 0.504 | 1.988 | 0.500 |
+
+`replay_clip_ablation(55919)` (raw accumulated norm: E=274.26, P=274.11):
+
+| threshold | E ratio | E cos | P ratio | P cos |
+|---|---|---|---|---|
+| 1.0  | 1.479 | 0.690 | 1.462 | 0.680 |
+| 0.3  | 1.881 | 0.542 | 1.879 | 0.530 |
+| 0.1  | 1.991 | 0.513 | 1.988 | 0.502 |
+| 0.03 | 1.991 | 0.513 | 1.988 | 0.502 |
+
+Three findings:
+
+1. **Clip order already disagrees on direction at the current production
+   threshold.** `default_clip=1.0` is what `E`/`P` actually run under
+   today (neither is in `GRAD_CLIP_OVERRIDES`), and at that threshold
+   `cos(applied dirs)` is already only 0.68-0.69 (~46-47 degrees) in
+   every one of the four (bundle, group) combinations above. This isn't
+   a hypothetical effect that only appears if the clip is tightened --
+   it's live in production right now, every time `E`/`P` saturate the
+   clip.
+
+2. Tightening the threshold makes the disagreement *worse*, not better,
+   plateauing at cos~0.50-0.51 (~60 degrees) by `threshold=0.1` and
+   identical at `0.03` -- confirming §45.1's arithmetic point
+   empirically. Below whatever the smallest individual microbatch's own
+   `E`/`P` gradient norm happens to be (evidently somewhere in the
+   0.1-1.0 range, since that's the span across which ratio/cosine keep
+   moving before going flat), *every* microbatch gets clipped under
+   `clip_then_sum` and the result becomes a fixed linear combination of
+   unit directions -- tightening further from there is a pure rescale
+   with zero additional effect on direction.
+
+3. **The pattern is essentially identical across both bundles**, despite
+   §44 recording them as having opposite layer-profile shapes (52940:
+   3.2x smooth cascade; 55919: 136x localized blowup). Every ratio/cosine
+   pair between the two bundles agrees to within ~0.01-0.02. This is the
+   strongest evidence yet that the clip-order effect is a structural
+   property of how `E`/`P` gradients accumulate across microbatches (one
+   or a few outlier microbatches dominating the sum -- the microbatch-
+   level analogue of §39/§44's row-concentration finding), not an
+   artifact of either spike's particular geometry: it generalizes.
+
+### 45.4 Status, and a caveat: `clip_then_sum` at the same threshold is a *bigger* step, not a smaller one
+
+Ratio is >1 throughout (1.44-1.99x): at any given threshold value,
+`clip_then_sum` produces a *larger* applied-update norm than
+`sum_then_clip` does today, because the accumulated sum (261-274) so
+vastly exceeds `default_clip=1.0` that `sum_then_clip` is always fully
+saturated to exactly the threshold regardless of direction, while
+`clip_then_sum` at threshold=1.0 already lets several microbatches
+contribute close to their own (>1.0) magnitude before any capping ever
+touches the sum. So naively swapping `sum_then_clip` for `clip_then_sum`
+**without recalibrating the threshold** would make the applied step
+44-99% *larger* during exactly these events -- the opposite of the
+original goal. If `clip_then_sum` is wired in, its threshold needs to be
+chosen to target a comparable (or deliberately smaller) applied
+magnitude to what `sum_then_clip(1.0)` gives today -- e.g. something in
+the ballpark of `1.0 / 1.47 ~= 0.68` for rough magnitude parity -- rather
+than reusing `default_clip=1.0` as-is; the two orders are not
+interchangeable at a shared threshold value.
+
+Both bundles now replayed and analyzed; the direction-divergence finding
+is real and reproduces across both, but `clip_then_sum` is not yet
+implemented -- it is a training-loop change (per-microbatch access to
+`E`/`P`'s gradient before the `GRAD_ACCUM` accumulation step, not a
+`GRAD_CLIP_OVERRIDES` config flip), and any implementation needs an
+explicitly chosen threshold per the caveat above rather than reusing
+`default_clip=1.0`. Not yet acted on.
 
 ## 46. A Checkpoint-Recompute Divergence Took Down the Whole Session: 4,252 Steps Lost, and a Wall-Clock Autosave Added
 
@@ -4074,7 +4149,18 @@ The anisotropic Gaussian V_theta is in
 SCAF stiffness audit (Phase 7b/7c Weyl bound) in the `stiffness_audit` branch
 of `semsimula-scaf` (`src/scaf/probes/stiffness.py`).
 
-Last updated: 7 September 2026, latest (§46: a `torch.utils.checkpoint`
+Last updated: 7 September 2026, latest (§45.3-45.4: `replay_clip_ablation`
+run against both live bundles (52940, 55919) -- clip order (`sum_then_clip`
+vs. `clip_then_sum`) already disagrees on `E`/`P`'s applied-update
+*direction* by ~46-47 degrees at the threshold currently used in
+production (`default_clip=1.0`), worsening to ~60 degrees once tightened,
+and the entire pattern reproduces near-identically across both bundles
+despite their opposite layer-profile shapes (§44) -- strong evidence it's
+a structural microbatch-outlier effect, not spike-specific noise. Caveat:
+`clip_then_sum` applies a 44-99% *larger* step than `sum_then_clip` at the
+same threshold today, so wiring it in needs a recalibrated threshold
+(~0.68 for magnitude parity), not a reuse of `default_clip=1.0`; not yet
+implemented). Previously updated 7 September 2026 (§46: a `torch.utils.checkpoint`
 `CheckpointError` while replaying bundle 52940 turned out to affect
 every replay path in the session, not just the new one, pointing to
 either gumbel-softmax routing nondeterminism inside nested checkpoint
