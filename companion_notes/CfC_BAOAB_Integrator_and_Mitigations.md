@@ -37,6 +37,7 @@ live in the same `companion_notes/` folder.
 42. [Step 1 Validated: `precision_lr_max` and `baoab_cfc_lowrank` Both Collapse All Three Replays, a Hook Bug and a Checkpoint-Loading Pitfall Found Along the Way, and the Cap Switched On](#42-step-1-validated-precision_lr_max-and-baoab_cfc_lowrank-both-collapse-all-three-replays-a-hook-bug-and-a-checkpoint-loading-pitfall-found-along-the-way-and-the-cap-switched-on)
 43. [Four Repeats of the Same Eval-Time OOM at Step 47,500: `gc.collect()` Was Never Going to Fix It, and Why](#43-four-repeats-of-the-same-eval-time-oom-at-step-47500-gccollect-was-never-going-to-fix-it-and-why)
 44. [Two Near-Trigger E/P-Led Replays: Layer-Profile Shape, Not Group Identity, Discriminates the Mechanisms, and the §39 Anti-Correlation Extends to This Regime](#44-two-near-trigger-ep-led-replays-layer-profile-shape-not-group-identity-discriminates-the-mechanisms-and-the-39-anti-correlation-extends-to-this-regime)
+45. [A `precision_lr_max`-Style Clip Ablation Doesn't Make Sense, and `replay_clip_ablation` Tests the Question That Does: Clip Order](#45-a-precision_lr_max-style-clip-ablation-doesnt-make-sense-and-replay_clip_ablation-tests-the-question-that-does-clip-order)
 
 ---
 
@@ -3892,6 +3893,90 @@ baseline for comparison. If a hard reload does fire, `replay_spike_batch`
 + `attribute_spike_rows` on it should be compared against both rows of
 §44.2/§44.3's table rather than assumed to match either one.
 
+## 45. A `precision_lr_max`-Style Clip Ablation Doesn't Make Sense, and `replay_clip_ablation` Tests the Question That Does: Clip Order
+
+§44's `E`/`P`-led near-trigger pair (441.9 at step 52,940, 446.3 at step
+55,919) raised the obvious follow-up: could tightening `E`/`P`'s
+per-group clip override (currently the `default_clip=1.0` fallback,
+since neither is in `GRAD_CLIP_OVERRIDES` -- `grad_clip_utils.py`)
+reduce whatever residual risk these events carry, and can that be
+checked offline the way §42 checked `precision_lr_max` -- replay the two
+captured bundles under a few candidate thresholds and compare?
+
+### 45.1 Why the direct analogue to §42 doesn't work
+
+It doesn't, and the reason is worth recording so it isn't retried later.
+`precision_lr_max` is read live inside the forward pass
+(`_bound_lowrank` reads `self._precision_lr_max` on every call), so
+swapping it and replaying genuinely recomputes a different gradient --
+that's what made `replay_precision_cap_ablation` a real ablation.
+Per-group clipping is different in kind: `clip_grads_per_group` calls
+`nn.utils.clip_grad_norm_(ps, thr[key])`, and that function *returns the
+norm it computed before rescaling* -- the value used everywhere else in
+this note as "pre-clip grad norm" (what the watchdog compares against
+`hard_trigger`, what `replay_spike_batch` reports) is therefore
+completely independent of `thr[key]`. The threshold only changes the
+in-place rescale applied to `.grad` afterward. Concretely:
+`clip_grads_per_group` is never even called by `replay_spike_batch` or
+`replay_precision_cap_ablation` -- they only ever read the pre-clip
+per-group norms via `per_group_grad_norms`, which takes no threshold
+argument at all. So "replay the batch under a tighter `E`/`P` threshold
+and see what the gradient looks like" is not a meaningful experiment:
+the gradient is identical in every arm by construction, and the applied
+update at any threshold `t` is just `min(t, raw_norm)` -- arithmetic,
+not something a replay is needed to discover, and already implied by
+the raw norms §44 already recorded (260.8 and 274.3 for `E`, both
+already saturating the current `default_clip=1.0` by a factor of ~260x,
+so tightening from 1.0 to, say, 0.3 only ever shrinks an already-tiny
+applied step further).
+
+### 45.2 The question that *is* worth an offline replay: clip order
+
+What a threshold value cannot fix, but *when* the clip is applied might,
+is the mechanism §44.3 flagged: the live training loop accumulates raw
+gradients across all `GRAD_ACCUM` microbatches (successive `.backward()`
+calls into the same `.grad` tensors) and clips the accumulated total
+exactly once, after the loop. `attribute_spike_rows` found 39-72% of a
+spike's `total_grad_norm` sitting in just 1-3 of the 32 rows across
+those microbatches. Under the current `sum_then_clip` order, one such
+outlier row's contribution is baked into the accumulated sum *before*
+any clip sees it -- a tighter threshold rescales the resulting vector
+uniformly but cannot change the fact that the outlier row set its
+direction. An alternative order, `clip_then_sum` -- clip each
+microbatch's own `E`/`P` gradient to `threshold` individually, before
+adding it into the running total -- bounds any single microbatch's
+influence on the final update at the source, which no choice of
+threshold under `sum_then_clip` can do. This is a real, replay-worthy
+ablation: `clip_then_sum`'s result depends on how the raw gradient is
+distributed *across* microbatches, which isn't derivable from the
+already-known aggregate norm alone.
+
+`replay_clip_ablation(step_tag, groups=('E', 'P'), thresholds=(1.0, 0.3,
+0.1, 0.03))` (Cell 6d, alongside `replay_precision_cap_ablation` and
+`replay_integrator_ablation`, same snapshot/restore non-pollution
+invariant) implements this: it replays the captured microbatches once,
+and for each requested group accumulates two parallel running totals --
+the plain sum (`sum_then_clip`, matching the live loop) and, per
+candidate threshold, the sum of each microbatch's own gradient
+pre-clipped to that threshold (`clip_then_sum`). It reports, per
+threshold: the two arms' applied-update norms, their ratio, and the
+cosine similarity between the two arms' final applied-update
+*directions* -- the more informative number, since a threshold where the
+two orders agree in direction (cosine near 1.0) means clip order is
+cosmetic at that threshold, while a noticeably lower cosine means the
+two regimes disagree about which way `E`/`P` should actually move, which
+would be the concrete case for preferring `clip_then_sum`.
+
+### 45.3 Status
+
+Not yet run against the two live bundles (52940, 55919) -- next step is
+to call `replay_clip_ablation(52940)` and `replay_clip_ablation(55919)`
+and read off the ratio/cosine table before deciding whether
+`clip_then_sum` is worth wiring into the live training loop (it would be
+a training-loop change, not just a config override, since it requires
+per-microbatch access to `E`/`P`'s gradient before the accumulation
+step -- more invasive than flipping a `GRAD_CLIP_OVERRIDES` entry).
+
 ---
 
 Companion note to `Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`.
@@ -3905,7 +3990,19 @@ The anisotropic Gaussian V_theta is in
 SCAF stiffness audit (Phase 7b/7c Weyl bound) in the `stiffness_audit` branch
 of `semsimula-scaf` (`src/scaf/probes/stiffness.py`).
 
-Last updated: 7 September 2026 (adds §44: two E/P-led near-trigger
+Last updated: 7 September 2026, latest (§45: a direct `precision_lr_max`
+-style clip-threshold ablation turns out to be a non-experiment --
+`clip_grad_norm_` returns its pre-clip norm independent of the threshold
+passed in, so the "replayed" gradient is identical in every arm by
+construction and the applied update is just `min(threshold, raw_norm)`
+arithmetic; the real, replay-worthy question is clip *order* --
+`sum_then_clip` (live loop: accumulate raw grads across microbatches,
+clip once) vs. `clip_then_sum` (clip each microbatch's `E`/`P` grad
+before accumulating), since only the latter can bound an outlier row's
+influence on the final update at the source. `replay_clip_ablation` (Cell
+6d) implements and compares both orders via applied-norm ratio and
+cosine-of-direction per threshold; not yet run against the 52940/55919
+bundles). Previously updated 7 September 2026 (adds §44: two E/P-led near-trigger
 replays -- 441.9 at step 52,940 and 446.3 at step 55,919, both 91-94% of
 `hard_trigger=500` once the reverse-channel gap is included -- show
 identical named-group leadership (`E`/`P`) but opposite layer-profile
