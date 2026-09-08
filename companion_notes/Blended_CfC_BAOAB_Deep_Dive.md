@@ -119,7 +119,7 @@ The full BAOAB with this inner splitting becomes the 7-sub-step **B̃AOAB̃** sc
 
 ---
 
-## 5. The CfC surrogate for B$\_\theta$
+## 5. The CfC surrogate for $B\_\theta$
 
 ### 5.1 Single-well undamped harmonic propagator
 
