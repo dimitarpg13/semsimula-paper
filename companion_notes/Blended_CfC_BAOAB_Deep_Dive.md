@@ -1,7 +1,7 @@
 # Deep Dive: The Blended CfC BAOAB Integrator for Fock-PARFLM
 
 *A fully worked-out construction of the hybrid integrator that replaces
-the numerical $V_\theta$ force evaluation with an analytical CfC surrogate
+the numerical V_theta force evaluation with an analytical CfC surrogate
 inside the BAOAB Langevin splitting.*
 
 **Date:** July 2026
