@@ -1,4 +1,4 @@
-# Deep Dive: The Blended CfC B̃AOAB̃ Integrator for Fock-PARFLM
+# Deep Dive: The Blended CfC BAOAB Integrator for Fock-PARFLM
 
 *A fully worked-out construction of the hybrid integrator that replaces
 the numerical $V_\theta$ force evaluation with an analytical CfC surrogate
@@ -119,7 +119,7 @@ The full BAOAB with this inner splitting becomes the 7-sub-step **B̃AOAB̃** sc
 
 ---
 
-## 5. The CfC surrogate for B̃$\_\theta$
+## 5. The CfC surrogate for B$\_\theta$
 
 ### 5.1 Single-well undamped harmonic propagator
 
