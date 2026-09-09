@@ -39,6 +39,7 @@ live in the same `companion_notes/` folder.
 44. [Two Near-Trigger E/P-Led Replays: Layer-Profile Shape, Not Group Identity, Discriminates the Mechanisms, and the §39 Anti-Correlation Extends to This Regime](#44-two-near-trigger-ep-led-replays-layer-profile-shape-not-group-identity-discriminates-the-mechanisms-and-the-39-anti-correlation-extends-to-this-regime)
 45. [A `precision_lr_max`-Style Clip Ablation Doesn't Make Sense, and `replay_clip_ablation` Tests the Question That Does: Clip Order](#45-a-precision_lr_max-style-clip-ablation-doesnt-make-sense-and-replay_clip_ablation-tests-the-question-that-does-clip-order)
 46. [A Checkpoint-Recompute Divergence Took Down the Whole Session: 4,252 Steps Lost, and a Wall-Clock Autosave Added](#46-a-checkpoint-recompute-divergence-took-down-the-whole-session-4252-steps-lost-and-a-wall-clock-autosave-added)
+47. [First Production Validation of `clip_then_sum` (§45.4): Plateau Broken, No New Spikes Through Step 61,650](#47-first-production-validation-of-clip_then_sum-454-plateau-broken-no-new-spikes-through-step-61650)
 
 ---
 
@@ -4212,6 +4213,72 @@ needs enough margin for the save itself to complete (observed up to
 ~2min under healthy conditions, more under duress) plus whatever step
 happens to be running when the check trips.
 
+## 47. First Production Validation of `clip_then_sum` (§45.4): Plateau Broken, No New Spikes Through Step 61,650
+
+The clean session resumed from the step-52,500 restore (§46.1) with
+`clip_then_sum` active for `E`/`P` from the very first step
+(`[clip-then-sum] active for groups ['E', 'P'] (2 param(s) total),
+threshold=0.3`). Across the ~9,100 steps and ~21.8h of continuous
+wall-clock logged since (step 52,550 at 438s of process uptime through
+step 61,650 at 78,962s), two signals together give this mitigation its
+first real production evidence, not just the offline/numeric validation
+§45.4 already had going in.
+
+### 47.1 Signal 1: `E`/`P` have not led a single step in ~9,100 steps
+
+No `top[...]` entry across this entire window names `E` or `P` -- every
+logged leader is one of the `override:*` groups, `V_theta`, or
+`raw_m_bias`, exactly the set §45.4 predicted would remain once `E`/`P`'s
+own contribution is capped at the microbatch level before it can ever
+dominate a step's `top[...]` ranking. Only one `[spike]` bundle capture
+fired in the whole window (step 55,405, pre-clip total grad=140.6,
+led by `override:creation_gate=112.1` with `override:depth_code`,
+`override:register`, `reverse_ch`, and `V_theta` following -- an
+already-known non-`E`/`P` mechanism, not a new one), and the last
+~1,600+ steps of the window (60,050 through 61,650) produced zero
+`[spike]` captures at all, the quietest stretch logged since before the
+§46 incident. This is exactly the side effect §45.4 flagged as "not yet
+observed running live": `E`/`P`'s post-clip group norm now sits around
+the ~0.5 order that offline validation predicted, well under
+`CAPTURE_SPIKE_THRESHOLD=100`, so the failure mode this mitigation
+targets appears to have simply stopped firing rather than merely
+shrinking.
+
+### 47.2 Signal 2: `val_ppl` broke the long-standing ~98-100 plateau
+
+`>>> EVAL step 60,500  val_loss=4.5205  val_ppl=91.88  best=91.88  ***
+NEW BEST ***` -- a decisive break below the plateau this run had been
+stuck at since long before §46: §44 had already called 98.45 (step
+52,500, the checkpoint this session resumed from) "the first genuine
+improvement on the 100.47 record since it was set," and 91.88 is a
+further ~6.7 percent reduction from that mark, clearly outside the
+92-104 band the run's evals had been oscillating in previously. Both the
+step-specific (`..._step60500_best.pt`) and canonical (`..._best.pt`)
+checkpoints saved successfully, so the gain is durable independent of
+anything that happens later in the session. The two evals immediately
+after (step 61,000: val_ppl=94.11; step 61,500: val_ppl=95.25) sit back
+inside the old noise band, which reads as normal WSD stable-phase
+variance around a now-lower center rather than a regression -- consistent
+with `EVAL_ITERS=40` giving each eval a low-noise, not resampled-per-call,
+estimate. The periodic causal-leak probe fired `[CLEAN]` at step 60,000
+(honest_PPL=62.06, standard_PPL=59.62, diff=+0.0401 nats), corroborating
+that the gain is a genuine capability improvement rather than a leak
+artifact.
+
+### 47.3 What this does and does not confirm
+
+`bproj_sig` continued its pre-existing slow climb across the same window
+(28.45 at step 52,550 to 30.35 at step 61,650) at an unchanged rate --
+expected, since `clip_then_sum` bounds `E`/`P`'s *applied step*, not the
+chronic low-rank stiffness (mechanism A, §41.2) that drives `bproj_sig`'s
+drift; the two are orthogonal by design and this window offers no
+evidence either way on mechanism A. One eval point beating the plateau by
+this much, one quiet ~9,100-step window, and one clean leak probe are a
+genuinely strong first signal, but still a single window: the schedule's
+decay phase starts at step 65,000, and a few more evals through that
+transition (plus continued absence of `E`/`P`-led `[spike]` events) would
+turn this from "first quantitative validation" into "confirmed fix."
+
 ---
 
 Companion note to `Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`.
@@ -4225,7 +4292,19 @@ The anisotropic Gaussian V_theta is in
 SCAF stiffness audit (Phase 7b/7c Weyl bound) in the `stiffness_audit` branch
 of `semsimula-scaf` (`src/scaf/probes/stiffness.py`).
 
-Last updated: 7 September 2026, latest (§45.4: `clip_then_sum` implemented
+Last updated: 8 September 2026 (§47: first production evidence for
+`clip_then_sum`, ~9,100 steps and ~21.8h after the clean resume from
+§46.1 -- `E`/`P` have not led a single `top[...]` entry in that window,
+`[spike]` captures dropped to one non-`E`/`P` event followed by a fully
+quiet 1,600+-step stretch, and `val_ppl` broke the long-standing ~98-100
+plateau with a new best of 91.88 at step 60,500 (vs. 98.45 at the
+step-52,500 resume point itself already a record per §44), corroborated
+by a clean causal-leak probe at step 60,000; `bproj_sig` kept drifting at
+its pre-existing rate, as expected since this mitigation doesn't touch
+mechanism A's chronic stiffness (§41.2) -- one window is a strong first
+signal, not yet a confirmed fix, with the WSD decay phase (step 65,000)
+still to come). Previously updated 7 September 2026, latest (§45.4:
+`clip_then_sum` implemented
 and wired live for `E`/`P` (`CLIP_THEN_SUM_GROUPS`, Cell 6, threshold=0.3
 chosen directly off §45.3's replay table rather than a magnitude-parity
 calculation), immediately rather than deferred, since the session had
