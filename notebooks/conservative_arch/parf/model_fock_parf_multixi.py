@@ -211,6 +211,13 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
                     init_scale=cfg.register_init_scale,
                     tau_create_init=cfg.tau_create_init,
                     per_register_keys=cfg.per_register_keys,
+                    # §49.9: default False. getattr keeps older configs
+                    # (and pickled cfgs inside pre-§49 checkpoints) loadable.
+                    qk_norm=getattr(cfg, "creation_qk_norm", False),
+                    logit_scale_init=getattr(
+                        cfg, "creation_logit_scale_init", 1.0 / 0.07),
+                    logit_scale_max=getattr(
+                        cfg, "creation_logit_scale_max", 100.0),
                 )
             else:
                 self.creation_gate_qkv = QKVCreationGate(

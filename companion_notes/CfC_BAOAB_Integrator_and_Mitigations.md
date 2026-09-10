@@ -40,6 +40,10 @@ live in the same `companion_notes/` folder.
 45. [A `precision_lr_max`-Style Clip Ablation Doesn't Make Sense, and `replay_clip_ablation` Tests the Question That Does: Clip Order](#45-a-precision_lr_max-style-clip-ablation-doesnt-make-sense-and-replay_clip_ablation-tests-the-question-that-does-clip-order)
 46. [A Checkpoint-Recompute Divergence Took Down the Whole Session: 4,252 Steps Lost, and a Wall-Clock Autosave Added](#46-a-checkpoint-recompute-divergence-took-down-the-whole-session-4252-steps-lost-and-a-wall-clock-autosave-added)
 47. [First Production Validation of `clip_then_sum` (§45.4): Plateau Broken, No New Spikes Through Step 61,650](#47-first-production-validation-of-clip_then_sum-454-plateau-broken-no-new-spikes-through-step-61650)
+48. [`replay_spike_batch` Predates `clip_then_sum`: a Diagnostic Fidelity Bug, Found and Fixed, and What the Corrected Replays of Steps 70522, 71194, and 71703 Show](#48-replay_spike_batch-predates-clip_then_sum-a-diagnostic-fidelity-bug-found-and-fixed-and-what-the-corrected-replays-of-steps-70522-71194-and-71703-show)
+49. [The `log_tau` Runaway: One Register's Temperature Is Diverging From the Pool, and Two Falsified Predictions on the Way to Finding It](#49-the-log_tau-runaway-one-registers-temperature-is-diverging-from-the-pool-and-two-falsified-predictions-on-the-way-to-finding-it)
+50. [Does QK-Normalisation Actually Break the Runaway? A Gradient-Flow Analysis of the Creation Gate's Temperature](#50-does-qk-normalisation-actually-break-the-runaway-a-gradient-flow-analysis-of-the-creation-gates-temperature)
+51. [Most of the Measured `log_tau` Drift Was Weight Decay on a Log-Parameterised Temperature](#51-most-of-the-measured-log_tau-drift-was-weight-decay-on-a-log-parameterised-temperature)
 
 ---
 
@@ -4279,6 +4283,1059 @@ decay phase starts at step 65,000, and a few more evals through that
 transition (plus continued absence of `E`/`P`-led `[spike]` events) would
 turn this from "first quantitative validation" into "confirmed fix."
 
+## 48. `replay_spike_batch` Predates `clip_then_sum`: a Diagnostic Fidelity Bug, Found and Fixed, and What the Corrected Replays of Steps 70522, 71194, and 71703 Show
+
+Two new `watchdog-hard` reloads fired in the ~700 steps after §47's window
+closed -- step 70,522 (pre-clip total grad=887.9, led by
+`override:depth_code=752.2`) and step 71,194 (691.0, a flatter three-way
+tie between `override:register=441.5`, `override:creation_gate=432.2`, and
+`override:reverse_channel_scale=406.3`) -- plus a second, larger
+reproduction of the `reverse_channel_scale`-exceeds-total anomaly at step
+71,703 (361.3 vs. a reported total of 233.1). Replaying all three with
+`replay_spike_batch`/`attribute_spike_rows` to dig into them surfaced a
+diagnostic-tool bug, not a training-run problem -- worth documenting
+precisely because it looked, at first, exactly like the kind of
+non-determinism/session-corruption signature §46 had just been caused by.
+
+### 48.1 The symptom: `E`/`P` inflate to 1,000+ in replay, an 80-105% fidelity gap
+
+All three replays failed `replay_spike_batch`'s own fidelity check by a wide
+margin -- 105.1% (70522: replayed 1821.4 vs. recorded 887.9), 90.5% (71194:
+1316.6 vs. 691.0), and 77.5% (71703: 413.7 vs. 233.1) -- each one dwarfing
+the 5% warning threshold that check exists to catch. The signature that
+ruled out nondeterminism, though, was immediate: for all three steps,
+*every group other than `E`/`P`* matched the bundle's captured
+`top_groups` **exactly**, to displayed precision (e.g. 70522:
+`override:depth_code` 752.20 replayed vs. 752.2 captured,
+`override:creation_gate` 429.52 vs. 429.52, `V_theta` 170.85 vs. 170.85,
+down to `raw_logfreq_alpha` at 32.02 vs. 32.02). `E` and `P` were the only
+groups off, and not subtly -- they replayed at 1124.55 / 792.43 / 241.74
+respectively, an order of magnitude above everything else and, at 70522
+and 71194, larger than the entire recorded total. A real nondeterminism
+bug does not reproduce seven other groups bit-for-bit while blowing up
+exactly two specific ones by 3-4 orders of magnitude; a missing piece of
+training-loop logic that happens to touch only those two groups does.
+
+### 48.2 Root cause: the replay helpers predate `clip_then_sum` (§45.4)
+
+`clip_then_sum` (implemented live for `CLIP_THEN_SUM_GROUPS = {'E', 'P'}`,
+Cell 6, threshold 0.3) clips each microbatch's own `E`/`P` gradient
+*before* folding it into the running total across `GRAD_ACCUM`, replacing
+the normal successive-`.backward()`-into-the-same-`.grad`-tensor
+accumulation for just those two groups. That is precisely why a captured
+step's `top_groups` never lists `E`/`P` at all (their post-clip group norm
+sits around the ~0.5 order this bounds it to, invisible next to
+`override:depth_code`-class numbers in the hundreds) -- and precisely why
+`replay_spike_batch`, whose per-microbatch loop was written before
+`clip_then_sum` existed and just does a plain `(loss / grad_accum
+).backward()` with no clip in between, reconstructs `E`/`P`'s *raw,
+unclipped, fully-summed* gradient instead. For a token/positional
+embedding table, that raw per-microbatch gradient is large by nature
+(concentrated in the handful of rows the microbatch's tokens actually
+touch), and without the per-microbatch clip, four microbatches' worth
+accumulate freely -- landing at ~1,100+ instead of the ~0.5-order value the
+live optimizer actually saw and applied.
+
+### 48.3 The fix: mirroring the exact splice for `replay_spike_batch`; a documented caveat instead for `attribute_spike_rows`
+
+Three small helpers were added to Cell 6d, reproducing Cell 6's own
+`clip_then_sum` mechanics exactly (same `nn.utils.clip_grad_norm_` call,
+same running-total-keyed-by-`id(param)` accumulation, same post-loop
+splice into `.grad`):
+
+- `_cts_group_params(mdl)` -- resolves `CLIP_THEN_SUM_GROUPS` to actual
+  parameters via `assign_clip_group`, fresh against whichever `mdl` is
+  passed in (not the live `_CLIP_THEN_SUM_PARAMS` global, which is bound
+  to `model` at Cell 6 run time). Returns `{}` -- a true no-op -- if
+  `CLIP_THEN_SUM_GROUPS`/`PER_GROUP_CLIP` aren't configured at all, so
+  this stays safe against pre-§45.4 notebooks or bundles.
+- `_cts_apply_microbatch(cts_params, cts_running)` -- called right after
+  each microbatch's `.backward()`, before the next one's; jointly clips,
+  accumulates, and zeros `.grad` for the tracked groups.
+- `_cts_splice_back(cts_params, cts_running)` -- called once after the
+  full `GRAD_ACCUM` loop, replacing the (already-zeroed) `.grad` with the
+  accumulated, per-microbatch-clipped total.
+
+`replay_spike_batch` now calls these at exactly the two points Cell 6
+does. `attribute_spike_rows` deliberately does **not** get the same
+splice: it replays one row completely alone (each row's own share of the
+aggregate, RNG reset before every row -- see its own docstring caveats),
+so there is no multi-row microbatch gradient for a joint, threshold-based
+clip to act on in the first place. Reproducing `clip_then_sum` per single
+row would be a different, not-live-representative computation, not a
+fidelity fix. Its docstring got a third caveat instead, spelling out that
+`norm_of_summed_grad` for `E`/`P` (or any future `CLIP_THEN_SUM_GROUPS`
+member) is expected to diverge from `replay_spike_batch`'s figure for
+that reason, and that its raw per-row numbers remain exactly what the
+`top1_share`/`top3_share` concentration metrics need.
+
+### 48.4 Corrected fidelity: 0.0% across all three replays
+
+| step | pre-fix fidelity gap | post-fix fidelity gap |
+|---|---|---|
+| 70522 | 105.1% | **0.0%** (887.9 vs. 887.9) |
+| 71194 | 90.5% | **0.0%** (691.0 vs. 691.0) |
+| 71703 | 77.5% | **0.0%** (233.1 vs. 233.1) |
+
+`E`/`P` are absent from all three top-parameter lists post-fix, consistent
+with the live logs' own `top[...]` entries and with §47.1's finding that
+`E`/`P` have not led a single event since `clip_then_sum` went live.
+
+### 48.5 The 71703 anomaly, corrected: the blind spot is 202.3, not 139.8
+
+§44.1 first identified that `WATCHDOG_EXCLUDE_GROUPS` (excluding
+`reverse_channel_scale`/`reverse_ch` from the aggregate both the EMA and
+`GRAD_NORM_HARD_TRIGGER` read) leaves the watchdog structurally blind to
+those two groups; this is now the third reproduction of that exact
+mechanism, and -- once the `E`/`P` contamination above is removed from the
+numbers -- the largest gap observed yet:
+
+| | watchdog-visible total | true total (incl. reverse groups) | gap |
+|---|---|---|---|
+| 70660 (§ earlier) | 118.8 | 242.1 (`reverse_channel_scale` alone) | -- |
+| 71703, pre-fix (wrong) | 413.7 | 553.5 | 139.8 |
+| 71703, post-fix (correct) | **233.1** | **435.4** | **202.3** |
+
+`reverse_channel_scale` alone replays at 361.3, `reverse_ch` at 68.3;
+`233.1` also now matches `bundle['pre_clip_grad_norm']` exactly, as it
+should (`WATCHDOG_EXCLUDE_GROUPS` is exactly what `pre_clip_grad_norm`
+excludes at capture time too).
+
+### 48.6 Step 70522: `depth_code` and `reverse_channel_scale` are two different mechanisms riding together, not one
+
+With `E`/`P` no longer swamping the top-parameter list, `attribute_spike_rows`
+was run against the four real top params
+(`V_theta.depth_code`, `creation_gate_qkv.W_V.weight`,
+`reverse_channel_scale`, `V_theta.bank.banks.0.B_proj.bias`). Row
+`mb=3,row=2` is the top row for every one of them, but by very different
+margins:
+
+- `reverse_channel_scale`: **top1_share = 0.57** -- this one row
+  contributes 7.15 of a 12.49 row-sum total; the next-highest row is only
+  0.66. A genuine single-row blowup.
+- `V_theta.depth_code`: top1_share = 0.34 -- elevated, but far more
+  broadly spread across the batch, consistent with `depth_code`'s usual
+  chronic, distributed contribution (§41.2) rather than a single outlier.
+
+The same row's `layer0_h_grad` (0.65) is 6-10x every other row's
+(typically 0.01-0.1), while its `ntp` loss (4.37) sits unremarkably inside
+the batch's normal 4.2-5.2 range -- i.e. this is not simply "the hardest
+example in the batch," it is specifically a row whose gradient the
+reverse channel (and, to a lesser extent, `depth_code`) reacts to sharply.
+Read together, step 70,522 looks like two co-occurring mechanisms rather
+than one: `depth_code`'s usual broad elevation (the reason this event's
+`top_groups` calls it "depth_code-dominant" by raw magnitude) plus a
+genuinely localized, single-row `reverse_channel_scale` spike riding along
+in the same step.
+
+### 48.7 Step 71194: two distinct hot rows, not one shared cause -- and a new `creation_gate_qkv.log_tau` signal
+
+> **Corrected 2026-09-09, see §49.4.** The per-row concentration figures in
+> this subsection are measurements of `attribute_spike_rows`' *isolated-row
+> surrogate*, which at this event reconstructs well under 1% of the real
+> gradient (register 14's true batch gradient is 345.38; the entire row-sum
+> for `log_tau` is 2.10). This is the same §41.5 reconstruction gap that
+> invalidated the magnitude claims at step 47,116, recurring on a different
+> parameter. The *ranking* of which rows are implicated survives and is what
+> the bullets below support; the original reading -- "81% of `log_tau`'s
+> gradient comes from one row" -- does not. §49 replaces it with a
+> per-register decomposition taken from the full-batch pass, where no such
+> gap exists.
+
+Tracking the real top-4 params (`register_embed`, `reverse_channel_scale`,
+`creation_gate_qkv.log_tau`, `creation_gate_qkv.W_K`) shows the "three-way"
+shape in the live log (`register`/`creation_gate`/`reverse_channel_scale`
+all comparably large) is actually **two separate localized triggers
+landing in the same optimizer step**, not one shared root cause:
+
+- `mb=2,row=2` dominates `register_embed` (top1_share=0.51),
+  `creation_gate_qkv.W_K` (0.34), and especially
+  `creation_gate_qkv.log_tau` -- **top1_share=0.81**, the sharpest
+  single-row concentration seen in any replay to date (`log_tau` controls
+  the creation gate's cumulative-softmax temperature). This row barely
+  registers for `reverse_channel_scale` (1.87, well behind that group's
+  own top row).
+- `mb=1,row=5` dominates `reverse_channel_scale` instead (top1_share=0.22
+  overall, but its own largest single value at 2.94, ahead of `mb=2,row=2`'s
+  1.87) while contributing almost nothing to `log_tau` (0.038 vs. row 2's
+  1.71).
+
+`creation_gate_qkv.log_tau` reaching 345.4 is a genuinely new signal, and
+it was visible only once the `E`/`P` contamination was removed -- it did
+not appear in any earlier, pre-fix top-parameter list. Two distinct
+implicated rows, two distinct downstream groups, coinciding in the same
+step is what actually produced 71194's "three-way tie" appearance in the
+coarse per-group log -- not a single row destabilizing three mechanisms at
+once.
+
+What the row axis cannot tell us, given the reconstruction gap above, is
+*why* `log_tau` is large. That turned out to be a question about the
+**register** axis, not the row axis, and §49 answers it: 100.0% of the
+345.4 is a single register.
+
+### 48.8 Proposed (not yet implemented) mitigation: the creation gate never got the reverse channel's QK-norm hardening
+
+Reading the two implicated modules side by side turns up a structural
+asymmetry that was not deliberate, and that predicts exactly the
+`log_tau` behaviour §48.7 measured. `ReverseChannel` was hardened under
+`stable=True` (§10.12 of the design doc / the E5c arm) with three
+explicit bounding devices: QK-normalisation of $q$ and $k$ plus a
+*clamped* learnable `logit_scale` (so logits stay bounded regardless of
+$\lVert q \rVert$, $\lVert k \rVert$, and the softmax cannot saturate into
+spiky-gradient regimes), per-token RMS-normalisation of the output
+`Q_force`, and an optional pre-LayerNorm on its inputs. This run has all
+of that switched on.
+
+`QKVCreationGate_v21` has none of it. It computes raw
+`scores = Q · K` with no normalisation of either factor and then divides
+by the learned per-register temperature, `scores = scores / tau` with
+`tau = log_tau.exp().clamp(min=1e-4)`. Writing $\tilde{s} = s/\tau$ for
+the scaled scores, the temperature gradient is
+
+$$\frac{\partial L}{\partial \log \tau}  = -\sum \tilde{s} \odot \frac{\partial L}{\partial \tilde{s}}$$
+
+-- that is, **proportional to the scaled score magnitudes themselves**,
+which are unbounded because $\lVert Q \rVert \lVert K \rVert$ is
+unbounded, and which are additionally divided by a *learned, per-register*
+$\tau$ that nothing constrains to stay comparable across registers.
+Anything that produces large scaled scores therefore lands directly, and
+linearly, on `log_tau`'s gradient.
+
+This derivative is the one part of this subsection that survived contact
+with the data unchanged. What did not survive is the resolution at which
+it was tested: the paragraph below guessed that the offending scores would
+belong to a single *row*, and §49 shows they belong to a single
+*register*.
+
+Two supporting observations from the same replays. First,
+`create_entropy` sits at roughly 6.0 at layer 0 but collapses to
+~0.47-0.74 at layers 2-7 -- i.e. the creation gate is running
+near-saturated exactly where these events originate, the regime the
+reverse channel's device 1 exists to prevent. Second, the prefix-causal
+readout stabilises its cumulative softmax with a *constant* shift
+(`clamp=40.0`) rather than a running max, deliberately, because a
+constant shift is what makes each position's output a bit-exact function
+of positions $\le t$ and the causality probe return literal 0.0. A useful
+property, but it also means the absolute score scale matters numerically
+in a way a max-shifted softmax would hide: the usable band is fixed, so
+any drift in $\lVert Q \rVert \lVert K \rVert$ or in $\tau$ moves the whole
+distribution around inside it.
+
+The proposed change is to mirror `reverse_channel_stable` for the
+creation gate, behind its own opt-in config flag: L2-normalise $Q$ and
+$K$, and replace the bare learned `tau` divisor with a clamped learnable
+scale, keeping the existing per-register granularity (`log_tau` is shape
+$(M,)$, one entry per register, and that granularity is worth preserving
+-- it is also what makes the per-element probe in §48.9 able to say
+*which* register is responsible). This is deferred rather than
+implemented for two reasons: it changes the forward function, so unlike
+`clip_then_sum` it cannot be picked up by an in-place
+`run_training(next_step, ...)` resume and needs a fresh arm or a
+checkpoint-compatible flag; and the mechanism is not yet confirmed.
+
+The confirming test is cheap and stated in advance, so it can falsify as
+well as confirm: replay the capture and record the creation gate's
+pre-softmax scores per row. **If** the gradient-hot row's scores are
+outliers against the other 31 rows, the score-magnitude mechanism holds
+and QK-norm addresses it at source. **If** the hot row's scores are
+unremarkable and only the upstream $\partial L / \partial \tilde{s}$ is
+large, then QK-norm would not fix anything here, and the real lever is
+the shared early-layer backward amplification those rows have in common
+(§48.6-48.7) rather than anything specific to the creation gate.
+
+> **Outcome, 2026-09-09: the stated test returned the second branch, but
+> the test itself was mis-specified and neither branch's conclusion
+> follows.** The peak $\lvert\tilde{s}\rvert$ per row is a maximum taken *over all 32
+> registers*, and register 14 -- present in every row -- dominates that
+> maximum everywhere, so the statistic was very nearly constant across
+> rows and had no power to separate them. The gradient-hot row duly came
+> back unremarkable (rank 8/32 at 70522, rank 31/32 at 71194), which the
+> test's own wording would have read as "QK-norm would not fix anything
+> here." Re-running the same measurement resolved **per register** instead
+> of per row reverses that: the score-magnitude mechanism is confirmed,
+> and QK-norm does address it at source. §49 has the corrected test and
+> the resulting mechanism.
+
+### 48.9 Status and next steps
+
+The fix is live in Cell 6d; every future replay of a `clip_then_sum`-era
+capture now gets a correct fidelity check automatically, with no per-call
+action needed. Two follow-ups noted but not yet done:
+
+- `replay_clip_ablation`'s own docstring (§45) still describes
+  `sum_then_clip` as "the live training loop's current order, Cell 6" --
+  that was true when it was written but is now stale for `E`/`P`
+  specifically, the same class of staleness this section just fixed
+  elsewhere. Low risk (it doesn't affect that helper's actual arithmetic,
+  only a comment), but worth correcting alongside any other doc pass.
+- `creation_gate_qkv.log_tau` at 345.4 was invisible until per-parameter
+  replay attribution looked underneath the group-level clip:
+  `override:creation_gate=432.16` alone gives no hint that 345.4 of it is
+  one single parameter. `log_tau` is not unprotected -- it shares a
+  ceiling with `creation_gate_qkv`'s `W_Q`/`W_K`/`W_V` via the
+  `creation_gate` override group (`GRAD_CLIP_OVERRIDES`, 0.3) -- but §49.8
+  shows that sharing is itself a problem. Pursued in §49.
+
+---
+
+## 49. The `log_tau` Runaway: One Register's Temperature Is Diverging From the Pool, and Two Falsified Predictions on the Way to Finding It
+
+> **Consolidated write-up.** §49, §50 and §51 were written incrementally as
+> the investigation ran, and each one partially revises the one before.
+> `Register_Temperature_Instability_in_the_Fock_Creation_Gate.md` presents
+> the settled version as a single technical report, and adds the analysis
+> none of these sections contains: the saddle-node existence condition and
+> one-nat stability criterion for the interior equilibrium, and an estimate
+> of the covariance coefficient $C$ from the observed drift showing this
+> run's decay strength sits at 82% of the threshold required for an
+> equilibrium to exist at all. Read that document first if you want the
+> conclusions; read these sections for the order in which they were reached.
+
+§48.8 proposed a mechanism and stated a falsifier in advance. The
+falsifier fired. So did a second one, proposed to explain the first
+failure. Both were wrong about *where* to look while the underlying
+physics -- §48.8's temperature derivative -- was right all along, and
+resolving the measurement one axis differently turns a confusing pile of
+row statistics into a single, simple, still-running failure mode.
+
+The whole of §49 rests on two probes added to Cell 6d:
+`probe_gate_saturation` (per-register x per-layer clamp occupancy,
+per-register scaled-score maxima, salience, and $\tau$, from one replayed
+microbatch) and `sweep_log_tau_history` (the same parameters read out of
+every `_spikebatch.pt` bundle on disk, which carry a full
+`model_state_dict` but no optimizer state and are therefore far cheaper
+to sweep than real checkpoints).
+
+### 49.1 Falsified prediction 1: the hot row is not a score outlier
+
+§48.8's test asked whether the gradient-hot row's creation-gate scores are
+outliers against the other 31 rows. They are not, and at 71194 they are
+close to the opposite:
+
+| event | hot row | peak $\lvert\tilde{s}\rvert$ for that row | rank in batch | batch median | batch max |
+|---|---|---|---|---|---|
+| 70522 | `mb=3,row=2` | 1176.55 | 8/32 | 993.38 | 1363.12 |
+| 71194 | `mb=1,row=5` | 1020.54 | 26/32 | 1189.24 | 1918.61 |
+| 71194 | `mb=2,row=2` | 899.79 | **31/32** | 1189.24 | 1918.61 |
+
+The row that owns register 14's entire `log_tau` gradient at 71194 has the
+second-*smallest* scaled-score maximum in its own batch.
+
+### 49.2 Falsified prediction 2: the readout's clamp is not gating the gradient
+
+The failure above suggested a second mechanism, because
+`_prefix_causal_creation_readout` does not merely shift by its constant --
+it clamps first:
+
+```python
+s32 = scores.float().clamp(max=clamp) - clamp             # <= 0
+```
+
+`clamp(max=.)` passes zero gradient above the ceiling, so a natural story
+is that gradient survives only on sub-clamp entries, which would explain
+both the extreme concentration and the inversion in §49.1. It predicts
+register 14 should be the *least* clamped register in the pool.
+
+Measured, the story collapses on both counts. Batch-wide only **2.32%**
+(70522) and **3.70%** (71194) of score entries reach the ceiling at all,
+so the clamp is nowhere near being the dominant gate on anything. And
+register 14's un-clamped rank is **27/32** and **31/32** -- it is in the
+*most*-clamped tail, at 71194 the second-most-clamped register of the 32.
+The prediction was rank 1.
+
+### 49.3 The mechanism: register 14 has the coldest temperature in the pool
+
+The same table that falsified prediction 2 contains the answer, in the
+columns that were only there as context:
+
+| | register 14 | the eight least-clamped registers |
+|---|---|---|
+| $\tau$ at 70522 | 5.231 | 6.58 -- 9.01 (pool median 6.389, max 9.006) |
+| $\tau$ at 71194 | 5.225 | 6.17 -- 9.08 (pool median 6.450, max 9.075) |
+| peak $\lvert\tilde{s}\rvert$ at 70522 | **952.3** | 12.1 -- 143.8 |
+| peak $\lvert\tilde{s}\rvert$ at 71194 | **659.1** | 10.9 -- 160.3 |
+
+`QKVCreationGate_v21` divides raw scores by a *learned, per-register*
+temperature, and nothing in the model constrains those 32 temperatures to
+stay comparable to one another. Register 14's has drifted to the bottom of
+the pool, so its scaled scores run roughly an order of magnitude above
+every other register's -- which is also, mechanically, why it is the most
+clamped register despite the clamp being irrelevant pool-wide.
+
+Feed that into §48.8's derivative,
+
+$$\frac{\partial L}{\partial \log \tau}  = -\sum \tilde{s} \odot \frac{\partial L}{\partial \tilde{s}}$$
+
+and the concentration follows immediately, with no appeal to rows, tokens,
+or clamping at all:
+
+| | register 14's share of `log_tau`'s full-batch gradient |
+|---|---|
+| 70522 | 0.9783 (1.6326 of a 1.65 norm) |
+| 71194 | **1.0000** (345.3764 of a 345.38 norm) |
+
+The next-largest register contributes 0.2335 at 70522 and 0.1073 at
+71194 -- three to four orders of magnitude down. **§48.8's
+score-magnitude mechanism is confirmed -- at register granularity.** The
+proposed QK-norm hardening addresses it at source, because bounding
+$\lVert Q \rVert \lVert K \rVert$ bounds $\tilde{s}$ regardless of how far
+any one $\tau$ has drifted.
+
+### 49.4 Why the row-level test had no power: a lesson about aggregating statistics
+
+The §48.8 test statistic was the peak $\lvert\tilde{s}\rvert$ *per row* --
+a maximum taken over all 32 registers. Register 14 appears in every row,
+and its scores exceed
+every other register's by an order of magnitude. So that maximum is
+essentially register 14's score in every single row, and the row-to-row
+variation left over is noise. The batch medians make this visible after
+the fact: 993.38 at 70522 against register 14's own 952.3, and 1189.24 at
+71194 against 659.1.
+
+The statistic was therefore near-constant by construction and could not
+have separated rows regardless of what was true. This is worth recording
+as a methodological failure and not just a wrong guess, because it is the
+second one in this investigation with the same shape: §48.7's row
+attribution reconstructs under 1% of the real gradient (§41.5's pathology
+on a new parameter), and §48.8's row statistic marginalises out the one
+axis that carries the signal. Both are cases of *measuring on the row
+axis a quantity that does not live there*. The per-register and per-layer
+decompositions in this section come from the full-batch pass and have
+neither problem: they are the actual gradient the optimizer applied,
+decomposed along an axis the parameter actually has.
+
+### 49.5 It is a feedback loop, and the history shows it running
+
+> **Substantially corrected 2026-09-09, see §51.** AdamW was constructed
+> from a flat parameter list, so `log_tau` was receiving
+> `weight_decay=0.01` -- and on a *log*-parameterised temperature,
+> decoupled decay pulls $\tau$ toward 1 from an initialisation of 8.0.
+> Integrating the real schedule with zero loss gradient, decay alone
+> accounts for about **70%** of the $\tau_{14}$ drift tabulated below, and
+> the pure-decay trajectory passes straight through the middle of the
+> observed pool. The *differential* between register 14 and the pool is
+> real and is loss-gradient (§51.3), and §49.3's per-step gradient
+> concentration is unaffected -- but "self-reinforcing divergence" as an
+> account of the drift does not survive, and the pool-wide cooling from
+> $\tau = 8.0$ is a config artifact rather than a learned preference.
+
+`sweep_log_tau_history` over all 12 bundles on disk:
+
+| step | $\tau_{14}$ | rank (1 = largest) | pool median $\tau$ | pool max $\tau$ |
+|---|---|---|---|---|
+| 68313 | 5.3409 | 30 | 6.5061 | 8.8367 |
+| 68701 | 5.3421 | 30 | 6.5061 | 8.8793 |
+| 70522 | 5.2310 | 31 | 6.3891 | 9.0062 |
+| 71194 | 5.2254 | 31 | 6.4498 | 9.0751 |
+| 71703 | 5.2282 | 31 | 6.4634 | 8.9700 |
+| 71985 | 5.2104 | **32** | 6.4778 | 8.9529 |
+
+Over 3,672 steps $\tau_{14}$ falls from 5.3409 to 5.2104 while the pool
+median stays flat (~6.45) and the pool maximum rises. Its rank slips 30 →
+31 → 32: as of step 71,985 register 14 has the coldest temperature of all
+32, and it is still separating.
+
+The loop closes on itself. Smaller $\tau_{14}$ gives larger $\tilde{s}$,
+which by the derivative above gives a larger gradient on $\log \tau_{14}$;
+both measured gradients are **positive** (+1.63 at 70522, +345.4 at
+71194), and gradient descent on a positive gradient lowers $\log \tau_{14}$
+further. Direction of drift, sign of gradient, and the derivative all
+agree. This is self-reinforcing divergence of one register, not a sequence
+of unrelated spikes.
+
+The register's embedding norm drifts mildly in the same direction
+($\lVert e_{14} \rVert$ 1.2139 → 1.3026 against a pool median moving 1.1898
+→ 1.2059, i.e. roughly 1.02x to 1.08x the median), and its salience is
+unremarkable-to-low (0.1983 at 71194, at the bottom of the sampled set).
+Register 14 is a cold, sharply-selective, low-salience register -- not a
+dominant one that happens to be loud.
+
+### 49.6 What $\tau$ does *not* explain: the 211x
+
+Between the two events $\tau_{14}$ barely moved (5.2310 → 5.2254) and its
+peak scaled score actually *fell* (952.3 → 659.1), yet the gradient rose
+by a factor of 211 (1.6326 → 345.3764) in 672 steps. Score magnitude alone
+therefore sets *which* register is exposed; it does not set the size of any
+individual event. That has to come from the upstream
+$\partial L / \partial \tilde{s}$ -- the backward signal.
+
+Which points back at the other half of §48: `reverse_channel_scale`'s
+full-batch gradient is **94.63%** layer 0 at 70522 and **99.91%** layer 0
+at 71194, with layers 3-7 at essentially zero. And the saturation probe
+shows layer 0 is the one layer with *no* clamping whatsoever (un-clamped
+fraction 1.000000 for every register at both events), so nothing attenuates
+what layer 0 sends backward. Two independently-discovered signals --
+`log_tau`'s register concentration and `reverse_channel_scale`'s layer
+concentration -- share one amplifier: early-layer backward gain, the same
+factor §48.6 isolated at row `mb=3,row=2`.
+
+A related reconciliation: `create_entropy` ~6.0 at layer 0 versus
+~0.47-0.74 at layers 2-7 (§48.8) now has a consistent reading. Layer 0 is
+diffuse and entirely un-clamped; the deeper layers are both peaked and
+partially clamped (register 14's un-clamped fraction at layer 2 falls from
+0.840 to 0.574 between the two events, and at layer 4 from 0.964 to 0.604).
+Register 14 is progressively saturating in the mid-stack even as layer 0
+stays wide open.
+
+### 49.7 Token degeneracy: falsified as a necessary condition, and one metric caught what the other missed
+
+`decode_hot_rows` read the three implicated rows directly rather than
+ranking candidates, which is the §38.4/§39 degeneracy test run in the
+correct direction. Two of the three are ordinary prose sitting on the
+*non*-degenerate side of their batch: `mb=3,row=2` at 70522 (a celebrity
+interview report) ranks 26/32 by `max_repeat_run` and 25/32 by
+`unique_token_ratio`, and `mb=2,row=2` at 71194 (a wire report on a border
+fence) ranks 19/32 and 26/32. Degeneracy is therefore **not a necessary
+condition** for a row to be implicated.
+
+The third is more interesting. `mb=1,row=5` at 71194 ranks 3/32 on
+`unique_token_ratio` (0.375 against a batch median of 0.508) and its text
+is a heavily templated list -- `ARGUMENT FROM ANGER (III) / (1) ... (4)
+Therefore, God does not exist. / ARGUMENT FROM ATHEISM (VII) / (1) ...`.
+But `max_repeat_run` ranked it 14/32 and missed it entirely, because that
+metric only counts *back-to-back identical tokens* and is structurally
+blind to phrase- and template-level repetition. Since `max_repeat_run` is
+the metric §38.4/§39 leaned on most, some of that earlier negative
+evidence is weaker than it looked, and `unique_token_ratio` should be
+preferred for this class of degeneracy.
+
+### 49.8 Mitigation 1 (config-only, resumable in place): give `log_tau` its own clip group
+
+This one falls out of §49.3 and can be applied on the next resume without
+any forward-function change.
+
+`log_tau` currently lands in the `creation_gate` override group together
+with `W_Q`/`W_K`/`W_V`, and `clip_grads_per_group` clips each group
+*jointly*. At 71194 the group's norm was 432.16, of which `log_tau` alone
+was 345.38. The rescale factor applied to the whole group was therefore
+$0.3 / 432.16 = 6.94 \times 10^{-4}$, and the projections -- whose own
+contribution was $\sqrt{432.16^2 - 345.38^2} = 259.8$ -- received an
+effective update of $259.8 \times 6.94\times10^{-4} = 0.180$ instead of the
+$0.300$ they would have received on their own. About 60%. At 70522 the
+effect was negligible (`log_tau` only 1.65 of 429.52), so this is an
+*emerging* tax that grows with the feedback loop, and it is collateral
+damage to parameters that are not misbehaving.
+
+The fix is one entry in `GRAD_CLIP_OVERRIDES`, with one non-obvious
+requirement: `assign_clip_group` returns the **first** substring match
+while iterating the dict, and `creation_gate_qkv.log_tau` contains both
+`log_tau` and `creation_gate`, so the new key must be inserted *before*
+`'creation_gate'` or it will never match.
+
+```python
+GRAD_CLIP_OVERRIDES = {
+    'V_phi': GRAD_CLIP_VPHI,
+    # 2026-09-09 (SS49.8): MUST precede 'creation_gate' -- assign_clip_group
+    # returns the first substring hit in dict order, and
+    # 'creation_gate_qkv.log_tau' matches both keys.
+    'log_tau': 0.3,
+    'creation_gate': 0.3,
+    ...
+}
+```
+
+Note carefully what this does and does not do. It stops `log_tau`'s spikes
+from consuming the creation-gate projections' clip budget, and it makes
+`override:log_tau` a first-class line in the per-group log so the runaway
+becomes visible at capture time. It does **not** stop the feedback loop:
+Adam is close to scale-invariant per parameter in steady state, so
+rescaling `log_tau`'s gradient changes its step size far less than the
+factor suggests. Halting the loop requires the forward-side work in §49.9.
+
+### 49.9 Mitigation 2 (live monitor) and mitigation 3 (forward-side, needs a fresh arm)
+
+**Monitor, applied now.** The runaway is a property of the weights alone,
+so it needs no batch and costs one `exp()` over 32 elements. At
+`LOG_INTERVAL` cadence, alongside `dc_ratio` and `b_proj_sigma_max`:
+
+```python
+_tau_min = _tau_argmin = _tau_med = None
+try:
+    _lt = model.creation_gate_qkv.log_tau.detach().float()
+    _tau = _lt.exp().clamp(min=1e-4)
+    _tau_argmin = int(torch.argmin(_tau))
+    _tau_min = float(_tau[_tau_argmin])
+    _tau_med = float(_tau.median())
+    _top_grp += f'tau_min={_tau_min:.3f}@r{_tau_argmin}  '
+except Exception as _e:
+    if GRAD_SPIKE_DEBUG:
+        print(f'[warn] log_tau monitor failed: {_e}')
+```
+
+with `'tau_min'`, `'tau_argmin'`, `'tau_median'` added to the JSONL
+record. This is a stated, falsifiable prediction: if §49.5 is right,
+`tau_argmin` stays pinned at 14 and `tau_min` keeps declining against a
+flat `tau_median`. If `tau_argmin` wanders between registers, the
+divergence is not the persistent single-register phenomenon this section
+claims.
+
+**Forward-side hardening, deferred.** Two options, both changing the
+forward function and therefore requiring a fresh arm or a
+checkpoint-compatible flag rather than an in-place
+`run_training(next_step, ...)` resume:
+
+1. Mirror `reverse_channel_stable` (§48.8): L2-normalise $Q$ and $K$ and
+   replace the bare learned divisor with a clamped learnable scale,
+   keeping per-register granularity. Addresses the mechanism at source and
+   makes $\tilde{s}$ bounded no matter what any $\tau$ does.
+2. Minimal alternative: clamp `log_tau` to a bounded range, exactly as
+   `ReverseChannel` already clamps its `logit_scale`. Cheaper and
+   strictly narrower -- it bounds the divergence rather than removing the
+   unbounded $\lVert Q \rVert \lVert K \rVert$ that drives it.
+
+Option 1 is preferred on the grounds that it fixes the cause; option 2 is
+worth keeping as a fallback if the QK-norm change proves to cost quality.
+Neither is urgent while the applied update stays clipped -- this is a
+slow drift over thousands of steps, not an imminent divergence -- but the
+monitor above is what will say whether that assessment holds.
+
+> **§50 supersedes the framing above.** Working the dynamics out properly
+> shows options 1 and 2 are not alternatives at all: they bound two
+> *different* multiplicative channels, and neither alone bounds the
+> scaled score. §50 also catches a defect in the first implementation of
+> option 1 -- a bounded scale applied *on top of* the unbounded $1/\tau$
+> divisor, which leaves the runaway completely intact.
+
+---
+
+## 50. Does QK-Normalisation Actually Break the Runaway? A Gradient-Flow Analysis of the Creation Gate's Temperature
+
+§49 established empirically that one register's temperature is drifting
+away from the pool and that this drift is self-reinforcing. It did not
+establish *why* the proposed fix would stop it, and "bound the scores"
+turns out to be too loose an argument to survive being written down
+carefully. This section does the derivation. The short answer: the
+temperature gradient is a **covariance**, the loop is a **Riccati
+equation with finite-time blow-up**, QK-normalisation **does not change
+those dynamics at all**, and what it actually buys is that the loop's
+terminal state becomes a design constant instead of an emergent numerical
+accident -- but only if the clamped scale *replaces* the temperature
+rather than multiplying it.
+
+### 50.1 Notation and what QK-normalisation changes in the forward pass
+
+For register $k$ and token $t$, write $q_k \in \mathbb{R}^{d_k}$ for the
+query (register state through $W_Q$), $k_t$ for the key, $s_{kt}$ for the
+raw contraction and $\tilde{s}_{kt}$ for the temperature-scaled score that
+enters the softmax. Let $\ell_k = \log \tau_k$.
+
+**Current gate.** $s_{kt} = q_k \cdot k_t$ and
+
+$$\tilde{s}_{kt}  = \frac{q_k \cdot k_t}{\tau_k}, \qquad\qquad \lvert \tilde{s}_{kt}\rvert  \le \frac{\lVert q_k\rVert \lVert k_t\rVert}{\tau_k}.$$
+
+Two multiplicative channels, **both unbounded**: the query-key norm
+product in the numerator, and $1/\tau_k$ in the denominator.
+
+**QK-normalised gate.** $\hat{q} = q/\lVert q \rVert$,
+$\hat{k} = k/\lVert k \rVert$, so $\hat{q}_k \cdot \hat{k}_t = \cos\theta_{kt} \in [-1,1]$, and
+
+$$\tilde{s}_{kt}  = \sigma_k \cos\theta_{kt}, \qquad \sigma_k = \min\left(e^{\lambda_k}, \sigma_{\max}\right), \qquad\qquad \lvert \tilde{s}_{kt}\rvert  \le \sigma_{\max}.$$
+
+One channel, bounded by a constant chosen in advance -- independent of the
+data and of every weight in the model.
+
+### 50.2 The temperature gradient is a covariance under the attention distribution
+
+Since $\tilde{s}_{kt} = s_{kt}e^{-\ell_k}$ we have
+$\partial \tilde{s}_{kt}/\partial \ell_k = -\tilde{s}_{kt}$, so with
+$g_{kt} = \partial L/\partial \tilde{s}_{kt}$,
+
+$$\frac{\partial L}{\partial \ell_k}  = -\sum_t \tilde{s}_{kt} g_{kt},$$
+
+which is §48.8's expression. Push one step further. Let
+$a_{kt} = \mathrm{softmax}_t(\tilde{s}_{kt})$ be the attention
+weights and $u_{kt} = \partial L/\partial a_{kt}$ the *utility* of putting
+weight on token $t$. The softmax Jacobian gives
+$g_{kt} = a_{kt}\left(u_{kt} - \bar{u}_k\right)$ with
+$\bar{u}_k = \sum_j a_{kj}u_{kj}$, and substituting collapses the sum:
+
+$$\boxed{\frac{\partial L}{\partial \log \tau_k}  = -\mathrm{Cov}_{a_k}\left(\tilde{s}_k, u_k\right)}$$
+
+the covariance taken under register $k$'s own attention distribution.
+This is the central object, and it is far more informative than the raw
+sum:
+
+- **Sign.** Gradient descent gives $\dot{\ell}_k = +\eta \mathrm{Cov}_{a_k}(\tilde{s}_k, u_k)$.
+  A *negative* covariance -- high-scoring tokens are the useful ones
+  (recall $u$ is a loss derivative, so useful means negative) -- drives
+  $\tau_k$ **down**, sharpening attention. That is the model correctly
+  exploiting a score function that already ranks tokens well. Both
+  measured gradients on register 14 are positive (+1.63 at 70522, +345.4
+  at 71194), so $\mathrm{Cov} < 0$: **register 14's scores are
+  informative, and the optimizer is deliberately sharpening it.** The
+  runaway is not the model malfunctioning; it is the model pursuing a
+  preference that has no interior optimum.
+- **Two regimes.** In the *diffuse* regime ($a_k$ near uniform)
+  $\mathrm{Cov}_{a_k}(\tilde{s}_k, u_k) \propto \lVert \tilde{s}_k \rVert$,
+  so the gradient grows as scores sharpen. In the *saturated* regime
+  ($a_k \to$ a point mass) the covariance $\to 0$, because a degenerate
+  distribution has zero covariance.
+- **No interior equilibrium.** $\dot{\ell}_k = 0$ requires
+  $\mathrm{Cov}_{a_k}(\tilde{s}_k, u_k) = 0$, which happens only if
+  the scores carry no information about utility, or if attention has
+  collapsed to a point mass. There is no stationary temperature in
+  between. **The temperature is always being driven toward one of two
+  degenerate ends**, and which one depends only on whether the register's
+  score function is informative. Register 14's is.
+
+  Read this precisely: it is a statement about the *bare* gradient
+  dynamics of one scalar with everything else held fixed. Any external
+  restoring term $-\eta\gamma(\ell_k - \ell_0)$ added to $\dot{\ell}_k$
+  creates a stable interior fixed point wherever it balances the
+  covariance. §51 shows the run already has exactly such a term -- AdamW's
+  weight decay -- anchored at $\ell_0 = 0$, i.e. at $\tau = 1$, which
+  points the wrong way and *adds* to the sharpening instead of opposing
+  it. The absence of an equilibrium is a property of this particular
+  configuration, not an inescapable feature of learned temperatures.
+
+### 50.3 The loop is a Riccati equation, so the divergence is superlinear
+
+Take the diffuse regime and write
+$\mathrm{Cov}_{a_k}(\tilde{s}_k, u_k) \approx \tau_k^{-1}\mathrm{Cov}(s_k, u_k) =: -C_k/\tau_k$
+with $C_k > 0$ for an informative register. Gradient flow on $\ell_k$ is
+then $\dot{\ell}_k = -\eta C_k e^{-\ell_k}$. Change variables to the
+**inverse** temperature $v_k = 1/\tau_k = e^{-\ell_k}$, giving
+$\dot{v}_k = -v_k \dot{\ell}_k$:
+
+$$\dot{v}_k  = \eta C_k v_k^{2} \qquad\Longrightarrow\qquad v_k(t)  = \frac{v_k(0)}{1 - \eta C_k v_k(0) t}, \qquad t^{*} = \frac{1}{\eta C_k v_k(0)}.$$
+
+A Riccati equation: the inverse temperature blows up in **finite time**,
+not merely exponentially. Three things intervene before the literal
+singularity -- Adam's per-parameter normalisation makes the effective
+$\eta$ adaptive, the per-group clip bounds the applied update, and
+saturation eventually collapses $\mathrm{Cov}$ to zero -- so this is
+a statement about the *tendency*, not a prediction of an actual blow-up
+time. But it says the drift should be accelerating rather than linear,
+and it says the endpoint absent intervention is a point-mass attention
+distribution rather than any healthy interior value.
+
+It also clarifies what §49.6 could not explain. The 211x gradient jump
+between 70522 and 71194 is *not* the loop, because $\tau_{14}$ moved only
+0.1% between those steps and the $1/\tau$ amplification is far too small
+to account for it. The loop governs the slow monotone drift of $\tau_{14}$
+(the $v^2$ term, visible across 3,672 steps); $C_k$ itself is
+batch-dependent, and its fluctuation is what produces order-of-magnitude
+swings in any individual step's gradient.
+
+### 50.4 QK-normalisation alone does **not** break the loop
+
+This is the part that does not survive the derivation, and it invalidated
+the first version of the implementation.
+
+Suppose we QK-normalise but *keep* the learned temperature, so
+$\tilde{s}_{kt} = (\sigma/\tau_k)\cos\theta_{kt}$ -- a bounded scale
+multiplied onto an unbounded divisor. Redo §50.2: nothing in the
+derivation used the form of $s$, only that $\tilde{s} = s/\tau$. So
+$\partial L/\partial \ell_k = -\mathrm{Cov}_{a_k}(\tilde{s}_k, u_k)$
+still holds, in the diffuse regime it is still $\propto \sigma/\tau_k$,
+and $v_k = 1/\tau_k$ still obeys $\dot{v}_k = \eta C_k v_k^2$ with
+$C_k$ merely rescaled by $\sigma$.
+
+**The loop is driven by the ratio, and bounding the numerator does not
+bound a ratio whose denominator is still free to fall.** Register 14
+would keep cooling, its scaled scores would keep growing past
+$\sigma_{\max}$, and every measurement in §49 would reproduce.
+
+The first implementation of this section's mitigation did exactly that --
+applied a clamped `logit_scale` and then divided by `log_tau` as before --
+and was therefore no fix at all. Corrected: under `qk_norm` the clamped
+per-register scale **replaces** the temperature. `log_tau` is not
+registered, `logit_scale` is shape $(M,)$ so the per-register granularity
+§49.3's attribution depends on is preserved, and exactly one
+temperature-like knob survives -- the bounded one.
+
+### 50.5 What the corrected version does and does not fix
+
+Now let $\tilde{s}_{kt} = \sigma_k \cos\theta_{kt}$ with
+$\sigma_k = e^{\lambda_k}$ below the ceiling. Then
+$\partial \tilde{s}_{kt}/\partial\lambda_k = \tilde{s}_{kt}$, so
+
+$$\frac{\partial L}{\partial \lambda_k}  = +\mathrm{Cov}_{a_k}\left(\tilde{s}_k, u_k\right),$$
+
+the same covariance with the opposite sign, because $\sigma$ multiplies
+where $\tau$ divided. Writing $w_k = \sigma_k = e^{\lambda_k}$ and
+repeating §50.3 verbatim gives
+
+$$\dot{w}_k  = \eta C_k' w_k^{2}.$$
+
+**The same Riccati equation.** QK-normalisation does not damp the
+feedback, does not change its order, and does not introduce a stable
+interior fixed point. The dynamics are structurally identical.
+
+What changes is the boundary condition. Under the clamp
+$\sigma_k = \min(e^{\lambda_k}, \sigma_{\max})$, the trajectory runs into
+a ceiling that was chosen in advance, and $\lvert\tilde{s}\rvert \le \sigma_{\max}$
+holds for every register, token, batch and weight configuration. So the
+honest statement of what QK-norm buys is:
+
+> QK-normalisation does not stop the runaway. It converts the runaway's
+> endpoint from an unbounded numerical accident into a bounded design
+> parameter, and -- because it removes the $\lVert q\rVert\lVert k\rVert$
+> channel -- it makes bounding a single scalar *sufficient*, which it is
+> not otherwise.
+
+That last clause is the whole point, and it is why the two mitigations
+are complementary rather than alternative:
+
+| intervention | bounds the $\lVert q\rVert \lVert k\rVert$ channel | bounds the temperature channel | resulting bound on $\lvert\tilde{s}\rvert$ |
+|---|---|---|---|
+| none (today) | no | no | none |
+| $\tau$ floor alone (§49.8) | no | yes | $\lVert q\rVert\lVert k\rVert / \tau_{\min}$ -- still unbounded |
+| QK-norm *on top of* $\tau$ (the defect) | yes | no | $\sigma_{\max}/\tau$ -- still unbounded |
+| QK-norm *replacing* $\tau$ | yes | yes | $\sigma_{\max}$ -- hard |
+
+Verified directly on the implementation, by scaling only $W_Q$ and $W_K$
+(leaving the temperature alone) and reading the scaled scores out of a
+patched readout:
+
+| $W_Q$, $W_K$ scaled by | current gate, peak $\lvert\tilde{s}\rvert$ | `qk_norm` gate, peak $\lvert\tilde{s}\rvert$ |
+|---|---|---|
+| 1x | 17.0 | 11.6 |
+| 3x | 351.2 | 12.3 |
+| 10x | 4,303.1 | 13.5 |
+| 30x | 14,461.0 | 14.7 |
+
+The current gate grows quadratically in the weight scale, unbounded; the
+hardened gate is flat, with the residual variation being initialisation
+noise across the freshly constructed modules rather than any dependence
+on the scale. The 10x row is also a sanity check on the live measurement:
+4,303 is the same order as register 14's actual raw
+$\lvert q \cdot k \rvert \approx 4{,}980$, i.e. the live run's query-key
+projections really have drifted about an order of magnitude beyond their
+initialisation scale.
+
+Two further properties worth recording, both consequences of the analysis
+rather than of any measurement.
+
+**The clamp is an absorbing state; the projection is not.** Once
+$e^{\lambda_k} > \sigma_{\max}$ the clamp zeroes
+$\partial L/\partial \lambda_k$, so $\lambda_k$ is frozen there
+permanently (modulo weight decay) -- that register's sharpness stops
+adapting. `ReverseChannel` has had exactly this property since §10.12
+without trouble, and it is standard practice, so it is inherited
+deliberately; but it is a real loss of adaptivity, and the alternative --
+projecting $\lambda_k$ back into the box after `optim.step()`, as §49.8
+does for `log_tau` -- leaves the gradient alive and lets the parameter
+leave the boundary again if the covariance reverses. Noted as available
+if the frozen-register behaviour ever shows up.
+
+**The $\tau$ floor blocks one channel and should push the drift into the
+other.** If the two-channel model in the table is right, then once the
+floor at $\tau \ge 4.0$ engages on the live run, register 14's raw
+$\lvert q \cdot k\rvert$ should *begin growing* -- the optimizer still
+wants a sharper register, and $\lVert q\rVert\lVert k\rVert$ is the only
+remaining route. That is a sharp, falsifiable prediction and the cleanest
+available test of whether §50's decomposition is the right one.
+
+### 50.6 Deployment: two tiers, and why they differ
+
+| | live d384 run (72k steps) | fresh arm |
+|---|---|---|
+| change | projected floor $\tau \ge 4.0$ after `optim.step()` | `creation_qk_norm=True` |
+| forward function | unchanged | changed |
+| resume-safe | yes | no |
+| effect today | none -- floor is 23% below the current minimum $\tau_{14}=5.21$ | n/a |
+| bounds | temperature channel only | both channels, $\lvert\tilde{s}\rvert \le \sigma_{\max}$ |
+
+The floor is deliberately implemented as a **projection** rather than a
+forward clamp. A forward clamp on `log_tau` would zero its gradient at the
+boundary, reproducing precisely the gradient-killing behaviour of the
+readout's own `clamp(max=40.0)` that §49.2 examined; projected gradient
+descent instead lets the gradient flow normally and pushes the parameter
+back into the feasible set afterwards. It sits next to the existing
+`bank.clamp_params()` call, which is the same kind of operation.
+
+`creation_qk_norm` is off by default and is **not retrofittable**, for the
+reason §49.9 quantified: it caps raw scores at $\sigma_{\max}=100$ while
+register 14 currently reaches raw $\lvert q\cdot k\rvert \approx 4{,}980$,
+so enabling it on the live checkpoint compresses the gate's scores by
+roughly 50x in a single step. No warmup schedule repairs that, because
+the parametrisation cannot represent the current operating point at all.
+
+### 50.7 Predictions, stated in advance
+
+1. **$\tau$ floor.** `tau_argmin` stays pinned at 14 and `tau_min`
+   declines toward 4.0, then pins there. If `tau_argmin` wanders, §49.5's
+   single-register claim is wrong.
+2. **Channel migration (§50.5).** After the floor engages, register 14's
+   raw $\lvert q \cdot k\rvert$ starts growing. If it does not, the
+   two-channel decomposition is incomplete.
+3. **Saturation endpoint (§50.2).** Register 14's `create_entropy`
+   contribution should keep falling toward a point mass while the loop
+   runs, since that is the only terminal state available to it.
+4. **QK-norm arm.** `log_tau`-style single-register gradient dominance
+   should be absent entirely, because no register's scaled scores can
+   exceed $\sigma_{\max}$ and therefore none can dominate the covariance
+   by an order of magnitude.
+
+Prediction 2 is the discriminating one: it is the only one that
+distinguishes §50's two-channel model from the simpler story that the
+temperature is the whole mechanism.
+
+> **Amended 2026-09-09, see §51.** The analysis above is unchanged as
+> analysis -- the covariance identity, the Riccati equation, and the
+> two-channel table all stand. What changes is how much of the *measured*
+> drift it explains: roughly 30%, with the rest being weight decay on a
+> log-parameterised temperature. Prediction 1 is also weakened, because
+> the $\tau \ge 4.0$ floor is now unlikely ever to bind (pure decay only
+> reaches 5.11 by step 100,000).
+
+---
+
+## 51. Most of the Measured `log_tau` Drift Was Weight Decay on a Log-Parameterised Temperature
+
+§49 measured a drift, §50 derived a mechanism that could produce one, and
+the two were read together as cause and effect. Checking the third force
+acting on the parameter -- the optimizer's own weight decay, which
+neither section had accounted for -- shows it dominates. This does not
+overturn §49's per-step attribution or §50's dynamics, but it does
+reassign most of the drift, and it turns "there is no interior
+equilibrium" from an alarming structural claim into a fixable
+configuration error.
+
+### 51.1 AdamW was given a flat parameter list
+
+```python
+_trainable = [p for p in model.parameters() if p.requires_grad]
+optim = torch.optim.AdamW(_trainable, lr=LR,
+                          weight_decay=WEIGHT_DECAY, betas=(0.9, 0.95))
+```
+
+No exclusions, so `WEIGHT_DECAY = 0.01` applied to every parameter,
+including every 1-D scale-like one. For most parameters that is merely
+conventional-practice drift. For `creation_gate_qkv.log_tau` it is a
+category error: decoupled decay shrinks the *logarithm* of the
+temperature toward zero, which means driving $\tau \to 1$ -- from
+`tau_create_init = 8.0`. Weight decay was, in other words, a standing
+sharpening pressure on all 32 registers for the entire run.
+
+### 51.2 The pure-decay trajectory runs through the middle of the observed pool
+
+Integrating AdamW's decoupled update $\ell \leftarrow \ell(1 - \eta\gamma)$
+along the actual WSD schedule (warmup 5%, stable 60% of 100k steps, cosine
+decay to a 5% floor thereafter) with **zero loss gradient at all**:
+
+| step | $\tau$ under pure weight decay |
+|---|---|
+| 5,000 | 7.88 |
+| 30,000 | 6.79 |
+| 65,000 | 5.61 |
+| 71,985 | **5.42** |
+| 100,000 | 5.11 |
+
+Against the measured pool at step ~71,985: minimum 5.21 (register 14),
+median 6.48, maximum 8.95. The decay line at 5.42 sits *between* register
+14 and the pool median. So the pool-wide cooling from the initial 8.0 --
+which §49 did note but did not explain -- is simply weight decay, with
+individual registers displaced above or below that line by their own loss
+gradients.
+
+### 51.3 Decomposition over the §49.5 window
+
+Splitting the observed $\Delta\log\tau$ across steps 68,313-71,985 into
+the exactly-computable decay part and the residual:
+
+| | observed $\Delta\log\tau$ | weight decay | residual (loss gradient) |
+|---|---|---|---|
+| register 14 | −0.0247 | −0.0174 (70%) | **−0.0073** |
+| pool median | −0.0044 | −0.0195 | **+0.0151** |
+
+Two conclusions, pulling in opposite directions.
+
+Against §49.5: most of register 14's absolute drift is decay, not a
+covariance runaway, and the phrase "self-reinforcing divergence" claims
+more than the data supports.
+
+For §49.5: the *differential* is entirely loss-gradient, and it is large.
+The median register's own gradient pushes $\tau$ **up**, actively
+resisting decay; register 14's does not. So register 14 is distinguished
+not by being driven down hardest but by being **the register that fails
+to resist a pool-wide pull**, and the mechanism that distinguishes it is
+exactly §50's covariance. §49.3's finding that register 14 carries 97.8%
+then 100.0% of `log_tau`'s per-step gradient is a per-step measurement
+and is untouched by any of this.
+
+It also supplies direct evidence against reading §50.2 as a universal
+runaway: 31 of 32 registers have loss gradients pushing $\tau$ upward. If
+sharpening were an inescapable attractor, they would not.
+
+### 51.4 The fix, and the equilibrium it restores
+
+Excluding 1-D parameters from weight decay is standard practice that this
+notebook had simply never applied. Implemented as `NO_DECAY_1D = True`,
+splitting AdamW into a `weight_decay=WEIGHT_DECAY` group for tensors of
+rank $\ge 2$ and a `weight_decay=0.0` group for everything 1-D --
+biases, norm gains, and the scale-like scalars: `log_tau`,
+`reverse_channel_scale`, `ReverseChannel.logit_scale`, `depth_code`.
+
+That last list is worth pausing on: those are, almost exactly, the
+parameters that have dominated the top-groups line of every captured
+spike in this investigation. `reverse_channel_scale` is initialised at
+*zeros* and ramped by a warmup, so decay has been pulling against its
+ramp for the whole run.
+
+On the equilibrium question, the general form of the temperature dynamics
+with a restoring term anchored at $\ell_0$ is
+
+$$\dot{\ell}_k  = \eta\mathrm{Cov}_{a_k}(\tilde{s}_k, u_k)  - \eta\gamma (\ell_k - \ell_0),$$
+
+which has a stable interior fixed point wherever the two terms balance.
+§50.2's "no interior equilibrium" holds only at $\gamma = 0$. The run has
+$\gamma = 0.01$ and $\ell_0 = 0$ -- a restoring force aimed at $\tau = 1$,
+which for a temperature initialised at 8.0 reinforces the sharpening
+rather than opposing it. Setting $\gamma = 0$ for `log_tau` removes the
+wrong-signed term; anchoring at $\ell_0 = \log \tau_{\text{init}}$
+instead would go further and supply a genuine interior equilibrium. The
+former is implemented; the latter is noted as available if the drift
+persists once decay is removed.
+
+### 51.5 Carrying Adam moments across the param-group change
+
+Splitting one group into two re-indexes the optimizer state, because
+torch keys it by each parameter's position in the flattened
+`param_groups`. Both checkpoint-load sites previously did
+`optim.load_state_dict(...)` inside `except (ValueError, KeyError): pass`,
+so on the first resume after this change every Adam moment would have
+been silently discarded at step ~72,000.
+
+`_remap_optim_state` rebuilds the mapping explicitly, old position →
+`Parameter` → new position, using `_trainable` as the recorded legacy
+ordering. Verified on a toy model, with a negative control to confirm the
+test has teeth:
+
+| approach | outcome |
+|---|---|
+| direct `load_state_dict` | raises `ValueError` on group-count mismatch; previously swallowed, moments lost |
+| naive sequential re-index | loads **without error**, silently mis-assigns 4 of 6 parameters |
+| `_remap_optim_state` | every `exp_avg` and step counter reproduced exactly, 0 dropped, per-group `weight_decay` = `[0.01, 0.0]` |
+
+The middle row is the reason this needed an explicit remap rather than a
+plausible-looking one-liner. The emitted `param_groups` deliberately
+carry the *new* optimizer's hyperparameters, because torch's
+`load_state_dict` keeps the saved group's hyperparameters and substitutes
+only the live group's `params` list -- emitting bare `{'params': ...}`
+groups would have silently discarded the per-group `weight_decay` that is
+the entire point of the change.
+
+### 51.6 Consequences for the §49-§50 mitigations
+
+- **The $\tau \ge 4.0$ floor (§49.8) will probably never bind.** Pure
+  decay only reaches 5.11 by step 100,000, and removing decay from
+  `log_tau` slows that further. It stays as an inert circuit breaker; the
+  real lever was the optimizer configuration.
+- **§50.7's prediction 1 is weakened** for the same reason, and
+  prediction 2 (channel migration into $\lVert q\rVert\lVert k\rVert$)
+  becomes the primary test, since it does not depend on the floor
+  engaging.
+- **A new prediction, and the cleanest one available.** With decay
+  removed from `log_tau`, the pool's downward drift should largely stop,
+  and the median $\tau$ should rise (its loss gradient was already
+  pushing up at +0.0151 against decay's −0.0195). If instead the pool
+  keeps cooling at a similar rate, the decay accounting in §51.3 is wrong
+  and §49.5's original runaway reading is closer to correct after all.
+  The `tau_min` / `tau_median` / `tau_argmin` monitor from §49.9 measures
+  this directly, with no replay needed.
+
 ---
 
 Companion note to `Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`.
@@ -4292,18 +5349,126 @@ The anisotropic Gaussian V_theta is in
 SCAF stiffness audit (Phase 7b/7c Weyl bound) in the `stiffness_audit` branch
 of `semsimula-scaf` (`src/scaf/probes/stiffness.py`).
 
-Last updated: 8 September 2026 (§47: first production evidence for
-`clip_then_sum`, ~9,100 steps and ~21.8h after the clean resume from
-§46.1 -- `E`/`P` have not led a single `top[...]` entry in that window,
-`[spike]` captures dropped to one non-`E`/`P` event followed by a fully
-quiet 1,600+-step stretch, and `val_ppl` broke the long-standing ~98-100
-plateau with a new best of 91.88 at step 60,500 (vs. 98.45 at the
-step-52,500 resume point itself already a record per §44), corroborated
-by a clean causal-leak probe at step 60,000; `bproj_sig` kept drifting at
-its pre-existing rate, as expected since this mitigation doesn't touch
-mechanism A's chronic stiffness (§41.2) -- one window is a strong first
-signal, not yet a confirmed fix, with the WSD decay phase (step 65,000)
-still to come). Previously updated 7 September 2026, latest (§45.4:
+Last updated: 9 September 2026, night (§51: AdamW was built from a flat
+parameter list, so `weight_decay=0.01` was hitting
+`creation_gate_qkv.log_tau` -- and decoupled decay on a
+*log*-parameterised temperature drives $\tau$ toward 1 from an
+initialisation of 8.0. Integrating the real WSD schedule with zero loss
+gradient, pure decay takes $\tau$ from 8.0 to 5.42 by step 72k (and 5.11
+by 100k), which lands between the observed register-14 minimum of 5.21
+and the pool median of 6.48 -- i.e. the pool-wide cooling §49 noted but
+did not explain is a config artifact, and decay accounts for ~70% of the
+register-14 drift §49.5 read as self-reinforcing divergence. What
+survives: the *differential* is entirely loss-gradient (median +0.0151,
+resisting decay; register 14 −0.0073, not resisting), so register 14 is
+the register that fails to resist a pool-wide pull rather than one being
+actively driven away, and §49.3's per-step gradient concentration is
+untouched. 31 of 32 registers having loss gradients that push $\tau$ *up*
+is also direct evidence against reading §50.2's "no interior equilibrium"
+as a universal runaway -- that result holds only at zero decay, and any
+restoring term anchored at $\ell_0$ creates a stable interior fixed point;
+this run had one, aimed at the wrong target. Fixed via `NO_DECAY_1D`,
+excluding 1-D parameters (biases, norm gains, `log_tau`,
+`reverse_channel_scale`, `logit_scale`, `depth_code` -- almost exactly
+the set that dominates every captured spike) from weight decay, with
+`_remap_optim_state` carrying Adam moments across the param-group split:
+both load sites previously hid a `ValueError` behind `except: pass` and
+would have silently discarded every moment at step ~72k, and a
+plausible-looking sequential re-index loads without error while
+mis-assigning 4 of 6 parameters, so the remap is verified exact against a
+negative control. The §49.8 $\tau$ floor is now expected never to bind.
+Previously updated 9 September 2026, late evening (§50: worked out the
+temperature dynamics analytically, which changed the mitigation design.
+$\partial L/\partial\log\tau_k = -\mathrm{Cov}_{a_k}(\tilde{s}_k, u_k)$
+-- a covariance under the register's own attention distribution -- which
+has no interior zero: it vanishes only if the scores carry no information
+about utility or if attention has collapsed to a point mass, so the
+temperature is always driven to one of two degenerate ends. In the
+diffuse regime the inverse temperature obeys $\dot v = \eta C v^2$, a
+Riccati equation with finite-time blow-up, so the drift is superlinear
+rather than exponential. Crucially, **QK-normalisation does not change
+these dynamics at all** -- the identical Riccati equation reappears in
+$\sigma$ -- and QK-norm applied *on top of* the $1/\tau$ divisor bounds
+only the numerator of a ratio whose denominator is still free to fall,
+leaving the runaway completely intact; the first implementation did
+exactly that and was corrected so the clamped per-register scale
+*replaces* `log_tau`. What QK-norm actually buys is that the loop's
+endpoint becomes a chosen constant ($\lvert\tilde s\rvert \le
+\sigma_{\max}$) instead of an unbounded accident, and that bounding one
+scalar becomes *sufficient*, which it is not while
+$\lVert q\rVert\lVert k\rVert$ is free. §50.5's table separates the two
+multiplicative channels and shows the $\tau$ floor and QK-norm are
+complementary, not alternative. Implemented: the §49.8 floor as a
+post-`optim.step()` *projection* (`TAU_CREATE_MIN = 4.0`, a no-op at
+today's $\tau_{14}=5.21$, and a projection rather than a forward clamp
+specifically so the gradient is not zeroed at the boundary), plus
+`creation_qk_norm` as an opt-in, non-retrofittable config flag for a
+fresh arm. §50.7 states four predictions in advance, of which channel
+migration -- register 14's raw $\lvert q\cdot k\rvert$ should start
+growing once the floor engages -- is the discriminating one. Previously
+updated 9 September 2026, evening (§49: two probes
+(`probe_gate_saturation`, `sweep_log_tau_history`) falsified both §48.8's
+stated row-level test *and* the clamp-gating hypothesis raised to explain
+that first failure, then located the real mechanism one axis over:
+`creation_gate_qkv.log_tau`'s gradient is 97.8%/100.0% a *single
+register*, number 14, whose learned temperature has drifted to the
+coldest in the pool (5.21 vs. a flat pool median of 6.45, rank 30 → 32
+over 3,672 steps) so its scaled scores run an order of magnitude above
+every other register's -- which by §48.8's own derivative
+$\partial L/\partial\log\tau = -\sum\tilde{s}\odot\partial L/\partial\tilde{s}$
+is exactly the observed gradient, confirming the score-magnitude
+mechanism at register rather than row granularity and vindicating the
+proposed QK-norm hardening. The drift is self-reinforcing (both measured
+gradients positive, so descent lowers $\tau_{14}$ further). §49.4 records
+why the row-level test had no power (its statistic maxed over registers,
+so register 14 dominated it in *every* row), §49.7 falsifies token
+degeneracy as a necessary condition while showing `max_repeat_run` is
+blind to template-level repetition that `unique_token_ratio` catches, and
+§49.8 adds a config-only, resume-safe mitigation: split `log_tau` into
+its own clip group, since at 71194 it consumed enough of the joint
+`creation_gate` budget to cut `W_Q`/`W_K`/`W_V`'s effective update to 60%
+of normal. §48.7's "81% single-row" figure is corrected -- it measured an
+isolated-row surrogate that reconstructs under 1% of the real gradient,
+§41.5's pathology recurring. Previously updated 9 September 2026 (§48:
+`replay_spike_batch`/
+`attribute_spike_rows` turned out to predate `clip_then_sum` (§45.4),
+which made all three new post-§47 replays -- steps 70522, 71194, 71703 --
+fail the fidelity check by 77-105%, an `E`/`P` blowup to 1,000+ that
+looked at first like another §46-style corruption but was confined
+entirely to the replay helpers, not the training run (every other group
+matched its captured value exactly); fixed by splicing `clip_then_sum`'s
+own per-microbatch-clip-then-accumulate mechanics into
+`replay_spike_batch` (three new helpers, `_cts_group_params` /
+`_cts_apply_microbatch` / `_cts_splice_back`, a true no-op against
+pre-§45.4 bundles), restoring 0.0% fidelity on all three; corrected the
+71703 `WATCHDOG_EXCLUDE_GROUPS` blind-spot figure to a 202.3 gap (not the
+E/P-contaminated 139.8 first reported), the largest reproduction of that
+mechanism yet; and, with `E`/`P` no longer swamping the top-parameter
+list, found two new row-level results: 70522's `depth_code` and
+`reverse_channel_scale` are two different mechanisms riding together in
+one step (`top1_share` 0.34 broad vs. 0.57 single-row), and 71194's
+apparent three-way tie is actually two distinct localized rows each
+driving a different group, one of them (`creation_gate_qkv.log_tau`) at
+an 81% single-row concentration -- the sharpest localization number seen
+in this investigation to date; §48.8 then specs, without implementing, a
+candidate fix traced from the model code itself: the creation gate never
+received the QK-norm hardening the reverse channel got under
+`stable=True`, leaving `log_tau`'s gradient proportional to unbounded raw
+score magnitudes, with a falsifiable score-magnitude test stated up front
+so the mechanism can be ruled out before any forward-function change is
+made). Previously updated 8 September 2026,
+latest (§47: first production evidence for `clip_then_sum`, ~9,100 steps
+and ~21.8h after the clean resume from §46.1 -- `E`/`P` have not led a
+single `top[...]` entry in that window, `[spike]` captures dropped to one
+non-`E`/`P` event followed by a fully quiet 1,600+-step stretch, and
+`val_ppl` broke the long-standing ~98-100 plateau with a new best of
+91.88 at step 60,500 (vs. 98.45 at the step-52,500 resume point itself
+already a record per §44), corroborated by a clean causal-leak probe at
+step 60,000; `bproj_sig` kept drifting at its pre-existing rate, as
+expected since this mitigation doesn't touch mechanism A's chronic
+stiffness (§41.2) -- one window is a strong first signal, not yet a
+confirmed fix, with the WSD decay phase (step 65,000) still to come).
+Previously updated 7 September 2026, latest (§45.4:
 `clip_then_sum` implemented
 and wired live for `E`/`P` (`CLIP_THEN_SUM_GROUPS`, Cell 6, threshold=0.3
 chosen directly off §45.3's replay table rather than a magnitude-parity

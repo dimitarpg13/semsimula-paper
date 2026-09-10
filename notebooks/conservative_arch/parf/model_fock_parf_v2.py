@@ -195,6 +195,17 @@ class FockPARFConfig_v2(SparsePARFConfig):
     n_registers: int = 16
     d_k: int = 64
     tau_create_init: Optional[float] = 0.1
+    # 2026-09-09 (CfC_BAOAB_Integrator_and_Mitigations.md §49): opt-in
+    # QK-normalisation for QKVCreationGate_v21, mirroring the hardening
+    # ReverseChannel has had since §10.12/E5c. OFF by default because it is
+    # NOT retrofittable: with it on, raw scores are capped at
+    # creation_logit_scale_max, whereas the live d384 run's register 14
+    # reaches raw |Q·K| ≈ 4,980. Enabling it on an existing checkpoint
+    # therefore compresses the creation gate's scores by ~50x in one step
+    # and destroys the learned attention pattern. Fresh arms only.
+    creation_qk_norm: bool = False
+    creation_logit_scale_init: float = 1.0 / 0.07
+    creation_logit_scale_max: float = 100.0
     register_salience_decay: float = 0.5
     register_salience_threshold: float = 0.005
     register_init_scale: float = 0.02
@@ -361,8 +372,29 @@ class QKVCreationGate_v21(nn.Module):
       B3 — (External) Orthogonal register embedding init is handled in
            FockMultiXiPARFLM.__init__, not here.
 
-    Backward-compatible: when per_register_keys=False and M=1, this
-    reduces to the original QKVCreationGate behaviour.
+      B4 — (2026-09-09, opt-in, default OFF) QK-normalisation, mirroring
+           ReverseChannel's §10.12/E5c hardening: L2-normalise Q and K and
+           restore dynamic range with a *clamped* learnable ``logit_scale``,
+           bounding scores regardless of ||Q||·||K||.  Motivation is §49 of
+           CfC_BAOAB_Integrator_and_Mitigations.md: with B1's per-register
+           temperatures unconstrained relative to each other, one register's
+           tau drifted to the bottom of the pool, its scaled scores ran an
+           order of magnitude above every other register's, and -- since
+           dL/dlog_tau = -sum(s_tilde * dL/ds_tilde) is linear in the scaled
+           scores -- that single register absorbed 97.8%, then 100.0%, of
+           log_tau's entire gradient, in a self-reinforcing loop.
+
+           NOT retrofittable.  Enabling this caps raw scores at
+           ``logit_scale_max`` (100), while the live d384 run's register 14
+           reaches raw |Q·K| ~ 4,980; switching it on for an existing
+           checkpoint compresses the gate's scores ~50x in a single step and
+           destroys the learned attention pattern.  Fresh arms only.
+
+    Backward-compatible: when per_register_keys=False, qk_norm=False and
+    M=1, this reduces to the original QKVCreationGate behaviour.  With
+    qk_norm=False no ``logit_scale`` parameter is registered at all, so a
+    default-constructed module still loads a pre-B4 checkpoint under
+    ``strict=True``.
     """
 
     def __init__(
@@ -373,11 +405,16 @@ class QKVCreationGate_v21(nn.Module):
         init_scale: float = 0.02,
         tau_create_init: Optional[float] = None,
         per_register_keys: bool = False,
+        qk_norm: bool = False,
+        logit_scale_init: float = 1.0 / 0.07,
+        logit_scale_max: float = 100.0,
     ):
         super().__init__()
         self.M = M
         self.d_k = d_k
         self.per_register_keys = per_register_keys
+        self.qk_norm = qk_norm
+        self.logit_scale_max = logit_scale_max
 
         self.W_Q = nn.Parameter(torch.randn(M, d, d_k) * init_scale)
         self.W_V = nn.Linear(d, d, bias=False)
@@ -397,9 +434,74 @@ class QKVCreationGate_v21(nn.Module):
         else:
             self.log_tau = None
 
+        # B4 (2026-09-09, companion notes §49/§50) — opt-in QK-normalisation.
+        # Registered ONLY when enabled, so a default-constructed module still
+        # load_state_dict()s a pre-B4 checkpoint under strict=True.
+        #
+        # The clamped per-register scale REPLACES log_tau rather than
+        # stacking on top of it. §50.4: adding a bounded multiplier in front
+        # of an unbounded 1/tau divisor leaves the runaway completely intact,
+        # because the loop is driven by the RATIO sigma/tau and tau is still
+        # free to fall. Only one temperature-like knob may survive, and it
+        # has to be the bounded one.
+        if qk_norm:
+            self.logit_scale = nn.Parameter(
+                torch.full((M,), math.log(logit_scale_init))
+            )
+            # tau_create_init is deliberately ignored under qk_norm; the
+            # per-register granularity it provided now lives in logit_scale,
+            # which is shape (M,) for exactly that reason.
+            self.log_tau = None
+        else:
+            self.logit_scale = None
+
         # Diagnostic capture (zero cost when off).
         self.capture_stats = False
         self.last_entropy = None   # mean creation-attention entropy (nats)
+
+    def _apply_qk_norm(
+        self, Q: torch.Tensor, K: torch.Tensor
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """L2-normalise queries and keys along the ``d_k`` axis.
+
+        Layout-agnostic on purpose: ``forward`` and ``forward_prefix`` carry
+        Q/K in different shapes ((B,M,d_k) / (B,T,M,d_k), and K additionally
+        with or without the per-register axis), but ``d_k`` is trailing in
+        every one of them, so normalising along -1 is correct for all four
+        combinations without branching on the layout.
+        """
+        if not self.qk_norm:
+            return Q, K
+        return F.normalize(Q, dim=-1), F.normalize(K, dim=-1)
+
+    def _scale_scores(self, scores: torch.Tensor) -> torch.Tensor:
+        """Turn raw contractions into temperature-scaled scores.
+
+        Exactly one of three mutually exclusive paths applies.
+
+        qk_norm: ``scores`` is already a cosine similarity in [-1, 1], and a
+        clamped per-register ``sigma_k = min(exp(lambda_k), logit_scale_max)``
+        multiplies it. This is the only path that bounds the scaled score
+        ABSOLUTELY -- |s_tilde| <= logit_scale_max, independent of the data
+        and of every weight in the model -- which is the property §50.5
+        shows is required to break the runaway. Mirrors ReverseChannel.
+
+        log_tau: the legacy §49 path, kept as the default. Scores are
+        divided by an unbounded learned per-register tau, so |s_tilde| has
+        no ceiling in either factor. Bounding it needs the projected floor
+        tau >= LOG_TAU_MIN applied post-optimizer-step in Cell 6 (§49.8),
+        which bounds one of the two channels; the ||Q|| ||K|| channel stays
+        open unless qk_norm is also on.
+
+        Neither: fixed 1/sqrt(d_k), the standard-attention fallback.
+        """
+        if self.qk_norm:
+            sigma = self.logit_scale.exp().clamp(max=self.logit_scale_max)
+            return scores * sigma.view(1, self.M, 1)             # (B, M, T)
+        if self.log_tau is not None:
+            tau = self.log_tau.exp().clamp(min=1e-4)             # (M,)
+            return scores / tau.view(1, self.M, 1)
+        return scores / (self.d_k ** 0.5)
 
     def forward(
         self,
@@ -426,19 +528,17 @@ class QKVCreationGate_v21(nn.Module):
 
         if self.per_register_keys:
             K = torch.einsum("btd,mdk->bmtk", h_tokens, self.W_K)
+            Q, K = self._apply_qk_norm(Q, K)
             scores = torch.einsum("bmk,bmtk->bmt", Q, K)
         else:
             K = self.W_K(h_tokens)  # (B, T, d_k)
+            Q, K = self._apply_qk_norm(Q, K)
             scores = torch.bmm(
                 Q.reshape(B * M, 1, self.d_k),
                 K.unsqueeze(1).expand(B, M, T, self.d_k).reshape(B * M, self.d_k, T),
             ).reshape(B, M, T)
 
-        if self.log_tau is not None:
-            tau = self.log_tau.exp().clamp(min=1e-4)  # (M,)
-            scores = scores / tau.unsqueeze(0).unsqueeze(-1)  # (B, M, T)
-        else:
-            scores = scores / (self.d_k ** 0.5)
+        scores = self._scale_scores(scores)                      # (B, M, T)
 
         if self.capture_stats:
             with torch.no_grad():
@@ -476,18 +576,16 @@ class QKVCreationGate_v21(nn.Module):
 
         if self.per_register_keys:
             K = torch.einsum("btd,mdk->btmk", h_tokens, self.W_K)  # (B,T,M,d_k)
+            Q, K = self._apply_qk_norm(Q, K)
             scores = (Q * K).sum(-1).permute(0, 2, 1)              # (B, M, T)
         else:
             K = self.W_K(h_tokens)                                  # (B, T, d_k)
+            Q, K = self._apply_qk_norm(Q, K)
             scores = torch.einsum(
                 "btmk,btk->btm", Q, K,
             ).permute(0, 2, 1)                                      # (B, M, T)
 
-        if self.log_tau is not None:
-            tau = self.log_tau.exp().clamp(min=1e-4)                # (M,)
-            scores = scores / tau.view(1, M, 1)
-        else:
-            scores = scores / (self.d_k ** 0.5)
+        scores = self._scale_scores(scores)                         # (B, M, T)
 
         if self.capture_stats:
             with torch.no_grad():

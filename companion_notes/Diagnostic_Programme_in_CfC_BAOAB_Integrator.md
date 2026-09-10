@@ -564,6 +564,11 @@ code) or a piece of diagnostic-adjacent infrastructure it depends on.
 | Cell 6d | `replay_clip_ablation` | `semsimula_diag.probes.clip_order` | `sum_then_clip` vs `clip_then_sum` (Mitigations §45) |
 | Cell 6d | `replay_integrator_ablation` | `semsimula_diag.probes.integrator` | `baoab_cfc` vs `baoab_cfc_lowrank` (§13, Mitigations §40) |
 | Cell 6d | `replay_all_captures` | `semsimula_diag.report` | batch-replays every `*_spikebatch.pt` on disk (§10's aggregate view) |
+| Cell 6d-2 | `STEPS_TO_INSPECT` spike-inspection driver | not extracted — a call-site script, not a reusable function | chains `replay_spike_batch`/`attribute_spike_rows` over a fixed step set (Mitigations §48); stays in the notebook even after §11.6's migration, same as any one-off analysis script would |
+| Cell 6d-3 | `decode_hot_rows` | `semsimula_diag.probes.tokens` | ranks a gradient-attribution-named row against the batch's own degeneracy metrics rather than searching for it (Mitigations §48 follow-up); extends the `tokens` module `inspect_spike_tokens` already owns |
+| Cell 6d-3 | `probe_hot_rows` | `semsimula_diag.probes.tau_saturation` (new) | per-register (`log_tau`) / per-layer (`reverse_channel_scale`) element breakdown plus a pre-softmax creation-gate score capture, full-batch and per-row (Mitigations §48 follow-up) |
+| Cell 6d-4 | `probe_gate_saturation` | `semsimula_diag.probes.tau_saturation` (new) | per-register x per-layer creation-gate readout clamp-saturation map, alongside salience/active-fraction (Mitigations §48.8; the register-14 saturation-rank finding in `Register_Temperature_Instability_in_the_Fock_Creation_Gate.md` §7.2) |
+| Cell 6d-4 | `sweep_log_tau_history` | `semsimula_diag.probes.tau_saturation` (new) | `log_tau`/`register_embed` trajectory mined from every `*_spikebatch.pt` bundle on disk, no checkpoint sweep needed (Mitigations §48.8; feeds the register-temperature report's §3 trajectory figure) |
 | Cell 6b-2 | `sigma_lr_report` | `semsimula_diag.probes.stiffness` | single-checkpoint `sigma_max(B_k)^2` percentiles (§3.3, Mitigations §31.3) |
 | Cell 6b-2 | `stiffness_report` | `semsimula_diag.probes.stiffness` | `omega*dt` distribution against the `baoab_cfc` stability wall (Mitigations §29) |
 | Cell 6b-3 | `bracket_precision_lr_max` | `semsimula_diag.probes.stiffness` | multi-checkpoint `sigma_max(B_k)^2` bracket, healthy vs spike-regime (Mitigations §42.4) |
@@ -585,7 +590,7 @@ flowchart TB
     CAP["capture&#95;py<br>watchdog thresholds<br>spikebatch writer, ring buffer<br>checkpoint IO, wall clock autosave"]
     REP["replay&#95;py<br>deterministic re run<br>snapshot restore invariant<br>RNG pinning"]
     CLIPM["clipping&#95;py<br>per group clip config<br>clip then sum splice<br>renamed from grad&#95;clip&#95;utils"]
-    PROBE["probes package<br>layer&#95;profile, row&#95;attribution, tokens<br>precision&#95;cap, clip&#95;order<br>integrator, stiffness"]
+    PROBE["probes package<br>layer&#95;profile, row&#95;attribution, tokens<br>precision&#95;cap, clip&#95;order<br>integrator, stiffness, tau&#95;saturation"]
     LOG["phase0&#95;py<br>dc&#95;ratio, b&#95;proj&#95;sigma&#95;max<br>jsonl schema and readers"]
     REPORT["report&#95;py<br>ProbeResult dataclasses<br>mode classifier, dp plot functions"]
     TESTDATA["testdata package<br>golden spikebatch outputs"]
@@ -611,9 +616,12 @@ Concretely:
   model-agnostic (takes a model + bundle).
 - `semsimula_diag.probes` — one module per instrument family
   (`layer_profile`, `row_attribution`, `tokens`, `precision_cap`,
-  `clip_order`, `integrator`, `stiffness`), each returning a plain dataclass
-  so results are serialisable and diffable across runs (§11.2's table maps
-  every current function to its module).
+  `clip_order`, `integrator`, `stiffness`, `tau_saturation`), each returning
+  a plain dataclass so results are serialisable and diffable across runs
+  (§11.2's table maps every current function to its module). `tau_saturation`
+  is the newest family (Mitigations §48/§48.8): the creation gate's
+  per-register/per-layer temperature diagnostics, distinct from the
+  $V_\theta$/low-rank-precision family the other probes target.
 - `semsimula_diag.phase0` — the JSONL schema, the `dc_ratio` /
   `b_proj_sigma_max` writers, `_log_write`, and readers that turn a log into
   a trajectory.
@@ -631,7 +639,7 @@ bundle) and online (as a `GradientSpikeProbe` on an `InterventableModel`). That
 makes Phase 3 (productionization) a matter of *adopting* the library's probes,
 not rewriting them.
 
-### 11.4 `ProbeResult`: one dataclass shape, nine producers
+### 11.4 `ProbeResult`: one dataclass shape, thirteen producers
 
 Every probe in §11.2's table currently returns a bespoke `dict`/tuple and
 prints its own ad hoc table. A single shared shape removes that duplication
@@ -701,15 +709,23 @@ by accident, exactly the fixture set a safe migration needs:
    (Mitigations §41-§45) and have the least test coverage today, so moving
    them while the exact expected numbers are still fresh (§16) is the
    highest-value-per-effort step.
-4. Move the Phase-0 writers (`dc_ratio`, `b_proj_sigma_max`, `_log_write`)
+4. Lift the four `tau_saturation`/`tokens` additions from Cell 6d-2 through
+   6d-4 (`decode_hot_rows`, `probe_hot_rows`, `probe_gate_saturation`,
+   `sweep_log_tau_history`) into `probes/tau_saturation.py` and
+   `probes/tokens.py` — these are younger still (Mitigations §48/§48.8,
+   captured in the notebook 9 September 2026), but §16 already has golden
+   outputs for all four at steps 70,522/71,194/71,703, so §11.5's
+   regression-test approach already has fixtures for this family too, same
+   as every other probe in this table.
+5. Move the Phase-0 writers (`dc_ratio`, `b_proj_sigma_max`, `_log_write`)
    into `semsimula_diag.phase0` and have Cell 6 import them (removes the
    most-duplicated code across notebook variants).
-5. Move the capture watchdog, checkpoint I/O, and the wall-clock autosave
+6. Move the capture watchdog, checkpoint I/O, and the wall-clock autosave
    into `semsimula_diag.capture`.
-6. Add the `clip_then_sum` splice to `semsimula_diag.clipping` alongside
+7. Add the `clip_then_sum` splice to `semsimula_diag.clipping` alongside
    the four functions moved in step 1, giving both clip strategies one
    home instead of one being a module and the other inline in Cell 6.
-7. Fold the SCAF `GradientSpikeProbe` onto `probes/` so there is one
+8. Fold the SCAF `GradientSpikeProbe` onto `probes/` so there is one
    implementation with two entry points.
 
 ---
@@ -976,6 +992,9 @@ the fixture inventory §11.5's testing strategy is built on.
 | `replay_spike_batch` + `attribute_spike_rows` | 55,919 | [replay_spike_batch_attribute_spike_rows_55919_output.txt](results/replay_spike_batch_attribute_spike_rows_55919_output.txt) | Mitigations §44 |
 | `replay_clip_ablation` | 52,940 | [replay_clip_ablation_52940_output.txt](results/replay_clip_ablation_52940_output.txt) | Mitigations §45.3 |
 | `replay_clip_ablation` | 55,919 | [replay_clip_ablation_55919_output.txt](results/replay_clip_ablation_55919_output.txt) | Mitigations §45.3 |
+| `replay_spike_batch` + `attribute_spike_rows` | 70,522 / 71,194 / 71,703 | [replay_spike_batch_and_attribute_spike_rows_70522_71194_71703_output.txt](results/replay_spike_batch_and_attribute_spike_rows_70522_71194_71703_output.txt) | Mitigations §48; `Register_Temperature_Instability_in_the_Fock_Creation_Gate.md` §2.1 |
+| `decode_hot_rows` + `probe_hot_rows` | 70,522 / 71,194 | [decode_hot_rows_probe_hot_rows_70522_71194_output.txt](results/decode_hot_rows_probe_hot_rows_70522_71194_output.txt) | Mitigations §48 follow-up; `Register_Temperature_Instability_in_the_Fock_Creation_Gate.md` §2.2, §4.1 |
+| `probe_gate_saturation` + `sweep_log_tau_history` | 70,522 / 71,194 | [probe_gate_saturation__sweep_log_tau_history_70522_71194_output.txt](results/probe_gate_saturation__sweep_log_tau_history_70522_71194_output.txt) | Mitigations §48.8; `Register_Temperature_Instability_in_the_Fock_Creation_Gate.md` §4.2, §5, §7.2, §8.2-§8.3 |
 
 Three files from the same results folder are not included above:
 `sigma_lr_report_output.txt` (a single-checkpoint scratch run whose numbers
@@ -1003,7 +1022,18 @@ Phase-1/2-instrumented captures (steps 37,763 / 41,318 / 39,983 / 41,837).
 §14's case study (steps 47,116 / 48,507 / 48,917) is documented in full in
 companion note §41; no new figures were made for it.
 
-Last updated: 7 September 2026 (adds §16, a table of every raw diagnostic
+Last updated: 9 September 2026 (records the four `tau_saturation`/`tokens`
+diagnostics added to the notebook as Cell 6d-2 through Cell 6d-4 --
+`decode_hot_rows`, `probe_hot_rows`, `probe_gate_saturation`,
+`sweep_log_tau_history`, all from Mitigations §48/§48.8's creation-gate
+temperature investigation -- in §11.2's inventory table, §11.3's module
+shape, and §11.4's producer count; adds a `tau_saturation` probe family and
+a migration-order step for it in §11.6, ahead of the Phase-0/capture moves
+since it is now the youngest, least-tested code in the notebook; adds three
+rows to §16 for the corresponding raw console outputs captured against
+steps 70,522/71,194/71,703, closing the fixture gap the §11.6 step above
+would otherwise have flagged). Previously
+updated 7 September 2026 (adds §16, a table of every raw diagnostic
 tool output saved to date, mapped to its producing function(s), step(s),
 and companion-note reference -- these are being uploaded to Hugging Face
 alongside checkpoints and model code under the same filenames, and double
