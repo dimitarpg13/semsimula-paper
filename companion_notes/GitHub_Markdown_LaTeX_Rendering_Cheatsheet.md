@@ -288,7 +288,9 @@ $w_t\ddot{h}\_t + \gamma(h_t)\dot{h}\_t = -\nabla V(h_t)$
 
 ## 12a. `\_` inside `\text{...}` breaks — it is a math-mode-only command
 
-Rule 12's `\_` escape is for a bare underscore acting as a **subscript operator** directly in math mode, such as `\dot{h}_t`. It must never be applied to an underscore that is already sitting inside `\text{...}` (or `\mathrm{...}`, `\mathbf{...}`, `\textbf{...}`, `\textrm{...}`) — for example writing a code-like identifier such as `refute_tol` as `\text{refute\_tol}`. GitHub's KaTeX defines `\_` as a command that requires math mode, and `\text{...}` switches into text mode internally, so the two are incompatible regardless of whether the surrounding expression is inline `$...$` or display `$$...$$`.
+Rule 12's `\_` escape is for a bare underscore acting as a **subscript operator** directly in math mode, such as `\dot{h}_t`. It must never be applied to an underscore that is already sitting inside a text-mode font command — for example writing a code-like identifier such as `refute_tol` as `\text{refute\_tol}`. GitHub's KaTeX defines `\_` as a command that requires math mode, and every command in this family switches into text mode internally, so the two are incompatible regardless of whether the surrounding expression is inline `$...$` or display `$$...$$`.
+
+**The full family, all equally affected:** `\text`, `\mathrm`, `\mathbf`, `\mathit`, `\mathsf`, `\mathtt`, `\textrm`, `\textbf`, `\textit`, `\textsf`, `\textsl`, `\textup`, `\emph`. **`\texttt` deserves special mention** — it is the one most likely to be reached for specifically *because* the argument is a code-like identifier (`\texttt{precision\_lr\_max}`, meant to typeset a real Python variable name in monospace), which is exactly the content most likely to contain the underscores that trigger this rule. Confirmed in the wild on `$\sqrt{\texttt{precision\_lr\_max}}$` (2026-09-11) — same pink box, same fix.
 
 **Symptom:** a pink error box reading exactly
 
@@ -299,19 +301,31 @@ appearing in place of the whole equation, anywhere a `\text{...}` (or similar) a
 **Mechanism:** an author sees an underscore near math and reflexively applies the rule 12 fix to every occurrence, without checking whether that particular underscore is already inside a text-mode command. Inside `\text{...}`, the underscore is already inert — text mode does not parse `_` as a subscript operator at all, so it needs no escaping — and escaping it anyway introduces a command (`\_`) that is only defined for math mode, which is exactly the mode `\text{...}` just switched out of.
 
 ```latex
-% Bad — \_ is math-mode-only; \text{...} is text mode, so this fails with
+% Bad — \_ is math-mode-only; \texttt{...} is text mode, so this fails with
 % "'_' allowed only in math mode", in both inline and display math
 $$
-\text{band} = \text{refute\_tol} \times \max(|\text{original effect}|, 10^{-9})
+b = \sqrt{\texttt{precision\_lr\_max}}
 $$
 
-% Good — replace the underscore with a hyphen or a space; safe everywhere
+% Also bad — swapping the underscores for hyphens fixes the RENDER but
+% silently misrepresents the actual identifier: the real config value is
+% `precision_lr_max`, not `precision-lr-max`. Never rename an identifier
+% to work around a rendering bug.
 $$
-\text{band} = \text{refute-tol} \times \max(|\text{original effect}|, 10^{-9})
+b = \sqrt{\texttt{precision-lr-max}}
+$$
+
+% Good — state the identifier once in prose with a plain backtick code
+% span (immune to this failure AND to rule 5's markdown-pairing risk,
+% since CommonMark code spans are never subject to emphasis parsing) and
+% keep the equation itself identifier-free
+$b$ is the square root of `precision_lr_max`:
+$$
+\lVert B_k \rVert_F \leftarrow b \tanh(\lVert B_k^{\mathrm{raw}} \rVert_F / b)
 $$
 ```
 
-**Rule:** never write `\_` inside `\text{...}` or any other text-mode command. If a code-like identifier inside `\text{...}` needs to preserve the look of an underscore, prefer a hyphen or a space (`\text{refute-tol}`, `\text{refute tol}`) — safe in both inline and display math. A bare, unescaped `_` inside `\text{...}` is technically safe too since text mode does not treat it as an operator, but only rely on that inside a display `$$...$$` block per rule 5's mitigation; inside inline `$...$` math, GitHub's Markdown emphasis pass still runs on the raw source before KaTeX does and can still mis-pair a bare `_` there independently of which TeX mode it will end up in. The hyphen/space substitution avoids the ambiguity entirely and is the recommended default. When the exact underscored identifier matters (e.g. it names a real parameter), it is often clearest to state it once in surrounding prose with backticks (`` `refute_tol` ``) and keep the equation itself identifier-free.
+**Rule:** never write `\_` inside `\text{...}`, `\texttt{...}`, or any other text-mode command (full list above). Do not "fix" the render by swapping the underscore for a hyphen or space if the argument names a real, underscored code identifier — that trades a rendering bug for a factual error in the documentation. The recommended default is to state the identifier once in surrounding prose with backticks (`` `precision_lr_max` ``) and keep the equation itself identifier-free, exactly as shown above. Reserve `\text{refute-tol}`-style hyphenation for cases where the math-mode label is not a real, externally-meaningful identifier and a small cosmetic change is harmless. A bare, unescaped `_` inside a text-mode command is technically safe too since text mode does not treat it as an operator, but only rely on that inside a display `$$...$$` block per rule 5's mitigation; inside inline `$...$` math, GitHub's Markdown emphasis pass still runs on the raw source before KaTeX does and can still mis-pair a bare `_` there independently of which TeX mode it will end up in.
 
 ---
 
@@ -860,7 +874,7 @@ The same applies to `[`, `]`, `{`, `}` inside pipe labels — none are quoted, s
 | `\tag{n}` in `$$...$$` | equation renders vertically | remove `\tag`, number in prose |
 | `\!` near `\left(` | parse failure or broken layout | remove `\!` entirely |
 | `}_x` in inline math (2+ on same line) | italic bleeds; subscript disappears | change `}_x` to `}\_x` |
-| `\_` inside `\text{...}` (or `\mathrm`/`\mathbf`/etc.) | "'\_' allowed only in math mode" pink error box | use a literal `_`, or better, a hyphen/space: `\text{refute-tol}` |
+| `\_` inside `\text{...}` (or `\texttt`/`\mathrm`/`\mathbf`/etc. — the whole text-mode family) | "'\_' allowed only in math mode" pink error box | prefer stating the identifier once in prose with backtick code and keeping the equation identifier-free; use a hyphen/space only if the label is not a real identifier |
 | Two bare `~` in one paragraph (e.g. `~5%` ... `~10%`) | text between them renders struck through | use `≈` for at least one of them |
 | `<X` (alphabetic) in math, with later `>` on same line | "Extra open brace or missing close brace"; HTML sanitiser eats text | replace `<` with `\lt`, `>` with `\gt` |
 | `\left\{ ... \middle\| ... \right\}` set-builder | "Missing or unrecognized delimiter for \left" | use `\lbrace ... \mid ... \rbrace` |

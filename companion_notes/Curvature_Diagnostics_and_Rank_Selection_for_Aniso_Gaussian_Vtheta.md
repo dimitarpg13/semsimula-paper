@@ -252,9 +252,9 @@ and what question it can answer.
 **The ordering rule.** Run `spectrum_across_checkpoints` first. Its `fro_p50`
 output is the load-bearing precondition for everything in §6: the claim "rank
 only redistributes a fixed budget" holds **only** while the Frobenius cap is
-binding. If $\lVert B_k \rVert_F$ at $p_{50}$ comes back well below
-$\sqrt{\texttt{precision\_lr\_max}}$, the cap is not biting at those weights,
-rank becomes an *additive* knob again, and §6's conclusions need re-deriving
+binding. If $\lVert B_k \rVert_F$ at $p_{50}$ comes back well below the square
+root of `precision_lr_max`, the cap is not biting at those weights, rank
+becomes an *additive* knob again, and §6's conclusions need re-deriving
 before the rebalance sweep's results mean anything.
 
 ---
@@ -299,9 +299,10 @@ directly, with the same function and no extra machinery.
 
 ## 6. Rank under a binding cap: redistribution, not addition
 
-`_bound_lowrank` caps the Frobenius norm:
+`_bound_lowrank` caps the Frobenius norm, with $b$ the square root of
+`precision_lr_max`:
 
-$$\lVert B_k \rVert_F \leftarrow b \tanh\big(\lVert B_k^{\mathrm{raw}} \rVert_F / b\big), \qquad b = \sqrt{\texttt{precision-lr-max}}.$$
+$$\lVert B_k \rVert_F \leftarrow b \tanh\big(\lVert B_k^{\mathrm{raw}} \rVert_F / b\big).$$
 
 With `precision_lr_max` = 1.0 and ambient uncapped $\sigma_{\max}(B_k)^2 \approx 283$
 (so $\lVert B_k^{\mathrm{raw}} \rVert_F \approx 17$), the argument to $\tanh$ is
@@ -429,8 +430,8 @@ flowchart TB
 ```
 
 **Stage 0 — precondition (free).** Run `spectrum_across_checkpoints()`. Confirm
-`fro_p50` is close to $\sqrt{\texttt{precision\_lr\_max}}$. If it is not, stop:
-the redistribution argument does not hold and the rank question is a different
+`fro_p50` is close to the square root of `precision_lr_max`. If it is not,
+stop: the redistribution argument does not hold and the rank question is a different
 question.
 
 **Stage 1 — measure the effective rank (free).** From the same call, read the
