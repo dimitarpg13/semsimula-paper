@@ -41,6 +41,7 @@ The thesis of the programme is a single sentence:
 14. [Case study: three new replays confirm chronic low-rank dominance and expose a `dc_ratio` blind spot](#14-case-study-three-new-replays-confirm-chronic-low-rank-dominance-and-expose-a-dc_ratio-blind-spot)
 15. [Closing the loop: the ablation validates remediation across both mechanisms, and two tooling lessons](#15-closing-the-loop-the-ablation-validates-remediation-across-both-mechanisms-and-two-tooling-lessons)
 16. [Raw diagnostic tool outputs](#16-raw-diagnostic-tool-outputs)
+17. [A fifth axis: curvature geometry and the rank question](#17-a-fifth-axis-curvature-geometry-and-the-rank-question)
 
 ---
 
@@ -129,7 +130,7 @@ $$
 \nabla_h V = \sum_{k=1}^{K} g_k P_k(h-\mu_k), \qquad g_k = w_k \exp\Big(-\tfrac12 (h-\mu_k)^{\top} P_k (h-\mu_k)\Big) > 0.
 $$
 
-*(this is exactly `analytical_grad`; the physical force is $f=-\nabla_h V$.)*
+(this is exactly `analytical_grad`; the physical force is $f=-\nabla_h V$.)
 Because $B_kB_k^{\top}$ is rank-$r$ PSD with eigenvalues $\sigma_i(B_k)^2$,
 
 $$
@@ -137,7 +138,7 @@ $$
 $$
 
 and with `lr_term_share` $\approx 0.999$ the diagonal part is negligible, so we
-write $\lambda := \sigma_{\max}(P_k) \approx \sigma_{\max}(B_k)^2$ for the
+write $\lambda := \sigma_{\max}(P_k)$, which is $\approx \sigma_{\max}(B_k)^2$, for the
 stiffness of the sharpest direction $v$ (top eigenvector of $P_k$).
 
 ### 3.2 Reduction to a one-dimensional force profile
@@ -191,7 +192,7 @@ $$
 
 That single quadratic is exactly the quantity mitigation #2 was designed to
 cap. `_bound_lowrank` bounds $\sigma_{\max}(B_k)^2 \le$ `precision_lr_max` by a
-smooth Frobenius cap (using $\sigma_{\max}(B_k)\le\lVert B_k\rVert_F$):
+smooth Frobenius cap (using the bound of $\sigma_{\max}(B_k)$ by $\lVert B_k\rVert_F$):
 
 ```python
 def _bound_lowrank(self, B):                       # B: (..., K, d, rank)
@@ -237,23 +238,37 @@ expensive end reconstructs a single offending step bit-for-bit.
 
 ```mermaid
 flowchart LR
+    A0["training&#95;log.jsonl<br>per group grad norms"]
+    A1["dc&#95;ratio<br>depth&#95;code vs next group"]
+    A2["b&#95;proj&#95;sigma&#95;max<br>sigma&#95;max of W&#95;B per bank"]
+    B0["watchdog<br>CAPTURE 200, HARD 500"]
+    B1["&#42;&#95;spikebatch.pt<br>batch + RNG + weights"]
+    C0["replay&#95;spike&#95;batch<br>per layer + per well forensics"]
+    C1["inspect&#95;spike&#95;tokens<br>token degeneracy"]
+    C2["attribute&#95;spike&#95;rows<br>per row concentration"]
+    D0["SCAF GradientSpikeProbe<br>InterventableModel or ProbeResult"]
+
     subgraph P0 [Phase 0 - always on, near zero cost]
-        A0["training&#95;log.jsonl<br>per group grad norms"]
-        A1["dc&#95;ratio<br>depth&#95;code vs next group"]
-        A2["b&#95;proj&#95;sigma&#95;max<br>sigma&#95;max of W&#95;B per bank"]
+        A0
+        A1
+        A2
     end
+
     subgraph P1 [Phase 1 - on trigger, cheap]
-        B0["watchdog<br>CAPTURE 200, HARD 500"]
-        B1["&#42;&#95;spikebatch.pt<br>batch + RNG + weights"]
+        B0
+        B1
     end
+
     subgraph P2 [Phase 2 - offline, expensive and exact]
-        C0["replay&#95;spike&#95;batch<br>per layer + per well forensics"]
-        C1["inspect&#95;spike&#95;tokens<br>token degeneracy"]
-        C2["attribute&#95;spike&#95;rows<br>per row concentration"]
+        C0
+        C1
+        C2
     end
+
     subgraph P3 [Phase 3 - productionize]
-        D0["SCAF GradientSpikeProbe<br>InterventableModel or ProbeResult"]
+        D0
     end
+
     P0 -->|threshold crossed| P1
     P1 -->|ring buffer of bundles| P2
     P2 -->|validated signal| P3
@@ -283,8 +298,8 @@ $$
 Mining the seven archived replay reports
 ([`spike_replay_reports.json`](results/spike_replay_reports.json)) showed
 this ratio cleanly separates the two modes *from data the watchdog already
-collected*: smooth-cascade events sit at `dc_ratio` $< 1.8$, localized ones at
-$> 2.2$. Logging it every interval lets us ask the one thing the archived
+collected*: smooth-cascade events sit at `dc_ratio` $\lt 1.8$, localized ones at
+$\gt 2.2$. Logging it every interval lets us ask the one thing the archived
 reports cannot — whether it **rises before** a hard trigger:
 
 ```python
@@ -465,7 +480,7 @@ shared-weight, batch-wide mechanism.
 
 **Falsification 2 — well occupancy.** Conjecture: the localized mode has denser
 $V_\theta$ well occupancy (more tokens "inside" a well). The exponent-occupancy
-histogram shows no separation between the modes, and $>99.9\%$ of well–token
+histogram shows no separation between the modes, and $\gt 99.9\%$ of well–token
 pairs are numerically dead ($\exp(\text{exponent})\approx 0$) in *every* capture.
 
 ![V_theta exponent live-fraction per bank across four captures on a log scale; smooth and localized events overlap and more than 99.9 percent of well-token pairs are numerically dead in every capture.](figures/dp_exponent_occupancy.png)
@@ -572,6 +587,10 @@ code) or a piece of diagnostic-adjacent infrastructure it depends on.
 | Cell 6b-2 | `sigma_lr_report` | `semsimula_diag.probes.stiffness` | single-checkpoint `sigma_max(B_k)^2` percentiles (§3.3, Mitigations §31.3) |
 | Cell 6b-2 | `stiffness_report` | `semsimula_diag.probes.stiffness` | `omega*dt` distribution against the `baoab_cfc` stability wall (Mitigations §29) |
 | Cell 6b-3 | `bracket_precision_lr_max` | `semsimula_diag.probes.stiffness` | multi-checkpoint `sigma_max(B_k)^2` bracket, healthy vs spike-regime (Mitigations §42.4) |
+| Cell 6b-4 | `sigma_lr_spectrum_report` | `semsimula_diag.probes.stiffness` | the FULL singular-value spectrum of $B_k$ (not just $\sigma_{\max}$), reduced to a participation ratio, the Frobenius norm and $\sigma_{\max}^2$ — the effective-rank measurement (§17) |
+| Cell 6b-4 | `spectrum_across_checkpoints` | `semsimula_diag.probes.stiffness` | the above across best/spike/prereload checkpoints, with archive fallback; also tests whether a spike is a spectral-collapse event (§17) |
+| Cell 6d | `replay_curvature_rebalance_ablation` | `semsimula_diag.probes.precision_cap` | 2-D sweep of **both** `precision_max` and `precision_lr_max` — the diagonal/low-rank rebalance question (§17) |
+| Cell 6d | `replay_rank_truncation_ablation` (PROPOSED) | `semsimula_diag.probes.precision_cap` | rank-$r'$ SVD truncation of the realised $B_k$, replayed — the one missing instrument in the rank-selection procedure (§17.3) |
 | Cell 6 (inline) | `dc_ratio` / `b_proj_sigma_max` computation | `semsimula_diag.phase0` | §5's leading-indicator writers |
 | Cell 6 (inline) | `_log_write` | `semsimula_diag.phase0` | generic JSONL append used by every logging site |
 | Cell 6 (inline) | spike-bundle capture block (`CAPTURE_SPIKE_THRESHOLD`, `SPIKEBATCH_SNAPSHOT_MAX_KEEP` ring buffer) | `semsimula_diag.capture` | §6's Phase-1 sidecar writer |
@@ -1004,6 +1023,61 @@ confirming before it can be cited against a specific finding),
 dependency, not a diagnostic tool's output), and `training_log.jsonl` (the
 raw per-step log underlying most of §5's Phase-0 discussion generally,
 rather than any one finding specifically).
+
+
+## 17. A fifth axis: curvature geometry and the rank question
+
+§4's four phases are organised around **when** a spike happens and **where in
+the model** it lives. They are silent about a fifth axis that turns out to
+matter for arm design rather than for firefighting: the **geometry** of the
+curvature that generates the spike in the first place — not how big
+$\sigma_{\max}(B_k)^2$ is, but how the well's curvature is *distributed*, both
+across the two precision channels and across the $r$ low-rank directions.
+
+Full treatment is in
+[`Curvature_Diagnostics_and_Rank_Selection_for_Aniso_Gaussian_Vtheta.md`](Curvature_Diagnostics_and_Rank_Selection_for_Aniso_Gaussian_Vtheta.md).
+This section records only what the programme itself gains.
+
+**Three instruments were added on 2026-09-11** (inventory rows in §11.2):
+`sigma_lr_spectrum_report` and `spectrum_across_checkpoints` (Cell 6b-4), which
+keep the full singular-value spectrum that `sigma_lr_report` had been computing
+and discarding; and `replay_curvature_rebalance_ablation` (Cell 6d), which
+sweeps `precision_max` and `precision_lr_max` together instead of only the
+latter.
+
+**Why this is a separate axis, not a new phase.** Every Phase 0-2 instrument
+answers a question about one *event*. These answer questions about the
+*configuration* that makes events likely, and they run against checkpoints
+rather than against captures — `spectrum_across_checkpoints` needs no bundle at
+all, which is why it works on `_best.pt` and on `_prereload.pt` snapshots that
+the replay helpers structurally cannot touch.
+
+**Two contributions back to this note's own findings.**
+
+1. **§9's Falsification 2 is stale and should be re-run.** The ">99.9% of
+   well-token pairs are numerically dead" measurement was taken on captures from
+   before `precision_lr_max` went live. Mitigations §42.2 shows per-bank
+   exponent minima moving from the −257,630 to −150,076 range up to −146.8 to
+   −51.8 once the cap was on — and fp32 underflows around $e^{-104}$, so the
+   post-cap minima straddle the boundary instead of sitting far past it.
+   Occupancy has probably improved substantially and nobody has re-measured.
+   `spectrum_across_checkpoints` reports the exponent minima alongside the
+   spectrum, so re-running it settles this for free.
+
+2. **A new, testable spike mechanism.** §3 derives spike magnitude
+   $\sim \sigma_{\max}(B_k)^2$. Under a *binding* Frobenius cap the total
+   $\sum_i \sigma_i^2$ is pinned, so that quantity can only grow by
+   **concentration** — which predicts that a $V_\theta$-led spike may literally
+   be a moment of **spectral collapse**, the well dumping its whole budget into
+   one direction. This is a sharper, more mechanistic version of §8's
+   "localized blow-up" and it is falsifiable with one call: compare the spectrum
+   at `_best.pt` against the spectrum at a spike bundle. If the participation
+   ratio does not drop at the spike, the hypothesis is dead.
+
+**Status.** Both instruments are implemented and unit-verified but have not yet
+been run against live data; the rank-selection procedure they feed is specified
+in the companion note's §7 and needs one further helper
+(`replay_rank_truncation_ablation`) that does not exist yet.
 
 ---
 

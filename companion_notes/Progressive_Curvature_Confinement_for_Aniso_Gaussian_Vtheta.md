@@ -158,7 +158,7 @@ Writing $b = \sqrt{\text{precision-lr-max}}$, the effective factor norm is
 $$\lVert B \rVert_F = b\tanh(\lVert B_{\mathrm{raw}} \rVert_F / b),$$
 
 which is the identity for small norms and asymptotes to $b$ from below for
-large ones. Because $\sigma_{\max}(B_k) \le \lVert B_k \rVert_F$, this
+large ones. Because $\sigma_{\max}(B_k)$ is bounded by $\lVert B_k \rVert_F$, this
 guarantees $s_k \lt \text{precision-lr-max}$. It is currently `None`
 (disabled) in the training config.
 
@@ -330,7 +330,7 @@ not catching intermittent spikes. Decoupled weight decay on the `B_proj` /
 ## 9. Reference implementation
 
 A drop-in penalty that confines the producible-capacity proxy
-$s_k = \sigma_{\max}(W_k^B)^2$ — the same `b_proj_sigma_max` Cell 6 already
+$s_k$, the squared top singular value of $W_k^B$ — the same `b_proj_sigma_max` Cell 6 already
 logs — with a power-hinge, computed cheaply by a couple of power-iteration
 steps and back-propagated into the `B_proj` weights:
 
@@ -496,15 +496,47 @@ returns to the diagnostic programme.
 
 ## 12. Status and next steps
 
-- **Now (offline):** run the two ablations of §10 on the captured bundles
-  (47,116 / 48,507 / 48,917) to bracket $s_0$ and identify the lever.
-- **If confinement is the lever (live):** add `curvature_stiffness_penalty`
-  (§9) to the loss with a warmup, seed $s_0$ from the ablation, and watch
-  `b_proj_sigma_max` relax toward equilibrium in the existing step line.
+**Done since this note was written (2026-09-05, Mitigations §42).** The §10
+ablations ran against all three bundles. Both `precision_lr_max` budgets (1.0
+and 4.0) and the low-rank integrator collapsed every capture from its recorded
+severity down to a pre-clip norm of roughly 1-4 — so the decision rule's first
+branch fired: **confinement is the lever**, and `PRECISION_LR_MAX = 1.0` has
+been live since step 47,121. The hard-ceiling precursor of §4 is therefore no
+longer hypothetical; it is the production configuration.
+
+That changes what this note's remaining proposals are *for*. With a **binding**
+cap in place, $\sum_i \sigma_i^2$ is pinned, and the open questions move from
+*how much* curvature to *where it sits* — which channel holds it, and across how
+many directions. Those two questions, the instruments that measure them, and a
+staged procedure for choosing the rank are in
+[`Curvature_Diagnostics_and_Rank_Selection_for_Aniso_Gaussian_Vtheta.md`](Curvature_Diagnostics_and_Rank_Selection_for_Aniso_Gaussian_Vtheta.md).
+
+**Still open, in priority order:**
+
+- **The progressive penalty of §5 has still never run live.** §4's two
+  objections to the hard cap are unaddressed by switching it on: it is a
+  ceiling rather than an equilibrium, and it hides raw-weight growth rather
+  than opposing it. `b_proj_sigma_max` has continued climbing throughout
+  (28.45 at step 52,550 to 35.19 at step 84,650) *while the cap was active* —
+  exactly the "hides growth instead of opposing it" failure mode §4 predicted,
+  now with a measured trajectory behind it.
+- **A flatness incentive, as the penalty's sibling.** §5's families all confine
+  the *scale* of the curvature. Under a binding cap the scale is already fixed,
+  so the useful analogue penalises the *shape* — pushing the budget to spread
+  across directions rather than concentrate in one. That is a different
+  objective from anything in §5 and is specified in the rank-selection note's
+  §8.
+- **Seed $s_0$ from measurement, not from the ablation bracket.**
+  `bracket_precision_lr_max` measures ambient $\sigma_{\max}(B_k)^2$; the new
+  `sigma_lr_spectrum_report` additionally reports whether the Frobenius cap is
+  actually binding, which is the precondition for the equilibrium argument in
+  §6 to apply at all.
 - **Baseline to try in parallel:** decoupled weight decay on the `B_proj` /
-  `mu_proj` parameter groups (§8) — the cheap linear special case.
-- **Open:** a mechanism-B restraint on the reverse channel, tracked
-  separately from this curvature work.
+  `mu_proj` parameter groups (§8) — the cheap linear special case. Note this
+  now interacts with `NO_DECAY_1D` (Mitigations §51): these are 2-D tensors, so
+  they still receive decay, unlike the 1-D scale parameters.
+- **Open:** a mechanism-B restraint on the reverse channel, tracked separately
+  from this curvature work.
 
 ---
 
