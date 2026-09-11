@@ -96,6 +96,12 @@ scheduled run.
 > initialisation of 8. Removing the second one and re-aiming it is a larger
 > and cheaper intervention than anything we designed for the first.
 
+**Post-hoc update.** Once the run resumed with §11.4's mitigation active,
+the coldest register handed off from 14 to register 26 for most of a
+6,000-plus-step window, then briefly back. Finding 1 above is accurate as a
+snapshot of steps 70,522 and 71,194; it is not accurate as a claim about
+register 14's identity holding for the rest of the run. See §12.1.
+
 ---
 
 ## 1. The system under study
@@ -396,6 +402,12 @@ Two supporting observations, for completeness:
 
 Register 14 is a **cold, sharply selective, low-salience** register. It is
 not a dominant register that happens to be loud.
+
+This is a snapshot of steps 70,522 and 71,194. It is register 14 that holds
+the description at those two steps, but the mechanism argument above does
+not depend on register 14's identity — only on being the coldest register
+in the pool. §12.1 reports that identity changing hands later in the same
+run.
 
 ---
 
@@ -1274,6 +1286,52 @@ replay, and each would falsify a specific claim in this report.
 Prediction 3 is the highest-value one, because it costs nothing to measure
 and it discriminates between the two competing accounts of the drift.
 
+### 12.1 Update: Prediction 1 is partially falsified, Prediction 3 holds
+
+The run resumed at step 71,786 with the §11.4 no-decay-1D mitigation
+active. The live monitor's `tau_min=X@rN` field was tracked continuously
+from that point through step 80,700+:
+
+| step range | argmin register |
+|---|---|
+| 71,786 - 71,800 | 14 (continuous with the pre-resume history) |
+| 71,850 - 77,800 | 26 |
+| 77,850 - 77,950 | 14 (three consecutive 50-step prints, then reverts) |
+| 78,000 - 80,700+ | 26 |
+
+By Prediction 1's own falsification criterion — "if the argmin wanders
+between registers, §5's single-register claim is wrong and this is a
+diffuse pool-level phenomenon" — this is a **partial falsification**. The
+argmin is not pinned at register 14. It is also not diffusely wandering
+across the pool: this is a two-way contest between registers 14 and 26
+specifically, with 26 dominant over this window. §5's mechanism (the
+temperature derivative is proportional to score magnitude, so whichever
+register is coldest gets the runaway gradient) is not contradicted by this.
+What is contradicted is the stronger reading that register 14, by identity,
+is the persistently affected register. The corrected statement: the
+mechanism selects *whichever register is currently coldest*, and that
+identity can hand off between two or more competing registers over a run
+long enough to observe it.
+
+Prediction 3 holds up over the same window. `tau_min`'s value oscillates in
+a 5.16-5.28 band rather than declining monotonically, consistent with
+§11.4's decay removal having taken out the dominant downward force
+identified in §8.
+
+One observation outside the original five predictions: across roughly two
+dozen gradient-spike events logged in this window, `log_tau` appears as a
+spike contributor in only about a third of them, and always as a minor
+term — never larger than 70, never in the top three. The dominant spike
+drivers are now `depth_code`, `creation_gate`, `reverse_channel_scale`,
+`V_theta`, and `register`, reaching into the hundreds and, once, above
+1,100. That is the Mechanism A/B territory of
+`Diagnostic_Programme_in_CfC_BAOAB_Integrator.md` §14, not the mechanism
+this report analyses, and it is still triggering the hard watchdog
+(five reloads in this ~9,000-step window) despite `PRECISION_LR_MAX=1.0`
+already being active on the live run. That is a separate, already-tracked
+problem, noted here only because it now dominates the spike log that
+`log_tau` used to dominate.
+
 ---
 
 ## 13. Deployment planning across future arms
@@ -1472,3 +1530,17 @@ raw diagnostic outputs from "proposed" to "captured, pending upload" in
 `probe_gate_saturation__sweep_log_tau_history_70522_71194_output.txt`),
 leaving only `qk_norm_score_bound_sweep_output.txt` and
 `test_optim_remap_output.txt` genuinely un-run in §15.4.
+
+**10 September 2026:** Adds §12.1, reporting that once the run resumed with
+§11.4's mitigation active, the coldest register handed off from 14 to
+register 26 for most of a 6,000-plus-step window (steps 71,850-77,800 and
+78,000-80,700+), with one brief reversion to 14 (77,850-77,950). This is a
+partial falsification of §12's Prediction 1 by its own stated criterion,
+though not the diffuse-pool-level reading that prediction contrasted it
+with — it is a two-register contest, not a wander across all 32. Prediction
+3 (decay removal stops the crash) holds up over the same window. Also notes
+that `log_tau` has become a minor, infrequent contributor to the live
+run's gradient spikes, which are now dominated by `depth_code`,
+`creation_gate`, `reverse_channel_scale`, `V_theta`, and `register` — the
+already-tracked Mechanism A/B territory, not this report's mechanism.
+Cross-references added at §0 and the end of §5.
