@@ -568,14 +568,28 @@ update replaces it with a concrete, function-by-function design.
 The inventory below is exhaustive as of this note's last update — every
 `def` in the training notebook that is a diagnostic (not core training/eval
 code) or a piece of diagnostic-adjacent infrastructure it depends on.
+**Verified 2026-09-12 by mechanically extracting every `def` from both
+notebooks** (`colab_fock_cfc_baoab_aniso_gaussian_openwebtext_d384.ipynb`
+and its joint-coupling/QK-norm sibling): **50 functions each, identical
+sets** — the two notebooks share the entire diagnostic surface, so this
+table applies to both without duplication. The one behavioural difference
+between them is not a function at all: the pilot notebook's inline Cell 6
+creation-gate monitor branches to a `sig_max`/`sig_argmax`/`sig_median`
+reading instead of `tau_min`/`tau_argmin`/`tau_median`, because it runs
+`creation_qk_norm=True` (§13.2 planning in the register-temperature
+report) — noted in its own row below.
 
 | Current location (notebook) | Function / config | Target module | Notes |
 |---|---|---|---|
 | Cell 6d | `_isolated_grad_snapshot`, `_isolated_grad_restore` | `semsimula_diag.replay` | the non-pollution invariant's primitives, used by every probe below |
+| Cell 6d | `_resolve_bundle_path`, `_load_spike_bundle` | `semsimula_diag.replay` | live-ring-then-archive bundle resolution (added 2026-09-11 after the ring evicted a bundle every replay helper needed); every probe below now goes through this instead of a bare `CKPT_DIR` lookup |
+| Cell 6d | `_cts_group_params`, `_cts_apply_microbatch`, `_cts_splice_back` | `semsimula_diag.replay` | Cell 6d's own copy of the live loop's `clip_then_sum` mechanics, so a replay's `E`/`P` fidelity matches what training actually saw (Mitigations §48.2-§48.3) — distinct from Cell 6's live inline copy below, which this one must stay bit-identical to |
 | Cell 6d | `replay_spike_batch` | `semsimula_diag.probes.layer_profile` | per-layer h-grad profile, activation extremes, exponent occupancy (§7.1) |
 | Cell 6d | `inspect_spike_tokens` | `semsimula_diag.probes.tokens` | token degeneracy check (§7.2) |
 | Cell 6d | `attribute_spike_rows` | `semsimula_diag.probes.row_attribution` | per-row concentration (§7.3); §14.4 item 2's unreliability-on-mechanism-A caveat travels with it |
 | Cell 6d | `replay_precision_cap_ablation` | `semsimula_diag.probes.precision_cap` | `precision_lr_max` budget sweep (Mitigations §41.7/§42) |
+| Cell 6d | `replay_curvature_rebalance_ablation` | `semsimula_diag.probes.precision_cap` | 2-D sweep of **both** `precision_max` and `precision_lr_max` — the diagonal/low-rank rebalance question (§17) |
+| Cell 6d | `replay_rank_truncation_ablation` (PROPOSED) | `semsimula_diag.probes.precision_cap` | rank-$r'$ SVD truncation of the realised $B_k$, replayed — the one missing instrument in the rank-selection procedure (§17.3) |
 | Cell 6d | `replay_clip_ablation` | `semsimula_diag.probes.clip_order` | `sum_then_clip` vs `clip_then_sum` (Mitigations §45) |
 | Cell 6d | `replay_integrator_ablation` | `semsimula_diag.probes.integrator` | `baoab_cfc` vs `baoab_cfc_lowrank` (§13, Mitigations §40) |
 | Cell 6d | `replay_all_captures` | `semsimula_diag.report` | batch-replays every `*_spikebatch.pt` on disk (§10's aggregate view) |
@@ -584,20 +598,71 @@ code) or a piece of diagnostic-adjacent infrastructure it depends on.
 | Cell 6d-3 | `probe_hot_rows` | `semsimula_diag.probes.tau_saturation` (new) | per-register (`log_tau`) / per-layer (`reverse_channel_scale`) element breakdown plus a pre-softmax creation-gate score capture, full-batch and per-row (Mitigations §48 follow-up) |
 | Cell 6d-4 | `probe_gate_saturation` | `semsimula_diag.probes.tau_saturation` (new) | per-register x per-layer creation-gate readout clamp-saturation map, alongside salience/active-fraction (Mitigations §48.8; the register-14 saturation-rank finding in `Register_Temperature_Instability_in_the_Fock_Creation_Gate.md` §7.2) |
 | Cell 6d-4 | `sweep_log_tau_history` | `semsimula_diag.probes.tau_saturation` (new) | `log_tau`/`register_embed` trajectory mined from every `*_spikebatch.pt` bundle on disk, no checkpoint sweep needed (Mitigations §48.8; feeds the register-temperature report's §3 trajectory figure) |
+| Cell 6b | `stiffness_report` | `semsimula_diag.probes.stiffness` | `omega*dt` distribution against the `baoab_cfc` stability wall (Mitigations §29) |
 | Cell 6b-2 | `sigma_lr_report` | `semsimula_diag.probes.stiffness` | single-checkpoint `sigma_max(B_k)^2` percentiles (§3.3, Mitigations §31.3) |
-| Cell 6b-2 | `stiffness_report` | `semsimula_diag.probes.stiffness` | `omega*dt` distribution against the `baoab_cfc` stability wall (Mitigations §29) |
 | Cell 6b-3 | `bracket_precision_lr_max` | `semsimula_diag.probes.stiffness` | multi-checkpoint `sigma_max(B_k)^2` bracket, healthy vs spike-regime (Mitigations §42.4) |
-| Cell 6b-4 | `sigma_lr_spectrum_report` | `semsimula_diag.probes.stiffness` | the FULL singular-value spectrum of $B_k$ (not just $\sigma_{\max}$), reduced to a participation ratio, the Frobenius norm and $\sigma_{\max}^2$ — the effective-rank measurement (§17) |
+| Cell 6b-4 | `sigma_lr_spectrum_report`, `_print_spectrum` | `semsimula_diag.probes.stiffness` | the FULL singular-value spectrum of $B_k$ (not just $\sigma_{\max}$), reduced to a participation ratio, the Frobenius norm and $\sigma_{\max}^2$ — the effective-rank measurement (§17) |
 | Cell 6b-4 | `spectrum_across_checkpoints` | `semsimula_diag.probes.stiffness` | the above across best/spike/prereload checkpoints, with archive fallback; also tests whether a spike is a spectral-collapse event (§17) |
-| Cell 6d | `replay_curvature_rebalance_ablation` | `semsimula_diag.probes.precision_cap` | 2-D sweep of **both** `precision_max` and `precision_lr_max` — the diagonal/low-rank rebalance question (§17) |
-| Cell 6d | `replay_rank_truncation_ablation` (PROPOSED) | `semsimula_diag.probes.precision_cap` | rank-$r'$ SVD truncation of the realised $B_k$, replayed — the one missing instrument in the rank-selection procedure (§17.3) |
+| Cell 6c | `_load_bottleneck_mod` | `semsimula_diag.probes.bottleneck` (new) | GPU-compute-bound vs CPU/launch-bound step-time attribution; prefers the standalone `cfc_step_bottleneck_profile.py` when present, falls back to a shipped copy — a *performance* diagnostic, the only family in this table not about stability/spikes |
+| Cell 7 | `_mk`, `_eval_on` | `semsimula_diag.probes.component_health` (new) | batch construction and ablation-loss measurement behind the "structural health" / "PPL attribution" component study the cell's own intro markdown describes — the rest of Cell 7 is inline script using these two, not further named functions |
+| Cell 6 (inline) | `run_causal_probe`, `run_trained_leak_probe` | `semsimula_diag.probes.leakage` (new) | periodic prefix-causality certification and trained-model honest-vs-standard-PPL leak probe, run every `CAUSAL_PROBE_INTERVAL`/`TRAINED_LEAK_PROBE_INTERVAL` steps — the correctness-of-the-conservative-mechanism family, distinct from the stability/spike families above |
 | Cell 6 (inline) | `dc_ratio` / `b_proj_sigma_max` computation | `semsimula_diag.phase0` | §5's leading-indicator writers |
+| Cell 6 (inline) | `tau_min`/`tau_argmin`/`tau_median` (baseline) or `sig_max`/`sig_argmax`/`sig_median` (pilot) computation | `semsimula_diag.phase0` | the creation-gate temperature/scale monitor from `Register_Temperature_Instability_in_the_Fock_Creation_Gate.md` §11.2 — the ONE inline diagnostic whose branch differs between the two notebooks (see this section's intro) |
 | Cell 6 (inline) | `_log_write` | `semsimula_diag.phase0` | generic JSONL append used by every logging site |
 | Cell 6 (inline) | spike-bundle capture block (`CAPTURE_SPIKE_THRESHOLD`, `SPIKEBATCH_SNAPSHOT_MAX_KEEP` ring buffer) | `semsimula_diag.capture` | §6's Phase-1 sidecar writer |
+| Cell 6 (inline) | `_archive_bundle` | `semsimula_diag.capture` | write-time permanent-archive copy for every spikebatch/prereload snapshot, severity-gated and count-capped (added 2026-09-11 after one 24h session produced more captures than a full ring rotation) |
+| Cell 1c (inline) | spikebatch/prereload archive sweep (`spikebatch_archive`, `prereload_archive`) | `semsimula_diag.capture` | the session-boundary backstop sweep `_archive_bundle` above makes mostly redundant in steady state, kept for anything from before that fix or a silent Drive-write failure |
 | Cell 6 (inline) | `_vm_uptime_seconds`, `AUTOSAVE_WALLCLOCK_HOURS` splice | `semsimula_diag.capture` | the wall-clock safety-net checkpoint (Mitigations §46) — not itself a spike diagnostic, but it shares `capture`'s "protect data that already happened" job and `save_manual_checkpoint`'s dependency |
 | Cell 6 (inline) | `save_manual_checkpoint`, `save_checkpoint`, `_reload_best` | `semsimula_diag.capture` | checkpoint I/O the rest of `capture` depends on |
-| Cell 6 (inline) | `CLIP_THEN_SUM_GROUPS` / per-microbatch clip-then-sum splice | `semsimula_diag.clipping` (extends `grad_clip_utils.py`) | Mitigations §45.4's live remediation, not a diagnostic, but it shares `clip_grads_per_group`'s grouping logic and belongs in the same already-extracted module rather than a new one |
+| Cell 6 (inline) | `CLIP_THEN_SUM_GROUPS` / per-microbatch clip-then-sum splice | `semsimula_diag.clipping` (extends `grad_clip_utils.py`) | the LIVE training loop's own copy, mirrored (not shared) by Cell 6d's `_cts_*` trio above; Mitigations §45.4's live remediation, not a diagnostic, but it shares `clip_grads_per_group`'s grouping logic and belongs in the same already-extracted module rather than a new one |
 | `grad_clip_utils.py` (already extracted) | `GradClipConfig`, `assign_clip_group`, `per_group_grad_norms`, `clip_grads_per_group` | `semsimula_diag.clipping` | rename/move only — this module's existence and test suite is what §11.1 points to as precedent |
+
+**Deliberately out of scope**, for the same reason `evaluate`/`run_training`/
+`lr_schedule`/`forward_with_vreg` are: `make_config`/`_clear_exc`/`_release`/
+`_rebuild_model`/`_probe_batch` (Cell 5's batch-size-fitting search) and
+`split_decay_params`/`_remap_optim_state`/`load_optim_state` (Cell 6's
+`NO_DECAY_1D` optimizer-construction and resume plumbing, Mitigations
+§51.4-§51.5) are core model-setup and optimizer code, not diagnostics or
+diagnostic-adjacent infrastructure — even though the latter three exist
+*because of* a diagnostic finding (the `log_tau` runaway), they do not
+themselves measure or report anything.
+
+**At a glance, by target module.** Verified by parsing this table
+programmatically rather than by hand — the first pass at this summary had
+arithmetic errors that a script caught. Two counts are given because they
+answer different planning questions: **functions** are real `def`s, movable
+essentially as-is; **inline facilities** are diagnostic-relevant code that is
+*not* wrapped in a function yet (a computed variable, a capture block, a
+splice) and would need to be turned into one as part of the extraction, not
+merely relocated.
+
+| target module | functions | inline facilities (not yet functions) |
+|---|---|---|
+| `semsimula_diag.replay` | 7 | — |
+| `semsimula_diag.probes.stiffness` | 6 | — |
+| `semsimula_diag.probes.tau_saturation` (new) | 3 | — |
+| `semsimula_diag.probes.precision_cap` | 2 (+1 proposed) | — |
+| `semsimula_diag.probes.tokens` | 2 | — |
+| `semsimula_diag.probes.component_health` (new) | 2 | — |
+| `semsimula_diag.probes.leakage` (new) | 2 | — |
+| `semsimula_diag.probes.layer_profile` | 1 | — |
+| `semsimula_diag.probes.row_attribution` | 1 | — |
+| `semsimula_diag.probes.clip_order` | 1 | — |
+| `semsimula_diag.probes.integrator` | 1 | — |
+| `semsimula_diag.probes.bottleneck` (new) | 1 | — |
+| `semsimula_diag.report` | 1 | — |
+| `semsimula_diag.capture` | 5 | 2 (spike-bundle capture block, Cell 1c archive sweep) |
+| `semsimula_diag.phase0` | 1 | 3 (`dc_ratio`/`b_proj_sigma_max` computation, the `tau_min`/`sig_max` monitor) |
+| `semsimula_diag.clipping` | 4 (already extracted, `grad_clip_utils.py`) | 1 (the live `clip_then_sum` splice) |
+| not extracted (call-site script) | 0 | 1 (`STEPS_TO_INSPECT` driver) |
+
+**36 functions in the notebook itself** (+1 proposed, not yet built) across
+13 target modules, of which 4 are newly identified by this pass
+(`leakage`, `bottleneck`, `component_health`, and `tau_saturation`, which
+existed in the table before today but had no module name of its own).
+Plus the 4 already extracted into `grad_clip_utils.py`, and **7 inline
+facilities** that are real diagnostic surface but need refactoring into a
+function before they can simply move.
 
 ### 11.3 Proposed shape: `semsimula-diag`
 
@@ -658,7 +723,7 @@ bundle) and online (as a `GradientSpikeProbe` on an `InterventableModel`). That
 makes Phase 3 (productionization) a matter of *adopting* the library's probes,
 not rewriting them.
 
-### 11.4 `ProbeResult`: one dataclass shape, thirteen producers
+### 11.4 `ProbeResult`: one dataclass shape, several dozen producers
 
 Every probe in §11.2's table currently returns a bespoke `dict`/tuple and
 prints its own ad hoc table. A single shared shape removes that duplication
