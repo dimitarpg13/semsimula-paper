@@ -42,6 +42,32 @@ Secondary set (lower severity, wider spread — useful only if the above four
 don't give a clean read): **81647** (269.6), **82660** (220.5), **81393**
 (173.6).
 
+**Added 2026-09-11 from the §2.6 ratio sweep over 88 archived spikes:
+step 47142** is the strongest register/V_theta decoupling on record
+(ratio 20.03, z=+3.92 — more than twice 87196's 8.59), with **41824**
+(9.05) next. Both predate the later mitigations, so they are a different
+regime, but if the register question survives §2.6 these are the sharpest
+examples available — and step 47116, 26 steps away in the same cluster,
+already has archived `replay_spike_batch` / `attribute_spike_rows` golden
+outputs to compare against.
+
+**Bundle availability, checked 2026-09-11.** The live ring has rotated far
+enough that the oldest surviving archived spikebatch is **step 77,223** —
+everything older is gone, including 70,522 / 71,194 / 71,703 (so the §16
+golden outputs for those steps can no longer be reproduced, only read).
+Of the §1 set:
+
+| step | spikebatch (replayable) | prereload (weights only) |
+|---|---|---|
+| 87196 | **yes** | yes |
+| 90360 | **yes** | yes |
+| 86201 | yes | yes |
+| 85885 | **NO — evicted** | yes |
+
+So **85885 can only be used by `spectrum_across_checkpoints` (§2.2)**; it
+cannot take part in §2.3 / §2.4 / §2.5, which all need the batch and RNG.
+Use 90360 as the `reverse_channel_scale` case for those.
+
 **Weights-only checkpoints** (no batch/RNG, `spectrum_across_checkpoints`
 only, not the `replay_*` ablations):
 - `_best.pt` — whatever the final best is when the run ends (currently step
@@ -121,18 +147,55 @@ bundles rotated out of the ring long ago.
 
 **The discriminator.** In a V_theta-driven cascade `override:register` comes
 out roughly V_theta-sized — that is mechanism B riding mechanism A
-(Mitigations §42). A genuinely register-specific event breaks that
-coupling. Measured over the 10 captures in the 86,500-90,450 window:
+(Mitigations §42). A genuinely register-specific event breaks that coupling.
 
-| | register / V_theta |
+**Calibrated 2026-09-11 against 88 real spikes** (the archived
+`training_log.jsonl`, steps 50–56,300 of this same run). This replaced an
+earlier eyeballed rule that was measured on only 10 hand-transcribed
+captures and turned out to be badly miscalibrated — see the warning below.
+
+| statistic over 88 events | value |
 |---|---|
-| 8 of the 9 measurable events | 0.50 – 1.64 (median of those 8: **0.97**) |
-| **step 87196** | **8.59** — 8.5x the all-event median |
-| step 88147 | register fell below the top-8 cut, so only `< 0.72` is known |
+| median | **0.65** |
+| p75 / p90 / p95 | 1.16 / 2.50 / 2.88 |
+| geometric mean, log-sd | **0.81**, **0.82** |
+| full range | 0.05 – 20.03 |
 
-That tight clustering around ~1.0 is the point: in normal spikes register
-is almost exactly V_theta-sized. **87196 is so far the only event where it
-broke away**, which is why it is the #1 checkpoint in §1.
+The ratio is **log-normally distributed with a fat right tail**, so score it
+in log space:
+
+| threshold | value | events flagged |
+|---|---|---|
+| +2sd | 4.15 | 3 of 88 (3.4%) |
+| +3sd | 9.42 | 1 of 88 (1.1%) |
+
+> **Do not use a multiple of the median.** The rule originally written here
+> — "more than 3x the median" — is *not* an outlier test on this
+> distribution: 3 x 0.65 = 1.95 lands between p75 (1.16) and p90 (2.50), and
+> flagged **12 of 88 events (14%)**. That is the fat tail, not an anomaly.
+
+**What the real data showed:**
+
+| step | reg / V_theta | z |
+|---|---|---|
+| **47142** | **20.03** | **+3.92** — the strongest register decoupling on record |
+| 41824 | 9.05 | +2.95 |
+| 51426 | 4.78 | +2.17 |
+| *87196 (later window)* | *8.59* | *+2.42 against this fit* |
+
+**This weakens the "87196 is the register event" framing.** It is a genuine
+tail event, but it is **not unprecedented** — step 47142 was more than twice
+as extreme, in an earlier regime, and 47116 (26 steps away, same cluster)
+already has archived golden outputs. Treat 87196 as *one* member of a
+recurring tail, not as a unique signature.
+
+**Caveat on regime.** Those 88 events predate three mitigations that landed
+later: `clip_then_sum` (Mitigations §45.4), the `log_tau` clip-group split
+(§49.8, around step 71K) and `NO_DECAY_1D` (§51.4, around step 72K). The central
+tendency did shift — median 0.65 there vs ~1.0 across the 10 captures in
+86,500–90,450 — so **re-fit on the full post-100K log** rather than reusing
+these constants. The log-space method is what carries over; the numbers are
+a baseline, not a law.
 
 ```bash
 python3 ../notebooks/conservative_arch/scaleup/debug/register_vtheta_ratio_sweep.py \
@@ -141,17 +204,18 @@ python3 ../notebooks/conservative_arch/scaleup/debug/register_vtheta_ratio_sweep
 
 ([`register_vtheta_ratio_sweep.py`](../notebooks/conservative_arch/scaleup/debug/register_vtheta_ratio_sweep.py)
 lives in the notebook's own `debug/` folder alongside its sibling diagnostic
-scripts, not next to this note. It de-duplicates steps that emit both a
-`grad_spike` and a `watchdog_hard_reload` record — counting those twice
-skews the median the rule below is measured against.)
+scripts, not next to this note. It fits the log-normal and reports z-scores
+itself, and de-duplicates steps that emit both a `grad_spike` and a
+`watchdog_hard_reload` record — counting those twice skews the fit.)
 
 **Decision rule:**
 
-- **Nothing exceeds 3x the median** → register is V_theta-slaved
-  everywhere, there is no register-specific mechanism, and no register knob
-  worth tuning. Skip the probes below; put the effort into 2.3/2.4.
-- **87196 (± others) exceed it** → those steps *are* the register
-  investigation. Run the probes below on those steps only.
+- **Nothing exceeds +2sd** → register is V_theta-slaved everywhere, there is
+  no register-specific mechanism, and no register knob worth tuning. Skip the
+  probes below; put the effort into 2.3/2.4.
+- **Some events exceed +2sd** → those steps *are* the register
+  investigation. Run the probes below on those steps only, and prefer the
+  highest-z one — which on current evidence may well not be 87196.
 
 **Check this claim while you are here:** §1's table says the register-led
 magnitude is escalating (567.6 → 2169.2 from 86201 to 87196). That rests on
