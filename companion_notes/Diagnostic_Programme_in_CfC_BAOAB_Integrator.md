@@ -242,7 +242,7 @@ flowchart LR
     A1["dc&#95;ratio<br>depth&#95;code vs next group"]
     A2["b&#95;proj&#95;sigma&#95;max<br>sigma&#95;max of W&#95;B per bank"]
     B0["watchdog<br>CAPTURE 200, HARD 500"]
-    B1["&#42;&#95;spikebatch.pt<br>batch + RNG + weights"]
+    B1["&#95;spikebatch.pt bundle<br>batch + RNG + weights"]
     C0["replay&#95;spike&#95;batch<br>per layer + per well forensics"]
     C1["inspect&#95;spike&#95;tokens<br>token degeneracy"]
     C2["attribute&#95;spike&#95;rows<br>per row concentration"]

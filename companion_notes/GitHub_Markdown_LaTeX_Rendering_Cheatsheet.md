@@ -595,6 +595,26 @@ V9["V_theta : R^2d -> R"]
 
 ---
 
+## 14a. `*` inside quoted node labels — the `&#95;`/`&#123;` entity trick does NOT extend to it
+
+The numeric-entity workaround for braces (§14) and underscores (§18/§21) both rely on decoding happening *after* Mermaid's lexer has already run, so the literal glyph only appears once parsing is finished. It is tempting to assume the same trick extends to any problem character — in particular `*`, using `&#42;` to represent an asterisk inside a label, e.g. a glob pattern like `*_spikebatch.pt`. **This is not a confirmed-safe pattern**, and it is not the same failure `&#95;`/`&#123;` fix: those two are explicitly documented here; `&#42;` never was.
+
+Confirmed broken in the wild (2026-09-12): `B1["&#42;&#95;spikebatch.pt<br>batch + RNG + weights"]` produced the standard "Cannot read properties of undefined (reading 'render')" failure, in a label where the underscore entity on its own was already known to be fine.
+
+```text
+%% Bad — &#42; is not a documented-safe entity; confirmed to break
+B1["&#42;&#95;spikebatch.pt<br>batch + RNG + weights"]
+
+%% Good — drop the asterisk. A glob-prefix's wildcard meaning is rarely
+%% load-bearing in a diagram label, and the underscore entity on its own
+%% (already confirmed safe) still works
+B1["&#95;spikebatch.pt bundle<br>batch + RNG + weights"]
+```
+
+**Rule:** only `&#95;` (underscore) and `&#123;`/`&#125;` (braces) are confirmed-safe numeric-entity substitutions for Mermaid node labels. Do not extend the pattern to other punctuation on the assumption that "entities work around this class of bug" — `&#42;` (asterisk) in particular is confirmed broken. If a label needs to convey a glob pattern or wildcard, spell it out in words ("any spikebatch file") or drop the wildcard character; the diagram rarely needs the literal glyph.
+
+---
+
 ## 15. `[...]` square brackets inside quoted node labels — replace with parens
 
 Mermaid uses `[...]` to delimit the *label itself* of a rectangular node: `Node[Label here]`. When the label is quoted (`Node["..."]`) the parser is *supposed* to treat `[` and `]` inside the quotes as literal text, but in practice GitHub's Mermaid version regularly fails on patterns like `["E[x_t]"]` or `["[ξ^1, ξ^2]"]`.
@@ -888,6 +908,7 @@ The same applies to `[`, `]`, `{`, `}` inside pipe labels — none are quoted, s
 | Problem | Symptom | Fix |
 | ------- | ------- | --- |
 | `{...}` inside a quoted node label, e.g. `["v_{l+1}"]` | "Cannot read properties of undefined (reading 'render')" | remove braces; rephrase as `(l+1)` or words |
+| `&#42;` (asterisk entity) inside a quoted node label, e.g. `["&#42;&#95;file.pt"]` | same render error | drop the asterisk / wildcard character; only `&#95;` and `&#123;`/`&#125;` are confirmed-safe entities, not `&#42;` |
 | `[...]` nested inside a quoted node label, e.g. `["E[x_t]"]` | same render error | replace nested brackets with parens or spaces |
 | `subgraph ID ["Title"]` (quotes inside brackets) | same render error | use `subgraph ID [Plain Title]` (no quotes) |
 | `-.text.-` dotted-edge label | same render error | use `-. text .->` (spaces around label, `.->` closing); if label contains `.`, use `-.->|text|` pipe form |
