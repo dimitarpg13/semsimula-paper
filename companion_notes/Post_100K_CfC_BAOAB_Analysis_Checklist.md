@@ -151,14 +151,45 @@ in the companion note's §7.3; now implemented as
 replay_rank_truncation_ablation(87196, ranks=(1, 2, 3, 4))
 ```
 
-Reports, per rank, `relative_force_error` — the relative L2 difference
-between the truncated-rank replay's full parameter-gradient vector and the
-untruncated reference. `rank=4` (the model's own rank) should read ~0 as a
-built-in fidelity check; watch how quickly it grows below that. A small
-error down to rank 1–2 means the top directions carry everything and the
-rest are dead weight (favors dropping rank); an error that keeps growing
-all the way down means the well is genuinely using the whole budget
-functionally, not just geometrically (favors Stage 3 — a rank-8 pilot).
+**Result (A100, 2026-09-13).** `rank=4` reproduced the untruncated
+reference exactly (2539.20, error 0.0000), so the built-in fidelity check
+passes and the harness is sound.
+
+| arm | pre-clip grad norm | ntp | batch PPL |
+|---|---|---|---|
+| untruncated | 2539.20 | 4.3385 | 76.6 |
+| rank = 4 | 2539.20 | 4.3385 | 76.6 |
+| rank = 3 | 2.83 | 4.3808 | 79.9 |
+| rank = 2 | 4.35 | 4.4682 | 87.2 |
+| rank = 1 | 2.87 | 4.6609 | 105.7 |
+
+Two readings, and only the first is about rank.
+
+**On rank:** read the `ntp` column, not `relative_force_error` — the latter
+saturated at 1.0 across all three arms because the gradient collapsed, at
+which point it is fixed by the norm ratio alone and carries no directional
+information. `ntp` orders correctly and shows every direction paying its
+way: discarding even the *smallest* of four costs 4.3% batch perplexity,
+rising to 13.8% and 38.0%. The budget is not idle, consistent with Stage
+1's saturated `pr_p50 = 3.68/4`. This argues against reclaiming parameters
+by cutting rank, and weakly for Stage 3.
+
+**On the spike:** any truncation collapses the gradient from 2539 to about
+3 — a normal, healthy value — for a 4.3% loss cost, and no further with
+deeper truncation. That is threshold behaviour, not attenuation, and it
+would reconcile with §33's finding that σ_max(B_k)² is only +1–24%
+elevated at spike checkpoints. This is now tracked separately in
+[Resonance_Hypothesis_for_Gradient_Spikes_in_the_LowRank_Kick.md](Resonance_Hypothesis_for_Gradient_Spikes_in_the_LowRank_Kick.md),
+which carries the mechanism and its diagnostic programme.
+
+**Caveat — run the control before drawing either conclusion too hard.**
+Truncation confounds removing specific directions with changing `B` by a
+given magnitude. `precision_cap.replay_rank_perturbation_control(ctx,
+87196, ranks=(1, 2, 3))` holds the magnitude and drops the specificity
+(isotropic noise of matched energy, rank left intact). If the spike dies
+under that too, the collapse is generic fragility and says nothing about
+direction. Also note step 87196 is an outlier by construction, so the rank
+question itself wants re-asking at a healthy checkpoint.
 
 ### 2.2 Spectral-collapse test + mechanism comparison
 

@@ -442,6 +442,17 @@ and no amount of additional rank will help; the lever is a **flatness incentive*
 pushes the existing budget to spread) or a **reduction** to rank 2, which would free 11.8M
 parameters.
 
+> **Update (2026-09-13).** Stage 2 has been implemented
+> (`precision_cap.replay_rank_truncation_ablation`) and run at step 87196.
+> It returned a result this stage did not anticipate: *any* truncation
+> collapses the gradient wholesale rather than degrading it, so the force
+> metric cannot report what the tail directions contribute. The loss column
+> still gives a usable reading — each discarded direction costs real
+> perplexity — but the spike behaviour it exposed is tracked in
+> [Resonance_Hypothesis_for_Gradient_Spikes_in_the_LowRank_Kick.md](Resonance_Hypothesis_for_Gradient_Spikes_in_the_LowRank_Kick.md).
+> Run that note's D1 control before reading a Stage 2 result as evidence
+> about rank, and prefer a healthy checkpoint to a spike capture.
+
 **Stage 2 — rank-truncation ablation (cheap, needs one new helper).** PR is a
 *geometric* statistic; it does not say whether the small singular directions
 matter *functionally*. A low PR could still coexist with tail directions that
