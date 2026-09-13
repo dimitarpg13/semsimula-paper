@@ -256,19 +256,33 @@ step 87196 with `ranks=(1, 2, 3)`, matching the truncation run. Minutes, same
 harness, settles F1. Everything below is worth doing only if the spike
 survives matched noise.
 
-**D2. Measure the wall directly.** `lowrank_modes` in `cfc_baoab.py` already
-returns the mode stiffnesses `kappa` for exactly this operator; the quantity
-wanted is $\Delta t \sqrt{\kappa_{\max}}$ per token, per layer. Compare the
-distribution at the spike capture against a healthy checkpoint. The
-prediction is specific: a tail crossing 2 at the spike and nothing near it
-when healthy. This needs no replay, only a forward pass, and it is the
-single most informative measurement available.
+**D2. Measure the wall directly — built.** Implemented as
+`probes.resonance.omega_dt_report` in `semsimula-diag`. It does not use
+`lowrank_modes`, because the full eigendecomposition is exactly what makes
+the exact arm unaffordable: only $\lambda_{\max}(L)$ is needed, and that
+comes from power iteration on $Lv = G(G^\top v)$ — thin matmuls, no
+eigensolver. $G$ is reconstructed by calling `harmonic_terms_lowrank` on
+precisely the $(\xi, h)$ the layer already linearised at, so the model's own
+computation is untouched.
 
-**D2b. Measure cross-well coherence of the tail directions.** Implied by the
+Two properties to keep in mind when reading its output. The estimate is
+**one-sided**: a Rayleigh quotient of an unconverged vector always
+*under*-states $\lambda_{\max}$, so a reading near the wall means "at least
+this large". And the step that matters is the **kick's** $\Delta t$, not the
+half-step handed to `cfc_substep`, since under `baoab_cfc` the low-rank part
+rides the kick — a factor of 2 that would silently halve every number.
+
+Compare the spike capture against a healthy checkpoint; the contrast is the
+result, not either number alone.
+
+**D2b. Measure cross-well coherence of the tail directions — built.**
+Implemented as `probes.resonance.tail_coherence_report`. Implied by the
 coherent-tail mechanism in §3 and not covered by any existing statistic: for
-each layer and channel, take the last right-singular vector of every well's
-$B_k$ and compute the pairwise cosine matrix across wells, or equivalently
-the participation ratio of the 40 tail directions taken together. The
+each layer and channel it takes the weakest $h$-space direction of every
+well's $B_k$ — obtained without a $d \times r$ SVD, as $B v_{\min} / s_{\min}$
+from the $r \times r$ Gram matrix — and reports both the mean pairwise cosine
+across wells and the participation ratio of the stacked tails, which runs
+from 1 (every tail identical) to the well count (mutually orthogonal). The
 prediction is that this coherence is elevated at the spike capture relative
 to a healthy checkpoint, *while per-well participation ratios stay flat*.
 That combination is the signature, and it is a weight-only measurement
@@ -322,6 +336,22 @@ steps that need it. `lowrank_max_modes` and `lowrank_layers` exist and were
 measured as insufficient for making the arm affordable across *all* steps;
 they were never evaluated as a *conditional* mechanism gated on a measured
 $\omega \Delta t$.
+
+A gate needs a threshold, and a threshold needs the distribution, which is
+why `probes.resonance.observe` exists as a context manager: wrapping a
+training step in it logs $\omega \Delta t$ without changing anything the
+model does. Running the next training run with observe-only logging every few
+hundred steps costs almost nothing and makes that run informative about this
+question even if no mitigation is ready.
+
+Note also what the mitigation should target. The experiment that prompted
+this note removed each well's *weakest* direction, but doing that on every
+step would be a permanent capability tax — it cost 4.3% batch perplexity at
+step 87196, and the `ntp` column shows every direction carrying real signal,
+so an unconditional version is just a rank-3 model paying rank-4 parameter
+costs. The principled intervention is conditional and aimed at the
+*collective* top mode of $L$, the thing actually over the wall, rather than
+at a per-well direction that reaches it only indirectly.
 
 That is speculation until D1 and D2 are done. It is recorded here so that
 the measurement is made with the question in view.
