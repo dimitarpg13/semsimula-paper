@@ -116,7 +116,7 @@ integrator note. The diagonal part is integrated **exactly** by the
 closed-form harmonic propagator and carries no stability constraint. The
 off-diagonal part,
 
-$$L = \sum_k g_k B_k B_k^\top, \qquad g_k = w_k \exp\left(-\frac{1}{2} e_k\right),$$
+$$\mathcal{L} = \sum_k g_k B_k B_k^\top, \qquad g_k = w_k \exp\left(-\frac{1}{2} e_k\right),$$
 
 is integrated as an **explicit kick**. Explicit integration of a harmonic
 mode of frequency $\omega$ at step $\Delta t$ is stable only while
@@ -124,9 +124,9 @@ mode of frequency $\omega$ at step $\Delta t$ is stable only while
 $$\omega \Delta t \lt 2,$$
 
 and the relevant frequencies are $\omega_i = \sqrt{\lambda_i}$ for the
-eigenvalues $\lambda_i$ of $L$. So the governing quantity is
+eigenvalues $\lambda_i$ of $\mathcal{L}$. So the governing quantity is
 
-$$\omega_{\max} \Delta t = \Delta t \sqrt{\lambda_{\max}(L)}.$$
+$$\omega_{\max} \Delta t = \Delta t \sqrt{\lambda_{\max}(\mathcal{L})}.$$
 
 This is a hard threshold. Below it the mode oscillates and the kick is
 merely inaccurate; above it the mode amplifies geometrically, once per
@@ -173,7 +173,7 @@ carry $\omega \Delta t$ from 1.95 to 2.05 and flip stability. Correlation
 between spike size and curvature size is then expected to be poor, which is
 what §33 measured.
 
-**It explains why removing the smallest direction is enough.** $\lambda_{\max}(L)$
+**It explains why removing the smallest direction is enough.** $\lambda_{\max}(\mathcal{L})$
 is the top eigenvalue of a *sum* over $K = 8$ wells and $n_c = 5$ channels —
 up to 160 rank-one contributions in a $d = 384$ space. The relevant quantity
 is therefore not any single well's spectrum but the alignment structure of
@@ -191,7 +191,7 @@ truncating each well by one direction does.
 
 A synthetic construction at the deployed shape puts numbers on the gap. With
 independent wells, truncating rank 4 to rank 3 costs 4% of
-$\lambda_{\max}(L)$ — the gentle, proportional loss one would expect. With a
+$\lambda_{\max}(\mathcal{L})$ — the gentle, proportional loss one would expect. With a
 coherent tail it costs **56%**, and the curve then flattens, with ranks 2 and
 1 taking it only a little further. That shape — one cliff, then a floor — is
 the shape the measured gradient column has, and nothing in the construction
@@ -242,7 +242,7 @@ run. It should be run first.**
 
 **F2. No token or layer is over the wall. — THIS IS WHAT HAPPENED (§5).**
 If a direct measurement of
-$\Delta t \sqrt{\lambda_{\max}(L)}$ at the spike checkpoint finds nothing
+$\Delta t \sqrt{\lambda_{\max}(\mathcal{L})}$ at the spike checkpoint finds nothing
 near 2, the mechanism is simply absent and the hypothesis is dead.
 
 **F3. The transition is smooth, not sharp.** Not reached: F2 fired first,
@@ -254,10 +254,10 @@ Three alternatives to keep live:
 
 - **A1. Generic fragility.** The spike is sensitive to any perturbation of
   $V_\theta$, with no threshold involved. F1 addresses this.
-- **A2. Occupancy reshuffling.** Truncation changes $B_k$, hence the
+- **A2. Well-weight reshuffling.** Truncation changes $B_k$, hence the
   exponent $e_k$, hence $g_k$ — so which wells are active shifts, and the
-  spike may be a property of one particular occupancy pattern rather than of
-  stiffness. Distinguishable by recording $g_k$ occupancy alongside each arm
+  spike may be a property of one particular well-weight pattern rather than
+  of stiffness. Distinguishable by recording the $g_k$ distribution beside each arm
   and checking whether the defused arms differ in *which* wells fire.
 - **A3. Something outside the well potential.** The spike is genuinely a
   register or
@@ -310,10 +310,10 @@ is
 $$g_k = w_k \exp\left(-\frac{1}{2} e_k\right),$$
 
 and the exponent $e_k$ contains the low-rank term, so truncating $B_k$
-**lowers the exponent and raises the occupancy**.
-Less curvature per well, but more wells firing harder, and here occupancy
+**lowers the exponent and raises the well weight**.
+Less curvature per well, but every well firing harder, and here the weight
 wins. A rank truncation is therefore not a clean "less curvature"
-intervention on $L$ at all — the two effects compete, and which one
+intervention on $\mathcal{L}$ at all — the two effects compete, and which one
 dominates is an empirical matter rather than something to be assumed.
 
 ### 5.4 There is no coherent tail
@@ -343,9 +343,21 @@ one candidate explanation, and it removes the specifically *structural* one —
 the appeal of the resonance account was that it was a property of the
 integrator rather than an accident of one step, and that is now excluded.
 
-Of the alternatives in §4, **A2 (occupancy reshuffling)** is considerably
+Of the alternatives in §4, **A2 (well-weight reshuffling)** is considerably
 more plausible than it was: §5.3 shows directly that truncating $B_k$ moves
-the well weights $g_k$, which is the mechanism A2 names. **A1 (generic
+the well weights $g_k$, which is the mechanism A2 names.
+
+A terminology caution, since the two are easy to run together and this note
+originally did. The weight $g_k$ — defined in §3 — is a per-well,
+*unnormalised* value at a single token. "Exponent occupancy" already means
+something else in these notes — `live_frac`, the fraction of token-slots per
+bank whose exponent clears an underflow cutoff, measured in
+`CfC_BAOAB_Integrator_and_Mitigations.md` §39.3. That is a count over a
+population, not a weight. Both derive from $e_k$, and neither is the
+normalised *responsibility* of the log-sum-exp quadratic family. All three
+are now defined and contrasted in
+`deep_dives/Structured_Scalar_Potential_Design_and_Theory.docx`, under
+"Three weights that are easy to confuse". **A1 (generic
 fragility)** remains untested, and D1 is still the experiment that
 distinguishes them.
 
@@ -363,8 +375,8 @@ survives matched noise.
 **D2. Measure the wall directly — done, negative (§5.1).** Implemented as
 `probes.resonance.omega_dt_report` in `semsimula-diag`. It does not use
 `lowrank_modes`, because the full eigendecomposition is exactly what makes
-the exact arm unaffordable: only $\lambda_{\max}(L)$ is needed, and that
-comes from power iteration on $Lv = G(G^\top v)$ — thin matmuls, no
+the exact arm unaffordable: only $\lambda_{\max}(\mathcal{L})$ is needed, and that
+comes from power iteration on $\mathcal{L} v = G(G^\top v)$ — thin matmuls, no
 eigensolver. $G$ is reconstructed by calling `harmonic_terms_lowrank` on
 precisely the $(\xi, h)$ the layer already linearised at, so the model's own
 computation is untouched.
@@ -439,7 +451,7 @@ currently what bounds this configuration, and arguments resting on its
 tightness need re-examining.
 
 **A measurement that stays cheap.** `probes.resonance` computes
-$\lambda_{\max}(L)$ by power iteration on $Lv = G(G^\top v)$, so the wall
+$\lambda_{\max}(\mathcal{L})$ by power iteration on $\mathcal{L} v = G(G^\top v)$, so the wall
 can be monitored during training for a small fraction of what the exact
 low-rank arm costs. `observe()` logs it without altering the model. That is
 worth keeping switched on: the headroom measured here is a property of *this*
@@ -447,10 +459,10 @@ configuration, and a rank-8 pilot or a longer schedule could consume it
 without anything else giving warning.
 
 **A caution about rank truncation as an instrument.** §5.3 showed that
-truncating $B_k$ raises well occupancy $g_k$, because the truncated
+truncating $B_k$ raises the well weight $g_k$, because the truncated
 directions were contributing to the exponent that suppresses it. Any
 experiment that truncates $B$ is therefore changing two things at once, and
-the occupancy term can dominate. That applies to the Stage 2 ablation in the
+the weight term can dominate. That applies to the Stage 2 ablation in the
 rank-selection note as much as it does here.
 
 **What does not survive** is the mitigation sketch this section previously

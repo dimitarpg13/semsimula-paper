@@ -456,7 +456,7 @@ parameters.
 > One measured caveat for this stage specifically: truncating $B_k$ *raises*
 > the well weight $g_k$, because the discarded directions were contributing
 > to the exponent that suppresses it. A rank truncation therefore changes
-> curvature and occupancy together, and the occupancy term can dominate — so
+> curvature and the well weight together, and the weight term can dominate — so
 > a Stage 2 reading is not a clean measurement of what the tail directions
 > contribute geometrically.
 
