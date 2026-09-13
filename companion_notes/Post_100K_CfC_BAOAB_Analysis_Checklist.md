@@ -177,10 +177,15 @@ by cutting rank, and weakly for Stage 3.
 **On the spike:** any truncation collapses the gradient from 2539 to about
 3 — a normal, healthy value — for a 4.3% loss cost, and no further with
 deeper truncation. That looked like threshold behaviour, and was tracked as a resonance
-hypothesis — **now refuted by direct measurement (2026-09-13): the stiffest
-low-rank mode sits at ωΔt ≈ 1.50 against a wall at 2, with 0.000% of tokens
-crossing in any capture.** The 900x collapse is still unexplained; what is
-ruled out is that it is a stability-wall crossing. Full result in
+hypothesis — **now refuted, and the actual cause established
+(2026-09-13): a spike is a conjunction between one microbatch and the
+routing draw it receives.** Resetting the RNG per microbatch collapses
+every captured spike to baseline (87196: 2539→2.71; 86201: 686→1.19;
+90360: 567→2.15), and 20 alternative draws on the spiking batch all land
+160x below the real one. Containment (clip + watchdog) is therefore the
+correct response and the rank question is decoupled from spikes entirely.
+See [Gradient_Spikes_as_Routing_Conjunctions.md](Gradient_Spikes_as_Routing_Conjunctions.md).
+The superseded resonance analysis is in
 [Resonance_Hypothesis_for_Gradient_Spikes_in_the_LowRank_Kick.md](Resonance_Hypothesis_for_Gradient_Spikes_in_the_LowRank_Kick.md),
 which carries the mechanism and its diagnostic programme.
 

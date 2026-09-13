@@ -1,18 +1,20 @@
 # Resonance, Not Magnitude: a Threshold Hypothesis for Gradient Spikes in the Low-Rank Kick
 
-**Status: FALSIFIED, 2026-09-13.** The mechanism proposed here is not
-present. Direct measurement (§5) finds the stiffest low-rank mode at
-$\omega \Delta t = 1.50$ against a wall at 2, with **0.000%** of tokens
-crossing it in any capture; the quantity does not track spike magnitude;
-truncation moves it the wrong way; and the coherent tail the explanation
-required is absent. Three independent legs, all failing.
+**Status: FALSIFIED, 2026-09-13. Superseded by
+[Gradient_Spikes_as_Routing_Conjunctions.md](Gradient_Spikes_as_Routing_Conjunctions.md),
+which establishes the actual cause.**
 
-The note is kept because the reasoning was sound and the refutation is
-worth more than the hypothesis was. §1's observation — a 900x gradient
-collapse costing 4.3% perplexity — is still unexplained, and §5 narrows
-what can explain it. Read §1 and §5; treat §2, §3 and the accompanying
-figures as the rejected account and the argument that motivated testing
-it.
+The mechanism proposed here is not present. Direct measurement (§5) finds
+the stiffest low-rank mode at $\omega \Delta t = 1.50$ against a wall at
+2, with **0 of 32** (microbatch, layer) cells crossing it; the quantity
+does not track spike magnitude; truncation moves it the wrong way; and the
+coherent tail the explanation required is absent.
+
+The answer turned out to be that a spike is a **conjunction** between one
+microbatch and the routing draw it receives — neither sufficient alone,
+and resetting the RNG per microbatch collapses every captured spike to
+baseline. That is written up in the note above. Read this one only for the
+refutation itself, which is recorded in §4 and §5 and remains valid.
 
 ---
 
