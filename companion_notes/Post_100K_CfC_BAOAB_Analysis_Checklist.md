@@ -123,21 +123,42 @@ only, not the `replay_*` ablations):
 > anything else here; its result decides whether the register branch is
 > worth any of the work below.
 
-### 2.1 Rank decision (free, no bundle needed)
+### 2.1 Rank decision (free, no bundle needed) — **done, 2026-09-13**
 
 ```python
 spectrum_across_checkpoints()   # defaults to _best.pt
 ```
 
-Read `fro_p50` first — confirms the Frobenius cap is actually binding
-(should sit near `sqrt(precision_lr_max) = 1.0`). If it doesn't, stop: the
-rank argument below doesn't apply yet.
+**Result, at the final `_best.pt` (step 96,000):**
 
-Then read `pr_p50` (participation ratio, out of rank=4):
-- **≥ 3.0** → budget saturated, rank 8 has a real case
-- **≤ 2.0** → budget unused, rank 8 would be wasted params — prefer a
-  flatness incentive or drop to rank 2 instead
-- **2.0–3.0** → ambiguous, weigh against step 2.2 below
+| statistic | value | reading |
+|---|---|---|
+| `fro_p50` | 0.9999999814 | cap binding almost exactly at `sqrt(precision_lr_max)=1.0` — Stage 0 passes cleanly |
+| `pr_p50` | 3.68 / 4 | **saturated** (≥3.0) |
+| `pr_p05` | 2.50 | already past the "unused" floor |
+| `pr_p95` | 3.91 | at the ceiling |
+
+Unambiguous: the whole p05–p95 band sits in the saturated zone, not just
+the median. Essentially identical to the reading at step 87196
+(`fro_p50≈0.99999997`, `pr_p50≈3.678`) — this has been a stable, saturated
+regime since at least the mid-90K-step mark, not a spike-time artifact.
+
+**Stage 2 — rank-truncation ablation, built 2026-09-13** (was `PROPOSED`
+in the companion note's §7.3; now implemented as
+`precision_cap.replay_rank_truncation_ablation`):
+
+```python
+replay_rank_truncation_ablation(87196, ranks=(1, 2, 3, 4))
+```
+
+Reports, per rank, `relative_force_error` — the relative L2 difference
+between the truncated-rank replay's full parameter-gradient vector and the
+untruncated reference. `rank=4` (the model's own rank) should read ~0 as a
+built-in fidelity check; watch how quickly it grows below that. A small
+error down to rank 1–2 means the top directions carry everything and the
+rest are dead weight (favors dropping rank); an error that keeps growing
+all the way down means the well is genuinely using the whole budget
+functionally, not just geometrically (favors Stage 3 — a rank-8 pilot).
 
 ### 2.2 Spectral-collapse test + mechanism comparison
 
@@ -337,9 +358,13 @@ replay_integrator_ablation(87196, lowrank_layers=frozenset({0, 1, 2}))
 - **The two disagree** (ratio flags 87196 but the cap collapses it anyway,
   or vice versa) → trust the cap ablation: it is causal (re-runs the step
   under a changed constraint), the ratio is only correlational.
-- **2.1's rank verdict** feeds directly into whether the joint-coupling
-  pilot (already built, `K=8` parameter-matched) should also carry a rank
-  change, or whether rank should be left alone and only coupling tested.
+- **2.1's rank verdict is in: saturated** (`pr_p50=3.68/4`, `pr_p05=2.50`).
+  The rank-truncation ablation (also §2.1) is the tie-breaker on whether
+  that's functionally real: if `relative_force_error` stays near 0 well
+  below rank 4, the saturation is geometric only and rank should stay at 4
+  (or drop); if it grows steadily down to rank 1, the joint-coupling pilot
+  (already built, `K=8` parameter-matched) should carry a rank increase
+  too, not just the coupling change.
 
 ---
 
