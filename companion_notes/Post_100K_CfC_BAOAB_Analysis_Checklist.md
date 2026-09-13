@@ -176,9 +176,11 @@ by cutting rank, and weakly for Stage 3.
 
 **On the spike:** any truncation collapses the gradient from 2539 to about
 3 — a normal, healthy value — for a 4.3% loss cost, and no further with
-deeper truncation. That is threshold behaviour, not attenuation, and it
-would reconcile with §33's finding that σ_max(B_k)² is only +1–24%
-elevated at spike checkpoints. This is now tracked separately in
+deeper truncation. That looked like threshold behaviour, and was tracked as a resonance
+hypothesis — **now refuted by direct measurement (2026-09-13): the stiffest
+low-rank mode sits at ωΔt ≈ 1.50 against a wall at 2, with 0.000% of tokens
+crossing in any capture.** The 900x collapse is still unexplained; what is
+ruled out is that it is a stability-wall crossing. Full result in
 [Resonance_Hypothesis_for_Gradient_Spikes_in_the_LowRank_Kick.md](Resonance_Hypothesis_for_Gradient_Spikes_in_the_LowRank_Kick.md),
 which carries the mechanism and its diagnostic programme.
 

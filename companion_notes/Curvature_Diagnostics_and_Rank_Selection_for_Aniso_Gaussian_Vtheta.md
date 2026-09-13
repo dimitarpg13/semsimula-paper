@@ -452,6 +452,13 @@ parameters.
 > [Resonance_Hypothesis_for_Gradient_Spikes_in_the_LowRank_Kick.md](Resonance_Hypothesis_for_Gradient_Spikes_in_the_LowRank_Kick.md).
 > Run that note's D1 control before reading a Stage 2 result as evidence
 > about rank, and prefer a healthy checkpoint to a spike capture.
+>
+> One measured caveat for this stage specifically: truncating $B_k$ *raises*
+> the well weight $g_k$, because the discarded directions were contributing
+> to the exponent that suppresses it. A rank truncation therefore changes
+> curvature and occupancy together, and the occupancy term can dominate — so
+> a Stage 2 reading is not a clean measurement of what the tail directions
+> contribute geometrically.
 
 **Stage 2 — rank-truncation ablation (cheap, needs one new helper).** PR is a
 *geometric* statistic; it does not say whether the small singular directions
