@@ -1,8 +1,13 @@
 # Post-100K analysis checklist — CfC/BAOAB d384 run
 
-Personal working note, not for publication. What to run once the current
-100,000-step run (`fock_cfc_owt_..._baoab_cfc`) finishes, before deciding on
-the joint-coupling/QK-norm pilot vs. continuing the additive arm.
+Personal working note, not for publication. What to run now that the
+100,000-step run (`fock_cfc_owt_..._baoab_cfc`) has finished, before deciding
+on the joint-coupling/QK-norm pilot vs. continuing the additive arm.
+
+**Run finished 2026-09-12.** Best PPL **81.92 at step 96,000** (`_best.pt`).
+Final health checks clean: causal probe `[PASS]` (max|dlogit|=0), trained
+leak probe `[CLEAN]` (honest PPL 53.59 vs. standard 51.14, diff +0.0469
+nats — consistent with the +0.0136 nats seen at step 90,000, not a drift).
 
 Full background lives alongside this file in `companion_notes/`:
 [`Diagnostic_Programme_in_CfC_BAOAB_Integrator.md`](Diagnostic_Programme_in_CfC_BAOAB_Integrator.md) §17,
@@ -13,7 +18,7 @@ Full background lives alongside this file in `companion_notes/`:
 
 ## 0. Before running anything
 
-- **Run only after the run ends** — don't interrupt it for this.
+- **The run has finished** — this is safe to run in a fresh session now.
 - **Notebook cell order**: run Cell 0 → 1 → 1b → 1c → 2 → 3 → 4 → 5 → 6d →
   6b → 6b-2 → 6b-3 → 6b-4, in that order. **Skip Cell 6** (training loop) —
   none of this needs it. Cell 1c also re-syncs the archive on this fresh
@@ -31,49 +36,83 @@ Full background lives alongside this file in `companion_notes/`:
 
 ## 1. Priority checkpoints
 
+**Tier A — the original set** (from the 83K-90K window, all GPU-verified
+for replay fidelity on the A100: 0.0002%/0.0003% for 87196/90360 via
+`layer_profile.replay_spike_batch`):
+
 | step | pre-clip grad | leading group | why it matters |
 |---|---|---|---|
-| **87196** | 2539.2 | `register` (85% of total) | most extreme event on record; `register`-led magnitude is **growing** (567.6 → 2169.2, 3.8x, vs step 86201) |
+| **87196** | 2539.2 | `register` (85% of total) | most extreme event **in this window**; register/V_theta ratio 8.59 |
 | **85885** | 2090.8 | `reverse_channel_scale` | most extreme `reverse_channel_scale`-led event |
 | **90360** | 567.3 | `reverse_channel_scale` | same mechanism as 85885, but **shrinking** (2014.1 → 490.8) — the contrast case |
-| **86201** | 685.6 | `register` | first of the register-led pair; use alongside 87196 for the escalation check |
+| **86201** | 685.6 | `register` | register-led; use alongside 87196 |
 
-Secondary set (lower severity, wider spread — useful only if the above four
+**Tier B — the late-run register cluster (new, 2026-09-12).** Four
+register-decoupled events inside a ~1,300-step span (95068 → 96410) — the
+densest such clustering seen anywhere in the run, versus isolated single
+events everywhere else. Ratios below are **manually computed from pasted
+log excerpts**, not yet from a full-log sweep — see the note in §2.6 about
+re-running the sweep on the complete `training_log.jsonl` before treating
+these as final:
+
+| step | pre-clip grad | register | V_theta | ratio | note |
+|---|---|---|---|---|---|
+| **95068** | 418.8 | 311.6 | 50.1 | **6.22** | opens the cluster |
+| **95091** | 216.2 | 148.5 | 35.9 | **4.14** | |
+| **95280** | 659.8 | 527.8 | 75.3 | **7.01** | **also the hard-trigger event** (only hard-trigger after 87196-era) |
+| **96410** | 129.8 | 96.3 | 14.4 | **6.69** | **at risk — see below** |
+
+**Secondary set** (lower severity, wider spread — useful only if Tier A/B
 don't give a clean read): **81647** (269.6), **82660** (220.5), **81393**
 (173.6).
 
-**Added 2026-09-11 from the §2.6 ratio sweep over 88 archived spikes:
-step 47142** is the strongest register/V_theta decoupling on record
-(ratio 20.03, z=+3.92 — more than twice 87196's 8.59), with **41824**
-(9.05) next. Both predate the later mitigations, so they are a different
-regime, but if the register question survives §2.6 these are the sharpest
-examples available — and step 47116, 26 steps away in the same cluster,
-already has archived `replay_spike_batch` / `attribute_spike_rows` golden
-outputs to compare against.
+**From the §2.6 ratio sweep over the first 88 archived spikes (steps
+50–56,300 only): step 47142** is the strongest register/V_theta decoupling
+found so far (ratio 20.03, z=+3.92 — more than twice 87196's 8.59), with
+**41824** (9.05) next. Both predate `clip_then_sum`/`NO_DECAY_1D`, so they
+are a different regime, but if the register question survives §2.6 these
+are the sharpest examples available — and step 47116, 26 steps away in the
+same cluster, already has archived `replay_spike_batch` /
+`attribute_spike_rows` golden outputs to compare against. **These 88
+events are a small prefix of the finished run — re-running the sweep on
+the complete log (§2.6) will very likely surface a sharper picture than
+either this fit or the Tier B ratios above.**
 
-**Bundle availability, checked 2026-09-11.** The live ring has rotated far
-enough that the oldest surviving archived spikebatch is **step 77,223** —
-everything older is gone, including 70,522 / 71,194 / 71,703 (so the §16
-golden outputs for those steps can no longer be reproduced, only read).
-Of the §1 set:
+**Bundle availability, cross-checked against the actual archive contents,
+2026-09-12 (run finished).** The live ring evicted everything before step
+77,223 — including 70,522/71,194/71,703, so the §16 golden outputs for
+those steps can no longer be reproduced, only read. Of the checkpoints
+above:
 
 | step | spikebatch (replayable) | prereload (weights only) |
 |---|---|---|
-| 87196 | **yes** | yes |
-| 90360 | **yes** | yes |
+| 87196 | yes | yes |
+| 90360 | yes | yes |
 | 86201 | yes | yes |
 | 85885 | **NO — evicted** | yes |
+| 95068 | yes | no |
+| 95091 | yes | no |
+| 95280 | yes | **yes** (in `prereload_archive/`, confirmed) |
+| **96410** | **NOT ARCHIVED** | n/a |
+| 74870 | n/a | yes (prereload only; unexamined — no `top_groups` on record for it) |
+
+**96410 is genuinely at risk.** Its pre-clip norm (129.8) never cleared the
+`ARCHIVE_MIN_GRAD_NORM = 200.0` auto-archive gate, so it was never copied
+out of the live ring. If the Colab runtime is still warm, check
+`checkpoints/` directly for `..._step96410_spikebatch.pt` and copy it to
+`spikebatch_archive/` by hand; if the runtime has already recycled, it's
+gone, and the Tier B analysis proceeds on the other three.
 
 So **85885 can only be used by `spectrum_across_checkpoints` (§2.2)**; it
 cannot take part in §2.3 / §2.4 / §2.5, which all need the batch and RNG.
-Use 90360 as the `reverse_channel_scale` case for those.
+Use 90360 (or a Tier B member) as the `reverse_channel_scale` case for
+those.
 
 **Weights-only checkpoints** (no batch/RNG, `spectrum_across_checkpoints`
 only, not the `replay_*` ablations):
-- `_best.pt` — whatever the final best is when the run ends (currently step
-  83,000 / PPL 82.87, may improve further before 100K).
-- `_prereload.pt` for 85885 / 86201 / 87196 / 90360 (same step numbers,
-  saved automatically at each hard-trigger).
+- `_best.pt` — **final, step 96,000, PPL 81.92.**
+- `_prereload.pt` for 74870 / 85885 / 86201 / 87196 / 90360 / 95280 (same
+  step numbers, saved automatically at each hard-trigger).
 
 ---
 
@@ -103,28 +142,31 @@ Then read `pr_p50` (participation ratio, out of rank=4):
 ### 2.2 Spectral-collapse test + mechanism comparison
 
 ```python
-spectrum_across_checkpoints(step_tags=(87196, 85885, 90360))
+spectrum_across_checkpoints(step_tags=(87196, 85885, 90360, 95068, 95091, 95280))
 ```
 
-Does PR drop (spectral collapse) at the spike bundles vs. `_best.pt`? Does
-it drop differently for the escalating (`register`) vs. non-escalating
-(`reverse_channel_scale`) mechanism?
+Does PR drop (spectral collapse) at the spike bundles vs. the final
+`_best.pt` (step 96,000)? Does it drop differently for the register-led
+events (87196, and the Tier B cluster) vs. the `reverse_channel_scale`-led
+ones (85885, 90360)?
 
 ### 2.3 Precision cap ablation — does capping the low-rank channel alone collapse it?
 
 ```python
-for s in (87196, 85885, 90360, 86201):
+for s in (87196, 85885, 90360, 86201, 95068, 95091, 95280):
     replay_precision_cap_ablation(s, budgets=(1.0, 0.25, 0.1, None))
 ```
 
 `1.0` is the as-trained baseline (fidelity check: should match the
 recorded pre-clip norm almost exactly). Watch `vtheta_exponent_min` too,
-not just the collapsed norm — that's the un-saturation read.
+not just the collapsed norm — that's the un-saturation read. If 96410 was
+rescued per §1, add it here too — it's the cleanest single-mechanism case
+in the Tier B cluster.
 
 ### 2.4 Curvature rebalance — diagonal vs. low-rank channel
 
 ```python
-for s in (87196, 85885, 90360):
+for s in (87196, 85885, 90360, 95068, 95280):
     replay_curvature_rebalance_ablation(s)
     # sweeps precision_max x precision_lr_max, default grids
 ```
@@ -132,7 +174,7 @@ for s in (87196, 85885, 90360):
 ### 2.5 Classify each event (smooth cascade vs. localized blow-up)
 
 ```python
-for s in (87196, 85885, 90360, 86201):
+for s in (87196, 85885, 90360, 86201, 95068, 95091, 95280):
     replay_spike_batch(s)
 ```
 
@@ -153,6 +195,16 @@ out roughly V_theta-sized — that is mechanism B riding mechanism A
 `training_log.jsonl`, steps 50–56,300 of this same run). This replaced an
 earlier eyeballed rule that was measured on only 10 hand-transcribed
 captures and turned out to be badly miscalibrated — see the warning below.
+
+**Re-run this now that the run is finished.** The fit below covers only
+the first 56,300 of 100,000 steps and predates `clip_then_sum`/
+`NO_DECAY_1D` (see the regime caveat further down) — it is not the right
+distribution to score the Tier B cluster (§1) against. The manually
+computed ratios for 95068/95091/95280/96410 are a strong hint, not a
+verified z-score. Re-running
+`register_vtheta_ratio_sweep.py` against the **complete** final
+`training_log.jsonl` gives the authoritative fit and should be the actual
+first thing run in this section, ahead of everything below it.
 
 | statistic over 88 events | value |
 |---|---|
@@ -215,7 +267,10 @@ itself, and de-duplicates steps that emit both a `grad_spike` and a
   probes below; put the effort into 2.3/2.4.
 - **Some events exceed +2sd** → those steps *are* the register
   investigation. Run the probes below on those steps only, and prefer the
-  highest-z one — which on current evidence may well not be 87196.
+  highest-z one — which on current evidence may well not be 87196: the
+  Tier B cluster (95068/95091/95280/96410, §1) is denser than any single
+  earlier event and should re-rank near the top once scored against the
+  full-run fit.
 
 **Check this claim while you are here:** §1's table says the register-led
 magnitude is escalating (567.6 → 2169.2 from 86201 to 87196). That rests on
@@ -223,13 +278,17 @@ raw magnitude alone — V_theta for 86201 was never recorded in the pasted
 window, so its ratio is unknown. If 86201 comes back near ~1.0, then it was
 an ordinary V_theta cascade, 87196 is a lone outlier rather than the second
 point of a trend, and the "escalating register mechanism" reading is wrong.
+The Tier B cluster is independent evidence either way: four events in
+1,300 steps is a *frequency* signal, not just a magnitude one, and doesn't
+depend on how 86201/87196 resolve.
 
 **Then, only for the steps the ratio flagged**, read across registers —
 not rows (§49.4's lesson, don't repeat the row-axis mistake):
 
 ```python
-probe_gate_saturation(87196)
-attribute_spike_rows(87196)   # caveat: unreliable on chronic mechanism-A
+for s in (87196, 95068, 95091, 95280):
+    probe_gate_saturation(s)
+attribute_spike_rows(95280)   # caveat: unreliable on chronic mechanism-A
                                # events, SS41.5 — ranking survives, magnitude doesn't
 ```
 
