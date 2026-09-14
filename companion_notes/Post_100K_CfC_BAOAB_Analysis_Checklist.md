@@ -228,7 +228,7 @@ under that too, the collapse is generic fragility and says nothing about
 direction. Also note step 87196 is an outlier by construction, so the rank
 question itself wants re-asking at a healthy checkpoint.
 
-### 2.2 Spectral-collapse test + mechanism comparison
+### 2.2 Spectral-collapse test + mechanism comparison — **done, 2026-09-13, negative**
 
 ```python
 spectrum_across_checkpoints(step_tags=(87196, 85885, 90360, 95068, 95091, 95280))
@@ -239,7 +239,28 @@ Does PR drop (spectral collapse) at the spike bundles vs. the final
 events (87196, and the Tier B cluster) vs. the `reverse_channel_scale`-led
 ones (85885, 90360)?
 
-### 2.3 Precision cap ablation — does capping the low-rank channel alone collapse it?
+**Result:** `85885` is confirmed gone -- evicted from the live ring and not
+in the archive; no measurement possible. Concentration ($3.96 - \mathrm{pr\_p50}$,
+against the random-init null established the same day) at the remaining five:
+
+| checkpoint | fro_p50 | pr_p50 | concentration |
+|---|---|---|---|
+| BEST (step 96000) | 1.0000 | 3.681 | 0.279 |
+| spikebatch 87196 | 1.0000 | 3.682 | 0.278 |
+| spikebatch 90360 | 1.0000 | 3.687 | 0.273 |
+| spikebatch 95068 | 1.0000 | 3.687 | 0.273 |
+| spikebatch 95091 | 1.0000 | 3.688 | 0.272 |
+| spikebatch 95280 | 1.0000 | 3.687 | 0.273 |
+
+Flat to 0.007 across every spike bundle and BEST -- if anything, spike-time
+concentration reads marginally *below* BEST, the opposite of what spectral
+collapse predicts. **No spectral collapse at any spike bundle tested.**
+Second independent confirmation (after the per-mb-layer wall/stiffness
+measurement) that $V_\theta$ curvature is unremarkable at these events, both
+consistent with
+[Gradient_Spikes_as_Routing_Conjunctions.md](Gradient_Spikes_as_Routing_Conjunctions.md).
+
+### 2.3 Precision cap ablation — does capping the low-rank channel alone collapse it? — **done, 2026-09-13**
 
 ```python
 for s in (87196, 85885, 90360, 86201, 95068, 95091, 95280):
@@ -247,10 +268,71 @@ for s in (87196, 85885, 90360, 86201, 95068, 95091, 95280):
 ```
 
 `1.0` is the as-trained baseline (fidelity check: should match the
-recorded pre-clip norm almost exactly). Watch `vtheta_exponent_min` too,
-not just the collapsed norm — that's the un-saturation read. If 96410 was
-rescued per §1, add it here too — it's the cleanest single-mechanism case
-in the Tier B cluster.
+recorded pre-clip norm almost exactly). `vtheta_exponent_min` was not
+carried into the `semsimula_diag` port of this probe, so the
+un-saturation read below comes from a separate follow-up (see the note
+at the end of this subsection) rather than from this call directly. 85885
+is confirmed gone (§2.2); 96410 was never rescued and is not included.
+
+**Result: every arm collapses the event, in both directions, at all six
+measured steps.**
+
+| step | recorded | @1.0 (fidelity) | @0.25 | @0.1 | uncapped |
+|---|---|---|---|---|---|
+| 87196 | 2539.2 | 2539.2 (exact) | 6.22 | 4.42 | 18.91 |
+| 90360 | 567.3 | 567.3 (exact) | 5.12 | 5.52 | 11.12 |
+| 86201 | 685.6 | 685.6 (exact) | 3.93 | 4.07 | 12.96 |
+| 95068 | 418.8 | 418.8 (exact) | 6.17 | 4.96 | 9.68 |
+| 95091 | 216.2 | 216.2 (exact) | 5.58 | 5.60 | 8.53 |
+| 95280 | 659.8 | 659.8 (exact) | 4.00 | 7.73 | 34.54 |
+
+Fidelity exact at all six (recorded = replayed@1.0 to the decimal, every
+step). Reduction is **97.4-99.8%** in every arm, including the *uncapped*
+one — tightening the cap and removing it entirely both destroy the event.
+This was not the predicted outcome: $V_\theta$ is only ~10% of
+`top_groups` at these steps, so a modest, roughly-proportional reduction
+was expected. The actual result says the shared trajectory $h$, not
+$V_\theta$'s own parameter gradient, is the channel through which this
+propagates to `register`/`depth_code`/`creation_gate` — $V_\theta$'s
+curvature is a sensitive knob on the trajectory even though it carries
+little of the gradient mass itself.
+
+**The two directions are not the same mechanism, and `ntp` is the
+tell.** Tightening (0.25, 0.1) costs +0.9 to +1.1 nats; removing the cap
+costs **+2.8 to +3.2 nats**, roughly 3x worse. `_bound_lowrank` is a true
+no-op when `precision_lr_max=None` -- it returns the raw, unsquashed $B$
+-- and today's own measurement found `fro_p50 = 1.0000000` at the live
+cap, meaning the raw $B$ this exposes is substantially larger than 1.
+**Confirmed, 2026-09-13, by direct measurement at step 87196:**
+
+| stat | p50 @ live (1.0) | p50 @ uncapped (None) |
+|---|---|---|
+| $\lVert B_k \rVert_F$ | 1.000 | **53.8** |
+| `lr_term` | 1.71 | **10,350** |
+| exponent | $-1.04$ | **$-5{,}177$** |
+| $g_k$ | 0.0191 | **0** |
+| fraction $g_k < 10^{-30}$ | 0.4% | **87.5%** |
+
+The model has been pushing $B$ to ~54x the trained operating point; the
+uncapped arm lets that through directly, and since `lr_term` enters
+quadratically the exponent goes catastrophic -- 87.5% of wells go
+numerically dead. Not "less curvature": $V_\theta$ almost entirely
+switched off, a genuinely out-of-distribution regime, not a mild ablation.
+
+**The 0.25-vs-0.1 non-monotonicity is the curvature/occupancy tradeoff
+from §2.1, recurring.** At 90360, 86201, 95091 and 95280 the *tighter*
+cap (0.1) gives a *larger* residual than the looser one (0.25) --
+shrinking $B$ shrinks the exponent, which raises well weight $g_k$,
+partially offsetting the reduced curvature. Two unrelated experiments
+(rank truncation and this precision-cap sweep) now show the same
+non-monotonic signature.
+
+**Fourth independent perturbation family collapsing these events** (after
+RNG reset, matched random noise, and rank truncation) -- see
+[Gradient_Spikes_as_Routing_Conjunctions.md](Gradient_Spikes_as_Routing_Conjunctions.md).
+And none of this is free: every arm degrades `ntp` while collapsing the
+gradient, which is one more reason containment, not an architectural cap
+change, is the right standing response.
 
 ### 2.4 Curvature rebalance — diagonal vs. low-rank channel
 
@@ -410,6 +492,26 @@ replay_integrator_ablation(87196, lowrank_layers=frozenset({0, 1, 2}))
 
 ## 3. What the results decide
 
+> **Correction (2026-09-13).** The branching logic below predates two
+> results that resolve part of it directly.
+> [Gradient_Spikes_as_Routing_Conjunctions.md](Gradient_Spikes_as_Routing_Conjunctions.md)
+> establishes that spikes are conjunctions between a microbatch and its
+> routing draw -- resetting the RNG per microbatch collapses every captured
+> spike to baseline, at three checkpoints independently. §2.2 (above) then
+> found no spectral collapse at any of five spike bundles. Both are
+> consistent with $V_\theta$ curvature being a bystander rather than a
+> cause, which is closer to the "no third mechanism" branch below than to
+> "mechanism A". The 2.3 run below is still worth having as a third,
+> independent check specifically of the curvature-collapse question, but
+> read a positive result (2.3 collapses the events) as surprising and in
+> need of reconciliation with the routing-conjunction finding, not as
+> confirmation of it.
+>
+> The rank bullet at the end of this section is also stale --
+> superseded by §2.1's correction: the verdict is not simply "saturated",
+> and the rank-8 experiment is no longer indicated. Read Stage 1's result
+> there before treating rank as an open fork here.
+
 - **2.3 collapses all four events** → confirms mechanism A (chronic
   low-rank stiffness) as the shared root cause behind both named
   mechanisms, same as §42's finding that "mechanism B rides on mechanism
@@ -426,13 +528,13 @@ replay_integrator_ablation(87196, lowrank_layers=frozenset({0, 1, 2}))
 - **The two disagree** (ratio flags 87196 but the cap collapses it anyway,
   or vice versa) → trust the cap ablation: it is causal (re-runs the step
   under a changed constraint), the ratio is only correlational.
-- **2.1's rank verdict is in: saturated** (`pr_p50=3.68/4`, `pr_p05=2.50`).
-  The rank-truncation ablation (also §2.1) is the tie-breaker on whether
-  that's functionally real: if `relative_force_error` stays near 0 well
-  below rank 4, the saturation is geometric only and rank should stay at 4
-  (or drop); if it grows steadily down to rank 1, the joint-coupling pilot
-  (already built, `K=8` parameter-matched) should carry a rank increase
-  too, not just the coupling change.
+- **2.1's rank verdict (superseded, see the correction above and in §2.1
+  itself):** PR is measured against the wrong null and the per-site view
+  shows the structure is real and channel-organised. Rank-8 is not
+  indicated; a per-channel allocation (Stage 4 of the Curvature note) is
+  the targeted alternative, at roughly 1/20th the parameter cost. The
+  joint-coupling pilot proceeds at `K=8` (already parameter-matched by
+  construction, not by this rank decision) without a rank change.
 
 ---
 

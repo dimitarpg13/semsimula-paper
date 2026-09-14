@@ -70,6 +70,72 @@ different kind of event.
 
 ---
 
+### 1.3 A fourth perturbation family: the precision cap, in both directions
+
+`replay_precision_cap_ablation` swept `precision_lr_max` -- the cap on
+$V_\theta$'s low-rank curvature channel -- at six of these captures, four
+values each (the live setting, two tighter caps, and no cap at all). Every
+arm collapsed the event:
+
+| step | recorded | @1.0 (live, fidelity check) | @0.25 | @0.1 | uncapped |
+|---|---|---|---|---|---|
+| 87196 | 2539.2 | 2539.2 (exact) | 6.22 | 4.42 | 18.91 |
+| 90360 | 567.3 | 567.3 (exact) | 5.12 | 5.52 | 11.12 |
+| 86201 | 685.6 | 685.6 (exact) | 3.93 | 4.07 | 12.96 |
+| 95068 | 418.8 | 418.8 (exact) | 6.17 | 4.96 | 9.68 |
+| 95091 | 216.2 | 216.2 (exact) | 5.58 | 5.60 | 8.53 |
+| 95280 | 659.8 | 659.8 (exact) | 4.00 | 7.73 | 34.54 |
+
+Fidelity exact at all six. Reduction is 97.4-99.8% in **every** arm,
+including the uncapped one -- tightening the cap and removing it entirely
+both destroy the event. That rules out a directional story ("less curvature
+fixes it"): the event is fragile to the cap being *changed*, not to it being
+lowered specifically.
+
+This was not the naively expected outcome. $V_\theta$ is only around 10% of
+`top_groups` at these steps, so a modest, roughly-proportional reduction was
+the reasonable prior. The actual result is further evidence for the
+mechanism already established: `register`/`depth_code`/`creation_gate`
+receive no gradient through $V_\theta$'s own weights, so the only channel
+this can propagate through is the shared trajectory $h$. $V_\theta$'s
+curvature is a sensitive knob on that trajectory even though it carries
+little of the gradient mass itself -- consistent with §4's finding that
+isotropic noise on $B_k$ collapses these events as thoroughly as a
+targeted truncation, i.e. that direction does not matter, only that $B$
+changed.
+
+**The two directions are not the same mechanism, and this is now
+confirmed rather than hypothesised.** Tightening the cap costs +0.9 to
++1.1 nats of `ntp`; removing it costs +2.8 to +3.2 nats, roughly 3x worse.
+`_bound_lowrank` is a literal no-op at `precision_lr_max=None` -- it
+returns $B$ unsquashed -- and a direct measurement of the exponent and
+well weight at step 87196 confirms what that predicts:
+
+| stat | p50 @ live (1.0) | p50 @ uncapped (None) |
+|---|---|---|
+| $\lVert B_k \rVert_F$ | 1.000 | **53.8** |
+| `lr_term` | 1.71 | **10,350** |
+| exponent | $-1.04$ | **$-5{,}177$** |
+| $g_k$ | 0.0191 | **0** |
+| fraction $g_k < 10^{-30}$ | 0.4% | **87.5%** |
+
+The model has been pushing $B$ to roughly 54x the trained operating point;
+removing the cap lets that through directly, and since `lr_term` enters
+quadratically the exponent goes catastrophic. 87.5% of wells go
+numerically dead. This is not "less curvature" -- it is $V_\theta$ almost
+entirely switched off, a genuinely out-of-distribution regime the model
+never trained under, not a mild ablation. It also explains why tightening
+and removing the cap land on similar total-gradient collapse through
+*opposite* routes: tightening *raises* $g_k$ (smaller exponent, larger
+weight), removing it *annihilates* $g_k$ (runaway exponent, underflow).
+Same destination, opposite mechanisms.
+
+The 0.25-vs-0.1 arms are also non-monotonic at four of the six steps (the
+*tighter* cap giving the *larger* residual) -- the same curvature/occupancy
+tradeoff §5.3 found under rank truncation, recurring in an unrelated
+perturbation. Shrinking $B$ shrinks the exponent, which raises $g_k$,
+partially offsetting the reduced curvature.
+
 ## 2. What a spike looks like while it happens
 
 The event is real and localised, even though its cause is a coincidence.
@@ -133,6 +199,16 @@ is load-bearing for the model's own behaviour.
 
 Each of these was measured, not argued away. They matter because the
 conjunction account is what survives them.
+
+**Spectral collapse at spike bundles (a second, independent check).**
+`spectrum_across_checkpoints` measured PR concentration ($3.96 - \mathrm{pr\_p50}$)
+at five spike bundles against `BEST` (step 96000): 0.278, 0.273, 0.273,
+0.272, 0.273 against BEST's 0.279. Flat to 0.007, with spike-time
+concentration if anything marginally *below* BEST -- the opposite of what a
+curvature-collapse event would show. This is unrelated machinery to the
+per-mb-layer wall/stiffness measurement below (a pooled cross-checkpoint
+comparison, not a within-bundle replay), and it agrees with it: $V_\theta$
+curvature is unremarkable at every spike checked.
 
 **Resonance in the explicit low-rank kick.** The off-diagonal channel
 rides an explicit kick, stable only while $\omega \Delta t \lt 2$, and
