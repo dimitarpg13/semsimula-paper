@@ -1392,6 +1392,29 @@ arm, and the diagnostics do not confound each other: the
 that note's own predictions are read off validation perplexity and the
 channel-input Hessian, not off the creation gate.
 
+> **Correction (2026-09-13).** The paragraph below argued from a spike
+> mechanism since falsified. See
+> [Gradient_Spikes_as_Routing_Conjunctions.md](Gradient_Spikes_as_Routing_Conjunctions.md):
+> spikes in Run 1 are conjunctions between one microbatch and its routing
+> draw, not curvature events. Resetting the RNG per microbatch collapsed
+> every captured spike to baseline at three checkpoints; a follow-up
+> precision-cap sweep found the same collapse under both tightening and
+> fully removing `precision_lr_max`, through opposite mechanisms
+> (occupancy rising vs. exponent underflow), and two independent
+> curvature/spectral measurements found nothing anomalous in $V_\theta$ at
+> any spike bundle tested. "Joint coupling is independently more
+> spike-prone" was reasoning from curvature concentration as the spike
+> driver, which no longer holds. The practical conclusion below is
+> weakened accordingly: the causal-story argument for landing
+> `coupling="joint"` alone before adding `creation_qk_norm` rested
+> specifically on that premise, and with it gone there is no longer a
+> known spike-risk reason to sequence the two arms apart. Real headroom
+> to the low-rank channel's stability wall was independently measured
+> (~75% of it used, `probes.resonance`) and is worth monitoring during
+> the joint arm regardless, since summing precision across channels
+> changes the operator that wall constrains -- but that is a "watch it"
+> case, not a "sequence around it" one.
+
 That note's own analysis flags joint coupling as independently more
 spike-prone — precision sums across channels, so curvature concentrates —
 and its own stated next step is characterising `coupling="joint"` with
@@ -1406,7 +1429,11 @@ story: in that case, the joint-coupling note's own plan argues for landing
 creation-gate mitigations in a subsequent arm once that combination is
 characterised.
 
-This is recorded as an open decision, not resolved here.
+This was recorded as an open decision. **Resolved, 2026-09-13: run the
+combined arm** (`coupling="joint"` + `creation_qk_norm`) — see the
+correction above. The mechanical-orthogonality argument in this section
+was never in question; only the spike-risk half of the sequencing
+argument is retracted.
 
 ---
 
