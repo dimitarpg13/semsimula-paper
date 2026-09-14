@@ -279,13 +279,34 @@ computation when the instrument was built: flat gives 4.00, mild decay 2.98,
 steep decay 1.20, and the degenerate rank-1 case 1.00 (which is also the
 division-by-zero guard).*
 
-`spectrum_across_checkpoints` applies these bands automatically:
+> **Correction (2026-09-13): these bands were calibrated against the wrong
+> null and are superseded by the table below.** They compare $\mathrm{PR}$ to
+> $r$, on the implicit assumption that $\mathrm{PR} \to r$ means a budget
+> fully used. It does not. A random $d \times r$ Gaussian already has a
+> near-flat spectrum, so an **untrained** model scores near the ceiling. This
+> was measured accidentally on this exact architecture, when a silent
+> auto-resume failure left the model at initialisation:
+> $\mathrm{PR} = 3.96$ of a possible 4. Training moves $\mathrm{PR}$
+> **down** from that null, not up.
 
-| $\mathrm{PR}$ at $p_{50}$, with $r = 4$ | reading | action |
+The measured null for this architecture is $\mathrm{PR}_0 = 3.96$ at $r = 4$.
+Read the *concentration* $\mathrm{PR}_0 - \mathrm{PR}$, not $\mathrm{PR}$
+itself:
+
+| concentration $\mathrm{PR}_0 - \mathrm{PR}$ | reading | action |
 |---|---|---|
-| $\ge 3.0$ (i.e. $\ge 0.75r$) | budget **saturated** | rank 8 has a real case, and would also halve $\sigma_{\max}^2$ under the same cap |
-| $\le 2.0$ (i.e. $\le 0.5r$) | budget **not used** | rank 8 is wasted parameters; prefer a spectral flatness incentive at rank 4, or drop to rank 2 |
-| between | ambiguous | weigh the spike-versus-best comparison and the parameter cost |
+| near 0 | spectrum still **unstructured** | the well has not differentiated its directions; more rank is not indicated, and may simply be more flatness |
+| moderate (0.1-0.4) | partially specialised | ambiguous; weigh against the parameter cost and check whether it is still moving across checkpoints |
+| large ($\gtrsim 0.5$) | strongly **concentrated** | the well is deliberately using fewer directions than it has; additional rank would sit idle |
+
+Two further cautions, both learned the hard way:
+
+* **Read $\lVert B_k \rVert_F$ alongside it.** $\mathrm{PR}$ alone cannot
+  distinguish "flat because it is using every direction" from "flat because it
+  is doing nothing". Only a well at the cap is spending its full budget.
+* **Read it per site, not pooled.** Pooled quantiles average over
+  (layer, channel) and hide exactly the structure the rank decision turns on
+  (§5.1).
 
 **A second, independent use of the same measurement.** Under a binding Frobenius
 cap, $\sigma_{\max}^2$ can only grow by *concentration*. Since the spike
@@ -434,8 +455,33 @@ flowchart TB
 stop: the redistribution argument does not hold and the rank question is a different
 question.
 
-**Stage 1 — measure the effective rank (free).** From the same call, read the
-per-well PR distribution — not just its median. Three outcomes, per §5's bands.
+**Stage 1 — measure the effective rank (free). — DONE, and it argues against
+rank 8.** Use `stiffness.sigma_lr_spectrum_by_site`, not the pooled report:
+the pooled quantiles hide the structure this stage exists to find. Measured at
+step 96410 across all 40 (layer, channel) sites:
+
+| | value |
+|---|---|
+| $\lVert B_k \rVert_F$ | **1.000 at every site** — the cap binds uniformly, so PR differences are pure redistribution and no channel is idle |
+| $\mathrm{PR}$ by channel | 3.18, 3.74, 3.82, 3.64, 3.61 — **range 0.65** |
+| $\mathrm{PR}$ by layer | 3.36 … 3.70 — range 0.33 |
+| `between_frac` | **0.39** — substantial between-site structure |
+| random-init null | 3.96 |
+
+**The structure is carried by channel, not layer**, at roughly twice the
+spread. Channel 0 has concentrated to 3.18 (0.78 below the null) while channel
+2 sits at 3.82, barely distinguishable from unstructured. Stable to 0.2% across
+seven checkpoints spanning 86201-96410, so this is a converged property, not a
+transient.
+
+A single global rank therefore serves these channels badly: raising every
+channel to 8 leaves roughly five directions idle in channel 0 to accommodate
+channel 2. That is Stage 4's argument, now supported by measurement rather than
+conjecture — and at roughly **+1.7%** of total parameters for a per-channel
+allocation against **+33%** for a uniform bump.
+
+Original guidance, retained for the other branches. From the same call, read the
+per-well PR distribution — not just its median.
 If PR sits at or below $r/2$, the model is not using the rank it already has,
 and no amount of additional rank will help; the lever is a **flatness incentive**
 (a penalty on the ratio of $\sigma_{\max}^2$ to $\lVert B_k \rVert_F^2$, which
@@ -502,9 +548,11 @@ promoted by clearing one config value. Then re-measure PR at the new rank:
   whether the low-rank parameterisation is the right structure at all.
 - PR plateaus partway → **the knee is the answer.** Adopt the knee rank.
 
-**Stage 4 — per-well allocation (future architecture work).** If stage 1's
-histogram is as heterogeneous as Figure 4B, a single $r$ is leaving value on the
-table at both ends. Two implementable designs:
+**Stage 4 — per-well allocation. — NOW INDICATED, not hypothetical.** Stage 1
+measured `between_frac = 0.39` with the spread carried by **channel** (range
+0.65) rather than layer (range 0.33), so design 1 below is the targeted form:
+per-*channel* rank, which in this architecture is per-bank. A single $r$ is
+leaving value on the table at both ends. Two implementable designs:
 
 1. **Per-bank rank.** `B_proj` is already per-bank; giving each bank its own
    rank costs only bookkeeping, and layer salience (diagnostic programme §8)

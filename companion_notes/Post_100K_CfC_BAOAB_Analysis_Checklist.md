@@ -134,14 +134,44 @@ spectrum_across_checkpoints()   # defaults to _best.pt
 | statistic | value | reading |
 |---|---|---|
 | `fro_p50` | 0.9999999814 | cap binding almost exactly at `sqrt(precision_lr_max)=1.0` — Stage 0 passes cleanly |
-| `pr_p50` | 3.68 / 4 | **saturated** (≥3.0) |
-| `pr_p05` | 2.50 | already past the "unused" floor |
-| `pr_p95` | 3.91 | at the ceiling |
+| `pr_p50` | 3.68 / 4 | see the correction below |
+| `pr_p05` | 2.50 | |
+| `pr_p95` | 3.91 | |
 
-Unambiguous: the whole p05–p95 band sits in the saturated zone, not just
-the median. Essentially identical to the reading at step 87196
-(`fro_p50≈0.99999997`, `pr_p50≈3.678`) — this has been a stable, saturated
-regime since at least the mid-90K-step mark, not a spike-time artifact.
+Stable to 0.2% across seven checkpoints from 86201 to 96410, so this is a
+converged property rather than a spike-time artifact.
+
+> **Correction (2026-09-13). The "saturated → rank 8" reading here was wrong
+> on two counts, and the rank-8 experiment is no longer indicated.**
+>
+> **1. Wrong null.** `pr_p50 = 3.68` was read as saturated because it clears
+> $0.75r = 3.0$. But a random $d \times r$ Gaussian is already near-flat: an
+> **untrained** model on this architecture scores **3.96**. Measured
+> accidentally, when a silent auto-resume failure left the model at
+> initialisation. Training moves PR *down* from that null, so 3.68 is a
+> concentration of 0.28 away from unstructured, not evidence of a budget
+> straining against its ceiling.
+>
+> **2. Pooling hid the structure.** The per-site view
+> (`stiffness.sigma_lr_spectrum_by_site`, step 96410, 40 sites) gives
+> `between_frac = 0.39` — substantial heterogeneity — carried by **channel**
+> (means 3.18, 3.74, 3.82, 3.64, 3.61; range 0.65) far more than by layer
+> (range 0.33). And $\lVert B_k \rVert_F$ reads **1.000 at every one of the
+> 40 sites**, so the cap binds uniformly and those PR differences are pure
+> redistribution — no channel is idle.
+>
+> A global rank 8 would raise every channel alike, leaving roughly five
+> directions idle in channel 0 to serve channel 2, at **+33%** of total
+> parameters. A per-channel allocation targets the same hypothesis for about
+> **+1.7%**. See Stage 4 in
+> `Curvature_Diagnostics_and_Rank_Selection_for_Aniso_Gaussian_Vtheta.md`,
+> now indicated rather than hypothetical.
+>
+> **Methodology note.** Run the by-site probe, not the pooled one, and load
+> the checkpoint's weights explicitly with `_load_weights_into` rather than
+> relying on whatever is in `model` — an entire afternoon of measurements in
+> this session was taken on randomly-initialised weights after Cell 2's
+> auto-resume failed without erroring.
 
 **Stage 2 — rank-truncation ablation, built 2026-09-13** (was `PROPOSED`
 in the companion note's §7.3; now implemented as
