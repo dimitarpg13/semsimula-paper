@@ -105,6 +105,20 @@ class FockMultiXiPARFConfig(MultiXiPARFConfig):
     per_register_tau: bool = False      # B1: per-register learnable temperature
     per_register_keys: bool = False     # B2: per-register key subspaces
     ortho_register_init: bool = False   # B3: orthogonal register embed init
+    # QK-normalisation of the creation gate (mirrors model_fock_parf_v2.py's
+    # FockV2Config; ported here 2026-09 for the joint-coupling + QK-norm
+    # arm). When True the gate scores q.k as cosine similarity times a
+    # clamped per-register logit_scale, REPLACING log_tau rather than
+    # multiplying it (Register_Temperature_Instability_in_the_Fock_
+    # Creation_Gate.md SS10.2-SS10.4) -- log_tau is not registered in this
+    # mode. The consuming code in _build_v2 already read these three via
+    # getattr(cfg, name, default) with exactly these defaults, tolerating
+    # their absence on older configs/checkpoints; they were never declared
+    # here, which is what made `FockMultiXiPARFConfig(creation_qk_norm=...)`
+    # raise TypeError instead of taking effect.
+    creation_qk_norm: bool = False
+    creation_logit_scale_init: float = 1.0 / 0.07
+    creation_logit_scale_max: float = 100.0
     # B4: explicit repulsion penalty on the register bank (§20.6 of
     # Improving_the_Fock_Mechanism_to_match_Attention.md).  B3 only sets the
     # initial pairwise similarity to zero and B2 makes the collapsed manifold a
