@@ -88,10 +88,27 @@ except ImportError:
                 pass
 
 if _lm is None:
+    # Last resort: fetch the repo ourselves rather than guess at paths. Two
+    # earlier attempts at path discovery both silently produced a benchmark
+    # that answered nothing, which is worse than a slow clone.
+    try:
+        import subprocess, tempfile
+        _tmp = tempfile.mkdtemp()
+        subprocess.run(['git', 'clone', '--quiet', '--depth', '1',
+                        'https://github.com/dimitarpg13/semsimula-paper.git',
+                        _tmp + '/repo'], check=True)
+        sys.path.insert(0, _tmp + '/repo/notebooks/conservative_arch/parf')
+        from cfc_baoab import lowrank_modes as _lm
+        print(f'[import] cfc_baoab from a fresh shallow clone')
+    except Exception as _e:
+        print(f'[import] clone fallback failed: {str(_e)[:60]}')
+
+if _lm is None:
     print(f'{"REAL lowrank_modes -- NOT FOUND":<42}{"":>20}{"skipped":>10}')
-    print('    Run this cell AFTER Cell 4 (which puts the repo on sys.path),')
-    print('    or set the path by hand. Without this row the benchmark does')
-    print('    NOT tell you whether the hardened gram driver is affordable.')
+    print('    Without this row the benchmark does NOT tell you whether the')
+    print('    hardened gram driver is affordable. Run the 1,000-step pilot')
+    print('    instead -- its first step-line gives the same number on REAL')
+    print('    G, which this synthetic benchmark cannot.')
 else:
     row('GRAM driver, REAL lowrank_modes (all 32)', f'{d}x{P_joint}',
         lambda x: _lm(x, max_modes=None, driver='gram'), g32)
