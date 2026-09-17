@@ -306,7 +306,11 @@ signatures so far, not one: `depth_code`-led (steps 23,000-28,700, up to
 
 ---
 
-## 6. The anneal probe (next action, 2026-09-16)
+## 6. The anneal probe — **RUN, SUCCEEDED** (2026-09-17)
+
+**Notebook:** [`colab_fock_cfc_baoab_joint_vtheta_qknorm_annealed_after_50K_openwebtext_d384.ipynb`](../notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_joint_vtheta_qknorm_annealed_after_50K_openwebtext_d384.ipynb)
+(committed 2026-09-17). Run order: Cell 0 → 1 → 1c → 2 → 3 → 4 → 5 →
+the `import shutil` redirect cell → Cell 6. Skip 1b (no-op) and 6d.
 
 Tests whether the plateau is an LR/curvature mismatch or something deeper.
 Branches from `_step50000_probe_stop.pt` and runs a **compressed** version
@@ -357,20 +361,117 @@ at 51,000. The informative evals are 52,500 on; decisive are 53,500/54,000.
 | 53,000 | 5.674e-05 | 18.9% |
 | 54,000 | 1.500e-05 | 5.0% |
 
-**Reading the result:**
-- **PPL into the 70s** → confirmed; the LR was the block and the
-  architecture was never the problem. Then set `TOTAL_STEPS ≈ 77,000` so
-  `stable_end = 50,050` and the real decay starts immediately instead of
-  burning 15,000 more flat steps.
-- **PPL barely moves (high 80s)** → the block is deeper than LR. §2.1's cap
-  question becomes the priority, with the four bundles to diagnose against.
+**Reading the result** (gate as recorded in advance):
+- **PPL into the 70s** → confirmed; the LR was the block.
+- **PPL barely moves (high 80s)** → the block is deeper than LR.
+
+### 6.1 RESULT, 2026-09-17 — the LR was the block
+
+| step | lr | val_ppl |
+|---|---|---|
+| 50,000 | 3.00e-04 | 93.93 (branch point) |
+| 51,000 | 2.58e-04 | 90.60 |
+| 52,000 | 1.58e-04 | 86.49 |
+| **52,500** | 1.03e-04 | **84.05** |
+| 53,000 | 5.68e-05 | 85.42 |
+
+Monotone throughout, and **84.05 beats the main run's all-time best of
+84.31** (step 28,500) — from a start 10 PPL worse, in 2,500 steps. The
+53,000 uptick is +1.37 against eval noise σ≈1.54, i.e. noise.
+
+**Scored honestly: a partial hit, not a clean one.** 93.93 was a high draw
+(the 45-50K windowed mean was 90.25), so the real gain is **90.25 → 84.05,
+−6.2 PPL (−6.9%)** — between the two outcomes stated above, not "into the
+70s". Direction unambiguous; magnitude below the recorded threshold. Also
+note the anneal was a *compressed* 4,000-step decay against a real one of
+≈27,000, and compressed anneals typically underperform, so **84.05 is a
+lower bound**.
+
+**The finding that matters most, and it falsifies §7's original premise.**
+`omega*dt` was **flat** across the whole anneal — p50 ranged 1.097-1.160
+while the LR fell 5.3x and PPL improved 7%; `over_wall` stayed 0.2-0.7% and
+`bproj_sig` 36.7-36.9. So the curvature situation did not change at all and
+PPL improved anyway. **Integration error was therefore not what capped PPL.**
+See §7's revised premise.
+
+**Spikes continued: 3 in 3,050 steps** (101.2, 164.2, 192.9) against 4 in
+the previous 15,400. Do not read this as a rate increase — pre-clip gradient
+norm does not depend on LR (it is computed before the optimiser step), so
+the anneal was never expected to suppress spikes, and n=3 is too small.
+The useful negative: **lowering LR does not touch the spike mechanism**,
+consistent with routing conjunctions.
+
+### 6.2 Next action
+
+Return to the **main** folder at step 50,000 (not the anneal's checkpoint —
+that state is already annealed to a low LR and is not a valid start for a
+full decay). Set `ANNEAL_PROBE = False` and **`TOTAL_STEPS = 77,000`**, so
+`stable_end = int(0.65 x 77,000) = 50,050` and the real decay begins
+immediately rather than burning 15,000 more flat steps that measurably
+degrade (+0.159 PPL/1k). ≈27,000 steps ≈ 31h, against ≈58h to finish at
+100,000 with 15,000 of those spent going backwards.
+
+### 6.3 Companion probe: anneal from the run's BEST (step 28,500) — **PROPOSED**
+
+**Notebook:** [`colab_fock_cfc_baoab_joint_vtheta_qknorm_annealed_after_28500_openwebtext_d384.ipynb`](../notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_joint_vtheta_qknorm_annealed_after_28500_openwebtext_d384.ipynb)
+(2026-09-17). Identical recipe, length and LR-at-every-eval to §6's
+notebook — **only the starting weights differ** — so the two are directly
+comparable. Diffs against it are confined to three cells: the config
+(`ANNEAL_FROM_STEP = 28_500`, `PROBE_MAX_STEPS = 32_500`), the redirect
+(source `_step28500_best.pt`, output folder `anneal_probe_28500`, plus a
+hard assertion that the loaded checkpoint's `step` really is 28,500), and
+a markdown note. Same run order as §6.
+
+**Why.** §6.1's anneal settled at ≈85.0 from a stable-phase level of
+≈90.25, i.e. **≈−5.25 PPL of decay gain**. The main run's stable-phase best
+was **84.31 at step 28,500** — so a decayed step-50,000 model is worth
+about the same as an *undecayed* step-28,500 model, implying the step-
+28,500 weights are better by roughly one decay's worth. The 25,500
+stable-phase steps between them bought nothing, and train `ntp` agrees
+(4.4733 in 25-30K → 4.5000 in 45-50K): the model genuinely regressed.
+
+**Prediction, recorded before running: settles near 79.**
+
+- **≈79** → confirmed. Set `TOTAL_STEPS ≈ 44,000` (`stable_end = 28,600`)
+  and run the real decay from step 28,500. That would beat the additive
+  baseline's **81.92** at under half its compute, and reframes the arm as
+  "reached its peak 3x faster, then was trained past it on a schedule that
+  decayed ≈36,500 steps too late."
+- **≈84 again** → the step-28,500 advantage is illusory, §6.2's
+  `TOTAL_STEPS = 77,000` plan stands, and the joint-vs-additive gap
+  (+2.6% best / +3.8% settled, at 54% of the steps) is real.
+
+Read the **settled level** (mean of the last three evals), not the best:
+§6.1 settled at 85.03 while its best, 84.05, was a 1.37-point lucky draw.
+
+**Do not reuse `anneal_probe/`.** Its `_best.pt` is now the step-52,500
+model at 84.05, which would suppress checkpointing, restore the wrong
+`best_val_ppl`, and give the watchdog a rollback target from a different
+trajectory. The notebook already redirects to `anneal_probe_28500`.
 
 ---
 
 ## 7. Integration refinement: does the over-wall tail actually cost anything?
 
-**Run only if the anneal (§6) does NOT unstick the plateau.** If lowering the
-LR fixes it, this question is moot for now.
+**Premise revised 2026-09-17, after §6.1.** This section originally said
+"run only if the anneal does not unstick the plateau." The anneal **did**
+unstick it — and in doing so falsified the motivating hypothesis, because
+`omega*dt` stayed flat (p50 1.097-1.160) while PPL improved 7%. Integration
+error is therefore **not** what caps PPL today.
+
+**What survives is forward-looking**, and it is still worth doing:
+
+- `omega*dt` is climbing logarithmically — projected p50 ≈1.39 and
+  `over_wall` ≈3.3% by step 100,000.
+- The tail is **genuinely unstable**: max 2.2-2.5, and above 2.0 the
+  explicit kick has no real solution at all.
+- Phase error at the median is ≈6% and rising (§7.6's table).
+- All of it worsens at the next scale-up, where the additive arm's d=768
+  blowup at step ≈37,000 is already on the record.
+
+So the justification moved from *"rescue this run"* to *"remove a ceiling
+while it is still cheap to measure, rather than mid-crisis at the next
+scale."* Treat §7 as de-risking work, not as the fix for the plateau.
 
 **The idea.** `omega*dt` scales linearly with `dt`, so halving the step size
 halves the whole distribution and moves it back under the stability wall:
@@ -387,18 +488,24 @@ parameters; it integrates the same dynamics more accurately.
 **Order to run these in.** §7.0 comes first and costs two minutes; it
 decides whether §7.6 is cheap, and therefore the order of everything below.
 
+**Ordering revised 2026-09-17.** §7.2 was previously called "cheapest".
+That was written when §7.6 was believed to need implementation work. It does
+not — §7.6 is **zero code**, a config switch (see §7.6). So:
+
 0. **§7.0 — benchmark the linalg first.** Two minutes, no model, no
    training. Determines whether `baoab_cfc_lowrank` is affordable on *this*
-   arm, which reorders the rest.
-1. **§7.2** — the cheapest *diagnostic*: zero surgery, zero training,
-   minutes. Answers "does integration error cost anything at all?" If PPL
-   is unchanged at dt=0.5, stop — the wall crossings are harmless and
-   §7.3/§7.6 are unnecessary.
-2. **§7.6 if §7.2 says yes** — the better *fix*: it removes the wall on the
-   off-diagonal channel outright rather than shrinking the step. **If §7.0
-   shows it is cheap on this arm, it likely outranks §7.2**, being exact
-   rather than approximate.
-3. **§7.3 only if you also want the extra gate applications**, a larger
+   arm, which decides the order of everything below.
+1. **§7.6 if §7.0 says it is affordable** — **zero code**, and the better
+   fix: exact on the off-diagonal channel rather than merely shrinking the
+   step. Cheapest *and* best when the benchmark permits it.
+2. **§7.2 as the independent cross-check** — ≈12 lines (see its revised
+   estimate). Worth running even if §7.6 works, because it measures the same
+   quantity through a different mechanism: **two mechanisms agreeing on "no
+   PPL change" is far stronger than either alone**, and agreeing on
+   "improvement" would be decisive.
+3. **§7.2 first instead** if §7.0 says §7.6 is expensive and the speed
+   fixes are not worth building yet.
+4. **§7.3 only if you also want the extra gate applications**, a larger
    change than either.
 
 §7.4 and §7.7 record what NOT to do, and why.
@@ -459,7 +566,7 @@ Checked against `_fock_layer_step` / `_layer_step_langevin`, 2026-09-16:
 
 That asymmetry is what makes 7.2 preferable to 7.3.
 
-### 7.2 Cheapest diagnostic: same L=8, two substeps of dt=0.5 — **PROPOSED**
+### 7.2 Independent cross-check: same L=8, two substeps of dt=0.5 — **PROPOSED, ≈12 lines**
 
 Keep `L = 8`, `depth_code`, every gate and every weight **exactly as they
 are**; split each layer's integration into two substeps of `dt = 0.5`.
@@ -471,8 +578,16 @@ are**; split each layer's integration into two substeps of `dt = 0.5`.
 - Compute rises only on the integrator, not the gates/attention, so expect
   well under 2x per step.
 
-**The zero-training read.** Load the step-50,000 weights, evaluate with the
-refined integrator, and compare against **93.93** with no training at all:
+**The zero-training read.** Branch from the **anneal's best,
+`anneal_probe/checkpoints/..._step52500_best.pt` (PPL 84.05)** — *not*
+step 50,000. Revised 2026-09-17: that is a **settled** state at low LR
+rather than one bouncing at 3e-4, so a PPL change is attributable to
+integration accuracy instead of being confounded with plateau dynamics.
+`omega*dt` there is still ≈1.12 and `bproj_sig` ≈36.8 (both flat through
+the anneal), so the error under test is present at full magnitude.
+
+Evaluate with the refined integrator and compare against **84.05**, with no
+training at all:
 
 - **PPL improves** → integration error was genuinely costing accuracy, the
   over-wall tail is doing damage, and reducing `dt` (or capping curvature)
@@ -491,14 +606,37 @@ The gate is therefore **asymmetric**: an immediate improvement is strong
 evidence, an immediate regression is not evidence either way. The first read
 still costs **minutes**.
 
-**Implementation note.** `_layer_step_ex` can be called twice with `dt/2`,
-but velocity is carried
-implicitly — `decode_velocity(h_in, h_prev, dt)` — so the `h_prev`
-bookkeeping between the two substeps must be right or the refinement is
-silently wrong. Validate by setting substeps=1 and confirming the result is
-bit-identical to the current path before trusting substeps=2.
+**Implementation — ≈12 lines, revised down 2026-09-17.** An earlier estimate
+here said 30-60 lines because the `h_prev` bookkeeping looked risky: velocity
+is carried implicitly and the substeps must decode it at the inner `dt`, not
+the outer one. Checked, and both conversions are linear and trivially
+invertible (`v = (h - h_prev)/dt`, `h_prev_out = h_new - dt*v`), so the
+boundary re-encoding is just a rescale. Wrap the existing `_layer_step_ex`
+call in `_fock_layer_step` (**two** call sites — the `prefix_causal` branch
+and the extended one):
 
-### 7.3 Fallback: L=16 at dt=0.5 with checkpoint surgery — **only if 7.2 says yes**
+```python
+_n = getattr(cfg, 'integrator_substeps', 1)
+if _n > 1:
+    _dt  = dt / _n
+    v_in = decode_velocity(h, h_prev, dt)
+    h_cur, hp = h, encode_velocity(h, v_in, _dt)
+    for _ in range(_n):
+        h_cur, hp = super()._layer_step_ex(
+            h_cur, hp, m_b, gamma, _dt, layer_idx=layer_idx)
+    h_new, h_prev_out = h_cur, encode_velocity(
+        h_cur, decode_velocity(h_cur, hp, _dt), dt)
+else:
+    h_new, h_prev_out = super()._layer_step_ex(
+        h, h_prev, m_b, gamma, dt, layer_idx=layer_idx)
+```
+
+The gates stay **outside** this loop, which is what preserves the schedule
+(§7.1). **Validate first:** `integrator_substeps=1` must be bit-identical to
+the current path — that catches any boundary-handling error for free before
+`=2` is trusted.
+
+### 7.3 Fallback: L=16 at dt=0.5 with checkpoint surgery — **only if §7.2 or §7.6 says yes**
 
 Genuinely doubles the gate applications as well as the integration
 resolution, so it is a different (and larger) change than 7.2. Requires
