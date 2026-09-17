@@ -144,6 +144,15 @@ class MultiXiPARFConfig(SparsePARFConfig):
     # ``P x P`` eigensolve when that aggregate is large.
     lowrank_max_modes: Optional[int] = None
 
+    # Which driver extracts those eigenmodes.  'svd' is the historical path
+    # (full torch.linalg.svd, or a randomised range-finder when truncating).
+    # 'gram' eigendecomposes the P x P Gram G^T G instead -- measured 241x
+    # faster at this model's shapes on an A100, because the randomised path
+    # spends 99.6% of its time in three batched (d x q) QRs, and it returns
+    # all P modes so truncation becomes unnecessary.  See _gram_eigh in
+    # cfc_baoab.py for the condition-number tradeoff it accepts.
+    lowrank_driver: str = "svd"
+
     # Restrict the (expensive) 'baoab_cfc_lowrank' exact off-diagonal
     # integration to a subset of layers -- the batched per-token SVD is the
     # whole cost of this arm, so running it on only the stiffest layers cuts
@@ -530,6 +539,7 @@ class MultiXiPARFLM(SparsePARFLM):
                 lr_G, max_modes=getattr(cfg, "lowrank_max_modes", None),
                 niter=getattr(cfg, "lowrank_niter", 2),
                 oversample=getattr(cfg, "lowrank_oversample", 4),
+                driver=getattr(cfg, "lowrank_driver", "svd"),
             )
             lr_sL = torch.einsum('...dp,...p->...d', lr_G, lr_Gmu)
             f_L = lr_sL - self._lowrank_matvec(lr_G, h_in)

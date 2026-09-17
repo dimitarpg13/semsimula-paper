@@ -366,6 +366,55 @@ def _randomised_svd_det(
     return u_full, s
 
 
+def _gram_eigh(Gd: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    """Left singular vectors / values of ``G`` via the ``P x P`` Gram matrix.
+
+    The nonzero eigenvalues of ``L = G G^T`` (``d x d``) are exactly those of
+    ``M = G^T G`` (``P x P``), and if ``M v = lam v`` then ``u = G v /
+    sqrt(lam)`` is the matching unit eigenvector of ``L``.  For ``P << d``
+    this replaces the ``(d x P)`` SVD -- or the range-finder's three
+    ``(d x q)`` QRs -- with a single ``P x P`` symmetric eigensolve.
+
+    **Why this is worth a second driver.**  Measured on an A100 at this
+    model's shapes (8,192 tokens, ``d=384``, ``P=32``, ``q_over=20``):
+
+        3 x QR (384x20)          1126.4 ms each  -> 3379 ms   (99.6% of cost)
+        small SVD (20x32)          12.0 ms
+        ------------------------------------------------------------------
+        randomised path total    3391.2 ms
+        GRAM+EIGH (32x32)          14.1 ms       -> 241x faster
+
+    At 16 calls per optimiser step, roughly doubled by gradient-checkpoint
+    recompute, that is the difference between ~112 s/step and ~4.65 s/step,
+    i.e. between an unrunnable arm and an ~11% overhead on ``baoab_cfc``.
+    It also returns **all** ``P`` modes, so truncation stops being necessary.
+
+    **The tradeoff, stated because :func:`_svd_stable` deliberately avoids
+    it.**  Forming ``G^T G`` squares the condition number.  That degrades the
+    *small* eigenvalues -- but this integrator wants the *stiffest* modes,
+    and :func:`lowrank_modes` already zeroes anything under ``floor`` as
+    inert, so the damaged end of the spectrum is the end already discarded.
+    Validate against ``_svd_stable`` on real ``G`` before trusting it on a
+    new configuration.
+
+    Branch-free and device-stable (matmul -> eigh -> matmul, no try/except,
+    no CPU fallback), so unlike ``_svd_stable`` it is safe to recompute
+    inside a gradient-checkpointed layer step.
+    """
+    M = Gd.transpose(-1, -2) @ Gd                       # (..., P, P) symmetric
+    lam, V = torch.linalg.eigh(M)                       # ASCENDING order
+    # eigh returns ascending; every caller here expects stiffest-first, to
+    # match _svd_stable / _randomised_svd_det.
+    lam = lam.flip(-1).clamp(min=0.0)                   # PSD; kill -1e-18 noise
+    V = V.flip(-1)
+    # u_i = G v_i / sqrt(lam_i).  Near-null directions would blow up, so they
+    # are zeroed here; lowrank_modes' own ``floor`` then marks them inert.
+    inv_sqrt = torch.where(lam > 0, lam.clamp(min=1e-30).rsqrt(),
+                           torch.zeros_like(lam))
+    U = (Gd @ V) * inv_sqrt.unsqueeze(-2)               # (..., d, P)
+    return U, lam.sqrt()
+
+
 def lowrank_modes(
     G: torch.Tensor,
     max_modes: Optional[int] = None,
@@ -373,6 +422,7 @@ def lowrank_modes(
     *,
     niter: int = 2,
     oversample: int = 4,
+    driver: str = "svd",
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     """Eigenmodes of the PSD operator ``L = G G^T`` from its factor ``G``.
 
@@ -433,7 +483,12 @@ def lowrank_modes(
     Gd = G.detach()
     P = Gd.shape[-1]
 
-    if max_modes is not None and int(max_modes) < P:
+    if driver == "gram":
+        # One P x P eigensolve instead of a (d x P) SVD or three (d x q) QRs.
+        # Returns all P modes, so max_modes only trims afterwards.
+        q_req = P if max_modes is None else min(int(max_modes), P)
+        U_full, S = _gram_eigh(Gd)
+    elif max_modes is not None and int(max_modes) < P:
         q_req = int(max_modes)
         q_over = min(q_req + max(0, oversample), Gd.shape[-2], Gd.shape[-1])
         # Deterministic, branch-free, device-stable randomised SVD -- safe to
