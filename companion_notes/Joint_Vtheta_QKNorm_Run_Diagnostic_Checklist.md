@@ -6,11 +6,32 @@ once GPU time is free. Deliberately deferred: every probe here is a
 deterministic function of saved checkpoints, so none of it competes with
 training for a Colab session.
 
-**Run status at time of writing (2026-09-15).** Paused at **step 34,600**,
-resuming to `PROBE_MAX_STEPS = 50,000` under `TOTAL_STEPS = 100,000`
-(WSD: warmup 0→5,000, stable 5,000→65,000, decay 65,000→100,000, floor
-1.50e-05). Best PPL **84.31 at step 28,500**; latest eval 87.95 at 34,500.
-**Zero `[spike]`, `[watchdog]` or reload events across all 34,600 steps.**
+**Run status (updated 2026-09-16).** The 50,000-step probe **concluded**.
+`TOTAL_STEPS = 100,000` (WSD: warmup 0→5,000, stable 5,000→65,000, decay
+65,000→100,000, floor 1.50e-05). Best PPL **84.31 at step 28,500**; final
+eval **93.93 at step 50,000**. Four `[spike]` events fired (steps 39,206 /
+39,521 / 40,075 / 41,135); **zero `[watchdog]` or reload events**.
+
+**The run stopped improving and began degrading.** Windowed mean PPL:
+89.76 → 88.45 → 87.88 → 89.15 → 88.92 → 90.25 across 5,000-step windows
+from 20,000 — bottoming at 30-35K and rising after. Slope from step 34,000
+is **+0.159 ± 0.065 PPL / 1,000 steps (t = +2.45)**: significant
+degradation, not noise. Diagnosis, from the telemetry:
+
+- **Not overfitting.** Train `ntp` and val loss agree within ±0.01 nats in
+  every window, and *both* stopped falling. Nothing to overfit to at 0.41
+  epochs of a 2B pool.
+- **Not capacity.** 76.8M params × 0.819B tokens = **10.7 tokens/param**
+  against Chinchilla-optimal ≈20 — 53% of compute-optimal, under-trained.
+- **Not data volume.** Train loss is flat, so more data cannot help a model
+  that is not fitting what it already has.
+- **Optimization.** Median grad norm doubled (0.82 → 1.65), p99 grew 14x
+  (5.73 → 80.27), `bproj_sig` kept climbing (22.12 → 34.10) — all while
+  `lr` sat at 3.00e-04 for 15,400 steps. A fixed step size gone too hot for
+  a sharpening landscape.
+
+**Next action: the anneal probe** (see §6), branching from
+`_step50000_probe_stop.pt` to test whether decaying the LR unsticks it.
 
 Background lives alongside this file in `companion_notes/`:
 [`Post_100K_CfC_BAOAB_Analysis_Checklist.md`](Post_100K_CfC_BAOAB_Analysis_Checklist.md)
@@ -54,29 +75,35 @@ Background lives alongside this file in `companion_notes/`:
 set a new best, plus `_step15000.pt`, `_step15000_probe_stop.pt`, the 23.5h
 autosave at **step 34,156**, and `_best.pt` (PPL 84.31, step 28,500).
 
-**No spikebatch bundles exist for this arm.** Nothing has cleared
-`capture_threshold = 100.0` — the largest pre-clip grad norm in 34,600 steps
-is **15.36** (step 34,600). This blocks, entirely:
+**Spikebatch bundles now EXIST — the bundle-dependent probe family is
+unblocked.** Four captures, but only two are permanent:
 
-| probe | module | why blocked |
-|---|---|---|
-| `omega_dt_report` | `resonance` | takes `step_tag`, loads a bundle |
-| `omega_dt_under_truncation` | `resonance` | same |
-| `tail_coherence_report` | `resonance` | same |
-| `replay_precision_cap_ablation` | `precision_cap` | same |
-| `replay_rank_truncation_ablation` | `precision_cap` | same |
-| `replay_rank_perturbation_control` | `precision_cap` | same |
-| `replay_curvature_rebalance_ablation` | `precision_cap` | same |
+| step | pre-clip grad | top group | archived? | availability |
+|---|---|---|---|---|
+| 39,206 | 202.2 | `reverse_channel_scale` 286.6 | yes | **permanent** (`spikebatch_archive`) |
+| 39,521 | **479.9** | `reverse_channel_scale` 321.2 | yes | **permanent** (`spikebatch_archive`) |
+| 40,075 | 102.4 | `reverse_channel_scale` 125.9 | no | **transient** — live ring only |
+| 41,135 | 163.6 | — | no | **transient** — live ring only |
 
-**Runnable now** (take a batch `x` or checkpoint tags, not bundles):
+**Why only two archived.** `ARCHIVE_MIN_GRAD_NORM` is
+`2 * CAPTURE_SPIKE_THRESHOLD` = 200.0, which deliberately filters the
+"routine 100-190 band" to bound Drive usage. This is by design, not a fault. The two
+unarchived bundles are still in `CKPT_DIR` (the live ring keeps 12 and only
+4 were captured) but **will rotate out once 12+ more captures accumulate** — roughly 30,000 further steps at the observed rate of 1 per
+≈3,850. If 40,075 or 41,135 is wanted, copy it out of the live ring before
+then, or lower `ARCHIVE_MIN_GRAD_NORM` before the next long run.
+
+All four are `reverse_channel_scale`-led, which is itself a finding: the
+earlier grad-norm cluster (steps 23,000-28,700) was `depth_code`-led, so the
+dominant group **changed** as the run progressed.
+
+**Also runnable** (take a batch `x` or checkpoint tags, not bundles):
 `sigma_lr_spectrum_by_site`, `sigma_lr_spectrum_report`, `sigma_lr_report`,
 `stiffness_report`, `spectrum_across_checkpoints`, `bracket_precision_lr_max`.
 
-**Expected unblock: step ≈45,000.** The pre-clip grad-norm p99 is growing
-exponentially with a ≈5,200-step doubling time (§3), projecting to cross
-`capture_threshold = 100` around step 45,300 — i.e. the run itself should
-produce the first bundle shortly before the 50,000-step stop. **This is the
-main reason training was prioritised over these diagnostics.**
+**Note on the anneal probe and the ring.** The anneal redirects `CKPT_DIR`
+to `anneal_probe/`, so captures during it land there and cannot evict the
+main ring's four bundles. They are safe for the duration of that probe.
 
 ---
 
@@ -160,7 +187,11 @@ top-1 share), the pairwise principal angles between the `B_k` column spaces,
 and `m`'s percentiles. Compare against the step-15,000 checkpoint to get a
 direction of travel.
 
-### 2.6 The moment a bundle exists (expected step ≈45,000) — **BLOCKED**
+### 2.6 Bundle-dependent probes — **UNBLOCKED, 2026-09-16**
+
+Use `step_tag=39521` first (pre-clip 479.9, the most severe) and `39206`
+(202.2) as the confirmation; both are permanently archived. `40075`/`41135`
+are transient — see §1 before relying on them.
 
 Run in this order, highest value first:
 
@@ -190,16 +221,27 @@ Run in this order, highest value first:
 Stated **before** the data, so the next log is a test rather than a story.
 All fits are on steps 34,600 and earlier.
 
-| quantity | fit | prediction at step 50,000 |
-|---|---|---|
-| `omega*dt` p50 | `-2.3531 + 0.3248·ln(step)`, R²=0.9904 | **1.16** |
-| `omega*dt` max | `-5.6224 + 0.7514·ln(step)`, R²=0.9759 | **2.51** |
-| `over_wall` | log-normal, σ held at 0.199 | **≈0.3%** |
-| log-normal σ | 0.191 → 0.198 over 11,000 steps | **stays ≈0.20** |
-| grad p99 | exponential, doubling 5,193 steps, R²=0.983 | crosses **50 at step ≈40,100**, **100 at ≈45,300** |
-| grad p90 | doubling 11,581 steps | ≈4.5 |
-| grad median | doubling 23,548 steps | ≈1.4 |
-| val PPL | `loss ~ step^-0.0581`, n=54 | **≈75** |
+| quantity | prediction at 50,000 | **actual** | verdict |
+|---|---|---|---|
+| `omega*dt` p50 | 1.16 | **1.128** | held |
+| `omega*dt` max | 2.51 | **2.435** | held |
+| `over_wall` | ≈0.3% | **0.423%** | high, under the 0.5% falsifier |
+| log-normal σ | ≈0.20 | **0.217** | held (under the 0.22 falsifier) |
+| grad p99 crosses 100 | step ≈45,300 | **step 39,206** | ≈6,000 steps early |
+| grad median | ≈1.4 | **1.65** | close |
+| val PPL | **≈75** | **93.93 (best 84.31)** | **FALSIFIED** |
+
+**Scored 2026-09-16. The pattern in the misses is the lesson.** Every
+*saturating* (logarithmic) fit held — the `omega*dt` family was predicted
+within 3%. Both fits that assumed *continued improvement* failed, and the
+PPL one failed badly because it extrapolated a monotonic power law straight
+through a turning point that the windowed means place at step 30-35K. The
+grad-tail exponential was directionally right but too slow, meaning real
+growth in that window was faster than exponential.
+
+**Rule for next time:** before extrapolating any trend here, check whether
+its growth rate is decaying. Saturating fits have been reliable; "this keeps
+going" fits have not.
 
 **The load-bearing claim, and how to falsify it.** `omega*dt` is *saturating*
 (logarithmic, growth rate already decayed 4.4x from +0.034 to +0.0077 per
@@ -264,7 +306,68 @@ signatures so far, not one: `depth_code`-led (steps 23,000-28,700, up to
 
 ---
 
-## 6. After this analysis
+## 6. The anneal probe (next action, 2026-09-16)
+
+Tests whether the plateau is an LR/curvature mismatch or something deeper.
+Branches from `_step50000_probe_stop.pt` and runs a **compressed** version
+of the real decay — same start, same floor, same cosine shape, 8.75x faster.
+
+```python
+ANNEAL_PROBE     = True        # short-circuits lr_schedule entirely
+ANNEAL_FROM_STEP = 50_000
+ANNEAL_STEPS     = 4_000       # ~4.7h at 4.2 s/step
+ANNEAL_LR_START  = 3e-4
+ANNEAL_LR_END    = 1.5e-5      # == WSD_LR_FLOOR
+PROBE_MAX_STEPS  = 54_000
+```
+
+`TOTAL_STEPS` stays 100,000, so the WSD windows are untouched and the main
+run stays resumable.
+
+**Three traps, all found by inspection before running:**
+
+1. **Cell 2 will silently resume from `_step45000.pt`.** It matches
+   `f'{CKPT_PREFIX}_step{s}.pt'` for `s in CKPT_STEPS`, and at
+   `CKPT_INTERVAL = 7,500` **50,000 is not in `CKPT_STEPS`** — nor does the
+   pattern match `_step50000_probe_stop.pt`. The probe cell must set
+   `resume_ckpt` / `resume_step` explicitly.
+2. **Outputs must be redirected** to `GDRIVE_ROOT / 'anneal_probe'`.
+   `RESULTS_DIR` is where `training_log.jsonl` is opened in *append* mode,
+   and the probe's steps 50,001-54,000 would otherwise interleave with the
+   main run's future steps at identical step numbers.
+3. **Seed the probe folder's `_best.pt`.** `_reload_best` resolves
+   `CKPT_DIR / f'{CKPT_PREFIX}_best.pt'` and returns early if absent, so the
+   watchdog is a **silent no-op** until the first eval at 50,500. Copy
+   `_step50000_probe_stop.pt` in as `_best.pt`: it closes that window *and*
+   makes the rollback target the anneal's own starting state rather than the
+   main run's step-28,500 best, 21,500 steps back.
+
+**Do not add an anneal marker to `_variant_parts`** — that would change
+`CKPT_PREFIX` and break the resume path. The probe reuses the tag on purpose
+and isolates via the explicit redirect instead.
+
+**Do not judge it before step ≈52,500.** Cosine is nearly flat at its start:
+lr is still 96.4% of its starting value at the first eval (50,500) and 86.1%
+at 51,000. The informative evals are 52,500 on; decisive are 53,500/54,000.
+
+| step | lr | % of start |
+|---|---|---|
+| 50,500 | 2.892e-04 | 96.4% |
+| 52,000 | 1.575e-04 | 52.5% |
+| 53,000 | 5.674e-05 | 18.9% |
+| 54,000 | 1.500e-05 | 5.0% |
+
+**Reading the result:**
+- **PPL into the 70s** → confirmed; the LR was the block and the
+  architecture was never the problem. Then set `TOTAL_STEPS ≈ 77,000` so
+  `stable_end = 50,050` and the real decay starts immediately instead of
+  burning 15,000 more flat steps.
+- **PPL barely moves (high 80s)** → the block is deeper than LR. §2.1's cap
+  question becomes the priority, with the four bundles to diagnose against.
+
+---
+
+## 7. After this analysis
 
 Decide `PROBE_MAX_STEPS`: clear to `None` for the full 100,000-step arm, or
 set another stop. The WSD schedule is a pure function of `TOTAL_STEPS` and
