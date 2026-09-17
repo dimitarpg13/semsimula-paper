@@ -367,7 +367,135 @@ at 51,000. The informative evals are 52,500 on; decisive are 53,500/54,000.
 
 ---
 
-## 7. After this analysis
+## 7. Integration refinement: does the over-wall tail actually cost anything?
+
+**Run only if the anneal (§6) does NOT unstick the plateau.** If lowering the
+LR fixes it, this question is moot for now.
+
+**The idea.** `omega*dt` scales linearly with `dt`, so halving the step size
+halves the whole distribution and moves it back under the stability wall:
+
+| | dt=1.0 (now, step 50,000) | dt=0.5 |
+|---|---|---|
+| `omega*dt` p50 | 1.128 | **0.564** |
+| `omega*dt` max | 2.435 | **≈1.22** |
+| `over_wall` | 0.423% | **≈0%** |
+
+This is a **stability** experiment, not a capacity one. It does not add
+parameters; it integrates the same dynamics more accurately.
+
+### 7.1 What refines for free, and what does not
+
+Checked against `_fock_layer_step` / `_layer_step_langevin`, 2026-09-16:
+
+- **Forces refine for free.** They enter the update multiplied by `dt`
+  (`v_mid + (dt / m_b) * f_kick`), so two half-steps deliver the same
+  impulse as one whole step.
+  V_theta and the reverse channel need no correction.
+- **Register blends do NOT.** The register update is
+  `r = blend * r + (1.0 - blend) * readout` — applied once per layer with
+  **no `dt` factor**. Doubling the layer count applies it twice as often
+  (`blend^16` vs `blend^8`), halving the register's effective memory
+  horizon in layer units. Any depth change must either hold the gate
+  schedule fixed or correct `blend -> sqrt(blend)` (right for a geometric
+  blend, but `blend` is gate-computed per token, not a stored parameter,
+  so this is the harder path).
+
+That asymmetry is what makes 7.2 preferable to 7.3.
+
+### 7.2 Preferred: same L=8, two integration substeps of dt=0.5 — **PROPOSED**
+
+Keep `L = 8`, `depth_code`, every gate and every weight **exactly as they
+are**; split each layer's integration into two substeps of `dt = 0.5`.
+
+- **No checkpoint surgery.** Shapes are unchanged, so the resume path is
+  untouched.
+- **Gate schedule preserved exactly** — gates still fire once per layer.
+- **Total integration time per layer unchanged** (2 × 0.5 = 1 × 1.0).
+- Compute rises only on the integrator, not the gates/attention, so expect
+  well under 2x per step.
+
+**The zero-training read.** Load the step-50,000 weights, evaluate with the
+refined integrator, and compare against **93.93** with no training at all:
+
+- **PPL improves** → integration error was genuinely costing accuracy, the
+  over-wall tail is doing damage, and reducing `dt` (or capping curvature)
+  is a real lever.
+- **PPL unchanged** → the wall crossings are harmless at this magnitude,
+  and `omega*dt` can be retired as a concern for this run. This would also
+  retire §2.6.2's open question.
+
+Either answer is worth having, and the first read costs **minutes**.
+
+**Implementation note.** `_layer_step_ex` can be called twice with `dt/2`,
+but velocity is carried
+implicitly — `decode_velocity(h_in, h_prev, dt)` — so the `h_prev`
+bookkeeping between the two substeps must be right or the refinement is
+silently wrong. Validate by setting substeps=1 and confirming the result is
+bit-identical to the current path before trusting substeps=2.
+
+### 7.3 Fallback: L=16 at dt=0.5 with checkpoint surgery — **only if 7.2 says yes**
+
+Genuinely doubles the gate applications as well as the integration
+resolution, so it is a different (and larger) change than 7.2. Requires
+surgery, because three tensors are L-shaped:
+
+| parameter | L=8 | L=16 |
+|---|---|---|
+| `depth_code` | `[8, 5, 384]` | `[16, 5, 384]` |
+| `reverse_channel_scale` | `[8]` | `[16]` |
+| `destruction_gates` | 8 modules | 16 modules |
+
+(`creation_gates` is an **empty** ModuleList under `fock_version='v2'` — the
+creation gate is the shared `creation_gate_qkv` — and `reverse_ch` and
+V_theta are shared, so only these three break.)
+
+**It will not load without surgery, and it fails loudly**, verified
+2026-09-16: `load_state_dict(..., strict=False)` suppresses missing and
+unexpected keys but **never** shape mismatches, so `depth_code` and
+`reverse_channel_scale` raise `RuntimeError` outright; the 8 new
+`destruction_gates.{8..15}.*` would additionally trip the
+`_n_loaded < 0.9 * _n_model` resume guard. Two independent safety nets.
+
+Surgery: interpolate `depth_code` along the L axis (new layer ℓ' sits at old
+time ℓ'/2), interpolate `reverse_channel_scale` likewise, duplicate each
+`destruction_gate` into the two layers subdividing it — **and then deal with
+the blend problem in §7.1**, which duplication alone does not solve.
+
+Same zero-training go/no-go gate: evaluate immediately against 93.93. If PPL
+collapses, the surgery did not preserve the function and anything measured
+afterward is confounded.
+
+### 7.4 Do NOT run L=16 at dt=1.0
+
+Confounded. Layers here are **integration steps**, so L=16 at dt=1.0
+integrates for twice as long — a different trajectory, not more capacity.
+The run's own `L_PROBE_OVERRIDE` comment already isolates this: *"not
+conflated with the separate 'fewer L, bigger dt for the same total
+integration time' question, which is a different experiment."*
+
+### 7.5 Standing facts about depth in this architecture
+
+- **Depth is nearly free in parameters, expensive in compute.** Embeddings +
+  untied head (38.6M, 50%) and the **shared** V_theta bank (35.4M, 46%) are
+  both L-independent; only ≈2.69M is per-layer, i.e. **337K/layer**. So
+  L=8→16 is **+3.5% params** but **≈2x compute/step** (≈8.4 s/step). Adding
+  wells is the opposite trade: K=8→16 is +46% params at ≈1x compute.
+- **L=8 is a mitigation, not a preference.** The ARCH_TIERS ladder picks
+  `d=384, L=16, M=32` by default. L=8 was pinned because the L=16 run hit a
+  grad-clip spike burst (steps 6297-6676) with a real PPL hit (176.88 →
+  207.11), the stated mechanism being that depth lengthens the compounding
+  chain a spike propagates through. **All four of this run's spikes are
+  `reverse_channel_scale`-led**, and `reverse_ch` is a single weight-tied
+  module reused at every layer — so its gradient accumulates once per layer.
+  Depth amplifies the exact signature currently escalating.
+- No evidence L=16 was ever better at matched steps: at step 6,000 the L=16
+  run was at 176.88 PPL (pre-burst) against this L=8 arm's **170.98**.
+  Different arms, so not clean — but it was not ahead, and it was spikier.
+
+---
+
+## 8. After this analysis
 
 Decide `PROBE_MAX_STEPS`: clear to `None` for the full 100,000-step arm, or
 set another stop. The WSD schedule is a pure function of `TOTAL_STEPS` and
