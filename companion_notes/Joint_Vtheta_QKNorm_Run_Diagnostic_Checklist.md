@@ -411,7 +411,7 @@ immediately rather than burning 15,000 more flat steps that measurably
 degrade (+0.159 PPL/1k). ≈27,000 steps ≈ 31h, against ≈58h to finish at
 100,000 with 15,000 of those spent going backwards.
 
-### 6.3 Companion probe: anneal from the run's BEST (step 28,500) — **PROPOSED**
+### 6.3 Companion probe: anneal from the run's BEST (step 28,500) — **RUN, SUCCEEDED**
 
 **Notebook:** [`colab_fock_cfc_baoab_joint_vtheta_qknorm_annealed_after_28500_openwebtext_d384.ipynb`](../notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_joint_vtheta_qknorm_annealed_after_28500_openwebtext_d384.ipynb)
 (2026-09-17). Identical recipe, length and LR-at-every-eval to §6's
@@ -443,6 +443,78 @@ stable-phase steps between them bought nothing, and train `ntp` agrees
 
 Read the **settled level** (mean of the last three evals), not the best:
 §6.1 settled at 85.03 while its best, 84.05, was a 1.37-point lucky draw.
+
+#### RESULT, 2026-09-17 — it beat the additive baseline
+
+| eval | lr | from 50,000 (§6.1) | from 28,500 | Δ |
+|---|---|---|---|---|
+| 1 | 2.89e-04 | 92.56 | 88.16 | −4.40 |
+| 3 | 2.12e-04 | 88.28 | 84.56 | −3.72 |
+| 5 | 1.03e-04 | 84.05 | **80.75** | −3.30 |
+| 8 | 1.50e-05 | 84.91 | 81.47 | −3.44 |
+| **settled** | | **85.03** | **81.58** | **−3.45** |
+
+Better at **every** eval, by 2.5-4.4 PPL.
+
+**Against the additive baseline (81.92 best, 100,000 steps): joint wins.**
+Best **80.75** (−1.4%), settled **81.58** (−0.4%), using **32,500 steps =
+32.5% of the compute**.
+
+**Prediction scored: near miss.** Recorded "settles near 79"; actual 81.58
+— off by +2.58. Direction strongly confirmed, magnitude optimistic. Same
+failure mode as §3's PPL extrapolation: direction reliable, magnitude not.
+
+**The sharpest form of the finding.** Training 28,500 → 50,000 did not
+merely buy nothing — it cost **3.45 PPL permanently**, measured after both
+states were given an identical decay. The step-28,500 state is also
+healthier on every axis:
+
+| | at 28,500 | at 50,000 |
+|---|---|---|
+| spikes in 4,000 steps | **0** | 3 |
+| max grad norm | **4.22** | 192.9 |
+| `omega*dt` p50 | **0.983** | 1.128 |
+| `over_wall` | **0.011-0.050%** | 0.2-0.7% |
+| `bproj_sig` | **24.88** | 36.80 |
+
+`bproj_sig` grew 48% across that window *while the model got worse*, so the
+curvature accumulated there was harmful rather than productive. Consistent
+with §6.1: the anneal at 50,000 improved PPL without moving `omega*dt`, so
+curvature does not cap PPL *directly* — but a state that accumulated it
+anneals to a worse place.
+
+**This reframes the arm.** The joint-vs-additive comparison in §6.1 read
+"+2.6% worse at 54% of the steps". With the right branch point it is
+**−1.4% better at 32.5%**. Joint coupling was never underperforming; it was
+being trained ≈36,500 steps past its peak on a schedule that decayed far
+too late.
+
+Leak probe at step 30,000: **[CLEAN]** (honest 49.86 vs standard 48.29,
++0.0319 ± 0.0358 nats).
+
+### 6.4 Production decay from step 28,500 — **NEXT**
+
+**Notebook:** `colab_fock_cfc_baoab_joint_vtheta_qknorm_decay_from_28500_openwebtext_d384.ipynb`
+
+`TOTAL_STEPS = 44_000` → `stable_end = int(0.65 x 44,000) = 28,600`, so a
+resume at 28,500 runs 100 stable steps and then a real **15,400-step
+decay**. `ANNEAL_PROBE = False`, `PROBE_MAX_STEPS = None`. ≈18h. The
+compressed 4,000-step version reached 81.58; a decay ≈4x longer should do
+better.
+
+**Two traps this notebook handles explicitly:**
+
+1. **Cell 2 would resume from `_step30000.pt`, not 28,500.** With
+   `TOTAL_STEPS = 44,000` the checkpoint steps are 7,500 / 15,000 /
+   22,500 / 30,000 / 37,500, and `_step30000.pt` already exists in the
+   main folder from the abandoned trajectory. Step 30,000 evaluated at 87.73 against 28,500's
+   84.31 — a materially worse start. The notebook sets `resume_ckpt`
+   explicitly and asserts the loaded `step`.
+2. **Writes must NOT go to the main folder.** The main run already covers
+   steps 28,501-50,000, so a second trajectory over 28,501-44,000 would
+   duplicate step numbers in `training_log.jsonl` and overwrite
+   `_step30000.pt` / `_step37500.pt` from the original run. Output is
+   redirected to `GDRIVE_ROOT / 'decay_from_28500'`.
 
 **Do not reuse `anneal_probe/`.** Its `_best.pt` is now the step-52,500
 model at 84.05, which would suppress checkpointing, restore the wrong
