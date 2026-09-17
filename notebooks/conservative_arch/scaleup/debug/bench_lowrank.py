@@ -63,11 +63,22 @@ row('SVD small  JOINT    (P=32)',   f'{q_over}x{P_joint}', svd, sm32)
 row('SVD small  ADDITIVE (P=160)',  f'{q_over}x{P_add}',   svd, sm160)
 row('SVD full   JOINT  (max_modes=None)', f'{d}x{P_joint}', svd, g32)
 
-def gram_eigh(G):
-    M = G.transpose(-1, -2) @ G
-    lam, V = torch.linalg.eigh(M)
-    return G @ V, lam
-row('GRAM+EIGH  JOINT  (proposed fix)', f'{P_joint}x{P_joint}', gram_eigh, g32)
+# Time the REAL driver, not a hand-rolled copy -- it was hardened on
+# 2026-09-17 after the fp32 eigh version died on real G with
+# "_LinAlgError: ... too many repeated eigenvalues". It now symmetrises,
+# works in float64 and uses svd rather than eigh, so the earlier 14.1 ms
+# figure does NOT carry over and must be re-measured.
+try:
+    import sys
+    sys.path.insert(0, '/content/semsimula-paper/notebooks/conservative_arch/parf')
+    from cfc_baoab import lowrank_modes as _lm
+    row('GRAM driver, REAL lowrank_modes (all 32)', f'{d}x{P_joint}',
+        lambda x: _lm(x, max_modes=None, driver='gram'), g32)
+    row('SVD driver, REAL lowrank_modes (q=16)',    f'{d}x{P_joint}',
+        lambda x: _lm(x, max_modes=16, driver='svd'), g32)
+except Exception as _e:
+    print(f'{"REAL lowrank_modes (repo not on path)":<42}{"":>20}{"skipped":>10}'
+          f'   {str(_e)[:40]}')
 
 del g32, qb, sm32, sm160, ref_a, ref_b
 torch.cuda.empty_cache()

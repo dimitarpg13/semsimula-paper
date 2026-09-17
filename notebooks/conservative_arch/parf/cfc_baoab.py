@@ -397,22 +397,48 @@ def _gram_eigh(Gd: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
     Validate against ``_svd_stable`` on real ``G`` before trusting it on a
     new configuration.
 
-    Branch-free and device-stable (matmul -> eigh -> matmul, no try/except,
+    Branch-free and device-stable (matmul -> svd -> matmul, no try/except,
     no CPU fallback), so unlike ``_svd_stable`` it is safe to recompute
     inside a gradient-checkpointed layer step.
+
+    **2026-09-17.** A first version used ``eigh`` in fp32 and died on real
+    ``G`` with ``_LinAlgError: ... ill-conditioned or has too many repeated
+    eigenvalues`` at batch element 5121 of the very first step. The three
+    hardenings below (symmetrise, float64, deterministic ramp) and the move
+    from ``eigh`` to ``svd`` are the response; see the inline notes.
     """
-    M = Gd.transpose(-1, -2) @ Gd                       # (..., P, P) symmetric
-    lam, V = torch.linalg.eigh(M)                       # ASCENDING order
-    # eigh returns ascending; every caller here expects stiffest-first, to
-    # match _svd_stable / _randomised_svd_det.
-    lam = lam.flip(-1).clamp(min=0.0)                   # PSD; kill -1e-18 noise
-    V = V.flip(-1)
-    # u_i = G v_i / sqrt(lam_i).  Near-null directions would blow up, so they
-    # are zeroed here; lowrank_modes' own ``floor`` then marks them inert.
-    inv_sqrt = torch.where(lam > 0, lam.clamp(min=1e-30).rsqrt(),
+    dt_in, P = Gd.dtype, Gd.shape[-1]
+    M = Gd.transpose(-1, -2) @ Gd                       # (..., P, P)
+
+    # -- three deterministic hardenings, all branch-free ----------------
+    # (1) Symmetrise. G^T G is symmetric in exact arithmetic but not in fp,
+    #     and the asymmetry is what tips a Jacobi driver into non-convergence.
+    # (2) float64. Forming the Gram SQUARES the condition number, which is
+    #     precisely the cost _svd_stable avoids by never forming it. 32x32
+    #     doubles are cheap; fp32 is not enough headroom for that squaring.
+    # (3) A deterministic diagonal ramp, ~1e-12 relative, to split exactly
+    #     repeated eigenvalues -- the failure cuSOLVER reports as "too many
+    #     repeated eigenvalues". Within a degenerate block ANY orthonormal
+    #     basis reconstructs the same operator U diag(lam) U^T, so choosing
+    #     one deterministically is harmless to the dynamics.
+    M = (0.5 * (M + M.transpose(-1, -2))).double()
+    scale = M.diagonal(dim1=-2, dim2=-1).amax(-1).clamp(min=1e-300)
+    ramp = torch.arange(P, device=M.device, dtype=M.dtype) * (1e-12 / max(P, 1))
+    M = M + torch.diag_embed(scale.unsqueeze(-1) * ramp)
+
+    # SVD rather than eigh: for a PSD matrix the two coincide, but the
+    # Jacobi SVD driver is markedly steadier than the symmetric-eigen one on
+    # repeated spectra -- and it returns DESCENDING values, which is the
+    # order every caller here expects.
+    V, lam, _ = torch.linalg.svd(M)                     # lam desc, = sigma^2(G)
+    lam = lam.clamp(min=0.0)
+
+    # u_i = G v_i / sigma_i.  Near-null directions would blow up, so they are
+    # zeroed here; lowrank_modes' own ``floor`` then marks them inert.
+    inv_sqrt = torch.where(lam > 0, lam.clamp(min=1e-300).rsqrt(),
                            torch.zeros_like(lam))
-    U = (Gd @ V) * inv_sqrt.unsqueeze(-2)               # (..., d, P)
-    return U, lam.sqrt()
+    U = (Gd.double() @ V) * inv_sqrt.unsqueeze(-2)      # (..., d, P)
+    return U.to(dt_in), lam.sqrt().to(dt_in)
 
 
 def lowrank_modes(
