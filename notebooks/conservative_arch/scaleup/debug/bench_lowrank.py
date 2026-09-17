@@ -68,17 +68,35 @@ row('SVD full   JOINT  (max_modes=None)', f'{d}x{P_joint}', svd, g32)
 # "_LinAlgError: ... too many repeated eigenvalues". It now symmetrises,
 # works in float64 and uses svd rather than eigh, so the earlier 14.1 ms
 # figure does NOT carry over and must be re-measured.
-try:
-    import sys
-    sys.path.insert(0, '/content/semsimula-paper/notebooks/conservative_arch/parf')
+import sys, glob, os
+_lm = None
+try:                                  # already on sys.path (e.g. after Cell 4)
     from cfc_baoab import lowrank_modes as _lm
+except ImportError:
+    _cands = ['/content/semsimula-paper/notebooks/conservative_arch/parf']
+    _cands += sorted(glob.glob('/content/*/notebooks/conservative_arch/parf'))
+    _cands += sorted(glob.glob(os.path.expanduser(
+        '~/**/notebooks/conservative_arch/parf'), recursive=True))[:3]
+    for _c in _cands:
+        if os.path.exists(os.path.join(_c, 'cfc_baoab.py')):
+            sys.path.insert(0, _c)
+            try:
+                from cfc_baoab import lowrank_modes as _lm
+                print(f'[import] cfc_baoab from {_c}')
+                break
+            except Exception:
+                pass
+
+if _lm is None:
+    print(f'{"REAL lowrank_modes -- NOT FOUND":<42}{"":>20}{"skipped":>10}')
+    print('    Run this cell AFTER Cell 4 (which puts the repo on sys.path),')
+    print('    or set the path by hand. Without this row the benchmark does')
+    print('    NOT tell you whether the hardened gram driver is affordable.')
+else:
     row('GRAM driver, REAL lowrank_modes (all 32)', f'{d}x{P_joint}',
         lambda x: _lm(x, max_modes=None, driver='gram'), g32)
     row('SVD driver, REAL lowrank_modes (q=16)',    f'{d}x{P_joint}',
         lambda x: _lm(x, max_modes=16, driver='svd'), g32)
-except Exception as _e:
-    print(f'{"REAL lowrank_modes (repo not on path)":<42}{"":>20}{"skipped":>10}'
-          f'   {str(_e)[:40]}')
 
 del g32, qb, sm32, sm160, ref_a, ref_b
 torch.cuda.empty_cache()
@@ -92,6 +110,9 @@ print('  * Per optimiser step there are 16 calls (8 layers x 2 microbatches),')
 print(f'    roughly doubled by checkpoint recompute: multiply by ~32{"" if SCALE==1 else f" x {SCALE:.0f} (batch scaling)"}.')
 print('    The randomised path costs 3x the QR row + 1x the SVD-small row.')
 print('  * On a T4 these ratios are a LOWER bound on the A100 gap.')
-print('  * If GRAM+EIGH failed or was slow, re-check on the A100 before')
-print('    committing -- this session has already seen cuSOLVER reject small')
-print('    batched eigh on one CUDA version but not another.')
+print('  * The GRAM row times the REAL lowrank_modes. Its fp32-eigh ancestor')
+print('    raised _LinAlgError on real G at the first training step, so the')
+print('    driver was hardened (symmetrise + float64 + ramp + svd). The old')
+print('    14.1 ms figure does NOT carry over -- this row is the live number.')
+print('  * A random-G benchmark cannot prove the driver survives REAL G.')
+print('    The 1,000-step pilot is the actual test; it fails in step 1 if not.')
