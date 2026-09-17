@@ -384,6 +384,62 @@ halves the whole distribution and moves it back under the stability wall:
 This is a **stability** experiment, not a capacity one. It does not add
 parameters; it integrates the same dynamics more accurately.
 
+**Order to run these in.** §7.0 comes first and costs two minutes; it
+decides whether §7.6 is cheap, and therefore the order of everything below.
+
+0. **§7.0 — benchmark the linalg first.** Two minutes, no model, no
+   training. Determines whether `baoab_cfc_lowrank` is affordable on *this*
+   arm, which reorders the rest.
+1. **§7.2** — the cheapest *diagnostic*: zero surgery, zero training,
+   minutes. Answers "does integration error cost anything at all?" If PPL
+   is unchanged at dt=0.5, stop — the wall crossings are harmless and
+   §7.3/§7.6 are unnecessary.
+2. **§7.6 if §7.2 says yes** — the better *fix*: it removes the wall on the
+   off-diagonal channel outright rather than shrinking the step. **If §7.0
+   shows it is cheap on this arm, it likely outranks §7.2**, being exact
+   rather than approximate.
+3. **§7.3 only if you also want the extra gate applications**, a larger
+   change than either.
+
+§7.4 and §7.7 record what NOT to do, and why.
+
+### 7.0 Benchmark the linalg before choosing — **RUN FIRST**
+
+[`notebooks/conservative_arch/scaleup/debug/bench_lowrank.py`](../notebooks/conservative_arch/scaleup/debug/bench_lowrank.py)
+(added 2026-09-17) times the ops `lowrank_modes`
+actually performs, at the shapes this arm produces, with no model and no
+training. It auto-scales the token batch to fit smaller cards and
+normalises every timing against a reference batched matmul so results
+compare across GPUs.
+
+**The hypothesis it tests.** cuSOLVER's `gesvdjBatched` handles matrices
+only up to **32×32**; above that PyTorch loops over the batch — 8,192
+sequential kernel launches per call. The randomised path's small SVD has
+shape `(q_over, P)`, so:
+
+| arm | small-SVD shape | inside 32×32? |
+|---|---|---|
+| additive (P=160) | `(20, 160)` | no → **loops** |
+| **joint (P=32, this arm)** | `(20, 32)` | **yes → batched** |
+
+The QR in the same routine is `(B·T, d, q_over)` — **independent of P**, so
+identical on both arms. That gives a clean discriminator: **if the SVD is
+the bottleneck, the joint arm sidesteps it for free; if the QR is, joint
+changes nothing.** The decisive pair of rows is `SVD small JOINT (20x32)`
+versus `ADDITIVE (20x160)`.
+
+**Unverified assumption that carries this whole reading.** The ≈60 s/step
+figure is remembered from an earlier attempt, and it was **never confirmed
+which arm it was measured on**. The cliff explanation only works if it was
+the additive arm (P=160). If it was the joint arm (P=32), the mechanism
+above does not explain it and the diagnosis must be redone. **Establish
+this before interpreting the benchmark.**
+
+A T4 is adequate — the 32×32 limit is a cuSOLVER API constraint, not a
+hardware one — but a T4 *understates* the gap (looping is launch-bound and
+roughly GPU-independent, while the batched path is throughput-bound and
+slower there), so a cliff seen on a T4 is a lower bound on the A100's.
+
 ### 7.1 What refines for free, and what does not
 
 Checked against `_fock_layer_step` / `_layer_step_langevin`, 2026-09-16:
@@ -403,7 +459,7 @@ Checked against `_fock_layer_step` / `_layer_step_langevin`, 2026-09-16:
 
 That asymmetry is what makes 7.2 preferable to 7.3.
 
-### 7.2 Preferred: same L=8, two integration substeps of dt=0.5 — **PROPOSED**
+### 7.2 Cheapest diagnostic: same L=8, two substeps of dt=0.5 — **PROPOSED**
 
 Keep `L = 8`, `depth_code`, every gate and every weight **exactly as they
 are**; split each layer's integration into two substeps of `dt = 0.5`.
@@ -424,8 +480,16 @@ refined integrator, and compare against **93.93** with no training at all:
 - **PPL unchanged** → the wall crossings are harmless at this magnitude,
   and `omega*dt` can be retired as a concern for this run. This would also
   retire §2.6.2's open question.
+- **PPL degrades** → **inconclusive, not a negative result.** The model was
+  *trained* with dt=1.0 explicit kicks, so its parameters partly compensate
+  for that integration error; refining the integrator removes an error it
+  had adapted to. Distinguishing "the refinement is worse" from "the
+  compensation was removed" needs a few hundred steps of re-adaptation
+  before the comparison means anything.
 
-Either answer is worth having, and the first read costs **minutes**.
+The gate is therefore **asymmetric**: an immediate improvement is strong
+evidence, an immediate regression is not evidence either way. The first read
+still costs **minutes**.
 
 **Implementation note.** `_layer_step_ex` can be called twice with `dt/2`,
 but velocity is carried
@@ -492,6 +556,136 @@ integration time' question, which is a different experiment."*
 - No evidence L=16 was ever better at matched steps: at step 6,000 the L=16
   run was at 176.88 PPL (pre-burst) against this L=8 arm's **170.98**.
   Different arms, so not clean — but it was not ahead, and it was spikier.
+
+---
+
+### 7.6 `baoab_cfc_lowrank` — the principled fix, already implemented
+
+**Nothing needs building — verified 2026-09-17.** Targeting only the
+stiffest modes is already in the code, and correctly:
+
+- `lowrank_modes(G, max_modes=...)` has both paths — `_svd_stable` (full,
+  all `P` modes) and `_randomised_svd_det` (truncated, top `q`).
+- `_randomised_svd_det` is a hand-rolled Halko-Martinsson-Tropp
+  range-finder written **branch-free with a local fixed-seed generator**,
+  specifically because `torch.svd_lowrank` trips `CheckpointError` under
+  gradient checkpointing. Do not replace it with a library call.
+- The caller demotes dropped modes correctly: `_layer_step_langevin`
+  subtracts only `P_U f_L = U(U^T f_L)`, so the soft modes stay in the
+  stable explicit kick instead of being silently cancelled — exactly what
+  `lowrank_modes`' docstring requires of it.
+- `lowrank_max_modes`, `lowrank_niter` and `lowrank_oversample` are all
+  live config knobs read via `getattr(cfg, ...)`.
+
+So this is a **configuration change, not an implementation task**. The open
+question is cost, not correctness — see §7.0.
+
+**Keep `LOWRANK_MAX_MODES = 16`, not `None`, on this arm.** `16 < P = 32`
+selects the randomised path, whose small SVD is `(20, 32)` and fits inside
+cuSOLVER's batched limit; `None` takes `_svd_stable` on `(384, 32)`, which
+does not. `_svd_stable` also carries `try/except`, a jitter-retry escalation
+and a CPU fallback — metadata still matches, so it likely will not raise
+under checkpointing, but a forward and a recompute could take different
+branches and compute gradients against slightly different activations. The
+truncated path avoids that by construction.
+
+**The defect this targets.** `baoab_cfc` is only *partially* exact. The
+closed-form harmonic propagator handles the **diagonal** part
+(`diag(a_k)`); the anisotropic **off-diagonal** part `B_k B_k^T` is still an
+explicit kick, which is where the `omega*dt < 2` wall comes from. So the
+off-diagonal channel is not merely near a stability limit — it is
+*under-resolved*. For leapfrog on a harmonic mode the numerical frequency
+satisfies `sin(w_num*dt/2) = w*dt/2`, giving:
+
+| `omega*dt` | frequency error | where |
+|---|---|---|
+| 0.564 | 1.4% | under §7.2 substeps |
+| **1.128** | **6.2%** | **current p50** |
+| 1.500 | 13.1% | |
+| 1.900 | 31.9% | |
+| 2.000 | unstable | the wall |
+| **2.435** | **unstable** | **current max** |
+
+The median mode carries ≈6% phase error and the 0.423% over the wall have no
+stable solution. `INTEGRATOR = 'baoab_cfc_lowrank'` integrates
+`L = sum_k g_k B_k B_k^T` **exactly** on its stiffest modes, so that channel
+has no hard wall at all (only narrow damped resonances at `omega*dt ≈ k·pi`).
+It fixes the cause rather than shrinking the step.
+
+**Why it may be affordable here when it was not for additive — CONFIRMED
+2026-09-16.** The arm was rejected at ≈120 s/step against `baoab_cfc`'s
+10-15. But `G` has `K·rank` columns **per bank**, and the number of banks
+differs by coupling. Traced through all three implementations in
+`model_aniso_gaussian_vtheta.py`:
+
+| class | `G` width | modes |
+|---|---|---|
+| `AnisotropicMixtureGaussianVTheta` (one bank) | `d × K·rank` | 32 |
+| `AnisotropicMultiContextGaussianVTheta` (additive, `torch.cat(Gs)`) | `d × n_ctx·K·rank` | **160** |
+| `JointContextAnisotropicGaussianVTheta` (**this arm**, delegates to `self.bank`) | `d × K·rank` | **32** |
+
+So this arm's low-rank operator is **5x smaller** than the additive arm's —
+an incidental payoff of joint coupling that had not been noticed. If the
+cost is dominated by the `O(d·P^2)` SVD, `P` going 160 → 32 is a **25x**
+reduction in that term, which would put the exact arm in the neighbourhood
+of the current 4.2 s/step rather than 120. **Measure it; do not assume it** —
+the cost model may not be SVD-dominated, and the 120 s/step figure was taken
+on a different configuration.
+
+Note also that `LOWRANK_MAX_MODES = 16` covers **half** of this arm's 32
+modes, where it covered only 10% of additive's 160. With `over_wall` at
+0.423%, the set genuinely needing exact treatment is far smaller than 16, so
+the truncated path should be ample — and `None` (all 32, full SVD) may now
+be viable too.
+
+**Plumbing already exists.** `INTEGRATOR` is part of `_variant_tag`, so
+switching it would normally orphan this arm's checkpoints into a fresh empty
+folder. **Cell 1b** (`RESUME_VARIANT_TAG_OVERRIDE`) was built for exactly
+this case, in its own words: *"the goal is to keep training the SAME run and
+only change which integrator it uses from here on (e.g. baoab_cfc ->
+baoab_cfc_lowrank after a hard-watchdog burst)."* Set it to this arm's tag.
+Re-read that cell's warning first — pointed at the *wrong* tag it silently
+loads an incompatible V_theta.
+
+**Same zero-training go/no-go as §7.2, including its asymmetry:** load
+step-50,000, switch the integrator, evaluate without training, compare
+against **93.93**. An immediate improvement is strong evidence; an immediate
+regression is inconclusive, because the trained weights partly compensate
+for the integration error being removed. Then measure s/step over a few
+hundred steps before committing — the cost is an open question (see the
+`gesvdjBatched` 32x32 batching cliff), not a settled one.
+
+### 7.7 Do NOT coarsen (L=4 at dt=2.0, etc.)
+
+`omega*dt` scales linearly with `dt`, so coarsening moves the whole
+distribution *past* the wall. Using the measured p50 = 1.128 and
+log-normal σ = 0.217 at step 50,000:
+
+| config | dt | `omega*dt` p50 | max | `over_wall` |
+|---|---|---|---|---|
+| L=16, or L=8 with 2 substeps | 0.5 | 0.564 | 1.22 | ≈0% |
+| **L=8 (current)** | **1.0** | **1.128** | **2.44** | **0.4%** |
+| L=4 | 2.0 | 2.256 | 4.87 | **71%** |
+| L=2 | 4.0 | 4.512 | 9.74 | **100%** |
+
+At `L=4, dt=2.0` the **median** token-slot is over the wall. Beyond the
+stability argument, two structural reasons make "exactness ⇒ fewer layers"
+not apply here:
+
+1. **The flow is non-autonomous.** `depth_code` is `[L, n_ctx, d]` and
+   `V_THETA_DEPTH_CONDITION = True`, so each layer applies a *different*
+   conditioned potential. Exact integration lets you take larger steps
+   through a *fixed* vector field; it cannot merge steps of a field that
+   changes every layer. Dropping layers discards learned potentials, not
+   redundant Euler steps.
+2. **Gates are not integration.** `r = blend * r + (1 - blend) * readout`
+   fires once per layer with no `dt` factor (§7.1), so halving `L` halves
+   the register updates — halving the depth of a recurrent channel.
+
+§7.2 bounds this question from both sides as a by-product: if PPL is
+unchanged at dt=0.5 then integration error at dt=1.0 is already negligible
+and coarsening buys nothing while costing the wall; if PPL improves, then
+coarsening is worse still.
 
 ---
 
