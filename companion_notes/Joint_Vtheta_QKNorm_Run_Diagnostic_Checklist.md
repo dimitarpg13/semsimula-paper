@@ -582,7 +582,35 @@ not — §7.6 is **zero code**, a config switch (see §7.6). So:
 
 §7.4 and §7.7 record what NOT to do, and why.
 
-### 7.0 Benchmark the linalg before choosing — **RUN FIRST**
+### 7.0 Benchmark the linalg before choosing — **RUN, 2026-09-17**
+
+#### RESULT (A100, CUDA 12.8, 8,192 tokens)
+
+| op | shape | ms/call |
+|---|---|---|
+| QR (randomised path, x3 per call) | `384x20` | 1,108.7 |
+| SVD small JOINT | `20x32` | 12.0 |
+| SVD small ADDITIVE | `20x160` | **6,335.4** |
+| SVD full JOINT (`max_modes=None`) | `384x32` | 9,111.8 |
+| **`lowrank_modes` svd driver, q=16** | `384x32` | **3,368.9** |
+| **`lowrank_modes` gram driver, all 32** | `384x32` | **40.1** |
+
+**The 32x32 cliff is real — 532x** between `(20,160)` and `(20,32)`. **But it
+is not this arm's problem.** Three QRs = 3,326 ms against the measured
+svd-path total of 3,368.9 — **99% of the cost is the QR**, and the QR shape
+is `P`-independent, so joint coupling gives no relief. The "joint sidesteps
+the cliff for free" hypothesis is closed: wrong branch.
+
+**Gram is 84x faster than the svd path** (40.1 vs 3,368.9), taking the arm
+from **112 s/step to 5.48** predicted / **5.74 measured**. It also returns
+all 32 modes, so the exact treatment is now the *cheap* one and truncation
+is obsolete.
+
+**Two process notes, both self-inflicted.** The first benchmark hardcoded a
+clone path and skipped the only row that mattered; the second had an
+unasserted string replacement that silently no-op'd. Assert every
+replacement, and prefer a shallow clone over path discovery.
+
 
 [`notebooks/conservative_arch/scaleup/debug/bench_lowrank.py`](../notebooks/conservative_arch/scaleup/debug/bench_lowrank.py)
 (added 2026-09-17) times the ops `lowrank_modes`
@@ -638,7 +666,16 @@ Checked against `_fock_layer_step` / `_layer_step_langevin`, 2026-09-16:
 
 That asymmetry is what makes 7.2 preferable to 7.3.
 
-### 7.2 Independent cross-check: same L=8, two substeps of dt=0.5 — **PROPOSED, ≈12 lines**
+### 7.2 Substeps at dt=0.5 — **LARGELY SUPERSEDED by §7.6, 2026-09-18**
+
+§7.6 answered the same question more directly and with a proper control:
+exact integration of the stiff modes gives **equal train loss** (4.5115 vs
+4.5120), a **1.03-sigma** val-PPL edge on n=2, and **1.57x calmer
+gradients**. Halving `dt` is a weaker version of that test — it shrinks the
+error rather than removing it — so this is now only worth building if you
+want a second, independent mechanism to confirm §7.6's stability result.
+The ≈12-line implementation below still stands if so.
+
 
 Keep `L = 8`, `depth_code`, every gate and every weight **exactly as they
 are**; split each layer's integration into two substeps of `dt = 0.5`.
@@ -769,9 +806,81 @@ integration time' question, which is a different experiment."*
 
 ---
 
-### 7.6 `baoab_cfc_lowrank` — the principled fix, already implemented
+### 7.6 `baoab_cfc_lowrank` — **RUN AND CLOSED, 2026-09-18**
 
-**Nothing needs building — verified 2026-09-17.** Targeting only the
+#### VERDICT
+
+**It works, it is affordable, and it buys stability rather than loss.**
+Use `baoab_cfc` for the production decay; keep lowrank for the next
+scale-up. Reasoning below.
+
+**Notebooks:** `colab_..._lowrank_from_50K_...ipynb` and its matched
+control `colab_..._control_flat_from_50K_...ipynb` — identical branch
+point (step 50,000), flat `lr=3e-4`, 1,000 steps, same seed and data
+order, differing only in `INTEGRATOR` and the output folder.
+
+**PPL — lowrank ahead at both evals, and widening:**
+
+| step | lowrank | control | edge |
+|---|---|---|---|
+| 50,000 | 93.93 | 93.93 | *(shared start)* |
+| 50,500 | 92.71 | 93.27 | +0.56 |
+| 51,000 | **91.67** | 93.26 | **+1.59** |
+
+Control went flat (−0.67 then nothing); lowrank kept descending (−2.26,
+still falling at the stop).
+
+**But train loss is a dead heat**, and it is the more direct measurement:
+control **4.5120** vs lowrank **4.5115** over 20 matched step-lines — a
+difference of 0.0005. A 1.59 val gap is **1.03 sigma on n=2**. Treat the
+PPL edge as suggestive, not established.
+
+**What IS solid — gradient stability, at n=20:**
+
+| | control | lowrank | |
+|---|---|---|---|
+| grad mean | 3.67 | 2.34 | **1.57x** |
+| grad std | 2.59 | 1.47 | **1.76x** |
+| grad max | 12.16 | 7.94 | |
+| spikes | **2** (343.9, 258.7) | **1** (145.3) | `creation_gate` vs `depth_code` |
+
+(Called at n=7, collapsed at n=10, recovered at n=20. Magnitude is loose;
+direction has now survived a real sample.)
+
+**Cost: 1.36x time (5.74 vs 4.21 s/step) and +6.9 GB** — eval peak 75.86 GB
+against `baoab_cfc`'s 68.96, i.e. **89% of 85.1 GB**. Tight on an 80 GB
+card, would not fit a smaller one.
+
+**Why `baoab_cfc` for the production decay anyway:**
+
+1. Known quantity, 18h vs 24.6h, with the anneal's 81.58 already as a
+   reference point.
+2. The PPL edge was measured at flat LR from the *degraded* step-50,000
+   state. No reason to assume it transfers to a decay from healthy 28,500.
+3. The decay is where the final number comes from — not the place for a
+   code path that raised `_LinAlgError` on its first contact with real `G`.
+
+**Why keep it for the next scale-up:** `omega*dt` is climbing
+logarithmically, `over_wall` projects to ≈3.3% by step 100,000, and the
+d=768 blowup at step ≈37,000 is on the record. 1.57x calmer gradients and
+half the spikes is the right insurance *there* — and it is now a working,
+benchmarked, config-switchable option rather than a 112 s/step non-starter.
+
+#### OPEN ITEM — the resonance monitor is blind under this integrator
+
+Zero `[resonance]` lines across the entire lowrank pilot, where every
+`baoab_cfc` run emits one per 500 steps. `resonance.observe()` patches
+`vt.harmonic_terms` and `integrator_module.cfc_substep`; the lowrank path
+calls `harmonic_terms_lowrank` and `lowrank_cfc_substep`, so the monitor
+records nothing and warns about nothing. **Fix before any long lowrank
+run** — that arm is precisely the one whose `omega*dt` we would want to
+watch. The control supplies the reference meanwhile: p50 1.108/1.118, max
+2.418/2.344, `over_wall` 0.200%/0.284% at steps 50,500/51,000.
+
+#### The driver, as built
+
+
+**Nothing needed building — verified 2026-09-17.** Targeting only the
 stiffest modes is already in the code, and correctly:
 
 - `lowrank_modes(G, max_modes=...)` has both paths — `_svd_stable` (full,
