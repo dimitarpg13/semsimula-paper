@@ -1014,3 +1014,231 @@ Decide `PROBE_MAX_STEPS`: clear to `None` for the full 100,000-step arm, or
 set another stop. The WSD schedule is a pure function of `TOTAL_STEPS` and
 is unaffected by either choice; the decay phase does not begin until step
 65,000, so any stop before then costs nothing but a pause.
+
+---
+
+## 9. The matched GPT-2 baseline — **RUNNING, 2026-09-18**
+
+**Notebook:** [`colab_matched_gpt2_baseline_openwebtext.ipynb`](../notebooks/conservative_arch/scaleup/colab_matched_gpt2_baseline_openwebtext.ipynb)
+
+This is the experiment that answers the programme's standing question: where
+is the bottleneck in the current Fock architecture?
+
+### 9.1 Why this comparison is valid
+
+Four things had to line up, and all four were verified in the source rather
+than assumed:
+
+| | Fock joint arm | GPT-2 baseline |
+| --- | --- | --- |
+| val set | `openwebtext_val_2M.npy` | **same file** — same 2B stream, same `all_ids[-2M:]` slice |
+| tokens/step | 16 x accum 2 x 512 = 16,384 | 32 x 512 = 16,384 |
+| train pool | 2B, sampled with replacement | **same 2B pool** |
+| endpoint | step 32,500, lr at floor 1.50e-05 | step 32,500, cosine at `LR_MIN` |
+
+Because tokens/step match, **steps map 1:1** and equal steps are equal tokens.
+Four notebook bugs had to be fixed first: a 200M token budget (32.5 epochs), a
+`total_mem` typo, a stale cache-name list that re-streamed 2B tokens, and an
+`EVAL_INTERVAL` of 2000 which does not divide 32,500 — that last one would
+have skipped the final decayed eval entirely and produced exactly the
+schedule-position error this section exists to avoid.
+
+### 9.2 Result
+
+**GPT-2 crossed Fock's fully-decayed endpoint at ≈step 15,200.** Interpolating
+between the step-15,000 eval (82.80) and step-15,500 (79.07):
+
+| Fock reference | GPT-2 reaches it at | fraction of budget |
+| --- | ---: | ---: |
+| 81.58 (settled, §6.3) | step ≈15,164 | **46.7%** |
+| 80.75 (best, §6.3) | step ≈15,275 | 47.0% |
+
+At step 20,500 GPT-2 stood at **64.60** and was still falling ≈1 PPL per 500
+steps with 12,000 steps of cosine decay remaining.
+
+**FINAL ENDPOINT AT STEP 32,500: pending.** Record it here on arrival rather
+than the extrapolation. A log fit over steps 17,000-20,500 projects ≈44-48,
+which is almost certainly too optimistic — §3 of this checklist already scored
+two "continued improvement" extrapolations as failures while saturating fits
+held. Do not quote a projected number.
+
+### 9.3 The four-axis comparison
+
+| | Fock | GPT-2 | |
+| --- | ---: | ---: | --- |
+| PPL at 32,500 steps | 81.58 | pending (was 64.60 at 20,500) | |
+| parameters | 76,745,698 | 33,691,776 | GPT-2 uses **2.28x fewer** |
+| inference MMAC/token | 323.6 | 36.6 | GPT-2 is **8.84x cheaper** |
+| training s/step | 4.18 | 0.29 | GPT-2 is **14.4x faster** |
+
+Step times measured from the logs: Fock steps 28,550 to 28,600 took 209s for
+50 steps; GPT-2 steps 14,200 to 14,400 took 58s for 200.
+
+The one caveat runs in Fock's favour: 81.58 came from a *compressed*
+4,000-step anneal, and §6.1 notes compressed anneals typically underperform a
+real decay. Credit Fock a generous 2 PPL and the conclusion does not move.
+
+### 9.4 The bottleneck diagnosis
+
+Full analysis in
+[`Fock_Inference_Productionization_Plan.md`](Fock_Inference_Productionization_Plan.md) §7.
+In brief: the context reaches the token update only through 5 fixed-decay
+EMAs, whose weights depend on distance `t-s` and never on content. 93.9% of
+Fock's non-embedding parameters sit in `V_theta`'s well-parameter generator,
+which is **downstream** of that compression and can only reshape what survived
+it. Every prior negative ablation in this checklist is consistent with an
+upstream bottleneck: more wells did not help (§ joint K=8 beat additive K=40),
+more depth did not help (§7.5), and rank is already fully used (PR 3.68
+against rank 4).
+
+### 9.5 Pre-registered predictions
+
+Recorded before running, to be scored the way §3 was.
+
+1. **Factorizing `V_theta` at bottleneck width 256** (Phase 2 of the
+   productionization plan) cuts its parameters ≈6.5x. **Prediction: PPL moves
+   by less than 2.** If it holds, those parameters were not doing work and the
+   bottleneck is definitively upstream in `xi`. If PPL degrades sharply, the
+   capacity was being used and this diagnosis is wrong.
+2. **Raising `XI_CHANNELS` from 5 to 10.** **Prediction: gain under 2 PPL.**
+   More fixed taps do not fix content-independence.
+3. **A content-addressed pooling variant** (paper `17f` family A or C).
+   **Prediction: gain of 10 PPL or more**, and much larger than 2.
+
+Predictions 2 and 3 together separate "too few taps" from "wrong kind of
+pooling". Prediction 1 is the cheapest and sharpest, and is already scheduled
+for other reasons.
+
+---
+
+## 10. Family A: xi-routed conservative attention — **GATES 0-2 PASSED, 2026-09-18**
+
+Tests prediction 3 of §9.5. Motivation and the bottleneck argument are in
+[`Fock_Inference_Productionization_Plan.md`](Fock_Inference_Productionization_Plan.md) §7.
+
+### 10.1 What already existed
+
+`model_xi_attention.py` (committed 2026-07-02, `8fbf4fe`) already implements
+family A as `XiRoutedConservativeAttention`, and it is conservative **by
+construction**: routing weights are read off the detached `xi` summary, so
+`alpha(t,s)` is a constant with respect to `h_t` and the induced force stays
+the gradient of a scalar potential. No straight-through estimator is needed.
+
+Two things blocked using it directly:
+
+1. `colab_xi_attention_openwebtext.ipynb` **has never been run** — zero output
+   cells.
+2. `XiAttnPARFLM` subclasses `MultiXiPARFLM`, **not** `FockMultiXiPARFLM`. It
+   therefore has no registers, no QK-norm, no CfC/BAOAB integrator and no
+   anisotropic joint `V_theta`. Training it as-is would confound
+   content-addressed routing with four other absent mechanisms.
+
+### 10.2 The port (Gate 0) — **DONE, uncommitted**
+
+`_pair_potential` in `model_parf_multixi.py` is a clean seam: it returns a
+**scalar** and is called once from `_layer_forces`, which already holds `xis`.
+`FockMultiXiPARFLM` overrides neither. So the port is a branch, not a rewrite.
+
+Four edits to `model_parf_multixi.py`, all strictly opt-in:
+
+| edit | what |
+| ---- | ---- |
+| `MultiXiPARFConfig` | added `pair_potential` (default `'sparse_topk'`) plus the `attn_*` knobs |
+| `MultiXiPARFLM.__init__` | builds `V_attn` when selected and sets `V_phi`/`score_head` to `None`; imports `model_xi_attention` **lazily**, since that module imports from this one and a module-level import would be circular |
+| `_pair_potential` | new leading branch; signature gains `xis=None`, so the old two-argument call still works |
+| `_layer_forces` | passes `xis=xis` |
+
+The default path is untouched: `pair_potential` defaults to `'sparse_topk'`,
+`V_attn` is `None`, and nothing new is constructed. Selection is read with
+`getattr`, so a checkpoint or notebook built against an older config still
+loads and still takes the sparse path.
+
+### 10.3 Gate results
+
+| gate | test | result |
+| ---- | ---- | ------ |
+| 0a | default config unchanged, old two-arg `_pair_potential` still callable | PASS |
+| 0b | `xi_attention` builds; zero `V_phi`/`score_head` keys left in `state_dict` | PASS |
+| 0c | calling without `xis` raises rather than silently mis-computing | PASS |
+| 0d | forward and backward for both variants; all 4 `V_attn` tensors receive gradient | PASS |
+| **1** | force equals minus the finite-difference gradient, context frozen | **PASS**, rel err 1.4e-09 (`dot`), 4.8e-09 (`rbf`) |
+| **2** | perturb tokens at `t >= 4`; force at `t < 4` must not move | **PASS**, change 0.0e+00 exactly, against a 2.9e-03 control at `t >= 4` |
+
+### 10.4 Two findings from running the gates
+
+**The Hessian-symmetry test is VACUOUS for the `dot` kernel.** Its potential is
+bilinear in `h_t` with `h_s` detached, hence **linear** in `h_t`, so its Hessian
+is identically zero and symmetry proves nothing. The finite-difference test is
+the real proof and is valid for either kernel. Under `rbf` the Hessian is
+genuinely non-trivial (max magnitude 2.0) and exactly symmetric.
+
+This has a direct consequence for Gate 3. A linear potential contributes **no
+curvature**, so the `dot` kernel cannot move `omega*dt` at all. The `rbf` kernel
+is quadratic in `h_t` and **can** push it toward the wall. Run `dot` first.
+
+**A finite-difference conservativity check must freeze `h_src`.** Because
+`h_src = h_in.detach()`, a naive perturbation moves the query and the source
+together and the test fails with relative error near 1.0 — a broken test, not a
+broken model. This is what `arm1_jacobian_symmetry`'s docstring means by "with
+context frozen".
+
+### 10.5 Cost and parameters at d=384
+
+| | parameters | MMAC/token/layer |
+| --- | ---: | ---: |
+| `sparse_topk`: `V_phi` + `score_head` | 137,801 | 1.557 |
+| `xi_attention`: `V_attn` (dot, 4 heads, d_k=d_v=48) | 884,736 | 1.081 |
+
+All-to-all routing is **cheaper** than top-k here, because the routing
+projections from the 1920-dimensional `xi` dominate while the T-dependent term
+is only `n_heads * T * d_k`. The parameter count rises 6.42x but that is
++747K against a 76.7M model, under 1% of the total.
+
+### 10.6 Two variants, not one
+
+Family A as written replaces `V_phi` — the **pair** path, 3.85% of compute. The
+bottleneck diagnosed in §9.4 is the **`xi` to `V_theta`** path: 87.6% of
+compute, 93.9% of parameters. Running only A1 risks a false negative on the
+whole hypothesis.
+
+| variant | change | tests |
+| ------- | ------ | ----- |
+| **A1** | `V_attn` replaces top-k `V_phi` | content-addressing on the pair path. **Ported, gated, ready.** |
+| **A2** | attention-pooled `xi` feeds `V_theta` | content-addressing on the diagnosed path. **Not yet written**, ≈60 lines in `MultiChannelXi`. |
+
+Outcomes: both help means content-addressing helps generally; only A2 confirms
+§9.4; only A1 means the diagnosis is wrong and the paper's framing is right;
+neither means content-addressing is not the issue and the second-order flow
+itself is the suspect.
+
+### 10.7 Remaining gates
+
+| gate | what | cost | criterion |
+| ---- | ---- | ---- | --------- |
+| 3 | `omega*dt` at init; step-0 PPL | minutes | PPL matches current arm (`attn_init_scale=0.02` keeps attention a perturbation); over-wall 0%. **Confirm the resonance monitor actually arms** — §7.6 recorded it going silently blind under the lowrank path |
+| 4 | 2,000-step pilot | ≈2.5h | no watchdog trips; grad norms comparable |
+| 5 | 5,000-step pilot, A1 **and** A2 | ≈6h each | see below |
+| 6 | full 32,500 | ≈38h | beat 81.58 and the GPT-2 endpoint |
+
+**Gate 5 uses a control that already exists.** Run the pilots on the *same*
+schedule as the 150,000-step run (warmup 7,500, lr 3.0e-04) and compare
+step-for-step against its logged head. Do not generate a fresh control, and do
+not change `TOTAL_STEPS` — the WSD schedule is a pure function of it.
+
+| step | current arm `val_ppl` |
+| ---: | ---: |
+| 2,000 | 473.12 |
+| 3,000 | 332.90 |
+| 4,000 | 253.93 |
+| 5,000 | **201.56** |
+
+This matched-step comparison is valid where the GPT-2 early-curve comparison
+was not, and for a specific reason: identical schedule, warmup, learning rate,
+initialization recipe and data order, with the pair term as the only
+difference. The GPT-2 comparison failed that test and had to be restricted to
+the decayed endpoint.
+
+**Pre-registered for Gate 5.** §9.5 prediction 3 says 10 PPL or more at the
+endpoint. At step 5,000, where PPL is near 200, a real mechanism gain should
+appear as **15 PPL or more**, far outside the 1.5 eval noise. **Under 5 PPL at
+step 5,000 does not justify Gate 6.**

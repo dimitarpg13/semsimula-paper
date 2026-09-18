@@ -96,6 +96,27 @@ class MultiXiPARFConfig(SparsePARFConfig):
     xi_alpha_init_mode: str = "explicit"   # "explicit" | "log_spaced"
     xi_tau_max: float = 100.0
 
+    # ── Pair-potential family (Gate 0, 2026-09-18) ───────────────────
+    # 'sparse_topk'  : the deployed Gumbel straight-through top-k V_phi.
+    #                  DEFAULT -- every run predating this option is
+    #                  bit-identical under it, and nothing below is built.
+    # 'xi_attention' : family A of paper_v5 sections/17f -- all-to-all soft
+    #                  routing read off the DETACHED xi summary, so
+    #                  alpha(t,s) is constant w.r.t. h_t and the induced
+    #                  force remains the gradient of a scalar potential
+    #                  (lem:cm-detached-routing).  Implemented by
+    #                  model_xi_attention.XiRoutedConservativeAttention,
+    #                  imported lazily because that module imports from
+    #                  THIS one -- a module-level import would be circular.
+    #                  Selecting it drops V_phi and score_head entirely.
+    pair_potential: str = "sparse_topk"
+    attn_n_heads: int = 4
+    attn_d_k: int = 48
+    attn_d_v: int = 48
+    attn_kernel: str = "dot"               # 'dot' | 'rbf'
+    attn_init_scale: float = 0.02          # small: enters as a perturbation
+    attn_rbf_log_sigma_init: float = 0.0
+
     # Stability: force clamping and LN-before-V_theta.
     force_clamp_max: Optional[float] = None   # clamp force to [-F, F] per dim
     ln_before_vtheta: bool = False            # LN(h) before V_theta evaluation
@@ -247,6 +268,30 @@ class MultiXiPARFLM(SparsePARFLM):
         else:
             self.ln_before_v = None
 
+        # ── Optional xi-routed conservative attention (family A) ──
+        # getattr, not cfg.pair_potential: a checkpoint or notebook built
+        # against an older config still loads and still takes the sparse
+        # path, which is the whole point of the default.
+        self.V_attn = None
+        if getattr(cfg, "pair_potential", "sparse_topk") == "xi_attention":
+            # Lazy import: model_xi_attention imports MultiXiPARFConfig
+            # from this module, so a top-level import is circular.
+            from model_xi_attention import XiRoutedConservativeAttention
+            self.V_attn = XiRoutedConservativeAttention(
+                d=cfg.d,
+                xi_channels=cfg.xi_channels,
+                n_heads=getattr(cfg, "attn_n_heads", 4),
+                d_k=getattr(cfg, "attn_d_k", 48),
+                d_v=getattr(cfg, "attn_d_v", 48),
+                kernel=getattr(cfg, "attn_kernel", "dot"),
+                init_scale=getattr(cfg, "attn_init_scale", 0.02),
+                rbf_log_sigma_init=getattr(cfg, "attn_rbf_log_sigma_init", 0.0),
+            )
+            # Retire the sparse machinery so its parameters leave the
+            # optimiser and the state_dict (same choice XiAttnPARFLM makes).
+            self.V_phi = None
+            self.score_head = None
+
     # ------------------------------------------------------------------
     @torch.no_grad()
     def xi_alpha_values(self) -> List[float]:
@@ -277,10 +322,37 @@ class MultiXiPARFLM(SparsePARFLM):
     # ------------------------------------------------------------------
     def _pair_potential(
         self, h_in: torch.Tensor, layer_idx: int,
+        xis: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
-        """Scalar V_φ pair sum at ``h_in`` (Stage-1.5b gathered or dense)."""
+        """Scalar pair potential at ``h_in``.
+
+        Sparse top-k V_φ by default; the xi-routed conservative attention
+        potential when ``cfg.pair_potential == 'xi_attention'``.  ``xis`` is
+        required only by the latter and is ignored by the former, so the
+        sparse path keeps its original two-argument behaviour.
+        """
         cfg = self.cfg
         B, T, d = h_in.shape
+
+        if self.V_attn is not None:
+            if xis is None:
+                raise RuntimeError(
+                    "pair_potential='xi_attention' needs the xi tensor for "
+                    "routing, but _pair_potential was called without it. "
+                    "Callers must pass xis=... (see _layer_forces)."
+                )
+            h_src = h_in.detach() if cfg.causal_force else h_in
+            # Detach again unconditionally. xis is already built from
+            # h.detach() whenever causal_force is set, but conservativity
+            # must not silently depend on that flag: alpha has to be a
+            # constant w.r.t. h_in for the force to stay a gradient.
+            xi_route = xis.detach()
+            causal = self._pair_mask_for(T, h_in.device)   # strict s < t
+            U_pair = self.V_attn.potential(h_in, h_src, xi_route, causal)
+            s_ell = self.per_layer_scale(layer_idx)
+            if s_ell is not None:
+                U_pair = U_pair * s_ell
+            return U_pair
 
         h_src = h_in.detach() if cfg.causal_force else h_in
         h_src_for_score = (
@@ -343,7 +415,7 @@ class MultiXiPARFLM(SparsePARFLM):
         parameters.  No-op when already fp32.
         """
         cfg = self.cfg
-        U_pair = self._pair_potential(h_in, layer_idx)
+        U_pair = self._pair_potential(h_in, layer_idx, xis=xis)
 
         if self._use_analytic_vtheta():
             # Closed-form V_theta force: no autograd, so V_theta never
