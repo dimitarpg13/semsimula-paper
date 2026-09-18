@@ -423,22 +423,24 @@ Before any inference claim can be made, two things have to be built:
 
   1. xi as the recurrence (Part A) -- exact, not an approximation, and it
      helps training too.
-  2. a routing scheme whose cost is not O(T^2). This is NOT just a
-     missing cache. Attention's logits are q^T k, which factorises, so a
-     KV cache makes decode O(T*d) per token. ScoreHead applies a GELU
-     BETWEEN the two token indices -- w2(gelu(a_t + b_s)) -- which does
-     not factorise, so no cache of per-source vectors can reconstruct it
-     without re-running the pairwise MLP over the whole history.
-     paper_v5's own design space already contains the fixes: family C
-     (RFF / Mercer kernel, O(TMd)) makes the kernel itself the router and
-     factorises by construction; family B (latent field, O(T*d*d_z)) is
-     linear outright. A bilinear score head would also factorise.
-     Note also that scoring reads the raw h_s, not xi, so the deployed
-     sparse form needs the full history of h at decode -- an O(T) cache,
-     not the O(1) runtime state claimed for the SPLM core.
+  2. a decode path for the routing. ScoreHead DOES admit one:
+     hidden[t,s] = proj_t[t] + proj_u[s], and proj_u[s] depends only on
+     the source token, so it caches at H_s = 32 floats per token per
+     layer. A new token then needs one row, O(T*H_s) work. That is
+     ~24x CHEAPER per token than attention's O(2*T*d) = 768*T, on a
+     cache about half the size of K+V. What the GELU between the two
+     indices blocks is collapsing the sum over s into a FIXED-SIZE
+     recurrent state -- but top-k ranking needs per-source scores
+     anyway, so that was never available. The runtime state is O(T),
+     not the O(1) claimed for the SPLM core, but "O(T) at half a KV
+     cache" is a much softer correction than it first appears.
 
-The integrator (8 substeps x 32 wells x rank-16 per layer) is O(1) per
-token with a large constant, and is the term that sets the floor on how
-close to GPT-2 a properly-implemented Fock decode could get.
+What actually sets the floor is V_theta, not the integrator. ABOBA takes
+ONE force evaluation per layer (not 8 substeps), over 40 wells at rank 4.
+Measured, V_theta costs 35.429 MMAC/token/layer, of which 35.405 is
+GENERATING the well bank from xi and 0.025 is using it -- a 1441:1 ratio,
+and 87.6% of the whole model. B_proj alone (1920 -> 12288) is 58.3% of
+Fock's total inference cost. That is the term to attack; see
+companion_notes/Fock_Inference_Productionization_Plan.md.
 """)
 print('done.')
