@@ -1056,20 +1056,37 @@ between the step-15,000 eval (82.80) and step-15,500 (79.07):
 At step 20,500 GPT-2 stood at **64.60** and was still falling ≈1 PPL per 500
 steps with 12,000 steps of cosine decay remaining.
 
-**FINAL ENDPOINT AT STEP 32,500: pending.** Record it here on arrival rather
-than the extrapolation. A log fit over steps 17,000-20,500 projects ≈44-48,
-which is almost certainly too optimistic — §3 of this checklist already scored
-two "continued improvement" extrapolations as failures while saturating fits
-held. Do not quote a projected number.
+**FINAL ENDPOINT AT STEP 32,500: `val_ppl_512` = 54.59** (settled 54.67),
+recorded 2026-09-19.
+
+**Prediction scored: the extrapolation was wrong again, in the same
+direction.** A log fit over steps 17,000-20,500 projected ≈44-48; the
+saturating read said 55-60. Actual **54.59**. That is the third time in this
+programme a log-linear extrapolation has overshot and a saturating fit has
+held (§3 recorded the first two). Treat log-linear extrapolation of PPL as
+refuted for this programme, not merely unreliable.
+
+Note GPT-2 also missed its own Kaplan prediction of 30-35, which is expected:
+0.53B tokens against 33.7M parameters is 15.7 tokens/param, below the
+Chinchilla-optimal 20.
 
 ### 9.3 The four-axis comparison
 
 | | Fock | GPT-2 | |
 | --- | ---: | ---: | --- |
-| PPL at 32,500 steps | 81.58 | pending (was 64.60 at 20,500) | |
-| parameters | 76,745,698 | 33,691,776 | GPT-2 uses **2.28x fewer** |
+| PPL, final decayed | 81.47 | **54.59** | −26.88 |
+| PPL, settled (last 3) | 81.58 | **54.67** | −26.91, a ratio of **1.49x** |
+| PPL, best | 80.75 | 54.59 | −26.16 |
+| total parameters | 76,745,698 | 33,691,776 | GPT-2 uses **2.28x fewer** |
+| non-embedding parameters | 37,760,000 | 14,196,480 | GPT-2 uses **2.66x fewer** |
 | inference MMAC/token | 323.6 | 36.6 | GPT-2 is **8.84x cheaper** |
 | training s/step | 4.18 | 0.29 | GPT-2 is **14.4x faster** |
+
+**The comparison is decided.** A plain transformer with 2.66x fewer
+non-embedding parameters reaches 33% lower perplexity on identical data at
+identical tokens, while costing 8.84x less to serve and 14.4x less to train.
+Fock-PARFLM as configured loses on every axis simultaneously, and not
+narrowly.
 
 Step times measured from the logs: Fock steps 28,550 to 28,600 took 209s for
 50 steps; GPT-2 steps 14,200 to 14,400 took 58s for 200.

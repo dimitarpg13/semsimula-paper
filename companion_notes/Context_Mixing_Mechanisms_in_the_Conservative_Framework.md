@@ -22,9 +22,10 @@
 5. [Alternative B: latent field interactions](#5-alternative-b-latent-field-interactions)
 6. [Alternative C: symmetric kernel V_phi](#6-alternative-c-symmetric-kernel-v_phi)
 7. [Alternative D: graph-structured conservative dynamics](#7-alternative-d-graph-structured-conservative-dynamics)
-8. [Comparison and cost analysis](#8-comparison-and-cost-analysis)
-9. [Recommendations and roadmap](#9-recommendations-and-roadmap)
-10. [References](#10-references)
+8. [Alternative E: content-addressed xi pooling](#8-alternative-e-content-addressed-xi-pooling)
+9. [Comparison and cost analysis](#9-comparison-and-cost-analysis)
+10. [Recommendations and roadmap](#10-recommendations-and-roadmap)
+11. [References](#11-references)
 
 ---
 
@@ -834,21 +835,195 @@ where $c_{ts} = A_{ts}$ is a constant. Each term $\phi(h_t - h_s)$ is a scalar f
 
 ---
 
-## 8. Comparison and cost analysis
+## 8. Alternative E: content-addressed $\xi$ pooling
+
+**Orthogonal to A-D.** Alternatives A through D all replace the *pair*
+potential: they are candidates for the $V_\phi$ slot. This one replaces the
+*pooling* of §3.2 and is composable with any of them.
+
+### 8.1 Motivation
+
+Measured on the deployed `d=384, L=8` joint arm, the pair potential is
+**3.85%** of per-token inference compute. The path from $\xi$ into
+$V_\theta$ is **87.6%**, and $V_\theta$ alone holds **93.9%** of the model's
+non-embedding parameters. If the context representation is the bottleneck,
+no amount of work in the $V_\phi$ slot can reach it.
+
+And the §3.2 pooling is content-independent by construction. The weight on
+source $s$ depends on the distance $t-s$ and on nothing else: not on what
+$h_s$ contains, not on what $h_t$ is looking for. Everything downstream is a
+reshaping of whatever survived that compression.
+
+### 8.2 The pooling is already a softmax
+
+The §3.2 EMA weights are
+
+$$W_j[t,s] = \frac{\alpha_j^{t-s}}{Z_t}, \qquad Z_t = \sum_{r \le t}\alpha_j^{t-r},$$
+
+and `causal_ema_weights` computes them in log space as
+`exp(log_W - logsumexp(log_W))`. That is exactly
+
+$$W_j[t,s] = \mathrm{softmax}_{s \le t}\big[(t-s)\log\alpha_j\big].$$
+
+Verified numerically to `5.6e-17`. **The model therefore already performs
+attention over the token sequence** -- with logits that carry only a
+distance term. In transformer vocabulary the EMA is a relative-position bias
+with no content term, which makes content-addressing a strictly *additive*
+change rather than a replacement.
+
+### 8.3 The content-addressed generalisation
+
+Write $w_j(t,s)$ for the pooling weight of channel $j$, keeping $\alpha_j$
+for the learned decay. Add a content term inside the same softmax:
+
+$$w_j(t,s) = \mathrm{softmax}_{s \le t}\left[(t-s)\log\alpha_j + \frac{q_j(h_t)^{\top} k_j(h_s)}{\sqrt{d_k}}\right], \qquad \xi^{(j)}_t = \sum_{s \le t} w_j(t,s) h_s.$$
+
+The distance term survives as a learned prior, $\alpha_j$ remains trainable,
+and the output contract `(B, T, K, d)` is unchanged -- so $V_\theta$, the
+integrator, the registers and the pair potential are all untouched.
+
+Note the mask is $s \le t$ **inclusive**: the EMA includes the current token
+($W[3,3] = 0.334$ at $\alpha = 0.809$), unlike the strict $s \lt t$ mask the
+pair potential uses. No row is ever fully masked, so unlike the pair case the
+softmax cannot produce `NaN`.
+
+### 8.4 Initialisation: a bilinear saddle to avoid
+
+Setting $q$ to zero makes the content logit identically zero, so the model
+is **bit-identical** to §3.2 at step 0. The tempting next step -- zero both
+projections -- is a trap. The logit is bilinear, so
+
+$$\frac{\partial (q^{\top}k)}{\partial W_q} = h_t \otimes (W_k h_s), \qquad \frac{\partial (q^{\top}k)}{\partial W_k} = (W_q h_t) \otimes h_s.$$
+
+With both at zero **both gradients vanish**, and the optimiser never leaves
+the saddle. A probe built that way would report no improvement while nothing
+had ever been learned -- a null result with no bearing on the hypothesis, and
+one that looks exactly like a refutation.
+
+The fix is an asymmetric initialisation: $W_q = 0$, $W_k \sim N(0, \sigma^2)$
+with $\sigma = 0.02$. The content logit is still exactly zero at step 0, but
+$\partial / \partial W_q \ne 0$, so $W_q$ moves on the first step and $W_k$
+unlocks on the second. Confirmed: gradient magnitudes 1.6e+03 on $W_q$ and
+1.8e+02 on the decays at init, against 0.0 for both under the symmetric
+initialisation.
+
+### 8.5 Computational analysis
+
+At $d = 384$, $K = 5$, $d_k = 48$, $T = 512$, per token per layer:
+
+| Component | Cost | MAC |
+| --------- | ---- | --- |
+| Query/key projections | $2 d K d_k$ | 184320 |
+| Scores | $K T d_k$ | 122880 |
+| Weighted sum | $K T d$ | already present in §3.2 |
+| **Added total** | | **307200** |
+
+Over $L = 8$ layers that is **2.46 MMAC/token against a 323.6 MMAC/token
+model: +0.76%**. The weighted sum is not new -- the §3.2 implementation
+already materialises a dense $(T, T)$ matrix per channel and multiplies, so
+this alternative adds only the scoring.
+
+**Memory:** $(B, K, T, T)$, which is 80 MiB per layer at $B = 16$, $T = 512$.
+
+### 8.6 Conservativity
+
+**Theorem.** Content-addressed $\xi$ pooling leaves the conservativity of the
+force field unchanged.
+
+**Proof.** With `causal_force` set, the pooling input is `h.detach()`, so
+$\xi$ is constant with respect to $h_t$ *however it is computed*. The force is
+
+$$f_t = -\nabla_{h_t} V_\theta(\xi, h_t),$$
+
+and $V_\theta(\xi, \cdot)$ is a scalar function of its second argument with
+$\xi$ frozen, so its gradient is by construction conservative. The argument never refers to the pooling at all. $\square$
+
+This is a stronger statement than §4.7 needs: Alternative A required its
+routing to be detached, whereas here the entire pooling already sits inside
+the detached context computation. There is no new conservativity obligation.
+
+### 8.7 Causality
+
+The mask is $s \le t$, so no future token can reach position $t$. A local
+check -- perturb all tokens at $t \ge 4$, measure $\xi$ at $t \lt 4$ --
+gives a change of exactly `0.0` against a control of `7.1`.
+
+**That check is not sufficient on its own.** A single future-perturbation
+probe is precisely what certified a Fock-PARFLM checkpoint reporting 7.69
+perplexity whose honest value was 258.07. The authoritative gate is
+`scaf.audit(...).assert_causal()` from the SemSimula Causal Auditing
+Framework, which also runs the target-relocation (honest-perplexity) and
+mediation probes that a perturbation test cannot replace.
+
+### 8.8 Warm start
+
+Because §8.4's initialisation is exact rather than approximate, this
+alternative can be added to an **already-trained checkpoint** and annealed,
+instead of requiring a run from scratch. That converts the experiment from a
+full training run into the compressed-decay probe shape already used twice in
+this programme, at roughly an eighth of the compute, and makes the comparison
+a controlled one: same checkpoint, same schedule, same step count, with the
+content term as the only difference.
+
+The checkpoint loader must be allowed to treat the new projections as
+freshly initialised rather than asserting an exact key match.
+
+### 8.9 Advantages and risks
+
+**Advantages:**
+
+- **Reaches the dominant path.** The only alternative here that touches the
+  87.6% of compute and 93.9% of parameters downstream of $\xi$.
+- **Strictly generalises §3.2.** The EMA is retained as a learned distance
+  prior, not discarded; the hypothesis class strictly grows.
+- **No conservativity obligation.** §8.6 holds without any detach discipline
+  beyond what `causal_force` already provides.
+- **Exact warm start**, hence a cheap controlled experiment.
+- **Negligible cost:** +0.76% compute.
+- **Composable** with Alternatives A-D, which occupy a different slot.
+
+**Risks:**
+
+- **Quadratic in $T$.** Though §3.2 already is, as implemented.
+- **The saddle of §8.4** is a silent failure mode, and the natural
+  initialisation choice walks straight into it.
+- **May not be the bottleneck.** The diagnosis rests on a parameter-and-compute
+  argument, not on a direct measurement of information flow. A null result
+  here, unlike a null result from Alternative A, would genuinely refute it.
+- **Untested.** No training run has been performed.
+
+### 8.10 Implementation status
+
+Implemented in `model_multixi.py` as an option on `MultiChannelXi`
+(`content_route`), selected through `xi_content_route` on the config, default
+off. `causal_ema_logits` is factored out of `causal_ema_weights` so the two
+paths cannot drift. Verified: identity of §8.2 to `5.6e-17`, bit-identity at
+initialisation to `4.4e-16`, gradient flow per §8.4, causality per §8.7.
+Gates 3 and beyond are recorded in
+`Joint_Vtheta_QKNorm_Run_Diagnostic_Checklist.md` §10.
+
+---
+
+## 9. Comparison and cost analysis
 
 ![Cost and conservativity comparison](images/context_mixing_cost_comparison.png)
 
-### 8.1 Summary table
+### 9.1 Summary table
 
-| Mechanism | Compute | Memory | Conservative | All-to-all | Score head needed |
-| --------- | ------- | ------ | ------------ | ---------- | ----------------- |
-| Current: sparse V_phi (top-k) | O(Tkd) | O(Tk) | Yes | No | Yes |
-| A: xi-routed attention | O(T^2 d) | O(T^2) | Yes | Yes | No (uses xi QK) |
-| B: latent field | O(T d d_z) | O(T d_z) | Yes | Yes (via field) | No |
-| C: symmetric kernel (RFF) | O(TMd) | O(TM) | Yes | Yes (approx.) | No (kernel is score) |
-| D: graph Laplacian (sparse) | O(Tkd) | O(Tk) | Yes | No (sparse) | Yes (graph scores) |
+| Mechanism | Slot | Compute | Memory | Conservative | All-to-all | Score head needed |
+| --------- | ---- | ------- | ------ | ------------ | ---------- | ----------------- |
+| Current: sparse V_phi (top-k) | pair | O(Tkd) | O(Tk) | Yes | No | Yes |
+| A: xi-routed attention | pair | O(T^2 d) | O(T^2) | Yes | Yes | No (uses xi QK) |
+| B: latent field | pair | O(T d d_z) | O(T d_z) | Yes | Yes (via field) | No |
+| C: symmetric kernel (RFF) | pair | O(TMd) | O(TM) | Yes | Yes (approx.) | No (kernel is score) |
+| D: graph Laplacian (sparse) | pair | O(Tkd) | O(Tk) | Yes | No (sparse) | Yes (graph scores) |
+| E: content-addressed xi | **pooling** | O(T K d_k) added | O(B K T^2) | Yes (§8.6) | Yes | No (reuses the EMA softmax) |
 
-### 8.2 Expressivity ranking
+A-D are alternatives to one another; **E occupies a different slot and
+composes with any of them**. A-D govern 3.85% of measured per-token compute,
+E governs the path carrying 87.6% (§8.1).
+
+### 9.2 Expressivity ranking
 
 From most to least expressive (capacity to represent arbitrary pairwise interactions):
 
@@ -858,7 +1033,12 @@ From most to least expressive (capacity to represent arbitrary pairwise interact
 4. **C: symmetric kernel** -- rich kernel theory, but the RFF approximation introduces a rank-$M$ bottleneck.
 5. **B: latent field** -- mean-field approximation; cannot represent interactions that depend on the specific identity of the source token (only on its contribution to the field).
 
-### 8.3 Composability
+**E is not on this ladder.** It does not represent pairwise interactions at
+all; it determines what context $V_\theta$ is conditioned on. Ranked instead
+against the §3.2 pooling it replaces, it strictly dominates: the distance-only
+weighting is the special case $q = 0$ (§8.3).
+
+### 9.3 Composability
 
 These mechanisms are **not mutually exclusive**. The total potential can combine multiple terms:
 
@@ -895,7 +1075,7 @@ flowchart TB
 
 ---
 
-## 9. Recommendations and roadmap
+## 10. Recommendations and roadmap
 
 ### 9.1 Immediate experiments (highest diagnostic value)
 
@@ -948,7 +1128,7 @@ flowchart TB
 
 ---
 
-## 10. References
+## 11. References
 
 1. Gueorguiev, D. (2026). *Semantic Simulation: A Prescriptive Lagrangian Framework for Efficient Semantic Inference*.
 2. Vaswani, A., et al. (2017). "Attention is All You Need." *NeurIPS*.

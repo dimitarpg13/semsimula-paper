@@ -119,6 +119,24 @@ def causal_ema_weights(
     -------
     W : torch.Tensor of shape (T, T), float dtype, on `device`.
     """
+    log_W = causal_ema_logits(T, alpha, dtype, device)
+    log_Z = torch.logsumexp(log_W, dim=1, keepdim=True)      # (T, 1)
+    return torch.exp(log_W - log_Z)
+
+
+def causal_ema_logits(
+    T: int,
+    alpha: torch.Tensor,
+    dtype: torch.dtype,
+    device: torch.device,
+) -> torch.Tensor:
+    """Pre-softmax logits of the causal EMA: (t-s)*log(alpha), masked to s <= t.
+
+    ``causal_ema_weights`` is exactly ``softmax`` of this over the source
+    axis, which is the fact that makes content-addressed routing a strictly
+    additive change: adding a term inside the same softmax generalises the
+    EMA without replacing it.  Factored out so the two callers cannot drift.
+    """
     alpha_safe = alpha.clamp(min=_ALPHA_EPS, max=1.0 - _ALPHA_EPS)
 
     s_idx = torch.arange(T, dtype=dtype, device=device)
@@ -127,9 +145,7 @@ def causal_ema_weights(
 
     log_alpha = torch.log(alpha_safe)
     log_W = log_alpha * diffs.clamp(min=0.0)
-    log_W = log_W.masked_fill(~causal, float("-inf"))
-    log_Z = torch.logsumexp(log_W, dim=1, keepdim=True)      # (T, 1)
-    return torch.exp(log_W - log_Z)
+    return log_W.masked_fill(~causal, float("-inf"))
 
 
 class MultiChannelXi(nn.Module):
@@ -147,6 +163,10 @@ class MultiChannelXi(nn.Module):
         max_len: int,
         alpha_inits: List[float],
         learnable: bool = True,
+        content_route: bool = False,
+        d: Optional[int] = None,
+        content_d_k: int = 48,
+        content_init_scale: float = 0.02,
     ):
         super().__init__()
         if K != len(alpha_inits):
@@ -168,6 +188,28 @@ class MultiChannelXi(nn.Module):
         else:
             self.register_buffer("raw_alpha", raw)
 
+        # ── Optional content-addressed routing (A2) ──────────────────
+        self.content_d_k = content_d_k
+        self.W_q = None
+        self.W_k = None
+        if content_route:
+            if d is None:
+                raise ValueError("content_route=True requires d=<model width>")
+            self.W_q = nn.Linear(d, K * content_d_k, bias=False)
+            self.W_k = nn.Linear(d, K * content_d_k, bias=False)
+            # ASYMMETRIC init, deliberately.
+            #   W_q = 0 makes the content logit exactly zero, so xi is
+            #   BIT-IDENTICAL to the pure EMA at step 0 and a warm start
+            #   from an existing checkpoint is exact rather than approximate.
+            #   W_k must NOT also be zero: the logit is bilinear, so
+            #   d(q.k)/dW_q = h (x) (W_k h) and d(q.k)/dW_k = (W_q h) (x) h.
+            #   Zeroing both makes BOTH gradients vanish -- a saddle the
+            #   optimiser never leaves, and the probe would then report a
+            #   null result for a reason that has nothing to do with the
+            #   hypothesis under test.
+            nn.init.zeros_(self.W_q.weight)
+            nn.init.normal_(self.W_k.weight, std=content_init_scale)
+
     @property
     def alpha(self) -> torch.Tensor:
         """Effective decays α_k ∈ (0, 1)."""
@@ -177,13 +219,31 @@ class MultiChannelXi(nn.Module):
         """h: (B, T, d)  →  xis: (B, T, K, d)."""
         B, T, d = h.shape
         alphas = self.alpha
-        xis = []
-        for k in range(self.K):
-            W_k = causal_ema_weights(T, alphas[k], h.dtype, h.device)  # (T, T)
-            # (1, T, T) @ (B, T, d) → (B, T, d) via broadcasting
-            xi_k = W_k.unsqueeze(0) @ h
-            xis.append(xi_k)
-        return torch.stack(xis, dim=2)                       # (B, T, K, d)
+
+        if self.W_q is None:
+            xis = []
+            for k in range(self.K):
+                W_k = causal_ema_weights(T, alphas[k], h.dtype, h.device)
+                # (1, T, T) @ (B, T, d) → (B, T, d) via broadcasting
+                xi_k = W_k.unsqueeze(0) @ h
+                xis.append(xi_k)
+            return torch.stack(xis, dim=2)                   # (B, T, K, d)
+
+        # Content-addressed routing: the SAME softmax, with a content term
+        # added to the distance logit.  At W_q = 0 this reduces exactly to
+        # the branch above.  No row is fully masked (s = t is allowed), so
+        # the softmax cannot produce NaN the way a strict-causal mask can.
+        dk = self.content_d_k
+        base = torch.stack(
+            [causal_ema_logits(T, alphas[k], h.dtype, h.device)
+             for k in range(self.K)], dim=0,
+        )                                                    # (K, T, T)
+        q = self.W_q(h).view(B, T, self.K, dk).permute(0, 2, 1, 3)
+        kk = self.W_k(h).view(B, T, self.K, dk).permute(0, 2, 1, 3)
+        content = (q @ kk.transpose(-1, -2)) * (dk ** -0.5)  # (B, K, T, T)
+        w = torch.softmax(base.unsqueeze(0) + content, dim=-1)
+        xis = w @ h.unsqueeze(1)                             # (B, K, T, d)
+        return xis.permute(0, 2, 1, 3).contiguous()          # (B, T, K, d)
 
 
 # ---------------------------------------------------------------------------

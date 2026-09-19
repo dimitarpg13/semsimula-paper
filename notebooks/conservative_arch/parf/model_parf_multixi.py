@@ -109,6 +109,19 @@ class MultiXiPARFConfig(SparsePARFConfig):
     #                  imported lazily because that module imports from
     #                  THIS one -- a module-level import would be circular.
     #                  Selecting it drops V_phi and score_head entirely.
+    # ── Content-addressed xi routing (A2, 2026-09-18) ────────────────
+    # The existing EMA is exactly softmax_s[(t-s)*log alpha_j], so adding a
+    # content term inside that same softmax generalises it rather than
+    # replacing it:
+    #     alpha_j(t,s) = softmax_s[(t-s)*log alpha_j + q_j(h_t).k_j(h_s)/sqrt(d_k)]
+    # W_q is zero-initialised, so with this off OR on at step 0 the model is
+    # bit-identical -- which is what lets a probe warm-start from a trained
+    # checkpoint exactly.  This targets the xi -> V_theta path (87.6% of
+    # compute) rather than the pair path that `pair_potential` governs.
+    xi_content_route: bool = False
+    xi_content_d_k: int = 48
+    xi_content_init_scale: float = 0.02
+
     pair_potential: str = "sparse_topk"
     attn_n_heads: int = 4
     attn_d_k: int = 48
@@ -260,6 +273,10 @@ class MultiXiPARFLM(SparsePARFLM):
             max_len=cfg.max_len,
             alpha_inits=alpha_inits,
             learnable=cfg.xi_learnable,
+            content_route=getattr(cfg, "xi_content_route", False),
+            d=cfg.d,
+            content_d_k=getattr(cfg, "xi_content_d_k", 48),
+            content_init_scale=getattr(cfg, "xi_content_init_scale", 0.02),
         )
 
         # ── Optional LN before V_theta (bounds force input range) ──

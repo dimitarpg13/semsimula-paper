@@ -560,6 +560,63 @@ best diagnostic available.
 
 ---
 
+## 8a. Benchmark results (A100, 2026-09-19) — PARTIAL
+
+Parts A, A2 and C ran in the GPT-2 session. **Part B did not**, so `V_theta`
+— the 87.6% term this entire roadmap rests on — has **not** been measured on
+hardware. Read §6 as provisional until it has.
+
+### 8a.1 Confirmed
+
+| claim | measured |
+| ----- | -------- |
+| `xi` recurrence beats the dense path at decode | **14x to 22x** across T = 128 to 2048, flat in T as predicted |
+| `ScoreHead` materialises `(B,T,T,H)` and it grows as T squared | 8, 32, 128, 512 MiB at T = 128, 256, 512, 1024 — exactly 4x per doubling |
+| the naive recurrence loop is launch-bound and loses on full sequences | 0.01x to 0.03x, scaling O(T^0.99) — one launch per token, as the script warned |
+
+### 8a.2 Refuted — two of this document's claims
+
+**Wall-clock does not follow the T-squared exponent.** Dense `xi` measured
+**O(T^0.37)** and `ScoreHead` **O(T^0.98)**, against ~2 predicted for both.
+The FLOP counts are not wrong — `ScoreHead`'s memory grows as T squared
+exactly — but at these sizes both kernels are launch- and overhead-bound on
+an A100, not compute-bound. The exponent only begins to appear at T = 2048.
+
+**`ScoreHead` is far more expensive than its FLOP share implied.** §2.4 put
+it at 0.16% of per-token compute. Measured at T = 512, B = 4, one layer costs
+0.84 ms, so eight layers cost **6.7 ms — about 69% of a complete GPT-2
+forward pass (9.78 ms)**, for a term this document called negligible. At
+T = 1024 it is 21.1 ms against GPT-2's 19.3 ms: one Fock routing term exceeds
+an entire GPT-2 forward.
+
+**Consequence for §5: Lever E is under-prioritised.** It was filed as a
+zero-quality-risk win worth only 0.16% of FLOPs. On wall-clock it is worth
+far more, and it remains zero-risk. It should move ahead of Lever B.
+
+### 8a.3 What this does and does not say about the roadmap
+
+FLOP counts mispredicted wall-clock for the two **memory-bound** terms. They
+are most reliable exactly where arithmetic intensity is high, and `V_theta`
+is four dense matmuls — 1920 by 12288 and three smaller — which is the
+compute-bound regime where a FLOP model should hold. So §6 is probably sound.
+
+But "probably" is doing real work in that sentence, and this benchmark is a
+demonstration that it should not be trusted on this architecture without
+measurement. **Run Part B in a Fock session before acting on Phase 2.**
+
+### 8a.4 Stale output note
+
+The Part D narrative printed in that run is the pre-`4e554b7` text and still
+carries two retracted claims: that no per-source cache can reconstruct the
+routing scores (`proj_u` caches fine, §4), and that the integrator is "8
+substeps x 32 wells x rank-16" and sets the floor (ABOBA takes one force
+evaluation per layer over 40 wells at rank 4, and `V_theta` sets the floor).
+Measurements were unaffected. The cross-check against the real
+`model_multixi.causal_ema_weights` also skipped, since that path is not on
+`sys.path` in the GPT-2 notebook; the identity was verified locally instead.
+
+---
+
 ## 9. Honest caveats
 
 - **These are MAC counts, not times.** The conversion depends on arithmetic
