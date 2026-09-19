@@ -139,6 +139,7 @@ class XiAttnPARFConfig(MultiXiPARFConfig):
     attn_init_scale: float = 0.02
     attn_rbf_log_sigma_init: float = 0.0
     attn_route_detach_xi: bool = True
+    attn_zero_readout: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -172,6 +173,7 @@ class XiRoutedConservativeAttention(nn.Module):
         kernel: str = "dot",
         init_scale: float = 0.02,
         rbf_log_sigma_init: float = 0.0,
+        zero_readout: bool = False,
     ):
         super().__init__()
         if kernel not in {"dot", "rbf"}:
@@ -195,8 +197,26 @@ class XiRoutedConservativeAttention(nn.Module):
             self.W_v = nn.Linear(d, n_heads * d_v, bias=False)    # source value
             nn.init.normal_(self.W_uq.weight, std=init_scale)
             nn.init.normal_(self.W_v.weight, std=init_scale)
+            if zero_readout:
+                # phi = (W_uq h_t).(W_v h_s), so zeroing the QUERY read-out
+                # makes the potential identically zero and the induced force
+                # unchanged -- the model is bit-identical at step 0 and can
+                # warm-start exactly from a checkpoint that predates this
+                # term.  W_v stays random, so dL/dW_uq is non-zero from step
+                # 1 with n_heads*d_v*d entries to orient the transport.
+                # Zeroing BOTH would freeze both gradients: phi depends on
+                # the product.  See
+                # Measuring_the_Price_of_Conservativity.md SS3.5.
+                nn.init.zeros_(self.W_uq.weight)
             self.log_sigma = None
-        else:  # 'rbf'
+        elif zero_readout:
+            raise ValueError(
+                "zero_readout has no meaning for the 'rbf' kernel: "
+                "phi = -||h_t - h_s||^2 / (2 sigma^2) is parameter-free "
+                "apart from sigma and cannot be held at zero without "
+                "switching the term off entirely. Use kernel='dot' for a "
+                "bit-identical warm start.")
+        if kernel != "dot":  # 'rbf'
             # Spring kernel phi = -||h_t - h_s||^2 / (2 sigma_head^2).
             self.log_sigma = nn.Parameter(
                 torch.full((n_heads,), float(rbf_log_sigma_init))
@@ -293,6 +313,7 @@ class XiAttnPARFLM(MultiXiPARFLM):
             kernel=cfg.attn_kernel,
             init_scale=cfg.attn_init_scale,
             rbf_log_sigma_init=cfg.attn_rbf_log_sigma_init,
+            zero_readout=getattr(cfg, "attn_zero_readout", False),
         )
         self._attn_mask: Optional[torch.Tensor] = None
 

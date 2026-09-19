@@ -141,6 +141,20 @@ class MultiXiPARFConfig(SparsePARFConfig):
     # lambda is ALWAYS zero-initialised, making step 0 bit-identical and the
     # warm start exact.  psi is NOT: the force depends on the product, so
     # zeroing both makes both gradients vanish (see the note's SS3.3).
+    # 'attention'       : Arm N-attn.  The added force is the §5.1 direct
+    #                     exchange -- standard causal multi-head attention,
+    #                     softmax(qk/sqrt(d_k)) @ v with an output
+    #                     projection, nothing detached, injected rather than
+    #                     derived from a potential.  Its conservative
+    #                     counterpart is pair_potential='xi_attention'
+    #                     (family A), which is the SAME mechanism made
+    #                     conservative by the framework's own rules: routing
+    #                     read off detached xi and the force taken as the
+    #                     gradient of a scalar.  The pair measures what
+    #                     conservativity costs using a mechanism already
+    #                     known to work -- GPT-2 beats this model 1.49x with
+    #                     it -- rather than a random field that may simply
+    #                     have failed to find the useful direction.
     force_relaxation: str = "none"
     relax_hidden: int = 128
     relax_init_scale: float = 0.02
@@ -162,6 +176,8 @@ class MultiXiPARFConfig(SparsePARFConfig):
     #                  noise together, and Adam is scale-invariant in the
     #                  gradient.  Kept to reproduce the 2026-09-19 run.
     relax_gate: str = "zero_readout"
+    relax_attn_d_k: int = 48        # force_relaxation='attention' only
+    relax_attn_heads: int = 4
 
     pair_potential: str = "sparse_topk"
     attn_n_heads: int = 4
@@ -170,6 +186,10 @@ class MultiXiPARFConfig(SparsePARFConfig):
     attn_kernel: str = "dot"               # 'dot' | 'rbf'
     attn_init_scale: float = 0.02          # small: enters as a perturbation
     attn_rbf_log_sigma_init: float = 0.0
+    # Zero the query read-out W_uq so phi -- and hence the added potential
+    # -- is identically zero at init.  Without it family A is NOT
+    # bit-identical and cannot warm-start exactly.  'dot' kernel only.
+    attn_zero_readout: bool = False
 
     # Stability: force clamping and LN-before-V_theta.
     force_clamp_max: Optional[float] = None   # clamp force to [-F, F] per dim
@@ -382,10 +402,12 @@ class MultiXiPARFLM(SparsePARFLM):
         self.relax_lambda = None
         _relax = getattr(cfg, "force_relaxation", "none")
         if _relax != "none":
-            if _relax not in ("nonconservative", "potential"):
+            _VALID = ("nonconservative", "potential", "attention",
+                      "attention_potential")
+            if _relax not in _VALID:
                 raise ValueError(
-                    f"force_relaxation must be 'none', 'nonconservative' or "
-                    f"'potential', got {_relax!r}")
+                    f"force_relaxation must be 'none' or one of {_VALID}, "
+                    f"got {_relax!r}")
             _H = getattr(cfg, "relax_hidden", 128)
             _in = (cfg.xi_channels + 1) * cfg.d
             if _relax == "nonconservative":
@@ -397,11 +419,51 @@ class MultiXiPARFLM(SparsePARFLM):
                 raise ValueError(
                     f"relax_gate must be 'zero_readout' or 'scalar', "
                     f"got {_gate!r}")
-            self.relax_field = _RelaxationField(
-                d=cfg.d, K=cfg.xi_channels, hidden=_hid, out_dim=_out,
-                init_scale=getattr(cfg, "relax_init_scale", 0.02),
-                gate=_gate,
-            )
+            if _relax == "attention_potential":
+                # The conservative twin of 'attention'. The SAME xi-routed
+                # attention, but entering as a scalar potential so the force
+                # stays a gradient.
+                #
+                # It must ADD, not replace. pair_potential='xi_attention'
+                # sets V_phi and score_head to None, discarding a trained
+                # component -- measured at 6.2e-05 even on a randomly
+                # initialised model, and far larger on a real checkpoint.
+                # Arm N adds its term, so the control must too, or the pair
+                # differs by more than conservativity.
+                from model_xi_attention import XiRoutedConservativeAttention
+                self.relax_field = XiRoutedConservativeAttention(
+                    d=cfg.d, xi_channels=cfg.xi_channels,
+                    n_heads=getattr(cfg, "relax_attn_heads", 4),
+                    d_k=getattr(cfg, "relax_attn_d_k", 48),
+                    d_v=getattr(cfg, "relax_attn_d_k", 48),
+                    kernel="dot",
+                    init_scale=getattr(cfg, "relax_init_scale", 0.02),
+                    zero_readout=(_gate == "zero_readout"),
+                )
+                self._relax_takes_h_only = False
+            elif _relax == "attention":
+                # Lazy: model_fock_attention imports from THIS module.
+                from model_fock_attention import DirectExchangeForce
+                self.relax_field = DirectExchangeForce(
+                    d=cfg.d,
+                    d_k=getattr(cfg, "relax_attn_d_k", 48),
+                    n_heads=getattr(cfg, "relax_attn_heads", 4),
+                    init_scale=getattr(cfg, "relax_init_scale", 0.02),
+                )
+                if _gate == "zero_readout":
+                    # W_O is the output projection, so zeroing it holds the
+                    # exchange force at exactly zero while leaving Q/K/V
+                    # random and giving W_O a live gradient -- the same
+                    # discipline that fixed the scalar gate.
+                    nn.init.zeros_(self.relax_field.W_O.weight)
+                self._relax_takes_h_only = True
+            else:
+                self.relax_field = _RelaxationField(
+                    d=cfg.d, K=cfg.xi_channels, hidden=_hid, out_dim=_out,
+                    init_scale=getattr(cfg, "relax_init_scale", 0.02),
+                    gate=_gate,
+                )
+                self._relax_takes_h_only = False
             _n_lam = cfg.L if getattr(cfg, "relax_lambda_per_layer", True) else 1
             if _gate == "scalar":
                 self.relax_lambda = nn.Parameter(torch.zeros(_n_lam))
@@ -434,6 +496,7 @@ class MultiXiPARFLM(SparsePARFLM):
                 kernel=getattr(cfg, "attn_kernel", "dot"),
                 init_scale=getattr(cfg, "attn_init_scale", 0.02),
                 rbf_log_sigma_init=getattr(cfg, "attn_rbf_log_sigma_init", 0.0),
+                zero_readout=getattr(cfg, "attn_zero_readout", False),
             )
             # Retire the sparse machinery so its parameters leave the
             # optimiser and the state_dict (same choice XiAttnPARFLM makes).
@@ -498,14 +561,23 @@ class MultiXiPARFLM(SparsePARFLM):
         so that lambda is the only gate in front of it."""
         if self.relax_field is None:
             return U_pair
-        if getattr(self.cfg, "force_relaxation", "none") != "potential":
+        _mode = getattr(self.cfg, "force_relaxation", "none")
+        if _mode not in ("potential", "attention_potential"):
             return U_pair
         if xis is None:
             raise RuntimeError(
                 "force_relaxation='potential' needs xis; callers must pass "
                 "xis=... to _pair_potential (see _layer_forces).")
         lam = self._relax_gate(layer_idx)
-        return U_pair + lam * self.relax_field(xis, h_in).sum()
+        if _mode == "attention_potential":
+            B, T, _ = h_in.shape
+            h_src = h_in.detach() if self.cfg.causal_force else h_in
+            add = self.relax_field.potential(
+                h_in, h_src, xis.detach(),
+                self._pair_mask_for(T, h_in.device))
+        else:
+            add = self.relax_field(xis, h_in).sum()
+        return U_pair + lam * add
 
     def _pair_potential(
         self, h_in: torch.Tensor, layer_idx: int,
@@ -649,8 +721,12 @@ class MultiXiPARFLM(SparsePARFLM):
         # V_theta's harmonic part is subtracted from f_kick and propagated
         # exactly, and this field has no harmonic decomposition.
         if (self.relax_field is not None
-                and getattr(cfg, "force_relaxation", "none") == "nonconservative"):
-            _add = self._relax_gate(layer_idx) * self.relax_field(xis, h_in)
+                and getattr(cfg, "force_relaxation", "none")
+                in ("nonconservative", "attention")):
+            _field = (self.relax_field(h_in)
+                      if getattr(self, "_relax_takes_h_only", False)
+                      else self.relax_field(xis, h_in))
+            _add = self._relax_gate(layer_idx) * _field
             # Record the share of the force carried outside the conservative
             # class.  Under 'zero_readout' this IS the measurement, lambda
             # being fixed at 1.  Three norms per layer, negligible.
