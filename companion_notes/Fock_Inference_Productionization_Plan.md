@@ -353,7 +353,7 @@ every reduction below that is a genuine capacity constraint, but a mild one.
 | 512 | 7.27 | 3.2x | 130.5 MMAC |
 | 1024 | 14.55 | 1.6x | 72.3 MMAC |
 
-At $b = 256$ this **single change removes 49% of the model's inference cost**.
+At $b = 256$ this **single change removes 49% of the model's inference cost**. Measured in §6.1: at $b = 256$ it also costs **+32.34 PPL** without retraining. The saving is real; the "mild" capacity constraint asserted above is not.
 
 ### 5.2 Lever B — factorize $W_\mu$ and $W_a$
 
@@ -362,7 +362,11 @@ Identical treatment, $\mathbb{R}^{1920} \to \mathbb{R}^{3072}$ each:
 $$F_B(b) = 2b\left(\xi_{\dim} + K d\right) = 2b \cdot 4992, \qquad b^{\ast} = 1181 .$$
 
 At $b = 256$: 2.56 MMAC against 11.80, saving 73.9 MMAC over the stack — a
-further 23%.
+further 23%. But $W_\mu$ is the map §6.1 finds **cannot** be factorised
+faithfully at all: it needs rank 1483 to retain 99% of its energy and
+breaks even at 1181, so every faithful factorisation of it is an
+expansion. $W_a$ is the opposite case and the cheapest win in the
+document.
 
 ### 5.3 Lever C — make $B$ context-independent or well-shared
 
@@ -442,13 +446,130 @@ flowchart TB
 | ----- | ------ | --------------: | -------: | ------------ |
 | today | | 323.57 | 8.84x | |
 | 1 | `xi` recurrence | 315.73 | 8.63x | none, exact |
-| 2 | + `W_B`, `W_mu`, `W_a` at `b = 256` | **82.16** | **2.24x** | bottleneck only |
-| 2' | same at `b = 128` | 57.38 | 1.57x | bottleneck only |
+| 2 | + `W_B`, `W_mu`, `W_a` at `b = 256` | **82.16** | **2.24x** | **measured +32.34 PPL, §6.1** |
+| 2' | same at `b = 128` | 57.38 | 1.57x | **measured +90.78 PPL, §6.1** |
 | 3 | + static `B` | **53.06** | **1.45x** | real, needs ablation |
 
 The Phase 2 number is the one to aim at first. It requires no change to the
 model's functional form beyond constraining four matrices to be low-rank, and
 it recovers **75% of the gap to GPT-2**.
+
+That paragraph was written before the premise was tested. §6.1 tests it.
+The quality column above is what changed.
+
+---
+
+### 6.1 Measured (2026-09-19): the factorisation premise does not hold
+
+Phase 2 rests on one unstated assumption — that the three generator maps are
+**effectively low-rank**, so a bottleneck of width $b \ll 1920$ discards
+directions the model was not using. `semsimula_diag.probes.generator_rank`
+tests that assumption directly against the deployed $d = 384$ step-28,500
+checkpoint, by truncating the trained weights in place and re-evaluating.
+No retraining.
+
+![Generator truncation](figures/fock_inference/generator_truncation.png)
+
+#### The spectrum
+
+Against a maximum possible rank of $\xi_{\dim} = 1920$:
+
+| map | shape | PR | r@0.9 | r@0.99 | break-even mn/(m+n) |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `W_B` | (12288, 1920) | 421.9 | 707 | 1506 | 1661 |
+| `W_mu` | (3072, 1920) | 92.0 | 668 | 1483 | 1182 |
+| `W_a` | (3072, 1920) | 5.7 | 242 | 773 | 1182 |
+
+The break-even rank is where $UV^{\top}$ costs exactly what the dense map
+costs, $r^{\ast} = mn/(m+n)$. Above it, factorising makes the model
+**larger**. $W_\mu$ needs rank 1483 for 99% of its energy and breaks even at
+1182: there is no factorisation of $W_\mu$ that is both faithful and a
+saving. $W_B$ clears its break-even by 9%, which is a saving in name only.
+
+The one genuine concentration is $W_a$, at a participation ratio of **5.7**.
+The anisotropy amplitudes ride on roughly six effective directions out of
+1920 — and $W_a$ is zero-initialised, so those are six directions it grew.
+
+#### The sweep
+
+Uniform rank across all three maps, 12 fixed batches of 4 × 512 = 24,576
+tokens. The batches are **the same for every row**, so the comparison is
+paired and the deltas carry no sampling noise; only the absolute baseline
+carries sample error, which is why it reads 84.96 against the checkpoint's
+recorded 84.31 on the full eval set.
+
+| rank | factorised params | of full | val loss | ppl | delta ppl |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| — | 35,389,440 | 100.0% | 4.4422 | 84.96 | — |
+| 1024 | 24,772,608 | 70.0% | 4.4455 | 85.25 | +0.29 |
+| 512 | 12,386,304 | 35.0% | 4.5070 | 90.65 | +5.69 |
+| 256 | 6,193,152 | 17.5% | 4.7648 | 117.30 | +32.34 |
+| 128 | 3,096,576 | 8.8% | 5.1690 | 175.74 | +90.78 |
+| 64 | 1,548,288 | 4.4% | 5.4803 | 239.92 | +154.96 |
+| 32 | 774,144 | 2.2% | 5.9032 | 366.21 | +281.26 |
+
+The knee sits between rank 1024 and 512, exactly where the spectrum said it
+would. Phase 2's $b = 256$ target is well past it.
+
+#### What this corrects in this document
+
+§2.3 measures a generate-to-use ratio of **1441:1** and this document has
+been reading that as slack. It is not. Truncate the generator and the loss
+moves immediately and monotonically: those parameters carry information. The
+inefficiency is at the **interface** between a high-rank generator and a
+rank-4 consumer, not in the generator's own weights — and an interface is a
+much harder thing to fix than a bottleneck would have been.
+
+#### The parameter-matched GPT-2 point, for free
+
+A matched-parameter comparison usually costs a training run. The sweep hands
+one over as a by-product, since truncation moves Fock down the parameter axis
+without retraining:
+
+| rank | non-emb params | vs GPT-2's 14.17M | ppl | inference cost | speedup |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| full | 37.69M | 2.66x | 84.96 | 1.000 | 1.00x |
+| 1024 | 27.07M | 1.91x | 85.25 | 0.737 | 1.36x |
+| **512** | **14.69M** | **1.04x** | **90.65** | 0.431 | 2.32x |
+| 256 | 8.49M | 0.60x | 117.30 | 0.277 | 3.61x |
+
+Rank 512 puts Fock within 4% of GPT-2's non-embedding parameter count. On the
+settled scale that is roughly $81.58 \times 1.067 \approx 87$ PPL against
+GPT-2's 54.67 — a **1.59x gap, wider than the 1.49x at full size**.
+
+So Fock does not lose to GPT-2 by carrying dead weight. It loses at full
+size and loses by more at matched size. For the elimination argument in §7
+this is a strengthening result, not a weakening one: the architecture is not
+wasteful, it is that conservative dynamics buys less per parameter than
+attention does.
+
+#### What survives
+
+**Rank 1024 is a real, free win.** 30% of the generator removed, 1.36x faster
+inference, +0.3% PPL, no retraining. Worth quoting in the paper's efficiency
+section as-is.
+
+**The uniform rank is leaving savings on the table.** $W_a$ reaches 90% of
+its energy by rank 242 while $W_B$ needs 707, so a uniform sweep is already
+gutting $W_B$ at ranks where $W_a$ is nearly intact — the damage at rank 256
+is not coming from $W_a$ at all. A mixed allocation costs
+
+$$1024 \cdot 14208 + 1024 \cdot 4992 + 256 \cdot 4992 = 20938752$$
+
+or 20.94M, against uniform-1024's 24.77M: **3.83M more saved at what should be
+near-identical loss**. `generator_rank.per_map_truncation` evaluates such
+allocations, `allocation_from_energy` builds one from the measured spectrum,
+and `cap_at_break_even=True` clamps each map to $mn/(m+n)$ so an allocation
+cannot ask for an expansion and report it as a saving.
+
+#### The honest limit
+
+SVD truncation is optimal in Frobenius norm, not for the task, and nothing
+was retrained. Every number above is therefore a **lower bound** on what a
+trained rank-$b$ factorisation could reach — a trained $b = 512$ might
+recover much of the 5.69. Survival is the strong direction of this test;
+collapse is the weak one. What the sweep rules out is the *free* version of
+Phase 2, not Phase 2 with a training budget attached.
 
 ---
 
@@ -538,6 +659,33 @@ Predictions 2 and 3 separate "too few taps" from "wrong kind of pooling".
 Prediction 1 is the cheapest, is the sharpest discriminator, and is already
 scheduled for cost reasons — which makes the cheapest optimization also the
 best diagnostic available.
+
+### 7.6 Resolution: two of the three predictions are refuted
+
+**Prediction 1 — refuted (2026-09-19).** §6.1 truncates the generator at
+rank 256 without retraining and PPL moves **+32.34**, against a predicted
+"less than 2". §7.5 states the consequence itself: *"If PPL degrades
+sharply, this diagnosis is wrong."* The parameters are doing work.
+
+This is the weaker form of the test, not the stronger one — truncation is a
+lower bound, and a *trained* $b = 256$ could still land under +2. But the
+prediction was written against the cheap version, and the cheap version
+failed by 16x.
+
+**Prediction 3 — refuted (Alternative E).** Content-addressed $\xi$ pooling
+gained **1.79 PPL** against a predicted 10 or more, landing inside the
+pre-registered refutation band. See
+[`Context_Mixing_Mechanisms_in_the_Conservative_Framework.md`](Context_Mixing_Mechanisms_in_the_Conservative_Framework.md)
+§8.
+
+**Prediction 2 — not run.**
+
+Predictions 1 and 3 were designed to fail in opposite directions: 1 says the
+capacity is idle, 3 says the capacity is fine but fed badly. Both failed,
+and they cannot both be wrong for the same reason. What survives is the
+reading in §6.1 — the generator's parameters are used, the context feeding
+them is adequate, and the loss is being paid somewhere neither prediction
+was looking. §7's diagnosis as stated does not survive this pair.
 
 ---
 
@@ -658,8 +806,9 @@ Order of work, revised:
    is a precondition for any inference claim.
 2. **Lever E** (`ScoreHead` fusion) and **Lever D** (`xi` recurrence) — both
    already argued, both wall-clock rather than FLOP wins.
-3. **Phase 2** factorisation — correct, but worth doing after the
-   wall-clock and FLOP numbers have converged.
+3. **Phase 2** factorisation — now known to cost quality (§6.1), so it is
+   a *trained* ablation rather than a free win. Rank 1024 and the per-map
+   allocation in §6.1 are the parts that remain free.
 
 ### 8a.5 What this does and does not say about the roadmap
 
