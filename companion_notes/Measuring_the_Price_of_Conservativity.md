@@ -149,10 +149,43 @@ first design. **It is not sufficient, and the first run showed why.**
 
 ### 3.4 Why a scalar gate is not enough
 
-Run of 2026-09-19 with a scalar $\lambda$: over the first 100 steps
-$\lambda$ reached only ~1e-3 and **flipped sign per layer between
-consecutive prints**, while the training loss stayed indistinguishable from
-the control. It was diffusing, not growing.
+Arm N was launched on 2026-09-19 with a scalar $\lambda$ and stopped after
+300 steps. The gate left zero, but not in the way a learning parameter does.
+
+| steps into the anneal | peak λ | ratio to √t | ratio to t |
+| ---: | ---: | ---: | ---: |
+| 50 | 0.0009 | 1.27e-04 | 1.80e-05 |
+| 100 | 0.0011 | 1.10e-04 | 1.10e-05 |
+| 150 | 0.0016 | 1.31e-04 | 1.07e-05 |
+| 200 | 0.0019 | 1.34e-04 | 9.50e-06 |
+| 250 | 0.0020 | 1.27e-04 | 8.00e-06 |
+| 300 | 0.0025 | 1.44e-04 | 8.33e-06 |
+| | | **spread 1.31x** | **spread 2.25x** |
+
+Here *peak λ* is the largest per-layer gate magnitude, the `|lam|max` field
+in the training log.
+
+**This is the signature of a random walk.** A diffusing quantity grows as
+√t; a parameter being optimised grows at least linearly. The √t-normalised
+column is flat to within 31% across a sixfold change in t, while the
+t-normalised column falls by a factor of 2.25. Sign
+flips corroborate it — 12 of the 40 per-layer transitions reversed — but the
+scaling test is the decisive one, because a slowly-learning parameter could
+also change sign occasionally while a diffusing one cannot hold a fixed
+$\sqrt{t}$ ratio by accident.
+
+![The gate diffuses rather than learning](figures/conservativity_price/diffusion_signature.png)
+
+The fitted diffusion constant is 1.29e-04 per $\sqrt{\text{step}}$.
+Extrapolated across the full 4,000-step anneal that gives
+$\lvert \lambda \rvert_{\max} \approx 0.008$ — against a $g_{\psi}$ already
+scaled by 0.02, a contribution to the force of order 1e-4. The run would
+have completed and measured the optimiser.
+
+The loss trace agrees. Against the control at the same six steps, Arm N
+averaged **-0.0014 nats with 4 of 6 favourable**, inside noise, where
+Alternative E at those same steps averaged **-0.0105 with 6 of 6** — a
+mechanism **7.7x stronger** and unambiguous in sign.
 
 The reason is that a scalar can rescale a direction but cannot orient one.
 With $\psi$ frozen at initialisation, $g_{\psi}$ is a *fixed random field*,
@@ -194,10 +227,22 @@ Everything the design needed is preserved and the defect is removed:
 - $\partial L / \partial W_{1} = 0$ at init and unlocks once $W_{2}$ moves:
   the same asymmetric structure, with the useful half now live.
 
+![Rescaling a fixed direction versus orienting one](figures/conservativity_price/scalar_vs_readout.png)
+
+The figure states the difference geometrically. A scalar can only slide
+along the one direction it was handed; the best alignment it can ever reach
+is the projection of the target onto a random draw, which is
+$1/\sqrt{d} = 0.05$ at $d = 384$ and of arbitrary sign. A matrix readout
+spans the space and can rotate the field onto the target.
+
 This is the standard zero-init-the-output-projection trick from residual
 architectures. Measured at $d = 32$: readout gradient **1.5e-01** against
 **1.7e-04** on the scalar, with 49152 orientable parameters against 1, and
-the field exactly zero at init in both.
+the field exactly zero at init in both. Gates re-run against the new
+default: bit-identity 0.000e+00 on both arms, Arm N $\kappa = 0.714$ at
+**1900x** the finite-difference noise floor, Arm C $\kappa$ = 3.8e-06 at
+**0.01x** it — cleaner than under the scalar gate — and causality exactly
+zero.
 
 **The measurement changes with it.** $\lambda$ is fixed at 1 and is no
 longer the readout. Its place is taken by the per-layer force share
