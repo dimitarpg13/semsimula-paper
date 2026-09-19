@@ -155,6 +155,24 @@ class MultiXiPARFConfig(SparsePARFConfig):
     #                     known to work -- GPT-2 beats this model 1.49x with
     #                     it -- rather than a random field that may simply
     #                     have failed to find the useful direction.
+    # 'attention_residual' : Arm R.  The SAME DirectExchangeForce as
+    #                     'attention', same parameters and same lambda, but
+    #                     its output is written into h AFTER the integrator
+    #                     instead of entering f.  This is the only arm that
+    #                     changes how routed information becomes
+    #                     representation rather than what is routed.  A
+    #                     transformer writes sum_j alpha_ij v_j straight into
+    #                     the residual stream; every other arm here makes the
+    #                     same quantity a FORCE, which sets velocity rather
+    #                     than position and so arrives late and smeared by
+    #                     the integrator.  Arm N measured the force delivery
+    #                     at +0.21 PPL; R is the paired test of whether the
+    #                     delivery, not the routing, is what costs the gap.
+    #                     The write displaces position and PRESERVES
+    #                     velocity: h_prev shifts with h, so the finite
+    #                     difference (h - h_prev)/dt is unchanged.  That is
+    #                     the natural lift of a transformer's velocity-free
+    #                     residual write into a second-order state.
     force_relaxation: str = "none"
     relax_hidden: int = 128
     relax_init_scale: float = 0.02
@@ -416,7 +434,7 @@ class MultiXiPARFLM(SparsePARFLM):
         _relax = getattr(cfg, "force_relaxation", "none")
         if _relax != "none":
             _VALID = ("nonconservative", "potential", "attention",
-                      "attention_potential")
+                      "attention_potential", "attention_residual")
             if _relax not in _VALID:
                 raise ValueError(
                     f"force_relaxation must be 'none' or one of {_VALID}, "
@@ -455,8 +473,10 @@ class MultiXiPARFLM(SparsePARFLM):
                     route_from=getattr(cfg, "relax_attn_route_from", "h"),
                 )
                 self._relax_takes_h_only = False
-            elif _relax == "attention":
-                # Lazy: model_fock_attention imports from THIS module.
+            elif _relax in ("attention", "attention_residual"):
+                # Identical construction for both, so R and N differ ONLY in
+                # where the output is delivered. Lazy import:
+                # model_fock_attention imports from THIS module.
                 from model_fock_attention import DirectExchangeForce
                 self.relax_field = DirectExchangeForce(
                     d=cfg.d,
@@ -573,6 +593,36 @@ class MultiXiPARFLM(SparsePARFLM):
         """The per-layer gate, or the single shared one."""
         n = self.relax_lambda.numel()
         return self.relax_lambda[layer_idx % n]
+
+    def _add_relax_residual(self, h_new, h_prev_out, h_in, layer_idx):
+        """Arm R: write the exchange output into h, after the integrator.
+
+        Returns ``(h_new, h_prev_out)`` unchanged unless
+        ``force_relaxation='attention_residual'``.
+
+        Both outputs are shifted by the same ``delta``. The state carried
+        between layers is a (position, pseudo-previous-position) pair whose
+        difference encodes velocity, so shifting only ``h_new`` would inject
+        a spurious velocity of ``delta/dt`` as well as the displacement.
+        Shifting both displaces the position and leaves the velocity alone,
+        which is what a transformer's residual write does to a state that
+        has no velocity at all.
+
+        ``h_in`` is the layer INPUT, the same tensor arm N feeds to
+        ``relax_field`` inside ``_layer_forces``, so the two arms route from
+        identical inputs.
+        """
+        if self.relax_field is None:
+            return h_new, h_prev_out
+        if getattr(self.cfg, "force_relaxation", "none") != "attention_residual":
+            return h_new, h_prev_out
+        _delta = self._relax_gate(layer_idx) * self.relax_field(h_in)
+        with torch.no_grad():
+            # The analogue of arm N's force share: what fraction of the
+            # displacement the integrator produced is this write adding.
+            _step = (h_new - h_in).norm()
+            self.relax_share[layer_idx] = _delta.norm() / (_step + 1e-12)
+        return h_new + _delta, h_prev_out + _delta
 
     def _add_relax_potential(self, U_pair, xis, h_in, layer_idx):
         """Arm C: add lambda * Phi_psi to the potential, so the force it
@@ -1003,12 +1053,21 @@ class MultiXiPARFLM(SparsePARFLM):
         dt: float,
         layer_idx: int = 0,
     ) -> tuple:
-        """Dispatch to the configured integrator; see the base-class docstring."""
+        """Dispatch to the configured integrator; see the base-class docstring.
+
+        Arm R's residual write lands here rather than in ``_layer_forces``:
+        it is applied to the integrator's OUTPUT, which is the whole point
+        of the arm. ``_add_relax_residual`` is a no-op for every other mode,
+        so this stays bit-identical outside ``attention_residual``.
+        """
         if getattr(self.cfg, "integrator", "verlet") == "verlet":
-            return self._layer_step(h, h_prev, m_b, gamma, dt, layer_idx), h
-        return self._layer_step_langevin(
-            h, h_prev, m_b, gamma, dt, layer_idx=layer_idx,
-        )
+            _h_new = self._layer_step(h, h_prev, m_b, gamma, dt, layer_idx)
+            _h_prev_out = h
+        else:
+            _h_new, _h_prev_out = self._layer_step_langevin(
+                h, h_prev, m_b, gamma, dt, layer_idx=layer_idx,
+            )
+        return self._add_relax_residual(_h_new, _h_prev_out, h, layer_idx)
 
     # ------------------------------------------------------------------
     def num_params(self) -> int:

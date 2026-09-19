@@ -532,18 +532,24 @@ single eval is not a difference; the quantity to compare is the settled mean,
 with the trajectory used to see *where* an arm departed rather than whether
 it did.
 
-#### Observed so far
+#### Arm N, attention, λ = 0.25 — run 2026-09-19
 
-| step | control | Arm N, attention, λ = 0.25 | delta ppl |
+| step | control | Arm N | delta ppl |
 | ---: | ---: | ---: | ---: |
-| 29,000 | 88.16 (4.4791) | 88.17 (4.4793) | +0.01 |
+| 29,000 | 88.16 | 88.17 | +0.01 |
+| 29,500 | 86.20 | 86.77 | +0.57 |
+| 30,000 | 84.56 | 84.89 | +0.33 |
+| 30,500 | 83.93 | 84.10 | +0.17 |
+| 31,000 | **80.75** | **80.87** | +0.12 |
+| 31,500 | 81.75 | 81.85 | +0.10 |
+| 32,000 | 81.53 | 81.52 | −0.01 |
 
-A dead heat at +0.0002 nats, two orders of magnitude inside the ~1 PPL
-step-to-step noise, and before the decisive window. Nothing is readable from
-it yet, in either direction. Health markers at the same point: `share_max`
-0.08–0.12 and flat, `lr` matching the column above exactly, and `dc_ratio`
-bouncing 0.32–1.24 rather than falling monotonically the way it did under the
-abandoned zero-readout parameterisation (§3.5).
+The arm tracked the control the whole way and converged onto it. `share_max`
+rose 0.004 to 0.28, `lr` matched the column above at every step, and
+`dc_ratio` bounced 0.28–2.45 rather than falling monotonically the way it did
+under the abandoned zero-readout parameterisation (§3.5). **A genuinely
+non-conservative force at a 20–28% share moved the settled PPL by
+approximately nothing.**
 
 ### 7.1 The geodesic gate is blocked, and this was mis-stated
 
@@ -599,6 +605,83 @@ for 4 on saturating fits beating linear extrapolations; expect the
 $\lambda$ trajectory to saturate and do not extrapolate its early slope.
 
 ---
+
+### 7.2 What the null means, and what it does not
+
+A flat result is consistent with two very different readings, and the
+protocol as written could not separate them:
+
+1. conservativity costs nothing — the intended measurement;
+2. a from-scratch 4-head attention grafted onto a converged model for 4,000
+   steps of *decaying* lr never had a chance to pay off.
+
+Reading 2 is not a quibble. The graft gets 14% of the host's training
+budget, most of it below lr 1e-4, and it must displace an established
+optimum rather than fill a vacuum. **Running Arm C does not separate them**:
+C carries the identical handicap, so N ≈ C ≈ control would be two
+handicapped arms cancelling — a null with no power.
+
+Cell 6b-6 separates them against the endpoint checkpoint, without training.
+
+#### A. lambda-ablation
+
+Twelve fixed batches, paired, on the step-31,000 best:
+
+| λ | ppl |
+| ---: | ---: |
+| 0.000 | 80.44 |
+| 0.125 | 80.22 |
+| **0.250** (trained value) | 80.23 |
+| 0.500 | 81.04 |
+
+A real minimum with penalties on both sides — the field is optimally scaled,
+not inert — but removing it entirely costs only **+0.21 PPL**.
+
+#### B. alpha entropy
+
+The hypothesis under test: `W_Q` and `W_K` start at std 0.02, so α starts
+near uniform, and a uniform causal softmax makes the field a rank-limited
+map of the causal mean — an EMA, redundant with the five the model already
+has. Per layer, on the forward pass:
+
+| layer | score std | H/H&#95;unif | eff/i | alpha&#95;max·i |
+| ---: | ---: | ---: | ---: | ---: |
+| 0 | 0.0012 | 1.0000 | 1.0000 | **1.00** |
+| 1 | 0.6380 | 0.9532 | 0.8024 | 3.87 |
+| 2 | 0.6841 | 0.9479 | 0.7784 | 4.22 |
+| 3 | 0.7047 | 0.9424 | 0.7558 | 4.76 |
+| 4 | 0.6830 | 0.9432 | 0.7581 | **5.10** |
+| 5 | 0.6217 | 0.9520 | 0.7935 | 4.83 |
+| 6 | 0.5050 | 0.9705 | 0.8695 | 3.71 |
+| 7 | 0.3250 | 0.9894 | 0.9521 | 2.22 |
+
+**The EMA hypothesis is refuted.** Entropy at 0.96 reads "near-uniform", but
+entropy is a very flat function of concentration over a 512-wide window and
+is the wrong instrument here: `alpha_max·i` shows the peak weight at 3.7–5.1
+times uniform through the middle of the stack. Against an offline
+calibration, score std 0.68 sits almost exactly on the "mild but real
+structure" point. The field learned peaked, content-dependent routing.
+
+Layer 0 is the exception, at score std 0.0012 and `alpha_max·i` of exactly
+1.00 — genuinely uniform, genuinely dead.
+
+#### The third reading
+
+Neither pre-registered option survives. The field is **structured, optimally
+scaled, and worth 0.21 PPL**. That is not a powerless null: the model had a
+live non-conservative gradient path with real capacity, learned non-trivial
+routing with it, took a quarter of the force budget, and the whole apparatus
+bought 0.21 against a 26.91 gap.
+
+This is what makes Arm C worth its five hours. There is now a number to
+attribute rather than an absence: C ≈ 0.21 puts the 0.21 down to capacity and
+conservativity at approximately zero; C ≈ 0 attributes it to
+non-conservativity specifically. Either outcome is a **quantified upper
+bound** — "at this budget and at λ = 0.25, conservativity costs at most about
+0.2 of the 26.91 gap" — rather than a seventh elimination.
+
+The 4,000-step caveat survives and must be stated in any write-up, but it is
+much weaker than it was: the graft demonstrably took.
 
 ## 8. The insertion point
 
