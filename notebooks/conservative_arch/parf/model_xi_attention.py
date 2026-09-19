@@ -159,7 +159,8 @@ class XiRoutedConservativeAttention(nn.Module):
     ------
       h_in     : (B, T, d)   query side, requires_grad.
       h_src    : (B, T, d)   source side, detached when causal_force.
-      xi_route : (B, T, n_ctx, d)  detached EMA context for routing.
+      xi_route : detached routing source -- (B, T, n_ctx, d) EMA context
+                 when route_from='xi', (B, T, d) hidden state when 'h'.
       causal   : (T, T) bool, True where s < t (strict lower-tri).
     """
 
@@ -174,6 +175,7 @@ class XiRoutedConservativeAttention(nn.Module):
         init_scale: float = 0.02,
         rbf_log_sigma_init: float = 0.0,
         zero_readout: bool = False,
+        route_from: str = "xi",
     ):
         super().__init__()
         if kernel not in {"dot", "rbf"}:
@@ -183,7 +185,26 @@ class XiRoutedConservativeAttention(nn.Module):
         self.d_k = d_k
         self.d_v = d_v
         self.kernel = kernel
-        xi_d = xi_channels * d
+        # Where the (detached) routing scores are read from.
+        #
+        # 'xi' : the EMA summary, xi_channels*d wide. The original choice.
+        # 'h'  : the detached hidden state itself, d wide.
+        #
+        # Both are equally conservative. lem:cm-detached-routing requires
+        # only that alpha be CONSTANT with respect to h_t, which detaching
+        # secures either way; it does not require the routing come from xi.
+        #
+        # 'h' exists so a conservative arm can be parameter-matched against
+        # a non-conservative one that routes from h, as
+        # model_fock_attention.DirectExchangeForce does. Routing from xi
+        # costs xi_channels times more in the q/k projections -- 3x at
+        # xi_channels=5 -- and charging that to "conservativity" would
+        # confound the measurement with a free choice of routing source.
+        if route_from not in ("xi", "h"):
+            raise ValueError(
+                f"route_from must be 'xi' or 'h', got {route_from!r}")
+        self.route_from = route_from
+        xi_d = xi_channels * d if route_from == "xi" else d
 
         # ── Routing projections from the (detached) xi summary ──
         self.W_q = nn.Linear(xi_d, n_heads * d_k, bias=False)
@@ -233,8 +254,13 @@ class XiRoutedConservativeAttention(nn.Module):
         alpha is constant w.r.t. h (xi_route is detached upstream), which is
         what keeps the induced force conservative.
         """
-        B, T, n_ctx, d = xi_route.shape
-        xi_flat = xi_route.reshape(B, T, n_ctx * d)
+        if self.route_from == "h":
+            # xi_route carries the detached h in this mode.
+            B, T, d = xi_route.shape
+            xi_flat = xi_route
+        else:
+            B, T, n_ctx, d = xi_route.shape
+            xi_flat = xi_route.reshape(B, T, n_ctx * d)
         q = self.W_q(xi_flat).view(B, T, self.H, self.d_k).transpose(1, 2)
         k = self.W_k(xi_flat).view(B, T, self.H, self.d_k).transpose(1, 2)
         scores = torch.matmul(q, k.transpose(-1, -2)) * (self.d_k ** -0.5)

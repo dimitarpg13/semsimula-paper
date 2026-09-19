@@ -111,6 +111,43 @@ $$\kappa_{\infty} = \lVert A(J_{g}) \rVert_{F} / \lVert J_{g} \rVert_{F},$$
 
 so it is bounded and dimensionless.
 
+#### What "frozen context" means, and why kappa must respect it
+
+The framework's conservativity is curl-free **with the detached context
+held fixed**. That qualifier is load-bearing, and it is easy to measure
+past.
+
+Detaching removes a quantity from the *gradient*, not from the *value*. If
+the routing is read off `h.detach()`, then perturbing `h` still changes the
+routing weights, even though autograd treats them as constant. A finite
+difference that recomputes the context from the perturbed state therefore
+picks up a term the force never contained, and the field reads as
+non-integrable when it is not.
+
+Measured on the conservative attention arm at $d = 16$:
+
+| measurement | kappa |
+| ----------- | ----: |
+| routing source frozen, as arm 1 prescribes | **0.000e+00** |
+| routing source recomputed from the perturbed state | 0.654 |
+
+The second number is an artefact of the protocol, not a property of the
+force. It is the same trap as §3.3's finite-difference check needing
+`h_src` frozen, one level further in.
+
+This is not a loophole. Within a layer step the context genuinely is
+frozen: `xis` is computed once from `h.detach()` and the integrator then
+moves `h` through its substeps against a fixed potential. That is precisely
+the setting the Jacobi-metric construction of §5 assumes. Across layers the
+potential changes, which is the non-autonomy the framework already
+acknowledges through `depth_code`.
+
+**Consequence for the protocol.** Every kappa in §7 must be measured with
+the routing source and `h_src` pinned. A non-conservative arm has nothing
+to pin -- `DirectExchangeForce` detaches nothing -- so the comparison is
+between a field measured with its context frozen and one that has no frozen
+context to speak of. That asymmetry is the measurement, not a flaw in it.
+
 This quantity is already implemented. `conservativity_diagnostic.py` arm 1
 computes it under the name `antisymmetry_ratio`:
 

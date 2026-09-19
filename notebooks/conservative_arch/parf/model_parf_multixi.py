@@ -176,8 +176,21 @@ class MultiXiPARFConfig(SparsePARFConfig):
     #                  noise together, and Adam is scale-invariant in the
     #                  gradient.  Kept to reproduce the 2026-09-19 run.
     relax_gate: str = "zero_readout"
-    relax_attn_d_k: int = 48        # force_relaxation='attention' only
+    relax_attn_d_k: int = 48        # attention modes only
     relax_attn_heads: int = 4
+    # Routing source for 'attention_potential'. Defaults to 'h' so the
+    # conservative arm is parameter-matched against 'attention', which
+    # routes from h. Both are conservative -- the lemma requires the
+    # routing be detached, not that it come from xi -- so charging xi's
+    # extra width to "conservativity" would confound the measurement.
+    relax_attn_route_from: str = "h"
+    # Fix the gate instead of learning it. None learns lambda (or holds it
+    # at 1 under zero_readout); a float pins every layer there and freezes
+    # it, which is how the PPL-versus-kappa curve is swept. Two probes have
+    # now shown a learned gate reports as much about the optimiser as about
+    # the architecture: a scalar gate diffused as sqrt(t), and a zero
+    # readout surged to 50% force share and raised the loss.
+    relax_lambda_fixed: Optional[float] = None
 
     pair_potential: str = "sparse_topk"
     attn_n_heads: int = 4
@@ -439,6 +452,7 @@ class MultiXiPARFLM(SparsePARFLM):
                     kernel="dot",
                     init_scale=getattr(cfg, "relax_init_scale", 0.02),
                     zero_readout=(_gate == "zero_readout"),
+                    route_from=getattr(cfg, "relax_attn_route_from", "h"),
                 )
                 self._relax_takes_h_only = False
             elif _relax == "attention":
@@ -465,9 +479,14 @@ class MultiXiPARFLM(SparsePARFLM):
                 )
                 self._relax_takes_h_only = False
             _n_lam = cfg.L if getattr(cfg, "relax_lambda_per_layer", True) else 1
-            if _gate == "scalar":
+            _fixed = getattr(cfg, "relax_lambda_fixed", None)
+            if _fixed is not None:
+                del self.relax_lambda
+                self.register_buffer(
+                    "relax_lambda", torch.full((_n_lam,), float(_fixed)))
+            elif _gate == "scalar":
                 self.relax_lambda = nn.Parameter(torch.zeros(_n_lam))
-            else:
+            elif True:
                 # The readout already holds the field at zero, so the
                 # coefficient is a fixed 1 and carries no parameters.  It
                 # stays a buffer so the force path is identical in both
@@ -572,8 +591,11 @@ class MultiXiPARFLM(SparsePARFLM):
         if _mode == "attention_potential":
             B, T, _ = h_in.shape
             h_src = h_in.detach() if self.cfg.causal_force else h_in
+            _route = (h_in.detach()
+                      if getattr(self.relax_field, "route_from", "xi") == "h"
+                      else xis.detach())
             add = self.relax_field.potential(
-                h_in, h_src, xis.detach(),
+                h_in, h_src, _route,
                 self._pair_mask_for(T, h_in.device))
         else:
             add = self.relax_field(xis, h_in).sum()
