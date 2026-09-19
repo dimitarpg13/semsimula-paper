@@ -254,9 +254,51 @@ machinery.
 | 3 | step-0 eval | minutes | **must read 84.31 exactly** on both arms, or the warm start is not bit-identical |
 | 4 | Arm N, §6.3's 4,000-step decay | ≈5h | settled against 81.58; record κ and λ |
 | 5 | Arm C, identical | ≈5h | settled against 81.58; κ must stay below 0.02 |
-| 6 | geodesic preservation on both endpoints | hours | against the completed d=384 baseline |
+| 6 | geodesic residual on both endpoints | **blocked, see §7.1** | paired against the control endpoint, not against any published baseline |
 
 **Total ≈10h of A100 time** for the two training arms.
+
+### 7.1 The geodesic gate is blocked, and this was mis-stated
+
+§5 argues that a growing $\kappa$ costs geometric fidelity, which makes the
+geodesic residual the natural other half of the measurement. An earlier
+version of this section costed that gate at "hours, against the completed
+d=384 baseline." Both halves of that are wrong.
+
+**The published d=384 baseline is not comparable.** The completed analysis in
+`Geodesic_Preservation_Experiment.md` §4.5 is **L=16** at PPL 342-741 across
+a gamma sweep. The deployed arm is **L=8**, gamma fixed at 0.1, PPL near 81.
+Different depth, different damping regime, two orders of magnitude apart in
+loss. Nothing can be read across.
+
+**The tool cannot build this architecture.** `geodesic_residual.py` imports
+`PRESETS` and `build_fock_model` from `train_fock.py`, which contains no
+`vtheta_coupling`, no anisotropic Gaussian bank, no `creation_qk_norm` and no
+`install_aniso_depth_routing`. Pointed at a joint-arm checkpoint it would
+load under `strict=False`, silently drop every $V_{\theta}$ tensor on shape
+mismatch, and report a residual computed against a **randomly initialised
+potential**. That is the same silent-failure class the notebook's own resume
+guard exists to catch, and this script has no equivalent check.
+
+Two ways forward, neither of them hours:
+
+1. **Extend `train_fock.py`** to build the joint/aniso/QK-norm arm, then
+   verify the rebuilt model reproduces the checkpoint's perplexity before
+   trusting any residual from it.
+2. **Re-implement the residual in the notebook**, where the model is already
+   built correctly. The quantity is
+
+   $$R_\ell = \frac{\lVert a_\ell + \Gamma(v_\ell, v_\ell) + \gamma v_\ell \rVert}{\lVert a_\ell \rVert + \varepsilon},$$
+
+   needing the position trajectory, the explicit velocity stream, and
+   $\Gamma$ in closed form from the conformally flat metric — all of which
+   the deployed model already has, $V_{\theta}$ carrying an analytic
+   gradient. This is the smaller job of the two.
+
+Until one is done, treat §5's geometric argument as **motivation rather than
+measurement**. The paper shape it proposes — cost on one axis, exclusive
+capability on the other — needs the second axis actually measured, and it is
+not measured yet for this arm at this depth.
 
 **Instrumentation to log per eval:** $\lambda$ itself (per layer if
 parameterised per layer), $\kappa$ from arm 1, and $\lVert \lambda g_{\psi} \rVert / \lVert \nabla U \rVert$ —
