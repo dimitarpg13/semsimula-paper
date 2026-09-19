@@ -1150,7 +1150,7 @@ Two things blocked using it directly:
    anisotropic joint `V_theta`. Training it as-is would confound
    content-addressed routing with four other absent mechanisms.
 
-### 10.2 The port (Gate 0) — **DONE, uncommitted**
+### 10.2 The port (Gate 0) — **DONE**, committed in `661d959`
 
 `_pair_potential` in `model_parf_multixi.py` is a clean seam: it returns a
 **scalar** and is called once from `_layer_forces`, which already holds `xis`.
@@ -1211,36 +1211,76 @@ projections from the 1920-dimensional `xi` dominate while the T-dependent term
 is only `n_heads * T * d_k`. The parameter count rises 6.42x but that is
 +747K against a 76.7M model, under 1% of the total.
 
-### 10.6 Two variants, not one
+### 10.6 Two mechanisms, two slots
 
 Family A as written replaces `V_phi` — the **pair** path, 3.85% of compute. The
 bottleneck diagnosed in §9.4 is the **`xi` to `V_theta`** path: 87.6% of
-compute, 93.9% of parameters. Running only A1 risks a false negative on the
-whole hypothesis.
+compute, 93.9% of parameters. Running only family A risks a false negative on
+the whole hypothesis.
 
-| variant | change | tests |
-| ------- | ------ | ----- |
-| **A1** | `V_attn` replaces top-k `V_phi` | content-addressing on the pair path. **Ported, gated, ready.** |
-| **A2** | attention-pooled `xi` feeds `V_theta` | content-addressing on the diagnosed path. **Not yet written**, ≈60 lines in `MultiChannelXi`. |
+**Naming.** An earlier draft of this section called these "A1" and "A2". That
+was a bad choice twice over: `Context_Mixing_Mechanisms_in_the_Conservative_Framework.md`
+§4.4 already uses **Option A1** and **Option A2** for family A's own *kernel*
+choices (squared-norm and dot-product), and paper v3 uses §A1/§A2 for
+appendices. The canonical names below follow that document's
+`Alternative X` convention and are used everywhere from here on.
 
-Outcomes: both help means content-addressing helps generally; only A2 confirms
-§9.4; only A1 means the diagnosis is wrong and the paper's framing is right;
+| mechanism | slot | change | tests |
+| --------- | ---- | ------ | ----- |
+| **Family A** — xi-routed conservative attention (note §4) | pair | `V_attn` replaces top-k `V_phi` | content-addressing on the pair path. **Ported, gated, ready.** |
+| **Alternative E** — content-addressed xi pooling (note §8) | pooling | content term added inside the EMA softmax, feeding `V_theta` | content-addressing on the diagnosed path. **Implemented and gate-verified.** |
+
+The two occupy different slots and compose. Outcomes: both help means
+content-addressing helps generally; only Alternative E confirms §9.4; only
+family A means the diagnosis is wrong and the paper's framing is right;
 neither means content-addressing is not the issue and the second-order flow
 itself is the suspect.
 
 ### 10.7 Remaining gates
 
+The two mechanisms need **different ladders**, because only Alternative E
+warm-starts. Family A removes trained `V_phi` and `score_head` and
+initialises `V_attn` at `attn_init_scale = 0.02`, so it perturbs the model at
+step 0 and cannot resume; Alternative E is bit-identical at initialisation
+(§10.4) and can be dropped onto a trained checkpoint.
+
+#### Alternative E — warm-start probe (RECOMMENDED NEXT)
+
 | gate | what | cost | criterion |
 | ---- | ---- | ---- | --------- |
-| 3 | `omega*dt` at init; step-0 PPL | minutes | PPL matches current arm (`attn_init_scale=0.02` keeps attention a perturbation); over-wall 0%. **Confirm the resonance monitor actually arms** — §7.6 recorded it going silently blind under the lowrank path |
-| 4 | 2,000-step pilot | ≈2.5h | no watchdog trips; grad norms comparable |
-| 5 | 5,000-step pilot, A1 **and** A2 | ≈6h each | see below |
-| 6 | full 32,500 | ≈38h | beat 81.58 and the GPT-2 endpoint |
+| 3 | `omega*dt` and step-0 PPL after loading `_step28500_best.pt` | minutes | PPL must read **84.31** exactly, the checkpoint's own value. Anything else means the warm start is not bit-identical and the run is invalid. **Confirm the resonance monitor arms** — §7.6 recorded it going silently blind under the lowrank path |
+| 3b | `scaf.audit(...).assert_causal()` | minutes | no leak. The local check in §10.4 is a single future-perturbation probe, which is exactly what certified a 7.69-PPL checkpoint whose honest value was 258.07 |
+| 4 | the §6.3 anneal, unchanged: 4,000-step decay from step 28,500 | ≈5h | compare **settled against 81.58** |
 
-**Gate 5 uses a control that already exists.** Run the pilots on the *same*
-schedule as the 150,000-step run (warmup 7,500, lr 3.0e-04) and compare
-step-for-step against its logged head. Do not generate a fresh control, and do
-not change `TOTAL_STEPS` — the WSD schedule is a pure function of it.
+This is an exactly controlled comparison: same checkpoint, same schedule,
+same step count, same eval grid as §6.3, with the content term as the only
+difference. It needs no new control run.
+
+**Pre-registered.** §9.5 prediction 3 says 10 PPL or more.
+
+| settled result | reading |
+| -------------- | ------- |
+| **≤ 71.6** | prediction met; §9.4's diagnosis confirmed; proceed to a full run |
+| 73.6 to 79.6 | real but under-predicted; worth the full run, prediction scored as a miss |
+| **≥ 79.6** | within roughly 2 PPL of 81.58, i.e. inside §6.3's own eval noise. **This refutes the diagnosis** — the parameters downstream of `xi` were not starved of context, and the second-order flow itself becomes the suspect (§7.4 of the plan) |
+
+Fold `bench_inference.py` into this notebook after Cell 5. It yields **Part B**
+— `V_theta` measured on GPU — at zero marginal cost, which plan §8a.3 requires
+before anyone acts on the Phase 2 roadmap.
+
+#### Family A — from-scratch ladder (only if worth running)
+
+| gate | what | cost | criterion |
+| ---- | ---- | ---- | --------- |
+| 3 | `omega*dt` at init; step-0 PPL | minutes | use the `dot` kernel first: §10.4 shows it adds no curvature and so cannot move `omega*dt`; `rbf` can |
+| 4 | 2,000-step pilot | ≈2.5h | no watchdog trips; grad norms comparable |
+| 5 | 5,000-step pilot | ≈6h | see below |
+| 6 | full 32,500 | ≈38h | beat 81.58 and 54.67 |
+
+**Gate 5 uses a control that already exists.** Run on the *same* schedule as
+the 150,000-step run (warmup 7,500, lr 3.0e-04) and compare step-for-step
+against its logged head. Do not generate a fresh control, and do not change
+`TOTAL_STEPS` — the WSD schedule is a pure function of it.
 
 | step | current arm `val_ppl` |
 | ---: | ---: |
@@ -1251,11 +1291,10 @@ not change `TOTAL_STEPS` — the WSD schedule is a pure function of it.
 
 This matched-step comparison is valid where the GPT-2 early-curve comparison
 was not, and for a specific reason: identical schedule, warmup, learning rate,
-initialization recipe and data order, with the pair term as the only
+initialisation recipe and data order, with the pair term as the only
 difference. The GPT-2 comparison failed that test and had to be restricted to
 the decayed endpoint.
 
-**Pre-registered for Gate 5.** §9.5 prediction 3 says 10 PPL or more at the
-endpoint. At step 5,000, where PPL is near 200, a real mechanism gain should
-appear as **15 PPL or more**, far outside the 1.5 eval noise. **Under 5 PPL at
-step 5,000 does not justify Gate 6.**
+At step 5,000, where PPL is near 200, a real mechanism gain should appear as
+**15 PPL or more**, far outside the 1.5 eval noise. **Under 5 PPL at step
+5,000 does not justify Gate 6.**
