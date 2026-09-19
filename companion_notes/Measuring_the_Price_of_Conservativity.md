@@ -480,11 +480,70 @@ machinery.
 | 1 | conservativity check at λ = 0 | minutes | arm 1 test A: force equals the finite-difference gradient with context frozen. **Arm C must also pass at λ > 0** |
 | 2 | causality | minutes | `scaf.audit(...).assert_causal()` — not a hand-rolled future-perturbation probe |
 | 3 | step-0 eval | minutes | **must read 84.31 exactly** on both arms, or the warm start is not bit-identical |
-| 4 | Arm N, §6.3's 4,000-step decay | ≈5h | settled against 81.58; record κ and λ |
-| 5 | Arm C, identical | ≈5h | settled against 81.58; κ must stay below 0.02 |
+| 4 | Arm N, §6.3's 4,000-step decay | ≈5h | settled against 81.58; paired against §7.0 at every eval; record κ and λ |
+| 5 | Arm C, identical | ≈5h | settled against 81.58; paired against §7.0; κ must stay below 0.02 |
 | 6 | geodesic residual on both endpoints | **blocked, see §7.1** | paired against the control endpoint, not against any published baseline |
 
 **Total ≈10h of A100 time** for the two training arms.
+
+### 7.0 The control trajectory, at every eval step
+
+Gates 4 and 5 above say "settled against 81.58". That is the right endpoint
+but the wrong instrument for watching a run: 81.58 is the **mean of the last
+three evals** (81.75, 81.53, 81.47 — checklist §6.3), so it exists only once
+the arm has finished. An arm that is going wrong is worth catching at step
+30,000, not at 32,500.
+
+The conservative control ran the identical 4,000-step decay from the same
+step-28,500 checkpoint, so it is a **paired** target at every eval. Its full
+log is committed at
+[`results/.../anneal_28500_control_result.txt`](../notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc/anneal_28500_control_result.txt):
+
+| step | lr | val loss | val ppl | note |
+| ---: | ---: | ---: | ---: | --- |
+| 28,500 | 3.00e-04 | — | 84.31 | branch point, bit-identical on every arm |
+| 29,000 | 2.89e-04 | 4.4791 | 88.16 | |
+| 29,500 | 2.58e-04 | 4.4567 | 86.20 | |
+| 30,000 | 2.12e-04 | 4.4375 | 84.56 | |
+| 30,500 | 1.58e-04 | 4.4300 | 83.93 | |
+| 31,000 | 1.03e-04 | 4.3914 | **80.75** | best |
+| 31,500 | 5.68e-05 | 4.4037 | 81.75 | |
+| 32,000 | 2.59e-05 | 4.4010 | 81.53 | |
+| 32,500 | 1.50e-05 | 4.4003 | 81.47 | final |
+| settled | | | **81.58** | mean of the last three |
+
+**Read the `lr` column first.** It is a byte-identity check that costs
+nothing: the anneal is a deterministic cosine from `ANNEAL_LR_START` to
+`ANNEAL_LR_END` over `ANNEAL_STEPS`, so any arm whose `lr` at a given step
+differs from this column is not running the §6.3 decay and its endpoint
+cannot be compared. This catches a mis-set `ANNEAL_*` knob in 500 steps
+rather than in five hours.
+
+**The decisive window is 30,000 to 31,000.** The control loses 3.81 PPL
+there, more than the rest of the schedule combined, and it is still at 88.16
+at the first eval. An arm that matches at 29,000 has shown nothing yet — the
+field's readout starts at zero by construction, so at the first eval it has
+had 500 steps to become a participant at all. Separation, if there is any,
+appears at 30,500 and 31,000.
+
+**Step-to-step noise is about 1 PPL.** The control's own 31,000 to 31,500
+move is +1.00 with the LR still falling. A difference smaller than that at a
+single eval is not a difference; the quantity to compare is the settled mean,
+with the trajectory used to see *where* an arm departed rather than whether
+it did.
+
+#### Observed so far
+
+| step | control | Arm N, attention, λ = 0.25 | delta ppl |
+| ---: | ---: | ---: | ---: |
+| 29,000 | 88.16 (4.4791) | 88.17 (4.4793) | +0.01 |
+
+A dead heat at +0.0002 nats, two orders of magnitude inside the ~1 PPL
+step-to-step noise, and before the decisive window. Nothing is readable from
+it yet, in either direction. Health markers at the same point: `share_max`
+0.08–0.12 and flat, `lr` matching the column above exactly, and `dc_ratio`
+bouncing 0.32–1.24 rather than falling monotonically the way it did under the
+abandoned zero-readout parameterisation (§3.5).
 
 ### 7.1 The geodesic gate is blocked, and this was mis-stated
 

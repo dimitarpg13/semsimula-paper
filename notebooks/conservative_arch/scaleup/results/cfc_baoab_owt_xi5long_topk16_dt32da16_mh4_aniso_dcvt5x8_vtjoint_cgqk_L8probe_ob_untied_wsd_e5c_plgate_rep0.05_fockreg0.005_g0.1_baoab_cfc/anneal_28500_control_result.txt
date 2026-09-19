@@ -1,0 +1,235 @@
+[no-decay-1d] weight_decay=0.01 on 67 tensors (76,673,824 params); 0.0 on 50 1-D tensors (71,874 params, incl. log_tau / reverse_channel_scale / logit_scale / depth_code)
+Optimizer: AdamW
+  CUDA after optimiser: 83.0 GB free / 85.1 GB
+Resuming from checkpoint at step 28,500: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_step28500_best.pt
+[resume] loaded 120/120 tensors  missing=0  unexpected=0
+  Optimizer state restored.
+  Model loaded. Previous PPL: 84.31
+Restored running best PPL: 84.31
+
+============================================================
+CfC/BAOAB [baoab_cfc]: steps 28,501 -> 100,000
+  batch=16 x accum=2 (eff=32)
+  block=512  lr=0.0003  grad_clip=1.0
+  schedule: WSD: warmup 0->5,000, stable 5,000->65,000, decay 65,000->100,000, floor=1.50e-05
+  d=384  L=8  M=32
+  fock-reg: lambda=0.005  eps=1e-06
+  integrator: baoab_cfc  (cfg.integrator=baoab_cfc, analytic V_theta force=True, thermostat T=0)
+  watchdog: threshold=50.0 patience=200 hard_trigger=500.0
+  spike-capture: on  capture_threshold=100.0  keep=12
+  per-group clip: default=1.0  overrides={'V_phi': 0.3, 'log_tau': 0.3, 'creation_gate_qkv.logit_scale': 0.3, 'creation_gate': 0.3, 'destruction_gate': 0.3, 'reverse_channel_scale': 0.1, 'reverse_ch': 0.1, 'register': 0.3, 'depth_code': 0.25}
+  post-resume CUDA cache warmup: empty_cache() every 50 steps for the first 1000 steps of each run_training() call (re-arms on every fresh resume, first one starts at step 28,500)
+  reverse channel: stable (QK-norm + soft-norm + pre-LN)  warmup=4000 forwards
+============================================================
+
+[clip-then-sum] active for groups ['E', 'P'] (2 param(s) total), threshold=0.3
+[tau-floor] no creation_gate_qkv.log_tau on this model; skipped
+[resonance] wall monitor armed, logging every 500 steps (integrator module: model_parf_multixi)
+step   28550/100000  ntp=4.4560  v_reg=0.0017  fock_reg=0.0100  lr=3.00e-04  grad=0.80  rep=0.0024  top[override:reverse_channel_scale]=0.6  dc_ratio=0.72  bproj_sig=24.45  sig_max=45.227@r14  gamma=0.100  alpha=[0.286,0.607,0.812,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.8GB  mem_peak=45.2GB  211s  (~83.8h remaining)
+step   28600/100000  ntp=4.4691  v_reg=0.0018  fock_reg=0.0100  lr=3.00e-04  grad=1.56  rep=0.0025  top[override:reverse_channel_scale]=1.2  dc_ratio=0.82  bproj_sig=24.47  sig_max=45.278@r14  gamma=0.100  alpha=[0.286,0.607,0.812,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.8GB  mem_peak=45.2GB  420s  (~83.3h remaining)
+step   28650/100000  ntp=4.4798  v_reg=0.0020  fock_reg=0.0100  lr=2.99e-04  grad=1.40  rep=0.0022  top[override:depth_code]=0.9  dc_ratio=1.07  bproj_sig=24.44  sig_max=45.259@r14  gamma=0.100  alpha=[0.286,0.607,0.812,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.8GB  mem_peak=45.2GB  629s  (~83.1h remaining)
+step   28700/100000  ntp=4.4680  v_reg=0.0017  fock_reg=0.0100  lr=2.98e-04  grad=2.40  rep=0.0023  top[override:reverse_channel_scale]=2.1  dc_ratio=0.76  bproj_sig=24.47  sig_max=45.238@r14  gamma=0.100  alpha=[0.286,0.607,0.812,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.8GB  mem_peak=45.2GB  838s  (~83.0h remaining)
+step   28750/100000  ntp=4.4631  v_reg=0.0022  fock_reg=0.0100  lr=2.97e-04  grad=1.38  rep=0.0023  top[override:depth_code]=0.9  dc_ratio=1.25  bproj_sig=24.47  sig_max=45.312@r14  gamma=0.100  alpha=[0.285,0.606,0.812,0.964,0.998]  mem_alloc=2.4GB  mem_resv=45.8GB  mem_peak=45.2GB  1047s  (~82.9h remaining)
+step   28800/100000  ntp=4.4734  v_reg=0.0015  fock_reg=0.0100  lr=2.96e-04  grad=0.88  rep=0.0024  top[override:reverse_channel_scale]=0.6  dc_ratio=0.89  bproj_sig=24.47  sig_max=45.348@r14  gamma=0.100  alpha=[0.285,0.606,0.812,0.964,0.998]  mem_alloc=2.4GB  mem_resv=45.8GB  mem_peak=45.2GB  1257s  (~82.9h remaining)
+step   28850/100000  ntp=4.4630  v_reg=0.0018  fock_reg=0.0100  lr=2.95e-04  grad=0.88  rep=0.0024  top[override:reverse_channel_scale]=0.7  dc_ratio=0.61  bproj_sig=24.48  sig_max=45.447@r14  gamma=0.100  alpha=[0.285,0.606,0.812,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.8GB  mem_peak=45.2GB  1466s  (~82.8h remaining)
+step   28900/100000  ntp=4.4353  v_reg=0.0018  fock_reg=0.0100  lr=2.93e-04  grad=1.11  rep=0.0022  top[override:depth_code]=0.7  dc_ratio=1.17  bproj_sig=24.51  sig_max=45.543@r14  gamma=0.100  alpha=[0.285,0.607,0.813,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.8GB  mem_peak=45.2GB  1675s  (~82.7h remaining)
+step   28950/100000  ntp=4.4589  v_reg=0.0022  fock_reg=0.0100  lr=2.91e-04  grad=2.84  rep=0.0024  top[override:depth_code]=2.3  dc_ratio=1.81  bproj_sig=24.52  sig_max=45.501@r14  gamma=0.100  alpha=[0.284,0.607,0.812,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.8GB  mem_peak=45.2GB  1884s  (~82.6h remaining)
+step   29000/100000  ntp=4.4620  v_reg=0.0021  fock_reg=0.0100  lr=2.89e-04  grad=1.00  rep=0.0023  top[override:reverse_channel_scale]=0.8  dc_ratio=0.79  bproj_sig=24.55  sig_max=45.444@r14  gamma=0.100  alpha=[0.284,0.607,0.813,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.8GB  mem_peak=45.2GB  2093s  (~82.5h remaining)
+[resonance] step   29000  omega*dt p50=0.983  max=2.069  over_wall=0.011%
+    [evaluate] iter 0/40  mem_alloc=31.67GB  mem_resv=32.05GB
+    [evaluate] iter 10/40  mem_alloc=31.67GB  mem_resv=32.05GB
+    [evaluate] iter 20/40  mem_alloc=31.67GB  mem_resv=32.05GB
+    [evaluate] iter 30/40  mem_alloc=31.67GB  mem_resv=32.07GB
+    [evaluate] iter 39/40  mem_alloc=31.67GB  mem_resv=32.07GB
+    [evaluate] mem before=30.26GB  after=31.67GB  peak_during=68.96GB  trend(every 10 iters)=[31.67, 31.67, 31.67, 31.67, 31.67]GB
+>>> EVAL step 29,000  val_loss=4.4791  val_ppl=88.16  best=84.31    (2177s)
+step   29050/100000  ntp=4.4620  v_reg=0.0030  fock_reg=0.0100  lr=2.87e-04  grad=0.74  rep=0.0025  top[override:reverse_channel_scale]=0.4  dc_ratio=0.97  bproj_sig=24.58  sig_max=45.454@r14  gamma=0.100  alpha=[0.283,0.607,0.813,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.8GB  mem_peak=69.0GB  2386s  (~85.5h remaining)
+step   29100/100000  ntp=4.4596  v_reg=0.0020  fock_reg=0.0100  lr=2.85e-04  grad=0.85  rep=0.0023  top[override:reverse_channel_scale]=0.7  dc_ratio=0.61  bproj_sig=24.59  sig_max=45.374@r14  gamma=0.100  alpha=[0.283,0.607,0.813,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.8GB  mem_peak=45.2GB  2596s  (~85.2h remaining)
+step   29150/100000  ntp=4.4883  v_reg=0.0019  fock_reg=0.0100  lr=2.82e-04  grad=1.13  rep=0.0023  top[override:reverse_channel_scale]=0.9  dc_ratio=0.84  bproj_sig=24.61  sig_max=45.416@r14  gamma=0.100  alpha=[0.283,0.607,0.813,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.8GB  mem_peak=45.2GB  2805s  (~84.9h remaining)
+step   29200/100000  ntp=4.4634  v_reg=0.0017  fock_reg=0.0100  lr=2.79e-04  grad=1.67  rep=0.0022  top[override:reverse_channel_scale]=1.7  dc_ratio=0.78  bproj_sig=24.61  sig_max=45.475@r14  gamma=0.100  alpha=[0.283,0.607,0.812,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.8GB  mem_peak=45.2GB  3014s  (~84.7h remaining)
+step   29250/100000  ntp=4.4535  v_reg=0.0023  fock_reg=0.0100  lr=2.76e-04  grad=0.86  rep=0.0024  top[override:reverse_channel_scale]=1.0  dc_ratio=0.41  bproj_sig=24.64  sig_max=45.603@r14  gamma=0.100  alpha=[0.283,0.607,0.812,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.8GB  mem_peak=45.2GB  3223s  (~84.5h remaining)
+step   29300/100000  ntp=4.4494  v_reg=0.0022  fock_reg=0.0100  lr=2.73e-04  grad=0.95  rep=0.0023  top[override:reverse_channel_scale]=1.2  dc_ratio=0.45  bproj_sig=24.67  sig_max=45.505@r14  gamma=0.100  alpha=[0.283,0.606,0.812,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.8GB  mem_peak=45.2GB  3432s  (~84.3h remaining)
+step   29350/100000  ntp=4.4626  v_reg=0.0020  fock_reg=0.0101  lr=2.69e-04  grad=0.56  rep=0.0022  top[override:reverse_channel_scale]=0.5  dc_ratio=0.62  bproj_sig=24.69  sig_max=45.510@r14  gamma=0.100  alpha=[0.282,0.606,0.812,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.8GB  mem_peak=45.2GB  3641s  (~84.1h remaining)
+step   29400/100000  ntp=4.4399  v_reg=0.0019  fock_reg=0.0101  lr=2.66e-04  grad=0.78  rep=0.0025  top[override:reverse_channel_scale]=1.0  dc_ratio=0.35  bproj_sig=24.69  sig_max=45.510@r14  gamma=0.100  alpha=[0.282,0.606,0.812,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.8GB  mem_peak=45.2GB  3850s  (~83.9h remaining)
+step   29450/100000  ntp=4.4444  v_reg=0.0022  fock_reg=0.0101  lr=2.62e-04  grad=0.88  rep=0.0025  top[override:reverse_channel_scale]=0.7  dc_ratio=0.57  bproj_sig=24.70  sig_max=45.434@r14  gamma=0.100  alpha=[0.282,0.606,0.812,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.8GB  mem_peak=45.2GB  4059s  (~83.7h remaining)
+step   29500/100000  ntp=4.4429  v_reg=0.0028  fock_reg=0.0101  lr=2.58e-04  grad=0.84  rep=0.0022  top[override:reverse_channel_scale]=1.1  dc_ratio=0.38  bproj_sig=24.74  sig_max=45.443@r14  gamma=0.100  alpha=[0.282,0.606,0.811,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.8GB  mem_peak=45.2GB  4268s  (~83.6h remaining)
+[resonance] step   29500  omega*dt p50=0.979  max=2.190  over_wall=0.024%
+    [evaluate] iter 0/40  mem_alloc=31.67GB  mem_resv=32.13GB
+    [evaluate] iter 10/40  mem_alloc=31.67GB  mem_resv=32.15GB
+    [evaluate] iter 20/40  mem_alloc=31.67GB  mem_resv=32.15GB
+    [evaluate] iter 30/40  mem_alloc=31.67GB  mem_resv=32.15GB
+    [evaluate] iter 39/40  mem_alloc=31.67GB  mem_resv=32.15GB
+    [evaluate] mem before=30.26GB  after=31.67GB  peak_during=68.96GB  trend(every 10 iters)=[31.67, 31.67, 31.67, 31.67, 31.67]GB
+>>> EVAL step 29,500  val_loss=4.4567  val_ppl=86.20  best=84.31    (4353s)
+step   29550/100000  ntp=4.4498  v_reg=0.0023  fock_reg=0.0101  lr=2.54e-04  grad=1.09  rep=0.0022  top[override:reverse_channel_scale]=1.0  dc_ratio=0.63  bproj_sig=24.75  sig_max=45.436@r14  gamma=0.100  alpha=[0.282,0.605,0.811,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=69.0GB  4561s  (~85.0h remaining)
+step   29600/100000  ntp=4.4411  v_reg=0.0023  fock_reg=0.0101  lr=2.50e-04  grad=0.82  rep=0.0024  top[override:reverse_channel_scale]=0.6  dc_ratio=0.69  bproj_sig=24.75  sig_max=45.404@r14  gamma=0.100  alpha=[0.282,0.606,0.812,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  4770s  (~84.8h remaining)
+step   29650/100000  ntp=4.4579  v_reg=0.0021  fock_reg=0.0101  lr=2.46e-04  grad=1.93  rep=0.0023  top[override:creation_gate]=1.2  dc_ratio=0.98  bproj_sig=24.77  sig_max=45.427@r14  gamma=0.100  alpha=[0.282,0.606,0.812,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  4979s  (~84.6h remaining)
+step   29700/100000  ntp=4.4420  v_reg=0.0020  fock_reg=0.0101  lr=2.41e-04  grad=0.84  rep=0.0023  top[override:reverse_channel_scale]=0.7  dc_ratio=0.62  bproj_sig=24.78  sig_max=45.418@r14  gamma=0.100  alpha=[0.282,0.606,0.812,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  5188s  (~84.4h remaining)
+step   29750/100000  ntp=4.4373  v_reg=0.0021  fock_reg=0.0101  lr=2.37e-04  grad=0.73  rep=0.0022  top[override:reverse_channel_scale]=0.9  dc_ratio=0.45  bproj_sig=24.78  sig_max=45.346@r14  gamma=0.100  alpha=[0.281,0.606,0.812,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  5396s  (~84.2h remaining)
+step   29800/100000  ntp=4.4304  v_reg=0.0015  fock_reg=0.0101  lr=2.32e-04  grad=0.88  rep=0.0030  top[override:reverse_channel_scale]=0.6  dc_ratio=0.82  bproj_sig=24.79  sig_max=45.266@r14  gamma=0.100  alpha=[0.281,0.606,0.811,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  5604s  (~84.1h remaining)
+step   29850/100000  ntp=4.4382  v_reg=0.0011  fock_reg=0.0101  lr=2.27e-04  grad=0.63  rep=0.0024  top[override:reverse_channel_scale]=0.5  dc_ratio=0.73  bproj_sig=24.79  sig_max=45.356@r14  gamma=0.100  alpha=[0.281,0.606,0.811,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  5813s  (~83.9h remaining)
+step   29900/100000  ntp=4.4406  v_reg=0.0014  fock_reg=0.0101  lr=2.22e-04  grad=0.71  rep=0.0023  top[override:reverse_channel_scale]=1.6  dc_ratio=0.25  bproj_sig=24.80  sig_max=45.422@r14  gamma=0.100  alpha=[0.281,0.606,0.811,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  6022s  (~83.8h remaining)
+step   29950/100000  ntp=4.4366  v_reg=0.0016  fock_reg=0.0101  lr=2.17e-04  grad=1.14  rep=0.0023  top[override:reverse_channel_scale]=0.8  dc_ratio=0.84  bproj_sig=24.82  sig_max=45.500@r14  gamma=0.100  alpha=[0.281,0.606,0.811,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  6231s  (~83.6h remaining)
+step   30000/100000  ntp=4.4396  v_reg=0.0018  fock_reg=0.0101  lr=2.12e-04  grad=1.46  rep=0.0023  top[override:reverse_channel_scale]=3.3  dc_ratio=0.33  bproj_sig=24.82  sig_max=45.479@r14  gamma=0.100  alpha=[0.281,0.606,0.811,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  6439s  (~83.5h remaining)
+[resonance] step   30000  omega*dt p50=0.970  max=2.104  over_wall=0.050%
+    [evaluate] iter 0/40  mem_alloc=31.67GB  mem_resv=32.09GB
+    [evaluate] iter 10/40  mem_alloc=31.67GB  mem_resv=32.09GB
+    [evaluate] iter 20/40  mem_alloc=31.67GB  mem_resv=32.09GB
+    [evaluate] iter 30/40  mem_alloc=31.67GB  mem_resv=32.09GB
+    [evaluate] iter 39/40  mem_alloc=31.67GB  mem_resv=32.05GB
+    [evaluate] mem before=30.26GB  after=31.67GB  peak_during=68.96GB  trend(every 10 iters)=[31.67, 31.67, 31.67, 31.67, 31.67]GB
+>>> EVAL step 30,000  val_loss=4.4375  val_ppl=84.56  best=84.31    (6523s)
+  Checkpoint saved: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc/anneal_probe_28500/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_step30000.pt  (PPL=84.56)
+
+[causal probe] step 30,000  max|dlogit|=0.000e+00  [PASS]
+
+================================================================
+[trained leak probe] step 30,000 -- running on live model
+================================================================
+[probe] reverse gate tanh(scale) per layer: [0.0227, 0.0041, 0.0092, 0.0138, 0.02, 0.0322, 0.0485, 0.0597]
+[probe] gate |mean| = 0.0263
+[probe] 2 window pairs, context=512, t_p=256, dtype=torch.float32
+[eval] torch.no_grad() forward failed (element 0 of tensors does not require grad and does not have a grad_fn); falling back to grad-enabled forward with manual detach.
+  [T0] determinism (same input twice): max|dlogit| = 0.000e+00
+  pair 0: max|dlogit|(past) = 0.000e+00   mean dNLL(past targets) = +0.0000 nats
+  pair 1: max|dlogit|(past) = 0.000e+00   mean dNLL(past targets) = +0.0000 nats
+  [ctrl] gate zeroed: max|dlogit|(past) = 0.000e+00 (must be ~0)
+
+[probe] SUMMARY
+  trained-scale leak:  max|dlogit| at past positions = 0.000e+00   (init-scale reference ~1.1e-05)
+  predictive value:    mean dNLL of past targets when future swapped = +0.0000 nats/token
+  interpretation:      dNLL ~ +0.3..0.7 nats -> the leak carries most of the apparent PPL gain;
+                       dNLL ~ +0.00x nats     -> leak still negligible at trained scale.
+[eval] torch.no_grad() forward failed (element 0 of tensors does not require grad and does not have a grad_fn); falling back to grad-enabled forward with manual detach.
+[honest-ppl] targets 256/256
+
+================================================================
+HONEST vs STANDARD PPL (same target tokens)
+================================================================
+  A mid-window  (256 left ctx, target+future IN window)   : NLL 3.8772  PPL    48.29
+  B last-pos    (511 left ctx, target OUTSIDE window)     : NLL 3.9091  PPL    49.86   <-- leak-free
+  paired diff (B - A) = +0.0319 +/- 0.0358 nats
+  causal model expectation: B <= A (B has MORE left context).
+  B >> A  ==> reported PPLs are leak-inflated; PPL_B is the honest number.
+
+  within-window NLL profile (256 windows; position -> mean NLL):
+    pos   1- 31: 4.9143
+    pos  32- 62: 4.4629
+    pos  63- 93: 4.4817
+    pos  94-124: 4.4908
+    pos 125-155: 4.4065
+    pos 156-186: 4.3250
+    pos 187-217: 4.4356
+    pos 218-248: 4.4153
+    pos 249-279: 4.3271
+    pos 280-310: 4.3127
+    pos 311-341: 4.3341
+    pos 342-372: 4.3620
+    pos 373-403: 4.3907
+    pos 404-434: 4.4264
+    pos 435-465: 4.3994
+    pos 466-511: 4.3415
+  (causal: decreasing toward the end; RISING toward the end = future context was doing the work)
+
+[trained leak probe] step 30,000  honest_PPL=49.86  standard_PPL=48.29  diff=+0.0319 nats  [CLEAN]
+step   30050/100000  ntp=4.4286  v_reg=0.0016  fock_reg=0.0101  lr=2.07e-04  grad=0.79  rep=0.0023  top[override:reverse_channel_scale]=1.8  dc_ratio=0.26  bproj_sig=24.84  sig_max=45.494@r14  gamma=0.100  alpha=[0.281,0.606,0.811,0.965,0.998]  mem_alloc=2.4GB  mem_resv=67.7GB  mem_peak=69.0GB  6795s  (~85.2h remaining)
+step   30100/100000  ntp=4.4315  v_reg=0.0015  fock_reg=0.0101  lr=2.02e-04  grad=0.73  rep=0.0022  top[override:reverse_channel_scale]=0.5  dc_ratio=0.81  bproj_sig=24.85  sig_max=45.510@r14  gamma=0.100  alpha=[0.281,0.606,0.811,0.965,0.998]  mem_alloc=2.4GB  mem_resv=67.7GB  mem_peak=45.2GB  7003s  (~85.0h remaining)
+step   30150/100000  ntp=4.4182  v_reg=0.0011  fock_reg=0.0101  lr=1.96e-04  grad=0.92  rep=0.0022  top[override:reverse_channel_scale]=0.9  dc_ratio=0.55  bproj_sig=24.86  sig_max=45.522@r14  gamma=0.100  alpha=[0.281,0.606,0.811,0.965,0.998]  mem_alloc=2.4GB  mem_resv=67.7GB  mem_peak=45.2GB  7212s  (~84.8h remaining)
+step   30200/100000  ntp=4.4264  v_reg=0.0017  fock_reg=0.0101  lr=1.91e-04  grad=0.82  rep=0.0023  top[override:reverse_channel_scale]=0.6  dc_ratio=0.63  bproj_sig=24.87  sig_max=45.513@r14  gamma=0.100  alpha=[0.281,0.606,0.811,0.965,0.998]  mem_alloc=2.4GB  mem_resv=67.7GB  mem_peak=45.2GB  7420s  (~84.6h remaining)
+step   30250/100000  ntp=4.4179  v_reg=0.0016  fock_reg=0.0101  lr=1.85e-04  grad=1.60  rep=0.0025  top[override:reverse_channel_scale]=2.5  dc_ratio=0.45  bproj_sig=24.86  sig_max=45.616@r14  gamma=0.100  alpha=[0.280,0.606,0.811,0.965,0.998]  mem_alloc=2.4GB  mem_resv=67.7GB  mem_peak=45.2GB  7629s  (~84.5h remaining)
+step   30300/100000  ntp=4.4521  v_reg=0.0017  fock_reg=0.0101  lr=1.80e-04  grad=0.85  rep=0.0022  top[override:reverse_channel_scale]=0.5  dc_ratio=0.93  bproj_sig=24.86  sig_max=45.567@r14  gamma=0.100  alpha=[0.280,0.605,0.811,0.965,0.998]  mem_alloc=2.4GB  mem_resv=67.7GB  mem_peak=45.2GB  7837s  (~84.3h remaining)
+step   30350/100000  ntp=4.4302  v_reg=0.0020  fock_reg=0.0101  lr=1.74e-04  grad=0.81  rep=0.0021  top[override:depth_code]=0.4  dc_ratio=1.10  bproj_sig=24.86  sig_max=45.661@r14  gamma=0.100  alpha=[0.280,0.605,0.811,0.965,0.998]  mem_alloc=2.4GB  mem_resv=67.7GB  mem_peak=45.2GB  8046s  (~84.1h remaining)
+step   30400/100000  ntp=4.4129  v_reg=0.0019  fock_reg=0.0101  lr=1.69e-04  grad=0.70  rep=0.0022  top[override:reverse_channel_scale]=0.4  dc_ratio=0.88  bproj_sig=24.86  sig_max=45.702@r14  gamma=0.100  alpha=[0.280,0.605,0.811,0.965,0.998]  mem_alloc=2.4GB  mem_resv=67.7GB  mem_peak=45.2GB  8255s  (~84.0h remaining)
+step   30450/100000  ntp=4.4065  v_reg=0.0020  fock_reg=0.0101  lr=1.63e-04  grad=1.24  rep=0.0023  top[override:depth_code]=0.8  dc_ratio=1.35  bproj_sig=24.85  sig_max=45.764@r14  gamma=0.100  alpha=[0.280,0.605,0.811,0.965,0.998]  mem_alloc=2.4GB  mem_resv=67.7GB  mem_peak=45.2GB  8464s  (~83.9h remaining)
+step   30500/100000  ntp=4.4372  v_reg=0.0027  fock_reg=0.0101  lr=1.58e-04  grad=1.43  rep=0.0023  top[override:reverse_channel_scale]=1.2  dc_ratio=0.85  bproj_sig=24.87  sig_max=45.843@r14  gamma=0.100  alpha=[0.280,0.605,0.811,0.965,0.998]  mem_alloc=2.4GB  mem_resv=67.7GB  mem_peak=45.2GB  8672s  (~83.7h remaining)
+[resonance] step   30500  omega*dt p50=0.991  max=2.099  over_wall=0.011%
+    [evaluate] iter 0/40  mem_alloc=31.67GB  mem_resv=32.11GB
+    [evaluate] iter 10/40  mem_alloc=31.67GB  mem_resv=32.13GB
+    [evaluate] iter 20/40  mem_alloc=31.67GB  mem_resv=32.13GB
+    [evaluate] iter 30/40  mem_alloc=31.67GB  mem_resv=32.13GB
+    [evaluate] iter 39/40  mem_alloc=31.67GB  mem_resv=32.11GB
+    [evaluate] mem before=30.26GB  after=31.67GB  peak_during=68.96GB  trend(every 10 iters)=[31.67, 31.67, 31.67, 31.67, 31.67]GB
+>>> EVAL step 30,500  val_loss=4.4300  val_ppl=83.93  best=83.93  *** NEW BEST ***  (8756s)
+  Checkpoint saved: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc/anneal_probe_28500/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_step30500_best.pt  (PPL=83.93)
+  Canonical best: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc/anneal_probe_28500/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_best.pt
+step   30550/100000  ntp=4.4439  v_reg=0.0023  fock_reg=0.0101  lr=1.52e-04  grad=0.89  rep=0.0022  top[override:depth_code]=0.5  dc_ratio=1.26  bproj_sig=24.87  sig_max=45.817@r14  gamma=0.100  alpha=[0.280,0.605,0.811,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=69.0GB  8970s  (~84.4h remaining)
+step   30600/100000  ntp=4.3996  v_reg=0.0022  fock_reg=0.0101  lr=1.46e-04  grad=0.91  rep=0.0022  top[override:reverse_channel_scale]=0.7  dc_ratio=0.77  bproj_sig=24.86  sig_max=45.820@r14  gamma=0.100  alpha=[0.280,0.605,0.811,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  9178s  (~84.3h remaining)
+step   30650/100000  ntp=4.4394  v_reg=0.0017  fock_reg=0.0101  lr=1.41e-04  grad=1.09  rep=0.0024  top[override:reverse_channel_scale]=1.0  dc_ratio=0.70  bproj_sig=24.87  sig_max=45.826@r14  gamma=0.100  alpha=[0.279,0.605,0.811,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  9387s  (~84.1h remaining)
+step   30700/100000  ntp=4.4193  v_reg=0.0019  fock_reg=0.0101  lr=1.35e-04  grad=0.97  rep=0.0021  top[override:reverse_channel_scale]=0.7  dc_ratio=0.82  bproj_sig=24.88  sig_max=45.789@r14  gamma=0.100  alpha=[0.279,0.605,0.811,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  9595s  (~84.0h remaining)
+step   30750/100000  ntp=4.4017  v_reg=0.0019  fock_reg=0.0101  lr=1.30e-04  grad=4.22  rep=0.0023  top[override:depth_code]=3.5  dc_ratio=2.11  bproj_sig=24.88  sig_max=45.756@r14  gamma=0.100  alpha=[0.279,0.605,0.811,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  9804s  (~83.8h remaining)
+step   30800/100000  ntp=4.4014  v_reg=0.0016  fock_reg=0.0101  lr=1.24e-04  grad=0.75  rep=0.0022  top[override:depth_code]=0.4  dc_ratio=1.11  bproj_sig=24.88  sig_max=45.758@r14  gamma=0.100  alpha=[0.279,0.605,0.811,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  10012s  (~83.7h remaining)
+step   30850/100000  ntp=4.4081  v_reg=0.0016  fock_reg=0.0101  lr=1.19e-04  grad=0.87  rep=0.0023  top[override:reverse_channel_scale]=1.1  dc_ratio=0.43  bproj_sig=24.87  sig_max=45.815@r14  gamma=0.100  alpha=[0.279,0.605,0.811,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  10221s  (~83.5h remaining)
+step   30900/100000  ntp=4.4028  v_reg=0.0018  fock_reg=0.0101  lr=1.14e-04  grad=0.69  rep=0.0021  top[override:reverse_channel_scale]=0.6  dc_ratio=0.57  bproj_sig=24.87  sig_max=45.763@r14  gamma=0.100  alpha=[0.279,0.604,0.811,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  10430s  (~83.4h remaining)
+step   30950/100000  ntp=4.4256  v_reg=0.0017  fock_reg=0.0101  lr=1.08e-04  grad=1.11  rep=0.0021  top[override:depth_code]=0.6  dc_ratio=1.26  bproj_sig=24.87  sig_max=45.777@r14  gamma=0.100  alpha=[0.279,0.604,0.811,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  10638s  (~83.3h remaining)
+step   31000/100000  ntp=4.3859  v_reg=0.0023  fock_reg=0.0101  lr=1.03e-04  grad=0.98  rep=0.0021  top[override:reverse_channel_scale]=0.7  dc_ratio=0.77  bproj_sig=24.86  sig_max=45.817@r14  gamma=0.100  alpha=[0.279,0.604,0.810,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  10846s  (~83.2h remaining)
+[resonance] step   31000  omega*dt p50=0.990  max=2.178  over_wall=0.023%
+    [evaluate] iter 0/40  mem_alloc=31.67GB  mem_resv=32.18GB
+    [evaluate] iter 10/40  mem_alloc=31.67GB  mem_resv=32.18GB
+    [evaluate] iter 20/40  mem_alloc=31.67GB  mem_resv=32.18GB
+    [evaluate] iter 30/40  mem_alloc=31.67GB  mem_resv=32.18GB
+    [evaluate] iter 39/40  mem_alloc=31.67GB  mem_resv=32.16GB
+    [evaluate] mem before=30.26GB  after=31.67GB  peak_during=68.96GB  trend(every 10 iters)=[31.67, 31.67, 31.67, 31.67, 31.67]GB
+>>> EVAL step 31,000  val_loss=4.3914  val_ppl=80.75  best=80.75  *** NEW BEST ***  (10930s)
+  Checkpoint saved: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc/anneal_probe_28500/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_step31000_best.pt  (PPL=80.75)
+  Canonical best: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc/anneal_probe_28500/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_best.pt
+step   31050/100000  ntp=4.3937  v_reg=0.0022  fock_reg=0.0101  lr=9.79e-05  grad=0.94  rep=0.0022  top[override:depth_code]=0.5  dc_ratio=1.09  bproj_sig=24.87  sig_max=45.860@r14  gamma=0.100  alpha=[0.279,0.604,0.810,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=69.0GB  11144s  (~83.7h remaining)
+step   31100/100000  ntp=4.3880  v_reg=0.0024  fock_reg=0.0102  lr=9.29e-05  grad=0.98  rep=0.0022  top[override:depth_code]=0.5  dc_ratio=1.27  bproj_sig=24.87  sig_max=45.867@r14  gamma=0.100  alpha=[0.279,0.604,0.810,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  11352s  (~83.6h remaining)
+step   31150/100000  ntp=4.3991  v_reg=0.0021  fock_reg=0.0102  lr=8.80e-05  grad=3.82  rep=0.0020  top[override:reverse_channel_scale]=4.4  dc_ratio=0.52  bproj_sig=24.87  sig_max=45.866@r14  gamma=0.100  alpha=[0.279,0.604,0.810,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  11561s  (~83.4h remaining)
+step   31200/100000  ntp=4.4198  v_reg=0.0022  fock_reg=0.0102  lr=8.31e-05  grad=0.91  rep=0.0021  top[override:depth_code]=0.5  dc_ratio=1.22  bproj_sig=24.87  sig_max=45.883@r14  gamma=0.100  alpha=[0.279,0.604,0.810,0.965,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  11769s  (~83.3h remaining)
+step   31250/100000  ntp=4.3724  v_reg=0.0020  fock_reg=0.0102  lr=7.84e-05  grad=0.74  rep=0.0022  top[override:reverse_channel_scale]=1.0  dc_ratio=0.37  bproj_sig=24.87  sig_max=45.920@r14  gamma=0.100  alpha=[0.279,0.604,0.810,0.964,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  11978s  (~83.2h remaining)
+step   31300/100000  ntp=4.3972  v_reg=0.0021  fock_reg=0.0102  lr=7.38e-05  grad=0.92  rep=0.0022  top[override:reverse_channel_scale]=0.5  dc_ratio=0.82  bproj_sig=24.88  sig_max=45.933@r14  gamma=0.100  alpha=[0.279,0.604,0.810,0.964,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  12186s  (~83.1h remaining)
+step   31350/100000  ntp=4.3930  v_reg=0.0020  fock_reg=0.0102  lr=6.94e-05  grad=1.02  rep=0.0022  top[override:reverse_channel_scale]=1.3  dc_ratio=0.45  bproj_sig=24.88  sig_max=45.910@r14  gamma=0.100  alpha=[0.279,0.604,0.810,0.964,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  12395s  (~82.9h remaining)
+step   31400/100000  ntp=4.3797  v_reg=0.0022  fock_reg=0.0102  lr=6.50e-05  grad=0.97  rep=0.0021  top[override:reverse_channel_scale]=1.0  dc_ratio=0.59  bproj_sig=24.88  sig_max=45.913@r14  gamma=0.100  alpha=[0.279,0.604,0.810,0.964,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  12603s  (~82.8h remaining)
+step   31450/100000  ntp=4.3979  v_reg=0.0019  fock_reg=0.0102  lr=6.09e-05  grad=0.80  rep=0.0022  top[override:reverse_channel_scale]=0.8  dc_ratio=0.57  bproj_sig=24.88  sig_max=45.921@r14  gamma=0.100  alpha=[0.279,0.603,0.810,0.964,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  12812s  (~82.7h remaining)
+step   31500/100000  ntp=4.4216  v_reg=0.0020  fock_reg=0.0102  lr=5.68e-05  grad=1.04  rep=0.0023  top[override:depth_code]=0.6  dc_ratio=1.30  bproj_sig=24.88  sig_max=45.912@r14  gamma=0.100  alpha=[0.279,0.603,0.810,0.964,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  13021s  (~82.6h remaining)
+[resonance] step   31500  omega*dt p50=0.985  max=2.165  over_wall=0.017%
+    [evaluate] iter 0/40  mem_alloc=31.67GB  mem_resv=32.18GB
+    [evaluate] iter 10/40  mem_alloc=31.67GB  mem_resv=32.16GB
+    [evaluate] iter 20/40  mem_alloc=31.67GB  mem_resv=32.16GB
+    [evaluate] iter 30/40  mem_alloc=31.67GB  mem_resv=32.16GB
+    [evaluate] iter 39/40  mem_alloc=31.67GB  mem_resv=32.16GB
+    [evaluate] mem before=30.26GB  after=31.67GB  peak_during=68.96GB  trend(every 10 iters)=[31.67, 31.67, 31.67, 31.67, 31.67]GB
+>>> EVAL step 31,500  val_loss=4.4037  val_ppl=81.75  best=80.75    (13105s)
+step   31550/100000  ntp=4.3942  v_reg=0.0019  fock_reg=0.0102  lr=5.29e-05  grad=1.08  rep=0.0023  top[override:depth_code]=0.6  dc_ratio=1.06  bproj_sig=24.88  sig_max=45.906@r14  gamma=0.100  alpha=[0.279,0.603,0.809,0.964,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=69.0GB  13313s  (~83.0h remaining)
+step   31600/100000  ntp=4.3793  v_reg=0.0018  fock_reg=0.0102  lr=4.92e-05  grad=0.78  rep=0.0021  top[override:reverse_channel_scale]=0.5  dc_ratio=0.73  bproj_sig=24.88  sig_max=45.922@r14  gamma=0.100  alpha=[0.278,0.603,0.810,0.964,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  13522s  (~82.9h remaining)
+step   31650/100000  ntp=4.3783  v_reg=0.0021  fock_reg=0.0102  lr=4.57e-05  grad=2.17  rep=0.0022  top[override:depth_code]=1.8  dc_ratio=1.02  bproj_sig=24.88  sig_max=45.912@r14  gamma=0.100  alpha=[0.278,0.603,0.809,0.964,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  13730s  (~82.8h remaining)
+step   31700/100000  ntp=4.3759  v_reg=0.0025  fock_reg=0.0102  lr=4.23e-05  grad=1.21  rep=0.0021  top[override:reverse_channel_scale]=2.0  dc_ratio=0.38  bproj_sig=24.88  sig_max=45.903@r14  gamma=0.100  alpha=[0.279,0.603,0.809,0.964,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  13938s  (~82.6h remaining)
+step   31750/100000  ntp=4.3931  v_reg=0.0025  fock_reg=0.0102  lr=3.91e-05  grad=0.77  rep=0.0021  top[override:reverse_channel_scale]=0.6  dc_ratio=0.74  bproj_sig=24.88  sig_max=45.896@r14  gamma=0.100  alpha=[0.279,0.603,0.809,0.964,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  14147s  (~82.5h remaining)
+step   31800/100000  ntp=4.3813  v_reg=0.0022  fock_reg=0.0102  lr=3.61e-05  grad=1.58  rep=0.0022  top[override:depth_code]=1.1  dc_ratio=1.45  bproj_sig=24.88  sig_max=45.916@r14  gamma=0.100  alpha=[0.279,0.603,0.809,0.964,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  14356s  (~82.4h remaining)
+step   31850/100000  ntp=4.3912  v_reg=0.0022  fock_reg=0.0102  lr=3.32e-05  grad=0.67  rep=0.0021  top[override:reverse_channel_scale]=1.0  dc_ratio=0.33  bproj_sig=24.88  sig_max=45.938@r14  gamma=0.100  alpha=[0.279,0.603,0.809,0.964,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  14564s  (~82.3h remaining)
+step   31900/100000  ntp=4.3873  v_reg=0.0021  fock_reg=0.0102  lr=3.06e-05  grad=0.78  rep=0.0021  top[override:reverse_channel_scale]=0.5  dc_ratio=0.75  bproj_sig=24.88  sig_max=45.967@r14  gamma=0.100  alpha=[0.279,0.603,0.809,0.964,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  14773s  (~82.2h remaining)
+step   31950/100000  ntp=4.3878  v_reg=0.0017  fock_reg=0.0102  lr=2.81e-05  grad=0.88  rep=0.0021  top[override:depth_code]=0.5  dc_ratio=1.15  bproj_sig=24.88  sig_max=45.977@r14  gamma=0.100  alpha=[0.278,0.603,0.809,0.964,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  14983s  (~82.1h remaining)
+step   32000/100000  ntp=4.3854  v_reg=0.0019  fock_reg=0.0102  lr=2.59e-05  grad=1.08  rep=0.0021  top[override:reverse_channel_scale]=0.9  dc_ratio=0.80  bproj_sig=24.88  sig_max=45.991@r14  gamma=0.100  alpha=[0.278,0.603,0.809,0.964,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  15191s  (~82.0h remaining)
+[resonance] step   32000  omega*dt p50=0.996  max=2.144  over_wall=0.044%
+    [evaluate] iter 0/40  mem_alloc=31.67GB  mem_resv=32.09GB
+    [evaluate] iter 10/40  mem_alloc=31.67GB  mem_resv=32.07GB
+    [evaluate] iter 20/40  mem_alloc=31.67GB  mem_resv=32.07GB
+    [evaluate] iter 30/40  mem_alloc=31.67GB  mem_resv=32.07GB
+    [evaluate] iter 39/40  mem_alloc=31.67GB  mem_resv=32.07GB
+    [evaluate] mem before=30.26GB  after=31.67GB  peak_during=68.96GB  trend(every 10 iters)=[31.67, 31.67, 31.67, 31.67, 31.67]GB
+>>> EVAL step 32,000  val_loss=4.4010  val_ppl=81.53  best=80.75    (15276s)
+step   32050/100000  ntp=4.3719  v_reg=0.0019  fock_reg=0.0102  lr=2.38e-05  grad=0.78  rep=0.0021  top[override:reverse_channel_scale]=0.5  dc_ratio=0.88  bproj_sig=24.89  sig_max=45.994@r14  gamma=0.100  alpha=[0.278,0.603,0.809,0.964,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=69.0GB  15484s  (~82.3h remaining)
+step   32100/100000  ntp=4.3746  v_reg=0.0020  fock_reg=0.0102  lr=2.20e-05  grad=0.91  rep=0.0021  top[override:reverse_channel_scale]=0.7  dc_ratio=0.67  bproj_sig=24.89  sig_max=46.017@r14  gamma=0.100  alpha=[0.279,0.603,0.809,0.964,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  15693s  (~82.2h remaining)
+step   32150/100000  ntp=4.3629  v_reg=0.0021  fock_reg=0.0102  lr=2.04e-05  grad=1.05  rep=0.0021  top[override:reverse_channel_scale]=1.3  dc_ratio=0.50  bproj_sig=24.88  sig_max=46.027@r14  gamma=0.100  alpha=[0.279,0.603,0.809,0.964,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  15902s  (~82.1h remaining)
+step   32200/100000  ntp=4.3781  v_reg=0.0021  fock_reg=0.0102  lr=1.90e-05  grad=0.96  rep=0.0022  top[override:reverse_channel_scale]=1.7  dc_ratio=0.34  bproj_sig=24.88  sig_max=46.038@r14  gamma=0.100  alpha=[0.278,0.602,0.809,0.964,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  16111s  (~82.0h remaining)
+step   32250/100000  ntp=4.3860  v_reg=0.0020  fock_reg=0.0102  lr=1.78e-05  grad=0.84  rep=0.0021  top[override:reverse_channel_scale]=0.6  dc_ratio=0.76  bproj_sig=24.88  sig_max=46.045@r14  gamma=0.100  alpha=[0.278,0.602,0.809,0.964,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  16320s  (~81.9h remaining)
+step   32300/100000  ntp=4.3907  v_reg=0.0021  fock_reg=0.0102  lr=1.68e-05  grad=1.71  rep=0.0023  top[override:reverse_channel_scale]=1.4  dc_ratio=0.89  bproj_sig=24.88  sig_max=46.040@r14  gamma=0.100  alpha=[0.278,0.602,0.809,0.964,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  16529s  (~81.8h remaining)
+step   32350/100000  ntp=4.3828  v_reg=0.0021  fock_reg=0.0102  lr=1.60e-05  grad=0.96  rep=0.0021  top[override:reverse_channel_scale]=2.0  dc_ratio=0.29  bproj_sig=24.88  sig_max=46.047@r14  gamma=0.100  alpha=[0.278,0.602,0.809,0.964,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  16738s  (~81.7h remaining)
+step   32400/100000  ntp=4.3733  v_reg=0.0020  fock_reg=0.0102  lr=1.54e-05  grad=0.99  rep=0.0021  top[override:reverse_channel_scale]=1.2  dc_ratio=0.49  bproj_sig=24.88  sig_max=46.050@r14  gamma=0.100  alpha=[0.278,0.602,0.809,0.964,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  16947s  (~81.6h remaining)
+step   32450/100000  ntp=4.3397  v_reg=0.0020  fock_reg=0.0102  lr=1.51e-05  grad=0.84  rep=0.0022  top[override:reverse_channel_scale]=0.6  dc_ratio=0.65  bproj_sig=24.88  sig_max=46.050@r14  gamma=0.100  alpha=[0.278,0.602,0.809,0.964,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  17157s  (~81.5h remaining)
+step   32500/100000  ntp=4.3679  v_reg=0.0020  fock_reg=0.0102  lr=1.50e-05  grad=1.04  rep=0.0020  top[override:depth_code]=0.7  dc_ratio=1.48  bproj_sig=24.88  sig_max=46.055@r14  gamma=0.100  alpha=[0.278,0.602,0.809,0.964,0.998]  mem_alloc=2.4GB  mem_resv=45.9GB  mem_peak=45.2GB  17367s  (~81.4h remaining)
+[resonance] step   32500  omega*dt p50=0.992  max=2.178  over_wall=0.020%
+    [evaluate] iter 0/40  mem_alloc=31.67GB  mem_resv=32.15GB
+    [evaluate] iter 10/40  mem_alloc=31.67GB  mem_resv=32.15GB
+    [evaluate] iter 20/40  mem_alloc=31.67GB  mem_resv=32.15GB
+    [evaluate] iter 30/40  mem_alloc=31.67GB  mem_resv=32.15GB
+    [evaluate] iter 39/40  mem_alloc=31.67GB  mem_resv=32.13GB
+    [evaluate] mem before=30.26GB  after=31.67GB  peak_during=68.96GB  trend(every 10 iters)=[31.67, 31.67, 31.67, 31.67, 31.67]GB
+>>> EVAL step 32,500  val_loss=4.4003  val_ppl=81.47  best=80.75    (17452s)
+  Checkpoint saved: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc/anneal_probe_28500/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_step32500_probe_stop.pt  (PPL=81.47)
+
+[probe] PROBE_MAX_STEPS=32500 reached at step 32,500; stopping this side-by-side probe (val_ppl=81.47). Saved fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_step32500_probe_stop.pt
+
+Training complete. Best PPL: 80.75
+
+[run_training] finished cleanly; next_step=100000 (== TOTAL_STEPS means training is fully done).
