@@ -463,7 +463,7 @@ $$
 
 ## 26. A bare `=` (or `-`) line inside a multiline `$$...$$` block — CommonMark reads it as a Setext heading
 
-A common way to lay out a display equation like $A = B\,C$ across several
+A common way to lay out a display equation like $A = BC$ across several
 physical lines, for readability, is to put the left side, a lone `=`, and the
 right side on their own lines:
 
@@ -561,6 +561,69 @@ at least all but one of them instead of `~`:
 This is unrelated to rule 3, which is still correct for the single-tilde,
 single-occurrence-per-paragraph case; it only becomes a problem once a
 second bare tilde appears anywhere later in the same paragraph.
+
+---
+
+## 28. `\#` inside math — the Markdown escape pass strips the backslash
+
+**Symptom:** a pink error box reading exactly
+
+> **You can't use 'macro parameter character #' in math mode**
+
+with the whole `$$...$$` block dumped below it as literal source.
+
+Confirmed on `$$\#\lbrace \text{constraints} \rbrace = \frac{d(d-1)}{2}$$`
+(2026-09-19), where `\#` was reached for as the cardinality operator.
+
+**Mechanism.** This is rule 12's mechanism with the opposite outcome. `#` is
+one of CommonMark's escapable characters, so GitHub's Markdown pass — which
+runs *before* KaTeX and does not treat `$...$` interiors as protected —
+consumes the backslash of `\#` and emits a bare `#`. For `_` that is exactly
+what you want (rule 12: the bare `_` reaches KaTeX and becomes a subscript
+operator). For `#` it is fatal: a bare `#` in TeX is the macro parameter
+character, legal only inside a macro definition, and KaTeX rejects it in
+math mode.
+
+Escaping harder does not help, because the problem is that the escape
+*works*: there is no spelling of `#` that survives the Markdown pass and is
+still legal in math mode.
+
+```latex
+% Bad — the backslash is eaten by Markdown; KaTeX sees a bare #
+$$\#\lbrace \text{constraints} \rbrace = \frac{d(d-1)}{2}$$
+
+% Good — name the quantity instead
+$$N_{\text{constraints}} = \frac{d(d-1)}{2}$$
+
+% Also good — cardinality bars, which have no escaping problem
+$$\lvert S \rvert = \frac{d(d-1)}{2}$$
+```
+
+**Rule:** never write `#` inside `$...$` or `$$...$$`, escaped or not. For
+cardinality use `\lvert S \rvert`, or name the quantity and define it in
+prose. Note that `\operatorname{card}` is not an alternative — rule 2 blocks
+it.
+
+---
+
+## 29. `\xrightarrow[below]{above}` and other bracketed optional arguments
+
+The same bracket-swallowing family as rules 13, 14, 15 and 25. A command
+taking an optional `[...]` argument inside math is not reliably threaded
+through GitHub's pipeline; the bracket content can be treated as literal
+text or break the parse.
+
+```latex
+% Risky — optional bracket argument inside math
+$$\frac{d-1}{2d} \xrightarrow[d \to \infty]{} \frac{1}{2}$$
+
+% Safe — plain arrow, limit stated alongside
+$$\frac{d-1}{2d} \longrightarrow \frac{1}{2} \quad (d \to \infty)$$
+```
+
+**Rule:** prefer `\longrightarrow` or `\to` with the limit written as an
+adjacent parenthetical. Reserve bracketed optional arguments for local TeX
+builds, where they are fine.
 
 ---
 
@@ -896,6 +959,8 @@ The same applies to `[`, `]`, `{`, `}` inside pipe labels — none are quoted, s
 | `}_x` in inline math (2+ on same line) | italic bleeds; subscript disappears | change `}_x` to `}\_x` |
 | `\_` inside `\text{...}` (or `\texttt`/`\mathrm`/`\mathbf`/etc. — the whole text-mode family) | "'\_' allowed only in math mode" pink error box | prefer stating the identifier once in prose with backtick code and keeping the equation identifier-free; use a hyphen/space only if the label is not a real identifier |
 | Two bare `~` in one paragraph (e.g. `~5%` ... `~10%`) | text between them renders struck through | use `≈` for at least one of them |
+| `\#` anywhere in math | pink box: "You can't use 'macro parameter character #' in math mode" | Markdown eats the backslash and KaTeX gets a bare `#`. Never use `#` in math at all; use `\lvert S \rvert` or name the quantity |
+| `\xrightarrow[x]{y}` or any bracketed optional argument in math | bracket content leaks as literal text, or the parse breaks | use `\longrightarrow` and put the limit in an adjacent parenthetical |
 | `<X` (alphabetic) in math, with later `>` on same line | "Extra open brace or missing close brace"; HTML sanitiser eats text | replace `<` with `\lt`, `>` with `\gt` |
 | `\left\{ ... \middle\| ... \right\}` set-builder | "Missing or unrecognized delimiter for \left" | use `\lbrace ... \mid ... \rbrace` |
 | `\left\lVert ... \right\rVert` over a long expression | same error | use `\Big\lVert ... \Big\rVert` or plain `\lVert ... \rVert` |

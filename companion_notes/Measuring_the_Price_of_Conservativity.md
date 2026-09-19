@@ -52,7 +52,7 @@ punctured-plane counterexamples.
 Symmetry is not a mild condition. $J$ has $d^{2}$ entries; requiring
 $J = J^{\top}$ imposes one equation per strictly-upper-triangular entry:
 
-$$\#\lbrace \text{constraints} \rbrace = \frac{d(d-1)}{2}, \qquad \frac{\text{constrained}}{\text{total}} = \frac{d(d-1)/2}{d^{2}} = \frac{d-1}{2d} \xrightarrow[d \to \infty]{} \frac{1}{2}.$$
+$$N_{\text{constraints}} = \frac{d(d-1)}{2}, \qquad \frac{N_{\text{constraints}}}{d^{2}} = \frac{d-1}{2d} \longrightarrow \frac{1}{2} \quad (d \to \infty).$$
 
 At the deployed $d = 384$ that is **73,536 of 147,456 entries, or 49.87%**.
 Half the linear response of the force field, at every point, is forbidden by
