@@ -596,18 +596,86 @@ an entire GPT-2 forward.
 zero-quality-risk win worth only 0.16% of FLOPs. On wall-clock it is worth
 far more, and it remains zero-risk. It should move ahead of Lever B.
 
-### 8a.3 What this does and does not say about the roadmap
+### 8a.3 Part B, measured (A100 80GB, 2026-09-19) — and it is not 8.84x
+
+Part B finally ran in a Fock session. Two findings, and the second is larger
+than the first.
+
+**The model cannot execute under `torch.no_grad()` at all.** The benchmark's
+`no_grad` attempt failed with *"element 0 of tensors does not require grad"*
+and fell back to `enable_grad`. The cause is structural: `_layer_forces`
+obtains the V_phi force through `torch.autograd.grad(U_pair, h_in)`, so a
+forward pass requires a live autograd graph even in eval. `V_theta` already
+has an analytic gradient (`vtheta_analytic_force=True`); `V_phi` does not.
+
+The consequences are not subtle. Peak memory is **32.8 GB at batch 1,
+T=128**, rising to **49.7 GB at batch 4, T=1024** — for inference. And no
+`no_grad` path means no straightforward TorchScript or ONNX export either.
+
+**Measured forward cost, batch 1:**
+
+| T | Fock | GPT-2 | ratio |
+| ---: | ---: | ---: | ---: |
+| 128 | 334.1 ms | 3.62 ms | 92.3x |
+| 256 | 358.1 ms | 3.68 ms | 97.2x |
+| 512 | 346.9 ms | 3.91 ms | 88.7x |
+| 1024 | 373.4 ms | 4.16 ms | 89.9x |
+
+**Roughly 90x, against the FLOP model's 8.84x.** The two numbers are both
+real and they measure different things.
+
+Fock's scaling exponent is **O(T^0.04)** — its forward time is essentially
+*constant* from T=128 to T=1024. Arithmetic cannot behave that way. The time
+is going to graph construction and kernel-launch overhead, not to the
+multiplies the FLOP model counts. Batching confirms it: at batch 4 the ratio
+falls to 55.7x at T=1024, because the fixed overhead amortises. The training
+runs at effective batch 32, well beyond anything measured here, so the
+overhead share in training is lower still.
+
+So there are now two defensible numbers, and they answer different questions:
+
+| claim | number |
+| ----- | ------ |
+| what this **architecture** costs, at matmul throughput | **8.84x** (§2) |
+| what this **implementation** costs today, batch 1 | **≈90x**, an upper bound including graph construction |
+
+### 8a.4 This reorders the roadmap
+
+§6 targets the FLOP number: factorise `V_theta`'s projections, 8.84x to
+2.24x. That work is still correct, but it optimises a term that is currently
+**not** the bottleneck in wall-clock. Removing 49% of the MACs from a forward
+whose time is 96% overhead buys almost nothing.
+
+**The prior lever is an analytic V_phi gradient.** It would remove the
+autograd dependency, permit `no_grad` inference, collapse the 33-50 GB peak,
+and bring wall-clock toward the FLOP model's prediction — at which point
+Phase 2's 49% actually materialises. It is not in §5's lever list at all,
+because the FLOP model gave no reason to look for it.
+
+Order of work, revised:
+
+1. **Analytic V_phi gradient** — unblocks `no_grad`, fixes the memory, and
+   is a precondition for any inference claim.
+2. **Lever E** (`ScoreHead` fusion) and **Lever D** (`xi` recurrence) — both
+   already argued, both wall-clock rather than FLOP wins.
+3. **Phase 2** factorisation — correct, but worth doing after the
+   wall-clock and FLOP numbers have converged.
+
+### 8a.5 What this does and does not say about the roadmap
 
 FLOP counts mispredicted wall-clock for the two **memory-bound** terms. They
 are most reliable exactly where arithmetic intensity is high, and `V_theta`
 is four dense matmuls — 1920 by 12288 and three smaller — which is the
-compute-bound regime where a FLOP model should hold. So §6 is probably sound.
+compute-bound regime where a FLOP model should hold.
 
-But "probably" is doing real work in that sentence, and this benchmark is a
-demonstration that it should not be trusted on this architecture without
-measurement. **Run Part B in a Fock session before acting on Phase 2.**
+That reasoning was sound as far as it went, and §8a.3 shows it was also
+beside the point: the forward never reaches the compute-bound regime,
+because it is dominated by graph construction the FLOP model does not
+represent at all. The lesson is not that FLOP counts are unreliable for
+`V_theta` — they are fine — but that a FLOP count cannot see a cost that is
+not arithmetic.
 
-### 8a.4 Stale output note
+### 8a.6 Stale output note
 
 The Part D narrative printed in that run is the pre-`4e554b7` text and still
 carries two retracted claims: that no per-source cache can reconstruct the

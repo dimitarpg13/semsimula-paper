@@ -1319,12 +1319,13 @@ rollback target re-seeded at 122 tensors.
 | 30,500 | 83.93 | 82.16 | 1.77 | 0.0213 |
 | 31,000 | 80.75 | **79.17** | 1.58 | 0.0198 |
 | 31,500 | 81.75 | 79.99 | 1.76 | 0.0218 |
-| 32,000 | 81.53 | **PENDING** | | |
-| 32,500 | 81.47 | **PENDING** | | |
-| **settled** | **81.58** | **79.87 (projected)** | **+1.72** | |
+| 32,000 | 81.53 | 79.70 | 1.83 | 0.0227 |
+| 32,500 | 81.47 | 79.70 | 1.77 | 0.0220 |
+| **settled** | **81.59** | **79.80** | **+1.79** | **0.0222** |
 
-Projection assumes the gap holds at its saturated 0.0210 nats. Replace the
-two pending cells with the measured values.
+**Run complete, 2026-09-19.** The projection recorded before the last two
+evals was 79.87 against an actual 79.80 — a 0.07 PPL error, the gap having
+held at its saturated value exactly as the flattening growth rate implied.
 
 #### The effect is real, and far too small
 
@@ -1341,14 +1342,15 @@ at the time and held.
 #### Prediction scored: FAILED
 
 §9.5 prediction 3 and §10.7 recorded 10 PPL or more, i.e. 0.1306 nats.
-**Achieved 0.0210 nats — 16% of target.** Against the pre-registered bands,
-the projected settled 79.87 lands in the `>= 79.6` band, which the notebook
-and §10.7 both defined as refuting the diagnosis.
+**Achieved 0.0222 nats — 17% of target.** Against the pre-registered bands,
+the measured settled **79.80** lands in the `>= 79.6` band, which the
+notebook and §10.7 both defined as refuting the diagnosis.
 
 Two distinctions worth keeping separate:
 
-- **The band call is marginal** — 0.27 PPL from the boundary, and the two
-  pending evals could cross it.
+- **The band call is marginal** — the final value sits **0.20 PPL** inside
+  the boundary. Had the gap been 0.0025 nats larger it would have read as
+  "real but under-predicted" instead.
 - **The prediction call is not** — 1.72 PPL against a required 10 is a clear
   miss wherever the boundary sits.
 
