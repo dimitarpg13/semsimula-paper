@@ -122,6 +122,30 @@ class MultiXiPARFConfig(SparsePARFConfig):
     xi_content_d_k: int = 48
     xi_content_init_scale: float = 0.02
 
+    # ── Relaxed force law (conservativity-price probe, 2026-09-19) ────
+    # Measures what the gradient constraint costs, per
+    # companion_notes/Measuring_the_Price_of_Conservativity.md.
+    #
+    # 'none'            : DEFAULT.  f = -grad U exactly.  Nothing is built
+    #                     and every run predating this option is unchanged.
+    # 'nonconservative' : Arm N.  f = -grad U + lambda * g_psi(xi, h), with
+    #                     g_psi vector-valued, so the field need not be
+    #                     integrable and the defect kappa is free to grow.
+    # 'potential'       : Arm C.  The SAME parameter budget routed through a
+    #                     scalar: f = -grad(U + lambda * Phi_psi(xi, h)).
+    #                     The force is still a gradient, so kappa == 0 by
+    #                     construction.  This is the control that separates
+    #                     "the model wanted non-conservativity" from "the
+    #                     model wanted more parameters".
+    #
+    # lambda is ALWAYS zero-initialised, making step 0 bit-identical and the
+    # warm start exact.  psi is NOT: the force depends on the product, so
+    # zeroing both makes both gradients vanish (see the note's SS3.3).
+    force_relaxation: str = "none"
+    relax_hidden: int = 128
+    relax_init_scale: float = 0.02
+    relax_lambda_per_layer: bool = True
+
     pair_potential: str = "sparse_topk"
     attn_n_heads: int = 4
     attn_d_k: int = 48
@@ -219,6 +243,44 @@ class MultiXiPARFConfig(SparsePARFConfig):
 # ---------------------------------------------------------------------------
 # Model
 # ---------------------------------------------------------------------------
+class _RelaxationField(nn.Module):
+    """``(xi, h) -> R^out``.  out = d for Arm N, out = 1 for Arm C.
+
+    Deliberately the same shape for both arms so the only difference is
+    whether the output is a force or a potential.  Weights are drawn at
+    ``init_scale``; the gate ``lambda`` in front of this module is what
+    starts at zero.
+    """
+
+    def __init__(self, d: int, K: int, hidden: int, out_dim: int,
+                 init_scale: float):
+        super().__init__()
+        self.in_dim = (K + 1) * d
+        self.net = nn.Sequential(
+            nn.Linear(self.in_dim, hidden),
+            nn.GELU(),
+            nn.Linear(hidden, out_dim),
+        )
+        for m in self.net:
+            if isinstance(m, nn.Linear):
+                nn.init.normal_(m.weight, std=init_scale)
+                nn.init.zeros_(m.bias)
+
+    def forward(self, xis: torch.Tensor, h: torch.Tensor) -> torch.Tensor:
+        B, T, K, d = xis.shape
+        return self.net(torch.cat([xis.reshape(B, T, K * d), h], dim=-1))
+
+
+def _matched_hidden(in_dim: int, d: int, hidden_n: int) -> int:
+    """Hidden width for Arm C that matches Arm N's parameter count.
+
+    Arm N:  in*H  + H + H*d + d
+    Arm C:  in*H' + H' + H'  + 1
+    """
+    target = hidden_n * (in_dim + 1 + d) + d
+    return max(1, round((target - 1) / (in_dim + 2)))
+
+
 class MultiXiPARFLM(SparsePARFLM):
     """Sparse PARF with multi-channel K-EMA ξ replacing causal cumulative mean.
 
@@ -289,6 +351,28 @@ class MultiXiPARFLM(SparsePARFLM):
         # getattr, not cfg.pair_potential: a checkpoint or notebook built
         # against an older config still loads and still takes the sparse
         # path, which is the whole point of the default.
+        # ── Optional relaxed force law ──
+        self.relax_field = None
+        self.relax_lambda = None
+        _relax = getattr(cfg, "force_relaxation", "none")
+        if _relax != "none":
+            if _relax not in ("nonconservative", "potential"):
+                raise ValueError(
+                    f"force_relaxation must be 'none', 'nonconservative' or "
+                    f"'potential', got {_relax!r}")
+            _H = getattr(cfg, "relax_hidden", 128)
+            _in = (cfg.xi_channels + 1) * cfg.d
+            if _relax == "nonconservative":
+                _out, _hid = cfg.d, _H
+            else:
+                _out, _hid = 1, _matched_hidden(_in, cfg.d, _H)
+            self.relax_field = _RelaxationField(
+                d=cfg.d, K=cfg.xi_channels, hidden=_hid, out_dim=_out,
+                init_scale=getattr(cfg, "relax_init_scale", 0.02),
+            )
+            _n_lam = cfg.L if getattr(cfg, "relax_lambda_per_layer", True) else 1
+            self.relax_lambda = nn.Parameter(torch.zeros(_n_lam))
+
         self.V_attn = None
         if getattr(cfg, "pair_potential", "sparse_topk") == "xi_attention":
             # Lazy import: model_xi_attention imports MultiXiPARFConfig
@@ -310,6 +394,13 @@ class MultiXiPARFLM(SparsePARFLM):
             self.score_head = None
 
     # ------------------------------------------------------------------
+    @torch.no_grad()
+    def relax_lambda_values(self) -> List[float]:
+        """Per-layer gate values, or [] when the relaxation is off."""
+        if self.relax_lambda is None:
+            return []
+        return [float(v) for v in self.relax_lambda.detach().cpu().tolist()]
+
     @torch.no_grad()
     def xi_alpha_values(self) -> List[float]:
         """Current α_k values (diagnostic)."""
@@ -337,6 +428,26 @@ class MultiXiPARFLM(SparsePARFLM):
         )
 
     # ------------------------------------------------------------------
+    def _relax_gate(self, layer_idx: int) -> torch.Tensor:
+        """The per-layer gate, or the single shared one."""
+        n = self.relax_lambda.numel()
+        return self.relax_lambda[layer_idx % n]
+
+    def _add_relax_potential(self, U_pair, xis, h_in, layer_idx):
+        """Arm C: add lambda * Phi_psi to the potential, so the force it
+        induces is still a gradient.  Added AFTER the per-layer V_phi scale
+        so that lambda is the only gate in front of it."""
+        if self.relax_field is None:
+            return U_pair
+        if getattr(self.cfg, "force_relaxation", "none") != "potential":
+            return U_pair
+        if xis is None:
+            raise RuntimeError(
+                "force_relaxation='potential' needs xis; callers must pass "
+                "xis=... to _pair_potential (see _layer_forces).")
+        lam = self._relax_gate(layer_idx)
+        return U_pair + lam * self.relax_field(xis, h_in).sum()
+
     def _pair_potential(
         self, h_in: torch.Tensor, layer_idx: int,
         xis: Optional[torch.Tensor] = None,
@@ -369,7 +480,7 @@ class MultiXiPARFLM(SparsePARFLM):
             s_ell = self.per_layer_scale(layer_idx)
             if s_ell is not None:
                 U_pair = U_pair * s_ell
-            return U_pair
+            return self._add_relax_potential(U_pair, xis, h_in, layer_idx)
 
         h_src = h_in.detach() if cfg.causal_force else h_in
         h_src_for_score = (
@@ -400,7 +511,7 @@ class MultiXiPARFLM(SparsePARFLM):
         s_ell = self.per_layer_scale(layer_idx)
         if s_ell is not None:
             U_pair = U_pair * s_ell
-        return U_pair
+        return self._add_relax_potential(U_pair, xis, h_in, layer_idx)
 
     # ------------------------------------------------------------------
     def _layer_forces(
@@ -472,6 +583,16 @@ class MultiXiPARFLM(SparsePARFLM):
                     retain_graph=self.training,
                 )
             f_theta, f_phi = None, -grad_U
+
+        # Arm N: an unconstrained field added to the force itself, so the
+        # total need not be a gradient.  It goes into f_phi because that is
+        # the term the CfC/BAOAB integrator treats as a plain kick -- only
+        # V_theta's harmonic part is subtracted from f_kick and propagated
+        # exactly, and this field has no harmonic decomposition.
+        if (self.relax_field is not None
+                and getattr(cfg, "force_relaxation", "none") == "nonconservative"):
+            f_phi = f_phi + self._relax_gate(layer_idx) * self.relax_field(
+                xis, h_in)
 
         if split:
             return f_theta, f_phi
