@@ -69,16 +69,16 @@ Section 5.5 treats it separately for that reason.
 
 | Symbol | Meaning | Value |
 | ------ | ------- | ----: |
-| $d$ | model width | 384 |
-| $L$ | layers, i.e. integration steps | 8 |
-| $n_c$ | `xi` channels, also `V_theta` contexts | 5 |
-| $K$ | Gaussian wells per bank | 8 |
-| $r$ | anisotropic low-rank width | 4 |
-| $k$ | top-k routing fan-in | 16 |
-| $H_s$ | `ScoreHead` hidden width | 32 |
-| $n_\phi$ | `V_phi` heads | 4 |
-| $V$ | vocabulary | 50257 |
-| $T$ | context length | 512 |
+| `d` | model width | 384 |
+| `L` | layers, i.e. integration steps | 8 |
+| `n_c` | `xi` channels, also `V_theta` contexts | 5 |
+| `K` | Gaussian wells per bank | 8 |
+| `r` | anisotropic low-rank width | 4 |
+| `k` | top-k routing fan-in | 16 |
+| `H_s` | `ScoreHead` hidden width | 32 |
+| `n_phi` | `V_phi` heads | 4 |
+| `V` | vocabulary | 50257 |
+| `T` | context length | 512 |
 
 Coupling is `joint`, so the `V_theta` bank sees the **concatenated** channels,
 giving an input width of
@@ -161,10 +161,10 @@ Numerically:
 
 | projection | shape | MAC/token/layer | share |
 | ---------- | ----- | --------------: | ----: |
-| $W_B$ | 1920 → 12288 | **23592960** | **66.6%** |
-| $W_\mu$ | 1920 → 3072 | 5898240 | 16.7% |
-| $W_a$ | 1920 → 3072 | 5898240 | 16.7% |
-| $W_w$ | 1920 → 8 | 15360 | 0.04% |
+| `W_B` | 1920 → 12288 | **23592960** | **66.6%** |
+| `W_mu` | 1920 → 3072 | 5898240 | 16.7% |
+| `W_a` | 1920 → 3072 | 5898240 | 16.7% |
+| `W_w` | 1920 → 8 | 15360 | 0.04% |
 | total | | 35404800 | |
 
 Now the force. Given the generated components, `analytical_grad` computes
@@ -314,7 +314,7 @@ The resulting runtime state compares favourably with attention:
 
 | per token per layer | GPT-2 | Fock |
 | ------------------- | ----: | ---: |
-| routing work at context $T$ | $2Td = 768T$ | $T H_s = 32T$ |
+| routing work at context `T` | `2Td = 768T` | `T H_s = 32T` |
 | cache | K and V, 768 floats | `proj_u` 32 + `h` 384 = 416 floats |
 
 Fock's routing is ≈24x cheaper per decode token than attention, on a cache
@@ -346,7 +346,7 @@ every reduction below that is a genuine capacity constraint, but a mild one.
 
 ![B_proj factorisation](figures/fock_inference/bproj_factorisation.png)
 
-| $b$ | MMAC/token/layer | vs dense | saving over 8 layers |
+| `b` | MMAC/token/layer | vs dense | saving over 8 layers |
 | --: | ---------------: | -------: | -------------------: |
 | 128 | 1.82 | 13.0x | 174.2 MMAC |
 | 256 | 3.64 | 6.5x | **159.6 MMAC** |
@@ -387,8 +387,11 @@ layer and turns the decode-time `xi` update from $O(Td)$ into $O(d)$. Do it
 regardless of the FLOP number; it is a prerequisite for a real decode path.
 
 For the chunked-parallel form needed at training time, note the recurrence is
-scan-associative: with $u_t = \alpha u_{t-1} + h_t$ two
-successive steps compose as
+scan-associative. With
+
+$$u_t = \alpha u_{t-1} + h_t,$$
+
+two successive steps compose as
 
 $$(\alpha_2\alpha_1, \ \alpha_2 h_1 + h_2),$$
 
@@ -408,11 +411,11 @@ Zero FLOP change, zero quality risk, two distinct wins:
 
 | Candidate | Why not |
 | --------- | ------- |
-| Reduce $r$ from 4 | Participation ratio measured at **3.68 against rank 4** — the anisotropy is nearly fully used. This is the one dimension already correctly sized. |
-| Shrink `V_phi` (heads, hidden, $k$) | Only 3.85% of cost. Even eliminating it entirely leaves 8.5x. Previously hypothesised as the main lever; the measurement refutes that. |
-| Reduce $L$ from 8 | Linear saving but directly trades model capacity, and `L=16` was already tested without benefit. Use only after Levers A-E are exhausted. |
+| Reduce `r` from 4 | Participation ratio measured at **3.68 against rank 4** — the anisotropy is nearly fully used. This is the one dimension already correctly sized. |
+| Shrink `V_phi` (heads, hidden, `k`) | Only 3.85% of cost. Even eliminating it entirely leaves 8.5x. Previously hypothesised as the main lever; the measurement refutes that. |
+| Reduce `L` from 8 | Linear saving but directly trades model capacity, and `L=16` was already tested without benefit. Use only after Levers A-E are exhausted. |
 | Tie embeddings | Saves 19.3M parameters of memory but no inference FLOPs — the output projection is still required. |
-| Reduce $K$ from 8 wells | Saves proportionally, but `K=8` joint already beat `K=40` additive on quality; do not disturb without cause. |
+| Reduce `K` from 8 wells | Saves proportionally, but `K=8` joint already beat `K=40` additive on quality; do not disturb without cause. |
 
 ---
 
@@ -439,9 +442,9 @@ flowchart TB
 | ----- | ------ | --------------: | -------: | ------------ |
 | today | | 323.57 | 8.84x | |
 | 1 | `xi` recurrence | 315.73 | 8.63x | none, exact |
-| 2 | + $W_B$, $W_\mu$, $W_a$ at $b = 256$ | **82.16** | **2.24x** | bottleneck only |
-| 2' | same at $b = 128$ | 57.38 | 1.57x | bottleneck only |
-| 3 | + static $B$ | **53.06** | **1.45x** | real, needs ablation |
+| 2 | + `W_B`, `W_mu`, `W_a` at `b = 256` | **82.16** | **2.24x** | bottleneck only |
+| 2' | same at `b = 128` | 57.38 | 1.57x | bottleneck only |
+| 3 | + static `B` | **53.06** | **1.45x** | real, needs ablation |
 
 The Phase 2 number is the one to aim at first. It requires no change to the
 model's functional form beyond constraining four matrices to be low-rank, and
@@ -488,7 +491,7 @@ wrong side of the bottleneck.
 | Ablation | Result | Reading under this diagnosis |
 | -------- | ------ | ---------------------------- |
 | wells, K=40 additive vs K=8 joint | K=8 won | widening a downstream stage does not help |
-| anisotropic rank $r=4$ | participation ratio 3.68 of 4 | already fully used; correctly sized |
+| anisotropic rank `r=4` | participation ratio 3.68 of 4 | already fully used; correctly sized |
 | depth, L=16 vs L=8 | not better, spikier | reprocessing impoverished context does not recover it |
 | `V_phi` width | 3.85% of compute | the content-addressed path is 16 pairs against attention's 512 positions per head |
 

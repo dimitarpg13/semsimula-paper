@@ -913,9 +913,9 @@ At $d = 384$, $K = 5$, $d_k = 48$, $T = 512$, per token per layer:
 
 | Component | Cost | MAC |
 | --------- | ---- | --- |
-| Query/key projections | $2 d K d_k$ | 184320 |
-| Scores | $K T d_k$ | 122880 |
-| Weighted sum | $K T d$ | already present in §3.2 |
+| Query/key projections | `2 d K d_k` | 184320 |
+| Scores | `K T d_k` | 122880 |
+| Weighted sum | `K T d` | already present in §3.2 |
 | **Added total** | | **307200** |
 
 Over $L = 8$ layers that is **2.46 MMAC/token against a 323.6 MMAC/token
@@ -1108,8 +1108,8 @@ flowchart TB
     PPL2{"PPL improves"}
     FIELD["Exp 3 add latent field"]
     ATTN["Exp 4 conservative attention"]
-    GRAPH["Long-term graph potential"]
-    HYBRID["Long-term hybrid field plus sparse"]
+    GRAPH["Long term graph potential"]
+    HYBRID["Long term hybrid field plus sparse"]
     DONE["Context mixing is not the bottleneck"]
     NEXT["Investigate V theta or depth"]
 

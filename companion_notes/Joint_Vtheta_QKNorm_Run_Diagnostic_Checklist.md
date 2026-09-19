@@ -1298,3 +1298,116 @@ the decayed endpoint.
 At step 5,000, where PPL is near 200, a real mechanism gain should appear as
 **15 PPL or more**, far outside the 1.5 eval noise. **Under 5 PPL at step
 5,000 does not justify Gate 6.**
+
+### 10.8 Alternative E result — **RUN, DIAGNOSIS REFUTED** (2026-09-19)
+
+**Notebook:** [`colab_fock_cfc_baoab_joint_vtheta_qknorm_xi_content_from_28500_openwebtext_d384.ipynb`](../notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_joint_vtheta_qknorm_xi_content_from_28500_openwebtext_d384.ipynb)
+
+Warm-started from `_step28500_best.pt` with `xi_content_route=True` and run
+through §6.3's identical 4,000-step decay. All four startup gates passed:
+120/122 tensors loaded, the two new tensors freshly initialised, the
+inserted-param optimizer remap carrying 113 states with 0 dropped, and the
+rollback target re-seeded at 122 tensors.
+
+#### Evals against the §6.3 control
+
+| step | control | Alt E | ΔPPL | Δnats |
+| ---: | ---: | ---: | ---: | ---: |
+| 29,000 | 88.16 | 87.36 | 0.80 | 0.0091 |
+| 29,500 | 86.20 | 84.83 | 1.38 | 0.0161 |
+| 30,000 | 84.56 | 83.16 | 1.40 | 0.0167 |
+| 30,500 | 83.93 | 82.16 | 1.77 | 0.0213 |
+| 31,000 | 80.75 | **79.17** | 1.58 | 0.0198 |
+| 31,500 | 81.75 | 79.99 | 1.76 | 0.0218 |
+| 32,000 | 81.53 | **PENDING** | | |
+| 32,500 | 81.47 | **PENDING** | | |
+| **settled** | **81.58** | **79.87 (projected)** | **+1.72** | |
+
+Projection assumes the gap holds at its saturated 0.0210 nats. Replace the
+two pending cells with the measured values.
+
+#### The effect is real, and far too small
+
+Six of six evals and ten of ten paired training steps favour Alternative E,
+never once reversing. Because the runs share a checkpoint, a schedule and a
+data order, the training comparison is paired on identical batches. This is
+not noise.
+
+The gap **saturated at 0.0210 nats**, flat across the last three evals
+(0.0213, 0.0198, 0.0218) after growing from 0.0091 at the first. Its growth
+rate had already fallen 4x between steps 28,550 and 29,000, which was called
+at the time and held.
+
+#### Prediction scored: FAILED
+
+§9.5 prediction 3 and §10.7 recorded 10 PPL or more, i.e. 0.1306 nats.
+**Achieved 0.0210 nats — 16% of target.** Against the pre-registered bands,
+the projected settled 79.87 lands in the `>= 79.6` band, which the notebook
+and §10.7 both defined as refuting the diagnosis.
+
+Two distinctions worth keeping separate:
+
+- **The band call is marginal** — 0.27 PPL from the boundary, and the two
+  pending evals could cross it.
+- **The prediction call is not** — 1.72 PPL against a required 10 is a clear
+  miss wherever the boundary sits.
+
+**Meta-prediction scored, 4 for 4.** The saturating read again beat the
+linear one. At step 29,000 the saturating outcome was put at ≈85.4 for the
+29,500 eval and "on track to the prediction" at ≈83.2; actual was 84.83,
+after which it flattened. §9.2 already recorded linear PPL extrapolation as
+refuted for this programme; this is the fourth confirmation.
+
+#### What this rules out, and what survives
+
+**Ruled out: the strong form of §9.4.** The 93.9% of non-embedding
+parameters downstream of `xi` were not meaningfully starved of context.
+Making the pooling content-addressed is the strongest available upgrade to
+that path, and it recovers 2.1%. Against GPT-2's 54.67 the ratio moves from
+1.49x to only 1.46x.
+
+**Survives (plan §7.4):** that a second-order conservative flow is simply a
+weaker inductive bias for language than a residual stream, independent of
+how context is pooled. Also surviving: that the parameters were never
+*useful*, as distinct from never being *fed* — which §10.9 tests.
+
+**Separate verdict as an optimisation.** 1.72 PPL for +0.76% compute and
++184K parameters is a good trade on its own terms. It is simply not an
+explanation for a 27-PPL gap. Keep the option; do not keep the hypothesis.
+
+#### Secondary observations
+
+`omega*dt` over-wall climbed 0.003% to 0.070% across the anneal, with p50
+rising 0.976 to 0.998. Alternative E started **below** the control at step
+29,000 (0.003% against 0.011%), but the control's later values were not to
+hand, so this is **unattributed** — it may be the decay stiffening the
+landscape rather than the content routing. Resolve from the §6.3 log before
+citing it.
+
+Learned decays moved in the opposite direction to the control on the
+shortest channel: alpha-1 rose 0.287 to 0.298 while the control's fell, and
+alpha-2 dropped faster (0.605 to 0.582). Consistent with the content term
+taking over work the distance term had been doing.
+
+Timing was identical to the control to within one second at step 28,800,
+confirming the predicted +0.76% cost is invisible in practice.
+
+### 10.9 Next: Phase 2 factorisation probe — **PROPOSED**
+
+Alternative E tested whether the parameters downstream of `xi` were starved.
+They were not. The other arm is whether they were ever useful.
+
+Factorise `B_proj`, `mu_proj` and `a_proj` at bottleneck 256, cutting
+`V_theta`'s parameters ≈6.5x, warm-started from a rank-256 SVD truncation of
+the trained weights so the start is near-exact. Run the same 4,000-step
+decay from step 28,500 and compare settled against 81.58.
+
+This is §9.5 prediction 1, it is already scheduled for cost reasons (plan §6
+Phase 2, worth 49% of inference cost), and it completes a 2x2:
+
+| Alt E | Phase 2 | reading |
+| ----- | ------- | ------- |
+| null | null | parameters neither starved nor used; `V_theta`-as-hypernetwork is the wrong design, and capacity should be reallocated |
+| null | hurts | parameters are used, but not for context: an aperture or capacity story, not a routing one |
+
+Alternative E has landed null. Phase 2 decides which column.
