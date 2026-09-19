@@ -241,7 +241,42 @@ $\partial L / \partial \lambda$, by the same factor — the ratio is
 unchanged. Adam compounds the point: its update is invariant to gradient
 scale, so $\lambda$'s step size would not move either.
 
-### 3.5 The fix: zero the readout, not the gate
+### 3.5 And why the fix is not sufficient either
+
+The zero readout was launched on 2026-09-19 and stopped after 550 steps. It
+failed in the opposite direction.
+
+| | scalar gate | zero readout |
+| --- | ---: | ---: |
+| force share after 50 steps | ~0 | **0.34** |
+| force share, settled | — | **0.575**, peak 0.633 |
+| train loss vs control, first step | +0.000 | **+0.078 nats** |
+| train loss vs control, settled | -0.001 | +0.012 nats |
+| val at step 29,000 | — | **89.72 against the control's 88.16** |
+
+The readout did exactly what §3.5 promised: it engaged immediately, with
+the gradient on `W_2` some 850x the scalar's. But it engaged *too*
+immediately, taking a third of the force within 50 steps and settling near
+**57%**, and the loss never recovered. It is not probing the space, it is
+occupying it.
+
+The per-layer shares are worth recording: 0.30 at layers 0-1, 0.13 across
+the middle, and **0.54 at the deepest layer**. Whatever the field is doing,
+it concentrates at the top of the stack.
+
+**What this does and does not establish.** It is a real data point: a
+generic unconstrained field carrying more than half the force makes the
+model 1.56 PPL worse. It is *not* evidence that non-conservativity cannot
+help, because the onset was abrupt and uncontrolled and the field may be
+stuck in a poor configuration it had no chance to leave.
+
+**The lesson is that a learned gate cannot be trusted at either end.** One
+parameterisation diffused and never engaged; the other seized half the
+dynamics in fifty steps. In both cases what got measured was the
+optimiser. §7 therefore pins lambda and sweeps it, which removes the
+optimiser from the measurement and yields a curve instead of a point.
+
+### 3.6 The fix: zero the readout, not the gate
 
 Drop the scalar. Initialise the **output layer** of $g_{\psi}$ to zero and
 leave the input layer random:
