@@ -549,18 +549,52 @@ attention does.
 inference, +0.3% PPL, no retraining. Worth quoting in the paper's efficiency
 section as-is.
 
-**The uniform rank is leaving savings on the table.** $W_a$ reaches 90% of
-its energy by rank 242 while $W_B$ needs 707, so a uniform sweep is already
-gutting $W_B$ at ranks where $W_a$ is nearly intact — the damage at rank 256
-is not coming from $W_a$ at all. A mixed allocation costs
+**The uniform rank was leaving savings on the table**, and a per-map
+allocation collects them. $W_a$ reaches 90% of its energy by rank 242 while
+$W_B$ needs 707, so a uniform sweep is already gutting $W_B$ at ranks where
+$W_a$ is nearly intact — the damage at rank 256 is not coming from $W_a$ at
+all. Measured on the same 12 fixed batches, so directly comparable to the
+table above:
 
-$$1024 \cdot 14208 + 1024 \cdot 4992 + 256 \cdot 4992 = 20938752$$
+![Allocation frontier](figures/fock_inference/generator_frontier.png)
 
-or 20.94M, against uniform-1024's 24.77M: **3.83M more saved at what should be
-near-identical loss**. `generator_rank.per_map_truncation` evaluates such
-allocations, `allocation_from_energy` builds one from the measured spectrum,
-and `cap_at_break_even=True` clamps each map to $mn/(m+n)$ so an allocation
-cannot ask for an expansion and report it as a saving.
+| allocation | generator | of gen | ppl | delta ppl | non-emb | inference |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| uniform r = 1024 | 24.77M | 70.0% | 85.25 | +0.29 | 27.07M | 1.36x |
+| **mixed `B`/`mu` 1024, `a` 256** | **20.94M** | **59.2%** | 85.25 | **+0.30** | 23.24M | **1.56x** |
+| mixed `B`/`mu` 1024, `a` 64 | 19.98M | 56.5% | 85.33 | +0.37 | 22.28M | 1.62x |
+| 99% energy, capped | 31.15M | 88.0% | 85.01 | +0.05 | 33.45M | 1.12x |
+
+**3.83M fewer parameters for +0.01 PPL.** Whole-model inference improves
+1.36x to 1.56x at no measurable quality cost beyond what uniform-1024
+already paid. This is the best free operating point in the document.
+
+**But the knee does not move.** $W_a$ is 5.9M of 35.4M and its rank barely
+registers — 256 to 64 costs +0.07 — so the uniform sweep's numbers were
+always essentially $W_B$ and $W_\mu$'s numbers. The mixed allocation
+recovers $W_a$'s over-provisioning; it does not shift the quality/rank
+frontier, and §6.1's conclusion is unchanged. Pushing $W_a$ below 64 is
+near-exhausted: rank 8 would save 1.24M more, because PR 5.7 means the map
+was nearly rank-6 all along and its parameters are simply few.
+
+#### Energy retention is the wrong objective
+
+The `99% energy, capped` row is the most instructive result here. It is
+**not** dominated — no measured point has both fewer parameters and a
+smaller loss — so it is Pareto-optimal and should not be described
+otherwise. What it is, is a **bad buy**: 10.2M parameters for 0.25 PPL,
+about 41M per PPL, against a mixed-to-uniform step that moves 3.83M for
+0.01.
+
+SVD energy optimises **Frobenius fidelity**, and fidelity is not what is
+being purchased. `cap_at_break_even=True` stops such an allocation asking
+for an outright *expansion* — $W_\mu$ was clamped from 1483 to 1181 — but
+nothing stops it overspending, and at 88% of the generator it very nearly
+does not factorise at all. Treat `allocation_from_energy` as a diagnostic
+that reports what fidelity *would* cost, not as a recommended allocation.
+
+`generator_rank.per_map_truncation` evaluates allocations directly, which is
+what the frontier above was measured with.
 
 #### The honest limit
 

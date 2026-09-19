@@ -125,5 +125,94 @@ def fig_truncation():
     print("wrote fock_inference/generator_truncation.png")
 
 
+
+
+# Per-map allocation, measured 2026-09-19 in the same cell and on the same
+# 12 fixed batches, so these are directly comparable to SWEEP above.
+# label, factorised params, ppl, d ppl
+PER_MAP = [("mixed  B/mu 1024, a 256", 20_938_752, 85.25, 0.30),
+           ("mixed  B/mu 1024, a 64", 19_980_288, 85.33, 0.37),
+           ("energy 99%, capped", 31_151_616, 85.01, 0.05)]
+GEN_FULL = 35_389_440
+
+
+def fig_frontier():
+    """Where the allocations sit against each other, in parameters spent.
+
+    The 99%-energy allocation is NOT dominated -- no measured point has
+    both fewer parameters and a smaller loss -- so it is Pareto-optimal and
+    the panel must not say otherwise. What it is, is a bad buy: 10.2M
+    parameters for 0.25 ppl, about 41M per ppl, against a mixed-to-uniform
+    step that moves 3.83M for 0.01. SVD energy optimises Frobenius
+    fidelity, and fidelity is not the thing being purchased.
+    """
+    fig, (axA, axB) = plt.subplots(1, 2, figsize=(12.4, 4.6))
+
+    FLOOR = 0.02                       # log axis needs a floor for d=0
+    ux = [s[1] / 1e6 for s in SWEEP]
+    uy = [max(s[3] - BASE_PPL, FLOOR) for s in SWEEP]
+    axA.plot(ux, uy, "-o", color=BLUE, lw=2, ms=7, zorder=3,
+             label="uniform rank")
+    for (r, p, _, ppl) in SWEEP:
+        if r <= 512:
+            axA.annotate(f"r={r}", (p / 1e6, ppl - BASE_PPL),
+                         textcoords="offset points", xytext=(7, -3),
+                         fontsize=9.5, color="#374151")
+    axA.scatter([GEN_FULL / 1e6], [FLOOR], marker="s", s=80, color=GREY,
+                zorder=4, label="dense (35.4M)")
+    for label, p, _, d in PER_MAP:
+        is_energy = label.startswith("energy")
+        axA.scatter([p / 1e6], [max(d, FLOOR)], marker="D" if is_energy else "*",
+                    s=110 if is_energy else 260,
+                    color=RED if is_energy else GREEN, zorder=5,
+                    label=("99% energy" if is_energy else None)
+                    if is_energy else ("per-map mixed" if d == 0.30 else None))
+    axA.annotate("10.2M more than mixed,\nto buy 0.25 ppl", (31.15, 0.05),
+                 xytext=(13.5, 0.09), fontsize=9.5, color=RED,
+                 fontweight="bold",
+                 arrowprops=dict(arrowstyle="->", color=RED, lw=1.5))
+    axA.annotate("same loss as uniform r=1024,\n3.83M fewer parameters",
+                 (20.94, 0.30), xytext=(2.0, 1.4), fontsize=9.5,
+                 color=GREEN, fontweight="bold",
+                 arrowprops=dict(arrowstyle="->", color=GREEN, lw=1.5))
+    axA.set_yscale("log")
+    axA.set_xlabel("generator parameters retained (millions of 35.4M)")
+    axA.set_ylabel("$\\Delta$ perplexity vs dense")
+    axA.set_title("A. 99% energy retention is a poor buy")
+    axA.set_yticks([0.02, 0.1, 1, 10, 100])
+    axA.set_yticklabels(["0", "0.1", "1", "10", "100"])
+    axA.yaxis.set_minor_formatter(NullFormatter())
+    axA.set_xlim(-1, 38)
+    axA.grid(alpha=0.25, which="major")
+    axA.legend(fontsize=9, loc="upper right", framealpha=0.95)
+
+    bars = [("99% energy\ncapped", 31_151_616, 0.05, RED),
+            ("uniform\nr = 1024", 24_772_608, 0.29, BLUE),
+            ("mixed\nB/mu 1024, a 256", 20_938_752, 0.30, GREEN),
+            ("mixed\nB/mu 1024, a 64", 19_980_288, 0.37, GREEN)]
+    xs = range(len(bars))
+    axB.bar(xs, [b[1] / 1e6 for b in bars], color=[b[3] for b in bars],
+            alpha=0.85, width=0.62, zorder=2)
+    for i, (lbl, p, d, _) in enumerate(bars):
+        axB.text(i, p / 1e6 + 0.6, f"{p/1e6:.2f}M", ha="center",
+                 fontsize=10, fontweight="bold")
+        axB.text(i, p / 1e6 / 2, f"+{d:.2f}\nppl", ha="center",
+                 va="center", fontsize=11, color="white", fontweight="bold")
+    axB.axhline(GEN_FULL / 1e6, color=GREY, ls="--", lw=1.4, zorder=1)
+    axB.text(3.42, GEN_FULL / 1e6 + 0.5, "dense 35.39M", fontsize=9,
+             color=GREY, ha="right")
+    axB.set_xticks(list(xs))
+    axB.set_xticklabels([b[0] for b in bars], fontsize=9.5)
+    axB.set_ylabel("generator parameters (M)")
+    axB.set_ylim(0, 39)
+    axB.set_title("B. Cost of staying under +0.5 ppl")
+    axB.grid(alpha=0.25, axis="y")
+
+    fig.tight_layout()
+    fig.savefig("fock_inference/generator_frontier.png", bbox_inches="tight")
+    print("wrote fock_inference/generator_frontier.png")
+
+
 if __name__ == "__main__":
     fig_truncation()
+    fig_frontier()

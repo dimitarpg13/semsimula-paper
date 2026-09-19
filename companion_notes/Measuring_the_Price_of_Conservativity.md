@@ -13,7 +13,7 @@ written beyond what already exists.
 
 A matched GPT-2 reaches **54.67** where the joint arm reaches **81.58**, on
 identical data at identical tokens, with 2.66x fewer non-embedding
-parameters. Five candidate explanations have been eliminated:
+parameters. Six candidate explanations have been eliminated:
 
 | candidate | result | where |
 | --------- | ------ | ----- |
@@ -22,14 +22,64 @@ parameters. Five candidate explanations have been eliminated:
 | depth | L=16 not better, spikier | §7.5 |
 | pair-path routing | 3.85% of compute; all-to-all is cheaper, not better | §10 |
 | context representation | content-addressed pooling buys 2.1%, 16% of predicted | §10.8 |
+| generator capacity | truncation past rank 1024 costs PPL monotonically | plan §6.1 |
 
-What survives is the constraint itself: that the per-token update must be
-the negative gradient of a scalar potential.
+**Elimination is not measurement.** Six eliminations license "it is not
+these six"; they license "therefore it is the seventh" only if the candidate
+set is provably complete, which it is not. The protocol below measures one
+surviving candidate directly, at the cost of one warm-started 4,000-step
+anneal per arm.
 
-**Elimination is not measurement.** Five eliminations license "it is not
-these five"; they license "therefore it is the sixth" only if the candidate
-set is provably complete, which it is not. The protocol below measures the
-sixth directly, at the cost of one warm-started 4,000-step anneal per arm.
+### 1.1 The residual is not one thing
+
+It is tempting to read the table as "therefore conservativity", and the
+earlier version of this section did. That reading elides two problems.
+
+**The residual contains at least two distinct candidates.** They are at
+completely different stages:
+
+| candidate | status |
+| --------- | ------ |
+| **conservativity** — the update must be a negative gradient | implemented, gated, **one run from measurement**; this document |
+| **second-order dynamics** — the Lagrangian and its geodesic reading | **no instrument.** §7.1 |
+
+This protocol measures the first and says **nothing** about the second. A
+result of the form "conservativity costs X nats" is not a result about the
+Lagrangian, and must not be written as one.
+
+**The eliminations do not point here.** They were not designed as a search
+that converges on conservativity; each ruled out a different downstream
+mechanism. The most recent two are the sharpest illustration:
+`Fock_Inference_Productionization_Plan.md` §7 diagnosed the ξ bottleneck —
+context that is weighted by distance and never by content — and staked two
+pre-registered predictions on it. Both failed (§7.6 there): content-addressed
+pooling bought 1.79 PPL against a predicted 10 or more, and truncating the
+generator to rank 256 cost +32.34 PPL against a predicted "under 2". So the
+residual is **"none of the candidates tested"**, which is a weaker statement
+than "the constraint itself", and it still contains anything nobody has
+named.
+
+Six eliminations and **zero of the 26.91 PPL explained**. That is the honest
+position this protocol starts from.
+
+### 1.2 What the obstruction theorem does and does not give you
+
+`thm:conservative-obstruction` (paper §17c) proves that attention's P1
+(asymmetric coupling), P2 (coupling–content decoupling) and P3 (normalised
+budget) cannot all hold for a $C^{2}$ scalar potential. That is a **proof
+that conservativity forbids attention's mechanism**. It is not a measurement
+of what the prohibition costs, and the two are independent. Both of these
+are consistent with the theorem:
+
+1. conservativity forbids attention-style routing, and that prohibition is
+   worth most of the 26.91 PPL;
+2. conservativity forbids attention-style routing, and the model loses
+   26.91 PPL for a reason that has nothing to do with it.
+
+A theorem about what a hypothesis class cannot express places no lower bound
+on the loss of the best model inside it. Separating (1) from (2) is the
+entire purpose of the $\lambda$ sweep, and is why the theorem — which was
+already available — does not make the experiment redundant.
 
 ---
 
@@ -409,7 +459,11 @@ Each quadrant is decisive, which is the point of pre-registering them:
   The constraint is free and the framework is vindicated on this axis.
 - **No gain, $\lambda$ stays near zero.** The model, offered the option to
   violate the constraint, declines it. A strong positive result — and the
-  most favourable outcome available to the framework.
+  most favourable outcome available to the framework. But read §1.1 before
+  writing it up: a null here **relocates** the residual to the second-order
+  dynamics, it does not resolve it, and that candidate currently has no
+  instrument. "Conservativity is free" and "the framework is vindicated" are
+  different claims, and only the first is supported.
 - **$\kappa$ rises with no gain.** Suspect the $\lambda$ parameterisation or
   the Arm C matching before believing it.
 
@@ -527,6 +581,11 @@ run when they were missed:
 
 - **Nothing here is measured.** Every number is a derivation or a
   configuration value. The protocol's output is the measurement.
+- **This isolates conservativity, not the Lagrangian.** Arms N and C differ
+  only in whether the added field enters the force or the potential. Both
+  integrate the same second-order dynamics with the same integrator, so no
+  outcome of this sweep — in either direction — is evidence about the
+  second-order formulation. See §1.1.
 - **One scale, one seed.** d=384, 0.53B tokens. The claim this can support is
   "the cost of conservativity at this scale is X", not a statement about
   conservative architectures in general. Scope the wording to match; a
