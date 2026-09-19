@@ -145,6 +145,23 @@ class MultiXiPARFConfig(SparsePARFConfig):
     relax_hidden: int = 128
     relax_init_scale: float = 0.02
     relax_lambda_per_layer: bool = True
+    # How the added term is held at zero on step 0.
+    #
+    # 'zero_readout' : DEFAULT.  The field's OUTPUT layer is zeroed and its
+    #                  input layer is random, so the term is identically
+    #                  zero at init while the readout carries a live,
+    #                  well-conditioned gradient from step 1 -- the standard
+    #                  zero-init-the-output-projection trick.
+    # 'scalar'       : a single learnable lambda in front of a fixed random
+    #                  field, zero-initialised.  SUPERSEDED: lambda can
+    #                  scale that field but not orient it, and a random
+    #                  direction in d dimensions overlaps the useful one by
+    #                  only about 1/sqrt(d) with arbitrary per-batch sign,
+    #                  so lambda random-walks instead of growing.  Raising
+    #                  relax_init_scale does not help: it scales signal and
+    #                  noise together, and Adam is scale-invariant in the
+    #                  gradient.  Kept to reproduce the 2026-09-19 run.
+    relax_gate: str = "zero_readout"
 
     pair_potential: str = "sparse_topk"
     attn_n_heads: int = 4
@@ -253,7 +270,7 @@ class _RelaxationField(nn.Module):
     """
 
     def __init__(self, d: int, K: int, hidden: int, out_dim: int,
-                 init_scale: float):
+                 init_scale: float, gate: str = "zero_readout"):
         super().__init__()
         self.in_dim = (K + 1) * d
         self.net = nn.Sequential(
@@ -265,6 +282,15 @@ class _RelaxationField(nn.Module):
             if isinstance(m, nn.Linear):
                 nn.init.normal_(m.weight, std=init_scale)
                 nn.init.zeros_(m.bias)
+        if gate == "zero_readout":
+            # Output layer at zero: the field is identically zero at init,
+            # so step 0 stays bit-identical, but dL/dW2 = delta (x)
+            # GELU(W1 z) is non-zero and points where the loss wants to go.
+            # W1 stays random and unlocks once W2 leaves zero.  Contrast the
+            # 'scalar' gate, whose single coefficient can only rescale a
+            # fixed random direction.
+            nn.init.zeros_(self.net[2].weight)
+            nn.init.zeros_(self.net[2].bias)
 
     def forward(self, xis: torch.Tensor, h: torch.Tensor) -> torch.Tensor:
         B, T, K, d = xis.shape
@@ -366,12 +392,33 @@ class MultiXiPARFLM(SparsePARFLM):
                 _out, _hid = cfg.d, _H
             else:
                 _out, _hid = 1, _matched_hidden(_in, cfg.d, _H)
+            _gate = getattr(cfg, "relax_gate", "zero_readout")
+            if _gate not in ("zero_readout", "scalar"):
+                raise ValueError(
+                    f"relax_gate must be 'zero_readout' or 'scalar', "
+                    f"got {_gate!r}")
             self.relax_field = _RelaxationField(
                 d=cfg.d, K=cfg.xi_channels, hidden=_hid, out_dim=_out,
                 init_scale=getattr(cfg, "relax_init_scale", 0.02),
+                gate=_gate,
             )
             _n_lam = cfg.L if getattr(cfg, "relax_lambda_per_layer", True) else 1
-            self.relax_lambda = nn.Parameter(torch.zeros(_n_lam))
+            if _gate == "scalar":
+                self.relax_lambda = nn.Parameter(torch.zeros(_n_lam))
+            else:
+                # The readout already holds the field at zero, so the
+                # coefficient is a fixed 1 and carries no parameters.  It
+                # stays a buffer so the force path is identical in both
+                # modes and so the resume block still sees it as new.
+                # `self.relax_lambda = None` above put the name in __dict__,
+                # and register_buffer refuses an existing attribute.
+                del self.relax_lambda
+                self.register_buffer("relax_lambda", torch.ones(_n_lam))
+            # Per-layer share of the force carried by the added term,
+            # ||lambda g|| / ||conservative force||.  With 'zero_readout'
+            # this replaces lambda as the measurement.
+            self.register_buffer(
+                "relax_share", torch.zeros(cfg.L), persistent=False)
 
         self.V_attn = None
         if getattr(cfg, "pair_potential", "sparse_topk") == "xi_attention":
@@ -394,6 +441,18 @@ class MultiXiPARFLM(SparsePARFLM):
             self.score_head = None
 
     # ------------------------------------------------------------------
+    @torch.no_grad()
+    def relax_share_values(self) -> List[float]:
+        """Per-layer ||added force|| / ||conservative force||, or [].
+
+        Under ``relax_gate='zero_readout'`` this replaces lambda as the
+        probe's primary measurement: the fraction of the dynamics the model
+        has chosen to take outside the conservative class.
+        """
+        if getattr(self, "relax_share", None) is None:
+            return []
+        return [float(v) for v in self.relax_share.detach().cpu().tolist()]
+
     @torch.no_grad()
     def relax_lambda_values(self) -> List[float]:
         """Per-layer gate values, or [] when the relaxation is off."""
@@ -591,8 +650,15 @@ class MultiXiPARFLM(SparsePARFLM):
         # exactly, and this field has no harmonic decomposition.
         if (self.relax_field is not None
                 and getattr(cfg, "force_relaxation", "none") == "nonconservative"):
-            f_phi = f_phi + self._relax_gate(layer_idx) * self.relax_field(
-                xis, h_in)
+            _add = self._relax_gate(layer_idx) * self.relax_field(xis, h_in)
+            # Record the share of the force carried outside the conservative
+            # class.  Under 'zero_readout' this IS the measurement, lambda
+            # being fixed at 1.  Three norms per layer, negligible.
+            with torch.no_grad():
+                _cons = f_phi if f_theta is None else f_theta + f_phi
+                self.relax_share[layer_idx] = (
+                    _add.norm() / (_cons.norm() + 1e-12))
+            f_phi = f_phi + _add
 
         if split:
             return f_theta, f_phi

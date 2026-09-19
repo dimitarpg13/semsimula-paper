@@ -143,14 +143,71 @@ learned, which is indistinguishable from a genuine null.
 
 ![The gate and the saddle it avoids](figures/conservativity_price/gate_saddle.png)
 
-The fix is asymmetric initialisation — $\lambda = 0$ with
-$\psi \sim N(0, \sigma^{2})$, $\sigma = 0.02$. Then $\partial f/\partial\lambda = g_{\psi} \neq 0$
-at step 0 while $\psi$ is frozen, $\lambda$ leaves zero on the first step,
-and $\psi$ unlocks on the second. This is the same trap and the same fix
-recorded in `Context_Mixing_Mechanisms_in_the_Conservative_Framework.md`
-§8.4 for Alternative E's bilinear logit, where it was verified: gradient
-magnitudes 1.6e+03 on the gated parameter against 0.0 for both under the
-symmetric initialisation.
+An asymmetric initialisation — $\lambda = 0$ with
+$\psi \sim N(0, \sigma^{2})$ — escapes the saddle proper, and that was the
+first design. **It is not sufficient, and the first run showed why.**
+
+### 3.4 Why a scalar gate is not enough
+
+Run of 2026-09-19 with a scalar $\lambda$: over the first 100 steps
+$\lambda$ reached only ~1e-3 and **flipped sign per layer between
+consecutive prints**, while the training loss stayed indistinguishable from
+the control. It was diffusing, not growing.
+
+The reason is that a scalar can rescale a direction but cannot orient one.
+With $\psi$ frozen at initialisation, $g_{\psi}$ is a *fixed random field*,
+and
+
+$$\frac{\partial L}{\partial \lambda} = \left\langle \frac{\partial L}{\partial f},\ g_{\psi} \right\rangle .$$
+
+A random direction in $\mathbb{R}^{d}$ overlaps any fixed one by about
+$1/\sqrt{d}$, which is 0.05 at $d = 384$, with a sign that varies batch to
+batch. So the gradient on $\lambda$ is small and its sign is close to
+arbitrary: a random walk.
+
+**Raising $\sigma$ does not rescue it.** Scaling $\psi$ scales $g_{\psi}$,
+and therefore both the signal and the per-batch noise in
+$\partial L / \partial \lambda$, by the same factor — the ratio is
+unchanged. Adam compounds the point: its update is invariant to gradient
+scale, so $\lambda$'s step size would not move either.
+
+### 3.5 The fix: zero the readout, not the gate
+
+Drop the scalar. Initialise the **output layer** of $g_{\psi}$ to zero and
+leave the input layer random:
+
+```python
+g_psi = nn.Sequential(nn.Linear((K+1)*d, H), nn.GELU(), nn.Linear(H, d))
+nn.init.normal_(g_psi[0].weight, std=0.02)   # random features, frozen at first
+nn.init.zeros_(g_psi[2].weight)              # zero readout, live gradient
+```
+
+Everything the design needed is preserved and the defect is removed:
+
+- $g_{\psi} \equiv 0$ at initialisation, so step 0 is still **bit-identical**
+  and the warm start is still exact.
+- $\partial L / \partial W_{2} = \delta \otimes \mathrm{GELU}(W_{1}z)$ is
+  non-zero from step 1 and points where the loss wants to go, rather than
+  along a random direction.
+- $W_{2}$ has $d \times H$ entries, so it can **orient** the added force,
+  not merely scale a fixed draw.
+- $\partial L / \partial W_{1} = 0$ at init and unlocks once $W_{2}$ moves:
+  the same asymmetric structure, with the useful half now live.
+
+This is the standard zero-init-the-output-projection trick from residual
+architectures. Measured at $d = 32$: readout gradient **1.5e-01** against
+**1.7e-04** on the scalar, with 49152 orientable parameters against 1, and
+the field exactly zero at init in both.
+
+**The measurement changes with it.** $\lambda$ is fixed at 1 and is no
+longer the readout. Its place is taken by the per-layer force share
+
+$$\mathrm{share}_{\ell} = \frac{\lVert g_{\psi} \rVert}{\lVert f^{\mathrm{cons}}_{\ell} \rVert},$$
+
+the fraction of the dynamics the model has chosen to take outside the
+conservative class — which §7 already listed as the most interpretable
+single number. The superseded scalar gate is retained as
+`relax_gate='scalar'` so the 2026-09-19 run can be reproduced.
 
 ---
 
