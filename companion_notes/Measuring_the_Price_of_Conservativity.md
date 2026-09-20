@@ -543,13 +543,58 @@ it did.
 | 31,000 | **80.75** | **80.87** | +0.12 |
 | 31,500 | 81.75 | 81.85 | +0.10 |
 | 32,000 | 81.53 | 81.52 | −0.01 |
+| 32,500 | 81.47 | *not captured* | |
+
+The 32,500 eval for Arm N was never saved to a file; its `training_log.jsonl`
+in `relaxA_N_lam0p25_28500/` has it. Extrapolating the control's own final
+step (−0.06) puts Arm N's settled at **≈81.6**, which is an estimate and is
+flagged as one wherever it appears.
 
 The arm tracked the control the whole way and converged onto it. `share_max`
 rose 0.004 to 0.28, `lr` matched the column above at every step, and
 `dc_ratio` bounced 0.28–2.45 rather than falling monotonically the way it did
 under the abandoned zero-readout parameterisation (§3.5). **A genuinely
 non-conservative force at a 20–28% share moved the settled PPL by
-approximately nothing.**
+approximately nothing** — a screening result, for the reasons in §7.3, not a
+measurement of what the mechanism is worth.
+
+#### Arm R, attention as a residual write, λ = 1 gate — run 2026-09-20
+
+Same `DirectExchangeForce`, same parameters, same pinned λ, routed from the
+same layer input — the only difference from Arm N is that its output is
+written into `h` after the integrator instead of entering `f`. Log at
+[`results/.../relaxA_R_lam0p25_28500_result.txt`](../notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc/relaxA_R_lam0p25_28500_result.txt).
+
+| step | control | Arm R | delta ppl |
+| ---: | ---: | ---: | ---: |
+| 29,000 | 88.16 | **87.95** | **−0.21** |
+| 29,500 | 86.20 | 86.76 | +0.56 |
+| 30,000 | 84.56 | 85.63 | +1.07 |
+| 30,500 | 83.93 | 85.01 | +1.08 |
+| 31,000 | **80.75** | 81.70 | +0.95 |
+| 31,500 | 81.75 | 82.65 | +0.90 |
+| 32,000 | 81.53 | 82.25 | +0.72 |
+| 32,500 | 81.47 | 82.21 | +0.74 |
+| **settled** | **81.58** | **82.37** | **+0.79** |
+
+**The delivery hypothesis is refuted.** Bypassing the integrator does not
+recover anything; it costs 0.79 settled and 0.95 at best. Whatever the
+second-order path does to routed information, writing straight into `h`
+instead is worse, not better. That hypothesis was this document's own, and
+it is recorded as refuted rather than softened.
+
+The shape is the tell, and it is what §7.3 is about. R leads at the first
+eval and falls behind monotonically as its share grows — `share_max` climbed
+0.016 to 0.17 over exactly that window, ending at
+`[0.0010, 0.1708, 0.1205, 0.0762, 0.0514, 0.0556, 0.0603, 0.0422]`. Note the
+profile peaks **early** (layer 1) and decays with depth, the opposite of Arm
+N, whose force share peaked **late** at layers 5–6. A write wants to land
+early so downstream layers can process it; a force wanted to land late.
+
+Layer 0 is dead in both arms — 0.0010 here, 0.012 in N — and 6b-6 found the
+same structurally, with layer 0's α at score std 0.0012 and `alpha_max·i` of
+exactly 1.00. Three independent measurements agree that the first layer does
+not use routed information at all.
 
 ### 7.1 The geodesic gate is blocked, and this was mis-stated
 
@@ -668,20 +713,121 @@ Layer 0 is the exception, at score std 0.0012 and `alpha_max·i` of exactly
 #### The third reading
 
 Neither pre-registered option survives. The field is **structured, optimally
-scaled, and worth 0.21 PPL**. That is not a powerless null: the model had a
+scaled, and worth 0.21 PPL at this schedule**. That is not a powerless null: the model had a
 live non-conservative gradient path with real capacity, learned non-trivial
 routing with it, took a quarter of the force budget, and the whole apparatus
 bought 0.21 against a 26.91 gap.
 
-This is what makes Arm C worth its five hours. There is now a number to
-attribute rather than an absence: C ≈ 0.21 puts the 0.21 down to capacity and
-conservativity at approximately zero; C ≈ 0 attributes it to
-non-conservativity specifically. Either outcome is a **quantified upper
-bound** — "at this budget and at λ = 0.25, conservativity costs at most about
-0.2 of the 26.91 gap" — rather than a seventh elimination.
+There is now a number to attribute rather than an absence, which is what
+would make Arm C worth its five hours: C ≈ 0.21 puts the 0.21 down to
+capacity and conservativity at approximately zero; C ≈ 0 attributes it to
+non-conservativity specifically.
 
-The 4,000-step caveat survives and must be stated in any write-up, but it is
-much weaker than it was: the graft demonstrably took.
+**Scope that claim carefully.** An earlier draft of this section called the
+result a "quantified upper bound" on the price of conservativity. It is not.
+§7.3 shows that every arm's observed value is the *sum* of what its mechanism
+buys and what its perturbation costs in lost consolidation, and that this
+design cannot separate the two. What 0.21 measures is **what adding a
+non-conservative attention force during the final 4,000 annealing steps is
+worth**. That is a screening result. It bounds nothing about what the
+mechanism would be worth to an architecture that had organised around it.
+
+The 4,000-step caveat is therefore not "much weaker than it was", as an
+earlier draft claimed on the grounds that the graft demonstrably took. The
+graft taking says the field learned something; it says nothing about whether
+the schedule gave it room to be worth anything.
+
+### 7.3 What the warm-start design can and cannot support
+
+Every arm here grafts a new mechanism onto the step-28,500 checkpoint and
+runs §6.3's 4,000-step decay. That makes the comparison very tight — bit
+identical starts, a paired control at every eval — and it is why the design
+was chosen. It also has a structural bias that the first three arms are now
+large enough to measure, and it runs against every graft.
+
+#### The evidence
+
+Read *consolidation* — what each arm gains from the first eval to its best —
+rather than the endpoint:
+
+| arm | 29,000 | best | gained |
+| --- | ---: | ---: | ---: |
+| control | 88.16 | 80.75 | **−7.41** |
+| N, attention force | 88.17 | 80.87 | −7.30 |
+| R, attention residual write | **87.95** | 81.70 | **−6.25** |
+
+Arm R starts **0.21 ahead** of the control and finishes **0.95 behind** — a
+1.16 swing. The mechanism is not being out-performed; the arm is
+**consolidating less**. That is a perturbation signature, not a capability
+measurement.
+
+Arm R completed 2026-09-20 and the settled figures say the same thing:
+
+| arm | 29,000 | settled | gained |
+| --- | ---: | ---: | ---: |
+| control | 88.16 | 81.58 | **−6.58** |
+| R, attention residual write | **87.95** | 82.37 | **−5.58** |
+
+A 1.00 PPL shortfall in consolidation from a 0.21 better start.
+
+#### Why the schedule produces it
+
+A WSD decay is a **consolidation phase**. Its purpose is to stop the model
+exploring and settle it into the basin it already occupies, and the control
+extracts 3.5 PPL from that settling alone. Grafting into that window means:
+
+- the new mechanism gets the least exploratory 14% of training, most of it
+  below lr 1e-4;
+- 76.9M incumbent parameters already sit at an optimum shaped by 28,500
+  steps of a force law the graft perturbs;
+- roughly 1,000 of the 4,000 steps run on Adam second moments
+  (`beta_2 = 0.999`, so a ~1,000-step memory) carried over from a model that
+  did not have the graft.
+
+So each arm's observed value is
+
+$$\Delta_{\text{observed}} = \Delta_{\text{mechanism}} - \Delta_{\text{perturbation}}$$
+
+where the first term is what the mechanism buys and the second is the
+consolidation the graft costs, and **this design cannot separate the two
+terms**. Arm R's −0.95 is equally consistent with a mechanism worth +0.5
+against a perturbation cost of −1.45.
+
+#### What remains valid
+
+**Arm versus arm.** Every arm received identical treatment from an identical
+start, so N − C and N − R are controlled contrasts. The bias above is shared,
+not differential.
+
+**Arm versus control, as a screen.** "Adding X during the final anneal does
+not help" is a sound conclusion and a cheap one.
+
+#### What is not valid
+
+**"Mechanism X is worth Y to this architecture."** That requires X to have
+been present while the architecture organised around it. No arm here meets
+that condition, and no result in §7.2 or §7.0 should be written as though it
+does.
+
+#### The fix, and its cost
+
+Give the graft exploratory steps *before* consolidation: graft at 28,500,
+run **8,000 steps at constant lr 3e-4**, then the same 4,000-step decay. The
+control has to be re-run on the identical 12,000-step schedule, since the
+existing 81.58 is not comparable to it.
+
+About 15h per arm against the current 5h, plus a new control. A cheaper
+partial is to extend the stable window by 4,000 steps before decaying, at
+roughly 10h per arm. Either way the question it answers changes from "does
+adding X late help" to "is X worth anything here", and only the second
+supports a claim about the architecture.
+
+#### Consequence for the programme
+
+The three arms already run are **screening results**. They are worth having
+and worth reporting as such. But another arm at the current design buys
+another screening result, not a measurement, which is the decision to take
+before spending five more hours on Arm C.
 
 ## 8. The insertion point
 
