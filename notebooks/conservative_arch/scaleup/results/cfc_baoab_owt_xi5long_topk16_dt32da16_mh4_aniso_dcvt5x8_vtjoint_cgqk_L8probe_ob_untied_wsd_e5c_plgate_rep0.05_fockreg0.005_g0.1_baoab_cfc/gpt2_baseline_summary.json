@@ -1,0 +1,23 @@
+{
+  "model": "GPT-2 baseline",
+  "params_total": 33691776,
+  "params_non_emb": 14196480,
+  "d": 384,
+  "n_layers": 8,
+  "n_heads": 6,
+  "lr": 0.0006,
+  "total_steps": 32500,
+  "batch_size": 32,
+  "best_step": 32500,
+  "best_val_loss_1024": 3.999820184707642,
+  "best_val_ppl_1024": 54.588333333456625,
+  "best_val_loss_512": 3.999820184707642,
+  "best_val_ppl_512": 54.588333333456625,
+  "gpt2_settled_ppl_512": 54.67497979816401,
+  "gpt2_final_ppl_512": 54.588333333456625,
+  "fock_final_ppl_512": 81.47,
+  "fock_settled_ppl_512": 81.58,
+  "fock_best_ppl_512": 80.75,
+  "fock_endpoint_step": 32500,
+  "ratio_fock_to_gpt2_settled": 1.4920901717962676
+}
