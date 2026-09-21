@@ -62,7 +62,7 @@ per call against gram's 40.1 ms. Cell 5 asserts the built config carries it.
 
 | # | run | cost | what it settles | state |
 | --- | --- | ---: | --- | --- |
-| 1 | **matched GPT-2**, batch 32 throughout | **2.7h** | removes the 1.48x token confound from every comparison in the programme | queued |
+| 1 | **matched GPT-2**, batch 32 throughout | 2.7h | removes the 1.48x token confound from every comparison in the programme | **DONE**, §5.4 |
 | 2 | L=2, `'attention'` | 14.5h | — | **DONE**, §5.1 |
 | 3 | L=2, `'none'` | 14.5h | what the exchange field contributes at fixed depth | **DONE**, §5.2 |
 | 4 | **L=4**, matched | ~27h | hops, versus "the L=8 arm was handicapped" | queued |
@@ -231,9 +231,74 @@ comparison still carries the token confound of §4 until run 1 lands.
 | L=2 `'none'` | ~~gap holds at 20-30%~~ **MISS: actual 9.9%** | see §5.2; the gap saturated rather than growing |
 | L=2 `'attention_potential'` | **75-82, point 78** | arm C detaches both alpha and `h_src`, so its Jacobian is block-diagonal and there is no inter-token coupling in the dynamics. Below 72 would be a genuine surprise. |
 | L=4 | no strong prior | this is the point of running it |
-| matched GPT-2 | **below 54.59** | more tokens, no mid-run batch discontinuity |
+| matched GPT-2 | ~~below 54.59~~ **HIT: 49.76 final, 49.81 settled** | predicted 49.5 band 49.0-50.0 from the published run's behaviour over the same lr range; error +0.26 |
 
 ---
+
+### 5.4 Matched GPT-2 baseline — **DONE 2026-09-21**
+
+Log: [`results/gpt2_baseline_d384_L8/matched_batch32_32500_result.txt`](../notebooks/conservative_arch/scaleup/results/gpt2_baseline_d384_L8/matched_batch32_32500_result.txt)
+
+Batch 32 throughout, 32,500 steps, **532.5M tokens** — token-matched to every
+ladder point for the first time.
+
+| | value |
+| --- | ---: |
+| final (step 32,500) | **49.76** |
+| settled (mean of last three) | **49.81** |
+
+**Prediction scored: HIT**, the first in this programme. Recorded 49.5 with a
+band of 49.0-50.0; actual 49.76, error +0.26. The method that worked was not
+a fit: it was the **analogue** — the published run's behaviour across the
+same lr range (8.4e-05 to the 6e-05 floor, a factor of 0.9726) applied to the
+current value. The three log(lr) fits gave 38.87, 47.32 and 49.00 depending
+on the window, i.e. the fit was less informative than the matched-schedule
+comparison. Worth remembering: where an analogue with the same architecture
+and schedule exists, prefer it to extrapolating the run's own curve.
+
+#### Consequences
+
+The extra 172M tokens are worth **4.86 PPL** to GPT-2, so every ratio widens:
+
+| | tokens | settled | ratio |
+| --- | ---: | ---: | ---: |
+| **GPT-2 matched** | 532.5M | **49.81** | 1.000 |
+| Fock L=2 + exchange force | 532.5M | 68.33 | **1.372** |
+| Fock L=2, conservative only | 532.5M | 75.09 | **1.508** |
+| Fock L=8 warm-start (reference) | 532.5M | 81.58 | 1.638 |
+
+The **1.49x** figure in circulation for the L=8 arm was computed against the
+360.4M-token baseline. Against a token-matched one it is **1.638x**. Every
+Fock-versus-GPT-2 claim in the paper needs this denominator.
+
+#### These ratios are tuned against untuned, and must be quoted that way
+
+The comparison is now matched on **data** and on **evaluation**. It is not
+matched on **hyperparameter effort**, and the asymmetry is large.
+
+| | GPT-2 | Fock ladder |
+| --- | --- | --- |
+| learning rate | 6e-04, nanoGPT default | 3e-04, **inherited from the L=8 arm, never swept at this depth** |
+| schedule | cosine, warmup 2,000 | WSD 5/60/35, inherited |
+| lambda on the exchange field | n/a | **1.0, chosen on structural argument, not evidence** |
+| heads x d&#95;k | 6 x 64, standard | 8 x 48, chosen for width parity |
+| T = L*dt, gamma, clip overrides | n/a | inherited or conventional, all unswept |
+
+GPT-2's settings are not optimal for this budget either -- nanoGPT defaults
+target a different regime -- but they are **known-good across a wide range**,
+whereas the Fock side has never been checked at all. One side sits at a
+community-validated point; the other sits where a previous experiment left
+it.
+
+So the honest form of every ratio here is **"at these hyperparameters"**, and
+the numbers are an **upper bound on the gap**, not a measurement of it. The
+LR probe in §3 is the first step at closing that, and until it lands no ratio
+in this document should be quoted without the qualifier.
+
+What the qualifier does **not** license: closing 68.33 to 49.81 needs **27%**,
+and LR tuning on a well-behaved setup typically buys 5-15%. Tuning is very
+unlikely to close this on its own, and claiming otherwise in advance would be
+the mirror image of the error this section exists to correct.
 
 ## 6. Open risks
 
