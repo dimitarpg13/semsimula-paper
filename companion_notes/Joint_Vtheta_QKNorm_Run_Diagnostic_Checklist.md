@@ -1032,11 +1032,45 @@ than assumed:
 | | Fock joint arm | GPT-2 baseline |
 | --- | --- | --- |
 | val set | `openwebtext_val_2M.npy` | **same file** — same 2B stream, same `all_ids[-2M:]` slice |
-| tokens/step | 16 x accum 2 x 512 = 16,384 | 32 x 512 = 16,384 |
+| tokens/step | 16 x accum 2 x 512 = 16,384 | **see the correction below** |
 | train pool | 2B, sampled with replacement | **same 2B pool** |
 | endpoint | step 32,500, lr at floor 1.50e-05 | step 32,500, cosine at `LR_MIN` |
 
-Because tokens/step match, **steps map 1:1** and equal steps are equal tokens.
+> ### CORRECTION, 2026-09-20: the budgets are NOT matched
+>
+> This section claimed "because tokens/step match, **steps map 1:1** and
+> equal steps are equal tokens." **That is false**, and it is false in the
+> direction that flatters Fock.
+>
+> The console logs show the baseline ran in **two phases**: steps 0-14,000 at
+> **batch 8** (4,096 tokens/step) and steps 14,000-32,500 at batch 32
+> (16,384), the second phase resuming the first's step-14,000 checkpoint.
+> Real budget **360.4M tokens**, against the Fock arm's **532.5M** at a
+> constant effective batch of 32.
+>
+> | | steps | tokens |
+> | --- | ---: | ---: |
+> | Fock joint arm | 32,500 | **532.5M** |
+> | GPT-2 as published | 32,500 | **360.4M** |
+> | | | Fock used **1.48x** more |
+>
+> It was invisible in `training_log.jsonl`, which computes its `tokens`
+> field as `step * 16,384` throughout regardless of the batch actually used.
+> Only the console banner recorded the real one. The notebook did print a
+> mismatch warning, but a `print` scrolls past in a 14,000-step log; it now
+> **raises** instead (`ALLOW_BATCH_MISMATCH`).
+>
+> **Every figure in this section that converts steps to budget inherits the
+> error**, including §9.2's crossing point. See the correction inline there.
+> A genuinely token-matched baseline is queued in
+> [`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md);
+> it supersedes this section's budget claims and is expected to land
+> **below** 54.59, widening the reported gap rather than narrowing it.
+>
+> What survives unchanged: the val file, the context, the 2B pool, the
+> fully-decayed endpoints, and therefore the **endpoint perplexities**
+> themselves — 54.59 final and 54.67 settled are measuring the right
+> quantity on the right data. It is only the *budget* framing that is wrong.
 Four notebook bugs had to be fixed first: a 200M token budget (32.5 epochs), a
 `total_mem` typo, a stale cache-name list that re-streamed 2B tokens, and an
 `EVAL_INTERVAL` of 2000 which does not divide 32,500 — that last one would
@@ -1048,10 +1082,17 @@ schedule-position error this section exists to avoid.
 **GPT-2 crossed Fock's fully-decayed endpoint at ≈step 15,200.** Interpolating
 between the step-15,000 eval (82.80) and step-15,500 (79.07):
 
-| Fock reference | GPT-2 reaches it at | fraction of budget |
-| --- | ---: | ---: |
-| 81.58 (settled, §6.3) | step ≈15,164 | **46.7%** |
-| 80.75 (best, §6.3) | step ≈15,275 | 47.0% |
+| Fock reference | GPT-2 reaches it at | fraction of STEPS | fraction of TOKENS |
+| --- | ---: | ---: | ---: |
+| 81.58 (settled, §6.3) | step ≈15,164 | 46.7% | **14.3%** |
+| 80.75 (best, §6.3) | step ≈15,275 | 47.0% | **14.6%** |
+
+**Read the token column, not the step column.** Step 15,164 of the baseline is
+`14,000 x 4,096 + 1,164 x 16,384` = **76.4M tokens**, against the Fock arm's
+532.5M — so GPT-2 crossed Fock's fully-decayed endpoint at **14.3% of Fock's
+token budget**, not 47%. The step fractions are retained only because earlier
+text quotes them; they are an artifact of the batch change documented in the
+correction above.
 
 At step 20,500 GPT-2 stood at **64.60** and was still falling ≈1 PPL per 500
 steps with 12,000 steps of cosine decay remaining.
