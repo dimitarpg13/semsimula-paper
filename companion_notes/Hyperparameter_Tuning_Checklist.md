@@ -95,7 +95,7 @@ empirical claim about the live 1.2e-03 run, not a guess.
 
 | knob | current | binds? | evidence |
 | --- | --- | --- | --- |
-| `LR` | 1.2e-03 | **yes — biggest knob found** | **+10.8%** over 3e-04 on the full run; optimum not yet bracketed (§5 T0) |
+| `LR` | 1.2e-03 | **yes — biggest knob found; CLOSED** | **+10.8%** over 3e-04; bracketed by 2.4e-03 at 69.59 (§5 T0) |
 | `WSD_STABLE_FRAC` | 0.60 | **untested, free** | decay is where PPL drops, and how much it drops depends on LR (§6.2) |
 | `WSD_WARMUP_FRAC` | 0.05 | untested | 1,625 steps; no instability seen after it ends |
 | `WSD_LR_FLOOR` | `LR * 0.05` | untested | 6.00e-05 at the current LR |
@@ -169,6 +169,31 @@ scaling:
 (peak 63.24 at step 26,350, settled 60.02), so a full run ends below its own
 mid-run maximum.
 
+#### 3.3.1a Both of these failed as predictors at 2.4e-03
+
+Recorded because each was wrong in a *different* direction, which is more
+useful than either being merely imprecise.
+
+| quantity | predicted at 2.4e-03 | actual |
+| --- | ---: | ---: |
+| `bproj_sig` | ~170 | **273.6** |
+| `sig_max` | ~75, climbing toward 100.0 | **49.92**, *down* from 60.02 |
+
+**`sig_max` is not monotone in LR.** Register sharpening fell when the LR
+doubled, so the absorbing-ceiling watch was aimed at a risk that does not
+scale the way the 3e-04 -> 1.2e-03 pair suggested. Keep the stop condition —
+touching 100.0 is still absorbing — but do not extrapolate a trajectory
+toward it.
+
+**`bproj_sig`'s constant ratio broke, and that is the useful part.** Against
+the 3e-04 reference it held at 3.4-3.6x across *every* matched step of the
+1.2e-03 run, then jumped to **10.8x** at 2.4e-03. It is the only logged
+quantity that separates the good run from the over-driven one, which makes
+**above ~5x the same-step reference** a candidate early-warning for "past the
+optimum". One data point, so it is a hypothesis and not a rule — the way to
+test it is to check the ratio on the next arm that turns out badly, not to
+act on it now.
+
 ### 3.4 Capacity — changes what the model is
 
 Moving any of these breaks parameter-matching with the completed arms, so
@@ -221,62 +246,105 @@ measurable without any new run.
 Each entry carries a **screening length**, because §1 establishes that short
 pilots mis-rank. "Full" means the complete 32,500-step WSD schedule.
 
-### T0. `LR = 2.4e-3` — **queued 2026-09-22, supersedes a bad call**
+### T0. `LR` — **CLOSED 2026-09-23. Optimum bracketed at 1.2e-03.**
 
-Ruled out earlier the same day on the grounds that "a 4x LR increase bought
-2.6%". It bought **10.8%**, and the optimum was never bracketed — two full-run
-points, both improving, bound it only from below.
+| LR | pre-decay | settled | decay | vs GPT-2 |
+| --- | ---: | ---: | ---: | ---: |
+| 3e-04 | 84.98 | 75.09 | 11.6% | 1.507 |
+| **1.2e-03** | 82.81 | **66.98** | 19.1% | **1.345** |
+| 2.4e-03 | **88.48** | 69.59 | 21.3% | 1.397 |
 
-Two forecasts, agreeing on direction:
+2.4e-03 is worse by 3.9%, landing in the pre-registered "above 69 ->
+bracketed" band. A quadratic through the three points in `log2(LR)` puts the
+vertex at **1.13e-03** with a predicted minimum of 66.96 against 1.2e-03's
+measured 66.98. **1.8e-03 is not worth testing** — the fit places the optimum
+*below* 1.2e-03, not between it and 2.4e-03, and the curve is flat there.
 
-| method | endpoint |
-| --- | ---: |
-| decay-scaling (see §6) | ~63.1 |
-| diminishing returns on endpoint gaps | ~65.9 |
+Health at 2.4e-03 was clean — zero watchdog triggers, zero spike captures,
+clip-hit 0.5%, finished at 32,500. This is over-driving, not instability.
 
-**Pre-registered: 63-66, centre ~64**, weighted toward decay-scaling because
-that is the mechanism the earlier forecasts kept missing.
+#### Why the forecast failed, and what it changes
 
-**2.4e-3, not 1.8e-3.** Both methods say 1.5x still improves, so 1.8e-3 would
-very likely win and leave the optimum still unbracketed, costing another
-13h. Spend the run on the step that can land on the far side.
+Pre-registered 63-66, centre ~64. **Actual 69.59 — wrong in direction.**
 
-- **Screening length:** full. See §1.
-- **Decision rule, recorded before the run:** below 64, go to 4.8e-3;
-  64-67, improving but flattening — 4.8e-3 only if `bproj_sig` and the
-  clip rate stay clean; 67-69, tied with 1.2e-03, lock it and close tuning;
-  above 69 or any watchdog trigger or clip-hit above ~2%, bracketed, close.
-- **Watch, in priority order:**
-  1. **`sig_max` against 100.0** — projected **~75** at 2.4e-3 (60.02 x
-     1.26 per doubling, §3.3.1), so it should clear with ~25% margin. If it
-     ever prints exactly `100.00`, **stop the run**: that register is in the
-     absorbing state and its sharpness is frozen for good. Documented
-     fallback is to project `lambda` back into the box after
-     `optim.step()` rather than clamping in the forward pass.
-  2. **clip-hit rate** — 0.0% is what makes the 1.2e-03 run clean; any
-     return above zero re-opens the §7.3 confound.
-  3. **`bproj_sig` near ~170** (twice the current 85) and whether it still
-     saturates. Not a failure mode on its own — see §3.3.1 — but the
-     saturation depth is the mechanism most likely to be flattening the LR
-     response.
+The decay-scaling mechanism the forecast was built on **held**: predicted
+22.9%, actual 21.3%. What broke was the other half. The forecast assumed
+pre-decay would keep drifting down (-1.3% per doubling -> ~81.7); it **rose
+to 88.48**, worse than even the 3e-04 arm.
 
-### T1. `WSD_STABLE_FRAC` — **the only free knob**
+So the shape of the LR response is not "pre-decay creeps down while decay
+does the work". It is: **the stable phase degrades first.** At 2.4e-03 the
+model trains worse at constant LR, the decay then works harder than in any
+other arm, and still cannot recover the deficit. Treat pre-decay as the
+quantity that turns, not the decay fraction.
 
-Ahead of T2-T5 because it is the only entry that costs no extra steps;
-behind T0 only because the LR it would be measured at is still moving.
+### T1. `WSD_STABLE_FRAC` — **NEXT, 2026-09-23.** Two paired branches, ~15.6h
 
-Move 0.60 -> 0.50 or 0.45, lengthening decay at **identical total compute**.
-Decay is where the PPL actually falls: 0.8796 (`'none'`) and 0.8790
-(`'attention'`) at 3e-04, reproducible to four digits across two arms — but
-**0.809 at 1.2e-03** on the same arm, so the ratio is a function of the
-learning rate and not a constant (§6.2). That is the argument for the sweep
-rather than against it: a longer decay at a high LR has more noise to remove
-than the 3e-04 pair suggests. Nothing else on this list costs zero extra
-steps.
+Runs **before** the remaining ladder points. Ladder comparisons are valid at
+any *common* schedule, so this does not strictly block them — but T0 is the
+worked example of what deferring a knob costs: if the schedule later moves by
+more than ~2%, L=2 `'attention'`, L=1 and L=4 all become pilots rather than
+results, which is ~47h to redo against 15.6h to settle now.
 
-- **Screening length:** full. A shorter run changes the very thing being tested.
-- **Decision rule:** pre-register before running. Gains over ~2% adopt;
-  under 1% revert to 0.60 and stop sweeping the schedule.
+#### It does not need a full run
+
+`lr_schedule(step)` is a pure function of `step`, `TOTAL_STEPS`,
+`WSD_WARMUP_FRAC` and `WSD_STABLE_FRAC`, and **below `stable_end` it returns
+a constant `LR` regardless of `WSD_STABLE_FRAC`**. Every candidate schedule
+therefore has a bit-identical trajectory up to the earliest `stable_end`, so
+a mid-stable checkpoint is an exact branch point.
+
+| `WSD&#95;STABLE&#95;FRAC` | `stable&#95;end` | decay window | branch from | steps to run |
+| ---: | ---: | ---: | ---: | ---: |
+| 0.50 | 17,875 | 14,625 | step 15,000 | 17,500 |
+| **0.60 — control, already run** | 21,125 | 11,375 | — | — |
+| 0.70 | 24,375 | 8,125 | step 15,000 | 17,500 |
+
+Branch both from the **step-15,000 periodic checkpoint of the 1.2e-03 arm**:
+below 17,875 so the short-decay arm is valid, and below 21,125 so the
+long-stable arm can hold peak LR past where the source began decaying.
+~7.8h each at the measured ~1.6 s/step.
+
+This is also a **better** design than two fresh runs, not merely a cheaper
+one: identical weights at the branch point make the three-way comparison
+paired, removing all pre-15,000 variance. The 0.60 control is already in hand.
+
+#### Test both directions — the recorded direction was an assumption
+
+An earlier draft said "move 0.60 -> 0.50 or 0.45, lengthening decay". That
+had no evidence behind it. What the completed arms actually show:
+
+- **The tail is flat, not harmful.** All three arms appear to degrade after
+  ~31,000, but the "best" values are single lucky evals — at 3e-04 the 31,000
+  eval is 73.20 and the next is 75.03 on a flat plateau, and the two 3e-04
+  arms have their outlier at the *same* step.
+- **The decay's last third contributing ~15%** (52/34/15, 52/32/16, 42/44/14)
+  is **not** evidence the window is too long: a cosine has zero derivative at
+  `progress = 1`, so the last third is flat at any window length.
+
+So there is no measurement favouring either direction, and against the
+recorded one: WSD practice usually puts decay at 10-20% of training and this
+schedule is already at **35%**, on the long side. Run 0.50 and 0.70.
+
+#### Required notebook change first
+
+`WSD_STABLE_FRAC` is **not in `_variant_tag`** — it carries
+`xi/topk/dt/mh/aniso/.../idt/lr/mech` and nothing about the schedule, so both
+branches and the source run would resolve to the same folder and overwrite
+each other. Add it conditionally, in the same style as the LR component so
+completed runs keep their folders:
+
+```python
+if abs(WSD_STABLE_FRAC - 0.60) > 1e-12:
+    _variant_parts.append(f'sf{WSD_STABLE_FRAC:g}'.replace('.', 'p'))
+```
+
+- **Screening length:** full schedule, from the branch point. A shorter
+  horizon changes the very thing being tested.
+- **Decision rule, recorded before the runs:** best arm beating 0.60 by more
+  than 2% is adopted and the ladder runs at it; under 1% either way, keep
+  0.60 and close the schedule permanently; 1-2% adopt only if the winner is
+  0.70, since a shorter decay also buys stable-phase steps for free.
 
 ### T2. Batch x LR jointly — **the one real interaction**
 
@@ -353,9 +421,10 @@ mechanism lives.
 
 ### 6.3 The corrected bound
 
-What survives is the **direction**, not the margin. At 1.345, with 2.4e-3
-forecast at ~64 (ratio ~1.285) and the remaining knobs in §5 unswept,
-tuning might plausibly reach ~1.25. **Closing to parity still needs ~25%
+What survives is the **direction**, not the margin. LR is now closed at
+**1.345**, and it was the largest knob available — 2.4e-03 came back *worse*,
+so there is no further LR gain to bank. With the remaining knobs in §5
+unswept, tuning might plausibly reach ~1.30. **Closing to parity still needs ~25%
 that no combination of §3 entries is likely to supply**, so the
 architectural gap is real.
 
@@ -539,12 +608,24 @@ adds a point to a curve.
 
 ## 8. Ledger
 
-| date | knob | range | screening | result |
-| --- | --- | --- | --- | --- |
-| 2026-09-21 | `LR` | 3e-04, 6e-04, 1.2e-03 | 6,000-step probe | ranked 1.2e-03 first, margin 15.1% — **ranking right, margin wrong four ways over**, see §1 |
-| 2026-09-22 | `LR` | 1.2e-03 | **full 32,500** | **75.09 -> 66.98, +10.8%.** Ratio vs GPT-2 1.507 -> 1.345. Decay 19.1% vs the reference's 11.6%. Clean: 0 watchdog, 0.0% clip, `bproj_sig` saturated at 85.4 |
-| 2026-09-22 | `LR` = 2.4e-03 | — | full, queued | **T0 in §5.** Pre-registered 63-66, centre ~64 |
+| date | knob | screening | result |
+| --- | --- | --- | --- |
+| 2026-09-21 | `LR` 3e-04/6e-04/1.2e-03 | 6,000-step probe | ranked 1.2e-03 first, margin 15.1% — **ranking right, margin wrong four ways over**, see §1 |
+| 2026-09-22 | `LR` 1.2e-03 | **full 32,500** | **75.09 -> 66.98, +10.8%.** Ratio vs GPT-2 1.507 -> 1.345. Decay 19.1% vs the reference's 11.6%. Clean: 0 watchdog, 0.0% clip, `bproj_sig` saturated at 85.4 |
+| 2026-09-23 | `LR` = 2.4e-03 | full 32,500 | **69.59 — WORSE by 3.9%.** Optimum bracketed; quadratic vertex 1.13e-03. Pre-registered 63-66: **wrong in direction** (§5 T0) |
+| — | `LR` **CLOSED** | — | **1.2e-03 is the ladder LR.** Ratio vs GPT-2 **1.345** |
 
-**Forecast record for the 1.2e-03 run**, kept because the failure was
-systematic rather than noisy: 70 -> 75 -> 70 -> 72.8 -> 69.8, actual
-**66.98**. Every point high, every one for the same reason (§6.2).
+**Forecast record**, kept because the two failures were systematic and point
+in *opposite* directions:
+
+| run | forecasts | actual | error |
+| --- | --- | ---: | --- |
+| 1.2e-03 | 70 -> 75 -> 70 -> 72.8 -> 69.8 | **66.98** | every point **high**, all for the same reason (§6.2) |
+| 2.4e-03 | 63-66, centre 64 | **69.59** | **low, and wrong in direction** (§5 T0) |
+
+The pair is the lesson. The first set under-weighted a mechanism that was
+real; the second extrapolated that same mechanism past the point where a
+*different* quantity turned. Both came from treating one measured trend as
+the whole model. No forecast in this document should rest on a single
+extrapolated quantity again — state which quantity could turn, and what
+would show it turning.

@@ -323,8 +323,11 @@ assumed.** L=2 `'none'` at 1.2e-03 settles at **66.98** against 75.09 —
 **+10.8%**, moving the ratio from 1.507 to **1.345** on a single knob. The
 paragraph above guessed "5-15%" for LR tuning and that was right; the guess
 that tuning "is very unlikely to close this on its own" still stands, but
-with much less room than it had. The optimum is not bracketed — 2.4e-03 is
-queued as T0 in §5 of that document, forecast 63-66.
+with much less room than it had. **The sweep is now closed**: 2.4e-03 came
+back at 69.59, worse by 3.9%, bracketing the optimum at 1.2e-03 (a quadratic
+through the three points puts the vertex at 1.13e-03). **`LADDER_LR =
+1.2e-03` is the ladder learning rate**, and LR was the largest knob
+available.
 
 So this section's qualifier does not merely stand, it **binds harder**: every
 ratio in this document was measured at 3e-04, every one of them is now known
