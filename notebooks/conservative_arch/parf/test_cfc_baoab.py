@@ -491,3 +491,55 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+# ---------------------------------------------------------------------------
+# 4c. _sinc must not reach for torch.sinc (jiterator / NVRTC dependency)
+# ---------------------------------------------------------------------------
+def test_sinc_matches_reference_and_avoids_jiterator():
+    """``torch.sinc`` has no prebuilt CUDA kernel -- it is NVRTC-compiled at
+    runtime through PyTorch's jiterator, so it dies on any host whose
+    ``libnvrtc-builtins`` does not match the build. A Colab image refresh on
+    2026-09-23 produced exactly that, killing Cell 5 mid-programme on code
+    that three earlier runs had executed cleanly:
+
+        nvrtc: error: failed to open libnvrtc-builtins.so.13.0
+
+    The integrator must therefore not depend on the host's ability to
+    compile CUDA at runtime. This test pins both halves of that: the source
+    is free of ``torch.sinc``, and the replacement still agrees with it to
+    floating-point precision (``torch.sinc`` on CPU is a fine oracle -- the
+    jiterator is a CUDA-only path).
+    """
+    import inspect
+    import math as _math
+    import cfc_baoab as _mod
+
+    for _fn in (_mod._sinc, _mod._psi):
+        # strip the docstring first: it names torch.sinc on purpose, to say
+        # why the function does not call it.
+        _src = inspect.getsource(_fn)
+        if _fn.__doc__:
+            _src = _src.replace(_fn.__doc__, '')
+        assert 'torch.sinc' not in _src, (
+            f'{_fn.__name__} reaches for torch.sinc again -- that is a '
+            f'jiterator op and will fail on hosts with a mismatched NVRTC.')
+
+    for dtype, tol in ((torch.float32, 1e-6), (torch.float64, 1e-12)):
+        x = torch.tensor(
+            [0.0, 1e-12, 1e-6, 1e-4, 1e-3, 1e-2, 0.1, 1.0,
+             _math.pi, 10.0, -2.5, 1e3], dtype=dtype)
+        assert torch.allclose(_mod._sinc(x), torch.sinc(x / _math.pi), atol=tol)
+        assert torch.allclose(
+            _mod._psi(x), 0.5 * torch.sinc(x / (2 * _math.pi)) ** 2, atol=tol)
+
+    # the omega -> 0 limits the BAOAB A-step degenerates to
+    zero = torch.zeros(3, dtype=torch.float64)
+    assert torch.allclose(_mod._sinc(zero), torch.ones(3, dtype=torch.float64))
+    assert torch.allclose(_mod._psi(zero), torch.full((3,), 0.5, dtype=torch.float64))
+
+    # and the gradient stays finite there: the naive sin(x)/x would give
+    # 0/0 -> nan in the discarded branch, which where() back-propagates.
+    g = torch.zeros(4, requires_grad=True)
+    _mod._sinc(g).sum().backward()
+    assert torch.isfinite(g.grad).all(), g.grad

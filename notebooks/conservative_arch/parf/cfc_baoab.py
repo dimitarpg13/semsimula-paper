@@ -47,13 +47,16 @@ with ``sinc(x) = sin(x)/x`` and ``psi(x) = (1 - cos x)/x^2``.  This
 parameterisation is deliberate: it is written in terms of the *force*
 rather than the equilibrium point ``mu``, so no division by ``K`` and no
 subtraction of a possibly-huge ``mu`` ever occurs.  Both special
-functions are evaluated through ``torch.sinc`` using
+functions are evaluated through ``_sinc`` below, using
 
-    sinc(x)  = torch.sinc(x/pi)
+    sinc(x)  = sin(x)/x, with a Taylor branch under 1e-3
     psi(x)   = (1 - cos x)/x^2 = 2 sin^2(x/2)/x^2
-             = 0.5 * torch.sinc(x/(2 pi))^2
+             = 0.5 * sinc(x/2)^2
 
-which is exact, branch-free, and smooth through ``omega -> 0``.  In that
+which is exact to the last fp32 bit and smooth through ``omega -> 0``.
+``torch.sinc`` is deliberately NOT used -- see ``_sinc``'s docstring: it is
+a jiterator op and needs a working NVRTC at runtime, which a host may not
+have.  In that
 limit ``sinc -> 1`` and ``psi -> 1/2``, and the update degenerates to the
 free drift-plus-constant-force step ``h + dt v + (dt^2/2m) f`` -- so a
 token far from every well is integrated exactly as an unforced particle,
@@ -183,14 +186,43 @@ _LOWRANK_SVD_MAX_TRIES = 3
 # ---------------------------------------------------------------------------
 # Special functions (branch-free, exact through the omega -> 0 limit)
 # ---------------------------------------------------------------------------
+# Below this, sin(x)/x is replaced by its Taylor series. The truncation
+# error there is x^4/120 <= 8.3e-15 at the cutoff, ~7 orders below fp32
+# epsilon, so the two branches agree to the last representable bit.
+_SINC_TAYLOR_EPS = 1e-3
+
+
 def _sinc(x: torch.Tensor) -> torch.Tensor:
-    """sin(x)/x, smooth at x = 0 (``torch.sinc`` is the normalised variant)."""
-    return torch.sinc(x / math.pi)
+    """sin(x)/x, smooth at x = 0.
+
+    NOT ``torch.sinc``. That op is implemented through PyTorch's
+    **jiterator**: it has no prebuilt CUDA kernel and is NVRTC-compiled at
+    runtime, so it fails outright on any host whose ``libnvrtc-builtins``
+    does not match the build. A Colab image refresh on 2026-09-23 did
+    exactly that --
+
+        nvrtc: error: failed to open libnvrtc-builtins.so.13.0
+
+    -- killing Cell 5 on a machine where three previous runs of this same
+    code had been fine. The hand-rolled version below uses only ``sin``,
+    ``where`` and division, all of which ship as prebuilt kernels, so the
+    integrator no longer depends on the runtime's ability to compile CUDA.
+
+    ``safe`` exists for the gradient, not the value: dividing by the raw
+    ``x`` would make the unused branch ``0/0 -> nan``, and ``where``'s
+    backward propagates that nan even though the forward discarded it.
+    Substituting 1.0 inside the masked region keeps both branches finite.
+    This is the same failure class as the ``_OMEGA_SQ_FLOOR`` fix that
+    ``test_cfc_substep_zero_stiffness_no_nan`` guards.
+    """
+    small = x.abs() < _SINC_TAYLOR_EPS
+    safe = torch.where(small, torch.ones_like(x), x)
+    return torch.where(small, 1.0 - x * x / 6.0, torch.sin(safe) / safe)
 
 
 def _psi(x: torch.Tensor) -> torch.Tensor:
     """(1 - cos x)/x^2 = 0.5 sinc(x/2)^2, smooth at x = 0 (value 1/2)."""
-    half = torch.sinc(x / (2.0 * math.pi))
+    half = _sinc(0.5 * x)
     return 0.5 * half * half
 
 
