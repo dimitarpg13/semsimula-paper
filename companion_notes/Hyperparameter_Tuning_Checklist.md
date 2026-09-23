@@ -80,7 +80,7 @@ Four consequences, each verified against the live 1.2e-03 log:
 3. **It is one-sided.** `-log(alpha)` is minimised as `alpha -> 1`, so it
    does not hold the channels at a target horizon; it pushes all five
    toward infinite memory. Channel 4 has saturated at exactly `1.000`.
-4. **The logged `fock&#95;reg` already includes lambda.** It reproduces
+4. **The logged `fock_reg` already includes lambda.** It reproduces
    `lam * sum(-log(alpha))` to four decimals at every logged step, so the
    logged 0.0099 is `lambda*R` with `R = 1.98`. Do not multiply again.
 
@@ -95,45 +95,45 @@ empirical claim about the live 1.2e-03 run, not a guess.
 
 | knob | current | binds? | evidence |
 | --- | --- | --- | --- |
-| `LR` | 1.2e-03 | **yes, swept** | 2.6% over 3e-04 at the decay boundary |
-| `WSD&#95;STABLE&#95;FRAC` | 0.60 | **untested, free** | decay ratio 0.879 in two arms; decay is where PPL drops |
-| `WSD&#95;WARMUP&#95;FRAC` | 0.05 | untested | 1,625 steps; no instability seen after it ends |
-| `WSD&#95;LR&#95;FLOOR` | `LR * 0.05` | untested | 6.00e-05 at the current LR |
-| `TARGET&#95;EFFECTIVE&#95;BATCH` | 32 | **likely** | 16,384 tok/step, unchanged while LR moved 4x |
-| `WEIGHT&#95;DECAY` | 0.01 | untested | applied to 57 tensors; 38 1-D tensors exempt |
+| `LR` | 1.2e-03 | **yes — biggest knob found** | **+10.8%** over 3e-04 on the full run; optimum not yet bracketed (§5 T0) |
+| `WSD_STABLE_FRAC` | 0.60 | **untested, free** | decay is where PPL drops, and how much it drops depends on LR (§6.2) |
+| `WSD_WARMUP_FRAC` | 0.05 | untested | 1,625 steps; no instability seen after it ends |
+| `WSD_LR_FLOOR` | `LR * 0.05` | untested | 6.00e-05 at the current LR |
+| `TARGET_EFFECTIVE_BATCH` | 32 | **likely** | 16,384 tok/step, unchanged while LR moved 4x |
+| `WEIGHT_DECAY` | 0.01 | untested | applied to 57 tensors; 38 1-D tensors exempt |
 | betas | (0.9, 0.95) | untested | hard-coded in the `AdamW` call, not a Cell 0 constant |
-| `GRAD&#95;CLIP` | 1.0 | no | `grad` runs 0.25-0.35, never near the cap |
-| `GRAD&#95;CLIP&#95;OVERRIDES['reverse&#95;channel&#95;scale']` | 0.1 | **yes, adversely** | clipped 20-45x on most steps |
-| `GRAD&#95;CLIP&#95;VPHI` | 0.3 | no | never tops the group table |
+| `GRAD_CLIP` | 1.0 | **depends on LR and depth** | 0.0% of steps at 1.2e-03, 4.2% at 3e-04, 36.2% at L=8 (§7.3) |
+| `GRAD_CLIP_OVERRIDES['reverse_channel_scale']` | 0.1 | **yes, adversely** | clipped 20-45x on most steps |
+| `GRAD_CLIP_VPHI` | 0.3 | no | never tops the group table |
 
 ### 3.2 Loss shaping
 
 | knob | current | binds? | evidence |
 | --- | --- | --- | --- |
-| `LAMBDA&#95;FOCK&#95;REG` | 5e-3 | **yes, weakly** | 0.23% of loss, rising 0.0075 -> 0.0099 against the task |
-| `LAMBDA&#95;V` | 1e-2 | **no — inert** | `v&#95;reg` logs 0.0000; contribution ~0 |
-| `REGISTER&#95;REPULSION&#95;COEFF` | 0.05 | marginal | `rep` ~0.0014, i.e. 0.03% of loss |
-| `FOCK&#95;REG&#95;EPS` | 1e-6 | no | only matters if some `alpha -> 0`; none has |
+| `LAMBDA_FOCK_REG` | 5e-3 | **yes, weakly** | 0.23% of loss, rising 0.0075 -> 0.0099 against the task |
+| `LAMBDA_V` | 1e-2 | **no — inert** | `v_reg` logs 0.0000; contribution ~0 |
+| `REGISTER_REPULSION_COEFF` | 0.05 | marginal | `rep` ~0.0014, i.e. 0.03% of loss |
+| `FOCK_REG_EPS` | 1e-6 | no | only matters if some `alpha -> 0`; none has |
 
 ### 3.3 Dynamics — physics, not optimisation
 
 | knob | current | binds? | evidence |
 | --- | --- | --- | --- |
-| `FIXED&#95;GAMMA` | 0.10 | swept once | `gamma&#95;sweep` in results, but never at this LR |
-| `LADDER&#95;T` | 8.0 | **held by design** | the ladder's controlled variable; moving it voids §2 of the protocol |
-| `LANGEVIN&#95;T` | 0.0 | untested | thermostat off |
-| `PRECISION&#95;LR&#95;MAX` | 1.0 | **yes, softly** | a tanh cap; `bproj&#95;sig` 84 means it is deeply saturated |
-| `CREATION&#95;LOGIT&#95;SCALE&#95;MAX` | 100.0 | not yet | `sig&#95;max` reached 60.02 at 1.2e-03; **absorbing** if touched |
+| `FIXED_GAMMA` | 0.10 | swept once | `gamma_sweep` in results, but never at this LR |
+| `LADDER_T` | 8.0 | **held by design** | the ladder's controlled variable; moving it voids §2 of the protocol |
+| `LANGEVIN_T` | 0.0 | untested | thermostat off |
+| `PRECISION_LR_MAX` | 1.0 | **yes, softly** | a tanh cap; `bproj_sig` 84 means it is deeply saturated |
+| `CREATION_LOGIT_SCALE_MAX` | 100.0 | not yet | `sig_max` reached 60.02 at 1.2e-03; **absorbing** if touched |
 
 #### 3.3.1 Two ceilings that are easy to misread
 
 Both are logged every step and neither means what its log line looks like.
 
-**`bproj_sig` is not the capped quantity.** `PRECISION&#95;LR&#95;MAX = 1.0`
+**`bproj_sig` is not the capped quantity.** `PRECISION_LR_MAX = 1.0`
 applies a **tanh soft cap** to each well's `||B_k||_F` at `sqrt(1.0)`, via
 `_bound_lowrank` in
 [`model_aniso_gaussian_vtheta.py`](../notebooks/conservative_arch/parf/model_aniso_gaussian_vtheta.py).
-The logged `bproj&#95;sig` is the **spectral norm of the `B_proj` weight
+The logged `bproj_sig` is the **spectral norm of the `B_proj` weight
 matrix** — the xi -> B generator — so 84 is not a violation of a cap of 1.0;
 the two are different objects. What 84 does mean is that the tanh is deeply
 saturated, so the gradient reaching B's *magnitude* is small and only its
@@ -159,7 +159,7 @@ The ceiling is **absorbing, not soft**: `sig_max == 100.0` exactly zeroes
 that register's gradient and freezes its sharpness permanently. Observed
 scaling:
 
-| arm | final `sig&#95;max` |
+| arm | final `sig_max` |
 | --- | ---: |
 | L=2 `'none'` @ 3e-04 | 38.00 @r18 |
 | L=2 `'attention'` @ 3e-04 | 43.81 @r20 |
@@ -174,17 +174,17 @@ mid-run maximum.
 Moving any of these breaks parameter-matching with the completed arms, so
 they are not tuning in the same sense. Listed for completeness.
 
-`TOP&#95;K=16`, `M=32` registers, `ANISO&#95;RANK=4`,
-`V&#95;THETA&#95;WELLS&#95;PER&#95;HEAD=8`, `V&#95;PHI&#95;MLP&#95;HIDDEN=128`,
-`V&#95;PHI&#95;N&#95;HEADS=4`, `XI&#95;OVERRIDE='5long'`,
-`XI&#95;CONTENT&#95;D&#95;K=48`.
+`TOP_K=16`, `M=32` registers, `ANISO_RANK=4`,
+`V_THETA_WELLS_PER_HEAD=8`, `V_PHI_MLP_HIDDEN=128`,
+`V_PHI_N_HEADS=4`, `XI_OVERRIDE='5long'`,
+`XI_CONTENT_D_K=48`.
 
 ### 3.5 Dead in the `'none'` arm
 
-`RELAX&#95;LAMBDA&#95;FIXED = 1.0` and every other `RELAX&#95;*` knob are
-inactive unless `FORCE&#95;RELAXATION != 'none'`. This is the "pinned lambda"
+`RELAX_LAMBDA_FIXED = 1.0` and every other `RELAX_*` knob are
+inactive unless `FORCE_RELAXATION != 'none'`. This is the "pinned lambda"
 of the conservativity note — it scales a **force** for `'attention'` and a
-**potential** for `'attention&#95;potential'`, which are different units with
+**potential** for `'attention_potential'`, which are different units with
 no principled match. It is a knob for the attention arms only.
 
 ---
@@ -211,7 +211,7 @@ monotonically because the short channels are collapsing against the barrier:
 | 4 | 0.999 | **1.000** | saturated; unbounded accumulator |
 
 Two channels want horizons of 1.5 and 2.0 tokens. That is a claim about the
-`XI&#95;OVERRIDE='5long'` preset being mismatched at this depth, and it is
+`XI_OVERRIDE='5long'` preset being mismatched at this depth, and it is
 measurable without any new run.
 
 ---
@@ -243,11 +243,11 @@ very likely win and leave the optimum still unbracketed, costing another
 
 - **Screening length:** full. See §1.
 - **Decision rule, recorded before the run:** below 64, go to 4.8e-3;
-  64-67, improving but flattening — 4.8e-3 only if `bproj&#95;sig` and the
+  64-67, improving but flattening — 4.8e-3 only if `bproj_sig` and the
   clip rate stay clean; 67-69, tied with 1.2e-03, lock it and close tuning;
   above 69 or any watchdog trigger or clip-hit above ~2%, bracketed, close.
 - **Watch, in priority order:**
-  1. **`sig&#95;max` against 100.0** — projected **~75** at 2.4e-3 (60.02 x
+  1. **`sig_max` against 100.0** — projected **~75** at 2.4e-3 (60.02 x
      1.26 per doubling, §3.3.1), so it should clear with ~25% margin. If it
      ever prints exactly `100.00`, **stop the run**: that register is in the
      absorbing state and its sharpness is frozen for good. Documented
@@ -255,7 +255,7 @@ very likely win and leave the optimum still unbracketed, costing another
      `optim.step()` rather than clamping in the forward pass.
   2. **clip-hit rate** — 0.0% is what makes the 1.2e-03 run clean; any
      return above zero re-opens the §7.3 confound.
-  3. **`bproj&#95;sig` near ~170** (twice the current 85) and whether it still
+  3. **`bproj_sig` near ~170** (twice the current 85) and whether it still
      saturates. Not a failure mode on its own — see §3.3.1 — but the
      saturation depth is the mechanism most likely to be flattening the LR
      response.
@@ -266,9 +266,13 @@ Ahead of T2-T5 because it is the only entry that costs no extra steps;
 behind T0 only because the LR it would be measured at is still moving.
 
 Move 0.60 -> 0.50 or 0.45, lengthening decay at **identical total compute**.
-The decay ratio is 0.8796 (`'none'`) and 0.8790 (`'attention'`) — reproducible
-to four digits across two arms — and decay is where the PPL actually falls.
-Nothing else on this list costs zero extra steps.
+Decay is where the PPL actually falls: 0.8796 (`'none'`) and 0.8790
+(`'attention'`) at 3e-04, reproducible to four digits across two arms — but
+**0.809 at 1.2e-03** on the same arm, so the ratio is a function of the
+learning rate and not a constant (§6.2). That is the argument for the sweep
+rather than against it: a longer decay at a high LR has more noise to remove
+than the 3e-04 pair suggests. Nothing else on this list costs zero extra
+steps.
 
 - **Screening length:** full. A shorter run changes the very thing being tested.
 - **Decision rule:** pre-register before running. Gains over ~2% adopt;
@@ -396,8 +400,8 @@ Asked before scheduling L=4, and answerable from runs already on disk.
 | L=8 | 67 | 76,673,824 |
 | L=2 | 57 | 76,698,784 |
 
-Within **0.03%**. `V&#95;THETA&#95;DEPTH&#95;CONDITION=True` shares the potential
-across layers and selects per layer with `depth&#95;code`, so `L` is not a
+Within **0.03%**. `V_THETA_DEPTH_CONDITION=True` shares the potential
+across layers and selects per layer with `depth_code`, so `L` is not a
 capacity knob — it is how many times the same operator is applied, at
 `dt = T/L`. That is the flow-vs-maps question of
 [`Composing_Single_Layer_Inferences_Flow_or_Maps.md`](Composing_Single_Layer_Inferences_Flow_or_Maps.md),
@@ -412,14 +416,23 @@ of all gradients leaves the update unchanged. What survives is a curvature
 effect — deeper composition, sharper landscape — which is real but weak, and
 LR is empirically far more depth-stable than width-stable.
 
-Cost settles the rest. §1 established that a 6,000-step probe mis-ranks; a
-trustworthy one runs to ~16,000, which at L=4 is **13h, half a full run**,
-to chase a knob that returned 2.6% at L=2. **Do not re-sweep LR per depth.**
+Cost settles the rest, though less comfortably than an earlier draft of this
+section claimed — it argued from a 2.6% LR gain, and the knob turned out to be
+worth **10.8%**. A knob that large is worth getting right, so the case now
+rests entirely on the transfer argument above rather than on the prize being
+small: §1 established that a 6,000-step probe mis-ranks, a trustworthy one
+runs to ~16,000, and at L=4 that is **13h, half a full run**.
+
+**Do not re-sweep LR per depth** — but the reason is that the ladder is valid
+at any *common* LR, not that LR is cheap to get wrong. If §7.2's premise
+fails and the optimum does move with depth, every ladder point inherits the
+error; the check for that is one LR probe at the far end of the ladder, not
+one per point.
 
 ### 7.3 Why `GRAD_CLIP` does *not* transfer
 
 A clip is a hard threshold, which is precisely what Adam's scale-invariance
-does not absorb. Same `GRAD&#95;CLIP = 1.0` in every arm:
+does not absorb. Same `GRAD_CLIP = 1.0` in every arm:
 
 | arm | lr | steps over the clip | median `grad` |
 | --- | ---: | ---: | ---: |
@@ -461,21 +474,21 @@ unknown part of that 6.8 PPL is the clip rather than the depth.
 | cost | ~1.48 s/step, 13.4h | ~2x | **~27h**, one Colab reconnect minimum |
 | clip-hit rate | **0.0%** at 1.2e-03 | unknown | the number this section exists to capture |
 | `alpha` drift | §4 | unknown | four layers now read the same shared xi channels |
-| `sig&#95;max` | 60.02 / 100.0 | unknown | one shared register pool, now written by 4 layers |
+| `sig_max` | 60.02 / 100.0 | unknown | one shared register pool, now written by 4 layers |
 
 The resonance criterion and the integrator stability guards genuinely relax
-at `dt = 2.0`, so none of those needs action. **`PRECISION&#95;LR&#95;MAX` does
+at `dt = 2.0`, so none of those needs action. **`PRECISION_LR_MAX` does
 not** — an earlier draft said it did. Per §3.3.1 it is a `tanh` cap on a
 *parameter* norm, with no `dt` in it, so depth neither tightens nor loosens
 it.
 
-`sig&#95;max` is the one to add to the L=4 watch list for a reason specific to
+`sig_max` is the one to add to the L=4 watch list for a reason specific to
 depth: the register pool is **shared**, so four layers now drive the same
 `lambda_k` that two did. If sharpening scales with the number of writers the
 way it scales with LR, L=4 could approach the absorbing ceiling from a
 direction the LR sweep never probed.
 
-`WSD&#95;STABLE&#95;FRAC`, batch and weight decay carry no depth dependence —
+`WSD_STABLE_FRAC`, batch and weight decay carry no depth dependence —
 **test them at L=2 where they cost 13h, then carry the winner up.**
 
 ### 7.5 Required at every ladder point, from L=4 onward
@@ -499,7 +512,7 @@ Pre-registered decision rule, recorded 2026-09-22:
 - **~10-15% at L=4** — interpolates cleanly between 4.2% and 36.2%. Note the
   confound in the results table and proceed.
 - **above ~25%** — the clip is doing more work than the depth is. Raise
-  `GRAD&#95;CLIP` until it stops binding at every depth, and **re-run both L=2
+  `GRAD_CLIP` until it stops binding at every depth, and **re-run both L=2
   points**, because their 4.2% and 7.5% are then not a common baseline.
 - **below ~7%** — depth is not driving the clip, the L=8 row was an artefact
   of the warm start, and this section closes.
@@ -510,9 +523,9 @@ clips on 0.0% of steps**, so the honest comparison for L=4 is against zero,
 not against 4.2%. Any non-zero rate at L=4 and 1.2e-03 is itself the depth
 signal — the bands above stay as a fallback for a re-run at 3e-04.
 
-**Also record `sig&#95;max` and which register holds it.** Per §7.4 the
+**Also record `sig_max` and which register holds it.** Per §7.4 the
 register pool is shared, so depth changes how many layers write the same
-`lambda_k`. `sig&#95;max == CREATION&#95;LOGIT&#95;SCALE&#95;MAX` at any ladder
+`lambda_k`. `sig_max == CREATION_LOGIT_SCALE_MAX` at any ladder
 point is a stop condition, not a diagnostic (§3.3.1).
 
 ### 7.6 Sequencing
@@ -529,7 +542,7 @@ adds a point to a curve.
 | date | knob | range | screening | result |
 | --- | --- | --- | --- | --- |
 | 2026-09-21 | `LR` | 3e-04, 6e-04, 1.2e-03 | 6,000-step probe | ranked 1.2e-03 first, margin 15.1% — **ranking right, margin wrong four ways over**, see §1 |
-| 2026-09-22 | `LR` | 1.2e-03 | **full 32,500** | **75.09 -> 66.98, +10.8%.** Ratio vs GPT-2 1.507 -> 1.345. Decay 19.1% vs the reference's 11.6%. Clean: 0 watchdog, 0.0% clip, `bproj&#95;sig` saturated at 85.4 |
+| 2026-09-22 | `LR` | 1.2e-03 | **full 32,500** | **75.09 -> 66.98, +10.8%.** Ratio vs GPT-2 1.507 -> 1.345. Decay 19.1% vs the reference's 11.6%. Clean: 0 watchdog, 0.0% clip, `bproj_sig` saturated at 85.4 |
 | 2026-09-22 | `LR` = 2.4e-03 | — | full, queued | **T0 in §5.** Pre-registered 63-66, centre ~64 |
 
 **Forecast record for the 1.2e-03 run**, kept because the failure was

@@ -763,6 +763,45 @@ These are not confirmed-fatal on every GitHub Mermaid version, but each one has 
 
 **Rule:** when your KaTeX-rich document also contains Mermaid diagrams, prefer ASCII inside the diagram labels and keep the Greek / unicode in the surrounding KaTeX prose. The diagram is for structure; the math beside it is for symbols.
 
+### 18a. `&#95;` is a **Mermaid-label** fix, not a general underscore escape
+
+Observed 2026-09-22, in a hand-written table that rendered as literal
+`WSD&#95;STABLE&#95;FRAC` across ten rows.
+
+The entity works in a Mermaid label because Mermaid decodes it *after* its
+lexer has run. **Markdown code spans decode nothing** — text between
+backticks is taken literally, so an entity written there survives to the page
+as the seven characters `&#95;`:
+
+| context | write | renders |
+| --- | --- | --- |
+| Mermaid quoted label | `A["h&#95;t"]` | `h_t` — correct, this is §18's rule |
+| Markdown code span | `` `WSD&#95;STABLE&#95;FRAC` `` | **`WSD&#95;STABLE&#95;FRAC`** — broken |
+| Markdown code span | `` `WSD_STABLE_FRAC` `` | `WSD_STABLE_FRAC` — correct |
+| Markdown prose, no backticks | `V&#95;theta` | `V_theta` — correct, and needed |
+
+**Rule:** inside backticks, underscores are already literal — write them
+plainly and escape nothing. Reach for `&#95;` only in a Mermaid node label,
+or in unbackticked prose where a pair of underscores would otherwise be read
+as emphasis. Table cells are not themselves special; what matters is whether
+the underscore sits inside a code span.
+
+Worth knowing that the linter does not catch this — an entity inside a code
+span is valid Markdown, just not what anyone meant. To sweep a file:
+
+```bash
+python3 - FILE.md <<'EOF'
+import sys
+fence = False
+for n, l in enumerate(open(sys.argv[1]), 1):
+    if l.lstrip().startswith('```'): fence = not fence; continue
+    if fence or '&#95;' not in l: continue
+    # odd-indexed backtick segments are inside code spans
+    if any('&#95;' in seg for i, seg in enumerate(l.split('`')) if i % 2):
+        print(f'{n}: {l.rstrip()}')
+EOF
+```
+
 **Underscores that must stay visible** (filenames, identifiers). Do not write a literal `_` and do not write `\_`. Use the HTML numeric entity, which GitHub's Mermaid decodes after the label has been lexed:
 
 ```text
