@@ -189,6 +189,25 @@ as an upper bound on the improvement.
 
 #### The attribution, which is the point of the run
 
+> **SUSPENDED 2026-09-22 — the sign has flipped.** Everything in this
+> subsection was measured with **both arms at 3e-04**. Tuning `'none'` alone
+> to 1.2e-03 took it to **66.98**, which *beats* `'attention'`'s 68.33 by
+> 2.0% — so the 6.76 credited to the exchange field below is not merely
+> smaller than stated, it points the other way at the only learning rate
+> where either arm has been tuned.
+>
+> | comparison | result |
+> | --- | --- |
+> | both arms @ 3e-04 | `'attention'` better by 9.0% |
+> | `'none'` tuned only | **`'none'` better by 2.0%** |
+>
+> This does **not** show the exchange field is worthless — `'attention'` has
+> never been tuned either and may gain as much or more. It does mean no
+> figure in this subsection may be quoted until L=2 `'attention'` has run at
+> the winning LR. See §6.4 of
+> [`Hyperparameter_Tuning_Checklist.md`](Hyperparameter_Tuning_Checklist.md).
+
+
 | component | PPL | share |
 | --- | ---: | ---: |
 | exchange field | **6.76** | 51% |
@@ -295,12 +314,37 @@ the numbers are an **upper bound on the gap**, not a measurement of it. The
 LR probe in §3 is the first step at closing that, and until it lands no ratio
 in this document should be quoted without the qualifier.
 
+**The full inventory of what is unswept now lives in
+[`Hyperparameter_Tuning_Checklist.md`](Hyperparameter_Tuning_Checklist.md)**,
+together with the evidence for which knobs actually bind.
+
+**The LR sweep has landed, and it was worth far more than this section
+assumed.** L=2 `'none'` at 1.2e-03 settles at **66.98** against 75.09 —
+**+10.8%**, moving the ratio from 1.507 to **1.345** on a single knob. The
+paragraph above guessed "5-15%" for LR tuning and that was right; the guess
+that tuning "is very unlikely to close this on its own" still stands, but
+with much less room than it had. The optimum is not bracketed — 2.4e-03 is
+queued as T0 in §5 of that document, forecast 63-66.
+
+So this section's qualifier does not merely stand, it **binds harder**: every
+ratio in this document was measured at 3e-04, every one of them is now known
+to be pessimistic by roughly a tenth, and none should be quoted without
+saying so.
+
 What the qualifier does **not** license: closing 68.33 to 49.81 needs **27%**,
 and LR tuning on a well-behaved setup typically buys 5-15%. Tuning is very
 unlikely to close this on its own, and claiming otherwise in advance would be
 the mirror image of the error this section exists to correct.
 
 ## 6. Open risks
+
+- **`GRAD_CLIP = 1.0` is a depth-dependent intervention, and it is not
+  recorded.** It fires on 4.2% of steps at L=2 `'none'` and 36.2% at L=8 —
+  nine times the rate, at a *lower* LR — so part of what this ladder
+  attributes to depth is the clip. §7 of
+  [`Hyperparameter_Tuning_Checklist.md`](Hyperparameter_Tuning_Checklist.md)
+  has the table, the caveats and a pre-registered rule; **from L=4 onward
+  every ladder point must report its clip-hit rate** in §5.
 
 - **lambda is uncalibrated for the potential arm.** For `'attention'` it
   scales a force; for `'attention_potential'` a potential whose gradient is
