@@ -96,7 +96,7 @@ empirical claim about the live 1.2e-03 run, not a guess.
 | knob | current | binds? | evidence |
 | --- | --- | --- | --- |
 | `LR` | 1.2e-03 | **yes — biggest knob found; CLOSED** | **+10.8%** over 3e-04; bracketed by 2.4e-03 at 69.59 (§5 T0) |
-| `WSD_STABLE_FRAC` | 0.60 | **untested, free** | decay is where PPL drops, and how much it drops depends on LR (§6.2) |
+| `WSD_STABLE_FRAC` | 0.60 | **no — swept, CLOSED** | 0.50 gave a null (t = -0.09); §5 T1 |
 | `WSD_WARMUP_FRAC` | 0.05 | untested | 1,625 steps; no instability seen after it ends |
 | `WSD_LR_FLOOR` | `LR * 0.05` | untested | 6.00e-05 at the current LR |
 | `TARGET_EFFECTIVE_BATCH` | 32 | **likely** | 16,384 tok/step, unchanged while LR moved 4x |
@@ -278,73 +278,50 @@ model trains worse at constant LR, the decay then works harder than in any
 other arm, and still cannot recover the deficit. Treat pre-decay as the
 quantity that turns, not the decay fraction.
 
-### T1. `WSD_STABLE_FRAC` — **NEXT, 2026-09-23.** Two paired branches, ~15.6h
+### T1. `WSD_STABLE_FRAC` — **CLOSED 2026-09-24. Keep 0.60.**
 
-Runs **before** the remaining ladder points. Ladder comparisons are valid at
-any *common* schedule, so this does not strictly block them — but T0 is the
-worked example of what deferring a knob costs: if the schedule later moves by
-more than ~2%, L=2 `'attention'`, L=1 and L=4 all become pilots rather than
-results, which is ~47h to redo against 15.6h to settle now.
+| arm | settled | vs control |
+| --- | ---: | ---: |
+| **0.60 — control** | **66.98** | — |
+| 0.50 (branch from step 15,000) | 68.34 | +2.04% |
 
-#### It does not need a full run
+Settled is the mean of the last three evals, the convention of §5 of the
+ladder protocol. Lengthening the decay window from 11,375 steps to 14,625
+did not help. Run was clean: 0.0% clip-hit, `sig_max` peak 59.31 against the
+100.0 ceiling, zero watchdog triggers, zero spike captures.
 
-`lr_schedule(step)` is a pure function of `step`, `TOTAL_STEPS`,
-`WSD_WARMUP_FRAC` and `WSD_STABLE_FRAC`, and **below `stable_end` it returns
-a constant `LR` regardless of `WSD_STABLE_FRAC`**. Every candidate schedule
-therefore has a bit-identical trajectory up to the earliest `stable_end`, so
-a mid-stable checkpoint is an exact branch point.
+**0.70 was not run.** The 0.50 arm found no gain from moving off 0.60, and a
+shorter decay was judged unlikely to do better; the schedule is treated as a
+flat plateau and the knob is closed rather than half-swept.
 
-| `WSD&#95;STABLE&#95;FRAC` | `stable&#95;end` | decay window | branch from | steps to run |
-| ---: | ---: | ---: | ---: | ---: |
-| 0.50 | 17,875 | 14,625 | step 15,000 | 17,500 |
-| **0.60 — control, already run** | 21,125 | 11,375 | — | — |
-| 0.70 | 24,375 | 8,125 | step 15,000 | 17,500 |
+#### What the number can and cannot support
 
-Branch both from the **step-15,000 periodic checkpoint of the 1.2e-03 arm**:
-below 17,875 so the short-decay arm is valid, and below 21,125 so the
-long-stable arm can hold peak LR past where the source began decaying.
-~7.8h each at the measured ~1.6 s/step.
+Recorded because it bears on how this entry should be quoted. Per-eval
+scatter in the tail is sd ~1.65 PPL, so a three-eval mean carries a standard
+error of about 0.95 and the +2.04% is roughly 1.4 sd. Measured across the
+22 evals from step 22,000 — where the two schedules genuinely differ — the
+paired difference is **-0.03, se 0.35, t = -0.09**, 95% CI [-0.72, +0.66],
+against a known-null window (shared schedule, 15,500-17,500) of sd 1.54.
 
-This is also a **better** design than two fresh runs, not merely a cheaper
-one: identical weights at the branch point make the three-way comparison
-paired, removing all pre-15,000 variance. The 0.60 control is already in hand.
+So the honest reading is **"0.50 is not better than 0.60"**, not "0.50 is
+2% worse". Both support the same decision. The distinction matters only if
+someone later quotes the 2.04% as an effect size, which it is not.
 
-#### Test both directions — the recorded direction was an assumption
+This also bounds what the last-three convention can resolve anywhere in this
+programme: **effects below roughly 2% are not separable from eval noise on
+it.** That is comfortably fine for the LR sweep (§5 T0 measured t = -11.79)
+and for anything else of that magnitude; it is not fine for schedule-scale
+differences, which is why this entry closes on a null rather than a ranking.
 
-An earlier draft said "move 0.60 -> 0.50 or 0.45, lengthening decay". That
-had no evidence behind it. What the completed arms actually show:
+#### The branch method worked, and is reusable
 
-- **The tail is flat, not harmful.** All three arms appear to degrade after
-  ~31,000, but the "best" values are single lucky evals — at 3e-04 the 31,000
-  eval is 73.20 and the next is 75.03 on a flat plateau, and the two 3e-04
-  arms have their outlier at the *same* step.
-- **The decay's last third contributing ~15%** (52/34/15, 52/32/16, 42/44/14)
-  is **not** evidence the window is too long: a cosine has zero derivative at
-  `progress = 1`, so the last third is flat at any window length.
-
-So there is no measurement favouring either direction, and against the
-recorded one: WSD practice usually puts decay at 10-20% of training and this
-schedule is already at **35%**, on the long side. Run 0.50 and 0.70.
-
-#### Required notebook change first
-
-`WSD_STABLE_FRAC` is **not in `_variant_tag`** — it carries
-`xi/topk/dt/mh/aniso/.../idt/lr/mech` and nothing about the schedule, so both
-branches and the source run would resolve to the same folder and overwrite
-each other. Add it conditionally, in the same style as the LR component so
-completed runs keep their folders:
-
-```python
-if abs(WSD_STABLE_FRAC - 0.60) > 1e-12:
-    _variant_parts.append(f'sf{WSD_STABLE_FRAC:g}'.replace('.', 'p'))
-```
-
-- **Screening length:** full schedule, from the branch point. A shorter
-  horizon changes the very thing being tested.
-- **Decision rule, recorded before the runs:** best arm beating 0.60 by more
-  than 2% is adopted and the ladder runs at it; under 1% either way, keep
-  0.60 and close the schedule permanently; 1-2% adopt only if the winner is
-  0.70, since a shorter decay also buys stable-phase steps for free.
+The run cost **7.8h instead of 14.4h** by resuming from the control's
+step-15,000 checkpoint, valid because `lr_schedule` returns a constant `LR`
+below `stable_end` regardless of `WSD_STABLE_FRAC` (see Cell 1d). The
+validity check confirms it: across the window where both schedules are
+identical, the branch tracked the control at mean **-0.31, sd 1.54** — pure
+batch noise, no systematic drift. Any future knob that only takes effect
+after a known step can be tested the same way.
 
 ### T2. Batch x LR jointly — **the one real interaction**
 
@@ -535,6 +512,29 @@ This also qualifies the informal "L=2 beats L=8" reading (75.09 against
 81.58): if L=8 spends a third of its steps clipped and L=2 spends 4%, an
 unknown part of that 6.8 PPL is the clip rather than the depth.
 
+### 7.3a Depth can change the model, not just the optimisation — **L=1**
+
+§7.1 says depth adds no parameters, so a ladder point is the same operator
+applied more times. **That stops being true at L=1.** Every
+`creation&#95;gate&#95;qkv` parameter receives exactly zero gradient there
+(against 3.18e-05 to 1.97e-02 at L=2), and the live L=1 run holds
+`sig&#95;max` at `CREATION&#95;LOGIT&#95;SCALE&#95;INIT = 14.2857` across all
+12 readings of its first 600 steps with the register index pinned at 0,
+while both L=2 arms differentiate within 50 steps.
+
+So L=1 is the architecture **with the Fock register mechanism switched
+off** — present, computed, regularised through the repulsion term, and
+untrainable. §6.1 of
+[`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md)
+carries the evidence, the consequences and the explicit warning that the
+mechanism is **not established** and no fix should be designed on top of it.
+
+Two consequences for this document. Any knob measured at L=1 is measured on
+a different model, so **nothing tuned there transfers up** — the reverse of
+§7.2's conclusion for LR. And `REGISTER&#95;REPULSION&#95;COEFF` (§3.2,
+"marginal") is the *only* gradient path to register content at L=1, which
+makes it structural there rather than marginal.
+
 ### 7.4 What genuinely changes at L=4
 
 | | L=2 | L=4 | consequence |
@@ -557,8 +557,9 @@ depth: the register pool is **shared**, so four layers now drive the same
 way it scales with LR, L=4 could approach the absorbing ceiling from a
 direction the LR sweep never probed.
 
-`WSD_STABLE_FRAC`, batch and weight decay carry no depth dependence —
-**test them at L=2 where they cost 13h, then carry the winner up.**
+`WSD_STABLE_FRAC` is closed at 0.60 (§5 T1). Batch and weight decay carry no
+depth dependence — **test them at L=2, where they cost 13h, then carry the
+winner up.**
 
 ### 7.5 Required at every ladder point, from L=4 onward
 
@@ -614,6 +615,7 @@ adds a point to a curve.
 | 2026-09-22 | `LR` 1.2e-03 | **full 32,500** | **75.09 -> 66.98, +10.8%.** Ratio vs GPT-2 1.507 -> 1.345. Decay 19.1% vs the reference's 11.6%. Clean: 0 watchdog, 0.0% clip, `bproj_sig` saturated at 85.4 |
 | 2026-09-23 | `LR` = 2.4e-03 | full 32,500 | **69.59 — WORSE by 3.9%.** Optimum bracketed; quadratic vertex 1.13e-03. Pre-registered 63-66: **wrong in direction** (§5 T0) |
 | — | `LR` **CLOSED** | — | **1.2e-03 is the ladder LR.** Ratio vs GPT-2 **1.345** |
+| 2026-09-24 | `WSD&#95;STABLE&#95;FRAC` = 0.50 | branch from step 15,000, 17,500 steps | **68.34 vs 66.98** (+2.04% on last-3; t = -0.09 over 22 evals, i.e. a null). **Keep 0.60**, 0.70 not run, T1 closed |
 
 **Forecast record**, kept because the two failures were systematic and point
 in *opposite* directions:

@@ -1,0 +1,796 @@
+[no-decay-1d] weight_decay=0.01 on 57 tensors (76,698,784 params); 0.0 on 38 1-D tensors (71,472 params, incl. log_tau / reverse_channel_scale / logit_scale / depth_code)
+Optimizer: AdamW
+  CUDA after optimiser: 83.0 GB free / 85.1 GB
+Resuming from checkpoint at step 15,000: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn_step15000.pt
+[resume] loaded 98/98 tensors  missing=0  unexpected=0
+  Optimizer state restored.
+  Model loaded. Previous PPL: 86.57
+
+============================================================
+CfC/BAOAB [baoab_cfc_lowrank]: steps 15,001 -> 32,500
+  batch=16 x accum=2 (eff=32)
+  block=512  lr=0.0012  grad_clip=1.0
+  schedule: WSD: warmup 0->1,625, stable 1,625->17,875, decay 17,875->32,500, floor=6.00e-05
+  d=384  L=2  M=32
+  fock-reg: lambda=0.005  eps=1e-06
+  integrator: baoab_cfc_lowrank  (cfg.integrator=baoab_cfc_lowrank, analytic V_theta force=True, thermostat T=0)
+  watchdog: threshold=50.0 patience=200 hard_trigger=500.0
+  spike-capture: on  capture_threshold=100.0  keep=12
+  per-group clip: default=1.0  overrides={'V_phi': 0.3, 'log_tau': 0.3, 'creation_gate_qkv.logit_scale': 0.3, 'creation_gate': 0.3, 'destruction_gate': 0.3, 'reverse_channel_scale': 0.1, 'reverse_ch': 0.1, 'register': 0.3, 'depth_code': 0.25}
+  post-resume CUDA cache warmup: empty_cache() every 50 steps for the first 1000 steps of each run_training() call (re-arms on every fresh resume, first one starts at step 15,000)
+  reverse channel: stable (QK-norm + soft-norm + pre-LN)  warmup=4000 forwards
+============================================================
+
+[clip-then-sum] active for groups ['E', 'P'] (2 param(s) total), threshold=0.3
+[tau-floor] no creation_gate_qkv.log_tau on this model; skipped
+[resonance] wall monitor armed, logging every 500 steps (integrator module: model_parf_multixi)
+step   15050/32500  ntp=4.4333  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.29  rep=0.0014  top[override:reverse_channel_scale]=1.2  dc_ratio=0.11  bproj_sig=73.83  sig_max=50.341@r4  gamma=0.100  alpha=[0.333,0.529,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  76s  (~7.4h remaining)
+step   15100/32500  ntp=4.4444  v_reg=0.0000  fock_reg=0.0095  lr=1.20e-03  grad=0.35  rep=0.0015  top[override:reverse_channel_scale]=1.3  dc_ratio=0.12  bproj_sig=73.92  sig_max=49.983@r4  gamma=0.100  alpha=[0.333,0.530,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=22.9GB  mem_peak=22.2GB  151s  (~7.3h remaining)
+step   15150/32500  ntp=4.4519  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.34  rep=0.0013  top[override:reverse_channel_scale]=5.9  dc_ratio=0.03  bproj_sig=74.00  sig_max=50.118@r4  gamma=0.100  alpha=[0.333,0.530,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.0GB  mem_peak=22.2GB  227s  (~7.3h remaining)
+step   15200/32500  ntp=4.4364  v_reg=0.0000  fock_reg=0.0095  lr=1.20e-03  grad=0.34  rep=0.0014  top[override:reverse_channel_scale]=1.8  dc_ratio=0.09  bproj_sig=74.14  sig_max=50.306@r4  gamma=0.100  alpha=[0.333,0.529,0.860,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  302s  (~7.3h remaining)
+step   15250/32500  ntp=4.4355  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.30  rep=0.0013  top[override:reverse_channel_scale]=2.7  dc_ratio=0.06  bproj_sig=74.18  sig_max=50.071@r4  gamma=0.100  alpha=[0.333,0.529,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.0GB  mem_peak=22.2GB  378s  (~7.2h remaining)
+step   15300/32500  ntp=4.4456  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.26  rep=0.0014  top[override:reverse_channel_scale]=3.7  dc_ratio=0.03  bproj_sig=74.21  sig_max=49.934@r4  gamma=0.100  alpha=[0.332,0.529,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  453s  (~7.2h remaining)
+step   15350/32500  ntp=4.4351  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.27  rep=0.0015  top[override:reverse_channel_scale]=1.5  dc_ratio=0.08  bproj_sig=74.29  sig_max=49.807@r4  gamma=0.100  alpha=[0.332,0.530,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  528s  (~7.2h remaining)
+step   15400/32500  ntp=4.4073  v_reg=0.0000  fock_reg=0.0095  lr=1.20e-03  grad=0.28  rep=0.0014  top[override:reverse_channel_scale]=1.2  dc_ratio=0.11  bproj_sig=74.38  sig_max=50.017@r4  gamma=0.100  alpha=[0.332,0.532,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.0GB  mem_peak=22.2GB  604s  (~7.2h remaining)
+step   15450/32500  ntp=4.4260  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.28  rep=0.0014  top[override:reverse_channel_scale]=1.8  dc_ratio=0.07  bproj_sig=74.44  sig_max=50.242@r4  gamma=0.100  alpha=[0.334,0.529,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  679s  (~7.1h remaining)
+step   15500/32500  ntp=4.4303  v_reg=0.0000  fock_reg=0.0095  lr=1.20e-03  grad=0.28  rep=0.0013  top[override:reverse_channel_scale]=3.9  dc_ratio=0.04  bproj_sig=74.55  sig_max=50.218@r4  gamma=0.100  alpha=[0.334,0.531,0.860,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  755s  (~7.1h remaining)
+[resonance] step   15500  EMPTY SUMMARY -- no substep hook fired. This is a MISSING diagnostic, not a passing one. Check that semsimula_diag patches the substep 'baoab_cfc_lowrank' actually calls.
+    [evaluate] iter 0/40  mem_alloc=7.73GB  mem_resv=8.11GB
+    [evaluate] iter 10/40  mem_alloc=7.73GB  mem_resv=8.11GB
+    [evaluate] iter 20/40  mem_alloc=7.73GB  mem_resv=8.13GB
+    [evaluate] iter 30/40  mem_alloc=7.73GB  mem_resv=8.13GB
+    [evaluate] iter 39/40  mem_alloc=7.73GB  mem_resv=8.13GB
+    [evaluate] mem before=6.31GB  after=7.73GB  peak_during=23.30GB  trend(every 10 iters)=[7.73, 7.73, 7.73, 7.73, 7.73]GB
+>>> EVAL step 15,500  val_loss=4.4659  val_ppl=87.00  best=87.00  *** NEW BEST ***  (791s)
+  Checkpoint saved: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn_step15500_best.pt  (PPL=87.00)
+  Canonical best: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn_best.pt
+step   15550/32500  ntp=4.4296  v_reg=0.0000  fock_reg=0.0095  lr=1.20e-03  grad=0.29  rep=0.0013  top[override:reverse_channel_scale]=3.7  dc_ratio=0.04  bproj_sig=74.63  sig_max=50.738@r4  gamma=0.100  alpha=[0.334,0.531,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=23.3GB  875s  (~7.5h remaining)
+step   15600/32500  ntp=4.4325  v_reg=0.0000  fock_reg=0.0095  lr=1.20e-03  grad=0.27  rep=0.0013  top[override:reverse_channel_scale]=1.1  dc_ratio=0.13  bproj_sig=74.71  sig_max=51.015@r4  gamma=0.100  alpha=[0.334,0.531,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  950s  (~7.4h remaining)
+step   15650/32500  ntp=4.4571  v_reg=0.0000  fock_reg=0.0095  lr=1.20e-03  grad=0.29  rep=0.0014  top[override:reverse_channel_scale]=4.1  dc_ratio=0.04  bproj_sig=74.77  sig_max=51.236@r4  gamma=0.100  alpha=[0.333,0.531,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  1026s  (~7.4h remaining)
+step   15700/32500  ntp=4.4337  v_reg=0.0000  fock_reg=0.0095  lr=1.20e-03  grad=0.26  rep=0.0013  top[override:reverse_channel_scale]=0.9  dc_ratio=0.13  bproj_sig=74.83  sig_max=51.281@r4  gamma=0.100  alpha=[0.333,0.530,0.860,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.0GB  mem_peak=22.2GB  1101s  (~7.3h remaining)
+step   15750/32500  ntp=4.4259  v_reg=0.0000  fock_reg=0.0095  lr=1.20e-03  grad=0.34  rep=0.0014  top[override:reverse_channel_scale]=6.5  dc_ratio=0.02  bproj_sig=74.96  sig_max=51.414@r4  gamma=0.100  alpha=[0.333,0.530,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  1177s  (~7.3h remaining)
+step   15800/32500  ntp=4.4206  v_reg=0.0000  fock_reg=0.0095  lr=1.20e-03  grad=0.26  rep=0.0013  top[override:reverse_channel_scale]=2.6  dc_ratio=0.05  bproj_sig=75.01  sig_max=51.296@r4  gamma=0.100  alpha=[0.333,0.529,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  1252s  (~7.3h remaining)
+step   15850/32500  ntp=4.4314  v_reg=0.0000  fock_reg=0.0095  lr=1.20e-03  grad=0.27  rep=0.0013  top[override:reverse_channel_scale]=2.1  dc_ratio=0.06  bproj_sig=75.06  sig_max=51.556@r4  gamma=0.100  alpha=[0.335,0.529,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  1327s  (~7.2h remaining)
+step   15900/32500  ntp=4.4162  v_reg=0.0000  fock_reg=0.0095  lr=1.20e-03  grad=0.31  rep=0.0013  top[override:reverse_channel_scale]=2.8  dc_ratio=0.06  bproj_sig=75.04  sig_max=51.957@r4  gamma=0.100  alpha=[0.333,0.528,0.860,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  1403s  (~7.2h remaining)
+step   15950/32500  ntp=4.4191  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.31  rep=0.0014  top[override:reverse_channel_scale]=1.5  dc_ratio=0.10  bproj_sig=75.11  sig_max=51.814@r4  gamma=0.100  alpha=[0.335,0.529,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  1478s  (~7.2h remaining)
+step   16000/32500  ntp=4.4169  v_reg=0.0000  fock_reg=0.0095  lr=1.20e-03  grad=0.28  rep=0.0013  top[override:reverse_channel_scale]=2.1  dc_ratio=0.07  bproj_sig=75.15  sig_max=52.113@r4  gamma=0.100  alpha=[0.334,0.527,0.860,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  1553s  (~7.1h remaining)
+[resonance] step   16000  EMPTY SUMMARY -- no substep hook fired. This is a MISSING diagnostic, not a passing one. Check that semsimula_diag patches the substep 'baoab_cfc_lowrank' actually calls.
+    [evaluate] iter 0/40  mem_alloc=7.73GB  mem_resv=8.17GB
+    [evaluate] iter 10/40  mem_alloc=7.73GB  mem_resv=8.15GB
+    [evaluate] iter 20/40  mem_alloc=7.73GB  mem_resv=8.17GB
+    [evaluate] iter 30/40  mem_alloc=7.73GB  mem_resv=8.15GB
+    [evaluate] iter 39/40  mem_alloc=7.73GB  mem_resv=8.15GB
+    [evaluate] mem before=6.31GB  after=7.73GB  peak_during=23.30GB  trend(every 10 iters)=[7.73, 7.73, 7.73, 7.73, 7.73]GB
+>>> EVAL step 16,000  val_loss=4.4439  val_ppl=85.11  best=85.11  *** NEW BEST ***  (1590s)
+  Checkpoint saved: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn_step16000_best.pt  (PPL=85.11)
+  Canonical best: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn_best.pt
+step   16050/32500  ntp=4.4253  v_reg=0.0000  fock_reg=0.0095  lr=1.20e-03  grad=0.28  rep=0.0013  top[override:reverse_channel_scale]=1.7  dc_ratio=0.08  bproj_sig=75.27  sig_max=51.894@r4  gamma=0.100  alpha=[0.334,0.527,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=23.3GB  1670s  (~7.3h remaining)
+step   16100/32500  ntp=4.4138  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.28  rep=0.0014  top[override:reverse_channel_scale]=2.1  dc_ratio=0.07  bproj_sig=75.31  sig_max=51.781@r4  gamma=0.100  alpha=[0.333,0.527,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  1746s  (~7.2h remaining)
+step   16150/32500  ntp=4.4285  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.34  rep=0.0014  top[override:reverse_channel_scale]=1.1  dc_ratio=0.16  bproj_sig=75.40  sig_max=52.247@r4  gamma=0.100  alpha=[0.334,0.528,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  1821s  (~7.2h remaining)
+step   16200/32500  ntp=4.4159  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.26  rep=0.0013  top[override:reverse_channel_scale]=1.3  dc_ratio=0.11  bproj_sig=75.50  sig_max=52.689@r4  gamma=0.100  alpha=[0.333,0.527,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  1897s  (~7.2h remaining)
+step   16250/32500  ntp=4.4136  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.27  rep=0.0013  top[override:reverse_channel_scale]=2.8  dc_ratio=0.05  bproj_sig=75.58  sig_max=52.415@r4  gamma=0.100  alpha=[0.333,0.526,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  1972s  (~7.1h remaining)
+step   16300/32500  ntp=4.4046  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.33  rep=0.0018  top[override:reverse_channel_scale]=4.0  dc_ratio=0.03  bproj_sig=75.64  sig_max=52.358@r4  gamma=0.100  alpha=[0.334,0.528,0.860,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  2048s  (~7.1h remaining)
+step   16350/32500  ntp=4.4081  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.26  rep=0.0013  top[override:reverse_channel_scale]=0.2  dc_ratio=0.65  bproj_sig=75.74  sig_max=52.607@r4  gamma=0.100  alpha=[0.332,0.529,0.860,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  2123s  (~7.1h remaining)
+step   16400/32500  ntp=4.4158  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.29  rep=0.0013  top[override:reverse_channel_scale]=3.7  dc_ratio=0.04  bproj_sig=75.81  sig_max=52.419@r4  gamma=0.100  alpha=[0.333,0.528,0.860,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  2199s  (~7.0h remaining)
+step   16450/32500  ntp=4.4149  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.28  rep=0.0013  top[override:reverse_channel_scale]=3.0  dc_ratio=0.05  bproj_sig=75.86  sig_max=52.582@r4  gamma=0.100  alpha=[0.333,0.528,0.860,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  2274s  (~7.0h remaining)
+step   16500/32500  ntp=4.4128  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.30  rep=0.0014  top[override:reverse_channel_scale]=4.2  dc_ratio=0.04  bproj_sig=75.83  sig_max=52.338@r4  gamma=0.100  alpha=[0.333,0.528,0.860,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  2349s  (~7.0h remaining)
+[resonance] step   16500  EMPTY SUMMARY -- no substep hook fired. This is a MISSING diagnostic, not a passing one. Check that semsimula_diag patches the substep 'baoab_cfc_lowrank' actually calls.
+    [evaluate] iter 0/40  mem_alloc=7.73GB  mem_resv=8.17GB
+    [evaluate] iter 10/40  mem_alloc=7.73GB  mem_resv=8.17GB
+    [evaluate] iter 20/40  mem_alloc=7.73GB  mem_resv=8.17GB
+    [evaluate] iter 30/40  mem_alloc=7.73GB  mem_resv=8.17GB
+    [evaluate] iter 39/40  mem_alloc=7.73GB  mem_resv=8.19GB
+    [evaluate] mem before=6.31GB  after=7.73GB  peak_during=23.30GB  trend(every 10 iters)=[7.73, 7.73, 7.73, 7.73, 7.73]GB
+>>> EVAL step 16,500  val_loss=4.4335  val_ppl=84.23  best=84.23  *** NEW BEST ***  (2386s)
+  Checkpoint saved: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn_step16500_best.pt  (PPL=84.23)
+  Canonical best: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn_best.pt
+step   16550/32500  ntp=4.4054  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.29  rep=0.0013  top[override:reverse_channel_scale]=1.6  dc_ratio=0.08  bproj_sig=75.93  sig_max=52.213@r4  gamma=0.100  alpha=[0.334,0.526,0.860,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=23.3GB  2466s  (~7.0h remaining)
+step   16600/32500  ntp=4.4060  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.26  rep=0.0013  top[override:reverse_channel_scale]=3.4  dc_ratio=0.04  bproj_sig=75.97  sig_max=53.014@r4  gamma=0.100  alpha=[0.334,0.527,0.861,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  2541s  (~7.0h remaining)
+step   16650/32500  ntp=4.3938  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.27  rep=0.0013  top[override:reverse_channel_scale]=1.8  dc_ratio=0.07  bproj_sig=76.04  sig_max=53.634@r4  gamma=0.100  alpha=[0.333,0.527,0.860,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  2617s  (~7.0h remaining)
+step   16700/32500  ntp=4.4063  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.27  rep=0.0013  top[override:reverse_channel_scale]=3.6  dc_ratio=0.04  bproj_sig=76.11  sig_max=53.819@r4  gamma=0.100  alpha=[0.334,0.526,0.860,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  2692s  (~7.0h remaining)
+step   16750/32500  ntp=4.3999  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.29  rep=0.0015  top[override:reverse_channel_scale]=0.7  dc_ratio=0.20  bproj_sig=76.19  sig_max=53.886@r4  gamma=0.100  alpha=[0.334,0.526,0.860,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  2768s  (~6.9h remaining)
+step   16800/32500  ntp=4.4320  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.26  rep=0.0014  top[override:reverse_channel_scale]=1.7  dc_ratio=0.08  bproj_sig=76.29  sig_max=54.058@r4  gamma=0.100  alpha=[0.334,0.526,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  2843s  (~6.9h remaining)
+step   16850/32500  ntp=4.4121  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.26  rep=0.0013  top[override:reverse_channel_scale]=1.9  dc_ratio=0.06  bproj_sig=76.37  sig_max=54.029@r4  gamma=0.100  alpha=[0.333,0.527,0.860,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  2918s  (~6.9h remaining)
+step   16900/32500  ntp=4.3920  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.24  rep=0.0013  top[override:reverse_channel_scale]=1.3  dc_ratio=0.08  bproj_sig=76.40  sig_max=53.494@r4  gamma=0.100  alpha=[0.334,0.525,0.860,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  2994s  (~6.8h remaining)
+step   16950/32500  ntp=4.3884  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.31  rep=0.0014  top[override:reverse_channel_scale]=1.9  dc_ratio=0.08  bproj_sig=76.43  sig_max=53.543@r4  gamma=0.100  alpha=[0.332,0.525,0.861,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  3069s  (~6.8h remaining)
+step   17000/32500  ntp=4.4235  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.29  rep=0.0013  top[override:reverse_channel_scale]=3.3  dc_ratio=0.04  bproj_sig=76.57  sig_max=53.310@r4  gamma=0.100  alpha=[0.333,0.527,0.860,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  3144s  (~6.8h remaining)
+[resonance] step   17000  EMPTY SUMMARY -- no substep hook fired. This is a MISSING diagnostic, not a passing one. Check that semsimula_diag patches the substep 'baoab_cfc_lowrank' actually calls.
+    [evaluate] iter 0/40  mem_alloc=7.73GB  mem_resv=8.13GB
+    [evaluate] iter 10/40  mem_alloc=7.73GB  mem_resv=8.13GB
+    [evaluate] iter 20/40  mem_alloc=7.73GB  mem_resv=8.11GB
+    [evaluate] iter 30/40  mem_alloc=7.73GB  mem_resv=8.13GB
+    [evaluate] iter 39/40  mem_alloc=7.73GB  mem_resv=8.13GB
+    [evaluate] mem before=6.31GB  after=7.73GB  peak_during=23.30GB  trend(every 10 iters)=[7.73, 7.73, 7.73, 7.73, 7.73]GB
+>>> EVAL step 17,000  val_loss=4.4376  val_ppl=84.57  best=84.23    (3181s)
+step   17050/32500  ntp=4.4251  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.31  rep=0.0013  top[override:reverse_channel_scale]=4.7  dc_ratio=0.03  bproj_sig=76.59  sig_max=53.348@r4  gamma=0.100  alpha=[0.333,0.525,0.860,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=23.3GB  3256s  (~6.8h remaining)
+step   17100/32500  ntp=4.3863  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.30  rep=0.0014  top[override:reverse_channel_scale]=1.2  dc_ratio=0.12  bproj_sig=76.66  sig_max=53.512@r4  gamma=0.100  alpha=[0.333,0.527,0.860,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  3331s  (~6.8h remaining)
+step   17150/32500  ntp=4.4275  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.32  rep=0.0014  top[override:reverse_channel_scale]=3.9  dc_ratio=0.04  bproj_sig=76.76  sig_max=53.868@r4  gamma=0.100  alpha=[0.334,0.526,0.860,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  3407s  (~6.8h remaining)
+step   17200/32500  ntp=4.4073  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.25  rep=0.0013  top[override:reverse_channel_scale]=0.9  dc_ratio=0.14  bproj_sig=76.80  sig_max=54.461@r4  gamma=0.100  alpha=[0.333,0.526,0.861,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  3482s  (~6.7h remaining)
+step   17250/32500  ntp=4.3915  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.26  rep=0.0013  top[override:reverse_channel_scale]=1.4  dc_ratio=0.10  bproj_sig=76.84  sig_max=54.737@r4  gamma=0.100  alpha=[0.334,0.525,0.860,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  3558s  (~6.7h remaining)
+step   17300/32500  ntp=4.3900  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.26  rep=0.0013  top[override:reverse_channel_scale]=0.6  dc_ratio=0.23  bproj_sig=76.91  sig_max=54.270@r4  gamma=0.100  alpha=[0.335,0.525,0.860,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  3633s  (~6.7h remaining)
+step   17350/32500  ntp=4.4007  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.26  rep=0.0014  top[override:reverse_channel_scale]=5.8  dc_ratio=0.02  bproj_sig=77.01  sig_max=53.758@r4  gamma=0.100  alpha=[0.334,0.525,0.860,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  3709s  (~6.6h remaining)
+step   17400/32500  ntp=4.3935  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.25  rep=0.0012  top[override:reverse_channel_scale]=0.4  dc_ratio=0.32  bproj_sig=77.05  sig_max=54.261@r4  gamma=0.100  alpha=[0.333,0.525,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  3784s  (~6.6h remaining)
+step   17450/32500  ntp=4.4204  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.27  rep=0.0014  top[override:reverse_channel_scale]=2.9  dc_ratio=0.04  bproj_sig=77.11  sig_max=54.682@r4  gamma=0.100  alpha=[0.332,0.524,0.860,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  3860s  (~6.6h remaining)
+step   17500/32500  ntp=4.3795  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.30  rep=0.0013  top[override:reverse_channel_scale]=3.5  dc_ratio=0.04  bproj_sig=77.19  sig_max=54.196@r4  gamma=0.100  alpha=[0.334,0.524,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  3935s  (~6.6h remaining)
+[resonance] step   17500  EMPTY SUMMARY -- no substep hook fired. This is a MISSING diagnostic, not a passing one. Check that semsimula_diag patches the substep 'baoab_cfc_lowrank' actually calls.
+    [evaluate] iter 0/40  mem_alloc=7.73GB  mem_resv=8.17GB
+    [evaluate] iter 10/40  mem_alloc=7.73GB  mem_resv=8.17GB
+    [evaluate] iter 20/40  mem_alloc=7.73GB  mem_resv=8.17GB
+    [evaluate] iter 30/40  mem_alloc=7.73GB  mem_resv=8.17GB
+    [evaluate] iter 39/40  mem_alloc=7.73GB  mem_resv=8.15GB
+    [evaluate] mem before=6.31GB  after=7.73GB  peak_during=23.30GB  trend(every 10 iters)=[7.73, 7.73, 7.73, 7.73, 7.73]GB
+>>> EVAL step 17,500  val_loss=4.4104  val_ppl=82.30  best=82.30  *** NEW BEST ***  (3972s)
+  Checkpoint saved: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn_step17500_best.pt  (PPL=82.30)
+  Canonical best: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn_best.pt
+step   17550/32500  ntp=4.3894  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.29  rep=0.0012  top[override:reverse_channel_scale]=2.1  dc_ratio=0.06  bproj_sig=77.27  sig_max=54.120@r4  gamma=0.100  alpha=[0.333,0.524,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=23.3GB  4054s  (~6.6h remaining)
+step   17600/32500  ntp=4.3834  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.29  rep=0.0013  top[override:reverse_channel_scale]=3.6  dc_ratio=0.04  bproj_sig=77.32  sig_max=54.451@r4  gamma=0.100  alpha=[0.333,0.522,0.860,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  4129s  (~6.6h remaining)
+step   17650/32500  ntp=4.3977  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.25  rep=0.0013  top[override:reverse_channel_scale]=2.4  dc_ratio=0.05  bproj_sig=77.37  sig_max=53.993@r4  gamma=0.100  alpha=[0.332,0.522,0.860,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  4204s  (~6.5h remaining)
+step   17700/32500  ntp=4.4200  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.28  rep=0.0013  top[override:reverse_channel_scale]=3.9  dc_ratio=0.03  bproj_sig=77.43  sig_max=53.490@r4  gamma=0.100  alpha=[0.333,0.521,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  4280s  (~6.5h remaining)
+step   17750/32500  ntp=4.3744  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.28  rep=0.0014  top[override:reverse_channel_scale]=1.2  dc_ratio=0.11  bproj_sig=77.54  sig_max=53.052@r4  gamma=0.100  alpha=[0.334,0.523,0.860,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  4356s  (~6.5h remaining)
+step   17800/32500  ntp=4.3965  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.27  rep=0.0014  top[override:reverse_channel_scale]=2.9  dc_ratio=0.05  bproj_sig=77.64  sig_max=52.980@r4  gamma=0.100  alpha=[0.334,0.522,0.860,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  4431s  (~6.5h remaining)
+step   17850/32500  ntp=4.3950  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.25  rep=0.0014  top[override:reverse_channel_scale]=1.3  dc_ratio=0.08  bproj_sig=77.70  sig_max=52.659@r4  gamma=0.100  alpha=[0.334,0.523,0.860,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  4506s  (~6.4h remaining)
+step   17900/32500  ntp=4.3817  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.26  rep=0.0012  top[override:reverse_channel_scale]=1.3  dc_ratio=0.10  bproj_sig=77.77  sig_max=52.631@r4  gamma=0.100  alpha=[0.334,0.523,0.860,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  4582s  (~6.4h remaining)
+step   17950/32500  ntp=4.4005  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.27  rep=0.0013  top[override:reverse_channel_scale]=3.4  dc_ratio=0.04  bproj_sig=77.83  sig_max=52.995@r4  gamma=0.100  alpha=[0.333,0.521,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  4657s  (~6.4h remaining)
+step   18000/32500  ntp=4.4244  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.29  rep=0.0014  top[override:reverse_channel_scale]=1.6  dc_ratio=0.08  bproj_sig=77.88  sig_max=52.553@r4  gamma=0.100  alpha=[0.333,0.523,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  4733s  (~6.4h remaining)
+[resonance] step   18000  EMPTY SUMMARY -- no substep hook fired. This is a MISSING diagnostic, not a passing one. Check that semsimula_diag patches the substep 'baoab_cfc_lowrank' actually calls.
+    [evaluate] iter 0/40  mem_alloc=7.73GB  mem_resv=8.13GB
+    [evaluate] iter 10/40  mem_alloc=7.73GB  mem_resv=8.11GB
+    [evaluate] iter 20/40  mem_alloc=7.73GB  mem_resv=8.13GB
+    [evaluate] iter 30/40  mem_alloc=7.73GB  mem_resv=8.11GB
+    [evaluate] iter 39/40  mem_alloc=7.73GB  mem_resv=8.11GB
+    [evaluate] mem before=6.31GB  after=7.73GB  peak_during=23.30GB  trend(every 10 iters)=[7.73, 7.73, 7.73, 7.73, 7.73]GB
+>>> EVAL step 18,000  val_loss=4.4319  val_ppl=84.09  best=82.30    (4769s)
+step   18050/32500  ntp=4.3965  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.33  rep=0.0013  top[override:reverse_channel_scale]=5.4  dc_ratio=0.03  bproj_sig=77.91  sig_max=52.345@r4  gamma=0.100  alpha=[0.332,0.521,0.860,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=23.3GB  4844s  (~6.4h remaining)
+step   18100/32500  ntp=4.3812  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.30  rep=0.0013  top[override:reverse_channel_scale]=5.2  dc_ratio=0.03  bproj_sig=77.96  sig_max=52.064@r4  gamma=0.100  alpha=[0.333,0.522,0.860,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  4919s  (~6.3h remaining)
+step   18150/32500  ntp=4.3842  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.30  rep=0.0014  top[override:reverse_channel_scale]=4.8  dc_ratio=0.03  bproj_sig=77.95  sig_max=52.023@r4  gamma=0.100  alpha=[0.332,0.519,0.860,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  4995s  (~6.3h remaining)
+step   18200/32500  ntp=4.3837  v_reg=0.0000  fock_reg=0.0097  lr=1.20e-03  grad=0.25  rep=0.0013  top[override:reverse_channel_scale]=3.2  dc_ratio=0.03  bproj_sig=78.05  sig_max=52.019@r4  gamma=0.100  alpha=[0.332,0.520,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  5071s  (~6.3h remaining)
+step   18250/32500  ntp=4.3972  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.25  rep=0.0013  top[override:reverse_channel_scale]=1.0  dc_ratio=0.13  bproj_sig=78.10  sig_max=52.418@r4  gamma=0.100  alpha=[0.332,0.522,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  5146s  (~6.3h remaining)
+step   18300/32500  ntp=4.3872  v_reg=0.0000  fock_reg=0.0097  lr=1.20e-03  grad=0.29  rep=0.0014  top[override:reverse_channel_scale]=6.2  dc_ratio=0.02  bproj_sig=78.23  sig_max=52.029@r4  gamma=0.100  alpha=[0.332,0.521,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  5221s  (~6.2h remaining)
+step   18350/32500  ntp=4.3961  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.26  rep=0.0013  top[override:reverse_channel_scale]=0.8  dc_ratio=0.17  bproj_sig=78.33  sig_max=52.248@r26  gamma=0.100  alpha=[0.333,0.521,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  5297s  (~6.2h remaining)
+step   18400/32500  ntp=4.3940  v_reg=0.0000  fock_reg=0.0096  lr=1.20e-03  grad=0.24  rep=0.0013  top[override:reverse_channel_scale]=0.7  dc_ratio=0.18  bproj_sig=78.40  sig_max=52.522@r26  gamma=0.100  alpha=[0.332,0.521,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  5373s  (~6.2h remaining)
+step   18450/32500  ntp=4.3944  v_reg=0.0000  fock_reg=0.0097  lr=1.20e-03  grad=0.26  rep=0.0013  top[override:reverse_channel_scale]=0.7  dc_ratio=0.18  bproj_sig=78.49  sig_max=52.683@r26  gamma=0.100  alpha=[0.332,0.520,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  5448s  (~6.2h remaining)
+step   18500/32500  ntp=4.3910  v_reg=0.0000  fock_reg=0.0097  lr=1.19e-03  grad=0.28  rep=0.0012  top[override:reverse_channel_scale]=2.2  dc_ratio=0.08  bproj_sig=78.52  sig_max=52.312@r26  gamma=0.100  alpha=[0.332,0.519,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  5524s  (~6.1h remaining)
+[resonance] step   18500  EMPTY SUMMARY -- no substep hook fired. This is a MISSING diagnostic, not a passing one. Check that semsimula_diag patches the substep 'baoab_cfc_lowrank' actually calls.
+    [evaluate] iter 0/40  mem_alloc=7.73GB  mem_resv=8.11GB
+    [evaluate] iter 10/40  mem_alloc=7.73GB  mem_resv=8.11GB
+    [evaluate] iter 20/40  mem_alloc=7.73GB  mem_resv=8.13GB
+    [evaluate] iter 30/40  mem_alloc=7.73GB  mem_resv=8.11GB
+    [evaluate] iter 39/40  mem_alloc=7.73GB  mem_resv=8.11GB
+    [evaluate] mem before=6.31GB  after=7.73GB  peak_during=23.30GB  trend(every 10 iters)=[7.73, 7.73, 7.73, 7.73, 7.73]GB
+>>> EVAL step 18,500  val_loss=4.4306  val_ppl=83.98  best=82.30    (5560s)
+step   18550/32500  ntp=4.3778  v_reg=0.0000  fock_reg=0.0097  lr=1.19e-03  grad=0.25  rep=0.0013  top[override:reverse_channel_scale]=0.3  dc_ratio=0.45  bproj_sig=78.62  sig_max=52.267@r26  gamma=0.100  alpha=[0.332,0.521,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=23.3GB  5635s  (~6.2h remaining)
+step   18600/32500  ntp=4.3794  v_reg=0.0000  fock_reg=0.0096  lr=1.19e-03  grad=0.28  rep=0.0013  top[override:reverse_channel_scale]=2.0  dc_ratio=0.07  bproj_sig=78.71  sig_max=52.080@r4  gamma=0.100  alpha=[0.332,0.520,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  5711s  (~6.1h remaining)
+step   18650/32500  ntp=4.3729  v_reg=0.0000  fock_reg=0.0097  lr=1.19e-03  grad=0.26  rep=0.0013  top[override:reverse_channel_scale]=1.9  dc_ratio=0.06  bproj_sig=78.80  sig_max=51.658@r4  gamma=0.100  alpha=[0.332,0.520,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  5786s  (~6.1h remaining)
+step   18700/32500  ntp=4.3825  v_reg=0.0000  fock_reg=0.0096  lr=1.19e-03  grad=0.28  rep=0.0013  top[override:reverse_channel_scale]=1.9  dc_ratio=0.08  bproj_sig=78.81  sig_max=52.037@r4  gamma=0.100  alpha=[0.334,0.520,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  5862s  (~6.1h remaining)
+step   18750/32500  ntp=4.3950  v_reg=0.0000  fock_reg=0.0096  lr=1.19e-03  grad=0.25  rep=0.0013  top[override:reverse_channel_scale]=0.4  dc_ratio=0.32  bproj_sig=78.94  sig_max=52.454@r4  gamma=0.100  alpha=[0.333,0.520,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  5937s  (~6.0h remaining)
+step   18800/32500  ntp=4.3931  v_reg=0.0000  fock_reg=0.0096  lr=1.19e-03  grad=0.26  rep=0.0013  top[override:reverse_channel_scale]=1.6  dc_ratio=0.08  bproj_sig=78.96  sig_max=52.827@r4  gamma=0.100  alpha=[0.332,0.520,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  6013s  (~6.0h remaining)
+step   18850/32500  ntp=4.3920  v_reg=0.0000  fock_reg=0.0096  lr=1.19e-03  grad=0.31  rep=0.0012  top[override:reverse_channel_scale]=4.1  dc_ratio=0.03  bproj_sig=79.06  sig_max=53.255@r4  gamma=0.100  alpha=[0.333,0.521,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  6089s  (~6.0h remaining)
+step   18900/32500  ntp=4.3807  v_reg=0.0000  fock_reg=0.0097  lr=1.19e-03  grad=0.24  rep=0.0012  top[override:reverse_channel_scale]=0.7  dc_ratio=0.17  bproj_sig=79.15  sig_max=54.105@r4  gamma=0.100  alpha=[0.332,0.520,0.859,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  6165s  (~6.0h remaining)
+step   18950/32500  ntp=4.3443  v_reg=0.0000  fock_reg=0.0096  lr=1.18e-03  grad=0.31  rep=0.0014  top[override:reverse_channel_scale]=2.4  dc_ratio=0.07  bproj_sig=79.22  sig_max=54.330@r4  gamma=0.100  alpha=[0.333,0.521,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  6240s  (~5.9h remaining)
+step   19000/32500  ntp=4.3759  v_reg=0.0000  fock_reg=0.0097  lr=1.18e-03  grad=0.27  rep=0.0012  top[override:reverse_channel_scale]=2.5  dc_ratio=0.05  bproj_sig=79.23  sig_max=55.166@r4  gamma=0.100  alpha=[0.331,0.517,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  6316s  (~5.9h remaining)
+[resonance] step   19000  EMPTY SUMMARY -- no substep hook fired. This is a MISSING diagnostic, not a passing one. Check that semsimula_diag patches the substep 'baoab_cfc_lowrank' actually calls.
+    [evaluate] iter 0/40  mem_alloc=7.73GB  mem_resv=8.21GB
+    [evaluate] iter 10/40  mem_alloc=7.73GB  mem_resv=8.19GB
+    [evaluate] iter 20/40  mem_alloc=7.73GB  mem_resv=8.19GB
+    [evaluate] iter 30/40  mem_alloc=7.73GB  mem_resv=8.19GB
+    [evaluate] iter 39/40  mem_alloc=7.73GB  mem_resv=8.21GB
+    [evaluate] mem before=6.31GB  after=7.73GB  peak_during=23.30GB  trend(every 10 iters)=[7.73, 7.73, 7.73, 7.73, 7.73]GB
+>>> EVAL step 19,000  val_loss=4.4360  val_ppl=84.43  best=82.30    (6353s)
+step   19050/32500  ntp=4.3728  v_reg=0.0000  fock_reg=0.0097  lr=1.18e-03  grad=0.29  rep=0.0013  top[override:reverse_channel_scale]=3.7  dc_ratio=0.04  bproj_sig=79.29  sig_max=55.385@r4  gamma=0.100  alpha=[0.331,0.518,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=23.3GB  6428s  (~5.9h remaining)
+step   19100/32500  ntp=4.3781  v_reg=0.0000  fock_reg=0.0097  lr=1.18e-03  grad=0.25  rep=0.0013  top[override:reverse_channel_scale]=1.8  dc_ratio=0.07  bproj_sig=79.37  sig_max=55.606@r4  gamma=0.100  alpha=[0.331,0.519,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  6503s  (~5.9h remaining)
+step   19150/32500  ntp=4.3737  v_reg=0.0000  fock_reg=0.0097  lr=1.18e-03  grad=0.26  rep=0.0012  top[override:reverse_channel_scale]=1.8  dc_ratio=0.06  bproj_sig=79.34  sig_max=55.609@r4  gamma=0.100  alpha=[0.332,0.518,0.858,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  6579s  (~5.9h remaining)
+step   19200/32500  ntp=4.3852  v_reg=0.0000  fock_reg=0.0097  lr=1.18e-03  grad=0.28  rep=0.0013  top[override:reverse_channel_scale]=1.4  dc_ratio=0.09  bproj_sig=79.37  sig_max=56.113@r4  gamma=0.100  alpha=[0.330,0.517,0.858,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  6655s  (~5.9h remaining)
+step   19250/32500  ntp=4.3784  v_reg=0.0000  fock_reg=0.0097  lr=1.18e-03  grad=0.27  rep=0.0013  top[override:reverse_channel_scale]=3.3  dc_ratio=0.05  bproj_sig=79.45  sig_max=55.984@r4  gamma=0.100  alpha=[0.332,0.517,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  6730s  (~5.8h remaining)
+step   19300/32500  ntp=4.3751  v_reg=0.0000  fock_reg=0.0097  lr=1.17e-03  grad=0.24  rep=0.0012  top[override:reverse_channel_scale]=2.4  dc_ratio=0.05  bproj_sig=79.48  sig_max=56.551@r4  gamma=0.100  alpha=[0.331,0.518,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  6806s  (~5.8h remaining)
+step   19350/32500  ntp=4.3800  v_reg=0.0000  fock_reg=0.0097  lr=1.17e-03  grad=0.28  rep=0.0012  top[override:reverse_channel_scale]=3.9  dc_ratio=0.03  bproj_sig=79.51  sig_max=56.297@r4  gamma=0.100  alpha=[0.332,0.519,0.858,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  6882s  (~5.8h remaining)
+step   19400/32500  ntp=4.3576  v_reg=0.0000  fock_reg=0.0097  lr=1.17e-03  grad=0.28  rep=0.0013  top[override:reverse_channel_scale]=4.4  dc_ratio=0.03  bproj_sig=79.55  sig_max=56.314@r4  gamma=0.100  alpha=[0.332,0.518,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  6958s  (~5.8h remaining)
+step   19450/32500  ntp=4.3700  v_reg=0.0000  fock_reg=0.0097  lr=1.17e-03  grad=0.31  rep=0.0013  top[override:reverse_channel_scale]=6.4  dc_ratio=0.02  bproj_sig=79.57  sig_max=56.678@r4  gamma=0.100  alpha=[0.331,0.518,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  7033s  (~5.7h remaining)
+step   19500/32500  ntp=4.3817  v_reg=0.0000  fock_reg=0.0097  lr=1.17e-03  grad=0.24  rep=0.0011  top[override:reverse_channel_scale]=1.0  dc_ratio=0.12  bproj_sig=79.53  sig_max=56.877@r4  gamma=0.100  alpha=[0.330,0.516,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  7109s  (~5.7h remaining)
+[resonance] step   19500  EMPTY SUMMARY -- no substep hook fired. This is a MISSING diagnostic, not a passing one. Check that semsimula_diag patches the substep 'baoab_cfc_lowrank' actually calls.
+    [evaluate] iter 0/40  mem_alloc=7.73GB  mem_resv=8.15GB
+    [evaluate] iter 10/40  mem_alloc=7.73GB  mem_resv=8.13GB
+    [evaluate] iter 20/40  mem_alloc=7.73GB  mem_resv=8.13GB
+    [evaluate] iter 30/40  mem_alloc=7.73GB  mem_resv=8.13GB
+    [evaluate] iter 39/40  mem_alloc=7.73GB  mem_resv=8.13GB
+    [evaluate] mem before=6.31GB  after=7.73GB  peak_during=23.30GB  trend(every 10 iters)=[7.73, 7.73, 7.73, 7.73, 7.73]GB
+>>> EVAL step 19,500  val_loss=4.4121  val_ppl=82.44  best=82.30    (7146s)
+step   19550/32500  ntp=4.4097  v_reg=0.0000  fock_reg=0.0097  lr=1.16e-03  grad=0.26  rep=0.0013  top[override:reverse_channel_scale]=3.6  dc_ratio=0.03  bproj_sig=79.61  sig_max=57.242@r4  gamma=0.100  alpha=[0.330,0.517,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=23.3GB  7221s  (~5.7h remaining)
+step   19600/32500  ntp=4.3877  v_reg=0.0000  fock_reg=0.0097  lr=1.16e-03  grad=0.26  rep=0.0013  top[override:reverse_channel_scale]=1.9  dc_ratio=0.06  bproj_sig=79.66  sig_max=57.433@r4  gamma=0.100  alpha=[0.331,0.516,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  7297s  (~5.7h remaining)
+step   19650/32500  ntp=4.3714  v_reg=0.0000  fock_reg=0.0097  lr=1.16e-03  grad=0.27  rep=0.0012  top[override:reverse_channel_scale]=3.2  dc_ratio=0.04  bproj_sig=79.77  sig_max=57.705@r4  gamma=0.100  alpha=[0.332,0.515,0.859,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  7373s  (~5.7h remaining)
+step   19700/32500  ntp=4.3592  v_reg=0.0000  fock_reg=0.0097  lr=1.16e-03  grad=0.27  rep=0.0013  top[override:reverse_channel_scale]=2.1  dc_ratio=0.05  bproj_sig=79.84  sig_max=57.277@r4  gamma=0.100  alpha=[0.331,0.514,0.858,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  7449s  (~5.6h remaining)
+step   19750/32500  ntp=4.3819  v_reg=0.0000  fock_reg=0.0097  lr=1.15e-03  grad=0.28  rep=0.0013  top[override:reverse_channel_scale]=1.9  dc_ratio=0.07  bproj_sig=79.92  sig_max=57.321@r4  gamma=0.100  alpha=[0.330,0.515,0.858,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  7525s  (~5.6h remaining)
+step   19800/32500  ntp=4.3849  v_reg=0.0000  fock_reg=0.0098  lr=1.15e-03  grad=0.27  rep=0.0013  top[override:reverse_channel_scale]=4.4  dc_ratio=0.03  bproj_sig=79.93  sig_max=57.013@r4  gamma=0.100  alpha=[0.331,0.515,0.858,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  7601s  (~5.6h remaining)
+step   19850/32500  ntp=4.3782  v_reg=0.0000  fock_reg=0.0097  lr=1.15e-03  grad=0.26  rep=0.0012  top[override:reverse_channel_scale]=0.8  dc_ratio=0.16  bproj_sig=79.93  sig_max=56.534@r4  gamma=0.100  alpha=[0.331,0.514,0.858,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  7677s  (~5.6h remaining)
+step   19900/32500  ntp=4.3619  v_reg=0.0000  fock_reg=0.0097  lr=1.15e-03  grad=0.31  rep=0.0013  top[override:reverse_channel_scale]=4.5  dc_ratio=0.03  bproj_sig=80.01  sig_max=56.374@r4  gamma=0.100  alpha=[0.331,0.514,0.858,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  7753s  (~5.5h remaining)
+step   19950/32500  ntp=4.3427  v_reg=0.0000  fock_reg=0.0097  lr=1.14e-03  grad=0.27  rep=0.0012  top[override:reverse_channel_scale]=3.7  dc_ratio=0.04  bproj_sig=80.03  sig_max=56.162@r4  gamma=0.100  alpha=[0.331,0.516,0.858,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  7829s  (~5.5h remaining)
+step   20000/32500  ntp=4.3568  v_reg=0.0000  fock_reg=0.0097  lr=1.14e-03  grad=0.27  rep=0.0013  top[override:reverse_channel_scale]=2.5  dc_ratio=0.06  bproj_sig=80.11  sig_max=55.863@r4  gamma=0.100  alpha=[0.331,0.515,0.858,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  7905s  (~5.5h remaining)
+[resonance] step   20000  EMPTY SUMMARY -- no substep hook fired. This is a MISSING diagnostic, not a passing one. Check that semsimula_diag patches the substep 'baoab_cfc_lowrank' actually calls.
+    [evaluate] iter 0/40  mem_alloc=7.73GB  mem_resv=8.20GB
+    [evaluate] iter 10/40  mem_alloc=7.73GB  mem_resv=8.20GB
+    [evaluate] iter 20/40  mem_alloc=7.73GB  mem_resv=8.20GB
+    [evaluate] iter 30/40  mem_alloc=7.73GB  mem_resv=8.20GB
+    [evaluate] iter 39/40  mem_alloc=7.73GB  mem_resv=8.20GB
+    [evaluate] mem before=6.31GB  after=7.73GB  peak_during=23.30GB  trend(every 10 iters)=[7.73, 7.73, 7.73, 7.73, 7.73]GB
+>>> EVAL step 20,000  val_loss=4.4274  val_ppl=83.71  best=82.30    (7942s)
+
+[causal probe] step 20,000  max|dlogit|=0.000e+00  [PASS]
+
+================================================================
+[trained leak probe] step 20,000 -- running on live model
+================================================================
+[probe] reverse gate tanh(scale) per layer: [0.0171, 0.0164]
+[probe] gate |mean| = 0.0167
+[probe] 2 window pairs, context=512, t_p=256, dtype=torch.float32
+[eval] torch.no_grad() forward failed (element 0 of tensors does not require grad and does not have a grad_fn); falling back to grad-enabled forward with manual detach.
+  [T0] determinism (same input twice): max|dlogit| = 0.000e+00
+  pair 0: max|dlogit|(past) = 0.000e+00   mean dNLL(past targets) = +0.0000 nats
+  pair 1: max|dlogit|(past) = 0.000e+00   mean dNLL(past targets) = +0.0000 nats
+  [ctrl] gate zeroed: max|dlogit|(past) = 0.000e+00 (must be ~0)
+
+[probe] SUMMARY
+  trained-scale leak:  max|dlogit| at past positions = 0.000e+00   (init-scale reference ~1.1e-05)
+  predictive value:    mean dNLL of past targets when future swapped = +0.0000 nats/token
+  interpretation:      dNLL ~ +0.3..0.7 nats -> the leak carries most of the apparent PPL gain;
+                       dNLL ~ +0.00x nats     -> leak still negligible at trained scale.
+[eval] torch.no_grad() forward failed (element 0 of tensors does not require grad and does not have a grad_fn); falling back to grad-enabled forward with manual detach.
+[honest-ppl] targets 256/256
+
+================================================================
+HONEST vs STANDARD PPL (same target tokens)
+================================================================
+  A mid-window  (256 left ctx, target+future IN window)   : NLL 3.8616  PPL    47.54
+  B last-pos    (511 left ctx, target OUTSIDE window)     : NLL 3.8944  PPL    49.13   <-- leak-free
+  paired diff (B - A) = +0.0328 +/- 0.0260 nats
+  causal model expectation: B <= A (B has MORE left context).
+  B >> A  ==> reported PPLs are leak-inflated; PPL_B is the honest number.
+
+  within-window NLL profile (256 windows; position -> mean NLL):
+    pos   1- 31: 4.8529
+    pos  32- 62: 4.4222
+    pos  63- 93: 4.4420
+    pos  94-124: 4.4132
+    pos 125-155: 4.3623
+    pos 156-186: 4.2793
+    pos 187-217: 4.4081
+    pos 218-248: 4.3619
+    pos 249-279: 4.2891
+    pos 280-310: 4.2980
+    pos 311-341: 4.3114
+    pos 342-372: 4.3313
+    pos 373-403: 4.3471
+    pos 404-434: 4.4087
+    pos 435-465: 4.3717
+    pos 466-511: 4.3114
+  (causal: decreasing toward the end; RISING toward the end = future context was doing the work)
+
+[trained leak probe] step 20,000  honest_PPL=49.13  standard_PPL=47.54  diff=+0.0328 nats  [CLEAN]
+step   20050/32500  ntp=4.3764  v_reg=0.0000  fock_reg=0.0097  lr=1.14e-03  grad=0.28  rep=0.0013  top[override:reverse_channel_scale]=3.6  dc_ratio=0.04  bproj_sig=80.19  sig_max=56.051@r4  gamma=0.100  alpha=[0.330,0.514,0.858,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=23.3GB  8063s  (~5.5h remaining)
+step   20100/32500  ntp=4.3457  v_reg=0.0000  fock_reg=0.0097  lr=1.14e-03  grad=0.25  rep=0.0012  top[override:reverse_channel_scale]=2.5  dc_ratio=0.05  bproj_sig=80.20  sig_max=56.193@r4  gamma=0.100  alpha=[0.331,0.515,0.858,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  8138s  (~5.5h remaining)
+step   20150/32500  ntp=4.3668  v_reg=0.0000  fock_reg=0.0097  lr=1.13e-03  grad=0.28  rep=0.0012  top[override:reverse_channel_scale]=2.4  dc_ratio=0.06  bproj_sig=80.23  sig_max=56.379@r4  gamma=0.100  alpha=[0.331,0.513,0.857,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  8214s  (~5.5h remaining)
+step   20200/32500  ntp=4.3603  v_reg=0.0000  fock_reg=0.0097  lr=1.13e-03  grad=0.27  rep=0.0012  top[override:reverse_channel_scale]=2.2  dc_ratio=0.06  bproj_sig=80.31  sig_max=56.217@r4  gamma=0.100  alpha=[0.333,0.514,0.857,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  8291s  (~5.4h remaining)
+step   20250/32500  ntp=4.3802  v_reg=0.0000  fock_reg=0.0097  lr=1.13e-03  grad=0.26  rep=0.0012  top[override:reverse_channel_scale]=4.7  dc_ratio=0.02  bproj_sig=80.36  sig_max=55.659@r4  gamma=0.100  alpha=[0.331,0.514,0.858,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  8366s  (~5.4h remaining)
+step   20300/32500  ntp=4.3527  v_reg=0.0000  fock_reg=0.0097  lr=1.12e-03  grad=0.24  rep=0.0012  top[override:reverse_channel_scale]=0.8  dc_ratio=0.14  bproj_sig=80.37  sig_max=55.769@r4  gamma=0.100  alpha=[0.331,0.513,0.858,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  8442s  (~5.4h remaining)
+step   20350/32500  ntp=4.3751  v_reg=0.0000  fock_reg=0.0097  lr=1.12e-03  grad=0.26  rep=0.0012  top[override:reverse_channel_scale]=1.8  dc_ratio=0.07  bproj_sig=80.42  sig_max=55.204@r4  gamma=0.100  alpha=[0.332,0.513,0.858,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  8518s  (~5.4h remaining)
+step   20400/32500  ntp=4.3627  v_reg=0.0000  fock_reg=0.0097  lr=1.12e-03  grad=0.26  rep=0.0012  top[override:reverse_channel_scale]=2.1  dc_ratio=0.07  bproj_sig=80.44  sig_max=55.169@r4  gamma=0.100  alpha=[0.332,0.514,0.858,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  8594s  (~5.3h remaining)
+step   20450/32500  ntp=4.3542  v_reg=0.0000  fock_reg=0.0097  lr=1.12e-03  grad=0.26  rep=0.0012  top[override:reverse_channel_scale]=3.4  dc_ratio=0.04  bproj_sig=80.52  sig_max=55.221@r4  gamma=0.100  alpha=[0.332,0.512,0.858,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  8669s  (~5.3h remaining)
+step   20500/32500  ntp=4.3746  v_reg=0.0000  fock_reg=0.0097  lr=1.11e-03  grad=0.26  rep=0.0013  top[override:reverse_channel_scale]=1.0  dc_ratio=0.11  bproj_sig=80.52  sig_max=55.928@r4  gamma=0.100  alpha=[0.331,0.514,0.859,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  8745s  (~5.3h remaining)
+[resonance] step   20500  EMPTY SUMMARY -- no substep hook fired. This is a MISSING diagnostic, not a passing one. Check that semsimula_diag patches the substep 'baoab_cfc_lowrank' actually calls.
+    [evaluate] iter 0/40  mem_alloc=7.73GB  mem_resv=8.28GB
+    [evaluate] iter 10/40  mem_alloc=7.73GB  mem_resv=8.30GB
+    [evaluate] iter 20/40  mem_alloc=7.73GB  mem_resv=8.30GB
+    [evaluate] iter 30/40  mem_alloc=7.73GB  mem_resv=8.30GB
+    [evaluate] iter 39/40  mem_alloc=7.73GB  mem_resv=8.28GB
+    [evaluate] mem before=6.31GB  after=7.73GB  peak_during=23.30GB  trend(every 10 iters)=[7.73, 7.73, 7.73, 7.73, 7.73]GB
+>>> EVAL step 20,500  val_loss=4.3985  val_ppl=81.33  best=81.33  *** NEW BEST ***  (8782s)
+  Checkpoint saved: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn_step20500_best.pt  (PPL=81.33)
+  Canonical best: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn_best.pt
+step   20550/32500  ntp=4.3273  v_reg=0.0000  fock_reg=0.0097  lr=1.11e-03  grad=0.24  rep=0.0012  top[override:reverse_channel_scale]=3.2  dc_ratio=0.04  bproj_sig=80.54  sig_max=55.903@r4  gamma=0.100  alpha=[0.332,0.513,0.858,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=23.3GB  8863s  (~5.3h remaining)
+step   20600/32500  ntp=4.3601  v_reg=0.0000  fock_reg=0.0097  lr=1.11e-03  grad=0.29  rep=0.0013  top[override:reverse_channel_scale]=4.6  dc_ratio=0.03  bproj_sig=80.60  sig_max=56.128@r4  gamma=0.100  alpha=[0.331,0.513,0.858,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  8939s  (~5.3h remaining)
+step   20650/32500  ntp=4.3563  v_reg=0.0000  fock_reg=0.0097  lr=1.10e-03  grad=0.29  rep=0.0013  top[override:reverse_channel_scale]=2.4  dc_ratio=0.06  bproj_sig=80.62  sig_max=56.210@r4  gamma=0.100  alpha=[0.332,0.512,0.858,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  9014s  (~5.3h remaining)
+step   20700/32500  ntp=4.3523  v_reg=0.0000  fock_reg=0.0097  lr=1.10e-03  grad=0.27  rep=0.0011  top[override:reverse_channel_scale]=2.3  dc_ratio=0.05  bproj_sig=80.64  sig_max=56.308@r4  gamma=0.100  alpha=[0.333,0.512,0.858,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  9090s  (~5.2h remaining)
+step   20750/32500  ntp=4.3477  v_reg=0.0000  fock_reg=0.0097  lr=1.09e-03  grad=0.26  rep=0.0013  top[override:reverse_channel_scale]=1.4  dc_ratio=0.10  bproj_sig=80.67  sig_max=56.263@r4  gamma=0.100  alpha=[0.334,0.511,0.858,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  9166s  (~5.2h remaining)
+step   20800/32500  ntp=4.3499  v_reg=0.0000  fock_reg=0.0097  lr=1.09e-03  grad=0.28  rep=0.0012  top[override:reverse_channel_scale]=4.9  dc_ratio=0.03  bproj_sig=80.67  sig_max=56.410@r4  gamma=0.100  alpha=[0.333,0.508,0.858,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  9242s  (~5.2h remaining)
+step   20850/32500  ntp=4.3638  v_reg=0.0000  fock_reg=0.0098  lr=1.09e-03  grad=0.28  rep=0.0012  top[override:reverse_channel_scale]=3.9  dc_ratio=0.03  bproj_sig=80.66  sig_max=56.361@r4  gamma=0.100  alpha=[0.331,0.510,0.857,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  9317s  (~5.2h remaining)
+step   20900/32500  ntp=4.3528  v_reg=0.0000  fock_reg=0.0098  lr=1.08e-03  grad=0.30  rep=0.0013  top[override:reverse_channel_scale]=4.7  dc_ratio=0.03  bproj_sig=80.71  sig_max=55.894@r4  gamma=0.100  alpha=[0.332,0.509,0.858,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  9394s  (~5.1h remaining)
+step   20950/32500  ntp=4.3492  v_reg=0.0000  fock_reg=0.0098  lr=1.08e-03  grad=0.29  rep=0.0012  top[override:reverse_channel_scale]=5.5  dc_ratio=0.02  bproj_sig=80.77  sig_max=55.830@r4  gamma=0.100  alpha=[0.332,0.511,0.857,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  9469s  (~5.1h remaining)
+step   21000/32500  ntp=4.3396  v_reg=0.0000  fock_reg=0.0097  lr=1.08e-03  grad=0.24  rep=0.0012  top[override:reverse_channel_scale]=1.4  dc_ratio=0.07  bproj_sig=80.80  sig_max=55.706@r4  gamma=0.100  alpha=[0.332,0.512,0.857,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  9545s  (~5.1h remaining)
+[resonance] step   21000  EMPTY SUMMARY -- no substep hook fired. This is a MISSING diagnostic, not a passing one. Check that semsimula_diag patches the substep 'baoab_cfc_lowrank' actually calls.
+    [evaluate] iter 0/40  mem_alloc=7.73GB  mem_resv=8.09GB
+    [evaluate] iter 10/40  mem_alloc=7.73GB  mem_resv=8.11GB
+    [evaluate] iter 20/40  mem_alloc=7.73GB  mem_resv=8.11GB
+    [evaluate] iter 30/40  mem_alloc=7.73GB  mem_resv=8.09GB
+    [evaluate] iter 39/40  mem_alloc=7.73GB  mem_resv=8.09GB
+    [evaluate] mem before=6.31GB  after=7.73GB  peak_during=23.30GB  trend(every 10 iters)=[7.73, 7.73, 7.73, 7.73, 7.73]GB
+>>> EVAL step 21,000  val_loss=4.4003  val_ppl=81.47  best=81.33    (9582s)
+step   21050/32500  ntp=4.3628  v_reg=0.0000  fock_reg=0.0098  lr=1.07e-03  grad=0.24  rep=0.0011  top[override:reverse_channel_scale]=2.2  dc_ratio=0.05  bproj_sig=80.82  sig_max=56.278@r4  gamma=0.100  alpha=[0.330,0.510,0.857,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=23.3GB  9657s  (~5.1h remaining)
+step   21100/32500  ntp=4.3633  v_reg=0.0000  fock_reg=0.0098  lr=1.07e-03  grad=0.25  rep=0.0012  top[override:reverse_channel_scale]=3.1  dc_ratio=0.03  bproj_sig=80.88  sig_max=56.541@r4  gamma=0.100  alpha=[0.332,0.509,0.857,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  9733s  (~5.1h remaining)
+step   21150/32500  ntp=4.3484  v_reg=0.0000  fock_reg=0.0098  lr=1.06e-03  grad=0.26  rep=0.0013  top[override:reverse_channel_scale]=2.1  dc_ratio=0.06  bproj_sig=80.89  sig_max=56.197@r4  gamma=0.100  alpha=[0.332,0.508,0.857,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  9808s  (~5.0h remaining)
+step   21200/32500  ntp=4.3549  v_reg=0.0000  fock_reg=0.0098  lr=1.06e-03  grad=0.33  rep=0.0013  top[override:reverse_channel_scale]=2.8  dc_ratio=0.05  bproj_sig=80.95  sig_max=55.892@r4  gamma=0.100  alpha=[0.331,0.509,0.857,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  9884s  (~5.0h remaining)
+step   21250/32500  ntp=4.3569  v_reg=0.0000  fock_reg=0.0098  lr=1.06e-03  grad=0.24  rep=0.0012  top[override:reverse_channel_scale]=1.7  dc_ratio=0.07  bproj_sig=80.95  sig_max=56.211@r4  gamma=0.100  alpha=[0.331,0.509,0.856,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  9960s  (~5.0h remaining)
+step   21300/32500  ntp=4.3663  v_reg=0.0000  fock_reg=0.0098  lr=1.05e-03  grad=0.31  rep=0.0013  top[override:reverse_channel_scale]=3.9  dc_ratio=0.03  bproj_sig=80.97  sig_max=55.658@r4  gamma=0.100  alpha=[0.332,0.506,0.857,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  10036s  (~5.0h remaining)
+step   21350/32500  ntp=4.3639  v_reg=0.0000  fock_reg=0.0098  lr=1.05e-03  grad=0.24  rep=0.0012  top[override:reverse_channel_scale]=3.7  dc_ratio=0.03  bproj_sig=81.01  sig_max=55.661@r4  gamma=0.100  alpha=[0.331,0.507,0.857,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  10112s  (~4.9h remaining)
+step   21400/32500  ntp=4.3459  v_reg=0.0000  fock_reg=0.0098  lr=1.04e-03  grad=0.25  rep=0.0012  top[override:reverse_channel_scale]=1.6  dc_ratio=0.08  bproj_sig=81.02  sig_max=56.220@r4  gamma=0.100  alpha=[0.330,0.507,0.857,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  10188s  (~4.9h remaining)
+step   21450/32500  ntp=4.3834  v_reg=0.0000  fock_reg=0.0098  lr=1.04e-03  grad=0.24  rep=0.0011  top[override:reverse_channel_scale]=1.8  dc_ratio=0.06  bproj_sig=81.07  sig_max=55.945@r4  gamma=0.100  alpha=[0.329,0.506,0.857,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  10263s  (~4.9h remaining)
+step   21500/32500  ntp=4.3618  v_reg=0.0000  fock_reg=0.0099  lr=1.04e-03  grad=0.27  rep=0.0012  top[override:reverse_channel_scale]=2.3  dc_ratio=0.05  bproj_sig=81.12  sig_max=56.059@r4  gamma=0.100  alpha=[0.331,0.505,0.856,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  10339s  (~4.9h remaining)
+[resonance] step   21500  EMPTY SUMMARY -- no substep hook fired. This is a MISSING diagnostic, not a passing one. Check that semsimula_diag patches the substep 'baoab_cfc_lowrank' actually calls.
+    [evaluate] iter 0/40  mem_alloc=7.73GB  mem_resv=8.21GB
+    [evaluate] iter 10/40  mem_alloc=7.73GB  mem_resv=8.24GB
+    [evaluate] iter 20/40  mem_alloc=7.73GB  mem_resv=8.21GB
+    [evaluate] iter 30/40  mem_alloc=7.73GB  mem_resv=8.24GB
+    [evaluate] iter 39/40  mem_alloc=7.73GB  mem_resv=8.21GB
+    [evaluate] mem before=6.31GB  after=7.73GB  peak_during=23.30GB  trend(every 10 iters)=[7.73, 7.73, 7.73, 7.73, 7.73]GB
+>>> EVAL step 21,500  val_loss=4.3864  val_ppl=80.35  best=80.35  *** NEW BEST ***  (10376s)
+  Checkpoint saved: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn_step21500_best.pt  (PPL=80.35)
+  Canonical best: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn_best.pt
+step   21550/32500  ntp=4.3416  v_reg=0.0000  fock_reg=0.0098  lr=1.03e-03  grad=0.27  rep=0.0013  top[override:reverse_channel_scale]=5.3  dc_ratio=0.02  bproj_sig=81.13  sig_max=56.291@r4  gamma=0.100  alpha=[0.330,0.506,0.856,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=23.3GB  10457s  (~4.9h remaining)
+step   21600/32500  ntp=4.3604  v_reg=0.0000  fock_reg=0.0099  lr=1.03e-03  grad=0.27  rep=0.0012  top[override:reverse_channel_scale]=2.3  dc_ratio=0.05  bproj_sig=81.17  sig_max=56.667@r4  gamma=0.100  alpha=[0.329,0.505,0.856,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  10533s  (~4.8h remaining)
+step   21650/32500  ntp=4.3415  v_reg=0.0000  fock_reg=0.0099  lr=1.02e-03  grad=0.27  rep=0.0012  top[override:reverse_channel_scale]=2.9  dc_ratio=0.04  bproj_sig=81.18  sig_max=56.345@r4  gamma=0.100  alpha=[0.329,0.505,0.856,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  10609s  (~4.8h remaining)
+step   21700/32500  ntp=4.3420  v_reg=0.0000  fock_reg=0.0099  lr=1.02e-03  grad=0.26  rep=0.0012  top[override:reverse_channel_scale]=1.5  dc_ratio=0.08  bproj_sig=81.20  sig_max=55.766@r4  gamma=0.100  alpha=[0.329,0.505,0.856,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  10685s  (~4.8h remaining)
+step   21750/32500  ntp=4.3268  v_reg=0.0000  fock_reg=0.0099  lr=1.01e-03  grad=0.25  rep=0.0011  top[override:reverse_channel_scale]=2.6  dc_ratio=0.05  bproj_sig=81.26  sig_max=55.785@r4  gamma=0.100  alpha=[0.330,0.505,0.856,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  10761s  (~4.8h remaining)
+step   21800/32500  ntp=4.3539  v_reg=0.0000  fock_reg=0.0099  lr=1.01e-03  grad=0.25  rep=0.0012  top[override:reverse_channel_scale]=1.3  dc_ratio=0.09  bproj_sig=81.27  sig_max=55.532@r4  gamma=0.100  alpha=[0.330,0.505,0.856,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  10837s  (~4.7h remaining)
+step   21850/32500  ntp=4.3505  v_reg=0.0000  fock_reg=0.0099  lr=1.00e-03  grad=0.26  rep=0.0012  top[override:reverse_channel_scale]=2.7  dc_ratio=0.04  bproj_sig=81.34  sig_max=55.558@r4  gamma=0.100  alpha=[0.329,0.504,0.856,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  10912s  (~4.7h remaining)
+step   21900/32500  ntp=4.3580  v_reg=0.0000  fock_reg=0.0099  lr=1.00e-03  grad=0.28  rep=0.0013  top[override:reverse_channel_scale]=4.3  dc_ratio=0.03  bproj_sig=81.37  sig_max=55.953@r4  gamma=0.100  alpha=[0.329,0.503,0.856,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  10988s  (~4.7h remaining)
+step   21950/32500  ntp=4.3626  v_reg=0.0000  fock_reg=0.0099  lr=9.95e-04  grad=0.24  rep=0.0012  top[override:reverse_channel_scale]=2.0  dc_ratio=0.05  bproj_sig=81.36  sig_max=56.030@r4  gamma=0.100  alpha=[0.328,0.504,0.856,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  11064s  (~4.7h remaining)
+step   22000/32500  ntp=4.3168  v_reg=0.0000  fock_reg=0.0099  lr=9.91e-04  grad=0.26  rep=0.0012  top[override:reverse_channel_scale]=1.9  dc_ratio=0.06  bproj_sig=81.41  sig_max=55.963@r4  gamma=0.100  alpha=[0.329,0.504,0.856,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  11140s  (~4.6h remaining)
+[resonance] step   22000  EMPTY SUMMARY -- no substep hook fired. This is a MISSING diagnostic, not a passing one. Check that semsimula_diag patches the substep 'baoab_cfc_lowrank' actually calls.
+    [evaluate] iter 0/40  mem_alloc=7.73GB  mem_resv=8.13GB
+    [evaluate] iter 10/40  mem_alloc=7.73GB  mem_resv=8.13GB
+    [evaluate] iter 20/40  mem_alloc=7.73GB  mem_resv=8.13GB
+    [evaluate] iter 30/40  mem_alloc=7.73GB  mem_resv=8.13GB
+    [evaluate] iter 39/40  mem_alloc=7.73GB  mem_resv=8.13GB
+    [evaluate] mem before=6.31GB  after=7.73GB  peak_during=23.30GB  trend(every 10 iters)=[7.73, 7.73, 7.73, 7.73, 7.73]GB
+>>> EVAL step 22,000  val_loss=4.3695  val_ppl=79.01  best=79.01  *** NEW BEST ***  (11176s)
+  Checkpoint saved: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn_step22000_best.pt  (PPL=79.01)
+  Canonical best: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn_best.pt
+step   22050/32500  ntp=4.3349  v_reg=0.0000  fock_reg=0.0099  lr=9.86e-04  grad=0.28  rep=0.0012  top[override:reverse_channel_scale]=3.0  dc_ratio=0.04  bproj_sig=81.42  sig_max=55.322@r28  gamma=0.100  alpha=[0.329,0.504,0.856,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.5GB  mem_peak=23.3GB  11261s  (~4.6h remaining)
+step   22100/32500  ntp=4.3320  v_reg=0.0000  fock_reg=0.0099  lr=9.81e-04  grad=0.27  rep=0.0012  top[override:reverse_channel_scale]=3.1  dc_ratio=0.04  bproj_sig=81.44  sig_max=55.171@r28  gamma=0.100  alpha=[0.329,0.504,0.856,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.5GB  mem_peak=22.2GB  11337s  (~4.6h remaining)
+step   22150/32500  ntp=4.3411  v_reg=0.0000  fock_reg=0.0099  lr=9.76e-04  grad=0.24  rep=0.0012  top[override:reverse_channel_scale]=1.5  dc_ratio=0.06  bproj_sig=81.49  sig_max=55.271@r4  gamma=0.100  alpha=[0.330,0.503,0.856,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.5GB  mem_peak=22.2GB  11413s  (~4.6h remaining)
+step   22200/32500  ntp=4.3140  v_reg=0.0000  fock_reg=0.0099  lr=9.71e-04  grad=0.29  rep=0.0011  top[override:reverse_channel_scale]=5.8  dc_ratio=0.02  bproj_sig=81.48  sig_max=55.101@r4  gamma=0.100  alpha=[0.329,0.502,0.856,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.5GB  mem_peak=22.2GB  11489s  (~4.6h remaining)
+step   22250/32500  ntp=4.3494  v_reg=0.0000  fock_reg=0.0099  lr=9.66e-04  grad=0.29  rep=0.0012  top[override:reverse_channel_scale]=5.4  dc_ratio=0.02  bproj_sig=81.47  sig_max=55.114@r28  gamma=0.100  alpha=[0.329,0.502,0.856,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.5GB  mem_peak=22.2GB  11565s  (~4.5h remaining)
+step   22300/32500  ntp=4.3310  v_reg=0.0000  fock_reg=0.0099  lr=9.61e-04  grad=0.25  rep=0.0015  top[override:reverse_channel_scale]=2.2  dc_ratio=0.05  bproj_sig=81.49  sig_max=54.869@r28  gamma=0.100  alpha=[0.330,0.503,0.855,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.5GB  mem_peak=22.2GB  11641s  (~4.5h remaining)
+step   22350/32500  ntp=4.3580  v_reg=0.0000  fock_reg=0.0099  lr=9.56e-04  grad=0.25  rep=0.0011  top[override:reverse_channel_scale]=2.7  dc_ratio=0.04  bproj_sig=81.52  sig_max=54.611@r4  gamma=0.100  alpha=[0.329,0.502,0.856,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.5GB  mem_peak=22.2GB  11716s  (~4.5h remaining)
+step   22400/32500  ntp=4.3349  v_reg=0.0000  fock_reg=0.0099  lr=9.51e-04  grad=0.26  rep=0.0012  top[override:reverse_channel_scale]=4.2  dc_ratio=0.03  bproj_sig=81.56  sig_max=54.500@r28  gamma=0.100  alpha=[0.329,0.503,0.855,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.5GB  mem_peak=22.2GB  11793s  (~4.5h remaining)
+step   22450/32500  ntp=4.3375  v_reg=0.0000  fock_reg=0.0099  lr=9.46e-04  grad=0.26  rep=0.0011  top[override:reverse_channel_scale]=2.9  dc_ratio=0.05  bproj_sig=81.58  sig_max=54.517@r4  gamma=0.100  alpha=[0.329,0.501,0.855,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.5GB  mem_peak=22.2GB  11868s  (~4.4h remaining)
+step   22500/32500  ntp=4.3342  v_reg=0.0000  fock_reg=0.0099  lr=9.41e-04  grad=0.26  rep=0.0011  top[override:reverse_channel_scale]=1.3  dc_ratio=0.10  bproj_sig=81.59  sig_max=54.479@r4  gamma=0.100  alpha=[0.329,0.502,0.855,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.5GB  mem_peak=22.2GB  11944s  (~4.4h remaining)
+[resonance] step   22500  EMPTY SUMMARY -- no substep hook fired. This is a MISSING diagnostic, not a passing one. Check that semsimula_diag patches the substep 'baoab_cfc_lowrank' actually calls.
+    [evaluate] iter 0/40  mem_alloc=7.73GB  mem_resv=8.13GB
+    [evaluate] iter 10/40  mem_alloc=7.73GB  mem_resv=8.13GB
+    [evaluate] iter 20/40  mem_alloc=7.73GB  mem_resv=8.15GB
+    [evaluate] iter 30/40  mem_alloc=7.73GB  mem_resv=8.15GB
+    [evaluate] iter 39/40  mem_alloc=7.73GB  mem_resv=8.15GB
+    [evaluate] mem before=6.31GB  after=7.73GB  peak_during=23.30GB  trend(every 10 iters)=[7.73, 7.73, 7.73, 7.73, 7.73]GB
+>>> EVAL step 22,500  val_loss=4.3589  val_ppl=78.17  best=78.17  *** NEW BEST ***  (11981s)
+  Checkpoint saved: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn_step22500_best.pt  (PPL=78.17)
+  Canonical best: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn_best.pt
+  Checkpoint saved: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn_step22500.pt  (PPL=78.17)
+step   22550/32500  ntp=4.3518  v_reg=0.0000  fock_reg=0.0099  lr=9.36e-04  grad=0.29  rep=0.0013  top[override:reverse_channel_scale]=4.2  dc_ratio=0.03  bproj_sig=81.59  sig_max=54.545@r4  gamma=0.100  alpha=[0.329,0.501,0.855,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=23.3GB  12068s  (~4.4h remaining)
+step   22600/32500  ntp=4.3688  v_reg=0.0000  fock_reg=0.0099  lr=9.31e-04  grad=0.25  rep=0.0011  top[override:reverse_channel_scale]=1.4  dc_ratio=0.08  bproj_sig=81.56  sig_max=54.718@r4  gamma=0.100  alpha=[0.328,0.502,0.856,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  12144s  (~4.4h remaining)
+step   22650/32500  ntp=4.3170  v_reg=0.0000  fock_reg=0.0099  lr=9.26e-04  grad=0.25  rep=0.0012  top[override:reverse_channel_scale]=3.7  dc_ratio=0.03  bproj_sig=81.59  sig_max=54.970@r4  gamma=0.100  alpha=[0.328,0.503,0.855,0.976,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  12220s  (~4.4h remaining)
+step   22700/32500  ntp=4.3365  v_reg=0.0000  fock_reg=0.0099  lr=9.20e-04  grad=0.24  rep=0.0011  top[override:reverse_channel_scale]=2.2  dc_ratio=0.05  bproj_sig=81.57  sig_max=54.777@r4  gamma=0.100  alpha=[0.329,0.503,0.855,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  12296s  (~4.3h remaining)
+step   22750/32500  ntp=4.3413  v_reg=0.0000  fock_reg=0.0099  lr=9.15e-04  grad=0.27  rep=0.0011  top[override:reverse_channel_scale]=3.2  dc_ratio=0.04  bproj_sig=81.61  sig_max=54.899@r4  gamma=0.100  alpha=[0.327,0.501,0.855,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  12372s  (~4.3h remaining)
+step   22800/32500  ntp=4.3289  v_reg=0.0000  fock_reg=0.0099  lr=9.10e-04  grad=0.26  rep=0.0012  top[override:reverse_channel_scale]=2.2  dc_ratio=0.05  bproj_sig=81.69  sig_max=54.666@r4  gamma=0.100  alpha=[0.327,0.501,0.855,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  12448s  (~4.3h remaining)
+step   22850/32500  ntp=4.3136  v_reg=0.0000  fock_reg=0.0099  lr=9.04e-04  grad=0.25  rep=0.0012  top[override:reverse_channel_scale]=1.1  dc_ratio=0.10  bproj_sig=81.71  sig_max=54.457@r4  gamma=0.100  alpha=[0.329,0.502,0.855,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  12524s  (~4.3h remaining)
+step   22900/32500  ntp=4.3423  v_reg=0.0000  fock_reg=0.0099  lr=8.99e-04  grad=0.25  rep=0.0012  top[override:reverse_channel_scale]=2.4  dc_ratio=0.04  bproj_sig=81.76  sig_max=54.860@r4  gamma=0.100  alpha=[0.329,0.501,0.854,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  12600s  (~4.3h remaining)
+step   22950/32500  ntp=4.3417  v_reg=0.0000  fock_reg=0.0099  lr=8.94e-04  grad=0.24  rep=0.0012  top[override:reverse_channel_scale]=2.3  dc_ratio=0.05  bproj_sig=81.76  sig_max=54.898@r4  gamma=0.100  alpha=[0.329,0.501,0.854,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  12676s  (~4.2h remaining)
+step   23000/32500  ntp=4.3317  v_reg=0.0000  fock_reg=0.0099  lr=8.88e-04  grad=0.26  rep=0.0011  top[override:reverse_channel_scale]=3.9  dc_ratio=0.03  bproj_sig=81.78  sig_max=55.345@r4  gamma=0.100  alpha=[0.329,0.501,0.854,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  12752s  (~4.2h remaining)
+[resonance] step   23000  EMPTY SUMMARY -- no substep hook fired. This is a MISSING diagnostic, not a passing one. Check that semsimula_diag patches the substep 'baoab_cfc_lowrank' actually calls.
+    [evaluate] iter 0/40  mem_alloc=7.73GB  mem_resv=8.21GB
+    [evaluate] iter 10/40  mem_alloc=7.73GB  mem_resv=8.23GB
+    [evaluate] iter 20/40  mem_alloc=7.73GB  mem_resv=8.23GB
+    [evaluate] iter 30/40  mem_alloc=7.73GB  mem_resv=8.23GB
+    [evaluate] iter 39/40  mem_alloc=7.73GB  mem_resv=8.23GB
+    [evaluate] mem before=6.31GB  after=7.73GB  peak_during=23.30GB  trend(every 10 iters)=[7.73, 7.73, 7.73, 7.73, 7.73]GB
+>>> EVAL step 23,000  val_loss=4.3512  val_ppl=77.57  best=77.57  *** NEW BEST ***  (12789s)
+  Checkpoint saved: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn_step23000_best.pt  (PPL=77.57)
+  Canonical best: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn_best.pt
+step   23050/32500  ntp=4.3207  v_reg=0.0000  fock_reg=0.0099  lr=8.83e-04  grad=0.25  rep=0.0011  top[override:reverse_channel_scale]=1.9  dc_ratio=0.06  bproj_sig=81.72  sig_max=55.572@r4  gamma=0.100  alpha=[0.329,0.500,0.854,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=23.3GB  12870s  (~4.2h remaining)
+step   23100/32500  ntp=4.3319  v_reg=0.0000  fock_reg=0.0099  lr=8.77e-04  grad=0.36  rep=0.0013  top[override:reverse_channel_scale]=3.0  dc_ratio=0.05  bproj_sig=81.72  sig_max=55.789@r4  gamma=0.100  alpha=[0.328,0.500,0.854,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  12946s  (~4.2h remaining)
+step   23150/32500  ntp=4.3302  v_reg=0.0000  fock_reg=0.0099  lr=8.72e-04  grad=0.25  rep=0.0011  top[override:reverse_channel_scale]=2.1  dc_ratio=0.05  bproj_sig=81.72  sig_max=56.401@r4  gamma=0.100  alpha=[0.329,0.499,0.855,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  13022s  (~4.1h remaining)
+step   23200/32500  ntp=4.3321  v_reg=0.0000  fock_reg=0.0099  lr=8.66e-04  grad=0.28  rep=0.0011  top[override:reverse_channel_scale]=5.5  dc_ratio=0.02  bproj_sig=81.70  sig_max=56.091@r4  gamma=0.100  alpha=[0.328,0.500,0.854,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  13098s  (~4.1h remaining)
+step   23250/32500  ntp=4.3112  v_reg=0.0000  fock_reg=0.0099  lr=8.61e-04  grad=0.24  rep=0.0011  top[override:reverse_channel_scale]=1.5  dc_ratio=0.07  bproj_sig=81.74  sig_max=56.417@r4  gamma=0.100  alpha=[0.328,0.500,0.855,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  13174s  (~4.1h remaining)
+step   23300/32500  ntp=4.3195  v_reg=0.0000  fock_reg=0.0099  lr=8.55e-04  grad=0.26  rep=0.0011  top[override:reverse_channel_scale]=5.9  dc_ratio=0.02  bproj_sig=81.76  sig_max=56.637@r4  gamma=0.100  alpha=[0.329,0.498,0.855,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  13250s  (~4.1h remaining)
+step   23350/32500  ntp=4.3169  v_reg=0.0000  fock_reg=0.0099  lr=8.49e-04  grad=0.26  rep=0.0011  top[override:reverse_channel_scale]=2.4  dc_ratio=0.04  bproj_sig=81.79  sig_max=56.748@r4  gamma=0.100  alpha=[0.328,0.499,0.854,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  13326s  (~4.1h remaining)
+step   23400/32500  ntp=4.3301  v_reg=0.0000  fock_reg=0.0100  lr=8.44e-04  grad=0.26  rep=0.0011  top[override:reverse_channel_scale]=1.8  dc_ratio=0.07  bproj_sig=81.77  sig_max=56.916@r4  gamma=0.100  alpha=[0.328,0.498,0.854,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  13402s  (~4.0h remaining)
+step   23450/32500  ntp=4.3236  v_reg=0.0000  fock_reg=0.0100  lr=8.38e-04  grad=0.30  rep=0.0012  top[override:reverse_channel_scale]=5.6  dc_ratio=0.02  bproj_sig=81.74  sig_max=56.958@r4  gamma=0.100  alpha=[0.328,0.497,0.854,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  13478s  (~4.0h remaining)
+step   23500/32500  ntp=4.3102  v_reg=0.0000  fock_reg=0.0100  lr=8.32e-04  grad=0.25  rep=0.0011  top[override:reverse_channel_scale]=0.2  dc_ratio=0.62  bproj_sig=81.74  sig_max=56.766@r4  gamma=0.100  alpha=[0.327,0.500,0.854,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  13554s  (~4.0h remaining)
+[resonance] step   23500  EMPTY SUMMARY -- no substep hook fired. This is a MISSING diagnostic, not a passing one. Check that semsimula_diag patches the substep 'baoab_cfc_lowrank' actually calls.
+    [evaluate] iter 0/40  mem_alloc=7.73GB  mem_resv=8.19GB
+    [evaluate] iter 10/40  mem_alloc=7.73GB  mem_resv=8.17GB
+    [evaluate] iter 20/40  mem_alloc=7.73GB  mem_resv=8.17GB
+    [evaluate] iter 30/40  mem_alloc=7.73GB  mem_resv=8.17GB
+    [evaluate] iter 39/40  mem_alloc=7.73GB  mem_resv=8.19GB
+    [evaluate] mem before=6.31GB  after=7.73GB  peak_during=23.30GB  trend(every 10 iters)=[7.73, 7.73, 7.73, 7.73, 7.73]GB
+>>> EVAL step 23,500  val_loss=4.3270  val_ppl=75.71  best=75.71  *** NEW BEST ***  (13592s)
+  Checkpoint saved: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn_step23500_best.pt  (PPL=75.71)
+  Canonical best: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn_best.pt
+step   23550/32500  ntp=4.3241  v_reg=0.0000  fock_reg=0.0100  lr=8.27e-04  grad=0.24  rep=0.0010  top[override:reverse_channel_scale]=2.6  dc_ratio=0.04  bproj_sig=81.78  sig_max=56.974@r4  gamma=0.100  alpha=[0.328,0.499,0.854,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=23.3GB  13673s  (~4.0h remaining)
+step   23600/32500  ntp=4.3031  v_reg=0.0000  fock_reg=0.0100  lr=8.21e-04  grad=0.26  rep=0.0011  top[override:reverse_channel_scale]=1.9  dc_ratio=0.06  bproj_sig=81.77  sig_max=57.412@r4  gamma=0.100  alpha=[0.327,0.498,0.854,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  13749s  (~4.0h remaining)
+step   23650/32500  ntp=4.3012  v_reg=0.0000  fock_reg=0.0100  lr=8.15e-04  grad=0.25  rep=0.0011  top[override:reverse_channel_scale]=1.1  dc_ratio=0.10  bproj_sig=81.76  sig_max=57.536@r4  gamma=0.100  alpha=[0.328,0.497,0.854,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  13825s  (~3.9h remaining)
+step   23700/32500  ntp=4.3282  v_reg=0.0000  fock_reg=0.0100  lr=8.09e-04  grad=0.25  rep=0.0011  top[override:reverse_channel_scale]=3.5  dc_ratio=0.03  bproj_sig=81.79  sig_max=57.607@r4  gamma=0.100  alpha=[0.328,0.498,0.854,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  13901s  (~3.9h remaining)
+step   23750/32500  ntp=4.3029  v_reg=0.0000  fock_reg=0.0100  lr=8.03e-04  grad=0.25  rep=0.0010  top[override:reverse_channel_scale]=4.4  dc_ratio=0.03  bproj_sig=81.76  sig_max=57.797@r4  gamma=0.100  alpha=[0.327,0.498,0.853,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  13977s  (~3.9h remaining)
+step   23800/32500  ntp=4.3207  v_reg=0.0000  fock_reg=0.0100  lr=7.98e-04  grad=0.24  rep=0.0012  top[override:reverse_channel_scale]=2.8  dc_ratio=0.04  bproj_sig=81.75  sig_max=58.082@r4  gamma=0.100  alpha=[0.327,0.496,0.854,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  14053s  (~3.9h remaining)
+step   23850/32500  ntp=4.3204  v_reg=0.0000  fock_reg=0.0100  lr=7.92e-04  grad=0.30  rep=0.0012  top[override:reverse_channel_scale]=3.4  dc_ratio=0.03  bproj_sig=81.76  sig_max=58.221@r4  gamma=0.100  alpha=[0.327,0.498,0.853,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  14129s  (~3.8h remaining)
+step   23900/32500  ntp=4.3217  v_reg=0.0000  fock_reg=0.0100  lr=7.86e-04  grad=0.25  rep=0.0010  top[override:reverse_channel_scale]=0.6  dc_ratio=0.22  bproj_sig=81.76  sig_max=57.980@r4  gamma=0.100  alpha=[0.327,0.496,0.854,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  14205s  (~3.8h remaining)
+step   23950/32500  ntp=4.2920  v_reg=0.0000  fock_reg=0.0100  lr=7.80e-04  grad=0.25  rep=0.0011  top[override:reverse_channel_scale]=2.2  dc_ratio=0.05  bproj_sig=81.76  sig_max=58.096@r4  gamma=0.100  alpha=[0.327,0.496,0.854,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  14281s  (~3.8h remaining)
+step   24000/32500  ntp=4.3202  v_reg=0.0000  fock_reg=0.0100  lr=7.74e-04  grad=0.26  rep=0.0011  top[override:reverse_channel_scale]=1.1  dc_ratio=0.11  bproj_sig=81.79  sig_max=58.174@r4  gamma=0.100  alpha=[0.327,0.496,0.854,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  14356s  (~3.8h remaining)
+[resonance] step   24000  EMPTY SUMMARY -- no substep hook fired. This is a MISSING diagnostic, not a passing one. Check that semsimula_diag patches the substep 'baoab_cfc_lowrank' actually calls.
+    [evaluate] iter 0/40  mem_alloc=7.73GB  mem_resv=8.20GB
+    [evaluate] iter 10/40  mem_alloc=7.73GB  mem_resv=8.20GB
+    [evaluate] iter 20/40  mem_alloc=7.73GB  mem_resv=8.20GB
+    [evaluate] iter 30/40  mem_alloc=7.73GB  mem_resv=8.20GB
+    [evaluate] iter 39/40  mem_alloc=7.73GB  mem_resv=8.22GB
+    [evaluate] mem before=6.31GB  after=7.73GB  peak_during=23.30GB  trend(every 10 iters)=[7.73, 7.73, 7.73, 7.73, 7.73]GB
+>>> EVAL step 24,000  val_loss=4.3484  val_ppl=77.36  best=75.71    (14393s)
+step   24050/32500  ntp=4.3485  v_reg=0.0000  fock_reg=0.0100  lr=7.68e-04  grad=0.27  rep=0.0011  top[override:reverse_channel_scale]=3.6  dc_ratio=0.04  bproj_sig=81.80  sig_max=57.992@r4  gamma=0.100  alpha=[0.326,0.495,0.853,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.6GB  mem_peak=23.3GB  14469s  (~3.8h remaining)
+step   24100/32500  ntp=4.3433  v_reg=0.0000  fock_reg=0.0100  lr=7.62e-04  grad=0.31  rep=0.0011  top[override:reverse_channel_scale]=2.8  dc_ratio=0.05  bproj_sig=81.84  sig_max=57.502@r4  gamma=0.100  alpha=[0.326,0.494,0.853,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.6GB  mem_peak=22.2GB  14544s  (~3.7h remaining)
+step   24150/32500  ntp=4.3387  v_reg=0.0000  fock_reg=0.0100  lr=7.56e-04  grad=0.25  rep=0.0010  top[override:reverse_channel_scale]=2.4  dc_ratio=0.04  bproj_sig=81.84  sig_max=57.074@r4  gamma=0.100  alpha=[0.324,0.495,0.853,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.6GB  mem_peak=22.2GB  14620s  (~3.7h remaining)
+step   24200/32500  ntp=4.3651  v_reg=0.0000  fock_reg=0.0101  lr=7.50e-04  grad=0.25  rep=0.0010  top[override:reverse_channel_scale]=2.8  dc_ratio=0.04  bproj_sig=81.86  sig_max=56.946@r4  gamma=0.100  alpha=[0.325,0.494,0.853,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.6GB  mem_peak=22.2GB  14696s  (~3.7h remaining)
+step   24250/32500  ntp=4.3319  v_reg=0.0000  fock_reg=0.0101  lr=7.44e-04  grad=0.26  rep=0.0011  top[override:reverse_channel_scale]=3.0  dc_ratio=0.03  bproj_sig=81.83  sig_max=56.745@r4  gamma=0.100  alpha=[0.325,0.493,0.853,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.6GB  mem_peak=22.2GB  14772s  (~3.7h remaining)
+step   24300/32500  ntp=4.3173  v_reg=0.0000  fock_reg=0.0101  lr=7.38e-04  grad=0.23  rep=0.0010  top[override:reverse_channel_scale]=1.5  dc_ratio=0.06  bproj_sig=81.87  sig_max=56.631@r4  gamma=0.100  alpha=[0.325,0.493,0.853,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.6GB  mem_peak=22.2GB  14848s  (~3.6h remaining)
+step   24350/32500  ntp=4.3184  v_reg=0.0000  fock_reg=0.0101  lr=7.32e-04  grad=0.23  rep=0.0011  top[override:reverse_channel_scale]=1.8  dc_ratio=0.05  bproj_sig=81.88  sig_max=56.806@r4  gamma=0.100  alpha=[0.326,0.494,0.852,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.6GB  mem_peak=22.2GB  14924s  (~3.6h remaining)
+step   24400/32500  ntp=4.3503  v_reg=0.0000  fock_reg=0.0101  lr=7.26e-04  grad=0.28  rep=0.0012  top[override:reverse_channel_scale]=1.6  dc_ratio=0.07  bproj_sig=81.88  sig_max=56.637@r4  gamma=0.100  alpha=[0.325,0.493,0.852,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.6GB  mem_peak=22.2GB  15000s  (~3.6h remaining)
+step   24450/32500  ntp=4.3542  v_reg=0.0000  fock_reg=0.0101  lr=7.20e-04  grad=0.25  rep=0.0011  top[override:reverse_channel_scale]=1.5  dc_ratio=0.07  bproj_sig=81.90  sig_max=56.693@r4  gamma=0.100  alpha=[0.325,0.492,0.852,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.6GB  mem_peak=22.2GB  15076s  (~3.6h remaining)
+step   24500/32500  ntp=4.3236  v_reg=0.0000  fock_reg=0.0101  lr=7.14e-04  grad=0.26  rep=0.0011  top[override:reverse_channel_scale]=2.0  dc_ratio=0.05  bproj_sig=81.95  sig_max=56.712@r4  gamma=0.100  alpha=[0.324,0.494,0.852,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.6GB  mem_peak=22.2GB  15152s  (~3.5h remaining)
+[resonance] step   24500  EMPTY SUMMARY -- no substep hook fired. This is a MISSING diagnostic, not a passing one. Check that semsimula_diag patches the substep 'baoab_cfc_lowrank' actually calls.
+    [evaluate] iter 0/40  mem_alloc=7.73GB  mem_resv=8.09GB
+    [evaluate] iter 10/40  mem_alloc=7.73GB  mem_resv=8.09GB
+    [evaluate] iter 20/40  mem_alloc=7.73GB  mem_resv=8.09GB
+    [evaluate] iter 30/40  mem_alloc=7.73GB  mem_resv=8.09GB
+    [evaluate] iter 39/40  mem_alloc=7.73GB  mem_resv=8.09GB
+    [evaluate] mem before=6.31GB  after=7.73GB  peak_during=23.30GB  trend(every 10 iters)=[7.73, 7.73, 7.73, 7.73, 7.73]GB
+>>> EVAL step 24,500  val_loss=4.3359  val_ppl=76.40  best=75.71    (15189s)
+step   24550/32500  ntp=4.3261  v_reg=0.0000  fock_reg=0.0101  lr=7.08e-04  grad=0.26  rep=0.0010  top[override:reverse_channel_scale]=1.8  dc_ratio=0.06  bproj_sig=81.97  sig_max=56.802@r4  gamma=0.100  alpha=[0.325,0.494,0.852,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.4GB  mem_peak=23.3GB  15264s  (~3.5h remaining)
+step   24600/32500  ntp=4.3407  v_reg=0.0000  fock_reg=0.0101  lr=7.02e-04  grad=0.25  rep=0.0012  top[override:reverse_channel_scale]=2.9  dc_ratio=0.04  bproj_sig=81.98  sig_max=56.920@r4  gamma=0.100  alpha=[0.325,0.493,0.851,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.4GB  mem_peak=22.2GB  15340s  (~3.5h remaining)
+step   24650/32500  ntp=4.3270  v_reg=0.0000  fock_reg=0.0101  lr=6.96e-04  grad=0.27  rep=0.0011  top[override:reverse_channel_scale]=3.9  dc_ratio=0.03  bproj_sig=81.97  sig_max=57.039@r4  gamma=0.100  alpha=[0.325,0.493,0.852,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.4GB  mem_peak=22.2GB  15416s  (~3.5h remaining)
+step   24700/32500  ntp=4.3437  v_reg=0.0000  fock_reg=0.0101  lr=6.90e-04  grad=0.25  rep=0.0011  top[override:reverse_channel_scale]=1.8  dc_ratio=0.06  bproj_sig=81.98  sig_max=57.130@r4  gamma=0.100  alpha=[0.325,0.494,0.851,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.4GB  mem_peak=22.2GB  15492s  (~3.5h remaining)
+step   24750/32500  ntp=4.3297  v_reg=0.0000  fock_reg=0.0101  lr=6.84e-04  grad=0.31  rep=0.0011  top[override:reverse_channel_scale]=6.1  dc_ratio=0.02  bproj_sig=82.02  sig_max=57.194@r4  gamma=0.100  alpha=[0.325,0.492,0.851,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.4GB  mem_peak=22.2GB  15568s  (~3.4h remaining)
+step   24800/32500  ntp=4.3378  v_reg=0.0000  fock_reg=0.0101  lr=6.78e-04  grad=0.23  rep=0.0011  top[override:reverse_channel_scale]=1.0  dc_ratio=0.10  bproj_sig=82.05  sig_max=57.367@r4  gamma=0.100  alpha=[0.325,0.493,0.851,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.4GB  mem_peak=22.2GB  15644s  (~3.4h remaining)
+step   24850/32500  ntp=4.3464  v_reg=0.0000  fock_reg=0.0101  lr=6.71e-04  grad=0.26  rep=0.0011  top[override:reverse_channel_scale]=1.2  dc_ratio=0.10  bproj_sig=82.06  sig_max=57.216@r4  gamma=0.100  alpha=[0.324,0.493,0.851,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.4GB  mem_peak=22.2GB  15720s  (~3.4h remaining)
+step   24900/32500  ntp=4.3482  v_reg=0.0000  fock_reg=0.0101  lr=6.65e-04  grad=0.25  rep=0.0010  top[override:reverse_channel_scale]=2.3  dc_ratio=0.05  bproj_sig=82.06  sig_max=57.417@r4  gamma=0.100  alpha=[0.324,0.492,0.851,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.4GB  mem_peak=22.2GB  15796s  (~3.4h remaining)
+step   24950/32500  ntp=4.3375  v_reg=0.0000  fock_reg=0.0101  lr=6.59e-04  grad=0.24  rep=0.0010  top[override:reverse_channel_scale]=2.2  dc_ratio=0.05  bproj_sig=82.05  sig_max=57.806@r4  gamma=0.100  alpha=[0.325,0.492,0.851,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.4GB  mem_peak=22.2GB  15872s  (~3.3h remaining)
+step   25000/32500  ntp=4.3447  v_reg=0.0000  fock_reg=0.0101  lr=6.53e-04  grad=0.28  rep=0.0011  top[override:reverse_channel_scale]=4.0  dc_ratio=0.03  bproj_sig=82.04  sig_max=57.528@r4  gamma=0.100  alpha=[0.325,0.492,0.851,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.4GB  mem_peak=22.2GB  15948s  (~3.3h remaining)
+[resonance] step   25000  EMPTY SUMMARY -- no substep hook fired. This is a MISSING diagnostic, not a passing one. Check that semsimula_diag patches the substep 'baoab_cfc_lowrank' actually calls.
+    [evaluate] iter 0/40  mem_alloc=7.73GB  mem_resv=8.15GB
+    [evaluate] iter 10/40  mem_alloc=7.73GB  mem_resv=8.15GB
+    [evaluate] iter 20/40  mem_alloc=7.73GB  mem_resv=8.17GB
+    [evaluate] iter 30/40  mem_alloc=7.73GB  mem_resv=8.15GB
+    [evaluate] iter 39/40  mem_alloc=7.73GB  mem_resv=8.17GB
+    [evaluate] mem before=6.31GB  after=7.73GB  peak_during=23.30GB  trend(every 10 iters)=[7.73, 7.73, 7.73, 7.73, 7.73]GB
+>>> EVAL step 25,000  val_loss=4.3099  val_ppl=74.43  best=74.43  *** NEW BEST ***  (15984s)
+  Checkpoint saved: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn_step25000_best.pt  (PPL=74.43)
+  Canonical best: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn_best.pt
+step   25050/32500  ntp=4.3115  v_reg=0.0000  fock_reg=0.0101  lr=6.47e-04  grad=0.25  rep=0.0011  top[override:reverse_channel_scale]=2.7  dc_ratio=0.04  bproj_sig=82.03  sig_max=57.544@r28  gamma=0.100  alpha=[0.325,0.491,0.851,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=23.3GB  16066s  (~3.3h remaining)
+step   25100/32500  ntp=4.3417  v_reg=0.0000  fock_reg=0.0101  lr=6.41e-04  grad=0.25  rep=0.0011  top[override:reverse_channel_scale]=1.9  dc_ratio=0.06  bproj_sig=82.03  sig_max=58.027@r4  gamma=0.100  alpha=[0.325,0.492,0.851,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  16142s  (~3.3h remaining)
+step   25150/32500  ntp=4.3067  v_reg=0.0000  fock_reg=0.0101  lr=6.35e-04  grad=0.38  rep=0.0013  top[override:reverse_channel_scale]=3.2  dc_ratio=0.06  bproj_sig=82.04  sig_max=58.112@r4  gamma=0.100  alpha=[0.325,0.492,0.851,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  16218s  (~3.3h remaining)
+step   25200/32500  ntp=4.3288  v_reg=0.0000  fock_reg=0.0101  lr=6.29e-04  grad=0.22  rep=0.0010  top[override:reverse_channel_scale]=1.2  dc_ratio=0.08  bproj_sig=82.05  sig_max=58.343@r4  gamma=0.100  alpha=[0.324,0.491,0.851,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  16294s  (~3.2h remaining)
+step   25250/32500  ntp=4.3253  v_reg=0.0000  fock_reg=0.0101  lr=6.22e-04  grad=0.26  rep=0.0011  top[override:reverse_channel_scale]=2.9  dc_ratio=0.04  bproj_sig=82.04  sig_max=58.472@r4  gamma=0.100  alpha=[0.325,0.492,0.851,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  16370s  (~3.2h remaining)
+step   25300/32500  ntp=4.3422  v_reg=0.0000  fock_reg=0.0101  lr=6.16e-04  grad=0.24  rep=0.0010  top[override:reverse_channel_scale]=2.0  dc_ratio=0.05  bproj_sig=82.07  sig_max=58.719@r4  gamma=0.100  alpha=[0.325,0.492,0.851,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  16446s  (~3.2h remaining)
+step   25350/32500  ntp=4.3278  v_reg=0.0000  fock_reg=0.0101  lr=6.10e-04  grad=0.26  rep=0.0011  top[override:reverse_channel_scale]=4.4  dc_ratio=0.02  bproj_sig=82.06  sig_max=58.823@r4  gamma=0.100  alpha=[0.324,0.491,0.851,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  16522s  (~3.2h remaining)
+step   25400/32500  ntp=4.3291  v_reg=0.0000  fock_reg=0.0101  lr=6.04e-04  grad=0.25  rep=0.0010  top[override:reverse_channel_scale]=3.7  dc_ratio=0.03  bproj_sig=82.07  sig_max=58.584@r4  gamma=0.100  alpha=[0.325,0.491,0.851,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  16598s  (~3.1h remaining)
+step   25450/32500  ntp=4.3266  v_reg=0.0000  fock_reg=0.0101  lr=5.98e-04  grad=0.24  rep=0.0011  top[override:reverse_channel_scale]=1.8  dc_ratio=0.06  bproj_sig=82.03  sig_max=58.995@r4  gamma=0.100  alpha=[0.324,0.490,0.852,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  16674s  (~3.1h remaining)
+step   25500/32500  ntp=4.2973  v_reg=0.0000  fock_reg=0.0101  lr=5.92e-04  grad=0.24  rep=0.0011  top[override:reverse_channel_scale]=1.5  dc_ratio=0.06  bproj_sig=82.04  sig_max=58.991@r4  gamma=0.100  alpha=[0.324,0.489,0.851,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  16750s  (~3.1h remaining)
+[resonance] step   25500  EMPTY SUMMARY -- no substep hook fired. This is a MISSING diagnostic, not a passing one. Check that semsimula_diag patches the substep 'baoab_cfc_lowrank' actually calls.
+    [evaluate] iter 0/40  mem_alloc=7.73GB  mem_resv=8.22GB
+    [evaluate] iter 10/40  mem_alloc=7.73GB  mem_resv=8.24GB
+    [evaluate] iter 20/40  mem_alloc=7.73GB  mem_resv=8.24GB
+    [evaluate] iter 30/40  mem_alloc=7.73GB  mem_resv=8.24GB
+    [evaluate] iter 39/40  mem_alloc=7.73GB  mem_resv=8.22GB
+    [evaluate] mem before=6.31GB  after=7.73GB  peak_during=23.30GB  trend(every 10 iters)=[7.73, 7.73, 7.73, 7.73, 7.73]GB
+>>> EVAL step 25,500  val_loss=4.2909  val_ppl=73.04  best=73.04  *** NEW BEST ***  (16786s)
+  Checkpoint saved: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn_step25500_best.pt  (PPL=73.04)
+  Canonical best: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn_best.pt
+step   25550/32500  ntp=4.3170  v_reg=0.0000  fock_reg=0.0101  lr=5.86e-04  grad=0.25  rep=0.0011  top[override:reverse_channel_scale]=1.9  dc_ratio=0.06  bproj_sig=82.01  sig_max=58.940@r4  gamma=0.100  alpha=[0.324,0.490,0.851,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=23.3GB  16868s  (~3.1h remaining)
+step   25600/32500  ntp=4.3378  v_reg=0.0000  fock_reg=0.0101  lr=5.80e-04  grad=0.26  rep=0.0010  top[override:reverse_channel_scale]=3.9  dc_ratio=0.03  bproj_sig=82.00  sig_max=58.903@r4  gamma=0.100  alpha=[0.324,0.491,0.851,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  16943s  (~3.1h remaining)
+step   25650/32500  ntp=4.3145  v_reg=0.0000  fock_reg=0.0101  lr=5.74e-04  grad=0.24  rep=0.0010  top[override:reverse_channel_scale]=2.8  dc_ratio=0.04  bproj_sig=82.01  sig_max=59.105@r4  gamma=0.100  alpha=[0.324,0.491,0.851,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  17019s  (~3.0h remaining)
+step   25700/32500  ntp=4.3056  v_reg=0.0000  fock_reg=0.0101  lr=5.67e-04  grad=0.25  rep=0.0011  top[override:reverse_channel_scale]=1.2  dc_ratio=0.09  bproj_sig=82.02  sig_max=58.979@r4  gamma=0.100  alpha=[0.325,0.491,0.851,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  17096s  (~3.0h remaining)
+step   25750/32500  ntp=4.3179  v_reg=0.0000  fock_reg=0.0101  lr=5.61e-04  grad=0.24  rep=0.0011  top[override:reverse_channel_scale]=2.0  dc_ratio=0.05  bproj_sig=82.02  sig_max=58.958@r4  gamma=0.100  alpha=[0.324,0.492,0.851,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  17171s  (~3.0h remaining)
+step   25800/32500  ntp=4.3185  v_reg=0.0000  fock_reg=0.0101  lr=5.55e-04  grad=0.26  rep=0.0010  top[override:reverse_channel_scale]=1.2  dc_ratio=0.10  bproj_sig=82.04  sig_max=58.937@r4  gamma=0.100  alpha=[0.324,0.491,0.850,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  17247s  (~3.0h remaining)
+step   25850/32500  ntp=4.3337  v_reg=0.0000  fock_reg=0.0101  lr=5.49e-04  grad=0.24  rep=0.0011  top[override:reverse_channel_scale]=3.1  dc_ratio=0.03  bproj_sig=82.05  sig_max=58.930@r4  gamma=0.100  alpha=[0.324,0.491,0.850,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  17323s  (~2.9h remaining)
+step   25900/32500  ntp=4.3133  v_reg=0.0000  fock_reg=0.0101  lr=5.43e-04  grad=0.27  rep=0.0010  top[override:reverse_channel_scale]=2.2  dc_ratio=0.05  bproj_sig=82.03  sig_max=59.174@r4  gamma=0.100  alpha=[0.324,0.491,0.850,0.978,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  17399s  (~2.9h remaining)
+step   25950/32500  ntp=4.3151  v_reg=0.0000  fock_reg=0.0101  lr=5.37e-04  grad=0.26  rep=0.0011  top[override:reverse_channel_scale]=1.1  dc_ratio=0.10  bproj_sig=82.03  sig_max=59.313@r4  gamma=0.100  alpha=[0.324,0.490,0.850,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  17475s  (~2.9h remaining)
+step   26000/32500  ntp=4.3150  v_reg=0.0000  fock_reg=0.0101  lr=5.31e-04  grad=0.29  rep=0.0010  top[override:reverse_channel_scale]=2.7  dc_ratio=0.04  bproj_sig=82.01  sig_max=59.100@r4  gamma=0.100  alpha=[0.325,0.489,0.849,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  17551s  (~2.9h remaining)
+[resonance] step   26000  EMPTY SUMMARY -- no substep hook fired. This is a MISSING diagnostic, not a passing one. Check that semsimula_diag patches the substep 'baoab_cfc_lowrank' actually calls.
+    [evaluate] iter 0/40  mem_alloc=7.73GB  mem_resv=8.20GB
+    [evaluate] iter 10/40  mem_alloc=7.73GB  mem_resv=8.20GB
+    [evaluate] iter 20/40  mem_alloc=7.73GB  mem_resv=8.20GB
+    [evaluate] iter 30/40  mem_alloc=7.73GB  mem_resv=8.20GB
+    [evaluate] iter 39/40  mem_alloc=7.73GB  mem_resv=8.22GB
+    [evaluate] mem before=6.31GB  after=7.73GB  peak_during=23.30GB  trend(every 10 iters)=[7.73, 7.73, 7.73, 7.73, 7.73]GB
+>>> EVAL step 26,000  val_loss=4.3259  val_ppl=75.63  best=73.04    (17588s)
+step   26050/32500  ntp=4.2918  v_reg=0.0000  fock_reg=0.0101  lr=5.25e-04  grad=0.23  rep=0.0010  top[override:reverse_channel_scale]=2.0  dc_ratio=0.05  bproj_sig=82.02  sig_max=59.021@r4  gamma=0.100  alpha=[0.324,0.490,0.850,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=23.3GB  17663s  (~2.9h remaining)
+step   26100/32500  ntp=4.3319  v_reg=0.0000  fock_reg=0.0101  lr=5.19e-04  grad=0.25  rep=0.0010  top[override:reverse_channel_scale]=2.7  dc_ratio=0.04  bproj_sig=82.05  sig_max=58.887@r4  gamma=0.100  alpha=[0.324,0.490,0.850,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  17739s  (~2.8h remaining)
+step   26150/32500  ntp=4.3021  v_reg=0.0000  fock_reg=0.0101  lr=5.13e-04  grad=0.25  rep=0.0010  top[override:reverse_channel_scale]=0.9  dc_ratio=0.13  bproj_sig=82.02  sig_max=58.804@r4  gamma=0.100  alpha=[0.324,0.490,0.850,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  17815s  (~2.8h remaining)
+step   26200/32500  ntp=4.2912  v_reg=0.0000  fock_reg=0.0101  lr=5.07e-04  grad=0.31  rep=0.0011  top[override:reverse_channel_scale]=4.2  dc_ratio=0.03  bproj_sig=82.01  sig_max=58.770@r4  gamma=0.100  alpha=[0.325,0.491,0.850,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  17891s  (~2.8h remaining)
+step   26250/32500  ntp=4.3209  v_reg=0.0000  fock_reg=0.0101  lr=5.01e-04  grad=0.23  rep=0.0010  top[override:reverse_channel_scale]=1.9  dc_ratio=0.05  bproj_sig=82.00  sig_max=58.695@r4  gamma=0.100  alpha=[0.324,0.490,0.850,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  17967s  (~2.8h remaining)
+step   26300/32500  ntp=4.3042  v_reg=0.0000  fock_reg=0.0101  lr=4.95e-04  grad=0.25  rep=0.0010  top[override:reverse_channel_scale]=2.1  dc_ratio=0.05  bproj_sig=81.99  sig_max=58.845@r4  gamma=0.100  alpha=[0.324,0.490,0.850,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  18043s  (~2.7h remaining)
+step   26350/32500  ntp=4.3013  v_reg=0.0000  fock_reg=0.0101  lr=4.89e-04  grad=0.25  rep=0.0010  top[override:reverse_channel_scale]=1.7  dc_ratio=0.06  bproj_sig=81.97  sig_max=58.923@r4  gamma=0.100  alpha=[0.325,0.490,0.850,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  18119s  (~2.7h remaining)
+step   26400/32500  ntp=4.3027  v_reg=0.0000  fock_reg=0.0101  lr=4.83e-04  grad=0.25  rep=0.0011  top[override:reverse_channel_scale]=1.6  dc_ratio=0.06  bproj_sig=81.99  sig_max=59.042@r4  gamma=0.100  alpha=[0.325,0.490,0.850,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  18196s  (~2.7h remaining)
+step   26450/32500  ntp=4.3117  v_reg=0.0000  fock_reg=0.0101  lr=4.77e-04  grad=0.24  rep=0.0009  top[override:reverse_channel_scale]=1.3  dc_ratio=0.08  bproj_sig=81.99  sig_max=59.257@r4  gamma=0.100  alpha=[0.326,0.490,0.850,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  18271s  (~2.7h remaining)
+step   26500/32500  ntp=4.2899  v_reg=0.0000  fock_reg=0.0101  lr=4.72e-04  grad=0.23  rep=0.0010  top[override:reverse_channel_scale]=1.9  dc_ratio=0.05  bproj_sig=81.99  sig_max=59.183@r4  gamma=0.100  alpha=[0.325,0.490,0.850,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  18347s  (~2.7h remaining)
+[resonance] step   26500  EMPTY SUMMARY -- no substep hook fired. This is a MISSING diagnostic, not a passing one. Check that semsimula_diag patches the substep 'baoab_cfc_lowrank' actually calls.
+    [evaluate] iter 0/40  mem_alloc=7.73GB  mem_resv=8.09GB
+    [evaluate] iter 10/40  mem_alloc=7.73GB  mem_resv=8.11GB
+    [evaluate] iter 20/40  mem_alloc=7.73GB  mem_resv=8.11GB
+    [evaluate] iter 30/40  mem_alloc=7.73GB  mem_resv=8.11GB
+    [evaluate] iter 39/40  mem_alloc=7.73GB  mem_resv=8.11GB
+    [evaluate] mem before=6.31GB  after=7.73GB  peak_during=23.30GB  trend(every 10 iters)=[7.73, 7.73, 7.73, 7.73, 7.73]GB
+>>> EVAL step 26,500  val_loss=4.3093  val_ppl=74.39  best=73.04    (18384s)
+step   26550/32500  ntp=4.2873  v_reg=0.0000  fock_reg=0.0101  lr=4.66e-04  grad=0.24  rep=0.0010  top[override:reverse_channel_scale]=1.4  dc_ratio=0.08  bproj_sig=81.98  sig_max=59.136@r4  gamma=0.100  alpha=[0.325,0.489,0.850,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=23.3GB  18460s  (~2.6h remaining)
+step   26600/32500  ntp=4.2965  v_reg=0.0000  fock_reg=0.0101  lr=4.60e-04  grad=0.26  rep=0.0010  top[override:reverse_channel_scale]=3.6  dc_ratio=0.04  bproj_sig=81.99  sig_max=58.895@r4  gamma=0.100  alpha=[0.325,0.489,0.850,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  18535s  (~2.6h remaining)
+step   26650/32500  ntp=4.3070  v_reg=0.0000  fock_reg=0.0101  lr=4.54e-04  grad=0.27  rep=0.0010  top[override:reverse_channel_scale]=4.8  dc_ratio=0.02  bproj_sig=81.98  sig_max=58.781@r4  gamma=0.100  alpha=[0.325,0.489,0.850,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  18611s  (~2.6h remaining)
+step   26700/32500  ntp=4.2533  v_reg=0.0000  fock_reg=0.0101  lr=4.48e-04  grad=0.25  rep=0.0011  top[override:reverse_channel_scale]=2.0  dc_ratio=0.05  bproj_sig=81.96  sig_max=58.744@r4  gamma=0.100  alpha=[0.325,0.490,0.850,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  18687s  (~2.6h remaining)
+step   26750/32500  ntp=4.2869  v_reg=0.0000  fock_reg=0.0101  lr=4.42e-04  grad=0.25  rep=0.0010  top[override:reverse_channel_scale]=0.9  dc_ratio=0.13  bproj_sig=81.95  sig_max=58.669@r4  gamma=0.100  alpha=[0.325,0.489,0.849,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  18763s  (~2.6h remaining)
+step   26800/32500  ntp=4.2872  v_reg=0.0000  fock_reg=0.0101  lr=4.37e-04  grad=0.27  rep=0.0010  top[override:reverse_channel_scale]=3.8  dc_ratio=0.03  bproj_sig=81.93  sig_max=58.638@r4  gamma=0.100  alpha=[0.325,0.488,0.849,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  18839s  (~2.5h remaining)
+step   26850/32500  ntp=4.3029  v_reg=0.0000  fock_reg=0.0101  lr=4.31e-04  grad=0.24  rep=0.0010  top[override:reverse_channel_scale]=0.7  dc_ratio=0.14  bproj_sig=81.93  sig_max=58.864@r4  gamma=0.100  alpha=[0.325,0.489,0.849,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  18915s  (~2.5h remaining)
+step   26900/32500  ntp=4.2979  v_reg=0.0000  fock_reg=0.0101  lr=4.25e-04  grad=0.24  rep=0.0011  top[override:reverse_channel_scale]=1.0  dc_ratio=0.10  bproj_sig=81.91  sig_max=59.040@r4  gamma=0.100  alpha=[0.325,0.488,0.849,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  18991s  (~2.5h remaining)
+step   26950/32500  ntp=4.2944  v_reg=0.0000  fock_reg=0.0101  lr=4.19e-04  grad=0.29  rep=0.0011  top[override:reverse_channel_scale]=5.4  dc_ratio=0.02  bproj_sig=81.91  sig_max=58.935@r4  gamma=0.100  alpha=[0.325,0.489,0.849,0.978,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  19067s  (~2.5h remaining)
+step   27000/32500  ntp=4.2990  v_reg=0.0000  fock_reg=0.0101  lr=4.14e-04  grad=0.24  rep=0.0010  top[override:reverse_channel_scale]=1.5  dc_ratio=0.07  bproj_sig=81.89  sig_max=59.011@r4  gamma=0.100  alpha=[0.325,0.489,0.849,0.978,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  19143s  (~2.4h remaining)
+[resonance] step   27000  EMPTY SUMMARY -- no substep hook fired. This is a MISSING diagnostic, not a passing one. Check that semsimula_diag patches the substep 'baoab_cfc_lowrank' actually calls.
+    [evaluate] iter 0/40  mem_alloc=7.73GB  mem_resv=8.11GB
+    [evaluate] iter 10/40  mem_alloc=7.73GB  mem_resv=8.13GB
+    [evaluate] iter 20/40  mem_alloc=7.73GB  mem_resv=8.13GB
+    [evaluate] iter 30/40  mem_alloc=7.73GB  mem_resv=8.13GB
+    [evaluate] iter 39/40  mem_alloc=7.73GB  mem_resv=8.11GB
+    [evaluate] mem before=6.31GB  after=7.73GB  peak_during=23.30GB  trend(every 10 iters)=[7.73, 7.73, 7.73, 7.73, 7.73]GB
+>>> EVAL step 27,000  val_loss=4.2825  val_ppl=72.42  best=72.42  *** NEW BEST ***  (19180s)
+  Checkpoint saved: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn_step27000_best.pt  (PPL=72.42)
+  Canonical best: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn_best.pt
+step   27050/32500  ntp=4.3087  v_reg=0.0000  fock_reg=0.0101  lr=4.08e-04  grad=0.25  rep=0.0010  top[override:reverse_channel_scale]=2.4  dc_ratio=0.05  bproj_sig=81.88  sig_max=58.714@r4  gamma=0.100  alpha=[0.325,0.488,0.849,0.978,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=23.3GB  19261s  (~2.4h remaining)
+step   27100/32500  ntp=4.2986  v_reg=0.0000  fock_reg=0.0101  lr=4.02e-04  grad=0.26  rep=0.0010  top[override:reverse_channel_scale]=1.6  dc_ratio=0.06  bproj_sig=81.87  sig_max=58.558@r4  gamma=0.100  alpha=[0.325,0.488,0.849,0.978,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  19336s  (~2.4h remaining)
+step   27150/32500  ntp=4.2931  v_reg=0.0000  fock_reg=0.0101  lr=3.97e-04  grad=0.25  rep=0.0010  top[override:reverse_channel_scale]=3.8  dc_ratio=0.03  bproj_sig=81.89  sig_max=58.431@r4  gamma=0.100  alpha=[0.325,0.488,0.849,0.978,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  19412s  (~2.4h remaining)
+step   27200/32500  ntp=4.2922  v_reg=0.0000  fock_reg=0.0101  lr=3.91e-04  grad=0.25  rep=0.0010  top[override:reverse_channel_scale]=3.2  dc_ratio=0.04  bproj_sig=81.87  sig_max=58.260@r4  gamma=0.100  alpha=[0.324,0.489,0.849,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  19489s  (~2.4h remaining)
+step   27250/32500  ntp=4.2930  v_reg=0.0000  fock_reg=0.0101  lr=3.86e-04  grad=0.25  rep=0.0011  top[override:reverse_channel_scale]=4.7  dc_ratio=0.02  bproj_sig=81.87  sig_max=58.143@r4  gamma=0.100  alpha=[0.325,0.488,0.849,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  19564s  (~2.3h remaining)
+step   27300/32500  ntp=4.3074  v_reg=0.0000  fock_reg=0.0101  lr=3.80e-04  grad=0.28  rep=0.0010  top[override:reverse_channel_scale]=3.0  dc_ratio=0.04  bproj_sig=81.86  sig_max=58.197@r4  gamma=0.100  alpha=[0.325,0.488,0.849,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  19640s  (~2.3h remaining)
+step   27350/32500  ntp=4.2791  v_reg=0.0000  fock_reg=0.0101  lr=3.75e-04  grad=0.26  rep=0.0011  top[override:reverse_channel_scale]=0.7  dc_ratio=0.19  bproj_sig=81.86  sig_max=58.277@r4  gamma=0.100  alpha=[0.324,0.488,0.849,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  19716s  (~2.3h remaining)
+step   27400/32500  ntp=4.2857  v_reg=0.0000  fock_reg=0.0101  lr=3.69e-04  grad=0.26  rep=0.0010  top[override:reverse_channel_scale]=1.0  dc_ratio=0.13  bproj_sig=81.85  sig_max=58.312@r4  gamma=0.100  alpha=[0.324,0.488,0.849,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  19792s  (~2.3h remaining)
+step   27450/32500  ntp=4.2797  v_reg=0.0000  fock_reg=0.0101  lr=3.64e-04  grad=0.25  rep=0.0010  top[override:reverse_channel_scale]=2.7  dc_ratio=0.03  bproj_sig=81.85  sig_max=58.229@r4  gamma=0.100  alpha=[0.324,0.488,0.849,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  19868s  (~2.2h remaining)
+step   27500/32500  ntp=4.2978  v_reg=0.0000  fock_reg=0.0102  lr=3.58e-04  grad=0.23  rep=0.0011  top[override:reverse_channel_scale]=0.6  dc_ratio=0.18  bproj_sig=81.85  sig_max=58.089@r4  gamma=0.100  alpha=[0.324,0.488,0.849,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  19944s  (~2.2h remaining)
+[resonance] step   27500  EMPTY SUMMARY -- no substep hook fired. This is a MISSING diagnostic, not a passing one. Check that semsimula_diag patches the substep 'baoab_cfc_lowrank' actually calls.
+    [evaluate] iter 0/40  mem_alloc=7.73GB  mem_resv=8.21GB
+    [evaluate] iter 10/40  mem_alloc=7.73GB  mem_resv=8.21GB
+    [evaluate] iter 20/40  mem_alloc=7.73GB  mem_resv=8.24GB
+    [evaluate] iter 30/40  mem_alloc=7.73GB  mem_resv=8.24GB
+    [evaluate] iter 39/40  mem_alloc=7.73GB  mem_resv=8.24GB
+    [evaluate] mem before=6.31GB  after=7.73GB  peak_during=23.30GB  trend(every 10 iters)=[7.73, 7.73, 7.73, 7.73, 7.73]GB
+>>> EVAL step 27,500  val_loss=4.3083  val_ppl=74.32  best=72.42    (19981s)
+step   27550/32500  ntp=4.2862  v_reg=0.0000  fock_reg=0.0101  lr=3.53e-04  grad=0.26  rep=0.0010  top[override:reverse_channel_scale]=2.1  dc_ratio=0.05  bproj_sig=81.84  sig_max=58.096@r4  gamma=0.100  alpha=[0.325,0.488,0.849,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=23.3GB  20056s  (~2.2h remaining)
+step   27600/32500  ntp=4.2827  v_reg=0.0000  fock_reg=0.0101  lr=3.48e-04  grad=0.26  rep=0.0011  top[override:reverse_channel_scale]=1.5  dc_ratio=0.08  bproj_sig=81.84  sig_max=58.022@r4  gamma=0.100  alpha=[0.324,0.488,0.849,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  20132s  (~2.2h remaining)
+step   27650/32500  ntp=4.2743  v_reg=0.0000  fock_reg=0.0101  lr=3.42e-04  grad=0.26  rep=0.0011  top[override:reverse_channel_scale]=4.2  dc_ratio=0.02  bproj_sig=81.84  sig_max=58.031@r4  gamma=0.100  alpha=[0.324,0.488,0.848,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  20208s  (~2.2h remaining)
+step   27700/32500  ntp=4.2755  v_reg=0.0000  fock_reg=0.0101  lr=3.37e-04  grad=0.26  rep=0.0010  top[override:reverse_channel_scale]=4.0  dc_ratio=0.03  bproj_sig=81.83  sig_max=57.910@r4  gamma=0.100  alpha=[0.325,0.489,0.848,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  20284s  (~2.1h remaining)
+step   27750/32500  ntp=4.2625  v_reg=0.0000  fock_reg=0.0101  lr=3.32e-04  grad=0.23  rep=0.0010  top[override:reverse_channel_scale]=1.5  dc_ratio=0.06  bproj_sig=81.81  sig_max=57.783@r4  gamma=0.100  alpha=[0.324,0.488,0.849,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  20360s  (~2.1h remaining)
+step   27800/32500  ntp=4.2767  v_reg=0.0000  fock_reg=0.0102  lr=3.27e-04  grad=0.26  rep=0.0010  top[override:reverse_channel_scale]=5.1  dc_ratio=0.02  bproj_sig=81.81  sig_max=57.677@r4  gamma=0.100  alpha=[0.324,0.488,0.849,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  20436s  (~2.1h remaining)
+step   27850/32500  ntp=4.2771  v_reg=0.0000  fock_reg=0.0101  lr=3.22e-04  grad=0.23  rep=0.0010  top[override:reverse_channel_scale]=0.8  dc_ratio=0.12  bproj_sig=81.79  sig_max=57.743@r4  gamma=0.100  alpha=[0.325,0.488,0.849,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  20512s  (~2.1h remaining)
+step   27900/32500  ntp=4.2795  v_reg=0.0000  fock_reg=0.0101  lr=3.16e-04  grad=0.23  rep=0.0010  top[override:reverse_channel_scale]=1.1  dc_ratio=0.09  bproj_sig=81.80  sig_max=57.882@r4  gamma=0.100  alpha=[0.325,0.488,0.849,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  20589s  (~2.0h remaining)
+step   27950/32500  ntp=4.2747  v_reg=0.0000  fock_reg=0.0101  lr=3.11e-04  grad=0.25  rep=0.0010  top[override:reverse_channel_scale]=1.9  dc_ratio=0.06  bproj_sig=81.77  sig_max=57.762@r4  gamma=0.100  alpha=[0.325,0.488,0.849,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  20665s  (~2.0h remaining)
+step   28000/32500  ntp=4.2896  v_reg=0.0000  fock_reg=0.0102  lr=3.06e-04  grad=0.27  rep=0.0010  top[override:reverse_channel_scale]=3.7  dc_ratio=0.03  bproj_sig=81.79  sig_max=57.749@r4  gamma=0.100  alpha=[0.324,0.487,0.849,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.3GB  mem_peak=22.2GB  20741s  (~2.0h remaining)
+[resonance] step   28000  EMPTY SUMMARY -- no substep hook fired. This is a MISSING diagnostic, not a passing one. Check that semsimula_diag patches the substep 'baoab_cfc_lowrank' actually calls.
+    [evaluate] iter 0/40  mem_alloc=7.73GB  mem_resv=8.11GB
+    [evaluate] iter 10/40  mem_alloc=7.73GB  mem_resv=8.13GB
+    [evaluate] iter 20/40  mem_alloc=7.73GB  mem_resv=8.13GB
+    [evaluate] iter 30/40  mem_alloc=7.73GB  mem_resv=8.13GB
+    [evaluate] iter 39/40  mem_alloc=7.73GB  mem_resv=8.11GB
+    [evaluate] mem before=6.31GB  after=7.73GB  peak_during=23.30GB  trend(every 10 iters)=[7.73, 7.73, 7.73, 7.73, 7.73]GB
+>>> EVAL step 28,000  val_loss=4.2864  val_ppl=72.70  best=72.42    (20778s)
+step   28050/32500  ntp=4.2840  v_reg=0.0000  fock_reg=0.0102  lr=3.01e-04  grad=0.25  rep=0.0009  top[override:reverse_channel_scale]=2.5  dc_ratio=0.04  bproj_sig=81.79  sig_max=57.791@r4  gamma=0.100  alpha=[0.325,0.488,0.849,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=23.3GB  20853s  (~2.0h remaining)
+step   28100/32500  ntp=4.2721  v_reg=0.0000  fock_reg=0.0101  lr=2.96e-04  grad=0.25  rep=0.0010  top[override:reverse_channel_scale]=2.8  dc_ratio=0.03  bproj_sig=81.78  sig_max=57.975@r4  gamma=0.100  alpha=[0.325,0.488,0.848,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  20929s  (~2.0h remaining)
+step   28150/32500  ntp=4.2815  v_reg=0.0000  fock_reg=0.0101  lr=2.91e-04  grad=0.26  rep=0.0010  top[override:reverse_channel_scale]=0.9  dc_ratio=0.13  bproj_sig=81.78  sig_max=57.951@r4  gamma=0.100  alpha=[0.325,0.488,0.848,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  21005s  (~1.9h remaining)
+step   28200/32500  ntp=4.2792  v_reg=0.0000  fock_reg=0.0101  lr=2.86e-04  grad=0.24  rep=0.0010  top[override:reverse_channel_scale]=2.6  dc_ratio=0.04  bproj_sig=81.76  sig_max=58.058@r4  gamma=0.100  alpha=[0.325,0.488,0.848,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  21081s  (~1.9h remaining)
+step   28250/32500  ntp=4.2776  v_reg=0.0000  fock_reg=0.0102  lr=2.82e-04  grad=0.24  rep=0.0010  top[override:reverse_channel_scale]=1.1  dc_ratio=0.09  bproj_sig=81.75  sig_max=58.105@r4  gamma=0.100  alpha=[0.324,0.488,0.848,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  21157s  (~1.9h remaining)
+step   28300/32500  ntp=4.2521  v_reg=0.0000  fock_reg=0.0102  lr=2.77e-04  grad=0.23  rep=0.0010  top[override:reverse_channel_scale]=0.4  dc_ratio=0.22  bproj_sig=81.73  sig_max=58.125@r4  gamma=0.100  alpha=[0.325,0.487,0.848,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  21233s  (~1.9h remaining)
+step   28350/32500  ntp=4.2818  v_reg=0.0000  fock_reg=0.0102  lr=2.72e-04  grad=0.24  rep=0.0010  top[override:reverse_channel_scale]=2.3  dc_ratio=0.04  bproj_sig=81.72  sig_max=58.233@r4  gamma=0.100  alpha=[0.324,0.487,0.848,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  21309s  (~1.8h remaining)
+step   28400/32500  ntp=4.2771  v_reg=0.0000  fock_reg=0.0102  lr=2.67e-04  grad=0.24  rep=0.0010  top[override:reverse_channel_scale]=1.2  dc_ratio=0.08  bproj_sig=81.71  sig_max=58.246@r4  gamma=0.100  alpha=[0.324,0.487,0.848,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  21385s  (~1.8h remaining)
+step   28450/32500  ntp=4.2601  v_reg=0.0000  fock_reg=0.0102  lr=2.63e-04  grad=0.27  rep=0.0010  top[override:reverse_channel_scale]=5.1  dc_ratio=0.02  bproj_sig=81.70  sig_max=58.169@r4  gamma=0.100  alpha=[0.324,0.488,0.848,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  21461s  (~1.8h remaining)
+step   28500/32500  ntp=4.2860  v_reg=0.0000  fock_reg=0.0102  lr=2.58e-04  grad=0.24  rep=0.0010  top[override:reverse_channel_scale]=3.6  dc_ratio=0.03  bproj_sig=81.70  sig_max=58.214@r4  gamma=0.100  alpha=[0.324,0.487,0.848,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  21537s  (~1.8h remaining)
+[resonance] step   28500  EMPTY SUMMARY -- no substep hook fired. This is a MISSING diagnostic, not a passing one. Check that semsimula_diag patches the substep 'baoab_cfc_lowrank' actually calls.
+    [evaluate] iter 0/40  mem_alloc=7.73GB  mem_resv=8.13GB
+    [evaluate] iter 10/40  mem_alloc=7.73GB  mem_resv=8.16GB
+    [evaluate] iter 20/40  mem_alloc=7.73GB  mem_resv=8.16GB
+    [evaluate] iter 30/40  mem_alloc=7.73GB  mem_resv=8.16GB
+    [evaluate] iter 39/40  mem_alloc=7.73GB  mem_resv=8.13GB
+    [evaluate] mem before=6.31GB  after=7.73GB  peak_during=23.30GB  trend(every 10 iters)=[7.73, 7.73, 7.73, 7.73, 7.73]GB
+>>> EVAL step 28,500  val_loss=4.2205  val_ppl=68.07  best=68.07  *** NEW BEST ***  (21574s)
+  Checkpoint saved: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn_step28500_best.pt  (PPL=68.07)
+  Canonical best: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn_best.pt
+step   28550/32500  ntp=4.2630  v_reg=0.0000  fock_reg=0.0102  lr=2.53e-04  grad=0.28  rep=0.0011  top[override:reverse_channel_scale]=3.3  dc_ratio=0.04  bproj_sig=81.68  sig_max=58.168@r4  gamma=0.100  alpha=[0.324,0.487,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=23.3GB  21655s  (~1.8h remaining)
+step   28600/32500  ntp=4.2589  v_reg=0.0000  fock_reg=0.0102  lr=2.49e-04  grad=0.22  rep=0.0010  top[override:reverse_channel_scale]=0.4  dc_ratio=0.24  bproj_sig=81.67  sig_max=58.070@r4  gamma=0.100  alpha=[0.325,0.487,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  21731s  (~1.7h remaining)
+step   28650/32500  ntp=4.2540  v_reg=0.0000  fock_reg=0.0102  lr=2.44e-04  grad=0.23  rep=0.0010  top[override:reverse_channel_scale]=1.3  dc_ratio=0.08  bproj_sig=81.67  sig_max=58.152@r4  gamma=0.100  alpha=[0.324,0.488,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  21807s  (~1.7h remaining)
+step   28700/32500  ntp=4.2646  v_reg=0.0000  fock_reg=0.0102  lr=2.40e-04  grad=0.28  rep=0.0013  top[override:reverse_channel_scale]=2.0  dc_ratio=0.05  bproj_sig=81.67  sig_max=58.256@r4  gamma=0.100  alpha=[0.324,0.488,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  21883s  (~1.7h remaining)
+step   28750/32500  ntp=4.2573  v_reg=0.0000  fock_reg=0.0102  lr=2.35e-04  grad=0.23  rep=0.0010  top[override:reverse_channel_scale]=1.4  dc_ratio=0.06  bproj_sig=81.65  sig_max=58.441@r4  gamma=0.100  alpha=[0.324,0.487,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  21959s  (~1.7h remaining)
+step   28800/32500  ntp=4.2613  v_reg=0.0000  fock_reg=0.0102  lr=2.31e-04  grad=0.25  rep=0.0011  top[override:reverse_channel_scale]=3.5  dc_ratio=0.03  bproj_sig=81.65  sig_max=58.473@r4  gamma=0.100  alpha=[0.324,0.488,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  22035s  (~1.6h remaining)
+step   28850/32500  ntp=4.2616  v_reg=0.0000  fock_reg=0.0102  lr=2.26e-04  grad=0.23  rep=0.0010  top[override:reverse_channel_scale]=2.6  dc_ratio=0.04  bproj_sig=81.64  sig_max=58.505@r4  gamma=0.100  alpha=[0.325,0.488,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  22111s  (~1.6h remaining)
+step   28900/32500  ntp=4.2881  v_reg=0.0000  fock_reg=0.0102  lr=2.22e-04  grad=0.24  rep=0.0010  top[override:reverse_channel_scale]=0.5  dc_ratio=0.23  bproj_sig=81.63  sig_max=58.342@r4  gamma=0.100  alpha=[0.324,0.488,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  22187s  (~1.6h remaining)
+step   28950/32500  ntp=4.2678  v_reg=0.0000  fock_reg=0.0102  lr=2.18e-04  grad=0.25  rep=0.0009  top[override:reverse_channel_scale]=3.4  dc_ratio=0.03  bproj_sig=81.64  sig_max=58.321@r4  gamma=0.100  alpha=[0.324,0.488,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  22263s  (~1.6h remaining)
+step   29000/32500  ntp=4.2454  v_reg=0.0000  fock_reg=0.0102  lr=2.14e-04  grad=0.27  rep=0.0010  top[override:reverse_channel_scale]=6.0  dc_ratio=0.02  bproj_sig=81.62  sig_max=58.250@r4  gamma=0.100  alpha=[0.324,0.487,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  22339s  (~1.6h remaining)
+[resonance] step   29000  EMPTY SUMMARY -- no substep hook fired. This is a MISSING diagnostic, not a passing one. Check that semsimula_diag patches the substep 'baoab_cfc_lowrank' actually calls.
+    [evaluate] iter 0/40  mem_alloc=7.73GB  mem_resv=8.19GB
+    [evaluate] iter 10/40  mem_alloc=7.73GB  mem_resv=8.19GB
+    [evaluate] iter 20/40  mem_alloc=7.73GB  mem_resv=8.19GB
+    [evaluate] iter 30/40  mem_alloc=7.73GB  mem_resv=8.19GB
+    [evaluate] iter 39/40  mem_alloc=7.73GB  mem_resv=8.21GB
+    [evaluate] mem before=6.31GB  after=7.73GB  peak_during=23.30GB  trend(every 10 iters)=[7.73, 7.73, 7.73, 7.73, 7.73]GB
+>>> EVAL step 29,000  val_loss=4.2539  val_ppl=70.38  best=68.07    (22375s)
+step   29050/32500  ntp=4.2650  v_reg=0.0000  fock_reg=0.0102  lr=2.10e-04  grad=0.22  rep=0.0010  top[override:reverse_channel_scale]=2.4  dc_ratio=0.04  bproj_sig=81.61  sig_max=58.224@r4  gamma=0.100  alpha=[0.324,0.487,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.5GB  mem_peak=23.3GB  22451s  (~1.5h remaining)
+step   29100/32500  ntp=4.2467  v_reg=0.0000  fock_reg=0.0102  lr=2.05e-04  grad=0.25  rep=0.0010  top[override:reverse_channel_scale]=0.7  dc_ratio=0.16  bproj_sig=81.60  sig_max=58.221@r4  gamma=0.100  alpha=[0.324,0.487,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.5GB  mem_peak=22.2GB  22527s  (~1.5h remaining)
+step   29150/32500  ntp=4.2812  v_reg=0.0000  fock_reg=0.0102  lr=2.01e-04  grad=0.24  rep=0.0010  top[override:reverse_channel_scale]=1.8  dc_ratio=0.06  bproj_sig=81.59  sig_max=58.104@r4  gamma=0.100  alpha=[0.324,0.487,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.5GB  mem_peak=22.2GB  22603s  (~1.5h remaining)
+step   29200/32500  ntp=4.2688  v_reg=0.0000  fock_reg=0.0102  lr=1.97e-04  grad=0.23  rep=0.0010  top[override:reverse_channel_scale]=0.8  dc_ratio=0.13  bproj_sig=81.58  sig_max=58.081@r4  gamma=0.100  alpha=[0.324,0.486,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.5GB  mem_peak=22.2GB  22679s  (~1.5h remaining)
+step   29250/32500  ntp=4.2564  v_reg=0.0000  fock_reg=0.0102  lr=1.93e-04  grad=0.22  rep=0.0010  top[override:reverse_channel_scale]=0.2  dc_ratio=0.44  bproj_sig=81.58  sig_max=58.007@r4  gamma=0.100  alpha=[0.324,0.487,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.5GB  mem_peak=22.2GB  22755s  (~1.4h remaining)
+step   29300/32500  ntp=4.2542  v_reg=0.0000  fock_reg=0.0102  lr=1.90e-04  grad=0.23  rep=0.0010  top[override:reverse_channel_scale]=1.1  dc_ratio=0.09  bproj_sig=81.58  sig_max=58.036@r4  gamma=0.100  alpha=[0.324,0.486,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.5GB  mem_peak=22.2GB  22831s  (~1.4h remaining)
+step   29350/32500  ntp=4.2709  v_reg=0.0000  fock_reg=0.0102  lr=1.86e-04  grad=0.23  rep=0.0009  top[override:reverse_channel_scale]=1.6  dc_ratio=0.06  bproj_sig=81.57  sig_max=58.040@r4  gamma=0.100  alpha=[0.324,0.486,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.5GB  mem_peak=22.2GB  22907s  (~1.4h remaining)
+step   29400/32500  ntp=4.2507  v_reg=0.0000  fock_reg=0.0102  lr=1.82e-04  grad=0.23  rep=0.0009  top[override:reverse_channel_scale]=1.2  dc_ratio=0.08  bproj_sig=81.57  sig_max=58.005@r4  gamma=0.100  alpha=[0.324,0.486,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.5GB  mem_peak=22.2GB  22984s  (~1.4h remaining)
+step   29450/32500  ntp=4.2572  v_reg=0.0000  fock_reg=0.0102  lr=1.78e-04  grad=0.25  rep=0.0010  top[override:reverse_channel_scale]=3.0  dc_ratio=0.04  bproj_sig=81.56  sig_max=58.117@r4  gamma=0.100  alpha=[0.324,0.487,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.5GB  mem_peak=22.2GB  23059s  (~1.4h remaining)
+step   29500/32500  ntp=4.2639  v_reg=0.0000  fock_reg=0.0102  lr=1.74e-04  grad=0.24  rep=0.0010  top[override:reverse_channel_scale]=2.9  dc_ratio=0.03  bproj_sig=81.55  sig_max=58.206@r4  gamma=0.100  alpha=[0.324,0.486,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.5GB  mem_peak=22.2GB  23135s  (~1.3h remaining)
+[resonance] step   29500  EMPTY SUMMARY -- no substep hook fired. This is a MISSING diagnostic, not a passing one. Check that semsimula_diag patches the substep 'baoab_cfc_lowrank' actually calls.
+    [evaluate] iter 0/40  mem_alloc=7.73GB  mem_resv=8.20GB
+    [evaluate] iter 10/40  mem_alloc=7.73GB  mem_resv=8.17GB
+    [evaluate] iter 20/40  mem_alloc=7.73GB  mem_resv=8.17GB
+    [evaluate] iter 30/40  mem_alloc=7.73GB  mem_resv=8.20GB
+    [evaluate] iter 39/40  mem_alloc=7.73GB  mem_resv=8.20GB
+    [evaluate] mem before=6.31GB  after=7.73GB  peak_during=23.30GB  trend(every 10 iters)=[7.73, 7.73, 7.73, 7.73, 7.73]GB
+>>> EVAL step 29,500  val_loss=4.2542  val_ppl=70.40  best=68.07    (23172s)
+step   29550/32500  ntp=4.2622  v_reg=0.0000  fock_reg=0.0102  lr=1.71e-04  grad=0.23  rep=0.0010  top[override:reverse_channel_scale]=1.3  dc_ratio=0.08  bproj_sig=81.53  sig_max=58.249@r4  gamma=0.100  alpha=[0.324,0.487,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=23.3GB  23248s  (~1.3h remaining)
+step   29600/32500  ntp=4.2523  v_reg=0.0000  fock_reg=0.0102  lr=1.67e-04  grad=0.24  rep=0.0010  top[override:reverse_channel_scale]=1.4  dc_ratio=0.07  bproj_sig=81.53  sig_max=58.237@r4  gamma=0.100  alpha=[0.324,0.487,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  23324s  (~1.3h remaining)
+step   29650/32500  ntp=4.2551  v_reg=0.0000  fock_reg=0.0102  lr=1.64e-04  grad=0.26  rep=0.0010  top[override:reverse_channel_scale]=3.0  dc_ratio=0.04  bproj_sig=81.52  sig_max=58.216@r4  gamma=0.100  alpha=[0.324,0.487,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  23400s  (~1.3h remaining)
+step   29700/32500  ntp=4.2541  v_reg=0.0000  fock_reg=0.0102  lr=1.60e-04  grad=0.26  rep=0.0012  top[override:reverse_channel_scale]=3.7  dc_ratio=0.03  bproj_sig=81.51  sig_max=58.269@r4  gamma=0.100  alpha=[0.324,0.487,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  23476s  (~1.2h remaining)
+step   29750/32500  ntp=4.2774  v_reg=0.0000  fock_reg=0.0102  lr=1.57e-04  grad=0.24  rep=0.0010  top[override:reverse_channel_scale]=0.8  dc_ratio=0.13  bproj_sig=81.51  sig_max=58.338@r4  gamma=0.100  alpha=[0.324,0.487,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  23552s  (~1.2h remaining)
+step   29800/32500  ntp=4.2352  v_reg=0.0000  fock_reg=0.0102  lr=1.53e-04  grad=0.24  rep=0.0011  top[override:reverse_channel_scale]=1.8  dc_ratio=0.06  bproj_sig=81.50  sig_max=58.322@r4  gamma=0.100  alpha=[0.324,0.487,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  23628s  (~1.2h remaining)
+step   29850/32500  ntp=4.2453  v_reg=0.0000  fock_reg=0.0102  lr=1.50e-04  grad=0.23  rep=0.0010  top[override:reverse_channel_scale]=2.4  dc_ratio=0.04  bproj_sig=81.50  sig_max=58.366@r4  gamma=0.100  alpha=[0.324,0.487,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  23704s  (~1.2h remaining)
+step   29900/32500  ntp=4.2543  v_reg=0.0000  fock_reg=0.0102  lr=1.47e-04  grad=0.24  rep=0.0010  top[override:reverse_channel_scale]=1.5  dc_ratio=0.07  bproj_sig=81.49  sig_max=58.345@r4  gamma=0.100  alpha=[0.324,0.487,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  23781s  (~1.2h remaining)
+step   29950/32500  ntp=4.2434  v_reg=0.0000  fock_reg=0.0102  lr=1.43e-04  grad=0.27  rep=0.0009  top[override:reverse_channel_scale]=3.3  dc_ratio=0.03  bproj_sig=81.49  sig_max=58.347@r4  gamma=0.100  alpha=[0.324,0.487,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  23856s  (~1.1h remaining)
+step   30000/32500  ntp=4.2344  v_reg=0.0000  fock_reg=0.0102  lr=1.40e-04  grad=0.24  rep=0.0010  top[override:reverse_channel_scale]=1.8  dc_ratio=0.06  bproj_sig=81.48  sig_max=58.331@r4  gamma=0.100  alpha=[0.324,0.487,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  23933s  (~1.1h remaining)
+[resonance] step   30000  EMPTY SUMMARY -- no substep hook fired. This is a MISSING diagnostic, not a passing one. Check that semsimula_diag patches the substep 'baoab_cfc_lowrank' actually calls.
+    [evaluate] iter 0/40  mem_alloc=7.73GB  mem_resv=8.19GB
+    [evaluate] iter 10/40  mem_alloc=7.73GB  mem_resv=8.19GB
+    [evaluate] iter 20/40  mem_alloc=7.73GB  mem_resv=8.19GB
+    [evaluate] iter 30/40  mem_alloc=7.73GB  mem_resv=8.19GB
+    [evaluate] iter 39/40  mem_alloc=7.73GB  mem_resv=8.19GB
+    [evaluate] mem before=6.31GB  after=7.73GB  peak_during=23.30GB  trend(every 10 iters)=[7.73, 7.73, 7.73, 7.73, 7.73]GB
+>>> EVAL step 30,000  val_loss=4.2406  val_ppl=69.45  best=68.07    (23970s)
+  Checkpoint saved: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn_step30000.pt  (PPL=69.45)
+
+[causal probe] step 30,000  max|dlogit|=0.000e+00  [PASS]
+
+================================================================
+[trained leak probe] step 30,000 -- running on live model
+================================================================
+[probe] reverse gate tanh(scale) per layer: [0.0184, 0.0157]
+[probe] gate |mean| = 0.0171
+[probe] 2 window pairs, context=512, t_p=256, dtype=torch.float32
+[eval] torch.no_grad() forward failed (element 0 of tensors does not require grad and does not have a grad_fn); falling back to grad-enabled forward with manual detach.
+  [T0] determinism (same input twice): max|dlogit| = 0.000e+00
+  pair 0: max|dlogit|(past) = 0.000e+00   mean dNLL(past targets) = +0.0000 nats
+  pair 1: max|dlogit|(past) = 0.000e+00   mean dNLL(past targets) = +0.0000 nats
+  [ctrl] gate zeroed: max|dlogit|(past) = 0.000e+00 (must be ~0)
+
+[probe] SUMMARY
+  trained-scale leak:  max|dlogit| at past positions = 0.000e+00   (init-scale reference ~1.1e-05)
+  predictive value:    mean dNLL of past targets when future swapped = +0.0000 nats/token
+  interpretation:      dNLL ~ +0.3..0.7 nats -> the leak carries most of the apparent PPL gain;
+                       dNLL ~ +0.00x nats     -> leak still negligible at trained scale.
+[eval] torch.no_grad() forward failed (element 0 of tensors does not require grad and does not have a grad_fn); falling back to grad-enabled forward with manual detach.
+[honest-ppl] targets 256/256
+
+================================================================
+HONEST vs STANDARD PPL (same target tokens)
+================================================================
+  A mid-window  (256 left ctx, target+future IN window)   : NLL 3.7317  PPL    41.75
+  B last-pos    (511 left ctx, target OUTSIDE window)     : NLL 3.7612  PPL    43.00   <-- leak-free
+  paired diff (B - A) = +0.0295 +/- 0.0199 nats
+  causal model expectation: B <= A (B has MORE left context).
+  B >> A  ==> reported PPLs are leak-inflated; PPL_B is the honest number.
+
+  within-window NLL profile (256 windows; position -> mean NLL):
+    pos   1- 31: 4.6943
+    pos  32- 62: 4.2580
+    pos  63- 93: 4.2836
+    pos  94-124: 4.2632
+    pos 125-155: 4.1941
+    pos 156-186: 4.1046
+    pos 187-217: 4.2379
+    pos 218-248: 4.1962
+    pos 249-279: 4.1221
+    pos 280-310: 4.1299
+    pos 311-341: 4.1443
+    pos 342-372: 4.1524
+    pos 373-403: 4.1721
+    pos 404-434: 4.2371
+    pos 435-465: 4.1858
+    pos 466-511: 4.1402
+  (causal: decreasing toward the end; RISING toward the end = future context was doing the work)
+
+[trained leak probe] step 30,000  honest_PPL=43.00  standard_PPL=41.75  diff=+0.0295 nats  [CLEAN]
+step   30050/32500  ntp=4.2341  v_reg=0.0000  fock_reg=0.0102  lr=1.37e-04  grad=0.27  rep=0.0011  top[override:reverse_channel_scale]=0.9  dc_ratio=0.12  bproj_sig=81.47  sig_max=58.431@r4  gamma=0.100  alpha=[0.324,0.487,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.5GB  mem_peak=23.3GB  24094s  (~1.1h remaining)
+step   30100/32500  ntp=4.2218  v_reg=0.0000  fock_reg=0.0102  lr=1.34e-04  grad=0.26  rep=0.0010  top[override:reverse_channel_scale]=3.3  dc_ratio=0.03  bproj_sig=81.47  sig_max=58.548@r4  gamma=0.100  alpha=[0.324,0.487,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.5GB  mem_peak=22.2GB  24170s  (~1.1h remaining)
+step   30150/32500  ntp=4.2386  v_reg=0.0000  fock_reg=0.0102  lr=1.31e-04  grad=0.26  rep=0.0010  top[override:reverse_channel_scale]=1.7  dc_ratio=0.06  bproj_sig=81.46  sig_max=58.589@r4  gamma=0.100  alpha=[0.324,0.487,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.5GB  mem_peak=22.2GB  24246s  (~1.0h remaining)
+step   30200/32500  ntp=4.2464  v_reg=0.0000  fock_reg=0.0102  lr=1.28e-04  grad=0.24  rep=0.0011  top[override:reverse_channel_scale]=0.9  dc_ratio=0.10  bproj_sig=81.45  sig_max=58.586@r4  gamma=0.100  alpha=[0.324,0.486,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.5GB  mem_peak=22.2GB  24323s  (~1.0h remaining)
+step   30250/32500  ntp=4.2382  v_reg=0.0000  fock_reg=0.0102  lr=1.25e-04  grad=0.23  rep=0.0010  top[override:reverse_channel_scale]=0.5  dc_ratio=0.19  bproj_sig=81.44  sig_max=58.557@r4  gamma=0.100  alpha=[0.324,0.486,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.5GB  mem_peak=22.2GB  24399s  (~1.0h remaining)
+step   30300/32500  ntp=4.2695  v_reg=0.0000  fock_reg=0.0102  lr=1.23e-04  grad=0.22  rep=0.0009  top[override:reverse_channel_scale]=1.9  dc_ratio=0.04  bproj_sig=81.44  sig_max=58.618@r4  gamma=0.100  alpha=[0.324,0.486,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.5GB  mem_peak=22.2GB  24475s  (~1.0h remaining)
+step   30350/32500  ntp=4.2457  v_reg=0.0000  fock_reg=0.0102  lr=1.20e-04  grad=0.23  rep=0.0009  top[override:reverse_channel_scale]=0.7  dc_ratio=0.13  bproj_sig=81.44  sig_max=58.649@r4  gamma=0.100  alpha=[0.324,0.486,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.5GB  mem_peak=22.2GB  24551s  (~1.0h remaining)
+step   30400/32500  ntp=4.2373  v_reg=0.0000  fock_reg=0.0102  lr=1.17e-04  grad=0.24  rep=0.0011  top[override:reverse_channel_scale]=1.3  dc_ratio=0.07  bproj_sig=81.43  sig_max=58.669@r4  gamma=0.100  alpha=[0.324,0.486,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.5GB  mem_peak=22.2GB  24627s  (~0.9h remaining)
+step   30450/32500  ntp=4.2489  v_reg=0.0000  fock_reg=0.0102  lr=1.14e-04  grad=0.24  rep=0.0010  top[override:reverse_channel_scale]=0.7  dc_ratio=0.16  bproj_sig=81.43  sig_max=58.614@r4  gamma=0.100  alpha=[0.324,0.486,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.5GB  mem_peak=22.2GB  24703s  (~0.9h remaining)
+step   30500/32500  ntp=4.2321  v_reg=0.0000  fock_reg=0.0102  lr=1.12e-04  grad=0.26  rep=0.0009  top[override:reverse_channel_scale]=3.2  dc_ratio=0.03  bproj_sig=81.42  sig_max=58.641@r4  gamma=0.100  alpha=[0.324,0.486,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.5GB  mem_peak=22.2GB  24779s  (~0.9h remaining)
+[resonance] step   30500  EMPTY SUMMARY -- no substep hook fired. This is a MISSING diagnostic, not a passing one. Check that semsimula_diag patches the substep 'baoab_cfc_lowrank' actually calls.
+    [evaluate] iter 0/40  mem_alloc=7.73GB  mem_resv=8.14GB
+    [evaluate] iter 10/40  mem_alloc=7.73GB  mem_resv=8.14GB
+    [evaluate] iter 20/40  mem_alloc=7.73GB  mem_resv=8.16GB
+    [evaluate] iter 30/40  mem_alloc=7.73GB  mem_resv=8.14GB
+    [evaluate] iter 39/40  mem_alloc=7.73GB  mem_resv=8.16GB
+    [evaluate] mem before=6.31GB  after=7.73GB  peak_during=23.30GB  trend(every 10 iters)=[7.73, 7.73, 7.73, 7.73, 7.73]GB
+>>> EVAL step 30,500  val_loss=4.2541  val_ppl=70.39  best=68.07    (24816s)
+step   30550/32500  ntp=4.2305  v_reg=0.0000  fock_reg=0.0102  lr=1.09e-04  grad=0.25  rep=0.0010  top[override:reverse_channel_scale]=0.3  dc_ratio=0.32  bproj_sig=81.41  sig_max=58.707@r4  gamma=0.100  alpha=[0.324,0.486,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=23.3GB  24892s  (~0.9h remaining)
+step   30600/32500  ntp=4.2469  v_reg=0.0000  fock_reg=0.0102  lr=1.07e-04  grad=0.23  rep=0.0009  top[override:reverse_channel_scale]=1.6  dc_ratio=0.06  bproj_sig=81.39  sig_max=58.735@r4  gamma=0.100  alpha=[0.324,0.486,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  24968s  (~0.8h remaining)
+step   30650/32500  ntp=4.2558  v_reg=0.0000  fock_reg=0.0102  lr=1.04e-04  grad=0.26  rep=0.0010  top[override:reverse_channel_scale]=3.9  dc_ratio=0.03  bproj_sig=81.40  sig_max=58.737@r4  gamma=0.100  alpha=[0.324,0.486,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  25044s  (~0.8h remaining)
+step   30700/32500  ntp=4.2361  v_reg=0.0000  fock_reg=0.0102  lr=1.02e-04  grad=0.25  rep=0.0009  top[override:reverse_channel_scale]=0.9  dc_ratio=0.11  bproj_sig=81.39  sig_max=58.742@r4  gamma=0.100  alpha=[0.323,0.486,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  25120s  (~0.8h remaining)
+step   30750/32500  ntp=4.2356  v_reg=0.0000  fock_reg=0.0102  lr=9.98e-05  grad=0.24  rep=0.0009  top[override:reverse_channel_scale]=1.7  dc_ratio=0.06  bproj_sig=81.38  sig_max=58.806@r4  gamma=0.100  alpha=[0.323,0.486,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  25196s  (~0.8h remaining)
+step   30800/32500  ntp=4.2438  v_reg=0.0000  fock_reg=0.0102  lr=9.76e-05  grad=0.26  rep=0.0009  top[override:reverse_channel_scale]=6.0  dc_ratio=0.02  bproj_sig=81.37  sig_max=58.834@r4  gamma=0.100  alpha=[0.323,0.486,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  25272s  (~0.8h remaining)
+step   30850/32500  ntp=4.2305  v_reg=0.0000  fock_reg=0.0102  lr=9.55e-05  grad=0.24  rep=0.0010  top[override:reverse_channel_scale]=0.8  dc_ratio=0.13  bproj_sig=81.37  sig_max=58.800@r4  gamma=0.100  alpha=[0.323,0.486,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  25348s  (~0.7h remaining)
+step   30900/32500  ntp=4.2489  v_reg=0.0000  fock_reg=0.0102  lr=9.34e-05  grad=0.23  rep=0.0009  top[override:reverse_channel_scale]=1.3  dc_ratio=0.07  bproj_sig=81.37  sig_max=58.783@r4  gamma=0.100  alpha=[0.323,0.486,0.846,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  25424s  (~0.7h remaining)
+step   30950/32500  ntp=4.2440  v_reg=0.0000  fock_reg=0.0102  lr=9.13e-05  grad=0.23  rep=0.0010  top[override:reverse_channel_scale]=0.8  dc_ratio=0.13  bproj_sig=81.36  sig_max=58.802@r4  gamma=0.100  alpha=[0.324,0.486,0.846,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  25500s  (~0.7h remaining)
+step   31000/32500  ntp=4.2320  v_reg=0.0000  fock_reg=0.0102  lr=8.94e-05  grad=0.24  rep=0.0010  top[override:reverse_channel_scale]=2.5  dc_ratio=0.04  bproj_sig=81.35  sig_max=58.774@r4  gamma=0.100  alpha=[0.323,0.486,0.846,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  25576s  (~0.7h remaining)
+[resonance] step   31000  EMPTY SUMMARY -- no substep hook fired. This is a MISSING diagnostic, not a passing one. Check that semsimula_diag patches the substep 'baoab_cfc_lowrank' actually calls.
+    [evaluate] iter 0/40  mem_alloc=7.73GB  mem_resv=8.17GB
+    [evaluate] iter 10/40  mem_alloc=7.73GB  mem_resv=8.17GB
+    [evaluate] iter 20/40  mem_alloc=7.73GB  mem_resv=8.17GB
+    [evaluate] iter 30/40  mem_alloc=7.73GB  mem_resv=8.17GB
+    [evaluate] iter 39/40  mem_alloc=7.73GB  mem_resv=8.15GB
+    [evaluate] mem before=6.31GB  after=7.73GB  peak_during=23.30GB  trend(every 10 iters)=[7.73, 7.73, 7.73, 7.73, 7.73]GB
+>>> EVAL step 31,000  val_loss=4.2039  val_ppl=66.95  best=66.95  *** NEW BEST ***  (25613s)
+  Checkpoint saved: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn_step31000_best.pt  (PPL=66.95)
+  Canonical best: /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn/checkpoints/fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_sf0p5_noattn_best.pt
+step   31050/32500  ntp=4.2318  v_reg=0.0000  fock_reg=0.0102  lr=8.75e-05  grad=0.23  rep=0.0010  top[override:reverse_channel_scale]=2.8  dc_ratio=0.03  bproj_sig=81.35  sig_max=58.775@r4  gamma=0.100  alpha=[0.323,0.486,0.846,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=23.3GB  25694s  (~0.6h remaining)
+step   31100/32500  ntp=4.2528  v_reg=0.0000  fock_reg=0.0102  lr=8.56e-05  grad=0.23  rep=0.0010  top[override:reverse_channel_scale]=3.1  dc_ratio=0.03  bproj_sig=81.35  sig_max=58.867@r4  gamma=0.100  alpha=[0.323,0.486,0.846,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  25770s  (~0.6h remaining)
+step   31150/32500  ntp=4.2370  v_reg=0.0000  fock_reg=0.0102  lr=8.38e-05  grad=0.23  rep=0.0010  top[override:reverse_channel_scale]=0.8  dc_ratio=0.13  bproj_sig=81.34  sig_max=58.855@r4  gamma=0.100  alpha=[0.323,0.486,0.846,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  25846s  (~0.6h remaining)
+step   31200/32500  ntp=4.2498  v_reg=0.0000  fock_reg=0.0102  lr=8.21e-05  grad=0.24  rep=0.0009  top[override:reverse_channel_scale]=2.2  dc_ratio=0.05  bproj_sig=81.33  sig_max=58.835@r4  gamma=0.100  alpha=[0.323,0.486,0.846,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  25923s  (~0.6h remaining)
+step   31250/32500  ntp=4.2497  v_reg=0.0000  fock_reg=0.0102  lr=8.05e-05  grad=0.24  rep=0.0011  top[override:reverse_channel_scale]=0.8  dc_ratio=0.12  bproj_sig=81.33  sig_max=58.827@r4  gamma=0.100  alpha=[0.323,0.486,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  25999s  (~0.6h remaining)
+step   31300/32500  ntp=4.2404  v_reg=0.0000  fock_reg=0.0102  lr=7.89e-05  grad=0.23  rep=0.0010  top[override:reverse_channel_scale]=0.4  dc_ratio=0.29  bproj_sig=81.32  sig_max=58.824@r4  gamma=0.100  alpha=[0.323,0.486,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  26075s  (~0.5h remaining)
+step   31350/32500  ntp=4.2499  v_reg=0.0000  fock_reg=0.0102  lr=7.73e-05  grad=0.24  rep=0.0010  top[override:reverse_channel_scale]=0.8  dc_ratio=0.12  bproj_sig=81.33  sig_max=58.862@r4  gamma=0.100  alpha=[0.323,0.485,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  26151s  (~0.5h remaining)
+step   31400/32500  ntp=4.2145  v_reg=0.0000  fock_reg=0.0102  lr=7.59e-05  grad=0.26  rep=0.0011  top[override:reverse_channel_scale]=0.2  dc_ratio=0.46  bproj_sig=81.32  sig_max=58.822@r4  gamma=0.100  alpha=[0.323,0.486,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  26227s  (~0.5h remaining)
+step   31450/32500  ntp=4.2621  v_reg=0.0000  fock_reg=0.0102  lr=7.45e-05  grad=0.25  rep=0.0009  top[override:reverse_channel_scale]=1.2  dc_ratio=0.09  bproj_sig=81.31  sig_max=58.840@r4  gamma=0.100  alpha=[0.323,0.486,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  26303s  (~0.5h remaining)
+step   31500/32500  ntp=4.2347  v_reg=0.0000  fock_reg=0.0102  lr=7.31e-05  grad=0.25  rep=0.0010  top[override:reverse_channel_scale]=1.0  dc_ratio=0.11  bproj_sig=81.31  sig_max=58.855@r4  gamma=0.100  alpha=[0.323,0.486,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.1GB  mem_peak=22.2GB  26379s  (~0.4h remaining)
+[resonance] step   31500  EMPTY SUMMARY -- no substep hook fired. This is a MISSING diagnostic, not a passing one. Check that semsimula_diag patches the substep 'baoab_cfc_lowrank' actually calls.
+    [evaluate] iter 0/40  mem_alloc=7.73GB  mem_resv=8.11GB
+    [evaluate] iter 10/40  mem_alloc=7.73GB  mem_resv=8.11GB
+    [evaluate] iter 20/40  mem_alloc=7.73GB  mem_resv=8.11GB
+    [evaluate] iter 30/40  mem_alloc=7.73GB  mem_resv=8.11GB
+    [evaluate] iter 39/40  mem_alloc=7.73GB  mem_resv=8.13GB
+    [evaluate] mem before=6.31GB  after=7.73GB  peak_during=23.30GB  trend(every 10 iters)=[7.73, 7.73, 7.73, 7.73, 7.73]GB
+>>> EVAL step 31,500  val_loss=4.2252  val_ppl=68.39  best=66.95    (26416s)
+step   31550/32500  ntp=4.2401  v_reg=0.0000  fock_reg=0.0102  lr=7.19e-05  grad=0.24  rep=0.0009  top[override:reverse_channel_scale]=1.3  dc_ratio=0.08  bproj_sig=81.30  sig_max=58.853@r4  gamma=0.100  alpha=[0.323,0.486,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=23.3GB  26491s  (~0.4h remaining)
+step   31600/32500  ntp=4.2494  v_reg=0.0000  fock_reg=0.0102  lr=7.06e-05  grad=0.22  rep=0.0010  top[override:reverse_channel_scale]=0.8  dc_ratio=0.12  bproj_sig=81.30  sig_max=58.858@r4  gamma=0.100  alpha=[0.323,0.486,0.847,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  26567s  (~0.4h remaining)
+step   31650/32500  ntp=4.2492  v_reg=0.0000  fock_reg=0.0102  lr=6.95e-05  grad=0.24  rep=0.0010  top[override:reverse_channel_scale]=2.4  dc_ratio=0.04  bproj_sig=81.29  sig_max=58.836@r4  gamma=0.100  alpha=[0.323,0.486,0.846,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  26643s  (~0.4h remaining)
+step   31700/32500  ntp=4.2468  v_reg=0.0000  fock_reg=0.0102  lr=6.84e-05  grad=0.24  rep=0.0010  top[override:reverse_channel_scale]=0.5  dc_ratio=0.21  bproj_sig=81.28  sig_max=58.809@r4  gamma=0.100  alpha=[0.323,0.486,0.846,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  26720s  (~0.4h remaining)
+step   31750/32500  ntp=4.2477  v_reg=0.0000  fock_reg=0.0102  lr=6.74e-05  grad=0.24  rep=0.0010  top[override:reverse_channel_scale]=0.7  dc_ratio=0.14  bproj_sig=81.28  sig_max=58.834@r4  gamma=0.100  alpha=[0.323,0.485,0.846,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  26796s  (~0.3h remaining)
+step   31800/32500  ntp=4.2239  v_reg=0.0000  fock_reg=0.0102  lr=6.65e-05  grad=0.26  rep=0.0011  top[override:reverse_channel_scale]=1.5  dc_ratio=0.08  bproj_sig=81.28  sig_max=58.819@r4  gamma=0.100  alpha=[0.323,0.486,0.846,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  26872s  (~0.3h remaining)
+step   31850/32500  ntp=4.2364  v_reg=0.0000  fock_reg=0.0102  lr=6.56e-05  grad=0.22  rep=0.0009  top[override:reverse_channel_scale]=0.3  dc_ratio=0.30  bproj_sig=81.27  sig_max=58.795@r4  gamma=0.100  alpha=[0.323,0.486,0.846,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  26948s  (~0.3h remaining)
+step   31900/32500  ntp=4.2140  v_reg=0.0000  fock_reg=0.0102  lr=6.47e-05  grad=0.23  rep=0.0009  top[override:reverse_channel_scale]=0.7  dc_ratio=0.15  bproj_sig=81.26  sig_max=58.784@r4  gamma=0.100  alpha=[0.323,0.486,0.846,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  27024s  (~0.3h remaining)
+step   31950/32500  ntp=4.2434  v_reg=0.0000  fock_reg=0.0102  lr=6.40e-05  grad=0.23  rep=0.0009  top[override:reverse_channel_scale]=1.2  dc_ratio=0.09  bproj_sig=81.27  sig_max=58.789@r4  gamma=0.100  alpha=[0.323,0.486,0.846,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  27100s  (~0.2h remaining)
+step   32000/32500  ntp=4.2213  v_reg=0.0000  fock_reg=0.0102  lr=6.33e-05  grad=0.25  rep=0.0010  top[override:reverse_channel_scale]=1.7  dc_ratio=0.06  bproj_sig=81.27  sig_max=58.811@r4  gamma=0.100  alpha=[0.323,0.486,0.846,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  27176s  (~0.2h remaining)
+[resonance] step   32000  EMPTY SUMMARY -- no substep hook fired. This is a MISSING diagnostic, not a passing one. Check that semsimula_diag patches the substep 'baoab_cfc_lowrank' actually calls.
+    [evaluate] iter 0/40  mem_alloc=7.73GB  mem_resv=8.11GB
+    [evaluate] iter 10/40  mem_alloc=7.73GB  mem_resv=8.11GB
+    [evaluate] iter 20/40  mem_alloc=7.73GB  mem_resv=8.11GB
+    [evaluate] iter 30/40  mem_alloc=7.73GB  mem_resv=8.11GB
+    [evaluate] iter 39/40  mem_alloc=7.73GB  mem_resv=8.13GB
+    [evaluate] mem before=6.31GB  after=7.73GB  peak_during=23.30GB  trend(every 10 iters)=[7.73, 7.73, 7.73, 7.73, 7.73]GB
+>>> EVAL step 32,000  val_loss=4.2363  val_ppl=69.15  best=66.95    (27213s)
+step   32050/32500  ntp=4.2434  v_reg=0.0000  fock_reg=0.0102  lr=6.27e-05  grad=0.23  rep=0.0010  top[override:reverse_channel_scale]=2.3  dc_ratio=0.04  bproj_sig=81.26  sig_max=58.766@r4  gamma=0.100  alpha=[0.323,0.486,0.846,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=23.3GB  27289s  (~0.2h remaining)
+step   32100/32500  ntp=4.2348  v_reg=0.0000  fock_reg=0.0102  lr=6.21e-05  grad=0.25  rep=0.0009  top[override:reverse_channel_scale]=3.7  dc_ratio=0.03  bproj_sig=81.26  sig_max=58.780@r4  gamma=0.100  alpha=[0.323,0.486,0.846,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  27365s  (~0.2h remaining)
+step   32150/32500  ntp=4.2353  v_reg=0.0000  fock_reg=0.0102  lr=6.16e-05  grad=0.24  rep=0.0010  top[override:reverse_channel_scale]=1.0  dc_ratio=0.10  bproj_sig=81.25  sig_max=58.786@r4  gamma=0.100  alpha=[0.323,0.486,0.846,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  27441s  (~0.2h remaining)
+step   32200/32500  ntp=4.2462  v_reg=0.0000  fock_reg=0.0102  lr=6.12e-05  grad=0.24  rep=0.0009  top[override:reverse_channel_scale]=1.8  dc_ratio=0.06  bproj_sig=81.25  sig_max=58.800@r4  gamma=0.100  alpha=[0.323,0.486,0.846,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  27517s  (~0.1h remaining)
+step   32250/32500  ntp=4.2477  v_reg=0.0000  fock_reg=0.0102  lr=6.08e-05  grad=0.25  rep=0.0010  top[override:reverse_channel_scale]=1.7  dc_ratio=0.07  bproj_sig=81.25  sig_max=58.803@r4  gamma=0.100  alpha=[0.323,0.486,0.846,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  27593s  (~0.1h remaining)
+step   32300/32500  ntp=4.2320  v_reg=0.0000  fock_reg=0.0102  lr=6.05e-05  grad=0.23  rep=0.0010  top[override:reverse_channel_scale]=1.3  dc_ratio=0.07  bproj_sig=81.24  sig_max=58.845@r4  gamma=0.100  alpha=[0.323,0.486,0.846,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  27669s  (~0.1h remaining)
+step   32350/32500  ntp=4.2516  v_reg=0.0000  fock_reg=0.0102  lr=6.03e-05  grad=0.25  rep=0.0010  top[override:reverse_channel_scale]=2.4  dc_ratio=0.05  bproj_sig=81.23  sig_max=58.844@r4  gamma=0.100  alpha=[0.323,0.486,0.846,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  27745s  (~0.1h remaining)
+step   32400/32500  ntp=4.2423  v_reg=0.0000  fock_reg=0.0102  lr=6.01e-05  grad=0.24  rep=0.0009  top[override:reverse_channel_scale]=1.3  dc_ratio=0.08  bproj_sig=81.23  sig_max=58.860@r4  gamma=0.100  alpha=[0.323,0.486,0.846,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  27822s  (~0.0h remaining)
+step   32450/32500  ntp=4.2431  v_reg=0.0000  fock_reg=0.0102  lr=6.00e-05  grad=0.24  rep=0.0009  top[override:reverse_channel_scale]=1.5  dc_ratio=0.07  bproj_sig=81.23  sig_max=58.867@r4  gamma=0.100  alpha=[0.323,0.486,0.846,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  27897s  (~0.0h remaining)
+step   32500/32500  ntp=4.2414  v_reg=0.0000  fock_reg=0.0102  lr=6.00e-05  grad=0.23  rep=0.0010  top[override:reverse_channel_scale]=1.4  dc_ratio=0.08  bproj_sig=81.23  sig_max=58.877@r4  gamma=0.100  alpha=[0.323,0.486,0.846,0.977,1.000]  mem_alloc=2.4GB  mem_resv=23.2GB  mem_peak=22.2GB  27974s  (~0.0h remaining)
+[resonance] step   32500  EMPTY SUMMARY -- no substep hook fired. This is a MISSING diagnostic, not a passing one. Check that semsimula_diag patches the substep 'baoab_cfc_lowrank' actually calls.
+    [evaluate] iter 0/40  mem_alloc=7.73GB  mem_resv=8.11GB
+    [evaluate] iter 10/40  mem_alloc=7.73GB  mem_resv=8.11GB
+    [evaluate] iter 20/40  mem_alloc=7.73GB  mem_resv=8.11GB
+    [evaluate] iter 30/40  mem_alloc=7.73GB  mem_resv=8.11GB
+    [evaluate] iter 39/40  mem_alloc=7.73GB  mem_resv=8.11GB
+    [evaluate] mem before=6.31GB  after=7.73GB  peak_during=23.30GB  trend(every 10 iters)=[7.73, 7.73, 7.73, 7.73, 7.73]GB
+>>> EVAL step 32,500  val_loss=4.2120  val_ppl=67.49  best=66.95    (28011s)
+
+Training complete. Best PPL: 66.95
+
+[run_training] finished cleanly; next_step=32500 (== TOTAL_STEPS means training is fully done).

@@ -380,7 +380,7 @@ L=2 ladder checkpoints will be usable when they land.
 | gate | what | criterion |
 | --- | --- | --- |
 | 0 | N = L, dt = dt_tr, policy `hold` | **must reproduce the checkpoint's PPL exactly** -- this is the no-op case and any drift is a harness bug |
-| 1 | reset-vs-carried at N = L | reset should be clearly worse; it is gradient descent (§3.1) |
+| 1 | reset-vs-carried at N = L | reset should be clearly worse; it is gradient descent (§3.1). **Now the programme's only clean velocity test** — the L=1 ladder point cannot serve, because it disables the registers as well (§9) |
 | 2 | axis 1, `cycle`, N in 1..2L | capability question |
 | 3 | axis 2, `hold`, N in 1..8 at fixed T | **the framework test** |
 | 4 | axis 2, `interp` | is the code table a smooth sample? |
@@ -415,6 +415,19 @@ extrapolation), so it is the cheapest first probe.
 - **The resonance monitor does not cover this.** `omega*dt` detects
   instability, not accuracy loss at a stable-but-coarse step, and under
   `baoab_cfc_lowrank` it reports stiffness rather than a stability margin.
+- **N=1 is not a clean refinement point.** `FOM_AXIS2_N` includes it, but
+  the Fock register mechanism is **untrainable at L=1** — every
+  `creation_gate_qkv` parameter receives exactly zero gradient there, and the
+  live L=1 ladder run holds `sig_max` at its initialisation value for 600
+  steps while both L=2 arms differentiate within 50. See §6.1 of
+  [`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md).
+  The gates still compute, so the *evaluation* at N=1 is well defined and
+  worth running; what it is not is a point on the same curve as N>=2.
+  Expect a structurally different endpoint there and do not read it as
+  evidence about refinement. The mechanism behind the severed gradient is
+  **not yet established** — two explanations were drafted and both described
+  a code path the run does not take.
+
 - **Gate 0 is not a formality.** If N = L with `hold` does not reproduce
   the checkpoint's perplexity bit-for-bit, nothing downstream means
   anything.

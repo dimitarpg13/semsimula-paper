@@ -68,7 +68,7 @@ per call against gram's 40.1 ms. Cell 5 asserts the built config carries it.
 | 4 | **L=4**, matched | ~27h | hops, versus "the L=8 arm was handicapped" | queued |
 | 5 | L=2, `'attention_potential'` | ~14h | the price of conservativity, from scratch, parameter-matched | queued |
 | 6 | L=2, `'nonconservative'`, lambda pinned | ~14h | an unconstrained pointwise map, the one function class Fock has nowhere | queued |
-| 7 | L=1, `'none'` | ~10h | one hop; also the structural floor where the Jacobi metric ceases to exist | queued |
+| 7 | L=1, `'none'` | ~7h | one hop; the structural floor where the Jacobi metric ceases to exist — **but see §6.1: it also silently disables the Fock registers** | **RUNNING** 2026-09-24 |
 
 Run 1 first regardless of ordering elsewhere: it is 2.7 hours and it makes
 every other number defensible.
@@ -340,6 +340,74 @@ unlikely to close this on its own, and claiming otherwise in advance would be
 the mirror image of the error this section exists to correct.
 
 ## 6. Open risks
+
+### 6.1 The Fock register mechanism is untrainable at L=1 — **CONFIRMED 2026-09-24**
+
+**L=1 is not "L=2 with one fewer layer". It is the architecture with the
+Fock machinery switched off**, and any L=1 result must be read that way.
+
+Two independent lines of evidence:
+
+| evidence | L=1 | L=2 |
+| --- | --- | --- |
+| gradient reaching `creation&#95;gate&#95;qkv.W&#95;Q` / `log&#95;tau` / `W&#95;K` / `W&#95;V` | **exactly 0.000e+00**, all four | 3.18e-05 / 1.87e-05 / 7.86e-05 / 1.97e-02 |
+| live `sig&#95;max` over the first 600 steps (d=384) | **14.286 at all 12 readings**, register index pinned at 0 | 14.289 -> 14.380 (@3e-04), 14.307 -> 16.247 (@2.4e-03), index wandering |
+
+`14.2857` is exactly `CREATION&#95;LOGIT&#95;SCALE&#95;INIT = 1/0.07`, and an
+index pinned at 0 is what `max` returns when every register is still tied at
+its initial value. Both L=2 arms differentiate within 50 steps. This is a
+severed gradient path, not slow learning.
+
+**What still runs at L=1.** The gates keep *computing* — `dc&#95;ratio` varies
+normally (1.36-2.44) and `rep` is non-zero (0.0004) because register
+repulsion is an explicit loss term on register contents. So the machinery is
+present, evaluated, and regularised, while contributing nothing the optimiser
+can steer. V&#95;theta, V&#95;phi, the five xi channels and the reverse channel
+are unaffected.
+
+#### The mechanism is NOT established
+
+Recorded deliberately. Two explanations were drafted for this section and
+**both were wrong** — each described a code path the run does not take
+(the legacy extended-state branch, when the live config sets
+`prefix&#95;causal&#95;registers=True`). The finding above is reproducible;
+the reason for it is not yet known.
+
+**Do not design a fix on top of this entry.** Registers aggregate across
+positions, so any within-layer token-to-register readout risks letting
+position `t` see `t+1` — and this architecture already carries
+`Fock-PARFLM_Causal_Leak_Audit_Results.md` plus a `prefix&#95;causal`
+mode written to close a leak that was found in practice. The trained-leak
+probe passes today (`dNLL = +0.0000`, honest 49.13 vs standard 47.54);
+an unexamined readout path is the change most likely to break that silently.
+Diagnose first.
+
+#### What it costs this programme
+
+**Run 7 cannot answer the question it was queued for.** L=1 was meant to
+isolate whether the second-order velocity state is load-bearing —
+`h&#95;prev = h0` gives `v == 0` at the only layer, verified in running code
+(`decode&#95;velocity` called once, `max|h - h&#95;prev| = 0.000e+00`, against
+L=2's second layer at 9.748e-02). It now differs from L=2 in **two** ways,
+so no endpoint can be attributed to either.
+
+Let it finish — it is still a legitimate ladder point, and "what does this
+architecture do at depth 1" is a question the ladder wants answered. Just do
+not read it as a velocity result.
+
+**The clean velocity test is gate 1 of
+[`Composing_Single_Layer_Inferences_Flow_or_Maps.md`](Composing_Single_Layer_Inferences_Flow_or_Maps.md)**
+— reset-versus-carried at N=L, which sets `h&#95;prev = h` so `v == 0` with
+registers working and depth unchanged. Minutes of evaluation against seven
+hours of training.
+
+**A comparable L=1 arm means removing registers at every depth**, not fixing
+them at one. An `M=0` ablation ladder is internally consistent across
+L=1/2/4/8 and answers "what do registers buy at each depth" as a
+by-product. That is a new programme, not a patch — a fix applied only at
+L=1 makes that rung a different architecture and voids §2, and a fix applied
+everywhere invalidates all three completed arms.
+
 
 - **`GRAD_CLIP = 1.0` is a depth-dependent intervention, and it is not
   recorded.** It fires on 4.2% of steps at L=2 `'none'` and 36.2% at L=8 —
