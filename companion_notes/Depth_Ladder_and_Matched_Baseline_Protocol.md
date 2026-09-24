@@ -341,55 +341,93 @@ the mirror image of the error this section exists to correct.
 
 ## 6. Open risks
 
-### 6.1 The Fock register mechanism is untrainable at L=1 — **CONFIRMED 2026-09-24**
+### 6.1 At L=1 the register bank is read but never updated — **2026-09-24**
 
-**L=1 is not "L=2 with one fewer layer". It is the architecture with the
-Fock machinery switched off**, and any L=1 result must be read that way.
+> Full treatment, with figures and the depth-dependence of the mechanism's
+> capacity, in
+> [`Fock_Mechanism_Efficiency_Across_Layer_Depth.md`](Fock_Mechanism_Efficiency_Across_Layer_Depth.md).
 
-Two independent lines of evidence:
+**Scope, corrected.** An earlier draft of this section claimed the whole Fock
+mechanism is inert at L=1 and, in a further draft, at L=2 as well. Both were
+wrong, and wrong the same way: they rested on gradient measurements taken on
+a **freshly built** model, where the register-to-token path is gated shut by
+construction. The correct, narrower finding is below.
 
-| evidence | L=1 | L=2 |
-| --- | --- | --- |
-| gradient reaching `creation&#95;gate&#95;qkv.W&#95;Q` / `log&#95;tau` / `W&#95;K` / `W&#95;V` | **exactly 0.000e+00**, all four | 3.18e-05 / 1.87e-05 / 7.86e-05 / 1.97e-02 |
-| live `sig&#95;max` over the first 600 steps (d=384) | **14.286 at all 12 readings**, register index pinned at 0 | 14.289 -> 14.380 (@3e-04), 14.307 -> 16.247 (@2.4e-03), index wandering |
+Registers reach the tokens by exactly one route,
 
-`14.2857` is exactly `CREATION&#95;LOGIT&#95;SCALE&#95;INIT = 1/0.07`, and an
-index pinned at 0 is what `max` returns when every register is still tied at
-its initial value. Both L=2 arms differentiate within 50 steps. This is a
-severed gradient path, not slow learning.
+```python
+Q_force   = self.reverse_ch(h_new, r_rev, active)
+increment = (dt*dt / m_b) * tanh(reverse_channel_scale) * warm * Q_force
+```
 
-**What still runs at L=1.** The gates keep *computing* — `dc&#95;ratio` varies
-normally (1.36-2.44) and `rep` is non-zero (0.0004) because register
-repulsion is an explicit loss term on register contents. So the machinery is
-present, evaluated, and regularised, while contributing nothing the optimiser
-can steer. V&#95;theta, V&#95;phi, the five xi channels and the reverse channel
-are unaffected.
+and **both gate factors are zero at initialisation**:
+`reverse&#95;channel&#95;scale` is `nn.Parameter(torch.zeros(...))` so
+`tanh(.) == 0`, and `warm = reverse&#95;warmup&#95;step / 4000 == 0`. Any
+gradient probe on an untrained model therefore reports "registers do nothing"
+at every depth. With both gates set to their trained values
+(`tanh(scale) ~ 0.017`, warmup complete):
 
-#### The mechanism is NOT established
+| | `register&#95;embed` | `creation&#95;gate&#95;qkv` |
+| --- | ---: | ---: |
+| L=1, gate shut (fresh init) | 0.000e+00 | 0.000e+00 |
+| **L=1, gate open (trained)** | **3.370e-02** | **0.000e+00** |
+| L=2, gate shut (fresh init) | 0.000e+00 | 0.000e+00 |
+| **L=2, gate open (trained)** | **2.185e-02** | **2.815e-03** |
 
-Recorded deliberately. Two explanations were drafted for this section and
-**both were wrong** — each described a code path the run does not take
-(the legacy extended-state branch, when the live config sets
-`prefix&#95;causal&#95;registers=True`). The finding above is reproducible;
-the reason for it is not yet known.
+**At L=2 the mechanism works.** Both the bank and the creation gate receive
+next-token gradient. Nothing in §5 needs re-describing.
 
-**Do not design a fix on top of this entry.** Registers aggregate across
-positions, so any within-layer token-to-register readout risks letting
-position `t` see `t+1` — and this architecture already carries
-`Fock-PARFLM_Causal_Leak_Audit_Results.md` plus a `prefix&#95;causal`
-mode written to close a leak that was found in practice. The trained-leak
-probe passes today (`dNLL = +0.0000`, honest 49.13 vs standard 47.54);
-an unexamined readout path is the change most likely to break that silently.
-Diagnose first.
+**At L=1 the bank is read but never updated.** `register&#95;embed` takes
+gradient — the reverse channel reads it and it does affect predictions — but
+`creation&#95;gate&#95;qkv` sits at exactly zero. The cause is separate from
+the gate and survives: `_init&#95;registers` sets `salience = 1.0`, so
+
+```python
+blend = salience.unsqueeze(-1)               # 1.0 at layer 0
+r = blend * r + (1.0 - blend) * readout      # (1 - 1.0) == 0
+```
+
+annihilates the creation readout at layer 0. The gate's only other exit,
+`alpha&#95;max -> salience -> active`, runs through `&#95;active&#95;mask`,
+a boolean comparison with no gradient. At L>=2 later layers (whose salience
+has decayed) train the shared module; **at L=1 there is no later layer.**
+
+So L=1 runs with a **static** register bank: read by the reverse channel,
+frozen at `register&#95;embed`, with the creation gate untrainable.
+
+#### This is broader than L=1
+
+**Layer 0 never trains the creation gate at any depth.** The gate is one
+shared module, so at L>=2 the later layers cover for it and the effect is
+invisible. L=1 removes the cover rather than introducing the problem.
+
+#### A knob exists, opt-in and default-inert
+
+`register&#95;salience&#95;init` (added 2026-09-24, default **1.0**) sets the
+starting salience. At the default it reproduces the historical behaviour
+bit-exactly — verified against pre-change measurements, so the three
+completed arms and their checkpoints still correspond to the code that made
+them. Below 1.0 it opens `(1 - blend)` and the creation gate becomes
+trainable in a single layer: 9.11e-06 at 0.9, 8.52e-05 at 0.5, 3.41e-04 at
+0.25. `0.5` is the principled choice — one decay step from 1.0 at the live
+`register&#95;salience&#95;decay = 0.5`, i.e. the floor of what layer 1 sees
+at L=2 — and it stays well clear of the 0.005 activity threshold. Range is
+checked in `&#95;&#95;init&#95;&#95;`; nine tests in
+`test&#95;register&#95;salience&#95;init.py` pin both the default and the fix.
+
+It is **not** a causality risk: it scales a position-independent mixing
+coefficient, touching no mask and no readout path.
 
 #### What it costs this programme
 
-**Run 7 cannot answer the question it was queued for.** L=1 was meant to
-isolate whether the second-order velocity state is load-bearing —
+**Run 7 still cannot cleanly answer the question it was queued for.** L=1 was
+meant to isolate whether the second-order velocity state is load-bearing —
 `h&#95;prev = h0` gives `v == 0` at the only layer, verified in running code
 (`decode&#95;velocity` called once, `max|h - h&#95;prev| = 0.000e+00`, against
-L=2's second layer at 9.748e-02). It now differs from L=2 in **two** ways,
-so no endpoint can be attributed to either.
+L=2's second layer at 9.748e-02). It also has a frozen creation gate, so it differs from
+L=2 in **two** ways and no endpoint can be attributed to either. The second
+difference is narrower than the earlier draft claimed — a static bank, not an
+absent mechanism — but it is still a second difference.
 
 Let it finish — it is still a legitimate ladder point, and "what does this
 architecture do at depth 1" is a question the ladder wants answered. Just do
@@ -401,12 +439,13 @@ not read it as a velocity result.
 registers working and depth unchanged. Minutes of evaluation against seven
 hours of training.
 
-**A comparable L=1 arm means removing registers at every depth**, not fixing
-them at one. An `M=0` ablation ladder is internally consistent across
-L=1/2/4/8 and answers "what do registers buy at each depth" as a
-by-product. That is a new programme, not a patch — a fix applied only at
-L=1 makes that rung a different architecture and voids §2, and a fix applied
-everywhere invalidates all three completed arms.
+**A comparable L=1 arm** can now be had with
+`register&#95;salience&#95;init = 0.5`, but it is a *different architecture*
+from the L>=2 rungs and voids §2 if placed on the ladder. Use it outside the
+ladder — as the instrument for
+[`Composing_Single_Layer_Inferences_Flow_or_Maps.md`](Composing_Single_Layer_Inferences_Flow_or_Maps.md),
+which is about composing a single trained layer — and keep run 7 as the
+ladder point, interpreted with the static-bank caveat.
 
 
 - **`GRAD_CLIP = 1.0` is a depth-dependent intervention, and it is not

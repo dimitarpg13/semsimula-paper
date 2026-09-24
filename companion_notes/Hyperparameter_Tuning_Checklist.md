@@ -515,25 +515,29 @@ unknown part of that 6.8 PPL is the clip rather than the depth.
 ### 7.3a Depth can change the model, not just the optimisation — **L=1**
 
 §7.1 says depth adds no parameters, so a ladder point is the same operator
-applied more times. **That stops being true at L=1.** Every
-`creation&#95;gate&#95;qkv` parameter receives exactly zero gradient there
-(against 3.18e-05 to 1.97e-02 at L=2), and the live L=1 run holds
-`sig&#95;max` at `CREATION&#95;LOGIT&#95;SCALE&#95;INIT = 14.2857` across all
-12 readings of its first 600 steps with the register index pinned at 0,
-while both L=2 arms differentiate within 50 steps.
-
-So L=1 is the architecture **with the Fock register mechanism switched
-off** — present, computed, regularised through the repulsion term, and
-untrainable. §6.1 of
+applied more times. **L=1 is a partial exception.** The register bank is
+still read there — `register&#95;embed` takes next-token gradient — but the
+creation gate is not trainable: `salience` initialises to exactly 1.0, so
+`(1 - blend) == 0` annihilates the creation readout at layer 0, and only
+layers 1 and up can train the shared module. L=1 therefore runs with a
+**static** bank. §6.1 of
 [`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md)
-carries the evidence, the consequences and the explicit warning that the
-mechanism is **not established** and no fix should be designed on top of it.
+has the evidence and the opt-in `register&#95;salience&#95;init` knob;
+[`Fock_Mechanism_Efficiency_Across_Layer_Depth.md`](Fock_Mechanism_Efficiency_Across_Layer_Depth.md)
+has the depth-by-depth picture.
 
-Two consequences for this document. Any knob measured at L=1 is measured on
-a different model, so **nothing tuned there transfers up** — the reverse of
+An earlier draft of this subsection said the Fock mechanism was switched off
+at L=1 entirely. That came from probing a **freshly built** model, where
+`tanh(reverse&#95;channel&#95;scale) == 0` and the warmup is `0/4000`, so the
+register-to-token path is gated shut at every depth. **Never measure register
+behaviour without first reading the effective gate** — Cell 6b-8 prints it
+before anything else.
+
+Two consequences for this document. Anything tuned at L=1 is tuned on a model
+with a frozen creation gate, so **it does not transfer up** — the reverse of
 §7.2's conclusion for LR. And `REGISTER&#95;REPULSION&#95;COEFF` (§3.2,
-"marginal") is the *only* gradient path to register content at L=1, which
-makes it structural there rather than marginal.
+"marginal") is the only term that can shape register *content* at L=1 once
+the bank is frozen, which makes it structural there rather than marginal.
 
 ### 7.4 What genuinely changes at L=4
 

@@ -415,18 +415,34 @@ extrapolation), so it is the cheapest first probe.
 - **The resonance monitor does not cover this.** `omega*dt` detects
   instability, not accuracy loss at a stable-but-coarse step, and under
   `baoab_cfc_lowrank` it reports stiffness rather than a stability margin.
-- **N=1 is not a clean refinement point.** `FOM_AXIS2_N` includes it, but
-  the Fock register mechanism is **untrainable at L=1** — every
-  `creation_gate_qkv` parameter receives exactly zero gradient there, and the
-  live L=1 ladder run holds `sig_max` at its initialisation value for 600
-  steps while both L=2 arms differentiate within 50. See §6.1 of
+- **N=1 carries a static register bank.** `FOM_AXIS2_N` includes it, and at
+  a single layer the register bank is *read* by the reverse channel but never
+  *updated*: `salience` initialises to exactly 1.0, so the creation readout is
+  multiplied by `(1 - blend) == 0` at layer 0, and only layers 1 and up can
+  train the shared gate. The live L=1 ladder run shows it — `sig_max` pinned
+  at its initialisation value while both L=2 arms differentiate within 50
+  steps. See §6.1 of
   [`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md).
-  The gates still compute, so the *evaluation* at N=1 is well defined and
-  worth running; what it is not is a point on the same curve as N>=2.
-  Expect a structurally different endpoint there and do not read it as
-  evidence about refinement. The mechanism behind the severed gradient is
-  **not yet established** — two explanations were drafted and both described
-  a code path the run does not take.
+  So the N=1 *evaluation* is well defined and worth running, but it is not a
+  point on the same curve as N>=2, and its endpoint should not be read as
+  evidence about refinement.
+
+- **An L=1 model with a live creation gate now exists as an option.**
+  `register_salience_init` (default 1.0, bit-exactly the historical
+  behaviour) opens `(1 - blend)` when set below 1; `0.5` is one decay step
+  from the default. That is the instrument this document wants — a single
+  trained layer whose Fock machinery is fully live, to chain *k* times and
+  compare against an L=k model. It sits **outside** the depth ladder, since
+  it is a different architecture from the L>=2 rungs. The depth-by-depth
+  picture is in
+  [`Fock_Mechanism_Efficiency_Across_Layer_Depth.md`](Fock_Mechanism_Efficiency_Across_Layer_Depth.md).
+
+- **Read the reverse-channel gate before measuring anything about
+  registers.** `tanh(reverse_channel_scale)` initialises to 0 and the warmup
+  is `reverse_warmup_step / 4000`, so on a freshly built model the
+  register-to-token path is shut and every probe reports registers doing
+  nothing — at *any* depth. Cell 6b-8 prints the effective gate first for
+  exactly this reason.
 
 - **Gate 0 is not a formality.** If N = L with `hold` does not reproduce
   the checkpoint's perplexity bit-for-bit, nothing downstream means

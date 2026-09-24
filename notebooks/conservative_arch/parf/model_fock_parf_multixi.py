@@ -78,6 +78,23 @@ class FockMultiXiPARFConfig(MultiXiPARFConfig):
       register_salience_decay : float — Per-layer exponential decay of salience.
       register_salience_threshold : float — σ_j must exceed this for register
                               j to participate in dynamics.
+      register_salience_init : float — Salience every register starts at.
+                              **1.0 (the default) makes layer 0 unable to
+                              train the creation gate**: the creation step is
+                              ``r = blend*r + (1-blend)*readout`` with
+                              ``blend = salience``, so at 1.0 the readout is
+                              multiplied by zero and no gradient reaches
+                              ``creation_gate_qkv`` from that layer. At L>=2
+                              later layers (whose salience has decayed) train
+                              it and the effect is invisible; at **L=1 it is
+                              the whole model** and the Fock mechanism is
+                              inert. Set below 1.0 — 0.5 is one decay step
+                              from 1.0, i.e. the floor of what layer 1 sees
+                              at L=2 — to make a single layer's registers
+                              trainable. Must stay above
+                              ``register_salience_threshold`` or every
+                              register starts inactive. See §6.1 of
+                              companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md.
       creation_gate_hidden  : int — Hidden width of the v1 creation gate MLP.
       stack_discipline      : bool — LIFO (salience-ordered) activation.
       register_init_scale   : float — Std of the learnable vacuum embeddings.
@@ -93,6 +110,7 @@ class FockMultiXiPARFConfig(MultiXiPARFConfig):
     n_registers: int = 16
     register_salience_decay: float = 0.9
     register_salience_threshold: float = 0.1
+    register_salience_init: float = 1.0
     creation_gate_hidden: int = 64
     stack_discipline: bool = True
     register_init_scale: float = 0.02
@@ -191,6 +209,7 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
             )
         super().__init__(cfg)
         self._fock_cfg = cfg
+        self._validate_salience_init()      # fail here, not on the first batch
         M, d, L = cfg.n_registers, cfg.d, cfg.L
 
         if cfg.ortho_register_init and M <= d:
@@ -285,10 +304,31 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
         self._repulsion_terms: List[torch.Tensor] = []
 
     # ------------------------------------------------------------------
+    def _validate_salience_init(self) -> float:
+        """Resolve and range-check ``register_salience_init``.
+
+        Called from ``__init__`` so a bad value fails at construction rather
+        than on the first batch, and again from ``_init_registers`` so the
+        invariant holds if the config is mutated after the fact.
+        """
+        s0 = float(getattr(self.cfg, "register_salience_init", 1.0))
+        if not (self.cfg.register_salience_threshold < s0 <= 1.0):
+            raise ValueError(
+                f"register_salience_init={s0} must lie in "
+                f"({self.cfg.register_salience_threshold}, 1.0]: at or below "
+                f"the salience threshold every register starts inactive, and "
+                f"above 1.0 is not a salience.")
+        return s0
+
     def _init_registers(
         self, B: int, device: torch.device,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         M, d = self.cfg.n_registers, self.cfg.d
+        # salience_init == 1.0 reproduces the historical behaviour exactly:
+        # blend == 1 makes the creation readout a no-op at layer 0. Anything
+        # below 1.0 opens that gradient path; it must stay above the activity
+        # threshold or every register starts masked off.
+        s0 = self._validate_salience_init()
         if (
             self.cfg.fock_version == "v2"
             and getattr(self.cfg, "prefix_causal_registers", False)
@@ -296,13 +336,13 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
             # Per-position causal state, initialised position-independent
             # (Tr=1 broadcasts to T at the first blend).
             r = self.register_embed.view(1, 1, M, d).expand(B, 1, M, d)
-            salience = torch.ones(B, 1, M, device=device)
+            salience = torch.full((B, 1, M), s0, device=device)
             return r, salience
         r = self.register_embed.unsqueeze(0).expand(B, M, d).clone()
         if self.cfg.fock_version == "v1":
             salience = torch.zeros(B, M, device=device)
         else:
-            salience = torch.ones(B, M, device=device)
+            salience = torch.full((B, M), s0, device=device)
         return r, salience
 
     # ------------------------------------------------------------------
