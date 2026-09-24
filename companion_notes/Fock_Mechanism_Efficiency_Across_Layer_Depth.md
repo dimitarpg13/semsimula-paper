@@ -35,8 +35,12 @@ Three findings, in increasing order of how surprising they were.
    it is a depth-1 model with a learned constant memory.
 
 The mechanism's capacity to write content is therefore a **function of
-depth**, zero at L=1 and growing with `L`. Whether that capacity is *worth*
-anything is a separate question, and §5 proposes the measurement.
+depth**, zero at L=1 and growing with `L`. §5 proposes the measurement and
+§6 reports it: the register-to-token path is worth **+52.2% at L=1 and
++275.1% at L=2**, so the capacity is not merely present but used. The same
+section records an ablation that *failed* — freezing the bank is worse than
+removing it, because you cannot ablate a trained component's input without
+going off-distribution.
 
 ---
 
@@ -172,6 +176,35 @@ r_out vs register_embed     : max|diff| = 0.000e+00
 r_out on input A vs input B : max|diff| = 0.000e+00
 ```
 
+### 4.1 The model turns the channel down when the bank carries nothing
+
+Measured on the two trained checkpoints — nobody set these, training chose
+them:
+
+| | `tanh(scale)` per layer | effective gate |
+| --- | --- | ---: |
+| L=1 | [0.0037] | **0.003671** |
+| L=2 | [0.0174, 0.0148] | **0.01738** |
+
+**4.7x weaker at L=1.** With a static bank carrying no information about the
+input, the reverse channel's force is worth less, and the learned gate shrank
+to match. This is the architecture reporting on its own usefulness, and it is
+the cleanest single piece of evidence that depth changes what the mechanism
+is worth.
+
+The creation gate at L=1 is also deader than §3 predicted. It receives zero
+gradient from the **repulsion term as well** — because `blend = 1` makes
+`r_new` identical to `register&#95;embed`, the penalty is computed on a
+quantity the gate never touched:
+
+```
+creation_gate_qkv.W_K / W_Q / W_V / logit_scale :  ntp 0.000e+00   repulsion 0.000e+00
+register_embed                                  :  ntp 2.875e-03   repulsion 1.063e-06
+```
+
+So 1,720,352 parameters — 2.24% of the model — received gradient from
+**nothing at all** across 32,500 training steps.
+
 So the depth ladder reads:
 
 | | what the mechanism is | live parameters |
@@ -209,9 +242,10 @@ flowchart TD
 carries information, and that a non-conservative force exists at all. Since
 $Q_{\rm force}$ is register-derived by construction, A cannot separate them.
 
-**Ablation B is the discriminating one.** Keep the force firing, feed it the
-*static* `register_embed` instead of the accumulated `r_new`. The difference
-B − A is what accumulation is worth.
+**Ablation B was designed as the discriminating one** — keep the force firing,
+feed it the *static* `register_embed` instead of the accumulated `r_new`, so
+that B − A prices accumulation. **It does not work**, for a reason worth
+reading before designing the next one: §6.2. A is the measure that survived.
 
 **B has a built-in validity check: at L=1 it is a no-op by construction**,
 because the bank is already static there. A non-zero cost at L=1 means the
@@ -220,31 +254,99 @@ harness is wrong and nothing downstream counts — the role gate 0 plays in
 
 ---
 
-## 6. Pre-registered predictions, and a tension
+## 6. Results — **measured 2026-09-24**, and what B got wrong
 
-Recorded before running any of it.
+Both ablations run, both checkpoints probed. The validity check passed
+(`|delta| = 0.0000` at L=1), so the harness is sound.
 
-| outcome | reading |
-| --- | --- |
-| B's cost grows with `L` | accumulation is what registers buy, and the mechanism genuinely improves with depth |
-| B's cost is flat in `L` | registers contribute a fixed amount; depth adds capacity nobody uses |
-| B's cost shrinks with `L` | later layers *overwrite* rather than accumulate — consistent with homogenisation |
+| | gate | baseline | **A** path removed | **B** bank frozen |
+| --- | ---: | ---: | ---: | ---: |
+| L=1 | 0.003671 | 81.91 | 124.68 (**+52.2%**) | 81.91 (+0.0%, no-op) |
+| L=2 | 0.01738 | 66.22 | 248.37 (**+275.1%**) | 878.33 (+1226.4%) |
 
-**The tension.** If deeper meant a better Fock mechanism, and the mechanism
-mattered much, the L=8 arm should have beaten L=2. It did not: **81.58 against
-74.75**. Either the contribution does not grow with depth, or it grows and is
-more than cancelled by whatever makes deep arms worse. Ablation B decomposes
-exactly that — a within-model delta at each depth, against a cross-model PPL
-that moves the other way.
+(Baselines are the cell's 12x4 fixed-batch estimate, lower than the settled
+figures of 87.09 and 66.98; they are internally consistent, which is what a
+paired ablation needs.)
+
+### 6.1 A answers the depth question
+
+**The register-to-token path is worth five times more at L=2 than at L=1** —
++275.1% against +52.2%. That is §5's "the contribution grows with `L`"
+outcome, arriving through ablation A rather than B.
+
+Part of that difference is the learned gate (§4.1): the L=2 model relies on
+the channel more because its bank carries information. That is not a
+confound to be subtracted — *choosing* to rely on the channel more is part of
+what the extra layer buys.
+
+A also supplies a number the programme has been missing. The model card
+records that the reverse channel's post-leak-fix value
+["will only be known after re-training with `prefix&#95;causal&#95;registers=True`"](Fock-PARFLM_Causal_Leak_Audit_Results.md).
+These arms are that re-training, and **+275.1% at L=2** is the answer: the
+channel is still decisive after the causal fix, not mostly leak. It is an
+ablation rather than a trained-without arm, so read it as an upper bound.
+
+### 6.2 B failed, and the failure is instructive
+
+**B is 3.5x more damaging than A.** Removing the force entirely costs +275%;
+feeding it a *static* bank costs +1226%. Absence is survivable; a wrong
+signal is not — the trained model has adapted to a particular register input,
+and substituting another injects a large spurious force.
+
+So **B measures out-of-distribution sensitivity, not the value of
+accumulation**, and the +1226% must not be quoted as the price of the Fock
+mechanism. Part B of the cell corroborates the sensitivity: perturbing
+`register&#95;embed` by 0.01 moves the logits as much as perturbing
+`lm&#95;head`.
+
+The general lesson, and it applies to any future ablation here:
+
+> **You cannot ablate a trained component's input without going
+> off-distribution.** Removing a component from a trained model and training
+> a model without it are different measurements, and only the second prices
+> the component.
+
+The programme already had this right elsewhere: the model card's
+`125.94 vs 27.23` comes from an arm **trained without** the reverse channel,
+not from ablating one that had it. That is why it is the honest comparison.
+
+### 6.3 What this does and does not settle
+
+**Settled.** The mechanism is load-bearing at both depths, and markedly more
+so at L=2. L=1 is *not* "Fock switched off" — it runs a degraded version,
+static bank and a gate turned down 4.7x, still worth +52.2%.
+
+**Not settled: how much of the L=1 vs L=2 PPL gap is Fock.** The measured gap
+is 87.09 against 66.98, +30.0%. The register path is worth more than that at
+*both* depths, so the gap cannot be read as "the mechanism is missing at
+L=1" — if it were missing, removing it at L=1 would cost nothing, and it
+costs 52%. The gap is a degraded mechanism *plus* `v == 0`, `dt = 8` against
+4, a 2.6% clip rate against 0.0%, and one fewer composition step.
+
+Pricing the degradation alone needs a **trained** arm: L=2 with salience
+pinned at 1.0 at every layer, reproducing L=1's frozen-bank condition while
+holding depth, `dt`, velocity and clip rate fixed. About 13h, and the only
+clean version.
+
+### 6.4 The standing tension, unresolved
+
+If deeper meant a better mechanism *and* the mechanism dominated, the L=8 arm
+should have beaten L=2. It did not: **81.58 against 74.75**. §6.1 shows the
+contribution does grow with depth, so the tension sharpens rather than
+dissolves — something else (homogenisation, refinement removing expressivity)
+more than cancels a mechanism that is getting stronger. Running A on the L=8
+checkpoint would extend the curve to three points and cost minutes.
 
 Note the L=8 arm is warm-started on a different schedule, which corrupts
-*absolute* PPL comparisons but **not** within-model ablation deltas. It is
-usable here in a way it is not in §5 of the ladder protocol.
+*absolute* PPL comparisons but not within-model ablation deltas. It is usable
+here in a way it is not in §5 of the ladder protocol.
 
-**Caveat on all three.** Different depths are separately trained models. Each
-delta is properly paired *within* a model; comparing deltas *across* models
-mixes mechanism effectiveness with different learned solutions. A monotone
-trend over three or four depths is suggestive, not conclusive.
+**Caveat on the cross-depth comparison.** L=1 and L=2 are separately trained
+models. Each delta is properly paired *within* a model; comparing deltas
+*across* models mixes mechanism effectiveness with different learned
+solutions — including the learned gate strength, which §6.1 argues is part of
+the effect rather than noise. A monotone trend over three depths would be
+stronger than two.
 
 ---
 
@@ -288,7 +390,19 @@ Each was reached from a real measurement and was wrong anyway.
 3. **"`salience_init = 0.5` carries no causality risk because registers never
    reach the output."** The conclusion may hold; the *reason* was false.
 
-The common cause: measuring a mechanism without first establishing whether the
-path carrying it was open. **Cell 6b-8 prints the effective gate before
-anything else** for this reason, and refuses to be read as a null when the
-gate is shut.
+4. **Ablation B prices accumulation.** It does not — it prices
+   out-of-distribution sensitivity, and returned +1226% where removing the
+   component entirely costs +275% (§6.2). Designed 2026-09-24, refuted the
+   same day by its own first result.
+
+The common cause of 1–3: measuring a mechanism without first establishing
+whether the path carrying it was open. **Cell 6b-8 prints the effective gate
+before anything else** for this reason, and refuses to be read as a null when
+the gate is shut.
+
+The cause of 4 is different and worth stating separately, because it will
+recur: **an ablation and a trained-without arm measure different things.**
+Substituting an input a trained model has adapted to is not "removing the
+contribution", it is "supplying a wrong one", and the second can be
+arbitrarily worse than absence. Prefer a trained-without arm whenever the
+question is *what is this component worth*.
