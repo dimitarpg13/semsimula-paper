@@ -3,8 +3,9 @@
 > **Status.** Master document for the Riemannian-geodesic programme on the
 > **CfC+BAOAB** integrator. Opened **2026-09-25**, immediately after the
 > flow/maps sweep (Cell 6b-7) returned its verdict. **E1 has run (Cell 6b-9,
-> §4.7): R(geo) = 1.09.** E3 (Cell 6b-10, §6) and E5 (Cell 6b-11, §11) are
-> built and harness-validated, awaiting their first runs; E2 and E4 are
+> §4.7): R(geo) = 1.09. E3 has run at L=2 (Cell 6b-10, §6.8): null, and
+> needs L ≥ 3.** E5 (Cell 6b-11, §11) is built and harness-validated,
+> awaiting its first run; E2 and E4 are
 > designed and pre-registered here so their predictions are on record before
 > any of them is measured.
 >
@@ -71,7 +72,10 @@ friction is tangential and changes only the speed along the path, while the
 reverse channel is a transverse, non-gradient force and is what bends it
 (§4.8). What that leaves — a second-order state that provably carries
 information, exact energy bookkeeping, and an open question about
-*forecastability* rather than *geodesicity* — is the subject of §6.
+*forecastability* rather than *geodesicity* — is the subject of §6. **E3
+has run at L=2 (§6.8): null**, and two of its three metrics turn out to be
+structurally invalid at L=2 because the layer-0 step is the embedding being
+projected onto the LN sphere; E3 is an L ≥ 3 experiment.
 
 ---
 
@@ -716,6 +720,76 @@ Two of three: suggestive; report the exception. None: the second-order
 structure is real (gate 1) but confers no predictability advantage at this
 depth, and the name should be defended on the energy bookkeeping alone.
 
+### 6.8 Result — **run 2026-09-25**, L=2 `'none'` @1.2e-03 vs matched GPT-2 L=8
+
+Both gate-0 checks passed bit-exactly. Loads verified: Fock `_best.pt` (step
+31,500, 66.56) gave 68.69 on the three probe batches, the matched GPT-2
+(step 32,500, 49.76) gave 47.42.
+
+| metric | Fock L=2 | GPT-2 L=8 | pre-registered | verdict |
+| --- | ---: | ---: | --- | --- |
+| (a) coherence, raw, mean over l ≥ 1 | **−0.566** | +0.168 (rising +0.06 → +0.37 with depth) | Fock higher | **invalid at L=2** (sphere geometry, below) |
+| (b) forecast error, finite-difference | 1.013 | 1.314 (1.47, 1.88 early; 1.05–1.08 late) | Fock lower | **both at the null**; Fock's 1.01 is LN swallowing a radial extrapolation |
+| (b) forecast error, true velocity | 1.149 | — | beats its own FD row | **no**; at L=2 the layer-1 velocity is the projection step |
+| (c) growth per step, ε = 1e-3 | 1.041 | 1.108 | Fock at or below | **precision floor** (TF32), discard |
+| (c) growth per step, ε = 1e-2 | 0.965 | 0.989 | Fock at or below | both mildly contractive; no meaningful gap |
+
+Inertial fraction ‖Δt·v‖/‖step‖ at layer 1: 0.66 — the velocity carries two
+thirds of the step's norm and still forecasts nothing, which is the tell for
+what follows.
+
+**Why (a) and (b) are contaminated at L=2 — the sphere.** Every Fock state
+$h_\ell$ with $\ell \ge 1$ lies on the LayerNorm sphere; $h_0$, the raw
+embedding, does not. So $s_0$ (the step from $h_0$ to $h_1$) is almost entirely *radial* (E1
+measured its size at 5.36 × ‖h_0‖: the step is the embedding being put on
+the sphere), while $s_1$ (from $h_1$ to $h_2$) is a *chord* between two points on
+the sphere, and a chord always has a negative component along the radius
+at its start: $\langle s_1, \hat h_1 \rangle = R(\cos\theta - 1) \le 0$.
+With E1's layer-1 step size of 1.10 × R, $\cos\theta = 0.395$, the radial
+component is −0.605 R, and $\cos(s_1, \hat h_1) = -0.605 / 1.10 = -0.55$.
+That is the measured −0.566, to within the small non-radial part of
+$s_0$. The negative coherence is geometry, not the stack "undoing" its
+last step. The same radial $s_0$ enters (b): the model's own layer-1
+velocity is $v_1 = s_0 / \Delta t$ (the `decode_velocity` convention), so
+the true-velocity forecast $\mathrm{LN}(h_1 + s_0)$ extrapolates along the
+radius, which LN then removes — the forecast collapses to ≈ $h_1$ and the
+error to ≈ 1. The finite-difference row does the same. GPT-2 has no sphere,
+so its rows are genuine: its late-layer FD error of 1.05–1.08 and rising
+coherence (+0.37 at block 7) say its residual stream *does* develop
+momentum with depth — the opposite of the pre-registered direction.
+
+At L=2, then, the Fock side has exactly one coherence value and one
+dynamical forecast, and both are the embedding-projection step in disguise.
+**E3 needs L ≥ 3 on the Fock side** (ideally the queued L=4), so that
+$s_{\ell-1}$ is itself a chord. The cell now also reports *tangential*
+coherence (both steps projected onto the tangent plane at their shared
+point) and the radial fraction of $s_{\ell-1}$, which removes the geometric
+term; but at L=2 the tangential remainder of $s_0$ is a small, noisy
+residue of the embedding, not a dynamical step, so the fix is depth, not
+projection.
+
+**Why (c) failed its linearity check — TF32.** The notebook enables TF32
+matmuls (Cell 2). TF32 keeps a 10-bit mantissa, so every matmul rounds at
+about $5 \times 10^{-4}$ relative; an $\epsilon = 10^{-3}$ perturbation is
+two rounding units and the "growth" measured at that $\epsilon$ is rounding
+noise divided by $\epsilon$ — which is exactly why it *fell* as
+$\epsilon$ rose (GPT-2 late blocks 2.6 → 0.9). The $\epsilon = 10^{-2}$
+row is twenty units above the floor and usable; it shows both models mildly
+contractive per step (0.965 vs 0.989) with the same shape at the first two
+layers (Fock 0.56, 0.93; GPT-2 0.54, 0.42) — no gap worth a claim. The cell
+now switches TF32 off for its duration and sweeps
+$\epsilon \in \{10^{-2}, 3 \times 10^{-2}, 10^{-1}\}$.
+
+**Verdict.** No forecast advantage is measurable at L=2. Two of the three
+metrics are invalid there for a structural reason that is itself a finding:
+with two layers, half of the "trajectory" is the embedding being projected
+onto the sphere, and the model's second-order state at layer 1 is the
+derivative of that projection. Gate 1 (+50.5% from inertia) stands — the
+model *uses* $h_{\mathrm{prev}}$ — but at L=2 what it uses is the raw
+embedding, not a velocity along a curve. The E3 question is open, and it is
+an L ≥ 3 question. The one clean cross-model number, (c) at
+$\epsilon = 10^{-2}$, is a null.
+
 ### 6.7 A complementary one-line addition to E1
 
 E1's arms remove the *deflections*. The mirror arm — zero $V_\theta$'s
@@ -788,7 +862,7 @@ written that way is exact for the scheme it is measuring.
 | Gate 3 (refinement) | 6b-7 | **done 2026-09-24** | fails, monotone 68.7 to 435.6; §1 |
 | **E1** deflection | **6b-9** | **run 2026-09-25** | **R(geo) = 1.09**; reverse channel ~90% of the step, V_phi inert; §4.7 |
 | E2 decomposed refinement | — | designed, §5 | — |
-| E3 forecastability vs matched GPT-2 | **6b-10** | **built 2026-09-25**, harness-validated, not yet run | — |
+| E3 forecastability vs matched GPT-2 | **6b-10** | **run 2026-09-25** at L=2; cell revised (tangential coherence, fp32, ε grid); needs L ≥ 3 | null at L=2; (a),(b) contaminated by the sphere; §6.8 |
 | E4 LN as constraint | via E1, E2 | analysis, §7 | — |
 | E5 reverse-channel slider | **6b-11** | **built 2026-09-25**, harness-validated, not yet run | — |
 

@@ -68,7 +68,7 @@ per call against gram's 40.1 ms. Cell 5 asserts the built config carries it.
 | 4 | **L=4**, matched | ~27h | hops, versus "the L=8 arm was handicapped" | queued |
 | 5 | L=2, `'attention_potential'` | ~14h | the price of conservativity, from scratch, parameter-matched | queued |
 | 6 | L=2, `'nonconservative'`, lambda pinned | ~14h | an unconstrained pointwise map, the one function class Fock has nowhere | queued |
-| 7 | L=1, `'none'` | ~7h | one hop; the structural floor where the Jacobi metric ceases to exist — **but see §6.1: it also silently disables the Fock registers** | **RUNNING** 2026-09-24 |
+| 7 | L=1, `'none'` | ~7h | one hop; the structural floor where the Jacobi metric ceases to exist — **but see §6.1: it also silently disables the Fock registers** | **DONE**, §5.5 |
 
 Run 1 first regardless of ordering elsewhere: it is 2.7 hours and it makes
 every other number defensible.
@@ -250,6 +250,7 @@ comparison still carries the token confound of §4 until run 1 lands.
 | L=2 `'none'` | ~~gap holds at 20-30%~~ **MISS: actual 9.9%** | see §5.2; the gap saturated rather than growing |
 | L=2 `'attention_potential'` | **75-82, point 78** | arm C detaches both alpha and `h_src`, so its Jacobian is block-diagonal and there is no inter-token coupling in the dynamics. Below 72 would be a genuine surprise. |
 | L=4 | no strong prior | this is the point of running it |
+| L=1 `'none'` @1.2e-03 | ~~74-80~~ **MISS: actual 87.09 settled** | forecast made in conversation from the L=2 curve shape; see §5.5 — the L=1/L=2 gap did not saturate, it kept widening through the decay |
 | matched GPT-2 | ~~below 54.59~~ **HIT: 49.76 final, 49.81 settled** | predicted 49.5 band 49.0-50.0 from the published run's behaviour over the same lr range; error +0.26 |
 
 ---
@@ -338,6 +339,69 @@ What the qualifier does **not** license: closing 68.33 to 49.81 needs **27%**,
 and LR tuning on a well-behaved setup typically buys 5-15%. Tuning is very
 unlikely to close this on its own, and claiming otherwise in advance would be
 the mirror image of the error this section exists to correct.
+
+### 5.5 L=1, `'none'` @1.2e-03 — **DONE 2026-09-24**
+
+Log: [`results/.../L1_idt8_lr0p0012_noattn_altE_fromscratch_32500_result.txt`](../notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L1probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt8_lr0p0012_noattn/L1_idt8_lr0p0012_noattn_altE_fromscratch_32500_result.txt)
+
+One hop, `LADDER_T` held (dt = 8), same LR, same schedule, same batches as
+the L=2 `'none'` @1.2e-03 run. **Read with the static-bank caveat of §6.1:**
+at L=1 the register bank is read by the reverse channel but never updated,
+so this arm is "one hop with a frozen Fock bank", not "one hop with the
+Fock mechanism".
+
+| | L=2 `'none'` @1.2e-03 | L=1 `'none'` @1.2e-03 | delta |
+| --- | ---: | ---: | ---: |
+| final (32,500) | 67.63 | 87.94 | +20.31 |
+| best | 66.56 (31,500) | 85.49 (31,000) | +18.93 |
+| **settled** (last 3) | **66.98** | **87.09** | **+20.11** |
+
+**+30.0%, +0.263 nats.** Against the matched GPT-2 (49.81 settled) the
+ratio is **1.748**, versus 1.345 at L=2.
+
+#### The gap widened through the decay; it did not saturate
+
+| step | 8,000 | 11,000 | 15,000 | 20,000 | 25,000 | 30,000 | 32,500 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| L=1 / L=2 gap | 12.9% | 14.7% | 19.5% | 22.1% | 27.1% | 24.2% | 30.0% |
+
+This is the opposite shape from the `'attention'`/`'none'` gap of §5.2,
+which reached ~10% by step 11,000 and held. Here the gap was still growing
+at the end of the stable phase (22% at 20,000) and the decay then opened it
+further: the decay bought L=2 **19.3%** (83.05 at 21,500 → 66.98) but L=1
+only **11.2%** (98.07 → 87.09). Whatever the decay phase consolidates,
+one hop consolidates less of it.
+
+**Prediction scored: MISS, on the low side.** The forecast (74-80) was
+made from the L=2 curve shape and assumed the L=1/L=2 gap would saturate
+the way the attention gap had. It kept widening, and the decay gain — the
+quantity that could turn, and did — was smaller at L=1. Third distinct
+failure mode in the forecast record (checklist §8): this one extrapolated
+a *saturation* that did not happen.
+
+#### Run health, reported per §6's rule
+
+- **Clip-hit rate 2.6%** (17 of 650 logged steps, max grad-norm 1.87)
+  against **0.0%** at L=2 @1.2e-03 (max 0.42). Small, but non-zero at the
+  same LR — the clip is a depth-dependent intervention, as §6 says, and it
+  fires *more* with fewer layers, not fewer. Noted, not corrected.
+- 0 watchdog triggers, 0 spike captures. `bproj_sig` saturated at 80.4
+  (85.4 at L=2). `sig_max` frozen at 14.286 for the entire run — the static
+  bank of §6.1, visible in the log.
+- Resonance monitor: empty summaries throughout (the known
+  `semsimula_diag` patch mismatch; missing diagnostic, not a passing one).
+
+#### What this run settles, and what it cannot
+
+It puts a number on the one-hop floor at the ladder LR: **87.09**, 30%
+behind two hops. It cannot say how much of that 30% is depth and how much
+is the frozen bank, because L=1 changes both at once (§6.1, and
+[`Fock_Mechanism_Efficiency_Across_Layer_Depth.md`](Fock_Mechanism_Efficiency_Across_Layer_Depth.md)
+§6, where the register-to-token path ablates to +52% at L=1 and +275% at
+L=2). The decomposition is the L=1 run at `register_salience_init = 0.5`,
+which is outside the ladder by design.
+
+---
 
 ## 6. Open risks
 
