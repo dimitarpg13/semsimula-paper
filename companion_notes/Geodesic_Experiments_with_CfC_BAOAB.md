@@ -2,9 +2,11 @@
 
 > **Status.** Master document for the Riemannian-geodesic programme on the
 > **CfC+BAOAB** integrator. Opened **2026-09-25**, immediately after the
-> flow/maps sweep (Cell 6b-7) returned its verdict. E1 is built and validated
-> (Cell 6b-9) and awaits its first run; E2–E4 are designed and pre-registered
-> here so their predictions are on record before any of them is measured.
+> flow/maps sweep (Cell 6b-7) returned its verdict. **E1 has run (Cell 6b-9,
+> §4.7): R(geo) = 1.09.** E3 (Cell 6b-10, §6) and E5 (Cell 6b-11, §11) are
+> built and harness-validated, awaiting their first runs; E2 and E4 are
+> designed and pre-registered here so their predictions are on record before
+> any of them is measured.
 >
 > **Scope.** The Verlet-regime geodesic work lives in
 > [`Geodesic_Preservation_Experiment.md`](Geodesic_Preservation_Experiment.md),
@@ -476,7 +478,9 @@ is the `geo` arm of E1, and it is what gate 0 validated bit-exactly. The
 machinery is right; the trained model does not use it as the dominant term
 at L=2. This is also why E3 (§6) drops geodesicity as the question and asks
 about forecastability instead: a forced, damped, non-geodesic flow can
-still be forecastable in a way a stack of arbitrary maps need not be.
+still be forecastable in a way a stack of arbitrary maps need not be. E5
+(§11) turns the reverse channel down continuously on the trained model and
+prices the geodesic in PPL.
 
 ## 5. E2 — decomposed refinement
 
@@ -786,6 +790,7 @@ written that way is exact for the scheme it is measuring.
 | E2 decomposed refinement | — | designed, §5 | — |
 | E3 forecastability vs matched GPT-2 | **6b-10** | **built 2026-09-25**, harness-validated, not yet run | — |
 | E4 LN as constraint | via E1, E2 | analysis, §7 | — |
+| E5 reverse-channel slider | **6b-11** | **built 2026-09-25**, harness-validated, not yet run | — |
 
 ---
 
@@ -819,3 +824,102 @@ trained trajectory are withdrawn; claims about the machinery (Jacobi
 metric, exact A-substep, exact friction) stand; and the predictive content
 of the second-order state is re-based on the full forced step, which is
 what E3 measures.
+
+---
+
+## 11. E5 — the reverse-channel slider: buying geodesicity with PPL
+
+### 11.1 The question
+
+§4.8 established that the reverse channel, not damping, is what bends the
+trained path away from the damped $V_\theta$ geodesic. Two questions follow
+that a single number (R(geo) = 1.09) does not answer:
+
+1. Turn the reverse channel down *continuously*. At what point does the
+   trajectory become a damped geodesic, and what does that cost in
+   prediction quality?
+2. Does the pairwise potential $V_\phi$, measured inert at 0.0002 of the
+   step in §4.7, recover when the reverse channel is removed?
+
+### 11.2 The knob already exists
+
+The reverse-channel increment in `_fock_layer_step` is
+
+$$\Delta h_{\mathrm{rc}} = \frac{\Delta t^2}{m} \tanh(s_\ell) w Q_{\mathrm{force}}, \qquad w = \min(1, n_{\mathrm{warm}} / N_{\mathrm{warm}})$$
+
+where $n_{\mathrm{warm}}$ is the `reverse_warmup_step` buffer and $N_{\mathrm{warm}}$ is `reverse_channel_warmup_steps`. Setting the buffer to $\lambda N_{\mathrm{warm}}$ gives
+$\tanh(s_\ell) \to \lambda \tanh(s_\ell)$ exactly, for any
+$\lambda \in [0, 1]$, with nothing else in the model reading that buffer
+at eval time. Training itself was this slider ramped from 0 to 1. The
+registers are still written at every $\lambda$; the slider scales the only
+path by which they reach $h$. (A model built without warmup gets the same
+$\lambda$ through the gate parameter, via $\operatorname{artanh}(\lambda
+\tanh s)$.)
+
+### 11.3 What is measured, at each $\lambda \in \{1, 0.9, \ldots, 0.1, 0.05, 0\}$
+
+On the same eight validation batches:
+
+| quantity | definition | what it answers |
+| --- | --- | --- |
+| PPL(λ) | validation perplexity with the gate at λ | the price of geodesicity |
+| R_geo(λ) per layer | E1 replay: same captured state, gate at 0, LN and V_φ kept (the `cons+LN` arm), against the λ-step | how far the λ-trajectory is from the damped geodesic |
+| ‖Δ_φ‖(λ) per layer | RMS per-token norm of the step change when f_φ is zeroed on the same state | whether V_φ's **absolute** force moves at all |
+| V_φ share | the same, divided by the step norm | reported, but see below |
+| coherence | E3's metric (a), cos(s_1, s_0) | free |
+
+The printed reading gives PPL(0)/PPL(1), and $\lambda^\ast$ = the
+smallest $\lambda$ within 5% of PPL(1) — the point down to which the
+reverse channel is redundant. Gate 0 (replay at $\lambda = 1$ reproduces
+the capture bit-exactly) guards the replay.
+
+### 11.4 What to expect, stated before the run
+
+**The geometry curve has no threshold.** Pre-LN the step is linear in
+$\lambda$: $h_{\ell+1}(\lambda) = \mathrm{LN}(h_{\mathrm{geo}} +
+\lambda\, \Delta h_{\mathrm{rc}})$. So $R_{\mathrm{geo}}(\lambda)$
+falls smoothly and reaches 0 at $\lambda = 0$ *by construction* — the
+damped geodesic does not emerge at a critical $\lambda$; it is always
+underneath and the slider uncovers it. The curve with content is
+PPL($\lambda$):
+
+- a **knee** — flat down to some $\lambda^\ast$, then a break — means the
+  reverse channel is partly redundant above $\lambda^\ast$ and the model
+  can be made more geodesic at little cost;
+- a **rise from the first notch** means the geodesic component is worthless
+  for prediction on its own, which is what the size of R(geo) suggests.
+
+**$V_\phi$ cannot recover at inference.** The weights are fixed. Its
+*share* of the step grows as $\lambda \to 0$ trivially, because the
+denominator shrinks; only the *absolute* norm $\lvert \Delta_\phi \rvert$
+can say anything, and it changes only if the $\lambda$-trajectory wanders
+into regions where $V_\phi$ has gradient. The cell prints the ratio of the
+largest $\lvert \Delta_\phi \rvert$ over the sweep to its value at
+$\lambda = 1$; below 2x, $V_\phi$ does not stir. Recovery is then a
+training question with two honest designs:
+
+1. **Branch-and-anneal** from the trained checkpoint (the T1 method of the
+   tuning checklist): decay $\lambda$ from 1 to 0 over a few thousand
+   steps while training continues, tracking $\lvert \Delta_\phi \rvert$
+   and PPL at each eval. Tests whether the model *re-routes* to the
+   pairwise potential when the reverse channel is taken away.
+2. **From scratch at $\lambda = 0$** — pure $V_\theta + V_\phi$ at this
+   configuration. This is the control, and it comes first: if $V_\phi$ is
+   inert without any competition, its inertness is a $V_\phi$/PARF matter
+   and no amount of turning the Fock mechanism off will recover it.
+
+### 11.5 Harness validation (2026-09-25)
+
+Random-init toy at the live configuration ($d = 32$, $L = 2$, warmup 4000,
+layer checkpointing on): gate 0 passes at $0.000\mathrm{e}{+00}$;
+$R_{\mathrm{geo}}$ runs monotonically to exactly 0 at $\lambda = 0$;
+$\lvert \Delta_\phi \rvert$ is flat across the sweep (ratio 1.00x, as it
+must be for fixed weights on a nearly unchanged trajectory); weights, gate
+parameter and warmup buffer are restored bit-exactly on exit. One
+observation from the toy worth keeping in mind for the real run: at layer 1
+$R_{\mathrm{geo}}$ stayed near 0.9 down to $\lambda = 0.1$ and only
+collapsed below 0.05, because the untrained reverse-channel increment was
+large compared with the geodesic step, so after LN even a small
+$\lambda$ fixes the direction. Linear-in-$\lambda$ holds pre-LN; the
+post-LN curve bends wherever $\lvert \Delta h_{\mathrm{rc}} \rvert$
+dominates $\lvert h_{\mathrm{geo}} \rvert$.
