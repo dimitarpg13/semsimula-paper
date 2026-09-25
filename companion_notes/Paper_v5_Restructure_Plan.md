@@ -117,7 +117,7 @@ than a confirmed one and reads better.
 | "memory steers" vs "memory steers occasionally" | **F1** | the thesis sentence; §13, §18 |
 | is L=2 a floor or the verdict on the geodesic share? | **F2** (needs L=4) | every "at L=2" caveat |
 | can the forecastability claim be made at all? | E3 at L ≥ 3 | §11, §17h |
-| the price of the pure geodesic in PPL | **E5** | §17c, §20 |
+| the price of the pure geodesic in PPL | **E5 — settled 2026-09-25**: 3.91×, no knee; layer 1's output direction is the register readout | §17c, §20 — and §17c must describe the last layer as a memory read, not a forced step |
 | is V_φ ever active? | F5 | §5, §17 (the pairwise potential's role) |
 | does the hallucination claim survive re-basing? | F4 | §18d and wherever hallucination is discussed |
 
@@ -128,3 +128,4 @@ than a confirmed one and reads better.
 | date | item |
 | --- | --- |
 | 2026-09-25 | skeleton opened; triage table drafted; no paper edits beyond Remark 52 / footnote / pointer |
+| 2026-09-25 | E5 settled its decision point (§5); F1 remains the gate on the thesis sentence |

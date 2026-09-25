@@ -6,8 +6,8 @@
 > experiments and gate-0 checks stays in
 > [`Geodesic_Experiments_with_CfC_BAOAB.md`](Geodesic_Experiments_with_CfC_BAOAB.md)
 > and is cited, not repeated. **F1 is built (Cell 6b-12) and
-> harness-validated; nothing in the F-series has run.** E5 (Cell 6b-11) is
-> running and slots into §3.0 when it lands. The paper-side consequences are
+> harness-validated; nothing in the F-series has run.** E5 (Cell 6b-11)
+> has run: §3.0. The paper-side consequences are
 > planned separately in
 > [`Paper_v5_Restructure_Plan.md`](Paper_v5_Restructure_Plan.md).
 >
@@ -184,8 +184,10 @@ a driven system" is a narrower name and a true one.
   property of the trained discretisation (flow/maps note §5).
 - Any claim that the dynamics are more forecastable than a transformer's,
   pending L ≥ 3 (E3 §6.8).
-- The specific value 0.0002 for $V_\phi$'s share: measured under TF32,
-  where it is below the rounding floor; it is a bound, and "inert" stands.
+- "$V_\phi$ is inert at 0.0002." That number was the *change in E1's
+  residual* between two arms, not $V_\phi$'s contribution. E5 measured
+  the contribution directly: 6% of the step at layer 0, 0.5% at layer 1,
+  resolvable and small. "Minor" is the word; "inert" overstated it.
 
 ---
 
@@ -194,10 +196,34 @@ a driven system" is a narrower name and a true one.
 All zero-training unless marked. All use the E1 replay method and carry a
 gate-0 check. Pre-registered readings are stated before any of them runs.
 
-### 3.0 E5 — the reverse-channel slider (Cell 6b-11, running)
+### 3.0 E5 — the reverse-channel slider (Cell 6b-11) — **run 2026-09-25**
 
-Prices geodesicity in PPL by turning the forcing down continuously; master
-doc §11. Result slots here.
+Prices geodesicity in PPL by turning the forcing down continuously; full
+table and reading in master doc §11.6. Three results carry into the thesis:
+
+1. **No free region.** PPL 69.5 at λ = 1 to 271.8 at λ = 0, a factor 3.91,
+   smooth and convex in log-PPL, with every notch below λ = 0.9 costing.
+   The unforced motion predicts at bigram level. *Measured.*
+2. **At layer 1 the forcing sets the direction outright.** R_geo at layer 1
+   is invariant to λ from 1 down to 0.3 and only then collapses: the
+   layer-1 output is the normalised direction of the reverse-channel
+   increment, and the geodesic-stepped state shows through only when the
+   increment is scaled below the state's own size. Layer 0 behaves
+   linearly instead. So "forcing" is the right word at layer 0 and too
+   weak at layer 1, where the register readout *replaces* the state — a
+   state-keyed read from memory. *Measured; the pre-LN increment-to-state
+   ratio is to be read on the next run.*
+3. **V_φ's direct contribution is 6% of the step at layer 0 and 0.5% at
+   layer 1** (the λ = 0 row, where nothing modulates it), and it does not
+   grow anywhere in the sweep. E1's "−0.0002" was the change in the
+   residual between two arms, not this quantity; the two are consistent.
+   With the reverse channel on, V_φ's effect is amplified at layer 1 and
+   masked at layer 0 because the readout reads `h_new`. *Measured.*
+
+Consequence for §2: the driven-system picture is confirmed and, at layer
+1, strengthened past "driven" — the last layer's output is a memory read.
+The thesis wording still waits for F1, which asks whether this holds for
+every token.
 
 ### 3.1 F1 — is the forcing sparse? (Cell 6b-12, built, harness-validated)
 
@@ -309,7 +335,7 @@ formal apparatus, written for a different purpose:
 | --- | --- | --- |
 | reformulation stated (§2) | drafted; wording of the strong form held for F1 | 2026-09-25 |
 | F1 | **built, Cell 6b-12, harness-validated**; not run | 2026-09-25 |
-| E5 | running (Cell 6b-11) | 2026-09-25 |
+| E5 | **run**: 3.91× price, no knee; layer-1 direction set by the readout; V_φ 6% / 0.5% direct | 2026-09-25 |
 | F2 | needs L=4 (ladder run 4, queued) | — |
 | F3 | conditional on F1 SPARSE | — |
 | F4 | designed | — |

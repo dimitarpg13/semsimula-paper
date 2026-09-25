@@ -4,8 +4,8 @@
 > **CfC+BAOAB** integrator. Opened **2026-09-25**, immediately after the
 > flow/maps sweep (Cell 6b-7) returned its verdict. **E1 has run (Cell 6b-9,
 > §4.7): R(geo) = 1.09. E3 has run at L=2 (Cell 6b-10, §6.8): null, and
-> needs L ≥ 3.** E5 (Cell 6b-11, §11) is built and harness-validated,
-> awaiting its first run; the F-series on the forcing itself (F1 built,
+> needs L ≥ 3. E5 has run (Cell 6b-11, §11.6): the pure damped geodesic
+> costs 3.9× in PPL with no knee.** The F-series on the forcing itself (F1 built,
 > Cell 6b-12) lives in
 > [`Forced_Lagrangian_Reformulation.md`](Forced_Lagrangian_Reformulation.md);
 > E2 and E4 are
@@ -867,7 +867,7 @@ written that way is exact for the scheme it is measuring.
 | E2 decomposed refinement | — | designed, §5 | — |
 | E3 forecastability vs matched GPT-2 | **6b-10** | **run 2026-09-25** at L=2; cell revised (tangential coherence, fp32, ε grid); needs L ≥ 3 | null at L=2; (a),(b) contaminated by the sphere; §6.8 |
 | E4 LN as constraint | via E1, E2 | analysis, §7 | — |
-| E5 reverse-channel slider | **6b-11** | **built 2026-09-25**, harness-validated, not yet run | — |
+| E5 reverse-channel slider | **6b-11** | **run 2026-09-25** | **PPL 69.5 → 271.8 (3.91×), no knee**; layer-1 direction set by the reverse channel down to λ ≈ 0.3; V_φ direct 6% / 0.5% of the step, no recovery; §11.6 |
 | F1 per-token forcing distribution | **6b-12** | **built 2026-09-25**, harness-validated, not yet run | — ; designed in [`Forced_Lagrangian_Reformulation.md`](Forced_Lagrangian_Reformulation.md) §3.1 |
 
 ---
@@ -1001,3 +1001,76 @@ large compared with the geodesic step, so after LN even a small
 $\lambda$ fixes the direction. Linear-in-$\lambda$ holds pre-LN; the
 post-LN curve bends wherever $\lvert \Delta h_{\mathrm{rc}} \rvert$
 dominates $\lvert h_{\mathrm{geo}} \rvert$.
+
+### 11.6 Result — **run 2026-09-25**, L=2 `'none'` @1.2e-03
+
+Gate 0 passed bit-exactly. Checkpoint `_best.pt` (step 31,500; tanh(gate)
+per layer 0.0174 / 0.0148; warmup complete, so λ = 1 is the checkpoint's
+own state). 8 × 4 × 512 tokens per point.
+
+| λ | PPL | R_geo l0 | R_geo l1 | ‖Δφ‖ l0 | ‖Δφ‖ l1 | coherence |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1.0 | 69.47 | 0.765 | 1.035 | 0.674 | 0.975 | −0.562 |
+| 0.9 | 71.81 | 0.727 | 1.034 | 0.710 | 0.860 | −0.477 |
+| 0.7 | 87.20 | 0.631 | 1.029 | 0.790 | 0.523 | −0.327 |
+| 0.5 | 119.72 | 0.505 | 1.039 | 0.880 | 0.243 | −0.192 |
+| 0.3 | 171.66 | 0.337 | 1.025 | 0.974 | 0.115 | −0.070 |
+| 0.2 | 199.97 | 0.236 | 0.889 | 1.017 | 0.091 | −0.025 |
+| 0.1 | 231.18 | 0.123 | 0.586 | 1.055 | 0.093 | +0.012 |
+| 0.05 | 250.02 | 0.063 | 0.337 | 1.071 | 0.098 | +0.028 |
+| 0.0 | 271.83 | 0 | 0 | 1.085 | 0.109 | +0.036 |
+
+Step RMS per token at λ = 1: 18.2 (layer 0), 21.4 (layer 1).
+
+**No knee.** PPL(0)/PPL(1) = **3.91×**. The smallest λ within 5% of
+PPL(1) is 0.9; every notch below it costs, and the curve is smooth and
+convex in log-PPL all the way down. The pure damped geodesic of $V_\theta$
+with $V_\phi$ and LN kept predicts at 271.8 — bigram-model territory. The
+second pre-registered reading of §11.4 obtained: the geodesic component is
+worthless for prediction on its own, and the reverse channel is redundant
+nowhere.
+
+**Layer 1 is not nudged; its direction is set.** $R_{\mathrm{geo}}$ at
+layer 0 falls linearly with λ (0.765 → 0), as the pre-LN linearity
+predicts. At layer 1 it does something else: it sits at **1.03 from λ = 1
+all the way down to λ = 0.3**, then collapses (0.89, 0.59, 0.34, 0). The
+layer-1 output direction does not depend on how much of the reverse-channel
+increment is added until the increment has been cut by a factor of three
+to ten. Post-LN, that means the layer-1 output *is* the direction of the
+reverse-channel increment; the geodesic-stepped state only shows through
+once the increment is scaled below the state's own magnitude. This is the
+toy-harness effect of §11.5, now in the trained model. The distinction
+matters for the reformulation: at layer 1 the register readout does not
+*force* the state, it *replaces* it — a layer whose output is a
+state-keyed read from memory, normalised. The pre-LN increment-to-state
+ratio (the model's own `qforce_ratio` capture) is now printed by the cell
+and should be read on the next run.
+
+**$V_\phi$ does not recover — and the earlier "inert at 0.0002" needs
+restating.** Its direct contribution, read at λ = 0 where nothing
+modulates it, is **6.0% of the step at layer 0 and 0.5% at layer 1**
+(1.085 / 18.2 and 0.109 / 21.4). Small, but real and resolvable (0.109 on
+a state of norm 19.6 is eleven TF32 rounding units, so the precision
+caveat raised after E3 does not apply to this quantity). E1's −0.0002 was
+the *change in the residual R* between the `geo` and `cons` arms — a
+weaker quantity than the contribution itself, and the two are consistent.
+With the reverse channel on, $V_\phi$'s effect on the step is modulated,
+in opposite directions at the two layers: at layer 1 it is *amplified* to
+0.97 (4.5% of the step) and at layer 0 *masked* to 0.67 (3.7%). The
+mechanism is plain from the code: `Q_force = reverse_ch(h_new, r, active)`
+reads the post-force state, so a small $V_\phi$ shift in `h_new` moves the
+register readout. Nowhere in the sweep does $V_\phi$'s absolute
+contribution rise above 1.11× its λ = 1 value, and at layer 1 it falls 9×
+as the reverse channel is removed. Recovery at inference: none. The
+from-scratch control (F5) is still the question that matters, and the
+cell's verdict logic has been corrected to look at both directions (it
+had reported the 1.11× and ignored the 9× fall).
+
+**Coherence** runs from −0.562 at λ = 1 to +0.036 at λ = 0, consistent
+with §6.8's geometry: the layer-1 chord shrinks to the small unforced
+step, and the radial term with it.
+
+**What E5 settles.** The price of the pure damped geodesic at L=2 is
+3.9× in PPL with no free region; the reverse channel is the mechanism,
+not a correction to one; at layer 1 it sets the output direction outright.
+F1 now asks whether that is true of every token or of a forced minority.
