@@ -286,6 +286,17 @@ These arms are that re-training, and **+275.1% at L=2** is the answer: the
 channel is still decisive after the causal fix, not mostly leak. It is an
 ablation rather than a trained-without arm, so read it as an upper bound.
 
+> **The trained-without arm has since run (2026-09-25).** L=2 `'none'`
+> with `REVERSE_CHANNEL = False`, from scratch, 32,500 steps, settles at
+> **87.93** against the intact arm's 66.98 — **+31.3%**, a ratio of
+> **1.31x**. Ablation A's 3.75x therefore overstates the mechanism by
+> **2.9x in PPL ratio and 4.9x in nats**. The upper bound was correct and
+> very loose. **+275% must not be quoted as the price of the Fock
+> mechanism**; it is the cost of removing the channel from a model trained
+> to use it, which is a sensitivity measurement. See
+> [`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md)
+> §5.6.
+
 ### 6.2 B failed, and the failure is instructive
 
 **B is 3.5x more damaging than A.** Removing the force entirely costs +275%;
@@ -371,6 +382,41 @@ being prefix-causal — which is what `prefix_causal_registers=True` exists to
 provide, and which every L=2 arm already exercises at layer 1. At $s_0 \lt 1$
 layer 0 exercises it too, so the trained-leak probe stops being a formality
 there and becomes the first thing to check.
+
+---
+
+## 7a. A fifth wrong conclusion, and the rule it yields — **2026-09-25**
+
+The four below were wrong about *mechanism*. This one was wrong about
+*magnitude*, and it survived longer because nothing contradicted it.
+
+**Wrong:** "the register-to-token path is worth +275% at L=2" (§6.1),
+repeated as "the reverse channel is decisive" throughout the programme.
+
+**Right:** trained *without* the path, from scratch, at the same LR,
+schedule and budget, the model reaches **87.93** against **66.98** —
+**+31.3%**. The ablation overstated the mechanism by **2.9× in PPL ratio
+and 4.9× in nats**
+([`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md)
+§5.6).
+
+**The rule.** An ablation measures *sensitivity of a trained model to
+losing a component*, never *the value of having built with it*. The two
+differ by however much the rest of the network can re-fit, and here that
+factor was three. Both §6.1 and §6.2 already carried "upper bound"
+qualifiers; the lesson is that an upper bound this loose is not a
+substitute for the trained arm, and the programme should stop quoting
+ablation percentages as prices. **Only trained-without numbers belong in
+the mechanism ladder.**
+
+A second finding from the same arm bears on this document's subject
+directly: with the register path removed, the *velocity* loses almost all
+of its value — Gate 1 falls from +50.5% to +5.2%
+([`Composing_Single_Layer_Inferences_Flow_or_Maps.md`](Composing_Single_Layer_Inferences_Flow_or_Maps.md)
+§8.2). The second-order state is largely a conduit for the register
+readout. That is the Fock mechanism's efficiency story stated in a
+different currency, and it strengthens §5's depth argument rather than
+weakening it.
 
 ---
 

@@ -31,7 +31,17 @@ and the third was not obvious in advance.
    asks "do extra hops help". Running more steps at *fixed total
    integration time* asks whether the stack is a **discretised flow** at
    all — which is what `18_riemannian_geometry` and the whole geodesic
-   reading presuppose. **It has now been checked (§8.1): it is not.**
+   reading presuppose. **It has now been checked (§8.1): it is not** — and
+   re-checked on a model with the Fock mechanism switched off (§8.2),
+   where it still is not. Refinement is broken by the per-step *maps*, not
+   by the non-conservative force, which is a sharper statement than the
+   one this document set out to make.
+
+   The same run also re-scopes finding 1 above. The velocity's value is
+   +50.5% with the Fock mechanism and **+5.2% without it**: the
+   second-order state earns its keep by carrying the register readout to
+   the next layer, not by carrying momentum in the conservative potential
+   (§8.2).
    Refinement degrades monotonically, 68.7 to 435.6 from N=2 to N=8. The
    stack is L specialised maps. Inertia is nonetheless worth +50.5% (gate
    1), and the question of whether each *individual* step is geodesic at
@@ -441,7 +451,10 @@ loop rather than `_fock_layer_step`, silently dropping the registers, the
 reverse channel and one LayerNorm — roughly the +275% register path of
 Cell 6b-8. Gate 0 is what caught it, before any number was read.
 
-**Gate 1 — inertia is worth +50.5%.** Carried 68.65, reset **103.35**,
+**Gate 1 — inertia is worth +50.5%** *(re-scoped 2026-09-25: this is the
+value of the velocity **as the conduit for the reverse-channel readout**,
+not of momentum in the conservative potential. The same measurement on the
+conservative-only arm gives +5.2% — see §8.2.)* Carried 68.65, reset **103.35**,
 delta +34.69 PPL. Resetting `h_prev = h` at every step is exactly gradient
 descent on `V_theta` (§3.1); the second-order velocity state is
 load-bearing, measured on the trained weights with no retraining. This is
@@ -496,6 +509,94 @@ four training runs, one by five minutes of evaluation. And it sharpens the
 picture: the L=8 *trained* model reaches 81.58 while the L=2 model *run* at
 N=8 reaches 435.61. Each depth learns a function fitted to its own
 discretisation, which is precisely what "maps" means.
+
+## 8.2 Results — **run 2026-09-25**, the conservative-only arm (Cell 6b-7)
+
+Checkpoint `..._norc_L2probe_..._lr0p0012_noattn_best.pt`, step 31,000,
+PPL 85.90. Same cell, same 12 x 4 x 512 fixed batches. `REVERSE_CHANNEL =
+False`, so the Fock mechanism is off and every force in the model is the
+gradient of a scalar potential. Gate 0 passed bit-exactly (91.1953 both
+ways).
+
+This arm was run to test one hypothesis: **that the reverse channel is what
+breaks refinement.** It is not.
+
+| gate | full Fock (§8.1) | conservative only | reading |
+| --- | ---: | ---: | --- |
+| trained (N = L = 2) | 68.65 | 91.20 | the arm costs +31.3% settled |
+| **Gate 1** inertia, reset vs carried | 103.35 (**+50.5%**) | 95.92 (**+5.2%**) | **collapses tenfold** |
+| **Gate 3** refinement, N = 8 | 435.61 (6.35×) | 394.24 (4.32×) | **still fails** |
+| Gate 3, N = 1 | 1032.73 (confounded, §9) | 215.07 (clean) | first uncontaminated point |
+| Gate 2 depth extrapolation, N = 8 | 4036.30 (58.8×) | 348.32 (**3.8×**) | **15× more graceful** |
+
+### Refinement fails without the reverse channel
+
+Successive changes: 123.9, 28.9, 44.7, 124.4, 105.1 — not shrinking toward
+zero. The third pre-registered shape again: degrades away from N = L in
+both directions. **The hypothesis is refuted.** What breaks refinement is
+what §8.1 already named mechanically — the operations that are per *step*
+rather than per unit time: the post-step LayerNorm, the top-k re-selection
+of Vφ, and the fit of Vθ's learned stiffness to one particular dt (the
+A-substep's $\psi(\omega \Delta t)$ and $\mathrm{sinc}(\omega \Delta t)$
+are strongly dt-dependent at the trained $\omega \Delta t \gt 2$). The
+register-salience decay, which §8.1 also listed, is **excluded** by this
+arm: it still runs here and still cannot touch the tokens.
+
+So the two obstructions are independent, and the programme now has one
+measurement of each:
+
+| obstruction | question | conservative only | full Fock |
+| --- | --- | --- | --- |
+| **the maps** | is the stack a flow that refines? | **no** (Gate 3, 4.32×) | **no** (6.35×) |
+| **the forcing** | is each step, at the trained dt, a geodesic? | by construction yes, up to LayerNorm — E1 quantifies | **no**, R(geo) = 1.09 |
+
+The conservative model is therefore **piecewise geodesic with maps between
+the pieces**; the full model is **not even piecewise geodesic**. That is
+the sharpened version of the claim, and it is stronger than the hypothesis
+it replaces because it separates two things that were conflated.
+
+### Inertia is mostly carrying memory, not carrying dynamics
+
+The striking number is Gate 1: **+50.5% with the Fock mechanism, +5.2%
+without it.** Resetting `h_prev = h` at every step reduces the stack to
+gradient descent on Vθ + Vφ (§3.1), and the conservative model barely
+notices.
+
+The mechanism is visible in the update: the reverse-channel increment
+enters `h_new`, so the velocity $v = (h_{\ell+1} - h_\ell)/\Delta t$ is
+the conduit by which the register readout reaches the *next* layer.
+Destroy the velocity and you destroy that conduit. Without a reverse
+channel the velocity carries only Vθ/Vφ information, which is
+recomputable from position — so discarding it costs almost nothing.
+
+This re-reads §8.1's headline. "Inertia is worth +50.5%" is true but was
+stated as though momentum in the conservative potential were doing the
+work. It is not. **The second-order state earns its keep by carrying the
+non-conservative memory force, and is nearly redundant without it.**
+
+Two consequences:
+
+- **First-order sufficiency, measured.** §17h of the paper asks when
+  first-order dynamics suffices. For the purely conservative architecture
+  the answer here is: nearly always — the penalty is 5.2%. The
+  second-order commitment pays for itself only in the presence of the
+  forcing.
+- **The Gate 1 result must be re-scoped** wherever it is quoted, including
+  §0 of this document and the master doc's §1.
+
+### Depth extrapolation is far more graceful
+
+Gate 2 runs extra hops at the trained dt. At N = 8, four times the trained
+depth, the conservative model goes 91.20 → 348.32 (**3.8×**) while the
+full model goes 68.65 → 4036.30 (**58.8×**). Both degrade, but one degrades
+gracefully and the other diverges.
+
+This is a genuine capability of the conservative design and belongs in the
+paper's §37 catalogue, which currently has no entry for it: a trajectory
+driven only by gradients of a bounded potential stays bounded when run
+past its trained horizon, while a trajectory driven by a learned
+non-conservative force does not. It is also a caution for any
+inference-time depth-extension scheme built on the Fock arm.
 
 ---
 

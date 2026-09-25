@@ -1,5 +1,29 @@
 # Conservative Obstruction and Virtual Particle Necessity
 
+> ### Empirically confirmed — **2026-09-25**
+>
+> The theorem proved here says no scalar potential on the token particles
+> can reproduce attention's structural properties without auxiliary degrees
+> of freedom, and identifies the Fock register mechanism as the minimal
+> such extension. The programme has now **measured the size of that
+> obstruction** on OpenWebText at d=384, L=2:
+>
+> | model | settled PPL |
+> | --- | ---: |
+> | conservative only — no auxiliary path to the tokens | **87.93** |
+> | the same plus the Fock register-to-token path | **66.98** |
+>
+> **+31.3%.** The auxiliary degrees of freedom are worth that, from
+> scratch, with every other parameter free to compensate. The theorem said
+> the conservative sub-system would be insufficient; the ladder says by how
+> much. A companion result sharpens it: on the conservative model the
+> layer step is *exactly* the projected damped geodesic (R = 0.0003), so
+> the sub-system is not failing through some implementation defect — it is
+> doing precisely what a conservative potential can do, and that is the
+> ceiling the theorem describes.
+>
+> Ladder: [`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md) §5.6. Geometry: [`Geodesic_Experiments_with_CfC_BAOAB.md`](Geodesic_Experiments_with_CfC_BAOAB.md) §4.9.
+
 > **Summary.** We prove that no scalar potential on token particles can
 > reproduce the three structural properties of scaled dot-product
 > attention (asymmetric coupling, coupling-content decoupling, normalized
@@ -17,6 +41,7 @@ subsection on the conservative obstruction theorem.
 - [`Improving_the_Fock_Mechanism_to_match_Attention.md`](Improving_the_Fock_Mechanism_to_match_Attention.md)
   — design rationale for FockPARFLM v2 (Q/K/V creation protocol)
 - Paper §9.4.2 — Fock space apparatus and expressivity hierarchy (v0/v1/v2/v3)
+
 
 ---
 

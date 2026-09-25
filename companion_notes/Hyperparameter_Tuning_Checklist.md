@@ -620,6 +620,7 @@ adds a point to a curve.
 | 2026-09-23 | `LR` = 2.4e-03 | full 32,500 | **69.59 — WORSE by 3.9%.** Optimum bracketed; quadratic vertex 1.13e-03. Pre-registered 63-66: **wrong in direction** (§5 T0) |
 | — | `LR` **CLOSED** | — | **1.2e-03 is the ladder LR.** Ratio vs GPT-2 **1.345** |
 | 2026-09-24 | `WSD_STABLE_FRAC` = 0.50 | branch from step 15,000, 17,500 steps | **68.34 vs 66.98** (+2.04% on last-3; t = -0.09 over 22 evals, i.e. a null). **Keep 0.60**, 0.70 not run, T1 closed |
+| 2026-09-25 | architecture: **L=2 `'none'`, reverse channel off** (ladder run 8, an architecture control, not a tuning run) | full 32,500 | **87.93 settled**, +31.3% vs 66.98 with the mechanism on; ratio vs GPT-2 1.765. **The inference-time ablations overstated the mechanism by 2.9x in PPL ratio, 4.9x in nats.** Clip 2.6% vs 0.0%. Ladder protocol §5.6 |
 | 2026-09-24 | depth: **L=1** `'none'` @1.2e-03 (ladder run 7, not a tuning run) | full 32,500 | **87.09 settled**, +30.0% vs L=2 at the same LR; ratio vs GPT-2 1.748. Decay gain 11.2% vs 19.3% at L=2. Clip 2.6% vs 0.0%. Static register bank (§7.3a). Ladder protocol §5.5 |
 
 **Forecast record**, kept because the two failures were systematic and point
@@ -630,8 +631,15 @@ in *opposite* directions:
 | 1.2e-03 | 70 -> 75 -> 70 -> 72.8 -> 69.8 | **66.98** | every point **high**, all for the same reason (§6.2) |
 | 2.4e-03 | 63-66, centre 64 | **69.59** | **low, and wrong in direction** (§5 T0) |
 | L=1 @1.2e-03 | 74-80 | **87.09** | **low**; assumed the L=1/L=2 gap would saturate like the attention gap — it widened through the decay (ladder §5.5) |
+| L=2 no reverse channel | **105, band 85-140** | **87.93** | **BAND HIT** — the first. Point high by 16%, landing 3% above the lower edge. The named turnable quantity (V_phi's share once uncontested) was recorded as pointing to "the low end or below", and did |
 
-The pair is the lesson (the third row is the same lesson from a third
+The fourth row is the first hit, and the reason is worth keeping: it was
+the only forecast that named, in advance, a specific measurable quantity
+whose direction would move the answer within the band — and that quantity
+moved as described. Naming the lever, not widening the band, is what made
+it work.
+
+The first pair is the lesson (the third row is the same lesson from a third
 angle: a saturation was assumed that did not occur). The first set
 under-weighted a mechanism that was real; the second extrapolated that same
 mechanism past the point where a *different* quantity turned. Both came from treating one measured trend as

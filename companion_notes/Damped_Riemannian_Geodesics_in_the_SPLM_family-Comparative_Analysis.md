@@ -5,6 +5,28 @@
 **Date:** June 2026
 **Status:** Technical Analysis — Supporting Material for Semantic Simulation Framework
 
+> ### Measured on CfC+BAOAB — **2026-09-25**
+>
+> This analysis is Verlet-era and argues on theoretical grounds that the
+> damped second-order regime is the unique minimal commitment under which
+> the Jacobi metric is valid and dynamically meaningful. Two measurements
+> on the production integrator (CfC+BAOAB, OpenWebText, d=384, L=2) now
+> bear on it, and they point in opposite directions:
+>
+> - **The Jacobi metric claim is vindicated exactly.** On a fully
+>   conservative trained model the layer step *is* the damped Vθ geodesic
+>   step followed by LayerNorm, to **R = 0.0003**. Not approximately — to
+>   three decimal places. ([`Geodesic_Experiments_with_CfC_BAOAB.md`](Geodesic_Experiments_with_CfC_BAOAB.md) §4.9.)
+> - **"Dynamically meaningful" is weaker than assumed.** On that same
+>   model the first-order reduction costs only **+5.2%**. The second-order
+>   state becomes load-bearing (+50.5%) only when a *non-conservative*
+>   register force is present for it to carry. ([`Composing_Single_Layer_Inferences_Flow_or_Maps.md`](Composing_Single_Layer_Inferences_Flow_or_Maps.md) §8.2.)
+>
+> And on the flagship model, which has that force, the step is **not** a
+> geodesic at all: R(geo) = 1.09, with the reverse channel ~90% of the
+> deflection. The regime taxonomy here should be read as applying to the
+> conservative sub-family only.
+
 ---
 
 ## Abstract

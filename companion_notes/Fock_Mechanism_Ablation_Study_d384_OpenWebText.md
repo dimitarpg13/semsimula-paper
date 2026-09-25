@@ -4,6 +4,24 @@
 **Date:** July 2026
 **Status:** Complete — extension run finished, ablation results final
 
+> ### ⚠️ Superseded in magnitude — **2026-09-25**
+>
+> This document's central claim — that the reverse channel is "the
+> essential component responsible for the model's language modelling
+> capability" — rests on **ablation**: removing the channel from a model
+> trained to use it. The trained-without arm has since been run. At L=2 on
+> OpenWebText, from scratch at the same LR, schedule and budget, the
+> conservative-only model reaches **87.93** against **66.98** with the
+> mechanism on: **+31.3%**, a ratio of **1.31×**.
+>
+> The ablations indicated 3.75× and 3.91×. They overstate the mechanism by
+> **2.9× in PPL ratio and 4.9× in nats**. The direction of this document's
+> finding stands and the mechanism is still the largest single term in the
+> architecture; the *magnitude* does not. **Do not quote ablation
+> percentages as the price of the Fock mechanism.**
+>
+> Measured price and method: [`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md) §5.6.
+
 ---
 
 ## 1. Purpose

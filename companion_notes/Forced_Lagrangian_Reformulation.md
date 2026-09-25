@@ -32,6 +32,16 @@ L=2 the second-order state at layer 1 is the raw embedding, not a velocity
 along a curve (E3, §6.8). Refinement fails (Gate 3). *All measured, at
 L=2.*
 
+**The other half, measured the same week.** Switch the reverse channel off
+and train from scratch, and the trajectory *is* the geometry the framework
+always claimed: at the one dynamically clean layer the step is the damped
+Vθ geodesic step followed by LayerNorm, to **R = 0.0003** (master doc
+§4.9). Riemannian geodesics are not refuted — they are **established, for
+the conservative architecture, and priced at 31.3%** (87.93 against 66.98).
+Refinement still fails there (flow/maps §8.2), so the conservative model is
+piecewise geodesic with maps between the pieces; the forced model is not
+even that. Two obstructions, independent, one measurement of each.
+
 **The reformulation.** Non-conservative forces do not leave Lagrangian
 mechanics; they enter through the Lagrange–d'Alembert principle. What died
 is the **geodesic** reading — inference as *free* motion on a learned
@@ -73,6 +83,10 @@ flowchart LR
 | Gate 3 (Cell 6b-7) | refinement invariance: the stack samples one curve | PPL 68.7 → 435.6 as N goes 2 → 8; the stack is maps between flows | **withdrawn** |
 | E1 (Cell 6b-9) | the step is the damped V_θ geodesic | R(geo) = 1.09; reverse channel ~90%; V_φ inert; LN helps | **withdrawn at L=2** |
 | E3 (Cell 6b-10) | the second-order state makes the trajectory forecastable | null at L=2; two of three metrics structurally invalid there | **open, L ≥ 3** |
+| E1 on the conservative arm (6b-9) | — | **`geo+LN` = 0.0003**: the step is the projected Vθ geodesic; LN accounts for the deflection, Vφ for none | **geodesics established** |
+| Gate 3 on the conservative arm (6b-7) | the reverse channel is what breaks refinement | **refuted** — still fails (4.32×); the per-step maps are the cause | two independent obstructions |
+| Gate 1 on the conservative arm (6b-7) | inertia is worth +50.5% | **+5.2% without the Fock mechanism** — the velocity carries memory, not dynamics | §17h, measured |
+| F5 (run 8) | the Fock mechanism is worth +275% | **+31.3%** trained-without; ablations overstate by 2.9× | price measured |
 | L=1 (ladder run 7) | one hop is the floor | 87.09, +30% vs L=2; register bank static | measured |
 
 What is *not* on this list, because nothing measured touches it: the
@@ -184,6 +198,11 @@ a driven system" is a narrower name and a true one.
   property of the trained discretisation (flow/maps note §5).
 - Any claim that the dynamics are more forecastable than a transformer's,
   pending L ≥ 3 (E3 §6.8).
+- **Any ablation figure as the price of the Fock mechanism.** Ablation A's
+  +275% and E5's 3.9x are inference-time removals from a trained model;
+  the trained-without arm says +31.3% (§3.5). The ablations remain valid
+  as upper bounds and as *sensitivity* measurements, and must be named as
+  such wherever they appear.
 - "$V_\phi$ is inert at 0.0002." That number was the *change in E1's
   residual* between two arms, not $V_\phi$'s contribution. E5 measured
   the contribution directly: 6% of the step at layer 0, 0.5% at layer 1,
@@ -397,6 +416,36 @@ construction.
 This is the programme's fourth forecast; the record is 0 for 3, and all
 three misses came from extrapolating one trend through a turn.
 
+**Result — run 2026-09-25: 87.93 settled** (best 85.90; final 88.82).
+Ladder protocol §5.6 has the full reading. Three things carry into this
+document:
+
+1. **The price of the Fock mechanism is +31.3%** (66.98 → 87.93, +0.272
+   nats), ratio to the matched GPT-2 1.765 against 1.345. Large, and the
+   biggest single term in the mechanism ladder — but not the 3.9x the
+   ablations implied.
+2. **The inference-time ablations overstated it by 2.9x in PPL ratio and
+   4.9x in nats.** Ablation A said 3.75x, E5 at λ = 0 said 3.91x, the
+   truth is 1.31x. Both were labelled upper bounds; now the looseness is
+   measured. **§2.6's list of things given up gains a line: no "+275%" or
+   "3.9x" figure may be quoted as the price of the mechanism.**
+3. **V_φ did not grow — measured, correcting an inference made here.**
+   After the run landed at the bottom of its band this section inferred
+   that V_φ had probably taken over once uncontested. E1 on the resulting
+   checkpoint (master doc §4.9) says otherwise: V_φ moves the step's
+   deflection by −0.0015, against LayerNorm's −0.669. Trained with no
+   competition at all, the pairwise potential is still inert. **F5's
+   original question is answered in the negative: V_φ's inertness is a
+   V_φ/PARF matter, not crowding-out by the Fock mechanism.** How the arm
+   *did* reach 87.93 — refitting V_θ, the embedding, the head — is open.
+4. **Riemannian geodesics exist, and this is the only model in the corpus
+   where they do.** At the one dynamically clean layer the step is the
+   damped V_θ geodesic step followed by LayerNorm, to R = 0.0003. The
+   framework's geometric claim is exactly true of *this* architecture, and
+   the ladder prices it: **31.3%**.
+
+Prediction scored: **band hit** (105, band 85–140), point high by 16%.
+
 **What it settles.** The price of the Fock mechanism, measured rather than
 ablated — the number the model card has been waiting for. It also gives
 §2's reformulation its denominator: "the register bank supplies the
@@ -484,5 +533,5 @@ formal apparatus, written for a different purpose:
 | F2 | needs L=4 (ladder run 4, queued) | — |
 | F3 | conditional on F1 SPARSE | — |
 | F4 | designed | — |
-| F5 | **promoted to the conservative-only baseline**; Cell 0 knob verified, `norc` tag added; pre-registered 105 (85–140); not run | 2026-09-25 |
+| F5 | **run: 87.93**, +31.3% vs the mechanism on; ablations overstated by 2.9x. Band hit (105, 85–140). Follow-up: confirm V_φ's share on this checkpoint | 2026-09-25 |
 | F6 | designed; corpus dependence (TinyStories); two training runs | — |

@@ -25,6 +25,30 @@ geodesic programme), and §19 (overdamped synthesis conclusion).
 - [`Improving_the_Fock_Mechanism_to_match_Attention.md`](Improving_the_Fock_Mechanism_to_match_Attention.md)
   — Q/K/V creation protocol design rationale for FockPARFLM v2
 
+> ### Direct measurement now available — **2026-09-25**
+>
+> This note argues that dynamical order and state-space extension are
+> orthogonal design choices. That argument is **supported and sharpened**
+> by a measurement it predates.
+>
+> Resetting `h_prev = h` at every layer reduces the stack to gradient
+> descent on the potential — the first-order reduction. Measured on trained
+> weights with no retraining, it costs:
+>
+> | model | cost of the first-order reduction |
+> | --- | ---: |
+> | Fock-PARFLM, reverse channel ON | **+50.5%** |
+> | the same, reverse channel OFF | **+5.2%** |
+>
+> So the second-order commitment pays for itself almost entirely *in the
+> presence of the auxiliary-register forcing*, and is close to redundant
+> without it — the velocity is the conduit by which the register readout
+> reaches the next layer, not a store of momentum in the conservative
+> potential. Order and extension are orthogonal as *design choices*, and
+> strongly coupled in *value*.
+>
+> Measurement: [`Composing_Single_Layer_Inferences_Flow_or_Maps.md`](Composing_Single_Layer_Inferences_Flow_or_Maps.md) §8.2.
+
 ---
 
 ## 1. The question

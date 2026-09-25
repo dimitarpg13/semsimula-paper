@@ -47,7 +47,7 @@ budget:
 | L=2 `'attention'` | the transformer itself | 63 (59–68), run 9 |
 | L=2 `'attention_potential'` | **conservativity**: the same xi-routed attention, but entering as a potential so the force stays a gradient | 66 (62–72), run 5 |
 | L=2 `'none'` | the exchange field | **66.98** |
-| L=2 `'none'`, reverse channel off | **the Fock mechanism**: the register-to-token path | 105 (85–140), run 8 |
+| L=2 `'none'`, reverse channel off | **the Fock mechanism**: the register-to-token path | **87.93**, run 8 |
 
 Measured values in bold; the rest are pre-registered bands from protocol
 §5.3. The *ordering* is the prediction and any inversion is a result.
@@ -60,12 +60,36 @@ about, and prices it by construction rather than by attribution:
 | GPT-2 → `'attention'` | what the transformer has that this architecture does not | ~13 PPL |
 | `'attention'` → `'attention_potential'` | **the price of conservativity** | ~3 PPL |
 | `'attention_potential'` → `'none'` | the exchange field | ~1 PPL |
-| `'none'` → no reverse channel | **the Fock mechanism** | ~38 PPL |
+| `'none'` → no reverse channel | **the Fock mechanism** | **20.95 PPL, measured** |
 
 If the predictions hold, the paper's two most quotable sentences fall out of
 one table: **conservativity is cheap** — about 5% — and **the
-non-conservative memory mechanism is what carries the model**, worth more
-than the entire remaining gap to a matched transformer.
+non-conservative memory mechanism is the largest single term**, worth
+about 21 PPL where conservativity costs about 3.
+
+The bottom row is now measured (protocol §5.6) and it carries a
+methodological result of its own: the *inference-time ablations* of the
+same mechanism said 3.75x and 3.91x, where training without it says
+**1.31x**. Removing a trained component overstated its value by nearly
+threefold in PPL ratio and fivefold in nats. Any version of this table
+built from ablations rather than trained arms would have been wrong by
+that factor, and §14 should say so — it is the clearest instance in the
+programme of why the ladder is built from independently trained models.
+
+**The second headline, and the one the framework needs.** The bottom arm of
+the ladder is the only fully conservative trained model in the programme,
+and on it the geometry is *exact*: at the clean layer the step is the
+damped Vθ geodesic step followed by LayerNorm, to R = 0.0003 (master doc
+§4.9). So the paper can say both of these, measured, in the same chapter:
+
+> Riemannian geodesics are real in this architecture — the trained step is
+> the projected geodesic step to three decimal places — and they cost
+> 31.3% in perplexity.
+
+That is a far better position than either "the framework is geometric"
+(unmeasured) or "the geodesic reading failed" (which is true only of the
+forced model). §18's retreat and §37's value proposition become two halves
+of one measured statement.
 
 **And it converges with the geometry.** E1 and E5 measured the same
 statement in the dynamics: the reverse channel is ~90% of the per-layer
@@ -116,7 +140,8 @@ first** (the section may already hold what the reframing needs).
 | 17h | first-order sufficiency | **promote** | E3's L=2 finding is direct evidence for the depth-memory mismatch | E3 at L ≥ 3 |
 | **18** | **Riemannian geometry** | **retreat, largest** | the residual diagnostic is re-based as the forcing measurement; "the trajectory is a geodesic" withdrawn and replaced by the three-layer table; the continuum footnote stays; refinement language removed | F1, F2 |
 | 18b, 18f, 18g, 18h, 18i | relations: EBMs, AlphaFold, Langevin completion, portable potentials, optimiser-inspired transformers | **keep, light** | remove any "geodesic" phrasing that refers to the trained path | — |
-| 18c, 18d | memorisation capacity, geometric capabilities | **review** | any capability argued *from* geodesicity needs re-basing | F1 |
+| 18c | memorisation capacity | **review** | any capability argued *from* geodesicity needs re-basing | F1 |
+| **18d** | **geometric capabilities (§37)** | **keep, retreat, retitle** | second-largest retreat after §18; splits into three groups, one of which inverts. See §3.1 | F1, F4, and the ladder's conservativity gap |
 | 18e | relation to liquid neural networks | **promote** | CfC is that lineage and is now the production integrator | — |
 | 18j | relation to flow matching | **retreat, small** | any refinement / continuous-time equivalence language goes | none |
 | 19 | conclusion | **rewrite** | last | after everything |
@@ -125,6 +150,82 @@ first** (the section may already hold what the reframing needs).
 | A1 | non-autonomous framework | **read first** | a time-dependent forcing from a slowly changing register bank is a non-autonomous system with an adiabatic parameter; the reformulation should be written *in* this appendix's language, and A1 may move into the main text | — |
 | A2 | inference efficiency | **keep** | — | — |
 | A3 | experiment index | **update** | E1–E5, F1–F5, ladder runs | as results land |
+
+### 3.1 §37 "Capabilities Unique to the Conservative Design" — keep, retreat, retitle
+
+**Keep.** Once the mechanism ladder (§2) prices conservativity at roughly
+3 PPL, the reader's next question is what that price buys. A paper that
+measures a cost precisely and states no corresponding benefit is weaker,
+not more honest. §37 is where the benefit lives, and it is also where the
+conservative members of the family (SPLM, PARFLM, `attention_potential`)
+have their value stated at all.
+
+**But three things in it are now wrong, and they separate cleanly** — along
+exactly the line the new subtitle draws.
+
+*Group A — from the conservative potential. Survives, and is now
+**established** rather than assumed.* E1 on the conservative-only arm
+(master doc §4.9) measures the trained step at the clean layer as the
+damped Vθ geodesic step followed by LayerNorm, to R = 0.0003. §37's first
+two rows — "well-defined Riemannian metric" and "computable geodesics" —
+are no longer claims resting on Verlet-era cosines of 0.52–0.75; they are
+exact for this architecture, with a measured price of 31.3%. **This is the
+strongest single result available to §37 and it should open the section.*** The
+Jacobi metric (row 1), sectional curvature from the Hessian of
+$V_\theta$ as a native uncertainty measure (row 4), energy bookkeeping
+(row 3), and the mechanistic reading of the trajectory (row 5). These are
+properties of $V_\theta$ and the integrator, exact by construction, and
+E1 does not touch them. E1's own `geo` arm — gate-0 validated bit-exact —
+*is* the metric being used.
+
+*Group B — from the auxiliary register degrees of freedom. Survives, but
+it is the non-conservative half.* The register lifecycle (row 6) and
+native chain-of-thought (§37.4). **The section's title claims these for
+"the conservative design", and they are not.** They exist because the
+Conservative Obstruction Theorem proved conservativity alone insufficient
+and forced auxiliary state in. This is the retitle: the capabilities are
+unique to *this architecture*, and they come from both halves — which is
+the paper's thesis, not a concession.
+
+*Missing entry to add:* **graceful depth extrapolation.** Gate 2 at four
+times the trained depth: the conservative arm degrades 3.8×, the full Fock
+arm 58.8× (flow/maps §8.2). Bounded-gradient dynamics stays bounded past
+its trained horizon; a learned non-conservative force does not. §37 has no
+row for this and should.
+
+*Group C — presupposed geodesic compliance of the trajectory. Broken.*
+Row 2's directional cosine 0.52–0.75, the G1 directed geodesic analogy,
+G3/G4 asymmetric geodesic distance, and the geodesic tiers of the
+leak-audit kit. The section states the presupposition explicitly — that
+the models sit in a weakly-damped regime where
+$\gamma_{\mathrm{eff}} \approx 0.13$ "preserves approximate geodesic
+compliance" — and under CfC+BAOAB that is false: R(geo) = 1.09, and the
+mechanism is not damping at all but the transverse reverse-channel force
+(master doc §4.8).
+
+**The inversion, which is the interesting part.** Group C's *instruments*
+survive with their interpretation turned around. The leak-audit kit
+measures deviation from the geodesic and reads it as a fault signal; the
+reformulation says deviation from the geodesic **is the forcing** — the
+informative quantity, not the error (reformulation §2.4). The kit was
+measuring the right thing and calling it the wrong name. Re-based, it
+becomes F4, and the three-tier hierarchy keeps its structure. Likewise
+G3/G4's asymmetry: an asymmetric distance is what a *forced* system
+produces, and the Tversky connection is if anything better motivated by a
+forcing term than by a damped geodesic.
+
+**Stale numbers to fix.** The section opens on "9.04 PPL versus ~7.8 matched attention" — **TinyStories at 16k steps**, a
+different corpus and scale from the OWT ladder's 66.98 versus 49.81. Both
+belong, but they must be labelled, and the framing gap should be the
+ladder's. Row 2's cosine figures come from the Verlet-era §18 battery and
+need the same label.
+
+**The corpus point, which the section should absorb rather than dodge.**
+Which capabilities are exhibitable depends on what the corpus rewards:
+curvature-as-uncertainty and asymmetric distance are claims about semantic
+structure, and a corpus whose structure is mostly local may not exercise
+them. That is F6 (reformulation §3.6) reaching §37, and it argues for
+keeping the section and conditioning it, not for dropping it.
 
 ---
 
@@ -161,9 +262,11 @@ than a confirmed one and reads better.
 > Separator, with a Correspondence to Joint Embedding Predictive
 > Architectures*
 
-**Agreed 2026-09-25:**
+**Agreed 2026-09-25, and APPLIED to `paper_v6` the same day** (branch
+`paper_v6_9-25-26`; `main.tex` title block, `abstract.txt` title line,
+`A0_edition_history` v6 entry; rebuilt clean at 475 pages):
 
-> **Semantic Simulation: A Prescriptive Lagrangian Framework for Efficient
+> **Semantic Simulation: A Prescriptive Lagrangian Framework for
 > Semantic Inference**
 > *Conservative Potentials, Non-Conservative Memory, and the
 > Shared-Potential Separator*
@@ -223,12 +326,15 @@ else is claiming.
 of a mechanical system in semantic space, with exact propagators per
 substep. What the reformulation drops is *free*, not *simulation*.
 
-The word to re-examine is **"Efficient"**. That claim is about inference
+**"Efficient" was dropped, 2026-09-25.** That claim is about inference
 cost (Appendix A2), while every headline number now in play is a quality
-ratio (1.345x the matched GPT-2 at L=2). Left open: does it still earn its
-place in the title, or does it invite the comparison the paper then has to
-spend a section qualifying? **Decide with the thesis sentence, last**, once
-the ladder is complete.
+ratio (1.345x the matched GPT-2 at L=2), so the word invited exactly the
+comparison the paper then has to spend a section qualifying. The
+efficiency argument itself is untouched and stays where it belongs, in
+A2 --- it is the title that no longer advertises it.
+
+`\ShortHeadings` needs no change: it reads "Semantic Simulation:
+Prescriptive Lagrangian Framework" and never carried the word.
 
 ---
 
@@ -258,7 +364,7 @@ the ladder is complete.
 | is L=2 a floor or the verdict on the geodesic share? | **F2** (needs L=4) | every "at L=2" caveat |
 | can the forecastability claim be made at all? | E3 at L ≥ 3 | §11, §17h |
 | the price of the pure geodesic in PPL | **E5 — settled 2026-09-25**: 3.91×, no knee; layer 1's output direction is the register readout | §17c, §20 — and §17c must describe the last layer as a memory read, not a forced step |
-| is V_φ ever active? | F5 | §5, §17 (the pairwise potential's role) |
+| is V_φ ever active? | **F5 + E1 — settled 2026-09-25: no.** Trained with no competition it still moves the step by −0.0015. Its inertness is a V_φ/PARF matter | §5, §17 must stop describing V_φ as load-bearing |
 | does the hallucination claim survive re-basing? | F4 | §18d and wherever hallucination is discussed |
 | is the dominance of the forcing a property of the corpus? | F6 (TinyStories) | every "the reverse channel dominates" sentence gains "on OpenWebText" until then; §14, §17c |
 
@@ -271,4 +377,6 @@ the ladder is complete.
 | 2026-09-25 | skeleton opened; triage table drafted; no paper edits beyond Remark 52 / footnote / pointer |
 | 2026-09-25 | E5 settled its decision point (§5); F1 remains the gate on the thesis sentence |
 | 2026-09-25 | mechanism ladder named as the headline result (§2); `attention_potential` band revised to 66 (62–72) after re-reading the detach semantics — protocol §5.3a |
+| 2026-09-25 | §37 (geometric capabilities) triaged: **keep, retreat, retitle** — three groups, one inverted; §3.1 |
+| 2026-09-25 | **`paper_v6` forked from v5** (branch `paper_v6_9-25-26`), build artifacts cleared, new A0 edition entry, title and subtitle applied, rebuilt clean: 475 pages, 0 undefined refs/cites, 0 errors |
 | 2026-09-25 | subtitle agreed (§5): *Conservative Potentials, Non-Conservative Memory, and the Shared-Potential Separator*; JEPA correspondence demoted to the body; "Efficient" in the main title left open |

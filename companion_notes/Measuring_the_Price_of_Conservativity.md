@@ -7,6 +7,27 @@ written beyond what already exists.
 [`Fock_Inference_Productionization_Plan.md`](Fock_Inference_Productionization_Plan.md) §7,
 [`Context_Mixing_Mechanisms_in_the_Conservative_Framework.md`](Context_Mixing_Mechanisms_in_the_Conservative_Framework.md) §8.
 
+> ### Partly answered by a different method — **2026-09-25**
+>
+> This note proposes a λ-gated relaxation protocol to price conservativity.
+> The programme has since taken a different route: a **mechanism ladder**
+> of independently trained arms at fixed depth, LR, corpus and budget, in
+> which each arm removes exactly one mechanism, so every gap prices one
+> component by construction rather than by gating.
+>
+> Two of its rungs are measured. The Fock mechanism (the non-conservative
+> register-to-token path) costs **+31.3%**. The conservativity rung proper
+> — `'attention'` against `'attention_potential'` — is pre-registered at
+> roughly **3 PPL (~5%)** and queued.
+>
+> A caution this note's design would have inherited: **λ-gating a trained
+> model measures sensitivity, not price.** Cell 6b-11 gated the reverse
+> channel continuously to zero and indicated 3.91×, where the trained-
+> without arm says 1.31×. A gated sweep is a useful instrument and a poor
+> price.
+>
+> Ladder and results: [`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md) §2–§3, §5.6.
+
 ---
 
 ## 1. Why this experiment exists

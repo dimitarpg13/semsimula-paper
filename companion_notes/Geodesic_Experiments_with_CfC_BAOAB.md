@@ -68,6 +68,23 @@ flow** — exact between punctuations, learned across them — and Gate 3 only
 says the pieces cannot be subdivided. If it is near 1, the geodesic reading
 fails at the trained step too, and that should be said plainly.
 
+**Both halves have now been measured, and they must be read together.**
+
+| model | is each step a projected Vθ geodesic? | does the stack refine? | settled PPL |
+| --- | --- | --- | ---: |
+| Fock-PARFLM, reverse channel ON | **no** — R(geo) = 1.09 (§4.7) | no — 6.35× at N=8 (§1) | **66.98** |
+| the same, reverse channel OFF | **yes** — `geo+LN` = 0.0003 (§4.9) | no — 4.32× (flow/maps §8.2) | **87.93** |
+
+Two independent obstructions, one measurement of each. The **maps** —
+LayerNorm, top-k re-selection, and Vθ's stiffness fitted to one dt — break
+refinement in *both* models, so the reverse channel is not what breaks it.
+The **forcing** breaks per-step geodesicity, and only in the model that has
+it. The conservative arm is therefore *piecewise geodesic with maps between
+the pieces*; the full arm is *not even piecewise geodesic*. **And the
+geodesics cost 31.3%** — the ladder prices them
+([`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md)
+§5.6).
+
 **E1 has now run (§4.7): R(geo) = 1.09.** The geodesic reading fails at the
 trained step. The step is the $V_\theta$ geodesic plus the reverse channel,
 and the reverse channel is the larger part. Damping is not the reason:
@@ -863,6 +880,7 @@ written that way is exact for the scheme it is measuring.
 | experiment | cell | status | result |
 | --- | --- | --- | --- |
 | Gate 3 (refinement) | 6b-7 | **done 2026-09-24** | fails, monotone 68.7 to 435.6; §1 |
+| Gate 3, **conservative-only arm** | 6b-7 | **done 2026-09-25** | **still fails** (91.2 to 394.2): the reverse channel is not what breaks refinement. Gate 1 collapses +50.5% to +5.2%; Gate 2 degrades 3.8× against 58.8×. Flow/maps note §8.2 |
 | **E1** deflection | **6b-9** | **run 2026-09-25** | **R(geo) = 1.09**; reverse channel ~90% of the step, V_phi inert; §4.7 |
 | E2 decomposed refinement | — | designed, §5 | — |
 | E3 forecastability vs matched GPT-2 | **6b-10** | **run 2026-09-25** at L=2; cell revised (tangential coherence, fp32, ε grid); needs L ≥ 3 | null at L=2; (a),(b) contaminated by the sphere; §6.8 |
@@ -892,7 +910,18 @@ a real retreat, and it would be measured rather than argued.
 Either way the measurement is minutes, the harness has passed its own gate,
 and the reading is pre-registered above.
 
-**Which branch obtained (2026-09-25).** The large-residual branch, and by
+**Both branches obtained — on different architectures (2026-09-25).**
+The small-residual branch is *exactly* true of the conservative-only arm
+(§4.9: `geo+LN` = 0.0003 at the clean layer), which is the strongest
+positive result the Riemannian programme has produced on this integrator
+and the only place in the CfC+BAOAB corpus where geodesics are
+*established* rather than assumed. The framework is correct at the level it
+can be correct at, and the ladder now says what that level costs: **31.3%**
+in perplexity, against a model that lets a non-conservative memory force
+redirect the trajectory. That is the honest shape of the result — not a
+framework refuted, but a framework priced.
+
+**Which branch obtained for the trained flagship (2026-09-25).** The large-residual branch, and by
 more than the pre-registered band anticipated: R(geo) = 1.09. §4.8 states
 the resolution in one line — the conservative potential defines a metric
 whose damped geodesic the integrator follows *exactly* when the reverse

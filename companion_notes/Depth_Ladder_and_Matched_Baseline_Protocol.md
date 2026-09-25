@@ -70,7 +70,7 @@ per call against gram's 40.1 ms. Cell 5 asserts the built config carries it.
 | 6 | L=2, `'nonconservative'`, lambda pinned **@1.2e-03** | ~14h | an unconstrained pointwise map, the one function class Fock has nowhere | queued — **Cell 0 could not launch it until 2026-09-25**: the variant-tag dict had no `'nonconservative'` entry and raised `KeyError`; fixed, tag is `noncons` |
 | 7 | L=1, `'none'` | ~7h | one hop; the structural floor where the Jacobi metric ceases to exist — **but see §6.1: it also silently disables the Fock registers** | **DONE**, §5.5 |
 | 9 | **L=2, `'attention'` @1.2e-03 — a RE-RUN** | ~14.5h | **repairs the ladder's central comparison.** Run 2 measured `'attention'` at 3e-04; `'none'` has since been retuned to 1.2e-03. The two arms are currently at different learning rates, which is what §5.2's SUSPENDED banner records. Until this runs, "what the exchange field contributes" has no answer at the ladder LR. Pre-registered **63, band 59–68** | queued, **highest priority of the remaining arms** |
-| 8 | **L=2, `'none'`, `REVERSE_CHANNEL = False`** — *not a ladder point; an architecture control* | ~14h | **the conservative-only baseline**: what PARFLM reaches with the Fock mechanism off and every parameter free to compensate. The three existing numbers (+275% ablation A, 3.91x E5 at λ=0, +1226% ablation B) are all inference-time removals from a trained model and are upper bounds. Pre-registered **105, band 85–140**; design and reasoning in [`Forced_Lagrangian_Reformulation.md`](Forced_Lagrangian_Reformulation.md) §3.5 | queued |
+| 8 | **L=2, `'none'`, `REVERSE_CHANNEL = False`** — *not a ladder point; an architecture control* | 14.5h | **the conservative-only baseline**: what PARFLM reaches with the Fock mechanism off and every parameter free to compensate. The three existing numbers (+275% ablation A, 3.91x E5 at λ=0, +1226% ablation B) are all inference-time removals from a trained model and are upper bounds. Pre-registered **105, band 85–140**; design and reasoning in [`Forced_Lagrangian_Reformulation.md`](Forced_Lagrangian_Reformulation.md) §3.5 | **DONE**, §5.6: **87.93** |
 
 Run 1 first regardless of ordering elsewhere: it is 2.7 hours and it makes
 every other number defensible.
@@ -256,7 +256,7 @@ before any of the remaining arms runs:**
 | L=2 `'attention'` | run 9, queued | 63 (59–68) |
 | L=2 `'attention_potential'` | run 5, queued | 66 (62–72) |
 | L=2 `'none'` | measured | **66.98** |
-| L=2 `'none'`, reverse channel off | run 8, **running** | 105 (85–140) |
+| L=2 `'none'`, reverse channel off | run 8, **DONE** | **87.93** (pre-reg 105, band 85–140: band hit) |
 
 The ordering itself is the prediction: each arm removes one mechanism from
 the one above it, and the gaps price them. Any inversion is a result.
@@ -471,6 +471,91 @@ is the frozen bank, because L=1 changes both at once (§6.1, and
 §6, where the register-to-token path ablates to +52% at L=1 and +275% at
 L=2). The decomposition is the L=1 run at `register_salience_init = 0.5`,
 which is outside the ladder by design.
+
+### 5.6 L=2, `'none'`, reverse channel off — the conservative-only control, **DONE 2026-09-25**
+
+Log: [`results/.../L2_idt4_lr0p0012_norc_noattn_altE_fromscratch_32500_result.txt`](../notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/L2_idt4_lr0p0012_norc_noattn_altE_fromscratch_32500_result.txt)
+
+Single-variable control against run 3: `REVERSE_CHANNEL = False`, nothing
+else changed. The register bank is still created and destroyed but has no
+path to the tokens, so the Fock mechanism is off and the model is the
+conservative architecture — V_θ, V_φ and the ξ content routing.
+
+| | L=2 `'none'` (run 3) | L=2 `'none'`, no reverse channel | delta |
+| --- | ---: | ---: | ---: |
+| final (32,500) | 67.63 | 88.82 | +21.19 |
+| best | 66.56 (31,500) | 85.90 (31,000) | +19.34 |
+| **settled** (last 3) | **66.98** | **87.93** | **+20.95** |
+
+**+31.3%, +0.272 nats.** Ratio to the matched GPT-2 (49.81): **1.765**,
+against 1.345 with the mechanism on.
+
+#### The ablations overstated the mechanism by roughly threefold
+
+This is the headline, and it is methodological:
+
+| estimate | method | ratio to its own baseline |
+| --- | --- | ---: |
+| Cell 6b-8, ablation A | inference-time removal from a trained model | 3.75x |
+| Cell 6b-11 (E5), λ = 0 | the same removal, reached continuously | 3.91x |
+| **run 8, trained without** | **from scratch, every parameter free to compensate** | **1.31x** |
+
+The two ablations overstate the mechanism's value by **2.9x in PPL ratio
+and 4.9x in nats**. Both were already labelled upper bounds
+([`Fock_Mechanism_Efficiency_Across_Layer_Depth.md`](Fock_Mechanism_Efficiency_Across_Layer_Depth.md)
+§6.1, master doc §11.6); this run says how loose those bounds are. **No
+"+275%" or "3.9x" figure may be quoted as the price of the Fock
+mechanism.** The price is **+31.3%**.
+
+#### The coincidence with L=1
+
+The L=1 `'none'` run (§5.5), whose register bank is read but never
+updated, settled at **87.09**. This arm, with two layers and no register
+path at all, settles at **87.93** — within 1% of it. Two quite different
+mutilations of the same architecture land in the same place: one hop with
+a frozen bank, and two hops with no bank. Whether that is coincidence or
+a ceiling imposed by what V_θ, V_φ and ξ-routing can do alone is not
+settled by these two points; F5's from-scratch reading and the L=4 rung
+would speak to it.
+
+#### The gap widened through training
+
+| step | 8,000 | 11,000 | 15,000 | 20,000 | 25,000 | 32,500 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| gap vs run 3 | 19.1% | 20.0% | 23.9% | 25.4% | 29.7% | 31.3% |
+
+Same shape as the L=1 comparison and the opposite of the saturating
+`'attention'`/`'none'` gap of §5.2. The decay bought this arm **13.6%**
+(101.81 at 21,500 to 87.93) against run 3's 19.3% — consolidating less,
+as the L=1 arm also did at 11.2%.
+
+**Prediction scored: BAND HIT, point high.** Pre-registered 105, band
+85–140 (F5 design, reformulation §3.5); actual 87.93, which is 3% above
+the lower edge and 16% below the point. **The first band hit in the
+programme's forecast record**, and the pre-registration earned it for the
+right reason: the named quantity that could turn — whether V_φ's share of
+the step grows once the reverse channel is not competing — was recorded
+with "if it grows into the tens of percent, the run lands at the low end
+or below," and it landed at the low end. The band was deliberately wide
+on the high side; the answer came in at the bottom. **Open follow-up:**
+run Cell 6b-11 or a V_φ attribution probe on *this* checkpoint to confirm
+V_φ actually grew, rather than inferring it from the PPL.
+
+#### Run health, per §6's rule
+
+- **Clip-hit rate 2.6%** (17 of 650 logged steps, max grad-norm 2.05),
+  identical to the L=1 rate and against **0.0%** for run 3. Both arms with
+  the Fock mechanism degraded clip at 2.6%; the intact arm does not clip
+  at all. Noted, not corrected.
+- `top[...]` never named `reverse_channel_scale` or `reverse_ch` in the
+  whole run — those parameters do not exist in this arm, which is the
+  visible signature that the mechanism is genuinely absent.
+- `sig_max` drifted **14.296 → 60.11**, driven entirely by `fock_reg` and
+  the register repulsion, since the LM loss reaches no register parameter.
+  Harmless — nothing downstream reads them — and both auxiliary terms are
+  identically weighted in run 3, so the paired comparison is unaffected.
+- 0 watchdog triggers, 0 spike captures. `bproj_sig` saturated at 88.7
+  (85.4 in run 3).
 
 ---
 
