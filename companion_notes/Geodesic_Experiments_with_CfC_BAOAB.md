@@ -5,7 +5,10 @@
 > flow/maps sweep (Cell 6b-7) returned its verdict. **E1 has run (Cell 6b-9,
 > §4.7): R(geo) = 1.09. E3 has run at L=2 (Cell 6b-10, §6.8): null, and
 > needs L ≥ 3.** E5 (Cell 6b-11, §11) is built and harness-validated,
-> awaiting its first run; E2 and E4 are
+> awaiting its first run; the F-series on the forcing itself (F1 built,
+> Cell 6b-12) lives in
+> [`Forced_Lagrangian_Reformulation.md`](Forced_Lagrangian_Reformulation.md);
+> E2 and E4 are
 > designed and pre-registered here so their predictions are on record before
 > any of them is measured.
 >
@@ -865,6 +868,7 @@ written that way is exact for the scheme it is measuring.
 | E3 forecastability vs matched GPT-2 | **6b-10** | **run 2026-09-25** at L=2; cell revised (tangential coherence, fp32, ε grid); needs L ≥ 3 | null at L=2; (a),(b) contaminated by the sphere; §6.8 |
 | E4 LN as constraint | via E1, E2 | analysis, §7 | — |
 | E5 reverse-channel slider | **6b-11** | **built 2026-09-25**, harness-validated, not yet run | — |
+| F1 per-token forcing distribution | **6b-12** | **built 2026-09-25**, harness-validated, not yet run | — ; designed in [`Forced_Lagrangian_Reformulation.md`](Forced_Lagrangian_Reformulation.md) §3.1 |
 
 ---
 
