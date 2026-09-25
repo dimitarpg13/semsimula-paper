@@ -267,6 +267,20 @@ scoped at the trained step size. What that leaves standing, and how to
 measure it, is the subject of
 [`Geodesic_Experiments_with_CfC_BAOAB.md`](Geodesic_Experiments_with_CfC_BAOAB.md).
 
+E1 then measured the residual directly at the trained step
+(`Geodesic_Experiments_with_CfC_BAOAB.md` §4.7–4.8): R(geo) = 1.09. Two
+points from that are worth carrying here because they bear on how the
+`18_riemannian_geometry` residual should be read. First, damping is not what
+spoils the geodesic: friction is parallel to the velocity, bends nothing,
+and only changes the speed along an otherwise unchanged geodesic path.
+Second, what the residual of the damped geodesic equation actually measures
+is the *transverse, non-gradient* forcing, and at L=2 that is the reverse
+channel (about 90% of the deflection), with the register bank as its input.
+Since the bank is updated by maps — exactly the punctuations of §1 — the
+residual is large for the same reason refinement fails: the stack is a
+forced flow between maps, not a geodesic of any fixed metric, including one
+on the enlarged $(h, r)$ space.
+
 A second consequence is practical. At L=2 the residual has exactly one
 second difference per token — three states, zero redundancy, no way to
 estimate its noise. If refinement is valid, you can compute the residual at

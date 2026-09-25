@@ -63,11 +63,13 @@ says the pieces cannot be subdivided. If it is near 1, the geodesic reading
 fails at the trained step too, and that should be said plainly.
 
 **E1 has now run (§4.7): R(geo) = 1.09.** The geodesic reading fails at the
-trained step. The step is the $V_	heta$ geodesic plus the reverse channel,
-and the reverse channel is the larger part. What that leaves — a
-second-order state that provably carries information, exact energy
-bookkeeping, and an open question about *forecastability* rather than
-*geodesicity* — is the subject of §6.
+trained step. The step is the $V_\theta$ geodesic plus the reverse channel,
+and the reverse channel is the larger part. Damping is not the reason:
+friction is tangential and changes only the speed along the path, while the
+reverse channel is a transverse, non-gradient force and is what bends it
+(§4.8). What that leaves — a second-order state that provably carries
+information, exact energy bookkeeping, and an open question about
+*forecastability* rather than *geodesicity* — is the subject of §6.
 
 ---
 
@@ -399,6 +401,83 @@ What this settles and what it opens is taken up in §6 and §10; the
 $V_\phi$ result is an architecture finding in its own right and needs its
 own ablation.
 
+### 4.8 Damping does not bend the path; the reverse channel does
+
+A natural first reading of §4.7 is "the flow is heavily damped, and true
+Riemannian geodesics do not survive heavy damping". That reading conflates
+two things that act on the path differently, and only one of them bends it.
+
+**What damping does.** The damped geodesic equation is
+
+$$\nabla_{\dot{h}} \dot{h} = -\gamma \dot{h}$$
+
+The friction term is parallel to the velocity, so its component normal to
+the path is zero: it changes *how fast* the curve is traversed, not *which
+curve* is traversed. Reparametrise by arc length and the damped solution is
+the same geodesic as the undamped one. This is why the heavy damping seen in
+the Verlet era did not, by itself, threaten the geodesic reading: heavily
+damped, but still a geodesic path of the Jacobi metric of $V_\theta$,
+taken with decaying speed. The one wrinkle is that the Jacobi conformal
+factor $E - V_\theta$ uses the energy, which decays along the path, so
+strictly the path is a geodesic of a slowly changing metric — a
+technicality, not the obstruction.
+
+For the record, the nominal damping of the live configuration is mild:
+$\gamma = 0.1$, so the per-layer O-step factor $e^{-\gamma \Delta t}$ is
+$0.67$ at L=2 ($\Delta t = 4$) and $0.905$ at L=8 ($\Delta t = 1$). The
+Verlet-era measurement was different in kind: $\gamma_{\mathrm{param}}
+\approx 0.93$ with an effective $\gamma_{\mathrm{eff}} \approx 0.13$,
+because the LayerNorm re-projection injects energy and nearly cancels the
+explicit friction
+([`Determining_optimal_gamma_for_Fock-PARFLM.md`](Determining_optimal_gamma_for_Fock-PARFLM.md)
+§2.2). Whichever figure one takes, it is a statement about speed along the
+path.
+
+**What the non-conservative forces do.** The equation of motion the trained
+L=2 model actually integrates is
+
+$$m \ddot{h} = -\nabla V_\theta(h) - \gamma m \dot{h} + F_{\mathrm{rc}}(h, r) + F_\phi(h)$$
+
+with $F_\phi$ measured inert in §4.7. The geodesic curvature of the path
+in the Jacobi metric of $V_\theta$ is
+
+$$\kappa_g = \frac{\lVert F_\perp \rVert}{\lVert \dot{h} \rVert^2}$$
+
+the *transverse* part of whatever force is not the gradient of the
+potential that defines the metric. $F_{\mathrm{rc}}$ is a function of the
+register bank, is not the gradient of anything in $h$, and is not
+tangential. So the reverse channel bends the path and the damping does not.
+§4.7 gives the size: replacing the full step by the damped $V_\theta$
+geodesic step leaves a residual of 109% of the step, with about 90% of the
+deflection attributable to $F_{\mathrm{rc}}$. That is not a geodesic with
+a perturbation on top; the geodesic term is the minority partner.
+
+**So: no damped geodesics at L=2.** In the sense that matters — is the
+trained path a damped geodesic of $V_\theta$'s Jacobi metric? — no. Three
+escape routes, all closed:
+
+1. **Absorb the reverse-channel force into the metric.** Only gradient forces can be
+   absorbed into a conformal factor; $F_{\mathrm{rc}}$ is not a gradient
+   in $h$.
+2. **Enlarge the configuration space to the pair (h, r).** A magnetic-type force
+   can become geodesic in a larger space (Kaluza–Klein), but that requires
+   the $r$-dynamics to be Lagrangian. Register writes are top-k selection,
+   salience decay and gated overwrites — maps, not flow. Gate 3 already
+   showed the consequence: $(M \circ F_{T/N})^N \neq M \circ F_T$
+   (§1, and
+   [`Composing_Single_Layer_Inferences_Flow_or_Maps.md`](Composing_Single_Layer_Inferences_Flow_or_Maps.md)
+   §8.1).
+3. **Damping rescues it.** It cannot; damping is tangential.
+
+**What is true.** Between punctuations, with $F_{\mathrm{rc}}$ switched
+off, the CfC+BAOAB step is *exactly* a damped Jacobi geodesic step —
+Jacobi's theorem (§2.1) plus the tangential-friction argument above. That
+is the `geo` arm of E1, and it is what gate 0 validated bit-exactly. The
+machinery is right; the trained model does not use it as the dominant term
+at L=2. This is also why E3 (§6) drops geodesicity as the question and asks
+about forecastability instead: a forced, damped, non-geodesic flow can
+still be forecastable in a way a stack of arbitrary maps need not be.
+
 ## 5. E2 — decomposed refinement
 
 Re-run Gate 3, but refine **only the $V_\theta$ flow**: $k$ CfC substeps of
@@ -729,3 +808,14 @@ a real retreat, and it would be measured rather than argued.
 
 Either way the measurement is minutes, the harness has passed its own gate,
 and the reading is pre-registered above.
+
+**Which branch obtained (2026-09-25).** The large-residual branch, and by
+more than the pre-registered band anticipated: R(geo) = 1.09. §4.8 states
+the resolution in one line — the conservative potential defines a metric
+whose damped geodesic the integrator follows *exactly* when the reverse
+channel is off, and the trained model turns the reverse channel on and lets
+it dominate. The retreat is therefore specific: geodesic claims about the
+trained trajectory are withdrawn; claims about the machinery (Jacobi
+metric, exact A-substep, exact friction) stand; and the predictive content
+of the second-order state is re-based on the full forced step, which is
+what E3 measures.
