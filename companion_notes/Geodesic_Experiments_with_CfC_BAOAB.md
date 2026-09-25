@@ -555,6 +555,33 @@ for name, v in (('true', v_true), ('fd', v_fd)):
 # (c): re-run the stack from h_0 + delta, read |dh_l|/|h_l| against |delta|/|h_0|
 ```
 
+Implemented as **Cell 6b-10** of the ladder notebook. Details fixed at build
+time, beyond the sketch:
+
+- The GPT-2 side re-implements the baseline's modules with the same
+  attribute names and loads its `gpt2_baseline_best.pt` with `strict=True`,
+  then splits the forward into embed / block loop / head so the residual
+  stream is readable after every block. Two gate-0 checks guard the
+  re-implemented stacks: the Fock trajectory path must reproduce the spy
+  capture, and the GPT-2 block loop must reproduce `model(idx)` logits,
+  both bit-exact. A PPL-on-these-batches line for both models catches a
+  wrong checkpoint.
+- Null values, so a number can be read without a reference run: (a) is 0
+  for unrelated steps and $+1$ for pure inertia; (b) is 1 when the velocity
+  predicts nothing beyond "stay put", and the finite-difference row has null
+  $\sqrt{2} \approx 1.414$ for unrelated equal-norm steps. Both nulls were
+  reproduced at random initialisation.
+- (b) on the GPT-2 side is raw extrapolation $2h_\ell - h_{\ell-1}$: its
+  residual stream is not normalised between blocks, so no LN is applied.
+  The Fock $\ell = 0$ true-velocity entry is degenerate ($v_0 = 0$, the
+  forecast is $\mathrm{LN}(h_0)$) and is excluded from the summary.
+- (c) uses the same unit random direction for both models, scaled to
+  $\epsilon \lVert h_0 \rVert$ per token, at $\epsilon \in \{10^{-3}, 10^{-2}\}$;
+  the two rows agreeing is the linearity check. The per-step figure is the
+  $L$-th root of the final-layer median.
+- The cell restores the live training weights and releases the GPT-2 on
+  exit, so it can run mid-training like 6b-8 and 6b-9.
+
 ### 6.5 Comparability — what is and is not matched
 
 **Matched:** tokenizer (GPT-2 BPE, 50,257), data, batches, width
@@ -678,7 +705,7 @@ written that way is exact for the scheme it is measuring.
 | Gate 3 (refinement) | 6b-7 | **done 2026-09-24** | fails, monotone 68.7 to 435.6; §1 |
 | **E1** deflection | **6b-9** | **run 2026-09-25** | **R(geo) = 1.09**; reverse channel ~90% of the step, V_phi inert; §4.7 |
 | E2 decomposed refinement | — | designed, §5 | — |
-| E3 forecastability vs matched GPT-2 | — | designed 2026-09-25, §6 | — |
+| E3 forecastability vs matched GPT-2 | **6b-10** | **built 2026-09-25**, harness-validated, not yet run | — |
 | E4 LN as constraint | via E1, E2 | analysis, §7 | — |
 
 ---
