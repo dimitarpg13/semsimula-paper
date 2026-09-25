@@ -62,6 +62,13 @@ flow** — exact between punctuations, learned across them — and Gate 3 only
 says the pieces cannot be subdivided. If it is near 1, the geodesic reading
 fails at the trained step too, and that should be said plainly.
 
+**E1 has now run (§4.7): R(geo) = 1.09.** The geodesic reading fails at the
+trained step. The step is the $V_	heta$ geodesic plus the reverse channel,
+and the reverse channel is the larger part. What that leaves — a
+second-order state that provably carries information, exact energy
+bookkeeping, and an open question about *forecastability* rather than
+*geodesicity* — is the subject of §6.
+
 ---
 
 ## 1. What Gate 3 showed, and what it did not
@@ -364,6 +371,34 @@ channel's share should be small in norm despite its PPL weight (§4.5).
 
 ---
 
+### 4.7 Result — **run 2026-09-25**, L=2 `'none'` @1.2e-03
+
+Gate 0 passed bit-exactly (`max |d| = 0.000e+00`, all six captured steps).
+
+| arm | layer 0 R_h | layer 0 R_v | layer 1 R_h | layer 1 R_v |
+| --- | ---: | ---: | ---: | ---: |
+| `geo` | 0.9054 | 0.9948 | **1.2656** | 0.7246 |
+| `geo+LN` | 0.7691 | 0.9948 | 1.0343 | 0.7246 |
+| `cons` | 0.9052 | 0.9898 | 1.2653 | 0.7238 |
+| `cons+LN` | 0.7616 | 0.9898 | 1.0350 | 0.7238 |
+| `full` | 0 | 0 | 0 | 0 |
+
+**R(geo) = 1.09** averaged — the third band of §4.6. At layer 1, the
+cleaner layer (step size 1.10 x |h_in| against 5.36 x at layer 0, where the
+embedding-to-sphere rescaling dominates), R_h = 1.27: following the
+$V_\theta$ geodesic lands further from the true next state than not moving.
+
+Attribution, averaged R_h: LayerNorm moves R by **−0.18** (a constraint, as
+§7 predicted); $V_\phi$ by **−0.0002** (inert); the reverse channel by
+**−0.90** (cons+LN sits at 0.90, full at 0). The step is, to first order,
+the $V_\theta$ geodesic *plus* the reverse channel, and the reverse channel
+is the larger part. §4.5's caution was backwards — the deflection is not
+small in norm.
+
+What this settles and what it opens is taken up in §6 and §10; the
+$V_\phi$ result is an architecture finding in its own right and needs its
+own ablation.
+
 ## 5. E2 — decomposed refinement
 
 Re-run Gate 3, but refine **only the $V_\theta$ flow**: $k$ CfC substeps of
@@ -390,24 +425,195 @@ Evaluation-only; reuses Cell 6b-7's loop with the A-substep subdivided.
 
 ---
 
-## 6. E3 — predictive utility
+## 6. E3 — is the semantic trajectory more forecastable than a transformer's?
 
-The claim the programme actually wants is that geodesics can be **used to
-predict** propagation across layers. That is a forecasting question, not a
-residual question. From the captured $(h_\ell, v_\ell)$, compare predictors
-of $h_{\ell+1}$:
+### 6.1 What E1 ruled out, and what it left open
 
-| predictor | what it is |
-| --- | --- |
-| `V_theta` geodesic step | the `geo` arm |
-| straight-line extrapolation | `h_l + dt * v_l` |
-| gradient-descent step | the reset arm of the flow/maps note, §3.1 |
-| random direction, matched norm | the null |
+E1 answered one specific form of "predictable": *the next state follows
+from $(h, v)$ through $V_\theta$ alone*. It does not — $R(\mathrm{geo}) =
+1.09$, and at layer 1 the $V_\theta$ geodesic lands further from the true
+next state than not moving at all (§4.7). That was the strongest possible
+form of the claim.
 
-Score each by its error against the true $h_{\ell+1}$, and — the part E1
-cannot give — by the **perplexity of the logits computed from the predicted
-state**. A framework that forecasts is useful whether or not it refines;
-one that does not is decorative even if $R$ is small.
+But "predictable" is broader than "geodesic". The architecture is called a
+*semantic simulation* because it evolves a state under a dynamical law, and
+the question that name actually poses is whether that evolution is more
+forecastable than a transformer's hidden-state sequence, which is a stack of
+arbitrary learned maps with no dynamical structure at all. That is an
+empirical question, it has never been tested, and E1's own attribution
+sharpens it: the step is dominated by the reverse channel, so predictability
+now rests on whether *that* force is smooth — not on $V_\theta$.
+
+### 6.2 What holds by construction
+
+Three properties the transformer lacks by design, none of which E1 touched:
+
+| property | Fock-PARFLM under CfC+BAOAB | transformer |
+| --- | --- | --- |
+| a velocity that carries information | gate 1: resetting it costs **+50.5%** | no velocity exists |
+| an energy with per-channel bookkeeping | `E = 1/2 m v^2 + V_theta(h)`; the A and O substeps are exact, so every change is attributable (§17c of the paper) | no such quantity |
+| exact, known dissipation | the O-step contracts `v` by `exp(-gamma dt)` per step, precisely | no invariant of any kind |
+
+The second is what the hallucination detector runs on, and it is untouched
+by E1. But none of the three says the trajectory is *forecastable*. That is
+what §6.4 measures.
+
+### 6.3 The physics: why inertia should constrain the next state
+
+For a second-order system the position update over one step is
+
+$$h_{\ell+1} = h_\ell + \Delta t \cdot v_\ell + \frac{\Delta t^2}{2m} F_\ell + O(\Delta t^3)$$
+
+The first term is fixed by the current state; the force enters only at
+second order in $\Delta t$. For a first-order map — a transformer block,
+or the reset arm of §3.1 — there is no such decomposition: $h_{\ell+1} =
+f_\ell(h_\ell)$, and the whole step is "forced".
+
+![inertia vs forced](figures/geodesic_cfc/gcfc_inertia_vs_forced.png)
+
+Define the **inertial fraction** of a step as
+
+$$\frac{\lVert \Delta t \cdot v_\ell \rVert}{\lVert h_{\ell+1} - h_\ell \rVert}$$
+
+Near 1, the state determines the next position and the force is a
+correction; near 0, the force is the step. Two things make the answer
+non-obvious here rather than a corollary of the equation above. First,
+$\Delta t = 4$ is not small, so the "second order" term need not be. Second,
+E1 measured the forced part at roughly 90% of the step. So inertia
+constrains the trajectory in principle, and whether it constrains it in
+practice is exactly what is unknown.
+
+### 6.4 Three metrics, one comparison
+
+All three are evaluation-only, computed per token on the same OpenWebText
+validation batches for both models — the **matched GPT-2 d384 baseline**
+(§5.4 of the ladder protocol) shares the tokenizer and the data, so the
+comparison is genuinely paired.
+
+![the three metrics](figures/geodesic_cfc/gcfc_e3_metrics.png)
+
+**(a) Direction coherence.** With the step at layer $\ell$ written
+$s_\ell$ (the difference of consecutive hidden states),
+
+$$c_\ell = \frac{\langle s_\ell, s_{\ell-1} \rangle}{\lVert s_\ell \rVert \lVert s_{\ell-1} \rVert}$$
+
+Does the trajectory keep going, or jump? For a damped system with no
+force, $s_\ell \propto v_\ell$ and $v_{\ell+1} = e^{-\gamma\Delta t} v_\ell$,
+so $c_\ell = 1$ exactly: inertia sets a default of "same direction" that
+forces must overcome. A transformer has no default. Scale-free, so the
+normalisation difference in §6.5 does not bias it.
+
+**(b) Velocity as forecast.** Extrapolate the current state one step and
+measure the miss:
+
+$$e_\ell = \frac{\lVert h_{\ell+1} - \mathrm{LN}(h_\ell + \Delta t \cdot v_\ell) \rVert}{\lVert h_{\ell+1} - h_\ell \rVert}$$
+
+The forecast is passed through LayerNorm because the true $h_{\ell+1}$ is
+post-LN; a raw extrapolation would be penalised for leaving the sphere,
+which is not the question. $e_\ell = 0$ means the velocity alone predicts
+the step; $e_\ell = 1$ means it predicts nothing.
+
+Three versions run side by side:
+
+| predictor | velocity used | model |
+| --- | --- | --- |
+| true-velocity | the integrator's own `v` from `encode_velocity` | Fock only |
+| finite-difference | `v := h_l - h_{l-1}`, one-step momentum | Fock |
+| finite-difference | `v := h_l - h_{l-1}` | GPT-2 |
+
+The two finite-difference rows are the like-for-like comparison. The
+true-velocity row asks a second question: does the integrator's velocity
+beat the naive momentum estimate on its own trajectory? If it does not,
+the second-order state is not adding forecast information beyond what
+the position sequence already contains.
+
+**(c) Perturbation growth.** Perturb the embedding, $h_0 \to h_0 + \delta$
+with $\lVert \delta \rVert = \epsilon \lVert h_0 \rVert$, and measure
+
+$$g_\ell = \frac{\lVert \delta h_\ell \rVert / \lVert h_\ell \rVert}{\lVert \delta h_0 \rVert / \lVert h_0 \rVert}$$
+
+per layer, at several $\epsilon$ to confirm linearity. This is
+predictability in the dynamical-systems sense — a finite-depth Lyapunov
+ratio. Damping alone would give $g \lt 1$; forces can amplify. It is also
+the metric that connects to the hallucination programme: an anomalous
+trajectory is one that leaves the contracting regime.
+
+The core of the cell, in the same capture-and-replay style as E1:
+
+```python
+# capture h_l for every layer, and v_l where the model has one
+caps = []                                  # (layer, h_in, h_prev_in, h_out, h_prev_out)
+...
+s_prev = caps[l-1].h_out - caps[l-1].h_in     # step l-1
+s_cur  = caps[l].h_out   - caps[l].h_in       # step l
+coherence[l] = cos(s_cur, s_prev)                                        # (a)
+v_true = (caps[l].h_in - caps[l].h_prev_in) / dt                         # decode_velocity
+v_fd   = caps[l].h_in - caps[l-1].h_in
+for name, v in (('true', v_true), ('fd', v_fd)):
+    forecast = layer_norm(caps[l].h_in + dt * v)
+    err[name][l] = norm(caps[l].h_out - forecast) / norm(s_cur)           # (b)
+# (c): re-run the stack from h_0 + delta, read |dh_l|/|h_l| against |delta|/|h_0|
+```
+
+### 6.5 Comparability — what is and is not matched
+
+**Matched:** tokenizer (GPT-2 BPE, 50,257), data, batches, width
+$d = 384$, and the token budget (§4 of the ladder protocol).
+
+**Not matched, and it matters:**
+
+- **Depth.** The Fock arms available are L=1 and L=2; the matched GPT-2 is
+  L=8. Metrics (a) and (b) are per-step and depth-agnostic — compare their
+  *distributions*. Metric (c) compounds with depth, so report $g_\ell$ per
+  layer and compare the per-step geometric mean, not the total. The L=4
+  ladder point, when it runs, tightens this.
+- **Normalisation.** Fock's $h_\ell$ is LayerNormed to $\sqrt d$ after every
+  step; GPT-2's residual stream is not normalised between blocks and grows
+  with depth. (a) is a cosine and immune. (b) forecasts through LN on the
+  Fock side and has no LN to apply on the GPT-2 side — so for GPT-2 the raw
+  extrapolation is the forecast, which is the honest analogue. (c) uses
+  *relative* norms at every layer precisely to cancel the drift.
+- **L=1 is a degenerate control, not a data point.** At L=1 there is one
+  step, no $s_{\ell-1}$, and $v_0 = 0$, so (a) and the true-velocity (b)
+  are undefined; and its register bank is static (depth document §4). It
+  is useful only for (c).
+
+### 6.6 Pre-registered predictions
+
+Committed before any of this is run.
+
+| metric | Fock L=2 | GPT-2 L=8 | prediction |
+| --- | --- | --- | --- |
+| (a) coherence | positive, 0.3 to 0.6 — inertia sets the default, the reverse channel bends it | near 0, at most ~0.3 from residual-stream feature persistence | **Fock higher**, moderate confidence |
+| (b) forecast error, finite-difference rows | 0.6 to 0.9 | near 1 | **Fock lower**, moderate confidence |
+| (b) true-velocity vs finite-difference, Fock only | true `v` beats the FD estimate | — | low confidence — E1's `R_v` says the velocity is heavily redirected |
+| (c) growth per step | at or below 1 | unknown | **Fock at or below GPT-2**, low confidence |
+
+The risk to every row is the same one E1 exposed: the reverse channel is
+~90% of the step, and if it redirects the trajectory arbitrarily between
+layers then inertia is overridden and coherence collapses. The reason it
+might *not* is that the channel reads registers, and registers are an
+EMA-like causal summary that changes slowly — a large force that varies
+smoothly is still forecastable. So the outcome turns on whether the
+extended state $(h, v, r)$ is smooth even where $(h, v)$ alone is not.
+That is the same extended-space question §10 raises, arriving from the
+predictability side.
+
+**What counts as an answer.** Fock ahead on all three: the "semantic
+simulation" name has measurable content beyond the energy bookkeeping, and
+the distinguishing characteristic is *forecastability*, stated as numbers.
+Two of three: suggestive; report the exception. None: the second-order
+structure is real (gate 1) but confers no predictability advantage at this
+depth, and the name should be defended on the energy bookkeeping alone.
+
+### 6.7 A complementary one-line addition to E1
+
+E1's arms remove the *deflections*. The mirror arm — zero $V_\theta$'s
+force and keep the reverse channel — asks whether the step is
+"inertia plus reverse channel" with $V_\theta$ as the residual. If that
+arm's $R$ is small, it settles the attribution from the other side, and it
+says the forecastable part of the dynamics, if any, is the register-driven
+part. One extra entry in `R9_ARMS`; worth running alongside E3.
 
 ---
 
@@ -470,9 +676,9 @@ written that way is exact for the scheme it is measuring.
 | experiment | cell | status | result |
 | --- | --- | --- | --- |
 | Gate 3 (refinement) | 6b-7 | **done 2026-09-24** | fails, monotone 68.7 to 435.6; §1 |
-| **E1** deflection | **6b-9** | built, validated, **not yet run** | — |
+| **E1** deflection | **6b-9** | **run 2026-09-25** | **R(geo) = 1.09**; reverse channel ~90% of the step, V_phi inert; §4.7 |
 | E2 decomposed refinement | — | designed, §5 | — |
-| E3 predictive utility | — | designed, §6 | — |
+| E3 forecastability vs matched GPT-2 | — | designed 2026-09-25, §6 | — |
 | E4 LN as constraint | via E1, E2 | analysis, §7 | — |
 
 ---

@@ -163,6 +163,81 @@ ax.set_xlim(-1.75, 1.75); ax.set_ylim(-1.85, 1.6); ax.set_aspect('equal'); ax.ax
 ax.set_title('E4: LayerNorm as a holonomic constraint, not a perturbation')
 fig.tight_layout(); fig.savefig(OUT / 'gcfc_ln_constraint.png', dpi=150); plt.close(fig)
 
+# ------------------------------------------------------------ fig 6
+# Why inertia constrains the next state: second-order vs first-order step.
+fig, (a1, a2) = plt.subplots(1, 2, figsize=(11.5, 4.4))
+h = np.array([0.0, 0.0]); v = np.array([2.2, 0.9]); F = np.array([-0.6, 1.6])
+inert = h + v; forced = inert + 0.55 * F
+a1.add_patch(FancyArrowPatch(h, inert, arrowstyle='->', mutation_scale=16, color=GEO, lw=2.4))
+a1.add_patch(FancyArrowPatch(inert, forced, arrowstyle='->', mutation_scale=16, color=DEF, lw=2.0))
+a1.add_patch(FancyArrowPatch(h, forced, arrowstyle='->', mutation_scale=14, color=INK, lw=1.2, ls='--'))
+a1.scatter(*h, s=60, color=INK, zorder=6); a1.scatter(*forced, s=60, color=INK, zorder=6)
+a1.text(-0.1, -0.28, '(h, v) at layer l', fontsize=9)
+a1.text(forced[0] + 0.08, forced[1] + 0.05, 'h at layer l+1', fontsize=9)
+a1.text(1.0, 0.15, 'dt * v   inertial part\nknown from the state', color=GEO, fontsize=9)
+a1.text(2.15, 1.55, '(dt^2/2m) F\nforced part', color=DEF, fontsize=9)
+a1.text(0.05, 2.35, 'SECOND ORDER: the next position is\n'
+                    'constrained by the current velocity.\n'
+                    'The force enters at order dt^2.', fontsize=9.5,
+        bbox=dict(boxstyle='round', fc='white', ec=MUTE))
+a1.set_xlim(-0.4, 3.4); a1.set_ylim(-0.5, 3.1); a1.set_aspect('equal'); a1.axis('off')
+a1.set_title('inertial fraction  =  |dt v| / |step|')
+h2 = np.array([0.0, 0.0])
+for k, (ang, col) in enumerate(((20, MUTE), (95, MUTE), (160, MUTE), (250, MUTE), (320, INK))):
+    e = 1.9 * np.array([np.cos(np.deg2rad(ang)), np.sin(np.deg2rad(ang))])
+    a2.add_patch(FancyArrowPatch(h2, e, arrowstyle='->', mutation_scale=14, color=col,
+                                 lw=2.0 if col == INK else 1.0, alpha=1 if col == INK else 0.45))
+a2.scatter(*h2, s=60, color=INK, zorder=6)
+a2.text(-0.15, -0.35, 'h at layer l', fontsize=9)
+a2.text(1.45, -1.6, 'h at layer l+1\n= f_l(h): any direction', fontsize=9)
+a2.text(-2.3, 2.35, 'FIRST ORDER (transformer): the state is h alone.\n'
+                    'The next position is an arbitrary learned map.\n'
+                    'Nothing carries over between layers.', fontsize=9.5,
+        bbox=dict(boxstyle='round', fc='white', ec=MUTE))
+a2.set_xlim(-2.5, 2.5); a2.set_ylim(-2.2, 3.1); a2.set_aspect('equal'); a2.axis('off')
+a2.set_title('no inertial part: the whole step is "forced"')
+fig.suptitle('What a second-order state buys, in principle -- E3 measures whether it buys it in practice', fontsize=10.5)
+fig.tight_layout(); fig.savefig(OUT / 'gcfc_inertia_vs_forced.png', dpi=150); plt.close(fig)
+
+# ------------------------------------------------------------ fig 7
+# The three E3 metrics as pictures.
+fig, (b1, b2, b3) = plt.subplots(1, 3, figsize=(13.5, 4.0))
+# (a) direction coherence
+p0, p1, p2 = np.array([0, 0]), np.array([1.6, 0.9]), np.array([2.9, 1.9])
+b1.add_patch(FancyArrowPatch(p0, p1, arrowstyle='->', mutation_scale=14, color=INK, lw=2))
+b1.add_patch(FancyArrowPatch(p1, p2, arrowstyle='->', mutation_scale=14, color=INK, lw=2))
+b1.add_patch(FancyArrowPatch(p1, p1 + (p1 - p0) * 0.8, arrowstyle='->', mutation_scale=12, color=GEO, lw=1.4, ls=':'))
+b1.text(0.5, 0.65, 's_{l-1}', fontsize=10); b1.text(2.25, 1.15, 's_l', fontsize=10)
+b1.text(2.35, 0.55, 'same direction\nas before', color=GEO, fontsize=8)
+b1.text(0.0, 2.35, 'coherence  c_l = cos(s_l, s_{l-1})\n1 = keeps going, 0 = unrelated, <0 = reverses', fontsize=9,
+        bbox=dict(boxstyle='round', fc='white', ec=MUTE))
+b1.set_xlim(-0.3, 3.6); b1.set_ylim(-0.4, 3.0); b1.set_aspect('equal'); b1.axis('off'); b1.set_title('(a) direction coherence')
+# (b) velocity forecast
+q0, qv, q1 = np.array([0, 0]), np.array([2.0, 1.2]), np.array([2.5, 0.5])
+b2.add_patch(FancyArrowPatch(q0, qv, arrowstyle='->', mutation_scale=14, color=GEO, lw=2))
+b2.add_patch(FancyArrowPatch(qv, q1, arrowstyle='->', mutation_scale=14, color=DEF, lw=1.8, ls='--'))
+b2.add_patch(FancyArrowPatch(q0, q1, arrowstyle='->', mutation_scale=12, color=INK, lw=1.2))
+b2.scatter(*q0, s=50, color=INK, zorder=5); b2.scatter(*qv, s=40, color=GEO, zorder=5); b2.scatter(*q1, s=50, color=INK, zorder=5)
+b2.text(0.9, 1.05, 'forecast\nh + dt v', color=GEO, fontsize=9); b2.text(2.45, 0.95, 'error', color=DEF, fontsize=9)
+b2.text(2.55, 0.3, 'actual h_{l+1}', fontsize=9); b2.text(-0.1, -0.3, 'h_l', fontsize=9)
+b2.text(0.0, 2.35, 'forecast error  e_l = |h_{l+1} - LN(h_l + dt v_l)| / |step|\n'
+                   'transformer analogue: v := h_l - h_{l-1}', fontsize=9,
+        bbox=dict(boxstyle='round', fc='white', ec=MUTE))
+b2.set_xlim(-0.3, 3.6); b2.set_ylim(-0.4, 3.0); b2.set_aspect('equal'); b2.axis('off'); b2.set_title('(b) velocity as forecast')
+# (c) perturbation growth
+t = np.linspace(0, 3, 50); mid = 0.4 * np.sin(1.3 * t) + 0.9
+for sc, col, lab in ((0.12, GEO, 'contractive: |dh_L| < |dh_0|'), (0.55, DEF, 'amplifying: |dh_L| > |dh_0|')):
+    w = 0.25 * (1 + (sc / 0.12 - 1) * t / 3) if sc > 0.2 else 0.25 * np.exp(-0.5 * t)
+    b3.fill_between(t, mid - w, mid + w, color=col, alpha=0.18)
+    b3.plot(t, mid + w, color=col, lw=1.0); b3.plot(t, mid - w, color=col, lw=1.0)
+b3.plot(t, mid, color=INK, lw=1.8)
+b3.text(0.05, 2.35, 'growth  g = |dh_L| / |dh_0|,  h_0 -> h_0 + delta\n'
+                    'g < 1: perturbations die (predictable)\ng > 1: sensitive to initial state', fontsize=9,
+        bbox=dict(boxstyle='round', fc='white', ec=MUTE))
+b3.text(2.1, 1.75, 'amplifying', color=DEF, fontsize=8.5); b3.text(2.1, 0.95, 'contractive', color=GEO, fontsize=8.5)
+b3.set_xlim(-0.1, 3.3); b3.set_ylim(-0.4, 3.0); b3.axis('off'); b3.set_title('(c) perturbation growth')
+fig.tight_layout(); fig.savefig(OUT / 'gcfc_e3_metrics.png', dpi=150); plt.close(fig)
+
 print('wrote:')
 for f in sorted(OUT.glob('*.png')):
     print(f'   {f.relative_to(Path(__file__).resolve().parent.parent)}  {f.stat().st_size // 1024} KB')

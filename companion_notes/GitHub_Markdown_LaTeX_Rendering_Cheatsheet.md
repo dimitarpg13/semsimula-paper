@@ -1,5 +1,11 @@
 # GitHub Markdown Rendering Cheatsheet (KaTeX + Mermaid)
 
+<!-- lint-disable §18a -->
+<!-- This document is *about* the entity rules, so it must quote the
+     broken forms verbatim. §18a is suppressed here and nowhere else;
+     see §18a below for what it checks. -->
+
+
 A reference for writing LaTeX math **and** Mermaid diagrams in Markdown files that render correctly on GitHub (and similar renderers). Every rule here was confirmed by observing an actual rendering failure on `github.com`.
 
 The cheatsheet has two parts:
@@ -786,8 +792,13 @@ or in unbackticked prose where a pair of underscores would otherwise be read
 as emphasis. Table cells are not themselves special; what matters is whether
 the underscore sits inside a code span.
 
-Worth knowing that the linter does not catch this — an entity inside a code
-span is valid Markdown, just not what anyone meant. To sweep a file:
+**The linter now catches this** (`§18a`, added 2026-09-25 with 17 tests). It
+exempts the three forms that legitimately *show* markup — a span quoted with
+double backticks, a span whose whole content is one entity, and a span holding
+Mermaid `["..."]` syntax — and a file that is irreducibly about the rule can
+opt out with `<!-- lint-disable §18a -->`, as this one does at the top.
+
+To sweep a file by hand anyway:
 
 ```bash
 python3 - FILE.md <<'EOF'
