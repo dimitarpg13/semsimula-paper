@@ -33,7 +33,63 @@
 
 ---
 
-## 2. The triage
+## 2. The headline result: the mechanism ladder
+
+The restructured paper's central experimental table is not a single PPL but
+an **ordering**, pre-registered before the runs that complete it. Five arms,
+each removing exactly one mechanism from the one above, all sharing
+tokenizer, corpus, batches, width, depth, learning rate, schedule and token
+budget:
+
+| arm | mechanism removed relative to the arm above | settled PPL |
+| --- | --- | ---: |
+| matched GPT-2 L=8 | — (the reference architecture) | **49.81** |
+| L=2 `'attention'` | the transformer itself | 63 (59–68), run 9 |
+| L=2 `'attention_potential'` | **conservativity**: the same xi-routed attention, but entering as a potential so the force stays a gradient | 66 (62–72), run 5 |
+| L=2 `'none'` | the exchange field | **66.98** |
+| L=2 `'none'`, reverse channel off | **the Fock mechanism**: the register-to-token path | 105 (85–140), run 8 |
+
+Measured values in bold; the rest are pre-registered bands from protocol
+§5.3. The *ordering* is the prediction and any inversion is a result.
+
+**Why this is the headline.** Each gap prices one thing the paper argues
+about, and prices it by construction rather than by attribution:
+
+| gap | prices | predicted |
+| --- | --- | ---: |
+| GPT-2 → `'attention'` | what the transformer has that this architecture does not | ~13 PPL |
+| `'attention'` → `'attention_potential'` | **the price of conservativity** | ~3 PPL |
+| `'attention_potential'` → `'none'` | the exchange field | ~1 PPL |
+| `'none'` → no reverse channel | **the Fock mechanism** | ~38 PPL |
+
+If the predictions hold, the paper's two most quotable sentences fall out of
+one table: **conservativity is cheap** — about 5% — and **the
+non-conservative memory mechanism is what carries the model**, worth more
+than the entire remaining gap to a matched transformer.
+
+**And it converges with the geometry.** E1 and E5 measured the same
+statement in the dynamics: the reverse channel is ~90% of the per-layer
+deflection, and removing it costs 3.9× in PPL at inference (master doc
+§4.7, §11.6). The ladder says it again in trained PPL, from scratch, with
+every parameter free to compensate. Two independent measurements — one
+geometric on a fixed model, one predictive across trained models — landing
+on the same conclusion is worth more than either alone, and the paper
+should present them as a pair.
+
+The uncomfortable half is the point, not a problem to be managed: the
+conservative machinery is nearly free *and* nearly inert without the
+non-conservative driver. That is the forced-Lagrangian thesis
+([`Forced_Lagrangian_Reformulation.md`](Forced_Lagrangian_Reformulation.md))
+stated in perplexity.
+
+**Caveats that travel with the table.** L=2 only (F2/L=4 pending),
+OpenWebText only (F6 pending), and `'attention'`'s 3e-04 predecessor
+(68.33, §5.1) must not be quoted in the same table — mixing learning rates
+is exactly what §5.2's suspended attribution records.
+
+---
+
+## 3. The triage
 
 Verdicts: **keep** (no content change), **reframe** (same results,
 rewritten around the forced system), **retreat** (claims withdrawn and
@@ -72,7 +128,7 @@ first** (the section may already hold what the reframing needs).
 
 ---
 
-## 3. The three audiences, and what each keeps
+## 4. The three audiences, and what each keeps
 
 **Language-modelling researchers.** The exact per-token decomposition of
 every step into prior and memory (reformulation §2.4) is the thing no
@@ -95,7 +151,88 @@ than a confirmed one and reads better.
 
 ---
 
-## 4. Order of edits, once the decision points are in
+## 5. Title and subtitle
+
+**Current:**
+
+> **Semantic Simulation: A Prescriptive Lagrangian Framework for Efficient
+> Semantic Inference**
+> *Conservative-by-Construction Language Models and the Shared-Potential
+> Separator, with a Correspondence to Joint Embedding Predictive
+> Architectures*
+
+**Agreed 2026-09-25:**
+
+> **Semantic Simulation: A Prescriptive Lagrangian Framework for Efficient
+> Semantic Inference**
+> *Conservative Potentials, Non-Conservative Memory, and the
+> Shared-Potential Separator*
+
+### 5.1 Why the old subtitle cannot stand
+
+"Conservative-by-Construction" is **true of SPLM and PARFLM and false of
+Fock-PARFLM**, which is the model every result in the restructured paper
+comes from. The Obstruction Theorem forced auxiliary degrees of freedom
+in; the reverse channel that carries them is non-conservative by design;
+E1 and E5 then measured it as ~90% of the per-layer deflection and 3.9x in
+PPL. So the subtitle advertises the property the paper's own theorem
+proves insufficient and the paper's own experiments show is nearly inert
+without the non-conservative addition.
+
+**This change does not wait on any pending result.** It is wrong
+independently of F1, F2, F6 and the two remaining ladder arms.
+
+### 5.2 Why the new one is a strengthening, not a retreat
+
+The arc it names is the paper's real one, and it is unusually clean:
+
+1. The **Shared-Potential Separator** and the **Conservative Obstruction
+   Theorem** prove that no scalar potential on the token subsystem
+   reproduces attention's structural properties without auxiliary state.
+2. **Fock-augmented PARFLM** is identified as the minimal extension that
+   supplies it.
+3. E1, E5 and the mechanism ladder (§2) **measure** that the auxiliary,
+   non-conservative part does the bulk of the work — conservativity costs
+   about 5%, the register-to-token path is worth more than the entire
+   remaining gap to a matched transformer.
+
+The theorem predicted the conservative part would be insufficient; the
+experiments say by how much. A paper that confirms its own impossibility
+result empirically is in a stronger position than one that only proves it,
+and the subtitle should carry both halves rather than only the half that
+turned out to be the smaller term.
+
+### 5.3 What was dropped, and why
+
+"with a Correspondence to Joint Embedding Predictive Architectures" moves
+to the body and the keywords. The JEPA correspondence (§10) is one section
+of forty, descriptive rather than load-bearing, and giving it equal billing
+with the Separator was already generous. Remark 52 lives there and stays.
+
+### 5.4 Runner-up, kept on the record
+
+> *The Shared-Potential Separator and the Measured Price of Each Mechanism*
+
+Foregrounds the measurement instead of the tension. Rejected because
+"non-conservative memory" is the more arresting phrase and the one nobody
+else is claiming.
+
+### 5.5 Open question on the main title
+
+**"Semantic Simulation" survives** — the model *is* a numerical integrator
+of a mechanical system in semantic space, with exact propagators per
+substep. What the reformulation drops is *free*, not *simulation*.
+
+The word to re-examine is **"Efficient"**. That claim is about inference
+cost (Appendix A2), while every headline number now in play is a quality
+ratio (1.345x the matched GPT-2 at L=2). Left open: does it still earn its
+place in the title, or does it invite the comparison the paper then has to
+spend a section qualifying? **Decide with the thesis sentence, last**, once
+the ladder is complete.
+
+---
+
+## 6. Order of edits, once the decision points are in
 
 1. A1 read; decide whether it moves into the main text (it probably does,
    as the formal home of the forcing).
@@ -107,12 +244,13 @@ than a confirmed one and reads better.
 5. §17c: promote; the register bank as the driver.
 6. §14: the experimental record, including the misses.
 7. §11, §17h, §18c, §18d, §20: reframe as their decision points allow.
-8. §1, abstract, §19: the thesis sentence, last.
+8. §1, abstract, §19: the thesis sentence, last — **and the title/subtitle
+   with it** (§5), including the open "Efficient" question.
 9. A0, A3.
 
 ---
 
-## 5. Open decision points
+## 7. Open decision points
 
 | decision | settled by | changes |
 | --- | --- | --- |
@@ -126,9 +264,11 @@ than a confirmed one and reads better.
 
 ---
 
-## 6. Ledger
+## 8. Ledger
 
 | date | item |
 | --- | --- |
 | 2026-09-25 | skeleton opened; triage table drafted; no paper edits beyond Remark 52 / footnote / pointer |
 | 2026-09-25 | E5 settled its decision point (§5); F1 remains the gate on the thesis sentence |
+| 2026-09-25 | mechanism ladder named as the headline result (§2); `attention_potential` band revised to 66 (62–72) after re-reading the detach semantics — protocol §5.3a |
+| 2026-09-25 | subtitle agreed (§5): *Conservative Potentials, Non-Conservative Memory, and the Shared-Potential Separator*; JEPA correspondence demoted to the body; "Efficient" in the main title left open |

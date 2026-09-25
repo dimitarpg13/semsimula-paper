@@ -63,12 +63,13 @@ per call against gram's 40.1 ms. Cell 5 asserts the built config carries it.
 | # | run | cost | what it settles | state |
 | --- | --- | ---: | --- | --- |
 | 1 | **matched GPT-2**, batch 32 throughout | 2.7h | removes the 1.48x token confound from every comparison in the programme | **DONE**, §5.4 |
-| 2 | L=2, `'attention'` | 14.5h | — | **DONE**, §5.1 |
-| 3 | L=2, `'none'` | 14.5h | what the exchange field contributes at fixed depth | **DONE**, §5.2 |
+| 2 | L=2, `'attention'` **@3e-04** | 14.5h | — | **DONE**, §5.1 — but at the *old* LR; see run 9 |
+| 3 | L=2, `'none'` **@3e-04, then @1.2e-03** | 14.5h each | what the exchange field contributes at fixed depth | **DONE**, §5.2 (3e-04: 75.09) and §5.4a (1.2e-03: **66.98**) |
 | 4 | **L=4**, matched | ~27h | hops, versus "the L=8 arm was handicapped" | queued |
-| 5 | L=2, `'attention_potential'` | ~14h | the price of conservativity, from scratch, parameter-matched | queued |
-| 6 | L=2, `'nonconservative'`, lambda pinned | ~14h | an unconstrained pointwise map, the one function class Fock has nowhere | queued |
+| 5 | L=2, `'attention_potential'` **@1.2e-03** | ~14h | the price of conservativity, from scratch, parameter-matched | queued — pre-registered **70, band 65–77** at the ladder LR (§5.3) |
+| 6 | L=2, `'nonconservative'`, lambda pinned **@1.2e-03** | ~14h | an unconstrained pointwise map, the one function class Fock has nowhere | queued — **Cell 0 could not launch it until 2026-09-25**: the variant-tag dict had no `'nonconservative'` entry and raised `KeyError`; fixed, tag is `noncons` |
 | 7 | L=1, `'none'` | ~7h | one hop; the structural floor where the Jacobi metric ceases to exist — **but see §6.1: it also silently disables the Fock registers** | **DONE**, §5.5 |
+| 9 | **L=2, `'attention'` @1.2e-03 — a RE-RUN** | ~14.5h | **repairs the ladder's central comparison.** Run 2 measured `'attention'` at 3e-04; `'none'` has since been retuned to 1.2e-03. The two arms are currently at different learning rates, which is what §5.2's SUSPENDED banner records. Until this runs, "what the exchange field contributes" has no answer at the ladder LR. Pre-registered **63, band 59–68** | queued, **highest priority of the remaining arms** |
 | 8 | **L=2, `'none'`, `REVERSE_CHANNEL = False`** — *not a ladder point; an architecture control* | ~14h | **the conservative-only baseline**: what PARFLM reaches with the Fock mechanism off and every parameter free to compensate. The three existing numbers (+275% ablation A, 3.91x E5 at λ=0, +1226% ablation B) are all inference-time removals from a trained model and are upper bounds. Pre-registered **105, band 85–140**; design and reasoning in [`Forced_Lagrangian_Reformulation.md`](Forced_Lagrangian_Reformulation.md) §3.5 | queued |
 
 Run 1 first regardless of ordering elsewhere: it is 2.7 hours and it makes
@@ -246,13 +247,82 @@ comparison still carries the token confound of §4 until run 1 lands.
 
 ### 5.3 Pre-registered bands, recorded before the runs
 
+**The expected ladder at the tuned LR (1.2e-03), stated as an ordering
+before any of the remaining arms runs:**
+
+| arm | status | settled PPL |
+| --- | --- | ---: |
+| matched GPT-2 L=8 | measured | **49.81** |
+| L=2 `'attention'` | run 9, queued | 63 (59–68) |
+| L=2 `'attention_potential'` | run 5, queued | 66 (62–72) |
+| L=2 `'none'` | measured | **66.98** |
+| L=2 `'none'`, reverse channel off | run 8, **running** | 105 (85–140) |
+
+The ordering itself is the prediction: each arm removes one mechanism from
+the one above it, and the gaps price them. Any inversion is a result.
+
 | run | prediction | reasoning |
 | --- | --- | --- |
 | L=2 `'none'` | ~~gap holds at 20-30%~~ **MISS: actual 9.9%** | see §5.2; the gap saturated rather than growing |
 | L=2 `'attention_potential'` | **75-82, point 78** | arm C detaches both alpha and `h_src`, so its Jacobian is block-diagonal and there is no inter-token coupling in the dynamics. Below 72 would be a genuine surprise. |
 | L=4 | no strong prior | this is the point of running it |
+| L=2 `'attention'` **@1.2e-03** (run 9) | **63, band 59–68** | recorded 2026-09-25. At 3e-04 `'attention'` led `'none'` 68.33 to 75.09 (9.0%); retuning `'none'` to 1.2e-03 bought 10.8%. A like-for-like gain puts `'attention'` near 61, but its optimum may sit lower than `'none'`'s (quadratic vertex 1.13e-03) because it carries more parameters — so the band is widened upward. **The quantity that could turn:** whether 1.2e-03 is already past `'attention'`'s own optimum, as 2.4e-03 was past `'none'`'s. If it is, the gain shrinks or reverses and the result lands above 68 |
+| L=2 `'attention_potential'` **@1.2e-03** (run 5) | ~~70, band 65–77~~ **66, band 62–72** | recorded 2026-09-25, **revised the same day after re-reading the code** — see §5.3a. The 3e-04 band below (75–82, point 78) stands as recorded. |
 | L=1 `'none'` @1.2e-03 | ~~74-80~~ **MISS: actual 87.09 settled** | forecast made in conversation from the L=2 curve shape; see §5.5 — the L=1/L=2 gap did not saturate, it kept widening through the decay |
 | matched GPT-2 | ~~below 54.59~~ **HIT: 49.76 final, 49.81 settled** | predicted 49.5 band 49.0-50.0 from the published run's behaviour over the same lr range; error +0.26 |
+
+### 5.3a Correcting the `attention_potential` reasoning — **2026-09-25**
+
+The band recorded in §5.3 for arm C rested on the sentence *"arm C detaches
+both alpha and `h_src`, so its Jacobian is block-diagonal and there is no
+inter-token coupling in the dynamics."* The first half is right and the
+second half is wrong, and the difference changes which side of `'none'`
+the arm should be expected to land.
+
+What the detaches actually do, from
+[`model_parf_multixi.py`](../notebooks/conservative_arch/parf/model_parf_multixi.py)
+`_add_relax_potential` and
+[`model_xi_attention.py`](../notebooks/conservative_arch/parf/model_xi_attention.py):
+
+```python
+h_src  = h_in.detach() if self.cfg.causal_force else h_in
+_route = h_in.detach()          # route_from='h'
+add    = self.relax_field.potential(h_in, h_src, _route, causal_mask)
+```
+
+- The routing weights and the source slice are constants with respect to
+  $h_t$. **That is what makes the force a gradient** — the point of the
+  arm.
+- The Jacobian is therefore block-diagonal: $\partial F_t / \partial h_s = 0$
+  for $s \neq t$. **True.**
+- But the potential still *reads* $h_s$ numerically. Context flows
+  **forward**: the force on token $t$ depends on what the other tokens
+  are. What is missing is the **backward** path — no gradient reaches the
+  source through this term, so the mechanism can *use* source
+  representations but cannot *shape* them.
+
+Two further facts the earlier reasoning did not weigh:
+
+- The term **adds to** $V_\phi$, it does not replace it (the code comment
+  is explicit: `pair_potential='xi_attention'` would discard a trained
+  component, and arm C must not). So this arm is `'none'` **plus** a
+  second conservative context mechanism — strictly more capacity.
+- `RELAX_LAMBDA_FIXED = 1.0` **pins** λ. The model cannot turn the term
+  down if it is a poor inductive bias.
+
+Those two point in opposite directions, which is why the revised band
+straddles `'none'`'s 66.98 rather than sitting cleanly on one side:
+
+**Revised pre-registration: 66, band 62–72.** *The quantity that decides:*
+whether the pinned-at-1.0 conservative attention term is extra capacity or
+a forced burden. If it helps, this lands just below `'none'` and the
+expected ordering holds; if the pin makes it fight $V_\phi$, it lands
+above 66.98 and the original §5.3 intuition is vindicated for a reason
+nobody wrote down.
+
+This is a revision of a pre-registered band *before* the run, on the
+grounds that the stated mechanism was factually wrong — not a re-basing
+after seeing a result. Both bands stay on the record.
 
 ---
 
