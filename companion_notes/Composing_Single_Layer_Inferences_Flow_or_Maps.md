@@ -1,5 +1,10 @@
 # Composing single-layer inferences: is the layer stack a flow, or a sequence of maps?
 
+> **Status 2026-09-24.** Gates 0–3 have been run on the L=2 `'none'`
+> @1.2e-03 checkpoint; results and verdict in §8.1. The verdict is **MAPS**.
+> Successor programme:
+> [`Geodesic_Experiments_with_CfC_BAOAB.md`](Geodesic_Experiments_with_CfC_BAOAB.md).
+
 > **Status: design note, nothing measured.** Every number below is a
 > derivation, a configuration value, or a clearly-labelled illustration.
 > The protocol in §8 is what would produce measurements, and it needs no
@@ -26,7 +31,12 @@ and the third was not obvious in advance.
    asks "do extra hops help". Running more steps at *fixed total
    integration time* asks whether the stack is a **discretised flow** at
    all — which is what `18_riemannian_geometry` and the whole geodesic
-   reading presuppose, and which nobody has checked.
+   reading presuppose. **It has now been checked (§8.1): it is not.**
+   Refinement degrades monotonically, 68.7 to 435.6 from N=2 to N=8. The
+   stack is L specialised maps. Inertia is nonetheless worth +50.5% (gate
+   1), and the question of whether each *individual* step is geodesic at
+   the trained dt is open and is taken up in
+   [`Geodesic_Experiments_with_CfC_BAOAB.md`](Geodesic_Experiments_with_CfC_BAOAB.md).
 
 3. **The depth code decides whether that second test is valid.** `V_theta`
    is one shared bank whose depth dependence is an additive code on `xi`.
@@ -250,8 +260,12 @@ geodesic claim becomes "at the trained step size", which is much weaker
 than the paper currently states.
 
 Refinement invariance is therefore a **precondition** for the geodesic
-programme, not an optional extra. It has never been tested, and testing it
-costs one evaluation sweep.
+programme, not an optional extra. **It has been tested (§8.1) and it fails**
+— PPL(N) degrades sharply, so the second branch above obtains: the residual
+is a property of the trained discretisation and every geodesic claim is
+scoped at the trained step size. What that leaves standing, and how to
+measure it, is the subject of
+[`Geodesic_Experiments_with_CfC_BAOAB.md`](Geodesic_Experiments_with_CfC_BAOAB.md).
 
 A second consequence is practical. At L=2 the residual has exactly one
 second difference per token — three states, zero redundancy, no way to
@@ -398,6 +412,76 @@ Pre-registered readings for gate 3, stated before any run:
 The N < L direction is as informative as N > L and needs no policy at all
 (running an L=8 model for 4 steps at double dt uses `hold` with no
 extrapolation), so it is the cheapest first probe.
+
+---
+
+## 8.1 Results — **run 2026-09-24**, L=2 `'none'` @1.2e-03 (Cell 6b-7)
+
+Checkpoint `..._L2probe_..._idt4_lr0p0012_noattn_best.pt`, step 31,500,
+12 fixed batches x 4 x 512 = 24,576 tokens per point.
+
+**Gate 0 — PASS, bit-exact.** Unpatched 68.6531, patched (N=L, `hold`)
+68.6531, `|d loss| = 0.00e+00`. Worth recording that the *first* draft of
+the cell would have failed this gate: it patched `_layer_step_ex` into the
+loop rather than `_fock_layer_step`, silently dropping the registers, the
+reverse channel and one LayerNorm — roughly the +275% register path of
+Cell 6b-8. Gate 0 is what caught it, before any number was read.
+
+**Gate 1 — inertia is worth +50.5%.** Carried 68.65, reset **103.35**,
+delta +34.69 PPL. Resetting `h_prev = h` at every step is exactly gradient
+descent on `V_theta` (§3.1); the second-order velocity state is
+load-bearing, measured on the trained weights with no retraining. This is
+the clean velocity test the L=1 ladder point turned out unable to provide.
+
+**Gate 3 — MAPS.** Axis 2, `hold`, T fixed at 8:
+
+| N | dt | val ppl | vs trained | successive change |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 8.000 | 1032.73 | — | (static-register confound; see §9) |
+| **2** | **4.000** | **68.65** | trained | |
+| 3 | 2.667 | 133.46 | +94% | 64.8 |
+| 4 | 2.000 | 236.62 | +245% | 103.2 |
+| 6 | 1.333 | 361.09 | +426% | 124.5 |
+| 8 | 1.000 | 435.61 | +535% | 74.5 |
+
+The successive changes do not shrink toward zero. Of the three
+pre-registered shapes in §8, this is the third: *degrades away from N = L
+in both directions*. The verdict does not lean on N=1 — N >= 2 alone is
+monotone and enormous.
+
+**Gate 2 — consistent.** Axis 1, `cycle`, dt fixed at 4: 353.56 at N=1,
+211.91 at N=3, 854.11 at N=4, 3221.00 at N=6, 4036.30 at N=8. The model is
+tied to T = 8 as well as to dt = 4.
+
+**What it settles.** The stack is not a discretisation of a flow that finer
+discretisation would approximate. §5's consequence follows: the §18
+residual is a property of the trained discretisation, every geodesic claim
+is scoped *at the trained step size*, depth is not an inference-time knob,
+and the refinement route to residual statistics is closed. Remark 52 of the
+paper now carries this scoping.
+
+**What it does not settle — and this is the important part.** Gate 3
+refutes refinement invariance. It does not test whether each layer step, at
+the trained dt, follows the `V_theta` Jacobi geodesic — a logically
+independent claim that has never been measured on CfC+BAOAB. The
+distinction, the reason CfC+BAOAB is in fact the *better* home for that
+claim (its A-substep is the exact harmonic flow), the piecewise-geodesic
+reading, and the experiment that decides it (E1, Cell 6b-9) are in
+[`Geodesic_Experiments_with_CfC_BAOAB.md`](Geodesic_Experiments_with_CfC_BAOAB.md),
+which is now the master document for that programme.
+
+**Why refinement fails, mechanically.** The layer step contains operations
+that are per *step*, not per unit time — the post-step LayerNorm, the
+register-salience decay, the register write, the top-k selection of
+`V_phi`. Refining N at fixed T applies each of them more often, so the
+computed function changes even under exact integration of the harmonic
+part. This is an architectural property, present at every L. It also
+explains the ladder: deeper-at-fixed-T (L=8 at 81.58 against L=2 at 74.75)
+and finer-at-fixed-T are the same phenomenon measured two ways — one by
+four training runs, one by five minutes of evaluation. And it sharpens the
+picture: the L=8 *trained* model reaches 81.58 while the L=2 model *run* at
+N=8 reaches 435.61. Each depth learns a function fitted to its own
+discretisation, which is precisely what "maps" means.
 
 ---
 

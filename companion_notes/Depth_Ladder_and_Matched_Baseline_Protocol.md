@@ -361,13 +361,13 @@ increment = (dt*dt / m_b) * tanh(reverse_channel_scale) * warm * Q_force
 ```
 
 and **both gate factors are zero at initialisation**:
-`reverse&#95;channel&#95;scale` is `nn.Parameter(torch.zeros(...))` so
-`tanh(.) == 0`, and `warm = reverse&#95;warmup&#95;step / 4000 == 0`. Any
+`reverse_channel_scale` is `nn.Parameter(torch.zeros(...))` so
+`tanh(.) == 0`, and `warm = reverse_warmup_step / 4000 == 0`. Any
 gradient probe on an untrained model therefore reports "registers do nothing"
 at every depth. With both gates set to their trained values
 (`tanh(scale) ~ 0.017`, warmup complete):
 
-| | `register&#95;embed` | `creation&#95;gate&#95;qkv` |
+| | `register_embed` | `creation_gate_qkv` |
 | --- | ---: | ---: |
 | L=1, gate shut (fresh init) | 0.000e+00 | 0.000e+00 |
 | **L=1, gate open (trained)** | **3.370e-02** | **0.000e+00** |
@@ -377,10 +377,10 @@ at every depth. With both gates set to their trained values
 **At L=2 the mechanism works.** Both the bank and the creation gate receive
 next-token gradient. Nothing in §5 needs re-describing.
 
-**At L=1 the bank is read but never updated.** `register&#95;embed` takes
+**At L=1 the bank is read but never updated.** `register_embed` takes
 gradient — the reverse channel reads it and it does affect predictions — but
-`creation&#95;gate&#95;qkv` sits at exactly zero. The cause is separate from
-the gate and survives: `_init&#95;registers` sets `salience = 1.0`, so
+`creation_gate_qkv` sits at exactly zero. The cause is separate from
+the gate and survives: `_init_registers` sets `salience = 1.0`, so
 
 ```python
 blend = salience.unsqueeze(-1)               # 1.0 at layer 0
@@ -388,12 +388,12 @@ r = blend * r + (1.0 - blend) * readout      # (1 - 1.0) == 0
 ```
 
 annihilates the creation readout at layer 0. The gate's only other exit,
-`alpha&#95;max -> salience -> active`, runs through `&#95;active&#95;mask`,
+`alpha_max -> salience -> active`, runs through `_active_mask`,
 a boolean comparison with no gradient. At L>=2 later layers (whose salience
 has decayed) train the shared module; **at L=1 there is no later layer.**
 
 So L=1 runs with a **static** register bank: read by the reverse channel,
-frozen at `register&#95;embed`, with the creation gate untrainable.
+frozen at `register_embed`, with the creation gate untrainable.
 
 #### This is broader than L=1
 
@@ -403,17 +403,17 @@ invisible. L=1 removes the cover rather than introducing the problem.
 
 #### A knob exists, opt-in and default-inert
 
-`register&#95;salience&#95;init` (added 2026-09-24, default **1.0**) sets the
+`register_salience_init` (added 2026-09-24, default **1.0**) sets the
 starting salience. At the default it reproduces the historical behaviour
 bit-exactly — verified against pre-change measurements, so the three
 completed arms and their checkpoints still correspond to the code that made
 them. Below 1.0 it opens `(1 - blend)` and the creation gate becomes
 trainable in a single layer: 9.11e-06 at 0.9, 8.52e-05 at 0.5, 3.41e-04 at
 0.25. `0.5` is the principled choice — one decay step from 1.0 at the live
-`register&#95;salience&#95;decay = 0.5`, i.e. the floor of what layer 1 sees
+`register_salience_decay = 0.5`, i.e. the floor of what layer 1 sees
 at L=2 — and it stays well clear of the 0.005 activity threshold. Range is
-checked in `&#95;&#95;init&#95;&#95;`; nine tests in
-`test&#95;register&#95;salience&#95;init.py` pin both the default and the fix.
+checked in `__init__`; nine tests in
+`test_register_salience_init.py` pin both the default and the fix.
 
 It is **not** a causality risk: it scales a position-independent mixing
 coefficient, touching no mask and no readout path.
@@ -422,8 +422,8 @@ coefficient, touching no mask and no readout path.
 
 **Run 7 still cannot cleanly answer the question it was queued for.** L=1 was
 meant to isolate whether the second-order velocity state is load-bearing —
-`h&#95;prev = h0` gives `v == 0` at the only layer, verified in running code
-(`decode&#95;velocity` called once, `max|h - h&#95;prev| = 0.000e+00`, against
+`h_prev = h0` gives `v == 0` at the only layer, verified in running code
+(`decode_velocity` called once, `max|h - h_prev| = 0.000e+00`, against
 L=2's second layer at 9.748e-02). It also has a frozen creation gate, so it differs from
 L=2 in **two** ways and no endpoint can be attributed to either. The second
 difference is narrower than the earlier draft claimed — a static bank, not an
@@ -435,12 +435,12 @@ not read it as a velocity result.
 
 **The clean velocity test is gate 1 of
 [`Composing_Single_Layer_Inferences_Flow_or_Maps.md`](Composing_Single_Layer_Inferences_Flow_or_Maps.md)**
-— reset-versus-carried at N=L, which sets `h&#95;prev = h` so `v == 0` with
+— reset-versus-carried at N=L, which sets `h_prev = h` so `v == 0` with
 registers working and depth unchanged. Minutes of evaluation against seven
 hours of training.
 
 **A comparable L=1 arm** can now be had with
-`register&#95;salience&#95;init = 0.5`, but it is a *different architecture*
+`register_salience_init = 0.5`, but it is a *different architecture*
 from the L>=2 rungs and voids §2 if placed on the ladder. Use it outside the
 ladder — as the instrument for
 [`Composing_Single_Layer_Inferences_Flow_or_Maps.md`](Composing_Single_Layer_Inferences_Flow_or_Maps.md),

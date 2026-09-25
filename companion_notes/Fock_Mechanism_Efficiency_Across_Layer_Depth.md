@@ -158,7 +158,7 @@ asymptote moves with it, the shape does not).
 
 Measured with the reverse gate at its trained value, next-token loss only:
 
-| arm | grad to `register&#95;embed` | grad to `creation&#95;gate&#95;qkv` | bank varies with input? |
+| arm | grad to `register_embed` | grad to `creation_gate_qkv` | bank varies with input? |
 | --- | ---: | ---: | --- |
 | L=1, s0 1.0 | 3.370e-02 | **0.000e+00** | **no — static** |
 | L=1, s0 0.9 | 3.175e-02 | 5.503e-04 | yes |
@@ -194,7 +194,7 @@ is worth.
 
 The creation gate at L=1 is also deader than §3 predicted. It receives zero
 gradient from the **repulsion term as well** — because `blend = 1` makes
-`r_new` identical to `register&#95;embed`, the penalty is computed on a
+`r_new` identical to `register_embed`, the penalty is computed on a
 quantity the gate never touched:
 
 ```
@@ -209,8 +209,8 @@ So the depth ladder reads:
 
 | | what the mechanism is | live parameters |
 | --- | --- | --- |
-| **L=1** | tokens attend to 32 **static** learned vectors — a soft prompt, not a register system | `register&#95;embed` only (12,288) |
-| **L=2** | one layer of accumulation; the shared gate is trained by layer 1 | + `creation&#95;gate&#95;qkv` (1,720,352) |
+| **L=1** | tokens attend to 32 **static** learned vectors — a soft prompt, not a register system | `register_embed` only (12,288) |
+| **L=2** | one layer of accumulation; the shared gate is trained by layer 1 | + `creation_gate_qkv` (1,720,352) |
 | **L=4** | three layers of accumulation, and an admittance that grows along the stack | same modules, more writes |
 
 The corroborating observation from the live L=1 run: `sig_max`, which reads
@@ -281,7 +281,7 @@ what the extra layer buys.
 
 A also supplies a number the programme has been missing. The model card
 records that the reverse channel's post-leak-fix value
-["will only be known after re-training with `prefix&#95;causal&#95;registers=True`"](Fock-PARFLM_Causal_Leak_Audit_Results.md).
+["will only be known after re-training with `prefix_causal_registers=True`"](Fock-PARFLM_Causal_Leak_Audit_Results.md).
 These arms are that re-training, and **+275.1% at L=2** is the answer: the
 channel is still decisive after the causal fix, not mostly leak. It is an
 ablation rather than a trained-without arm, so read it as an upper bound.
@@ -296,8 +296,8 @@ and substituting another injects a large spurious force.
 So **B measures out-of-distribution sensitivity, not the value of
 accumulation**, and the +1226% must not be quoted as the price of the Fock
 mechanism. Part B of the cell corroborates the sensitivity: perturbing
-`register&#95;embed` by 0.01 moves the logits as much as perturbing
-`lm&#95;head`.
+`register_embed` by 0.01 moves the logits as much as perturbing
+`lm_head`.
 
 The general lesson, and it applies to any future ablation here:
 

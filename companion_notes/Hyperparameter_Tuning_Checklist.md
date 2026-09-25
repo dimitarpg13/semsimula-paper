@@ -516,26 +516,26 @@ unknown part of that 6.8 PPL is the clip rather than the depth.
 
 §7.1 says depth adds no parameters, so a ladder point is the same operator
 applied more times. **L=1 is a partial exception.** The register bank is
-still read there — `register&#95;embed` takes next-token gradient — but the
+still read there — `register_embed` takes next-token gradient — but the
 creation gate is not trainable: `salience` initialises to exactly 1.0, so
 `(1 - blend) == 0` annihilates the creation readout at layer 0, and only
 layers 1 and up can train the shared module. L=1 therefore runs with a
 **static** bank. §6.1 of
 [`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md)
-has the evidence and the opt-in `register&#95;salience&#95;init` knob;
+has the evidence and the opt-in `register_salience_init` knob;
 [`Fock_Mechanism_Efficiency_Across_Layer_Depth.md`](Fock_Mechanism_Efficiency_Across_Layer_Depth.md)
 has the depth-by-depth picture.
 
 An earlier draft of this subsection said the Fock mechanism was switched off
 at L=1 entirely. That came from probing a **freshly built** model, where
-`tanh(reverse&#95;channel&#95;scale) == 0` and the warmup is `0/4000`, so the
+`tanh(reverse_channel_scale) == 0` and the warmup is `0/4000`, so the
 register-to-token path is gated shut at every depth. **Never measure register
 behaviour without first reading the effective gate** — Cell 6b-8 prints it
 before anything else.
 
 Two consequences for this document. Anything tuned at L=1 is tuned on a model
 with a frozen creation gate, so **it does not transfer up** — the reverse of
-§7.2's conclusion for LR. And `REGISTER&#95;REPULSION&#95;COEFF` (§3.2,
+§7.2's conclusion for LR. And `REGISTER_REPULSION_COEFF` (§3.2,
 "marginal") is the only term that can shape register *content* at L=1 once
 the bank is frozen, which makes it structural there rather than marginal.
 
@@ -619,7 +619,7 @@ adds a point to a curve.
 | 2026-09-22 | `LR` 1.2e-03 | **full 32,500** | **75.09 -> 66.98, +10.8%.** Ratio vs GPT-2 1.507 -> 1.345. Decay 19.1% vs the reference's 11.6%. Clean: 0 watchdog, 0.0% clip, `bproj_sig` saturated at 85.4 |
 | 2026-09-23 | `LR` = 2.4e-03 | full 32,500 | **69.59 — WORSE by 3.9%.** Optimum bracketed; quadratic vertex 1.13e-03. Pre-registered 63-66: **wrong in direction** (§5 T0) |
 | — | `LR` **CLOSED** | — | **1.2e-03 is the ladder LR.** Ratio vs GPT-2 **1.345** |
-| 2026-09-24 | `WSD&#95;STABLE&#95;FRAC` = 0.50 | branch from step 15,000, 17,500 steps | **68.34 vs 66.98** (+2.04% on last-3; t = -0.09 over 22 evals, i.e. a null). **Keep 0.60**, 0.70 not run, T1 closed |
+| 2026-09-24 | `WSD_STABLE_FRAC` = 0.50 | branch from step 15,000, 17,500 steps | **68.34 vs 66.98** (+2.04% on last-3; t = -0.09 over 22 evals, i.e. a null). **Keep 0.60**, 0.70 not run, T1 closed |
 
 **Forecast record**, kept because the two failures were systematic and point
 in *opposite* directions:
