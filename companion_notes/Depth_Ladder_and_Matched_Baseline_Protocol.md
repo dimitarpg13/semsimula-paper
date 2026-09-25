@@ -69,6 +69,7 @@ per call against gram's 40.1 ms. Cell 5 asserts the built config carries it.
 | 5 | L=2, `'attention_potential'` | ~14h | the price of conservativity, from scratch, parameter-matched | queued |
 | 6 | L=2, `'nonconservative'`, lambda pinned | ~14h | an unconstrained pointwise map, the one function class Fock has nowhere | queued |
 | 7 | L=1, `'none'` | ~7h | one hop; the structural floor where the Jacobi metric ceases to exist — **but see §6.1: it also silently disables the Fock registers** | **DONE**, §5.5 |
+| 8 | **L=2, `'none'`, `REVERSE_CHANNEL = False`** — *not a ladder point; an architecture control* | ~14h | **the conservative-only baseline**: what PARFLM reaches with the Fock mechanism off and every parameter free to compensate. The three existing numbers (+275% ablation A, 3.91x E5 at λ=0, +1226% ablation B) are all inference-time removals from a trained model and are upper bounds. Pre-registered **105, band 85–140**; design and reasoning in [`Forced_Lagrangian_Reformulation.md`](Forced_Lagrangian_Reformulation.md) §3.5 | queued |
 
 Run 1 first regardless of ordering elsewhere: it is 2.7 hours and it makes
 every other number defensible.

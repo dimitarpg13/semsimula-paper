@@ -26,8 +26,10 @@
 4. **One thesis sentence, everywhere the same.** Drafted in the
    reformulation note §0, finalised after F1, then propagated to the
    abstract, §1, §7, §18, §19, §20.
-5. **Depth caveats are explicit.** Every trajectory-level claim carries its
-   depth: "at L=2" until F2 says otherwise.
+5. **Depth and corpus caveats are explicit.** Every trajectory-level claim
+   carries its depth and its corpus: "at L=2, on OpenWebText" until F2 and
+   F6 say otherwise. The Verlet-era geodesic work mixed TinyStories and
+   OWT; the CfC+BAOAB work is OWT only (reformulation note §2.7).
 
 ---
 
@@ -120,6 +122,7 @@ than a confirmed one and reads better.
 | the price of the pure geodesic in PPL | **E5 — settled 2026-09-25**: 3.91×, no knee; layer 1's output direction is the register readout | §17c, §20 — and §17c must describe the last layer as a memory read, not a forced step |
 | is V_φ ever active? | F5 | §5, §17 (the pairwise potential's role) |
 | does the hallucination claim survive re-basing? | F4 | §18d and wherever hallucination is discussed |
+| is the dominance of the forcing a property of the corpus? | F6 (TinyStories) | every "the reverse channel dominates" sentence gains "on OpenWebText" until then; §14, §17c |
 
 ---
 

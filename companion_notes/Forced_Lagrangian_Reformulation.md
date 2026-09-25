@@ -189,6 +189,33 @@ a driven system" is a narrower name and a true one.
   the contribution directly: 6% of the step at layer 0, 0.5% at layer 1,
   resolvable and small. "Minor" is the word; "inert" overstated it.
 
+### 2.7 Scope of the evidence — the conditioning set, stated once
+
+Every *measured* claim in this document is conditioned on one
+configuration, and the reformulation inherits that scope until the
+F-series widens it:
+
+| condition | value in every E/F measurement so far | what it could change |
+| --- | --- | --- |
+| **corpus** | OpenWebText (GPT-2 BPE, 50,257) | how much of the predictable structure is *local* (reachable by a pointwise potential) versus *contextual* (reachable only through memory); the balance between V_θ and the reverse channel is a property of the corpus as much as of the model — **F6** |
+| depth | L = 2 | F2 |
+| arm | `'none'` (no attention potential) | the `'attention'` arm has a second context mechanism competing with the registers |
+| width | d = 384 | the Verlet-era γ sweeps found a V_θ-dependent crossover with width |
+| integrator config | CfC+BAOAB low-rank, `ln_after_step`, gate warmup 4,000, γ = 0.1 | the layer-1 "direction set by the readout" result (E5) depends on LN being applied *after* the increment |
+| learning rate, budget | 1.2e-03, 32,500 steps at 32 × 512 | the geodesic share may change along training; nothing here is measured mid-run |
+
+The corpus row carries a historical confound worth naming: the Verlet-era
+geodesic and damping work was done on **both** corpora — anisotropic
+Gaussian V_θ at d = 256, L = 8 on TinyStories, MLP and aniso V_θ at
+d = 384 on OWT (`Determining_optimal_gamma_for_Fock-PARFLM.md` §11–§12,
+where the PPL-geodesic coincidence held on one and broke on the other) —
+while the CfC+BAOAB era is OWT only. The corpus changed *with* the
+integrator. No CfC+BAOAB model has been trained on TinyStories; the
+unigram-surprisal file for it exists
+(`results/logfreq_surprisal_tinystories.npy`), the Verlet-era TinyStories
+notebooks do not carry the new integrator, and the matched GPT-2 baseline
+is OWT only.
+
 ---
 
 ## 3. The F-series: experiments on the forcing
@@ -298,15 +325,133 @@ claim survives only if corruptions land in its tail at a rate a simple
 loss-based detector does not match. Loss is the baseline to beat, and it
 may win.
 
-### 3.5 F5 — can $V_\phi$ be active at all? (one L=2 run)
+### 3.5 F5 — the conservative-only baseline: PARFLM trained without the Fock mechanism (one full run)
 
-From scratch at $\lambda = 0$ (reverse channel off): pure
-$V_\theta + V_\phi$ at this configuration. The control for any claim about
-the pairwise potential being crowded out. **Pre-registered:** if $V_\phi$
-is inert here too, its inertness is a $V_\phi$/PARF matter — likely the
-gathered top-k force scale — and no amount of turning the Fock mechanism
-off recovers it; the branch-and-anneal variant (master doc §11.4) is then
-not worth running.
+**Promoted 2026-09-25**, from "can $V_\phi$ be active at all?" to the
+control the whole programme has been missing. It is the arm that says what
+the conservative architecture achieves *on its own*, from scratch, with
+every parameter free to compensate.
+
+**Why the existing numbers do not answer it.** Three measurements look
+like they price the Fock mechanism and none of them does:
+
+| measurement | value | why it is not the answer |
+| --- | ---: | --- |
+| 6b-8 ablation A, L=2 | 248.37 vs 66.22 (**+275%**) | inference-time removal from a *trained* model; already labelled an upper bound in [`Fock_Mechanism_Efficiency_Across_Layer_Depth.md`](Fock_Mechanism_Efficiency_Across_Layer_Depth.md) §6.1 |
+| E5 at λ = 0 | **271.83** vs 69.47 (3.91×) | the same ablation, reached continuously; same objection |
+| 6b-8 ablation B, L=2 | 878.33 (+1226%) | measures out-of-distribution sensitivity, recorded as a design failure (§6.2 there) |
+
+All three take weights trained *with* the reverse channel and then remove
+it. Every other parameter was fitted in its presence, so the model is out
+of distribution the moment it is gone. The honest reading of 271.83 is
+**an upper bound on the damage**, not a prediction of what a
+conservative-only model reaches.
+
+**The counter-evidence is already in the ladder.** The L=1 run trains with
+a register bank that is read but never updated (protocol §6.1) — a
+crippled Fock mechanism, from scratch — and lands at 87.09, **+30%** over
+L=2's 66.98, not +275%. A model trained with the mechanism impaired
+adapts; a trained model with the mechanism amputated does not. That gap
+between +30% and +275% is the size of the effect this run measures.
+
+**What the arm retains.** Switching the reverse channel off removes the
+register-to-token path only. The model keeps $V_\theta$ (depth-conditioned
+anisotropic Gaussian), $V_\phi$ (`structural_competitive`, gathered top-k
+with k = 16, multi-head) and the ξ content routing — genuine token mixing.
+This is not a context-free model, and it should not be compared to a
+bigram floor as though it were.
+
+**Configuration.** One knob: `REVERSE_CHANNEL = False` in Cell 0, at
+`LADDER_L = 2`, `LADDER_MECHANISM = 'none'`, `LADDER_LR = 1.2e-03`,
+32,500 steps — everything else identical to ladder run 3, which is the
+paired comparison. Verified locally: `reverse_ch` and
+`reverse_channel_scale` become `None`, the `_fock_layer_step` guard skips
+the increment cleanly, forward and backward run, `V_phi` still receives
+gradient, and `register_embed` / `creation_gate_qkv` receive **none** — the
+bank is created and destroyed but never read, so the Fock mechanism is off
+rather than merely quiet. Parameter difference is ~1% (the `reverse_ch`
+module).
+
+**Tag safety, already applied.** `REVERSE_CHANNEL` did not reach the
+variant tag, so this arm would have shared a Drive folder with the
+full-Fock L=2 run and silently resumed from its checkpoint. Cell 0 now
+appends `norc` when the reverse channel is off, and prints a
+conservative-only banner. This is not a ladder point: the ladder varies
+depth, this varies the architecture.
+
+**Pre-registered: 105, band 85–140.**
+
+Reasoning, with the quantity that could turn named per the forecast rule
+(checklist §8): the arm keeps two real context mechanisms, and the L=1
+static-bank point shows that from-scratch training recovers most of what
+ablation destroys. **The quantity that could turn is $V_\phi$'s share of
+the step.** E5 measured it at 6.0% (layer 0) and 0.5% (layer 1) under
+competition from the reverse channel. If from-scratch training grows it
+into the tens of percent, the run lands at the low end or below. If it is
+structurally capped — the gathered top-k force scale, which is what this
+experiment was originally about — the model has almost no context mixing
+left, and the result could land above 150 and vindicate the ablation
+numbers after all. The band is therefore wide on the high side by
+construction.
+
+This is the programme's fourth forecast; the record is 0 for 3, and all
+three misses came from extrapolating one trend through a turn.
+
+**What it settles.** The price of the Fock mechanism, measured rather than
+ablated — the number the model card has been waiting for. It also gives
+§2's reformulation its denominator: "the register bank supplies the
+forcing that redirects the motion" is worth stating only if the motion
+without it is materially worse, and this says by how much. Secondarily, it
+answers the original F5 question: if $V_\phi$ is inert here too, with no
+competition at all, its inertness is a $V_\phi$/PARF matter and no amount
+of turning the Fock mechanism off recovers it.
+
+### 3.6 F6 — corpus dependence: does the forcing dominate on TinyStories? (two training runs)
+
+**Question.** E1/E5 say the reverse channel dominates the dynamics *on
+OpenWebText*. Is that the model, or the corpus? TinyStories has a
+vocabulary of ~12,700 used types, short sentences, and simple syntax; the
+suspicion is that a corpus with more locally predictable structure lets
+the pointwise potential carry more of the prediction, and the exposure to
+non-conservative forces is smaller or differently distributed.
+
+**Design.** Train the same L=2 `'none'` configuration on TinyStories
+(same tokenizer, same LR, same schedule shape; the budget can be shorter
+since TinyStories converges in far fewer tokens — pre-register the step
+count before launch) and a matched GPT-2 on the same data. Run E1, E5 and
+F1 on the result. Compare not the absolute PPLs across corpora but three
+corpus-relative quantities:
+
+| quantity | OWT value | reading on TinyStories |
+| --- | --- | --- |
+| R(geo) at λ = 1, layer 1 | 1.03 | lower ⇒ the potential carries more of the step |
+| PPL(λ = 0) / PPL(λ = 1) | 3.91 | the price of the pure geodesic, dimensionless across corpora |
+| PPL(λ = 0) against the corpus's own bigram floor | ≈ bigram | whether the unforced motion is more than an n-gram model *anywhere* |
+| F1 sparsity at λ = 1 | (pending) | whether forcing concentrates on entity/name tokens |
+
+**Pre-registered, with both mechanisms stated because they point in
+opposite directions.**
+
+- *H1 (the local-structure hypothesis).* Simpler local statistics → the
+  potential predicts more on its own → R(geo) lower, price ratio below
+  3.9, unforced PPL clearly above the bigram floor. This is the
+  suspicion that motivates the experiment.
+- *H2 (the contextual-structure hypothesis).* What makes TinyStories
+  predictable beyond n-grams is *story state* — which character is
+  acting, what was said two sentences ago — and that is exactly what a
+  register bank carries and a pointwise potential cannot. Then the
+  reverse channel dominates at least as much, but the forcing is
+  *sparser*: it fires on the tokens where story state is consulted.
+- *The quantity that decides:* the price ratio for H1 versus H2's
+  dominance, and F1's sparsity for H2's distribution. The two hypotheses
+  can both be partly right — a lower price ratio *and* sparser forcing —
+  and that outcome would be the most informative one.
+
+**Cost.** One L=2 CfC+BAOAB run on TinyStories (hours at a reduced
+budget), one matched GPT-2 (about an hour), then three zero-training
+cells. Requires a corpus switch in the ladder notebook (data loading, the
+TinyStories unigram file for the mass mode) and in the GPT-2 baseline
+notebook.
 
 ---
 
@@ -339,4 +484,5 @@ formal apparatus, written for a different purpose:
 | F2 | needs L=4 (ladder run 4, queued) | — |
 | F3 | conditional on F1 SPARSE | — |
 | F4 | designed | — |
-| F5 | designed; one training run | — |
+| F5 | **promoted to the conservative-only baseline**; Cell 0 knob verified, `norc` tag added; pre-registered 105 (85–140); not run | 2026-09-25 |
+| F6 | designed; corpus dependence (TinyStories); two training runs | — |
