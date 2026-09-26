@@ -86,6 +86,96 @@ where
 - $a_\ell$ is the measured acceleration (discrete second difference of the position stream, consistent with the Velocity-Verlet integrator's staggering)
 - $\Gamma(v,v)^k = \Gamma^k_{ij} v^i v^j$ is computed in closed form from Section 2
 
+### 3.1 The scale, stated explicitly — **2026-09-26**
+
+Because the denominator is the bare acceleration, three reference points are
+fixed and should be quoted whenever R-bar ($\bar{R}$) is:
+
+| R-bar | meaning |
+| --- | --- |
+| ≈ 0 | geodesic |
+| ≈ 1 | **the null** — the geometric terms contribute nothing |
+| above 1 | the geometric terms make the fit worse than omitting them |
+
+**What the Verlet-era OpenWebText sweeps actually measured**, on this scale
+(3,000-step checkpoints, L=16, aniso-Gaussian $V_\theta$ + fock-reg):
+
+| sweep | R-bar range | below the null |
+| --- | --- | ---: |
+| d=384 | 0.671 – 1.540 | 4 of 8 |
+| d=768 | 1.281 – 3.579 | **0 of 8** |
+| d=1024 | 1.207 – 2.295 | **0 of 8** |
+
+At d=768 and d=1024 no swept damping produces a trajectory the geometry
+explains at all. The *ranking* findings in those sweeps stand — where the
+minimum falls is independent of its absolute level, so the coincidence of
+the PPL and $\bar{R}$ minima and the damping-predictor matches are
+unaffected — but none of them demonstrates geodesic motion.
+
+### 3.2 Calibration on a known geodesic — the diagnostic cannot read 0 in its own regime — **2026-09-26**
+
+A reviewer raised two defects in the residual as coded in the sweep
+notebooks, and a third that limits any residual of this kind. All three
+were checked, and the check is now a script:
+[`notebooks/conservative_arch/scaleup/geodesic_residual_calibration.py`](../notebooks/conservative_arch/scaleup/geodesic_residual_calibration.py).
+It integrates exact damped Newtonian dynamics in a smooth bounded potential
+— a geodesic of the Jacobi metric by Jacobi's theorem — and feeds the
+trajectory to the notebooks' own `conformal_grad` and `christoffel_vv`.
+
+**Defect 1 — the reparametrisation term is missing.** Newtonian
+trajectories are Jacobi geodesics only up to reparametrisation:
+$ds = 2(E - V) dt$, so in layer time the geodesic equation carries an
+extra term $\frac{\nabla V \cdot \dot{x}}{E - V} \dot{x}$ along the
+velocity. The code (`residual_vec = a_ell + Gamma_vv + gamma_eval * v_ell`)
+omits it. **Defect 2 — the energy is frozen at layer 0** (`E = KE_ref +
+V_ref` at `ref_layer=0`), so under damping the conformal factor drifts from
+the $\lvert \dot{x} \rvert^2 = 2(E - V)$ identity the Christoffel term
+relies on.
+
+**What the calibration shows.**
+
+| regime | R-bar as coded | with both fixes | fitted γ_geo |
+| --- | ---: | ---: | ---: |
+| small dt (ω·dt ≈ 0.05–0.1), γ = 0 | 0.61 | **0.02** | 0.0 |
+| small dt, γ = 0.1 / 0.3 | 0.81 / 0.95 | **0.02 / 0.03** | 0.02 |
+| **the sweeps' regime** — dt = 1, L = 16, ω·dt ≈ 1; γ = 0.05 / 0.1 / 0.3 | **1.06 / 0.96 / 0.84** | 0.66–0.98 | **0.93 / 0.82 / 0.75** |
+
+Three conclusions, in increasing order of consequence:
+
+1. **On a perfect geodesic the residual as coded reads ≈ 1 in the regime
+   the sweeps ran in.** The R-bar ≈ 1 values in §3.1's table are what
+   geodesic motion looks like through this instrument; they were never
+   evidence about the models either way.
+2. **The "universal γ_geo ≈ 0.9"** — read in the sweep write-ups as an
+   intrinsic preferred geometry, and hedged in an earlier revision of this
+   note as a contraction rate — **is reproduced by a known geodesic whose
+   true damping ranges over 6×.** It is an artefact of the missing term
+   being absorbed by the least-squares γ at ω·dt ≈ 1. It carries no
+   information about the models' damping.
+3. **Even with both fixes, R stays at 0.66–0.98 at ω·dt ≈ 1.** At one step
+   per period a second difference in layer index is not a derivative, so
+   *no* residual of a continuous-time geodesic equation can be small there,
+   corrected or not. The approach was inapplicable in its own regime. This
+   is why the CfC+BAOAB programme measures geodesicity by replaying the
+   model's own discrete integrator with $V_\theta$ as the only force and
+   comparing trajectories — no Christoffel symbols, no parametrisation, no
+   derivatives (E1, Cell 6b-9,
+   [`Geodesic_Experiments_with_CfC_BAOAB.md`](Geodesic_Experiments_with_CfC_BAOAB.md)
+   §4) — and why E1's 0.0003 on the conservative-only arm, itself exact
+   damped Newton plus LayerNorm, is that instrument passing precisely the
+   calibration this one fails.
+
+The third defect the reviewer named — LayerNorm's constraint force, normal
+to the sphere, which no ambient conformal metric can explain — is real for
+any residual of this kind and is exactly what E1's `geo` versus `geo+LN`
+arms separate.
+
+For contrast, the conservative CfC+BAOAB arm's layer step is the damped
+$V_\theta$ geodesic step followed by LayerNorm at a deflection of
+**0.0003**
+([`Geodesic_Experiments_with_CfC_BAOAB.md`](Geodesic_Experiments_with_CfC_BAOAB.md)
+§4.9) — three orders of magnitude below a null these sweeps never reach.
+
 **Interpretation.** $R_\ell \approx 0$ means the trajectory is a damped geodesic of the Jacobi metric induced by the model's own learned potential. The $\gamma v_\ell$ term ensures this is an honest underdamped claim rather than a pure-geodesic overclaim — the assertion is not that energy is conserved, but that the dynamics follow the geodesic equation with the damping coefficient explicitly present in the architecture.
 
 ![Geodesic residual experimental design](images/geodesic_residual_experimental_design.png)
@@ -205,7 +295,15 @@ The diagonal overlay was computed on all eight d=384 (L=16) gamma-sweep checkpoi
 
 ![d=384 L=16: Per-layer geodesic residual heatmap](images/geodesic_per_layer_d384.png)
 
-*Figure 7. Per-layer $R_\ell$ heatmap. At low $\gamma$ (bottom rows), residuals are uniformly near 1.0 (dark purple) — nearly geodesic. At higher $\gamma$ (upper rows), bright spots in the middle layers (6–10) show localized departures from geodesic dynamics.*
+*Figure 7. Per-layer $R_\ell$ heatmap. At low $\gamma$ (bottom rows), residuals are uniformly near 1.0 (dark purple); at higher $\gamma$ (upper rows), bright spots in the middle layers (6–10) show where the residual is largest.*
+
+> **Caption corrected 2026-09-26.** This caption previously glossed "near 1.0" as *nearly
+> geodesic*, contradicting §3's own definition. By that definition $R_\ell \approx 0$ is
+> geodesic and $R_\ell \approx 1$ is the **null** — the value at which
+> $\Gamma(v,v) + \gamma v$ contributes nothing and the residual equals the bare
+> acceleration it was normalised by. $R_\ell \gt 1$ means the geometric terms make the fit
+> *worse* than omitting them. The misreading propagated into the gamma-sweep write-ups and
+> the three OpenWebText sweep model cards, which now carry corrections; see §3.1 below.*
 
 **Observations:**
 

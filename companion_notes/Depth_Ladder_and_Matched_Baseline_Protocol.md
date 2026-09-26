@@ -72,8 +72,62 @@ per call against gram's 40.1 ms. Cell 5 asserts the built config carries it.
 | 9 | **L=2, `'attention'` @1.2e-03 — a RE-RUN** | ~14.5h | **repairs the ladder's central comparison.** Run 2 measured `'attention'` at 3e-04; `'none'` has since been retuned to 1.2e-03. The two arms are currently at different learning rates, which is what §5.2's SUSPENDED banner records. Until this runs, "what the exchange field contributes" has no answer at the ladder LR. Pre-registered **63, band 59–68** | queued, **highest priority of the remaining arms** |
 | 8 | **L=2, `'none'`, `REVERSE_CHANNEL = False`** — *not a ladder point; an architecture control* | 14.5h | **the conservative-only baseline**: what PARFLM reaches with the Fock mechanism off and every parameter free to compensate. The three existing numbers (+275% ablation A, 3.91x E5 at λ=0, +1226% ablation B) are all inference-time removals from a trained model and are upper bounds. Pre-registered **105, band 85–140**; design and reasoning in [`Forced_Lagrangian_Reformulation.md`](Forced_Lagrangian_Reformulation.md) §3.5 | **DONE**, §5.6: **87.93** |
 
+| 10 | **L=2, multi-ξ SPLM** — V_θ(ξ, h) + ξ routing, **no V_φ**, no Fock | ~12h | the PARF rung: **V_φ has never been removed from a trained model**, in a family named PARFLM. Pairs with run 11 as a 2×2 (§3.2) | queued — **blocked on `pair_potential='none'`** |
+| 11 | **L=2, Fock-SPLM** — as run 10 but with the Fock mechanism on | ~13h | replicates the Fock price on a V_φ-free base and supplies the 2×2's interaction term (§3.2) | queued — same blocker |
+
 Run 1 first regardless of ordering elsewhere: it is 2.7 hours and it makes
 every other number defensible.
+
+### 3.2 Runs 10 and 11 — the V_φ × Fock factorial
+
+Runs 10 and 11 are queued as a **pair**, because separately they are two
+more points and together they are a 2×2 factorial with two cells already
+measured:
+
+| | with V_φ (PARF) | without V_φ |
+| --- | ---: | ---: |
+| **with Fock** | Fock-PARFLM (run 3) **66.98** | Fock-SPLM (run 11) — ? |
+| **without Fock** | PARFLM (run 8) **87.93** | multi-ξ SPLM (run 10) — ? |
+
+Three things follow that no single arm gives:
+
+1. **A replication of the Fock price on a different base.** +31.3% rests on
+   one pair. Run 11 against run 10 measures the same quantity
+   independently. Agreement makes the number robust; disagreement is the
+   finding.
+2. **V_φ's worth, measured twice** — once with the register mechanism
+   present, once without.
+3. **The interaction term.** Are V_φ and the register bank *substitutes*
+   (each covering context the other would) or *complements*?
+
+**Pre-registered**, from E1's measurement that V_φ moves the step by
+−0.0002 with the Fock mechanism and −0.0015 without it (master doc §4.7,
+§4.9): **near-zero interaction, and a near-flat right-hand column.**
+Concretely, run 10 within 5% of 87.93 and run 11 within 5% of 66.98. If
+either misses by much, V_φ matters through *training dynamics* in a way
+the per-step deflection cannot see — which would be a more interesting
+result than confirmation.
+
+**Screen before spending 29 hours.** Zero `f_phi` at inference on the run 3
+and run 8 checkpoints and read the PPL. F5 established that an
+inference-time ablation overstates by roughly 3×, so it is a poor price
+and a serviceable **upper bound**: if the ablation costs ~2%, the trained
+arms are predictable and the factorial is confirmatory; if it costs ~40%,
+run it.
+
+**Blocker.** There is no clean switch. `pair_potential='xi_attention'` sets
+`V_phi = None` but *replaces* it with the routed attention rather than
+removing it, and pinning `raw_v_phi_scale` leaves the parameters in the
+optimiser. Both runs need a `pair_potential='none'` branch in
+`model_parf_multixi.py` — small, but it is shared model code touching every
+other arm, so it needs tests. The arms will not be parameter-matched (V_φ's
+four heads plus the score head leave), and their cards must say so.
+
+**Not a rung: vanilla SPLM.** A truly pointwise V_θ(h) is not a config
+flag — the anisotropic-Gaussian V_θ computes its well centres, amplitudes,
+widths and low-rank factors *from* ξ, so removing ξ means a different
+potential family. It would be a floor rather than a ladder step, and the
+paper already records vanilla SPLM's ceiling from earlier work.
 
 ### 3.1 Why L=4 rather than L=8
 
