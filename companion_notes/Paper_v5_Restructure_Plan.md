@@ -44,7 +44,7 @@ budget:
 | arm | mechanism removed relative to the arm above | settled PPL |
 | --- | --- | ---: |
 | matched GPT-2 L=8 | — (the reference architecture) | **49.81** |
-| L=2 `'attention'` | the transformer itself | 63 (59–68), run 9 |
+| L=2 `'attention'` | the transformer itself | **63.51**, run 9 |
 | L=2 `'attention_potential'` | **conservativity**: the same xi-routed attention, but entering as a potential so the force stays a gradient | 66 (62–72), run 5 |
 | L=2 `'none'` | the exchange field | **66.98** |
 | L=2 `'none'`, reverse channel off | **the Fock mechanism**: the register-to-token path | **87.93**, run 8 |
@@ -57,15 +57,22 @@ about, and prices it by construction rather than by attribution:
 
 | gap | prices | predicted |
 | --- | --- | ---: |
-| GPT-2 → `'attention'` | what the transformer has that this architecture does not | ~13 PPL |
-| `'attention'` → `'attention_potential'` | **the price of conservativity** | ~3 PPL |
-| `'attention_potential'` → `'none'` | the exchange field | ~1 PPL |
+| GPT-2 → `'attention'` | what the transformer has that this architecture does not | **13.70 PPL (+27.5%), measured** |
+| `'attention'` → `'attention_potential'` | **the price of conservativity** | _pending (pre-reg ~2.5 PPL)_ |
+| `'attention_potential'` → `'none'` | the exchange field, conservative form | _pending_ |
 | `'none'` → no reverse channel | **the Fock mechanism** | **20.95 PPL, measured** |
 
 If the predictions hold, the paper's two most quotable sentences fall out of
 one table: **conservativity is cheap** — about 5% — and **the
 non-conservative memory mechanism is the largest single term**, worth
 about 21 PPL where conservativity costs about 3.
+
+The exchange field's own price is now measured too, and it halved under
+retuning: `'attention'` against `'none'` is **+5.2%** with both arms at
+1.2e-03, where the same comparison with both arms at 3e-04 read +9.9%
+(protocol §5.2, suspension lifted; §5.7). One caveat travels with it — the
+`'attention'` arm clips on 29.2% of steps at this LR against `'none'`'s
+0.0%, so +5.2% is a lower bound.
 
 The bottom row is now measured (protocol §5.6) and it carries a
 methodological result of its own: the *inference-time ablations* of the

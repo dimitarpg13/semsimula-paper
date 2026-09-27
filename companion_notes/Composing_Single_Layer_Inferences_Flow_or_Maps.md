@@ -558,7 +558,8 @@ it replaces because it separates two things that were conflated.
 ### Inertia is mostly carrying memory, not carrying dynamics
 
 The striking number is Gate 1: **+50.5% with the Fock mechanism, +5.2%
-without it.** Resetting `h_prev = h` at every step reduces the stack to
+without it** *(and +27.2% on the `'attention'` arm — see §8.3, which
+corrects the reading below with a substitution clause)*. Resetting `h_prev = h` at every step reduces the stack to
 gradient descent on Vθ + Vφ (§3.1), and the conservative model barely
 notices.
 
@@ -597,6 +598,74 @@ driven only by gradients of a bounded potential stays bounded when run
 past its trained horizon, while a trajectory driven by a learned
 non-conservative force does not. It is also a caution for any
 inference-time depth-extension scheme built on the Fock arm.
+
+## 8.3 Results — **run 2026-09-26**, the `'attention'` arm (Cell 6b-7)
+
+Checkpoint `..._lr0p0012_attn_best.pt`, step 31,000, PPL 61.49. Gate 0
+passed bit-exactly (62.3714 both ways). The third and last arm the gates
+have been run on, and it completes an ordering.
+
+| gate | conservative only | `'none'` | **`'attention'`** |
+| --- | ---: | ---: | ---: |
+| trained (N = L = 2) | 91.20 | 68.65 | **62.37** |
+| **Gate 1** reset vs carried | 95.92 (+5.2%) | 103.35 (+50.5%) | **79.33 (+27.2%)** |
+| **Gate 3** refinement, N = 8 | 394.24 (4.32×) | 435.61 (6.35×) | **1933.75 (31.0×)** |
+| Gate 2 depth extrapolation, N = 8 | 348.32 (3.8×) | 4036.30 (58.8×) | **3872.95 (62.1×)** |
+
+### Refinement brittleness tracks non-conservative content
+
+Successive Gate 3 changes: 2202.5, 239.9, 260.0, 848.4, 523.1 — not
+shrinking, and the largest departure of any arm. Ordered by how much
+non-gradient force each arm carries:
+
+| arm | non-gradient forces | Gate 3 at N = 8 |
+| --- | --- | ---: |
+| conservative only | none | 4.32× |
+| `'none'` | reverse channel | 6.35× |
+| `'attention'` | reverse channel **+** exchange field (`share_max` settled at 3.93, i.e. about 4× the conservative force) | **31.0×** |
+
+The relation is monotone, and it sharpens §8.2's mechanical account. The
+per-step maps (LayerNorm, top-k re-selection, Vθ's stiffness fitted to one
+dt) break refinement in *every* arm — that is why even the conservative one
+fails at 4.32×. What the non-conservative forces add is *magnitude*: they
+enter as B-step kicks with no exact propagator, unlike Vθ's A-substep, so
+refining redistributes them in a way the trained model never saw. The arm
+whose non-conservative share is largest breaks hardest.
+
+### Inertia: a substitution effect, and a prediction missed
+
+**Gate 1 gives +27.2% here, against +50.5% for `'none'` and +5.2% for the
+conservative arm.** When §8.2 was written I predicted this arm would come
+in *above* 50%, on the reasoning that it has a second non-conservative
+mechanism for the velocity to carry. **That was wrong, and the error is
+informative.**
+
+The conduit reading survives but needs a substitution clause. The velocity
+is one conduit among several, and its *marginal* value falls when an
+alternative exists. The exchange field couples tokens directly at every
+layer, recomputed from `h` each step — it does not need the velocity to
+reach the next layer. Add it, and the velocity's job is partly taken over:
+
+| arm | non-conservative routes to the next layer | inertia worth |
+| --- | --- | ---: |
+| conservative only | none | +5.2% |
+| `'none'` | reverse channel only, which must ride the velocity | **+50.5%** |
+| `'attention'` | reverse channel **and** a direct per-layer coupling | +27.2% |
+
+So "the second-order state earns its keep by carrying the non-conservative
+force" stands, with the correction that it is the *only-conduit* case that
+makes it worth 50%. This is a prediction made in §8.2 and refuted three
+days later by the next arm; it is recorded here rather than quietly
+amended.
+
+### Depth extrapolation splits the ladder cleanly
+
+At four times the trained depth, both forced arms diverge (58.8× and
+62.1×) and the conservative arm degrades gracefully (3.8×). Two
+independent forced arms behaving alike, against one conservative arm that
+does not, is much stronger evidence for the §37 capability claim of §8.2
+than the single contrast was: **bounded-gradient dynamics stays bounded
+past its trained horizon; learned non-conservative forcing does not.**
 
 ---
 

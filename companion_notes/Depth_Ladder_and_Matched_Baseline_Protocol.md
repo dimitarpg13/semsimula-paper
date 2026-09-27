@@ -69,7 +69,7 @@ per call against gram's 40.1 ms. Cell 5 asserts the built config carries it.
 | 5 | L=2, `'attention_potential'` **@1.2e-03** | ~14h | the price of conservativity, from scratch, parameter-matched | queued — pre-registered **70, band 65–77** at the ladder LR (§5.3) |
 | 6 | L=2, `'nonconservative'`, lambda pinned **@1.2e-03** | ~14h | an unconstrained pointwise map, the one function class Fock has nowhere | queued — **Cell 0 could not launch it until 2026-09-25**: the variant-tag dict had no `'nonconservative'` entry and raised `KeyError`; fixed, tag is `noncons` |
 | 7 | L=1, `'none'` | ~7h | one hop; the structural floor where the Jacobi metric ceases to exist — **but see §6.1: it also silently disables the Fock registers** | **DONE**, §5.5 |
-| 9 | **L=2, `'attention'` @1.2e-03 — a RE-RUN** | ~14.5h | **repairs the ladder's central comparison.** Run 2 measured `'attention'` at 3e-04; `'none'` has since been retuned to 1.2e-03. The two arms are currently at different learning rates, which is what §5.2's SUSPENDED banner records. Until this runs, "what the exchange field contributes" has no answer at the ladder LR. Pre-registered **63, band 59–68** | queued, **highest priority of the remaining arms** |
+| 9 | **L=2, `'attention'` @1.2e-03 — a RE-RUN** | 13.6h | **repairs the ladder's central comparison.** Run 2 measured `'attention'` at 3e-04; `'none'` has since been retuned to 1.2e-03. The two arms are currently at different learning rates, which is what §5.2's SUSPENDED banner records. Until this runs, "what the exchange field contributes" has no answer at the ladder LR. Pre-registered **63, band 59–68** | **DONE**, §5.7: **63.51** (band hit, error +0.51) |
 | 8 | **L=2, `'none'`, `REVERSE_CHANNEL = False`** — *not a ladder point; an architecture control* | 14.5h | **the conservative-only baseline**: what PARFLM reaches with the Fock mechanism off and every parameter free to compensate. The three existing numbers (+275% ablation A, 3.91x E5 at λ=0, +1226% ablation B) are all inference-time removals from a trained model and are upper bounds. Pre-registered **105, band 85–140**; design and reasoning in [`Forced_Lagrangian_Reformulation.md`](Forced_Lagrangian_Reformulation.md) §3.5 | **DONE**, §5.6: **87.93** |
 
 | 10 | **L=2, multi-ξ SPLM** — V_θ(ξ, h) + ξ routing, **no V_φ**, no Fock | ~12h | the PARF rung: **V_φ has never been removed from a trained model**, in a family named PARFLM. Pairs with run 11 as a 2×2 (§3.2) | queued — **blocked on `pair_potential='none'`** |
@@ -245,23 +245,25 @@ as an upper bound on the improvement.
 
 #### The attribution, which is the point of the run
 
-> **SUSPENDED 2026-09-22 — the sign has flipped.** Everything in this
-> subsection was measured with **both arms at 3e-04**. Tuning `'none'` alone
-> to 1.2e-03 took it to **66.98**, which *beats* `'attention'`'s 68.33 by
-> 2.0% — so the 6.76 credited to the exchange field below is not merely
-> smaller than stated, it points the other way at the only learning rate
-> where either arm has been tuned.
+> **SUSPENSION LIFTED 2026-09-26 — both arms are now tuned.** This
+> subsection was suspended on 2026-09-22 because it compared two arms at
+> 3e-04 while only `'none'` had been retuned to 1.2e-03, at which point
+> `'none'` (66.98) *beat* the untuned `'attention'` (68.33) and the credited
+> attribution pointed the wrong way. `'attention'` has now run at 1.2e-03
+> (§5.7): **63.51**.
 >
-> | comparison | result |
+> | comparison | exchange field is worth |
 > | --- | --- |
-> | both arms @ 3e-04 | `'attention'` better by 9.0% |
-> | `'none'` tuned only | **`'none'` better by 2.0%** |
+> | both arms @ 3e-04 | 75.09 vs 68.33 — **+9.9%** |
+> | `'none'` tuned only (the suspension) | ~~`'none'` better by 2.0%~~ — an artefact |
+> | **both arms @ 1.2e-03** | **66.98 vs 63.51 — +5.2%** |
 >
-> This does **not** show the exchange field is worthless — `'attention'` has
-> never been tuned either and may gain as much or more. It does mean no
-> figure in this subsection may be quoted until L=2 `'attention'` has run at
-> the winning LR. See §6.4 of
-> [`Hyperparameter_Tuning_Checklist.md`](Hyperparameter_Tuning_Checklist.md).
+> **The corrected figure is +5.2%, not the +9.9% this subsection credits
+> below.** Retuning nearly halved the exchange field's measured
+> contribution: `'none'` gained 10.8% from the LR change and `'attention'`
+> only 7.1%, so most of what the 3e-04 comparison attributed to the
+> mechanism was really the untuned arm's headroom. Every number in the rest
+> of this subsection is a 3e-04 number and must be labelled as such.
 
 
 | component | PPL | share |
@@ -307,7 +309,7 @@ before any of the remaining arms runs:**
 | arm | status | settled PPL |
 | --- | --- | ---: |
 | matched GPT-2 L=8 | measured | **49.81** |
-| L=2 `'attention'` | run 9, queued | 63 (59–68) |
+| L=2 `'attention'` | run 9, **DONE** | **63.51** |
 | L=2 `'attention_potential'` | run 5, queued | 66 (62–72) |
 | L=2 `'none'` | measured | **66.98** |
 | L=2 `'none'`, reverse channel off | run 8, **DONE** | **87.93** (pre-reg 105, band 85–140: band hit) |
@@ -320,7 +322,7 @@ the one above it, and the gaps price them. Any inversion is a result.
 | L=2 `'none'` | ~~gap holds at 20-30%~~ **MISS: actual 9.9%** | see §5.2; the gap saturated rather than growing |
 | L=2 `'attention_potential'` | **75-82, point 78** | arm C detaches both alpha and `h_src`, so its Jacobian is block-diagonal and there is no inter-token coupling in the dynamics. Below 72 would be a genuine surprise. |
 | L=4 | no strong prior | this is the point of running it |
-| L=2 `'attention'` **@1.2e-03** (run 9) | **63, band 59–68** | recorded 2026-09-25. At 3e-04 `'attention'` led `'none'` 68.33 to 75.09 (9.0%); retuning `'none'` to 1.2e-03 bought 10.8%. A like-for-like gain puts `'attention'` near 61, but its optimum may sit lower than `'none'`'s (quadratic vertex 1.13e-03) because it carries more parameters — so the band is widened upward. **The quantity that could turn:** whether 1.2e-03 is already past `'attention'`'s own optimum, as 2.4e-03 was past `'none'`'s. If it is, the gain shrinks or reverses and the result lands above 68 |
+| L=2 `'attention'` **@1.2e-03** (run 9) | **63, band 59–68 — HIT, actual 63.51, error +0.51 (+0.8%)** | recorded 2026-09-25. At 3e-04 `'attention'` led `'none'` 68.33 to 75.09 (9.0%); retuning `'none'` to 1.2e-03 bought 10.8%. A like-for-like gain puts `'attention'` near 61, but its optimum may sit lower than `'none'`'s (quadratic vertex 1.13e-03) because it carries more parameters — so the band is widened upward. **The quantity that could turn:** whether 1.2e-03 is already past `'attention'`'s own optimum, as 2.4e-03 was past `'none'`'s. If it is, the gain shrinks or reverses and the result lands above 68 |
 | L=2 `'attention_potential'` **@1.2e-03** (run 5) | ~~70, band 65–77~~ **66, band 62–72** | recorded 2026-09-25, **revised the same day after re-reading the code** — see §5.3a. The 3e-04 band below (75–82, point 78) stands as recorded. |
 | L=1 `'none'` @1.2e-03 | ~~74-80~~ **MISS: actual 87.09 settled** | forecast made in conversation from the L=2 curve shape; see §5.5 — the L=1/L=2 gap did not saturate, it kept widening through the decay |
 | matched GPT-2 | ~~below 54.59~~ **HIT: 49.76 final, 49.81 settled** | predicted 49.5 band 49.0-50.0 from the published run's behaviour over the same lr range; error +0.26 |
@@ -377,6 +379,69 @@ nobody wrote down.
 This is a revision of a pre-registered band *before* the run, on the
 grounds that the stated mechanism was factually wrong — not a re-basing
 after seeing a result. Both bands stay on the record.
+
+### 5.7 L=2, `'attention'` @1.2e-03 — **DONE 2026-09-26** (run 9)
+
+Log: [`results/.../L2_idt4_lr0p0012_attn_altE_fromscratch_32500_result.txt`](../notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_attn/L2_idt4_lr0p0012_attn_altE_fromscratch_32500_result.txt)
+
+The re-run that repairs §5.2. Identical to run 2 except the learning rate —
+77,360,081 parameters both times — so LR is the only variable and the
+3e-04 to 1.2e-03 transfer is measured, not inferred.
+
+| | @3e-04 (run 2) | @1.2e-03 (run 9) | gain |
+| --- | ---: | ---: | ---: |
+| final (32,500) | 68.44 | 63.42 | |
+| best | 66.03 (31,000) | **61.49** (31,000) | |
+| **settled** (last 3) | **68.33** | **63.51** | **+7.1%** |
+
+Ratio to the matched GPT-2 (49.81): **1.275**, the closest any arm in this
+programme has come.
+
+#### What it settles: the exchange field is worth +5.2%, not +9.9%
+
+| both arms at | `'none'` | `'attention'` | exchange field |
+| --- | ---: | ---: | ---: |
+| 3e-04 | 75.09 | 68.33 | +9.9% |
+| **1.2e-03** | **66.98** | **63.51** | **+5.2%** |
+
+Retuning nearly halved it. `'none'` gained 10.8% from the LR change,
+`'attention'` 7.1%, so roughly half of what the 3e-04 comparison credited
+to the mechanism was the untuned arm's headroom. This is the third time in
+the programme that a contribution measured at an untuned operating point
+shrank once both sides were tuned, and it belongs with the ablation lesson
+of §5.6: **a gap measured off-optimum is an upper bound.**
+
+**Prediction scored: HIT — the first point-accurate one.** Pre-registered
+63, band 59–68; actual 63.51, error +0.51 (+0.8%). The reasoning that
+earned it is worth keeping: the forecast was built from the *transfer*
+`'none'` had already shown (10.8%) discounted for the extra parameters
+`'attention'` carries, with "is 1.2e-03 past this arm's own optimum?"
+named as the quantity that could turn it. It was — partially. The arm
+gained 7.1% rather than 10.8%, which is exactly the discount the band was
+widened for.
+
+#### The clip rate is the caveat, and it is large
+
+**29.2%** of logged steps hit the gradient clip (190 of 650, max norm
+1.42), against **7.5%** for the same arm at 3e-04 and **0.0%** for
+`'none'` at this LR. That is close to the 36% L=8 regime §6 warns about.
+
+Two things follow. First, the two arms being compared are not equally well
+optimised at 1.2e-03: `'attention'` is training under heavy clipping and
+`'none'` under none, so **+5.2% is a lower bound on the exchange field** —
+at its own optimal LR, which the 7.1% transfer and the clip rate both
+suggest is below 1.2e-03, this arm would likely do better. Second, the
+ladder's discipline is one LR for all arms, so 63.51 is the correct ladder
+number; the caveat is recorded rather than corrected for.
+
+#### Run health
+
+0 watchdog triggers, 0 spike captures. `share_max` — the exchange field's
+share of the force — peaked at 15.68 early and fell monotonically to 3.93,
+the same shape as the 3e-04 run (16.71 to ~3.3), so the mechanism is not
+running away at the higher LR. `bproj_sig` saturated at 84.25 (85.4 for
+`'none'`). Decay gain 17.1% (76.62 at 21,500 to 63.51), against `'none'`'s
+19.3%.
 
 ---
 

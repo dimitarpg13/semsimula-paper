@@ -175,11 +175,14 @@ treating the remainder as an error:
    atypical forcing — the register readout driving the state somewhere the
    geometry would not take it. That is a per-token scalar with a null
    distribution (F4).
-3. **The thesis has a testable strong form.** If the forcing is *sparse*
-   across tokens — most tokens near-geodesic, a minority strongly steered —
-   then "geodesic between events, forced at events" is true at the token
-   level even though the average R is 1.09. That is F1, and it decides
-   whether the thesis says *memory steers* or *memory steers occasionally*.
+3. ~~**The thesis has a testable strong form.**~~ **Settled 2026-09-26 —
+   the forcing is UNIFORM.** The proposal here was that if forcing were
+   *sparse* across tokens, "geodesic between events, forced at events"
+   would hold at the token level despite an average R above 1. F1 measured
+   the distribution on the `'attention'` arm and found no such structure:
+   0.0% of layer-1 tokens below R = 0.25, 93.8% above 0.75, a tight
+   unimodal spread with IQR [0.83, 0.95] (§3.1). **The thesis therefore
+   reads *memory steers*, without the qualifier.**
 
 ### 2.5 What "semantic simulation" now means
 
@@ -302,6 +305,55 @@ model's own loss (high-surprise tokens forced harder), forcing is
 *corrective*; if it tracks position (early tokens forced, later ones
 geodesic), forcing is *initialisation*; if it tracks nothing, the events
 are semantic and F3 needs token classes.
+
+### Result — **run 2026-09-26** on the `'attention'` arm: **UNIFORM**
+
+First F1 run. Checkpoint `..._lr0p0012_attn_best.pt`, 16,384 tokens per
+layer, TF32 off, gate 0 bit-exact.
+
+| layer | mean | q05 | q25 | q50 | q75 | q95 | < 0.25 | > 0.75 | bimodality |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 0 | 0.559 | 0.425 | 0.517 | 0.568 | 0.610 | 0.661 | 0.0% | 0.0% | 0.407 |
+| **1** | **0.894** | 0.739 | 0.825 | 0.882 | 0.950 | 1.091 | **0.0%** | **93.8%** | 0.322 |
+
+**The pre-registered SPARSE criterion is not met, and not nearly.** It
+required ≥ 30% of tokens below 0.25 or a bimodality coefficient above
+0.555; the measurement gives **0.0%** and 0.322. The UNIFORM criterion is
+met exactly: the interquartile range is **[0.83, 0.95]**, well inside the
+[0.6, 1.6] band, with under 10% below 0.25. The distribution is tight and
+unimodal — the histogram is a single narrow peak at each layer, not a
+near-geodesic bulk with a forced tail.
+
+**So the thesis wording is decided: *memory steers*, not *memory steers
+occasionally*.** §2.4's third consequence — that "geodesic between events,
+forced at events" might hold at the token level even though the average is
+above 1 — is **refuted** for this arm. There is no sizeable class of
+near-geodesic tokens. Every token is substantially redirected, and the
+spread around that is narrow.
+
+**Correlates, with one large confound.** The step-size correlation is
+ρ = **−0.936**, which is essentially the normalisation rather than a
+finding: R_tok is defined as a ratio to the step, so anything correlated
+with step size inherits a correlation with R. That matters for reading the
+rest of the row, because semantic mass — the only other substantial
+correlate at ρ = **+0.319** — is itself expected to co-vary with step size
+(heavier tokens move less). **It needs partialling out before "rare tokens
+are forced harder" can be claimed**, and that is a ten-line addition to the
+cell rather than a new experiment. Position in block (ρ = −0.122) and
+next-token loss (ρ = −0.094) are weak. Token-level consistency across
+layers is real: ρ = +0.530 between a token's layer-0 and layer-1
+deflection.
+
+The weak position correlation is the first evidence on the inference-time
+question: deflection barely depends on how much prefix the register bank
+has accumulated over 512 tokens, which is mild evidence that
+generation-time R will not differ wildly from eval-time R. Mild, because it
+carries the same step-size confound.
+
+**Still open:** whether UNIFORM also holds on the `'none'` arm (this was
+the `'attention'` arm, which carries two non-gradient forces) and on the
+conservative arm, where the prediction is the opposite and the deflection
+should be near zero for every token.
 
 **Harness (2026-09-25).** Random-init toy at the live configuration:
 gate 0 passes at $0.000\mathrm{e}{+00}$; all quantities compute; the
@@ -528,7 +580,7 @@ formal apparatus, written for a different purpose:
 | item | status | date |
 | --- | --- | --- |
 | reformulation stated (§2) | drafted; wording of the strong form held for F1 | 2026-09-25 |
-| F1 | **built, Cell 6b-12, harness-validated**; not run | 2026-09-25 |
+| F1 | **run on the `'attention'` arm: UNIFORM** — 0.0% of tokens below 0.25, 93.8% above 0.75, IQR [0.83, 0.95]. The thesis reads *memory steers*, not *occasionally*. Still to run on the other two arms | 2026-09-26 |
 | E5 | **run**: 3.91× price, no knee; layer-1 direction set by the readout; V_φ 6% / 0.5% direct | 2026-09-25 |
 | F2 | needs L=4 (ladder run 4, queued) | — |
 | F3 | conditional on F1 SPARSE | — |

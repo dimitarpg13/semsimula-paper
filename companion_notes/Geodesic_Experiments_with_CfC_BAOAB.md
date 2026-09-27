@@ -506,6 +506,57 @@ still be forecastable in a way a stack of arbitrary maps need not be. E5
 (§11) turns the reverse channel down continuously on the trained model and
 prices the geodesic in PPL.
 
+### 4.10 E1 on the `'attention'` arm — **run 2026-09-26**: two non-gradient forces, least geodesic of the three
+
+Checkpoint `..._lr0p0012_attn_best.pt`, step 31,000, PPL 61.49. Gate 0
+passed bit-exactly. Reverse-channel effective gate **0.03934** — more than
+twice as open as the `'none'` arm's 0.01738.
+
+| arm | layer 0 R_h | layer 1 R_h |
+| --- | ---: | ---: |
+| `geo` (Vθ only, no LN) | 0.9536 | 1.2838 |
+| `geo+LN` | 0.7139 | **1.1111** |
+| `cons` (+ Vφ and the exchange field) | 0.9349 | 1.0608 |
+| `cons+LN` | 0.5655 | 0.8676 |
+| step size, |step| / |h_in| | 8.421 | 1.054 |
+
+**R(geo) = 1.1187**, the largest of the three arms, and at the clean layer
+`geo+LN` = 1.111: following the Vθ geodesic and projecting lands *further*
+from the true next state than not moving at all.
+
+| attribution (R_h, averaged) | conservative only | `'none'` | **`'attention'`** |
+| --- | ---: | ---: | ---: |
+| R(geo) | 0.742 | 1.09 | **1.119** |
+| LayerNorm | −0.669 | −0.18 | −0.206 |
+| Vφ (+ exchange field, this arm) | −0.0015 | −0.0002 | **−0.1208** |
+| reverse channel | absent | −0.90 | −0.717 |
+| `geo+LN` at the clean layer | **0.0003** | 1.034 | **1.111** |
+
+**A labelling caveat, now fixed in the cell.** For
+`force_relaxation='attention'` the exchange field is added **into `f_phi`**
+(`model_parf_multixi._layer_forces` says so in a comment), so E1's phi arm
+zeroes Vφ *and* the exchange field together. The −0.1208 row is therefore
+**Vφ + exchange field**, not Vφ. Since Vφ measures −0.0002 and −0.0015 on
+the two arms where it is unbundled, essentially all of it is the exchange
+field. Cell 6b-9 now prints `V_phi+exch` with a bundling warning whenever a
+relax field is present.
+
+This arm therefore has **two** non-gradient forces, and §4.8's structural
+argument applies twice over. Two cautions against over-reading the split:
+the step sizes differ between arms (8.42 / 1.05 here against 5.36 / 1.10
+for `'none'`), so normalised attributions are not comparable in magnitude
+across arms; and the reverse channel's share falls from −0.90 to −0.717
+even though its gate is twice as open, which is consistent with a larger
+denominator rather than a weaker channel.
+
+**What this establishes.** Geodesicity across the ladder now tracks
+non-conservative content monotonically — conservative-only **0.0003** at
+the clean layer, `'none'` **1.034**, `'attention'` **1.111**. The arm with
+the best perplexity is the least geodesic. The forced-Lagrangian thesis is
+no longer a single contrast; it is an ordering.
+
+---
+
 ## 5. E2 — decomposed refinement
 
 Re-run Gate 3, but refine **only the $V_\theta$ flow**: $k$ CfC substeps of
@@ -882,6 +933,9 @@ written that way is exact for the scheme it is measuring.
 | Gate 3 (refinement) | 6b-7 | **done 2026-09-24** | fails, monotone 68.7 to 435.6; §1 |
 | Gate 3, **conservative-only arm** | 6b-7 | **done 2026-09-25** | **still fails** (91.2 to 394.2): the reverse channel is not what breaks refinement. Gate 1 collapses +50.5% to +5.2%; Gate 2 degrades 3.8× against 58.8×. Flow/maps note §8.2 |
 | **E1** deflection | **6b-9** | **run 2026-09-25** | **R(geo) = 1.09**; reverse channel ~90% of the step, V_phi inert; §4.7 |
+| **E1, `'attention'` arm** | **6b-9** | **run 2026-09-26** | **R(geo) = 1.119**, `geo+LN` 1.111 at the clean layer — least geodesic of the three arms; two non-gradient forces; §4.10 |
+| **F1** per-token forcing, `'attention'` | **6b-12** | **run 2026-09-26** | **UNIFORM**, not sparse: 0.0% of tokens below 0.25, 93.8% above 0.75, IQR [0.83, 0.95]; reformulation §3.1 |
+| Gate 0–3, `'attention'` arm | 6b-7 | **run 2026-09-26** | refinement fails hardest of the three (31.0x); inertia +27.2%; flow/maps §8.3 |
 | E2 decomposed refinement | — | designed, §5 | — |
 | E3 forecastability vs matched GPT-2 | **6b-10** | **run 2026-09-25** at L=2; cell revised (tangential coherence, fp32, ε grid); needs L ≥ 3 | null at L=2; (a),(b) contaminated by the sphere; §6.8 |
 | E4 LN as constraint | via E1, E2 | analysis, §7 | — |
