@@ -620,6 +620,7 @@ adds a point to a curve.
 | 2026-09-23 | `LR` = 2.4e-03 | full 32,500 | **69.59 — WORSE by 3.9%.** Optimum bracketed; quadratic vertex 1.13e-03. Pre-registered 63-66: **wrong in direction** (§5 T0) |
 | — | `LR` **CLOSED** | — | **1.2e-03 is the ladder LR.** Ratio vs GPT-2 **1.345** |
 | 2026-09-24 | `WSD_STABLE_FRAC` = 0.50 | branch from step 15,000, 17,500 steps | **68.34 vs 66.98** (+2.04% on last-3; t = -0.09 over 22 evals, i.e. a null). **Keep 0.60**, 0.70 not run, T1 closed |
+| 2026-09-27 | depth-ladder run 5: **L=2 `'attention_potential'` @1.2e-03** | full 32,500 | **80.90 settled.** The price of conservativity is **+27.4%** (63.51 → 80.90) at matched parameters — and the conservative exchange field is **+20.8% worse than no exchange field at all** (66.98). Clip 0.0% vs `'attention'`'s 29.2%: it trained cleanly to a lower ceiling. Ladder §5.8 |
 | 2026-09-26 | depth-ladder run 9: **L=2 `'attention'` @1.2e-03** (a RE-RUN at the tuned LR) | full 32,500 | **63.51 settled**, +7.1% over the same arm at 3e-04 (68.33); ratio vs GPT-2 **1.275**, the programme's closest. **Repairs §5.2**: the exchange field is worth **+5.2%**, not the +9.9% measured with both arms untuned. **Clip 29.2%** vs 0.0% for `'none'` — see the caveat in ladder §5.7 |
 | 2026-09-25 | architecture: **L=2 `'none'`, reverse channel off** (ladder run 8, an architecture control, not a tuning run) | full 32,500 | **87.93 settled**, +31.3% vs 66.98 with the mechanism on; ratio vs GPT-2 1.765. **The inference-time ablations overstated the mechanism by 2.9x in PPL ratio, 4.9x in nats.** Clip 2.6% vs 0.0%. Ladder protocol §5.6 |
 | 2026-09-24 | depth: **L=1** `'none'` @1.2e-03 (ladder run 7, not a tuning run) | full 32,500 | **87.09 settled**, +30.0% vs L=2 at the same LR; ratio vs GPT-2 1.748. Decay gain 11.2% vs 19.3% at L=2. Clip 2.6% vs 0.0%. Static register bank (§7.3a). Ladder protocol §5.5 |
@@ -632,10 +633,22 @@ in *opposite* directions:
 | 1.2e-03 | 70 -> 75 -> 70 -> 72.8 -> 69.8 | **66.98** | every point **high**, all for the same reason (§6.2) |
 | 2.4e-03 | 63-66, centre 64 | **69.59** | **low, and wrong in direction** (§5 T0) |
 | L=1 @1.2e-03 | 74-80 | **87.09** | **low**; assumed the L=1/L=2 gap would saturate like the attention gap — it widened through the decay (ladder §5.5) |
+| L=2 `'attention_potential'` @1.2e-03 | **66, band 62-72** (revised from 75-82) | **80.90** | **MISS +22.6% — and the superseded band would have HIT.** The revision repaired a genuinely wrong mechanism claim, then adjusted the old number instead of re-deriving from the corrected reasoning, and moved toward an expected ordering. See the rule below |
 | L=2 `'attention'` @1.2e-03 | **63, band 59-68** | **63.51** | **HIT, point-accurate** — error +0.51 (+0.8%). Built from `'none'`'s measured 10.8% LR transfer, discounted for the extra parameters, with "is 1.2e-03 past this arm's optimum?" named as the turnable quantity. It partly was: the arm gained 7.1%, which is the discount the band was widened for |
 | L=2 no reverse channel | **105, band 85-140** | **87.93** | **BAND HIT** — the first. Point high by 16%, landing 3% above the lower edge. The named turnable quantity (V_phi's share once uncontested) was recorded as pointing to "the low end or below", and did |
 
-The last two rows are the programme's first hits, and they share a method:
+**The `attention_potential` row adds a rule the others do not cover.** When
+a pre-registered band is revised because its stated reasoning was wrong,
+**re-derive the number from the corrected reasoning rather than adjusting
+the old number, and record what the superseded band would have predicted.**
+Here the original band (75-82, point 78) rested on a mechanism claim that
+was factually wrong, and would have hit 80.90; the corrected mechanism was
+right and the number derived from it was wrong by 22.6%. A flawed argument
+can support a correct prediction. The revision also moved the band toward
+an ordering that had been suggested as expected and away from the answer,
+which is the shape of anchoring and worth naming.
+
+The two hit rows share a different method:
 each named, in advance, a specific measurable quantity whose direction
 would move the answer, and each was built from a *measured transfer* rather
 than an extrapolated trend. The fifth row is the stronger case — a point

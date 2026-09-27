@@ -654,7 +654,9 @@ reach the next layer. Add it, and the velocity's job is partly taken over:
 
 So "the second-order state earns its keep by carrying the non-conservative
 force" stands, with the correction that it is the *only-conduit* case that
-makes it worth 50%. This is a prediction made in §8.2 and refuted three
+makes it worth 50%. **§8.4 settles which clause does the work:** the
+conservative arm gives +22.6%, so it is having an alternative route at
+all, not that route being non-conservative. This is a prediction made in §8.2 and refuted three
 days later by the next arm; it is recorded here rather than quietly
 amended.
 
@@ -666,6 +668,84 @@ independent forced arms behaving alike, against one conservative arm that
 does not, is much stronger evidence for the §37 capability claim of §8.2
 than the single contrast was: **bounded-gradient dynamics stays bounded
 past its trained horizon; learned non-conservative forcing does not.**
+
+## 8.4 Results — **run 2026-09-27**, the `'attention_potential'` arm (Cell 6b-7)
+
+Checkpoint `..._lr0p0012_attnpot_best.pt`, step 31,000, PPL 79.14. Gate 0
+passed bit-exactly (83.3686 both ways). The fourth arm, and the one that
+turns §8.3's account from a correlation into a tested prediction.
+
+| gate | conservative only | `'none'` | **`'attnpot'`** | `'attention'` |
+| --- | ---: | ---: | ---: | ---: |
+| trained (N = L = 2) | 91.20 | 68.65 | 83.37 | **62.37** |
+| **Gate 1** reset vs carried | +5.2% | **+50.5%** | **+22.6%** | +27.2% |
+| **Gate 3** refinement, N = 8 | 4.32× | 6.35× | **6.46×** | **31.0×** |
+| Gate 2 depth extrapolation, N = 8 | 3.82× | 58.8× | **39.5×** | 62.1× |
+
+### The refinement prediction, confirmed
+
+§8.3 claimed that refinement brittleness tracks **non-conservative
+content** — that the per-step maps break refinement in every arm, and the
+non-gradient forces supply the magnitude. `'attention_potential'` is the
+test, because it adds an exchange field that is a **gradient**: its
+non-conservative content is identical to `'none'`'s (the reverse channel,
+and nothing else).
+
+| arm | non-gradient forces | Gate 3 at N = 8 |
+| --- | --- | ---: |
+| conservative only | none | 4.32× |
+| `'none'` | reverse channel | 6.35× |
+| **`'attention_potential'`** | **reverse channel only** — the exchange field is conservative | **6.46×** |
+| `'attention'` | reverse channel **+** exchange force | 31.0× |
+
+**6.46× against `'none'`'s 6.35×.** Adding a whole extra context mechanism
+— 589,824 parameters, eight heads, live at every layer — adds *nothing* to
+refinement brittleness, provided it is a gradient. Adding the same
+mechanism as a force multiplies brittleness fivefold. The ordering is by
+non-conservative content and not by capacity, parameter count, or
+perplexity: this arm is the second *worst* on PPL and the second *best* on
+refinement.
+
+### The substitution question, answered
+
+§8.3 posed a question it could not resolve: Gate 1 falls from +50.5%
+(`'none'`) to +27.2% (`'attention'`) when a second coupling exists, but is
+that because the velocity now has *an alternative route*, or specifically a
+*non-conservative* one? The prediction recorded before this run: near 27%
+for the first reading, near 50% for the second.
+
+**+22.6%.** The first reading. The velocity's marginal value falls because
+an alternative per-layer conduit exists at all — conservative or not. What
+matters is that the exchange field is recomputed from `h` at every layer
+and so does not need the velocity to reach the next one.
+
+| arm | routes to the next layer besides the velocity | inertia worth |
+| --- | --- | ---: |
+| conservative only | none | +5.2% |
+| `'none'` | none — the reverse channel must ride the velocity | **+50.5%** |
+| `'attention'` | a direct per-layer coupling (non-conservative) | +27.2% |
+| **`'attention_potential'`** | **a direct per-layer coupling (conservative)** | **+22.6%** |
+
+### Conservativity costs prediction and buys robustness — on a matched pair
+
+`'attention'` and `'attention_potential'` differ in one thing: whether the
+same 589,824-parameter xi-routed exchange field enters as a force or as the
+gradient of a potential. Everything else — capacity, routing source, heads,
+gate, LR, schedule, budget — is identical.
+
+| | `'attention'` | `'attention_potential'` | conservativity's effect |
+| --- | ---: | ---: | --- |
+| settled PPL | **63.51** | 80.90 | **+27.4% worse** |
+| refinement, N = 8 | 31.0× | **6.46×** | **4.8× more robust** |
+| depth extrapolation, N = 8 | 62.1× | **39.5×** | 1.6× more robust |
+
+This is §37's value proposition measured on a matched pair rather than
+argued across arms: **the price of conservativity is prediction quality;
+what it buys is dynamical robustness.** A reader who wants the best
+perplexity should take the force; a reader who wants a model that degrades
+gracefully when run at a depth or step size it was not trained for should
+take the potential. That is a real trade-off with two measured sides, and
+it is the strongest entry §37 has.
 
 ---
 

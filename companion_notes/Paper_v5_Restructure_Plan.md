@@ -45,7 +45,7 @@ budget:
 | --- | --- | ---: |
 | matched GPT-2 L=8 | — (the reference architecture) | **49.81** |
 | L=2 `'attention'` | the transformer itself | **63.51**, run 9 |
-| L=2 `'attention_potential'` | **conservativity**: the same xi-routed attention, but entering as a potential so the force stays a gradient | 66 (62–72), run 5 |
+| L=2 `'attention_potential'` | **conservativity**: the same xi-routed attention, but entering as a potential so the force stays a gradient | **80.90**, run 5 |
 | L=2 `'none'` | the exchange field | **66.98** |
 | L=2 `'none'`, reverse channel off | **the Fock mechanism**: the register-to-token path | **87.93**, run 8 |
 
@@ -58,14 +58,29 @@ about, and prices it by construction rather than by attribution:
 | gap | prices | predicted |
 | --- | --- | ---: |
 | GPT-2 → `'attention'` | what the transformer has that this architecture does not | **13.70 PPL (+27.5%), measured** |
-| `'attention'` → `'attention_potential'` | **the price of conservativity** | _pending (pre-reg ~2.5 PPL)_ |
-| `'attention_potential'` → `'none'` | the exchange field, conservative form | _pending_ |
+| `'attention'` → `'attention_potential'` | **the price of conservativity** | **17.39 PPL (+27.4%), measured** |
+| `'attention_potential'` → `'none'` | the conservative field is **worse than none**: adding it costs +20.8% | **−13.92 PPL, measured** |
 | `'none'` → no reverse channel | **the Fock mechanism** | **20.95 PPL, measured** |
 
-If the predictions hold, the paper's two most quotable sentences fall out of
-one table: **conservativity is cheap** — about 5% — and **the
-non-conservative memory mechanism is the largest single term**, worth
-about 21 PPL where conservativity costs about 3.
+**The prediction that conservativity is cheap was wrong, and the measured
+answer is better for the paper.** At matched parameters — 77,360,081 in
+both arms, same routing source, same heads, same gate — making the
+exchange field conservative costs **+27.4%**, and the conservative field
+is **+20.8% worse than having no exchange field at all**. Conservativity
+does not tax the mechanism; it reverses its sign. The non-conservative
+twin *gains* 5.2% over `'none'`; the conservative twin *loses* 20.8%.
+
+This is the Conservative Obstruction Theorem measured on a matched pair.
+The theorem proves that no scalar potential on the token subsystem can
+reproduce attention's structural properties; here the same routing, the
+same capacity and the same parameter count, differing only in whether the
+field enters as a force or as the gradient of a potential, differ by 27%
+in perplexity. The ordering the ladder measures is therefore:
+
+> matched GPT-2 **49.81** · attention **63.51** · none **66.98** ·
+> attention_potential **80.90** · no reverse channel **87.93**
+
+with the two conservative-leaning arms at the bottom.
 
 The exchange field's own price is now measured too, and it halved under
 retuning: `'attention'` against `'none'` is **+5.2%** with both arms at
@@ -194,11 +209,30 @@ and forced auxiliary state in. This is the retitle: the capabilities are
 unique to *this architecture*, and they come from both halves — which is
 the paper's thesis, not a concession.
 
-*Missing entry to add:* **graceful depth extrapolation.** Gate 2 at four
-times the trained depth: the conservative arm degrades 3.8×, the full Fock
-arm 58.8× (flow/maps §8.2). Bounded-gradient dynamics stays bounded past
-its trained horizon; a learned non-conservative force does not. §37 has no
-row for this and should.
+*Missing entries to add, and they now come as a matched pair.*
+`'attention'` and `'attention_potential'` differ in exactly one thing —
+whether the same 589,824-parameter exchange field enters as a force or as
+the gradient of a potential — so the trade-off can be stated without any
+cross-arm hand-waving (flow/maps §8.4):
+
+| | `'attention'` | `'attention_potential'` |
+| --- | ---: | ---: |
+| settled PPL | **63.51** | 80.90 (**+27.4%**) |
+| refinement at N = 8 | 31.0× | **6.46×** (**4.8× more robust**) |
+| depth extrapolation at N = 8 | 62.1× | **39.5×** |
+
+**The price of conservativity is prediction quality; what it buys is
+dynamical robustness.** That is the single strongest entry available to
+§37, and it is measured rather than argued. The conservative arm is the
+*second worst* on perplexity and the *second best* on refinement — so the
+section's organising claim should be the trade-off, not a list of
+capabilities.
+
+The wider fact behind it: refinement brittleness tracks **non-conservative
+content**, not capacity or parameter count. Adding a whole extra context
+mechanism as a gradient costs nothing in brittleness (6.46× against
+`'none'`'s 6.35×); adding the same mechanism as a force multiplies it
+fivefold.
 
 *Group C — presupposed geodesic compliance of the trajectory. Broken.*
 Row 2's directional cosine 0.52–0.75, the G1 directed geodesic analogy,

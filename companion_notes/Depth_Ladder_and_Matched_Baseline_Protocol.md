@@ -66,7 +66,7 @@ per call against gram's 40.1 ms. Cell 5 asserts the built config carries it.
 | 2 | L=2, `'attention'` **@3e-04** | 14.5h | — | **DONE**, §5.1 — but at the *old* LR; see run 9 |
 | 3 | L=2, `'none'` **@3e-04, then @1.2e-03** | 14.5h each | what the exchange field contributes at fixed depth | **DONE**, §5.2 (3e-04: 75.09) and §5.4a (1.2e-03: **66.98**) |
 | 4 | **L=4**, matched | ~27h | hops, versus "the L=8 arm was handicapped" | queued |
-| 5 | L=2, `'attention_potential'` **@1.2e-03** | ~14h | the price of conservativity, from scratch, parameter-matched | queued — pre-registered **70, band 65–77** at the ladder LR (§5.3) |
+| 5 | L=2, `'attention_potential'` **@1.2e-03** | 13.9h | the price of conservativity, from scratch, parameter-matched | **DONE**, §5.8: **80.90** — conservativity costs +27.4%, and the conservative field is *worse than no field at all* |
 | 6 | L=2, `'nonconservative'`, lambda pinned **@1.2e-03** | ~14h | an unconstrained pointwise map, the one function class Fock has nowhere | queued — **Cell 0 could not launch it until 2026-09-25**: the variant-tag dict had no `'nonconservative'` entry and raised `KeyError`; fixed, tag is `noncons` |
 | 7 | L=1, `'none'` | ~7h | one hop; the structural floor where the Jacobi metric ceases to exist — **but see §6.1: it also silently disables the Fock registers** | **DONE**, §5.5 |
 | 9 | **L=2, `'attention'` @1.2e-03 — a RE-RUN** | 13.6h | **repairs the ladder's central comparison.** Run 2 measured `'attention'` at 3e-04; `'none'` has since been retuned to 1.2e-03. The two arms are currently at different learning rates, which is what §5.2's SUSPENDED banner records. Until this runs, "what the exchange field contributes" has no answer at the ladder LR. Pre-registered **63, band 59–68** | **DONE**, §5.7: **63.51** (band hit, error +0.51) |
@@ -310,7 +310,7 @@ before any of the remaining arms runs:**
 | --- | --- | ---: |
 | matched GPT-2 L=8 | measured | **49.81** |
 | L=2 `'attention'` | run 9, **DONE** | **63.51** |
-| L=2 `'attention_potential'` | run 5, queued | 66 (62–72) |
+| L=2 `'attention_potential'` | run 5, **DONE** | **80.90** |
 | L=2 `'none'` | measured | **66.98** |
 | L=2 `'none'`, reverse channel off | run 8, **DONE** | **87.93** (pre-reg 105, band 85–140: band hit) |
 
@@ -323,7 +323,7 @@ the one above it, and the gaps price them. Any inversion is a result.
 | L=2 `'attention_potential'` | **75-82, point 78** | arm C detaches both alpha and `h_src`, so its Jacobian is block-diagonal and there is no inter-token coupling in the dynamics. Below 72 would be a genuine surprise. |
 | L=4 | no strong prior | this is the point of running it |
 | L=2 `'attention'` **@1.2e-03** (run 9) | **63, band 59–68 — HIT, actual 63.51, error +0.51 (+0.8%)** | recorded 2026-09-25. At 3e-04 `'attention'` led `'none'` 68.33 to 75.09 (9.0%); retuning `'none'` to 1.2e-03 bought 10.8%. A like-for-like gain puts `'attention'` near 61, but its optimum may sit lower than `'none'`'s (quadratic vertex 1.13e-03) because it carries more parameters — so the band is widened upward. **The quantity that could turn:** whether 1.2e-03 is already past `'attention'`'s own optimum, as 2.4e-03 was past `'none'`'s. If it is, the gain shrinks or reverses and the result lands above 68 |
-| L=2 `'attention_potential'` **@1.2e-03** (run 5) | ~~70, band 65–77~~ **66, band 62–72** | recorded 2026-09-25, **revised the same day after re-reading the code** — see §5.3a. The 3e-04 band below (75–82, point 78) stands as recorded. |
+| L=2 `'attention_potential'` **@1.2e-03** (run 5) | ~~70, band 65–77~~ **66, band 62–72 — MISS, actual 80.90, error +14.90 (+22.6%)**; the *superseded* 75–82 band would have hit, see §5.3a | recorded 2026-09-25, **revised the same day after re-reading the code** — see §5.3a. The 3e-04 band below (75–82, point 78) stands as recorded. |
 | L=1 `'none'` @1.2e-03 | ~~74-80~~ **MISS: actual 87.09 settled** | forecast made in conversation from the L=2 curve shape; see §5.5 — the L=1/L=2 gap did not saturate, it kept widening through the decay |
 | matched GPT-2 | ~~below 54.59~~ **HIT: 49.76 final, 49.81 settled** | predicted 49.5 band 49.0-50.0 from the published run's behaviour over the same lr range; error +0.26 |
 
@@ -442,6 +442,112 @@ the same shape as the 3e-04 run (16.71 to ~3.3), so the mechanism is not
 running away at the higher LR. `bproj_sig` saturated at 84.25 (85.4 for
 `'none'`). Decay gain 17.1% (76.62 at 21,500 to 63.51), against `'none'`'s
 19.3%.
+
+### 5.8 L=2, `'attention_potential'` @1.2e-03 — **DONE 2026-09-27** (run 5)
+
+Log: [`results/.../L2_idt4_lr0p0012_attnpot_altE_fromscratch_32500_result.txt`](../notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_attnpot/L2_idt4_lr0p0012_attnpot_altE_fromscratch_32500_result.txt)
+
+The conservative twin of run 9, **parameter-matched to it exactly**
+(77,360,081 both): same routing source (`h`), same 8 heads, same
+`d_k = 48`, same λ pinned at 1.0. The single difference is whether the
+xi-routed exchange field enters as a **force** or as the **gradient of a
+scalar potential**.
+
+| | final | best | **settled** | vs GPT-2 |
+| --- | ---: | ---: | ---: | ---: |
+| `'attention'` (run 9) | 63.42 | 61.49 | **63.51** | 1.275 |
+| **`'attention_potential'`** | 81.50 | 79.14 (31,000) | **80.90** | **1.624** |
+
+#### The price of conservativity is +27.4%, and it inverts the mechanism's sign
+
+| comparison | delta |
+| --- | ---: |
+| `'attention'` → `'attention_potential'` | **+17.39 PPL, +27.4%** — the price of conservativity |
+| `'none'` → `'attention'` | −3.47 PPL, **−5.2%** — a non-conservative exchange field *helps* |
+| `'none'` → `'attention_potential'` | **+13.92 PPL, +20.8%** — a conservative one *hurts* |
+
+**The conservative exchange field is worse than having no exchange field at
+all.** Adding it to `'none'` costs 20.8%; adding the non-conservative twin
+of the same size gains 5.2%. Conservativity here is not a tax on a
+mechanism — it reverses the mechanism's sign at matched capacity.
+
+The predicted ordering (matched GPT-2 ≥ attention ≥ attention_potential >
+none > no-RC) is therefore **wrong in one place**: `attention_potential`
+does not sit between `attention` and `none`, it sits between `none` and
+the arm with no Fock mechanism at all.
+
+| arm | settled | vs GPT-2 |
+| --- | ---: | ---: |
+| matched GPT-2 | 49.81 | 1.000 |
+| L=2 `'attention'` | 63.51 | 1.275 |
+| L=2 `'none'` | 66.98 | 1.345 |
+| **L=2 `'attention_potential'`** | **80.90** | **1.624** |
+| L=2 `'none'`, no reverse channel | 87.93 | 1.765 |
+
+#### It is not an optimisation failure
+
+**Clip-hit 0.0%** (0 of 650 logged steps, max grad-norm 0.93), against
+`'attention'`'s **29.2%** at the same LR. 0 watchdog, 0 spikes.
+`bproj_sig` reached 100.46, the highest of any arm. Decay gain 15.5%
+(95.70 at 21,500 to 80.90), the lowest of the L=2 arms.
+
+This arm trained smoothly, unclipped, and converged cleanly to a worse
+place. It is not struggling; the ceiling is lower. **And the clip
+asymmetry cuts against `'attention'`, not for it** — the better arm is the
+one training under heavy clipping, so the +27.4% is if anything an
+underestimate of the gap at each arm's own best LR.
+
+#### The mechanism, from the code
+
+With α detached (which is what makes the force a gradient) and `h_src`
+detached (which is what keeps it causal), the potential is **bilinear**,
+so the force is
+
+$$F_t = \sum_s \alpha(t,s) W_{uq}^{\top} W_v h_s$$
+
+— structurally the same shape as `DirectExchangeForce`'s
+$\sum_s \alpha W_V h_s$, except that taking the gradient **welds the
+output projection to the query projection**. The non-conservative twin has
+three free matrices (W_Q, W_K, W_V) and can choose *where* to push
+independently of *what it reads*; the conservative twin cannot. That is
+the expressivity conservativity costs here, and it is evidently large.
+
+#### Prediction scored: MISS, and the revision made it worse
+
+Pre-registered 66, band 62–72; actual **80.90**, error +14.90 (+22.6%).
+
+The uncomfortable part: **the band this one replaced would have hit.** The
+original §5.3 pre-registration was 75–82, point 78, on the reasoning that
+arm C's detaches leave "no inter-token coupling in the dynamics". §5.3a
+revised it to 66 (62–72) after re-reading the code, on the grounds that
+the stated mechanism was factually wrong — context *does* flow forward,
+only the backward path is cut — and that the term *adds* to V_φ and so is
+strictly more capacity.
+
+Both halves of that correction are still true. The conclusion drawn from
+them was not. **A flawed argument can support a correct prediction, and
+repairing the argument without re-deriving the magnitude can make the
+prediction worse.** The revision also moved the band toward an expected
+ordering and away from the answer, which is the shape of anchoring.
+
+The rule this adds to §9's forecast discipline: *when correcting the
+reasoning behind a pre-registered band, re-derive the number from the
+corrected reasoning rather than adjusting the old number — and record what
+the superseded band would have predicted.*
+
+#### One caveat that limits how strongly this can be stated
+
+Both arms ran with `RELAX_GATE = 'scalar'` and `RELAX_LAMBDA_FIXED = 1.0`.
+The model config's own docstring marks `'scalar'` **superseded**: *"lambda
+can scale that field but not orient it, and a random direction in d
+dimensions overlaps the useful one by only about 1/sqrt(d) with arbitrary
+per-batch sign, so lambda random-walks instead of growing. Kept to
+reproduce the 2026-09-19 run."* So the honest claim is **conservativity
+costs 27.4% *as instantiated here***, with a random-direction field forced
+on at full strength from step 0. Whether a zero-readout gate
+(`RELAX_GATE = 'zero_readout'`, which is symmetric across both arms)
+recovers it is the obvious follow-up, and is tracked as a separate
+question rather than a ladder rung.
 
 ---
 

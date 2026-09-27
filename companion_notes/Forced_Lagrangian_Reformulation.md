@@ -350,10 +350,49 @@ has accumulated over 512 tokens, which is mild evidence that
 generation-time R will not differ wildly from eval-time R. Mild, because it
 carries the same step-size confound.
 
-**Still open:** whether UNIFORM also holds on the `'none'` arm (this was
-the `'attention'` arm, which carries two non-gradient forces) and on the
-conservative arm, where the prediction is the opposite and the deflection
-should be near zero for every token.
+### Second arm — **`'attention_potential'`, run 2026-09-27**: UNIFORM again, more so
+
+| layer | mean | q25 | q50 | q75 | < 0.25 | > 0.75 | bimodality |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 0 | 0.903 | 0.817 | 0.901 | 0.992 | 0.0% | 87.7% | 0.361 |
+| **1** | **1.176** | 1.057 | 1.142 | 1.258 | **0.0%** | **100.0%** | 0.485 |
+
+**100.0% of layer-1 tokens above 0.75**, against the `'attention'` arm's
+93.8%, with an IQR of [1.06, 1.26] — every value above 1. So for this arm
+the Vθ geodesic step lands further from the true next state than not
+moving, *for every token measured*. UNIFORM is confirmed on a second,
+structurally different arm.
+
+Two numbers moved sharply from the first run and both are informative:
+
+- **Layer-to-layer consistency rose to ρ = +0.805** (from +0.530). A token
+  forced at layer 0 is forced at layer 1. Forcing is a property of the
+  token, not of the layer.
+- **Position in block reads ρ = −0.546** (from −0.122), quintile means
+  1.363 → 1.079. Early tokens deflect much more. That is mechanically
+  plausible here — the causal mask means token *t* has only *t* sources, so
+  the exchange potential has almost nothing to act on at low *t* — **but it
+  is confounded**, see below.
+
+### The step-size confound, and the fix
+
+R_tok is a ratio to the step, so any key co-varying with step size inherits
+a correlation with it, and step size itself reads ρ = −0.925. The
+position and step-size quintile profiles have nearly the same shape
+(1.363 → 1.079 against 1.433 → 1.002), which is what mediation looks like.
+
+**Cell 6b-12 now prints a partial correlation** alongside the raw one:
+both R_tok and the key are rank-residualised against step size and then
+correlated. Validated on the toy harness, where it separates the two
+cleanly (`position` raw −0.123 / partial −0.185; `mass` raw +0.020 /
+partial −0.097). **Read the partial column.** The two runs above predate
+it, so their position and mass correlations remain uninterpreted — a rerun
+of 6b-12 on either checkpoint is minutes and would settle whether early
+tokens really are forced harder.
+
+**Still open:** UNIFORM on the `'none'` arm, and on the conservative arm,
+where the prediction is the opposite — near-zero deflection for every
+token. Both are minutes, and both now come with partial correlations.
 
 **Harness (2026-09-25).** Random-init toy at the live configuration:
 gate 0 passes at $0.000\mathrm{e}{+00}$; all quantities compute; the
@@ -580,7 +619,7 @@ formal apparatus, written for a different purpose:
 | item | status | date |
 | --- | --- | --- |
 | reformulation stated (§2) | drafted; wording of the strong form held for F1 | 2026-09-25 |
-| F1 | **run on the `'attention'` arm: UNIFORM** — 0.0% of tokens below 0.25, 93.8% above 0.75, IQR [0.83, 0.95]. The thesis reads *memory steers*, not *occasionally*. Still to run on the other two arms | 2026-09-26 |
+| F1 | **UNIFORM on two arms.** `'attention'`: 93.8% above 0.75. `'attention_potential'`: **100.0%**, IQR [1.06, 1.26], every token above 1. Layer-to-layer consistency +0.805. Cell now prints partial correlations controlling for step size; the two runs predate it | 2026-09-27 |
 | E5 | **run**: 3.91× price, no knee; layer-1 direction set by the readout; V_φ 6% / 0.5% direct | 2026-09-25 |
 | F2 | needs L=4 (ladder run 4, queued) | — |
 | F3 | conditional on F1 SPARSE | — |

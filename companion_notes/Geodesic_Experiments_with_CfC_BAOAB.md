@@ -555,6 +555,70 @@ the clean layer, `'none'` **1.034**, `'attention'` **1.111**. The arm with
 the best perplexity is the least geodesic. The forced-Lagrangian thesis is
 no longer a single contrast; it is an ordering.
 
+### 4.11 E1 on the `'attention_potential'` arm — **run 2026-09-27**: why R(geo) is the wrong yardstick here
+
+Checkpoint `..._lr0p0012_attnpot_best.pt`, step 31,000, PPL 79.14. Gate 0
+passed bit-exactly. Reverse-channel effective gate 0.02353.
+
+| arm | layer 0 R_h | layer 1 R_h |
+| --- | ---: | ---: |
+| `geo` (Vθ only, no LN) | 0.9501 | 1.5985 |
+| `geo+LN` | 0.9118 | 1.1917 |
+| `cons` (+ Vφ **and the exchange potential**, no LN) | 0.9618 | **2.1185** |
+| `cons+LN` | 0.9044 | 1.1367 |
+| step size, |step| / |h_in| | 6.187 | 0.826 |
+
+R(geo) = **1.2743**, nominally the largest of the four arms. **That number
+should not be compared across arms**, and this run is what shows why.
+
+**R(geo) measures the deflection from the Vθ-only geodesic.** For the other
+three arms that is nearly the whole conservative story, because Vφ is
+inert (−0.0002 and −0.0015 where it is unbundled). This arm adds a *second
+scalar potential* — the xi-routed exchange term enters `U_pair`, whose
+gradient is `f_phi`. Its conservative dynamics is the geodesic of
+Vθ + Vφ + V_exch, so measuring it against Vθ alone charges the extra
+potential to "non-geodesicity" when it is nothing of the sort.
+
+**The comparable quantity is `cons+LN` = 1.0205** — everything conservative,
+plus the LayerNorm constraint, against the full step. That is the reverse
+channel's deflection and nothing else:
+
+| arm | `cons+LN` (the non-gradient deflection) | R(geo) |
+| --- | ---: | ---: |
+| conservative only | **0** (gate 0) | 0.742 |
+| `'none'` | 0.90 | 1.09 |
+| `'attention'` | 0.717 | 1.119 |
+| **`'attention_potential'`** | **1.0205** | 1.274 |
+
+Read that way the arm sits where the others do: one non-gradient force,
+deflecting by about one step. The structural conclusion of §4.8 is
+unchanged — the reverse channel is not the gradient of anything in `h`, so
+the trained step is not a geodesic of any metric on the token subsystem.
+
+**A positive Vφ attribution, and what it means.** `V_phi+exch` moves R by
+**+0.2659** — the only positive value in the series. Turning a component
+*on* should move an arm *closer* to the full step, so a positive reading is
+a signal that something else is wrong, and it is: the `cons` arm has
+LayerNorm **off**, and at layer 1 it reaches 2.1185 against `cons+LN`'s
+1.1367. Without the projection, the exchange potential's gradient overshoots
+badly. The term is not weak — it has grown large enough during training to
+destabilise the unprojected arm.
+
+That last point bears directly on the init-scale question. At
+initialisation this term's force is 0.088 of the conservative force, seven
+times weaker than the non-conservative twin's 0.616. By the end of training
+it is large enough to dominate a no-LN replay. **It plainly did get
+going**, which is further evidence against the "it never got started"
+reading and for the expressivity reading — the welded `W_uqᵀ W_v` readout
+of §5.8.
+
+**A labelling bug, now fixed.** The `V_phi+exch` label added after §4.10
+only fired for `force_relaxation` in `('attention', 'nonconservative')`,
+where the field is added directly to `f_phi`. The potential modes reach
+`f_phi` by a different route — `_add_relax_potential` adds to `U_pair`,
+whose gradient *is* `f_phi` — so this run printed a bare `V_phi` label for a
+bundled quantity. Cell 6b-9 now labels every non-`'none'` relax mode.
+
 ---
 
 ## 5. E2 — decomposed refinement
@@ -933,8 +997,10 @@ written that way is exact for the scheme it is measuring.
 | Gate 3 (refinement) | 6b-7 | **done 2026-09-24** | fails, monotone 68.7 to 435.6; §1 |
 | Gate 3, **conservative-only arm** | 6b-7 | **done 2026-09-25** | **still fails** (91.2 to 394.2): the reverse channel is not what breaks refinement. Gate 1 collapses +50.5% to +5.2%; Gate 2 degrades 3.8× against 58.8×. Flow/maps note §8.2 |
 | **E1** deflection | **6b-9** | **run 2026-09-25** | **R(geo) = 1.09**; reverse channel ~90% of the step, V_phi inert; §4.7 |
+| **E1, `'attention_potential'` arm** | **6b-9** | **run 2026-09-27** | `cons+LN` = **1.0205** (the reverse channel's deflection); R(geo) = 1.274 is **not** cross-arm comparable here — a second scalar potential is charged to it; §4.11 |
 | **E1, `'attention'` arm** | **6b-9** | **run 2026-09-26** | **R(geo) = 1.119**, `geo+LN` 1.111 at the clean layer — least geodesic of the three arms; two non-gradient forces; §4.10 |
 | **F1** per-token forcing, `'attention'` | **6b-12** | **run 2026-09-26** | **UNIFORM**, not sparse: 0.0% of tokens below 0.25, 93.8% above 0.75, IQR [0.83, 0.95]; reformulation §3.1 |
+| Gate 0–3, `'attention_potential'` arm | 6b-7 | **run 2026-09-27** | **refines like `'none'`** (6.46x vs 6.35x) despite the extra mechanism — confirms brittleness tracks non-conservative content, not capacity; inertia +22.6%; flow/maps §8.4 |
 | Gate 0–3, `'attention'` arm | 6b-7 | **run 2026-09-26** | refinement fails hardest of the three (31.0x); inertia +27.2%; flow/maps §8.3 |
 | E2 decomposed refinement | — | designed, §5 | — |
 | E3 forecastability vs matched GPT-2 | **6b-10** | **run 2026-09-25** at L=2; cell revised (tangential coherence, fp32, ε grid); needs L ≥ 3 | null at L=2; (a),(b) contaminated by the sphere; §6.8 |
