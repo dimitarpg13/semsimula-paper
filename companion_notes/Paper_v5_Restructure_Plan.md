@@ -13,6 +13,91 @@
 
 ---
 
+## 0. Framing decision — this is a book, not a paper — **2026-09-27**
+
+> **Read this before acting on anything below.** Every verdict in this
+> document, and every entry in
+> [`Paper_v6_Section_Audit.md`](Paper_v6_Section_Audit.md), was written as
+> though the object were a paper. It is not.
+
+**The author's framing, recorded verbatim in substance:** the work started
+as a paper, but at 476 pages it has evolved into a **book** — intended as
+relevant reading for a broad scientific audience: physicists curious about
+language modelling, mechanical engineers, chemists working on particle
+dynamics, scientists generally. Not only machine-learning researchers.
+
+**The measurable mismatch.** The document is 476 pages, 23 numbered
+sections spanning pp. 20–416, built on `\documentclass{article}` with a
+995-word `abstract` environment. None of those three facts belongs to the
+same form:
+
+| | what it is | what a book of this size would have |
+| --- | --- | --- |
+| front matter | a 995-word abstract | a preface, a reader's guide, a short abstract |
+| top level | `\section`, 23 of them, flat | `\chapter`, grouped into `\part`s |
+| class | `article` (via `jmlr2e`) | `book` or `memoir` |
+| opening | dense results, perplexity tables | the question the work started from |
+
+**The constraint that shapes any solution.** SSRN and Zenodo both require
+an abstract as *platform metadata*, so an abstract cannot simply be
+removed. The question is not whether one exists but **what goes in the PDF
+and how long it is**.
+
+**Consequences for the plan below.** Three verdicts in §3's triage change
+character under a book framing, and should be re-read before use:
+
+- "Keep / reframe / retreat" was judged by *claim correctness*. A book
+  must also be judged by *accessibility and narrative order* — a section
+  can be entirely correct and still be in the wrong place for a chemist
+  reading linearly.
+- §4's "three audiences" was written as a positioning argument for a
+  paper's framing. For a book it becomes a **structural requirement**: the
+  reader's guide has to route each audience to a different entry point.
+- §6's edit order is a *correctness* order. A book needs that work done,
+  but the front matter and part structure should be decided **first**,
+  because they determine where the corrected material lands.
+
+**Nothing in the audit is invalidated** — the section-level findings are
+about claims and remain true. What changes is what "restructuring" means:
+not only fixing what is wrong, but deciding the form the corrected
+material takes.
+
+**Two outputs, not one — recorded 2026-09-27.** A separate **TMLR paper**
+is planned, much shorter, to be started once the ladder experiments are
+complete and the CfC+BAOAB models are understood. That changes what this
+document is for:
+
+| | **this document → the book (paper v6)** | the TMLR paper (later) |
+| --- | --- | --- |
+| audience | broad scientific — physicists, engineers, chemists, ML | ML reviewers |
+| length | ~476pp | conference/journal length |
+| carries | the whole programme, including the retreat and the misses | one result, cleanly argued |
+| likely core | the framework, the architectures, the full measurement record | **the mechanism ladder** — matched arms, each gap pricing one component |
+| front matter | preface, reader's guide, short abstract | a conventional abstract |
+
+**The book is the current focus.** The TMLR paper is deferred until the
+ladder is complete, and nothing in this plan should be shaped around its
+needs. One practical consequence worth holding on to: the ladder is the
+most obviously extractable unit — matched arms, pre-registered
+predictions, a single ordering — so material written for it in the book
+should be self-contained enough to lift, but the book's version should not
+be trimmed to paper length in anticipation.
+
+**Open, and the author's call:**
+
+1. Short abstract (~200 words, accessible) in the PDF, with the present
+   995 words relocated to a *Summary of principal results*?
+2. A **preface** — why this exists, the question it started from, and the
+   honest arc of a hypothesis stated, measured and partly retreated. This
+   is the book's most distinctive feature and it is written in the
+   author's voice, so it is not something to draft unasked.
+3. A **reader's guide** routing physicist / engineer / LM researcher /
+   general scientist to different entry points.
+4. `\part` grouping — and eventually whether to move from `article` to a
+   book class, which is mechanical but touches all 40 input files.
+
+---
+
 ## 1. Principles
 
 1. **Retreat to what was measured, not to what feels safe.** Every
@@ -132,6 +217,58 @@ stated in perplexity.
 OpenWebText only (F6 pending), and `'attention'`'s 3e-04 predecessor
 (68.33, §5.1) must not be quoted in the same table — mixing learning rates
 is exactly what §5.2's suspended attribution records.
+
+---
+
+## 2a. Objective: contain and label Verlet, do not reduce it — **2026-09-27**
+
+**The author's objective**, and the strategy agreed for it. Verlet is
+genuinely superseded, and for a demonstrated reason rather than a
+preference: the trained stiffness pushes $\omega \Delta t$ past Verlet's
+stability bound of 2, which is what produced the E/P spikes and motivated
+the closed-form CfC/BAOAB propagator. Verlet-era material should therefore
+be **contained**, not scattered through the book unmarked.
+
+**But not deleted, and the distinction matters.** The Verlet failure *is*
+the argument for the closed-form propagator. Remove it and the book's
+integrator looks like an arbitrary choice rather than a forced one. The
+instability checkpoints published on Hugging Face exist for the same
+reason.
+
+**The measured footprint** (2026-09-27): **120** Verlet mentions against
+**157** CfC/BAOAB across 18 files. So the problem is not quantity. The
+failure mode actually hit was a Verlet-era *measurement*
+($\gamma_{\text{geo}} \approx 0.9$) read as a property of the
+architecture, which then propagated into §8's motivation — cured by
+scoping and withdrawal, not by reducing mentions.
+
+### The three-tier policy
+
+| tier | Verlet is… | policy |
+| --- | --- | --- |
+| 1 | **the subject** — the stability bound, the spikes, why the propagator exists | **contain**: told once, properly, in one home (§20, where the simulator lives) |
+| 2 | **the provenance of a number** — any Verlet-era measurement | **label**: a scope marker on every one, and re-check any inference drawn from a Verlet-only diagnostic. §27's `rem:riemannian-verlet-scope` and §8's two withdrawals are the template |
+| 3 | **a description of current machinery** — "the reverse-channel increment is applied after the Verlet step" | **rewrite**: this is the only real problem, and it is concentrated in the sections the plan wants to promote |
+
+### Priority queue — Verlet mentions with **zero** CfC/BAOAB
+
+These are where a reader meets an unsignposted Verlet-era claim.
+
+| file | renders as | verlet | cfc | tier | note |
+| --- | --- | ---: | ---: | --- | --- |
+| `17c_fock_parflm` | Fock-PARFLM | **9** | **0** | **3** | **highest priority.** Slated for promotion to the book's centre, and its mentions are structural: `eq:fock-gamma-verlet`, "the reverse-channel increment is applied *after* the Verlet step", "the residual is dominated by the discrete velocity-Verlet truncation error". Describes today's mechanism with yesterday's integrator |
+| `17_parf_augmented_splm` | PARF-augmented SPLM | 8 | 0 | **3** | "a depth-$L$ stack of damped velocity-Verlet integrators", "per-layer constants matching the velocity-Verlet integrator" — the architecture is defined in Verlet terms throughout |
+| `18h_portable_potentials` | portable potentials | 10 | 0 | **mostly 2** | a taxonomy column, "minimiser (Verlet) or sampler (O-step Langevin)" — defensible as a category; check whether the port table's integrator column is current |
+| `16_hybrid_splm` | hybrid SPLM | 2 | 0 | 3 | "damped velocity-Verlet update under the causal-flow invariant"; one table row is a labelled control and can stay |
+| `17b_cross_architecture_vreg` | cross-architecture v-reg | 2 | 0 | 2 | "only the velocity-Verlet damped dynamics…" — a claim whose scope needs checking |
+| `15a_causal_integrity` | causal integrity | 2 | 0 | 1–2 | one is a genuine Verlet-stiffness instability — tier 1 material, keep and cross-reference |
+| `18j_relation_to_flow_matching` | flow matching | 1 | 0 | 3 | "Euler--Lagrange equation yields the damped Verlet…" |
+| `19_conclusion` | conclusion | 1 | 0 | 3 | "unrolled at every layer as a velocity-Verlet integrator" — the conclusion should describe the current model |
+
+**Sequencing.** This runs alongside the correctness audit rather than
+replacing it: §17c is both the top of this queue and a section the plan
+already wants promoted, so it is the natural next target and the two jobs
+are done in one pass.
 
 ---
 
