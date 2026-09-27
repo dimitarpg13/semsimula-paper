@@ -535,6 +535,52 @@ reasoning behind a pre-registered band, re-derive the number from the
 corrected reasoning rather than adjusting the old number — and record what
 the superseded band would have predicted.*
 
+#### The initialisation confound, eliminated — **probe run 2026-09-27**
+
+The conservative arm's exchange term starts **7x weaker** than the
+non-conservative twin's: measured at init, the exchange force is 0.088 of
+the conservative force for `'attention_potential'` against **0.616** for
+`'attention'`. The cause is structural — the potential is bilinear, so its
+induced force scales as `init_scale^2` where the direct force scales
+linearly. That is an obvious candidate explanation for the gap that has
+nothing to do with conservativity, so it was tested.
+
+A 3,000-step probe at `RELAX_INIT_SCALE = 0.055` (chosen to put the term's
+starting magnitude at ~0.62, matching `'attention'`), everything else
+identical, against the completed run's own evals:
+
+| step | probe @0.055 | arm @0.02 | delta | `'attention'` |
+| ---: | ---: | ---: | ---: | ---: |
+| 500 | 475.66 | 477.72 | −2.06 | 481.47 |
+| 1,000 | 257.44 | 258.18 | −0.74 | 248.81 |
+| 2,000 | 174.28 | 173.22 | +1.06 | 158.76 |
+| **3,000** | **149.84** | **148.99** | **+0.85** | **131.20** |
+
+**Null, and decisively so.** +0.57% at step 3,000 — well inside the ±5%
+band and an order of magnitude smaller than the 13.6% gap to
+`'attention'` it was meant to explain. A 2.75x larger starting magnitude
+moves the curve by under 1 PPL at any point. The gap to `'attention'`
+is 13.6% at 0.02 and 14.2% at 0.055: unchanged.
+
+Log: [`results/.../L2_idt4_lr0p0012_attnpot_ris0p055_probe3000_result.txt`](../notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_ris0p055_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_attnpot/L2_idt4_lr0p0012_attnpot_ris0p055_probe3000_result.txt)
+
+**The result was predicted, by the code and by three measurements.** The
+model config's docstring states it outright: *"Raising `relax_init_scale`
+does not help: it scales signal and noise together, and Adam is
+scale-invariant in the gradient."* Three independent observations agreed
+before the probe ran — the two arms are **tied at step 500** (477.72
+against 481.47) and diverge only afterwards, which is the signature of an
+expressivity deficit rather than a starting-magnitude one; the term
+**grew large enough by convergence to destabilise a no-LayerNorm replay**
+(master doc §4.11), so it plainly did get going; and Adam normalises by
+recent gradient RMS, erasing a constant scale within a few hundred steps.
+
+**So the +27.4% is not an initialisation artefact.** What remains is the
+expressivity reading: taking the gradient welds the output projection to
+the query projection, so the conservative twin cannot choose where to push
+independently of what it reads. That is the mechanism, and the obvious
+confound is now eliminated rather than argued away.
+
 #### One caveat that limits how strongly this can be stated
 
 Both arms ran with `RELAX_GATE = 'scalar'` and `RELAX_LAMBDA_FIXED = 1.0`.
