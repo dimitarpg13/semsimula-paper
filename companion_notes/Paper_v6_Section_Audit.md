@@ -55,17 +55,65 @@ current object.
 contents use the rendered numbers. This audit uses **`file` -> §rendered**
 throughout, and quotes page numbers from the current build.
 
-| file | renders as | pp. | |
-| --- | --- | --- | --- |
-| `07_lagrangian.tex` | **§7** The Lagrangian for Semantic Space | 56–67 |
-| `07a_position_dependent_damping.tex` | **§8** Position-Dependent Damping and the Reinforcement Field | 68–74 |
-| `18_riemannian_geometry.tex` | **§27** Riemannian Geometry of Hidden-State Space | 337– |
-| `18d_geometric_capabilities.tex` | **§37** Capabilities Unique to the Conservative Design | 402– |
-| `14_experiments.tex` | **§15** Experimental Validation on GPT-2 and Pythia | 125– |
-| `17c_fock_parflm.tex` | (Fock-PARFLM) | — | **next target**: top of the Verlet queue *and* slated for promotion |
-| `A1_non_autonomous_framework.tex` | appendix | — |
+**Complete map, generated from `main.toc` of the current build
+(2026-09-27, 482 pp.). Always cite the rendered number — it is what the
+reader sees in the PDF.**
 
-Numbers not listed are filled in as each section is audited.
+| file | renders as | p. |
+| --- | --- | ---: |
+| `01_introduction.tex` | **§1** Introduction | 20 |
+| `02_semantic_space.tex` | **§2** Semantic Space: Metric Structure and Hierarchy | 26 |
+| `03_signature_matrix.tex` | **§3** The Signature Matrix of a Semantic Property | 29 |
+| `04_gaussian_well.tex` | **§4** The Gaussian Semantic Energy Well | 33 |
+| `05_parf.tex` | **§5** Dynamics of Semantic Properties: PARF | 38 |
+| `06_sarf.tex` | **§6** Dynamics of Semantic Structures: SARF | 46 |
+| `07_lagrangian.tex` | **§7** The Lagrangian for Semantic Space | 56 |
+| `07a_position_dependent_damping.tex` | **§8** Position-Dependent Damping and the Reinforcement Field | 68 |
+| `08_tree_operations.tex` | **§9** Semantic Tree Operations and Executive Space | 75 |
+| `09_expressivity_mcs.tex` | **§10** Expressivity, Mechanism Justification, MCS | 83 |
+| `10_jepa_connection.tex` | **§11** Connection to JEPA | 103 |
+| `11_hidden_state_interpretation.tex` | **§12** Hidden States as Semantic Properties | 107 |
+| `12_semantic_mass.tex` | **§13** Semantic Mass in Transformers | 110 |
+| `13_stp_acceleration.tex` | **§14** The STP Loss as Normalized Normal Acceleration | 121 |
+| `14_experiments.tex` | **§15** Experimental Validation on GPT-2 and Pythia | 126 |
+| `15_conservative_architectures.tex` | **§16** The Prescriptive Test: A Conservative-by-Construction LM | 132 |
+| `15a_causal_integrity.tex` | **§17** Causal integrity: leak taxonomy, detection, remediation | 198 |
+| `16_hybrid_splm.tex` | **§18** Hybrid SPLM: Helmholtz, Variant A, Variant B | 207 |
+| `17_parf_augmented_splm.tex` | **§19** PARF-Augmented SPLM and the Generalised PSP Test | 222 |
+| `17c_fock_parflm.tex` | **§20** Fock-Augmented PARFLM: Non-Conservative Virtual Particle Exchange | 246 |
+| `17b_cross_architecture_vreg.tex` | **§21** Cross-Architecture Analysis: Vφ Output Regularisation | 273 |
+| `17d_structured_scalar_potential.tex` | **§22** Structured Scalar Potential | 277 |
+| `17e_scaling_up.tex` | **§23** Scaling Up the SPLM Family | 300 |
+| `17f_context_mixing_design_space.tex` | **§24** The Conservative Context-Mixing Design Space | 316 |
+| `17g_continuous_learning.tex` | **§25** Continuous Learning | 321 |
+| `17h_first_order_sufficiency.tex` | **§26** When First-Order Dynamics Suffices | 326 |
+| `18_riemannian_geometry.tex` | **§27** Riemannian Geometry of Hidden-State Space | 338 |
+| `20_dynamical_simulator.tex` | **§28** The Direct Dynamical Simulator | 366 |
+| `18b_relation_to_energy_based_models.tex` | **§29** Relation to Energy-Based Models | 380 |
+| `18e_relation_to_liquid_neural_networks.tex` | **§30** Relation to Liquid Neural Networks | 382 |
+| `18i_relation_to_optimizer_inspired_transformers.tex` | **§31** Relation to Optimizer-Inspired Transformers | 387 |
+| `18f_relation_to_alphafold.tex` | **§32** Relation to AlphaFold | 393 |
+| `18g_langevin_completion.tex` | **§33** The Thermal Langevin Completion | 396 |
+| `18j_relation_to_flow_matching.tex` | **§34** Relation to Flow Matching and CNFs | 398 |
+| `18h_portable_potentials.tex` | **§35** Portable Learned Potentials | 401 |
+| `18c_memorization_capacity.tex` | **§36** Memorization Capacity | 405 |
+| `18d_geometric_capabilities.tex` | **§37** Capabilities Unique to the Conservative Design | 409 |
+| `19_conclusion.tex` | **§38** Conclusion and Open Questions | 422 |
+
+Unnumbered: `00_notation.tex`, `A0_edition_history.tex`,
+`A1_non_autonomous_framework.tex`, `A2_inference_efficiency.tex`,
+`A3_experiment_index.tex`.
+
+**Note the two traps.** The filename ordering is not the rendered ordering:
+`20_dynamical_simulator.tex` renders as **§28**, between `18_riemannian`
+(§27) and `18b_energy_based` (§29); and `17b_cross_architecture_vreg.tex`
+renders as **§21**, *after* `17c_fock_parflm.tex` at **§20**. Never infer a
+section number from a filename.
+
+Regenerate this table from `main.toc` after any change that adds or removes
+a section.
+
+
 
 ---
 
@@ -94,12 +142,12 @@ arm and the severity tracks non-conservative content; inertia is worth
 | `07_lagrangian` -> **§7** | reframe | **augment, don't reframe** — the three-force decomposition is already correct | **audited 2026-09-27** |
 | `07a_position_dependent_damping` -> **§8** | reframe | **augment + two withdrawals** — see below | **edited 2026-09-27** |
 | `18_riemannian_geometry` -> **§27** | retreat, largest | **confirmed — and it was 100% Verlet-era** | **edited 2026-09-27** |
-| 13 STP loss | promote | not yet read | pending |
-| 17c Fock-PARFLM | promote | not yet read | pending |
-| 14 experiments | reframe | not yet read | pending |
-| 11, 17h, 18c, 18d, 20 | reframe as decision points allow | not yet read | pending |
-| 37 (18d) geometric capabilities | keep, retreat, retitle | plan §3.1 written; not line-audited | pending |
-| 1, abstract, 19 | thesis sentence, last | **abstract updated 2026-09-27** (obstruction + geodesics paragraphs); §1 and §19 pending | partial |
+| `13_stp_acceleration` -> **§14** STP loss | promote | not yet read | pending |
+| `17c_fock_parflm` -> **§20** Fock-Augmented PARFLM | promote | not yet read | pending |
+| `14_experiments` -> **§15** Experimental Validation | reframe | not yet read | pending |
+| **§11**, **§26**, **§36**, **§37**, **§28** | reframe as decision points allow | not yet read | pending |
+| `18d_geometric_capabilities` -> **§37** | keep, retreat, retitle | plan §3.1 written; not line-audited | pending |
+| **§1**, abstract, **§38** conclusion | thesis sentence, last | **abstract updated 2026-09-27** (obstruction + geodesics paragraphs); §1 and §38 pending | partial |
 | A0 edition history | update | v6 entry written 2026-09-25 | **done** |
 
 ---
@@ -299,6 +347,134 @@ replaying trajectories rather than by fitting an $R^2$ to an observed
 acceleration.
 
 **Build:** 481pp, 0 undefined refs/cites, 0 errors.
+
+---
+
+## `09_expressivity_mcs.tex` -> §10, pp. 83–102 — where do the built models sit? — **asked 2026-09-28**
+
+**The chapter names no implemented model.** Zero occurrences of
+"Fock-PARFLM", "PARFLM", "SPLM" or "v2.1" in §10. It develops a staircase
+
+$$\mathcal{L}(\text{v0}) \subseteq \mathrm{REG} \subsetneq
+  \mathcal{L}(\text{v0+v2}) \subseteq \mathrm{CFL} \subsetneq
+  \mathcal{L}(\text{v0+v1.5+v2+v3}) = \mathrm{MCS}$$
+
+and never says which rung the architecture the rest of the book builds
+actually occupies. A reader finishing §10 meets trained models from §16
+onward with no statement connecting them.
+
+**By component inventory, Fock-PARFLM v2.1 is v0 + v1.5 + v2, with no v3.**
+
+| mechanism | in Fock-PARFLM v2.1? | what implements it |
+| --- | --- | --- |
+| v0 field | yes | Vθ pointwise + Vφ pairwise potentials |
+| v1.5 salient decay | yes | `register_salience_decay`, `register_salience_threshold`, the destruction gate |
+| v2 creation / Fock | yes | the M-register pool, creation gates, LIFO stack discipline |
+| **v3 execution** | **no** | nothing. No operator-valued particles, no non-abelian composition; grep finds no execution/gauge machinery anywhere in the model code |
+
+So it sits on the **middle rung** — and **no model in this programme reaches
+MCS**, because none implements v3. That is a sentence the book should say out
+loud, before a referee says it first.
+
+**But the theorem that puts that rung at CFL does not cover the model as
+built.** §10's bound argues v0+v2 is a multi-type branching process, and it
+is explicit about the hypothesis: *"Each creation event is conditioned only
+on the parent's type and the local field configuration around the parent; the
+offspring distribution depends on no other particle's state."* Fock-PARFLM's
+creation gate is `QKVCreationGate_v21.forward_prefix`: register queries
+scored against **keys and values from every token at or before position t**,
+per-register key subspaces, per-register temperatures. Creation content is a
+function of the whole causal prefix, not of a parent's local field. The
+branching-process reduction therefore does not apply.
+
+**SHARPENED 2026-09-28 — the prefix-conditioning worry is a distraction, and
+the earlier three options were all downstream of a wrong premise.** They
+assumed the model sits on the CFL rung and asked whether the bound survives.
+It does not sit on that rung, for a more basic reason.
+
+**§10 defines v2 by UNBOUNDED cardinality. The implementation fixes M.**
+
+> "The cardinality of the active particle set therefore grows during
+> inference, in contrast to v0's fixed-cast assumption." (§10,
+> `subsec:mech-restate`)
+
+> "each $($ instantiates a new open-bracket particle ... **The state-space
+> dimension grows linearly with depth**, lifting from regular to
+> deterministic context-free." (§10, F1 falsifier)
+
+Fock-PARFLM v2.1 has `n_registers` = 16 (TinyStories family) or 32 (ladder),
+fixed at construction, with slots **recycled** by LIFO discipline, salience
+decay and the destruction gate. Nothing grows with depth. A fixed pool at
+bounded precision is a bounded register machine — finite state — so the
+implemented model sits **below** the middle rung, not on it. It has v2's
+*mechanism* (creation, destruction, stack discipline, Fock bookkeeping) with
+v2's *defining property* absent.
+
+**The programme's own experimental plan already encodes this without naming
+it.** `Augmenting_PARFLM_to_handle_MCS_Languages.md` §Phase 1:
+
+| experiment | architecture | expected |
+| --- | --- | --- |
+| F1-fock-nostack | FockPARFLM, **M=16**, no stack | extends past D* (**≥ 8–10**) |
+| F1-fock-stack | FockPARFLM, **M=16**, LIFO stack | extends further (**≥ 12–15**) |
+| F1-attention | matched GPT-2 | **succeeds to arbitrary depth (TC⁰)** |
+
+A collapse depth just under M is the signature of a depth-M stack, i.e. of
+bounded memory. And the fourth row expects the transformer to **beat** the
+Fock mechanism on the very falsifier meant to demonstrate its expressivity
+advantage. Both were written down and neither was read back.
+
+**Why this dissolves the prefix question.** Prefix conditioning does break
+the branching-process hypothesis, so the CFG argument genuinely does not
+apply — but that only matters for proving an upper bound of CFL, and a
+tighter bound already binds: whatever the gate reads, it writes into M slots.
+Bounded memory dominates.
+
+**What replaces it is worse for the chapter.** §10 carries two measuring
+instruments: the Chomsky ladder for the formalism, whose rungs are defined by
+what grows without bound, and circuit complexity (TC⁰/NC¹) for transformers.
+The implemented model belongs on the **second** axis. Yet
+`subsubsec:framework-vs-transformers` credits the Fock formalism as *"the
+structured memory that transformers acquire only via augmentation"* while, two
+paragraphs earlier, quoting Deletang et al. that length generalisation
+*"requires explicit, structured memory augmentation"*. A fixed 32-slot pool
+is the bolt-on that paragraph criticises, not the unbounded stack it credits.
+The forward-vs-backward rhetoric is about the formalism; the built model is on
+the backward side of that line.
+
+**The honest trilemma.**
+
+1. **The formalism is MCS-capable and the implementation is a bounded
+   truncation of it.** Then §10's expressivity claims are about a system
+   nobody has built, and the chapter must say so in those words.
+2. **The bounded pool is the design and unbounded cardinality was never the
+   plan.** Then v2's definition in §10 is wrong as written, the middle rung
+   changes, and the MCS claim needs a different route or is withdrawn.
+3. **Recycling plus continuous register content recovers effective
+   unboundedness at high precision.** This is exactly the unbounded-precision
+   escape §10 denies Universal Transformers. It cannot be claimed here and
+   denied there.
+
+**Designed and pre-registered 2026-09-28** as Phase 1b of
+`Augmenting_PARFLM_to_handle_MCS_Languages.md`: M ∈ {2,4,8,16,32,64} × 3
+seeds on v2.1, close-type accuracy at exact stack depth, collapse depth
+$D^\ast(M)$, four controls (bag, v0, parameter-matched, tiny transformer).
+Stated prior: limb 1. Refutation conditions named. ~2 h Colab GPU, after L=4.
+
+**The decisive experiment is cheap and already half-built.**
+`parf/dyck_data.py` exists and its docstring names this exact purpose. Sweep
+**M ∈ {4, 8, 16, 32}** at otherwise fixed configuration and measure the
+collapse depth. Under the bounded-pool reading D* scales with M, roughly
+linearly. One plot settles which limb of the trilemma the programme is on,
+at d=64, L=4 — a few small runs, not an OpenWebText rung.
+**Pre-register before running.**
+
+**Verdict: a real gap, and a substantive one.** Not a placement sentence that
+can be dropped in — the honest fix is a short subsection at the end of §10,
+"Where the implemented models sit", that states the inventory, states plainly
+that no built model has v3 and so none is claimed to reach MCS, and names the
+hypothesis mismatch as open rather than resolving it by assertion. Queue it
+behind the §20 pass; it needs thought, not typing.
 
 ---
 
