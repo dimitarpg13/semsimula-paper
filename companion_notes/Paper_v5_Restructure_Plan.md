@@ -8,7 +8,7 @@
 > [`Forced_Lagrangian_Reformulation.md`](Forced_Lagrangian_Reformulation.md);
 > the measurements behind it are in
 > [`Geodesic_Experiments_with_CfC_BAOAB.md`](Geodesic_Experiments_with_CfC_BAOAB.md).
-> Edits already applied to the paper: Remark 52 (§10), its footnote (§17c),
+> Edits already applied to the paper: Remark 52 (§10), its footnote (§20),
 > and the pointer in §18.
 
 ---
@@ -110,7 +110,8 @@ be trimmed to paper length in anticipation.
 3. **The geometry is untouched.** §§2–6 are not edited for content.
 4. **One thesis sentence, everywhere the same.** Drafted in the
    reformulation note §0, finalised after F1, then propagated to the
-   abstract, §1, §7, §18, §19, §20.
+   abstract, **§1**, **§7**, **§27**, **§38**, **§20** (rendered numbers;
+   see the audit's file-to-section map).
 5. **Depth and corpus caveats are explicit.** Every trajectory-level claim
    carries its depth and its corpus: "at L=2, on OpenWebText" until F2 and
    F6 say otherwise. The Verlet-era geodesic work mixed TinyStories and
@@ -242,33 +243,178 @@ failure mode actually hit was a Verlet-era *measurement*
 architecture, which then propagated into §8's motivation — cured by
 scoping and withdrawal, not by reducing mentions.
 
+### Terminology, settled **2026-09-27** — say "the explicit-integrator era"
+
+**"Verlet-era" is retired.** It was never accurate for the whole period, and
+the question was settled by reading the integrators rather than the labels.
+Three distinct schemes ran, in two lineages:
+
+| lineage | file | update | name |
+| --- | --- | --- | --- |
+| SPLM family | `model.py`, `multixi/model_multixi.py`, `energetic_minima/model_ln.py` | `v = (v + dt·f/m)/(1+dt·γ)` then `h += dt·v` | **damped semi-implicit Euler** — explicit velocity state, `v_0 = 0` |
+| first-order ablation | `first_order_ablation/model_first_order.py` | `h_new = h + dt·f/m` | **gradient flow** — no velocity at all |
+| hybrid + PARF/Fock | `helmholtz/model_helmholtz.py`, `parf/model_parf_multixi.py` | `h_new = h + (h−h_prev)/(1+γ·dt) + dt²·f/(m(1+γ·dt))` | **damped Störmer–Verlet** — no velocity state; the velocity is the position difference |
+
+**Nothing in this programme ever ran velocity-Verlet.** Velocity-Verlet
+carries an explicit velocity through half-kick / drift / half-kick. The third
+row is the *position* form: undamped it is
+$h_{n+1} = 2h_n - h_{n-1} + dt^2 f/m$. The code says so against itself — it
+calls `delta` a "velocity proxy", and the CfC/BAOAB branch exists partly
+because those integrators "need to return an outgoing velocity as well as a
+position", which the Störmer form has none of. Every docstring and every
+paper sentence saying "velocity-Verlet" is wrong by one word, consistently.
+
+**Why the distinction earns its keep.** The $\omega \cdot dt < 2$ wall is the
+Störmer/leapfrog bound. It governs the hybrid and PARF/Fock lineages. It was
+never the stability condition on the SPLM family, which is semi-implicit
+Euler. Any sentence generalising that bound across the whole period is
+overreaching, and the E/P-spike story that motivated the propagator belongs
+to the Störmer lineage alone.
+
+**The rule for the rewrite.**
+
+- Period, collectively: **"the explicit-integrator era"** — what the three
+  schemes share is being explicit, and being superseded by the closed-form
+  propagator. Not "Verlet-era", not "Euler-era".
+- Any claim that depends on the scheme: name it. **damped semi-implicit
+  Euler** (SPLM family), **damped Störmer–Verlet** (hybrid, PARF, Fock),
+  **gradient flow** (the first-order ablation).
+- Never write "velocity-Verlet" again.
+
+**§18's equation was already right** (`eq:helmholtz-update`, the S-block
+branch): it is the position-difference form, which is what
+`model_helmholtz.py` computes. Only the surrounding prose calls it
+velocity-Verlet. So §20 is a relabelling job plus one word, not a correction
+of the mathematics — which is what the pass needed to know before starting.
+
+**Twelve published cards were wrong, and are now fixed — 2026-09-27.**
+The `semi_implicit_euler` string appears nowhere in the code, so every
+`integrator` field on the older cards was hand-written metadata. Checking
+`model_type` against the class that defines `_layer_step` settled each one.
+Only `model_parf.py`, `model_parf_multixi.py`, `model_parf_sparse.py` and
+`helmholtz/model_helmholtz.py` define a step at all; every Fock, attention
+and structured-Vθ class inherits from them, so **the entire PARF / Fock /
+hybrid lineage is Störmer**.
+
+| card lineage | was | now |
+| --- | --- | --- |
+| `ScalarPotentialLM*` — 2 repos | `semi_implicit_euler` | unchanged, it was right |
+| `FockG1MultiXiPARFLM` — 1 repo | `first_order_gradient_flow` | unchanged, it was right |
+| `HybridSPLM`, `MultiXiPARFLM`, `FockMultiXiPARFLM`, `FockAttentionPARFLM` — 12 repos | `semi_implicit_euler` (8), absent (3), `verlet` (1) | **`damped_stormer_verlet`**, plus an `integrator_note` giving the update |
+
+Eleven of the twelve also carried the wrong *update* in their README, not
+just the wrong name: an ASCII architecture line reading
+`+-- Damped Euler step: v += dt*f/m; v /= (1+dt*gamma); h += dt*v`, which is
+the SPLM family's step, on a PARF/Fock card. Replaced with the Störmer line
+and a dated correction note explaining what changed and that no measurement
+moves. The hybrid card additionally claimed its S-blocks "use the same damped
+Euler integration as the purely conservative variants", which was wrong twice
+over — wrong scheme, and not the same as all three linked models. Rewritten.
+
+Verified after upload: all twelve read `damped_stormer_verlet`, none still
+contains the Euler pseudocode, and the two genuinely-Euler SPLM cards were
+left alone.
+
+**Second wave, same day: the sixteen "velocity-Verlet" mentions.** A separate
+sweep of the collection found the term in six cards, including the one whose
+whole subject is the instability. Nine of the sixteen were on that card alone,
+and one of them carried the Euler update *labelled* Velocity-Verlet — both
+errors in a single line, which the first pass had missed because its pattern
+matched only "Damped Euler step". All are now "Störmer–Verlet", with the
+stability-bound sentences left intact: the \(\omega \cdot dt < 2\) wall is the
+Störmer bound, so the instability finding is unaffected by the renaming. The
+`velocity-verlet` YAML tag became `stormer-verlet`. The gradient-flow
+ablation's card needed a tailored note, since the wrong name was applied to
+the second-order *anchor* it compares against, not to the ablation itself.
+
+**Final state, verified against the live files: 15 of 15 cards correct.** The
+two `ScalarPotentialLM*` cards keep the `v += dt*f/m; v /= (1+dt*gamma);
+h += dt*v` pseudocode, which is right for them and only for them. The repo
+slug `...-verlet-instability` is unchanged: renaming it would break the
+collection item and the URL, and "Verlet instability" remains true of the
+Störmer family.
+
+---
+
 ### The three-tier policy
 
 | tier | Verlet is… | policy |
 | --- | --- | --- |
-| 1 | **the subject** — the stability bound, the spikes, why the propagator exists | **contain**: told once, properly, in one home (§20, where the simulator lives) |
+| 1 | **the subject** — the stability bound, the spikes, why the propagator exists | **contain**: told once, properly, in one home (**§28**, the Direct Dynamical Simulator, which is `20_dynamical_simulator.tex` — *not* §20, which is Fock-PARFLM) |
 | 2 | **the provenance of a number** — any Verlet-era measurement | **label**: a scope marker on every one, and re-check any inference drawn from a Verlet-only diagnostic. §27's `rem:riemannian-verlet-scope` and §8's two withdrawals are the template |
 | 3 | **a description of current machinery** — "the reverse-channel increment is applied after the Verlet step" | **rewrite**: this is the only real problem, and it is concentrated in the sections the plan wants to promote |
 
-### Priority queue — Verlet mentions with **zero** CfC/BAOAB
+### Priority queue — explicit-integrator mentions with **zero** CfC/BAOAB
+
+*(Counts below were taken by grepping "Verlet", the word the text currently
+uses. Per the terminology decision above, each one is either a
+**Störmer–Verlet** reference that needs the qualifier corrected, or a
+period reference that becomes "the explicit-integrator era".)*
 
 These are where a reader meets an unsignposted Verlet-era claim.
 
 | file | renders as | verlet | cfc | tier | note |
 | --- | --- | ---: | ---: | --- | --- |
-| `17c_fock_parflm` | Fock-PARFLM | **9** | **0** | **3** | **highest priority.** Slated for promotion to the book's centre, and its mentions are structural: `eq:fock-gamma-verlet`, "the reverse-channel increment is applied *after* the Verlet step", "the residual is dominated by the discrete velocity-Verlet truncation error". Describes today's mechanism with yesterday's integrator |
-| `17_parf_augmented_splm` | PARF-augmented SPLM | 8 | 0 | **3** | "a depth-$L$ stack of damped velocity-Verlet integrators", "per-layer constants matching the velocity-Verlet integrator" — the architecture is defined in Verlet terms throughout |
-| `18h_portable_potentials` | portable potentials | 10 | 0 | **mostly 2** | a taxonomy column, "minimiser (Verlet) or sampler (O-step Langevin)" — defensible as a category; check whether the port table's integrator column is current |
-| `16_hybrid_splm` | hybrid SPLM | 2 | 0 | 3 | "damped velocity-Verlet update under the causal-flow invariant"; one table row is a labelled control and can stay |
-| `17b_cross_architecture_vreg` | cross-architecture v-reg | 2 | 0 | 2 | "only the velocity-Verlet damped dynamics…" — a claim whose scope needs checking |
-| `15a_causal_integrity` | causal integrity | 2 | 0 | 1–2 | one is a genuine Verlet-stiffness instability — tier 1 material, keep and cross-reference |
-| `18j_relation_to_flow_matching` | flow matching | 1 | 0 | 3 | "Euler--Lagrange equation yields the damped Verlet…" |
-| `19_conclusion` | conclusion | 1 | 0 | 3 | "unrolled at every layer as a velocity-Verlet integrator" — the conclusion should describe the current model |
+| `17c_fock_parflm` | **§20** Fock-Augmented PARFLM | **9** | **0** | **3** | **highest priority.** Slated for promotion to the book's centre, and its mentions are structural: `eq:fock-gamma-verlet`, "the reverse-channel increment is applied *after* the Verlet step", "the residual is dominated by the discrete velocity-Verlet truncation error". Describes today's mechanism with yesterday's integrator |
+| `17_parf_augmented_splm` | **§19** PARF-Augmented SPLM | 8 | 0 | **3** | "a depth-$L$ stack of damped velocity-Verlet integrators", "per-layer constants matching the velocity-Verlet integrator" — the architecture is defined in Verlet terms throughout |
+| `18h_portable_potentials` | **§35** Portable Learned Potentials | 10 | 0 | **mostly 2** | a taxonomy column, "minimiser (Verlet) or sampler (O-step Langevin)" — defensible as a category; check whether the port table's integrator column is current |
+| `16_hybrid_splm` | **§18** Hybrid SPLM | 2 | 0 | 3 | "damped velocity-Verlet update under the causal-flow invariant"; one table row is a labelled control and can stay |
+| `17b_cross_architecture_vreg` | **§21** Cross-Architecture Analysis | 2 | 0 | 2 | "only the velocity-Verlet damped dynamics…" — a claim whose scope needs checking |
+| `15a_causal_integrity` | **§17** Causal integrity | 2 | 0 | 1–2 | one is a genuine Verlet-stiffness instability — tier 1 material, keep and cross-reference |
+| `18j_relation_to_flow_matching` | **§34** Flow Matching | 1 | 0 | 3 | "Euler--Lagrange equation yields the damped Verlet…" |
+| `19_conclusion` | **§38** Conclusion | 1 | 0 | 3 | "unrolled at every layer as a velocity-Verlet integrator" — the conclusion should describe the current model |
 
 **Sequencing.** This runs alongside the correctness audit rather than
-replacing it: §17c is both the top of this queue and a section the plan
-already wants promoted, so it is the natural next target and the two jobs
+replacing it: **§20** (`17c_fock_parflm`) is both the top of this queue and a section the
+plan already wants promoted, so it is the natural next target and the two jobs
 are done in one pass.
+
+---
+
+## 2b. Optimisation disclosures — a missing thread, opened **2026-09-28**
+
+**The gap.** The book discloses "AdamW with grad-clip $1.0$" (§16 twice, §22
+in passing) and **nowhere mentions the nine per-group overrides**. A reader
+told only "grad-clip 1.0" infers something far milder than what runs: the
+tightest override is 0.1 on the reverse channel, and on every arm that has
+one it is the largest pre-clip group on essentially every step, at a median
+10–20× its threshold, maximum 88×. The thresholds came from L=8/L=16
+forensics and were never re-derived for the ladder's depths.
+
+**Done so far:** `rem:gate-clipping` in **§27**, next to "What the geodesics
+cost" — the disclosure plus the three bounds on what it can cost, and an
+explicit statement that the direction of any residual bias flatters the
+mechanism rather than its critics. Build clean at 483 pp.
+
+**Still owed, and it is a thread rather than a remark.** One remark inside
+the geometry chapter is the minimum, not the treatment. What a careful
+reader — or a TMLR referee — will actually ask is two questions the book
+currently cannot answer:
+
+1. **What do the clips cost in accuracy?** Partly bounded (C-series C0–C3:
+   the gate falls rather than being held up; Adam absorbs a persistent
+   rescale; the group is scalars so allocation is untouched). Not bounded
+   for the step-to-step variation in the clip factor. **The measurement that
+   would close it is C1 and it is free.**
+2. **What do the clips cost in CONVERGENCE?** *Entirely unexamined.* Every
+   argument assembled so far is about where training ends, not how long it
+   takes to get there — and variance reduction on a parameter's updates is
+   exactly the kind of thing that changes the second without changing the
+   first. Nothing in the C-series addresses it. The data to start is already
+   on disk: the per-group pre-clip norms are in every run log, so the
+   fraction of steps on which each group binds can be plotted against the
+   loss curve for all five completed arms, at no compute cost.
+
+**Where it should live in the book.** Not in §27. The natural home is the
+experimental protocol, beside the other training details, with §27's remark
+cross-referencing it rather than carrying the argument alone. Candidate: a
+short "Optimisation and its confounds" subsection in **§16**, which is where
+grad-clip 1.0 is first stated and where the prescriptive-test setup is laid
+out.
+
+**Sequencing.** Write it after the C-series reports, so the subsection states
+measurements rather than caveats. Until then §27's remark is the honest
+placeholder and says so.
 
 ---
 
@@ -518,18 +664,25 @@ Prescriptive Lagrangian Framework" and never carried the word.
 
 ## 6. Order of edits, once the decision points are in
 
-1. A1 read; decide whether it moves into the main text (it probably does,
-   as the formal home of the forcing).
-2. §7 and §07a: the forced Lagrangian, damping is tangential.
-3. §18: the retreat. Three-layer table, residual re-based, refinement
-   language out.
-4. §13: promote; connect the STP loss to κ_g and to F1's
-   distribution.
-5. §17c: promote; the register bank as the driver.
-6. §14: the experimental record, including the misses.
-7. §11, §17h, §18c, §18d, §20: reframe as their decision points allow.
-8. §1, abstract, §19: the thesis sentence, last — **and the title/subtitle
-   with it** (§5), including the open "Efficient" question.
+**Rendered section numbers throughout, with the filename stem beside each,
+because the two do not match.** See the audit's file-to-section map.
+
+1. A1 read; decide whether it moves into the main text (**audited
+   2026-09-27: it stays an appendix**).
+2. **§7** (`07_lagrangian`) and **§8** (`07a_position_dependent_damping`): the forced Lagrangian, damping is tangential.
+3. **§27** (`18_riemannian_geometry`): the retreat. Three-layer table,
+   residual re-based, refinement language out.
+4. **§14** (`13_stp_acceleration`): promote; connect the STP loss to κ_g and
+   to F1's distribution.
+5. **§20** (`17c_fock_parflm`): promote; the register bank as the driver.
+6. **§15** (`14_experiments`): the experimental record, including the misses.
+6b. **§16** (`15_conservative_architectures`): "Optimisation and its
+   confounds" — the per-group clips, what they cost in accuracy and in
+   convergence (§2b). After the C-series reports.
+7. **§11**, **§26**, **§36**, **§37**, **§28**: reframe as their decision
+   points allow.
+8. **§1**, abstract, **§38** (conclusion): the thesis sentence, last — **and
+   the title/subtitle with it** (§5), including the open "Efficient" question.
 9. A0, A3.
 
 ---
@@ -538,13 +691,13 @@ Prescriptive Lagrangian Framework" and never carried the word.
 
 | decision | settled by | changes |
 | --- | --- | --- |
-| "memory steers" vs "memory steers occasionally" | **F1** | the thesis sentence; §13, §18 |
+| "memory steers" vs "memory steers occasionally" | **F1 — settled 2026-09-27**: all four L=2 arms read UNIFORM, so **"memory steers"**, no hedge | the thesis sentence; §14, §27 |
 | is L=2 a floor or the verdict on the geodesic share? | **F2** (needs L=4) | every "at L=2" caveat |
-| can the forecastability claim be made at all? | E3 at L ≥ 3 | §11, §17h |
-| the price of the pure geodesic in PPL | **E5 — settled 2026-09-25**: 3.91×, no knee; layer 1's output direction is the register readout | §17c, §20 — and §17c must describe the last layer as a memory read, not a forced step |
-| is V_φ ever active? | **F5 + E1 — settled 2026-09-25: no.** Trained with no competition it still moves the step by −0.0015. Its inertness is a V_φ/PARF matter | §5, §17 must stop describing V_φ as load-bearing |
-| does the hallucination claim survive re-basing? | F4 | §18d and wherever hallucination is discussed |
-| is the dominance of the forcing a property of the corpus? | F6 (TinyStories) | every "the reverse channel dominates" sentence gains "on OpenWebText" until then; §14, §17c |
+| can the forecastability claim be made at all? | E3 at L ≥ 3 | §11, §26 |
+| the price of the pure geodesic in PPL | **E5 — settled 2026-09-25**: 3.91×, no knee; layer 1's output direction is the register readout | §20, §28 — and §20 must describe the last layer as a memory read, not a forced step |
+| is V_φ ever active? | **F5 + E1 — settled 2026-09-25: no.** Trained with no competition it still moves the step by −0.0015. Its inertness is a V_φ/PARF matter | §5, §19 must stop describing V_φ as load-bearing |
+| does the hallucination claim survive re-basing? | F4 | §37 and wherever hallucination is discussed |
+| is the dominance of the forcing a property of the corpus? | F6 (TinyStories) | every "the reverse channel dominates" sentence gains "on OpenWebText" until then; §15, §20 |
 
 ---
 
