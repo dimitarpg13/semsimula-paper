@@ -390,9 +390,47 @@ it, so their position and mass correlations remain uninterpreted — a rerun
 of 6b-12 on either checkpoint is minutes and would settle whether early
 tokens really are forced harder.
 
-**Still open:** UNIFORM on the `'none'` arm, and on the conservative arm,
-where the prediction is the opposite — near-zero deflection for every
-token. Both are minutes, and both now come with partial correlations.
+### Third arm — **the conservative one, run 2026-09-27**: the mirror image
+
+The prediction was near-zero deflection for every token. Confirmed, and it
+upgrades the headline claim from an average to a per-token statement.
+
+| arm at the clean layer | RMS | q05 | q50 | q95 | < 0.25 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Vθ geodesic + LN vs the full step | **0.0002** | 0.000 | 0.000 | 0.000 | **100.0%** |
+| bare Vθ geodesic (LN off) | 0.675 | 0.287 | 0.606 | 1.071 | 3.3% |
+
+**Every one of 16,384 tokens** deflects by less than 0.25, with all five
+quantiles at 0.000 to three decimals. So "the trained step is the
+projected damped Vθ geodesic step" holds token by token, not merely in
+aggregate — and the mirror image of the two forced arms (0.0% below 0.25
+there) shows the statistic is reading the forcing rather than producing
+the pattern.
+
+**And the per-token view separates two things the average could not.**
+With LayerNorm switched off the deflection is **0.632** and *broad* —
+q05 0.287 to q95 1.071. So on this arm the entire gap between the bare
+geodesic step and the trained step is the LayerNorm constraint, and the
+constraint's effect is strongly token-dependent. Vφ contributes
+essentially nothing to either: it is the 0.0002.
+
+**Two cell defects found and fixed by this run**, both mine:
+
+- **The primary arm was tautological here.** F1's primary was
+  `conservative + LN` = (Vφ on, RC off, LN on), which on a model with *no*
+  reverse channel **is the full step** — R = 0 identically, gate 0
+  restated. The first run reported 0.000 at every quantile and it meant
+  nothing. Arm selection is now conditional: `conservative + LN` where a
+  reverse channel exists, `Vθ geodesic + LN` where it does not.
+- **Sarle's bimodality coefficient exploded** on the degenerate
+  distribution (reported 1820.074), tripping the `> 0.555` branch and
+  printing **"SPARSE forcing"** — the opposite of the truth. It now
+  returns `nan` on near-zero variance, and a third reading, `NO FORCING`,
+  is checked first, since the SPARSE/UNIFORM criteria were written for
+  forced arms only.
+
+**Still open:** the `'none'` arm — one flag away, and the only ladder arm
+without a per-token distribution.
 
 **Harness (2026-09-25).** Random-init toy at the live configuration:
 gate 0 passes at $0.000\mathrm{e}{+00}$; all quantities compute; the
@@ -619,7 +657,7 @@ formal apparatus, written for a different purpose:
 | item | status | date |
 | --- | --- | --- |
 | reformulation stated (§2) | drafted; wording of the strong form held for F1 | 2026-09-25 |
-| F1 | **UNIFORM on two arms.** `'attention'`: 93.8% above 0.75. `'attention_potential'`: **100.0%**, IQR [1.06, 1.26], every token above 1. Layer-to-layer consistency +0.805. Cell now prints partial correlations controlling for step size; the two runs predate it | 2026-09-27 |
+| F1 | **UNIFORM on the two forced arms; NO FORCING on the conservative one.** `'attention'`: 93.8% above 0.75. `'attention_potential'`: **100.0%**, IQR [1.06, 1.26], every token above 1. Layer-to-layer consistency +0.805. Conservative arm: **100% of 16,384 tokens below 0.25**, all quantiles 0.000 — the 0.0003 holds per token. Two cell defects found and fixed (tautological primary arm, bimodality on a degenerate sample) | 2026-09-27 |
 | E5 | **run**: 3.91× price, no knee; layer-1 direction set by the readout; V_φ 6% / 0.5% direct | 2026-09-25 |
 | F2 | needs L=4 (ladder run 4, queued) | — |
 | F3 | conditional on F1 SPARSE | — |

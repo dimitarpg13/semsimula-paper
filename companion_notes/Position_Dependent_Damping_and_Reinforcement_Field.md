@@ -14,6 +14,45 @@
 > - **The gradient-cascade instability:** [`Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`](Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md)
 > - **Model code:** [`notebooks/conservative_arch/parf/model_parf.py`](../notebooks/conservative_arch/parf/model_parf.py)
 
+
+> ### ⚠️ Correction — 2026-09-27: the $\gamma_{\text{geo}} \approx 0.9$ gap is a diagnostic artefact
+>
+> Several arguments below — §9.1, §9.5's "three targets a damping value can
+> serve", and the framing of §8.2's perplexity/geodesic split — lean on a
+> recovered intrinsic damping $\gamma_{\text{geo}}$ "pinned near 0.96–0.98
+> by LayerNorm regardless of the dial", and read the gap to the explicit
+> $\gamma = 0.10$ as evidence of implicit position-dependent damping.
+>
+> **That reading is withdrawn.** The residual diagnostic was calibrated on a
+> *known* geodesic — exact damped Newtonian dynamics in a bounded potential.
+> At one step per layer with ω·Δt ≈ 1, the same least-squares fit returns
+> $\gamma_{\text{geo}} = 0.93 / 0.82 / 0.75$ for trajectories whose true
+> damping is $0.05 / 0.10 / 0.30$. The recovered value is nearly independent
+> of the truth: the residual omits the reparametrisation term Jacobi
+> geodesics carry in layer time, and that term lies along $v$, exactly where
+> a fitted γ absorbs it. See
+> [`Geodesic_Preservation_Experiment.md`](Geodesic_Preservation_Experiment.md)
+> §3.2 and the calibration script it names.
+>
+> **What this does and does not touch.** The *motivation* for γ(h) survives
+> on its other grounds — the five-channel energy budget, the curvature
+> dependence of the local harmonic frequency, and the per-token degree of
+> freedom a scalar dial lacks. What does not survive is any inference from
+> the γ_geo gap, and any claim that γ(h) moves the trajectory toward or away
+> from the conservative flow.
+>
+> **A second correction, to §4.3.** Damping is *tangential at every
+> position*: $-\gamma(h)\dot{h}$ is parallel to the velocity, so its normal
+> component is zero and it changes speed along an unchanged path, never the
+> path. γ(h) is a throttle, not a steering wheel. The Fock-channel-derived
+> parameterisation therefore cannot "compensate" for reverse-channel
+> injection geometrically — and in fact moves the geometry the wrong way:
+> the reverse-channel increment carries no $v$ while the conservative
+> displacement does, so damping harder raises the channel's share of the
+> step. Measured on a replayed layer step: share $0.915 \to 0.931 \to 0.941
+> \to 0.952$ for $\gamma = 0.10, 0.20, 0.30, 0.50$, with the increment
+> itself constant to four decimals. Paper v6 §7a carries both corrections.
+
 ---
 
 ## Table of Contents

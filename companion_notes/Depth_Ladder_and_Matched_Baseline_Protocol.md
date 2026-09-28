@@ -108,6 +108,13 @@ either misses by much, V_φ matters through *training dynamics* in a way
 the per-step deflection cannot see — which would be a more interesting
 result than confirmation.
 
+> **Priority revised 2026-09-27 (§3.3).** The paragraph below ranks these
+> runs third, reasoning from E1's small Vφ deflection to a predicted
+> near-null. That inference is unsound — §5.6 establishes that a per-step
+> or ablation measure does not predict a trained-without outcome — and the
+> runs are promoted to follow run 4. The screening advice still holds as a
+> cheap sanity check, but it is no longer a gate on whether to run them.
+
 **Screen before spending 29 hours.** Zero `f_phi` at inference on the run 3
 and run 8 checkpoints and read the PPL. F5 established that an
 inference-time ablation overstates by roughly 3×, so it is a poor price
@@ -128,6 +135,106 @@ flag — the anisotropic-Gaussian V_θ computes its well centres, amplitudes,
 widths and low-rank factors *from* ξ, so removing ξ means a different
 potential family. It would be a floor rather than a ladder step, and the
 paper already records vanilla SPLM's ceiling from earlier work.
+
+### 3.3 Completion plan — **agreed 2026-09-27**
+
+Four runs remain. Two of them address **single-point-of-failure headline
+claims**; two add rungs. The sequencing below is by *risk*, not value,
+because the two priorities cost the same.
+
+**Why these two first.** Each of the book's two strongest numbers rests on
+a single measurement:
+
+| headline claim | rests on | what removes the single point of failure |
+| --- | --- | --- |
+| `geo+LN` = **0.0003** — geodesics are exact on the conservative arm | **one** dynamically clean layer (at L=2, layer 0 is the embedding-to-sphere projection at 5.4–9.1 × \|h_in\|) | **run 4, L=4** — three clean layers, so a point becomes a trend |
+| the Fock mechanism costs **+31.3%** | **one** pair (`'none'` vs no-reverse-channel) | **runs 11 vs 10** — the same quantity measured independently on a Vφ-free base |
+
+**A correction to §3.2's earlier priority note.** Runs 10/11 were ranked
+third there, on the grounds that E1 measures Vφ at −0.0002 and −0.0015 and
+so predicts a near-null. **That inference is unsound and this document
+already says why:** §5.6 establishes that a per-step or ablation measure
+does not predict a trained-without outcome — the reverse channel's
+ablation said 3.75x where the trained arm said 1.31x. A small deflection
+is no more predictive than a large ablation was. Runs 10/11 are promoted.
+
+**Sequencing: start the zero-risk run, build the risky code while it
+trains.** Run 4 needs one Cell 0 knob. Runs 10/11 need a
+`pair_potential='none'` branch in shared model code that every other arm
+executes, so it must be written and tested before it lands.
+
+---
+
+#### Checklist
+
+**A. Run 4 — L=4, `'none'`, @1.2e-03 — start immediately**
+
+- [ ] Cell 0: `LADDER_L = 4`. Leave `LADDER_T = 8.0` (so `LADDER_DT`
+      derives to 2.0), `LADDER_MECHANISM = 'none'`, `LADDER_LR = 1.2e-3`,
+      `REVERSE_CHANNEL = True`, `RELAX_GATE = 'scalar'`,
+      `RELAX_INIT_SCALE = 0.02`, `PROBE_MAX_STEPS = None`
+- [ ] Confirm the tag carries `L4probe` and Cell 2 trains from scratch
+- [ ] Pre-register the settled PPL **before launch**, naming the quantity
+      that could turn it — no band has yet been recorded for L=4 (§5.3 says
+      "no strong prior; this is the point of running it", which is no
+      longer good enough now that four arms are measured)
+- [ ] Record the clip-hit rate: §6 requires it from L=4 onward
+- [ ] Run ~27h
+- [ ] Probes afterwards: 6b-7, **6b-9** (three clean layers for the first
+      time), **6b-10** (E3 was structurally invalid at L=2 and becomes
+      measurable), 6b-12
+- [ ] File to `results/`, write §5.9, score the forecast, update the HF
+      card and `ladder.json`
+
+**Caveat to state when it lands:** at fixed `LADDER_T = 8`, L=4 means
+dt = 2, so ω·Δt halves. That is a different operating point, not only more
+layers — and Gate 3 shows the model is fitted to its dt. Some of what L=4
+shows will be dt, not depth.
+
+**B. `pair_potential='none'` — write while A trains**
+
+- [ ] Add the branch to `model_parf_multixi.py`: null `V_phi` **and**
+      `score_head`
+- [ ] Guard the call sites in `_pair_potential` — the gathered path, the
+      dense path, and the checkpointed path — in **both**
+      `model_parf_multixi.py` and `model_parf_sparse.py`
+- [ ] Decide what `_add_relax_potential` returns when there is no `U_pair`
+      to add to (the `'attention_potential'` arm depends on this)
+- [ ] Tests: forward/backward clean; `V_phi` and `score_head` absent from
+      `state_dict`; no gradient path to them; parameter count drops by the
+      expected amount; **existing arms bit-identical** — the regression
+      that matters, since this is shared code
+- [ ] Expose `PAIR_POTENTIAL` in Cell 0 and thread it through
+      `make_config`
+- [ ] **Add it to the variant tag** — the fourth time this has been needed
+      (`norc`, `ris`, `zro`); an untagged arm shares a Drive folder and
+      silently resumes from the wrong checkpoint
+- [ ] Cell 5b guard + NOT-A-LADDER-POINT banner, matching the existing three
+
+**C. Runs 10 and 11 — back to back after A**
+
+- [ ] Run 10: multi-ξ SPLM — `pair_potential='none'`,
+      `REVERSE_CHANNEL = False`, `LADDER_MECHANISM = 'none'`, L=2
+- [ ] Run 11: Fock-SPLM — as run 10 but `REVERSE_CHANNEL = True`
+- [ ] Pre-registrations already recorded in §3.2: each **within 5%** of its
+      Vφ-carrying sibling (87.93 and 66.98 respectively)
+- [ ] Report the **2×2 interaction** explicitly, not just the four cells
+- [ ] Report the **Fock-price replication**: run 11 vs run 10 against
+      run 3 vs run 8's +31.3%. Agreement makes the abstract's number
+      robust; disagreement is the finding
+- [ ] Note in the cards that these arms are **not parameter-matched** —
+      Vφ's four heads and the score head leave
+
+**D. Deferred**
+
+- [ ] Run 6 (`'nonconservative'`, λ pinned) — a function-class bound;
+      unblocks nothing. Cell 0's tag dict now accepts it (`noncons`)
+- [ ] F1 on the `'none'` and conservative arms — minutes each, and
+      **confirmatory rather than decisive**: at RMS 0.0003 a single token
+      at R = 0.3 among 16,384 would give ≥ 0.0023, so the average already
+      constrains every token. Worth running for the distribution shape
+
+---
 
 ### 3.1 Why L=4 rather than L=8
 
@@ -433,6 +540,63 @@ at its own optimal LR, which the 7.1% transfer and the clip rate both
 suggest is below 1.2e-03, this arm would likely do better. Second, the
 ladder's discipline is one LR for all arms, so 63.51 is the correct ladder
 number; the caveat is recorded rather than corrected for.
+
+#### The gate confound, eliminated — **probe run 2026-09-27**
+
+This arm runs with `RELAX_GATE = 'scalar'` and `RELAX_LAMBDA_FIXED = 1.0`,
+which the model config's own docstring marks **superseded**: *"lambda can
+scale that field but not orient it, and a random direction in d dimensions
+overlaps the useful one by only about 1/sqrt(d) with arbitrary per-batch
+sign."* Measured at initialisation, the exchange force is **0.616** of the
+entire conservative force here — the term is live at full random strength
+from step 0. `'zero_readout'` instead zeroes the output projection, so the
+term starts at exactly zero and grows through a gradient that can
+*orient* it, not merely scale it. Since this is the ladder's best arm, a
+gain would move both the exchange-field attribution and the conservativity
+price.
+
+A 3,000-step probe, `RELAX_GATE = 'zero_readout'`, everything else
+identical, against this arm's own evals:
+
+| step | zero_readout | scalar (this arm) | delta |
+| ---: | ---: | ---: | ---: |
+| 500 | **467.17** | 481.47 | **−14.30** |
+| 1,000 | 252.12 | 248.81 | +3.31 |
+| 2,000 | 161.62 | 158.76 | +2.86 |
+| **3,000** | **133.37** | **131.20** | **+2.17** |
+
+**Null: +1.65% at step 3,000**, inside the ±5% band, and marginally the
+wrong way.
+
+**The share trace says why, and it is the more interesting half.** The
+zeroed readout does not stall — it climbs from 0.569 at step 50 to
+**12.58 by step 350**, reaching the scalar arm's operating point within a
+few hundred steps, and the two track each other from there (12.77 against
+13.75 at step 2,750). **The gate changes how the term starts, not where it
+ends up.**
+
+That also explains the one real difference: at step 500 the zero-readout
+arm is **3.0% ahead**. Starting a random-direction field at full strength
+*is* a genuine early handicap, exactly as the docstring argues. The
+advantage simply does not survive the term finding its own scale, and by
+step 1,000 it has reversed.
+
+**Taken with the init-scale probe of §5.8, both initialisation confounds
+are eliminated.** Neither a 2.75x larger starting magnitude on the
+conservative arm nor a zero start with an orientable readout on this one
+moves the curve outside noise. The exchange field converges to its
+operating point regardless of how it is initialised, so the differences
+between these arms are about what each term **can express**, not how it
+begins. The +5.2% exchange-field attribution and the +27.4% conservativity
+price both stand.
+
+Log: [`results/.../L2_idt4_lr0p0012_attn_zro_probe3000_result.txt`](../notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_zro_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_attn/L2_idt4_lr0p0012_attn_zro_probe3000_result.txt)
+
+**Caveat.** 3,000 steps is early, and this arm's clip rate reaches 29.2%
+only over the full run (5.0% in the probe window). A full-length
+`'zero_readout'` run could still differ. The null is recorded as *no
+evidence of a gate effect at the point where half the eventual
+conservativity gap has already opened*, not as proof of none.
 
 #### Run health
 
@@ -963,3 +1127,223 @@ ladder point, interpreted with the static-bank caveat.
 - **`hold` subsamples when coarsening.** Relevant to Cell 6b-7's N < L
   direction: L=8 to N=4 visits codes `[0,2,4,6]` and never 1,3,5,7.
   Refinement is a true refinement; coarsening is not its mirror image.
+
+## 7. Publication readiness of the five completed arms — audit **2026-09-27**
+
+Audited the five local experiment folders that hold the L=2 ladder plus the
+matched baseline, against what a HuggingFace repo per arm needs. Folder names
+in `hf_model_cards/_ladder/ladder.json` (`gdrive` field) match the folders on
+disk exactly for all five; the two queued arms (runs 10 and 11, §3.2) have no
+data yet.
+
+### 7.1 What is complete
+
+**Every arm's headline number is recomputable from the artefacts it ships.**
+Recomputing `mean(last three val_ppl)` from each `results/training_log.jsonl`
+reproduces `ladder.json`'s settled value to the second decimal for all five:
+
+| arm | best step / PPL in ckpt | last three evals | settled | ladder.json |
+| --- | --- | --- | ---: | ---: |
+| `gpt2-matched` | 32,500 / 49.76 | 49.87, 49.80, 49.76 | 49.81 | 49.81 |
+| `attention` | 31,000 / 61.49 | 63.52, 63.58, 63.42 | 63.51 | 63.51 |
+| `attention_potential` | 31,000 / 79.14 | 80.74, 80.46, 81.50 | 80.90 | 80.90 |
+| `none` | 31,500 / 66.56 | 66.56, 66.75, 67.63 | 66.98 | 66.98 |
+| `none` no-RC | 31,000 / 85.90 | 87.53, 87.44, 88.82 | 87.93 | 87.93 |
+
+Also verified present and correct:
+
+- **Two stripped checkpoints per arm** — `_best.published.pt` and
+  `_step500_best.published.pt`, the pairing agreed earlier (endpoint plus the
+  earliest usable point, so a reader can see where the run started). No
+  optimizer state in any of them; Fock arms 293–295 MB, GPT-2 137 MB.
+- **Full config inside every Fock checkpoint** under `model_cfg` (112–113
+  fields) plus `train_cfg` (25). The arm-defining knobs read correctly:
+  `force_relaxation` is `none`/`attention`/`attention_potential` on the three
+  arms that vary it, and `reverse_channel` is the *only* model-config
+  difference between the `none` and no-RC folders (`True` vs `False`, plus a
+  `register_salience_init` default and the logfreq path). `d=384`, `L=2`,
+  `xi_channels=5`, `top_k=16`, `integrator='baoab_cfc_lowrank'`, lr 1.2e-3,
+  batch 16 × grad-accum 2 on all four.
+- **Complete training logs** — 721/722 JSONL rows spanning steps 50–32,500,
+  65–66 evals, carrying `relax_lambda` and `relax_share` alongside PPL. The
+  GPT-2 log has 227 rows over 200–32,500 with both context lengths.
+- **Console logs** for all four Fock arms and, after this audit, for GPT-2
+  (`matched_gpt2_training_output.txt` was loose in `~/Downloads` and is now
+  filed into that arm's `results/`).
+- **Probe logs** for three arms: 6b-7, 6b-9 and 6b-12 outputs sit in the
+  `attention`, `attention_potential` and no-RC folders.
+
+**Parameter counts in `ladder.json` are right and should not be "corrected".**
+Summing `numel` over each `model_state_dict` exceeds the card's count by a
+fixed amount because state dicts carry buffers: +50,257 (`logfreq_surprisal`)
+plus three scalars on every Fock arm, and +2,097,152 on GPT-2 (eight
+262,144-element causal masks, one per block). Net of buffers the counts match.
+
+### 7.2 The four gaps
+
+1. **The `none` arm ships no probe logs.** 6b-7 and 6b-9 were run on it
+   (R(geo) = 1.09, gates 4.32×/6.35×, recorded in
+   `Geodesic_Experiments_with_CfC_BAOAB.md` §4.7 and
+   `Composing_Single_Layer_Inferences_Flow_or_Maps.md` §8.2) but the console
+   output was never filed; 6b-12 (F1) has never been run on this arm. The
+   numbers are recorded in the notes, so the card can cite them, but the arm
+   with the *most* prose written about it is the one whose probe output cannot
+   be re-read. Remedy and its true cost in §7.2a: not 20 minutes, one session
+   of 45 to 75 minutes that closes this gap and the next one together.
+2. **E3 (6b-10) and E5 (6b-11) outputs are not filed anywhere.** Both ran and
+   both are written up (§6.8 and §11.6 of the geodesic notes). Both ran on
+   *this same* `none` arm, which is why §7.2a treats gaps 1 and 2 as one job.
+   Note that neither cell is the cell that produced those write-ups any more.
+3. **`gpt2_baseline_summary.json` carries a stale cross-reference.** Its four
+   `fock_*` fields and `ratio_fock_to_gpt2_settled = 1.6378` are not a ladder
+   arm: the file was written 2026-09-21, before any L=2 arm existed, and those
+   numbers come from the pre-ladder **L=8** run
+   (`fock_cfc_baoab_joint_vtheta_qknorm_annealed_after_28500_...`, lr 3e-4,
+   read at step 32,500 of a 100k schedule), whose own last-three mean is
+   81.49. The ratio is close to the `attention_potential` arm's 1.624 by
+   coincidence, which makes it a trap rather than a harmless leftover. A
+   `NOTE_summary_json_fock_fields.md` now sits beside it in that folder,
+   relabelling the fields as a matched-depth side note. Worth keeping *as*
+   that side note: at matched depth L=8 the ratio was 1.638, against the L=2
+   `attention` arm's 1.275 — depth 8 at lr 3e-4 was further from GPT-2 than
+   depth 2 at lr 1.2e-3, which is why the ladder was rebuilt at L=2.
+
+4. **The second checkpoint is not the same kind of checkpoint on every arm.**
+   The four Fock arms ship step 500 (PPL 478–491, essentially untrained — an
+   initialisation reference, not a learning-curve point). The GPT-2 folder has
+   no step-500 checkpoint at all; its second file is step 25,000 at PPL 52.87,
+   already within 6% of its endpoint. So "the early checkpoint" means two
+   different things across the collection, and anyone diffing first-checkpoints
+   arm-by-arm will be comparing an init to a near-converged model. Either state
+   the asymmetry on the GPT-2 card, or drop its step-25,000 file and ship the
+   baseline as endpoint-only.
+
+Also quarantined: the superseded `f1_forcing_per_token_WRONG.png` in the no-RC
+folder's `checkpoints/` (from F1's first, tautological run) was moved to
+`results/` under a `_DO_NOT_PUBLISH_` prefix, and the corrected plot renamed
+`F1_6b12_per_token_deflection.png` to match its log.
+
+### 7.2a What closing gaps 1 and 2 actually costs
+
+Both gaps are the same job. E3 (6b-10) and E5 (6b-11) were run on the `none`
+arm, not on some other arm, so all four missing logs belong to one
+configuration and one Colab session closes them.
+
+**Nothing is retrained.** Every probe resolves its own checkpoint as
+`CKPT_DIR / f'{CKPT_PREFIX}_best.pt'`, loads it into the built model, and
+restores the previous weights on exit. Cell 6 is not needed. Cell 2 is
+read-only. Run order:
+
+    Cell 0 (config for this arm)  ->  1  ->  1b  ->  2  ->  3  ->  4  ->  5
+    then 6b-9, 6b-7, 6b-12, 6b-11, 6b-10
+
+Probes in that order rather than numeric order: 6b-9 is the cheapest and
+verifies the load, the tag and the gate readings before anything expensive
+runs, and 6b-10 is last because it is the only one that also needs the matched
+GPT-2 checkpoint present on Drive. 6b-11 and 6b-12 write their figures into
+`CKPT_DIR`, so collect those alongside the logs.
+
+Skip 1c and 1d (no-ops here: nothing they assign is read by any later cell),
+skip 5b (the from-scratch guard protects a training run), skip 6.
+
+**Cell 0 as committed already IS this arm.** Reconstructing `_variant_tag`
+from the committed values reproduces the Drive folder's tag character for
+character, so the work is confirming the Colab copy has not drifted from the
+`attention_potential` run and the two gate/init-scale probes that followed it.
+Values to verify, most-recently-disturbed first:
+
+| knob | value | tag effect if wrong |
+| --- | --- | --- |
+| `LADDER_MECHANISM` | `'none'` | `noattn` becomes `attnpot`/`attn` — **was last set to `'attention_potential'`** |
+| `RELAX_INIT_SCALE` | `0.02` | adds `ris0p055` — the init-scale probe set this |
+| `RELAX_GATE` | `'scalar'` | **silent on this arm**: the `zro` token is gated on `FORCE_RELAXATION != 'none'`, so a stale `'zero_readout'` neither shows in the tag nor changes the model here. Harmless, but the tag cannot warn you |
+| `REVERSE_CHANNEL` | `True` | adds `norc` and resolves the *other* folder |
+| `LADDER_L` | `2` | `L2probe` |
+| `LADDER_T` / `LADDER_DT` | `8.0` / `None` | dt = 4, giving `idt4` |
+| `LADDER_LR` | `1.2e-3` | `lr0p0012` |
+| `LADDER_STEPS` | `32_500` | not in the tag, but sets the WSD windows |
+| `WSD_STABLE_FRAC` | `0.60` | adds `sf...` |
+| `LADDER_SALIENCE_INIT` | `1.0` | adds `sal...` |
+| `LANGEVIN_T` | `0.0` | adds `T...` |
+
+`PROBE_MAX_STEPS` and `ANNEAL_PROBE` do not matter: nothing trains.
+
+The two lines to read back before running any probe:
+
+    [variant] tag=xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+    CKPT_DIR    = /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_<that same tag>/checkpoints
+
+**This is the only thing that can silently go wrong.** The probes locate the
+checkpoint through the tag and load it with `strict=False`, so a drifted Cell 0
+finds either nothing or the wrong file and reports a partial load rather than
+failing. The guard is already printed: every probe header must read
+`step 31500  ppl 66.56  missing 0  unexpected 0`.
+
+No edits are needed inside any probe. Each defaults its own checkpoint to
+`CKPT_DIR / f'{CKPT_PREFIX}_best.pt'`, and 6b-12's `R12_PRIMARY` auto-selects
+`conservative + LN` when a reverse channel exists, which is correct here.
+
+| cell | on this arm | work | estimate |
+| --- | --- | --- | ---: |
+| setup, 0–5 | | Drive mount, OWT cache load, model build | 10–15 min |
+| 6b-7 flow or maps | re-file | ~14 evals x 12 x 4 x 512 | 3–7 min |
+| 6b-9 E1 | re-file | 3 x 4 x 512, three arms | 1–2 min |
+| 6b-10 E3 | **improved run** | builds GPT-2 too; fp32; 3 perturbation sizes | 5–15 min |
+| 6b-11 E5 | **improved run** | 12 lambda points x 8 x 4 x 512 | 10–20 min |
+| 6b-12 F1 | **first run** | 8 x 4 x 512, three arms | 2–5 min |
+
+One session, roughly 45 to 75 minutes of GPU, no training. 6b-10 additionally
+needs the matched GPT-2 checkpoint present on Drive at the path hard-coded in
+`R10_GPT2_CKPT`.
+
+**Two of the four are not re-filings.** The cells changed after those runs:
+
+- **6b-10** now uses `R10_EPS = (1e-2, 3e-2, 1e-1)`. The run written up in
+  `Geodesic_Experiments_with_CfC_BAOAB.md` §6.8 reports an epsilon = 1e-3 row
+  that sat on the TF32 rounding floor and was discarded, and has no 3e-2 or
+  1e-1 rows at all. A re-run replaces that table's (c) block with three usable
+  rows.
+- **6b-11** now prints the maximum *and* the minimum of the per-layer V_phi
+  change across the sweep. The run in §11.6 was read off a version that only
+  checked increases, which is the bug that let layer 1's ninefold *fall* go
+  unmentioned. A re-run puts both directions in the log.
+
+So budget a short edit to §6.8 and §11.6 afterwards. Neither is expected to
+move a conclusion; both make the recorded evidence match the current cell.
+
+**6b-12 on this arm is a first run, so pre-register before launching it.**
+E1 puts the arm's average deflection at R(geo) = 1.09 with the reverse channel
+carrying about 90% of it, and the forced arm already measured (`attention`)
+read UNIFORM at 93.8% of tokens above 0.75. The band to record: primary arm
+`conservative + LN`, layer 1, **above 80% of tokens over 0.75, under 5% below
+0.25, bimodality under 0.6** — that is, uniform forcing, the mirror image of
+the no-RC arm's 100% below 0.25.
+
+**A wider point the same work exposes.** The F1 logs already held for
+`attention` and `attention_potential` came from the two-arm version of 6b-12,
+before the third arm and before the partial correlations that control for step
+size. On the attention arm the raw correlation between deflection and step
+size is **-0.936**, so every other correlate in that log is read through a
+confound the current cell removes. Making all four arms comparable under one
+cell version costs two more sessions of the same shape, about 25 minutes each,
+because Cell 0 defines the architecture and each arm needs its own build.
+
+### 7.3 Upload shape
+
+Total for five repos, publishing only the stripped checkpoints and the
+results: **≈2.6 GB** (587 / 595 / 592 / 586 MB for the four Fock arms, 273 MB
+for GPT-2). The `collection_cfc` design in `_ladder/ladder.json` stands: a
+**separate** collection, *Semantic Simulation — CfC+BAOAB Mechanism Ladder*,
+with the Verlet-instability repo as item 0 (prologue) and the two queued arms
+added when they run rather than created empty. Separate rather than folded
+into *SPLM Model Family* because every repo in that family is Verlet-era and
+the integrator is exactly what this collection holds fixed.
+
+**The paper's URL waits on the collection.** HuggingFace derives the
+collection slug from the title, and it is not obvious what it does with the
+em dash and the `+` in `CfC+BAOAB`. The existing family URL resolves without
+any id suffix, so a slug-only URL is safe once the real slug is known. Create
+the collection first, read its URL, then add one sentence to `main.tex`'s
+*Code and supporting material* paragraph next to the existing family link.
+Guessing the slug into a 481-page book is the one step not worth saving time
+on.
