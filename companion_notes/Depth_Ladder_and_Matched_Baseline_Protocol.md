@@ -218,6 +218,553 @@ exactly this reason.
 matched-T depth scaling has turned, and the next rung should hold dt fixed
 and let T grow instead, which is a different ladder.
 
+**Launched 2026-09-27.** Clean start: schedule reads warmup 0→1,625, stable
+1,625→21,125, decay 21,125→32,500, matching every other arm (stable_end =
+warmup + 0.60 × total). Watchdog, spike capture, per-group clips and the
+resonance monitor all armed. `[tau-floor] skipped` is expected under
+`CREATION_QK_NORM = True`, which does not register `log_tau`.
+
+**It will need one resume.** 3.12 s/step against L=2's 1.29, i.e. **2.41×,
+not the 2× that doubling the layer count suggests** — the extra 20% is the
+per-step overhead that does not halve with dt. Projected wall clock **28.2 h**
+against the 23.5 h autosave, so the autosave fires near **step 27,100** with
+about **4.7 h** left to run. Scheduled checkpoints at 7,500 / 15,000 / 22,500
+/ 30,000 are the coarser safety net underneath it. To resume: re-run Cells
+0→5, then Cell 6; Cell 2 picks up the tagged snapshot.
+
+**Autosave mechanics, verified in the committed notebook.**
+`AUTOSAVE_WALLCLOCK_HOURS = 23.5` is checked every step and fires **once per
+process**, calling `save_manual_checkpoint`, which writes
+`{CKPT_PREFIX}_step{N}_manual.pt` with model *and* optimizer state. Cell 2's
+resume regex is `_step(\d+)_(?:manual|prereload|probe_stop)\.pt`, so that file
+is picked up automatically and Cell 2 prints that it is resuming from it
+whenever its step is ahead of `_best.pt`. The save is wrapped in try/except:
+a failure warns and training continues rather than dying.
+
+Two details that matter operationally. It reads **VM uptime**, not training
+time, so it fires earlier in the run by however long the VM was alive before
+Cell 6 started — deliberate, since the thing it guards against is Colab's
+~24 h VM lifetime. And the once-per-process flag is reset by re-running
+Cell 6; calling `run_training(...)` again by hand in a still-live session
+leaves it armed-and-spent.
+
+**The exposure is small even without it.** `_best.pt` is written on every
+improving eval, i.e. potentially every 500 steps, and at L=2 the best landed
+at step 31,500 of 32,500, so improvements continued almost to the end. The
+periodic saves at 7,500 / 15,000 / 22,500 / 30,000 are the floor. Worst case
+is a stalled-PPL stretch ending at a hard cutoff, which would cost back to
+the last periodic save; the realistic case is under 500 steps.
+
+Memory is not the constraint: peak 30.9 GB of 85.1 GB at batch 16. The batch
+is held at 16 × 2 for token-budget parity with the other arms, not because
+the device is full.
+
+**Reference curve for reading L=4 while it runs.** L=2 at the same LR and
+budget, so the two are directly comparable step for step:
+
+| step | L=2 ppl | local movement per 500-step eval |
+| ---: | ---: | ---: |
+| 500 | 478.33 | −46.1% |
+| 2,000 | 167.87 | −11.8% |
+| 5,000 | 118.05 | −5.2% |
+| 10,000 | 97.14 | −3.8% |
+| 15,000 | 86.57 | −0.5% |
+| 21,000 | 81.09 | +2.4% (decay begins 21,125) |
+| 25,000 | 75.19 | −0.0% |
+| 30,000 | 69.79 | −2.7% |
+| 32,500 | 67.63 | — |
+
+**Running log, L=4 against the L=2 curve.**
+
+| step | L=2 | L=4 | gap |
+| ---: | ---: | ---: | ---: |
+| 500 | 478.33 | 495.47 | +3.6% |
+| 1,000 | 257.74 | 260.64 | +1.1% |
+| **1,500** | 197.04 | 195.16 | **−1.0%** (crossover) |
+| 2,500 | 148.02 | 145.57 | −1.7% |
+| 5,000 | 118.05 | 115.63 | −2.1% (widest lead) |
+| 7,000 | 104.21 | 103.06 | −1.1% |
+| 8,000 | 100.77 | 100.52 | −0.2% |
+
+**L=4 is not trailing; it has been ahead since step 1,500.** The early deficit
+was the warmup artefact it looked like. It crossed over at 1,500, led by 1–2%
+through step 7,000, and is now level. Do not read the lead as a result either:
+decay does not begin until 21,125, and the pre-registered band is scored on
+the settled value alone.
+
+**`dc_ratio` is NOT a clip ratio — correction to a first reading.** It is
+`||grad(depth_code)|| / max(||grad|| of every OTHER group)`, i.e. how far
+`depth_code` dominates the gradient landscape, and it says nothing directly
+about clipping. The clip ratio is the printed `top[...]` value, which
+`clip_grads_per_group` returns **pre-clip**, divided by the group's threshold.
+
+Two separate facts, then, from the first 1,000 steps at L=4:
+
+1. **`depth_code` is clipped, mildly.** Pre-clip norms of 0.2–0.6 against its
+   0.25 threshold: between not clipped at all and **2.4×**. Its update is
+   scaled to roughly 42–83% of what the gradient asked. Real, not draconian,
+   and the printed value carries only one decimal so the precision is poor.
+2. **`depth_code` now *dominates*, which it did not at L=2.** `dc_ratio`
+   1.2–3.0 here, against 0.13–0.42 in the L=2 log at step 6,050+. At L=4 the
+   code is twice the size (shape `[L, n_ctx, d]`) and must differentiate four
+   layers instead of two, so dominance is plausible rather than surprising.
+
+**Whether the clip is "too harsh" is NOT established by this.** The threshold
+was tuned on earlier depths and nobody has checked it against L=4's larger
+code. What to check in the completed log: whether the pre-clip norm decays
+after warmup or stays above 0.25, and whether the trained depth codes actually
+separate four layers. If the norm stays pinned above threshold for most of the
+run AND the codes do not separate, then the clip is binding and this rung is
+not a clean depth measurement.
+
+### Clip thresholds are depth-dependent in effect and were never re-tuned — **2026-09-28**
+
+Prompted by the question "are the clips layer-depth dependent and mistuned?".
+They are, and the biggest offender is not `depth_code`.
+
+**Structure.** Building the model at L = 1, 2, 4, 8 and bucketing every
+parameter by its clip group: exactly three groups grow **linearly in L** —
+`creation_gate`, `destruction_gate`, `depth_code` — plus
+`reverse_channel_scale`, which is per-layer by config. Everything else
+(`V_theta`, `V_phi`, `register`, `score_head`, embeddings) is depth-invariant.
+`clip_grads_per_group` clips each group **jointly**, so for the L-scaling
+groups the norm being compared against a fixed threshold aggregates L
+contributions and grows as √L (independent) to L (correlated), while the
+number it is compared against never moves.
+
+**Provenance.** `depth_code: 0.25` was tightened from 0.5 on **2026-08-23**
+against the **L=16** g0.1 OpenWebText run. Every other override traces to
+L=8/L=16 forensics (step 6435, step 71194). None was revisited when the
+ladder dropped to L=1, 2 and 4. So the ladder — whose whole claim is that
+rungs differ by *exactly one mechanism* — has been running each rung at a
+different effective clip strength.
+
+**Measured on the completed rungs** (from each run's `top[...]` line, which
+`clip_grads_per_group` reports **pre-clip**):
+
+| arm | group that dominates | share of logged steps | median pre-clip | threshold | over by |
+| --- | --- | ---: | ---: | ---: | ---: |
+| L=2 `none` | `reverse_channel_scale` | **98.5%** | 2.00 | 0.1 | **20×** |
+| L=2 `attention_potential` | `reverse_channel_scale` | 88.9% | 1.00 | 0.1 | **10×** |
+| L=2 `attention` | `relax_field` / `reverse_channel_scale` | 59% / 34% | 0.90 / 1.00 | — / 0.1 | — / **10×** |
+| L=2 `none` no-RC | `depth_code` | 90.9% | 0.20 | 0.25 | not clipped |
+| L=4 `none` (to step 8,350) | `reverse_channel_scale` | 77.2% overall, **100%** after step 4,000 | 1.20 (1.60 steady) | 0.1 | **12–16×** |
+
+**The headline is the reverse channel, not the depth code.**
+`reverse_channel_scale` is clipped by a **median factor of 10–20, on
+essentially every step, on every arm that has a reverse channel** — including
+the flagship. Its maximum reaches 8.8 against a 0.1 ceiling, i.e. 88×. The
+`norc` arm, which has no reverse channel, is the only completed arm where
+nothing is meaningfully clipped.
+
+**Why this matters more than a tuning nit.** E5 measured the reverse channel
+as *setting the layer-1 output direction outright*, and the book's central
+claim rests on it. If its gate parameter's gradient has been scaled down by
+10–20× at every step of training, the trained gate is not obviously where an
+unclipped run would have put it.
+
+**The argument on the other side, and it is the notebook's own.** The
+`log_tau` comment in Cell 6 states it directly: *"Adam is close to
+scale-invariant per parameter in steady state, so clipping log_tau's gradient
+changes its own step size far less than the factor suggests."* The same
+applies here. A group clipped 20× does not get a 20× smaller update; the
+second-moment estimate absorbs most of a persistent rescale, and what survives
+is the transient and the change in relative direction within the group.
+
+#### Update from L=4 at step 8,350 — **2026-09-28**
+
+The confound survives, one half of it is resolved, and the depth-scaling
+prediction is **refuted**.
+
+**1. The reverse-channel clip is confirmed, and its onset is explained.**
+Dominant group by 1,000-step block:
+
+| steps | dominant group | share | median pre-clip |
+| --- | --- | ---: | ---: |
+| 0–1,999 | `depth_code` | 63–80% | 0.40–0.50 |
+| 2,000–3,999 | `reverse_channel_scale` | 85–95% | 1.00 |
+| 4,000–8,350 | `reverse_channel_scale` | **100%** | **1.60** |
+
+The handover at ~step 2,000 is the reverse channel's own warmup completing:
+4,000 forwards at grad-accum 2 is exactly 2,000 optimiser steps. From then on
+the gate parameter is clipped by a **median 16×** (max 45×) on *every* step.
+
+**2. `depth_code` is not the problem, and my first worry is withdrawn.** It
+dominates only during warmup, peaks at 2× its threshold, and stops being the
+top group once the reverse channel comes online. It is a warmup transient at
+L=4, not a persistent constraint.
+
+**3. The √L prediction is refuted.** `reverse_channel_scale` is per-layer, so
+its joint group norm should grow with depth. On the only like-for-like window
+the two logs share (steps 6,050–8,350, 47 logged steps each):
+
+| arm | dominant | share | median pre-clip | over threshold |
+| --- | --- | ---: | ---: | ---: |
+| L=2 `none` | `reverse_channel_scale` | 100% | 1.50 | 15× |
+| L=4 `none` | `reverse_channel_scale` | 100% | 1.60 | 16× |
+
+**1.50 against 1.60.** Doubling the depth moved the group norm by 7%, not the
+41% that √2 predicts, let alone the 100% that full correlation would give.
+So the per-layer gate gradients are not adding up across layers in the way
+the parameter-count argument assumed — they are largely cancelling, or the
+per-layer magnitudes shrink as depth grows. **Whatever the clip confound is,
+it is not depth-dependent in the way I argued.** The structural observation
+about group membership stands; the inference from it to a per-rung difference
+in clip strength does not.
+
+**What remains true, and it is the part that matters.** The gate parameter of
+the mechanism this book is built on is clipped by a factor of 10–20 on
+essentially every step of every arm that has it, at **both** depths measured.
+That is a uniform confound rather than a per-rung one, which is better for
+the ladder's internal comparisons and no better at all for the absolute
+claims about what the reverse channel learns.
+
+**So this is a confound of unknown magnitude, not a demonstrated error.**
+
+### What the clipping costs — the reviewer-facing answer, **2026-09-28**
+
+Written to be quotable. If a reader of the book or a referee of the TMLR
+paper asks "your gate is clipped on every step; what does that cost you?",
+this is the answer, with the evidence for each clause and the parts still
+open named as open.
+
+**The disclosure first.** Training does not use a single global clip. It uses
+a global clip of 1.0 **plus nine per-group overrides**, of which the tightest
+is 0.1 on `reverse_channel_scale` and `reverse_ch`. On every arm that has a
+reverse channel, `reverse_channel_scale` is the largest pre-clip group on
+essentially every logged step, at a median **10–20× its threshold** (15× at
+L=2, 16× at L=4, maximum 88×). The thresholds were set from L=8/L=16
+forensics in August–September 2026 and were never re-derived for the ladder.
+
+**Why we nevertheless do not think it costs measurable perplexity.** Three
+independent reasons, two of them measured:
+
+1. **The gate is not being held up against a ceiling — it is falling.**
+   Measured at the two ends of the L=2 flagship: 0.0612/0.0600 at step 500,
+   0.0174/0.0148 at step 31,500, a fall of 3.5–4×. A clip limits step size in
+   either direction, so what it can have done here is *slow a decline*. The
+   unclipped counterfactual has a gate that falls **further and faster**, not
+   one that grows.
+2. **Adam largely absorbs a persistent rescale.** The update is
+   `lr · m̂/√v̂`; scaling every gradient for a group by the same factor scales
+   `m` and `√v` alike and leaves the ratio unchanged. Measured on the
+   endpoint's optimizer state, this parameter's `|m|/√v` is **0.007–0.27**:
+   what limits its movement is step-to-step gradient cancellation, not the
+   clip.
+3. **For this group the clip cannot distort direction at all.**
+   `clip_grads_per_group` rescales a group by one scalar, and this group is
+   just the per-layer gate scalars, so clipping multiplies every element by
+   the same number. It cannot change which layer gets more gate — only how
+   fast the whole vector moves. That removes a whole class of confound by
+   construction.
+
+**What we do NOT claim, and where the argument is still soft.** The clip
+factor is not constant: the pre-clip norm ranges 1.0–4.5 against a 0.1
+threshold, so clipping compresses large-gradient steps harder than small ones.
+That is **not** a uniform learning-rate cut, it is variance reduction on the
+gate's trajectory, and it can move where the gate settles. Direction and
+magnitude are unmeasured. Reason 2 defends against a *persistent* rescale, not
+against this.
+
+**And the direction of any residual bias is the uncomfortable one.** If the
+clip binds at all, it has slowed a shrinking gate, so the unclipped model has
+a **weaker** reverse channel. Any bias makes the mechanism look more important
+than it is, not less. Nothing here inflates the case against the reverse
+channel; if anything it inflates the case for it.
+
+**What would settle it, and what it would be worth.** The one untested
+direction is a gate *larger* than the trained value: E5 swept λ from 1 down to
+0 and found PPL rising monotonically with no knee, so the trained gate is best
+among all smaller gates, and nobody has looked above 1. That is C1 below, free
+and unrun. Note its status carefully — it is an **upper bound**, not a
+prediction: this volume's own measurement is that inference-time ablation
+overstated this mechanism 3.91× against trained-without's 1.31×, so whatever
+C1 puts on the table is the most retraining could recover and probably several
+times more than it would.
+
+**Status: open, bounded, and biased in the direction that does not flatter the
+thesis.** That is the honest position, and it is the one to quote.
+
+---
+
+### SPLM-family card audit — corrections applied **2026-09-28**
+
+Audited all fifteen cards in the older collection against what the CfC+BAOAB
+work has since measured. Two classes of error, both fixed; a third left
+standing deliberately.
+
+**1. Cards called reverse-channel models "purely conservative".** The
+Fock-PARFLM card's opening sentence said so outright, and its capabilities
+section derived a Riemannian geometry from the premise that *"all forces
+derive from the gradient of a scalar potential"*. That card's own
+`config.json` carries `use_reverse_channel: true`, and E1 later measured the
+deflection of the layer step from the damped Vθ geodesic at **1.09 with the
+channel on against 0.0003 with it off** — the non-gradient term carries most
+of the step. Two further cards (`fock-attention`, `hybrid-splm`) propagated
+the error by naming Fock-PARFLM in a list of "the purely conservative
+variants". Corrected on four cards; the removal from the list is stated
+rather than silent. `depthcond-vtheta` and `anisogaussian-vtheta` needed
+nothing — they make no conservativity claim in prose, and their architecture
+diagrams already label the reverse channel non-conservative.
+
+**2. Three gamma-sweep cards read a small residual as proof of geodesy.**
+The exact sentence: *"R ≈ 0 means the trajectory is a damped geodesic of the
+metric induced by the model's own learned potential"*. That is the inference
+the calibration withdrew — at one step per layer the residual cannot separate
+a geodesic from a forced trajectory, and returns ≈1 for motion that is
+geodesic by construction. Scoped in place, with a note saying what survives:
+the **comparative** use across γ at otherwise fixed settings, including the
+coincidence of the PPL and R̄ minima, which is what the sweep actually rests
+on. The `hybrid-splm` card's claim that a diagnostic battery *"confirmed the
+metric validity and characterised the damping-dominated dynamics"* was scoped
+the same way — both of its headline readings have since been narrowed.
+
+**3. Left standing: ~8% redundancy.** 21 verbatim blocks shared by three or
+more cards, about 37 KB of 461 KB — two rival citation blocks, a 1.8 KB
+capabilities bullet list on three cards, a 0.9 KB comparison table on three.
+Cosmetic, and not worth churning the cards a third time in two days. The
+duplicated correction notes are deliberate: each card must carry its own.
+
+Verified after upload: **0 of 15** cards still carry a conservativity claim
+alongside an enabled reverse channel, still list Fock-PARFLM as purely
+conservative, or still state the unscoped geodesic reading.
+
+---
+
+### The C-series — probes on the clip confound, planned **2026-09-28**
+
+Agreed: study it with targeted probes rather than one big re-run, and let L=4
+finish first. Ordered by cost. **C0 and C2 are already run** — both are reads
+of checkpoints we hold, needing no GPU.
+
+---
+
+#### C0 — which way is the gate moving? **RUN 2026-09-28. Result reframes the whole question.**
+
+Read `reverse_channel_scale` out of the L=2 `none` checkpoints at both ends of
+training:
+
+| checkpoint | step | raw gate (per layer) | tanh |
+| --- | ---: | --- | --- |
+| `_step500_best` | 500 | 0.0612, 0.0600 | 0.0611, 0.0599 |
+| `_best` | 31,500 | 0.0174, 0.0148 | 0.0174, 0.0148 |
+
+**The gate FALLS by 3.5–4× over training.** It is not straining upward against
+a ceiling the clip denies it. The hypothesis I started from — "the clip
+suppressed a gate that wanted to grow" — is **refuted in its stated
+direction**.
+
+What survives is the mirror image, and it is the more awkward one: a clip
+limits step size in *either* direction, so the unclipped counterfactual has a
+gate that falls **further and faster**, i.e. an even weaker reverse channel.
+If the clip has biased anything, it has biased the mechanism to look
+**stronger** than it is, not weaker. Every downstream claim that leans on the
+reverse channel's size inherits that direction.
+
+---
+
+#### C1 — extend the E5 slider above λ = 1 (FREE, minutes, no training)
+
+`R11_LAMBDAS` in Cell 6b-11 stops at 1.0, so the sweep has only ever asked
+what happens when the gate is turned **down**. The clip question is about
+whether the trained gate is below where it would otherwise sit, and that is a
+question about λ > 1, which has never been measured.
+
+- **Change:** `R11_LAMBDAS = (2.0, 1.5, 1.25, 1.1, 1.0, 0.9, ..., 0.0)`.
+- **Reading:** PPL falling above λ = 1 means the trained gate is below the
+  inference-optimal value — the signature a binding clip would leave. PPL
+  rising immediately means the gate is at its optimum and the clip did not
+  bind the endpoint.
+- **Pre-registered, from C0:** **PPL rises monotonically above λ = 1.** C0
+  shows the model spent training *reducing* this gate, so a value above the
+  trained one should be worse. A fall above λ = 1 would contradict C0 and
+  would be the single most interesting outcome in this series.
+- **C1 is an UPPER BOUND, not a prediction.** It scales the gate at
+  inference on a model trained with the clip. By this volume's own rule —
+  inference ablation overstated the reverse channel 3.91× against
+  trained-without's 1.31× — whatever PPL C1 shows on the table is the most
+  that retraining without the clip could recover, and probably several times
+  more than it would. A null in C1 closes the question; a hit in C1 only
+  licenses C4 and then C5.
+
+---
+
+#### C2 — the Adam realised-step audit (FREE, minutes; partial result in hand)
+
+Tests the scale-invariance defence directly instead of arguing it. Adam's
+update is `lr · m̂/√v̂`; a *persistent* k× clip scales `m` and `√v` alike, so
+the ratio — and therefore the update — is unchanged. The measurable is
+`|exp_avg| / √exp_avg_sq`, the fraction of full learning rate a parameter
+actually moves at, read straight from the optimizer state the unstripped
+checkpoints carry.
+
+**Partial result:** the two 2-element optimizer states in the L=2 `none`
+endpoint give `|m|/√v` of **0.007–0.27**. Far below 1, so this parameter's
+gradient largely cancels step to step; it is not a consistent push being
+throttled. Consistent with the clip being cosmetic, but **not yet decisive**:
+the parameter-index-to-name map was inferred by numel and two states match.
+
+- **To finish:** build the model, zip `named_parameters()` against the
+  optimizer's `param_groups` ordering for an exact map, then report `|m|/√v`
+  per clip group.
+- **Reading:** if the heavily-clipped groups show the same `|m|/√v` as
+  unclipped ones, Adam is absorbing the rescale and the clip is cosmetic for
+  the endpoint.
+
+---
+
+#### C3 — what joint clipping can and cannot do (FREE, code reading + one assertion)
+
+`clip_grads_per_group` rescales each group by a single scalar. For a group
+that is **L scalars** — which `reverse_channel_scale` is — that is *exactly* a
+learning-rate reduction for that group and nothing else: the per-layer
+allocation is untouched, because every element is multiplied by the same
+number. This **bounds** what the confound can be. It cannot have changed which
+layer gets more gate, only how fast the whole vector moved. Verify and state
+once; it removes a whole class of worry.
+
+---
+
+#### C4 — the paired short run (CHEAP, ~30 min GPU, after L=4)
+
+From the L=2 `none` `_best` checkpoint, 500 steps twice with identical data
+order: once as-is, once with `reverse_channel_scale`'s threshold at 2.0 (above
+its 1.50 median pre-clip norm, so the clip stops binding). Compare the val-PPL
+trajectory and the gate value.
+
+- **Pre-registered, from C0 + C2:** gate ends **lower** in the unclipped arm,
+  by less than 20%; val PPL within eval noise (±1.5). A larger gate in the
+  unclipped arm would contradict C0.
+
+---
+
+#### C5 — the full re-run (11.7 h, ONLY if C1 or C4 separate)
+
+Re-train the L=2 flagship with the threshold raised, compare settled PPL and
+final gate. Do not spend this until a cheaper probe says it is warranted.
+
+---
+
+#### C6 — the watchdog is structurally blind to this parameter (FREE, documentation)
+
+Not a clip question but the same parameter, and it belongs in the same place.
+Cell 6's own comment: excluding `reverse_channel_scale` and `reverse_ch` from
+the watchdog aggregate keeps it from false-triggering on their warmup ramp,
+**"but it also means BOTH watchdog layers below are structurally blind to
+them"** — and they appeared in the top-4 of nearly every spike in the
+2026-08-23 burst. State this wherever run health is claimed.
+
+---
+
+#### C7 — what the clips cost in CONVERGENCE, not accuracy (FREE, no GPU)
+
+**The whole C-series so far asks where training *ends*. Nothing in it asks
+how long it took to get there** — and variance reduction on a parameter's
+updates is precisely the kind of intervention that changes the second without
+moving the first. Raised 2026-09-28; the gap was real and unexamined.
+
+Free, because the data is already on disk: every run log prints the top
+pre-clip group and its norm every 50 steps, for all five completed arms plus
+L=4 in flight.
+
+- **Measure:** per arm, the fraction of steps on which each group exceeds its
+  threshold, binned by 1,000 steps, plotted against that arm's loss curve.
+- **The comparison that does the work:** the `norc` arm is the one completed
+  arm with nothing meaningfully clipped. If heavy clipping slows convergence,
+  the arms with a reverse channel should reach a given loss later *in steps*
+  than their curves' shape otherwise predicts — and `norc` is the control
+  that has no such brake.
+- **Confound to respect:** `norc` is also a different model, so a raw
+  step-to-loss comparison is not clean. The usable signal is *within* an arm:
+  does the loss curve bend where the clip-hit fraction changes? The
+  reverse-channel warmup gives a natural discontinuity — at L=4 the dominant
+  group hands over from `depth_code` to `reverse_channel_scale` at step
+  ~2,000, and L=4 crossed ahead of L=2 at step 1,500. Whether those are
+  related is exactly this probe's question.
+- **Reading:** a bend in the loss curve coincident with the clip-hit handover
+  is evidence the clip shapes convergence. No bend across five arms is a
+  strong null.
+
+---
+
+**Sequencing.** C0 done. C1, C2 and C7 are free and can run the moment a GPU
+session is spare — C7 needs no GPU at all — C1 needs one tuple edit and a probe cell, C2 needs no GPU
+at all. C3 is a code read. C4 waits for L=4 to finish. C5 only on evidence.
+**Do not start C1 or C4 while L=4 is training.**
+
+**A second, free result.** The notebook logs `dc_ratio` precisely to find out
+whether it is a leading indicator of spikes or a spike-time coincidence: of 7
+captured spike events, every smooth cascade had `dc_ratio < 1.8` and both
+localized blowups had `> 2.2`. L=4 is sitting at **2.1–3.0 through completely
+healthy training** — no spikes, no watchdog, grad ≈ 0.5. That is evidence
+against `dc_ratio > 2.2` being predictive on its own, from ordinary training
+rather than from capture-time forensics, which is exactly the data the note
+asked for.
+
+**The resonance monitor is blind under `baoab_cfc_lowrank` — diagnosed
+2026-09-28, and it is a library bug, not a stale clone.** The `EMPTY SUMMARY`
+at step 500 was first blamed on a Colab session that cloned
+`semsimula-diag` before the 2026-09-26 fix. That was wrong. Reproduced
+locally against `origin/main` at `036d529`, on a toy Fock model with the
+anisotropic depth-conditioned Vθ and `integrator='baoab_cfc_lowrank'`.
+
+Call counts on one forward:
+
+| hook | fires |
+| --- | ---: |
+| `_fock_layer_step` | 2 (one per layer) |
+| `harmonic_terms_lowrank` | 2 |
+| `lowrank_cfc_substep` | 4 |
+| **`harmonic_terms`** | **0** |
+| `cfc_substep` | 0 |
+
+`observe()` opens a record in its wrapper on **`harmonic_terms`** (which
+calls `mon._stash`) and closes it in the substep wrapper (`mon._finish`).
+`_finish` returns immediately when `_pending is None`. Under the low-rank
+integrator `harmonic_terms` is never called — the path calls
+`harmonic_terms_lowrank` — so nothing is ever stashed, every `_finish` is a
+no-op, and `summary()` is empty. The 2026-09-26 commit added
+`_wrap_lowrank_substep`, the *closing* half, but no wrapper on
+`harmonic_terms_lowrank`, the *opening* half. Half a fix.
+
+**Consequence: the stiffness reading has been dark for every
+`baoab_cfc_lowrank` run — the entire ladder.** Pulling the library at the
+resume will not help; the fix has to be written. The ingredient exists
+already: `omega_dt_report` reconstructs `G` via
+`vt.harmonic_terms_lowrank(xis, h, comps=comps)`, so `observe()` needs the
+same call stashing `λ_max(G Gᵀ)`.
+
+**Do not read the early steps.** L=4's first eval came in at 495.47 against
+L=2's 478.33, which looks like a 3.6% deficit and is not one: the curve is
+falling **46% per 500-step eval** there, so 495.47 sits **28 steps** behind
+L=2's own trajectory — under two minutes of equivalent training, measured at
+1.5% of the run with the learning rate still in warmup at 31% of peak.
+Nothing about depth or timestep is visible yet. The first eval where local
+movement is small enough for a gap to mean anything is around **step 15,000**
+(−0.5% per eval); before the decay phase any ordering is noise. The
+pre-registration is about the settled value, and only the settled value
+scores it.
+
+**Depth is nearly free in parameters — recorded at launch, 2026-09-27.**
+Cell 5 built L=4 at **76,823,511** parameters against L=2's **76,770,256**:
+a difference of **53,255**, or **0.069%**, about 26,600 per added layer. The
+architecture is almost entirely weight-tied across depth — `reverse_ch` is one
+module reused at every layer, and only `depth_code`, the creation/destruction
+gates and the per-layer scalars grow with L. For comparison the exchange field
+costs 589,825 parameters, eleven times more than two extra layers.
+
+Two consequences, both good for this rung:
+
+1. **Capacity is not a confound.** Whatever L=4 settles at, it cannot be
+   attributed to a bigger model. That is a stronger control than the ladder's
+   other rungs enjoy, where the mechanism under test does change the count.
+2. **It sharpens the dt caveat below.** With capacity held flat, the two
+   candidate explanations for any change are depth and the timestep, and only
+   those two. The clip-hit rate is what separates them.
+
+Batch resolved to 16 × accum 2 = 32, identical to every other arm, so the
+token budget is again exactly 532,480,000.
+
 **Caveat to state when it lands:** at fixed `LADDER_T = 8`, L=4 means
 dt = 2, so ω·Δt halves. That is a different operating point, not only more
 layers — and Gate 3 shows the model is fitted to its dt. Some of what L=4
