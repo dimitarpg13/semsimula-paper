@@ -15,7 +15,7 @@ PARFLM (PARF-Augmented SPLM) adds token-token pair interactions $V_\phi(h_t, h_s
 - There is no mechanism for the state space to grow during inference
 
 Consequently, PARFLM is at most a finite automaton (regular languages). It cannot:
-- Recognise $\text{Dyck}_n$ beyond the predicted collapse depth $D^*$
+- Recognise $\text{Dyck}\_n$ beyond the predicted collapse depth $D^\ast$
 - Handle cross-serial dependencies ($a^n b^n c^n$)
 - Reach the mildly context-sensitive (MCS) class
 
@@ -31,10 +31,10 @@ To escape this ceiling, the framework requires **v2 (creation/destruction)** map
 
 | v2 mechanism | Fock-space object |
 |---|---|
-| Introduce an entity into discourse | Creation operator $a^\dagger_v \|\psi\rangle$ |
-| Entity drops out of discourse | Annihilation operator $a_v \|\psi\rangle$ |
+| Introduce an entity into discourse | Creation operator $a^\dagger_v \lvert \psi \rangle$ |
+| Entity drops out of discourse | Annihilation operator $a_v \lvert \psi \rangle$ |
 | Count of currently-live entities | Number operator $N = \sum_v a^\dagger_v a_v$ |
-| Field at semantic position $x$ | $\hat{\phi}(x) = \sum_v \phi_v(x) a_v$ |
+| Field at semantic position *x* | $\hat{\phi}(x) = \sum_v \phi_v(x) a_v$ |
 
 The Fock space itself:
 
@@ -65,12 +65,12 @@ Registers start in a "vacuum" state (inactive). A learned creation gate activate
 
 | Implementation concept | Fock-space analogue |
 |---|---|
-| Register pool (all inactive) | Vacuum state $\|0\rangle$ |
-| Activation of register $r_j$ | Creation: $a^\dagger_v \|0\rangle$ |
-| Deactivation of register $r_j$ | Annihilation: $a_v \|\psi\rangle$ |
-| Number of active registers | Number operator $N$ |
+| Register pool (all inactive) | Vacuum state $\lvert 0 \rangle$ |
+| Activation of register `r_j` | Creation: $a^\dagger_v \lvert 0 \rangle$ |
+| Deactivation of register `r_j` | Annihilation: $a_v \lvert \psi \rangle$ |
+| Number of active registers | Number operator *N* |
 | Salience-ordered LIFO activation | Stack discipline (→ pushdown automaton) |
-| Register hidden state $r_j \in \mathbb{R}^d$ | Single-particle state in $\mathcal{H}$ |
+| Register hidden state `r_j` ∈ ℝ^d | Single-particle state in $\mathcal{H}$ |
 
 ### Why This Escapes v0
 
@@ -150,26 +150,26 @@ class FockPARFConfig(SparsePARFConfig):
 
 At the P10f scale ($d = 256$, $L = 8$, $M = 32$):
 - Register embeddings: $32 \times 256 = 8192$ params
-- Creation gates: $8 \times (256 \times 64 + 64 \times 32) = 8 \times 18432 = 147$K params
-- Destruction gates: $8 \times (256 \times 64 + 64) = 8 \times 16448 = 132$K params
+- Creation gates: $8 \times (256 \times 64 + 64 \times 32) = 8 \times 18432 = 147456$ parameters
+- Destruction gates: $8 \times (256 \times 64 + 64) = 8 \times 16448 = 131584$ parameters
 - Total overhead: ~290K params (< 2% of the 22M total)
 
 ## Experimental Plan
 
 ### Phase 1: Dyck Falsifier (proof of concept)
 
-**Goal**: Demonstrate that FockPARFLM solves $\text{Dyck}_2$ past the predicted collapse depth $D^*$, where plain PARFLM fails.
+**Goal**: Demonstrate that FockPARFLM solves $\text{Dyck}\_2$ past the predicted collapse depth $D^\ast$, where plain PARFLM fails.
 
 | Experiment | Architecture | Expected result |
 |---|---|---|
-| F1-baseline | PARFLM (P10f config) | Collapses at depth $D^* \approx 3$–$6$ |
-| F1-fock-nostack | FockPARFLM, M=16, no stack | Extends past $D^*$ (≥ 8–10) |
+| F1-baseline | PARFLM (P10f config) | Collapses at depth D\* ≈ 3–6 |
+| F1-fock-nostack | FockPARFLM, M=16, no stack | Extends past D\* (≥ 8–10) |
 | F1-fock-stack | FockPARFLM, M=16, LIFO stack | Extends further (≥ 12–15) |
 | F1-attention | Matched GPT-2 baseline | Succeeds to arbitrary depth (TC⁰) |
 
-**Success criterion**: F1-fock-stack succeeds at depth $> D^*$ with 3/3 seed consistency.
+**Success criterion**: F1-fock-stack succeeds at depth $\gt D^\ast$ with 3/3 seed consistency.
 
-**Training**: Synthetic $\text{Dyck}_2$ strings at controlled max depth, next-bracket-type prediction task. Small scale ($d=64$, $L=4$) sufficient for falsifier.
+**Training**: Synthetic $\text{Dyck}\_2$ strings at controlled max depth, next-bracket-type prediction task. Small scale ($d=64$, $L=4$) sufficient for falsifier.
 
 ### Phase 2: Natural Language (TinyStories integration)
 
@@ -193,12 +193,12 @@ At the P10f scale ($d = 256$, $L = 8$, $M = 32$):
 
 ### After Phase 1 (Dyck falsifier)
 
-- FockPARFLM **passes** Dyck past $D^*$ → v2 mechanism confirmed; proceed to Phase 2
-- FockPARFLM **fails** at $D^*$ → implementation does not correctly realise Fock-space dynamics; debug creation/destruction gates
+- FockPARFLM **passes** Dyck past $D^\ast$ → v2 mechanism confirmed; proceed to Phase 2
+- FockPARFLM **fails** at $D^\ast$ → implementation does not correctly realise Fock-space dynamics; debug creation/destruction gates
 
 ### After Phase 2 (TinyStories)
 
-- PPL improves $> 1$ PPL over P10g → v2 structures are useful for natural text at this scale
+- PPL improves $\gt 1$ PPL over P10g → v2 structures are useful for natural text at this scale
 - PPL unchanged → corpus-information ceiling dominates; v2 benefit will appear only at larger corpus scale (proceed to 20M tokens)
 
 ### After Phase 3 ($a^n b^n c^n$)
@@ -226,9 +226,9 @@ v0 (SPLM)
 
 ### Configuration
 
-- Corpus: Synthetic $\text{Dyck}_2$, max nesting depth 12, $p_{\text{open}} = 0.55$
+- Corpus: Synthetic $\text{Dyck}\_2$, max nesting depth 12, $p_{\text{open}} = 0.55$
 - Train: 10,000 samples. Val: 2,000 samples. Deep test: 500 samples (depth 5–12 only)
-- Model: $d = 64$, $L = 4$, $v_{\text{hidden}} = 128$, top-$k = 8$, mass = global
+- Model: $d = 64$, $L = 4$, $v_{\text{hidden}} = 128$, top-k = 8, mass = global
 - Training: 4000 steps, batch 32, lr $3 \times 10^{-4}$ cosine, AdamW
 - Fock-specific: $M = 16$ registers, creation gate hidden = 16, decay = 0.9, threshold = 0.1
 
@@ -263,7 +263,7 @@ The modest result suggests that at $d = 64$, $M = 16$, and 4000 steps, the gate 
 
 | Intervention | Rationale |
 |---|---|
-| **Scale up**: $d = 128$, $M = 32$, 8000 steps | More capacity per register, longer gate specialisation time |
+| **Scale up**: d = 128, M = 32, 8000 steps | More capacity per register, longer gate specialisation time |
 | **Curriculum**: start at depth 4, increase to depth 12 | Easier initial gradient signal for gate learning |
 | **Gate pre-training**: initialise creation gate to trigger on open brackets | Warm-start the stack discipline |
 | **Longer sequences**: max_length = 128, max_depth = 16 | More room for deep nesting to differentiate |
@@ -277,9 +277,9 @@ The modest result suggests that at $d = 64$, $M = 16$, and 4000 steps, the gate 
 
 ### Configuration
 
-- Corpus: Synthetic $\text{Dyck}_2$, max nesting depth 12, $p_{\text{open}} = 0.55$
+- Corpus: Synthetic $\text{Dyck}\_2$, max nesting depth 12, $p_{\text{open}} = 0.55$
 - Train: 10,000 samples. Val: 2,000 samples. Deep test: 500 samples (depth 5–12 only)
-- Model: $d = 64$, $L = 4$, $v_{\text{hidden}} = 128$, top-$k = 8$, mass = global
+- Model: $d = 64$, $L = 4$, $v_{\text{hidden}} = 128$, top-k = 8, mass = global
 - Training: 4000 steps, batch 32, lr $3 \times 10^{-4}$ cosine, AdamW
 - Fock v2–specific: $M = 16$ registers, $\lambda = 0.5$, $\tau_{\text{thresh}} = 0.005$, gated reverse channel (`reverse_channel_scale` learnable)
 - Implemented in `notebooks/conservative_arch/parf/model_fock_parf_v2.py`; three-arm notebook: `fockparf_v2_dyck2_falsifier.ipynb`
@@ -315,7 +315,7 @@ The v2 curve rises monotonically from 34.1% (step 200) to 49.01% (step 4000), st
 | Intervention | Rationale |
 |---|---|
 | **Extend training** to 8000–12000 steps | Curve still rising at step 4000 |
-| **Scale up**: $d = 128$, $M = 32$ | More capacity per register slot |
+| **Scale up**: d = 128, M = 32 | More capacity per register slot |
 | **Multi-seed** (seeds 1, 2) | Confirm ordering is stable |
 | **TinyStories integration** | Real-language validation (Phase 3) |
 
@@ -436,10 +436,10 @@ because the target is determined. (Positions where the *target* is an open
 bracket are excluded from $A(k)$ entirely; they are reported separately as
 a sanity curve and are expected near the generator's entropy for every arm.)
 
-**Collapse depth** $D^\ast$: the smallest $k$ at which $A(k) < 0.75$, the
-midpoint between chance and ceiling, provided $A(k') < 0.75$ for all
-$k' > k$ as well (so a single noisy bin cannot set it). If $A(32) \ge 0.75$,
-report $D^\ast > 32$.
+**Collapse depth** $D^\ast$: the smallest $k$ at which $A(k) \lt 0.75$, the
+midpoint between chance and ceiling, provided $A(k') \lt 0.75$ for all
+$k' \gt k$ as well (so a single noisy bin cannot set it). If $A(32) \ge 0.75$,
+report $D^\ast \gt 32$.
 
 Per-string max depth is also recorded so the May pooled metric can be
 recomputed for continuity, but it decides nothing.
@@ -453,12 +453,12 @@ $D^\ast$ against M, log–log, with the three controls as horizontal lines
 
 Stated prior: **limb (a), the built v2 is a bounded truncation.**
 
-| limb | what $D^\ast(M)$ looks like | reads as |
+| limb | what D\*(M) looks like | reads as |
 | --- | --- | --- |
-| **(a) bounded truncation** | $D^\ast$ rises with M and is bounded by it: $D^\ast(M) \le M$ at every M, with slope in $\log D^\ast/\log M$ between 0.5 and 1.0, and $D^\ast(64) \le 64$ | the pool is the memory, the cap is real, §10 must say the built model is below its middle rung |
-| **(a′) bounded, and not even tracking M** | $D^\ast$ flat in M above some small M, i.e. slope < 0.3, with C-bag ≈ the sweep | the salience ordering is not encoding recency; capacity is set by d and L, not by the pool at all — worse than (a) for the v2 story, and it would say the May "LIFO wins" result was not about the stack |
-| **(b) prefix conditioning lifts it** | $D^\ast$ **exceeds** M at small M — e.g. $D^\ast(2) \ge 8$ or $D^\ast(4) \ge 16$ | depth is being carried outside the pool, by the prefix-attending gate or by the token state; the staircase is the wrong ladder and the model must be placed on the circuit-complexity axis instead |
-| **(c) effective unboundedness** | $D^\ast > 32$ at every M including M = 2, and C-attn also $> 32$ | indistinguishable from (b) at this grid; would need the extrapolation variant and a precision sweep to separate, and the book would owe the same precision caveat it applies to Universal Transformers |
+| **(a) bounded truncation** | D\* rises with M and is bounded by it: D\*(M) ≤ M at every M, with slope in log D\* / log M between 0.5 and 1.0, and D\*(64) ≤ 64 | the pool is the memory, the cap is real, §10 must say the built model is below its middle rung |
+| **(a′) bounded, and not even tracking M** | D\* flat in M above some small M, i.e. slope < 0.3, with C-bag ≈ the sweep | the salience ordering is not encoding recency; capacity is set by d and L, not by the pool at all — worse than (a) for the v2 story, and it would say the May "LIFO wins" result was not about the stack |
+| **(b) prefix conditioning lifts it** | D\* **exceeds** M at small M — e.g. D\*(2) ≥ 8 or D\*(4) ≥ 16 | depth is being carried outside the pool, by the prefix-attending gate or by the token state; the staircase is the wrong ladder and the model must be placed on the circuit-complexity axis instead |
+| **(c) effective unboundedness** | D\* > 32 at every M including M = 2, and C-attn also > 32 | indistinguishable from (b) at this grid; would need the extrapolation variant and a precision sweep to separate, and the book would owe the same precision caveat it applies to Universal Transformers |
 
 **Point prediction, limb (a):** $D^\ast(2) \approx 2$, $D^\ast(4) \approx 3$–4,
 $D^\ast(8) \approx 5$–7, $D^\ast(16) \approx 8$–12, $D^\ast(32) \approx 12$–20,
@@ -474,9 +474,9 @@ pool is inert: the cap may be the lifetime, not the count.
 **Controls, predicted:** C-v0 $D^\ast \approx 4$–6 (the §7 band [3, 8] —
 this is the first per-depth measurement of that prediction, and it scores
 it). C-bag $\le$ C-v0 + 2. C-params $\approx D^\ast(8)$, not $D^\ast(32)$.
-C-attn $> 32$ at matched parameters, per Hewitt et al. and Yao et al.
+C-attn $\gt 32$ at matched parameters, per Hewitt et al. and Yao et al.
 
-**What refutes the prior.** Any of: $D^\ast(M) > M$ at any M; C-attn failing
+**What refutes the prior.** Any of: $D^\ast(M) \gt M$ at any M; C-attn failing
 where the sweep succeeds; C-params matching $D^\ast(32)$. Each is a clean
 result and each is more interesting than confirmation.
 
@@ -484,12 +484,12 @@ result and each is more interesting than confirmation.
 
 | confound | closed by |
 | --- | --- |
-| more slots = more parameters | C-params; and report $D^\ast$ per 10³ params as a secondary axis |
+| more slots = more parameters | C-params; and report D\* per 10³ params as a secondary axis |
 | deeper training distribution than May | all arms share one distribution; May numbers are not compared, only recomputed for continuity |
-| the gate reading depth off the prefix rather than the pool | limb (b) is a *prediction*, not a nuisance: $D^\ast > M$ is the signature, and C-v0 (no registers, same prefix access via Vφ) bounds how much the prefix alone gives |
+| the gate reading depth off the prefix rather than the pool | limb (b) is a *prediction*, not a nuisance: D\* > M is the signature, and C-v0 (no registers, same prefix access via Vφ) bounds how much the prefix alone gives |
 | sequence length capping depth | `max_length` = 128 admits depth 32 with margin; strings at depth 32 are 8.7% of the distribution |
 | chance-level inflation from open positions | close-only scoring |
-| one lucky seed | three seeds, error bars, and $D^\ast$ defined with the monotonicity guard |
+| one lucky seed | three seeds, error bars, and D\* defined with the monotonicity guard |
 | register lifetime masquerading as pool size | the decay follow-up named above |
 
 ### Harness changes required (all small, none run)
