@@ -627,6 +627,60 @@ adds a point to a curve.
 | 2026-09-25 | architecture: **L=2 `'none'`, reverse channel off** (ladder run 8, an architecture control, not a tuning run) | full 32,500 | **87.93 settled**, +31.3% vs 66.98 with the mechanism on; ratio vs GPT-2 1.765. **The inference-time ablations overstated the mechanism by 2.9x in PPL ratio, 4.9x in nats.** Clip 2.6% vs 0.0%. Ladder protocol §5.6 |
 | 2026-09-24 | depth: **L=1** `'none'` @1.2e-03 (ladder run 7, not a tuning run) | full 32,500 | **87.09 settled**, +30.0% vs L=2 at the same LR; ratio vs GPT-2 1.748. Decay gain 11.2% vs 19.3% at L=2. Clip 2.6% vs 0.0%. Static register bank (§7.3a). Ladder protocol §5.5 |
 
+## Open: are the per-group clip thresholds tuned? — **2026-09-28**
+
+Every `GRAD_CLIP_OVERRIDES` value was set from L=8/L=16 forensics
+(`depth_code` 0.5 → 0.25 on 2026-08-23 against the L=16 g0.1 OWT run; the
+rest from the step-6435 and step-71194 captures). None was revisited for the
+ladder's L=1/2/4 rungs.
+
+**Measured, not assumed:** `reverse_channel_scale` is the top pre-clip group
+on essentially every step of every arm that has a reverse channel, at a
+**median 10–20× its 0.1 threshold** — 15× at L=2 and 16× at L=4 on the only
+like-for-like window the logs share. `depth_code` is a warmup transient only,
+peaking at 2×. The `norc` arm is the one completed arm where nothing is
+meaningfully clipped.
+
+**What is NOT true:** the effect is not depth-dependent. 1.50 at L=2 against
+1.60 at L=4 is a 7% move where √L predicts 41%. So it is a *uniform* confound
+across rungs, which leaves the ladder's internal comparisons intact and says
+nothing kind about the absolute claims.
+
+**Direction of the bias, from C0:** the gate *falls* 3.5–4× over training
+(0.061 → 0.017 at L=2). So the clip, if it binds at all, has slowed a
+**shrinking** gate — meaning the unclipped model has a **weaker** reverse
+channel, not a stronger one. Any bias makes the mechanism look more important
+than it is.
+
+**Probe series and pre-registrations:**
+[`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md)
+§ "The C-series". C0 run; C1 (extend the E5 slider above λ = 1) and C2 (Adam
+realised-step audit) are free and unrun; C4 (paired 500-step run) waits for
+L=4; C5 (full re-run) only on evidence.
+
+**Checklist:**
+
+- [x] C0 — gate trajectory across checkpoints
+- [ ] C1 — `R11_LAMBDAS` extended above 1.0; pre-registered: PPL rises
+- [ ] C2 — exact param→group map, then `|m|/√v` per clip group
+- [ ] C3 — state that joint clipping of a scalar group is exactly an LR cut
+- [ ] C4 — paired 500-step run, threshold 0.1 vs 2.0
+- [ ] C5 — full re-run, only if C1 or C4 separate
+- [ ] C6 — record the watchdog's structural blindness wherever run health is claimed
+- [ ] C7 — clip-hit fraction vs the loss curve, all five arms: what the clips
+      cost in **convergence** rather than accuracy. Free, no GPU; the per-group
+      norms are already in every run log
+- [ ] Book: "Optimisation and its confounds" subsection in §16, after the
+      C-series reports (restructure plan §2b). §27's `rem:gate-clipping` is the
+      interim disclosure
+
+**Rule going forward.** A clip threshold inherited from a different depth,
+width or mechanism is an untuned hyperparameter, not a constant. When a rung
+changes any of those, either re-derive the threshold or record that it was
+carried over unchanged and why.
+
+---
+
 **Forecast record**, kept because the two failures were systematic and point
 in *opposite* directions:
 
