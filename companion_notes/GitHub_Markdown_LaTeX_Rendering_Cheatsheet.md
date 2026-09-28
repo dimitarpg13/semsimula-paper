@@ -10,7 +10,7 @@ A reference for writing LaTeX math **and** Mermaid diagrams in Markdown files th
 
 The cheatsheet has two parts:
 
-- **Part I — KaTeX math rendering** (rules §1–§13, §19, §25–§27): inline `$...$` and display `$$...$$` math.
+- **Part I — KaTeX math rendering** (rules §1–§13, §19, §25–§27): inline math and display `$$...$$` math. Inline is `$...$` on GitHub but **must** be `\\( ... \\)` on Hugging Face — see §5b before writing a model card.
 - **Part II — Mermaid diagram rendering** (rules §14–§18, §20–§24): ` ```mermaid ` fenced blocks.
 
 ---
@@ -155,6 +155,51 @@ $$
 ```
 
 **Rule:** never use a bare `*` inside `$...$` or `$$...$$` math (common in optimality notation like `R^*`, `w^*`, `\theta^*`, or swept-value notation like `\gamma^*`). Always write `\ast` (or `\star` if the five-pointed-star glyph is intended instead of the asterisk glyph). This is safe even when only one `*` appears in the whole document, but it is *mandatory* whenever the same starred symbol is reused more than once, since a single unpaired `*` will happily pair with any other lone `*` anywhere later in the rendered page.
+
+---
+
+## 5b. Hugging Face model cards do not render `$...$` inline math — use `\\( ... \\)`
+
+GitHub renders inline math written as `$x$`. **Hugging Face does not.** On a
+model card the single-dollar delimiters are not recognised at all: the card
+prints the dollar signs and the LaTeX source verbatim, in body text. Display
+math `$$...$$` renders on both, which is what makes this hard to spot — an
+equation block above a paragraph renders perfectly while every inline span in
+the paragraph beneath it comes out as source.
+
+**Symptom:** a paragraph reads `$V_\theta$ is the pointwise scalar potential,
+$V_\phi$ the pairwise one` in the rendered page, dollar signs and all, with
+the `$$...$$` equation directly above it rendered correctly.
+
+**This is not rule 5 or rule 12.** Those describe the Markdown emphasis pass
+mangling underscores, and they leave the delimiters consumed and the *math*
+broken. Here the delimiters themselves survive into the output, and spans
+with no underscore at all — `$h$` — fail identically. Underscore count is
+irrelevant; the delimiter is the whole story.
+
+```markdown
+<!-- Bad: renders verbatim on Hugging Face -->
+$V_\theta$ is the pointwise scalar potential and $h$ the token state.
+
+<!-- Good: renders on Hugging Face and on GitHub -->
+\\(V_\theta\\) is the pointwise scalar potential and \\(h\\) the token state.
+```
+
+Note the **doubled** backslash. The Markdown escape pass consumes one, so
+`\\(` in the source reaches KaTeX as `\(`. A single `\(` is eaten and the
+math disappears.
+
+**Rule:** in any file destined for a Hugging Face model card or collection,
+write inline math as `\\( ... \\)` and reserve `$$ ... $$` for display
+blocks. Never use `$...$`. `\\( ... \\)` is also accepted by GitHub, so a
+document that must render in both places should use it throughout.
+
+**Confirmed in the wild.** The gamma-sweep cards (118 inline spans, all
+`\\( ... \\)`) have always rendered correctly. The ladder cards shipped
+2026-09-27 with eight `$...$` spans per card and every one printed as source;
+converting the delimiters, changing nothing else, fixed all five.
+`_ladder/build_cards.py` now refuses to write a card containing single-`$`
+inline math, so the generator cannot regress.
 
 ---
 

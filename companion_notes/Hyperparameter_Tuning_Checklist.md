@@ -638,6 +638,7 @@ in *opposite* directions:
 | L=2 `'attention_potential'` @1.2e-03 | **66, band 62-72** (revised from 75-82) | **80.90** | **MISS +22.6% — and the superseded band would have HIT.** The revision repaired a genuinely wrong mechanism claim, then adjusted the old number instead of re-deriving from the corrected reasoning, and moved toward an expected ordering. See the rule below |
 | L=2 `'attention'` @1.2e-03 | **63, band 59-68** | **63.51** | **HIT, point-accurate** — error +0.51 (+0.8%). Built from `'none'`'s measured 10.8% LR transfer, discounted for the extra parameters, with "is 1.2e-03 past this arm's optimum?" named as the turnable quantity. It partly was: the arm gained 7.1%, which is the discount the band was widened for |
 | L=2 no reverse channel | **105, band 85-140** | **87.93** | **BAND HIT** — the first. Point high by 16%, landing 3% above the lower edge. The named turnable quantity (V_phi's share once uncontested) was recorded as pointing to "the low end or below", and did |
+| F1 per-token forcing, L=2 `'none'` (a distribution, not a PPL) | **>80% of tokens above 0.75, <5% below 0.25, bimodality <0.6** | **100.0% / 0.0% / 0.515** | **HIT on all three**. Built from two measurements on sibling arms: E1's average deflection of 1.09 on this arm, and the exchange arm's own F1 reading of UNIFORM. Interpolation between measured neighbours again, not extrapolation |
 
 **The `attention_potential` row adds a rule the others do not cover.** When
 a pre-registered band is revised because its stated reasoning was wrong,
@@ -650,14 +651,17 @@ can support a correct prediction. The revision also moved the band toward
 an ordering that had been suggested as expected and away from the answer,
 which is the shape of anchoring and worth naming.
 
-The two hit rows share a different method:
+The three hit rows share a different method:
 each named, in advance, a specific measurable quantity whose direction
 would move the answer, and each was built from a *measured transfer* rather
 than an extrapolated trend. The fifth row is the stronger case — a point
 estimate accurate to 0.8% — because the quantity it named (the arm's LR
 transfer) had already been measured on a sibling arm, so the forecast was
-an interpolation, not an extrapolation. **Naming the lever, and anchoring
-on a measurement rather than a trend, is what the three misses lacked.**
+an interpolation, not an extrapolation. The F1 row is the same shape in a
+different currency: a distribution rather than a perplexity, bracketed by two
+neighbouring arms that had already been measured. **Naming the lever, and
+anchoring on a measurement rather than a trend, is what the three misses
+lacked.**
 
 The first pair is the lesson (the third row is the same lesson from a third
 angle: a saturation was assumed that did not occur). The first set

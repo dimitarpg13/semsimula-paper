@@ -274,6 +274,34 @@ Consequence for §2: the driven-system picture is confirmed and, at layer
 The thesis wording still waits for F1, which asks whether this holds for
 every token.
 
+**Re-run 2026-09-27, and the open item in point 2 is now closed.** The cell
+was re-run on the same checkpoint to file a log that had never been saved.
+Every λ point reproduces, and the version that ran carries two readings the
+first one did not.
+
+The **pre-LN increment-to-state ratio**, the quantity point 2 deferred, is
+**1.408 at layer 0 and 1.195 at layer 1**. Both exceed 1. The reverse-channel
+increment is larger than the state it is added to, at *both* layers, so the
+sum points essentially where the increment points and LayerNorm then fixes the
+length. Point 2 restricted "replaces the state" to layer 1 on the evidence of
+the λ-invariance of R_geo; the ratio says the overwriting is happening at
+layer 0 as well, and what distinguishes layer 1 is only that the geodesic
+component never shows through. Read the two together: at layer 0 the increment
+dominates but the underlying step still varies with λ, at layer 1 it does not.
+
+The **Vφ sweep now reports both directions**. Relative to λ = 1, |Δφ| at layer
+0 rises to at most 1.61× and never falls; at layer 1 it **falls to 0.09×**, a
+factor of eleven, before recovering slightly at λ = 0. Point 3's "does not
+grow anywhere" survives, since neither layer doubles. But the layer-1 collapse
+is the more informative half and the first version of the cell could not see
+it: it checked increases only. What it means is that Vφ's *apparent* size at
+layer 1 under normal operation is mostly the reverse channel modulating it,
+not Vφ's own force, which is the 4.25% in point 3.
+
+![The measured slider: PPL against λ with no knee, R_geo pinned near 1 at
+layer 1 until λ &lt; 0.2, and Vφ's elevenfold collapse at layer
+1](figures/geodesic_cfc/gcfc_e5_slider_measured.png)
+
 ### 3.1 F1 — is the forcing sparse? (Cell 6b-12, built, harness-validated)
 
 **Question.** E1's R(geo) = 1.09 is an RMS ratio averaged over tokens. Is
@@ -429,8 +457,46 @@ essentially nothing to either: it is the 0.0002.
   is checked first, since the SPARSE/UNIFORM criteria were written for
   forced arms only.
 
-**Still open:** the `'none'` arm — one flag away, and the only ladder arm
-without a per-token distribution.
+### Fourth arm — **the `'none'` arm, run 2026-09-27**: the band was pre-registered and met
+
+The last arm without a per-token distribution. The band was recorded before
+the run: above 80% of tokens over 0.75, under 5% below 0.25, bimodality under
+0.6. Measured at the clean layer: **100.0%** over 0.75, **0.0%** below 0.25,
+bimodality **0.515**. **Prediction met on all three.**
+
+| arm at layer 1 | RMS | q05 | q50 | q95 | > 0.75 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| conservative + LN vs the full step | 1.048 | 0.955 | 1.029 | 1.191 | **100.0%** |
+| Vθ geodesic + LN | 1.047 | 0.955 | 1.028 | 1.191 | 100.0% |
+| bare Vθ geodesic | 1.289 | 1.139 | 1.267 | 1.493 | 100.0% |
+
+**The distribution is tight, not merely shifted.** The interquartile range is
+[0.99, 1.08] around a median of 1.03. Every token is displaced by about as far
+as the step itself is long, and they are displaced by nearly the same amount.
+Compare the conservative arm, where every token sits at 0.000, and the
+exchange arm, where the median is 0.88 with a wider spread. Across the four
+arms the reading is the same: forcing is uniform where it exists at all.
+
+![Per-token deflection on the `'none'` arm: one tight spike at R = 1, no
+near-geodesic population, and the correlate panel whose apparent trend is
+mostly step size](figures/forced_lagrangian/f1_per_token_none_arm.png)
+
+**Vφ is invisible again, now per token.** Dropping Vφ from the arm moves the
+whole distribution by 0.001 in RMS and leaves every quantile unchanged to
+three decimals. The two top rows of that table are the same curve.
+
+**The correlate panel is the one thing in this figure to distrust.** Raw
+Spearman says semantic mass tracks deflection at +0.437, which looks like a
+real mechanism. Controlling for step size it falls to **+0.081**. Step size
+itself correlates at **−0.833**, and the quintile means in the right-hand
+panel of the figure run over a range of 0.99 to 1.08, a span of nine percent
+drawn across the full height of the axis. The eye reads a strong effect where
+the partial correlation says there is almost none. This is exactly why the
+partial columns were added after the exchange arm, where the same confound
+reads −0.936.
+
+**Still open:** nothing on F1. All four L=2 arms now have a per-token
+distribution.
 
 **Harness (2026-09-25).** Random-init toy at the live configuration:
 gate 0 passes at $0.000\mathrm{e}{+00}$; all quantities compute; the

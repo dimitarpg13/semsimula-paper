@@ -925,6 +925,58 @@ embedding, not a velocity along a curve. The E3 question is open, and it is
 an L ≥ 3 question. The one clean cross-model number, (c) at
 $\epsilon = 10^{-2}$, is a null.
 
+#### Re-run **2026-09-27** with the corrected cell — one verdict changes
+
+The cell was re-run on the same two checkpoints to file a log that had never
+been saved. It now runs in true fp32 and sweeps the three usable $\epsilon$
+values, and it reports tangential coherence alongside the raw figure. Loads
+verified identically (Fock 68.69, GPT-2 47.42 on the same batches). What the
+better instrument shows:
+
+| metric | Fock L=2 | GPT-2 L=8 | pre-registered | verdict now |
+| --- | ---: | ---: | --- | --- |
+| (a) coherence, **tangential**, ℓ ≥ 1 | **−0.178** | **+0.195** | Fock higher | **refuted**, not invalid |
+| (a) coherence, raw, ℓ ≥ 1 | −0.566 | +0.168 | | geometry, as established |
+| (b) forecast error, finite-difference | 1.013 | 1.314 | Fock lower | met on its face, meaningless |
+| (c) growth per step, ε = 1e-2 | 0.963 | 0.979 | Fock at or below | met |
+| (c) growth per step, ε = 3e-2 | 0.954 | 0.980 | Fock at or below | met |
+| (c) growth per step, ε = 1e-1 | 0.942 | 0.982 | Fock at or below | met |
+
+**(a) moves from "invalid" to "refuted", which is worse for the thesis.**
+§6.8 above could only say the raw −0.566 was contaminated by the sphere, with
+the radial fraction of $s_0$ measured at 0.84. Projecting both steps onto the
+tangent plane removes that term, and what is left is still **negative**
+(−0.178) while GPT-2's tangential coherence is **positive** (+0.195). So the
+prediction "Fock higher" fails on the clean quantity, not merely on the
+contaminated one. The structural caveat stands — at L=2 the tangential
+remainder of $s_0$ is a noisy residue of the embedding rather than a
+dynamical step — but the honest present reading is a refutation awaiting
+L ≥ 3, not an unmeasurable.
+
+**(b) is still not a win.** 1.013 against 1.314 satisfies "Fock lower" as
+written, but 1.0 *is* the null: it means the velocity forecasts no better
+than "stay put". Fock sits on the null; GPT-2 sits partway between the null
+and the 1.414 finite-difference null for unrelated steps. Neither forecasts.
+The pre-registration should have named a threshold below 1, and that is a
+lesson for the L ≥ 3 re-run rather than a result here.
+
+**(c) is the one metric that now separates the models, mildly.** Across all
+three perturbation sizes Fock is the more contractive per step, and the gap
+widens as $\epsilon$ grows: 0.963/0.979, then 0.954/0.980, then 0.942/0.982.
+GPT-2's reading is flat to within 0.003 across a tenfold change in
+$\epsilon$, which is what a clean linear regime looks like. **Fock's drifts
+by 0.021 over the same range**, so Fock's own linearity check is the one that
+is soft, and part of its extra contraction is a nonlinearity of the
+perturbation rather than a property of the linearised flow. The claim the
+data supports is narrow: at the trained step the Fock layer contracts small
+displacements slightly more than a transformer block does, measured per step
+and never compounded across unequal depths.
+
+**The verdict does not change.** No forecast advantage at L=2, and E3 stays
+an L ≥ 3 question. What changes is the reason: (a) is now a measured failure
+rather than an unmeasurable, and (c) is a small measured difference rather
+than a null.
+
 ### 6.7 A complementary one-line addition to E1
 
 E1's arms remove the *deflections*. The mirror arm — zero $V_\theta$'s
@@ -1003,10 +1055,10 @@ written that way is exact for the scheme it is measuring.
 | Gate 0–3, `'attention_potential'` arm | 6b-7 | **run 2026-09-27** | **refines like `'none'`** (6.46x vs 6.35x) despite the extra mechanism — confirms brittleness tracks non-conservative content, not capacity; inertia +22.6%; flow/maps §8.4 |
 | Gate 0–3, `'attention'` arm | 6b-7 | **run 2026-09-26** | refinement fails hardest of the three (31.0x); inertia +27.2%; flow/maps §8.3 |
 | E2 decomposed refinement | — | designed, §5 | — |
-| E3 forecastability vs matched GPT-2 | **6b-10** | **run 2026-09-25** at L=2; cell revised (tangential coherence, fp32, ε grid); needs L ≥ 3 | null at L=2; (a),(b) contaminated by the sphere; §6.8 |
+| E3 forecastability vs matched GPT-2 | **6b-10** | **run 2026-09-25**, **re-run 2026-09-27** with the revised cell; needs L ≥ 3 | null at L=2 stands. With tangential coherence the (a) prediction is **refuted**, not merely invalid (−0.178 vs GPT-2 +0.195); (c) clean at three ε, Fock mildly more contractive per step (0.963/0.954/0.942 vs 0.979/0.980/0.982) with a soft linearity check of its own; §6.8 |
 | E4 LN as constraint | via E1, E2 | analysis, §7 | — |
-| E5 reverse-channel slider | **6b-11** | **run 2026-09-25** | **PPL 69.5 → 271.8 (3.91×), no knee**; layer-1 direction set by the reverse channel down to λ ≈ 0.3; V_φ direct 6% / 0.5% of the step, no recovery; §11.6 |
-| F1 per-token forcing distribution | **6b-12** | **built 2026-09-25**, harness-validated, not yet run | — ; designed in [`Forced_Lagrangian_Reformulation.md`](Forced_Lagrangian_Reformulation.md) §3.1 |
+| E5 reverse-channel slider | **6b-11** | **run 2026-09-25**, **re-run 2026-09-27** (log filed, three λ points added) | **PPL 69.5 → 271.8 (3.91×), no knee**; layer-1 direction set by the reverse channel down to λ ≈ 0.3; V_φ direct 6% / 0.5% of the step, no recovery. Re-run closes the deferred reading: **pre-LN increment/state = 1.408 (l0), 1.195 (l1)** — the increment outweighs the state at *both* layers; V_φ 1.61× up at l0, **0.09× down at l1**; §11.6 |
+| **F1 per-token forcing, `'none'`** | **6b-12** | **run 2026-09-27** | **UNIFORM**, pre-registered band met on all three criteria: 100.0% of tokens above 0.75, 0.0% below 0.25, bimodality 0.515, IQR [0.99, 1.08]. V_φ moves the distribution by 0.001 RMS. All four L=2 arms now have a per-token reading; reformulation §3.1 |
 
 ---
 
@@ -1223,3 +1275,38 @@ step, and the radial term with it.
 3.9× in PPL with no free region; the reverse channel is the mechanism,
 not a correction to one; at layer 1 it sets the output direction outright.
 F1 now asks whether that is true of every token or of a forced minority.
+
+#### Re-run **2026-09-27** — the deferred ratio, and three λ points that were missing
+
+Re-run on the same checkpoint to file a log. Every shared λ point reproduces
+to the digit, and the sweep now includes λ = 0.8, 0.6 and 0.4, which fills
+the gap where the PPL curve bends: 77.78, 100.80 and 144.09. λ* = 0.90 and
+the 3.91× ratio are unchanged.
+
+**The pre-LN increment-to-state ratio, deferred above, is 1.408 at layer 0
+and 1.195 at layer 1.** Both above 1, so at *both* layers the reverse-channel
+increment is larger than the state it is added to. The paragraph above
+restricted "replaces rather than forces" to layer 1, on the evidence that
+R_geo at layer 1 is λ-invariant down to 0.3. The ratio shows the overwriting
+is not confined to layer 1; what is special about layer 1 is that no geodesic
+component survives it. At layer 0 the increment also dominates in norm, yet
+R_geo there falls smoothly with λ, so the underlying geodesic step is still
+visible through the sum.
+
+**The Vφ verdict now reads both directions, as it should have.** Relative to
+λ = 1: layer 0 rises to at most **1.61×**, layer 1 falls to **0.09×**. The
+first number is a slightly larger rise than the 1.11× quoted above, because
+the finer λ grid catches the layer-0 maximum between the old points; the
+second is the 9× fall, now in the log rather than in a correction. The
+conclusion is unchanged and better supported: no recovery in either
+direction, and Vφ's apparent layer-1 size under normal operation is mostly
+the reverse channel modulating it.
+
+![The measured slider](figures/geodesic_cfc/gcfc_e5_slider_measured.png)
+
+The figure is the sweep as run. Left, PPL against λ, log scale, with λ* and
+the 5% band marked: convex everywhere, no shoulder. Middle, R_geo per layer
+against λ, which is the λ-invariance argument in one line, layer 1 flat near
+1.03 until λ &lt; 0.2 and then collapsing while layer 0 falls smoothly from
+the start. Right, Vφ's per-token |Δφ| on a log axis, where the layer-1
+collapse and the layer-0 rise are the two curves crossing.

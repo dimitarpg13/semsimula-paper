@@ -445,7 +445,10 @@ Checkpoint `..._L2probe_..._idt4_lr0p0012_noattn_best.pt`, step 31,500,
 12 fixed batches x 4 x 512 = 24,576 tokens per point.
 
 **Gate 0 — PASS, bit-exact.** Unpatched 68.6531, patched (N=L, `hold`)
-68.6531, `|d loss| = 0.00e+00`. Worth recording that the *first* draft of
+68.6531, `|d loss| = 0.00e+00`. *(Re-run 2026-09-27 to file a log that had
+never been saved: every number in this section reproduces to the digit, from
+the 68.6531 gate to the 435.61 at N=8. The arm is deterministic under the
+probe, which is worth knowing before any of these figures reach the book.)* Worth recording that the *first* draft of
 the cell would have failed this gate: it patched `_layer_step_ex` into the
 loop rather than `_fock_layer_step`, silently dropping the registers, the
 reverse channel and one LayerNorm — roughly the +275% register path of

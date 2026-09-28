@@ -174,10 +174,10 @@ executes, so it must be written and tested before it lands.
       `REVERSE_CHANNEL = True`, `RELAX_GATE = 'scalar'`,
       `RELAX_INIT_SCALE = 0.02`, `PROBE_MAX_STEPS = None`
 - [ ] Confirm the tag carries `L4probe` and Cell 2 trains from scratch
-- [ ] Pre-register the settled PPL **before launch**, naming the quantity
-      that could turn it — no band has yet been recorded for L=4 (§5.3 says
-      "no strong prior; this is the point of running it", which is no
-      longer good enough now that four arms are measured)
+- [x] Pre-register the settled PPL **before launch**, naming the quantity
+      that could turn it — **done 2026-09-27**, band below. §5.3's "no strong
+      prior; this is the point of running it" is superseded now that four
+      arms are measured
 - [ ] Record the clip-hit rate: §6 requires it from L=4 onward
 - [ ] Run ~27h
 - [ ] Probes afterwards: 6b-7, **6b-9** (three clean layers for the first
@@ -185,6 +185,38 @@ executes, so it must be written and tested before it lands.
       measurable), 6b-12
 - [ ] File to `results/`, write §5.9, score the forecast, update the HF
       card and `ladder.json`
+
+#### Pre-registration for run 4 — recorded **2026-09-27, before launch**
+
+Drafted by Claude; overrule before starting if you read it differently.
+
+**Point 59, band 55–65 settled.**
+
+Built from the one measured transfer available, and discounted for why that
+transfer overstates: L=1 → L=2 at this learning rate gave 87.09 → 66.98, a
+23.1% improvement. **That number is contaminated and must not be applied
+again as-is.** At L=1 the register bank is read but never updated (§6.1), so
+part of the L=1 → L=2 gain was a mechanism switching on, not depth. From L=2
+to L=4 the mechanism is live at both ends, so the depth-only component is
+what remains. Halving the contaminated gain gives 66.98 × 0.88 ≈ 59; the band
+spans 0.82 (55) to 0.97 (65).
+
+**The quantity that could turn it: the timestep, not the depth.** `LADDER_T`
+is held at 8, so L=4 means dt = 2 and ω·Δt halves. Gate 3 has already shown
+the stack is fitted to its own dt — re-running the *trained* L=2 model at
+N=4, dt=2 gave 236.62 against 68.65. Training at dt=2 is not that experiment,
+but it is the same warning: this rung changes the operating point as well as
+the depth, and the two cannot be separated within this run.
+
+**What would show it turning.** Clip-hit rate against L=2's 0.0%, and
+`bproj_sig`. If clipping appears where L=2 had none, the smaller timestep is
+binding and the settled value should be read as an operating-point result,
+not a depth result. §6 requires the clip-hit rate from this rung onward for
+exactly this reason.
+
+**If it lands above 66.98** — worse than L=2 — the honest reading is that
+matched-T depth scaling has turned, and the next rung should hold dt fixed
+and let T grow instead, which is a different ladder.
 
 **Caveat to state when it lands:** at fixed `LADDER_T = 8`, L=4 means
 dt = 2, so ω·Δt halves. That is a different operating point, not only more
@@ -1181,6 +1213,18 @@ plus three scalars on every Fock arm, and +2,097,152 on GPT-2 (eight
 
 ### 7.2 The four gaps
 
+> **CLOSED 2026-09-27.** Gaps 1 and 2 below were filled in one session of the
+> shape §7.2a describes. Five logs now sit in that arm's `results/`
+> (6b-7, 6b-9, 6b-10, 6b-11, 6b-12) plus the two figures in `checkpoints/`.
+> Every header reads `step 31500  ppl 66.56  missing 0  unexpected 0`. 6b-7
+> and 6b-9 reproduce their recorded numbers exactly (Gate 1 +50.5%, Gate 3
+> 435.61 at N=8, R(geo) = 1.0855). 6b-10 and 6b-11 produced the better
+> readings §7.2a predicted they would, and one recorded verdict changed as a
+> result: E3's coherence metric moves from "invalid at L=2" to **refuted**
+> (geodesic notes §6.8). 6b-12 was a first run and **met its pre-registered
+> band on all three criteria**. Gaps 3 and 4 stand. The text below is kept as
+> written, since it is what the audit found.
+
 1. **The `none` arm ships no probe logs.** 6b-7 and 6b-9 were run on it
    (R(geo) = 1.09, gates 4.32×/6.35×, recorded in
    `Geodesic_Experiments_with_CfC_BAOAB.md` §4.7 and
@@ -1327,6 +1371,81 @@ size is **-0.936**, so every other correlate in that log is read through a
 confound the current cell removes. Making all four arms comparable under one
 cell version costs two more sessions of the same shape, about 25 minutes each,
 because Cell 0 defines the architecture and each arm needs its own build.
+
+### 7.3a Uploaded — **2026-09-27**
+
+Done, public, five repos plus the collection.
+
+| repo (under `dimitarpg13/`) | files | contents |
+| --- | ---: | --- |
+| `semsimula-ladder-owt-d384-l2-gpt2-matched` | 9 | 2 checkpoints, 4 results, 1 notebook |
+| `semsimula-ladder-owt-d384-l2-attention` | 26 | 2 checkpoints, 6 results, 16 code |
+| `semsimula-ladder-owt-d384-l2-attention-potential` | 26 | as above |
+| `semsimula-ladder-owt-d384-l2-none` | 28 | 2 checkpoints, 8 results, 16 code |
+| `semsimula-ladder-owt-d384-l2-none-norc` | 27 | 2 checkpoints, 7 results, 16 code |
+
+Collection: **Semantic Simulation — CfC+BAOAB Mechanism Ladder**, six items,
+the Verlet-instability repo first as the prologue. Both URL forms resolve,
+and the book uses the suffix-free one to match the existing family link:
+`https://huggingface.co/collections/dimitarpg13/semantic-simulation-cfcbaoab-mechanism-ladder`
+
+**Code shipped, and why that subset.** The SPLM family's precedent is that a
+repo carries the model source it was trained with, so nobody has to guess
+which revision the weights belong to. These repos do that and add the
+notebook, because an arm here is defined by Cell 0 knobs rather than by a
+script. The Python set is the *transitive import closure* of what the
+notebook imports, computed by walking the ASTs rather than chosen by hand:
+12 modules plus `data_module.py`, `parf/__init__.py` and
+`parf/test_cfc_baoab.py`, which Cell 4 runs as a gate. Layout under `code/`
+mirrors the repository so the notebook's own `sys.path` lines resolve
+unchanged. The GPT-2 arm ships one notebook and nothing else, because it
+defines its model in Cell 3 and imports nothing from the repository.
+
+**Three Hub limits found the hard way**, recorded so the next collection does
+not rediscover them: a collection description is capped at 150 characters, an
+item note at 500, and the collection slug gets a 24-hex suffix appended to a
+slugified title (`CfC+BAOAB` becomes `cfcbaoab`, the em dash is dropped). The
+suffix-free URL redirects, which is why guessing the slug in advance would
+have half-worked and been fragile.
+
+**Verified after upload**, not merely reported by the uploader: every repo is
+public with the expected file count, no `*.published.*` name and no
+`_DO_NOT_PUBLISH_*` file leaked, and the flagship checkpoint was downloaded
+back from the Hub, loaded, and confirmed at step 31,500, PPL 66.56, 98
+tensors, no optimizer state.
+
+Gaps 3 and 4 of §7.2 were handled on the cards rather than in the data: the
+GPT-2 card now carries its own caveat block naming both the stale `fock_*`
+fields and the step-25,000 asymmetry, and `NOTE_summary_json_fock_fields.md`
+ships beside the summary it corrects.
+
+### 7.3b The "Verlet-era" label is too narrow — **2026-09-27**
+
+Checking whether the SPLM Model Family collection should be marked as
+Verlet-based turned up that it is not. Integrator declared by each of its
+fifteen items:
+
+| integrator | items |
+| --- | ---: |
+| `semi_implicit_euler` (config) plus the three gamma sweeps, whose READMEs document a damped Euler step `v += dt*f/m; v /= (1 + dt*gamma); h += dt*v` | 13 |
+| `first_order_gradient_flow` (the Fock-G1 ablation — no velocity at all) | 1 |
+| `verlet` (the instability repo, which is also item 0 of the ladder collection) | 1 |
+
+So **fourteen of fifteen published models in that family are not Verlet.**
+What the family actually shares is being *pre-CfC*: explicit integrators,
+one force evaluation per step, chosen before the closed-form propagator
+existed. Its description now says so and its title is unchanged, because the
+title generates the slug and paper v6 cites the suffix-free form of it.
+
+**This reaches further than the collection.** This programme has been saying
+"Verlet-era" for the whole pre-CfC period, here and in the scoping remarks
+added to paper v6 §8 and §27 (`rem:riemannian-verlet-scope`,
+`rem:gamma-eff-scope`). On the published evidence that phrase is too narrow:
+the geodesic-residual work whose conclusions those remarks scope was done on
+damped-Euler runs, and only the instability that ended the era was Verlet.
+The remarks are not *wrong* — a damped explicit step has the same defect the
+calibration exposed — but they name the wrong integrator. **Unreviewed; no
+text has been changed.** Check before the Verlet containment pass of §2a.
 
 ### 7.3 Upload shape
 
