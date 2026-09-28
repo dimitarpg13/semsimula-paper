@@ -172,6 +172,13 @@ Hewitt et al. (2020) and Yao et al. (2021) established that tiny transformers an
 | Models (matched params + compute) | (a) v0 simulator; (b) tiny transformer (1-block); (c) tiny LSTM (1-layer) |
 | Score              | Per-position accuracy as a function of $D$                                |
 
+> **2026-09-28.** The per-depth protocol in this section has never been run as
+> written: the May-2026 Dyck runs pooled depths 5–12 and scored all positions,
+> not closing types (see `Augmenting_PARFLM_to_handle_MCS_Languages.md`,
+> Phase 1b, "Why the May runs cannot answer it"). Phase 1b is the first
+> experiment that measures $D^\ast$ as this section defines it, for v0 (its
+> C-v0 control) and for the register-pool model across M.
+
 ### Predicted outcome
 
 Concretely, the falsifiable table:

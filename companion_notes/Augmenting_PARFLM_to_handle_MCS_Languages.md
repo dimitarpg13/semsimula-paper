@@ -2,6 +2,8 @@
 
 ## Status
 
+**Reopened 2026-09-28** — Phase 1b (register-count sweep) designed and pre-registered below; unrun. Prior: the built v2 is a bounded truncation of the formalism. May-2026 status follows.
+
 **Active** — May 2026. PARFLM P10 ladder completed (architectural ceiling confirmed at val PPL ≈ 26.4). FockPARFLM v2 (Q/K/V + gated reverse channel) F2 seed 0 complete: **best deep-test acc 49.01%**, val PPL 2.856 — +5.37 pp over PARFLM baseline, +3.89 pp over v1 mean-gate. Next: extended training (8000 steps) and/or scale-up; then TinyStories (Phase 3).
 
 ## Motivation
@@ -318,6 +320,220 @@ The v2 curve rises monotonically from 34.1% (step 200) to 49.01% (step 4000), st
 | **TinyStories integration** | Real-language validation (Phase 3) |
 
 **Decision**: Run extended training (8000 steps) with the current config as the cheapest next signal. If the curve crosses 55%, proceed to scale-up.
+
+## Phase 1b — the register-count sweep: is the built v2 a bounded truncation? — **designed 2026-09-28, pre-registered, unrun**
+
+### Why this experiment exists
+
+§10 of paper v6 defines v2 by *unbounded* particle cardinality: "the
+state-space dimension grows linearly with depth, lifting from regular to
+deterministic context-free." Fock-PARFLM v2.1 has `n_registers` = M fixed at
+construction, with slots recycled. If M is a hard cap on usable memory, the
+built model is a **bounded truncation** of the formalism and sits *below*
+§10's middle rung, not on it — and the book's expressivity claims are about a
+system nobody has built. That is the stated prior of this programme as of
+2026-09-28 (limb (a) in `Paper_v6_Section_Audit.md`, §10 entry). This
+experiment is designed so that prior can be **refuted**, not merely confirmed.
+
+### Why the May 2026 runs (Phase 1 and F2 above) cannot answer it
+
+Four defects, each fatal on its own for this question:
+
+1. **No per-depth curve.** Deep-test accuracy was pooled over depths 5–12.
+   The theory's own protocol (`Expressivity_Bounds_For_v0_Simulator.md` §6)
+   calls for accuracy *as a function of* D on a grid {1, 2, 4, 8, 16, 32}.
+   A collapse depth cannot be read off a pooled number.
+2. **The wrong positions were scored.** `evaluate_dyck_accuracy` scores
+   next-token accuracy at *every* valid position. At open positions the
+   generator's next token is a stochastic choice (open-vs-close with
+   `p_open`, type uniform), so those positions have a ceiling far below 1
+   that depends on `p_open` and n, not on expressivity. The theory protocol
+   scores **closing-bracket type only**, where the target is fully determined
+   by the stack and chance is exactly 1/n. The May 43–49% figures mix the two
+   and are not comparable to the pre-registered 90% criterion.
+3. **Single M, single seed.** M = 16 throughout; nothing varied the quantity
+   under test.
+4. **The generator cannot produce the deep grid.** At the May settings
+   (`p_open` = 0.55, `max_length` = 64) strings of depth ≥ 16 are 2.8% of
+   samples and depth ≥ 24 do not occur. Measured 2026-09-28 on 20,000 draws.
+
+### The mechanism as built — what the sweep is actually testing
+
+`FockMultiXiPARFLM._active_mask` (v2.1, `model_fock_parf_multixi.py`):
+
+```python
+sorted_sal, sort_idx = salience.sort(dim=-1, descending=True)
+sorted_above = sorted_sal > cfg.register_salience_threshold
+sorted_active = torch.cumprod(sorted_above.float(), dim=-1).bool()
+```
+
+with `salience = salience * decay + alpha_max * (1 - decay)` per layer.
+**There is no push and no pop.** "LIFO" means salience-ordered contiguous
+activation; a register's rank is set by how strongly the creation gate has
+recently attended to it, not by when it was created. A close bracket cannot
+deterministically retire the most recent register. Two consequences the
+predictions below rely on:
+
+- M is a hard cap on *simultaneously active* registers, so it bounds the
+  representable stack depth from above **regardless** of how the gate learns.
+- Whether depth capacity tracks M at all depends on the gate learning a
+  recency-encoding salience pattern that nothing in the architecture
+  enforces. That is the part the sweep measures.
+
+### Factors and arms
+
+| factor | levels | role |
+| --- | --- | --- |
+| **M** (`n_registers`) | 2, 4, 8, 16, 32, 64 | the quantity under test |
+| model class | `FockMultiXiPARFLM` (v2.1, `mass_mode='global'`, default `ScalarPotentialMultiXi` Vθ) | the class the ladder trains; **not** the older v2 class of the May runs |
+| seeds | 0, 1, 2 | every cell |
+
+Held fixed across all M: d = 64, L = 4, `v_hidden` = 64, `v_depth` = 2,
+`top_k` = 8, `d_k` = 32, `creation_gate_hidden` = 32, salience decay 0.5,
+threshold 0.005, `stack_discipline=True`, `prefix_causal_registers=True`,
+reverse channel on with its default warmup, 4,000 steps, batch 64, lr
+3e-4 cosine, AdamW wd 0.01 — i.e. the F2-fock-v2 recipe above, ported to
+v2.1, so that M = 16 reproduces a known anchor.
+
+Controls, each at 3 seeds:
+
+| arm | what it removes | what it separates |
+| --- | --- | --- |
+| **C-bag**, M = 16, `stack_discipline=False` | the salience ordering | whether ordering, not pool size, carries any depth capacity (May: bag ≈ baseline) |
+| **C-v0**, `SparsePARFLM`, no registers | the register pool | the v0 floor; its collapse depth is §7's D* ≈ 4–6 prediction, never yet measured per depth |
+| **C-params**, M = 8 with `d_k` = 128 | — | matches the *parameter count* of M = 32 without adding slots; separates "more slots" from "more parameters" |
+| **C-attn**, matched tiny transformer (`matched_baseline_model.py`, ≈ same params as M = 16) | everything | the §10 comparator that "succeeds to arbitrary depth"; the row the May plan wrote down and never ran |
+
+**Parameter confound, quantified.** v2.1 at d = 64, L = 4 (measured
+2026-09-28): M = 4 → 123,326 params; 8 → 124,622; 16 → 127,214; 32 →
+132,398; 64 → 142,766. The register machinery grows ≈ 324 params per slot
+(`W_Q`, per-register `W_K`, embeddings). From M = 4 to 64 the total grows
+15.8%. C-params exists to show the effect tracks slots, not that 15.8%.
+
+### Data
+
+Train and validation from one distribution for **every** arm, so no arm
+sees deeper strings than another: `DyckConfig(n_types=2, max_depth=32,
+min_length=8, max_length=128, p_open=0.65)`. Measured depth distribution
+of that generator (20,000 draws): 1–3: 3.2%, 4–7: 13.6%, 8–11: 14.1%,
+12–15: 13.8%, 16–23: 26.9%, 24–31: 19.7%, 32: 8.7%. Every depth on the
+test grid is represented in training; the question is capacity, not
+extrapolation. (A second, extrapolation variant — train to depth 12, test
+to 32 — is the F1 falsifier proper and is *not* this experiment.)
+
+Test sets: **exact-depth** bins, 1,000 strings each, at D ∈ {1, 2, 4, 6, 8,
+12, 16, 24, 32}, generated by rejection with `min_depth = max_depth = D`.
+Seeds disjoint from train/val. N_TRAIN = 20,000, N_VAL = 2,000.
+
+### Metric
+
+**Close-type accuracy at stack depth k**, per position, not per string:
+walk each test string, record the stack depth at every closing-bracket
+position, score the model's predicted bracket type there. Report
+$A(k)$ = accuracy over all close positions whose depth is exactly $k$,
+pooled across the test bins. Chance is 0.50 for n = 2; the ceiling is 1.0
+because the target is determined. (Positions where the *target* is an open
+bracket are excluded from $A(k)$ entirely; they are reported separately as
+a sanity curve and are expected near the generator's entropy for every arm.)
+
+**Collapse depth** $D^\ast$: the smallest $k$ at which $A(k) < 0.75$, the
+midpoint between chance and ceiling, provided $A(k') < 0.75$ for all
+$k' > k$ as well (so a single noisy bin cannot set it). If $A(32) \ge 0.75$,
+report $D^\ast > 32$.
+
+Per-string max depth is also recorded so the May pooled metric can be
+recomputed for continuity, but it decides nothing.
+
+### The plot that decides
+
+$D^\ast$ against M, log–log, with the three controls as horizontal lines
+(C-v0, C-bag) or a point (C-attn), three seeds as error bars.
+
+### Pre-registered predictions — recorded 2026-09-28, before any run
+
+Stated prior: **limb (a), the built v2 is a bounded truncation.**
+
+| limb | what $D^\ast(M)$ looks like | reads as |
+| --- | --- | --- |
+| **(a) bounded truncation** | $D^\ast$ rises with M and is bounded by it: $D^\ast(M) \le M$ at every M, with slope in $\log D^\ast/\log M$ between 0.5 and 1.0, and $D^\ast(64) \le 64$ | the pool is the memory, the cap is real, §10 must say the built model is below its middle rung |
+| **(a′) bounded, and not even tracking M** | $D^\ast$ flat in M above some small M, i.e. slope < 0.3, with C-bag ≈ the sweep | the salience ordering is not encoding recency; capacity is set by d and L, not by the pool at all — worse than (a) for the v2 story, and it would say the May "LIFO wins" result was not about the stack |
+| **(b) prefix conditioning lifts it** | $D^\ast$ **exceeds** M at small M — e.g. $D^\ast(2) \ge 8$ or $D^\ast(4) \ge 16$ | depth is being carried outside the pool, by the prefix-attending gate or by the token state; the staircase is the wrong ladder and the model must be placed on the circuit-complexity axis instead |
+| **(c) effective unboundedness** | $D^\ast > 32$ at every M including M = 2, and C-attn also $> 32$ | indistinguishable from (b) at this grid; would need the extrapolation variant and a precision sweep to separate, and the book would owe the same precision caveat it applies to Universal Transformers |
+
+**Point prediction, limb (a):** $D^\ast(2) \approx 2$, $D^\ast(4) \approx 3$–4,
+$D^\ast(8) \approx 5$–7, $D^\ast(16) \approx 8$–12, $D^\ast(32) \approx 12$–20,
+$D^\ast(64) \approx 16$–28. Sub-linear because salience decay 0.5 across L = 4
+layers retires registers faster than closes arrive at depth, and because the
+gate must *learn* to spend slots on depth.
+
+**Named turnable quantity:** salience decay. At 0.5 a register that stops
+being attended loses 94% of its salience within four layers. If $D^\ast$ is
+flat in M (limb a′), re-run M = 16 and 64 at decay 0.9 before concluding the
+pool is inert: the cap may be the lifetime, not the count.
+
+**Controls, predicted:** C-v0 $D^\ast \approx 4$–6 (the §7 band [3, 8] —
+this is the first per-depth measurement of that prediction, and it scores
+it). C-bag $\le$ C-v0 + 2. C-params $\approx D^\ast(8)$, not $D^\ast(32)$.
+C-attn $> 32$ at matched parameters, per Hewitt et al. and Yao et al.
+
+**What refutes the prior.** Any of: $D^\ast(M) > M$ at any M; C-attn failing
+where the sweep succeeds; C-params matching $D^\ast(32)$. Each is a clean
+result and each is more interesting than confirmation.
+
+### Confounds and how each is closed
+
+| confound | closed by |
+| --- | --- |
+| more slots = more parameters | C-params; and report $D^\ast$ per 10³ params as a secondary axis |
+| deeper training distribution than May | all arms share one distribution; May numbers are not compared, only recomputed for continuity |
+| the gate reading depth off the prefix rather than the pool | limb (b) is a *prediction*, not a nuisance: $D^\ast > M$ is the signature, and C-v0 (no registers, same prefix access via Vφ) bounds how much the prefix alone gives |
+| sequence length capping depth | `max_length` = 128 admits depth 32 with margin; strings at depth 32 are 8.7% of the distribution |
+| chance-level inflation from open positions | close-only scoring |
+| one lucky seed | three seeds, error bars, and $D^\ast$ defined with the monotonicity guard |
+| register lifetime masquerading as pool size | the decay follow-up named above |
+
+### Harness changes required (all small, none run)
+
+1. `dyck_data.py`: a `generate_exact_depth_dataset(cfg, n, D, seed)` and a
+   `position_depths(x, cfg)` returning the stack depth at every position.
+2. `train_fock_parf.py`: `--arch fock21` (constructs `FockMultiXiPARFLM`
+   with `mass_mode='global'`), `--arch transformer`, `--no-stack` already
+   exists; `--dyck-p-open`, `--dyck-max-length`, `--d-k`.
+3. `evaluate_dyck_accuracy`: add close-only $A(k)$ and the $D^\ast$ rule;
+   write per-bin JSON, not just a scalar.
+4. Assert at build time that every arm's train set is the same tensor
+   (hash) — the shared-distribution guarantee, enforced not assumed.
+
+### Budget and venue
+
+CPU on this machine: 1.58 s/step at batch 32, M = 16 → ~105 min per run;
+the grid is 6 M × 3 seeds + 4 controls × 3 seeds = 30 runs ≈ 50 h. **Not
+here.** Colab GPU ran the May v2 arm at 98 s per 4,000 steps; v2.1 is
+heavier, call it 4 min → the grid is ~2 h of GPU. **After L=4 finishes**; do
+not share the session.
+
+### Decision rules
+
+- **Limb (a) confirmed** → §10 gains a closing subsection stating: the built
+  model implements v2's mechanism without v2's defining property; it sits
+  below the middle rung; the MCS claim is about the formalism, not about any
+  trained model; the register count is the memory bound and here is the
+  measured $D^\ast(M)$. The ladder cards' `riemannian-geodesics` and
+  `fock-space` tags are reviewed for the same overreach.
+- **Limb (a′)** → as (a), plus the May "LIFO is the active ingredient"
+  finding is withdrawn and the salience-ordering mechanism is flagged as not
+  doing the job its name claims.
+- **Limb (b)** → §10's staircase is declared the wrong instrument for the
+  built model; the model is placed on the TC⁰ axis beside transformers and
+  the "native memory vs. bolt-on" contrast in `framework-vs-transformers` is
+  rewritten.
+- **Limb (c)** → run the extrapolation variant (train ≤ 12, test ≤ 32) and a
+  bf16/fp32 precision pair before any claim.
+
+Whatever the outcome, `Expressivity_Bounds_For_v0_Simulator.md` §6–7 gets its
+first per-depth measurement of D* for v0, which it has waited for since July.
+
+---
 
 ## Implementation Status
 
