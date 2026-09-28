@@ -734,6 +734,250 @@ already: `omega_dt_report` reconstructs `G` via
 `vt.harmonic_terms_lowrank(xis, h, comps=comps)`, so `observe()` needs the
 same call stashing `λ_max(G Gᵀ)`.
 
+### L=4 is genuinely behind, and it is NOT overfitting — diagnosis **2026-09-28, step 15,500**
+
+The crossover reversed. L=4 led from step 1,500 to 8,500, then fell behind and
+the gap is widening: +4.7% at 11,500, +6.5% at 12,500, +9.0% at 14,500, +7.7%
+at 15,500. Its own validation curve now oscillates upward (88.68 → 91.81 →
+92.60 → 90.57 → 92.76), which is not a plateau.
+
+**The decisive measurement: L=4 is worse on TRAIN as well.** Next-token loss,
+L=4 minus L=2, on the steps the two logs share:
+
+| step | Δ ntp (nats) |
+| ---: | ---: |
+| 6,050 | −0.009 |
+| 8,050 | −0.001 |
+| 9,050 | **+0.044** |
+| 11,050 | +0.044 |
+| 13,050 | **+0.064** |
+| 15,050 | +0.037 |
+
+It crosses at the same place the validation curve does and stays positive. At
+the last shared step L=4 is **+4.7% worse in perplexity terms on the training
+objective**. So this is **not** a generalisation failure — the deeper model is
+*fitting worse*. Overfitting is ruled out; every "more layers, more capacity"
+intuition is ruled out with it.
+
+**Curvature is higher at L=4 and rising faster.** `bproj_sig`, the σ_max
+proxy on the low-rank factor:
+
+| step | L=2 | L=4 |
+| ---: | ---: | ---: |
+| 6,500 | 51.7 | **54.3** |
+| 10,500 | 64.0 | 67.8 |
+| 15,500 | 74.6 | **83.1** |
+
+and `sig_max` reaches 42.7 at L=4 by step 6,500, a level L=2 does not reach
+until step ~9,500. L=4 is running a stiffer potential, earlier.
+
+**Health is otherwise clean.** Zero `[spike]` events, zero watchdog triggers,
+grad norm steady at 0.28–0.33, learning rate correct, dominant register index
+rotating rather than locking. Nothing is diverging; it is simply losing.
+
+#### Two candidate mechanisms, both consistent with everything above
+
+**(1) Curvature compensation — the dt story.** `LADDER_T` is held at 8, so
+L=4 means dt = 2. If the model grows ω to recover the displacement the smaller
+step costs it, then ω·dt is unchanged and the finer integration buys nothing
+while costing 2.41× the compute. `bproj_sig` rising faster at L=4 is exactly
+what that compensation looks like. **This is the quantity the pre-registration
+named as able to turn the result**, and it has turned.
+
+**(2) Weight tying — the depth story.** L=4 adds only **0.069%** more
+parameters (§ above). That is not a happy accident, it is the mechanism:
+`reverse_ch` is one module reused at every layer, and V_θ, V_φ, the register
+bank and the score head are all depth-invariant. Only `depth_code`, the
+creation/destruction gates and the per-layer scalars can differentiate layers
+at all. So L=4 asks the *same weights* to serve twice as many layer-roles,
+with almost no new capacity to do it. A model asked to do more with the same
+parameters fits worse — which is what the train loss says.
+
+**These are distinguishable, and cheaply.** (1) predicts ω·dt is
+approximately equal across L=2 and L=4 — the compensation is exact. (2)
+predicts it is not, and that the per-layer parameters are the binding
+constraint.
+
+**The fix is now in `semsimula-diag` main** (cherry-picked 2026-09-28,
+`409175b`). Verified against a fresh clone of the published branch: 134 tests
+pass, and an end-to-end run on the real `FockMultiXiPARFLM` with the
+anisotropic depth-conditioned Vθ under `baoab_cfc_lowrank` returns a summary
+covering every layer at both L=2 and L=4. Colab will pick it up on the
+restart.
+
+**But the in-flight readings will NOT settle the question, and it is worth
+being clear why.** The autosave fires near step 28,300, leaving ~4,200 steps
+and about **8 resonance readings**, all inside the deep decay phase. Worse,
+**there is no L=2 baseline to compare them against**: the L=2 run was trained
+with the same broken hook, so its ω·dt was never recorded either. Eight
+readings from one arm compare with nothing.
+
+**The comparison that does settle it is an offline probe, not in-flight
+logging.** `omega_dt_report` replays a captured batch under `observe()`, so
+it runs against a *checkpoint*. Both `_best.pt` files exist. After L=4
+finishes, run it on the L=2 and L=4 endpoints at matched batch and seed and
+compare the ω·dt distributions directly. That is an apples-to-apples endpoint
+comparison rather than eight samples from one arm, it costs minutes, and it
+is the measurement that chooses between mechanisms (1) and (2).
+
+Treat the in-flight readings as a smoke test that the fix works in Colab, and
+nothing more.
+
+**Do not stop the run.** It is the pre-registered rung and the settled value
+is what scores the band; a partial curve scores nothing. Current trajectory
+puts the settled value near **88–93**, i.e. *above* L=2's 66.98 and far above
+the 55–65 band — a clean, large miss, and the most informative outcome the
+rung could produce, because it says matched-T depth scaling has turned.
+
+**If it lands there, the next rung is not L=8.** It is L=4 at fixed dt,
+letting T grow, which separates the two mechanisms above by construction.
+
+#### Interrupted and resumed with the monitor live — **2026-09-28, step 20,000**
+
+Interrupted at step 20,160 and resumed from `_best.pt` at step 20,000 (160
+steps redone, ≈8 min). The interrupt was worth taking because the best
+checkpoint had *just* been written at 20,000 — an hour earlier it was
+stranded at 13,500 while the curve oscillated, and the same interrupt would
+have cost 6,500 steps.
+
+**The trap that nearly defeated it.** A Colab *runtime* restart does not wipe
+`/content`, and the notebook's resonance block clones `semsimula-diag` only
+`if not exists` — it never pulls. A restart alone would have re-imported the
+stale clone and produced the same `EMPTY SUMMARY`. The clone had to be
+removed by hand first. Only the ~24 h VM teardown avoids this, because that
+gives a fresh disk.
+
+**Verified live, from the Colab Terminal** (which runs while the training
+cell is busy, unlike notebook cells, which queue):
+
+    git -C /content/semsimula-diag log -1 --oneline
+      -> 409175b resonance: open a record on the low-rank path too
+    grep -c _wrap_harmonic_lowrank .../probes/resonance.py
+      -> 2
+
+Resume is clean: 106/106 tensors, optimizer state restored, best PPL 85.81
+carried over, WSD windows unchanged (decay still begins at 21,125). So the
+monitor covers **the entire decay phase**, ~25 readings, rather than the 8 at
+the tail that waiting would have given.
+
+**What the in-flight readings can and cannot do.** They confirm the fix works
+under Colab and show how ω·dt moves through decay. They **cannot** settle
+mechanism (1) vs (2): there is still no L=2 in-flight counterpart, because
+that arm trained under the same broken hook. The discriminator remains the
+offline `omega_dt_report` on both arms' checkpoints after this finishes.
+
+**Operational note, learned the hard way.** The console output is the *only*
+home of the per-step telemetry, the clip-group lines and the resonance
+readings — `training_log.jsonl` on Drive does not carry them. The pre-restart
+console was lost and survives only because it had been saved to
+`~/Downloads/lowrank_depth_ladder_L=4_no_attention_LR=1.2e-03_32500_training_output.txt`.
+Save the tab before every restart.
+
+#### First ω·dt reading ever taken on a CfC+BAOAB ladder arm — **step 20,500**
+
+    [resonance] step 20500  omega*dt p50=2.236  max=4.398  over_wall=60.938%
+
+The hook fix works. Two things follow, one immediate and one pre-registered.
+
+**1. The propagator is not a convenience, it is load-bearing.** The median
+token-layer pair sits at **ω·dt = 2.24**, above the Störmer/leapfrog wall of
+2, and **60.9% of all pairs are past it**. Under an explicit integrator the
+majority of this model would be provably amplifying at every step. The
+closed-form A-substep integrates those modes exactly, so this is a
+*stiffness* reading and not an instability — but it is the direct measurement
+that the integrator change was necessary rather than precautionary. **This
+has never been measured on a CfC+BAOAB arm before** (the hook has been broken
+for the entire ladder), and it retires the caveat in the Verlet-instability
+card that the ω·dt evidence was Verlet-era only.
+
+**2. It sets up a decisive, falsifiable test of the L=4 deficit.** At L=4,
+dt = 2, so the measured ω·dt = 2.236 implies **ω ≈ 1.118**. At L=2, dt = 4.
+The two competing mechanisms predict different L=2 readings:
+
+| hypothesis | what it says | predicted ω·dt at L=2 |
+| --- | --- | ---: |
+| **(1) exact curvature compensation** | the model doubles ω when dt halves, so the operating point is depth-invariant and finer integration buys nothing | **≈ 2.2** |
+| **(2) no compensation** | ω is a property of the learned potential, unchanged by depth; halving dt genuinely halved the product | **≈ 4.5** |
+
+**The weight-space proxy already favours (2), and not weakly.** `bproj_sig`
+at the matched step 20,450: **97.35 at L=4 against 81.77 at L=2**, a ratio of
+**1.19×** — nowhere near the 2× that exact compensation requires. Scaling ω by
+that measured ratio predicts **ω·dt(L=2) ≈ 3.8**, much closer to (2) than to
+(1).
+
+If that holds, the reading is: **halving the timestep really did move the
+operating point, the model only partly compensated, and L=4 is a different
+dynamical system rather than a finer integration of the same one.** The
+deficit then belongs to mechanism (2), weight tying across depth — the same
+weights serving twice as many layer-roles with 0.069% more parameters.
+
+**Pre-registered before the measurement: ω·dt(L=2) lands in [3.3, 4.2].**
+Below 2.6 refutes this and hands it back to compensation; above 4.7 says ω
+*fell* with depth, which neither mechanism predicts and would need its own
+explanation.
+
+**The measurement.** `omega_dt_report` on the L=2 `_best.pt` and the L=4
+`_best.pt`, same batch, same seed, once this run finishes. Minutes of work.
+The local L=2 checkpoints already carry everything needed; the only thing
+missing here is an OpenWebText batch, so it runs in Colab, not on the laptop.
+
+#### "Can we fix L=4 by adding parameters?" — **analysed 2026-09-28**
+
+Short answer: **partly, and the cheap part is worth trying; the expensive part
+is not a fix but a different thesis.**
+
+**What is actually shared.** Bucketing every parameter by whether it grows
+with L (build at d=384, n_registers=32, ladder shape):
+
+| group | tied across layers? | share |
+| --- | --- | ---: |
+| **V_θ** | **tied** | **~59% of non-embedding** |
+| V_φ, register bank, reverse channel | tied | small |
+| `depth_code` | per-layer | **6,144 params at L=4 (0.013%)** |
+| creation / destruction gates | per-layer | 205,700 at L=4 |
+
+Untying every tied group per layer at L=4 costs **2.76× the parameters**.
+
+**Why untying V_θ is not a bug fix.** The framework's claim is that inference
+is the integration of **one** potential over L steps: dt and L are integrator
+settings, not capacity. Give each layer its own V_θ and the model is no longer
+one dynamical system integrated L times — it is L different systems stacked,
+which is a transformer with unusual blocks. The Jacobi metric, the geodesic
+results of §27, and the "structured memory natively, not as a retrofit"
+argument all rest on the potential being shared. **Untying it would trade the
+thesis for the perplexity.**
+
+**The legitimate, cheap part of the space.** The architecture already has a
+per-layer conditioning channel, and it is extraordinarily narrow:
+`depth_code`, shape `[L, n_ctx, d]`, **6,144 parameters at L=4** — 0.013% of
+the model, and the *only* thing that distinguishes layer 3 from layer 1 inside
+the shared potential. We measured it clipped at 0.25 and dominating the
+gradient landscape through warmup. Two interventions preserve the thesis
+entirely:
+
+- **C-clip: loosen `depth_code`'s clip** (0.25 → 1.0). **Zero** new
+  parameters. Tests whether the existing channel is throttled rather than
+  too small.
+- **C-width: widen the depth conditioning.** A few thousand parameters,
+  still one potential, still depth-modulated.
+
+**A standing warning against "just add capacity".** This architecture has
+already been shown to get *worse* with more parameters: the conservative-twin
+arm added **589,825** parameters to the L=2 model and settled at **80.90
+against 66.98**, i.e. **20.8% worse**. Capacity is not a free axis here.
+
+**The experiment that should come first changes no parameters at all.**
+**L=4 at fixed dt = 4** (so T grows to 16 instead of being held at 8). That
+holds the operating point and varies only depth. If depth pays once dt is
+held, there is nothing for parameters to fix and the matched-T protocol was
+the confound. If it still loses at fixed dt, depth genuinely does not pay in
+this architecture at this budget — and only then is the capacity question
+live.
+
+**Order:** L=4 at fixed dt → C-clip (free) → C-width → and only if all three
+fail, the untying question, which should be framed as a new architecture with
+its own name rather than as a repair of this one.
+
 **Do not read the early steps.** L=4's first eval came in at 495.47 against
 L=2's 478.33, which looks like a 3.6% deficit and is not one: the curve is
 falling **46% per 500-step eval** there, so 495.47 sits **28 steps** behind
@@ -830,6 +1074,175 @@ answers the same question.
 **589,824** parameters — four 384x384 matrices each. So arm N minus arm C is
 the price of conservativity at matched parameters, matched routing shape and
 matched budget, with none of §7.3's bias.
+
+---
+
+## 3b. The D-series — why depth does not pay, and what to do about it
+
+Opened **2026-09-28**, after L=4 at matched T came in behind L=2 **on the
+training objective as well as on validation**. Ordered so that the cheapest
+experiment that could make the others unnecessary runs first.
+
+### The constraint that shapes all of it
+
+$T = L \cdot dt$. You cannot hold depth, timestep and integration time fixed
+at once — varying $L$ forces a choice of which of $dt$ or $T$ moves with it.
+The ladder so far has held **T = 8** and let dt fall. That is one arm of the
+fork and it has now produced a non-monotonic result:
+
+| arm | L | dt | T | settled |
+| --- | ---: | ---: | ---: | ---: |
+| run 7 | 1 | 8 | 8 | 87.09 |
+| **run 3** | **2** | **4** | **8** | **66.98** |
+| run 4 (in flight) | 4 | 2 | 8 | ~85–90 projected |
+
+**At fixed T the optimum is interior.** Depth 2 with dt = 4 beats both its
+neighbours, by 23% over L=1 and by an apparent ~28% over L=4. Nothing in the
+framework predicted an interior optimum, and it is the single most
+interesting thing the ladder has produced.
+
+### D1 — L=4 at **fixed dt**, letting T grow (one full run, ~27 h)
+
+The other arm of the fork. Holds the operating point that worked and asks
+whether depth itself pays.
+
+- **Cell 0:** `LADDER_L = 4`, **`LADDER_T = 16.0`** (so `LADDER_DT` derives to
+  4.0). Everything else exactly as run 4.
+- **Tag check:** derives to `...cgqk_L4probe_ob_..._idt4_lr0p0012_noattn` —
+  `L4probe` + `idt4`, distinct from both run 3 (`L2probe`+`idt4`) and run 4
+  (`L4probe`+`idt2`). No collision, trains from scratch.
+- **What it confounds, stated up front:** depth *and* integration time move
+  together. That is unavoidable, and it is the complement of run 4's confound
+  rather than a defect.
+
+**Pre-registered, recorded before launch: settles in 62–70.**
+Reasoning: dt = 4 is the operating point that produced the ladder's best Fock
+result, and D1 keeps it while adding depth and integration time. The band is
+centred slightly *better* than run 3's 66.98 but deliberately spans it,
+because the plausible failure is that **T = 8 already saturates the dynamics**
+and the extra integration time buys nothing.
+**Named turnable quantity:** whether T = 8 is saturated. The tell is D1's
+train loss against run 3's — if D1 fits *better* but generalises the same, the
+extra time is being spent on the training distribution.
+**If D1 lands near 85–90** (i.e. like run 4), depth is the problem, not the
+timestep, and the capacity question below becomes live.
+**If D1 beats 66.98 materially**, the matched-T protocol was the confound, and
+the headline ladder should be re-stated at fixed dt.
+
+### D2 — loosen the `depth_code` clip (FREE in parameters; one run)
+
+`depth_code` is the **only** per-layer channel inside the shared potential:
+`[L, n_ctx, d]` = 6,144 parameters at L=4, 0.013% of the model. It is clipped
+at **0.25**, the second-tightest override in the table, and it dominates the
+gradient landscape through warmup.
+
+- **Change:** `GRAD_CLIP_OVERRIDES['depth_code'] = 1.0` (the global default).
+- **⚠ TAG TRAP — must be fixed before this runs.** `GRAD_CLIP_OVERRIDES`
+  lives in **Cell 6**, not Cell 0, and **does not reach `_variant_tag`**. As
+  written, D2 resolves to the *same Drive folder as D1/run 4* and Cell 2 would
+  silently resume from its checkpoint. Add a tag component first, on the
+  `ris`/`zro` precedent:
+
+      if GRAD_CLIP_OVERRIDES.get('depth_code', 0.25) != 0.25:
+          _variant_parts.append(f"dcclip{...:g}".replace('.', 'p'))
+
+  and a Cell 5b guard asserting the tag carries it. **This is the same class
+  of bug the `norc`, `ris` and `zro` components exist to prevent, and it is
+  currently live for every clip threshold.**
+- **Pre-registered:** if the clip is binding, the pre-clip norm falls below
+  threshold within ~2,000 steps and settled PPL improves by >2%. If nothing
+  moves, the channel is too *small*, not too throttled → D3.
+
+### D3 — widen the depth conditioning (a few thousand parameters)
+
+Only if D2 is null. Give the depth code more capacity, or let it modulate more
+of V_θ, while keeping **one** potential. Preserves the thesis; changes
+parameter shapes, so it reaches the tag automatically.
+
+### D4 — untying (CONTINGENT, and it is a new architecture, not a repair)
+
+Only if D1–D3 all fail. Untying every tied group at L=4 costs **2.76×** the
+parameters, and **~59% of the non-embedding model is V_θ alone**. Untying
+V_θ means each layer has its own potential, i.e. L stacked dynamical systems
+rather than one integrated L times — which forfeits the Jacobi metric, §27's
+geodesic results, and the "native memory, not a retrofit" argument. **If it is
+ever run, it gets its own name and its own claims; it does not enter this
+ladder.**
+
+### Standing caution
+
+More parameters have already made this architecture *worse* once: the
+conservative twin added **589,825** parameters and settled at **80.90 against
+66.98**, 20.8% worse. Capacity is not a free axis here.
+
+### Order, cost, and the decision taken **2026-09-28**
+
+| step | cost | |
+| --- | --- | --- |
+| **D1** | ~27 h | the only rung authorised now |
+| D2 | ~27 h, 0 new params | **parked** behind runs 10 & 11 |
+| D3 | ~27 h, few k params | parked |
+| D4 | new architecture | contingent, and renamed if ever run |
+
+**Decision: run D1, then return to the factorial unless D1 comes back
+positive.** Each D rung is a full 27 h run and competes directly with runs 10
+and 11, which would close the V_φ × Fock 2×2 that is already half-measured
+and fully pre-registered. Completing a factorial beats chasing a repair for a
+rung that may simply be a true negative.
+
+**Three branches, not two.**
+
+| D1 settles | reading | next |
+| --- | --- | --- |
+| **materially below 66.98** | matched-T *was* the confound; depth pays once dt is held | **stop and re-state the headline ladder at fixed dt.** Bigger than D2/D3 and it comes first |
+| **≈ 66.98 (null)** | depth does not pay even at a held operating point | **runs 10 & 11.** The interior optimum at fixed T stands as the result |
+| **≈ 85–90 (negative)** | depth actively hurts at this budget | **runs 10 & 11.** Strengthens the interior-optimum finding |
+
+So D2 and D3 are reached only through the *positive* branch, and even then
+only after the ladder is re-stated. The prior from run 4 is that the null or
+negative branch is the likely one.
+
+**The clip-threshold tag defect drops in priority with D2, but does not go
+away.** It blocks any run that varies a threshold, which includes C4 and C5
+of the clip series. Fix it before either, not before D1 — D1 changes no
+thresholds.
+
+### What to run in the gaps, since none of it needs a 27 h slot
+
+Ordered by when the GPU is free:
+
+1. **The ω·dt offline comparison — immediately when run 4 finishes, before
+   D1 starts.** It needs the run-4 endpoint checkpoint and a short GPU
+   window, and it scores the pre-registered band [3.3, 4.2]. Do not let D1
+   occupy the machine first.
+
+   **Cell 6b-13 is written and in the notebook** (inserted after 6b-12,
+   2026-09-28). Two things about it worth knowing before running:
+
+   - **Cell 6b is NOT this measurement.** 6b forces `integrator='baoab_cfc'`
+     and records `k_diag` from `harmonic_terms` — the *diagonal* curvature,
+     i.e. the proxy the Verlet-instability audit found "stays under 1
+     throughout and would have reported no problem at all". 6b-13 runs the
+     low-rank monitor, the same one the in-flight `[resonance]` line reports.
+   - **Run order is 0 → 1 → 1b → 2 → 3 → 4 → 5 → 6b-13. Do NOT run Cell 6.**
+     On a completed arm Cell 6 resumes training from `_best.pt` and can
+     overwrite a published checkpoint. 6b-13 therefore imports the monitor
+     itself if Cell 6 has not, and writes to its own
+     `results/omega_dt_endpoint.jsonl` rather than the training log.
+
+   It asserts the clone is at 409175b or later before measuring, so a stale
+   checkout fails loudly instead of returning an empty summary. Batches are
+   drawn with a fixed seed that does not depend on L, so both arms see the
+   same tokens. It scores the band automatically when `model.cfg.L == 2`.
+
+   **Two sessions, one per arm**, because L is baked into the built model:
+   the L=4 session that is live now, and a fresh L=2-configured session.
+2. **C1** (extend the E5 slider above λ = 1) — one tuple edit, minutes.
+3. **C2** and **C7** — no GPU at all; they read optimizer state and existing
+   logs. Can run while D1 trains.
+
+That ordering costs nothing and closes three pre-registered questions during
+time the machine is busy or idle anyway.
 
 ---
 

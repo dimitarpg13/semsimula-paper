@@ -627,6 +627,61 @@ adds a point to a curve.
 | 2026-09-25 | architecture: **L=2 `'none'`, reverse channel off** (ladder run 8, an architecture control, not a tuning run) | full 32,500 | **87.93 settled**, +31.3% vs 66.98 with the mechanism on; ratio vs GPT-2 1.765. **The inference-time ablations overstated the mechanism by 2.9x in PPL ratio, 4.9x in nats.** Clip 2.6% vs 0.0%. Ladder protocol §5.6 |
 | 2026-09-24 | depth: **L=1** `'none'` @1.2e-03 (ladder run 7, not a tuning run) | full 32,500 | **87.09 settled**, +30.0% vs L=2 at the same LR; ratio vs GPT-2 1.748. Decay gain 11.2% vs 19.3% at L=2. Clip 2.6% vs 0.0%. Static register bank (§7.3a). Ladder protocol §5.5 |
 
+## Agenda: the D-series — why depth does not pay — **2026-09-28**
+
+L=4 at matched T came in behind L=2 **on train as well as validation**, so it
+is a fitting problem, not a generalisation one. At fixed T = 8 the ladder now
+shows an **interior optimum**: L=1 → 87.09, **L=2 → 66.98**, L=4 → ~85–90
+projected. Nothing in the framework predicted that.
+
+Full design, pre-registrations and tag checks:
+[`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md)
+§3b.
+
+- [ ] **D1 — L=4 at fixed dt = 4** (`LADDER_L=4`, `LADDER_T=16.0`), ~27 h.
+      Pre-registered **62–70**. Tag derives to `L4probe`+`idt4`; no collision.
+      Turnable quantity: whether T = 8 is already saturated.
+- [ ] **D2 — loosen `depth_code`'s clip** 0.25 → 1.0. Zero new parameters.
+      **Blocked on the tag fix below.** Pre-registered: >2% improvement if the
+      clip binds; null means the channel is too small, not too throttled.
+- [ ] **D3 — widen the depth conditioning.** Only if D2 is null. Keeps one
+      potential, so the thesis is intact; changes shapes, so it tags itself.
+- [ ] **D4 — untying.** Only if D1–D3 fail. 2.76× parameters, ~59% of the
+      non-embedding model is V_θ alone. A new architecture with its own name,
+      **not** a rung of this ladder.
+
+**Decision 2026-09-28: D1 only, then back to the factorial.** D2 and D3 are
+**parked behind runs 10 and 11**. They are reached only if D1 comes back
+*positive* (materially better than 66.98), and even then the first job is
+re-stating the headline ladder at fixed dt, not the repairs. A null or
+negative D1 — the likely outcome on run 4's evidence — sends the queue
+straight to the V_φ × Fock factorial, which is half-measured and fully
+pre-registered. Completing a factorial beats repairing a rung that may be a
+true negative.
+
+**Fill the gaps with the free work**: the ω·dt offline comparison the moment
+run 4 finishes (before D1 takes the machine), then C1; C2 and C7 need no GPU
+and can run while D1 trains.
+
+### ⚠ Blocking defect: clip thresholds do not reach the variant tag
+
+`GRAD_CLIP_OVERRIDES` lives in **Cell 6**; `_variant_tag` is built in
+**Cell 0**. Changing any threshold therefore produces a run that resolves to
+**the same Drive folder** as its unchanged sibling, and Cell 2 will silently
+resume from that sibling's checkpoint — the exact failure the `norc`, `ris`
+and `zro` tag components were added to prevent. **This is live right now for
+every one of the nine overrides**, not just `depth_code`.
+
+- [ ] Add a conditional tag component for any override that differs from its
+      default, plus a Cell 5b guard asserting the tag carries it. Do this
+      **before** D2 or any C-series run that touches a threshold.
+
+**Standing caution for the whole series.** More parameters have already made
+this architecture worse once: the conservative twin added 589,825 parameters
+and settled 20.8% worse (80.90 vs 66.98). Capacity is not a free axis.
+
+---
+
 ## Open: are the per-group clip thresholds tuned? — **2026-09-28**
 
 Every `GRAD_CLIP_OVERRIDES` value was set from L=8/L=16 forensics
