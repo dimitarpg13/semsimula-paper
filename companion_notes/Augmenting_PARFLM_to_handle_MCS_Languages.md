@@ -331,13 +331,24 @@ deterministic context-free." Fock-PARFLM v2.1 has `n_registers` = M fixed at
 construction, with slots recycled. If M is a hard cap on usable memory, the
 built model is a **bounded truncation** of the formalism and sits *below*
 §10's middle rung, not on it — and the book's expressivity claims are about a
-system nobody has built. That is the stated prior of this programme as of
-2026-09-28 (limb (a) in `Paper_v6_Section_Audit.md`, §10 entry). This
+system nobody has built. That was the stated prior when this design was
+first written (limb (a) in `Paper_v6_Section_Audit.md`, §10 entry). This
 experiment is designed so that prior can be **refuted**, not merely confirmed.
+
+> **Prior revised 2026-09-28, the same day, before any run: (a) → (b).**
+> Reading `_fock_layer_step` showed that in the prefix-causal lifecycle the
+> register bank is rebuilt from the whole prefix at **every layer**, so the
+> lifecycle runs over L, not over tokens, and M caps readout width, not
+> retained history. See "The mechanism as built" below and the audit's
+> "CORRECTED 2026-09-28" block. The factors, arms, data, metric, limbs and
+> decision rules are unchanged; the stated prior, the point prediction and
+> the mechanism description are revised, and the original limb-(a) point
+> prediction is kept below, marked as superseded.
 
 ### Why the May 2026 runs (Phase 1 and F2 above) cannot answer it
 
-Four defects, each fatal on its own for this question:
+Five defects, each fatal on its own for this question (the fifth added
+2026-09-28, after the mechanism reading below):
 
 1. **No per-depth curve.** Deep-test accuracy was pooled over depths 5–12.
    The theory's own protocol (`Expressivity_Bounds_For_v0_Simulator.md` §6)
@@ -356,10 +367,46 @@ Four defects, each fatal on its own for this question:
 4. **The generator cannot produce the deep grid.** At the May settings
    (`p_open` = 0.55, `max_length` = 64) strings of depth ≥ 16 are 2.8% of
    samples and depth ≥ 24 do not occur. Measured 2026-09-28 on 20,000 draws.
+5. **They ran the leaky lifecycle.** Both May runs predate the causal-leak
+   fix (23 July, `Fock-PARFLM_Causal_Leak_Audit_Results.md`). `FockPARFLM_v2`
+   then carried the cross-layer register state from the **last position of
+   the full window** (`_causal_creation_readout`, `r_new = r_causal_mt[:, :,
+   -1, :]`), the configuration the leak audit's T2 probe certifies as leaking
+   future tokens backward with the reverse channel on. On Dyck a future leak
+   can supply the closing bracket outright. Its size at d=64 was never
+   measured, so the May accuracies — and the "LIFO is the active ingredient"
+   reading — are not evidence in either direction. Every Phase 1b arm runs
+   with `prefix_causal_registers=True`.
 
 ### The mechanism as built — what the sweep is actually testing
 
-`FockMultiXiPARFLM._active_mask` (v2.1, `model_fock_parf_multixi.py`):
+**Rewritten 2026-09-28 before any run.** The first version of this section
+described the salience ordering correctly but drew the wrong consequence
+from it; the original bullets are kept at the end, marked superseded.
+
+**The lifecycle runs over layers.** With `prefix_causal_registers=True` (the
+default, and every arm here), `FockMultiXiPARFLM._fock_layer_step` does, once
+per layer:
+
+```python
+readout, alpha_max = self.creation_gate_qkv.forward_prefix(h, r)
+r = blend * r + (1.0 - blend) * readout                  # (B, T, M, d)
+salience = salience * decay + alpha_max * (1.0 - decay)  # (B, T, M)
+```
+
+`QKVCreationGate_v21.forward_prefix` scores each register's query — from that
+register's previous-layer state at position t — against per-register keys of
+tokens 1…t, and returns a cumulative-softmax readout of their values. The
+active mask and the destruction gate then step, also per layer. So:
+
+- At position t there are **at most L = 4 creation events**, independent of
+  how many brackets are open. No token creates or retires a register.
+- The pool is **M learned-query attention readouts over the prefix,
+  iterated L times**. Its store is the prefix itself, re-read at every
+  layer; M limits how many readouts a layer takes, not how much history
+  survives.
+
+**The salience ordering** (`_active_mask`):
 
 ```python
 sorted_sal, sort_idx = salience.sort(dim=-1, descending=True)
@@ -367,18 +414,35 @@ sorted_above = sorted_sal > cfg.register_salience_threshold
 sorted_active = torch.cumprod(sorted_above.float(), dim=-1).bool()
 ```
 
-with `salience = salience * decay + alpha_max * (1 - decay)` per layer.
 **There is no push and no pop.** "LIFO" means salience-ordered contiguous
-activation; a register's rank is set by how strongly the creation gate has
-recently attended to it, not by when it was created. A close bracket cannot
-deterministically retire the most recent register. Two consequences the
-predictions below rely on:
+activation, and the salience it orders by evolves across the four layers at
+a fixed position, not across positions. A close bracket cannot retire
+anything.
 
-- M is a hard cap on *simultaneously active* registers, so it bounds the
-  representable stack depth from above **regardless** of how the gate learns.
+Consequences the revised predictions rely on:
+
+- **M is not a cap on representable depth.** Depth information can reach
+  position t through the token state (V_θ, V_φ over the prefix, the K-EMA ξ
+  channels) and through any of the M readouts; nothing forces one slot per
+  open bracket. There is no architectural reason for $D^\ast \le M$.
+- **Depth capacity should be set mainly by L, d and the position signal**,
+  as in a small transformer, with M contributing readout width. The expected
+  signature is $D^\ast$ nearly flat in M.
+- **Whether the registers help at all is read from the sweep against C-v0,
+  not from the slope.** A flat $D^\ast(M)$ well above C-v0 means the readouts
+  add depth capacity without the capacity being slot-bounded; a flat
+  $D^\ast(M) \approx$ C-v0 means they add none at this scale.
+
+*Superseded bullets, kept for the record (written earlier 2026-09-28):*
+
+- ~~M is a hard cap on *simultaneously active* registers, so it bounds the
+  representable stack depth from above **regardless** of how the gate
+  learns.~~ Wrong: active registers are readouts of the prefix, not stack
+  cells, so their number does not bound what the prefix can carry.
 - Whether depth capacity tracks M at all depends on the gate learning a
   recency-encoding salience pattern that nothing in the architecture
-  enforces. That is the part the sweep measures.
+  enforces. *(Still true as far as it goes; recency across tokens is not
+  something the layer-wise salience can encode at all.)*
 
 ### Factors and arms
 
@@ -451,7 +515,9 @@ $D^\ast$ against M, log–log, with the three controls as horizontal lines
 
 ### Pre-registered predictions — recorded 2026-09-28, before any run
 
-Stated prior: **limb (a), the built v2 is a bounded truncation.**
+Stated prior: **limb (b), prefix conditioning carries depth and M does not
+bound it** — revised 2026-09-28 before any run from the original limb (a);
+see "The mechanism as built". The limb table is unchanged.
 
 | limb | what D\*(M) looks like | reads as |
 | --- | --- | --- |
@@ -460,25 +526,55 @@ Stated prior: **limb (a), the built v2 is a bounded truncation.**
 | **(b) prefix conditioning lifts it** | D\* **exceeds** M at small M — e.g. D\*(2) ≥ 8 or D\*(4) ≥ 16 | depth is being carried outside the pool, by the prefix-attending gate or by the token state; the staircase is the wrong ladder and the model must be placed on the circuit-complexity axis instead |
 | **(c) effective unboundedness** | D\* > 32 at every M including M = 2, and C-attn also > 32 | indistinguishable from (b) at this grid; would need the extrapolation variant and a precision sweep to separate, and the book would owe the same precision caveat it applies to Universal Transformers |
 
-**Point prediction, limb (a):** $D^\ast(2) \approx 2$, $D^\ast(4) \approx 3$–4,
-$D^\ast(8) \approx 5$–7, $D^\ast(16) \approx 8$–12, $D^\ast(32) \approx 12$–20,
-$D^\ast(64) \approx 16$–28. Sub-linear because salience decay 0.5 across L = 4
-layers retires registers faster than closes arrive at depth, and because the
-gate must *learn* to spend slots on depth.
+**Point prediction, limb (b) — the revised prior:** $D^\ast$ nearly flat in
+M, log–log slope **below 0.3** across M = 2…64, with every $D^\ast(M)$ in
+**4–12**; in particular **$D^\ast(2) \ge 4$**, i.e. above M. The sweep sits
+**at or above C-v0** by at most ~4 levels, the registers adding readout width
+rather than slot-bounded depth. Reasoning: at L = 4, d = 64 the ceiling is set
+by what four layers of prefix readouts can count, not by how many readouts
+there are.
 
-**Named turnable quantity:** salience decay. At 0.5 a register that stops
-being attended loses 94% of its salience within four layers. If $D^\ast$ is
-flat in M (limb a′), re-run M = 16 and 64 at decay 0.9 before concluding the
-pool is inert: the cap may be the lifetime, not the count.
+**Overlap with limb (a′), resolved in advance.** A flat curve was written as
+(a′) under the old mechanism, where it meant "the pool is inert". Under the
+corrected mechanism, flatness is the *expected* shape and reads as (b). The
+pool's contribution is read from **sweep − C-v0**, not from the slope:
+
+| flat $D^\ast(M)$ and … | reads as |
+| --- | --- |
+| sweep ≥ C-v0 + 3 | (b): the readouts add depth capacity that M does not bound |
+| sweep within 2 of C-v0 | (b) with an inert pool: the registers add nothing to depth at this scale; the May "LIFO wins" reading is withdrawn as for (a′) |
+
+**What refutes the revised prior.** $D^\ast$ tracking M with slope ≥ 0.5 and
+$D^\ast(M) \le M$ at every M — the original limb (a). That would mean the
+layer-wise readouts somehow partition depth across slots, and it would need
+explaining against the code, not just reporting.
+
+**Named turnable quantity:** L, not salience decay. Salience decays over
+layers at a fixed position, so it cannot set a lifetime in *tokens*; at 0.5
+it only shapes which readouts are active within a four-layer pass. If
+$D^\ast$ is flat, the informative follow-up is **M = 16 at L ∈ {2, 4, 8}**:
+under (b), $D^\ast$ should move with L. That also ties the result to the
+depth ladder, where L is the axis under test.
+
+*Superseded point prediction, limb (a) — the original prior, kept for the
+record:* $D^\ast(2) \approx 2$, $D^\ast(4) \approx 3$–4,
+$D^\ast(8) \approx 5$–7, $D^\ast(16) \approx 8$–12,
+$D^\ast(32) \approx 12$–20, $D^\ast(64) \approx 16$–28,
+sub-linear because decay 0.5 was taken to retire registers
+faster than closes arrive. Its named turnable quantity was salience decay
+(re-run M = 16 and 64 at decay 0.9). Both rested on registers carrying state
+across tokens, which the prefix-causal lifecycle does not do.
 
 **Controls, predicted:** C-v0 $D^\ast \approx 4$–6 (the §7 band [3, 8] —
 this is the first per-depth measurement of that prediction, and it scores
 it). C-bag $\le$ C-v0 + 2. C-params $\approx D^\ast(8)$, not $D^\ast(32)$.
 C-attn $\gt 32$ at matched parameters, per Hewitt et al. and Yao et al.
 
-**What refutes the prior.** Any of: $D^\ast(M) \gt M$ at any M; C-attn failing
-where the sweep succeeds; C-params matching $D^\ast(32)$. Each is a clean
-result and each is more interesting than confirmation.
+*Original refutation conditions for limb (a), still valid as tests of (a):*
+any of $D^\ast(M) \gt M$ at any M; C-attn failing where the sweep succeeds;
+C-params matching $D^\ast(32)$. Under the revised prior the first is
+expected, and C-params ≈ $D^\ast(8)$ ≈ $D^\ast(32)$ is expected too, since the
+curve is flat.
 
 ### Confounds and how each is closed
 
@@ -490,7 +586,8 @@ result and each is more interesting than confirmation.
 | sequence length capping depth | `max_length` = 128 admits depth 32 with margin; strings at depth 32 are 8.7% of the distribution |
 | chance-level inflation from open positions | close-only scoring |
 | one lucky seed | three seeds, error bars, and D\* defined with the monotonicity guard |
-| register lifetime masquerading as pool size | the decay follow-up named above |
+| register lifetime masquerading as pool size | moot under the corrected mechanism — lifetime is in layers, not tokens; the L follow-up named above replaces the decay follow-up |
+| May numbers contaminated by the pre-fix leak | every arm runs `prefix_causal_registers=True`; May numbers recomputed for continuity only, never compared |
 
 ### Harness changes required (all small, none run)
 
