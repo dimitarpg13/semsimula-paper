@@ -631,8 +631,13 @@ adds a point to a curve.
 
 L=4 at matched T came in behind L=2 **on train as well as validation**, so it
 is a fitting problem, not a generalisation one. At fixed T = 8 the ladder now
-shows an **interior optimum**: L=1 → 87.09, **L=2 → 66.98**, L=4 → ~85–90
-projected. Nothing in the framework predicted that.
+shows an **interior optimum**: L=1 → 87.09, **L=2 → 66.98**, L=4 → **71.75
+settled** (+7.1%). This read "~85–90 projected" until run 4 settled on
+2026-09-29; that projection ignored the WSD decay. Nothing in the framework
+predicted an interior optimum. The ω·dt comparison scored the same day,
+**HIT** (L=2 3.796 in [3.3, 4.2]): halving dt raised ω by only 21%, with full
+compensation at layer 0 and none beyond it (protocol note, "Run 4 settled at
+71.75").
 
 Full design, pre-registrations and tag checks:
 [`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md)

@@ -829,6 +829,11 @@ puts the settled value near **88–93**, i.e. *above* L=2's 66.98 and far above
 the 55–65 band — a clean, large miss, and the most informative outcome the
 rung could produce, because it says matched-T depth scaling has turned.
 
+> **Corrected 2026-09-29.** Run 4 settled at **71.75**, not 88–93. The
+> projection extrapolated the stable phase and ignored the WSD decay. The band
+> was still missed (above 65), but the gap to L=2 is 7.1%, not about 30%. See
+> "Run 4 settled at 71.75, and the ω·dt comparison scored" below.
+
 **If it lands there, the next rung is not L=8.** It is L=4 at fixed dt,
 letting T grow, which separates the two mechanisms above by construction.
 
@@ -1062,6 +1067,90 @@ Why it is not the result, and how it must be reported:
   L=4's** (≈ 4.4–4.9 and ≈ 62%). The exploratory max ratio is therefore
   ≈ 1.5, to be confirmed by 6b-13 on both endpoints.
 
+#### Run 4 settled at 71.75, and the ω·dt comparison scored — **2026-09-29**
+
+**The rung.** Run 4 finished cleanly at 32,500. Best 70.19 (step 31,000);
+last three evals 71.47, 71.93, 71.84, so **settled 71.75**. Log:
+[`results/.../L4_idt2_lr0p0012_noattn_altE_fromscratch_32500_result.txt`](../notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L4probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt2_lr0p0012_noattn/L4_idt2_lr0p0012_noattn_altE_fromscratch_32500_result.txt).
+
+| L | dt | T | settled | against L=2 |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 8 | 8 | 87.09 | +30.0% |
+| **2** | **4** | **8** | **66.98** | — |
+| 4 | 2 | 8 | **71.75** | **+7.1%** (best against best: +5.5%) |
+
+- **Pre-registration scored: MISS.** The band was 55–65, and 71.75 lands
+  above it, on the side where depth does not pay.
+- **The interior optimum at fixed T stands, but narrowly.** L=4 is 7% behind
+  L=2, not the ~28% the stable-phase readings suggested.
+- **The "88–93" projection above was wrong by about 20 PPL.** It
+  extrapolated the stable phase and ignored the WSD decay, which took L=4
+  from 85.8 (step 21,125) to 71.8. Most of the gain arrived in the last
+  third, as it does on every rung.
+- **The gap is not a trend.** It was about 9% at step 25,000, about 3.5% over
+  the 28,000–28,500 window, and 7.1% settled. The last 1,500 steps moved L=4
+  slightly the wrong way (70.19, then 71.47, 71.93, 71.84), which is within
+  eval noise but is why best and settled differ.
+
+**The ω·dt endpoint comparison (Cell 6b-13).** Both arms were measured at
+`_best.pt` on the same seed (20260928) and the same tokens.
+
+| arm | step | ω·dt p50 | ω | max | over the wall |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| L=2, dt = 4 | 31,500 | **3.796** | 0.949 | 6.766 | 98.4% |
+| L=4, dt = 2 | 31,000 | **2.292** | 1.146 | 4.484 | 63.9% |
+
+- **Pre-registered band for L=2, [3.3, 4.2]: HIT** at 3.796.
+- **Recorded before reading this:** the L=2 value was previewed twice — once
+  in-flight by accident (3.797, the incident entry), and once by a local dry
+  run (3.796) — so the scored run was not blind. The band itself was fixed
+  before either.
+- **The route to the band was partly a proxy mismatch.** `bproj_sig` tracks
+  the tail, not the median (nine-readings entry). So the hit confirms the
+  hypothesis less strongly than the band's width suggests.
+- **Exploratory, added after the in-flight readings:** max(L=2) / max(L=4) =
+  1.51.
+
+**What it says.** Halving dt raised ω by only **21%** (0.949 → 1.146); full
+compensation would have doubled it. The ω·dt ratio is 1.66, against 1 for
+exact compensation and 2 for none. In log terms the model compensated about
+27% of the way, so **the smaller step genuinely moved the operating point.**
+Of the two mechanisms, this is mechanism (2).
+
+**The per-layer breakdown locates the compensation.** Aligned by integration
+time:
+
+| time window | L=2 layer : ω | L=4 layers : ω |
+| --- | --- | --- |
+| t ∈ [0, 4] | 0 : **0.84** | 0 : **1.68**; 1 : 1.00 |
+| t ∈ [4, 8] | 1 : 1.13 | 2 : 1.25; 3 : 0.74 |
+
+- **At the first layer the compensation is full.** ω doubles (0.84 → 1.68),
+  so ω·dt is held (3.34 against 3.37).
+- **Beyond the first layer there is none.** L=4's later layers run no stiffer
+  than L=2's second layer, and its last layer is the softest in either model:
+  23% over the wall, against 97–100% at every L=2 layer.
+- **So L=4 is a different dynamical system, not a finer integration of the
+  same one.** The first layer adapts to the smaller step and the rest do not.
+  That is the pattern weight tying predicts: everything except `depth_code`,
+  the gates and the per-layer scalars is shared across layers, so only
+  limited per-layer freedom exists to re-tune the curvature at each depth.
+  It is **consistent with** tying rather than a demonstration of it.
+
+**Still open, and what separates the candidates.** The ω·dt result narrows
+the question but does not close it:
+
+- **D1** (L=4 at dt = 4) decides between "the step size" and "the depth".
+- **Offline per-layer diagnostics on both checkpoints** — knocking out one
+  layer at a time, and comparing 6b-8 and 6b-9 per layer — can tell whether
+  layers 2–3 at L=4 contribute anything, at no training cost.
+- **The per-group clip difference** (the reverse-channel gate is clipped
+  12–16× at L=4 against 20× at L=2) and **an LR that was tuned at L=2** remain
+  unexamined.
+
+Results filed with both logs, as `D2_6b13_omega_dt_endpoint.txt` in the L=2
+and L=4 results folders.
+
 #### "Can we fix L=4 by adding parameters?" — **analysed 2026-09-28**
 
 Short answer: **partly, and the cheap part is worth trying; the expensive part
@@ -1235,12 +1324,13 @@ fork and it has now produced a non-monotonic result:
 | --- | ---: | ---: | ---: | ---: |
 | run 7 | 1 | 8 | 8 | 87.09 |
 | **run 3** | **2** | **4** | **8** | **66.98** |
-| run 4 (in flight) | 4 | 2 | 8 | ~85–90 projected |
+| run 4 | 4 | 2 | 8 | **71.75** (settled 2026-09-29) |
 
 **At fixed T the optimum is interior.** Depth 2 with dt = 4 beats both its
-neighbours, by 23% over L=1 and by an apparent ~28% over L=4. Nothing in the
-framework predicted an interior optimum, and it is the single most
-interesting thing the ladder has produced.
+neighbours, by 23% over L=1 and by **7.1%** over L=4. (Written 2026-09-28 as
+"an apparent ~28%" from a stable-phase projection of 85–90; corrected when run
+4 settled.) Nothing in the framework predicted an interior optimum, and it is
+the single most interesting thing the ladder has produced.
 
 ### D1 — L=4 at **fixed dt**, letting T grow (one full run, ~27 h)
 
@@ -1265,8 +1355,11 @@ and the extra integration time buys nothing.
 **Named turnable quantity:** whether T = 8 is saturated. The tell is D1's
 train loss against run 3's — if D1 fits *better* but generalises the same, the
 extra time is being spent on the training distribution.
-**If D1 lands near 85–90** (i.e. like run 4), depth is the problem, not the
-timestep, and the capacity question below becomes live.
+**If D1 lands near run 4's value** — 71.75 settled; this read "near 85–90"
+until run 4 settled on 2026-09-29 — depth is the problem, not the timestep,
+and the capacity question below becomes live. With run 4 at 71.75, this
+branch and the top of D1's 62–70 band are under 2 PPL apart, so D1 has to be
+read against eval noise rather than by eye.
 **If D1 beats 66.98 materially**, the matched-T protocol was the confound, and
 the headline ladder should be re-stated at fixed dt.
 
@@ -1337,7 +1430,7 @@ rung that may simply be a true negative.
 | --- | --- | --- |
 | **materially below 66.98** | matched-T *was* the confound; depth pays once dt is held | **stop and re-state the headline ladder at fixed dt.** Bigger than D2/D3 and it comes first |
 | **≈ 66.98 (null)** | depth does not pay even at a held operating point | **runs 10 & 11.** The interior optimum at fixed T stands as the result |
-| **≈ 85–90 (negative)** | depth actively hurts at this budget | **runs 10 & 11.** Strengthens the interior-optimum finding |
+| **≈ run 4's 71.75 (negative)** — read "≈ 85–90" until run 4 settled, 2026-09-29 | depth actively hurts at this budget | **runs 10 & 11.** Strengthens the interior-optimum finding |
 
 So D2 and D3 are reached only through the *positive* branch, and even then
 only after the ladder is re-stated. The prior from run 4 is that the null or
