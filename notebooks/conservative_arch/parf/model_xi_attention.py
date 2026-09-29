@@ -299,6 +299,30 @@ class XiRoutedConservativeAttention(nn.Module):
         phi = -dist2.unsqueeze(1) * inv                      # (B, H, T, T)
         return -(alpha * phi).sum()
 
+    def force_live(
+        self,
+        h_in: torch.Tensor,
+        xi_route: torch.Tensor,
+        causal: torch.Tensor,
+    ) -> torch.Tensor:
+        """-dV_attn/dh_t written out, over LIVE tensors (relax_grad_path='live').
+
+        Equal in value to ``-autograd.grad(potential(h, h.detach(),
+        route.detach(), causal), h)``: that force is
+        sum_s alpha(t,s) W_uq^T W_v h_s / sqrt(d_v), which does not depend on
+        h_t, so the detached path sends no gradient into any hidden state.
+        Here alpha, h_s and the routing input are live, so the loss reaches
+        them as it does in DirectExchangeForce. Dot kernel only.
+        """
+        if self.kernel != "dot":
+            raise NotImplementedError("force_live is defined for kernel='dot'")
+        B, T, d = h_in.shape
+        alpha = self._routing(xi_route, causal)                  # (B, H, T, T)
+        vs = self.W_v(h_in).view(B, T, self.H, self.d_v).transpose(1, 2)
+        agg = torch.matmul(alpha, vs) * (self.d_v ** -0.5)       # (B, H, T, d_v)
+        agg = agg.transpose(1, 2).reshape(B, T, self.H * self.d_v)
+        return agg @ self.W_uq.weight                            # (B, T, d)
+
 
 # ---------------------------------------------------------------------------
 # Xi-routed conservative attention PARFLM

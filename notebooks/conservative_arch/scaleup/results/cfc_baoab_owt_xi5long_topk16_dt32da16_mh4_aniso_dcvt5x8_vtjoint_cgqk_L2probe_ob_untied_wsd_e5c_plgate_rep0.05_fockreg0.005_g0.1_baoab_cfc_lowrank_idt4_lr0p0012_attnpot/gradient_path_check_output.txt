@@ -1,0 +1,28 @@
+# Gradient-path check, attention vs attention_potential, L=2, _best.pt (step 31,000) -- 2026-09-29
+# script: notebooks/conservative_arch/scaleup/debug/gradcheck_exchange_paths.py
+
+== attention  (_best.pt step 31,000, PPL 61.49; gate per layer [1.0, 1.0])  [13s]
+layer   |F| rms   |h| rms  grad->sources  grad->query  grad->routing W
+    0    0.0070    0.1126     2.7089e-01   4.6884e-02       5.5649e-02
+    1    0.0714    1.0000     5.2826e+00   4.2801e+00       5.2109e+01
+== attention_potential  (_best.pt step 31,000, PPL 79.14; gate per layer [1.0, 1.0])  [12s]
+layer   |F| rms   |h| rms  grad->sources  grad->query  grad->routing W
+    0    0.0099    0.1530     0.0000e+00   0.0000e+00       3.7750e-02   (autograd: no path to h at all)
+    1    0.0323    1.0000     0.0000e+00   0.0000e+00       1.0646e+01   (autograd: no path to h at all)
+
+# Probe switch verification (RELAX_GRAD_PATH), same checkpoints and tokens
+# script: notebooks/conservative_arch/scaleup/debug/verify_relax_grad_path.py
+
+== attention + RELAX_GRAD_PATH='detached'
+   tag   : xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_rgdet_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_attn
+   5b    : GRADIENT-PATH PROBE: RELAX_GRAD_PATH = 'detached' -- NOT A LADDER POINT
+   forward vs parent: max|dlogit| = 0.000e+00   loss 4.121767 vs 4.121767
+   exchange force vs parent's: max|dF| = 0.000e+00   (force rms 0.0714)
+   gradient into earlier tokens through the field: 0.0000e+00
+
+== attention_potential + RELAX_GRAD_PATH='live'
+   tag   : xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_rglive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_attnpot
+   5b    : GRADIENT-PATH PROBE: RELAX_GRAD_PATH = 'live' -- NOT A LADDER POINT
+   forward vs parent: max|dlogit| = 3.433e-05   loss 4.371019 vs 4.371019
+   exchange force vs parent's: max|dF| = 1.192e-07   (force rms 0.0323)
+   gradient into earlier tokens through the field: 7.9768e-01

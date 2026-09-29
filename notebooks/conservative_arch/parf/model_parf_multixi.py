@@ -209,6 +209,21 @@ class MultiXiPARFConfig(SparsePARFConfig):
     # the architecture: a scalar gate diffused as sqrt(t), and a zero
     # readout surged to 50% force share and raised the loss.
     relax_lambda_fixed: Optional[float] = None
+    # Which hidden states the exchange field's LOSS GRADIENT reaches. The
+    # forward force is identical in every setting; only the backward pass
+    # differs (2026-09-29, the gradient-starvation probes):
+    #   'default'  -- as trained: 'attention' back-propagates through q, k
+    #                 and v into every token; 'attention_potential' detaches
+    #                 alpha and h_src, and its force is constant in h_t, so
+    #                 it sends NO gradient into any hidden state.
+    #   'detached' -- 'attention' only: its inputs are detached, which puts
+    #                 it in exactly the starved class 'attention_potential'
+    #                 trains in.
+    #   'live'     -- 'attention_potential' only: the same conservative
+    #                 force, written out as sum_s alpha W_uq^T W_v h_s over
+    #                 LIVE h and h_s, so the forward is unchanged and the
+    #                 learning signal returns.
+    relax_grad_path: str = "default"
 
     pair_potential: str = "sparse_topk"
     attn_n_heads: int = 4
@@ -445,6 +460,14 @@ class MultiXiPARFLM(SparsePARFLM):
                 _out, _hid = cfg.d, _H
             else:
                 _out, _hid = 1, _matched_hidden(_in, cfg.d, _H)
+            _gpath = getattr(cfg, "relax_grad_path", "default")
+            _GPATH_OK = {"default": _VALID, "detached": ("attention",),
+                         "live": ("attention_potential",)}
+            if _gpath not in _GPATH_OK or _relax not in _GPATH_OK[_gpath]:
+                raise ValueError(
+                    f"relax_grad_path={_gpath!r} is not defined for "
+                    f"force_relaxation={_relax!r}: 'detached' applies to "
+                    f"'attention' and 'live' to 'attention_potential'.")
             _gate = getattr(cfg, "relax_gate", "zero_readout")
             if _gate not in ("zero_readout", "scalar"):
                 raise ValueError(
@@ -638,6 +661,12 @@ class MultiXiPARFLM(SparsePARFLM):
                 "force_relaxation='potential' needs xis; callers must pass "
                 "xis=... to _pair_potential (see _layer_forces).")
         lam = self._relax_gate(layer_idx)
+        if (_mode == "attention_potential"
+                and getattr(self.cfg, "relax_grad_path", "default") == "live"):
+            # Delivered as an explicit force in _layer_forces instead: same
+            # value, but with a backward path into h. Adding it here too
+            # would count it twice.
+            return U_pair
         if _mode == "attention_potential":
             B, T, _ = h_in.shape
             h_src = h_in.detach() if self.cfg.causal_force else h_in
@@ -795,9 +824,12 @@ class MultiXiPARFLM(SparsePARFLM):
         if (self.relax_field is not None
                 and getattr(cfg, "force_relaxation", "none")
                 in ("nonconservative", "attention")):
-            _field = (self.relax_field(h_in)
+            _h_field = (h_in.detach()
+                        if getattr(cfg, "relax_grad_path", "default") == "detached"
+                        else h_in)
+            _field = (self.relax_field(_h_field)
                       if getattr(self, "_relax_takes_h_only", False)
-                      else self.relax_field(xis, h_in))
+                      else self.relax_field(xis, _h_field))
             _add = self._relax_gate(layer_idx) * _field
             # Record the share of the force carried outside the conservative
             # class.  Under 'zero_readout' this IS the measurement, lambda
@@ -807,6 +839,17 @@ class MultiXiPARFLM(SparsePARFLM):
                 self.relax_share[layer_idx] = (
                     _add.norm() / (_cons.norm() + 1e-12))
             f_phi = f_phi + _add
+
+        # 'attention_potential' with relax_grad_path='live': the conservative
+        # force -dV_attn/dh_t (alpha and h_s held fixed, as in the potential
+        # path) written out explicitly over live tensors. Forward value is
+        # the same; the loss gradient now reaches h through q, k and v.
+        if (self.relax_field is not None
+                and getattr(cfg, "force_relaxation", "none") == "attention_potential"
+                and getattr(cfg, "relax_grad_path", "default") == "live"):
+            _T = h_in.shape[1]
+            f_phi = f_phi + self._relax_gate(layer_idx) * self.relax_field.force_live(
+                h_in, h_in, self._pair_mask_for(_T, h_in.device))
 
         if split:
             return f_theta, f_phi

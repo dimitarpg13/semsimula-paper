@@ -1889,6 +1889,12 @@ underestimate of the gap at each arm's own best LR.
 
 #### The mechanism, from the code
 
+> **Withdrawn 2026-09-29.** The "weld" reading below does not survive a
+> second look at the code: W_uq is an output projection, and the routing
+> query is the separate W_q. The two arms' forces have the same form; they
+> differ in the backward pass. See "The 'welded projection' reading withdrawn"
+> at the end of this section, and the two probes pre-registered there.
+
 With α detached (which is what makes the force a gradient) and `h_src`
 detached (which is what keeps it causal), the potential is **bilinear**,
 so the force is
@@ -1984,6 +1990,119 @@ on at full strength from step 0. Whether a zero-readout gate
 (`RELAX_GATE = 'zero_readout'`, which is symmetric across both arms)
 recovers it is the obvious follow-up, and is tracked as a separate
 question rather than a ladder rung.
+
+#### The "welded projection" reading withdrawn: the conservative arm is gradient-starved — **2026-09-29**
+
+**The two forces have the same form.** Read side by side,
+`DirectExchangeForce` (`'attention'`) and
+`XiRoutedConservativeAttention.potential` (`'attention_potential'`) compute:
+
+| | `'attention'` | `'attention_potential'` |
+| --- | --- | --- |
+| routing α(t,s) | softmax of (W_Q h_t)·(W_K h_s) | softmax of (W_q h_t)·(W_k h_s), `route_from='h'` |
+| force on token t | W_O Σ_s α W_V h_s | Σ_s α W_uqᵀ W_v h_s / √d_v |
+| matrices | W_Q, W_K, W_V, W_O | W_q, W_k, W_v, W_uq, with the same shapes |
+
+- **There is no output-to-query weld.** W_uq is not the routing query, which
+  is the separate W_q; W_uqᵀ plays exactly the role of W_O. The mechanism
+  paragraph above ("taking the gradient welds the output projection to the
+  query projection") misread this, and **the expressivity reading is
+  withdrawn.**
+- **The conservativity here is close to trivial.** With α and h_src detached,
+  the potential is *linear* in h_t, so its force does not depend on h_t, and
+  any such field is a gradient.
+
+**What differs is the backward pass.** Detaching changes gradients, never
+forward values:
+
+- In `'attention'`, `relax_field(h_in)` receives the live h_in, so the loss
+  trains every token's state through q, k and v. Earlier tokens learn to be
+  useful values for later ones.
+- In `'attention_potential'`, the routing input and h_src are detached, and
+  the force is constant in h_t. **The exchange field sends no gradient into
+  any hidden state.** Its own four matrices still learn, through
+  `create_graph`.
+
+**Measured offline, on both `_best.pt` checkpoints** (step 31,000), with real
+validation tokens and a cotangent at the last position only:
+
+| arm | layer | force RMS | gradient → earlier tokens | gradient → the token itself | gradient → routing W |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `'attention'` | 0 | 0.0070 | 0.271 | 0.047 | 0.056 |
+| `'attention'` | 1 | 0.0714 | **5.28** | **4.28** | 52.1 |
+| `'attention_potential'` | 0 | 0.0099 | **0** | **0** | 0.038 |
+| `'attention_potential'` | 1 | 0.0323 | **0** | **0** | 10.6 |
+
+For `'attention_potential'`, autograd finds no path from the force to h at
+all. The controls rule out a trivial zero: the force is live, and the routing
+weights receive gradient. Output and scripts:
+[`gradient_path_check_output.txt`](../notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_attnpot/gradient_path_check_output.txt),
+`scaleup/debug/gradcheck_exchange_paths.py` and
+`verify_relax_grad_path.py`.
+
+**New leading hypothesis, H_s: gradient starvation.** It fits what was
+already measured. The arms are tied at step 500 and diverge afterwards, a
+learning deficit rather than a starting one. Neither the init-scale nor the
+gate probe moved the curve. And it would explain "worse than no field at
+all": a force the representations cannot adapt to is noise the rest of the
+model must work around.
+
+This confirms the **mechanism**. It does not yet show that the mechanism
+**causes** the +27.4%, which needs training.
+
+#### Pre-registered: the two gradient-path probes — **recorded 2026-09-29, before either run**
+
+One switch, `RELAX_GRAD_PATH` in Cell 0, passed as `relax_grad_path` to the
+model. **The forward force is unchanged in every setting; only the backward
+pass differs.** Verified on the checkpoints before any run:
+
+| probe | Cell 0 | tag component | forward vs parent | gradient into earlier tokens |
+| --- | --- | --- | --- | --- |
+| **(a)** | `LADDER_MECHANISM='attention'`, `RELAX_GRAD_PATH='detached'` | `rgdet` | identical (Δlogit 0) | 5.28 → **0** |
+| **(b)** | `LADDER_MECHANISM='attention_potential'`, `RELAX_GRAD_PATH='live'` | `rglive` | identical (Δlogit 3e-5, ΔF 1e-7) | 0 → **0.80** |
+
+- **(a)** detaches the field's inputs, which puts `'attention'` in exactly
+  the starved class `'attention_potential'` trains in.
+- **(b)** writes the same conservative force out explicitly
+  (`XiRoutedConservativeAttention.force_live`, Σ_s α W_uqᵀ W_v h_s / √d_v
+  over live tensors), so its forward dynamics stay conservative and causal
+  while the learning signal returns.
+- Both runs: `PROBE_MAX_STEPS = 3_000`, everything else at the ladder
+  defaults (`RELAX_GATE='scalar'`, λ pinned at 1.0, LR 1.2e-3). They are
+  **not ladder points**; Cell 5b says so and asserts the tag. About 1.5 h
+  each.
+
+**What the parents recorded** (a 3,000-step window is enough, because the gap
+was already 13.6% at step 3,000):
+
+| step | `'attention'` | `'attention_potential'` |
+| ---: | ---: | ---: |
+| 500 | 481.47 | 477.72 |
+| 1,000 | 248.81 | 258.18 |
+| 2,000 | 158.76 | 173.22 |
+| **3,000** | **131.20** | **148.99** |
+
+**Predictions under H_s, scored at step 3,000** with a ±3% band: the two
+earlier probes on this pair moved step 3,000 by +0.57% and +1.65%.
+
+- **(a) `attention` + `rgdet` lands within ±3% of 148.99, i.e. in [144.5,
+  153.5].** Within ±3% of 131.20, i.e. [127.3, 135.1], **refutes** H_s.
+- **(b) `attention_potential` + `rglive` lands within ±3% of 131.20, i.e. in
+  [127.3, 135.1].** Within ±3% of 148.99 **refutes** H_s.
+- Anywhere in between reads as **partial**: starvation explains part of the
+  gap, and the rest is something else.
+
+**Decision rules.**
+
+| (a) | (b) | reading | next |
+| --- | --- | --- | --- |
+| confirms | confirms | the +27.4% is the price of **detaching**, not of conservativity | train (b) to 32,500 steps as a new, named arm; **correct the cards** and the book's conservativity claim |
+| confirms | refutes | starving a field hurts, but the conservative arm has a further deficit | look for it: the per-head 1/√d_v scale, the sign convention, delivery through the potential path |
+| refutes | confirms | restoring gradients helps the conservative arm, while starving attention does not hurt it | attention's own backward path is not what makes it good; re-examine the routing difference |
+| refutes | refutes | gradient flow is not the explanation | the reverse-channel interference test (the arm with the reverse channel off, against `none-norc`) moves to first |
+
+**Order: (b) first.** It is the one that could yield a better conservative
+model, and a (b) confirmation alone already overturns the current reading.
 
 ---
 
