@@ -296,7 +296,7 @@ $$
 $$
 
 Mining the seven archived replay reports
-([`spike_replay_reports.json`](results/spike_replay_reports.json)) showed
+([`spike_replay_reports.json`](https://github.com/dimitarpg13/semsimula-paper/blob/main/notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc/spike_replay_reports.json)) showed
 this ratio cleanly separates the two modes *from data the watchdog already
 collected*: smooth-cascade events sit at `dc_ratio` $\lt 1.8$, localized ones at
 $\gt 2.2$. Logging it every interval lets us ask the one thing the archived
@@ -1054,40 +1054,45 @@ about how the session got into its current state.
 
 Every probe in §11.2's table has, at least once, produced a raw printed
 output that was saved to a text or JSON file rather than only quoted as
-numbers in prose. These are being uploaded to Hugging Face alongside this
-run's checkpoints and model code, under the same filenames used here, so
-the links below resolve once that upload lands (`results/` is a
-placeholder prefix for the eventual raw-content URL). This table is also
-the fixture inventory §11.5's testing strategy is built on.
+numbers in prose. They are filed in this repository, under their original
+filenames, in the run's results folder
+[`notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_…_L8probe_…_baoab_cfc/`](https://github.com/dimitarpg13/semsimula-paper/tree/main/notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc)
+(the L=8 CfC/BAOAB OpenWebText run; tag
+`xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc`
+— not the later `vtjoint_cgqk` L8 run), and the links below point there.
+This table is also the fixture inventory §11.5's testing strategy is built
+on.
 
 | Function(s) | Step(s) | File | Companion note reference |
 |---|---|---|---|
-| `replay_spike_batch` | 37,763 / 41,318 | [replay_spike_batch_37763_41318_output.txt](results/replay_spike_batch_37763_41318_output.txt) | §35, §38 |
-| `attribute_spike_rows` | 37,763 | [attributes_spike_batch_37763_output.txt](results/attributes_spike_batch_37763_output.txt) | §39.2 |
-| `replay_spike_batch` + `inspect_spike_tokens` | 39,983 / 41,837 | [replay_spike_batch_and_inspect_spike_tokens_39983_41837_output.txt](results/replay_spike_batch_and_inspect_spike_tokens_39983_41837_output.txt) | §38.6-§38.7 |
-| `replay_all_captures` (7-event aggregate) | 37,763 / 40,043 / 40,387 / 41,318 / 41,824 / 39,983 / 41,837 | [spike_replay_reports.json](results/spike_replay_reports.json) | §38.1, §38.7 |
-| `replay_spike_batch` | 47,116 | [replay_spike_batch_47116_output.txt](results/replay_spike_batch_47116_output.txt) | §41.1 |
-| `replay_spike_batch` | 48,507 | [replay_spike_batch_48507_output.txt](results/replay_spike_batch_48507_output.txt) | §41.1 |
-| `replay_spike_batch` | 48,917 | [replay_spike_batch_48917_output.txt](results/replay_spike_batch_48917_output.txt) | §41.1 |
-| `attribute_spike_rows` | 47,116 | [attribute_spike_rows_47116_output.txt](results/attribute_spike_rows_47116_output.txt) | §41.1 |
-| `replay_precision_cap_ablation` + `replay_integrator_ablation` | 47,116 / 48,507 / 48,917 | [replay_precision_cap_and_integration_ablations_47116_48507_48917_output.txt](results/replay_precision_cap_and_integration_ablations_47116_48507_48917_output.txt) | §14.3, §15.1 |
-| `bracket_precision_lr_max` | 47,116 / 48,507 / 48,917 (vs. healthy 27,000) | [bracket_precision_lr_max_47116_48507_48917_output.txt](results/bracket_precision_lr_max_47116_48507_48917_output.txt) | §15.1 |
-| `replay_spike_batch` + `attribute_spike_rows` | 52,940 | [replay_spike_batch_attribute_spike_rows_52940_output.txt](results/replay_spike_batch_attribute_spike_rows_52940_output.txt) | Mitigations §44 |
-| `replay_spike_batch` + `attribute_spike_rows` | 55,919 | [replay_spike_batch_attribute_spike_rows_55919_output.txt](results/replay_spike_batch_attribute_spike_rows_55919_output.txt) | Mitigations §44 |
-| `replay_clip_ablation` | 52,940 | [replay_clip_ablation_52940_output.txt](results/replay_clip_ablation_52940_output.txt) | Mitigations §45.3 |
-| `replay_clip_ablation` | 55,919 | [replay_clip_ablation_55919_output.txt](results/replay_clip_ablation_55919_output.txt) | Mitigations §45.3 |
-| `replay_spike_batch` + `attribute_spike_rows` | 70,522 / 71,194 / 71,703 | [replay_spike_batch_and_attribute_spike_rows_70522_71194_71703_output.txt](results/replay_spike_batch_and_attribute_spike_rows_70522_71194_71703_output.txt) | Mitigations §48; `Register_Temperature_Instability_in_the_Fock_Creation_Gate.md` §2.1 |
-| `decode_hot_rows` + `probe_hot_rows` | 70,522 / 71,194 | [decode_hot_rows_probe_hot_rows_70522_71194_output.txt](results/decode_hot_rows_probe_hot_rows_70522_71194_output.txt) | Mitigations §48 follow-up; `Register_Temperature_Instability_in_the_Fock_Creation_Gate.md` §2.2, §4.1 |
-| `probe_gate_saturation` + `sweep_log_tau_history` | 70,522 / 71,194 | [probe_gate_saturation__sweep_log_tau_history_70522_71194_output.txt](results/probe_gate_saturation__sweep_log_tau_history_70522_71194_output.txt) | Mitigations §48.8; `Register_Temperature_Instability_in_the_Fock_Creation_Gate.md` §4.2, §5, §7.2, §8.2-§8.3 |
+| `replay_spike_batch` | 37,763 / 41,318 | [replay_spike_batch_37763_41318_output.txt](https://github.com/dimitarpg13/semsimula-paper/blob/main/notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc/replay_spike_batch_37763_41318_output.txt) | §35, §38 |
+| `attribute_spike_rows` | 37,763 | [attributes_spike_batch_37763_output.txt](https://github.com/dimitarpg13/semsimula-paper/blob/main/notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc/attributes_spike_batch_37763_output.txt) | §39.2 |
+| `replay_spike_batch` + `inspect_spike_tokens` | 39,983 / 41,837 | [replay_spike_batch_and_inspect_spike_tokens_39983_41837_output.txt](https://github.com/dimitarpg13/semsimula-paper/blob/main/notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc/replay_spike_batch_and_inspect_spike_tokens_39983_41837_output.txt) | §38.6-§38.7 |
+| `replay_all_captures` (7-event aggregate) | 37,763 / 40,043 / 40,387 / 41,318 / 41,824 / 39,983 / 41,837 | [spike_replay_reports.json](https://github.com/dimitarpg13/semsimula-paper/blob/main/notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc/spike_replay_reports.json) | §38.1, §38.7 |
+| `replay_spike_batch` | 47,116 | [replay_spike_batch_47116_output.txt](https://github.com/dimitarpg13/semsimula-paper/blob/main/notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc/replay_spike_batch_47116_output.txt) | §41.1 |
+| `replay_spike_batch` | 48,507 | [replay_spike_batch_48507_output.txt](https://github.com/dimitarpg13/semsimula-paper/blob/main/notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc/replay_spike_batch_48507_output.txt) | §41.1 |
+| `replay_spike_batch` | 48,917 | [replay_spike_batch_48917_output.txt](https://github.com/dimitarpg13/semsimula-paper/blob/main/notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc/replay_spike_batch_48917_output.txt) | §41.1 |
+| `attribute_spike_rows` | 47,116 | [attribute_spike_rows_47116_output.txt](https://github.com/dimitarpg13/semsimula-paper/blob/main/notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc/attribute_spike_rows_47116_output.txt) | §41.1 |
+| `replay_precision_cap_ablation` + `replay_integrator_ablation` | 47,116 / 48,507 / 48,917 | [replay_precision_cap_and_integration_ablations_47116_48507_48917_output.txt](https://github.com/dimitarpg13/semsimula-paper/blob/main/notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc/replay_precision_cap_and_integration_ablations_47116_48507_48917_output.txt) | §14.3, §15.1 |
+| `bracket_precision_lr_max` | 47,116 / 48,507 / 48,917 (vs. healthy 27,000) | [bracket_precision_lr_max_47116_48507_48917_output.txt](https://github.com/dimitarpg13/semsimula-paper/blob/main/notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc/bracket_precision_lr_max_47116_48507_48917_output.txt) | §15.1 |
+| `replay_spike_batch` + `attribute_spike_rows` | 52,940 | [replay_spike_batch_attribute_spike_rows_52940_output.txt](https://github.com/dimitarpg13/semsimula-paper/blob/main/notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc/replay_spike_batch_attribute_spike_rows_52940_output.txt) | Mitigations §44 |
+| `replay_spike_batch` + `attribute_spike_rows` | 55,919 | [replay_spike_batch_attribute_spike_rows_55919_output.txt](https://github.com/dimitarpg13/semsimula-paper/blob/main/notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc/replay_spike_batch_attribute_spike_rows_55919_output.txt) | Mitigations §44 |
+| `replay_clip_ablation` | 52,940 | [replay_clip_ablation_52940_output.txt](https://github.com/dimitarpg13/semsimula-paper/blob/main/notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc/replay_clip_ablation_52940_output.txt) | Mitigations §45.3 |
+| `replay_clip_ablation` | 55,919 | [replay_clip_ablation_55919_output.txt](https://github.com/dimitarpg13/semsimula-paper/blob/main/notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc/replay_clip_ablation_55919_output.txt) | Mitigations §45.3 |
+| `replay_spike_batch` + `attribute_spike_rows` | 70,522 / 71,194 / 71,703 | [replay_spike_batch_and_attribute_spike_rows_70522_71194_71703_output.txt](https://github.com/dimitarpg13/semsimula-paper/blob/main/notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc/replay_spike_batch_and_attribute_spike_rows_70522_71194_71703_output.txt) | Mitigations §48; `Register_Temperature_Instability_in_the_Fock_Creation_Gate.md` §2.1 |
+| `decode_hot_rows` + `probe_hot_rows` | 70,522 / 71,194 | [decode_hot_rows_probe_hot_rows_70522_71194_output.txt](https://github.com/dimitarpg13/semsimula-paper/blob/main/notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc/decode_hot_rows_probe_hot_rows_70522_71194_output.txt) | Mitigations §48 follow-up; `Register_Temperature_Instability_in_the_Fock_Creation_Gate.md` §2.2, §4.1 |
+| `probe_gate_saturation` + `sweep_log_tau_history` | 70,522 / 71,194 | [probe_gate_saturation__sweep_log_tau_history_70522_71194_output.txt](https://github.com/dimitarpg13/semsimula-paper/blob/main/notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc/probe_gate_saturation__sweep_log_tau_history_70522_71194_output.txt) | Mitigations §48.8; `Register_Temperature_Instability_in_the_Fock_Creation_Gate.md` §4.2, §5, §7.2, §8.2-§8.3 |
 
 Three files from the same results folder are not included above:
-`sigma_lr_report_output.txt` (a single-checkpoint scratch run whose numbers
+[`sigma_lr_report_output.txt`](https://github.com/dimitarpg13/semsimula-paper/blob/main/notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc/sigma_lr_report_output.txt)
+(filed alongside the others, but a single-checkpoint scratch run whose numbers
 do not match any table currently in either note — its provenance needs
 confirming before it can be cited against a specific finding),
 `logfreq_surprisal_openwebtext.npy` (a precomputed token-frequency data
 dependency, not a diagnostic tool's output), and `training_log.jsonl` (the
 raw per-step log underlying most of §5's Phase-0 discussion generally,
-rather than any one finding specifically).
+rather than any one finding specifically). The last two are not filed in
+the repository.
 
 
 ## 17. A fifth axis: curvature geometry and the rank question
