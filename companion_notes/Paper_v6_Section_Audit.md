@@ -56,8 +56,14 @@ contents use the rendered numbers. This audit uses **`file` -> §rendered**
 throughout, and quotes page numbers from the current build.
 
 **Complete map, generated from `main.toc` of the current build
-(2026-09-27, 482 pp.). Always cite the rendered number — it is what the
-reader sees in the PDF.**
+(regenerated 2026-09-28 after a forced clean rebuild, `latexmk -g`: 483 pp.,
+0 errors, 0 undefined references or citations; source at `747173f`). Always
+cite the rendered number — it is what the reader sees in the PDF.**
+
+**The rule.** The rendered number is the position in `main.tex`'s
+`\input` order (ll. 342–379): each file opens with exactly one `\section`,
+counted in input order. The filename prefix plays no part. `\appendix`
+(l. 381) switches the counter to letters for the four `A*` files.
 
 | file | renders as | p. |
 | --- | --- | ---: |
@@ -88,27 +94,34 @@ reader sees in the PDF.**
 | `17g_continuous_learning.tex` | **§25** Continuous Learning | 321 |
 | `17h_first_order_sufficiency.tex` | **§26** When First-Order Dynamics Suffices | 326 |
 | `18_riemannian_geometry.tex` | **§27** Riemannian Geometry of Hidden-State Space | 338 |
-| `20_dynamical_simulator.tex` | **§28** The Direct Dynamical Simulator | 366 |
-| `18b_relation_to_energy_based_models.tex` | **§29** Relation to Energy-Based Models | 380 |
-| `18e_relation_to_liquid_neural_networks.tex` | **§30** Relation to Liquid Neural Networks | 382 |
-| `18i_relation_to_optimizer_inspired_transformers.tex` | **§31** Relation to Optimizer-Inspired Transformers | 387 |
+| `20_dynamical_simulator.tex` | **§28** The Direct Dynamical Simulator | 367 |
+| `18b_relation_to_energy_based_models.tex` | **§29** Relation to Energy-Based Models | 381 |
+| `18e_relation_to_liquid_neural_networks.tex` | **§30** Relation to Liquid Neural Networks | 383 |
+| `18i_relation_to_optimizer_inspired_transformers.tex` | **§31** Relation to Optimizer-Inspired Transformers | 388 |
 | `18f_relation_to_alphafold.tex` | **§32** Relation to AlphaFold | 393 |
 | `18g_langevin_completion.tex` | **§33** The Thermal Langevin Completion | 396 |
-| `18j_relation_to_flow_matching.tex` | **§34** Relation to Flow Matching and CNFs | 398 |
-| `18h_portable_potentials.tex` | **§35** Portable Learned Potentials | 401 |
-| `18c_memorization_capacity.tex` | **§36** Memorization Capacity | 405 |
-| `18d_geometric_capabilities.tex` | **§37** Capabilities Unique to the Conservative Design | 409 |
-| `19_conclusion.tex` | **§38** Conclusion and Open Questions | 422 |
+| `18j_relation_to_flow_matching.tex` | **§34** Relation to Flow Matching and CNFs | 399 |
+| `18h_portable_potentials.tex` | **§35** Portable Learned Potentials | 402 |
+| `18c_memorization_capacity.tex` | **§36** Memorization Capacity | 406 |
+| `18d_geometric_capabilities.tex` | **§37** Capabilities Unique to the Conservative Design | 410 |
+| `19_conclusion.tex` | **§38** Conclusion and Open Questions | 423 |
 
-Unnumbered: `00_notation.tex`, `A0_edition_history.tex`,
-`A1_non_autonomous_framework.tex`, `A2_inference_efficiency.tex`,
-`A3_experiment_index.tex`.
+| `A0_edition_history.tex` | **Appendix A** Edition history | 437 |
+| `A1_non_autonomous_framework.tex` | **Appendix B** The non-autonomous conservative framework | 439 |
+| `A2_inference_efficiency.tex` | **Appendix C** Inference efficiency: FLOP and parameter counts | 445 |
+| `A3_experiment_index.tex` | **Appendix D** Experiment quick-reference index | 461 |
 
-**Note the two traps.** The filename ordering is not the rendered ordering:
+Unnumbered: `00_notation.tex` only (`\section*`, p. 15). The four `A*`
+files are **lettered, not unnumbered** — `\appendix` in `main.tex` switches
+the counter to letters. (Corrected 2026-09-28; the earlier version of this
+table listed them as unnumbered.)
+
+**Note the three traps.** The filename ordering is not the rendered ordering:
 `20_dynamical_simulator.tex` renders as **§28**, between `18_riemannian`
 (§27) and `18b_energy_based` (§29); and `17b_cross_architecture_vreg.tex`
-renders as **§21**, *after* `17c_fock_parflm.tex` at **§20**. Never infer a
-section number from a filename.
+renders as **§21**, *after* `17c_fock_parflm.tex` at **§20**. And a third:
+`A1_non_autonomous_framework.tex` is **Appendix B**, not Appendix A —
+`A0_edition_history` takes A. Never infer a section number from a filename.
 
 Regenerate this table from `main.toc` after any change that adds or removes
 a section.
@@ -153,7 +166,7 @@ arm and the severity tracks non-conservative content; inertia is worth
 
 ---
 
-## `A1_non_autonomous_framework.tex` -> appendix — **audited 2026-09-27**
+## `A1_non_autonomous_framework.tex` -> Appendix B — **audited 2026-09-27**
 
 **Plan said:** *"A1 read; decide whether it moves into the main text (it
 probably does, as the formal home of the forcing)."*
@@ -278,7 +291,7 @@ should fold into §8.5 once the part structure is settled.
 
 ---
 
-## `18_riemannian_geometry.tex` -> §27, pp. 337–392 — Riemannian geometry — **EDITED 2026-09-27**
+## `18_riemannian_geometry.tex` -> §27, pp. 338–366 — Riemannian geometry — **EDITED 2026-09-27**
 
 **Plan said:** "retreat, largest". **Audit: correct, and the reason is
 starker than the plan knew.**
