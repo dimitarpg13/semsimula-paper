@@ -1287,10 +1287,27 @@ whole 0 → … → 6b-13 path against the L=2 checkpoint, which completed in 75
 | L=4, dt=2 | in-flight, 25 readings, steps 20,500–32,500 | 2.280 ± 0.034 | 4.60 ± 0.18 | 63.1% | complete; no trend through the decay phase |
 | L=2, dt=4 | in-flight, 1 reading, step 32,000 | 3.797 | 6.926 | 98.3% | **unplanned preview**: 500 steps past `_best.pt`, training batches |
 | L=2, dt=4 | 6b-13 local dry run, `_best.pt` (step 31,500) | 3.796 | 6.766 | 98.4% | local validation cache, not necessarily the Colab tokens |
-| L=4, dt=2 | 6b-13, Colab, `_best.pt` (step 31,000) | — | — | — | **pending** |
+| L=4, dt=2 | 6b-13, Colab, `_best.pt` (step 31,000) | 2.292 | 4.484 | 63.9% | **scored** 2026-09-29; [raw output](https://github.com/dimitarpg13/semsimula-paper/blob/main/notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L4probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt2_lr0p0012_noattn/D2_6b13_omega_dt_endpoint.txt) |
 | L=2, dt=4 | 6b-13, Colab, `_best.pt` (step 31,500) | — | — | — | **pending**: the scored measurement |
 
-The dry run's per-layer medians at L=2 are 3.34 (layer 0) and 4.53 (layer 1).
+The scored L=4 endpoint agrees with its own in-flight series (p50 2.292
+against 2.280 ± 0.034; 63.9% against 63.1% over the wall), so the offline
+probe and the in-flight monitor measure the same quantity.
+
+Per-layer medians, with the L=2 row still unscored:
+
+| arm | layer 0 | layer 1 | layer 2 | layer 3 | source |
+|---|---:|---:|---:|---:|---|
+| L=4 | 3.367 | 2.007 | 2.494 | 1.485 | scored |
+| L=2 | 3.34 | 4.53 | — | — | local dry run |
+
+The L=4 mean hides a steep gradient across depth: 99.8% of layer 0's
+readings are over the wall, against 23.2% of layer 3's. Layer 0 reads almost
+the same at both depths (3.37 against 3.34) despite dt halving, meaning ω
+doubled there. That suggests the partial compensation seen in the overall
+median is full compensation at the first layer and little beyond it. This is a
+**lead, not a finding**, until the scored L=2 endpoint confirms the L=2
+per-layer values on the same tokens.
 
 What the programme gains, independent of the ladder question:
 
