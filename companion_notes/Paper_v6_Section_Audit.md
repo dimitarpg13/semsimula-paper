@@ -146,6 +146,7 @@ arm and the severity tracks non-conservative content; inertia is worth
 | `17c_fock_parflm` -> **§20** Fock-Augmented PARFLM | promote | not yet read | pending |
 | `14_experiments` -> **§15** Experimental Validation | reframe | not yet read | pending |
 | **§11**, **§26**, **§36**, **§37**, **§28** | reframe as decision points allow | not yet read | pending |
+| `09_expressivity_mcs` -> **§10** Expressivity / MCS | (plan: keep, review) | **real gap** — no built model placed; v2.1's register lifecycle runs over layers, not tokens, so it does not realise v2; needs a closing "Where the implemented models sit" subsection | **audited 2026-09-28, corrected from code same day**; Phase 1b pending |
 | `18d_geometric_capabilities` -> **§37** | keep, retreat, retitle | plan §3.1 written; not line-audited | pending |
 | **§1**, abstract, **§38** conclusion | thesis sentence, last | **abstract updated 2026-09-27** (obstruction + geodesics paragraphs); §1 and §38 pending | partial |
 | A0 edition history | update | v6 entry written 2026-09-25 | **done** |
@@ -410,6 +411,13 @@ implemented model sits **below** the middle rung, not on it. It has v2's
 *mechanism* (creation, destruction, stack discipline, Fock bookkeeping) with
 v2's *defining property* absent.
 
+> **Corrected later the same day — see "CORRECTED 2026-09-28" below.** The
+> "bounded register machine, finite state" step assumes the registers carry
+> state from token to token. In the prefix-causal lifecycle they do not: the
+> bank is rebuilt from the whole prefix at every layer. The first half of the
+> paragraph (M is fixed, nothing grows with bracket depth) stands; the
+> finite-state conclusion does not.
+
 **The programme's own experimental plan already encodes this without naming
 it.** `Augmenting_PARFLM_to_handle_MCS_Languages.md` §Phase 1:
 
@@ -429,6 +437,11 @@ the branching-process hypothesis, so the CFG argument genuinely does not
 apply — but that only matters for proving an upper bound of CFL, and a
 tighter bound already binds: whatever the gate reads, it writes into M slots.
 Bounded memory dominates.
+
+> **Withdrawn, 2026-09-28 — see "CORRECTED" below.** The gate writes into M
+> slots, but it re-reads the full prefix at every layer, so the M slots are
+> not where history is stored. Prefix conditioning is not a distraction; it
+> is the mechanism.
 
 **What replaces it is worse for the chapter.** §10 carries two measuring
 instruments: the Chomsky ladder for the formalism, whose rungs are defined by
@@ -459,7 +472,9 @@ the backward side of that line.
 `Augmenting_PARFLM_to_handle_MCS_Languages.md`: M ∈ {2,4,8,16,32,64} × 3
 seeds on v2.1, close-type accuracy at exact stack depth, collapse depth
 $D^\ast(M)$, four controls (bag, v0, parameter-matched, tiny transformer).
-Stated prior: limb 1. Refutation conditions named. ~2 h Colab GPU, after L=4.
+Stated prior: limb 1 — **revised the same day, before any run, to limb (b)**;
+see "CORRECTED 2026-09-28" below. Refutation conditions named. ~2 h Colab
+GPU, after L=4.
 
 **The decisive experiment is cheap and already half-built.**
 `parf/dyck_data.py` exists and its docstring names this exact purpose. Sweep
@@ -469,12 +484,97 @@ linearly. One plot settles which limb of the trilemma the programme is on,
 at d=64, L=4 — a few small runs, not an OpenWebText rung.
 **Pre-register before running.**
 
+### CORRECTED 2026-09-28 — the register lifecycle runs over layers, not tokens
+
+Read against the code, not the design notes. Three findings; the first two
+revise the placement above, the third removes the May Dyck evidence.
+
+**1. The lifecycle clock is depth, not discourse time.** With
+`prefix_causal_registers=True` — the default, and the configuration of every
+ladder arm — `FockMultiXiPARFLM._fock_layer_step`
+(`model_fock_parf_multixi.py`, the `elif prefix_causal:` branch) does, at
+**each layer**:
+
+```python
+readout, alpha_max = self.creation_gate_qkv.forward_prefix(h, r)
+r = blend * r + (1.0 - blend) * readout                  # (B, T, M, d)
+salience = salience * decay + alpha_max * (1.0 - decay)  # (B, T, M)
+```
+
+`QKVCreationGate_v21.forward_prefix` (`model_fock_parf_v2.py`) scores each
+register's query — taken from that register's *previous-layer* state at
+position t — against keys from tokens 1…t, and returns a cumulative-softmax
+readout of their values. Salience, the active mask and the destruction gate
+then step once, also per layer. Consequences:
+
+- At position t there are **at most L creation events** — 2 or 4 on the
+  ladder — whatever the number of open brackets before t.
+- A `(` creates nothing and a `)` destroys nothing. §10's F1 paragraph
+  (`09_expressivity_mcs.tex` ≈ l.1005: "each `(` instantiates a new
+  open-bracket particle … each `)` removes the most recent") describes a
+  mechanism the model does not have.
+- The register pool is **M learned-query attention readouts over the
+  prefix, iterated L times** — a causal, per-position relative of a
+  Perceiver latent array. "Creation", "destruction" and "salience" are
+  accurate names for the layer-wise gating, but they are not a particle
+  population evolving along the token sequence.
+
+**2. So the model is not a finite-state truncation either.** The
+finite-state argument above needed memory to pass from token to token
+through M slots. It does not: every layer re-reads the full prefix, so the
+store is the prefix itself, exactly as in attention. M bounds how many
+readouts a layer takes, not how much history is retained. Two things follow:
+
+- The trilemma's limb 1 ("bounded truncation") loses its mechanism. What M
+  caps is readout width, and there is no reason D\* must track it — small
+  transformers carry bounded Dyck depth through layers and position
+  information, not through a slot count (Yao et al. 2021).
+- The model's natural home is the **circuit-complexity axis beside
+  transformers** — the placement the "What replaces it" paragraph above
+  already reached by a different route. That paragraph's conclusion stands
+  and is now the primary reading, not a consequence of bounded memory.
+
+The staircase question ("which rung?") is therefore mis-posed for the built
+model: its rungs are defined by what grows along the input, and nothing in
+v2.1 grows along the input. The honest statement is that v2.1 shares v2's
+*vocabulary* and none of v2's *dynamics*.
+
+**3. The May 2026 Dyck results ran the leaky lifecycle.** Phase 1 (10 May)
+and F2 (23 May) predate the causal-leak fix (23 July,
+`Fock-PARFLM_Causal_Leak_Audit_Results.md`). `FockPARFLM_v2` at the time ran
+the legacy lifecycle — cross-layer register state taken from the
+**last position of the full window** (`_causal_creation_readout`, `r_new =
+r_causal_mt[:, :, -1, :]`), which the leak audit's T2 probe certifies as
+leaking future tokens backward whenever the reverse channel is on. On Dyck a
+future leak can hand the model the closing bracket outright. The leak's size
+at d=64 on Dyck was never measured, so the May 49.01% and the "LIFO is the
+active ingredient" reading are **not evidence either way**. Phase 1b's list
+of May defects did not include this; it now does.
+
+**What changes downstream.**
+
+- Phase 1b (`Augmenting_PARFLM_to_handle_MCS_Languages.md`) is still the
+  right experiment and its four limbs still cover the outcomes. Its stated
+  prior moves from limb (a) to **limb (b)**, and its "mechanism as built"
+  section is rewritten — both revised **before any run**, with the original
+  prior kept on the record there.
+- The §10 fix below gains a sentence: the built model's creation and
+  destruction are layer-wise gating over prefix attention, and the Fock
+  vocabulary describes the formalism, not the trained model's dynamics.
+- `subsubsec:framework-vs-transformers` and its table
+  (`tab:framework-vs-transformers`) cannot contrast the built model with
+  attention-based memory, because the built model's memory *is*
+  attention-based. The contrast is legitimate for the formalism only.
+
 **Verdict: a real gap, and a substantive one.** Not a placement sentence that
 can be dropped in — the honest fix is a short subsection at the end of §10,
 "Where the implemented models sit", that states the inventory, states plainly
-that no built model has v3 and so none is claimed to reach MCS, and names the
-hypothesis mismatch as open rather than resolving it by assertion. Queue it
-behind the §20 pass; it needs thought, not typing.
+that no built model has v3 and so none is claimed to reach MCS, **states that
+the built model's register lifecycle runs over layers on prefix attention and
+so does not realise v2's growth along the input**, names Phase 1b as the
+measurement that places it, and names the hypothesis mismatch as open rather
+than resolving it by assertion. Queue it behind the §20 pass; it needs
+thought, not typing.
 
 ---
 
@@ -490,3 +590,5 @@ behind the §20 pass; it needs thought, not typing.
 | 2026-09-27 | §27 Arm 2 | **magnitude-compliance inference withdrawn** (`rem:gamma-eff-scope`). Corrects my own flag: γ_eff (T-ratio) is *not* the withdrawn γ_geo machinery and stands; the overclaim was concluding compliance from damped ≈ undamped at R² ≈ −2.5. 481pp clean |
 | 2026-09-27 | §8 (`07a`) | **edited** — two withdrawals (γ_geo artefact, γ_Q sign) + new §8.6; 477pp clean |
 | 2026-09-27 | — | **framing decision recorded (§0): this is a book.** Every verdict so far is a *correctness* verdict; *placement* verdicts not yet started |
+| 2026-09-28 | §10 (`09`) | audited — no built model named; v2.1 = v0+v1.5+v2 by inventory, no v3, so none reaches MCS. Phase 1b (M-sweep) designed and pre-registered |
+| 2026-09-28 | §10 (`09`) | **corrected from code**: in the prefix-causal lifecycle the registers are rebuilt from the prefix at every layer — creation/destruction run over L, not over tokens. Withdraws the "bounded register machine, finite state" step; places the built model on the circuit axis beside attention. May Dyck runs flagged as pre-leak-fix. Phase 1b prior moved (a) → (b) before any run |

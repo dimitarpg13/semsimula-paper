@@ -921,6 +921,80 @@ explanation.
 The local L=2 checkpoints already carry everything needed; the only thing
 missing here is an OpenWebText batch, so it runs in Colab, not on the laptop.
 
+#### Nine readings after the fix — steps 20,500–24,500, **recorded 2026-09-28**
+
+Source: the appended run-4 log
+(`lowrank_depth_ladder_L=4_no_attention_LR=1.2e-03_32500_training_output.txt`),
+resumed with `semsimula-diag` at 409175b. Every `[resonance]` line from
+20,500 on is populated; every one before the restart reads `EMPTY SUMMARY`.
+
+| step | ω·dt p50 | ω·dt max | over wall (2) | `bproj_sig` | val PPL |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 20,500 | 2.236 | 4.398 | 60.9% | 97.48 | 87.05 |
+| 21,000 | 2.346 | 4.573 | 65.6% | 98.88 | 85.97 |
+| 21,500 | 2.318 | 4.579 | 63.5% | 100.10 | 85.83 |
+| 22,000 | 2.271 | 4.589 | 61.9% | 101.40 | 85.62 |
+| 22,500 | 2.283 | 4.661 | 63.1% | 102.64 | **82.91** |
+| 23,000 | 2.296 | 4.692 | 63.4% | 103.76 | 84.08 |
+| 23,500 | 2.262 | 4.503 | 62.8% | 104.85 | 83.99 |
+| 24,000 | 2.258 | 4.627 | 62.6% | 105.67 | 83.97 |
+| 24,500 | 2.293 | **4.945** | 64.1% | 106.25 | **81.41** |
+
+`bproj_sig` is read from the training line of the same step. Linear fits
+over the nine points, slope per 1,000 steps against the fit's residual std:
+
+| series | mean | slope / 1k | residual std | change 20,500 → 24,500 |
+| --- | ---: | ---: | ---: | ---: |
+| ω·dt p50 | 2.285 | −0.004 | 0.035 | +2.5% |
+| ω·dt max | 4.619 | +0.077 | 0.115 | +12.4% |
+| over wall | 63.1% | +0.13 pp | 1.41 pp | +3.2 pp |
+| `bproj_sig` | 102.3 | +2.24 | 0.33 | +9.0% |
+
+**1. The median is stationary, and past the wall.** p50 = 2.285 ± 0.033
+with no slope distinguishable from noise, so ω ≈ 1.14 at dt = 2. About 63%
+of token-layer pairs sit above ω·dt = 2 at every reading. The step-20,500
+reading was representative, not a transient. The WSD decay began near step
+21,700 and has not moved the median, while val PPL keeps improving (new
+bests at 22,500 and 24,500): the operating point is holding while the loss
+falls.
+
+**2. The max drifts up, mildly.** 4.40 → 4.95, a fitted rise of about 0.31
+over the window against 0.115 residual scatter, and roughly half of the
+total change is the last reading alone. Stiffness, not instability — the
+A-substep integrates every pair exactly — but worth watching through the
+rest of the decay phase.
+
+**3. Caveat on the pre-registered band: `bproj_sig` tracks the tail, not
+the median.** Over the same nine readings `bproj_sig` rose a smooth 9%
+(residual std 0.33) while p50 did not move: corr(p50, `bproj_sig`) = −0.16,
+corr(max, `bproj_sig`) = +0.67. `bproj_sig` behaves like a σ_max-type
+quantity. The [3.3, 4.2] band was derived by scaling the **median** by the
+L=4 / L=2 `bproj_sig` ratio (97.35 / 81.77 = 1.19×, giving ≈ 3.8), so its
+derivation leaned on a proxy that, on this evidence, does not follow the
+statistic it was used to scale.
+
+What this does and does not change:
+
+- **The band stands as pre-registered.** It was recorded before the L=2
+  measurement and Cell 6b-13 scores it on p50 exactly as written. It is not
+  moved.
+- **A hit is less confirmatory than it looked, and a miss is less
+  damning.** The two mechanisms still predict different L=2 medians (≈ 2.2
+  vs ≈ 4.5), and that discrimination is unaffected; what weakened is only
+  the route to the narrow band inside it. A miss inside [2.6, 4.7] should be
+  read against the proxy before it is read against mechanism (2).
+- **Exploratory secondary comparison, labelled as added after these
+  readings:** the ratio max(L=2) / max(L=4). That is the comparison
+  `bproj_sig` actually speaks to. Cell 6b-13 already writes `max` and
+  per-layer p50 to `results/omega_dt_endpoint.jsonl`, so no cell change is
+  needed; it is reported beside the scored p50, never in place of it.
+
+**4. The L=4 endpoint reading should be unremarkable.** With p50 this
+stationary, 6b-13 on the final L=4 checkpoint should land near 2.29. If it
+does not, the batch or the checkpoint is the first suspect, not the model.
+
+**Plan unchanged:** run 4 to 32,500; 6b-13 on both arms; then D1.
+
 #### "Can we fix L=4 by adding parameters?" — **analysed 2026-09-28**
 
 Short answer: **partly, and the cheap part is worth trying; the expensive part
