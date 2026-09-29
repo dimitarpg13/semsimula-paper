@@ -1,0 +1,420 @@
+[rows] loaded fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_step37763_spikebatch.pt  step=37763  pre_clip_grad_norm=160.39
+
+[rows] per-row attribution, ranked by V_theta.depth_code  (each row scaled by 1/(grad_accum*rows_per_mb), i.e. its own share of the aggregate):
+ mb  row                   ntp         layer0_h_grad       total_grad_norm    V_theta.depth_code
+  3    4                4.8804               0.32311               4.60041               2.58857
+  2    2                4.6282              0.111779               2.59942               1.47224
+  3    3                  5.42              0.102567               1.48999              0.887136
+  0    6               3.42324              0.115325               1.37347              0.496414
+  1    5               4.38294              0.023022              0.552012              0.378535
+  1    6               4.93721              0.019486              0.313139              0.227069
+  0    4               4.89287             0.0387644              0.489012              0.224487
+  1    3               4.58513             0.0233594              0.388043              0.211862
+  3    2               3.97977             0.0282218              0.302208              0.208397
+  1    2               4.40211              0.037567              0.377567              0.173272
+  2    4               3.92948             0.0281066              0.326697              0.169039
+  1    0               5.06268             0.0213215              0.276952              0.133541
+  0    3               4.35824             0.0127317              0.208518              0.125611
+  2    5               5.19071             0.0178887              0.179882              0.115237
+  0    1               4.52327             0.0141957              0.195443              0.114404
+  0    7               5.02342             0.0206113               0.18915              0.104462
+  1    4               4.55735               0.21306               2.96654             0.0954939
+  0    2               4.77854             0.0167231              0.176016             0.0940941
+  2    1               4.49472             0.0208425              0.177052             0.0939095
+  3    7               4.43189             0.0151199              0.170648             0.0877291
+  2    7               4.61811             0.0148384              0.171285              0.085853
+  3    6               4.67115             0.0121626              0.151556             0.0849671
+  1    1               4.24063             0.0137282              0.167705              0.081094
+  1    7               4.84138             0.0127035              0.136368             0.0790692
+  3    0               4.93541             0.0132045              0.160836             0.0759689
+  0    0               4.08253             0.0159837              0.143377             0.0747826
+  3    1               3.92167             0.0151668              0.173848             0.0699499
+  3    5               4.50187             0.0110574              0.124267             0.0685505
+  2    6               4.85855             0.0116188              0.122281             0.0639995
+  2    3               4.30058             0.0105497              0.154829             0.0614481
+  0    5               4.89089             0.0103497               0.11176             0.0613788
+  2    0               4.31245             0.0111119              0.114931             0.0588075
+
+[rows] concentration for V_theta.depth_code:
+    top-1 row / sum-of-row-norms : 0.2919   (flat-batch baseline 0.0312)
+    top-3 rows / sum-of-row-norms : 0.5580
+    sum of ||row grad||           : 8.8674
+    ||sum of row grads||          : 3.0711   (rough cf. replay_spike_batch for this param; see caveats)
+
+[rows] concentration for layer0_h_grad:
+    top-1 row / sum-of-row-norms : 0.2382   (flat-batch baseline 0.0312)
+    top-3 rows / sum-of-row-norms : 0.4804
+    sum of ||row grad||           : 1.3563
+
+[rows] concentration for total_grad_norm:
+    top-1 row / sum-of-row-norms : 0.2410   (flat-batch baseline 0.0312)
+    top-3 rows / sum-of-row-norms : 0.5327
+    sum of ||row grad||           : 19.0852
+[rows] loaded fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_step41318_spikebatch.pt  step=41318  pre_clip_grad_norm=432.8
+
+[rows] per-row attribution, ranked by V_theta.depth_code  (each row scaled by 1/(grad_accum*rows_per_mb), i.e. its own share of the aggregate):
+ mb  row                   ntp         layer0_h_grad       total_grad_norm    V_theta.depth_code
+  2    2               4.62138              0.539433               5.34806               3.23615
+  2    5                4.7832             0.0857294               1.35109              0.957462
+  0    5               4.36092             0.0521838               1.02912               0.70129
+  0    4               4.24357              0.094009               1.04046              0.571823
+  0    2               4.74173             0.0625049              0.526923              0.271305
+  1    3               5.18197             0.0266824              0.371158              0.213977
+  0    0               3.88438             0.0287697              0.357412              0.191896
+  0    1               4.41656             0.0189473              0.275217               0.15539
+  0    6               5.14593             0.0174158              0.236581               0.15183
+  1    2               4.47142             0.0166082              0.234639              0.142602
+  2    3               4.40117             0.0191367              0.222851              0.127957
+  2    1               4.78911             0.0181311              0.286499              0.123683
+  2    4               4.70664             0.0199999              0.229103              0.119306
+  3    6                4.3334             0.0162971               0.20927              0.114852
+  2    6               5.29261             0.0205601              0.180356             0.0964609
+  3    2               4.65307             0.0138744              0.161819             0.0872767
+  1    4               4.69155             0.0152157              0.154393             0.0871083
+  1    6               4.10739             0.0151828              0.147611             0.0861254
+  3    5               4.17263             0.0162176              0.167526             0.0833388
+  2    0               4.43613              0.014297              0.146824             0.0785124
+  0    3               4.41469             0.0112448              0.125525             0.0784493
+  3    1               4.70125             0.0135975              0.174937             0.0769683
+  1    0               4.37441             0.0124137              0.136345             0.0732094
+  3    4               3.56393             0.0144239              0.140611             0.0713747
+  1    5               4.90281             0.0136195              0.143765             0.0681573
+  3    3               4.08582              0.011681              0.125153             0.0620916
+  2    7               4.24702               0.01255               0.13725              0.060354
+  0    7               5.03585             0.0112261              0.117554             0.0602578
+  1    7               4.74149             0.0106291              0.114659             0.0596407
+  3    7               4.55805             0.0132573              0.119345             0.0565521
+  1    1               4.44291             0.0122718              0.133787              0.054865
+  3    0               3.71992            0.00958208              0.095872              0.048542
+
+[rows] concentration for V_theta.depth_code:
+    top-1 row / sum-of-row-norms : 0.3867   (flat-batch baseline 0.0312)
+    top-3 rows / sum-of-row-norms : 0.5849
+    sum of ||row grad||           : 8.3688
+    ||sum of row grads||          : 3.5937   (rough cf. replay_spike_batch for this param; see caveats)
+
+[rows] concentration for layer0_h_grad:
+    top-1 row / sum-of-row-norms : 0.4289   (flat-batch baseline 0.0312)
+    top-3 rows / sum-of-row-norms : 0.5718
+    sum of ||row grad||           : 1.2577
+
+[rows] concentration for total_grad_norm:
+    top-1 row / sum-of-row-norms : 0.3755   (flat-batch baseline 0.0312)
+    top-3 rows / sum-of-row-norms : 0.5434
+    sum of ||row grad||           : 14.2417
+[rows] loaded fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_step39983_spikebatch.pt  step=39983  pre_clip_grad_norm=235.47
+
+[rows] per-row attribution, ranked by V_theta.depth_code  (each row scaled by 1/(grad_accum*rows_per_mb), i.e. its own share of the aggregate):
+ mb  row                   ntp         layer0_h_grad       total_grad_norm    V_theta.depth_code
+  3    7               5.96038               0.15638               2.06307               1.24194
+  0    7               4.19291             0.0867267               1.23302              0.727949
+  2    3                5.2154              0.137527               1.06621               0.45783
+  3    1                5.1721             0.0348395              0.493178              0.386254
+  0    5               4.41208             0.0627023              0.535532              0.317819
+  2    1               4.37931             0.0546689              0.613768              0.253442
+  2    2               5.70498             0.0694855              0.547838              0.198877
+  3    3               4.56298             0.0193832              0.258432              0.173733
+  1    1               4.50811             0.0351713              0.333784              0.171551
+  1    2                4.6236             0.0258912              0.236393              0.129697
+  2    5                5.3903             0.0365541              0.288132                0.1274
+  3    0               4.77442             0.0197422              0.190752               0.10553
+  0    2               4.86617             0.0180156              0.175702              0.100884
+  3    4               4.39634             0.0186109              0.190598             0.0949093
+  0    0               4.87513             0.0220941              0.215153             0.0948168
+  2    6               4.41547             0.0225494              0.247321             0.0886101
+  0    1               4.93528             0.0175177              0.156028             0.0850335
+  1    3               3.91362             0.0171769              0.182959             0.0826425
+  0    3               3.72497             0.0163872              0.171508             0.0797661
+  1    0               4.35071              0.023188              0.234685             0.0793192
+  1    4               4.19344             0.0151966              0.147169              0.073134
+  0    6               4.80239             0.0138653              0.141775             0.0730954
+  1    5               5.23743             0.0137533              0.160579             0.0721768
+  2    0               4.41101             0.0158035              0.170436             0.0687126
+  0    4               4.52607              0.012795              0.159253             0.0632447
+  3    5               4.09026             0.0168814              0.147201             0.0619172
+  3    2               4.12282             0.0138753              0.136588             0.0593172
+  2    4               4.45645             0.0111996               0.11434             0.0584418
+  2    7                4.6933             0.0120656              0.124294             0.0578822
+  1    6               3.90557             0.0107985              0.126811             0.0517302
+  3    6               3.93408             0.0107506              0.107307             0.0511036
+  1    7               3.94261             0.0104415              0.103667             0.0429427
+
+[rows] concentration for V_theta.depth_code:
+    top-1 row / sum-of-row-norms : 0.2167   (flat-batch baseline 0.0312)
+    top-3 rows / sum-of-row-norms : 0.4236
+    sum of ||row grad||           : 5.7317
+    ||sum of row grads||          : 1.7414   (rough cf. replay_spike_batch for this param; see caveats)
+
+[rows] concentration for layer0_h_grad:
+    top-1 row / sum-of-row-norms : 0.1486   (flat-batch baseline 0.0312)
+    top-3 rows / sum-of-row-norms : 0.3618
+    sum of ||row grad||           : 1.0520
+
+[rows] concentration for total_grad_norm:
+    top-1 row / sum-of-row-norms : 0.1863   (flat-batch baseline 0.0312)
+    top-3 rows / sum-of-row-norms : 0.3939
+    sum of ||row grad||           : 11.0735
+[rows] loaded fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_step41837_spikebatch.pt  step=41837  pre_clip_grad_norm=527.97
+
+[rows] per-row attribution, ranked by V_theta.depth_code  (each row scaled by 1/(grad_accum*rows_per_mb), i.e. its own share of the aggregate):
+ mb  row                   ntp         layer0_h_grad       total_grad_norm    V_theta.depth_code
+  2    6               4.13881             0.0462977              0.591593              0.394789
+  1    7               4.33085             0.0871867               1.23173              0.353465
+  1    3               4.52921             0.0604706              0.587831              0.283212
+  1    4               4.91705              0.034253              0.437075              0.261163
+  2    4               4.36395              0.039545              0.431953              0.225588
+  2    0               4.94629             0.0320067              0.396659              0.220006
+  0    1               6.48113             0.0324724              0.391348               0.19236
+  3    5               4.90645             0.0443691              0.487978              0.173749
+  0    4               4.31845             0.0235957              0.298043              0.156842
+  2    2               5.20321             0.0207432              0.225456              0.145373
+  0    7               4.72849             0.0291617              0.260053              0.123637
+  1    1               4.22921              0.027022              0.245877              0.118058
+  1    0               4.49723             0.0175494              0.212138              0.115246
+  0    2               4.78875              0.017351              0.195253              0.110701
+  0    3               4.06082             0.0191682              0.204261              0.106763
+  2    1               4.73024             0.0228056              0.240272              0.100887
+  2    3               4.09683              0.015287              0.158126             0.0998222
+  0    0               4.97748             0.0217273              0.190513             0.0956534
+  3    1               4.26477             0.0158263              0.139954             0.0832385
+  3    3               4.80094             0.0157173              0.150961             0.0824472
+  3    6               3.83114             0.0115594              0.128585             0.0751739
+  3    2               4.46588             0.0129925              0.132604             0.0733998
+  1    6               4.98331             0.0131583              0.127886             0.0711529
+  3    0                 4.015             0.0106389               0.12683              0.060407
+  1    2               4.07944             0.0127388              0.153888               0.06026
+  1    5               4.30357             0.0107528              0.131394             0.0577602
+  3    4               4.04729             0.0112833              0.122236             0.0576586
+  2    7               4.63974             0.0121217               0.14224             0.0570603
+  3    7               4.30394             0.0103352              0.100699             0.0528603
+  2    5               4.91095              0.010567              0.110077             0.0522117
+  0    5               4.65417             0.0107061              0.113001             0.0491605
+  0    6               4.78407             0.0105103              0.104192             0.0467264
+
+[rows] concentration for V_theta.depth_code:
+    top-1 row / sum-of-row-norms : 0.0950   (flat-batch baseline 0.0312)
+    top-3 rows / sum-of-row-norms : 0.2481
+    sum of ||row grad||           : 4.1568
+    ||sum of row grads||          : 0.8534   (rough cf. replay_spike_batch for this param; see caveats)
+
+[rows] concentration for layer0_h_grad:
+    top-1 row / sum-of-row-norms : 0.1147   (flat-batch baseline 0.0312)
+    top-3 rows / sum-of-row-norms : 0.2552
+    sum of ||row grad||           : 0.7599
+
+[rows] concentration for total_grad_norm:
+    top-1 row / sum-of-row-norms : 0.1437   (flat-batch baseline 0.0312)
+    top-3 rows / sum-of-row-norms : 0.2813
+    sum of ||row grad||           : 8.5707
+{'step': 41837,
+ 'pre_clip_grad_norm_recorded': 527.97,
+ 'rows': [{'microbatch': 0,
+   'row': 0,
+   'ntp': 4.977483749389648,
+   'layer0_h_grad': 0.021727340295910835,
+   'total_grad_norm': 0.19051318725491567,
+   'V_theta.depth_code': 0.09565336257219315},
+  {'microbatch': 0,
+   'row': 1,
+   'ntp': 6.481131553649902,
+   'layer0_h_grad': 0.03247241675853729,
+   'total_grad_norm': 0.3913481773550635,
+   'V_theta.depth_code': 0.19235984981060028},
+  {'microbatch': 0,
+   'row': 2,
+   'ntp': 4.788749694824219,
+   'layer0_h_grad': 0.017351027578115463,
+   'total_grad_norm': 0.19525343191826172,
+   'V_theta.depth_code': 0.11070147156715393},
+  {'microbatch': 0,
+   'row': 3,
+   'ntp': 4.060815334320068,
+   'layer0_h_grad': 0.019168224185705185,
+   'total_grad_norm': 0.20426117376496447,
+   'V_theta.depth_code': 0.10676254332065582},
+  {'microbatch': 0,
+   'row': 4,
+   'ntp': 4.318447113037109,
+   'layer0_h_grad': 0.02359572984278202,
+   'total_grad_norm': 0.2980431342461241,
+   'V_theta.depth_code': 0.15684229135513306},
+  {'microbatch': 0,
+   'row': 5,
+   'ntp': 4.654173851013184,
+   'layer0_h_grad': 0.010706104338169098,
+   'total_grad_norm': 0.11300112118441824,
+   'V_theta.depth_code': 0.04916053265333176},
+  {'microbatch': 0,
+   'row': 6,
+   'ntp': 4.784067153930664,
+   'layer0_h_grad': 0.010510300286114216,
+   'total_grad_norm': 0.10419193765468449,
+   'V_theta.depth_code': 0.04672641679644585},
+  {'microbatch': 0,
+   'row': 7,
+   'ntp': 4.728485584259033,
+   'layer0_h_grad': 0.029161736369132996,
+   'total_grad_norm': 0.2600531103025531,
+   'V_theta.depth_code': 0.12363682687282562},
+  {'microbatch': 1,
+   'row': 0,
+   'ntp': 4.49723482131958,
+   'layer0_h_grad': 0.0175494272261858,
+   'total_grad_norm': 0.21213800979414146,
+   'V_theta.depth_code': 0.11524570733308792},
+  {'microbatch': 1,
+   'row': 1,
+   'ntp': 4.229212760925293,
+   'layer0_h_grad': 0.027021953836083412,
+   'total_grad_norm': 0.24587711451662905,
+   'V_theta.depth_code': 0.11805765330791473},
+  {'microbatch': 1,
+   'row': 2,
+   'ntp': 4.079442024230957,
+   'layer0_h_grad': 0.01273881271481514,
+   'total_grad_norm': 0.15388803630344372,
+   'V_theta.depth_code': 0.06025998294353485},
+  {'microbatch': 1,
+   'row': 3,
+   'ntp': 4.529211044311523,
+   'layer0_h_grad': 0.0604705773293972,
+   'total_grad_norm': 0.5878314170959817,
+   'V_theta.depth_code': 0.2832115590572357},
+  {'microbatch': 1,
+   'row': 4,
+   'ntp': 4.917051315307617,
+   'layer0_h_grad': 0.03425297141075134,
+   'total_grad_norm': 0.4370754305168401,
+   'V_theta.depth_code': 0.26116272807121277},
+  {'microbatch': 1,
+   'row': 5,
+   'ntp': 4.303569316864014,
+   'layer0_h_grad': 0.010752787813544273,
+   'total_grad_norm': 0.13139409740432298,
+   'V_theta.depth_code': 0.05776023864746094},
+  {'microbatch': 1,
+   'row': 6,
+   'ntp': 4.9833149909973145,
+   'layer0_h_grad': 0.013158310204744339,
+   'total_grad_norm': 0.12788556132133003,
+   'V_theta.depth_code': 0.07115290313959122},
+  {'microbatch': 1,
+   'row': 7,
+   'ntp': 4.3308515548706055,
+   'layer0_h_grad': 0.08718670159578323,
+   'total_grad_norm': 1.231726145922156,
+   'V_theta.depth_code': 0.35346469283103943},
+  {'microbatch': 2,
+   'row': 0,
+   'ntp': 4.9462890625,
+   'layer0_h_grad': 0.03200666233897209,
+   'total_grad_norm': 0.39665861952395287,
+   'V_theta.depth_code': 0.22000615298748016},
+  {'microbatch': 2,
+   'row': 1,
+   'ntp': 4.730243682861328,
+   'layer0_h_grad': 0.022805621847510338,
+   'total_grad_norm': 0.24027217556866182,
+   'V_theta.depth_code': 0.10088690370321274},
+  {'microbatch': 2,
+   'row': 2,
+   'ntp': 5.2032060623168945,
+   'layer0_h_grad': 0.020743202418088913,
+   'total_grad_norm': 0.22545649301380358,
+   'V_theta.depth_code': 0.1453731805086136},
+  {'microbatch': 2,
+   'row': 3,
+   'ntp': 4.096833229064941,
+   'layer0_h_grad': 0.015287021175026894,
+   'total_grad_norm': 0.1581255793689102,
+   'V_theta.depth_code': 0.09982219338417053},
+  {'microbatch': 2,
+   'row': 4,
+   'ntp': 4.363945960998535,
+   'layer0_h_grad': 0.03954501450061798,
+   'total_grad_norm': 0.43195339034884994,
+   'V_theta.depth_code': 0.22558780014514923},
+  {'microbatch': 2,
+   'row': 5,
+   'ntp': 4.910953521728516,
+   'layer0_h_grad': 0.010567035526037216,
+   'total_grad_norm': 0.11007737949135701,
+   'V_theta.depth_code': 0.05221165344119072},
+  {'microbatch': 2,
+   'row': 6,
+   'ntp': 4.138809680938721,
+   'layer0_h_grad': 0.046297669410705566,
+   'total_grad_norm': 0.5915925147985368,
+   'V_theta.depth_code': 0.3947892487049103},
+  {'microbatch': 2,
+   'row': 7,
+   'ntp': 4.63974142074585,
+   'layer0_h_grad': 0.012121728621423244,
+   'total_grad_norm': 0.14223959141645023,
+   'V_theta.depth_code': 0.05706028640270233},
+  {'microbatch': 3,
+   'row': 0,
+   'ntp': 4.014995574951172,
+   'layer0_h_grad': 0.010638892650604248,
+   'total_grad_norm': 0.1268296762740586,
+   'V_theta.depth_code': 0.060406964272260666},
+  {'microbatch': 3,
+   'row': 1,
+   'ntp': 4.264767646789551,
+   'layer0_h_grad': 0.015826309099793434,
+   'total_grad_norm': 0.13995421382419992,
+   'V_theta.depth_code': 0.08323854207992554},
+  {'microbatch': 3,
+   'row': 2,
+   'ntp': 4.465883731842041,
+   'layer0_h_grad': 0.012992515228688717,
+   'total_grad_norm': 0.13260351595286043,
+   'V_theta.depth_code': 0.07339975982904434},
+  {'microbatch': 3,
+   'row': 3,
+   'ntp': 4.800941467285156,
+   'layer0_h_grad': 0.015717338770627975,
+   'total_grad_norm': 0.15096089574140978,
+   'V_theta.depth_code': 0.08244720846414566},
+  {'microbatch': 3,
+   'row': 4,
+   'ntp': 4.047292709350586,
+   'layer0_h_grad': 0.011283325962722301,
+   'total_grad_norm': 0.12223557091606214,
+   'V_theta.depth_code': 0.05765863135457039},
+  {'microbatch': 3,
+   'row': 5,
+   'ntp': 4.906454086303711,
+   'layer0_h_grad': 0.04436914250254631,
+   'total_grad_norm': 0.48797841888510574,
+   'V_theta.depth_code': 0.1737493872642517},
+  {'microbatch': 3,
+   'row': 6,
+   'ntp': 3.8311381340026855,
+   'layer0_h_grad': 0.011559449136257172,
+   'total_grad_norm': 0.12858543360751598,
+   'V_theta.depth_code': 0.07517385482788086},
+  {'microbatch': 3,
+   'row': 7,
+   'ntp': 4.303943634033203,
+   'layer0_h_grad': 0.010335203260183334,
+   'total_grad_norm': 0.10069855855198485,
+   'V_theta.depth_code': 0.05286026746034622}],
+ 'summary': {'V_theta.depth_code': {'sum_of_row_norms': 4.156830795109272,
+   'max_row_norm': 0.3947892487049103,
+   'top1_share': 0.09497361527666712,
+   'top3_share': 0.248137475743963,
+   'uniform_share_baseline': 0.03125,
+   'norm_of_summed_grad': 0.853358268737793},
+  'layer0_h_grad': {'sum_of_row_norms': 0.7599205542355776,
+   'max_row_norm': 0.08718670159578323,
+   'top1_share': 0.1147313375192048,
+   'top3_share': 0.2552305596352634,
+   'uniform_share_baseline': 0.03125,
+   'norm_of_summed_grad': None},
+  'total_grad_norm': {'sum_of_row_norms': 8.570703113839551,
+   'max_row_norm': 1.231726145922156,
+   'top1_share': 0.1437135471339831,
+   'top3_share': 0.2813246528074538,
+   'uniform_share_baseline': 0.03125,
+   'norm_of_summed_grad': None}}}

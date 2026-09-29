@@ -1,0 +1,745 @@
+[replay] loaded fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_step37763_spikebatch.pt  step=37763  pre_clip_grad_norm=160.39
+[replay] Phase-0 top groups at capture time: override:depth_code=88.33, E=80.95, P=80.89, override:creation_gate=57.34, V_theta=33.26, override:reverse_channel_scale=18.46, override:destruction_gate=13.79, raw_m_bias=12.86
+
+[replay] fidelity check: replayed (matching-groups) total=160.4  vs. recorded pre_clip_grad_norm=160.4  (diff 0.0%)
+[replay] replayed total incl. reverse-channel groups=161.7  (excl.=160.4; the gap is what the watchdog aggregate would have missed, SS33.3 Phase 0)
+[replay] replayed per-group norms (top 8):
+         88.33  override:depth_code
+         80.95  E
+         80.89  P
+         57.34  override:creation_gate
+         33.26  V_theta
+         18.46  override:reverse_channel_scale
+         13.79  override:destruction_gate
+         12.86  raw_m_bias
+[replay] top per-parameter grad norms:
+         88.33  V_theta.depth_code
+         80.95  E.weight
+         80.89  P
+         57.06  creation_gate_qkv.W_V.weight
+         18.46  reverse_channel_scale
+         13.51  V_theta.bank.banks.1.B_proj.bias
+         12.86  raw_m_bias
+         12.54  destruction_gates.1.net.0.weight
+         11.33  V_theta.bank.banks.0.B_proj.bias
+         10.40  V_theta.bank.banks.2.B_proj.bias
+          9.95  V_theta.bank.banks.1.B_proj.weight
+          9.53  V_theta.bank.banks.3.B_proj.bias
+[replay] per-layer grad norm (gradient flowing INTO each layer boundary):
+    layer  0:       0.17
+    layer  1:       0.10
+    layer  2:       0.04
+    layer  3:       0.03
+    layer  4:       0.02
+    layer  5:       0.01
+    layer  6:       0.01
+    layer  7:       0.00
+[replay] forward-activation extremes at risky ops (by layer; -1 = not layer-attributable):
+    reverse_ch.logit_scale (exp, clamped)  layer -1: {'min': 17.94392967224121, 'max': 17.94392967224121, 'mean': 17.94392967224121}
+    creation_gate.alpha_max (~Z-normalised top weight)  layer  0: {'min': 0.0020646133925765753, 'max': 1.0, 'mean': 0.019407466053962708}
+    creation_gate.alpha_max (~Z-normalised top weight)  layer  1: {'min': 0.00418134918436408, 'max': 1.0, 'mean': 0.32486429810523987}
+    creation_gate.alpha_max (~Z-normalised top weight)  layer  2: {'min': 0.0, 'max': 1.0, 'mean': 0.33109813928604126}
+    creation_gate.alpha_max (~Z-normalised top weight)  layer  3: {'min': 0.0, 'max': 1.0, 'mean': 0.2929907739162445}
+    creation_gate.alpha_max (~Z-normalised top weight)  layer  4: {'min': 0.0, 'max': 1.0, 'mean': 0.3772134780883789}
+    creation_gate.alpha_max (~Z-normalised top weight)  layer  5: {'min': 0.0, 'max': 1.0, 'mean': 0.5437273979187012}
+    creation_gate.alpha_max (~Z-normalised top weight)  layer  6: {'min': 0.0, 'max': 1.0, 'mean': 0.6194593906402588}
+    creation_gate.alpha_max (~Z-normalised top weight)  layer  7: {'min': 0.0, 'max': 1.0, 'mean': 0.5808694362640381}
+    creation_gate.tau  layer  0: {'min': 5.641198635101318, 'max': 7.5124616622924805, 'mean': 6.514423370361328}
+    creation_gate.tau  layer  1: {'min': 5.641198635101318, 'max': 7.5124616622924805, 'mean': 6.514423370361328}
+    creation_gate.tau  layer  2: {'min': 5.641198635101318, 'max': 7.5124616622924805, 'mean': 6.514423370361328}
+    creation_gate.tau  layer  3: {'min': 5.641198635101318, 'max': 7.5124616622924805, 'mean': 6.514423370361328}
+    creation_gate.tau  layer  4: {'min': 5.641198635101318, 'max': 7.5124616622924805, 'mean': 6.514423370361328}
+    creation_gate.tau  layer  5: {'min': 5.641198635101318, 'max': 7.5124616622924805, 'mean': 6.514423370361328}
+    creation_gate.tau  layer  6: {'min': 5.641198635101318, 'max': 7.5124616622924805, 'mean': 6.514423370361328}
+    creation_gate.tau  layer  7: {'min': 5.641198635101318, 'max': 7.5124616622924805, 'mean': 6.514423370361328}
+    reverse_ch.Q_force  layer  0: {'min': -9.37744140625, 'max': 7.59941291809082, 'mean': -0.3442242741584778}
+    reverse_ch.Q_force  layer  1: {'min': -8.040542602539062, 'max': 4.244786262512207, 'mean': -0.18750016391277313}
+    reverse_ch.Q_force  layer  2: {'min': -8.240692138671875, 'max': 5.547279357910156, 'mean': -0.124638631939888}
+    reverse_ch.Q_force  layer  3: {'min': -8.489496231079102, 'max': 5.419629096984863, 'mean': -0.28839024901390076}
+    reverse_ch.Q_force  layer  4: {'min': -7.894281387329102, 'max': 5.9140729904174805, 'mean': -0.519629955291748}
+    reverse_ch.Q_force  layer  5: {'min': -6.1802077293396, 'max': 5.039673328399658, 'mean': -0.5757045745849609}
+    reverse_ch.Q_force  layer  6: {'min': -5.091300964355469, 'max': 4.633999824523926, 'mean': -0.5227611064910889}
+    reverse_ch.Q_force  layer  7: {'min': -5.5130839347839355, 'max': 4.156854152679443, 'mean': -0.4670177400112152}
+    destruction_gates[0].output  layer  0: {'min': 0.19591641426086426, 'max': 0.44003826379776, 'mean': 0.3674016296863556}
+    destruction_gates[1].output  layer  1: {'min': 6.908603467081775e-08, 'max': 1.0, 'mean': 0.36693042516708374}
+    destruction_gates[2].output  layer  2: {'min': 2.1925833371128078e-10, 'max': 1.0, 'mean': 0.7720267176628113}
+    destruction_gates[3].output  layer  3: {'min': 1.0007786266363894e-11, 'max': 1.0, 'mean': 0.35161563754081726}
+    destruction_gates[4].output  layer  4: {'min': 0.002832448808476329, 'max': 0.9999991655349731, 'mean': 0.7852394580841064}
+    destruction_gates[5].output  layer  5: {'min': 0.0009452038211748004, 'max': 1.0, 'mean': 0.9675883054733276}
+    destruction_gates[6].output  layer  6: {'min': 0.009139146655797958, 'max': 1.0, 'mean': 0.9991852641105652}
+    destruction_gates[7].output  layer  7: {'min': 0.4736740291118622, 'max': 0.5245994925498962, 'mean': 0.4987128674983978}
+    V_theta.bank[0].exponent  layer  7: {'min': -231439.828125, 'max': -14.75220775604248, 'mean': -6221.48828125}
+    V_theta.bank[0].lr_term_share  layer  7: {'min': 0.9136629700660706, 'max': 0.9999892115592957, 'mean': 0.9993822574615479}
+    V_theta.bank[0].xi_shifted_norm  layer  7: {'min': 11.981170654296875, 'max': 19.643800735473633, 'mean': 15.119274139404297}
+    V_theta.bank[1].exponent  layer  7: {'min': -187872.234375, 'max': -14.637893676757812, 'mean': -4566.81396484375}
+    V_theta.bank[1].lr_term_share  layer  7: {'min': 0.9284128546714783, 'max': 0.9999960064888, 'mean': 0.9993829727172852}
+    V_theta.bank[1].xi_shifted_norm  layer  7: {'min': 10.248233795166016, 'max': 19.712303161621094, 'mean': 13.957860946655273}
+    V_theta.bank[2].exponent  layer  7: {'min': -87246.578125, 'max': -5.970070838928223, 'mean': -2042.3597412109375}
+    V_theta.bank[2].lr_term_share  layer  7: {'min': 0.8714576959609985, 'max': 0.9999847412109375, 'mean': 0.998753547668457}
+    V_theta.bank[2].xi_shifted_norm  layer  7: {'min': 8.146228790283203, 'max': 19.735837936401367, 'mean': 12.372724533081055}
+    V_theta.bank[3].exponent  layer  7: {'min': -49221.3203125, 'max': -1.7598929405212402, 'mean': -818.966552734375}
+    V_theta.bank[3].lr_term_share  layer  7: {'min': 0.524970293045044, 'max': 0.9999487996101379, 'mean': 0.9957095980644226}
+    V_theta.bank[3].xi_shifted_norm  layer  7: {'min': 7.11149263381958, 'max': 19.63984489440918, 'mean': 10.230464935302734}
+    V_theta.bank[4].exponent  layer  7: {'min': -83553.6640625, 'max': -1.583873987197876, 'mean': -627.01953125}
+    V_theta.bank[4].lr_term_share  layer  7: {'min': 0.44300076365470886, 'max': 0.9999755024909973, 'mean': 0.9955112934112549}
+    V_theta.bank[4].xi_shifted_norm  layer  7: {'min': 6.045732021331787, 'max': 19.68596076965332, 'mean': 9.553679466247559}
+[replay] per-layer register/gate health (microbatch 3 of 4, via set_fock_capture):
+    layer       active_frac     salience_mean       reg_cos_sim      destroy_mean  create_alpha_max    create_entropy       rev_entropy     rev_alpha_max         rev_scale      qforce_ratio
+        0                 1            0.3174            0.1204            0.3674          0.003564             6.224             1.413            0.5925           -0.1165             0.193
+        1                 1            0.1363            0.1685            0.5031            0.2409             3.666             2.353            0.2548          -0.03591           0.05617
+        2            0.9336           0.07486             0.202            0.6303            0.2677            0.6969             2.167            0.3318            0.1535             0.243
+        3            0.9648           0.05082            0.2278             0.535            0.1464            0.4139             2.125            0.3579           0.08185            0.1242
+        4                 1           0.02327            0.2011            0.8643             0.228            0.4671             1.942            0.3999           0.05883           0.08237
+        5                 1          0.001741            0.2205            0.9907            0.4121            0.4821             1.896            0.4031             0.101            0.1457
+        6            0.9883          0.001582             0.236            0.9966            0.5147            0.6064             1.959            0.3901            0.1582            0.2326
+        7            0.9805            0.1266             0.197            0.4982            0.5025            0.6452             2.075            0.3675            0.1891            0.2611
+[replay] loaded fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_step41318_spikebatch.pt  step=41318  pre_clip_grad_norm=432.8
+[replay] Phase-0 top groups at capture time: E=266.65, P=266.64, override:reverse_channel_scale=252.97, override:creation_gate=194.8, override:reverse_ch=114.16, override:register=74.09, override:depth_code=31.16, raw_m_bias=22.44
+
+[replay] fidelity check: replayed (matching-groups) total=432.8  vs. recorded pre_clip_grad_norm=432.8  (diff 0.0%)
+[replay] replayed total incl. reverse-channel groups=514.1  (excl.=432.8; the gap is what the watchdog aggregate would have missed, SS33.3 Phase 0)
+[replay] replayed per-group norms (top 8):
+        266.65  E
+        266.64  P
+        252.97  override:reverse_channel_scale
+        194.80  override:creation_gate
+        114.16  override:reverse_ch
+         74.09  override:register
+         31.16  override:depth_code
+         22.44  raw_m_bias
+[replay] top per-parameter grad norms:
+        266.65  E.weight
+        266.64  P
+        252.97  reverse_channel_scale
+        180.55  creation_gate_qkv.W_V.weight
+         91.72  reverse_ch.W_Q_rev.weight
+         74.09  register_embed
+         60.86  creation_gate_qkv.W_Q
+         49.41  reverse_ch.W_V_rev.weight
+         45.10  reverse_ch.W_K_rev.weight
+         40.57  creation_gate_qkv.W_K
+         31.16  V_theta.depth_code
+         22.44  raw_m_bias
+[replay] per-layer grad norm (gradient flowing INTO each layer boundary):
+    layer  0:       0.05
+    layer  1:       0.04
+    layer  2:       0.03
+    layer  3:       0.02
+    layer  4:       0.02
+    layer  5:       0.01
+    layer  6:       0.01
+    layer  7:       0.00
+[replay] forward-activation extremes at risky ops (by layer; -1 = not layer-attributable):
+    reverse_ch.logit_scale (exp, clamped)  layer -1: {'min': 17.94392967224121, 'max': 17.94392967224121, 'mean': 17.94392967224121}
+    creation_gate.alpha_max (~Z-normalised top weight)  layer  0: {'min': 0.0021483013406395912, 'max': 1.0, 'mean': 0.02154316008090973}
+    creation_gate.alpha_max (~Z-normalised top weight)  layer  1: {'min': 0.006174125708639622, 'max': 1.0, 'mean': 0.3349000811576843}
+    creation_gate.alpha_max (~Z-normalised top weight)  layer  2: {'min': 0.0, 'max': 1.0, 'mean': 0.38492274284362793}
+    creation_gate.alpha_max (~Z-normalised top weight)  layer  3: {'min': 0.0, 'max': 1.0, 'mean': 0.3965604901313782}
+    creation_gate.alpha_max (~Z-normalised top weight)  layer  4: {'min': 0.0, 'max': 1.0, 'mean': 0.47861745953559875}
+    creation_gate.alpha_max (~Z-normalised top weight)  layer  5: {'min': 0.0, 'max': 1.0, 'mean': 0.5963505506515503}
+    creation_gate.alpha_max (~Z-normalised top weight)  layer  6: {'min': 0.0, 'max': 1.0, 'mean': 0.6082806587219238}
+    creation_gate.alpha_max (~Z-normalised top weight)  layer  7: {'min': 0.0, 'max': 1.0, 'mean': 0.588824987411499}
+    creation_gate.tau  layer  0: {'min': 5.536913871765137, 'max': 7.864654541015625, 'mean': 6.530336380004883}
+    creation_gate.tau  layer  1: {'min': 5.536913871765137, 'max': 7.864654541015625, 'mean': 6.530336380004883}
+    creation_gate.tau  layer  2: {'min': 5.536913871765137, 'max': 7.864654541015625, 'mean': 6.530336380004883}
+    creation_gate.tau  layer  3: {'min': 5.536913871765137, 'max': 7.864654541015625, 'mean': 6.530336380004883}
+    creation_gate.tau  layer  4: {'min': 5.536913871765137, 'max': 7.864654541015625, 'mean': 6.530336380004883}
+    creation_gate.tau  layer  5: {'min': 5.536913871765137, 'max': 7.864654541015625, 'mean': 6.530336380004883}
+    creation_gate.tau  layer  6: {'min': 5.536913871765137, 'max': 7.864654541015625, 'mean': 6.530336380004883}
+    creation_gate.tau  layer  7: {'min': 5.536913871765137, 'max': 7.864654541015625, 'mean': 6.530336380004883}
+    reverse_ch.Q_force  layer  0: {'min': -9.427013397216797, 'max': 7.721746444702148, 'mean': -0.34479427337646484}
+    reverse_ch.Q_force  layer  1: {'min': -8.515073776245117, 'max': 4.454959392547607, 'mean': -0.17330817878246307}
+    reverse_ch.Q_force  layer  2: {'min': -8.31655216217041, 'max': 5.774106979370117, 'mean': -0.13328993320465088}
+    reverse_ch.Q_force  layer  3: {'min': -8.669126510620117, 'max': 5.910658836364746, 'mean': -0.34065502882003784}
+    reverse_ch.Q_force  layer  4: {'min': -7.515753269195557, 'max': 5.917361259460449, 'mean': -0.5922006368637085}
+    reverse_ch.Q_force  layer  5: {'min': -6.282623767852783, 'max': 4.078738689422607, 'mean': -0.6216676831245422}
+    reverse_ch.Q_force  layer  6: {'min': -5.279024124145508, 'max': 3.751054525375366, 'mean': -0.570353627204895}
+    reverse_ch.Q_force  layer  7: {'min': -4.987597465515137, 'max': 5.058209419250488, 'mean': -0.4765070080757141}
+    destruction_gates[0].output  layer  0: {'min': 0.1920642852783203, 'max': 0.45136117935180664, 'mean': 0.35278189182281494}
+    destruction_gates[1].output  layer  1: {'min': 1.4231923728402762e-07, 'max': 1.0, 'mean': 0.5627461671829224}
+    destruction_gates[2].output  layer  2: {'min': 2.0581145142496314e-15, 'max': 1.0, 'mean': 0.9100538492202759}
+    destruction_gates[3].output  layer  3: {'min': 2.0347810242293818e-11, 'max': 1.0, 'mean': 0.560327410697937}
+    destruction_gates[4].output  layer  4: {'min': 0.0013106251135468483, 'max': 0.9999946355819702, 'mean': 0.7887760400772095}
+    destruction_gates[5].output  layer  5: {'min': 2.5136063413810916e-05, 'max': 1.0, 'mean': 0.9311626553535461}
+    destruction_gates[6].output  layer  6: {'min': 0.001619399874471128, 'max': 1.0, 'mean': 0.9969403147697449}
+    destruction_gates[7].output  layer  7: {'min': 0.45899730920791626, 'max': 0.5136703252792358, 'mean': 0.49454301595687866}
+    V_theta.bank[0].exponent  layer  7: {'min': -157230.09375, 'max': -3.763256072998047, 'mean': -5432.6884765625}
+    V_theta.bank[0].lr_term_share  layer  7: {'min': 0.6547605991363525, 'max': 0.9999890923500061, 'mean': 0.9993511438369751}
+    V_theta.bank[0].xi_shifted_norm  layer  7: {'min': 11.393637657165527, 'max': 19.670446395874023, 'mean': 14.75546646118164}
+    V_theta.bank[1].exponent  layer  7: {'min': -90757.359375, 'max': -8.040553092956543, 'mean': -4431.91357421875}
+    V_theta.bank[1].lr_term_share  layer  7: {'min': 0.914229154586792, 'max': 0.9999918341636658, 'mean': 0.9993304014205933}
+    V_theta.bank[1].xi_shifted_norm  layer  7: {'min': 10.138466835021973, 'max': 19.64473533630371, 'mean': 13.482198715209961}
+    V_theta.bank[2].exponent  layer  7: {'min': -287403.40625, 'max': -3.0557727813720703, 'mean': -1811.255615234375}
+    V_theta.bank[2].lr_term_share  layer  7: {'min': 0.8083745241165161, 'max': 0.9999920725822449, 'mean': 0.998603343963623}
+    V_theta.bank[2].xi_shifted_norm  layer  7: {'min': 8.395546913146973, 'max': 19.82671546936035, 'mean': 11.78598690032959}
+    V_theta.bank[3].exponent  layer  7: {'min': -328915.59375, 'max': -1.7257187366485596, 'mean': -875.85791015625}
+    V_theta.bank[3].lr_term_share  layer  7: {'min': 0.4444708228111267, 'max': 0.9999900460243225, 'mean': 0.9958181381225586}
+    V_theta.bank[3].xi_shifted_norm  layer  7: {'min': 6.815075874328613, 'max': 19.569997787475586, 'mean': 9.666650772094727}
+    V_theta.bank[4].exponent  layer  7: {'min': -188893.5, 'max': -1.6042699813842773, 'mean': -874.3623046875}
+    V_theta.bank[4].lr_term_share  layer  7: {'min': 0.6466484069824219, 'max': 0.9999932050704956, 'mean': 0.9963767528533936}
+    V_theta.bank[4].xi_shifted_norm  layer  7: {'min': 5.98002815246582, 'max': 19.64608383178711, 'mean': 9.100001335144043}
+[replay] per-layer register/gate health (microbatch 3 of 4, via set_fock_capture):
+    layer       active_frac     salience_mean       reg_cos_sim      destroy_mean  create_alpha_max    create_entropy       rev_entropy     rev_alpha_max         rev_scale      qforce_ratio
+        0                 1            0.3249            0.1288            0.3528          0.004116             6.216              1.34            0.6141           -0.1261            0.2109
+        1                 1            0.1421            0.2441            0.4971            0.2528             3.712             2.444            0.2392           -0.0235           0.03785
+        2            0.9531           0.05835            0.2428            0.8131            0.3231            0.7172             2.111            0.3594            0.1506            0.2441
+        3            0.9648           0.07384             0.195            0.4897            0.2491            0.4903             1.964            0.3973           0.07519            0.1154
+        4            0.9844           0.02037            0.1873            0.8593            0.3382            0.4738             1.895            0.3977           0.06647           0.09682
+        5            0.9961          0.004756            0.2284            0.9701            0.4951            0.4869             1.904            0.3918            0.1011            0.1516
+        6            0.9922          0.003251            0.2681            0.9911            0.5162            0.6551             1.981             0.389             0.157            0.2393
+        7            0.9961             0.129            0.2024            0.4949            0.5068            0.7132             2.115             0.356            0.1974            0.2786
+{'step': 41318,
+ 'pre_clip_grad_norm_recorded': 432.8,
+ 'pre_clip_grad_norm_replayed_matching': 432.8005994230276,
+ 'pre_clip_grad_norm_replayed_all_groups': 514.1442085175529,
+ 'fidelity_gap_pct': 0.00013849885111107588,
+ 'top_params': [('E.weight', 266.6529846191406),
+  ('P', 266.6424865722656),
+  ('reverse_channel_scale', 252.97427368164062),
+  ('creation_gate_qkv.W_V.weight', 180.5478057861328),
+  ('reverse_ch.W_Q_rev.weight', 91.72064971923828),
+  ('register_embed', 74.09231567382812),
+  ('creation_gate_qkv.W_Q', 60.86282730102539),
+  ('reverse_ch.W_V_rev.weight', 49.41157531738281),
+  ('reverse_ch.W_K_rev.weight', 45.102142333984375),
+  ('creation_gate_qkv.W_K', 40.572540283203125),
+  ('V_theta.depth_code', 31.163372039794922),
+  ('raw_m_bias', 22.436983108520508)],
+ 'replayed_group_norms': {'P': 266.6424865722656,
+  'out_bias': 0.010010325349867344,
+  'raw_m_bias': 22.436983108520508,
+  'override:V_phi': 0.6398546840855456,
+  'raw_logfreq_alpha': 2.702136993408203,
+  'override:register': 74.09231567382812,
+  'override:reverse_channel_scale': 252.97427368164062,
+  'E': 266.6529846191406,
+  'lm_head': 0.16849687695503235,
+  'override:depth_code': 31.163372039794922,
+  'V_theta': 13.916148877770542,
+  'score_head': 0.05834285303565958,
+  'xi_module': 0.7775872945785522,
+  'override:creation_gate': 194.80244855927302,
+  'override:destruction_gate': 0.2883391492325754,
+  'override:reverse_ch': 114.15745769092466},
+ 'layer_grad_norms': {0: 0.054090701043605804,
+  1: 0.04153883084654808,
+  2: 0.027645988389849663,
+  3: 0.02104289084672928,
+  4: 0.015987180173397064,
+  5: 0.01163463294506073,
+  6: 0.007725798990577459,
+  7: 0.0044983383268117905},
+ 'activation_extremes': {'reverse_ch.logit_scale (exp, clamped)': {-1: {'min': 17.94392967224121,
+    'max': 17.94392967224121,
+    'mean': 17.94392967224121}},
+  'creation_gate.alpha_max (~Z-normalised top weight)': {0: {'min': 0.0021483013406395912,
+    'max': 1.0,
+    'mean': 0.02154316008090973},
+   1: {'min': 0.006174125708639622, 'max': 1.0, 'mean': 0.3349000811576843},
+   2: {'min': 0.0, 'max': 1.0, 'mean': 0.38492274284362793},
+   3: {'min': 0.0, 'max': 1.0, 'mean': 0.3965604901313782},
+   4: {'min': 0.0, 'max': 1.0, 'mean': 0.47861745953559875},
+   5: {'min': 0.0, 'max': 1.0, 'mean': 0.5963505506515503},
+   6: {'min': 0.0, 'max': 1.0, 'mean': 0.6082806587219238},
+   7: {'min': 0.0, 'max': 1.0, 'mean': 0.588824987411499}},
+  'creation_gate.tau': {0: {'min': 5.536913871765137,
+    'max': 7.864654541015625,
+    'mean': 6.530336380004883},
+   1: {'min': 5.536913871765137,
+    'max': 7.864654541015625,
+    'mean': 6.530336380004883},
+   2: {'min': 5.536913871765137,
+    'max': 7.864654541015625,
+    'mean': 6.530336380004883},
+   3: {'min': 5.536913871765137,
+    'max': 7.864654541015625,
+    'mean': 6.530336380004883},
+   4: {'min': 5.536913871765137,
+    'max': 7.864654541015625,
+    'mean': 6.530336380004883},
+   5: {'min': 5.536913871765137,
+    'max': 7.864654541015625,
+    'mean': 6.530336380004883},
+   6: {'min': 5.536913871765137,
+    'max': 7.864654541015625,
+    'mean': 6.530336380004883},
+   7: {'min': 5.536913871765137,
+    'max': 7.864654541015625,
+    'mean': 6.530336380004883}},
+  'reverse_ch.Q_force': {0: {'min': -9.427013397216797,
+    'max': 7.721746444702148,
+    'mean': -0.34479427337646484},
+   1: {'min': -8.515073776245117,
+    'max': 4.454959392547607,
+    'mean': -0.17330817878246307},
+   2: {'min': -8.31655216217041,
+    'max': 5.774106979370117,
+    'mean': -0.13328993320465088},
+   3: {'min': -8.669126510620117,
+    'max': 5.910658836364746,
+    'mean': -0.34065502882003784},
+   4: {'min': -7.515753269195557,
+    'max': 5.917361259460449,
+    'mean': -0.5922006368637085},
+   5: {'min': -6.282623767852783,
+    'max': 4.078738689422607,
+    'mean': -0.6216676831245422},
+   6: {'min': -5.279024124145508,
+    'max': 3.751054525375366,
+    'mean': -0.570353627204895},
+   7: {'min': -4.987597465515137,
+    'max': 5.058209419250488,
+    'mean': -0.4765070080757141}},
+  'destruction_gates[0].output': {0: {'min': 0.1920642852783203,
+    'max': 0.45136117935180664,
+    'mean': 0.35278189182281494}},
+  'destruction_gates[1].output': {1: {'min': 1.4231923728402762e-07,
+    'max': 1.0,
+    'mean': 0.5627461671829224}},
+  'destruction_gates[2].output': {2: {'min': 2.0581145142496314e-15,
+    'max': 1.0,
+    'mean': 0.9100538492202759}},
+  'destruction_gates[3].output': {3: {'min': 2.0347810242293818e-11,
+    'max': 1.0,
+    'mean': 0.560327410697937}},
+  'destruction_gates[4].output': {4: {'min': 0.0013106251135468483,
+    'max': 0.9999946355819702,
+    'mean': 0.7887760400772095}},
+  'destruction_gates[5].output': {5: {'min': 2.5136063413810916e-05,
+    'max': 1.0,
+    'mean': 0.9311626553535461}},
+  'destruction_gates[6].output': {6: {'min': 0.001619399874471128,
+    'max': 1.0,
+    'mean': 0.9969403147697449}},
+  'destruction_gates[7].output': {7: {'min': 0.45899730920791626,
+    'max': 0.5136703252792358,
+    'mean': 0.49454301595687866}},
+  'V_theta.bank[0].exponent': {7: {'min': -157230.09375,
+    'max': -3.763256072998047,
+    'mean': -5432.6884765625}},
+  'V_theta.bank[0].lr_term_share': {7: {'min': 0.6547605991363525,
+    'max': 0.9999890923500061,
+    'mean': 0.9993511438369751}},
+  'V_theta.bank[0].xi_shifted_norm': {7: {'min': 11.393637657165527,
+    'max': 19.670446395874023,
+    'mean': 14.75546646118164}},
+  'V_theta.bank[1].exponent': {7: {'min': -90757.359375,
+    'max': -8.040553092956543,
+    'mean': -4431.91357421875}},
+  'V_theta.bank[1].lr_term_share': {7: {'min': 0.914229154586792,
+    'max': 0.9999918341636658,
+    'mean': 0.9993304014205933}},
+  'V_theta.bank[1].xi_shifted_norm': {7: {'min': 10.138466835021973,
+    'max': 19.64473533630371,
+    'mean': 13.482198715209961}},
+  'V_theta.bank[2].exponent': {7: {'min': -287403.40625,
+    'max': -3.0557727813720703,
+    'mean': -1811.255615234375}},
+  'V_theta.bank[2].lr_term_share': {7: {'min': 0.8083745241165161,
+    'max': 0.9999920725822449,
+    'mean': 0.998603343963623}},
+  'V_theta.bank[2].xi_shifted_norm': {7: {'min': 8.395546913146973,
+    'max': 19.82671546936035,
+    'mean': 11.78598690032959}},
+  'V_theta.bank[3].exponent': {7: {'min': -328915.59375,
+    'max': -1.7257187366485596,
+    'mean': -875.85791015625}},
+  'V_theta.bank[3].lr_term_share': {7: {'min': 0.4444708228111267,
+    'max': 0.9999900460243225,
+    'mean': 0.9958181381225586}},
+  'V_theta.bank[3].xi_shifted_norm': {7: {'min': 6.815075874328613,
+    'max': 19.569997787475586,
+    'mean': 9.666650772094727}},
+  'V_theta.bank[4].exponent': {7: {'min': -188893.5,
+    'max': -1.6042699813842773,
+    'mean': -874.3623046875}},
+  'V_theta.bank[4].lr_term_share': {7: {'min': 0.6466484069824219,
+    'max': 0.9999932050704956,
+    'mean': 0.9963767528533936}},
+  'V_theta.bank[4].xi_shifted_norm': {7: {'min': 5.98002815246582,
+    'max': 19.64608383178711,
+    'mean': 9.100001335144043}}},
+ 'fock_capture_per_microbatch': [{0: {'layer': 0,
+    'active_frac': 1.0,
+    'salience_mean': 0.32491326332092285,
+    'salience_std': 0.025746077299118042,
+    'reg_cos_sim': 0.128841370344162,
+    'destroy_mean': 0.35278189182281494,
+    'qforce_ratio': 0.2095242589712143,
+    'rev_scale': -0.12611006200313568,
+    'create_alpha_max': 0.004073965363204479,
+    'create_entropy': 6.216429710388184,
+    'rev_entropy': 1.4721928834915161,
+    'rev_alpha_max': 0.5704865455627441},
+   1: {'layer': 1,
+    'active_frac': 1.0,
+    'salience_mean': 0.14414411783218384,
+    'salience_std': 0.1839924305677414,
+    'reg_cos_sim': 0.2466389387845993,
+    'destroy_mean': 0.5339093208312988,
+    'qforce_ratio': 0.03715198114514351,
+    'rev_scale': -0.023504747077822685,
+    'create_alpha_max': 0.27796632051467896,
+    'create_entropy': 3.6039299964904785,
+    'rev_entropy': 2.4465701580047607,
+    'rev_alpha_max': 0.245151087641716},
+   2: {'layer': 2,
+    'active_frac': 0.91796875,
+    'salience_mean': 0.06295285373926163,
+    'salience_std': 0.1406741440296173,
+    'reg_cos_sim': 0.23399965465068817,
+    'destroy_mean': 0.7957110404968262,
+    'qforce_ratio': 0.24050498008728027,
+    'rev_scale': 0.15062811970710754,
+    'create_alpha_max': 0.33867502212524414,
+    'create_entropy': 0.6357907056808472,
+    'rev_entropy': 2.097090721130371,
+    'rev_alpha_max': 0.3547629714012146},
+   3: {'layer': 3,
+    'active_frac': 0.953125,
+    'salience_mean': 0.05357586219906807,
+    'salience_std': 0.11348036676645279,
+    'reg_cos_sim': 0.2242680788040161,
+    'destroy_mean': 0.6193322539329529,
+    'qforce_ratio': 0.11402333527803421,
+    'rev_scale': 0.07519350945949554,
+    'create_alpha_max': 0.24685321748256683,
+    'create_entropy': 0.465949147939682,
+    'rev_entropy': 1.9864479303359985,
+    'rev_alpha_max': 0.38958078622817993},
+   4: {'layer': 4,
+    'active_frac': 0.98046875,
+    'salience_mean': 0.017418017610907555,
+    'salience_std': 0.052355341613292694,
+    'reg_cos_sim': 0.19157271087169647,
+    'destroy_mean': 0.8993672132492065,
+    'qforce_ratio': 0.0956389456987381,
+    'rev_scale': 0.06646619737148285,
+    'create_alpha_max': 0.33652204275131226,
+    'create_entropy': 0.4460766613483429,
+    'rev_entropy': 1.9055571556091309,
+    'rev_alpha_max': 0.3908196687698364},
+   5: {'layer': 5,
+    'active_frac': 0.97265625,
+    'salience_mean': 0.004805855453014374,
+    'salience_std': 0.01796410232782364,
+    'reg_cos_sim': 0.2563876509666443,
+    'destroy_mean': 0.9712097644805908,
+    'qforce_ratio': 0.14978782832622528,
+    'rev_scale': 0.10108759254217148,
+    'create_alpha_max': 0.4262970983982086,
+    'create_entropy': 0.49244049191474915,
+    'rev_entropy': 1.9210162162780762,
+    'rev_alpha_max': 0.3914731740951538},
+   6: {'layer': 6,
+    'active_frac': 0.9765625,
+    'salience_mean': 0.00010174126509809867,
+    'salience_std': 0.0006569760153070092,
+    'reg_cos_sim': 0.25563135743141174,
+    'destroy_mean': 0.9998924732208252,
+    'qforce_ratio': 0.2351253181695938,
+    'rev_scale': 0.15697792172431946,
+    'create_alpha_max': 0.5370781421661377,
+    'create_entropy': 0.5534139275550842,
+    'rev_entropy': 1.9158926010131836,
+    'rev_alpha_max': 0.40333467721939087},
+   7: {'layer': 7,
+    'active_frac': 0.98828125,
+    'salience_mean': 0.12671542167663574,
+    'salience_std': 0.09109804779291153,
+    'reg_cos_sim': 0.21895486116409302,
+    'destroy_mean': 0.49438679218292236,
+    'qforce_ratio': 0.2769538462162018,
+    'rev_scale': 0.1973993480205536,
+    'create_alpha_max': 0.5002040266990662,
+    'create_entropy': 0.6750737428665161,
+    'rev_entropy': 2.102764129638672,
+    'rev_alpha_max': 0.35808175802230835}},
+  {0: {'layer': 0,
+    'active_frac': 1.0,
+    'salience_mean': 0.32491061091423035,
+    'salience_std': 0.025742659345269203,
+    'reg_cos_sim': 0.128841370344162,
+    'destroy_mean': 0.35278189182281494,
+    'qforce_ratio': 0.21091583371162415,
+    'rev_scale': -0.12611006200313568,
+    'create_alpha_max': 0.0040669371373951435,
+    'create_entropy': 6.21673583984375,
+    'rev_entropy': 1.3652641773223877,
+    'rev_alpha_max': 0.6039674282073975},
+   1: {'layer': 1,
+    'active_frac': 1.0,
+    'salience_mean': 0.16093206405639648,
+    'salience_std': 0.19501006603240967,
+    'reg_cos_sim': 0.2523140609264374,
+    'destroy_mean': 0.49807822704315186,
+    'qforce_ratio': 0.03764308616518974,
+    'rev_scale': -0.023504747077822685,
+    'create_alpha_max': 0.2732764482498169,
+    'create_entropy': 3.6517345905303955,
+    'rev_entropy': 2.480346202850342,
+    'rev_alpha_max': 0.22886702418327332},
+   2: {'layer': 2,
+    'active_frac': 0.96484375,
+    'salience_mean': 0.0482131764292717,
+    'salience_std': 0.11848773807287216,
+    'reg_cos_sim': 0.2328190803527832,
+    'destroy_mean': 0.8520756363868713,
+    'qforce_ratio': 0.24394550919532776,
+    'rev_scale': 0.15062811970710754,
+    'create_alpha_max': 0.342182457447052,
+    'create_entropy': 0.7068302035331726,
+    'rev_entropy': 2.1086506843566895,
+    'rev_alpha_max': 0.3511180281639099},
+   3: {'layer': 3,
+    'active_frac': 0.94921875,
+    'salience_mean': 0.06262467056512833,
+    'salience_std': 0.11373377591371536,
+    'reg_cos_sim': 0.20303212106227875,
+    'destroy_mean': 0.47417810559272766,
+    'qforce_ratio': 0.11514297872781754,
+    'rev_scale': 0.07519350945949554,
+    'create_alpha_max': 0.23101559281349182,
+    'create_entropy': 0.49053072929382324,
+    'rev_entropy': 2.0290756225585938,
+    'rev_alpha_max': 0.3847894072532654},
+   4: {'layer': 4,
+    'active_frac': 0.98046875,
+    'salience_mean': 0.022727439180016518,
+    'salience_std': 0.05451791733503342,
+    'reg_cos_sim': 0.1739238053560257,
+    'destroy_mean': 0.8727380037307739,
+    'qforce_ratio': 0.09604839235544205,
+    'rev_scale': 0.06646619737148285,
+    'create_alpha_max': 0.38839292526245117,
+    'create_entropy': 0.4535115361213684,
+    'rev_entropy': 1.8386050462722778,
+    'rev_alpha_max': 0.4030090570449829},
+   5: {'layer': 5,
+    'active_frac': 0.99609375,
+    'salience_mean': 0.006240738555788994,
+    'salience_std': 0.01806521601974964,
+    'reg_cos_sim': 0.2429119199514389,
+    'destroy_mean': 0.965844988822937,
+    'qforce_ratio': 0.1518786996603012,
+    'rev_scale': 0.10108759254217148,
+    'create_alpha_max': 0.4911460280418396,
+    'create_entropy': 0.5309646725654602,
+    'rev_entropy': 1.8938913345336914,
+    'rev_alpha_max': 0.40394991636276245},
+   6: {'layer': 6,
+    'active_frac': 0.9921875,
+    'salience_mean': 9.172225691145286e-05,
+    'salience_std': 0.000896539306268096,
+    'reg_cos_sim': 0.2391805201768875,
+    'destroy_mean': 0.999866783618927,
+    'qforce_ratio': 0.2388835996389389,
+    'rev_scale': 0.15697792172431946,
+    'create_alpha_max': 0.6147291660308838,
+    'create_entropy': 0.536689043045044,
+    'rev_entropy': 1.9745962619781494,
+    'rev_alpha_max': 0.3934231698513031},
+   7: {'layer': 7,
+    'active_frac': 0.9921875,
+    'salience_mean': 0.13606788218021393,
+    'salience_std': 0.0915650948882103,
+    'reg_cos_sim': 0.19754086434841156,
+    'destroy_mean': 0.49471142888069153,
+    'qforce_ratio': 0.2786480486392975,
+    'rev_scale': 0.1973993480205536,
+    'create_alpha_max': 0.5381789207458496,
+    'create_entropy': 0.7129650115966797,
+    'rev_entropy': 2.141018867492676,
+    'rev_alpha_max': 0.359247088432312}},
+  {0: {'layer': 0,
+    'active_frac': 1.0,
+    'salience_mean': 0.32490116357803345,
+    'salience_std': 0.025754030793905258,
+    'reg_cos_sim': 0.128841370344162,
+    'destroy_mean': 0.35278189182281494,
+    'qforce_ratio': 0.2085123211145401,
+    'rev_scale': -0.12611006200313568,
+    'create_alpha_max': 0.00403418717905879,
+    'create_entropy': 6.217392921447754,
+    'rev_entropy': 1.4407724142074585,
+    'rev_alpha_max': 0.5791475176811218},
+   1: {'layer': 1,
+    'active_frac': 1.0,
+    'salience_mean': 0.158212810754776,
+    'salience_std': 0.17403380572795868,
+    'reg_cos_sim': 0.245429128408432,
+    'destroy_mean': 0.45585623383522034,
+    'qforce_ratio': 0.037202898412942886,
+    'rev_scale': -0.023504747077822685,
+    'create_alpha_max': 0.270879328250885,
+    'create_entropy': 3.638064384460449,
+    'rev_entropy': 2.4476399421691895,
+    'rev_alpha_max': 0.24147891998291016},
+   2: {'layer': 2,
+    'active_frac': 0.94921875,
+    'salience_mean': 0.051024459302425385,
+    'salience_std': 0.12374455481767654,
+    'reg_cos_sim': 0.24365234375,
+    'destroy_mean': 0.8357284069061279,
+    'qforce_ratio': 0.24044086039066315,
+    'rev_scale': 0.15062811970710754,
+    'create_alpha_max': 0.34666967391967773,
+    'create_entropy': 0.6084693670272827,
+    'rev_entropy': 2.1469223499298096,
+    'rev_alpha_max': 0.3444519639015198},
+   3: {'layer': 3,
+    'active_frac': 0.9453125,
+    'salience_mean': 0.05817569047212601,
+    'salience_std': 0.11432202905416489,
+    'reg_cos_sim': 0.20681720972061157,
+    'destroy_mean': 0.578066349029541,
+    'qforce_ratio': 0.11332041770219803,
+    'rev_scale': 0.07519350945949554,
+    'create_alpha_max': 0.24977189302444458,
+    'create_entropy': 0.43853849172592163,
+    'rev_entropy': 1.995898962020874,
+    'rev_alpha_max': 0.39117565751075745},
+   4: {'layer': 4,
+    'active_frac': 0.984375,
+    'salience_mean': 0.018688615411520004,
+    'salience_std': 0.04818893224000931,
+    'reg_cos_sim': 0.19650527834892273,
+    'destroy_mean': 0.8862296938896179,
+    'qforce_ratio': 0.09546239674091339,
+    'rev_scale': 0.06646619737148285,
+    'create_alpha_max': 0.3049153983592987,
+    'create_entropy': 0.4862508773803711,
+    'rev_entropy': 1.9063398838043213,
+    'rev_alpha_max': 0.39768606424331665},
+   5: {'layer': 5,
+    'active_frac': 0.9921875,
+    'salience_mean': 0.005862670950591564,
+    'salience_std': 0.040255334228277206,
+    'reg_cos_sim': 0.24197377264499664,
+    'destroy_mean': 0.9731354117393494,
+    'qforce_ratio': 0.14885742962360382,
+    'rev_scale': 0.10108759254217148,
+    'create_alpha_max': 0.43080493807792664,
+    'create_entropy': 0.4800957441329956,
+    'rev_entropy': 1.8555898666381836,
+    'rev_alpha_max': 0.4125097692012787},
+   6: {'layer': 6,
+    'active_frac': 0.9765625,
+    'salience_mean': 9.43715131143108e-05,
+    'salience_std': 0.0005554102244786918,
+    'reg_cos_sim': 0.25300583243370056,
+    'destroy_mean': 0.9998493790626526,
+    'qforce_ratio': 0.2355511486530304,
+    'rev_scale': 0.15697792172431946,
+    'create_alpha_max': 0.5291474461555481,
+    'create_entropy': 0.5983020663261414,
+    'rev_entropy': 1.9540263414382935,
+    'rev_alpha_max': 0.4006423056125641},
+   7: {'layer': 7,
+    'active_frac': 0.98046875,
+    'salience_mean': 0.12142791599035263,
+    'salience_std': 0.09169167280197144,
+    'reg_cos_sim': 0.231025829911232,
+    'destroy_mean': 0.4952940046787262,
+    'qforce_ratio': 0.2756293714046478,
+    'rev_scale': 0.1973993480205536,
+    'create_alpha_max': 0.4805672764778137,
+    'create_entropy': 0.7297881245613098,
+    'rev_entropy': 2.0245447158813477,
+    'rev_alpha_max': 0.3858228921890259}},
+  {0: {'layer': 0,
+    'active_frac': 1.0,
+    'salience_mean': 0.32492494583129883,
+    'salience_std': 0.025731150060892105,
+    'reg_cos_sim': 0.128841370344162,
+    'destroy_mean': 0.35278189182281494,
+    'qforce_ratio': 0.2108718901872635,
+    'rev_scale': -0.12611006200313568,
+    'create_alpha_max': 0.004115634597837925,
+    'create_entropy': 6.216292858123779,
+    'rev_entropy': 1.3396189212799072,
+    'rev_alpha_max': 0.614111065864563},
+   1: {'layer': 1,
+    'active_frac': 1.0,
+    'salience_mean': 0.14207516610622406,
+    'salience_std': 0.16612015664577484,
+    'reg_cos_sim': 0.24412305653095245,
+    'destroy_mean': 0.4971032738685608,
+    'qforce_ratio': 0.03785337507724762,
+    'rev_scale': -0.023504747077822685,
+    'create_alpha_max': 0.2527965307235718,
+    'create_entropy': 3.7118358612060547,
+    'rev_entropy': 2.4444034099578857,
+    'rev_alpha_max': 0.23919352889060974},
+   2: {'layer': 2,
+    'active_frac': 0.953125,
+    'salience_mean': 0.05835229903459549,
+    'salience_std': 0.13307572901248932,
+    'reg_cos_sim': 0.24284857511520386,
+    'destroy_mean': 0.8130924105644226,
+    'qforce_ratio': 0.24410101771354675,
+    'rev_scale': 0.15062811970710754,
+    'create_alpha_max': 0.3230668008327484,
+    'create_entropy': 0.717211127281189,
+    'rev_entropy': 2.110771417617798,
+    'rev_alpha_max': 0.359428346157074},
+   3: {'layer': 3,
+    'active_frac': 0.96484375,
+    'salience_mean': 0.07384467124938965,
+    'salience_std': 0.12874703109264374,
+    'reg_cos_sim': 0.19497700035572052,
+    'destroy_mean': 0.48970600962638855,
+    'qforce_ratio': 0.11537274718284607,
+    'rev_scale': 0.07519350945949554,
+    'create_alpha_max': 0.2491471767425537,
+    'create_entropy': 0.4903029203414917,
+    'rev_entropy': 1.9640159606933594,
+    'rev_alpha_max': 0.3973432183265686},
+   4: {'layer': 4,
+    'active_frac': 0.984375,
+    'salience_mean': 0.02037253975868225,
+    'salience_std': 0.04247293621301651,
+    'reg_cos_sim': 0.1872972697019577,
+    'destroy_mean': 0.8592521548271179,
+    'qforce_ratio': 0.09682239592075348,
+    'rev_scale': 0.06646619737148285,
+    'create_alpha_max': 0.3382320702075958,
+    'create_entropy': 0.47376522421836853,
+    'rev_entropy': 1.8945176601409912,
+    'rev_alpha_max': 0.3977118730545044},
+   5: {'layer': 5,
+    'active_frac': 0.99609375,
+    'salience_mean': 0.004755930043756962,
+    'salience_std': 0.011837256141006947,
+    'reg_cos_sim': 0.22837617993354797,
+    'destroy_mean': 0.9701442122459412,
+    'qforce_ratio': 0.15164664387702942,
+    'rev_scale': 0.10108759254217148,
+    'create_alpha_max': 0.4951188564300537,
+    'create_entropy': 0.48692601919174194,
+    'rev_entropy': 1.9038076400756836,
+    'rev_alpha_max': 0.39180392026901245},
+   6: {'layer': 6,
+    'active_frac': 0.9921875,
+    'salience_mean': 0.003251289948821068,
+    'salience_std': 0.03029285930097103,
+    'reg_cos_sim': 0.2680908441543579,
+    'destroy_mean': 0.9911074042320251,
+    'qforce_ratio': 0.23928315937519073,
+    'rev_scale': 0.15697792172431946,
+    'create_alpha_max': 0.5162477493286133,
+    'create_entropy': 0.6550694704055786,
+    'rev_entropy': 1.9811031818389893,
+    'rev_alpha_max': 0.3890101909637451},
+   7: {'layer': 7,
+    'active_frac': 0.99609375,
+    'salience_mean': 0.12898753583431244,
+    'salience_std': 0.09279771149158478,
+    'reg_cos_sim': 0.20240671932697296,
+    'destroy_mean': 0.4949187636375427,
+    'qforce_ratio': 0.2785986363887787,
+    'rev_scale': 0.1973993480205536,
+    'create_alpha_max': 0.506780743598938,
+    'create_entropy': 0.7132444977760315,
+    'rev_entropy': 2.11537504196167,
+    'rev_alpha_max': 0.3559565246105194}}]}

@@ -1,0 +1,37 @@
+[clipabl] loaded fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_step55919_spikebatch.pt  step=55919  pre_clip_grad_norm=446.34
+
+[clipabl] step=55919  4 microbatch(es), grad_accum=4
+
+[clipabl] group 'E'  (raw accumulated norm = 274.26, 1 param(s))
+     threshold   sum_then_clip   clip_then_sum     ratio   cos(applied dirs)
+             1          1.0000          1.4792     1.479              0.6895
+           0.3          0.3000          0.5644     1.881              0.5423
+           0.1          0.1000          0.1991     1.991              0.5126
+          0.03          0.0300          0.0597     1.991              0.5126
+
+[clipabl] group 'P'  (raw accumulated norm = 274.11, 1 param(s))
+     threshold   sum_then_clip   clip_then_sum     ratio   cos(applied dirs)
+             1          1.0000          1.4624     1.462              0.6800
+           0.3          0.3000          0.5638     1.879              0.5304
+           0.1          0.1000          0.1988     1.988              0.5018
+          0.03          0.0300          0.0597     1.988              0.5018
+
+[clipabl] "ratio" > 1 means clip_then_sum applies a *larger* update than sum_then_clip at that threshold (the outlier microbatch alone can already saturate that threshold, so clipping earlier costs it nothing extra); "ratio" < 1 means clip_then_sum is *more* conservative (multiple microbatches each partially saturate the threshold, so summing their capped contributions still ends up smaller than capping the sum once). "cos" close to 1.0 means clip order barely changes the update's direction at that threshold (clipping earlier vs. later mainly just rescales the same direction); a noticeably lower cosine means the two regimes disagree about which way the parameter should actually move -- that would be the concrete case for preferring clip_then_sum.
+{'sum_then_clip': {'E': {1.0: 1.0, 0.3: 0.3, 0.1: 0.1, 0.03: 0.03},
+  'P': {1.0: 1.0, 0.3: 0.3, 0.1: 0.1, 0.03: 0.03}},
+ 'clip_then_sum': {'E': {1.0: 1.4792108535766602,
+   0.3: 0.5643759965896606,
+   0.1: 0.199074849486351,
+   0.03: 0.05972245708107948},
+  'P': {1.0: 1.4624390602111816,
+   0.3: 0.5638362765312195,
+   0.1: 0.19884158670902252,
+   0.03: 0.05965247377753258}},
+ 'cosine_vs_sum_then_clip': {'E': {1.0: 0.6895034909248352,
+   0.3: 0.5423009991645813,
+   0.1: 0.5125561356544495,
+   0.03: 0.5125560760498047},
+  'P': {1.0: 0.6799888014793396,
+   0.3: 0.5303981900215149,
+   0.1: 0.5017686486244202,
+   0.03: 0.5017687082290649}}}

@@ -1,0 +1,131 @@
+> for step_tag in (47116, 48507, 48917):
+>    replay_precision_cap_ablation(step_tag, budgets=[1.0, 4.0, None])
+>    replay_integrator_ablation(step_tag, lowrank_layers={0, 1, 2})
+
+
+
+[precap] loaded fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_step47116_spikebatch.pt  step=47116  pre_clip_grad_norm=13139.46
+
+[precap] precision_lr_max=1.0:
+    pre_clip_grad_norm=3.98
+    top groups: E=2.37, P=2.21, override:reverse_channel_scale=1.80, override:creation_gate=1.60, override:V_phi=1.23, override:reverse_ch=0.96, override:depth_code=0.84, override:register=0.56
+    per-layer h-grad: L0=0.0545, L1=0.0453, L2=0.0317, L3=0.0242, L4=0.0178, L5=0.0143, L6=0.0084, L7=0.0050
+    V_theta exponent min per bank: bank0=-124.4, bank1=-67.8, bank2=-51.8, bank3=-91.9, bank4=-135.8
+
+[precap] precision_lr_max=4.0:
+    pre_clip_grad_norm=4.09
+    top groups: P=2.07, E=2.07, override:depth_code=1.99, override:reverse_channel_scale=1.59, override:creation_gate=1.20, override:V_phi=1.18, override:register=0.75, override:reverse_ch=0.74
+    per-layer h-grad: L0=0.0427, L1=0.0391, L2=0.0270, L3=0.0204, L4=0.0156, L5=0.0116, L6=0.0080, L7=0.0047
+    V_theta exponent min per bank: bank0=-556.7, bank1=-235.3, bank2=-226.6, bank3=-352.1, bank4=-522.2
+
+[precap] uncapped (None, as trained):
+    pre_clip_grad_norm=13032.99
+    top groups: override:depth_code=8541.44, E=5712.02, P=5711.95, override:creation_gate=4069.09, V_theta=3802.15, override:reverse_channel_scale=860.19, override:reverse_ch=808.86, override:register=762.23
+    per-layer h-grad: L0=0.0593, L1=0.0503, L2=0.0343, L3=0.0238, L4=0.0157, L5=0.0113, L6=0.0077, L7=0.0046
+    V_theta exponent min per bank: bank0=-257630.0, bank1=-150075.5, bank2=-203833.0, bank3=-151134.6, bank4=-196640.3
+
+[precap] summary (step=47116, recorded pre-clip=13139.5 at capture time):
+    arm                                pre_clip   vs uncapped
+    precision_lr_max=1.0                   3.98        0.000x
+    precision_lr_max=4.0                   4.09        0.000x
+    uncapped (None, as trained)        13032.99        1.000x
+[intgab] loaded fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_step47116_spikebatch.pt  step=47116  pre_clip_grad_norm=13139.46
+
+[intgab] baoab_cfc as captured:
+    pre_clip_grad_norm=13032.99
+    top groups: override:depth_code=8541.44, E=5712.02, P=5711.95, override:creation_gate=4069.09, V_theta=3802.15, override:reverse_channel_scale=860.19, override:reverse_ch=808.86, override:register=762.23
+    per-layer h-grad: L0=0.0593, L1=0.0503, L2=0.0343, L3=0.0238, L4=0.0157, L5=0.0113, L6=0.0077, L7=0.0046
+/content/semsimula-paper/notebooks/conservative_arch/parf/cfc_baoab.py:364: UserWarning: torch.linalg.svd: During SVD computation with the selected cusolver driver, batches 19, 99, 128, 131, 170, and other 114 batches failed to converge. A more accurate method will be used to compute the SVD as a fallback. Check doc at https://pytorch.org/docs/stable/generated/torch.linalg.svd.html (Triggered internally at /pytorch/aten/src/ATen/native/cuda/linalg/BatchLinearAlgebraLib.cpp:692.)
+  u_small, s, _ = torch.linalg.svd(small, full_matrices=False)
+
+[intgab] baoab_cfc_lowrank layers [0, 1, 2]:
+    pre_clip_grad_norm=2.65
+    top groups: override:depth_code=1.72, override:reverse_channel_scale=1.40, E=1.15, P=1.15, override:creation_gate=0.80, V_theta=0.64, override:reverse_ch=0.60, override:V_phi=0.40
+    per-layer h-grad: L0=0.1595, L1=0.1349, L2=0.0959, L3=0.0667, L4=0.0382, L5=0.0126, L6=0.0077, L7=0.0046
+
+[intgab] summary (step=47116, recorded pre-clip=13139.5 at capture time):
+    arm                                          pre_clip  vs baoab_cfc
+    baoab_cfc as captured                        13032.99        1.000x
+    baoab_cfc_lowrank layers [0, 1, 2]               2.65        0.000x
+[precap] loaded fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_step48507_spikebatch.pt  step=48507  pre_clip_grad_norm=203.13
+
+[precap] precision_lr_max=1.0:
+    pre_clip_grad_norm=2.14
+    top groups: override:reverse_channel_scale=2.50, override:creation_gate=1.26, override:reverse_ch=0.97, E=0.86, override:V_phi=0.76, P=0.75, override:depth_code=0.72, override:register=0.46
+    per-layer h-grad: L0=0.0607, L1=0.0481, L2=0.0323, L3=0.0234, L4=0.0173, L5=0.0120, L6=0.0083, L7=0.0048
+    V_theta exponent min per bank: bank0=-146.8, bank1=-75.2, bank2=-54.0, bank3=-65.1, bank4=-134.7
+
+[precap] precision_lr_max=4.0:
+    pre_clip_grad_norm=2.95
+    top groups: E=1.69, P=1.68, override:reverse_channel_scale=1.14, override:depth_code=1.10, override:creation_gate=0.99, override:reverse_ch=0.59, raw_m_bias=0.50, override:V_phi=0.46
+    per-layer h-grad: L0=0.0432, L1=0.0359, L2=0.0248, L3=0.0182, L4=0.0142, L5=0.0108, L6=0.0077, L7=0.0046
+    V_theta exponent min per bank: bank0=-451.8, bank1=-280.5, bank2=-186.6, bank3=-326.2, bank4=-449.5
+
+[precap] uncapped (None, as trained):
+    pre_clip_grad_norm=203.86
+    top groups: override:depth_code=128.69, P=95.36, E=90.96, override:creation_gate=70.11, V_theta=48.93, override:reverse_channel_scale=27.26, override:register=17.63, override:reverse_ch=15.23
+    per-layer h-grad: L0=0.0812, L1=0.0597, L2=0.0322, L3=0.0181, L4=0.0136, L5=0.0103, L6=0.0074, L7=0.0045
+    V_theta exponent min per bank: bank0=-230780.5, bank1=-147688.7, bank2=-218997.6, bank3=-228827.5, bank4=-338988.2
+
+[precap] summary (step=48507, recorded pre-clip=203.1 at capture time):
+    arm                                pre_clip   vs uncapped
+    precision_lr_max=1.0                   2.14        0.010x
+    precision_lr_max=4.0                   2.95        0.014x
+    uncapped (None, as trained)          203.86        1.000x
+[intgab] loaded fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_step48507_spikebatch.pt  step=48507  pre_clip_grad_norm=203.13
+
+[intgab] baoab_cfc as captured:
+    pre_clip_grad_norm=203.86
+    top groups: override:depth_code=128.69, P=95.36, E=90.96, override:creation_gate=70.11, V_theta=48.93, override:reverse_channel_scale=27.26, override:register=17.63, override:reverse_ch=15.23
+    per-layer h-grad: L0=0.0812, L1=0.0597, L2=0.0322, L3=0.0181, L4=0.0136, L5=0.0103, L6=0.0074, L7=0.0045
+
+[intgab] baoab_cfc_lowrank layers [0, 1, 2]:
+    pre_clip_grad_norm=1.42
+    top groups: override:depth_code=0.88, override:reverse_channel_scale=0.68, override:creation_gate=0.65, E=0.53, P=0.52, override:reverse_ch=0.39, V_theta=0.32, override:V_phi=0.28
+    per-layer h-grad: L0=0.0634, L1=0.0530, L2=0.0354, L3=0.0247, L4=0.0163, L5=0.0106, L6=0.0074, L7=0.0045
+
+[intgab] summary (step=48507, recorded pre-clip=203.1 at capture time):
+    arm                                          pre_clip  vs baoab_cfc
+    baoab_cfc as captured                          203.86        1.000x
+    baoab_cfc_lowrank layers [0, 1, 2]               1.42        0.007x
+[precap] loaded fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_step48917_spikebatch.pt  step=48917  pre_clip_grad_norm=201.97
+
+[precap] precision_lr_max=1.0:
+    pre_clip_grad_norm=2.79
+    top groups: override:reverse_channel_scale=1.94, override:creation_gate=1.47, E=1.32, P=1.25, override:reverse_ch=1.00, override:V_phi=0.95, override:depth_code=0.87, override:register=0.54
+    per-layer h-grad: L0=0.0778, L1=0.0636, L2=0.0421, L3=0.0277, L4=0.0180, L5=0.0120, L6=0.0083, L7=0.0049
+    V_theta exponent min per bank: bank0=-97.4, bank1=-139.1, bank2=-79.7, bank3=-71.0, bank4=-146.2
+
+[precap] precision_lr_max=4.0:
+    pre_clip_grad_norm=1.90
+    top groups: override:depth_code=1.08, override:reverse_channel_scale=0.93, override:creation_gate=0.91, E=0.68, override:reverse_ch=0.64, P=0.64, override:V_phi=0.50, raw_m_bias=0.48
+    per-layer h-grad: L0=0.0571, L1=0.0446, L2=0.0301, L3=0.0221, L4=0.0163, L5=0.0114, L6=0.0078, L7=0.0046
+    V_theta exponent min per bank: bank0=-409.0, bank1=-458.1, bank2=-223.1, bank3=-229.3, bank4=-579.3
+
+[precap] uncapped (None, as trained):
+    pre_clip_grad_norm=199.56
+    top groups: override:reverse_channel_scale=130.74, override:depth_code=122.84, E=101.74, P=101.74, V_theta=44.45, override:creation_gate=35.49, override:register=25.68, override:reverse_ch=21.15
+    per-layer h-grad: L0=0.0536, L1=0.0422, L2=0.0281, L3=0.0201, L4=0.0152, L5=0.0110, L6=0.0075, L7=0.0045
+    V_theta exponent min per bank: bank0=-269914.4, bank1=-248060.6, bank2=-126022.3, bank3=-188426.6, bank4=-139147.0
+
+[precap] summary (step=48917, recorded pre-clip=202.0 at capture time):
+    arm                                pre_clip   vs uncapped
+    precision_lr_max=1.0                   2.79        0.014x
+    precision_lr_max=4.0                   1.90        0.010x
+    uncapped (None, as trained)          199.56        1.000x
+[intgab] loaded fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_step48917_spikebatch.pt  step=48917  pre_clip_grad_norm=201.97
+
+[intgab] baoab_cfc as captured:
+    pre_clip_grad_norm=199.56
+    top groups: override:reverse_channel_scale=130.74, override:depth_code=122.84, E=101.74, P=101.74, V_theta=44.45, override:creation_gate=35.49, override:register=25.68, override:reverse_ch=21.15
+    per-layer h-grad: L0=0.0536, L1=0.0422, L2=0.0281, L3=0.0201, L4=0.0152, L5=0.0110, L6=0.0075, L7=0.0045
+
+[intgab] baoab_cfc_lowrank layers [0, 1, 2]:
+    pre_clip_grad_norm=1.34
+    top groups: override:depth_code=0.85, E=0.54, P=0.54, override:creation_gate=0.53, override:reverse_channel_scale=0.40, override:reverse_ch=0.35, V_theta=0.30, override:V_phi=0.22
+    per-layer h-grad: L0=0.0459, L1=0.0363, L2=0.0243, L3=0.0181, L4=0.0142, L5=0.0107, L6=0.0075, L7=0.0045
+
+[intgab] summary (step=48917, recorded pre-clip=202.0 at capture time):
+    arm                                          pre_clip  vs baoab_cfc
+    baoab_cfc as captured                          199.56        1.000x
+    baoab_cfc_lowrank layers [0, 1, 2]               1.34        0.007x

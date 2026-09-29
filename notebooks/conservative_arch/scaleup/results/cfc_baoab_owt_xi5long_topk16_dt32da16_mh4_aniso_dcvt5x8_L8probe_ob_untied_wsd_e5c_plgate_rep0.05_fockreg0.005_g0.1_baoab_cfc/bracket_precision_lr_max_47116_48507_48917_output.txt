@@ -1,0 +1,8 @@
+state                        p50       p90       p99     p99.9          max
+healthy (step 27,000)    283.193   669.889  1053.995  2329.502     6362.134
+spike step 47116         310.610   714.012  1136.094  2900.607     8065.585
+spike step 48507         284.203   683.365  1058.250  2305.327     6386.796
+spike step 48917         281.597   687.400  1054.872  2426.891     6682.763
+
+=> per companion-note SS31.4: set PRECISION_LR_MAX above the healthy row's p90-p99, below the spike rows' p99/max, then bias slightly upward (the Frobenius cap in _bound_lowrank is conservative by up to a factor ANISO_RANK=4).
+

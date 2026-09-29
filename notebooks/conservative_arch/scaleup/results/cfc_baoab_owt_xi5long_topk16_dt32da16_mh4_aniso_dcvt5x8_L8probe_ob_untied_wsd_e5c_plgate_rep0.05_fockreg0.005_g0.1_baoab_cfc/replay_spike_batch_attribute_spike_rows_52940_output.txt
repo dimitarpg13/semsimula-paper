@@ -1,0 +1,366 @@
+[replay] loaded fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_step52940_spikebatch.pt  step=52940  pre_clip_grad_norm=441.92
+[replay] Phase-0 top groups at capture time: E=260.82, P=260.74, override:depth_code=156.76, override:creation_gate=152.22, override:reverse_ch=117.13, override:reverse_channel_scale=106.3, override:register=95.99, V_theta=47.3
+
+[replay] fidelity check: replayed (matching-groups) total=441.9  vs. recorded pre_clip_grad_norm=441.9  (diff 0.0%)
+[replay] replayed total incl. reverse-channel groups=469.4  (excl.=441.9; the gap is what the watchdog aggregate would have missed, SS33.3 Phase 0)
+[replay] replayed per-group norms (top 8):
+        260.82  E
+        260.74  P
+        156.76  override:depth_code
+        152.22  override:creation_gate
+        117.13  override:reverse_ch
+        106.30  override:reverse_channel_scale
+         95.99  override:register
+         47.30  V_theta
+[replay] top per-parameter grad norms:
+        260.82  E.weight
+        260.74  P
+        156.76  V_theta.depth_code
+        135.24  creation_gate_qkv.W_K
+        106.30  reverse_channel_scale
+         98.20  reverse_ch.W_Q_rev.weight
+         95.99  register_embed
+         59.98  creation_gate_qkv.W_V.weight
+         49.92  reverse_ch.W_K_rev.weight
+         37.67  reverse_ch.W_V_rev.weight
+         35.10  creation_gate_qkv.W_Q
+         23.48  V_theta.bank.banks.0.B_proj.bias
+[replay] per-layer grad norm (gradient flowing INTO each layer boundary):
+    layer  0:       0.16
+    layer  1:       0.12
+    layer  2:       0.07
+    layer  3:       0.05
+    layer  4:       0.03
+    layer  5:       0.01
+    layer  6:       0.01
+    layer  7:       0.00
+[replay] forward-activation extremes at risky ops (by layer; -1 = not layer-attributable):
+    reverse_ch.logit_scale (exp, clamped)  layer -1: {'min': 19.826705932617188, 'max': 19.826705932617188, 'mean': 19.826705932617188}
+    creation_gate.alpha_max (~Z-normalised top weight)  layer  0: {'min': 0.0021486973855644464, 'max': 1.0, 'mean': 0.0231027714908123}
+    creation_gate.alpha_max (~Z-normalised top weight)  layer  1: {'min': 0.006310201250016689, 'max': 1.0, 'mean': 0.41345319151878357}
+    creation_gate.alpha_max (~Z-normalised top weight)  layer  2: {'min': 0.0, 'max': 1.0, 'mean': 0.34936851263046265}
+    creation_gate.alpha_max (~Z-normalised top weight)  layer  3: {'min': 0.0, 'max': 1.0, 'mean': 0.3460148572921753}
+    creation_gate.alpha_max (~Z-normalised top weight)  layer  4: {'min': 0.0, 'max': 1.0, 'mean': 0.4906383156776428}
+    creation_gate.alpha_max (~Z-normalised top weight)  layer  5: {'min': 0.0, 'max': 1.0, 'mean': 0.5708951950073242}
+    creation_gate.alpha_max (~Z-normalised top weight)  layer  6: {'min': 0.0, 'max': 1.0, 'mean': 0.6298786401748657}
+    creation_gate.alpha_max (~Z-normalised top weight)  layer  7: {'min': 0.0, 'max': 1.0, 'mean': 0.5985507369041443}
+    creation_gate.tau  layer  0: {'min': 5.598196029663086, 'max': 7.7527923583984375, 'mean': 6.520176887512207}
+    creation_gate.tau  layer  1: {'min': 5.598196029663086, 'max': 7.7527923583984375, 'mean': 6.520176887512207}
+    creation_gate.tau  layer  2: {'min': 5.598196029663086, 'max': 7.7527923583984375, 'mean': 6.520176887512207}
+    creation_gate.tau  layer  3: {'min': 5.598196029663086, 'max': 7.7527923583984375, 'mean': 6.520176887512207}
+    creation_gate.tau  layer  4: {'min': 5.598196029663086, 'max': 7.7527923583984375, 'mean': 6.520176887512207}
+    creation_gate.tau  layer  5: {'min': 5.598196029663086, 'max': 7.7527923583984375, 'mean': 6.520176887512207}
+    creation_gate.tau  layer  6: {'min': 5.598196029663086, 'max': 7.7527923583984375, 'mean': 6.520176887512207}
+    creation_gate.tau  layer  7: {'min': 5.598196029663086, 'max': 7.7527923583984375, 'mean': 6.520176887512207}
+    reverse_ch.Q_force  layer  0: {'min': -11.26517105102539, 'max': 7.315894603729248, 'mean': -0.3519170880317688}
+    reverse_ch.Q_force  layer  1: {'min': -10.244380950927734, 'max': 4.141496658325195, 'mean': -0.2562538981437683}
+    reverse_ch.Q_force  layer  2: {'min': -10.20096206665039, 'max': 4.169826030731201, 'mean': -0.21596002578735352}
+    reverse_ch.Q_force  layer  3: {'min': -10.248065948486328, 'max': 4.181419849395752, 'mean': -0.3156183362007141}
+    reverse_ch.Q_force  layer  4: {'min': -9.699339866638184, 'max': 5.091006278991699, 'mean': -0.5710890293121338}
+    reverse_ch.Q_force  layer  5: {'min': -8.20291805267334, 'max': 4.472663879394531, 'mean': -0.6699654459953308}
+    reverse_ch.Q_force  layer  6: {'min': -5.532736778259277, 'max': 4.185665607452393, 'mean': -0.6308974623680115}
+    reverse_ch.Q_force  layer  7: {'min': -5.269449710845947, 'max': 5.031358242034912, 'mean': -0.5556562542915344}
+    destruction_gates[0].output  layer  0: {'min': 0.13793812692165375, 'max': 0.3835670053958893, 'mean': 0.25792020559310913}
+    destruction_gates[1].output  layer  1: {'min': 7.559310301200398e-14, 'max': 1.0, 'mean': 0.3415622413158417}
+    destruction_gates[2].output  layer  2: {'min': 4.491214772574535e-18, 'max': 0.9996751546859741, 'mean': 0.15252315998077393}
+    destruction_gates[3].output  layer  3: {'min': 3.872478870903251e-08, 'max': 1.0, 'mean': 0.888107180595398}
+    destruction_gates[4].output  layer  4: {'min': 0.0023115198127925396, 'max': 1.0, 'mean': 0.7667303681373596}
+    destruction_gates[5].output  layer  5: {'min': 7.4666645559773315e-06, 'max': 1.0, 'mean': 0.9267070293426514}
+    destruction_gates[6].output  layer  6: {'min': 0.00010228327300865203, 'max': 1.0, 'mean': 0.9965341091156006}
+    destruction_gates[7].output  layer  7: {'min': 0.4712543189525604, 'max': 0.5188702940940857, 'mean': 0.4969024062156677}
+    V_theta.bank[0].exponent  layer -1: {'min': -130.5445556640625, 'max': -0.5659357905387878, 'mean': -11.565679550170898}
+    V_theta.bank[0].lr_term_share  layer -1: {'min': 0.008652577176690102, 'max': 0.9891359806060791, 'mean': 0.7569442391395569}
+    V_theta.bank[0].xi_shifted_norm  layer -1: {'min': 12.311738014221191, 'max': 19.93834686279297, 'mean': 15.515729904174805}
+    V_theta.bank[1].exponent  layer -1: {'min': -385.0480041503906, 'max': -0.682201623916626, 'mean': -9.357589721679688}
+    V_theta.bank[1].lr_term_share  layer -1: {'min': 0.020312944427132607, 'max': 0.9903287887573242, 'mean': 0.704899787902832}
+    V_theta.bank[1].xi_shifted_norm  layer -1: {'min': 11.014392852783203, 'max': 20.21430778503418, 'mean': 14.481477737426758}
+    V_theta.bank[2].exponent  layer -1: {'min': -179.50233459472656, 'max': -0.3635656237602234, 'mean': -10.254552841186523}
+    V_theta.bank[2].lr_term_share  layer -1: {'min': 0.019079133868217468, 'max': 0.9870632886886597, 'mean': 0.7463463544845581}
+    V_theta.bank[2].xi_shifted_norm  layer -1: {'min': 9.234526634216309, 'max': 20.524356842041016, 'mean': 13.04377555847168}
+    V_theta.bank[3].exponent  layer -1: {'min': -157.01132202148438, 'max': -1.2403405904769897, 'mean': -24.495925903320312}
+    V_theta.bank[3].lr_term_share  layer -1: {'min': 0.1072322279214859, 'max': 0.9910235404968262, 'mean': 0.9030908942222595}
+    V_theta.bank[3].xi_shifted_norm  layer -1: {'min': 8.704005241394043, 'max': 20.284889221191406, 'mean': 11.469244956970215}
+    V_theta.bank[4].exponent  layer -1: {'min': -190.8827667236328, 'max': -0.7697821855545044, 'mean': -18.666194915771484}
+    V_theta.bank[4].lr_term_share  layer -1: {'min': 0.03580550104379654, 'max': 0.9864253997802734, 'mean': 0.8455137014389038}
+    V_theta.bank[4].xi_shifted_norm  layer -1: {'min': 7.828930377960205, 'max': 19.825115203857422, 'mean': 10.50124740600586}
+[replay] V_theta exponent occupancy per bank (token-slot counts summed over all microbatches; "live" = exponent > -10, where exp() >= 4.5e-5 and the well still contributes gradient):
+    bank       (-1,inf]        (-2,-1]        (-5,-2]       (-10,-5]      (-20,-10]      (-30,-20]     (-100,-30]   (-1000,-100]  (-10000,-1000]  (-inf,-10000]      live_n    live_frac
+       0             71           5428          33224          37325          33752          12630           8600             42              0              0       76048   5.8020e-01
+       1             63           8752          47576          31104          23531          10215           9718            113              0              0       87495   6.6753e-01
+       2            506          10984          46914          34162          23341           8120           6945            100              0              0       92566   7.0622e-01
+       3              5            528           8506          23772          36193          25299          36578            191              0              0       32811   2.5033e-01
+       4             43           6204          30017          29518          26298          14546          23655            791              0              0       65782   5.0188e-01
+[replay] per-layer register/gate health (microbatch 3 of 4, via set_fock_capture):
+    layer       active_frac     salience_mean       reg_cos_sim      destroy_mean  create_alpha_max    create_entropy       rev_entropy     rev_alpha_max         rev_scale      qforce_ratio
+        0                 1            0.3727            0.1805            0.2579          0.004588              6.21              1.52            0.5613           -0.1163            0.2684
+        1                 1            0.2326            0.1217            0.3287            0.3246             2.926             2.312            0.2601          -0.02949           0.06592
+        2            0.9727            0.2017            0.2606            0.1834            0.2833            0.7907             2.352            0.3033            0.1146            0.2586
+        3            0.9961           0.05364            0.2952            0.7925            0.2205            0.5437             2.195            0.3539           0.06773            0.1506
+        4            0.9766           0.03258            0.2098            0.8075             0.384            0.5006              1.98            0.3761           0.06298            0.1339
+        5                 1          0.005433            0.2314            0.9724            0.4684            0.5664             1.937            0.3807           0.09548            0.1975
+        6                 1         0.0003104            0.2499            0.9989            0.5362            0.6438             1.975              0.38            0.1404            0.2894
+        7            0.9727            0.1314            0.2174            0.4958            0.5206            0.7507             2.036            0.3766            0.1648            0.3233
+[rows] loaded fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_step52940_spikebatch.pt  step=52940  pre_clip_grad_norm=441.92
+
+[rows] per-row attribution, ranked by V_theta.depth_code  (each row scaled by 1/(grad_accum*rows_per_mb), i.e. its own share of the aggregate):
+ mb  row                   ntp         layer0_h_grad       total_grad_norm    V_theta.depth_code
+  3    3               5.74555              0.643512               9.36848               2.68328
+  3    6               4.38828              0.792229               7.24811               2.06975
+  0    3                5.2647              0.105454              0.858602              0.223427
+  1    1               3.95484             0.0986644              0.881918              0.221864
+  0    7               4.69691               0.08362              0.441864              0.163431
+  1    5               4.77175               0.04048               0.53834              0.139739
+  2    3               4.86735             0.0403336              0.364439              0.120284
+  0    5               4.45199             0.0403057              0.384602              0.104514
+  1    7               4.41371             0.0240734              0.283165             0.0934177
+  0    4               4.23753             0.0243143              0.243421             0.0842537
+  1    2               4.97111             0.0370866              0.247174             0.0660034
+  2    4               4.88869             0.0244842              0.232186             0.0606467
+  1    3               4.97228             0.0203378               0.16234             0.0582606
+  0    6               4.53221             0.0235952              0.213152             0.0530553
+  1    4               4.27593             0.0219439              0.194714             0.0516201
+  2    2               4.71136             0.0175708              0.170277             0.0514953
+  3    7               3.98653             0.0190988              0.182842              0.051032
+  2    6               5.42348             0.0173518              0.152484             0.0485537
+  0    1               4.98328             0.0166509               0.17496             0.0482844
+  1    0               4.58897             0.0215243              0.200925             0.0464017
+  2    7               4.56327             0.0152336              0.232276              0.040691
+  2    1               4.39195             0.0180552              0.200349             0.0393142
+  2    0               4.68419             0.0166953              0.152538             0.0366394
+  0    2               4.12333             0.0183721              0.125328             0.0363455
+  3    4               4.23439             0.0161297              0.121664             0.0329567
+  0    0                4.4525             0.0159004              0.128127             0.0318864
+  2    5               4.23901             0.0136337              0.131819             0.0300816
+  3    1               4.71546             0.0143754              0.151001             0.0273869
+  3    2               4.02632             0.0130106               0.11539              0.026516
+  3    5               4.41622             0.0120665              0.113493             0.0231522
+  3    0               3.88653             0.0126806              0.113004             0.0220317
+  1    6               3.20897             0.0126427             0.0957655             0.0216128
+
+[rows] concentration for V_theta.depth_code:
+    top-1 row / sum-of-row-norms : 0.3941   (flat-batch baseline 0.0312)
+    top-3 rows / sum-of-row-norms : 0.7310
+    sum of ||row grad||           : 6.8079
+    ||sum of row grads||          : 3.4872   (rough cf. replay_spike_batch for this param; see caveats)
+
+[rows] concentration for layer0_h_grad:
+    top-1 row / sum-of-row-norms : 0.3457   (flat-batch baseline 0.0312)
+    top-3 rows / sum-of-row-norms : 0.6726
+    sum of ||row grad||           : 2.2914
+
+[rows] concentration for total_grad_norm:
+    top-1 row / sum-of-row-norms : 0.3867   (flat-batch baseline 0.0312)
+    top-3 rows / sum-of-row-norms : 0.7223
+    sum of ||row grad||           : 24.2248
+{'step': 52940,
+ 'pre_clip_grad_norm_recorded': 441.92,
+ 'rows': [{'microbatch': 0,
+   'row': 0,
+   'ntp': 4.452498435974121,
+   'layer0_h_grad': 0.015900369733572006,
+   'total_grad_norm': 0.12812672668945882,
+   'V_theta.depth_code': 0.03188640624284744},
+  {'microbatch': 0,
+   'row': 1,
+   'ntp': 4.983280181884766,
+   'layer0_h_grad': 0.016650937497615814,
+   'total_grad_norm': 0.17495993535570933,
+   'V_theta.depth_code': 0.04828439652919769},
+  {'microbatch': 0,
+   'row': 2,
+   'ntp': 4.12333345413208,
+   'layer0_h_grad': 0.018372051417827606,
+   'total_grad_norm': 0.1253275709576398,
+   'V_theta.depth_code': 0.0363454595208168},
+  {'microbatch': 0,
+   'row': 3,
+   'ntp': 5.264697074890137,
+   'layer0_h_grad': 0.10545435547828674,
+   'total_grad_norm': 0.8586019600824034,
+   'V_theta.depth_code': 0.22342729568481445},
+  {'microbatch': 0,
+   'row': 4,
+   'ntp': 4.237532138824463,
+   'layer0_h_grad': 0.024314289912581444,
+   'total_grad_norm': 0.24342075652690826,
+   'V_theta.depth_code': 0.084253691136837},
+  {'microbatch': 0,
+   'row': 5,
+   'ntp': 4.451993942260742,
+   'layer0_h_grad': 0.04030565917491913,
+   'total_grad_norm': 0.3846024370320563,
+   'V_theta.depth_code': 0.1045142337679863},
+  {'microbatch': 0,
+   'row': 6,
+   'ntp': 4.532214164733887,
+   'layer0_h_grad': 0.02359519898891449,
+   'total_grad_norm': 0.213151864905029,
+   'V_theta.depth_code': 0.053055256605148315},
+  {'microbatch': 0,
+   'row': 7,
+   'ntp': 4.696907997131348,
+   'layer0_h_grad': 0.08361995220184326,
+   'total_grad_norm': 0.44186373956501723,
+   'V_theta.depth_code': 0.16343098878860474},
+  {'microbatch': 1,
+   'row': 0,
+   'ntp': 4.588965892791748,
+   'layer0_h_grad': 0.021524325013160706,
+   'total_grad_norm': 0.20092501931793513,
+   'V_theta.depth_code': 0.04640166088938713},
+  {'microbatch': 1,
+   'row': 1,
+   'ntp': 3.9548425674438477,
+   'layer0_h_grad': 0.09866441786289215,
+   'total_grad_norm': 0.8819175692282248,
+   'V_theta.depth_code': 0.22186359763145447},
+  {'microbatch': 1,
+   'row': 2,
+   'ntp': 4.971114158630371,
+   'layer0_h_grad': 0.03708658367395401,
+   'total_grad_norm': 0.2471740132758767,
+   'V_theta.depth_code': 0.06600336730480194},
+  {'microbatch': 1,
+   'row': 3,
+   'ntp': 4.97227668762207,
+   'layer0_h_grad': 0.020337823778390884,
+   'total_grad_norm': 0.16233966160706945,
+   'V_theta.depth_code': 0.05826057493686676},
+  {'microbatch': 1,
+   'row': 4,
+   'ntp': 4.2759318351745605,
+   'layer0_h_grad': 0.02194386161863804,
+   'total_grad_norm': 0.1947144131665373,
+   'V_theta.depth_code': 0.05162005126476288},
+  {'microbatch': 1,
+   'row': 5,
+   'ntp': 4.771753787994385,
+   'layer0_h_grad': 0.04048004746437073,
+   'total_grad_norm': 0.5383395471602636,
+   'V_theta.depth_code': 0.1397392749786377},
+  {'microbatch': 1,
+   'row': 6,
+   'ntp': 3.2089664936065674,
+   'layer0_h_grad': 0.012642678804695606,
+   'total_grad_norm': 0.09576549608497018,
+   'V_theta.depth_code': 0.021612834185361862},
+  {'microbatch': 1,
+   'row': 7,
+   'ntp': 4.413714408874512,
+   'layer0_h_grad': 0.02407335489988327,
+   'total_grad_norm': 0.2831650759649832,
+   'V_theta.depth_code': 0.0934176817536354},
+  {'microbatch': 2,
+   'row': 0,
+   'ntp': 4.6841936111450195,
+   'layer0_h_grad': 0.016695348545908928,
+   'total_grad_norm': 0.152537954396859,
+   'V_theta.depth_code': 0.03663943335413933},
+  {'microbatch': 2,
+   'row': 1,
+   'ntp': 4.391948699951172,
+   'layer0_h_grad': 0.018055202439427376,
+   'total_grad_norm': 0.20034890613275372,
+   'V_theta.depth_code': 0.03931417316198349},
+  {'microbatch': 2,
+   'row': 2,
+   'ntp': 4.711361885070801,
+   'layer0_h_grad': 0.01757076196372509,
+   'total_grad_norm': 0.17027726219262926,
+   'V_theta.depth_code': 0.05149533972144127},
+  {'microbatch': 2,
+   'row': 3,
+   'ntp': 4.8673505783081055,
+   'layer0_h_grad': 0.04033355787396431,
+   'total_grad_norm': 0.3644394203751983,
+   'V_theta.depth_code': 0.12028448283672333},
+  {'microbatch': 2,
+   'row': 4,
+   'ntp': 4.8886871337890625,
+   'layer0_h_grad': 0.0244841780513525,
+   'total_grad_norm': 0.23218625613310692,
+   'V_theta.depth_code': 0.06064668297767639},
+  {'microbatch': 2,
+   'row': 5,
+   'ntp': 4.239012241363525,
+   'layer0_h_grad': 0.013633662834763527,
+   'total_grad_norm': 0.1318187234584315,
+   'V_theta.depth_code': 0.030081601813435555},
+  {'microbatch': 2,
+   'row': 6,
+   'ntp': 5.423483371734619,
+   'layer0_h_grad': 0.017351800575852394,
+   'total_grad_norm': 0.15248414023162082,
+   'V_theta.depth_code': 0.04855374991893768},
+  {'microbatch': 2,
+   'row': 7,
+   'ntp': 4.563269138336182,
+   'layer0_h_grad': 0.015233635902404785,
+   'total_grad_norm': 0.2322757285393174,
+   'V_theta.depth_code': 0.04069095477461815},
+  {'microbatch': 3,
+   'row': 0,
+   'ntp': 3.8865280151367188,
+   'layer0_h_grad': 0.012680593878030777,
+   'total_grad_norm': 0.11300424167461932,
+   'V_theta.depth_code': 0.02203165367245674},
+  {'microbatch': 3,
+   'row': 1,
+   'ntp': 4.715455055236816,
+   'layer0_h_grad': 0.014375441707670689,
+   'total_grad_norm': 0.15100148348675108,
+   'V_theta.depth_code': 0.027386870235204697},
+  {'microbatch': 3,
+   'row': 2,
+   'ntp': 4.0263237953186035,
+   'layer0_h_grad': 0.013010620139539242,
+   'total_grad_norm': 0.1153902381708916,
+   'V_theta.depth_code': 0.026515962556004524},
+  {'microbatch': 3,
+   'row': 3,
+   'ntp': 5.745553970336914,
+   'layer0_h_grad': 0.643512487411499,
+   'total_grad_norm': 9.36848457718753,
+   'V_theta.depth_code': 2.6832823753356934},
+  {'microbatch': 3,
+   'row': 4,
+   'ntp': 4.234390735626221,
+   'layer0_h_grad': 0.01612967625260353,
+   'total_grad_norm': 0.12166387382897989,
+   'V_theta.depth_code': 0.032956670969724655},
+  {'microbatch': 3,
+   'row': 5,
+   'ntp': 4.416215419769287,
+   'layer0_h_grad': 0.01206652820110321,
+   'total_grad_norm': 0.11349265720681588,
+   'V_theta.depth_code': 0.023152248933911324},
+  {'microbatch': 3,
+   'row': 6,
+   'ntp': 4.388278007507324,
+   'layer0_h_grad': 0.7922292351722717,
+   'total_grad_norm': 7.248108407258784,
+   'V_theta.depth_code': 2.0697526931762695},
+  {'microbatch': 3,
+   'row': 7,
+   'ntp': 3.9865331649780273,
+   'layer0_h_grad': 0.01909884251654148,
+   'total_grad_norm': 0.1828421312002333,
+   'V_theta.depth_code': 0.05103202536702156}],
+ 'summary': {'V_theta.depth_code': {'sum_of_row_norms': 6.8079336900264025,
+   'max_row_norm': 2.6832823753356934,
+   'top1_share': 0.39414049805841855,
+   'top3_share': 0.7309798524458715,
+   'uniform_share_baseline': 0.03125,
+   'norm_of_summed_grad': 3.4872117042541504},
+  'layer0_h_grad': {'sum_of_row_norms': 2.2914274809882045,
+   'max_row_norm': 0.7922292351722717,
+   'top1_share': 0.34573611503978896,
+   'top3_share': 0.6725921247123208,
+   'uniform_share_baseline': 0.03125,
+   'norm_of_summed_grad': None},
+  'total_grad_norm': {'sum_of_row_norms': 24.224751788394606,
+   'max_row_norm': 9.36848457718753,
+   'top1_share': 0.386731912013881,
+   'top3_share': 0.7223401381580958,
+   'uniform_share_baseline': 0.03125,
+   'norm_of_summed_grad': None}}}

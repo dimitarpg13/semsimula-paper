@@ -1,0 +1,264 @@
+[rows] loaded fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_step47116_spikebatch.pt  step=47116  pre_clip_grad_norm=13139.46
+
+[rows] per-row attribution, ranked by V_theta.depth_code  (each row scaled by 1/(grad_accum*rows_per_mb), i.e. its own share of the aggregate):
+ mb  row                   ntp         layer0_h_grad       total_grad_norm    V_theta.depth_code
+  3    2               4.25861              0.269085               3.24705               2.00184
+  1    0               4.80293              0.213828               1.59784              0.917167
+  1    1               4.95078             0.0784315               1.25854              0.523181
+  3    1               5.60128              0.100362              0.828909              0.441309
+  0    2               5.09927              0.065895              0.657628              0.318762
+  2    4               4.82254              0.053279              0.687727              0.289491
+  2    7               5.59107               0.06232              0.498007              0.275766
+  0    6               4.56165             0.0334079              0.391834              0.246267
+  0    3               4.35933             0.0358603              0.370944              0.224292
+  2    1               4.85703             0.0352727              0.408933              0.203145
+  2    5               5.80925              0.027537              0.363952              0.194942
+  0    7               4.43698             0.0355942              0.347889              0.178461
+  1    3               4.80743             0.0304606              0.274934              0.158363
+  3    7               4.42828             0.0259738              0.329975              0.157436
+  3    4               4.12913             0.0237663              0.255608              0.128787
+  0    1               4.65223              0.024073              0.262501              0.125441
+  2    6               5.57787             0.0208734               0.23797              0.115163
+  3    6               4.57378             0.0192518              0.198798               0.11218
+  3    3               4.04551             0.0139336               0.20499              0.100669
+  1    4               4.31629             0.0117522              0.150149             0.0880286
+  2    0               4.54769             0.0163394              0.181065             0.0859624
+  3    5               4.21784             0.0291301              0.259887             0.0774563
+  0    0                3.9561             0.0178685              0.149162             0.0703054
+  0    4               4.42795             0.0131458              0.120706             0.0700407
+  2    3               4.42597             0.0148126              0.142843             0.0691615
+  1    2               3.92939             0.0138914              0.137318             0.0668487
+  3    0               4.77135             0.0118605               0.12402              0.063343
+  1    7               4.37444             0.0132774              0.159406             0.0631723
+  1    5               4.04124              0.011262              0.122759             0.0590781
+  1    6               4.59717             0.0116432              0.109962             0.0585027
+  0    5               4.13467             0.0103268             0.0995349             0.0556295
+  2    2               4.65206             0.0102536              0.106905             0.0555849
+
+[rows] concentration for V_theta.depth_code:
+    top-1 row / sum-of-row-norms : 0.2635   (flat-batch baseline 0.0312)
+    top-3 rows / sum-of-row-norms : 0.4532
+    sum of ||row grad||           : 7.5958
+    ||sum of row grads||          : 2.3507   (rough cf. replay_spike_batch for this param; see caveats)
+
+[rows] concentration for layer0_h_grad:
+    top-1 row / sum-of-row-norms : 0.1986   (flat-batch baseline 0.0312)
+    top-3 rows / sum-of-row-norms : 0.4305
+    sum of ||row grad||           : 1.3548
+
+[rows] concentration for total_grad_norm:
+    top-1 row / sum-of-row-norms : 0.2273   (flat-batch baseline 0.0312)
+    top-3 rows / sum-of-row-norms : 0.4272
+    sum of ||row grad||           : 14.2877
+{'step': 47116,
+ 'pre_clip_grad_norm_recorded': 13139.46,
+ 'rows': [{'microbatch': 0,
+   'row': 0,
+   'ntp': 3.956102132797241,
+   'layer0_h_grad': 0.01786848157644272,
+   'total_grad_norm': 0.14916202070830722,
+   'V_theta.depth_code': 0.07030542194843292},
+  {'microbatch': 0,
+   'row': 1,
+   'ntp': 4.652230262756348,
+   'layer0_h_grad': 0.02407304383814335,
+   'total_grad_norm': 0.26250117680172314,
+   'V_theta.depth_code': 0.12544144690036774},
+  {'microbatch': 0,
+   'row': 2,
+   'ntp': 5.099272727966309,
+   'layer0_h_grad': 0.06589503586292267,
+   'total_grad_norm': 0.657627745734474,
+   'V_theta.depth_code': 0.3187616765499115},
+  {'microbatch': 0,
+   'row': 3,
+   'ntp': 4.359332084655762,
+   'layer0_h_grad': 0.035860251635313034,
+   'total_grad_norm': 0.3709440022057013,
+   'V_theta.depth_code': 0.2242923527956009},
+  {'microbatch': 0,
+   'row': 4,
+   'ntp': 4.427946090698242,
+   'layer0_h_grad': 0.013145837932825089,
+   'total_grad_norm': 0.12070643902402187,
+   'V_theta.depth_code': 0.07004068046808243},
+  {'microbatch': 0,
+   'row': 5,
+   'ntp': 4.134666442871094,
+   'layer0_h_grad': 0.010326775722205639,
+   'total_grad_norm': 0.0995348852907365,
+   'V_theta.depth_code': 0.05562949925661087},
+  {'microbatch': 0,
+   'row': 6,
+   'ntp': 4.5616536140441895,
+   'layer0_h_grad': 0.03340790048241615,
+   'total_grad_norm': 0.3918339841466623,
+   'V_theta.depth_code': 0.24626679718494415},
+  {'microbatch': 0,
+   'row': 7,
+   'ntp': 4.436983108520508,
+   'layer0_h_grad': 0.0355941504240036,
+   'total_grad_norm': 0.34788913490852363,
+   'V_theta.depth_code': 0.17846053838729858},
+  {'microbatch': 1,
+   'row': 0,
+   'ntp': 4.8029279708862305,
+   'layer0_h_grad': 0.2138284295797348,
+   'total_grad_norm': 1.597839899360372,
+   'V_theta.depth_code': 0.9171674251556396},
+  {'microbatch': 1,
+   'row': 1,
+   'ntp': 4.950775146484375,
+   'layer0_h_grad': 0.07843150198459625,
+   'total_grad_norm': 1.2585407317866362,
+   'V_theta.depth_code': 0.523181140422821},
+  {'microbatch': 1,
+   'row': 2,
+   'ntp': 3.9293911457061768,
+   'layer0_h_grad': 0.013891429640352726,
+   'total_grad_norm': 0.13731824781065077,
+   'V_theta.depth_code': 0.06684865802526474},
+  {'microbatch': 1,
+   'row': 3,
+   'ntp': 4.807433605194092,
+   'layer0_h_grad': 0.030460573732852936,
+   'total_grad_norm': 0.274933929928298,
+   'V_theta.depth_code': 0.15836334228515625},
+  {'microbatch': 1,
+   'row': 4,
+   'ntp': 4.316291809082031,
+   'layer0_h_grad': 0.011752207763493061,
+   'total_grad_norm': 0.15014859822452717,
+   'V_theta.depth_code': 0.08802860975265503},
+  {'microbatch': 1,
+   'row': 5,
+   'ntp': 4.041236877441406,
+   'layer0_h_grad': 0.011262019164860249,
+   'total_grad_norm': 0.12275867485426235,
+   'V_theta.depth_code': 0.05907808616757393},
+  {'microbatch': 1,
+   'row': 6,
+   'ntp': 4.597167015075684,
+   'layer0_h_grad': 0.011643234640359879,
+   'total_grad_norm': 0.10996222824020478,
+   'V_theta.depth_code': 0.05850274860858917},
+  {'microbatch': 1,
+   'row': 7,
+   'ntp': 4.374442100524902,
+   'layer0_h_grad': 0.013277414254844189,
+   'total_grad_norm': 0.1594063323287908,
+   'V_theta.depth_code': 0.06317225843667984},
+  {'microbatch': 2,
+   'row': 0,
+   'ntp': 4.547694206237793,
+   'layer0_h_grad': 0.01633935049176216,
+   'total_grad_norm': 0.18106482649736566,
+   'V_theta.depth_code': 0.08596240729093552},
+  {'microbatch': 2,
+   'row': 1,
+   'ntp': 4.857029914855957,
+   'layer0_h_grad': 0.03527268022298813,
+   'total_grad_norm': 0.40893312865360504,
+   'V_theta.depth_code': 0.203145369887352},
+  {'microbatch': 2,
+   'row': 2,
+   'ntp': 4.652060031890869,
+   'layer0_h_grad': 0.010253597982227802,
+   'total_grad_norm': 0.10690451773724347,
+   'V_theta.depth_code': 0.05558491125702858},
+  {'microbatch': 2,
+   'row': 3,
+   'ntp': 4.425967216491699,
+   'layer0_h_grad': 0.014812587760388851,
+   'total_grad_norm': 0.14284293975649145,
+   'V_theta.depth_code': 0.0691615492105484},
+  {'microbatch': 2,
+   'row': 4,
+   'ntp': 4.822542190551758,
+   'layer0_h_grad': 0.053278956562280655,
+   'total_grad_norm': 0.6877267602115062,
+   'V_theta.depth_code': 0.28949129581451416},
+  {'microbatch': 2,
+   'row': 5,
+   'ntp': 5.809246063232422,
+   'layer0_h_grad': 0.02753704972565174,
+   'total_grad_norm': 0.36395206378835776,
+   'V_theta.depth_code': 0.1949424147605896},
+  {'microbatch': 2,
+   'row': 6,
+   'ntp': 5.577866554260254,
+   'layer0_h_grad': 0.0208734180778265,
+   'total_grad_norm': 0.2379704104058872,
+   'V_theta.depth_code': 0.11516308039426804},
+  {'microbatch': 2,
+   'row': 7,
+   'ntp': 5.591070175170898,
+   'layer0_h_grad': 0.0623200461268425,
+   'total_grad_norm': 0.4980074261465869,
+   'V_theta.depth_code': 0.2757664918899536},
+  {'microbatch': 3,
+   'row': 0,
+   'ntp': 4.771348476409912,
+   'layer0_h_grad': 0.011860459111630917,
+   'total_grad_norm': 0.12401988420927884,
+   'V_theta.depth_code': 0.06334301829338074},
+  {'microbatch': 3,
+   'row': 1,
+   'ntp': 5.6012797355651855,
+   'layer0_h_grad': 0.10036169737577438,
+   'total_grad_norm': 0.8289092775091973,
+   'V_theta.depth_code': 0.4413088262081146},
+  {'microbatch': 3,
+   'row': 2,
+   'ntp': 4.25860595703125,
+   'layer0_h_grad': 0.26908543705940247,
+   'total_grad_norm': 3.247048181649446,
+   'V_theta.depth_code': 2.0018367767333984},
+  {'microbatch': 3,
+   'row': 3,
+   'ntp': 4.04550838470459,
+   'layer0_h_grad': 0.013933626934885979,
+   'total_grad_norm': 0.2049895400571996,
+   'V_theta.depth_code': 0.10066933929920197},
+  {'microbatch': 3,
+   'row': 4,
+   'ntp': 4.12912654876709,
+   'layer0_h_grad': 0.02376633509993553,
+   'total_grad_norm': 0.255607515046837,
+   'V_theta.depth_code': 0.1287870854139328},
+  {'microbatch': 3,
+   'row': 5,
+   'ntp': 4.217839241027832,
+   'layer0_h_grad': 0.029130129143595695,
+   'total_grad_norm': 0.2598870974028119,
+   'V_theta.depth_code': 0.0774562731385231},
+  {'microbatch': 3,
+   'row': 6,
+   'ntp': 4.573781967163086,
+   'layer0_h_grad': 0.01925181783735752,
+   'total_grad_norm': 0.19879758513664228,
+   'V_theta.depth_code': 0.11218011379241943},
+  {'microbatch': 3,
+   'row': 7,
+   'ntp': 4.428282260894775,
+   'layer0_h_grad': 0.02597382292151451,
+   'total_grad_norm': 0.3299746058245256,
+   'V_theta.depth_code': 0.1574360728263855}],
+ 'summary': {'V_theta.depth_code': {'sum_of_row_norms': 7.595775708556175,
+   'max_row_norm': 2.0018367767333984,
+   'top1_share': 0.26354606211956105,
+   'top3_share': 0.4531710090431513,
+   'uniform_share_baseline': 0.03125,
+   'norm_of_summed_grad': 2.350694179534912},
+  'layer0_h_grad': {'sum_of_row_norms': 1.3547693006694317,
+   'max_row_norm': 0.26908543705940247,
+   'top1_share': 0.1986208551717546,
+   'top3_share': 0.4305349728006812,
+   'uniform_share_baseline': 0.03125,
+   'norm_of_summed_grad': None},
+  'total_grad_norm': {'sum_of_row_norms': 14.287743791386875,
+   'max_row_norm': 3.247048181649446,
+   'top1_share': 0.22726108677892687,
+   'top3_share': 0.42717932949468224,
+   'uniform_share_baseline': 0.03125,
+   'norm_of_summed_grad': None}}}

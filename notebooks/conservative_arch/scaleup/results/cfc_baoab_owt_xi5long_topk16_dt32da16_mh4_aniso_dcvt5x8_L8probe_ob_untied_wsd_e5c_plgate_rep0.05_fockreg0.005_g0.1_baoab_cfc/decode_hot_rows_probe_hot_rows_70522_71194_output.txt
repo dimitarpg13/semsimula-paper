@@ -1,0 +1,141 @@
+==============================================================================
+[deconstruct] step 70522
+==============================================================================
+
+[hot-tokens] step 70522: 32 rows; batch medians: unique_token_ratio=0.535, max_repeat_run=2
+
+  -- GRADIENT-HOT row mb=3 row=2 --
+     max_repeat_run=    2   rank 26/32 (1 = most repetitive)
+     unique_token_ratio=0.551   rank 25/32 (1 = most degenerate)
+     text:  then ended on an incredibly awkward note after a gay superfan, Russell Turner, briefly joined the group on stage for some hugs with the cast and a minute-log interview with Megyn.\n\nThe brief interview with Turner began with Megyn asking if it was true that he became both a lawyer and gay because of the show and its leading man, played by actor Eric McCormack.\n\nTurner jokingly affirmed that was in
+
+[probe] loaded fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_step70522_spikebatch.pt  step=70522  pre_clip_grad_norm=887.87
+
+[probe] creation_gate_qkv.log_tau: per-register breakdown of the full-batch gradient (norm=1.65, 32 entries)
+     idx          grad   share_of_norm^2
+      14        1.6326            0.9783
+       1        0.2335            0.0200
+      15       -0.0335            0.0004
+      13        0.0267            0.0003
+       7        0.0225            0.0002
+      12        0.0210            0.0002
+       0       -0.0193            0.0001
+      17        0.0166            0.0001
+      24        0.0135            0.0001
+      11       -0.0129            0.0001
+       4       -0.0123            0.0001
+      20       -0.0096            0.0000
+      21       -0.0091            0.0000
+      29       -0.0078            0.0000
+       6       -0.0072            0.0000
+      26        0.0070            0.0000
+       2        0.0067            0.0000
+      28        0.0062            0.0000
+      10       -0.0062            0.0000
+       9       -0.0052            0.0000
+       3       -0.0049            0.0000
+       8       -0.0040            0.0000
+      19       -0.0035            0.0000
+      25        0.0032            0.0000
+      23        0.0031            0.0000
+      31       -0.0025            0.0000
+      16       -0.0023            0.0000
+       5        0.0012            0.0000
+      30        0.0009            0.0000
+      27        0.0005            0.0000
+      22       -0.0004            0.0000
+      18        0.0001            0.0000
+
+[probe] reverse_channel_scale: per-layer breakdown of the full-batch gradient (norm=237.33, 8 entries)
+     idx          grad   share_of_norm^2
+       0      230.8743            0.9463
+       1      -52.2892            0.0485
+       2      -16.9583            0.0051
+       3        0.3988            0.0000
+       4        0.1861            0.0000
+       6        0.0635            0.0000
+       5        0.0474            0.0000
+       7        0.0275            0.0000
+
+[probe] creation-gate score magnitude, full batch: max|scaled score|=1363.12  (34.08x the readout's constant shift of 40)
+[probe] per-row max|scaled score|: median=993.38  p90=1225.05  max=1363.12
+
+[probe] gradient-hot rows vs. batch (the §48.8 test -- is the hot row a SCORE outlier, or only a backward-signal outlier?):
+    mb=3 row=2  ntp=4.367  max|scaled score|=1176.55  (rank 8/32, 1 = largest in batch)
+        creation_gate_qkv.log_tau: peak register 14 (grad=-0.0533, row norm=0.0540)
+        reverse_channel_scale: peak layer 0 (grad=6.3168, row norm=7.1491)
+
+==============================================================================
+[deconstruct] step 71194
+==============================================================================
+
+[hot-tokens] step 71194: 32 rows; batch medians: unique_token_ratio=0.508, max_repeat_run=2
+
+  -- GRADIENT-HOT row mb=2 row=2 --
+     max_repeat_run=    2   rank 19/32 (1 = most repetitive)
+     unique_token_ratio=0.555   rank 26/32 (1 = most degenerate)
+     text:  border crossing for refugees at Gevgelija, the army official said.\n\nHe refused to say how long the new fence would be, but local media reported that it would stretch for more than 30 kilometres (19 miles) along the frontier.\n\nMacedonian Foreign Minister Nikola Poposki said in January that his government had no intention to fully close the border, but would coordinate with the European Union and '
+
+  -- GRADIENT-HOT row mb=1 row=5 --
+     max_repeat_run=    2   rank 14/32 (1 = most repetitive)
+     unique_token_ratio=0.375   rank 3/32 (1 = most degenerate)
+     text:  irrational the very idea of God is.\n\n(4) Therefore, God does not exist. ARGUMENT FROM ANGER (III)\n\n(1) Why do believers get so angry when someone has a different opinion than them?\n\n(2) Athiests never get angry.\n\n(3) Except with those goddam theists. God, I hate them.\n\n(4) Therefore, God does not exist. ARGUMENT FROM ATHEISM (VII)\n\n(1) Atheism is more common than you think.\n\n(2) Just like being g
+
+[probe] loaded fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_step71194_spikebatch.pt  step=71194  pre_clip_grad_norm=691.01
+
+[probe] creation_gate_qkv.log_tau: per-register breakdown of the full-batch gradient (norm=345.38, 32 entries)
+     idx          grad   share_of_norm^2
+      14      345.3764            1.0000
+      11        0.1073            0.0000
+      15        0.0575            0.0000
+      31        0.0467            0.0000
+       8        0.0381            0.0000
+      12        0.0258            0.0000
+      21       -0.0223            0.0000
+      29       -0.0191            0.0000
+      18        0.0134            0.0000
+      27       -0.0111            0.0000
+       6       -0.0109            0.0000
+      24        0.0108            0.0000
+       1        0.0090            0.0000
+      16        0.0087            0.0000
+      10        0.0087            0.0000
+       2        0.0084            0.0000
+      17        0.0081            0.0000
+      26        0.0077            0.0000
+      25        0.0070            0.0000
+       3       -0.0058            0.0000
+       9        0.0045            0.0000
+      13       -0.0040            0.0000
+      20        0.0039            0.0000
+       4        0.0038            0.0000
+      28        0.0031            0.0000
+      19       -0.0026            0.0000
+       0        0.0024            0.0000
+      30        0.0022            0.0000
+       7       -0.0016            0.0000
+       5        0.0012            0.0000
+      23        0.0010            0.0000
+      22        0.0002            0.0000
+
+[probe] reverse_channel_scale: per-layer breakdown of the full-batch gradient (norm=406.34, 8 entries)
+     idx          grad   share_of_norm^2
+       0      406.1635            0.9991
+       1      -10.8978            0.0007
+       2        4.4561            0.0001
+       3        1.7077            0.0000
+       4        0.1066            0.0000
+       7       -0.0161            0.0000
+       6       -0.0080            0.0000
+       5        0.0072            0.0000
+
+[probe] creation-gate score magnitude, full batch: max|scaled score|=1918.61  (47.97x the readout's constant shift of 40)
+[probe] per-row max|scaled score|: median=1189.24  p90=1655.86  max=1918.61
+
+[probe] gradient-hot rows vs. batch (the §48.8 test -- is the hot row a SCORE outlier, or only a backward-signal outlier?):
+    mb=1 row=5  ntp=3.574  max|scaled score|=1020.54  (rank 26/32, 1 = largest in batch)
+        creation_gate_qkv.log_tau: peak register 4 (grad=-0.0286, row norm=0.0380)
+        reverse_channel_scale: peak layer 1 (grad=2.8469, row norm=2.9388)
+    mb=2 row=2  ntp=4.204  max|scaled score|=899.79  (rank 31/32, 1 = largest in batch)
+        creation_gate_qkv.log_tau: peak register 14 (grad=-1.7074, row norm=1.7074)
+        reverse_channel_scale: peak layer 0 (grad=-1.8560, row norm=1.8661)
