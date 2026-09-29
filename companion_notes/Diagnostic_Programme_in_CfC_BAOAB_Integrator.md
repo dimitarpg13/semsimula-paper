@@ -42,6 +42,7 @@ The thesis of the programme is a single sentence:
 15. [Closing the loop: the ablation validates remediation across both mechanisms, and two tooling lessons](#15-closing-the-loop-the-ablation-validates-remediation-across-both-mechanisms-and-two-tooling-lessons)
 16. [Raw diagnostic tool outputs](#16-raw-diagnostic-tool-outputs)
 17. [A fifth axis: curvature geometry and the rank question](#17-a-fifth-axis-curvature-geometry-and-the-rank-question)
+18. [The resonance monitor on the low-rank path, and Cell 6b-13](#18-the-resonance-monitor-on-the-low-rank-path-and-cell-6b-13)
 
 ---
 
@@ -627,6 +628,30 @@ diagnostic-adjacent infrastructure — even though the latter three exist
 *because of* a diagnostic finding (the `log_tau` runaway), they do not
 themselves measure or report anything.
 
+**The depth-ladder notebook (added 2026-09-29; not in the table or the
+counts below).** `colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb`
+was not part of the 2026-09-12 extraction. Two of its facilities belong to this
+programme, and both already call extracted code rather than adding functions to
+move:
+
+- the in-flight `[resonance]` wall monitor in Cell 6;
+- the offline endpoint probe **Cell 6b-13**.
+
+Both use `semsimula_diag.probes.resonance.observe`; see §18. Its Cells 6b-7
+to 6b-12 are **thesis experiments, not spike diagnostics**:
+
+- 6b-7: flow or maps;
+- 6b-8: the register → token path;
+- 6b-9: E1;
+- 6b-10: E3;
+- 6b-11: E5;
+- 6b-12: F1.
+
+They are recorded in `Geodesic_Experiments_with_CfC_BAOAB.md`,
+`Forced_Lagrangian_Reformulation.md` and
+`Depth_Ladder_and_Matched_Baseline_Protocol.md`, and are deliberately not
+inventoried here.
+
 **At a glance, by target module.** Verified by parsing this table
 programmatically rather than by hand — the first pass at this summary had
 arithmetic errors that a script caught. Two counts are given because they
@@ -1151,6 +1176,140 @@ in the companion note's §7 and needs one further helper
 
 ---
 
+## 18. The resonance monitor on the low-rank path, and Cell 6b-13
+
+§5-§15 read stiffness through weight-space proxies ($\sigma_{\max}(B_k)^2$,
+`b_proj_sigma_max`) and through replays. This section records the instrument
+that reads it *directly, during the forward pass*: the $\omega \Delta t$
+resonance monitor, `semsimula_diag.probes.resonance`. It first produced data
+on the low-rank integrator on 2026-09-28, after a fix that is itself the
+programme's third tooling lesson. The measurements come from the depth-ladder
+notebook
+(`colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb`, integrator
+`baoab_cfc_lowrank`), not from the L=8 run the rest of this note studies. Their
+interpretation for the ladder is in
+[`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md);
+what is recorded here is the instrument and what it has read.
+
+### 18.1 What it measures, and why the diagonal proxy is not enough
+
+Per token and per layer, the monitor takes $\lambda_{\max}$ of the low-rank
+curvature $G$ by power iteration and reports
+
+$$
+\omega \Delta t_{\text{kick}}, \qquad \omega = \sqrt{\lambda_{\max}(G)/m},
+\qquad \Delta t_{\text{kick}} = 2 \Delta t_{\text{substep}},
+$$
+
+against the Störmer/leapfrog wall of 2. The factor of 2 is deliberate: in
+`baoab_cfc` the low-rank part sits in the kick, which runs for the full step,
+and the kick is what carries the wall.
+
+The notebook's older stiffness reading (Cell 6b, §11.2's first
+`probes.stiffness` row) does not answer this on the low-rank path. It records
+`k_diag` from `harmonic_terms`, the *diagonal* curvature, which stays under 1
+throughout and would have reported no problem at all. What approaches or
+crosses the wall is the low-rank operator, and only the resonance monitor reads
+it. Under `baoab_cfc_lowrank` those modes are integrated exactly, so a reading
+past 2 is a **stiffness** reading, not an instability. It says an explicit
+integrator would have been amplifying there, and that the closed-form
+propagator is doing the work.
+
+### 18.2 Tooling lesson 3: a hook pair patched by halves reports silence, not failure
+
+`observe()` works by patching a pair of methods: one **opens** a record (stashes
+$\lambda_{\max}$), and the other **closes** it (reads $\Delta t$ and $m$ and
+files the value). Which pair fires depends on the integrator:
+
+| integrator | opens on | closes on |
+|---|---|---|
+| `baoab_cfc` | `harmonic_terms` | `cfc_substep` |
+| `baoab_cfc_lowrank` | `harmonic_terms_lowrank` | `lowrank_cfc_substep` |
+
+Before `semsimula-diag` `409175b` (2026-09-28), `observe()` patched the
+low-rank *close* but opened records only in the `harmonic_terms` wrapper, which
+`baoab_cfc_lowrank` never calls. Nothing was ever stashed, `_finish` returned
+early every time, and `summary()` came back empty. The training loop guarded
+the print with `if summary:`, so an empty summary read as a quiet monitor. In
+fact **every low-rank run was unmonitored**: the whole 2026-09 depth ladder
+(L=1, the L=2 arms, the conservative-only arm) and run 4 up to step 20,000.
+
+The fix wraps `harmonic_terms_lowrank` too. It costs nothing, because $G$ is
+already the third element of what that method returns. The regression test uses
+a toy low-rank module whose `cfc_substep` raises if called. Two guards now
+follow from the lesson:
+
+- the in-flight monitor prints `EMPTY SUMMARY -- no substep hook fired. This is
+  a MISSING diagnostic, not a passing one` rather than staying silent;
+- Cell 6b-13 refuses to run if `_wrap_harmonic_lowrank` is absent from
+  `observe`'s source.
+
+The second guard is there because of a related trap. A Colab *runtime* restart
+does not wipe `/content`, and the notebook clones `semsimula-diag` only if it
+is absent and never pulls. A restart therefore silently re-imports a stale
+clone.
+
+This joins §15.2 (a hook that returns a bookkeeping value crashes autograd) and
+§15.3 (verify the instrument reads the state you think it reads). The addition
+is that **an instrument's silence must be distinguishable from its absence**:
+the caller's `if result:` guard is part of the instrument.
+
+### 18.3 Cell 6b-13: an offline endpoint probe
+
+In-flight readings come from one arm's training batches, one reading per 500
+steps. Comparing arms needs the same tokens on both. Cell 6b-13
+(`D2 -- omega*dt at the endpoint`, ladder notebook) is built for that:
+
+- it loads the arm's `_best.pt`;
+- it draws 8 × 4 × 512 validation tokens with a **fixed seed (20260928) that
+  does not depend on L**, so every arm sees the same tokens;
+- it runs one forward per batch under `observe()`, with no backward pass;
+- it reports p05/p50/p95/max and the share over the wall, overall and per layer;
+- it appends a record to its own `results/omega_dt_endpoint.jsonl`, not the
+  training log;
+- it restores the live weights afterwards.
+
+The run order is 0 → 1 → 1b → 2 → 3 → 4 → 5 → 5b → 6b-13, **never Cell 6**. On
+a completed arm, Cell 6 resumes training. Since 2026-09-29 Cell 6 refuses to do
+so, and Cell 5b warns: the completed-run guard, protocol note incident entry.
+On the L=2 arm the cell also scores the pre-registered band [3.3, 4.2].
+
+Its first Colab run (L=4, 2026-09-29) died in the embedding: `get_batch` returns
+NumPy arrays and the cell passed them to the model unconverted, which Cells
+6b-10/11/12 do not do. The fix converts once, keeping the draw and hence the
+tokens unchanged. It was verified the same day by a local CPU dry run of the
+whole 0 → … → 6b-13 path against the L=2 checkpoint, which completed in 75 s.
+
+### 18.4 Readings so far
+
+| arm | source | p50 | max | over the wall | status |
+|---|---|---:|---:|---:|---|
+| L=4, dt=2 | in-flight, 25 readings, steps 20,500–32,500 | 2.280 ± 0.034 | 4.60 ± 0.18 | 63.1% | complete; no trend through the decay phase |
+| L=2, dt=4 | in-flight, 1 reading, step 32,000 | 3.797 | 6.926 | 98.3% | **unplanned preview**: 500 steps past `_best.pt`, training batches |
+| L=2, dt=4 | 6b-13 local dry run, `_best.pt` (step 31,500) | 3.796 | 6.766 | 98.4% | local validation cache, not necessarily the Colab tokens |
+| L=4, dt=2 | 6b-13, Colab, `_best.pt` (step 31,000) | — | — | — | **pending** |
+| L=2, dt=4 | 6b-13, Colab, `_best.pt` (step 31,500) | — | — | — | **pending**: the scored measurement |
+
+The dry run's per-layer medians at L=2 are 3.34 (layer 0) and 4.53 (layer 1).
+
+What the programme gains, independent of the ladder question:
+
+- **The first direct $\omega \Delta t$ readings on the low-rank path.** At both
+  depths the majority of token-layer pairs sit past the explicit-integrator
+  wall. This is the forward-pass counterpart of the weight-space case for
+  `baoab_cfc_lowrank` that §13 and §15 built from replays.
+- **A stationary operating point.** Through the whole L=4 decay phase the median
+  held at 2.28 with no measurable slope. An apparent upward drift in the max at
+  step 24,500 did not persist over the full 25 readings, so the tail should be
+  read as scatter until more data says otherwise.
+- **A caution on the weight-space proxy.** Over the same readings
+  `b_proj_sigma_max` rose a smooth 9% while the p50 did not move. Its
+  correlation with the p50 was −0.16 and with the max +0.67. §5's leading
+  indicator tracks the **tail** of the $\omega \Delta t$ distribution, not its
+  bulk, and should not be used to scale a median.
+
+---
+
 Provenance. The math in §2-§3 is the exact energy/force of
 `notebooks/conservative_arch/parf/model_aniso_gaussian_vtheta.py`
 (`AnisotropicMixtureGaussianVTheta.forward` / `analytical_grad` /
@@ -1166,7 +1325,21 @@ Phase-1/2-instrumented captures (steps 37,763 / 41,318 / 39,983 / 41,837).
 §14's case study (steps 47,116 / 48,507 / 48,917) is documented in full in
 companion note §41; no new figures were made for it.
 
-Last updated: 9 September 2026 (records the four `tau_saturation`/`tokens`
+Last updated: 29 September 2026. Adds §18, the $\omega \Delta t$ resonance
+monitor on the `baoab_cfc_lowrank` path:
+
+- why the diagonal `k_diag` proxy cannot see the wall;
+- a third tooling lesson, from the `semsimula-diag` `409175b` hook-pair fix
+  (silence must be distinguishable from absence);
+- Cell 6b-13's offline endpoint design and its first-run NumPy-batch fix;
+- the readings so far: L=4 in-flight p50 2.280 over 25 readings; an L=2
+  preview and dry run at about 3.80; both scored Colab endpoints pending.
+
+Also adds a §11.2 paragraph placing the depth-ladder notebook's cells, and
+repoints §16's links from the Hugging Face placeholder to the files now filed
+in this repository.
+
+Previously updated 9 September 2026 (records the four `tau_saturation`/`tokens`
 diagnostics added to the notebook as Cell 6d-2 through Cell 6d-4 --
 `decode_hot_rows`, `probe_hot_rows`, `probe_gate_saturation`,
 `sweep_log_tau_history`, all from Mitigations §48/§48.8's creation-gate
