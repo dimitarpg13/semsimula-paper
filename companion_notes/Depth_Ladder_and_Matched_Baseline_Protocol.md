@@ -995,6 +995,73 @@ does not, the batch or the checkpoint is the first suspect, not the model.
 
 **Plan unchanged:** run 4 to 32,500; 6b-13 on both arms; then D1.
 
+#### Incident: Cell 6 resumed the FINISHED L=2 arm — **2026-09-28/29**, repaired
+
+**What happened.** A laptop reboot made the browser restore an older copy
+of this notebook: the committed `LADDER_L = 2` default (run 4's
+`LADDER_L = 4` existed only as an uncommitted edit in the Colab tab) and a
+version from before Cell 6b-13 was pushed (`39539e1`). Cell 0 therefore
+resolved run 3's folder,
+`…_cgqk_L2probe_…_idt4_lr0p0012_noattn`; Cell 2 picked its `_best.pt`
+(step 31,500, val PPL 66.56); and Cell 6 resumed the completed arm and
+trained **31,501 → 32,183** before being interrupted. Nothing in the
+notebook checked that the resolved arm was the one intended.
+
+**Damage and repair — verified byte-exact.**
+
+| artefact | state after the accident | repair | verified |
+| --- | --- | --- | --- |
+| `checkpoints/…_best.pt` | untouched: the one eval reached (step 32,000) gave 68.30, not a new best, and no checkpoint was written | none | md5 `4ea4dd87cec6958a06a5540bdb3d277f`, matching the local copy (step 31,500, PPL 66.56) |
+| `results/training_log.jsonl` | 15 lines appended (737 total): per-step records 31,550–32,150 and the 32,000 eval | trimmed to the first 722 lines on 2026-09-29 | 722 lines, 482,567 bytes, md5 `ad29260a02d13b01c3a4d75697943719`, identical to the local copy |
+| any other file in the folder | none modified (`find -mmin -180` listed only the log) | none | — |
+
+Run 3's folder is byte-identical to its pre-accident state, and every
+number recorded for run 3 (settled 66.98) stands. The appended lines were
+kept off-Drive as `/content/training_log.damaged.jsonl` (VM-local).
+
+**Prevention — completed-run guard, added to the notebook 2026-09-29.**
+Cell 0 gains `ALLOW_EXTEND_COMPLETED_RUN = False` and a helper,
+`_ladder_final_eval()`, that finds an eval record at
+`step >= TOTAL_STEPS` in the folder's `training_log.jsonl`.
+
+- **Cell 6 refuses** to start, before it loads a checkpoint or opens the log,
+  when that record exists, unless the flag is set.
+- **Cell 5b only warns**, so probe-only sessions (0 → … → 5b → 6b-*) on a
+  finished arm keep working.
+- **Tested against real logs:**
+  - run 3's pristine log, and the same log with the accident's 15 lines,
+    both refuse;
+  - a log ending at 28,500 (run 4's situation), a missing log and a
+    truncated last line all proceed;
+  - the flag overrides as intended.
+- **Not covered:** calling `run_training(...)` again inside a session whose
+  Cell 6 already passed the guard.
+
+**Unplanned preview of the L=2 ω·dt reading — NOT the scored measurement.**
+The accidental run printed one resonance line from the L=2 arm:
+
+    [resonance] step 32000  omega*dt p50=3.797  max=6.926  over_wall=98.334%
+
+It lands **inside the pre-registered band [3.3, 4.2]**, near the ≈ 3.8
+point estimate. Against L=4's stationary p50 ≈ 2.25–2.29, the ratio is
+**≈ 1.69**: neither exact compensation (≈ 1) nor none (≈ 2). As ω, that is
+≈ 0.95 at L=2 against ≈ 1.13 at L=4, so halving dt raised ω by only ≈ 18%.
+That is partial compensation, which leans towards mechanism (2).
+
+Why it is not the result, and how it must be reported:
+
+- **Wrong weights.** They are 500 steps past `_best.pt`, trained at LR ≈ 6.5e-5.
+  That is tiny this late in decay (`bproj_sig` sat at 84.45 ± 0.03 throughout),
+  but it is not the checkpoint the band scores.
+- **Wrong batches.** It used training batches, not 6b-13's fixed seed
+  `20260928`.
+- **The L=2 6b-13 run is no longer blind.** The band itself was fixed before
+  either reading, so the pre-registration stands, but the scored L=2 value
+  must be reported as **"measured after an unplanned preview of 3.80"**.
+- **The L=2 max (6.93) and share over the wall (98.3%) are far above
+  L=4's** (≈ 4.4–4.9 and ≈ 62%). The exploratory max ratio is therefore
+  ≈ 1.5, to be confirmed by 6b-13 on both endpoints.
+
 #### "Can we fix L=4 by adding parameters?" — **analysed 2026-09-28**
 
 Short answer: **partly, and the cheap part is worth trying; the expensive part
