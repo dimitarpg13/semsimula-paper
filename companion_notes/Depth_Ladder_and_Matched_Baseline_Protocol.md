@@ -2092,6 +2092,122 @@ earlier probes on this pair moved step 3,000 by +0.57% and +1.65%.
 - Anywhere in between reads as **partial**: starvation explains part of the
   gap, and the rest is something else.
 
+> **Revised for probe (b) during the run — 2026-09-29, at step 1,300.** This
+> revision was made after seeing (b)'s evals at step 500 (472.41) and step
+> 1,000 (255.98), and before any later eval. Those two evals are
+> uninformative: every arm sits within 4% of every other at both steps.
+>
+> **Why the band above is too strict for (b).** It asks the probe to match
+> `'attention'` fully within 3,000 steps. Even if starvation is the whole
+> story, (b) starts with a field about 7× weaker than `'attention'`'s (the
+> potential's force carries 1/√d_v and a product of two init-scale
+> matrices). Restored gradients let it grow, but need not let it catch up by
+> step 3,000. The band also counts a partial explanation as a failure.
+>
+> **The sharper yardstick is the no-exchange arm** (`'none'`). The symptom that
+> matters is that the conservative field is *worse than no field at all*:
+>
+> | step | `'attention'` | no-exchange | `'attention_potential'` |
+> | ---: | ---: | ---: | ---: |
+> | 1,000 | 248.81 | 257.74 | 258.18 |
+> | 2,000 | 158.76 | 167.87 | 173.22 |
+> | 3,000 | 131.20 | **140.61** | 148.99 |
+>
+> **Revised criterion for (b), scored at step 3,000** against no-exchange's
+> 140.61, ±2.5% for noise:
+>
+> - **≤ 137.1: the field now helps.** Starvation explains the sign flip. This
+>   is strong support for H_s, without a full match to `'attention'`.
+> - **137.1–144.1: the field is neutral.** Starvation explains the harm but
+>   not the benefit, so H_s is partial.
+> - **≥ 144.5: refuted.** Restoring gradients does not rescue the field.
+>
+> The original [127.3, 135.1] stays on the record as the **full-recovery**
+> criterion, a (b) that matches `'attention'`. Probe (a) keeps its
+> pre-registration unchanged.
+
+#### Probe (b) extended to a full run — pre-registered **2026-09-29, at step ~1,300, before the step-3,000 eval**
+
+(b) continues past its 3,000-step stop to 32,500 steps in the same session:
+`PROBE_MAX_STEPS = None; run_training(3000, TOTAL_STEPS)`. The WSD schedule is
+a function of step and `TOTAL_STEPS` only, and the probe stop reuses the
+step-3,000 eval, so the continuation is identical to an uninterrupted
+from-scratch run. It becomes a **complete, comparable arm**, and its settled
+PPL is what the model cards will report. The step-3,000 value is still
+scored against the revised criterion above.
+
+**Expectation recorded by the author before the step-3,000 eval:** about
+136–137 at step 3,000, which would sit just inside "the field now helps".
+
+**Prediction for the settled value.** From step 3,000 to settled, the arms
+improved by these factors: no-exchange ×0.476, `'attention'` ×0.484,
+`'attention_potential'` ×0.543 (the starved arm degraded relative to the
+others as it trained). A step-3,000 value near 136.5 maps to about 65–66 if
+(b) trains like the healthy arms, and about 74 if it trains like its parent.
+
+- **Pre-registered: settled 63–72, point 67.**
+- **≤ 66.98** (at or below no-exchange): the conservative field genuinely
+  *helps* once it can train the representations. The "worse than no field"
+  result was starvation.
+- **≥ 76: refutes H_s at full length.** Restored gradients do not carry the
+  conservative field to a useful place.
+- **Between 72 and 76: partial.** The pre-registration misses on the high
+  side without a clean refutation.
+
+**What would change on the cards.** A settled value in the band supports
+restating the +27.4% as "the price of detaching the exchange field's inputs"
+rather than "the price of conservativity", and adding (b) to the collection
+as a named arm: a conservative forward pass with a transformer-like learning
+signal. Probe (a) is still needed as the mirror-image check.
+
+#### Probe (b) scored at step 3,000: **133.74 — HIT on both criteria** — **2026-09-29**
+
+Log:
+[`results/.../L2_idt4_lr0p0012_attnpot_rglive_probe3000_result.txt`](../notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_rglive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_attnpot/L2_idt4_lr0p0012_attnpot_rglive_probe3000_result.txt).
+The run was clean: no spikes, no watchdog events, and the same parameter
+count and step-50 line as its parent.
+
+| step | `'attention'` | **(b) live** | no-exchange | `'attention_potential'` |
+| ---: | ---: | ---: | ---: | ---: |
+| 500 | 481.47 | 472.41 | 478.33 | 477.72 |
+| 1,000 | 248.81 | 255.98 | 257.74 | 258.18 |
+| 1,500 | 188.01 | **192.73** | 197.04 | 200.79 |
+| 2,000 | 158.76 | **162.27** | 167.87 | 173.22 |
+| 2,500 | 140.11 | **142.28** | 148.02 | 155.64 |
+| **3,000** | **131.20** | **133.74** | **140.61** | **148.99** |
+
+- **The original pre-registration, recorded before the run** (full recovery,
+  [127.3, 135.1]): **HIT.**
+- **The revised criterion, recorded at step 1,300** (≤ 137.1, "the field now
+  helps"): **HIT.** Both agree, so the mid-run revision did not decide the
+  verdict. The author's expectation of 136–137 was on the cautious side.
+- **Against its parent:** restoring the gradients closes **86% of the gap** to
+  `'attention'`, from 148.99 to 133.74 against 131.20. (b) is 1.9% behind
+  `'attention'`.
+- **Against no-exchange:** the conservative field now **helps**, 4.9% better
+  than no field, where the starved version was 6.0% worse. **The sign flip is
+  gone.**
+- **It is not one noisy eval.** The separation from the parent grows steadily:
+  4.0% at step 1,500, 6.3% at 2,000, 8.6% at 2,500, 10.2% at 3,000.
+
+**What this establishes at 3,000 steps.** The same conservative forward force,
+given back the learning signal it was denied, behaves almost exactly like
+`'attention'`. The ladder's "+27.4% price of conservativity" was **mostly the
+price of detaching the exchange field's inputs**, which is gradient
+starvation, and not of conservativity itself.
+
+**Not yet established.**
+
+- **The settled value.** (b) continues to 32,500 steps under the full-run
+  pre-registration (63–72, point 67).
+- **Probe (a), the mirror image.** `'attention'` with detached inputs should
+  fall to about 149 if starvation is the mechanism.
+- **The reverse-channel confound.** The reverse channel is still on in (b), as
+  in every exchange arm. That question stands, but it no longer carries the
+  "worse than no field" result.
+
+The model cards keep their current wording until the full run settles.
+
 **Decision rules.**
 
 | (a) | (b) | reading | next |
