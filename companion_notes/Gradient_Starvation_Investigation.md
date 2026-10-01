@@ -2,7 +2,8 @@
 
 **Status:** opened 2026-09-30 as the programme's top priority. Tier 0 done
 (2026-09-30): the V_φ and ξ source gradients are exactly zero in both trained arms.
-Next: Tier 1.
+Tier 1 done (2026-10-01): `vphi_grad_path` / `xi_grad_path`
+built, forward bit-identical, source gradient opened. Next: P2.1.
 **Companion to:**
 [`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md)
 §5.8 (the gradient-path probes and the full `rglive` run),
@@ -95,7 +96,7 @@ for these channels; the programme stops and the report says so.
 
 Harness: [`scaleup/debug/gradcheck_vphi_xi_paths.py`](../notebooks/conservative_arch/scaleup/debug/gradcheck_vphi_xi_paths.py).
 Output:
-[`scaleup/results/gradient_starvation_tier0/`](../notebooks/conservative_arch/scaleup/results/gradient_starvation_tier0/).
+[`scaleup/results/gradient_starvation/`](../notebooks/conservative_arch/scaleup/results/gradient_starvation/).
 Inputs: the two `_best.pt` checkpoints (no-exchange step 31,500; conservative-only step 31,000), 2 × 512 validation tokens (seed 20260930), and a random cotangent on the last position.
 The harness propagates it back through each layer's force at the trained layer inputs.
 
@@ -138,6 +139,65 @@ The harness propagates it back through each layer's force at the trained layer i
 | **I1.1** | `vphi_grad_path` (`'default'` / `'live'`): the pair force stays ∂V_φ(h_t, h_s)/∂h_t with sources held fixed in the forward, but h_s (and the score head's source input) are live for backprop. Implementation: build the target slot from an alias node and differentiate only with respect to it, so no reaction force appears. | forward Δlogit ≈ 0 vs parent; source gradient > 0; SCAF CLEAN |
 | **I1.2** | `xi_grad_path` (`'default'` / `'live'`): ξ built from live h for backprop, but the V_θ force stays the partial in h with ξ held fixed — ξ enters the force computation through a separate node so ∂V/∂ξ · ∂ξ/∂h_t never enters the forward force. **Care:** the causal EMA at position t includes h_t itself. | as I1.1, on both checkpoints |
 | **I1.3** | Notebook wiring: Cell 0 settings, tag components (`vplive`, `xilive`), Cell 5 pass-through, Cell 5b guard and banner — as for `rglive`. | tags distinct from every finished arm; guard fires on a missing component |
+
+#### Tier 1 result (2026-10-01): switches built and verified; ready for Tier 2
+
+**Code** (uncommitted):
+
+- `parf/model_parf_multixi.py`: config `vphi_grad_path`, `xi_grad_path` (`'default'` / `'live'`). `'live'` is refused without `causal_force`, and for V_φ on the `xi_attention` pair potential.
+  - **V_φ live.** `_layer_forces` passes `h_in` to `_pair_potential` as `h_src_live`, which becomes the V_φ sources and the score head's source input. Every force is then taken w.r.t. `h_in.view_as(h_in)`, an alias node. `autograd.grad(·, alias)` follows only the target slot, so the force has no reaction term.
+    - The live source is gathered from (B, T, d) directly, not from the (B, T, T, d) expansion. Same values, but its backward is a scatter into (B, T, d).
+  - **ξ live.** ξ is built from live `h`. In the CfC/BAOAB step the force is taken w.r.t. `h_mid`, which is downstream of `h`, so no path through ξ can enter it and no alias is needed.
+    - The Verlet step differentiates w.r.t. `h` itself, so there the target is an alias, keeping ∂V/∂ξ·∂ξ/∂h_t out of the force.
+    - Live ξ reaches `h` both through the force and through the CfC/low-rank linearisation, which is built from ξ.
+- Ladder notebook:
+  - Cell 0: `VPHI_GRAD_PATH`, `XI_GRAD_PATH`, and tag components `vplive` / `xilive`, placed after `rgdet`/`rglive` and before `L{L}probe`.
+  - Cell 5: pass-through.
+  - Cell 5b: tag guard and a "SOURCE-GRADIENT PROBE — NOT A LADDER POINT" banner.
+
+**Verification.** Script: [`scaleup/debug/verify_vphi_xi_grad_path.py`](../notebooks/conservative_arch/scaleup/debug/verify_vphi_xi_grad_path.py). Output: [`results/gradient_starvation/tier1_verify_output.txt`](../notebooks/conservative_arch/scaleup/results/gradient_starvation/tier1_verify_output.txt).
+
+Each arm was built through the notebook's own Cells 0–5b on the parent's `_best.pt`. The gradient is measured through one real layer step (`_layer_step_ex`, train mode), from the last position into earlier tokens.
+
+| arm | switches | forward vs parent (eval / train) | layer 0 → earlier | layer 1 → earlier |
+| --- | --- | --- | ---: | ---: |
+| no-exchange | default | 0 / 0 | **0** | **0** |
+| no-exchange | V_φ live | 0 / 0 | 23.9 | 0.36 |
+| no-exchange | ξ live | 0 / 0 | 0.023 | 8.8 |
+| no-exchange | both | 0 / 0 | 23.9 | 8.8 |
+| conservative-only | default | 0 / 0 | **0** | **0** |
+| conservative-only | V_φ live | 0 / 0 | 41.1 | 1.8e-17 |
+| conservative-only | ξ live | 0 / 0 | 20.1 | 13.1 |
+| conservative-only | both | 0 / 0 | 45.8 | 13.1 |
+
+- **The forward pass is bit-identical** (max |Δlogit| = 0) in all eight builds, in eval and in train mode with the same Gumbel seed. The tiny random Verlet model, where the alias is required, is bit-identical too.
+- **As trained, a layer step sends exactly 0 gradient to earlier tokens.** Within a step, V_φ and ξ are the only inter-token paths. The live switches open them.
+- The pattern matches Tier 0:
+  - V_φ carries nothing at conservative-only layer 1.
+  - ξ carries little at no-exchange layer 0.
+- The step-level gradients are larger than Tier 0's force-only ones because they include the CfC linearisation.
+- **Cost:**
+  - Train forward+backward time on CPU is unchanged (11.6–13.8 s for every build).
+  - The `_smoke` tests of `model_parf_multixi.py` and `model_fock_parf_multixi.py` pass.
+  - GPU memory is not measured yet: watch the first log lines of P2.1.
+- **Causality.** No forward value changes, so the SCAF leak audit's result is unchanged by construction. The periodic audits in Cell 6 still run.
+- **Tags:**
+  - no-exchange: `…cgqk_vplive_xilive_L2probe…`;
+  - conservative-only: `…cgqk_norc_vplive_xilive_L2probe…`.
+  - Each switch alone gets its own tag (`vplive` or `xilive`), so P2.3 and P2.4 cannot collide with P2.1 or P2.2.
+
+**Launch recipe for P2.1** (Colab, fresh session, notebook from GitHub). Cell 0:
+
+```python
+LADDER_L         = 2
+LADDER_MECHANISM = 'none'
+REVERSE_CHANNEL              = False     # conservative-only
+PROBE_MAX_STEPS = 3_000
+VPHI_GRAD_PATH         = 'live'
+XI_GRAD_PATH           = 'live'
+```
+
+Cell 5b must print the SOURCE-GRADIENT PROBE banner and a tag containing `norc_vplive_xilive_L2probe`. Only then run Cell 6.
 
 ### Tier 2 — 3,000-step probes (Colab, about 1.5 GPU h each)
 
@@ -204,3 +264,4 @@ queue resumes, and the report records a clean null.
 | --- | --- |
 | 2026-09-30 | Programme opened. Motivating result: `attention_potential` + `rglive`, settled 61.11 (pre-registered 63–72; better than predicted). V_φ and ξ source detaches identified at `model_parf_multixi.py` l.717/719 and l.897/959. |
 | 2026-09-30 | **Tier 0 done.** In no-exchange and conservative-only, the gradient reaching earlier tokens through V_φ and through ξ is exactly 0 at both layers; the score-head parameters still train. The offline live-source construction leaves the forward force bit-identical, and its source gradient is non-zero. V_φ is small (7–9% of F_θ) and effectively off at conservative-only layer 1; live ξ carries 4–20× more source gradient than live V_φ. Stop rule does not fire → Tier 1. |
+| 2026-10-01 | **Tier 1 done.** Added `vphi_grad_path` / `xi_grad_path` to `model_parf_multixi.py` (alias-node target, live sources; flat gather) and wired `VPHI_GRAD_PATH` / `XI_GRAD_PATH` (tags `vplive` / `xilive`) through Cells 0, 5 and 5b. Across 8 builds on the parent checkpoints the forward is bit-identical; a layer step's gradient into earlier tokens goes from exactly 0 to non-zero; CPU step time is unchanged. Next: P2.1 (conservative-only, both live), band ≤ 154.1 at step 3,000. |

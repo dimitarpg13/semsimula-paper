@@ -1,0 +1,60 @@
+# Tier 1 verification (I1.1-I1.3), 2026-10-01, laptop CPU, 2x512 val tokens (seed 20261001)
+# python3 scaleup/debug/verify_vphi_xi_grad_path.py OUT  -- parent _best.pt weights, notebook Cells 0-5b
+
+== small random model, integrator='verlet', autograd V_theta (alias path)
+   vphi=default xi=default  max|dlogit| 0.00e+00   step grad -> earlier 0.0000e+00
+   vphi=live    xi=default  max|dlogit| 0.00e+00   step grad -> earlier 2.3225e-08
+   vphi=default xi=live     max|dlogit| 0.00e+00   step grad -> earlier 3.3137e-12
+   vphi=live    xi=live     max|dlogit| 0.00e+00   step grad -> earlier 2.3225e-08
+
+== no-exchange
+   vphi=default xi=default  tag ...cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g
+      5b banner : (none: ladder point)
+      forward   : eval max|dlogit| 0.00e+00 (loss 4.454480)   train max|dlogit| 0.00e+00 (loss 4.454697)
+      backward  : train fwd+bwd  12.1s, |grad params| 7.1873e+00
+      layer 0 step: grad -> earlier tokens 0.0000e+00   -> own token 3.2926e+02
+      layer 1 step: grad -> earlier tokens 0.0000e+00   -> own token 5.0032e+01
+   vphi=live    xi=default  tag ...cgqk_vplive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg
+      5b banner : SOURCE-GRADIENT PROBE: VPHI_GRAD_PATH=live -- NOT A LADDER POINT
+      forward   : eval max|dlogit| 0.00e+00 (loss 4.454480)   train max|dlogit| 0.00e+00 (loss 4.454697)
+      backward  : train fwd+bwd  12.4s, |grad params| 7.2162e+00
+      layer 0 step: grad -> earlier tokens 2.3891e+01   -> own token 3.2926e+02
+      layer 1 step: grad -> earlier tokens 3.5925e-01   -> own token 5.0032e+01
+   vphi=default xi=live     tag ...cgqk_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg
+      5b banner : SOURCE-GRADIENT PROBE: XI_GRAD_PATH=live -- NOT A LADDER POINT
+      forward   : eval max|dlogit| 0.00e+00 (loss 4.454480)   train max|dlogit| 0.00e+00 (loss 4.454697)
+      backward  : train fwd+bwd  11.6s, |grad params| 7.2020e+00
+      layer 0 step: grad -> earlier tokens 2.3024e-02   -> own token 3.2926e+02
+      layer 1 step: grad -> earlier tokens 8.7911e+00   -> own token 5.0876e+01
+   vphi=live    xi=live     tag ...cgqk_vplive_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_
+      5b banner : SOURCE-GRADIENT PROBE: VPHI_GRAD_PATH=live, XI_GRAD_PATH=live -- NOT A LADDER POINT
+      forward   : eval max|dlogit| 0.00e+00 (loss 4.454480)   train max|dlogit| 0.00e+00 (loss 4.454697)
+      backward  : train fwd+bwd  11.9s, |grad params| 7.2512e+00
+      layer 0 step: grad -> earlier tokens 2.3891e+01   -> own token 3.2926e+02
+      layer 1 step: grad -> earlier tokens 8.8004e+00   -> own token 5.0876e+01
+
+== conservative-only
+   vphi=default xi=default  tag ...cgqk_norc_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.
+      5b banner : (none: ladder point)
+      forward   : eval max|dlogit| 0.00e+00 (loss 4.662434)   train max|dlogit| 0.00e+00 (loss 4.663036)
+      backward  : train fwd+bwd  13.6s, |grad params| 9.3632e-01
+      layer 0 step: grad -> earlier tokens 0.0000e+00   -> own token 1.4241e+02
+      layer 1 step: grad -> earlier tokens 0.0000e+00   -> own token 4.9635e+01
+   vphi=live    xi=default  tag ...cgqk_norc_vplive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fo
+      5b banner : SOURCE-GRADIENT PROBE: VPHI_GRAD_PATH=live -- NOT A LADDER POINT
+      forward   : eval max|dlogit| 0.00e+00 (loss 4.662434)   train max|dlogit| 0.00e+00 (loss 4.663036)
+      backward  : train fwd+bwd  13.8s, |grad params| 9.7766e-01
+      layer 0 step: grad -> earlier tokens 4.1082e+01   -> own token 1.4241e+02
+      layer 1 step: grad -> earlier tokens 1.7691e-17   -> own token 4.9635e+01
+   vphi=default xi=live     tag ...cgqk_norc_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fo
+      5b banner : SOURCE-GRADIENT PROBE: XI_GRAD_PATH=live -- NOT A LADDER POINT
+      forward   : eval max|dlogit| 0.00e+00 (loss 4.662434)   train max|dlogit| 0.00e+00 (loss 4.663036)
+      backward  : train fwd+bwd  13.1s, |grad params| 1.1024e+00
+      layer 0 step: grad -> earlier tokens 2.0119e+01   -> own token 1.4130e+02
+      layer 1 step: grad -> earlier tokens 1.3087e+01   -> own token 5.0291e+01
+   vphi=live    xi=live     tag ...cgqk_norc_vplive_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep
+      5b banner : SOURCE-GRADIENT PROBE: VPHI_GRAD_PATH=live, XI_GRAD_PATH=live -- NOT A LADDER POINT
+      forward   : eval max|dlogit| 0.00e+00 (loss 4.662434)   train max|dlogit| 0.00e+00 (loss 4.663036)
+      backward  : train fwd+bwd  13.5s, |grad params| 1.1444e+00
+      layer 0 step: grad -> earlier tokens 4.5774e+01   -> own token 1.4130e+02
+      layer 1 step: grad -> earlier tokens 1.3087e+01   -> own token 5.0291e+01

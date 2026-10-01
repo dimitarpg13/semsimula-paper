@@ -224,6 +224,21 @@ class MultiXiPARFConfig(SparsePARFConfig):
     #                 LIVE h and h_s, so the forward is unchanged and the
     #                 learning signal returns.
     relax_grad_path: str = "default"
+    # The same choice for the two channels every arm carries (2026-10-01,
+    # Gradient_Starvation_Investigation.md). Under causal_force both detach
+    # their sources, so -- measured on the trained no-exchange and
+    # conservative-only checkpoints -- NO loss gradient reaches an earlier
+    # token through either. 'live' keeps every forward value as trained and
+    # only lets the backward pass reach those tokens:
+    #   vphi_grad_path='live' -- V_phi's sources (and the score head's source
+    #       input) are live h; the force is still dV_phi/dh_t with sources
+    #       held fixed, taken w.r.t. an alias of h_t so no reaction force
+    #       appears.
+    #   xi_grad_path='live'   -- xi is built from live h; the force is still
+    #       the partial in h with xi held fixed (xi enters through a node the
+    #       force is never differentiated w.r.t.).
+    vphi_grad_path: str = "default"
+    xi_grad_path: str = "default"
 
     pair_potential: str = "sparse_topk"
     attn_n_heads: int = 4
@@ -565,6 +580,24 @@ class MultiXiPARFLM(SparsePARFLM):
             self.V_phi = None
             self.score_head = None
 
+        # Source-gradient switches. Under causal_force=False the sources are
+        # already live (and the force is not causal), so 'live' would mean
+        # nothing; the xi-routed family has its own potential and is not
+        # wired here.
+        for _name in ("vphi_grad_path", "xi_grad_path"):
+            _p = getattr(cfg, _name, "default")
+            if _p not in ("default", "live"):
+                raise ValueError(
+                    f"{_name} must be 'default' or 'live', got {_p!r}")
+            if _p == "live" and not cfg.causal_force:
+                raise ValueError(
+                    f"{_name}='live' needs causal_force=True: without it the "
+                    f"sources are not detached in the first place.")
+        if getattr(cfg, "vphi_grad_path", "default") == "live" and self.V_attn is not None:
+            raise ValueError(
+                "vphi_grad_path='live' is defined for the sparse top-k V_phi "
+                "only, not pair_potential='xi_attention'.")
+
     # ------------------------------------------------------------------
     @torch.no_grad()
     def relax_share_values(self) -> List[float]:
@@ -683,6 +716,7 @@ class MultiXiPARFLM(SparsePARFLM):
     def _pair_potential(
         self, h_in: torch.Tensor, layer_idx: int,
         xis: Optional[torch.Tensor] = None,
+        h_src_live: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
         """Scalar pair potential at ``h_in``.
 
@@ -690,6 +724,13 @@ class MultiXiPARFLM(SparsePARFLM):
         potential when ``cfg.pair_potential == 'xi_attention'``.  ``xis`` is
         required only by the latter and is ignored by the former, so the
         sparse path keeps its original two-argument behaviour.
+
+        ``h_src_live`` (``vphi_grad_path='live'``, sparse path only): a
+        tensor equal in value to ``h_in`` but a DIFFERENT autograd node,
+        used as V_φ's sources and the score head's source input in place
+        of ``h_in.detach()``.  The caller differentiates w.r.t. ``h_in``
+        alone, so the force is unchanged; the loss gradient reaches the
+        sources through ``h_src_live``.
         """
         cfg = self.cfg
         B, T, d = h_in.shape
@@ -714,20 +755,32 @@ class MultiXiPARFLM(SparsePARFLM):
                 U_pair = U_pair * s_ell
             return self._add_relax_potential(U_pair, xis, h_in, layer_idx)
 
-        h_src = h_in.detach() if cfg.causal_force else h_in
-        h_src_for_score = (
-            h_in.detach() if cfg.score_head_use_detached_h_src else h_in
-        )
+        if h_src_live is not None:
+            h_src = h_src_for_score = h_src_live
+        else:
+            h_src = h_in.detach() if cfg.causal_force else h_in
+            h_src_for_score = (
+                h_in.detach() if cfg.score_head_use_detached_h_src else h_in
+            )
 
         pi = self.score_head(h_in, h_src_for_score)              # (B, T, T)
         causal = self._pair_mask_for(T, h_in.device)
 
         if cfg.use_gathered_v_phi:
             idx, m_g = self._sparse_topk_indices(pi, causal, T)  # (B,T,k), (B,T,k)
-            idx_for_gather = idx.unsqueeze(-1).expand(-1, -1, -1, d)
-            h_src_g = h_src.unsqueeze(1).expand(-1, T, -1, -1).gather(
-                2, idx_for_gather,
-            )                                                    # (B, T, k, d)
+            if h_src_live is not None:
+                # Same values as the expanded gather below, but gathered
+                # from (B, T, d) directly: a live source's backward is then a
+                # scatter into (B, T, d), not into a (B, T, T, d) buffer.
+                k = idx.shape[-1]
+                h_src_g = h_src.gather(
+                    1, idx.reshape(B, T * k, 1).expand(-1, -1, d),
+                ).view(B, T, k, d)
+            else:
+                idx_for_gather = idx.unsqueeze(-1).expand(-1, -1, -1, d)
+                h_src_g = h_src.unsqueeze(1).expand(-1, T, -1, -1).gather(
+                    2, idx_for_gather,
+                )                                                # (B, T, k, d)
             V_phi_g = self.V_phi.forward_gathered(h_in, h_src_g) # (B, T, k)
             U_pair = (V_phi_g * m_g).sum()
         else:
@@ -775,7 +828,17 @@ class MultiXiPARFLM(SparsePARFLM):
         parameters.  No-op when already fp32.
         """
         cfg = self.cfg
-        U_pair = self._pair_potential(h_in, layer_idx, xis=xis)
+        # vphi_grad_path='live': V_φ's sources are h_in itself, and every
+        # force below is taken w.r.t. an ALIAS of it.  autograd.grad(., alias)
+        # follows only the target slot, so the forward force is exactly the
+        # trained one (sources held fixed, no reaction term), while the outer
+        # loss reaches h_in through both the alias and the sources.
+        h_src_live = None
+        if getattr(cfg, "vphi_grad_path", "default") == "live":
+            h_src_live = h_in
+            h_in = h_in.view_as(h_in)
+        U_pair = self._pair_potential(
+            h_in, layer_idx, xis=xis, h_src_live=h_src_live)
 
         if self._use_analytic_vtheta():
             # Closed-form V_theta force: no autograd, so V_theta never
@@ -894,12 +957,20 @@ class MultiXiPARFLM(SparsePARFLM):
         delta = h - h_prev
 
         # ── Multi-channel ξ (replaces causal_cumulative_mean) ──
-        xi_input = h.detach() if cfg.causal_force else h
+        xi_live = getattr(cfg, "xi_grad_path", "default") == "live"
+        if xi_live and not h.requires_grad:
+            h = h.requires_grad_(True)
+        xi_input = h.detach() if (cfg.causal_force and not xi_live) else h
         xis = self.xi_module(xi_input)                           # (B, T, K, d)
 
         h_in = h
         if not h_in.requires_grad:
             h_in = h_in.requires_grad_(True)
+        if xi_live:
+            # The force is differentiated w.r.t. h_in, and xi (which includes
+            # h_t itself) was built from h: an alias keeps dV/dxi . dxi/dh_t
+            # out of the force, so it stays the partial in h with xi fixed.
+            h_in = h_in.view_as(h_in)
 
         f = self._layer_forces(h_in, xis, layer_idx)
 
@@ -956,7 +1027,13 @@ class MultiXiPARFLM(SparsePARFLM):
                 use_cfc = True
         half = 0.5 * dt
 
-        xi_input = h.detach() if cfg.causal_force else h
+        # xi_grad_path='live': xi from live h.  No alias is needed here: the
+        # force is taken w.r.t. h_mid, which is downstream of h, so no path
+        # through xi can enter it; the forward is unchanged and the loss
+        # gradient reaches h through xi (in the force and in the CfC
+        # linearisation alike).
+        xi_live = getattr(cfg, "xi_grad_path", "default") == "live"
+        xi_input = h.detach() if (cfg.causal_force and not xi_live) else h
         xis = self.xi_module(xi_input)                           # (B, T, K, d)
 
         h_in = h
