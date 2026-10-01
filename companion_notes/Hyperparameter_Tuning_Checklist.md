@@ -627,6 +627,30 @@ adds a point to a curve.
 | 2026-09-25 | architecture: **L=2 `'none'`, reverse channel off** (ladder run 8, an architecture control, not a tuning run) | full 32,500 | **87.93 settled**, +31.3% vs 66.98 with the mechanism on; ratio vs GPT-2 1.765. **The inference-time ablations overstated the mechanism by 2.9x in PPL ratio, 4.9x in nats.** Clip 2.6% vs 0.0%. Ladder protocol §5.6 |
 | 2026-09-24 | depth: **L=1** `'none'` @1.2e-03 (ladder run 7, not a tuning run) | full 32,500 | **87.09 settled**, +30.0% vs L=2 at the same LR; ratio vs GPT-2 1.748. Decay gain 11.2% vs 19.3% at L=2. Clip 2.6% vs 0.0%. Static register bank (§7.3a). Ladder protocol §5.5 |
 
+## TOP PRIORITY: gradient starvation across the ladder — **opened 2026-09-30**
+
+`attention_potential` with its learning signal restored (forward identical,
+`relax_grad_path='live'`) settled at **61.11**, against 80.90 starved and 63.51
+for the non-conservative `attention`. The same source-detach is used in **V_φ**
+and **ξ** in every arm, which puts "V_φ is inert", the +31.3% price of the Fock
+mechanism, and the queued factorial on the same starved convention.
+
+Full programme, tiers and stop rules:
+[`Gradient_Starvation_Investigation.md`](Gradient_Starvation_Investigation.md).
+
+- [ ] **Tier 0** — offline gradient checks for V_φ, ξ and the score head on the
+      no-exchange and conservative-only checkpoints (free, laptop).
+- [ ] **Tier 1** — `vphi_grad_path` / `xi_grad_path` switches, verified forward-
+      identical, tagged `vplive` / `xilive`.
+- [ ] **Tier 2** — P2.1 conservative-only live (≤ 154.1 at step 3,000), then
+      P2.2 no-exchange live (≤ 137.1). ~1.5 GPU h each.
+- [ ] **Tier 3/4** — full runs and consolidation, only if Tier 2 moves.
+
+**Paused behind it:** D1, `splm-multixi`, `fock-splm`, and any restatement of
+ladder numbers in the cards or the book.
+
+---
+
 ## Agenda: the D-series — why depth does not pay — **2026-09-28**
 
 L=4 at matched T came in behind L=2 **on train as well as validation**, so it
