@@ -56,8 +56,8 @@ contents use the rendered numbers. This audit uses **`file` -> §rendered**
 throughout, and quotes page numbers from the current build.
 
 **Complete map, generated from `main.toc` of the current build
-(regenerated 2026-09-28 after a forced clean rebuild, `latexmk -g`: 483 pp.,
-0 errors, 0 undefined references or citations; source at `747173f`). Always
+(regenerated 2026-09-30 after the velocity-Verlet sweep and Remark 72: 484 pp.,
+0 errors, 0 undefined references or citations). Always
 cite the rendered number — it is what the reader sees in the PDF.**
 
 **The rule.** The rendered number is the position in `main.tex`'s
@@ -67,49 +67,49 @@ counted in input order. The filename prefix plays no part. `\appendix`
 
 | file | renders as | p. |
 | --- | --- | ---: |
-| `01_introduction.tex` | **§1** Introduction | 20 |
-| `02_semantic_space.tex` | **§2** Semantic Space: Metric Structure and Hierarchy | 26 |
-| `03_signature_matrix.tex` | **§3** The Signature Matrix of a Semantic Property | 29 |
-| `04_gaussian_well.tex` | **§4** The Gaussian Semantic Energy Well | 33 |
-| `05_parf.tex` | **§5** Dynamics of Semantic Properties: PARF | 38 |
-| `06_sarf.tex` | **§6** Dynamics of Semantic Structures: SARF | 46 |
-| `07_lagrangian.tex` | **§7** The Lagrangian for Semantic Space | 56 |
-| `07a_position_dependent_damping.tex` | **§8** Position-Dependent Damping and the Reinforcement Field | 68 |
-| `08_tree_operations.tex` | **§9** Semantic Tree Operations and Executive Space | 75 |
-| `09_expressivity_mcs.tex` | **§10** Expressivity, Mechanism Justification, MCS | 83 |
-| `10_jepa_connection.tex` | **§11** Connection to JEPA | 103 |
-| `11_hidden_state_interpretation.tex` | **§12** Hidden States as Semantic Properties | 107 |
-| `12_semantic_mass.tex` | **§13** Semantic Mass in Transformers | 110 |
-| `13_stp_acceleration.tex` | **§14** The STP Loss as Normalized Normal Acceleration | 121 |
-| `14_experiments.tex` | **§15** Experimental Validation on GPT-2 and Pythia | 126 |
-| `15_conservative_architectures.tex` | **§16** The Prescriptive Test: A Conservative-by-Construction LM | 132 |
-| `15a_causal_integrity.tex` | **§17** Causal integrity: leak taxonomy, detection, remediation | 198 |
-| `16_hybrid_splm.tex` | **§18** Hybrid SPLM: Helmholtz, Variant A, Variant B | 207 |
-| `17_parf_augmented_splm.tex` | **§19** PARF-Augmented SPLM and the Generalised PSP Test | 222 |
-| `17c_fock_parflm.tex` | **§20** Fock-Augmented PARFLM: Non-Conservative Virtual Particle Exchange | 246 |
-| `17b_cross_architecture_vreg.tex` | **§21** Cross-Architecture Analysis: Vφ Output Regularisation | 273 |
-| `17d_structured_scalar_potential.tex` | **§22** Structured Scalar Potential | 277 |
-| `17e_scaling_up.tex` | **§23** Scaling Up the SPLM Family | 300 |
-| `17f_context_mixing_design_space.tex` | **§24** The Conservative Context-Mixing Design Space | 316 |
-| `17g_continuous_learning.tex` | **§25** Continuous Learning | 321 |
-| `17h_first_order_sufficiency.tex` | **§26** When First-Order Dynamics Suffices | 326 |
-| `18_riemannian_geometry.tex` | **§27** Riemannian Geometry of Hidden-State Space | 338 |
-| `20_dynamical_simulator.tex` | **§28** The Direct Dynamical Simulator | 367 |
-| `18b_relation_to_energy_based_models.tex` | **§29** Relation to Energy-Based Models | 381 |
-| `18e_relation_to_liquid_neural_networks.tex` | **§30** Relation to Liquid Neural Networks | 383 |
-| `18i_relation_to_optimizer_inspired_transformers.tex` | **§31** Relation to Optimizer-Inspired Transformers | 388 |
-| `18f_relation_to_alphafold.tex` | **§32** Relation to AlphaFold | 393 |
-| `18g_langevin_completion.tex` | **§33** The Thermal Langevin Completion | 396 |
-| `18j_relation_to_flow_matching.tex` | **§34** Relation to Flow Matching and CNFs | 399 |
-| `18h_portable_potentials.tex` | **§35** Portable Learned Potentials | 402 |
-| `18c_memorization_capacity.tex` | **§36** Memorization Capacity | 406 |
-| `18d_geometric_capabilities.tex` | **§37** Capabilities Unique to the Conservative Design | 410 |
-| `19_conclusion.tex` | **§38** Conclusion and Open Questions | 423 |
+| `01_introduction.tex` | **§1** Introduction | 21 |
+| `02_semantic_space.tex` | **§2** Semantic Space: Metric Structure and Hierarchy | 27 |
+| `03_signature_matrix.tex` | **§3** The Signature Matrix of a Semantic Property | 30 |
+| `04_gaussian_well.tex` | **§4** The Gaussian Semantic Energy Well | 34 |
+| `05_parf.tex` | **§5** Dynamics of Semantic Properties: PARF | 39 |
+| `06_sarf.tex` | **§6** Dynamics of Semantic Structures: SARF | 47 |
+| `07_lagrangian.tex` | **§7** The Lagrangian for Semantic Space | 57 |
+| `07a_position_dependent_damping.tex` | **§8** Position-Dependent Damping and the Reinforcement Field | 69 |
+| `08_tree_operations.tex` | **§9** Semantic Tree Operations and Executive Space | 76 |
+| `09_expressivity_mcs.tex` | **§10** Expressivity, Mechanism Justification, MCS | 84 |
+| `10_jepa_connection.tex` | **§11** Connection to JEPA | 104 |
+| `11_hidden_state_interpretation.tex` | **§12** Hidden States as Semantic Properties | 108 |
+| `12_semantic_mass.tex` | **§13** Semantic Mass in Transformers | 111 |
+| `13_stp_acceleration.tex` | **§14** The STP Loss as Normalized Normal Acceleration | 122 |
+| `14_experiments.tex` | **§15** Experimental Validation on GPT-2 and Pythia | 127 |
+| `15_conservative_architectures.tex` | **§16** The Prescriptive Test: A Conservative-by-Construction LM | 133 |
+| `15a_causal_integrity.tex` | **§17** Causal integrity: leak taxonomy, detection, remediation | 199 |
+| `16_hybrid_splm.tex` | **§18** Hybrid SPLM: Helmholtz, Variant A, Variant B | 208 |
+| `17_parf_augmented_splm.tex` | **§19** PARF-Augmented SPLM and the Generalised PSP Test | 223 |
+| `17c_fock_parflm.tex` | **§20** Fock-Augmented PARFLM: Non-Conservative Virtual Particle Exchange | 247 |
+| `17b_cross_architecture_vreg.tex` | **§21** Cross-Architecture Analysis: Vφ Output Regularisation | 274 |
+| `17d_structured_scalar_potential.tex` | **§22** Structured Scalar Potential | 278 |
+| `17e_scaling_up.tex` | **§23** Scaling Up the SPLM Family | 301 |
+| `17f_context_mixing_design_space.tex` | **§24** The Conservative Context-Mixing Design Space | 317 |
+| `17g_continuous_learning.tex` | **§25** Continuous Learning | 322 |
+| `17h_first_order_sufficiency.tex` | **§26** When First-Order Dynamics Suffices | 327 |
+| `18_riemannian_geometry.tex` | **§27** Riemannian Geometry of Hidden-State Space | 339 |
+| `20_dynamical_simulator.tex` | **§28** The Direct Dynamical Simulator | 368 |
+| `18b_relation_to_energy_based_models.tex` | **§29** Relation to Energy-Based Models | 382 |
+| `18e_relation_to_liquid_neural_networks.tex` | **§30** Relation to Liquid Neural Networks | 384 |
+| `18i_relation_to_optimizer_inspired_transformers.tex` | **§31** Relation to Optimizer-Inspired Transformers | 389 |
+| `18f_relation_to_alphafold.tex` | **§32** Relation to AlphaFold | 394 |
+| `18g_langevin_completion.tex` | **§33** The Thermal Langevin Completion | 397 |
+| `18j_relation_to_flow_matching.tex` | **§34** Relation to Flow Matching and CNFs | 400 |
+| `18h_portable_potentials.tex` | **§35** Portable Learned Potentials | 403 |
+| `18c_memorization_capacity.tex` | **§36** Memorization Capacity | 407 |
+| `18d_geometric_capabilities.tex` | **§37** Capabilities Unique to the Conservative Design | 411 |
+| `19_conclusion.tex` | **§38** Conclusion and Open Questions | 424 |
 
-| `A0_edition_history.tex` | **Appendix A** Edition history | 437 |
-| `A1_non_autonomous_framework.tex` | **Appendix B** The non-autonomous conservative framework | 439 |
-| `A2_inference_efficiency.tex` | **Appendix C** Inference efficiency: FLOP and parameter counts | 445 |
-| `A3_experiment_index.tex` | **Appendix D** Experiment quick-reference index | 461 |
+| `A0_edition_history.tex` | **Appendix A** Edition history | 438 |
+| `A1_non_autonomous_framework.tex` | **Appendix B** The non-autonomous conservative framework | 440 |
+| `A2_inference_efficiency.tex` | **Appendix C** Inference efficiency: FLOP and parameter counts | 446 |
+| `A3_experiment_index.tex` | **Appendix D** Experiment quick-reference index | 462 |
 
 Unnumbered: `00_notation.tex` only (`\section*`, p. 15). The four `A*`
 files are **lettered, not unnumbered** — `\appendix` in `main.tex` switches
@@ -197,7 +197,7 @@ Mechanism 2 to the register bank and the forcing. **Not yet written.**
 
 ---
 
-## `07_lagrangian.tex` -> §7, pp. 56–67 — the Lagrangian for semantic space — **audited 2026-09-27, not yet edited**
+## `07_lagrangian.tex` -> §7, pp. 57–68 — the Lagrangian for semantic space — **audited 2026-09-27, not yet edited**
 
 **Plan said:** *"reframe — Lagrange--d'Alembert with an explicit forcing
 term; 'geodesic' becomes 'unforced motion'."*
@@ -249,7 +249,7 @@ the measurements it anticipated.
 
 ---
 
-## `07a_position_dependent_damping.tex` -> §8, pp. 68–74 — position-dependent damping — **EDITED 2026-09-27**
+## `07a_position_dependent_damping.tex` -> §8, pp. 69–75 — position-dependent damping — **EDITED 2026-09-27**
 
 **Plan said:** reframe. **Audit: augment, plus two withdrawals** — one of
 which was load-bearing for the section's motivation.
@@ -291,7 +291,7 @@ should fold into §8.5 once the part structure is settled.
 
 ---
 
-## `18_riemannian_geometry.tex` -> §27, pp. 338–366 — Riemannian geometry — **EDITED 2026-09-27**
+## `18_riemannian_geometry.tex` -> §27, pp. 339–367 — Riemannian geometry — **EDITED 2026-09-27**
 
 **Plan said:** "retreat, largest". **Audit: correct, and the reason is
 starker than the plan knew.**
@@ -364,7 +364,7 @@ acceleration.
 
 ---
 
-## `09_expressivity_mcs.tex` -> §10, pp. 83–102 — where do the built models sit? — **asked 2026-09-28**
+## `09_expressivity_mcs.tex` -> §10, pp. 84–103 — where do the built models sit? — **asked 2026-09-28**
 
 **The chapter names no implemented model.** Zero occurrences of
 "Fock-PARFLM", "PARFLM", "SPLM" or "v2.1" in §10. It develops a staircase
@@ -605,3 +605,4 @@ thought, not typing.
 | 2026-09-27 | — | **framing decision recorded (§0): this is a book.** Every verdict so far is a *correctness* verdict; *placement* verdicts not yet started |
 | 2026-09-28 | §10 (`09`) | audited — no built model named; v2.1 = v0+v1.5+v2 by inventory, no v3, so none reaches MCS. Phase 1b (M-sweep) designed and pre-registered |
 | 2026-09-28 | §10 (`09`) | **corrected from code**: in the prefix-causal lifecycle the registers are rebuilt from the prefix at every layer — creation/destruction run over L, not over tokens. Withdraws the "bounded register machine, finite state" step; places the built model on the circuit axis beside attention. May Dyck runs flagged as pre-leak-fix. Phase 1b prior moved (a) → (b) before any run |
+| 2026-09-30 | all (integrator names) | **velocity-Verlet sweep.** All 40 case-insensitive occurrences audited in context (inventory in the restructure plan §2a). **30 fixed** across 13 files: 22 renamed to damped Störmer–Verlet; 8 renamed with a real correction — §27 `18` l.1369 (the Störmer-era model has **no** explicit velocity stream), §8 `07a` ("every SPLM-family integrator" was wrong; caption's v is the δ proxy), notation Δt row, §11 `10`, §21 `17b`, §20 `17c` l.1016. **10 kept** as genuinely velocity-Verlet: the symplectic SPLM variant (§16 ×4), classical MD (§32 ×3), a generic integrator list (§23), and **BAOAB's deterministic skeleton** (§28 ×2). Also §19.8 and Theorem 71 (+ new Remark 72, scope to the explicit-integrator era). Rebuilt clean: 484 pp., 0 errors, 0 undefined refs. Every section moved +1 page (notation grew); map regenerated. Remark 72 shifted the shared theorem counter: Conservative Obstruction is now **Theorem 75, p. 249**. Flagged, not changed: `eq:helmholtz-update` and `eq:gamma-h-verlet` are exact only at Δt = 1 |

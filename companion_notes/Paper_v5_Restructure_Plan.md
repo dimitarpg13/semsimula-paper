@@ -264,6 +264,77 @@ because those integrators "need to return an outgoing velocity as well as a
 position", which the Störmer form has none of. Every docstring and every
 paper sentence saying "velocity-Verlet" is wrong by one word, consistently.
 
+> **Corrected 2026-09-30: one lineage did run velocity-Verlet.**
+> `symplectic_variant/model_symplectic.py` is a genuine kick–drift–kick
+> velocity-Verlet with Strang-split damping. It was trained as the
+> "SARF-faithful SPLM with velocity-Verlet" (checkpoint `integrator:
+> velocity_verlet_strang`), and it is the "Verlet L=16, dt=0.5" arm of the
+> attractor analysis. The four "velocity-Verlet" mentions in §16
+> (`15_conservative_architectures.tex`, the SARF ablation and attractor
+> discussion) are therefore **correct and must stay**. The sweep above missed
+> this lineage because it read only the classes that define `_layer_step`.
+> The statement above holds for the SPLM mainline, the hybrid, and the whole
+> PARF/Fock lineage — not for the programme as a whole.
+
+### Verified inventory: the 40 "velocity-Verlet" strings in paper v6 — **audited one by one, 2026-09-30**
+
+Every occurrence of "velocity-Verlet" / "Velocity-Verlet" / "velocity Verlet"
+in the v6 sources (case-insensitive; 40 as of this date, after the two
+2026-09-30 fixes to §19.8 and Theorem 71) was read in surrounding context and
+checked against the lineage table above. Two mentions of "the current
+integrator" era aside, the verdicts:
+
+**KEEP — genuinely velocity-Verlet (10).**
+
+| where | why it is correct |
+| --- | --- |
+| §16 `15_conservative_architectures` 2405, 2468, 2483, 4138 | the symplectic SPLM variant (`symplectic_variant/`, `velocity_verlet_strang`): real kick–drift–kick |
+| §32 `18f_relation_to_alphafold` 30, 128, 209 | classical molecular dynamics; velocity-Verlet **is** the standard NVE integrator |
+| §23 `17e_scaling_up` 902 | a generic list of explicit symplectic schemes in the stability-ceiling argument |
+| §28 `20_dynamical_simulator` **847, 869** | **the STP-BAOAB integrator's own deterministic skeleton.** BAOAB's B-A-B core *is* velocity-Verlet (Leimkuhler–Matthews' own attribution), and the h ≲ 2/√λ_max bound row cites it as the source. The first pass wrongly queued these for renaming; they describe BAOAB, not the old production integrator. |
+
+So there are **three** legitimate uses, not two: the symplectic variant,
+external MD practice, and **BAOAB's deterministic skeleton**.
+
+**RENAME → damped Störmer–Verlet (22).** All describe the hybrid/PARF/Fock
+explicit step (the γ·Δt factor, the position-difference carry-over, or a
+figure of that architecture): §19 `17_parf` 20, 179, 330, 389 (fig.), 1070
+(fig.); §18 `16_hybrid` 185, 222 (all-S table row — the S-block *is* the
+Störmer update, not SPLM's Euler); §20 `17c` 379 (fig.), 1125, 1303; §28
+`20_dyn` 226, 235, 326, 627; §23 `17e` 887, 1028; §27 `18_riem` 545 and 569
+(Experiment A's M2 — the fitted form h + v_t/(1+γ) − α/(1+γ)∇V is the
+position form at Δt = 1), 991 (the d=256 five-arm battery's Fock v2.1 row —
+the same sentence already labels multi-ξ SPLM "semi-implicit damped Euler"
+correctly); §38 `19_conclusion` 755 (the Q9c plan item); §30 `18e` 235;
+`main.tex` 309 (the semsimula-diag acknowledgement). Corroborating detail:
+`20_dyn` 630 itself says "Verlet's finite-difference velocity is implicit in
+h_{ℓ−1}" — the text knows it is the position form.
+
+**RENAME + a real correction (8).**
+
+| where | what else is wrong |
+| --- | --- |
+| §20 `17c` 1016 | "post-Verlet geometry" → post-step geometry (injection after the Störmer step) |
+| §8 `07a` 412, 418 (fig. caption) | the caption's state "(h⁽ℓ⁾, v⁽ℓ⁾)" needs the note that v is the position-difference proxy δ — the equation right below it uses δ |
+| §8 `07a` 427 | "used by **every SPLM-family** integrator" is wrong: the SPLM family proper is semi-implicit Euler (same (1+γΔt)⁻¹ denominator, so the γ(h) substitution does carry over — say that instead) |
+| notation `00_notation` 33 | the Δt row names the wrong integrator **for its own scope reference** (§16 = Euler), and "fixed to 1.0" is stale outside §16 (the ladder runs dt = 2–8) |
+| §11 `10_jepa` 157 | "SPLM and PARFLM families under Velocity-Verlet" conflates both lineages — name them: Euler and Störmer respectively |
+| §21 `17b` 9 | the equilibria claim spans both lineages; the honest fix drops the integrator qualifier: "only the **damped dynamics** of the forward pass produces equilibria" |
+| §27 `18_riem` 1369 | **factual, not a rename**: "Fock-PARFLM carries an *explicit* velocity stream v_ℓ … (the Velocity-Verlet state)". The subsection (`subsec:geodesic-preservation`, zero CfC/BAOAB mentions) describes the Störmer-era model, which carries **no** velocity stream — v is x_ℓ − x_{ℓ−1}, exact in the state. The claim is true only under CfC/BAOAB. Fix must say both: the position-difference proxy in the explicit era, an explicit stream under CfC/BAOAB; either way no finite-difference estimation from sampled trajectories is needed, which was the sentence's actual point. |
+
+**The Δt = 1 reconciliation (dissolves the flagged equation mismatches).**
+`eq:helmholtz-update` (149) writes dt/(1+γ)·δ and dt²/((1+γ)m); §8's
+`eq:gamma-h-verlet` writes Δt/(1+γΔt)·δ. The code computes δ/(1+γΔt) and
+dt²/(m(1+γΔt)). **At Δt = 1 — the value the notation table fixes and the
+value every §16/§18-era run used — all three coincide exactly.** So the
+equations are correct for the experiments they describe but are not the
+general-Δt form the code implements; the depth ladder (dt = 2–8) is where
+they would diverge. Both equations should either gain a "(Δt = 1)" scope or
+the general form; flagged for the author, not silently changed.
+
+Bare "Verlet" (no "velocity-") occurrences are acceptable shorthand once the
+governing update is named Störmer–Verlet, and were not queued.
+
 **Why the distinction earns its keep.** The $\omega \cdot dt < 2$ wall is the
 Störmer/leapfrog bound. It governs the hybrid and PARF/Fock lineages. It was
 never the stability condition on the SPLM family, which is semi-implicit
@@ -279,7 +350,9 @@ to the Störmer lineage alone.
 - Any claim that depends on the scheme: name it. **damped semi-implicit
   Euler** (SPLM family), **damped Störmer–Verlet** (hybrid, PARF, Fock),
   **gradient flow** (the first-order ablation).
-- Never write "velocity-Verlet" again.
+- Never write "velocity-Verlet" again — **except** for the symplectic SPLM
+  variant (`symplectic_variant/`), which really is one, and for external
+  practice such as classical molecular dynamics (§32).
 
 **§18's equation was already right** (`eq:helmholtz-update`, the S-block
 branch): it is the position-difference form, which is what
