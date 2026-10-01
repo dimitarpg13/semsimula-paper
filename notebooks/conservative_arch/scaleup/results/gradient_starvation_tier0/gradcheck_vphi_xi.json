@@ -1,0 +1,90 @@
+[
+ {
+  "arm": "no-exchange",
+  "step": 31500,
+  "ppl": 66.56131245229126,
+  "flags": {
+   "causal_force": true,
+   "score_head_use_detached_h_src": true,
+   "use_gathered_v_phi": true,
+   "reverse_channel": true
+  },
+  "rows": [
+   {
+    "layer": 0,
+    "h_rms": 0.17264403402805328,
+    "F_theta_rms": 2.8418805868568597e-06,
+    "F_phi_rms": 0.0005657753790728748,
+    "F_rev_rms": 0.017314120484890783,
+    "vphi_trained_to_earlier": 0.0,
+    "vphi_trained_to_self": 0.08968736976385117,
+    "vphi_live_forward_diff": 0.0,
+    "vphi_live_to_earlier": 0.0224562156945467,
+    "xi_trained_to_earlier": 0.0,
+    "xi_live_forward_diff": 0.0,
+    "xi_live_to_earlier": 4.261969297658652e-05,
+    "xi_live_to_self_via_xi": 7.288833876373246e-05
+   },
+   {
+    "layer": 1,
+    "h_rms": 0.9999979734420776,
+    "F_theta_rms": 0.010873392224311829,
+    "F_phi_rms": 0.0008045743452385068,
+    "F_rev_rms": 0.014711385434192203,
+    "vphi_trained_to_earlier": 0.0,
+    "vphi_trained_to_self": 0.0432090163230896,
+    "vphi_live_forward_diff": 0.0,
+    "vphi_live_to_earlier": 0.017444513738155365,
+    "xi_trained_to_earlier": 0.0,
+    "xi_live_forward_diff": 0.0,
+    "xi_live_to_earlier": 0.37672069668769836,
+    "xi_live_to_self_via_xi": 0.41989657282829285
+   }
+  ],
+  "secs": 22
+ },
+ {
+  "arm": "conservative-only",
+  "step": 31000,
+  "ppl": 85.90339062495228,
+  "flags": {
+   "causal_force": true,
+   "score_head_use_detached_h_src": true,
+   "use_gathered_v_phi": true,
+   "reverse_channel": false
+  },
+  "rows": [
+   {
+    "layer": 0,
+    "h_rms": 0.18770617246627808,
+    "F_theta_rms": 0.005620633251965046,
+    "F_phi_rms": 0.0005204934277571738,
+    "F_rev_rms": null,
+    "vphi_trained_to_earlier": 0.0,
+    "vphi_trained_to_self": 0.07110738754272461,
+    "vphi_live_forward_diff": 0.0,
+    "vphi_live_to_earlier": 0.02814851701259613,
+    "xi_trained_to_earlier": 0.0,
+    "xi_live_forward_diff": 0.0,
+    "xi_live_to_earlier": 0.10186420381069183,
+    "xi_live_to_self_via_xi": 0.19537878036499023
+   },
+   {
+    "layer": 1,
+    "h_rms": 0.9999127984046936,
+    "F_theta_rms": 0.004829612094908953,
+    "F_phi_rms": 3.02149646813632e-06,
+    "F_rev_rms": null,
+    "vphi_trained_to_earlier": 0.0,
+    "vphi_trained_to_self": 7.803503621062191e-08,
+    "vphi_live_forward_diff": 0.0,
+    "vphi_live_to_earlier": 7.821149239362057e-08,
+    "xi_trained_to_earlier": 0.0,
+    "xi_live_forward_diff": 0.0,
+    "xi_live_to_earlier": 0.13540278375148773,
+    "xi_live_to_self_via_xi": 0.17629918456077576
+   }
+  ],
+  "secs": 18
+ }
+]
