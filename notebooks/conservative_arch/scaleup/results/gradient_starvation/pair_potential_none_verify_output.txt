@@ -1,0 +1,32 @@
+# pair_potential='none' (runs 10, 11), 2026-10-01 -- fresh init, notebook Cells 0-5b
+# python3 scaleup/debug/verify_pair_potential_none.py OUT
+
+== multi-xi SPLM (run 10)   (PARF arm of the same config: 76,572,110 params)
+   xi=default tag ...cgqk_norc_nophi_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_f
+      5b: NO PAIR POTENTIAL (PAIR_POTENTIAL='none') -- NOT A LADDER POINT
+      5b: multi-xi SPLM (run 10), 76,434,307 parameters.
+      params 76,434,307 (-137,803 vs PARF)   eval loss 7.5659  train loss 7.5659  max|dlogit| vs xi=default 0.0e+00
+      layer 0 step: grad -> earlier tokens 0.0000e+00   -> own token 1.7716e+03
+      layer 1 step: grad -> earlier tokens 0.0000e+00   -> own token 5.2498e+01
+   xi=live    tag ...cgqk_norc_nophi_xilive_L2probe_ob_untied_wsd_e5c_plgate_re
+      5b: NO PAIR POTENTIAL (PAIR_POTENTIAL='none') -- NOT A LADDER POINT
+      5b: multi-xi SPLM (run 10), 76,434,307 parameters.
+      5b: SOURCE-GRADIENT PROBE: XI_GRAD_PATH=live -- NOT A LADDER POINT
+      params 76,434,307 (-137,803 vs PARF)   eval loss 7.5659  train loss 7.5659  max|dlogit| vs xi=default 0.0e+00
+      layer 0 step: grad -> earlier tokens 2.2187e+00   -> own token 1.7717e+03
+      layer 1 step: grad -> earlier tokens 3.3792e-01   -> own token 5.2514e+01
+
+== Fock-SPLM (run 11)   (PARF arm of the same config: 76,770,257 params)
+   xi=default tag ...cgqk_nophi_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockre
+      5b: NO PAIR POTENTIAL (PAIR_POTENTIAL='none') -- NOT A LADDER POINT
+      5b: Fock-SPLM (run 11), 76,632,454 parameters.
+      params 76,632,454 (-137,803 vs PARF)   eval loss 7.5654  train loss 7.5654  max|dlogit| vs xi=default 0.0e+00
+      layer 0 step: grad -> earlier tokens 0.0000e+00   -> own token 1.7728e+03
+      layer 1 step: grad -> earlier tokens 0.0000e+00   -> own token 5.2256e+01
+   xi=live    tag ...cgqk_nophi_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05
+      5b: NO PAIR POTENTIAL (PAIR_POTENTIAL='none') -- NOT A LADDER POINT
+      5b: Fock-SPLM (run 11), 76,632,454 parameters.
+      5b: SOURCE-GRADIENT PROBE: XI_GRAD_PATH=live -- NOT A LADDER POINT
+      params 76,632,454 (-137,803 vs PARF)   eval loss 7.5654  train loss 7.5654  max|dlogit| vs xi=default 0.0e+00
+      layer 0 step: grad -> earlier tokens 2.1809e+00   -> own token 1.7729e+03
+      layer 1 step: grad -> earlier tokens 2.8389e-01   -> own token 5.2262e+01

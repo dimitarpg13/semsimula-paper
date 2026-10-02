@@ -240,6 +240,13 @@ class MultiXiPARFConfig(SparsePARFConfig):
     vphi_grad_path: str = "default"
     xi_grad_path: str = "default"
 
+    # 'sparse_topk' (V_phi, the PARF pair potential) | 'xi_attention' |
+    # 'none' (2026-10-01): no pair potential at all -- V_phi, its score head
+    # and its per-layer scale leave the model, the state_dict and the
+    # optimiser. With it the model is multi-xi SPLM (V_theta(xi, h) + xi),
+    # or Fock-SPLM when the Fock mechanism is on: runs 10 and 11 of the
+    # depth-ladder protocol, the V_phi x Fock factorial. NOT
+    # parameter-matched to the PARF arms.
     pair_potential: str = "sparse_topk"
     attn_n_heads: int = 4
     attn_d_k: int = 48
@@ -579,6 +586,14 @@ class MultiXiPARFLM(SparsePARFLM):
             # optimiser and the state_dict (same choice XiAttnPARFLM makes).
             self.V_phi = None
             self.score_head = None
+        elif getattr(cfg, "pair_potential", "sparse_topk") == "none":
+            self.V_phi = None
+            self.score_head = None
+            self.raw_v_phi_scale = None
+        elif getattr(cfg, "pair_potential", "sparse_topk") != "sparse_topk":
+            raise ValueError(
+                f"pair_potential must be 'sparse_topk', 'xi_attention' or "
+                f"'none', got {cfg.pair_potential!r}")
 
         # Source-gradient switches. Under causal_force=False the sources are
         # already live (and the force is not causal), so 'live' would mean
@@ -593,10 +608,11 @@ class MultiXiPARFLM(SparsePARFLM):
                 raise ValueError(
                     f"{_name}='live' needs causal_force=True: without it the "
                     f"sources are not detached in the first place.")
-        if getattr(cfg, "vphi_grad_path", "default") == "live" and self.V_attn is not None:
+        if getattr(cfg, "vphi_grad_path", "default") == "live" and (
+                self.V_attn is not None or self.V_phi is None):
             raise ValueError(
                 "vphi_grad_path='live' is defined for the sparse top-k V_phi "
-                "only, not pair_potential='xi_attention'.")
+                f"only, not pair_potential={cfg.pair_potential!r}.")
 
     # ------------------------------------------------------------------
     @torch.no_grad()
@@ -755,6 +771,13 @@ class MultiXiPARFLM(SparsePARFLM):
                 U_pair = U_pair * s_ell
             return self._add_relax_potential(U_pair, xis, h_in, layer_idx)
 
+        if self.V_phi is None:
+            # pair_potential='none': no pair term.  A constant zero, so a
+            # potential-type exchange field still adds onto it, and
+            # _layer_forces turns a constant into a zero force.
+            return self._add_relax_potential(
+                h_in.new_zeros(()), xis, h_in, layer_idx)
+
         if h_src_live is not None:
             h_src = h_src_for_score = h_src_live
         else:
@@ -850,13 +873,18 @@ class MultiXiPARFLM(SparsePARFLM):
                 f_theta = -self.V_theta.analytical_grad(
                     xis, h_in, comps=vtheta_comps,
                 )
-            with torch.autocast(device_type="cuda", enabled=False):
-                grad_phi, = torch.autograd.grad(
-                    U_pair.float(), h_in,
-                    create_graph=self.training,
-                    retain_graph=self.training,
-                )
-            f_phi = -grad_phi
+            if not U_pair.requires_grad:
+                # pair_potential='none' with no potential-type exchange
+                # field: nothing to differentiate.
+                f_phi = torch.zeros_like(h_in)
+            else:
+                with torch.autocast(device_type="cuda", enabled=False):
+                    grad_phi, = torch.autograd.grad(
+                        U_pair.float(), h_in,
+                        create_graph=self.training,
+                        retain_graph=self.training,
+                    )
+                f_phi = -grad_phi
         else:
             if split:
                 raise RuntimeError(

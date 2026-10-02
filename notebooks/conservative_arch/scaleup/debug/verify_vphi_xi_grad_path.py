@@ -14,7 +14,11 @@ _best.pt and real validation tokens:
 plus a small random model on the Verlet integrator with a non-analytic V_theta,
 where xi live needs the alias node (the force is differentiated w.r.t. h).
 
-Usage: python3 verify_vphi_xi_grad_path.py OUT_DIR
+Usage: python3 verify_vphi_xi_grad_path.py OUT_DIR [--exchange]
+
+--exchange runs the same checks on the exchange-field arms instead
+('attention', 'attention_potential', and 'attention_potential' with
+relax_grad_path='live'), the ones a live-gradient ladder needs.
 """
 import contextlib, io, json, sys, time
 from pathlib import Path
@@ -25,19 +29,29 @@ import torch
 sys.path.insert(0, str(Path(__file__).parent))
 import gradcheck_vphi_xi_paths as G   # notebook cells, arms, VAL, build helpers
 
+_PFX = 'semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_'
+_SFX = 'L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_'
+EXCHANGE_ARMS = {  # name: (REVERSE_CHANNEL, folder, LADDER_MECHANISM, RELAX_GRAD_PATH)
+    'attention': (True, _PFX + _SFX + 'attn', 'attention', 'default'),
+    'attention_potential': (True, _PFX + _SFX + 'attnpot', 'attention_potential', 'default'),
+    'attention_potential + rglive': (True, _PFX + 'rglive_' + _SFX + 'attnpot',
+                                     'attention_potential', 'live'),
+}
 COMBOS = (('default', 'default'), ('live', 'default'), ('default', 'live'), ('live', 'live'))
 c5b = [''.join(c['source']) for c in json.load(open(G.NB))['cells']
        if ''.join(c['source']).startswith('# == Cell 5b')][0]
 
 
-def build(rc, folder, vp, xi):
+def build(rc, folder, vp, xi, mech='none', rg='default'):
     import os
     os.chdir(G.REPO / 'notebooks/conservative_arch/scaleup')
     g = {'__name__': '__main__'}
     c0 = G.cells['Cell 0:']
     for old, new in (('REVERSE_CHANNEL              = True', f'REVERSE_CHANNEL              = {rc}'),
                      ("VPHI_GRAD_PATH         = 'default'", f"VPHI_GRAD_PATH         = {vp!r}"),
-                     ("XI_GRAD_PATH           = 'default'", f"XI_GRAD_PATH           = {xi!r}")):
+                     ("XI_GRAD_PATH           = 'default'", f"XI_GRAD_PATH           = {xi!r}"),
+                     ("LADDER_MECHANISM = 'none'", f"LADDER_MECHANISM = {mech!r}"),
+                     ("RELAX_GRAD_PATH        = 'default'", f"RELAX_GRAD_PATH        = {rg!r}")):
         assert c0.count(old) == 1, old
         c0 = c0.replace(old, new)
     out = io.StringIO()
@@ -58,6 +72,7 @@ def build(rc, folder, vp, xi):
         exec(compile(G.strip(c5b), 'Cell5b', 'exec'), g)
     model = g['model']
     assert model.cfg.vphi_grad_path == vp and model.cfg.xi_grad_path == xi
+    assert model.cfg.force_relaxation == (mech if mech != 'none' else model.cfg.force_relaxation)
     # The PARENT's prefix (its folder name), not this tag's.
     parent = folder[len('semsimula_'):].replace('fock_cfc_baoab_owt', 'fock_cfc_owt')
     ck = torch.load(g['CKPT_DIR'] / f'{parent}_best.pt', map_location='cpu', weights_only=False)
@@ -83,11 +98,11 @@ def step_source_grad(model, x, layer):
     return gh[:, :-1].norm().item(), gh[:, -1].norm().item()
 
 
-def arm_report(name, rc, folder, x, y):
+def arm_report(name, rc, folder, x, y, mech='none', rg='default'):
     print(f"\n== {name}")
     ref = None
     for vp, xi in COMBOS:
-        model, tag, banner = build(rc, folder, vp, xi)
+        model, tag, banner = build(rc, folder, vp, xi, mech, rg)
         model.eval()
         with torch.enable_grad():
             lo, l = model(x, y)
@@ -146,6 +161,10 @@ if __name__ == '__main__':
     starts = rng.integers(0, len(val) - 513, size=2)
     x = torch.from_numpy(np.stack([val[s:s + 512] for s in starts]).astype(np.int64))
     y = torch.from_numpy(np.stack([val[s + 1:s + 513] for s in starts]).astype(np.int64))
-    verlet_smoke()
-    for name, (rc, folder) in G.ARMS.items():
-        arm_report(name, rc, folder, x, y)
+    if '--exchange' in sys.argv:
+        for name, (rc, folder, mech, rg) in EXCHANGE_ARMS.items():
+            arm_report(name, rc, folder, x, y, mech, rg)
+    else:
+        verlet_smoke()
+        for name, (rc, folder) in G.ARMS.items():
+            arm_report(name, rc, folder, x, y)

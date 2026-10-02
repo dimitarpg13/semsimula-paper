@@ -72,8 +72,8 @@ per call against gram's 40.1 ms. Cell 5 asserts the built config carries it.
 | 9 | **L=2, `'attention'` @1.2e-03 — a RE-RUN** | 13.6h | **repairs the ladder's central comparison.** Run 2 measured `'attention'` at 3e-04; `'none'` has since been retuned to 1.2e-03. The two arms are currently at different learning rates, which is what §5.2's SUSPENDED banner records. Until this runs, "what the exchange field contributes" has no answer at the ladder LR. Pre-registered **63, band 59–68** | **DONE**, §5.7: **63.51** (band hit, error +0.51) |
 | 8 | **L=2, `'none'`, `REVERSE_CHANNEL = False`** — *not a ladder point; an architecture control* | 14.5h | **the conservative-only baseline**: what PARFLM reaches with the Fock mechanism off and every parameter free to compensate. The three existing numbers (+275% ablation A, 3.91x E5 at λ=0, +1226% ablation B) are all inference-time removals from a trained model and are upper bounds. Pre-registered **105, band 85–140**; design and reasoning in [`Forced_Lagrangian_Reformulation.md`](Forced_Lagrangian_Reformulation.md) §3.5 | **DONE**, §5.6: **87.93** |
 
-| 10 | **L=2, multi-ξ SPLM** — V_θ(ξ, h) + ξ routing, **no V_φ**, no Fock | ~12h | the PARF rung: **V_φ has never been removed from a trained model**, in a family named PARFLM. Pairs with run 11 as a 2×2 (§3.2) | queued — **blocked on `pair_potential='none'`** |
-| 11 | **L=2, Fock-SPLM** — as run 10 but with the Fock mechanism on | ~13h | replicates the Fock price on a V_φ-free base and supplies the 2×2's interaction term (§3.2) | queued — same blocker |
+| 10 | **L=2, multi-ξ SPLM** — V_θ(ξ, h) + ξ routing, **no V_φ**, no Fock | ~12h | the PARF rung: **V_φ has never been removed from a trained model**, in a family named PARFLM. Pairs with run 11 as a 2×2 (§3.2) | queued — **unblocked 2026-10-01**: `PAIR_POTENTIAL = 'none'` (tag `nophi`; −137,803 params, 0.18%). Under the live convention: run with `XI_GRAD_PATH = 'live'` (gradient-starvation note, live ladder) |
+| 11 | **L=2, Fock-SPLM** — as run 10 but with the Fock mechanism on | ~13h | replicates the Fock price on a V_φ-free base and supplies the 2×2's interaction term (§3.2) | queued — **unblocked 2026-10-01**, as run 10 with `REVERSE_CHANNEL = True` |
 
 Run 1 first regardless of ordering elsewhere: it is 2.7 hours and it makes
 every other number defensible.
@@ -2452,6 +2452,175 @@ V_φ actually grew, rather than inferring it from the PPL.
   identically weighted in run 3, so the paired comparison is unaffected.
 - 0 watchdog triggers, 0 spike captures. `bproj_sig` saturated at 88.7
   (85.4 in run 3).
+
+#### The V_φ follow-up, answered offline: V_φ did not grow — **2026-09-30**
+
+Gradient-starvation Tier 0
+([`Gradient_Starvation_Investigation.md`](Gradient_Starvation_Investigation.md))
+measured the forces on this run's `_best.pt`:
+
+- V_φ's RMS force is **9% of F_θ at layer 0** and **effectively zero at layer 1** (below 5e-5).
+- It did not grow "into the tens of percent". The band hit above therefore did not come about for the reason the pre-registration named; that part of the reading is withdrawn.
+- The same measurement shows why V_φ could not have grown much: **no loss gradient reaches an earlier token through V_φ or through ξ**. Both detach their sources under causal force.
+- So in this arm the conservative architecture's two inter-token channels trained only from the target side.
+- The +31.3% "price of the Fock mechanism" therefore includes an unknown share of starvation. That is what P2.1 below measures.
+
+#### P2.1 pre-registered: conservative-only with live V_φ and ξ sources — **frozen 2026-10-01, at launch, before any eval**
+
+**Run.**
+
+- Tag: `…cgqk_norc_vplive_xilive_L2probe…`.
+- Config: this arm's config plus `VPHI_GRAD_PATH = XI_GRAD_PATH = 'live'`, with `PROBE_MAX_STEPS = 3_000`. Everything else is unchanged.
+- The forward force is bit-identical to this arm's: verified on its `_best.pt`, max |Δlogit| = 0 (Tier 1). Only the backward pass reaches earlier tokens.
+
+**Scored at step 3,000** against this arm's own trajectory (1,000: 267.41; 2,000: 183.10; 3,000: **158.09**). The noise band is ±2.5%:
+
+| outcome | step-3,000 PPL | reading |
+| --- | --- | --- |
+| **move** | **≤ 154.1** | the detach cost something; run P2.3 / P2.4 (V_φ alone, ξ alone) to split it |
+| null | 154.1 – 162.0 | the detach costs nothing measurable at 3k; on its own this does not stop the programme — P2.2 still runs |
+| worse | > 162.0 | live sources hurt early training; check the clip-hit rate and grad norm before reading it |
+
+Secondary readings (not scored):
+
+- Distance to no-exchange's 140.61. Closing more than half the 17.5-point gap would mean most of the early "Fock price" is starvation.
+- Clip-hit rate, against 2.6% for the parent.
+- GPU memory on the first log lines. This is not measured anywhere yet.
+
+Tier 0 suggests that any effect will be mostly ξ: live ξ carries 4–20× more source gradient than live V_φ. That expectation is recorded here so that P2.4 can test it.
+
+#### P2.1 scored at step 3,000: **127.73 — MOVE, by eight times the threshold** — **2026-10-01**
+
+Log: [`results/.../L2_idt4_lr0p0012_norc_vplive_xilive_noattn_probe3000_result.txt`](../notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/L2_idt4_lr0p0012_norc_vplive_xilive_noattn_probe3000_result.txt)
+
+| step | conservative-only (parent) | **P2.1: same, V_φ + ξ live** | Δ vs parent | no-exchange (run 3) | `attention` | `rglive` |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 500 | 490.68 | **463.41** | −5.6% | — | 481.47 | 472.41 |
+| 1,000 | 267.41 | **241.67** | −9.6% | 257.74 | 248.81 | 255.98 |
+| 1,500 | 210.60 | **179.65** | −14.7% | — | 188.01 | 192.73 |
+| 2,000 | 183.10 | **151.89** | −17.0% | 167.87 | 158.76 | 162.27 |
+| 2,500 | 164.90 | **134.33** | −18.5% | — | 140.11 | 142.28 |
+| **3,000** | **158.09** | **127.73** | **−19.2%** (0.213 nats) | 140.61 | 131.20 | 133.74 |
+
+**Scored: MOVE.**
+
+- The criterion was ≤ 154.1, i.e. 2.5% below the parent. P2.1 is **19.2%** below.
+- The gap widened at every eval: 5.6% → 9.6% → 14.7% → 17.0% → 18.5% → 19.2%. It is not an early-training transient.
+- The forward force is bit-identical to the parent's (Tier 1). The only thing changed is which tokens the loss gradient reaches.
+
+**What it means at 3,000 steps:**
+
+1. **Opening the V_φ and ξ source gradients is worth more than adding the Fock mechanism.**
+   - P2.1 has no reverse channel, so no register ever reaches a token. Yet it is **9.2% below no-exchange** (127.73 vs 140.61), which has the reverse channel but starved V_φ and ξ.
+   - The parent's 17.5-point gap to no-exchange was not just closed; it is **overshot by 12.9 points**.
+   - At step 3,000, the "price of the Fock mechanism" measured in §5.6 (+31.3% settled) is **entirely an artefact of the gradient convention**.
+2. **It is the best L=2 step-3,000 number in the programme.** It beats `attention` (131.20, −2.6%) and `rglive` (133.74, −4.5%), with **no non-conservative force and no register path**.
+3. **The arm also trains more stably.** Clip-hits in steps 1–3,000: **2 of 60** logged steps (max grad-norm 1.16), against **17 of 60** for the parent (max 2.05).
+   - All of the parent's 17 clip-hits (its "2.6%, 17 of 650" above) fell in these first 3,000 steps.
+   - Training loss agrees with the evals: ntp 4.875 against 5.087 at step 3,000.
+   - Peak GPU memory 22.2 GB, the same as the parent; wall time +3%.
+4. ~~**ξ is consistent with "learning to read further back".**~~ **Corrected 2026-10-01:** that reading had the sign backwards. ξ weights source s by α^(t−s), so a *smaller* α means a *shorter* memory. The fastest channel moved 0.500 → 0.412 by step 3,000 (parent: 0.428): it became **more local**, slightly more than the parent's. The other four track the parent's.
+
+**What it does not show yet:**
+
+- **A settled number.** At 3,000 steps the `attention`/no-exchange gap was 6.7% and settled at 5.2%; the `rglive`/`attention_potential` gap was 10.2% and *grew* to 24.5%. Neither direction is safe to assume.
+- **Which channel carries the effect.** P2.3 (V_φ only) and P2.4 (ξ only) split it. Tier 0 and Tier 1 predict mostly ξ.
+- **Whether the Fock arm gains as much** (P2.2). If it does, the ladder shifts but keeps its order. If it gains less, the mechanism's value was partly compensating for starved channels.
+- **The SCAF audit.** The first audit was due at step 5,000, so none ran. The forward pass is bit-identical, so causality is unchanged by construction, but the full run will audit it.
+- **Seeds.** This is one seed, as for every ladder arm.
+
+**Consequences, effective now:**
+
+- Every statement that prices the Fock mechanism or the conservative architecture is **suspended** until P2.2 and a full run land. That covers the +31.3% above, the "ablations overstated by 3×" table, the F5 reading, and the model cards and book wherever they quote these.
+- The §5.6 headline numbers stand as measurements of the **starved** convention. They are no longer readings of the architecture.
+
+#### P2.1 extended to the full 32,500 steps (F3.1) — pre-registered **2026-10-01, at step 3,000, before step 3,001**
+
+The run continues from `_step3000_probe_stop.pt` (model and optimizer state) on the WSD schedule it has used from step 1. Nothing else changes. This replaces P2.2 as the next GPU job, at the author's call. P2.2, P2.3 and P2.4 stay queued.
+
+**Basis.** The ratio of settled PPL to step-3,000 PPL in the four finished L=2 arms:
+
+| arm | 3,000 | settled | ratio |
+| --- | ---: | ---: | ---: |
+| conservative-only (parent) | 158.09 | 87.93 | 0.556 |
+| no-exchange | 140.61 | 66.98 | 0.476 |
+| `attention` | 131.20 | 63.51 | 0.484 |
+| `rglive` | 133.74 | 61.11 | 0.457 |
+
+127.73 × 0.556 = **71.0** (if it consolidates like its parent) and 127.73 × 0.476 = **60.8** (if it consolidates like no-exchange). The upper edge allows for the 3k gap shrinking to −10% of the parent: 0.90 × 87.93 = **79.1**.
+
+**Prediction:**
+
+- **Settled (mean of the last three evals): point 67, band 60–79.**
+- **The question this run exists to answer:** does conservative-only with live gradients settle **below no-exchange's 66.98**? That would mean the conservative architecture alone, trained properly, beats the Fock arm as trained.
+  - The point sits on that line, so call it **even odds**.
+  - Below 63.51 would also beat `attention`. I don't expect that (about 1 in 4).
+- **Settled above 79.1** means the early advantage mostly washed out in the decay. The detach would then cost little at convergence, and the 3k reading would be withdrawn as transient.
+
+**Health, also scored:**
+
+- Clip-hit rate below the parent's 2.6%.
+- All seven SCAF audits CLEAN (5k, 10k, …, 30k, 32.5k). The forward pass is bit-identical, so anything else would be a harness or code fault, not a leak.
+- No watchdog trigger.
+
+#### F3.1 mid-run reading at step 15,000 — **2026-10-01, not a revision of the prediction above**
+
+Log (in progress, not yet filed): `~/Downloads/L2_none_norc_32500steps_output.txt`. Validation PPL at matched steps:
+
+| step | **F3.1: conservative-only, V_φ + ξ live** | conservative-only (parent) | no-exchange | `attention` | `rglive` |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 3,000 | **127.73** | 158.09 | 140.61 | 131.20 | 133.74 |
+| 5,000 | **106.71** | 136.05 | — | 107.62 | 106.77 |
+| 7,500 | **93.69** | 120.86 | 102.08 | 93.85 | 91.60 |
+| 10,000 | **85.13** | 114.31 | 97.14 | 86.97 | 83.74 |
+| 12,500 | **81.97** | 114.28 | 90.62 | 86.28 | 82.64 |
+| 15,000 | **77.31** | 107.30 | 86.57 | 81.27 | 77.46 |
+| Δ vs parent at 15,000 | **−27.9%** | | −19.3% | −24.3% | −27.8% |
+
+No-exchange's log in the repo starts at step 6,500, so it has no 5,000 eval.
+
+- **The gap to the parent kept widening:** −19.2% at 3,000 and −27.9% at 15,000.
+- **It is now below no-exchange by 10.7%** and below `attention` by 4.9%. It is level with `rglive`, the best L=2 arm, which has an exchange field and a reverse channel. This model has neither.
+- **What it implies for the settled score, by the same method as the pre-registration.** The finished arms settled at 0.77–0.82× their 15,000-step PPL: parent 0.819, no-exchange 0.774, `attention` 0.781, `rglive` 0.789.
+  - Applied to 77.31, that gives **59.8–63.3**.
+  - That is below the pre-registered point (67), below no-exchange (66.98) by a clear margin, and probably below `attention` (63.51).
+  - It sits near the band's lower edge (60). The run is outperforming its own prediction on the low/good side.
+  - The prediction stands as frozen; it is scored at 32,500.
+- **Health:**
+  - Clip-hits: 2 of 300 logged steps (0.7%), both before step 3,000; max grad-norm 1.16.
+  - SCAF CLEAN at 5k, 10k and 15k; leak tax ≤ 1.1e-4 nats.
+  - No watchdog trigger; memory flat at 22.2 GB.
+- **ξ:** the two fast channels kept shortening: α 0.335 and 0.570 at 15,000, against the parent's 0.371 and 0.616. The slow channels hold near 0.91 and 0.99.
+  - With live gradients, ξ makes its fast channels **more local**, not longer-range.
+- **Resonance: much stiffer than any arm so far.** The in-flight ω·dt median rose steadily: 2.16 at 3,000, 2.72 at 5,000, 4.88 at 10,000 and **6.41 at 15,000**, with 99% of tokens over the wall and max 9.6–10.0.
+  - For comparison: `rglive` held at about 1.6 (33–40% over), and no-exchange **ended** at 3.80 (6b-13, `_best.pt`). The parent's in-flight monitor was not working (the pre-409175b hook bug).
+  - Under `baoab_cfc_lowrank` those modes are integrated exactly, so this is a **stiffness** reading, not an instability. Loss and grad-norm are clean.
+  - But it is the largest stiffness in the programme, and it is still rising, though more slowly (6.17 → 6.41 over the last 2,000 steps).
+  - The plausible mechanism: live ξ lets V_θ's context-dependent wells be **trained from the source side**, and they are getting sharper.
+  - **Watch item:** if the median keeps climbing through the decay, or the loss shows spikes, run 6b-13 on the parent's `_best.pt` to see whether the detached arm was stiff too. Its monitor never read it.
+
+#### F3.1 second mid-run reading at step 29,500 — **2026-10-01, still not the score**
+
+| step | **F3.1** | parent | no-exchange | `attention` | `rglive` |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 25,000 | **67.46** | 97.50 | 75.19 | 72.49 | 68.47 |
+| 27,500 | **61.29** | 91.34 | 71.66 | 66.91 | 63.68 |
+| 28,500 | **59.35** | 90.96 | 68.95 | 66.36 | 63.50 |
+| 29,000 | **58.84** (best) | 89.55 | 68.82 | 65.02 | 62.11 |
+| 29,500 | **59.38** | 88.39 | 72.47 | 64.11 | 61.31 |
+| *settled* | *pending* | 87.93 | 66.98 | 63.51 | 61.11 |
+
+- **Ahead of every L=2 arm at every matched step since 25,500.**
+  - At step 29,000 it is 5.3% below `rglive`, 9.5% below `attention`, 14.5% below no-exchange, and **34.3% below its own detached-gradient parent**.
+- **Projected settled score: about 57–59.**
+  - The finished arms settled at 0.973–0.984× their step-29,000 value. Applied to 58.84, that gives 57.3–57.9.
+  - The noisier step-29,500 ratios give 54.8–59.2.
+  - Either way it lands **below the pre-registered band (60–79)**, a miss on the good side. It would also be below `rglive`'s 61.11, the best settled L=2 number so far.
+  - Ratio to the matched GPT-2 (49.81): about 1.16, against 1.345 for no-exchange.
+- **Stiffness eased through the decay.** The ω·dt median peaked at 6.41 (step 15,000), then fell: 5.95 → 5.10 → 4.79 → 4.54 → **4.45** at 27,500. That is still above no-exchange's 3.80 endpoint, but the watch item is resolving.
+- **Health:**
+  - Two isolated clip-hits in the stable phase, at steps 17,700 (1.51) and 19,250 (2.19). Total 4 of 593 logged (0.7%), against the parent's 2.6%. No watchdog trigger.
+  - SCAF CLEAN at 5k, 10k, 15k, 20k and 25k.
 
 ---
 

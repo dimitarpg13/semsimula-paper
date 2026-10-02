@@ -3,7 +3,7 @@
 **Status:** opened 2026-09-30 as the programme's top priority. Tier 0 done
 (2026-09-30): the V_φ and ξ source gradients are exactly zero in both trained arms.
 Tier 1 done (2026-10-01): `vphi_grad_path` / `xi_grad_path`
-built, forward bit-identical, source gradient opened. Next: P2.1.
+built, forward bit-identical, source gradient opened. **P2.1 (2026-10-01): 127.73 vs 158.09, MOVE (−19.2%)**, below every L=2 arm at 3k. Next: P2.2 and the P2.3/P2.4 decomposition.
 **Companion to:**
 [`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md)
 §5.8 (the gradient-path probes and the full `rglive` run),
@@ -215,7 +215,7 @@ Parent trajectories (validation PPL):
 
 | id | arm | switches | provisional prediction under starvation (freeze before launch) |
 | --- | --- | --- | --- |
-| **P2.1** | conservative-only | V_φ live + ξ live | **≤ 154.1** (> 2.5% below its parent's 158.09). Approaching no-exchange's 140.61 would mean the "price of the Fock mechanism" is largely starvation. **Sharpest test: the only inter-token channels are the starved ones.** |
+| **P2.1** ✅ **127.73, MOVE (−19.2%)** | conservative-only | V_φ live + ξ live | **≤ 154.1** (> 2.5% below its parent's 158.09). Approaching no-exchange's 140.61 would mean the "price of the Fock mechanism" is largely starvation. **Sharpest test: the only inter-token channels are the starved ones.** |
 | **P2.2** | no-exchange | V_φ live + ξ live | **≤ 137.1** (> 2.5% below 140.61) means V_φ/ξ add something once they can train, alongside the Fock path |
 | P2.3 | whichever of P2.1/P2.2 moved | V_φ live only | decomposition: how much of the effect is V_φ |
 | P2.4 | the same arm | ξ live only | decomposition: how much is ξ |
@@ -234,6 +234,49 @@ queue resumes, and the report records a clean null.
 | F3.1 | the Tier 2 arm with the largest effect, full 32,500 steps | a settled number comparable with the ladder |
 | F3.2 | **everything live**: `attention_potential` + `rglive` + live V_φ + live ξ | the strongest conservative-forward model the programme can build |
 | F3.3 | the factorial arms (`splm-multixi`, `fock-splm`) in the chosen convention | the V_φ × Fock 2×2, measured on the right convention |
+
+#### The live-gradient ladder — planned 2026-10-01
+
+F3.1's mid-run readings, a move at 3k and about 57–59 projected settled, make the live convention the programme's convention, not just a probe. Every ladder rung needs a live counterpart so the comparisons are made on one convention. Each arm is its parent's config plus every switch that applies to it:
+
+| arm | base | Fock | exchange | live switches | tag | state |
+| --- | --- | --- | --- | --- | --- | --- |
+| PARF only | V_θ + V_φ + ξ | off | — | `vplive`, `xilive` | `…norc_vplive_xilive…` | **F3.1, running** |
+| Fock-PARF `none` | V_θ + V_φ + ξ | on | — | `vplive`, `xilive` | `…vplive_xilive…_noattn` | queued (P2.2 → full) |
+| Fock-PARF `attention` | V_θ + V_φ + ξ | on | non-conservative field | `vplive`, `xilive` | `…vplive_xilive…_attn` | queued |
+| Fock-PARF `attention_potential` | V_θ + V_φ + ξ | on | conservative field | `rglive`, `vplive`, `xilive` | `…rglive_vplive_xilive…_attnpot` | queued (F3.2, everything live) |
+| multi-ξ SPLM (run 10) | V_θ + ξ, **no V_φ** | off | — | `xilive` | `…norc_nophi_xilive…` | queued |
+| Fock-SPLM (run 11) | V_θ + ξ, **no V_φ** | on | — | `xilive` | `…nophi_xilive…` | queued |
+| L=4 Fock-PARF `none` | as above, L=4 | on | — | `vplive`, `xilive` | `…vplive_xilive_L4probe…` | queued: may also explain L=4 < L=2 |
+
+**Verified before any GPU time** (all on the parent's `_best.pt`, or at fresh init where no parent exists):
+
+- **Exchange-field arms**
+  - Script: `verify_vphi_xi_grad_path.py --exchange`.
+  - Output: [`results/gradient_starvation/tier1_verify_exchange_arms_output.txt`](../notebooks/conservative_arch/scaleup/results/gradient_starvation/tier1_verify_exchange_arms_output.txt).
+  - Coverage: `attention`, `attention_potential` and `attention_potential` + `rglive`, each with all four switch combinations.
+  - The forward pass is bit-identical in all 12 builds.
+  - The live switches add gradient into earlier tokens on top of what the exchange field already carries. In starved `attention_potential` that gradient was exactly 0.
+- **`pair_potential='none'`**
+  - New in `model_parf_multixi.py`, wired as `PAIR_POTENTIAL` in Cells 0, 5 and 5b; the tag gains `nophi`.
+  - Script: `verify_pair_potential_none.py`.
+  - Output: [`results/gradient_starvation/pair_potential_none_verify_output.txt`](../notebooks/conservative_arch/scaleup/results/gradient_starvation/pair_potential_none_verify_output.txt).
+  - V_φ, the score head and the per-layer scale are gone from the module and the `state_dict`: 137,803 parameters (0.18%).
+  - Both arms build, train-step and backprop.
+  - In multi-ξ SPLM, ξ is the only inter-token channel. A layer step sends exactly 0 gradient to earlier tokens by default (2.2 at layer 0 with `xilive`), and the forward pass is identical.
+  - Regression: every existing-arm reading in `verify_vphi_xi_grad_path.py` is unchanged, and both `_smoke` suites pass.
+  - `VPHI_GRAD_PATH = 'live'` with no V_φ is refused, in the model and in Cell 5b.
+
+**Cost:** about 14 GPU h per L=2 arm and about 27 h at L=4. The full table is roughly 110 GPU h. Suggested order:
+
+1. F3.1 (running).
+2. L=4 Fock-PARF `none`, live.
+3. Fock-PARF `none`, live.
+4. F3.2, everything live.
+5. Fock-PARF `attention`, live.
+6. Run 10 and run 11, live.
+
+Run 10 and run 11 go last because, with V_φ absent, the PARF-only arm and the Fock-PARF arm already bound them.
 
 ### Tier 4 — consolidation
 
@@ -265,3 +308,9 @@ queue resumes, and the report records a clean null.
 | 2026-09-30 | Programme opened. Motivating result: `attention_potential` + `rglive`, settled 61.11 (pre-registered 63–72; better than predicted). V_φ and ξ source detaches identified at `model_parf_multixi.py` l.717/719 and l.897/959. |
 | 2026-09-30 | **Tier 0 done.** In no-exchange and conservative-only, the gradient reaching earlier tokens through V_φ and through ξ is exactly 0 at both layers; the score-head parameters still train. The offline live-source construction leaves the forward force bit-identical, and its source gradient is non-zero. V_φ is small (7–9% of F_θ) and effectively off at conservative-only layer 1; live ξ carries 4–20× more source gradient than live V_φ. Stop rule does not fire → Tier 1. |
 | 2026-10-01 | **Tier 1 done.** Added `vphi_grad_path` / `xi_grad_path` to `model_parf_multixi.py` (alias-node target, live sources; flat gather) and wired `VPHI_GRAD_PATH` / `XI_GRAD_PATH` (tags `vplive` / `xilive`) through Cells 0, 5 and 5b. Across 8 builds on the parent checkpoints the forward is bit-identical; a layer step's gradient into earlier tokens goes from exactly 0 to non-zero; CPU step time is unchanged. Next: P2.1 (conservative-only, both live), band ≤ 154.1 at step 3,000. |
+| 2026-10-01 | **P2.1 launched.** Cell 5b confirmed tag `…cgqk_norc_vplive_xilive_L2probe…`, fresh run, both switches in the banner. Pre-registration frozen in the protocol note §5.6 (move ≤ 154.1 / null 154.1–162.0 / worse > 162.0). That entry also withdraws §5.6's "V_φ grew" reading: V_φ is 9% of F_θ at layer 0 and ~0 at layer 1. |
+| 2026-10-01 | **P2.1 scored: 127.73 at step 3,000, a MOVE** (parent 158.09, −19.2%; criterion ≤ 154.1). The gap widened at every eval (−5.6% at step 500 → −19.2% at step 3,000). It is below no-exchange (140.61, −9.2%), `attention` (131.20) and `rglive` (133.74), with no reverse channel at all: at 3k the measured Fock price is entirely starvation. Clip-hits 2/60 vs the parent's 17/60. Scored in the protocol note §5.6, where every Fock-price and conservativity-price statement is suspended. Log filed under `results/…cgqk_norc_vplive_xilive_L2probe…_noattn/`. |
+| 2026-10-01 | **P2.1 extended to the full run (F3.1)** at the author's call, ahead of P2.2: it continues from `_step3000_probe_stop.pt`. Pre-registered in protocol §5.6 at step 3,000: settled point 67, band 60–79. Key line: below no-exchange's 66.98, called even odds. Above 79.1 = transient. P2.2, P2.3 and P2.4 stay queued. |
+| 2026-10-01 | **F3.1 at step 15,000: 77.31** (parent 107.30, −27.9%). Below no-exchange (86.57), level with `rglive` (77.46). Settled-ratio projection 59.8–63.3. SCAF CLEAN ×3; clip-hits 0.7%. The ω·dt median rose to 6.41 (no-exchange ended at 3.80), a stiffness watch item. Corrected the P2.1 ξ reading: smaller α = shorter memory; the fast channels became more local. |
+| 2026-10-01 | **F3.1 at step 29,500:** best 58.84 (step 29,000), below every L=2 arm at matched steps since 25,500 (`rglive` 62.11, `attention` 65.02, no-exchange 68.82, parent 89.55). Projected settled 57–59, below the pre-registered band on the good side and below `rglive`'s 61.11. The ω·dt median eased to 4.45. SCAF CLEAN ×5. |
+| 2026-10-01 | **Live-gradient ladder planned; switches verified on every arm it needs.** `vplive`/`xilive` on `attention`, `attention_potential` and `rglive`: 12 builds, forward bit-identical. New `pair_potential='none'` (`PAIR_POTENTIAL`, tag `nophi`) unblocks protocol runs 10 (multi-ξ SPLM) and 11 (Fock-SPLM); verified, with no change to existing arms. |
