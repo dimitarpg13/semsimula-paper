@@ -1,0 +1,36 @@
+probing fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_vplive_xilive_L4probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt2_lr0p0012_noattn_best.pt
+   step 32500  ppl 49.48  missing 0  unexpected 0
+   L=4  dt=2  reverse-channel effective gate 0.02214
+   captured 12 layer steps from 3 batches
+
+GATE 0  replayed full step vs captured output, every layer step:
+   max |d| = 0.000e+00   PASS
+
+E1  deflection from the damped V_theta geodesic, R = |arm - full| / |step|
+    arm                     layer 0               layer 1               layer 2               layer 3
+                     R_h        R_v        R_h        R_v        R_h        R_v        R_h        R_v
+    geo           0.6296     0.2545     2.0106     0.4384     1.8359     0.2647     0.9985     0.7824
+    geo+LN        0.0826     0.2545     0.5207     0.4384     0.3487     0.2647     0.8508     0.7824
+    cons          0.6290     0.2537     2.0065     0.4315     1.8263     0.2445     0.9988     0.7827
+    cons+LN       0.0802     0.2537     0.5177     0.4315     0.3395     0.2445     0.8570     0.7827
+    full          0.0000     0.0000     0.0000     0.0000     0.0000     0.0000     0.0000     0.0000
+
+    step size for scale, |h_full - h_in| / |h_in| per layer: 6.284  0.137  0.174  1.238
+
+ATTRIBUTION  (R_h, deflection of position, averaged over layers)
+   R(geo)     = 1.3686   <- how far the real step is from the V_theta geodesic
+   LN alone   moves R by -0.9179   (geo -> geo+LN)
+   V_phi      moves R by -0.0035   (geo -> cons)
+   RC         moves R by -0.4486   (cons+LN -> full; full is 0 by construction)
+   cons+LN    = 0.4486   <- everything except the reverse channel
+
+   R(geo) well under 1  -> geodesics exist at the trained step; the
+   flow is PIECEWISE: exact-ish between the per-step maps. Gate 3
+   failing only means the pieces cannot be subdivided.
+   R(geo) near 1        -> the V_theta geodesic is a minority of the
+   step; the Riemannian reading fails at the trained dt as well.
+   Small R does NOT mean the deflecting term is unimportant for PPL
+   -- the reverse channel is small in norm yet worth +31.3% in trained
+      PPL (66.98 -> 87.93). The +275% ablation overstates it ~2.9x.
+
+   live training state restored

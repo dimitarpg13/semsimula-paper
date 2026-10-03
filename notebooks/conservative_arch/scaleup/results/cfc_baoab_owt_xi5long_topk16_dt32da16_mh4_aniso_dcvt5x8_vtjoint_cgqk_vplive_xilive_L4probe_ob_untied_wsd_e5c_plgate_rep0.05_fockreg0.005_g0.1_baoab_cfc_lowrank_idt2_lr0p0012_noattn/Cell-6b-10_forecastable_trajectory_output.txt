@@ -1,0 +1,57 @@
+FOCK   fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_vplive_xilive_L4probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt2_lr0p0012_noattn_best.pt
+       step 32500  ppl 49.48  missing 0  unexpected 0
+       L=4  dt=2  reverse-channel gate 0.02214
+GPT-2  matched d=384 L=8 heads=6  step 32500  ppl 49.76
+PPL on these 3x4 batches:  Fock 48.02   GPT-2 47.42   (ladder ~67 / matched ~50; a wrong load shows here)
+
+captured 3 batches x 4 Fock layers, 8 GPT-2 blocks
+
+GATE 0
+   Fock : trajectory path vs spy capture, max|d| = 0.000e+00   PASS
+   GPT-2: block loop vs model(idx) logits,  max|d| = 0.000e+00   PASS
+
+(a) DIRECTION COHERENCE  c_l = cos(s_l, s_{l-1}) per token   [mean / median]
+    null: 0 for unrelated steps; +1 = pure inertia; negative = the stack undoes its last step
+   Fock  raw  l1: +0.038/+0.040   l2: +0.739/+0.747   l3: +0.181/+0.173
+   Fock  tan  l1: +0.753/+0.776   l2: +0.749/+0.758   l3: +0.302/+0.293
+   GPT-2 raw  l1: +0.063/+0.062   l2: +0.011/+0.008   l3: +0.182/+0.184   l4: +0.199/+0.196   l5: +0.101/+0.117   l6: +0.256/+0.257   l7: +0.366/+0.405
+   GPT-2 tan  l1: -0.009/-0.007   l2: +0.222/+0.224   l3: +0.214/+0.214   l4: +0.295/+0.293   l5: +0.084/+0.089   l6: +0.216/+0.215   l7: +0.342/+0.358
+   Fock: fraction of |s_{l-1}| that is radial at h_l: l1: 0.86   l2: 0.00   l3: 0.00   (l=1 is the embedding-to-sphere step; needs L>=3 for a clean value)
+
+(b) VELOCITY AS FORECAST  e_l = |h_{l+1} - forecast| / |step|   [mean / median]
+    0 = velocity predicts the step; 1 = no better than "stay put"; sqrt(2)=1.414 = the
+    finite-difference null for unrelated equal-norm steps (verified at random init)
+   Fock  true v      l0: 1.096/1.096   l1: 0.695/0.673   l2: 0.583/0.574   l3: 0.935/0.940      (l0 is the null: v_0 = 0; at l1, dt*v_1 = s_0 is the embedding-to-sphere step, so L=2 has no dynamical entry -- needs L>=3)
+   Fock  finite-diff l1: 0.699/0.688   l2: 0.664/0.660   l3: 0.969/0.972
+   GPT-2 finite-diff l1: 1.468/1.457   l2: 1.878/1.880   l3: 1.331/1.319   l4: 1.076/1.071   l5: 1.275/1.210   l6: 1.102/1.050   l7: 1.066/1.048
+   Fock inertial fraction |dt v| / |step| at l>=1: 1.405 / 1.466
+
+(c) PERTURBATION GROWTH  g_l = (|dh_l|/|h_l|) / (|dh_0|/|h_0|), median over tokens
+   eps=0.01
+      Fock  l1: 0.402   l2: 0.320   l3: 0.272   l4: 0.749      per-step geo-mean 0.930
+      GPT-2 l1: 0.536   l2: 0.415   l3: 0.522   l4: 0.591   l5: 0.759   l6: 0.882   l7: 0.859   l8: 0.847      per-step geo-mean 0.979
+   eps=0.03
+      Fock  l1: 0.403   l2: 0.323   l3: 0.277   l4: 0.768      per-step geo-mean 0.936
+      GPT-2 l1: 0.535   l2: 0.414   l3: 0.521   l4: 0.592   l5: 0.758   l6: 0.885   l7: 0.862   l8: 0.851      per-step geo-mean 0.980
+   eps=0.1
+      Fock  l1: 0.406   l2: 0.329   l3: 0.288   l4: 0.813      per-step geo-mean 0.950
+      GPT-2 l1: 0.536   l2: 0.414   l3: 0.525   l4: 0.593   l5: 0.760   l6: 0.888   l7: 0.875   l8: 0.864      per-step geo-mean 0.982
+   (linearity check: the two eps rows should agree; divergence means the perturbation is not small)
+
+SIDE BY SIDE   (Fock L=4, GPT-2 L=8; same batches, same d)
+   metric                                        Fock     GPT-2   pre-registered
+   (a) coherence, tangential, l>=1             +0.601    +0.195   Fock higher
+   (a) coherence, raw, l>=1                    +0.319    +0.168   (geometry-contaminated on the sphere)
+   (b) forecast err, finite-diff, mean          0.777     1.314   Fock lower
+   (b) forecast err, TRUE v (Fock only)         0.738         -   beats its own FD row?
+   (c) growth per step, eps=0.01                0.930     0.979   Fock at or below
+   (c) growth per step, eps=0.03                0.936     0.980   Fock at or below
+   (c) growth per step, eps=0.1                 0.950     0.982   Fock at or below
+
+   Depth is NOT matched (L=4 vs 8): (a),(b) are per-step and comparable as
+   distributions; (c) is compared per step, never as a total. See SS6.5.
+   A win on all three gives "semantic simulation" measurable content; on
+   none, the second-order state is real (gate 1) but confers no forecast
+   advantage at this depth.
+
+   live training state restored; GPT-2 released

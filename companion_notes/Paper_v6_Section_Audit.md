@@ -199,6 +199,9 @@ models.
    - State that the Fock mechanism's value, the depth question and the conservativity price are **open**.
    - Text changes only, no restructuring. Scope: the abstract, the §18 pricing arc, A0, and the §17e "not optimisation" sentence.
 2. **After P2.2 (Fock live) and L=4 live.** Rewrite the abstract's experimental half and the §18 arc around what the live ladder actually ranks; revisit the subtitle.
+   - **Gating arms (decided 2026-10-03):** L=4 Fock-PARF live (finishing; at step 27,000 it reads 53.11 and projects to about 48–50, near the matched GPT-2's 49.81); **P2.2, L=2 Fock-PARF live** (needed for both the register mechanism's value and the depth question); **F3.2, `attention_potential` everything-live** (the only live-convention price of conservativity, read against `attention` live). Runs 10–11 and `attention` live refine the ladder but do not gate the abstract.
+   - **Naming fix for that pass:** the abstract calls the detached-source ladder its "first generation"; the Hub collections and `rem:gen2-gen3` call it **Gen 2** (Gen 1 = explicit integrators). Use Gen 2 / Gen 3 throughout.
+   - Any parity claim against the matched GPT-2 must carry its caveats in the same sentence: one seed, an untuned baseline, unmatched depth (L=8 vs L=4).
 3. **After the rest of the live ladder** (everything-live, `attention` live, runs 10–11). Restate the ladder as Gen 3 and decide the P items in §17c/§17e/§18e/§20.
    - Each of those either gets a live re-run or a "measured under the detached convention" caveat.
 4. **Structural restructuring** (the v6 restructure plan) stays deferred until stage 3. The ranking it would organise the book around is still moving.
@@ -721,3 +724,11 @@ thought, not typing.
   - **Census** on six archived ladder checkpoints: Tier A 0.0 and Tier B 0.0 at every layer (`results/gradient_starvation/scaf_geometric_tiers_census.txt`).
   - Open: the acceptance test's positive half (detect the known pre-fix leak) has never run; the leaky depthcond checkpoints are archived locally.
   - §17e stiffness-audit paragraph got `par:su-stiffness-audit`. Rebuilt clean: **502 pp.**; Theorem 81 still p. 255 |
+| 2026-10-03 | §8 (`07a`), App. A3 | **new §8.9 `ssec:settling-refinement`.** Theory of refinement and extension invariance, three repair routes and their causal links.
+  - **Prop 44, phase-sampled dissipation:** the split A·O·A step's dissipation carries a phase-dependent term amplified by θ/sin θ, proportional to γ/ω, so adding damping within the split does not remove it. It aliases at ωΔt > π, as in the L=2 conservative-only arm.
+  - **Prop 45, exact damped-mode flow:** closed form for all damping regimes, refinement-invariant by the group property.
+  - Settling argument (inertial fraction 1.41 at L=4); causal links (1a)⇒(3), (2)⇒(3), (1b)⇒extension in part, (3)⇏extension; the common cause.
+  - The four-arm Gate 1 / Gate 3 rank-order table, and the SR1–SR4 experiment table with a pointer to the pre-registration.
+  - Corrects my own earlier claim that critical damping removes phase sensitivity: only the joint exact flow does.
+  - A3: SR table. Protocol §5.9: pre-registration and decision rule. Checklist: SR agenda.
+  - Rebuilt clean: **505 pp.**; Conservative Obstruction is now **Theorem 83, p. 258** |

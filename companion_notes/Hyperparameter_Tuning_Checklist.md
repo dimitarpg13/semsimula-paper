@@ -627,6 +627,27 @@ adds a point to a curve.
 | 2026-09-25 | architecture: **L=2 `'none'`, reverse channel off** (ladder run 8, an architecture control, not a tuning run) | full 32,500 | **87.93 settled**, +31.3% vs 66.98 with the mechanism on; ratio vs GPT-2 1.765. **The inference-time ablations overstated the mechanism by 2.9x in PPL ratio, 4.9x in nats.** Clip 2.6% vs 0.0%. Ladder protocol §5.6 |
 | 2026-09-24 | depth: **L=1** `'none'` @1.2e-03 (ladder run 7, not a tuning run) | full 32,500 | **87.09 settled**, +30.0% vs L=2 at the same LR; ratio vs GPT-2 1.748. Decay gain 11.2% vs 19.3% at L=2. Clip 2.6% vs 0.0%. Static register bank (§7.3a). Ladder protocol §5.5 |
 
+## Scheduled: v6 abstract-gating runs — **opened 2026-10-03** (protocol §5.10)
+
+- [ ] **G2** — P2.2 run to the full length: L=2 Fock-PARFLM `none`, live. **First.** Settles the register mechanism's value (< 57.76) and depth (> 50.10).
+- [ ] **G4** — Cell 6b-10 on run 4, the Gen 2 twin of the L=4 live arm. Runs alongside G2 and takes minutes. Settles whether the L=4 forecastability comes from the live gradients.
+- [ ] **G3** — F3.2: L=2 `attention_potential` with everything live (`rglive` + `vplive` + `xilive`). Settles the exchange field's value against G2.
+- [ ] **G1** — **scheduled, deferred until G2–G4 are in.** A GPT-2 matched on parameters at the same width: d=384, L=22, untied, 77.8M. Width is held at 384 by design: comparisons stay in the same semantic-space dimension, so d=512 was rejected. The author's reservation is that matching the parameter count by depth ignores the model's dynamics and may draw reviewer questions; the run is kept for completeness. GPT-2 notebook Cell 0: `N_LAYERS = 22`, `TIE_EMBEDDINGS = False`. Commit and push the `VARIANT_TAG` folder guard before running it.
+
+## Agenda: SR-series — settling, refinement and depth extension — **opened 2026-10-03**
+
+Theory: book §8.9 (Props 44–45). Pre-registration: [`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md) §5.9. Baseline config: F3.1 (L=2 conservative-only, live V_φ + ξ), full runs.
+
+- [ ] **SR1** — palindromic step order (O half-steps around the kick). Code: reorder `_layer_step_langevin`. Cheapest; run first.
+- [ ] **SR2** — exact damped-mode flow on the stiff subspace, constant γ. Code: new joint substep in `cfc_baoab.py` (Prop 45, closed form for all damping regimes); replaces A·O·A on span(U) only.
+- [ ] **SR4a** — variable-step training at fixed T, N ~ U{2, 3, 4}. Code: per-batch step count and depth code indexed by time (as Cell 6b-7's `hold` policy).
+- [ ] **SR3** — SR2 plus constant-ratio friction Γ = γ₀I + 2ζ*√(L/m) at ζ* = 1 (book Prop 43, eq. constant-ζ).
+- [ ] **SR4b** — variable-step training at fixed Δt, N ~ U{2, 3} (the extension axis).
+- [ ] **Each arm:** settled PPL, Gates 1–3 (6b-7), CG1 (6b-9), CG3 (6b-10), ω·Δt (6b-13), SCAF.
+- [ ] **After SR2–SR4a:** score the decision rule and the Gate 1/Gate 3 rank-order check (§5.9).
+
+Not gated on the live-gradient ladder, but competes with it for GPU time. Suggested placement: after P2.2 and the 77M GPT-2 control.
+
 ## TOP PRIORITY: gradient starvation across the ladder — **opened 2026-09-30**
 
 `attention_potential` with its learning signal restored (forward identical,

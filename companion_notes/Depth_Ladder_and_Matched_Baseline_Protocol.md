@@ -1260,6 +1260,91 @@ Book: §18 "The replay instrument and the forecastability test" (CG3, formerly n
 - **Indeterminate:** anything in between.
 - Metric (c) is reported separately. It speaks to contraction, not to forecasting.
 
+#### L=4 live scored: **50.10 settled — within 0.6% of the matched GPT-2** — **2026-10-03**
+
+Log: [`results/…cgqk_vplive_xilive_L4probe…idt2…_noattn/L4_idt2_lr0p0012_vplive_xilive_noattn_32500_result.txt`](../notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_vplive_xilive_L4probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt2_lr0p0012_noattn/L4_idt2_lr0p0012_vplive_xilive_noattn_32500_result.txt)
+
+| | **L=4 Fock, live V_φ + ξ** | run 4 (L=4, detached) | F3.1 (L=2 cons.-only, live) | matched GPT-2 |
+| --- | ---: | ---: | ---: | ---: |
+| **settled** (last 3: 50.05, 50.77, 49.48) | **50.10** | 71.75 | 57.76 | 49.81 |
+| best | 49.48 (32,500 = final) | 70.19 | 57.35 | 49.76 |
+| ratio to GPT-2 | **1.006×** (+0.006 nats) | 1.441× | 1.160× | 1 |
+| parameters | 76.8M | 76.8M | 76.6M | **33.7M** |
+
+**Scored against the pre-registration (point 57, band 52–63, frozen at step 3,000):**
+
+- **MISS on the good side.** 50.10 is 1.9 below the band and 6.9 below the point.
+- The settled-to-3k ratio is 0.418, the lowest of any arm (previous range 0.452–0.556). Every live arm has consolidated more than its predecessors, and every forecast built on them has been too pessimistic.
+- **Below run 4 (71.75), called near-certain: YES**, by −30.2%. This is the starvation fix at L=4, against −34.3% at L=2 for the conservative-only arm.
+- **Below F3.1 (57.76), called even odds: YES**, by −13.3%.
+
+**Health, scored:**
+
+- Clip-hit 0.5% (3 of 650, max 1.96), against run 4's 0.0%: a MISS on the letter of the criterion, though at a trivially low rate.
+- SCAF CLEAN at all seven audits. Future perturbation was exactly 0.0, and the leak tax was at most 2×10⁻⁴ nats where measured (at 32.5k the honest stage was skipped, as before).
+- **The first in-flight Tier B readings on a joint-bank model**, after the SCAF fix: Tier A 0.0 and Tier B 0.0 at steps 30,000 and 32,500.
+- No watchdog trigger.
+- The ω·dt median at the endpoint was 2.34 in flight (run 4's 6b-13: 2.29).
+
+**What it means, and what it does not:**
+
+- **Parity with the matched GPT-2 at equal tokens, within eval noise.** The 0.29-PPL gap is smaller than the 1–3 PPL step-to-step bounce of these evals.
+- **The parameter count is not matched**: 76.8M against 33.7M. Roughly 19M of the difference is the untied output head; the rest is V_θ's bank, V_φ and the registers.
+- The baseline is untuned (one LR, separately chosen) and twice as deep (L=8). The run is one seed.
+- The fair statement is therefore: *the first conservative-forward model in the programme to reach the matched transformer's perplexity at the same token budget, with 2.3× its parameters and half its depth*. A parameter-matched baseline (a wider or deeper GPT-2 at 76.8M, or a slimmer Fock arm) is needed before anything stronger is said.
+- **Framing, agreed 2026-10-03.** Neither side is tuned, and the conservative family is immature: a month of development (joint V_θ, exact low-rank integration, the gradient fix), no LR or width tuning for this architecture, and V_φ still in the explicit kick. 50.10 is therefore a lower bound on the family, not its ceiling. The parameter caveat is about the *comparison*, not the model. The cheap control is a GPT-2 at about 77M parameters on the same notebook (about 3 h). It decides whether "parity" holds on a parameter-matched footing.
+- **Headroom noted:** with sources frozen for the layer, V_φ is a function of h_t alone. If built from Gaussian-type pair terms, it satisfies the analyticity hinge (book Prop 80), so its stiff part could join the exact flow (Props 97–100) rather than ride in the kick, removing the last second-order autograd chain in the force.
+- **Headroom, also noted:** position-dependent damping. Every arm runs a constant γ = 0.1, and the stiff modes sit at a damping ratio ζ ≈ 0.05 (book §8.8). The exact friction step already accepts a per-token γ, and the precondition (a clean constant-γ baseline) is met.
+  - A scalar γ(h), or the mode-resolved friction Γ = 2ζ√(L/m), is a local change.
+  - So is the palindromic step order (O half-steps around the kick), which the same section shows is second-order at no extra cost.
+- **Depth:** L=4 live beats L=2 conservative-only live by 13.3%. That comparison mixes depth with the Fock mechanism, so the depth answer still needs P2.2 (L=2 Fock live).
+- Run 4's L=4 < L=2 inversion, the original question that opened the depth investigation, does not survive the gradient fix: L=4 live (50.10) is far below every L=2 arm measured so far.
+
+#### L=4 live: post-training probes, and CG3 scored — **2026-10-03**
+
+Outputs filed with the run (`results/…cgqk_vplive_xilive_L4probe…/Cell-6b-*`). All gates passed bit-exactly. On the probe batches the model scores PPL 48.02, against GPT-2's 47.42.
+
+**CG3 (forecastability, 6b-10), scored by the rule frozen on 2026-10-02:** layers ℓ ≥ 2 only, tangential coherence.
+
+The geometry is clean exactly as the sphere proposition requires: the radial fraction of s_{ℓ−1} is **0.86 at ℓ = 1 and 0.00 at ℓ = 2, 3**.
+
+| metric (ℓ ≥ 2) | ℓ = 2 | ℓ = 3 | mean | pre-registered point / band | GPT-2 (per layer) | verdict |
+| --- | ---: | ---: | ---: | --- | --- | --- |
+| (a⊥) tangential coherence | +0.749 | +0.302 | **+0.526** | +0.10 / −0.10 to +0.30 | +0.22 (ℓ = 2), +0.21 (ℓ = 3) | > 0 ✓; > GPT-2's +0.195 ✓ (called 1 in 3); band MISS, good side |
+| (b) true-velocity forecast error | 0.583 | 0.935 | **0.759** | 0.95 / 0.85–1.05 | — | ≤ 0.90 ✓ (layer 3 alone does not) |
+| (b) finite-difference error | 0.664 | 0.969 | 0.817 | 1.00 / 0.90–1.15 | 1.878, 1.331 | ≤ 0.90 ✓; below GPT-2 at both layers ✓ |
+| (c) per-step growth, ε = 10⁻² / 3·10⁻² / 10⁻¹ | | | 0.930 / 0.936 / 0.950 | 0.92 / 0.88–0.97 | 0.979–0.982 | ≤ GPT-2 at every ε ✓; drift 0.020, at the 0.02 limit |
+
+- **Verdict: FORECASTABLE**, by the frozen rule: (b) true-velocity ≤ 0.90 and (a⊥) > 0. This is the first positive forecastability result in the programme.
+- The integrator's own velocity beats the finite-difference momentum at both layers (0.583 vs 0.664, 0.935 vs 0.969). So the second-order state carries forecast information beyond the position sequence.
+- The effect is concentrated at ℓ = 2, where the steps are small (|s|/|h| = 0.14–0.17). At ℓ = 3, the large output step (|s|/|h| = 1.24), forecasting is near the stay-put null.
+- **The inertial fraction |Δt·v|/|step| is 1.41.** The velocity alone would overshoot the step, and the forces brake it; this is consistent with the stiff-mode rotation (ω·dt ≈ 2.3).
+- **Not yet separable from the gradient fix:** the paired control, 6b-10 on run 4, has not run. Until it does, this says the L=4 live model forecasts, not that live gradients made it so.
+
+**CG1 (6b-9):**
+
+- R(geo) = 1.369; LayerNorm −0.918; **V_φ −0.0035**; reverse channel −0.449; interaction I = +0.001.
+- **V_φ is inert again**, with live gradients, in the Fock arm. In the conservative-only live arm (F3.1) it woke up (−0.291).
+- So V_φ and the register path behave as **substitutes**: with the register path available, V_φ is not used.
+- This is the V_φ × Fock interaction the factorial (runs 10/11) was designed to measure, seen here first, across a depth difference.
+- **Predictions it makes:**
+  - P2.2 (L=2 Fock live) will also show V_φ inert;
+  - removing V_φ will cost little with the Fock mechanism on (run 11) and much without it (run 10).
+- The reverse channel's deflection is 0.449, against 0.90 in the Gen 2 L=2 Fock arm (step sizes differ). R_v(geo+LN) = R_v(geo) to every digit at all four layers.
+
+**CG2 (6b-7):**
+
+- Inertia worth **+26.30 PPL (+54.8%)**, against run 4's in-flight-only record, which has no 6b-7.
+- Refinement still reads MAPS (N=6: +104; N=8: +201). Coarsening is far worse than refining (N=3: +799).
+- **Extra hops at fixed dt degrade gently:** 1.5× the trained depth costs +40.6%, against +92% (F3.1), +341% (`rglive`) and +331% (Gen 2 `attention_potential`) at 1.5× for the L=2 arms. The Gen 2 conservative-only arm, at +26%, is the only one gentler.
+
+**CG6 (6b-12):** uniform forcing again. At layer 3, 99.8% of tokens have R > 0.75 against the conservative+LN step.
+
+**CG7 (6b-13):**
+
+- ω·dt median **2.347**, against run 4's 2.292: overall stiffness unchanged by the gradient fix at L=4, unlike L=2 conservative-only (4.32).
+- It is redistributed across layers (layer 0: 2.69 vs 3.37; layer 3: 2.27 vs 1.49), and the tail is longer (max 6.15 vs 4.48).
+
 #### "Can we fix L=4 by adding parameters?" — **analysed 2026-09-28**
 
 Short answer: **partly, and the cheap part is worth trying; the expensive part
@@ -2813,6 +2898,80 @@ The last three evals were 58.39, 57.54 and 57.35. The run was still improving at
 - Single seed.
 
 ---
+
+### 5.9 SR1–SR4: settling, refinement and depth extension — **pre-registered 2026-10-03, before any run**
+
+Book §8.9 (`ssec:settling-refinement`, Props 44–45) gives the theory: the split A·O·A step makes a stiff mode's dissipation depend on the step count through θ/sin θ (θ = ω·Δt), proportional to the damping ratio; the exact damped-mode flow removes that for the linear stiff part; settling needs ‖v_T‖ small; a common cause, single-discretisation training with weak damping, sits behind all three failures.
+
+**Baseline** (all four arms): the L=2 live-gradient conservative-only configuration of F3.1, **retrained from scratch per arm, full 32,500 steps**. The comparison is against F3.1's own probe readings:
+
+| baseline reading (F3.1) | value |
+| --- | ---: |
+| settled PPL | 57.76 |
+| Gate 1, velocity reset | +34.3% |
+| Gate 2, 1.5× steps at fixed Δt (N=3) | +92% |
+| Gate 3, 1.5× steps at fixed T (N=3) | +143% |
+| CG1 V_φ attribution | −0.291 |
+| ω·Δt median | 4.32 |
+
+**Arms and predictions:**
+
+| arm | intervention | Gate 3 (1.5×) | Gate 2 (1.5×) | Gate 1 | settled PPL |
+| --- | --- | --- | --- | --- | --- |
+| **SR1** | palindromic order A·O½·B·O½·A | within ±25% of +143% | within ±25% of +92% | within ±25% of +34% | within ±2% |
+| **SR2** | exact damped-mode flow on span(U), constant γ = 0.1 | **≤ +100%** | not predicted | within ±25% | within ±3% |
+| **SR3** | SR2 + constant-ratio friction ζ* = 1 on the stiff modes | **≤ +70%** | **≤ +50%** | **≤ +25%** (inertia falls) | within +5% |
+| **SR4a** | train with N ~ U{2, 3, 4} at T = 8 (depth code by time, 6b-7 `hold` policy) | **≤ +10% on N ∈ {2, 3, 4}** | not predicted | **≥ +27%** (≥ 80% of baseline: inertia kept) | within +5% |
+| **SR4b** | train with N ~ U{2, 3} at Δt = 4 | not predicted | **≤ +10% at N = 3** | not predicted | within +5% |
+
+**Decision rule** (scored after SR2–SR4a are in):
+
+- **SR2 or SR3 meets its Gate 3 threshold and its PPL band:** the split, or the underdamping, is a cause. Adopt it in the integrator.
+- **Only SR4a meets it:** the single-discretisation objective is the cause. Variable-step training becomes the default for any model meant to have depth as an inference-time knob.
+- **Both meet it:** the effects add. Run SR2 + SR4a together.
+- **Neither meets it:** the cause lies in what no arm touches (per-step refreezing of the occupancies, the kick, per-layer context, the projection). Record this as a negative result.
+- **The common-cause check:** across the baseline and SR1–SR4a, Gate 1 and Gate 3 have been perfectly rank-ordered over the four L=2 arms so far. SR4a is predicted to **break** that ordering, keeping inertia while being refinable; SR3 is predicted to **keep** it, losing both together.
+
+**Order and cost:** SR1 (cheapest; code change only), then SR2, then SR4a, then SR3, then SR4b. About 14 GPU-h each at L=2. Implementation note: SR2/SR3 need a joint damped-mode substep on span(U) in `cfc_baoab.py`; SR4 needs the step count sampled per batch and the depth code indexed by time. Neither exists yet.
+
+**Caveat recorded in advance:** with γ·T = 0.8, Prop 44 is first-order and qualitative. Its prediction is the *mechanism* (SR2 helps Gate 3), not a magnitude.
+
+### 5.10 The v6 abstract-gating runs — **pre-registered 2026-10-03, before any run**
+
+The v6 abstract (book stage 2, `Paper_v6_Section_Audit.md`) will state three things the published Gen 3 models do not yet settle: what the Fock register mechanism is worth under live gradients, whether depth helps under live gradients, and whether parity with the matched GPT-2 survives a parameter-matched baseline. Each run below decides one of them. All three run on the same notebooks, data and 32,500-step schedule as the published arms. Settled = the mean of the last three evals.
+
+**G1. Parameter-matched GPT-2 at the same width: scheduled, deferred until G2–G4 are in** (`colab_matched_gpt2_baseline_openwebtext.ipynb`). Revised 2026-10-03, before any run.
+
+- **Configuration.** Cell 0: `N_LAYERS = 22`, `TIE_EMBEDDINGS = False`. Everything else is unchanged: `D_MODEL = 384`, `N_HEADS = 6`, LR 6e-4 with a cosine to 6e-5, 16,384 tokens/step.
+- **Parameter count:** 77,832,960, which is +1.3% against the L=4 live arm's 76,823,510. L=22 is chosen over L=21 (76,058,496, −1.0%) so that the baseline is never the smaller model.
+- **Output folders:** `checkpoints_d384_L22_h6_untied/` and `results_d384_L22_h6_untied/`, via the `VARIANT_TAG` guard. The published 33.7M baseline's files are not touched.
+- **Cost:** about 2.7× the baseline's time per step.
+- **Width is held at d = 384 by design.** All comparisons are constrained to the same semantic-space dimension. A wider GPT-2 (d = 512, L = 8, 76.9M) was considered and rejected: the conservative model at d = 512 would be a different dynamical system, so matching parameters by width compares across semantic spaces.
+- **Author's reservation, recorded in advance.** Matching the parameter count by stacking depth ignores the physics and dynamics of the model, and a reviewer may question it on those grounds. The run is kept for completeness; on its own it is not expected to carry much weight. The primary comparison stays the width-matched 33.7M baseline, with the parameter counts stated in the same sentence.
+
+- **Prediction:** settled **45**, band **41–48**. Adding depth at fixed width and a fixed 0.53B tokens (about 7 tokens per parameter) gains less than widening would.
+- **Key line:** settled ≤ 47.6 (5% below 50.10) means parity does not hold on a parameter-matched footing at the same width. Settled > 47.6 means it does.
+- **Called:** about 65% that parity does not hold.
+- **Abstract, until G1 runs:** the parity sentence quotes the width-matched baseline (49.81, 33.7M) against the L=4 live arm (50.10, 76.8M), with both parameter counts.
+
+**G2 (= P2.2 → full). L=2 Fock-PARFLM `none`, live** (ladder notebook). Cell 0: `LADDER_L = 2`, `LADDER_MECHANISM = 'none'`, `REVERSE_CHANNEL = True`, `VPHI_GRAD_PATH = 'live'`, `XI_GRAD_PATH = 'live'`, `PROBE_MAX_STEPS = None`. Expected tag: `…cgqk_vplive_xilive_L2probe_…_idt4_lr0p0012_noattn`. The Gen 2 twin is the published no-exchange arm (66.98). The 3k criterion in `Gradient_Starvation_Investigation.md` (≤ 137.1 against 140.61) is read from this run's step-3,000 eval. The run does not stop there.
+
+- **Prediction:** settled **53**, band **50–57**.
+- **Key line 1, the register mechanism's value under live gradients:** settled < 57.76 (F3.1, the same depth without the Fock mechanism). Called at about 80%.
+- **Key line 2, depth under live gradients:** settled > 50.10 means L=4 beats L=2 on one mechanism and one convention, which is the first clean depth answer. Called at about 75%. If it is ≤ 50.10, the L=2 < L=4 inversion survives the gradient fix, and depth is not what the L=4 run bought.
+- **CG1 forecast:** V_φ attribution |·| < 0.05 (inert, as at L=4), from the substitution reading. Above 0.15 refutes the substitution account at L=2.
+
+**G3 (= F3.2). L=2 `attention_potential`, everything live** (ladder notebook). Cell 0: `LADDER_L = 2`, `LADDER_MECHANISM = 'attention_potential'`, `REVERSE_CHANNEL = True`, `RELAX_GRAD_PATH = 'live'`, `VPHI_GRAD_PATH = 'live'`, `XI_GRAD_PATH = 'live'`, `PROBE_MAX_STEPS = None`. The tag carries `rglive`, `vplive` and `xilive` and ends `_attnpot`. Its partial-live parent is the published `rglive` model (61.11).
+
+- **Prediction:** settled **51**, band **46–56**. The live V_φ/ξ gain is smaller than the conservative-only arm's 34%, because the exchange field already carries some of what the starved channels could not.
+- **Key line, the conservative exchange field's value under live gradients:** settled below G2's settled value by more than 2% (beyond eval noise). Called at about 60%.
+- **Not decided by this run:** the price of conservativity under live gradients needs `attention` live against it. That run is not gating. Until it runs, the abstract states the price as measured under Gen 2 only (`attention` 63.51 against `attention_potential` 80.9 detached and 61.11 with `rglive`).
+
+**G4 (cheap, gates only a forecastability sentence). Cell 6b-10 on run 4**, the Gen 2 twin of the L=4 live arm, with the same layer 2–3 rule as the L=4 scoring. Prediction: tangential coherence below +0.526, and the integrator-velocity forecast error above 0.759. Either one meeting its threshold would credit part of the forecastability to the live gradients. If run 4 is also forecastable, the property belongs to the L=4 architecture and the abstract says so.
+
+**What the abstract says in each case** is fixed now, so that the results fill in numbers rather than choose the story. The parity sentence quotes both GPT-2 baselines with parameter counts. The register sentence quotes G2 against F3.1. The depth sentence quotes the L=4 live arm against G2. The exchange-field sentence quotes G3 against G2. Each claim carries one seed and an untuned baseline in the same sentence.
+
+**Order and cost (author's call, 2026-10-03):** G2 first (it gates two claims and is the longest run, about 12 h at 1.29 s/step), with G4 (minutes) alongside. G3 next, or at the same time if a second session is free (about 13–14 h). G1 is deferred until all three are in. With concurrent Colab sessions, all three trainings can run at once. They share no files: separate tags and, for G1, separate folders.
 
 ## 6. Open risks
 
