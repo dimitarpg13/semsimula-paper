@@ -1,0 +1,11 @@
+# SCAF geometric tiers (A: hidden-state cosine deviation, B: basin-crossing rate), 2026-10-02
+# Six archived ladder _best.pt checkpoints, laptop CPU, eval mode, n_seqs=4 n_pairs=2 seq_len=512 seed=20261002
+# semsimula-scaf causal_probe_add_in @ ae9094e (joint-bank adapter fix); Tier B was silently absent on every vtjoint checkpoint before it
+arm                                  TierA max dcos         per-layer dcos TierB crossing          per-layer     s
+no-exchange (Gen2)                        0.000e+00        [0.0, 0.0, 0.0]      0.000e+00    [0.0, 0.0, 0.0]   232
+conservative-only (Gen2)                  0.000e+00        [0.0, 0.0, 0.0]      0.000e+00    [0.0, 0.0, 0.0]   230
+attention (Gen2)                          0.000e+00        [0.0, 0.0, 0.0]      0.000e+00    [0.0, 0.0, 0.0]   241
+attention_potential (Gen2)                0.000e+00        [0.0, 0.0, 0.0]      0.000e+00    [0.0, 0.0, 0.0]   275
+attention_potential rglive (probe)        0.000e+00        [0.0, 0.0, 0.0]      0.000e+00    [0.0, 0.0, 0.0]   240
+conservative-only live (Gen3)             0.000e+00        [0.0, 0.0, 0.0]      0.000e+00    [0.0, 0.0, 0.0]   230
+

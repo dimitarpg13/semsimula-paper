@@ -1151,6 +1151,115 @@ the question but does not close it:
 Results filed with both logs, as `D2_6b13_omega_dt_endpoint.txt` in the L=2
 and L=4 results folders.
 
+#### L=4 with live gradients (Gen 3), 3,000-step probe — pre-registered **2026-10-02, at launch, before any eval**
+
+**Run.**
+
+- Tag: `…cgqk_vplive_xilive_L4probe…idt2_lr0p0012_noattn`.
+- Config: run 4's config plus `VPHI_GRAD_PATH = XI_GRAD_PATH = 'live'` and `PROBE_MAX_STEPS = 3_000`. The reverse channel is on (the Fock arm), with L=4, dt=2 and T=8.
+- The forward force is identical to run 4's. Verified locally at L=4 from fresh init through the notebook's cells:
+  - max |Δlogit| = 0;
+  - the gradient from a layer step into earlier tokens goes from exactly 0 at every layer to 0.51 / 0.069 / 0.069 / 0.070.
+
+**Scored at step 3,000** against run 4's own evals (1,000: 260.64; 2,000: 165.58; 3,000: **138.94**). Noise band ±2.5%.
+
+| outcome | step-3,000 PPL | reading |
+| --- | --- | --- |
+| **move** | **≤ 135.5** | the starvation fix helps at L=4 too; extend to 32,500 |
+| null | 135.5 – 142.4 | no early effect at L=4. Extending is still informative, since F3.1's gap widened through training |
+| worse | > 142.4 | check clip-hit and grad-norm before reading it |
+
+- **Point estimate: about 125** (−10%), band 112–135.
+  - The basis is F3.1's −19.2% at 3k, discounted because this arm also carries the register path, which was never starved.
+  - More starved layers (four, not two) could push the other way. That direction is recorded so it can be scored.
+- **What this run can and cannot answer.**
+  - On its own it prices the starvation fix at L=4 (against 71.75 settled).
+  - Whether L=4 beats L=2 *on the live convention* needs the L=2 Fock-live arm (P2.2), which has not run. Comparing it with the Gen 2 L=2 arm (66.98) mixes conventions and will not be read as the depth answer.
+
+#### L=4 live probe scored at step 3,000: **119.77 — MOVE, and a band HIT** — **2026-10-02**
+
+Log: [`results/…cgqk_vplive_xilive_L4probe…idt2…_noattn/L4_idt2_lr0p0012_vplive_xilive_noattn_probe3000_result.txt`](../notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_vplive_xilive_L4probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt2_lr0p0012_noattn/L4_idt2_lr0p0012_vplive_xilive_noattn_probe3000_result.txt)
+
+| step | run 4 (L=4, Gen 2) | **L=4 live** | Δ |
+| ---: | ---: | ---: | ---: |
+| 500 | 495.47 | **475.12** | −4.1% |
+| 1,000 | 260.64 | **242.99** | −6.8% |
+| 1,500 | 195.16 | **178.94** | −8.3% |
+| 2,000 | 165.58 | **147.42** | −11.0% |
+| 2,500 | 145.57 | **127.44** | −12.5% |
+| **3,000** | **138.94** | **119.77** | **−13.8%** |
+
+- **Scored: MOVE** (criterion ≤ 135.5) **and HIT** (band 112–135; the point estimate of about 125 was 5 too high).
+- The gap widened at every eval, as F3.1's did.
+- The gain is smaller than F3.1's −19.2%, as predicted: this arm also has the register path, which was never starved.
+- **The best step-3,000 number in the programme.** For comparison at 3k:
+  - F3.1 (L=2 conservative-only, live) 127.73;
+  - `attention` 131.20; `rglive` 133.74;
+  - L=2 no-exchange (Gen 2) 140.61.
+- **Health:**
+  - 0 clip-hits in 60 logged steps (max grad-norm 0.79; run 4 was also 0 in its first 3k);
+  - memory 30.9 GB and 3.14 s/step, both as run 4.
+- **Resonance:** ω·dt median 1.22 at step 3,000 with 3.5% past the wall, rising from 0.63. That is far below F3.1's 2.16 at the same step, since dt is 2 here against 4 there. Run 4's monitor recorded nothing (hook bug), so there is no Gen 2 comparison.
+
+#### L=4 live extended to 32,500 — pre-registered **2026-10-02, at step 3,000, before step 3,001**
+
+**Basis.** The ratio of settled PPL to step-3,000 PPL across the finished arms:
+
+| arm | ratio |
+| --- | ---: |
+| run 4 (L=4, Gen 2) | 0.516 |
+| L=2 no-exchange | 0.476 |
+| `attention` | 0.484 |
+| `rglive` | 0.457 |
+| F3.1 | 0.452 |
+
+Applied to 119.77, the two extremes give 54.1 (F3.1's ratio) and 61.8 (run 4's).
+
+**Prediction:**
+
+- **Settled: point 57, band 52–63.**
+- **Against run 4 (71.75):** below it, called near-certain. This is the starvation fix at L=4.
+- **Against F3.1 (57.76, L=2 conservative-only live):** even odds.
+- **Against the Gen 2 L=2 Fock arm (66.98):** below it, very likely. **This is not the depth answer**: it mixes conventions.
+- **What would answer the depth question:** whether L=4 beats L=2 under live gradients needs P2.2 (L=2 Fock live). That run is still unrun and is now the decisive next run.
+
+**Health, scored:**
+
+- clip-hit rate below run 4's full-run rate;
+- SCAF CLEAN at every audit;
+- no watchdog trigger.
+
+The ω·dt median is to be reported, not scored.
+
+**Cost:** about 25.5 h for the remaining 29,500 steps at 3.1 s/step, so at least one session break and a resume.
+
+#### CG3 (forecastability, Cell 6b-10) on the L=4 live arm — pre-registered **2026-10-02, before the run finishes and before 6b-10 is run on it**
+
+Book: §18 "The replay instrument and the forecastability test" (CG3, formerly note-label E3). At L=2 the test cannot be read: the first step projects the embedding onto the LayerNorm sphere (the book's sphere-obstruction proposition). **L=4 is the first arm where it can.**
+
+**Rules fixed in advance:**
+
+- **Read only layers ℓ ≥ 2.** At ℓ = 1, s₀ is still the embedding projection, and its radial fraction is printed by the cell. The cell's own "ℓ ≥ 1" summary line is therefore *not* the scored number; the per-layer rows at ℓ = 2, 3 are.
+- **Use the tangential coherence (a⊥), not the raw value.**
+- **Paired control: run 6b-10 on run 4** (the Gen 2 L=4 `_best.pt`, same tokens). The live-minus-detached difference is the gradient-convention effect on forecastability.
+- **Use the same matched GPT-2 and the same ε values** {10⁻², 3·10⁻², 10⁻¹}.
+
+**Predictions** (L=4 live; Gen 2 run 4 expected to sit on the same side but weaker):
+
+| metric (ℓ ≥ 2) | point | band | "forecastable" requires |
+| --- | ---: | --- | --- |
+| (a⊥) tangential coherence, mean | +0.10 | −0.10 to +0.30 | > 0; "beats GPT-2" requires > +0.195 (called about 1 in 3) |
+| (b) true-velocity forecast error | 0.95 | 0.85–1.05 | **≤ 0.90**, i.e. 10% below the stay-put null |
+| (b) finite-difference error | 1.00 | 0.90–1.15 | ≤ 0.90, and below GPT-2's per-layer value |
+| (c) per-step growth, every ε | 0.92 | 0.88–0.97 | ≤ GPT-2's (0.979–0.982), with Fock drift across ε ≤ 0.02 |
+
+**Verdict rule:**
+
+- **Forecastable:** (b) true-velocity ≤ 0.90 **and** (a⊥) > 0.
+- **Not forecastable:** (b) ≥ 1.0 at both ℓ = 2 and ℓ = 3, i.e. on the stay-put null.
+- **Indeterminate:** anything in between.
+- Metric (c) is reported separately. It speaks to contraction, not to forecasting.
+
 #### "Can we fix L=4 by adding parameters?" — **analysed 2026-09-28**
 
 Short answer: **partly, and the cheap part is worth trying; the expensive part
@@ -2222,6 +2331,24 @@ model, and a (b) confirmation alone already overturns the current reading.
 
 ---
 
+#### Probe (b), full run: post-training probes (6b-7/9/12/13) and publication — **2026-10-02**
+
+On `_best.pt` (step 31,000, PPL 59.09), against its starved parent on the same architecture. E1 values are comparable within this pair only; other arms carry different potentials.
+
+| reading | parent (starved) | probe (b), `rglive` |
+| --- | ---: | ---: |
+| 6b-7 gate 1: PPL rise when the velocity is reset | +18.80 | **+32.66** |
+| 6b-7 gate 3: refinement at fixed T | MAPS | MAPS |
+| 6b-9 R(geo) | 1.274 | 1.144 |
+| 6b-9 cons+LN (everything except the reverse channel) | 1.021 | 0.877 |
+| 6b-9 reverse-channel effective gate | 0.024 | 0.034 |
+| 6b-12 layer 1, share of tokens strongly forced (R > 0.75) | 100% | 100% (uniform) |
+| 6b-13 ω·dt median (share past 2) | not run | 1.784 (44%); layer 0 1.61, layer 1 2.82 |
+
+- **Live gradients make the model lean more on inertia,** and its step sits somewhat closer to the damped Vθ geodesic. It is still not one, and it still reads MAPS.
+- 6b-13 printed MISS against [3.3, 4.2]. That band was pre-registered for the no-exchange arm and does not apply here; the reading is recorded, not scored.
+- **Published 2026-10-02** as a Gen 2 probe, NOT a ladder arm: `dimitarpg13/semsimula-ladder-owt-d384-l2-attention-potential-rglive`. It is the last item of the Gen 2 collection, and the four Gen 2 banners link it where they cite 61.11.
+
 ### 5.4 Matched GPT-2 baseline — **DONE 2026-09-21**
 
 Log: [`results/gpt2_baseline_d384_L8/matched_batch32_32500_result.txt`](../notebooks/conservative_arch/scaleup/results/gpt2_baseline_d384_L8/matched_batch32_32500_result.txt)
@@ -2621,6 +2748,69 @@ No-exchange's log in the repo starts at step 6,500, so it has no 5,000 eval.
 - **Health:**
   - Two isolated clip-hits in the stable phase, at steps 17,700 (1.51) and 19,250 (2.19). Total 4 of 593 logged (0.7%), against the parent's 2.6%. No watchdog trigger.
   - SCAF CLEAN at 5k, 10k, 15k, 20k and 25k.
+
+#### F3.1 scored: **57.76 settled — the best L=2 model in the programme** — **2026-10-02**
+
+Log and probe outputs: [`results/…cgqk_norc_vplive_xilive_L2probe…_noattn/`](../notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/).
+
+| | F3.1: conservative-only, Vφ + ξ live | conservative-only (parent, detached) | no-exchange | `attention` | `rglive` | matched GPT-2 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| **settled** (last 3) | **57.76** | 87.93 | 66.98 | 63.51 | 61.11 | 49.81 |
+| best | 57.35 (32,500) | 85.90 | 66.56 | | 59.09 | |
+| final | 57.35 | 88.82 | 67.63 | | 61.06 | |
+| ratio to GPT-2 | **1.160×** | 1.765× | 1.345× | 1.275× | 1.227× | 1 |
+
+The last three evals were 58.39, 57.54 and 57.35. The run was still improving at the last eval, so best = final.
+
+**Scored against the frozen pre-registration (point 67, band 60–79):**
+
+- **MISS on the good side.** 57.76 is 2.24 below the band's lower edge and 9.24 below the point. The basis, the finished arms' settled-to-3k ratio, underestimated how much more this arm consolidates (0.452×, below every finished arm's 0.457–0.556×).
+- **The question the run existed to answer: YES, by a clear margin.**
+  - It settles **13.8% below no-exchange** (57.76 vs 66.98). The conservative architecture alone, with live gradients, beats the Fock arm as trained.
+  - It is also 9.1% below `attention` and 5.5% below `rglive`. I had called beating `attention` about a 1-in-4 chance.
+- **Against its own parent: −34.3%** (−0.420 nats). The forward pass is identical; only the gradient convention changed.
+
+**Health, scored:**
+
+- **Clip-hit 0.6%** (4 of 650 logged steps, max 2.19) against the parent's 2.6%: HIT.
+- **SCAF CLEAN at all seven audits.** Future perturbation was exactly 0.0, and the leak tax was at most 2.8e-4 nats where measured. At 32.5k the honest stage was skipped (prints nan), which is the known cosmetic print issue: HIT.
+- **No watchdog trigger:** HIT.
+
+**Probe readings, against the parent on the same architecture.** E1 compares like with like only within this pair.
+
+| reading | parent (detached) | **F3.1 (live)** |
+| --- | ---: | ---: |
+| 6b-7 gate 1: PPL rise when the velocity is reset | +4.72 | **+19.33** |
+| 6b-7 gate 3: refinement at fixed T | MAPS | MAPS |
+| 6b-9 R(geo), distance from the Vθ-only geodesic | 0.742 | 0.665 |
+| 6b-9 **Vφ attribution** (geo → cons) | **−0.0015** | **−0.291** |
+| 6b-9 LN attribution | −0.669 | −0.267 |
+| 6b-9 layer 1: R_h geo → cons | 0.642 → 0.642 (Vφ absent) | **0.772 → 0.240** |
+| 6b-12 layer 1, Vθ geodesic + LN: median R_tok (Vφ's per-token share) | 0.000 | **0.669** (85.5% of tokens in 0.25–0.75) |
+| 6b-13 ω·dt median (share past 2) | not run | 4.32 (99.8%) |
+
+1. **Vφ woke up.** Its attribution grew about 190×, from −0.0015 to −0.291.
+   - At layer 1, where it was effectively off in the parent (Tier 0), it now carries most of the step's departure from the Vθ geodesic, and it does so for almost every token.
+   - **"Vφ is inert" (E1, F5) is withdrawn.** It was a property of the detached convention, exactly as the investigation predicted.
+   - This also reverses Tier 0's expectation that ξ would carry most of the effect; P2.3 and P2.4 now matter more, not less.
+2. **The step is a geodesic of the full conservative potential, up to LayerNorm.** With no reverse channel this holds by construction (cons+LN = full).
+   - What is new is that Vθ alone no longer describes it: R(geo) = 0.665, with Vφ making up the difference.
+   - The Riemannian reading, a damped geodesic of V = Vθ + Vφ at the trained step, holds for this model, piecewise: 6b-7 still reads MAPS, so the steps cannot be subdivided.
+3. **Inertia is worth 4× more:** +19.33 against +4.72 when the velocity is reset.
+4. **E3 (6b-10) against the matched GPT-2 on the same batches.** The cell's "GATE SHUT, results void" line is a false alarm for an arm with no reverse channel, fixed in the notebook on 2026-10-02.
+   - Velocity forecast error: 1.008 vs 1.314. **Fock lower, as pre-registered.**
+   - Perturbation growth per step: 0.920 vs 0.979. **Fock at or below, as pre-registered.**
+   - Tangential direction coherence: −0.126 vs +0.195. **Opposite to the pre-registration.**
+   - Two of three, against a null at L=2 for no-exchange (§6.8 of the geodesic note). But the cell itself warns that at L=2, (a) and (b) are dominated by the embedding-to-sphere step and need L ≥ 3. **Not to be quoted as a forecastability result until an L ≥ 3 live arm runs.**
+5. **The stiffest arm at the endpoint:** ω·dt median 4.32, with 99.8% past the wall, against no-exchange's 3.80. Integrated exactly, so not an instability.
+   - The in-flight median peaked at 6.4 (step 15,000) and settled to 4.3 through the decay.
+   - 6b-13 printed MISS against [3.3, 4.2]. That band was pre-registered for no-exchange and does not apply to this arm.
+
+**Consequences:**
+
+- The §5.6 Fock price (+31.3%) and the F5 reading are confirmed withdrawn. Under the live convention, removing the Fock mechanism from a starved model and opening Vφ/ξ instead buys −13.8% against the starved Fock arm.
+- **The Fock mechanism's real value is now unknown.** It needs no-exchange with live gradients (P2.2, then the full run), which is now the most important open run.
+- Single seed.
 
 ---
 

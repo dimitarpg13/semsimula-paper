@@ -321,6 +321,29 @@ Once Tiers A–C are validated, the basin-membership infrastructure enables a re
 
 ---
 
+## 7a. Status as of 2026-10-02: what is built, what was silently broken, what is measured
+
+**Implemented (Phases 1–2):** `HiddenStateLeakProbe` (Tier A) and `BasinMembershipProbe` (Tier B), each with a positive control on a synthetic leaky model, both run by default in `LeakMonitor`.
+
+**Not implemented (Phase 3):** the asymmetric geodesic distance of Tier C. No geodesic is integrated anywhere in the library. Note a **naming collision**: SCAF's `StiffnessProbe` calls itself "Tier C" in its docstring. It audits whether the local curvature keeps the step size numerically stable (the ω·Δt wall) and has nothing to do with this note's Tier C beyond the label. The book (§37.3) now flags this.
+
+**A defect, found and fixed.** On every joint-bank (`vtjoint`) checkpoint, i.e. the whole CfC/BAOAB ladder, `FockAdapter.well_parameters` sliced one channel's `d` columns out of the context and handed them to a bank whose projections read all `n_ctx·d`. The resulting shape error (`1024×384 @ 1920×3072`) was swallowed by the monitor's `except: pass`, so every ladder audit carried Tier A fields and **no Tier B fields**, indistinguishable from "not applicable". Fixed in `semsimula-scaf` `ae9094e` (joint branch in the adapter, three regression tests); the monitor now writes a `basin_membership_error` / `hidden_state_error` field when a probe raises, so absence and zero can no longer be confused.
+
+**Measured** (`notebooks/conservative_arch/scaleup/results/gradient_starvation/scaf_geometric_tiers_census.txt`), on the final weights of six archived ladder checkpoints, laptop CPU, eval mode:
+
+| checkpoint | Tier A max Δcos (per layer) | Tier B crossing rate (per layer) |
+| --- | ---: | ---: |
+| no-exchange (Gen 2) | 0 (0, 0, 0) | 0 (0, 0, 0) |
+| conservative-only (Gen 2) | 0 (0, 0, 0) | 0 (0, 0, 0) |
+| `attention` (Gen 2) | 0 (0, 0, 0) | 0 (0, 0, 0) |
+| `attention_potential` (Gen 2) | 0 (0, 0, 0) | 0 (0, 0, 0) |
+| `attention_potential`, live exchange field (probe) | 0 (0, 0, 0) | 0 (0, 0, 0) |
+| conservative-only, live Vφ + ξ (Gen 3) | 0 (0, 0, 0) | 0 (0, 0, 0) |
+
+In-flight, Tier A also read 0 at every layer on all seven audits of each Gen 3 run. The **negative half** of the acceptance test (Phase 2 step 4: causal models show β̄ = 0) is therefore passed on the prefix-causal architecture.
+
+**Not yet run:** the **positive half**, that the kit detects a known leak on a trained model (Δcos > 0 at the reverse-channel layer, β̄ > 0). The pre-fix depth-conditioned d=384 checkpoints (`semsimula_fock_depthcond_vtheta_owt_…e5a/e5c…`, L=16, `prefix_causal_registers` unset) are archived locally and load with the forensic forward (`prefix_causal_registers=False`). This is the one measurement that would validate the kit as the book describes it.
+
 ## 8. Companion documents
 
 - [Framework_for_Causal_Analysis_SemSimula_Models.md](Framework_for_Causal_Analysis_SemSimula_Models.md) — SCAF design and causal formalism

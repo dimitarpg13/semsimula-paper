@@ -427,7 +427,9 @@ What this settles and what it opens is taken up in §6 and §10; the
 $V_\phi$ result is an architecture finding in its own right and needs its
 own ablation.
 
-### 4.8 Damping does not bend the path; the reverse channel does
+### 4.8 The reverse channel bends the path; damping does not cause the residual
+
+> **Corrected 2026-10-02.** This section first said damping "changes how fast the curve is traversed, not which curve". That holds for the friction equation in a *fixed* metric, not for the damped Newtonian dynamics the model integrates: damping drains the energy the Jacobi metric is built on, and a slower particle is bent more sharply by the potential, with curvature $\lVert\nabla V_\perp\rVert/(m v^2)$. What survives, and all the argument below needs, is that friction adds no *transverse* force of its own, and that E1's reference step already contains the same damping, so damping cannot appear in the residual. The book carries the corrected statement (§8, "Friction adds no transverse force — but it does change the path").
 
 A natural first reading of §4.7 is "the flow is heavily damped, and true
 Riemannian geodesics do not survive heavy damping". That reading conflates
@@ -437,16 +439,19 @@ two things that act on the path differently, and only one of them bends it.
 
 $$\nabla_{\dot{h}} \dot{h} = -\gamma \dot{h}$$
 
-The friction term is parallel to the velocity, so its component normal to
-the path is zero: it changes *how fast* the curve is traversed, not *which
-curve* is traversed. Reparametrise by arc length and the damped solution is
-the same geodesic as the undamped one. This is why the heavy damping seen in
+In a *fixed* metric the friction term is parallel to the velocity, so its
+component normal to the path is zero, and it only re-times the curve. The
+model's dynamics is not that equation (see the correction above): in a
+potential, damping changes the path indirectly, by changing the speed at
+which the potential's transverse force acts. This is why the heavy damping seen in
 the Verlet era did not, by itself, threaten the geodesic reading: heavily
 damped, but still a geodesic path of the Jacobi metric of $V_\theta$,
 taken with decaying speed. The one wrinkle is that the Jacobi conformal
 factor $E - V_\theta$ uses the energy, which decays along the path, so
-strictly the path is a geodesic of a slowly changing metric — a
-technicality, not the obstruction.
+strictly the path is a geodesic of a changing metric. That is not a
+technicality: it is exactly how damping bends the path. It is still not
+the obstruction E1 measures, because E1's reference step carries the same
+damping.
 
 For the record, the nominal damping of the live configuration is mild:
 $\gamma = 0.1$, so the per-layer O-step factor $e^{-\gamma \Delta t}$ is
@@ -456,8 +461,8 @@ Verlet-era measurement was different in kind: $\gamma_{\mathrm{param}}
 because the LayerNorm re-projection injects energy and nearly cancels the
 explicit friction
 ([`Determining_optimal_gamma_for_Fock-PARFLM.md`](Determining_optimal_gamma_for_Fock-PARFLM.md)
-§2.2). Whichever figure one takes, it is a statement about speed along the
-path.
+§2.2). Whichever figure one takes, it is contained in the reference step, so it
+cannot show up in the residual.
 
 **What the non-conservative forces do.** The equation of motion the trained
 L=2 model actually integrates is
@@ -472,7 +477,8 @@ $$\kappa_g = \frac{\lVert F_\perp \rVert}{\lVert \dot{h} \rVert^2}$$
 the *transverse* part of whatever force is not the gradient of the
 potential that defines the metric. $F_{\mathrm{rc}}$ is a function of the
 register bank, is not the gradient of anything in $h$, and is not
-tangential. So the reverse channel bends the path and the damping does not.
+tangential. So the reverse channel bends the path away from the damped
+reference; the damping, which is in both, does not account for the residual.
 §4.7 gives the size: replacing the full step by the damped $V_\theta$
 geodesic step leaves a residual of 109% of the step, with about 90% of the
 deflection attributable to $F_{\mathrm{rc}}$. That is not a geodesic with
@@ -493,11 +499,11 @@ escape routes, all closed:
    (§1, and
    [`Composing_Single_Layer_Inferences_Flow_or_Maps.md`](Composing_Single_Layer_Inferences_Flow_or_Maps.md)
    §8.1).
-3. **Damping rescues it.** It cannot; damping is tangential.
+3. **Damping rescues it.** It cannot: friction adds no transverse force, and E1's reference already contains it.
 
 **What is true.** Between punctuations, with $F_{\mathrm{rc}}$ switched
 off, the CfC+BAOAB step is *exactly* a damped Jacobi geodesic step —
-Jacobi's theorem (§2.1) plus the tangential-friction argument above. That
+by construction: one integrated step of $m\ddot h = -\nabla V_\theta - \gamma m\dot h$ (§2.1), which is the programme's definition of a damped geodesic step. It is not a geodesic of a fixed Jacobi metric, because damping changes the energy that metric is built on. That
 is the `geo` arm of E1, and it is what gate 0 validated bit-exactly. The
 machinery is right; the trained model does not use it as the dominant term
 at L=2. This is also why E3 (§6) drops geodesicity as the question and asks

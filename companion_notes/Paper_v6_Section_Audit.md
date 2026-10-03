@@ -145,6 +145,72 @@ arm; forcing is UNIFORM per token, not sparse; refinement fails in every
 arm and the severity tracks non-conservative content; inertia is worth
 +50.5% / +27.2% / +5.2% by how many non-conservative routes exist.
 
+> **Superseded as readings, 2026-10-02.** The table above is the **Gen 2
+> (detached-source)** ladder: V_φ and ξ never sent gradient to earlier tokens
+> in any of those arms, and `attention_potential` sent none at all. The
+> perplexities stand as measurements of that convention. Every reading of a
+> gap as a *price* is withdrawn or pending. See the live-gradient re-review
+> below.
+>
+> | Gen 3 (live gradients) | settled |
+> | --- | ---: |
+> | `attention_potential`, live exchange field only (Gen 2 probe) | 61.11 |
+> | conservative-only, live Vφ + ξ (first Gen 3 model) | **57.76** (1.160× GPT-2) |
+> | Fock arm live (P2.2), L=4 live, everything-live, `attention` live | not yet run (L=4 live running) |
+
+---
+
+## Live-gradient re-review — **opened 2026-10-02**
+
+**Why.** The gradient-starvation finding
+([`Gradient_Starvation_Investigation.md`](Gradient_Starvation_Investigation.md))
+changes the reading of every ladder gap. The forward pass is the same, so
+the measurements stand; the *interpretations* do not.
+
+**Audit (read-only, 2026-10-02; spot-checked against source).** The Gen 2
+ladder numbers appear in only three places. Everything else that is affected
+rests on the same detached-ξ/Vφ convention in older, Verlet-era or TinyStories
+models.
+
+| where | what rests on a withdrawn reading | class |
+| --- | --- | --- |
+| **`main.tex` abstract, l.194–267** | "The obstruction, measured"; "every gap prices one component"; 31.3% Fock price; 27.4% conservativity price and "reverses its sign"; "Geodesics, established and **priced**", "cost 31.3%"; "conduit, not stored momentum"; bold "**the price of conservativity is prediction quality; what it buys is dynamical robustness**" | **W** (withdraw) + R (label Gen 2, add Gen 3) |
+| **§18 `subsec:geometry-under-cfc`, l.1581–1813** (+ fwd refs l.85–89, 1123–1127) | "Vφ … inert" (l.1621, 1677); "What the geodesics cost" (l.1681–1688); "The same price, measured inside one model" (l.1724); "the smaller one is the honest one" (1.31×, l.1743); "latent rather than absent. It does not" (l.1765); the closing trade-off (l.1810) | **W** + R; the geometry measurements stay, labelled Gen 2 |
+| **`A0_edition_history` v6 entry, l.35–72** | "each gap prices one component"; "every result in this edition comes from the Fock-augmented model" (now false: the best result is conservative-only Gen 3) | W + P |
+| **§17e scaling-up, l.18–29, 545–565, 1040–1048** | "deficit is representational capacity (not optimisation…)"; "reverse channel load-bearing / necessary"; "price of conservativity made qualitative" | **W** (the "not optimisation" claim) + P |
+| §17c Fock-PARFLM (TinyStories, Verlet) l.9, 1010–1020, 1136–1146, 1570 | "single-ξ PPL floor"; "residual gap is the price of conservativity"; the conservativity dial; "conservativity premium" | P: detached-ξ convention, not re-measured |
+| §18e l.119–123, 297–299; §20 l.6–10, 928–936; §18d l.908, 937; intro l.180–187 | PPL floors / "expressivity plateau floored by the Obstruction" / "price of geometric structure" / "conservativity premium 1.23 PPL" | P: starvation is a competing cause |
+| §17 l.420–430; §17f l.32–45 (+ §15, §16 ξ-from-`h.detach()` mentions) | "conservativity is implemented by a single `.detach()`" | R: the detach also cuts training; a forward stop with a live backward (alias node) keeps the force and causality |
+| subtitle (`main.tex` l.130–131) "Conservative Potentials, Non-Conservative Memory" | the framing assumes the Fock memory carries the value | P: revisit after P2.2 |
+
+**Stands:**
+- the theorem statement (pure mathematics);
+- the GPT-2 numbers;
+- the integrator facts;
+- the leak history;
+- refinement failure (MAPS), which Gen 3 shares;
+- the Gen 2 measurements themselves, once labelled.
+
+**Plan, staged by what is known:**
+
+1. **Now (facts known).**
+   - Withdraw the W claims and label the Gen 2 numbers.
+   - Add the two Gen 3 results.
+   - State that the Fock mechanism's value, the depth question and the conservativity price are **open**.
+   - Text changes only, no restructuring. Scope: the abstract, the §18 pricing arc, A0, and the §17e "not optimisation" sentence.
+2. **After P2.2 (Fock live) and L=4 live.** Rewrite the abstract's experimental half and the §18 arc around what the live ladder actually ranks; revisit the subtitle.
+3. **After the rest of the live ladder** (everything-live, `attention` live, runs 10–11). Restate the ladder as Gen 3 and decide the P items in §17c/§17e/§18e/§20.
+   - Each of those either gets a live re-run or a "measured under the detached convention" caveat.
+4. **Structural restructuring** (the v6 restructure plan) stays deferred until stage 3. The ranking it would organise the book around is still moving.
+
+**Scope note.** `xi_input = h.detach() if causal_force` (or equivalent) is in every SPLM-family model, not only the ladder:
+- `multixi/model_multixi.py`;
+- `sarf_variant/model_sarf.py`;
+- `parf/model_parf.py`;
+- `parf/model_parf_multixi.py`.
+
+So the TinyStories/Verlet "floors" and "premiums" share the convention. That is why they are P, not S.
+
 ---
 
 ## Progress
@@ -606,3 +672,52 @@ thought, not typing.
 | 2026-09-28 | §10 (`09`) | audited — no built model named; v2.1 = v0+v1.5+v2 by inventory, no v3, so none reaches MCS. Phase 1b (M-sweep) designed and pre-registered |
 | 2026-09-28 | §10 (`09`) | **corrected from code**: in the prefix-causal lifecycle the registers are rebuilt from the prefix at every layer — creation/destruction run over L, not over tokens. Withdraws the "bounded register machine, finite state" step; places the built model on the circuit axis beside attention. May Dyck runs flagged as pre-leak-fix. Phase 1b prior moved (a) → (b) before any run |
 | 2026-09-30 | all (integrator names) | **velocity-Verlet sweep.** All 40 case-insensitive occurrences audited in context (inventory in the restructure plan §2a). **30 fixed** across 13 files: 22 renamed to damped Störmer–Verlet; 8 renamed with a real correction — §27 `18` l.1369 (the Störmer-era model has **no** explicit velocity stream), §8 `07a` ("every SPLM-family integrator" was wrong; caption's v is the δ proxy), notation Δt row, §11 `10`, §21 `17b`, §20 `17c` l.1016. **10 kept** as genuinely velocity-Verlet: the symplectic SPLM variant (§16 ×4), classical MD (§32 ×3), a generic integrator list (§23), and **BAOAB's deterministic skeleton** (§28 ×2). Also §19.8 and Theorem 71 (+ new Remark 72, scope to the explicit-integrator era). Rebuilt clean: 484 pp., 0 errors, 0 undefined refs. Every section moved +1 page (notation grew); map regenerated. Remark 72 shifted the shared theorem counter: Conservative Obstruction is now **Theorem 75, p. 249**. Flagged, not changed: `eq:helmholtz-update` and `eq:gamma-h-verlet` are exact only at Δt = 1 |
+| 2026-10-02 | all | **live-gradient re-review opened.** Read-only audit: Gen 2 ladder numbers live only in the abstract (`main.tex` l.194–267), §18 `subsec:geometry-under-cfc` and A0; withdrawn readings (31.3% Fock price, 27.4% conservativity price, "Vφ inert", "geodesics priced", "prediction quality vs robustness", §17e "not optimisation") itemised; older detached-ξ "floors/premiums" (§17c/§17e/§18e/§20/intro) marked pending. Four-stage plan; restructuring deferred until the live ladder settles. No book edits yet |
+| 2026-10-02 | abstract, §18 (CfC geometry), A0, §17e | **live-gradient re-review, stage 1 done (text-only).**
+  - New `rem:gen2-gen3` at the head of §18 `subsec:geometry-under-cfc` explains the detached-source (Gen 2) vs live-gradient (Gen 3) convention once, gives 61.11 and 57.76, and states the Fock value, the depth question and any conservativity price as **open**.
+  - New `par:gen3-geometry`: the Gen 3 conservative arm is a damped geodesic step of Vθ + Vφ, with Vφ attribution −0.291 and R(geo) 0.665.
+  - Withdrawn: the 31.3% and 27.4% price readings, "reverses its sign", "priced" geodesics, "Vφ inert" (now attributed to starvation), "conduit, not stored momentum", the prediction-quality-for-robustness trade-off, "each gap prices one component", and §17e's "not optimisation".
+  - Gen 2 numbers kept and labelled. The abstract's code paragraph now lists the three generation collections.
+  - Damping correction (same day): §7a, §18 and the abstract summary.
+  - Rebuilt clean: **487 pp.**, 0 undefined references. The section map above predates both edits: pages after §7a shifted by up to 3, and Theorem 75's page needs re-reading.
+  - Stages 2–4 unchanged |
+| 2026-10-02 | §17d, §20, §17e | **joint coupling and the exact low-rank integrator added, with full math.** Neither had been in the book; §17d even called the additive banks "the production form".
+  - **§17d:** new subsubsection `sssec:ssp-gw-joint`.
+    - Props 79–82: additive banks are separable (zero cross-channel Hessian, zero mixed second difference); the analyticity hinge (closed-form ∇V and ∇²V for any ξ-only parameter map); joint contains additive (exact for unnormalised weights; the softmax caveat stated); product-of-experts closed form with stiffness bounds.
+    - Also: the coupling ladder A–E, the channel-Hessian figure, and the rank P = Kr vs HKr argument.
+  - **§20:** new `par:cfp-lowrank`, Props 97–100: the frozen-occupancy split (PSD by construction, vs the indefinite Hessian); the exact low-rank mode flow; no ω·dt wall (leapfrog stable iff ωΔt < 2, exact map energy-preserving); modes from a P×P Gram eigensolve.
+    - Also: the cost argument (P = 32 at the batched-solver limit vs 160) and the evidence (5.74 vs 112 s/step; 1.57× calmer gradients).
+  - **§17e:** the envelope table now points to it.
+  - Historical fact recorded in the coupling note §11: additive + low-rank was attempted first and was impractically slow.
+  - Rebuilt clean: **492 pp.**; Theorem 75 is now on p. 251 |
+| 2026-10-02 | §8 (`07a`) | **position-dependent damping under the exact propagator: new §8.8 `ssec:gamma-h-exact`** (replaces the August forward-looking paragraph, which was written before CfC existed and described the blended map, not the built integrator).
+  - Props 38–43 / Cor 42:
+    - exact O-step, with the explicit factor's velocity excess e^x/(1+x) = 1 + x²/2 (+6.6% velocity and +13.6% KE at L=2);
+    - Maxwell / Gibbs invariance for any γ(h);
+    - the dissipation budget exp(−∫γ dt) is depth-invariant at fixed T (so no dissipation reading of L=4 vs L=2);
+    - Lie brackets [B,O] and [A,O], whose only γ(h) term is −(v·∇γ)v.
+  - **Finding:** the deployed A·B·O·A order is formally first-order in the force–friction coupling; the palindrome A·O½·B·O½·A is second-order at no extra force evaluation.
+  - Smoothness of γ(h) becomes an accuracy preference, not a stability requirement.
+  - Mode-resolved friction Γ = γ₀I + U diag(β)Uᵀ in closed form, with per-mode damping ratio ζ. Deployed stiff modes sit at ζ ≈ 0.05. A constant-ζ family Γ = 2ζ√(L/m) is proposed.
+  - The control signals are already computed. Four pre-registered predictions.
+  - Rebuilt clean: **496 pp.**; the Conservative Obstruction Theorem is now **Theorem 81, p. 255** |
+| 2026-10-02 | §18, App. A3 | **replay instrument and forecastability test added: new §18 subsection `subsec:replay-forecast`.**
+  - Naming: CG1–CG7 ("CfC geometry"), because the book already uses E1–E10 and F1–F6. A mapping table gives the cells and the companion-note labels.
+  - CG1: the replay arms as Φ^S; R_h and R_v.
+    - Prop: the shares don't add; the defect is the φ×LN interaction I, so the attribution depends on order (Shapley = s + I/2).
+    - Prop: LN moves positions, not velocities (exact without a reverse channel; confirmed digit for digit).
+    - Table across six arms, Gen 2 and Gen 3, with I. attention_potential's positive Vφ share is an interaction (I = −0.30).
+  - CG3: three metrics; Prop on the nulls (stay-put 1; isotropic coherence mean 0, variance 1/d; √2).
+    - Prop (sphere obstruction at L=2): cos(s₁, ĥ₁) = −sin(θ/2), and a radial s₀ forecasts h₁ exactly. It predicts −0.55 vs −0.566 measured.
+    - Results inconclusive at L=2 in both generations.
+  - App. A3: new CfC/BAOAB ladder table (Gen 2 and Gen 3, settled values, status) and CG table; the overloaded-code row for the note labels E1–E5/F1.
+  - Protocol: CG3 on L=4 live pre-registered (ℓ ≥ 2 only; tangential coherence; paired with run 4; verdict rule).
+  - Note `Geodesic_Experiments_with_CfC_BAOAB.md` §4.8 damping claim corrected.
+  - Rebuilt clean: **501 pp.** |
+| 2026-10-02 | §15a (`15a`), §37.3 (`18d`), §23.10 (`17e`) | **SCAF geometric leak kit: status corrected, results recorded.**
+  - §18d said the three-tier kit "is realised" in SCAF. Tiers A and B are implemented; the geodesic-distance Tier C is designed only. SCAF's own "Tier C" is the `StiffnessProbe` (predicts integration instability, not leaks): naming collision now flagged. New status paragraph says what is built, measured and designed.
+  - §15a: probe battery now names the Tier A/B diagnostics; "continuous monitoring" rewritten (full battery, not "a cheap AILE proxy") with the ladder's audit record; validation paragraph adds the independent final-weights check.
+  - **Bug found:** Tier B silently failed on every joint-bank (`vtjoint`) checkpoint (adapter sliced one channel's d columns for a bank reading all H·d; monitor's `except: pass` hid it). Fixed in `semsimula-scaf` (`ae9094e`, pushed, +3 tests); monitor now records swallowed probe errors (uncommitted); ladder notebook audit print shows Tier A/B with 'absent' ≠ 0 (uncommitted).
+  - **Census** on six archived ladder checkpoints: Tier A 0.0 and Tier B 0.0 at every layer (`results/gradient_starvation/scaf_geometric_tiers_census.txt`).
+  - Open: the acceptance test's positive half (detect the known pre-fix leak) has never run; the leaky depthcond checkpoints are archived locally.
+  - §17e stiffness-audit paragraph got `par:su-stiffness-audit`. Rebuilt clean: **502 pp.**; Theorem 81 still p. 255 |
