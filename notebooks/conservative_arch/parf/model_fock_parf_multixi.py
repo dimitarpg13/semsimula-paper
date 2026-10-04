@@ -176,6 +176,29 @@ class FockMultiXiPARFConfig(MultiXiPARFConfig):
     # 'v1'.  No parameters are added or removed, so state_dicts remain
     # compatible in both directions.
     prefix_causal_registers: bool = True
+    # CB series (Depth_Ladder_and_Matched_Baseline_Protocol.md SS5.11): bound
+    # how much of each layer step goes through the non-conservative reverse
+    # channel.  Both act on the reverse-channel increment only; off (the
+    # defaults) leaves the forward pass and the parameter set unchanged.
+    #   fock_budget  (CB2): per token, ||increment|| <= rho * ||conservative
+    #                step||, where the conservative step is h_new - h before
+    #                the increment.  The cap factor is detached, so the model
+    #                gets no gradient for inflating its conservative step to
+    #                buy reverse-channel budget.  None = off.
+    #   fock_gate    (CB3): a per-token, per-layer gate g in [0, 1] on the
+    #                increment, g = clamp(1.2*sigmoid(w.[h_new, Q] + b) - 0.1,
+    #                0, 1).  The stretch gives exact zeros (a token whose step
+    #                is exactly the conservative one) and exact ones.  Its
+    #                layer-mean is drained by pop_fock_gate_mean() for an L1
+    #                penalty in the training loss.  Parameters are created
+    #                without consuming the torch RNG.
+    #   fock_gate_pin: verification only -- g == 1 exactly, gate parameters
+    #                still present.
+    fock_budget: Optional[float] = None
+    fock_gate: bool = False
+    fock_gate_bias_init: float = 2.0   # sigmoid(2)=0.881 -> g=0.957; inside the
+                                       # stretch, so the gate has gradient at init
+    fock_gate_pin: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -281,6 +304,32 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
             raise ValueError(
                 f"fock_version must be 'v1' or 'v2', got {cfg.fock_version!r}"
             )
+
+        # CB3 gate parameters.  torch.zeros/full, not nn.Linear, so building
+        # them consumes no RNG and every other parameter initialises exactly
+        # as in the ungated model.
+        self.fock_gate_w = None
+        self.fock_gate_b = None
+        if getattr(cfg, "fock_gate", False) or getattr(cfg, "fock_budget", None) is not None:
+            if self.reverse_ch is None:
+                raise ValueError(
+                    "fock_gate / fock_budget act on the reverse channel; they need "
+                    "fock_version='v2' and reverse_channel=True.")
+        if getattr(cfg, "fock_gate", False):
+            self.fock_gate_w = nn.Parameter(torch.zeros(L, 2 * d))
+            self.fock_gate_b = nn.Parameter(
+                torch.full((L,), float(cfg.fock_gate_bias_init)))
+        self._fock_gate_terms: List[torch.Tensor] = []
+        # Per-layer CB readings from the latest forward (python floats, no
+        # graph): eta = mean over tokens of ||increment|| / ||conservative
+        # step||, gate_mean, gate_zero (fraction of tokens with g == 0).
+        # Filled only when a CB switch is on or capture is active.
+        self.cb_stats: List[dict] = []
+        # True only inside _stack_forward's layer loop.  Under per-layer
+        # checkpointing, backward() re-runs _fock_layer_step to recompute
+        # activations; that recompute happens outside the loop, so it must
+        # not reset or append to cb_stats / _fock_gate_terms.
+        self._in_stack_forward = False
 
         # Warmup counter for the reverse-channel gate (incremented once per
         # training forward pass in _stack_forward).  Persisted so resumed
@@ -401,6 +450,14 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
 
         if layer_idx == 0 and self.training and getattr(cfg, "register_repulsion", False):
             self._repulsion_terms = []
+        _record = self._in_stack_forward
+        if layer_idx == 0 and _record:
+            # CB readings and gate terms are per forward pass; reset here, not
+            # in the reverse-channel branch, which a layer with no active
+            # registers skips.
+            self.cb_stats = []
+            if self.training:
+                self._fock_gate_terms = []
 
         # --- Creation ---
         alpha_max = None
@@ -511,6 +568,42 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
                 ).clamp(max=1.0)
                 scale = scale * warm
             increment = (dt * dt / m_b) * scale * Q_force
+            _cb_gate = getattr(cfg, "fock_gate", False)
+            _cb_budget = getattr(cfg, "fock_budget", None)
+            if _cb_gate or _cb_budget is not None or self._fock_capture is not None:
+                # The conservative step this layer took, before the increment.
+                d_cons = h_new - h
+            g = None
+            if _cb_gate:
+                if getattr(cfg, "fock_gate_pin", False):
+                    g = torch.ones_like(increment[..., :1])
+                else:
+                    z = (torch.cat([h_new, Q_force], dim=-1)
+                         @ self.fock_gate_w[layer_idx]
+                         + self.fock_gate_b[layer_idx]).unsqueeze(-1)
+                    g = (1.2 * torch.sigmoid(z) - 0.1).clamp(0.0, 1.0)
+                if self.training and _record:
+                    self._fock_gate_terms.append(g.mean())
+                increment = increment * g
+            if _cb_budget is not None:
+                n_c = d_cons.norm(dim=-1, keepdim=True)
+                n_i = increment.norm(dim=-1, keepdim=True)
+                cap = (float(_cb_budget) * n_c / n_i.clamp(min=1e-12)).clamp(max=1.0)
+                increment = increment * cap.detach()
+            if _record and (_cb_gate or _cb_budget is not None
+                            or self._fock_capture is not None):
+                with torch.no_grad():
+                    eta = (increment.norm(dim=-1)
+                           / d_cons.norm(dim=-1).clamp(min=1e-12))
+                    self.cb_stats.append({
+                        "layer": layer_idx,
+                        "eta": float(eta.mean()),
+                        "eta_p90": float(eta.float().flatten().quantile(0.9)),
+                        "eta_max": float(eta.max()),
+                        "gate_mean": float(g.mean()) if g is not None else 1.0,
+                        "gate_zero": float((g == 0).float().mean())
+                                     if g is not None else 0.0,
+                    })
             if self._fock_capture is not None:
                 with torch.no_grad():
                     h_rms = h_new.pow(2).mean().sqrt().clamp(min=1e-8)
@@ -641,38 +734,45 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
         if return_trajectory:
             traj = [h.detach().cpu()]
 
-        for ell in range(cfg.L):
-            # Gate on grad-tracking, not train/eval mode: evaluate() runs
-            # this forward inside torch.enable_grad() (the PARF/SARF force
-            # needs autograd.grad at every layer regardless of train/eval),
-            # so gating on self.training silently disables checkpointing
-            # during evaluation.
-            if cfg.use_layer_checkpoint and torch.is_grad_enabled():
-                def _ckpt_step(
-                    _h, _h_prev, _r, _sal, _m_b, _gamma,
-                    _dt=dt, _ell=ell,
-                ):
-                    h_n, h_p, r_n, s_n = self._fock_layer_step(
-                        _h, _h_prev, _r, _sal, _m_b, _gamma, _dt, _ell,
-                    )
-                    return h_n, h_p, r_n, s_n
+        # CB readings / gate terms record only inside this loop (see
+        # _in_stack_forward in __init__); recomputes in backward do not.
+        self._in_stack_forward = True
+        try:
+            for ell in range(cfg.L):
+                # Gate on grad-tracking, not train/eval mode: evaluate() runs
+                # this forward inside torch.enable_grad() (the PARF/SARF force
+                # needs autograd.grad at every layer regardless of train/eval),
+                # so gating on self.training silently disables checkpointing
+                # during evaluation.
+                if cfg.use_layer_checkpoint and torch.is_grad_enabled():
+                    def _ckpt_step(
+                        _h, _h_prev, _r, _sal, _m_b, _gamma,
+                        _dt=dt, _ell=ell,
+                    ):
+                        h_n, h_p, r_n, s_n = self._fock_layer_step(
+                            _h, _h_prev, _r, _sal, _m_b, _gamma, _dt, _ell,
+                        )
+                        return h_n, h_p, r_n, s_n
 
-                h_new, h_prev_out, r, salience = (
-                    torch.utils.checkpoint.checkpoint(
-                        _ckpt_step,
-                        h, h_prev, r, salience, m_b, gamma,
-                        use_reentrant=False,
+                    h_new, h_prev_out, r, salience = (
+                        torch.utils.checkpoint.checkpoint(
+                            _ckpt_step,
+                            h, h_prev, r, salience, m_b, gamma,
+                            use_reentrant=False,
+                        )
                     )
-                )
-            else:
-                h_new, h_prev_out, r, salience = self._fock_layer_step(
-                    h, h_prev, r, salience, m_b, gamma, dt, layer_idx=ell,
-                )
+                else:
+                    h_new, h_prev_out, r, salience = self._fock_layer_step(
+                        h, h_prev, r, salience, m_b, gamma, dt, layer_idx=ell,
+                    )
 
-            h_prev = h_prev_out
-            h = h_new
-            if traj is not None:
-                traj.append(h.detach().cpu())
+                h_prev = h_prev_out
+                h = h_new
+                if traj is not None:
+                    traj.append(h.detach().cpu())
+
+        finally:
+            self._in_stack_forward = False
 
         return h, traj
 
@@ -850,6 +950,18 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
         this out of ``forward`` guarantees the term never enters the eval PPL.
         """
         terms, self._repulsion_terms = self._repulsion_terms, []
+        if not terms:
+            return self.register_embed.new_zeros(())
+        return torch.stack(terms).mean()
+
+    def pop_fock_gate_mean(self) -> torch.Tensor:
+        """Drain the CB3 gate's per-layer means into one scalar (the L1 term).
+
+        Call once after a training forward and before backward(), like
+        pop_repulsion_loss().  Zero when the gate is off or no layer had
+        active registers.  The penalty weight is applied by the caller.
+        """
+        terms, self._fock_gate_terms = self._fock_gate_terms, []
         if not terms:
             return self.register_embed.new_zeros(())
         return torch.stack(terms).mean()

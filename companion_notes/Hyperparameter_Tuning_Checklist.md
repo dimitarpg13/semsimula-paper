@@ -121,7 +121,7 @@ empirical claim about the live 1.2e-03 run, not a guess.
 | --- | --- | --- | --- |
 | `FIXED_GAMMA` | 0.10 | swept once | `gamma_sweep` in results, but never at this LR |
 | `LADDER_T` | 8.0 | **held by design** | the ladder's controlled variable; moving it voids §2 of the protocol |
-| `LANGEVIN_T` | 0.0 | untested | thermostat off |
+| `LANGEVIN_T` | 0.0 | untested; SR5 arms calibrated 2026-10-03 (0.00025, 0.0022) | thermostat off |
 | `PRECISION_LR_MAX` | 1.0 | **yes, softly** | a tanh cap; `bproj_sig` 84 means it is deeply saturated |
 | `CREATION_LOGIT_SCALE_MAX` | 100.0 | not yet | `sig_max` reached 60.02 at 1.2e-03; **absorbing** if touched |
 
@@ -597,6 +597,8 @@ clips on 0.0% of steps**, so the honest comparison for L=4 is against zero,
 not against 4.2%. Any non-zero rate at L=4 and 1.2e-03 is itself the depth
 signal — the bands above stay as a fallback for a re-run at 3e-04.
 
+**Record the trained θ = ω·Δt distribution with every Gate 3 reading** (added 2026-10-04): p05/p50/p95 from 6b-13, θ/sin θ at the median, and whether 1.5× refinement carries the median across π. A depth choice is also a choice of θ (Δt = T/L), and refinement readiness appears to track the π crossing (SR-π, protocol §5.9). A ladder point whose stiff modes train near or past π should be expected to refine badly.
+
 **Also record `sig_max` and which register holds it.** Per §7.4 the
 register pool is shared, so depth changes how many layers write the same
 `lambda_k`. `sig_max == CREATION_LOGIT_SCALE_MAX` at any ladder
@@ -634,19 +636,70 @@ adds a point to a curve.
 - [ ] **G3** — F3.2: L=2 `attention_potential` with everything live (`rglive` + `vplive` + `xilive`). Settles the exchange field's value against G2.
 - [ ] **G1** — **scheduled, deferred until G2–G4 are in.** A GPT-2 matched on parameters at the same width: d=384, L=22, untied, 77.8M. Width is held at 384 by design: comparisons stay in the same semantic-space dimension, so d=512 was rejected. The author's reservation is that matching the parameter count by depth ignores the model's dynamics and may draw reviewer questions; the run is kept for completeness. GPT-2 notebook Cell 0: `N_LAYERS = 22`, `TIE_EMBEDDINGS = False`. Commit and push the `VARIANT_TAG` folder guard before running it.
 
+## Scheduled: CB-series — balancing the conservative and Fock paths — **opened 2026-10-03** (protocol §5.11)
+
+The author's hypothesis: with the Fock path present, PARF's V_φ is starved, so the model gains PPL at the cost of conservativity. All switches are in Cell 0 and off by default; verified in `debug/verify_cb_switches.py`, where each neutral setting is bit-identical to G2. The baseline η (Fock increment / conservative step) on the Gen 2 no-exchange weights is 1.6 at layer 0 and 3.0 at layer 1.
+
+- [ ] **Stop-rule check:** G2 settled < 56.6. Otherwise the series does not run.
+- [ ] **CB0** (free): η on G2's checkpoint, and 6b-11 (inference slider) on G2.
+- [ ] **CB2b** — `FOCK_BUDGET = 0.3`. **The key arm:** mostly conservative by construction.
+  - *Added 2026-10-04:* G2 shows the register path amplifying refinement failure (Gate 3 +1,274% against F3.1's +143%). So every CB arm also reads **Gate 3 with the θ distribution**, and capping the Fock path is predicted to cut it sharply.
+- [ ] **CB1** — `REVERSE_CHANNEL_WARMUP_STEPS = 20000`: Fock arrives late.
+- [ ] **CB3** — `FOCK_GATE_L1 = 0.02`: a learned per-token gate, with ν = the share of exactly-conservative tokens.
+- [ ] **CB2a** — `FOCK_BUDGET = 1.0`.
+
+**CG8 reading on every SR and CB arm, and on the baselines** (protocol §5.12): does the geometry predict the model's own next-token errors beyond softmax entropy? Signals: the energy anomaly, the CG6 deflection, and η. Score: ΔAUROC over entropy alone.
+- [ ] Implement 6b-14 (CG8 cell), evaluation only.
+- [ ] CG8 on the baselines: F3.1, G2, L=4 live (free).
+
+## Scheduled: FO-series — does OWT need second-order training? — **opened 2026-10-03** (protocol §5.13)
+
+Scope: at the current damping regime (constant γ = 0.1, ζ ≈ 0.05, CfC low-rank, live gradients, L=2).
+- [x] **Stage 0, corpus side** (C1–C5) — done 2026-10-04: OWT more long-range dependent; equal total I_pred; C3–C5 predictions missed (protocol §5.13 results): Zipf, the I_pred proxy, repetition autocorrelation, embedded-stream autocovariance, and the ξ filter-bank conditioning, on TinyStories vs OWT. Local, free.
+- [x] **Stage 0, model side** (M1 anharmonic fraction ε, M2 inertial share) — done 2026-10-04: TinyStories ε = 0 (force constant across a step); OWT CfC ε 0.3–6. The full 2×2 runs, plus ε on SO-TS: on the TinyStories second-order anchor and Fock-G1, and on F3.1, L=4 live and (later) G2.
+- [ ] Implement the **FO-a switch** (h_prev := h per layer, the Fock-G1 definition) behind Cell 0; verify it is bit-identical to G2 when off.
+- [ ] **Stage 1:** FO-OWT, SO-TS, FO-TS (the 2×2 with G2). After G2–G4, before CB and SR.
+  - FO-OWT: 32,500 steps.
+  - SO-TS and FO-TS: **16,250 steps** (about 7 h each; amended 2026-10-04), then the settling check. If either fails, extend both equally.
+  - Prerequisites: the full TinyStories token cache (one-time, on Colab), a corpus switch in Cell 0, and the FO-a switch (each verified).
+- [ ] *FO-b (true overdamped step): only if FO-a shows a gap.*
+- [ ] *γ(h) link: test the local-order prediction once a trained γ(h) arm exists.*
+
 ## Agenda: SR-series — settling, refinement and depth extension — **opened 2026-10-03**
 
 Theory: book §8.9 (Props 44–45). Pre-registration: [`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md) §5.9. Baseline config: F3.1 (L=2 conservative-only, live V_φ + ξ), full runs.
 
+> **Insight, 2026-10-04: refinement readiness tracks the π crossing** (protocol §5.9, SR-π).
+>
+> The L=4 Fock live arm refines far better than the L=2 Fock live arm (G2): Gate 3 at 1.5× the steps is +216% against +1,274%. Prop 44 amplifies the phase-sampled dissipation by θ/sin θ (θ = ω·Δt), most sharply near θ = π.
+>
+> - **L=4** trains its stiff modes at θ ≈ 2.35 (θ/sin θ = 3.3) and stays below π when refined (θ ≈ 1.57).
+> - **G2** trains them at θ ≈ 3.40, just past π (θ/sin θ = −13.3). Refinement carries them back across π (θ ≈ 2.27), which flips the sign of the term the network learned to rely on.
+> - **F3.1** also crosses π (4.32 → 2.88) but fails much less (+143%). So the crossing is not sufficient alone, and the register path amplifies it.
+>
+> What it suggests:
+>
+> 1. **A prediction to test.** Gate 3 cost tracks how close the trained ω·Δt sits to π and whether refinement crosses it. An L=8 model (ω·Δt ≈ 1.2) should be more refinement-ready still, approaching flow (SR-π.1).
+> 2. **SR2 becomes a sharper test.** The exact damped flow removes the phase term altogether, so on G2's configuration it should cut Gate 3 far more than on F3.1's (SR-π.2). Run SR2 on both configurations.
+> 3. **A cheap design lever.** Choose L or Δt so the stiff modes train below π. Since Δt = T/L at fixed T = 8, this is a choice of L. It becomes a standing rule (§7.5) once SR-π.1 or SR-π.3 confirms it.
+>
+> One seed per arm, medians over wide spreads (G2's θ spans 2.6–5.5 between p05 and p95), and "1.5×" means N = 3 at L=2 but N = 6 at L=4.
+
 - [ ] **SR1** — palindromic step order (O half-steps around the kick). Code: reorder `_layer_step_langevin`. Cheapest; run first.
-- [ ] **SR2** — exact damped-mode flow on the stiff subspace, constant γ. Code: new joint substep in `cfc_baoab.py` (Prop 45, closed form for all damping regimes); replaces A·O·A on span(U) only.
+- [ ] **SR2** — exact damped-mode flow on the stiff subspace, constant γ. Code: new joint substep in `cfc_baoab.py` (Prop 45, closed form for all damping regimes); replaces A·O·A on span(U) only. **Two arms:** F3.1's configuration (the baseline) and G2's (SR-π.2: predicted to cut Gate 3 by more than half there).
 - [ ] **SR4a** — variable-step training at fixed T, N ~ U{2, 3, 4}. Code: per-batch step count and depth code indexed by time (as Cell 6b-7's `hold` policy).
 - [ ] **SR3** — SR2 plus constant-ratio friction Γ = γ₀I + 2ζ*√(L/m) at ζ* = 1 (book Prop 43, eq. constant-ζ).
 - [ ] **SR4b** — variable-step training at fixed Δt, N ~ U{2, 3} (the extension axis).
-- [ ] **Each arm:** settled PPL, Gates 1–3 (6b-7), CG1 (6b-9), CG3 (6b-10), ω·Δt (6b-13), SCAF.
+- [ ] **Each arm:** settled PPL, Gates 1–3 (6b-7), CG1 (6b-9), CG3 (6b-10), ω·Δt (6b-13), SCAF. **With every Gate 3 reading, report the trained θ = ω·Δt distribution (p05/p50/p95), θ/sin θ at the median, and whether 1.5× refinement crosses π.**
 - [ ] **After SR2–SR4a:** score the decision rule and the Gate 1/Gate 3 rank-order check (§5.9).
 
-Not gated on the live-gradient ladder, but competes with it for GPU time. Suggested placement: after P2.2 and the 77M GPT-2 control.
+Not gated on the live-gradient ladder, but competes with it for GPU time. Placement (updated 2026-10-04): after G2–G4 and the Zenodo upload, behind the FO 2×2 and the CB series. P2.2 has run as G2; the parameter-matched GPT-2 (G1) is deferred.
+- [ ] **SR-π.3** (free): on G2's checkpoint, the Gate 3 loss rise split by whether a token's stiff modes cross π under refinement (protocol §5.9, SR-π).
+- [ ] **SR-π.2**: SR2 on G2's configuration as well as F3.1's, testing whether removing the phase term cuts Gate 3 by more than half.
+- [ ] *SR-π.1: an L=8 Fock live arm (θ ≈ 1.2), testing Gate 3 ≤ +100%. About 55 h; after the CB series.*
+- [ ] **SR5b** — thermal training, `LANGEVIN_T = 0.0022` (r = 0.3, calibrated on F3.1: `debug/calibrate_langevin_T_output.txt`). No code needed; tag `T0p0022`. Predicted to trade along the Gate 1 / Gate 3 frontier (65%).
+- [ ] **SR5a** — `LANGEVIN_T = 0.00025` (r ≈ 0.1), predicted near-null.
+- [ ] *SR5c (annealed thermostat, per-layer T → 0 with late damping): only if SR4b passes Gate 2; needs per-layer T in `ou_step`.*
 
 ## TOP PRIORITY: gradient starvation across the ladder — **opened 2026-09-30**
 

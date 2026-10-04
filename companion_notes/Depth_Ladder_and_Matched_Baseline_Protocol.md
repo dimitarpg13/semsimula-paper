@@ -2923,6 +2923,8 @@ Book §8.9 (`ssec:settling-refinement`, Props 44–45) gives the theory: the spl
 | **SR3** | SR2 + constant-ratio friction ζ* = 1 on the stiff modes | **≤ +70%** | **≤ +50%** | **≤ +25%** (inertia falls) | within +5% |
 | **SR4a** | train with N ~ U{2, 3, 4} at T = 8 (depth code by time, 6b-7 `hold` policy) | **≤ +10% on N ∈ {2, 3, 4}** | not predicted | **≥ +27%** (≥ 80% of baseline: inertia kept) | within +5% |
 | **SR4b** | train with N ~ U{2, 3} at Δt = 4 | not predicted | **≤ +10% at N = 3** | not predicted | within +5% |
+| **SR5a** | thermal training, `LANGEVIN_T = 0.00025` (r ≈ 0.1; added 2026-10-03, see below) | within ±25% of +143% | within ±25% of +92% | within ±25% of +34% | within +2% |
+| **SR5b** | thermal training, `LANGEVIN_T = 0.0022` (r = 0.3) | **≤ +100%**, called at 45% | **≤ +70%**, called at 40% | **≤ +25%**, called at 60%: inertia falls | **+2% to +8%**, point +4% |
 
 **Decision rule** (scored after SR2–SR4a are in):
 
@@ -2932,11 +2934,62 @@ Book §8.9 (`ssec:settling-refinement`, Props 44–45) gives the theory: the spl
 - **Neither meets it:** the cause lies in what no arm touches (per-step refreezing of the occupancies, the kick, per-layer context, the projection). Record this as a negative result.
 - **The common-cause check:** across the baseline and SR1–SR4a, Gate 1 and Gate 3 have been perfectly rank-ordered over the four L=2 arms so far. SR4a is predicted to **break** that ordering, keeping inertia while being refinable; SR3 is predicted to **keep** it, losing both together.
 
-**Order and cost:** SR1 (cheapest; code change only), then SR2, then SR4a, then SR3, then SR4b. About 14 GPU-h each at L=2. Implementation note: SR2/SR3 need a joint damped-mode substep on span(U) in `cfc_baoab.py`; SR4 needs the step count sampled per batch and the depth code indexed by time. Neither exists yet.
+**SR-π: refinement cost and the π crossing (added 2026-10-04, before any run that tests it).**
+
+Proposition 44 amplifies the phase-sampled dissipation of the split step by θ/sin θ (θ = ω·Δt), and the amplification is sharpest near θ = π, where the sampled phase aliases. Three Gen 3 arms now have both the trained θ (6b-13 median) and Gate 3 at 1.5× the steps:
+
+| arm | trained θ | θ/sin θ | θ after 1.5× refinement | crosses π? | Gate 3, 1.5× |
+| --- | ---: | ---: | ---: | --- | ---: |
+| L=4 Fock live | 2.35 | +3.3 | 1.57 | no | +216% |
+| F3.1 (L=2 conservative-only) | 4.32 | −4.7 | 2.88 | yes | +143% |
+| G2 (L=2 Fock live) | 3.40 | −13.3 | 2.27 | yes | **+1,274%** |
+
+**Reading.**
+
+- **The Fock pair agrees with the mechanism.** G2 trains its stiff modes just past π, at the largest |θ/sin θ| of the three, and refinement carries them back across π, flipping the sign of the phase term. L=4 trains below π and stays below it.
+- **F3.1 does not fit cleanly.** It crosses π but fails much less, so the crossing is not sufficient alone. The register path (present in G2 and L=4, absent in F3.1) amplifies whatever the crossing does.
+- **Weaknesses:** one seed each, medians over wide spreads (G2's θ runs from 2.6 to 5.5 between p05 and p95), and "1.5×" means N = 3 at L=2 against N = 6 at L=4.
+
+**Predictions, pre-registered.**
+
+| id | prediction | called |
+| --- | --- | --- |
+| SR-π.1 | Across Fock arms at matched mechanism and convention, Gate 3 at 1.5× falls monotonically as the trained median θ moves below π. An **L=8 Fock live** arm (Δt = 1; expected θ ≈ 1.2) reads Gate 3 ≤ +100%. | 60% |
+| SR-π.2 | On G2's configuration, **SR2** (the exact damped-mode flow, which removes the phase term) cuts Gate 3 by more than half, a far larger relative cut than on F3.1's configuration. | 55% |
+| SR-π.3 | A **diagnostic, free:** on G2's checkpoint, split the Gate 3 loss rise by token according to whether the token's stiff modes cross π under refinement (from the 6b-13 per-coordinate θ). Tokens whose modes cross contribute disproportionately: their mean loss rise is ≥ 2× that of non-crossing tokens. | 55% |
+
+**Design lever if these hold.** Choose L, or Δt, so the stiff modes train below π. Report the trained θ distribution with every Gate 3 reading.
+
+**Order.** SR-π.3 is free and runs first. SR-π.2 rides on SR2 (adding G2's configuration as a second SR2 arm). SR-π.1 needs an L=8 Fock live run: about 6 s/step, so about 55 h. It is scheduled after the CB series.
+
+**SR5, thermal training (added 2026-10-03, before any run).** `LANGEVIN_T > 0` turns the O-step into an FDT-locked thermostat. The noise is applied in training only (`noise_eval=False`), so eval PPL and every 6b probe stay deterministic. The cell-0 switch and its tag already exist; the tag now renders `T0p00025` / `T0p0022`.
+
+- **Why it is in the SR series.** It attacks the common cause from a different side than SR4.
+  - SR4 randomises the discretisation, so the model must make its momentum work at every step count.
+  - Velocity noise randomises the phase and momentum detail of the one discrete trajectory (Prop 44's mechanism), so the readout cannot rely on it.
+- **Why it is not a settling route at inference.** The FDT stationary state holds ⟨m‖v‖²⟩ = dT. In addition, with γT = 0.8 the relaxation time (1/γ = 10) exceeds the trajectory (T = 8), so 2–4 steps never anneal into a basin.
+- **Temperatures are calibrated, not guessed** (`debug/calibrate_langevin_T.py` on F3.1's checkpoint, eval, 8 × 512 validation tokens; output saved next to it). The kinetic temperature T_kin = m‖v‖²/d entering the O-step has a median of 1.05e-2 at layer 0 and 5.19e-2 at layer 1, pooled 2.43e-2. The median speed rises from 6.7 to 15.0 across the two layers: the trajectory is accelerating, not settling, inside the trained window. T_r = r²·median(T_kin) gives an equilibrium thermal speed of r × the typical speed:
+
+  | arm | r | `LANGEVIN_T` | one O-step injects (median, relative to ‖c v‖, c = e^{−0.4}) |
+  | --- | --- | --- | --- |
+  | SR5a | 0.1 | 0.00025 (calibrated 2.43e-4) | 0.11 (p10 0.07, p90 0.19) |
+  | SR5b | 0.3 | 0.0022 (calibrated 2.19e-3) | 0.33 (p10 0.21, p90 0.58) |
+
+- **The frontier prediction** (the point of the arm). The four L=2 arms have Gate 1 and Gate 3 perfectly rank-ordered. **SR5 is predicted to move along that ordering, not off it:** lower Gate 3 comes with lower Gate 1 and a PPL cost. Called at 65%. SR4a is predicted to break the ordering (above).
+- **Decision rule.**
+  - **SR5b meets Gate 3 ≤ +100% at PPL ≤ +3%:** thermal training is a cheap repair. Adopt it as a default training regulariser and run it together with SR4a.
+  - **It lowers Gate 3 only with Gate 1 ≤ +25% and PPL ≥ +5%:** it trades along the frontier. That confirms the momentum tension, and SR4 remains the route.
+  - **SR5a and SR5b both within noise of the baseline:** phase-reliance is not what velocity noise at these scales reaches. Record it as a negative result.
+- **CG8 is read on SR5 as well.** Predicted s_G ΔAUROC < 0.01, called at 60%.
+- **SR5c, annealed thermostat: conditional on SR4b, not scheduled.** A per-layer temperature, hot early and zero at the last step, combined with stronger late damping (γ(h) or SR3's ζ* = 1): anneal into the attractor, then come to rest. With 2–4 steps there is no time for barrier crossing (1/γ > T), so it is meaningful only on a model trained over longer horizons. It runs only if SR4b passes its Gate 2 threshold. It needs a per-layer temperature in `ou_step`, which does not exist yet.
+
+**Order and cost:** SR1 (cheapest; code change only), then SR2, then SR4a, then SR3, then SR4b. SR5a and SR5b need no code and can run in any free slot; SR5b first. About 14 GPU-h each at L=2. Implementation note: SR2/SR3 need a joint damped-mode substep on span(U) in `cfc_baoab.py`; SR4 needs the step count sampled per batch and the depth code indexed by time. Neither exists yet.
 
 **Caveat recorded in advance:** with γ·T = 0.8, Prop 44 is first-order and qualitative. Its prediction is the *mechanism* (SR2 helps Gate 3), not a magnitude.
 
 ### 5.10 The v6 abstract-gating runs — **pre-registered 2026-10-03, before any run**
+
+> **Label note (2026-10-03).** The book already uses "Experiment G1–G4" for the geometric capability experiments (§18d: analogy, energy anomaly, geodesic distance, asymmetry). These runs therefore appear in the book as **AG1–AG4** (abstract-gating). In these notes and in conversation they stay G1–G4.
 
 The v6 abstract (book stage 2, `Paper_v6_Section_Audit.md`) will state three things the published Gen 3 models do not yet settle: what the Fock register mechanism is worth under live gradients, whether depth helps under live gradients, and whether parity with the matched GPT-2 survives a parameter-matched baseline. Each run below decides one of them. All three run on the same notebooks, data and 32,500-step schedule as the published arms. Settled = the mean of the last three evals.
 
@@ -2961,6 +3014,51 @@ The v6 abstract (book stage 2, `Paper_v6_Section_Audit.md`) will state three thi
 - **Key line 2, depth under live gradients:** settled > 50.10 means L=4 beats L=2 on one mechanism and one convention, which is the first clean depth answer. Called at about 75%. If it is ≤ 50.10, the L=2 < L=4 inversion survives the gradient fix, and depth is not what the L=4 run bought.
 - **CG1 forecast:** V_φ attribution |·| < 0.05 (inert, as at L=4), from the substitution reading. Above 0.15 refutes the substitution account at L=2.
 
+**G2 scored, 2026-10-04.**
+
+| measure | value |
+| --- | --- |
+| settled (last three evals: 53.01, 53.29, 53.07) | **53.12** |
+| best | 51.27 at step 31,000 |
+| parameters | 76,770,256, identical to the Gen 2 twin |
+| speed | 1.64 s/step |
+| ω·Δt at the endpoint | p50 3.41, 99.7% past the wall |
+| SCAF audits (5k, 10k, …, 32.5k) | CLEAN at all seven: future perturbation 0.0, Tier A and Tier B both 0 |
+
+The step-32,500 audit printed honest/standard PPL as nan, while its future perturbation is exactly 0. The independent causality check on the final weights is still to run.
+
+- **Point 53, band 50–57: HIT, on the point.**
+- **Step-3,000 criterion: HIT.** 123.59 against ≤ 137.1, which is −12.1% vs the Gen 2 twin's 140.61.
+- **Key line 1, the register mechanism under live gradients: YES.** 53.12 vs F3.1's 57.76, −8.0%.
+- **Key line 2, depth under live gradients: YES.** The L=4 live arm, at 50.10, is 5.7% better (a 3.02 PPL gap, larger than either arm's last-three spread). It costs 1.9× per step (3.12 vs 1.64 s/step). This is the first clean depth answer: one mechanism, one convention.
+- **Against the Gen 2 twin (66.98): −20.7%.** Against the matched GPT-2 (49.81): 1.067×.
+- **CB stop rule:** G2 < 56.6, so the CB series is **live**.
+- **CG1 V_φ forecast: HIT.** 6b-9 gives a V_φ share of **−0.0002** against the threshold |·| < 0.05. V_φ is inert in the L=2 Fock arm, as at L=4 (−0.0035), against −0.291 in F3.1. The substitution account now holds at both depths.
+
+**G2 6b readings, 2026-10-04** (best checkpoint, step 31,000; files in G2's results folder):
+
+| reading | F3.1 (L=2 conservative-only live) | **G2 (L=2 Fock live)** | L=4 Fock live |
+| --- | ---: | ---: | ---: |
+| CG1 V_φ share | −0.291 | **−0.0002** | −0.0035 |
+| CG1 reverse-channel share (cons+LN → full) | — | −0.694 | −0.449 |
+| CG1 R(geo) | 0.665 | 0.911 | 1.369 |
+| Gate 1, velocity reset | +34.3% | **+32.7%** (51.99 → 68.97) | +55% |
+| Gate 2, 1.5× steps at the trained Δt | +92% | +50.7% (N=3); +14.7% at N=4 | +41% |
+| Gate 3, 1.5× steps at fixed T | +143% | **+1,274%** (N=3); +611% at N=4 | +216% (N=6) |
+| CG6 forcing, layer 1 | — | uniform: 100% of tokens above 0.75 | — |
+| CG7 ω·Δt p50 | 4.32 | **3.40**: in the pre-registered L=2 band [3.3, 4.2], HIT | 2.35 |
+| 6b-8, reverse channel off (inference ablation) | — | **+300%** (51.17 → 204.84) | — |
+| 6b-8, bank frozen at init | — | +24.0% | — |
+
+**Two findings.**
+
+1. **The momentum–refinement rank order breaks.** Book §8.9 states that, across four L=2 arms, Gate 1 (reliance on velocity) and Gate 3 (refinement failure) are perfectly rank-ordered. G2 relies on velocity *slightly less* than F3.1 (+32.7% vs +34.3%), yet fails refinement **nine times worse** (+1,274% vs +143%). The non-conservative register path drives refinement failure independently of momentum. That is consistent with the Gen 1 finding, "how badly refinement fails tracks non-conservative content". §8.9's common-cause paragraph needs this fifth arm (stage 2). For the CB series it raises a direct prediction: capping the Fock path (CB2, CB3) should cut Gate 3 sharply.
+2. **Ablation overstates trained value by far more under live gradients.**
+   - **Under live gradients:** switching the reverse channel off at inference costs +300%, yet the model trained without it (F3.1, 57.76) is only 8.7% worse than G2.
+   - **In Gen 2:** the same pair read about +275–291% against 31.3%.
+
+   The book's methodological sentence ("ablation indicates 3.75–3.91× against 1.31× trained without") gains a live-gradient row: **4.00× against 1.087×**.
+
 **G3 (= F3.2). L=2 `attention_potential`, everything live** (ladder notebook). Cell 0: `LADDER_L = 2`, `LADDER_MECHANISM = 'attention_potential'`, `REVERSE_CHANNEL = True`, `RELAX_GRAD_PATH = 'live'`, `VPHI_GRAD_PATH = 'live'`, `XI_GRAD_PATH = 'live'`, `PROBE_MAX_STEPS = None`. The tag carries `rglive`, `vplive` and `xilive` and ends `_attnpot`. Its partial-live parent is the published `rglive` model (61.11).
 
 - **Prediction:** settled **51**, band **46–56**. The live V_φ/ξ gain is smaller than the conservative-only arm's 34%, because the exchange field already carries some of what the starved channels could not.
@@ -2972,6 +3070,279 @@ The v6 abstract (book stage 2, `Paper_v6_Section_Audit.md`) will state three thi
 **What the abstract says in each case** is fixed now, so that the results fill in numbers rather than choose the story. The parity sentence quotes both GPT-2 baselines with parameter counts. The register sentence quotes G2 against F3.1. The depth sentence quotes the L=4 live arm against G2. The exchange-field sentence quotes G3 against G2. Each claim carries one seed and an untuned baseline in the same sentence.
 
 **Order and cost (author's call, 2026-10-03):** G2 first (it gates two claims and is the longest run, about 12 h at 1.29 s/step), with G4 (minutes) alongside. G3 next, or at the same time if a second session is free (about 13–14 h). G1 is deferred until all three are in. With concurrent Colab sessions, all three trainings can run at once. They share no files: separate tags and, for G1, separate folders.
+
+### 5.11 CB1–CB3: balancing the conservative and Fock paths — **pre-registered 2026-10-03, before any run**
+
+**Question.** Is the pair potential (PARF's V_φ) starved when the Fock register path is present? And can a model keep most of the Fock gain while staying mostly conservative? (Author's hypothesis, 2026-10-03.)
+
+**Evidence so far.** At L=4, V_φ's 6b-9 share of the step is −0.0035 in the Fock arm, against −0.291 in the conservative-only arm, so the two read as substitutes. G2's 6b-9 tests this at L=2: the pre-registered value in §5.10 is |share| < 0.05.
+
+**Measure of "mostly conservative".** Any non-zero Fock force breaks strict conservativity, so the claim needs a number.
+
+- **η** (per token, per layer) = ‖Fock increment‖ / ‖conservative step‖. The conservative step is h_new − h before the increment, LayerNorm included. Reported as the mean, p90 and max over tokens.
+- **ν** (CB3 only) = the fraction of tokens whose gate is exactly 0. For those tokens the layer step is exactly the conservative step.
+- η measures the magnitude of the non-gradient increment, not its curl. It is therefore an upper bound on the non-conservative share of the step.
+
+**Baseline η, measured 2026-10-03** (`debug/verify_cb_switches_output.txt`, on the trained Gen 2 no-exchange L=2 weights, eval, 2 × 512 validation tokens):
+
+| layer | mean | p90 | max |
+| --- | ---: | ---: | ---: |
+| 0 | 1.62 | 1.70 | 2.13 |
+| 1 | 3.05 | 3.45 | 3.84 |
+
+The Fock increment is larger than the conservative step at both layers, and three times larger at the output layer. The Gen 2 model is Fock-dominated by this measure. G2's own η is read from its checkpoint before any CB arm starts.
+
+**Arms.** Each is G2's configuration (L=2, `none`, Fock on, V_φ and ξ live) plus one switch, trained from scratch for 32,500 steps. The switches were verified on 2026-10-03 (`debug/verify_cb_switches.py`):
+
+- At the neutral setting, every switch gives logits bit-identical to G2's, in eval and in train with the same Gumbel seed.
+- G2's default build is bit-identical to the committed model file, including gradients, so a running G2 can resume on the new code.
+- CB3 adds 1,538 parameters and consumes no RNG.
+- The CB2 bound holds for every token.
+- CB3 passes the future-perturbation test.
+
+| arm | Cell 0 | tag | what it tests |
+| --- | --- | --- | --- |
+| **CB1** | `REVERSE_CHANNEL_WARMUP_STEPS = 20000` (forwards; 10,000 steps at accum 2, against 2,000) | `rcw20000` | Fock arrives late. Does V_φ stay awake when it matures first? |
+| **CB2a** | `FOCK_BUDGET = 1.0` | `fb1` | per token, the Fock increment is no larger than the conservative step |
+| **CB2b** | `FOCK_BUDGET = 0.3` | `fb0p3` | the conservative step is at least 3.3× the Fock increment: **mostly conservative** |
+| **CB3** | `FOCK_GATE_L1 = 0.02` | `fg0p02` | a learned per-token gate, g = clamp(1.2σ(w·[h, Q] + b) − 0.1, 0, 1), with an L1 penalty; the Fock path acts only where it pays |
+
+**Fixed details.**
+
+- **CB2's cap factor is detached.** The model gets no gradient for inflating its conservative step to buy Fock budget.
+- **CB3's gate starts at g = 0.957** (b = 2, w = 0), inside the stretch, so it has gradient from step 0.
+- **The budgets are fixed now** and are not chosen after G2's η is known. 0.3 is the operational threshold for "mostly conservative".
+
+**Predictions.** "Gap" means F3.1 (57.76) minus G2's settled value. "Recovered" means the share of the gap an arm keeps, so 100% means as good as G2.
+
+| arm | settled PPL | gap recovered | η mean (both layers) | V_φ 6b-9 share |
+| --- | --- | --- | --- | --- |
+| CB1 | within 3% of G2 | ≥ 80% | within 25% of G2's | \|·\| ≥ 0.15, called at **35%**: I expect the substitution to be structural, not a matter of order |
+| CB2a | within 3% of G2 | ≥ 70% | ≤ 1.0 by construction | \|·\| ≥ 0.05, called at 50% |
+| CB2b | — | **≥ 50%**, called at **50%** | ≤ 0.3 by construction | \|·\| ≥ 0.15, called at **65%**: V_φ wakes when Fock is capped |
+| CB3 | — | ≥ 50% | ≤ 0.5 | ν ≥ 0.3, called at 40%. CB3 Pareto-dominates CB2 (lower PPL at equal η), called at 55% |
+
+**Success criterion, the claim the book could make.** At least one arm has η mean ≤ 0.3 at both layers and recovers ≥ 50% of the gap. If so: "a model whose every layer step is at least 70% conservative by magnitude keeps half or more of the register mechanism's gain."
+
+**Stop rule.** If G2 settles at or above 56.6 (within 2% of F3.1), the Fock path adds nothing under live gradients, and the series does not run.
+
+**Readout per arm:**
+- settled PPL;
+- η per layer (mean, p90, max), logged every 50 steps as `cb=[...]` and in `training_log.jsonl`;
+- ν (CB3);
+- 6b-9 (V_φ share), 6b-7 (the gates) and 6b-13;
+- SCAF at every 5k audit, and the independent causality check before any publication.
+
+**Order and cost:** after G2, G3 and G4.
+1. η and 6b-11 (the inference-time slider) on G2's checkpoint, which are free. The slider understates a trained arm's gain (the Gen 2 ablation overstated the Fock path's value by 3–4×), so it is read only as the shape of the curve.
+2. CB2b, the key arm.
+3. CB1.
+4. CB3.
+5. CB2a.
+
+About 15 h each at L=2.
+
+### 5.12 CG8: does the geometry predict the model's own errors? — **pre-registered 2026-10-03, before any measurement**
+
+**Why.** Book §18d's new subsection (`subsec:geom-requirements`) separates three properties: a conservative step (C), refinement invariance (R) and settling (S). Each geometric capability is the model's own only if the properties it reads are present. SR1–SR4 target (R) and (S); CB1–CB3 target (C). CG8 asks whether securing them is worth anything: does the trajectory's geometry carry information about the model's own errors that the output distribution does not? It is a token-level proxy for the hallucination detector (§18d Experiment G2), and it needs evaluation only.
+
+**Measurement** (one new 6b cell, planned as 6b-14):
+
+- **Tokens:** 32 × 512 validation tokens, with a fixed seed shared by every arm (as in 6b-13).
+- **Event:** the top-1 prediction at token t is wrong. Secondary event: the NLL at t is above the arm's median.
+- **Signals per token** (summed over layers unless stated):
+  - **s_E**, the energy anomaly |ΔE_obs − ΔE_expected|. Here H = ½ m‖v‖² + V_θ(ξ, h) (+ V_φ when present), and ΔE_expected = γ‖v‖²Δt (§18d eq. energy-anomaly).
+  - **s_G**, the deflection of the full step from the damped V_θ geodesic step, as in CG6 (6b-12).
+  - **s_η**, Fock arms only: the per-token η = ‖reverse-channel increment‖ / ‖conservative step‖, maximum over layers.
+  - **Reference:** the softmax entropy H_soft at t.
+- **Score:** ΔAUROC(s) = AUROC(logistic[H_soft, s]) − AUROC(logistic[H_soft]), by 5-fold cross-validation over sequences, not tokens, with a 1,000-sample bootstrap CI. AUROC(s) alone is also reported.
+- **Arms:**
+  - the baselines F3.1, G2 and the L=4 live arm (measured first, free);
+  - SR1–SR4 against F3.1;
+  - CB1–CB3 against G2.
+
+**Predictions:**
+
+| arm(s) | signal | prediction | called |
+| --- | --- | --- | --- |
+| baselines (F3.1, G2, L=4 live) | s_E, s_G | ΔAUROC < 0.01: at the trained step size the geometry adds nothing to entropy | 60% |
+| G2, L=4 live | s_η | ΔAUROC < 0.01 | 55% |
+| SR2 (exact damped flow) vs F3.1 | s_E | ΔAUROC higher by ≥ 0.01, because the phase noise of Prop 44 is removed | 35% |
+| SR4a (variable N at fixed T) vs F3.1 | s_G | ΔAUROC ≥ 0.02 | 35% |
+| CB2b (ρ = 0.3) vs G2 | s_G | ΔAUROC higher by ≥ 0.01 | 40% |
+| CB3 | s_G on tokens with g = 0 vs g > 0 | AUROC(s_G) higher on the exactly-conservative tokens | 50% |
+
+**Decision rule.**
+
+- **Any arm with ΔAUROC ≥ 0.02 (CI excluding 0)** for a geometry signal: this is the first evidence that the Lagrangian geometry carries information the output distribution does not. Name the property that arm holds; that property is the one worth paying for.
+- **The baselines already ≥ 0.02:** the geometry is informative even at the trained step size. (C)/(R)/(S) then matter for interpretation, not for the signal.
+- **No arm reaches 0.01:** the §18d capability claims remain unshown on the CfC/BAOAB family. The book says so in §18d and in the abstract's scope.
+
+**Caveat recorded in advance.** Next-token top-1 errors on OpenWebText are mostly ambiguity, not hallucination. CG8 tests whether geometry tracks error at all, not factuality. Factuality needs the QA protocol of §18d Experiment G2.
+
+### 5.13 FO series: does OpenWebText need second-order training where TinyStories did not? — **pre-registered 2026-10-03, before any measurement**
+
+**Question** (author's, 2026-10-03). On TinyStories with Verlet, Fock-PARFLM trained first-order matched second order: Fock-G1 8.95 against 9.04, d=256, L=8, one seed. Does the same hold on OpenWebText, or does that corpus need the second-order dynamics? Which corpus statistics separate the two cases?
+
+**Theory.** `Corpus_Statistics_and_the_First_vs_Second_Order_Well_Gap.md`, the order-gap master inequality, with three corpus channels:
+
+- **(A) predictive information I_pred**, through the per-layer step and the anharmonicity A = s̄·√λ_max;
+- **(B) long-range dependence**, through the conditioning κ of the ξ filter bank and the force variation across the momentum window;
+- **(C) Zipf**, which affects the noise floor only.
+
+Its prediction #1 orders the gap: Markov < TinyStories < OpenWebText < code.
+
+**What has changed since that note.**
+
+- Its §11 explained the TinyStories null mainly by a realized damping of γ_geo ≈ 0.965, worth about 26× suppression. γ_geo has since been withdrawn as an artefact of the residual (book Remark 102).
+- The CfC models measure the opposite regime: Gate 1 +34% (F3.1) and +55% (L=4), inertial fraction 1.41, speeds rising from 6.7 to 15.0 across layers, and stiff modes at ζ ≈ 0.05.
+- The TinyStories null also carries three confounds besides the corpus: Verlet, detached gradients (Gate 1 there would be about +5%), and d=256.
+
+**Scope.** Every reading in this series is **at the current damping regime**: constant γ = 0.1 on the CfC/BAOAB low-rank propagator, stiff modes at ζ ≈ 0.05, live gradients, L=2 with T = 8. The master inequality scales the gap as about γ_eff⁻³, so heavier damping (γ(h), SR3's ζ* = 1) would shrink it. Results are reported with the realized damping alongside and are not extrapolated past it.
+
+#### Stage 0, free (no training). Corpus side, with identical procedures on both corpora
+
+Data: TinyStories `tinystories_gpt2_1files_5000000toks.npz` (GPT-2 BPE), and 5M contiguous tokens of OpenWebText train (GPT-2 BPE). Blocks of 512, as in training. One fixed embedding for both corpora (GPT-2 `wte`), so the comparison is about the corpus, not a model.
+
+| id | statistic | channel | prediction (OWT relative to TinyStories) | called |
+| --- | --- | --- | --- | --- |
+| C1 | token types used; Zipf exponent α (ranks 10–10⁴) | C | OWT ≥ 3× the types; α within ±0.15 | 80% |
+| C2 | **I_pred proxy** = H_unigram − H_model, in bits/token. H_unigram is the plug-in unigram entropy; H_model is the best trained model's val loss on that corpus (OWT: matched GPT-2, 49.81; TinyStories: the second-order anchor, 9.04) | A | OWT higher, by ≥ 0.5 bit | **55%**: TinyStories' low conditional entropy may make the two comparable, contrary to the note's assumption |
+| C3 | token-repetition autocorrelation R(τ) = P(x_t = x_{t+τ}) − Σp², τ = 1…256, within blocks | B | **TinyStories higher** at τ ≤ 64 (names and phrases repeat within a story) | 70% |
+| C4 | embedded-stream autocovariance C_e(τ)/C_e(0) (centred `wte`); half-decay lag and tail slope over τ = 8–256 | B | TinyStories decays more slowly over τ ≤ 64 | 60% |
+| C5 | ξ filter-bank Gram G for the ladder's α = (0.5, 0.75, 0.95, 0.99, 0.995) on the embedded stream: κ(G) and effective rank (participation ratio) | B | TinyStories κ ≥ OWT κ | 55% |
+
+The C3–C5 predictions run **against** the note's simple ordering. If they hold, Channel B does not favour an OWT gap, and any OWT-specific gap must come through Channel A or through the model's operating point.
+
+#### Stage 0, free. Model side, on the trained second-order models of each corpus
+
+Models:
+- **TinyStories:** the second-order anchor (`semsimula_fock_aniso_gaussian_fockreg_tinystories/results/seed0_gamma=0.3`, 9.04) and the Fock-G1 checkpoint (8.95).
+- **OWT:** F3.1 (conservative-only live, L=2) and the L=4 live Fock arm, plus G2 when it lands.
+
+Measured on each model's own validation tokens, with ξ frozen at the layer's own value:
+
+| id | statistic | prediction | called |
+| --- | --- | --- | --- |
+| M1 | **anharmonic fraction** per token and layer, ε = ‖f(h+Δh) − f(h) − H(h)Δh‖ / ‖f(h+Δh) − f(h)‖. Here f = −∇_h V_θ, H is its Hessian (one Hessian-vector product), and Δh is the layer's actual step. This is the model-agnostic form of the note's anharmonicity gate: ε ≪ 1 means the force is linear across a step, so second order is absorbable | median ε: OWT models ≥ 2× the TinyStories anchor | 65% |
+| M1′ | the TinyStories anchor alone: median ε < 0.2 (structural-sufficiency regime) | — | 55% |
+| M2 | **inertial share** of each layer step, ‖Φ(h, v) − Φ(h, 0)‖ / ‖Φ(h, v) − h‖, using each model's own layer step with and without the incoming velocity | OWT CfC models ≥ 0.5 at the last layer; TinyStories anchor ≤ 0.3 | 60% |
+
+**Caveat recorded in advance.** M1 and M2 compare the operating points of the two model families: Verlet, d=256, L=8, Δt=1 against CfC, d=384, L=2, Δt=4. They are not a pure corpus comparison, which is why Stage 1 exists.
+
+**Stage-0 decision rule (§12 of the note).**
+
+- **ε ≪ 1 on the OWT models** (median < 0.1, p90 < 0.3): first order is structurally sufficient at this operating point. Stage 1 runs only FO-OWT, as confirmation.
+- **Otherwise:** the full Stage-1 2×2 runs.
+
+#### Stage 1, trained: the 2×2 that separates corpus from setup
+
+| | second order | first order (FO-a, memoryless) |
+| --- | --- | --- |
+| OWT, Fock 'none', L=2, CfC, live (G2's configuration) | **G2** (running) | **FO-OWT** |
+| TinyStories, the same architecture, propagator, convention, d and L; **16,250 steps** (amended 2026-10-04, below) | **SO-TS** | **FO-TS** |
+
+**FO-a** is the Fock-G1 definition carried over unchanged: h_prev := h at every layer, so no velocity crosses a layer boundary. Every other channel (V_θ, V_φ, ξ, registers, reverse channel, regularisers) is identical. On the CfC propagator each step then starts from rest. It is the trained counterpart of Gate 1, and it needs one Cell-0 switch with the same bit-identity verification as the CB switches (identical to G2 when off).
+
+**FO-b** is a true overdamped first-order Langevin step, with exact exponential relaxation of the low-rank stiff modes. It is a second, conditional arm: run only if FO-a shows a gap, to separate inter-layer memory from within-step inertia. It needs new integrator code.
+
+**Statistic.** Δ_corpus = (settled PPL_FO − settled PPL_SO) / settled PPL_SO, per corpus. The test is the interaction Δ_OWT − Δ_TS.
+
+| reading | prediction | called |
+| --- | --- | --- |
+| Δ_OWT | ≥ +5% (second order earns it on OWT) | 60% |
+| Δ_TS | within ±3% (the Fock-G1 null reproduces under CfC and live gradients) | 55% |
+| interaction Δ_OWT − Δ_TS | ≥ 4 points | 50% |
+| FO arms, Gates 2 and 3 | pass by construction (no momentum, so no phase-dependent dissipation); reported as the perplexity cost of perfect settling | — |
+
+**Outcomes.**
+
+- **OWT gap without a TinyStories gap:** the corpus separates them, and Stage 0 says which statistics carry it.
+- **Gaps on both:** CfC and live gradients, not the corpus, make second order matter. The TinyStories null was a property of the Gen 1 setup.
+- **No gap on either:** first-order training suffices even on OWT at this damping regime. That supports a train-first-order / infer-second-order recipe, and bears on the book's "minimal structural commitment" claim for training.
+
+**Future prediction, the γ(h) link** (recorded now, to be tested only once a trained γ(h) arm exists). Where learned damping is high, a token is effectively overdamped (first-order); where it is low, the token keeps its inertia. So a trained γ(h) is a local measurement of where second order earns its keep. Predicted:
+
+- the learned γ(h) is higher on tokens whose local ε (M1) is low and whose context mixes fast;
+- the fraction of locally overdamped tokens (ζ_local > 1) is lower on OWT than on TinyStories.
+
+#### Stage 0 results, 2026-10-04 (scored against the predictions above)
+
+Outputs: `notebooks/conservative_arch/first_order_ablation/fo_series/results/` (`stage0_corpus_output.txt`, `stage0_c4_corrected_output.txt`, `stage0_models_output.txt`, plus the JSON files).
+
+**Disclosed correction.** C4 as specified centred the GPT-2 embedding on the *vocabulary* mean. It measured a constant offset (flat at about 0.28 for TinyStories and 0.22 for OWT from τ = 1 to 256), not dependence. It was re-run, centred on each corpus's own frequency-weighted mean, and only that version is scored. C5 centres each channel on its own sample mean and was unaffected.
+
+**Corpus side:**
+
+| id | TinyStories | OpenWebText | prediction | scored |
+| --- | --- | --- | --- | --- |
+| C1 types | 12,742 | 47,787 (3.75×) | OWT ≥ 3× | **hit** |
+| C1 Zipf α | 1.98 | 1.01 | within ±0.15 | **miss**: TinyStories' frequency distribution is far steeper |
+| C2 I_pred proxy (H_uni − H_model) | 5.38 bits | 5.24 bits | OWT higher by ≥ 0.5 | **miss**: equal within 0.15 bit |
+| C2 held-out bigram drop (H_uni − H_bi) | 3.10 bits | 1.72 bits | (not predicted) | — |
+| C3 repetition R(τ ≤ 64) | lower or equal at most lags | higher or equal | TinyStories higher | **miss** |
+| C4 (corrected) embedded autocorrelation | ≈ 0 at τ ≤ 4 (slightly negative), 0.008 at τ = 8–32, 0.0016 at 256; tail slope −0.44 | 0.012 at τ = 1, 0.008 at 256; tail slope −0.19 | TinyStories decays more slowly | **miss**: OWT carries long-range positive correlation. Removing each block's own mean erases most of it, so it is topic persistence |
+| C5 κ(G) / κ(corr) / effective rank | 1,022 / 133 / 2.21 | 1,243 / 173 / 2.06 | TinyStories κ ≥ OWT | **miss**: OWT's channels are more collinear |
+
+**Reading.** My contrarian predictions for Channel B (C3–C5) all failed. The note's original expectation holds: OpenWebText has more long-range dependence and a worse-conditioned ξ filter bank. Channel A, as I operationalised it (total predictive information), does **not** separate the corpora. Where that information lives does, though this is post hoc and needs confirming:
+
+- **TinyStories:** 58% of its predictive information is available from the previous token alone (3.10 / 5.38).
+- **OWT:** only 33% (1.72 / 5.24).
+
+OWT's predictability sits at longer range. That is exactly what must be carried across positions and layers by the ξ channels and, in the second-order models, by the momentum.
+
+**Model side** (the reproduction guard passed; on 6 × 2 × 512 validation tokens):
+
+| model | PPL here | its checkpoint |
+| --- | --- | --- |
+| TinyStories second-order | 8.68 | 9.04 |
+| TinyStories Fock-G1 | 8.79 | 8.95 |
+| OWT F3.1 | 65.5 | 57.76 |
+| OWT L=4 | 55.1 | 50.10 |
+
+The OWT figures sit about 12% high on 12 short sequences, consistent with eval-sample noise at this tiny size.
+
+| model | M1 ε, interior layers (median) | ‖Δf‖/‖f‖ across a step | step ‖Δh‖ | M2 inertial share (median, per layer from 1) |
+| --- | --- | --- | --- | --- |
+| TinyStories second-order (Verlet, d=256, L=8) | **0.000** at layers 1–7 (p90 ≤ 0.49) | **0.000** | 0.9–2.3 | 0.92, 0.59, 0.56, 0.62, 0.67, 0.69, 0.70 |
+| TinyStories Fock-G1 | 0.000 at layers 1–7 | 0.000 | 1.4–2.3 | 0 by construction |
+| OWT F3.1 (CfC, L=2) | **6.13** (layer 1, the output step) | 1.01 | 20.7 | 0.50 |
+| OWT L=4 live (CfC) | **0.32, 0.46** (layers 1–2); 6.17 (layer 3, the output step) | 0.62, 0.97 | 2.6, 3.2 | 0.68, 0.59, 0.24 |
+
+Layer 0 reads ε ≈ 6–15 in every model. That step is the projection of the embedding onto the LayerNorm sphere (‖Δh‖ ≈ 15–18), not dynamics, so it is excluded from the comparison.
+
+**Scored:**
+
+- **M1: hit.** The OWT interior median ε is 0.3–6 against 0.000 for TinyStories, far beyond 2×.
+- **M1′: hit.** The TinyStories anchor's interior ε is below 0.2.
+- **M2: miss**, and the miss is informative. The TinyStories second-order model carries a *large* inertial share, 0.56–0.92 at every layer, larger than the OWT models (0.24–0.68), and yet first order matched it.
+
+**What Stage 0 says.**
+
+1. **On TinyStories, the V_θ force does not change across a layer step**: ‖Δf‖/‖f‖ ≈ 0. A constant force makes the inertial displacement exactly reproducible by a first-order step with a rescaled step size. That is the note's absorbable case (§6.2), seen directly, and it explains the Fock-G1 null *mechanistically*, not as a power failure. A large inertial share does not imply that second order is needed. M2 is not the discriminator; M1 is.
+2. **On the OWT CfC models, the force changes by 60–100% across a step** (ε 0.3–6). Second order is not absorbable at this operating point, and the §12 sufficiency criterion fails.
+3. **The confound is architectural as well as corpus-level.** Both families cap the diagonal well precision at 2/d. The OWT ladder adds a joint V_θ bank and a stiff low-rank precision channel (`PRECISION_LR_MAX = 1.0`), integrated exactly by the CfC propagator, and its L=2/L=4 steps are larger. Stage 0 cannot tell whether OWT *requires* stiff, anharmonic wells or whether this architecture merely *permits* them.
+
+**Stage-0 decision.** The OWT ε median is far above 0.1, so **the full Stage-1 2×2 runs.** One reading is added to it, pre-registered now: M1 and the corpus statistics on **SO-TS** (TinyStories trained in the CfC architecture).
+
+- If SO-TS also learns anharmonic wells (interior ε ≥ 0.3), the architecture, not the corpus, produced the OWT stiffness. FO-TS then predicts a gap as well, called at 50%.
+- If SO-TS stays near-linear (ε < 0.1) under the same architecture, the corpus is the separator, and the **long-range share of predictive information** (post-hoc C2b) and the long-range embedded correlation (C4) are the candidate statistics. A third corpus would confirm them.
+
+**Order and cost.**
+
+1. Stage 0 now (local, minutes).
+2. Stage 1 after G2–G4 and ahead of the CB and SR series: FO-OWT at 32,500 steps (about 13–15 h); SO-TS and FO-TS at 16,250 steps (about 7 h each). That is about 28 GPU-h serial, or about 15 h wall time with three sessions in parallel. SO-TS and FO-TS reuse the ladder notebook with a TinyStories data path.
+
+**Amendment, 2026-10-04, before any Stage-1 run: the TinyStories schedule and a settling check.**
+
+- **Schedule.** SO-TS and FO-TS train for **16,250 steps** (266M tokens, about 0.6 epoch of the full TinyStories training set), not 32,500. The WSD schedule keeps its fractions of the run.
+  - **Why.** The test statistic compares first order with second order *within* each corpus, so the two TinyStories arms need to match each other, not G2's budget. TinyStories also saturates far sooner: the August second-order model reached 9.04 on 164M tokens.
+  - **Data.** 266M tokens still needs the full TinyStories token cache. The local 5M-token cache, which the August runs repeated about 33 times, is not enough.
+- **Settling check, applied to both TinyStories arms before scoring.** Fit a line to the evals over the last 3,000 steps. Both arms are "settled" if the fitted change over that window is within the eval noise, estimated as the standard deviation of the residuals about the fit.
+  - **If either arm fails:** extend **both** by the same number of steps, from their checkpoints. Continue the decay at the floor learning rate, so the schedule for the extra steps is identical in both. Re-check.
+  - **If both arms settle at 16,250:** the arms are scored there.
+- **Disclosure.** With different budgets per corpus, the interaction Δ_OWT − Δ_TS compares relative gaps measured at different training lengths. First-order arms can lag at short budgets, which would inflate Δ_TS. The settling check is what guards against that. If an extension is needed, both budgets are reported with the result.
+3. The FO-a switch is implemented and verified before Stage 1.
 
 ## 6. Open risks
 

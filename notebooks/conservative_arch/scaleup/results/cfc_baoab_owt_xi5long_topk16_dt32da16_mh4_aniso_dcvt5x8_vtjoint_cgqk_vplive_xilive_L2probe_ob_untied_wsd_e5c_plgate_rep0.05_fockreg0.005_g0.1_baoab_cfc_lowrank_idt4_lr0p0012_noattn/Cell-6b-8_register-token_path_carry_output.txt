@@ -1,0 +1,41 @@
+probing fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_vplive_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt
+   step 31000  ppl 51.27  missing 0  unexpected 0
+GATE  increment = (dt^2/m) * tanh(scale) * warm * Q_force
+   tanh(scale) per layer : [0.018, 0.0151]
+   warmup               : 62067/4000 = 1.000
+   effective gate       : 0.01796
+
+A. GRADIENT -- which loss term reaches the register parameters?
+   parameter                              via ntp  via repulsion
+   creation_gate_qkv.W_K                6.471e-03      1.166e-04
+   creation_gate_qkv.W_Q                7.370e-05      1.436e-06
+   creation_gate_qkv.W_V.weight         4.388e-02      4.195e-04
+   creation_gate_qkv.logit_scale        1.702e-02      3.256e-05
+   register_embed                       6.738e-03      6.213e-05
+   => the creation gate receives next-token gradient, so the
+      bank accumulates. Part D shows at which layers.
+
+B. PERTURBATION -- move a parameter by 0.01, watch the logits
+   register_embed : max|d logits| = 8.102e-01
+   lm_head.weight : max|d logits| = 1.152e+00   <- control
+
+C. ABLATIONS -- 12 fixed batches x 4, paired
+   baseline                       ppl    51.17
+   A  reverse channel off         ppl   204.84   +300.3%
+   B  bank frozen at init         ppl    63.44    +24.0%
+
+   ACCUMULATION is worth +24.0% here;
+   the whole register path is worth +300.3%.
+   The first number is the price of "the Fock mechanism not
+   working", measured WITHIN one model. An L=1 vs L=2 PPL gap
+   cannot be read that way -- it also moves v, dt, the clip rate
+   and the layer count. See Fock_Mechanism_Efficiency_Across_
+   Layer_Depth.md SS5-6.
+   For scale: pre-leak-fix, ablation A read 125.94 -> 27.23 (-78%),
+   but that arm leaked future context. These are the honest numbers.
+
+D. ACCUMULATION PROFILE -- max|r_l - r_0| by layer
+   layer 0: max|r_l - r_0| = 0.0000e+00   <- static, nothing written
+   layer 1: max|r_l - r_0| = 7.4791e+00
+
+   live training state restored

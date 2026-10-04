@@ -732,3 +732,39 @@ thought, not typing.
   - Corrects my own earlier claim that critical damping removes phase sensitivity: only the joint exact flow does.
   - A3: SR table. Protocol §5.9: pre-registration and decision rule. Checklist: SR agenda.
   - Rebuilt clean: **505 pp.**; Conservative Obstruction is now **Theorem 83, p. 258** |
+
+### 2026-10-03 — geometric capabilities: what they require of the dynamics
+
+- **New book §18d subsection `subsec:geom-requirements`** ("What the capabilities require of the dynamics"; §37.6, p. 444).
+  - It names three properties: (C) a conservative step, (R) refinement invariance, (S) settling. A table shows which capability needs which, and where the OWT models stand.
+  - The Gen 2 Fock arm has η = 1.6/3.0 on (C). Every arm fails Gate 3 on (R). The L=4 live arm costs +41%/+435% on Gate 2 on (S).
+  - The tension: momentum and the register path both earn perplexity and break the properties.
+  - The deciding experiments are SR1–SR4, CB1–CB3, and a new reading, CG8.
+- **Pointers added:** §8.9 (closing paragraph "Why this matters beyond depth"), §18d intro and §18d Summary.
+- **CG table:** a CG8 row.
+- **A3 index:**
+  - CG8 added, and a CB1–CB3 table;
+  - a new overloaded-codes row: G1–G4 means the §18d experiments in the book and the abstract-gating runs in the protocol; the book will call the latter AG1–AG4.
+- **Flagged for stage 2:**
+  - Experiment G2's premise in §18d (a small, calibrated reverse-channel non-conservatism, tanh = −0.227) is a TinyStories measurement. The bridge now says it must be re-measured on the OWT models.
+  - The §18d intro still opens with the TinyStories 9.04-PPL framing.
+- **SR5, thermal training (2026-10-03).**
+  - §8.9: the SR table gains SR5 ("SR1–SR5"), plus a new paragraph, "Temperature: a training-time route, not a settling one". It covers the FDT stationary kinetic energy, 1/γ > T, the micro-state randomisation mechanism and the F3.1 calibration. It records the median speed rising 6.7 → 15.0 across the two layers, and the annealed variant as conditional on SR4b.
+  - §18d `subsec:geom-requirements` and A3 updated to SR1–SR5.
+  - The book builds at 510 pages, with no undefined references.
+- **Margin sweep before the Zenodo upload (2026-10-03).** Every line extending past the right margin was measured on the PDF itself, and all of them at ≥ 6 pt are fixed, 27 places in total. Two had run off the page, at p. 352 and p. 496.
+  - **Fixes:**
+    - `xurl`, so long paths break;
+    - shortened run-in titles for Remark 37, Proposition 39 and Remark 102, with the rest of each title moved into the body;
+    - ragged-right `p{}` columns or narrower column gaps in about 10 tables;
+    - one display equation split onto two lines (`eq:ssp-poe`);
+    - inline math split at commas;
+    - `\path` in place of `\texttt` for file names;
+    - three short rewordings (§19 opening, Acknowledgments, the HiPPO list);
+    - the §15 step figure scaled to 1.0×, not 1.1×, the text width.
+  - **Result:** the build is 512 pages, with no undefined references. 16 log warnings remain, all < 6 pt and not visible.
+- **Update (2026-10-04, later): definitions are live.** The gate definitions (Terms) and a Glossary are now on the three Gen 3 cards. Only the sentence citing the book's sections is held, behind `BOOK_V22_LIVE = False` in `build_cards.py`. After v22, the steps below reduce to: verify the numbers, set the flag to True, rebuild, push.
+- **Pending, right after the Zenodo v22 upload (2026-10-04).** The three Gen 3 HF cards now carry a shared **Terms** paragraph in their geometry sections, built locally but not pushed. It defines Gate 1 (inertia), Gate 2 (extension), Gate 3 (refinement) and FLOW vs MAPS, and points to the book: §8.9 *Settling, refinement and depth extension* (Props 44–45), Remark 62 *Refinement invariance is a testable precondition*, and §27.15. Its link is the concept DOI 10.5281/zenodo.19712427, which resolves to the latest version, and v21 has none of this. So, after the v22 upload:
+  1. verify §8.9, Prop 44, Prop 45, Remark 62 and §27.15 against the final PDF (update `GATES_TERMS` in `build_cards.py` if anything moved);
+  2. rebuild;
+  3. push the three Gen 3 READMEs (`l4-none`, `l2-none`, `l2-none-norc`) README-only.

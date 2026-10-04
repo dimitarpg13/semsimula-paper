@@ -1,0 +1,49 @@
+probing fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_vplive_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt
+  step 31000  ppl 51.27  missing 0
+  trained: L=2  dt=4  T=L*dt=8
+
+  eval: 12 fixed batches x 4 x 512 = 24,576 tok
+
+GATE 0  unpatched 51.9874   patched(N=L, hold) 51.9874   |d loss| 0.00e+00
+        PASS -- the patched loop is a faithful copy
+
+GATE 1  carried    51.99   reset    68.97   +16.99
+        reset = gradient descent on V_theta at lr dt^2/2m.
+        A large positive delta is what inertia buys, measured
+        on the trained weights with no retraining.
+
+GATE 2  AXIS 1 -- more hops, dt fixed, T grows   policy='cycle'
+    N       dt        T   val_loss      ppl    d ppl
+    1    4.000    4.000     6.3647   581.00  +529.01
+    2    4.000    8.000     3.9510    51.99    +0.00  <- trained
+    3    4.000   12.000     4.3612    78.35   +26.37
+    4    4.000   16.000     4.0885    59.65    +7.66
+    6    4.000   24.000     4.2114    67.45   +15.46
+    8    4.000   32.000     4.3380    76.56   +24.57
+
+GATE 3  AXIS 2 -- refinement, T fixed  <<< THE FRAMEWORK TEST   policy='hold'
+    N       dt        T   val_loss      ppl    d ppl
+    1    8.000    8.000     7.0573  1161.30 +1109.32
+    2    4.000    8.000     3.9510    51.99    +0.00  <- trained
+    3    2.667    8.000     6.5713   714.32  +662.33
+    4    2.000    8.000     5.9130   369.80  +317.81
+    6    1.333    8.000     6.5425   694.02  +642.03
+    8    1.000    8.000     6.7633   865.50  +813.51
+
+    N_i -> N_j   |d ppl|  successive change
+        1 -> 2  1109.316
+        2 -> 3   662.332
+        3 -> 4   344.518
+        4 -> 6   324.215
+        6 -> 8   171.484
+
+  shrinking toward 0     -> FLOW. Refinement invariance
+                            holds; the SS18 geodesic
+                            residual is a property of a
+                            curve, and depth becomes an
+                            inference-time knob.
+  monotone improvement   -> the trained dt was TOO COARSE.
+  grows away from N=L    -> MAPS. Re-scope every geodesic
+                            claim to the trained dt.
+
+  live training state restored

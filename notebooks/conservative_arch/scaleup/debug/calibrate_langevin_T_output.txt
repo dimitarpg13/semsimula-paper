@@ -1,0 +1,10 @@
+F3.1 (L=2, dt=4, gamma=0.1): O-step decay c = exp(-gamma dt) = 0.6703, 1 - c^2 = 0.5507; d = 384; 8 x 512 validation tokens, eval (no noise)
+
+kinetic temperature T_kin = m ||v||^2 / d of the velocity entering each O-step:
+   layer 0: T_kin median 1.0506e-02  p10 6.9992e-03  p90 1.5794e-02   ||v|| median 6.7426   m median 0.0887 (p10 0.0829, p90 0.0942)
+   layer 1: T_kin median 5.1922e-02  p10 3.6132e-02  p90 7.0564e-02   ||v|| median 14.9853   m median 0.0887 (p10 0.0829, p90 0.0942)
+   pooled over layers: T_kin median 2.4282e-02
+
+SR5 temperatures, T_r = r^2 * median T_kin (equilibrium thermal speed = r x typical speed):
+   r = 0.1:  LANGEVIN_T = 0.000243   one O-step injects 0.111 x ||c v|| (median; p10 0.068, p90 0.193)
+   r = 0.3:  LANGEVIN_T = 0.00219   one O-step injects 0.332 x ||c v|| (median; p10 0.205, p90 0.578)

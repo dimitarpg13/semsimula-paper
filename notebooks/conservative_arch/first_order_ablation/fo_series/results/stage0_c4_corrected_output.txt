@@ -1,0 +1,15 @@
+C4, CORRECTED (post-hoc, disclosed): centred on each corpus's own frequency-weighted mean embedding
+    (the pre-registered version centred on the vocabulary mean and measured a constant offset)
+
+  tau  TS corpus-mean  OWT corpus-mean  TS block-mean  OWT block-mean
+    1         -0.0232           0.0120        -0.0293          0.0000
+    2         -0.0070           0.0107        -0.0130         -0.0013
+    4         -0.0057           0.0164        -0.0116          0.0045
+    8          0.0083           0.0158         0.0025          0.0039
+   16          0.0084           0.0148         0.0025          0.0028
+   32          0.0085           0.0130         0.0025          0.0009
+   64          0.0068           0.0116         0.0008         -0.0005
+  128          0.0041           0.0102        -0.0021         -0.0020
+  256          0.0016           0.0080        -0.0043         -0.0040
+TinyStories: half-decay lag 1, tail slope (tau 8-256) -0.444, C_e(64)/C_e(1) -0.293
+OpenWebText: half-decay lag >256, tail slope (tau 8-256) -0.191, C_e(64)/C_e(1) 0.972

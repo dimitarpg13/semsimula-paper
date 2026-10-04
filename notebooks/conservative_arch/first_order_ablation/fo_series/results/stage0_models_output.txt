@@ -1,0 +1,55 @@
+FO Stage 0, model side (protocol SS5.13): each model on its own corpus, eval, 2 x 512 tokens
+
+== TS-SO: d=256 L=8 dt=1 integrator=verlet  val PPL here 8.68 (6 x 2 x 512), checkpoint 9.04
+   M1 anharmonic fraction eps (median / p10 / p90), force change ||df||/||f||, step ||dh||:
+     layer 0: eps 5.706 / 4.432 / 7.215   ||df||/||f|| 1.008   ||dh|| 15.566
+     layer 1: eps 0.000 / 0.000 / 0.000   ||df||/||f|| 0.000   ||dh|| 0.921
+     layer 2: eps 0.000 / 0.000 / 0.000   ||df||/||f|| 0.000   ||dh|| 1.177
+     layer 3: eps 0.000 / 0.000 / 0.001   ||df||/||f|| 0.000   ||dh|| 1.596
+     layer 4: eps 0.000 / 0.000 / 0.026   ||df||/||f|| 0.000   ||dh|| 1.879
+     layer 5: eps 0.000 / 0.000 / 0.487   ||df||/||f|| 0.000   ||dh|| 2.031
+     layer 6: eps 0.000 / 0.000 / 0.463   ||df||/||f|| 0.000   ||dh|| 2.172
+     layer 7: eps 0.000 / 0.000 / 0.021   ||df||/||f|| 0.000   ||dh|| 2.284
+     pooled: eps median 0.000, p90 5.208
+   M2 inertial share (median / p10 / p90):
+     layer 1: 0.921 / 0.821 / 0.988
+     layer 2: 0.585 / 0.446 / 0.736
+     layer 3: 0.557 / 0.486 / 0.611
+     layer 4: 0.617 / 0.567 / 0.666
+     layer 5: 0.670 / 0.618 / 0.719
+     layer 6: 0.689 / 0.645 / 0.736
+     layer 7: 0.704 / 0.659 / 0.746
+
+== TS-FO: d=256 L=8 dt=1 integrator=verlet  val PPL here 8.79 (6 x 2 x 512), checkpoint 8.95
+   M1 anharmonic fraction eps (median / p10 / p90), force change ||df||/||f||, step ||dh||:
+     layer 0: eps 6.291 / 4.923 / 8.047   ||df||/||f|| 1.006   ||dh|| 15.884
+     layer 1: eps 0.000 / 0.000 / 0.001   ||df||/||f|| 0.000   ||dh|| 1.350
+     layer 2: eps 0.000 / 0.000 / 0.011   ||df||/||f|| 0.000   ||dh|| 1.901
+     layer 3: eps 0.000 / 0.000 / 0.115   ||df||/||f|| 0.000   ||dh|| 2.078
+     layer 4: eps 0.000 / 0.000 / 0.157   ||df||/||f|| 0.000   ||dh|| 1.946
+     layer 5: eps 0.000 / 0.000 / 0.656   ||df||/||f|| 0.000   ||dh|| 2.248
+     layer 6: eps 0.000 / 0.000 / 0.450   ||df||/||f|| 0.000   ||dh|| 2.286
+     layer 7: eps 0.000 / 0.000 / 0.038   ||df||/||f|| 0.000   ||dh|| 2.269
+     pooled: eps median 0.000, p90 5.883
+   M2: 0 by construction (first order: no velocity crosses a layer)
+
+== OWT-F31: d=384 L=2 dt=4 integrator=baoab_cfc_lowrank  val PPL here 65.52 (6 x 2 x 512)
+   M1 anharmonic fraction eps (median / p10 / p90), force change ||df||/||f||, step ||dh||:
+     layer 0: eps 6.913 / 4.659 / 9.253   ||df||/||f|| 1.015   ||dh|| 18.820
+     layer 1: eps 6.128 / 2.774 / 9.348   ||df||/||f|| 1.007   ||dh|| 20.675
+     pooled: eps median 6.566, p90 9.296
+   M2 inertial share (median / p10 / p90):
+     layer 1: 0.503 / 0.397 / 0.667
+
+== OWT-L4: d=384 L=4 dt=2 integrator=baoab_cfc_lowrank  val PPL here 55.09 (6 x 2 x 512)
+   M1 anharmonic fraction eps (median / p10 / p90), force change ||df||/||f||, step ||dh||:
+     layer 0: eps 14.726 / 12.115 / 17.454   ||df||/||f|| 1.000   ||dh|| 18.463
+     layer 1: eps 0.324 / 0.138 / 0.763   ||df||/||f|| 0.618   ||dh|| 2.558
+     layer 2: eps 0.457 / 0.261 / 0.794   ||df||/||f|| 0.971   ||dh|| 3.241
+     layer 3: eps 6.174 / 3.316 / 9.654   ||df||/||f|| 1.000   ||dh|| 22.894
+     pooled: eps median 1.646, p90 15.223
+   M2 inertial share (median / p10 / p90):
+     layer 1: 0.677 / 0.577 / 0.854
+     layer 2: 0.593 / 0.506 / 0.700
+     layer 3: 0.235 / 0.176 / 0.311
+

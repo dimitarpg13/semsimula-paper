@@ -1,0 +1,26 @@
+FO Stage 0, corpus side (pre-registered protocol SS5.13): 5M GPT-2-BPE tokens each, blocks of 512, GPT-2 wte
+(C4 as pre-registered centred on the vocabulary mean and is superseded: see stage0_c4_corrected_output.txt)
+
+C1 (Zipf)
+  types                  TS        12742   OWT        47787
+  zipf_alpha             TS        1.981   OWT        1.012
+C2 (predictive information, bits/token)
+  H_unigram              TS        8.552   OWT       10.876
+  H_model                TS        3.176   OWT        5.638
+  Ipred_proxy            TS        5.376   OWT        5.237
+  H_bigram_heldout       TS        5.455   OWT        9.161
+  bigram_drop            TS        3.098   OWT        1.715
+C3 (token repetition R(tau))
+  tau=1                TS       0.0086   OWT       0.0106
+  tau=2                TS      -0.0104   OWT      -0.0009
+  tau=4                TS      -0.0046   OWT       0.0030
+  tau=8                TS       0.0015   OWT       0.0049
+  tau=16               TS       0.0044   OWT       0.0051
+  tau=32               TS       0.0048   OWT       0.0048
+  tau=64               TS       0.0040   OWT       0.0042
+  tau=128              TS       0.0025   OWT       0.0033
+  tau=256              TS       0.0013   OWT       0.0027
+C5 (xi filter-bank Gram, alphas 0.5..0.995)
+  kappa_G                TS     1022.096   OWT     1243.151
+  kappa_corr             TS      132.646   OWT      172.851
+  eff_rank               TS        2.212   OWT        2.059
