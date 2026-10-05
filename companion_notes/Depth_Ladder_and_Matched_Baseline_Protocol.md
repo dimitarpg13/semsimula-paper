@@ -2954,7 +2954,7 @@ Proposition 44 amplifies the phase-sampled dissipation of the split step by θ/s
 
 | id | prediction | called |
 | --- | --- | --- |
-| SR-π.1 | Across Fock arms at matched mechanism and convention, Gate 3 at 1.5× falls monotonically as the trained median θ moves below π. An **L=8 Fock live** arm (Δt = 1; expected θ ≈ 1.2) reads Gate 3 ≤ +100%. | 60% |
+| SR-π.1 | Across Fock arms at matched mechanism and convention, Gate 3 at 1.5× falls monotonically as the trained median θ moves below π. An **L=8 Fock live** arm (Δt = 1; expected θ ≈ 1.2) reads Gate 3 ≤ +100%. | 60%; **revised to about 40% on 2026-10-05** after G3 (θ 2.07, no crossing, Gate 3 +1,342%) |
 | SR-π.2 | On G2's configuration, **SR2** (the exact damped-mode flow, which removes the phase term) cuts Gate 3 by more than half, a far larger relative cut than on F3.1's configuration. | 55% |
 | SR-π.3 | A **diagnostic, free:** on G2's checkpoint, split the Gate 3 loss rise by token according to whether the token's stiff modes cross π under refinement (from the 6b-13 per-coordinate θ). Tokens whose modes cross contribute disproportionately: their mean loss rise is ≥ 2× that of non-crossing tokens. | 55% |
 
@@ -3083,6 +3083,48 @@ The step-32,500 audit printed honest/standard PPL as nan, while its future pertu
     - a per-group clip override for `relax_field` at 0.3, like the other gates.
 
     Predicted: the gradient norm stays flat (within ±25% of its 5,000-step value) through the stable phase, called at 70%. Settled ≤ 52.1, i.e. the exchange field adds value once hardened, called at 50%. Code: a QK-norm switch on `XiRoutedConservativeAttention`, off by default and verified bit-identical. It is not gating the v6 abstract.
+
+- **G3 scored, 2026-10-05.**
+
+  | measure | value |
+  | --- | --- |
+  | settled (last three evals: 54.17, 54.35, 54.12) | **54.21** |
+  | best | 52.44 at step 31,000 |
+  | speed | 1.68 s/step |
+  | clip hits | 9 of 650 logged steps (1.4%), max norm 1.14 |
+  | SCAF audits | CLEAN at all seven; Tier A and Tier B 0. The final audit printed nan for honest/standard PPL, as G2's did |
+
+  - **Point 51, band 46–56:** in the band; the point missed by 3.2, on the bad side.
+  - **Key line, the exchange field's value under live gradients (≤ 52.1): NO.** G3 is **2.1% worse** than G2 (53.12), the same model without the exchange field.
+  - **Against its parent probe** (only the field live, 61.11): −11.3%. **Against F3.1** (57.76): −6.1%. **Against GPT-2:** 1.088×.
+  - **The mid-run projection** (about 54.4) was close.
+  - **Gradients:** the gradient norm peaked at 0.91 (steps 22.5k–25k) and fell to 0.75 in the decay; clip hits were confined to steps 20k–27.5k.
+  - **Reading.** As trained, the conservative exchange field adds nothing over no exchange field at all under live gradients. It led by 5–7 PPL early, and lost the lead as its gradient grew. Whether that is the field or its untuned routing is what **G3′** (QK-norm routing plus a 0.3 clip override) decides. The price of conservativity is still undetermined: it needs `attention` live.
+
+- **G3 diagnostics, 2026-10-05.** Outputs are in G3's results folder; the routing probe is `debug/g3_routing_probe.py` with its output.
+  - **Independent causality check on the final weights: CLEAN.** Future perturbation is 0 at five cut points, batch independence is 0, and the prefix-only leak tax is −9.5e-5 nats.
+  - **6b-6 A, λ-ablation: the field is load-bearing.** λ = 0 costs **+29.46 PPL (+56%)**, λ = 0.125 costs +19.3 and λ = 0.5 costs +4.3. Yet the model trained without the field (G2) is 2.1% *better*: the cleanest ablation-against-trained-without gap yet. The field substitutes for work the model otherwise does elsewhere.
+  - **6b-6 B and its force share do not read this field.** Part B (routing entropy) is written only for `DirectExchangeForce`. The "force share 0.0" is a measurement gap: `relax_share` is computed only for the non-conservative modes, and the live `attention_potential` force goes through `force_live`.
+  - **The routing probe, step 500 against best (31,000), on the same tokens:**
+
+    | | step 500 | step 31,000 |
+    | --- | --- | --- |
+    | W_q, W_k spectral norms per head | about 0.9–1.4 | **5.0–6.3** |
+    | logit bound σ(W_q)σ(W_k)/√d_k per unit input | 0.12–0.22 | 3.7–5.6 (**about 28×**) |
+    | layer 1 score std / max abs score | 1.5–3.8 / 9.5–24 | 3.9–5.1 / 23–37 |
+    | layer 1 routing entropy (as a share of uniform) | 0.57–0.86 | 0.60–0.69 |
+    | layer 1 max routing weight | 0.06–0.21 | 0.19–0.28 |
+    | layer 0 routing | uniform (1.00) | near-uniform (0.94–0.98) |
+    | field share of the total conservative force, layer 1 (median) | 1.00 | **0.92** |
+    | the same, layer 0 | 0.05 | 0.32 |
+
+    **Reading.** The logit-growth hypothesis is confirmed in the weights: the routing projections grew about 5–6× unchecked, and the attainable logit scale about 28×. The routing sharpened only moderately, though: layer 1 entropy stays near 0.6 of uniform. It did not collapse. The field carries about 92% of layer 1's conservative force, so the model became attention-dominated at its output layer, while still conservative. QK-norm (G3′) caps exactly the growth measured here.
+  - **6b-9 (CG1):** R(geo) is 1.068. The reverse channel moves R by −0.759, and V_φ plus the exchange field by only −0.073. **Checked 2026-10-05: consistent.** The replay's "cons" arm keeps `f_phi`, which includes the live field's `force_live`; "geo" zeroes it. And G3's η (reverse-channel increment / conservative step) is **1.16 at layer 0 and 2.75 at layer 1** (`debug/g3_eta_output.txt`). The register path dominates the step's displacement. The field dominates the smaller conservative part (about 92% of it at layer 1), so its displacement attribution is small. Both readings stand.
+  - **6b-7:** Gate 1 +25.8 (+49%). Gate 2 at N=3 **+325%** (G2: +51%), so extension fails far worse. Gate 3 at N=3 **+1,342%** (G2: +1,274%).
+  - **6b-13:** θ = ω·Δt p50 is **2.07** (layer 0 1.91, layer 1 3.00). The pre-registered L=2 band [3.3, 4.2] is a **MISS**: the exchange field takes stiffness off V_θ.
+  - **SR-π, a fourth point that goes against the π-crossing account.** G3's median θ (2.07, and 3.00 at layer 1) does not cross π under 1.5× refinement, yet Gate 3 is as bad as G2's. So the π crossing is not sufficient to explain refinement failure in the Fock arms; the register path, and here the field, drive it. The SR-π.1 prediction (L=8, θ ≈ 1.2, Gate 3 ≤ +100%) stays registered but is now less likely. My call drops from 60% to about 40%.
+  - **6b-8:** reverse channel off **+393.7%** (G2: +300%); bank frozen +16.7%.
+  - **6b-12:** uniform forcing (100% of tokens strongly forced at layer 1).
 
 - **Not decided by this run:** the price of conservativity under live gradients needs `attention` live against it. That run is not gating. Until it runs, the abstract states the price as measured under Gen 2 only (`attention` 63.51 against `attention_potential` 80.9 detached and 61.11 with `rglive`).
 

@@ -1,0 +1,40 @@
+probing fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_rglive_vplive_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_attnpot_best.pt
+   step 31000  ppl 52.44  missing 0  unexpected 0
+   L=2  dt=4  reverse-channel effective gate 0.02841  (TF32 off for this cell)
+   captured 16 layer steps from 8 batches, 16,384 tokens per layer
+
+GATE 0  replayed full step vs captured output: max |d| = 0.000e+00   PASS
+
+F1  per-token deflection R_tok = |h_full - h_arm| / |step|,  16,384 tokens per layer
+    step size |step|/|h_in| median per layer: l0: 7.50  l1: 1.18
+
+   arm: conservative + LN   [PRIMARY]
+   layer    RMS(E1)    mean     q05     q25     q50     q75     q95   <0.25  0.25-.75   >0.75   bimod
+   0          0.534   0.523   0.333   0.464   0.528   0.589   0.685    0.2%     98.2%    1.6%   0.293
+   1          0.991   0.988   0.898   0.936   0.974   1.024   1.130    0.0%      0.0%  100.0%   0.490
+
+   arm: Vtheta geodesic + LN
+   layer    RMS(E1)    mean     q05     q25     q50     q75     q95   <0.25  0.25-.75   >0.75   bimod
+   0          0.600   0.589   0.353   0.527   0.594   0.663   0.766    0.1%     93.4%    6.6%   0.307
+   1          1.062   1.060   0.990   1.019   1.049   1.087   1.178    0.0%      0.0%  100.0%   0.489
+
+   arm: bare Vtheta geodesic
+   layer    RMS(E1)    mean     q05     q25     q50     q75     q95   <0.25  0.25-.75   >0.75   bimod
+   0          0.888   0.887   0.830   0.874   0.889   0.904   0.931    0.0%      0.2%   99.8%   0.278
+   1          1.258   1.254   1.137   1.186   1.242   1.302   1.426    0.0%      0.0%  100.0%   0.424
+
+   correlates of R_tok, primary arm, layer 1  (Spearman rank correlation; binned means by quintile of the key)
+   key                     raw rho  partial rho   quintile means of R_tok
+   position in block        -0.079       -0.046   0.999  0.989  0.985  0.984  0.983
+   semantic mass m_b        +0.508       -0.875   0.939  0.962  0.987  1.015  1.036
+   next-token loss          -0.151       -0.046   1.008  0.990  0.987  0.980  0.975
+   step size |s|/|h|        -0.943    (control)   1.098  1.011  0.975  0.945  0.912
+   R_tok layer 1 vs layer 0 (same token)   rho = +0.727
+
+READING  (primary arm = 'conservative + LN', layer 1)
+   tokens with R < 0.25 (near-geodesic): 0.0%    R > 0.75 (strongly forced): 100.0%    IQR [0.94, 1.02]    bimodality 0.490
+   -> UNIFORM forcing: every token is substantially redirected; the geodesic is not the default motion for any sizeable class of tokens
+
+   figure -> /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_rglive_vplive_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_attnpot/checkpoints/f1_forcing_per_token.png
+
+   live training state restored

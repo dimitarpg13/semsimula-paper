@@ -1,0 +1,25 @@
+probing fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_rglive_vplive_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_attnpot_best.pt
+  step 31000  ppl 52.44  missing 0  unexpected 0
+  live lambda: [1.0, 1.0]
+  force share: [0.0, 0.0]  (after one forward)
+
+A. LAMBDA-ABLATION   (12 fixed batches x 4 x 512 = 24,576 tok)
+   lambda   val_loss      ppl  d ppl vs live
+    0.000     4.4044    81.81         +29.46
+    0.125     4.2723    71.68         +19.34
+    0.500     4.0374    56.68          +4.33
+    1.000     3.9579    52.35          +0.00   <- live
+
+  lambda=0 costs +29.46 ppl.
+  |d| < ~0.3  -> DECORATIVE. The field carries force but not
+                 information; reading (b), the graft is
+                 under-trained and arm C will not fix it.
+  |d| > ~1.0  -> LOAD-BEARING. Non-conservative work REPLACED
+                 conservative work at equal quality; reading
+                 (a), and the sweep is measuring what it should.
+
+B. ALPHA ENTROPY   (1 batch x 2 x 512)
+  skipped: relax_field is XiRoutedConservativeAttention, not DirectExchangeForce. Part B is specific to arm N.
+ layer  score std  H/H_unif    eff/i  alpha_max*i  verdict
+
+  live training state restored

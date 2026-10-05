@@ -1,0 +1,36 @@
+probing fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_rglive_vplive_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_attnpot_best.pt
+   step 31000  ppl 52.44  missing 0  unexpected 0
+   L=2  dt=4  reverse-channel effective gate 0.02841
+   captured 6 layer steps from 3 batches
+
+GATE 0  replayed full step vs captured output, every layer step:
+   max |d| = 0.000e+00   PASS
+
+E1  deflection from the damped V_theta geodesic, R = |arm - full| / |step|
+    arm                     layer 0               layer 1
+                     R_h        R_v        R_h        R_v
+    geo           0.8890     0.9446     1.2475     0.8847
+    geo+LN        0.6044     0.9447     1.0556     0.8847
+    cons          0.8731     0.9191     1.1179     0.6634
+    cons+LN       0.5381     0.9192     0.9793     0.6634
+    full          0.0000     0.0000     0.0000     0.0000
+
+    step size for scale, |h_full - h_in| / |h_in| per layer: 7.474  1.181
+
+ATTRIBUTION  (R_h, deflection of position, averaged over layers)
+   R(geo)     = 1.0682   <- how far the real step is from the V_theta geodesic
+   LN alone   moves R by -0.2382   (geo -> geo+LN)
+   V_phi+exch moves R by -0.0727   (geo -> cons)   <- BUNDLED: the non-conservative exchange field rides in f_phi
+   RC         moves R by -0.7587   (cons+LN -> full; full is 0 by construction)
+   cons+LN    = 0.7587   <- everything except the reverse channel
+
+   R(geo) well under 1  -> geodesics exist at the trained step; the
+   flow is PIECEWISE: exact-ish between the per-step maps. Gate 3
+   failing only means the pieces cannot be subdivided.
+   R(geo) near 1        -> the V_theta geodesic is a minority of the
+   step; the Riemannian reading fails at the trained dt as well.
+   Small R does NOT mean the deflecting term is unimportant for PPL
+   -- the reverse channel is small in norm yet worth +31.3% in trained
+      PPL (66.98 -> 87.93). The +275% ablation overstates it ~2.9x.
+
+   live training state restored

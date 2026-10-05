@@ -779,3 +779,26 @@ thought, not typing.
     - `\mathbb{1}` → `\mathbf{1}` (the blackboard digit renders as a broken glyph).
   - **Result:** the build is 513 pages, with no undefined or multiply defined references and no new margin overflow. The draft in `docs/` is unchanged.
   - **Also flagged:** the two other `\mathbb{1}` in the book (indicator functions, §17f l.217 and §18d l.486) render the same broken glyph.
+- **Stage 2, the abstract rewritten (2026-10-05)**, after all the gating arms except G4.
+  - **The mechanism-ladder paragraph:** Gen 2 / Gen 3 naming throughout, with the two conventions explained. The Gen 2 ordering and the withdrawn price readings stay. Under Gen 3, every arm improves by 21–34%. At L=2:
+    - conservative-only, 57.76;
+    - with the Fock register mechanism, 53.12 (+8.0%);
+    - with a conservative exchange field on top, 54.21 (no gain as trained; hardened version pre-registered).
+  - **Depth:** L=4 reaches 50.10 (a further 5.7%, at 1.9× the per-step cost), 1.006× GPT-2. The parity sentence carries 2.3× the parameters (76.8M against 33.7M; about 19M is the untied head), half the depth, one seed, and an untuned baseline.
+  - **Methodological findings:** inference ablation overstates (Gen 3: 4.0× against 1.087×; the field +56% against −2.1%; Gen 2: 3.75–3.91× against 1.31×), and the channels substitute (V_φ −0.291 → −0.0002 / −0.0035).
+  - **Geodesics:**
+    - exact on conservative-only, at the trained step;
+    - the Fock models are forced, with η 1.2–3;
+    - refinement fails everywhere, tracks non-conservative content, and L=4 is more refinement-ready (+216% against +1,274%);
+    - L=4 forecastability is stated as pending attribution (G4);
+    - a pointer to §37.6.
+  - **Scope:** d=384, L ∈ {2, 4}, one seed; four open, pre-registered questions.
+  - **Unchanged:** the descriptive, prescriptive and expressivity paragraphs.
+  - **Also:** the code-availability paragraph's "first generation" became Gen 2 / Gen 3 (all three collection URLs return 200).
+  - **Build:** 513 pages, 0 undefined.
+  - **When G4 lands:** update the forecastability clause.
+- **Abstract revised again (2026-10-05, the author's call): no Gen 2 in the abstract.** The abstract describes only the current design: every model is trained with the loss gradient reaching every force's source tokens.
+  - Removed: the Gen 2 ordering, the withdrawn price readings, the "every arm improves by 21–34%" clause, and the Gen 2 ablation parenthetical.
+  - Kept as a one-clause pointer in Scope: an earlier convention, which detached the source gradients, and the readings it supported are analysed and withdrawn in `rem:gen2-gen3`. Those readings never reached a paper release or Zenodo (the ladder postdates v5.2), but the detached-source models are public in the Hugging Face Gen 2 collection, so the pointer stays.
+  - Forecastability now reads "whose paired control is pending".
+  - Build: 513 pages, 0 undefined.

@@ -16,7 +16,7 @@ through the ladder notebook's own Cells 0-5b:
 
 plus validation PPL on the local cache, as a load check.
 
-Usage: python3 causality_check_checkpoint.py OUT_DIR FOLDER [REVERSE_CHANNEL VPHI XI]
+Usage: python3 causality_check_checkpoint.py OUT_DIR FOLDER [REVERSE_CHANNEL VPHI XI [MECH RELAX_GRAD]]
   e.g. ... OUT semsimula_..._norc_vplive_xilive_..._noattn False live live
 """
 import math, sys
@@ -34,6 +34,8 @@ FOLDER = sys.argv[2]
 RC = (sys.argv[3] == 'True') if len(sys.argv) > 3 else True
 VP = sys.argv[4] if len(sys.argv) > 4 else 'default'
 XI = sys.argv[5] if len(sys.argv) > 5 else 'default'
+MECH = sys.argv[6] if len(sys.argv) > 6 else 'none'
+RG = sys.argv[7] if len(sys.argv) > 7 else 'default'
 
 
 def logits_of(model, x):
@@ -44,7 +46,7 @@ def logits_of(model, x):
 
 if __name__ == '__main__':
     torch.manual_seed(0)
-    model, tag, _ = build(RC, FOLDER, VP, XI)
+    model, tag, _ = build(RC, FOLDER, VP, XI, MECH, RG)
     model.eval()
     V = model.cfg.vocab_size
     val = np.load(G.VAL)
