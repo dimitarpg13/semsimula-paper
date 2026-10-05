@@ -1,0 +1,52 @@
+
+== G2 (L=2 Fock, live): best step 31000, L=2, M=32, decay 0.5, threshold 0.005, LIFO True
+  layer 0: active fraction 1.0000 (min over positions 1.000); below threshold 0.0000
+           salience q01/q10/q50/q90/q99 0.515 / 0.528 / 0.680 / 0.997 / 1.000
+           g        q01/q10/q50/q90/q99 0.001 / 0.016 / 0.994 / 1.000 / 1.000   mean 0.691
+           DP2 weighted |cos| earlier 0.041  last 0.042;  near-duplicate share earlier 0.0000  last 0.0000
+           DP3 Spearman(salience, leave-one-out force) mean -0.005 median -0.002 over 4096 positions
+  layer 1: active fraction 0.9995 (min over positions 0.875); below threshold 0.0005
+           salience q01/q10/q50/q90/q99 0.056 / 0.167 / 0.397 / 0.570 / 0.788
+           g        q01/q10/q50/q90/q99 0.480 / 0.492 / 0.500 / 0.511 / 0.526   mean 0.501
+           DP2 weighted |cos| earlier 0.128  last 0.091;  near-duplicate share earlier 0.0130  last 0.0028
+           DP3 Spearman(salience, leave-one-out force) mean -0.061 median -0.087 over 4096 positions
+  share of the initial salience left after layer 1: mean 0.0386; q01/q10/q50/q90/q99 0.0000 / 0.0000 / 0.0007 / 0.1228 / 0.1251
+
+== L=4 Fock, live: best step 32500, L=4, M=32, decay 0.5, threshold 0.005, LIFO True
+  layer 0: active fraction 1.0000 (min over positions 1.000); below threshold 0.0000
+           salience q01/q10/q50/q90/q99 0.515 / 0.534 / 0.698 / 0.993 / 1.000
+           g        q01/q10/q50/q90/q99 0.003 / 0.047 / 0.436 / 0.999 / 1.000   mean 0.512
+           DP2 weighted |cos| earlier 0.075  last 0.075;  near-duplicate share earlier 0.0000  last 0.0000
+           DP3 Spearman(salience, leave-one-out force) mean -0.022 median -0.025 over 4096 positions
+  layer 1: active fraction 1.0000 (min over positions 1.000); below threshold 0.0000
+           salience q01/q10/q50/q90/q99 0.069 / 0.197 / 0.438 / 0.774 / 0.893
+           g        q01/q10/q50/q90/q99 0.000 / 0.002 / 0.975 / 1.000 / 1.000   mean 0.658
+           DP2 weighted |cos| earlier 0.109  last 0.052;  near-duplicate share earlier 0.0066  last 0.0003
+           DP3 Spearman(salience, leave-one-out force) mean -0.321 median -0.325 over 4096 positions
+  layer 2: active fraction 1.0000 (min over positions 1.000); below threshold 0.0000
+           salience q01/q10/q50/q90/q99 0.062 / 0.161 / 0.362 / 0.536 / 0.874
+           g        q01/q10/q50/q90/q99 0.000 / 0.000 / 0.000 / 0.033 / 0.997   mean 0.052
+           DP2 weighted |cos| earlier 0.120  last 0.066;  near-duplicate share earlier 0.0094  last 0.0003
+           DP3 Spearman(salience, leave-one-out force) mean -0.144 median -0.172 over 4096 positions
+  layer 3: active fraction 1.0000 (min over positions 1.000); below threshold 0.0000
+           salience q01/q10/q50/q90/q99 0.077 / 0.172 / 0.413 / 0.740 / 0.900
+           g        q01/q10/q50/q90/q99 0.481 / 0.492 / 0.502 / 0.509 / 0.521   mean 0.501
+           DP2 weighted |cos| earlier 0.143  last 0.073;  near-duplicate share earlier 0.0093  last 0.0003
+           DP3 Spearman(salience, leave-one-out force) mean -0.407 median -0.428 over 4096 positions
+  share of the initial salience left after layer 3: mean 0.0075; q01/q10/q50/q90/q99 0.0000 / 0.0000 / 0.0001 / 0.0294 / 0.0311
+
+== G3 (L=2 + exchange field): best step 31000, L=2, M=32, decay 0.5, threshold 0.005, LIFO True
+  layer 0: active fraction 1.0000 (min over positions 1.000); below threshold 0.0000
+           salience q01/q10/q50/q90/q99 0.523 / 0.546 / 0.628 / 0.979 / 1.000
+           g        q01/q10/q50/q90/q99 0.022 / 0.384 / 0.978 / 0.998 / 1.000   mean 0.778
+           DP2 weighted |cos| earlier 0.020  last 0.020;  near-duplicate share earlier 0.0000  last 0.0000
+           DP3 Spearman(salience, leave-one-out force) mean -0.022 median -0.023 over 4096 positions
+  layer 1: active fraction 1.0000 (min over positions 1.000); below threshold 0.0000
+           salience q01/q10/q50/q90/q99 0.050 / 0.109 / 0.303 / 0.681 / 0.928
+           g        q01/q10/q50/q90/q99 0.464 / 0.484 / 0.500 / 0.520 / 0.535   mean 0.500
+           DP2 weighted |cos| earlier 0.098  last 0.047;  near-duplicate share earlier 0.0098  last 0.0000
+           DP3 Spearman(salience, leave-one-out force) mean -0.172 median -0.197 over 4096 positions
+  share of the initial salience left after layer 1: mean 0.0276; q01/q10/q50/q90/q99 0.0000 / 0.0002 / 0.0027 / 0.0771 / 0.1221
+
+wrote /Users/dimitargueorguiev/git/ml/semsimula-paper/companion_notes/figures/doi_peliti/dp_register_diagnostics.png
+wrote /private/tmp/claude-501/-Users-dimitargueorguiev-git-ml-semsimula-paper/3aa3f150-5d21-482f-b102-acdf6da87bf2/scratchpad/dp/dp_register_statistics.json

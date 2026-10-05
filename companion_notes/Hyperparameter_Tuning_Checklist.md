@@ -637,6 +637,30 @@ adds a point to a curve.
 - [ ] **G3′** (F3.2b) — G3's configuration plus QK-normalised exchange-field routing (a clamped logit scale, as in the creation gate's `cgqk`) and a 0.3 clip override for `relax_field`. Predicted: the gradient norm stays flat (70%) and settled ≤ 52.1 (50%). Code: a QK-norm switch on `XiRoutedConservativeAttention`, off by default and verified bit-identical. **After G3 completes, ahead of the FO 2×2.** Not gating v6. *Implemented and verified 2026-10-05 (protocol §5.10): Cell 0 `RELAX_ATTN_QK_NORM = True`, `RELAX_FIELD_CLIP = 0.3` on G3's settings.*
 - [ ] **G1** — **scheduled, deferred until G2–G4 are in.** A GPT-2 matched on parameters at the same width: d=384, L=22, untied, 77.8M. Width is held at 384 by design: comparisons stay in the same semantic-space dimension, so d=512 was rejected. The author's reservation is that matching the parameter count by depth ignores the model's dynamics and may draw reviewer questions; the run is kept for completeness. GPT-2 notebook Cell 0: `N_LAYERS = 22`, `TIE_EMBEDDINGS = False`. Commit and push the `VARIANT_TAG` folder guard before running it.
 
+## Scheduled, free — run now: DP-series — what Doi–Peliti process do the trained registers implement? — **opened 2026-10-05** (protocol §5.14)
+
+**Priority (2026-10-05):** first in the free queue. These are evaluation-only, local CPU checks taking minutes, run in parallel with G3′, which is training on Colab. They gate the v6.1 book revision of §10.5.2 (the Doi–Peliti paragraph and the v2 mapping table) and §20 (salience). Companion note: `Doi_Peliti_Dynamics_of_Semantic_Particles_and_Registers.md`.
+
+- [x] Write the companion note, theory §0–§6, with derivations and figures. *Done 2026-10-05.*
+- [x] **DP1** *(done 2026-10-05: hit; active fraction 0.9995–1.000, so there are no number dynamics)*: active fraction, below-threshold cells and destruction gate g, from layer 1 up, on G2, L=4 live and G3.
+- [x] **DP2** *(done 2026-10-05: both predictions missed narrowly on G2, at 1.30% and 0.037; well below the 5% line, so content is not shared)*: register content duplication (salience-weighted cosine, near-duplicates), earlier positions against the last.
+- [x] **DP3** *(done 2026-10-05: hit, and negative, down to −0.41; salience is retention, not intensity)*: Spearman ρ between salience and each register's leave-one-out reverse-channel contribution.
+- [x] Record the results in the note (§7–§8) and score them in protocol §5.14. *Done 2026-10-05.*
+- [ ] **Book v6.1:**
+  - §10.5.2: derivations of the coherent-state/Poisson and Hamilton-equation claims, the bosonic-versus-exclusion reading forced by DP1–DP3, and the causal-symmetry caveat on the bosonic justification;
+  - §20: the salience sentence;
+  - A3: the DP rows.
+
+**Free queue, in order (2026-10-05):**
+1. ~~DP1–DP3~~ done 2026-10-05.
+2. G4, 6b-10 on run 4 (Colab, minutes).
+3. CB0 (η and 6b-11 on G2).
+4. SR-π.3.
+5. CG8 on the baselines, once 6b-14 exists.
+6. The overlap diagnostics D1, D2 and E4 (low priority).
+
+The GPU queue is unchanged: G3′ (running), then the FO 2×2, the CB series and the SR series.
+
 ## Scheduled: CB-series — balancing the conservative and Fock paths — **opened 2026-10-03** (protocol §5.11)
 
 The author's hypothesis: with the Fock path present, PARF's V_φ is starved, so the model gains PPL at the cost of conservativity. All switches are in Cell 0 and off by default; verified in `debug/verify_cb_switches.py`, where each neutral setting is bit-identical to G2. The baseline η (Fock increment / conservative step) on the Gen 2 no-exchange weights is 1.6 at layer 0 and 3.0 at layer 1.

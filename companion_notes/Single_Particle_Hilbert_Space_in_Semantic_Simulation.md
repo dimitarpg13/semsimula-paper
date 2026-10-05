@@ -341,7 +341,7 @@ Each entropy splits into a $\ln 2$ for the 50/50 choice plus the average entropy
 
 If the effective dynamics of the particle system is linear, with a quadratic potential and Gaussian noise, its stationary statistics are Gaussian. All connected cumulants beyond second order then vanish, in particular $G_c^{(4)} = 0$. A Gaussian joint density cannot be bimodal, so correlated structures like (4.3) need a non-quadratic potential.
 
-This must not be read as "conservative means free." The framework's conservative forces come from **anharmonic** potentials: the Gaussian well $V$ and the pair potential $V_\phi$. Under the Langevin thermostat the stationary density of a conservative system is the Boltzmann density, proportional to $e^{-U/T}$, which is non-Gaussian whenever $U$ is not quadratic. It can carry exactly the correlation of (4.3).
+This must not be read as "conservative means free." The framework's conservative forces come from **anharmonic** potentials: the Gaussian well $V$ and the pair potential $V_\phi$. Under the Langevin thermostat the stationary density of a conservative system with reciprocal forces is the Boltzmann density, proportional to $e^{-U/T}$, which is non-Gaussian whenever $U$ is not quadratic. It can carry exactly the correlation of (4.3). The causal models' forces are not reciprocal (a token feels its sources, and they do not feel it back), so they have no Boltzmann state; see the [Doi–Peliti note](Doi_Peliti_Dynamics_of_Semantic_Particles_and_Registers.md), §5.3.
 
 The free/interacting partition that the book draws alongside the Conservative Obstruction Theorem (Section 20.4) concerns a different ensemble. There, $G_c^{(4)}$ is the connected four-point function of an attention head's output, averaged over its random initialization in the neural-network/QFT correspondence. It is a statement about how attention couples its inputs, not about the stationary statistics of semantic particles.
 
@@ -445,7 +445,7 @@ Since the book takes the second route at the level of the formalism, the bosonic
 
 Bosonic statistics allow several particles in the same state.
 
-- **Registers** carry no position, so repeated occupation of one mode means *more of the same meaning*: intensity. In Doi–Peliti, a mode whose occupation is Poisson with mean $\alpha$ is described by a coherent state (§7.2), so a register's continuous salience is naturally read as that Poisson mean. (The book writes the salience as $\sigma_k$; it is unrelated to the mode width $\sigma$.)
+- **Registers** carry no position, so in a bosonic reading repeated occupation of one mode would mean *more of the same meaning*: intensity, with a register's continuous salience read as a Poisson mean (§7.2). **The trained models do not use registers that way.** Each register is a single slot holding one content vector. Its number never changes in practice, and its salience behaves as the probability of retaining old content, anti-correlated with its effect on the force. The registers are exclusion objects; see the [Doi–Peliti note](Doi_Peliti_Dynamics_of_Semantic_Particles_and_Registers.md), §7. (The book writes the salience as $\sigma_k$; it is unrelated to the mode width $\sigma$.)
 - **Token particles with position labels** fill each text slot exactly once. In the position label they behave like excluded particles (at most one per slot), while their semantic content can still be shared. A hybrid statistic, bosonic in content and exclusive in slot, is the accurate description.
 
 ---
@@ -563,7 +563,7 @@ $$
 \lvert\alpha\rangle_v = e^{\alpha(\tilde a_v^\dagger - 1)}\lvert 0\rangle = \sum_{n\geq0}e^{-\alpha}\frac{\alpha^n}{n!}(\tilde a_v^\dagger)^n\lvert 0\rangle, \qquad (7.5)
 $$
 
-which by (7.2) is exactly the Poisson distribution with mean $\alpha$. Product coherent states over modes are product Poisson distributions. This is the classical meaning of the mean-field approximation, and the reason a continuous register salience is naturally a Poisson mean. The stationary state of the creation–decay process in §6.3 is such a coherent state, with $\alpha = c/d$.
+which by (7.2) is exactly the Poisson distribution with mean $\alpha$. Product coherent states over modes are product Poisson distributions. This is the classical meaning of the mean-field approximation, and the reason the Doi field of a mode is a Poisson mean. Whether a model's register salience is that field is an empirical question; for the trained models it is not (§5.5). The stationary state of the creation–decay process in §6.3 is such a coherent state, with $\alpha = c/d$.
 
 ### 7.3 "Bank" at the Fock level
 
@@ -617,7 +617,7 @@ For cat and kitten, $c = 0.9753$, so $\alpha = 3.538$ and $\beta = -2.826$. The 
 | Stationary state | The prior, under spontaneous creation; Poisson in the simplest case |
 | Löwdin modes | Orthonormal bookkeeping basis for Doi–Peliti; not root densities |
 | Doi–Peliti $\lvert P\rangle$ | Probability distribution over configurations, normalized by a sum |
-| Coherent state | Poisson distribution; salience as Poisson mean |
+| Coherent state | Poisson distribution; its mean is the Doi field (in the trained models, not the register salience) |
 
 **Summary.** In the Semantic Simulation framework, the single-particle Hilbert space is a space of **root densities over semantic space**, not a space of quantum amplitudes. Its inner product is the Bhattacharyya coefficient. For the framework's Gaussian states that coefficient equals one minus the normalized well potential, so semantic similarity is built into $\mathcal{H}$ and fixed by the dynamics through $\sigma = x^{\ast}/2$.
 

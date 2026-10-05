@@ -803,3 +803,22 @@ thought, not typing.
   - Kept as a one-clause pointer in Scope: an earlier convention, which detached the source gradients, and the readings it supported are analysed and withdrawn in `rem:gen2-gen3`. Those readings never reached a paper release or Zenodo (the ladder postdates v5.2), but the detached-source models are public in the Hugging Face Gen 2 collection, so the pointer stays.
   - Forecastability now reads "whose paired control is pending".
   - Build: 513 pages, 0 undefined.
+
+## v6.1 edits (next edition, after Zenodo v22) — started 2026-10-05
+
+**DP series** (protocol §5.14, companion note `Doi_Peliti_Dynamics_of_Semantic_Particles_and_Registers.md`). Book edits, built clean: 514 pages, no undefined references, no new overfull boxes.
+- **§10.5.2:**
+  - the bosonic justification gains the causal-symmetry caveat;
+  - new paragraph *Capacity and use* after the v2 mapping table;
+  - the Doi–Peliti paragraph now derives the construction rule (eq. `dp-rule`), coherent states as Poisson distributions, the action (eq. `dp-action`), Hamilton's equations and the invariant line;
+  - new **Remark 60** (`rem:dp-registers`) with the two-state chain (eq. `dp-chain`) and the DP1–DP3 results;
+  - the class implication is qualified for the trained instances.
+- **§20.3** (`ssec:fock-parf`): the implemented blend, the threshold bound, and the dead last-layer destruction gate.
+- **A3:** new table `tab:expidx-dp`.
+
+**Renumbering consequence (pending, at v6.1 publication).**
+- **Remarks shift by one from Remark 60:**
+  - "Refinement invariance is a testable precondition" is now **Remark 63** (was 62);
+  - `rem:gen2-gen3` is now **Remark 104** (was 103).
+- **Equations shift by 3 from (126).** Propositions 44–45 and section numbers are unchanged.
+- **The Gen 3 HF cards cite "Remark 62" through the concept DOI.** When v6.1 is published, change it to 63 in `semsimula/hf_model_cards/_ladder/build_cards.py` (the `GATES_TERMS` book sentence), rebuild, and push the four Gen 3 READMEs. Until then v22 is current and the cards are right.

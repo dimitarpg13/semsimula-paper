@@ -3421,6 +3421,72 @@ Layer 0 reads ε ≈ 6–15 in every model. That step is the projection of the e
 - **Disclosure.** With different budgets per corpus, the interaction Δ_OWT − Δ_TS compares relative gaps measured at different training lengths. First-order arms can lag at short budgets, which would inflate Δ_TS. The settling check is what guards against that. If an extension is needed, both budgets are reported with the result.
 3. The FO-a switch is implemented and verified before Stage 1.
 
+### 5.14 DP series: what Doi–Peliti process do the trained registers implement? — **pre-registered 2026-10-05, before any measurement**
+
+**Why.** Book §10.5.2 makes the Fock registers a bosonic Doi–Peliti system. It says "a continuous salience variable plays the role of a Poisson mean." The code ([`model_fock_parf_v2.py`](../notebooks/conservative_arch/parf/model_fock_parf_v2.py), [`model_fock_parf_multixi.py`](../notebooks/conservative_arch/parf/model_fock_parf_multixi.py)) shows four structural facts that bear on that reading. They are stated here before any measurement.
+
+1. **Time is depth.** Salience updates once per layer, separately at each position.
+2. **The process starts full.** Every register starts at salience 1, not at the vacuum. With decay 0.5, every register is necessarily active at layer 0.
+3. **Salience is bounded and deterministic.** The update is a convex combination, the old salience times 0.5 plus the peak creation weight times 0.5, followed by the destruction factor (1 − g). Salience stays in [0, 1] and carries no fluctuation.
+4. **The force sees a yes/no mask, not the salience.** The reverse channel receives only the mask (salience above 0.005, with LIFO stack discipline). Salience otherwise enters only as the retention weight of a register's old content.
+
+Each register is one slot holding one content vector: an exclusion (hard-core) object. A bosonic Poisson reading would put up to 26% of a register's probability on double occupancy, which a single slot cannot represent. The diagnostics ask what the trained models do with this machinery. Companion note: [`Doi_Peliti_Dynamics_of_Semantic_Particles_and_Registers.md`](Doi_Peliti_Dynamics_of_Semantic_Particles_and_Registers.md).
+
+**Measurement.** Evaluation only, local CPU, script `debug/dp_register_statistics.py`.
+- **Tokens:** 8 × 512 validation tokens, seed 20261005.
+- **Arms:** G2 (L=2 Fock, live), the L=4 Fock live arm, and G3 (L=2 with the exchange field), each on its best checkpoint.
+- **Hooks:** for every layer, position and register, record the salience that sets that layer's mask (after creation, before destruction), the destruction gate g, the mask, and the register content passed to the reverse channel.
+
+- **DP1, is particle number dynamic at all?** For each layer from 1 up (layer 0 is all-active by construction), measure:
+  - the active fraction (active registers out of M = 32), per position;
+  - the fraction of (position, register) cells below threshold;
+  - the distribution of g.
+- **DP2, do registers share content?** Among the active registers at each position, measure:
+  - the salience-weighted mean absolute off-diagonal cosine of their contents;
+  - the fraction of pairs with cosine above 0.9 (near-duplicates).
+
+  Both are reported separately for earlier positions and for the last position, the only one the 0.05 repulsion penalty acts on in training.
+- **DP3, does salience act as intensity?** At each position and layer, take each active register's leave-one-out contribution to the reverse-channel force: the change in that force when the register alone is removed from the mask. Measure the Spearman correlation between salience and that contribution across the active registers, averaged over positions and layers.
+
+**Predictions:**
+
+| test | arm(s) | prediction | called |
+| --- | --- | --- | --- |
+| DP1 | G2, G3 | active fraction ≥ 0.95 at layer 1: no number dynamics in practice | 65% |
+| DP1 | L=4 live | active fraction ≥ 0.95 at every layer from 1 to 3 | 55% |
+| DP2 | all | near-duplicate pairs (cosine above 0.9) under 1% of active pairs, at every position | 55% |
+| DP2 | all | mean absolute cosine at earlier positions above the last position's by at least 0.05 (the penalty acts only there) | 50% |
+| DP3 | all | Spearman ρ below 0.3: salience does not act as intensity | 60% |
+
+**Decision rule.**
+- **DP1 holds (active fraction ≥ 0.95).** The trained models implement no particle-number dynamics: the register count stays at M, and v2 reduces to content rewriting with retention weights. The Fock/Doi–Peliti language then describes the architecture's *capacity*, not its trained behavior. Book §10.5.2 (the v2 mapping table) and §20 say so.
+- **DP3 weak (ρ < 0.3).** "Salience plays the role of a Poisson mean" is withdrawn. Salience is read as an occupation (retention) probability of a hard-core slot, and the exclusion Doi–Peliti formalism is the correct home. DP3 strong (ρ ≥ 0.5): the intensity reading survives empirically, learned through content even though the force sees only the mask, and the sentence stays with that qualification.
+- **DP2 near-duplicates common (≥ 5%).** Registers share content modes: exclusive per slot, bosonic in content, the hybrid statistic of the single-particle note §5.5. The book then says that, not "bosonic."
+
+**Caveat recorded in advance.** Salience is a deterministic mean-field quantity. No measurement on these models can distinguish bosonic from exclusion fluctuations, since there are none. The tests read how the models *use* the variables, not their statistics.
+
+**DP scored, 2026-10-05.** Output: `debug/dp_register_statistics_output.txt` and its JSON; figure `companion_notes/figures/doi_peliti/dp_register_diagnostics.png`. Layer checkpointing was off for the measurement (it recomputes each layer and doubles every hook); the logits are bit-identical with and without it.
+
+| test | G2 | L=4 live | G3 | prediction | outcome |
+| --- | --- | --- | --- | --- | --- |
+| DP1, active fraction from layer 1 | 0.9995 | 1.0000 (layers 1–3) | 1.0000 | at least 0.95 (65%, 55%) | **hit** |
+| DP2, near-duplicates at earlier positions | 1.30% | 0.66–0.94% | 0.98% | under 1% everywhere (55%) | **miss**, narrowly (G2) |
+| DP2, absolute cosine earlier minus last | 0.037 | 0.054–0.070 | 0.051 | at least 0.05 everywhere (50%) | **miss** (G2); hit elsewhere from layer 1 |
+| DP3, Spearman(salience, own force) | −0.005, −0.061 | −0.022, −0.321, −0.144, −0.407 | −0.022, −0.172 | below 0.3 (60%) | **hit**, and negative |
+
+- **Decision rules triggered.**
+  - DP1 holds: the trained models implement no particle-number dynamics.
+  - DP3 is weak, in fact negative: "salience plays the role of a Poisson mean" is withdrawn, and salience is read as the retention probability of a hard-core slot.
+  - DP2 is far below the 5% line: registers do not share content, so the hybrid-statistic reading does not apply either.
+- **Why DP1 was nearly forced.** The mask is taken after the refresh and before destruction, and there the salience is at least (1 − λ) divided by the number of prefix positions. At decay 0.5 and threshold 0.005, no register can be inactive in the first 99 positions.
+- **Not pre-registered:**
+  - The destruction gate is switch-like at layer 0 (G2 median 0.994, 10th percentile 0.016). It acts as a content reset: the next blend overwrites a low-salience register with fresh readout.
+  - The **last layer's destruction gate receives exactly zero gradient** in every model (its output is never read) and sits at its initialization, 0.46–0.54.
+  - The median weight of the initial salience after the last layer is 0.0007 (G2), 0.0001 (L=4) and 0.0027 (G3).
+  - DP3's negative sign has a mechanism: freshly reset registers carry the current context and dominate the force.
+- **Book (next edition):** §10.5.2 and §20 as listed in the companion note's §8.1.
+
+
 ## 6. Open risks
 
 ### 6.1 At L=1 the register bank is read but never updated — **2026-09-24**
