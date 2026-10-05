@@ -1,0 +1,42 @@
+
+== G3: tag ...rglive_vplive_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_attnpot
+   relax_field H=8 d_k=48 qk_norm=False; checkpoints: best, step500_best
+-- best (step 31000, val_ppl 52.43534778792072)
+   spectral norm W_q [5.58, 5.82, 5.12, 6.28, 5.18, 6.14, 5.80, 5.74]  W_k [5.41, 6.09, 4.98, 6.14, 5.23, 5.56, 5.49, 5.19]
+   logit bound sigma(W_q)sigma(W_k)/sqrt(d_k) per unit input [4.36, 5.12, 3.69, 5.56, 3.90, 4.93, 4.60, 4.30]
+   call 0: entropy/log(t) [0.97, 0.98, 0.98, 0.94, 0.97, 0.95, 0.95, 0.96]  max weight [0.02, 0.01, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02]
+           score std [0.58, 0.42, 0.46, 0.77, 0.57, 0.69, 0.68, 0.59]  max|score| [2.40, 2.06, 1.90, 2.80, 2.08, 2.76, 2.70, 2.66]  field share median 0.315 p90 0.392
+   call 1: entropy/log(t) [0.69, 0.60, 0.60, 0.61, 0.67, 0.61, 0.65, 0.62]  max weight [0.19, 0.23, 0.26, 0.25, 0.20, 0.28, 0.21, 0.27]
+           score std [4.15, 5.09, 4.62, 4.79, 4.81, 4.26, 3.90, 3.87]  max|score| [25.51, 33.26, 25.08, 36.90, 28.66, 25.19, 23.30, 25.01]  field share median 0.915 p90 0.976
+   OFFLINE grad (LM loss, 2 batches x 2 x 512): relax_field group 2.6283 (sd 0.2135); total 3.8642; W_q 0.2186, W_k 0.1060, W_uq 0.4203, W_v 2.5830
+-- step500_best (step 500, val_ppl 456.74788844434886)
+   spectral norm W_q [0.95, 0.90, 1.02, 0.95, 1.10, 0.93, 0.94, 0.85]  W_k [1.13, 1.16, 1.24, 1.24, 1.37, 1.04, 1.14, 0.96]
+   logit bound sigma(W_q)sigma(W_k)/sqrt(d_k) per unit input [0.16, 0.15, 0.18, 0.17, 0.22, 0.14, 0.16, 0.12]
+   call 0: entropy/log(t) [1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00]  max weight [0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01]
+           score std [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00]  max|score| [0.01, 0.01, 0.02, 0.01, 0.03, 0.01, 0.01, 0.01]  field share median 0.049 p90 0.061
+   call 1: entropy/log(t) [0.80, 0.75, 0.62, 0.80, 0.57, 0.83, 0.70, 0.86]  max weight [0.08, 0.17, 0.18, 0.09, 0.21, 0.08, 0.16, 0.06]
+           score std [1.98, 1.63, 3.79, 1.85, 3.43, 1.84, 2.21, 1.47]  max|score| [11.27, 11.19, 22.63, 11.48, 23.56, 12.10, 12.49, 9.51]  field share median 1.000 p90 1.010
+   OFFLINE grad (LM loss, 2 batches x 2 x 512): relax_field group 0.2115 (sd 0.0339); total 2.0368; W_q 0.1176, W_k 0.0407, W_uq 0.1335, W_v 0.1065
+
+wrote /private/tmp/claude-501/-Users-dimitargueorguiev-git-ml-semsimula-paper/3aa3f150-5d21-482f-b102-acdf6da87bf2/scratchpad/efp/exchange_field_probe.json
+
+== G3' (SMOKE: G3 code path test on G3 weights, not a measurement): tag ...rglive_vplive_xilive_rfqk_rfclip0p3_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_attnpot
+   relax_field H=8 d_k=48 qk_norm=True; checkpoints: best, step500_best
+-- best (step 31000, val_ppl 52.43534778792072)
+   spectral norm W_q [5.58, 5.82, 5.12, 6.28, 5.18, 6.14, 5.80, 5.74]  W_k [5.41, 6.09, 4.98, 6.14, 5.23, 5.56, 5.49, 5.19]
+   logit scale sigma_h [14.29, 14.29, 14.29, 14.29, 14.29, 14.29, 14.29, 14.29]  (ceiling 100; at ceiling: 0 of 8)
+   call 0: entropy/log(t) [0.71, 0.72, 0.68, 0.74, 0.72, 0.71, 0.74, 0.70]  max weight [0.08, 0.09, 0.10, 0.07, 0.08, 0.08, 0.06, 0.09]
+           score std [5.83, 4.53, 4.07, 5.93, 5.41, 5.08, 6.11, 4.75]  max|score| [12.64, 12.03, 10.79, 13.12, 12.67, 11.88, 12.55, 11.95]  field share median 0.346 p90 0.433
+   call 1: entropy/log(t) [0.95, 0.93, 0.92, 0.95, 0.95, 0.92, 0.93, 0.92]  max weight [0.03, 0.03, 0.05, 0.04, 0.03, 0.05, 0.04, 0.05]
+           score std [1.76, 1.70, 1.81, 1.57, 1.89, 1.85, 1.69, 1.68]  max|score| [9.73, 8.80, 8.74, 7.91, 9.19, 8.57, 8.08, 8.35]  field share median 0.880 p90 0.959
+   OFFLINE grad (LM loss, 2 batches x 2 x 512): relax_field group 4.3130 (sd 0.4935); total 8.2836; logit_scale 0.0841, W_q 0.2100, W_k 0.1186, W_uq 0.4653, W_v 4.2800
+-- step500_best (step 500, val_ppl 456.74788844434886)
+   spectral norm W_q [0.95, 0.90, 1.02, 0.95, 1.10, 0.93, 0.94, 0.85]  W_k [1.13, 1.16, 1.24, 1.24, 1.37, 1.04, 1.14, 0.96]
+   logit scale sigma_h [14.29, 14.29, 14.29, 14.29, 14.29, 14.29, 14.29, 14.29]  (ceiling 100; at ceiling: 0 of 8)
+   call 0: entropy/log(t) [0.61, 0.58, 0.62, 0.62, 0.59, 0.60, 0.56, 0.61]  max weight [0.19, 0.22, 0.15, 0.18, 0.16, 0.20, 0.22, 0.20]
+           score std [3.96, 3.67, 5.05, 4.21, 5.01, 3.90, 3.95, 3.47]  max|score| [11.59, 11.71, 13.24, 12.30, 13.00, 12.54, 12.21, 11.64]  field share median 0.200 p90 0.268
+   call 1: entropy/log(t) [0.63, 0.54, 0.62, 0.62, 0.60, 0.64, 0.52, 0.66]  max weight [0.16, 0.26, 0.14, 0.18, 0.14, 0.16, 0.25, 0.15]
+           score std [5.96, 4.89, 6.63, 5.35, 6.36, 5.11, 5.43, 4.73]  max|score| [12.66, 13.16, 13.83, 12.87, 13.45, 12.62, 12.91, 12.52]  field share median 1.001 p90 1.022
+   OFFLINE grad (LM loss, 2 batches x 2 x 512): relax_field group 0.3499 (sd 0.0367); total 2.1786; logit_scale 0.0102, W_q 0.2241, W_k 0.1181, W_uq 0.1922, W_v 0.1454
+
+wrote /private/tmp/claude-501/-Users-dimitargueorguiev-git-ml-semsimula-paper/3aa3f150-5d21-482f-b102-acdf6da87bf2/scratchpad/efp/exchange_field_probe_smoke.json

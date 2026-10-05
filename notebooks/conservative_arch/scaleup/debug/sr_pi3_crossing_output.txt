@@ -1,0 +1,37 @@
+  batch: PPL trained 37.04  refined 550.48
+  batch: PPL trained 51.46  refined 957.55
+  batch: PPL trained 45.75  refined 785.61
+  batch: PPL trained 59.52  refined 848.04
+  batch: PPL trained 39.66  refined 695.86
+  batch: PPL trained 56.54  refined 683.33
+  batch: PPL trained 55.50  refined 790.68
+  batch: PPL trained 48.86  refined 780.36
+
+G2, 16,384 tokens: refined/trained PPL = 15.46 (Gate 3 = +1446%)
+theta median per layer 2.94, 4.62; pooled 3.40
+
+     class   share  mean dNLL   median  trained NLL
+     below    3.0%      3.726    3.269        3.985
+  crossing   61.4%      2.931    2.421        3.880
+      past   35.6%      2.321    2.002        3.885
+
+mean dNLL, crossing / non-crossing = 1.21   (pre-registered: >= 2, called 55%)
+   crossing at layer 0 only counted: ratio 1.28  (share 24.4%)
+   crossing at layer 1 only counted: ratio 1.10  (share 49.1%)
+
+mean dNLL by the token's largest theta (pi = 3.14, 1.5 pi = 4.71):
+   [2.50,  3.00)  share   1.7%  mean dNLL 3.807
+   [3.00,  3.14)  share   1.2%  mean dNLL 3.655
+   [3.14,  3.60)  share   7.5%  mean dNLL 3.615
+   [3.60,  4.20)  share  19.8%  mean dNLL 3.165
+   [4.20,  4.71)  share  24.5%  mean dNLL 2.608
+   [4.71,  6.00)  share  43.0%  mean dNLL 2.399
+   [6.00, 99.00)  share   2.2%  mean dNLL 2.636
+
+within quartiles of trained NLL (controls for token difficulty):
+   quartile 1: crossing 4.378  non-crossing 3.839  ratio 1.14
+   quartile 2: crossing 3.218  non-crossing 2.646  ratio 1.22
+   quartile 3: crossing 2.786  non-crossing 2.259  ratio 1.23
+   quartile 4: crossing 1.319  non-crossing 1.024  ratio 1.29
+
+-> SR-pi.3 MISS

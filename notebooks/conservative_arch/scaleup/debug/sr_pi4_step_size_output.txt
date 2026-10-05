@@ -1,0 +1,32 @@
+
+== F3.1  (L=2, dt=4; Gate 3 at 1.5x: +143%)
+   layer  cons_rel  inc_rel  nonlin0   nonlin  (medians; projections per layer)
+       0     3.206      nan    1.006    1.006  (1)
+       1     0.964      nan    0.241    0.241  (1)
+   mean over layers: nonlin 0.623; cons_rel + inc_rel 2.085
+
+== L=4 Fock live  (L=4, dt=2; Gate 3 at 1.5x: +216%)
+   layer  cons_rel  inc_rel  nonlin0   nonlin  (medians; projections per layer)
+       0     2.408    1.337    1.622    0.190  (2)
+       1     0.275    0.242    0.872    0.844  (2)
+       2     0.353    0.247    0.833    0.798  (2)
+       3     0.447    1.396    0.620    0.792  (2)
+   mean over layers: nonlin 0.656; cons_rel + inc_rel 1.677
+
+== G2  (L=2, dt=4; Gate 3 at 1.5x: +1274%)
+   layer  cons_rel  inc_rel  nonlin0   nonlin  (medians; projections per layer)
+       0     1.679    9.220    2.818    0.592  (2)
+       1     0.394    1.149    0.542    0.760  (2)
+   mean over layers: nonlin 0.676; cons_rel + inc_rel 6.221
+
+== G3  (L=2, dt=4; Gate 3 at 1.5x: +1342%)
+   layer  cons_rel  inc_rel  nonlin0   nonlin  (medians; projections per layer)
+       0     1.232    8.299    5.133    0.462  (2)
+       1     0.449    0.946    0.515    0.672  (2)
+   mean over layers: nonlin 0.567; cons_rel + inc_rel 5.463
+
+rank by Gate 3:          ['F3.1', 'L=4 Fock live', 'G2', 'G3']
+rank by nonlinearity:    ['G3', 'F3.1', 'L=4 Fock live', 'G2']   -> NO MATCH (pre-registered, 60%)
+rank by relative step:   ['L=4 Fock live', 'F3.1', 'G3', 'G2']   -> no match (descriptive)
+
+-> SR-pi.4 MISS

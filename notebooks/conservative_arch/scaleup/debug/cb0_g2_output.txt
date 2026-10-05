@@ -1,0 +1,41 @@
+A. eta = ||register increment|| / ||conservative step||, G2 best, 16,384 tokens
+   layer     p10     p50    mean     p90      max   > 0.3   > 1.0
+       0    1.43    1.47    1.47    1.52     1.71  100.0%  100.0%
+       1    3.32    3.88    3.99    4.64     9.64  100.0%  100.0%
+
+B. Cell 6b-11 (reverse-channel slider), R11_NBATCH = 4:
+probing fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_vplive_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt
+   step 31000  ppl 51.27  missing 0  unexpected 0
+   L=2  dt=4  tanh(gate) per layer [0.018, -0.0151]  warm 1.000  effective gate 0.01796
+
+GATE 0  replayed step vs captured output at lambda=1: max |d| = 0.000e+00   PASS
+
+E5  reverse-channel slider, 4x4x512 tokens per point
+    lambda      PPL  R_geo l0  R_geo l1  |dphi| l0  |dphi| l1  phi% l0  phi% l1     coh
+     1.000    56.38    0.4404    0.9450  4.824e-01  7.626e-02    2.55%    0.31%  -0.636
+     0.900    58.08    0.4185    0.9273  5.124e-01  6.068e-02    2.71%    0.29%  -0.540
+     0.800    62.89    0.3938    0.9050  5.491e-01  4.540e-02    2.92%    0.26%  -0.450
+     0.700    71.31    0.3658    0.8779  5.935e-01  3.526e-02    3.16%    0.25%  -0.371
+     0.600    84.41    0.3339    0.8456  6.470e-01  2.758e-02    3.46%    0.23%  -0.302
+     0.500   102.94    0.2973    0.8061  7.113e-01  2.325e-02    3.81%    0.24%  -0.243
+     0.400   126.97    0.2549    0.7554  7.881e-01  1.562e-02    4.24%    0.20%  -0.190
+     0.300   155.57    0.2057    0.6842  8.796e-01  1.022e-02    4.75%    0.16%  -0.142
+     0.200   187.21    0.1480    0.5709  9.886e-01  8.745e-03    5.36%    0.18%  -0.098
+     0.100   218.72    0.0801    0.3670  1.117e+00  8.688e-03    6.09%    0.23%  -0.058
+     0.050   233.32    0.0417    0.2084  1.190e+00  7.493e-03    6.51%    0.22%  -0.040
+     0.000   246.72    0.0000    0.0000  1.269e+00  6.021e-03    6.95%    0.19%  -0.023
+   step RMS per token at lambda=1: l0: 18.914  l1: 24.635
+
+READING
+   PPL(1) = 56.38   PPL(0) = 246.72   ratio 4.38x   <- the price of the pure damped geodesic
+   lambda* = 0.90   (smallest lambda within 5% of PPL(1))   -- no knee: every notch costs PPL
+   R_geo at lambda=1: [0.44, 0.945]  ->  at lambda=0: [0.0, 0.0]  (0 by construction)
+   V_phi per layer: |dphi| over the sweep relative to lambda=1, max / min:  l0: 2.63x / 1.00x  l1: 1.00x / 0.08x
+   V_phi DIRECT contribution at lambda=0 (no reverse channel), |dphi| / |step|:  l0: 6.95%  l1: 0.19%
+   <- V_phi grows as the reverse channel is removed; branch-and-anneal is worth a run
+   reverse-channel increment RMS / state RMS, pre-LN, at lambda=1 (model capture qforce_ratio):  l0: 1.366  l1: 1.148   (>1 means the increment overwrites the direction rather than nudging it)
+   coherence: -0.636 at lambda=1  ->  -0.023 at lambda=0
+   figure -> /private/tmp/claude-501/-Users-dimitargueorguiev-git-ml-semsimula-paper/3aa3f150-5d21-482f-b102-acdf6da87bf2/scratchpad/cb0/e5_reverse_channel_slider_G2.png
+
+   live training state restored (weights, gate parameter, warmup buffer)
+

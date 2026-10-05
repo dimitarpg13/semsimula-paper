@@ -2955,10 +2955,76 @@ Proposition 44 amplifies the phase-sampled dissipation of the split step by θ/s
 | id | prediction | called |
 | --- | --- | --- |
 | SR-π.1 | Across Fock arms at matched mechanism and convention, Gate 3 at 1.5× falls monotonically as the trained median θ moves below π. An **L=8 Fock live** arm (Δt = 1; expected θ ≈ 1.2) reads Gate 3 ≤ +100%. | 60%; **revised to about 40% on 2026-10-05** after G3 (θ 2.07, no crossing, Gate 3 +1,342%) |
-| SR-π.2 | On G2's configuration, **SR2** (the exact damped-mode flow, which removes the phase term) cuts Gate 3 by more than half, a far larger relative cut than on F3.1's configuration. | 55% |
+| SR-π.2 | On G2's configuration, **SR2** (the exact damped-mode flow, which removes the phase term) cuts Gate 3 by more than half, a far larger relative cut than on F3.1's configuration. | 55%; **withdrawn untested on 2026-10-05** (its arm was dropped after SR-π.3) |
 | SR-π.3 | A **diagnostic, free:** on G2's checkpoint, split the Gate 3 loss rise by token according to whether the token's stiff modes cross π under refinement (from the 6b-13 per-coordinate θ). Tokens whose modes cross contribute disproportionately: their mean loss rise is ≥ 2× that of non-crossing tokens. | 55% |
 
 **Design lever if these hold.** Choose L, or Δt, so the stiff modes train below π. Report the trained θ distribution with every Gate 3 reading.
+
+**SR-π.3 scored, 2026-10-05: MISS.** Script `debug/sr_pi3_crossing.py` and its output. It runs on G2's best checkpoint, with 6b-13's token draw (seed 20260928, 16,384 tokens) and 6b-7's own refinement (N = 3, hold policy).
+- **Gate 3 on these tokens:** +1,446%.
+- **θ:** median 2.94 at layer 0 and 4.62 at layer 1, pooled 3.40 (as in 6b-13).
+- **The prediction fails.** Crossing tokens' mean loss rise is 2.93 nats, against 2.42 for the rest: a ratio of **1.21**, against the predicted 2 or more. Within each quartile of trained token loss the ratio is 1.14–1.29.
+- **The dependence on θ runs the wrong way.** The loss rise *falls* as the token's largest θ rises:
+
+  | θ range of the token's largest mode | share of tokens | mean loss rise (nats) |
+  | --- | --- | --- |
+  | 2.5–3.14 | 2.9% | 3.66–3.81 |
+  | 3.14–3.6 | 7.5% | 3.62 |
+  | 3.6–4.2 | 19.8% | 3.17 |
+  | 4.2–4.71 | 24.5% | 2.61 |
+  | above 4.71 (stays past π) | 45.2% | 2.40 |
+
+  Tokens that never pass π fail worst (3.73).
+- **Reading.** In G2, refinement failure is broad, 2.3–3.7 nats for every class of token, and is not a π-phase effect.
+- **Consequences:**
+  - **SR-π.2** (SR2 on G2's configuration, predicted to cut Gate 3 by more than half) loses its rationale. **That second SR2 arm is dropped (author's decision, 2026-10-05); SR2 runs on F3.1's configuration only, and SR-π.2 is withdrawn untested.**
+  - **SR-π.1** is weakened further; my call moves from about 40% to about 30%.
+  - **The design lever** (choose L so stiff modes train below π) is not supported by G2.
+
+**SR-π.3b, pre-registered 2026-10-05 before any measurement: is the register bookkeeping what refinement breaks?**
+- **Mechanism.** Under 6b-7's refinement the register updates (creation, blend, refresh, destruction) run once per *step*. At N = 3 with the hold policy, steps 0 and 1 both use layer 0's codes, so layer 0's destruction gate, switch-like in the trained models (median about 0.99, DP §5.14), fires twice.
+- **Test.** This is the "per-step refreezing of the occupancies" listed under the SR decision rule. Refine the token dynamics as in 6b-7, but run the register bookkeeping once per trained layer code (at steps 0 and 2), carrying the register state through step 1 unchanged. Evaluation only, on G2's checkpoint and SR-π.3's tokens.
+- **Prediction:** Gate 3 on G2 falls to +300% or below (from +1,446% on these tokens), called **50%**.
+- **Decision.** If it does, the Fock arms' refinement failure is mostly register bookkeeping, not integration. The fix is a time-consistent register update (per-step decay λ^(L/N), with destruction applied once per trained interval), a code change that can be tested before any SR arm runs. If it does not, the failure lies in the token step itself, and SR2 and SR4 remain the right tests.
+
+**SR-π.3b scored, 2026-10-05: MISS.** Script `debug/sr_pi3b_bookkeeping.py` and its output, on SR-π.3's tokens. The sanity check passes: the held stack at N = L reproduces the model exactly.
+- **Gate 3:** +1,446% with Gate 3's own refinement, and **+994%** with the register bookkeeping held to once per trained layer. The prediction was +300% or below.
+- **In loss terms,** holding the bookkeeping removes about 13% of the refinement penalty: ln 15.46 = 2.74 nats falls to ln 10.94 = 2.39.
+- **Reading.** The repeated register update is a real but minor part. The bulk of the Fock models' refinement failure lies in the token step under the register path, not in the register bookkeeping.
+- **Open.** G2's register increment exceeds its conservative step on every token (CB0: η 1.5–3.9). It is applied as (dt²/m)·scale·Q per step and then passes into the next step's velocity encoding. How its integrated effect scales with N is the next thing to derive, before any SR GPU run.
+
+**SR-π.4: derivation and pre-registration, 2026-10-05, before any measurement.**
+- **The derivation.** In one Fock layer, the BAOAB step returns a projected state h₀ = P(·) and encodes h_prev_out = h₀ − Δt·v₀. The register increment δ = (Δt²/m)·s·Q is then added and projected, h_new = P(h₀ + δ), and the next layer decodes v_next = (P(h₀ + δ) − h₀ + Δt·v₀)/Δt.
+  - If P were linear, v_next = v₀ + (Δt/m)·s·Q. The increment is then a velocity kick proportional to Δt plus a displacement proportional to Δt²: a kick-then-drift splitting of a force s·Q, whose total impulse over N steps of Δt = T/N is independent of N.
+  - **So the register push is refinement-consistent by construction, and rescaling it by N/L would break that, not fix it.** The suggested rescaled-push fix is withdrawn on this derivation.
+- **What can break refinement** is the LayerNorm projection after a finite jump. The continuum argument needs ‖δ‖ ≪ ‖h‖. 6b-11 measured the increment at 1.37× (layer 0) and 1.15× (layer 1) the state's RMS before projection. A projected O(1) jump leaves a velocity footprint (P(h₀ + δ) − h₀)/Δt that does not scale as a force does. The same holds for the conservative step when it is large.
+- **Measurement** (`debug/sr_pi4_step_size.py`, evaluation only, CPU). On F3.1, G2, G3 and the L=4 Fock live arm, per layer:
+  - the conservative step's size relative to the state, before projection;
+  - the register increment's size relative to the state;
+  - the projection nonlinearity of the layer's last projection, ‖P(x) − x‖ / ‖x − h‖, the share of the step the projection rewrites.
+- **Prediction** (called **60%**). Across the four arms, the rank order of Gate 3 at 1.5× refinement matches the rank order of the projection nonlinearity, averaged over layers. Gate 3: F3.1 +143%, L=4 +216%, G2 +1,274%, G3 +1,342%.
+- **Decision.**
+  - **If it holds,** the refinement failure is the finite-jump regime: steps comparable to the state, rewritten by the projection. The remedies are smaller per-layer steps (more layers or smaller Δt, which SR-π.1's L=8 arm also tests), or a projection that is not applied to the whole jump. Neither is a rescaled push.
+  - **If it does not,** the cause is elsewhere and SR1–SR4 remain the tests.
+
+**SR-π.4 scored, 2026-10-05: MISS.** `debug/sr_pi4_step_size.py` and its output; 4 × 512 tokens, medians per layer.
+
+| arm | Gate 3 | layer | conservative step / state | increment / state | projection rewrites (last) |
+| --- | ---: | --- | ---: | ---: | ---: |
+| F3.1 | +143% | 0 / 1 | 3.21 / 0.96 | — | 1.01 / 0.24 |
+| L=4 Fock live | +216% | 0 / 1 / 2 / 3 | 2.41 / 0.28 / 0.35 / 0.45 | 1.34 / 0.24 / 0.25 / 1.40 | 0.19 / 0.84 / 0.80 / 0.79 |
+| G2 | +1,274% | 0 / 1 | 1.68 / 0.39 | **9.22** / 1.15 | 0.59 / 0.76 |
+| G3 | +1,342% | 0 / 1 | 1.23 / 0.45 | **8.30** / 0.95 | 0.46 / 0.67 |
+
+- **The prediction fails.** The rank by mean projection nonlinearity (G3, F3.1, L=4, G2) does not match the rank by Gate 3 (F3.1, L=4, G2, G3).
+- **Every arm takes finite jumps that the projection substantially rewrites,** including F3.1, which refines best and has the largest conservative steps. So the finite-jump regime is universal, not what separates the arms. Layer 0's ratios presumably also include the lift from the embedding onto the LayerNorm sphere.
+- **What does separate the two L=2 Fock arms is their layer-0 register increment,** 8–9× the state, against 1.3× at L=4. Part of that is Δt²: Δt is 4 at L=2 against 2 at L=4. This is descriptive, not a tested prediction.
+- **Conclusions:**
+  - The derivation stands: the push is a correctly scaled force, and a rescaled push is not a fix.
+  - The finite-jump hypothesis does not explain the cross-arm ordering.
+  - The cause of the Fock arms' refinement failure stays open. SR1–SR4 (GPU) remain the tests, with the L=2 register increment as the leading descriptive suspect.
+
+
 
 **Order.** SR-π.3 is free and runs first. SR-π.2 rides on SR2 (adding G2's configuration as a second SR2 arm). SR-π.1 needs an L=8 Fock live run: about 6 s/step, so about 55 h. It is scheduled after the CB series.
 
@@ -3084,6 +3150,22 @@ The step-32,500 audit printed honest/standard PPL as nan, while its future pertu
 
     Predicted: the gradient norm stays flat (within ±25% of its 5,000-step value) through the stable phase, called at 70%. Settled ≤ 52.1, i.e. the exchange field adds value once hardened, called at 50%. Code: a QK-norm switch on `XiRoutedConservativeAttention`, off by default and verified bit-identical. It is not gating the v6 abstract.
 
+    **Mid-run reading, step 14,500 of 32,500 (2026-10-05, about 8.3 h left).**
+
+    | step | G3′ | G3 | G2 | G3′ / G3 | G3′ / G2 |
+    | --- | ---: | ---: | ---: | ---: | ---: |
+    | 3,000 | 113.52 | 118.14 | 123.59 | 0.961 | 0.919 |
+    | 6,000 | 84.28 | 87.51 | 93.11 | 0.963 | 0.905 |
+    | 10,000 | 71.98 | 74.22 | 76.26 | 0.970 | 0.944 |
+    | 12,000 | 69.80 | 72.05 | 72.20 | 0.969 | 0.967 |
+    | 14,500 | 67.51 | 69.50 | 69.14 | 0.971 | 0.976 |
+
+    - **Against G3,** G3′ holds a steady 3–4% lead (0.961–0.971 since step 3,000). The hardening helps, and the help is not fading.
+    - **Against G2,** the lead is shrinking, from about 10% at steps 4,000–8,000 to 2.4% now. That is the pattern G3 followed before it fell behind G2 at about step 13,000.
+    - **Projection.** If the 0.965–0.971 ratio to G3 holds through the decay, G3′ settles at about 52.4–52.7, against G3's 54.21. That would beat G2's 53.12 by about 1%, but miss the pre-registered ≤ 52.1 narrowly. The ratio could still move in the decay phase.
+    - **Gradient prediction (flat within ±25% of the step-5,000 value): trending to a miss.** The field's group norm appears in the log only when it is the largest group. It was never largest before step 7,500, so its step-5,000 value is not logged. Its readings then rise from 0.43 (steps 7,500–10,000) to 0.52 and 0.57, at least +33% within the stable phase. G3's matching readings were 0.49, 0.57 and 0.67: the same growth, about 15% lower. This is consistent with the W_v observation below, since QK-norm caps the routing logits but not W_v's growth. The offline probe will score it checkpoint for checkpoint.
+    - **Health:** SCAF CLEAN at steps 5,000 and 10,000 (leak tax −1.7e-5 and +1.6e-4 nats); no spikes or watchdog triggers. The total gradient norm tracks G3's (0.43 → 0.70 against 0.43 → 0.72).
+
     **Implemented 2026-10-05.**
     - **Code.**
       - `XiRoutedConservativeAttention(qk_norm=...)`: q and k L2-normalised over d_k, times a clamped per-head σ_h = min(exp λ_h, 100), with λ initialised at log(1/0.07).
@@ -3133,6 +3215,12 @@ The step-32,500 audit printed honest/standard PPL as nan, while its future pertu
     | the same, layer 0 | 0.05 | 0.32 |
 
     **Reading.** The logit-growth hypothesis is confirmed in the weights: the routing projections grew about 5–6× unchecked, and the attainable logit scale about 28×. The routing sharpened only moderately, though: layer 1 entropy stays near 0.6 of uniform. It did not collapse. The field carries about 92% of layer 1's conservative force, so the model became attention-dominated at its output layer, while still conservative. QK-norm (G3′) caps exactly the growth measured here.
+  - **Observation recorded before G3′ completes (2026-10-05), not a revision of any call.** `debug/exchange_field_probe.py` (it supersedes `g3_routing_probe.py` and reads either routing mode) measured the offline LM-loss gradient on G3's checkpoints.
+    - **The field's gradient grows 12× from step 500 to best,** 0.21 to 2.63.
+    - **Almost all of that is W_v:** 0.11 to 2.58, 24×. W_q goes 0.12 to 0.22 and W_k 0.04 to 0.11.
+    - **QK-norm acts on the routing (W_q, W_k), not on W_v.** So G3′'s "gradient stays flat" (70%) rests on the 0.3 group clip and on whether W_v's growth followed from the routing sharpening.
+    - The probe reproduces the earlier G3 routing figures (layer 1 entropy 0.60–0.69, max |score| 23–37).
+    - It runs on G3′ the moment its folder is downloaded, checkpoint for checkpoint.
   - **6b-9 (CG1):** R(geo) is 1.068. The reverse channel moves R by −0.759, and V_φ plus the exchange field by only −0.073. **Checked 2026-10-05: consistent.** The replay's "cons" arm keeps `f_phi`, which includes the live field's `force_live`; "geo" zeroes it. And G3's η (reverse-channel increment / conservative step) is **1.16 at layer 0 and 2.75 at layer 1** (`debug/g3_eta_output.txt`). The register path dominates the step's displacement. The field dominates the smaller conservative part (about 92% of it at layer 1), so its displacement attribution is small. Both readings stand.
   - **6b-7:** Gate 1 +25.8 (+49%). Gate 2 at N=3 **+325%** (G2: +51%), so extension fails far worse. Gate 3 at N=3 **+1,342%** (G2: +1,274%).
   - **6b-13:** θ = ω·Δt p50 is **2.07** (layer 0 1.91, layer 1 3.00). The pre-registered L=2 band [3.3, 4.2] is a **MISS**: the exchange field takes stiffness off V_θ.
@@ -3218,6 +3306,26 @@ The Fock increment is larger than the conservative step at both layers, and thre
 5. CB2a.
 
 About 15 h each at L=2.
+
+**CB0 scored, 2026-10-05.** Script `debug/cb0_g2.py` and its output. It runs on G2's best checkpoint, on CPU.
+- **η per token** (16,384 tokens) is ‖register increment‖ / ‖conservative step‖, computed with the code's own definitions:
+  - layer 0: median **1.47**, p90 1.52, max 1.71;
+  - layer 1: median **3.88**, p90 4.64, max 9.64;
+  - 100% of tokens are above both 0.3 and 1.0, at both layers.
+- **The register path is larger than the conservative step on every token.** So CB2's caps are drastic:
+  - ρ = 1.0 binds on every token, cutting the increment by about 1.5× at layer 0 and 3.9× at layer 1;
+  - ρ = 0.3 cuts it by about 5× and 13×.
+
+  CB2a and CB2b test a different regime from the one G2 trained in, and their predictions should be read with that in mind.
+- **6b-11, the inference slider, run as written** (4 × 4 × 512 tokens per point):
+  - PPL goes from 56.38 at λ = 1 to **246.72 at λ = 0, a factor of 4.38**;
+  - there is no knee: λ* = 0.9, and every notch costs perplexity;
+  - R(geo) at λ = 1 is 0.44 (layer 0) and 0.95 (layer 1);
+  - V_φ's direct share of the step rises from 2.6% to 7.0% at layer 0 as the register path is removed;
+  - consecutive steps are anti-aligned at λ = 1, with coherence −0.64.
+- **Compared with training.** The model trained without the register path, F3.1, is only 1.087× worse than G2. So the slider overstates the path's value about 4×, as the Gen 2 ablation did.
+- **Harness note.** A first local run reported 1,114 at λ = 1. That was a bug in my wrapper, not in the cell. The notebook installs the depth routing as an *instance* attribute `_fock_layer_step`, and my script removed its own wrapper with `del`, which stripped the routing too. The script now restores by assignment, and the cell itself (which assigns) is unaffected. The other local scripts were checked: only `_fock_layer_step` is instance-level, and none of them deletes it.
+
 
 ### 5.12 CG8: does the geometry predict the model's own errors? — **pre-registered 2026-10-03, before any measurement**
 

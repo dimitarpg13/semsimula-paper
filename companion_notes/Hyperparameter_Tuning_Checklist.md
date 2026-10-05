@@ -654,7 +654,7 @@ adds a point to a curve.
 **Free queue, in order (2026-10-05):**
 1. ~~DP1–DP3~~ done 2026-10-05.
 2. G4, 6b-10 on run 4 (Colab, minutes).
-3. CB0 (η and 6b-11 on G2).
+3. ~~CB0~~ done 2026-10-05.
 4. SR-π.3.
 5. CG8 on the baselines, once 6b-14 exists.
 6. The overlap diagnostics D1, D2 and E4 (low priority).
@@ -683,7 +683,7 @@ The alternative Fock mechanism that is bosonic and Poisson-mean by construction,
 The author's hypothesis: with the Fock path present, PARF's V_φ is starved, so the model gains PPL at the cost of conservativity. All switches are in Cell 0 and off by default; verified in `debug/verify_cb_switches.py`, where each neutral setting is bit-identical to G2. The baseline η (Fock increment / conservative step) on the Gen 2 no-exchange weights is 1.6 at layer 0 and 3.0 at layer 1.
 
 - [x] **Stop-rule check:** G2 settled < 56.6. Otherwise the series does not run. *Passed 2026-10-05: G2 settled at 53.12.*
-- [ ] **CB0** (free): η on G2's checkpoint, and 6b-11 (inference slider) on G2.
+- [x] **CB0** (free): η on G2's checkpoint, and 6b-11 (inference slider) on G2. *Done 2026-10-05: η median 1.47 (layer 0) and 3.88 (layer 1), above 1 on every token, so both CB2 caps bind everywhere; slider 56.4 → 246.7 (4.38×), no knee, against 1.087× trained-without (protocol §5.11).*
 - [ ] **CB2b** — `FOCK_BUDGET = 0.3`. **The key arm:** mostly conservative by construction.
   - *Added 2026-10-04:* G2 shows the register path amplifying refinement failure (Gate 3 +1,274% against F3.1's +143%). So every CB arm also reads **Gate 3 with the θ distribution**, and capping the Fock path is predicted to cut it sharply.
 - [ ] **CB1** — `REVERSE_CHANNEL_WARMUP_STEPS = 20000`: Fock arrives late.
@@ -722,13 +722,13 @@ Theory: book §8.9 (Props 44–45). Pre-registration: [`Depth_Ladder_and_Matched
 > What it suggests:
 >
 > 1. **A prediction to test.** Gate 3 cost tracks how close the trained ω·Δt sits to π and whether refinement crosses it. An L=8 model (ω·Δt ≈ 1.2) should be more refinement-ready still, approaching flow (SR-π.1).
-> 2. **SR2 becomes a sharper test.** The exact damped flow removes the phase term altogether, so on G2's configuration it should cut Gate 3 far more than on F3.1's (SR-π.2). Run SR2 on both configurations.
+> 2. **SR2 becomes a sharper test.** The exact damped flow removes the phase term altogether, so on G2's configuration it should cut Gate 3 far more than on F3.1's (SR-π.2). Run SR2 on both configurations. *(Superseded 2026-10-05: SR-π.3 missed, and the G2 arm is dropped.)*
 > 3. **A cheap design lever.** Choose L or Δt so the stiff modes train below π. Since Δt = T/L at fixed T = 8, this is a choice of L. It becomes a standing rule (§7.5) once SR-π.1 or SR-π.3 confirms it.
 >
 > One seed per arm, medians over wide spreads (G2's θ spans 2.6–5.5 between p05 and p95), and "1.5×" means N = 3 at L=2 but N = 6 at L=4.
 
 - [ ] **SR1** — palindromic step order (O half-steps around the kick). Code: reorder `_layer_step_langevin`. Cheapest; run first.
-- [ ] **SR2** — exact damped-mode flow on the stiff subspace, constant γ. Code: new joint substep in `cfc_baoab.py` (Prop 45, closed form for all damping regimes); replaces A·O·A on span(U) only. **Two arms:** F3.1's configuration (the baseline) and G2's (SR-π.2: predicted to cut Gate 3 by more than half there).
+- [ ] **SR2** — exact damped-mode flow on the stiff subspace, constant γ. Code: new joint substep in `cfc_baoab.py` (Prop 45, closed form for all damping regimes); replaces A·O·A on span(U) only. **One arm:** F3.1's configuration. *(The G2-configuration arm, SR-π.2, was dropped on 2026-10-05.)*
 - [ ] **SR4a** — variable-step training at fixed T, N ~ U{2, 3, 4}. Code: per-batch step count and depth code indexed by time (as Cell 6b-7's `hold` policy).
 - [ ] **SR3** — SR2 plus constant-ratio friction Γ = γ₀I + 2ζ*√(L/m) at ζ* = 1 (book Prop 43, eq. constant-ζ).
 - [ ] **SR4b** — variable-step training at fixed Δt, N ~ U{2, 3} (the extension axis).
@@ -736,8 +736,10 @@ Theory: book §8.9 (Props 44–45). Pre-registration: [`Depth_Ladder_and_Matched
 - [ ] **After SR2–SR4a:** score the decision rule and the Gate 1/Gate 3 rank-order check (§5.9).
 
 Not gated on the live-gradient ladder, but competes with it for GPU time. Placement (updated 2026-10-04): after G2–G4 and the Zenodo upload, behind the FO 2×2 and the CB series. P2.2 has run as G2; the parameter-matched GPT-2 (G1) is deferred.
-- [ ] **SR-π.3** (free): on G2's checkpoint, the Gate 3 loss rise split by whether a token's stiff modes cross π under refinement (protocol §5.9, SR-π).
-- [ ] **SR-π.2**: SR2 on G2's configuration as well as F3.1's, testing whether removing the phase term cuts Gate 3 by more than half.
+- [x] **SR-π.3** (free): on G2's checkpoint, the Gate 3 loss rise split by whether a token's stiff modes cross π under refinement (protocol §5.9, SR-π). *Done 2026-10-05: **MISS**. The ratio is 1.21 against the predicted 2, and the loss rise falls as θ rises; tokens that never pass π fail worst. Recommendation: drop SR-π.2's G2-configuration SR2 arm (about 14 h); SR-π.1 moves to about 30%.*
+- [x] **SR-π.4** *(done 2026-10-05: MISS)*. The derivation shows the register push is a correctly scaled force (impulse ∝ Δt), so a rescaled push is not a fix. The finite-jump/projection hypothesis does not rank the arms by Gate 3. The L=2 Fock arms' layer-0 register increment (8–9× the state, against 1.3× at L=4) is the leading descriptive suspect (protocol §5.9).
+- [x] **SR-π.3b** *(done 2026-10-05: MISS; holding the bookkeeping brings Gate 3 from +1,446% to +994%, only about 13% of the penalty)* (free, pre-registered 2026-10-05): refine with the register bookkeeping held to once per trained layer code. Prediction: G2's Gate 3 falls to +300% or below (50%). If it does, the Fock refinement failure is register bookkeeping, and a time-consistent register update is the fix to test first.
+- [ ] ~~**SR-π.2**: SR2 on G2's configuration as well as F3.1's, testing whether removing the phase term cuts Gate 3 by more than half.~~ **Dropped 2026-10-05 (author's decision)** after SR-π.3's miss removed its rationale. SR2 runs on F3.1's configuration only.
 - [ ] *SR-π.1: an L=8 Fock live arm (θ ≈ 1.2), testing Gate 3 ≤ +100%. About 55 h; after the CB series.*
 - [ ] **SR5b** — thermal training, `LANGEVIN_T = 0.0022` (r = 0.3, calibrated on F3.1: `debug/calibrate_langevin_T_output.txt`). No code needed; tag `T0p0022`. Predicted to trade along the Gate 1 / Gate 3 frontier (65%).
 - [ ] **SR5a** — `LANGEVIN_T = 0.00025` (r ≈ 0.1), predicted near-null.
