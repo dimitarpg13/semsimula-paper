@@ -1,0 +1,17 @@
+OFF (POISSON_MODES = 0): HEAD vs working copy, fixed trained weights
+  G2    eval 0.0e+00  train 0.0e+00  grads 0.0e+00  (91 params)  -> IDENTICAL
+  F3.1  eval 0.0e+00  train 0.0e+00  grads 0.0e+00  (73 params)  -> IDENTICAL
+  G3'   eval 0.0e+00  train 0.0e+00  grads 0.0e+00  (96 params)  -> IDENTICAL
+
+ON (F3.1's Cell 0 + POISSON_MODES = 64), on F3.1's trained weights
+1. tag ...cgqk_norc_vplive_xilive_pm64_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+   new parameters ['pm_depth', 'pm_log_kappa2', 'pm_logit_lambda', 'pm_mu']; banner printed: True -> True
+   half-lives 4.0-128.0 tokens; |mu| mean 19.6 (sqrt d = 19.6)
+2. depths 0: max |dlogit| vs no modes 0.0e+00; grad reaches pm_depth (norm 5.26e+00) -> True
+3. force vs -grad U at fixed phi: relative error 2.4e-07 (|F| 3.564e+00) -> True
+4. Monte Carlo immigration-death (20,000 runs): max |mean - phi| / max phi = 0.0046; variance/mean median 1.001 (Poisson: 1) -> True
+5. causality, depths non-zero: tokens replaced at t >= 128, max |dlogit| at t < 128 = 0.0e+00 -> True
+6. grads with depths non-zero: pm_mu 2.44e-01, pm_log_kappa2 6.10e-01, pm_logit_lambda 2.20e-01, pm_depth 1.10e+00 -> True
+7. clip group 'pm_' catches ['pm_depth', 'pm_log_kappa2', 'pm_logit_lambda', 'pm_mu'] -> True
+
+-> ALL PASS

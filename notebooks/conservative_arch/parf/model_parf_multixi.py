@@ -206,6 +206,18 @@ class MultiXiPARFConfig(SparsePARFConfig):
     # -- cosine scores times a clamped learnable per-head logit scale, the
     # creation gate's `cgqk` scheme. Off by default: bit-identical to G3.
     relax_attn_qk_norm: bool = False
+    # PM1 (protocol SS5.15, 2026-10-05): bosonic Poisson-mode registers. K
+    # shared mode prototypes mu_v; each token creates particles in mode v at
+    # rate equal to its overlap exp(-kappa_v^2 |h_s - mu_v|^2), and each
+    # particle survives to the next token with probability lambda_v. The
+    # occupation phi_v(t) = sum_{s<t} lambda_v^(t-1-s) overlap_v(s) is then
+    # EXACTLY the Poisson mean of an immigration-death process. The force is
+    # -grad_h of U = -sum_v phi_v(t) a_v exp(-kappa_v^2 |h - mu_v|^2): linear
+    # in phi, so carrying only the mean is exact. Strict past (s < t), so phi
+    # does not depend on h_t and the force is a gradient in h_t. 0 = off.
+    poisson_modes: int = 0
+    poisson_halflife_min: float = 4.0     # tokens; per-mode half-lives are
+    poisson_halflife_max: float = 128.0   # log-spaced over this range
     relax_attn_logit_scale_init: float = 1.0 / 0.07
     relax_attn_logit_scale_max: float = 100.0
     # Fix the gate instead of learning it. None learns lambda (or holds it
@@ -629,6 +641,68 @@ class MultiXiPARFLM(SparsePARFLM):
                 "vphi_grad_path='live' is defined for the sparse top-k V_phi "
                 f"only, not pair_potential={cfg.pair_potential!r}.")
 
+        # PM1 Poisson-mode registers. Created ONLY when enabled, so the
+        # default model draws the same RNG stream and keeps the same
+        # state_dict. Well depths start at zero: the force is exactly zero
+        # at step 0 and the depths receive a gradient from step 1.
+        self.pm_mu = None
+        _K = int(getattr(cfg, "poisson_modes", 0) or 0)
+        if _K > 0:
+            self.pm_mu = nn.Parameter(torch.randn(_K, cfg.d))           # |mu| ~ sqrt(d), LN scale
+            self.pm_log_kappa2 = nn.Parameter(
+                torch.full((_K,), -math.log(cfg.d)))                   # exponent |h - mu|^2 / d
+            _hl = torch.logspace(
+                math.log10(getattr(cfg, "poisson_halflife_min", 4.0)),
+                math.log10(getattr(cfg, "poisson_halflife_max", 128.0)), _K)
+            _lam = 0.5 ** (1.0 / _hl)
+            self.pm_logit_lambda = nn.Parameter(torch.log(_lam / (1 - _lam)))
+            self.pm_depth = nn.Parameter(torch.zeros(cfg.L, _K))
+            self.register_buffer("pm_share", torch.zeros(cfg.L), persistent=False)
+
+    # ------------------------------------------------------------------
+    def poisson_mode_occupation(self, h: torch.Tensor):
+        """Mode overlaps E (B, T, K) and strict-past occupations phi (B, T, K).
+
+        E[b, s, v] = exp(-kappa_v^2 |h_s - mu_v|^2) is token s's overlap with
+        mode v (the single-particle note's overlap identity) and its creation
+        rate. phi[b, t, v] = sum_{s<t} lambda_v^(t-1-s) E[b, s, v] is the
+        Poisson mean of the immigration-death process: Poisson(E) particles
+        enter per token, each survives a token with probability lambda_v.
+        """
+        B, T, d = h.shape
+        with torch.autocast(device_type=h.device.type, enabled=False):
+            hf = h.float()
+            mu = self.pm_mu.float()
+            k2 = self.pm_log_kappa2.float().exp()                        # (K,)
+            d2 = ((hf * hf).sum(-1, keepdim=True) + (mu * mu).sum(-1)
+                  - 2.0 * hf @ mu.t()).clamp_min(0.0)                    # (B, T, K)
+            E = torch.exp(-k2 * d2)
+            log_lam = torch.nn.functional.logsigmoid(self.pm_logit_lambda.float())
+            t = torch.arange(T, device=h.device)
+            lag = (t[:, None] - t[None, :] - 1)                          # t - 1 - s
+            past = lag >= 0                                              # s < t
+            Lam = torch.where(past, torch.exp(lag.clamp_min(0)[None].float()
+                                              * log_lam[:, None, None]),
+                              torch.zeros((), device=h.device))          # (K, T, T)
+            phi = torch.einsum("kts,bsk->btk", Lam, E)
+        return E, phi
+
+    def poisson_mode_force(self, h: torch.Tensor, layer_idx: int) -> torch.Tensor:
+        """-grad_{h_t} U, U = -sum_v phi_v(t) a_v exp(-kappa_v^2 |h_t - mu_v|^2).
+
+        phi uses tokens s < t only, so it is constant in h_t and this is the
+        exact gradient in h_t; the loss still reaches earlier tokens through
+        phi (live, the Gen 3 convention).
+        """
+        E, phi = self.poisson_mode_occupation(h)
+        with torch.autocast(device_type=h.device.type, enabled=False):
+            k2 = self.pm_log_kappa2.float().exp()
+            a = self.pm_depth[layer_idx].float()
+            w = phi * E * (2.0 * k2 * a)                                 # (B, T, K)
+            hf = h.float()
+            f = -(w.sum(-1, keepdim=True) * hf - w @ self.pm_mu.float())
+        return f.to(h.dtype)
+
     # ------------------------------------------------------------------
     @torch.no_grad()
     def relax_share_values(self) -> List[float]:
@@ -956,6 +1030,14 @@ class MultiXiPARFLM(SparsePARFLM):
             _T = h_in.shape[1]
             f_phi = f_phi + self._relax_gate(layer_idx) * self.relax_field.force_live(
                 h_in, h_in, self._pair_mask_for(_T, h_in.device))
+
+        # PM1: the Poisson-mode force, a plain kick like the exchange field.
+        if self.pm_mu is not None:
+            _f_pm = self.poisson_mode_force(h_in, layer_idx)
+            with torch.no_grad():
+                _cons = f_phi if f_theta is None else f_theta + f_phi
+                self.pm_share[layer_idx] = _f_pm.norm() / (_cons.norm() + 1e-12)
+            f_phi = f_phi + _f_pm
 
         if split:
             return f_theta, f_phi

@@ -661,6 +661,23 @@ adds a point to a curve.
 
 The GPU queue is unchanged: G3′ (running), then the FO 2×2, the CB series and the SR series.
 
+## Scheduled: PM1 — bosonic Poisson-mode registers — **opened 2026-10-05** (protocol §5.15)
+
+The alternative Fock mechanism that is bosonic and Poisson-mean by construction, prompted by DP1–DP3.
+
+- [x] Implement `poisson_modes`: model, Cell 0 `POISSON_MODES` and `POISSON_MODE_CLIP`, tag `pm<K>`, Cell 5b guard, Cell 6 clip group. Verified 2026-10-05: off is bit-identical to HEAD on G2, F3.1 and G3′; on passes all seven checks (`debug/verify_pm_switch.py`).
+- [ ] **Probe:** F3.1's Cell 0 plus `POISSON_MODES = 64`, `PROBE_MAX_STEPS = 3_000` (about 1.5 h). It goes after G3′, or in parallel if a second Colab GPU is free. Gate: at most 126.4 at step 3,000 (at least 1% better than F3.1's 127.73), with pm_ clip hits under 5%.
+- [ ] **Full run** if the gate passes. Clear `PROBE_MAX_STEPS` and the same run continues, after the FO 2×2 unless moved.
+- [ ] **Post-run:** the repetition test, the depth signs and the DP3 rerun (protocol §5.15). Then the book: Remark 60 and §10.5.2, according to the decision rule.
+
+**GPU queue (2026-10-05):**
+1. G3′ (running).
+2. PM1 probe (about 1.5 h).
+3. The FO 2×2.
+4. PM1 full run, if gated in.
+5. The CB series.
+6. The SR series.
+
 ## Scheduled: CB-series — balancing the conservative and Fock paths — **opened 2026-10-03** (protocol §5.11)
 
 The author's hypothesis: with the Fock path present, PARF's V_φ is starved, so the model gains PPL at the cost of conservativity. All switches are in Cell 0 and off by default; verified in `debug/verify_cb_switches.py`, where each neutral setting is bit-identical to G2. The baseline η (Fock increment / conservative step) on the Gen 2 no-exchange weights is 1.6 at layer 0 and 3.0 at layer 1.

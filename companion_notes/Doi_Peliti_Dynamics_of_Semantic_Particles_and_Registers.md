@@ -17,6 +17,7 @@ Companion note to Section 10.5.2 and Section 20 of the book, and to [*The Single
 6. [Vacuum, absorbing and stationary states](#6-vacuum-absorbing-and-stationary-states)
 7. [What the trained models implement: the DP series](#7-what-the-trained-models-implement-the-dp-series)
 8. [Consequences for the book, and a dictionary](#8-consequences-for-the-book-and-a-dictionary)
+9. [An alternative that is bosonic: Poisson-mode registers (PM1)](#9-an-alternative-that-is-bosonic-poisson-mode-registers-pm1)
 
 ---
 
@@ -461,5 +462,33 @@ Further readings, not pre-registered:
 | time | continuous | depth, 2 or 4 discrete steps per position |
 | transport | diffusion (overdamped) | Kramers with inertia, deterministic at T = 0, causal and non-reciprocal |
 | Hamilton's equations | saddle point of the coherent-state action | the formal content of the book's claim 3 |
+
+---
+
+## 9. An alternative that is bosonic: Poisson-mode registers (PM1)
+
+§7 shows that the slot registers are exclusion objects. A register mechanism that honours both bosonic statistics and the Poisson mean needs three changes, each forced by §2–§4:
+- **Shared modes, not slots.** Occupation must be able to exceed one in the same content mode.
+- **An occupation that is an unbounded Poisson mean.** Its update must be exactly the mean of a bosonic process.
+- **A coupling linear in the occupation.** Otherwise the mean is not enough.
+
+PM1 (protocol §5.15) takes $K$ shared prototypes $\mu_v$. Over token time, it uses the overlap of the single-particle note as the creation rate, (9.1):
+
+$$
+E_v(s) = e^{-\kappa_v^2\lVert h_s - \mu_v\rVert^2}, \qquad \phi_v(t) = \sum_{s \lt t}\lambda_v^{t-1-s}E_v(s). \qquad (9.1)
+$$
+
+If each token injects a Poisson number of particles with mean $E_v(s)$ and each particle survives a token with probability $\lambda_v$, then the occupation is exactly Poisson with mean $\phi_v(t)$. Thinning and the addition of independent Poisson numbers both preserve the law. The occupations act on tokens through wells whose depth grows with occupation, (9.2):
+
+$$
+U(h;t) = -\sum_v \phi_v(t) a_v e^{-\kappa_v^2\lVert h - \mu_v\rVert^2}, \qquad F = -\nabla_h U. \qquad (9.2)
+$$
+
+The more a meaning is present, the deeper its well. Because (9.2) is linear in the occupations, the force of the mean equals the mean of the force: carrying only $\phi$ is exact. Because (9.1) uses only $s \lt t$, the occupation is constant in $h_t$, and the force is an exact gradient in the token's own state. The claims of §0 then hold literally:
+- the coherent states are the Poisson laws of the occupations;
+- the occupation is the Doi field;
+- its update is the rate equation on the invariant line of §4.2.
+
+The implementation passes seven checks (`debug/verify_pm_switch.py`), including a Monte Carlo simulation of the immigration–death process that reproduces $\phi$ within 0.5% with variance equal to the mean. The pre-registered probe and full run decide whether the mechanism is worth anything over the conservative-only model. With a linear coupling, no measurement can show bosonic fluctuations: what is bosonic is the structure. A variant that samples the occupations in training would make the statistics themselves consequential.
 
 **References.** M. Doi, Second quantization representation for classical many-particle system, J. Phys. A 9 (1976). L. Peliti, Path integral approach to birth-death processes on a lattice, J. Physique 46 (1985). U. C. Täuber, M. Howard and B. P. Vollmayr-Lee, Applications of field-theoretic renormalization group methods to reaction-diffusion problems, J. Phys. A 38 (2005). H. Risken, The Fokker–Planck Equation (Springer, 1989), for the Kramers operator.

@@ -3487,6 +3487,57 @@ Each register is one slot holding one content vector: an exclusion (hard-core) o
 - **Book (next edition):** §10.5.2 and §20 as listed in the companion note's §8.1.
 
 
+### 5.15 PM1: bosonic Poisson-mode registers — **pre-registered 2026-10-05, before any run**
+
+**Why.** DP1–DP3 (§5.14) showed that the slot registers are exclusion objects, with constant number and salience acting as retention. So the book's bosonic, Poisson-mean Doi–Peliti v2 describes no trained model. PM1 is a register mechanism that has both properties by construction, to find out whether the bosonic v2 can be trained and what it is worth. Companion note: [`Doi_Peliti_Dynamics_of_Semantic_Particles_and_Registers.md`](Doi_Peliti_Dynamics_of_Semantic_Particles_and_Registers.md) §9.
+
+**Mechanism** (`model_parf_multixi.py`, `poisson_modes`). It has K = 64 shared mode prototypes μ_v, and works in five parts.
+- **Creation.** Token s creates particles in mode v at the rate given by its overlap with that mode, E_v(s) = exp(−κ_v²‖h_s − μ_v‖²).
+- **Survival.** Each particle survives to the next token with probability λ_v. Half-lives start log-spaced from 4 to 128 tokens and are learnable.
+- **Occupation.** The occupation is φ_v(t) = Σ over s < t of λ_v^(t−1−s) E_v(s). This is exactly the Poisson mean of the immigration–death process, and the process is unbounded and bosonic: shared modes, no cap on occupation.
+- **Force.** −∇ of U = −Σ_v φ_v(t) a_{l,v} exp(−κ_v²‖h − μ_v‖²). It is linear in φ, so carrying only the mean is exact.
+- **Conservativity.** It uses the strict past, so φ is constant in h_t and the force is a gradient in h_t. Like V_φ, it is causal and one-way. The well depths start at 0, so the force is exactly zero at step 0.
+- **Switches.** `POISSON_MODES = 64` adds the tag `pm64`, and the parameters get their own clip group at 0.3.
+
+**Verification** (`debug/verify_pm_switch.py` and its output, 2026-10-05).
+- **Off:** bit-identical to HEAD on G2, F3.1 and G3′ (logits, loss, every gradient).
+- **On:**
+  - at zero depth, bit-identical to the model without modes;
+  - the force equals −∇U at fixed φ (relative error 2.4e-7);
+  - a Monte Carlo immigration–death simulation reproduces φ within 0.5%, with variance/mean 1.001;
+  - causal (exactly 0 leak);
+  - every new parameter receives a gradient;
+  - the clip group catches exactly the four new parameters.
+
+**Arm.** F3.1's configuration (L=2, conservative-only, `REVERSE_CHANNEL = False`, V_φ and ξ live) plus the modes. The ladder then reads F3.1 (57.76) → PM1 → G2 (53.12, slot registers).
+
+**Stage 1, the probe: 3,000 steps** (`PROBE_MAX_STEPS = 3_000`, same schedule, about 1.5 h). At step 3,000, F3.1 is at 127.73 and G2 at 123.59, only 3.3% apart, so a gate set relative to G2 could not reject anything. The gate is set against PM1's own base, F3.1:
+
+| measure | gate | called |
+| --- | --- | --- |
+| val PPL at step 3,000 | 126.4 or lower (at least 1% better than F3.1) | 50% |
+| clip hits on the pm_ group over the probe | under 5% of logged steps, no divergence | 85% |
+
+Both must hold for the full run. If the probe passes, clear `PROBE_MAX_STEPS` and the same run continues; the full run goes after the FO 2×2 unless the author moves it.
+
+**Stage 2, the full run (32,500 steps), if the gate passes:**
+
+| measure | prediction | called |
+| --- | --- | --- |
+| settled PPL | better than F3.1 by at least 1% (57.18 or lower) | 50% |
+| settled PPL | between G2 and F3.1 | 45% |
+| causality, in-flight and independent | clean | 95% |
+| repetition: Spearman of φ for the best-matching mode against the decay-weighted count of earlier occurrences of the same token | above 0.5 | 55% |
+| sign of the trained well depths | most positive (attractive wells) | 60% |
+| DP3 rerun on the modes: Spearman of φ times depth against each mode's leave-one-out force contribution | above 0.5 (by construction, a sanity check) | 80% |
+
+**Decision rule.**
+- **Gate fails:** no full run. The book keeps the exclusion statement (Remark 60) and records that a bosonic alternative was tried and added nothing at 3,000 steps.
+- **Full run beats F3.1 by at least 1%:** the bosonic Doi–Peliti v2 is trainable and worth something. The book states its price against the slot registers (G2) and that it honours claims 1–3 literally.
+- **Full run within 1% of F3.1:** the bosonic mechanism is trainable but adds nothing over ξ-conditioned V_θ at this scale.
+
+**Caveat recorded in advance.** With a coupling linear in φ, no measurement can show bosonic *fluctuations*; what is bosonic is the structure (shared modes, occupation without a cap, an exact immigration–death mean). A sampled variant, drawing n ~ Poisson(φ) in training, is the follow-up that would make the statistics consequential.
+
 ## 6. Open risks
 
 ### 6.1 At L=1 the register bank is read but never updated — **2026-09-24**
