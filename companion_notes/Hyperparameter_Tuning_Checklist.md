@@ -631,9 +631,10 @@ adds a point to a curve.
 
 ## Scheduled: v6 abstract-gating runs — **opened 2026-10-03** (protocol §5.10)
 
-- [ ] **G2** — P2.2 run to the full length: L=2 Fock-PARFLM `none`, live. **First.** Settles the register mechanism's value (< 57.76) and depth (> 50.10).
+- [x] **G2** — done 2026-10-04: **53.12** settled, published as `semsimula-ladder-live-owt-d384-l2-none`. P2.2 run to the full length: L=2 Fock-PARFLM `none`, live. **First.** Settles the register mechanism's value (< 57.76) and depth (> 50.10).
 - [ ] **G4** — Cell 6b-10 on run 4, the Gen 2 twin of the L=4 live arm. Runs alongside G2 and takes minutes. Settles whether the L=4 forecastability comes from the live gradients.
-- [ ] **G3** — F3.2: L=2 `attention_potential` with everything live (`rglive` + `vplive` + `xilive`). Settles the exchange field's value against G2.
+- [ ] **G3** — F3.2: L=2 `attention_potential` with everything live (`rglive` + `vplive` + `xilive`). Settles the exchange field's value against G2. *Running (2026-10-04).* At step 21,700 it trails G2 by about 1.6 PPL, and the exchange field's gradient has grown 0.3 → 0.8 (protocol §5.10, mid-run reading).
+- [ ] **G3′** (F3.2b) — G3's configuration plus QK-normalised exchange-field routing (a clamped logit scale, as in the creation gate's `cgqk`) and a 0.3 clip override for `relax_field`. Predicted: the gradient norm stays flat (70%) and settled ≤ 52.1 (50%). Code: a QK-norm switch on `XiRoutedConservativeAttention`, off by default and verified bit-identical. **After G3 completes, ahead of the FO 2×2.** Not gating v6.
 - [ ] **G1** — **scheduled, deferred until G2–G4 are in.** A GPT-2 matched on parameters at the same width: d=384, L=22, untied, 77.8M. Width is held at 384 by design: comparisons stay in the same semantic-space dimension, so d=512 was rejected. The author's reservation is that matching the parameter count by depth ignores the model's dynamics and may draw reviewer questions; the run is kept for completeness. GPT-2 notebook Cell 0: `N_LAYERS = 22`, `TIE_EMBEDDINGS = False`. Commit and push the `VARIANT_TAG` folder guard before running it.
 
 ## Scheduled: CB-series — balancing the conservative and Fock paths — **opened 2026-10-03** (protocol §5.11)
@@ -700,6 +701,64 @@ Not gated on the live-gradient ladder, but competes with it for GPU time. Placem
 - [ ] **SR5b** — thermal training, `LANGEVIN_T = 0.0022` (r = 0.3, calibrated on F3.1: `debug/calibrate_langevin_T_output.txt`). No code needed; tag `T0p0022`. Predicted to trade along the Gate 1 / Gate 3 frontier (65%).
 - [ ] **SR5a** — `LANGEVIN_T = 0.00025` (r ≈ 0.1), predicted near-null.
 - [ ] *SR5c (annealed thermostat, per-layer T → 0 with late damping): only if SR4b passes Gate 2; needs per-layer T in `ou_step`.*
+
+## Scheduled, low priority: overlap-distance diagnostics — **opened 2026-10-04**
+
+Source: `semsimula/docs/Overlap_Distance_in_Semantic_Simulation.md` (§10.5, §12). The book's §10.5.2 now carries the overlap formalism. These are its free checks on existing checkpoints: **evaluation only, no training.**
+
+**Priority (2026-10-04):** below G3′, the FO 2×2 and the CB series. They run in any idle slot, alongside nothing urgent. They do not gate the book or any arm.
+
+**Expectation, recorded in advance.** The formalism is a change of basis (overlap and Löwdin presentations are unitarily equivalent), so it cannot add expressiveness and changes no trained model. At d ≥ 768 it is fragile.
+
+- **Width mismatch.** With anisotropic, learned per-well precisions, the shape prefactor (2σ_vσ_w/(σ_v²+σ_w²))^{L/2} suppresses overlaps strongly: a 10% width mismatch at L = 768 already gives about 0.18. Trained models are therefore expected to read G ≈ I.
+- **Distance concentration.** The calibration κ ∼ 1/(s√(2L)) is already mirrored in the code: the well precision is capped at `2/d`, and `init_log_precision = −log d`.
+- **Where the value lies, if any:** the register-redundancy diagnostic (D2) and, behind it, the log-det diversity regulariser (D4).
+
+- [ ] **D1 — temperature-to-bandwidth calibration.**
+  - Convert the trained creation-gate scales to bandwidths: κ_k² = 1/(2τ_k).
+  - Under `cgqk` the learnable `logit_scale` replaces τ, so use τ_k = 1/logit_scale_k.
+  - Map κ_k to semantic-space units through the singular values of W_Q and W_K^(k), and compare with the wells' κ.
+  - Record the key-norm spread std_j‖k_j‖ / mean_j‖k_j‖. If it is small, a Gaussian-kernel gate is identical to the current one and that option is dropped.
+  - Checkpoints: G2 (L=2 Fock live) and the L=4 live arm.
+- [ ] **D2 — register redundancy against collapse.**
+  - Compute λ_min, effective rank and det of the routing Gram G^(α) (Bhattacharyya: no bandwidth needed; also on sharpened α^β with β > 1, because diffuse rows overlap trivially). Also compute the content Gram G^(r).
+  - Restrict both to the active registers, per layer and averaged over positions.
+  - Compare the collapsed regime (pre-B1, creation entropy about 0.04) with the fixed one (B1+B2+B3), and test whether the effective rank drops *before* the creation entropy does along a training trajectory.
+  - A lead time makes effective rank an early-warning diagnostic in its own right.
+- [ ] **E4 — width heterogeneity** (revised 2026-10-04).
+
+  **Question.** At d ≥ 768 the overlap of two Gaussian modes carries the shape prefactor (Bhattacharyya form, general covariances)
+
+  π_vw = det(Σ_v)^¼ · det(Σ_w)^¼ / det((Σ_v + Σ_w)/2)^½,
+
+  which, with isotropic widths that differ in all L dimensions, is ((2σ_vσ_w)/(σ_v²+σ_w²))^{L/2}. A 10% mismatch at L = 768 then gives about 0.18. Our wells are not built that way:
+  - each precision is P = diag(a) + BBᵀ, with B of rank r = 4;
+  - the diagonal is capped at `2/d`;
+  - the stiff, anisotropic directions live in B (capped by `PRECISION_LR_MAX = 1.0`).
+
+  If most wells' diagonals sit at or near the cap, the mismatch exponent counts only the up-to-2r directions where the two low-rank factors differ, not L/2. A 10% mismatch over 8 directions costs about 0.98, not 0.18. **Hypothesis:** the effective mismatch dimension is O(r), not O(L).
+
+  **Measurement** (evaluation only; G2's checkpoint, d = 384; repeat at d ≥ 768 when such a checkpoint exists):
+  1. **Contexts.** Our wells are functions of ξ, so draw 1,024 contexts ξ from the corpus (G2's validation tokens, the 6b-13 seed, every layer), and state that choice. At each context read every well's μ, a and B.
+  2. **Exact prefactor π_vw** for all pairs of wells at the same context and layer. Compute it in log form with Cholesky or `slogdet` on the r-dimensional Woodbury forms, never on dense d×d inverses. Report the median, p10 and p90 over all pairs and over **nearest-neighbour pairs** (the nearest centroid by d_Σ).
+  3. **Diagonal / low-rank split.** log π_vw = log π_diag + log π_lr.
+     - log π_diag is the prefactor of the diagonal parts alone: Σ over i of ½ log(2√(a_vi a_wi)/(a_vi + a_wi)).
+     - log π_lr is the remainder: the low-rank factors and their orientation.
+     - Also report the share of diagonal entries within 1% of the cap, and the number of dimensions whose width ratio exceeds 1.1 (the *effective mismatch dimension*).
+  4. **Centroid term**, for comparison: exp(−¼ Δᵀ((Σ_v+Σ_w)/2)⁻¹Δ) on the same pairs, which says whether proximity or width mismatch sets G.
+  5. **Common-width alternative.** G under modes of one isotropic width σ = x*/2 at a reference κ (the median well κ), giving G = exp(−κ²‖μ_v − μ_w‖²). Report its spectrum (λ_min, effective rank) next to the well-tied G.
+
+  **Predictions:**
+  - effective mismatch dimension ≤ 2r = 8 for the median pair (55%);
+  - median nearest-neighbour π_vw ≥ 0.5 (50%);
+  - the low-rank term dominates log π, more than 50% of its magnitude (60%).
+
+  **Decision rule:**
+  - **Median nearest-neighbour π_vw ≥ 0.5:** keep the well-tied mode widths as written. The book's §10.5.2 footnote (per-type widths, with the prefactor) stands.
+  - **Below 0.5:** adopt **common-width modes** in the formalism. That is one sentence in the §10.5.2 footnote and in the note's §9.6. Common widths keep G a genuine Gram matrix (positive semidefinite, so the Fock space stays well-defined), and the identity d_ov² = 2V/(𝔪υ²) then holds for the reference well.
+  - **In either case:** do **not** drop the prefactor by convention. The location term alone is not guaranteed positive semidefinite, which would allow negative norms in the Fock space; if it is ever used as a similarity score, check PSD-ness explicitly. Do **not** regularise the model's widths to suit the formalism: the anisotropic V_θ is what the family's quality rests on (9.04 against 16.33 isotropic, TinyStories). And do not read hierarchy (broad against narrow wells) from overlaps, since nested Gaussians are nearly orthogonal at high d; use an asymmetric measure (the book's Experiment G4, or KL).
+
+- [ ] *D3 (PPL against effective rank, across checkpoints) and D4 (the log-det diversity regulariser, λ_det ∈ {0, 1e-3, 1e-2, 1e-1}): **only if D2 shows signal.** D4 would be pre-registered first, on G2's configuration. It is independent of the CB series: CB caps the register path's push, while D4 keeps the registers distinct.*
 
 ## TOP PRIORITY: gradient starvation across the ladder — **opened 2026-09-30**
 
