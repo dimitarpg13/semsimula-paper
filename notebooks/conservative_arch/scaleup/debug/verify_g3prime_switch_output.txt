@@ -1,0 +1,18 @@
+G3' switch check (RELAX_ATTN_QK_NORM = True, RELAX_FIELD_CLIP = 0.3, on G3's Cell 0)
+1. tag ...cgqk_rglive_vplive_xilive_rfqk_rfclip0p3_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_attnpot
+   = G3's tag with rfqk_rfclip0p3 after xilive: True
+   Cell 5b banner:
+     G3' -- HARDENED EXCHANGE FIELD (protocol SS5.10) -- NOT A LADDER POINT
+     routing: cosine scores x clamped per-head logit scale, init 14.29, ceiling 100 (8 heads)
+     clip: relax_field in its own group at 0.3 (G3: the default group, 1.0)
+2. new parameters vs G3: ['relax_field.logit_scale'] (8 heads, sigma init 14.2857 = 1/0.07); G3 weights load into the rest: True
+3. routing at init: max|score| 12.796 <= sigma 14.286; rows sum to 1: True
+   logit scale pushed to 1e4: sigma clamps to 100, max|score| 89.57 <= 100: True
+4. train loss 4.5528; grad norms logit_scale 1.04e-01, W_q.weight 1.87e-01, W_k.weight 1.35e-01, W_uq.weight 3.80e-01, W_v.weight 4.00e+00: True
+5. causality: future tokens replaced at t >= 256, max|dlogit| at t < 256 = 0.0e+00: True
+6. clip groups: 5 relax_field parameters move from [('relax_field', 1.0)] to [('override:relax_field', 0.3)]; no other parameter changes group: True
+-> ALL PASS
+
+OFF path (verify_head_equiv_g3.py, HEAD vs working copy on G3's configuration):
+      HEAD vs working copy: eval max|dlogit| 0.0e+00   train 0.0e+00   grads max|diff| 0.0e+00   loss 4.239223 vs 4.239223
+      -> IDENTICAL: safe to push under a running G3
