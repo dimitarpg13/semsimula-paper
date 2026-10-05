@@ -202,6 +202,12 @@ class MultiXiPARFConfig(SparsePARFConfig):
     # routing be detached, not that it come from xi -- so charging xi's
     # extra width to "conservativity" would confound the measurement.
     relax_attn_route_from: str = "h"
+    # G3' (protocol SS5.10): QK-normalised routing for 'attention_potential'
+    # -- cosine scores times a clamped learnable per-head logit scale, the
+    # creation gate's `cgqk` scheme. Off by default: bit-identical to G3.
+    relax_attn_qk_norm: bool = False
+    relax_attn_logit_scale_init: float = 1.0 / 0.07
+    relax_attn_logit_scale_max: float = 100.0
     # Fix the gate instead of learning it. None learns lambda (or holds it
     # at 1 under zero_readout); a float pins every layer there and freezes
     # it, which is how the PPL-versus-kappa curve is swept. Two probes have
@@ -469,6 +475,10 @@ class MultiXiPARFLM(SparsePARFLM):
         self.relax_field = None
         self.relax_lambda = None
         _relax = getattr(cfg, "force_relaxation", "none")
+        if getattr(cfg, "relax_attn_qk_norm", False) and _relax != "attention_potential":
+            raise ValueError(
+                "relax_attn_qk_norm applies to force_relaxation="
+                f"'attention_potential' only, got {_relax!r}")
         if _relax != "none":
             _VALID = ("nonconservative", "potential", "attention",
                       "attention_potential", "attention_residual")
@@ -516,6 +526,11 @@ class MultiXiPARFLM(SparsePARFLM):
                     init_scale=getattr(cfg, "relax_init_scale", 0.02),
                     zero_readout=(_gate == "zero_readout"),
                     route_from=getattr(cfg, "relax_attn_route_from", "h"),
+                    qk_norm=getattr(cfg, "relax_attn_qk_norm", False),
+                    logit_scale_init=getattr(
+                        cfg, "relax_attn_logit_scale_init", 1.0 / 0.07),
+                    logit_scale_max=getattr(
+                        cfg, "relax_attn_logit_scale_max", 100.0),
                 )
                 self._relax_takes_h_only = False
             elif _relax in ("attention", "attention_residual"):

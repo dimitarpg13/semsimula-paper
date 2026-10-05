@@ -176,6 +176,9 @@ class XiRoutedConservativeAttention(nn.Module):
         rbf_log_sigma_init: float = 0.0,
         zero_readout: bool = False,
         route_from: str = "xi",
+        qk_norm: bool = False,
+        logit_scale_init: float = 1.0 / 0.07,
+        logit_scale_max: float = 100.0,
     ):
         super().__init__()
         if kernel not in {"dot", "rbf"}:
@@ -212,6 +215,19 @@ class XiRoutedConservativeAttention(nn.Module):
         nn.init.normal_(self.W_q.weight, std=init_scale)
         nn.init.normal_(self.W_k.weight, std=init_scale)
 
+        # G3' (protocol SS5.10, 2026-10-05) -- opt-in QK-normalised routing,
+        # the creation gate's `cgqk` scheme. q and k are L2-normalised over
+        # d_k, so the score is a cosine in [-1, 1] times a clamped per-head
+        # sigma_h = min(exp(lambda_h), logit_scale_max) that replaces the
+        # fixed 1/sqrt(d_k):  |score| <= logit_scale_max  whatever the norms
+        # of W_q and W_k (which grew 5-6x unchecked in G3).
+        # Created AFTER every random init and ONLY when enabled, so the
+        # default module draws the same RNG stream and keeps the same
+        # state_dict: bit-identical to G3, and strict-loads its checkpoints.
+        self.qk_norm = qk_norm
+        self.logit_scale_max = logit_scale_max
+        self.logit_scale = None
+
         if kernel == "dot":
             # Bilinear value-transport kernel phi = (U h_t).(W h_s)/sqrt(d_v).
             self.W_uq = nn.Linear(d, n_heads * d_v, bias=False)   # query read-out
@@ -244,6 +260,10 @@ class XiRoutedConservativeAttention(nn.Module):
             )
             self.W_uq = None
             self.W_v = None
+        if qk_norm:
+            # Deterministic fill, after all random inits: no RNG drawn.
+            self.logit_scale = nn.Parameter(
+                torch.full((n_heads,), math.log(logit_scale_init)))
 
     # ------------------------------------------------------------------
     def _routing(
@@ -263,7 +283,12 @@ class XiRoutedConservativeAttention(nn.Module):
             xi_flat = xi_route.reshape(B, T, n_ctx * d)
         q = self.W_q(xi_flat).view(B, T, self.H, self.d_k).transpose(1, 2)
         k = self.W_k(xi_flat).view(B, T, self.H, self.d_k).transpose(1, 2)
-        scores = torch.matmul(q, k.transpose(-1, -2)) * (self.d_k ** -0.5)
+        if self.qk_norm:
+            q, k = F.normalize(q, dim=-1), F.normalize(k, dim=-1)
+            sigma = self.logit_scale.exp().clamp(max=self.logit_scale_max)
+            scores = torch.matmul(q, k.transpose(-1, -2)) * sigma.view(1, self.H, 1, 1)
+        else:
+            scores = torch.matmul(q, k.transpose(-1, -2)) * (self.d_k ** -0.5)
         scores = scores.masked_fill(~causal.view(1, 1, T, T), float("-inf"))
         alpha = torch.softmax(scores, dim=-1)
         # t=0 row (and any fully-masked row) softmaxes all -inf -> nan; zero it.

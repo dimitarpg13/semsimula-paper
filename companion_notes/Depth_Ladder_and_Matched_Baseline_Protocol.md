@@ -3084,6 +3084,20 @@ The step-32,500 audit printed honest/standard PPL as nan, while its future pertu
 
     Predicted: the gradient norm stays flat (within ±25% of its 5,000-step value) through the stable phase, called at 70%. Settled ≤ 52.1, i.e. the exchange field adds value once hardened, called at 50%. Code: a QK-norm switch on `XiRoutedConservativeAttention`, off by default and verified bit-identical. It is not gating the v6 abstract.
 
+    **Implemented 2026-10-05.**
+    - **Code.**
+      - `XiRoutedConservativeAttention(qk_norm=...)`: q and k L2-normalised over d_k, times a clamped per-head σ_h = min(exp λ_h, 100), with λ initialised at log(1/0.07).
+      - Config `relax_attn_qk_norm`; Cell 0 `RELAX_ATTN_QK_NORM` (tag `rfqk`) and `RELAX_FIELD_CLIP` (tag `rfclip0p3`, its own clip group in Cell 6), plus a Cell 5b guard.
+    - **Off: bit-identical to HEAD on G3's configuration** (eval and train logits, loss and all 95 gradients; `debug/verify_head_equiv_g3.py`).
+    - **On: all six checks pass** (`debug/verify_g3prime_switch.py` and its output):
+      - the tag is G3's plus `rfqk_rfclip0p3`;
+      - the only new parameter is `relax_field.logit_scale`, one per head;
+      - |score| ≤ σ ≤ 100;
+      - gradients reach σ, W_q and W_k;
+      - the run is causal;
+      - only the five `relax_field` parameters change clip group.
+    - **Watch item.** On G3's trained weights, W_v carries most of the field's gradient (4.0 against 0.1–0.4 for the others). The 0.3 group clip will be set by W_v. Per-group norms are logged, so it can be read in the run.
+
 - **G3 scored, 2026-10-05.**
 
   | measure | value |
