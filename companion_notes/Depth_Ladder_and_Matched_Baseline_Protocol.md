@@ -3063,6 +3063,27 @@ The step-32,500 audit printed honest/standard PPL as nan, while its future pertu
 
 - **Prediction:** settled **51**, band **46–56**. The live V_φ/ξ gain is smaller than the conservative-only arm's 34%, because the exchange field already carries some of what the starved channels could not.
 - **Key line, the conservative exchange field's value under live gradients:** settled below G2's settled value by more than 2% (beyond eval noise). Called at about 60%.
+- **Mid-run reading, 2026-10-04, step 21,700, recorded before the result.** The run is not stopped; the pre-registered scoring stands.
+
+  | | G3 | G2 | the parent probe |
+  | --- | --- | --- | --- |
+  | PPL, steps 3,000–8,000 | led G2 by **5–7 PPL** | — | — |
+  | PPL, step 21,500 | 64.18; crossed G2 near 13,000, now trails by about 1.6 (+2.5%) | 62.61 | G3 holds a steady −11% against it throughout |
+  | global gradient norm, constant-LR phase | rose 0.43 → **0.88** | flat at about 0.35 | rose 0.42 → 0.64 |
+  | clip hits | 5.9% of steps in the last window | 0 | 0 |
+
+  - **Where the growth is.** When `relax_field` tops the per-group gradient table (35 logged steps; it never appears in G2's log), its gradient alone rises from about 0.3 to about 0.8, almost the whole model's norm. The growth is the exchange field's.
+  - **Mechanism, a hypothesis.** The field's routing is unnormalised: scores = q·k/√d_k with free W_q and W_k (`model_xi_attention.py`, `XiRoutedConservativeAttention._routing`), and its bilinear value kernel is unbounded too. It has no per-group clip override either; it shares the global 1.0.
+    - In Gen 2 its routing received no gradient, so it could not sharpen. Neither the hardening the creation gate got (QK-norm, `cgqk`) nor the reverse channel's (stable QK-norm + soft-norm) was ever needed or applied.
+    - Under live gradients the field learns, and its gradients grow through the stable phase. That is the signature of logit growth (sharpening routing), the failure the programme met and fixed in the creation gate.
+  - **Not yet shown.** Adam normalises per parameter, so growing gradients alone do not shrink the other groups' steps until global clipping binds, which happened only in the last 2,500 steps. The PPL crossover (about 10k–13k) predates it. The check is 6b-6 part B (routing entropy: has α collapsed?), plus the W_q/W_k norms and `relax_share` from the checkpoint and `training_log.jsonl`.
+  - **Projection.** G2 fell 16.5% from step 21,000 to settled. The same decay would put G3 near 54.4, missing the key line (≤ 52.1) and landing a few percent behind G2.
+  - **Pre-registered follow-up arm, G3′ (F3.2b).** G3's configuration plus:
+    - QK-normalised routing for the exchange field, with a clamped learnable logit scale (the creation gate's `cgqk` scheme);
+    - a per-group clip override for `relax_field` at 0.3, like the other gates.
+
+    Predicted: the gradient norm stays flat (within ±25% of its 5,000-step value) through the stable phase, called at 70%. Settled ≤ 52.1, i.e. the exchange field adds value once hardened, called at 50%. Code: a QK-norm switch on `XiRoutedConservativeAttention`, off by default and verified bit-identical. It is not gating the v6 abstract.
+
 - **Not decided by this run:** the price of conservativity under live gradients needs `attention` live against it. That run is not gating. Until it runs, the abstract states the price as measured under Gen 2 only (`attention` 63.51 against `attention_potential` 80.9 detached and 61.11 with `rglive`).
 
 **G4 (cheap, gates only a forecastability sentence). Cell 6b-10 on run 4**, the Gen 2 twin of the L=4 live arm, with the same layer 2–3 rule as the L=4 scoring. Prediction: tangential coherence below +0.526, and the integrator-velocity forecast error above 0.759. Either one meeting its threshold would credit part of the forecastability to the live gradients. If run 4 is also forecastable, the property belongs to the L=4 architecture and the abstract says so.

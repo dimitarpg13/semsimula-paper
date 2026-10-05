@@ -768,3 +768,14 @@ thought, not typing.
   1. verify §8.9, Prop 44, Prop 45, Remark 62 and §27.15 against the final PDF (update `GATES_TERMS` in `build_cards.py` if anything moved);
   2. rebuild;
   3. push the three Gen 3 READMEs (`l4-none`, `l2-none`, `l2-none-norc`) README-only.
+- **§10.5.2 replaced (2026-10-04)** with the author's revision (`semsimula/docs/Sec_10_5_2_Fock_revised.tex`), in `09_expressivity_mcs.tex`. The new text has a single-particle space of overlapping Gaussian modes tied to the well (Def 13), the Gram matrix and induced distance, consistent (anti-)commutation relations and statistics (bosonic adopted, with three reasons), an inverse-Gram number operator and field (Löwdin equivalent), and a reworded Doi–Peliti paragraph.
+  - **Adapted on integration:**
+    - kept `subsubsec:apparatus-v2` (cited 11 times) and `eq:fock`;
+    - new equation labels prefixed `eq:v2-…`;
+    - hard-coded numbers turned into `\cref`: `def:well`, `def:semantic-space`, `sec:parf,sec:sarf`, `subsubsec:apparatus-v3`;
+    - the book's bibliography keys (`Doi1976SecondQ`, `Peliti1985PathIntegral`);
+    - `\semm\upsilon^2` and `\semSpace`, matching Def 13 and §2;
+    - a booktabs table;
+    - `\mathbb{1}` → `\mathbf{1}` (the blackboard digit renders as a broken glyph).
+  - **Result:** the build is 513 pages, with no undefined or multiply defined references and no new margin overflow. The draft in `docs/` is unchanged.
+  - **Also flagged:** the two other `\mathbb{1}` in the book (indicator functions, §17f l.217 and §18d l.486) render the same broken glyph.
