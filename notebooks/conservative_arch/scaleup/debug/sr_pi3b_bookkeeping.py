@@ -81,7 +81,14 @@ def held_stack(model, N, dt):
 
 
 if __name__ == '__main__':
-    model, g, _ = VP.build(VP.G2_F, VP.CONFIGS['G2'][1])
+    # RR-B (protocol SS5.18): optional argument "G3'" runs the hardened model
+    if len(sys.argv) > 2 and sys.argv[2] == "G3'":
+        from exchange_field_probe import ARMS as _EF
+        _NAME = "G3'"
+        model, g, _ = VP.build(*_EF['G3p'])
+    else:
+        _NAME = 'G2'
+        model, g, _ = VP.build(VP.G2_F, VP.CONFIGS['G2'][1])
     model.cfg.use_layer_checkpoint = False
     nb = json.load(open(G.NB))
     c19 = [''.join(c['source']) for c in nb['cells'] if ''.join(c['source']).startswith('# == Cell 6b-7')][0]
@@ -116,9 +123,9 @@ if __name__ == '__main__':
     ppl = {k: math.exp(torch.cat(v).mean()) for k, v in tot.items()}
     g_ref = 100 * (ppl['refined'] / ppl['trained'] - 1)
     g_held = 100 * (ppl['held'] / ppl['trained'] - 1)
-    print(f"\nG2, {sum(v.numel() for v in tot['trained']):,} tokens: PPL trained {ppl['trained']:.2f}  "
+    print(f"\n{_NAME}, {sum(v.numel() for v in tot['trained']):,} tokens: PPL trained {ppl['trained']:.2f}  "
           f"refined {ppl['refined']:.2f} (Gate 3 {g_ref:+.0f}%)  held {ppl['held']:.2f} (Gate 3 {g_held:+.0f}%)")
     verdict = 'HIT' if g_held <= 300 else 'MISS'
     print(f"-> SR-pi.3b {verdict} (prediction: held Gate 3 <= +300%, called 50%)")
-    (G.OUT / 'sr_pi3b.json').write_text(json.dumps({'ppl': ppl, 'gate3_refined': g_ref, 'gate3_held': g_held,
+    (G.OUT / f"sr_pi3b_{_NAME.replace(chr(39), 'p')}.json").write_text(json.dumps({'ppl': ppl, 'gate3_refined': g_ref, 'gate3_held': g_held,
                                                     'verdict': verdict}, indent=1))

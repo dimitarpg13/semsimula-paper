@@ -1,0 +1,16 @@
+
+== G3' (L=2 + hardened field): best step 31000, L=2, M=32, decay 0.5, threshold 0.005, LIFO True
+  layer 0: active fraction 1.0000 (min over positions 1.000); below threshold 0.0000
+           salience q01/q10/q50/q90/q99 0.513 / 0.555 / 0.799 / 1.000 / 1.000
+           g        q01/q10/q50/q90/q99 0.009 / 0.029 / 0.478 / 0.999 / 0.999   mean 0.504
+           DP2 weighted |cos| earlier 0.058  last 0.058;  near-duplicate share earlier 0.0000  last 0.0000
+           DP3 Spearman(salience, leave-one-out force) mean +0.035 median +0.035 over 4096 positions
+  layer 1: active fraction 1.0000 (min over positions 1.000); below threshold 0.0000
+           salience q01/q10/q50/q90/q99 0.060 / 0.131 / 0.476 / 0.833 / 0.962
+           g        q01/q10/q50/q90/q99 0.485 / 0.495 / 0.501 / 0.508 / 0.516   mean 0.501
+           DP2 weighted |cos| earlier 0.071  last 0.048;  near-duplicate share earlier 0.0046  last 0.0003
+           DP3 Spearman(salience, leave-one-out force) mean -0.627 median -0.648 over 4096 positions
+  share of the initial salience left after layer 1: mean 0.0620; q01/q10/q50/q90/q99 0.0001 / 0.0002 / 0.0646 / 0.1212 / 0.1239
+
+wrote /Users/dimitargueorguiev/git/ml/semsimula-paper/companion_notes/figures/doi_peliti/dp_register_diagnostics.png
+wrote /private/tmp/claude-501/-Users-dimitargueorguiev-git-ml-semsimula-paper/3aa3f150-5d21-482f-b102-acdf6da87bf2/scratchpad/rrA/dp_register_statistics.json

@@ -44,13 +44,18 @@ ARMS = {  # name: (folder, Cell 0 switches)
                        dict(vp='live', xi='live', mech='none', rg='default', L=4)),
     'G3 (L=2 + exchange field)': (_P + 'rglive_vplive_xilive_L2probe' + _S + 'idt4_lr0p0012_attnpot',
                                   dict(vp='live', xi='live', mech='attention_potential', rg='live', L=2)),
+    # RR-A (protocol SS5.18, 2026-10-06): G3', the hardened exchange field
+    "G3' (L=2 + hardened field)": (_P + 'rglive_vplive_xilive_rfqk_rfclip0p3_L2probe' + _S + 'idt4_lr0p0012_attnpot',
+                                   dict(vp='live', xi='live', mech='attention_potential', rg='live', L=2, rfqk=True)),
 }
 N_SEQ, T, SEED = 8, 512, 20261005
 
 
-def build(folder, vp, xi, mech, rg, L):
+def build(folder, vp, xi, mech, rg, L, rfqk=False):
     c0 = G.cells['Cell 0:']
-    for old, new in (("VPHI_GRAD_PATH         = 'default'", f"VPHI_GRAD_PATH         = {vp!r}"),
+    extra = ((("RELAX_ATTN_QK_NORM          = False", "RELAX_ATTN_QK_NORM          = True"),
+              ("RELAX_FIELD_CLIP            = None", "RELAX_FIELD_CLIP            = 0.3")) if rfqk else ())
+    for old, new in extra + (("VPHI_GRAD_PATH         = 'default'", f"VPHI_GRAD_PATH         = {vp!r}"),
                      ("XI_GRAD_PATH           = 'default'", f"XI_GRAD_PATH           = {xi!r}"),
                      ("LADDER_MECHANISM = 'none'", f"LADDER_MECHANISM = {mech!r}"),
                      ("RELAX_GRAD_PATH        = 'default'", f"RELAX_GRAD_PATH        = {rg!r}"),
@@ -193,7 +198,10 @@ if __name__ == '__main__':
     starts = rng.integers(0, len(val) - T - 1, size=N_SEQ)
     xs = [torch.from_numpy(val[s:s + T].astype(np.int64))[None] for s in starts]
     results = {}
+    sel = [a for a in sys.argv[2:]]                      # optional: run only these arms
     for name, (folder, sw) in ARMS.items():
+        if sel and not any(name.startswith(x) for x in sel):
+            continue
         model, step = build(folder, **sw)
         cfg = model.cfg
         lam, thr = cfg.register_salience_decay, cfg.register_salience_threshold

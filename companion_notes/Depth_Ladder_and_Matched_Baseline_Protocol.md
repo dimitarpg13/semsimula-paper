@@ -3794,6 +3794,105 @@ Both must hold for the full run. If the probe passes, clear `PROBE_MAX_STEPS` an
 - **More than 2% worse:** WSD at this peak suits GPT-2 less well. The cosine baseline stays as the reference, and the L=8 comparison uses whichever schedule is better for GPT-2, stated as such.
 - **Optional W2:** the same run at the ladder's peak learning rate (1.2e-3, tag `_wsd_lr0p0012`) separates peak from shape. Queued, not scheduled.
 
+### 5.18 RR: what makes a model refinement-ready? — **pre-registered 2026-10-06, before any measurement**
+
+**The clue.** G3 and G3′ differ only in the routing hardening (QK-norm and the 0.3 field clip). Gate 3 at 1.5× refinement:
+
+| model | Gate 3 |
+| --- | ---: |
+| G3 | +1,342% |
+| G3′ | +115% |
+| G2 | +1,274% |
+| F3.1 | +143% |
+| L=4 | +216% |
+
+**Ruled out so far:**
+- the π crossing (SR-π.3; G3′'s layer-1 θ of 3.40 still crosses);
+- the size of the register increment (SR-π.4b; G3′'s is 7.8×, like its siblings');
+- the exchange field itself (G2 has none and fails);
+- the repeated register bookkeeping on G2 (SR-π.3b, about 13% of the penalty).
+
+**What separates them.** Freezing the register bank at initialisation costs G3′ +2,280%, against +24% for G2 and +17% for G3. DP1 showed G2's layer-0 destruction gate is switch-like (median 0.994): its register content is mostly reset and rewritten each layer.
+
+**Hypothesis H-RR.**
+- **A Fock model is refinement-ready when its register state is *accumulated*,** a slowly built memory. Extra steps then add more of the same, so the update approximates a flow.
+- **It fails when its register state is *reset and rewritten* at each layer.** Refinement then inserts rewrite events the model never trained with, so the update is a sequence of maps.
+- F3.1 has no registers and is consistent with this.
+
+**Measurements** (evaluation only, CPU, G3′'s best checkpoint):
+- **RR-A:** `debug/dp_register_statistics.py` extended to G3′: the destruction gate g per layer, salience, and the share of the initial salience left after the last layer.
+- **RR-B:** `debug/sr_pi3b_bookkeeping.py` on G3′, with SR-π.3's tokens: Gate 3 under 6b-7's refinement against refinement with the bookkeeping held to once per trained layer.
+
+**Predictions:**
+
+| | prediction | called |
+| --- | --- | --- |
+| RR1 | G3′'s layer-0 destruction gate has median below 0.5 (G2 0.994, G3 0.978) | 60% |
+| RR2 | G3′'s median share of initial salience left after the last layer is at least 10× G2's (0.0007) | 55% |
+| RR3 | holding the bookkeeping changes G3′'s refinement penalty (ln of refined over trained PPL) by under 30% | 55% |
+
+**Decision rule.**
+- **RR1 and RR2 hold:** H-RR gains support. The decisive test is a second seed of G3′ and of G2 (GPU), to rule out a lucky basin.
+- **RR1 fails** (G3′'s gate is as switch-like as G2's): the register content is not what separates them. The routing's effect works through the token step, and the next candidate is the bounded logits.
+- **RR3** separates how much of G3′'s small refinement penalty still comes from bookkeeping.
+
+**RR scored, 2026-10-06.** Outputs: `debug/rr_a_dp_g3prime_output.txt` and `debug/rr_b_bookkeeping_g3prime_output.txt`.
+
+| | measure | G3′ | G2 | G3 | outcome |
+| --- | --- | ---: | ---: | ---: | --- |
+| RR1 | layer-0 destruction gate, median | **0.478** | 0.994 | 0.978 | **HIT**, narrowly |
+| RR2 | share of initial salience left after the last layer, median | **0.0646** | 0.0007 | 0.0027 | **HIT** (about 90× G2's) |
+| RR3 | change in refinement penalty when bookkeeping is held | **+141%** (Gate 3 +111% → +503%) | −13% (+1,446% → +994%) | — | **MISS** |
+
+- **The layer-0 destruction gate is bimodal in G3′:** 10th percentile 0.03, 90th 0.999. It empties about half its registers and keeps the rest, where G2 empties nearly all of them.
+- **RR3 missed, in the direction that supports H-RR.**
+  - In G2 the per-step register bookkeeping under refinement is harmful: holding it back helps a little.
+  - In G3′ it is the reverse. The per-step updates are part of why it refines well, and holding them back raises the penalty sixfold. Its register state behaves like an accumulated quantity that more steps integrate smoothly.
+- **Reading.** RR1 and RR2 hold, and RR3's direction agrees: H-RR gains support. Also, G3′'s DP3 correlation at layer 1 is −0.63, stronger than G2's.
+- **The decisive test remains a second seed of G3′ and of G2** (GPU), to rule out a basin one seed happened to find.
+
+### 5.19 The refinement decomposition: two failure modes, two tests — **pre-registered 2026-10-06, before any run**
+
+**Design principle (the author, 2026-10-06).** Refinement readiness is a required property, not an optional one:
+- **Conservative models** should be both conservative and refinement-ready;
+- **non-conservative (Fock) models** should at least be refinement-ready.
+
+This is property (R) of the book's §37.6 (`subsec:geom-requirements`), stated as a requirement for every arm. Refinement-related investigations are therefore high priority in the queue.
+
+**The decomposition** (from §5.18 and the gate table). Two different mechanisms produce the refinement failures:
+
+| failure mode | where | mechanism | evidence so far |
+| --- | --- | --- | --- |
+| **register reset** (H-RR) | Fock arms G2 (+1,274%) and G3 (+1,342%) | register content emptied and rewritten each layer; refinement inserts rewrite events never trained | RR1, RR2 hold; RR3's direction (§5.18) |
+| **stiff-mode discretisation** | F3.1 (+143%), no registers | V_θ alone carries the conservative force with stiff modes past π (θ median 4.32); the remaining error is Proposition 44's θ/sin θ phase error | G3′'s field takes stiffness off V_θ (θ 2.29) and refines slightly better (+115%) |
+
+Neither mechanism alone explains every arm, which is why the single-cause accounts failed: the π crossing (SR-π.3), the push size (SR-π.4b) and the bookkeeping (SR-π.3b). The tests below are one per mechanism. In refinement penalties, ln(refined over trained PPL): F3.1 0.89 nats, G3′ 0.77, G2 2.74.
+
+**Test 1: register reset, by replication.** A second seed (`SEED = 1`, tag `s1`) of G3′ and of G2, each with its seed-0 Cell 0 otherwise unchanged. About 15 h each. The seed tag was added and verified 2026-10-06: seed-0 tags are unchanged against HEAD, and `SEED = 1` adds `_s1`.
+
+| | prediction for the seed-1 runs | called |
+| --- | --- | --- |
+| S1 | G3′-s1 is refinement-ready: Gate 3 at 1.5× of +250% or below (penalty under 1.25 nats) | 55% |
+| S2 | G2-s1 is not: Gate 3 of +600% or above (penalty over 1.95 nats) | 65% |
+| S3 | the register signature replicates: G3′-s1 frozen-bank cost above +500% and layer-0 destruction median below 0.8; G2-s1 frozen-bank cost below +100% and destruction median above 0.9 | 50% |
+| S4 | settled PPL within ±2% of seed 0 for both (G3′ 52.90, G2 53.12): the first seed-variance measurement in the programme | 70% |
+
+- **S1 and S2 hold:** the routing hardening causes the accumulated solution, and H-RR stands as a design rule. Fock models should be built so that their register state accumulates.
+- **S1 fails, S2 holds:** G3′'s solution was a basin its seed found. H-RR may still describe it, but the hardening does not guarantee it.
+- **S2 fails:** refinement readiness is seed-dependent even without the field, and H-RR must explain why the same configuration lands in both basins.
+
+**Test 2: discretisation, by the exact flow.** SR2 on F3.1's configuration (§5.9): the exact damped-mode flow on the stiff subspace replaces the split step, which removes the θ/sin θ phase term. The code is a new joint substep in `cfc_baoab.py` (Proposition 45, closed form); it is a CPU task, next in priority.
+
+| | prediction | called |
+| --- | --- | --- |
+| E1 | SR2-F3.1 cuts F3.1's refinement penalty by at least half (0.89 → 0.45 nats or below) | 55% |
+| E2 | SR2-F3.1 settles within +3% of F3.1 (59.5 or below): the exact flow costs little | 60% |
+
+- **E1 holds:** the conservative core's residual failure is integrator error, removable by the exact flow. Together with Test 1, the framework then has a refinement-ready conservative core, and a Fock mechanism that preserves that readiness when its registers accumulate.
+- **E1 fails:** F3.1's failure is not discretisation. The next suspect is tuning: the learning rate was never re-swept under Gen 3 or for a conservative-only arm.
+
+**Book.** If both tests hold, the decomposition becomes a subsection of book §37.6, in the next edition after the seed runs.
+
 ## 6. Open risks
 
 ### 6.1 At L=1 the register bank is read but never updated — **2026-09-24**

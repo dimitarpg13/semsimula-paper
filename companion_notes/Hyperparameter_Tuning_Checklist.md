@@ -660,17 +660,28 @@ adds a point to a curve.
 6. CG8 on the baselines, once 6b-14 exists.
 7. The overlap diagnostics D1, D2 and E4 (low priority).
 
-**GPU queue (updated 2026-10-06):**
+**GPU queue (updated 2026-10-06; refinement work is high priority):**
 1. ~~G3′~~ done: 52.90.
-2. **W1, the matched GPT-2 on WSD** (about 2.5 h; protocol §5.17): `LR_SCHEDULE = 'wsd'` in the GPT-2 notebook.
+2. **W1, the matched GPT-2 on WSD** (running; protocol §5.17).
 3. The PM1 probe (about 1.5 h), with G4 (6b-10 on run 4) in the same session.
-4. The FO 2×2.
-5. **An L=8 Fock live probe, then the full run** (about 5 h + 55 h). It combines SR-π.1, the depth trend, the matched-depth GPT-2 comparison and the floor question; its consolidated pre-registration is still to be written.
-6. The PM1 full run, if gated in.
-7. The CB series.
-8. The SR series: SR2 on F3.1 only.
+4. **The seed pair: G3′-s1, then G2-s1** (about 15 h each; protocol §5.19, Test 1).
+5. **SR2 on F3.1** (protocol §5.19, Test 2), once the exact substep is implemented and verified.
+6. The FO 2×2.
+7. **An L=8 Fock live probe, then the full run** (about 5 h + 55 h). It combines SR-π.1, the depth trend, the matched-depth GPT-2 comparison and the floor question; its consolidated pre-registration is still to be written.
+8. The PM1 full run, if gated in.
+9. The CB series.
+10. The rest of the SR series (SR1, SR4a, SR3, SR4b, SR5).
 
 Queued, unscheduled: F1 (2× tokens), F2 (d = 768), W2 (GPT-2 WSD at 1.2e-3), G1 (parameter-matched GPT-2).
+
+## Open: what makes a model refinement-ready? — **opened 2026-10-06** (protocol §5.18)
+
+- [x] RR-A, RR-B on G3′ (free) — done 2026-10-06. RR1 HIT (layer-0 destruction gate median 0.478, against 0.994 for G2). RR2 HIT (initial salience retained about 90× G2's). RR3 MISS, in the supporting direction (holding the bookkeeping makes G3′ worse, +111% → +503%, while it makes G2 slightly better). H-RR (accumulated register state means flow; reset-and-rewrite means maps) gains support.
+- [x] **Pre-registered 2026-10-06 (protocol §5.19):** the refinement decomposition, with register reset for the Fock arms and stiff-mode discretisation for F3.1. Design principle: refinement readiness is required, for conservative arms together with conservativity, and for Fock arms on its own.
+- [x] Seed tag (`SEED != 0` gives `s<N>`) and Cell 5b guard added; verified that seed-0 tags are unchanged.
+- [ ] **Test 1, GPU, high priority:** G3′-s1 and G2-s1 (`SEED = 1`), about 15 h each. Predictions S1–S4.
+- [ ] **Test 2: implement SR2's exact damped-mode substep** (CPU, next), then run SR2 on F3.1 (GPU). Predictions E1–E2.
+- [x] Hypothesis and evidence added to the G3 and G3′ model cards (2026-10-06).
 
 ## Queued: is there a shared floor near 50 PPL? — **opened 2026-10-06**
 
