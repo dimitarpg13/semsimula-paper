@@ -1,0 +1,16 @@
+F0: L(t) = L_inf + A (t/1000)^-alpha on val loss, steps 3,000-21,000; 90% interval from 2000 bootstrap refits
+
+model                              n   L_inf      90% interval  PPL_inf      PPL interval  alpha   rmse  PPL@21k identified
+F3.1 (L=2, conservative-only)     37   3.256 [ 2.209,  3.636]    25.94 [  9.11,  37.92]   0.24  0.017    71.81      False
+G2 (L=2, registers)               37   3.339 [ 2.965,  3.549]    28.19 [ 19.40,  34.79]   0.33  0.015    63.61      False
+G3 (L=2, + field)                 37   3.898 [ 3.805,  3.967]    49.31 [ 44.92,  52.80]   0.61  0.016    65.22       True
+G3' (L=2, + hardened field)       37   3.875 [ 3.772,  3.944]    48.17 [ 43.48,  51.61]   0.62  0.017    63.45       True
+L=4 Fock                          37   3.763 [ 3.661,  3.839]    43.07 [ 38.89,  46.48]   0.60  0.016    60.80       True
+GPT-2, cosine (descriptive only)  37   3.557 [ 3.434,  3.647]    35.04 [ 30.99,  38.37]   0.45  0.011    56.35       True
+
+P1  L=2 Fock L_inf spread 0.559 nats (<= 0.05): MISS  (65%)
+P2  every L=2 Fock interval above L=4's (depth-set floor): MISS  (45%)
+P3  F3.1's interval above every L=2 Fock interval: MISS  (60%)
+P4  at least one fit unidentified: HIT  (50%)
+
+wrote /Users/dimitargueorguiev/git/ml/semsimula-paper/notebooks/conservative_arch/scaleup/debug/f0_floor_fit.json
