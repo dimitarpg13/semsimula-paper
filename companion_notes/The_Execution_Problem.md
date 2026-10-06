@@ -624,7 +624,7 @@ Under the two riders (Turing-expressive templates; admissibility of unbounded co
 
 Four distinct gaps prevent a formal proof in the present state of the framework:
 
-1. **The template calculus is not yet formalised.** §2.4 of the main paper gives Definition 2.8 and an explicit deferral statement. Neither this document nor *Execution of Semantic Structures* specifies a grammar for templates, a matching algorithm, or a closure/expressiveness result. Without a precise calculus, questions such as *"can this template language express arbitrary tree-to-tree computable functions?"* cannot be answered.
+1. **The template calculus is not yet formalised.** §2.6 of the main paper gives Definition 8 and an explicit deferral statement. Neither this document nor *Execution of Semantic Structures* specifies a grammar for templates, a matching algorithm, or a closure/expressiveness result. Without a precise calculus, questions such as *"can this template language express arbitrary tree-to-tree computable functions?"* cannot be answered.
 
 2. **The operation calculus is not yet formalised.** *Executive Space and Operations* (§8.9 of the main paper) says that operations are *"substitution, insertion, deletion, and more elaborate rewriting rules"* — but the phrase *"more elaborate"* is doing all the heavy lifting. A precise formal signature of operations, an application relation, and a closure claim (*"these operations generate all computable tree-to-tree functions"*) would be required.
 

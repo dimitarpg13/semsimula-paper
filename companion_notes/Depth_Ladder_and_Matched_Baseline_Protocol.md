@@ -3379,7 +3379,7 @@ Its prediction #1 orders the gap: Markov < TinyStories < OpenWebText < code.
 
 **What has changed since that note.**
 
-- Its §11 explained the TinyStories null mainly by a realized damping of γ_geo ≈ 0.965, worth about 26× suppression. γ_geo has since been withdrawn as an artefact of the residual (book Remark 102).
+- Its §11 explained the TinyStories null mainly by a realized damping of γ_geo ≈ 0.965, worth about 26× suppression. γ_geo has since been withdrawn as an artefact of the residual (book Remark 103).
 - The CfC models measure the opposite regime: Gate 1 +34% (F3.1) and +55% (L=4), inertial fraction 1.41, speeds rising from 6.7 to 15.0 across layers, and stiff modes at ζ ≈ 0.05.
 - The TinyStories null also carries three confounds besides the corpus: Verlet, detached gradients (Gate 1 there would be about +5%), and d=256.
 
@@ -3640,7 +3640,7 @@ Both must hold for the full run. If the probe passes, clear `PROBE_MAX_STEPS` an
 | DP3 rerun on the modes: Spearman of φ times depth against each mode's leave-one-out force contribution | above 0.5 (by construction, a sanity check) | 80% |
 
 **Decision rule.**
-- **Gate fails:** no full run. The book keeps the exclusion statement (Remark 60) and records that a bosonic alternative was tried and added nothing at 3,000 steps.
+- **Gate fails:** no full run. The book keeps the exclusion statement (Remark 61) and records that a bosonic alternative was tried and added nothing at 3,000 steps.
 - **Full run beats F3.1 by at least 1%:** the bosonic Doi–Peliti v2 is trainable and worth something. The book states its price against the slot registers (G2) and that it honours claims 1–3 literally.
 - **Full run within 1% of F3.1:** the bosonic mechanism is trainable but adds nothing over ξ-conditioned V_θ at this scale.
 

@@ -212,7 +212,7 @@ The Semantic Tube Prediction (STP) regulariser of Huang, LeCun & Balestriero (20
 
 $$\mathcal{L}_\mathrm{STP}(\mathbf{d}_1, \mathbf{d}_2) = 1 - \frac{\langle\mathbf{d}_1, \mathbf{d}_2\rangle_g}{\lVert\mathbf{d}_1\rVert_g \lVert\mathbf{d}_2\rVert_g}$$
 
-Proposition 72 of the main paper establishes conformal invariance of Equation 15: $\mathcal{L}_\mathrm{STP}$ takes the same value in the flat metric $g$ and in the Jacobi metric $\tilde{g} = \Omega^2 g$. Three consequences follow:
+Proposition 102 of the main paper establishes conformal invariance of Equation 15: $\mathcal{L}_\mathrm{STP}$ takes the same value in the flat metric $g$ and in the Jacobi metric $\tilde{g} = \Omega^2 g$. Three consequences follow:
 
 1. Cosine similarity is the geometrically natural choice for the STP loss.
 2. Jacobi geodesics have nonzero flat-space STP loss (the Christoffel symbols absorb curvature).
@@ -286,7 +286,7 @@ The table below collects the full comparison across all structural properties.
 | Semantic inertia / momentum | Full | None | Full |
 | Time-reversibility | Time-reversible | Time-reversible | Broken — asymmetric |
 | Intrinsic meaning asymmetry | Cannot represent | Cannot represent | Structural consequence |
-| STP loss derivation | Partial (metric degenerates) | No Jacobi metric | Complete (Proposition 72) |
+| STP loss derivation | Partial (metric degenerates) | No Jacobi metric | Complete (Proposition 102) |
 | Expressivity | MCS (unstable) | Regular class only | MCS (stable) |
 | Obstruction Theorem strength | Full force | Weakened | Full force |
 | Fock extension motivation | Ad hoc | Irrelevant | Minimal dissipative completion |
@@ -346,7 +346,7 @@ The damped second-order Lagrangian framework is not a convenient choice among eq
 2. **Semantic convergence is guaranteed** — trajectories settle to attractor basins of $V_\theta$.
 3. **Semantic inertia is retained** — the velocity register $\mathbf{v}$ carries independent information.
 4. **Meaning asymmetry is intrinsic** — $d_\mathrm{geo}(\mathbf{h}_A \to \mathbf{h}_B) \neq d_\mathrm{geo}(\mathbf{h}_B \to \mathbf{h}_A)$ as a structural theorem.
-5. **The STP loss has a complete geometric derivation** — via Proposition 72 and conformal invariance.
+5. **The STP loss has a complete geometric derivation** — via Proposition 102 and conformal invariance.
 6. **Mildly context-sensitive expressivity is both achieved and stable.**
 7. **The Conservative Obstruction Theorem operates at full force**, with the Fock extension as its minimal resolution.
 8. **LayerNorm is accommodated** — via the $\gamma_\mathrm{eff}$ mechanism rather than treated as an obstacle.

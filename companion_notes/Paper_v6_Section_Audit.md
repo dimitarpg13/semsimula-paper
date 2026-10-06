@@ -816,9 +816,22 @@ thought, not typing.
 - **§20.3** (`ssec:fock-parf`): the implemented blend, the threshold bound, and the dead last-layer destruction gate.
 - **A3:** new table `tab:expidx-dp`.
 
-**Renumbering consequence (pending, at v6.1 publication).**
-- **Remarks shift by one from Remark 60:**
-  - "Refinement invariance is a testable precondition" is now **Remark 63** (was 62);
-  - `rem:gen2-gen3` is now **Remark 104** (was 103).
-- **Equations shift by 3 from (126).** Propositions 44–45 and section numbers are unchanged.
-- **The Gen 3 HF cards cite "Remark 62" through the concept DOI.** When v6.1 is published, change it to 63 in `semsimula/hf_model_cards/_ladder/build_cards.py` (the `GATES_TERMS` book sentence), rebuild, and push the four Gen 3 READMEs. Until then v22 is current and the cards are right.
+**Semantic particle type** (companion notes `Single_Particle_Hilbert_Space_in_Semantic_Simulation.md`, `Semantic_Templates_as_Doi_Peliti_Reactions.md`). Built clean: 516 pages, no undefined references.
+- **§2.4:** an unnumbered pointer after Definition 6 — particles agreeing up to position in Σ are of the same *type*, and that is not the aspect type of Definition 4.
+- **§2.6:** Definition 8's deferral now cites `Gueorguiev2022Templates` (new `@unpublished` entry; `manuscripts/PROVENANCE.md` updated from "background material, no BibTeX key").
+- **§3.4** (`subsec:why-signature`): label only, no visible change.
+- **§10.5.2:** new **Definition 60** (`def:particle-type`, p. 100), prose-only so no equation shifts; the vocabulary paragraph; the aspect-type contrast; the inherited-data paragraph; and a closing paragraph naming the template formalism as a candidate source for the reactions.
+- **Notation:** new $\mathcal{V}$ row in the overloaded-symbols table (p. 20).
+
+**Four-note representation pass** (2026-10-05, uncommitted at time of writing). Built clean: **518 pages**, no undefined references, **no renumbering** — all three insertions are unnumbered `\paragraph`s.
+- **§10.5.2, p. 101:** *What the mode functions are, classically* — root densities, the Bhattacharyya reading of the Gram pairing, the Hellinger/Fisher–Rao distance, linear combinations are not mixtures, and the two roles of $\mathcal{H}$.
+- **§10.5.3, p. 105:** *What v3 has to supply, and what it does not* — control-as-particle makes δ a hopping reaction, so the obstruction v3 removes is commutativity of the outcome, not ordering of events.
+- **§10.5.3, p. 106:** *Realisation in a trained architecture* — the gauge channel, LayerNorm forcing rotations, $[U,\Lambda_v]=0$, flagged as untested.
+
+**Renumbering consequence (pending, at v6.1 publication).** Cumulative over both edits above; the second shifted everything after Definition 60 by one more.
+- **Remarks shift by two from the pre-DP numbering:**
+  - `rem:dp-registers` (*What the trained registers implement*) is **Remark 61** (was 60 when first added);
+  - "Refinement invariance is a testable precondition" is now **Remark 64** (was 62 pre-DP, 63 after DP);
+  - `rem:gen2-gen3` is now **Remark 105** (was 103 pre-DP, 104 after DP).
+- **Equations shift by 3 from (126)**, unchanged by the particle-type edit, which added no numbered equation. Propositions 44–45 and section numbers are unchanged.
+- **The Gen 3 HF cards cite "Remark 62" through the concept DOI.** When v6.1 is published, change it to **64** in `semsimula/hf_model_cards/_ladder/build_cards.py` (the `GATES_TERMS` book sentence), rebuild, and push the four Gen 3 READMEs. Until then v22 is current and the cards are right.
