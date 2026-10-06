@@ -1033,6 +1033,34 @@ The same applies to `[`, `]`, `{`, `}` inside pipe labels — none are quoted, s
 
 ---
 
+## 25. `\boldsymbol` without braces — always brace the argument
+
+Observed 2026-10-05 in `Single_Particle_Hilbert_Space_in_Semantic_Simulation.md` §1.3: the
+span rendered as raw literal text while four other spans on the same line rendered
+correctly. The cause is not the `$...$` pairing (the line had an even count) but a KaTeX
+parse failure inside one span, after which GitHub falls back to printing the source.
+
+`\boldsymbol` is a font-switch macro and wants an explicit group. The single-token form
+`\boldsymbol\theta` is accepted by LaTeX proper but not reliably by the KaTeX build GitHub
+runs; accents such as `\vec`, `\tilde`, `\hat` and `\bar` are *not* affected and take a
+single token happily.
+
+```latex
+% Bad — single-token argument, whole span falls back to literal text
+$A = (\vec r, l, \boldsymbol\theta)$
+
+% Good — braced argument
+$A = (\vec r, l, \boldsymbol{\theta})$
+```
+
+**Rule:** always write `\boldsymbol{...}` with braces, even for a single symbol. The same
+caution applies to the other font-switch macros (`\mathbf`, `\mathcal`, `\mathfrak`,
+`\mathrm`, `\operatorname`): brace the argument. Note the diagnostic signature — if one
+inline span prints as source while its neighbours on the same line render, suspect a parse
+failure inside that span, not a delimiter-pairing problem.
+
+---
+
 ## Quick reference card
 
 ### KaTeX (Part I)
@@ -1047,6 +1075,7 @@ The same applies to `[`, `]`, `{`, `}` inside pipe labels — none are quoted, s
 | Many `_` in one `$...$` | subscripts disappear | break into shorter expressions |
 | Lone `*` in math (e.g. `R^{*}`), reused later in the doc | "Extra close brace or missing open brace"; fallback text shows `_` where `*` was | use `\ast` (or `\star`) instead of a literal `*` |
 | `\|...\|` in inline math | math context broken | use `\lVert...\rVert` or display block |
+| `\boldsymbol\theta` (no braces) | that one span prints as raw source, neighbours render fine | brace it: `\boldsymbol{\theta}` |
 | Display line starts with `- `, `+ `, or `* ` (0-3 spaces indent) | becomes bullet point | collapse to one line, or carry the operator to the end of the previous line |
 | `\boxed{...}` multiline with `-` or `+` | bullet inside box | single-line `\boxed{...}` |
 | `\tag{n}` in `$$...$$` | equation renders vertically | remove `\tag`, number in prose |

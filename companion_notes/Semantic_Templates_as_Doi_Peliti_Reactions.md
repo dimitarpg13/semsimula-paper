@@ -96,7 +96,7 @@ $$
 the **average trajectory weight** (Eq. 19) as their ratio, and the firing rule (Eq. 20) as a threshold test:
 
 $$
-\bar w_1 = \frac{w_1}{l_1}, \qquad \text{template } \mathcal{T}_P \text{ is triggered by } S_1 \iff \bar w_1 > \Theta. \qquad (1.3)
+\bar w_1 = \frac{w_1}{l_1}, \qquad \text{template } \mathcal{T}_P \text{ is triggered by } S_1 \iff \bar w_1 \gt \Theta. \qquad (1.3)
 $$
 
 Written geometrically, since $v_{1,t}\,dt = d\ell$ is the arc-length element, (1.2)–(1.3) say
@@ -175,10 +175,10 @@ $$
 \mathrm{BC} = e^{-\kappa^2 d^2} = 1 - \frac{V(d)}{\mathfrak{m}\upsilon^2}, \qquad d = \lVert \mu_p - \mu_q\rVert, \qquad (3.3)
 $$
 
-so the firing rule $\mathrm{BC} > \Theta$ is exactly
+so the firing rule $\mathrm{BC} \gt \Theta$ is exactly
 
 $$
-d \;<\; \frac{1}{\kappa}\sqrt{\ln\tfrac1\Theta} \qquad\text{i.e.}\qquad \frac{d}{x^\ast} \;<\; \sqrt{2\ln\tfrac1\Theta}. \qquad (3.4)
+d \;\lt \; \frac{1}{\kappa}\sqrt{\ln\tfrac1\Theta} \qquad\text{i.e.}\qquad \frac{d}{x^\ast} \;\lt \; \sqrt{2\ln\tfrac1\Theta}. \qquad (3.4)
 $$
 
 **The matching threshold is a binding radius, measured in inflection radii.** It is no longer a free scalar attached to each template: it is fixed by the well that binds the type, through the same $\kappa$ that sets the dynamics.
@@ -227,7 +227,7 @@ the catalytic-creation entry that the Doi–Peliti note's reaction table does no
 (1.3) is a hard gate; (4.2) wants a rate. The two are reconciled by reading the gate as the sharp limit of a rate:
 
 $$
-r_\mathcal{T} = r_0\,\sigma\!\left(\beta\left(\mathrm{BC} - \Theta\right)\right) \;\xrightarrow[\beta\to\infty]{}\; r_0\,\mathbb{1}\!\left[\mathrm{BC} > \Theta\right]. \qquad (4.4)
+r_\mathcal{T} = r_0\,\sigma\left(\beta\left(\mathrm{BC} - \Theta\right)\right) \;\xrightarrow[\beta\to\infty]{}\; r_0\,\mathbb{1}\left[\mathrm{BC} \gt \Theta\right]. \qquad (4.4)
 $$
 
 The manuscript's threshold rule is the $\beta\to\infty$ limit. For a stochastic formalism the finite-$\beta$ version is the natural object, and it is also the differentiable one, which matters if templates are ever to be learned rather than specified. Note that $\Theta$ sets *where* the rate turns on — by (3.4), a radius — while $r_0$ sets *how fast* it fires once on. The manuscript has only the first; Doi–Peliti needs both.

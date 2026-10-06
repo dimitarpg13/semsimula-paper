@@ -65,7 +65,7 @@ identically. The contributions are vectors in the same tangent space and additio
 `ReverseChannel` computes, per token $i$,
 
 $$
-Q_i \;=\; \sum_{k\,\in\,\mathrm{active}} \mathrm{softmax}_k\!\left(\frac{q_i\cdot k_k^{\mathrm{reg}}}{\sqrt{d_k}}\right) v_k^{\mathrm{reg}}, \qquad (2.1)
+Q_i \;=\; \sum_{k \in \mathrm{active}} \mathrm{softmax}_k\left(\frac{q_i\cdot k_k^{\mathrm{reg}}}{\sqrt{d_k}}\right) v_k^{\mathrm{reg}}, \qquad (2.1)
 $$
 
 and adds $Q_i$ to the force in (1.1). Each register contributes a **vector**, through the learned $W_V^{\mathrm{rev}}$.
@@ -75,8 +75,8 @@ and adds $Q_i$ to the force in (1.1). Each register contributes a **vector**, th
 Keep the routing weights and replace what the register contributes: a **group element** instead of a vector. Give register $k$ a generator $A_k$ in the Lie algebra $\mathfrak{g}\subset\mathfrak{so}(d)$, and let the token pick up
 
 $$
-U_i^{(\ell)} \;=\; \exp\!\left(\varepsilon^{(\ell)} \sum_{k\,\in\,\mathrm{active}} w_{ik}^{(\ell)} A_k\right), \qquad
-w_{ik}^{(\ell)} = \mathrm{softmax}_k\!\left(\frac{q_i\cdot k_k^{\mathrm{reg}}}{\sqrt{d_k}}\right), \qquad (2.2)
+U_i^{(\ell)} \;=\; \exp\left(\varepsilon^{(\ell)} \sum_{k \in \mathrm{active}} w_{ik}^{(\ell)} A_k\right), \qquad
+w_{ik}^{(\ell)} = \mathrm{softmax}_k\left(\frac{q_i\cdot k_k^{\mathrm{reg}}}{\sqrt{d_k}}\right), \qquad (2.2)
 $$
 
 with $\varepsilon^{(\ell)}$ the existing per-layer gate (`reverse_channel_scale`), initialised at zero so the model starts exactly where it is today. The state is then transported rather than pushed:
@@ -96,7 +96,7 @@ $$
 and this product depends on the order of the factors precisely when the generators fail to commute, $[A^{(\ell)}, A^{(\ell')}] \neq 0$. Depth is what carries order. To second order in $\varepsilon$,
 
 $$
-U^{(2)}U^{(1)}\left(U^{(1)}U^{(2)}\right)^{-1} = \exp\!\left(\varepsilon^2\bigl[A^{(2)},A^{(1)}\bigr] + O(\varepsilon^3)\right), \qquad (2.5)
+U^{(2)}U^{(1)}\left(U^{(1)}U^{(2)}\right)^{-1} = \exp\left(\varepsilon^2\bigl[A^{(2)},A^{(1)}\bigr] + O(\varepsilon^3)\right), \qquad (2.5)
 $$
 
 so the commutator is both the mechanism and the measurable: §4 uses it as the primary diagnostic.
@@ -123,7 +123,7 @@ $$
 Take the anisotropic well the scale-up runs actually use, with precision $\Lambda_v = D + \sum_{j=1}^{r}\lambda_j u_j u_j^\top$:
 
 $$
-V_v(h) = \mathfrak{m}\upsilon^2\left(1 - \exp\!\left(-\tfrac12 (h-\mu_v)^\top\Lambda_v (h-\mu_v)\right)\right). \qquad (2.8)
+V_v(h) = \mathfrak{m}\upsilon^2\left(1 - \exp\left(-\tfrac12 (h-\mu_v)^\top\Lambda_v (h-\mu_v)\right)\right). \qquad (2.8)
 $$
 
 Under the centred transport (2.3), $h-\mu_v \mapsto U(h-\mu_v)$, so the quadratic form becomes $(h-\mu_v)^\top U^\top\Lambda_v U (h-\mu_v)$ and
@@ -172,7 +172,7 @@ It predicts order-sensitivity where there is currently none, and it should show 
 
 ### 3.1 What causality already does
 
-The trained models restrict the partners of token $t$ to positions $s<t$ (`causal_force=True`) and summarise the prefix through the multi-channel EMAs $\xi_t = \sum_{s\le t}\alpha^{\,t-s}h_s$. The composite map from a token sequence to the final hidden states is therefore already order-dependent: permuting the input changes the output. The book makes exactly this point — the causal models break the permutation symmetry of the framework's force law, and that is where they carry word order.
+The trained models restrict the partners of token $t$ to positions $s\lt t$ (`causal_force=True`) and summarise the prefix through the multi-channel EMAs $\xi_t = \sum_{s\le t}\alpha^{\,t-s}h_s$. The composite map from a token sequence to the final hidden states is therefore already order-dependent: permuting the input changes the output. The book makes exactly this point — the causal models break the permutation symmetry of the framework's force law, and that is where they carry word order.
 
 ### 3.2 The precise reach, and the precise limit
 
@@ -212,14 +212,14 @@ $$
 
 $\Omega \equiv 0$ identically for the additive channel, which makes it a clean null rather than a baseline to beat. A gauge arm whose learned generators commute would also report $\Omega\approx0$, and that is the honest failure signal of §2.6.
 
-**Targets.** F4 accuracy against $n$; F5 accuracy against $\lvert w\rvert$, reported separately for $\lvert w\rvert\le M$ and $\lvert w\rvert>M$, since §3.2 says only the second is discriminating. **Guard:** OpenWebText perplexity, to detect the case where order-sensitivity is bought by damaging ordinary language modelling.
+**Targets.** F4 accuracy against $n$; F5 accuracy against $\lvert w\rvert$, reported separately for $\lvert w\rvert\le M$ and $\lvert w\rvert\gt M$, since §3.2 says only the second is discriminating. **Guard:** OpenWebText perplexity, to detect the case where order-sensitivity is bought by damaging ordinary language modelling.
 
 **What falsifies what.**
 
 | Outcome | Reading |
 |---|---|
-| $\Omega>0$ and F4 improves at matched $M$ | Route A is doing what it was built to do |
-| $\Omega>0$ and F4 flat | Non-commutativity is realizable but not sufficient; the bottleneck is elsewhere |
+| $\Omega\gt 0$ and F4 improves at matched $M$ | Route A is doing what it was built to do |
+| $\Omega\gt 0$ and F4 flat | Non-commutativity is realizable but not sufficient; the bottleneck is elsewhere |
 | $\Omega\approx0$ after training | The model declines the group structure; Route A is not refuted but is not engaged either |
 | Both arms equal on F5 for $\lvert w\rvert\le M$ | Expected, and not evidence either way — this is the capacity regime of §3.2 |
 | Arm (iii) matches arm (ii) everywhere | Capacity, not algebra, was the operative variable; prefer Route B |
