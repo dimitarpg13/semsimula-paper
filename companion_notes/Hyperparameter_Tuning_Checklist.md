@@ -715,6 +715,7 @@ The alternative Fock mechanism that is bosonic and Poisson-mean by construction,
 - [ ] **Probe:** F3.1's Cell 0 plus `POISSON_MODES = 64`, `PROBE_MAX_STEPS = 3_000` (about 1.5 h). It goes after G3′, or in parallel if a second Colab GPU is free. Gate: at most 126.4 at step 3,000 (at least 1% better than F3.1's 127.73), with pm_ clip hits under 5%.
 - [ ] **Full run** if the gate passes. Clear `PROBE_MAX_STEPS` and the same run continues, after the FO 2×2 unless moved.
 - [ ] **Post-run:** the repetition test, the depth signs and the DP3 rerun (protocol §5.15). Then the book: Remark 61 and §10.5.2, according to the decision rule.
+- [ ] **Refinement readiness (added 2026-10-06, before the probe):** 6b-7 Gate 3 on the full run's best checkpoint, N = 3 at fixed T, policy `hold`. Pre-registered RR-PM1: at or below F3.1's +143% (60%); RR-PM2: below +600% (85%). `pm_depth` follows `_fom_policy_index` like `depth_code`, so no code change; φ is token-accumulated and unaffected by refinement. If SR2's E1 holds first, the full run goes on the corrected base (`LOWRANK_DAMPED_FLOW = True`, tag `pm64_sr2`), the author's call before launch. Protocol §5.15.
 
 **GPU queue (2026-10-05):**
 1. G3′ (running).
