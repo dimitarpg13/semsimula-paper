@@ -16,7 +16,7 @@ through the ladder notebook's own Cells 0-5b:
 
 plus validation PPL on the local cache, as a load check.
 
-Usage: python3 causality_check_checkpoint.py OUT_DIR FOLDER [REVERSE_CHANNEL VPHI XI [MECH RELAX_GRAD]]
+Usage: python3 causality_check_checkpoint.py OUT_DIR FOLDER [REVERSE_CHANNEL VPHI XI [MECH RELAX_GRAD [rfqk]]]
   e.g. ... OUT semsimula_..._norc_vplive_xilive_..._noattn False live live
 """
 import math, sys
@@ -36,6 +36,13 @@ VP = sys.argv[4] if len(sys.argv) > 4 else 'default'
 XI = sys.argv[5] if len(sys.argv) > 5 else 'default'
 MECH = sys.argv[6] if len(sys.argv) > 6 else 'none'
 RG = sys.argv[7] if len(sys.argv) > 7 else 'default'
+# Optional 9th argument 'rfqk': G3' (protocol SS5.10), the hardened exchange
+# field -- RELAX_ATTN_QK_NORM = True and RELAX_FIELD_CLIP = 0.3 in Cell 0.
+if len(sys.argv) > 8 and sys.argv[8] == 'rfqk':
+    for _old, _new in (("RELAX_ATTN_QK_NORM          = False", "RELAX_ATTN_QK_NORM          = True"),
+                       ("RELAX_FIELD_CLIP            = None", "RELAX_FIELD_CLIP            = 0.3")):
+        assert G.cells['Cell 0:'].count(_old) == 1, _old
+        G.cells['Cell 0:'] = G.cells['Cell 0:'].replace(_old, _new)
 
 
 def logits_of(model, x):

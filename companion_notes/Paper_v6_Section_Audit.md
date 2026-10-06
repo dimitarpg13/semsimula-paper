@@ -835,3 +835,12 @@ thought, not typing.
   - `rem:gen2-gen3` is now **Remark 105** (was 103 pre-DP, 104 after DP).
 - **Equations shift by 3 from (126)**, unchanged by the particle-type edit, which added no numbered equation. Propositions 44–45 and section numbers are unchanged.
 - **The Gen 3 HF cards cite "Remark 62" through the concept DOI.** When v6.1 is published, change it to **64** in `semsimula/hf_model_cards/_ladder/build_cards.py` (the `GATES_TERMS` book sentence), rebuild, and push the four Gen 3 READMEs. Until then v22 is current and the cards are right.
+
+**Gate-clipping disclosure** (`rem:gate-clipping`, §27, `18_riemannian_geometry.tex`): updated to the Gen 3 figures, 2026-10-05.
+- Gate is the top pre-clip group on 86–95% of logged steps, at a median 17–26× its threshold.
+- Its magnitude falls in every live-gradient model.
+- C2: |m|/√v of 0.020–0.045, with the exact parameter map.
+- New fourth bound, C1: perplexity rises monotonically above the trained gate.
+- The "open test" sentence is removed, since C1 closes it.
+
+Built clean at 514 pages, with no undefined references, on the laptop where it was made, before the particle-type and four-note edits above were merged in. It adds no numbered items, so the renumbering above is unchanged. Rebuild once the two laptops' `semsimula` repos are reconciled.

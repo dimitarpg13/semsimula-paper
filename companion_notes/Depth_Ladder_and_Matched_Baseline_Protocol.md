@@ -587,6 +587,24 @@ question about λ > 1, which has never been measured.
   more than it would. A null in C1 closes the question; a hit in C1 only
   licenses C4 and then C5.
 
+**C1 scored on Gen 3 G2, 2026-10-05: prediction HIT; the question is closed.** Script `debug/c1_c2_g2.py` and its output. The gate is scaled through its parameter, since 6b-11's buffer method cannot exceed λ = 1. The tokens are 6b-11's (4 × 4 × 512).
+
+| λ | PPL | against λ = 1 |
+| --- | ---: | ---: |
+| 3.0 | 3,019.20 | +5,255% |
+| 2.0 | 1,172.45 | +1,980% |
+| 1.5 | 233.60 | +314% |
+| 1.25 | 78.56 | +39% |
+| 1.1 | 58.64 | +4.0% |
+| **1.0** | **56.38** | 0 |
+| 0.9 | 58.08 | +3.0% |
+| 0.5 | 102.94 | +83% |
+| 0.0 | 246.72 | +338% |
+
+- **Perplexity rises monotonically above λ = 1,** and also below it: the trained gate sits at a sharp inference optimum.
+- **Consistency check:** the λ = 1 and λ = 0 values reproduce 6b-11's exactly.
+- **This is the null that closes the question.** The clip did not hold the gate below the value the model prefers, so C4 and C5 are not licensed.
+
 ---
 
 #### C2 — the Adam realised-step audit (FREE, minutes; partial result in hand)
@@ -610,6 +628,11 @@ the parameter-index-to-name map was inferred by numel and two states match.
 - **Reading:** if the heavily-clipped groups show the same `|m|/√v` as
   unclipped ones, Adam is absorbing the rescale and the clip is cosmetic for
   the endpoint.
+
+**C2 finished on Gen 3 G2, 2026-10-05: the clip is cosmetic for the endpoint.** The map is exact: Cell 6's `split_decay_params` ordering, checked shape by shape over 95 tensors.
+- **The gate (`reverse_channel_scale`) reads |m|/√v of 0.0446 and 0.0204,** median 0.033, against a median of about 0.15 for the other groups. Its gradient cancels from step to step, so it is not being throttled.
+- **The heavily clipped reverse-channel weights** (threshold 0.1) read a median of 0.153, the same as the unclipped V_θ (0.154), ξ (0.153) and the score head (0.164). Adam absorbs the rescale.
+- **Side finding:** the last layer's destruction gate (`destruction_gates.1`) has no optimizer state at all. It never received a gradient, consistent with DP (§5.14).
 
 ---
 
@@ -3150,6 +3173,51 @@ The step-32,500 audit printed honest/standard PPL as nan, while its future pertu
 
     Predicted: the gradient norm stays flat (within ±25% of its 5,000-step value) through the stable phase, called at 70%. Settled ≤ 52.1, i.e. the exchange field adds value once hardened, called at 50%. Code: a QK-norm switch on `XiRoutedConservativeAttention`, off by default and verified bit-identical. It is not gating the v6 abstract.
 
+    **G3′ scored, 2026-10-06.** Log `~/Downloads/L2_arm_attnpot_rfqk_32500steps_output.txt`.
+
+    | measure | value |
+    | --- | --- |
+    | settled (last three evals: 52.83, 53.05, 52.81) | **52.90** |
+    | best | 50.97 at step 31,000 |
+    | SCAF | CLEAN at all seven audits (the final audit prints nan, as G2's and G3's did) |
+    | against G2 (53.12) | −0.4%, within eval noise |
+    | against G3 (54.21) | −2.4% |
+
+    - **Settled ≤ 52.1 (50%): MISS.** The mid-run projection, 52.4–52.7, was close.
+    - **The key line, whether the exchange field adds value once hardened: NO.** QK-norm and the clip recover G3's loss against G2, but the field then adds nothing measurable over the model without it.
+    - **Gradient flat within ±25% of the step-5,000 value (70%): MISS.** The field's group norm, read whenever it is the largest group, rises from 0.43 (steps 7,500–10,000) to 0.82 (22,500–25,000), about +90% across the stable phase, then eases to 0.65–0.74 in the decay. This is consistent with the observation recorded before the result: QK-norm caps the routing logits but not W_v's growth.
+    - **Eval noise near the end** is about ±2 PPL between consecutive evals (50.97 at step 31,000, then 52.83–53.05). The three L=2 Fock arms, G2, G3 and G3′, settle within 2.5% of each other.
+    - **G3′ diagnostics, 2026-10-06.** Outputs are in `~/Downloads/Cell-6b-*`, all on G3′'s best checkpoint.
+
+      | measure | G3′ | G3 | G2 | F3.1 | L=4 |
+      | --- | ---: | ---: | ---: | ---: | ---: |
+      | 6b-6, exchange field off (λ = 0) | +26.0 PPL (+51%) | +29.5 (+56%) | — | — | — |
+      | 6b-7 Gate 1, velocity reset | +34% | +49% | +33% | +34% | +55% |
+      | 6b-7 Gate 2, N = 3 at fixed Δt | +441% | +325% | +51% | +92% | +41% |
+      | **6b-7 Gate 3, 1.5× refinement** | **+115%** | +1,342% | +1,274% | +143% | +216% |
+      | 6b-8, reverse channel off | +291% | +394% | +300% | — | — |
+      | 6b-8, register bank frozen at initialisation | **+2,280%** | +16.7% | +24.0% | — | — |
+      | 6b-9, R(geo) | 1.050 | 1.068 | — | — | — |
+      | 6b-12, near-geodesic tokens | 0.0% | 0.0% | — | — | — |
+      | 6b-13, θ median: layer 0 / layer 1 / pooled | 2.01 / 3.40 / 2.29 | 1.91 / 3.00 / 2.07 | 2.94 / 4.62 / 3.40 | — | — |
+
+    - **The headline is refinement.** G3′ is the most refinement-ready model in the programme: +115% at 1.5× the steps, against +1,274–1,342% for its L=2 Fock siblings, and better than both F3.1 (+143%) and L=4 (+216%). Its layer-1 θ (3.40) still crosses π under refinement, which is one more case against the π account (SR-π.3).
+    - **It is also a different solution.** Freezing the register bank at initialisation costs +2,280%, against +17–24% for G3 and G2: G3′ relies on accumulated register content far more than its siblings. Extension (Gate 2) is worse than G3's.
+    - **The exchange field remains load-bearing at inference** (+51% when removed), while adding nothing measurable over G2 when trained in (§ G3′ scored).
+    - **One seed.** The routing hardening (QK-norm plus the 0.3 field clip) is the only difference from G3, so the change in refinement is attributable to it within this pair. It may not survive replication.
+    - **Pre-registered 2026-10-06, before the checkpoints are downloaded: SR-π.4b.** The leading descriptive suspect for the Fock arms' refinement failure is the size of the layer-0 register increment (SR-π.4: 8–9× the state in G2 and G3, 1.3× at L=4). If it is the cause, G3′, which refines well, should have a small one.
+      - **Prediction:** G3′'s layer-0 increment / state is 3.0 or below (`debug/sr_pi4_step_size.py` run on G3′), called **55%**.
+      - **Miss:** a refinement-ready model with a large increment rules out increment size as the cause.
+    - **Local checks on the downloaded folder, 2026-10-06:**
+      - **Independent causality check: CLEAN.** Future perturbation is exactly 0 at five cut points, batch independence is exact, and the prefix-only leak tax is −1.4e-4 nats. The local validation PPL is 52.17 (`causality_check_checkpoint.py … rfqk`; output in the run's results folder).
+      - **Exchange-field probe** (`debug/exchange_field_probe_G3prime_output.txt`), step 500 → best:
+        - the per-head logit scales settled at 11.6–21.7 (init 14.3), so no head approached the ceiling of 100;
+        - layer-1 routing entropy is 0.55–0.75 of uniform, and max |score| is 10–20 against G3's 23–37: QK-norm bounded the logits as designed;
+        - the field's share of layer 1's conservative force is 0.90 (G3: 0.92);
+        - the field's offline gradient rose 0.36 → 2.46, 6.9× (G3: 12×), dominated by W_v (0.11 → 2.41).
+        - The W_q/W_k norms still grew, but under QK-norm the scores no longer depend on them.
+      - **SR-π.4b: MISS.** G3′'s layer-0 register increment is **7.8×** the state (layer 1: 0.98×), as large as G2's 9.2× and G3's 8.3×. Yet G3′ refines best of all the arms. **The size of the register increment is ruled out as the cause of the Fock arms' refinement failure.** The remaining difference between G3′ and G3 is the routing hardening. Its measured effects are bounded routing logits and a far larger dependence on accumulated register content (frozen bank +2,280%). Which of these makes the trajectory refinable is the open question.
+
     **Mid-run reading, step 14,500 of 32,500 (2026-10-05, about 8.3 h left).**
 
     | step | G3′ | G3 | G2 | G3′ / G3 | G3′ / G2 |
@@ -3645,6 +3713,86 @@ Both must hold for the full run. If the probe passes, clear `PROBE_MAX_STEPS` an
 - **Full run within 1% of F3.1:** the bosonic mechanism is trainable but adds nothing over ξ-conditioned V_θ at this scale.
 
 **Caveat recorded in advance.** With a coupling linear in φ, no measurement can show bosonic *fluctuations*; what is bosonic is the structure (shared modes, occupation without a cap, an exact immigration–death mean). A sampled variant, drawing n ~ Poisson(φ) in training, is the follow-up that would make the statistics consequential.
+
+### 5.16 F0: is there a shared floor near 50 PPL? The stable-phase extrapolation — **pre-registered 2026-10-06, before any fit**
+
+**Why.** Among the L=2 models with the register path, G2 (53.12), G3 (54.21) and G3′ (52.90) settle within 2.5% of each other, whatever else is switched on. L=4 Fock (50.10) and the 8-layer matched GPT-2 (49.81) end near 50. Is the floor set by depth, or by what every model shares: d = 384, the untied head and 532M tokens?
+
+**Measurement** (`debug/f0_floor_fit.py`, CPU):
+- **Fit** L(t) = L∞ + A·t^(−α), in validation loss (nats), to each model's evals in the constant-learning-rate stable phase: steps 3,000 to 21,000 inclusive, every 500 steps, ending before the WSD decay at 21,125.
+- **Models:** F3.1, G2, G3, G3′ and L=4 Fock. All five share the identical WSD schedule, learning rate, batches and token budget.
+- **Uncertainty:** a 90% interval on L∞ from 2,000 residual-bootstrap refits. A fit is unidentified if its L∞ interval is wider than 0.3 nats, or if α runs into a bound.
+- **The matched GPT-2 is excluded from the comparison.** It used a cosine schedule (6e-4 decaying from step 2,000) with no constant-rate phase, so a stable-phase L∞ is not defined for it, and a fit to its decaying curve would be biased low. It is reported descriptively only.
+- **What it reads.** These are constant-learning-rate asymptotes, not decayed ones: the WSD decay adds a further drop of its own. The comparison is between models, not against settled values.
+
+**Predictions:**
+
+| | prediction | called |
+| --- | --- | --- |
+| P1 | G2, G3 and G3′ have L∞ within 0.05 nats (about 5% in PPL) of each other | 65% |
+| P2 | the L=2 Fock models' L∞ are above L=4's by more than their combined 90% intervals (a depth-set floor) | 45% |
+| P3 | F3.1's L∞ is above the L=2 Fock models' by more than the intervals | 60% |
+| P4 | at least one fit is unidentified (the window is short and the eval noise is about ±2 PPL) | 50% |
+
+**Decision rule.**
+- **P2 holds:** the floor is set by depth at L=2. F1, the doubled token budget, then asks whether L=2's floor moves with data.
+- **P2 fails, with identified fits:** the L=2 and L=4 models extrapolate to a common floor, so the floor is shared (budget or width). F1 and F2 test which.
+- **The fits are unidentified:** F0 is inconclusive, and F1 is the test.
+
+**F0 scored, 2026-10-06.** `debug/f0_floor_fit.py` and its output and JSON; 37 evals per model.
+
+| model | L∞ (nats) | 90% interval | PPL∞ | PPL interval | α | identified | PPL at step 21,000 |
+| --- | ---: | --- | ---: | --- | ---: | --- | ---: |
+| F3.1 | 3.256 | [2.209, 3.636] | 25.9 | [9.1, 37.9] | 0.24 | **no** | 71.81 |
+| G2 | 3.339 | [2.965, 3.549] | 28.2 | [19.4, 34.8] | 0.33 | **no** | 63.61 |
+| G3 | 3.898 | [3.805, 3.967] | 49.3 | [44.9, 52.8] | 0.61 | yes | 65.22 |
+| G3′ | 3.875 | [3.772, 3.944] | 48.2 | [43.5, 51.6] | 0.62 | yes | 63.45 |
+| L=4 Fock | 3.763 | [3.661, 3.839] | 43.1 | [38.9, 46.5] | 0.60 | yes | 60.80 |
+| GPT-2, cosine (descriptive only) | 3.557 | [3.434, 3.647] | 35.0 | [31.0, 38.4] | 0.45 | yes | 56.35 |
+
+- **Scoring:**
+  - **P1 (the L=2 Fock models agree within 0.05 nats): MISS,** spread 0.56 nats. It is driven by G2's unidentified fit; the two identified L=2 fits, G3 and G3′, agree within 0.023.
+  - **P2 (a depth-set floor): MISS.** The identified L=2 intervals overlap L=4's, narrowly: G3's lower bound is 3.805 against L=4's upper bound of 3.839.
+  - **P3 (F3.1 above the Fock models): MISS,** since F3.1's fit is unidentified.
+  - **P4 (some fit unidentified): HIT.** F3.1's and G2's intervals are 1.4 and 0.58 nats wide: their stable-phase curves do not pin the asymptote down.
+- **Reading under the decision rule: inconclusive, and F1 is the test.**
+  - **What it supports is relative only.** Fitted the same way on the same window and schedule, G3 and G3′ extrapolate to a constant-learning-rate asymptote about 11% above L=4's (about 48–49 against about 43 PPL), with intervals that just overlap. That hints at a depth dependence. It is not a floor.
+  - **It does not support any absolute floor for L=2, for four reasons** (corrected 2026-10-06 after an overstatement in discussion):
+    1. Only G3 and G3′ are identified; G2's and F3.1's fits leave much lower asymptotes possible.
+    2. L∞ is the asymptote at constant learning rate. The final WSD decay removes that rate's noise: in G3′ it took the loss from 63.45 at step 21,000 to 52.90 settled. A longer run that decays at the end would land well below L∞.
+    3. Extrapolating a three-parameter fit far beyond its sixfold window is unreliable, because L∞ and α trade off.
+    4. A much longer run would also be re-tuned (learning rate, schedule) and would reach a tokens-per-parameter regime these runs never see.
+  - So nothing here says what an L=2 model reaches at, say, 8B tokens. Whether L=2 levels off sooner than L=4 is what F1 measures directly.
+- **GPT-2** is not compared: its cosine curve is not a constant-rate curve.
+
+### 5.17 W1: the matched GPT-2 on the ladder's WSD schedule — **pre-registered 2026-10-06, before the run**
+
+**Why.**
+- **The schedules differ.** The published matched GPT-2 (49.81 settled) used a cosine schedule: warmup to step 2,000, then decay from 6e-4 to 6e-5 throughout. Every Fock arm used WSD: warmup over 5%, constant to 65%, then a cosine decay.
+- **So every GPT-2 comparison mixes architecture with schedule.** That includes "L=4 reaches parity with GPT-2" (50.10 against 49.81). F0 (§5.16) also could not compare GPT-2, since its curve has no constant-rate phase.
+- **W1 removes the schedule difference** for about 2.5 GPU hours, and is a prerequisite for a clean L=8 comparison.
+
+**The run.**
+- `colab_matched_gpt2_baseline_openwebtext.ipynb` with `LR_SCHEDULE = 'wsd'`; everything else at the published baseline's values (d = 384, L = 8, tied, peak 6e-4, floor 6e-5, weight decay 0.1, batch 32 × 512, 32,500 steps).
+- The schedule's shape is the only change. The tag `_wsd` gives it its own folders.
+- **Verified 2026-10-06:**
+  - with the default, the tag is unchanged and the schedule is identical to HEAD at all 32,500 steps;
+  - with `wsd`, the schedule equals the Fock ladder's formula (same peak and floor) at every step.
+
+**Predictions:**
+
+| | prediction | called |
+| --- | --- | --- |
+| W1.1 | settled PPL within −3% to +2% of the cosine baseline (48.3–50.8) | 70% |
+| W1.2 | settled PPL at or below the cosine baseline's 49.81 | 55% |
+| W1.3 | the F0 fit on its stable phase (steps 3,000–21,000) is identified | 75% |
+| W1.4 | that fit's L∞ lies below L=4 Fock's 90% interval (under 3.661 nats) | 50% |
+
+**Decision rule.**
+- **Within ±2% of 49.81:** the "parity at equal tokens and width" reading of L=4 is robust to the schedule, and the book's sentence stands.
+- **More than 2% better:** the published parity was partly a schedule effect in Fock's favour. The book's L=4 comparison is restated against the WSD baseline, and the cards updated.
+- **More than 2% worse:** WSD at this peak suits GPT-2 less well. The cosine baseline stays as the reference, and the L=8 comparison uses whichever schedule is better for GPT-2, stated as such.
+- **Optional W2:** the same run at the ladder's peak learning rate (1.2e-3, tag `_wsd_lr0p0012`) separates peak from shape. Queued, not scheduled.
 
 ## 6. Open risks
 

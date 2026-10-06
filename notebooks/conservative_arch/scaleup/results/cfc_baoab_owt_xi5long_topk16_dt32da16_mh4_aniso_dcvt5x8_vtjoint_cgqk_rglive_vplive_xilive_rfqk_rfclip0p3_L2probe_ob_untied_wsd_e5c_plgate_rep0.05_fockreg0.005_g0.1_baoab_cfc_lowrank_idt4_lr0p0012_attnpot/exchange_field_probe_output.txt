@@ -1,0 +1,21 @@
+
+== G3p: tag ...rglive_vplive_xilive_rfqk_rfclip0p3_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_attnpot
+   relax_field H=8 d_k=48 qk_norm=True; checkpoints: best, step500_best
+-- best (step 31000, val_ppl 50.96970998810521)
+   spectral norm W_q [7.49, 8.22, 10.86, 7.21, 8.96, 8.26, 7.93, 9.40]  W_k [7.39, 7.37, 7.56, 8.14, 7.92, 7.71, 7.32, 7.62]
+   logit scale sigma_h [20.03, 21.23, 14.28, 14.07, 21.73, 19.42, 19.28, 11.61]  (ceiling 100; at ceiling: 0 of 8)
+   call 0: entropy/log(t) [0.75, 0.75, 0.68, 0.74, 0.78, 0.71, 0.75, 0.70]  max weight [0.09, 0.09, 0.14, 0.09, 0.08, 0.11, 0.08, 0.12]
+           score std [2.35, 2.12, 2.33, 2.10, 1.92, 2.62, 2.32, 2.40]  max|score| [18.72, 19.13, 12.63, 12.75, 18.02, 18.02, 18.00, 10.95]  field share median 0.328 p90 0.427
+   call 1: entropy/log(t) [0.61, 0.61, 0.68, 0.62, 0.55, 0.59, 0.62, 0.75]  max weight [0.23, 0.25, 0.18, 0.22, 0.28, 0.30, 0.23, 0.18]
+           score std [2.55, 2.70, 2.46, 2.50, 2.76, 2.80, 2.56, 1.95]  max|score| [17.66, 17.56, 11.15, 11.53, 19.93, 16.75, 16.54, 9.90]  field share median 0.903 p90 0.970
+   OFFLINE grad (LM loss, 2 batches x 2 x 512): relax_field group 2.4571 (sd 0.1640); total 3.9227; logit_scale 0.0179, W_q 0.2132, W_k 0.2086, W_uq 0.3724, W_v 2.4101
+-- step500_best (step 500, val_ppl 453.4399063878158)
+   spectral norm W_q [0.64, 0.63, 0.65, 0.65, 0.68, 0.64, 0.64, 0.61]  W_k [0.63, 0.60, 0.62, 0.67, 0.63, 0.62, 0.61, 0.62]
+   logit scale sigma_h [14.50, 14.35, 14.44, 14.46, 14.55, 14.34, 14.42, 14.41]  (ceiling 100; at ceiling: 0 of 8)
+   call 0: entropy/log(t) [0.56, 0.61, 0.55, 0.58, 0.57, 0.54, 0.59, 0.57]  max weight [0.23, 0.21, 0.24, 0.23, 0.24, 0.24, 0.22, 0.22]
+           score std [3.07, 2.87, 3.03, 2.94, 3.15, 3.00, 2.88, 2.97]  max|score| [12.85, 11.26, 11.68, 11.95, 12.21, 12.44, 11.85, 13.03]  field share median 0.280 p90 0.426
+   call 1: entropy/log(t) [0.56, 0.57, 0.58, 0.59, 0.58, 0.55, 0.57, 0.56]  max weight [0.20, 0.22, 0.20, 0.18, 0.21, 0.21, 0.20, 0.21]
+           score std [4.44, 3.87, 4.02, 3.92, 4.55, 4.00, 3.68, 4.24]  max|score| [13.16, 12.43, 12.32, 12.17, 12.90, 12.66, 12.38, 13.00]  field share median 0.995 p90 1.011
+   OFFLINE grad (LM loss, 2 batches x 2 x 512): relax_field group 0.3552 (sd 0.0332); total 1.6808; logit_scale 0.0029, W_q 0.2350, W_k 0.1660, W_uq 0.1749, W_v 0.1123
+
+wrote /private/tmp/claude-501/-Users-dimitargueorguiev-git-ml-semsimula-paper/3aa3f150-5d21-482f-b102-acdf6da87bf2/scratchpad/efp/exchange_field_probe.json

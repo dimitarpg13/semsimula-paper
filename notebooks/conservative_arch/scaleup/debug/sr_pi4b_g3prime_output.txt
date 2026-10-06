@@ -1,0 +1,8 @@
+
+== G3'  (L=2, dt=4; Gate 3 at 1.5x: +115%)
+   layer  cons_rel  inc_rel  nonlin0   nonlin  (medians; projections per layer)
+       0     1.369    7.832    4.345    0.482  (2)
+       1     0.407    0.981    0.440    0.683  (2)
+   mean over layers: nonlin 0.582; cons_rel + inc_rel 5.294
+
+

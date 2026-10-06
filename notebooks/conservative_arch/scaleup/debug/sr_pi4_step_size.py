@@ -31,7 +31,10 @@ ARMS = {  # name: (folder, Cell 0 replacements, Gate 3 at 1.5x from 6b-7, %)
     'L=4 Fock live': (L4_F, VP.LIVE + (("LADDER_L         = 2 ", "LADDER_L         = 4 "),), 216),
     'G2': (VP.G2_F, VP.CONFIGS['G2'][1], 1274),
     'G3': (EF_ARMS['G3'][0], EF_ARMS['G3'][1], 1342),
+    "G3'": (EF_ARMS['G3p'][0], EF_ARMS['G3p'][1], 115),   # SR-pi.4b, added 2026-10-06
 }
+if len(sys.argv) > 2:                                      # e.g. G3' alone
+    ARMS = {k: v for k, v in ARMS.items() if k in sys.argv[2:]}
 
 
 def measure(model, x):

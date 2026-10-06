@@ -634,7 +634,7 @@ adds a point to a curve.
 - [x] **G2** — done 2026-10-04: **53.12** settled, published as `semsimula-ladder-live-owt-d384-l2-none`. P2.2 run to the full length: L=2 Fock-PARFLM `none`, live. **First.** Settles the register mechanism's value (< 57.76) and depth (> 50.10).
 - [ ] **G4** — Cell 6b-10 on run 4, the Gen 2 twin of the L=4 live arm. Runs alongside G2 and takes minutes. Settles whether the L=4 forecastability comes from the live gradients.
 - [x] **G3** — done 2026-10-05: **54.21** settled, 2.1% worse than G2 (key line NO). F3.2: L=2 `attention_potential` with everything live (`rglive` + `vplive` + `xilive`). Settles the exchange field's value against G2. *Running (2026-10-04).* At step 21,700 it trails G2 by about 1.6 PPL, and the exchange field's gradient has grown 0.3 → 0.8 (protocol §5.10, mid-run reading).
-- [ ] **G3′** (F3.2b) — G3's configuration plus QK-normalised exchange-field routing (a clamped logit scale, as in the creation gate's `cgqk`) and a 0.3 clip override for `relax_field`. Predicted: the gradient norm stays flat (70%) and settled ≤ 52.1 (50%). Code: a QK-norm switch on `XiRoutedConservativeAttention`, off by default and verified bit-identical. **After G3 completes, ahead of the FO 2×2.** Not gating v6. *Implemented and verified 2026-10-05 (protocol §5.10): Cell 0 `RELAX_ATTN_QK_NORM = True`, `RELAX_FIELD_CLIP = 0.3` on G3's settings.*
+- [x] **G3′** (F3.2b) *(done 2026-10-06: 52.90 settled, best 50.97. Both predictions missed: settled ≤ 52.1 and gradient flat. −0.4% against G2 is within noise, so the hardened field adds nothing measurable; −2.4% against G3, so hardening recovers G3's loss. Diagnostics, causality check and probe still to run.)* — G3's configuration plus QK-normalised exchange-field routing (a clamped logit scale, as in the creation gate's `cgqk`) and a 0.3 clip override for `relax_field`. Predicted: the gradient norm stays flat (70%) and settled ≤ 52.1 (50%). Code: a QK-norm switch on `XiRoutedConservativeAttention`, off by default and verified bit-identical. **After G3 completes, ahead of the FO 2×2.** Not gating v6. *Implemented and verified 2026-10-05 (protocol §5.10): Cell 0 `RELAX_ATTN_QK_NORM = True`, `RELAX_FIELD_CLIP = 0.3` on G3's settings.*
 - [ ] **G1** — **scheduled, deferred until G2–G4 are in.** A GPT-2 matched on parameters at the same width: d=384, L=22, untied, 77.8M. Width is held at 384 by design: comparisons stay in the same semantic-space dimension, so d=512 was rejected. The author's reservation is that matching the parameter count by depth ignores the model's dynamics and may draw reviewer questions; the run is kept for completeness. GPT-2 notebook Cell 0: `N_LAYERS = 22`, `TIE_EMBEDDINGS = False`. Commit and push the `VARIANT_TAG` folder guard before running it.
 
 ## Scheduled, free — run now: DP-series — what Doi–Peliti process do the trained registers implement? — **opened 2026-10-05** (protocol §5.14)
@@ -651,15 +651,48 @@ adds a point to a curve.
   - §20: the salience sentence;
   - A3: the DP rows.
 
-**Free queue, in order (2026-10-05):**
+**Free queue, in order (updated 2026-10-05):**
 1. ~~DP1–DP3~~ done 2026-10-05.
-2. G4, 6b-10 on run 4 (Colab, minutes).
-3. ~~CB0~~ done 2026-10-05.
-4. SR-π.3.
-5. CG8 on the baselines, once 6b-14 exists.
-6. The overlap diagnostics D1, D2 and E4 (low priority).
+2. ~~CB0~~ done 2026-10-05.
+3. ~~SR-π.3~~ done 2026-10-05: MISS. Its follow-ups SR-π.3b (MISS) and SR-π.4 (derivation, then MISS) are also done (protocol §5.9).
+4. G4, 6b-10 on run 4 (Colab, minutes). The next free item; run it in the same session as the PM1 probe.
+5. The G3′ local checks once its folder is downloaded: the exchange-field probe, the causality check and η.
+6. CG8 on the baselines, once 6b-14 exists.
+7. The overlap diagnostics D1, D2 and E4 (low priority).
 
-The GPU queue is unchanged: G3′ (running), then the FO 2×2, the CB series and the SR series.
+**GPU queue (updated 2026-10-06):**
+1. ~~G3′~~ done: 52.90.
+2. **W1, the matched GPT-2 on WSD** (about 2.5 h; protocol §5.17): `LR_SCHEDULE = 'wsd'` in the GPT-2 notebook.
+3. The PM1 probe (about 1.5 h), with G4 (6b-10 on run 4) in the same session.
+4. The FO 2×2.
+5. **An L=8 Fock live probe, then the full run** (about 5 h + 55 h). It combines SR-π.1, the depth trend, the matched-depth GPT-2 comparison and the floor question; its consolidated pre-registration is still to be written.
+6. The PM1 full run, if gated in.
+7. The CB series.
+8. The SR series: SR2 on F3.1 only.
+
+Queued, unscheduled: F1 (2× tokens), F2 (d = 768), W2 (GPT-2 WSD at 1.2e-3), G1 (parameter-matched GPT-2).
+
+## Queued: is there a shared floor near 50 PPL? — **opened 2026-10-06**
+
+All three L=2 models with the register path settle within 2.5% of each other:
+
+| model | settled |
+| --- | ---: |
+| G2 | 53.12 |
+| G3 | 54.21 |
+| G3′ | 52.90 |
+
+The deeper models end near 50 at the same width and token budget: L=4 Fock at 50.10 and the 8-layer matched GPT-2 at 49.81. Is the floor set by depth, or by what every model shares, namely d = 384, the untied head and 532M tokens? The Fock models see about 7 tokens per parameter, against about 16 for GPT-2.
+
+- [x] **F0 — free, CPU.** *Done 2026-10-06 (protocol §5.16): inconclusive. F3.1's and G2's fits are unidentified. The identified ones give G3 and G3′ a constant-learning-rate asymptote about 11% above L=4's, with overlapping intervals: a hint of depth dependence, not a floor. It says nothing absolute about what L=2 reaches with more tokens (the final decay alone lowers the loss well below L∞). F1 is the test. GPT-2 was excluded: its schedule is cosine.* Fit L(t) = L∞ + A·t^(−α) to each model's stable-phase eval curve (steps 3,000–21,000, before the WSD decay) and compare the L∞ estimates. Pre-register the reading before fitting.
+  - If the L=2 models share an L∞ clearly above L=4's and GPT-2's, depth sets the floor.
+  - If all extrapolate to about the same L∞, it is budget or width.
+  - It runs after the G3′ diagnostics and upload.
+- [ ] **F1 — GPU, about 30 h each, queued.** Double the token budget (65,000 steps) for G2 and the matched GPT-2.
+  - If both improve by similar amounts, it is a budget floor.
+  - If GPT-2 improves and G2 does not, it is an L=2 limit.
+  - Pre-register before running.
+- [ ] **F2 — GPU, most expensive, queued.** Width: L=2 Fock and GPT-2 at d = 768, a direct test of the shared d = 384 bottleneck. Pre-register before running.
 
 ## Scheduled: PM1 — bosonic Poisson-mode registers — **opened 2026-10-05** (protocol §5.15)
 
@@ -803,7 +836,7 @@ Source: `semsimula/docs/Overlap_Distance_in_Semantic_Simulation.md` (§10.5, §1
 
 - [ ] *D3 (PPL against effective rank, across checkpoints) and D4 (the log-det diversity regulariser, λ_det ∈ {0, 1e-3, 1e-2, 1e-1}): **only if D2 shows signal.** D4 would be pre-registered first, on G2's configuration. It is independent of the CB series: CB caps the register path's push, while D4 keeps the registers distinct.*
 
-## TOP PRIORITY: gradient starvation across the ladder — **opened 2026-09-30**
+## CLOSED: gradient starvation across the ladder — **opened 2026-09-30, closed 2026-10-05**
 
 `attention_potential` with its learning signal restored (forward identical,
 `relax_grad_path='live'`) settled at **61.11**, against 80.90 starved and 63.51
@@ -814,20 +847,47 @@ mechanism, and the queued factorial on the same starved convention.
 Full programme, tiers and stop rules:
 [`Gradient_Starvation_Investigation.md`](Gradient_Starvation_Investigation.md).
 
-- [ ] **Tier 0** — offline gradient checks for V_φ, ξ and the score head on the
-      no-exchange and conservative-only checkpoints (free, laptop).
-- [ ] **Tier 1** — `vphi_grad_path` / `xi_grad_path` switches, verified forward-
-      identical, tagged `vplive` / `xilive`.
-- [ ] **Tier 2** — P2.1 conservative-only live (≤ 154.1 at step 3,000), then
-      P2.2 no-exchange live (≤ 137.1). ~1.5 GPU h each.
-- [ ] **Tier 3/4** — full runs and consolidation, only if Tier 2 moves.
+- [x] **Tier 0** (done 2026-09-30): offline gradient checks for V_φ, ξ and the score head on the no-exchange and conservative-only checkpoints. Starvation confirmed: exactly 0 gradient reaches earlier tokens through V_φ and ξ.
+- [x] **Tier 1** (done 2026-10-01): `vphi_grad_path` / `xi_grad_path` switches, verified forward-identical, tagged `vplive` / `xilive`.
+- [x] **Tier 2** (done 2026-10-01 to 10-04):
+  - P2.1, conservative-only live: **127.73 at step 3,000, a MOVE** (criterion ≤ 154.1; parent 158.09, −19.2%).
+  - P2.2, no-exchange live: run in full as G2.
+- [x] **Tier 3/4** (done 2026-10-02 to 10-05): the full runs and their consolidation.
+  - F3.1: **57.76**.
+  - L=4 Fock live: **50.10**, parity with GPT-2 49.81.
+  - G2: **53.12**.
+  - G3: **54.21**.
+  - All four are published on Hugging Face as Gen 3.
+  - Consolidated in book v6, where the detached-source readings are withdrawn (Remark 103, `rem:gen2-gen3`).
 
-**Paused behind it:** D1, `splm-multixi`, `fock-splm`, and any restatement of
-ladder numbers in the cards or the book.
+**Closed 2026-10-05.** The live-gradient (Gen 3) convention is now the default for every new arm.
+
+**Was paused behind it, now released:**
+- **`splm-multixi`, `fock-splm`:** marked "moved to Gen 3" and unscheduled. Re-queue only if their questions remain open.
+- **D1:** its premise, "depth does not pay", was a Gen 2 reading. Under live gradients L=4 is 5.7% better than L=2, so D1 needs re-justifying before it is scheduled.
+- **Restating ladder numbers** in the cards and the book: done (Gen 3 cards, book v6).
 
 ---
 
-## Agenda: the D-series — why depth does not pay — **2026-09-28**
+## SUPERSEDED: the D-series — why depth does not pay — **2026-09-28, superseded 2026-10-05**
+
+> **Superseded by Gen 3 (2026-10-05).** The premise below (L=4 behind L=2: 71.75 against 66.98) was measured under the detached-source (Gen 2) convention, whose readings book v6 withdraws (Remark 103). Under live gradients **depth pays**:
+>
+> | | L=2 | L=4 |
+> | --- | --- | --- |
+> | Gen 3 Fock live, settled | 53.12 (G2) | **50.10**: 5.7% better, at 1.9× the cost per step |
+> | Gen 2, settled | 66.98 | 71.75 |
+>
+> So the "interior optimum" was an artefact of gradient starvation. Status of each item:
+>
+> - **D1** (L=4 at fixed dt = 4, T = 16): no longer motivated as a repair. The question it would still answer, whether T = 8 is saturated, is legitimate but low priority. It needs its own Gen 3 pre-registration before any GPU time. Unscheduled.
+> - **D2** (loosen `depth_code`'s clip): its motivation is gone, and it is still blocked by the clip-tag defect below. Unscheduled.
+> - **D3, D4:** withdrawn. Both were contingent on D1–D2 failing.
+> - **"Back to the factorial":** superseded. The V_φ × Fock comparison on the starved convention is replaced by the Gen 3 ladder (F3.1 57.76 against G2 53.12 at L=2, with V_φ and ξ live).
+>
+> **The blocking defect below stays open as general hygiene.** It applies to any run that changes a clip threshold. The two new clip knobs differ: `RELAX_FIELD_CLIP` reaches the tag (`rfclip…`), but `POISSON_MODE_CLIP` does not, so only the default 0.3 is collision-safe.
+
+**Original agenda, kept for the record:**
 
 L=4 at matched T came in behind L=2 **on train as well as validation**, so it
 is a fitting problem, not a generalisation one. At fixed T = 8 the ladder now
@@ -889,6 +949,21 @@ and settled 20.8% worse (80.90 vs 66.98). Capacity is not a free axis.
 
 ## Open: are the per-group clip thresholds tuned? — **2026-09-28**
 
+> **Re-measured on Gen 3 (2026-10-05): the confound persists and is somewhat stronger.** Source: the Cell 6 logs and the step-500 and best checkpoints.
+>
+> | arm | reverse_channel_scale is the top pre-clip group | median pre-clip norm | tanh(gate), step 500 → best |
+> | --- | --- | --- | --- |
+> | G2 (L=2 Fock) | 93% of logged steps | 1.90 = **19×** the 0.1 threshold | [0.063, −0.054] → [0.018, −0.015] |
+> | G3 (L=2 + exchange field) | 86% | 1.70 = **17×** | [0.052, −0.046] → [0.028, −0.025] |
+> | L=4 Fock | 95% | 2.60 = **26×** | [−0.074, −0.068, −0.071, −0.075] → [−0.003, +0.004, +0.004, −0.022] |
+> | G3′ (to step 14,500) | 84% | 1.0 = 10× | — |
+> | F3.1 (no reverse channel) | 0% | — | — |
+>
+> - **The direction-of-bias argument still holds under Gen 3.** The gate's magnitude falls in every arm (3.5× in G2; 3–20× per layer at L=4, where two layers also change sign), so a clip can only have slowed a decline.
+> - **Book updated for v6.1 (2026-10-05):** `rem:gate-clipping` now carries the Gen 3 figures throughout (17–26×, the gate trajectories, C2's 0.020–0.045, and C1 as a fourth bound). Previously it quoted the Gen 2 figures: "median 10–20×" and "0.061 → 0.017". It should be updated to the Gen 3 ones in v6.1. The |m|/√v bound (C2) was measured on Gen 2 only.
+> - **C1, C2 and C7 are still free and unrun, and can now run on the Gen 3 checkpoints** using the local harness (`debug/cb0_g2.py` already runs 6b-11 on CPU).
+
+
 Every `GRAD_CLIP_OVERRIDES` value was set from L=8/L=16 forensics
 (`depth_code` 0.5 → 0.25 on 2026-08-23 against the L=16 g0.1 OWT run; the
 rest from the step-6435 and step-71194 captures). None was revisited for the
@@ -921,8 +996,8 @@ L=4; C5 (full re-run) only on evidence.
 **Checklist:**
 
 - [x] C0 — gate trajectory across checkpoints
-- [ ] C1 — `R11_LAMBDAS` extended above 1.0; pre-registered: PPL rises
-- [ ] C2 — exact param→group map, then `|m|/√v` per clip group
+- [x] C1 — `R11_LAMBDAS` extended above 1.0; pre-registered: PPL rises. *Done on Gen 3 G2, 2026-10-05: HIT. PPL rises monotonically above λ = 1 (+4% at 1.1, +39% at 1.25, +314% at 1.5); the gate is at its inference optimum, so the question is closed and C4 and C5 are not licensed.*
+- [x] C2 — exact param→group map, then `|m|/√v` per clip group. *Done on Gen 3 G2, 2026-10-05: gate 0.020–0.045 against about 0.15 elsewhere; the clipped reverse-channel weights match the unclipped groups (0.153 against 0.154). The clip is cosmetic for the endpoint.*
 - [ ] C3 — state that joint clipping of a scalar group is exactly an LR cut
 - [ ] C4 — paired 500-step run, threshold 0.1 vs 2.0
 - [ ] C5 — full re-run, only if C1 or C4 separate

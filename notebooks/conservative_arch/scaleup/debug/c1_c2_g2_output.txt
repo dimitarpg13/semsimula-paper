@@ -1,0 +1,36 @@
+C1. G2 best, tanh(gate) per layer [0.018, -0.0151]; 4 x 4 x 512 tokens
+    lambda       PPL  vs lambda=1
+      3.00   3019.20     +5255.2%
+      2.00   1172.45     +1979.6%
+      1.50    233.60      +314.4%
+      1.25     78.56       +39.3%
+      1.10     58.64        +4.0%
+      1.00     56.38        +0.0%
+      0.90     58.08        +3.0%
+      0.75     66.59       +18.1%
+      0.50    102.94       +82.6%
+      0.25    171.15      +203.6%
+      0.00    246.72      +337.6%
+   -> PPL rises monotonically above lambda = 1: True  (pre-registered: yes)
+
+C2. parameters with NO optimizer state (never received a gradient): ['destruction_gates.1.net.0.weight', 'destruction_gates.1.net.2.weight', 'destruction_gates.1.net.0.bias', 'destruction_gates.1.net.2.bias']
+C2. |m| / sqrt(v) per clip group, G2 best (step 31000); exact map, 95 tensors checked by shape
+   clip group                               thr tensors  elements     p10  median     p90
+   override:reverse_ch                     0.10       8   198,145   0.028   0.153   0.361
+   override:reverse_channel_scale          0.10       1         2   0.023   0.033   0.042
+   override:depth_code                     0.25       1     3,840   0.027   0.146   0.352
+   override:register                       0.30       1    12,288   0.029   0.153   0.359
+   override:V_phi                          0.30      49   100,874   0.025   0.136   0.341
+   override:creation_gate                  0.30       3 1,720,320   0.027   0.148   0.351
+   override:destruction_gate               0.30       4    24,705   0.013   0.086   0.221
+   override:creation_gate_qkv.logit_scale  0.30       1        32   0.038   0.195   0.398
+   P                                       1.00       1   393,216   0.000   0.000   0.292
+   E                                       1.00       1 19,298,688   0.000   0.050   0.288
+   lm_head                                 1.00       1 19,298,688   0.005   0.075   0.303
+   V_theta                                 1.00       8 35,423,240   0.029   0.154   0.365
+   score_head                              1.00       6    36,929   0.030   0.164   0.381
+   xi_module                               1.00       3   184,325   0.029   0.153   0.363
+   out_bias                                1.00       1    50,257   0.020   0.148   0.437
+   raw_m_bias                              1.00       1         1   0.137   0.137   0.137
+   raw_logfreq_alpha                       1.00       1         1   0.235   0.235   0.235
+   reverse_channel_scale elements: [0.0446, 0.0204]
