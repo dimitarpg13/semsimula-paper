@@ -663,7 +663,7 @@ adds a point to a curve.
 **GPU queue (updated 2026-10-06; refinement work is high priority):**
 1. ~~G3′~~ done: 52.90.
 2. ~~**W1, the matched GPT-2 on WSD**~~ done 2026-10-06: settled 48.82 (−1.99% against cosine). W1.1–W1.3 HIT, W1.4 MISS; parity stands by the rule, on its boundary (protocol §5.17).
-3. The PM1 probe (about 1.5 h), with G4 (6b-10 on run 4) in the same session.
+3. The PM1 probe (8,000 steps, about 4 h; revised 2026-10-06 from 3,000), with G4 (6b-10 on run 4) in the same session.
 4. **The seed pair: G3′-s1, then G2-s1** (about 15 h each; protocol §5.19, Test 1).
 5. **SR2 on F3.1** (protocol §5.19, Test 2). The substep is implemented and verified (2026-10-06); F3.1's Cell 0 + `LOWRANK_DAMPED_FLOW = True`.
 6. The FO 2×2.
@@ -712,14 +712,14 @@ The deeper models end near 50 at the same width and token budget: L=4 Fock at 50
 The alternative Fock mechanism that is bosonic and Poisson-mean by construction, prompted by DP1–DP3.
 
 - [x] Implement `poisson_modes`: model, Cell 0 `POISSON_MODES` and `POISSON_MODE_CLIP`, tag `pm<K>`, Cell 5b guard, Cell 6 clip group. Verified 2026-10-05: off is bit-identical to HEAD on G2, F3.1 and G3′; on passes all seven checks (`debug/verify_pm_switch.py`).
-- [ ] **Probe:** F3.1's Cell 0 plus `POISSON_MODES = 64`, `PROBE_MAX_STEPS = 3_000` (about 1.5 h). It goes after G3′, or in parallel if a second Colab GPU is free. Gate: at most 126.4 at step 3,000 (at least 1% better than F3.1's 127.73), with pm_ clip hits under 5%.
+- [ ] **Probe:** F3.1's Cell 0 plus `POISSON_MODES = 64`, `PROBE_MAX_STEPS = 8_000` (about 4 h). **Revised 2026-10-06 from 3,000 steps, before any PM1 data:** G2's advantage over F3.1 is −3.2% at 3,000 (inside the ±2% eval scatter) and −11.4% at 8,000, so 3,000 is before any memory mechanism shows itself, and PM1's well depths start at 0. Gate: **at most 90.8 at step 8,000** (at least 3% better than F3.1's 93.57); 90.8–92.6 is a weak signal, full run at the author's discretion; above 92.6 fails. pm_ clip hits under 5%. The probe steps are not wasted: a passing run continues from `_step8000_probe_stop.pt`. Protocol §5.15.
 - [ ] **Full run** if the gate passes. Clear `PROBE_MAX_STEPS` and the same run continues, after the FO 2×2 unless moved.
 - [ ] **Post-run:** the repetition test, the depth signs and the DP3 rerun (protocol §5.15). Then the book: Remark 61 and §10.5.2, according to the decision rule.
 - [ ] **Refinement readiness (added 2026-10-06, before the probe):** 6b-7 Gate 3 on the full run's best checkpoint, N = 3 at fixed T, policy `hold`. Pre-registered RR-PM1: at or below F3.1's +143% (60%); RR-PM2: below +600% (85%). `pm_depth` follows `_fom_policy_index` like `depth_code`, so no code change; φ is token-accumulated and unaffected by refinement. If SR2's E1 holds first, the full run goes on the corrected base (`LOWRANK_DAMPED_FLOW = True`, tag `pm64_sr2`), the author's call before launch. Protocol §5.15.
 
 **GPU queue (2026-10-05):**
 1. G3′ (running).
-2. PM1 probe (about 1.5 h).
+2. PM1 probe (about 1.5 h; *revised 2026-10-06 to 8,000 steps, about 4 h, see the probe item above*).
 3. The FO 2×2.
 4. PM1 full run, if gated in.
 5. The CB series.

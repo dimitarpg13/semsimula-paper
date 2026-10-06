@@ -3687,14 +3687,31 @@ Each register is one slot holding one content vector: an exclusion (hard-core) o
 
 **Arm.** F3.1's configuration (L=2, conservative-only, `REVERSE_CHANNEL = False`, V_φ and ξ live) plus the modes. The ladder then reads F3.1 (57.76) → PM1 → G2 (53.12, slot registers).
 
-**Stage 1, the probe: 3,000 steps** (`PROBE_MAX_STEPS = 3_000`, same schedule, about 1.5 h). At step 3,000, F3.1 is at 127.73 and G2 at 123.59, only 3.3% apart, so a gate set relative to G2 could not reject anything. The gate is set against PM1's own base, F3.1:
+**Stage 1, the probe — revised 2026-10-06 to 8,000 steps, before any PM1 data exists** (`PROBE_MAX_STEPS = 8_000`, same schedule, about 4 h). The original gate, ~~126.4 or lower at step 3,000 (at least 1% better than F3.1's 127.73), about 1.5 h~~, is withdrawn at the author's call, for a reason the F3.1 and G2 curves make plain: at 3,000 steps no memory mechanism has yet shown itself. G2 is F3.1 plus the slot registers, and its advantage over F3.1 by step is
+
+| step | F3.1 | G2 | G2 vs F3.1 |
+| ---: | ---: | ---: | ---: |
+| 3,000 | 127.73 | 123.59 | −3.2% |
+| 4,000 | 113.51 | 111.61 | −1.7% |
+| 5,000 | 106.71 | 101.17 | −5.2% |
+| 6,000 | 103.00 | 93.11 | −9.6% |
+| 7,000 | 99.00 | 86.98 | −12.1% |
+| **8,000** | **93.57** | **82.92** | **−11.4%** |
+| 10,000 | 85.13 | 76.26 | −10.4% |
+| 15,000 | 77.31 | 67.91 | −12.2% |
+
+At 3,000 the gap is inside what a single eval resolves (the 4,000 point reads −1.7%; the step-to-step scatter is about ±2%). It opens between 4,000 and 6,000 and is at its stable-phase value, −10 to −12%, from 7,000 on. PM1 has a further reason to be slow: its well depths start at 0, so the force is exactly zero at step 0 and the modes must learn depths, widths and half-lives before they contribute. A null at 3,000 would be close to uninformative; a null at 8,000 means something. The cost is refundable: the probe saves `_step8000_probe_stop.pt` and a passing run continues from it, so the extra steps are paid for only when PM1 fails.
+
+The gate is set against PM1's own base, F3.1, at step 8,000 (93.57), with G2 (82.92, −11.4%) as the descriptive comparator and no expectation that PM1 reaches it:
 
 | measure | gate | called |
 | --- | --- | --- |
-| val PPL at step 3,000 | 126.4 or lower (at least 1% better than F3.1) | 50% |
+| val PPL at step 8,000 | **90.8 or lower** (at least 3% better than F3.1): a noticeable difference, above the ±2% eval scatter | 50% |
+| val PPL between 90.8 and 92.6 (1–3% better) | a weak signal: the full run at the author's discretion, recorded as a discretionary continuation | — |
+| val PPL above 92.6 | fail: no full run | — |
 | clip hits on the pm_ group over the probe | under 5% of logged steps, no divergence | 85% |
 
-Both must hold for the full run. If the probe passes, clear `PROBE_MAX_STEPS` and the same run continues; the full run goes after the FO 2×2 unless the author moves it.
+The step-7,500 eval is read beside the step-8,000 one for the scatter, but the gate is the step-8,000 value. The tag does not carry `PROBE_MAX_STEPS`, so the folder and the resume logic are unchanged. Both criteria must hold for the full run. If the probe passes, clear `PROBE_MAX_STEPS` and the same run continues; the full run goes after the FO 2×2 unless the author moves it.
 
 **Stage 2, the full run (32,500 steps), if the gate passes:**
 
@@ -3712,7 +3729,7 @@ Both must hold for the full run. If the probe passes, clear `PROBE_MAX_STEPS` an
 **Refinement readiness, added 2026-10-06 before the probe.** §5.19 makes refinement readiness a required property of every conservative arm, so PM1 is scored on Gate 3 like the others. The base is F3.1, whose Gate 3 is +143% with stiff modes at θ ≈ 4.32 per step; PM1 shares the base, the step and the stiff modes, so it inherits that discretisation error. What it adds is a memory that is accumulated over *tokens*, not rewritten per layer (φ_v(t) sums over s < t and does not depend on the layer index at all), which is the accumulated kind that H-RR (§5.18) predicts refines well. Hence the two calls: the modes should not make refinement worse (RR-PM1), and PM1 should be nowhere near the Fock arms, whose penalty H-RR attributes to per-layer reset-and-rewrite (RR-PM2).
 
 - **Policy for the per-layer depths under refinement.** `pm_depth` is a (L, K) table read as `pm_depth[layer_idx]` in `poisson_mode_force`. Cell 6b-7 remaps the layer index for every refined step through `_fom_policy_index`, and `depth_code`, the gates and V_θ already follow it, so the depths follow the same `hold` policy with no code change: at N = 3 for L = 2 the trained depths are held as [0, 0, 1]. Nothing else in the mechanism is layer-indexed: φ is computed once from the token sequence and is identical at every step count, so refinement changes only how often the well force is applied and at what Δt. Gate 0 (unpatched against patched at N = L) must still pass bit-exactly before any axis is read.
-- **Measured on the full run's best checkpoint**, the same checkpoint 6b-7 used for F3.1, so the two numbers compare. On the probe checkpoint it may be run as descriptive only; a 3,000-step model is not comparable with F3.1's final one.
+- **Measured on the full run's best checkpoint**, the same checkpoint 6b-7 used for F3.1, so the two numbers compare. On the probe checkpoint (step 8,000) it may be run as descriptive only; an 8,000-step model is not comparable with F3.1's final one.
 - **Reading.** RR-PM1 holds: the bosonic memory costs nothing in refinement, and the conservative line keeps it under the §5.19 principle as well as on perplexity. RR-PM1 fails but RR-PM2 holds: the memory costs refinement; the next measurement is Gate 3 with the depths held to the trained Δt-weighted values, to separate the well force's own step-size dependence from the base's. RR-PM2 fails: an accumulated memory refines as badly as a reset one, which counts against H-RR as a general account and is recorded as such in §5.18.
 - **If SR2 (§5.19, Test 2) has run before PM1's full run and E1 holds,** the full run should be launched with `LOWRANK_DAMPED_FLOW = True` as well (tag `pm64_sr2`), so that PM1 is scored on the corrected base. That is a change of arm and is the author's call; it is recorded here so the choice is made before the run, not after.
 
