@@ -17,13 +17,13 @@ included in this `manuscripts/` folder. For every manuscript it gives:
 
 The commit history in `dimitarpg13/aiconcepts` provides an independent,
 cryptographically-anchored attestation of the existence of each manuscript at
-or before the stated git timestamp. For eight of the ten *cited* manuscripts,
+or before the stated git timestamp. For eight of the eleven *cited* manuscripts,
 the earliest git commit date falls **within a few days** of the authorship
 date asserted in the paper's bibliography, closely corroborating the
-bibliography record through external git evidence. One additional manuscript
-(`Semantic_Templates`) is included in this folder as background material; it
-is not cited in the paper and therefore has no BibTeX key, but its git
-provenance in `aiconcepts` is recorded below for completeness.
+bibliography record through external git evidence. `Semantic_Templates` is a
+different case: its earliest git evidence **predates** the revision date its
+own header asserts by four months, so the git record establishes existence
+earlier than the bibliography claims rather than merely corroborating it.
 
 ---
 
@@ -41,13 +41,13 @@ provenance in `aiconcepts` is recorded below for completeness.
 | `Semantic_Simulation.{pdf,docx}`                                                                         | `Gueorguiev2024SemSim`            | first revision 11 February 2023; second revision 10 March 2024    | [`1bdbd47` — 2023-02-11](https://github.com/dimitarpg13/aiconcepts/blob/1bdbd47/docs/SemanticSimulation.pdf)                                                                                     |
 | `The_Foundations_of_Semantic_Simulation.{pdf,docx}`                                                      | `Gueorguiev2022Foundations`       | 2022 (per bib `year` field)                                       | [`b9b1ceb` — 2024-12-30](https://github.com/dimitarpg13/aiconcepts/blob/b9b1ceb/docs/SemanticStructures/TheFoundationsOfSemanticSimulation.docx) (no earlier `.pdf` in aiconcepts)                |
 | `Constructing_Langrangian_for_Semantic_Space.{pdf,docx}`                                                 | `Gueorguiev2026Lagrangian`        | 2026                                                              | [`de90d71` — 2026-04-12](https://github.com/dimitarpg13/aiconcepts/blob/de90d71/docs/SemanticStructures/ConstructingLangrangianForSemanticSpace.docx) (no earlier `.pdf` in aiconcepts)          |
-| `Semantic_Templates.{pdf,docx}` *(not cited in the paper)*                                               | *(no BibTeX key)*                 | *(no bib entry; earliest git evidence 9 January 2022)*            | [`4d0684b` — 2022-01-09](https://github.com/dimitarpg13/aiconcepts/blob/4d0684b/docs/SemanticTemplates.pdf)                                                                                      |
+| `Semantic_Templates.{pdf,docx}`                                                                          | `Gueorguiev2022Templates`         | 9 May 2022 (header date; git evidence from 9 January 2022)        | [`4d0684b` — 2022-01-09](https://github.com/dimitarpg13/aiconcepts/blob/4d0684b/docs/SemanticTemplates.pdf)                                                                                      |
 
 ---
 
 ## How closely does git corroborate the bib dates?
 
-For eight of the ten manuscripts, the earliest git-observable timestamp is
+For eight of the eleven manuscripts, the earliest git-observable timestamp is
 **within two days to three weeks** of the authorship date asserted in
 `paper/references.bib`:
 
@@ -61,6 +61,12 @@ For eight of the ten manuscripts, the earliest git-observable timestamp is
 | Signature Matrix        | 19 May 2022           | 2022-05-21          | +2 days  |
 | SARF (structures)       | 6 Jun 2022            | 2022-06-12          | +6 days  |
 | Semantic Simulation     | 11 Feb 2023 (rev. 1)  | 2023-02-11          | **same day** |
+
+`Gueorguiev2022Templates` is the one manuscript whose git evidence runs the
+other way: the earliest PDF is dated 2022-01-09, four months **before** the
+9 May 2022 date carried in the document's own header, which is consistent with
+a document first written in January 2022 and revised in May (see the note
+below).
 
 The remaining two manuscripts, `Gueorguiev2022Foundations` and
 `Gueorguiev2026Lagrangian`, appear in aiconcepts only as `.docx` (no PDF
@@ -112,12 +118,14 @@ at `2bffb23` (2023-02-12) and `9267a14` (2023-02-14), with the second
 major revision date noted in the bib (10 March 2024) reflected in further
 commits during 2024.
 
-### `Semantic_Templates` — background manuscript, not cited in the paper
+### `Gueorguiev2022Templates` — header date later than the earliest git evidence
 
-`Semantic_Templates.{pdf,docx}` is included in this `manuscripts/` folder
-as a background research document from the same line of work but is
-**not** cited in the main paper and therefore has no BibTeX entry. Its
-git provenance in aiconcepts is nevertheless clear:
+`Semantic_Templates.{pdf,docx}` is cited in the main paper at \S 2.6, where
+Definition 8 defers the operational mechanics of template matching and
+inference firing to it, and at \S 10.5.2, where it is named as a candidate
+source for the reactions of the Doi--Peliti Liouvillian. Its own header
+asserts 9 May 2022, while the earliest git evidence is four months earlier;
+both are recorded above. Its git provenance in aiconcepts is clear:
 
 * The earliest PDF commit is `4d0684b` on **2022-01-09**, which introduces
   `docs/SemanticTemplates.pdf` alongside several other PDFs authored

@@ -39,7 +39,7 @@ This note rebuilds the discussion so that every object has a classical meaning. 
 
 The classical reading gives $\mathcal{H}$ two distinct roles, and most of what follows depends on keeping them apart.
 
-- **Geometry.** Unit vectors of $\mathcal{H}$, the root densities, are the **modes**: one per semantic type, with overlaps that measure resemblance (§1–§2).
+- **Geometry.** Unit vectors of $\mathcal{H}$, the root densities, are the **modes**: one per semantic *particle* type in the sense of the book's §10.5.2, which is not the aspect type of Definitions 3 and 4 (§1.3), with overlaps that measure resemblance (§1–§2).
 - **Probability.** Probabilities live in the Doi–Peliti state. Its one-particle sector is a probability vector over modes, normalized by summing to 1 rather than by having unit length (§7).
 
 ```mermaid
@@ -71,7 +71,7 @@ flowchart TD
 
 $\mathcal{H}$ is an inner-product space, complete in its norm. In the Semantic Simulation framework a unit vector $\phi\in\mathcal{H}$ represents the state of one semantic particle. Choosing $\mathcal{H}$ amounts to answering two modeling questions:
 
-1. **What can one semantic particle be?** Which degrees of freedom does its state carry: a type label, a location in $\Sigma$, a position in the text, a velocity?
+1. **What can one semantic particle be?** Which degrees of freedom does its state carry: a type label (§1.3 fixes which of the book's notions of type this is), a location in $\Sigma$, a position in the text, a velocity?
 2. **When are two particle states the same, and how similar are they?** That is, which inner product correctly measures semantic resemblance?
 
 Everything in the Fock construction is then forced by this choice.
@@ -112,6 +112,23 @@ For the location family of (1.3) below, the Fisher information is the identity d
 All scalars here are real and all root densities are non-negative, so a **real** Hilbert space suffices.
 
 ### 1.3 The Gaussian states of the framework
+
+**What "type" means here, and what it does not.** The index $v$ runs over the **semantic particle types** of the book's §10.5.2, which introduces $\lbrace\mu_v\rbrace_{v\in\mathcal{V}}$ as the centroids of those types and attaches one mode function to each. The book uses the term there without a numbered definition, and it is **not** the **aspect type** $l\in\mathcal{L}$ of Definition 3 (*Semantic energy field*, which introduces $\mathcal{L}$ as a discrete set of aspect types) and Definition 4 (*Semantic aspect*, $A = (\vec r, l, \boldsymbol\theta)$). The two live at different levels of the hierarchy of Definitions 4–7:
+
+| Book level | Object | Centroid | Carries a mode? |
+|---|---|---|---|
+| Aspect (Definition 4) | $A = (\vec r, l, \boldsymbol\theta)$: a point, an aspect type $l\in\mathcal{L}$, optional internal angles | none; the aspect *is* a point | no |
+| Property (Definition 5) | mass-weighted bundle of aspects | $\vec r_c$, the mass-weighted mean | possible in principle |
+| Particle (Definition 6) | a property plus a trajectory $\gamma$ | $\vec r_c$, moving along $\gamma$ | **yes — this is the index $v$** |
+| Structure (Definition 7) | a graph of particles | ensemble centroid $\vec p_S$ | no; a configuration of several |
+
+A mode therefore attaches one level **above** the aspect. The centre $\mu_v$ of (1.3) is a *centroid*, and only properties and particles have centroids; an aspect is a bare point in $\Sigma$.
+
+The distinction is sharper than a difference of level, because an aspect type is not a lexical label at all. In the PARF parametrization (§5 of the book) the type of an aspect is a **radial coordinate**, $l_i = \lVert\vec p_i - \vec p_c\rVert$, the distance of the aspect from its property's centroid, with the angular part $\boldsymbol\theta^{(i)}$ carrying the *value*. Aspect types enter the dynamics through the field $\mathcal{E}$ (Definition 3) and through the type-matching function $\Phi$ of the aspect-level PARF, never through a mode of $\mathcal{H}$.
+
+**Two Gaussians, at two levels.** The parallel is close enough to be worth stating precisely, because it is a parallel and not an identity. The book's type matcher is Gaussian in the *type labels*, $\Phi(l_1,l_2) = \exp(-d_l^2(l_1,l_2)/\sigma_l^2)$, and Definition 17 (*Closely related aspect types*) calls two aspect types closely related when $\Phi\lvert\Theta\rvert$ can be driven arbitrarily close to 1, which for that matcher reduces to $\lvert l_1 - l_2\rvert < \delta$. The overlap (1.4) below is Gaussian in the *centroids in $\Sigma$*, $e^{-\kappa^2\lVert\mu_a-\mu_b\rVert^2}$. Same functional form, different argument, different level — and one further difference: $\sigma_l$ is a free modelling constant, whereas $\kappa$ is fixed by the well, so once $V$ is chosen the mode overlaps are not separately tunable ((1.4b)).
+
+**In the trained models.** $\mathcal{V}$ is the token vocabulary, or a set of senses where a token is ambiguous, and $\mu_v$ is a learned well centre of $V_\theta$ — in the anisotropic bank of the scale-up runs, one of the $K$ wells per context channel. That is the level at which the modes of this note are realized in code.
 
 For a type $v$ with centroid $\mu_v$, take $p_v = \mathcal{N}(\mu_v,\sigma^2I)$:
 
@@ -606,6 +623,7 @@ For cat and kitten, $c = 0.9753$, so $\alpha = 3.538$ and $\beta = -2.826$. The 
 | Abstract object | SemSimula meaning |
 |---|---|
 | $\mathcal{H}$ | Root densities of one semantic particle over $\Sigma$; recommended: span of the Gaussian modes, width half the inflection radius |
+| Mode index $v\in\mathcal{V}$ | A semantic **particle** type (book §10.5.2); a vocabulary entry or sense, realized as a well centre of $V_\theta$. Not the aspect type $l\in\mathcal{L}$ of Definitions 3–4, which is a radial coordinate within a property (§1.3) |
 | Unit vector $\phi = \sqrt p$ | State of one semantic particle at the resolution its well sets |
 | $\langle\phi_a,\phi_b\rangle$ | Bhattacharyya coefficient, equal to one minus the normalized well potential |
 | $\lVert\phi_a-\phi_b\rVert$ | Overlap distance, √2 times the Hellinger distance |
