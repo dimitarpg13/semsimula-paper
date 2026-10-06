@@ -3072,7 +3072,7 @@ Proposition 44 amplifies the phase-sampled dissipation of the split step by θ/s
 - **CG8 is read on SR5 as well.** Predicted s_G ΔAUROC < 0.01, called at 60%.
 - **SR5c, annealed thermostat: conditional on SR4b, not scheduled.** A per-layer temperature, hot early and zero at the last step, combined with stronger late damping (γ(h) or SR3's ζ* = 1): anneal into the attractor, then come to rest. With 2–4 steps there is no time for barrier crossing (1/γ > T), so it is meaningful only on a model trained over longer horizons. It runs only if SR4b passes its Gate 2 threshold. It needs a per-layer temperature in `ou_step`, which does not exist yet.
 
-**Order and cost:** SR1 (cheapest; code change only), then SR2, then SR4a, then SR3, then SR4b. SR5a and SR5b need no code and can run in any free slot; SR5b first. About 14 GPU-h each at L=2. Implementation note: SR2/SR3 need a joint damped-mode substep on span(U) in `cfc_baoab.py`; SR4 needs the step count sampled per batch and the depth code indexed by time. Neither exists yet.
+**Order and cost:** SR1 (cheapest; code change only), then SR2, then SR4a, then SR3, then SR4b. SR5a and SR5b need no code and can run in any free slot; SR5b first. About 14 GPU-h each at L=2. Implementation note: SR2/SR3 need a joint damped-mode substep on span(U) in `cfc_baoab.py`; SR4 needs the step count sampled per batch and the depth code indexed by time. *(2026-10-06: the SR2 substep now exists, `lowrank_damped_flow`, §5.19; SR3's constant-ratio friction and SR4 do not.)*
 
 **Caveat recorded in advance:** with γ·T = 0.8, Prop 44 is first-order and qualitative. Its prediction is the *mechanism* (SR2 helps Gate 3), not a magnitude.
 
@@ -3794,6 +3794,35 @@ Both must hold for the full run. If the probe passes, clear `PROBE_MAX_STEPS` an
 - **More than 2% worse:** WSD at this peak suits GPT-2 less well. The cosine baseline stays as the reference, and the L=8 comparison uses whichever schedule is better for GPT-2, stated as such.
 - **Optional W2:** the same run at the ladder's peak learning rate (1.2e-3, tag `_wsd_lr0p0012`) separates peak from shape. Queued, not scheduled.
 
+**W1 scored, 2026-10-06.** Run output `gpt2_matched_baseline_wsd_schedule_output.txt`; fit `debug/w1_f0_fit.py` and its output and JSON. The fit reuses F0's functions unchanged and parses the 65 printed evals (loss@512, 4 decimals), because the run's `training_log.jsonl` was not downloaded.
+
+- **Result.** Final and best eval 48.67 at step 32,500. Settled (the mean of the last three evals: 49.00, 48.78, 48.67) **48.82**, which is **−1.99%** against the cosine baseline's 49.81.
+- **W1.1 (settled within −3% to +2%, 48.3–50.8): HIT.**
+- **W1.2 (at or below 49.81): HIT.**
+- **W1.3 (stable-phase fit identified): HIT.** L∞ 4.038 nats, 90% interval [4.031, 4.045]; PPL∞ 56.74 [56.33, 57.14]; α 0.93; rmse 0.003.
+- **W1.4 (L∞ below L=4 Fock's interval, under 3.661): MISS, in the opposite direction.** GPT-2's L∞ lies above L=4's whole interval [3.661, 3.839], and above G3's and G3′'s.
+- **Decision rule: within ±2%, so the published parity reading of L=4 stands, and the book's sentence stands.** The margin is 0.01 percentage points: the rule is met by the letter and sits on its boundary in substance. Against the WSD baseline, L=4 Fock (50.10) is +2.6%; against the cosine baseline it is +0.6%.
+
+**What W1 shows about F0: a stable-phase L∞ is not a floor.** The same run ended 0.15 nats (8 PPL) *below* its own stable-phase asymptote, because the asymptote is the constant-rate plateau and the decay removes that rate's noise. This confirms point 2 of F0's correction directly. It also makes L∞ unfit for comparing architectures trained at different peaks: GPT-2 ran at 6e-4, the Fock arms at 1.2e-3, and the plateau includes each rate's noise excess.
+
+**Descriptive, same schedule shape and token budget:**
+
+| model | PPL at step 21,000 (end of the stable phase) | settled | decay gain (nats) | stable-phase PPL∞ |
+| --- | ---: | ---: | ---: | ---: |
+| GPT-2, WSD (W1), peak 6e-4 | 64.01 | 48.82 | **0.271** | 56.74 |
+| L=4 Fock, peak 1.2e-3 | 60.80 | 50.10 | 0.194 | 43.07 |
+| G3′ | 63.45 | 52.90 | 0.182 | 48.17 |
+| G2 | 63.61 | 53.12 | 0.180 | (unidentified) |
+| G3 | 65.22 | 54.21 | 0.185 | 49.31 |
+| F3.1 | 71.81 | 57.76 | 0.218 | (unidentified) |
+
+- **At the end of the stable phase, Fock leads or is level.** L=4 is 5% ahead of GPT-2, and G2 and G3′ are level with it.
+- **GPT-2 then gains more from the decay:** 0.27 nats against 0.18–0.22 for every Fock arm, and it finishes ahead.
+- **Two explanations, not separable here:**
+  - **Architecture:** Fock models extract less from annealing.
+  - **Peak learning rate:** GPT-2's stable phase at 6e-4 had nearly flattened (α 0.93, interval 0.014 nats wide), while the Fock arms at 1.2e-3 were still falling. A different peak changes both the plateau and what the decay can recover.
+- **W2** (GPT-2 on WSD at 1.2e-3, tag `_wsd_lr0p0012`, about 2.5 h) separates them. It is now the cheapest run that bears on every GPT-2 comparison, including the L=8 one.
+
 ### 5.18 RR: what makes a model refinement-ready? — **pre-registered 2026-10-06, before any measurement**
 
 **The clue.** G3 and G3′ differ only in the routing hardening (QK-norm and the 0.3 field clip). Gate 3 at 1.5× refinement:
@@ -3881,7 +3910,7 @@ Neither mechanism alone explains every arm, which is why the single-cause accoun
 - **S1 fails, S2 holds:** G3′'s solution was a basin its seed found. H-RR may still describe it, but the hardening does not guarantee it.
 - **S2 fails:** refinement readiness is seed-dependent even without the field, and H-RR must explain why the same configuration lands in both basins.
 
-**Test 2: discretisation, by the exact flow.** SR2 on F3.1's configuration (§5.9): the exact damped-mode flow on the stiff subspace replaces the split step, which removes the θ/sin θ phase term. The code is a new joint substep in `cfc_baoab.py` (Proposition 45, closed form); it is a CPU task, next in priority.
+**Test 2: discretisation, by the exact flow.** SR2 on F3.1's configuration (§5.9): the exact damped-mode flow on the stiff subspace replaces the split step, which removes the θ/sin θ phase term. The code is a new joint substep in `cfc_baoab.py` (Proposition 45, closed form). *Implemented and verified 2026-10-06; see below.*
 
 | | prediction | called |
 | --- | --- | --- |
@@ -3890,6 +3919,29 @@ Neither mechanism alone explains every arm, which is why the single-cause accoun
 
 - **E1 holds:** the conservative core's residual failure is integrator error, removable by the exact flow. Together with Test 1, the framework then has a refinement-ready conservative core, and a Fock mechanism that preserves that readiness when its registers accumulate.
 - **E1 fails:** F3.1's failure is not discretisation. The next suspect is tuning: the learning rate was never re-swept under Gen 3 or for a conservative-only arm.
+
+**SR2 implementation — 2026-10-06.** `cfc_baoab.py` gains `damped_mode_coefficients` and `lowrank_damped_substep`; the switch is `lowrank_damped_flow` in `MultiXiPARFConfig` (Cell 0 `LOWRANK_DAMPED_FLOW`, tag `sr2`, Cell 5b guard and banner).
+
+- **What changes.** When the switch is on, each A(dt/2) half-step integrates every mode on span(U) as one forced damped oscillator, x″ + γx′ + ω₀²x = a with ω₀² = κ/m. The forcing a is the frozen affine mode force at the start of the half-step. The O-step's action on span(U) is then undone, so friction is not applied there twice. The complement keeps its free drift and its O-step. The B kick, the projection and the velocity encoding are unchanged, so friction on span(U) still totals γ·dt per layer.
+- **Coefficients** (float64, every regime). Underdamped cos/sin, overdamped cosh/sinh, critical, and ω₀ = 0. The position response Q = (1 − E₁₁)/ω₀² cancels where ω₀²t² < 10⁻⁴, which is where the trained soft modes (κ ≈ 0) sit. There it is summed from the exact Taylor recurrence of the mode equation, 40 terms, converged for γt < 4. A first version truncated that series at t⁶ and was off by up to 3·10⁻⁵ at γt = 0.4; the RK4 check caught it before any use.
+- **Guards.** The model refuses the switch unless `integrator = 'baoab_cfc_lowrank'` and γ is fixed (`fixed_gamma`), because the closed form assumes a constant scalar γ.
+
+**Verification** (`debug/verify_sr2_switch.py` and its output). The HEAD reference is dumped with the committed `cfc_baoab.py`, `model_parf_multixi.py` and ladder notebook swapped in.
+
+| check | result |
+| --- | --- |
+| OFF vs HEAD, G2, F3.1 and G3′ (eval logits, train logits, every gradient) | bit-identical (0.0) |
+| γ = 0: damped substep vs `lowrank_cfc_substep` | 9·10⁻¹⁴ |
+| coefficients vs RK4 (7 regimes incl. critical, ω₀ = 0, series branch; 2 horizons; 3 initial conditions) | 2·10⁻¹⁴ |
+| group property: one step of 4 = two steps of 2, γ = 0.1 | 3·10⁻¹⁵ |
+| tag `…_sr2_L2probe…`, banner, no new parameters | pass |
+| γ = 0 on F3.1's weights: switch on vs off | 7.6·10⁻⁵ (float32) |
+| causality with the switch on | exact 0 |
+| refuses a learned γ or another integrator | pass |
+
+Descriptive, not a test: switching SR2 on post hoc on F3.1's weights, which were trained under the split scheme, raises the loss from 4.230 to 4.356 nats (median |Δlogit| 2.8). The stiff modes rotate by θ ≈ 4.3 per step, so the split and the exact flow differ materially there. E1 and E2 are about a model trained under SR2, not about this transplant.
+
+**Run settings.** F3.1's Cell 0 (`REVERSE_CHANNEL = False`, `VPHI_GRAD_PATH = 'live'`, `XI_GRAD_PATH = 'live'`) plus `LOWRANK_DAMPED_FLOW = True`. Same seed, steps and schedule as F3.1. Then the full 6b set, with 6b-7 (Gates 1–3) deciding E1.
 
 **Book.** If both tests hold, the decomposition becomes a subsection of book §37.6, in the next edition after the seed runs.
 

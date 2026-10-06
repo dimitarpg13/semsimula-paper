@@ -68,7 +68,7 @@ from cfc_baoab import (  # noqa: E402
     cfc_substep,
     decode_velocity,
     encode_velocity,
-    lowrank_cfc_substep,
+    lowrank_cfc_substep, lowrank_damped_substep,
     lowrank_modes,
     ou_step,
 )
@@ -216,6 +216,12 @@ class MultiXiPARFConfig(SparsePARFConfig):
     # in phi, so carrying only the mean is exact. Strict past (s < t), so phi
     # does not depend on h_t and the force is a gradient in h_t. 0 = off.
     poisson_modes: int = 0
+    # SR2 (protocol SS5.9 / SS5.19, 2026-10-06): integrate the low-rank stiff
+    # modes as exact forced DAMPED oscillators (book Prop 45) instead of the
+    # split A(dt/2) O(dt) A(dt/2); the O-step then acts on the complement of
+    # span(U) only. Needs integrator='baoab_cfc_lowrank' and a constant scalar
+    # gamma. Off by default: bit-identical to the split scheme.
+    lowrank_damped_flow: bool = False
     poisson_halflife_min: float = 4.0     # tokens; per-mode half-lives are
     poisson_halflife_max: float = 128.0   # log-spaced over this range
     relax_attn_logit_scale_init: float = 1.0 / 0.07
@@ -640,6 +646,11 @@ class MultiXiPARFLM(SparsePARFLM):
             raise ValueError(
                 "vphi_grad_path='live' is defined for the sparse top-k V_phi "
                 f"only, not pair_potential={cfg.pair_potential!r}.")
+
+        if getattr(cfg, "lowrank_damped_flow", False) and getattr(cfg, "integrator", "verlet") != "baoab_cfc_lowrank":
+            raise ValueError("lowrank_damped_flow (SR2) needs integrator='baoab_cfc_lowrank'")
+        if getattr(cfg, "lowrank_damped_flow", False) and getattr(cfg, "fixed_gamma", None) is None:
+            raise ValueError("lowrank_damped_flow (SR2) needs a constant gamma (fixed_gamma)")
 
         # PM1 Poisson-mode registers. Created ONLY when enabled, so the
         # default model draws the same RNG stream and keeps the same
@@ -1212,9 +1223,14 @@ class MultiXiPARFLM(SparsePARFLM):
             )
             lr_sL = torch.einsum('...dp,...p->...d', lr_G, lr_Gmu)
             f_L = lr_sL - self._lowrank_matvec(lr_G, h_in)
-            h_mid, v_mid = lowrank_cfc_substep(
-                h_in, v, lr_U, lr_kappa, f_L, m_b, half,
-            )
+            if getattr(cfg, "lowrank_damped_flow", False):
+                h_mid, v_mid = lowrank_damped_substep(
+                    h_in, v, lr_U, lr_kappa, f_L, m_b, gamma, half,
+                )
+            else:
+                h_mid, v_mid = lowrank_cfc_substep(
+                    h_in, v, lr_U, lr_kappa, f_L, m_b, half,
+                )
         elif use_cfc:
             # Frozen over the layer step, as in any exponential
             # integrator: the linearisation is taken once, at h.
@@ -1257,19 +1273,32 @@ class MultiXiPARFLM(SparsePARFLM):
         v_mid = v_mid + (dt / m_b) * f_kick
 
         # ── O: exact friction, optionally FDT-thermostatted ──
+        _v_pre_o = v_mid
         v_mid = ou_step(
             v_mid, gamma, dt, m=m_b,
             T=getattr(cfg, "langevin_T", 0.0),
             training=self.training,
             noise_eval=getattr(cfg, "langevin_noise_eval", False),
         )
+        if use_lowrank and getattr(cfg, "lowrank_damped_flow", False):
+            # SR2: span(U) gets its friction inside the exact damped flow of
+            # the A substeps, so undo the O-step there (complement unchanged).
+            v_mid = v_mid + torch.einsum(
+                '...dq,...q->...d', lr_U,
+                torch.einsum('...dq,...d->...q', lr_U, _v_pre_o - v_mid),
+            )
 
         # ── A: second half substep ──
         if use_lowrank:
             f_L = lr_sL - self._lowrank_matvec(lr_G, h_mid)
-            h_new, v_new = lowrank_cfc_substep(
-                h_mid, v_mid, lr_U, lr_kappa, f_L, m_b, half,
-            )
+            if getattr(cfg, "lowrank_damped_flow", False):
+                h_new, v_new = lowrank_damped_substep(
+                    h_mid, v_mid, lr_U, lr_kappa, f_L, m_b, gamma, half,
+                )
+            else:
+                h_new, v_new = lowrank_cfc_substep(
+                    h_mid, v_mid, lr_U, lr_kappa, f_L, m_b, half,
+                )
         elif use_cfc:
             h_new, v_new = cfc_substep(
                 h_mid, v_mid, s_lin - k_diag * h_mid, k_diag, m_b, half,

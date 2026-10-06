@@ -1,0 +1,19 @@
+OFF (LOWRANK_DAMPED_FLOW = False): HEAD vs working copy, fixed trained weights
+  G2    eval 0.0e+00  train 0.0e+00  grads 0.0e+00  (91 params)  -> IDENTICAL
+  F3.1  eval 0.0e+00  train 0.0e+00  grads 0.0e+00  (73 params)  -> IDENTICAL
+  G3'   eval 0.0e+00  train 0.0e+00  grads 0.0e+00  (96 params)  -> IDENTICAL
+
+ON, unit level (float64; q = 16 modes, kappa in [0, 0.21], m in [0.5, 2], dt = 2)
+1. gamma = 0 vs lowrank_cfc_substep: max |diff| 9.2e-14 -> True
+2. exact coefficients vs RK4 (20,000 steps), 7 regimes x 2 horizons x 3 initial conditions: max error 2.2e-14 -> True
+3. group property, gamma = 0.1: one step of 4 vs two steps of 2, max |diff| 2.8e-15 -> True
+
+ON, model level (F3.1's Cell 0 + LOWRANK_DAMPED_FLOW = True, F3.1's trained weights)
+4. tag ...cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+   parameter-set difference []; banner printed: True; gamma 0.1 -> True
+5. gamma = 0: max |dlogit| flag ON vs OFF 7.6e-05 (max |logit| 48.2) -> True
+6. gamma = 0.1: finite logits and grads True; same 73 params get grads; loss ON 4.3556 vs OFF 4.2301; |dlogit| median 2.77e+00 max 1.47e+01 (descriptive: the weights were trained under the split scheme) -> True
+7. causality: tokens replaced at t >= 128, max |dlogit| at t < 128 = 0.0e+00 -> True
+8. refuses learned gamma True, refuses integrator='baoab_cfc' True -> True
+
+ALL CHECKS PASS

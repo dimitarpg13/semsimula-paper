@@ -662,17 +662,17 @@ adds a point to a curve.
 
 **GPU queue (updated 2026-10-06; refinement work is high priority):**
 1. ~~G3′~~ done: 52.90.
-2. **W1, the matched GPT-2 on WSD** (running; protocol §5.17).
+2. ~~**W1, the matched GPT-2 on WSD**~~ done 2026-10-06: settled 48.82 (−1.99% against cosine). W1.1–W1.3 HIT, W1.4 MISS; parity stands by the rule, on its boundary (protocol §5.17).
 3. The PM1 probe (about 1.5 h), with G4 (6b-10 on run 4) in the same session.
 4. **The seed pair: G3′-s1, then G2-s1** (about 15 h each; protocol §5.19, Test 1).
-5. **SR2 on F3.1** (protocol §5.19, Test 2), once the exact substep is implemented and verified.
+5. **SR2 on F3.1** (protocol §5.19, Test 2). The substep is implemented and verified (2026-10-06); F3.1's Cell 0 + `LOWRANK_DAMPED_FLOW = True`.
 6. The FO 2×2.
 7. **An L=8 Fock live probe, then the full run** (about 5 h + 55 h). It combines SR-π.1, the depth trend, the matched-depth GPT-2 comparison and the floor question; its consolidated pre-registration is still to be written.
 8. The PM1 full run, if gated in.
 9. The CB series.
 10. The rest of the SR series (SR1, SR4a, SR3, SR4b, SR5).
 
-Queued, unscheduled: F1 (2× tokens), F2 (d = 768), W2 (GPT-2 WSD at 1.2e-3), G1 (parameter-matched GPT-2).
+Queued, unscheduled: F1 (2× tokens), F2 (d = 768), W2 (GPT-2 WSD at 1.2e-3), G1 (parameter-matched GPT-2). *W2 recommended for promotion (2026-10-06, about 2.5 h): W1 shows GPT-2 trailing or level at the end of the stable phase and overtaking in the decay (0.27 against 0.18–0.22 nats), which is either architecture or peak learning rate. Only W2 separates them.*
 
 ## Open: what makes a model refinement-ready? — **opened 2026-10-06** (protocol §5.18)
 
@@ -680,7 +680,8 @@ Queued, unscheduled: F1 (2× tokens), F2 (d = 768), W2 (GPT-2 WSD at 1.2e-3), G1
 - [x] **Pre-registered 2026-10-06 (protocol §5.19):** the refinement decomposition, with register reset for the Fock arms and stiff-mode discretisation for F3.1. Design principle: refinement readiness is required, for conservative arms together with conservativity, and for Fock arms on its own.
 - [x] Seed tag (`SEED != 0` gives `s<N>`) and Cell 5b guard added; verified that seed-0 tags are unchanged.
 - [ ] **Test 1, GPU, high priority:** G3′-s1 and G2-s1 (`SEED = 1`), about 15 h each. Predictions S1–S4.
-- [ ] **Test 2: implement SR2's exact damped-mode substep** (CPU, next), then run SR2 on F3.1 (GPU). Predictions E1–E2.
+- [x] **Test 2, code: SR2's exact damped-mode substep** (`lowrank_damped_flow`, Cell 0 `LOWRANK_DAMPED_FLOW`, tag `sr2`). Verified 2026-10-06: off is bit-identical to HEAD on G2, F3.1 and G3′; on passes eight checks, including RK4 agreement to 2·10⁻¹⁴ and the group property (`debug/verify_sr2_switch.py`).
+- [ ] **Test 2, GPU: SR2 on F3.1** (F3.1's Cell 0 + `LOWRANK_DAMPED_FLOW = True`), about 14 h. Predictions E1–E2.
 - [x] Hypothesis and evidence added to the G3 and G3′ model cards (2026-10-06).
 
 ## Queued: is there a shared floor near 50 PPL? — **opened 2026-10-06**
@@ -699,6 +700,7 @@ The deeper models end near 50 at the same width and token budget: L=4 Fock at 50
   - If the L=2 models share an L∞ clearly above L=4's and GPT-2's, depth sets the floor.
   - If all extrapolate to about the same L∞, it is budget or width.
   - It runs after the G3′ diagnostics and upload.
+- [x] **W1's stable-phase fit** (2026-10-06, protocol §5.17): GPT-2 on WSD has an identified L∞ of 56.7 PPL and then ends at 48.7, 8 PPL *below* it. A stable-phase L∞ is a constant-rate plateau, not a floor, and is not comparable across peak learning rates. This settles F0's reading: it is relative, and only within one schedule and peak.
 - [ ] **F1 — GPU, about 30 h each, queued.** Double the token budget (65,000 steps) for G2 and the matched GPT-2.
   - If both improve by similar amounts, it is a budget floor.
   - If GPT-2 improves and G2 does not, it is an L=2 limit.
@@ -772,7 +774,7 @@ Theory: book §8.9 (Props 44–45). Pre-registration: [`Depth_Ladder_and_Matched
 > One seed per arm, medians over wide spreads (G2's θ spans 2.6–5.5 between p05 and p95), and "1.5×" means N = 3 at L=2 but N = 6 at L=4.
 
 - [ ] **SR1** — palindromic step order (O half-steps around the kick). Code: reorder `_layer_step_langevin`. Cheapest; run first.
-- [ ] **SR2** — exact damped-mode flow on the stiff subspace, constant γ. Code: new joint substep in `cfc_baoab.py` (Prop 45, closed form for all damping regimes); replaces A·O·A on span(U) only. **One arm:** F3.1's configuration. *(The G2-configuration arm, SR-π.2, was dropped on 2026-10-05.)*
+- [ ] **SR2** — exact damped-mode flow on the stiff subspace, constant γ. *Code done and verified 2026-10-06 (`lowrank_damped_flow`; see the refinement block).* Code: new joint substep in `cfc_baoab.py` (Prop 45, closed form for all damping regimes); replaces A·O·A on span(U) only. **One arm:** F3.1's configuration. *(The G2-configuration arm, SR-π.2, was dropped on 2026-10-05.)*
 - [ ] **SR4a** — variable-step training at fixed T, N ~ U{2, 3, 4}. Code: per-batch step count and depth code indexed by time (as Cell 6b-7's `hold` policy).
 - [ ] **SR3** — SR2 plus constant-ratio friction Γ = γ₀I + 2ζ*√(L/m) at ζ* = 1 (book Prop 43, eq. constant-ζ).
 - [ ] **SR4b** — variable-step training at fixed Δt, N ~ U{2, 3} (the extension axis).

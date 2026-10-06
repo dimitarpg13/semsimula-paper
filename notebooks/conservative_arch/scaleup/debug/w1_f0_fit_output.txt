@@ -1,0 +1,8 @@
+65 evals parsed, steps 500-32,500; window 3,000-21,000: 37 evals
+
+GPT-2, WSD (W1)              L_inf 4.038 [4.031, 4.045]  PPL_inf 56.74 [56.33, 57.14]  alpha 0.93  rmse 0.0032  identified True
+GPT-2, cosine (descriptive)  L_inf 3.557 [3.442, 3.650]  PPL_inf 35.04 [31.25, 38.46]  alpha 0.45  rmse 0.0113  identified True
+L=4 Fock (F0)                L_inf 3.763 [3.661, 3.839]  PPL_inf 43.07 [38.89, 46.48]  alpha 0.60  rmse 0.0163  identified True
+
+W1.3 the fit is identified (interval <= 0.3 nats, alpha off its bounds): HIT  (75%)
+W1.4 its L_inf lies below L=4 Fock's 90% interval (< 3.661 nats): MISS  (50%)

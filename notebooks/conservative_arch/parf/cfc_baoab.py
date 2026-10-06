@@ -641,6 +641,111 @@ def lowrank_cfc_substep(
 
 
 # ---------------------------------------------------------------------------
+# SR2: exact DAMPED flow of the low-rank stiff modes (book Prop 45)
+# ---------------------------------------------------------------------------
+#
+# The split A(dt/2) O(dt) A(dt/2) rotates each stiff mode, applies friction,
+# and rotates again; the friction is therefore sampled at the phases the
+# rotation happens to reach, and the energy a mode dissipates depends on the
+# step count (book Prop 44, the theta/sin theta term). The friction and the
+# low-rank rotation are diagonal in the same basis, so each stiff mode can
+# instead be integrated as ONE forced damped oscillator,
+#
+#     x'' + gamma x' + omega0^2 x = a,   x = z - z0,  omega0^2 = kappa/m,
+#     a = (U^T f_lr)/m (the frozen affine mode force at the start),
+#
+# whose flow is a linear autonomous map: e^{sM} e^{tM} = e^{(s+t)M}, so the
+# linear stiff dynamics no longer depend on how T is cut (book Prop 45). The
+# caller removes the O-step's action on span(U) so friction is not applied
+# twice there; the complement keeps its free drift and its O-step.
+
+def _sinhc(x: torch.Tensor) -> torch.Tensor:
+    """sinh(x)/x, smooth at x = 0 (nan-safe in the unused branch)."""
+    small = x.abs() < 1e-4
+    safe = torch.where(small, torch.ones_like(x), x)
+    return torch.where(small, 1.0 + x * x / 6.0, torch.sinh(safe) / safe)
+
+
+def damped_mode_coefficients(
+    omega0_sq: torch.Tensor, gamma: torch.Tensor | float, t: float,
+) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    """(E12, E22, P, Q) of the exact flow of x'' + g x' + w0^2 x = a over t.
+
+    With x(0) = 0, x'(0) = w0:  x(t) = E12 w0 + Q a,  x'(t) = E22 w0 + P a.
+    (E11 is not needed because x(0) = 0 in the caller's coordinates.)
+    Evaluated in float64 for every damping regime: underdamped (cos/sin),
+    overdamped (cosh/sinh), critical and omega0 = 0, without dividing by a
+    vanishing omega0^2 (series branch) and nan-free in every unused branch.
+    """
+    w2 = omega0_sq.double()
+    g = torch.as_tensor(gamma, dtype=torch.float64, device=w2.device)
+    wd2 = w2 - 0.25 * g * g                                    # omega_d^2, either sign
+    r = wd2.abs().sqrt()
+    under = wd2 >= 0
+    C = torch.where(under, torch.cos(r * t), torch.cosh(torch.where(under, torch.zeros_like(r), r) * t))
+    S = t * torch.where(under, _sinc(r * t), _sinhc(torch.where(under, torch.zeros_like(r), r) * t))
+    e = torch.exp(-0.5 * g * t)
+    E11 = e * (C + 0.5 * g * S)
+    E12 = e * S
+    E22 = e * (C - 0.5 * g * S)
+    P = E12                                                    # velocity response to unit forcing
+    # Position response Q = (1 - E11)/omega0^2. Where omega0^2 t^2 is tiny the
+    # division cancels catastrophically, so Q is summed from the exact Taylor
+    # recurrence of x'' = 1 - g x' - w0^2 x, x(0) = x'(0) = 0, in the terms
+    # T_n = c_n t^n:  T_{n+2} = -(g t (n+1) T_{n+1} + w0^2 t^2 T_n)/((n+2)(n+1)),
+    # T_2 = t^2/2 (40 terms: converged to round-off for g t < 4). For g t >= 4
+    # with tiny omega0^2, the omega0 = 0 damped drift (relative error ~ w0^2 t/2g)
+    # or the division (~ eps g/(w0^2 t)), whichever is smaller (both <= 1e-8).
+    small = (w2 * t * t) < 1e-4
+    safe_w2 = torch.where(w2 > 0, w2, torch.ones_like(w2))
+    Q_div = (1.0 - E11) / safe_w2
+    gt = g * t
+    Tm, Tn = torch.zeros_like(w2), torch.full_like(w2, 0.5 * t * t)     # T_1, T_2
+    Q_ser = Tn
+    for k in range(2, 42):                                     # T_3 .. T_41
+        Tm, Tn = Tn, -(gt * k * Tn + w2 * t * t * Tm) / ((k + 1) * k)
+        Q_ser = Q_ser + Tn
+    g_safe = torch.where(gt > 0, g, torch.ones_like(g))
+    Q_zero = (gt - 1.0 + torch.exp(-gt)) / (g_safe * g_safe)
+    Q_large = torch.where(w2 * t < 1e-8 * g_safe, Q_zero.expand_as(Q_div), Q_div)
+    Q = torch.where(small, torch.where(gt < 4.0, Q_ser, Q_large), Q_div)
+    return E12, E22, P, Q
+
+
+def lowrank_damped_substep(
+    h: torch.Tensor,
+    v: torch.Tensor,
+    U: torch.Tensor,
+    kappa: torch.Tensor,
+    f_lr: torch.Tensor,
+    m: torch.Tensor,
+    gamma: torch.Tensor | float,
+    dt: float,
+) -> Tuple[torch.Tensor, torch.Tensor]:
+    """``lowrank_cfc_substep`` with the friction integrated exactly on span(U).
+
+    Same arguments plus ``gamma`` (a scalar, constant damping). On span(U)
+    each mode follows the exact forced damped oscillator over ``dt``; on the
+    complement the motion is the same free drift ``h += dt v``. With
+    ``gamma = 0`` this equals ``lowrank_cfc_substep`` (up to its omega^2
+    floor). The caller must NOT also apply the O-step to span(U).
+    """
+    z = torch.einsum('...dq,...d->...q', U, h)
+    wz = torch.einsum('...dq,...d->...q', U, v)
+    fz = torch.einsum('...dq,...d->...q', U, f_lr)
+    mq = m                                                    # (..., 1) broadcasts over the q modes
+    w0sq = kappa / mq
+    E12, E22, P, Q = damped_mode_coefficients(w0sq, gamma, dt)
+    E12, E22, P, Q = (c.to(h.dtype) for c in (E12, E22, P, Q))
+    a = fz / mq
+    z_new = z + E12 * wz + Q * a
+    wz_new = E22 * wz + P * a
+    h_new = h + dt * v + torch.einsum('...dq,...q->...d', U, z_new - z - dt * wz)
+    v_new = v + torch.einsum('...dq,...q->...d', U, wz_new - wz)
+    return h_new, v_new
+
+
+# ---------------------------------------------------------------------------
 # O-step: exact Ornstein-Uhlenbeck friction (+ optional FDT-locked noise)
 # ---------------------------------------------------------------------------
 def ou_step(
