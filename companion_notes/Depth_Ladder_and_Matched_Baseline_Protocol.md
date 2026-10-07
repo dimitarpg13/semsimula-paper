@@ -3665,7 +3665,7 @@ Each register is one slot holding one content vector: an exclusion (hard-core) o
 
 ### 5.15 PM1: bosonic Poisson-mode registers — **pre-registered 2026-10-05, before any run**
 
-**Why.** DP1–DP3 (§5.14) showed that the slot registers are exclusion objects, with constant number and salience acting as retention. So the book's bosonic, Poisson-mean Doi–Peliti v2 describes no trained model. PM1 is a register mechanism that has both properties by construction, to find out whether the bosonic v2 can be trained and what it is worth. Companion note: [`Doi_Peliti_Dynamics_of_Semantic_Particles_and_Registers.md`](Doi_Peliti_Dynamics_of_Semantic_Particles_and_Registers.md) §9.
+**Why.** DP1–DP3 (§5.14) showed that the slot registers are exclusion objects, with constant number and salience acting as retention. So the book's bosonic, Poisson-mean Doi–Peliti v2 describes no trained model. PM1 is a register mechanism that has both properties by construction, to find out whether the bosonic v2 can be trained and what it is worth. Companion notes: [`Poisson_Mode_Registers_PM1.md`](Poisson_Mode_Registers_PM1.md) (mechanism, Poisson exactness, conservativity proof, comparison with the slot registers, results), summarised in [`Doi_Peliti_Dynamics_of_Semantic_Particles_and_Registers.md`](Doi_Peliti_Dynamics_of_Semantic_Particles_and_Registers.md) §9.
 
 **Mechanism** (`model_parf_multixi.py`, `poisson_modes`). It has K = 64 shared mode prototypes μ_v, and works in five parts.
 - **Creation.** Token s creates particles in mode v at the rate given by its overlap with that mode, E_v(s) = exp(−κ_v²‖h_s − μ_v‖²).

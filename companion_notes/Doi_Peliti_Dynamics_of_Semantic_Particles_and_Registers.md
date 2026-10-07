@@ -467,6 +467,8 @@ Further readings, not pre-registered:
 
 ## 9. An alternative that is bosonic: Poisson-mode registers (PM1)
 
+The full treatment, with the derivations, the conservativity proof, the comparison with the slot registers, figures and results, is the companion note [*Poisson-Mode Registers (PM1)*](Poisson_Mode_Registers_PM1.md). This section summarises it.
+
 §7 shows that the slot registers are exclusion objects. A register mechanism that honours both bosonic statistics and the Poisson mean needs three changes, each forced by §2–§4:
 - **Shared modes, not slots.** Occupation must be able to exceed one in the same content mode.
 - **An occupation that is an unbounded Poisson mean.** Its update must be exactly the mean of a bosonic process.
@@ -478,17 +480,15 @@ $$
 E_v(s) = e^{-\kappa_v^2\lVert h_s - \mu_v\rVert^2}, \qquad \phi_v(t) = \sum_{s \lt t}\lambda_v^{t-1-s}E_v(s). \qquad (9.1)
 $$
 
-If each token injects a Poisson number of particles with mean $E_v(s)$ and each particle survives a token with probability $\lambda_v$, then the occupation is exactly Poisson with mean $\phi_v(t)$. Thinning and the addition of independent Poisson numbers both preserve the law. The occupations act on tokens through wells whose depth grows with occupation, (9.2):
+If each token injects a Poisson number of particles with mean $E_v(s)$ and each particle survives a token with probability $\lambda_v$, the occupation is exactly Poisson with mean $\phi_v(t)$: one token maps the coherent state with label $\phi$ to the one with label $\lambda\phi + E$ (PM1 note §3). The occupations act on tokens through wells whose depth grows with occupation, (9.2):
 
 $$
 U(h;t) = -\sum_v \phi_v(t) a_v e^{-\kappa_v^2\lVert h - \mu_v\rVert^2}, \qquad F = -\nabla_h U. \qquad (9.2)
 $$
 
-The more a meaning is present, the deeper its well. Because (9.2) is linear in the occupations, the force of the mean equals the mean of the force: carrying only $\phi$ is exact. Because (9.1) uses only $s \lt t$, the occupation is constant in $h_t$, and the force is an exact gradient in the token's own state. The claims of §0 then hold literally:
-- the coherent states are the Poisson laws of the occupations;
-- the occupation is the Doi field;
-- its update is the rate equation on the invariant line of §4.2.
-
-The implementation passes seven checks (`debug/verify_pm_switch.py`), including a Monte Carlo simulation of the immigration–death process that reproduces $\phi$ within 0.5% with variance equal to the mean. The pre-registered probe and full run decide whether the mechanism is worth anything over the conservative-only model. With a linear coupling, no measurement can show bosonic fluctuations: what is bosonic is the structure. A variant that samples the occupations in training would make the statistics themselves consequential.
+- **The claims of §0 hold literally.** The coherent states are the Poisson laws of the occupations, the occupation is the Doi field, and its update is the rate equation on the invariant line of §4.2. Because (9.2) is linear in the occupations, carrying only $\phi$ is exact.
+- **The step stays conservative.** The occupation uses only $s \lt t$, so it is constant in $h_t$; the force is then the gradient of a sum of Gaussian wells, with a symmetric Jacobian and zero curl (PM1 note §4). Like V_φ, it is conservative per token and one-way between tokens (§5.3).
+- **What is not bosonic in effect.** With a linear coupling no measurement can show bosonic fluctuations; what is bosonic is the structure. A variant that samples the occupations in training would make the statistics consequential.
+- **Result so far.** The 8,000-step probe reached 79.78 PPL, against 93.57 for its conservative base F3.1 and 82.92 for G2, the slot-register model, at the same step (PM1 note §6). The full run and the refinement test decide what the book says.
 
 **References.** M. Doi, Second quantization representation for classical many-particle system, J. Phys. A 9 (1976). L. Peliti, Path integral approach to birth-death processes on a lattice, J. Physique 46 (1985). U. C. Täuber, M. Howard and B. P. Vollmayr-Lee, Applications of field-theoretic renormalization group methods to reaction-diffusion problems, J. Phys. A 38 (2005). H. Risken, The Fokker–Planck Equation (Springer, 1989), for the Kramers operator.
