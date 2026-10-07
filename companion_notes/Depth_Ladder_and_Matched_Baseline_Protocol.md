@@ -3740,6 +3740,60 @@ The step-7,500 eval is read beside the step-8,000 one for the scatter, but the g
 
 **Caveat recorded in advance.** With a coupling linear in φ, no measurement can show bosonic *fluctuations*; what is bosonic is the structure (shared modes, occupation without a cap, an exact immigration–death mean). A sampled variant, drawing n ~ Poisson(φ) in training, is the follow-up that would make the statistics consequential.
 
+#### PM1 probe scored at step 8,000: **79.78 — perplexity PASS, clip MISS on the letter** — **2026-10-06**
+
+Run output `L2probe_arm_none_pm64_8000steps_output.txt`; tag `…cgqk_norc_vplive_xilive_pm64_L2probe…idt4_lr0p0012_noattn`; stopped at `_step8000_probe_stop.pt`.
+
+| step | **PM1** | F3.1 | PM1 vs F3.1 | G2 | PM1 vs G2 |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 3,000 | 122.34 | 127.73 | −4.2% | 123.59 | −1.0% |
+| 5,000 | 97.23 | 106.71 | −8.9% | 101.17 | −3.9% |
+| 6,000 | 89.73 | 103.00 | −12.9% | 93.11 | −3.6% |
+| 7,000 | 84.45 | 99.00 | −14.7% | 86.98 | −2.9% |
+| 7,500 | 81.49 | 93.69 | −13.0% | 84.71 | −3.8% |
+| **8,000** | **79.78** | 93.57 | **−14.7%** | 82.92 | **−3.8%** |
+
+- **Perplexity gate (90.8 or lower at step 8,000): PASS**, by 11 PPL; step 7,500 agrees. PM1 is below G2, the slot-register model, at every eval from step 3,000 on, which no pre-registered prediction anticipated (the closest, "settled between G2 and F3.1", 45%). The modes add about 25k parameters to 77M, so this is not capacity. It would also have passed the withdrawn 3,000-step gate (122.34 against 126.4).
+- **pm_ clip criterion (under 5% of logged steps, no divergence): MISS on the letter.** The pm_ group is the largest-gradient group on 138 of 160 logged steps, and its pre-clip norm is shown at 0.4 or more, certainly above the 0.3 threshold, on 123 (77%). Over steps 2,000–8,000 the norm is steady, median 0.5, p95 0.9, maximum 1.6, with no growth. The aggregate norm peaks at 1.81 and exceeds the global 1.0 on 11 of 160 logged steps (6.9%; F3.1 2 of 160 over the same window). No spike, no watchdog event. The criterion's purpose, no divergence, is met: this is a steady throttle, so the pm_ parameters trained at a capped effective learning rate for most of the probe (the effect checklist item C3 states exactly for scalar groups: persistent joint clipping acts as a learning-rate cut).
+- **SCAF** at step 5,000: CLEAN, leak tax −3.8e-5 nats.
+- **Stiffness:** ω·Δt median 3.00 at step 8,000 (max 6.81), against F3.1's 4.00 and G2's 2.34 at the same step.
+- **Decision (author, 2026-10-06):** the split is accepted. The full run goes ahead, but with the pm_ clip retuned, as a fresh arm (next block), not as a continuation of this checkpoint. The 0.3 value was never tuned for these parameters; it was copied from the other gates. This probe is kept as the 0.3 comparator through step 8,000, and its checkpoint as a fallback: if the retuned arm diverges, this one continues from `_step8000_probe_stop.pt`.
+
+#### PM1 at pm_ clip 1.0: an 8,000-step probe, then the full run — pre-registered **2026-10-06, before the run**
+
+**Why a fresh arm.** Continuing the probe with a different clip would give a hybrid (0.3 for 8,000 steps, then 1.0, with AdamW's moments shaped under the throttle), and, because `POISSON_MODE_CLIP` was not in the tag, it would have resumed into the 0.3 arm's folder under the same name. With its own 8,000-step probe the fresh arm costs about 3.6 h more than a continuation, and that time buys the matched comparison.
+
+**Why 1.0.** Over steps 2,000–8,000 of the probe, the share of logged steps on which the pm_ group's pre-clip norm exceeds a threshold is 91% at 0.3, 40% at 0.5, 11% at 0.75, **2% at 1.0** and 1% at 1.5. At 1.0 the group is clipped on outliers only, within the 5% criterion, at the same threshold as the default group.
+
+**Code (2026-10-06).** Cell 0 appends `pmclip<thr>` when `POISSON_MODES > 0` and `POISSON_MODE_CLIP ≠ 0.3`, conditionally, as `RELAX_FIELD_CLIP` does with `rfclip`; Cell 5b asserts it. Verified by running Cell 0's code at HEAD and in the working copy: the tags of the default, F3.1, the 0.3 probe, G2, G3′, L=4 live and SR2-on-F3.1 are unchanged, a clip of 1.0 with the modes off adds nothing, and the new arm's tag is `…cgqk_norc_vplive_xilive_pm64_pmclip1_L2probe…idt4_lr0p0012_noattn`. This closes the `POISSON_MODE_CLIP` tag defect of the checklist's clip-hygiene block. Cell 6 already passes the knob through (`GRAD_CLIP_OVERRIDES['pm_'] = POISSON_MODE_CLIP`).
+
+**Run.** F3.1's Cell 0 (`REVERSE_CHANNEL = False`, `VPHI_GRAD_PATH = XI_GRAD_PATH = 'live'`) plus `POISSON_MODES = 64`, `POISSON_MODE_CLIP = 1.0`, `PROBE_MAX_STEPS = 8_000`. Seed 0, WSD on the full 32,500-step schedule as every arm.
+
+**Stage 1, a matched probe (added at the author's request, before the run).** The clip-1.0 arm also stops at step 8,000, so the two clip settings are compared at matched steps before either goes to 32,500. The stop costs nothing: the chosen arm continues from its own `_step8000_probe_stop.pt` (about 11 h). Decision rule at step 8,000, against the 0.3 probe's 79.78:
+
+| clip-1.0 at step 8,000 | arm continued to 32,500 |
+| --- | --- |
+| 78.2 or lower (better by more than 2%) | clip 1.0 |
+| 78.2–81.4 (within ±2%) | clip 1.0: equal perplexity, and it meets the clip criterion |
+| above 81.4 (worse by more than 2%) | the 0.3 arm, continued from its checkpoint; clip 1.0 is stopped and recorded |
+| diverged at any point | the 0.3 arm |
+
+Early stop, descriptive and at the author's discretion: if clip 1.0 is more than 5% behind the 0.3 probe at both steps 5,000 (97.23) and 6,000 (89.73), it may be stopped before 8,000 and the 0.3 arm continued. The losing probe's 8,000 steps are kept as the paired comparison of the two clip settings.
+
+**Predictions:**
+
+| | prediction | called |
+| --- | --- | --- |
+| PC1 | pm_ clip hits under 5% of logged steps, no divergence (no watchdog trigger) | 80% |
+| PC2 | step 8,000 at 81.4 or lower, i.e. not more than 2% worse than the 0.3 probe's 79.78 | 80% |
+| PC3 | step 8,000 at 78.2 or lower: the throttle cost more than 2% | 25% |
+| PC4 | settled PPL below G2's 53.12 | 50% |
+
+- **The Stage 2 table above carries over unchanged** (settled vs F3.1 and vs G2, causality, repetition, depth signs, DP3 rerun), as do RR-PM1 and RR-PM2, now scored on this arm. Those calls were made before the probe and are not revised. PC4 is new and is made with the probe in hand: PM1 leads G2 by 3.8% at step 8,000, but G2's own lead over F3.1 narrows during the decay (−11.4% at 8,000, −7.5% at 32,500), so a lead at 8,000 need not survive to settling.
+- **Reading PC2 and PC3 together.** Within ±2% of 79.78: the throttle did not matter at this scale, and the 0.3 probe's number stands as a fair reading of the mechanism. Better by more than 2%: the throttle was costing perplexity, and every pm_ number from the probe is a lower bound. Worse by more than 2%: the clip was acting as a useful learning-rate cut on these parameters; the settled comparison is then run against the 0.3 arm continued from its checkpoint, and both are reported.
+- **If PC1 fails by divergence** (watchdog hard trigger, or a pm_ norm that grows rather than plateaus): stop, record it, and continue the 0.3 arm from `_step8000_probe_stop.pt` instead.
+- **PC1–PC3 are scored at the probe stop; PC4, the Stage 2 table and RR-PM1/RR-PM2 on whichever arm the rule continues.** If that is the 0.3 arm, the full-run predictions are scored on it and the clip criterion is reported as missed.
+
 ### 5.16 F0: is there a shared floor near 50 PPL? The stable-phase extrapolation — **pre-registered 2026-10-06, before any fit**
 
 **Why.** Among the L=2 models with the register path, G2 (53.12), G3 (54.21) and G3′ (52.90) settle within 2.5% of each other, whatever else is switched on. L=4 Fock (50.10) and the 8-layer matched GPT-2 (49.81) end near 50. Is the floor set by depth, or by what every model shares: d = 384, the untied head and 532M tokens?

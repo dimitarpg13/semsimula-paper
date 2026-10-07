@@ -663,12 +663,12 @@ adds a point to a curve.
 **GPU queue (updated 2026-10-06; refinement work is high priority):**
 1. ~~G3′~~ done: 52.90.
 2. ~~**W1, the matched GPT-2 on WSD**~~ done 2026-10-06: settled 48.82 (−1.99% against cosine). W1.1–W1.3 HIT, W1.4 MISS; parity stands by the rule, on its boundary (protocol §5.17).
-3. The PM1 probe (8,000 steps, about 4 h; revised 2026-10-06 from 3,000), with G4 (6b-10 on run 4) in the same session.
-4. **The seed pair: G3′-s1, then G2-s1** (about 15 h each; protocol §5.19, Test 1).
-5. **SR2 on F3.1** (protocol §5.19, Test 2). The substep is implemented and verified (2026-10-06); F3.1's Cell 0 + `LOWRANK_DAMPED_FLOW = True`.
-6. The FO 2×2.
-7. **An L=8 Fock live probe, then the full run** (about 5 h + 55 h). It combines SR-π.1, the depth trend, the matched-depth GPT-2 comparison and the floor question; its consolidated pre-registration is still to be written.
-8. The PM1 full run, if gated in.
+3. ~~The PM1 probe (8,000 steps)~~ done 2026-10-06: **79.78**, −14.7% against F3.1 and −3.8% against G2 at step 8,000. Perplexity PASS; pm_ clip MISS on the letter (a steady throttle at 0.3, no divergence). G4 (6b-10 on run 4) still open: Colab, minutes.
+4. **PM1 at pm_ clip 1.0: an 8,000-step probe (about 3.6 h; tag `…pm64_pmclip1…`), then the full run on whichever clip wins at step 8,000** (about 11 h), at the author's call 2026-10-06 (protocol §5.15).
+5. **The seed pair: G3′-s1, then G2-s1** (about 15 h each; protocol §5.19, Test 1).
+6. **SR2 on F3.1** (protocol §5.19, Test 2). The substep is implemented and verified (2026-10-06); F3.1's Cell 0 + `LOWRANK_DAMPED_FLOW = True`.
+7. The FO 2×2.
+8. **An L=8 Fock live probe, then the full run** (about 5 h + 55 h). It combines SR-π.1, the depth trend, the matched-depth GPT-2 comparison and the floor question; its consolidated pre-registration is still to be written.
 9. The CB series.
 10. The rest of the SR series (SR1, SR4a, SR3, SR4b, SR5).
 
@@ -712,8 +712,10 @@ The deeper models end near 50 at the same width and token budget: L=4 Fock at 50
 The alternative Fock mechanism that is bosonic and Poisson-mean by construction, prompted by DP1–DP3.
 
 - [x] Implement `poisson_modes`: model, Cell 0 `POISSON_MODES` and `POISSON_MODE_CLIP`, tag `pm<K>`, Cell 5b guard, Cell 6 clip group. Verified 2026-10-05: off is bit-identical to HEAD on G2, F3.1 and G3′; on passes all seven checks (`debug/verify_pm_switch.py`).
-- [ ] **Probe:** F3.1's Cell 0 plus `POISSON_MODES = 64`, `PROBE_MAX_STEPS = 8_000` (about 4 h). **Revised 2026-10-06 from 3,000 steps, before any PM1 data:** G2's advantage over F3.1 is −3.2% at 3,000 (inside the ±2% eval scatter) and −11.4% at 8,000, so 3,000 is before any memory mechanism shows itself, and PM1's well depths start at 0. Gate: **at most 90.8 at step 8,000** (at least 3% better than F3.1's 93.57); 90.8–92.6 is a weak signal, full run at the author's discretion; above 92.6 fails. pm_ clip hits under 5%. The probe steps are not wasted: a passing run continues from `_step8000_probe_stop.pt`. Protocol §5.15.
-- [ ] **Full run** if the gate passes. Clear `PROBE_MAX_STEPS` and the same run continues, after the FO 2×2 unless moved.
+- [x] **Probe:** F3.1's Cell 0 plus `POISSON_MODES = 64`, `PROBE_MAX_STEPS = 8_000` (about 4 h). **Revised 2026-10-06 from 3,000 steps, before any PM1 data:** G2's advantage over F3.1 is −3.2% at 3,000 (inside the ±2% eval scatter) and −11.4% at 8,000, so 3,000 is before any memory mechanism shows itself, and PM1's well depths start at 0. Gate: **at most 90.8 at step 8,000** (at least 3% better than F3.1's 93.57); 90.8–92.6 is a weak signal, full run at the author's discretion; above 92.6 fails. pm_ clip hits under 5%. The probe steps are not wasted: a passing run continues from `_step8000_probe_stop.pt`. Protocol §5.15. **Scored 2026-10-06: 79.78 at step 8,000** (F3.1 93.57, G2 82.92): perplexity PASS by 11 PPL, below G2 at every eval from 3,000. pm_ clip MISS on the letter: pre-clip norm above 0.3 on 77–86% of logged steps, steady at median 0.5, no divergence, SCAF CLEAN. Split accepted by the author; the full run is retuned (next item). Checkpoint `_step8000_probe_stop.pt` kept as the 0.3 comparator and fallback.
+- [x] ~~**Full run** if the gate passes. Clear `PROBE_MAX_STEPS` and the same run continues, after the FO 2×2 unless moved.~~ Superseded 2026-10-06 by the retuned fresh run below.
+- [x] **`POISSON_MODE_CLIP` reaches the tag** (2026-10-06): `pmclip<thr>` when modes are on and the clip is not 0.3, with a Cell 5b guard. Verified against HEAD: every existing arm's tag is unchanged, including the 0.3 probe.
+- [ ] **Clip-1.0 arm: 8,000-step probe, then the full run on the winning clip** (author's call 2026-10-06). F3.1's Cell 0 plus `POISSON_MODES = 64`, `POISSON_MODE_CLIP = 1.0`, `PROBE_MAX_STEPS = 8_000`. Rule at step 8,000 against the 0.3 probe's 79.78: at or below 81.4 → continue clip 1.0; above 81.4 or diverged → continue the 0.3 arm from its checkpoint; tag `…cgqk_norc_vplive_xilive_pm64_pmclip1_L2probe…`. Why 1.0: over the probe's steps 2k–8k the group would be clipped on 91% of steps at 0.3, 40% at 0.5, 11% at 0.75, 2% at 1.0. Pre-registered PC1 clip hits under 5%, no divergence (80%); PC2 step 8,000 at or below 81.4 (80%); PC3 at or below 78.2 (25%); PC4 settled below G2's 53.12 (50%). The Stage 2 table, RR-PM1 and RR-PM2 carry over. If it diverges, continue the 0.3 arm instead. Protocol §5.15.
 - [ ] **Post-run:** the repetition test, the depth signs and the DP3 rerun (protocol §5.15). Then the book: Remark 61 and §10.5.2, according to the decision rule.
 - [ ] **Refinement readiness (added 2026-10-06, before the probe):** 6b-7 Gate 3 on the full run's best checkpoint, N = 3 at fixed T, policy `hold`. Pre-registered RR-PM1: at or below F3.1's +143% (60%); RR-PM2: below +600% (85%). `pm_depth` follows `_fom_policy_index` like `depth_code`, so no code change; φ is token-accumulated and unaffected by refinement. If SR2's E1 holds first, the full run goes on the corrected base (`LOWRANK_DAMPED_FLOW = True`, tag `pm64_sr2`), the author's call before launch. Protocol §5.15.
 
@@ -899,7 +901,7 @@ Full programme, tiers and stop rules:
 > - **D3, D4:** withdrawn. Both were contingent on D1–D2 failing.
 > - **"Back to the factorial":** superseded. The V_φ × Fock comparison on the starved convention is replaced by the Gen 3 ladder (F3.1 57.76 against G2 53.12 at L=2, with V_φ and ξ live).
 >
-> **The blocking defect below stays open as general hygiene.** It applies to any run that changes a clip threshold. The two new clip knobs differ: `RELAX_FIELD_CLIP` reaches the tag (`rfclip…`), but `POISSON_MODE_CLIP` does not, so only the default 0.3 is collision-safe.
+> **The blocking defect below stays open as general hygiene.** It applies to any run that changes a clip threshold. The two new clip knobs differ: `RELAX_FIELD_CLIP` reaches the tag (`rfclip…`), but `POISSON_MODE_CLIP` does not, so only the default 0.3 is collision-safe. *`POISSON_MODE_CLIP` fixed 2026-10-06 (tag `pmclip<thr>`, PM1 block); the general defect stays open for the other clip knobs.*
 
 **Original agenda, kept for the record:**
 
