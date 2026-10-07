@@ -1,0 +1,50 @@
+probing fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_pm64_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_step8000_probe_stop.pt
+   step 8,000  val ppl 79.78
+
+MODES  K=64  L=2
+   half-life (tokens): init 4.0-128.0; trained p05 5.6  p50 15.0  p95 32.3  (median |log2(trained/init)| 0.58)
+   kappa^2 x d: init 1.00; trained p05 0.60  p50 0.80  p95 1.13
+   layer 0: depth p05/p50/p95 -0.048 / -0.022 / +0.001  positive 6%   PM force / conservative force 0.970
+   layer 1: depth p05/p50/p95 +0.130 / +0.349 / +0.601  positive 98%   PM force / conservative force 6.287
+
+(A) STEP SIZE -- Adam moments at the checkpoint
+   noise floor of the consistency c: 0.229   (other tensors: median c 0.192, median relative step 2.54e-03)
+             tensor       c  c/floor   rel step  x median
+              pm_mu   0.182     0.80   2.47e-04      0.10
+           pm_depth   0.137     0.60   6.62e-04      0.26
+      pm_log_kappa2   0.139     0.61   2.74e-05      0.01
+    pm_logit_lambda   0.123     0.54   5.20e-05      0.02
+   -> (A) not indicated
+
+(B) WEIGHT DECAY
+   |mu_v| p05/p50/p95 16.3 / 17.5 / 19.8  (init ~ sqrt(d) = 19.6)
+   dead modes (no token at any layer reaches overlap 0.01): 0 of 64 (0%)
+       pm_mu: weight decay 0.01; decay step / Adam step 0.05; cosine(Adam step, theta) -0.04 (loss pushes inward)
+    pm_depth: weight decay 0.01; decay step / Adam step 0.02; cosine(Adam step, theta) +0.42 (loss pushes outward)
+   -> (B) not indicated
+
+(D) PLACEMENT AND WIDTH -- do the modes reach the tokens at each layer?
+   layer 0: median |h|     2.1  (median |mu| 17.5); tokens reaching a mode 100.0%; mean overlap 4.97e-01; modes silent here 0/64
+   layer 1: median |h|    22.6  (median |mu| 17.5); tokens reaching a mode 100.0%; mean overlap 1.64e-01; modes silent here 0/64
+   -> (D) not indicated
+
+(C) OCCUPATION SCALE -- by half-life quartile (short <= 9.1 tokens, long >= 22.2)
+   layer 0: occupation phi  short   5.97  long  14.15  (x2.4)
+            force share   short  19.2%  long  22.3%  (balanced: 25% each)   Spearman(half-life, share) +0.03
+            function-space step per update, long / short: x1.3
+   layer 1: occupation phi  short   2.40  long   3.29  (x1.4)
+            force share   short  34.4%  long  10.8%  (balanced: 25% each)   Spearman(half-life, share) -0.75
+            function-space step per update, long / short: x0.5
+   -> (C) not indicated
+
+CLIP GROUP pm_ on one batch: group norm 1.059; share of norm^2 by tensor: pm_depth 99%, pm_log_kappa2 1%, pm_logit_lambda 0%, pm_mu 0%
+   (a group clip scales all four together: if one tensor carries most of the
+    norm, the others are clipped on its account)
+
+SUMMARY
+   (A) step size         not indicated
+   (B) weight decay      not indicated
+   (C) occupation scale  not indicated
+   (D) placement, width  not indicated
+   filed -> /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_pm64_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/results/pm_tuning_diagnostics.jsonl
+   live training state restored
