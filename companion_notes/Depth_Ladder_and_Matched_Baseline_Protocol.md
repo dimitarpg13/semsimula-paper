@@ -3796,7 +3796,7 @@ Early stop, descriptive and at the author's discretion: if clip 1.0 is more than
 
 #### PM1 clip-1.0 probe scored at step 8,000: **81.67 — the 0.3 arm continues** — **2026-10-07**
 
-Run output `L2probe_arm_none_pm64_clip1.0_8000steps_output.txt`; tag `…cgqk_norc_vplive_xilive_pm64_pmclip1_L2probe…idt4_lr0p0012_noattn`; stopped at `_step8000_probe_stop.pt`. Same seed, data order and schedule as the 0.3 probe.
+Run output `L2probe_arm_none_pm64_clip1.0_8000steps_output.txt`; tag `…cgqk_norc_vplive_xilive_pm64_pmclip1_L2probe…idt4_lr0p0012_noattn`; stopped at `_step8000_probe_stop.pt`. Same seed, data order and schedule as the 0.3 probe. The printed log is partial (it starts at step 1,550: copying the earlier output was blocked by macOS's clipboard scanner, a false positive); the run's `training_log.jsonl` is complete and is filed beside it in `results/…pm64_pmclip1…/`. It gives step 500 at 459.66 and step 1,500 at 177.84 (clip 0.3: 459.92 and 177.50), and agrees with every printed eval.
 
 | step | clip 1.0 | clip 0.3 | 1.0 vs 0.3 |
 | ---: | ---: | ---: | ---: |
@@ -3817,6 +3817,29 @@ Run output `L2probe_arm_none_pm64_clip1.0_8000steps_output.txt`; tag `…cgqk_no
 - **Reading.** The tight clip helped. Under AdamW a constant rescaling of a group's gradient cancels in the update, so the 0.3 clip did not act as a learning-rate cut; what it changed is that every step's pm_ gradient was renormalised to the same norm, so steps with a large pm_ gradient counted no more than quiet ones. The clip criterion of the first probe measured a symptom, not a fault. Both arms remain below G2 at step 8,000 (clip 1.0 by 1.5%, clip 0.3 by 3.8%).
 - **Stiffness:** ω·Δt median at step 8,000 is 3.68 (max 7.13) for clip 1.0, against 3.00 for clip 0.3 and 4.00 for F3.1. The looser clip let the stiff modes climb further, which bears on refinement readiness (RR-PM1).
 - **Before the full run (author, 2026-10-07):** Cell 6b-15 (PM1 tuning diagnostics: step size, weight decay, occupation scale, placement and width) is run on both probe checkpoints. A knob flagged on both is a property of the mechanism, not of the clip, and is addressed before the 0.3 arm is continued. A local test of the cell on F3.1's state scales, with the modes at initialisation, found the layer-1 states at median norm about 300 against mode centres at about 20, so only 2% of tokens reach a mode at layer 1; whether the trained probes still show this is what the cell reads.
+
+#### Cell 6b-15 on both probe checkpoints: **no knob flagged — the 0.3 arm continues unchanged** — **2026-10-07**
+
+Cell 6b-15 (PM1 tuning diagnostics, ladder notebook) reads a probe checkpoint with its optimiser state and tests four knobs against thresholds written into the cell before it was first run: (A) step size, from Adam's moments; (B) weight decay; (C) occupation scale, by half-life quartile; (D) placement and width, per layer. Both checkpoints at step 8,000; no knob is flagged on either.
+
+| | clip 1.0 | clip 0.3 |
+| --- | ---: | ---: |
+| val PPL at step 8,000 | 81.67 | 79.78 |
+| half-life p50 / p95, tokens (init 4–128) | 16.0 / 33.0 | 15.0 / 32.3 |
+| κ²·d p50 (init 1.00) | 0.84 | 0.80 |
+| layer-0 depth p50, share positive | −0.017, 6% | −0.022, 6% |
+| layer-1 depth p50, share positive | +0.327, 100% | +0.349, 98% |
+| layer-1 PM force / conservative force | 5.45 | 6.29 |
+| (A) consistency c of pm_depth (noise floor 0.23) | 0.12 | 0.14 |
+| (B) pm_depth decay / Adam step; cosine(step, θ) | 0.02; +0.17 | 0.02; +0.42 |
+| (D) tokens reaching a mode, layer 0 / 1 | 100% / 100% | 100% / 100% |
+| (C) layer-1 force share, short / long quartile | 28% / 13% | 34% / 11% |
+| pm_depth share of the pm_ group's gradient norm² | 99% | 99% |
+
+- **Shared by both, so properties of the mechanism:** PM1 acts at layer 1 (attractive wells, force 5–6× the conservative force) and has switched itself off at layer 0 (depths near zero, slightly repulsive). The trained half-lives are short to mid range (none above about 33 tokens), and at layer 1 the short modes carry the most force, the opposite of the count imbalance (C) tested for. PM1's own states sit at median |h| 2.1 (layer 0) and 22.6 (layer 1) against centres at about 18, so every token reaches a mode; the silent-layer concern from the cell's local test on F3.1's state scales does not apply to the trained model. Adam's consistency is below the noise floor for every tensor in both models, so the step size is not limiting.
+- **What the clip changed:** only the depths. pm_depth carries 99% of the group's gradient norm, so the group clip is effectively a clip on the 128 depth parameters. Under 0.3 the layer-1 wells are deeper, the memory force stronger, and the loss still pushes the depths outward (cosine +0.42 against +0.17), consistent with per-step renormalisation of the depth gradient helping.
+- **Decision (author, 2026-10-07):** continue the 0.3 arm from `_step8000_probe_stop.pt` to 32,500 unchanged (`POISSON_MODE_CLIP = 0.3`, `PROBE_MAX_STEPS = None`). The Stage 2 predictions, PC4, RR-PM1 and RR-PM2 are scored on it. RR-PM1 is now the most informative: the conservative memory force dominates the layer-1 step.
+- **Candidate follow-ups, not scheduled:** a clip group of its own for pm_depth; an initial half-life range of 4–32 tokens; removing the layer-0 depths.
 
 ### 5.16 F0: is there a shared floor near 50 PPL? The stable-phase extrapolation — **pre-registered 2026-10-06, before any fit**
 
