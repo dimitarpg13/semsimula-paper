@@ -3794,6 +3794,30 @@ Early stop, descriptive and at the author's discretion: if clip 1.0 is more than
 - **If PC1 fails by divergence** (watchdog hard trigger, or a pm_ norm that grows rather than plateaus): stop, record it, and continue the 0.3 arm from `_step8000_probe_stop.pt` instead.
 - **PC1–PC3 are scored at the probe stop; PC4, the Stage 2 table and RR-PM1/RR-PM2 on whichever arm the rule continues.** If that is the 0.3 arm, the full-run predictions are scored on it and the clip criterion is reported as missed.
 
+#### PM1 clip-1.0 probe scored at step 8,000: **81.67 — the 0.3 arm continues** — **2026-10-07**
+
+Run output `L2probe_arm_none_pm64_clip1.0_8000steps_output.txt`; tag `…cgqk_norc_vplive_xilive_pm64_pmclip1_L2probe…idt4_lr0p0012_noattn`; stopped at `_step8000_probe_stop.pt`. Same seed, data order and schedule as the 0.3 probe.
+
+| step | clip 1.0 | clip 0.3 | 1.0 vs 0.3 |
+| ---: | ---: | ---: | ---: |
+| 1,000 | 239.71 | 238.54 | +0.5% |
+| 2,000 | 150.18 | 148.12 | +1.4% |
+| 3,000 | 125.38 | 122.34 | +2.5% |
+| 4,000 | 113.26 | 109.33 | +3.6% |
+| 5,000 | 101.28 | 97.23 | +4.2% |
+| 6,000 | 93.26 | 89.73 | +3.9% |
+| 7,000 | 85.79 | 84.45 | +1.6% |
+| 7,500 | 83.54 | 81.49 | +2.5% |
+| **8,000** | **81.67** | **79.78** | **+2.4%** |
+
+- **PC1 (pm_ clip hits under 5%, no divergence): HIT.** The pm_ pre-clip norm exceeded 1.0 on 5 of 130 logged steps (3.8%), maximum 1.5. No spike or watchdog event. SCAF CLEAN at step 5,000 (leak tax +1.4e-4 nats).
+- **PC2 (81.4 or lower at step 8,000): MISS,** by 0.27 PPL.
+- **PC3 (78.2 or lower): MISS.**
+- **Decision rule: above 81.4, so the 0.3 arm continues** from its `_step8000_probe_stop.pt`; clip 1.0 is stopped. Clip 1.0 trails at every eval from step 2,000 on, by 1.4–4.4%, so this is not one noisy point.
+- **Reading.** The tight clip helped. Under AdamW a constant rescaling of a group's gradient cancels in the update, so the 0.3 clip did not act as a learning-rate cut; what it changed is that every step's pm_ gradient was renormalised to the same norm, so steps with a large pm_ gradient counted no more than quiet ones. The clip criterion of the first probe measured a symptom, not a fault. Both arms remain below G2 at step 8,000 (clip 1.0 by 1.5%, clip 0.3 by 3.8%).
+- **Stiffness:** ω·Δt median at step 8,000 is 3.68 (max 7.13) for clip 1.0, against 3.00 for clip 0.3 and 4.00 for F3.1. The looser clip let the stiff modes climb further, which bears on refinement readiness (RR-PM1).
+- **Before the full run (author, 2026-10-07):** Cell 6b-15 (PM1 tuning diagnostics: step size, weight decay, occupation scale, placement and width) is run on both probe checkpoints. A knob flagged on both is a property of the mechanism, not of the clip, and is addressed before the 0.3 arm is continued. A local test of the cell on F3.1's state scales, with the modes at initialisation, found the layer-1 states at median norm about 300 against mode centres at about 20, so only 2% of tokens reach a mode at layer 1; whether the trained probes still show this is what the cell reads.
+
 ### 5.16 F0: is there a shared floor near 50 PPL? The stable-phase extrapolation — **pre-registered 2026-10-06, before any fit**
 
 **Why.** Among the L=2 models with the register path, G2 (53.12), G3 (54.21) and G3′ (52.90) settle within 2.5% of each other, whatever else is switched on. L=4 Fock (50.10) and the 8-layer matched GPT-2 (49.81) end near 50. Is the floor set by depth, or by what every model shares: d = 384, the untied head and 532M tokens?
