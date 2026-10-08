@@ -3841,6 +3841,49 @@ Cell 6b-15 (PM1 tuning diagnostics, ladder notebook) reads a probe checkpoint wi
 - **Decision (author, 2026-10-07):** continue the 0.3 arm from `_step8000_probe_stop.pt` to 32,500 unchanged (`POISSON_MODE_CLIP = 0.3`, `PROBE_MAX_STEPS = None`). The Stage 2 predictions, PC4, RR-PM1 and RR-PM2 are scored on it. RR-PM1 is now the most informative: the conservative memory force dominates the layer-1 step.
 - **Candidate follow-ups, not scheduled:** a clip group of its own for pm_depth; an initial half-life range of 4–32 tokens; removing the layer-0 depths.
 
+#### PM1 full run scored: **55.17 settled — 4.5% better than F3.1, 3.9% behind G2** — **2026-10-08**
+
+Run output `L2_arm_none_pm64_clip0.3_32500steps_output.txt` (steps 8,001–32,500, resumed from the 0.3 probe's step-8,000 checkpoint), filed with the probe log in `results/…pm64_L2probe…/`.
+
+| | **PM1** | F3.1 (conservative-only) | G2 (slot registers) | matched GPT-2 (cosine) |
+| --- | ---: | ---: | ---: | ---: |
+| settled (last 3) | **55.17** (56.61, 55.17, 53.74) | 57.76 | 53.12 | 49.81 |
+| best | 53.67 (step 30,500) | 57.35 | 51.27 | — |
+| PPL at step 21,000 (end of the stable phase) | 67.29 | 71.81 | 63.61 | — |
+| decay gain, nats | 0.199 | 0.218 | 0.180 | — |
+| ω·Δt median at the end | 2.84 | 4.32 | 3.40 | — |
+
+- **Settled better than F3.1 by at least 1% (50%): HIT**, −4.5%.
+- **Settled between G2 and F3.1 (45%): HIT.**
+- **PC4, settled below G2 (50%): MISS**, +3.9%. PM1 led G2 at step 8,000 (−3.8%) and fell behind at about step 12,000. Its lead over F3.1 held at 9–11% from step 9,000 to 18,000, while G2's lead over F3.1 grew to 12–15%: PM1's memory gives a fixed gain; G2's slot registers kept adding value in mid-training. A model-wide gradient episode at steps 10,000–14,000 (pm_ norm above 1.0 on 25% of logged steps, the global norm above 1.0 on 32%) coincides with the crossover.
+- **Causality in flight:** SCAF CLEAN at 10k, 15k, 20k, 25k and 30k (and at 5k in the probe). The step-32,500 audit printed nan for its PPLs, as G3′'s did. The independent check (`debug/causality_check_checkpoint.py … pm64`) is pending.
+- **Health:** no watchdog or spike event; the global norm exceeded 1.0 on 47 of 490 logged steps (9.6%, max 2.45); the pm_ pre-clip norm exceeded 0.3 on 265 of 477 steps where pm_ was the top group (56%) and 1.0 on 29.
+- **Decision rule: the full run beats F3.1 by at least 1%,** so the bosonic Doi–Peliti v2 is trainable and worth something. The book states its price against the slot registers (3.9%) and that it honours claims 1–3 literally. PM1 is the best conservative model at L = 2: it recovers 56% of the F3.1 → G2 gap (2.59 of 4.64 PPL).
+- **The queued conditional applies** (PC4 missed): the clip-1.0 arm continues from its step-8,000 checkpoint before the seed pair, preferably to 32,500 for a settled comparison.
+- **Pending, all pre-registered:** RR-PM1 and RR-PM2 (6b-7 Gate 3), the repetition test, the depth signs, the DP3 rerun on the modes (`debug/pm1_post_run_measurements.py`), the conservativity test on the trained weights (`debug/conservativity_test_checkpoint.py … pm64`, with V_φ's router share), and the independent causality check.
+
+#### PM1 refinement and stiffness (6b-7, 6b-13): **RR-PM1 MISS narrowly, RR-PM2 HIT — but PM1 is the least robust off its trained schedule** — **2026-10-08**
+
+Cells 6b-7 and 6b-13 on the full run's best checkpoint (step 30,500, PPL 53.67), filed in `results/…pm64_L2probe…/`. GATE 0 PASS (patched loop bit-identical).
+
+| | F3.1 | G2 | **PM1** |
+| --- | ---: | ---: | ---: |
+| Gate 1, velocity reset | +34% | +33% | **+10,600%** (5,748 PPL) |
+| Gate 2, one extra step at the trained Δt (N = 3) | +92% | +51% | **+951%** |
+| Gate 3, refinement at fixed T, N = 3 | +143% | +1,274% | **+149%** |
+| Gate 3, N = 4 | +374% | +611% | +16,700% |
+| Gate 3, N = 6 | +703% | +1,235% | +6,880% |
+| Gate 3, N = 8 | +873% | +1,565% | +3,700% |
+| ω·Δt median at the endpoint (6b-13) | 4.32 | 3.40 | **2.81** |
+
+- **RR-PM1 (Gate 3 at N = 3 at or below F3.1's +143%, called 60%): MISS,** by 6 points (+149%).
+- **RR-PM2 (Gate 3 at N = 3 below +600%, called 85%): HIT.**
+- **The scored point hides the shape.** Beyond N = 3 PM1's refinement penalty is 4–45 times F3.1's and worse than G2's; one extra step (Gate 2) costs ten times what it costs F3.1; and resetting the velocity entering each layer (Gate 1), which costs both comparators a third, destroys the model. PM1 is the most momentum-dependent and least schedule-robust of the three, while having the lowest stiffness, so stiffness is not the cause.
+- **Reading, a hypothesis.** The layer-1 wells act with about six times the conservative force (6b-15). The trained step appears to rely on a balance between the incoming momentum and that strong attractive force at exactly Δt = 4; changing either throws tokens off. That makes the layer step a learned map rather than a sample of a flow, however conservative each force is. H-RR (§5.18) predicted that a token-accumulated memory refines like its base: it does at N = 3 and not beyond, so accumulation alone is not sufficient.
+- **For the design principle (§5.19):** PM1 improves perplexity on a conservative step but does not satisfy refinement readiness (R) better than F3.1; except at N = 3 it is worse. Candidate tests, not scheduled: Gate 1 per layer (reset only at layer 1); PM1 on the SR2 base; capping the layer-1 well depth or the PM force share.
+- 6b-13's printed "pre-registered band [3.3, 4.2] … MISS" belongs to the 2026-09-28 Gen 2 depth question, not to PM1, and is not scored here.
+- 6b-9 and 6b-12 ran in their pre-patch form (V_φ and the PM1 wells bundled; R(geo) 0.97, the bundle moves R by −0.27) and 6b-15 read the step-8,000 probe checkpoint; all three are re-run with the patched cells before they are scored.
+
 ### 5.16 F0: is there a shared floor near 50 PPL? The stable-phase extrapolation — **pre-registered 2026-10-06, before any fit**
 
 **Why.** Among the L=2 models with the register path, G2 (53.12), G3 (54.21) and G3′ (52.90) settle within 2.5% of each other, whatever else is switched on. L=4 Fock (50.10) and the 8-layer matched GPT-2 (49.81) end near 50. Is the floor set by depth, or by what every model shares: d = 384, the untied head and 532M tokens?

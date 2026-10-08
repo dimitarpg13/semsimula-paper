@@ -16,7 +16,7 @@ through the ladder notebook's own Cells 0-5b:
 
 plus validation PPL on the local cache, as a load check.
 
-Usage: python3 causality_check_checkpoint.py OUT_DIR FOLDER [REVERSE_CHANNEL VPHI XI [MECH RELAX_GRAD [rfqk]]]
+Usage: python3 causality_check_checkpoint.py OUT_DIR FOLDER [REVERSE_CHANNEL VPHI XI [MECH RELAX_GRAD [rfqk] [pm<K>] [pmclip<thr>]]]
   e.g. ... OUT semsimula_..._norc_vplive_xilive_..._noattn False live live
 """
 import math, sys
@@ -36,11 +36,24 @@ VP = sys.argv[4] if len(sys.argv) > 4 else 'default'
 XI = sys.argv[5] if len(sys.argv) > 5 else 'default'
 MECH = sys.argv[6] if len(sys.argv) > 6 else 'none'
 RG = sys.argv[7] if len(sys.argv) > 7 else 'default'
-# Optional 9th argument 'rfqk': G3' (protocol SS5.10), the hardened exchange
-# field -- RELAX_ATTN_QK_NORM = True and RELAX_FIELD_CLIP = 0.3 in Cell 0.
-if len(sys.argv) > 8 and sys.argv[8] == 'rfqk':
-    for _old, _new in (("RELAX_ATTN_QK_NORM          = False", "RELAX_ATTN_QK_NORM          = True"),
-                       ("RELAX_FIELD_CLIP            = None", "RELAX_FIELD_CLIP            = 0.3")):
+# Optional trailing arguments, any order, after RELAX_GRAD:
+#   'rfqk'          G3' (protocol SS5.10), the hardened exchange field --
+#                   RELAX_ATTN_QK_NORM = True and RELAX_FIELD_CLIP = 0.3 in Cell 0
+#   'pm<K>'         PM1 (protocol SS5.15), POISSON_MODES = K      (2026-10-07)
+#   'pmclip<thr>'   POISSON_MODE_CLIP = thr, e.g. pmclip1 (only the tag reads it)
+#   e.g. PM1:  ... OUT semsimula_..._pm64_L2probe_..._noattn False live live none default pm64
+import re as _re
+for _extra in sys.argv[8:]:
+    if _extra == 'rfqk':
+        _subs = (("RELAX_ATTN_QK_NORM          = False", "RELAX_ATTN_QK_NORM          = True"),
+                 ("RELAX_FIELD_CLIP            = None", "RELAX_FIELD_CLIP            = 0.3"))
+    elif _re.fullmatch(r'pm\d+', _extra):
+        _subs = (("POISSON_MODES        = 0", f"POISSON_MODES        = {int(_extra[2:])}"),)
+    elif _re.fullmatch(r'pmclip[\d.p]+', _extra):
+        _subs = (("POISSON_MODE_CLIP    = 0.3", f"POISSON_MODE_CLIP    = {float(_extra[6:].replace('p', '.'))}"),)
+    else:
+        raise SystemExit(f'unknown option {_extra!r} (expected rfqk, pm<K>, pmclip<thr>)')
+    for _old, _new in _subs:
         assert G.cells['Cell 0:'].count(_old) == 1, _old
         G.cells['Cell 0:'] = G.cells['Cell 0:'].replace(_old, _new)
 

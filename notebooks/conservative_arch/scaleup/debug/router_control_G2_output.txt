@@ -1,0 +1,4 @@
+V_phi ROUTER TERM (exact: score-head query detached vs as trained): cgqk_vplive_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+   240 token positions per layer; share = |router term| / |force|
+   layer 0: of the V_phi force median 11.15% (p95 92.77%);  of the total conservative force median 10.551% (p95 89.225%);  |V_phi| 0.00243, |total| 0.00258
+   layer 1: of the V_phi force median 0.65% (p95 97.08%);  of the total conservative force median 0.000% (p95 0.168%);  |V_phi| 1.58e-11, |total| 0.184

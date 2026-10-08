@@ -1,0 +1,34 @@
+PM1 clip question from the logs (protocol SS5.15)
+paired logged steps: 160 (50..8000); clip-1.0 pm_ norms read on 122 steps
+
+1. THE PAIRED GAP on the same batches, D = loss(clip 1.0) - loss(clip 0.3), nats
+   steps     0-2000 : mean +0.0037  median +0.0044  share of steps with clip 1.0 behind 82%  (n=40)
+   steps  2000-4000 : mean +0.0211  median +0.0214  share of steps with clip 1.0 behind 100%  (n=40)
+   steps  4000-6000 : mean +0.0369  median +0.0372  share of steps with clip 1.0 behind 100%  (n=40)
+   steps  6000-8001 : mean +0.0280  median +0.0279  share of steps with clip 1.0 behind 100%  (n=40)
+   after step 2,000: mean +0.0286 nats (exp: +2.91% in PPL terms), behind on 100% of steps
+
+2. DOES clip 1.0 LOSE GROUND AFTER A LARGE pm_ GRADIENT?
+   n = 114 logged steps after 2,000 with a pm_ norm; clip-0.3 arm median pm_ norm 0.50
+   "large" = pm_ norm >= 0.7 (at least 0.2 above that median): 27 steps; typical: 87
+   mean dD over the next 50 steps: after large +0.0000   after typical +0.0001   difference -0.0001 nats
+   permutation p (two-sided, 20,000 shuffles): 0.946
+   Spearman(pm_ norm, dD) over all 114: -0.014
+
+3. THE SAME TEST WITH THE GLOBAL GRADIENT NORM (both arms log it on every step)
+   Spearman(global grad norm of clip 1.0, dD): -0.039  (n=119)
+
+4. ADAM ON pm_depth AT STEP 8,000 (Cell 6b-15 outputs): did the clip enlarge the depth steps?
+             tensor  c, clip 1.0  c, clip 0.3  rel step 1.0  rel step 0.3  0.3 / 1.0
+           pm_depth        0.117        0.137      5.59e-04      6.62e-04       1.18
+              pm_mu        0.157        0.182      2.18e-04      2.47e-04       1.13
+      pm_log_kappa2        0.094        0.139      1.81e-05      2.74e-05       1.51
+    pm_logit_lambda        0.105        0.123      4.87e-05      5.20e-05       1.07
+   (c = |m_hat| / |sqrt v_hat|, the consistency of the step; rel step = Adam step / |theta|.)
+
+READING
+   H-clip (single large steps hurt) NOT SUPPORTED at this resolution: no reliable loss of ground after large pm_ gradients. With one logged step in 50 and one-decimal norms this does not refute it; the decisive test is the depth-only clip arm (pm_depth at 0.3, the rest at 1.0).
+   H-adam (the clip removes norm variance from Adam's second moment, so the depth steps
+   are larger and steadier): CONSISTENT -- at step 8,000 the 0.3 arm takes 18% larger relative steps on pm_depth (consistency 0.137 against 0.117), and the paired gap is continuous, not tied to individual steps.
+   Its prediction: clip 1.0 with a larger learning rate on pm_depth alone should recover the gap, and a
+   depth-only clip at 0.3 (the rest at 1.0) should match the 0.3 arm. Both are untested.
