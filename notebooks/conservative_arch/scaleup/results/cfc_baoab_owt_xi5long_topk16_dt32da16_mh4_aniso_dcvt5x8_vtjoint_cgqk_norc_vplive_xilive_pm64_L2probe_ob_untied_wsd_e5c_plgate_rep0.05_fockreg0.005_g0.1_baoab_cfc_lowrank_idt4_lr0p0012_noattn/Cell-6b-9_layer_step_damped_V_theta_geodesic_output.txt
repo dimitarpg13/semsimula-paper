@@ -1,0 +1,52 @@
+probing fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_pm64_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt
+   step 30500  ppl 53.67  missing 0  unexpected 0
+   L=2  dt=4  reverse-channel effective gate 0
+
+   CONSERVATIVE-ONLY MODEL (no reverse channel).  Read the arms this way:
+     - every force in this model is the gradient of a scalar potential,
+       so V = V_theta + V_phi + the PM1 wells admits a Jacobi metric and the step IS its
+       damped geodesic step, up to the LayerNorm projection.
+     - 'full' and 'cons+LN' are therefore the SAME computation, and
+       R(cons+LN) = 0 is GATE 0 restated, not a result.  Do not quote it.
+     - the numbers that ARE results: R(geo) = how far the step is from
+       the V_theta-only geodesic (i.e. what V_phi + LN contribute),
+       R(cons) = what LN alone contributes, and the V_phi attribution (and, separately, the PM1 wells).
+
+   captured 6 layer steps from 3 batches
+
+GATE 0  replayed full step vs captured output, every layer step:
+   max |d| = 0.000e+00   PASS
+
+E1  deflection from the damped V_theta geodesic, R = |arm - full| / |step|
+    arm                     layer 0               layer 1
+                     R_h        R_v        R_h        R_v
+    geo           0.8382     0.6782     1.0966     0.9466
+    geo+LN        0.5160     0.6782     0.8723     0.9466
+    geo+PM        0.7490     0.1721     0.6617     0.0133
+    cons-PM       0.8097     0.5531     1.0907     0.9416
+    cons          0.7229     0.0000     0.6625     0.0000
+    cons+LN       0.0000     0.0000     0.0000     0.0000
+    full          0.0000     0.0000     0.0000     0.0000
+
+    step size for scale, |h_full - h_in| / |h_in| per layer: 5.958  1.076
+
+ATTRIBUTION  (R_h, deflection of position, averaged over layers)
+   R(geo)     = 0.9674   <- how far the real step is from the V_theta geodesic
+   LN alone   moves R by -0.2732   (geo -> geo+LN)
+   V_phi+PM1  moves R by -0.2746   (geo -> cons)   <- V_phi and the PM1 wells, both conservative; split below
+     of which V_phi      -0.0171   (geo -> cons-PM)
+     then PM1 wells      -0.2575   (cons-PM -> cons: wells added last)
+     PM1 wells alone     -0.2620   (geo -> geo+PM: wells added first)
+   RC         moves R by +0.0000   (cons+LN -> full; full is 0 by construction)
+   cons+LN    = 0.0000   <- everything except the reverse channel
+
+   R(geo) well under 1  -> geodesics exist at the trained step; the
+   flow is PIECEWISE: exact-ish between the per-step maps. Gate 3
+   failing only means the pieces cannot be subdivided.
+   R(geo) near 1        -> the V_theta geodesic is a minority of the
+   step; the Riemannian reading fails at the trained dt as well.
+   Small R does NOT mean the deflecting term is unimportant for PPL
+   -- the reverse channel is small in norm yet worth +31.3% in trained
+      PPL (66.98 -> 87.93). The +275% ablation overstates it ~2.9x.
+
+   live training state restored

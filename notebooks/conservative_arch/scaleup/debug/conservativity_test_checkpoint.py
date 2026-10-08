@@ -225,12 +225,17 @@ def router_shares(model, val):
         pm = (type(model).poisson_mode_force(model, h, l).detach()[0] if has_pm else torch.zeros_like(fp))
         dr = (fp - fp_det).norm(dim=-1)                       # router term, per token
         tot = (ft + fp + pm).norm(dim=-1)
-        keep = torch.arange(T_SEQ) >= 16                      # positions with a full top-k
-        r_phi = (dr / (fp.norm(dim=-1) + 1e-30))[keep]
-        r_tot = (dr / (tot + 1e-30))[keep]
-        out[l] = dict(router_over_vphi_median=float(r_phi.median()), router_over_vphi_p95=float(r_phi.quantile(0.95)),
-                      router_over_total_median=float(r_tot.median()), router_over_total_p95=float(r_tot.quantile(0.95)),
-                      vphi_norm_median=float(fp.norm(dim=-1)[keep].median()), total_norm_median=float(tot[keep].median()))
+        # 2026-10-08: report both bands. At t < top_k the straight-through
+        # mask's k = min(top_k, T-1) differs between a short prefix and the
+        # full sequence, and the router term is not negligible there.
+        tt = torch.arange(T_SEQ)
+        out[l] = {}
+        for band, keep in (('t>=16', tt >= 16), ('3<=t<16', (tt >= 3) & (tt < 16))):
+            r_phi = (dr / (fp.norm(dim=-1) + 1e-30))[keep]
+            r_tot = (dr / (tot + 1e-30))[keep]
+            out[l][band] = dict(router_over_vphi_median=float(r_phi.median()), router_over_vphi_p95=float(r_phi.quantile(0.95)),
+                                router_over_total_median=float(r_tot.median()), router_over_total_p95=float(r_tot.quantile(0.95)),
+                                vphi_norm_median=float(fp.norm(dim=-1)[keep].median()), total_norm_median=float(tot[keep].median()))
     return out
 
 
@@ -357,10 +362,11 @@ if __name__ == '__main__':
         rs = router_shares(model, np.load(G.VAL))
         lines = [f'V_phi ROUTER TERM (exact: score-head query detached vs as trained): {label}',
                  f'   {T_SEQ - 16} token positions per layer; share = |router term| / |force|']
-        for l, r in sorted(rs.items()):
-            lines.append(f'   layer {l}: of the V_phi force median {100*r["router_over_vphi_median"]:.2f}% (p95 {100*r["router_over_vphi_p95"]:.2f}%);  '
-                         f'of the total conservative force median {100*r["router_over_total_median"]:.3f}% (p95 {100*r["router_over_total_p95"]:.3f}%);  '
-                         f'|V_phi| {r["vphi_norm_median"]:.3g}, |total| {r["total_norm_median"]:.3g}')
+        for l, bands in sorted(rs.items()):
+            for band, r in bands.items():
+                lines.append(f'   layer {l} {band:>8}: of the V_phi force median {100*r["router_over_vphi_median"]:.2f}% (p95 {100*r["router_over_vphi_p95"]:.2f}%);  '
+                             f'of the total conservative force median {100*r["router_over_total_median"]:.3f}% (p95 {100*r["router_over_total_p95"]:.3f}%);  '
+                             f'|V_phi| {r["vphi_norm_median"]:.3g}, |total| {r["total_norm_median"]:.3g}')
         print('\n'.join(lines))
         OUT.mkdir(parents=True, exist_ok=True)
         name = re.sub(r'[^A-Za-z0-9]+', '_', label)[:80]
@@ -372,9 +378,10 @@ if __name__ == '__main__':
     rs = router_shares(model, np.load(G.VAL))
     res['router'] = rs
     txt += '\n   V_phi ROUTER TERM (exact), share of the total conservative force on the token:'
-    for l, r in sorted(rs.items()):
-        txt += (f'\n     layer {l}: median {100*r["router_over_total_median"]:.3f}%  p95 {100*r["router_over_total_p95"]:.3f}%'
-                f'   (of V_phi: median {100*r["router_over_vphi_median"]:.2f}%, p95 {100*r["router_over_vphi_p95"]:.2f}%)')
+    for l, bands in sorted(rs.items()):
+        for band, r in bands.items():
+            txt += (f'\n     layer {l} {band:>8}: median {100*r["router_over_total_median"]:.3f}%  p95 {100*r["router_over_total_p95"]:.3f}%'
+                    f'   (of V_phi: median {100*r["router_over_vphi_median"]:.2f}%, p95 {100*r["router_over_vphi_p95"]:.2f}%)')
     print(txt)
     OUT.mkdir(parents=True, exist_ok=True)
     name = re.sub(r'[^A-Za-z0-9]+', '_', label)[:80]

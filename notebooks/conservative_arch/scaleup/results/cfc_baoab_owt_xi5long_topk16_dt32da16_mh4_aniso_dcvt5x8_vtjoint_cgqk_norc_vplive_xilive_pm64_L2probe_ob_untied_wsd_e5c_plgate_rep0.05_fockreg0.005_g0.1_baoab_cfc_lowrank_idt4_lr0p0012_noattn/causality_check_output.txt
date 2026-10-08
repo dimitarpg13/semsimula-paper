@@ -1,0 +1,18 @@
+model: ...cgqk_norc_vplive_xilive_pm64_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+
+1. FUTURE PERTURBATION  (max |d logit| at positions <= p; must be exactly 0)
+   cut p= 31: max |d| over 3 draws = 0.000e+00
+   cut p=127: max |d| over 3 draws = 0.000e+00
+   cut p=255: max |d| over 3 draws = 0.000e+00
+   cut p=383: max |d| over 3 draws = 0.000e+00
+   cut p=500: max |d| over 3 draws = 0.000e+00
+   -> CLEAN (worst 0.000e+00)
+
+2. BATCH INDEPENDENCE  (replace sequence 2 entirely; sequences 0,1 must not move)
+   max |d| on the untouched sequences = 0.000e+00  -> CLEAN
+
+3. PREFIX-ONLY SCORING  (feed x[:t+1] only; compare the logit at t)
+   positions 0..511 (8 sampled x 3 seqs): max |d logit| = 9.767e-02, leak tax = +1.70e-03 nats  -> CHECK
+
+4. VALIDATION PPL on the local cache  (load check; 12 batches x 4 x 512)
+   val loss 4.0015  PPL 54.68

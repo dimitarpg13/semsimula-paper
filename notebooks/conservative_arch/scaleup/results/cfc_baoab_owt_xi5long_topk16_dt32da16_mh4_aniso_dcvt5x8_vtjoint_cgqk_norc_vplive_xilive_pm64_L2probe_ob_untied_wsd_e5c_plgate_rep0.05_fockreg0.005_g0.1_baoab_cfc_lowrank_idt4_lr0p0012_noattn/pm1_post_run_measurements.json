@@ -1,0 +1,44 @@
+{
+ "layers": {
+  "0": {
+   "depth_positive_share": 0.4375,
+   "depth_p05_p50_p95": [
+    -0.0784214586019516,
+    -0.002014406956732273,
+    0.11517398059368134
+   ],
+   "force_share_from_positive_depths": 0.46709412745706874,
+   "pm_over_conservative_force": 0.6869151741266251,
+   "repetition_spearman": 0.1016934518262125,
+   "repetition_spearman_repeats_only": -0.03280716375835305,
+   "repeated_positions": 1954,
+   "positions": 4088,
+   "dp3_signed": -0.10805252939462662,
+   "dp3_abs": 0.9807579517364502
+  },
+  "1": {
+   "depth_positive_share": 0.703125,
+   "depth_p05_p50_p95": [
+    -0.42634567618370056,
+    0.2379632294178009,
+    0.6588506102561951
+   ],
+   "force_share_from_positive_depths": 0.9353400857589798,
+   "pm_over_conservative_force": 4.232070565223694,
+   "repetition_spearman": 0.08551726547148965,
+   "repetition_spearman_repeats_only": -0.07861265215071517,
+   "repeated_positions": 1954,
+   "positions": 4088,
+   "dp3_signed": 0.8146535158157349,
+   "dp3_abs": 0.9916062951087952
+  }
+ },
+ "depth_positive_share_all": 0.5703125,
+ "halflife_p05_p50_p95": [
+  3.317257249355316,
+  7.08369779586792,
+  17.554869794845555
+ ],
+ "kappa2_x_d_p50": 0.7288557291030884,
+ "score_layer": 1
+}

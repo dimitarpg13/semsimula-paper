@@ -1,0 +1,37 @@
+PM1 prefix-only check, decomposed: ...cgqk_norc_vplive_xilive_pm64_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+
+1. SAME LENGTH, real vs random tokens after t (must be exactly 0)
+   t= 40  length  42: max |d logit| = 0.000e+00
+   t= 40  length 105: max |d logit| = 0.000e+00
+   t= 40  length 512: max |d logit| = 0.000e+00
+   t=127  length 129: max |d logit| = 0.000e+00
+   t=127  length 192: max |d logit| = 0.000e+00
+   t=127  length 512: max |d logit| = 0.000e+00
+   t=255  length 257: max |d logit| = 0.000e+00
+   t=255  length 320: max |d logit| = 0.000e+00
+   t=255  length 512: max |d logit| = 0.000e+00
+   t=383  length 385: max |d logit| = 0.000e+00
+   t=383  length 448: max |d logit| = 0.000e+00
+   t=383  length 512: max |d logit| = 0.000e+00
+   t=500  length 502: max |d logit| = 0.000e+00
+   t=500  length 512: max |d logit| = 0.000e+00
+
+2. LENGTH SWEEP: |logit(length t+1+k)[t] - logit(full)[t]|, real vs random appended tokens
+      t      k=0 real      rand     k=1 real      rand     k=8 real      rand    k=64 real      rand
+     40     4.768e-06 4.768e-06    5.722e-06 5.722e-06    1.144e-05 1.144e-05    9.537e-06 9.537e-06
+    127     2.003e-05 2.003e-05    1.526e-05 1.526e-05    2.480e-05 2.480e-05    2.480e-05 2.480e-05
+    255     2.670e-05 2.670e-05    2.289e-05 2.289e-05    1.144e-05 1.144e-05    1.907e-05 1.907e-05
+    383     5.722e-06 5.722e-06    1.144e-05 1.144e-05    5.722e-06 5.722e-06    1.335e-05 1.335e-05
+    500     2.098e-05 2.098e-05    1.526e-05 1.526e-05    1.717e-05 1.717e-05    0.000e+00 0.000e+00
+
+3. WHERE: phi at position t on IDENTICAL layer-0 inputs, short vs full sequence
+   t= 40: max relative |d phi| = 0.000e+00
+   t=127: max relative |d phi| = 0.000e+00
+   t=255: max relative |d phi| = 1.007e-07
+   t=383: max relative |d phi| = 1.154e-07
+   t=500: max relative |d phi| = 1.464e-07
+
+4. FIX TEST: the prefix-only comparison with phi in float32 (as trained) and in float64
+   float32 phi: max |d logit| 2.670e-05, leak tax +2.15e-07 nats
+   float64 phi: max |d logit| 1.717e-05, leak tax +3.64e-07 nats
+   (F3.1, the same model without modes: max |d logit| 3.05e-05, leak tax -7.7e-08)

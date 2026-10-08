@@ -1,0 +1,13 @@
+PM1 post-run measurements (protocol SS5.15); scored at layer 1, the larger PM1 force share
+   half-life p05/p50/p95 3.3 / 7.1 / 17.6 tokens;  kappa^2 x d p50 0.73
+   layer 0: PM1 / conservative force 0.69; depths positive 44% (p05/p50/p95 -0.078 / -0.002 / +0.115); force from positive-depth modes 47%
+   layer 1: PM1 / conservative force 4.23; depths positive 70% (p05/p50/p95 -0.426 / +0.238 / +0.659); force from positive-depth modes 94%
+
+DEPTH SIGNS   most depths positive (60%): 57.0% of all L x K depths positive -> HIT
+REPETITION    Spearman(phi*, decay-weighted repeat count) > 0.5 (55%): +0.086 at layer 1 -> MISS
+              layer 0: all positions +0.102; repeated positions only -0.033 (1954 of 4088)
+              layer 1: all positions +0.086; repeated positions only -0.079 (1954 of 4088)
+DP3 ON MODES  Spearman(phi * a, leave-one-out force) > 0.5 (80%): +0.815 at layer 1 -> HIT
+              layer 0: signed -0.108; |phi * a| +0.981
+              layer 1: signed +0.815; |phi * a| +0.992
+

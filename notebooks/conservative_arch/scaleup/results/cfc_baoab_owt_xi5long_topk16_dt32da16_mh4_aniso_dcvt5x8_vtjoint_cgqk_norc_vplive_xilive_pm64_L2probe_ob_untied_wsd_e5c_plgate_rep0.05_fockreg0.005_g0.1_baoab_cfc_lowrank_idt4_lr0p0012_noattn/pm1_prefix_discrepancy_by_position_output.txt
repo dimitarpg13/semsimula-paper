@@ -1,0 +1,16 @@
+PM1 prefix-only discrepancy by position (2026-10-08), the causality script's 3 sequences (seed 20261002).
+max |d logit| over 3 sequences between logits(x[:t+1])[t] and logits(x)[t].
+
+position t        3          7          12         15         16         31         128
+PM1 as trained    2.36e-03   9.77e-02   1.25e-01   1.21e-02   3.05e-05   2.10e-05   2.86e-05
+F3.1              1.53e-05   3.05e-05   5.92e-03   2.29e-05   1.91e-05   2.67e-05   2.10e-05
+PM1, router term  1.53e-05   1.91e-05   3.05e-05   1.72e-05   3.05e-05   2.48e-05   -
+removed (score-head query detached)
+
+Reading: the discrepancy lives only at 3 <= t < 16 (top_k = 16) and vanishes when V_phi's
+straight-through router term is removed. The mask m = (m_hard - k y).detach() + k y uses
+k = min(top_k, T - 1), so at t < 16 a short prefix (k = t) and the full sequence (k = 16)
+scale the router term differently. Future CONTENT never matters (real vs random future tokens
+at equal length: exactly 0, pm1_prefix_length_check_output.txt section 1). Not a causality leak;
+a sequence-length dependence of V_phi's force at the first 15 positions, shared by every V_phi
+model (F3.1 shows it at t = 12).

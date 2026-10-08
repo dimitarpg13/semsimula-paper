@@ -3884,6 +3884,42 @@ Cells 6b-7 and 6b-13 on the full run's best checkpoint (step 30,500, PPL 53.67),
 - 6b-13's printed "pre-registered band [3.3, 4.2] … MISS" belongs to the 2026-09-28 Gen 2 depth question, not to PM1, and is not scored here.
 - 6b-9 and 6b-12 ran in their pre-patch form (V_φ and the PM1 wells bundled; R(geo) 0.97, the bundle moves R by −0.27) and 6b-15 read the step-8,000 probe checkpoint; all three are re-run with the patched cells before they are scored.
 
+#### PM1 conservativity, causality and post-run measurements: **the step is a gradient flow; causal; repetition MISS** — **2026-10-08**
+
+All on the full run's best checkpoint (step 30,500), outputs in `results/…pm64_L2probe…/`.
+
+**Conservativity on the trained weights** (`debug/conservativity_test_checkpoint.py`, per token at fixed context; the test was validated first on F3.1, which passes, and G2, whose reverse channel fails with Jacobian asymmetry 1.3–1.9):
+
+| layer | term | Jacobian asymmetry (autograd) | closed-loop work | force | verdict |
+| ---: | --- | ---: | ---: | ---: | --- |
+| 0 | V_θ | 3.3e-07 | 4.9e-07 | 0.0003 | conservative |
+| 0 | V_φ | 2.3e-06 | 2.0e-07 | 0.037 | conservative |
+| 0 | PM1 wells | 1.8e-07 | 9.3e-08 | 0.10 | conservative |
+| 0 | total | 5.1e-06 | 1.9e-07 | 0.12 | conservative |
+| 1 | V_θ | 3.7e-07 | 1.9e-07 | 0.17 | conservative |
+| 1 | V_φ | 4.6e-07 | 7.0e-04 | 0.012 | conservative |
+| 1 | PM1 wells | 1.7e-07 | 9.3e-08 | 1.26 | conservative |
+| 1 | total | 2.6e-07 | 3.0e-04 | 1.24 | conservative |
+
+- **V_φ's straight-through router term,** measured exactly (score-head query detached against as trained), as a share of the total conservative force: 0 at positions t ≥ 16 in both layers; at 3 ≤ t < 16, median 0 and p95 0.98% (layer 0) and 0.009% (layer 1). F3.1 for comparison: p95 2.4% at layer 0 (t ≥ 16) and 15.2% at layer 1 (3 ≤ t < 16). **PM1's step is a gradient flow to within 1% of the force for its worst 5% of tokens, and only at the first 15 positions; cleaner than F3.1.**
+- **Scope** (as for F3.1): per token at fixed context (one-way between tokens, no global energy); the potential changes with layer; V_φ's hard top-k selection makes it a gradient piecewise (switches not measured).
+
+**6b-9 (patched, V_φ and the wells separated).** GATE 0 PASS. R(geo) 0.97. The wells carry the non-V_θ part of the step: they move R by −0.258 when added last and −0.262 when added first, V_φ by −0.017 (in F3.1 V_φ moved it by −0.29). At layer 1, V_θ plus the wells reproduce the step's velocity almost exactly (R_v 0.013). **In PM1 the wells have taken over V_φ's role.**
+
+**Causality** (`debug/causality_check_checkpoint.py … pm64`): future perturbation exactly 0 (5 cut points × 3 draws); batch independence exactly 0; prefix-only scoring max |d logit| 9.8e-2, leak tax +1.7e-3 nats ("CHECK"). **Explained, not a leak** (`pm1_prefix_length_check_output.txt`, `pm1_prefix_discrepancy_by_position_output.txt`): real against random future tokens at equal length give exactly identical logits at every length tested; the discrepancy lives only at positions 3–15 (top_k = 16) and vanishes when V_φ's router term is removed. The straight-through mask (m_hard − k y).detach() + k y uses k = min(top_k, T − 1), so at t < 16 a short prefix (k = t) and the full sequence (k = 16) scale the router term differently. Future content never matters. F3.1 shows the same effect (position 12, 5.9e-3); the causality script samples position 7, where only PM1's is large. Consequence: a small train/inference mismatch at the first 15 positions for every V_φ model. Remedy for future models: k from the per-row count of valid sources, min(top_k, t).
+
+**Post-run measurements** (`debug/pm1_post_run_measurements.py`; scoring fixed in its docstring before the run was scored; scored at layer 1, the larger PM1 force share):
+
+| prediction | called | result |
+| --- | --- | --- |
+| most trained depths positive | 60% | **HIT** on the letter: 57% of all depths; layer 1 70%, carrying 94% of the PM1 force; layer 0 mixed near zero |
+| repetition: Spearman(φ of the best-matching mode, decay-weighted repeat count) > 0.5 | 55% | **MISS**: +0.086 (repeated positions only: −0.08) |
+| DP3 on the modes: Spearman(φ·a, leave-one-out force) > 0.5 | 80% | **HIT**: +0.815 (magnitudes +0.99) |
+
+- **Reading:** the modes track regions of semantic space the recent context visited, not token identity. The memory shortened over the full run: median half-life 7.1 tokens (15 at step 8,000), none above about 18; 8 of 64 modes (12%) dead; layer-1 PM1 force 4.7× the conservative force (6b-15 at step 30,500, no knob flagged). A short-horizon memory overlapping ξ's short channels may be why PM1's gain over F3.1 stopped growing after step 9,000.
+
+**Overall for PM1:** causal; a gradient flow on the trained weights, cleaner than F3.1; 4.5% better than F3.1 and 3.9% behind G2 in settled PPL; but not refinement-ready (6b-7: Gate 3 beyond N = 3 and Gates 1–2 far worse than F3.1). **6b-12 (patched), the wells' per-token forcing:** GATE 0 PASS. Deflection of each token's step when the wells are switched off, as a fraction of the step: layer 0 median 0.40 (IQR 0.38–0.43); layer 1 median 0.87 (IQR 0.85–0.89), 97.8% of tokens above 0.75 and 0.5% below 0.25. The wells act on every token, strongly and uniformly, not sparsely; position, semantic mass and loss barely predict it (|ρ| ≤ 0.18). Descriptive: the SPARSE/UNIFORM criteria were written for the reverse channel.
+
 ### 5.16 F0: is there a shared floor near 50 PPL? The stable-phase extrapolation — **pre-registered 2026-10-06, before any fit**
 
 **Why.** Among the L=2 models with the register path, G2 (53.12), G3 (54.21) and G3′ (52.90) settle within 2.5% of each other, whatever else is switched on. L=4 Fock (50.10) and the 8-layer matched GPT-2 (49.81) end near 50. Is the floor set by depth, or by what every model shares: d = 384, the untied head and 532M tokens?
