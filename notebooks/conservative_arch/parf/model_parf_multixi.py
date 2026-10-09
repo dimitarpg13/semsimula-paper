@@ -230,6 +230,15 @@ class MultiXiPARFConfig(SparsePARFConfig):
     # of U at fixed phi. Depths start at 0 and tanh(0) = 0, so the force is
     # still exactly zero at step 0. None = off (bit-identical to PM1).
     poisson_depth_cap: Optional[float] = None
+    # Per-layer flow inference mode (protocol SS5.19, FLOW-C / FLOW-R,
+    # 2026-10-09): each layer runs as k substeps of dt/k, with the context xi,
+    # V_theta's low-rank quadratic and (PM1) the occupations phi taken at the
+    # layer's first substep, the remaining force applied as kicks at every
+    # substep, and one LayerNorm projection at the end of the layer. On SR2
+    # this refinement converges (FLOW-R). k = 1 is the trained model, bit for
+    # bit. Inference only: eval mode, FockMultiXiPARFLM, integrator
+    # 'baoab_cfc_lowrank', no reverse channel.
+    substeps_per_layer: int = 1
     relax_attn_logit_scale_init: float = 1.0 / 0.07
     relax_attn_logit_scale_max: float = 100.0
     # Fix the gate instead of learning it. None learns lambda (or holds it
@@ -729,6 +738,9 @@ class MultiXiPARFLM(SparsePARFLM):
         phi (live, the Gen 3 convention). a_v is pm_effective_depth.
         """
         E, phi = self.poisson_mode_occupation(h)
+        _ctx = getattr(self, "_flow_ctx", None)
+        if _ctx is not None:                    # per-layer flow: phi from the layer's first substep
+            phi = _ctx.setdefault("phi", phi)
         with torch.autocast(device_type=h.device.type, enabled=False):
             k2 = self.pm_log_kappa2.float().exp()
             a = self.pm_effective_depth(layer_idx)
@@ -1193,7 +1205,14 @@ class MultiXiPARFLM(SparsePARFLM):
         # linearisation alike).
         xi_live = getattr(cfg, "xi_grad_path", "default") == "live"
         xi_input = h.detach() if (cfg.causal_force and not xi_live) else h
-        xis = self.xi_module(xi_input)                           # (B, T, K, d)
+        # Per-layer flow (substeps_per_layer > 1): None outside that mode.
+        flow_ctx = getattr(self, "_flow_ctx", None)
+        if flow_ctx is not None and "xis" in flow_ctx:
+            xis = flow_ctx["xis"]                                # context from the layer's first substep
+        else:
+            xis = self.xi_module(xi_input)                       # (B, T, K, d)
+            if flow_ctx is not None:
+                flow_ctx["xis"] = xis
 
         h_in = h
         if not h_in.requires_grad:
@@ -1235,9 +1254,15 @@ class MultiXiPARFLM(SparsePARFLM):
             # is put in the exact fast flow (lowrank_cfc_substep), which
             # carries the drift; the clamped diagonal spring, V_phi and the
             # nonlinear V_theta residual are demoted to the explicit kick.
-            _, _, lr_G, lr_Gmu = self.V_theta.harmonic_terms_lowrank(
-                xis, h_in, comps=vtheta_comps,
-            )
+            if flow_ctx is not None and "lr" in flow_ctx:
+                _lr = flow_ctx["lr"]                             # quadratic from the layer's first substep
+            else:
+                _lr = self.V_theta.harmonic_terms_lowrank(
+                    xis, h_in, comps=vtheta_comps,
+                )
+                if flow_ctx is not None:
+                    flow_ctx["lr"] = _lr
+            _, _, lr_G, lr_Gmu = _lr
             lr_U, lr_kappa = lowrank_modes(
                 lr_G, max_modes=getattr(cfg, "lowrank_max_modes", None),
                 niter=getattr(cfg, "lowrank_niter", 2),
@@ -1329,7 +1354,7 @@ class MultiXiPARFLM(SparsePARFLM):
         else:
             h_new, v_new = h_mid + half * v_mid, v_mid
 
-        if cfg.ln_after_step:
+        if cfg.ln_after_step and (flow_ctx is None or flow_ctx.get("project", True)):
             h_new = self._project(h_new)
         return h_new, encode_velocity(h_new, v_new, dt)
 

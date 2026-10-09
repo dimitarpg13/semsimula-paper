@@ -4394,6 +4394,126 @@ At N = L this is the trained model, bit for bit.
   - **Hit:** PM1, and PM1-cap after it, are tested under the same definition before any PM1 card.
   - **Miss:** the wells remain PM1's refinement problem, and PM1-cap goes ahead as pre-registered.
 
+**FLOW-C on SR2, scored 2026-10-09** (`refinement_flow_confirmation_sr2_output.txt` in SR2's results folder; all checks exact). F3.1 and PM1 are pending.
+
+| N (same T) | 2 | 3 | 4 | 6 | 8 | 12 | 16 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| as trained, PPL | 57.59 | 86.36 | 154.30 | 323.33 | 474.90 | 683.63 | 815.03 |
+| per-layer flow, PPL | 57.59 | 78.91 | 72.99 | 63.71 | 65.41 | 65.55 | 65.54 |
+| per-layer flow, penalty (nats) | — | 0.315 | 0.237 | 0.101 | 0.127 | 0.129 | 0.129 |
+
+- **C0: HIT.** As trained: 0.405, 0.986 and 2.110 nats at N = 3, 4, 8, matching Colab's 6b-7.
+- **C1: HIT.** 0.127 nats at N = 8.
+- **C2: MISS on the letter.** The penalty rises by 0.026 nats from N = 6 to N = 8, against the allowed 0.02, and N = 16 ends 0.002 above N = 8.
+- **C3: HIT.** The kick share, median at the trained N = 2, is 0.367 at layer 0 and 0.506 at layer 1 (velocity 0.63 and 0.60). The kick shapes a third to a half of the step, so the convergence is not by construction.
+- **Decision rule as written:** C2 missed, so no (R) claim from FLOW-C.
+- **What the miss is.** The successive changes are −0.136, +0.026, +0.002 and −0.0002 nats: the refined trajectory converges to a limit, at PPL about 65.5. C2 was written for a penalty falling toward zero. A convergent flow can instead settle at a constant gap above the trained coarse step. That is a mis-specified criterion, but it was specified in advance, so it stands.
+- **Author's decision (2026-10-09):** replicate on fresh data under a convergence criterion pre-registered now (FLOW-R, below), rather than reinterpret C2.
+
+**FLOW-C on F3.1 (the control), scored 2026-10-09** (`refinement_flow_confirmation_f31_output.txt` in F3.1's results folder; all checks exact):
+
+| N (same T) | 2 | 3 | 4 | 6 | 8 | 12 | 16 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| as trained, penalty (nats) | — | 0.889 | 1.555 | 2.083 | 2.275 | 2.445 | 2.528 |
+| per-layer flow, PPL | 56.30 | 71.20 | 140.04 | 95.68 | 104.21 | 94.66 | 93.78 |
+| per-layer flow, penalty (nats) | — | 0.235 | 0.911 | 0.530 | 0.616 | 0.520 | 0.510 |
+
+- **C4 (F3.1 does not converge: pen(16) above 0.5 nats or above pen(8)): HIT on the letter,** by 0.010 nats: 0.510.
+- **The shape matters more than the margin.**
+  - The penalty oscillates (0.235, 0.911, 0.530, 0.616) before its last two points move by only 0.010. F3.1 may be converging slowly, to a limit about 0.5 nats from its trained step, four to five times SR2's 0.10–0.13.
+  - The non-monotone start fits the split step's stiff-mode phase error, which depends on Δt.
+  - **The reading is therefore scoped:** the exact flow is what makes the per-layer flow converge quickly and close to the trained step. Whether F3.1 converges at all at large N is not settled by N ≤ 16.
+- **Kick share** (descriptive): 0.416 at layer 0 and 0.782 at layer 1, larger than SR2's. F3.1's V_φ still acts (6b-9), and it is part of the kick.
+
+**FLOW-C on PM1, scored 2026-10-09** (`refinement_flow_confirmation_pm1_output.txt` in PM1's results folder; run in the author's terminal, all checks exact):
+
+| N (same T) | 2 | 3 | 4 | 6 | 8 | 12 | 16 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| as trained, PPL | 53.71 | 133.77 | 9,028.50 | 3,747.54 | 2,041.92 | 1,501.56 | 1,287.96 |
+| as trained, penalty (nats) | — | 0.912 | 5.124 | 4.245 | 3.638 | 3.331 | 3.177 |
+| per-layer flow (φ frozen too), PPL | 53.71 | 302.40 | 2,798.71 | 5,988.00 | 8,290.74 | 10,224.31 | 11,071.83 |
+| per-layer flow, penalty (nats) | — | 1.728 | 3.953 | 4.714 | 5.039 | 5.249 | 5.328 |
+
+- **C5 (PM1, per-layer flow: pen(8) ≤ 1.0 nats, called 35%): MISS,** 5.039.
+- **The per-layer flow does not rescue PM1; it makes it worse.** The penalty grows at every N, above the standard refinement's from N = 6 on.
+- **The kick is almost all of PM1's step:** 0.616 at layer 0 and 0.942 at layer 1, against SR2's 0.37 and 0.51. Its wells act as explicit kicks, about 4.7 times the conservative force at layer 1 (6b-15). Holding φ fixed and re-evaluating such a force at every substep integrates a strongly attracting field the trained two-step map never sampled.
+- **Decision rule:** the wells remain PM1's refinement problem. **PM1-cap goes ahead as pre-registered.** The per-layer flow should be re-tested on PM1-cap, whose bounded wells shrink the kick.
+
+#### FLOW-R: replication of the per-layer flow's convergence on fresh batches — pre-registered **2026-10-09, before the run**
+
+**Why.** FLOW-C showed SR2's per-layer flow settling at a limit, but its convergence criterion was mis-specified and missed. A criterion written after seeing those data must be tested on data not yet seen.
+
+**Measurement.** `debug/refinement_flow_confirmation.py … sr2 seed=20261009`:
+- **Data:** 12 × 4 × 512 validation tokens drawn with seed **20261009**, not 6b-7's 20260920; the same `get_batch`.
+- **Model and arms:** SR2's `_best.pt`. Arms: per-layer flow at N in {2, 3, 4, 6, 8, 12, 16}; as trained at N = 2 and 8.
+- **Kick share:** measured again on the first new batch.
+- **Checks:** the same exact checks as FLOW-C.
+- pen(N) = ln(PPL_N ÷ PPL_N=2).
+
+**Predictions:**
+
+| | prediction | called |
+| --- | --- | --- |
+| R1 | convergence: \|pen(16) − pen(12)\| ≤ 0.01 and \|pen(12) − pen(8)\| ≤ 0.02 nats | 80% |
+| R2 | the limit is close to the trained step: pen(16) ≤ 0.25 nats | 80% |
+| R3 | the gap replicates: pen(16) within 0.05 nats of FLOW-C's 0.129 | 70% |
+| R4 | as trained still diverges on the new batches: pen(8) ≥ 1.5 nats | 90% |
+| R5 | the kick share stays non-trivial: median at least 0.10 at both layers | 90% |
+
+**Decision rule.**
+- **R1, R2 and R5 hit:** the claim is that **SR2's layer step is a coarse sample of a convergent per-layer flow, with a discretisation gap of pen(16) nats.** The per-layer flow is: context, stiffness and occupations taken at layer entry, the damped Langevin dynamics exact on the stiff subspace, one LayerNorm projection per layer. Then, in order:
+  1. the inference mode `substeps_per_layer` (bit-identical at 1);
+  2. SR2's HF card with FLOW-C and FLOW-R;
+  3. book §37.6's (R) stated with this definition.
+- **R1 misses:** no convergence claim on the per-layer flow. SR4a proceeds.
+- **R2 misses with R1 hit:** the flow exists but is far from the trained step. The claim is restricted to existence, not to the trained model sampling it.
+- **R3 and R4** are descriptive checks of stability and do not gate the claim.
+
+#### FLOW-R scored: **all five HIT — SR2's layer step is a coarse sample of a convergent per-layer flow** — **2026-10-09**
+
+`refinement_flow_confirmation_sr2_seed20261009_output.txt` in SR2's results folder; every check exact (0.0).
+
+| N (same T), batch seed 20261009 | 2 | 3 | 4 | 6 | 8 | 12 | 16 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| as trained, PPL | 55.04 | | | | 408.23 | | |
+| per-layer flow, PPL | 55.04 | 73.30 | 67.64 | 59.83 | 61.00 | 61.08 | 61.09 |
+| per-layer flow, penalty (nats) | — | 0.286 | 0.206 | 0.084 | 0.103 | 0.104 | 0.104 |
+
+| | prediction | called | result |
+| --- | --- | --- | --- |
+| R1 | \|pen(16) − pen(12)\| ≤ 0.01 and \|pen(12) − pen(8)\| ≤ 0.02 | 80% | **HIT:** 0.0001 and 0.0012 |
+| R2 | pen(16) ≤ 0.25 | 80% | **HIT:** 0.104 |
+| R3 | pen(16) within 0.05 of FLOW-C's 0.129 | 70% | **HIT:** 0.025 away |
+| R4 | as trained, pen(8) ≥ 1.5 | 90% | **HIT:** 2.004 |
+| R5 | kick share median ≥ 0.10 at both layers | 90% | **HIT:** 0.369 and 0.505 (velocity 0.635, 0.598) |
+
+- **Decision rule: R1, R2 and R5 hit, so the claim is licensed.** SR2's layer step is a coarse sample of a convergent per-layer flow, with a discretisation gap of **0.104 nats** (11%) on fresh data, 0.129 on 6b-7's batches.
+- **The per-layer flow:**
+  - the context ξ and V_θ's low-rank stiffness are taken at layer entry;
+  - the damped Langevin dynamics run exactly on the stiff subspace;
+  - the remaining force is the real one, applied as kicks;
+  - LayerNorm projects once per layer.
+- **What the claim rests on.** The refined trajectory stops changing by N = 8–16, to 10⁻³ nats. The limit sits close to the trained step. The explicit kick, which carries 37–51% of each step, is integrated by the refinement rather than frozen, so the convergence is not by construction.
+- **What it does not claim.**
+  - The standard refinement, which recomputes the context and projects at every substep, still diverges: R4, 2.0 nats at N = 8.
+  - The result is shown for SR2 only. FLOW-C's control: F3.1 does not settle within N ≤ 16 (C4 HIT, by 0.010 nats), and PM1 diverges under the per-layer flow (C5 MISS).
+  - It is a property of the trained weights at inference. Training is unchanged.
+- **Next, per the decision rule:**
+  1. the inference mode `substeps_per_layer`, bit-identical at 1;
+  2. SR2's HF card with FLOW-C and FLOW-R;
+  3. book §37.6's (R) stated with this definition.
+
+**Inference mode implemented and verified, 2026-10-09.** `substeps_per_layer: int = 1` in the model config.
+- **Code.** `FockMultiXiPARFLM._stack_forward` runs each layer as k substeps of dt/k, with a per-layer context on the model (`_flow_ctx`). `_layer_step_langevin` takes ξ and the low-rank quadratic from it after the layer's first substep, and projects only at the last. `poisson_mode_force` takes φ from it. Outside the mode the context is `None` and every line takes its original path.
+- **Scope.** Inference only: it refuses training mode and k < 1, and it requires `baoab_cfc_lowrank` with no reverse channel. There is no layer checkpointing inside the mode.
+- **Verification** (`debug/verify_substeps_switch.py` and its output):
+  - **k = 1:** bit-identical to HEAD (`git archive`) on SR2's and PM1's configurations and trained weights. Eval logits, train-mode loss and all 73 and 77 parameter gradients match.
+  - **k = 4 and 8 on SR2:** logits identical to the FLOW-C/FLOW-R harness at N = 8 and 16 (max |Δ| 0.0), and the loss on FLOW-R's first batch identical (4.134370).
+  - **k = 4 on PM1:** identical to the harness with φ frozen.
+  - **Causality at k = 4:** exact.
+  - **State and guards:** k = 1 set explicitly equals the default, the context is cleared after every forward, and both guards fire.
+- **For users.** `model.cfg.substeps_per_layer = k` with `model.eval()` turns depth into an inference-time knob on SR2. Perplexity converges as k grows (FLOW-R), to within about 0.10–0.13 nats of the trained k = 1.
+
 
 **Consequences for the queue.**
 - **PM1-cap's base: the author's call before launch, as pre-registered.** SR2 does not address PM1's failure, which is in the wells (§5.15 localization). Running PM1-cap on the base without SR2 isolates the cap against PM1. Running it on SR2 (`…pmcap0p3…sr2`) would test the candidate combined model but confound the two changes. Recommendation: as pre-registered, without SR2; combine the two afterwards if CAP3 holds.

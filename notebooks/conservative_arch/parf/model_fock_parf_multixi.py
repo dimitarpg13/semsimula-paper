@@ -727,6 +727,19 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
 
         r, salience = self._init_registers(B, h0.device)
 
+        # Per-layer flow inference mode (cfg.substeps_per_layer, protocol
+        # SS5.19): k substeps of dt/k per layer; see MultiXiPARFLMConfig.
+        k_sub = getattr(cfg, "substeps_per_layer", 1)
+        k_sub = 1 if k_sub is None else int(k_sub)
+        if k_sub != 1:
+            if k_sub < 1:
+                raise ValueError(f"substeps_per_layer must be >= 1, got {k_sub}")
+            if self.training:
+                raise RuntimeError("substeps_per_layer > 1 is an inference mode; call model.eval()")
+            if self.reverse_ch is not None or getattr(cfg, "integrator", "verlet") != "baoab_cfc_lowrank":
+                raise ValueError("substeps_per_layer > 1 is defined for integrator='baoab_cfc_lowrank' "
+                                 "with no reverse channel (the per-layer flow of protocol SS5.19)")
+
         h = h0
         h_prev = h0
 
@@ -744,7 +757,22 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
                 # needs autograd.grad at every layer regardless of train/eval),
                 # so gating on self.training silently disables checkpointing
                 # during evaluation.
-                if cfg.use_layer_checkpoint and torch.is_grad_enabled():
+                if k_sub != 1:
+                    # No layer checkpointing here (inference only). The
+                    # per-layer context lives in self._flow_ctx for the
+                    # layer's k substeps; registers evolve per substep.
+                    self._flow_ctx = {}
+                    try:
+                        for j in range(k_sub):
+                            self._flow_ctx["project"] = j == k_sub - 1
+                            h_new, h_prev_out, r, salience = self._fock_layer_step(
+                                h, h_prev, r, salience, m_b, gamma, dt / k_sub, layer_idx=ell,
+                            )
+                            if j < k_sub - 1:
+                                h, h_prev = h_new, h_prev_out
+                    finally:
+                        self._flow_ctx = None
+                elif cfg.use_layer_checkpoint and torch.is_grad_enabled():
                     def _ckpt_step(
                         _h, _h_prev, _r, _sal, _m_b, _gamma,
                         _dt=dt, _ell=ell,

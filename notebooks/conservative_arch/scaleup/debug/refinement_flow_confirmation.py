@@ -19,7 +19,9 @@ Checks first, all exact: switches off = 6b-7's _fom_stack; per-layer flow at
 N = 2 = trained; one fresh xi / quadratic (/ phi) per trained layer at N = 8;
 the replay with the normal clamp reproduces the captured output.
 
-Usage: python3 refinement_flow_confirmation.py OUT_DIR FOLDER {f31|sr2|pm1}
+Usage: python3 refinement_flow_confirmation.py OUT_DIR FOLDER {f31|sr2|pm1} [seed=<int>]
+  seed=<int> (FLOW-R, 2026-10-09): draw the 12 batches with this seed instead
+  of Cell 6b-7's 20260920, and run 'as trained' at N = 2 and 8 only.
 """
 import ast, json, sys
 from pathlib import Path
@@ -32,6 +34,7 @@ N_BATCH, BATCH, BLOCK = 12, 4, 512
 
 if __name__ == '__main__':
     OUT = Path(sys.argv[1]); FOLDER = sys.argv[2]; KIND = sys.argv[3]
+    SEED = next((int(a[5:]) for a in sys.argv[4:] if a.startswith('seed=')), None)
     assert KIND in ('f31', 'sr2', 'pm1'), KIND
     sys.argv = [sys.argv[0], str(OUT / 'harness')]
     sys.path.insert(0, str(Path(__file__).parent))
@@ -56,7 +59,7 @@ if __name__ == '__main__':
     exec(compile(ast.Module(body=keep, type_ignores=[]), 'Cell6b7_defs', 'exec'), g)
     policy_index, fom_stack = g['_fom_policy_index'], g['_fom_stack']
 
-    rng = np.random.default_rng(20260920)                    # the cell's seed
+    rng = np.random.default_rng(20260920 if SEED is None else SEED)   # the cell's seed, or FLOW-R's
     batches = [g['get_batch'](g['val_ids'], BATCH, BLOCK, rng) for _ in range(12)][:N_BATCH]
     L, DT = model.cfg.L, model.cfg.dt
     T = L * DT
@@ -64,8 +67,9 @@ if __name__ == '__main__':
     FLOW = dict(ln_once=True, freeze=True, xi_freeze=True, phi_freeze=PM)
     TRAINED = dict(ln_once=False, freeze=False, xi_freeze=False, phi_freeze=False)
 
-    lines = [f'FLOW-C, the per-layer flow: {KIND}  ...{FOLDER[-70:]}',
-             f'   {N_BATCH} x {BATCH} x {BLOCK} tokens (Cell 6b-7\'s batches); policy hold; T = {T:g}']
+    lines = [f'{"FLOW-C" if SEED is None else "FLOW-R"}, the per-layer flow: {KIND}  ...{FOLDER[-70:]}',
+             f'   {N_BATCH} x {BATCH} x {BLOCK} tokens (' + ("Cell 6b-7's batches" if SEED is None else f'batch seed {SEED}')
+             + f'); policy hold; T = {T:g}']
     say = lambda s='': (print(s, flush=True), lines.append(s))
 
     def stack(n, arm):
@@ -149,15 +153,16 @@ if __name__ == '__main__':
     say('\nGATE 3: PPL at N steps of dt = T/N, then the penalty ln(PPL_N / PPL_2) in nats')
     for name, arm in (('as trained', TRAINED), ('per-layer flow', FLOW)):
         loss = {}
-        for n in NS:
+        for n in (NS if (SEED is None or name == 'per-layer flow') else (2, 8)):
             loss[n] = loss[2] if (n == 2 and 2 in loss) else ev(arm, n)
             print(f'      {name} N={n}: {np.exp(loss[n]):.2f}', flush=True)
-        out['gate3'][name] = {n: loss[n] for n in NS}
-        say(f'   {name:<15} PPL ' + '  '.join(f'N={n}:{np.exp(loss[n]):.2f}' for n in NS))
-        say(f'   {"":<15} pen ' + '  '.join(f'N={n}:{loss[n] - loss[2]:.3f}' for n in NS[1:]))
+        out['gate3'][name] = dict(loss)
+        say(f'   {name:<15} PPL ' + '  '.join(f'N={n}:{np.exp(loss[n]):.2f}' for n in loss))
+        say(f'   {"":<15} pen ' + '  '.join(f'N={n}:{loss[n] - loss[2]:.3f}' for n in loss if n != 2))
 
     txt = '\n'.join(lines)
     OUT.mkdir(parents=True, exist_ok=True)
-    (OUT / f'refinement_flow_confirmation_{KIND}_output.txt').write_text(txt + '\n')
-    (OUT / f'refinement_flow_confirmation_{KIND}.json').write_text(json.dumps(out, indent=1))
-    print(f'\nwrote {OUT}/refinement_flow_confirmation_{KIND}_output.txt')
+    stem = f'refinement_flow_confirmation_{KIND}' + ('' if SEED is None else f'_seed{SEED}')
+    (OUT / f'{stem}_output.txt').write_text(txt + '\n')
+    (OUT / f'{stem}.json').write_text(json.dumps(out, indent=1))
+    print(f'\nwrote {OUT}/{stem}_output.txt')
