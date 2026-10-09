@@ -1,0 +1,14 @@
+k = 1 (default): working copy vs HEAD, on the trained weights
+   SR2: eval 0.0e+00  train 0.0e+00  grads 0.0e+00  (73 params, same set: True)  -> IDENTICAL
+   PM1: eval 0.0e+00  train 0.0e+00  grads 0.0e+00  (77 params, same set: True)  -> IDENTICAL
+
+k > 1, on the trained weights
+1. SR2 k = 4 vs the FLOW-C harness at N = 8: max |d logit| 0.0e+00
+1. SR2 k = 8 vs the FLOW-C harness at N = 16: max |d logit| 0.0e+00
+   SR2 loss on FLOW-R's first batch at k = 8: mode 4.134370  harness 4.134370  (PPL 62.45)
+2. PM1 k = 4 vs the harness with phi frozen at N = 8: max |d logit| 0.0e+00
+3. causality at k = 4: tokens replaced at t >= 128, max |d logit| at t < 128 = 0.0e+00
+4. k = 1 set explicitly vs the default: max |d logit| 0.0e+00; _flow_ctx None after every forward: True
+5. guards: refuses training mode True, refuses k = 0 True
+
+-> ALL PASS
