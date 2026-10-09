@@ -1,0 +1,19 @@
+FLOW-C, the per-layer flow: f31  ...lgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+   12 x 4 x 512 tokens (Cell 6b-7's batches); policy hold; T = 8
+CHECK  N=2: as trained vs Cell 6b-7 _fom_stack, max |d logit| 0.0e+00
+CHECK  N=3: as trained vs Cell 6b-7 _fom_stack, max |d logit| 0.0e+00
+CHECK  N=2: per-layer flow vs the trained model, max |d logit| 0.0e+00
+CHECK  N=8 per-layer flow: fresh quadratic / xi = (2, 2) (one per trained layer: 2)
+CHECK  layer 0: replay with the normal clamp vs captured output, max |d| 0.0e+00
+CHECK  layer 1: replay with the normal clamp vs captured output, max |d| 0.0e+00
+-> checks PASS
+
+KICK SHARE at the trained N = 2 (first batch, 4 x 512 tokens): |h(no kick) - h| / |h - h_in|
+   layer 0: position median 0.416 (p90 0.466); velocity median 0.736
+   layer 1: position median 0.782 (p90 0.838); velocity median 0.953
+
+GATE 3: PPL at N steps of dt = T/N, then the penalty ln(PPL_N / PPL_2) in nats
+   as trained      PPL N=2:56.30  N=3:137.00  N=4:266.70  N=6:452.02  N=8:547.63  N=12:649.38  N=16:705.59
+                   pen N=3:0.889  N=4:1.555  N=6:2.083  N=8:2.275  N=12:2.445  N=16:2.528
+   per-layer flow  PPL N=2:56.30  N=3:71.20  N=4:140.04  N=6:95.68  N=8:104.21  N=12:94.66  N=16:93.78
+                   pen N=3:0.235  N=4:0.911  N=6:0.530  N=8:0.616  N=12:0.520  N=16:0.510
