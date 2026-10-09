@@ -3920,6 +3920,83 @@ All on the full run's best checkpoint (step 30,500), outputs in `results/…pm64
 
 **Overall for PM1:** causal; a gradient flow on the trained weights, cleaner than F3.1; 4.5% better than F3.1 and 3.9% behind G2 in settled PPL; but not refinement-ready (6b-7: Gate 3 beyond N = 3 and Gates 1–2 far worse than F3.1). **6b-12 (patched), the wells' per-token forcing:** GATE 0 PASS. Deflection of each token's step when the wells are switched off, as a fraction of the step: layer 0 median 0.40 (IQR 0.38–0.43); layer 1 median 0.87 (IQR 0.85–0.89), 97.8% of tokens above 0.75 and 0.5% below 0.25. The wells act on every token, strongly and uniformly, not sparsely; position, semantic mass and loss barely predict it (|ρ| ≤ 0.18). Descriptive: the SPARSE/UNIFORM criteria were written for the reverse channel.
 
+#### PM1 refinement localized: **the layer-1 wells cause both the refinement failure and the momentum dependence** — **2026-10-08**
+
+`debug/pm1_refinement_localization.py` on the best checkpoint, CPU, executing Cell 6b-7's own refinement functions (policy hold) on the first 4 of its 12 batches. Not pre-registered: a diagnostic to choose the next arm. The α = 1 row reproduces Colab's 6b-7 within the subset's noise (53.70 at N = 2 against 53.71; +167% at N = 3 against +149%).
+
+| well depths × α | PPL at the trained N = 2 | Gate 3, N = 3 | Gate 3, N = 4 | Gate 1, velocity reset at layer 1 |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 (as trained) | 53.70 | +167% | +19,029% | +11,737% |
+| 0.75 | 59.91 | +138% | +968% | |
+| 0.5 | 76.52 | +85% | +133% | |
+| 0 (wells off) | 122.29 | +25% | +102% | +0.3% |
+| F3.1, for reference | 56.30 | +143% | +374% | +34% (both layers) |
+
+- **The wells drive the failure.** The refinement penalty falls steadily as the wells weaken; at half strength it is below F3.1's, and with the wells off the remaining V_θ + V_φ dynamics refine far more smoothly than F3.1's.
+- **The momentum dependence is the wells' too,** and it is all at layer 1: resetting the velocity entering layer 0 changes nothing (the stack starts at rest), resetting it at layer 1 costs +11,737% with the wells and +0.3% without.
+- **The rest of the model co-adapted to the wells:** without them PPL is 122, against F3.1's 56. Post-hoc weakening is therefore a trade-off, not a fix; the question for a trained arm is whether bounding the well strength during training keeps most of α = 1's perplexity with something like α = 0.5's refinement.
+- **Candidate next arms:** (a) bound the depths by reparameterisation, a = a_max tanh(a_raw / a_max), which keeps the force an exact gradient (a scaled per-token force budget would not); (b) variable-step training on PM1 (SR4a: N ~ U{2, 3, 4} at fixed T), which targets refinement readiness directly. (a) is pre-registered below (author's choice, 2026-10-08); (b) is not.
+
+#### PM1-cap: bounded well depths — pre-registered **2026-10-08, before the run**
+
+**Why.** The localization above puts PM1's refinement failure and its momentum dependence in the layer-1 wells. At half strength (α = 0.5) Gate 3 is +85% at N = 3 and +133% at N = 4, both below F3.1's, but post-hoc weakening costs perplexity because the rest of the model co-adapted to deep wells. The question for a trained arm: if the depths can never grow deep, does training find a model that keeps most of PM1's gain and refines like α ≤ 0.5?
+
+**Mechanism** (`model_parf_multixi.py`, `poisson_depth_cap`; Cell 0 `POISSON_DEPTH_CAP`). Each well's effective depth is a = c · tanh(a_raw / c), with a_raw the trained `pm_depth`, so |a| < c. The force is −∇U with the same bounded a, so it stays an exact gradient at fixed φ. At initialisation (a_raw = 0) the cap is linear and the arm starts exactly as PM1 does. The tag gains `pmcap<c>` only when the knob is set; Cell 5b asserts tag and model agree and prints "well depths capped at c". Cell 6b-15 and `debug/pm1_post_run_measurements.py` read the effective depths.
+
+**Why c = 0.3.** PM1's trained layer-1 depths at step 30,500 have p05 / p50 / p95 −0.43 / +0.24 / +0.66, max |a| 1.02. A cap of 0.3 leaves the median well almost intact (0.24 → 0.20) and bounds the tails near α = 0.5's scale on the strongest wells (0.66 × 0.5 = 0.33). It already binds during PM1's probe: the layer-1 median was +0.35 at step 8,000.
+
+**Verification** (`debug/verify_pm_cap_switch.py` and its output, 2026-10-08; PM1's trained weights):
+- **Off:** with `POISSON_DEPTH_CAP = None`, eval logits, train-mode loss and all 77 parameter gradients are bit-identical to HEAD on PM1's configuration. Every existing arm's tag is unchanged.
+- **On** (c = 0.3), all pass:
+  1. the tag reads `…pm64_pmcap0p3_L2probe…`, and Cell 5b's banner prints;
+  2. the effective depths stay below 0.3 (max 0.2993);
+  3. the force equals −autograd ∇U with the capped depths, relative error 1.1e-7;
+  4. at zero depth the logits are bit-identical to a model without modes;
+  5. causality is exact (the logits at t < 256 don't change when the tokens from 256 on are replaced);
+  6. gradients reach `pm_depth` through the tanh.
+
+**Preview, not this arm** (`debug/pm1_refinement_localization.py … cap0p3`, PM1's trained weights capped post hoc; the cap replaces α):
+
+| | PPL at N = 2 | Gate 3, N = 3 | Gate 3, N = 4 | Gate 1, velocity reset at layer 1 |
+| --- | ---: | ---: | ---: | ---: |
+| PM1 as trained | 53.70 | +167% | +19,029% | +11,737% |
+| PM1, depths capped at 0.3 post hoc | 88.53 | +100% | +73% | −19% |
+
+The cap removes the momentum lock and the N = 4 blow-up on weights that were not trained for it, at a 65% perplexity cost. Only training can say how much of that cost the rest of the model recovers.
+
+**Run.** F3.1's Cell 0 (`REVERSE_CHANNEL = False`, `VPHI_GRAD_PATH = XI_GRAD_PATH = 'live'`) plus `POISSON_MODES = 64`, `POISSON_MODE_CLIP = 0.3` (PM1's), `POISSON_DEPTH_CAP = 0.3`. Seed 0, WSD on the full 32,500-step schedule. Base without SR2, so the only difference from PM1 is the cap. It goes on the GPU after SR2 on F3.1. If SR2's E1 holds first, whether PM1-cap runs on the SR2 base instead (tag `…pmcap0p3…sr2`) is the author's call before launch; the predictions below are for the base without SR2.
+
+**Stage 1, the probe.** `PROBE_MAX_STEPS = 8_000` (about 4 h), at matched steps with PM1's probe (79.78) and F3.1 (93.57).
+
+| step-8,000 PPL | next |
+| --- | --- |
+| 90.8 or lower (at least 3% better than F3.1, PM1's own probe gate) | continue to 32,500 from `_step8000_probe_stop.pt` |
+| 90.8–92.6 | weak signal; full run at the author's discretion |
+| above 92.6, or diverged | stop; the cap costs the memory its gain |
+
+At the probe stop: Cells 6b-7 and 6b-15 on the probe checkpoint, descriptive. PM1's step-8,000 checkpoint had no 6b-7, so there is no matched refinement comparator. Early warning, at the author's discretion: if 6b-7's Gate 1 at the probe is above +1,000% (PM1's signature), the cap has not removed the momentum lock and the full run may be skipped.
+
+**Predictions:**
+
+| | prediction | called |
+| --- | --- | --- |
+| CAP0 | step 8,000 at or below 84.0 (within 5% of PM1's probe) | 65% |
+| CAP1 | settled at least 1% better than F3.1 (at or below 57.18) | 60% |
+| CAP1′ | settled at or below PM1's 55.17 (the cap costs nothing) | 25% |
+| CAP2 | Gate 3 at N = 3 at or below F3.1's +143% (6b-7, best checkpoint, policy hold) | 60% |
+| CAP3 | Gate 3 at N = 4 at or below F3.1's +374% | 55% |
+| CAP4 | Gate 1 (velocity reset) at or below +100% (PM1 +10,600%, F3.1 +34%) | 55% |
+| CAP5 | the conservativity test passes as for PM1 (wells exact; router term only at t < 16) | 95% |
+| CAP6 | layer-1 PM1 force / conservative force below PM1's 4.7 (6b-15 at the end) | 75% |
+
+- **Compensation, recorded in advance.** The cap bounds depth per unit occupation, not the force, 2κ² φ a E |h − μ|. φ can grow if the half-lives lengthen (λ is trainable; 4–128 tokens is only its initial range), and κ² can sharpen the wells. If CAP3 or CAP4 misses, the first reading is whether the half-life median (PM1: 7.1 tokens) or κ²·d (PM1: 0.80) moved to rebuild the force. 6b-15 and the post-run script report both. Also reported: the share of layer-1 depths with |a_raw| > c, where the tanh saturates.
+- **Scoring.** CAP0 at the probe stop. The rest on the full run's best checkpoint, with the same tools as PM1: 6b-7, 6b-13, 6b-15, the patched 6b-9 and 6b-12, `conservativity_test_checkpoint.py … pm64`, `causality_check_checkpoint.py … pm64`, `pm1_post_run_measurements.py` and `pm1_refinement_localization.py`. The local scripts need the cap in their Cell 0 substitutions before they are run on this arm.
+
+**Decision rule.**
+- **CAP1 and CAP3 both hit:** PM1-cap replaces PM1 as the conservative memory arm in the book (§37.6 and the abstract) and is the candidate for the HF card, the author's call. PM1 keeps its row as the unbounded comparison.
+- **CAP3 hits, CAP1 misses:** bounding trades the memory gain for refinement. Next: (b), variable-step training on PM1, or c = 0.5.
+- **CAP3 misses:** a depth bound is not enough. Read the compensation channel above, then (b).
+
 ### 5.16 F0: is there a shared floor near 50 PPL? The stable-phase extrapolation — **pre-registered 2026-10-06, before any fit**
 
 **Why.** Among the L=2 models with the register path, G2 (53.12), G3 (54.21) and G3′ (52.90) settle within 2.5% of each other, whatever else is switched on. L=4 Fock (50.10) and the 8-layer matched GPT-2 (49.81) end near 50. Is the floor set by depth, or by what every model shares: d = 384, the untied head and 532M tokens?
@@ -4149,7 +4226,180 @@ Descriptive, not a test: switching SR2 on post hoc on F3.1's weights, which were
 
 **Run settings.** F3.1's Cell 0 (`REVERSE_CHANNEL = False`, `VPHI_GRAD_PATH = 'live'`, `XI_GRAD_PATH = 'live'`) plus `LOWRANK_DAMPED_FLOW = True`. Same seed, steps and schedule as F3.1. Then the full 6b set, with 6b-7 (Gates 1–3) deciding E1.
 
-**Book.** If both tests hold, the decomposition becomes a subsection of book §37.6, in the next edition after the seed runs.
+#### SR2 on F3.1 scored: **E1 HIT, E2 HIT — the exact flow halves the refinement penalty at no perplexity cost, but does not make the model a flow** — **2026-10-09**
+
+Run output `L2_SR2_for_noattn_none_32500steps_output.txt` and Cell 6b-7 on the best checkpoint (step 31,000), filed in `results/…_sr2_L2probe…/`. Tag `…cgqk_norc_vplive_xilive_sr2_L2probe…idt4_lr0p0012_noattn`.
+
+| | **SR2** | F3.1 |
+| --- | ---: | ---: |
+| settled (mean of the last 3 evals) | **58.32** | 57.76 |
+| best | 56.49 (step 31,000) | 57.35 |
+| step 21,000 (end of the stable phase) | 70.94 | 71.81 |
+| gap to F3.1 at matched evals, steps 8,000–18,000 | +0.0% mean, sd 2.0% | — |
+| global gradient norm above 1.0, logged steps to 18,000 | 0 of 360 (max 0.94) | 3 of 360 (max 1.51) |
+| seconds per step | 1.72 | 1.28 |
+
+- **E2 (settled at or below 59.5, called 60%): HIT,** +1.0% against F3.1. The exact flow costs about a third more compute per step, and no perplexity.
+- **Causality:** SCAF CLEAN at 5k, 10k, 15k, 20k, 25k and 30k; the causal and trained-scale leak probes at 10k were exactly 0. The step-32,500 audit printed nan for its PPLs, as G3′'s and PM1's did.
+- **The in-flight resonance monitor was empty throughout.** semsimula-diag hooked `lowrank_cfc_substep`, which SR2 replaces with `lowrank_damped_substep`. Fixed in semsimula-diag, with a regression test, on 2026-10-08; it does not affect training.
+
+**Cell 6b-7** (Gate 0 PASS, bit-identical), penalties in nats, ln(PPL at N ÷ PPL at N = 2):
+
+| | SR2 | F3.1 | cut |
+| --- | ---: | ---: | ---: |
+| Gate 1, velocity reset | +3.9% | +34.3% | |
+| Gate 2, N = 3 at the trained Δt | +35% | +92% | |
+| Gate 2, N = 8 | +567% | +9,614% | |
+| Gate 3, N = 1 | 1.944 (+598%) | 2.565 (+1,200%) | 24% |
+| **Gate 3, N = 3** | **0.405 (+50%)** | 0.889 (+143%) | **54%** |
+| Gate 3, N = 4 | 0.986 (+168%) | 1.555 (+374%) | 37% |
+| Gate 3, N = 6 | 1.725 (+461%) | 2.083 (+703%) | 17% |
+| Gate 3, N = 8 | 2.110 (+725%) | 2.275 (+873%) | 7% |
+
+- **E1 (the N = 3 penalty halved, to 0.45 nats or below, called 55%): HIT,** 0.405 nats.
+- **The momentum dependence nearly vanishes.** Resetting the incoming velocity costs +3.9% against F3.1's +34%. Running more steps at the trained Δt (Gate 2) degrades far more gently: +567% at N = 8 against +9,614%.
+- **Not refinement-invariant.** Gate 3 still grows away from N = 2, so by the cell's own classification the model is still a map at the trained Δt. The cut is largest at the coarse end (54% at N = 3) and shrinks towards fine steps (7% at N = 8), where the two models converge.
+- **Reading.** The stiff-mode phase error, which SR2 removes, is what separates F3.1 from SR2 near the trained Δt. It is not what fails at fine steps. As Δt → 0 the split step's stiff-mode error vanishes for F3.1 too, so the shared fine-step penalty, about 2.1–2.3 nats at N = 8, belongs to something both models share. The candidates:
+  - **Δt = 4 is far from the flow limit for the non-stiff parts as well.** V_φ, the ξ coupling and the depth code stay explicit and are trained only at Δt = 4.
+  - **The trained map uses that coarseness.** Variable-step training (SR4a, N ~ U{2, 3, 4} at fixed T) tests this directly, as the next item in the SR series.
+- **Decision rule (pre-registered).** E1 holds, so "the conservative core's residual failure is integrator error, removable by the exact flow" is half right, and is recorded with that scope:
+  - **Removable by the exact flow:** the stiff-mode share near the trained Δt, which is most of the N = 3 penalty.
+  - **Not removable by it:** the fine-step limit, which is not a flow under either integrator.
+  - **Status of (R):** SR2-F3.1 is the most refinement-ready conservative model so far, but it does not satisfy (R).
+
+**Cell 6b-9 (descriptive), 2026-10-09.** Gate 0 PASS. Deflection of the real step from the damped V_θ geodesic, R_h:
+
+| arm | SR2 layer 0 | SR2 layer 1 | F3.1 layer 0 | F3.1 layer 1 |
+| --- | ---: | ---: | ---: | ---: |
+| geo (V_θ only) | 0.691 | 0.548 | 0.557 | 0.772 |
+| geo + LN | 0.064 | **0.003** | 0.117 | 0.679 |
+| cons (V_θ + V_φ) | 0.688 | 0.548 | 0.507 | 0.240 |
+| step size, \|Δh\| / \|h_in\| | 5.96 | 0.72 | 6.27 | 1.07 |
+
+| attribution, averaged over layers | SR2 | F3.1 | PM1 |
+| --- | ---: | ---: | ---: |
+| R(geo) | 0.620 | 0.665 | 0.967 |
+| LN moves R by | −0.586 | −0.267 | −0.273 |
+| V_φ moves R by | **−0.002** | −0.291 | −0.017 |
+
+- **In SR2, V_φ has dropped out of the step.** V_θ plus the LayerNorm projection reproduce it: R 0.064 at layer 0 and 0.003 at layer 1, with the layer-1 velocity almost exactly V_θ's (R_v 0.004). F3.1's V_φ carried 0.29 of the step and PM1's wells took that role. Under the exact flow the model let it go. Whether V_φ still matters for perplexity is not measured here; the cell warns that a small deflection does not mean a small perplexity effect.
+- **This narrows the fine-step residual.** V_φ's explicit kick is not a candidate for SR2, because it hardly acts. What is left in the step besides V_θ's exact flow is the LayerNorm projection.
+  - The projection is applied once per layer step, after a step that is 6 times the state's norm at layer 0 (5.96 in SR2, 6.27 in F3.1). So the trained layer-0 map is a long move followed by a projection back.
+  - Refined to N steps, the projection runs N times, after shorter moves. In the limit that is the flow constrained to the LayerNorm manifold, a different curve from the trained chord-then-project.
+  - Both models share this, which fits the convergence of their Gate 3 penalties at fine N.
+- **Test, local and cheap** (not yet written): Gate 3 with the projection applied once per trained layer interval instead of after every substep, on F3.1's and SR2's checkpoints. If the fine-step penalty collapses, the projection placement is the residual, and the fix is architectural (where LN sits in the step), not a training schedule.
+
+**Cell 6b-13 (descriptive), 2026-10-09.** The first ω·Δt reading on an SR2 model; the semsimula-diag fix works. ω·Δt per layer, p05 / p50 / p95:
+
+| | layer 0 | layer 1 | all |
+| --- | --- | --- | --- |
+| **SR2** | 7.82 / **8.93** / 10.15 | 3.92 / 5.46 / 7.02 | **7.55** |
+| F3.1 | 3.81 / 4.34 / 4.97 | 3.06 / 4.28 / 5.32 | 4.32 |
+| PM1 | 2.22 / 2.68 / 3.08 | 1.50 / 3.32 / 4.66 | 2.81 |
+
+- **Under the exact flow, V_θ stiffened, mostly at layer 0, where ω·Δt doubled.** The split step charges a phase error for stiff modes; the exact flow charges nothing, so training let them climb. A median of 8.9 radians is about 1.4 full rotations of the stiff modes within one layer step.
+- **A second candidate for the shared fine-step residual.** SR2 is exact for the quadratic model of V_θ, frozen at the step's starting state. Refined to N steps, the linearisation is recomputed N times. With ω·Δt near 9, the trained map leans on one frozen quadratic per step, and a re-linearised trajectory is a different curve. F3.1 freezes its linearisation in the same way.
+- **The test above gains a second switch.** Gate 3 with the linearisation (U, κ, f) held at its value from the start of each trained layer interval, alone and together with the once-per-interval projection. The exact flow of a frozen quadratic composes, so with both switches on only the explicit kick (V_θ's nonlinear residual, V_φ) differs between the refined and the trained step. The two switches then separate projection placement from re-linearisation.
+- The cell's printed band "[3.3, 4.2] … MISS" belongs to the 2026-09-28 Gen 2 depth question and is not scored here.
+
+#### The fine-step residual localized: **with the context frozen per layer and one projection per layer, SR2 refines like a flow** — **2026-10-09**
+
+`debug/refinement_ln_linearisation_split.py` (evaluation only, CPU; outputs `refinement_ln_linearisation_split_{sr2,f31}[_xi]_output.txt` in each run's results folder). A diagnostic, not pre-registered.
+- **Method.** Gate 3 is re-run (policy hold, the first 4 of Cell 6b-7's 12 batches) with switches that act once per trained layer's share of the interval, instead of at every substep:
+  - **LN once:** the projection runs at the end of the share only;
+  - **freeze:** the low-rank quadratic of V_θ is taken at the share's first substep;
+  - **ξ frozen:** the context ξ, which feeds V_θ's wells and V_φ, is taken at the share's first substep.
+- **What stays live.** The force in the kick is always the real one at the current state.
+- **Checks (all exact, 0.0).** With the switches off, the loop is bit-identical to 6b-7's `_fom_stack` at N = 2 and 3. At N = 2 every arm is the trained model. Each frozen quantity is computed once per trained layer at N = 8.
+
+Penalty ln(PPL_N ÷ PPL_N=2), nats:
+
+| arm | SR2 N = 3 | SR2 N = 4 | SR2 N = 8 | F3.1 N = 3 | F3.1 N = 4 | F3.1 N = 8 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| as trained (= 6b-7) | 0.421 | 1.029 | 2.219 | 0.914 | 1.613 | 2.400 |
+| LN once | 0.540 | 0.421 | 1.138 | 0.952 | 0.978 | 2.055 |
+| freeze | 2.919 | 2.779 | 2.280 | 1.272 | 1.504 | 2.380 |
+| LN once + freeze | 2.896 | 1.262 | 1.346 | 2.096 | 1.562 | 2.235 |
+| ξ frozen | 0.536 | 1.443 | 2.420 | 0.723 | 1.399 | 2.531 |
+| **all three** | **0.331** | **0.269** | **0.143** | 0.242 | 0.922 | 0.673 |
+
+- **SR2 with all three switches refines like a flow.** The penalty shrinks as the steps get finer: +39%, +31% and +15% at N = 3, 4 and 8, against +52%, +180% and +820% as trained. That is 94% of the N = 8 penalty removed. By 6b-7's own classification ("shrinking toward 0"), this is a flow.
+- **No single switch does it; the three act together.**
+  - **LN once alone** removes about half of SR2's fine-step penalty (59% at N = 4, 49% at N = 8).
+  - **Freezing the quadratic alone is catastrophic.** With the projection running every substep, the state leaves the region where the frozen quadratic holds.
+  - **Freezing ξ alone is mildly harmful.**
+- **F3.1 improves with all three (72% at N = 8) but does not converge** (0.242, 0.922, 0.673). It still carries the split step's stiff-mode phase error, and that error depends on Δt. So the exact flow is needed for convergence, and SR2's E1 gain is a prerequisite, not a side effect.
+- **Reading.** The trained SR2 layer step is close to a coarse sample of a well-defined per-layer flow: the damped Langevin flow at fixed context (ξ and V_θ's stiffness taken at layer entry), followed by one LayerNorm projection per layer.
+  - This is the framework's piecewise-autonomous reading, in which the potential changes per layer and is fixed within one ([*Addendum: Non-Autonomous Fields*](Addendum_Non_Autonomous_Fields_For_Appendix_A.md)).
+  - The standard refinement, which recomputes the context and projects at every substep, refines a different ODE, one the model was never trained to sample.
+- **What it does not show.**
+  - **Part of the convergence is by construction.** The exact flow of a frozen quadratic composes, so only the explicit kick is tested: V_θ's nonlinear residual, V_φ and the soft modes. The kick's share of the step has not been measured yet.
+  - **Small sample.** It was run on 4 batches and three step counts.
+  - **Inference only.** Training is unchanged, since at N = 2 every arm is the trained model.
+- **Consequences.**
+  - **(R) can be satisfied on SR2 by definition of the layer flow, without retraining.** The book's §37.6 property (R) should state which ODE the step samples: context and stiffness frozen per layer, one projection per layer.
+  - **Proposed confirmation, to pre-register before running:**
+    - all 12 of 6b-7's batches, N up to 16, on SR2 and F3.1;
+    - plus the kick's norm as a share of the step;
+    - plus the same arms on PM1, whose occupation φ is part of the per-layer context. This is the test of whether PM1's wells refine under the same definition.
+  - **SR4a's rationale changes.** Variable-step training is no longer needed to make SR2 refine under this definition. It remains the test for the stricter definition, in which the context is recomputed at every substep.
+
+#### FLOW-C: confirmation of the per-layer flow — pre-registered **2026-10-09, before the run**
+
+**Why.** If it holds, this is the result that lets the conservative core claim property (R). The 4-batch diagnostic above was exploratory, and it has one open doubt: the exact flow of a frozen quadratic composes by construction, so only the explicit kick is really tested. FLOW-C repeats the test at the full 6b-7 sample with more step counts, measures the kick, and adds the control and PM1.
+
+**Definition under test, the per-layer flow.** Each trained layer's share of the interval T is integrated with N/L substeps, where:
+- the context ξ is taken at the share's first substep;
+- V_θ's low-rank quadratic (G, Gμ, hence U and κ) is taken at the share's first substep;
+- for PM1, so is the occupation φ (the overlap E of the token's own state stays live);
+- the explicit kick uses the real force at each substep's midpoint;
+- the LayerNorm projection runs once, at the end of the share.
+
+At N = L this is the trained model, bit for bit.
+
+**Measurement** (`debug/refinement_flow_confirmation.py`, evaluation only, CPU):
+- **Data:** all 12 of Cell 6b-7's batches (seed 20260920, 12 × 4 × 512 tokens), policy hold, N in {2, 3, 4, 6, 8, 12, 16} at fixed T.
+- **Arms:** "as trained" (6b-7's Gate 3) and "per-layer flow".
+- **Penalty:** ln(PPL_N ÷ PPL_N=2). The batches are identical across N, so differences between N are paired.
+- **Kick share:** at the trained N = 2, each layer step is replayed from its captured inputs with the explicit kick set to exactly zero. The kick share is |h_out(no kick) − h_out| ÷ |h_out − h_in|, median over tokens, per layer.
+- **Models:** SR2 (tag `…sr2…`), F3.1 (control: same weights family, split stiff-mode step) and PM1 (clip 0.3), each on its `_best.pt`.
+- **Checks before any number is read** (exact, 0.0):
+  - with the switches off, the loop equals 6b-7's `_fom_stack`;
+  - at N = 2 the per-layer flow equals the trained model;
+  - each frozen quantity is computed once per trained layer;
+  - the kick-off replay with the clamp at its normal value reproduces the captured output.
+
+**Predictions:**
+
+| | prediction | called |
+| --- | --- | --- |
+| C0 | SR2 as trained reproduces Colab's 6b-7 within 0.03 nats at N = 3, 4, 8 (0.405, 0.986, 2.110) | 90% |
+| C1 | SR2, per-layer flow: penalty at N = 8 at most 0.25 nats | 80% |
+| C2 | SR2, per-layer flow, convergence: the penalty does not rise from N = 4 to N = 16 (each successive change at most +0.02 nats), and N = 16 ≤ N = 8 | 65% |
+| C3 | SR2 kick share: median at least 0.10 at both layers (the kick shapes at least a tenth of the step, so the convergence is not by construction) | 55% |
+| C4 | F3.1, per-layer flow, does not converge: penalty at N = 16 above 0.5 nats, or above its N = 8 value | 65% |
+| C5 | PM1, per-layer flow with φ frozen: penalty at N = 8 at most 1.0 nats (as trained, 6b-7: +3,700%, 3.63 nats) | 35% |
+
+**Decision rule.**
+- **C1, C2 and C3 hit:** SR2 satisfies (R) under the per-layer flow definition, non-trivially.
+  - The inference mode (`substeps_per_layer`, verified bit-identical at 1) is implemented.
+  - SR2 gets its HF card with these results, pushed on the author's go-ahead.
+  - Book §37.6 states (R) with this definition.
+- **C1 and C2 hit, C3 misses:** the convergence holds but the kick is small, so most of it is by construction.
+  - The claim is scoped: the trained step is, to within a small kick, the exact flow of a per-layer frozen quadratic.
+  - The card and the book say so in those words.
+- **C1 or C2 misses:** the diagnostic does not replicate at full sample. No (R) claim, and SR4a proceeds.
+- **C4 misses** (F3.1 converges too): the exact flow is not a prerequisite, and the reading above that SR2's E1 gain is necessary is withdrawn.
+- **C5:**
+  - **Hit:** PM1, and PM1-cap after it, are tested under the same definition before any PM1 card.
+  - **Miss:** the wells remain PM1's refinement problem, and PM1-cap goes ahead as pre-registered.
+
+
+**Consequences for the queue.**
+- **PM1-cap's base: the author's call before launch, as pre-registered.** SR2 does not address PM1's failure, which is in the wells (§5.15 localization). Running PM1-cap on the base without SR2 isolates the cap against PM1. Running it on SR2 (`…pmcap0p3…sr2`) would test the candidate combined model but confound the two changes. Recommendation: as pre-registered, without SR2; combine the two afterwards if CAP3 holds.
+- **SR4a moves up.** It targets the residual both integrators share, unless the LayerNorm-placement test above explains that residual first. That test runs on the CPU in minutes and should come before a GPU run.
+
+**Book.** If both tests hold, the decomposition becomes a subsection of book §37.6, in the next edition after the seed runs. With E1 scored, the subsection gains its scope statement: the exact flow removes the stiff-mode share of the refinement failure, not the fine-step limit.
 
 ## 6. Open risks
 

@@ -350,6 +350,10 @@ if __name__ == '__main__':
             subs = (("POISSON_MODES        = 0", f"POISSON_MODES        = {int(e[2:])}"),)
         elif re.fullmatch(r'pmclip[\d.p]+', e):
             subs = (("POISSON_MODE_CLIP    = 0.3", f"POISSON_MODE_CLIP    = {float(e[6:].replace('p', '.'))}"),)
+        elif re.fullmatch(r'pmcap[\d.p]+', e):
+            subs = (("POISSON_DEPTH_CAP    = None", f"POISSON_DEPTH_CAP    = {float(e[5:].replace('p', '.'))}"),)
+        elif e == 'sr2':
+            subs = (("LOWRANK_DAMPED_FLOW  = False", "LOWRANK_DAMPED_FLOW  = True"),)
         else:
             raise SystemExit(f'unknown option {e!r}')
         for old, new in subs:

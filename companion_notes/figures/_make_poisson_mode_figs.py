@@ -22,6 +22,10 @@ three runs (values copied below from their training logs).
                             closed loops against loop radius (S4).
   pm_probe.png           -- the 8,000-step probe: PM1 against F3.1 and G2, and
                             the pm_ group's pre-clip gradient norm (S6).
+  pm_full_run.png        -- the full run: PM1 against F3.1 and G2 over 32,500
+                            steps, and the refinement trade-off of the wells
+                            (S6). Reads the three runs' logs and PM1's
+                            localization outputs from the results folders.
 
 Run:  python3 _make_poisson_mode_figs.py
 """
@@ -458,9 +462,90 @@ def fig_probe():
     save(fig, "pm_probe.png")
 
 
+RES = Path(__file__).resolve().parents[2] / "notebooks/conservative_arch/scaleup/results"
+_RUN = "cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_{}vplive_xilive_{}L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn"
+LOG_F31 = RES / _RUN.format("norc_", "") / "L2_idt4_lr0p0012_norc_vplive_xilive_noattn_32500_result.txt"
+LOG_G2 = RES / _RUN.format("", "") / "L2_arm_none_live_grads_output.txt"
+DIR_PM1 = RES / _RUN.format("norc_", "pm64_")
+
+
+def evals_from_printout(path):
+    import re
+    out = {}
+    for line in open(path):
+        m = re.search(r"EVAL step ([\d,]+)\s+val_loss=[\d.]+\s+val_ppl=([\d.]+)", line)
+        if m:
+            out[int(m.group(1).replace(",", ""))] = float(m.group(2))
+    return out
+
+
+def evals_from_jsonl(path):
+    import json
+    out = {}
+    for line in open(path):
+        r = json.loads(line)
+        if "val_ppl" in r:
+            out[int(r["step"])] = float(r["val_ppl"])
+    return out
+
+
+def fig_full_run():
+    import json
+    f31, g2 = evals_from_printout(LOG_F31), evals_from_printout(LOG_G2)
+    pm = evals_from_jsonl(DIR_PM1 / "training_log.jsonl")
+    s = np.array(sorted(set(f31) & set(g2) & set(pm)))
+    f, g, p = (np.array([d[k] for k in s]) for d in (f31, g2, pm))
+    fig, axes = plt.subplots(1, 3, figsize=(17, 4.7))
+
+    ax = axes[0]
+    ax.plot(s, f, "-", color=GREY, lw=1.6, label=f"F3.1 (conservative-only), settled {f[-3:].mean():.2f}")
+    ax.plot(s, g, "-", color=PURPLE, lw=1.6, label=f"G2 (slot registers), settled {g[-3:].mean():.2f}")
+    ax.plot(s, p, "-", color=GREEN, lw=2.2, label=f"PM1, clip 0.3 (conservative), settled {p[-3:].mean():.2f}")
+    ax.axvspan(21125, 32500, color=GREY, alpha=0.12)
+    ax.text(21600, 135, "WSD decay", color=GREY, fontsize=9)
+    ax.set_yscale("log")
+    ax.set_ylim(48, 160)
+    ax.set_xlabel("step")
+    ax.set_ylabel("validation PPL")
+    ax.set_title("the full run, 32,500 steps")
+    ax.legend(fontsize=8.5)
+
+    ax = axes[1]
+    ax.axhspan(-2, 2, color=GREY, alpha=0.15, label="±2% eval scatter")
+    ax.plot(s, 100 * (g / f - 1), "-", color=PURPLE, lw=1.6, label="G2 vs F3.1")
+    ax.plot(s, 100 * (p / f - 1), "-", color=GREEN, lw=2.2, label="PM1 vs F3.1")
+    ax.axvspan(21125, 32500, color=GREY, alpha=0.12)
+    ax.set_xlabel("step")
+    ax.set_ylabel("% against F3.1 at the same step")
+    ax.set_title("PM1's lead peaks by step 9,000; G2's lasts longer")
+    ax.legend(fontsize=9, loc="upper right")
+
+    ax = axes[2]
+    loc = json.load(open(DIR_PM1 / "pm1_refinement_localization.json"))["refinement"]
+    cap = json.load(open(DIR_PM1 / "pm1_refinement_localization_cap0p3.json"))["refinement"]["1.0"]
+    pts = [(f"wells x{float(a):g}", r) for a, r in loc.items()] + [("capped at 0.3\n(post hoc)", cap)]
+    for name, r in pts:
+        x, y = r["2"], 100 * (r["4"] / r["2"] - 1)
+        col = ORANGE if "capped" in name else GREEN
+        ax.plot(x, y, "o", color=col, ms=8)
+        ax.annotate(name, (x, y), textcoords="offset points", xytext=(7, 4), fontsize=8.5, color=col)
+    ax.plot(56.30, 374, "s", color=GREY, ms=8)
+    ax.annotate("F3.1", (56.30, 374), textcoords="offset points", xytext=(7, -12), fontsize=8.5, color=GREY)
+    ax.set_yscale("log")
+    ax.set_xlim(48, 140)
+    ax.set_xlabel("PPL at the trained step count, N = 2")
+    ax.set_ylabel("Gate 3 at N = 4: % above N = 2")
+    ax.set_title("the wells trade perplexity for refinement")
+    ax.text(0.97, 0.96, "PM1's trained weights, wells scaled or capped\nafter training; not trained arms",
+            transform=ax.transAxes, fontsize=8, color=GREY, ha="right", va="top")
+    fig.tight_layout()
+    save(fig, "pm_full_run.png")
+
+
 if __name__ == "__main__":
     fig_slots_vs_modes()
     fig_bank_example()
     fig_poisson_exact()
     fig_conservativity()
     fig_probe()
+    fig_full_run()

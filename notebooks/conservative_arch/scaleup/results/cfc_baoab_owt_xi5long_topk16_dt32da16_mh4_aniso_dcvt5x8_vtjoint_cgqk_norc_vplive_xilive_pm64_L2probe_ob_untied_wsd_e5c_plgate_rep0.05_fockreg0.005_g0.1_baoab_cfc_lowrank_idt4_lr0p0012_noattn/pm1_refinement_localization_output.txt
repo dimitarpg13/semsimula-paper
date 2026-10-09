@@ -1,0 +1,13 @@
+PM1 refinement localization: .05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+   4 x 4 x 512 tokens (the first 4 of Cell 6b-7's batches); policy hold; T = 8
+
+1. WELL STRENGTH x alpha: PPL at N steps of dt = T/N, and the change from N = 2
+    alpha         N=2         N=3         N=4       d N=3       d N=4
+     1.00       53.70      143.31    10272.43       +167%     +19029%
+     0.75       59.91      142.58      639.82       +138%       +968%
+     0.50       76.52      141.30      178.47        +85%       +133%
+     0.00      122.29      152.45      246.92        +25%       +102%
+
+2. GATE 1 PER LAYER: velocity entering the layer set to zero (h_prev := h), at the trained N = 2
+   wells x1: none 53.70   layer 0 53.70 (+0%)   layer 1 6356.87 (+11737%)   both 6356.87 (+11737%)
+   wells x0: none 122.29   layer 0 122.29 (+0%)   layer 1 122.65 (+0%)   both 122.65 (+0%)

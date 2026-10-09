@@ -16,11 +16,14 @@ its 'hold' policy and batch seed (the first 4 of its 12 batches).
      the wells drive the failure. alpha = 1 must reproduce Colab's ratios.
      alpha < 1 is not a trained model; it previews what capping the wells might
      buy, and what it costs at the trained N = 2.
+     With an option cap<c> (added 2026-10-08, before the PM1-cap arm), the bounded
+     depth a = c tanh(a_raw / c) is applied to the trained depths instead of
+     alpha: a post-hoc preview of the PM1-cap reparameterisation, not that arm.
   2. GATE 1 PER LAYER. The velocity entering layer 0 only, layer 1 only, or
      both set to zero (h_prev := h), wells on (alpha = 1) and off (alpha = 0).
      Says whose momentum the model depends on.
 
-Usage: python3 pm1_refinement_localization.py OUT_DIR FOLDER
+Usage: python3 pm1_refinement_localization.py OUT_DIR FOLDER [cap<c>]
 """
 import ast, contextlib, io, json, sys
 from pathlib import Path
@@ -34,6 +37,8 @@ NS = (2, 3, 4)
 
 if __name__ == '__main__':
     OUT = Path(sys.argv[1]); FOLDER = sys.argv[2]
+    CAP = float(sys.argv[3][3:].replace('p', '.')) if len(sys.argv) > 3 else None
+    SUF = f'_cap{CAP:g}'.replace('.', 'p') if CAP is not None else ''
     sys.argv = [sys.argv[0], str(OUT / 'harness')]
     sys.path.insert(0, str(Path(__file__).parent))
     import verify_pm_switch as P
@@ -67,7 +72,10 @@ if __name__ == '__main__':
     T = L * DT
     depth0 = model.pm_depth.detach().clone()
     out = {'refinement': {}, 'gate1': {}}
-    lines = [f'PM1 refinement localization: {FOLDER[-60:]}',
+    if CAP is not None:                                  # preview: the cap replaces alpha
+        model.cfg.poisson_depth_cap = CAP
+        ALPHAS = (1.0,)
+    lines = [f'PM1 refinement localization: {FOLDER[-60:]}' + (f'; depths capped post hoc, a = {CAP:g} tanh(a_raw / {CAP:g})' if CAP is not None else ''),
              f'   {N_BATCH} x {BATCH} x {BLOCK} tokens (the first {N_BATCH} of Cell 6b-7\'s batches); policy hold; T = {T:g}']
 
     lines.append('\n1. WELL STRENGTH x alpha: PPL at N steps of dt = T/N, and the change from N = 2')
@@ -87,7 +95,7 @@ if __name__ == '__main__':
 
         lines.append('\n2. GATE 1 PER LAYER: velocity entering the layer set to zero (h_prev := h), at the trained N = 2')
         orig_step = model._fock_layer_step
-        for a in (1.0, 0.0):
+        for a in ALPHAS[:1] + ALPHAS[-1:] if CAP is None else ALPHAS:
             with torch.no_grad():
                 model.pm_depth.copy_(depth0 * a)
             row = {}
@@ -112,5 +120,5 @@ if __name__ == '__main__':
     txt = '\n'.join(lines)
     print('\n' + txt)
     OUT.mkdir(parents=True, exist_ok=True)
-    (OUT / 'pm1_refinement_localization_output.txt').write_text(txt + '\n')
-    (OUT / 'pm1_refinement_localization.json').write_text(json.dumps(out, indent=1))
+    (OUT / f'pm1_refinement_localization{SUF}_output.txt').write_text(txt + '\n')
+    (OUT / f'pm1_refinement_localization{SUF}.json').write_text(json.dumps(out, indent=1))

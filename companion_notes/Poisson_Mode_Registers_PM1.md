@@ -4,7 +4,11 @@
 
 Companion note to [*Doi–Peliti Dynamics of Semantic Particles and Registers*](Doi_Peliti_Dynamics_of_Semantic_Particles_and_Registers.md) (the DP note), whose §7 motivates this mechanism and whose §9 summarises it, and to [*The Single-Particle Hilbert Space in the Semantic Simulation Framework*](Single_Particle_Hilbert_Space_in_Semantic_Simulation.md), which supplies the mode overlaps. The pre-registration, predictions and scores are in protocol §5.15 ([`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md)). The code is `poisson_mode_occupation` and `poisson_mode_force` in [`model_parf_multixi.py`](../notebooks/conservative_arch/parf/model_parf_multixi.py). Figures: [`figures/_make_poisson_mode_figs.py`](figures/_make_poisson_mode_figs.py).
 
-**Status, 2026-10-06.** The 8,000-step probe at pm_ clip 0.3 reached 79.78 PPL, 14.7% below its conservative base F3.1 and 3.8% below G2, the slot-register model, at the same step (§6). A matched probe at clip 1.0 is running; the full 32,500-step run follows on whichever clip wins at step 8,000.
+**Status, 2026-10-09.** The full run at pm_ clip 0.3 is scored (§6).
+- **Perplexity:** settled at 55.17, 4.5% below its conservative base F3.1 (57.76) and 3.9% above G2, the slot-register model (53.12). That makes PM1 the best conservative model at L = 2.
+- **Causal, and conservative on the trained weights:** the wells are an exact gradient.
+- **Not refinement-ready:** the layer-1 wells make the step depend on the trained step count and on the incoming momentum (§6.6).
+- **Next arm:** PM1-cap bounds the well depths, a = 0.3 tanh(a_raw / 0.3). It is pre-registered and verified, and runs after SR2 (§6.7).
 
 ---
 
@@ -327,12 +331,16 @@ This is attention as the gradient of an energy. That is the structure of the boo
 | **conservative step (C)** | no: curl ≠ 0, (4.8) | yes: (4.1)–(4.3) |
 | **what reaches the token** | content vectors, through a learned value map | only the landscape: where the wells are and how deep |
 | **parameters** | creation gate, destruction gates, register embeddings, reverse channel | 24,832 at K = 64 |
-| **refinement (Gate 3)** | G2 +1,274% | to be measured (RR-PM1, RR-PM2) |
+| **refinement (Gate 3, N = 3 / N = 4)** | G2 +1,274% / +611% | +149% / +16,700% (F3.1: +143% / +374%) |
 | **at step 8,000** | 82.92 | **79.78** (clip 0.3) |
+| **settled, step 32,500** | **53.12** | 55.17 |
 
 **One structural consequence worth naming.** The slot registers pass *content* to the token: the reverse channel hands it a learned mixture of register vectors, which can point anywhere. PM1 passes only *geometry*: it can pull a token toward places in semantic space that the context has populated, and nothing else. That is a narrower channel, and the probe says it is enough to beat the slot registers at matched steps on this corpus.
 
 **And one about refinement.** H-RR (protocol §5.18) attributes the Fock arms' refinement failure to register state that is reset and rewritten at each layer. PM1's occupation is accumulated over tokens and does not depend on the layer index at all; refining the layer step changes how often its force is applied, not its state. If H-RR is right, PM1 should refine like its base, F3.1 (RR-PM1), and nowhere near the Fock arms (RR-PM2).
+- **The result:** PM1 refines like F3.1 at N = 3 only (+149% against +143%).
+- **Beyond N = 3 it is worse than both,** and the cause is not its state. The localization (§6.6) shows the wells' strength is what breaks refinement, not their accumulation.
+- **So accumulation is necessary but not sufficient,** and the force has to stay moderate too.
 
 ---
 
@@ -358,27 +366,137 @@ This is attention as the gradient of an energy. That is the structure of the boo
 
 ### 6.2 The clip throttle
 
-The pm_ group was clipped at 0.3, a value copied from the other gates. Its pre-clip norm was steady (median 0.5, p95 0.9, maximum 1.6) and above 0.3 on 91% of logged steps after step 2,000, so the modes trained at a capped effective learning rate for most of the probe. There was no instability. A matched probe at clip 1.0, which the same statistics put at 2% of steps, is running under a pre-registered rule (protocol §5.15): at step 8,000, 81.4 or lower continues clip 1.0 to 32,500; above that, the 0.3 arm continues from its checkpoint.
+The pm_ group was clipped at 0.3, a value copied from the other gates. Its pre-clip norm was steady (median 0.5, p95 0.9, maximum 1.6) and above 0.3 on 91% of logged steps after step 2,000, so the modes trained at a capped effective learning rate for most of the probe. There was no instability. A matched probe at clip 1.0, which the same statistics put at 2% of steps, ran under a pre-registered rule (protocol §5.15). It reached 81.67 at step 8,000, 2.4% behind the 0.3 arm and behind it at every eval from step 2,000, so the 0.3 arm continued.
 
-### 6.3 Still to be measured
+**Why the tight clip helped.** Under AdamW a constant rescaling of a group's gradient cancels in the update, so the 0.3 clip was not a learning-rate cut. What it did was renormalise every step's pm_ gradient to the same norm. On identical batches the 0.3 arm took larger, steadier Adam steps on every pm_ tensor (pm_depth +18%; `debug/pm_clip_log_analysis.py`). pm_depth carries 99% of the group's gradient norm, so the group clip is in effect a clip on the 128 depths.
 
-All pre-registered in protocol §5.15 before the relevant run:
-- the settled perplexity against F3.1 and G2;
-- causality, in flight and by the independent check;
-- the repetition test: does a mode's occupation track the decay-weighted count of earlier occurrences of the same token;
-- the signs of the trained depths: attractive or repulsive wells;
-- the DP3 rerun on the modes, the counterpart of the measurement that falsified the Poisson reading of the slots;
-- refinement readiness, Gate 3 of 6b-7 (RR-PM1, RR-PM2).
+Cell 6b-15 (step size, weight decay, occupation scale, placement) flagged no knob on either probe.
+
+### 6.3 The full run
+
+![The full run: PM1, F3.1 and G2 over 32,500 steps; PM1 and G2 against F3.1; and the perplexity-refinement trade-off of PM1's wells](figures/poisson_modes/pm_full_run.png)
+
+**Figure 6.**
+- **Left:** validation perplexity of the three runs over the full WSD schedule. The shading marks the decay phase.
+- **Centre:** PM1 and G2 against F3.1 at the same step.
+- **Right:** PM1's trained weights with the wells scaled by α or capped after training (§6.6). The x-axis is perplexity at the trained two steps, the y-axis the Gate 3 penalty at four. F3.1 is shown for reference.
+
+| | **PM1** | F3.1 | G2 |
+| --- | ---: | ---: | ---: |
+| settled (mean of the last 3 evals) | **55.17** | 57.76 | 53.12 |
+| best | 53.67 (step 30,500) | 57.35 | 51.27 |
+| step 21,000 (end of the stable phase) | 67.29 | 71.81 | 63.61 |
+| ω·Δt median at the end | 2.84 | 4.32 | 3.40 |
+
+- **The pre-registered calls:**
+  - better than F3.1 by at least 1%: HIT;
+  - between G2 and F3.1: HIT;
+  - below G2: MISS.
+- **PM1 recovers 56% of the F3.1 → G2 gap** (2.59 of 4.64 PPL) with 24,832 parameters and a conservative step.
+- **The lead stops growing early.** PM1 led G2 at step 8,000 and fell behind at about step 12,000. Its lead over F3.1 held at 9–11% from step 9,000 to 18,000, while G2's grew to 12–15%. The memory gives a fixed gain, while the slot registers kept adding value in mid-training.
+- **The memory shortened as it trained.** The median half-life fell from 15 tokens at step 8,000 to 7.1 at the end, with none above about 18, and 8 of the 64 modes died. A short memory that overlaps ξ's short channels may explain the early plateau.
+- **Health:** no watchdog or spike event, and SCAF CLEAN at every audit, 5k to 30k.
+
+### 6.4 Conservativity and causality on the trained weights
+
+This answers the first open question of the earlier draft: does the proof of §4 hold on the trained model? The test is `debug/conservativity_test_checkpoint.py`. It measures autograd Jacobian symmetry and closed-loop work per token at fixed context, for each force term at each layer. It was validated first on F3.1, which passes, and on G2, whose reverse channel fails with asymmetry 1.3–1.9.
+
+| layer | term | Jacobian asymmetry | closed-loop work | force | verdict |
+| ---: | --- | ---: | ---: | ---: | --- |
+| 0 | PM1 wells | 1.8e-07 | 9.3e-08 | 0.10 | conservative |
+| 0 | total | 5.1e-06 | 1.9e-07 | 0.12 | conservative |
+| 1 | PM1 wells | 1.7e-07 | 9.3e-08 | 1.26 | conservative |
+| 1 | total | 2.6e-07 | 3.0e-04 | 1.24 | conservative |
+
+- **The wells are exact,** as §4 proves.
+- **The one non-gradient piece is shared with F3.1: V_φ's straight-through router term.** V_φ's top-k sources are chosen by a score head that reads the token's own state. The router term is 0 at positions t ≥ 16. At 3 ≤ t < 16 its share of the force has median 0 and p95 0.98% (layer 0), against F3.1's p95 of 2.4–15%. **PM1's step is a gradient flow to within 1% for its worst 5% of tokens, and cleaner than F3.1's.**
+- **Causal.** The independent check (`debug/causality_check_checkpoint.py … pm64`) found future perturbation and batch independence both exactly 0.
+  - Its prefix-only comparison flagged a CHECK (max |Δ logit| 0.098). This is explained, not a leak.
+  - The discrepancy lives only at positions 3–15 and vanishes when the router term is removed. The straight-through mask scales that term by k = min(top_k, T − 1), so a short prefix and the full sequence weigh it differently.
+  - Real against random future tokens at equal length give identical logits.
+  - F3.1 has the same effect. The remedy for future V_φ models is k = min(top_k, t) per row.
+
+### 6.5 What the modes learned
+
+Scored with `debug/pm1_post_run_measurements.py`, whose scoring rules were fixed before the run was scored. Measured at layer 1, which carries most of the PM1 force.
+
+| pre-registered prediction | called | result |
+| --- | --- | --- |
+| most trained depths positive (attractive wells) | 60% | **HIT:** 57% of all depths; layer 1 70%, carrying 94% of the PM1 force; layer 0 mixed, near zero |
+| repetition: Spearman(φ of the best-matching mode, decay-weighted repeat count) > 0.5 | 55% | **MISS:** +0.086 (repeated positions only: −0.08) |
+| DP3 on the modes: Spearman(φ·a, leave-one-out force) > 0.5 | 80% | **HIT:** +0.815 (magnitudes +0.99) |
+
+- **The modes track regions of semantic space, not tokens.** The context's recent visits deepen the wells; a repeated token does not raise its own count. This weakens the "repetition counts" reading of §2 for the trained model.
+- **The occupation is an intensity.** This is the opposite of the slot registers, whose salience was a retention probability (DP3, −0.41).
+- **PM1 has switched itself off at layer 0** and acts at layer 1, as attractive wells with about 4.7 times the conservative force.
+- **The wells act on every token, not sparsely.** Switching them off redirects each token's layer-1 step by a median 87% (Cell 6b-12), and 97.8% of tokens are above 75%.
+- **The wells have taken over V_φ's role.** Cell 6b-9 shows they carry the non-V_θ part of the step; V_φ's share fell from 0.29 in F3.1 to 0.017.
+
+### 6.6 Refinement: the wells are the problem
+
+Cells 6b-7 and 6b-13 on the best checkpoint:
+
+| | F3.1 | G2 | **PM1** |
+| --- | ---: | ---: | ---: |
+| Gate 1, velocity entering each layer reset | +34% | +33% | **+10,600%** |
+| Gate 2, one extra step at the trained Δt | +92% | +51% | +951% |
+| Gate 3, N = 3 at fixed T | +143% | +1,274% | +149% |
+| Gate 3, N = 4 | +374% | +611% | +16,700% |
+| ω·Δt median | 4.32 | 3.40 | **2.81** |
+
+- **RR-PM1** (Gate 3 at N = 3 no worse than F3.1, called 60%): MISS, by 6 points.
+- **RR-PM2** (below +600%, called 85%): HIT.
+- **The scored point hides the shape.** PM1 has the lowest stiffness of the three, yet it is the most momentum-dependent and the least robust off its trained schedule.
+
+**Localization** (`debug/pm1_refinement_localization.py`, Cell 6b-7's own refinement code on its first 4 batches; a diagnostic, not pre-registered):
+
+| wells | PPL at N = 2 | Gate 3, N = 3 | Gate 3, N = 4 | Gate 1 at layer 1 |
+| --- | ---: | ---: | ---: | ---: |
+| × 1, as trained | 53.70 | +167% | +19,029% | +11,737% |
+| × 0.75 | 59.91 | +138% | +968% | |
+| × 0.5 | 76.52 | +85% | +133% | |
+| × 0 (off) | 122.29 | +25% | +102% | +0.3% |
+| capped at 0.3 after training | 88.53 | +100% | +73% | −19% |
+
+- **The wells drive the failure.** The refinement penalty falls steadily as they weaken, and at half strength it is below F3.1's.
+- **The momentum lock is theirs too, and it sits at layer 1.** Resetting the velocity at layer 1 costs +11,737% with the wells and +0.3% without. The trained step balances the incoming momentum against a strong attractive force at exactly Δt = 4.
+- **Each force is conservative, but the trained layer step is a learned map,** not a sample of a flow.
+- **The rest of the model co-adapted to deep wells,** so weakening them after training costs perplexity: 122 PPL with the wells off, against F3.1's 56.
+- **The trade-off can only be renegotiated in training.**
+
+### 6.7 Next: PM1-cap
+
+Each well's effective depth is bounded during training (protocol §5.15, "PM1-cap"):
+
+$$
+a_{l,v} = c \tanh\big(a^{\mathrm{raw}}_{l,v} / c\big), \qquad c = 0.3. \qquad (6.1)
+$$
+
+- **Still an exact gradient.** The force is $-\nabla U$ with the bounded depths, so §4 holds unchanged. A scaled per-token force budget would not.
+- **It starts exactly as PM1.** At initialisation the cap is linear.
+- **Why c = 0.3.** The trained layer-1 depths have p05 / p50 / p95 −0.43 / +0.24 / +0.66. A cap of 0.3 leaves the median well almost intact (0.24 → 0.20) and bounds the tails near the α = 0.5 scale.
+- **Verified** (`debug/verify_pm_cap_switch.py`). Off, the model is bit-identical to HEAD. On, the force equals $-\nabla U$ to 1.1e-7, causality is exact, and gradients reach the depths through the tanh.
+
+The arm is F3.1's Cell 0 plus `POISSON_MODES = 64`, `POISSON_MODE_CLIP = 0.3`, `POISSON_DEPTH_CAP = 0.3`. It runs as an 8,000-step probe, then the full run, after SR2.
+
+**Predictions:**
+- settled at least 1% better than F3.1 (60%);
+- Gate 3 at N = 3 no worse than F3.1 (60%);
+- Gate 3 at N = 4 no worse than F3.1 (55%);
+- Gate 1 at or below +100% (55%).
+
+**Recorded in advance:** the cap bounds depth per unit occupation, not the force, $2\kappa^2\phi a E\lVert h - \mu\rVert$. Training can rebuild strength through longer half-lives or sharper wells, and 6b-15 reports both.
 
 ---
 
 ## 7. Open questions
 
-1. **A replay of conservativity on trained weights.** §4 is a proof and a build-time check. For F3.1 the same property was confirmed on the trained model by the 6b-9 replay (Gate 0 bit-exact). The replay must include the PM1 force in its conservative arm before it can do the same for PM1.
+1. ~~**A replay of conservativity on trained weights.**~~ Answered (§6.4): the wells are exact on the trained weights, and the step is a gradient flow to within V_φ's router term, which is smaller than F3.1's.
 2. **Sampled occupations.** Drawing $n \sim \mathrm{Poisson}(\phi)$ in training, with a straight-through or score-function gradient, would make the bosonic fluctuations consequential and is the only test of the statistics themselves (§3.4).
 3. **What the modes learn.** Do the 64 modes align with recognisable topics, and do the half-lives separate into short and long memory? The trained $\mu_v$ and $\lambda_v$ answer this offline.
-4. **PM1 on the SR2 base.** If the exact damped flow (protocol §5.19, Test 2) fixes F3.1's refinement, PM1 on that base (`pm64_sr2`) is the candidate conservative, refinement-ready model with memory.
+4. **PM1 on the SR2 base.** SR2 replaces the split step on the stiff subspace with the exact damped flow (protocol §5.19, Test 2). If it fixes F3.1's refinement, PM1-cap on that base is the candidate conservative, refinement-ready model with memory. SR2 alone does not fix PM1: PM1's failure is in the wells (§6.6), not in V_θ's stiff modes.
+4b. **Variable-step training** (SR4a: N drawn from {2, 3, 4} at fixed T) on PM1. This targets refinement readiness directly, and is the fallback if PM1-cap's Gate 3 at N = 4 misses.
 5. **Depth.** PM1 at L = 4 against the L = 4 Fock model (50.10) is the next rung if the full run holds.
-6. **The book.** Protocol §5.15's decision rule sets the edits to Remark 61 and §10.5.2. If the full run beats F3.1 by at least 1%, the book can state that the bosonic Doi–Peliti v2 is trainable, honours the three claims literally, and keeps the step conservative.
+6. **The book.** The decision rule of protocol §5.15 is met: the full run beats F3.1 by 4.5%. The book can state that the bosonic Doi–Peliti v2 is trainable, honours the three claims literally and keeps the step conservative, at a cost of 3.9% against the slot registers. The edits to Remark 61, §10.5.2 and the abstract wait for PM1-cap, which would replace PM1 as the arm named if it keeps the gain and refines.
 
 **References.** M. Doi, Second quantization representation for classical many-particle system, J. Phys. A 9 (1976). L. Peliti, Path integral approach to birth-death processes on a lattice, J. Physique 46 (1985). U. C. Täuber, M. Howard and B. P. Vollmayr-Lee, Applications of field-theoretic renormalization group methods to reaction-diffusion problems, J. Phys. A 38 (2005). For thinning and superposition of Poisson laws, any text on point processes, e.g. J. F. C. Kingman, *Poisson Processes* (Oxford, 1993).

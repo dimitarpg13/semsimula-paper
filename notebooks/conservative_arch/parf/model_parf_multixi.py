@@ -224,6 +224,12 @@ class MultiXiPARFConfig(SparsePARFConfig):
     lowrank_damped_flow: bool = False
     poisson_halflife_min: float = 4.0     # tokens; per-mode half-lives are
     poisson_halflife_max: float = 128.0   # log-spaced over this range
+    # PM1-cap (protocol SS5.15, 2026-10-08): bound every well depth smoothly,
+    # a = cap * tanh(a_raw / cap), so no well can grow past |cap|. A
+    # reparameterisation of the depth only: the force stays the exact gradient
+    # of U at fixed phi. Depths start at 0 and tanh(0) = 0, so the force is
+    # still exactly zero at step 0. None = off (bit-identical to PM1).
+    poisson_depth_cap: Optional[float] = None
     relax_attn_logit_scale_init: float = 1.0 / 0.07
     relax_attn_logit_scale_max: float = 100.0
     # Fix the gate instead of learning it. None learns lambda (or holds it
@@ -658,6 +664,10 @@ class MultiXiPARFLM(SparsePARFLM):
         # at step 0 and the depths receive a gradient from step 1.
         self.pm_mu = None
         _K = int(getattr(cfg, "poisson_modes", 0) or 0)
+        _cap = getattr(cfg, "poisson_depth_cap", None)
+        if _cap is not None and (_K <= 0 or not _cap > 0):
+            raise ValueError("poisson_depth_cap needs poisson_modes > 0 and a positive cap, "
+                             f"got poisson_modes={_K}, poisson_depth_cap={_cap}")
         if _K > 0:
             self.pm_mu = nn.Parameter(torch.randn(_K, cfg.d))           # |mu| ~ sqrt(d), LN scale
             self.pm_log_kappa2 = nn.Parameter(
@@ -698,17 +708,30 @@ class MultiXiPARFLM(SparsePARFLM):
             phi = torch.einsum("kts,bsk->btk", Lam, E)
         return E, phi
 
+    def pm_effective_depth(self, layer_idx: int) -> torch.Tensor:
+        """The well depths a_v the force uses at this layer (K,), float32.
+
+        The raw parameter pm_depth unless poisson_depth_cap is set, in which
+        case cap * tanh(pm_depth / cap). Diagnostics must read this, not
+        pm_depth, so that a capped model reports the depths it acts with.
+        """
+        a = self.pm_depth[layer_idx].float()
+        cap = getattr(self.cfg, "poisson_depth_cap", None)
+        if cap is not None:
+            a = cap * torch.tanh(a / cap)
+        return a
+
     def poisson_mode_force(self, h: torch.Tensor, layer_idx: int) -> torch.Tensor:
         """-grad_{h_t} U, U = -sum_v phi_v(t) a_v exp(-kappa_v^2 |h_t - mu_v|^2).
 
         phi uses tokens s < t only, so it is constant in h_t and this is the
         exact gradient in h_t; the loss still reaches earlier tokens through
-        phi (live, the Gen 3 convention).
+        phi (live, the Gen 3 convention). a_v is pm_effective_depth.
         """
         E, phi = self.poisson_mode_occupation(h)
         with torch.autocast(device_type=h.device.type, enabled=False):
             k2 = self.pm_log_kappa2.float().exp()
-            a = self.pm_depth[layer_idx].float()
+            a = self.pm_effective_depth(layer_idx)
             w = phi * E * (2.0 * k2 * a)                                 # (B, T, K)
             hf = h.float()
             f = -(w.sum(-1, keepdim=True) * hf - w @ self.pm_mu.float())

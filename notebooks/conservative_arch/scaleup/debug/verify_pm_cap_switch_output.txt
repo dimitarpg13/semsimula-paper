@@ -1,0 +1,12 @@
+OFF (POISSON_DEPTH_CAP = None): working copy vs HEAD, PM1 config on PM1's trained weights
+   eval 0.0e+00  train 0.0e+00  grads 0.0e+00  (77 params, same set: True)  -> IDENTICAL
+
+ON (F3.1 Cell 0 + POISSON_MODES = 64 + POISSON_DEPTH_CAP = 0.3), on PM1's trained weights
+1. tag ...pm64_pmcap0p3_L2probe; model cap 0.3; 5b banner: True -> True
+2. effective depths: max |a| 0.2993 < 0.3; raw max |a| 1.0168; layer-1 median raw +0.227 -> capped +0.191 -> True
+3. force vs -grad U with the capped depths at fixed phi: relative error 1.1e-07 -> True
+4. depths at 0 with the cap on vs the same weights in a model without modes: max |d logit| 0.0e+00 -> True
+5. causality with the cap: tokens replaced at t >= 256, max |d logit| at t < 256 = 0.0e+00 -> True
+6. gradient reaches pm_depth through the tanh: norm 3.673e+00 -> True
+
+-> ALL PASS

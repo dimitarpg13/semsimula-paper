@@ -98,7 +98,7 @@ def measure(model, val, n_batches=8, T=512, seed=20261007):
 
     res = {'layers': {}}
     for l in range(L):
-        a = model.pm_depth[l].float()
+        a = model.pm_effective_depth(l) if hasattr(model, 'pm_effective_depth') else model.pm_depth[l].float()
         rep_phi, rep_C, dp3_signed, dp3_abs, f_pos, f_all = [], [], [], [], 0.0, 0.0
         for b in range(n_batches):
             h, x = cap[(b, l)], xs[b]
@@ -129,7 +129,8 @@ def measure(model, val, n_batches=8, T=512, seed=20261007):
             repeated_positions=int(pos.sum()), positions=int(len(rc)),
             dp3_signed=float(torch.cat(dp3_signed).nanmean()),
             dp3_abs=float(torch.cat(dp3_abs).nanmean()))
-    allw = model.pm_depth.float()
+    allw = (torch.stack([model.pm_effective_depth(l) for l in range(L)]) if hasattr(model, 'pm_effective_depth')
+            else model.pm_depth.float())
     hl = (math.log(2) / -loglam).numpy()
     res['depth_positive_share_all'] = float((allw > 0).float().mean())
     res['halflife_p05_p50_p95'] = [float(np.quantile(hl, q)) for q in (0.05, 0.5, 0.95)]

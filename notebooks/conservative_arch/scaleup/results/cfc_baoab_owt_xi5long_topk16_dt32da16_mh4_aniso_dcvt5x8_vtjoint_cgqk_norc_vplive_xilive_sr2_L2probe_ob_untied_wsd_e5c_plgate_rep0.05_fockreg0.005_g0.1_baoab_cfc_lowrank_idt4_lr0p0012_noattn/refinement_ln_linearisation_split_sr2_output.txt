@@ -1,0 +1,23 @@
+Refinement split, LN placement vs re-linearisation: SR2  ...lgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+   4 x 4 x 512 tokens (the first 4 of Cell 6b-7's batches); policy hold; T = 8
+CHECK  N=2: switches off vs Cell 6b-7 _fom_stack, max |d logit| 0.0e+00
+CHECK  N=3: switches off vs Cell 6b-7 _fom_stack, max |d logit| 0.0e+00
+CHECK  N=2 as trained: max |d logit| against the trained model 0.0e+00
+CHECK  N=2 LN once   : max |d logit| against the trained model 0.0e+00
+CHECK  N=2 freeze    : max |d logit| against the trained model 0.0e+00
+CHECK  N=2 both      : max |d logit| against the trained model 0.0e+00
+CHECK  freeze at N=8 takes 2 fresh linearisations (one per trained layer: 2)
+CHECK  as trained at N=8 takes 8 (one per substep: 8)
+-> checks PASS
+
+GATE 3 per arm: PPL at N steps of dt = T/N, and the penalty ln(PPL_N / PPL_2) in nats
+   arm                N=2       N=3       N=4       N=8     pen N=3     pen N=4     pen N=8
+   as trained       58.38     88.92    163.36    537.10       0.421       1.029       2.219
+   LN once          58.38    100.15     88.89    182.15       0.540       0.421       1.138
+   freeze           58.38   1081.50    939.96    570.95       2.919       2.779       2.280
+   both             58.38   1056.39    206.17    224.22       2.896       1.262       1.346
+
+SHARE of the as-trained penalty removed by each arm
+   LN once        N=3:   -28%   N=4:   +59%   N=8:   +49%
+   freeze         N=3:  -594%   N=4:  -170%   N=8:    -3%
+   both           N=3:  -588%   N=4:   -23%   N=8:   +39%
