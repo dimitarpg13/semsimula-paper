@@ -244,13 +244,21 @@ class MultiXiPARFConfig(SparsePARFConfig):
     # exactly. Their quadratic at the layer step's start (phi fixed) -- an
     # isotropic curvature alpha plus an indefinite rank-K part -- joins V_theta's
     # low-rank part in the exact damped flow, which then covers all of R^d
-    # (no O-step); the kick keeps only what the quadratic misses (about 5% of
-    # PM1's layer-1 wells force, debug/pm_wells_curvature.py). Vtheta is
+    # (no O-step); the kick keeps only what that misses (13% of PM1's layer-1
+    # wells force with the rank part of the top 16 wells, 4.7% with all of
+    # them; debug/pm_wells_curvature.py). Vtheta is
     # treated exactly as under SR2: its retained low-rank modes go into the
     # exact flow, the soft ones (lowrank_max_modes) stay in the kick. Needs
     # poisson_modes > 0, lowrank_damped_flow and langevin_T = 0. False = off
     # (bit-identical).
     poisson_wells_exact: bool = False
+    # PMX's rank part per token: every well's force and isotropic curvature go
+    # into the exact flow, but only the rank part W of the token's M strongest
+    # wells (by force) joins the eigensolve; the rest of W stays in the kick
+    # (13% of PM1's layer-1 wells force at M = 16). lowrank_max_modes + M must
+    # be <= 32: the GPU's batched solvers stop at 32 x 32 (an 80 x 80 version
+    # ran at > 26 s/step, 2026-10-10).
+    poisson_wells_exact_modes: int = 16
     relax_attn_logit_scale_init: float = 1.0 / 0.07
     relax_attn_logit_scale_max: float = 100.0
     # Fix the gate instead of learning it. None learns lambda (or holds it
@@ -685,6 +693,11 @@ class MultiXiPARFLM(SparsePARFLM):
                 raise ValueError("poisson_wells_exact (PMX) needs lowrank_damped_flow (SR2)")
             if getattr(cfg, "langevin_T", 0.0) != 0.0:
                 raise ValueError("poisson_wells_exact (PMX) applies no O-step, so it needs langevin_T = 0")
+            _q = getattr(cfg, "lowrank_max_modes", None)
+            _n = (32 if _q is None else int(_q)) + int(getattr(cfg, "poisson_wells_exact_modes", 16))
+            if _n > 32:
+                raise ValueError(f"poisson_wells_exact (PMX): lowrank_max_modes + poisson_wells_exact_modes = {_n} > 32; "
+                                 "the GPU's batched eigensolvers stop at 32 x 32")
 
         # PM1 Poisson-mode registers. Created ONLY when enabled, so the
         # default model draws the same RNG stream and keeps the same
@@ -736,25 +749,36 @@ class MultiXiPARFLM(SparsePARFLM):
             phi = torch.einsum("kts,bsk->btk", Lam, E)
         return E, phi
 
-    def poisson_mode_quadratic(self, h: torch.Tensor, layer_idx: int):
+    def poisson_mode_quadratic(self, h: torch.Tensor, layer_idx: int, top: Optional[int] = None):
         """PMX: the wells' force and Hessian pieces at h, with phi from h's context.
 
-        Returns (F, alpha, r, dW), float32: F = -grad U at h, exactly
-        :meth:`poisson_mode_force`'s value; the Hessian of U at h is
-        alpha I - sum_v dW_v r_v r_v^T with alpha (B, T, 1), r_v = h - mu_v
-        (B, T, K, d) and dW (B, T, K). Live tensors: the caller detaches what
-        goes into the exact flow's spring and keeps the forces live.
+        Returns (F, alpha, r, dW), float32. F = -grad U at h over every well,
+        exactly :meth:`poisson_mode_force`'s value, and alpha (B, T, 1) the
+        isotropic curvature of every well. The rank part is returned for the
+        token's ``top`` wells with the largest force |w_v| |r_v| (all K if None):
+        r (B, T, M, d) with r_v = h - mu_v, and dW (B, T, M), so that the
+        Hessian of those wells' share is alpha I - sum_v dW_v r_v r_v^T. Live
+        tensors: the caller detaches what goes into the exact flow's spring.
         """
         E, phi = self.poisson_mode_occupation(h)
         with torch.autocast(device_type=h.device.type, enabled=False):
             k2 = self.pm_log_kappa2.float().exp()
             a = self.pm_effective_depth(layer_idx)
+            mu = self.pm_mu.float()
             w = phi * E * (2.0 * k2 * a)                                 # (B, T, K)
             hf = h.float()
-            F = -(w.sum(-1, keepdim=True) * hf - w @ self.pm_mu.float())
-            r = hf.unsqueeze(-2) - self.pm_mu.float()                    # (B, T, K, d)
+            F = -(w.sum(-1, keepdim=True) * hf - w @ mu)
             alpha = w.sum(-1, keepdim=True)                              # (B, T, 1)
-            dW = 2.0 * k2 * w                                            # (B, T, K)
+            K = w.shape[-1]
+            if top is None or int(top) >= K:
+                r = hf.unsqueeze(-2) - mu                                # (B, T, K, d)
+                dW = 2.0 * k2 * w
+            else:
+                d2 = ((hf * hf).sum(-1, keepdim=True) + (mu * mu).sum(-1)
+                      - 2.0 * hf @ mu.t()).clamp_min(0.0)                # |r_v|^2, (B, T, K)
+                idx = (w.abs() * d2.sqrt()).topk(int(top), dim=-1).indices   # (B, T, M)
+                r = hf.unsqueeze(-2) - mu[idx]                           # (B, T, M, d)
+                dW = 2.0 * k2[idx] * w.gather(-1, idx)                   # (B, T, M)
         return F, alpha, r, dW
 
     def pm_effective_depth(self, layer_idx: int) -> torch.Tensor:
@@ -1312,7 +1336,8 @@ class MultiXiPARFLM(SparsePARFLM):
                 if flow_ctx is not None and "pmq" in flow_ctx:
                     pm_h0, pm_F0, pm_alpha, pm_r, pm_dW = flow_ctx["pmq"]
                 else:
-                    pm_F0, pm_alpha, pm_r, pm_dW = self.poisson_mode_quadratic(h_in, layer_idx)
+                    pm_F0, pm_alpha, pm_r, pm_dW = self.poisson_mode_quadratic(
+                        h_in, layer_idx, top=getattr(cfg, "poisson_wells_exact_modes", 16))
                     pm_h0 = h_in
                     if flow_ctx is not None:
                         flow_ctx["pmq"] = (pm_h0, pm_F0, pm_alpha, pm_r, pm_dW)

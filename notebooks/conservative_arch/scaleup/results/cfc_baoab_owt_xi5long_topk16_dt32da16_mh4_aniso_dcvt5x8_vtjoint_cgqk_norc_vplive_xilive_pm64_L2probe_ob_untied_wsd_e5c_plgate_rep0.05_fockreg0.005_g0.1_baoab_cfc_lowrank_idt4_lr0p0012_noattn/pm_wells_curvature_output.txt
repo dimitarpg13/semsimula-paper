@@ -8,6 +8,15 @@ layer 0   (|h_mid - h_in| / |h_in| median 0.56)
    FIDELITY    remainder / force change      p05/p50/p95 0.070 / 0.092 / 0.109
                remainder / force at h_mid    p05/p50/p95 0.003 / 0.005 / 0.006
                isotropic part only: remainder / force at h_mid  p05/p50/p95 0.005 / 0.008 / 0.010   (tokens with alpha < 0: 100%)
+               top 8 wells only: remainder / force at h_mid  p05/p50/p95 0.609 / 0.670 / 0.687
+               all wells' alpha and force + W of the top 8 (chosen by force): remainder / force at h_mid  p05/p50/p95 0.004 / 0.006 / 0.008
+               all wells' alpha and force + W of the top 8 (chosen by W): remainder / force at h_mid  p05/p50/p95 0.004 / 0.006 / 0.009
+               top 16 wells only: remainder / force at h_mid  p05/p50/p95 0.368 / 0.431 / 0.446
+               all wells' alpha and force + W of the top 16 (chosen by force): remainder / force at h_mid  p05/p50/p95 0.003 / 0.005 / 0.006
+               all wells' alpha and force + W of the top 16 (chosen by W): remainder / force at h_mid  p05/p50/p95 0.004 / 0.005 / 0.007
+               top 24 wells only: remainder / force at h_mid  p05/p50/p95 0.200 / 0.237 / 0.242
+               all wells' alpha and force + W of the top 24 (chosen by force): remainder / force at h_mid  p05/p50/p95 0.003 / 0.005 / 0.006
+               all wells' alpha and force + W of the top 24 (chosen by W): remainder / force at h_mid  p05/p50/p95 0.003 / 0.005 / 0.006
 
 layer 1   (|h_mid - h_in| / |h_in| median 0.25)
    STIFFNESS   omega dt, isotropic part      p05/p50/p95 2.00 / 2.10 / 2.18
@@ -16,5 +25,14 @@ layer 1   (|h_mid - h_in| / |h_in| median 0.25)
    FIDELITY    remainder / force change      p05/p50/p95 0.293 / 0.371 / 0.446
                remainder / force at h_mid    p05/p50/p95 0.032 / 0.047 / 0.059
                isotropic part only: remainder / force at h_mid  p05/p50/p95 0.207 / 0.272 / 0.342   (tokens with alpha < 0: 0%)
+               top 8 wells only: remainder / force at h_mid  p05/p50/p95 0.486 / 0.501 / 0.568
+               all wells' alpha and force + W of the top 8 (chosen by force): remainder / force at h_mid  p05/p50/p95 0.134 / 0.182 / 0.239
+               all wells' alpha and force + W of the top 8 (chosen by W): remainder / force at h_mid  p05/p50/p95 0.141 / 0.189 / 0.239
+               top 16 wells only: remainder / force at h_mid  p05/p50/p95 0.271 / 0.291 / 0.344
+               all wells' alpha and force + W of the top 16 (chosen by force): remainder / force at h_mid  p05/p50/p95 0.097 / 0.132 / 0.172
+               all wells' alpha and force + W of the top 16 (chosen by W): remainder / force at h_mid  p05/p50/p95 0.103 / 0.139 / 0.182
+               top 24 wells only: remainder / force at h_mid  p05/p50/p95 0.119 / 0.137 / 0.150
+               all wells' alpha and force + W of the top 24 (chosen by force): remainder / force at h_mid  p05/p50/p95 0.067 / 0.093 / 0.118
+               all wells' alpha and force + W of the top 24 (chosen by W): remainder / force at h_mid  p05/p50/p95 0.071 / 0.101 / 0.132
 
 RULE OF THUMB (written before the run), layer 1: stiff True, quadratic faithful True  -> design (b) WORTHWHILE

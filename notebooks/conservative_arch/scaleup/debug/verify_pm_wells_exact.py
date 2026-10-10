@@ -25,7 +25,10 @@ on PM1's trained weights:
   6. gradients finite and reaching pm_depth, pm_mu, pm_log_kappa2
   7. per-layer flow: substeps_per_layer = 4 takes one quadratic per layer;
      k = 1 equals the default
-  8. guards: PMX without SR2, and with langevin_T > 0, refuse to build
+  8. guards: PMX without SR2, with langevin_T > 0, and with an eigensolve wider
+     than 32 (lowrank_max_modes + poisson_wells_exact_modes), refuse to build
+  9. the eigensolve is exactly 32 columns wide (the GPU's batched fast path),
+     and the wall time of one eval forward at the real size, 16 x 512, against SR2
 """
 import sys, time
 from pathlib import Path
@@ -150,7 +153,7 @@ say(f'0c. full-space exact substep vs RK4: {e_sub:.1e}; two half steps vs one: {
 say('\nON (F3.1 Cell 0 + POISSON_MODES = 64 + LOWRANK_DAMPED_FLOW + POISSON_WELLS_EXACT), on PM1\'s trained weights')
 model, g, out5b = P.build(PM1F, F31 + P.PM_ON + SR2_ON + PMX_ON)
 tag = g['_variant_tag']
-ok = 'pmx' in tag.split('_') and 'sr2' in tag.split('_') and model.cfg.poisson_wells_exact and 'WELLS INTEGRATED EXACTLY' in out5b
+ok = 'pmx16' in tag.split('_') and 'sr2' in tag.split('_') and model.cfg.poisson_wells_exact and model.cfg.poisson_wells_exact_modes == 16 and 'WELLS INTEGRATED EXACTLY' in out5b
 ok_all &= ok
 say(f'1. tag ...{tag[tag.find("pm64"):tag.find("_ob_")]}; switch on: {model.cfg.poisson_wells_exact}; 5b banner: {"WELLS INTEGRATED EXACTLY" in out5b} -> {ok}')
 
@@ -244,9 +247,9 @@ say(f'   CPU cost of one train step, 2 x 256 tokens: PMX {t_pmx:.1f} s, explicit
 
 calls = {'n': 0}
 orig_q = model.poisson_mode_quadratic
-def countq(h, layer_idx):
+def countq(h, layer_idx, **kw):
     calls['n'] += 1
-    return orig_q(h, layer_idx)
+    return orig_q(h, layer_idx, **kw)
 model.poisson_mode_quadratic = countq
 try:
     model.eval(); model.cfg.substeps_per_layer = 4
@@ -266,10 +269,13 @@ say(f'7. per-layer flow: quadratics taken per forward at k = 4: {n4} (one per la
 
 refused = []
 import copy
-for why in ('no SR2', 'T > 0'):
+for why in ('no SR2', 'T > 0', 'wider than 32'):
     try:
         if why == 'no SR2':
             P.build(PM1F, F31 + P.PM_ON + PMX_ON)
+        elif why == 'wider than 32':
+            cfg2 = copy.deepcopy(model.cfg); cfg2.poisson_wells_exact_modes = 24
+            type(model)(cfg2)
         else:
             cfg2 = copy.deepcopy(model.cfg); cfg2.langevin_T = 0.1
             type(model)(cfg2)
@@ -277,7 +283,32 @@ for why in ('no SR2', 'T > 0'):
     except Exception as e:                       # a refusal only if it names PMX
         refused.append('PMX' in str(e) or 'poisson_wells_exact' in str(e))
 ok = all(refused); ok_all &= ok
-say(f'8. guards: refuses without SR2 {refused[0]}, refuses with langevin_T > 0 {refused[1]} -> {ok}')
+say(f'8. guards: refuses without SR2 {refused[0]}, with langevin_T > 0 {refused[1]}, wider than 32 {refused[2]} -> {ok}')
+
+import model_parf_multixi as MPX
+widths = []
+orig_ilm = MPX.indefinite_lowrank_modes
+def ilm(B, sg, *a, **k):
+    widths.append(B.shape[-1]); return orig_ilm(B, sg, *a, **k)
+MPX.indefinite_lowrank_modes = ilm
+try:
+    xb, _ = g['get_batch'](g['val_ids'], 16, 512, np.random.default_rng(20260920))
+    xf = torch.from_numpy(xb)
+    model.eval(); t0 = time.time()
+    with torch.enable_grad():
+        model(xf)
+    t_pmx_full = time.time() - t0
+finally:
+    MPX.indefinite_lowrank_modes = orig_ilm
+model.cfg.poisson_wells_exact = False; model.cfg.lowrank_damped_flow = True
+t0 = time.time()
+with torch.enable_grad():
+    model(xf)
+t_sr2_full = time.time() - t0
+model.cfg.poisson_wells_exact = True
+ok = len(widths) > 0 and set(widths) == {32}; ok_all &= ok
+say(f'9. eigensolve widths seen: {sorted(set(widths))} (must be 32) -> {ok}; '
+    f'eval forward 16 x 512 on the CPU: PMX {t_pmx_full:.1f} s, explicit wells on SR2 {t_sr2_full:.1f} s ({t_pmx_full / t_sr2_full:.2f}x)')
 
 say(f'\n-> {"ALL PASS" if ok_all else "FAILURES ABOVE"}')
 (HERE / 'verify_pm_wells_exact_output.txt').write_text('\n'.join(lines) + '\n')

@@ -4188,6 +4188,47 @@ At the probe stop, descriptive only: Cells 6b-7 and 6b-15.
 - **Both miss:** park the Poisson-mode line (option c).
 - **Scoring tools:** `refinement_flow_confirmation.py` needs a kind for this arm. It is added before scoring and checked against the harness and against `substeps_per_layer`.
 
+#### PMX amended: a 32-wide eigensolve (`pmx16`) — **2026-10-10, before any data**
+
+**What happened.** The first launch (tag `…pm64_pmx_sr2…`) had not logged step 50 after 22 minutes, more than 26 s/step, and the author stopped it. No checkpoint was written and no eval exists. The cause: cuSOLVER's batched Jacobi eigensolvers handle matrices only up to 32 × 32. SR2's problem is exactly 32 × 32. PMX's was 80 × 80 (V_θ's 16 retained modes plus all 64 wells), twice per token, which leaves the batched path. The CPU test (2.5×) could not see this.
+
+**Phase 0 for the fix** (`debug/pm_wells_curvature.py`, extended). Force missed at the kick point, ÷ the force, layer 1, median:
+
+| what the exact flow carries | missed |
+| --- | ---: |
+| every well's full quadratic (the first design, 80-wide) | 0.047 |
+| every well's force and isotropic curvature α, plus the rank part of the top 24 wells | 0.093 |
+| **the same with the top 16 wells (32-wide)** | **0.132** |
+| the same with the top 8 | 0.182 |
+| only the top 16 wells, whole | 0.291 |
+| isotropic part only | 0.272 |
+
+- The top wells are chosen by force, |w_v|·|r_v| at h₀. Choosing by the rank part's weight is slightly worse (0.139 at 16).
+- **The stiffness is in α** (ω·Δt 2.10, against 2.18 for the stiffest direction). α costs no eigensolve, so every well's α and force stay in the flow. W only softens directions, and its remainder is left to the kick.
+
+**Change** (`poisson_wells_exact_modes = 16`; Cell 0 `POISSON_WELLS_EXACT_MODES`; tag `pmx<modes>`):
+- `poisson_mode_quadratic` returns every well's force and α, and the rank part (r_v, dW_v) of the token's 16 strongest wells, without building the 64-well tensor.
+- The exact flow carries F_w(h₀) − (αI − W₁₆)(h − h₀).
+- The model refuses to build if `lowrank_max_modes + poisson_wells_exact_modes > 32`.
+- The SR2 banner now says there is no O-step under PMX.
+
+**Re-verified** (`debug/verify_pm_wells_exact.py`):
+- **Off:** bit-identical to the first PMX commit on PM1 and SR2, and in `damped_mode_coefficients`.
+- **Unit tests:** unchanged.
+- **On PM1's weights:**
+  - consistency: ratio 4.1 per halving of Δt;
+  - layer-1 kick share **0.119**, against 0.938 for the explicit wells (the full 80-wide version: 0.090);
+  - causality exact; gradients finite and reaching every pm_ parameter;
+  - the per-layer flow takes one quadratic per layer;
+  - three guards fire;
+  - **every eigensolve is 32 wide.**
+- **CPU cost:** 1.5 times SR2 per train step and 1.7 times per eval forward at 16 × 512.
+
+**The run** is otherwise as pre-registered above, with tag **`…pm64_pmx16_sr2_L2probe…`** and `POISSON_WELLS_EXACT_MODES = 16`.
+- **Cost watch, unchanged:** stop above 3.5 s/step.
+- **CX0–CX6 and the decision rule stand.** CX6's threshold (layer-1 kick share at most 0.3) was set before the design's own value on PM1's weights was known (0.119). It is recorded here and not revised.
+- The aborted `…pm64_pmx_sr2…` folder on Drive holds no checkpoint and may be deleted.
+
 ### 5.16 F0: is there a shared floor near 50 PPL? The stable-phase extrapolation — **pre-registered 2026-10-06, before any fit**
 
 **Why.** Among the L=2 models with the register path, G2 (53.12), G3 (54.21) and G3′ (52.90) settle within 2.5% of each other, whatever else is switched on. L=4 Fock (50.10) and the 8-layer matched GPT-2 (49.81) end near 50. Is the floor set by depth, or by what every model shares: d = 384, the untied head and 532M tokens?

@@ -118,6 +118,33 @@ if __name__ == '__main__':
         change = (F_mid - F_in).norm(dim=-1)
         remainder = (F_mid - F_quad).norm(dim=-1) / change.clamp_min(1e-12)
         rel_to_force = (F_mid - F_quad).norm(dim=-1) / F_mid.norm(dim=-1).clamp_min(1e-12)
+        # top-M (added 2026-10-10 for PMX on the GPU, whose batched solvers stop at
+        # 32 x 32): only each token's M wells with the largest force |w_v| |r_v| at
+        # h_in go into the exact flow; the others stay whole in the kick. And the
+        # hybrid: all wells' force F(h_in) and isotropic alpha (no eigensolve), plus
+        # the top-M wells' rank part W
+        r_in = hi[:, None, :] - mu[None]
+        E_in = torch.exp(-k2 * (r_in * r_in).sum(-1)); w_in = 2 * k2 * ph * a[None] * E_in
+        score = w_in.abs() * r_in.norm(dim=-1)
+        topm = {}
+        for M in (8, 16, 24):
+            idx = score.topk(M, dim=-1).indices                              # (N, M)
+            keep = torch.zeros_like(w_in).scatter_(1, idx, 1.0)
+            wS = w_in * keep
+            FS = -(wS[..., None] * r_in).sum(1)
+            aS = wS.sum(-1)
+            dWS = 2 * k2 * wS
+            HdhS = aS[:, None] * dh - (dWS[..., None] * r_in * (r_in * dh[:, None, :]).sum(-1, keepdim=True)).sum(1)
+            topm[M] = (F_mid - (FS - HdhS)).norm(dim=-1) / F_mid.norm(dim=-1).clamp_min(1e-12)
+            # hybrid: every well's force F(h_in) and isotropic alpha go into the flow
+            # (no eigensolve needed), only the top-M wells' rank part W_S does
+            HdhH = alpha[:, None] * dh - (dWS[..., None] * r_in * (r_in * dh[:, None, :]).sum(-1, keepdim=True)).sum(1)
+            topm[f'iso+W{M}'] = (F_mid - (F_in - HdhH)).norm(dim=-1) / F_mid.norm(dim=-1).clamp_min(1e-12)
+            # the same hybrid with the top M chosen by the rank part's own weight |dW_v| |r_v|^2
+            idx2 = (2 * k2 * w_in.abs() * (r_in * r_in).sum(-1)).topk(M, dim=-1).indices
+            dW2 = 2 * k2 * w_in * torch.zeros_like(w_in).scatter_(1, idx2, 1.0)
+            Hdh2 = alpha[:, None] * dh - (dW2[..., None] * r_in * (r_in * dh[:, None, :]).sum(-1, keepdim=True)).sum(1)
+            topm[f'iso+W{M}byW'] = (F_mid - (F_in - Hdh2)).norm(dim=-1) / F_mid.norm(dim=-1).clamp_min(1e-12)
         # the isotropic-only variant: only alpha (h - h_in) goes into the exact flow
         F_iso = F_in - alpha[:, None] * dh
         rel_iso = (F_mid - F_iso).norm(dim=-1) / F_mid.norm(dim=-1).clamp_min(1e-12)
@@ -134,6 +161,7 @@ if __name__ == '__main__':
                  unstable_rate_dt=q(rate), share_unstable=float((lam_neg < 0).double().mean()),
                  remainder=q(remainder), remainder_rel_force=q(rel_to_force), remainder_iso_rel_force=q(rel_iso),
                  alpha_negative_share=float((alpha < 0).double().mean()),
+                 remainder_topM_rel_force={M: q(v) for M, v in topm.items()},
                  step_over_state=float((dh.norm(dim=-1) / hi.norm(dim=-1)).median()))
         res[l] = R
         lines += [f'\nlayer {l}   (|h_mid - h_in| / |h_in| median {R["step_over_state"]:.2f})',
@@ -145,6 +173,10 @@ if __name__ == '__main__':
                   f'               remainder / force at h_mid    p05/p50/p95 ' + ' / '.join(f'{v:.3f}' for v in R['remainder_rel_force']),
                   f'               isotropic part only: remainder / force at h_mid  p05/p50/p95 ' + ' / '.join(f'{v:.3f}' for v in R['remainder_iso_rel_force'])
                   + f'   (tokens with alpha < 0: {100*R["alpha_negative_share"]:.0f}%)']
+        lines += [(f'               top {M} wells only' if isinstance(M, int) else
+                   f'               all wells\' alpha and force + W of the top {M[5:].replace("byW", "")}' + (' (chosen by W)' if M.endswith('byW') else ' (chosen by force)'))
+                  + ': remainder / force at h_mid  p05/p50/p95 ' + ' / '.join(f'{v:.3f}' for v in vals)
+                  for M, vals in R['remainder_topM_rel_force'].items()]
     L1 = res[max(res)]
     stiff = max(L1['alpha_omega_dt'][1], L1['stiffest_omega_dt'][1]) > 2
     faithful = L1['remainder'][1] < 0.5
