@@ -1,0 +1,20 @@
+PM1 wells: curvature and quadratic fidelity  ....05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+   2 x 512 tokens (Cell 6b-7's first batch), phi fixed at the layer input, dt = 4
+
+layer 0   (|h_mid - h_in| / |h_in| median 0.56)
+   STIFFNESS   omega dt, isotropic part      p05/p50/p95 0.00 / 0.00 / 0.00
+               omega dt, stiffest direction  p05/p50/p95 0.00 / 0.00 / 0.00
+               unstable rate x dt            p05/p50/p95 0.61 / 0.64 / 0.66   (tokens with a negative direction 100%)
+   FIDELITY    remainder / force change      p05/p50/p95 0.070 / 0.092 / 0.109
+               remainder / force at h_mid    p05/p50/p95 0.003 / 0.005 / 0.006
+               isotropic part only: remainder / force at h_mid  p05/p50/p95 0.005 / 0.008 / 0.010   (tokens with alpha < 0: 100%)
+
+layer 1   (|h_mid - h_in| / |h_in| median 0.25)
+   STIFFNESS   omega dt, isotropic part      p05/p50/p95 2.00 / 2.10 / 2.18
+               omega dt, stiffest direction  p05/p50/p95 2.04 / 2.18 / 2.26
+               unstable rate x dt            p05/p50/p95 0.89 / 0.97 / 1.05   (tokens with a negative direction 100%)
+   FIDELITY    remainder / force change      p05/p50/p95 0.293 / 0.371 / 0.446
+               remainder / force at h_mid    p05/p50/p95 0.032 / 0.047 / 0.059
+               isotropic part only: remainder / force at h_mid  p05/p50/p95 0.207 / 0.272 / 0.342   (tokens with alpha < 0: 0%)
+
+RULE OF THUMB (written before the run), layer 1: stiff True, quadratic faithful True  -> design (b) WORTHWHILE

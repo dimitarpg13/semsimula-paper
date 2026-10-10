@@ -69,6 +69,7 @@ from cfc_baoab import (  # noqa: E402
     decode_velocity,
     encode_velocity,
     lowrank_cfc_substep, lowrank_damped_substep,
+    indefinite_lowrank_modes, lowrank_iso_damped_substep,
     lowrank_modes,
     ou_step,
 )
@@ -239,6 +240,17 @@ class MultiXiPARFConfig(SparsePARFConfig):
     # bit. Inference only: eval mode, FockMultiXiPARFLM, integrator
     # 'baoab_cfc_lowrank', no reverse channel.
     substeps_per_layer: int = 1
+    # PMX (protocol SS5.15, 2026-10-10): integrate the Poisson-mode wells
+    # exactly. Their quadratic at the layer step's start (phi fixed) -- an
+    # isotropic curvature alpha plus an indefinite rank-K part -- joins V_theta's
+    # low-rank part in the exact damped flow, which then covers all of R^d
+    # (no O-step); the kick keeps only what the quadratic misses (about 5% of
+    # PM1's layer-1 wells force, debug/pm_wells_curvature.py). Vtheta is
+    # treated exactly as under SR2: its retained low-rank modes go into the
+    # exact flow, the soft ones (lowrank_max_modes) stay in the kick. Needs
+    # poisson_modes > 0, lowrank_damped_flow and langevin_T = 0. False = off
+    # (bit-identical).
+    poisson_wells_exact: bool = False
     relax_attn_logit_scale_init: float = 1.0 / 0.07
     relax_attn_logit_scale_max: float = 100.0
     # Fix the gate instead of learning it. None learns lambda (or holds it
@@ -666,6 +678,13 @@ class MultiXiPARFLM(SparsePARFLM):
             raise ValueError("lowrank_damped_flow (SR2) needs integrator='baoab_cfc_lowrank'")
         if getattr(cfg, "lowrank_damped_flow", False) and getattr(cfg, "fixed_gamma", None) is None:
             raise ValueError("lowrank_damped_flow (SR2) needs a constant gamma (fixed_gamma)")
+        if getattr(cfg, "poisson_wells_exact", False):
+            if not getattr(cfg, "poisson_modes", 0):
+                raise ValueError("poisson_wells_exact (PMX) needs poisson_modes > 0")
+            if not getattr(cfg, "lowrank_damped_flow", False):
+                raise ValueError("poisson_wells_exact (PMX) needs lowrank_damped_flow (SR2)")
+            if getattr(cfg, "langevin_T", 0.0) != 0.0:
+                raise ValueError("poisson_wells_exact (PMX) applies no O-step, so it needs langevin_T = 0")
 
         # PM1 Poisson-mode registers. Created ONLY when enabled, so the
         # default model draws the same RNG stream and keeps the same
@@ -716,6 +735,27 @@ class MultiXiPARFLM(SparsePARFLM):
                               torch.zeros((), device=h.device))          # (K, T, T)
             phi = torch.einsum("kts,bsk->btk", Lam, E)
         return E, phi
+
+    def poisson_mode_quadratic(self, h: torch.Tensor, layer_idx: int):
+        """PMX: the wells' force and Hessian pieces at h, with phi from h's context.
+
+        Returns (F, alpha, r, dW), float32: F = -grad U at h, exactly
+        :meth:`poisson_mode_force`'s value; the Hessian of U at h is
+        alpha I - sum_v dW_v r_v r_v^T with alpha (B, T, 1), r_v = h - mu_v
+        (B, T, K, d) and dW (B, T, K). Live tensors: the caller detaches what
+        goes into the exact flow's spring and keeps the forces live.
+        """
+        E, phi = self.poisson_mode_occupation(h)
+        with torch.autocast(device_type=h.device.type, enabled=False):
+            k2 = self.pm_log_kappa2.float().exp()
+            a = self.pm_effective_depth(layer_idx)
+            w = phi * E * (2.0 * k2 * a)                                 # (B, T, K)
+            hf = h.float()
+            F = -(w.sum(-1, keepdim=True) * hf - w @ self.pm_mu.float())
+            r = hf.unsqueeze(-2) - self.pm_mu.float()                    # (B, T, K, d)
+            alpha = w.sum(-1, keepdim=True)                              # (B, T, 1)
+            dW = 2.0 * k2 * w                                            # (B, T, K)
+        return F, alpha, r, dW
 
     def pm_effective_depth(self, layer_idx: int) -> torch.Tensor:
         """The well depths a_v the force uses at this layer (K,), float32.
@@ -1225,6 +1265,7 @@ class MultiXiPARFLM(SparsePARFLM):
         # so the force evaluation does not re-derive the bank.
         k_diag = s_lin = None
         lr_U = lr_kappa = lr_sL = lr_G = None
+        pmx = use_lowrank and getattr(cfg, "poisson_wells_exact", False)
         vtheta_comps = None
         if use_cfc or use_lowrank:
             if use_lowrank and not hasattr(self.V_theta, "harmonic_terms_lowrank"):
@@ -1263,15 +1304,57 @@ class MultiXiPARFLM(SparsePARFLM):
                 if flow_ctx is not None:
                     flow_ctx["lr"] = _lr
             _, _, lr_G, lr_Gmu = _lr
-            lr_U, lr_kappa = lowrank_modes(
-                lr_G, max_modes=getattr(cfg, "lowrank_max_modes", None),
-                niter=getattr(cfg, "lowrank_niter", 2),
-                oversample=getattr(cfg, "lowrank_oversample", 4),
-                driver=getattr(cfg, "lowrank_driver", "svd"),
-            )
+            if pmx:
+                # PMX: the wells' quadratic at the step's start (in the
+                # per-layer flow, at the layer's first substep) joins Vtheta's
+                # low-rank part: K = alpha I + modes of G G^T - W on
+                # span[G, r_v], integrated exactly with damping on all of R^d.
+                if flow_ctx is not None and "pmq" in flow_ctx:
+                    pm_h0, pm_F0, pm_alpha, pm_r, pm_dW = flow_ctx["pmq"]
+                else:
+                    pm_F0, pm_alpha, pm_r, pm_dW = self.poisson_mode_quadratic(h_in, layer_idx)
+                    pm_h0 = h_in
+                    if flow_ctx is not None:
+                        flow_ctx["pmq"] = (pm_h0, pm_F0, pm_alpha, pm_r, pm_dW)
+                # Vtheta's retained modes exactly as SR2 keeps them; their
+                # projected force goes into the flow, the soft modes stay in the kick
+                th_U, th_kappa = lowrank_modes(
+                    lr_G, max_modes=getattr(cfg, "lowrank_max_modes", None),
+                    niter=getattr(cfg, "lowrank_niter", 2),
+                    oversample=getattr(cfg, "lowrank_oversample", 4),
+                    driver=getattr(cfg, "lowrank_driver", "svd"),
+                )
+                _Bm = torch.cat([th_U * th_kappa.clamp(min=0).sqrt().unsqueeze(-2),
+                                 pm_r.transpose(-1, -2).to(lr_G.dtype)], dim=-1)
+                _sg = torch.cat([torch.ones_like(th_kappa), -pm_dW.to(lr_G.dtype)], dim=-1)
+                lr_U, lr_kappa = indefinite_lowrank_modes(_Bm, _sg)
+
+                def _th_proj(f):
+                    return torch.einsum('...dq,...q->...d', th_U,
+                                        torch.einsum('...dq,...d->...q', th_U, f))
+                pm_alpha_s = pm_alpha.detach().to(h_in.dtype)
+
+                def _pm_quad_force(hh):
+                    # F_w(h0) - H_w (hh - h0), live: the wells force the exact flow carries
+                    dh = (hh - pm_h0).float()
+                    Hdh = pm_alpha * dh - (pm_dW.unsqueeze(-1) * pm_r
+                                           * (pm_r * dh.unsqueeze(-2)).sum(-1, keepdim=True)).sum(-2)
+                    return (pm_F0 - Hdh).to(hh.dtype)
+            else:
+                lr_U, lr_kappa = lowrank_modes(
+                    lr_G, max_modes=getattr(cfg, "lowrank_max_modes", None),
+                    niter=getattr(cfg, "lowrank_niter", 2),
+                    oversample=getattr(cfg, "lowrank_oversample", 4),
+                    driver=getattr(cfg, "lowrank_driver", "svd"),
+                )
             lr_sL = torch.einsum('...dp,...p->...d', lr_G, lr_Gmu)
             f_L = lr_sL - self._lowrank_matvec(lr_G, h_in)
-            if getattr(cfg, "lowrank_damped_flow", False):
+            if pmx:
+                h_mid, v_mid = lowrank_iso_damped_substep(
+                    h_in, v, lr_U, lr_kappa, pm_alpha_s, _th_proj(f_L) + _pm_quad_force(h_in),
+                    m_b, gamma, half,
+                )
+            elif getattr(cfg, "lowrank_damped_flow", False):
                 h_mid, v_mid = lowrank_damped_substep(
                     h_in, v, lr_U, lr_kappa, f_L, m_b, gamma, half,
                 )
@@ -1311,24 +1394,30 @@ class MultiXiPARFLM(SparsePARFLM):
             # being the sub-threshold ones) instead of being silently
             # cancelled out of the dynamics.
             f_L_mid = lr_sL - self._lowrank_matvec(lr_G, h_mid)
-            f_L_mid = torch.einsum(
-                '...dq,...q->...d', lr_U,
-                torch.einsum('...dq,...d->...q', lr_U, f_L_mid),
-            )
-            f_kick = f_kick - f_L_mid
+            if pmx:
+                # the exact flow carries Vtheta's retained-mode force and the
+                # wells' quadratic in full; the soft modes stay in the kick
+                f_kick = f_kick - (_th_proj(f_L_mid) + _pm_quad_force(h_mid))
+            else:
+                f_L_mid = torch.einsum(
+                    '...dq,...q->...d', lr_U,
+                    torch.einsum('...dq,...d->...q', lr_U, f_L_mid),
+                )
+                f_kick = f_kick - f_L_mid
         if cfg.force_clamp_max is not None:
             f_kick = f_kick.clamp(-cfg.force_clamp_max, cfg.force_clamp_max)
         v_mid = v_mid + (dt / m_b) * f_kick
 
         # ── O: exact friction, optionally FDT-thermostatted ──
         _v_pre_o = v_mid
-        v_mid = ou_step(
-            v_mid, gamma, dt, m=m_b,
-            T=getattr(cfg, "langevin_T", 0.0),
-            training=self.training,
-            noise_eval=getattr(cfg, "langevin_noise_eval", False),
-        )
-        if use_lowrank and getattr(cfg, "lowrank_damped_flow", False):
+        if not pmx:     # PMX: friction is inside the exact flow on all of R^d
+            v_mid = ou_step(
+                v_mid, gamma, dt, m=m_b,
+                T=getattr(cfg, "langevin_T", 0.0),
+                training=self.training,
+                noise_eval=getattr(cfg, "langevin_noise_eval", False),
+            )
+        if use_lowrank and getattr(cfg, "lowrank_damped_flow", False) and not pmx:
             # SR2: span(U) gets its friction inside the exact damped flow of
             # the A substeps, so undo the O-step there (complement unchanged).
             v_mid = v_mid + torch.einsum(
@@ -1339,7 +1428,12 @@ class MultiXiPARFLM(SparsePARFLM):
         # ── A: second half substep ──
         if use_lowrank:
             f_L = lr_sL - self._lowrank_matvec(lr_G, h_mid)
-            if getattr(cfg, "lowrank_damped_flow", False):
+            if pmx:
+                h_new, v_new = lowrank_iso_damped_substep(
+                    h_mid, v_mid, lr_U, lr_kappa, pm_alpha_s, _th_proj(f_L) + _pm_quad_force(h_mid),
+                    m_b, gamma, half,
+                )
+            elif getattr(cfg, "lowrank_damped_flow", False):
                 h_new, v_new = lowrank_damped_substep(
                     h_mid, v_mid, lr_U, lr_kappa, f_L, m_b, gamma, half,
                 )

@@ -696,8 +696,11 @@ def damped_mode_coefficients(
     # T_2 = t^2/2 (40 terms: converged to round-off for g t < 4). For g t >= 4
     # with tiny omega0^2, the omega0 = 0 damped drift (relative error ~ w0^2 t/2g)
     # or the division (~ eps g/(w0^2 t)), whichever is smaller (both <= 1e-8).
-    small = (w2 * t * t) < 1e-4
-    safe_w2 = torch.where(w2 > 0, w2, torch.ones_like(w2))
+    # |w2| and w2 != 0 (2026-10-10, PMX): negative omega0^2 (an unstable,
+    # hyperbolic mode) takes the division branch like a positive one. For
+    # w2 >= 0 both are the same expressions as before, bit for bit.
+    small = (w2.abs() * t * t) < 1e-4
+    safe_w2 = torch.where(w2 != 0, w2, torch.ones_like(w2))
     Q_div = (1.0 - E11) / safe_w2
     gt = g * t
     Tm, Tn = torch.zeros_like(w2), torch.full_like(w2, 0.5 * t * t)     # T_1, T_2
@@ -707,7 +710,7 @@ def damped_mode_coefficients(
         Q_ser = Q_ser + Tn
     g_safe = torch.where(gt > 0, g, torch.ones_like(g))
     Q_zero = (gt - 1.0 + torch.exp(-gt)) / (g_safe * g_safe)
-    Q_large = torch.where(w2 * t < 1e-8 * g_safe, Q_zero.expand_as(Q_div), Q_div)
+    Q_large = torch.where(w2.abs() * t < 1e-8 * g_safe, Q_zero.expand_as(Q_div), Q_div)
     Q = torch.where(small, torch.where(gt < 4.0, Q_ser, Q_large), Q_div)
     return E12, E22, P, Q
 
@@ -742,6 +745,87 @@ def lowrank_damped_substep(
     wz_new = E22 * wz + P * a
     h_new = h + dt * v + torch.einsum('...dq,...q->...d', U, z_new - z - dt * wz)
     v_new = v + torch.einsum('...dq,...q->...d', U, wz_new - wz)
+    return h_new, v_new
+
+
+# ---------------------------------------------------------------------------
+# PMX (protocol SS5.15, 2026-10-10): the Poisson-mode wells integrated exactly
+# ---------------------------------------------------------------------------
+def indefinite_lowrank_modes(
+    B: torch.Tensor, signs: torch.Tensor, floor: float = 1e-10,
+) -> Tuple[torch.Tensor, torch.Tensor]:
+    """Eigenmodes of the symmetric, possibly INDEFINITE ``L = B diag(s) B^T``.
+
+    ``B`` is (..., d, n), ``signs`` (..., n). Returns orthonormal mode columns
+    ``U`` (..., d, n) spanning range(B) (zero columns where B is rank-deficient,
+    inert) and eigenvalues ``kappa`` (..., n) of either sign, both detached,
+    as :func:`lowrank_modes` returns for the PSD case. ``L`` acts as zero on
+    the complement of range(B).
+
+    Route: an orthonormal basis Q of range(B) from :func:`_gram_eigh` (the
+    hardened Gram path), the n x n restriction M = (Q^T B) diag(s) (Q^T B)^T,
+    shifted by c >= |lambda_min| to be PSD so that the same Jacobi SVD can
+    diagonalise it (it returns |lambda| otherwise), then shifted back. Inert
+    basis directions are decoupled by a large distinct diagonal value, so
+    their eigenvectors are unit vectors and their mode columns exactly zero.
+    """
+    Bd, sd = B.detach(), signs.detach()
+    dt_in, n = Bd.dtype, Bd.shape[-1]
+    Q, sv = _gram_eigh(Bd)                                   # (..., d, n), (..., n) desc
+    inert = ~(torch.isfinite(sv) & (sv * sv > floor))
+    Q = torch.where(inert.unsqueeze(-2), torch.zeros_like(Q), Q)
+    Q = torch.nan_to_num(Q, nan=0.0, posinf=0.0, neginf=0.0).double()
+    Pm = Q.transpose(-1, -2) @ Bd.double()                   # (..., n, n)
+    M = (Pm * sd.double().unsqueeze(-2)) @ Pm.transpose(-1, -2)
+    M = 0.5 * (M + M.transpose(-1, -2))
+    c = M.abs().sum(-1).amax(-1, keepdim=True).clamp(min=1e-300)   # >= spectral radius
+    big = 10.0 * c + 1.0
+    eye = torch.eye(n, dtype=M.dtype, device=M.device)
+    Ms = M + c.unsqueeze(-1) * eye + torch.diag_embed(inert.double() * big)
+    ramp = torch.arange(n, device=M.device, dtype=M.dtype) * (1e-12 / max(n, 1))
+    Ms = Ms + torch.diag_embed(c * ramp)
+    Y, lam, _ = torch.linalg.svd(Ms)                         # PSD: SVD = eigen, desc
+    kappa = lam - c - (Y * Y * (inert.double() * big).unsqueeze(-1)).sum(-2)
+    U = Q @ Y                                                # (..., d, n)
+    dead = U.norm(dim=-2) < 0.5                              # an inert direction's column
+    U = torch.where(dead.unsqueeze(-2), torch.zeros_like(U), U)
+    kappa = torch.where(dead, torch.zeros_like(kappa), kappa)
+    return U.to(dt_in), kappa.to(dt_in)
+
+
+def lowrank_iso_damped_substep(
+    h: torch.Tensor,
+    v: torch.Tensor,
+    U: torch.Tensor,
+    kappa: torch.Tensor,
+    alpha: torch.Tensor,
+    f: torch.Tensor,
+    m: torch.Tensor,
+    gamma: torch.Tensor | float,
+    dt: float,
+) -> Tuple[torch.Tensor, torch.Tensor]:
+    """Exact flow over ``dt`` of  m x'' = f - K (x - h) - gamma m x',  x(0) = h, x'(0) = v,
+
+    with the frozen spring ``K = alpha I + U diag(kappa) U^T`` on ALL of R^d:
+    modes in span(U) have stiffness ``kappa + alpha`` (either sign), the
+    complement has ``alpha`` (per token, either sign), and the damping is
+    integrated exactly everywhere. ``f`` is the force at ``h`` (the start of
+    the substep), as in :func:`lowrank_damped_substep`. The caller must apply
+    no O-step at all: friction is inside this flow on the whole space.
+    ``alpha`` is (..., 1); ``U`` has orthonormal or zero columns.
+    """
+    vz = torch.einsum('...dq,...d->...q', U, v)
+    fz = torch.einsum('...dq,...d->...q', U, f)
+    vc = v - torch.einsum('...dq,...q->...d', U, vz)
+    fc = f - torch.einsum('...dq,...q->...d', U, fz)
+    E12s, E22s, Ps, Qs = (c.to(h.dtype) for c in damped_mode_coefficients((kappa + alpha) / m, gamma, dt))
+    E12c, E22c, Pc, Qc = (c.to(h.dtype) for c in damped_mode_coefficients(alpha / m, gamma, dt))
+    dz = E12s * vz + Qs * fz / m
+    vz_new = E22s * vz + Ps * fz / m
+    dc = E12c * vc + Qc * fc / m
+    vc_new = E22c * vc + Pc * fc / m
+    h_new = h + torch.einsum('...dq,...q->...d', U, dz) + dc
+    v_new = torch.einsum('...dq,...q->...d', U, vz_new) + vc_new
     return h_new, v_new
 
 

@@ -1,0 +1,25 @@
+OFF (POISSON_WELLS_EXACT = False): working copy vs HEAD, on the trained weights
+   PM1: eval 0.0e+00  train 0.0e+00  grads 0.0e+00  (77 params) -> IDENTICAL
+   SR2: eval 0.0e+00  train 0.0e+00  grads 0.0e+00  (73 params) -> IDENTICAL
+   damped_mode_coefficients on omega0^2 in {0} U [1e-12, 1e2], 3 dampings x 2 steps: max |d| 0.0e+00 -> IDENTICAL
+
+ON, unit tests (float64)
+0a. damped_mode_coefficients, omega0^2 < 0, vs RK4: worst rel err 1.6e-13 -> True
+0b. indefinite modes: reconstruction 2.0e-12, orthonormality 2.0e-12, negative modes present -> True
+0c. full-space exact substep vs RK4: 6.9e-14; two half steps vs one: 6.5e-15 -> True
+
+ON (F3.1 Cell 0 + POISSON_MODES = 64 + LOWRANK_DAMPED_FLOW + POISSON_WELLS_EXACT), on PM1's trained weights
+1. tag ...pm64_pmx_sr2_L2probe; switch on: True; 5b banner: True -> True
+2. poisson_mode_quadratic force vs poisson_mode_force at layer 1: max rel |d| 0.0e+00 -> True
+3. consistency, PMX vs explicit wells, |d h| / |step| at dt 0.5, 0.25: 1.87e-02, 4.55e-03; ratio 4.1 (>= 3.5) -> True
+4. kick share, median |h(no kick) - h| / |h - h_in| (PMX against explicit wells, both on SR2):
+      layer 0: PMX 0.319   explicit wells 0.586
+      layer 1: PMX 0.090   explicit wells 0.939
+   the explicit part at layer 1 at least halves -> True
+5. causality: tokens replaced at t >= 128, max |d logit| at t < 128 = 0.0e+00 -> True
+6. gradients finite: True; pm_ grad norms pm_mu 2.25e-01, pm_log_kappa2 3.27e-01, pm_logit_lambda 3.71e-01, pm_depth 3.11e+00 -> True
+   CPU cost of one train step, 2 x 256 tokens: PMX 14.0 s, explicit wells 5.6 s (2.51x)
+7. per-layer flow: quadratics taken per forward at k = 4: 2 (one per layer, L = 2); at k = 1: 4 (the layer-checkpoint wrapper runs each step twice, as for every model); k = 1 vs default max |d| 0.0e+00 -> True
+8. guards: refuses without SR2 True, refuses with langevin_T > 0 True -> True
+
+-> ALL PASS

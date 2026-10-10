@@ -4050,6 +4050,144 @@ At the probe stop, descriptive only: Cells 6b-7 and 6b-15.
 - **CS1 hits, CS3 misses:** the memory gain is real but the wells still break the per-layer flow. Next, variable-step training (SR4a) on this arm, or a smaller cap.
 - **Both miss:** the Poisson-mode mechanism needs rethinking before any further arm.
 
+#### PM1-cap on SR2, probe scored at step 8,000: **92.89 — the probe gate stops the arm; the capped modes add nothing to SR2** — **2026-10-10**
+
+Run output `L2probe_SR2_on_PM1_8000steps_output.txt`, filed in `results/…pm64_pmcap0p3_sr2_L2probe…/`. Tag and Cell 5b banners as pre-registered; fresh start; stopped at `_step8000_probe_stop.pt`.
+
+| step | PM1-cap on SR2 | SR2 | PM1 | F3.1 | against SR2 | against PM1 |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1,000 | 243.52 | 242.50 | 238.54 | 241.67 | +0.4% | +2.1% |
+| 2,000 | 152.90 | 152.73 | 148.12 | 151.89 | +0.1% | +3.2% |
+| 3,000 | 128.73 | 129.07 | 122.34 | 127.73 | −0.3% | +5.2% |
+| 4,000 | 118.41 | 118.78 | 109.33 | 113.51 | −0.3% | +8.3% |
+| 5,000 | 107.44 | 108.37 | 97.23 | 106.71 | −0.9% | +10.5% |
+| 6,000 | 100.48 | 101.40 | 89.73 | 103.00 | −0.9% | +12.0% |
+| 7,000 | 95.25 | 95.60 | 84.45 | 99.00 | −0.4% | +12.8% |
+| **8,000** | **92.89** | 92.93 | 79.78 | 93.57 | **−0.0%** | +16.4% |
+
+- **Probe gate (at or below 90.1 to continue; above 91.9 stops): STOP.** The capped arm tracks SR2 within 1% at every eval. The modes, as capped, buy nothing measurable, while uncapped PM1 was 16% ahead by step 8,000.
+- **CS0 (step 8,000 at or below 84.0): MISS.** CS1–CS6 are not scored: the full run does not happen.
+- **Health:** the global norm exceeded 1.0 on 2 of 160 logged steps (max 1.14). pm_ was the most-clipped group on 30 of 160 steps, against most steps for PM1. No watchdog or spike event.
+- **The resonance monitor works** (fresh runtime with the semsimula-diag fix): ω·dt p50 rises from 1.0 at step 500 to 2.1 at step 8,000, with 58% of readings past 2. Under the exact flow this is a stiffness reading, not an instability.
+- **The step-5,000 SCAF line is not in the saved log.** The record is in the run's `results/scaf_leak_monitor.jsonl` on Drive.
+- **Reading, a hypothesis to test before any further arm.** PM1's gain came from deep layer-1 wells: a median depth of +0.35 at step 8,000, with tails to ±1, about 6 times the conservative force. A cap of 0.3 removes exactly the depth that bought the perplexity. The post-hoc preview already showed that the cap costs 65% on PM1's weights. Training did not find another use for bounded wells: it appears to have let them go.
+- **Two readings, separated by Cell 6b-15 on the probe checkpoint** (pre-registered as descriptive at the probe stop):
+  - **Saturated:** many layer-1 depths sit at the cap (|a_raw| well above 0.3), and the PM force share is held down. The cap is binding; c = 0.5 would be the next try.
+  - **Abandoned:** the depths sit near zero, well inside the cap, and the PM force share is small. Training gave up on the modes on this base, and a larger cap would not help.
+
+**Cell 6b-15 on the probe checkpoint, 2026-10-10** (`Cell-6b-15_PM1cap_on_SR2_…_step8000_output.txt`; no knob flagged): **neither reading as written. The cap binds, the model compensates, and the force it rebuilds buys nothing.**
+
+| at step 8,000 | PM1-cap on SR2 | PM1 |
+| --- | ---: | ---: |
+| layer-1 effective depth p05 / p50 / p95 | −0.119 / +0.249 / +0.293 | +0.130 / +0.349 / +0.601 |
+| raw depth behind p50 / p95 (a_raw = 0.3 atanh(a / 0.3)) | 0.356 / 0.666 | (uncapped) |
+| tanh slope at p50 / p95 (the gradient reaching a_raw) | 0.31 / 0.05 | 1 |
+| layer-1 PM force / conservative force | 3.13 | 6.29 |
+| layer-1 force share, short / long half-life quartile | 10% / **57%** | 34% / 11% |
+| κ²·d p50 / p95 | 1.15 / **3.03** | 0.80 / 1.13 |
+| half-life p50 / p95, tokens | 16.6 / 42.4 | 15.0 / 32.3 |
+| loss direction on pm_depth, cosine(Adam step, θ) | −0.03 | +0.42 (outward) |
+| dead modes | 4 of 64 | 0 of 64 |
+
+- **The cap binds.** The upper half of the layer-1 depths sits near 0.3, and at p95 the tanh passes 5% of the gradient back to the raw depth. The loss can no longer push those wells deeper; the cosine of −0.03 against PM1's +0.42 is that blockage, not a lack of demand.
+- **The compensation channel recorded in advance happened.** Force moved to the long half-life modes (57% of layer-1 force, against 11% in PM1), whose occupations φ are about four times larger. The wells sharpened (κ²·d p95 3.03 against 1.13). The PM force recovered to 3.1 times the conservative force, half of PM1's.
+- **And it buys nothing:** perplexity equals SR2's at every eval. A memory carried by long-lived, sharp, shallow wells is not the memory PM1 used: deep, wide wells driven by the recent context (short half-lives).
+- **Reading.** PM1's perplexity gain and its refinement failure come from the same deep layer-1 wells. Bounding the wells removed both, and SR2 alone already supplies the refinement.
+
+**Options, for the author.**
+- **(a) c = 0.5 on SR2.** Cheap: a 5 h probe, and the "saturated" follow-up named above. It maps the trade-off, but PM1's useful depths reach 0.6, and wells scaled to 0.75 of PM1's already broke refinement at N = 4 (+968%, localization). Expected: some gain back, refinement at risk.
+- **(b) Integrate the wells exactly.** The wells fail refinement because they are a strong explicit kick (0.94 of PM1's layer-1 step). Their Hessian at the token is a sum of per-mode isotropic and rank-1 terms. The stiff part of the wells could join the exactly integrated low-rank flow, as V_θ's stiff modes did under SR2, leaving only a weak remainder in the kick. A design change: implementation, verification and pre-registration before any run.
+- **(c) Park the Poisson-mode line.** SR2 stands as the conservative, refinement-ready model; the memory remains a perplexity gain that refinement cannot keep.
+- **Author's decision, 2026-10-10: (b).**
+
+#### PMX: the wells integrated exactly — designed, verified and pre-registered **2026-10-10, before the run**
+
+**Phase 0, is (b) supported?** (`debug/pm_wells_curvature.py` on PM1's best weights; its rule of thumb was written into the script before the run.) The wells' Hessian at a token, with φ fixed, is H = αI − W: an isotropic part α = Σ_v 2κ_v² c_v E_v and an indefinite rank-K part W = Σ_v 4κ_v⁴ c_v E_v r_v r_vᵀ.
+
+| layer 1 | p05 / p50 / p95 |
+| --- | --- |
+| ω·Δt of the isotropic part | 2.00 / 2.10 / 2.18 |
+| ω·Δt of the stiffest direction | 2.04 / 2.18 / 2.26 |
+| unstable rate × Δt (radial direction; every token has one) | 0.89 / 0.97 / 1.05 |
+| force missed by the frozen full quadratic at the kick point, ÷ the force | 0.032 / 0.047 / 0.059 |
+| the same with the isotropic part only | 0.207 / 0.272 / 0.342 |
+
+- **The rule of thumb is met:** stiff (ω·Δt at the explicit wall of 2) and faithful (the quadratic leaves 4.7% of the force).
+- **Only the full quadratic qualifies;** the isotropic part alone leaves 27%.
+- **Layer 0's wells are weak and slightly repulsive** (α < 0 for every token). The design must and does handle negative curvature.
+
+**Design** (`poisson_wells_exact`; Cell 0 `POISSON_WELLS_EXACT`, tag `pmx`; requires SR2 and `langevin_T = 0`):
+1. **At the step's start, h₀.** In the per-layer flow this is at the layer's first substep. The wells' quadratic is taken there: F_w(h₀), α and (dW_v, r_v), φ from h₀'s context (`poisson_mode_quadratic`).
+2. **V_θ exactly as under SR2.** Its retained low-rank modes (`lowrank_max_modes`, scaled by √κ) and the wells' r_v columns form B. The spring on span(B) is B diag(+1, …, −dW_v) Bᵀ, diagonalised by `indefinite_lowrank_modes`: an orthonormal basis from the hardened Gram path, the restriction shifted to be PSD for the Jacobi SVD, then shifted back. α acts on all of ℝᵈ.
+3. **Both A half-steps are exact over all of ℝᵈ** (`lowrank_iso_damped_substep`). Modes have stiffness κ_i + α, the complement α, either sign. Damping is inside the flow and there is no O-step. The force carried is V_θ's retained-mode projection of its low-rank force plus the wells' quadratic, F_w(h₀) − H(h − h₀).
+4. **The kick keeps the remainder:** the true total force at h_mid (V_θ, V_φ, the wells with φ at h_mid) minus what the flow carries.
+5. **The forward value of every force is unchanged.** As in SR2, the spring's modes are detached and the forces live.
+6. **`damped_mode_coefficients` takes negative ω²** through the division branch. For ω² ≥ 0 its expressions are unchanged.
+
+**Verification** (`debug/verify_pm_wells_exact.py` and its output; HEAD from `git archive`):
+- **Off:** bit-identical to HEAD on PM1's and SR2's configurations and trained weights (eval logits, train loss, all 77 and 73 gradients), and `damped_mode_coefficients` bit-identical on ω² in {0} ∪ [1e-12, 1e2].
+- **On:**
+  - **Unit tests (float64):**
+    - coefficients for ω² < 0 against RK4: 1.6e-13;
+    - indefinite modes: they reconstruct B diag(s) Bᵀ to 2e-12 and are orthonormal;
+    - full-space substep against RK4: 6.9e-14;
+    - two half steps against one: 6.5e-15.
+  - **On PM1's trained weights:**
+    - the tag (`…pm64_pmx_sr2…`) and the 5b banner are right;
+    - the quadratic's force equals `poisson_mode_force` exactly;
+    - PMX and the explicit wells integrate the same ODE (their difference falls at second order, ratio 4.1 per halving of Δt; at the trained Δt they differ by 44%);
+    - causality is exact;
+    - gradients are finite and reach every pm_ parameter;
+    - the per-layer flow takes one quadratic per layer, and k = 1 equals the default;
+    - both guards fire.
+  - **Kick share (explicit part of the step):**
+
+    | | layer 0 | layer 1 |
+    | --- | ---: | ---: |
+    | explicit wells | 0.586 | **0.939** |
+    | PMX | 0.319 | **0.090** |
+
+  - **Cost:** 2.5 times the explicit step on the CPU (2 × 256 tokens). The GPU cost is unknown until the run starts; SR2 is 1.72 s/step.
+
+**Run.** F3.1's Cell 0 plus:
+- `POISSON_MODES = 64`;
+- `POISSON_MODE_CLIP = 0.3`;
+- `LOWRANK_DAMPED_FLOW = True`;
+- `POISSON_WELLS_EXACT = True`;
+- **no** depth cap: the point is to keep PM1's deep wells.
+
+Tag `…pm64_pmx_sr2_L2probe…`. Seed 0, WSD over 32,500 steps. The probe stops at `PROBE_MAX_STEPS = 8_000`.
+- **Cost watch:** if the first logged steps run above 3.5 s/step (about 32 h for the full run), stop and reconsider. Option: keep only the wells modes that matter per token; anything dropped stays in the kick.
+
+| step-8,000 PPL | next |
+| --- | --- |
+| 90.1 or lower (at least 3% better than SR2's 92.93) | continue to 32,500 |
+| 90.1–91.9 | weak signal; author's discretion |
+| above 91.9, or diverged | stop |
+
+At the probe stop, descriptive only: Cells 6b-7 and 6b-15.
+
+**Predictions:**
+
+| | prediction | called |
+| --- | --- | --- |
+| CX0 | step 8,000 at or below 84.0 (within 5% of PM1's 79.78) | 50% |
+| CX1 | settled at least 1% better than SR2 (at or below 57.74) | 55% |
+| CX1′ | settled at or below PM1's 55.17 | 30% |
+| CX2 | Gate 3 (standard) at N = 3 at or below SR2's 0.405 nats | 40% |
+| CX3 | **the per-layer flow converges** by FLOW-R's criterion on FLOW-R's batches: \|pen(16) − pen(12)\| ≤ 0.01 and \|pen(12) − pen(8)\| ≤ 0.02 nats | 50% |
+| CX3′ | its limit is within 0.25 nats of the trained step | 40% |
+| CX4 | Gate 1 (velocity reset) at or below +100% | 60% |
+| CX5 | the conservativity test passes (the force field is unchanged; only its integration differs) | 90% |
+| CX6 | the trained model's layer-1 kick share at most 0.3 (PM1: 0.94) | 75% |
+
+**Decision rule.**
+- **CX1, CX3 and CX3′ hit:** the conservative, refinement-ready model with a memory exists. It gets an HF card and is the arm named in the book, with SR2 as its no-memory comparison.
+- **CX3 hits, CX1 misses:** the exactly integrated wells refine but do not pay. The memory gain of PM1 needs its explicit, map-like use of the wells.
+- **CX1 hits, CX3 misses:** the gain survives but the flow does not converge. The remainder or the φ dynamics still break it, so read CX6 and the per-layer-flow kick share first.
+- **Both miss:** park the Poisson-mode line (option c).
+- **Scoring tools:** `refinement_flow_confirmation.py` needs a kind for this arm. It is added before scoring and checked against the harness and against `substeps_per_layer`.
+
 ### 5.16 F0: is there a shared floor near 50 PPL? The stable-phase extrapolation — **pre-registered 2026-10-06, before any fit**
 
 **Why.** Among the L=2 models with the register path, G2 (53.12), G3 (54.21) and G3′ (52.90) settle within 2.5% of each other, whatever else is switched on. L=4 Fock (50.10) and the 8-layer matched GPT-2 (49.81) end near 50. Is the floor set by depth, or by what every model shares: d = 384, the untied head and 532M tokens?
