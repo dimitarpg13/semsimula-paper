@@ -3997,6 +3997,59 @@ At the probe stop: Cells 6b-7 and 6b-15 on the probe checkpoint, descriptive. PM
 - **CAP3 hits, CAP1 misses:** bounding trades the memory gain for refinement. Next: (b), variable-step training on PM1, or c = 0.5.
 - **CAP3 misses:** a depth bound is not enough. Read the compensation channel above, then (b).
 
+#### PM1-cap amended: on the SR2 base — **2026-10-09, before the run** (author's decision)
+
+**Why.** FLOW-C and FLOW-R (§5.19) settled the base question the original text left open:
+- the per-layer flow converges on SR2;
+- it does not settle on F3.1's split step (C4);
+- PM1, on that split step, diverges under it (C5).
+
+A PM1-cap on the base without SR2 could therefore not become refinement-ready even if the cap works. The arm that can be conservative, refinement-ready and have a memory is PM1-cap on SR2. The original predictions CAP0–CAP6 above were never scored and are **superseded** by those below. The cost, recorded: against PM1 this arm changes two things, the cap and the integrator. Its memory gain is therefore read against SR2, the same integrator without modes.
+
+**Run.** F3.1's Cell 0 (`REVERSE_CHANNEL = False`, `VPHI_GRAD_PATH = XI_GRAD_PATH = 'live'`) plus:
+- `POISSON_MODES = 64`;
+- `POISSON_MODE_CLIP = 0.3`;
+- `POISSON_DEPTH_CAP = 0.3`;
+- `LOWRANK_DAMPED_FLOW = True`.
+
+Seed 0, WSD over 32,500 steps.
+- **Tag:** `…cgqk_norc_vplive_xilive_pm64_pmcap0p3_sr2_L2probe…idt4_lr0p0012_noattn`. It was checked locally through the notebook's Cells 0–5b. Cell 5b prints both banners, the model carries 64 modes, cap 0.3 and SR2 with γ = 0.1, and forward passes are finite at `substeps_per_layer` 1 and 4.
+
+**Stage 1, the probe.** `PROBE_MAX_STEPS = 8_000`, against SR2 at step 8,000 (92.93) and PM1 (79.78).
+
+| step-8,000 PPL | next |
+| --- | --- |
+| 90.1 or lower (at least 3% better than SR2) | continue to 32,500 from `_step8000_probe_stop.pt` |
+| 90.1–91.9 | weak signal; full run at the author's discretion |
+| above 91.9, or diverged | stop: the capped modes add nothing to SR2 |
+
+At the probe stop, descriptive only: Cells 6b-7 and 6b-15.
+
+**Predictions:**
+
+| | prediction | called |
+| --- | --- | --- |
+| CS0 | step 8,000 at or below 84.0 (within 5% of PM1's probe) | 55% |
+| CS1 | settled at least 1% better than SR2 (at or below 57.74) | 55% |
+| CS1′ | settled at or below PM1's 55.17 | 20% |
+| CS2 | Gate 3 (standard, 6b-7) at N = 3 at or below SR2's 0.405 nats | 45% |
+| CS3 | **the per-layer flow converges**, by FLOW-R's criterion on FLOW-R's batches (seed 20261009): \|pen(16) − pen(12)\| ≤ 0.01 and \|pen(12) − pen(8)\| ≤ 0.02 nats | 45% |
+| CS3′ | the limit is close to the trained step: pen(16) ≤ 0.25 nats | 40% |
+| CS4 | Gate 1 (velocity reset) at or below +100% | 60% |
+| CS5 | the conservativity test passes: wells exact, router term only at t < 16 | 95% |
+| CS6 | layer-1 PM1 force over conservative force below PM1's 4.7 | 75% |
+
+- **Descriptive, recorded with CS3:** the kick share. PM1's was 0.94 at layer 1, against SR2's 0.51. The cap is expected to bring it down, and CS3 depends on that.
+- **Compensation channel, as before:** the half-life median and κ²·d against PM1's 7.1 tokens and 0.80.
+- **Scoring tools:** 6b-7, 6b-13, 6b-15, the patched 6b-9 and 6b-12, and the local scripts with `pm64 pmcap0p3 sr2`.
+  - `refinement_flow_confirmation.py` needs a kind for this arm. It is added before scoring and checked, as for the other kinds, against the harness and against `substeps_per_layer`.
+
+**Decision rule.**
+- **CS1, CS3 and CS3′ hit:** PM1-cap on SR2 is the conservative, refinement-ready model with a memory. It gets an HF card and becomes the arm named in the book (§37.6, the abstract), with SR2 as its no-memory comparison.
+- **CS3 and CS3′ hit, CS1 misses:** refinement-ready, but the capped memory adds nothing over SR2. The cap is too tight for this base; next, c = 0.5 on SR2.
+- **CS1 hits, CS3 misses:** the memory gain is real but the wells still break the per-layer flow. Next, variable-step training (SR4a) on this arm, or a smaller cap.
+- **Both miss:** the Poisson-mode mechanism needs rethinking before any further arm.
+
 ### 5.16 F0: is there a shared floor near 50 PPL? The stable-phase extrapolation — **pre-registered 2026-10-06, before any fit**
 
 **Why.** Among the L=2 models with the register path, G2 (53.12), G3 (54.21) and G3′ (52.90) settle within 2.5% of each other, whatever else is switched on. L=4 Fock (50.10) and the 8-layer matched GPT-2 (49.81) end near 50. Is the floor set by depth, or by what every model shares: d = 384, the untied head and 532M tokens?
