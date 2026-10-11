@@ -1,0 +1,16 @@
+D-sync clustering diagnostics: f31  ....05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+   4 x 512 tokens (Cell 6b-7's first batch), layer inputs as the model used them
+
+layer 0   V_theta: K = 8 wells, G nominal rank 32
+   GATING  effective wells p05/p50/p95:  context w 6.06 / 7.04 / 7.58   proximity 4.76 / 5.82 / 6.51   responsibility g 2.70 / 3.55 / 4.38   (tokens on one well: 0%)
+   RANK    participation ratio p05/p50/p95 4.7 / 5.9 / 7.5;  above floor 32 of 32
+           Spearman(rank, .): context gating +0.33   proximity +0.30   responsibility +0.86   nearest-token distance +0.10
+   TOKENS  in : pairwise cos mean +0.099 (p95 +0.247; >0.9: 1.4%)  nn cos p50 0.993  |h| p50 2.9;  geodesic to token 1 by position 1-8: 1.49, 8-32: 1.48, 32-128: 1.48, 128-512: 1.50
+           out: pairwise cos mean +0.734 (p95 +0.856; >0.9: 1.5%)  nn cos p50 0.945  |h| p50 19.6;  geodesic to token 1 by position 1-8: 1.16, 8-32: 1.19, 32-128: 1.21, 128-512: 1.21
+
+layer 1   V_theta: K = 8 wells, G nominal rank 32
+   GATING  effective wells p05/p50/p95:  context w 1.00 / 1.00 / 1.00   proximity 1.00 / 1.00 / 1.00   responsibility g 1.00 / 1.00 / 1.00   (tokens on one well: 100%)
+   RANK    participation ratio p05/p50/p95 2.7 / 3.1 / 3.8;  above floor 4 of 32
+           Spearman(rank, .): context gating +0.01   proximity -0.32   responsibility +0.10   nearest-token distance -0.60
+   TOKENS  in : pairwise cos mean +0.734 (p95 +0.856; >0.9: 1.5%)  nn cos p50 0.945  |h| p50 19.6;  geodesic to token 1 by position 1-8: 1.16, 8-32: 1.19, 32-128: 1.21, 128-512: 1.21
+           out: pairwise cos mean +0.187 (p95 +0.505; >0.9: 0.2%)  nn cos p50 0.768  |h| p50 19.6;  geodesic to token 1 by position 1-8: 1.29, 8-32: 1.51, 32-128: 1.53, 128-512: 1.53

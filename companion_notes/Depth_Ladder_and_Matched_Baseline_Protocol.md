@@ -4667,6 +4667,14 @@ Penalty ln(PPL_N ÷ PPL_N=2), nats:
     - plus the same arms on PM1, whose occupation φ is part of the per-layer context. This is the test of whether PM1's wells refine under the same definition.
   - **SR4a's rationale changes.** Variable-step training is no longer needed to make SR2 refine under this definition. It remains the test for the stricter definition, in which the context is recomputed at every substep.
 
+#### D-sync: the two clustering mechanisms on the trained arms — descriptive, **2026-10-11**
+
+Companion note [`Two_Clustering_Mechanisms_Saturation_and_Synchronization.md`](Two_Clustering_Mechanisms_Saturation_and_Synchronization.md); `debug/dsync_clustering_diagnostics.py` on F3.1, SR2 and PM1, outputs in each arm's results folder. Not pre-registered: it answers two questions the author raised, whether the 2026-09-17 eigensolve failures were a clustering effect and whether synchronization bears on the Fock mechanism.
+- **The eigensolve failures were saturation, not clustering.** V_θ's well responsibility g_k = w_k exp(−e_k/2) has a context-gating factor and a proximity factor. At layer 1 the gating is one-hot for 100% of tokens in F3.1 and PM1 (effective wells 1.00 at p05, p50 and p95) and 64% in SR2; the low-rank factor G keeps 4, 8 and 12 of its 32 eigenvalues. The rank tracks the responsibility (Spearman +0.80 to +0.89 at layer 0) and not the distance to the nearest token (within ±0.17). V_θ's wells are per token, so its saturation cannot synchronize tokens.
+- **Token coherence is a transient of layer 0.** Mean pairwise cosine of the token states: 0.10–0.17 at the embeddings, 0.73 (F3.1), 0.60 (PM1) and 0.32 (SR2) after layer 0, 0.19 in all three after layer 1. One shared direction, under 1.5% of pairs above 0.9; no clusters, and no pull toward the first token (1.5 rad at every position).
+- **PM1's modes:** by overlap alone one broad mode is nearest to every token; the per-mode force share is the right assignment variable, not the overlap argmax.
+- **Follow-ups, none scheduled:** the α sweep of PM1's wells with the order parameter (a threshold reading of the PM1-cap null result); the distance histogram against depth on the L = 8 arm; a Kuramoto-type pair potential as an arm; a sequential Lyapunov argument for the per-layer flow (note §7).
+
 #### FLOW-C: confirmation of the per-layer flow — pre-registered **2026-10-09, before the run**
 
 **Why.** If it holds, this is the result that lets the conservative core claim property (R). The 4-batch diagnostic above was exploratory, and it has one open doubt: the exact flow of a frozen quadratic composes by construction, so only the explicit kick is really tested. FLOW-C repeats the test at the full 6b-7 sample with more step counts, measures the kick, and adds the control and PM1.
