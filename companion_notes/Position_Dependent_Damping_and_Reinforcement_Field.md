@@ -14,6 +14,8 @@
 > - **The gradient-cascade instability:** [`Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`](Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md)
 > - **Model code:** [`notebooks/conservative_arch/parf/model_parf.py`](../notebooks/conservative_arch/parf/model_parf.py)
 
+> **Update, 2026-10-11.** No arm has trained $\gamma(h)$ yet, but the SR2, PM1, PM1-cap and PMX arms changed what it is for. §11 records three findings: refinement readiness did not need it; the place where damping matters is the memory wells, and PMX now carries the mode basis that makes mode-resolved damping free; and LayerNorm is a constraint, not the damping. The roadmap of §10 is superseded by §11.4.
+
 
 > ### ⚠️ Correction — 2026-09-27: the $\gamma_{\text{geo}} \approx 0.9$ gap is a diagnostic artefact
 >
@@ -67,6 +69,7 @@
 8. [Impact on the two-regime formula](#8-impact-on-the-two-regime-formula)
 9. [Caveats and open questions](#9-caveats-and-open-questions)
 10. [Summary and next steps](#10-summary-and-next-steps)
+11. [What the October 2026 arms changed (2026-10-11)](#11-what-the-october-2026-arms-changed-2026-10-11)
 
 ---
 
@@ -1156,6 +1159,66 @@ Scale the winner to OpenWebText.
   of the potential-derived design (§9.5's falsifiable prediction), as a
   direct readout of whether stability pressure dominates the
   fine-settling intuition that motivated Section 4.1.
+
+---
+
+## 11. What the October 2026 arms changed (2026-10-11)
+
+Nothing here trained a position-dependent $\gamma$. The arms were SR2 (the exact damped flow of V_θ's stiff modes, protocol §5.19), PM1 and PM1-cap (the Poisson-mode wells, §5.15) and PMX (the wells integrated exactly, §5.15), all at constant $\gamma = 0.1$. Three of their results bear on this note.
+
+### 11.1 Refinement readiness did not need damping
+
+The note's §9.7 and the SR series expected mode-resolved or state-dependent damping to be part of making the layer step a sample of a flow. It was not.
+
+- SR2 keeps $\gamma = 0.1$ constant and integrates the damping exactly on the stiff subspace. Its stiff modes **stiffened** once the split integrator's phase error was gone: $\omega\Delta t$ rose from 4.3 (F3.1) to 8.9 at layer 0 (Cell 6b-13), so the damping ratio of the stiffest modes is
+
+$$
+\zeta = \frac{\gamma}{2\omega} = \frac{0.1 \cdot \Delta t}{2 \cdot \omega\Delta t} \approx \frac{0.4}{17.9} \approx 0.02,
+$$
+
+  badly underdamped, with about 1.4 rotations per layer step.
+- Under the per-layer flow (context, stiffness and projection fixed per layer) SR2's refinement **converges** anyway: FLOW-R, pre-registered and replicated on fresh batches, pen(8) 0.103, pen(12) 0.104, pen(16) 0.104 nats. The residual failure of F3.1 was integrator error, not under-damping.
+- So the rationale that SR3 (constant damping ratio $\zeta = 1$ across modes) inherited from the refinement question is gone. What constant-ratio damping still targets is settling, property (S), and the energy readings.
+
+### 11.2 The wells are where damping matters, and PMX built the tool
+
+The momentum dependence of the trained step sits in the layer-1 memory wells, and nowhere else:
+
+| arm | Gate 1 of Cell 6b-7 (incoming velocity reset) |
+|---|---:|
+| SR2 | +3.9% |
+| F3.1 | +34% |
+| PM1 | +10,600% (+11,737% at layer 1 alone, +0.3% with the wells off) |
+| PMX, step 8,000 | +30,600% |
+
+The trained step balances the velocity a token carries into layer 1 against the pull of deep, attractive wells; break the balance and the model collapses. Exact integration of the wells (PMX) fixed their refinement blow-up (Gate 3 at four steps: 5.12 nats for PM1, 0.76 for PMX at step 8,000) but not this dependence, because it changes how the wells are integrated, not how much the model leans on carried momentum.
+
+This is the configuration the note's §4.1 and §9.5 argued about from the other side. §4.1's fine-settling sign asked for the **lowest** damping at well centres, so that a token settles to the bottom; §9.5 worried that this starves damping where the training-time cascade is largest; §9.7 concluded that CfC makes the low-damping sign safe again because it removes the cascade. The new data add a third consideration that none of them had: at inference, low damping in deep wells produces a **momentum lock**, a step that is robust only at its trained velocity. That is a cost in robustness, not in training stability, and it argues for the opposite sign, critical damping where the wells are deep.
+
+PMX makes the test cheap, in exactly the way §9.7 anticipated for V_θ:
+
+- the exact propagator holds an orthonormal basis of the combined operator, V_θ's retained stiff modes plus the wells' quadratic $\alpha I - W$, in `indefinite_lowrank_modes_chol`, including the wells' negative-curvature radial direction;
+- `lowrank_iso_damped_substep` integrates the damped flow exactly on all of $\mathbb{R}^d$ with a scalar $\gamma$; replacing it by a per-mode rate,
+
+$$
+\gamma_i = \gamma_0 + 2 \zeta \omega_i \quad \text{on the modes with } \omega_i^2 \gt 0, \qquad \gamma_i = \gamma_0 \quad \text{on the rest}, \qquad \zeta = 1,
+$$
+
+  is the book's mode-resolved friction (§7a, "Friction resolved by mode") at no extra eigensolve;
+- the result is a state-dependent damping, set by the local curvature of V_θ **and** of the wells, with no hand-designed $\gamma(h)$ and no gradient through $\gamma$, and it is exactly integrated. It is the first form of position-dependent damping in the programme that costs nothing to add.
+
+That is SR3 on PMX. Its pre-registration waits for CX3, PMX's per-layer-flow test: if PMX already converges, SR3-on-PMX targets Gate 1 and (S); if it does not, SR3-on-PMX is also a candidate fix for (R). Either way the falsifiable prediction is the one §10.3 asked for in another form: critical damping in the wells lowers Gate 1 by an order of magnitude at a perplexity cost under 1%; if perplexity falls with it, the memory needs its underdamped wells, and the §4.1 sign wins on the data.
+
+### 11.3 LayerNorm is a constraint, not the damping
+
+The clustering note ([`Two_Clustering_Mechanisms_Saturation_and_Synchronization.md`](Two_Clustering_Mechanisms_Saturation_and_Synchronization.md), §1) settled a question this note left implicit. In the attention literature LayerNorm is modelled as the tangential projection onto the sphere, a holonomic constraint that removes the radial mode; constraint forces do no work. In our step the projection acts once per layer on the position while the velocity passes through, and the FLOW results showed the trained model samples that once-per-layer version, not a per-substep one. Whatever $\gamma(h)$ is meant to supply, it is not what LayerNorm supplies; the two levers are independent, and §2's accounting of dissipation should not count the projection as friction.
+
+### 11.4 What this does to the roadmap of §10
+
+- **Order.** SR3-on-PMX, the curvature-keyed and exactly integrated damping of §11.2, comes before any learned or potential-derived $\gamma(h)$ of §4: it tests the sign question of §4.1 against §11.2 with no new parameters and no stability risk.
+- **Corpus.** The §10.2 sequence started on TinyStories; the momentum lock is an OpenWebText, L = 2, Poisson-well phenomenon, so the test runs there, on the PMX checkpoint's configuration.
+- **Measurements to add** to any $\gamma(h)$ arm: Gate 1 of Cell 6b-7 and the per-layer-flow convergence (FLOW-R's criterion), beside perplexity and the settling check. The success criteria of §10.3 did not include robustness off the trained velocity; they should.
+- **The FO link of §10's last item** has a preview now: Gate 1 is the FO-a switch applied at inference, and the FO 2×2's second-order anchor has been moved to SR2 for that reason (checklist, FO series, 2026-10-11).
 
 ---
 
