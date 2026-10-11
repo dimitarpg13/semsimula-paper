@@ -4185,6 +4185,7 @@ At the probe stop, descriptive only: Cells 6b-7 and 6b-15.
 
 **Decision rule.**
 - **CX1, CX3 and CX3′ hit:** the conservative, refinement-ready model with a memory exists. It gets an HF card and is the arm named in the book, with SR2 as its no-memory comparison.
+- **Scope (added 2026-10-11):** CX1–CX6 score PMX at 532.5M tokens, a third of compute-optimal. A CX3 miss is a statement about this budget (§5.19 scope caveat, RT1–RT3), not about exactly integrated wells.
 - **CX3 hits, CX1 misses:** the exactly integrated wells refine but do not pay. The memory gain of PM1 needs its explicit, map-like use of the wells.
 - **CX1 hits, CX3 misses:** the gain survives but the flow does not converge. The remainder or the φ dynamics still break it, so read CX6 and the per-layer-flow kick share first.
 - **Both miss:** park the Poisson-mode line (option c).
@@ -4495,6 +4496,20 @@ Run output `L2probe_PMX16_on_SR2_8000steps_output.txt` in `results/…pm64_pmx16
 - **non-conservative (Fock) models** should at least be refinement-ready.
 
 This is property (R) of the book's §37.6 (`subsec:geom-requirements`), stated as a requirement for every arm. Refinement-related investigations are therefore high priority in the queue.
+
+> **Scope caveat: every refinement result is from an undertrained model (the author, 2026-10-11).** Every ladder arm trains on exactly 532.5M tokens (32,500 steps × 16,384). At 76.8M parameters that is about 7 tokens per parameter, a third of the compute-optimal budget of about 20 per parameter (about 1.5B tokens), and far from convergence. Every Gate 1–3 reading, FLOW-C, FLOW-R and the CX/RR/E scores in this section are therefore statements about **models at 0.5B tokens**, not about the architectures. A refinement failure here does not establish that the architecture cannot refine, and a pass does not establish that it stays refinement-ready. The book must carry the same scope.
+>
+> **The direction is a hypothesis, and the evidence is mixed.** For better refinement with training: refinement needs a smooth V_θ, and an undertrained potential is rough. Against: training stiffens some modes (ω·Δt median F3.1 4.00 at step 8,000 → 4.32 settled; and trained under SR2's exact flow, which charges no phase error, layer 0's settles at twice F3.1's, so training lets stiff modes climb where nothing penalises them), and the split step's phase error grows near θ = π; a longer-trained map may also be more tied to its step size. Not uniform: PM1's fell (3.00 → 2.81).
+>
+> **RT, the training-budget tests (pre-registered 2026-10-11):**
+>
+> | id | test | prediction | called at |
+> | --- | --- | --- | ---: |
+> | RT1 | free, within run: PMX's 6b-7 Gate 3 at N = 3, step 8,000 (0.584 nats) against its best checkpoint | the penalty falls with training | 60% |
+> | RT2 | free, where a step-8,000 probe checkpoint exists (PM1, PM1-cap): 6b-7 Gate 3 at N = 3 at step 8,000 against settled | the penalty falls in each | 50% |
+> | RT3 | a long run: SR2's Cell 0 at 4× the steps (130,000; 2.13B tokens, about 56 h), Gate 3 as trained and FLOW-R at the end | Gate 3 at N = 3 at or below 0.30 nats (0.405 at 0.5B); the per-layer flow still converges | 45% |
+>
+> RT1 and RT2 give a trend inside the WSD schedule and cost nothing beyond the scoring cells. They are confounded with the schedule (step 8,000 is mid-stable-phase, the best checkpoint is after the decay). RT3 is the real test. It needs the data pool checked first (about 2B tokens prepared: 130,000 steps is about one epoch, so a "few billion" run needs a larger OpenWebText slice), and its own arm registration with the WSD schedule rescaled to 130,000 steps. SR2 is the base because it is the fastest arm whose per-layer flow is known to converge (FLOW-R); PMX at 4× would take about 106 h.
 
 **The decomposition** (from §5.18 and the gate table). Two different mechanisms produce the refinement failures:
 
