@@ -660,6 +660,8 @@ adds a point to a curve.
 
 - [x] **D-sync, the two clustering mechanisms** (2026-10-11, descriptive; protocol §5.19 "D-sync"; note `Two_Clustering_Mechanisms_Saturation_and_Synchronization.md` with four figures). The 2026-09-17 eigensolve degeneracy was saturation of V_θ's context gating at layer 1 (one-hot for 100% of tokens in F3.1 and PM1), not token clustering; token coherence is a transient of layer 0 (pairwise cosine 0.73 after layer 0 in F3.1, 0.19 after layer 1). Follow-ups listed in the note's §7, none scheduled.
 
+- [ ] **D-sync on the Fock arms** (added 2026-10-11, descriptive; Doi–Peliti note §10, clustering note §5.2). On G2 and G3′, local checkpoints: the D-sync token geometry (`debug/dsync_clustering_diagnostics.py`, which needs a `g2` and a `g3p` kind: `REVERSE_CHANNEL = True`, and for G3′ the rfqk settings), plus three register-side quantities per layer: the entropy of the read-side softmax over registers (saturation), the coherence between a token's register increment and the value vectors of the registers it reads with the share of tokens on the same top register (synchronization onto the nuclei), and the layer-to-layer cosine of each register's content (nuclei stability). Puts G2 and G3′ on the same figure as F3.1, SR2 and PM1 and turns the nuclei-stability reading of H-RR into a measured axis. CPU, about an hour; no GPU.
+
 **Free queue, in order (updated 2026-10-05):**
 1. ~~DP1–DP3~~ done 2026-10-05.
 2. ~~CB0~~ done 2026-10-05.

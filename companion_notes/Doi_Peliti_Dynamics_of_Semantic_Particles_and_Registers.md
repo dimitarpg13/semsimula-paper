@@ -18,6 +18,7 @@ Companion note to Section 10.5.2 and Section 20 of the book, and to [*The Single
 7. [What the trained models implement: the DP series](#7-what-the-trained-models-implement-the-dp-series)
 8. [Consequences for the book, and a dictionary](#8-consequences-for-the-book-and-a-dictionary)
 9. [An alternative that is bosonic: Poisson-mode registers (PM1)](#9-an-alternative-that-is-bosonic-poisson-mode-registers-pm1)
+10. [The registers as a clustering mechanism (2026-10-11)](#10-the-registers-as-a-clustering-mechanism-2026-10-11)
 
 ---
 
@@ -490,5 +491,56 @@ $$
 - **The step stays conservative.** The occupation uses only $s \lt t$, so it is constant in $h_t$; the force is then the gradient of a sum of Gaussian wells, with a symmetric Jacobian and zero curl (PM1 note §4). Like V_φ, it is conservative per token and one-way between tokens (§5.3).
 - **What is not bosonic in effect.** With a linear coupling no measurement can show bosonic fluctuations; what is bosonic is the structure. A variant that samples the occupations in training would make the statistics consequential.
 - **Result so far.** The 8,000-step probe reached 79.78 PPL, against 93.57 for its conservative base F3.1 and 82.92 for G2, the slot-register model, at the same step (PM1 note §6). The full run and the refinement test decide what the book says.
+
+## 10. The registers as a clustering mechanism (2026-10-11)
+
+The attention-clustering literature (Geshkovski, Letrouit, Polyanskiy and Rigollet 2023a, 2023b; Karagodin, Polyanskiy and Rigollet 2024; summarised with our own measurements in [`Two_Clustering_Mechanisms_Saturation_and_Synchronization.md`](Two_Clustering_Mechanisms_Saturation_and_Synchronization.md)) finds that tokens cluster because an attractive coupling pulls each of them toward a weighted mean of shared targets, that the softmax's hardening sets the number and lifetime of the clusters, and that LayerNorm only bounds the motion. This section places the slot-register scheme of §3 in that picture. It is a structural reading; the measurement that would test it is listed at the end and in the checklist.
+
+### 10.1 The Fock path is a two-hop attention, and clusters for the same reason
+
+The register path is token to register to token. On the write side the creation gate is a QKV attention over the prefix; on the read side the reverse channel moves token $i$ by a softmax-weighted mean of the registers' value vectors,
+
+$$
+Q_i = \sum_{k} \alpha_k(h_i) W_V r_k, \qquad \alpha = \mathrm{softmax}\Big(\frac{K q_i}{\sqrt{d_k}}\Big),
+$$
+
+followed by the RMS normalisation and the per-layer gate (PM1 note §4.5). Every ingredient of the attention mechanism's clustering is present:
+
+| in attention | in the Fock path | what it does |
+|---|---|---|
+| the tokens' value vectors V x_j | the registers' value vectors W_V r_k, the same M = 32 targets for every token at a position | the shared targets that a contraction can pull toward |
+| the softmax row over tokens | the softmax over registers on the read side; a QKV attention over the prefix on the write side | the hardening (saturation): which register a token reads, which prefix tokens fill it |
+| the spectrum of V | the spectrum of W_V and the per-layer gate, for a whole head at once | the sign: attractive or repulsive. No pairwise sign as in V_φ's aligner |
+| tokens j ≤ i | registers at position t built from tokens ≤ t | the sequential, prefix-causal structure |
+
+So tokens that read the same registers are pulled toward the same vectors: a mean-field coupling through the register bank, one indirection away from attention's direct coupling. In the papers' classification the Fock mechanism is in the attention class, not the PARF class, and it can synchronize tokens on its own, by the same argument that attention does. Whether a model with only the Fock path and no conservative forces would, has not been trained and is not claimed.
+
+### 10.2 Three differences from attention
+
+1. **An indirection and a bottleneck.** The targets are register contents, not other tokens, and there are at most M of them. Where the attention papers find about $\beta^{(d_1 - 1)/2}$ metastable clusters, the Fock path caps the nuclei at M = 32 by construction. DP2 (§7) found the contents distinct across slots (1.3% duplication), so the cap is real: up to 32 distinct targets, not one.
+2. **No energy.** The reverse channel is not a gradient (Jacobian asymmetry 1.3–1.9 on the trained G2, protocol §5.15), so there is no interaction energy being ascended. Clustering here would be a contraction map, not a gradient ascent; the Lyapunov arguments of the second paper do not transfer, and the hierarchy-based proof of the causal paper is the one that could.
+3. **The nuclei move.** The metastable clusters of the papers need near-stationary nuclei (the strong Rényi centres of Karagodin et al., Lemma 5.1). The register contents are the nuclei here, and how fast they move is a measured quantity:
+
+| arm | first-layer destruction gate, median | share of the initial salience left after the last layer | the nuclei are |
+|---|---:|---:|---|
+| G2 (no exchange field) | 0.994 | 0.0007 | emptied and rewritten at every layer |
+| G3′ (hardened routing) | 0.478 | 0.0646 | about half persistent across layers |
+| PM1 / PMX (Poisson modes, §9) | fixed parameters | fixed parameters | imposed and permanent |
+
+This puts H-RR of protocol §5.18 on an axis. The hypothesis that a Fock model is refinement-ready when its register state accumulates is, in the clustering papers' terms, the statement that a flow needs nuclei that do not jump between substeps: refinement inserts extra read and write events, and a configuration contracting toward targets that are re-chosen at every event has no limit to converge to. G2 (+1,274% at 1.5× the steps) and G3′ (+115%) sit where that reading puts them. The Poisson modes are the fixed end of the axis, and their refinement failure (PM1 note §6.6) came from the strength of the pull, not from moving targets, which is the other way a contraction can fail to be a flow. This is a reading of existing numbers, not a test; the test is in §10.4.
+
+### 10.3 What is already known about the token side
+
+- Every token in the Fock arms is strongly forced by the register path (Cell 6b-12: 100% of last-layer tokens above the threshold on G2), so the coupling acts everywhere.
+- The D-sync measurement of the token geometry (pairwise cosines with depth, the pull toward the first token) has been run on F3.1, SR2 and PM1 only. On those arms the coherence is a transient of layer 0 and there are no clusters after layer 1. Nothing equivalent exists for G2 or G3′.
+
+### 10.4 The measurement
+
+On the G2 and G3′ checkpoints, which are local, three quantities per layer beside the D-sync token geometry:
+- the entropy of the read-side softmax, $\exp H(\alpha)$: how many registers a token reads (saturation);
+- the coherence between a token's register increment and the value vectors of the registers it reads, and the share of tokens whose top register is the same (synchronization onto the nuclei);
+- the layer-to-layer cosine of each register's content (the stability of the nuclei), beside the destruction-gate and salience numbers above.
+
+With those, G2 and G3′ go on the same figure as F3.1, SR2 and PM1, and the axis of §10.2 becomes a measured one. It is in the checklist's free queue as a descriptive item.
 
 **References.** M. Doi, Second quantization representation for classical many-particle system, J. Phys. A 9 (1976). L. Peliti, Path integral approach to birth-death processes on a lattice, J. Physique 46 (1985). U. C. Täuber, M. Howard and B. P. Vollmayr-Lee, Applications of field-theoretic renormalization group methods to reaction-diffusion problems, J. Phys. A 38 (2005). H. Risken, The Fokker–Planck Equation (Springer, 1989), for the Kramers operator.

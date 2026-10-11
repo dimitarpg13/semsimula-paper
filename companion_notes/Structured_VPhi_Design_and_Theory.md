@@ -50,6 +50,7 @@ Fock-PARFLM family — the analogue of
 14. [Recommendations](#14-recommendations)
 15. [Interaction with hybrid structured V_theta](#15-interaction-with-hybrid-structured-v_theta)
 16. [References](#16-references)
+17. [V_phi as the vehicle for Kuramoto-type clustering (2026-10-11)](#17-v_phi-as-the-vehicle-for-kuramoto-type-clustering-2026-10-11)
 
 ---
 
@@ -509,6 +510,51 @@ production configuration.
 - Hornik, K., **Approximation Capabilities of Multilayer Feedforward Networks**, Neural Networks 4(2),
   1991 — the universal-approximation basis for why an MLP V_phi can in principle express the
   structural form.
+
+---
+
+## 17. V_phi as the vehicle for Kuramoto-type clustering (2026-10-11)
+
+The attention-clustering literature (Geshkovski, Letrouit, Polyanskiy and Rigollet 2023a, 2023b; Karagodin, Polyanskiy and Rigollet 2024) finds that tokens cluster because an attractive pairwise coupling pulls each token toward a weighted mean of the others, with LayerNorm only bounding the motion, and that at $d = 2$ the dynamics is Kuramoto's model. The companion note [`Two_Clustering_Mechanisms_Saturation_and_Synchronization.md`](Two_Clustering_Mechanisms_Saturation_and_Synchronization.md) separates the hardening of the weights (saturation) from the synchronization of the states and locates both in our models. This section records where $V_\phi$ sits in that picture: it is the one direct token-to-token coupling in the conservative arms, and its structural form contains the Kuramoto coupling as a special case.
+
+### 17.1 The term-by-term mapping
+
+On the LayerNorm sphere the Kuramoto–Lohe coupling for token $i$ at fixed sources is the per-token energy
+
+$$
+V_{\mathrm{K}}(x_i) = -\sum_{j} J_{ij} \langle x_i, x_j \rangle, \qquad -\nabla_{x_i} V_{\mathrm{K}} = \sum_j J_{ij} x_j,
+$$
+
+whose tangential part on the sphere is Kuramoto's sine coupling at $d = 2$. Compare the structural form of Section 3, restricted to the causal sources $s \lt t$:
+
+$$
+V_\phi(h_t) = -C \sum_{s \lt t} \Theta_\phi(\theta_t, \theta_s) \tilde\Phi_\phi(l_t, l_s) \frac{1}{\sqrt{\lVert h_t - h_s \rVert^2 + \varepsilon^2}}.
+$$
+
+| Kuramoto–Lohe | structural V_φ | role |
+|---|---|---|
+| sign of J_ij | Θ_φ in [−1, 1], the value-aligner | attractive or repulsive: the "AR" of PARF |
+| magnitude of J_ij | C · Φ̃_φ, the competitive row-softmax over past sources | which pairs couple, and how much; Σ_s w_ts = 1 as in an attention row |
+| ⟨x_i, x_j⟩, the cosine kernel | 1 / r_ts, the Plummer-softened inverse distance | the radial law; its gradient points along r̂_ts as the cosine's does on the sphere |
+| all j | s < t | causal, one-way: Karagodin et al.'s "sequential gradient flow" |
+
+So the Lohe coupling is the structural form with Θ_φ fixed positive, Φ̃_φ uniform and the inverse-distance kernel replaced by the cosine. The framework's pair potential is a learned generalisation of the Kuramoto coupling, not a different object. Two of its learned degrees of freedom are exactly the two clustering mechanisms:
+
+- **Saturation (Mechanism 1)** lives in the competitive softmax and the top-k gather of Section 9: each token couples to its $k = \min(16, t)$ highest-scoring sources (16 is the production top-k), a hard assignment in the router, with the straight-through mask's non-gradient term measured on the trained arms (protocol §5.15: at most 0.98% of the force at $t \lt 16$ on PM1, up to 15% at the first positions on F3.1).
+- **Synchronization (Mechanism 2)** lives in the sign and size of $\Theta_\phi \tilde\Phi_\phi$. Where attention moves a token toward value vectors, so that the spectrum of the value matrix decides the destination, $V_\phi$ moves a token toward or away from the source states themselves. In Karagodin et al.'s terms the "value matrix" of $V_\phi$ is the identity when $\Theta_\phi \gt 0$, which is the case that collapses every token onto the first one (their Theorem 4.1), and minus the identity when $\Theta_\phi \lt 0$, the repulsive case that spreads them. The learned, pairwise sign is what stands between the two.
+
+### 17.2 What follows, and what the measurements already say
+
+- **A uniformly attractive $V_\phi$ would be the attention-collapse mechanism.** If training drove $\Theta_\phi$ positive on every coupled pair, the conservative arms would inherit the clustering of (CSA) with $V = I$: contraction toward the earliest tokens, metastable clusters, eventual collapse. The AR sign channel is the safeguard, and it is one the attention models do not have, because attention's sign is fixed by the value matrix's spectrum for the whole head.
+- **The trained arms do not collapse.** After layer 1 the mean pairwise cosine of the token states is 0.19 in F3.1, SR2 and PM1, the nearest-neighbour cosine 0.77, and the geodesic distance to the first token 1.5 rad at every position (clustering note §6.2). In F3.1, where $V_\phi$ carries a third of the layer-1 step (6b-9: it moves R by −0.29), that is consistent only with a mixed-sign or locally selective coupling. Whether it is the sign or the top-k locality that prevents collapse is the open measurement.
+- **Under the exact stiff-mode flow $V_\phi$ dropped out of the step** (SR2, 6b-9: −0.002), and in PM1 the Poisson-mode registers took its place. So the two token-coupling mechanisms of the conservative arms, the pair potential and the registers, traded places across arms rather than adding. Which coupling a model uses, and whether it uses both, is a design variable we have not controlled.
+- **Measurements to add to D-sync,** cheap on the existing checkpoints: the sign statistics of $\Theta_\phi$ over the selected pairs (the share of attractive couplings, per layer and per head); a per-pair order parameter, the cosine between a token and its top-k sources against the cosine to unselected tokens, which is where local synchronization would show; and the same on the first positions, where the router term lives.
+
+### 17.3 Design consequences
+
+1. **A Kuramoto-type arm is an ablation of the structural form, not a new mechanism.** Fix the value-aligner positive and the gate uniform, and swap the kernel for the cosine: the result is the Lohe model as a pair potential, conservative per token at fixed sources exactly as Section 8 requires. Miyato et al. 2025 report gains in robustness and binding from such oscillator networks; in our framework the test is whether the structural pair potential already learns what that arm imposes.
+2. **Over-synchronization is monitorable in flight.** The share of attractive couplings and the pairwise-cosine histogram per layer cost one forward pass; logging them beside the resonance monitor would catch a drift toward collapse before it costs perplexity.
+3. **The first-token attractor is a diagnostic.** Karagodin et al.'s Theorem 4.1 predicts contraction toward token 1 under uniform attraction. Its absence in our arms is evidence of the mixed sign; its appearance in any future arm would be the sign that $V_\phi$ has become attention-like.
 
 ---
 
