@@ -1,0 +1,23 @@
+Cell 6b-16 on the A100, 2026-10-11, fresh session before the continuation (split basis loaded)
+
+== explicit wells on SR2: 0.781 s per microbatch step (forward + backward); x 2 microbatches = 1.56 s per optimiser step (before eval and logging)
+   Vtheta lowrank_modes (SVD)         0.208 s  (6)
+     _gram_eigh (inside both)         0.199 s  (6)
+   SR2 exact substep                  0.175 s  (10)
+   wells force (kick)                 0.012 s  (4)
+   occupation phi                     0.008 s  (4)
+   top kernels: _linalg_svd 166.4 ms (6 calls, batched_svd_parallel_jacobi_32x16<double>); mul 102.9 ms; bmm 93.6 ms; mm 67.8 ms
+   Self CUDA time total: 709.761ms
+
+== PMX on SR2: 1.351 s per microbatch step (forward + backward); x 2 microbatches = 2.70 s per optimiser step (before eval and logging)
+   PMX exact substep                  0.327 s  (10)
+   PMX spring (eigensolves)           0.306 s  (6)
+     _gram_eigh (inside both)         0.304 s  (12)
+   Vtheta lowrank_modes (SVD)         0.209 s  (6)
+   PMX quadratic                      0.026 s  (6)
+   occupation phi                     0.020 s  (10)
+   wells force (kick)                 0.011 s  (4)
+   top kernels: _linalg_svd 359.3 ms (18 calls, batched_svd_parallel_jacobi_32x16<double>); bmm 151.6 ms; mul 142.3 ms; elementwise 71.4 ms; mm 68.2 ms; copy_ 57.0 ms
+   Self CUDA time total: 1.099s
+
+PMX / explicit wells, per microbatch step: 1.73x  (+0.570 s)

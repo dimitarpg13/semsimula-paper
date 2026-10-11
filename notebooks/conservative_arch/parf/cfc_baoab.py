@@ -668,6 +668,7 @@ def _sinhc(x: torch.Tensor) -> torch.Tensor:
 
 def damped_mode_coefficients(
     omega0_sq: torch.Tensor, gamma: torch.Tensor | float, t: float,
+    n_terms: int = 40,
 ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """(E12, E22, P, Q) of the exact flow of x'' + g x' + w0^2 x = a over t.
 
@@ -705,7 +706,7 @@ def damped_mode_coefficients(
     gt = g * t
     Tm, Tn = torch.zeros_like(w2), torch.full_like(w2, 0.5 * t * t)     # T_1, T_2
     Q_ser = Tn
-    for k in range(2, 42):                                     # T_3 .. T_41
+    for k in range(2, 2 + n_terms):                            # T_3 .. T_41 at the default 40
         Tm, Tn = Tn, -(gt * k * Tn + w2 * t * t * Tm) / ((k + 1) * k)
         Q_ser = Q_ser + Tn
     g_safe = torch.where(gt > 0, g, torch.ones_like(g))
@@ -839,6 +840,90 @@ def indefinite_lowrank_modes_split(
     return U.to(dt_in), kappa.to(dt_in)
 
 
+def series_terms_for(gamma_t: float, tol: float = 1e-18) -> int:
+    """Taylor terms :func:`damped_mode_coefficients` needs at gamma * t (host float).
+
+    Its series branch is used only where |omega0^2| t^2 < 1e-4, so the terms
+    fall at least as fast as (gamma t + 0.01)^n / n!. Returns the smallest
+    count, at least 8 and at most the default 40, that brings a term below
+    ``tol`` (relative to T_2): 12 at PMX's gamma t = 0.2. Identical to the
+    40-term sum to float64 rounding (PMX, 2026-10-11).
+    """
+    x, term, n = float(gamma_t) + 0.01, 1.0, 0
+    while n < 40:
+        n += 1
+        term *= x / (n + 2)
+        if n >= 8 and term < tol:
+            break
+    return n
+
+
+def _cholqr_basis(Rp: torch.Tensor, floor: float) -> Tuple[torch.Tensor, torch.Tensor]:
+    """Orthonormal columns spanning Rp's (float64), by Cholesky QR in two passes.
+
+    Columns with |r|^2 <= floor are inert: their Gram rows are decoupled to the
+    identity and their output columns zeroed. Two passes make the result
+    orthonormal to float64 rounding for condition numbers far beyond what PMX
+    meets (at most 2.1 on PM1's states, debug/verify_pmx_fast.py). One batched
+    Cholesky and one triangular solve per pass replace a Gram SVD, which on the
+    GPU costs a fixed 32 x 16 Jacobi tile whatever the width.
+    """
+    Rd = Rp.double()
+    M = Rd.shape[-1]
+    G = Rd.transpose(-1, -2) @ Rd
+    inert = G.diagonal(dim1=-2, dim2=-1) <= floor                  # (..., M)
+    eye = torch.eye(M, dtype=G.dtype, device=G.device)
+    pair = inert.unsqueeze(-1) | inert.unsqueeze(-2)
+    G = torch.where(pair, eye.expand_as(G), G)
+    Q = Rd
+    for _ in range(2):
+        L = torch.linalg.cholesky(G)
+        Q = torch.linalg.solve_triangular(L, Q.transpose(-1, -2), upper=False).transpose(-1, -2)
+        Q = torch.where(inert.unsqueeze(-2), torch.zeros_like(Q), Q)
+        G = Q.transpose(-1, -2) @ Q
+        G = torch.where(pair, eye.expand_as(G), G)
+    return Q, inert
+
+
+def indefinite_lowrank_modes_chol(
+    U0: torch.Tensor, kappa0: torch.Tensor, R: torch.Tensor, dW: torch.Tensor,
+    floor: float = 1e-10,
+) -> Tuple[torch.Tensor, torch.Tensor]:
+    """:func:`indefinite_lowrank_modes_split` with the well basis by Cholesky QR.
+
+    Same operator, same span, same restriction and shifted-SVD diagonalisation;
+    only the orthonormal basis of R's part outside span(U0) is built by two
+    Cholesky passes instead of a Gram SVD (PMX, 2026-10-11). Removes one of
+    the three batched SVDs per PMX layer step.
+    """
+    U0d, k0, Rd, sd = U0.detach(), kappa0.detach(), R.detach(), dW.detach()
+    dt_in = Rd.dtype
+    q, M = U0d.shape[-1], Rd.shape[-1]
+    Rp = Rd - U0d @ (U0d.transpose(-1, -2) @ Rd)
+    Qr, inert_r = _cholqr_basis(Rp, floor)
+    inert = torch.cat([U0d.norm(dim=-2) < 0.5, inert_r], dim=-1)
+    Q = torch.cat([U0d.double(), Qr], dim=-1)
+    Bd = torch.cat([U0d * k0.clamp(min=0).sqrt().unsqueeze(-2), Rd], dim=-1).double()
+    sg = torch.cat([torch.ones_like(k0), -sd], dim=-1).double()
+    n = q + M
+    Pm = Q.transpose(-1, -2) @ Bd
+    Mm = (Pm * sg.unsqueeze(-2)) @ Pm.transpose(-1, -2)
+    Mm = 0.5 * (Mm + Mm.transpose(-1, -2))
+    c = Mm.abs().sum(-1).amax(-1, keepdim=True).clamp(min=1e-300)
+    big = 10.0 * c + 1.0
+    eye = torch.eye(n, dtype=Mm.dtype, device=Mm.device)
+    Ms = Mm + c.unsqueeze(-1) * eye + torch.diag_embed(inert.double() * big)
+    ramp = torch.arange(n, device=Mm.device, dtype=Mm.dtype) * (1e-12 / max(n, 1))
+    Ms = Ms + torch.diag_embed(c * ramp)
+    Y, lam, _ = torch.linalg.svd(Ms)
+    kappa = lam - c - (Y * Y * (inert.double() * big).unsqueeze(-1)).sum(-2)
+    U = Q @ Y
+    dead = U.norm(dim=-2) < 0.5
+    U = torch.where(dead.unsqueeze(-2), torch.zeros_like(U), U)
+    kappa = torch.where(dead, torch.zeros_like(kappa), kappa)
+    return U.to(dt_in), kappa.to(dt_in)
+
+
 def lowrank_iso_damped_substep(
     h: torch.Tensor,
     v: torch.Tensor,
@@ -849,6 +934,7 @@ def lowrank_iso_damped_substep(
     m: torch.Tensor,
     gamma: torch.Tensor | float,
     dt: float,
+    n_terms: int = 40,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     """Exact flow over ``dt`` of  m x'' = f - K (x - h) - gamma m x',  x(0) = h, x'(0) = v,
 
@@ -864,8 +950,8 @@ def lowrank_iso_damped_substep(
     fz = torch.einsum('...dq,...d->...q', U, f)
     vc = v - torch.einsum('...dq,...q->...d', U, vz)
     fc = f - torch.einsum('...dq,...q->...d', U, fz)
-    E12s, E22s, Ps, Qs = (c.to(h.dtype) for c in damped_mode_coefficients((kappa + alpha) / m, gamma, dt))
-    E12c, E22c, Pc, Qc = (c.to(h.dtype) for c in damped_mode_coefficients(alpha / m, gamma, dt))
+    E12s, E22s, Ps, Qs = (c.to(h.dtype) for c in damped_mode_coefficients((kappa + alpha) / m, gamma, dt, n_terms))
+    E12c, E22c, Pc, Qc = (c.to(h.dtype) for c in damped_mode_coefficients(alpha / m, gamma, dt, n_terms))
     dz = E12s * vz + Qs * fz / m
     vz_new = E22s * vz + Ps * fz / m
     dc = E12c * vc + Qc * fc / m

@@ -4269,6 +4269,57 @@ Run output `L2probe_PMX16_on_SR2_8000steps_output.txt` in `results/…pm64_pmx16
 - **The resonance monitor was empty throughout.** semsimula-diag hooks `lowrank_cfc_substep` and `lowrank_damped_substep`, not PMX's `lowrank_iso_damped_substep`. Training is unaffected, but Cell 6b-13 will need the same one-line hook before it can read ω·Δt on this arm.
 - **Not yet received:** Cell 6b-15 (pre-registered as descriptive at the probe stop) and the GPU profile, Cell 6b-16.
 
+**At the probe stop, descriptive** (filed in the arm's results folder):
+
+| step 8,000 | **PMX** | PM1 | PM1-cap on SR2 |
+| --- | ---: | ---: | ---: |
+| 6b-15: layer-1 depth p05 / p50 / p95 | −0.097 / +0.241 / +0.468 | +0.130 / +0.349 / +0.601 | −0.119 / +0.249 / +0.293 |
+| 6b-15: layer-1 PM force / conservative force | **7.54** | 6.29 | 3.13 |
+| 6b-15: layer-1 force share, short / long half-life quartile | **38% / 5%** | 34% / 11% | 10% / 57% |
+| 6b-15: κ²·d p50 / p95 | 0.85 / 1.41 | 0.80 / 1.13 | 1.15 / 3.03 |
+| 6b-15: loss direction on pm_depth | +0.37 (outward) | +0.42 (outward) | −0.03 (blocked) |
+| 6b-7: Gate 3, N = 3 / 4 / 8 (nats) | 0.584 / 0.764 / 1.721 | 0.912 / 5.124 / 3.638 (final) | — |
+| 6b-7: Gate 1, velocity reset | **+30,600%** | +10,600% (final) | — |
+
+- **PMX learned PM1's memory, not the capped arm's.** Deep, wide layer-1 wells, driven by the recent context: short half-lives carry the force, κ² is unsharpened, the loss still pushes the depths outward, and no mode is dead. The force is even stronger than PM1's (7.5 times the conservative force). That fits the gain matching PM1's.
+- **Standard refinement already beats PM1 and, at N ≥ 4, SR2's final weights,** at step 8,000. PM1's blow-up at N = 4 (5.12 nats) is gone (0.76). N = 3 (0.584) is above SR2's 0.405, the CX2 threshold.
+- **The momentum dependence is larger than PM1's.** Gate 1 is +30,600%: the trained step still balances the incoming velocity against the deep layer-1 wells, which exact integration does not change. CX4 (Gate 1 at most +100%) is on course to miss.
+- **These readings describe the probe and score nothing.** CX2–CX6 are scored on the final weights; CX3 (per-layer flow convergence) is the (R) test.
+
+**Continuation, 2026-10-11:** a fresh session resumed from `_best.pt` (step 8,000, the same weights and optimizer state as `_step8000_probe_stop.pt`). Tag and Cell 5b checks as at the probe. The session loaded the split basis: the profile below labels its routine, and the SVD calls match the split path. Steps 8,001 onwards therefore run `indefinite_lowrank_modes_split`, the same model to float rounding.
+
+**GPU profile, Cell 6b-16** (A100, one microbatch of 16 × 512, forward and backward; `Cell-6b-16_PMX_GPU_step_profile_output.txt`):
+
+| | explicit wells on SR2 | PMX |
+| --- | ---: | ---: |
+| per microbatch step | 0.781 s | 1.351 s (1.73×) |
+| per optimiser step (2 microbatches, before eval and logging) | 1.56 s | 2.70 s |
+| SVD kernel time (batched Jacobi 32×16, float64) | 166 ms, 6 calls | **359 ms, 18 calls** |
+| exact substeps | 175 ms | **327 ms** |
+| occupation, quadratic, wells force | 20 ms | 57 ms |
+
+- **The eigensolves are a third of PMX's extra time.** Each batched SVD costs about 20 ms whatever its width up to 32: the kernel works in fixed 32 × 16 tiles. So the split basis's 16-wide solve costs on the GPU what the 32-wide one did. Its CPU gain does not carry over.
+- **The exact substeps are a quarter.** PMX projects onto 32 modes rather than 16, and evaluates `damped_mode_coefficients` (float64, with a 40-term series computed for every element under `torch.where`) on the span and the complement.
+- **Identical-math levers left:**
+  - an orthonormal well basis from a batched Cholesky of the 16 × 16 Gram instead of its SVD, saving 6 of the 18 SVD calls;
+  - evaluating the coefficients' Taylor series only where it is selected.
+  - Estimated together: about 0.3–0.4 s per optimiser step.
+- **The model-changing lever:** PMX at layer 1 only, which halves PMX's extra work.
+- **The running continuation is not changed.**
+
+**Identical-math speed-ups, implemented and verified 2026-10-11, for any resume or later PMX arm** (`debug/verify_pmx_fast.py` and its output):
+- **(a) `indefinite_lowrank_modes_chol`, now what PMX calls.** The well basis comes from two Cholesky QR passes instead of a Gram SVD, one batched SVD fewer per PMX layer step. The well directions outside span(U₀) are far from dependent: worst condition number 8.7 on PM1's states.
+- **(b) `series_terms_for`, PMX's substep only.** `damped_mode_coefficients` takes a term count, default 40, so SR2's path is unchanged. PMX passes the count needed at γ·Δt/2: 12 terms at 0.2, chosen on the host.
+- **Checks:**
+  - Cholesky QR is orthonormal to 8.9e-16;
+  - on the real states the Cholesky and split routines' operators agree to 8.2e-13. Both reconstruct L to 1.2e-5, the float32 floor of U₀;
+  - the short series equals the 40-term sum exactly on its branch, and the default call is unchanged;
+  - on PM1's weights, against the split path, logits agree to 1.0e-6, the train loss exactly, gradients to 2.8e-5, and the per-layer flow at k = 4 to 5e-7; the kick share is identical (0.1187).
+- **Full PMX verification re-run** (`debug/verify_pm_wells_exact.py`): off still bit-identical to HEAD on PM1 and SR2 and in `damped_mode_coefficients`; all on-checks pass, eigensolves 32 wide.
+- **CPU:** a train step 8% faster than the split path.
+- **GPU estimate from 6b-16:** about 0.25 s per optimiser step from (a) and some of the substep's 0.15 s from (b).
+- **Code by segment,** recorded for scoring: steps 1–8,000 ran the original basis; 8,001 onwards in the current session run the split basis. A resume in a fresh runtime after these are pushed would run (a) and (b). All are the same model to float rounding.
+
 ### 5.16 F0: is there a shared floor near 50 PPL? The stable-phase extrapolation — **pre-registered 2026-10-06, before any fit**
 
 **Why.** Among the L=2 models with the register path, G2 (53.12), G3 (54.21) and G3′ (52.90) settle within 2.5% of each other, whatever else is switched on. L=4 Fock (50.10) and the 8-layer matched GPT-2 (49.81) end near 50. Is the floor set by depth, or by what every model shares: d = 384, the untied head and 532M tokens?

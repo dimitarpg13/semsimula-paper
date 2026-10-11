@@ -1,0 +1,9 @@
+1a. Cholesky QR: orthonormality 8.9e-16; columns reproduced to 7.9e-16; inert column zeroed: True -> True
+1b. real states (PM1 weights, every PMX call of one forward): worst condition number of the well directions outside span(U0) 8.71
+2. operator on the real states: Cholesky vs split routine 8.2e-13; each against L 1.2e-05 (the float32 floor of U0, alike for both) -> True
+3. coefficients: short series (12 terms at gamma t 0.2) vs 40 terms on the series branch: worst rel |d| 0.0e+00; default call = 40 terms exactly: True -> True
+4a. model, PM1 weights, PMX on, new vs split path: logits max rel |d| 1.0e-06; train loss |d| 0.0e+00; worst gradient rel |d| 2.8e-05 (tensors above 1e-6 of the total norm); per-layer flow k = 4 logits 5.0e-07 -> True
+4b. layer-1 kick share: new 0.1187, split 0.1187 -> True
+5. CPU, one train step (2 x 256): new 10.7 s, split 11.6 s
+
+-> ALL PASS

@@ -287,10 +287,10 @@ say(f'8. guards: refuses without SR2 {refused[0]}, with langevin_T > 0 {refused[
 
 import model_parf_multixi as MPX
 widths = []
-orig_ilm = MPX.indefinite_lowrank_modes_split             # the routine PMX calls (2026-10-10)
+orig_ilm = MPX.indefinite_lowrank_modes_chol              # the routine PMX calls (2026-10-11)
 def ilm(U0, k0, R, dW, *a, **k):
     widths.append(U0.shape[-1] + R.shape[-1]); return orig_ilm(U0, k0, R, dW, *a, **k)
-MPX.indefinite_lowrank_modes_split = ilm
+MPX.indefinite_lowrank_modes_chol = ilm
 try:
     xb, _ = g['get_batch'](g['val_ids'], 16, 512, np.random.default_rng(20260920))
     xf = torch.from_numpy(xb)
@@ -299,7 +299,7 @@ try:
         model(xf)
     t_pmx_full = time.time() - t0
 finally:
-    MPX.indefinite_lowrank_modes_split = orig_ilm
+    MPX.indefinite_lowrank_modes_chol = orig_ilm
 model.cfg.poisson_wells_exact = False; model.cfg.lowrank_damped_flow = True
 t0 = time.time()
 with torch.enable_grad():

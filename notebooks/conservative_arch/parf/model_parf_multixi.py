@@ -69,7 +69,8 @@ from cfc_baoab import (  # noqa: E402
     decode_velocity,
     encode_velocity,
     lowrank_cfc_substep, lowrank_damped_substep,
-    indefinite_lowrank_modes, indefinite_lowrank_modes_split, lowrank_iso_damped_substep,
+    indefinite_lowrank_modes, indefinite_lowrank_modes_split, indefinite_lowrank_modes_chol,
+    lowrank_iso_damped_substep, series_terms_for,
     lowrank_modes,
     ou_step,
 )
@@ -1352,8 +1353,12 @@ class MultiXiPARFLM(SparsePARFLM):
                 # the same operator as indefinite_lowrank_modes on
                 # B = [th_U sqrt(th_kappa), r_v], signs [+1, -dW], with the basis
                 # built from th_U (already orthonormal): a 16-wide Gram solve, not 32
-                lr_U, lr_kappa = indefinite_lowrank_modes_split(
+                # 2026-10-11: the well basis by Cholesky QR (indefinite_lowrank_modes_chol),
+                # one batched SVD fewer than the split routine; same operator and span
+                lr_U, lr_kappa = indefinite_lowrank_modes_chol(
                     th_U, th_kappa, pm_r.transpose(-1, -2).to(lr_G.dtype), pm_dW.to(lr_G.dtype))
+                # the damped-mode series needs fewer terms at PMX's gamma * dt/2 (host float)
+                pm_nterms = series_terms_for(float(getattr(cfg, "fixed_gamma", 0.0) or 0.0) * half)
 
                 def _th_proj(f):
                     return torch.einsum('...dq,...q->...d', th_U,
@@ -1378,7 +1383,7 @@ class MultiXiPARFLM(SparsePARFLM):
             if pmx:
                 h_mid, v_mid = lowrank_iso_damped_substep(
                     h_in, v, lr_U, lr_kappa, pm_alpha_s, _th_proj(f_L) + _pm_quad_force(h_in),
-                    m_b, gamma, half,
+                    m_b, gamma, half, pm_nterms,
                 )
             elif getattr(cfg, "lowrank_damped_flow", False):
                 h_mid, v_mid = lowrank_damped_substep(
@@ -1457,7 +1462,7 @@ class MultiXiPARFLM(SparsePARFLM):
             if pmx:
                 h_new, v_new = lowrank_iso_damped_substep(
                     h_mid, v_mid, lr_U, lr_kappa, pm_alpha_s, _th_proj(f_L) + _pm_quad_force(h_mid),
-                    m_b, gamma, half,
+                    m_b, gamma, half, pm_nterms,
                 )
             elif getattr(cfg, "lowrank_damped_flow", False):
                 h_new, v_new = lowrank_damped_substep(
