@@ -80,6 +80,8 @@ every other number defensible.
 
 ### 3.2 Runs 10 and 11 — the V_φ × Fock factorial
 
+> **Superseded 2026-10-11 by §5.21 (VF),** the same factorial under live gradients and extended by a wells row. The predictions below were made on Gen 2 numbers and are not scored.
+
 Runs 10 and 11 are queued as a **pair**, because separately they are two
 more points and together they are a 2×2 factorial with two cells already
 measured:
@@ -3122,7 +3124,7 @@ The step-32,500 audit printed honest/standard PPL as nan, while its future pertu
 - **Key line 2, depth under live gradients: YES.** The L=4 live arm, at 50.10, is 5.7% better (a 3.02 PPL gap, larger than either arm's last-three spread). It costs 1.9× per step (3.12 vs 1.64 s/step). This is the first clean depth answer: one mechanism, one convention.
 - **Against the Gen 2 twin (66.98): −20.7%.** Against the matched GPT-2 (49.81): 1.067×.
 - **CB stop rule:** G2 < 56.6, so the CB series is **live**.
-- **CG1 V_φ forecast: HIT.** 6b-9 gives a V_φ share of **−0.0002** against the threshold |·| < 0.05. V_φ is inert in the L=2 Fock arm, as at L=4 (−0.0035), against −0.291 in F3.1. The substitution account now holds at both depths.
+- **CG1 V_φ forecast: HIT.** 6b-9 gives a V_φ share of **−0.0002** against the threshold |·| < 0.05. V_φ is inert in the L=2 Fock arm, as at L=4 (−0.0035), against −0.291 in F3.1. The substitution account now holds at both depths. *Amended 2026-10-11 (§5.20 CD2): "inert" is a displacement reading. Removed at inference, V_φ costs G2 0.037 nats (+3.7%): subordinate, not inert; the Fock channel costs 1.486.*
 
 **G2 6b readings, 2026-10-04** (best checkpoint, step 31,000; files in G2's results folder):
 
@@ -3904,7 +3906,7 @@ All on the full run's best checkpoint (step 30,500), outputs in `results/…pm64
 - **V_φ's straight-through router term,** measured exactly (score-head query detached against as trained), as a share of the total conservative force: 0 at positions t ≥ 16 in both layers; at 3 ≤ t < 16, median 0 and p95 0.98% (layer 0) and 0.009% (layer 1). F3.1 for comparison: p95 2.4% at layer 0 (t ≥ 16) and 15.2% at layer 1 (3 ≤ t < 16). **PM1's step is a gradient flow to within 1% of the force for its worst 5% of tokens, and only at the first 15 positions; cleaner than F3.1.**
 - **Scope** (as for F3.1): per token at fixed context (one-way between tokens, no global energy); the potential changes with layer; V_φ's hard top-k selection makes it a gradient piecewise (switches not measured).
 
-**6b-9 (patched, V_φ and the wells separated).** GATE 0 PASS. R(geo) 0.97. The wells carry the non-V_θ part of the step: they move R by −0.258 when added last and −0.262 when added first, V_φ by −0.017 (in F3.1 V_φ moved it by −0.29). At layer 1, V_θ plus the wells reproduce the step's velocity almost exactly (R_v 0.013). **In PM1 the wells have taken over V_φ's role.**
+**6b-9 (patched, V_φ and the wells separated).** GATE 0 PASS. R(geo) 0.97. The wells carry the non-V_θ part of the step: they move R by −0.258 when added last and −0.262 when added first, V_φ by −0.017 (in F3.1 V_φ moved it by −0.29). At layer 1, V_θ plus the wells reproduce the step's velocity almost exactly (R_v 0.013). **In PM1 the wells have taken over V_φ's role.** *Withdrawn 2026-10-11 (§5.20 CD4): removing V_φ costs PM1 0.324 nats, more than F3.1's 0.282. The wells carry the displacement; V_φ stays load-bearing.*
 
 **Causality** (`debug/causality_check_checkpoint.py … pm64`): future perturbation exactly 0 (5 cut points × 3 draws); batch independence exactly 0; prefix-only scoring max |d logit| 9.8e-2, leak tax +1.7e-3 nats ("CHECK"). **Explained, not a leak** (`pm1_prefix_length_check_output.txt`, `pm1_prefix_discrepancy_by_position_output.txt`): real against random future tokens at equal length give exactly identical logits at every length tested; the discrepancy lives only at positions 3–15 (top_k = 16) and vanishes when V_φ's router term is removed. The straight-through mask (m_hard − k y).detach() + k y uses k = min(top_k, T − 1), so at t < 16 a short prefix (k = t) and the full sequence (k = 16) scale the router term differently. Future content never matters. F3.1 shows the same effect (position 12, 5.9e-3); the causality script samples position 7, where only PM1's is large. Consequence: a small train/inference mismatch at the first 15 positions for every V_φ model. Remedy for future models: k from the per-row count of valid sources, min(top_k, t).
 
@@ -4851,6 +4853,89 @@ At N = L this is the trained model, bit for bit.
 - **SR4a moves up.** It targets the residual both integrators share, unless the LayerNorm-placement test above explains that residual first. That test runs on the CPU in minutes and should come before a GPU run.
 
 **Book.** If both tests hold, the decomposition becomes a subsection of book §37.6, in the next edition after the seed runs. With E1 scored, the subsection gains its scope statement: the exact flow removes the stiff-mode share of the refinement failure, not the fine-step limit.
+
+### 5.20 CD: one coupling takes over — what does each mechanism cost when it is removed? — **pre-registered 2026-10-11, before any measurement**
+
+**Why.** The 6b-9 attributions show V_φ carrying the non-V_θ part of the step in exactly one arm, F3.1 (−0.291), and moving it by less than 0.02 in every arm with a competitor: the Fock reverse channel (G2 −0.0002, the L=4 Fock arm −0.0035), the PM1 wells (−0.017, the wells −0.258), and SR2's exact V_θ flow (−0.002). That supports a partial order with V_φ at the bottom, but 6b-9 measures displacement, not importance, and the shares of different mechanisms are in different units (6b-9 attribution, η). This series gives every mechanism one unit: the perplexity cost of removing it at inference from the trained weights.
+
+**Method** (`debug/coupling_dominance_ablation.py OUT`, CPU, no training). Each arm is built through the ladder notebook's Cells 0–5b on its best checkpoint, eval mode, and scored on Cell 6b-7's 12 × 4 × 512 validation batches (seed 20260920). Switches, all reversible on the same weights:
+
+- **V_φ off:** `_pair_potential` returns the constant zero of the `pair_potential='none'` path, so f_φ = 0; the wells' force and the Fock increment are unaffected.
+- **Fock off** (G2): `reverse_channel_scale` set to 0, so tanh(0) = 0 and the increment vanishes.
+- **Wells off** (PM1): `pm_depth` set to 0.
+
+The cost of a removal is c = ln(PPL_removed / PPL_full) in nats, with a paired standard error over the 12 batches. Checks first, all exact: the identity patch of `_pair_potential` and every switch restored leave the logits bit-identical; the patched potential is called on every layer step.
+
+**Arms:** F3.1 (V_φ off); SR2 (V_φ off); G2 (V_φ off, Fock off, both); PM1 (V_φ off, wells off, both).
+
+**Readings, fixed now.** V_φ is *dormant* in an arm if c(V_φ) < 0.01 nats (1% PPL), and *load-bearing* if c(V_φ) ≥ 0.05.
+
+| id | prediction | called at |
+| --- | --- | ---: |
+| CD1 | F3.1: V_φ load-bearing, c ≥ 0.05 | 85% |
+| CD2 | G2: V_φ dormant, c < 0.01 | 70% |
+| CD3 | SR2: V_φ dormant, c < 0.01 | 65% |
+| CD4 | PM1: V_φ dormant, c < 0.01 | 55% |
+| CD5 | G2: c(Fock off) > c(V_φ off in F3.1): the displacing coupling carries more than the one it displaced | 65% |
+| CD6 | PM1: c(wells off) > c(V_φ off in F3.1) | 55% |
+
+**What the readings license.** CD2–CD4 together: "dormant" in the book means a removal cost below 1% PPL, not only a small displacement. CD5/CD6 rank the displacing mechanisms above V_φ in the common unit. A zero-shot removal measures the trained model's reliance on a term, not what a model trained without it would reach; it cannot test path-dependence, which is the CB series' job (CB1, CB2b, §5.10). Fock against the wells stays unranked: no arm carries both.
+
+#### CD scored: **3 of 6; "dormant" fails, the Fock channel dominates, the wells coexist with V_φ** — **2026-10-11**
+
+`debug/coupling_dominance_ablation.py` (output `coupling_dominance_ablation_output.txt`, `.json`). Every check exact: identity patch bit-identical and called on all 4 layer steps; every switch restored bit-identical. Cell 6b-7's batches reproduce the settled order (G2 51.99, PM1 53.71, F3.1 56.30, SR2 57.59).
+
+| arm | removal | c (nats) | PPL | | 6b-9 share of the same term |
+| --- | --- | ---: | ---: | --- | ---: |
+| F3.1 | V_φ | **+0.282** ± 0.013 | 56.30 → 74.64 | +33% | −0.291 |
+| SR2 | V_φ | +0.0135 ± 0.0010 | 57.59 → 58.38 | +1.4% | −0.002 |
+| G2 | V_φ | +0.037 ± 0.008 | 51.99 → 53.92 | +3.7% | −0.0002 |
+| G2 | Fock channel | **+1.486** ± 0.076 | → 229.67 | +342% | (η 1.6–3.1) |
+| G2 | both | +1.524 ± 0.081 | → 238.75 | +359% | |
+| PM1 | V_φ | **+0.324** ± 0.008 | 53.71 → 74.28 | +38% | −0.017 |
+| PM1 | wells | **+0.775** ± 0.052 | → 116.53 | +117% | −0.258 |
+| PM1 | both | +0.956 ± 0.061 | → 139.77 | +160% | |
+
+- **CD1 HIT.** V_φ is load-bearing in F3.1 (0.282, every batch above 0.22).
+- **CD2 MISS.** V_φ in G2 costs 0.037, above 0.01 on every batch. Not dormant: **subordinate**, 8× below its F3.1 cost and 40× below the Fock channel's.
+- **CD3 MISS, narrowly.** SR2's V_φ costs 0.0135: marginal, 21× below F3.1, but over the line fixed in advance.
+- **CD4 MISS, and it overturns a reading.** PM1's V_φ costs 0.324, *more* than in F3.1. "In PM1 the wells have taken over V_φ's role" (the PM1 6b-9 block below, and `Poisson_Mode_Registers_PM1.md` §6) is **withdrawn**: the wells carry the step's displacement, but the trained model relies on V_φ at least as much as F3.1 does.
+- **CD5 HIT.** The Fock channel's cost (1.486) is 5× V_φ's in F3.1.
+- **CD6 HIT.** The wells' cost (0.775) is 2.7× V_φ's in F3.1.
+
+**What it changes.**
+
+1. **6b-9 displacement is not reliance.** Shares of 0.0002 and 0.017 hid costs of 3.7% and 38%. Displacement is a single-step, layer-averaged replay; the removal propagates through both layers and the readout. No 6b-9 share is to be quoted as importance again without a removal cost beside it.
+2. **The Fock arm fits the exclusivity conjecture; the wells arm does not.** In G2 one coupling carries the model (1.49 against 0.037) and the two costs add (1.524 against 1.523): the remainder is a separate job, not a back-up. In PM1 two couplings are both load-bearing, and they overlap by 13% (0.956 against 1.099). The conjecture holds for the non-conservative register path, not for the conservative wells.
+3. **Partial order in the removal unit:** Fock channel (1.49) > wells (0.77) > V_φ uncontested (0.28–0.32) > V_φ beside Fock (0.037) > V_φ under SR2 (0.014). Fock against the wells is still not measured in one model.
+4. **Reliance overstates value.** Trained-without gains are much smaller: G2 against F3.1 0.084 nats (the Fock channel), PM1 against F3.1 0.046 (the wells), against zero-shot costs of 1.49 and 0.77. A removal cost says what this network routes through a term, not what a model trained without it would lose (the same overstatement as the Gen 3 field, +56% removed against −2.1% trained without).
+
+### 5.21 VF: is V_φ worth more beside the wells? The trained-without factorial — **pre-registered 2026-10-11, before any run**
+
+**Why.** §5.20 measured reliance: removed at inference, V_φ costs F3.1 0.282 nats, G2 0.037 and PM1 0.324. Reliance overstates value (the Fock channel's removal cost 1.49 against its trained-without gain 0.084), so it cannot say whether the wells *enhance* the pair potential or whether the Fock channel *substitutes* for it in training. Models trained without V_φ can. This is the live-gradient successor to runs 10 and 11 (§3.2), which were pre-registered on Gen 2 numbers and never run.
+
+**Arms.** F3.1's Cell 0 (live V_φ and ξ, the leapfrog-base `baoab_cfc_lowrank`, not SR2), so that the three measured arms are the matching cells. Seed 0, WSD on 32,500 steps, about 14 h each on one A100, run one at a time.
+
+| | with V_φ (measured) | without V_φ (`PAIR_POTENTIAL = 'none'`, tag `nophi`) |
+| --- | ---: | --- |
+| no other coupling | F3.1 57.76 | **VF0** |
+| wells (`POISSON_MODES = 64`) | PM1 55.17 | **VF1** |
+| Fock (`REVERSE_CHANNEL = True`) | G2 53.12 | **VF2** |
+
+**Readout.** V_φ's value in each setting: $v = \ln(\mathrm{PPL}\_{\text{without}} / \mathrm{PPL}\_{\text{with}})$, settled PPL (mean of the last three evals), so $v_0 = \ln(\mathrm{VF0}/57.76)$, $v_{\text{wells}} = \ln(\mathrm{VF1}/55.17)$, $v_{\text{Fock}} = \ln(\mathrm{VF2}/53.12)$.
+
+| id | prediction | called at |
+| --- | --- | ---: |
+| VF-a | V_φ is worth something uncontested: $v_0 \ge 0.03$ | 70% |
+| VF-b | the Fock channel substitutes in training: $v_{\text{Fock}} \le 0.01$ | 55% |
+| VF-c | the wells do not substitute: $v_{\text{wells}} \ge v_0 - 0.01$ | 55% |
+| VF-d | the wells enhance V_φ: $v_{\text{wells}} \gt v_0 + 0.02$ | 30% |
+
+**What the readings license.** VF-b and VF-c together: "the non-conservative route displaces the pair potential and the conservative route does not" holds in training, not only at inference (§5.20). VF-d licenses "the wells enhance the pair potential", which nothing measured so far does. VF1 also answers a question of its own: how far the wells carry the conservative route with no direct token-to-token term.
+
+**Before launch.** `PAIR_POTENTIAL = 'none'` was verified on 2026-10-01 for the multi-ξ and Fock builds (`debug/verify_pair_potential_none.py`), but never together with `POISSON_MODES > 0`. VF1 needs a switch check first: tag, Cell 5b banner, parameter count, forward and backward, the wells' force still the gradient at fixed occupation, causality.
+
+**Order and priority.** VF0 and VF1 first (the conservative-route claim), VF2 after. Behind PMX's scoring; the book's conservative-route paragraph does not wait on them, but it may say only "the wells work beside V_φ" until VF1 is scored.
 
 ## 6. Open risks
 

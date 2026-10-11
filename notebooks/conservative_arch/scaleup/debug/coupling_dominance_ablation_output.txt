@@ -1,0 +1,33 @@
+F3.1  ..._ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+  check: identity patch bit-identical, called 4x for L = 2 -> True
+  check: vphi        moves logits by max 1.65e+01; restored bit-identical -> True
+  full model: PPL 56.30 on 12 x 4 x 512 tokens
+  remove vphi       : PPL    74.64   c = +0.2821 +- 0.0126 nats (+32.6% PPL; batches +0.2260 .. +0.3695)
+
+SR2  ..._ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+  check: identity patch bit-identical, called 4x for L = 2 -> True
+  check: vphi        moves logits by max 7.41e+00; restored bit-identical -> True
+  full model: PPL 57.59 on 12 x 4 x 512 tokens
+  remove vphi       : PPL    58.38   c = +0.0135 +- 0.0010 nats (+1.4% PPL; batches +0.0072 .. +0.0204)
+
+G2  ..._ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+  check: identity patch bit-identical, called 4x for L = 2 -> True
+  check: vphi        moves logits by max 6.87e+00; restored bit-identical -> True
+  check: fock        moves logits by max 3.10e+01; restored bit-identical -> True
+  check: vphi+fock   moves logits by max 3.10e+01; restored bit-identical -> True
+  full model: PPL 51.99 on 12 x 4 x 512 tokens
+  remove vphi       : PPL    53.92   c = +0.0366 +- 0.0076 nats (+3.7% PPL; batches +0.0111 .. +0.0936)
+  remove fock       : PPL   229.67   c = +1.4857 +- 0.0757 nats (+341.8% PPL; batches +1.1708 .. +2.0245)
+  remove vphi+fock  : PPL   238.75   c = +1.5244 +- 0.0810 nats (+359.3% PPL; batches +1.1874 .. +2.0932)
+
+PM1  ..._ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+  check: identity patch bit-identical, called 4x for L = 2 -> True
+  check: vphi        moves logits by max 2.23e+01; restored bit-identical -> True
+  check: wells       moves logits by max 2.07e+01; restored bit-identical -> True
+  check: vphi+wells  moves logits by max 2.24e+01; restored bit-identical -> True
+  full model: PPL 53.71 on 12 x 4 x 512 tokens
+  remove vphi       : PPL    74.28   c = +0.3242 +- 0.0081 nats (+38.3% PPL; batches +0.2751 .. +0.3679)
+  remove wells      : PPL   116.53   c = +0.7745 +- 0.0518 nats (+116.9% PPL; batches +0.5534 .. +1.1712)
+  remove vphi+wells : PPL   139.77   c = +0.9563 +- 0.0614 nats (+160.2% PPL; batches +0.6982 .. +1.4518)
+
+-> checks ALL PASS

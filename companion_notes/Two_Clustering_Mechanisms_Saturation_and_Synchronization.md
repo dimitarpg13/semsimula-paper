@@ -181,6 +181,28 @@ The three papers agree on a hierarchy, and it is worth stating because LayerNorm
 
 **Which measurement separates them.** The responsibility (2.1) factorises, so the entropy of $w$ (gating alone), of $\exp(-e/2)$ (proximity alone) and of $g$ can be compared token by token, with the rank of $G$ beside them; and the token states' pairwise cosines, nearest-neighbour cosines and distances to the first token measure Mechanism 2 directly. If the rank deficit of $G$ tracks the gating entropy and not the inter-token distances, the 2026-09-17 degeneracy was saturation.
 
+### 5.3 Two routes for carrying context: conservative and non-conservative
+
+The book's conservative obstruction (Theorem 85, §17c) says a force map that is the gradient of one scalar on all $T$ token states cannot be asymmetric, content-decoupled and budget-normalised at once. Its corollary leaves two ways out: **(a)** extend the state space with auxiliary degrees of freedom, or **(b)** admit a force that is the gradient of no scalar. Both routes the book develops ("Two routes across the obstruction": the Fock registers and Fock Attention) take branch (b).
+
+The Poisson-mode registers take **branch (a) alone.** Their occupations $\phi_v(t)$ are auxiliary state, built from the strict past, and the force they exert on token $t$ is the gradient of a potential in $h_t$ at fixed occupation. V_φ is conservative in the same sense: a gradient in $h_t$ with its sources held fixed. "Conservative" here is the per-token sense of property (C) (book §37.6), not the global sense of the theorem: under causal masking no global potential exists for any of our arms (Karagodin et al.'s point, §4), but the per-token gradient survives, and it is what the conservativity test checks (PM1: all terms conservative, wells exact).
+
+So the trained arms carry context between tokens by two routes:
+
+| route | mechanism | force on token $t$ | arm | settled PPL |
+| --- | --- | --- | --- | ---: |
+| non-conservative, branch (b) | Fock slot registers, reverse channel | no gradient | G2 | 53.12 |
+| conservative, branch (a) | Poisson-mode wells + V_φ | gradient in $h_t$, context fixed | PM1 | 55.17 |
+| conservative, no auxiliary state | V_φ alone | gradient in $h_t$, sources fixed | F3.1 | 57.76 |
+
+**They treat the pair potential differently** (§6.4). The non-conservative channel subordinates V_φ; the conservative wells work beside it. Removed at inference, the Fock channel costs G2 1.49 nats and V_φ beside it 0.037; the wells cost PM1 0.77 and V_φ beside them 0.32, more than V_φ costs F3.1 alone (0.28), with only 13% overlap. The likely reason, untested: the reverse channel and V_φ do the same job, moving a token toward content drawn from specific earlier tokens, so one crowds the other out; the wells do a different one, pulling toward shared prototypes weighted by how much of the context occupied them, so the two add.
+
+**What this does not yet license.**
+
+- **"The wells enable V_φ."** 0.32 against 0.28 compares two models against their own baselines, and a removal cost measures the trained network's reliance on a term, not its value. Whether V_φ is *worth more* beside the wells needs models trained without it (§7 item 8; protocol §5.21).
+- **"Competing in expressivity."** The comparison is on perplexity. The corollary is about attention-like routing in the formal sense, which the F-falsifiers (Dyck tasks) test; neither route has been run on them.
+- **The decisive axis is still open.** A per-token gradient flow is what refinement needs, and the Fock route fails refinement badly (Gate 3 +1,274% at N = 3 in G2). If PMX passes CX3, the conservative route has an advantage the non-conservative one structurally cannot match.
+
 ---
 
 ## 6. Measurements on the trained arms
@@ -230,6 +252,23 @@ The three papers agree on a hierarchy, and it is worth stating because LayerNorm
 
 By the overlap alone (the creation rate of PM1 note equation 1.1, a Gaussian in the distance to the mode centre), every token's nearest mode is the same one at both layers (1 of 64 used; top overlap 0.92 at layer 0, 0.74 at layer 1). This is a property of the widths: a broad mode wins the overlap everywhere. The force, which weighs the overlap by occupation and depth, is spread over the modes (6b-15: 8 of 64 dead, short half-lives carrying most of the layer-1 force). So the overlap argmax is not the right assignment variable for PM1; the per-mode force share is. The measurement is recorded for the caveat it carries.
 
+### 6.4 Removal costs: which coupling carries the model
+
+`debug/coupling_dominance_ablation.py` (protocol §5.20, pre-registered and scored 2026-10-11): each coupling removed at inference from the trained weights, on Cell 6b-7's 12 × 4 × 512 batches, cost $c = \ln(\mathrm{PPL}\_{\text{removed}} / \mathrm{PPL}\_{\text{full}})$ in nats. Every switch exact (identity patch and restores bit-identical).
+
+| arm | remove V_φ | remove the other coupling | remove both | 6b-9 V_φ share |
+| --- | ---: | ---: | ---: | ---: |
+| F3.1 | **0.282** (+33%) | — | — | −0.291 |
+| SR2 | 0.014 (+1.4%) | — | — | −0.002 |
+| G2 | 0.037 (+3.7%) | Fock **1.486** (+342%) | 1.524 | −0.0002 |
+| PM1 | **0.324** (+38%) | wells **0.775** (+117%) | 0.956 | −0.017 |
+
+- **Displacement is not reliance.** The 6b-9 shares of 0.0002 and 0.017 hid costs of 3.7% and 38%. "V_φ inert" (G2) and "the wells took over V_φ's role" (PM1) are withdrawn.
+- **The Fock channel carries G2,** and the two costs add exactly (1.524 against 1.523): what V_φ still does there is a separate job.
+- **The wells and V_φ both carry PM1,** overlapping by 13% (0.956 against 1.099).
+- **Under SR2's exact flow V_φ is marginal** with no competitor at all: V_θ integrated exactly does most of its work.
+- **Reliance overstates value.** The trained-without gains are 0.084 nats for the Fock channel (G2 against F3.1) and 0.046 for the wells (PM1 against F3.1), against removal costs of 1.49 and 0.77.
+
 ---
 
 ## 7. Consequences and open questions
@@ -247,6 +286,7 @@ $$
    is a gradient per token at fixed sources, as V_φ is. Miyato et al. 2025 built networks of such oscillators with attention-like coupling. In our framework it would be a second pair potential, to be pre-registered like any other arm.
 6. **Over-synchronization is a failure mode to monitor,** the collapse of representations that deep attention stacks show. The order parameter and the pairwise-cosine histogram per layer are cheap to log in flight, as the resonance monitor is.
 7. **A theorem to try.** Karagodin et al. prove convergence without a global energy by using the causal hierarchy. Our conservative arms have the same hierarchy and, per token at fixed context, an energy that friction alone decreases (PM1 note §4.3). A sequential Lyapunov argument for the per-layer flow of SR2 would turn FLOW-R's measured convergence into a statement about the model class, which is what property (R) in the book asks for.
+8. **Does V_φ gain value beside the wells? The trained-without test.** §6.4 measures reliance. Value needs the models trained without V_φ (`PAIR_POTENTIAL = 'none'`), on F3.1's base so that the three measured arms are the other cells: no coupling, wells, Fock, each without V_φ. V_φ's worth in each setting is ln(PPL without / PPL with). If its worth beside the wells exceeds its worth uncontested, the wells enhance the pair potential; if it is near zero beside Fock, the channel substitutes for it in training as well as at inference. This is the live-gradient successor to the protocol's runs 10 and 11, which were never run. Pre-registered in protocol §5.21.
 
 ---
 

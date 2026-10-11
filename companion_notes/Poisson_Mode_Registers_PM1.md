@@ -432,7 +432,7 @@ Scored with `debug/pm1_post_run_measurements.py`, whose scoring rules were fixed
 - **The occupation is an intensity.** This is the opposite of the slot registers, whose salience was a retention probability (DP3, −0.41).
 - **PM1 has switched itself off at layer 0** and acts at layer 1, as attractive wells with about 4.7 times the conservative force.
 - **The wells act on every token, not sparsely.** Switching them off redirects each token's layer-1 step by a median 87% (Cell 6b-12), and 97.8% of tokens are above 75%.
-- **The wells have taken over V_φ's role.** Cell 6b-9 shows they carry the non-V_θ part of the step; V_φ's share fell from 0.29 in F3.1 to 0.017.
+- ~~**The wells have taken over V_φ's role.**~~ Cell 6b-9 shows they carry the non-V_θ part of the step; V_φ's share fell from 0.29 in F3.1 to 0.017. **Withdrawn 2026-10-11:** removed at inference, V_φ costs PM1 0.324 nats (+38% PPL), more than in F3.1 (0.282); the wells cost 0.775, and the two overlap by only 13%. The wells carry the displacement, but PM1 relies on both couplings (protocol §5.20, CD4).
 
 ### 6.6 Refinement: the wells are the problem
 
