@@ -1,0 +1,7 @@
+1. operator level: reconstruction split 2.2e-12, original 2.4e-12; orthonormality split 1.1e-12 -> True
+2. model, PM1 weights, PMX on: logits max rel |d| 2.4e-05; train loss |d| 1.9e-06; worst gradient rel |d| 3.3e-05 (tensors above 1e-6 of the total gradient norm) -> True
+3a. per-layer flow at k = 4: logits max rel |d| 1.2e-05
+3b. layer-1 kick share: split 0.1187, original 0.1187 -> True
+4. CPU, one train step (2 x 256): split 7.0 s (spring 3.12 s), original 7.7 s (spring 4.41 s); spring routine 1.41x faster
+
+-> ALL PASS

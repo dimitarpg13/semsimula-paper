@@ -1,0 +1,63 @@
+PMX step profile, CPU, 4 x 512 tokens, PM1 weights, train mode (forward + backward)
+
+== explicit wells on SR2: forward 7.97 s, backward 17.64 s, total 25.61 s
+   component (inclusive wall time in the forward pass and the checkpoint recompute; calls)
+   Vtheta lowrank_modes (SVD)            2.78 s  (6 calls)
+     _gram_eigh (inside both)            2.58 s  (6 calls)
+   SR2 exact substep                     0.34 s  (10 calls)
+   wells force (kick)                    0.19 s  (4 calls)
+   occupation phi (O(K T^2))             0.18 s  (4 calls)
+   top operators by self CPU time:
+   -------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  
+                                                      Name    Self CPU %      Self CPU   CPU total %     CPU total  CPU time avg    # of Calls  
+   -------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  
+                                                  aten::mm        32.15%        7.996s        32.16%        7.999s      11.033ms           725  
+                                                 aten::mul         9.35%        2.325s         9.40%        2.337s     495.470us          4717  
+                                               aten::addmm         7.39%        1.839s         7.76%        1.931s      18.216ms           106  
+                                                 aten::bmm         7.09%        1.764s         8.17%        2.031s       8.093ms           251  
+                                         aten::_linalg_svd         6.01%        1.495s         6.06%        1.506s     251.071ms             6  
+                                               aten::copy_         3.12%     775.054ms         3.12%     775.054ms     272.618us          2843  
+                                                 aten::add         2.86%     710.194ms         2.86%     710.806ms     501.274us          1418  
+                                                aten::add_         2.75%     684.825ms         2.75%     684.825ms     682.777us          1003  
+         autograd::engine::evaluate_function: MulBackward0         2.18%     542.682ms        20.37%        5.068s       4.988ms          1016  
+                                       aten::gelu_backward         1.93%     480.668ms         1.93%     480.880ms       6.679ms            72  
+                                              MulBackward0         1.74%     433.667ms        16.24%        4.039s       3.976ms          1016  
+                                     GeluBackwardBackward0         1.59%     396.045ms         5.11%        1.271s      70.613ms            18  
+                                  _gram_eigh (inside both)         1.55%     386.555ms        10.36%        2.577s     429.558ms             6  
+                                  NativeLayerNormBackward0         1.55%     385.624ms        17.11%        4.257s     125.210ms            34  
+   -------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  
+   Self CPU time total: 24.875s
+   
+
+== PMX pmx16 on SR2: forward 13.35 s, backward 22.44 s, total 35.79 s
+   component (inclusive wall time in the forward pass and the checkpoint recompute; calls)
+   PMX indefinite_lowrank_modes          6.47 s  (6 calls)
+     _gram_eigh (inside both)            5.18 s  (12 calls)
+   Vtheta lowrank_modes (SVD)            2.82 s  (6 calls)
+   PMX exact substep                     0.70 s  (10 calls)
+   occupation phi (O(K T^2))             0.40 s  (10 calls)
+   PMX quadratic                         0.37 s  (6 calls)
+   wells force (kick)                    0.18 s  (4 calls)
+   top operators by self CPU time:
+   -------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  
+                                                      Name    Self CPU %      Self CPU   CPU total %     CPU total  CPU time avg    # of Calls  
+   -------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  
+                                                  aten::mm        25.45%        8.872s        25.46%        8.875s      11.817ms           751  
+                                         aten::_linalg_svd        13.93%        4.855s        14.03%        4.891s     271.717ms            18  
+                                                 aten::mul         9.18%        3.201s         9.24%        3.220s     391.434us          8225  
+                                                 aten::bmm         7.30%        2.544s         8.08%        2.816s       8.773ms           321  
+                                               aten::addmm         5.56%        1.939s         5.83%        2.031s      19.164ms           106  
+                                               aten::copy_         3.83%        1.337s         3.83%        1.337s     276.900us          4827  
+         autograd::engine::evaluate_function: MulBackward0         2.34%     815.354ms        23.94%        8.345s       4.768ms          1750  
+                              PMX indefinite_lowrank_modes         2.33%     810.984ms        18.56%        6.471s        1.079s             6  
+                                                 aten::add         2.30%     802.271ms         2.30%     802.892ms     343.410us          2338  
+                                  _gram_eigh (inside both)         2.22%     773.821ms        14.85%        5.177s     431.412ms            12  
+                                                aten::add_         2.21%     770.438ms         2.21%     770.438ms     478.533us          1610  
+                                              MulBackward0         1.49%     520.037ms        19.97%        6.961s       3.978ms          1750  
+                                                 aten::sub         1.45%     504.216ms         1.45%     504.429ms       1.141ms           442  
+                                  NativeLayerNormBackward0         1.40%     487.247ms        20.26%        7.063s     207.735ms            34  
+   -------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  
+   Self CPU time total: 34.860s
+   
+
+PMX / explicit: forward 1.67x, backward 1.27x, total 1.40x

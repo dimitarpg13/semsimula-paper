@@ -69,7 +69,7 @@ from cfc_baoab import (  # noqa: E402
     decode_velocity,
     encode_velocity,
     lowrank_cfc_substep, lowrank_damped_substep,
-    indefinite_lowrank_modes, lowrank_iso_damped_substep,
+    indefinite_lowrank_modes, indefinite_lowrank_modes_split, lowrank_iso_damped_substep,
     lowrank_modes,
     ou_step,
 )
@@ -1349,10 +1349,11 @@ class MultiXiPARFLM(SparsePARFLM):
                     oversample=getattr(cfg, "lowrank_oversample", 4),
                     driver=getattr(cfg, "lowrank_driver", "svd"),
                 )
-                _Bm = torch.cat([th_U * th_kappa.clamp(min=0).sqrt().unsqueeze(-2),
-                                 pm_r.transpose(-1, -2).to(lr_G.dtype)], dim=-1)
-                _sg = torch.cat([torch.ones_like(th_kappa), -pm_dW.to(lr_G.dtype)], dim=-1)
-                lr_U, lr_kappa = indefinite_lowrank_modes(_Bm, _sg)
+                # the same operator as indefinite_lowrank_modes on
+                # B = [th_U sqrt(th_kappa), r_v], signs [+1, -dW], with the basis
+                # built from th_U (already orthonormal): a 16-wide Gram solve, not 32
+                lr_U, lr_kappa = indefinite_lowrank_modes_split(
+                    th_U, th_kappa, pm_r.transpose(-1, -2).to(lr_G.dtype), pm_dW.to(lr_G.dtype))
 
                 def _th_proj(f):
                     return torch.einsum('...dq,...q->...d', th_U,

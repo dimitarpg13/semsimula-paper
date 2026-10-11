@@ -793,6 +793,52 @@ def indefinite_lowrank_modes(
     return U.to(dt_in), kappa.to(dt_in)
 
 
+def indefinite_lowrank_modes_split(
+    U0: torch.Tensor, kappa0: torch.Tensor, R: torch.Tensor, dW: torch.Tensor,
+    floor: float = 1e-10,
+) -> Tuple[torch.Tensor, torch.Tensor]:
+    """:func:`indefinite_lowrank_modes` for ``L = U0 diag(kappa0) U0^T - R diag(dW) R^T``.
+
+    The same operator and span as ``B = [U0 sqrt(kappa0), R]`` with signs
+    ``[+1, -dW]``, but ``U0`` (..., d, q) is already orthonormal (or zero
+    columns), as :func:`lowrank_modes` returns it, so the basis only needs the
+    part of ``R`` (..., d, M) outside span(U0): a M x M Gram solve instead of a
+    (q + M) x (q + M) one (PMX, 2026-10-10; about 8x less basis work at
+    q = M = 16). The restriction is then diagonalised exactly as in
+    :func:`indefinite_lowrank_modes`. Returns ``U`` (..., d, q + M) and
+    ``kappa`` (..., q + M), detached.
+    """
+    U0d, k0, Rd, sd = U0.detach(), kappa0.detach(), R.detach(), dW.detach()
+    dt_in = Rd.dtype
+    q, M = U0d.shape[-1], Rd.shape[-1]
+    Rp = Rd - U0d @ (U0d.transpose(-1, -2) @ Rd)               # R outside span(U0)
+    Qr, sv = _gram_eigh(Rp)                                    # (..., d, M)
+    inert_r = ~(torch.isfinite(sv) & (sv * sv > floor))
+    Qr = torch.where(inert_r.unsqueeze(-2), torch.zeros_like(Qr), Qr)
+    Qr = torch.nan_to_num(Qr, nan=0.0, posinf=0.0, neginf=0.0)
+    inert = torch.cat([U0d.norm(dim=-2) < 0.5, inert_r], dim=-1)    # (..., q + M)
+    Q = torch.cat([U0d, Qr], dim=-1).double()                  # (..., d, q + M)
+    Bd = torch.cat([U0d * k0.clamp(min=0).sqrt().unsqueeze(-2), Rd], dim=-1).double()
+    sg = torch.cat([torch.ones_like(k0), -sd], dim=-1).double()
+    n = q + M
+    Pm = Q.transpose(-1, -2) @ Bd                              # (..., n, n)
+    Mm = (Pm * sg.unsqueeze(-2)) @ Pm.transpose(-1, -2)
+    Mm = 0.5 * (Mm + Mm.transpose(-1, -2))
+    c = Mm.abs().sum(-1).amax(-1, keepdim=True).clamp(min=1e-300)
+    big = 10.0 * c + 1.0
+    eye = torch.eye(n, dtype=Mm.dtype, device=Mm.device)
+    Ms = Mm + c.unsqueeze(-1) * eye + torch.diag_embed(inert.double() * big)
+    ramp = torch.arange(n, device=Mm.device, dtype=Mm.dtype) * (1e-12 / max(n, 1))
+    Ms = Ms + torch.diag_embed(c * ramp)
+    Y, lam, _ = torch.linalg.svd(Ms)
+    kappa = lam - c - (Y * Y * (inert.double() * big).unsqueeze(-1)).sum(-2)
+    U = Q @ Y
+    dead = U.norm(dim=-2) < 0.5
+    U = torch.where(dead.unsqueeze(-2), torch.zeros_like(U), U)
+    kappa = torch.where(dead, torch.zeros_like(kappa), kappa)
+    return U.to(dt_in), kappa.to(dt_in)
+
+
 def lowrank_iso_damped_substep(
     h: torch.Tensor,
     v: torch.Tensor,

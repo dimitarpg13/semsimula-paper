@@ -18,9 +18,9 @@ ON (F3.1 Cell 0 + POISSON_MODES = 64 + LOWRANK_DAMPED_FLOW + POISSON_WELLS_EXACT
    the explicit part at layer 1 at least halves -> True
 5. causality: tokens replaced at t >= 128, max |d logit| at t < 128 = 0.0e+00 -> True
 6. gradients finite: True; pm_ grad norms pm_mu 2.29e-01, pm_log_kappa2 3.62e-01, pm_logit_lambda 3.73e-01, pm_depth 3.18e+00 -> True
-   CPU cost of one train step, 2 x 256 tokens: PMX 8.9 s, explicit wells 6.0 s (1.48x)
+   CPU cost of one train step, 2 x 256 tokens: PMX 7.3 s, explicit wells 5.2 s (1.40x)
 7. per-layer flow: quadratics taken per forward at k = 4: 2 (one per layer, L = 2); at k = 1: 4 (the layer-checkpoint wrapper runs each step twice, as for every model); k = 1 vs default max |d| 0.0e+00 -> True
 8. guards: refuses without SR2 True, with langevin_T > 0 True, wider than 32 True -> True
-9. eigensolve widths seen: [32] (must be 32) -> True; eval forward 16 x 512 on the CPU: PMX 52.3 s, explicit wells on SR2 30.3 s (1.73x)
+9. eigensolve widths seen: [32] (must be 32) -> True; eval forward 16 x 512 on the CPU: PMX 41.0 s, explicit wells on SR2 25.4 s (1.62x)
 
 -> ALL PASS

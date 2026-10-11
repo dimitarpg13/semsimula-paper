@@ -4229,6 +4229,46 @@ At the probe stop, descriptive only: Cells 6b-7 and 6b-15.
 - **CX0–CX6 and the decision rule stand.** CX6's threshold (layer-1 kick share at most 0.3) was set before the design's own value on PM1's weights was known (0.119). It is recorded here and not revised.
 - The aborted `…pm64_pmx_sr2…` folder on Drive holds no checkpoint and may be deleted.
 
+**The `pmx16` probe launched 2026-10-10 at 2.92 s/step** (SR2: 1.72): under the 3.5 cap. Peak memory 26.1 GB. About 6.5 h to step 8,000.
+
+**Speed work, 2026-10-10, while the probe runs** (the running probe's code is not changed):
+- **CPU profile** (`debug/profile_pmx_step.py` and its output; one training step at 4 × 512 on PM1's weights). PMX is 1.40 times the explicit wells (forward 1.67×, backward 1.27×).
+  - The spring routine takes 6.5 s of the forward's 5.4 s excess plus recompute: 18 SVD calls against 6.
+  - The second occupation pass and the quadratic's tensors add 0.6 s.
+  - The backward grows by 4.8 s.
+- **A mathematically identical basis** (`indefinite_lowrank_modes_split`, now used by PMX). V_θ's retained modes are already orthonormal from SR2's solve, so only the 16 well directions are orthonormalised against them: a 16-wide Gram solve instead of a 32-wide one. Same operator and span.
+  - **Verified** (`debug/verify_pmx_split.py` and its output):
+    - the operator agrees to 2e-12;
+    - on PM1's weights, logits agree to 2.4e-5, the train loss to 1.9e-6 and every gradient-carrying tensor to 3.3e-5. The one outlier, `score_head.w2.bias`, has a gradient of about 1e-9;
+    - the per-layer flow at k = 4 agrees to 1.2e-5, and the kick share is identical (0.1187).
+  - **Gain on the CPU:** the spring routine is 1.41 times faster, the train step 9% faster.
+- **A GPU profile cell, Cell 6b-16** (smoke-tested on the CPU with CUDA calls stubbed; it changes no weight and restores the switches). For the probe stop: it times plain microbatch steps, PMX against explicit wells, and attributes the GPU time.
+- **For the continuation, if the gate passes:** with the repo pulled, the continuation runs the split basis, which is the same model to float rounding. The protocol records which code each segment ran. Larger savings change the model and would be separate arms: PMX at layer 1 only (layer 0's wells are about 0.1 of the conservative force), or 8 wells in the eigensolve.
+
+#### PMX probe scored at step 8,000: **79.43 — the gate passes; PMX keeps PM1's memory gain on the exact flow** — **2026-10-11**
+
+Run output `L2probe_PMX16_on_SR2_8000steps_output.txt` in `results/…pm64_pmx16_sr2_L2probe…/`. Steps 1–8,000 ran the original 32-wide basis (`indefinite_lowrank_modes`); the split basis was written during the run.
+
+| step | **PMX on SR2** | SR2 | PM1 | PM1-cap on SR2 | against SR2 | against PM1 |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1,000 | 237.99 | 242.50 | 238.54 | 243.52 | −1.9% | −0.2% |
+| 2,000 | 147.28 | 152.73 | 148.12 | 152.90 | −3.6% | −0.6% |
+| 3,000 | 122.15 | 129.07 | 122.34 | 128.73 | −5.4% | −0.2% |
+| 4,000 | 108.60 | 118.78 | 109.33 | 118.41 | −8.6% | −0.7% |
+| 5,000 | 96.46 | 108.37 | 97.23 | 107.44 | −11.0% | −0.8% |
+| 6,000 | 88.68 | 101.40 | 89.73 | 100.48 | −12.5% | −1.2% |
+| 7,000 | 83.46 | 95.60 | 84.45 | 95.25 | −12.7% | −1.2% |
+| **8,000** | **79.43** | 92.93 | 79.78 | 92.89 | **−14.5%** | **−0.4%** |
+
+- **Probe gate (at or below 90.1): PASS,** by 10.7 PPL. The arm continues to 32,500 from `_step8000_probe_stop.pt`.
+- **CX0 (step 8,000 at or below 84.0, called 50%): HIT.**
+- **The memory gain survives exact integration.** PMX tracks PM1 within 1.2% at every eval and is slightly ahead throughout. Where the depth cap erased the gain, integrating the deep wells exactly kept it.
+- **Causality:** SCAF CLEAN at step 5,000 (future perturbation 0, leak tax +2.2e-5 nats).
+- **Health:** no watchdog or spike event. The global norm exceeded 1.0 on 24 of 160 logged steps (15%, max 1.94), more than SR2 (2 of 160) or the capped arm (2 of 160). pm_ was the most-clipped group throughout, as in PM1.
+- **Speed:** 2.82 s/step over the probe.
+- **The resonance monitor was empty throughout.** semsimula-diag hooks `lowrank_cfc_substep` and `lowrank_damped_substep`, not PMX's `lowrank_iso_damped_substep`. Training is unaffected, but Cell 6b-13 will need the same one-line hook before it can read ω·Δt on this arm.
+- **Not yet received:** Cell 6b-15 (pre-registered as descriptive at the probe stop) and the GPU profile, Cell 6b-16.
+
 ### 5.16 F0: is there a shared floor near 50 PPL? The stable-phase extrapolation — **pre-registered 2026-10-06, before any fit**
 
 **Why.** Among the L=2 models with the register path, G2 (53.12), G3 (54.21) and G3′ (52.90) settle within 2.5% of each other, whatever else is switched on. L=4 Fock (50.10) and the 8-layer matched GPT-2 (49.81) end near 50. Is the floor set by depth, or by what every model shares: d = 384, the untied head and 532M tokens?
