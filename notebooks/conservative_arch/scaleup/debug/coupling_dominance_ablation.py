@@ -18,7 +18,10 @@ Switches, all reversible on the same weights:
 Checks first, all exact: the identity patch and every switch restored give
 bit-identical logits; the patch is called on every layer step.
 
-Usage: python3 coupling_dominance_ablation.py OUT_DIR
+Usage: python3 coupling_dominance_ablation.py OUT_DIR [ARM ...]
+  ARM from F3.1 SR2 G2 PM1 PMX (default: the four pre-registered arms;
+  PMX added 2026-10-11, after CD was scored, as a descriptive extension).
+  A subset writes coupling_dominance_ablation_<ARMS>_output.txt.
 """
 import json, sys, types
 from pathlib import Path
@@ -28,6 +31,7 @@ import torch
 import torch.nn.functional as F
 
 OUT = Path(sys.argv[1])
+SELECT = sys.argv[2:]
 sys.argv = [sys.argv[0], str(OUT / 'harness')]
 HERE = Path(__file__).parent
 sys.path.insert(0, str(HERE))
@@ -35,6 +39,7 @@ import verify_pm_switch as P
 
 N_BATCH, BATCH, BLOCK = 12, 4, 512
 SR2 = (("LOWRANK_DAMPED_FLOW  = False", "LOWRANK_DAMPED_FLOW  = True"),)
+PMXS = (("POISSON_WELLS_EXACT  = False", "POISSON_WELLS_EXACT  = True"),)
 _T = 'semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_'
 _E = '_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn'
 ARMS = {   # name: (folder, Cell 0 replacements, removals)
@@ -42,7 +47,10 @@ ARMS = {   # name: (folder, Cell 0 replacements, removals)
     'SR2': (_T + 'sr2' + _E, P.CONFIGS['F3.1'][1] + SR2, ['vphi']),
     'G2': (P.G2_F, P.CONFIGS['G2'][1], ['vphi', 'fock', 'vphi+fock']),
     'PM1': (_T + 'pm64' + _E, P.CONFIGS['F3.1'][1] + P.PM_ON, ['vphi', 'wells', 'vphi+wells']),
+    'PMX': (_T + 'pm64_pmx16_sr2' + _E, P.CONFIGS['F3.1'][1] + P.PM_ON + SR2 + PMXS, ['vphi', 'wells', 'vphi+wells']),
 }
+RUN = SELECT or ['F3.1', 'SR2', 'G2', 'PM1']
+assert all(a in ARMS for a in RUN), RUN
 
 lines = []
 say = lambda s='': (print(s, flush=True), lines.append(s))
@@ -109,14 +117,16 @@ def nll(model, batches):
 
 results = {}
 ok_all = True
-for name, (folder, repl, removals) in ARMS.items():
+for name in RUN:
+    folder, repl, removals = ARMS[name]
     model, g, _ = P.build(folder, repl)
     model.to('cpu'); model.eval()
     sw = Switches(model)
     L = model.cfg.L
     assert ('fock' in ' '.join(removals)) == (model.reverse_ch is not None), name
     assert ('wells' in ' '.join(removals)) == (getattr(model, 'pm_mu', None) is not None), name
-    assert bool(getattr(model.cfg, 'lowrank_damped_flow', False)) == (name == 'SR2'), name
+    assert bool(getattr(model.cfg, 'lowrank_damped_flow', False)) == (name in ('SR2', 'PMX')), name
+    assert bool(getattr(model.cfg, 'poisson_wells_exact', False)) == (name == 'PMX'), name
 
     rng = np.random.default_rng(20260920)                       # Cell 6b-7's batches
     batches = [g['get_batch'](g['val_ids'], BATCH, BLOCK, rng) for _ in range(12)][:N_BATCH]
@@ -159,5 +169,6 @@ for name, (folder, repl, removals) in ARMS.items():
     del model
 
 say(f'-> checks {"ALL PASS" if ok_all else "FAILURES ABOVE"}')
-(HERE / 'coupling_dominance_ablation_output.txt').write_text('\n'.join(lines) + '\n')
-(HERE / 'coupling_dominance_ablation.json').write_text(json.dumps(results, indent=1))
+stem = 'coupling_dominance_ablation' + ('' if not SELECT else '_' + '_'.join(RUN).replace('.', ''))
+(HERE / f'{stem}_output.txt').write_text('\n'.join(lines) + '\n')
+(HERE / f'{stem}.json').write_text(json.dumps(results, indent=1))

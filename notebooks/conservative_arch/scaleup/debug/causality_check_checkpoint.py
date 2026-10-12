@@ -43,6 +43,8 @@ RG = sys.argv[7] if len(sys.argv) > 7 else 'default'
 #   'pmclip<thr>'   POISSON_MODE_CLIP = thr, e.g. pmclip1 (only the tag reads it)
 #   'pmcap<c>'      POISSON_DEPTH_CAP = c, e.g. pmcap0p3 (PM1-cap, 2026-10-08)
 #   'sr2'           LOWRANK_DAMPED_FLOW = True (SR2, protocol SS5.19, 2026-10-08)
+#   'pmx<M>'        POISSON_WELLS_EXACT = True, POISSON_WELLS_EXACT_MODES = M (PMX, 2026-10-11);
+#                   with pm64 and sr2, e.g. ... pm64 sr2 pmx16
 #   e.g. PM1:  ... OUT semsimula_..._pm64_L2probe_..._noattn False live live none default pm64
 import re as _re
 for _extra in sys.argv[8:]:
@@ -57,8 +59,11 @@ for _extra in sys.argv[8:]:
         _subs = (("POISSON_DEPTH_CAP    = None", f"POISSON_DEPTH_CAP    = {float(_extra[5:].replace('p', '.'))}"),)
     elif _extra == 'sr2':
         _subs = (("LOWRANK_DAMPED_FLOW  = False", "LOWRANK_DAMPED_FLOW  = True"),)
+    elif _re.fullmatch(r'pmx\d+', _extra):
+        _subs = (("POISSON_WELLS_EXACT  = False", "POISSON_WELLS_EXACT  = True"),
+                 ("POISSON_WELLS_EXACT_MODES = 16", f"POISSON_WELLS_EXACT_MODES = {int(_extra[3:])}"))
     else:
-        raise SystemExit(f'unknown option {_extra!r} (expected rfqk, pm<K>, pmclip<thr>, pmcap<c>, sr2)')
+        raise SystemExit(f'unknown option {_extra!r} (expected rfqk, pm<K>, pmclip<thr>, pmcap<c>, sr2, pmx<M>)')
     for _old, _new in _subs:
         assert G.cells['Cell 0:'].count(_old) == 1, _old
         G.cells['Cell 0:'] = G.cells['Cell 0:'].replace(_old, _new)

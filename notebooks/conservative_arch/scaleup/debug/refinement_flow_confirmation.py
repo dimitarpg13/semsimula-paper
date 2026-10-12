@@ -19,7 +19,12 @@ Checks first, all exact: switches off = 6b-7's _fom_stack; per-layer flow at
 N = 2 = trained; one fresh xi / quadratic (/ phi) per trained layer at N = 8;
 the replay with the normal clamp reproduces the captured output.
 
-Usage: python3 refinement_flow_confirmation.py OUT_DIR FOLDER {f31|sr2|pm1} [seed=<int>]
+Usage: python3 refinement_flow_confirmation.py OUT_DIR FOLDER {f31|sr2|pm1|pmx} [seed=<int>]
+  pmx (CX3, 2026-10-11): SR2 + 64 Poisson modes with the wells integrated
+  exactly; the per-layer flow also freezes the wells' quadratic and its
+  linearisation point at the share's first substep (split_stack pmq_freeze),
+  and is checked against the model's own substeps_per_layer path.
+  checks: run the checks only (exit before the kick share and Gate 3).
   seed=<int> (FLOW-R, 2026-10-09): draw the 12 batches with this seed instead
   of Cell 6b-7's 20260920, and run 'as trained' at N = 2 and 8 only.
 """
@@ -35,20 +40,24 @@ N_BATCH, BATCH, BLOCK = 12, 4, 512
 if __name__ == '__main__':
     OUT = Path(sys.argv[1]); FOLDER = sys.argv[2]; KIND = sys.argv[3]
     SEED = next((int(a[5:]) for a in sys.argv[4:] if a.startswith('seed=')), None)
-    assert KIND in ('f31', 'sr2', 'pm1'), KIND
+    CHECKS_ONLY = 'checks' in sys.argv[4:]
+    assert KIND in ('f31', 'sr2', 'pm1', 'pmx'), KIND
     sys.argv = [sys.argv[0], str(OUT / 'harness')]
     sys.path.insert(0, str(Path(__file__).parent))
     import verify_pm_switch as P
     from refinement_ln_linearisation_split import split_stack
     repl = P.CONFIGS['F3.1'][1]
-    if KIND == 'sr2':
+    if KIND in ('sr2', 'pmx'):
         repl = repl + (("LOWRANK_DAMPED_FLOW  = False", "LOWRANK_DAMPED_FLOW  = True"),)
-    if KIND == 'pm1':
+    if KIND in ('pm1', 'pmx'):
         repl = repl + P.PM_ON
+    if KIND == 'pmx':
+        repl = repl + (("POISSON_WELLS_EXACT  = False", "POISSON_WELLS_EXACT  = True"),)
     model, g, _ = P.build(FOLDER, repl)
     model.to('cpu'); model.eval()
-    assert bool(getattr(model.cfg, 'lowrank_damped_flow', False)) == (KIND == 'sr2')
-    assert (getattr(model, 'pm_mu', None) is not None) == (KIND == 'pm1')
+    assert bool(getattr(model.cfg, 'lowrank_damped_flow', False)) == (KIND in ('sr2', 'pmx'))
+    assert (getattr(model, 'pm_mu', None) is not None) == (KIND in ('pm1', 'pmx'))
+    assert bool(getattr(model.cfg, 'poisson_wells_exact', False)) == (KIND == 'pmx')
     assert model.cfg.integrator == 'baoab_cfc_lowrank' and model.reverse_ch is None and model.cfg.ln_after_step
     assert model.cfg.force_clamp_max is None
 
@@ -64,7 +73,9 @@ if __name__ == '__main__':
     L, DT = model.cfg.L, model.cfg.dt
     T = L * DT
     PM = KIND == 'pm1'
-    FLOW = dict(ln_once=True, freeze=True, xi_freeze=True, phi_freeze=PM)
+    PMX = KIND == 'pmx'
+    # PMX: phi is frozen by the flow context (with the wells' quadratic), not by split_stack's call-index cache
+    FLOW = dict(ln_once=True, freeze=True, xi_freeze=True, phi_freeze=PM, pmq_freeze=PMX)
     TRAINED = dict(ln_once=False, freeze=False, xi_freeze=False, phi_freeze=False)
 
     lines = [f'{"FLOW-C" if SEED is None else "FLOW-R"}, the per-layer flow: {KIND}  ...{FOLDER[-70:]}',
@@ -87,11 +98,33 @@ if __name__ == '__main__':
         say(f'CHECK  N={n}: as trained vs Cell 6b-7 _fom_stack, max |d logit| {d:.1e}')
     d = float((logits(stack(2, FLOW)) - logits(stack(2, TRAINED))).abs().max()); ok &= d == 0.0
     say(f'CHECK  N=2: per-layer flow vs the trained model, max |d logit| {d:.1e}')
-    with stack(8, FLOW) as st, torch.enable_grad():
-        model(x)
-    fresh = (st['fresh'], st['xfresh']) + ((st['pfresh'],) if PM else ())
+    nq = [0]
+    if PMX:
+        orig_pmq = model.poisson_mode_quadratic
+        def count_pmq(*a, **k):
+            nq[0] += 1
+            return orig_pmq(*a, **k)
+        model.poisson_mode_quadratic = count_pmq
+    try:
+        with stack(8, FLOW) as st, torch.enable_grad():
+            model(x)
+    finally:
+        if PMX:
+            del model.__dict__['poisson_mode_quadratic']
+    fresh = (st['fresh'], st['xfresh']) + ((st['pfresh'],) if PM else ()) + ((nq[0],) if PMX else ())
     ok &= all(f == L for f in fresh)
-    say(f'CHECK  N=8 per-layer flow: fresh quadratic / xi{" / phi" if PM else ""} = {fresh} (one per trained layer: {L})')
+    say(f'CHECK  N=8 per-layer flow: fresh quadratic / xi{" / phi" if PM else ""}{" / wells quadratic" if PMX else ""} = {fresh} (one per trained layer: {L})')
+    if PMX:
+        # an independent implementation of the same flow: the model's inference mode, 4 substeps per layer
+        flow8 = logits(stack(8, FLOW))
+        model.cfg.substeps_per_layer = 4
+        try:
+            with torch.enable_grad():
+                sub4 = model(x)[0].detach()
+        finally:
+            model.cfg.substeps_per_layer = 1
+        d = float((flow8 - sub4).abs().max() / sub4.abs().max()); ok &= d < 1e-5
+        say(f'CHECK  N=8 per-layer flow vs the model\'s substeps_per_layer = 4: max rel |d logit| {d:.1e}')
 
     # ---- kick share at the trained N = 2 ----
     cap = []
@@ -134,6 +167,9 @@ if __name__ == '__main__':
     say(f'-> checks {"PASS" if ok else "FAIL"}')
     if not ok:
         raise SystemExit(1)
+    if 'checks' in sys.argv[4:] or CHECKS_ONLY:
+        print('checks only: stopping before the kick share and Gate 3', flush=True)
+        raise SystemExit(0)
 
     say('\nKICK SHARE at the trained N = 2 (first batch, 4 x 512 tokens): |h(no kick) - h| / |h - h_in|')
     for li, k in kick.items():

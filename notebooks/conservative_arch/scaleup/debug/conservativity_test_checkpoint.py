@@ -354,6 +354,9 @@ if __name__ == '__main__':
             subs = (("POISSON_DEPTH_CAP    = None", f"POISSON_DEPTH_CAP    = {float(e[5:].replace('p', '.'))}"),)
         elif e == 'sr2':
             subs = (("LOWRANK_DAMPED_FLOW  = False", "LOWRANK_DAMPED_FLOW  = True"),)
+        elif re.fullmatch(r'pmx\d+', e):      # PMX (2026-10-11): exact wells, M modes in the eigensolve
+            subs = (("POISSON_WELLS_EXACT  = False", "POISSON_WELLS_EXACT  = True"),
+                    ("POISSON_WELLS_EXACT_MODES = 16", f"POISSON_WELLS_EXACT_MODES = {int(e[3:])}"))
         else:
             raise SystemExit(f'unknown option {e!r}')
         for old, new in subs:

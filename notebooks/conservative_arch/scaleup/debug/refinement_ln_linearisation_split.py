@@ -56,10 +56,15 @@ ARMS_XI = {'as trained': (False, False, False), 'xi frozen': (False, False, True
 
 
 @contextlib.contextmanager
-def split_stack(model, N, dt, policy_index, ln_once, freeze, xi_freeze=False, phi_freeze=False):
+def split_stack(model, N, dt, policy_index, ln_once, freeze, xi_freeze=False, phi_freeze=False, pmq_freeze=False):
     """6b-7's _fom_stack (policy 'hold'), plus the switches. phi_freeze (PM1,
     added 2026-10-09 for FLOW-C): the occupation phi is taken at the share's
-    first force evaluation; the token's own overlap E stays live."""
+    first force evaluation; the token's own overlap E stays live.
+    pmq_freeze (PMX, added 2026-10-11): a fresh model._flow_ctx at the share's
+    first substep, so the wells' quadratic is frozen there together with its
+    linearisation point pm_h0 (and phi with it), exactly as the model's own
+    substeps_per_layer path does; a plain cache of poisson_mode_quadratic
+    would pair the frozen force with the current point."""
     L = model.cfg.L
     lis = [policy_index(j, N, L, 'hold') for j in range(N)]
     st = {'proj': True, 'start': True, 'calls': 0, 'cache': {}, 'fresh': 0,
@@ -111,9 +116,12 @@ def split_stack(model, N, dt, policy_index, ln_once, freeze, xi_freeze=False, ph
             st['proj'] = (not ln_once) or j == N - 1 or lis[j + 1] != li
             st['calls'] = st['xcalls'] = st['pcalls'] = 0
             st['inloop'] = True
+            if pmq_freeze and st['start']:
+                model._flow_ctx = {}
             h, h_prev, r, sal = model._fock_layer_step(h, h_prev, r, sal, m_b, gamma, dt, layer_idx=li)
             st['inloop'] = False
         st['proj'] = True
+        model._flow_ctx = None
         return h, None
 
     orig_sf, orig_dt = model._stack_forward, model.cfg.dt
@@ -128,6 +136,7 @@ def split_stack(model, N, dt, policy_index, ln_once, freeze, xi_freeze=False, ph
         yield st
     finally:
         hook.remove()
+        model._flow_ctx = None
         model._stack_forward, model.cfg.dt = orig_sf, orig_dt
         for o, k in ((model, '_project'), (vt, 'harmonic_terms_lowrank'), (model, 'poisson_mode_occupation')):
             if (o, k) in saved:                     # an instance wrapper was there: put it back
