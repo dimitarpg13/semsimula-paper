@@ -4323,6 +4323,60 @@ Run output `L2probe_PMX16_on_SR2_8000steps_output.txt` in `results/…pm64_pmx16
 - **GPU estimate from 6b-16:** about 0.25 s per optimiser step from (a) and some of the substep's 0.15 s from (b).
 - **Code by segment,** recorded for scoring: steps 1–8,000 ran the original basis; 8,001 onwards in the current session run the split basis. A resume in a fresh runtime after these are pushed would run (a) and (b). All are the same model to float rounding.
 
+#### PMX full run scored (Colab part): **54.63 settled — CX1 and CX1′ hit; Gate 1 +91%; standard refinement worse than at the probe** — **2026-10-11**
+
+Run log `L2_PMX_32500steps_output.txt`; Cells 6b-7, 6b-9, 6b-12, 6b-13 and 6b-15 on the best checkpoint (step 30,500, 53.15). Every SCAF audit CLEAN with future perturbation exactly 0. The final audit's `honest_PPL=nan` is a property of the end-of-run audit, not of PMX: SR2's and PM1's final audits read nan the same way, in 8–9 s against about 29 s for a full audit.
+
+**Scope (the author, 2026-10-11).** PMX is trained on 532.5M tokens, a third of compute-optimal (§5.19 scope caveat). A refinement failure here, or a half-way result, says nothing about whether a fully trained PMX-PARFLM refines.
+
+| | prediction | result | |
+| --- | --- | --- | --- |
+| CX1 | settled ≤ 57.74 | **54.63** (mean of 56.07, 54.61, 53.21) | **HIT** |
+| CX1′ | settled ≤ PM1's 55.17 | 54.63 | **HIT** (called 30%) |
+| CX2 | Gate 3 at N = 3 ≤ 0.405 nats | **1.097** (53.24 → 159.41) | **MISS** |
+| CX4 | Gate 1 ≤ +100% | **+91%** (53.24 → 101.83) | **HIT** |
+| RT1 | Gate 3 at N = 3 falls from the probe's 0.584 | **rises** to 1.097 | **MISS** |
+| CX3, CX3′, CX5, CX6 | — | local, on the downloaded folder | pending |
+
+Settled against the other L = 2 arms: −6.3% against SR2 (58.32), −5.4% against F3.1 (57.76), −1.0% against PM1 (55.17), +2.8% against G2 (53.12). **The best conservative model on the ladder**, 2.8% behind the Fock model.
+
+**6b-7.** Gate 3 penalties (nats) at N = 3, 4, 6, 8: 1.097, 1.172, 2.185, 2.579 (probe: 0.584 and 0.76 at N = 3 and 4). The successive changes shrink from N = 3 to 4 (12.4 PPL) and then grow, so the cell reads neither FLOW nor monotone. Gate 2 (more hops at fixed dt) is catastrophic: 2.36 nats at N = 3. **Gate 1 fell from +30,600% at the probe to +91%**: the momentum lock at the layer-1 wells was a mid-training state, and exact integration has removed it by the end of training (PM1, explicit wells, ended at +10,600%).
+
+**RT1 and the training-budget hypothesis.** The first within-run reading goes against "refinement improves with training": the standard penalty at N = 3 nearly doubled between step 8,000 and the best checkpoint, while stiffness rose (resonance monitor ω·Δt p50 2.37 at step 8,500, 2.70 at 32,500). It is confounded with the schedule: step 8,000 is mid-stable-phase and the best checkpoint is after the decay, which sharpens the trained map. It also concerns the *standard* refinement, which keeps per-step LayerNorm and re-linearisation. The question for the architecture is the per-layer flow (CX3), and the clean test of the budget is RT3.
+
+**6b-9** (descriptive). R(geo) 1.020; LayerNorm moves R by −0.355, **the wells by −0.518** (−0.522 added first), V_φ by −0.0025. At layer 1, V_θ plus the wells reproduce the step's velocity almost exactly (R_v 0.014). V_φ's small displacement is not a reliance reading (§5.20); a removal cost on PMX is to be added.
+
+**6b-12** (descriptive). The wells' per-token forcing is uniform: at layer 1, 97.7% of tokens have R > 0.75, IQR [0.87, 0.91].
+
+**6b-13** (descriptive). ω·Δt p50 2.65 (layer 0 2.19, layer 1 4.21), 90% past 2, below PM1 (2.81) and F3.1 (4.32). The generic L = 2 band [3.3, 4.2] misses.
+
+**6b-15.** All four tuning checks not indicated. No dead modes (PM1 had 8 of 64). Half-lives p50 9.1 tokens. Layer-1 wells force / conservative force 4.79 (layer 0: 0.81). About half the depths are positive at each layer (50%, 48%): the wells learned both attractive and repulsive modes.
+
+**What follows.**
+
+- **Decision rule: CX1 hits; CX3 decides** between "the conservative, refinement-ready model with a memory exists" and "the gain survives but the flow does not converge". `refinement_flow_confirmation.py` now has the `pmx` kind (split_stack `pmq_freeze`); its checks pass bit-exactly on PM1's weights with PMX on, including the per-layer flow at N = 8 against the model's own `substeps_per_layer = 4` path, and the `sr2` kind is unchanged.
+- **SR3-on-PMX loses its new rationale.** It rested on the layer-1 momentum lock (Gate 1 +30,600%), which has gone (+91%). Mode-resolved friction is still the route to settling (Gate 2 at 2.36 nats), so SR3 and SR3-L4 are re-aimed at (S), to be re-registered after CX3.
+
+#### PMX CX3, CX3′ and CX6 scored (FLOW-R): **CX6 hits; CX3 misses narrowly, CX3′ misses — the per-layer flow converges, slowly, to a limit 0.39 nats from the trained step** — **2026-10-11**
+
+`debug/refinement_flow_confirmation.py … pmx seed=20261009` (FLOW-R's criterion and batches; output in PMX's results folder). Every check exact on the trained PMX weights, including the per-layer flow at N = 8 against the model's own `substeps_per_layer = 4`.
+
+| penalty ln(PPL_N / PPL_2), nats | N = 3 | 4 | 6 | 8 | 12 | 16 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| PMX, per-layer flow | 1.711 | 0.841 | 0.292 | 0.415 | 0.386 | 0.387 |
+| SR2, per-layer flow (FLOW-R) | 0.286 | 0.206 | 0.084 | 0.103 | 0.104 | 0.104 |
+| PMX, as trained (standard) | | | | 2.464 | | |
+
+- **CX6 (layer-1 kick share ≤ 0.3, called 75%): HIT,** 0.288 (layer 0: 0.319; PM1: 0.94).
+- **CX3 (|pen16 − pen12| ≤ 0.01 and |pen12 − pen8| ≤ 0.02, called 50%): MISS on the letter.** 0.001 passes; 0.029 fails the second condition by 0.009. The flow does reach a limit between N = 12 and 16, more slowly than SR2's, which had settled by N = 8. Not revised.
+- **CX3′ (limit within 0.25 nats of the trained step, called 40%): MISS,** 0.387 (SR2: 0.104).
+- **What converges and what does not.** The per-layer flow removes most of the standard refinement's damage (2.46 → 0.42 nats at N = 8), and its N = 12 and 16 values agree to 0.001. Its coarse end is non-monotone (N = 6 below N = 8), as SR2's is (0.084 against 0.103).
+
+**Decision rule** (pre-registered, unchanged): CX1 hits and CX3 misses, so "the gain survives but the flow does not converge" under this criterion. The rule's first branch (CX1, CX3 and CX3′ all hit: the HF card and the arm named in the book, with SR2 as its no-memory comparison) is **not met**. SR2 remains the refinement-ready arm; PMX is the best conservative model by perplexity. CX6 has been read as the rule asks: the explicit share is within its bound, so the slow convergence is not the kick's doing at the trained step; the remaining candidates are the frozen wells' quadratic over a share (§5.15 Phase 0: 13% of the force missed at the kick point) and the φ dynamics.
+
+**Scope.** 532.5M tokens, a third of compute-optimal (§5.19 scope caveat): this is a statement about PMX at this budget, not about exactly integrated wells. CX5 (conservativity) and causality are still to run.
+
+
 ### 5.16 F0: is there a shared floor near 50 PPL? The stable-phase extrapolation — **pre-registered 2026-10-06, before any fit**
 
 **Why.** Among the L=2 models with the register path, G2 (53.12), G3 (54.21) and G3′ (52.90) settle within 2.5% of each other, whatever else is switched on. L=4 Fock (50.10) and the 8-layer matched GPT-2 (49.81) end near 50. Is the floor set by depth, or by what every model shares: d = 384, the untied head and 532M tokens?
@@ -4951,6 +5005,46 @@ The cost of a removal is c = ln(PPL_removed / PPL_full) in nats, with a paired s
 **Before launch.** `PAIR_POTENTIAL = 'none'` was verified on 2026-10-01 for the multi-ξ and Fock builds (`debug/verify_pair_potential_none.py`), but never together with `POISSON_MODES > 0`. VF1 needs a switch check first: tag, Cell 5b banner, parameter count, forward and backward, the wells' force still the gradient at fixed occupation, causality.
 
 **Order and priority.** VF0 and VF1 first (the conservative-route claim), VF2 after. Behind PMX's scoring; the book's conservative-route paragraph does not wait on them, but it may say only "the wells work beside V_φ" until VF1 is scored.
+
+### 5.22 SY: is spontaneous synchronization at the root of semantic inference in these models? — **pre-registered 2026-10-11, before any measurement**
+
+**Design:** [`Spontaneous_Synchronization_and_Semantic_Binding_Test_Programme.md`](Spontaneous_Synchronization_and_Semantic_Binding_Test_Programme.md), which defines every statistic used here (§3 there) and the tests SY0–SY6. This section fixes the primary statistics, the thresholds and the calls. Book Q10 points to it.
+
+**Synchronization** is alignment produced by the inter-token couplings, measured against a replay of the same layer step with the coupling switched off (the 6b-9 instrument). Statistics are on centred states (the LayerNorm common direction removed). Groupings: coreference chains (if a coreference model is available offline; otherwise dropped), dependency head–dependent pairs, shared subtrees, named-entity spans, part of speech. Contrasts are distance-matched.
+
+**General rules, fixed now.**
+- **Unit and intervals:** the sequence; cluster bootstrap over 200 sequences of 512 tokens, 1,000 resamples, 95% intervals.
+- **Effect floor:** a contrast counts only if its interval excludes 0 and it is at least 0.02 (cosine units, or NMI).
+- **Replication:** a level holds only if it holds in PMX and in at least one other arm with the same coupling route (V_φ: F3.1 or PM1; wells: PM1; Fock: the L = 4 Fock arm).
+- **Primary statistics only** decide levels; everything else is descriptive.
+- **Prerequisite:** SY0 passes on all four toy checks (the design note's §4) before any model is measured. A failure is fixed and re-run, never waived.
+- **BLiMP sets** enter only where the full model scores at least 60%.
+
+**Primary statistics and level criteria.**
+
+| level | primary statistic | holds if |
+| --- | --- | --- |
+| 0. exists | coupling-attributable gain in global coherence or co-movement, Δ_c R or Δ_c C, at any layer, for any coupling | at least one passes the floor, replicated |
+| 1. structured | (a) V_φ: attraction contrast for coreferent or head–dependent pairs, with selection enrichment; (b) wells: NMI gain of dominant-mode assignment over the input-state assignment, or co-assignment contrast; (c) coupling-attributable binding contrast Δ_c B | (a) contrast passes the floor and enrichment ≥ 1.2; or (b) passes the floor; and in either case (c) passes the floor for the same grouping; all beat the shuffled-label control |
+| 2. used | targeted removal of related pairs against matched random removal: loss change at binding-dependent positions | ratio targeted / random ≥ 1.5 with interval excluding 1; that ratio at least 1.2 × the same ratio at other positions; and BLiMP accuracy falls at least 2 points more under targeted than random removal on at least one admitted set |
+| 3. root | SY4 λ sweep and SY5 Gate 2 axis | level 2 holds; performance peaks at λ in [0.75, 1.25] and drops by at least 0.05 nats at λ = 1.5 while R rises by at least 0.02; and along Gate 2, from N = 2 to 3, R rises by at least 0.05 or the effective rank of the final states falls by at least 20% |
+
+**Calls.**
+
+| id | prediction | called at |
+| --- | --- | ---: |
+| SY-L0 | level 0 holds | 75% |
+| SY-L1 | level 1 holds | 45% |
+| SY-L2 | level 2 holds | 30% |
+| SY-L3 | level 3 holds | 10% |
+| SY-pair | V_φ attracts coreferent or head–dependent pairs more than distance-matched controls (level 1 (a) alone) | 50% |
+| SY-wells | the wells' route passes level 1 (b) and V_φ's does not | 25% |
+| SY-G2 | Gate 2's blow-up comes with over-synchronization (the SY5 criterion alone) | 35% |
+| SY-GPT2 | the matched GPT-2 shows a binding contrast at least as large as the best Lagrangian arm's (descriptive comparison) | 60% |
+
+**Reading.** The verdict is the highest level that holds: refuted (0 fails), semantically blind (1 fails), epiphenomenal (2 fails), load-bearing for binding (3 fails), or root (3 holds). Every verdict is scoped to these models: L = 2 (L = 4 where read), 532.5M tokens, a third of compute-optimal (§5.19 scope caveat).
+
+**Before measurement:** the annotation packages (spaCy pipeline, a coreference model) and BLiMP need the author's go-ahead to install and download. If no coreference model is available, coreference is dropped and the criteria use the remaining groupings; this is fixed now and is not a post-hoc choice.
 
 ## 6. Open risks
 

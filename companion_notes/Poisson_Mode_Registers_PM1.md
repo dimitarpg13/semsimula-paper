@@ -22,6 +22,7 @@ Companion note to [*Doi–Peliti Dynamics of Semantic Particles and Registers*](
 5. [How PM1 differs from the Fock v2.1 slot registers](#5-how-pm1-differs-from-the-fock-v21-slot-registers)
 6. [Results so far](#6-results-so-far)
 7. [Open questions](#7-open-questions)
+8. [PMX: the wells integrated exactly](#8-pmx-the-wells-integrated-exactly)
 
 ---
 
@@ -501,5 +502,11 @@ The arm is F3.1's Cell 0 plus `POISSON_MODES = 64`, `POISSON_MODE_CLIP = 0.3`, `
 4c. **The registers as a clustering mechanism.** A per-token assignment of tokens to modes by force share, the token order parameter against the well scale α on the trained weights, and the same on PMX. If the α sweep shows a threshold, the cap of PM1-cap was sub-critical and future caps should sit above it; if it shows a slope, the Kuramoto reading of the cap result is wrong. Clustering note §5.2 and §7.
 5. **Depth.** PM1 at L = 4 against the L = 4 Fock model (50.10) is the next rung if the full run holds.
 6. **The book.** The decision rule of protocol §5.15 is met: the full run beats F3.1 by 4.5%. The book can state that the bosonic Doi–Peliti v2 is trainable, honours the three claims literally and keeps the step conservative, at a cost of 3.9% against the slot registers. The edits to Remark 61, §10.5.2 and the abstract wait for PM1-cap, which would replace PM1 as the arm named if it keeps the gain and refines.
+
+## 8. PMX: the wells integrated exactly
+
+PMX keeps this note's mechanism (the modes, the occupations, the wells and their force law) and changes one thing: the wells leave the explicit kick and join the exact damped flow that SR2 introduced for V_θ's stiff modes. Per token and step, the wells' quadratic is frozen at the step's start. Every well's force and isotropic curvature α, together with the rank part of the 16 strongest wells, go into the spring K = αI + U₀ diag(κ₀) U₀ᵀ − R diag(dW) Rᵀ, which acts on all of ℝᵈ. That indefinite spring is diagonalised in a 32-wide eigensolve and integrated exactly, friction included, on every direction. The kick carries only the remainder.
+
+The derivations, the numerical route and the verification are in [`Exact_Integration_of_Poisson_Mode_Wells_PMX.md`](Exact_Integration_of_Poisson_Mode_Wells_PMX.md). It covers the wells' Hessian and its indefinite spectrum, the frozen linear model and the 32-wide hybrid, the diagonalisation (Cholesky QR, restriction, Gershgorin shift), the closed-form damped flow for curvature of either sign with its series branch, the splitting and its energy identity, the per-layer flow, and what the trained model integrates. Results: protocol §5.15, the PMX blocks.
 
 **References.** M. Doi, Second quantization representation for classical many-particle system, J. Phys. A 9 (1976). L. Peliti, Path integral approach to birth-death processes on a lattice, J. Physique 46 (1985). U. C. Täuber, M. Howard and B. P. Vollmayr-Lee, Applications of field-theoretic renormalization group methods to reaction-diffusion problems, J. Phys. A 38 (2005). For thinning and superposition of Poisson laws, any text on point processes, e.g. J. F. C. Kingman, *Poisson Processes* (Oxford, 1993).
