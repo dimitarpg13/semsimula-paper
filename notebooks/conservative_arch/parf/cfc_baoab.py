@@ -864,7 +864,7 @@ def _cholqr_basis(Rp: torch.Tensor, floor: float) -> Tuple[torch.Tensor, torch.T
     Columns with |r|^2 <= floor are inert: their Gram rows are decoupled to the
     identity and their output columns zeroed. Two passes make the result
     orthonormal to float64 rounding for condition numbers far beyond what PMX
-    meets (at most 2.1 on PM1's states, debug/verify_pmx_fast.py). One batched
+    meets (at most 8.7 on PM1's states, debug/verify_pmx_fast.py). One batched
     Cholesky and one triangular solve per pass replace a Gram SVD, which on the
     GPU costs a fixed 32 x 16 Jacobi tile whatever the width.
     """
