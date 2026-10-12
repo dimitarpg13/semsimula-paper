@@ -1,0 +1,11 @@
+PMX  ..._ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+  check: identity patch bit-identical, called 4x for L = 2 -> True
+  check: vphi        moves logits by max 6.08e+00; restored bit-identical -> True
+  check: wells       moves logits by max 2.71e+01; restored bit-identical -> True
+  check: vphi+wells  moves logits by max 2.74e+01; restored bit-identical -> True
+  full model: PPL 53.24 on 12 x 4 x 512 tokens
+  remove vphi       : PPL    54.02   c = +0.0145 +- 0.0012 nats (+1.5% PPL; batches +0.0077 .. +0.0219)
+  remove wells      : PPL   154.18   c = +1.0633 +- 0.0560 nats (+189.6% PPL; batches +0.8152 .. +1.5069)
+  remove vphi+wells : PPL   157.95   c = +1.0875 +- 0.0543 nats (+196.7% PPL; batches +0.8455 .. +1.5078)
+
+-> checks ALL PASS

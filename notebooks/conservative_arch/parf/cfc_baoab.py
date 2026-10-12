@@ -752,6 +752,24 @@ def lowrank_damped_substep(
 # ---------------------------------------------------------------------------
 # PMX (protocol SS5.15, 2026-10-10): the Poisson-mode wells integrated exactly
 # ---------------------------------------------------------------------------
+def _psd_eig_desc(Ms: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    """Eigenvectors and eigenvalues, descending, of a batch of symmetric PSD matrices.
+
+    The Jacobi SVD (for a PSD matrix its singular pairs are its eigenpairs),
+    falling back to ``eigh`` only if the SVD fails to converge, which LAPACK can
+    do on many exactly repeated eigenvalues: a token whose top wells all have
+    zero weight (the first token of a sequence, whose occupation is zero, or
+    wells switched off) leaves a 16-fold repeated eigenvalue c after the shift
+    (2026-10-11). Whenever the SVD succeeds the result is the SVD's, bit for bit.
+    """
+    try:
+        Y, lam, _ = torch.linalg.svd(Ms)
+        return Y, lam
+    except torch.linalg.LinAlgError:
+        lam, Y = torch.linalg.eigh(Ms)                       # ascending
+        return Y.flip(-1), lam.flip(-1)
+
+
 def indefinite_lowrank_modes(
     B: torch.Tensor, signs: torch.Tensor, floor: float = 1e-10,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -785,7 +803,7 @@ def indefinite_lowrank_modes(
     Ms = M + c.unsqueeze(-1) * eye + torch.diag_embed(inert.double() * big)
     ramp = torch.arange(n, device=M.device, dtype=M.dtype) * (1e-12 / max(n, 1))
     Ms = Ms + torch.diag_embed(c * ramp)
-    Y, lam, _ = torch.linalg.svd(Ms)                         # PSD: SVD = eigen, desc
+    Y, lam = _psd_eig_desc(Ms)                         # PSD: SVD = eigen, desc
     kappa = lam - c - (Y * Y * (inert.double() * big).unsqueeze(-1)).sum(-2)
     U = Q @ Y                                                # (..., d, n)
     dead = U.norm(dim=-2) < 0.5                              # an inert direction's column
@@ -831,7 +849,7 @@ def indefinite_lowrank_modes_split(
     Ms = Mm + c.unsqueeze(-1) * eye + torch.diag_embed(inert.double() * big)
     ramp = torch.arange(n, device=Mm.device, dtype=Mm.dtype) * (1e-12 / max(n, 1))
     Ms = Ms + torch.diag_embed(c * ramp)
-    Y, lam, _ = torch.linalg.svd(Ms)
+    Y, lam = _psd_eig_desc(Ms)
     kappa = lam - c - (Y * Y * (inert.double() * big).unsqueeze(-1)).sum(-2)
     U = Q @ Y
     dead = U.norm(dim=-2) < 0.5
@@ -915,7 +933,7 @@ def indefinite_lowrank_modes_chol(
     Ms = Mm + c.unsqueeze(-1) * eye + torch.diag_embed(inert.double() * big)
     ramp = torch.arange(n, device=Mm.device, dtype=Mm.dtype) * (1e-12 / max(n, 1))
     Ms = Ms + torch.diag_embed(c * ramp)
-    Y, lam, _ = torch.linalg.svd(Ms)
+    Y, lam = _psd_eig_desc(Ms)
     kappa = lam - c - (Y * Y * (inert.double() * big).unsqueeze(-1)).sum(-2)
     U = Q @ Y
     dead = U.norm(dim=-2) < 0.5

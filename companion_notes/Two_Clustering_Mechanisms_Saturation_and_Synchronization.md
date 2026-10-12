@@ -195,7 +195,7 @@ So the trained arms carry context between tokens by two routes:
 | conservative, branch (a) | Poisson-mode wells + V_φ | gradient in $h_t$, context fixed | PM1 | 55.17 |
 | conservative, no auxiliary state | V_φ alone | gradient in $h_t$, sources fixed | F3.1 | 57.76 |
 
-**They treat the pair potential differently** (§6.4). The non-conservative channel subordinates V_φ; the conservative wells work beside it. Removed at inference, the Fock channel costs G2 1.49 nats and V_φ beside it 0.037; the wells cost PM1 0.77 and V_φ beside them 0.32, more than V_φ costs F3.1 alone (0.28), with only 13% overlap. The likely reason, untested: the reverse channel and V_φ do the same job, moving a token toward content drawn from specific earlier tokens, so one crowds the other out; the wells do a different one, pulling toward shared prototypes weighted by how much of the context occupied them, so the two add.
+**They treat the pair potential differently** (§6.4). The non-conservative channel subordinates V_φ; the conservative wells work beside it under the explicit integrator (PM1), but with the wells integrated exactly (PMX) V_φ is marginal, as it already is in SR2 with no wells at all (amended 2026-10-11, below). Removed at inference, the Fock channel costs G2 1.49 nats and V_φ beside it 0.037; the wells cost PM1 0.77 and V_φ beside them 0.32, more than V_φ costs F3.1 alone (0.28), with only 13% overlap. The likely reason, untested: the reverse channel and V_φ do the same job, moving a token toward content drawn from specific earlier tokens, so one crowds the other out; the wells do a different one, pulling toward shared prototypes weighted by how much of the context occupied them, so the two add.
 
 **What this does not yet license.**
 
@@ -262,11 +262,13 @@ By the overlap alone (the creation rate of PM1 note equation 1.1, a Gaussian in 
 | SR2 | 0.014 (+1.4%) | — | — | −0.002 |
 | G2 | 0.037 (+3.7%) | Fock **1.486** (+342%) | 1.524 | −0.0002 |
 | PM1 | **0.324** (+38%) | wells **0.775** (+117%) | 0.956 | −0.017 |
+| PMX | 0.0145 (+1.5%) | wells **1.063** (+190%) | 1.088 | −0.0025 |
 
 - **Displacement is not reliance.** The 6b-9 shares of 0.0002 and 0.017 hid costs of 3.7% and 38%. "V_φ inert" (G2) and "the wells took over V_φ's role" (PM1) are withdrawn.
 - **The Fock channel carries G2,** and the two costs add exactly (1.524 against 1.523): what V_φ still does there is a separate job.
 - **The wells and V_φ both carry PM1,** overlapping by 13% (0.956 against 1.099).
 - **Under SR2's exact flow V_φ is marginal** with no competitor at all: V_θ integrated exactly does most of its work.
+- **PMX (added 2026-10-11): the PM1 coexistence was the explicit integrator's.** With the wells integrated exactly, V_φ is as marginal as in SR2 and the wells carry more than in PM1. On the exact-flow base the conservative route is the wells alone; what sidelines V_φ is the exact flow, not the wells.
 - **Reliance overstates value.** The trained-without gains are 0.084 nats for the Fock channel (G2 against F3.1) and 0.046 for the wells (PM1 against F3.1), against removal costs of 1.49 and 0.77.
 
 ---
