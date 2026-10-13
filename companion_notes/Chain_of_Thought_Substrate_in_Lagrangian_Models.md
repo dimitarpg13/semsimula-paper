@@ -1,8 +1,10 @@
-# Chain-of-Thought Inside a Lagrangian Model: the Substrate, the Blocker and the Route
+# Chain-of-Thought and the Lagrangian Models: a Working Memory Without the Operator
 
 **The question.** Can chain-of-thought be built inside one of our models, with the mechanisms we have: the Fock registers, the Poisson-mode registers, the pair potential, the per-layer flow and per-token conservativity?
 
-**The short answer.** Not today, and not for the reason the book's current design assumes. Every mechanism supplies some of what chain-of-thought needs and none supplies all of it; the union does, except for one thing no mechanism supplies: a way to spend more compute on a hard token that helps. Extension past the trained depth is catastrophic in every arm, and refinement converges but reasons no more. The route that is open is the one transformers use, emitting intermediate particles, on a substrate transformers do not have: a conservative, inspectable scratchpad with a per-step energy. What is missing is a training signal, and that is the real cost.
+**The short answer.** Not today. Chain-of-thought, in the classical sense of Wei et al. (2022) and Feng et al. (2023), is a chain of emitted steps, each computed from a bounded number of earlier ones, that raises a model's effective depth with the problem. The trained mechanisms supply the memory such a chain would be written to, the Poisson-mode registers, a **conservative working memory** that transformers lack; they do not supply the chain itself. The registers' trace is order-blind (sums commute), so it holds the steps without composing them: in the book's terms, the v2 half of native chain-of-thought (§10.9.5) without the v3 half. Extension past the trained depth is catastrophic in every arm and refinement adds no depth, so the compute has to come from emission, which is what chain-of-thought is. What is missing is a training signal that produces steps, an operator that composes them, and depth: Feng et al.'s constructions need four or five layers, and the ladder's models have two.
+
+**Revised 2026-10-12** against the two classical papers (§1a); the first version led with memory, which is not the heart of chain-of-thought.
 
 This note records the analysis, replaces the substrate of the book's native chain-of-thought design (§37.4), and fixes the first measurement. The figures are made by [`figures/_make_cot_substrate_figs.py`](figures/_make_cot_substrate_figs.py).
 
@@ -10,9 +12,9 @@ This note records the analysis, replaces the substrate of the book's native chai
 
 1. [What chain-of-thought needs](#1-what-chain-of-thought-needs)
 2. [What each mechanism supplies](#2-what-each-mechanism-supplies)
-3. [The blocker: nothing makes thinking longer help](#3-the-blocker-nothing-makes-thinking-longer-help)
-4. [The route: emitted particles on a conservative scratchpad](#4-the-route-emitted-particles-on-a-conservative-scratchpad)
-4a. [The ceiling: the scratchpad is an unordered bag](#4a-the-ceiling-the-scratchpad-is-an-unordered-bag)
+3. [The blocker: nothing makes thinking longer help, and emission is the mechanism](#3-the-blocker-nothing-makes-thinking-longer-help-and-emission-is-the-mechanism)
+4. [The route: emitted particles on a conservative working memory](#4-the-route-emitted-particles-on-a-conservative-working-memory)
+4a. [The missing half: the working memory is an unordered bag](#4a-the-missing-half-the-working-memory-is-an-unordered-bag)
 5. [What the framework adds, and what it does not](#5-what-the-framework-adds-and-what-it-does-not)
 6. [What is missing, in order of cost](#6-what-is-missing-in-order-of-cost)
 7. [The first measurement: do the registers already carry forward-looking state?](#7-the-first-measurement-do-the-registers-already-carry-forward-looking-state)
@@ -23,14 +25,25 @@ This note records the analysis, replaces the substrate of the book's native chai
 
 ## 1. What chain-of-thought needs
 
-Strip chain-of-thought down to what it does mechanically and three requirements remain.
+### 1a. The classical definition
 
-1. **Memory across the computation.** Intermediate state that persists while the answer is being produced and is not the output distribution.
-2. **Extra compute on a hard token.** A way to spend more work on some positions than on others, without changing the trained function on the easy ones.
-3. **Readback.** A way for later predictions to use that state, and ideally to check it (self-correction).
-4. **Order-dependent composition** (added 2026-10-12). A chain of reasoning is a sequence of operations whose result depends on their order: "subtract, then divide" is not "divide, then subtract". The trace must be able to represent not only *which* intermediate steps were taken but *in what order and applied to what*. [`Realizing_Execution_Gauge_vs_Causal_Ordering.md`](Realizing_Execution_Gauge_vs_Causal_Ordering.md) §1 proves that no additive update can: additive contributions to a state commute, so the outcome is blind to their order. The book assigns this to v3, the non-abelian apparatus (§10.5.3), with F4 and F5 as its falsifiers.
+Two papers fix what the term means.
 
-A transformer gets the first three by emitting extra tokens, and the fourth through position and attention's content-dependence: the KV cache is the memory, each extra token is a full forward pass of extra compute, and attention is the readback. The reasoning trace is external to the architecture; it has no privileged status, no energy, and no conservation law. The book's claim (§37.4, §10.5) is that the composite simulator can make it native. The question here is whether the trained mechanisms support that.
+- **Wei et al. (2022), *Chain-of-Thought Prompting Elicits Reasoning in Large Language Models*.** A chain of thought is "a series of intermediate natural language reasoning steps that lead to the final output", elicited by a few exemplars in the prompt with no training, no fine-tuning and no architectural change ("no language models were finetuned"). Its gains are largest on multi-step problems and negative on single-step ones; the ability emerges with scale; and the chains are usually faithful (of 50 correct GSM8K answers, 48 chains were also correct).
+- **Feng et al. (2023), *Towards Revealing the Mystery behind Chain of Thought*.** The mechanism. Assuming TC⁰ ≠ NC¹, no bounded-depth, polynomial-size, log-precision transformer evaluates arithmetic expressions, solves linear equations or decides context-free-grammar membership in one pass, however wide (Theorems 3.1, 3.2, 4.8): the obstruction "is not due to the (serialized) computational cost of these problems but rather to their parallel complexity." A constant-size transformer (depth 4–5, five heads, width independent of the input) generates correct step-by-step derivations for all of them, and for every dynamic program whose transition reads a bounded number of inputs and earlier states, $\mathrm{dp}(i) = f(n, i, s_{g(n,i)}, \mathrm{dp}(h(n,i)))$ (Theorems 3.3, 3.4, 4.7): "the recursive nature of CoT … increases the effective depth of the Transformer to be proportional to the generation steps." Trained on derivations, models extrapolate to longer inputs than any seen in training.
+
+So the defining property is **serial, order-dependent computation bought by emission**: each step is a function of a bounded number of earlier steps, and the chain's length is the depth. Memory and readback are how the chain is stored, not what it is. The first version of this note led with memory; that was the wrong order, and it is corrected below.
+
+### 1b. The four requirements
+
+Strip chain-of-thought down to what it does mechanically and four requirements remain, in this order.
+
+1. **Order-dependent composition.** Each step is computed from a bounded number of earlier steps, and the result depends on their order: "subtract, then divide" is not "divide, then subtract". This is what raises the effective depth, and it is the defining requirement. [`Realizing_Execution_Gauge_vs_Causal_Ordering.md`](Realizing_Execution_Gauge_vs_Causal_Ordering.md) §1 proves that no additive update can supply it: additive contributions to a state commute, so the outcome is blind to their order. The book assigns it to v3, the non-abelian apparatus (§10.5.3), with F4 and F5 as its falsifiers; Feng et al.'s DP transition with constant fan-in $K$ is a v3-operator event of rank $r = K$ (book §10.9.5).
+2. **Extra compute on a hard token.** A way to spend more work on some positions than on others, without changing the trained function on the easy ones. In the classical form this is emission: each step is a forward pass.
+3. **Memory across the computation.** Intermediate state that persists while the answer is being produced and is not the output distribution.
+4. **Readback.** A way for later predictions to use that state, and ideally to check it (self-correction).
+
+A transformer gets all four by emitting tokens: the emitted token is the step, the forward pass is the compute, the KV cache is the memory, and attention over position supplies readback and order. the KV cache is the memory, each extra token is a full forward pass of extra compute, and attention is the readback. The reasoning trace is external to the architecture; it has no privileged status, no energy, and no conservation law. The book's claim (§37.4, §10.5) is that the composite simulator can make it native. The question here is whether the trained mechanisms support that.
 
 ---
 
@@ -52,14 +65,14 @@ A transformer gets the first three by emitting extra tokens, and the fourth thro
 Two readings of the table.
 
 - **No single mechanism covers the three requirements.** The two register mechanisms supply memory and readback but no extra compute; the per-layer flow supplies extra compute but no memory. $V_\phi$ supplies neither memory nor compute: it binds a token to a few earlier tokens within one step, which is routing, not a scratchpad.
-- **The union covers the first three, in one published model.** PMX-PARFLM carries the Poisson-mode registers (memory, readback, conservative) and the per-layer flow (extra compute). Whether that extra compute is the right kind is the question of §3.
-- **No mechanism covers the fourth.** Every coupling in the framework updates a token's state additively, so none can make the outcome depend on the order in which the registers acted. This is the ceiling of §4a.
+- **No mechanism covers the first, the defining one.** Every coupling in the framework updates a token's state additively, so none can make the outcome depend on the order in which the registers acted. This is the missing half of §4a.
+- **One published model covers the other three.** PMX-PARFLM carries the Poisson-mode registers (memory, readback, conservative) and the per-layer flow (extra compute). Whether that extra compute is the right kind is the question of §3; it is not.
 
 Where the mechanisms are described: the Fock registers in the book §20 and [`Doi_Peliti_Dynamics_of_Semantic_Particles_and_Registers.md`](Doi_Peliti_Dynamics_of_Semantic_Particles_and_Registers.md) §2–3 (exclusion slots, one content vector each, always occupied); the Poisson-mode registers in [`Poisson_Mode_Registers_PM1.md`](Poisson_Mode_Registers_PM1.md) §1–4 and the book §10.5.2; the modes themselves in [`Single_Particle_Hilbert_Space_in_Semantic_Simulation.md`](Single_Particle_Hilbert_Space_in_Semantic_Simulation.md) §1 and §5 (states as root densities; repeated occupation); the exact integration in [`Exact_Integration_of_Poisson_Mode_Wells_PMX.md`](Exact_Integration_of_Poisson_Mode_Wells_PMX.md); the per-layer flow in the protocol §5.19.
 
 ---
 
-## 3. The blocker: nothing makes thinking longer help
+## 3. The blocker: nothing makes thinking longer help, and emission is the mechanism
 
 There are two ways to spend more compute on a trained model without retraining it, and the ladder has measured both.
 
@@ -71,11 +84,11 @@ There are two ways to spend more compute on a trained model without retraining i
 
 **Refinement converges, and is not reasoning.** Cutting each layer into $k$ substeps with the context and the quadratics frozen at the layer's entry converges: SR2 to within 0.10 nats of its trained step, PMX to within 0.39. But this is more accuracy of the *same* step, the trained map sampled more finely. It changes no decision the model makes; it cannot, since it converges to a limit that the trained step already approximates. It is a knob, not a scratchpad.
 
-So the one requirement no mechanism supplies in a useful form is the second: extra compute that **helps**. The book's design (§37.4) asks for it in the form it cannot have, "a trajectory continued past the trained window", and that is why its table marks native chain-of-thought as needing (S) and not usable today. The design was built on the wrong substrate twice: the Fock registers, which are the non-conservative channel and refine worst, and Gate-2 extension, which fails in every arm.
+Neither extension nor refinement raises the effective depth with the problem, which by Feng et al. is what chain-of-thought is. The compute therefore has to come from the classical source, **emission**: each intermediate particle is a full step, spent where the model chooses, raising the depth by one. Emission is not a fallback from a failed "think longer"; it is the mechanism, and extension's failure is irrelevant to it. The book's earlier design (§37.4, now rewritten) asked for compute in the form it cannot have, "a trajectory continued past the trained window", on the Fock registers, which are the non-conservative channel and refine worst.
 
 ---
 
-## 4. The route: emitted particles on a conservative scratchpad
+## 4. The route: emitted particles on a conservative working memory
 
 The route that is open is the transformer's: **emit intermediate particles.** An intermediate token is a full step of extra compute, spent exactly where the model chooses to spend it, and it costs no new property. What differs is where the trace lives and what it does to later tokens.
 
@@ -95,7 +108,7 @@ In the Poisson-mode registers an emitted particle at position $s$ raises the occ
 
 ---
 
-## 4a. The ceiling: the scratchpad is an unordered bag
+## 4a. The missing half: the working memory is an unordered bag
 
 The route of §4 inherits a limit that [`Realizing_Execution_Gauge_vs_Causal_Ordering.md`](Realizing_Execution_Gauge_vs_Causal_Ordering.md) §1 states for the Fock channel and that applies equally to the Poisson-mode registers. The occupation is a sum,
 
@@ -110,7 +123,7 @@ What this permits and what it forbids:
 - **Permitted: retrieval-style reasoning.** Which facts are relevant, which concepts are in play, which entities have been introduced. The trace is a set with recency weights, and that is what a set supports. The RF probe's weak signal (§7) is consistent with exactly this: the occupation carries content about what the context was.
 - **Forbidden: procedural reasoning.** Anything whose answer depends on the order of operations, which includes arithmetic chains, nested structure and "who did what to whom". The book's own witnesses are F4 (cross-serial dependencies, $a^n b^n c^n$) and F5 (bounded copy, $ww$); a Poisson-mode scratchpad should fail both for the same reason the Fock channel does.
 
-The execution note works out the two ways through the ceiling, neither built or run: **Route A**, a gauge channel in which registers act on a token's state by rotations rather than additive forces, so that two thoughts applied in opposite orders land in different places (and conservativity may survive, since a rotation is a change of frame, not a force: conjectured there, §2.4); and **Route B**, keeping every force a gradient and putting the order into the dynamics through causality. The experiment that separates them is F4 against F5 (§4 there). Until one of them exists, a robust chain-of-thought in this framework is bounded above by what an ordered-by-recency bag of concepts can express, and the §37.4 rewrite must say so.
+The execution note works out the two ways through the ceiling, neither built or run: **Route A**, a gauge channel in which registers act on a token's state by rotations rather than additive forces, so that two thoughts applied in opposite orders land in different places (and conservativity may survive, since a rotation is a change of frame, not a force: conjectured there, §2.4); and **Route B**, keeping every force a gradient and putting the order into the dynamics through causality. The experiment that separates them is F4 against F5 (§4 there). Until one of them exists, what the registers supply is a **conservative working memory**, not chain-of-thought: in the book's terms, the v2 half of the native derivation of §10.9.5 (emission into a memory) without the v3 half (the operator that composes). The book's §37.4 says so. One further bound is independent of training: Feng et al.'s constructions need depth 4–5 at constant width, and the ladder's L = 2 models sit below that floor.
 
 [`Semantic_Templates_as_Doi_Peliti_Reactions.md`](Semantic_Templates_as_Doi_Peliti_Reactions.md) reaches the same conclusion from the other side (§7.3 there): a reaction formalism sequences firings perfectly well, through a control particle hopping on the atom tree, but cannot make the outcome depend on the sequence. It also supplies the language in which a learned template bank, the source of intermediate steps that §6 says is missing, would be stated (firing as a creation term, the threshold as a rate); it does not supply the bank.
 
@@ -118,7 +131,7 @@ The execution note works out the two ways through the ceiling, neither built or 
 
 **Adds.**
 
-- **A conservative scratchpad.** The reasoning state is per-token conservative memory: its effect on every later token is a gradient force, and the model that carries it stays a damped geodesic step per token.
+- **A conservative working memory.** The reasoning state is per-token conservative memory: its effect on every later token is a gradient force, and the model that carries it stays a damped geodesic step per token.
 - **An energy on the trace.** Each step along the trace has an energy $H_t$ that, within a step, falls at exactly the friction rate, and across steps changes by friction plus the landscape work $V_{\ell+1}(h_t) - V_\ell(h_t)$ (book §37.6, the energy-anomaly bullet). A thought token that moves the system into a region inconsistent with the learned landscape shows up as an energy anomaly on the reasoning itself. That is the hallucination detector of Experiment G2 applied to the trace, and it has no transformer analogue.
 - **A removable trace.** Suppressing the readout of a thought while keeping its occupation gives a reasoning step with no output token. Transformers cannot do this: a token that is not emitted is not in the cache.
 - **Self-correction has a mechanism.** A flagged thought can be re-emitted; its occupation decays with $\lambda_v$ and is overwritten by the new one. This is not designed yet.

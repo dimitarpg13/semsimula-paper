@@ -1,13 +1,13 @@
-"""Figures for Chain_of_Thought_Substrate_in_Lagrangian_Models.md.
+"""Figures for Chain_of_Thought_Substrate_in_Lagrangian_Models.md (the working-memory note).
 
 PNGs into figures/cot_substrate/. The measured panels carry the ladder's
 recorded numbers (protocol SS5.10, SS5.15, SS5.19; the generations registry);
 the toy panel simulates the Poisson-mode occupation recursion of
 Poisson_Mode_Registers_PM1.md eq. 1.2 on a planted sequence.
 
-  cot_three_needs.png     -- the four things chain-of-thought needs (the fourth,
-                             order-dependent composition, added 2026-10-12), and
-                             which mechanism of the framework supplies each
+  cot_three_needs.png     -- the four things chain-of-thought needs, order-dependent
+                             composition first (the classical definition, Feng et
+                             al. 2023), and which mechanism supplies each
   cot_extra_compute.png   -- the two ways to spend more compute on a trained
                              model: extension past the trained depth (Gate 2,
                              catastrophic in every arm) against refinement of
@@ -48,20 +48,20 @@ def box(ax, xy, w, h, text, col, fs=9, ec="k"):
 
 # ------------------------------------------------------------- 1. the grid
 def fig_three_needs():
-    needs = ["memory across\nthe computation", "extra compute\non a hard token", "readback into\nlater predictions",
-             "order-dependent\ncomposition", "conservative\n(per token)", "refinement-ready\n(at 0.5B tokens)"]
+    needs = ["order-dependent\ncomposition", "extra compute\non a hard token", "memory across\nthe computation", "readback into\nlater predictions",
+             "conservative\n(per token)", "refinement-ready\n(at 0.5B tokens)"]
     mechs = ["Fock\nregisters", "Poisson-mode\nregisters", "pair potential\n$V_\\phi$", "per-layer flow\n(SR2 / PMX)"]
     # 2 = yes, 1 = partial, 0 = no
-    M = np.array([[2, 2, 0, 0],
+    M = np.array([[0, 0, 0, 0],
                   [0, 0, 0, 2],
+                  [2, 2, 0, 0],
                   [2, 2, 1, 0],
-                  [0, 0, 0, 0],
                   [0, 2, 2, 2],
                   [0, 0, 0, 1]])
-    labels = [["slot contents\n(two-hop attention)", "occupations $\\bar n_v$\nover the strict past", "none: pairwise,\nno persistent state", "none"],
+    labels = [["no: additive\nupdates commute", "no: occupations\nare sums", "no: additive", "no: a flow of\none fixed step"],
               ["fixed step", "fixed step", "fixed step", "substeps_per_layer\n= k converges"],
+              ["slot contents\n(two-hop attention)", "occupations $\\bar n_v$\nover the strict past", "none: pairwise,\nno persistent state", "none"],
               ["reverse channel", "the wells' force", "selected sources\n(top-16)", "—"],
-              ["no: additive\nupdates commute", "no: occupations\nare sums", "no: additive", "no: a flow of\none fixed step"],
               ["no: gradient\nof nothing", "yes", "yes", "yes"],
               ["no: +1,274%", "no: CX3 miss\n(0.39 nats)", "—", "SR2 yes:\nwithin 0.10 nats"]]
     cols = {2: "#BBF7D0", 1: "#FEF3C7", 0: "#FEE2E2"}
@@ -76,9 +76,9 @@ def fig_three_needs():
             box(ax, (0.95 + j * 0.9, y), 0.85, 0.82, labels[i][j], cols[M[i, j]], fs=8, ec="#6B7280")
     ax.plot([0.9, 4.6], [1.74, 1.74], color="k", lw=0.8)
     ax.text(0.47, 1.52, "properties", ha="center", fontsize=8.5, color=GREY, style="italic")
-    ax.text(0.47, 2.58, "no mechanism\nsupplies it", ha="center", va="top", fontsize=8, color=RED, style="italic")
+    ax.text(0.47, 5.43, "the defining one:\nno mechanism\nsupplies it", ha="center", va="top", fontsize=8, color=RED, style="italic")
     ax.text(0.47, 6.72, "what CoT needs", ha="center", va="center", fontsize=9, color=GREY, style="italic")
-    ax.set_title("Four things chain-of-thought needs, and which mechanism supplies each (green yes, amber partial, red no)")
+    ax.set_title("Four things chain-of-thought needs, in order, and which mechanism supplies each (green yes, amber partial, red no)")
     save(fig, "cot_three_needs.png")
 
 
@@ -178,7 +178,7 @@ def fig_route():
             ha="center", fontsize=8.8)
     ax.text(6.75, 0.15, "What it does not add: a way to think longer without emitting. Extension fails (Figure 2); refinement converges but reasons no more.",
             ha="center", fontsize=8.8, color=RED)
-    ax.set_title("The route: chain-of-thought as emitted particles on a conservative scratchpad (green exists, red missing)")
+    ax.set_title("The route: emitted steps held in a conservative working memory (green exists, red missing)")
     save(fig, "cot_route.png")
 
 

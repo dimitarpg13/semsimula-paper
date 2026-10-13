@@ -5112,6 +5112,25 @@ The cost of a removal is c = ln(PPL_removed / PPL_full) in nats, with a paired s
 
 **Reading, revised.** RF-b misses, so the strong precondition fails at the pre-registered size: PMX's registers do not add 0.02 of R² about the next 16 tokens to the hidden state. The weak precondition holds, for PMX only: the occupation carries a small, real, content-bearing signal about what comes next (R² 0.024 alone, equal to the full hidden state's; +0.004 to +0.014 over the hidden state once local difficulty is conditioned on; nothing in PM1). For the chain-of-thought substrate note (§6 there): the registers are a memory of the past with a real but faint forward component; the design that writes thoughts to them is not refuted, since nothing has been trained to write, and the claim that the scratchpad "is already there" holds only in this weak form.
 
+### 5.24 MT: do the Poisson modes have transitions? — **pre-registered 2026-10-12, before any measurement**
+
+**Why.** The template design note ([`Community_of_Semantic_Templates_for_Native_CoT.md`](Community_of_Semantic_Templates_for_Native_CoT.md)) reads a Poisson mode as a learned pattern-matching region (centre μ_v, width κ_v, threshold as a binding radius) and its occupation as a firing history. A template bank that can carry a chain of thought needs *transitions*: which template fires next, given which fired. This asks whether the trained PMX modes already have them. RF (§5.23) asked whether the occupation predicts future *loss*; this asks whether it predicts future *firings*.
+
+**Method** (`debug/mode_transition_probe.py OUT {pmx|pm1}`, CPU). Same capture as RF: 200 × 512 validation tokens, seed 20261012, layer-1 input states. A mode **fires** on token t if its overlap E_v(t) = exp(−κ_v²‖h_t − μ_v‖²) exceeds a threshold θ fixed per mode at its 90th percentile over the training split (so every mode fires on 10% of tokens, which removes the dominant-mode artefact of 6b-15 and the clustering note §6.3). For lags Δ ∈ {1, 2, 4, 8}: the 64 × 64 transition matrix P_Δ(u → v) = Pr[v fires at t + Δ | u fires at t], and its **lift** over the marginal, L_Δ(u, v) = P_Δ(u → v) / Pr[v fires].
+
+**The null.** Adjacent states are similar, so firings co-occur without any transition structure. The control is the lift predicted by state similarity alone: the same matrices computed after replacing h_{t+Δ} by its best linear prediction from h_t (ridge, fit on the training split), i.e. the transitions a smooth drift of the hidden state would produce. **Structured transitions** are lift that survives conditioning on that prediction.
+
+**Primary statistic.** The mutual information I_Δ between "u fires at t" and "v fires at t + Δ" over the 64 modes, in bits, and the **excess** ΔI_Δ = I_Δ − I_Δ^{drift}, with bootstrap intervals over sequences (1,000 resamples). Secondary: the number of (u, v) pairs with lift ≥ 2 and ≤ 0.5 at Δ = 1 beyond the drift null (interval disjoint from 0); whether the top transitions are asymmetric (L(u→v) ≠ L(v→u)), which a chain needs and a similarity structure does not have.
+
+| id | prediction | called at |
+| --- | --- | ---: |
+| MT-a | I_1 exceeds the shuffle null (modes permuted within each sequence) | 90% |
+| MT-b | the excess ΔI_1 over the drift null is positive, interval disjoint from 0 | 55% |
+| MT-c | ΔI_Δ decays with Δ but is still positive at Δ = 4 | 40% |
+| MT-d | at least 20 of the 64 × 63 ordered pairs have asymmetric lift (L(u→v) ≥ 2 L(v→u), both beyond the drift null) | 35% |
+
+**Reading.** MT-b holding: the modes carry transition structure that state similarity does not explain; the bank has implicit transitions, and the inference region is partly learned. MT-b failing with MT-a holding: the modes are patterns whose co-firing is a shadow of the state's own drift; no transitions. MT-d is the one that bears on order: a chain needs asymmetric transitions, and a similarity structure is symmetric. PM1 is the comparison (explicit wells; no forward signal in RF). Every reading is scoped to these models and their budget (§5.19 scope caveat).
+
 ## 6. Open risks
 
 ### 6.1 At L=1 the register bank is read but never updated — **2026-09-24**

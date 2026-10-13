@@ -132,6 +132,17 @@ both are recorded above. Its git provenance in aiconcepts is clear:
   earlier in the `SemanticStructures` line of work.
 * The same filename receives further revisions through 2022
   (`5addf6b`, `4a1e990`, `1bbfab2`, …, up to `019cdfc` on 2022-06-24).
+* **The PDF was regenerated from the `.docx` on 2026-10-12.** The PDF
+  committed in April rendered only the first two pages of the source and
+  broke off mid-sentence in the pattern-matching section; the present
+  `Semantic_Templates.pdf` (9 pages, exported from Word) is the whole
+  `.docx`: 188 paragraphs, through the template-particle construction, the
+  matching functional (Eqs. 17–20), six `//TODO` definitions, and two
+  headings with no body, *Optimal Match of the Pattern Matching Region* and
+  *Inference Structure of Semantic Template*. The paragraph numbers cited
+  by the companion notes (`Semantic_Templates_as_Doi_Peliti_Reactions.md`,
+  `Community_of_Semantic_Templates_for_Native_CoT.md`) refer to the
+  `.docx`.
 * The `.docx` source included here is the canonical version currently at
   `docs/SemanticStructures/SemanticTemplates.docx` in aiconcepts; the
   PDF included here is the last PDF blob from git history (commit
