@@ -125,6 +125,18 @@ $$\Phi_\tau \circ \Phi_s = \Phi_{\tau + s}, \qquad \Phi_\tau^{-1} = \Phi_{-\tau}
 
 Invertibility is time-reversibility, and it is the reason "evolve for time $\tau$" can be treated as a change of coordinates on phase space rather than as an irreversible process.
 
+**Notation: the derivative of the flow.** Sections 3.2 and 3.3 need the derivative of $\Phi_\tau$ with respect to its argument, written $D\Phi_\tau$. Here $D$ is the **total-derivative (Jacobian) operator**, not a partial derivative and not an increment: for a map from $\mathbb{R}^{2L}$ to $\mathbb{R}^{2L}$ it is the full matrix of first partials,
+
+$$\bigl(D\Phi_\tau\bigr)_{ij} = \frac{\partial (\Phi_\tau)_i}{\partial \Gamma_j}, \qquad D\Phi_\tau \in \mathbb{R}^{2L \times 2L}$$
+
+Its meaning is the propagation of perturbations: start at $\Gamma$ and at a nearby point $\Gamma + \epsilon w$, and after time $\tau$ the two have separated by
+
+$$\Phi_\tau(\Gamma + \epsilon w) - \Phi_\tau(\Gamma) = \epsilon D\Phi_\tau(\Gamma) w + O(\epsilon^2)$$
+
+so $D\Phi_\tau$ carries tangent vectors at $\Gamma$ to tangent vectors at $\Phi_\tau(\Gamma)$. It is also called the tangent flow, the state-transition matrix or, over a period, the monodromy matrix, and it obeys the **variational equation** $\dot M = J \nabla^2 H M$ with $M(0) = I$.
+
+The letter is $D$ rather than the more common $J$ for a Jacobian because $J$ is already the symplectic matrix here. Keeping them apart matters: the two symbols stand side by side in the next subsection.
+
 ### 2.3 The generator
 
 For an observable $A$ on phase space, write $A(\tau) := A \circ \Phi_\tau$. Differentiating and substituting Hamilton's equations gives the **Poisson bracket**:
