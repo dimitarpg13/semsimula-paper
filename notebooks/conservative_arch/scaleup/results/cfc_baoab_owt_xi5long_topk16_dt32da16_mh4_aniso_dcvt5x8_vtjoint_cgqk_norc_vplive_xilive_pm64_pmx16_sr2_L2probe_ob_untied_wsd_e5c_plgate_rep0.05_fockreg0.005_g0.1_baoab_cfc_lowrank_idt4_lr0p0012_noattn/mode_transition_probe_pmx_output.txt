@@ -1,0 +1,21 @@
+MT, mode transition probe: pmx  ...lgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+CHECK  overlaps from the captured layer-1 input vs the model's, max |d| 0.0e+00
+   200 x 512 tokens, K = 64 modes; train 150 / test 50 sequences
+   firing rate on test, per mode: median 0.099 (target 0.10); modes never firing on test: 0
+
+MUTUAL INFORMATION between "u fires at t" and "v fires at t + D", summed over the 64 x 64 pairs (bits; test sequences)
+   D   I_D       I_drift   I_shuffle   excess over drift [95% CI over sequences]   (drift null: capacity-matched, 64 PCs)
+   1      1.646     1.274      0.550     +0.373  [+0.305, +0.571]   (I_drift(384) inf)
+   2      0.779     0.588      0.231     +0.191  [+0.134, +0.363]   (I_drift(384) 0.745)
+   4      0.458     0.375      0.191     +0.083  [+0.040, +0.226]   (I_drift(384) 0.451)
+   8      0.354     0.329      0.171     +0.025  [-0.006, +0.137]   (I_drift(384) 0.372)
+
+LIFT at D = 1, off-diagonal pairs: lift >= 2: 0 (beyond the drift null: 0);  lift <= 0.5: 0 (beyond: 0)
+   asymmetric pairs, L(u->v) >= 2 L(v->u), L(u->v) >= 2 and beyond the drift null: 0
+   top transitions (u -> v): 52->19 lift 1.9 (drift 1.7, reverse 1.6), 20->27 lift 1.9 (drift 1.8, reverse 1.6), 30->58 lift 1.8 (drift 1.7, reverse 1.5), 52->33 lift 1.8 (drift 1.7, reverse 1.2), 33->58 lift 1.8 (drift 1.6, reverse 0.9), 33->30 lift 1.8 (drift 1.5, reverse 1.5), 51->30 lift 1.8 (drift 1.6, reverse 1.7), 63->50 lift 1.7 (drift 1.6, reverse 0.9)
+
+CALLS (protocol SS5.24)
+   MT-a  I_1 exceeds the shuffle null                         -> HIT (1.646 vs 0.550)
+   MT-b  excess over drift at D = 1, CI disjoint from 0         -> HIT (+0.373 [+0.305, +0.571])
+   MT-c  excess decays with D and is positive at D = 4           -> HIT (D=4: +0.083 [+0.040, +0.226])
+   MT-d  >= 20 asymmetric pairs beyond the drift null            -> MISS (0)

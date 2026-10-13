@@ -132,7 +132,7 @@ def drift_fire(D, seed=0, full=False):
             grad = Z.T @ (pz - y) + lam @ w
             Hs = (Z * r[:, None]).T @ Z + lam
             w = w - np.linalg.solve(Hs, grad)
-        probs[:, v] = 1 / (1 + np.exp(-(Zte @ w)))
+        probs[:, v] = np.clip(1 / (1 + np.exp(-(Zte @ w))), 1e-6, 1 - 1e-6)   # the 384-wide fit can saturate; a p of exactly 0/1 makes the MI log infinite
     rs = np.random.default_rng(SEED + 100 + seed + D)
     return (rs.random(probs.shape) < probs).reshape(len(te), T - D, K)
 

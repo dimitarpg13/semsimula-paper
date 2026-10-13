@@ -149,7 +149,21 @@ A bank that carries a chain needs transitions: which template fires next, given 
 
 **Figure 4.** The MT probe on the published PMX weights. Left: the measured lift matrix at lag 1. Middle: the lift the state's own drift predicts. Right: summed mutual information against lag for the data, the drift null and the shuffle, with the excess and its interval.
 
-**Result.** *(to be filled from the run)*
+**Result (2026-10-12; protocol §5.24, "MT scored").** Three of four calls hit, in both arms; the fourth, the one that bears on order, missed in both.
+
+| | PMX | PM1 |
+| --- | --- | --- |
+| summed MI at lag 1: data / drift null / shuffle (bits) | 1.65 / 1.27 / 0.55 | 3.37 / 2.89 / 1.28 |
+| excess over the drift null at lag 1 (MT-b) | **+0.37** [+0.31, +0.57] | **+0.48** [+0.17, +0.96] |
+| excess at lag 4 (MT-c) | +0.08 [+0.04, +0.23] | +0.19 [+0.07, +0.42] |
+| ordered pairs with lift ≥ 2 beyond the null | 0 | 7 |
+| of those, asymmetric, L(u→v) ≥ 2 L(v→u) (MT-d) | **0** | **3** |
+
+- **The modes have transitions.** About a quarter of the firing information at lag 1 in PMX is not explained by the hidden state's own drift, and it decays over 4–8 tokens. The bank is not a set of independent detectors; which mode fires makes some others more likely to fire next.
+- **The transitions have no direction.** In PMX no ordered pair reaches a lift of 2 at all, and the strongest are within 0.2 of their own reverse. In PM1 three pairs are asymmetric, against the 20 pre-registered. u-then-v is as likely as v-then-u: the modes co-fire on temporal proximity, which is what a similarity structure does and not what a chain does.
+- **PM1's bank is coarser and more concentrated** (16 strong pairs; 3.4 bits against 1.6), consistent with its explicitly integrated wells firing together over longer stretches. The difference does not bear on order.
+
+**Reading.** The weak form of the claim holds: the trained models already carry a learned community of pattern-matching regions whose firings carry transition structure. The strong form does not: the transitions are symmetric, so the community has co-occurrence and not sequence. That is the order-blindness of the working-memory note's §4a measured at the level of the bank rather than the trace, and it sharpens §5 above. The inference region is not only undefined on paper; nothing in the trained modes has the asymmetric structure an inference region would have had to learn. Supplying order is therefore a design task, not a training task that more data would finish: a non-commutative inference region (Route A or B of the execution note), tested on F4 against F5, with a corpus that contains ordered derivations.
 
 ---
 

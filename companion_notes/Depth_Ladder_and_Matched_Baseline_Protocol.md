@@ -5131,6 +5131,32 @@ The cost of a removal is c = ln(PPL_removed / PPL_full) in nats, with a paired s
 
 **Reading.** MT-b holding: the modes carry transition structure that state similarity does not explain; the bank has implicit transitions, and the inference region is partly learned. MT-b failing with MT-a holding: the modes are patterns whose co-firing is a shadow of the state's own drift; no transitions. MT-d is the one that bears on order: a chain needs asymmetric transitions, and a similarity structure is symmetric. PM1 is the comparison (explicit wells; no forward signal in RF). Every reading is scoped to these models and their budget (§5.19 scope caveat).
 
+#### MT scored: **the modes have transitions beyond the state's drift (MT-a, b, c HIT in both arms), and none of them are asymmetric (MT-d MISS: 0 in PMX, 3 in PM1)** — **2026-10-12**
+
+`debug/mode_transition_probe.py` on the published PMX and PM1 weights, 200 × 512 validation tokens, seed 20261012; the exactness check passes on both (captured overlaps reproduce the model's to 0). Firing rate per mode on the test split 0.099 (target 0.10); no mode silent. Outputs in each arm's results folder.
+
+| summed MI, bits | PMX Δ=1 | Δ=2 | Δ=4 | Δ=8 | PM1 Δ=1 | Δ=2 | Δ=4 | Δ=8 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| data | 1.646 | 0.779 | 0.458 | 0.354 | 3.369 | 2.362 | 0.832 | 0.407 |
+| drift null (64 PCs) | 1.274 | 0.588 | 0.375 | 0.329 | 2.888 | 2.282 | 0.639 | 0.314 |
+| shuffle null | 0.550 | 0.231 | 0.191 | 0.171 | 1.279 | 0.919 | 0.435 | 0.228 |
+| **excess over drift** | **+0.373** | +0.191 | +0.083 | +0.025 | **+0.482** | +0.079 | +0.192 | +0.093 |
+| 95% CI | [+0.31, +0.57] | [+0.13, +0.36] | [+0.04, +0.23] | [−0.01, +0.14] | [+0.17, +0.96] | [−0.22, +0.54] | [+0.07, +0.42] | [+0.04, +0.27] |
+
+| | PMX | PM1 |
+| --- | --- | --- |
+| MT-a (I₁ exceeds the shuffle, 90%) | **HIT**, 3.0× | **HIT**, 2.6× |
+| MT-b (excess over drift at Δ=1, CI disjoint from 0, 55%) | **HIT**, +0.37 [+0.31, +0.57] | **HIT**, +0.48 [+0.17, +0.96] |
+| MT-c (excess decays, still positive at Δ=4, 40%) | **HIT**, +0.08 [+0.04, +0.23] | **HIT**, +0.19 [+0.07, +0.42] |
+| MT-d (≥ 20 asymmetric pairs beyond the null, 35%) | **MISS**, **0** (no off-diagonal pair reaches lift 2 at all; top lift 1.9, matched by the null's 1.7) | **MISS**, 3 (16 pairs at lift ≥ 2, 7 beyond the null, 3 asymmetric) |
+
+- **The modes carry transition information that the state's own drift does not explain**, about 0.37 bits summed over the 64 × 64 pairs at lag 1 in PMX (a quarter of the total), decaying over 4–8 tokens. The bank has implicit transitions.
+- **The transitions are symmetric.** In PMX no ordered pair even reaches a lift of 2, and the strongest ones are within 0.2 of the null and of their reverse. In PM1 a handful are strong, but of the 7 that exceed the null only 3 are asymmetric, and the top ones (22→40, 8→40, 8→53) are matched by the drift null almost exactly. What the modes co-fire on is *proximity in time*, not a direction: u-then-v is as likely as v-then-u. This is what a similarity structure looks like, and it is not what a chain looks like.
+- **PM1's transitions are stronger and more concentrated than PMX's** (16 strong pairs against 0; summed MI 3.4 against 1.6 bits). PM1's wells were explicitly integrated and sit at the stability wall; its modes are coarser objects that fire together on larger stretches. PMX's exact integration spread the firings out. Neither direction of this difference bears on order.
+- **A note on the reported-only column.** `I_drift(384)` printed `inf` at Δ = 1 in both arms: the full-state logistic fit saturates to probabilities of exactly 0 or 1 and the MI log diverges. The capacity-matched null the calls use never did. The probe now clips the probabilities; the recorded calls are unaffected.
+
+**Reading.** The weak form of the author's claim is supported: the trained Poisson modes form a bank of learned pattern-matching regions whose firings carry transition structure beyond what the hidden state's drift supplies, in both arms, decaying over a few tokens. The strong form is not: the transitions have no direction. For a chain of thought, a template firing has to make the *next* firing more likely than the *previous* one; these firings make neighbours likely in both directions, which is co-occurrence, not sequence. This is the order-blindness of §4a of the working-memory note, now measured at the level of the bank rather than the trace: the inference region is not merely undefined on paper, there is no asymmetric structure in the trained modes for it to have learned. Every reading is scoped to these models and their budget (§5.19).
+
 ## 6. Open risks
 
 ### 6.1 At L=1 the register bank is read but never updated — **2026-09-24**

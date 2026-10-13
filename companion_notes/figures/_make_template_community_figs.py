@@ -166,11 +166,11 @@ def fig_transitions():
     import json
     d = np.load(f); mi = json.load(open(j))["mi"]
     Lf, Ld = d["lift"], d["lift_drift"]
-    fig, ax = plt.subplots(1, 3, figsize=(15.5, 4.6), gridspec_kw={"width_ratios": [1, 1, 0.9]})
+    fig, ax = plt.subplots(1, 3, figsize=(17, 4.8), gridspec_kw={"width_ratios": [1, 1, 1.0], "wspace": 0.42})
     for k, (M, t) in enumerate(((Lf, "measured lift $L_1(u \\to v)$"), (Ld, "capacity-matched drift null"))):
         im = ax[k].imshow(np.log2(np.clip(np.nan_to_num(M, nan=1.0), 0.25, 4)), cmap="RdBu_r", vmin=-2, vmax=2, origin="lower")
         ax[k].set_title(t); ax[k].set_xlabel("v fires at t + 1"); ax[k].set_ylabel("u fires at t")
-    plt.colorbar(im, ax=ax[:2], fraction=0.025, label="$\\log_2$ lift (clipped to [1/4, 4])")
+    cb = fig.colorbar(im, ax=ax[1], fraction=0.046, pad=0.04); cb.set_label("$\\log_2$ lift (clipped to [1/4, 4])", fontsize=8)
     lags = sorted(int(x) for x in mi)
     I = [mi[str(l)]["I"] for l in lags]; Id = [mi[str(l)]["I_drift"] for l in lags]; Is = [mi[str(l)]["I_shuffle"] for l in lags]
     ex = [mi[str(l)]["excess"] for l in lags]; lo = [mi[str(l)]["lo"] for l in lags]; hi = [mi[str(l)]["hi"] for l in lags]
@@ -179,10 +179,11 @@ def fig_transitions():
     ax[2].plot(lags, Is, "x:", color=GREY, lw=1.5, label="shuffle null")
     ax[2].set_xscale("log", base=2); ax[2].set_xticks(lags); ax[2].set_xticklabels(lags)
     ax[2].set_xlabel("lag $\\Delta$ (tokens)"); ax[2].set_ylabel("summed mutual information (bits)")
-    ax[2].set_title("Firing information against lag")
+    ax[2].set_title("Firing information against lag (PMX)")
     ax2 = ax[2].twinx(); ax2.errorbar(lags, ex, yerr=[np.array(ex) - np.array(lo), np.array(hi) - np.array(ex)], fmt="d", color=RED, capsize=3, label="excess over drift")
     ax2.axhline(0, color=RED, lw=0.6, ls=":"); ax2.set_ylabel("excess (bits)", color=RED)
     ax[2].legend(fontsize=7.5, loc="upper right")
+    ax[2].text(0.03, 0.04, "excess at lag 1: 0.37 bits, a quarter of the total;\nevery strong pair symmetric (MT-d: 0 asymmetric)", transform=ax[2].transAxes, fontsize=7.5)
     save(fig, "tc_transitions.png")
 
 
