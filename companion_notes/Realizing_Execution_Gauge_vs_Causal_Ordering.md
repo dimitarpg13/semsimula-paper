@@ -24,12 +24,12 @@ Book context: §10.5.3 assigns order-dependence to a non-abelian operator algebr
 
 | Claim | Status |
 |---|---|
-| The present reverse channel is additive, $Q_i=\sum_k \mathrm{softmax}_k(q_i\cdot k_k/\sqrt{d_k})\,v_k$ | **In the code**, `ReverseChannel` in `model_fock_parf_v2.py` |
+| The present reverse channel is additive, $Q_i=\sum_k \mathrm{softmax}_k(q_i\cdot k_k/\sqrt{d_k}) v_k$ | **In the code**, `ReverseChannel` in `model_fock_parf_v2.py` |
 | Additive updates commute, so order cannot change the outcome | **Derived**, §1 |
 | Rotations are the unique linear action commuting with the layer's LayerNorm | **Derived**, §2.3 |
-| A centred rotation leaves $V_\theta$ invariant exactly when it commutes with the precision | **Derived**, §2.4 |
+| A centred rotation leaves Vθ invariant exactly when it commutes with the precision | **Derived**, §2.4 |
 | A gauge action is a change of frame, not a force, so the conservativity claim may survive it | **Conjectured**, §2.4 — the sharpest thing here, and unproven |
-| Rank-$2\rho$ generators cost less than the additive channel they replace | **Computed**, §2.5 |
+| Rank-2ρ generators cost less than the additive channel they replace | **Computed**, §2.5 |
 | Either route clears F4 or F5 | **Not known.** No experiment has been run |
 
 Every number quoted is an exact computation at the live configuration ($d=384$, $M=32$, $d_k=64$, aniso rank $r=4$). No predicted accuracy appears anywhere in this note, in text or in figures.
@@ -41,13 +41,13 @@ Every number quoted is an exact computation at the live configuration ($d=384$, 
 Write the layer update of the Fock-PARFLM schematically, with $F$ the conservative force and $Q$ the register channel:
 
 $$
-h^{(\ell+1)} = \Pi\left[\,h^{(\ell)} + \frac{\Delta t}{1+\gamma\Delta t}\left(h^{(\ell)}-h^{(\ell-1)}\right) + \frac{\Delta t^2}{(1+\gamma\Delta t)\,\mathfrak{m}}\Bigl(-\nabla V_\theta + Q^{(\ell)}\Bigr)\right], \qquad (1.1)
+h^{(\ell+1)} = \Pi\left[ h^{(\ell)} + \frac{\Delta t}{1+\gamma\Delta t}\left(h^{(\ell)}-h^{(\ell-1)}\right) + \frac{\Delta t^2}{(1+\gamma\Delta t) \mathfrak{m}}\Bigl(-\nabla V_\theta + Q^{(\ell)}\Bigr)\right], \qquad (1.1)
 $$
 
 with $\Pi$ the LayerNorm projection. Suppose two registers $k_1,k_2$ contribute $Q_1$ and $Q_2$ at the same layer. Then
 
 $$
-h + Q_1 + Q_2 \;=\; h + Q_2 + Q_1 \qquad (1.2)
+h + Q_1 + Q_2  =  h + Q_2 + Q_1 \qquad (1.2)
 $$
 
 identically. The contributions are vectors in the same tangent space and addition is commutative; no schedule, gate or ordering of the registers can make (1.2) fail. This is the formal content of §7.3 of the templates note, and it is why "John gave Mary a book" and "Mary gave John a book" cannot be separated by the channel itself — only by what reaches it.
@@ -65,7 +65,7 @@ identically. The contributions are vectors in the same tangent space and additio
 `ReverseChannel` computes, per token $i$,
 
 $$
-Q_i \;=\; \sum_{k \in \mathrm{active}} \mathrm{softmax}_k\left(\frac{q_i\cdot k_k^{\mathrm{reg}}}{\sqrt{d_k}}\right) v_k^{\mathrm{reg}}, \qquad (2.1)
+Q_i  =  \sum_{k \in \mathrm{active}} \mathrm{softmax}_k\left(\frac{q_i\cdot k_k^{\mathrm{reg}}}{\sqrt{d_k}}\right) v_k^{\mathrm{reg}}, \qquad (2.1)
 $$
 
 and adds $Q_i$ to the force in (1.1). Each register contributes a **vector**, through the learned $W_V^{\mathrm{rev}}$.
@@ -75,14 +75,14 @@ and adds $Q_i$ to the force in (1.1). Each register contributes a **vector**, th
 Keep the routing weights and replace what the register contributes: a **group element** instead of a vector. Give register $k$ a generator $A_k$ in the Lie algebra $\mathfrak{g}\subset\mathfrak{so}(d)$, and let the token pick up
 
 $$
-U_i^{(\ell)} \;=\; \exp\left(\varepsilon^{(\ell)} \sum_{k \in \mathrm{active}} w_{ik}^{(\ell)} A_k\right), \qquad
+U_i^{(\ell)}  =  \exp\left(\varepsilon^{(\ell)} \sum_{k \in \mathrm{active}} w_{ik}^{(\ell)} A_k\right), \qquad
 w_{ik}^{(\ell)} = \mathrm{softmax}_k\left(\frac{q_i\cdot k_k^{\mathrm{reg}}}{\sqrt{d_k}}\right), \qquad (2.2)
 $$
 
 with $\varepsilon^{(\ell)}$ the existing per-layer gate (`reverse_channel_scale`), initialised at zero so the model starts exactly where it is today. The state is then transported rather than pushed:
 
 $$
-h_i^{(\ell+1)} \;\longmapsto\; \mu_i^{(\ell)} + U_i^{(\ell)}\left(h_i^{(\ell+1)} - \mu_i^{(\ell)}\right), \qquad (2.3)
+h_i^{(\ell+1)}  \longmapsto  \mu_i^{(\ell)} + U_i^{(\ell)}\left(h_i^{(\ell+1)} - \mu_i^{(\ell)}\right), \qquad (2.3)
 $$
 
 where $\mu_i^{(\ell)}$ is the centre of the attractor currently binding the token (§2.4 explains why the action is centred there rather than at the origin).
@@ -113,7 +113,7 @@ $$
 and therefore
 
 $$
-\Pi(Rh) = \frac{R\left(h-m(h)\mathbf 1\right)}{s(h)} = R\,\Pi(h). \qquad (2.7)
+\Pi(Rh) = \frac{R\left(h-m(h)\mathbf 1\right)}{s(h)} = R \Pi(h). \qquad (2.7)
 $$
 
 **The transport passes through the projection untouched.** The admissible group is the stabiliser of $\mathbf 1$, that is $SO(d-1)$ acting on $\mathbf 1^{\perp}$; generators are antisymmetric with $A\mathbf 1 = 0$. No other linear action has this property: a scaling changes $s$, a shear changes both, and a general $GL(d)$ element changes the manifold $\Pi$ projects onto.
@@ -136,7 +136,7 @@ For an isotropic well ($\Lambda = \lambda I$) every rotation qualifies and the t
 
 ![A rotation orbit about an attractor, and the potential along it for an isotropic and an anisotropic well](figures/realizing_execution/rex_admissible_rotations.png)
 
-**Figure 2.** Left: the circular orbit traced by a centred rotation, drawn over an anisotropic well. Right: the potential along that orbit. For the isotropic well it is exactly flat, so the transport does no work. For the anisotropic well with $\sigma_1=0.20$, $\sigma_2=0.50$ it swings by $0.59\,\mathfrak{m}\upsilon^2$ over a full turn — which is why (2.9) matters and why the generators are restricted to the commutant.
+**Figure 2.** Left: the circular orbit traced by a centred rotation, drawn over an anisotropic well. Right: the potential along that orbit. For the isotropic well it is exactly flat, so the transport does no work. For the anisotropic well with $\sigma_1=0.20$, $\sigma_2=0.50$ it swings by $0.59 \mathfrak{m}\upsilon^2$ over a full turn — which is why (2.9) matters and why the generators are restricted to the commutant.
 
 **The conjecture.** The framework's central claim is that every per-layer **force** derives from one shared scalar potential. A group action is not a force: it appears in (2.3) as a transport of the state, not as a term in the acceleration of (1.1). If the admissible generators of (2.9) are used, the transport also leaves $V_\theta$ invariant, and applying the same $U$ to the incoming velocity preserves the kinetic term, so the total energy is unchanged. The conjecture is therefore:
 
@@ -149,7 +149,7 @@ This is the sharpest claim in the note and it is unproven. What would have to be
 Full generators are unnecessary. Take $A_k$ of rank $2\rho$, a sum of $\rho$ plane generators $A = uv^\top - vu^\top$ with $u\perp v$ orthonormal. Then $A^2 = -(uu^\top + vv^\top) = -P$, the projector on the plane, and $A^3 = -A$, so the exponential is a Rodrigues rotation in that plane:
 
 $$
-\exp(\theta A) = I + \sin\theta\,A - (1-\cos\theta)\,P, \qquad (2.10)
+\exp(\theta A) = I + \sin\theta A - (1-\cos\theta) P, \qquad (2.10)
 $$
 
 $$
@@ -172,7 +172,7 @@ It predicts order-sensitivity where there is currently none, and it should show 
 
 ### 3.1 What causality already does
 
-The trained models restrict the partners of token $t$ to positions $s\lt t$ (`causal_force=True`) and summarise the prefix through the multi-channel EMAs $\xi_t = \sum_{s\le t}\alpha^{\,t-s}h_s$. The composite map from a token sequence to the final hidden states is therefore already order-dependent: permuting the input changes the output. The book makes exactly this point — the causal models break the permutation symmetry of the framework's force law, and that is where they carry word order.
+The trained models restrict the partners of token $t$ to positions $s\lt t$ (`causal_force=True`) and summarise the prefix through the multi-channel EMAs $\xi_t = \sum_{s\le t}\alpha^{ t-s}h_s$. The composite map from a token sequence to the final hidden states is therefore already order-dependent: permuting the input changes the output. The book makes exactly this point — the causal models break the permutation symmetry of the framework's force law, and that is where they carry word order.
 
 ### 3.2 The precise reach, and the precise limit
 
@@ -218,9 +218,9 @@ $\Omega \equiv 0$ identically for the additive channel, which makes it a clean n
 
 | Outcome | Reading |
 |---|---|
-| $\Omega\gt 0$ and F4 improves at matched $M$ | Route A is doing what it was built to do |
-| $\Omega\gt 0$ and F4 flat | Non-commutativity is realizable but not sufficient; the bottleneck is elsewhere |
-| $\Omega\approx0$ after training | The model declines the group structure; Route A is not refuted but is not engaged either |
+| Ω > 0 and F4 improves at matched M | Route A is doing what it was built to do |
+| Ω > 0 and F4 flat | Non-commutativity is realizable but not sufficient; the bottleneck is elsewhere |
+| Ω ≈ 0 after training | The model declines the group structure; Route A is not refuted but is not engaged either |
 | Both arms equal on F5 for $\lvert w\rvert\le M$ | Expected, and not evidence either way — this is the capacity regime of §3.2 |
 | Arm (iii) matches arm (ii) everywhere | Capacity, not algebra, was the operative variable; prefer Route B |
 | Perplexity degrades in arm (ii) | The conservativity conjecture of §2.4 needs re-examination before anything else is concluded |
@@ -234,7 +234,7 @@ $\Omega \equiv 0$ identically for the additive channel, which makes it a clean n
 | $h+Q_1+Q_2 = h+Q_2+Q_1$ | (1.2) | the obstruction: additive channels are order-blind |
 | $U_i=\exp(\varepsilon\sum_k w_{ik}A_k)$ | (2.2) | the gauge channel, reusing the existing routing weights |
 | $U^{(2)}U^{(1)}(U^{(1)}U^{(2)})^{-1}=\exp(\varepsilon^2[A^{(2)},A^{(1)}])$ | (2.5) | the commutator is the mechanism and the measurable |
-| $\Pi(Rh)=R\,\Pi(h)$ for $R\mathbf 1=\mathbf 1$ | (2.7) | rotations are the unique action commuting with LayerNorm |
+| $\Pi(Rh)=R \Pi(h)$ for $R\mathbf 1=\mathbf 1$ | (2.7) | rotations are the unique action commuting with LayerNorm |
 | $V_v$ invariant $\iff [U,\Lambda_v]=0$ | (2.9) | the admissibility condition; 97.41% of $\mathfrak{so}(d)$ at $d=384$, $r=4$ |
 | $\exp(\theta A)=I+\sin\theta A-(1-\cos\theta)P$ | (2.10) | closed-form exponential, $O(\rho d)$ per token per layer |
 | $\Omega^{(\ell)}$ | (4.1) | order-sensitivity, identically zero for the additive channel |

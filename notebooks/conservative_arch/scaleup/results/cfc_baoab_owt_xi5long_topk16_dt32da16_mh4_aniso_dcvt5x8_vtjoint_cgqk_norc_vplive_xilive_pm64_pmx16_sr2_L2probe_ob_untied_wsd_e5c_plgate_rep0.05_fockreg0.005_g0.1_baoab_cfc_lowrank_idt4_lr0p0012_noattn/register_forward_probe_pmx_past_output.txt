@@ -1,0 +1,19 @@
+RF, register forward probe: pmx  ...lgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+CHECK  captured losses vs direct evaluation, max |d| 0.0e+00
+CHECK  occupation from the captured layer-1 input vs the model's, max |d| 0.0e+00
+   200 x 512 tokens; register state width 64; state width 384; mean loss 4.0032 (PPL 54.77)
+
+R^2 on the held-out sequences (pooled), target = mean loss over the next w tokens
+   feature          w=1        w=4        w=16     
+   past16           +0.0025     +0.0066     +0.0218   
+   n                +0.0026     +0.0074     +0.0236   
+   n+past16         +0.0051     +0.0148     +0.0514   
+   h+past16         +0.0382     +0.0233     +0.0448   
+   n+h+past16       +0.0373     +0.0215     +0.0517   
+   h                +0.0363     +0.0171     +0.0227   
+   n+h              +0.0354     +0.0154     +0.0317   
+
+FOLLOW-UP  does n's increment survive the past-16 difficulty feature? per held-out sequence, 95% bootstrap CI
+   w=1   n over h: [-0.0037, +0.0014]   n over h+past16: [-0.0029, +0.0009]   n over past16 alone: [+0.0003, +0.0049]
+   w=4   n over h: [-0.0078, +0.0053]   n over h+past16: [-0.0061, +0.0038]   n over past16 alone: [+0.0024, +0.0174]
+   w=16  n over h: [-0.0058, +0.0294]   n over h+past16: [+0.0043, +0.0142]   n over past16 alone: [+0.0229, +0.0585]

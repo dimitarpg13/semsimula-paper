@@ -1,0 +1,32 @@
+RF, register forward probe: pmx  ...lgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+CHECK  captured losses vs direct evaluation, max |d| 0.0e+00
+CHECK  occupation from the captured layer-1 input vs the model's, max |d| 0.0e+00
+   200 x 512 tokens; register state width 64; state width 384; mean loss 4.0032 (PPL 54.77)
+
+R^2 on the held-out sequences (pooled), target = mean loss over the next w tokens
+   feature          w=1        w=4        w=16     
+   n                +0.0026     +0.0074     +0.0236   
+   h                +0.0363     +0.0171     +0.0227   
+   n+h              +0.0354     +0.0154     +0.0317   
+   n shuffled       -0.0003     -0.0023     -0.0060   
+   position         -0.0003     -0.0011     -0.0066   
+   h, 64 PCs        +0.0314     +0.0167     +0.0124   
+
+PRIMARY  dR2 = R2(n+h) - R2(h), per held-out sequence (mean, 95% bootstrap CI over sequences)
+   w=1   dR2 -0.0010  [-0.0037, +0.0014]
+   w=4   dR2 -0.0012  [-0.0084, +0.0054]
+   w=16  dR2 +0.0114  [-0.0057, +0.0279]
+
+CONTROLS  n alone against the shuffle and against position, per sequence
+   w=1   n - n shuffled  [-0.0003, +0.0062] -> NOT
+   w=1   n - position    [-0.0011, +0.0065] -> NOT
+   w=4   n - n shuffled  [+0.0031, +0.0205] -> disjoint from 0
+   w=4   n - position    [-0.0040, +0.0232] -> NOT
+   w=16  n - n shuffled  [+0.0082, +0.0641] -> disjoint from 0
+   w=16  n - position    [-0.0029, +0.0742] -> NOT
+
+CALLS (protocol SS5.23)
+   RF-a  n beats shuffle and position at every w            -> MISS
+   RF-b  dR2 >= 0.02 at w = 16                                 -> MISS (+0.0114)
+   RF-c  dR2 increases from w = 1 to w = 16                    -> HIT (-0.0010 -> +0.0114)
+   RF-d  h (64 PCs) beats n alone at w = 16                    -> MISS ([-0.0444, +0.0127])

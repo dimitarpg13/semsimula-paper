@@ -5056,6 +5056,62 @@ The cost of a removal is c = ln(PPL_removed / PPL_full) in nats, with a paired s
 
 **Before measurement:** the annotation packages (spaCy pipeline, a coreference model) and BLiMP need the author's go-ahead to install and download. If no coreference model is available, coreference is dropped and the criteria use the remaining groupings; this is fixed now and is not a post-hoc choice.
 
+### 5.23 RF: do the Poisson-mode registers carry forward-looking state? — **pre-registered 2026-10-12, before any measurement**
+
+**Why.** The chain-of-thought substrate note ([`Chain_of_Thought_Substrate_in_Lagrangian_Models.md`](Chain_of_Thought_Substrate_in_Lagrangian_Models.md)) finds that the Poisson-mode registers are the conservative scratchpad a native chain-of-thought would write to, and that the missing piece is a training signal. Before any such training, this measures whether the registers in the published PMX model already carry state about what comes next, beyond what the hidden state carries. If they do not, the scratchpad is a memory of the past only, and the design changes before anything is trained.
+
+**Method** (`debug/register_forward_probe.py OUT FOLDER {pmx|pm1|g2}`, CPU, about an hour per arm). 200 validation sequences of 512 tokens, fixed seed 20261012. At every position: the full model's per-token loss, the layer-1 occupation vector n̄(t) (64), the layer-1 hidden state h_t (384), and for G2 the register bank's contents. Target: the mean loss over the next w tokens, w in {1, 4, 16}. Ridge probes, regularisation chosen on 25 of the 150 training sequences, scored by R² on 50 held-out sequences, intervals by bootstrap over sequences (1,000 resamples).
+
+**Probes:** n̄ alone; h alone; n̄ and h together; **controls:** n̄ with the modes shuffled across positions (keeps the marginal, breaks the trace); position alone; h reduced to 64 dimensions by PCA (capacity-matched to n̄).
+
+**Primary statistic.** ΔR² = R²(n̄, h) − R²(h) at w = 16.
+
+| id | prediction | called at |
+| --- | --- | ---: |
+| RF-a | n̄ alone beats the shuffle and position at every w (intervals disjoint) | 80% |
+| RF-b | ΔR² ≥ 0.02 at w = 16 | 45% |
+| RF-c | ΔR² increases from w = 1 to w = 16 | 40% |
+| RF-d | the capacity-matched h (64 PCs) beats n̄ alone at w = 16 | 60% |
+
+**Reading.** RF-b holding: the registers carry forward-looking state the hidden state lacks, the precondition for a scratchpad; the next step is the training signal (the note's §6). RF-b failing with RF-a holding: a memory of the past, not a working memory. RF-d holding alongside RF-b is consistent (the registers add to, but do not replace, the state). Arms: PMX (primary), PM1 (explicit wells), G2 (the Fock slots, as the comparison). Every reading is scoped to these models and their budget (§5.19 scope caveat).
+
+#### RF scored: **a small forward-looking signal in PMX's occupation, none in PM1's; RF-b misses in both; the G2 probe is invalid** — **2026-10-12**
+
+`debug/register_forward_probe.py` on the published PMX, PM1 and G2 weights, 200 × 512 validation tokens, seed 20261012; both exactness checks pass on every arm (captured losses and occupations reproduce the model's to 0). Outputs in each arm's results folder.
+
+| R² on held-out sequences, pooled | PMX w=1 | w=4 | w=16 | PM1 w=1 | w=4 | w=16 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| occupation n̄ | 0.003 | 0.007 | **0.024** | 0.001 | −0.002 | −0.017 |
+| hidden state h | 0.036 | 0.017 | 0.023 | 0.037 | 0.024 | 0.013 |
+| n̄ + h | 0.035 | 0.015 | 0.032 | 0.035 | 0.016 | −0.005 |
+| n̄ shuffled | 0.000 | −0.002 | −0.006 | 0.000 | 0.000 | 0.001 |
+| h, 64 PCs | 0.031 | 0.017 | 0.012 | 0.031 | 0.017 | 0.010 |
+
+| | PMX | PM1 |
+| --- | --- | --- |
+| RF-a (n̄ beats shuffle and position at every w, 80%) | **MISS**: beats the shuffle at w = 4 and 16 (intervals [+0.003, +0.021] and [+0.008, +0.064]) but not at w = 1, and never position by a disjoint interval | **MISS**: beats neither at any w |
+| RF-b (ΔR² ≥ 0.02 at w = 16, 45%) | **MISS**: +0.011 [−0.006, +0.028] | **MISS**: −0.028 [−0.056, −0.002] |
+| RF-c (ΔR² grows with w, 40%) | HIT: −0.001 → +0.011 | MISS |
+| RF-d (64-PC h beats n̄ at w = 16, 60%) | MISS: [−0.044, +0.013] | MISS: [−0.000, +0.070] |
+
+- **PMX's occupation carries a small, real signal about the next 16 tokens' loss** (R² 0.024 alone, equal to the full 384-dimensional hidden state's 0.023 and above the 64-PC hidden state's 0.012; the shuffle at −0.006), and it adds to the hidden state (+0.011), but below the pre-registered 0.02 and with an interval crossing 0. **A precondition for a scratchpad in the weak form; not the strong one the call asked for.**
+- **PM1's occupation carries none** at any horizon, and adding it to the hidden state hurts at w = 16 (overfitting with no signal). The exact integration made the registers more informative about what follows, not only better integrated.
+- **Both signals are weak in absolute terms.** The best R² anywhere is 0.04: the next tokens' loss is mostly unpredictable from any layer-1 state, in a model at a third of compute-optimal.
+- **The G2 probe is invalid and is not scored.** The prefix-causal register bank is 32 × 384 = 12,288 features against 125 training sequences; the ridge probe overfits to R² −1 to −4 and the shuffle control fails the same way. The design's capacity matching does not extend to a 12,288-wide input. A valid Fock comparison needs a low-dimensional readout of the bank (the reverse channel's own projection, or the registers' salience and norms). Not a result about G2's registers.
+- **Descriptive follow-up to run before the reading is settled:** is PMX's signal content or difficulty? The occupation summarises how much recent text overlapped the modes; if that is a proxy for "how predictable is this stretch", the signal is frequency, not a trace. Test: add the mean loss over the *previous* 16 tokens as a feature and see whether n̄'s increment survives it.
+
+**Follow-up scored (PMX, `… pmx past`): the signal is content, not difficulty.** With the mean loss over the previous 16 tokens (past16) as a competing feature:
+
+| R², w = 16 | past16 | n̄ | n̄ + past16 | h + past16 | n̄ + h + past16 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| | 0.022 | 0.024 | **0.051** | 0.045 | 0.052 |
+
+- The occupation's increment **over h + past16** at w = 16 is +0.004 to +0.014 (95% interval, disjoint from 0), where over h alone it was [−0.006, +0.029]. Conditioning on local difficulty sharpens the occupation's contribution instead of removing it.
+- Over past16 alone, n̄ adds [+0.023, +0.059] at w = 16, and a disjoint-from-0 increment at every w. n̄ and past16 are nearly additive (0.024 + 0.022 ≈ 0.051): they carry different information.
+- So the forward-looking component of PMX's occupation is about **what** the recent context was, not how predictable it was. Small (R² 0.01 added), real, and content-bearing.
+
+**Reading, revised.** RF-b misses, so the strong precondition fails at the pre-registered size: PMX's registers do not add 0.02 of R² about the next 16 tokens to the hidden state. The weak precondition holds, for PMX only: the occupation carries a small, real, content-bearing signal about what comes next (R² 0.024 alone, equal to the full hidden state's; +0.004 to +0.014 over the hidden state once local difficulty is conditioned on; nothing in PM1). For the chain-of-thought substrate note (§6 there): the registers are a memory of the past with a real but faint forward component; the design that writes thoughts to them is not refuted, since nothing has been trained to write, and the claim that the scratchpad "is already there" holds only in this weak form.
+
 ## 6. Open risks
 
 ### 6.1 At L=1 the register bank is read but never updated — **2026-09-24**
