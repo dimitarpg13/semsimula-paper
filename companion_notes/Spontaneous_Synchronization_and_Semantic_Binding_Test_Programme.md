@@ -2,9 +2,11 @@
 
 **The question.** Is spontaneous synchronization at the root of how models built on the Lagrangian framework make semantic inference?
 
+**Status (2026-10-15).** Part I (§1–11) is the design, written before any measurement. Part II (§12–23) reports what has been measured, on six trained models, with figures: the instruments, the first two of the four claims, and four follow-up tests. Short answer: the couplings do synchronize tokens, but not along linguistic structure through the routes the test was designed around. The context field groups the words of syntactic constituents into clusters, which is not an artefact of next-word prediction. Reference (which word a pronoun stands for) is not bound by any measure.
+
 This note turns that question into four claims of increasing strength, each of which can fail, and designs the measurements that decide them. The verdict criteria are pre-registered in the protocol ([`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md) §5.22) before any measurement. The book's open question Q10 points here.
 
-**Background.** Self-attention, read with layers as time, is a system of particles under an attractive mean-field coupling, and such systems cluster (Geshkovski et al. 2023a, 2023b; Karagodin et al. 2024). The mathematics is that of coupled-oscillator synchronization. The mechanisms, and where they live in our models, are in [`Two_Clustering_Mechanisms_Saturation_and_Synchronization.md`](Two_Clustering_Mechanisms_Saturation_and_Synchronization.md) (§3–5). In this framework every route by which one token can pull another is a named term: V_φ (a pair potential with a learned per-pair sign), the Poisson-mode wells (shared centres; [`Poisson_Mode_Registers_PM1.md`](Poisson_Mode_Registers_PM1.md)) and the Fock path (a two-hop attention). V_θ cannot synchronize tokens: each token's wells come from its own context. That makes the question answerable here in a way it barely is for transformers: every coupling can be switched off, scaled, or read pair by pair.
+**Background.** Self-attention, read with layers as time, is a system of particles under an attractive mean-field coupling, and such systems cluster (Geshkovski et al. 2023a, 2023b; Karagodin et al. 2024). The mathematics is that of coupled-oscillator synchronization. The mechanisms, and where they live in our models, are in [`Two_Clustering_Mechanisms_Saturation_and_Synchronization.md`](Two_Clustering_Mechanisms_Saturation_and_Synchronization.md) (§3–5). In this framework every route by which one token can pull another is a named term: V_φ (a pair potential with a learned per-pair sign), the Poisson-mode wells (shared centres; [`Poisson_Mode_Registers_PM1.md`](Poisson_Mode_Registers_PM1.md)) and the Fock path (a two-hop attention). V_θ is one-body only at fixed context: its wells are placed by the context ξ, an average over the earlier tokens, so through ξ it couples tokens too (and Part II shows this is the coupling that matters). That makes the question answerable here in a way it barely is for transformers: every coupling can be switched off, scaled, or read pair by pair.
 
 ## Contents
 
@@ -19,6 +21,21 @@ This note turns that question into four claims of increasing strength, each of w
 9. [Order and cost](#9-order-and-cost)
 10. [What each outcome would mean](#10-what-each-outcome-would-mean)
 11. [Priors from what is already measured](#11-priors-from-what-is-already-measured)
+
+**Part II. Results**
+
+12. [The results in one page](#12-the-results-in-one-page)
+13. [Terms used in the results](#13-terms-used-in-the-results)
+14. [The measuring tools, and why two were replaced](#14-the-measuring-tools-and-why-two-were-replaced)
+15. [What each coupling does to the token set as a whole](#15-what-each-coupling-does-to-the-token-set-as-a-whole)
+16. [The pair potential does not choose related tokens](#16-the-pair-potential-does-not-choose-related-tokens)
+17. [A pattern every model forms](#17-a-pattern-every-model-forms)
+18. [Which coupling forms it](#18-which-coupling-forms-it)
+19. [It is not the geometry of prediction](#19-it-is-not-the-geometry-of-prediction)
+20. [Clustered, not global, synchronization](#20-clustered-not-global-synchronization)
+21. [Coreference: what is and is not bound](#21-coreference-what-is-and-is-not-bound)
+22. [The verdict against the pre-registered calls](#22-the-verdict-against-the-pre-registered-calls)
+23. [What remains open](#23-what-remains-open)
 
 ---
 
@@ -171,7 +188,7 @@ Gate 2 (extra layers at the trained step) is catastrophic in every arm: PMX goes
 | position | nearby tokens are both related and similar; causal attention pulls toward the first token | distance-matched contrasts; position-bin baseline |
 | frequency | frequent tokens share directions | frequency-bin baseline |
 | LayerNorm common mode | a shared direction aligns every pair | centred states (§3.1); SY0 check 4 |
-| shared context ξ | the context is a leaky average over earlier tokens, a Krause-type coupling in disguise | report the ξ contribution separately by replaying with ξ frozen at its input value |
+| shared context ξ | the context is a causal, time-weighted average over earlier tokens that places V_θ's wells, so it couples tokens as a mean field (not Krause-type: Hegselmann–Krause weights depend on state similarity, ξ's only on time) | report the ξ contribution separately by replaying with ξ replaced (own-token and sequence-average versions). **Measured 2026-10-14:** ξ is not only a confound but the coupling that carries the noun-chunk binding (protocol §5.22, "The separating tests and the probe scored") |
 | label noise | automatic annotation errs | shuffled-label control at the same group sizes; report against annotation confidence where available |
 | subword tokens | labels are word-level | a word's label is given to all its BPE tokens; pairs within one word are excluded |
 | model scale | L = 2 and 0.5B tokens may be too small for the effect | verdicts are scoped to these models; L = 4 arms read separately |
@@ -261,5 +278,208 @@ Each verdict is scoped to the trained models: L = 2 (and L = 4 where read), 532.
 - **Mixed signs.** About half of PMX's well depths are positive and half negative: the wells attract toward some centres and repel from others, so a uniformly attractive picture is already ruled out.
 - **A dose-response exists for the wells** (§4, SY4), without the order parameters that would interpret it.
 - **Training budget.** Every model here is undertrained (book Remark 44). A weak result is weak for these models.
+
+---
+
+# Part II. Results
+
+Measured 2026-10-13 to 2026-10-14. Every number below comes from the scripts in [`notebooks/conservative_arch/scaleup/sync/`](../notebooks/conservative_arch/scaleup/sync/), with the scoring recorded in the protocol (§5.22 and its scoring sections). The figures are made by [`figures/_make_sy_results_figs.py`](figures/_make_sy_results_figs.py) from the same outputs.
+
+## 12. The results in one page
+
+1. **The tools work, after two were replaced.** On toy systems where the answer is known, two of the measures planned in Part I failed, for reasons that are now understood. Their replacements recover synchronization where it exists and read zero where it does not (§14).
+2. **The couplings do synchronize tokens, modestly.** The pair potential pulls tokens together a little. The Poisson wells pull them together strongly, but toward fixed points rather than toward each other. The Fock registers push them apart (§15). This is claim 1 of Part I, and it holds.
+3. **None of the couplings the test was designed around groups related words.** The pair potential does not prefer to interact with coreferent words or with a word's syntactic head (§16). Claim 2, as pre-registered, fails: on those routes the models are *semantically blind*.
+4. **But every model forms the same structure.** In all six, the words of a noun chunk ("the old wooden table") end up closer together, and a word ends up further from its syntactic head, than at the start (§17).
+5. **The context field forms it.** The context is a fading average of the earlier words that sets where each word's own potential wells sit. Giving every word the same context removes the structure (§18).
+6. **It is not a by-product of predicting the next word**, for noun chunks. The true next words of chunk members are no more alike than those of unrelated words, and the grouping survives removing everything that prediction similarity explains (§19).
+7. **The synchronization is clustered, not global.** Each word's own context spreads the words apart overall while drawing the members of each noun chunk together (§20).
+8. **Reference is not bound.** A probe cannot find a pronoun's antecedent better than "pick the nearest earlier mention". The one coreference signal found anywhere is the same word repeated, not reference (§21).
+
+## 13. Terms used in the results
+
+The reader is assumed to know linear algebra and basic statistical mechanics, and nothing about language models.
+
+- **Token.** A word or a piece of a word. A text of 512 tokens is the unit of analysis.
+- **State.** Each token is represented by a vector of 384 numbers, its *state*. The model moves the states; the final states are read out to predict the next token.
+- **Layer, or step.** The model moves the states in a fixed number of steps of an integrator for a second-order equation of motion (mass times acceleration equals force minus friction). Two steps in five of the models, four in the sixth. The *embedding* is the state before the first step.
+- **Normalisation.** At the end of every step each state is shifted and rescaled to a fixed mean and length. This matters below, because a push shared by all tokens can make normalised states look aligned.
+- **The six models.** All are trained on the same 532.5 million tokens of web text, which is about a third of the compute-optimal amount for their size, so every result is about undertrained models.
+
+| model | couplings it has | layers |
+| --- | --- | --- |
+| F3.1 | pair potential, context field | 2 |
+| SR2 | pair potential (largely unused), context field | 2 |
+| G2 | pair potential, Fock registers, context field | 2 |
+| PM1 | pair potential, Poisson wells, context field | 2 |
+| PMX | pair potential, Poisson wells (integrated exactly), context field | 2 |
+| L = 4 | pair potential, Fock registers, context field | 4 |
+
+- **Coupling.** Any term in a token's equation of motion through which another token's state acts on it: a term whose contribution to token i's force would change if the other tokens moved while token i stayed put. There are four, each a separate term that can be switched off on its own:
+  - the **pair potential** V_φ: token i picks up to 16 earlier tokens and is attracted to or repelled from each;
+  - the **Poisson wells**: shared attracting points whose depth for token i depends on how many earlier tokens fell into them;
+  - the **Fock registers**: a memory written by earlier tokens that pushes token i;
+  - the **context field** ξ: a fading average of the earlier states, which decides where token i's own wells sit. It acts on every token as a *mean field* (each token responds to an aggregate of the others, not to any single one).
+- **Replay.** Each step of the trained model is recomputed from its exact recorded input, once as trained (this reproduces the original to the last bit) and once with one coupling changed. The difference is what that coupling did.
+- **Common-mode reference.** The replay in which a coupling's effect is replaced by its average over all tokens of the text. It keeps what the coupling does to every token alike and removes what it does differently to different tokens.
+- **Synchronization**, as measured here, is what a coupling does differently to different tokens that brings them closer. A push shared by all tokens is not synchronization.
+- **Contraction S.** The average, over all pairs of tokens, of the logarithm of how much closer the pair is with the coupling acting than in the common-mode reference:
+
+$$
+S = \Big\langle \ln \frac{\lVert h^{\mathrm{ref}}_{t} - h^{\mathrm{ref}}_{s} \rVert}{\lVert h_{t} - h_{s} \rVert} \Big\rangle_{t \neq s}.
+$$
+
+  S is positive when the coupling draws tokens together and negative when it spreads them apart. It is read before normalisation, and a push shared by all tokens leaves it unchanged.
+- **Grouping.** A way of saying which pairs of tokens are *related*, from an automatic linguistic analysis of the text:
+  - **coreference**: two mentions of the same entity ("Mary" and "she");
+  - **head–dependent**: a word and the word it grammatically depends on ("keys" and "are" in "the keys to the cabinet are");
+  - **noun chunk**: the words of one simple noun phrase ("the old wooden table");
+  - **named entity**: the words of one name ("New York Times");
+  - **part of speech**: two words of the same class (two nouns).
+- **Binding contrast B.** The average cosine similarity of related pairs minus that of unrelated pairs. The states are first centred by subtracting their mean over the text, so a direction shared by all tokens does not count. Unrelated pairs are compared only at the **same token distance** as the related ones, because nearby tokens are both more often related and more often similar. Binding *made by a coupling* is the change in B between the trained step and the common-mode reference.
+- **Shuffled control.** The same computation with the grouping's labels scrambled within each text. A real effect must vanish under it.
+- **Threshold and interval.** An effect counts only if it is at least 0.02 (in cosine units) and its 95% interval excludes zero. The interval comes from resampling the 200 texts with replacement 1,000 times. The threshold keeps tiny but statistically certain effects from counting.
+- **Replication.** A result counts only if it holds in PMX and in at least one other model with the same coupling.
+- **Principal components.** The directions in which the states vary most across tokens. "The top 16 components" means the 16 most varied directions.
+- **Probe.** A small model trained to read a piece of information out of the states. If it cannot, the information is not there in a readable form.
+
+## 14. The measuring tools, and why two were replaced
+
+![Instrument validation on systems with a known answer](figures/sy_results/sy_r1_instruments.png)
+
+**Figure 1.** The measuring tools tested on systems whose answer is known, before any model was measured. (a) Coupled phase oscillators (the Kuramoto model) swept through their synchronization threshold. (b) Three systems in which tokens are pushed but do not interact. (c) An attention-like flow in which groups exist only through stronger coupling within them.
+
+Part I planned to measure global synchronization with a *centred coherence*, the average cosine between states after subtracting their mean. Panel (a) shows why it was dropped. It rises at the threshold and then **falls** as the oscillators lock (grey dashed line), while the true order parameter rises to 0.98 (black). The reason is arithmetic. For vectors whose mean has been subtracted, the sum of all pairwise dot products equals minus the sum of their squared lengths, so the average cosine is pinned near −1/(N−1) once the spread becomes small. The contraction S (purple) follows the true order parameter all the way.
+
+Part I also planned to attribute effects by switching a coupling off. Panel (b) shows the problem. A push applied equally to every token (a "drift") does not couple the tokens, yet against the switched-off step it reads as contraction (grey bars), because the push moves states into regions where the rest of the step contracts them, and because normalisation turns a shared push into apparent alignment. Against the common-mode reference the same push reads exactly zero (purple). The third pair of bars is a caveat that matters later: a single fixed attracting point, which pulls every token toward it without any interaction, still reads as strong contraction. The measure cannot tell "drawn toward each other" from "drawn toward the same fixed point".
+
+Panel (c) is the positive control. Groups planted only through the coupling, with all tokens starting at random, are recovered and grow with depth to B = 1.22, while scrambled labels read 0.0009. A check of the binding contrast on clustered inputs with a group-blind coupling also confirmed that similarity of inputs alone is not read as binding. Three rounds of validation were needed, each recorded in the protocol (§5.22, "SY0 scored").
+
+## 15. What each coupling does to the token set as a whole
+
+![Contraction by coupling and model, and the four-layer depth profile](figures/sy_results/sy_r2_couplings.png)
+
+**Figure 2.** (a) The contraction S of each coupling at the last layer of the two-layer models, on a scale that is linear near zero and logarithmic beyond. (b) The four-layer model, layer by layer.
+
+Four behaviours appear.
+
+- **The pair potential draws tokens together a little**: S = +0.064 in F3.1, where it carries the most weight, and +0.021 in PMX. In SR2 it does essentially nothing, as an earlier experiment found.
+- **The Poisson wells draw tokens together about fifty times more strongly** (S ≈ +1 in PMX and PM1). By the caveat of Figure 1(b) this is tokens converging on the wells' fixed centres, not on each other.
+- **The Fock registers spread tokens apart** (S = −0.10 in G2).
+- **The context field spreads tokens apart** in every model (S from −0.07 to −0.57). §20 explains what this means.
+
+Panel (b) asks whether synchronization accumulates with depth, as it does in idealised attention, where the tokens eventually collapse. It does not. In the four-layer model the pair potential is nearly idle in the two middle layers and acts only at the last one. The Fock registers and the context field spread the tokens at both ends.
+
+By the pre-registered rule (§22), claim 1, that synchronization exists, holds. It holds on the pair potential alone, which is a genuine interaction between tokens.
+
+## 16. The pair potential does not choose related tokens
+
+![Selection of related sources by the pair potential](figures/sy_results/sy_r3_selection.png)
+
+**Figure 3.** For each grouping, how often the pair potential picks a related earlier token among its 16, divided by how often it picks an unrelated one at the same distance. 1.0 is chance; the pre-registered requirement for "binding by attraction" was 1.2.
+
+If synchronization were how these models bind meaning, the pair potential, the only direct token-to-token interaction, should interact preferentially with related words. For coreference and head–dependent pairs it does not: the ratio is 0.97 to 1.15 in PMX, PM1 and F3.1. It does pick words of the same part of speech more often (1.2 to 1.5). Among the words it does pick, the force toward coreferent ones has no consistent sign across layers, and the binding it produces on the states is at most 0.005 for every grouping in every model. Two exceptions do not change this. G2 picks coreferent words at 2.3 times chance, but its states do not move accordingly. The four-layer model picks noun-chunk members at 2.9 times chance at its last layer, but neither is a model in which the rule could call a replication.
+
+## 17. A pattern every model forms
+
+![Noun-chunk and head-dependent binding, layer by layer](figures/sy_results/sy_r4_depth.png)
+
+**Figure 4.** The binding contrast B of the states themselves, from the embedding to the last layer, in all six models. (a) Words of one noun chunk. (b) A word and its syntactic head. The grey band is below the threshold.
+
+The states tell a different story from the couplings. All six models start from the same place, since they share the embedding: noun-chunk members slightly dissimilar (B ≈ −0.008), heads and dependents slightly similar (+0.014). All six end in the same place: **noun-chunk members clearly similar** (+0.032 to +0.047) and **heads further from their dependents** (−0.009 to −0.018). In the four-layer model almost all of it forms in the last layer.
+
+This is a test of a prediction the framework made before these models existed. Prediction P2 of the book (§12 there) states that "tokens within a phrase should become more similar to each other across layers", the dynamical counterpart of the parts of a structure reaching a joint bound state. With distances matched, noun chunks do. The rise is strict in three models (F3.1, SR2, PM1); in the other three there is a small dip of about 0.002 after the first layer before the rise.
+
+## 18. Which coupling forms it
+
+![Binding made by each coupling at the last layer](figures/sy_results/sy_r5_attribution.png)
+
+**Figure 5.** The binding made by each coupling at the last layer: the change in B when that coupling is replaced by its common-mode reference. (a) Noun chunks. (b) Head–dependent pairs. The dotted line is the threshold.
+
+The pair potential (blue) contributes nothing. The Fock registers (red) work slightly *against* the pattern. Two couplings form it.
+
+- **The context field (purple) forms it in every model.** Giving every token the sequence-average context, in place of its own, removes the noun-chunk binding (+0.038 in PMX, +0.027 in PM1, +0.064 in G2, +0.033 in the four-layer model; +0.017 and +0.015 in F3.1 and SR2, just under the threshold) and the head–dependent separation (−0.033 in PMX, −0.027 in PM1 and SR2).
+- **The Poisson wells (green) form it too, where they exist** (+0.044 and +0.026 for noun chunks). Replacing either the wells or the context by its common-mode version removes the pattern while the other is left as trained, so the two act together. Whether the wells work through the context or alongside it is not separated.
+
+This is the pre-registered follow-up test A (protocol §5.22), and it holds: in PMX, replicated in PM1, for both groupings.
+
+## 19. It is not the geometry of prediction
+
+![The binding contrast in the states, after removing prediction similarity, and in the true next words](figures/sy_results/sy_r6_prediction.png)
+
+**Figure 6.** At the last layer: B in the states (grey), what remains of it after removing everything that the similarity of the model's predicted next-word distributions explains (purple), and B computed on the true next words (orange). (a) Noun chunks. (b) Head–dependent pairs.
+
+The last layer's states are what the readout reads, and the readout is linear in them. Two tokens with similar likely continuations will therefore have similar states for that reason alone. A grouping could be nothing more than this. Two controls separate it from binding.
+
+- **Do the true next words have the pattern?** For noun chunks, no: the contrast on the true next words is at most 0.0014 in magnitude, with every interval spanning zero (orange, panel a). The data's continuations do not group chunk members.
+- **Does prediction similarity explain the states' pattern?** State similarity and prediction similarity are correlated (0.51 to 0.52 in every model), but after removing, text by text, the part of state similarity that prediction similarity explains, the noun-chunk binding remains at +0.029 to +0.044 in all six models (purple).
+
+So **the noun-chunk grouping is made by the models, not inherited from what comes next.** Head–dependent pairs are the opposite case: there the residual falls below the threshold everywhere (panel b), and heads and dependents do have dissimilar continuations (−0.011 to −0.015). The separation of a word from its head is mostly a consequence of prediction. This is pre-registered follow-up test B, and its "prediction geometry" reading is contradicted for noun chunks.
+
+## 20. Clustered, not global, synchronization
+
+![Clustered versus global synchronization: schematic and measurements](figures/sy_results/sy_r7_clustered.png)
+
+**Figure 7.** (a, b) Schematic illustrations, not data, of the two outcomes the context replay distinguishes. (c) Measured contraction of the whole token set: each token's own context against the same context for all. (d) Measured noun-chunk binding made by the context, at the last layer.
+
+The context replay answers a second question at the same time. When every token reads the same context, the tokens end up much closer together overall; their own contexts spread them apart (panel c, S from −0.07 in F3.1 to −0.57 in PM1). Within that spreading, the members of each noun chunk are drawn together (panel d). Each word is individuated by its own context, and the words of one constituent share theirs.
+
+This is **clustered synchronization**: the system breaks into groups that synchronize internally and stay distinct from one another, like oscillator networks that split into several synchronized clusters instead of locking to a single phase. Its relation to the Kuramoto model is close but not identical.
+
+- **Same family.** In both, no unit responds to any other individually. Each responds to a collective quantity that all of them generate (here the context, there the mean phase), and that quantity is fed back. This self-consistent loop is what makes it synchronization rather than a shared external drive.
+- **Indirect.** The Kuramoto mean field *pulls* each oscillator toward the mean phase. The context does not pull a token toward anything. It decides where the token's own potential wells sit, and the token settles into them. The closer physical analogy is cells that synchronize through a chemical they all secrete and all sense.
+- **Local in time.** Kuramoto has one order parameter for all. Here each token's field is a fading average of *its own* past, so neighbouring tokens see nearly the same field and distant ones different fields.
+- **Its clusters are syntactic constituents.**
+
+The contrast with idealised attention is complete. There a pairwise attraction contracts all tokens onto a few clusters whose positions are set by one weight matrix, and the clusters eventually merge. Here the pairwise interaction does not group anything, and the grouping comes from a field that spreads tokens globally and groups them locally. It also matches the framework's own account of where binding should come from. The book's mean-field decomposition (Remark 34 there) splits the force on a particle into a one-body well, which is the averaged effect of all the others, and a pairwise correction for close encounters. The trained models follow that split more literally than expected: the averaged part binds constituents and the pairwise correction does not.
+
+## 21. Coreference: what is and is not bound
+
+![Coreference: the decoding probe and the breakdown of the one coreference signal](figures/sy_results/sy_r8_coreference.png)
+
+**Figure 8.** (a) A probe that scores each pronoun's candidate antecedents, trained on 150 texts and tested on 50: the fraction of pronouns whose antecedent it finds, by layer. The dashed red line is the accuracy of always choosing the nearest earlier mention (0.54); chance is 0.14. (b) The one coreference signal found in a restricted set of directions, broken down by which coreferent pairs are counted.
+
+Binding by closeness is one way to bind. A transformer binds differently: attention copies information from the antecedent into the pronoun's state without making the two states alike. The probe in panel (a) tests for that kind of binding. It uses a learned bilinear score, which has the shape of one attention head. **No layer of any model finds the antecedent more than four points better than choosing the nearest earlier mention.** The probe does best after the first layer and worse at the last, where the states are shaped for prediction. The antecedent is not recoverable as information.
+
+A last possibility was that coreference binding exists but is hidden in a few directions, under each token's own identity, which dominates the whole-vector cosine. Recomputing the binding contrast in the 16 most varied directions does find one coreference signal, at the first layer, in five models (panel b, first group). Panel (b) shows what it is made of.
+
+- **It does not depend on identical tokens**: removing pairs of the same token leaves it intact (second group).
+- **It is the same word repeated.** GPT-2 spells one word with several token codes ("Zhang" at the start of a sentence and " Zhang" after a space; "Trump" and "Trump's"). Removing pairs of the same *word* reduces it to the level of a random set of 16 directions in four of the five models (third group). One model, F3.1, keeps a residual between different words that refer to the same entity; it does not replicate.
+- **It is absent for pronoun–antecedent pairs** (fourth group). The shuffled controls of this group are biased in every model, so it cannot be read alone; it agrees with the probe.
+
+So the signal is the identity of a repeated word, carried by the context field from each token's own state. It is not resolved reference.
+
+## 22. The verdict against the pre-registered calls
+
+| call | prediction | called at | result |
+| --- | --- | ---: | --- |
+| SY-L0 | synchronization exists (claim 1) | 75% | **hit** |
+| SY-L1 | it follows linguistic structure on the designed routes (claim 2) | 45% | **miss** |
+| SY-pair | the pair potential binds coreferent or head–dependent pairs | 50% | **miss** |
+| SY-wells | the wells pass claim 2 and the pair potential does not | 25% | **miss** |
+| SY-L2, SY-L3 | the models use it; it is at the root | 30%, 10% | cannot hold once claim 2 fails |
+| SY-G2, SY-GPT2 | extra depth over-synchronizes; GPT-2 binds at least as well | 35%, 60% | not yet run |
+
+The four follow-up tests, each fixed in advance in the protocol, are not part of the pre-registered ladder and do not rescore it.
+
+| follow-up | result |
+| --- | --- |
+| A: does the context field form the pattern? | **yes**, replicated (§18) |
+| B: is the pattern the geometry of prediction? | **no** for noun chunks, **mostly yes** for head–dependent (§19) |
+| decoding probe: is the antecedent recoverable? | **no**, in every model (§21) |
+| binding in a subspace | only lexical identity, not reference (§21) |
+
+**The verdict, in plain terms.** On the couplings the test was designed around, the trained models synchronize tokens without grouping related words. The pre-registered verdict is "semantically blind". The models do group the words of syntactic constituents, through a coupling Part I had classed as a confound to control: the context field, a mean field that produces clustered synchronization. They do not bind reference at all.
+
+## 23. What remains open
+
+- **The same measurements on the matched GPT-2** (SY6). If attention shows the same blindness on these measures yet binds clearly in the probe, the lesson is about the measure; if it binds where these models do not, it is about the models.
+- **Whether extra depth over-synchronizes** (SY5). This would explain why adding layers beyond the trained depth is catastrophic in every model.
+- **Whether the wells act through the context or alongside it**, which needs a replay that changes both at once.
+- **The Fock register readout** (are related tokens written into the same register?), which Part I planned and was not implemented.
+- **Predictions P3 and P4 of the book**: clustering the last-layer states into constituency trees, and a per-phrase potential well.
+- **A possible link to the context design.** A smooth, redundant bank of moving averages makes a better context than more informative orthogonal bases (book claim C7). A smooth, local-in-time field may be exactly what produces constituent clusters. That is a hypothesis, not a finding.
+- **Scope.** Every result is for two-layer models and one four-layer model at about a third of a compute-optimal budget. The effects are a few hundredths of a cosine: small, consistent across models, and controlled, but not large.
+
 
 **References.** B. Geshkovski, C. Letrouit, Y. Polyanskiy, P. Rigollet, The emergence of clusters in self-attention dynamics, NeurIPS 36 (2023); A mathematical perspective on Transformers, arXiv:2312.10794. N. Karagodin, Y. Polyanskiy, P. Rigollet, Clustering in causal attention masking, arXiv:2411.04990 (2024). Y. Kuramoto, Chemical Oscillations, Waves, and Turbulence (1984). S. Strogatz, Sync (2003). A. Warstadt et al., BLiMP: The Benchmark of Linguistic Minimal Pairs for English, TACL 8 (2020).

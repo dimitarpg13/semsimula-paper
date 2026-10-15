@@ -1,0 +1,33 @@
+SY2 route readouts: PM1  ....05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn  (L = 2; wells: True)
+CHECK  layer 0: rebuilt pair potential vs model |dU| 0.0e+00; total V_phi force max |d| 0.0e+00; potential-only share of the force 1.000
+CHECK  layer 1: rebuilt pair potential vs model |dU| 0.0e+00; total V_phi force max |d| 0.0e+00; potential-only share of the force 1.000
+
+SUMMARY (200 sequences; 95% cluster-bootstrap intervals; floor 0.02; enrichment threshold 1.2)
+layer 0
+   coref  V_phi attraction (relative) +0.4280 [-0.2644, +1.1570] (shuffled +0.1190 [+0.0335, +0.1985])   enrichment 1.058 [0.983, 1.123] (shuffled 1.037)
+          wells co-assignment gain -0.0025 [-0.0086, +0.0034] (shuffled +0.0004 [-0.0019, +0.0027])
+   dep    V_phi attraction (relative) -0.1364 [-0.3641, +0.0470] (shuffled -0.0780 [-0.2115, +0.0268])   enrichment 1.097 [1.068, 1.126] (shuffled 1.040)
+          wells co-assignment gain +0.0019 [+0.0008, +0.0032] (shuffled +0.0002 [-0.0008, +0.0012])
+   chunk  V_phi attraction (relative) -0.0561 [-0.1886, +0.0520] (shuffled -0.0706 [-0.1501, +0.0073])   enrichment 0.834 [0.775, 0.905] (shuffled 1.002)
+          wells co-assignment gain -0.0001 [-0.0037, +0.0036] (shuffled -0.0004 [-0.0019, +0.0011])
+   ent    V_phi attraction (relative) +0.1394 [-0.0067, +0.2888] (shuffled +0.1628 [-0.0078, +0.3421])   enrichment 0.725 [0.618, 0.847] (shuffled 1.006)
+          wells co-assignment gain -0.0001 [-0.0064, +0.0048] (shuffled -0.0028 [-0.0067, +0.0004])
+   pos    V_phi attraction (relative) -0.0471 [-0.1427, +0.0384] (shuffled -0.0014 [-0.0229, +0.0196])   enrichment 1.374 [1.342, 1.408] (shuffled 1.010)
+          wells co-assignment gain +0.0001 [-0.0008, +0.0011] (shuffled -0.0009 [-0.0018, +0.0000])
+   repeat V_phi attraction (relative) -1.8571 [-6.3461, +2.4789] (shuffled +0.0119 [-0.0590, +0.0786])   enrichment 0.421 [0.384, 0.459] (shuffled 0.986)
+          wells co-assignment gain -0.0010 [-0.0028, +0.0007] (shuffled -0.0003 [-0.0018, +0.0011])
+   wells NMI(dominant mode, POS): input 0.0004  output 0.0001  gain -0.0002 [-0.0005, -0.0001] (200 resamples)
+layer 1
+   coref  V_phi attraction (relative) +0.7319 [+0.6222, +0.8517] (shuffled +0.0281 [+0.0052, +0.0548])   enrichment 1.055 [0.991, 1.124] (shuffled 0.997)
+          wells co-assignment gain +0.0013 [-0.0015, +0.0040] (shuffled +0.0011 [-0.0005, +0.0028])
+   dep    V_phi attraction (relative) +0.0981 [+0.0791, +0.1173] (shuffled +0.0031 [-0.0111, +0.0165])   enrichment 1.024 [1.000, 1.049] (shuffled 0.985)
+          wells co-assignment gain -0.0004 [-0.0009, +0.0002] (shuffled +0.0001 [-0.0005, +0.0006])
+   chunk  V_phi attraction (relative) +0.0523 [+0.0224, +0.0811] (shuffled +0.0141 [-0.0067, +0.0385])   enrichment 0.706 [0.658, 0.759] (shuffled 1.012)
+          wells co-assignment gain -0.0012 [-0.0036, +0.0014] (shuffled +0.0003 [-0.0009, +0.0014])
+   ent    V_phi attraction (relative) +0.0373 [-0.0448, +0.1249] (shuffled +0.0314 [-0.0097, +0.0750])   enrichment 0.634 [0.531, 0.739] (shuffled 0.992)
+          wells co-assignment gain -0.0019 [-0.0043, +0.0000] (shuffled +0.0001 [-0.0013, +0.0015])
+   pos    V_phi attraction (relative) +0.1890 [+0.1737, +0.2033] (shuffled +0.0004 [-0.0082, +0.0082])   enrichment 1.444 [1.406, 1.485] (shuffled 1.019)
+          wells co-assignment gain +0.0003 [-0.0005, +0.0009] (shuffled +0.0005 [-0.0000, +0.0011])
+   repeat V_phi attraction (relative) +4.3726 [+4.0254, +4.7553] (shuffled -0.0042 [-0.0279, +0.0234])   enrichment 0.430 [0.400, 0.459] (shuffled 1.003)
+          wells co-assignment gain +0.0007 [-0.0001, +0.0016] (shuffled -0.0001 [-0.0011, +0.0009])
+   wells NMI(dominant mode, POS): input 0.0003  output 0.0003  gain +0.0000 [-0.0001, +0.0002] (200 resamples)

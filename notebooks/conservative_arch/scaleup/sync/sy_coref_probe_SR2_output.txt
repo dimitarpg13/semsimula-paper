@@ -1,0 +1,17 @@
+SY coreference decoding probe: SR2 (L = 2); 2074 pronoun items in 200 sequences
+CHECK  layer 0: replay "on" vs the forward pass, max |d| 0.0e+00
+CHECK  layer 1: replay "on" vs the forward pass, max |d| 0.0e+00
+CHECK  every patch restored (logits identical after all replays)
+   states captured in 7.7 min
+   test items 442 in 48 sequences; chance 0.136; distance only (nearest) 0.541
+   probe on the embeddings   test accuracy 0.511
+   probe on layer 0 output   test accuracy 0.516
+   probe on layer 1 output   test accuracy 0.507
+   final layer minus embeddings -0.005 [-0.075, +0.069];  minus distance-only -0.034 [-0.141, +0.074]
+   => the dynamics do not make decodable binding information in this arm
+
+ABLATION: the final-layer probe (trained on the trained model) applied to the last step replayed under each change
+   vphi  common  accuracy 0.507   drop +0.000 [+0.000, +0.000]
+   vphi  off     accuracy 0.507   drop +0.000 [+0.000, +0.000]
+   xi    own     accuracy 0.448   drop +0.059 [+0.014, +0.104]
+   xi    common  accuracy 0.434   drop +0.072 [+0.024, +0.118]   RELIES

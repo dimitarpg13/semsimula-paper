@@ -1,0 +1,19 @@
+SY2 route readouts: G2  ....05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn  (L = 2; wells: False)
+CHECK  layer 0: rebuilt pair potential vs model |dU| 0.0e+00; total V_phi force max |d| 0.0e+00; potential-only share of the force 0.993
+CHECK  layer 1: rebuilt pair potential vs model |dU| 0.0e+00; total V_phi force max |d| 0.0e+00; potential-only share of the force 0.298
+
+SUMMARY (200 sequences; 95% cluster-bootstrap intervals; floor 0.02; enrichment threshold 1.2)
+layer 0
+   coref  V_phi attraction (relative) +7.3304 [+6.5249, +8.2908] (shuffled +0.0223 [-0.2034, +0.2654])   enrichment 2.205 [2.066, 2.359] (shuffled 1.026)
+   dep    V_phi attraction (relative) +0.1584 [-0.1943, +0.4183] (shuffled +0.0413 [-0.1105, +0.1658])   enrichment 1.137 [1.110, 1.164] (shuffled 1.003)
+   chunk  V_phi attraction (relative) -0.2640 [-0.4729, -0.1180] (shuffled +0.0238 [-0.1758, +0.2410])   enrichment 1.123 [1.050, 1.198] (shuffled 0.998)
+   ent    V_phi attraction (relative) -0.2381 [-0.4152, -0.0667] (shuffled +0.4221 [+0.0886, +0.8072])   enrichment 0.898 [0.778, 1.028] (shuffled 1.004)
+   pos    V_phi attraction (relative) +1.4958 [+1.3966, +1.6095] (shuffled +0.1263 [+0.0465, +0.2036])   enrichment 4.733 [4.595, 4.879] (shuffled 1.013)
+   repeat V_phi attraction (relative) +1.3987 [+0.8973, +1.8316] (shuffled -0.1122 [-0.4002, +0.0720])   enrichment 12.453 [11.671, 13.147] (shuffled 1.002)
+layer 1
+   coref  V_phi attraction (relative) -0.0492 [-0.5604, +0.5277] (shuffled +0.0710 [-0.1747, +0.3799])   enrichment 2.263 [2.122, 2.412] (shuffled 1.014)
+   dep    V_phi attraction (relative) -0.0201 [-0.0932, +0.0598] (shuffled -0.0695 [-0.3379, +0.1094])   enrichment 0.963 [0.944, 0.985] (shuffled 0.996)
+   chunk  V_phi attraction (relative) -0.0048 [-0.0891, +0.0548] (shuffled +0.0916 [-0.4584, +0.7974])   enrichment 1.136 [1.068, 1.210] (shuffled 1.004)
+   ent    V_phi attraction (relative) -0.0145 [-0.1360, +0.1027] (shuffled -0.3585 [-0.9608, +0.2391])   enrichment 1.123 [0.993, 1.263] (shuffled 1.064)
+   pos    V_phi attraction (relative) -0.1607 [-0.3250, -0.0282] (shuffled -0.1076 [-0.3274, +0.0314])   enrichment 3.184 [3.117, 3.254] (shuffled 1.001)
+   repeat V_phi attraction (relative) +1.9879 [+1.4515, +2.4982] (shuffled -0.0120 [-0.2447, +0.2151])   enrichment 9.523 [9.139, 9.896] (shuffled 1.001)

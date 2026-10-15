@@ -5056,6 +5056,220 @@ The cost of a removal is c = ln(PPL_removed / PPL_full) in nats, with a paired s
 
 **Before measurement:** the annotation packages (spaCy pipeline, a coreference model) and BLiMP need the author's go-ahead to install and download. If no coreference model is available, coreference is dropped and the criteria use the remaining groupings; this is fixed now and is not a post-hoc choice.
 
+#### SY0 scored: the instruments as specified failed; fixed, re-run, passed on run 3 — **2026-10-13, before any model state was measured**
+
+The author gave the go-ahead on 2026-10-13. `sync/sy_instruments.py` (outputs `sy0_v1_output.txt`, `sy0_v2_output.txt`, `sy0_output.txt` for run 3). Forty independent draws per condition, 95% cluster-bootstrap intervals, floor 0.02. As this section requires, every failure was fixed and re-run, and none was waived.
+
+| run | what it tested | what failed, and why |
+| --- | --- | --- |
+| 1 | the measures as the design note specifies them | **raw (uncentred) measures** read a shared drift as synchronization (Δ_c R = +0.75). **Centred coherence R** passed the letter of check 1 but is unusable: it peaks at the Kuramoto threshold (+0.08 at 1.25 K_c) and falls as synchronization completes (+0.03 at 3 K_c, order parameter 0.98). For centred vectors, Σ over t ≠ s of y_t·y_s = −Σ‖y_t‖², so their mean pairwise cosine is pinned near −1/(N−1) as the spread vanishes. **Coupling attribution against the switch-off replay** counts a coupling's common push, which aligns states indirectly through the per-token nonlinearity and the closing LayerNorm (pairwise contraction Γ = +0.56 and +1.82 under a pure drift). |
+| 2 | a second reference, the **common-mode replay**: the coupling's force on every token replaced by its cross-token mean ("spec" = on minus common; synchronization is what the coupling does *differently* to different tokens); monotonicity added to check 1; checks 3 and 4 also at d = 384, the models' width | Γ_spec passed everything, and every spec attribution is exactly 0 under drift with or without LayerNorm, at both widths. The binding measures failed only check 3, where a pull toward each token's *running* mean lowered B by 0.033 at both widths. A diagnostic showed this is a real effect of the coupling, not an artefact: a pull toward one *shared* target gives −0.0000, and per-token targets dilute tight clusters with or without the per-token map. A coupling with a different target per token is token-specific, so it was the wrong null. |
+| 3 | check 3 with the shared-target pull, decided two-sided; the running-mean pull kept as 3′ (descriptive) | **all admitted measures pass** |
+
+**Instruments admitted (run 3):** Γ_spec, the global pairwise contraction of the pre-LayerNorm step output against the common-mode reference (tracks the Kuramoto order parameter monotonically: +0.58, +1.36, +1.83 at 1.25, 2, 3 K_c); **B_spec**, the distance-matched binding contrast on the centred states the next layer reads, on minus common (coupling-planted groups +1.22 at depth 8, shuffled control +0.0009); **Gb_spec**, its contraction form; **C_spec**, the co-movement contrast on the centred pre-LayerNorm displacements. **Rejected:** every raw measure, and centred coherence R in both forms.
+
+**Amendment to the primary statistics, made now, before any model is measured.**
+- **Level 0:** "Δ_c R or Δ_c C" becomes **Γ_spec** (global contraction attributable to the coupling's token-specific action). Global co-movement is dropped: it is a mean pairwise cosine of centred displacements and inherits the defect that removed R.
+- **Level 1 (c):** "Δ_c B" becomes **B_spec**. The shuffled-label control applies to B_spec.
+- Levels 1 (a), (b), 2 and 3, the thresholds, the replication rule and the calls are unchanged.
+
+**On the models: the displacement form of the common reference.** PMX integrates its wells inside the exact low-rank flow, so for that coupling no force can be replaced by its mean. The model script (`sync/sy_measure.py`) therefore also builds a displacement-level reference, off + the cross-token mean of (on − off) before the closing LayerNorm, and adopts it only if it agrees with the force-level reference on V_φ (a plain kick on every arm) to within 0.005, with the same sign, on Γ_spec and every grouping's B_spec. On the four-sequence PMX smoke run (placeholder labels, mechanics only) the two agree to the fourth decimal (Γ_spec at layer 1: +0.0218 against +0.0212). On a single step the displacement-form Γ_spec equals Γ_tot identically, since a shared translation leaves pairwise distances unchanged; the common reference matters for the binding measures, which are read after the LayerNorm.
+
+**Annotation.** spaCy `en_core_web_trf` 3.7.3 (parts of speech, dependencies, noun chunks, entities) and fastcoref `FCoref` (coreference chains) were installed in a separate virtualenv (system Python 3.9, numpy below 2), because their dependencies conflict with the model stack's torch 2.2.2. The annotation is cached in `sync/sy_cache/` (git-ignored). BLiMP: all 67 paradigms downloaded from the authors' repository. The sets admitted to level 2, fixed now: the *anaphor agreement* and *subject–verb agreement* phenomena, and *binding* (principle A), subject to the ≥ 60% rule.
+
+**Evaluation data:** 200 × 512 validation tokens, seed 20261011 (`sy_cache/sy_tokens.npz`).
+
+**One unit fixed before the scored route readouts (2026-10-13).** Level 1 (a)'s attraction contrast is a force, and the 0.02 floor is in cosine or NMI units. It is therefore scored **relative to the mean absolute radial force over all selected pairs** (dimensionless: 0.02 means 2% of a typical pair's force). This was fixed after a 2-sequence mechanics smoke test (relative values not computed) and before any scored run. The route readout is `sync/sy_routes.py`: its rebuilt V_φ branch reproduces the model's pair potential and force exactly, and the potential's own gradient is the whole V_φ force (share 1.000; the straight-through selection term contributes nothing at inference).
+
+**"Beats the shuffled-label control"**, which level 1 requires, is read as: the real statistic passes the floor and the shuffled one is null by the same rule.
+
+#### SY levels 0 and 1 scored: **level 0 HOLDS, level 1 FAILS: the couplings synchronize tokens, but not along linguistic structure by the pre-registered criteria** — **2026-10-14**
+
+`sync/sy_measure.py` and `sync/sy_routes.py` on the five arms (200 × 512 tokens, both layers), scored by `sync/sy_score.py` (`sy_score_output.txt`). Every run passed its checks: the replays reproduce the trained steps bit for bit, every patch restores, and the rebuilt V_φ branch is exact. The displacement-form common reference was adopted on PMX, PM1, G2 and SR2. On **F3.1 it disagreed** with the force form (Γ_spec at layer 1: +0.089 against +0.064), so F3.1 is scored at the force level, as fixed in advance.
+
+**Level 0: global contraction Γ_spec**
+
+| arm | V_φ, layer 0 | V_φ, layer 1 | wells / Fock, layer 0 | wells / Fock, layer 1 |
+| --- | ---: | ---: | ---: | ---: |
+| PMX | +0.003 | **+0.021** | wells −0.207 | wells **+0.983** |
+| PM1 | +0.007 | +0.007 | wells −0.039 | wells **+1.156** |
+| F3.1 | +0.004 | **+0.064** | | |
+| G2 | +0.001 | 0.000 | Fock −0.065 | Fock −0.099 |
+| SR2 | +0.003 | 0.000 | | |
+
+Intervals are all narrower than ±0.004. The V_φ route holds (PMX and F3.1, layer 1), and so does the wells route (PMX and PM1, layer 1). **Level 0 holds on the V_φ route alone**, which is a pairwise interaction. The wells' contraction is ~50× larger, but SY0 check 5 showed that a fixed external attractor reads as Γ_spec of the same size (+0.98 at d = 384), so it is consistent with tokens converging on the wells' fixed centres rather than on each other. The **Fock channel expands** the token set at both layers. SR2's V_φ does nothing at layer 1, as CD found.
+
+**Level 1: no grouping meets the criterion in any arm.**
+- **V_φ (a):** the selection enrichment of coreferent and head-dependent sources is 0.97–1.15 in PMX, PM1 and F3.1, against the 1.2 required: V_φ does not choose related sources. The attraction contrasts are heavy-tailed and change sign between layers (coreference, PMX: −9.0 at layer 0, +0.24 at layer 1). Same-POS sources are enriched 1.35–1.46×, but the B_spec they would need is at most 0.0006 in magnitude, or negative.
+- **Wells (b):** the dominant-mode co-assignment gain is null for every grouping, and so is the NMI gain against POS.
+- **(c) B_spec for V_φ** is at most 0.005 in magnitude everywhere: V_φ moves tokens without binding related ones.
+
+**A replicated structural signal that the pre-registered rule does not admit (descriptive).** At layer 1 the wells **bind noun-chunk members** and **separate head–dependent pairs**:
+
+| | PMX | PM1 |
+| --- | ---: | ---: |
+| chunk B_spec | **+0.044** [+0.039, +0.049] | **+0.026** [+0.022, +0.029] |
+| dep B_spec | **−0.022** [−0.024, −0.020] | **−0.027** [−0.028, −0.025] |
+| coref B_spec | −0.007 | −0.009 |
+
+All shuffled controls are null. In PM1 the result is identical against the common, force-level and switch-off references (+0.026, +0.025, +0.026). The binding is **made by the layer**: chunk B at layer 1's input is −0.010 (PMX) and at its output +0.044, and with the wells off it is +0.0005. It fails level 1 only because criterion (b), dominant-mode co-assignment, is null. The modes that dominate each token's force are not shared by chunk members, even though the wells' displacement pulls them together. Whether (b) is too coarse a readout for this effect is a question for a follow-up, not a reason to rescore.
+
+**Also descriptive:** G2's V_φ selects coreferent sources at 2.2× the matched rate and same-POS sources at 3.2–4.7×, the only arm where V_φ's routing is strongly structured. Its states do not move accordingly (B_spec ≈ 0). At layer 1, G2's V_φ force is only 30% potential gradient (the rest is the selection term), so the attraction readout covers a minority of it.
+
+| call | prediction | called at | result |
+| --- | --- | ---: | --- |
+| SY-L0 | level 0 holds | 75% | **HIT** |
+| SY-L1 | level 1 holds | 45% | **MISS** |
+| SY-pair | V_φ attracts coreferent or head–dependent pairs | 50% | **MISS** (enrichment 0.97–1.15) |
+| SY-wells | the wells pass 1 (b) and V_φ does not | 25% | **MISS** (neither passes) |
+
+**Reading.** By the pre-registered criteria the verdict is **semantically blind**. The couplings synchronize tokens: V_φ pairwise, modestly (Γ_spec 0.02–0.06 at layer 1), and the wells strongly, but by convergence on fixed centres. Neither route binds coreferent or syntactically related tokens. Levels 2 and 3 cannot hold when level 1 fails. SY5 (does Gate 2's blow-up come with over-synchronization?) and the GPT-2 comparison stand on their own and remain worth running. The wells' chunk/dependency pattern is the one lead: a layer-made, replicated, shuffle-controlled structural effect that the pre-registered readout did not confirm. Scope: L = 2, 532.5M tokens (§5.19).
+
+#### SY on the L = 4 Fock arm (descriptive depth reading) and a pattern common to every arm — **2026-10-14**
+
+The arm was run at the author's request, through the same two scripts with the same checks; every check passed. On this arm the displacement reference disagreed with the force reference at layer 3 (+0.018 against +0.024), so it is read at the force level. It is a single arm, so it cannot change any call.
+
+**Coupling profile over depth (Γ_spec, force reference):**
+
+| | layer 0 | layer 1 | layer 2 | layer 3 |
+| --- | ---: | ---: | ---: | ---: |
+| V_φ | +0.000 | +0.001 | +0.004 | **+0.024** |
+| Fock | −0.052 | −0.002 | −0.002 | **−0.111** |
+
+There is no accumulation through depth. V_φ is nearly idle in the two middle layers (switching it off moves their output by 0.016 and 0.078, against 1.2 and 2.4 at the outer layers). Its only contraction above the floor is at the last layer. The Fock channel expands the token set at both ends. No grouping's B_spec reaches the floor for either coupling at any layer (largest: Fock, noun chunks, layer 3, −0.015). **Depth does not turn the L = 2 verdict around in this arm.**
+
+**A pattern in every arm, which no coupling we measured accounts for.** In the states themselves, noun-chunk members end up closer and head–dependent pairs further apart, from identical embedding values (chunk B −0.007 to −0.010, dependency B +0.014 to +0.015):
+
+| arm | chunk B at the final output | dependency B at the final output |
+| --- | ---: | ---: |
+| F3.1 | +0.032 | −0.009 |
+| SR2 | +0.032 | −0.013 |
+| G2 | +0.047 | −0.011 |
+| PM1 | +0.035 | −0.018 |
+| PMX | +0.044 | −0.014 |
+| L4F | +0.042 | −0.015 |
+
+At L = 4 it forms almost entirely in the **last** layer (chunk B −0.003 → +0.015 → +0.042 over the last two). In the wells arms the wells carry it (PMX: +0.044 with the wells on, +0.0005 off). In the arms without wells, neither V_φ nor the Fock channel does (their B_spec is at most 0.015 in magnitude, and in the wrong direction). So it is made by the rest of the step: the context-conditioned single-token potential V_θ (through ξ) and the integrator.
+
+**Two readings, not yet separated:**
+1. Binding through the shared context ξ, a mean-field coupling the programme has not yet measured as a coupling. The test is a replay with ξ frozen at its input value.
+2. **Readout geometry.** The pattern forms where the states are shaped to predict the next token. Tokens inside a noun phrase share a continuation, while a head and its dependent play different roles. That would make it a property of prediction, not of binding. The test is to measure the same contrast on the next-token distributions (the logits): if the logit-space contrast explains the state-space one, reading 2 holds.
+
+Until these are separated, the pattern is not evidence of binding.
+
+#### The two separating tests — **criteria fixed 2026-10-14, before either is run** (`sync/sy_xi_pred.py`, all six arms)
+
+**Test A: binding through ξ.** Every step computes ξ from its own input, and the step is replayed with ξ replaced:
+- **own:** each token's ξ computed from that token alone, so no other token acts through ξ.
+- **common:** the sequence-average ξ given to every token.
+
+B_tot,ξ = B(on) − B(own) and B_spec,ξ = B(on) − B(common).
+**Reading 1 holds** if B_spec,ξ at the last layer passes the floor for noun chunks (positive) and for dependencies (negative), with the shuffled control null, in PMX and in at least one other arm.
+
+**Test B: prediction geometry, at the last layer's output.** The readout is linear in that state (logits = W h + b), so the test cannot simply ask whether the logits show the pattern. It measures three contrasts:
+- **B_target:** on the cosine of the true next tokens' output embeddings. Does the data's continuation structure have the pattern?
+- **B_pred:** on the Bhattacharyya overlap of the predicted distributions.
+- **B_resid:** the state contrast after removing, per sequence, the linear fit of state cosine on prediction overlap.
+
+**Reading 2 holds** if B_resid is null for noun chunks in at least five of the six arms while B_state passes. It is **contradicted** if B_resid passes for noun chunks in PMX and in at least one other arm.
+
+Both readings can hold; neither is exclusive.
+
+#### The decoding probe — **criteria fixed 2026-10-14, before it is run** (`sync/sy_coref_probe.py`, all six arms)
+
+Every SY state measure asks whether related tokens become more alike. A transformer binds differently: attention copies the antecedent's information into the later token without making the two states similar. The probe tests for binding of that kind.
+
+- **Task:** 2,074 pronouns (in 188 sequences) that fastcoref links to an earlier non-pronoun mention. For each, rank the true antecedent's last token against the last tokens of up to 7 preceding mentions of other chains: 7.6 candidates on average, chance 0.138. The nearest candidate is the antecedent 46.8% of the time.
+- **Probe:** a rank-32 bilinear score, (U h_m)·(V h_c), which is one attention head's query–key form. Trained on 150 sequences and tested on the other 50, separately on the embeddings and on each layer's output.
+- **The dynamics make decodable binding information** if the final-layer probe's test accuracy exceeds the embedding probe's by at least 5 points, with the 95% bootstrap interval over test sequences excluding 0, and exceeds the distance-only baseline. **Replicated** if this holds in PMX and in at least one other arm.
+- **Coupling ablation** (added before any probe run). The final-layer probe, trained on the trained model's states, is applied on the test sequences to the last step replayed with each coupling at its common-mode reference, switched off, and with ξ per token alone or as the sequence average. **The readout relies on a coupling** if accuracy falls by at least 5 points under its common-mode reference, with the interval excluding 0. This is meaningful only where the dynamics make binding information.
+
+#### Binding in a subspace — **criteria fixed 2026-10-14, before it is run** (`sync/sy_subspace.py`, all six arms)
+
+B_spec is recomputed after projecting the states onto a fixed family of subspaces of each layer's output, fitted on sequences 0–49 and measured on sequences 50–199:
+- principal components 1–16, 17–64, and 65 onward;
+- the span of the 64 mode centres (PM1, PMX);
+- the 64 directions of the coreference probe's query and key maps (last layer).
+
+Random orthonormal subspaces of 16, 64 and 320 dimensions are the matched-dimension controls; projecting onto fewer dimensions inflates cosines by itself. The context ξ is included as a coupling.
+
+**A hidden binding signal:** for a linguistic grouping, a coupling and a subspace, B_spec is positive and passes the floor, its shuffled control is null, and it exceeds the matched random subspace's B_spec by at least the floor. It must replicate in PMX and in at least one other arm with the same route (for ξ: PMX and any other arm). With five subspaces, five groupings and up to three couplings per arm, the replication requirement carries the burden of multiplicity.
+
+The whole-space statistics reproduce `sy_measure`'s stored ones exactly (checked on the smoke run: max |d| 0).
+
+#### The separating tests and the probe scored: **the noun-chunk pattern is made through ξ and is not prediction geometry; the dependency pattern is mostly prediction geometry; no arm carries decodable coreference information beyond the embeddings and recency** — **2026-10-14**
+
+`sync/sy_xi_pred.py` and `sync/sy_coref_probe.py`, all six arms, 200 sequences. Every check passed: the replays are bit-exact, every patch restores, and the logits rebuilt from the last step equal the model's exactly.
+
+**Test A: ξ, last layer, B_spec,ξ (on minus the common-ξ replay)**
+
+| arm | noun chunks | dependencies |
+| --- | ---: | ---: |
+| PMX | **+0.038** [+0.033, +0.044] | **−0.033** [−0.036, −0.031] |
+| PM1 | **+0.027** [+0.017, +0.035] | **−0.027** [−0.030, −0.025] |
+| G2 | **+0.064** | +0.003 |
+| L4F | **+0.033** | −0.017 |
+| F3.1 | +0.017 | −0.017 |
+| SR2 | +0.015 | **−0.027** |
+
+The shuffled controls are null throughout. **Reading 1 HOLDS:** in PMX and replicated in PM1, both the chunk binding and the dependency separation pass through ξ. The chunk binding passes the floor in four of six arms and is positive with a tight interval in the other two.
+
+**Test B: prediction geometry, last layer's output**
+
+| arm | chunk: state | chunk: residual after prediction | chunk: true next tokens | dependency: residual | dependency: true next tokens |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| PMX | +0.044 | **+0.042** | +0.001 | −0.005 | −0.014 |
+| PM1 | +0.035 | **+0.034** | +0.001 | −0.009 | −0.011 |
+| F3.1 | +0.032 | **+0.029** | −0.001 | −0.002 | −0.015 |
+| G2 | +0.048 | **+0.044** | −0.000 | −0.002 | −0.015 |
+| SR2 | +0.032 | **+0.030** | +0.001 | −0.004 | −0.011 |
+| L4F | +0.042 | **+0.038** | −0.000 | −0.005 | −0.015 |
+
+State cosine and prediction overlap correlate at 0.51–0.52 in every arm. **Reading 2 is CONTRADICTED for noun chunks:** the residual passes in all six arms, and the data's continuations have no chunk structure (true next tokens ≈ 0). For **dependencies, prediction geometry accounts for the pattern:** the residual is below the floor in every arm, and heads and dependents do have dissimilar continuations (−0.011 to −0.015).
+
+**The decoding probe:** no arm passes. Test accuracy, against 0.541 for the nearest candidate and 0.136 for chance:
+
+| | embeddings | best layer | final layer | final − embeddings |
+| --- | ---: | ---: | ---: | ---: |
+| PMX | 0.464 | 0.532 | 0.532 | +0.068 [+0.012, +0.127] |
+| PM1 | 0.516 | 0.563 | 0.446 | −0.070 |
+| F3.1 | 0.473 | 0.545 | 0.477 | +0.005 |
+| G2 | 0.459 | 0.575 | 0.475 | +0.016 |
+| SR2 | 0.511 | 0.516 | 0.507 | −0.005 |
+| L4F | 0.414 | 0.584 | 0.480 | +0.066 |
+
+PMX clears the 5-point margin over its embeddings but not the distance baseline. No probe on any layer of any arm beats recency by more than 4 points. The probe peaks after the first layer and falls at the last, where the states are shaped for prediction. **The ablation is descriptive only,** since no arm makes binding information. The readout falls 7–20 points under the common-ξ replay in four arms, and 12 under the wells in PMX. But a probe applied to perturbed states degrades with the size of the perturbation (switching off G2's Fock channel costs 29 points), so the drops measure perturbation, not reliance.
+
+**Reading.**
+1. **Noun chunks:** the one structural regularity the dynamics create in every arm is **binding through the shared context ξ**, a mean-field coupling and not a pairwise one. It is not an artefact of next-token prediction: the data's continuations do not have it, and it survives removing everything prediction similarity explains. In the wells arms the wells carry the same pattern; whether they act through ξ or alongside it is not separated.
+2. **Dependency separation:** mostly prediction geometry.
+3. **Coreference:** not bound in either sense, by closeness or as decodable information beyond lexical compatibility and recency, at L = 2 or L = 4.
+
+This adds a qualified positive to the "semantically blind" verdict on the pre-registered routes: these models bind syntactic constituents through the context field, and do not bind reference at all. These tests were fixed before they ran but are follow-ups, so they do not rescore level 1. Scope: §5.19.
+
+#### Binding in a subspace scored, and its one coreference hit examined: **the hit is the same word repeated, not reference** — **2026-10-14**
+
+`sync/sy_subspace.py` on all six arms; every check passed (bit-exact replays, patches restored, whole-space statistics equal to `sy_measure`'s). Hits replicated by the rule (same coupling, grouping and subspace in PMX and another arm):
+
+| hit | PMX | replicated in |
+| --- | --- | --- |
+| ξ, part of speech, top 16 components, layer 0 | +0.117 | all five others |
+| ξ, noun chunks, top 16 components | +0.063 (layer 1) | PM1, SR2 (layer 0), G2 (layer 1) |
+| **ξ, coreference, top 16 components, layer 0** | +0.037 | PM1, F3.1, G2, SR2 |
+| wells, noun chunks, top 16 components, layer 1 | +0.063 | none |
+
+The chunk and part-of-speech hits restate in the dominant directions what the whole-space measures showed. **The coreference hit is the only one that would change a conclusion**, so it was examined (`sync/sy_coref_subspace_check.py`; not pre-registered, an examination of a hit). The context field ξ includes each token's own state, and many coreferent pairs are one word repeated. Revision 2, fixed after PMX's first run and before any other arm, excluded pairs of the same word (after lower-casing, stripping and removing a possessive "'s", since GPT-2 spells one word with several token ids).
+
+| arm | all pairs | identical tokens excluded | same words excluded | verdict |
+| --- | ---: | ---: | ---: | --- |
+| PMX | +0.037 | +0.048 | +0.023 (random 16-dim: +0.016) | lexical |
+| PM1 | +0.024 | +0.035 | +0.012 | lexical |
+| G2 | +0.043 | +0.047 | +0.020 (random: +0.014) | lexical |
+| SR2 | +0.045 | +0.058 | +0.022 (random: +0.012) | lexical |
+| F3.1 | +0.060 | +0.077 | **+0.054** (random: +0.028) | different words of one entity |
+
+**Reading.** The coreference signal is lexical identity, one word repeated in different spellings. It reaches the first layer through the context field's own-token term. Without same-word pairs it falls to what any 16-dimensional projection shows, in four of five arms. F3.1 keeps a residual between different words of one entity, which does not replicate. Restricted to pronoun–antecedent pairs the signal is absent. That row's shuffled control is biased in every arm (−0.05 to +0.04, never null), so it cannot be read alone; the conclusion on pronouns rests on the probe. **"Reference is not bound" stands**, and with a reason: what looks like coreference in the dominant directions is repeated words, not resolved reference.
+
 ### 5.23 RF: do the Poisson-mode registers carry forward-looking state? — **pre-registered 2026-10-12, before any measurement**
 
 **Why.** The chain-of-thought substrate note ([`Chain_of_Thought_Substrate_in_Lagrangian_Models.md`](Chain_of_Thought_Substrate_in_Lagrangian_Models.md)) finds that the Poisson-mode registers are the conservative scratchpad a native chain-of-thought would write to, and that the missing piece is a training signal. Before any such training, this measures whether the registers in the published PMX model already carry state about what comes next, beyond what the hidden state carries. If they do not, the scratchpad is a memory of the past only, and the design changes before anything is trained.

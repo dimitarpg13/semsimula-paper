@@ -1,0 +1,54 @@
+SY0, validation of the SY instruments on toy systems (40 independent draws per condition; 95% cluster-bootstrap intervals; floor 0.02)
+
+CHECK 1  Kuramoto, N = 256, unit-variance Gaussian frequencies, K_c = 1.596; attribution = coupled minus uncoupled from the same start
+    K/K_c   order r on/off                          dR_raw                           dR_v0                    dR (centred)                           Gamma
+     0.00   0.056 / 0.056      +0.0000 [-0.0000, +0.0000]      +0.0000 [-0.0000, +0.0000]      +0.0000 [-0.0000, +0.0000]      -0.0000 [-0.0000, +0.0000]
+     0.25   0.068 / 0.053      +0.0021 [+0.0014, +0.0029]      +0.0005 [+0.0004, +0.0007]      +0.0005 [+0.0004, +0.0007]      +0.0023 [+0.0013, +0.0034]
+     0.50   0.096 / 0.057      +0.0071 [+0.0048, +0.0095]      +0.0017 [+0.0012, +0.0023]      +0.0017 [+0.0012, +0.0023]      +0.0067 [+0.0040, +0.0095]
+     0.75   0.125 / 0.050      +0.0155 [+0.0107, +0.0208]      +0.0039 [+0.0027, +0.0054]      +0.0039 [+0.0027, +0.0054]      +0.0153 [+0.0100, +0.0211]
+     1.25   0.700 / 0.048      +0.4974 [+0.4600, +0.5316]      +0.0818 [+0.0772, +0.0860]      +0.0818 [+0.0772, +0.0860]      +0.5805 [+0.5338, +0.6263]
+     2.00   0.938 / 0.058      +0.8795 [+0.8728, +0.8856]      +0.0540 [+0.0509, +0.0573]      +0.0540 [+0.0509, +0.0573]      +1.3597 [+1.3337, +1.3853]
+     3.00   0.976 / 0.057      +0.9531 [+0.9516, +0.9547]      +0.0324 [+0.0307, +0.0342]      +0.0324 [+0.0307, +0.0342]      +1.8256 [+1.8119, +1.8394]
+
+CHECK 2  causal attention, V = I, on S^15; N = 128, 4 groups planted only in the attention weights (within 1, between 0.1); random initial states
+   depth T                     B (centred)                            B_v0                           B_raw                  Gamma (vs T=0)             dB (centred) vs T=0
+         1      +0.0599 [+0.0547, +0.0656]      +0.0599 [+0.0547, +0.0656]      +0.0573 [+0.0522, +0.0627]      +0.0186 [+0.0166, +0.0206]      +0.0607 [+0.0567, +0.0649]
+         2      +0.2301 [+0.2151, +0.2457]      +0.2301 [+0.2151, +0.2457]      +0.1944 [+0.1822, +0.2072]      +0.0907 [+0.0829, +0.0989]      +0.2309 [+0.2170, +0.2449]
+         4      +0.9272 [+0.9031, +0.9511]      +0.9272 [+0.9031, +0.9511]      +0.4348 [+0.4029, +0.4708]      +0.4935 [+0.4618, +0.5251]      +0.9280 [+0.9046, +0.9509]
+         8      +1.2207 [+1.2051, +1.2364]      +1.2207 [+1.2051, +1.2364]      +0.2852 [+0.2374, +0.3345]      +1.1824 [+1.1153, +1.2496]      +1.2215 [+1.2058, +1.2368]
+   shuffled labels at T = 8:  B (centred) +0.0005 [-0.0047, +0.0058]   B_v0 +0.0005 [-0.0047, +0.0058]   B_raw +0.0013 [-0.0005, +0.0030]   Gb -0.0005 [-0.0087, +0.0072]
+   binding contraction Gb at T = 8: +1.9709 [+1.9180, +2.0243]
+
+CHECK 3  planted clusters (similar inputs), shared per-token map, group-blind causal mean-field pull as the coupling
+   B_c   +1.0518 [+1.0123, +1.0867]   attribution dB_c   -0.0331 [-0.0396, -0.0271]
+   B_v0  +1.0086 [+0.9631, +1.0463]   attribution dB_v0  -0.0575 [-0.0746, -0.0418]
+   B_raw +0.3530 [+0.2802, +0.4359]   attribution dB_raw -0.4534 [-0.5021, -0.3996]
+   C_c   +1.1835 [+1.1751, +1.1926]   attribution dC_c   +0.0191 [+0.0089, +0.0302]
+   C_raw +0.7725 [+0.7280, +0.8165]   attribution dC_raw -0.0852 [-0.1067, -0.0675]
+   Gb     -0.1131 [-0.1323, -0.0941]      Gamma +0.8788 [+0.8608, +0.8952]  (global contraction is expected: the pull is real)
+
+CHECK 4a  common-mode drift (a state-independent shared displacement, 3x the state scale)
+   dR_raw +0.7478 [+0.6827, +0.8019]   dR_v0 -0.0091 [-0.0202, +0.0012]   dR (centred) -0.0027 [-0.0099, +0.0029]   Gamma +0.5556 [+0.4846, +0.6223]
+   dB_raw -0.8300 [-0.9064, -0.7413]   dB_v0 +0.0348 [+0.0118, +0.0604]   dB (centred) +0.0189 [+0.0013, +0.0382]   Gb -0.0196 [-0.0566, +0.0181]
+   dC_raw -0.8285 [-0.8707, -0.7844]   dC (centred) +0.0164 [+0.0059, +0.0268]
+
+CHECK 4b  common-mode drift (a state-independent shared displacement, 3x the state scale) with a closing LayerNorm
+   dR_raw +0.7559 [+0.6909, +0.8098]   dR_v0 -0.0051 [-0.0173, +0.0047]   dR (centred) -0.0051 [-0.0173, +0.0047]   Gamma +1.8247 [+1.7170, +1.9447]
+   dB_raw -0.8673 [-0.9380, -0.7831]   dB_v0 +0.0324 [+0.0095, +0.0591]   dB (centred) +0.0324 [+0.0095, +0.0591]   Gb -0.1377 [-0.1884, -0.0822]
+   dC_raw -0.4404 [-0.4781, -0.3948]   dC (centred) +0.0383 [+0.0271, +0.0511]
+
+CHECK 5  (descriptive) a common external attractor, no interaction: what the instruments say about common forcing
+   Gamma +0.9098 [+0.8856, +0.9330]   dR_raw +0.4451 [+0.3877, +0.5124]   dR (centred) +0.0006 [-0.0021, +0.0031]
+   dB (centred) -0.0109 [-0.0189, -0.0034]   Gb -0.0264 [-0.0404, -0.0140]   dC (centred) +0.0216 [+0.0103, +0.0351]
+
+VERDICT per measure (a measure is admitted to SY1 only if it passes every check it enters)
+   dR_raw  REJECTED  1:pass  4a:FAIL  4b:FAIL
+   dR_v0   ADMITTED  1:pass  4a:pass  4b:pass
+   dR_c    ADMITTED  1:pass  4a:pass  4b:pass
+   Gamma   REJECTED  1:pass  2 (descriptive: global contraction present):pass  4a:FAIL  4b:FAIL
+   B_c     REJECTED  2:pass  3:FAIL  4a:pass  4b:FAIL
+   B_v0    REJECTED  2:pass  3:FAIL  4a:FAIL  4b:FAIL
+   B_raw   REJECTED  2:FAIL  3:FAIL  4a:FAIL  4b:FAIL
+   Gb      REJECTED  2:pass  3:FAIL  4a:pass  4b:FAIL
+   C_c     REJECTED  3:pass  4a:pass  4b:FAIL
+   C_raw   REJECTED  3:FAIL  4a:FAIL  4b:FAIL

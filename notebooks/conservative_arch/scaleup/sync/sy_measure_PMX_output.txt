@@ -1,0 +1,72 @@
+SY1/SY2 state level: PMX  ....05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn  (L = 2, couplings ['vphi', 'wells']; force-level common for ['vphi'])
+CHECK  pair-relation bin statistics equal the validated gid form: max |d| 0.0e+00
+CHECK  layer 0: replay "on" vs the forward pass, max |d| 0.0e+00; LayerNorm of the captured pre-LN state vs the output 0.0e+00
+       off_vphi: output moved by 3.267e-01 (must be > 0)
+       fcom_vphi: output moved by 3.281e-01 (must be > 0)
+       off_wells: output moved by 3.097e+00 (must be > 0)
+CHECK  layer 1: replay "on" vs the forward pass, max |d| 0.0e+00; LayerNorm of the captured pre-LN state vs the output 0.0e+00
+       off_vphi: output moved by 2.115e+00 (must be > 0)
+       fcom_vphi: output moved by 1.694e+00 (must be > 0)
+       off_wells: output moved by 2.082e+01 (must be > 0)
+CHECK  every patch restored: logits after all replays vs before, max |d| 0.0e+00
+
+SUMMARY (200 sequences; 95% cluster-bootstrap intervals; floor 0.02). spec = on minus common-mode reference.
+layer 0
+   vphi   Gamma_tot +0.0030 [+0.0029, +0.0030]   Gamma_spec(disp) +0.0030 [+0.0029, +0.0030]   Gamma_spec(force) +0.0030 [+0.0029, +0.0031]
+   wells  Gamma_tot -0.2067 [-0.2078, -0.2057]   Gamma_spec(disp) -0.2067 [-0.2078, -0.2057]
+   coref   B_in +0.1189 [+0.1033, +0.1351]   B_on +0.1277 [+0.1121, +0.1447]
+      vphi  B_spec -0.0001 [-0.0003, -0.0000]  (shuffled +0.0000 [-0.0000, +0.0001])   Gb_spec -0.0019 [-0.0027, -0.0014]   C_spec -0.0005 [-0.0008, -0.0003]
+      wells B_spec +0.0003 [-0.0009, +0.0014]  (shuffled -0.0000 [-0.0003, +0.0002])   Gb_spec +0.0112 [+0.0085, +0.0137]   C_spec +0.0024 [+0.0007, +0.0040]
+   dep     B_in +0.0144 [+0.0119, +0.0169]   B_on +0.0104 [+0.0072, +0.0141]
+      vphi  B_spec +0.0002 [+0.0002, +0.0003]  (shuffled -0.0001 [-0.0001, -0.0000])   Gb_spec +0.0004 [+0.0002, +0.0005]   C_spec +0.0002 [+0.0001, +0.0003]
+      wells B_spec -0.0003 [-0.0008, +0.0001]  (shuffled -0.0004 [-0.0007, -0.0001])   Gb_spec -0.0005 [-0.0012, +0.0003]   C_spec -0.0017 [-0.0025, -0.0009]
+   chunk   B_in -0.0081 [-0.0109, -0.0054]   B_on -0.0104 [-0.0152, -0.0060]
+      vphi  B_spec -0.0000 [-0.0002, +0.0001]  (shuffled -0.0000 [-0.0001, +0.0000])   Gb_spec -0.0006 [-0.0007, -0.0004]   C_spec -0.0001 [-0.0003, +0.0002]
+      wells B_spec +0.0047 [+0.0036, +0.0058]  (shuffled -0.0001 [-0.0003, +0.0001])   Gb_spec +0.0075 [+0.0058, +0.0092]   C_spec +0.0007 [-0.0016, +0.0030]
+   ent     B_in -0.0238 [-0.0387, -0.0108]   B_on +0.0036 [-0.0136, +0.0202]
+      vphi  B_spec +0.0001 [-0.0004, +0.0005]  (shuffled +0.0000 [-0.0001, +0.0001])   Gb_spec -0.0009 [-0.0013, -0.0006]   C_spec -0.0000 [-0.0007, +0.0006]
+      wells B_spec +0.0026 [+0.0003, +0.0048]  (shuffled -0.0005 [-0.0010, +0.0000])   Gb_spec +0.0087 [+0.0048, +0.0126]   C_spec +0.0113 [+0.0055, +0.0166]
+   pos     B_in +0.1469 [+0.1422, +0.1516]   B_on +0.1405 [+0.1368, +0.1441]
+      vphi  B_spec -0.0004 [-0.0005, -0.0004]  (shuffled -0.0000 [-0.0000, +0.0000])   Gb_spec +0.0001 [+0.0000, +0.0002]   C_spec +0.0019 [+0.0017, +0.0020]
+      wells B_spec -0.0028 [-0.0032, -0.0024]  (shuffled +0.0001 [-0.0000, +0.0001])   Gb_spec -0.0021 [-0.0031, -0.0010]   C_spec -0.0076 [-0.0086, -0.0066]
+   repeat  B_in +1.0044 [+1.0028, +1.0061]   B_on +0.6183 [+0.6044, +0.6301]
+      vphi  B_spec -0.0037 [-0.0046, -0.0028]  (shuffled -0.0000 [-0.0000, +0.0000])   Gb_spec -0.0065 [-0.0077, -0.0053]   C_spec +0.0003 [-0.0004, +0.0009]
+      wells B_spec +0.0342 [+0.0314, +0.0376]  (shuffled +0.0000 [-0.0001, +0.0001])   Gb_spec +0.0661 [+0.0613, +0.0717]   C_spec -0.0308 [-0.0349, -0.0259]
+layer 1
+   vphi   Gamma_tot +0.0208 [+0.0205, +0.0212]   Gamma_spec(disp) +0.0208 [+0.0205, +0.0212]   Gamma_spec(force) +0.0203 [+0.0199, +0.0206]
+   wells  Gamma_tot +0.9834 [+0.9794, +0.9875]   Gamma_spec(disp) +0.9834 [+0.9794, +0.9875]
+   coref   B_in +0.1277 [+0.1121, +0.1447]   B_on +0.1227 [+0.1082, +0.1377]
+      vphi  B_spec -0.0012 [-0.0016, -0.0009]  (shuffled -0.0000 [-0.0001, +0.0001])   Gb_spec -0.0009 [-0.0016, -0.0002]   C_spec +0.0001 [-0.0001, +0.0003]
+      wells B_spec -0.0072 [-0.0112, -0.0036]  (shuffled +0.0003 [-0.0005, +0.0012])   Gb_spec -0.0433 [-0.0516, -0.0343]   C_spec -0.0158 [-0.0209, -0.0111]
+   dep     B_in +0.0104 [+0.0072, +0.0141]   B_on -0.0142 [-0.0193, -0.0086]
+      vphi  B_spec -0.0010 [-0.0012, -0.0009]  (shuffled -0.0000 [-0.0002, +0.0001])   Gb_spec -0.0014 [-0.0016, -0.0011]   C_spec +0.0001 [+0.0000, +0.0003]
+      wells B_spec -0.0218 [-0.0237, -0.0200]  (shuffled +0.0013 [+0.0002, +0.0026])   Gb_spec +0.0026 [-0.0007, +0.0065]   C_spec -0.0083 [-0.0103, -0.0062]
+   chunk   B_in -0.0104 [-0.0152, -0.0060]   B_on +0.0441 [+0.0363, +0.0511]
+      vphi  B_spec +0.0006 [+0.0001, +0.0010]  (shuffled -0.0000 [-0.0001, +0.0001])   Gb_spec +0.0040 [+0.0035, +0.0045]   C_spec -0.0017 [-0.0020, -0.0014]
+      wells B_spec +0.0438 [+0.0392, +0.0486]  (shuffled +0.0004 [-0.0002, +0.0010])   Gb_spec +0.0548 [+0.0473, +0.0622]   C_spec -0.0121 [-0.0176, -0.0062]
+   ent     B_in +0.0036 [-0.0136, +0.0202]   B_on +0.0277 [-0.0007, +0.0570]
+      vphi  B_spec +0.0008 [-0.0003, +0.0017]  (shuffled +0.0002 [+0.0000, +0.0005])   Gb_spec +0.0006 [-0.0005, +0.0017]   C_spec +0.0007 [-0.0002, +0.0016]
+      wells B_spec +0.0119 [+0.0001, +0.0229]  (shuffled +0.0022 [+0.0002, +0.0044])   Gb_spec +0.0289 [+0.0106, +0.0461]   C_spec -0.0306 [-0.0412, -0.0188]
+   pos     B_in +0.1405 [+0.1368, +0.1441]   B_on +0.1396 [+0.1349, +0.1439]
+      vphi  B_spec -0.0007 [-0.0008, -0.0005]  (shuffled -0.0000 [-0.0000, +0.0000])   Gb_spec -0.0001 [-0.0004, +0.0001]   C_spec -0.0002 [-0.0004, -0.0001]
+      wells B_spec -0.0052 [-0.0068, -0.0035]  (shuffled -0.0001 [-0.0003, +0.0001])   Gb_spec +0.0109 [+0.0085, +0.0136]   C_spec -0.0207 [-0.0230, -0.0186]
+   repeat  B_in +0.6183 [+0.6044, +0.6301]   B_on +0.4613 [+0.4447, +0.4757]
+      vphi  B_spec -0.0031 [-0.0037, -0.0022]  (shuffled -0.0000 [-0.0001, +0.0000])   Gb_spec +0.0001 [-0.0007, +0.0012]   C_spec -0.0029 [-0.0035, -0.0024]
+      wells B_spec -0.0897 [-0.0939, -0.0851]  (shuffled -0.0003 [-0.0006, +0.0001])   Gb_spec -0.1201 [-0.1332, -0.1046]   C_spec +0.0774 [+0.0710, +0.0846]
+
+CHECK  displacement-level vs force-level common reference, on V_phi (adopted for every coupling only if |d| < 0.005 with the same sign)
+   layer 0 Gamma_spec: disp +0.0030  force +0.0030  agree
+   layer 0 B_spec coref : disp -0.0001  force -0.0001  agree
+   layer 0 B_spec dep   : disp +0.0002  force +0.0002  agree
+   layer 0 B_spec chunk : disp -0.0000  force -0.0000  agree
+   layer 0 B_spec ent   : disp +0.0001  force +0.0001  agree
+   layer 0 B_spec pos   : disp -0.0004  force -0.0004  agree
+   layer 0 B_spec repeat: disp -0.0037  force -0.0037  agree
+   layer 1 Gamma_spec: disp +0.0208  force +0.0203  agree
+   layer 1 B_spec coref : disp -0.0012  force -0.0012  agree
+   layer 1 B_spec dep   : disp -0.0010  force -0.0010  agree
+   layer 1 B_spec chunk : disp +0.0006  force +0.0006  agree
+   layer 1 B_spec ent   : disp +0.0008  force +0.0008  agree
+   layer 1 B_spec pos   : disp -0.0007  force -0.0007  agree
+   layer 1 B_spec repeat: disp -0.0031  force -0.0030  agree
+   => displacement-level reference ADOPTED

@@ -34,3 +34,11 @@ notebooks/conservative_arch/data/*.parquet
 # Smoke-model (random-init) conservativity results. The scientifically
 # meaningful results live under results/conservativity_v21/ (trained checkpoint).
 notebooks/conservative_arch/parf/results/conservativity/
+
+# SY programme caches: BLiMP downloads and the cached annotation of the 200
+# validation sequences (regeneratable by sy_annotate.py; large).
+notebooks/conservative_arch/scaleup/sync/sy_cache/
+# SY per-sequence statistics (bootstrap inputs; tens of MB, regeneratable by the
+# sync/ scripts). The _output.txt and .json summaries beside them are kept, and the
+# figures' statistics are cached in companion_notes/figures/sy_results/_numbers.json.
+notebooks/conservative_arch/scaleup/sync/*.npz

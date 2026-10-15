@@ -1,0 +1,29 @@
+SY xi / prediction tests: G2  ....05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn  (L = 2)
+CHECK  layer 0: replay "on" max |d| 0.0e+00; xi own moves the output by 3.642e+00, common by 3.745e+00
+CHECK  layer 1: replay "on" max |d| 0.0e+00; xi own moves the output by 9.370e+00, common by 7.551e+00
+CHECK  logits rebuilt from the last step's output vs the model's: max |d| 0.0e+00
+CHECK  every patch restored (logits identical after all replays)
+
+TEST A: xi as a coupling (200 sequences; 95% cluster-bootstrap intervals; floor 0.02)
+layer 0: Gamma vs own-xi +0.2153 [+0.2129, +0.2178]   vs common-xi +0.1739 [+0.1681, +0.1794]
+   coref  B_in +0.1187  B_on +0.1275   B_tot_xi +0.0133 [+0.0095, +0.0174]   B_spec_xi +0.0149 [+0.0112, +0.0189]  (shuffled +0.0000 [-0.0008, +0.0009])
+   dep    B_in +0.0138  B_on +0.0084   B_tot_xi -0.0024 [-0.0036, -0.0010]   B_spec_xi +0.0048 [+0.0030, +0.0066]  (shuffled +0.0022 [+0.0002, +0.0047])
+   chunk  B_in -0.0071  B_on -0.0095   B_tot_xi -0.0018 [-0.0047, +0.0009]   B_spec_xi -0.0034 [-0.0070, -0.0001]  (shuffled -0.0002 [-0.0011, +0.0006])
+   ent    B_in -0.0181  B_on +0.0095   B_tot_xi +0.0211 [+0.0147, +0.0268]   B_spec_xi +0.0252 [+0.0173, +0.0322]  (shuffled +0.0032 [+0.0014, +0.0051])
+   pos    B_in +0.1419  B_on +0.1350   B_tot_xi +0.0056 [+0.0040, +0.0075]   B_spec_xi +0.0029 [+0.0012, +0.0050]  (shuffled -0.0002 [-0.0005, -0.0000])
+   repeat B_in +1.0045  B_on +0.6280   B_tot_xi -0.3378 [-0.3587, -0.3223]   B_spec_xi -0.2344 [-0.2548, -0.2192]  (shuffled -0.0015 [-0.0029, -0.0003])
+layer 1: Gamma vs own-xi -0.0863 [-0.0890, -0.0836]   vs common-xi -0.3512 [-0.3559, -0.3465]
+   coref  B_in +0.1275  B_on +0.1210   B_tot_xi -0.0057 [-0.0098, -0.0022]   B_spec_xi +0.0017 [-0.0016, +0.0047]  (shuffled -0.0003 [-0.0011, +0.0005])
+   dep    B_in +0.0084  B_on -0.0110   B_tot_xi -0.0122 [-0.0140, -0.0106]   B_spec_xi +0.0025 [+0.0007, +0.0042]  (shuffled +0.0025 [+0.0015, +0.0035])
+   chunk  B_in -0.0095  B_on +0.0475   B_tot_xi +0.0298 [+0.0249, +0.0348]   B_spec_xi +0.0641 [+0.0588, +0.0691]  (shuffled -0.0003 [-0.0011, +0.0004])
+   ent    B_in +0.0095  B_on +0.0254   B_tot_xi -0.0235 [-0.0340, -0.0140]   B_spec_xi +0.0117 [-0.0006, +0.0256]  (shuffled +0.0029 [+0.0009, +0.0052])
+   pos    B_in +0.1350  B_on +0.1376   B_tot_xi +0.0064 [+0.0047, +0.0082]   B_spec_xi -0.0179 [-0.0194, -0.0164]  (shuffled -0.0003 [-0.0005, -0.0001])
+   repeat B_in +0.6280  B_on +0.4409   B_tot_xi -0.0349 [-0.0391, -0.0308]   B_spec_xi -0.0380 [-0.0449, -0.0315]  (shuffled +0.0004 [-0.0000, +0.0009])
+
+TEST B: prediction geometry at the last layer's output (per-sequence fit of state cosine on prediction overlap: median slope +0.456, median correlation +0.518)
+   coref  state +0.1210 [+0.1072, +0.1361]   prediction overlap +0.0558 [+0.0471, +0.0655]   residual +0.0966 [+0.0846, +0.1089] (shuffled +0.0018 [-0.0001, +0.0037])   true next tokens +0.0576 [+0.0503, +0.0652] (shuffled +0.0015 [+0.0003, +0.0028])
+   dep    state -0.0110 [-0.0158, -0.0056]   prediction overlap -0.0186 [-0.0232, -0.0141]   residual -0.0022 [-0.0056, +0.0015] (shuffled +0.0072 [+0.0034, +0.0126])   true next tokens -0.0152 [-0.0184, -0.0114] (shuffled +0.0016 [+0.0000, +0.0033])
+   chunk  state +0.0475 [+0.0401, +0.0541]   prediction overlap +0.0083 [-0.0003, +0.0156]   residual +0.0441 [+0.0378, +0.0501] (shuffled -0.0014 [-0.0026, -0.0001])   true next tokens -0.0003 [-0.0038, +0.0029] (shuffled +0.0001 [-0.0011, +0.0013])
+   ent    state +0.0254 [-0.0011, +0.0541]   prediction overlap -0.0303 [-0.0601, +0.0002]   residual +0.0413 [+0.0241, +0.0587] (shuffled +0.0073 [+0.0028, +0.0121])   true next tokens -0.0160 [-0.0308, -0.0020] (shuffled +0.0022 [-0.0004, +0.0050])
+   pos    state +0.1376 [+0.1332, +0.1423]   prediction overlap +0.1276 [+0.1221, +0.1332]   residual +0.0784 [+0.0754, +0.0817] (shuffled +0.0013 [+0.0005, +0.0020])   true next tokens +0.0629 [+0.0603, +0.0655] (shuffled +0.0005 [+0.0000, +0.0010])
+   repeat state +0.4409 [+0.4246, +0.4552]   prediction overlap +0.3593 [+0.3489, +0.3682]   residual +0.2682 [+0.2600, +0.2774] (shuffled +0.0005 [-0.0006, +0.0016])   true next tokens +0.2352 [+0.2216, +0.2488] (shuffled +0.0008 [-0.0007, +0.0030])

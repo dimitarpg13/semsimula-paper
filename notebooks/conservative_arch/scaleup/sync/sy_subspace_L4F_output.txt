@@ -1,0 +1,74 @@
+SY binding in a subspace: L4F (L = 4; couplings ['vphi', 'fock'] + xi; common reference fcom)
+CHECK  layer 0: replay "on" vs the forward pass, max |d| 0.0e+00
+CHECK  layer 1: replay "on" vs the forward pass, max |d| 0.0e+00
+CHECK  layer 2: replay "on" vs the forward pass, max |d| 0.0e+00
+CHECK  layer 3: replay "on" vs the forward pass, max |d| 0.0e+00
+CHECK  every patch restored (logits identical after all replays)
+   subspaces: pc1-16 (16), pc17-64 (48), pc65+ (320), rand16 (16), rand64 (64), rand320 (320), probe (64)
+CHECK  whole-space statistics vs sy_measure_L4F.npz (sequence 50, layer 0, coref): max |d| 0.0e+00
+CHECK  whole-space statistics vs sy_measure_L4F.npz (sequence 50, layer 1, coref): max |d| 0.0e+00
+CHECK  whole-space statistics vs sy_measure_L4F.npz (sequence 50, layer 2, coref): max |d| 0.0e+00
+CHECK  whole-space statistics vs sy_measure_L4F.npz (sequence 50, layer 3, coref): max |d| 0.0e+00
+
+B_spec by subspace (150 sequences; 95% cluster-bootstrap intervals; floor 0.02); a hit needs: passes, shuffled null, and above the matched random subspace by the floor
+   L0 vphi  coref  pc1-16 +0.0001  pc17-64 -0.0017  pc65+ -0.0004  rand16 +0.0008  rand64 -0.0004  rand320 -0.0006  whole -0.0005
+   L0 vphi  dep    pc1-16 +0.0010  pc17-64 +0.0001  pc65+ +0.0005  rand16 +0.0001  rand64 +0.0002  rand320 +0.0004  whole +0.0004
+   L0 vphi  chunk  pc1-16 +0.0003  pc17-64 +0.0001  pc65+ +0.0008  rand16 +0.0005  rand64 +0.0003  rand320 +0.0006  whole +0.0006
+   L0 vphi  ent    pc1-16 +0.0035  pc17-64 -0.0003  pc65+ +0.0002  rand16 -0.0018  rand64 +0.0005  rand320 +0.0004  whole +0.0003
+   L0 vphi  pos    pc1-16 -0.0012  pc17-64 -0.0006  pc65+ -0.0005  rand16 -0.0009  rand64 -0.0002  rand320 -0.0007  whole -0.0007
+   L0 fock  coref  pc1-16 -0.0044  pc17-64 -0.0006  pc65+ +0.0003  rand16 -0.0009  rand64 -0.0004  rand320 -0.0001  whole -0.0001
+   L0 fock  dep    pc1-16 -0.0144  pc17-64 -0.0031  pc65+ -0.0017  rand16 -0.0043  rand64 -0.0046  rand320 -0.0030  whole -0.0031
+   L0 fock  chunk  pc1-16 -0.0147  pc17-64 -0.0036  pc65+ -0.0023  rand16 -0.0079  rand64 -0.0049  rand320 -0.0053  whole -0.0054
+   L0 fock  ent    pc1-16 -0.0128  pc17-64 +0.0027  pc65+ +0.0012  rand16 -0.0016  rand64 -0.0009  rand320 -0.0008  whole -0.0014
+   L0 fock  pos    pc1-16 +0.0395*  pc17-64 +0.0035  pc65+ -0.0094  rand16 +0.0100  rand64 +0.0115  rand320 +0.0103  whole +0.0098
+   L0 xi    coref  pc1-16 +0.0268  pc17-64 +0.0300  pc65+ +0.0123  rand16 +0.0192  rand64 +0.0188  rand320 +0.0241  whole +0.0229
+   L0 xi    dep    pc1-16 -0.0101  pc17-64 -0.0188  pc65+ -0.0313  rand16 -0.0236  rand64 -0.0329  rand320 -0.0211  whole -0.0216
+   L0 xi    chunk  pc1-16 -0.0936  pc17-64 -0.0271  pc65+ -0.0422  rand16 -0.0485  rand64 -0.0710  rand320 -0.0477  whole -0.0495
+   L0 xi    ent    pc1-16 +0.0750*  pc17-64 +0.0748  pc65+ +0.0837  rand16 +0.0257  rand64 +0.0894  rand320 +0.0732  whole +0.0712
+   L0 xi    pos    pc1-16 +0.1233*  pc17-64 -0.0888  pc65+ -0.1784  rand16 -0.0882  rand64 -0.1034  rand320 -0.0910  whole -0.0910
+   L1 vphi  coref  pc1-16 -0.0001  pc17-64 -0.0000  pc65+ +0.0000  rand16 +0.0000  rand64 -0.0000  rand320 -0.0000  whole -0.0000
+   L1 vphi  dep    pc1-16 -0.0002  pc17-64 -0.0000  pc65+ -0.0000  rand16 -0.0000  rand64 -0.0001  rand320 -0.0001  whole -0.0001
+   L1 vphi  chunk  pc1-16 -0.0004  pc17-64 +0.0001  pc65+ -0.0000  rand16 +0.0000  rand64 -0.0001  rand320 -0.0001  whole -0.0001
+   L1 vphi  ent    pc1-16 +0.0000  pc17-64 +0.0001  pc65+ -0.0000  rand16 +0.0002  rand64 -0.0001  rand320 -0.0000  whole -0.0000
+   L1 vphi  pos    pc1-16 +0.0001  pc17-64 -0.0000  pc65+ +0.0000  rand16 -0.0000  rand64 -0.0000  rand320 -0.0000  whole -0.0000
+   L1 fock  coref  pc1-16 -0.0004  pc17-64 -0.0003  pc65+ -0.0001  rand16 -0.0005  rand64 -0.0003  rand320 -0.0002  whole -0.0001
+   L1 fock  dep    pc1-16 -0.0011  pc17-64 -0.0003  pc65+ -0.0000  rand16 -0.0006  rand64 -0.0003  rand320 -0.0003  whole -0.0003
+   L1 fock  chunk  pc1-16 -0.0012  pc17-64 -0.0001  pc65+ -0.0002  rand16 -0.0007  rand64 -0.0003  rand320 -0.0004  whole -0.0004
+   L1 fock  ent    pc1-16 +0.0003  pc17-64 -0.0005  pc65+ -0.0001  rand16 +0.0002  rand64 +0.0000  rand320 -0.0002  whole -0.0001
+   L1 fock  pos    pc1-16 -0.0004  pc17-64 -0.0002  pc65+ -0.0000  rand16 -0.0003  rand64 +0.0001  rand320 +0.0001  whole +0.0001
+   L1 xi    coref  pc1-16 +0.0011  pc17-64 -0.0038  pc65+ -0.0007  rand16 -0.0035  rand64 -0.0019  rand320 -0.0012  whole -0.0009
+   L1 xi    dep    pc1-16 -0.0214  pc17-64 +0.0057  pc65+ +0.0011  rand16 -0.0088  rand64 -0.0039  rand320 -0.0013  whole -0.0021
+   L1 xi    chunk  pc1-16 +0.0019  pc17-64 +0.0062  pc65+ +0.0032  rand16 -0.0086  rand64 +0.0037  rand320 +0.0028  whole +0.0025
+   L1 xi    ent    pc1-16 +0.0037  pc17-64 -0.0015  pc65+ +0.0015  rand16 -0.0027  rand64 +0.0025  rand320 +0.0005  whole +0.0009
+   L1 xi    pos    pc1-16 -0.0180  pc17-64 -0.0114  pc65+ -0.0030  rand16 +0.0021  rand64 +0.0015  rand320 -0.0011  whole -0.0003
+   L2 vphi  coref  pc1-16 -0.0000  pc17-64 +0.0001  pc65+ +0.0001  rand16 +0.0001  rand64 +0.0001  rand320 +0.0000  whole +0.0001
+   L2 vphi  dep    pc1-16 -0.0009  pc17-64 -0.0002  pc65+ -0.0001  rand16 -0.0003  rand64 -0.0003  rand320 -0.0004  whole -0.0004
+   L2 vphi  chunk  pc1-16 -0.0017  pc17-64 -0.0001  pc65+ -0.0000  rand16 -0.0010  rand64 -0.0005  rand320 -0.0005  whole -0.0005
+   L2 vphi  ent    pc1-16 +0.0005  pc17-64 +0.0001  pc65+ -0.0001  rand16 -0.0000  rand64 +0.0002  rand320 +0.0000  whole +0.0001
+   L2 vphi  pos    pc1-16 +0.0006  pc17-64 -0.0000  pc65+ +0.0000  rand16 +0.0003  rand64 -0.0002  rand320 -0.0001  whole -0.0001
+   L2 fock  coref  pc1-16 -0.0004  pc17-64 -0.0007  pc65+ -0.0006  rand16 -0.0001  rand64 -0.0004  rand320 -0.0005  whole -0.0005
+   L2 fock  dep    pc1-16 -0.0016  pc17-64 +0.0000  pc65+ +0.0004  rand16 -0.0005  rand64 -0.0004  rand320 -0.0004  whole -0.0004
+   L2 fock  chunk  pc1-16 -0.0011  pc17-64 -0.0001  pc65+ -0.0000  rand16 -0.0001  rand64 -0.0003  rand320 -0.0003  whole -0.0002
+   L2 fock  ent    pc1-16 -0.0017  pc17-64 -0.0004  pc65+ -0.0002  rand16 -0.0010  rand64 -0.0006  rand320 -0.0004  whole -0.0004
+   L2 fock  pos    pc1-16 +0.0000  pc17-64 -0.0004  pc65+ -0.0001  rand16 +0.0007  rand64 +0.0007  rand320 +0.0008  whole +0.0008
+   L2 xi    coref  pc1-16 +0.0101  pc17-64 -0.0011  pc65+ -0.0033  rand16 -0.0006  rand64 +0.0001  rand320 +0.0006  whole +0.0007
+   L2 xi    dep    pc1-16 -0.0546  pc17-64 +0.0228*  pc65+ -0.0009  rand16 -0.0011  rand64 -0.0152  rand320 -0.0099  whole -0.0087
+   L2 xi    chunk  pc1-16 +0.0190  pc17-64 +0.0317*  pc65+ +0.0065  rand16 +0.0068  rand64 +0.0057  rand320 +0.0117  whole +0.0127
+   L2 xi    ent    pc1-16 +0.0258*  pc17-64 +0.0044  pc65+ +0.0050  rand16 +0.0052  rand64 +0.0053  rand320 +0.0077  whole +0.0073
+   L2 xi    pos    pc1-16 -0.0513  pc17-64 -0.0360  pc65+ -0.0068  rand16 +0.0057  rand64 +0.0069  rand320 +0.0059  whole +0.0046
+   L3 vphi  coref  pc1-16 -0.0007  pc17-64 +0.0001  pc65+ +0.0001  rand16 +0.0013  rand64 +0.0006  rand320 +0.0001  probe -0.0008  whole +0.0001
+   L3 vphi  dep    pc1-16 -0.0034  pc17-64 -0.0039  pc65+ -0.0031  rand16 -0.0041  rand64 -0.0025  rand320 -0.0035  probe -0.0031  whole -0.0035
+   L3 vphi  chunk  pc1-16 -0.0043  pc17-64 -0.0039  pc65+ -0.0021  rand16 -0.0018  rand64 -0.0012  rand320 -0.0030  probe -0.0038  whole -0.0028
+   L3 vphi  ent    pc1-16 -0.0004  pc17-64 +0.0012  pc65+ -0.0006  rand16 +0.0022  rand64 +0.0009  rand320 +0.0001  probe -0.0003  whole +0.0002
+   L3 vphi  pos    pc1-16 -0.0004  pc17-64 -0.0020  pc65+ -0.0008  rand16 -0.0004  rand64 -0.0003  rand320 +0.0003  probe -0.0005  whole +0.0002
+   L3 fock  coref  pc1-16 +0.0066  pc17-64 +0.0020  pc65+ +0.0034  rand16 +0.0038  rand64 +0.0048  rand320 +0.0049  probe +0.0038  whole +0.0048
+   L3 fock  dep    pc1-16 +0.0050  pc17-64 -0.0238  pc65+ -0.0101  rand16 -0.0125  rand64 -0.0130  rand320 -0.0096  probe -0.0107  whole -0.0096
+   L3 fock  chunk  pc1-16 -0.0020  pc17-64 -0.0365  pc65+ -0.0149  rand16 -0.0162  rand64 -0.0164  rand320 -0.0138  probe -0.0146  whole -0.0140
+   L3 fock  ent    pc1-16 -0.0132  pc17-64 -0.0120  pc65+ +0.0036  rand16 -0.0082  rand64 -0.0043  rand320 -0.0040  probe +0.0029  whole -0.0028
+   L3 fock  pos    pc1-16 -0.0294  pc17-64 -0.0186  pc65+ -0.0011  rand16 -0.0126  rand64 -0.0089  rand320 -0.0098  probe -0.0054  whole -0.0097
+   L3 xi    coref  pc1-16 +0.0086  pc17-64 +0.0025  pc65+ -0.0015  rand16 +0.0062  rand64 +0.0021  rand320 +0.0045  probe +0.0025  whole +0.0041
+   L3 xi    dep    pc1-16 -0.0468  pc17-64 -0.0102  pc65+ -0.0043  rand16 -0.0095  rand64 -0.0174  rand320 -0.0165  probe -0.0091  whole -0.0168
+   L3 xi    chunk  pc1-16 +0.0191  pc17-64 +0.0409  pc65+ +0.0302  rand16 +0.0282  rand64 +0.0294  rand320 +0.0323  probe +0.0359  whole +0.0317
+   L3 xi    ent    pc1-16 -0.0060  pc17-64 +0.0037  pc65+ +0.0015  rand16 -0.0056  rand64 +0.0006  rand320 +0.0015  probe +0.0008  whole +0.0025
+   L3 xi    pos    pc1-16 +0.0285  pc17-64 -0.0065  pc65+ -0.0100  rand16 +0.0157  rand64 +0.0139  rand320 +0.0134  probe +0.0032  whole +0.0145
+   hits in this arm (layer, coupling, grouping, subspace, B_spec): [[0, 'fock', 'pos', 'pc1-16', 0.03950721782387384], [0, 'xi', 'ent', 'pc1-16', 0.07504370226601334], [0, 'xi', 'pos', 'pc1-16', 0.12326253637405976], [2, 'xi', 'dep', 'pc17-64', 0.022819096477744827], [2, 'xi', 'chunk', 'pc17-64', 0.03169882554934553], [2, 'xi', 'ent', 'pc1-16', 0.025803119748130765]]

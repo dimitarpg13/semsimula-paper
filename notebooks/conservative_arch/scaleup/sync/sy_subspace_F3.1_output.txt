@@ -1,0 +1,30 @@
+SY binding in a subspace: F3.1 (L = 2; couplings ['vphi'] + xi; common reference fcom)
+CHECK  layer 0: replay "on" vs the forward pass, max |d| 0.0e+00
+CHECK  layer 1: replay "on" vs the forward pass, max |d| 0.0e+00
+CHECK  every patch restored (logits identical after all replays)
+   subspaces: pc1-16 (16), pc17-64 (48), pc65+ (320), rand16 (16), rand64 (64), rand320 (320), probe (64)
+CHECK  whole-space statistics vs sy_measure_F3.1.npz (sequence 50, layer 0, coref): max |d| 0.0e+00
+CHECK  whole-space statistics vs sy_measure_F3.1.npz (sequence 50, layer 1, coref): max |d| 0.0e+00
+
+B_spec by subspace (150 sequences; 95% cluster-bootstrap intervals; floor 0.02); a hit needs: passes, shuffled null, and above the matched random subspace by the floor
+   L0 vphi  coref  pc1-16 -0.0012  pc17-64 -0.0002  pc65+ -0.0007  rand16 +0.0003  rand64 -0.0011  rand320 -0.0007  whole -0.0007
+   L0 vphi  dep    pc1-16 +0.0007  pc17-64 -0.0001  pc65+ -0.0007  rand16 -0.0013  rand64 +0.0001  rand320 -0.0001  whole -0.0001
+   L0 vphi  chunk  pc1-16 +0.0011  pc17-64 +0.0009  pc65+ +0.0000  rand16 +0.0005  rand64 +0.0012  rand320 +0.0006  whole +0.0006
+   L0 vphi  ent    pc1-16 +0.0004  pc17-64 -0.0010  pc65+ -0.0001  rand16 -0.0005  rand64 +0.0009  rand320 -0.0000  whole +0.0002
+   L0 vphi  pos    pc1-16 +0.0045  pc17-64 +0.0011  pc65+ -0.0009  rand16 +0.0012  rand64 -0.0000  rand320 +0.0002  whole +0.0005
+   L0 xi    coref  pc1-16 +0.0598*  pc17-64 +0.0412  pc65+ +0.0146  rand16 +0.0300  rand64 +0.0355  rand320 +0.0340  whole +0.0329
+   L0 xi    dep    pc1-16 -0.0011  pc17-64 -0.0200  pc65+ -0.0319  rand16 -0.0003  rand64 -0.0163  rand320 -0.0214  whole -0.0229
+   L0 xi    chunk  pc1-16 +0.0269  pc17-64 +0.0125  pc65+ +0.0095  rand16 +0.0102  rand64 +0.0208  rand320 +0.0073  whole +0.0084
+   L0 xi    ent    pc1-16 +0.0582  pc17-64 +0.0445  pc65+ +0.0391  rand16 +0.0773  rand64 +0.0450  rand320 +0.0433  whole +0.0434
+   L0 xi    pos    pc1-16 +0.1043*  pc17-64 -0.1271  pc65+ -0.1225  rand16 -0.0156  rand64 -0.0450  rand320 -0.0403  whole -0.0383
+   L1 vphi  coref  pc1-16 -0.0005  pc17-64 -0.0018  pc65+ -0.0007  rand16 -0.0025  rand64 -0.0035  rand320 -0.0010  probe -0.0005  whole -0.0009
+   L1 vphi  dep    pc1-16 -0.0057  pc17-64 -0.0024  pc65+ -0.0032  rand16 -0.0051  rand64 -0.0053  rand320 -0.0036  probe -0.0033  whole -0.0036
+   L1 vphi  chunk  pc1-16 +0.0039  pc17-64 -0.0011  pc65+ -0.0011  rand16 +0.0006  rand64 -0.0014  rand320 +0.0005  probe -0.0022  whole +0.0001
+   L1 vphi  ent    pc1-16 +0.0136  pc17-64 -0.0021  pc65+ +0.0012  rand16 +0.0025  rand64 +0.0020  rand320 +0.0029  probe -0.0027  whole +0.0026
+   L1 vphi  pos    pc1-16 -0.0184  pc17-64 -0.0090  pc65+ -0.0090  rand16 -0.0143  rand64 -0.0179  rand320 -0.0127  probe -0.0034  whole -0.0120
+   L1 xi    coref  pc1-16 -0.0116  pc17-64 -0.0002  pc65+ -0.0117  rand16 -0.0045  rand64 -0.0052  rand320 -0.0050  probe -0.0002  whole -0.0058
+   L1 xi    dep    pc1-16 -0.0427  pc17-64 -0.0069  pc65+ -0.0073  rand16 -0.0145  rand64 -0.0191  rand320 -0.0169  probe -0.0121  whole -0.0167
+   L1 xi    chunk  pc1-16 +0.0266  pc17-64 +0.0217  pc65+ +0.0107  rand16 +0.0239  rand64 +0.0203  rand320 +0.0167  probe +0.0163  whole +0.0173
+   L1 xi    ent    pc1-16 +0.0275  pc17-64 +0.0088  pc65+ +0.0119  rand16 +0.0110  rand64 +0.0126  rand320 +0.0089  probe +0.0105  whole +0.0094
+   L1 xi    pos    pc1-16 -0.0577  pc17-64 -0.0257  pc65+ -0.0182  rand16 -0.0167  rand64 -0.0144  rand320 -0.0103  probe -0.0088  whole -0.0115
+   hits in this arm (layer, coupling, grouping, subspace, B_spec): [[0, 'xi', 'coref', 'pc1-16', 0.0597615877356686], [0, 'xi', 'pos', 'pc1-16', 0.10433775609162682]]
