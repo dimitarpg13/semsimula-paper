@@ -171,9 +171,11 @@ This recovers the closed-form gradient and the STP algebraic path (speed), and b
 **What is still open** is turning this from an intra-run design into a **cross-run harvesting programme**. Three things to get right:
 
 1. **Structured bulk plus a thin MLP residual — not pure analytical.** Pure analytical distillation re-imposes the low-capacity ceiling the paper works to escape. Keep the hybrid, paying AD only on the small residual:
+
    $$
    V_{\text{total}}(\xi, x) = \underbrace{V_\theta^{\text{harvested}}(\xi, x)}_{\text{structured, STP-clean, bounded}} + \underbrace{V_{\text{residual}}(\xi, x)}_{\text{thin MLP, AD only here}}.
    $$
+
 2. **Aim the harvest at the pairwise kernel, not the one-body terrain.** The one-body `V_theta` gradient is already cheap. The term that scales with sequence length is the pairwise PARF (the semantic KV-cache analogue), and it is the genuine cross-run invariant: how properties attract or repel is run-independent physics, whereas the xi-routed context coupling is not reusable.
 3. **Uncertainty / OOD gate.** Seeding run N from runs before N compounds fitting error and ossifies early basins (an MLIP-style extrapolation failure = the divergence failure). Add an OOD-triggered spawn: spawn a well or fall back to the residual when the state is far from every well centre.
 
@@ -248,9 +250,11 @@ flowchart TB
 - **Warm-start from TinyStories potentials (the MSA-prior lesson).** AlphaFold never folds from scratch; it conditions on evolutionary/template priors. Analogue: initialise the OWT run's `V_theta`, `V_phi`, and well bank from the TinyStories-converged potentials, then spawn OWT-specific wells under an over-provision-and-prune schedule. Keep the OOD gate of [§3](#3-open-direction-a-harvest-structured-potentials) or transferred wells mislead on OWT-novel contexts. This is not implemented today (only the tokenised data cache is reused).
 - **Weight-EMA for evaluation.** Near-free PPL gain; not implemented.
 - **Mixture-of-Softmaxes, only if a residual readout ceiling is measured.** With `W_out` already untied and a unigram bias in place, the readout ceiling is largely addressed. If a rank probe still shows the softmax binding, add either a low-rank output adapter, $h_L \leftarrow h_L + U V^\top h_L$, or a mixture-of-softmaxes head,
+
   $$
   p(v \mid x_L) = \sum_{r=1}^{R} \pi_r(x_L) \mathrm{softmax}\big(\beta \langle e_v, h_L^{(r)}\rangle\big),
   $$
+
   which is philosophically identical to the multi-xi mixtures, just on the readout side.
 - **Jacobi-metric preconditioner (low priority).** A natural-gradient-flavoured preconditioner would finally make the geodesic thread useful for optimisation. Motivational; defer.
 - **Cite AlphaFold in the manuscript.** For a physics-inspired-ML paper, the omission is conspicuous. The three structural correspondences of [§2](#2-structural-analogies-that-survive-scrutiny) plus the MLIP framing of [§3](#3-open-direction-a-harvest-structured-potentials) give natural citation points.

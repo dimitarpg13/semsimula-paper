@@ -895,9 +895,11 @@ $$
 Gaussian-kernel routing is therefore dot-product routing with
 
 1. temperature tied to bandwidth,
+
 $$
 \tau_k = \frac{1}{2\kappa_k^2}, \qquad (10.6)
 $$
+
 2. plus an additive **key-norm penalty** $-\kappa_k^2\lVert k_j\rVert ^2$ that biases routing toward tokens with small key norm.
 
 If keys are normalized to a common norm, the penalty is constant in $j$ and the two gates are **identical**. The learnable temperature of B1 already plays the role of κ. Switching kernels can only matter through the key-norm term, and whether that helps (for example, by de-emphasizing high-norm keys of very frequent tokens) or hurts is an empirical question with no theoretical prior in its favor.

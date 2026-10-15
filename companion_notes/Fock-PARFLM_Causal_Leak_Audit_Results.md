@@ -508,9 +508,11 @@ $\ell$:
 - **Creation readout at t.** The query is $Q_t = f(r_t^{(\ell)})$, causal by
   hypothesis. The prefix-normalized readout sums only over token indices
   $j \le t$:
+
   $$
   \mathrm{readout}_t = \frac{\sum_{j \le t} e^{s_{t,j}} V_j}{\sum_{j \le t} e^{s_{t,j}}} ,
   $$
+
   and the constant-shift stabilizer keeps this a bit-exact function of
   $\lbrace x_0, \ldots, x_t \rbrace$. The blend and salience updates at slot t
   are pointwise in t, hence $r_t^{(\ell+1)}$ depends only on $x_0 \ldots x_t$.

@@ -116,14 +116,18 @@ and likewise $\Delta_c R$ and $\Delta_c C$. The replay is the 6b-9 instrument: i
 ### 3.4 Route-specific readouts
 
 - **V_φ, pair by pair.** For each token $t$ and each of its selected sources $s$ (top 16), the pair's radial force
+
 $$
 a_{ts} = f_{ts}^{\top} \frac{h_s - h_t}{\lVert h_s - h_t \rVert}, \qquad f_{ts} = -\nabla_{h_t} V_\phi(h_t, h_s),
 $$
+
   positive when the pair attracts. Two statistics per grouping: **attraction contrast**, the mean $a_{ts}$ over related pairs minus distance-matched unrelated selected pairs; and **selection enrichment**, the rate at which related sources are selected into the top 16 divided by the distance-matched rate for unrelated ones.
 - **The wells.** Each token's force share over the 64 modes,
+
 $$
 s_{tv} = \frac{\lvert w_v \rvert \lVert r_v \rVert}{\sum_u \lvert w_u \rvert \lVert r_u \rVert},
 $$
+
   with its dominant mode $m_t = \arg\max_v s_{tv}$. Statistics: the normalised mutual information between $m_t$ and a label, and the **co-assignment rate** of related pairs (same dominant mode) against distance-matched unrelated pairs. The occupation $\phi$ is the order parameter of a mode (clustering note §5.2).
 - **Fock (G2).** The registers' creation weights: whether related tokens are written into the same register.
 

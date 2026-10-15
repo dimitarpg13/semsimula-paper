@@ -47,11 +47,20 @@ def inline_spans(line):
         out.append((m.start(), m.end(), m.group(1)))
     return out
 
+def _in_list_item(lines, j):
+    """Is 0-based line j inside a list item's paragraph (walking back to the paragraph start)?"""
+    while j >= 0 and lines[j].strip() != '':
+        if re.match(r'^\s*([-*+]|\d+\.)\s', lines[j]):
+            return True
+        j -= 1
+    return False
+
 def lint(path):
     lines = open(path).read().split('\n')
     hits = []
     in_fence = False
     in_display = False
+    open_in_list = False
     for i, l in enumerate(lines, 1):
         if re.match(r'^\s*```', l):
             in_fence = not in_fence
@@ -60,6 +69,15 @@ def lint(path):
             continue
         stripped = l.strip()
         if stripped.startswith('$$') and stripped.count('$$') == 1:
+            # R30 a display block glued to a list item's text (no blank line before or after):
+            # the $$ lines become lazy continuation lines of the bullet and render as raw LaTeX
+            if not in_display:
+                open_in_list = _in_list_item(lines, i - 2)
+                if open_in_list and i >= 2 and lines[i - 2].strip() != '':
+                    hits.append((i, 'R30', 'display $$ block glued to a list item: no blank line before', l))
+            else:
+                if open_in_list and i < len(lines) and lines[i].strip() != '':
+                    hits.append((i, 'R30', 'display $$ block glued to a list item: no blank line after', l))
             in_display = not in_display
             continue
 

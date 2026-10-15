@@ -10,7 +10,7 @@ A reference for writing LaTeX math **and** Mermaid diagrams in Markdown files th
 
 The cheatsheet has two parts:
 
-- **Part I — KaTeX math rendering** (rules §1–§13, §19, §25–§27): inline math and display `$$...$$` math. Inline is `$...$` on GitHub but **must** be `\\( ... \\)` on Hugging Face — see §5b before writing a model card.
+- **Part I — KaTeX math rendering** (rules §1–§13, §19, §25–§30): inline math and display `$$...$$` math. Inline is `$...$` on GitHub but **must** be `\\( ... \\)` on Hugging Face — see §5b before writing a model card.
 - **Part II — Mermaid diagram rendering** (rules §14–§18, §20–§24): ` ```mermaid ` fenced blocks.
 
 ---
@@ -676,6 +676,30 @@ $$\frac{d-1}{2d} \longrightarrow \frac{1}{2} \quad (d \to \infty)$$
 adjacent parenthetical. Reserve bracketed optional arguments for local TeX
 builds, where they are fine.
 
+## 30. A `$$...$$` block glued to a list item — set it off with blank lines
+
+Observed 2026-10-15 in `Spontaneous_Synchronization_and_Semantic_Binding_Test_Programme.md` §3.4. A display block written directly under a bullet's text, with no blank line before the opening `$$` or after the closing one, renders as raw LaTeX inside the bullet: `$$ a_{ts} = f_{ts}^{\top} \frac{...}{...}, \qquad ... $$` appears verbatim. CommonMark reads the `$$` lines as *lazy continuation lines* of the list item's paragraph, so the block is never recognised as display math. The same note had a formula of the same shape a few lines earlier, set off by blank lines, and it rendered correctly; the blank lines are the only difference.
+
+```markdown
+<!-- Broken: raw LaTeX inside the bullet -->
+- **V_φ, pair by pair.** For each token, the pair's radial force
+$$
+a_{ts} = f_{ts}^{\top} u_{ts},
+$$
+  positive when the pair attracts.
+
+<!-- Safe: blank line before and after; the continuation indented to the item's content column -->
+- **V_φ, pair by pair.** For each token, the pair's radial force
+
+$$
+a_{ts} = f_{ts}^{\top} u_{ts},
+$$
+
+  positive when the pair attracts.
+```
+
+**Rule:** inside a list item, always put a blank line before the opening `$$` and after the closing `$$`, and indent the text that continues the item to the item's content column (two spaces for `- `). Outside lists the blank lines are not confirmed to be required, but they cost nothing and are the robust default. `_ghlint.py` reports violations inside list items as **R30**.
+
 ---
 
 # Part II — Mermaid diagrams
@@ -1091,6 +1115,7 @@ failure inside that span, not a delimiter-pairing problem.
 | `\underbrace{\left\{ X \right\}}_{...}` | same error | use `\underbrace{\lbrace X \rbrace}_{...}` |
 | `\\[Npt]` row spacing in a matrix/array | stray `[Npt]` text leaks into a cell; row break lost | use plain `\\` for row breaks, drop the bracketed argument |
 | `\\` row break in a **multiline** `$$` matrix | KaTeX fails; raw `\begin{pmatrix}...` dumps as large bold text | collapse the display to one source line and write every row break as `\cr` |
+| `$$...$$` block directly under a bullet's text, no blank lines around it | raw LaTeX shows inside the bullet | blank line before the opening `$$` and after the closing one; indent the continuation two spaces (§30) |
 
 ### Mermaid (Part II)
 
