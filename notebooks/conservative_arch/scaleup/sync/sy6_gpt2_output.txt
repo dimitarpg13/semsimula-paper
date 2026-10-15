@@ -1,0 +1,66 @@
+SY6 on the matched GPT-2: d = 384, 8 layers, 6 heads; checkpoint step 32500, recorded validation perplexity 49.76; checkpoint loaded strictly
+CHECK  logits rebuilt from the captured trajectory vs the model: max |d| 0.0e+00; layer replay "on" vs the forward pass: max |d| 0.0e+00
+CHECK  perplexity on the 200 SY sequences: 46.01 (recorded on the validation split: 49.76)
+
+STATE LEVEL (200 sequences; 95% cluster-bootstrap intervals; floor 0.02); attention as the coupling
+layer 0: S vs common -0.2109 [-0.2132, -0.2087]   S vs off +0.3619 [+0.3578, +0.3656]
+   coref  B_in +0.0889  B_on +0.1273   attention-made B_spec +0.0003 [-0.0010, +0.0016]  (shuffled -0.0005 [-0.0011, +0.0001])
+   dep    B_in +0.0456  B_on +0.0087   attention-made B_spec -0.0080 [-0.0088, -0.0072]  (shuffled -0.0008 [-0.0014, -0.0002])
+   chunk  B_in +0.0527  B_on -0.0060   attention-made B_spec -0.0057 [-0.0077, -0.0037]  (shuffled +0.0000 [-0.0006, +0.0007])
+   ent    B_in -0.1267  B_on -0.0055   attention-made B_spec +0.0060 [+0.0016, +0.0102]  (shuffled -0.0003 [-0.0017, +0.0012])
+   pos    B_in +0.4189  B_on +0.1811   attention-made B_spec -0.0253 [-0.0265, -0.0240]  (shuffled -0.0003 [-0.0006, -0.0001])
+layer 1: S vs common -0.2587 [-0.2608, -0.2565]   S vs off -0.1782 [-0.1808, -0.1755]
+   coref  B_in +0.1273  B_on +0.0914   attention-made B_spec -0.0375 [-0.0469, -0.0281]  (shuffled -0.0019 [-0.0040, +0.0003])
+   dep    B_in +0.0087  B_on -0.0080   attention-made B_spec -0.0195 [-0.0210, -0.0177]  (shuffled -0.0009 [-0.0026, +0.0007])
+   chunk  B_in -0.0060  B_on -0.0122   attention-made B_spec -0.0056 [-0.0114, +0.0009]  (shuffled +0.0013 [+0.0000, +0.0027])
+   ent    B_in -0.0055  B_on +0.0084   attention-made B_spec +0.0118 [-0.0031, +0.0256]  (shuffled -0.0010 [-0.0038, +0.0019])
+   pos    B_in +0.1811  B_on +0.1088   attention-made B_spec -0.0776 [-0.0801, -0.0750]  (shuffled -0.0003 [-0.0011, +0.0004])
+layer 2: S vs common -0.0621 [-0.0629, -0.0614]   S vs off -0.0544 [-0.0552, -0.0536]
+   coref  B_in +0.0914  B_on +0.0985   attention-made B_spec +0.0033 [+0.0014, +0.0055]  (shuffled +0.0000 [-0.0003, +0.0004])
+   dep    B_in -0.0080  B_on +0.0059   attention-made B_spec +0.0057 [+0.0051, +0.0064]  (shuffled +0.0022 [+0.0017, +0.0028])
+   chunk  B_in -0.0122  B_on +0.0075   attention-made B_spec +0.0132 [+0.0116, +0.0147]  (shuffled +0.0001 [-0.0002, +0.0004])
+   ent    B_in +0.0084  B_on +0.0200   attention-made B_spec +0.0072 [+0.0030, +0.0111]  (shuffled +0.0016 [+0.0006, +0.0029])
+   pos    B_in +0.1088  B_on +0.1052   attention-made B_spec -0.0102 [-0.0110, -0.0094]  (shuffled -0.0001 [-0.0003, +0.0000])
+layer 3: S vs common -0.0231 [-0.0246, -0.0218]   S vs off -0.0120 [-0.0134, -0.0106]
+   coref  B_in +0.0985  B_on +0.1042   attention-made B_spec +0.0021 [+0.0007, +0.0037]  (shuffled +0.0001 [-0.0003, +0.0004])
+   dep    B_in +0.0059  B_on +0.0193   attention-made B_spec +0.0104 [+0.0099, +0.0108]  (shuffled +0.0026 [+0.0022, +0.0030])
+   chunk  B_in +0.0075  B_on +0.0363   attention-made B_spec +0.0264 [+0.0247, +0.0279]  (shuffled -0.0000 [-0.0003, +0.0002])
+   ent    B_in +0.0200  B_on +0.0311   attention-made B_spec +0.0147 [+0.0125, +0.0172]  (shuffled +0.0002 [-0.0004, +0.0009])
+   pos    B_in +0.1052  B_on +0.1076   attention-made B_spec -0.0039 [-0.0043, -0.0035]  (shuffled +0.0000 [-0.0001, +0.0001])
+layer 4: S vs common -0.0807 [-0.0824, -0.0790]   S vs off -0.0649 [-0.0669, -0.0630]
+   coref  B_in +0.1042  B_on +0.1124   attention-made B_spec +0.0081 [+0.0059, +0.0107]  (shuffled -0.0003 [-0.0009, +0.0004])
+   dep    B_in +0.0193  B_on +0.0220   attention-made B_spec +0.0026 [+0.0016, +0.0036]  (shuffled +0.0007 [-0.0001, +0.0015])
+   chunk  B_in +0.0363  B_on +0.0446   attention-made B_spec +0.0088 [+0.0062, +0.0110]  (shuffled -0.0003 [-0.0007, +0.0001])
+   ent    B_in +0.0311  B_on +0.0305   attention-made B_spec +0.0048 [-0.0003, +0.0100]  (shuffled +0.0011 [-0.0002, +0.0025])
+   pos    B_in +0.1076  B_on +0.1134   attention-made B_spec -0.0027 [-0.0034, -0.0019]  (shuffled +0.0002 [-0.0000, +0.0004])
+layer 5: S vs common -0.1352 [-0.1421, -0.1282]   S vs off -0.0740 [-0.0804, -0.0677]
+   coref  B_in +0.1124  B_on +0.1115   attention-made B_spec -0.0059 [-0.0084, -0.0038]  (shuffled -0.0004 [-0.0009, -0.0000])
+   dep    B_in +0.0220  B_on +0.0221   attention-made B_spec +0.0043 [+0.0032, +0.0054]  (shuffled -0.0003 [-0.0011, +0.0004])
+   chunk  B_in +0.0446  B_on +0.0563   attention-made B_spec +0.0173 [+0.0145, +0.0197]  (shuffled -0.0000 [-0.0004, +0.0004])
+   ent    B_in +0.0305  B_on +0.0440   attention-made B_spec +0.0175 [+0.0055, +0.0300]  (shuffled +0.0007 [-0.0004, +0.0020])
+   pos    B_in +0.1134  B_on +0.1151   attention-made B_spec -0.0164 [-0.0173, -0.0156]  (shuffled -0.0001 [-0.0003, +0.0001])
+layer 6: S vs common -0.0467 [-0.0485, -0.0450]   S vs off -0.0034 [-0.0059, -0.0012]
+   coref  B_in +0.1115  B_on +0.1224   attention-made B_spec +0.0060 [+0.0045, +0.0078]  (shuffled +0.0001 [-0.0002, +0.0004])
+   dep    B_in +0.0221  B_on +0.0043   attention-made B_spec -0.0043 [-0.0050, -0.0035]  (shuffled -0.0008 [-0.0013, -0.0002])
+   chunk  B_in +0.0563  B_on +0.0584   attention-made B_spec -0.0062 [-0.0077, -0.0047]  (shuffled +0.0003 [-0.0000, +0.0005])
+   ent    B_in +0.0440  B_on +0.0398   attention-made B_spec +0.0044 [+0.0006, +0.0082]  (shuffled +0.0017 [+0.0008, +0.0027])
+   pos    B_in +0.1151  B_on +0.1341   attention-made B_spec -0.0046 [-0.0054, -0.0037]  (shuffled +0.0000 [-0.0001, +0.0001])
+layer 7: S vs common -0.0247 [-0.0258, -0.0238]   S vs off -0.0248 [-0.0260, -0.0236]
+   coref  B_in +0.1224  B_on +0.1270   attention-made B_spec +0.0030 [+0.0021, +0.0040]  (shuffled +0.0002 [-0.0001, +0.0004])
+   dep    B_in +0.0043  B_on -0.0088   attention-made B_spec -0.0016 [-0.0021, -0.0010]  (shuffled -0.0012 [-0.0015, -0.0008])
+   chunk  B_in +0.0584  B_on +0.0540   attention-made B_spec -0.0036 [-0.0046, -0.0026]  (shuffled -0.0001 [-0.0003, +0.0002])
+   ent    B_in +0.0398  B_on +0.0441   attention-made B_spec +0.0023 [+0.0002, +0.0046]  (shuffled +0.0009 [+0.0003, +0.0015])
+   pos    B_in +0.1341  B_on +0.1431   attention-made B_spec -0.0016 [-0.0021, -0.0010]  (shuffled -0.0000 [-0.0001, +0.0000])
+
+TEST B, prediction geometry on the final states (median slope +0.561, median correlation +0.534)
+   coref  state +0.1292 [+0.1129, +0.1458]  prediction +0.0589 [+0.0506, +0.0684]  residual +0.0977 [+0.0850, +0.1107]  true next words +0.0585 [+0.0494, +0.0683]
+   dep    state -0.0082 [-0.0131, -0.0027]  prediction -0.0182 [-0.0229, -0.0131]  residual +0.0021 [-0.0017, +0.0058]  true next words -0.0608 [-0.0683, -0.0542]
+   chunk  state +0.0539 [+0.0448, +0.0618]  prediction +0.0078 [-0.0004, +0.0151]  residual +0.0496 [+0.0423, +0.0561]  true next words +0.0199 [+0.0086, +0.0313]
+   ent    state +0.0445 [+0.0140, +0.0773]  prediction -0.0283 [-0.0579, +0.0004]  residual +0.0614 [+0.0407, +0.0816]  true next words -0.0475 [-0.0778, -0.0197]
+   pos    state +0.1437 [+0.1384, +0.1489]  prediction +0.1335 [+0.1276, +0.1396]  residual +0.0666 [+0.0633, +0.0702]  true next words +0.1026 [+0.0969, +0.1085]
+
+SY-GPT2: attention-made binding at GPT-2's last layer vs the best coupling-made binding at the last layer of any Lagrangian arm
+   coref  GPT-2 +0.0030   best Lagrangian +0.0292 (PM1/Bspec/xi/coref)   smaller
+   dep    GPT-2 -0.0016   best Lagrangian +0.0025 (G2/Bspec/xi/dep)   smaller
+   chunk  GPT-2 -0.0036   best Lagrangian +0.0641 (G2/Bspec/xi/chunk)   smaller
+   => SY-GPT2 MISS (0 of 3)

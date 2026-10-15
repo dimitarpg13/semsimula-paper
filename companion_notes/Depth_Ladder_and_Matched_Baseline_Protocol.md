@@ -5247,6 +5247,81 @@ PMX clears the 5-point margin over its embeddings but not the distance baseline.
 
 This adds a qualified positive to the "semantically blind" verdict on the pre-registered routes: these models bind syntactic constituents through the context field, and do not bind reference at all. These tests were fixed before they ran but are follow-ups, so they do not rescore level 1. Scope: §5.19.
 
+#### SY5 and SY6: amendment and additions — **fixed 2026-10-15, before either is built**
+
+**SY5 (does extra depth over-synchronize?), amended.** The pre-registered criterion used the centred coherence R, which SY0 rejected because it falls as synchronization completes, so it could not detect over-synchronization. It is replaced by the admitted measure:
+- **Intervention:** Gate 2 exactly as Cell 6b-7 defines it, N steps at the trained Δt with the "hold" layer schedule, run through the cell's own `_fom_stack`. Two-layer arms at N = 2 (trained), 3, 4; the L = 4 arm at N = 4, 6, 8 (descriptive). Check first: at N = L the patched stack reproduces the trained logits bit for bit.
+- **Measures on the final states (the states the readout reads):**
+  - **S_N:** the pairwise contraction of the final states at N steps against the trained N = L, the mean over pairs of ln(distance at N = L / distance at N); positive when the tokens have drawn together;
+  - **effective rank:** exp of the entropy of the normalized squared singular values of the centred final states, per sequence;
+  - perplexity at each N, which must reproduce Gate 2's blow-up.
+- **Over-synchronization holds in an arm** if from N = 2 to N = 3, S_3 is at least 0.05 with its interval excluding 0, **or** the effective rank falls by at least 20%, while perplexity rises.
+- **SY-G2 (35%) is a HIT** if over-synchronization holds in PMX and in at least one other two-layer arm.
+- Descriptive: the noun-chunk and head–dependent binding of the final states at each N.
+
+**SY6 (the matched GPT-2), additions.** SY6 as designed measures the state-level contraction and binding with attention as the coupling, replayed per layer switched off and as its token average (the common-mode reference). The replay must reproduce the trained layer bit for bit. Two tests are added, with the criteria already used for the Lagrangian arms:
+1. the **coreference decoding probe** (`sync/sy_coref_probe.py`'s task, probe and criterion: the final layer beats the embeddings by at least 5 points with the interval excluding 0, and beats the nearest-mention baseline);
+2. the **prediction-geometry test B** (`sync/sy_xi_pred.py`'s B_target, B_pred and B_resid on GPT-2's last-layer states, read after its final normalization).
+
+**SY-GPT2 (60%), made precise** (the call said only "a binding contrast at least as large as the best Lagrangian arm's"). For each of coreference, head–dependent and noun chunks, compare GPT-2's attention-made binding (B_spec at its last layer) with the largest coupling-made B_spec at the last layer over all Lagrangian arms and couplings. **HIT** if GPT-2's is at least as large for at least two of the three.
+
+#### SY5 scored: **SY-G2 HIT — extra depth over-synchronizes in PMX, F3.1 and G2; the large blow-ups come with collapse, the onset of failure does not** — **2026-10-15**
+
+`sync/sy5_depth.py`, Gate 2 through Cell 6b-7's own `_fom_stack` (hold schedule), 200 sequences. In every arm the trained depth reproduces the trained logits bit for bit.
+
+| arm | PPL at L → first extra step | S (≥ 0.05) | effective rank (≤ −20%) | over-synchronization | next step |
+| --- | --- | ---: | ---: | --- | --- |
+| PMX | 50.4 → 58.2 (+15%) | **+0.054** [+0.052, +0.056] | −7.5% | **holds** | N = 4: PPL 205, S +0.50, rank −22% |
+| F3.1 | 53.2 → 90.1 (+69%) | **+0.058** | −1.8% | **holds** | N = 4: PPL 268, S +0.45, rank −18% |
+| G2 | 48.5 → 2,534 (+5,122%) | **+0.473** | −3.6% | **holds** | N = 4: PPL 3,349, S +0.96 |
+| PM1 | 51.1 → 75.7 (+48%) | +0.022 | −14.8% | does not | N = 4: PPL 1.1 × 10⁶, S +0.02, **rank −38%** |
+| SR2 | 53.3 → 109.8 (+106%) | +0.029 | +3.6% | does not | N = 4: PPL 221, S +0.03, rank −9% |
+| L = 4 (descriptive) | 45.4 → 62.1 at N = 6 (+37%) | −0.003 | +9.0% | does not | N = 8: PPL 495, S +0.61, rank −19% |
+
+**SY-G2 (35%): HIT** (PMX, replicated in F3.1 and G2).
+
+**Reading.** Over-synchronization is real and accompanies the **large** failures of extra depth. In every catastrophic case the token set collapses: G2 at its first extra step (S +0.47, perplexity ×52); PMX, F3.1 and the L = 4 arm one step later (S +0.45 to +0.61); and PM1, whose collapse goes through the rank instead (−38%). But it does **not** account for the onset. The first-step failures of SR2 (+106%), PM1 (+48%) and the L = 4 arm (+37%) arrive with no over-synchronization by either measure. So extra time first degrades prediction by some other route, then, one step further, drives the tokens together, at which point the readout can no longer tell them apart. The noun-chunk binding keeps growing with extra steps (PMX +0.044 → +0.070, F3.1 +0.032 → +0.050): the clustered dynamics continue on top of the global contraction. The evidence is co-occurrence across arms and steps, not a causal test.
+
+#### SY6 scored: **SY-GPT2 MISS (0 of 3) — but the constituent clustering is generic: GPT-2 forms it too, by attention in its middle layers** — **2026-10-15**
+
+`sync/sy6_gpt2.py`, 200 sequences. The checkpoint loads strictly, logits rebuilt from the captured trajectory equal the model's, and the layer replay is bit-exact. Perplexity on the SY sequences is 46.0 (49.8 recorded on the validation split). (The first queued run never started: a smoke-test cleanup had deleted the script. It was restored unchanged and run on 2026-10-15.)
+
+**Attention as the coupling, layer by layer (S against the common-mode reference; attention-made B_spec):**
+
+| layer | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| S (whole set) | −0.21 | −0.26 | −0.06 | −0.02 | −0.08 | −0.14 | −0.05 | −0.02 |
+| noun chunks | −0.006 | −0.006 | +0.013 | **+0.026** | +0.009 | +0.017 | −0.006 | −0.004 |
+| coreference | 0.000 | −0.038 | +0.003 | +0.002 | +0.008 | −0.006 | +0.006 | +0.003 |
+| head–dependent | −0.008 | −0.020 | +0.006 | +0.010 | +0.003 | +0.004 | −0.004 | −0.002 |
+
+Shuffled controls are null throughout. The noun-chunk binding in GPT-2's own states rises from −0.012 (after layer 1) to +0.058 (after layer 6) and is +0.054 in the final states.
+
+**Prediction geometry on GPT-2's final states:**
+- noun chunks: state +0.054, residual **+0.050**, true next words +0.020;
+- head–dependent: state −0.008, residual +0.002, true next words −0.061;
+- coreference: state +0.129, residual +0.098, which the subspace examination showed to be lexical in the Lagrangian arms.
+
+**SY-GPT2 (60%): MISS, 0 of 3.** At the last layer, GPT-2's attention-made binding is +0.003 for coreference, −0.002 for head–dependent and −0.004 for noun chunks. The best Lagrangian couplings give +0.029 (PM1, ξ), +0.003 (G2, ξ) and +0.064 (G2, ξ). The comparison was fixed at the last layer. Attention's own best layer for noun chunks (+0.026, layer 3) is also below the best Lagrangian value.
+
+**Reading.**
+1. **The grouping of constituents is generic.** The matched transformer's states form it as strongly as the Lagrangian arms' do (+0.054 against +0.032 to +0.047), and it survives the prediction control there too. It is a property of language models trained on this data at this budget, not of this framework.
+2. **The mechanism and its timing are framework-specific.** Attention builds the grouping gradually through the middle layers (layers 2–5) and contributes nothing at the last one. In the Lagrangian arms a mean field, the context, makes it at the last step. The separation of heads from dependents is the geometry of prediction in both.
+3. **Neither family binds reference** (the probe, and attention-made coreference binding at most +0.008).
+4. **Trained attention spreads the token set at every layer.** At this depth and budget, the trained transformer is not in the collapsing regime of the idealised attention flow, as the clustering literature's metastable phase anticipates.
+
+#### SY6, first part: the coreference probe on the matched GPT-2 — **GPT-2 also fails the criterion; the same shape as our models** — **2026-10-15**
+
+`sync/sy6_gpt2_probe.py`, with the task, probe, split and criterion of the Lagrangian arms reused verbatim. The model is built from the matched-baseline notebook's own Cell 3, and the checkpoint loads strictly. 442 test items in 48 sequences; chance 0.136; nearest mention 0.541.
+
+| state | embeddings | layer 0 | 1 | **2** | 3 | 4 | 5 | 6 | 7 | final (after ln_f) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| test accuracy | 0.457 | 0.554 | 0.600 | **0.643** | 0.638 | 0.638 | 0.609 | 0.557 | 0.502 | 0.541 |
+
+- **Criterion: not met.** Final minus embeddings is +0.084 [−0.002, +0.172], and final minus nearest is +0.000. So GPT-2's dynamics do not make decodable binding information by the pre-registered rule either.
+- **Descriptive.** GPT-2's middle layers carry more antecedent information than any layer of any Lagrangian arm (0.64 against at most 0.58), but its best layer is only +0.102 [−0.012, +0.199] above the nearest-mention baseline. The shape matches the Lagrangian arms: the readout rises mid-depth and falls at the last layer, where the states are shaped for prediction.
+- **Reading.** At this training budget neither attention nor the Lagrangian couplings produce reference binding that this probe can read. "Reference is not bound" is therefore not, on this evidence, a deficit specific to the framework. With 48 test sequences the intervals are about ±0.1, so differences of a few points between the families are not resolvable with this test set.
+
 #### Binding in a subspace scored, and its one coreference hit examined: **the hit is the same word repeated, not reference** — **2026-10-14**
 
 `sync/sy_subspace.py` on all six arms; every check passed (bit-exact replays, patches restored, whole-space statistics equal to `sy_measure`'s). Hits replicated by the rule (same coupling, grouping and subspace in PMX and another arm):

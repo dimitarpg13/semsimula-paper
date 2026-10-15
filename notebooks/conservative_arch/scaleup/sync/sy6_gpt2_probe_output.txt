@@ -1,0 +1,15 @@
+SY6 coreference probe on the matched GPT-2 (8 layers); 2074 pronoun items in 200 sequences
+   test items 442 in 48 sequences; chance 0.136; distance only (nearest) 0.541
+   probe on the embeddings     test accuracy 0.457
+   probe on layer 0 output     test accuracy 0.554
+   probe on layer 1 output     test accuracy 0.600
+   probe on layer 2 output     test accuracy 0.643
+   probe on layer 3 output     test accuracy 0.638
+   probe on layer 4 output     test accuracy 0.638
+   probe on layer 5 output     test accuracy 0.609
+   probe on layer 6 output     test accuracy 0.557
+   probe on layer 7 output     test accuracy 0.502
+   probe on the final states   test accuracy 0.541
+   final minus embeddings +0.084 [-0.002, +0.172];  final minus distance-only +0.000 [-0.139, +0.133]
+   best layer (2) minus distance-only +0.102 [-0.012, +0.199] (descriptive)
+   => the dynamics do not make decodable binding information in GPT-2

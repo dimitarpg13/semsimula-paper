@@ -1,0 +1,12 @@
+SY5, Gate 2 axis: G2  ....05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn  (L = 2, trained dt = 4, N in (2, 3, 4))
+CHECK  N = L through Cell 6b-7's _fom_stack vs the trained forward: max |d logits| 0.0e+00; layer schedule [0, 1]
+       N = 3: layer schedule [0, 0, 1]
+       N = 4: layer schedule [0, 0, 1, 1]
+
+RESULTS (200 sequences; 95% cluster-bootstrap intervals)
+     N        PPL                        S vs N=L  eff. rank                     rank change    chunk B      dep B
+     2      48.53      +0.0000 [+0.0000, +0.0000]      88.55      +0.0000 [+0.0000, +0.0000]    +0.0475    -0.0110
+     3    2534.40      +0.4725 [+0.4665, +0.4782]      85.40      -0.0356 [-0.0465, -0.0250]    +0.0276    -0.0058
+     4    3348.82      +0.9624 [+0.9563, +0.9685]      83.28      -0.0595 [-0.0717, -0.0481]    +0.0322    -0.0028
+   from N = 2 to N = 3: perplexity 48.53 -> 2534.40 (+5122%); S +0.4725 (criterion >= 0.05); effective rank -3.6% (criterion <= -20%)
+   => over-synchronization HOLDS in this arm

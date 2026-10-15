@@ -2,7 +2,7 @@
 
 **The question.** Is spontaneous synchronization at the root of how models built on the Lagrangian framework make semantic inference?
 
-**Status (2026-10-15).** Part I (§1–11) is the design, written before any measurement. Part II (§12–23) reports what has been measured, on six trained models, with figures: the instruments, the first two of the four claims, and four follow-up tests. Short answer: the couplings do synchronize tokens, but not along linguistic structure through the routes the test was designed around. The context field groups the words of syntactic constituents into clusters, which is not an artefact of next-word prediction. Reference (which word a pronoun stands for) is not bound by any measure.
+**Status (2026-10-15).** Part I (§1–11) is the design, written before any measurement. Part II (§12–25) reports what has been measured, on six trained models and the matched GPT-2, with figures: the instruments, the first two of the four claims, the extra-depth test, the transformer comparison, and four follow-up tests. Short answer: the couplings do synchronize tokens, but not along linguistic structure through the routes the test was designed around. The context field groups the words of syntactic constituents into clusters, which is not an artefact of next-word prediction. The matched transformer forms the same grouping, by a different mechanism. Reference (which word a pronoun stands for) is bound by neither family. Running the models past their trained depth makes the tokens collapse together, which accompanies the catastrophic failures but not their onset.
 
 This note turns that question into four claims of increasing strength, each of which can fail, and designs the measurements that decide them. The verdict criteria are pre-registered in the protocol ([`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md) §5.22) before any measurement. The book's open question Q10 points here.
 
@@ -34,8 +34,10 @@ This note turns that question into four claims of increasing strength, each of w
 19. [It is not the geometry of prediction](#19-it-is-not-the-geometry-of-prediction)
 20. [Clustered, not global, synchronization](#20-clustered-not-global-synchronization)
 21. [Coreference: what is and is not bound](#21-coreference-what-is-and-is-not-bound)
-22. [The verdict against the pre-registered calls](#22-the-verdict-against-the-pre-registered-calls)
-23. [What remains open](#23-what-remains-open)
+22. [Extra depth: when the tokens collapse](#22-extra-depth-when-the-tokens-collapse)
+23. [The matched transformer: what is generic and what is not](#23-the-matched-transformer-what-is-generic-and-what-is-not)
+24. [The verdict against the pre-registered calls](#24-the-verdict-against-the-pre-registered-calls)
+25. [What remains open](#25-what-remains-open)
 
 ---
 
@@ -294,7 +296,9 @@ Measured 2026-10-13 to 2026-10-14. Every number below comes from the scripts in 
 5. **The context field forms it.** The context is a fading average of the earlier words that sets where each word's own potential wells sit. Giving every word the same context removes the structure (§18).
 6. **It is not a by-product of predicting the next word**, for noun chunks. The true next words of chunk members are no more alike than those of unrelated words, and the grouping survives removing everything that prediction similarity explains (§19).
 7. **The synchronization is clustered, not global.** Each word's own context spreads the words apart overall while drawing the members of each noun chunk together (§20).
-8. **Reference is not bound.** A probe cannot find a pronoun's antecedent better than "pick the nearest earlier mention". The one coreference signal found anywhere is the same word repeated, not reference (§21).
+8. **Reference is not bound, in either family.** A probe cannot find a pronoun's antecedent better than "pick the nearest earlier mention", in our models or in the matched GPT-2. The one coreference signal found anywhere is the same word repeated, not reference (§21).
+9. **Extra depth collapses the tokens.** Run past their trained depth, the models' tokens draw together or lose dimensions, and this accompanies every catastrophic failure. The first, milder degradation happens without it (§22).
+10. **The constituent grouping is generic; its mechanism is not.** The matched GPT-2 groups noun-chunk words as strongly, and this too survives the prediction control. But in GPT-2 attention builds the grouping gradually in the middle layers, while in our models a mean field makes it at the last step (§23).
 
 ## 13. Terms used in the results
 
@@ -331,17 +335,23 @@ $$
 
   S is positive when the coupling draws tokens together and negative when it spreads them apart. It is read before normalisation, and a push shared by all tokens leaves it unchanged.
 - **Grouping.** A way of saying which pairs of tokens are *related*, from an automatic linguistic analysis of the text:
-  - **coreference**: two mentions of the same entity ("Mary" and "she");
+  - **coreference**: two mentions of the same entity ("Mary" and "she"; see *reference* below);
   - **head–dependent**: a word and the word it grammatically depends on ("keys" and "are" in "the keys to the cabinet are");
   - **noun chunk**: the words of one simple noun phrase ("the old wooden table");
   - **named entity**: the words of one name ("New York Times");
   - **part of speech**: two words of the same class (two nouns).
+- **Syntax and reference.** The groupings are of two kinds. *Syntax* is how words combine into phrases: "the old wooden table" is one noun chunk whatever it denotes. *Reference* is what an expression stands for. Two expressions are **coreferent** when they pick out the same entity, as "Mary" and "she" do in "Mary said she would come". The earlier one is the **antecedent**, and all the mentions of one entity in a text form a **coreference chain**. Reference often crosses sentences and has no grammatical link to follow, so resolving it, above all **pronoun resolution** (deciding which earlier name a pronoun stands for), is the clearest case of binding that syntax does not supply.
+  - *What was tested*: coreference chains found automatically by a coreference model (fastcoref) in 200 texts of 512 tokens, and, in the probe, pronoun resolution.
+  - *What was not*: other parts of meaning, such as who did what to whom (semantic roles), word senses, or reference across texts. "Reference is not bound" below means precisely that the models do not link pronouns to the entities they refer to.
 - **Binding contrast B.** The average cosine similarity of related pairs minus that of unrelated pairs. The states are first centred by subtracting their mean over the text, so a direction shared by all tokens does not count. Unrelated pairs are compared only at the **same token distance** as the related ones, because nearby tokens are both more often related and more often similar. Binding *made by a coupling* is the change in B between the trained step and the common-mode reference.
 - **Shuffled control.** The same computation with the grouping's labels scrambled within each text. A real effect must vanish under it.
 - **Threshold and interval.** An effect counts only if it is at least 0.02 (in cosine units) and its 95% interval excludes zero. The interval comes from resampling the 200 texts with replacement 1,000 times. The threshold keeps tiny but statistically certain effects from counting.
 - **Replication.** A result counts only if it holds in PMX and in at least one other model with the same coupling.
 - **Principal components.** The directions in which the states vary most across tokens. "The top 16 components" means the 16 most varied directions.
 - **Probe.** A small model trained to read a piece of information out of the states. If it cannot, the information is not there in a readable form.
+- **Effective rank.** How many dimensions the tokens of a text really occupy: the exponential of the entropy of the normalized squared singular values of the centred states. A collapse onto a few directions lowers it.
+- **Extra-depth test.** The trained model run for more steps than it was trained for, at the same step size (in the protocol this is "Gate 2"). It is catastrophic in every model, and §22 asks whether over-synchronization is why.
+- **Matched GPT-2.** A standard transformer with the same width (384), data, token budget and readout as our models, and 8 layers. In it, every influence of one token on another passes through **attention**, which is therefore its only coupling. It is replayed exactly like ours: as trained, switched off, and replaced by its token average.
 
 ## 14. The measuring tools, and why two were replaced
 
@@ -437,9 +447,11 @@ The contrast with idealised attention is complete. There a pairwise attraction c
 
 ![Coreference: the decoding probe and the breakdown of the one coreference signal](figures/sy_results/sy_r8_coreference.png)
 
-**Figure 8.** (a) A probe that scores each pronoun's candidate antecedents, trained on 150 texts and tested on 50: the fraction of pronouns whose antecedent it finds, by layer. The dashed red line is the accuracy of always choosing the nearest earlier mention (0.54); chance is 0.14. (b) The one coreference signal found in a restricted set of directions, broken down by which coreferent pairs are counted.
+**Figure 8.** (a) A probe that scores each pronoun's candidate antecedents, trained on 150 texts and tested on 50: the fraction of pronouns whose antecedent it finds, against the fraction of each model's depth. The matched GPT-2 is in orange. The dashed red line is the accuracy of always choosing the nearest earlier mention (0.54); chance is 0.14. (b) The one coreference signal found in a restricted set of directions, broken down by which coreferent pairs are counted.
 
-Binding by closeness is one way to bind. A transformer binds differently: attention copies information from the antecedent into the pronoun's state without making the two states alike. The probe in panel (a) tests for that kind of binding. It uses a learned bilinear score, which has the shape of one attention head. **No layer of any model finds the antecedent more than four points better than choosing the nearest earlier mention.** The probe does best after the first layer and worse at the last, where the states are shaped for prediction. The antecedent is not recoverable as information.
+Binding by closeness is one way to bind. A transformer binds differently: attention copies information from the antecedent into the pronoun's state without making the two states alike. The probe in panel (a) tests for that kind of binding. It uses a learned bilinear score, which has the shape of one attention head. **No layer of any of our models finds the antecedent more than four points better than choosing the nearest earlier mention.** The probe does best after the first layer and worse at the last, where the states are shaped for prediction. The antecedent is not recoverable as information.
+
+The matched GPT-2 answers the obvious question, whether a transformer would do better. Somewhat, in the middle: its layers 2 to 4 reach 0.64, against at most 0.58 for any layer of our models. But its best layer is only 0.10 above the nearest-mention rule (interval −0.01 to +0.20), and its final states are *exactly* at that rule (0.54). By the same criterion it also fails. Both families show the same shape: antecedent information rises in the middle and is washed out where the states are shaped for prediction. At this budget, not binding reference is not a weakness of this framework in particular. With 48 test texts the intervals are about ±0.1, so a few points' difference between the families cannot be resolved.
 
 A last possibility was that coreference binding exists but is hidden in a few directions, under each token's own identity, which dominates the whole-vector cosine. Recomputing the binding contrast in the 16 most varied directions does find one coreference signal, at the first layer, in five models (panel b, first group). Panel (b) shows what it is made of.
 
@@ -449,7 +461,36 @@ A last possibility was that coreference binding exists but is hidden in a few di
 
 So the signal is the identity of a repeated word, carried by the context field from each token's own state. It is not resolved reference.
 
-## 22. The verdict against the pre-registered calls
+## 22. Extra depth: when the tokens collapse
+
+![Perplexity, contraction and effective rank as extra steps are added](figures/sy_results/sy_r9_extra_depth.png)
+
+**Figure 9.** The trained models run for one and two steps beyond their trained depth (two and four for the four-layer model) at the trained step size. (a) Perplexity, on a logarithmic scale. (b) The contraction S of the final states against the trained depth. (c) The change of their effective rank. Dashed red lines: the pre-registered criteria.
+
+Adding steps beyond the trained depth is catastrophic in every model, and the cause was unknown. The hypothesis of Part I (SY5) was that extra time over-synchronizes the tokens: they collapse together until the readout can no longer tell them apart. The test used the notebook's own extra-step code, so it is the same intervention whose cost was recorded before. At the trained depth it reproduces the trained model exactly.
+
+- **One extra step.** The tokens draw together past the criterion (S ≥ 0.05) in PMX (+0.054), F3.1 (+0.058) and, dramatically, G2 (+0.47, with perplexity rising from 49 to 2,534). In PM1, SR2 and the four-layer model they do not, although perplexity still rises by 37% to 106%.
+- **Two extra steps.** Every model that fails badly has collapsed. PMX, F3.1 and the four-layer model draw together strongly (S from +0.45 to +0.61). PM1, whose perplexity reaches a million, collapses differently: its tokens lose 38% of their effective dimensions while their distances barely change.
+- **The constituent grouping keeps growing** through the extra steps (noun-chunk binding in PMX: +0.044, +0.051, +0.070). The clustered dynamics continue while the whole set contracts.
+
+So the pre-registered call is a hit: extra depth does over-synchronize, in PMX and in two other models. But the picture is more specific than the hypothesis. Collapse accompanies the large failures, not the onset. The first, moderate degradation comes by some other route, and one step later the tokens are driven together. The evidence is co-occurrence across models and steps, not a causal test.
+
+## 23. The matched transformer: what is generic and what is not
+
+![The matched GPT-2 beside the Lagrangian models](figures/sy_results/sy_r10_gpt2.png)
+
+**Figure 10.** The matched GPT-2 (orange) beside our models, on a common axis of the fraction of each model's depth. (a) The noun-chunk binding of the states. (b) The noun-chunk binding made by the coupling: GPT-2's attention, layer by layer, and our context field at the last layer. (c) The contraction S of the whole token set by each coupling.
+
+Everything above was measured on models built from this framework. The matched GPT-2 separates what is particular to them from what any language model trained on these data at this budget does. It was measured with the same tools, the same groupings and the same controls.
+
+- **The grouping of constituents is generic** (panel a). GPT-2's final states put noun-chunk members closer together (+0.054) than any of our models do (+0.032 to +0.047). The grouping survives the prediction control there too: +0.050 remains after removing prediction similarity. Its head–dependent separation is, as in our models, explained by prediction.
+- **The mechanism is not** (panel b). In GPT-2, attention builds the grouping gradually, from layer 2 to layer 5 (+0.026 at layer 3), and contributes nothing at the last layer. In our models the context field makes it in one go, at the last step. One more difference: GPT-2's *embedding* already groups noun-chunk words (+0.053); the grouping dips through the first two layers and attention then rebuilds it. Our models' embeddings start slightly negative.
+- **Neither coupling collapses the token set** (panel c). At the last layer, GPT-2's attention and our context field both spread the tokens apart; attention does so at every layer. At this depth and budget the trained transformer is not in the collapsing regime of the idealized attention flow, as the literature on that flow's long-lived intermediate phase anticipates. Our context field contracts the tokens at the first layer in two models (G2, four layers) and spreads them at the last in all.
+- **Neither binds reference.** Attention's coreference binding is at most +0.008 at any layer, and the probe fails (§21).
+
+The pre-registered comparison asked whether GPT-2's attention makes at least as much binding at its last layer as the best coupling of any of our models, for coreference, head–dependent and noun chunks. It does not, for any of the three: 0.003, −0.002 and −0.004, against 0.029, 0.003 and 0.064. That is a statement about where the binding is made, not about how much the final states end up with.
+
+## 24. The verdict against the pre-registered calls
 
 | call | prediction | called at | result |
 | --- | --- | ---: | --- |
@@ -458,7 +499,8 @@ So the signal is the identity of a repeated word, carried by the context field f
 | SY-pair | the pair potential binds coreferent or head–dependent pairs | 50% | **miss** |
 | SY-wells | the wells pass claim 2 and the pair potential does not | 25% | **miss** |
 | SY-L2, SY-L3 | the models use it; it is at the root | 30%, 10% | cannot hold once claim 2 fails |
-| SY-G2, SY-GPT2 | extra depth over-synchronizes; GPT-2 binds at least as well | 35%, 60% | not yet run |
+| SY-G2 | extra depth over-synchronizes | 35% | **hit** (PMX, F3.1, G2; §22) |
+| SY-GPT2 | GPT-2's attention binds at least as much at its last layer | 60% | **miss**, 0 of 3 (§23) |
 
 The four follow-up tests, each fixed in advance in the protocol, are not part of the pre-registered ladder and do not rescore it.
 
@@ -469,12 +511,13 @@ The four follow-up tests, each fixed in advance in the protocol, are not part of
 | decoding probe: is the antecedent recoverable? | **no**, in every model (§21) |
 | binding in a subspace | only lexical identity, not reference (§21) |
 
-**The verdict, in plain terms.** On the couplings the test was designed around, the trained models synchronize tokens without grouping related words. The pre-registered verdict is "semantically blind". The models do group the words of syntactic constituents, through a coupling Part I had classed as a confound to control: the context field, a mean field that produces clustered synchronization. They do not bind reference at all.
+**The verdict, in plain terms.** On the couplings the test was designed around, the trained models synchronize tokens without grouping related words, so the pre-registered verdict is "semantically blind". They do group the words of syntactic constituents, through a coupling Part I had classed as a confound to control: the context field, a mean field that produces clustered synchronization. That grouping is generic, since the matched transformer forms it too, but the mechanism is particular to this framework: one mean field at the last step, where the transformer uses attention spread over its middle layers. Neither family binds reference at this budget. And running the models past their trained depth makes the tokens collapse together, which is how their catastrophic failures look, though not how they begin.
 
-## 23. What remains open
+## 25. What remains open
 
-- **The same measurements on the matched GPT-2** (SY6). If attention shows the same blindness on these measures yet binds clearly in the probe, the lesson is about the measure; if it binds where these models do not, it is about the models.
-- **Whether extra depth over-synchronizes** (SY5). This would explain why adding layers beyond the trained depth is catastrophic in every model.
+- **What starts the extra-depth failure.** Collapse accompanies the catastrophic stage but not the first degradation (§22), so something else breaks first.
+- **Why GPT-2's embedding already groups noun chunks** while ours does not, and whether this is why attention can build the grouping gradually.
+- **A larger probe test set.** With 48 test texts the probe cannot resolve differences of a few points between the families.
 - **Whether the wells act through the context or alongside it**, which needs a replay that changes both at once.
 - **The Fock register readout** (are related tokens written into the same register?), which Part I planned and was not implemented.
 - **Predictions P3 and P4 of the book**: clustering the last-layer states into constituency trees, and a per-phrase potential well.

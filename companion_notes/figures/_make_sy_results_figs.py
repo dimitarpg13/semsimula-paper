@@ -262,14 +262,19 @@ a0 = ax[0]
 for k, a in enumerate(ARMS):
     acc = N[f'{a}/probe']['acc']
     ys = [acc['emb']] + [acc[str(l)] for l in range(NL[a])]
-    a0.plot(range(len(ys)), ys, '-o', color=plt.cm.viridis(k / len(ARMS)), lw=1.8, label=LABEL[a])
+    a0.plot(np.linspace(0, 1, len(ys)), ys, '-o', color=plt.cm.viridis(k / len(ARMS)), lw=1.6, label=LABEL[a])
+gp = json.loads((DBG / 'sy6_gpt2_probe.json').read_text())['acc']
+yg = [gp['emb']] + [gp[str(l)] for l in range(8)]
+a0.plot(np.linspace(0, 1, 9), yg, '-s', color='#ea580c', lw=2.4, label='matched GPT-2')
+a0.plot([1.0], [gp['final']], 'D', color='#ea580c', ms=7, mfc='white', label='GPT-2 after final norm')
 pr = N['PMX/probe']
-a0.axhline(pr['nearest'], color='#ef4444', ls='--'); a0.text(3.05, pr['nearest'] + 0.008, 'pick the nearest mention', fontsize=8, color='#ef4444')
-a0.axhline(pr['chance'], color='0.5', ls=':'); a0.text(3.05, pr['chance'] + 0.008, 'chance', fontsize=8, color='0.4')
-a0.set_xticks(range(5)); a0.set_xticklabels(['embedding', 'after 1', 'after 2', 'after 3', 'after 4'])
+a0.axhline(pr['nearest'], color='#ef4444', ls='--'); a0.text(0.62, pr['nearest'] + 0.008, 'pick the nearest mention', fontsize=8, color='#ef4444')
+a0.axhline(pr['chance'], color='0.5', ls=':'); a0.text(0.0, pr['chance'] + 0.008, 'chance', fontsize=8, color='0.4')
+a0.set_xticks([0, 0.25, 0.5, 0.75, 1]); a0.set_xticklabels(['embedding', '1/4', '1/2', '3/4', 'last layer'])
+a0.set_xlabel('fraction of the model\'s depth')
 a0.set_ylabel('antecedent found (test accuracy)'); a0.set_ylim(0.1, 0.65)
 a0.set_title('(a) Can a pronoun\'s antecedent be read from its state?', fontsize=10)
-a0.legend(fontsize=8, ncol=3, loc='lower center')
+a0.legend(fontsize=7.5, ncol=3, loc='lower right', bbox_to_anchor=(1.0, 0.12))
 a1 = ax[1]
 if cc:
     variants = [('all', 'all coreferent pairs'), ('nonident', 'identical tokens removed'),
@@ -290,3 +295,65 @@ else:
     a1.text(0.5, 0.5, 'coreference check pending', ha='center', transform=a1.transAxes)
 a1.set_title('(b) The one coreference signal: what is it made of?', fontsize=10)
 save(fig, 'sy_r8_coreference.png')
+
+
+# ---------------------------------------------------------------- Figure 9: SY5, extra depth
+fig, ax = plt.subplots(1, 3, figsize=(16, 4.4))
+for k, a in enumerate(ARMS):
+    d = json.loads((DBG / f'sy5_depth_{a}.json').read_text())
+    NSa = d['NS']; R = d['results']
+    x = list(range(len(NSa)))
+    col = plt.cm.viridis(k / len(ARMS))
+    ax[0].plot(x, [R[str(n)]['ppl'] for n in NSa], '-o', color=col, lw=2, label=LABEL[a])
+    ax[1].plot(x, [R[str(n)]['S'][0] for n in NSa], '-o', color=col, lw=2)
+    ax[2].plot(x, [100 * R[str(n)]['rank_change'][0] for n in NSa], '-o', color=col, lw=2)
+ax[0].set_yscale('log'); ax[0].set_ylabel('perplexity (log scale)')
+ax[1].axhline(0.05, color='#ef4444', ls='--', lw=1); ax[1].text(0.05, 0.08, 'criterion 0.05', color='#ef4444', fontsize=8)
+ax[1].set_ylabel('contraction S of the final states\n(> 0: tokens drawn together)')
+ax[2].axhline(-20, color='#ef4444', ls='--', lw=1); ax[2].text(0.05, -18, 'criterion -20%', color='#ef4444', fontsize=8)
+ax[2].set_ylabel('change of effective rank (%)')
+for a_ in ax:
+    a_.set_xticks([0, 1, 2]); a_.set_xticklabels(['trained depth', '+1 step\n(+2 at L = 4)', '+2 steps\n(+4 at L = 4)'])
+ax[0].set_title('(a) Extra steps at the trained step size:\nperplexity', fontsize=10)
+ax[1].set_title('(b) Do the tokens draw together?', fontsize=10)
+ax[2].set_title('(c) Do they lose dimensions?', fontsize=10)
+ax[0].legend(fontsize=8)
+save(fig, 'sy_r9_extra_depth.png')
+
+
+# ---------------------------------------------------------------- Figure 10: SY6, the matched GPT-2 beside the Lagrangian models
+G6 = np.load(DBG / 'sy6_gpt2.npz')
+gk = num('gpt2/Bdepth/chunk', lambda: [S.boot_contrast(G6[f'L{l}/chunk/B_in'])[0] for l in range(8)] + [S.boot_contrast(G6['L7/chunk/B_on'])[0]])
+gs = num('gpt2/Bspec/chunk', lambda: [S.boot_contrast_diff(G6[f'L{l}/chunk/B_on'], G6[f'L{l}/chunk/common/B_ref']) for l in range(8)])
+gS = num('gpt2/S', lambda: [S.boot_mean(G6[f'L{l}/common/S']) for l in range(8)])
+fig, ax = plt.subplots(1, 3, figsize=(17, 4.6), gridspec_kw={'wspace': 0.38})
+for k, a in enumerate(ARMS):
+    v = N[f'{a}/Bdepth/chunk']
+    ax[0].plot(np.linspace(0, 1, len(v)), v, '-o', color=plt.cm.viridis(k / len(ARMS)), lw=1.4, alpha=0.8, label=LABEL[a])
+ax[0].plot(np.linspace(0, 1, 9), gk, '-s', color='#ea580c', lw=2.6, label='matched GPT-2')
+ax[0].axhline(0, color='k', lw=0.8); ax[0].axhspan(-0.02, 0.02, color='0.93', zorder=0)
+ax[0].set_xlabel('fraction of the model\'s depth'); ax[0].set_ylabel('noun-chunk binding B of the states')
+ax[0].set_title('(a) Both families group noun-chunk words', fontsize=10); ax[0].legend(fontsize=7.5, ncol=2)
+g = np.array(gs)
+ax[1].bar(np.arange(8), g[:, 0], 0.6, yerr=[g[:, 0] - g[:, 1], g[:, 2] - g[:, 0]], capsize=2, color='#ea580c', label='GPT-2: attention, per layer')
+lag = np.array([N[f'{a}/Bspec/xi/chunk'] for a in ARMS])
+ax[1].bar(np.arange(9, 9 + len(ARMS)), lag[:, 0], 0.6, yerr=[lag[:, 0] - lag[:, 1], lag[:, 2] - lag[:, 0]], capsize=2, color='#a855f7', label='ours: context field, last layer')
+ax[1].set_xticks(list(range(8)) + list(range(9, 9 + len(ARMS))))
+ax[1].set_xticklabels([str(l) for l in range(8)] + [LABEL[a] for a in ARMS], fontsize=8, rotation=45)
+ax[1].set_xlabel('GPT-2 layer 0-7  |  our models')
+ax[1].axhline(0.02, color='0.5', ls=':', lw=1); ax[1].axhline(0, color='k', lw=0.8)
+ax[1].set_ylabel('noun-chunk binding made by the coupling')
+ax[1].set_title('(b) Who makes it: attention mid-depth (GPT-2),\nthe context field at the last step (ours)', fontsize=10)
+ax[1].legend(fontsize=7.5)
+gS = np.array(gS)
+ax[2].plot(np.arange(8), gS[:, 0], '-s', color='#ea580c', lw=2.4, label='GPT-2: attention')
+for k, a in enumerate(ARMS):
+    v = [N[f'{a}/S/xi/L{l}'][0] for l in range(NL[a])]
+    ax[2].plot(np.linspace(0, 7, NL[a]) if NL[a] > 1 else [7], v, '-o', color=plt.cm.viridis(k / len(ARMS)), lw=1.2, alpha=0.8)
+ax[2].plot([], [], '-o', color='0.5', label='ours: context field')
+ax[2].axhline(0, color='k', lw=0.8); ax[2].set_yscale('symlog', linthresh=0.05)
+ax[2].set_xticks([0, 7]); ax[2].set_xticklabels(['first layer', 'last layer'])
+ax[2].set_ylabel('contraction S of the whole set\n(< 0: spread apart)')
+ax[2].set_title('(c) At the last layer both couplings spread the\ntoken set (ours contract it at the first, G2 and L = 4)', fontsize=10)
+ax[2].legend(fontsize=8)
+save(fig, 'sy_r10_gpt2.png')
