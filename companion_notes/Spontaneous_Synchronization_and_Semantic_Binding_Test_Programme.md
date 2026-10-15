@@ -6,7 +6,7 @@
 
 This note turns that question into four claims of increasing strength, each of which can fail, and designs the measurements that decide them. The verdict criteria are pre-registered in the protocol ([`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md) §5.22) before any measurement. The book's open question Q10 points here.
 
-**Background.** Self-attention, read with layers as time, is a system of particles under an attractive mean-field coupling, and such systems cluster (Geshkovski et al. 2023a, 2023b; Karagodin et al. 2024). The mathematics is that of coupled-oscillator synchronization. The mechanisms, and where they live in our models, are in [`Two_Clustering_Mechanisms_Saturation_and_Synchronization.md`](Two_Clustering_Mechanisms_Saturation_and_Synchronization.md) (§3–5). In this framework every route by which one token can pull another is a named term: V_φ (a pair potential with a learned per-pair sign), the Poisson-mode wells (shared centres; [`Poisson_Mode_Registers_PM1.md`](Poisson_Mode_Registers_PM1.md)) and the Fock path (a two-hop attention). V_θ is one-body only at fixed context: its wells are placed by the context ξ, an average over the earlier tokens, so through ξ it couples tokens too (and Part II shows this is the coupling that matters). That makes the question answerable here in a way it barely is for transformers: every coupling can be switched off, scaled, or read pair by pair.
+**Background.** Self-attention, read with layers as time, is a system of particles under an attractive mean-field coupling, and such systems cluster (Geshkovski et al. 2023a, 2023b; Karagodin et al. 2024). The mathematics is that of coupled-oscillator synchronization. The mechanisms, and where they live in our models, are in [`Two_Clustering_Mechanisms_Saturation_and_Synchronization.md`](Two_Clustering_Mechanisms_Saturation_and_Synchronization.md) (§3–5). A **coupling** is any term in a token's equation of motion through which another token's state acts on it: a term whose contribution to token i's force would change if the other tokens moved while token i stayed put. In attention every such influence passes through one operation, so no part of it can be isolated. In this framework each coupling is a separate, **named** term of the equation of motion, with its own parameters: V_φ (a pair potential with a learned per-pair sign), the Poisson-mode wells (shared centres; [`Poisson_Mode_Registers_PM1.md`](Poisson_Mode_Registers_PM1.md)), the Fock path (a two-hop attention) and, in the exchange-field arms, a conservative attention-shaped potential. V_θ is one-body only at fixed context: its wells are placed by the context ξ, an average over the earlier tokens, so through ξ it couples tokens too (and Part II shows this is the coupling that matters). That makes the question answerable here in a way it barely is for transformers: every coupling can be switched off, scaled, or read pair by pair.
 
 ## Contents
 
@@ -112,6 +112,8 @@ $$
 $$
 
 and likewise $\Delta_c R$ and $\Delta_c C$. The replay is the 6b-9 instrument: it reproduces the trained step bit for bit when nothing is switched off, which is its validity check.
+
+**Revised before any model was measured** (SY0, §14). Switching a coupling off also removes its push shared by all tokens, which can make states look aligned without coupling them. The attribution actually used compares the trained step with a *common-mode reference*, in which the coupling's force is replaced by its average over the tokens, and the global measure $R$ was replaced by the pairwise contraction $S$ (definitions in §13).
 
 ### 3.4 Route-specific readouts
 
@@ -323,7 +325,7 @@ The reader is assumed to know linear algebra and basic statistical mechanics, an
 | PMX | pair potential, Poisson wells (integrated exactly), context field | 2 |
 | L = 4 | pair potential, Fock registers, context field | 4 |
 
-- **Coupling.** Any term in a token's equation of motion through which another token's state acts on it: a term whose contribution to token i's force would change if the other tokens moved while token i stayed put. There are four, each a separate term that can be switched off on its own:
+- **Coupling.** Any term in a token's equation of motion through which another token's state acts on it: a term whose contribution to token i's force would change if the other tokens moved while token i stayed put (defined at first use in the Background). The six models measured first have four, each a separate term that can be switched off on its own; the two exchange-field models add a fifth, a conservative attention-shaped potential:
   - the **pair potential** V_φ: token i picks up to 16 earlier tokens and is attracted to or repelled from each;
   - the **Poisson wells**: shared attracting points whose depth for token i depends on how many earlier tokens fell into them;
   - the **Fock registers**: a memory written by earlier tokens that pushes token i;
