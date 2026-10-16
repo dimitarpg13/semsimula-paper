@@ -3,6 +3,7 @@
 **Technical Report — Semantic Simulation Research Programme**  
 **Status:** Active — June 2026 (updated with causal leak fix, corrected v2 results, Fock Attention results, register diagnostics, v2.1 routing fix, and causal-fixed v2.1 rerun results: B1+B2+B3 = **9.30 PPL**, surpassing Fock Attention)  
 > ⚠ **Re-certification notice (July 2026):** a *second, deeper* causal leak was found after this report was written. The `8c47d90` cumulative-softmax fix was incomplete, and the **9.30 PPL** result and every "causal-fixed" number below are certified only by a probe now known to be blind. They are **pending re-certification** with `prefix_causal_registers=True`. See the banner in §19.8 and [`Fock-PARFLM_Causal_Leak_Audit_Results.md`](Fock-PARFLM_Causal_Leak_Audit_Results.md).  
+> **Revision (2026-10-16): the reverse channel.** Earlier versions did not say what the reverse channel is for, and in places described a mechanism the code does not implement. Revised: §8 (Figure 8.1, the two-hop path), §9.6 (new: the read port), §10.1–10.2 (notation β, how the update is applied, the non-conservativity argument), §10.7 (the force as implemented; the token flow is not purely conservative), §10.9 (rewritten: the claim that only the reverse channel makes the coupling directed fails for causal models), Figure 10.2 and §10.11.  
 **Relates to:** Paper v4 §§9.4.2, 17.8, 17.13, 17c; FockPARFLM Phase 1 (Dyck₂ seed 0 complete); QFT v2.1 (Q0–Q8 complete); `model_fock_attention.py`; `model_fock_parf_v2.py`
 
 ---
@@ -39,7 +40,7 @@ The **Semantic Simulation** research programme models language understanding as 
 
 $$\mathcal{L} = T - V, \qquad T = \tfrac{1}{2}m\lVert\dot{h}\rVert^2, \qquad V_\theta(h) = m\upsilon^2 \left(1 - e^{-\kappa\lVert h - h^*\rVert^2}\right)$$
 
-where $h \in \mathbb{R}^d$ is the hidden state (position of the semantic particle in $\Sigma$), $h^*$ is its equilibrium centroid, $\upsilon$ is the characteristic speed, and $\kappa = f/\upsilon$ controls well curvature.
+where $h \in \mathbb{R}^d$ is the hidden state (position of the semantic particle in $\Sigma$), $h^{\ast}$ is its equilibrium centroid, $\upsilon$ is the characteristic speed, and $\kappa = f/\upsilon$ controls well curvature.
 
 The **PARF-augmented SPLM (PARFLM)** enriches the single-particle picture by adding token-token pairwise interactions via a learned pair potential $V_\phi(h_t, h_s)$. This models repulsive and attractive forces between co-present semantic particles — particles that are semantically similar attract; dissimilar or contradictory particles repel. When we model the system by converting all force interactions into potential wells, this is valid **only under the assumption that all forces are conservative**:
 
@@ -63,7 +64,7 @@ From Paper v4, §9.2 (Theorem v0-ceiling):
 > - There is no mechanism for the state space to grow during inference
 
 Consequently, PARFLM is **at most a finite automaton** (regular languages). It cannot:
-- Recognise $\mathrm{Dyck}_n$ beyond the predicted collapse depth $D^*$
+- Recognise $\mathrm{Dyck}\_n$ beyond the predicted collapse depth $D^{\ast}$
 - Handle cross-serial dependencies ($a^n b^n c^n$)
 - Reach the mildly context-sensitive (MCS) class
 
@@ -150,7 +151,7 @@ Token $j$ may have high coupling with $i$ (large $\alpha_{ij}$) while transferri
 
 The softmax normalization enforces $\sum_j \alpha_{ij} = 1$ — a **budget constraint**. Attending more to token $j$ necessarily means attending less to all other $k$. This is a non-local, competitive allocation mechanism.
 
-Conservative potentials are additive and purely local: $V_\text{total} = \sum_{i<j} V_\phi(h_i, h_j)$. There is no global normalization and no competition between interactions. Sigmoid gates (as in the current creation gate) are independent per-register activations with no such constraint.
+Conservative potentials are additive and purely local: $V_\text{total} = \sum_{i \lt j} V_\phi(h_i, h_j)$. There is no global normalization and no competition between interactions. Sigmoid gates (as in the current creation gate) are independent per-register activations with no such constraint.
 
 ### 4.4 Summary Table
 
@@ -220,11 +221,11 @@ Registers start in a "vacuum" state (inactive). A learned creation gate activate
 
 <img src="images/fock_forward_pass_v1.png" alt="FockPARFLM v1: Forward Pass per Layer" width="600">
 
-Parameter budget at P10f scale ($d = 256$, $L = 8$, $M = 32$): **~288K overhead** (<2% of the ~13M base PARFLM).
+Parameter budget at P10f scale ($d = 256$, $L = 8$, $M = 32$): **≈288K overhead** (under 2% of the ≈13M base PARFLM).
 
 ### 6.3 Phase 1 Results: Dyck₂ Falsifier (Seed 0, 10 May 2026)
 
-Configuration: $d = 64$, $L = 4$, $M = 16$, 4000 steps. Corpus: synthetic $\mathrm{Dyck}_2$, max nesting depth 12.
+Configuration: $d = 64$, $L = 4$, $M = 16$, 4000 steps. Corpus: synthetic $\mathrm{Dyck}\_2$, max nesting depth 12.
 
 | Arm | Params | Val PPL | Deep-test acc. (depth 5–12) |
 |---|---|---|---|
@@ -283,6 +284,17 @@ The current FockPARFLM creates and destroys **input particles** (register slots 
 
 <img src="images/fock_current_vs_proposed.png" alt="FockPARFLM: Current vs Proposed mechanism" width="600">
 
+The proposed panel above compresses two hops into one. It draws token $j$ exchanging directly with token $i$ through $\mathrm{softmax}(q_i \cdot k_j)$, which is single-hop attention between tokens. What v2.1 implements (Figure 8.1) passes through a register:
+
+1. the **write port** (creation, §9.1): the register's query attends over the tokens, and the softmax runs over tokens $j$;
+2. the **read port** (the reverse channel, §9.6): the token's query attends over the registers, and the softmax runs over registers $k$.
+
+The "virtual photon" is the register $r_k$, not a quantity exchanged directly between tokens. Token $i$ is the absorber, coupled to the register by a second, separately parameterised softmax.
+
+![Fock v2.1: the registers are a memory with a write port and a read port](images/fock_register_read_write.png)
+
+**Figure 8.1.** What Fock v2.1 implements. Token $j$'s content enters register $k$ through the write port (weights $\alpha_{kj}$, softmax over tokens). Token $i$ reads the register through the read port (weights $\beta_{ik}$, softmax over registers). Token $i$ receives token $j$'s content only through both hops. Made by [`images/make_fock_register_read_write.py`](images/make_fock_register_read_write.py).
+
 | | Current FockPARFLM | Proposed FockPARFLM v2 |
 |---|---|---|
 | **What is created** | Register slot (real persistent particle) | Virtual semantic photon (transient) |
@@ -307,7 +319,7 @@ $$r_k \leftarrow \sum_{j=1}^{T} \alpha_{kj} \cdot v_j \qquad \text{(content of c
 
 $$\sigma_k \leftarrow \sigma_k \cdot \lambda + \max_j(\alpha_{kj}) \cdot (1 - \lambda) \qquad \text{(salience update)}$$
 
-Register $k$ is **active** (created) iff $\sigma_k > \tau$; it is **destroyed** when salience decays below $\tau$.
+Register $k$ is **active** (created) iff $\sigma_k \gt \tau$; it is **destroyed** when salience decays below $\tau$.
 
 ### 9.2 How This Implements All Three Missing Properties
 
@@ -390,6 +402,45 @@ class FockPARFLM_v2(SparsePARFLM):
 
 ![FockPARFLM v2: Full Forward Pass](images/fock_full_forward_pass.png)
 
+### 9.6 The Read Port: How Register Content Reaches the Tokens
+
+§9.1 defines how the registers are **written**. The registers form a memory, and a memory needs a read operation as well. In v2.1 the read operation is the **reverse channel**. Each token's query attends over the registers that are active at its position:
+
+$$q_i = W_Q^{\mathrm{rev}} h_i, \qquad k^{\mathrm{reg}}_k = W_K^{\mathrm{rev}} r_k, \qquad \beta_{ik} = \mathrm{softmax}_k\left(q_i \cdot k^{\mathrm{reg}}_k\right), \qquad Q_i = \sum_{k \in \mathrm{active}} \beta_{ik} W_V^{\mathrm{rev}} r_k.$$
+
+The write and read ports are mirror images:
+
+| | write port (creation, §9.1) | read port (reverse channel) |
+| --- | --- | --- |
+| who queries | the register | the token |
+| softmax over | tokens | active registers |
+| content moved | token values into the register | register values into the token |
+| projections | per-register query, key and value maps | separate query, key and value maps |
+
+**It is the only read port.** In the code nothing else reads the registers:
+- tokens never receive a force from register rows;
+- the destruction gate reads the registers only to update their salience;
+- the logits are computed from the tokens alone.
+
+Without the reverse channel the registers are therefore write-only, and the whole Fock mechanism cannot affect a prediction. This is the most important fact about the channel, and it is what makes the ablation of §10.11 meaningful.
+
+**What token $i$ receives from token $j$.** Combining the two ports gives the effective token-to-token kernel
+
+$$A_{ij} = \sum_k \beta_{ik} \alpha_{kj}.$$
+
+It has three properties:
+- **Rank at most $M$.** All exchange passes through $M$ registers (32 in the published arms), so a position can hold at most $M$ distinct retrieved items.
+- **Causal.** With `prefix_causal_registers=True` the bank read at position $i$ is built from tokens $1 \ldots i$ only.
+- **Persistent.** The registers carry content across layers, $r_k \leftarrow \sigma_k r_k + (1 - \sigma_k) \sum_j \alpha_{kj} v_j$. A read at layer $\ell$ can therefore return content written at an earlier layer.
+
+This write-then-read structure through a small set of intermediate slots is known in the attention literature as induced-set attention (Set Transformer, Lee et al. 2019) and as pack/unpack attention (Luna, Ma et al. 2021). What Fock adds is the persistence of the slots across layers and their salience-gated lifecycle.
+
+**How the read result enters the dynamics.** $Q_i$ is not a term inside the integrator. It is applied once per layer, after the integrator step and its LayerNorm, as a position increment:
+
+$$h_i \leftarrow \mathrm{LN}\left(h_i + \frac{dt^2}{m_i} \tanh(s) \widetilde{Q}_i\right),$$
+
+where $s$ is the learned scale (per layer with `reverse_channel_per_layer`) and $\widetilde{Q}\_i$ is $Q_i$ after the stable variant's RMS normalisation (§10.12). Under the BAOAB/CfC integrators the outgoing velocity absorbs the increment as the velocity change a force would produce.
+
 ---
 
 ## 10. Asymmetric Non-Conservative Force Formulation
@@ -398,13 +449,13 @@ class FockPARFLM_v2(SparsePARFLM):
 
 The Q/K/V creation protocol introduces a **generalized (non-conservative) force** on each token $i$. The extended equation of motion for semantic particle $i$ becomes:
 
-$$\ddot{h}_i = \underbrace{-\nabla_{h_i} V_\theta(h_i)}_{\text{restoring force (conservative)}} + \underbrace{\sum_{j \neq i} F_{ij}^{(\mathrm{PARF})}}_{\text{pairwise PARF (conservative)}} + \underbrace{\sum_{k \in \mathrm{active}} \alpha_{ik} \cdot v_k^{(\mathrm{reg})}}_{\text{non-conservative Fock exchange}\ Q_i}$$
+$$\ddot{h}_i = \underbrace{-\nabla_{h_i} V_\theta(h_i)}_{\text{restoring force (conservative)}} + \underbrace{\sum_{j \neq i} F_{ij}^{(\mathrm{PARF})}}_{\text{pairwise PARF (conservative)}} + \underbrace{\sum_{k \in \mathrm{active}} \beta_{ik} \cdot v_k^{(\mathrm{reg})}}_{\text{non-conservative Fock exchange}\ Q_i}$$
 
 where:
 
-$$\alpha_{ik} = \mathrm{softmax}_k\left(\frac{q_i \cdot k_k^{(\mathrm{reg})}}{\sqrt{d}}\right), \qquad v_k^{(\mathrm{reg})} = W_V^{(\mathrm{reg})} r_k$$
+$$\beta_{ik} = \mathrm{softmax}_k\left(\frac{q_i \cdot k_k^{(\mathrm{reg})}}{\sqrt{d}}\right), \qquad v_k^{(\mathrm{reg})} = W_V^{(\mathrm{reg})} r_k$$
 
-The third term $Q_i$ is the reverse channel: tokens read from active registers via attention-like coupling, completing the bidirectional but asymmetric exchange loop.
+The third term $Q_i$ is the reverse channel, the read port of §9.6: each token reads the active registers. Its weights are written $\beta_{ik}$ to keep them apart from the creation weights $\alpha_{kj}$: they are a different softmax, over registers rather than tokens, with separate projections. The equation of motion writes $Q_i$ as a force for clarity. In the code it is applied as a per-layer position increment after the integrator step (§9.6), which in a single step amounts to the same thing.
 
 ### 10.2 Why This Force is Non-Conservative
 
@@ -412,13 +463,17 @@ A force field $\mathbf{Q}(\mathbf{h})$ is conservative iff there exists a scalar
 
 $$Q_i = \sum_k \frac{\exp(q_i \cdot k_k^{(\mathrm{reg})} / \sqrt{d})}{\sum_{k'} \exp(q_i \cdot k_{k'}^{(\mathrm{reg})} / \sqrt{d})} \cdot v_k^{(\mathrm{reg})}$$
 
-This force depends on the **relative inner products** across all active registers via the softmax — it cannot be expressed as the gradient of any scalar function of $h_i$ alone. Furthermore $Q_i \neq Q_j$ in general (asymmetry), so Newton's Third Law fails: no potential can be derived.
+A force field on the tokens is conservative only if it is the gradient of one scalar of all the token positions. Then the cross-Jacobian is symmetric: $\partial Q_i / \partial h_j = (\partial Q_j / \partial h_i)^{\top}$. The Fock exchange violates this for two reasons:
+- **Write and read are different maps.** Token $j$ reaches token $i$ through $\alpha_{kj}$, a softmax over tokens with creation projections, then $\beta_{ik}$, a softmax over registers with independent reverse projections. The influence of $j$ on $i$ and of $i$ on $j$ are products of different factors, so the cross-Jacobian is not symmetric.
+- **No back-reaction.** A token reading a register exerts no force on that register: the read leaves the register unchanged.
+
+$Q_i \neq Q_j$ is not the criterion. Different tokens can feel different forces under any potential. What fails is the symmetry of the cross-Jacobian.
 
 This is exactly the class of **non-conservative generalized forces** that the Lagrangian formalism accommodates via the generalized force term $Q_i$ in the Euler-Lagrange equations:
 
 $$\frac{d}{dt}\frac{\partial \mathcal{L}}{\partial \dot{h}_i} - \frac{\partial \mathcal{L}}{\partial h_i} = Q_i$$
 
-The first two terms on the right-hand side of the extended equation of motion ($V_\theta$ and $V_\phi$) remain conservative. Only the Fock exchange term breaks conservativity — and it does so in precisely the way required to match attention's three structural properties.
+The first two terms on the right-hand side of the extended equation of motion ($V_\theta$ and $V_\phi$) remain conservative per token, at fixed sources. Under the causal mask the pair term is already one-directional (§10.9), so the token system as a whole is not the gradient of one joint potential even without the Fock term. Only the Fock exchange term breaks conservativity — and it does so in precisely the way required to match attention's three structural properties.
 
 ### 10.3 Connection to the Paper's Conservativity Obstructions (§15)
 
@@ -468,11 +523,13 @@ Here is the subtlety the particle picture makes precise. If the spring energy $V
 
 The symmetry breaks because the **reverse channel is a separately parameterised force field**, not the back-reaction of $V_{\text{create}}$:
 
-$$F_{h_i}^{\text{reverse}} = \sum_k \beta_{ik} (\tilde{v}_k - h_i), \qquad \beta_{ik} = \mathrm{softmax}_k\left( \frac{Q_i \cdot K_k}{\sqrt{d}} \right),$$
+$$F_{h_i}^{\text{reverse}} = \sum_k \beta_{ik} \tilde{v}_k, \qquad \tilde{v}_k = W_V^{\mathrm{rev}} r_k, \qquad \beta_{ik} = \mathrm{softmax}_k\left( \frac{Q_i \cdot K_k}{\sqrt{d}} \right),$$
 
 with **independent** projections: the token query $Q_i$, the register keys $K_k$, and the register values come from different weight matrices than the $q_k, k_j, v_j$ of the creation vertex. Because the forward stiffness $\alpha_{kj}$ and the backward stiffness $\beta_{ik}$ are produced by two different rules, there is **no single elastic potential** whose gradient yields both vertices. Newton's third law fails at the vertex level:
 
 $$\frac{\partial F_{r_k}}{\partial h_j} \neq \frac{\partial F_{h_j}}{\partial r_k}.$$
+
+(The spring picture would add a restoring term $-h_i$, giving $\sum_k \beta_{ik}(\tilde{v}\_k - h_i)$. The code has no such term: the read port injects $\sum_k \beta_{ik} \tilde{v}\_k$, RMS-normalised in the stable variant. The spring bundle of §10.4–10.6 is an interpretation of the write port as an overdamped relaxation, not the implementation. In the published prefix-causal arms the registers are not integrated as particles.)
 
 When the registers are integrated out, the effective token-to-token influence is a product of two *different* asymmetric stiffness matrices,
 
@@ -480,11 +537,11 @@ $$A_{ij} \sim \sum_k \beta_{ik} \alpha_{kj}, \qquad A_{ij} \neq A_{ji},$$
 
 which is asymmetric and is not the gradient of any scalar — exactly the non-conservative, reciprocity-violating coupling that the Conservative Obstruction Theorem (§4, §15) forbids on the bare token subsystem. Two further ingredients complete the picture. First, the influence is **routed through a small shared pool** of $M$ mediators rather than through $O(T^2)$ direct bonds, which is what keeps the inference state $O(1)$ in sequence length. Second, the registers **decay** (the destruction gate, salience $\sigma_k \to \lambda \sigma_k$ with $\lambda \lt 1$), so the spring bundles are **transient**: set up, used to carry one asymmetric pulse of content, then dissipated — the hallmark of a *virtual* exchange quantum rather than a permanent conservative bond.
 
-Crucially, all of this symmetry breaking is **quarantined in the register sector**. The token subsystem retains its conservative second-order flow
+The symmetry breaking is **not** confined to the register sector. The read port acts on the tokens: it is a non-conservative update of $h_i$ every layer. What stays conservative, apart from friction, is the **integrator step**:
 
 $$\ddot{h}_i = -\nabla_{h_i}(V_\theta + V_\phi) - \gamma \dot{h}_i,$$
 
-and its intrinsic Jacobi metric; only the token-register exchange is non-conservative. This is precisely why the Fock extension can escape the obstruction without sacrificing the geometric structure of the base model.
+with its intrinsic Jacobi metric. The Fock increment is then added once per layer, after that step and its LayerNorm (§9.6). The geometric statements about the base flow (Jacobi metric, geodesic compliance) therefore hold for the integrator step, while the full layer map is conservative flow followed by a non-conservative read. The extension escapes the obstruction because of that read, not despite it. Its size is bounded by $\tanh(s)$ and the RMS normalisation, so the conservative part can still dominate.
 
 ### 10.8 Quantifying the Reverse-Channel Benefit: an NTP-Loss Decomposition
 
@@ -498,39 +555,48 @@ where $p^\star$ is the true conditional distribution and $H(p^\star)$ is the irr
 
 $$\Delta\mathcal{L}_{\text{rev}} = \mathcal{L}_{\text{NTP}}(\theta_{\text{rev=off}}) - \mathcal{L}_{\text{NTP}}(\theta_{\text{rev=on}}) \ge 0.$$
 
-The inequality is structural, not empirical. The reverse-channel scale $s$ (the learnable scalar `reverse_channel_scale`, initialised at $0$) makes the disabled model an **exact nested special case** of the enabled model at $s = 0$. Any optimiser that can reach $s = 0$ can do no worse with the channel than without it, so $\Delta\mathcal{L}_{\text{rev}} \ge 0$ up to optimisation error. The scientific content is therefore entirely in the **magnitude** of $\Delta\mathcal{L}_{\text{rev}}$ and in the **stability price** paid to obtain it (§10.11).
+The inequality is structural, not empirical. The reverse-channel scale $s$ (the learnable scalar `reverse_channel_scale`, initialised at $0$) makes the disabled model an **exact nested special case** of the enabled model at $s = 0$. Any optimiser that can reach $s = 0$ can do no worse with the channel than without it, so $\Delta\mathcal{L}\_{\text{rev}} \ge 0$ up to optimisation error. The scientific content is therefore entirely in the **magnitude** of $\Delta\mathcal{L}\_{\text{rev}}$ and in the **stability price** paid to obtain it (§10.11).
 
-### 10.9 The Expressivity Source: Directed vs Undirected Coupling
+### 10.9 The Expressivity Source: What the Read Port Adds
 
-To localise where $\Delta\mathcal{L}_{\text{rev}}$ comes from, integrate the registers out of one layer and read off the effective token-to-token influence matrix $A$, where $A_{ij}$ measures how strongly the update of token $i$ depends on token $j$.
+To localise where $\Delta\mathcal{L}\_{\text{rev}}$ comes from, integrate the registers out of one layer and read off the effective token-to-token influence matrix $A$, where $A_{ij}$ measures how strongly the update of token $i$ depends on token $j$.
 
-**Without the reverse channel.** The only token force is the back-reaction of the creation spring bundle $V_{\text{create}}$ of §10.5. Because it is the gradient of a single scalar potential, its cross-Jacobian is symmetric (§10.7), so the effective coupling is **symmetric**:
+**Without the reverse channel.** The tokens feel only the integrator's forces: $V_\theta$, whose wells the context places, and the pair potential $V_\phi$. The registers are written but never read (§9.6), so they contribute nothing to $A$.
 
-$$A^{\text{(no rev)}}_{ij} = A^{\text{(no rev)}}_{ji}.$$
+The pair potential runs under a strict causal mask. Token $i$ is pulled by earlier tokens $j \lt i$, and those tokens do not feel $i$. The coupling is therefore **already directed**: $A$ is lower-triangular and $A_{ij} \neq A_{ji}$.
 
-**With the reverse channel.** The separately parameterised force of §10.7 adds a product of two *different* stiffness matrices,
+An earlier version of this section said that without the reverse channel the coupling is symmetric, and that only the reverse channel can produce a directed part $D = \tfrac{1}{2}(A - A^{\top}) \neq 0$. That holds for a bidirectional conservative potential, the setting of §4.1. It does not hold for these causal models, where the mask alone makes $D \neq 0$.
 
-$$A_{ij} \sim \sum_{k} \beta_{ik} \alpha_{kj}, \qquad A_{ij} \neq A_{ji}.$$
+What the pair potential cannot do is decouple what it transfers from how strongly it couples. The push it gives token $i$ is the gradient of one function of $h_i$ and $h_j$, so the same function sets both its direction and its strength (§4.2). Its choice of up to 16 sources has no softmax budget across them either (§4.3).
 
-Split any coupling into its symmetric and antisymmetric parts,
+**With the reverse channel.** The read port adds the register path $A^{\mathrm{reg}}\_{ij} = \sum_k \beta_{ik} \alpha_{kj}$ (§9.6). Four things are new, and directedness is not one of them:
+1. **Register content reaches the tokens at all.** This is the precondition for every other benefit of the Fock mechanism.
+2. **Coupling and content are decoupled on both hops.** The keys decide which tokens are written into a register and the values decide what is written. On the read side, separate projections decide which register a token reads and what it receives. A register can be keyed on one feature of a token and carry another.
+3. **Softmax competition**, over tokens when writing and over registers when reading: a budget, not independent gates.
+4. **A small, persistent memory**: at most $M$ slots, carried across layers.
 
-$$A = \underbrace{\tfrac{1}{2}(A + A^{\mathsf{T}})}_{S \ \text{(undirected)}} + \underbrace{\tfrac{1}{2}(A - A^{\mathsf{T}})}_{D \ \text{(directed)}}.$$
+**Induction and copy.** The canonical primitive is: find an earlier occurrence of the current token and copy the token that followed it. It needs two things:
+- a source selected by content (a match on the current token's identity);
+- transferred content different from the matching feature (the identity of the *following* token).
 
-The conservative core can represent $S$ to arbitrary accuracy; it can **never** produce $D \neq 0$. The directed component $D$ is the sole property the reverse channel adds. Counting degrees of freedom on a length-$T$ context, the symmetric part carries $T(T+1)/2$ parameters and the directed part adds another $T(T-1)/2$ — the channel **roughly doubles** the representable interaction structure, and the half it adds is precisely the directed half.
+The causal pair potential is directed, but it transfers along the gradient of its coupling function, so it cannot match on one feature and copy another. The register path can: a register keyed on token $x$ stores what followed it, and a later $x$ reads that register (Figure 10.2B). Its capacity is bounded by $M$: at most $M$ such items can be held at once at any position.
 
-This is not an abstract gain. The canonical NTP primitive that requires $D \neq 0$ is the **induction / copy** operation: *find a previous occurrence of the current token and copy the token that followed it.* This map sends position $i$ to a strictly earlier, content-selected source $j < i$ with no reciprocal $j \to i$ term, so its coupling is purely directed. A short argument makes the cost concrete.
-
-> **Proposition (directed floor).** Let $\rho$ be the fraction of positions whose optimal predictor is an induction/copy of an earlier token, and suppose the copy target is unpredictable from the symmetric (undirected) statistics alone with residual entropy $\ge \delta$ nats. Then any model with symmetric effective coupling satisfies
+> **Argument (copy floor, informal).** Let $\rho$ be the fraction of positions whose best predictor copies content from an earlier position chosen by content. Suppose that content cannot be recovered, to within residual entropy $\delta$ nats, by a coupling whose transferred content is locked to its strength. Then the model without the read port satisfies
 >
-> $$\mathcal{L}_{\text{NTP}}(\theta_{\text{rev=off}}) - H(p^\star) \ \ge \ \rho \delta,$$
+> $$\mathcal{L}_{\text{NTP}}(\theta_{\text{rev=off}}) - H(p^\star) \ \ge \ \rho \delta.$$
 >
-> a floor the reverse channel can remove. Hence $\Delta\mathcal{L}_{\text{rev}}$ is lower-bounded by the copy-predictable mass of the corpus times its directed residual entropy.
+> The read port can lower this floor by at most what $M$ persistent slots can hold. This is a statement about what each mechanism can represent, not a measured bound; §10.11 is the measurement.
 
-The figure makes the contrast visual: a symmetric coupling (panel A) is a mirror image across the diagonal; the reverse channel adds the off-diagonal directed band (panel B) that carries copy and induction.
+Figure 10.2 shows the difference.
 
-![Reverse-channel benefit: directed routing the conservative core cannot represent](images/reverse_channel_benefit.png)
+![Reverse-channel benefit: a read port that brings register content, routed by content, into the tokens](images/reverse_channel_benefit.png)
 
-**Figure 10.2.** **(A)** Without the reverse channel the effective token coupling is symmetric ($A = A^{\mathsf{T}}$): only undirected, reciprocal associations are representable. **(B)** With the reverse channel the coupling becomes asymmetric, $A_{ij} \sim \sum_k \beta_{ik}\alpha_{kj}$, and a directed induction/copy band appears below the diagonal — a routing pattern no symmetric matrix can express. **(C)** Empirical anchor: across the two causal-fixed v2.1 runs, the better-performing configuration invests a far larger reverse-channel scale (real numbers from the training logs), consistent with the channel doing real predictive work.
+**Figure 10.2.**
+- **(A)** Without the reverse channel the tokens feel only $V_\phi$ (and $V_\theta$). The coupling is causal and sparse, already directed by the mask, and what it transfers is locked to its strength. The registers are written but never read.
+- **(B)** With the reverse channel, the register path $A_{ij} = \sum_k \beta_{ik} \alpha_{kj}$ is causal and has rank at most $M$, with values decoupled from keys. A planted copy shows one register storing what followed the first occurrence of a token, read by a later occurrence.
+- **(C)** Empirical anchor: across the two causal-fixed v2.1 runs, the better-performing configuration invests a far larger reverse-channel scale. These are real numbers from the training logs; the PPLs are pending re-certification (see the banner).
+
+Panels A and B are illustrations, not measurements. The figure is made by [`images/make_reverse_channel_benefit.py`](images/make_reverse_channel_benefit.py).
 
 ### 10.10 A Curvature Estimate from the Learned Scale
 
@@ -549,7 +615,7 @@ so **benefit scales with $(s^\star)^2$** — the curvature-weighted reliance the
 | v2.1 tau-only | +0.056 | 3.1e-3 | 11.18 | 2.414 |
 | v2.1 tau+perK+ortho | -0.227 | 5.2e-2 | 9.30 | 2.230 |
 
-Two observations follow. First, the stronger model invests about $(0.227/0.056)^2 \approx 16\times$ more curvature-weighted reliance on the reverse channel, and is the one that lands lower (9.30 vs 11.18 PPL, a $0.184$ nat NTP gap). Second, the sign it converges to is **negative** (dispersive / repulsive), matching the independent $-0.14$ to $-0.32$ range that Fock Attention learns (§19.9) — two different mechanisms discovering the same complementary role: the conservative Verlet supplies attractive clustering, the reverse channel supplies the directed, dispersive discrimination that separates competing continuations.
+Two observations follow. First, the stronger model invests about $(0.227/0.056)^2 \approx 16\times$ more curvature-weighted reliance on the reverse channel, and is the one that lands lower (9.30 vs 11.18 PPL, a $0.184$ nat NTP gap). Second, the sign it converges to is **negative** (dispersive / repulsive), matching the independent $-0.14$ to $-0.32$ range that Fock Attention learns (§19.9) — two different mechanisms discovering the same complementary role: the conservative Verlet supplies attractive clustering, the reverse channel supplies the directed, dispersive discrimination that separates competing continuations. The synchronization programme found the same sign independently on the published OpenWebText arms (G2, G3, G3′). Replayed with the register increment replaced by its token average, the Fock channel spreads the token set apart (contraction $S$ from −0.03 to −0.10 at each layer), and it works slightly against the noun-chunk grouping ([`Spontaneous_Synchronization_and_Semantic_Binding_Test_Programme.md`](Spontaneous_Synchronization_and_Semantic_Binding_Test_Programme.md) §15, §18 and §24).
 
 The caveat is honest: this cross-run comparison conflates the reverse-channel scale with the per-register-keys and orthogonal-init changes, so the $16\times$ figure is **correlational, not a controlled effect**. The $0.184$ nat NTP gap is an upper band on the reverse-channel contribution, not an attribution. The controlled number requires the ablation of §10.11.
 
@@ -557,11 +623,11 @@ The caveat is honest: this cross-run comparison conflates the reverse-channel sc
 
 The clean measurement is a single pre-registered ablation: set `reverse_channel = False` (equivalently freeze $s = 0$) with **every other hyperparameter fixed**, and compare NTP loss head-to-head. Three predictions, falsifiable:
 
-1. **Predictive cost (PPL up).** Disabling forfeits the directed component $D$ of §10.9, so the induction/copy floor of the Proposition reappears. Magnitude is bounded below by zero and above by the full Fock-on/off gap; using the learned reliance as a guide, the regression should be **larger for the tau+perK+ortho config** (it leans on the channel $\sim 16\times$ harder) than for tau-only. Pre-registered band: roughly $+0.05$ to $+0.20$ nats NTP (about $+5\%$ to $+22\%$ PPL) for the perK+ortho configuration on TinyStories, and noticeably smaller for tau-only.
+1. **Predictive cost (PPL up).** Disabling cuts the only read port (§9.6): the registers can no longer affect the logits, so the copy floor of §10.9 reappears. (Added 2026-10-16: with the read port off, the forward pass is the token dynamics alone, so the regression is the whole predictive contribution of the Fock mechanism at the trained token parameters. The band below was fixed before this was noted, and is unchanged.) Magnitude is bounded below by zero and above by the full Fock-on/off gap; using the learned reliance as a guide, the regression should be **larger for the tau+perK+ortho config** (it leans on the channel $\sim 16\times$ harder) than for tau-only. Pre-registered band: roughly $+0.05$ to $+0.20$ nats NTP (about $+5\%$ to $+22\%$ PPL) for the perK+ortho configuration on TinyStories, and noticeably smaller for tau-only.
 
 2. **Stability dividend (spikes down).** The reverse channel is the **sole non-conservative force** in the token sector (§10.7) and was the dominant gradient-spike source flagged by the per-group spike debugger on OpenWebText (the `override:reverse_ch` group). Disabling it is therefore predicted to remove the watchdog-triggering spikes and let the run proceed with a looser global clip. The ablation thus measures benefit and instability cost **simultaneously and on the same axis**.
 
-3. **Geometric reversion (diagnostic).** With $D \to 0$ the effective coupling becomes reciprocal, so the shared-potential $R^2$ separator (§10.3) should swing from the attention quadrant back toward the conservative quadrant — a mechanistic confirmation that the separator tracks the reverse channel specifically, not the Fock machinery as a whole.
+3. **Geometric reversion (diagnostic).** With the read port cut, the token update is the causal conservative core alone, so the shared-potential $R^2$ separator (§10.3) should swing from the attention quadrant back toward the conservative quadrant — a mechanistic confirmation that the separator tracks the reverse channel specifically, not the Fock machinery as a whole.
 
 The decision rule is then explicit: **retain the reverse channel iff its NTP benefit exceeds the optimisation budget (tighter per-group clipping, watchdog reloads) it costs.** On TinyStories, where training is stable, the channel is essentially free upside and should stay on. On OpenWebText, where it dominates the spikes, the ablation tells us whether the directed routing is worth the stability tax or whether a *gated* reverse channel (a near-zero-initialised scalar with a slow warm-up, §18.3) captures most of the benefit at a fraction of the instability — the recommended follow-up. The OpenWebText realisation of this ablation is registered as experiment **E5** in `Fock-PARFLM_vs_GPT-2_on_OpenWebText_Next_Steps.md`.
 
@@ -675,7 +741,7 @@ python train_fock_parf_v2.py \
   --steps 16000 --seed 0
 ```
 
-**Success criterion:** Any improvement below 26.4 PPL with pure FockPARFLM v2 (no hybrid attention). A result of ~20 PPL would be highly significant; ~15 PPL would indicate the mechanism genuinely captures most of attention's directed-routing expressivity.
+**Success criterion:** Any improvement below 26.4 PPL with pure FockPARFLM v2 (no hybrid attention). A result of ≈20 PPL would be highly significant; ≈15 PPL would indicate the mechanism genuinely captures most of attention's directed-routing expressivity.
 
 ---
 
@@ -796,7 +862,7 @@ Replace the fixed $1/\sqrt{d_k}$ with a **learnable temperature** $\tau$ paramet
 
 $$\alpha_{kj} = \mathrm{softmax}_j\left(\frac{q_k \cdot k_j}{\tau}\right), \qquad \tau = \exp(\theta_\tau), \qquad \theta_\tau \in \mathbb{R}$$
 
-where $\theta_\tau$ is a learnable scalar initialised to $\ln(\tau_0)$. The log-space parameterisation ensures $\tau > 0$ without explicit clamping and provides a natural multiplicative learning dynamic: equal gradient steps produce equal proportional changes in $\tau$.
+where $\theta_\tau$ is a learnable scalar initialised to $\ln(\tau_0)$. The log-space parameterisation ensures $\tau \gt 0$ without explicit clamping and provides a natural multiplicative learning dynamic: equal gradient steps produce equal proportional changes in $\tau$.
 
 **Initialisation:** $\tau_0 = 0.1$ (i.e. $\theta_\tau = \ln 0.1 \approx -2.3$).
 
@@ -877,7 +943,7 @@ The D6 arm of the TinyStories debug notebook tests this fix directly:
 | **D6** | **FockPARF v2, M=16, $\tau_0 = 0.1$ (learnable)** | **Tests B1 fix** |
 
 **Predictions:**
-- Attention entropy at layer 1 should drop from 0.996 (D1) to $< 0.95$ (D6)
+- Attention entropy at layer 1 should drop from 0.996 (D1) to below 0.95 (D6)
 - If $\tau$ learns to decrease further, entropy could reach 0.5–0.7 range ($n_\text{eff} \sim 20\text{–}100$)
 - PPL should improve beyond D1's 52.6, potentially approaching D3's 49.9 without the extra projection parameters
 - If $\tau$ grows (model prefers uniform attention), the fix has no effect — ruling out B1 as the binding bottleneck
@@ -1058,7 +1124,7 @@ The field-theoretic proof sharpens the architectural roadmap for the Semantic Si
 
 2. **Fock registers are the interaction vertices.** Each register with Q/K/V gates acts as an interaction vertex that generates non-Gaussian connected correlations. The register's creation corresponds to emitting a virtual quantum; its annihilation (or readback via the reverse channel) corresponds to absorbing it.
 
-3. **The register pool must be rich enough.** The $1/N_h$ scaling result means that the register pool size $M$ must grow with the complexity of the target interaction structure. For simple formal languages (Dyck$_2$), 16 registers suffice. For natural language, $M$ must scale with the effective number of independent interaction channels.
+3. **The register pool must be rich enough.** The $1/N_h$ scaling result means that the register pool size $M$ must grow with the complexity of the target interaction structure. For simple formal languages ($\mathrm{Dyck}\_2$), 16 registers suffice. For natural language, $M$ must scale with the effective number of independent interaction channels.
 
 4. **The free/interacting boundary is the expressivity wall.** No amount of scaling the conservative potential (larger $d_V$, deeper MLP, richer pair potential) can cross from free to interacting statistics. The wall is topological in nature — it requires a qualitative change (adding interaction vertices = Fock registers), not a quantitative one (larger parameters).
 
@@ -1151,7 +1217,7 @@ $$k_j^{(k)} = W_K^{(k)} h_j, \qquad \alpha_{kj} = \mathrm{softmax}_j\left(\frac{
 
 Each register $k$ has its own $W_K^{(k)} \in \mathbb{R}^{d \times d_k}$, ensuring it attends in a different subspace of the token representations. This is structurally identical to multi-head attention's per-head Q/K projections.
 
-**Parameter cost.** At $M = 16$, $d = 256$, $d_k = 64$: the per-register keys add $M \cdot d \cdot d_k = 16 \times 256 \times 64 \approx 262$K parameters, comparable to the existing per-register $W_Q$ cost. For value projections, the choice depends on whether per-register values are needed. The QFT analysis says the **key** subspace is what must differ (it determines the coupling), while the value projection (the content transferred) can remain shared. This parallels multi-head attention, where the key and query projections are per-head but the value projection is often shared via concatenation.
+**Parameter cost.** At $M = 16$, $d = 256$, $d_k = 64$: the per-register keys add $M \cdot d \cdot d_k = 16 \times 256 \times 64 \approx 2.6 \times 10^5$ parameters, comparable to the existing per-register $W_Q$ cost. For value projections, the choice depends on whether per-register values are needed. The QFT analysis says the **key** subspace is what must differ (it determines the coupling), while the value projection (the content transferred) can remain shared. This parallels multi-head attention, where the key and query projections are per-head but the value projection is often shared via concatenation.
 
 **Implementation:**
 
@@ -1171,7 +1237,7 @@ for k in range(self.M):
 
 ### 16.4 Improvement 3: Orthogonal Query Initialization — Maximally Spread Probes
 
-**QFT motivation.** The independence-breaking term $\mathrm{Cov}_{W^Q, W^K}(X_{ab}, X_{cd})$ is nonzero precisely because different output coordinates are coupled through the shared attention map. For Fock registers to produce maximally diverse interaction modes, their query projections should probe **orthogonal semantic subspaces** from the first forward pass.
+**QFT motivation.** The independence-breaking term $\mathrm{Cov}\_{W^Q, W^K}(X_{ab}, X_{cd})$ is nonzero precisely because different output coordinates are coupled through the shared attention map. For Fock registers to produce maximally diverse interaction modes, their query projections should probe **orthogonal semantic subspaces** from the first forward pass.
 
 Currently, $W_Q \in \mathbb{R}^{M \times d \times d_k}$ is initialized with isotropic Gaussian noise at std $= 0.02$. All $M$ query directions are nearly aligned at initialization (all near zero with random small perturbations). During early training, all registers probe approximately the same direction, compounding the entropy collapse: even with a learnable temperature, the registers all attend to the same tokens.
 
@@ -1328,7 +1394,7 @@ The P10 ladder established the PARFLM architectural ceiling on TinyStories:
 | P10h | PARFLM (same) | 16,000 | 20M | 26.43 |
 | S2 (v2) | FockPARF v1 (d=256, L=8, M=32) | 16,000 | 5M+ | 27.85 |
 
-The Q6 result (53.47 PPL at 2000 steps / 1M tokens) is a small-budget proof-of-concept. At the same short budget, PARFLM (Q8) achieves 56.43 --- so Q6 already holds a 5.2% advantage. Power-law extrapolation of Q6's learning curve (scaling exponent $\alpha \approx 0.33$) suggests PPL $\sim$24--26 at 8000 steps with 5M tokens, which would be at or slightly below the P10g/h PARFLM ceiling. Whether Q6 can definitively break through the 26.4 PPL wall remains to be tested.
+The Q6 result (53.47 PPL at 2000 steps / 1M tokens) is a small-budget proof-of-concept. At the same short budget, PARFLM (Q8) achieves 56.43 --- so Q6 already holds a 5.2% advantage. Power-law extrapolation of Q6's learning curve (scaling exponent $\alpha \approx 0.33$) suggests PPL ≈ 24–26 at 8000 steps with 5M tokens, which would be at or slightly below the P10g/h PARFLM ceiling. Whether Q6 can definitively break through the 26.4 PPL wall remains to be tested.
 
 ### 17.5 Current Bottleneck: The Temperature-Register Coordination Problem
 
@@ -1346,7 +1412,7 @@ Based on the QFT v2.1 results, the following improvements are the highest-priori
 
 1. **Per-register temperature.** Replace the single global $\tau = \exp(\theta_\tau)$ with per-register temperatures $\tau_k = \exp(\theta_{\tau,k})$ for $k = 1, \ldots, M$. This adds $M$ scalar parameters (16 at current scale) and allows each register to discover its own optimal attention sharpness. Hypothesis: this is necessary for M=32 to work and may further improve M=16.
 
-2. **Temperature annealing schedule.** Initialize at a warm temperature ($\tau_0 = 1.0$) for exploration, then anneal toward a lower temperature ($\tau_{\min} = 0.1$--$0.3$) over training. This is analogous to simulated annealing and provides a more principled initialization trajectory than a fixed learnable scalar.
+2. **Temperature annealing schedule.** Initialize at a warm temperature ($\tau_0 = 1.0$) for exploration, then anneal toward a lower temperature ($\tau_{\min} \in [0.1, 0.3]$) over training. This is analogous to simulated annealing and provides a more principled initialization trajectory than a fixed learnable scalar.
 
 3. **Full-scale Q6 validation.** Run Q6 at the P10g budget (8000 steps, 5M tokens) to determine whether it breaks the 26.4 PPL ceiling. This is the critical experiment: if Q6 at full budget achieves PPL $\lt$ 26.4, it confirms that the QFT-motivated Fock mechanism provides expressivity beyond the conservative PARFLM ceiling.
 
@@ -1558,7 +1624,7 @@ The register diversity/entropy eval pass (§18.5) has been completed, and the Fo
 | Single-ξ PARFLM ceiling (P10h) | 26.4 | 16k | O(1) | — | |
 | Fock v2 registers (K=4, M=16) | 12.69 | 8k | O(1) | ~17.2M (+578K Fock) | causal-fixed |
 | Multi-ξ K=4 conservative base | 12.47 | 8k | O(1) | ~16.6M | |
-| Conservative K=8 no registers | ~12.06 | 8k | O(1) | ~16.6M | |
+| Conservative K=8 no registers | ≈12.06 | 8k | O(1) | ≈16.6M | |
 | Fock Attention K=8 4-head | 11.65 | 8k | O(T²) | 17.8M (+131K exchange) | |
 | Fock Attention K=4 1-head | 11.48 | 8k | O(T²) | 16.6M (+66K exchange) | |
 | **Fock v2 registers (K=4, M=16)** | **11.37** | **16k** | **O(1)** | **~17.2M (+578K Fock)** | **causal-fixed** |
@@ -1628,8 +1694,8 @@ An eval pass was run on the converged Fock v2 Multi-Xi checkpoint (12.00 PPL, K=
 
 | Regime | Diversity | Entropy | Source |
 |--------|-----------|---------|--------|
-| Genuine routing (Q6 result) | ~0.785 | ~0.304 | §17.2 |
-| Inert mean-pool (Q0 baseline) | ~0.145 | ~1.0 | §17.2 |
+| Genuine routing (Q6 result) | ≈0.785 | ≈0.304 | §17.2 |
+| Inert mean-pool (Q0 baseline) | ≈0.145 | ≈1.0 | §17.2 |
 | **This checkpoint** | **0.371** | **0.040** | eval pass |
 
 **Verdict: MIXED — temperature collapse, not mean-pooling.**
@@ -1925,9 +1991,9 @@ This section gives a geometric and information-theoretic account of that content
 
 ### 20.1 Formalising collapse: the register Gram matrix and effective rank
 
-Let the active register content at a given layer be the rows of $R \in \mathbb{R}^{M \times d}$, and let $\hat r_k = r_k / \lVert r_k \rVert$ be the unit-normalised rows. The register Gram matrix and the diagnostic scalar are
+Let the active register content at a given layer be the rows of $R \in \mathbb{R}^{M \times d}$, and let $\hat{r}\_k = r_k / \lVert r_k \rVert$ be the unit-normalised rows. The register Gram matrix and the diagnostic scalar are
 
-$$G = \hat R \hat R^\top, \qquad G_{kl} = \frac{r_k \cdot r_l}{\lVert r_k \rVert \lVert r_l \rVert}, \qquad \texttt{reg-cos-sim} = \frac{1}{M(M-1)} \sum_{k \ne l} G_{kl}.$$
+$$G = \hat{R} \hat{R}^\top, \qquad G_{kl} = \frac{r_k \cdot r_l}{\lVert r_k \rVert \lVert r_l \rVert}, \qquad \texttt{reg-cos-sim} = \frac{1}{M(M-1)} \sum_{k \ne l} G_{kl}.$$
 
 The right measure of "how many registers are we actually using" is the **participation ratio** of the Gram spectrum,
 
@@ -1963,7 +2029,7 @@ This is Panel (C): the reducible loss the registers *could* deliver grows with $
 
 Why does the bank collapse at all, and why is a good initialisation not enough on its own? Because the collapsed configuration is a **dynamically invariant, early-attracting manifold** of the NTP gradient flow when the creation machinery is permutation-symmetric across registers.
 
-Consider the "diagonal" manifold $D = \lbrace R : r_1 = \dots = r_M \rbrace$. With a **shared** key/value projection, the creation content of register $k$ is $c_k = \sum_j \mathrm{softmax}_j(q_k \cdot W_K h_j / \tau) v_j$ with $q_k = W_Q^{(k)} r_k$. If $r_k = r$ for all $k$ and the query map is also symmetric, then $q_k = q$, hence $c_k = c$ is identical across registers. The loss depends on the registers symmetrically, so the gradient is the **same** vector $g$ for every register:
+Consider the "diagonal" manifold $D = \lbrace R : r_1 = \dots = r_M \rbrace$. With a **shared** key/value projection, the creation content of register $k$ is $c_k = \sum_j \mathrm{softmax}\_j(q_k \cdot W_K h_j / \tau) v_j$ with $q_k = W_Q^{(k)} r_k$. If $r_k = r$ for all $k$ and the query map is also symmetric, then $q_k = q$, hence $c_k = c$ is identical across registers. The loss depends on the registers symmetrically, so the gradient is the **same** vector $g$ for every register:
 
 $$\left.\frac{\partial \mathcal{L}_{\mathrm{NTP}}}{\partial r_k}\right|_{R \in D} = g \quad \text{for all } k \quad\Rightarrow\quad \text{a gradient step keeps } R \in D.$$
 
@@ -1987,13 +2053,13 @@ The third lever adds an explicit penalty that makes register similarity **costly
 
 **Form 1 — Gram / orthogonality penalty.** Penalise the squared off-diagonal similarity directly (this is exactly the quantity the probe measures):
 
-$$\mathcal{L}_{\mathrm{rep}} = \frac{1}{M(M-1)} \sum_{k \ne l} (\hat r_k \cdot \hat r_l)^2 = \frac{\lVert G \rVert_F^2 - M}{M(M-1)}.$$
+$$\mathcal{L}_{\mathrm{rep}} = \frac{1}{M(M-1)} \sum_{k \ne l} (\hat{r}_k \cdot \hat{r}_l)^2 = \frac{\lVert G \rVert_F^2 - M}{M(M-1)}.$$
 
 Its gradient on register $k$ is a pure **rotation away from its neighbours** (the normalisation removes any radial part):
 
-$$\frac{\partial \mathcal{L}_{\mathrm{rep}}}{\partial r_k} = \frac{4}{M(M-1)\lVert r_k \rVert} \sum_{l \ne k} s_{kl}\left(\hat r_l - s_{kl} \hat r_k\right), \qquad s_{kl} = \hat r_k \cdot \hat r_l,$$
+$$\frac{\partial \mathcal{L}_{\mathrm{rep}}}{\partial r_k} = \frac{4}{M(M-1)\lVert r_k \rVert} \sum_{l \ne k} s_{kl}\left(\hat{r}_l - s_{kl} \hat{r}_k\right), \qquad s_{kl} = \hat{r}_k \cdot \hat{r}_l,$$
 
-where $\hat r_l - s_{kl}\hat r_k$ is the component of $\hat r_l$ orthogonal to $\hat r_k$. The force vanishes if and only if every $s_{kl} = 0$, so (for $M \leq d$) the unique minimiser is a mutually orthogonal bank, $N_{\mathrm{eff}} = M$.
+where $\hat{r}\_l - s_{kl}\hat{r}\_k$ is the component of $\hat{r}\_l$ orthogonal to $\hat{r}\_k$. The force vanishes if and only if every $s_{kl} = 0$, so (for $M \leq d$) the unique minimiser is a mutually orthogonal bank, $N_{\text{eff}} = M$.
 
 **Form 2 — Coulomb potential (physics-native).** Because the surrounding model is a conservative particle system, the natural form is a genuine repulsive pairwise potential — registers as like charges:
 
@@ -2114,7 +2180,7 @@ where $s$ is a **single learned scalar** shared across all layers. The NTP loss 
 
 $$\frac{\partial \mathcal{L}}{\partial s} = \sum_{\ell=0}^{L-1} \sum_{i=1}^{T} \frac{\partial \mathcal{L}}{\partial h_i^{(\ell)}} \cdot \frac{\Delta t^2}{m_i} w(t) \mathrm{sech}^2(s) \hat{Q}_i^{(\ell)}$$
 
-This is a sum of $L \times T$ terms. Since the per-layer force directions $\hat{Q}_i^{(\ell)}$ are in general **not orthogonal** across layers (the same register bank is read by every layer), the contributions can reinforce constructively. In the worst case, the variance scales as:
+This is a sum of $L \times T$ terms. Since the per-layer force directions $\hat{Q}\_i^{(\ell)}$ are in general **not orthogonal** across layers (the same register bank is read by every layer), the contributions can reinforce constructively. In the worst case, the variance scales as:
 
 $$\mathrm{Var}\left(\frac{\partial \mathcal{L}}{\partial s}\right) \propto L^2 \sigma_Q^2$$
 
@@ -2285,7 +2351,7 @@ $$h_i^{(\ell)} \leftarrow h_i^{(\ell)} + \frac{\Delta t^2}{m_i} \tanh(s_\ell) w(
 
 7. **Destruction** — register salience decays.
 
-The critical invariant is that **stage 5 (repulsion) precedes stage 6 (reverse channel)**. During `backward()`, the NTP loss gradient at stage 6 flows through $\hat{Q}_i^{(\ell)}$ into the register states $r_k^{(\ell)}$ used to compute the force, and the repulsion gradient at stage 5 also flows into the same $r_k^{(\ell)}$. Both gradients are computed on the same graph, so their contributions **add** on the shared parameters (creation gate projections, register embed, V_theta/V_phi). There is no conflict or double-counting: the NTP gradient says where the registers should be to predict the next token; the repulsion gradient says how spread-out they should be.
+The critical invariant is that **stage 5 (repulsion) precedes stage 6 (reverse channel)**. During `backward()`, the NTP loss gradient at stage 6 flows through $\hat{Q}\_i^{(\ell)}$ into the register states $r_k^{(\ell)}$ used to compute the force, and the repulsion gradient at stage 5 also flows into the same $r_k^{(\ell)}$. Both gradients are computed on the same graph, so their contributions **add** on the shared parameters (creation gate projections, register embed, V_theta/V_phi). There is no conflict or double-counting: the NTP gradient says where the registers should be to predict the next token; the repulsion gradient says how spread-out they should be.
 
 ### 21.13 Gradient decomposition on the register states
 
@@ -2309,7 +2375,7 @@ The per-layer gate gradient is (from §21.3):
 
 $$\frac{\partial \mathcal{L}}{\partial s_\ell} = \sum_{i=1}^{T} \frac{\partial \mathcal{L}}{\partial h_i^{(\ell)}} \cdot \frac{\Delta t^2}{m_i} w(t) \mathrm{sech}^2(s_\ell) \hat{Q}_i^{(\ell)}$$
 
-The force $\hat{Q}_i^{(\ell)}$ depends on the register content through the reverse-channel attention:
+The force $\hat{Q}\_i^{(\ell)}$ depends on the register content through the reverse-channel attention:
 
 $$\hat{Q}_i^{(\ell)} = \mathrm{RMSnorm}\left(\sum_k \alpha_{ik}^{(\ell)} v_k^{(\ell)}\right), \qquad \alpha_{ik}^{(\ell)} = \mathrm{softmax}_k\left(\tau \frac{q_i}{\lVert q_i \rVert} \cdot \frac{k_k}{\lVert k_k \rVert}\right)$$
 
@@ -2317,14 +2383,14 @@ When registers are collapsed ($\rho \approx 1$), all keys $k_k / \lVert k_k \rVe
 
 - The attention weights $\alpha_{ik}$ become near-uniform: $\alpha_{ik} \approx 1/M$ for all $k$.
 - The value sum $\sum_k \alpha_{ik} v_k \approx \bar{v}$ (the mean value) regardless of the query $q_i$.
-- The force $\hat{Q}_i$ is nearly **token-independent**: every token receives the same push.
+- The force $\hat{Q}\_i$ is nearly **token-independent**: every token receives the same push.
 
 A token-independent force carries almost no information about which tokens should be pushed where. The gate gradient $\partial \mathcal{L} / \partial s_\ell$ therefore has **low signal-to-noise ratio**: the useful signal (which tokens benefit from the force) is drowned in the noise of applying the same force everywhere.
 
 With repulsion maintaining $\rho \ll 1$ and $N_{\mathrm{eff}} \gg 1$:
 
 - The keys $k_k / \lVert k_k \rVert$ span multiple directions, so the attention $\alpha_{ik}$ is **query-selective**: different tokens attend to different registers.
-- The force $\hat{Q}_i$ varies meaningfully across tokens: it carries information about the specific register content relevant to each token position.
+- The force $\hat{Q}\_i$ varies meaningfully across tokens: it carries information about the specific register content relevant to each token position.
 - The gate gradient $\partial \mathcal{L} / \partial s_\ell$ is a sum of **informative, non-degenerate** terms, so AdamW's second-moment estimate converges faster and the learned $\tanh(s_\ell)$ reflects the true optimal coupling at layer $\ell$.
 
 In information-theoretic terms, the mutual information between the force and the token identity satisfies:

@@ -1,21 +1,18 @@
 """
-Generate the illustrative figure for the reverse-channel benefit analysis in
-Improving_the_Fock_Mechanism_to_match_Attention.md (section 10.8-10.11).
+Generate Figure 10.2 of Improving_the_Fock_Mechanism_to_match_Attention.md (section 10.9).
 
-reverse_channel_benefit.png -- three panels:
-  (A) Without the reverse channel: the effective token-token coupling that
-      survives integrating out the registers is SYMMETRIC (A = A^T). Only
-      undirected associations are representable.
-  (B) With the reverse channel: A_ij ~ sum_k beta_ik alpha_kj is ASYMMETRIC.
-      A directed "induction / copy" band appears in the upper part that the
-      symmetric model cannot represent. This directed component is exactly
-      what next-token prediction needs (copy the token that followed a prior
-      occurrence of the current token).
-  (C) Empirical anchor: across the two causal-fixed v2.1 runs the better
-      model invests a far larger reverse-channel scale. |s*|^2 is the
-      curvature-relevant reliance measure; the better model uses ~16x more.
-
-All data in panel (C) are real numbers pulled from the v2.1 training logs.
+reverse_channel_benefit.png -- three panels (redrawn 2026-10-16; the first version showed the
+coupling without the channel as symmetric, which a causal model cannot have):
+  (A) Without the reverse channel the tokens feel only V_phi: a causal (strictly lower-triangular),
+      sparse coupling, already directed by the mask, whose transferred content is locked to its
+      strength (the gradient of a pair potential). The registers are written but never read.
+  (B) With the reverse channel: A_ij = sum_k beta_ik alpha_kj through M registers -- causal (the bank
+      read at position i is built from tokens <= i), rank <= M, content-routed with a decoupled value.
+      A planted copy: one register stores what followed the first occurrence of a token; a later
+      occurrence reads it.
+  (C) Empirical anchor: across the two causal-fixed v2.1 runs the better model invests a far larger
+      reverse-channel scale (real numbers from the training logs; pending re-certification, see the
+      note's banner).
 """
 import numpy as np
 import matplotlib
@@ -38,35 +35,28 @@ rng = np.random.default_rng(7)
 T = 14  # toy sequence length for the coupling heatmaps
 
 
-def symmetric_coupling(n):
-    """Undirected, reciprocal coupling: A = A^T (visibly mirror-symmetric)."""
-    base = rng.gamma(1.4, 0.5, size=(n, n))
-    sym = 0.5 * (base + base.T)
-    # local-decay envelope so it reads as a sensible interaction kernel
-    idx = np.arange(n)
-    dist = np.abs(idx[:, None] - idx[None, :])
-    env = np.exp(-dist / 3.5)
-    A = sym * env
-    np.fill_diagonal(A, A.max() * 0.9)
+def vphi_coupling(n, k=3):
+    """V_phi alone: each token is pulled by up to k earlier tokens (strictly j < i), sparse, directed."""
+    A = np.zeros((n, n))
+    for i in range(1, n):
+        js = np.arange(i)
+        w = rng.gamma(1.5, 0.5, size=i) * np.exp(-(i - js) / 4.0)
+        top = js[np.argsort(w)[-k:]]
+        A[i, top] = w[np.isin(js, top)]
     return A / A.max()
 
 
-def asymmetric_coupling(n):
-    """Directed coupling: symmetric part + a directed induction/copy band that
-    lives only below the diagonal (token i reads from earlier token j<i),
-    making A != A^T visibly obvious."""
-    A = symmetric_coupling(n) * 0.45
-    # directed induction band: token i reads strongly from i-2 / i-1 (copy what
-    # followed a previous occurrence) -- a one-sided, non-reciprocal stripe
+def register_coupling(n, M=4):
+    """A_ij = sum_k beta_ik alpha^(i)_kj: the bank read at i is written from tokens j <= i."""
+    S = rng.normal(0, 1.0, size=(M, n))          # write scores of register k for token j
+    S[0, 4] = 6.0                                 # register 0 stores the token after the first "x" (j = 4)
+    Bl = rng.normal(0, 1.0, size=(n, M))         # read scores of token i for register k
+    Bl[10, 0] = 6.0                               # the second "x" (i = 10) reads register 0
+    A = np.zeros((n, n))
     for i in range(n):
-        if i - 2 >= 0:
-            A[i, i - 2] += 0.9
-        if i - 1 >= 0:
-            A[i, i - 1] += 0.4
-    # sparse long-range directed links (induction-head style), strictly i>j
-    A[11, 3] += 0.85
-    A[9, 2] += 0.7
-    A[12, 6] += 0.6
+        al = np.exp(S[:, :i + 1]); al /= al.sum(1, keepdims=True)   # prefix softmax over j <= i
+        be = np.exp(Bl[i]); be /= be.sum()
+        A[i, :i + 1] = be @ al
     return A / A.max()
 
 
@@ -75,42 +65,40 @@ def main():
     gs = GridSpec(1, 4, width_ratios=[1.0, 1.0, 0.05, 1.18], wspace=0.45,
                   left=0.05, right=0.985, top=0.78, bottom=0.14)
 
-    A_sym = symmetric_coupling(T)
-    A_asym = asymmetric_coupling(T)
+    A_v = vphi_coupling(T)
+    A_r = register_coupling(T)
 
     cmap = "magma"
 
-    # ---- Panel A: symmetric (no reverse channel) ----
+    # ---- Panel A: V_phi only (no reverse channel) ----
     axA = fig.add_subplot(gs[0, 0])
     axA.set_facecolor(BG)
-    im = axA.imshow(A_sym, cmap=cmap, vmin=0, vmax=1, aspect="equal")
-    axA.set_title("(A)  No reverse channel\neffective coupling is symmetric  "
-                  r"$A=A^{\mathsf{T}}$",
+    im = axA.imshow(A_v, cmap=cmap, vmin=0, vmax=1, aspect="equal")
+    axA.set_title("(A)  No reverse channel: tokens feel only\n"
+                  r"$V_\phi$ (causal, already directed)",
                   fontsize=11.5, color=BLUE_DARK, fontweight="bold", pad=8)
     axA.set_xlabel("source token  j", fontsize=10)
     axA.set_ylabel("target token  i", fontsize=10)
-    axA.text(0.5, -0.27, "only undirected associations\n(reciprocity preserved)",
-             transform=axA.transAxes, ha="center", va="top",
-             fontsize=9.5, color=GREY)
+    axA.text(0.5, -0.24, "content locked to the coupling strength;\n"
+                         "registers written but never read",
+             transform=axA.transAxes, ha="center", va="top", fontsize=9.5, color=GREY)
 
-    # ---- Panel B: asymmetric (with reverse channel) ----
+    # ---- Panel B: the register path (with reverse channel) ----
     axB = fig.add_subplot(gs[0, 1])
     axB.set_facecolor(BG)
-    axB.imshow(A_asym, cmap=cmap, vmin=0, vmax=1, aspect="equal")
-    axB.set_title("(B)  With reverse channel\n"
-                  r"$A_{ij}\sim\sum_k \beta_{ik}\,\alpha_{kj}$  is asymmetric",
+    axB.imshow(A_r, cmap=cmap, vmin=0, vmax=1, aspect="equal")
+    axB.set_title("(B)  With reverse channel: through M registers\n"
+                  r"$A_{ij}=\sum_k \beta_{ik}\,\alpha_{kj}$  (rank $\leq M$)",
                   fontsize=11.5, color=TEAL_DARK, fontweight="bold", pad=8)
     axB.set_xlabel("source token  j", fontsize=10)
     axB.set_ylabel("target token  i", fontsize=10)
-    # highlight the directed induction band
-    axB.annotate("directed\ninduction /\ncopy band",
-                 xy=(9.0, 11.0), xytext=(2.2, 12.6),
-                 fontsize=9.0, color=RED, fontweight="bold", ha="left",
-                 arrowprops=dict(arrowstyle="->", color=RED, lw=1.6))
-    axB.text(0.5, -0.27, "directed routing -> copy / induction\n"
-                         "(impossible for any symmetric A)",
-             transform=axB.transAxes, ha="center", va="top",
-             fontsize=9.5, color=GREY)
+    axB.annotate("copy via a register:\n2nd \"x\" (i = 10) reads what\nfollowed the 1st (j = 4)",
+                 xy=(4.0, 10.0), xytext=(5.6, 1.6),
+                 fontsize=8.6, color="white", fontweight="bold", ha="left",
+                 arrowprops=dict(arrowstyle="->", color="white", lw=1.6))
+    axB.text(0.5, -0.24, "register content reaches the tokens; value\n"
+                         "decoupled from key; softmax over registers",
+             transform=axB.transAxes, ha="center", va="top", fontsize=9.5, color=GREY)
 
     # shared colourbar in its own slim gridspec column
     cax = fig.add_subplot(gs[0, 2])
@@ -159,19 +147,19 @@ def main():
     axC.set_title("(C)  The model invests more in the reverse\n"
                   f"channel when it helps more  (~{ratio:.0f}x reliance)",
                   fontsize=11.5, color=PURPLE, fontweight="bold", pad=8)
-    axC.set_xlabel(r"reverse-channel reliance  $|s^{*}|^{2}$", fontsize=10)
+    axC.set_xlabel(r"reverse-channel reliance  $|s^{*}|^{2}$" + "\n(PPLs pending re-certification)", fontsize=10)
     axC.set_ylabel("TinyStories val PPL  (lower is better)", fontsize=10)
     axC.grid(True, alpha=0.3, linestyle=":")
     axC.invert_yaxis()
     for spine in ["top", "right"]:
         axC.spines[spine].set_visible(False)
 
-    fig.suptitle("What the reverse channel buys: directed routing the conservative "
-                 "core cannot represent",
+    fig.suptitle("What the reverse channel buys: a read port that brings register content, "
+                 "routed by content, into the tokens",
                  fontsize=13.5, fontweight="bold", color="#212121", y=0.965)
 
     out = "reverse_channel_benefit.png"
-    fig.savefig(out, dpi=150, facecolor=BG)
+    fig.savefig(out, dpi=150, facecolor=BG, bbox_inches="tight")
     print("wrote", out)
 
 
