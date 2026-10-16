@@ -327,7 +327,7 @@ The reader is assumed to know linear algebra and basic statistical mechanics, an
 | PMX | pair potential, Poisson wells (integrated exactly), context field | 2 |
 | L = 4 | pair potential, Fock registers, context field | 4 |
 | G3 | pair potential, Fock registers, exchange field, context field | 2 |
-| G3′ | as G3, hardened (normalised queries and keys, clipped field) | 2 |
+| G3′ | as G3, hardened (normalised queries and keys; the field's parameters in their own gradient-clipping group) | 2 |
 
 - **Coupling.** Any term in a token's equation of motion through which another token's state acts on it: a term whose contribution to token i's force would change if the other tokens moved while token i stayed put (defined at first use in the Background). The six models measured first have four, each a separate term that can be switched off on its own; the two exchange-field models add a fifth, a conservative attention-shaped potential:
   - the **pair potential** V_φ: token i picks up to 16 earlier tokens and is attracted to or repelled from each;
