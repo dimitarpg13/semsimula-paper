@@ -4,7 +4,7 @@ SY1 and SY2, state level: does each coupling synchronize tokens, and along
 linguistic structure? (protocol §5.22; design note §3-4; instruments from
 sy_instruments.py as admitted by SY0 run 3).
 
-    python3 sy_measure.py ARM [n_seq=200]      ARM in F3.1 SR2 G2 PM1 PMX L4F (the L = 4 Fock arm, live V_phi and xi)
+    python3 sy_measure.py ARM [n_seq=200]      ARM in F3.1 SR2 G2 PM1 PMX L4F G3 G3p
 
 For every layer step of the trained model, on the 200 SY evaluation sequences
 (sy_cache/sy_tokens.npz) and their annotation (sy_cache/sy_annotation.npz),
@@ -72,6 +72,15 @@ ARMS = {   # name: (folder, Cell 0 replacements, couplings)
     'PMX': (_T + 'pm64_pmx16_sr2' + _E, F31 + P.PM_ON + SR2 + PMXS, ['vphi', 'wells']),
     'L4F': (P._P + 'vplive_xilive_L4probe' + P._S.replace('idt4_', 'idt2_') + 'noattn',
             P.CONFIGS['G2'][1] + (("LADDER_L         = 2 ", "LADDER_L         = 4 "),), ['vphi', 'fock']),
+    # the exchange-field arms of Gen 3 (added 2026-10-15)
+    'G3': (P._P + 'rglive_vplive_xilive_L2probe' + P._S + 'attnpot',
+           P.LIVE + (("LADDER_MECHANISM = 'none'", "LADDER_MECHANISM = 'attention_potential'"),
+                     ("RELAX_GRAD_PATH        = 'default'", "RELAX_GRAD_PATH        = 'live'")), ['vphi', 'fock', 'exch']),
+    'G3p': (P._P + 'rglive_vplive_xilive_rfqk_rfclip0p3_L2probe' + P._S + 'attnpot',
+            P.LIVE + (("LADDER_MECHANISM = 'none'", "LADDER_MECHANISM = 'attention_potential'"),
+                      ("RELAX_GRAD_PATH        = 'default'", "RELAX_GRAD_PATH        = 'live'"),
+                      ("RELAX_ATTN_QK_NORM          = False", "RELAX_ATTN_QK_NORM          = True"),
+                      ("RELAX_FIELD_CLIP            = None", "RELAX_FIELD_CLIP            = 0.3")), ['vphi', 'fock', 'exch']),
 }
 GROUPINGS = ('coref', 'dep', 'chunk', 'ent', 'pos', 'repeat')
 AGREE_TOL = S.FLOOR / 4
@@ -87,6 +96,7 @@ model.to('cpu'); model.eval()
 L = model.cfg.L
 assert ('fock' in COUPLINGS) == (model.reverse_ch is not None), ARM
 assert ('wells' in COUPLINGS) == (getattr(model, 'pm_mu', None) is not None), ARM
+assert ('exch' in COUPLINGS) == (getattr(model, 'relax_field', None) is not None), ARM
 PMX_WELLS = bool(getattr(model.cfg, 'poisson_wells_exact', False))
 FORCE_COMMON = {c for c in COUPLINGS if not (c == 'wells' and PMX_WELLS)}
 
@@ -118,6 +128,9 @@ class Patch:
             elif c == 'fock':
                 self.saved['f'] = model.reverse_channel_scale.detach().clone()
                 with torch.no_grad(): model.reverse_channel_scale.zero_()
+            elif c == 'exch':
+                self.saved['x'] = model.relax_lambda.detach().clone()
+                with torch.no_grad(): model.relax_lambda.zero_()
         elif k == 'fcom':
             if c == 'vphi':
                 def lf(h_in, xis, layer_idx, *, split=False, vtheta_comps=None):
@@ -137,6 +150,10 @@ class Patch:
                 self.saved['rc_fwd'] = rc.forward
                 orig_fwd = rc.forward
                 rc.forward = lambda *a, **kw: _tokmean(orig_fwd(*a, **kw))
+            elif c == 'exch':
+                rf = model.relax_field; fl0 = rf.force_live
+                self.saved['rf'] = True
+                rf.force_live = lambda *a, **kw: _tokmean(fl0(*a, **kw))
         return self
     def __exit__(self, *exc):
         for name in ('_pair_potential', '_layer_forces', 'poisson_mode_force'):
@@ -144,8 +161,11 @@ class Patch:
         with torch.no_grad():
             if 'w' in self.saved: model.pm_depth.copy_(self.saved['w'])
             if 'f' in self.saved: model.reverse_channel_scale.copy_(self.saved['f'])
+            if 'x' in self.saved: model.relax_lambda.copy_(self.saved['x'])
         if 'rc_fwd' in self.saved:
             del model.reverse_ch.__dict__['forward']
+        if 'rf' in self.saved:
+            del model.relax_field.__dict__['force_live']
         return False
 
 

@@ -61,6 +61,14 @@ ARMS = {
     'PM1': (_T + 'pm64' + _E, F31 + P.PM_ON), 'PMX': (_T + 'pm64_pmx16_sr2' + _E, F31 + P.PM_ON + SR2 + PMXS),
     'L4F': (P._P + 'vplive_xilive_L4probe' + P._S.replace('idt4_', 'idt2_') + 'noattn',
             P.CONFIGS['G2'][1] + (("LADDER_L         = 2 ", "LADDER_L         = 4 "),)),
+    'G3': (P._P + 'rglive_vplive_xilive_L2probe' + P._S + 'attnpot',
+           P.LIVE + (("LADDER_MECHANISM = 'none'", "LADDER_MECHANISM = 'attention_potential'"),
+                     ("RELAX_GRAD_PATH        = 'default'", "RELAX_GRAD_PATH        = 'live'"))),
+    'G3p': (P._P + 'rglive_vplive_xilive_rfqk_rfclip0p3_L2probe' + P._S + 'attnpot',
+            P.LIVE + (("LADDER_MECHANISM = 'none'", "LADDER_MECHANISM = 'attention_potential'"),
+                      ("RELAX_GRAD_PATH        = 'default'", "RELAX_GRAD_PATH        = 'live'"),
+                      ("RELAX_ATTN_QK_NORM          = False", "RELAX_ATTN_QK_NORM          = True"),
+                      ("RELAX_FIELD_CLIP            = None", "RELAX_FIELD_CLIP            = 0.3"))),
 }
 lines = []
 say = lambda s='': (print(s, flush=True), lines.append(s))
@@ -142,7 +150,7 @@ for l in range(L):
     R = vphi_pairs(h, l)
     with torch.enable_grad():
         ha = h.detach().clone().requires_grad_(True)
-        Um = model._pair_potential(ha, l, xis=None, h_src_live=None)
+        Um = model._pair_potential(ha, l, xis=model.xi_module(ha.detach()), h_src_live=None)   # xi is required by the exchange-field arms, unused by V_phi
         fm, = torch.autograd.grad(Um, ha)
     dU = float((R['U'] - Um.detach()).abs()); dF = float((R['f_full'] + fm).abs().max())
     share = float(R['f_pot'].norm() / R['f_full'].norm())

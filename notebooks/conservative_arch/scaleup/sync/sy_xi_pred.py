@@ -68,6 +68,14 @@ ARMS = {
     'PM1': (_T + 'pm64' + _E, F31 + P.PM_ON), 'PMX': (_T + 'pm64_pmx16_sr2' + _E, F31 + P.PM_ON + SR2 + PMXS),
     'L4F': (P._P + 'vplive_xilive_L4probe' + P._S.replace('idt4_', 'idt2_') + 'noattn',
             P.CONFIGS['G2'][1] + (("LADDER_L         = 2 ", "LADDER_L         = 4 "),)),
+    'G3': (P._P + 'rglive_vplive_xilive_L2probe' + P._S + 'attnpot',
+           P.LIVE + (("LADDER_MECHANISM = 'none'", "LADDER_MECHANISM = 'attention_potential'"),
+                     ("RELAX_GRAD_PATH        = 'default'", "RELAX_GRAD_PATH        = 'live'"))),
+    'G3p': (P._P + 'rglive_vplive_xilive_rfqk_rfclip0p3_L2probe' + P._S + 'attnpot',
+            P.LIVE + (("LADDER_MECHANISM = 'none'", "LADDER_MECHANISM = 'attention_potential'"),
+                      ("RELAX_GRAD_PATH        = 'default'", "RELAX_GRAD_PATH        = 'live'"),
+                      ("RELAX_ATTN_QK_NORM          = False", "RELAX_ATTN_QK_NORM          = True"),
+                      ("RELAX_FIELD_CLIP            = None", "RELAX_FIELD_CLIP            = 0.3"))),
 }
 lines = []
 say = lambda s='': (print(s, flush=True), lines.append(s))

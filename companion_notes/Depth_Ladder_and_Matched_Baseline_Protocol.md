@@ -5265,6 +5265,213 @@ This adds a qualified positive to the "semantically blind" verdict on the pre-re
 
 **SY-GPT2 (60%), made precise** (the call said only "a binding contrast at least as large as the best Lagrangian arm's"). For each of coreference, head–dependent and noun chunks, compare GPT-2's attention-made binding (B_spec at its last layer) with the largest coupling-made B_spec at the last layer over all Lagrangian arms and couplings. **HIT** if GPT-2's is at least as large for at least two of the three.
 
+#### SY extended to the two exchange-field arms of Gen 3 — **fixed 2026-10-15, before any code is written or any model is measured**
+
+The two published Gen 3 arms not yet measured are added, at the author's request:
+- **G3** (`attention-potential-live`, settled PPL 54.21);
+- **G3′** (`attention-potential-rfqk-live`, the hardened version with query–key normalisation and field clip 0.3, settled PPL 52.90).
+
+Both are built from the registry's Cell 0 settings (`attention_potential`, reverse channel on, every gradient path live) and their local checkpoints.
+
+**The new coupling.** The exchange field is a conservative, attention-shaped potential. With `RELAX_GRAD_PATH = 'live'` it enters the step only as an explicit force (`relax_field.force_live`, added to `f_phi` in `_layer_forces`, scaled by the gate λ). Its replays:
+- **off:** λ = 0 (restored exactly);
+- **force-level common:** its force replaced by its token average;
+- **displacement-level common:** as for the other couplings, adopted per arm by the same agreement check on V_φ.
+
+The usual checks come first: the "on" replay is bit-exact, each patch moves the step and restores, and the perplexity on the SY sequences is consistent with the recorded value.
+
+**Measurements:** every SY script run so far (state level, route readouts, the ξ and prediction tests, the coreference probe, binding in a subspace, extra depth), with their criteria unchanged.
+
+**Scoring.**
+1. These arms were added after the pre-registered calls were scored. **They do not rescore SY-L0, SY-L1, SY-pair, SY-wells, SY-G2 or SY-GPT2**, which stand as recorded; for the V_φ and Fock routes they are descriptive.
+2. **The exchange route is scored as a follow-up** with the level 0 and level 1 (c) criteria (Γ_spec, and B_spec with the shuffled control null). PMX has no exchange field, so the replication rule for this route is: **G3 and G3′ both**.
+3. The question it answers: does a conservative, attention-shaped coupling bind (noun chunks, or coreference) where V_φ, the wells and the Fock channel do not, and does it resemble GPT-2's attention (grouping built mid-depth, no reference binding)?
+
+#### SY on G3 and G3′ scored: **the exchange field binds nothing (level 1 (c) fails in both); its level 0 holds by the fixed rule but not under the force reference; the context field ξ makes the strongest noun-chunk binding of any arm** — **2026-10-15**
+
+Every SY script was run on both arms, 200 sequences each. Every check passed:
+- the "on" replays reproduce the trained steps bit for bit, and the logits rebuilt from the last step equal the model's;
+- every patch, the exchange field's included, moves the output and is restored exactly;
+- the extra-depth stack at N = L reproduces the trained logits.
+
+On both arms the displacement and force references agree on V_φ, so the displacement reference was adopted, as the rule fixes. The first route readout failed on both arms before measuring anything (V_φ's pair potential needs ξ in these arms); it was fixed by passing ξ and re-run.
+
+**The exchange route (scored)**
+
+| | G3 | G3′ |
+| --- | ---: | ---: |
+| Γ_spec, layer 0, displacement reference (adopted) | **+0.056** [+0.055, +0.057] | **+0.110** [+0.108, +0.111] |
+| Γ_spec, layer 0, force reference | −0.002 | −0.008 |
+| Γ_spec, layer 1, displacement / force | −0.226 / −0.138 | −0.244 / −0.117 |
+| B_spec, layer 1: noun chunks | −0.012 | −0.001 |
+| B_spec, layer 1: coreference | −0.008 | −0.003 |
+| B_spec, layer 1: head–dependent | −0.015 | −0.009 |
+| B_spec, largest positive, either layer | entities +0.010 | entities +0.018 [+0.008, +0.029] (shuffled +0.002, not null) |
+
+- **Level 0 holds for the exchange route by the fixed rule** (G3 and G3′ both), **and the result is not robust to the reference.**
+  - On one step, the displacement form of Γ_spec equals the total contraction: a shared translation leaves distances unchanged, so it counts whatever the rest of the step does with the coupling's common push.
+  - The force form takes that push out before the rest of the step. It finds no contraction from the field's token-specific action (−0.002, −0.008).
+  - The adoption check is made on V_φ and cannot see a disagreement that arises in the coupling being scored.
+  - The layer-0 contraction is therefore read as the step's response to the field's common push, not as synchronization by the field. At layer 1 the field spreads the tokens under both references.
+  - **Decided by the reference test below: level 0 FAILS.** Read before any normalization, the field contracts at no layer of either arm; the layer-0 reading was the first LayerNorm acting on its shared push.
+- **Level 1 (c) fails in both arms.** No grouping passes the floor at either layer. The exchange field moves tokens strongly (switching it off moves the output by 8.9 and 9.4) without binding related ones.
+- **Against GPT-2's attention:** the field resembles GPT-2's first two attention layers, which also spread the token set (S −0.21, −0.26) and bind nothing. These arms have no middle depth, where GPT-2's attention builds the chunk grouping (+0.026 at layer 3).
+
+**The other couplings (descriptive)**
+- **ξ, test A, last layer:**
+  - noun chunks B_spec,ξ **+0.054** [+0.051, +0.058] in G3 and **+0.076** [+0.071, +0.081] in G3′, the largest of any arm (G2 +0.064 was the largest before);
+  - head–dependent B_spec,ξ +0.005 and +0.010, the wrong sign, with shuffled controls not null.
+- **The head–dependent separation** is still in the states (layer 1 B_on −0.018 and −0.015), but these arms carry it through other couplings:
+  - G3: through the exchange field (−0.015);
+  - G3′: through the Fock channel (−0.018) and the exchange field (−0.009).
+- **Test B:** the noun-chunk residual after prediction passes (+0.031, +0.038), and the true next tokens have no chunk structure (+0.002, −0.000), as in the other six arms. The head–dependent residual is below the floor (−0.009, −0.006).
+- **The Fock channel expands the token set** at both layers (G3 −0.026 and −0.056; G3′ −0.052 and −0.092), as in G2.
+- **V_φ** does nothing at G3's layer 1 (0.000, as in G2 and SR2). It contracts at G3′'s layer 1 (+0.039 [+0.039, +0.040]).
+- **V_φ route readout** (`sync/sy_routes.py`; the rebuilt branch is exact, potential share 1.000): as in the six arms, V_φ does not choose related sources.
+  - Coreference enrichment is 1.06–1.15, and head–dependent 1.01–1.19 (G3 layer 1: 1.193 [1.163, 1.221]), against the 1.2 required.
+  - Same-POS sources are enriched up to 1.44.
+  - The attraction contrasts are heavy-tailed and change sign between layers (coreference, G3′: −5.3 at layer 0, +0.51 at layer 1).
+- **The decoding probe fails in both arms.**
+  - G3: final layer 0.475 against embeddings 0.471 (+0.005).
+  - G3′: final layer 0.491 against embeddings 0.446 (+0.045 [−0.035, +0.137]).
+  - G3′'s layer-0 probe reaches 0.620, the highest of any arm at any layer, and 7.9 points above the nearest-mention baseline (0.541). Its interval was not computed; at the final layer the matching interval is about ±0.11 wide, so a margin of this size cannot be told from zero at this test size (442 items).
+  - Ablation: neither the exchange field's common-mode replay nor switching it off moves the final-layer readout (drops −0.020 to +0.000).
+- **Binding in a subspace:** no hit involves the exchange field.
+  - The ξ hits repeat the six arms': part of speech, noun chunks and entities in the top 16 components.
+  - G3′ also has the ξ coreference hit at layer 0 (+0.034), the one the six arms showed. Its examination (`sync/sy_coref_subspace_check.py`, revision 2 unchanged) finds it **lexical by the fixed rule, narrowly**:
+    - all pairs: +0.034;
+    - identical tokens excluded: +0.041;
+    - same words excluded: +0.021 [+0.014, +0.029], against +0.003 for the random 16-dimensional projection. That is 0.018 above it, where a hit needs 0.02.
+    - Pronoun–antecedent pairs give +0.014, with a biased shuffled control (−0.026), as in every arm.
+- **Extra depth (SY5): over-synchronization holds in both arms, at the first extra step.**
+  - G3: perplexity 49.6 → 1,025 (+1,967%), S +0.31, effective rank −22%.
+  - G3′: perplexity 50.0 → 188 (+276%), S +0.29, rank −68%; at N = 4, rank −84%.
+  - Unlike SR2, PM1 and the L = 4 arm, these failures come with collapse at the onset.
+  - Unlike PMX and F3.1, the noun-chunk binding decays with the extra steps (G3 +0.034 → +0.020 → +0.010; G3′ +0.043 → −0.001).
+
+**Reading.**
+1. **The attention-shaped conservative coupling is not where binding happens.** At L = 2 the exchange field behaves like an early attention layer: it moves and spreads tokens, and it binds no grouping, noun chunks or reference.
+2. **What these arms do bind, they bind through ξ, more strongly than any other arm.** The constituent grouping is again a mean-field effect. The exchange field and the Fock channel take over the head–dependent separation that ξ carries in PMX and PM1.
+3. **Coreference** is not bound in either sense in these arms either.
+4. **SY-G2 stands** as scored. These arms add two more cases of collapse with extra depth, here from the first extra step.
+
+Scope: L = 2, 532.5M tokens, the same as the other arms (§5.19).
+
+#### Which common-mode reference for Γ_spec: a toy check and a mechanism replay — **criteria fixed 2026-10-15, before either is run**
+
+**The problem.** On the exchange field the two references disagree at layer 0 (displacement +0.056 and +0.110, force −0.002 and −0.008). On one step the displacement form of Γ_spec equals Γ_tot in every arm and for every coupling (a shared translation leaves distances unchanged). For Γ it is therefore the switch-off attribution, which SY0 run 1 rejected because it counts a common push. It was admitted for PMX's wells, which have no separable force, by an agreement check on V_φ. That check cannot see a disagreement in another coupling.
+
+**A fact found while designing the replay.** In the Fock arms (G2, L4F, G3, G3′) the step applies LayerNorm twice: once at the end of the integrator, and again after the Fock increment is added. The "pre-LayerNorm" state on which Γ is read is the first LayerNorm's output plus the Fock increment. A shared push from V_φ or the exchange field passes through a per-token normalization before Γ reads it. In the other arms there is one LayerNorm and Γ is read before it.
+
+**Check 6 (toy, `sync/sy0_check6.py`, SY0's conventions: 40 draws, d = 16 and 384, verdict at 384).** The step is a shared per-token map plus a coupling, then a LayerNorm, then a small per-token increment on the normalized state. It is read before a closing LayerNorm, as in the Fock arms.
+- **6a:** a pure common push, at three sizes relative to the state spread (0.3, 1, 3). **Passes** if the force-form Γ_spec is null at every size. It is also **informative** if the displacement form passes the floor at some size: the form then misreads a shared push.
+- **6b:** a genuine grouping pull (token-specific, as SY0 check 2's) plus a large common push in the same coupling. **Passes** if the force-form Γ_spec is within 0.01 of the same coupling's Γ_spec without the common push, which must itself pass the floor.
+- **6c (descriptive):** a common push through a per-token linear response with no LayerNorm (different stiffness per token, as the low-rank harmonic flow gives).
+
+**Mechanism replay (`sync/sy_exch_reference.py`, G3 and G3′, 50 sequences, both layers).** "The push" is the replay with the exchange force replaced by its token mean, read against the switch-off replay: Γ_push = Γ(push vs off), so that Γ_tot = Γ_push + Γ_spec(force) exactly.
+- **M1 (check):** the replays reproduce `sy_measure`'s per-sequence Γ values exactly, and the identity holds.
+- **M2:** Γ_push read at the integrator's output, before the first LayerNorm, is below the floor in magnitude in both arms: the integrator (per-token mass, harmonic flow) does not make the contraction.
+- **M3:** with the first LayerNorm's per-token mean and scale frozen at the switch-off replay's values, Γ_push at the readout is below the floor in both arms: the normalization's rescaling of the shared push makes it.
+- **Descriptive:**
+  - Γ_push after the first LayerNorm without the Fock increment;
+  - linearity (the push scaled by 0.5 and 2);
+  - the size of the shared displacement against the states' spread.
+
+**The amendment, decided now and conditional on check 6 passing.** If 6a and 6b pass:
+- Γ_spec and B_spec are scored against the **force-level** common reference wherever the coupling has a separable force. The displacement form remains only where none exists (PMX's wells), with its caveat.
+- Every earlier score is re-read under the amendment, and any call or criterion that changes is reported.
+- M2 and M3 decide only the reading of the mechanism: a normalization artefact (both hold), or the integrator's heterogeneous response to a shared drive (M2 fails). Neither is the coupling's token-specific action, so the amendment does not depend on them.
+
+If check 6 fails, the force form is not validated in this setting, and the exchange route's level 0 is reported as undecided.
+
+#### Check 6 scored: **FAILS on 6b — with a LayerNorm before the readout, neither reference isolates a coupling's token-specific contraction** — **2026-10-15**
+
+`sync/sy0_check6.py` (`sy0_check6_output.txt`), 40 draws, verdict at d = 384:
+
+| case | force form | displacement form (= switch-off) |
+| --- | ---: | ---: |
+| 6a: pure common push, s = 0.3 / 1 / 3 | 0.000 / 0.000 / 0.000 | **+0.063 / +0.458 / +1.338** |
+| 6b: grouping pull alone | **+0.017** | +0.017 |
+| 6b: pull + common push, s = 0.3 / 1 / 3 | +0.217 / +0.641 / +0.807 | +0.280 / +1.100 / +2.145 |
+| 6c: common push, per-token linear response, no LayerNorm, s = 0.3 / 1 / 3 | 0 (by construction) | −0.001 / −0.014 / −0.101 |
+
+- **6a passes**, and the displacement form misreads a shared push as strong contraction once a LayerNorm precedes the readout.
+- **6b fails.** The pull alone reads only +0.017: the LayerNorm rescales each token and undoes most of the pull's contraction (before the LayerNorm it is about ln 2). With a large shared push, the push dominates each token's normalization and the pull's contraction shows almost in full. So the token-specific part's effect depends on the shared part, and the two do not add. The force form reads the specific part *given* the push, which here is 13–47 times the pull's effect alone.
+- **6c:** without any LayerNorm, a shared push through a per-token linear response also reads as an effect under the displacement form (−0.10 at s = 3).
+
+**Consequences, by the rules fixed above.**
+1. The force form is not validated with a normalization before the readout. **The exchange route's level 0 is undecided** as measured. The amendment is not adopted.
+2. The cause is the readout point. The design defines Γ on the pre-LayerNorm step output, but in the Fock arms the readout comes after an intermediate LayerNorm (found while designing the replay). Before any normalization, a shared push is a translation, apart from the integrator's own per-token response (6c's case). There the decomposition is additive except for that response.
+
+**Extension, fixed now, before the mechanism replay runs** (it replaces M1–M3 above as the deciding readout; they are still reported):
+- **6b′ (toy):** 6b read on the state before its LayerNorm. **Passes** if the force form is within 0.01 of the pull alone at every push size.
+- **Readout before any normalization (the replay):** for the exchange field at each layer, Γ at the integrator's output, before the first LayerNorm, under four references:
+  - switch-off;
+  - force-common;
+  - displacement-common;
+  - **specific-only**: the force replaced by its deviation from the token mean, so the field acts with no shared push, read against switch-off.
+
+  The last two orders bracket the interaction between the shared and the specific parts.
+- **Decision for the exchange route's level 0:**
+  - if, at the integrator output, Γ_spec(force) and Γ(specific-only vs off) agree within 0.01 in both arms, their mean decides by the usual floor;
+  - if they do not agree, level 0 stays undecided.
+- **The same pre-normalization readout is reported for V_φ in the four Fock arms** (G2, L4F, G3, G3′), to show whether any earlier V_φ score depended on the readout point.
+
+#### The reference test scored: **the exchange route's level 0 FAILS; its layer-0 "contraction" was the first LayerNorm acting on the field's shared push** — **2026-10-15**
+
+`sync/sy_exch_reference.py` (outputs `sy_exch_reference_<ARM>_output.txt`), 50 sequences, on G3, G3′, G2 and L4F. 6b′ passes in `sy0_check6.py`'s second run (`sy0_check6_output.txt`): before the LayerNorm, the force form recovers the pull exactly at every push size (+0.836 against +0.836). In that run 6b's two orders also disagree, as the decision rule would catch (force +0.217 to +0.807, specific-only +0.017).
+
+**Checks (M1):** all pass.
+- Stage B reproduces `sy_measure`'s per-sequence Γ exactly (max |d| 0.0) for every arm, layer and coupling.
+- Γ_tot − Γ_push − Γ_spec ≤ 1e-16.
+- The "on" replay's last LayerNorm equals the recorded step output (0.0).
+- The frozen-LayerNorm "off" replay matches the plain one to 1e-5 (the LayerNorm recomputed by hand).
+
+**The exchange field, both readouts**
+
+| | G3, layer 0 | G3′, layer 0 | G3, layer 1 | G3′, layer 1 |
+| --- | ---: | ---: | ---: | ---: |
+| B (as scored): displacement form (= switch-off) | +0.055 | +0.111 | −0.229 | −0.245 |
+| B: force form | −0.003 | −0.008 | −0.145 | −0.119 |
+| B: specific-only | −0.002 | −0.004 | −0.148 | −0.119 |
+| **A (before any normalization): force form** | **−0.007** | **−0.014** | **−0.171** | **−0.176** |
+| **A: specific-only** | **−0.007** | **−0.013** | **−0.172** | **−0.177** |
+| A: the shared push alone (M2) | +0.004 | +0.009 | −0.004 | −0.006 |
+| B: the shared push, first LayerNorm frozen (M3) | +0.005 | +0.004 | −0.014 | **−0.024** |
+| B: the shared push, as read | +0.058 | +0.119 | −0.084 | −0.126 |
+
+Intervals are all narrower than ±0.025 (most under ±0.003).
+
+**Decision (rule fixed before the run).** At the integrator output the two orders agree within 0.001 at every layer of both arms.
+- At layer 0 their mean is −0.007 (G3) and −0.014 (G3′): below the floor and negative.
+- At layer 1 it is −0.172 and −0.176, spreading.
+
+**The exchange route's level 0 FAILS:** the field contracts the token set at no layer of either arm. This replaces the "holds by the fixed rule" reading of the G3 block above.
+
+**Mechanism (descriptive).**
+- **M2 holds** at every layer of both arms: before any normalization the field's shared push contracts nothing (|Γ| ≤ 0.009).
+- The integrator's response to the push is exactly linear (relative error 4–7 × 10⁻⁷ for the push scaled by 0.5 and 2). It is only 3–7% token-specific (per-token mass varies ±2%, plus the harmonic flow).
+- The push is large: its shared displacement is 22% (G3) and 28% (G3′) of the states' RMS spread at layer 0, and 64% and 67% at layer 1.
+- **M3 holds at layer 0** in both arms. Freezing the first LayerNorm's per-token statistics removes the contraction (+0.058 → +0.005 and +0.119 → +0.004). The same LayerNorm without the Fock increment gives +0.059 and +0.128.
+- The layer-0 "contraction" is therefore SY0's normalization trap: a large shared push followed by a per-token rescaling makes the normalized states look aligned.
+- At layer 1, M3 fails narrowly in G3′ (−0.024 with the LayerNorm frozen). There the Fock increment also responds to the pushed state; it spreads, so the verdict is unaffected.
+
+**V_φ in the four Fock arms (descriptive: no call rests on a Fock arm).** V_φ carries almost no shared push (|Γ_push| at A ≤ 0.002), so at the integrator output all its references agree within 0.002:
+
+| | layer | A (force = specific-only = total) | B, as scored |
+| --- | ---: | ---: | ---: |
+| G2 | 0 / 1 | −0.002 / 0.000 | +0.001 / 0.000 |
+| L4F | 0 / 1 / 2 / 3 | −0.002 / +0.001 / +0.004 / **+0.035** | +0.000 / +0.001 / +0.004 / **+0.024** (force) |
+| G3 | 0 / 1 | +0.006 / 0.000 | +0.001 / 0.000 |
+| G3′ | 0 / 1 | +0.006 / **+0.045** | +0.004 / **+0.040** |
+
+Read before the normalization, V_φ's contraction is the same or somewhat larger: the LayerNorm partly undoes a token-specific contraction, as check 6b showed. No V_φ reading changes sign or crosses the floor.
+
+**What this changes.**
+1. **The exchange route:** level 0 fails and level 1 (c) fails. The attention-shaped coupling neither synchronizes nor binds.
+2. **The instrument, from now on:** in arms with a LayerNorm inside the step, Γ_spec is read at the integrator's output, before any normalization. There a shared push is a translation, apart from the integrator's own small per-token response, and the force and specific-only orders bracket it. A coupling's Γ_spec counts only if the two orders agree within 0.01. For binding, B_spec stays on the states the next layer reads, with the references as adopted.
+3. **Earlier calls:** none change. SY-L0 was scored on PMX and F3.1 (one LayerNorm, read before it), and the wells' and V_φ's readings stand.
+
 #### SY5 scored: **SY-G2 HIT — extra depth over-synchronizes in PMX, F3.1 and G2; the large blow-ups come with collapse, the onset of failure does not** — **2026-10-15**
 
 `sync/sy5_depth.py`, Gate 2 through Cell 6b-7's own `_fom_stack` (hold schedule), 200 sequences. In every arm the trained depth reproduces the trained logits bit for bit.

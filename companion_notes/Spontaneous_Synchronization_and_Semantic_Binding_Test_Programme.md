@@ -2,7 +2,7 @@
 
 **The question.** Is spontaneous synchronization at the root of how models built on the Lagrangian framework make semantic inference?
 
-**Status (2026-10-15).** Part I (§1–11) is the design, written before any measurement. Part II (§12–25) reports what has been measured, on six trained models and the matched GPT-2, with figures: the instruments, the first two of the four claims, the extra-depth test, the transformer comparison, and four follow-up tests. Short answer: the couplings do synchronize tokens, but not along linguistic structure through the routes the test was designed around. The context field groups the words of syntactic constituents into clusters, which is not an artefact of next-word prediction. The matched transformer forms the same grouping, by a different mechanism. Reference (which word a pronoun stands for) is bound by neither family. Running the models past their trained depth makes the tokens collapse together, which accompanies the catastrophic failures but not their onset.
+**Status (2026-10-15).** Part I (§1–11) is the design, written before any measurement. Part II (§12–26) reports what has been measured, on six trained models, then the two exchange-field models of Gen 3, and the matched GPT-2, with figures: the instruments, the first two of the four claims, the extra-depth test, the transformer comparison, and four follow-up tests. Short answer: the couplings do synchronize tokens, but not along linguistic structure through the routes the test was designed around. The context field groups the words of syntactic constituents into clusters, which is not an artefact of next-word prediction. The matched transformer forms the same grouping, by a different mechanism. Reference (which word a pronoun stands for) is bound by neither family. Running the models past their trained depth makes the tokens collapse together, which accompanies the catastrophic failures but not their onset. The attention-shaped coupling of the exchange-field models binds nothing; their context field makes the strongest constituent grouping of any model.
 
 This note turns that question into four claims of increasing strength, each of which can fail, and designs the measurements that decide them. The verdict criteria are pre-registered in the protocol ([`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md) §5.22) before any measurement. The book's open question Q10 points here.
 
@@ -36,8 +36,9 @@ This note turns that question into four claims of increasing strength, each of w
 21. [Coreference: what is and is not bound](#21-coreference-what-is-and-is-not-bound)
 22. [Extra depth: when the tokens collapse](#22-extra-depth-when-the-tokens-collapse)
 23. [The matched transformer: what is generic and what is not](#23-the-matched-transformer-what-is-generic-and-what-is-not)
-24. [The verdict against the pre-registered calls](#24-the-verdict-against-the-pre-registered-calls)
-25. [What remains open](#25-what-remains-open)
+24. [The two exchange-field models](#24-the-two-exchange-field-models)
+25. [The verdict against the pre-registered calls](#25-the-verdict-against-the-pre-registered-calls)
+26. [What remains open](#26-what-remains-open)
 
 ---
 
@@ -291,7 +292,7 @@ Each verdict is scoped to the trained models: L = 2 (and L = 4 where read), 532.
 
 # Part II. Results
 
-Measured 2026-10-13 to 2026-10-14. Every number below comes from the scripts in [`notebooks/conservative_arch/scaleup/sync/`](../notebooks/conservative_arch/scaleup/sync/), with the scoring recorded in the protocol (§5.22 and its scoring sections). The figures are made by [`figures/_make_sy_results_figs.py`](figures/_make_sy_results_figs.py) from the same outputs.
+Measured 2026-10-13 to 2026-10-15. Every number below comes from the scripts in [`notebooks/conservative_arch/scaleup/sync/`](../notebooks/conservative_arch/scaleup/sync/), with the scoring recorded in the protocol (§5.22 and its scoring sections). The figures are made by [`figures/_make_sy_results_figs.py`](figures/_make_sy_results_figs.py) from the same outputs.
 
 ## 12. The results in one page
 
@@ -305,6 +306,7 @@ Measured 2026-10-13 to 2026-10-14. Every number below comes from the scripts in 
 8. **Reference is not bound, in either family.** A probe cannot find a pronoun's antecedent better than "pick the nearest earlier mention", in our models or in the matched GPT-2. The one coreference signal found anywhere is the same word repeated, not reference (§21).
 9. **Extra depth collapses the tokens.** Run past their trained depth, the models' tokens draw together or lose dimensions, and this accompanies every catastrophic failure. The first, milder degradation happens without it (§22).
 10. **The constituent grouping is generic; its mechanism is not.** The matched GPT-2 groups noun-chunk words as strongly, and this too survives the prediction control. But in GPT-2 attention builds the grouping gradually in the middle layers, while in our models a mean field makes it at the last step (§23).
+11. **An attention-shaped coupling does not bind either.** Two later models have an *exchange field*, a coupling shaped like attention. It moves and spreads the tokens and groups nothing. Their context field groups noun-chunk words more strongly than in any other model. Run past their trained depth, they collapse from the first extra step (§24).
 
 ## 13. Terms used in the results
 
@@ -312,9 +314,9 @@ The reader is assumed to know linear algebra and basic statistical mechanics, an
 
 - **Token.** A word or a piece of a word. A text of 512 tokens is the unit of analysis.
 - **State.** Each token is represented by a vector of 384 numbers, its *state*. The model moves the states; the final states are read out to predict the next token.
-- **Layer, or step.** The model moves the states in a fixed number of steps of an integrator for a second-order equation of motion (mass times acceleration equals force minus friction). Two steps in five of the models, four in the sixth. The *embedding* is the state before the first step.
+- **Layer, or step.** The model moves the states in a fixed number of steps of an integrator for a second-order equation of motion (mass times acceleration equals force minus friction). Two steps in every model but one, which has four. The *embedding* is the state before the first step.
 - **Normalisation.** At the end of every step each state is shifted and rescaled to a fixed mean and length. This matters below, because a push shared by all tokens can make normalised states look aligned.
-- **The six models.** All are trained on the same 532.5 million tokens of web text, which is about a third of the compute-optimal amount for their size, so every result is about undertrained models.
+- **The models.** Six were measured first; the two exchange-field models of Gen 3 were measured after them (§24). All are trained on the same 532.5 million tokens of web text, which is about a third of the compute-optimal amount for their size, so every result is about undertrained models.
 
 | model | couplings it has | layers |
 | --- | --- | --- |
@@ -324,11 +326,14 @@ The reader is assumed to know linear algebra and basic statistical mechanics, an
 | PM1 | pair potential, Poisson wells, context field | 2 |
 | PMX | pair potential, Poisson wells (integrated exactly), context field | 2 |
 | L = 4 | pair potential, Fock registers, context field | 4 |
+| G3 | pair potential, Fock registers, exchange field, context field | 2 |
+| G3′ | as G3, hardened (normalised queries and keys, clipped field) | 2 |
 
 - **Coupling.** Any term in a token's equation of motion through which another token's state acts on it: a term whose contribution to token i's force would change if the other tokens moved while token i stayed put (defined at first use in the Background). The six models measured first have four, each a separate term that can be switched off on its own; the two exchange-field models add a fifth, a conservative attention-shaped potential:
   - the **pair potential** V_φ: token i picks up to 16 earlier tokens and is attracted to or repelled from each;
   - the **Poisson wells**: shared attracting points whose depth for token i depends on how many earlier tokens fell into them;
   - the **Fock registers**: a memory written by earlier tokens that pushes token i;
+  - the **exchange field** (G3 and G3′ only): a conservative potential shaped like attention. Its force on token i comes from attention-like scores between token i and the earlier tokens, and a learned gate sets its strength;
   - the **context field** ξ: a fading average of the earlier states, which decides where token i's own wells sit. It acts on every token as a *mean field* (each token responds to an aggregate of the others, not to any single one).
 - **Replay.** Each step of the trained model is recomputed from its exact recorded input, once as trained (this reproduces the original to the last bit) and once with one coupling changed. The difference is what that coupling did.
 - **Common-mode reference.** The replay in which a coupling's effect is replaced by its average over all tokens of the text. It keeps what the coupling does to every token alike and removes what it does differently to different tokens.
@@ -339,7 +344,7 @@ $$
 S = \Big\langle \ln \frac{\lVert h^{\mathrm{ref}}_{t} - h^{\mathrm{ref}}_{s} \rVert}{\lVert h_{t} - h_{s} \rVert} \Big\rangle_{t \neq s}.
 $$
 
-  S is positive when the coupling draws tokens together and negative when it spreads them apart. It is read before normalisation, and a push shared by all tokens leaves it unchanged.
+  S is positive when the coupling draws tokens together and negative when it spreads them apart. It is read before normalisation, and a push shared by all tokens leaves it unchanged. (In the models with Fock registers the step normalises twice, and S must be read before the first normalisation; §24 shows what goes wrong otherwise.)
 - **Grouping.** A way of saying which pairs of tokens are *related*, from an automatic linguistic analysis of the text:
   - **coreference**: two mentions of the same entity ("Mary" and "she"; see *reference* below);
   - **head–dependent**: a word and the word it grammatically depends on ("keys" and "are" in "the keys to the cabinet are");
@@ -386,7 +391,7 @@ Four behaviours appear.
 
 Panel (b) asks whether synchronization accumulates with depth, as it does in idealised attention, where the tokens eventually collapse. It does not. In the four-layer model the pair potential is nearly idle in the two middle layers and acts only at the last one. The Fock registers and the context field spread the tokens at both ends.
 
-By the pre-registered rule (§22), claim 1, that synchronization exists, holds. It holds on the pair potential alone, which is a genuine interaction between tokens.
+By the pre-registered rule (protocol §5.22), claim 1, that synchronization exists, holds. It holds on the pair potential alone, which is a genuine interaction between tokens.
 
 ## 16. The pair potential does not choose related tokens
 
@@ -455,7 +460,7 @@ The contrast with idealised attention is complete. There a pairwise attraction c
 
 **Figure 8.** (a) A probe that scores each pronoun's candidate antecedents, trained on 150 texts and tested on 50: the fraction of pronouns whose antecedent it finds, against the fraction of each model's depth. The matched GPT-2 is in orange. The dashed red line is the accuracy of always choosing the nearest earlier mention (0.54); chance is 0.14. (b) The one coreference signal found in a restricted set of directions, broken down by which coreferent pairs are counted.
 
-Binding by closeness is one way to bind. A transformer binds differently: attention copies information from the antecedent into the pronoun's state without making the two states alike. The probe in panel (a) tests for that kind of binding. It uses a learned bilinear score, which has the shape of one attention head. **No layer of any of our models finds the antecedent more than four points better than choosing the nearest earlier mention.** The probe does best after the first layer and worse at the last, where the states are shaped for prediction. The antecedent is not recoverable as information.
+Binding by closeness is one way to bind. A transformer binds differently: attention copies information from the antecedent into the pronoun's state without making the two states alike. The probe in panel (a) tests for that kind of binding. It uses a learned bilinear score, which has the shape of one attention head. **No layer of the six models finds the antecedent more than four points better than choosing the nearest earlier mention** (for the two exchange-field models, see §24). The probe does best after the first layer and worse at the last, where the states are shaped for prediction. The antecedent is not recoverable as information.
 
 The matched GPT-2 answers the obvious question, whether a transformer would do better. Somewhat, in the middle: its layers 2 to 4 reach 0.64, against at most 0.58 for any layer of our models. But its best layer is only 0.10 above the nearest-mention rule (interval −0.01 to +0.20), and its final states are *exactly* at that rule (0.54). By the same criterion it also fails. Both families show the same shape: antecedent information rises in the middle and is washed out where the states are shaped for prediction. At this budget, not binding reference is not a weakness of this framework in particular. With 48 test texts the intervals are about ±0.1, so a few points' difference between the families cannot be resolved.
 
@@ -496,7 +501,32 @@ Everything above was measured on models built from this framework. The matched G
 
 The pre-registered comparison asked whether GPT-2's attention makes at least as much binding at its last layer as the best coupling of any of our models, for coreference, head–dependent and noun chunks. It does not, for any of the three: 0.003, −0.002 and −0.004, against 0.029, 0.003 and 0.064. That is a statement about where the binding is made, not about how much the final states end up with.
 
-## 24. The verdict against the pre-registered calls
+## 24. The two exchange-field models
+
+![The two exchange-field models: the exchange field's contraction, binding by coupling, and extra depth](figures/sy_results/sy_r11_exchange.png)
+
+**Figure 11.** The two exchange-field models of Gen 3, G3 and its hardened version G3′. (a) The contraction made by the exchange field at each layer: as first read, between the step's two normalisations, against the two forms of the common-mode reference; and read before any normalisation, with the shared push removed first (force form) or last (specific only). (b) The binding made by each coupling at the last layer, G3 solid and G3′ pale; dotted lines are the threshold. (c, d) The extra-depth test: the change of effective rank, and the noun-chunk binding of the final states, with the six earlier models in grey.
+
+After the six models above had been scored, every measurement was repeated on the two published Gen 3 models that have an **exchange field**: G3, and G3′, the same design hardened. Their coupling is the closest thing in this framework to attention: a conservative potential with attention's shape. They ask whether an attention-shaped coupling binds where the pair potential, the wells and the Fock registers do not. They were added after the pre-registered calls were scored, so they cannot change those calls. The exchange field was scored as a follow-up with the same criteria, and a result had to hold in both models.
+
+- **It does not bind.** At neither layer does the exchange field make binding above the threshold for any grouping (panel b, orange). Its largest positive effect, on named entities in G3′, is +0.018, and its shuffled control is not null. Yet it is far from idle: switching it off changes the model's output substantially.
+- **It does not draw tokens together either** (panel a). Getting this right took a test of its own, because the first reading said the opposite.
+  - The common-mode reference can be built in two ways. The **force** form averages the coupling's force over the tokens and lets the rest of the step act on that average. The **displacement** form averages the change of state the coupling caused. For the contraction S, the displacement form reads the same as switching the coupling off, and Figure 1(b) showed that this counts a shared push.
+  - At the first layer the two forms disagreed. By the displacement form the field drew tokens together (+0.056 in G3, +0.110 in G3′); by the force form it did nothing.
+  - The reason is where S was read. In models with Fock registers each step normalises the states twice, once before the registers' push is added and once after, and S was read between the two. The exchange field's shared push is large: its common part moves every token by about a quarter of the tokens' spread. The first normalisation rescales each token separately, and that turns a shared shift into apparent alignment.
+  - A toy check confirmed the danger in both directions. With a normalisation before the readout, a shared push reads as strong contraction under the displacement form. It can also inflate a genuine coupling's contraction 13 to 47 times under the force form. Read before the normalisation, the force form recovers the genuine coupling exactly.
+  - Read before any normalisation, the exchange field contracts nothing at the first layer (−0.007 and −0.014, whether its shared push is removed first or last) and spreads the tokens at the second (−0.17, −0.18). Freezing the first normalisation removes the apparent contraction. So **claim 1 fails for the exchange field**, as claim 2 does. The pair potential carries almost no shared push, and its readings do not change.
+- **The context field binds here more strongly than anywhere** (panel b, purple). Noun-chunk binding is +0.054 in G3 and +0.076 in G3′, against at most +0.064 in the six earlier models. It survives the prediction control as before (+0.031 and +0.038 remain), and the true next words again have no chunk structure.
+- **The head–dependent separation moves to other couplings.** The context field no longer makes it, and pushes slightly the wrong way (+0.005, +0.010). The states still separate heads from dependents (−0.018, −0.015). In G3 the exchange field does it; in G3′ the Fock registers and the exchange field share it.
+- **No reference binding.** The probe fails in both models: 0.475 and 0.491 at the last layer, against 0.54 for the nearest earlier mention. G3′'s first layer reaches 0.62, the highest of any of our models at any layer and close to GPT-2's middle layers (0.64). With 48 test texts, though, a margin of eight points is within the uncertainty. In the 16 dominant directions, G3′ shows the first-layer coreference signal of the earlier models. It is again the same word repeated, though narrowly: without same-word pairs it is +0.021, 0.018 above a random projection, where the rule needs 0.02. The pair potential again does not choose related sources (coreference 1.06–1.15 times chance).
+- **Extra depth collapses them at once** (panels c, d).
+  - One extra step raises perplexity from 50 to 1,025 in G3 and to 188 in G3′.
+  - In both, the tokens draw together (S +0.31, +0.29) and lose dimensions (−22%, −68%). Unlike PM1, SR2 and the four-layer model, these failures come with collapse from the start.
+  - Unlike most earlier models, their noun-chunk grouping fades with the extra steps instead of growing. In G3′ it is gone after one step.
+
+The reading is short. At two layers, the attention-shaped conservative coupling behaves like the first layers of the matched GPT-2: it moves the tokens, spreads them, and binds nothing. Whatever these models group, they group through the context field, and more strongly than any other model does.
+
+## 25. The verdict against the pre-registered calls
 
 | call | prediction | called at | result |
 | --- | --- | ---: | --- |
@@ -516,19 +546,21 @@ The four follow-up tests, each fixed in advance in the protocol, are not part of
 | B: is the pattern the geometry of prediction? | **no** for noun chunks, **mostly yes** for head–dependent (§19) |
 | decoding probe: is the antecedent recoverable? | **no**, in every model (§21) |
 | binding in a subspace | only lexical identity, not reference (§21) |
+| exchange field (G3 and G3′ both): claims 1 and 2 | **both fail**; the apparent contraction at the first layer was the normalisation acting on its shared push (§24) |
 
-**The verdict, in plain terms.** On the couplings the test was designed around, the trained models synchronize tokens without grouping related words, so the pre-registered verdict is "semantically blind". They do group the words of syntactic constituents, through a coupling Part I had classed as a confound to control: the context field, a mean field that produces clustered synchronization. That grouping is generic, since the matched transformer forms it too, but the mechanism is particular to this framework: one mean field at the last step, where the transformer uses attention spread over its middle layers. Neither family binds reference at this budget. And running the models past their trained depth makes the tokens collapse together, which is how their catastrophic failures look, though not how they begin.
+**The verdict, in plain terms.** On the couplings the test was designed around, the trained models synchronize tokens without grouping related words, so the pre-registered verdict is "semantically blind". They do group the words of syntactic constituents, through a coupling Part I had classed as a confound to control: the context field, a mean field that produces clustered synchronization. That grouping is generic, since the matched transformer forms it too, but the mechanism is particular to this framework: one mean field at the last step, where the transformer uses attention spread over its middle layers. The attention-shaped exchange field of the Gen 3 models does not change this: it binds nothing, and those models too bind constituents through the context field. Neither family binds reference at this budget. And running the models past their trained depth makes the tokens collapse together, which is how their catastrophic failures look, though not how they begin.
 
-## 25. What remains open
+## 26. What remains open
 
 - **What starts the extra-depth failure.** Collapse accompanies the catastrophic stage but not the first degradation (§22), so something else breaks first.
 - **Why GPT-2's embedding already groups noun chunks** while ours does not, and whether this is why attention can build the grouping gradually.
-- **A larger probe test set.** With 48 test texts the probe cannot resolve differences of a few points between the families.
+- **A larger probe test set.** With 48 test texts the probe cannot resolve differences of a few points between the families. G3′'s first layer (0.62, §24) is the first case it should decide.
+- **The readout point in the other measures.** S is now read before any normalisation. The binding contrast is read, by design, on the normalised states the next layer reads. For the couplings measured here the references agree on it, but a coupling with a large shared push could make it depend on the reference too.
 - **Whether the wells act through the context or alongside it**, which needs a replay that changes both at once.
 - **The Fock register readout** (are related tokens written into the same register?), which Part I planned and was not implemented.
 - **Predictions P3 and P4 of the book**: clustering the last-layer states into constituency trees, and a per-phrase potential well.
 - **A possible link to the context design.** A smooth, redundant bank of moving averages makes a better context than more informative orthogonal bases (book claim C7). A smooth, local-in-time field may be exactly what produces constituent clusters. That is a hypothesis, not a finding.
-- **Scope.** Every result is for two-layer models and one four-layer model at about a third of a compute-optimal budget. The effects are a few hundredths of a cosine: small, consistent across models, and controlled, but not large.
+- **Scope.** Every result is for seven two-layer models (counting G3 and G3′) and one four-layer model at about a third of a compute-optimal budget. The effects are a few hundredths of a cosine: small, consistent across models, and controlled, but not large.
 
 
 **References.** B. Geshkovski, C. Letrouit, Y. Polyanskiy, P. Rigollet, The emergence of clusters in self-attention dynamics, NeurIPS 36 (2023); A mathematical perspective on Transformers, arXiv:2312.10794. N. Karagodin, Y. Polyanskiy, P. Rigollet, Clustering in causal attention masking, arXiv:2411.04990 (2024). Y. Kuramoto, Chemical Oscillations, Waves, and Turbulence (1984). S. Strogatz, Sync (2003). A. Warstadt et al., BLiMP: The Benchmark of Linguistic Minimal Pairs for English, TACL 8 (2020).

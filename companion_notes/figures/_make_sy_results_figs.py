@@ -357,3 +357,64 @@ ax[2].set_ylabel('contraction S of the whole set\n(< 0: spread apart)')
 ax[2].set_title('(c) At the last layer both couplings spread the\ntoken set (ours contract it at the first, G2 and L = 4)', fontsize=10)
 ax[2].legend(fontsize=8)
 save(fig, 'sy_r10_gpt2.png')
+
+
+# ---------------------------------------------------------------- Figure 11: the two exchange-field arms (G3, G3')
+GX = ['G3', 'G3p']; GXL = {'G3': 'G3', 'G3p': 'G3′'}; GXC = {'G3': '#0f766e', 'G3p': '#be185d'}
+for a in GX:
+    m = load('measure', a); x = load('xi_pred', a)
+    for l in (0, 1):
+        for rf in ('dcom', 'fcom'):
+            num(f'{a}/S/exch/{rf}/L{l}', lambda: S.boot_mean(m[f'L{l}/exch/{rf}/Gamma']))
+    for c in ('vphi', 'fock', 'exch'):
+        for g in ('chunk', 'dep', 'coref'):
+            num(f'{a}/Bspec/{c}/{g}', lambda: S.boot_contrast_diff(m[f'L1/{g}/B_on'], m[f'L1/{g}/{c}/dcom/B_ref']))
+    for g in ('chunk', 'dep', 'coref'):
+        num(f'{a}/Bspec/xi/{g}', lambda: S.boot_contrast_diff(x[f'L1/{g}/B_on'], x[f'L1/{g}/common/B_ref']))
+fig, ax = plt.subplots(2, 2, figsize=(14, 9.6), gridspec_kw={'wspace': 0.3, 'hspace': 0.5})
+# (a) the exchange field's contraction: as first read (after the first LayerNorm) and before any normalization
+a0 = ax[0, 0]
+REFJ = {a: json.loads((DBG / f'sy_exch_reference_{a}.json').read_text()) for a in GX}
+bars = (('B/tot', 'first reading: displacement form', 1.0, None), ('B/spec', 'first reading: force form', 0.45, '//'),
+        ('A/spec', 'before normalisation: force form', 1.0, '...'), ('A/dev', 'before normalisation: specific only', 0.45, 'xx'))
+w = 0.1
+for k, a in enumerate(GX):
+    for j, (key, nm, alp, hatch) in enumerate(bars):
+        v = np.array([REFJ[a][f'L{l}/exch/{key}'] for l in (0, 1)])
+        a0.bar(np.arange(2) + (4 * k + j - 3.5) * w, v[:, 0], w, yerr=[v[:, 0] - v[:, 1], v[:, 2] - v[:, 0]], capsize=1.5,
+               color=GXC[a], alpha=alp, hatch=hatch, edgecolor='white' if alp == 1.0 else GXC[a], linewidth=0.6,
+               label=f'{GXL[a]}: {nm}')
+a0.axhline(0, color='k', lw=0.8); a0.axhspan(-0.02, 0.02, color='0.93', zorder=0)
+a0.set_xticks([0, 1]); a0.set_xticklabels(['layer 0', 'layer 1']); a0.set_ylabel('contraction S by the exchange field\n(> 0: drawn together)')
+a0.set_title('(a) The first reading\'s contraction at layer 0 vanishes when S is\nread before the normalisation; at layer 1 the field spreads', fontsize=10)
+a0.legend(fontsize=6.8, loc='lower left', ncol=1)
+# (b) binding made by each coupling at the last layer
+a1 = ax[0, 1]; groups = ('chunk', 'dep', 'coref'); coups = ('vphi', 'fock', 'exch', 'xi')
+CC = dict(CCOL, exch='#f59e0b'); CN = dict(CNAME, exch='exchange field')
+for i, c in enumerate(coups):
+    for k, a in enumerate(GX):
+        v = np.array([N[f'{a}/Bspec/{c}/{g}'] for g in groups])
+        pos = np.arange(3) + (i - 1.5) * 0.2 + (k - 0.5) * 0.09
+        a1.bar(pos, v[:, 0], 0.085, yerr=[v[:, 0] - v[:, 1], v[:, 2] - v[:, 0]], capsize=1.5, color=CC[c],
+               alpha=1.0 if k == 0 else 0.55, label=f'{CN[c]}' if k == 0 else None)
+a1.axhline(0, color='k', lw=0.8); a1.axhline(0.02, color='0.5', ls=':', lw=1); a1.axhline(-0.02, color='0.5', ls=':', lw=1)
+a1.set_xticks(range(3)); a1.set_xticklabels(['noun chunk', 'head-dependent', 'coreference'])
+a1.set_ylabel('binding made by the coupling, last layer')
+a1.set_title('(b) Who binds in G3 (solid) and G3′ (pale): the context field,\nnot the exchange field', fontsize=10)
+a1.legend(fontsize=8)
+# (c, d) extra depth: effective rank and noun-chunk binding, beside the earlier arms
+for a in ARMS + GX:
+    d = json.loads((DBG / f'sy5_depth_{a}.json').read_text()); NSa = d['NS']; R = d['results']
+    hi = a in GX
+    kw = dict(color=GXC[a], lw=2.4, marker='o', label=GXL[a]) if hi else dict(color='0.7', lw=1.1, marker='.', label='earlier arms' if a == 'F3.1' else None)
+    ax[1, 0].plot(range(len(NSa)), [100 * R[str(n)]['rank_change'][0] for n in NSa], **kw)
+    ax[1, 1].plot(range(len(NSa)), [R[str(n)]['B_chunk'][0] for n in NSa], **kw)
+ax[1, 0].axhline(-20, color='#ef4444', ls='--', lw=1); ax[1, 0].text(0.05, -17, 'criterion -20%', color='#ef4444', fontsize=8)
+ax[1, 0].set_ylabel('change of effective rank (%)')
+ax[1, 0].set_title('(c) Extra depth: both exchange-field models lose\ndimensions from the first extra step', fontsize=10)
+ax[1, 1].axhline(0, color='k', lw=0.8); ax[1, 1].axhspan(-0.02, 0.02, color='0.93', zorder=0)
+ax[1, 1].set_ylabel('noun-chunk binding B of the final states')
+ax[1, 1].set_title('(d) ... and their noun-chunk grouping fades with extra\nsteps, where in most earlier models it kept growing', fontsize=10)
+for a_ in (ax[1, 0], ax[1, 1]):
+    a_.set_xticks([0, 1, 2]); a_.set_xticklabels(['trained depth', '+1 step\n(+2 at L = 4)', '+2 steps\n(+4 at L = 4)']); a_.legend(fontsize=8)
+save(fig, 'sy_r11_exchange.png')

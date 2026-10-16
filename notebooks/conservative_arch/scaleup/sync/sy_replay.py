@@ -32,7 +32,27 @@ ARMS = {   # name: (folder, Cell 0 replacements, couplings, common reference ado
     'PMX': (_T + 'pm64_pmx16_sr2' + _E, F31 + P.PM_ON + SR2 + PMXS, ['vphi', 'wells'], 'dcom'),
     'L4F': (P._P + 'vplive_xilive_L4probe' + P._S.replace('idt4_', 'idt2_') + 'noattn',
             P.CONFIGS['G2'][1] + (("LADDER_L         = 2 ", "LADDER_L         = 4 "),), ['vphi', 'fock'], 'fcom'),
+    # the two exchange-field arms of Gen 3 (added 2026-10-15; protocol §5.22, "SY extended ..."); their common
+    # reference is read from sy_measure's adoption check (None = decide from sy_measure_<ARM>_output.txt)
+    'G3': (P._P + 'rglive_vplive_xilive_L2probe' + P._S + 'attnpot',
+           P.LIVE + (("LADDER_MECHANISM = 'none'", "LADDER_MECHANISM = 'attention_potential'"),
+                     ("RELAX_GRAD_PATH        = 'default'", "RELAX_GRAD_PATH        = 'live'")),
+           ['vphi', 'fock', 'exch'], None),
+    'G3p': (P._P + 'rglive_vplive_xilive_rfqk_rfclip0p3_L2probe' + P._S + 'attnpot',
+            P.LIVE + (("LADDER_MECHANISM = 'none'", "LADDER_MECHANISM = 'attention_potential'"),
+                      ("RELAX_GRAD_PATH        = 'default'", "RELAX_GRAD_PATH        = 'live'"),
+                      ("RELAX_ATTN_QK_NORM          = False", "RELAX_ATTN_QK_NORM          = True"),
+                      ("RELAX_FIELD_CLIP            = None", "RELAX_FIELD_CLIP            = 0.3")),
+            ['vphi', 'fock', 'exch'], None),
 }
+
+
+def adopted_ref(arm):
+    """'dcom' if sy_measure adopted the displacement-level reference for the arm, else 'fcom'."""
+    out = HERE / f'sy_measure_{arm}_output.txt'
+    if not out.exists():
+        return 'dcom'
+    return 'dcom' if 'displacement-level reference ADOPTED' in out.read_text() else 'fcom'
 
 
 def _tokmean(F):
@@ -49,6 +69,8 @@ class Replayer:
     def __init__(self, arm):
         self.arm = arm
         folder, repl, self.couplings, self.ref = ARMS[arm]
+        if self.ref is None:
+            self.ref = adopted_ref(arm)
         self.model, _, _ = P.build(folder, repl)
         m = self.model
         m.to('cpu'); m.eval()
@@ -97,6 +119,9 @@ class Replayer:
             elif c == 'fock':
                 saved['f'] = m.reverse_channel_scale.detach().clone()
                 with torch.no_grad(): m.reverse_channel_scale.zero_()
+            elif c == 'exch':
+                saved['x'] = m.relax_lambda.detach().clone()
+                with torch.no_grad(): m.relax_lambda.zero_()
         elif k == 'fcom':
             if c == 'vphi':
                 lf0, zp = self._lf, self._zero_pair
@@ -117,6 +142,10 @@ class Replayer:
                 rc = m.reverse_ch; f0 = rc.forward
                 rc.forward = lambda *a, **kw: _tokmean(f0(*a, **kw))
                 saved['rc'] = True
+            elif c == 'exch':
+                rf = m.relax_field; fl0 = rf.force_live
+                rf.force_live = lambda *a, **kw: _tokmean(fl0(*a, **kw))
+                saved['rf'] = True
         elif k == 'xi':
             x0 = self._xi
             if c == 'own':
@@ -139,7 +168,9 @@ class Replayer:
         with torch.no_grad():
             if 'w' in saved: m.pm_depth.copy_(saved['w'])
             if 'f' in saved: m.reverse_channel_scale.copy_(saved['f'])
+            if 'x' in saved: m.relax_lambda.copy_(saved['x'])
         if 'rc' in saved: del m.reverse_ch.__dict__['forward']
+        if 'rf' in saved: del m.relax_field.__dict__['force_live']
         if 'xi' in saved: del m.xi_module.__dict__['forward']
 
     def replay(self, l, version):
