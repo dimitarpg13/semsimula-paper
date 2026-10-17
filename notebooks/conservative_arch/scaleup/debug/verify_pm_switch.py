@@ -80,9 +80,14 @@ def build(folder, repl):
     assert not r.unexpected_keys, r.unexpected_keys
     for k in r.missing_keys:      # new parameters: deterministic fill so HEAD and working copy agree
         assert k in ('relax_field.logit_scale',) or k.startswith('pm_'), k
+    # Fill the exchange field's per-head temperature ONLY when the checkpoint lacks it (an arm
+    # trained before the parameter existed). Until 2026-10-16 this fill ran unconditionally and
+    # overwrote G3''s trained temperatures with their initial value 1/0.07 on every local load.
     with torch.no_grad():
-        if getattr(model, 'relax_field', None) is not None and getattr(model.relax_field, 'logit_scale', None) is not None:
+        if 'relax_field.logit_scale' in r.missing_keys:
             model.relax_field.logit_scale.fill_(np.log(1 / 0.07))
+        elif getattr(model, 'relax_field', None) is not None and getattr(model.relax_field, 'logit_scale', None) is not None:
+            assert torch.equal(model.relax_field.logit_scale, ck['model_state_dict']['relax_field.logit_scale'].to(model.relax_field.logit_scale.dtype))
     return model, g, out.getvalue()
 
 

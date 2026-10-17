@@ -32,7 +32,10 @@ Values are those of the published G3′ (`attention-potential-rfqk-live`), $L = 
 | $V_\theta$, $V_\phi$ | the one-body potential (wells placed by the context) and the pair potential | |
 | $f^{\mathrm{ex}}\_t$ | exchange-field force on token $t$ | |
 | $\lambda_{\mathrm{ex}}$ | exchange-field gate | fixed at 1 |
-| $H$, $d_v$ | exchange-field heads and head width | 8, 48 |
+| $H$ | exchange-field heads | 8 |
+| $W^{(c)}\_{\mathrm{q}}$, $W^{(c)}\_{\mathrm{k}}$, $W^{(c)}\_{\mathrm{v}}$ | query, key and value projections of exchange head $c$ (subscripts q, k, v; v is "value", not the Greek $\nu$) | each $d \to 48$ |
+| $U^{(c)}$ | readout projection of exchange head $c$ (value space back to $d$) | $48 \to d$, initialised at 0 |
+| $d_{\mathrm{k}}$, $d_{\mathrm{v}}$ | key and value width of each exchange head | 48, 48 |
 | $a^{(c)}_{ts}$ | exchange routing weight of source $s$ for token $t$, head $c$ | |
 | $\eta_c$ | exchange routing temperature, head $c$ | initial 1/0.07, cap 100 |
 | $M$ | number of registers | 32 |
@@ -49,7 +52,7 @@ Values are those of the published G3′ (`attention-potential-rfqk-live`), $L = 
 | $w(n)$ | warm-up ramp of the read, at training step $n$ | 4,000 steps |
 | $A_{ij}$ | effective influence of token $j$ on token $i$ through the registers | |
 
-Two symbols that look alike are kept apart: $\lambda$ is the salience decay and $\lambda_{\mathrm{ex}}$ the exchange-field gate; $\sigma_k$ is a salience and $\eta$ (with any index) a softmax temperature.
+A tilde marks a normalised vector: $\tilde{q}$ and $\tilde{k}$ are the query and key scaled to unit length, and $\widetilde{Q}$ is the read result after its output normalisation. Two symbols that look alike are kept apart: $\lambda$ is the salience decay and $\lambda_{\mathrm{ex}}$ the exchange-field gate; $\sigma_k$ is a salience and $\eta$ (with any index) a softmax temperature.
 
 ## 2. The attention mechanism it is built to match
 
@@ -107,19 +110,21 @@ Steps 1, 2 and 7 act on the registers; steps 3 and 5 act on the tokens.
 
 ### 4.1 Definition
 
-The exchange field routes each token over the earlier tokens with $H$ attention heads. For head $c$, queries and keys are projected from the token states and normalised, and a learned temperature restores their range ($b_c$ is a trained parameter):
+The exchange field routes each token over the earlier tokens with $H$ attention heads. Head $c$ has four projections: a query projection $W^{(c)}\_{\mathrm{q}}$, a key projection $W^{(c)}\_{\mathrm{k}}$ and a value projection $W^{(c)}\_{\mathrm{v}}$, each from the token space ($d$) to a head space of width $d_{\mathrm{k}} = d_{\mathrm{v}} = 48$, and a readout $U^{(c)}$ that maps the value space back to the token space. The subscripts q, k and v stand for query, key and value. Queries and keys are normalised to unit length (a tilde marks a normalised vector), and a learned temperature restores their range ($b_c$ is a trained parameter):
 
-$$\tilde{q}^{(c)}_t = \frac{W^{(c)}_q h_t}{\lVert W^{(c)}_q h_t \rVert}, \qquad \tilde{k}^{(c)}_s = \frac{W^{(c)}_k h_s}{\lVert W^{(c)}_k h_s \rVert}, \qquad a^{(c)}_{ts} = \mathrm{softmax}_{s \lt t}\left(\eta_c \tilde{q}^{(c)}_t \cdot \tilde{k}^{(c)}_s\right), \qquad \eta_c = \min\left(e^{b_c}, 100\right).$$
+$$\tilde{q}^{(c)}_t = \frac{W^{(c)}_{\mathrm{q}} h_t}{\lVert W^{(c)}_{\mathrm{q}} h_t \rVert}, \qquad \tilde{k}^{(c)}_s = \frac{W^{(c)}_{\mathrm{k}} h_s}{\lVert W^{(c)}_{\mathrm{k}} h_s \rVert}, \qquad a^{(c)}_{ts} = \mathrm{softmax}_{s \lt t}\left(\eta_c \tilde{q}^{(c)}_t \cdot \tilde{k}^{(c)}_s\right), \qquad \eta_c = \min\left(e^{b_c}, 100\right).$$
 
-The force on token $t$ is the routed sum of the earlier tokens' values, read out through a second projection $U^{(c)}$:
+The score of source $s$ for token $t$ is the dot product $\tilde{q}^{(c)}\_t \cdot \tilde{k}^{(c)}\_s$ of two unit vectors, which is the cosine of the angle between the query and the key. It always lies between −1 and 1, however large the weights grow. Multiplying by $\eta_c$ restores the range: the score is at most $\eta_c$ in size, and $\eta_c$ is capped at 100. A larger $\eta_c$ makes the softmax sharper, concentrating token $t$ on the earlier tokens that match best. The softmax over the earlier positions turns the scores into routing weights that sum to 1. (Plain attention, as in G3, uses the unnormalised dot product divided by $\sqrt{d_{\mathrm{k}}}$, whose size grows with the weights.)
 
-$$f^{\mathrm{ex}}_t = \lambda_{\mathrm{ex}} \sum_{c=1}^{H} \sum_{s \lt t} a^{(c)}_{ts} \frac{U^{(c)\top} W^{(c)}_v h_s}{\sqrt{d_v}}.$$
+The force on token $t$ is the routed sum of the earlier tokens' values $W^{(c)}\_{\mathrm{v}} h_s$, mapped back to the token space by $U^{(c)}$ and scaled by $1/\sqrt{d_{\mathrm{v}}}$:
+
+$$f^{\mathrm{ex}}_t = \lambda_{\mathrm{ex}} \sum_{c=1}^{H} \sum_{s \lt t} a^{(c)}_{ts} \frac{U^{(c)\top} W^{(c)}_{\mathrm{v}} h_s}{\sqrt{d_{\mathrm{v}}}}.$$
 
 The sum runs over strictly earlier tokens: a token does not route to itself. $U^{(c)}$ is initialised at zero, so the field is exactly zero at the start of training and grows as it is learned. The gate $\lambda_{\mathrm{ex}}$ is fixed at 1.
 
 ### 4.2 As a potential, at frozen routing
 
-The field was designed as the gradient of an attention potential. With the bilinear kernel $\phi^{(c)}(h_t, h_s) = (U^{(c)} h_t) \cdot (W^{(c)}\_v h_s) / \sqrt{d_v}$,
+The field was designed as the gradient of an attention potential. With the bilinear kernel $\phi^{(c)}(h_t, h_s) = (U^{(c)} h_t) \cdot (W^{(c)}\_{\mathrm{v}} h_s) / \sqrt{d_{\mathrm{v}}}$,
 
 $$V_{\mathrm{attn}} = -\sum_t \sum_{s \lt t} \sum_c a^{(c)}_{ts} \phi^{(c)}(h_t, h_s), \qquad f^{\mathrm{ex}}_t = -\lambda_{\mathrm{ex}} \nabla_{h_t} V_{\mathrm{attn}} \quad \text{with } a \text{ and } h_s \text{ held fixed}.$$
 
@@ -131,7 +136,7 @@ With `relax_grad_path='live'` (G3, G3′) the forward value is exactly the expre
 
 ### 4.3 Relation to attention
 
-Algebraically the exchange field is causal multi-head self-attention without the self term: the routing is a softmax over query–key cosines, the value is $W_v h_s$, and $U^{\top}$ is the output projection. It differs in where its output goes:
+Algebraically the exchange field is causal multi-head self-attention without the self term: the routing is a softmax over query–key cosines, the value is $W_{\mathrm{v}} h_s$, and $U^{\top}$ is the output projection. It differs in where its output goes:
 - **It is a force, not a residual write.** It enters the velocity, scaled by $dt / m_t$, and passes through the friction and the harmonic flow of the integrator before it moves the token.
 - **It has no memory.** It is recomputed from the current states at every layer.
 
@@ -141,7 +146,7 @@ In the language of §2 it is an **instantaneous** virtual exchange, emitted and 
 
 - **G3** routes with plain scaled dot products ($1/\sqrt{d_k}$).
 - **G3′** normalises queries and keys (the $\eta_c$ form above), and trains the field's parameters in their own gradient-clipping group (clip 0.3). The clip acts on the gradients, not on the field.
-- Both: $H = 8$ heads, $d_k = d_v = 48$, routing from the token states, zero-initialised readout $U$, $\lambda_{\mathrm{ex}} = 1$.
+- Both: $H = 8$ heads, $d_{\mathrm{k}} = d_{\mathrm{v}} = 48$, routing from the token states, zero-initialised readout $U$, $\lambda_{\mathrm{ex}} = 1$.
 
 ## 5. The mediated route: the Fock registers
 
@@ -306,7 +311,11 @@ The canonical routing primitive is: find an earlier occurrence of the current to
 
 Panels A and B are illustrations, not measurements. The exchange field is not drawn.
 
-**What has and has not been measured.** The controlled measurement of the read's contribution is the ablation with $s_\ell = 0$ and everything else fixed. With the read off, the forward pass is the token dynamics alone, so the change in loss is the registers' whole predictive contribution. That ablation has not yet been run on the Gen 3 arms. §10 reports what the trained mechanism does, not what it is worth.
+**What has been measured.** Because the read is the registers' only port, removing it is the same as removing the register mechanism from the forward pass. On the Gen 3 two-layer model with registers and no exchange field (G2) this has been measured two ways (book, "Which coupling carries the step"):
+- **Reliance.** Switched off at inference on the trained weights, the register path costs 1.49 nats: the trained network routes a great deal through it.
+- **Value.** A model trained without it, everything else equal, is only 0.084 nats worse (perplexity 57.76 against 53.12).
+
+Reliance overstates value by an order of magnitude: a model trained without the registers finds other routes. An earlier ablation from initialisation on the $d = 384$ OpenWebText pilot showed a much larger gap, but that comparison predates the causal-leak fix and the live-gradient (Gen 3) training, so only its sign is retained. The corresponding measurements for G3 and G3′, where the exchange field offers a second route, are not in that comparison.
 
 ## 8. The virtual-particle interpretation
 
@@ -316,7 +325,7 @@ Panels A and B are illustrations, not measurements. The exchange field is not dr
 | --- | --- | --- | --- |
 | emitter | source charge | earlier token $s$ (key) | token $j$, through the write's key |
 | emission vertex | coupling at the source | routing weight $a_{ts}$ | write weight $\alpha_{kj}$ |
-| what propagates | the virtual photon | the value $W_v h_s$, within one step | the register $r_k$, across layers |
+| what propagates | the virtual photon | the value $W_{\mathrm{v}} h_s$, within one step | the register $r_k$, across layers |
 | absorption vertex | coupling at the receiver | the same weight $a_{ts}$ | read weight $\beta_{ik}$ |
 | receiver | target charge | token $t$ (query) | token $i$, through the read's query |
 | lifetime | off-shell, short | zero: emitted and absorbed in one step | set by salience, about $1/(1-\lambda)$ layers |
@@ -364,7 +373,7 @@ This is an interpretation, not the implementation. In the published prefix-causa
 | hops | one | one | two |
 | who queries | the token | the token | the register (write), then the token (read) |
 | softmax over | earlier tokens | strictly earlier tokens | prefix tokens, then active registers |
-| content | $W_V h_j$ | $W_v h_s$, read out by $U^{\top}$ | $W_V h_j$ into the register, $W^{\mathrm{rev}}\_V r_k$ out |
+| content | $W_V h_j$ | $W_{\mathrm{v}} h_s$, read out by $U^{\top}$ | $W_V h_j$ into the register, $W^{\mathrm{rev}}\_V r_k$ out |
 | enters the token as | a residual write | a force inside the integrator | a position increment after the step |
 | memory across layers | none | none | yes, salience-gated |
 | rank of the token kernel | up to $T$ | up to $T$ per head | at most $M$ |
@@ -376,7 +385,7 @@ This is an interpretation, not the implementation. In the published prefix-causa
 
 ![Measured on the trained G3′](figures/fock_v21/fock_g3p_lifecycle.png)
 
-**Figure 7.** Measured on the trained G3′, 8 validation sequences of 512 tokens.
+**Figure 7.** Measured on the trained G3′, 8 validation sequences of 512 tokens (re-measured 2026-10-16 after a loader fix that restored G3′'s trained exchange-field temperatures; the changes are small).
 - **(a)** The destruction gate.
 - **(b)** How focused the read is.
 - **(c)** The relative size of the two routes.
@@ -390,11 +399,11 @@ Made by [`figures/_make_fock_v21_figs.py`](figures/_make_fock_v21_figs.py).
 
 **The read.**
 - At layer 0 the read weights have entropy 1.9 nats, about 6.7 registers read effectively, with peak weight 0.48.
-- At layer 1 the entropy is 2.4 nats, about 10.5 registers, with peak weight 0.28.
+- At layer 1 the entropy is 2.3 nats, about 10.4 registers, with peak weight 0.28.
 
-The read is selective, and more so at the first layer, where it looks up the learned prototypes. The read increment has RMS 1.05 and 0.98 per coordinate, the same size as the normalised state.
+The read is selective, and more so at the first layer, where it looks up the learned prototypes. The read increment has RMS 1.04 and 0.98 per coordinate, the same size as the normalised state.
 
-**The exchange field.** It carries 32% of the integrator's force at layer 0 and 87% at layer 1 (medians of per-token force norms).
+**The exchange field.** It carries 32% of the integrator's force at layer 0 and 88% at layer 1 (medians of per-token force norms).
 
 **What the synchronization tests found.** These are from [`Spontaneous_Synchronization_and_Semantic_Binding_Test_Programme.md`](Spontaneous_Synchronization_and_Semantic_Binding_Test_Programme.md) §15, §18 and §24.
 - **The register read** spreads the token set apart at every layer of G2, G3 and G3′. It works slightly against the grouping of noun-chunk words.

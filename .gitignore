@@ -41,4 +41,4 @@ notebooks/conservative_arch/scaleup/sync/sy_cache/
 # SY per-sequence statistics (bootstrap inputs; tens of MB, regeneratable by the
 # sync/ scripts). The _output.txt and .json summaries beside them are kept, and the
 # figures' statistics are cached in companion_notes/figures/sy_results/_numbers.json.
-notebooks/conservative_arch/scaleup/sync/*.npz
+notebooks/conservative_arch/scaleup/sync/**/*.npz

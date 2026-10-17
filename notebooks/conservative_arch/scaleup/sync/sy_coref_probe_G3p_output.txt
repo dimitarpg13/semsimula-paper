@@ -2,20 +2,20 @@ SY coreference decoding probe: G3p (L = 2); 2074 pronoun items in 200 sequences
 CHECK  layer 0: replay "on" vs the forward pass, max |d| 0.0e+00
 CHECK  layer 1: replay "on" vs the forward pass, max |d| 0.0e+00
 CHECK  every patch restored (logits identical after all replays)
-   states captured in 8.1 min
+   states captured in 5.7 min
    test items 442 in 48 sequences; chance 0.136; distance only (nearest) 0.541
    probe on the embeddings   test accuracy 0.446
    probe on layer 0 output   test accuracy 0.620
-   probe on layer 1 output   test accuracy 0.491
-   final layer minus embeddings +0.045 [-0.035, +0.137];  minus distance-only -0.050 [-0.161, +0.055]
+   probe on layer 1 output   test accuracy 0.482
+   final layer minus embeddings +0.036 [-0.041, +0.123];  minus distance-only -0.059 [-0.178, +0.053]
    => the dynamics do not make decodable binding information in this arm
 
 ABLATION: the final-layer probe (trained on the trained model) applied to the last step replayed under each change
-   vphi  common  accuracy 0.491   drop +0.000 [-0.020, +0.017]
-   vphi  off     accuracy 0.491   drop +0.000 [-0.018, +0.020]
-   fock  common  accuracy 0.514   drop -0.023 [-0.059, +0.013]
-   fock  off     accuracy 0.348   drop +0.143 [+0.089, +0.201]
-   exch  common  accuracy 0.505   drop -0.014 [-0.042, +0.016]
-   exch  off     accuracy 0.511   drop -0.020 [-0.062, +0.021]
-   xi    own     accuracy 0.486   drop +0.005 [-0.041, +0.056]
-   xi    common  accuracy 0.468   drop +0.023 [-0.017, +0.062]
+   vphi  common  accuracy 0.480   drop +0.002 [-0.018, +0.023]
+   vphi  off     accuracy 0.484   drop -0.002 [-0.020, +0.018]
+   fock  common  accuracy 0.509   drop -0.027 [-0.062, +0.009]
+   fock  off     accuracy 0.353   drop +0.129 [+0.085, +0.176]
+   exch  common  accuracy 0.489   drop -0.007 [-0.042, +0.027]
+   exch  off     accuracy 0.495   drop -0.014 [-0.050, +0.029]
+   xi    own     accuracy 0.489   drop -0.007 [-0.054, +0.047]
+   xi    common  accuracy 0.464   drop +0.018 [-0.028, +0.063]

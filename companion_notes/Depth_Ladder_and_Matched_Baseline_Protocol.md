@@ -4542,12 +4542,12 @@ Settled against the other L = 2 arms: −6.3% against SR2 (58.32), −5.4% again
 | --- | --- | ---: | ---: | ---: | --- |
 | RR1 | layer-0 destruction gate, median | **0.478** | 0.994 | 0.978 | **HIT**, narrowly |
 | RR2 | share of initial salience left after the last layer, median | **0.0646** | 0.0007 | 0.0027 | **HIT** (about 90× G2's) |
-| RR3 | change in refinement penalty when bookkeeping is held | **+141%** (Gate 3 +111% → +503%) | −13% (+1,446% → +994%) | — | **MISS** |
+| RR3 | change in refinement penalty when bookkeeping is held | **+121%** (Gate 3 +119% → +468%; corrected 2026-10-16, see the G3′ correction in §5.22) | −13% (+1,446% → +994%) | — | **MISS** |
 
 - **The layer-0 destruction gate is bimodal in G3′:** 10th percentile 0.03, 90th 0.999. It empties about half its registers and keeps the rest, where G2 empties nearly all of them.
 - **RR3 missed, in the direction that supports H-RR.**
   - In G2 the per-step register bookkeeping under refinement is harmful: holding it back helps a little.
-  - In G3′ it is the reverse. The per-step updates are part of why it refines well, and holding them back raises the penalty sixfold. Its register state behaves like an accumulated quantity that more steps integrate smoothly.
+  - In G3′ it is the reverse. The per-step updates are part of why it refines well, and holding them back raises Gate 3 from +119% to +468% (ln-penalty 0.79 → 1.74; corrected 2026-10-16). Its register state behaves like an accumulated quantity that more steps integrate smoothly.
 - **Reading.** RR1 and RR2 hold, and RR3's direction agrees: H-RR gains support. Also, G3′'s DP3 correlation at layer 1 is −0.63, stronger than G2's.
 - **The decisive test remains a second seed of G3′ and of G2** (GPU), to rule out a basin one seed happened to find.
 
@@ -5269,7 +5269,7 @@ This adds a qualified positive to the "semantically blind" verdict on the pre-re
 
 The two published Gen 3 arms not yet measured are added, at the author's request:
 - **G3** (`attention-potential-live`, settled PPL 54.21);
-- **G3′** (`attention-potential-rfqk-live`, the hardened version with query–key normalisation and field clip 0.3, settled PPL 52.90).
+- **G3′** (`attention-potential-rfqk-live`, the hardened version with query–key normalisation and the exchange field's parameters in their own gradient-clipping group at 0.3, settled PPL 52.90).
 
 Both are built from the registry's Cell 0 settings (`attention_potential`, reverse channel on, every gradient path live) and their local checkpoints.
 
@@ -5300,13 +5300,13 @@ On both arms the displacement and force references agree on V_φ, so the displac
 
 | | G3 | G3′ |
 | --- | ---: | ---: |
-| Γ_spec, layer 0, displacement reference (adopted) | **+0.056** [+0.055, +0.057] | **+0.110** [+0.108, +0.111] |
+| Γ_spec, layer 0, displacement reference (adopted) | **+0.056** [+0.055, +0.057] | **+0.112** [+0.110, +0.113] |
 | Γ_spec, layer 0, force reference | −0.002 | −0.008 |
-| Γ_spec, layer 1, displacement / force | −0.226 / −0.138 | −0.244 / −0.117 |
-| B_spec, layer 1: noun chunks | −0.012 | −0.001 |
-| B_spec, layer 1: coreference | −0.008 | −0.003 |
-| B_spec, layer 1: head–dependent | −0.015 | −0.009 |
-| B_spec, largest positive, either layer | entities +0.010 | entities +0.018 [+0.008, +0.029] (shuffled +0.002, not null) |
+| Γ_spec, layer 1, displacement / force | −0.226 / −0.138 | −0.286 / −0.144 |
+| B_spec, layer 1: noun chunks | −0.012 | −0.003 |
+| B_spec, layer 1: coreference | −0.008 | −0.007 |
+| B_spec, layer 1: head–dependent | −0.015 | −0.010 |
+| B_spec, largest positive, either layer | entities +0.010 | entities +0.018 [+0.006, +0.030] (shuffled +0.002, not null) |
 
 - **Level 0 holds for the exchange route by the fixed rule** (G3 and G3′ both), **and the result is not robust to the reference.**
   - On one step, the displacement form of Γ_spec equals the total contraction: a shared translation leaves distances unchanged, so it counts whatever the rest of the step does with the coupling's common push.
@@ -5314,40 +5314,40 @@ On both arms the displacement and force references agree on V_φ, so the displac
   - The adoption check is made on V_φ and cannot see a disagreement that arises in the coupling being scored.
   - The layer-0 contraction is therefore read as the step's response to the field's common push, not as synchronization by the field. At layer 1 the field spreads the tokens under both references.
   - **Decided by the reference test below: level 0 FAILS.** Read before any normalization, the field contracts at no layer of either arm; the layer-0 reading was the first LayerNorm acting on its shared push.
-- **Level 1 (c) fails in both arms.** No grouping passes the floor at either layer. The exchange field moves tokens strongly (switching it off moves the output by 8.9 and 9.4) without binding related ones.
+- **Level 1 (c) fails in both arms.** No grouping passes the floor at either layer. The exchange field moves tokens strongly (switching it off moves the output by 8.9 in both) without binding related ones.
 - **Against GPT-2's attention:** the field resembles GPT-2's first two attention layers, which also spread the token set (S −0.21, −0.26) and bind nothing. These arms have no middle depth, where GPT-2's attention builds the chunk grouping (+0.026 at layer 3).
 
 **The other couplings (descriptive)**
 - **ξ, test A, last layer:**
-  - noun chunks B_spec,ξ **+0.054** [+0.051, +0.058] in G3 and **+0.076** [+0.071, +0.081] in G3′, the largest of any arm (G2 +0.064 was the largest before);
+  - noun chunks B_spec,ξ **+0.054** [+0.051, +0.058] in G3 and **+0.074** [+0.069, +0.079] in G3′, the largest of any arm (G2 +0.064 was the largest before);
   - head–dependent B_spec,ξ +0.005 and +0.010, the wrong sign, with shuffled controls not null.
 - **The head–dependent separation** is still in the states (layer 1 B_on −0.018 and −0.015), but these arms carry it through other couplings:
   - G3: through the exchange field (−0.015);
-  - G3′: through the Fock channel (−0.018) and the exchange field (−0.009).
-- **Test B:** the noun-chunk residual after prediction passes (+0.031, +0.038), and the true next tokens have no chunk structure (+0.002, −0.000), as in the other six arms. The head–dependent residual is below the floor (−0.009, −0.006).
-- **The Fock channel expands the token set** at both layers (G3 −0.026 and −0.056; G3′ −0.052 and −0.092), as in G2.
-- **V_φ** does nothing at G3's layer 1 (0.000, as in G2 and SR2). It contracts at G3′'s layer 1 (+0.039 [+0.039, +0.040]).
+  - G3′: through the Fock channel (−0.018) and the exchange field (−0.010).
+- **Test B:** the noun-chunk residual after prediction passes (+0.031, +0.037), and the true next tokens have no chunk structure (+0.002, −0.000), as in the other six arms. The head–dependent residual is below the floor (−0.009, −0.006).
+- **The Fock channel expands the token set** at both layers (G3 −0.026 and −0.056; G3′ −0.052 and −0.089), as in G2.
+- **V_φ** does nothing at G3's layer 1 (0.000, as in G2 and SR2). It contracts at G3′'s layer 1 (+0.037 [+0.037, +0.038]).
 - **V_φ route readout** (`sync/sy_routes.py`; the rebuilt branch is exact, potential share 1.000): as in the six arms, V_φ does not choose related sources.
   - Coreference enrichment is 1.06–1.15, and head–dependent 1.01–1.19 (G3 layer 1: 1.193 [1.163, 1.221]), against the 1.2 required.
   - Same-POS sources are enriched up to 1.44.
   - The attraction contrasts are heavy-tailed and change sign between layers (coreference, G3′: −5.3 at layer 0, +0.51 at layer 1).
 - **The decoding probe fails in both arms.**
   - G3: final layer 0.475 against embeddings 0.471 (+0.005).
-  - G3′: final layer 0.491 against embeddings 0.446 (+0.045 [−0.035, +0.137]).
+  - G3′: final layer 0.482 against embeddings 0.446 (+0.036 [−0.041, +0.123]).
   - G3′'s layer-0 probe reaches 0.620, the highest of any arm at any layer, and 7.9 points above the nearest-mention baseline (0.541). Its interval was not computed; at the final layer the matching interval is about ±0.11 wide, so a margin of this size cannot be told from zero at this test size (442 items).
-  - Ablation: neither the exchange field's common-mode replay nor switching it off moves the final-layer readout (drops −0.020 to +0.000).
+  - Ablation: neither the exchange field's common-mode replay nor switching it off moves the final-layer readout (drops −0.018 to +0.000).
 - **Binding in a subspace:** no hit involves the exchange field.
   - The ξ hits repeat the six arms': part of speech, noun chunks and entities in the top 16 components.
   - G3′ also has the ξ coreference hit at layer 0 (+0.034), the one the six arms showed. Its examination (`sync/sy_coref_subspace_check.py`, revision 2 unchanged) finds it **lexical by the fixed rule, narrowly**:
     - all pairs: +0.034;
     - identical tokens excluded: +0.041;
-    - same words excluded: +0.021 [+0.014, +0.029], against +0.003 for the random 16-dimensional projection. That is 0.018 above it, where a hit needs 0.02.
-    - Pronoun–antecedent pairs give +0.014, with a biased shuffled control (−0.026), as in every arm.
+    - same words excluded: +0.022 [+0.015, +0.030], against +0.003 for the random 16-dimensional projection. That is 0.019 above it, where a hit needs 0.02.
+    - Pronoun–antecedent pairs give +0.016, with a biased shuffled control (−0.026), as in every arm.
 - **Extra depth (SY5): over-synchronization holds in both arms, at the first extra step.**
   - G3: perplexity 49.6 → 1,025 (+1,967%), S +0.31, effective rank −22%.
-  - G3′: perplexity 50.0 → 188 (+276%), S +0.29, rank −68%; at N = 4, rank −84%.
+  - G3′: perplexity 48.4 → 187 (+286%), S +0.27, rank −67%; at N = 4, rank −81%.
   - Unlike SR2, PM1 and the L = 4 arm, these failures come with collapse at the onset.
-  - Unlike PMX and F3.1, the noun-chunk binding decays with the extra steps (G3 +0.034 → +0.020 → +0.010; G3′ +0.043 → −0.001).
+  - Unlike PMX and F3.1, the noun-chunk binding decays with the extra steps (G3 +0.034 → +0.020 → +0.010; G3′ +0.041 → +0.000).
 
 **Reading.**
 1. **The attention-shaped conservative coupling is not where binding happens.** At L = 2 the exchange field behaves like an early attention layer: it moves and spreads tokens, and it binds no grouping, noun chunks or reference.
@@ -5359,7 +5359,7 @@ Scope: L = 2, 532.5M tokens, the same as the other arms (§5.19).
 
 #### Which common-mode reference for Γ_spec: a toy check and a mechanism replay — **criteria fixed 2026-10-15, before either is run**
 
-**The problem.** On the exchange field the two references disagree at layer 0 (displacement +0.056 and +0.110, force −0.002 and −0.008). On one step the displacement form of Γ_spec equals Γ_tot in every arm and for every coupling (a shared translation leaves distances unchanged). For Γ it is therefore the switch-off attribution, which SY0 run 1 rejected because it counts a common push. It was admitted for PMX's wells, which have no separable force, by an agreement check on V_φ. That check cannot see a disagreement in another coupling.
+**The problem.** On the exchange field the two references disagree at layer 0 (displacement +0.056 and +0.110, force −0.002 and −0.008; G3′'s values as first measured, +0.112 and −0.008 after the loader correction below). On one step the displacement form of Γ_spec equals Γ_tot in every arm and for every coupling (a shared translation leaves distances unchanged). For Γ it is therefore the switch-off attribution, which SY0 run 1 rejected because it counts a common push. It was admitted for PMX's wells, which have no separable force, by an agreement check on V_φ. That check cannot see a disagreement in another coupling.
 
 **A fact found while designing the replay.** In the Fock arms (G2, L4F, G3, G3′) the step applies LayerNorm twice: once at the end of the integrator, and again after the Fock increment is added. The "pre-LayerNorm" state on which Γ is read is the first LayerNorm's output plus the Fock increment. A shared push from V_φ or the exchange field passes through a per-token normalization before Γ reads it. In the other arms there is one LayerNorm and Γ is read before it.
 
@@ -5431,30 +5431,30 @@ If check 6 fails, the force form is not validated in this setting, and the excha
 
 | | G3, layer 0 | G3′, layer 0 | G3, layer 1 | G3′, layer 1 |
 | --- | ---: | ---: | ---: | ---: |
-| B (as scored): displacement form (= switch-off) | +0.055 | +0.111 | −0.229 | −0.245 |
-| B: force form | −0.003 | −0.008 | −0.145 | −0.119 |
-| B: specific-only | −0.002 | −0.004 | −0.148 | −0.119 |
-| **A (before any normalization): force form** | **−0.007** | **−0.014** | **−0.171** | **−0.176** |
-| **A: specific-only** | **−0.007** | **−0.013** | **−0.172** | **−0.177** |
+| B (as scored): displacement form (= switch-off) | +0.055 | +0.111 | −0.229 | −0.288 |
+| B: force form | −0.003 | −0.008 | −0.145 | −0.147 |
+| B: specific-only | −0.002 | −0.003 | −0.148 | −0.148 |
+| **A (before any normalization): force form** | **−0.007** | **−0.013** | **−0.171** | **−0.210** |
+| **A: specific-only** | **−0.007** | **−0.013** | **−0.172** | **−0.211** |
 | A: the shared push alone (M2) | +0.004 | +0.009 | −0.004 | −0.006 |
-| B: the shared push, first LayerNorm frozen (M3) | +0.005 | +0.004 | −0.014 | **−0.024** |
-| B: the shared push, as read | +0.058 | +0.119 | −0.084 | −0.126 |
+| B: the shared push, first LayerNorm frozen (M3) | +0.005 | +0.004 | −0.014 | **−0.025** |
+| B: the shared push, as read | +0.058 | +0.119 | −0.084 | −0.142 |
 
 Intervals are all narrower than ±0.025 (most under ±0.003).
 
-**Decision (rule fixed before the run).** At the integrator output the two orders agree within 0.001 at every layer of both arms.
-- At layer 0 their mean is −0.007 (G3) and −0.014 (G3′): below the floor and negative.
-- At layer 1 it is −0.172 and −0.176, spreading.
+**Decision (rule fixed before the run).** At the integrator output the two orders agree within 0.002 at every layer of both arms.
+- At layer 0 their mean is −0.007 (G3) and −0.013 (G3′): below the floor and negative.
+- At layer 1 it is −0.172 and −0.210, spreading.
 
 **The exchange route's level 0 FAILS:** the field contracts the token set at no layer of either arm. This replaces the "holds by the fixed rule" reading of the G3 block above.
 
 **Mechanism (descriptive).**
 - **M2 holds** at every layer of both arms: before any normalization the field's shared push contracts nothing (|Γ| ≤ 0.009).
 - The integrator's response to the push is exactly linear (relative error 4–7 × 10⁻⁷ for the push scaled by 0.5 and 2). It is only 3–7% token-specific (per-token mass varies ±2%, plus the harmonic flow).
-- The push is large: its shared displacement is 22% (G3) and 28% (G3′) of the states' RMS spread at layer 0, and 64% and 67% at layer 1.
+- The push is large: its shared displacement is 22% (G3) and 28% (G3′) of the states' RMS spread at layer 0, and 64% and 71% at layer 1.
 - **M3 holds at layer 0** in both arms. Freezing the first LayerNorm's per-token statistics removes the contraction (+0.058 → +0.005 and +0.119 → +0.004). The same LayerNorm without the Fock increment gives +0.059 and +0.128.
 - The layer-0 "contraction" is therefore SY0's normalization trap: a large shared push followed by a per-token rescaling makes the normalized states look aligned.
-- At layer 1, M3 fails narrowly in G3′ (−0.024 with the LayerNorm frozen). There the Fock increment also responds to the pushed state; it spreads, so the verdict is unaffected.
+- At layer 1, M3 fails narrowly in G3′ (−0.025 with the LayerNorm frozen). There the Fock increment also responds to the pushed state; it spreads, so the verdict is unaffected.
 
 **V_φ in the four Fock arms (descriptive: no call rests on a Fock arm).** V_φ carries almost no shared push (|Γ_push| at A ≤ 0.002), so at the integrator output all its references agree within 0.002:
 
@@ -5463,7 +5463,7 @@ Intervals are all narrower than ±0.025 (most under ±0.003).
 | G2 | 0 / 1 | −0.002 / 0.000 | +0.001 / 0.000 |
 | L4F | 0 / 1 / 2 / 3 | −0.002 / +0.001 / +0.004 / **+0.035** | +0.000 / +0.001 / +0.004 / **+0.024** (force) |
 | G3 | 0 / 1 | +0.006 / 0.000 | +0.001 / 0.000 |
-| G3′ | 0 / 1 | +0.006 / **+0.045** | +0.004 / **+0.040** |
+| G3′ | 0 / 1 | +0.006 / **+0.043** | +0.004 / **+0.038** |
 
 Read before the normalization, V_φ's contraction is the same or somewhat larger: the LayerNorm partly undoes a token-specific contraction, as check 6b showed. No V_φ reading changes sign or crosses the floor.
 
@@ -5471,6 +5471,31 @@ Read before the normalization, V_φ's contraction is the same or somewhat larger
 1. **The exchange route:** level 0 fails and level 1 (c) fails. The attention-shaped coupling neither synchronizes nor binds.
 2. **The instrument, from now on:** in arms with a LayerNorm inside the step, Γ_spec is read at the integrator's output, before any normalization. There a shared push is a translation, apart from the integrator's own small per-token response, and the force and specific-only orders bracket it. A coupling's Γ_spec counts only if the two orders agree within 0.01. For binding, B_spec stays on the states the next layer reads, with the references as adopted.
 3. **Earlier calls:** none change. SY-L0 was scored on PMX and F3.1 (one LayerNorm, read before it), and the wells' and V_φ's readings stand.
+
+#### G3′ re-measured after a loader bug: **no conclusion changes; G3′'s numbers above are the corrected ones** — **2026-10-16**
+
+**The bug.** The local model builder, `build()` in `debug/verify_pm_switch.py`, reset the exchange field's per-head temperature (`relax_field.logit_scale`) to its initial value 1/0.07 after loading every checkpoint. The fill was meant only for checkpoints that lack the parameter, but it ran unconditionally. G3′'s checkpoint holds trained temperatures (11.6 to 21.7 across the eight heads), so every local replay of G3′ used untrained routing temperatures. G3 has no such parameter and was unaffected; so were the measurements made in Colab during training (G3′'s settled perplexity, 52.90, and its Gate 3 refinement, +115%).
+- **Why the checks missed it:** every replay check compares the replay with a forward pass of the same, already altered, model.
+- **The size:** on the SY sequences G3′'s perplexity is 50.00 as replayed and 48.44 with its trained temperatures.
+- **The fix:** the builder now fills the temperature only when the checkpoint lacks it, and asserts that a stored value loads unchanged.
+
+**Re-measured** (pre-fix outputs kept in `sync/pre_fix_G3p_eta_reset/` and `debug/pre_fix_G3p_eta_reset/`): every SY script on G3′, the coreference subspace check, the reference test, the read-dependence test, RR-B (`sr_pi3b_bookkeeping.py`) and SR-π.4b (`sr_pi4_step_size.py`). Every replay check passed again. The scripts with their own loaders were correct already: `exchange_field_probe.py` fills only when the parameter is missing, and `dp_register_statistics.py` (RR-A) loads strictly.
+
+| G3′ quantity | as first measured | corrected |
+| --- | ---: | ---: |
+| exchange field, layer 0, displacement / force form (as scored) | +0.110 / −0.008 | +0.112 / −0.008 |
+| exchange field, layer 1, displacement / force form | −0.244 / −0.117 | −0.286 / −0.144 |
+| exchange field at the integrator output, layer 0 / layer 1 (the deciding readout) | −0.014 / −0.176 | −0.013 / −0.210 |
+| exchange-field binding, any grouping, either layer | none above 0.02 | none above 0.02 |
+| noun-chunk binding made by ξ, last layer | +0.076 | +0.074 |
+| noun-chunk grouping after the prediction control | +0.038 | +0.037 |
+| coreference probe, last layer (layer 0) | 0.491 (0.620) | 0.482 (0.620) |
+| coreference subspace hit without same-word pairs, above random | 0.018 | 0.019 (still lexical) |
+| first extra step: perplexity, S, effective rank | 50.0 → 188, +0.29, −68% | 48.4 → 187, +0.27, −67% |
+| RR-B: Gate 3 refined / bookkeeping held; RR3 change | +111% / +503%; +141% | +119% / +468%; +121% |
+| SR-π.4b: layer-0 / layer-1 register increment | 7.8× / 0.98× | 7.8× / 0.98× (unchanged) |
+
+**Verdicts.** None changes. The exchange route's level 0 still fails, by the same rule (the two orders now agree within 0.002), and its level 1 (c) still fails. G3′ keeps the strongest ξ chunk binding of any arm, its coreference hit is still lexical, over-synchronization still holds at the first extra step, RR3 still misses in the direction that supports H-RR, and SR-π.4b is unchanged.
 
 #### SY5 scored: **SY-G2 HIT — extra depth over-synchronizes in PMX, F3.1 and G2; the large blow-ups come with collapse, the onset of failure does not** — **2026-10-15**
 

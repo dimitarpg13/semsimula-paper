@@ -44,7 +44,7 @@ box(11.2, 2.3, 2.0, 1.0, "token  i\n(receiver)", READ)
 
 # write port
 arrow(2.35, 2.8, 4.9, 2.8, WRITE)
-ax.text(3.45, 3.95, "WRITE  (creation, §9.1)", ha="center", fontsize=11.5, fontweight="bold", color=WRITE)
+ax.text(3.45, 3.95, "WRITE  (creation)", ha="center", fontsize=11.5, fontweight="bold", color=WRITE)
 ax.text(3.45, 3.45, r"$\alpha_{kj} = \mathrm{softmax}_j\!\left(q_k \cdot k_j / \tau_k\right)$", ha="center", fontsize=11)
 ax.text(3.45, 1.98, r"query from the register: $q_k = W_Q^{(k)} r_k$", ha="center", fontsize=9.3, color=GREY)
 ax.text(3.45, 2.35, r"payload  $v_j = W_V h_j$", ha="center", fontsize=10)
@@ -52,7 +52,7 @@ ax.text(3.45, 3.08, "softmax over tokens j", ha="center", fontsize=9.3, color=GR
 
 # read port
 arrow(8.6, 2.8, 11.15, 2.8, READ)
-ax.text(10.05, 3.95, "READ  (reverse channel, §9.6)", ha="center", fontsize=11.5, fontweight="bold", color=READ)
+ax.text(10.05, 3.95, "READ  (reverse channel)", ha="center", fontsize=11.5, fontweight="bold", color=READ)
 ax.text(10.05, 3.45, r"$\beta_{ik} = \mathrm{softmax}_k\!\left(q_i \cdot k^{\mathrm{reg}}_k\right)$", ha="center", fontsize=11)
 ax.text(10.05, 1.98, r"query from the token: $q_i = W_Q^{\mathrm{rev}} h_i$", ha="center", fontsize=9.3, color=GREY)
 ax.text(10.05, 2.35, r"payload  $W_V^{\mathrm{rev}} r_k$", ha="center", fontsize=10)

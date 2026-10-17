@@ -1,0 +1,13 @@
+sanity: held stack at N = L vs the model, max |dlogit| = 0.0e+00
+  batch trained 37.6  refined 79.5  held 253.2
+  batch trained 54.7  refined 115.4  held 331.5
+  batch trained 47.8  refined 101.1  held 239.7
+  batch trained 63.4  refined 131.3  held 365.9
+  batch trained 40.3  refined 92.9  held 303.6
+  batch trained 56.3  refined 115.1  held 316.8
+  batch trained 55.9  refined 115.2  held 331.3
+  batch trained 48.7  refined 100.5  held 285.6
+
+G3', 16,384 tokens: PPL trained 49.91  refined 105.26 (Gate 3 +111%)  held 300.78 (Gate 3 +503%)
+-> SR-pi.3b MISS (prediction: held Gate 3 <= +300%, called 50%)
+RRDONE

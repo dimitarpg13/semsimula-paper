@@ -88,7 +88,7 @@ notes = [
     (READ, 'Step 5 is the mediated route\'s only read port: without it the registers cannot affect a prediction.'),
     (REG, 'Layer 0: registers start at their learned embeddings with salience 1, so step 1 writes nothing; step 5 reads the embeddings.'),
     (REG, 'From layer 1 on, the blend in step 1 writes the token content, weighted by how much salience step 7 removed.'),
-    (GREY, 'G3′: M = 32, λ = 0.5 (lifetime 1/(1-λ) = 2 layers), τ = 0.005, per-layer read scales s, exchange gate λ_ex = 1.'),
+    (GREY, 'G3′: M = 32, λ = 0.5 (lifetime 1/(1-λ) = 2 layers), τ = 0.005, per-layer read scales s, exchange-field gate fixed at 1.'),
 ]
 for n, (c, s) in enumerate(notes):
     ax.text(0.4, 2.95 - n * 0.47, '■', color=c, fontsize=11, va='center')

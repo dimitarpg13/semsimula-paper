@@ -4,6 +4,7 @@
 **Status:** Active — June 2026 (updated with causal leak fix, corrected v2 results, Fock Attention results, register diagnostics, v2.1 routing fix, and causal-fixed v2.1 rerun results: B1+B2+B3 = **9.30 PPL**, surpassing Fock Attention)  
 > ⚠ **Re-certification notice (July 2026):** a *second, deeper* causal leak was found after this report was written. The `8c47d90` cumulative-softmax fix was incomplete, and the **9.30 PPL** result and every "causal-fixed" number below are certified only by a probe now known to be blind. They are **pending re-certification** with `prefix_causal_registers=True`. See the banner in §19.8 and [`Fock-PARFLM_Causal_Leak_Audit_Results.md`](Fock-PARFLM_Causal_Leak_Audit_Results.md).  
 > **For the current mechanism without the history,** read [`Fock_Mechanism_v2.1_Principle_of_Operation.md`](Fock_Mechanism_v2.1_Principle_of_Operation.md): the exchange field, the registers and the reverse channel as implemented, with their equations, the virtual-particle reading and the relation to attention.  
+> **Unsupported (2026-10-16): the v1 register results of §6.3, §6.4 and §7.** In the v1 design the registers cannot affect the tokens: they sit after the tokens in the extended state, and the pair-force mask is strictly lower-triangular, so a token feels only earlier tokens. A direct test ([`fock_register_read_dependence.py`](../notebooks/conservative_arch/scaleup/debug/fock_register_read_dependence.py)) scrambles every register-side parameter of a v1 model: the logits change by exactly 0, and no gradient reaches the registers. The same holds at the commit of the v1 runs (6c1d074, 2026-05-10). The v1 differences reported below are therefore run-to-run variation, not an effect of the registers or of the LIFO discipline.  
 > **Revision (2026-10-16): the reverse channel.** Earlier versions did not say what the reverse channel is for, and in places described a mechanism the code does not implement. Revised: §8 (Figure 8.1, the two-hop path), §9.6 (new: the read port), §10.1–10.2 (notation β, how the update is applied, the non-conservativity argument), §10.7 (the force as implemented; the token flow is not purely conservative), §10.9 (rewritten: the claim that only the reverse channel makes the coupling directed fails for causal models), Figure 10.2 and §10.11.  
 **Relates to:** Paper v4 §§9.4.2, 17.8, 17.13, 17c; FockPARFLM Phase 1 (Dyck₂ seed 0 complete); QFT v2.1 (Q0–Q8 complete); `model_fock_attention.py`; `model_fock_parf_v2.py`
 
@@ -226,6 +227,8 @@ Parameter budget at P10f scale ($d = 256$, $L = 8$, $M = 32$): **≈288K overhea
 
 ### 6.3 Phase 1 Results: Dyck₂ Falsifier (Seed 0, 10 May 2026)
 
+> **Unsupported (2026-10-16).** The v1 registers could not reach the tokens, so all three arms are PARFLM with different, unused register parameters. The differences (37.36%, 37.93%, 39.22%) are single-seed run-to-run variation. Neither the LIFO discipline nor the registers are shown to help, and v1 is not shown to escape the v0 ceiling. Kept below as recorded, with its original reading.
+
 Configuration: $d = 64$, $L = 4$, $M = 16$, 4000 steps. Corpus: synthetic $\mathrm{Dyck}\_2$, max nesting depth 12.
 
 | Arm | Params | Val PPL | Deep-test acc. (depth 5–12) |
@@ -240,6 +243,8 @@ Key observations:
 - **The pre-registered success criterion** (>90% deep-test accuracy at depth 8+ with 3/3 seed consistency) is not yet met at 39.22%.
 
 ### 6.4 FockPARF Improvement Sweep: TinyShakespeare Results
+
+> **Unsupported (2026-10-16).** These arms use the v1 registers, which cannot reach the tokens (see the note at the top). Their register mechanism contributes nothing to the forward pass, so the sweep measures PARFLM variants with unused register parameters, plus the attention hybrid P1. The quoted conclusion that v1's value lies in the Dyck_n escape is withdrawn.
 
 From Paper v4, §17.13, five improvement strategies were tested against the FR4 baseline (190.2 PPL on TinyShakespeare):
 
@@ -275,7 +280,7 @@ is conditioned on the **mean of all tokens** — a single undifferentiated globa
 
 <img src="images/fock_structural_gaps.png" alt="Current FockPARFLM vs Attention: Structural Gaps" width="600">
 
-The current FockPARFLM therefore uses creation/destruction to implement **auxiliary persistent memory** — registers are additional hidden states that persist across layers. This is computationally useful (it escapes the v0 ceiling via Dyck₂) but it does not implement **directed information exchange** — the mechanism that drives attention's language-modelling power.
+The current FockPARFLM therefore uses creation/destruction to implement **auxiliary persistent memory** — registers are additional hidden states that persist across layers. As implemented, that memory is never read: the v1 registers cannot reach the tokens, and the Dyck₂ result of §6.3 is run-to-run variation (see the note at the top). Nor does v1 implement **directed information exchange** — the mechanism that drives attention's language-modelling power.
 
 ---
 
@@ -704,7 +709,7 @@ The proposed mechanism has one structural advantage over standard attention: cro
 
 ### 12.1 F2-qkv-creation: Dyck₂ Falsifier with Q/K/V Creation
 
-**Goal:** Replace the mean-conditioned creation gate with the Q/K/V structured gate and re-run the Dyck₂ falsifier.
+**Goal:** Replace the mean-conditioned creation gate with the Q/K/V structured gate and re-run the Dyck₂ falsifier. (2026-10-16: without the reverse channel of §12.2 this arm, too, would have registers that cannot reach the tokens; the test is meaningful only with the read port.)
 
 | Arm | Architecture | Expected result |
 |---|---|---|
@@ -1125,7 +1130,7 @@ The field-theoretic proof sharpens the architectural roadmap for the Semantic Si
 
 2. **Fock registers are the interaction vertices.** Each register with Q/K/V gates acts as an interaction vertex that generates non-Gaussian connected correlations. The register's creation corresponds to emitting a virtual quantum; its annihilation (or readback via the reverse channel) corresponds to absorbing it.
 
-3. **The register pool must be rich enough.** The $1/N_h$ scaling result means that the register pool size $M$ must grow with the complexity of the target interaction structure. For simple formal languages ($\mathrm{Dyck}\_2$), 16 registers suffice. For natural language, $M$ must scale with the effective number of independent interaction channels.
+3. **The register pool must be rich enough.** The $1/N_h$ scaling result means that the register pool size $M$ must grow with the complexity of the target interaction structure. Whether 16 registers suffice for simple formal languages such as $\mathrm{Dyck}\_2$ is untested: the only Dyck₂ run used v1 registers, which cannot reach the tokens. For natural language, $M$ must scale with the effective number of independent interaction channels.
 
 4. **The free/interacting boundary is the expressivity wall.** No amount of scaling the conservative potential (larger $d_V$, deeper MLP, richer pair potential) can cross from free to interacting statistics. The wall is topological in nature — it requires a qualitative change (adding interaction vertices = Fock registers), not a quantitative one (larger parameters).
 

@@ -1,0 +1,20 @@
+1. v1 design (no reverse channel), smoke-test configuration, M = 16, LIFO on
+   max |logit change| after scrambling every register-side parameter: 0.0e+00
+   max |gradient| reaching any register-side parameter:               0.0e+00
+
+2. trained G3' (Fock v2.1, prefix-causal registers), one validation sequence of 512 tokens
+   read scales set to 0   repeat run 0.0e+00;  registers, write port and destruction gate scrambled: max |logit change| 0.0e+00
+   read as trained        repeat run 0.0e+00;  registers, write port and destruction gate scrambled: max |logit change| 4.0e+01
+   read off, only register_embed  scrambled: max |logit change| 0.0e+00   (active share per call [1.0, 1.0, 1.0, 1.0], trained [1.0, 1.0, 1.0, 1.0])
+   read off, only creation_gate   scrambled: max |logit change| 0.0e+00   (active share per call [1.0, 1.0, 1.0, 1.0], trained [1.0, 1.0, 1.0, 1.0])
+   read off, only destruction     scrambled: max |logit change| 0.0e+00   (active share per call [1.0, 1.0, 1.0, 1.0], trained [1.0, 1.0, 1.0, 1.0])
+   read off, every register forced inactive: max |logit change| 2.3e-02   (active share per call [0.0, 0.0, 0.0, 0.0]): the second LayerNorm is skipped
+
+Reading. Without the reverse channel the registers cannot affect a prediction. In the v1 design the
+effect is exactly zero and no gradient reaches the registers. In G3' with the read off, register
+content never reaches the tokens. One residue is possible and carries no content: the second LayerNorm
+sits inside the reverse-channel block, which runs only if some register is active. If no register is
+active at a layer (a strongly perturbed destruction gate can do this), that LayerNorm is skipped. It
+acts on an already normalised state, so skipping it only rescales each token's state slightly (by a
+factor set by the LayerNorm epsilon and the state's variance): up to 0.02 in a logit with every
+register off at both layers. With the trained gate every register is always active.
