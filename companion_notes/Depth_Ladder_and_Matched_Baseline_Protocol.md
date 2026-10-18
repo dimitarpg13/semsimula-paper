@@ -3598,6 +3598,28 @@ Layer 0 reads ε ≈ 6–15 in every model. That step is the projection of the e
   - **If both arms settle at 16,250:** the arms are scored there.
 - **Disclosure.** With different budgets per corpus, the interaction Δ_OWT − Δ_TS compares relative gaps measured at different training lengths. First-order arms can lag at short budgets, which would inflate Δ_TS. The settling check is what guards against that. If an extension is needed, both budgets are reported with the result.
 3. The FO-a switch is implemented and verified before Stage 1.
+   - *Done 2026-10-18* (`debug/verify_fo_switch.py`, output `debug/verify_fo_switch_output.txt`), on SR2's weights, since the anchor moved to SR2 on 2026-10-11. Off: bit-identical to HEAD in logits, loss and every gradient. On: equal, bit for bit, to Cell 6b-7's Gate 1 reset (`_fom_stack`, N = L, `reset_prev=True`), so the trained switch and the inference-time reset are the same operation. On a 2 × 256 validation batch SR2 loses 3.1% under it (Gate 1 on 12 × 4 × 512 tokens: +3.9%). The corpus switch for SO-TS and FO-TS is in Cell 0 (`CORPUS`).
+
+#### FO-PMX: the exploratory first-order twin on PMX — **pre-registered 2026-10-18, before the run; exploratory, outside the 2×2 (author's decision)**
+
+**Why.** The 2×2's anchor, SR2, leans little on momentum: resetting the velocity at inference costs it +3.9% (Gate 1). PMX leans on it far more: +91% at its best checkpoint, +30,600% at the step-8,000 probe. In PMX the layer-1 step balances the velocity a token carries in against the pull of the memory wells (§5.15). If second-order dynamics earns its keep anywhere at this budget, it is there. The FO 2×2 cannot see this, because none of its arms has wells. FO-PMX asks whether PMX trained first-order matches PMX.
+
+**The arm.** PMX's Cell 0 (F3.1's settings plus `POISSON_MODES = 64`, `LOWRANK_DAMPED_FLOW = True`, `POISSON_WELLS_EXACT = True`) plus `FIRST_ORDER_MEMORYLESS = True`; tag `…pm64_pmx16_sr2_fo…`; 32,500 steps, seed 0, OpenWebText; about 24.5 h at PMX's 2.72 s/step. **Switch verified on PMX's weights** (`debug/verify_fo_switch.py arm=pmx threads=1`, output `debug/verify_fo_switch_pmx_output.txt`): off, it is bit-identical to HEAD in logits, loss and all 77 gradients (single-threaded: at 8 threads one gradient, `pm_mu`'s, varies by about 5e-10 from run to run in HEAD itself); on, it equals Cell 6b-7's Gate 1 reset bit for bit, trains with finite gradients on the same parameters, and adds no parameters. On a 2 × 256 batch, PMX's trained weights lose ×1.82 under it (SR2: ×1.03).
+
+**Statistic.** Δ_PMX = (settled PPL of FO-PMX − 54.63) / 54.63, against PMX's settled 54.63.
+
+| call | prediction | called |
+| --- | --- | ---: |
+| FX1 | second order earns its keep in the wells: Δ_PMX ≥ +3% (FO-PMX at or above 56.27) | 55% |
+| FX2 | it earns more there than without wells: Δ_PMX exceeds Δ_OWT (FO-OWT against SR2) by at least 2 points | 55% |
+| FX3 | the wells still help when trained first-order: FO-PMX settles below F3.1's 57.76 | 65% |
+
+**Descriptive** (Cells 6b-7, 6b-9, 6b-13, 6b-15 on the best checkpoint): Gate 1 reads 0 by construction (the trained model already resets); Gate 2 and Gate 3 against PMX's 2.36 and 1.097 nats at N = 3; the wells' depths and half-lives (6b-15) against PMX's, to see whether a first-order model builds shallower wells.
+
+**Readings, fixed now.**
+- **FX1 hits:** the memory wells need second-order dynamics at this budget, and whatever the 2×2 finds on SR2 does not extend to the memory arms.
+- **FX1 misses:** even where the trained model leans hardest on momentum, a model trained first-order compensates. PMX's Gate 1 then measures how PMX was trained, not what the task needs.
+- **Scope:** as for the whole series, constant γ = 0.1, L = 2, 532.5M tokens, one seed.
 
 ### 5.14 DP series: what Doi–Peliti process do the trained registers implement? — **pre-registered 2026-10-05, before any measurement**
 
@@ -4493,6 +4515,30 @@ Settled against the other L = 2 arms: −6.3% against SR2 (58.32), −5.4% again
   - **Architecture:** Fock models extract less from annealing.
   - **Peak learning rate:** GPT-2's stable phase at 6e-4 had nearly flattened (α 0.93, interval 0.014 nats wide), while the Fock arms at 1.2e-3 were still falling. A different peak changes both the plateau and what the decay can recover.
 - **W2** (GPT-2 on WSD at 1.2e-3, tag `_wsd_lr0p0012`, about 2.5 h) separates them. It is now the cheapest run that bears on every GPT-2 comparison, including the L=8 one.
+
+#### W2: the matched GPT-2 at the ladder's peak learning rate — **pre-registered 2026-10-18, before the run**
+
+**Why.** W1 left two readings of GPT-2's larger decay gain (0.271 nats, against 0.18–0.22 for every Fock arm) unseparated: the architecture, or GPT-2's lower peak (6e-4 against the ladder's 1.2e-3). W2 runs GPT-2 on the ladder's schedule exactly, peak included. It also decides the peak learning rate of the matched GPT-2 in the 2B-token runs (Epic 3), the reference for every comparison there.
+
+**The run.** `colab_matched_gpt2_baseline_openwebtext.ipynb` with `LR_SCHEDULE = 'wsd'` and `LR = 1.2e-3`; everything else as W1 (d = 384, L = 8, tied, weight decay 0.1, batch 32 × 512, 32,500 steps, seed 0). Tag `_wsd_lr0p0012`, printed by Cell 0 before training.
+- `LR_MIN` stays at 6e-5. That is the ladder's floor at this peak (`WSD_LR_FLOOR = 0.05 × LR`), so peak, floor and shape all equal the ladder's.
+- **Verified 2026-10-18:** the notebook's `lr_schedule` at these settings equals the learning rate logged by a ladder run (XRB-F's `training_log.jsonl`) at all 650 logged steps, to a relative 5e-16.
+
+**Predictions** (decay gain = ln PPL at step 21,000, the end of the stable phase, minus ln settled PPL):
+
+| | prediction | called |
+| --- | --- | --- |
+| W2.0 | the run completes with no loss spike (no eval rising more than 0.2 nats above the previous one) | 85% |
+| W2.1 | settled PPL within ±2% of W1's 48.82 (47.84–49.80) | 55% |
+| W2.2 | settled PPL at or below W1's 48.82 | 50% |
+| W2.3 | decay gain larger than W1's 0.271 (a higher peak leaves more noise for the decay to remove) | 65% |
+| W2.4 | decay gain still above every Fock arm's at the same peak (above 0.218, F3.1's) | 60% |
+
+**Decision rules, fixed now.**
+- **Settled more than 2% below W1 (under 47.84):** the baseline was under-tuned at 6e-4. W2 becomes the GPT-2 reference; the book's and cards' GPT-2 comparisons are restated against it; the 2B-token GPT-2 runs at 1.2e-3.
+- **Within ±2%:** the peak does not matter for GPT-2 at this budget. The published reference stands, and the 2B-token GPT-2 runs at 1.2e-3 so that its schedule is the ladder's in every respect.
+- **More than 2% above W1 (over 49.80):** GPT-2 prefers 6e-4. W1 stays the reference, and the 2B-token GPT-2 runs at 6e-4, stated as such.
+- **On the decay gain (W2.4):** if it hits, GPT-2 extracts more from annealing than the Fock models at equal peak, which is the architecture reading; if it misses, W1's gap was the peak learning rate.
 
 ### 5.18 RR: what makes a model refinement-ready? — **pre-registered 2026-10-06, before any measurement**
 

@@ -199,6 +199,14 @@ class FockMultiXiPARFConfig(MultiXiPARFConfig):
     fock_gate_bias_init: float = 2.0   # sigmoid(2)=0.881 -> g=0.957; inside the
                                        # stretch, so the gate has gradient at init
     fock_gate_pin: bool = False
+    # FO series (Depth_Ladder_and_Matched_Baseline_Protocol.md SS5.13, FO-a,
+    # 2026-10-18): first-order, memoryless training. h_prev := h at the start
+    # of every layer step, so no velocity crosses a layer boundary and each
+    # step starts from rest -- the Fock-G1 definition, and the trained
+    # counterpart of Cell 6b-7's Gate 1 (which applies the same reset at
+    # inference). Within a step the integrator is unchanged. No parameters are
+    # added; False = off (bit-identical).
+    first_order_memoryless: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -752,6 +760,8 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
         self._in_stack_forward = True
         try:
             for ell in range(cfg.L):
+                if getattr(cfg, "first_order_memoryless", False):
+                    h_prev = h                   # FO-a: v <- 0 at the layer boundary
                 # Gate on grad-tracking, not train/eval mode: evaluate() runs
                 # this forward inside torch.enable_grad() (the PARF/SARF force
                 # needs autograd.grad at every layer regardless of train/eval),

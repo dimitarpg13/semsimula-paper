@@ -676,7 +676,19 @@ adds a point to a curve.
 6. CG8 on the baselines, once 6b-14 exists.
 7. The overlap diagnostics D1, D2 and E4 (low priority).
 
-**GPU queue (updated 2026-10-06; refinement work is high priority):**
+**GPU queue (updated 2026-10-18, agreed with the author; supersedes the 2026-10-06 queue below). One A100, serial:**
+1. **W2**, the matched GPT-2 at the ladder's peak 1.2e-3 (protocol §5.17, pre-registered 2026-10-18; about 2.5 h). GPT-2 notebook: `LR_SCHEDULE = 'wsd'`, `LR = 1.2e-3`; Cell 0 must print `VARIANT_TAG = '_wsd_lr0p0012'`. Its decision rule sets the peak for item 2.
+2. **The matched GPT-2 at 2B tokens** (130,000 steps, 2.13B tokens, about 10 h): the reference for every 2B comparison, run early (author, 2026-10-18). Peak from W2's rule; its own registration before launch. The notebook's tag now carries the run length (`_st130000`; existing tags unchanged, checked). The prepared pool is 2.0B tokens, so the run sees about 1.07 epochs: disclose it, or enlarge the pool first.
+3. **SO-TS, then FO-TS** (FO 2×2, protocol §5.13; about 8 h each), back to back so the settling check can extend both equally. Ladder Cell 0: SR2's settings plus `CORPUS = 'tinystories'`, `LADDER_STEPS = 16_250` (and `FIRST_ORDER_MEMORYLESS = True` for FO-TS). The first builds the shared TinyStories cache.
+4. **FO-OWT** (about 15.5 h): SR2's settings plus `FIRST_ORDER_MEMORYLESS = True`.
+5. **FO-PMX** (exploratory, about 24.5 h): PMX's settings plus `FIRST_ORDER_MEMORYLESS = True`. Pre-registration in §5.13.
+6. **The seed pair: G3′-s1, then G2-s1** (about 15 h each; §5.19 Test 1).
+7. **SR3-on-PMX** (about 25 h): position-dependent damping, the curvature-keyed form (per-mode γ_i = γ₀ + 2ω_i, critical damping, no new parameters; `Position_Dependent_Damping_and_Reinforcement_Field.md` §11). Code and the bit-identity check to be written while items 1–6 run; its pre-registration after FO-PMX is scored, since FO-PMX says how PMX tolerates first-order (overdamped) behaviour in its wells. Aim: settling (PMX Gate 2 2.36 nats at N = 3), Gate 1, Gate 3 and the per-layer flow beside perplexity.
+   - **7b, conditional on SR3's outcome: one learned-γ(h) arm** on the same base (author, 2026-10-18), its design chosen from the note's §4 (potential-derived, learned MLP, or Fock-derived) when SR3 is scored. Gradient through γ: log the per-group gradient norms (§9.5's concentrated-cascade risk). It also tests the FO series' registered γ(h) prediction (§5.13).
+   - SR3-L4: unscheduled.
+8. Then the 2B-token runs of the models items 3–7 select.
+
+**GPU queue (2026-10-06; superseded by the 2026-10-18 queue above):**
 1. ~~G3′~~ done: 52.90.
 2. ~~**W1, the matched GPT-2 on WSD**~~ done 2026-10-06: settled 48.82 (−1.99% against cosine). W1.1–W1.3 HIT, W1.4 MISS; parity stands by the rule, on its boundary (protocol §5.17).
 3. ~~The PM1 probe (8,000 steps)~~ done 2026-10-06: **79.78**, −14.7% against F3.1 and −3.8% against G2 at step 8,000. Perplexity PASS; pm_ clip MISS on the letter (a steady throttle at 0.3, no divergence). G4 (6b-10 on run 4) still open: Colab, minutes.
@@ -787,12 +799,13 @@ The author's hypothesis: with the Fock path present, PARF's V_φ is starved, so 
 Scope: at the current damping regime (constant γ = 0.1, ζ ≈ 0.05, CfC low-rank, live gradients, L=2).
 - [x] **Stage 0, corpus side** (C1–C5) — done 2026-10-04: OWT more long-range dependent; equal total I_pred; C3–C5 predictions missed (protocol §5.13 results): Zipf, the I_pred proxy, repetition autocorrelation, embedded-stream autocovariance, and the ξ filter-bank conditioning, on TinyStories vs OWT. Local, free.
 - [x] **Stage 0, model side** (M1 anharmonic fraction ε, M2 inertial share) — done 2026-10-04: TinyStories ε = 0 (force constant across a step); OWT CfC ε 0.3–6. The full 2×2 runs, plus ε on SO-TS: on the TinyStories second-order anchor and Fock-G1, and on F3.1, L=4 live and (later) G2.
-- [ ] Implement the **FO-a switch** (h_prev := h per layer, the Fock-G1 definition) behind Cell 0; verify it is bit-identical to G2 when off.
+- [x] Implement the **FO-a switch** (h_prev := h per layer, the Fock-G1 definition) behind Cell 0; verify it is bit-identical to G2 when off. *Done 2026-10-18: Cell 0 `FIRST_ORDER_MEMORYLESS` (tag `fo`), `cfg.first_order_memoryless`. `debug/verify_fo_switch.py` on SR2's weights (the amended anchor), all pass: off is HEAD bit for bit (logits, loss, all 73 gradients); on equals Cell 6b-7's Gate 1 reset exactly; on trains with finite gradients on the same parameters; no parameters added.*
 - **Amended 2026-10-11 (before any FO run): the second-order anchor is SR2, not G2 or F3.1, and Gate 1 joins the scoring.** Why: Cell 6b-7's Gate 1 (the incoming velocity reset at inference) is the FO-a switch applied at inference, and on the trained arms it costs +3.9% on SR2 against +34% on F3.1 and +33% on G2, +10,600% on PM1 and +30,600% on PMX at step 8,000. F3.1's and G2's +34% is partly the split integrator's stiff-mode phase error, which SR2 removed (protocol §5.19, E1): a 2×2 on the split integrator would charge integrator error to inertia. So: FO-OWT = SR2's Cell 0 plus FO-a; SO-TS and FO-TS likewise on the SR2 base; and each arm's 6b-7 Gate 1 is reported next to its FO twin's settled PPL, so the inference-time reset and the training-time switch are compared on the same model. Caveat recorded: at L = 2 the stack starts at rest, so FO-a and Gate 1 test only the velocity handed from layer 0 to layer 1; the within-layer dynamics stays second-order (SR2's stiff modes rotate about 1.4 turns per step). FO-b, the overdamped within-layer step, remains the conditional follow-up. Where second order visibly earns its keep is the memory arms (PM1, PMX), whose layer-1 step balances the incoming momentum against the wells.
 - [ ] **Stage 1:** FO-OWT, SO-TS, FO-TS (the 2×2, now on the SR2 base). After G2–G4, before CB and SR.
   - FO-OWT: 32,500 steps.
   - SO-TS and FO-TS: **16,250 steps** (about 7 h each; amended 2026-10-04), then the settling check. If either fails, extend both equally.
   - Prerequisites: the full TinyStories token cache (one-time, on Colab), a corpus switch in Cell 0, and the FO-a switch (each verified).
+    - *2026-10-18:* the FO-a switch and the corpus switch are done and verified. Cell 0 `CORPUS = 'tinystories'` selects a shared TinyStories cache (`semsimula_tinystories_gpt2/data` on Drive; the first TinyStories arm tokenises the whole train split and the first 2M tokens of the validation split into it, Cell 3), a per-corpus frequency table for the mass model (Cell 5), and the Drive prefix `semsimula_fock_cfc_baoab_ts_`. `LADDER_STEPS` off 32,500 now reaches the tag (`st<N>`). Every existing arm's tag is unchanged (seven checked). Tags: FO-OWT `…sr2_fo…`, SO-TS `…sr2_st16250…`, FO-TS `…sr2_fo_st16250…`. The TinyStories cache is the one prerequisite left, built by the first TinyStories run.
 - [ ] *FO-b (true overdamped step): only if FO-a shows a gap.*
 - [ ] *γ(h) link: test the local-order prediction once a trained γ(h) arm exists.*
 
