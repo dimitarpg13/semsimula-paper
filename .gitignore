@@ -44,3 +44,6 @@ notebooks/conservative_arch/scaleup/sync/sy_cache/
 notebooks/conservative_arch/scaleup/sync/**/*.npz
 # XR comparison per-sequence statistics (regeneratable by xr/xr_compare.py)
 notebooks/conservative_arch/scaleup/xr/**/*.npz
+
+# Office lock files (created while a document is open)
+~$*
