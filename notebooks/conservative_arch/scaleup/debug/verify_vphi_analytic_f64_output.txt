@@ -1,0 +1,11 @@
+Analytic V_phi force against autograd in float64, at real layer inputs (2 x 128 tokens)
+
+F3.1 (V_phi sources live)
+   layer 0: force relative error 7.7e-15; d<f,R>/d(parameters, h): worst 1.7e-12 (score_head.w_q.weight, |grad| 3.8e-03); 55 tensors; zero in exact arithmetic: score_head.w2.bias (|grad| below 8e-12 in both)  -> PASS
+   layer 1: force relative error 1.4e-15; d<f,R>/d(parameters, h): worst 4.2e-13 (score_head.w_q.weight, |grad| 9.8e-02); 55 tensors; zero in exact arithmetic: score_head.w2.bias (|grad| below 1e-10 in both)  -> PASS
+
+G2 (V_phi sources live)
+   layer 0: force relative error 2.8e-15; d<f,R>/d(parameters, h): worst 2.7e-13 (V_phi.heads.2.theta_w2.bias, |grad| 1.7e-01); 55 tensors; zero in exact arithmetic: score_head.w2.bias (|grad| below 8e-12 in both)  -> PASS
+   layer 1: force relative error 2.5e-15; d<f,R>/d(parameters, h): worst 3.4e-14 (V_phi.heads.0.phi_c_net.0.weight, |grad| 1.7e-04); 55 tensors; zero in exact arithmetic: score_head.w2.bias (|grad| below 1e-13 in both)  -> PASS
+
+ALL PASS

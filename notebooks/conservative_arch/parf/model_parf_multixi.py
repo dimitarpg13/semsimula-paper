@@ -59,6 +59,7 @@ from model_parf_sparse import (  # noqa: E402
     SparsePARFLM,
     _has_analytical_grad,
 )
+from model_parf import StructuralVPhi  # noqa: E402  (vphi_analytic_force)
 from model_multixi import (  # noqa: E402
     MultiChannelXi,
     ScalarPotentialMultiXi,
@@ -79,6 +80,24 @@ from cfc_baoab import (  # noqa: E402
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
+def _autocast_active(device_type: str) -> bool:
+    """Whether autocast is on for this device type (works on torch 2.2 and >= 2.4)."""
+    try:
+        return torch.is_autocast_enabled(device_type)
+    except TypeError:
+        return (torch.is_autocast_cpu_enabled() if device_type == "cpu"
+                else torch.is_autocast_enabled())
+
+
+def _to_fp32(x):
+    """Floating tensors (also inside lists and tuples) to float32; no copy if already float32."""
+    if torch.is_tensor(x):
+        return x.float() if x.is_floating_point() else x
+    if isinstance(x, (list, tuple)):
+        return type(x)(_to_fp32(v) for v in x)
+    return x
+
+
 @dataclass
 class MultiXiPARFConfig(SparsePARFConfig):
     """Sparse PARF config extended with multi-channel K-EMA ξ parameters.
@@ -224,6 +243,18 @@ class MultiXiPARFConfig(SparsePARFConfig):
     # span(U) only. Needs integrator='baoab_cfc_lowrank' and a constant scalar
     # gamma. Off by default: bit-identical to the split scheme.
     lowrank_damped_flow: bool = False
+    # Analytic V_phi force (2026-10-18; Eliminating_the_Autograd_Dependency_in_VPhi.md):
+    # f_phi = -grad_h U_pair in closed form instead of torch.autograd.grad, so no
+    # forward pass needs an autograd graph (no_grad inference) and training needs
+    # one backward through V_phi instead of a double backward. Same function, so
+    # equal to the autograd force up to float rounding. It includes the router
+    # term: the straight-through gate's gradient through the score head's softmax
+    # is live in eval as in training, and moves individual logits by up to 3.5 on
+    # the trained G2 (debug/vphi_ste_term.py). Supported: sparse gathered V_phi of
+    # kind structural / structural_competitive (the gathered form is the plain
+    # Gaussian gate), Theta 'mlp' with tanh, detached or live sources, no value
+    # transport, no exchange potential inside U_pair. False = off (bit-identical).
+    vphi_analytic_force: bool = False
     poisson_halflife_min: float = 4.0     # tokens; per-mode half-lives are
     poisson_halflife_max: float = 128.0   # log-spaced over this range
     # PM1-cap (protocol SS5.15, 2026-10-08): bound every well depth smoothly,
@@ -929,6 +960,119 @@ class MultiXiPARFLM(SparsePARFLM):
             add = self.relax_field(xis, h_in).sum()
         return U_pair + lam * add
 
+    def _pair_force_analytic(
+        self, h_in: torch.Tensor, layer_idx: int,
+        h_src_live: Optional[torch.Tensor] = None,
+    ) -> torch.Tensor:
+        """f_phi = -grad_{h_in} U_pair in closed form (cfg.vphi_analytic_force).
+
+        U_pair = s_l * sum_t sum_{j in K(t)} V_phi(h_t, h_j) * m_tj, with the gathered
+        structural V_phi = -C Theta Phi / r summed over heads and the straight-through
+        gate m = stop_grad(m_hard - k y) + k y. Its query-side gradient has two parts:
+          pair:   s_l * sum_j m_tj * grad V_phi(h_t, h_j)
+          router: s_l * k * sum_j V_phi(h_t, h_j) * grad y_tj,
+                  grad y_tj = y_tj (grad z_tj - sum_s y_ts grad z_ts),  z = score / tau.
+        Sources are detached (causal_force) or a live alias (vphi_grad_path='live'):
+        in both the force differentiates the query slot only, as autograd does.
+        """
+        cfg = self.cfg
+        B, T, d = h_in.shape
+        _mode = getattr(cfg, "force_relaxation", "none")
+        if (self.V_attn is not None or self.V_phi is None or not cfg.use_gathered_v_phi
+                or getattr(cfg, "v_phi_add_value_transport", False)):
+            raise ValueError("vphi_analytic_force supports the sparse gathered V_phi only")
+        if (self.relax_field is not None and _mode in ("potential", "attention_potential")
+                and not (_mode == "attention_potential"
+                         and getattr(cfg, "relax_grad_path", "default") == "live")):
+            raise ValueError("vphi_analytic_force: an exchange potential rides in U_pair; "
+                             "use relax_grad_path='live' or the autograd force")
+        heads = list(self.V_phi.heads) if hasattr(self.V_phi, "heads") else [self.V_phi]
+        for hd in heads:
+            if (not isinstance(hd, StructuralVPhi) or hd.theta_form != "mlp"
+                    or hd.theta_activation != "tanh"):
+                raise ValueError("vphi_analytic_force supports structural V_phi heads with "
+                                 "theta_form='mlp' and theta_activation='tanh'")
+        if h_src_live is not None:
+            h_src = h_src_sc = h_src_live
+        else:
+            if not cfg.causal_force or not cfg.score_head_use_detached_h_src:
+                raise ValueError("vphi_analytic_force needs detached sources "
+                                 "(causal_force and score_head_use_detached_h_src)")
+            h_src = h_src_sc = h_in.detach()
+
+        def gelu_prime(x):
+            return 0.5 * (1.0 + torch.erf(x * 0.7071067811865476)) + x * torch.exp(-0.5 * x * x) * 0.3989422804014327
+
+        # ---- router: the score head exactly as ScoreHead.forward, keeping its pre-activation
+        sh = self.score_head
+        proj_t = sh.w_q(h_in) + sh.w_d(h_in) + sh.b1                       # (B, T, Hs)
+        proj_u = sh.w_s(h_src_sc) - sh.w_d(h_src_sc)                       # (B, T, Hs)
+        hid_s = proj_t.unsqueeze(2) + proj_u.unsqueeze(1)                  # (B, T, T, Hs)
+        pi = sh.w2(F.gelu(hid_s)).squeeze(-1)                              # (B, T, T)
+        causal = self._pair_mask_for(T, h_in.device)
+        idx, m_g, y = self._sparse_topk_indices(pi, causal, T, return_soft=True)
+        k = idx.shape[-1]
+        tau = float(self._gumbel_tau)
+        causal_b = causal.unsqueeze(0).expand(B, T, T) if causal.dim() == 2 else causal
+        causal_g = causal_b.gather(-1, idx).to(h_in.dtype)                  # (B, T, k)
+        h_src_g = h_src.gather(1, idx.reshape(B, T * k, 1).expand(-1, -1, d)).view(B, T, k, d)
+        s_ell = self.per_layer_scale(layer_idx)
+        s_ell = 1.0 if s_ell is None else s_ell
+
+        f_pair = h_in.new_zeros(B, T, d)
+        V_tot = h_in.new_zeros(B, T, k)
+        if heads and heads[0].ln_before_distance:
+            u_q = F.layer_norm(h_in, (d,))
+            sig = torch.sqrt(h_in.var(-1, unbiased=False, keepdim=True) + 1e-5)
+            u_s = F.layer_norm(h_src_g, (d,))
+        for hd in heads:
+            # type gate Phi = exp(-c(D) D), c = softplus(MLP(D)), D = |W_l h_t - W_l h_j|^2
+            l_q = hd.W_l(h_in); l_s = hd.W_l(h_src_g)
+            diff_l = l_q.unsqueeze(2) - l_s                                 # (B, T, k, dl)
+            D = (diff_l * diff_l).sum(-1)
+            lin1, lin2 = hd.phi_c_net[0], hd.phi_c_net[2]
+            a1 = lin1(D.unsqueeze(-1))                                      # (B, T, k, Hc)
+            zc = lin2(F.gelu(a1)).squeeze(-1)
+            c = F.softplus(zc)
+            dc_dD = torch.sigmoid(zc) * ((gelu_prime(a1) * lin2.weight[0]) @ lin1.weight[:, 0])
+            Phi = torch.exp(-c * D)
+            dPhi_dD = -Phi * (c + D * dc_dD)
+            # value aligner Theta = tanh(MLP(theta_t, theta_j))
+            th_q = hd.W_theta(h_in); th_s = hd.W_theta(h_src_g)
+            pt = (hd.theta_w_q(th_q) + hd.theta_w_d(th_q) + hd.theta_b1).unsqueeze(2)
+            hid = pt + (hd.theta_w_s(th_s) - hd.theta_w_d(th_s))            # (B, T, k, H)
+            Theta = torch.tanh(hd.theta_w2(F.gelu(hid)).squeeze(-1))
+            gs = gelu_prime(hid) * hd.theta_w2.weight[0]
+            # distance r = sqrt(|LN(h_t) - LN(h_j)|^2 + eps^2)
+            if hd.ln_before_distance:
+                diff_u = u_q.unsqueeze(2) - u_s
+            else:
+                diff_u = h_in.unsqueeze(2) - h_src_g
+            r = torch.sqrt((diff_u * diff_u).sum(-1) + hd.eps2)
+            V_tot = V_tot + (-hd.C) * Theta * Phi / r
+            # pair weights: the live gate. Its value is the hard mask, but its gradient path into
+            # the score head is part of the trained force's dependence on the parameters
+            w = s_ell * m_g
+            # f = C sum_j w [ (Phi/r) Theta' grad score + (Theta/r) Phi' grad D - (Theta Phi / r^2) grad r ]
+            g_th = torch.einsum("btk,btkh->bth", w * (Phi / r) * (1 - Theta * Theta), gs)
+            A_th = hd.theta_w_q.weight + hd.theta_w_d.weight                  # (H, K)
+            t_theta = (g_th @ A_th) @ hd.W_theta.weight                        # (B, T, d)
+            t_D = 2.0 * torch.einsum("btk,btkl->btl", w * (Theta / r) * dPhi_dD, diff_l) @ hd.W_l.weight
+            v = torch.einsum("btk,btkd->btd", -w * Theta * Phi / (r * r * r), diff_u)
+            if hd.ln_before_distance:                                        # J_LN is symmetric
+                v = (v - v.mean(-1, keepdim=True) - u_q * (u_q * v).sum(-1, keepdim=True) / d) / sig
+            f_pair = f_pair + hd.C * (t_theta + t_D + v)
+
+        # router term: -s_l k/tau [ sum_j a_j y_j g_j - (sum_j a_j y_j) sum_s y_s g_s ] A_s
+        G = gelu_prime(hid_s) * sh.w2.weight[0]                              # (B, T, T, Hs)
+        y_m = y * causal_b.to(y.dtype)
+        G_bar = torch.einsum("bts,btsh->bth", y_m, G)
+        G_g = G.gather(2, idx.unsqueeze(-1).expand(-1, -1, -1, G.shape[-1]))  # (B, T, k, Hs)
+        wy = V_tot * causal_g * y.gather(-1, idx)                            # (B, T, k)
+        inner = torch.einsum("btk,btkh->bth", wy, G_g) - wy.sum(-1, keepdim=True) * G_bar
+        f_router = -(s_ell * float(k) / tau) * (inner @ (sh.w_q.weight + sh.w_d.weight))
+        return f_pair + f_router
+
     def _pair_potential(
         self, h_in: torch.Tensor, layer_idx: int,
         xis: Optional[torch.Tensor] = None,
@@ -1060,8 +1204,11 @@ class MultiXiPARFLM(SparsePARFLM):
         if getattr(cfg, "vphi_grad_path", "default") == "live":
             h_src_live = h_in
             h_in = h_in.view_as(h_in)
-        U_pair = self._pair_potential(
-            h_in, layer_idx, xis=xis, h_src_live=h_src_live)
+        _vphi_closed = (getattr(cfg, "vphi_analytic_force", False)
+                        and self._use_analytic_vtheta())
+        if not _vphi_closed:
+            U_pair = self._pair_potential(
+                h_in, layer_idx, xis=xis, h_src_live=h_src_live)
 
         if self._use_analytic_vtheta():
             # Closed-form V_theta force: no autograd, so V_theta never
@@ -1073,7 +1220,11 @@ class MultiXiPARFLM(SparsePARFLM):
                 f_theta = -self.V_theta.analytical_grad(
                     xis, h_in, comps=vtheta_comps,
                 )
-            if not U_pair.requires_grad:
+            if _vphi_closed:
+                # closed form, no autograd (cfg.vphi_analytic_force)
+                f_phi = (self._pair_force_analytic(h_in, layer_idx, h_src_live=h_src_live)
+                         if self.V_phi is not None else torch.zeros_like(h_in))
+            elif not U_pair.requires_grad:
                 # pair_potential='none' with no potential-type exchange
                 # field: nothing to differentiate.
                 f_phi = torch.zeros_like(h_in)
@@ -1261,7 +1412,6 @@ class MultiXiPARFLM(SparsePARFLM):
             if lr_layers is not None and layer_idx not in lr_layers:
                 use_lowrank = False
                 use_cfc = True
-        half = 0.5 * dt
 
         # xi_grad_path='live': xi from live h.  No alias is needed here: the
         # force is taken w.r.t. h_mid, which is downstream of h, so no path
@@ -1279,6 +1429,33 @@ class MultiXiPARFLM(SparsePARFLM):
             if flow_ctx is not None:
                 flow_ctx["xis"] = xis
 
+        # The well parameters depend only on xis, so derive them once here and
+        # hand them to the linearisation and the force evaluation: without this
+        # the bank (whose low-rank factor alone is K*d*rank floats per token) is
+        # built twice per layer, which is most of the CfC arm's activation
+        # footprint.
+        vtheta_comps = None
+        if (use_cfc or use_lowrank) and hasattr(self.V_theta, "context_components"):
+            vtheta_comps = self.V_theta.context_components(xis)
+
+        # Selective bf16 (2026-10-18): under autocast the context and V_theta's
+        # well generator above run in bf16 (the large matmuls); everything from
+        # the linearisation on -- eigensolves, exact substeps, force assembly,
+        # the LayerNorm projection -- runs in float32. Without autocast this is
+        # the same computation as before, in the same order.
+        if _autocast_active(h.device.type):
+            with torch.autocast(device_type=h.device.type, enabled=False):
+                return self._layer_step_langevin_core(
+                    _to_fp32(h), _to_fp32(h_prev), _to_fp32(m_b), _to_fp32(gamma), dt, layer_idx,
+                    _to_fp32(xis), _to_fp32(vtheta_comps), flow_ctx, use_cfc, use_lowrank)
+        return self._layer_step_langevin_core(
+            h, h_prev, m_b, gamma, dt, layer_idx, xis, vtheta_comps, flow_ctx, use_cfc, use_lowrank)
+
+    def _layer_step_langevin_core(self, h, h_prev, m_b, gamma, dt, layer_idx,
+                                  xis, vtheta_comps, flow_ctx, use_cfc, use_lowrank):
+        """The layer step from the linearisation on (see _layer_step_langevin)."""
+        cfg = self.cfg
+        half = 0.5 * dt
         h_in = h
         if not h_in.requires_grad:
             h_in = h_in.requires_grad_(True)
@@ -1291,7 +1468,6 @@ class MultiXiPARFLM(SparsePARFLM):
         k_diag = s_lin = None
         lr_U = lr_kappa = lr_sL = lr_G = None
         pmx = use_lowrank and getattr(cfg, "poisson_wells_exact", False)
-        vtheta_comps = None
         if use_cfc or use_lowrank:
             if use_lowrank and not hasattr(self.V_theta, "harmonic_terms_lowrank"):
                 raise RuntimeError(
@@ -1307,13 +1483,6 @@ class MultiXiPARFLM(SparsePARFLM):
                     "Gaussian family in model_aniso_gaussian_vtheta.py. "
                     "Use integrator='baoab' for other V_theta variants."
                 )
-            # The well parameters depend only on xis, so derive them once
-            # here and hand them to the force evaluation below: without
-            # this the bank (whose low-rank factor alone is K*d*rank
-            # floats per token) is built twice per layer, which is most of
-            # the CfC arm's activation footprint.
-            if hasattr(self.V_theta, "context_components"):
-                vtheta_comps = self.V_theta.context_components(xis)
 
         if use_lowrank:
             # Impulse / RESPA scheme: the stiff PSD low-rank part L = G G^T

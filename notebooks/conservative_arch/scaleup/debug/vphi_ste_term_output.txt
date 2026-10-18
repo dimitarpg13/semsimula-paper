@@ -1,0 +1,16 @@
+V_phi router (straight-through) term in the trained force; 8 sequences of 512 tokens
+
+F3.1  (per-layer V_phi scale s_l: [0.0618, 2.4001])
+   layer 0: |router| / |pair term| median 0.000 (p90 0.000); |router| / |V_theta force| median 0.0000; cos(router, pair) median +0.004
+   layer 1: |router| / |pair term| median 0.000 (p90 0.000); |router| / |V_theta force| median 0.0000; cos(router, pair) median +0.000
+   removing the router term from the force at every layer: loss 3.9893 -> 3.9893 (perplexity x1.000); max |d logit| 4.46e-01
+
+SR2  (per-layer V_phi scale s_l: [0.0195, 0.0061])
+   layer 0: |router| / |pair term| median 0.000 (p90 0.064); |router| / |V_theta force| median 0.0000; cos(router, pair) median +0.000
+   layer 1: |router| / |pair term| median 0.000 (p90 0.000); |router| / |V_theta force| median 0.0000; cos(router, pair) median +0.000
+   removing the router term from the force at every layer: loss 3.9957 -> 3.9958 (perplexity x1.000); max |d logit| 2.26e+00
+
+G2  (per-layer V_phi scale s_l: [0.0187, 0.0016])
+   layer 0: |router| / |pair term| median 0.251 (p90 1.449); |router| / |V_theta force| median 0.0051; cos(router, pair) median -0.001
+   layer 1: |router| / |pair term| median 0.054 (p90 4.034); |router| / |V_theta force| median 0.0000; cos(router, pair) median +0.000
+   removing the router term from the force at every layer: loss 3.8794 -> 3.8791 (perplexity x1.000); max |d logit| 3.53e+00

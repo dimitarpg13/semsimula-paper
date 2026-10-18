@@ -1,0 +1,6 @@
+Selective bf16 verification on PMX's trained weights (2 x 256 validation tokens)
+1. autocast off vs HEAD: max |d logit| 0.0e+00; |d loss| 0.0e+00; same parameters with a gradient True (77); max |d grad| 0.0e+00  -> PASS
+2. bf16 autocast: train and eval run; loss and gradients finite True; well generator outputs ['torch.bfloat16']; eigensolve and substep inputs ['torch.float32']  -> PASS
+3. (descriptive) bf16 against float32: eval logits max |d| 6.89e-01; eval loss 3.4498 -> 3.4503; train loss 3.4498 -> 3.4519; gradient |d| / |g| 4.24e-02, cosine 0.9993
+
+ALL PASS

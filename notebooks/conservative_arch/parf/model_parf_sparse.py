@@ -346,6 +346,7 @@ class SparsePARFLM(PARFLM):
         pi: torch.Tensor,        # (B, T, T) — score logits
         causal: torch.Tensor,    # (B, T, T) — strict-causal bool mask
         T: int,
+        return_soft: bool = False,
     ) -> tuple:
         """Top-k Gumbel-softmax routing in gathered form.
 
@@ -383,6 +384,10 @@ class SparsePARFLM(PARFLM):
         kf = float(k_eff)
         m_g = (m_hard_g - kf * y_g).detach() + kf * y_g       # (B, T, k_eff)
 
+        if return_soft:
+            # the analytic V_phi force (cfg.vphi_analytic_force) needs the soft
+            # weights y over all sources; same draws, nothing else changes
+            return idx, m_g, y
         return idx, m_g
 
     # ------------------------------------------------------------------

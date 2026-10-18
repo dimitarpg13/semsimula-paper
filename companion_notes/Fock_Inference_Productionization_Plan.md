@@ -1,6 +1,6 @@
 # Productionizing Fock-PARFLM: Where the Inference Cost Is, and How to Remove It
 
-**Status:** analysis complete, measured, no code changes applied yet.
+**Status:** analysis complete, measured. **Update 2026-10-18:** the analytic V_phi gradient (§8a.4, step 1) is implemented and verified; §10 adds the training-speed levers for the 2B-token runs, ordered by priority.
 **Date:** 2026-09-18.
 **Scope:** the joint `V_theta` + QK-norm arm at `d=384`, `L=8`, as configured in
 [`colab_fock_cfc_baoab_joint_vtheta_qknorm_openwebtext_d384.ipynb`](../notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_joint_vtheta_qknorm_openwebtext_d384.ipynb).
@@ -838,6 +838,8 @@ Order of work, revised:
 
 1. **Analytic V_phi gradient** — unblocks `no_grad`, fixes the memory, and
    is a precondition for any inference claim.
+   *Done 2026-10-18 (§10.3): Cell 0 `VPHI_ANALYTIC_FORCE`; inference runs under `no_grad`. The GPU
+   memory and time of the gain are still to be measured.*
 2. **Lever E** (`ScoreHead` fusion) and **Lever D** (`xi` recurrence) — both
    already argued, both wall-clock rather than FLOP wins.
 3. **Phase 2** factorisation — now known to cost quality (§6.1), so it is
@@ -870,6 +872,67 @@ Measurements were unaffected. The cross-check against the real
 `sys.path` in the GPT-2 notebook; the identity was verified locally instead.
 
 ---
+
+## 10. Training speed for the 2B-token runs (2026-10-18)
+
+This section is about **training** the current Gen 3 arms, not inference: the 2B-token runs (Epic 3) need
+4× the steps of every earlier run, and speed now decides how many models can be taken there. The models
+are the L = 2 ladder arms on the CfC/BAOAB low-rank integrator, not the L = 8 joint arm of §0–§8.
+
+### 10.1 What a step costs today
+
+| model | A100 seconds per step | hours at 2B tokens (130,000 steps) |
+| --- | ---: | ---: |
+| matched GPT-2 (33.7M parameters) | 0.28–0.30 | about 10.7 |
+| F3.1, G3′, XRB-F, SR2 (76.6–77.4M) | 1.60–1.72 | about 58–62 |
+| PMX | 2.72 | about 98 |
+
+Our models are about 6× slower per step than GPT-2, with about 2.3× its parameters.
+
+### 10.2 What the training code does today
+
+- TF32 matrix multiplies are on; there is no bf16 mixed precision and no `torch.compile`.
+- Layer checkpointing is on: each layer's forward pass is recomputed during the backward pass.
+- The batch is 16 × 2 accumulation steps, because peak memory is 22–26 GB on the 40 GB card.
+- The V_θ force is analytic. Until 2026-10-18 the V_φ force went through `torch.autograd.grad` with
+  `create_graph`, a double backward; it now has an analytic option (§10.3, item 1).
+
+### 10.3 The levers, in priority order
+
+Two groups. The first changes no arithmetic beyond float rounding, so a lever can be switched on even in the
+middle of a series. The second changes numerics, so each needs a pre-registered check before a series uses it.
+
+**Measure first.** Cell 6c, the GPU bottleneck profile, says whether a step is bound by GPU arithmetic or by
+kernel launches. It has never been recorded for these arms. Its answer decides between items 5 and 7 below.
+It takes about ten minutes on the A100, and should run before the next training series (SO-TS).
+
+**Identical arithmetic (up to float rounding):**
+
+| # | lever | expected gain | status |
+| --- | --- | --- | --- |
+| 1 | **Analytic V_φ force** (`Eliminating_the_Autograd_Dependency_in_VPhi.md`, Option B, with the router term that note's §5.1 had missed) | CPU: train step 1.06–1.16×, eval forward 1.5–1.7×; inference under `no_grad` | **done, verified** 2026-10-18: float64 identity with autograd (force 1e-14, derivatives 2e-12); float32 on F3.1, SR2, G2, G3′, PMX. Cell 0 `VPHI_ANALYTIC_FORCE`, off by default. GPU measurement pending |
+| 2 | **Cache the stiff-mode basis for the checkpoint recompute.** Each layer's low-rank basis (an SVD or eigendecomposition per token) is computed in the forward pass and again in the recompute | the eigensolves are 11% of an SR2-type step and 26% of a PMX step on the CPU; caching should remove about half of that | to do |
+| 3 | **PMX's faster well basis**: a Cholesky basis and a shorter coefficient series (`debug/verify_pmx_fast.py`) | about 8% of a PMX step on the CPU; GPU unknown | implemented and verified equal; not yet used in a run |
+| 4 | **Turn off layer checkpointing** where memory allows | the recompute is typically 20–30% of a step | blocked by memory at batch 16 until item 5 halves the activations |
+
+**Changes numerics (each needs a pre-registered check):**
+
+| # | lever | expected gain | check before use |
+| --- | --- | --- | --- |
+| 5 | **Selective bf16 mixed precision**: MLPs, projections and attention in bf16; integrator, eigensolves, LayerNorm and force assembly in fp32 (the force code already guards its differentiation in fp32) | probably the largest single gain, plausibly 1.3–2×, and it frees memory for item 4 | an 8,000-step probe in bf16 tracks the fp32 curve within eval noise. All 2B Fock arms then use the same setting, so they stay comparable. **Implemented 2026-10-18** (Cell 0 `AMP_BF16`, tag `bf16`; the layer-step core runs in fp32 under autocast) and verified on the CPU (`debug/verify_bf16_switch.py`: off bit-identical to HEAD on SR2, PMX, G3′; on, the well generator in bf16 and every eigensolve and substep input in fp32). Probe drafted as protocol §5.26; GPU timing in Cell 6b-17 |
+| 6 | **Drop V_φ** on the bases where it is marginal (removal costs: SR2 0.014 nats, PMX 0.015; but F3.1 0.28, PM1 0.32) | removes the V_φ evaluation altogether | an architecture decision, not a speed-up: the queued VF factorial (protocol §5.21) |
+| 7 | **Fuse the many small operations**: `torch.compile`, or compiling just the propagator's element-wise parts | depends on the bottleneck profile: worthwhile only if the step is launch-bound | the riskiest item; `torch.compile`'s support for a double backward is poor (less of an issue once item 1 is on) |
+
+**Hardware.** If Colab Pro+ offers an H100 or an A100-80GB: bf16 on an H100 is the largest gain of all; the
+80 GB card alone would allow batch 32 with no accumulation and no checkpointing (items 4 and 5's memory
+argument), with identical arithmetic.
+
+### 10.4 Decision points
+
+- Whether the FO runs and the 2B runs use item 1: after its GPU measurement, and before SO-TS starts, since
+  switching it on in the middle of a series changes float32 rounding between arms.
+- Whether to adopt item 5: only through its probe, and for every 2B Fock arm or none.
+- **Cell 6b-17** measures items 1, 4 and 5 together in one GPU session: training step time and peak memory for float32 and bf16, each with the autograd and the analytic V_φ force, bf16 with checkpointing off, and inference with and without the autograd graph.
 
 ## 9. Honest caveats
 

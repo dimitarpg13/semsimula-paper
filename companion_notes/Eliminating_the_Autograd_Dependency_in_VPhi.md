@@ -6,6 +6,31 @@
 > §8a.3; everything else is exact arithmetic on the deployed shapes or a
 > derivation. §4 is the one option testable today, in minutes.
 
+> **Update, 2026-10-18: Option B is implemented and verified, with one correction to §5.1.**
+> - **Correction.** §5.1 says the straight-through path "is irrelevant" at evaluation because the
+>   mask's forward value is hard. It is not: the force is `torch.autograd.grad(U_pair, h)`, and the
+>   gate $m = \mathrm{sg}(m_{\text{hard}} - k y) + k y$ keeps its gradient path through the score
+>   head's softmax $y$ in eval as in training. So the trained force has a second, router term,
+>   $-s_\ell k \sum_{j \in \mathcal K(t)} V_\phi(h_t, h_j) \nabla_{h_t} y_{tj}$, beside the pair term
+>   of §5.2–5.5. On most tokens it is zero (the routing is nearly one-hot); on a minority it is as large
+>   as the pair term or larger (90th percentile 1.4–4 times it on G2), and removing it moves individual
+>   logits by up to 3.5 while leaving the loss unchanged (`debug/vphi_ste_term.py`, output beside it).
+>   The gate also enters the force's dependence on the score head's parameters, so the pair term's
+>   weight must be the live gate, not its value.
+> - **Implementation.** `cfg.vphi_analytic_force` (Cell 0 `VPHI_ANALYTIC_FORCE`, off by default, not in
+>   the variant tag), `MultiXiPARFLM._pair_force_analytic`: the pair term over the selected sources
+>   (the gathered form, whose gate is the plain Gaussian, so §5.6's competitive softmax does not
+>   arise), and the router term through the score head over all sources.
+> - **Verification.** Float64 on F3.1 and G2 at real layer inputs (`debug/verify_vphi_analytic_f64.py`):
+>   the force agrees with autograd to 1e-14, and its derivatives with respect to every parameter and
+>   to the input states to 2e-12 or better. The closed form is autograd's function, including the
+>   second-order paths training uses. Float32 on F3.1, SR2, G2, G3′ and PMX
+>   (`debug/verify_vphi_analytic.py`): force to a relative 1e-7, eval logits to 1e-4 with identical
+>   loss, training gradients to 1e-6–5e-5 of the whole gradient (rounding), and **inference runs under
+>   `torch.no_grad()`**. The model builds and runs through the ladder notebook with the switch on.
+> - **CPU timing** (2 × 256 tokens): eval forward 1.5–1.7× faster (no graph), train step 1.06–1.16×.
+>   GPU time and memory are still to be measured.
+
 **Read alongside.** The pair potential's design and its diagnostics are
 developed in
 [`Structured_VPhi_Design_and_Theory.md`](Structured_VPhi_Design_and_Theory.md)

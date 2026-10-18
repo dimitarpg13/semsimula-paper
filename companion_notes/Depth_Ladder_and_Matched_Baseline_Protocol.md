@@ -6012,6 +6012,34 @@ The run (`…cgqk_norc_rglive_vplive_xilive_rfqk_rfclip0p3_L2probe…_attnpot`, 
 4. **No reference binding**, as everywhere: the probe is at the nearest-mention baseline, switching the field to its common mode leaves the probe unchanged (switching it off costs 0.070, all of it common-mode), and the coreference subspace check reads LEXICAL.
 5. **Extra depth over-synchronizes** (S +0.30, rank −41% at one extra step; +0.38 and −76% at two), and the noun-chunk grouping of the final states turns negative (+0.038 → −0.014 → −0.023), as it faded in G3 and G3′.
 
+### 5.26 BF: selective bf16 training — **DRAFT 2026-10-18, for the author's review; not yet binding**
+
+**Why.** The 2B-token runs (Epic 3) take about 60 h per arm on the A100 (PMX about 100 h). Selective bf16 (Cell 0 `AMP_BF16`; productionization plan §10.3, item 5) is expected to be the largest single speed-up, and it frees the memory that layer checkpointing now uses. It changes the training numerics, so it may not be adopted without showing that it does not change what the model learns.
+
+**What bf16 covers.** The training forward runs under bf16 autocast: V_θ's well generator, the context channels, the output head and the Fock gates and read in bf16; the layer step from the linearisation on (eigensolves, exact substeps, force assembly, the LayerNorm projection) in float32. Evaluation is float32 in every arm. Verified on the CPU (`debug/verify_bf16_switch.py`): with autocast off, bit-identical to HEAD; with it on, the well generator runs in bf16 and every eigensolve and substep input is float32.
+
+**The probe.** SR2's Cell 0 (the FO series' anchor, the fastest arm whose per-layer flow converges) plus `AMP_BF16 = True` and `PROBE_MAX_STEPS = 8_000`; seed 0, so the data order is SR2's published run's. Tag `…sr2_bf16…`. About 2.5–4 h. The reference is SR2's float32 run: its `training_log.jsonl`, evals every 500 steps (92.93 at step 8,000).
+
+**Measurements.** The evals at steps 500–8,000 against SR2's at the same steps; the gradient-norm trajectory; any watchdog trigger or spike; seconds per step and peak memory (also measured beforehand by Cell 6b-17, float32 against bf16).
+
+**Calls (draft):**
+
+| | prediction | called |
+| --- | --- | --- |
+| BF1 | bf16 tracks float32: the mean of ln(PPL_bf16 / PPL_fp32) over the evals at steps 4,000–8,000 lies within ±0.02 (±2%) | 70% |
+| BF2 | at step 8,000 the ratio lies within ±3% | 70% |
+| BF3 | no watchdog trigger and no spike capture | 85% |
+| BF4 | at least 1.3× faster per training step than float32 | 50% |
+
+**The band, and why it is ±2%.** Evaluation draws fresh batches each time, so consecutive evals of one run differ by a median 1.7% in SR2's constant-rate phase (p90 4.9%), part of it real progress. A ±2% band on the mean over nine evals is therefore well above the eval noise of a mean and well below a change that would matter to any comparison in the programme (the closest pre-registered gaps are 2–3%). Seed variance is not known yet, which is why the band is not tighter.
+
+**Decision rule (draft).**
+- **BF1, BF2 and BF3 hit:** every 2B-token Fock arm trains in bf16 (Epic 3), and the 2B cards state it. Runs that are compared against an existing float32 run (the FO series against SR2, the seed pair against G2 and G3′) stay in float32.
+- **Any of BF1–BF3 misses:** Epic 3 trains in float32; the miss is recorded and the cause looked for (which bf16 region moves the curve).
+- **BF4** decides only whether the switch is worth using, not whether it is safe.
+
+**Open for the author.** Whether to probe PMX as well (its wells make it the most numerically sensitive arm), and whether the probe runs with the analytic V_φ force on (the same function as the autograd force; using it in the probe would test the combination the 2B runs would use).
+
 ## 6. Open risks
 
 ### 6.1 At L=1 the register bank is read but never updated — **2026-09-24**

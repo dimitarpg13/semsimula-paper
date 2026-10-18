@@ -688,6 +688,8 @@ adds a point to a curve.
    - SR3-L4: unscheduled.
 8. Then the 2B-token runs of the models items 3–7 select.
 
+**Speed (2026-10-18).** The analytic V_φ force is implemented and verified (`Eliminating_the_Autograd_Dependency_in_VPhi.md`, update at the top): Cell 0 `VPHI_ANALYTIC_FORCE`, the same function as the autograd force (float64: 1e-14, derivatives 2e-12), `no_grad` inference now possible, CPU eval 1.5–1.7× and train step 1.06–1.16× faster. Still to do: a GPU measurement (step time and memory, a few minutes once the A100 is free), and only then the decision whether the FO and 2B runs use it. **Selective bf16** (Cell 0 `AMP_BF16`) is implemented and CPU-verified; its probe is drafted as protocol §5.26 for the author's review. **First GPU session after GPT-2: Cell 6b-17** (analytic V_φ, bf16, checkpointing off: time and memory), then the bf16 probe if approved. Identical-arithmetic items next: cache the per-layer stiff-mode basis for the checkpoint recompute; PMX's verified Cholesky basis.
+
 **GPU queue (2026-10-06; superseded by the 2026-10-18 queue above):**
 1. ~~G3′~~ done: 52.90.
 2. ~~**W1, the matched GPT-2 on WSD**~~ done 2026-10-06: settled 48.82 (−1.99% against cosine). W1.1–W1.3 HIT, W1.4 MISS; parity stands by the rule, on its boundary (protocol §5.17).
