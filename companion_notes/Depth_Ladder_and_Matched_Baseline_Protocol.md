@@ -4560,6 +4560,25 @@ Run output `matched_gpt2_LR=1.2e-03_32500steps_training_output.txt` (Colab, A100
 - **For the comparisons** (descriptive, not a change of reference): against the GPT-2 trained on the ladder's identical schedule (48.37), L = 4 Fock (50.10) is +3.6%, G3′ (52.90) +9.4%, PMX (54.63) +12.9%. Against the published cosine baseline (49.81) the same arms read +0.6%, +6.2% and +9.7%. W2 is 2.9% below the cosine baseline, a gap the rule (relative to W1) does not act on, but which any claim of parity should state.
 - **Reading for Epic 3.** The Fock arms lead at the end of the constant-rate phase and lose it in the decay. Whether that persists at 2B tokens, where a longer stable phase moves every model closer to its plateau, is one of the cleanest questions the 2B runs can answer.
 
+#### G2B: the matched GPT-2 at 2B tokens, the reference for Epic 3 — **pre-registered 2026-10-18, before the run**
+
+**Why.** Every 2B-token comparison needs a GPT-2 reference trained on the same budget and the same schedule. It is the cheapest 2B run and does not depend on which of our models are selected, so it runs first (author, 2026-10-18).
+
+**The run.** `colab_matched_gpt2_baseline_openwebtext.ipynb` with W2's Cell 0 (`LR_SCHEDULE = 'wsd'`, `LR = 1.2e-3`, floor 6e-5) plus `TOTAL_STEPS = 130_000`: 2.13B tokens at 16,384 per step, seed 0. Tag `_wsd_lr0p0012_st130000` (the run length joined the tag on 2026-10-18; every existing tag unchanged). The WSD fractions are the ladder's, so warmup ends at step 6,500, the constant phase at 84,500, and the decay runs to 130,000. Evals every 500 steps; settled = the mean of the last three, as everywhere. About 10.7 h on the A100.
+- **Resume, fixed 2026-10-18.** Before, a resume went back to the best checkpoint and re-seeded the batch sampler, replaying the first steps' batches. The training cell now keeps a rolling `gpt2_baseline_latest.pt` every 2,500 steps with the sampler state, and resumes from the newer of it and the best checkpoint. Tested on a tiny CPU model: a run interrupted at step 26 and resumed from step 20 ends bit-identical to an uninterrupted one (weights, Adam moments, best value, sampler state); the fallback for an older checkpoint without sampler state (resume from the best, sampler fast-forwarded) is bit-identical too; an uninterrupted run is bit-identical to the notebook before the change.
+- **Data.** The prepared pool is the 2.0B-token cache every arm uses, so 2.13B tokens means about 1.07 passes on average. Batches are random windows drawn with replacement, so no run is epoch-ordered and repetition at this level is negligible. Every 2B-token arm sees the same pool, so the comparison stays matched. Disclosed here; not enlarged.
+
+**Predictions** (W2, the same model and schedule at 532.5M tokens: settled 48.37; PPL 67.79 at the end of its constant phase; decay gain 0.338):
+
+| | prediction | called |
+| --- | --- | --- |
+| G2B.0 | completes with no loss spike (no eval more than 0.2 nats above the previous one) | 85% |
+| G2B.1 | settled between 41.0 and 45.5 | 65% |
+| G2B.2 | settled below W2's 48.37 by at least 5% (at most 45.95) | 80% |
+| G2B.3 | decay gain (ln PPL at step 84,500 − ln settled) below W2's 0.338: a longer constant phase leaves the model nearer its plateau | 55% |
+
+**What it is for.** It is the denominator of every Epic-3 ratio, and its constant-phase curve is what the Fock arms' are compared with at equal tokens, which tests W2's reading (Fock ahead until the decay) at four times the budget.
+
 ### 5.18 RR: what makes a model refinement-ready? — **pre-registered 2026-10-06, before any measurement**
 
 **The clue.** G3 and G3′ differ only in the routing hardening (QK-norm and the 0.3 field clip). Gate 3 at 1.5× refinement:
