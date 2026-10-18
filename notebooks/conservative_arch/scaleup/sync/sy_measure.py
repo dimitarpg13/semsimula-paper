@@ -4,7 +4,7 @@ SY1 and SY2, state level: does each coupling synchronize tokens, and along
 linguistic structure? (protocol §5.22; design note §3-4; instruments from
 sy_instruments.py as admitted by SY0 run 3).
 
-    python3 sy_measure.py ARM [n_seq=200]      ARM in F3.1 SR2 G2 PM1 PMX L4F G3 G3p
+    python3 sy_measure.py ARM [n_seq=200]      ARM in F3.1 SR2 G2 PM1 PMX L4F G3 G3p XRBF
 
 For every layer step of the trained model, on the 200 SY evaluation sequences
 (sy_cache/sy_tokens.npz) and their annotation (sy_cache/sy_annotation.npz),
@@ -81,6 +81,12 @@ ARMS = {   # name: (folder, Cell 0 replacements, couplings)
                       ("RELAX_GRAD_PATH        = 'default'", "RELAX_GRAD_PATH        = 'live'"),
                       ("RELAX_ATTN_QK_NORM          = False", "RELAX_ATTN_QK_NORM          = True"),
                       ("RELAX_FIELD_CLIP            = None", "RELAX_FIELD_CLIP            = 0.3")), ['vphi', 'fock', 'exch']),
+    # XR part B: G3''s field on F3.1, no reverse channel (added 2026-10-18; protocol §5.25)
+    'XRBF': (P._P + 'norc_rglive_vplive_xilive_rfqk_rfclip0p3_L2probe' + P._S + 'attnpot',
+             F31 + (("LADDER_MECHANISM = 'none'", "LADDER_MECHANISM = 'attention_potential'"),
+                      ("RELAX_GRAD_PATH        = 'default'", "RELAX_GRAD_PATH        = 'live'"),
+                      ("RELAX_ATTN_QK_NORM          = False", "RELAX_ATTN_QK_NORM          = True"),
+                      ("RELAX_FIELD_CLIP            = None", "RELAX_FIELD_CLIP            = 0.3")), ['vphi', 'exch']),
 }
 GROUPINGS = ('coref', 'dep', 'chunk', 'ent', 'pos', 'repeat')
 AGREE_TOL = S.FLOOR / 4

@@ -76,6 +76,12 @@ ARMS = {
                       ("RELAX_GRAD_PATH        = 'default'", "RELAX_GRAD_PATH        = 'live'"),
                       ("RELAX_ATTN_QK_NORM          = False", "RELAX_ATTN_QK_NORM          = True"),
                       ("RELAX_FIELD_CLIP            = None", "RELAX_FIELD_CLIP            = 0.3"))),
+    # XR part B: G3''s field on F3.1, no reverse channel (added 2026-10-18; protocol §5.25)
+    'XRBF': (P._P + 'norc_rglive_vplive_xilive_rfqk_rfclip0p3_L2probe' + P._S + 'attnpot',
+             F31 + (("LADDER_MECHANISM = 'none'", "LADDER_MECHANISM = 'attention_potential'"),
+                      ("RELAX_GRAD_PATH        = 'default'", "RELAX_GRAD_PATH        = 'live'"),
+                      ("RELAX_ATTN_QK_NORM          = False", "RELAX_ATTN_QK_NORM          = True"),
+                      ("RELAX_FIELD_CLIP            = None", "RELAX_FIELD_CLIP            = 0.3"))),
 }
 lines = []
 say = lambda s='': (print(s, flush=True), lines.append(s))

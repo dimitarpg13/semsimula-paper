@@ -1,0 +1,41 @@
+XR part A: G3 (exchange field: yes); 100 / 20 / 20 sequences
+CHECK  switches restore the model: max |d loss| after off/on 0.0e+00
+CHECK  the read switch acts: mean |d loss| with the read off 1.856
+CHECK  the head-mask rewrite with all heads kept reproduces the model: max |d| 0.0e+00
+CHECK  the rewritten read with all registers kept reproduces the model: max |d| 0.0e+00
+CHECK  the masked read with all registers kept reproduces the model: max |d| 0.0e+00
+   removal runs done, 12.3 min
+
+1. REMOVAL AT INFERENCE (cost in nats per token; 95% cluster-bootstrap intervals)
+   full model: mean loss 3.9388 (perplexity 51.36)
+   read  off: cost +1.5590 [+1.5199, +1.6001]  (perplexity x4.75)
+   field off: cost +0.5200 [+0.4474, +0.6026]  (perplexity x1.68)
+   both  off: cost +1.6105 [+1.5245, +1.7072]  (perplexity x5.01)
+   overlap 1 - cost(both) / (cost(field) + cost(read)): +0.225 [+0.217, +0.241] (per-sequence interval)
+
+3. COST BY TARGET CLASS (nats per token)
+   class share: induction 0.083, repeated 0.403, novel 0.514, frequent 0.480, rare 0.520
+   read  off: induction +1.0566; repeated +1.5177; novel +1.6452; frequent +1.2703; rare +1.8189
+         induction / novel ratio: 0.64
+   field off: induction +1.7503; repeated +0.5097; novel +0.2666; frequent +0.1680; rare +0.8366
+         induction / novel ratio: 6.56
+   both  off: induction +2.7360; repeated +1.6807; novel +1.3026; frequent +1.3100; rare +1.8808
+         induction / novel ratio: 2.10
+
+2. THE ROUTES' KERNELS (rows t >= 64; head-averaged field routing; register path A = sum_k beta (1 - sigma) alpha)
+   layer 0 register path  : no token-to-token transfer (the write is a no-op: salience 1 keeps the learned embeddings)
+   layer 0 exchange field : far64 0.698; mean_dist 142.632; eff_sources 243.143; prev_tok 0.005; same_tok 0.036; induction 0.022; eff_rank 6.534
+   layer 1 register path  : far64 0.552; mean_dist 103.122; eff_sources 61.225; prev_tok 0.010; same_tok 0.056; induction 0.057; eff_rank 32.285
+   layer 1 exchange field : far64 0.575; mean_dist 111.101; eff_sources 79.495; prev_tok 0.015; same_tok 0.034; induction 0.132; eff_rank 7.619
+   layer 1 overlap of the two kernels: row cosine 0.288 [0.276, 0.300]; Jensen-Shannon 0.325 nats
+
+4. CAPACITY (20 sequences; retained value = (cost removed - cost keeping k) / cost removed)
+   read: cost removed +1.5787; single-unit removal costs (largest 4) +0.1150, +0.0239, +0.0164, +0.0147
+          retained value keeping the top k:   k=1 0.08, k=2 -0.08, k=4 0.25, k=8 0.50, k=16 0.96, k=32 1.00
+          retained value keeping a random k: k=1 -0.01, k=2 -0.01, k=4 -0.10, k=8 0.45, k=16 0.76, k=32 1.00
+          (descriptive) top k, read renormalised over the kept registers: k=1 -0.21, k=2 0.30, k=4 0.52, k=8 0.75, k=16 0.96, k=32 1.00
+   field: cost removed +0.6372; single-unit removal costs (largest 4) +0.1265, +0.0652, +0.0587, +0.0526
+          retained value keeping the top k:   k=1 0.43, k=2 0.57, k=4 0.80, k=6 0.95, k=8 1.00
+          retained value keeping a random k: k=1 0.21, k=2 0.22, k=4 0.67, k=6 0.81, k=8 1.00
+
+   total 66.3 min

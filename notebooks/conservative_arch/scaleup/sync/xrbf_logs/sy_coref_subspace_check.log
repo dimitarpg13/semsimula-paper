@@ -1,0 +1,7 @@
+Coreference subspace hit, examined: XRBF, layer 0, xi common-mode, top-16 PCs (150 sequences)
+   related coreference pairs: all 69335, identical tokens excluded 61359, same words excluded 55339, pronoun-antecedent 20951
+   all coreferent pairs (reproduces sy_subspace)  B_spec +0.0322 [+0.0229, +0.0422]  shuffled -0.0004 [-0.0032, +0.0027]  rand16 +0.0223  -
+   identical-token pairs excluded                 B_spec +0.0412 [+0.0311, +0.0519]  shuffled -0.0004 [-0.0034, +0.0028]  rand16 +0.0403  -
+   same-word pairs excluded                       B_spec +0.0213 [+0.0118, +0.0314]  shuffled -0.0009 [-0.0039, +0.0022]  rand16 +0.0300  -
+   pronoun-antecedent pairs only                  B_spec -0.0097 [-0.0219, +0.0025]  shuffled -0.0405 [-0.0474, -0.0335]  rand16 +0.0565  -
+   => LEXICAL

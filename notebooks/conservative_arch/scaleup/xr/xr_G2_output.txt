@@ -1,0 +1,27 @@
+XR part A: G2 (exchange field: no); 100 / 20 / 20 sequences
+CHECK  switches restore the model: max |d loss| after off/on 0.0e+00
+CHECK  the read switch acts: mean |d loss| with the read off 1.534
+CHECK  the rewritten read with all registers kept reproduces the model: max |d| 0.0e+00
+CHECK  the masked read with all registers kept reproduces the model: max |d| 0.0e+00
+   removal runs done, 8.0 min
+
+1. REMOVAL AT INFERENCE (cost in nats per token; 95% cluster-bootstrap intervals)
+   full model: mean loss 3.9110 (perplexity 49.95)
+   read  off: cost +1.4164 [+1.3389, +1.5042]  (perplexity x4.12)
+
+3. COST BY TARGET CLASS (nats per token)
+   class share: induction 0.083, repeated 0.403, novel 0.514, frequent 0.480, rare 0.520
+   read  off: induction +2.4193; repeated +1.3319; novel +1.2529; frequent +0.8780; rare +1.9061
+         induction / novel ratio: 1.93
+
+2. THE ROUTES' KERNELS (rows t >= 64; head-averaged field routing; register path A = sum_k beta (1 - sigma) alpha)
+   layer 0 register path  : no token-to-token transfer (the write is a no-op: salience 1 keeps the learned embeddings)
+   layer 1 register path  : far64 0.529; mean_dist 95.943; eff_sources 68.515; prev_tok 0.010; same_tok 0.014; induction 0.075; eff_rank 28.658
+
+4. CAPACITY (20 sequences; retained value = (cost removed - cost keeping k) / cost removed)
+   read: cost removed +1.4989; single-unit removal costs (largest 4) +0.0306, +0.0256, +0.0235, +0.0146
+          retained value keeping the top k:   k=1 0.10, k=2 0.48, k=4 0.67, k=8 0.85, k=16 0.95, k=32 1.00
+          retained value keeping a random k: k=1 0.01, k=2 0.12, k=4 0.03, k=8 0.63, k=16 0.87, k=32 1.00
+          (descriptive) top k, read renormalised over the kept registers: k=1 -2.18, k=2 0.61, k=4 0.73, k=8 0.87, k=16 0.95, k=32 1.00
+
+   total 48.2 min

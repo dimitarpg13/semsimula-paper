@@ -1,0 +1,17 @@
+=== sy_measure start 20:16:12
+=== sy_measure exit 0 20:56:34
+=== sy_routes start 20:56:34
+=== sy_routes exit 0 21:15:17
+=== sy_xi_pred start 21:15:17
+=== sy_xi_pred exit 0 21:42:59
+=== sy_coref_probe start 21:42:59
+=== sy_coref_probe exit 0 22:01:59
+=== sy_subspace start 22:01:59
+=== sy_subspace exit 0 22:32:52
+=== sy_coref_subspace_check start 22:32:52
+=== sy_coref_subspace_check exit 0 22:42:10
+=== sy5_depth start 22:42:10
+=== sy5_depth exit 0 23:22:59
+=== sy_exch_reference start 23:22:59
+=== sy_exch_reference exit 1 23:23:18
+ALLDONE

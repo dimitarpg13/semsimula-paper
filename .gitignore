@@ -42,3 +42,5 @@ notebooks/conservative_arch/scaleup/sync/sy_cache/
 # sync/ scripts). The _output.txt and .json summaries beside them are kept, and the
 # figures' statistics are cached in companion_notes/figures/sy_results/_numbers.json.
 notebooks/conservative_arch/scaleup/sync/**/*.npz
+# XR comparison per-sequence statistics (regeneratable by xr/xr_compare.py)
+notebooks/conservative_arch/scaleup/xr/**/*.npz

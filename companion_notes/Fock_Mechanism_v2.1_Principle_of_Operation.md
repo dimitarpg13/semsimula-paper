@@ -34,7 +34,7 @@ Values are those of the published G3′ (`attention-potential-rfqk-live`), $L = 
 | $\lambda_{\mathrm{ex}}$ | exchange-field gate | fixed at 1 |
 | $H$ | exchange-field heads | 8 |
 | $W^{(c)}\_{\mathrm{q}}$, $W^{(c)}\_{\mathrm{k}}$, $W^{(c)}\_{\mathrm{v}}$ | query, key and value projections of exchange head $c$ (subscripts q, k, v; v is "value", not the Greek $\nu$) | each $d \to 48$ |
-| $U^{(c)}$ | readout projection of exchange head $c$ (value space back to $d$) | $48 \to d$, initialised at 0 |
+| $U^{(c)}$ | readout projection of exchange head $c$ (value space back to $d$) | $48 \to d$, random at initialisation (scale 0.02) |
 | $d_{\mathrm{k}}$, $d_{\mathrm{v}}$ | key and value width of each exchange head | 48, 48 |
 | $a^{(c)}_{ts}$ | exchange routing weight of source $s$ for token $t$, head $c$ | |
 | $\eta_c$ | exchange routing temperature, head $c$ | initial 1/0.07, cap 100 |
@@ -120,7 +120,7 @@ The force on token $t$ is the routed sum of the earlier tokens' values $W^{(c)}\
 
 $$f^{\mathrm{ex}}_t = \lambda_{\mathrm{ex}} \sum_{c=1}^{H} \sum_{s \lt t} a^{(c)}_{ts} \frac{U^{(c)\top} W^{(c)}_{\mathrm{v}} h_s}{\sqrt{d_{\mathrm{v}}}}.$$
 
-The sum runs over strictly earlier tokens: a token does not route to itself. $U^{(c)}$ is initialised at zero, so the field is exactly zero at the start of training and grows as it is learned. The gate $\lambda_{\mathrm{ex}}$ is fixed at 1.
+The sum runs over strictly earlier tokens: a token does not route to itself. All four projections start random (normal, scale 0.02), so the field acts from the first training step, and the gate $\lambda_{\mathrm{ex}}$ is fixed at 1 (the `'scalar'` gate setting of these runs).
 
 ### 4.2 As a potential, at frozen routing
 
@@ -146,7 +146,7 @@ In the language of §2 it is an **instantaneous** virtual exchange, emitted and 
 
 - **G3** routes with plain scaled dot products ($1/\sqrt{d_k}$).
 - **G3′** normalises queries and keys (the $\eta_c$ form above), and trains the field's parameters in their own gradient-clipping group (clip 0.3). The clip acts on the gradients, not on the field.
-- Both: $H = 8$ heads, $d_{\mathrm{k}} = d_{\mathrm{v}} = 48$, routing from the token states, zero-initialised readout $U$, $\lambda_{\mathrm{ex}} = 1$.
+- Both: $H = 8$ heads, $d_{\mathrm{k}} = d_{\mathrm{v}} = 48$, routing from the token states, all projections random at initialisation, $\lambda_{\mathrm{ex}} = 1$.
 
 ## 5. The mediated route: the Fock registers
 
@@ -317,6 +317,49 @@ Panels A and B are illustrations, not measurements. The exchange field is not dr
 
 Reliance overstates value by an order of magnitude: a model trained without the registers finds other routes. An earlier ablation from initialisation on the $d = 384$ OpenWebText pilot showed a much larger gap, but that comparison predates the causal-leak fix and the live-gradient (Gen 3) training, so only its sign is retained. The corresponding measurements for G3 and G3′, where the exchange field offers a second route, are not in that comparison.
 
+### 7.4 The two routes compared on the trained models
+
+The exchange field and the register path were compared on the trained G3, G3′ and G2 by switching each one off at inference and measuring where the loss rises (protocol §5.25, "XR part A"). A fourth model, XRB-F, was then trained with the field and no register read (F3.1 plus G3′'s field, same 532.5M tokens; "XR part B"). Three terms first:
+- An **induction position** is one where the next token is the token that followed an earlier occurrence of the current token. Copying from earlier in the text would predict it. About 8% of positions are of this kind.
+- A **novel position** is one whose next token has not occurred earlier in the text (about 51%); the rest are **repeated** positions.
+- A route's **kernel** is how much weight it gives each earlier token when it updates the current one: the field's routing weights averaged over its 8 heads, and for the register path the write weights multiplied through the read weights.
+
+![The exchange field against the register path](figures/xr/xr_routes.png)
+
+**Figure 6.**
+- **(a)** The loss increase when each route is removed, by kind of position. The two bars on the left are each route alone (G2's register path, XRB-F's field).
+- **(b)** How much of each route's value survives when only its most important registers or heads are kept.
+- **(c)** Where each route's kernel puts its weight: on the token that followed an earlier occurrence of the current token, and further than 64 tokens back.
+
+Made by [`figures/_make_xr_figs.py`](figures/_make_xr_figs.py).
+
+| loss increase when removed (nats per token) | induction positions | novel positions | all positions |
+| --- | ---: | ---: | ---: |
+| G2: register path (no field present) | 2.42 | 1.25 | 1.42 |
+| XRB-F: exchange field (no register read) | 2.61 | 1.16 | 1.32 |
+| G3: register path / exchange field | 1.06 / 1.75 | 1.65 / 0.27 | 1.56 / 0.52 |
+| G3′: register path / exchange field | 0.94 / 1.74 | 1.36 / 0.22 | 1.34 / 0.47 |
+
+1. **The register path is the broad channel.** It carries most of the loss at every kind of position, and removing it costs about three times as much as removing the field. It is wide: its kernel has effective rank about 30 in G2 and G3, and keeping 95% of its value takes about 16 of its 32 registers. In G3′ its rank is about 10, because half its registers keep their learned content (§10).
+2. **The exchange field is a copying specialist.** Its cost is 6 to 8 times larger at induction positions than at novel ones, and its kernel puts 2 to 5 times the register path's weight on the induction targets. This is the job of attention's induction heads. It reaches slightly further back than the register path, and it needs 6 of its 8 heads to keep 95% of its value.
+3. **Beside the field, the register path gives the copying up.** In G2, which has no field, the register path does it: removing it costs 2.42 nats at induction positions, twice its cost elsewhere. Beside the field that falls to about 1 nat, and the field carries the rest. With both routes removed, the cost at induction positions (2.7 to 2.9 nats) is close to G2's. The total copying ability is about the same; it is divided differently.
+
+4. **Alone, the field becomes the broad channel too.** In XRB-F, removing the field costs about what removing G2's register path costs, at every kind of position (2.61 against 2.42 at induction positions, 1.16 against 1.25 at novel ones). Its kernel widens to match: effective rank 25 at the last layer, against 7.4 beside the registers and 29 for G2's register path. It still puts twice the register path's weight on induction targets (0.142 against 0.075). So the division of labour in points 1–3 is not built into the field. It arises when the two routes are trained together.
+
+**What this says about the field's value.** Value is measured by training with and without a route, not by removing it from a trained model: a trained model leans on whatever route it has (removing XRB-F's field costs 1.32 nats, although training with it lowered the loss by only 0.06 nats). Trained values, as settled perplexity at L = 2:
+
+| | no exchange field | exchange field |
+| --- | ---: | ---: |
+| no register read | 57.76 (F3.1) | 54.27 (XRB-F, −6.0%) |
+| register path | 53.12 (G2, −8.0%) | 52.90 (G3′, −8.4%) |
+
+1. **The field alone is a real but weaker route.** It takes the conservative core three quarters of the way the register path does (6.0% against 8.0%).
+2. **Beside the registers it adds almost nothing** (0.4%). The two routes largely substitute for each other: each, alone, does most of what the pair does.
+3. **Refinement.** XRB-F refines about as well as F3.1 and G3′ (Gate 3 at 1.5× the steps: +134%, against +143% and +115%), and far better than G2 and G3 (above +1,200%). The exchange field does not cause the large refinement failures.
+4. **It leans on momentum.** Resetting the velocity between layers costs XRB-F +113%, against +33% to +34% for every other two-layer model, including G3′. This was not predicted and is not yet explained.
+
+One seed per model; settled values have an evaluation spread of about ±1.
+
 ## 8. The virtual-particle interpretation
 
 ### 8.1 Two exchange processes
@@ -356,7 +399,7 @@ A light register relaxes to the force balance $r_k = \sum_j \alpha_{kj} v_j$, wh
 
 <img src="images/fock_token_register_transfer.png" alt="Token to register transfer as an alignment-gated spring bundle" width="600">
 
-**Figure 6.** The write port as a bundle of alignment-gated springs (teal), and the read as a separately parameterised coupling back to the tokens (red).
+**Figure 7.** The write port as a bundle of alignment-gated springs (teal), and the read as a separately parameterised coupling back to the tokens (red).
 
 This is an interpretation, not the implementation. In the published prefix-causal arms the registers are not integrated as particles: the write is computed directly, and blended by salience. The read has no restoring term. It adds $\sum_k \beta_{ik} u_k$, not $\sum_k \beta_{ik} (u_k - h_i)$.
 
@@ -385,7 +428,7 @@ This is an interpretation, not the implementation. In the published prefix-causa
 
 ![Measured on the trained G3′](figures/fock_v21/fock_g3p_lifecycle.png)
 
-**Figure 7.** Measured on the trained G3′, 8 validation sequences of 512 tokens (re-measured 2026-10-16 after a loader fix that restored G3′'s trained exchange-field temperatures; the changes are small).
+**Figure 8.** Measured on the trained G3′, 8 validation sequences of 512 tokens (re-measured 2026-10-16 after a loader fix that restored G3′'s trained exchange-field temperatures; the changes are small).
 - **(a)** The destruction gate.
 - **(b)** How focused the read is.
 - **(c)** The relative size of the two routes.

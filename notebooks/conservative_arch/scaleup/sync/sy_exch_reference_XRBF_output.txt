@@ -1,0 +1,43 @@
+SY reference test: XRBF (L = 2), couplings ['vphi', 'exch'], 50 sequences
+   first batch 36 s
+   50 sequences, 14.4 min
+CHECK     "on" replay: last LayerNorm of stage B vs the recorded step output, max |d| 0.0e+00
+CHECK M1  layer 0 vphi off: stage-B Gamma vs sy_measure per sequence, max |d| 0.0e+00
+CHECK M1  layer 0 vphi fcom: stage-B Gamma vs sy_measure per sequence, max |d| 0.0e+00
+CHECK M1  layer 0 vphi: Gamma_tot - Gamma_push - Gamma_spec, max |d| 3.5e-18
+CHECK M1  layer 0 exch off: stage-B Gamma vs sy_measure per sequence, max |d| 0.0e+00
+CHECK M1  layer 0 exch fcom: stage-B Gamma vs sy_measure per sequence, max |d| 0.0e+00
+CHECK M1  layer 0 exch: Gamma_tot - Gamma_push - Gamma_spec, max |d| 3.5e-17
+CHECK     layer 0: frozen-LayerNorm "off" replay vs the plain "off" replay, max |d| 0.0e+00
+CHECK M1  layer 1 vphi off: stage-B Gamma vs sy_measure per sequence, max |d| 0.0e+00
+CHECK M1  layer 1 vphi fcom: stage-B Gamma vs sy_measure per sequence, max |d| 0.0e+00
+CHECK M1  layer 1 vphi: Gamma_tot - Gamma_push - Gamma_spec, max |d| 2.8e-17
+CHECK M1  layer 1 exch off: stage-B Gamma vs sy_measure per sequence, max |d| 0.0e+00
+CHECK M1  layer 1 exch fcom: stage-B Gamma vs sy_measure per sequence, max |d| 0.0e+00
+CHECK M1  layer 1 exch: Gamma_tot - Gamma_push - Gamma_spec, max |d| 1.7e-16
+CHECK     layer 1: frozen-LayerNorm "off" replay vs the plain "off" replay, max |d| 0.0e+00
+
+SUMMARY (50 sequences; 95% cluster-bootstrap intervals; floor 0.02)
+   A = integrator output, before any normalization;  B = sy_measure readout (no reverse channel: the same point as A)
+layer 0
+   vphi  A: tot (= disp) +0.0089 [+0.0087, +0.0092]  spec (force) +0.0087 [+0.0084, +0.0089]  push +0.0003 [+0.0003, +0.0003]  dev (specific only) +0.0086 [+0.0084, +0.0089]
+   vphi  B: tot (= disp) +0.0089 [+0.0087, +0.0092]  spec (force) +0.0087 [+0.0084, +0.0089]  push +0.0003 [+0.0003, +0.0003]  dev (specific only) +0.0086 [+0.0084, +0.0089]
+   exch  A: tot (= disp) +0.0501 [+0.0472, +0.0528]  spec (force) -0.0107 [-0.0124, -0.0092]  push +0.0608 [+0.0591, +0.0623]  dev (specific only) -0.0073 [-0.0089, -0.0058]
+   exch  B: tot (= disp) +0.0501 [+0.0472, +0.0528]  spec (force) -0.0107 [-0.0124, -0.0092]  push +0.0608 [+0.0591, +0.0623]  dev (specific only) -0.0073 [-0.0089, -0.0058]
+   exch  push at B with the first LayerNorm frozen +0.0608 [+0.0591, +0.0623];  push after the first LayerNorm, no Fock increment +0.7626 [+0.7555, +0.7699]
+   exch  push at B scaled x0.5 +0.0318 [+0.0308, +0.0325], x2 +0.1083 [+0.1053, +0.1110];  linearity at A: rel. error x0.5 2.0e-07, x2 1.6e-07
+   exch  shared displacement at A / RMS spread of the states: median 1.713;  token-specific part of the push displacement at A, relative: median 0.078
+layer 1
+   vphi  A: tot (= disp) +0.0487 [+0.0468, +0.0506]  spec (force) +0.0491 [+0.0471, +0.0510]  push -0.0003 [-0.0004, -0.0003]  dev (specific only) +0.0491 [+0.0472, +0.0510]
+   vphi  B: tot (= disp) +0.0487 [+0.0468, +0.0506]  spec (force) +0.0491 [+0.0471, +0.0510]  push -0.0003 [-0.0004, -0.0003]  dev (specific only) +0.0491 [+0.0472, +0.0510]
+   exch  A: tot (= disp) -0.1682 [-0.1950, -0.1456]  spec (force) -0.2478 [-0.2693, -0.2302]  push +0.0796 [+0.0729, +0.0854]  dev (specific only) -0.2261 [-0.2482, -0.2076]
+   exch  B: tot (= disp) -0.1682 [-0.1950, -0.1456]  spec (force) -0.2478 [-0.2693, -0.2302]  push +0.0796 [+0.0729, +0.0854]  dev (specific only) -0.2261 [-0.2482, -0.2076]
+   exch  push at B with the first LayerNorm frozen +0.0796 [+0.0729, +0.0854];  push after the first LayerNorm, no Fock increment -1.0625 [-1.0777, -1.0475]
+   exch  push at B scaled x0.5 +0.0415 [+0.0381, +0.0444], x2 +0.1398 [+0.1274, +0.1504];  linearity at A: rel. error x0.5 1.3e-07, x2 1.2e-07
+   exch  shared displacement at A / RMS spread of the states: median 3.197;  token-specific part of the push displacement at A, relative: median 0.051
+
+READINGS for this arm (the decision needs both G3 and G3p)
+   layer 0: at A, spec -0.0107 and dev -0.0073 agree (within 0.01); mean -0.0090
+            M2 |push at A| < floor: fails (+0.0608);  M3 push at B, LayerNorm frozen, < floor: fails (+0.0608)
+   layer 1: at A, spec -0.2478 and dev -0.2261 DISAGREE (within 0.01); mean -0.2369
+            M2 |push at A| < floor: fails (+0.0796);  M3 push at B, LayerNorm frozen, < floor: fails (+0.0796)

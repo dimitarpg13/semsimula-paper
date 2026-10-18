@@ -28,6 +28,10 @@ M3: Gamma_push at B with the first LayerNorm frozen below the floor. V_phi is re
 every Fock arm (G2, L4F, G3, G3p), to show whether its earlier scores depended on the readout point.
 
     python3 sy_exch_reference.py ARM [n_seq=50]
+
+Arms without a reverse channel (XRBF, added 2026-10-18) have one LayerNorm per step: integrator -> LayerNorm.
+There sy_measure's readout already is the integrator's output, so stages A and B coincide, and the
+frozen-LayerNorm replay at B reduces to the push at A (M3 = M2).
 """
 import json, sys, time
 from pathlib import Path
@@ -47,6 +51,7 @@ say = lambda s='': (print(s, flush=True), lines.append(s))
 R = Replayer(ARM)
 m = R.model
 COUP = [c for c in ('vphi', 'exch') if c in R.couplings]
+ONE_LN = m.reverse_ch is None
 X = np.load(CACHE / 'sy_tokens.npz')['x'][:N_SEQ]
 REF = np.load(HERE / f'sy_measure_{ARM}.npz')
 
@@ -110,6 +115,10 @@ def run(l, version, frozen=None):
         R._unpatch(saved)
         if frozen is not None:
             m._project = R._spy_proj
+    if ONE_LN:                                 # no reverse channel: one LayerNorm, so B is A
+        assert len(R.proj_in) == 1, f'expected one LayerNorm per step (no reverse channel), got {len(R.proj_in)}'
+        a = R.proj_in[0].double().numpy()
+        return a, a
     assert len(R.proj_in) == 2, f'expected two LayerNorms per step (Fock arm), got {len(R.proj_in)}'
     return R.proj_in[0].double().numpy(), R.proj_in[1].double().numpy()
 
@@ -175,7 +184,8 @@ for l in range(R.L):
 out = {}
 bm = lambda k: S.boot_mean(store[k])
 say(f'\nSUMMARY ({N_SEQ} sequences; 95% cluster-bootstrap intervals; floor 0.02)')
-say('   A = integrator output, before any normalization;  B = sy_measure readout (after the first LayerNorm + Fock increment)')
+say('   A = integrator output, before any normalization;  B = sy_measure readout ' +
+    ('(no reverse channel: the same point as A)' if ONE_LN else '(after the first LayerNorm + Fock increment)'))
 for l in range(R.L):
     say(f'layer {l}')
     for c in COUP:

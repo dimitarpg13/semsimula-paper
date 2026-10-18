@@ -1,0 +1,25 @@
+XR: XRBF (exchange field: yes; reverse channel: no); 100 / 20 / 20 sequences
+CHECK  switches restore the model: max |d loss| after off/on 0.0e+00
+CHECK  the field switch acts: mean |d loss| with the field off 1.515
+CHECK  the head-mask rewrite with all heads kept reproduces the model: max |d| 0.0e+00
+   removal runs done, 6.7 min
+
+1. REMOVAL AT INFERENCE (cost in nats per token; 95% cluster-bootstrap intervals)
+   full model: mean loss 3.9379 (perplexity 51.31)
+   field off: cost +1.3218 [+1.2441, +1.4064]  (perplexity x3.75)
+
+3. COST BY TARGET CLASS (nats per token)
+   class share: induction 0.083, repeated 0.403, novel 0.514, frequent 0.480, rare 0.520
+   field off: induction +2.6052; repeated +1.1706; novel +1.1576; frequent +0.7092; rare +1.8739
+         induction / novel ratio: 2.25
+
+2. THE ROUTES' KERNELS (rows t >= 64; head-averaged field routing; register path A = sum_k beta (1 - sigma) alpha)
+   layer 0 exchange field : far64 0.685; mean_dist 137.588; eff_sources 78.527; prev_tok 0.005; same_tok 0.068; induction 0.035; eff_rank 6.666
+   layer 1 exchange field : far64 0.567; mean_dist 106.970; eff_sources 106.624; prev_tok 0.016; same_tok 0.044; induction 0.142; eff_rank 25.073
+
+4. CAPACITY (20 sequences; retained value = (cost removed - cost keeping k) / cost removed)
+   field: cost removed +1.3978; single-unit removal costs (largest 4) +0.6790, +0.4291, +0.0995, +0.0945
+          retained value keeping the top k:   k=1 0.13, k=2 0.53, k=4 0.80, k=6 0.93, k=8 1.00
+          retained value keeping a random k: k=1 0.07, k=2 0.24, k=4 0.43, k=6 0.90, k=8 1.00
+
+   total 20.5 min

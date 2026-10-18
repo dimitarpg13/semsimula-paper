@@ -1,0 +1,18 @@
+SY5, Gate 2 axis: XRBF  ...05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_attnpot  (L = 2, trained dt = 4, N in (2, 3, 4))
+CHECK  N = L through Cell 6b-7's _fom_stack vs the trained forward: max |d logits| 0.0e+00; layer schedule [0, 1]
+       N = 3: layer schedule [0, 0, 1]
+       N = 4: layer schedule [0, 0, 1, 1]
+   2/200 sequences, 0.4 min
+   42/200 sequences, 8.5 min
+   82/200 sequences, 16.5 min
+   122/200 sequences, 24.5 min
+   162/200 sequences, 32.6 min
+
+RESULTS (200 sequences; 95% cluster-bootstrap intervals)
+     N        PPL                        S vs N=L  eff. rank                     rank change    chunk B      dep B
+     2      49.62      +0.0000 [+0.0000, +0.0000]      91.77      +0.0000 [+0.0000, +0.0000]    +0.0378    -0.0168
+     3     117.72      +0.2965 [+0.2844, +0.3092]      53.80      -0.4138 [-0.4225, -0.4047]    -0.0136    -0.0356
+     4     521.32      +0.3760 [+0.3584, +0.3953]      22.40      -0.7559 [-0.7637, -0.7481]    -0.0226    -0.0628
+   from N = 2 to N = 3: perplexity 49.62 -> 117.72 (+137%); S +0.2965 (criterion >= 0.05); effective rank -41.4% (criterion <= -20%)
+   => over-synchronization HOLDS in this arm
+wrote sy5_depth_XRBF_output.txt

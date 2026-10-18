@@ -528,6 +528,16 @@ After the six models above had been scored, every measurement was repeated on th
 
 The reading is short. At two layers, the attention-shaped conservative coupling behaves like the first layers of the matched GPT-2: it moves the tokens, spreads them, and binds nothing. Whatever these models group, they group through the context field, and more strongly than any other model does.
 
+**The same field without the registers (added 2026-10-18).** A third model, XRB-F, has G3′'s exchange field and no register read: the conservative-only model F3.1 plus the field (protocol §5.25, "XR part B"). Every measurement above was repeated on it. These are descriptive; no SY call was fixed for this model.
+
+- **It still draws nothing together.** Read before any normalisation, the field's specific part contracts nothing at the first layer (−0.011 by the force form, −0.007 specific only), and it spreads the tokens at the second (about −0.24).
+- **Its shared push is six times larger.** Without the registers the field moves every token by 1.7 times the tokens' spread at the first layer and 3.2 times at the second (G3′: 0.28 and 0.71). That push does not move every token by exactly the same amount, and at this size the difference alone reads as contraction (+0.06 and +0.08) even before any normalisation. It is a common-mode effect, not synchronization by the field.
+- **It now separates related words.** At the last layer it pushes the words of noun chunks apart (−0.046) and heads apart from their dependents (−0.029), both past the threshold. Beside the registers it did neither measurably. The context field still groups noun chunks (+0.049; +0.034 after the prediction control), and the two nearly cancel: the final states keep a chunk grouping of +0.038.
+- **No reference binding.** The probe reads 0.534 at the last layer and 0.615 at the first, at the nearest-mention baseline within the test's uncertainty.
+- **Extra depth collapses it,** as G3 and G3′: one extra step raises perplexity from 50 to 118, the tokens draw together (S +0.30) and lose 41% of their dimensions, and the chunk grouping turns negative.
+
+So the field's failure to bind does not come from sharing the work with the registers. Alone, it takes on more of the model's work and pushes harder, but what it does to related words is to separate them.
+
 ## 25. The verdict against the pre-registered calls
 
 | call | prediction | called at | result |
@@ -549,6 +559,7 @@ The four follow-up tests, each fixed in advance in the protocol, are not part of
 | decoding probe: is the antecedent recoverable? | **no**, in every model (§21) |
 | binding in a subspace | only lexical identity, not reference (§21) |
 | exchange field (G3 and G3′ both): claims 1 and 2 | **both fail**; the apparent contraction at the first layer was the normalisation acting on its shared push (§24) |
+| exchange field without registers (XRB-F; descriptive) | claim 1 fails again; on related words the field now separates instead of doing nothing (§24) |
 
 **The verdict, in plain terms.** On the couplings the test was designed around, the trained models synchronize tokens without grouping related words, so the pre-registered verdict is "semantically blind". They do group the words of syntactic constituents, through a coupling Part I had classed as a confound to control: the context field, a mean field that produces clustered synchronization. That grouping is generic, since the matched transformer forms it too, but the mechanism is particular to this framework: one mean field at the last step, where the transformer uses attention spread over its middle layers. The attention-shaped exchange field of the Gen 3 models does not change this: it binds nothing, and those models too bind constituents through the context field. Neither family binds reference at this budget. And running the models past their trained depth makes the tokens collapse together, which is how their catastrophic failures look, though not how they begin.
 

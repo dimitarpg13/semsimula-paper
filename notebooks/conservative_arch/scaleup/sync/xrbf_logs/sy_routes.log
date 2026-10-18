@@ -1,0 +1,30 @@
+SY2 route readouts: XRBF  ...05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_attnpot  (L = 2; wells: False)
+CHECK  layer 0: rebuilt pair potential vs model |dU| 0.0e+00; total V_phi force max |d| 0.0e+00; potential-only share of the force 1.000
+CHECK  layer 1: rebuilt pair potential vs model |dU| 0.0e+00; total V_phi force max |d| 0.0e+00; potential-only share of the force 1.000
+   2/200 sequences, 0.2 min
+   22/200 sequences, 2.0 min
+   42/200 sequences, 3.8 min
+   62/200 sequences, 5.6 min
+   82/200 sequences, 7.4 min
+   102/200 sequences, 9.3 min
+   122/200 sequences, 11.1 min
+   142/200 sequences, 12.9 min
+   162/200 sequences, 14.8 min
+   182/200 sequences, 16.6 min
+
+SUMMARY (200 sequences; 95% cluster-bootstrap intervals; floor 0.02; enrichment threshold 1.2)
+layer 0
+   coref  V_phi attraction (relative) -5.5502 [-6.5300, -4.7032] (shuffled -0.0192 [-0.1403, +0.0989])   enrichment 1.058 [0.990, 1.121] (shuffled 1.024)
+   dep    V_phi attraction (relative) -0.0121 [-0.2214, +0.1637] (shuffled -0.0732 [-0.2408, +0.0452])   enrichment 1.096 [1.070, 1.123] (shuffled 1.039)
+   chunk  V_phi attraction (relative) +0.2370 [+0.0141, +0.3935] (shuffled -0.1420 [-0.3511, +0.0338])   enrichment 0.866 [0.810, 0.931] (shuffled 1.010)
+   ent    V_phi attraction (relative) +0.0078 [-0.1844, +0.1825] (shuffled -0.1845 [-0.4647, +0.0761])   enrichment 0.790 [0.679, 0.906] (shuffled 1.013)
+   pos    V_phi attraction (relative) -0.8013 [-0.9208, -0.6915] (shuffled -0.0152 [-0.0429, +0.0119])   enrichment 1.372 [1.333, 1.412] (shuffled 1.025)
+   repeat V_phi attraction (relative) -38.0631 [-41.1799, -35.0359] (shuffled -0.0663 [-0.2117, +0.0581])   enrichment 0.454 [0.419, 0.488] (shuffled 1.012)
+layer 1
+   coref  V_phi attraction (relative) +0.4280 [+0.3555, +0.5168] (shuffled +0.0045 [-0.0194, +0.0269])   enrichment 1.073 [1.013, 1.134] (shuffled 1.036)
+   dep    V_phi attraction (relative) -0.0953 [-0.1084, -0.0823] (shuffled -0.0044 [-0.0130, +0.0038])   enrichment 1.081 [1.057, 1.108] (shuffled 1.008)
+   chunk  V_phi attraction (relative) -0.0838 [-0.1115, -0.0590] (shuffled +0.0103 [-0.0027, +0.0245])   enrichment 0.896 [0.846, 0.951] (shuffled 1.003)
+   ent    V_phi attraction (relative) +0.0829 [+0.0195, +0.1539] (shuffled +0.0005 [-0.0220, +0.0267])   enrichment 0.805 [0.694, 0.930] (shuffled 1.018)
+   pos    V_phi attraction (relative) -0.0450 [-0.0620, -0.0269] (shuffled +0.0057 [-0.0053, +0.0166])   enrichment 1.321 [1.282, 1.364] (shuffled 1.013)
+   repeat V_phi attraction (relative) +3.6701 [+3.1332, +4.2311] (shuffled +0.0146 [-0.0073, +0.0419])   enrichment 0.504 [0.466, 0.542] (shuffled 1.002)
+wrote sy_routes_XRBF.npz and _output.txt

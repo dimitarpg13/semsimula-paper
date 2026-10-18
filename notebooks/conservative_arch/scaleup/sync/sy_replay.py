@@ -44,6 +44,13 @@ ARMS = {   # name: (folder, Cell 0 replacements, couplings, common reference ado
                       ("RELAX_ATTN_QK_NORM          = False", "RELAX_ATTN_QK_NORM          = True"),
                       ("RELAX_FIELD_CLIP            = None", "RELAX_FIELD_CLIP            = 0.3")),
             ['vphi', 'fock', 'exch'], None),
+    # XR part B (protocol §5.25): G3''s hardened exchange field on F3.1, no reverse channel (added 2026-10-18)
+    'XRBF': (P._P + 'norc_rglive_vplive_xilive_rfqk_rfclip0p3_L2probe' + P._S + 'attnpot',
+             P.CONFIGS['F3.1'][1] + (("LADDER_MECHANISM = 'none'", "LADDER_MECHANISM = 'attention_potential'"),
+                                     ("RELAX_GRAD_PATH        = 'default'", "RELAX_GRAD_PATH        = 'live'"),
+                                     ("RELAX_ATTN_QK_NORM          = False", "RELAX_ATTN_QK_NORM          = True"),
+                                     ("RELAX_FIELD_CLIP            = None", "RELAX_FIELD_CLIP            = 0.3")),
+             ['vphi', 'exch'], None),
 }
 
 

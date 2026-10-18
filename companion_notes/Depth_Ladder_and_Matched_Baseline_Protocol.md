@@ -5678,6 +5678,255 @@ The chunk and part-of-speech hits restate in the dominant directions what the wh
 
 **Reading.** The weak form of the author's claim is supported: the trained Poisson modes form a bank of learned pattern-matching regions whose firings carry transition structure beyond what the hidden state's drift supplies, in both arms, decaying over a few tokens. The strong form is not: the transitions have no direction. For a chain of thought, a template firing has to make the *next* firing more likely than the *previous* one; these firings make neighbours likely in both directions, which is co-occurrence, not sequence. This is the order-blindness of §4a of the working-memory note, now measured at the level of the bank rather than the trace: the inference region is not merely undefined on paper, there is no asymmetric structure in the trained modes for it to have learned. Every reading is scoped to these models and their budget (§5.19).
 
+### 5.25 XR: the exchange field against the reverse channel, part A — **pre-registered 2026-10-17, before any measurement**
+
+**The question.** The Gen 3 models carry two attention-like routes between tokens, both exploratory instruments:
+- the **exchange field**, one hop, a force inside the integrator, recomputed every layer;
+- the **register path**, two hops: the registers' write port, then the reverse channel (their only read port), applied after the step.
+
+They have been compared only by their marginal value as trained: the register path is worth 8.0% over the conservative core (57.76 → 53.12), and the exchange field adds nothing measurable on top of it (G3 54.21, G3′ 52.90). The field has never been trained without the registers, so that comparison cannot separate "the field is weak" from "the field is redundant beside the registers". Part A measures, on the trained checkpoints and without retraining, what each route carries, how far it reaches, which positions it serves, and how much each can be narrowed. Part B, an exchange-field-only model trained at 532.5M tokens, completes the factorial; it needs a GPU run and the author's decision.
+
+**Arms and data.** G3 and G3′ (both routes), and G2 (registers only, for the register path without the field), each on its best checkpoint, loaded with the corrected builder (§5.22, "G3′ re-measured after a loader bug"). Validation sequences: the SY set (`sy_cache/sy_tokens.npz`, 200 × 512 tokens), the first 511 tokens of each as input and the next 511 as targets. Intervals: cluster bootstrap over sequences, 1,000 resamples, 95%.
+
+**Measurements** (script `xr/xr_compare.py`; the switches are exact and restore the model bit for bit, checked before measuring):
+1. **Removal at inference, 2 × 2** (100 sequences). Per-token loss with the field off (gate set to 0), the read off (read scale set to 0), both off, and neither; costs in nats against the full model. The **overlap** is 1 − cost(both) / (cost(field) + cost(read)): 0 when the two routes carry separate loss, positive when they carry the same loss.
+2. **The routes' kernels** (20 sequences, both layers). The exchange field's routing weights $a^{(c)}\_{ts}$, averaged over heads; the register path's effective influence of token $j$ on token $i$, $A_{ij} = \sum_k \beta_{ik} (1 - \sigma^{(i)}\_k) \alpha^{(i)}\_{kj}$, the write weights scaled by the share of each register that the write replaces, then the read weights. Rows are normalised to sum to 1 before comparison. Read off each kernel, over positions $t \geq 64$:
+   - the share of routing mass beyond 64 tokens back, and the mean distance;
+   - the effective number of sources (exp of the row entropy);
+   - the effective rank of the kernel (exp of the entropy of its normalised squared singular values);
+   - the previous-token score (mass at $t - 1$), the same-token score (mass on earlier occurrences of the current token) and the induction score (mass on the token after an earlier occurrence of the current token);
+   - the overlap of the two kernels row by row: cosine, and Jensen–Shannon divergence.
+3. **Where each route's loss comes from** (the 100 sequences of measurement 1). Each target position is classed by its next token:
+   - **induction:** the current token occurred earlier, and the next token equals the one that followed that earlier occurrence;
+   - **repeated:** the next token occurred earlier in the text, otherwise;
+   - **novel:** it did not occur earlier;
+   - frequent (top 1% of tokens by frequency in the 200 sequences) against the rest.
+   
+   Each route's removal cost is computed per class.
+4. **Capacity** (20 sequences). Single-head and single-register removal costs rank the 8 heads and 32 registers; then only the top $k$ are kept (heads: $k$ = 1, 2, 4, 6, 8; registers: $k$ = 1, 2, 4, 8, 16, 32), and once more for a random order. The **retained value** at $k$ is (cost with the route removed − cost keeping $k$) / (cost with the route removed).
+
+**Calls** (pre-registered; part A decides no architecture, the arms are measuring instruments):
+
+| id | prediction | called at |
+| --- | --- | ---: |
+| XR1 | the routes overlap: in G3 and G3′, the overlap of measurement 1 is at least 0.20 | 60% |
+| XR2 | the register path carries more: the read's removal cost exceeds the field's in G3 and G3′ | 75% |
+| XR3 | the register path reaches further: its share of routing mass beyond 64 tokens exceeds the field's at the last layer, in G3 and G3′ | 55% |
+| XR4 | they route different pairs: the mean row cosine between the two kernels is below 0.3 at the last layer, in G3 and G3′ | 55% |
+| XR5a | the read serves induction: its removal cost per induction position is at least 1.5× its cost per novel position, in G2, G3 and G3′ | 50% |
+| XR5b | the field serves induction: the same for the field, in G3 and G3′ | 45% |
+| XR6a | the register path is narrow: the 8 most important registers retain at least 90% of its value, in G3 and G3′ | 40% |
+| XR6b | the field is narrow: the 4 most important heads retain at least 90% of its value, in G3 and G3′ | 50% |
+
+Everything else is descriptive. Scope: L = 2, 532.5M tokens, one seed per arm.
+
+**Amendment, 2026-10-17, after a 2-sequence mechanics smoke run and before any scored run.** Measurement 4 did not say how registers are removed from the read. Masking them out of the read renormalises its softmax over the registers that remain, and in the smoke run keeping only 1 to 4 registers this way did worse than no read at all: the reweighting itself moves the model away from its trained behaviour. Head removal in the exchange field renormalises nothing, since the heads add up independently. For a like-for-like measure, **a removed register's terms are dropped from the read and the remaining registers keep their trained read weights**; XR6a is scored on this. The renormalised version is reported as descriptive. The smoke run's numbers (2 sequences) are not used.
+
+#### XR part A scored: **the two routes divide the work: the register path is a broad channel, the exchange field a copying specialist that takes induction over from it; 2 of 8 calls hit** — **2026-10-17**
+
+`xr/xr_compare.py` on G3, G3′ and G2 (outputs `xr/xr_<ARM>_output.txt`). Every check passed: the switches restore the model bit for bit, and the rewritten read and the head-masked field reproduce the trained model exactly when everything is kept.
+
+**1. Removal at inference** (100 sequences; cost in nats per token):
+
+| | G3 | G3′ | G2 |
+| --- | ---: | ---: | ---: |
+| full model, perplexity on these sequences | 51.36 | 50.26 | 49.95 |
+| read off (register path removed) | **1.56** [1.52, 1.60] | **1.34** [1.30, 1.38] | 1.42 [1.34, 1.50] |
+| field off | 0.52 [0.45, 0.60] | 0.47 [0.40, 0.55] | — |
+| both off | 1.61 | 1.66 | — |
+| overlap, 1 − both / (field + read) | 0.225 | 0.084 | — |
+
+**3. Cost by target class** (nats per token; induction 8.3% of positions, repeated 40.3%, novel 51.4%):
+
+| | induction | repeated | novel | induction ÷ novel |
+| --- | ---: | ---: | ---: | ---: |
+| G2, read off | **2.42** | 1.33 | 1.25 | **1.93** |
+| G3, read off | 1.06 | 1.52 | 1.65 | 0.64 |
+| G3′, read off | 0.94 | 1.39 | 1.36 | 0.69 |
+| G3, field off | **1.75** | 0.51 | 0.27 | **6.56** |
+| G3′, field off | **1.74** | 0.44 | 0.22 | **7.84** |
+| G3, both off | 2.74 | 1.68 | 1.30 | 2.10 |
+| G3′, both off | 2.88 | 1.65 | 1.39 | 2.08 |
+
+**2. The kernels at the last layer** (20 sequences, rows t ≥ 64; at layer 0 the register write is a no-op, so the register path transfers nothing between tokens there):
+
+| | share of mass > 64 back | mean distance | effective sources | effective rank | induction score | previous-token score |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| G2 register path | 0.53 | 96 | 69 | 28.7 | 0.075 | 0.010 |
+| G3 register path | 0.55 | 103 | 61 | 32.3 | 0.057 | 0.010 |
+| G3 exchange field | 0.58 | 111 | 79 | 7.6 | **0.132** | 0.015 |
+| G3′ register path | 0.52 | 108 | 58 | 10.2 | 0.033 | 0.013 |
+| G3′ exchange field | 0.64 | 126 | 79 | 7.4 | **0.158** | 0.013 |
+
+Row overlap of the two kernels: cosine 0.29 (G3), 0.49 (G3′); Jensen–Shannon 0.33 and 0.29 nats.
+
+**4. Capacity** (20 sequences; retained value when keeping the top k by single-unit removal cost; registers dropped without renormalising, per the amendment):
+
+| | k = 1 | 2 | 4 | 8 | 16 | all |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| G2 registers | 0.10 | 0.48 | 0.67 | 0.85 | 0.95 | 1 (32) |
+| G3 registers | 0.08 | −0.08 | 0.25 | 0.50 | 0.96 | 1 (32) |
+| G3′ registers | 0.06 | 0.02 | 0.06 | 0.52 | 0.96 | 1 (32) |
+
+| | k = 1 | 2 | 4 | 6 | all |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| G3 heads | 0.43 | 0.57 | 0.80 | 0.95 | 1 (8) |
+| G3′ heads | 0.44 | 0.60 | 0.84 | 0.95 | 1 (8) |
+
+A random order of registers or heads retains less at every k. The renormalised register variant (descriptive) is worse at k = 1 (−0.2 to −4.6), confirming the artefact the amendment avoided.
+
+| call | prediction | called at | result |
+| --- | --- | ---: | --- |
+| XR1 | overlap ≥ 0.20 in G3 and G3′ | 60% | **MISS** (0.225, 0.084) |
+| XR2 | the read's removal cost exceeds the field's in G3 and G3′ | 75% | **HIT** (1.56 vs 0.52; 1.34 vs 0.47) |
+| XR3 | the register path reaches further (mass beyond 64 tokens) in G3 and G3′ | 55% | **MISS**: the field reaches slightly further (0.58 vs 0.55; 0.64 vs 0.52) |
+| XR4 | row cosine between the kernels below 0.3 in G3 and G3′ | 55% | **MISS** (0.29, 0.49) |
+| XR5a | the read's induction ÷ novel cost ≥ 1.5 in G2, G3 and G3′ | 50% | **MISS**: 1.93 in G2, but 0.64 and 0.69 beside the field |
+| XR5b | the field's induction ÷ novel cost ≥ 1.5 in G3 and G3′ | 45% | **HIT** (6.56, 7.84) |
+| XR6a | the 8 most important registers retain ≥ 90% | 40% | **MISS** (0.50, 0.52; 16 registers retain 0.96) |
+| XR6b | the 4 most important heads retain ≥ 90% | 50% | **MISS** (0.80, 0.84; 6 heads retain 0.95) |
+
+**Reading.**
+1. **The register path is the broad channel.** It carries most of the loss at every kind of position in both exchange-field models, and removing it costs three times as much as removing the field. It is wide: its kernel has effective rank 29–32 in G2 and G3, and it needs about 16 of its 32 registers to keep 95% of its value. G3′'s register path is narrower in rank (10), as half its registers keep their learned content (§5.18).
+2. **The exchange field is a copying specialist.** Its cost is concentrated at induction positions, where the next token is the one that followed an earlier occurrence of the current token: 1.75 nats there against 0.22–0.27 at novel positions. Its kernel puts two to five times the register path's mass on those induction targets. This is the job of attention's induction heads.
+3. **Beside the field, the register path gives induction up.** Alone in G2, the read is what serves induction: removing it costs 2.42 nats at induction positions, twice its cost elsewhere. Beside the field its induction cost falls to 0.94–1.06, and the field carries it instead. With both routes removed, the induction cost (2.7–2.9 nats) is close to G2's read-off cost. The total copying capacity is about the same; it is divided differently.
+4. **What this says about "the field adds nothing".** As trained, the field adds no perplexity on average (§5.20: G3 54.21 and G3′ 52.90 against G2's 53.12), but it is not idle. It takes over a specific job, which the register path does when the field is absent. Its marginal value on top of the registers is small because the registers can do that job too. Whether the field alone, without registers, could carry the conservative core further remains part B's question: an exchange-field-only model at 532.5M tokens.
+5. **Both routes are wider than predicted.** Neither can be narrowed to a quarter or a half of its units without losing more than 10% of its value. They also overlap less in G3′ than in G3 (0.08 against 0.23), so in the hardened model the two routes carry nearly separate loss.
+
+Scope: L = 2, 532.5M tokens, one seed per arm; removal at inference measures reliance, not the value of training without a route (§5.20).
+
+#### XR part B: an exchange-field-only model — **pre-registered 2026-10-17; fixed as binding when the author began the run, before any training step** (drafted earlier the same day)
+
+**Why.** Part A found that the exchange field adds almost no perplexity beside the registers because it takes over a job the registers also do, copying at induction positions. Its value without the registers is unmeasured: every model with the field also has the register path. Part B trains the missing cell, so that the field and the register path are compared as alternatives, not only as additions.
+
+**The arm (XRB-F).** F3.1's configuration exactly, plus the hardened exchange field of G3′:
+- Cell 0 as F3.1: `LIVE` (every gradient path live) and `REVERSE_CHANNEL = False`;
+- plus `LADDER_MECHANISM = 'attention_potential'`, `RELAX_GRAD_PATH = 'live'`, `RELAX_ATTN_QK_NORM = True` and `RELAX_FIELD_CLIP = 0.3` (G3′'s hardening, the better-behaved of the two field arms);
+- seed 0, 532.5M tokens, the ladder's schedule and evaluation, the notebook's variant tag generated as usual. The tag, checked in Cell 0's output before training: `…cgqk_norc_rglive_vplive_xilive_rfqk_rfclip0p3_L2probe…_attnpot`. Like G3 and G3′, the field uses the `'scalar'` gate: its projections start random and its gate is fixed at 1.
+
+**A caveat that holds for all four cells.** "Without registers" means as in F3.1: the 32 registers are still built and written, and their repulsion term (coefficient 0.05) still acts during training. Nothing reads them, so they cannot affect a prediction (`debug/fock_register_read_dependence.py`), but the repulsion gradient reaches the token states through the write port. XRB-F keeps this, so that it differs from F3.1 only by the field. A fully register-free control is a separate question.
+
+**The factorial it completes** (settled perplexity, L = 2, Gen 3):
+
+| | no exchange field | exchange field (hardened) |
+| --- | ---: | ---: |
+| no register read | 57.76 (F3.1) | **XRB-F** |
+| register path | 53.12 (G2) | 52.90 (G3′) |
+
+**Measurements after training.** Settled perplexity (Colab, as for every arm). Gates 1–3 of 6b-7, with Gate 3 at 1.5× the steps. The SY state-level, context-field and probe scripts. XR part A's measurements for the field: removal cost overall and by kind of position, its kernel, and capacity over its 8 heads.
+
+**Calls (draft):**
+
+| id | prediction | called at |
+| --- | --- | ---: |
+| XRB1 | the field alone helps: XRB-F settles at least 2% below F3.1 (at most 56.60) | 55% |
+| XRB2 | the field alone does not match the register path: XRB-F settles above G2's 53.12 | 70% |
+| XRB3 | the field is worth more alone than beside the registers: its relative gain over F3.1 exceeds its gain over G2 (G3′: 0.4%) by at least 2 points | 55% |
+| XRB4 | without registers the field takes on broad loss: its removal cost at novel positions is at least 0.50 nats (0.22–0.27 beside the registers) | 50% |
+| XRB5 | it still serves copying: its removal cost at induction positions is at least 1.74 nats, as beside the registers | 60% |
+| XRB6 | it refines better than F3.1: Gate 3 at 1.5× below F3.1's +143% | 40% |
+
+**Reading, fixed now.**
+- **XRB1 and XRB2 both hit:** the field is a real but weaker route; the register path stays the stronger instrument.
+- **XRB1 hits and XRB2 misses:** the field alone matches the register path, and the two are interchangeable at this budget.
+- **XRB1 misses:** the field is valuable only as a specialist beside another route.
+
+**Cost.** One A100 run of about 15 hours (as G3′), then about 2 hours of local measurement. A second run without the hardening would separate the hardening's effect, and is optional.
+
+#### XR part B, first results: **the exchange field alone is worth 6.0% to the conservative core, three quarters of what the register path is worth, and almost nothing beside it** — **2026-10-18** (all six calls scored)
+
+The run (`…cgqk_norc_rglive_vplive_xilive_rfqk_rfclip0p3_L2probe…_attnpot`, output `L2_attnpot_norc_F3.1prim_32500steps_output.txt`) finished cleanly at step 32,500:
+- the causal-leak audit was CLEAN at steps 5,000, 10,000, 15,000, 20,000, 25,000, 30,000 and 32,500 (the step-32,500 audit printed nan for its perplexities, as G3′'s and PM1's did);
+- no watchdog reload and no spike capture.
+
+**Settled perplexity: 54.27**, the mean of the last three evaluations (54.20, 54.39, 54.22). The best single evaluation was 52.50, at step 31,000.
+
+**Trajectory against its neighbours** (evaluation perplexity):
+
+| step | F3.1 (neither) | **XRB-F (field only)** | G3′ (both) |
+| ---: | ---: | ---: | ---: |
+| 500 | 463.4 | 458.1 | 453.4 |
+| 2,000 | 151.9 | 144.1 | 144.1 |
+| 5,000 | 106.7 | 91.6 | 91.4 |
+| 10,000 | 85.1 | 72.8 | 72.0 |
+| 20,000 | 73.3 | 63.4 | 61.8 |
+| settled | 57.76 | **54.27** | 52.90 |
+
+**The factorial, completed** (settled perplexity, L = 2, Gen 3; gain against F3.1):
+
+| | no exchange field | exchange field (hardened) |
+| --- | ---: | ---: |
+| no register read | 57.76 (F3.1) | **54.27** (−6.0%) |
+| register path | 53.12 (G2, −8.0%) | 52.90 (G3′, −8.4%) |
+
+| call | prediction | called at | result |
+| --- | --- | ---: | --- |
+| XRB1 | the field alone helps: at most 56.60 | 55% | **HIT** (54.27, 6.0% below F3.1) |
+| XRB2 | it does not match the register path: above 53.12 | 70% | **HIT** (54.27, 2.2% above G2) |
+| XRB3 | it is worth more alone than beside the registers, by at least 2 points | 55% | **HIT** (6.0% alone against 0.4% beside the registers) |
+| XRB4 | its removal cost at novel positions is at least 0.50 nats | 50% | **HIT** (1.16) |
+| XRB5 | its removal cost at induction positions is at least 1.74 nats | 60% | **HIT** (2.61) |
+| XRB6 | Gate 3 at 1.5× below F3.1's +143% | 40% | **HIT, narrowly** (+134%; G3′ +115%) |
+
+**Reading** (the rule fixed in advance: XRB1 and XRB2 both hit). The exchange field is a real but weaker route. Alone it takes the conservative core three quarters of the way the register path does (6.0% against 8.0%). Its value beside the registers is almost nil (0.4%), so the two routes largely substitute for each other: the field's gain is mostly a gain the register path already provides. With both, the model is only 0.4 points better than with the register path alone. The register path stays the stronger instrument. One seed per arm; the settled values have an evaluation spread of about ±1 (the last three evaluations of this run span 54.20 to 54.39, and the best single evaluation was 52.50).
+
+**Cells 6b-7 and 6b-9** (outputs `Cell-6b-7_flow_or_maps_output.txt` and `Cell-6b-9_layer_step_damped_V_theta_geodesic_32500steps_output.txt`; best checkpoint, step 31,000; Cell 6b-7's 12 × 4 × 512 validation batches, on which this checkpoint scores 52.75). Gate 0 passes in both: the patched loop and the replayed step reproduce the trained model exactly.
+
+| measure | **XRB-F** | G3′ | G2 | F3.1 |
+| --- | ---: | ---: | ---: | ---: |
+| 6b-7 Gate 1, velocity reset | **+113%** (52.75 → 112.42) | +34% | +33% | +34% |
+| 6b-7 Gate 2, N = 3 at fixed Δt | **+112%** | +441% | +51% | +92% |
+| 6b-7 Gate 3, 1.5× refinement (N = 3, fixed T) | **+134%** (→ 123.35) | +115% | +1,274% | +143% |
+| 6b-9 R(geo) | **1.044** (layer 0 0.84, layer 1 1.25) | 1.050 | — | — |
+
+- **XRB6 hits, by 9 points.** Without the register path the model refines about as well as F3.1 and G3′ do (+115% to +143%), and nowhere near the register-path arms (G2 +1,274%, G3 +1,342%). So the exchange field does not cause the large refinement failures. Neither, by G3′, does the register read on its own: G3′ reads registers and refines at +115%, and it differs from G3 only in the routing hardening (the clue in §5.18). Gate 3 still grows away from N = L at every N, so the model is still a map, not a flow.
+- **Gate 1 is the surprise.** Resetting the velocity costs +113%, three times what it costs every other two-layer arm (+33% to +34%, with G3′, which carries the same field, at +34%). Without registers this model relies on momentum much more. The field's push is built from past tokens, so a plausible account is that the velocity carries forward what the register path otherwise supplies at each layer. That account is untested; the result was not predicted, so it is descriptive.
+- **6b-9.** The step is about as far from the V_θ-only geodesic as G3′'s (R(geo) 1.044 against 1.050). LayerNorm moves R by −0.323, and V_φ plus the exchange field by −0.554, so here the non-V_θ part of the step is carried by V_φ and the field (in G3, the reverse channel moved R by −0.759 and V_φ plus the field by only −0.073). These are displacements, not reliance (§5.20).
+- **Two stale lines in Cell 6b-9's text.** It labels the exchange field "non-conservative"; the attention_potential field is the gradient of a potential at each token while the routing weights are held fixed, as the cell's own header says ("every force in this model is the gradient of a scalar potential"). It quotes "+31.3% in trained PPL (66.98 → 87.93)" for the reverse channel, a Gen 2 figure that does not apply to this arm, which has no reverse channel. Neither affects a number above.
+- **Training curve (Cell 8).** Smooth descent with no spike. Three labels are left over from older arms: the plot's title, its "TinyStories best (9.14)" reference line, and the right panel's "Fock coupling strengths (alpha_k)", which are the decay coefficients of the five ξ context channels (`xi_alphas` in `training_log.jsonl`).
+
+**XR measurements on XRB-F** (`xr/xr_compare.py XRBF`, output `xr/xr_XRBF_output.txt` and `.json`; the arm added to `sync/sy_replay.py` as `XRBF`). The script was extended on 2026-10-18 to run on a model without a reverse channel; nothing else changed, and it uses part A's 100 / 20 / 20 sequences. Checks: the local build scores 52.7508 on Cell 6b-7's batches (Colab 52.7510), with the trained per-head temperatures loaded; the switches restore the model exactly; the head-mask rewrite with all heads kept reproduces it exactly.
+
+| loss increase when removed (nats per token) | induction | repeated | novel | all positions | induction / novel |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| **XRB-F: exchange field (no register read)** | **2.61** | **1.17** | **1.16** | **1.32** [1.24, 1.41] | **2.25** |
+| G2: register path (no field) | 2.42 | 1.33 | 1.25 | 1.42 | 1.94 |
+| G3′: exchange field beside the register path | 1.74 | 0.44 | 0.22 | 0.47 | 7.84 |
+| G3′: register path beside the field | 0.94 | 1.39 | 1.36 | 1.34 | 0.69 |
+
+| the route's kernel at layer 1 | effective rank | effective sources | weight on induction targets | weight beyond 64 tokens |
+| --- | ---: | ---: | ---: | ---: |
+| **XRB-F field** | **25.1** | **107** | **0.142** | 0.57 |
+| G3′ field | 7.4 | 79 | 0.158 | 0.64 |
+| G2 register path | 28.7 | 69 | 0.075 | 0.53 |
+
+**Capacity.** Two of the 8 heads carry most of the field (single-head removal costs 0.68 and 0.43 nats; the next is 0.10). The top 2 heads keep 53% of its value, the top 4 keep 80%, the top 6 keep 93%. Beside the registers no head stood out (largest single cost 0.074).
+
+**Reading.**
+1. **XRB4 and XRB5 hit, both by wide margins.** Without registers the field carries loss at every kind of position and still serves copying.
+2. **Whichever route is alone becomes the broad channel.** The field alone has almost the same profile as the register path alone in G2: within 0.2 nats at every kind of position, and the same overall cost (1.32 against 1.42). Its kernel widens to match: effective rank 25, against 7.4 beside the registers and 29 for G2's register path. It keeps its preference for induction targets (0.142, twice the register path's 0.075). So part A's division of labour is not a fixed property of the field. It arises when the two routes are trained together: the register path takes the broad job and the field the copying.
+3. **The removal costs measure reliance, not value** (§5.20). Removing the field costs 1.32 nats (perplexity ×3.75), but training with it gained only 0.062 nats over F3.1 (57.76 → 54.27). The same holds for G2's register path (1.42 nats against 0.084). A trained model is built around whatever route it has. The trained gains (XRB1–XRB3) are the measure of value; the removal costs show how the routes are used.
+
+**SY on XRB-F** (the eight SY scripts, run 2026-10-18 on the best checkpoint; outputs `sync/sy_*_XRBF_output.txt`; descriptive, since part B fixed no SY calls). Two scripts were extended for a model without a reverse channel: the arm tables (`XRBF` in `sy_measure.py`, `sy_routes.py`, `sy_xi_pred.py`, `sy_replay.py`), and `sy_exch_reference.py`, whose readout points A and B coincide when the step has one LayerNorm. Every check is exact: the "on" replays reproduce the trained step bit for bit, every patch restores, and the reference script reproduces `sy_measure`'s per-sequence values (M1, max |d| 0). `sy_measure` adopted the displacement-level reference by its fixed agreement test on V_φ.
+
+| measure | **XRB-F** | G3′ (same field, with the register path) |
+| --- | --- | --- |
+| field's contraction at layer 0, read before normalisation: force form / specific only | **−0.011 / −0.007** (rule: agree, mean −0.009, below the floor) | −0.013 / −0.013 |
+| field's contraction at layer 1, same readings | −0.248 / −0.226 (disagree by 0.022; both spread) | −0.210 / −0.211 |
+| the field's shared push alone, layer 0 / layer 1 | **+0.061 / +0.080** | +0.009 / −0.006 |
+| shared displacement of the push / RMS spread of the states, layer 0 / layer 1 | **1.71 / 3.20** | 0.28 / 0.71 |
+| binding by the field, last layer: noun chunk / head–dependent / coreference | **−0.046 / −0.029** / −0.007 | −0.003 / −0.010 / −0.007 |
+| binding by ξ, last layer: noun chunk / head–dependent | +0.049 / −0.006 | +0.074 / +0.010 |
+| noun-chunk grouping after the prediction control | +0.034 | +0.037 |
+| coreference probe, last layer / best layer (nearest mention 0.541) | 0.534 / 0.615 (layer 0) | 0.482 / 0.620 (layer 0) |
+| first extra step: perplexity / S / effective rank | 49.6 → 117.7 (+137%) / +0.30 / −41% | 48.4 → 187 / +0.27 / −67% |
+
+1. **The field draws no tokens together** by its specific part, as in G3 and G3′ (level 0 for the exchange route, by the rule fixed for those arms: at the readout before normalisation, the force form and the specific-only form agree within 0.01, and their mean, −0.009, is below the floor). At layer 1 it spreads the tokens strongly; the two forms disagree there by 0.022, more than the rule allows, but both lie below −0.2.
+2. **Its shared push is six times larger than beside the registers.** It moves every token by 1.7 times the tokens' spread at layer 0 and 3.2 times at layer 1 (G3′: 0.28 and 0.71). Even before any normalisation that push alone reads as contraction (+0.061, +0.080; M2 fails), because the step does not move every token equally under a shared force: the displacement it causes has a token-specific part of 5–8%, for instance through the per-token masses. This is a common-mode effect and does not count as synchronization by the field.
+3. **Without registers the field separates related words.** At the last layer it pushes the words of noun chunks apart (−0.046) and heads apart from their dependents (−0.029), both past the threshold with null shuffled controls (+0.000 and −0.003). Beside the registers it did neither measurably. ξ still groups noun chunks (+0.049, +0.034 after the prediction control), so the two nearly cancel on chunks; the final states keep a chunk grouping of +0.038.
+4. **No reference binding**, as everywhere: the probe is at the nearest-mention baseline, switching the field to its common mode leaves the probe unchanged (switching it off costs 0.070, all of it common-mode), and the coreference subspace check reads LEXICAL.
+5. **Extra depth over-synchronizes** (S +0.30, rank −41% at one extra step; +0.38 and −76% at two), and the noun-chunk grouping of the final states turns negative (+0.038 → −0.014 → −0.023), as it faded in G3 and G3′.
+
 ## 6. Open risks
 
 ### 6.1 At L=1 the register bank is read but never updated — **2026-09-24**
