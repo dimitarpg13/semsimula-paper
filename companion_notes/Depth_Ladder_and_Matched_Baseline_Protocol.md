@@ -4540,6 +4540,26 @@ Settled against the other L = 2 arms: −6.3% against SR2 (58.32), −5.4% again
 - **More than 2% above W1 (over 49.80):** GPT-2 prefers 6e-4. W1 stays the reference, and the 2B-token GPT-2 runs at 6e-4, stated as such.
 - **On the decay gain (W2.4):** if it hits, GPT-2 extracts more from annealing than the Fock models at equal peak, which is the architecture reading; if it misses, W1's gap was the peak learning rate.
 
+#### W2 scored: **settled 48.37, within 2% of W1 (−0.9%); all five calls hit. At the ladder's own schedule GPT-2 still gains more from the decay than any Fock arm, so W1's gap is the architecture, not the peak** — **2026-10-18**
+
+Run output `matched_gpt2_LR=1.2e-03_32500steps_training_output.txt` (Colab, A100-40GB, 2.7 h). Cell 0 printed the tag `_wsd_lr0p0012` and its own folders (`checkpoints_wsd_lr0p0012`, `results_wsd_lr0p0012`); batch 32 × 512, 32,500 steps, 0.532B tokens, 33.7M parameters, as W1. Scored from the 65 printed evals (loss@512, 4 decimals), as W1 was; the run's `training_log.jsonl` was not downloaded.
+
+| | prediction | result | |
+| --- | --- | --- | --- |
+| W2.0 | no eval rises more than 0.2 nats above the previous one | largest rise +0.009 nats (step 15,000) | **HIT** |
+| W2.1 | settled within ±2% of W1's 48.82 | **48.37** (mean of 48.65, 48.32, 48.14), −0.92% | **HIT** |
+| W2.2 | settled at or below 48.82 | 48.37 | **HIT** |
+| W2.3 | decay gain above W1's 0.271 | **0.338** (67.79 at step 21,000 → 48.37) | **HIT** |
+| W2.4 | decay gain above every Fock arm's (0.218) | 0.338 | **HIT** |
+
+**Decision rule: within ±2% of W1.** The peak learning rate does not matter for GPT-2 at this budget. The published reference stands by the rule, and **the 2B-token GPT-2 runs at 1.2e-3**, so that its schedule is the ladder's in every respect.
+
+**What it shows.**
+- **The decay-gain gap is architectural.** On exactly the ladder's schedule (peak, floor and shape verified identical), GPT-2 gains 0.338 nats from the decay, against 0.18–0.22 for every Fock arm. The higher peak raised GPT-2's gain, as W2.3 predicted, and widened the gap rather than closing it.
+- **At the end of the stable phase GPT-2 is behind every comparable Fock arm** (step 21,000, same schedule): GPT-2 67.79, against L = 4 60.80, G3′ 63.45, G2 63.61, G3 65.22; only F3.1 (71.81) is behind it. The higher peak made GPT-2's plateau noisier (W1 at 6e-4: 64.01) and its decay recovers more, so it finishes ahead.
+- **For the comparisons** (descriptive, not a change of reference): against the GPT-2 trained on the ladder's identical schedule (48.37), L = 4 Fock (50.10) is +3.6%, G3′ (52.90) +9.4%, PMX (54.63) +12.9%. Against the published cosine baseline (49.81) the same arms read +0.6%, +6.2% and +9.7%. W2 is 2.9% below the cosine baseline, a gap the rule (relative to W1) does not act on, but which any claim of parity should state.
+- **Reading for Epic 3.** The Fock arms lead at the end of the constant-rate phase and lose it in the decay. Whether that persists at 2B tokens, where a longer stable phase moves every model closer to its plateau, is one of the cleanest questions the 2B runs can answer.
+
 ### 5.18 RR: what makes a model refinement-ready? — **pre-registered 2026-10-06, before any measurement**
 
 **The clue.** G3 and G3′ differ only in the routing hardening (QK-norm and the 0.3 field clip). Gate 3 at 1.5× refinement:
