@@ -594,27 +594,71 @@ a probability distribution over which mode is occupied. This is the precise clas
 
 ### 7.4 The Löwdin modes, explicitly
 
+**The construction.** Collect the overlaps of the original modes into the **Gram matrix** $G_{vw} = \langle\phi_v,\phi_w\rangle$, which by (1.4) is $G_{vw} = e^{-\kappa^2\lVert\mu_v-\mu_w\rVert^2}$. It is symmetric, and positive definite because the Gaussian kernel is strictly positive definite at distinct centroids (§2.3), so the modes are linearly independent. A symmetric positive-definite matrix has a unique symmetric positive-definite square root, obtained from its spectral decomposition $G = U\Lambda U^{\top}$ by acting on the eigenvalues:
+
+$$G^{1/2} = U\Lambda^{1/2}U^{\top}, \qquad G^{-1/2} = U\Lambda^{-1/2}U^{\top}$$
+
+The Löwdin modes are then $\tilde\phi = G^{-1/2}\phi$, meaning $\tilde\phi_v = \sum_w (G^{-1/2})_{vw}\phi_w$.
+
+**They are orthonormal.** One line, using the symmetry of $G^{-1/2}$:
+
+$$\langle\tilde\phi_v,\tilde\phi_w\rangle = \sum_{p,q}(G^{-1/2})_{vp}\langle\phi_p,\phi_q\rangle (G^{-1/2})_{qw} = \left(G^{-1/2} G G^{-1/2}\right)_{vw} = \delta_{vw} \qquad (7.7)$$
+
+So the Gram matrix is doing two jobs at once: it *records* the overlaps, and its inverse square root is exactly the transformation that *removes* them.
+
+**Why this orthonormalisation and not another.** There are infinitely many ways to orthonormalise a linearly independent family, and Löwdin's choice is characterised by a minimality property worth deriving, because it is the reason the modes stay interpretable.
+
+Any linear orthonormalisation is a map $T$ with $\tilde\phi_v = \sum_w T_{vw}\phi_w$ whose Gram is the identity, $T G T^{\top} = I$. Putting $S = T G^{1/2}$ turns that into $S S^{\top} = I$, so $S$ is orthogonal and every orthonormalisation has the form
+
+$$T = W G^{-1/2}, \qquad W^{\top}W = I \qquad (7.8)$$
+
+Measure how far the result moves from the original family by the total squared displacement. Using $T G T^{\top} = I$ and the symmetry of $G$,
+
+$$D(W) = \sum_v \lVert\tilde\phi_v - \phi_v\rVert^2 = \mathrm{tr}\left((T - I)G(T - I)^{\top}\right) = n + \mathrm{tr}(G) - 2\mathrm{tr}\left(W G^{1/2}\right)$$
+
+Only the last term depends on the choice, so minimising the distortion means maximising $\mathrm{tr}(W G^{1/2})$ over orthogonal $W$. For a symmetric positive-definite $A$ with $A = U\Lambda U^{\top}$,
+
+$$\mathrm{tr}(WA) = \mathrm{tr}\left(U^{\top}W U \Lambda\right) = \sum_i \left(U^{\top}WU\right)_{ii}\lambda_i \le \sum_i \lambda_i = \mathrm{tr}(A)$$
+
+because the diagonal entries of an orthogonal matrix never exceed 1 in absolute value, and equality forces every one of them to equal 1, which for an orthogonal matrix means $U^{\top}WU = I$. Hence $W = I$ and
+
+$$T = G^{-1/2} \text{ uniquely}, \qquad D_{\min} = \mathrm{tr}\left((I - G^{1/2})^2\right) = 2\sum_i\left(1 - \sqrt{\lambda_i}\right) \qquad (7.9)$$
+
+the last form using $\mathrm{tr}(G) = n$ for unit vectors. **Among all orthonormalisations, the symmetric one moves the modes least.** That is why it is called *symmetric* orthogonalisation, and why it is the right choice for a bookkeeping basis: it privileges no mode.
+
+Gram–Schmidt, by contrast, is order-dependent. It leaves the first mode untouched and piles the entire distortion onto the later ones, so relabelling the vocabulary changes the basis. For two modes at overlap $c$ the two schemes have closed forms,
+
+$$D_{\mathrm{L}} = 2\left(2 - \sqrt{1+c} - \sqrt{1-c}\right), \qquad D_{\mathrm{GS}} = 2 - 2\sqrt{1-c^2} \qquad (7.10)$$
+
+the second because the untouched mode contributes nothing and $\langle\tilde\phi_b^{\mathrm{GS}},\phi_b\rangle = \sqrt{1-c^2}$.
+
+![The two-mode geometry, the distortion of the two schemes against overlap, and the diverging coefficients](figures/single_particle_space/sps_lowdin_construction.png)
+
+**Figure 8.** Left: two modes at the cat–kitten overlap, $12.8^\circ$ apart. Löwdin turns both outward by the same angle, landing symmetrically at a right angle; Gram–Schmidt pins one and rotates the other the whole way. Centre: the closed forms (7.10). At $c = 0.9753$ Löwdin distorts by 0.875 against Gram–Schmidt's 1.558, and the gap widens with the overlap. Right: the price. The coefficients of (7.11) and the condition number of $G$ both diverge as the modes merge, reaching $\alpha = 3.54$ and $\mathrm{cond}(G) = 80$ for cat and kitten.
+
+**Why Doi–Peliti needs any of this.** With the original overlapping modes the commutator is the Gram matrix, $[a_v, a_w^{\dagger}] = G_{vw}$, the number operator and the field need $G^{-1}$, and the standard machinery does not apply as written. In the Löwdin basis $[\tilde a_v, \tilde a_w^{\dagger}] = \delta_{vw}$ and §7.1 proceeds verbatim. The similarity has not disappeared; it has moved from the algebra into the basis (overlap-distance note §8.5).
+
 **The Löwdin modes are not root densities.** The Löwdin step removes overlap by subtracting neighbors: $G^{-1/2}$ has negative off-diagonal entries wherever modes overlap. So each Löwdin mode takes negative values on the far side of its near-synonyms. It is a unit vector, but not the square root of any density. The root-density reading of §1 belongs to the original modes $\phi_v$. The Löwdin modes are an orthonormal bookkeeping basis, which is all Doi–Peliti requires: it uses them only to label sites.
 
 ![The Löwdin-orthonormalized cat mode in two dimensions, and a cut along the cat-kitten line](figures/single_particle_space/sps_lowdin_modes.png)
 
-**Figure 8.** Left: the Löwdin cat mode for the toy vocabulary. It is pushed off kitten, positive at kitten's centroid (0.86 against a peak of 1.75), and negative beyond it, down to −0.41; the black line is its zero contour. Right: a cut along the cat–kitten line. The original modes (dotted) are non-negative and overlap at 0.975. Each Löwdin mode (solid) is negative on the far side of the other.
+**Figure 9.** Left: the Löwdin cat mode for the toy vocabulary. It is pushed off kitten, positive at kitten's centroid (0.86 against a peak of 1.75), and negative beyond it, down to −0.41; the black line is its zero contour. Right: a cut along the cat–kitten line. The original modes (dotted) are non-negative and overlap at 0.975. Each Löwdin mode (solid) is negative on the far side of the other.
 
-**Two modes, explicitly.** For two modes with overlap $c$, the Löwdin matrix has equal diagonal entries $\alpha$ and equal off-diagonal entries $\beta$, given by (7.7):
+**Two modes, explicitly.** Here the spectral recipe can be carried out by hand. For two modes with overlap $c$ the Gram matrix is $G = \begin{pmatrix} 1 & c \cr c & 1 \end{pmatrix}$, whose eigenvectors are the symmetric and antisymmetric combinations, with eigenvalues $1+c$ and $1-c$ and orthogonal projectors $P_{\pm} = \tfrac12\begin{pmatrix} 1 & \pm 1 \cr \pm 1 & 1 \end{pmatrix}$. Applying $\lambda \mapsto \lambda^{-1/2}$ to the spectrum gives $G^{-1/2} = (1+c)^{-1/2}P_{+} + (1-c)^{-1/2}P_{-}$, and reading off the entries yields equal diagonals $\alpha$ and equal off-diagonals $\beta$:
 
 $$
-G^{-1/2} = \begin{pmatrix} \alpha & \beta \cr \beta & \alpha \end{pmatrix}, \qquad \alpha = \tfrac12\left((1+c)^{-1/2} + (1-c)^{-1/2}\right), \qquad \beta = \tfrac12\left((1+c)^{-1/2} - (1-c)^{-1/2}\right). \qquad (7.7)
+G^{-1/2} = \begin{pmatrix} \alpha & \beta \cr \beta & \alpha \end{pmatrix}, \qquad \alpha = \tfrac12\left((1+c)^{-1/2} + (1-c)^{-1/2}\right), \qquad \beta = \tfrac12\left((1+c)^{-1/2} - (1-c)^{-1/2}\right). \qquad (7.11)
 $$
 
 For overlapping modes $\beta$ is negative, so the Löwdin mode of $a$ is $\alpha\phi_a - \lvert\beta\rvert\phi_b$. It is negative wherever $\phi_b/\phi_a$ exceeds $\alpha/\lvert\beta\rvert$. For isotropic Gaussians that ratio depends on $x$ only through its coordinate $s$ along the line from $a$ to $b$, measured from $a$. With $d$ the distance between the centroids, the squared distances differ by $2sd - d^2$. So the zero set is a hyperplane at the coordinate given by (7.8):
 
 $$
-s_0 = \frac{d}{2} + \frac{2\sigma^2}{d}\ln\frac{\alpha}{\lvert\beta\rvert}. \qquad (7.8)
+s_0 = \frac{d}{2} + \frac{2\sigma^2}{d}\ln\frac{\alpha}{\lvert\beta\rvert}. \qquad (7.12)
 $$
 
-For cat and kitten, $c = 0.9753$, so $\alpha = 3.538$ and $\beta = -2.826$. The zero sits 0.307 from cat, 0.195 beyond kitten: the straight zero contour of Figure 8.
+For cat and kitten, $c = 0.9753$, so $\alpha = 3.538$ and $\beta = -2.826$. The zero sits 0.307 from cat, 0.195 beyond kitten: the straight zero contour of Figure 9.
 
-**The negative lobe never goes away.** As the pair merges ($c \to 1$), $\alpha/\lvert\beta\rvert$ tends to 1, approximately $1 + \sqrt2\kappa d$, so the second term of (7.8) tends to $2\sqrt2\kappa\sigma^2$. At the framework's width that is exactly $\sigma$. The zero therefore stays one width beyond the midpoint, however close the near-synonyms come, while the coefficients $\alpha$ and $\lvert\beta\rvert$ diverge together. Orthonormalizing near-synonyms always produces signed modes with large, cancelling coefficients. This is the conditioning cost of §2.3 seen in function space.
+**The negative lobe never goes away.** As the pair merges ($c \to 1$), $\alpha/\lvert\beta\rvert$ tends to 1, approximately $1 + \sqrt2\kappa d$, so the second term of (7.12) tends to $2\sqrt2\kappa\sigma^2$. At the framework's width that is exactly $\sigma$. The zero therefore stays one width beyond the midpoint, however close the near-synonyms come, while the coefficients $\alpha$ and $\lvert\beta\rvert$ diverge together. Orthonormalizing near-synonyms always produces signed modes with large, cancelling coefficients. This is the conditioning cost of §2.3 seen in function space.
 
 ---
 

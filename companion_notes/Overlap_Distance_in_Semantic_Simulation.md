@@ -628,7 +628,7 @@ $$
 [\tilde{a}_v, \tilde{a}_w^\dagger] = \delta_{vw},\qquad N = \sum_v\tilde{a}_v^\dagger\tilde{a}_v,\qquad \hat{\phi}(x) = \sum_v\tilde{\phi}_v(x)\tilde{a}_v. \qquad (8.6)
 $$
 
-The two presentations are unitarily equivalent descriptions of the same Fock space. Similarity lives either in the algebra (overlap presentation) or in the change of basis (Löwdin presentation). Among symmetric orthogonalizations, Löwdin's $G^{-1/2}$ is the one that minimizes $\sum\_v\lVert \tilde{\phi}\_v - \phi\_v\rVert ^2$, so the orthonormal modes stay as close as possible to the original Gaussians.
+The two presentations are unitarily equivalent descriptions of the same Fock space. Similarity lives either in the algebra (overlap presentation) or in the change of basis (Löwdin presentation). Among **all** orthonormalizations — every one of which has the form $W G^{-1/2}$ for some orthogonal $W$ — Löwdin's symmetric choice $W = I$ is the unique minimizer of $\sum\_v\lVert \tilde{\phi}\_v - \phi\_v\rVert ^2$, so the orthonormal modes stay as close as possible to the original Gaussians. The derivation, together with the Gram–Schmidt comparison and the conditioning cost, is in the single-particle note §7.4.
 
 ```mermaid
 flowchart TD
