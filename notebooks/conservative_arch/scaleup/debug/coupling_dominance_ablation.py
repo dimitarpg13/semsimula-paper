@@ -14,13 +14,16 @@ Switches, all reversible on the same weights:
               the Fock increment are added elsewhere and stay)
   Fock off  : reverse_channel_scale = 0, so tanh(0) = 0 and the increment is 0
   wells off : pm_depth = 0
+  exch off  : relax_lambda = 0, the exchange field's gate (added 2026-10-18, for G3, G3' and XRB-F)
 
 Checks first, all exact: the identity patch and every switch restored give
 bit-identical logits; the patch is called on every layer step.
 
 Usage: python3 coupling_dominance_ablation.py OUT_DIR [ARM ...]
-  ARM from F3.1 SR2 G2 PM1 PMX (default: the four pre-registered arms;
-  PMX added 2026-10-11, after CD was scored, as a descriptive extension).
+  ARM from F3.1 SR2 G2 PM1 PMX G3 G3p XRBF (default: the four pre-registered arms;
+  PMX added 2026-10-11, after CD was scored, as a descriptive extension; G3, G3p and
+  XRBF added 2026-10-18, descriptive, to complete the token-to-token couplings:
+  V_phi, the exchange field and the register read, alone and in every combination).
   A subset writes coupling_dominance_ablation_<ARMS>_output.txt.
 """
 import json, sys, types
@@ -42,12 +45,22 @@ SR2 = (("LOWRANK_DAMPED_FLOW  = False", "LOWRANK_DAMPED_FLOW  = True"),)
 PMXS = (("POISSON_WELLS_EXACT  = False", "POISSON_WELLS_EXACT  = True"),)
 _T = 'semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_'
 _E = '_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn'
+ATT = (("LADDER_MECHANISM = 'none'", "LADDER_MECHANISM = 'attention_potential'"),
+       ("RELAX_GRAD_PATH        = 'default'", "RELAX_GRAD_PATH        = 'live'"))
+QK = (("RELAX_ATTN_QK_NORM          = False", "RELAX_ATTN_QK_NORM          = True"),
+      ("RELAX_FIELD_CLIP            = None", "RELAX_FIELD_CLIP            = 0.3"))
+ALL3 = ['vphi', 'exch', 'fock', 'vphi+exch', 'vphi+fock', 'exch+fock', 'vphi+exch+fock']
 ARMS = {   # name: (folder, Cell 0 replacements, removals)
     'F3.1': (P.F31_F, P.CONFIGS['F3.1'][1], ['vphi']),
     'SR2': (_T + 'sr2' + _E, P.CONFIGS['F3.1'][1] + SR2, ['vphi']),
     'G2': (P.G2_F, P.CONFIGS['G2'][1], ['vphi', 'fock', 'vphi+fock']),
     'PM1': (_T + 'pm64' + _E, P.CONFIGS['F3.1'][1] + P.PM_ON, ['vphi', 'wells', 'vphi+wells']),
     'PMX': (_T + 'pm64_pmx16_sr2' + _E, P.CONFIGS['F3.1'][1] + P.PM_ON + SR2 + PMXS, ['vphi', 'wells', 'vphi+wells']),
+    # 2026-10-18 (descriptive): the exchange-field arms
+    'G3': (P.G3_F, P.LIVE + ATT, ALL3),
+    'G3p': (P._P + 'rglive_vplive_xilive_rfqk_rfclip0p3_L2probe' + P._S + 'attnpot', P.LIVE + ATT + QK, ALL3),
+    'XRBF': (P._P + 'norc_rglive_vplive_xilive_rfqk_rfclip0p3_L2probe' + P._S + 'attnpot',
+             P.CONFIGS['F3.1'][1] + ATT + QK, ['vphi', 'exch', 'vphi+exch']),
 }
 RUN = SELECT or ['F3.1', 'SR2', 'G2', 'PM1']
 assert all(a in ARMS for a in RUN), RUN
@@ -88,6 +101,10 @@ class Switches:
             self.saved['wells'] = m.pm_depth.detach().clone()
             with torch.no_grad():
                 m.pm_depth.zero_()
+        if 'exch' in parts:
+            self.saved['exch'] = m.relax_lambda.detach().clone()
+            with torch.no_grad():
+                m.relax_lambda.zero_()
 
     def reset(self):
         m = self.m
@@ -98,6 +115,8 @@ class Switches:
                 m.reverse_channel_scale.copy_(self.saved['fock'])
             if 'wells' in self.saved:
                 m.pm_depth.copy_(self.saved['wells'])
+            if 'exch' in self.saved:
+                m.relax_lambda.copy_(self.saved['exch'])
         self.saved = {}
 
 
@@ -125,6 +144,7 @@ for name in RUN:
     L = model.cfg.L
     assert ('fock' in ' '.join(removals)) == (model.reverse_ch is not None), name
     assert ('wells' in ' '.join(removals)) == (getattr(model, 'pm_mu', None) is not None), name
+    assert ('exch' in ' '.join(removals)) == (getattr(model, 'relax_field', None) is not None), name
     assert bool(getattr(model.cfg, 'lowrank_damped_flow', False)) == (name in ('SR2', 'PMX')), name
     assert bool(getattr(model.cfg, 'poisson_wells_exact', False)) == (name == 'PMX'), name
 

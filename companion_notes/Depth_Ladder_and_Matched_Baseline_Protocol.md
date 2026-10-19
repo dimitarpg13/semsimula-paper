@@ -4579,6 +4579,35 @@ Run output `matched_gpt2_LR=1.2e-03_32500steps_training_output.txt` (Colab, A100
 
 **What it is for.** It is the denominator of every Epic-3 ratio, and its constant-phase curve is what the Fock arms' are compared with at equal tokens, which tests W2's reading (Fock ahead until the decay) at four times the budget.
 
+#### G2B scored: **settled 42.69, 11.7% below the same model at 0.5B tokens; three of four calls hit. The decay gains more, not less, after a longer constant phase** — **2026-10-18**
+
+Run output `matched_gpt2_LR=1.2e-03_130000steps_training_output.txt` (Colab, A100-40GB). One uninterrupted session, 38,709 s (10.75 h, 0.30 s per step); Cell 5 printed `Training: steps 1 -> 130,000` with the tag `_wsd_lr0p0012_st130000`, so no resume was needed. 260 evals, no gap and no duplicate. Scored from the printed evals (loss@512, 4 decimals), as W1 and W2 were; the run's `training_log.jsonl` is on Drive.
+
+| | prediction | result | |
+| --- | --- | --- | --- |
+| G2B.0 | no eval more than 0.2 nats above the previous one | largest rise +0.013 nats (step 15,000) | **HIT** |
+| G2B.1 | settled between 41.0 and 45.5 | **42.69** (mean of 42.68, 42.70, 42.68) | **HIT** |
+| G2B.2 | at least 5% below W2's 48.37 | −11.7% | **HIT** |
+| G2B.3 | decay gain below W2's 0.338 | **0.371** (61.84 at step 84,500 → 42.69) | **MISS** |
+
+**The curve** (evaluation perplexity):
+
+| step | tokens | perplexity | phase |
+| ---: | ---: | ---: | --- |
+| 6,500 | 0.11B | 92.99 | end of warmup |
+| 21,000 | 0.34B | 68.01 | constant |
+| 32,500 | 0.53B | 64.97 | constant (W2 had settled at 48.37 by here, after its decay) |
+| 50,000 | 0.82B | 63.17 | constant |
+| 84,500 | 1.38B | 61.84 | end of the constant phase |
+| 100,000 | 1.64B | 57.66 | decay |
+| 120,000 | 1.97B | 45.92 | decay |
+| 130,000 | 2.13B | 42.68 | end |
+
+**Reading.**
+- **Four times the tokens buy 0.125 nats** (48.37 → 42.69) for this 33.7M-parameter model, about 63 tokens per parameter at the end, well past compute-optimal for its size.
+- **G2B.3 misses: the decay is worth more after a longer constant phase** (0.371 against 0.338). The constant phase flattens slowly (−4.8% from step 32,500 to 84,500), and nearly all of the final gain comes in the decay. At a fixed peak, the noise the constant learning rate holds the model above its floor does not shrink with time, and the decay removes it.
+- **For Epic 3:** the Fock arms' 2B runs are compared against 42.69, and their constant-phase curves against this one at equal tokens. W2's reading (Fock ahead until the decay) is tested there.
+
 ### 5.18 RR: what makes a model refinement-ready? — **pre-registered 2026-10-06, before any measurement**
 
 **The clue.** G3 and G3′ differ only in the routing hardening (QK-norm and the 0.3 field clip). Gate 3 at 1.5× refinement:
@@ -5073,6 +5102,32 @@ The cost of a removal is c = ln(PPL_removed / PPL_full) in nats, with a paired s
 4. **Reliance overstates value.** Trained-without gains are much smaller: G2 against F3.1 0.084 nats (the Fock channel), PM1 against F3.1 0.046 (the wells), against zero-shot costs of 1.49 and 0.77. A removal cost says what this network routes through a term, not what a model trained without it would lose (the same overstatement as the Gen 3 field, +56% removed against −2.1% trained without).
 
 **Extension, PMX (2026-10-11, descriptive, after CD was scored).** `coupling_dominance_ablation.py … PMX` (same batches; full model 53.24): removing V_φ costs **0.0145** ± 0.0012 nats (+1.5%), the wells **1.063** ± 0.056 (+190%), both 1.088 (additive: 1.078). With the wells integrated exactly, V_φ is as marginal as in SR2 (0.0135), and the wells carry more than in PM1 (0.775). **So the PM1 reading "the wells and V_φ are both load-bearing" belongs to the explicit integrator:** on the exact-flow base V_φ is marginal with or without the wells, and the conservative route is carried by the wells. What makes V_φ marginal is the exact flow (SR2 alone already shows it), not the wells. The VF factorial (§5.21) is on F3.1's explicit base and still asks its question there; a VF arm on the SR2 base would ask it for the exact flow.
+
+#### CD extended to the exchange-field arms: **a substitution order among the token couplings, register read ≻ exchange field ≻ V_φ** — **2026-10-18** (descriptive; not pre-registered)
+
+**Why.** The author's question: when the reverse channel is absent and the exchange field takes over, does V_φ sit in the background? And is there an order of strength among the couplings? The CD arms so far had V_φ alone (F3.1, SR2), beside the read (G2) or beside the wells (PM1, PMX). The three arms with the exchange field (XRB-F, G3, G3′) were missing. Same script, switches and batches (Cell 6b-7's 12 × 4 × 512), plus one switch: the exchange field off by its gate (`relax_lambda = 0`). Every check exact (20 of 20: identity patch bit-identical, every switch moves the logits and restores bit for bit). Output `debug/coupling_dominance_ablation_XRBF_G3p_G3_output.txt`, `.json`.
+
+**Removal costs, nats** (standard errors 0.002–0.003 for V_φ, 0.02–0.10 for the field and the read):
+
+| arm | couplings | V_φ | exchange field | register read | field + read | all three |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| F3.1 | V_φ | **0.282** | — | — | — | — |
+| XRB-F | V_φ, field | 0.041 | **1.372** | — | — | — |
+| G2 | V_φ, read | 0.037 | — | **1.486** | — | — |
+| G3′ | V_φ, field, read | 0.031 | 0.569 | **1.351** | 1.806 | 1.815 |
+| G3 | V_φ, field, read (unhardened) | 0.011 | 0.613 | **1.550** | 1.735 | 1.750 |
+| SR2 | V_φ (exact stiff-mode flow) | 0.014 | — | — | — | — |
+| PM1 | V_φ, wells | 0.324 | wells 0.775 | — | — | — |
+
+**Reading.**
+1. **V_φ steps back beside either token route, by about the same factor.** Its removal cost falls from 0.282 alone (F3.1) to 0.041 beside the field and 0.037 beside the read: about 7× either way. It does not vanish: 0.01–0.04 nats in every arm with another coupling, well resolved. The learned per-layer V_φ scale (`raw_v_phi_scale`, read from the checkpoints) falls much more beside the read (output layer 2.40 → 0.0016) than beside the field (→ 0.41), so the scale is not a measure of reliance: the model compensates through V_φ's own parameters.
+2. **The read crowds out the field; the field barely touches the read.** The field's cost falls from 1.372 alone to 0.57–0.61 beside the read (about 2.3×); the read's moves from 1.486 alone to 1.35 (G3′) or 1.55 (G3).
+3. **So the order is register read ≻ exchange field ≻ V_φ:** each route is crowded out by the ones above it and barely affected by the ones below it. In value (§5.25, trained with and without), the same order: the read alone −8.0%, the field alone −6.0% against F3.1.
+4. **Not quite additive.** Removing field and read together costs less than the sum: 6% less in G3′ (1.806 against 1.920), 20% less in G3 (1.735 against 2.163). Their work overlaps, more so with unhardened routing. V_φ adds 0.01–0.05 nats on top of any removal.
+5. **The wells are different.** Beside the wells (PM1), V_φ keeps all its reliance (0.324), unlike beside the field or the read. The wells pull tokens toward shared learned centres rather than toward each other, which fits a separate niche. Wells against the read and the field stay unranked, since no arm carries both; the candidate run G2 + wells is recorded in the checklist.
+6. **The integrator matters too.** In SR2 V_φ is nearly idle with no competing coupling at all (0.014): part of what V_φ does in F3.1 compensates the split integrator.
+
+**Scope.** Removal at inference measures reliance on a term in a trained model, not what a model trained without it reaches (§5.20). One seed per arm; L = 2; 532.5M tokens.
 
 ### 5.21 VF: is V_φ worth more beside the wells? The trained-without factorial — **pre-registered 2026-10-11, before any run**
 

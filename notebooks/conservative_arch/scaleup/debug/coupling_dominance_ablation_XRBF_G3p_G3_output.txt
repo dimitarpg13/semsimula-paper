@@ -1,0 +1,47 @@
+XRBF  ...ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_attnpot
+  check: identity patch bit-identical, called 4x for L = 2 -> True
+  check: vphi        moves logits by max 6.51e+00; restored bit-identical -> True
+  check: exch        moves logits by max 3.43e+01; restored bit-identical -> True
+  check: vphi+exch   moves logits by max 3.45e+01; restored bit-identical -> True
+  full model: PPL 52.75 on 12 x 4 x 512 tokens
+  remove vphi       : PPL    54.95   c = +0.0408 +- 0.0033 nats (+4.2% PPL; batches +0.0248 .. +0.0671)
+  remove exch       : PPL   208.08   c = +1.3723 +- 0.0780 nats (+294.5% PPL; batches +0.9910 .. +1.9513)
+  remove vphi+exch  : PPL   208.80   c = +1.3758 +- 0.0784 nats (+295.8% PPL; batches +0.9963 .. +1.9593)
+
+G3p  ...ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_attnpot
+  check: identity patch bit-identical, called 4x for L = 2 -> True
+  check: vphi        moves logits by max 6.27e+00; restored bit-identical -> True
+  check: exch        moves logits by max 1.83e+01; restored bit-identical -> True
+  check: fock        moves logits by max 4.35e+01; restored bit-identical -> True
+  check: vphi+exch   moves logits by max 2.18e+01; restored bit-identical -> True
+  check: vphi+fock   moves logits by max 4.33e+01; restored bit-identical -> True
+  check: exch+fock   moves logits by max 4.16e+01; restored bit-identical -> True
+  check: vphi+exch+fock moves logits by max 4.14e+01; restored bit-identical -> True
+  full model: PPL 51.23 on 12 x 4 x 512 tokens
+  remove vphi       : PPL    52.86   c = +0.0312 +- 0.0016 nats (+3.2% PPL; batches +0.0203 .. +0.0377)
+  remove exch       : PPL    90.47   c = +0.5687 +- 0.0718 nats (+76.6% PPL; batches +0.3154 .. +1.1082)
+  remove fock       : PPL   197.75   c = +1.3506 +- 0.0234 nats (+286.0% PPL; batches +1.2337 .. +1.4488)
+  remove vphi+exch  : PPL    92.71   c = +0.5931 +- 0.0745 nats (+81.0% PPL; batches +0.3252 .. +1.1469)
+  remove vphi+fock  : PPL   207.05   c = +1.3966 +- 0.0235 nats (+304.1% PPL; batches +1.2843 .. +1.4963)
+  remove exch+fock  : PPL   311.84   c = +1.8061 +- 0.1050 nats (+508.7% PPL; batches +1.3985 .. +2.5972)
+  remove vphi+exch+fock: PPL   314.70   c = +1.8152 +- 0.1047 nats (+514.2% PPL; batches +1.4086 .. +2.6035)
+
+G3  ...ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_attnpot
+  check: identity patch bit-identical, called 4x for L = 2 -> True
+  check: vphi        moves logits by max 3.26e+00; restored bit-identical -> True
+  check: exch        moves logits by max 2.36e+01; restored bit-identical -> True
+  check: fock        moves logits by max 4.01e+01; restored bit-identical -> True
+  check: vphi+exch   moves logits by max 2.31e+01; restored bit-identical -> True
+  check: vphi+fock   moves logits by max 4.03e+01; restored bit-identical -> True
+  check: exch+fock   moves logits by max 3.31e+01; restored bit-identical -> True
+  check: vphi+exch+fock moves logits by max 3.32e+01; restored bit-identical -> True
+  full model: PPL 52.56 on 12 x 4 x 512 tokens
+  remove vphi       : PPL    53.14   c = +0.0110 +- 0.0015 nats (+1.1% PPL; batches +0.0022 .. +0.0188)
+  remove exch       : PPL    97.01   c = +0.6129 +- 0.0705 nats (+84.6% PPL; batches +0.3519 .. +1.1787)
+  remove fock       : PPL   247.64   c = +1.5501 +- 0.0331 nats (+371.2% PPL; batches +1.3317 .. +1.7367)
+  remove vphi+exch  : PPL    97.29   c = +0.6158 +- 0.0713 nats (+85.1% PPL; batches +0.3539 .. +1.1939)
+  remove vphi+fock  : PPL   258.95   c = +1.5947 +- 0.0358 nats (+392.7% PPL; batches +1.3690 .. +1.7985)
+  remove exch+fock  : PPL   297.97   c = +1.7351 +- 0.0944 nats (+467.0% PPL; batches +1.4407 .. +2.4216)
+  remove vphi+exch+fock: PPL   302.57   c = +1.7504 +- 0.0951 nats (+475.7% PPL; batches +1.4541 .. +2.4439)
+
+-> checks ALL PASS
