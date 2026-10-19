@@ -19,7 +19,12 @@ M2  inertial share of each layer step,
         ||Phi(h, v) - Phi(h, 0)|| / ||Phi(h, v) - h||,
     re-running the stack with the incoming velocity reset at that layer only.
 
-Usage: python3 stage0_models.py OUT_DIR
+Usage: python3 stage0_models.py OUT_DIR [MODEL ...]
+  MODEL from TS-SO TS-FO OWT-F31 OWT-L4 SO-TS (default: the first four, as scored on 2026-10-04).
+  SO-TS (added 2026-10-19, Stage 1): TinyStories trained in the CfC architecture on SR2's settings,
+  the reading pre-registered with the Stage-0 decision. Built through the ladder notebook with
+  CORPUS = 'tinystories', on its own validation tokens and its own frequency table; output
+  stage0_models_SO-TS_output.txt and .json.
 """
 import contextlib, io, json, math, sys
 from pathlib import Path
@@ -122,6 +127,52 @@ def build_owt(folder, rc, L):
     return model, np.load(G.VAL), float('nan')
 
 
+def build_cfc_ts(folder, extra):
+    """A TinyStories arm of the FO 2x2 (SO-TS, FO-TS), built through the current ladder notebook."""
+    sys.path.insert(0, str(REPO / 'notebooks/conservative_arch/scaleup/debug'))
+    sys.argv = sys.argv[:1] + [str(OUT / 'ts_cfc_scratch')]
+    import gradcheck_vphi_xi_paths as G
+    import os, shutil
+    c5b = [c for c in cells(G.NB) if c.startswith('# == Cell 5b')][0]
+    os.chdir(REPO / 'notebooks/conservative_arch/scaleup')
+    run = DL / folder
+    _vc = [run / 'data/tinystories_val_2M.npy', DL / 'semsimula_tinystories_gpt2/data/tinystories_val_2M.npy']
+    val = np.load(next(v for v in _vc if v.exists()))     # the run's own validation tokens (Drive: semsimula_tinystories_gpt2/data)
+    g = {'__name__': '__main__'}
+    c0 = G.cells['Cell 0:']
+    for old, new in (('REVERSE_CHANNEL              = True', 'REVERSE_CHANNEL              = False'),
+                     ("VPHI_GRAD_PATH         = 'default'", "VPHI_GRAD_PATH         = 'live'"),
+                     ("XI_GRAD_PATH           = 'default'", "XI_GRAD_PATH           = 'live'"),
+                     ("LOWRANK_DAMPED_FLOW  = False", "LOWRANK_DAMPED_FLOW  = True"),
+                     ("CORPUS           = 'openwebtext'", "CORPUS           = 'tinystories'"),
+                     ("LADDER_STEPS     = 32_500", "LADDER_STEPS     = 16_250"),
+                     ("VPHI_ANALYTIC_FORCE = False", "VPHI_ANALYTIC_FORCE = True"),
+                     ("LAYER_CHECKPOINT = True", "LAYER_CHECKPOINT = False")) + tuple(extra):
+        assert c0.count(old) == 1, old
+        c0 = c0.replace(old, new)
+    with contextlib.redirect_stdout(io.StringIO()):
+        exec(compile(G.strip(c0), 'Cell0', 'exec'), g)
+        exec(compile(G.strip(G.cells['Cell 1:']), 'Cell1', 'exec'), g)
+        g['CKPT_DIR'] = run / 'checkpoints'
+        g['RESULTS_DIR'] = G.OUT / 'results_ts'; g['RESULTS_DIR'].mkdir(parents=True, exist_ok=True)
+        # the run's own frequency table, so the mass model is the trained one's
+        shutil.copy2(run / 'results/logfreq_surprisal_tinystories.npy', g['RESULTS_DIR'] / 'logfreq_surprisal_tinystories.npy')
+        g['DATA_DIR'] = G.OUT / 'data'; g['GDRIVE_ROOT'] = G.OUT
+        exec(compile(G.strip(G.cells['Cell 2:']), 'Cell2', 'exec'), g)
+        exec('from data_module import get_batch', g)
+        g['val_ids'] = val; g['train_ids'] = val
+        exec(compile(G.strip(G.cells['Cell 4:']), 'Cell4', 'exec'), g)
+        exec(compile(G.strip(G.cells['Cell 5:']), 'Cell5', 'exec'), g)
+        g['PROBE_MAX_STEPS'] = g.get('PROBE_MAX_STEPS')
+        exec(compile(G.strip(c5b), 'Cell5b', 'exec'), g)
+    assert folder.endswith(g['_variant_tag']), (folder, g['_variant_tag'])
+    model = g['model']
+    sd = torch.load(g['CKPT_DIR'] / f"{g['CKPT_PREFIX']}_best.pt", map_location='cpu', weights_only=False)
+    r = model.load_state_dict(sd['model_state_dict'], strict=False)
+    assert not r.missing_keys and not r.unexpected_keys, r
+    return model, val, float(sd.get('val_ppl', float('nan')))
+
+
 def trajectory(model, x):
     model.eval()
     with torch.enable_grad():
@@ -181,12 +232,21 @@ def m2(model, x, traj):
 if __name__ == '__main__':
     q = lambda t, p: float(torch.quantile(t, p))
     summary = {}
+    _TS = ('semsimula_fock_cfc_baoab_ts_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2'
+           '{fo}_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn')
     specs = [
         ('TS-SO', lambda: build_ts('SO')),
         ('TS-FO', lambda: build_ts('FO')),
         ('OWT-F31', lambda: build_owt('semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn', False, 2)),
         ('OWT-L4', lambda: build_owt('semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_vplive_xilive_L4probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt2_lr0p0012_noattn', True, 4)),
+        ('SO-TS', lambda: build_cfc_ts(_TS.format(fo=''), ())),
     ]
+    SELECT = sys.argv[2:]
+    specs = [sp for sp in specs if (sp[0] in SELECT if SELECT else sp[0] != 'SO-TS')]
+    _lines = []
+    _print = print
+    def print(*a, **k):                                # also keep the printed report for an output file
+        _print(*a, **k); _lines.append(' '.join(str(x) for x in a))
     print('FO Stage 0, model side (protocol SS5.13): each model on its own corpus, eval, 2 x 512 tokens\n')
     for name, mk in specs:
         torch.manual_seed(0)
@@ -231,4 +291,7 @@ if __name__ == '__main__':
                          'inertial_share_median_by_layer': [q(r['share'], .5) for r in b]}
         print()
         del model
-    json.dump(summary, open(OUT / 'stage0_models.json', 'w'), indent=1)
+    stem = 'stage0_models' + ('' if not SELECT else '_' + '_'.join(SELECT))
+    json.dump(summary, open(Path(__file__).parent / 'results' / f'{stem}.json' if SELECT else OUT / 'stage0_models.json', 'w'), indent=1)
+    if SELECT:
+        (Path(__file__).parent / 'results' / f'{stem}_output.txt').write_text('\n'.join(_lines) + '\n')
