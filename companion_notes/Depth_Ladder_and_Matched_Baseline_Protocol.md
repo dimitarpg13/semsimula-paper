@@ -6069,6 +6069,8 @@ The run (`…cgqk_norc_rglive_vplive_xilive_rfqk_rfclip0p3_L2probe…_attnpot`, 
 
 ### 5.26 BF: selective bf16 training — **DRAFT 2026-10-18, for the author's review; not yet binding**
 
+> **Deferred, 2026-10-18, after the A100 measurement** (productionization plan §10.3a): bf16 made a training step only 2% faster, while the analytic V_φ force with layer checkpointing off made it 1.6× faster with identical arithmetic. If float32 + analytic + no checkpointing confirms that on the next session, this probe is not worth running now; the draft is kept for a later scale (d = 768) where the matrix multiplies weigh more.
+
 **Why.** The 2B-token runs (Epic 3) take about 60 h per arm on the A100 (PMX about 100 h). Selective bf16 (Cell 0 `AMP_BF16`; productionization plan §10.3, item 5) is expected to be the largest single speed-up, and it frees the memory that layer checkpointing now uses. It changes the training numerics, so it may not be adopted without showing that it does not change what the model learns.
 
 **What bf16 covers.** The training forward runs under bf16 autocast: V_θ's well generator, the context channels, the output head and the Fock gates and read in bf16; the layer step from the linearisation on (eigensolves, exact substeps, force assembly, the LayerNorm projection) in float32. Evaluation is float32 in every arm. Verified on the CPU (`debug/verify_bf16_switch.py`): with autocast off, bit-identical to HEAD; with it on, the well generator runs in bf16 and every eigensolve and substep input is float32.

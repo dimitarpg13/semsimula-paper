@@ -927,6 +927,28 @@ It takes about ten minutes on the A100, and should run before the next training 
 80 GB card alone would allow batch 32 with no accumulation and no checkpointing (items 4 and 5's memory
 argument), with identical arithmetic.
 
+### 10.3a Measured on the A100 (Cell 6b-17, SR2's best checkpoint, batch 16 × 512, 2026-10-18)
+
+| training microbatch (forward + backward) | seconds | peak GiB | against float32 + autograd |
+| --- | ---: | ---: | ---: |
+| float32, autograd V_φ (every run so far) | 0.736 | 19.87 | ×1.00 |
+| float32, analytic V_φ | 0.638 | 15.13 | ×1.15 |
+| bf16, autograd V_φ | 0.724 | 19.60 | ×1.02 |
+| bf16, analytic V_φ | 0.628 | 15.03 | ×1.17 |
+| bf16, analytic V_φ, no layer checkpointing | 0.457 | 29.44 | ×1.61 |
+
+| inference forward | autograd (graph) | analytic (`no_grad`) |
+| --- | --- | --- |
+| batch 16 × 512 | 0.317 s, 16.16 GiB | 0.185 s, 8.48 GiB (×1.71 faster, ×1.91 less memory) |
+| batch 1 × 512 | 0.154 s, 3.96 GiB | 0.061 s, 3.47 GiB (×2.50 faster) |
+
+Eval logits, analytic against autograd: max difference 0.028 (TF32 matrix multiplies, different order of arithmetic), loss equal to 1e-5.
+
+- **Item 1 (analytic V_φ) pays on the GPU**: ×1.15 per training step and 4.7 GiB less peak memory; inference ×1.7–2.5.
+- **Item 5 (bf16) adds almost nothing** (×1.02 alone, +2% on top of item 1): the bf16 region (the well generator, the output head, the Fock gates) is not where the time goes, and TF32 already makes the float32 matrix multiplies fast.
+- **Item 4 (layer checkpointing off) is the large lever**, ×1.61 together with item 1, and it fits the 40 GB card (29.4 GiB). Both are identical arithmetic up to float rounding, so if float32 + analytic + no checkpointing matches the bf16 row (the row added to Cell 6b-17 for the next session), the speed-up needs no numerics change and no probe. Cell 0 now has `LAYER_CHECKPOINT` (default `True`, not in the tag).
+- Per optimiser step (2 microbatches) that is about 0.9 s against 1.5 s, so a 2B-token SR2 run of about 35 h against 60 h. PMX, which already peaked at 26 GiB with checkpointing, must be measured before it runs without.
+
 ### 10.4 Decision points
 
 - Whether the FO runs and the 2B runs use item 1: after its GPU measurement, and before SO-TS starts, since
