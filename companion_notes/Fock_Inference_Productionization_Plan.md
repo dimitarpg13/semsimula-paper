@@ -936,6 +936,7 @@ argument), with identical arithmetic.
 | bf16, autograd V_φ | 0.724 | 19.60 | ×1.02 |
 | bf16, analytic V_φ | 0.628 | 15.03 | ×1.17 |
 | bf16, analytic V_φ, no layer checkpointing | 0.457 | 29.44 | ×1.61 |
+| **float32, analytic V_φ, no layer checkpointing** (second session, same day) | **0.468** | **29.89** | **×1.62** |
 
 | inference forward | autograd (graph) | analytic (`no_grad`) |
 | --- | --- | --- |
@@ -946,8 +947,9 @@ Eval logits, analytic against autograd: max difference 0.028 (TF32 matrix multip
 
 - **Item 1 (analytic V_φ) pays on the GPU**: ×1.15 per training step and 4.7 GiB less peak memory; inference ×1.7–2.5.
 - **Item 5 (bf16) adds almost nothing** (×1.02 alone, +2% on top of item 1): the bf16 region (the well generator, the output head, the Fock gates) is not where the time goes, and TF32 already makes the float32 matrix multiplies fast.
-- **Item 4 (layer checkpointing off) is the large lever**, ×1.61 together with item 1, and it fits the 40 GB card (29.4 GiB). Both are identical arithmetic up to float rounding, so if float32 + analytic + no checkpointing matches the bf16 row (the row added to Cell 6b-17 for the next session), the speed-up needs no numerics change and no probe. Cell 0 now has `LAYER_CHECKPOINT` (default `True`, not in the tag).
-- Per optimiser step (2 microbatches) that is about 0.9 s against 1.5 s, so a 2B-token SR2 run of about 35 h against 60 h. PMX, which already peaked at 26 GiB with checkpointing, must be measured before it runs without.
+- **Item 4 (layer checkpointing off) is the large lever.** Confirmed in a second session: **float32 + analytic V_φ + no checkpointing is ×1.62 at 29.9 GiB**, and bf16 on top adds 2% (the second session's timings ran about 3% slower throughout; the ratios agree). Both levers are identical arithmetic up to float rounding, so **the speed-up needs no numerics change and no probe**. Cell 0: `VPHI_ANALYTIC_FORCE = True`, `LAYER_CHECKPOINT = False` (neither in the tag).
+- Per optimiser step (2 microbatches) that is about 0.94 s against 1.52 s, so a 2B-token SR2 run of about 37 h against 60 h.
+- **PMX** (same cell, PMX's best checkpoint, A100-80GB): float32 + autograd 1.103 s at 22.9 GiB; float32 + analytic 0.903 s at 16.3 GiB (×1.22); **float32 + analytic + no checkpointing 0.613 s at 32.9 GiB (×1.80)**; bf16 on top ×1.84. Inference ×1.75 (batch 16) and ×2.42 (batch 1). Eval logits differ by up to 0.21 between the two force paths (loss equal to 1e-5): PMX's exact well integration is more sensitive to rounding. 32.9 GiB plus about 1 GB of optimizer state fits the 40 GB card with about 5 GiB to spare. A 2B-token PMX run: about 55 h against 100 h.
 
 ### 10.4 Decision points
 

@@ -3600,6 +3600,21 @@ Layer 0 reads ε ≈ 6–15 in every model. That step is the projection of the e
 3. The FO-a switch is implemented and verified before Stage 1.
    - *Done 2026-10-18* (`debug/verify_fo_switch.py`, output `debug/verify_fo_switch_output.txt`), on SR2's weights, since the anchor moved to SR2 on 2026-10-11. Off: bit-identical to HEAD in logits, loss and every gradient. On: equal, bit for bit, to Cell 6b-7's Gate 1 reset (`_fom_stack`, N = L, `reset_prev=True`), so the trained switch and the inference-time reset are the same operation. On a 2 × 256 validation batch SR2 loses 3.1% under it (Gate 1 on 12 × 4 × 512 tokens: +3.9%). The corpus switch for SO-TS and FO-TS is in Cell 0 (`CORPUS`).
 
+#### Amendment, 2026-10-18, before any Stage-1 run: the FO arms run with the analytic V_φ force and without layer checkpointing (author's decision)
+
+**What.** SO-TS, FO-TS, FO-OWT and FO-PMX run with Cell 0 `VPHI_ANALYTIC_FORCE = True` and `LAYER_CHECKPOINT = False`. Neither switch is in the variant tag.
+
+**Why.** Speed: on the A100, the two together make a training microbatch 1.62× faster on SR2 (0.468 s against 0.760 s, peak 29.9 GiB) and 1.80× faster on PMX (0.613 s against 1.103 s, peak 32.9 GiB), with float32 arithmetic throughout (Cell 6b-17; productionization plan §10.3a). Both fit the 40 GB card.
+
+**Why the comparison is unaffected.** The anchors (SR2's run for FO-OWT, PMX's run for FO-PMX) were trained with the V_φ force taken by `torch.autograd.grad` and with layer checkpointing on.
+- The analytic V_φ force is the same function: in float64 on trained weights it agrees with the autograd force to 1e-14, and its derivatives with respect to every parameter to 2e-12 (`debug/verify_vphi_analytic_f64.py`); in float32 the forces agree to a relative 1e-7 and the training gradients to 1e-6–5e-5 of the whole gradient (`debug/verify_vphi_analytic.py`, on F3.1, SR2, G2, G3′ and PMX).
+- Layer checkpointing recomputes each layer's forward in the backward; switching it off changes the memory used, not the arithmetic.
+- GPU training is not bit-reproducible in any case, so two runs of one configuration already differ at the level these changes introduce.
+
+So the FO arms differ from their anchors by FO-a alone, and the 2×2's within-corpus pairs (SO-TS against FO-TS) share every setting. The anchors' own runs are not repeated.
+
+**Scope.** Selective bf16 (`AMP_BF16`) is not used: it added 2% on top (§5.26, deferred).
+
 #### FO-PMX: the exploratory first-order twin on PMX — **pre-registered 2026-10-18, before the run; exploratory, outside the 2×2 (author's decision)**
 
 **Why.** The 2×2's anchor, SR2, leans little on momentum: resetting the velocity at inference costs it +3.9% (Gate 1). PMX leans on it far more: +91% at its best checkpoint, +30,600% at the step-8,000 probe. In PMX the layer-1 step balances the velocity a token carries in against the pull of the memory wells (§5.15). If second-order dynamics earns its keep anywhere at this budget, it is there. The FO 2×2 cannot see this, because none of its arms has wells. FO-PMX asks whether PMX trained first-order matches PMX.
@@ -6069,7 +6084,7 @@ The run (`…cgqk_norc_rglive_vplive_xilive_rfqk_rfclip0p3_L2probe…_attnpot`, 
 
 ### 5.26 BF: selective bf16 training — **DRAFT 2026-10-18, for the author's review; not yet binding**
 
-> **Deferred, 2026-10-18, after the A100 measurement** (productionization plan §10.3a): bf16 made a training step only 2% faster, while the analytic V_φ force with layer checkpointing off made it 1.6× faster with identical arithmetic. If float32 + analytic + no checkpointing confirms that on the next session, this probe is not worth running now; the draft is kept for a later scale (d = 768) where the matrix multiplies weigh more.
+> **Deferred, 2026-10-18, after the A100 measurement** (productionization plan §10.3a): bf16 made a training step only 2% faster, while the analytic V_φ force with layer checkpointing off made it 1.6× faster with identical arithmetic. Confirmed the same day: float32 + analytic + no checkpointing is ×1.62 at 29.9 GiB, bf16 on top +2%. The probe is not run now; the draft is kept for a later scale (d = 768) where the matrix multiplies weigh more.
 
 **Why.** The 2B-token runs (Epic 3) take about 60 h per arm on the A100 (PMX about 100 h). Selective bf16 (Cell 0 `AMP_BF16`; productionization plan §10.3, item 5) is expected to be the largest single speed-up, and it frees the memory that layer checkpointing now uses. It changes the training numerics, so it may not be adopted without showing that it does not change what the model learns.
 
