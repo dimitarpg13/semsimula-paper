@@ -44,15 +44,15 @@ The classical reading gives $\mathcal{H}$ two distinct roles, and most of what f
 
 ```mermaid
 flowchart TD
-    A["semantic space Sigma, R to the L<br>Euclidean metric d Sigma"]
+    A["semantic space<br>L dimensional real space with Euclidean distance"]
     B["semantic density p of one particle<br>Gaussian centered at a type centroid"]
-    C["root density phi, square root of p<br>unit vector in L2 of Sigma"]
-    D["single particle space H<br>span of the type modes phi v"]
+    C["root density phi, the square root of p<br>a unit vector in function space"]
+    D["single particle space H<br>the span of the type modes"]
     E["n fold tensor products<br>several particles"]
     F["symmetric subspace<br>indistinguishable particles"]
-    G["Fock space<br>direct sum over n, vacuum at n zero"]
+    G["Fock space<br>direct sum over particle number, including the vacuum"]
     H["Doi Peliti state P<br>probability distribution over occupations"]
-    I["Bhattacharyya coefficient<br>one minus V over m upsilon squared"]
+    I["Bhattacharyya coefficient<br>one minus the normalised well potential"]
     A --> B
     B --> C
     C --> D
