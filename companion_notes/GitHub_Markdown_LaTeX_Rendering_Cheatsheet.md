@@ -11,7 +11,7 @@ A reference for writing LaTeX math **and** Mermaid diagrams in Markdown files th
 The cheatsheet has two parts:
 
 - **Part I — KaTeX math rendering** (rules §1–§13, §19, §25–§30): inline math and display `$$...$$` math. Inline is `$...$` on GitHub but **must** be `\\( ... \\)` on Hugging Face — see §5b before writing a model card.
-- **Part II — Mermaid diagram rendering** (rules §14–§18, §20–§24): ` ```mermaid ` fenced blocks.
+- **Part II — Mermaid diagram rendering** (rules §14–§18, §20–§24, including §22a): ` ```mermaid ` fenced blocks.
 
 ---
 
@@ -957,6 +957,42 @@ A["gamma -> 0\nHamiltonian\nConservative\ndiv F = 0"]
 
 ---
 
+## 22a. ASCII-ified math renders perfectly and communicates nothing — say it in words
+
+Every other rule in this cheatsheet catches a **render** failure: something goes pink, or vanishes, or the diagram refuses to draw. This one is different and there is no error message. The label renders exactly as written, and a reader still cannot tell what the box is.
+
+The cause is following §22 too literally. §22 says to replace math symbols with ASCII equivalents, and the natural reflex is to transliterate the expression symbol by symbol. The result is a string that is a faithful encoding of the formula and unreadable as English. Observed in this repository:
+
+```
+# Renders fine. Means nothing to a reader.
+A["semantic space Sigma, R to the L<br>Euclidean metric d Sigma"]
+B["ORDER GAP L times s bar times A over m times gamma eff cubed"]
+C["overlap identity G is 1 minus V over m upsilon squared"]
+D["Boltzmann Gibbs: p proportional to exp neg E over tau"]
+
+# Same content, said in words.
+A["semantic space<br>L dimensional real space with Euclidean distance"]
+C["overlap identity<br>one minus the normalised well potential"]
+```
+
+"R to the L" and "d Sigma" are each a correct transliteration of $\mathbb{R}^L$ and $d_\Sigma$, and neither is a phrase anyone recognises. §22's own worked fix, `A["gamma -> 0\nHamiltonian\nConservative\ndiv F = 0"]`, shows the same trap: it clears the render error and leaves a label that reads as code.
+
+**Two cases, and only one of them is a problem.**
+
+- A symbol used as a **proper noun** is fine. `V phi`, `tau`, `xi` are how the project names those objects in prose, so a node saying `BAOAB B kick beside V phi` reads correctly. Keep it.
+- A transliterated **expression** is the problem — and the giveaway is not the arithmetic word itself but what it operates on. `one minus the normalised well potential` names its operand and reads as English; `one minus V over m upsilon squared` spells the operand out symbol by symbol and does not. Arithmetic words (`equals`, `times`, `over`, `to the`, `squared`, `proportional to`) are a warning sign worth checking, not an automatic fault: ask whether a reader could restate the label without decoding it.
+
+**Two repair patterns.** Either name the thing in words, as above, or — better where the formula is genuinely the point — name the object and let the numbered equation carry the mathematics:
+
+```
+# Good: names the object, defers the formula to the text
+P["occupations phi at token t<br>leaky sum over earlier tokens, eq 1.2"]
+```
+
+**Rule:** a Mermaid node label names an object or a step; it never spells out an equation. Write it so that it reads as English to someone who has not seen the formulas. Symbol names used as the project's own names for things are fine, and so is arithmetic over named concepts; what fails is arithmetic over transliterated symbols. The check is not whether it renders — it always will — but whether a reader who has only the diagram can say what the box is.
+
+---
+
 ## 23. Chained arrows and inline-defined targets of dotted edges — declare every node on its own line
 
 Two patterns are **valid in upstream Mermaid** but **trigger the generic "Cannot read properties of undefined (reading 'render')" crash** on GitHub:
@@ -1137,6 +1173,7 @@ failure inside that span, not a delimiter-pairing problem.
 | `--` inside unquoted node label, e.g. `[Lever 3 -- X]` | same render error — `--` parsed as edge | quote the label: `["Lever 3 -- X"]` |
 | `(` / `[` / `{` inside a pipe-form edge label, e.g. `A -->\|f (x)\| B` | `Parse error ... got 'PS'` (the `(` token) | remove the bracket — edge labels aren't quoted; use plain words (`A -->\|f of x\| B`). Parens are only safe in quoted *node* labels |
 | `$$...$$` or `$...$` math inside node label | "KaTeX parse error: Can't use function '$' in math mode" | remove math delimiters; use ASCII (`gamma`, `->`, `div F`, `grad V`) |
+| Transliterated expression in a label, e.g. `"R to the L"`, `"V over m upsilon squared"` | renders fine; reader cannot tell what the node is | say it in words, or name the object and cite the equation number (§22a) |
 | Chained arrows ≥ 4 on one line, e.g. `A --> B --> C --> D --> E` | "Cannot read properties of undefined (reading 'render')" | one edge per line |
 | Inline node definition as target of dotted-edge label, e.g. `A -. text .-> B["label"]` | same render error | pre-declare `B["label"]` on its own line; use pipe form `A -.->\|text\| B` |
 | Subgraph with inline node definitions inside the block | intermittent render error | declare nodes outside the `subgraph ... end` block; reference bare `NodeId` inside |

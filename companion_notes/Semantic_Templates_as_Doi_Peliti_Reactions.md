@@ -42,7 +42,7 @@ flowchart TD
     A["template particle<br>stochastic cloud over Sigma"]
     B["spatial pdf f p<br>normalized, factorized from time"]
     C["mode density p v<br>Gaussian at a type centroid"]
-    D["root density phi equals sqrt p<br>unit vector in H"]
+    D["root density phi, the square root of p<br>a unit vector in H"]
     E["matching functional<br>arc length average, linear in f p"]
     F["Bhattacharyya overlap<br>bilinear in the roots"]
     G["matching threshold Theta"]
