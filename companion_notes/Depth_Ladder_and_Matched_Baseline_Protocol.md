@@ -3622,6 +3622,14 @@ Run output `L2_SO-TS_16250steps_output.txt` (Colab, A100-80GB; Cell 0 as in the 
 - **Settled 5.22** (evals at 15,000, 15,500 and 16,000: 5.21, 5.24, 5.21); best 5.21. Evals come every 500 steps, which does not divide 16,250, so the last eval is at step 16,000 and the final 250 steps (learning rate within 1% of the floor) are not evaluated. FO-TS has the same schedule, so the pair stays matched.
 - **Settling check (amendment of 2026-10-04), as written: not settled.** The line through the evals of the last 3,000 steps (13,000–16,000, seven evals) changes by −0.080 nats, against a residual standard deviation of 0.017. The whole window lies in the decay phase (10,562–16,250), where the loss falls by design (5.66 at 13,000, 5.21 at 15,000); only the last three evals are flat. The rule stands as registered: if either TinyStories arm fails, both are extended by the same number of steps at the floor learning rate, and re-checked. The number of steps is not fixed by the rule (proposed: 3,000, so that the re-check window lies at the floor), and the notebook needs a switch to resume a finished run in place at the floor (raising `LADDER_STEPS` would change the tag and recompute the schedule).   - **Extension: 3,000 steps per arm (author, 2026-10-19), if the rule triggers for the pair.** Cell 0 `EXTRA_FLOOR_STEPS = 3_000` (not in the tag): the schedule keeps its 16,250 steps and the loop runs to 19,250 at the floor rate (6e-5). Each run resumes in its own folder from its latest checkpoint, step 15,000 (none was saved after it), so it re-trains 15,000 → 16,250 and then adds the 3,000 floor steps, about 1.3 h per arm. The batch sampler restarts at its seed on any resume (every resumed ladder run has done so), the same for both arms; the log gains a second record for steps 15,500 and 16,000, and the re-check keeps the latest record per step. Verified: with the switch off the schedule is identical to HEAD at every step (OWT and TinyStories); with it on, the tag is unchanged, steps below 16,250 follow the original schedule and steps 16,250–19,249 sit at the floor.
   - **SO-TS extended and re-checked, 2026-10-19: SETTLED.** Output `L2_SO-TS_19250steps_ext_output.txt`. Resumed from the step-15,000 checkpoint (all 89 tensors and the optimizer state), followed the original decay (1.81e-4 at step 15,050, the schedule's value) and held the floor (6.00e-5) from step 16,250 to 19,250. No watchdog trigger or spike; the causal-leak monitor CLEAN at 19,250 (future perturbation 0, leak tax −3.6e-7 nats). Evals, latest record per step: 15,500 5.32, 16,000 5.25, 16,500 5.14, 17,000 5.21, 17,500 5.29, 18,000 5.13, 18,500 5.16, 19,000 5.19. **Re-check, steps 16,000–19,000 (seven evals): fitted change −0.008 nats against a residual standard deviation of 0.012, so SO-TS is settled. Settled perplexity 5.16** (evals at 18,000, 18,500, 19,000), 1.1% below the pre-extension 5.22; best 5.13 at step 18,000. **Cell 6b-7 on the extended best checkpoint** (`Cell-6b-7_flow_or_maps_19250steps_ext_output.txt`): Gate 0 PASS; Gate 1 +2.0% (5.52 → 5.63); Gate 2 at N = 3 +25.5%; Gate 3 at N = 3 +23.6% (0.211 nats), unchanged by the extension.
+  - **The per-layer flow (FLOW-R) on the extended SO-TS, 2026-10-19** (descriptive; `debug/refinement_flow_confirmation.py … sr2-ts seed=20261009`, FLOW-R's batch seed, on the step-18,000 checkpoint; output in the run's results folder). Every check exact: the per-layer flow at N = 2 equals the trained model, the replays reproduce the captured steps. Penalty ln(PPL_N / PPL_2), nats:
+
+    | N | 3 | 4 | 6 | 8 | 12 | 16 |
+    | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+    | **SO-TS (SR2, TinyStories)** | 0.255 | 0.151 | 0.086 | **0.100** | **0.098** | **0.097** |
+    | SR2 (OpenWebText), FLOW-R of 2026-10-09 | 0.286 | 0.206 | 0.084 | 0.103 | 0.104 | 0.104 |
+
+    **The per-layer flow converges on TinyStories** by FLOW-R's criterion (|pen(16) − pen(12)| = 0.001 ≤ 0.01, |pen(12) − pen(8)| = 0.002 ≤ 0.02), to the same limit as on OpenWebText, about 0.10 nats from the trained step. The whole-stack refinement (Gate 3) reads maps on both corpora, with TinyStories less penalised (N = 3: 0.211 against 0.405; N = 8 as trained: 1.99). On the same architecture, two corpora, two budgets and two schedules give the same per-layer limit: refinement here is a property of SR2's exact damped flow, not of the corpus. One seed each.
   - **FO-TS follows the same path:** a 16,250-step run, then the same extension from its step-15,000 checkpoint (Cell 0 `EXTEND_FROM_STEP = 15_000` pins the resume there, as Cell 2 would otherwise prefer a later best checkpoint), then Cell 6b-7. Its settled perplexity is scored against SO-TS's 5.16.
   - **A guard fixed on the way.** The completed-run guard looked for an eval at step ≥ 16,250, which a 16,250-step run never has (evals every 500), so Cell 6 would have resumed the finished SO-TS from step 15,000. A run now counts as complete when any log record reached its last step; tested on SO-TS's log (complete at 16,250, not at 19,250) and on two OWT logs (unchanged).
 - **Cell 6b-7** (best checkpoint, step 15,000; 12 × 4 × 512 TinyStories validation tokens; output `Cell-6b-7_flow_or_maps_16250steps_output.txt`). Gate 0 PASS (|d loss| 0). **Gate 1, the velocity reset at inference (FO-a applied to the trained model): +2.1%** (5.63 → 5.75), against SR2's +3.9% on OpenWebText: the trained model leans very little on momentum. Gate 2 at N = 3: +25% (0.224 nats). **Gate 3 at N = 3: +23% (0.211 nats)**, about half SR2's 0.405; the penalty still grows away from the trained step count (N = 4: 0.68 nats), so the stack remains a set of maps. Reported next to FO-TS's settled perplexity once it is in (amendment of 2026-10-11).
@@ -3634,6 +3642,35 @@ Run output `L2_SO-TS_16250steps_output.txt` (Colab, A100-80GB; Cell 0 as in the 
   | M2 inertial share, output step (median) | 0.27 | 0.50 | 0.59–0.92 |
 
   Layer 0 is the projection of the embedding onto the LayerNorm sphere (‖Δh‖ 18.7) and is excluded, as in Stage 0. **Reading, by the rule fixed on 2026-10-04: SO-TS learns anharmonic wells (ε ≥ 0.3).** In the CfC architecture TinyStories is far from the near-linear regime the Verlet anchor was in, so the architecture, not the corpus, produced the OWT stiffness, and FO-TS is predicted to show a gap as well (called at 50%). Gate 1 above (+2.1%) points the other way, toward a small cost of removing momentum; FO-TS's training decides.
+
+#### Stage 1, second arm: FO-TS finished — **2026-10-19** (scoring waits for its extension)
+
+Output `L2_FO-TS_16250steps_output.txt`. SO-TS's Cell 0 plus `FIRST_ORDER_MEMORYLESS = True` (FO-a), tag `…sr2_fo_st16250…`. Finished cleanly at 16,250 steps; best 5.18 at step 15,000; no watchdog trigger; SCAF CLEAN at 5,000, 10,000, 15,000 and 16,250 (the last prints nan PPLs, the known cosmetic issue).
+
+| step | SO-TS | FO-TS | FO − SO (nats) | ω·Δt p50, SO / FO |
+| ---: | ---: | ---: | ---: | ---: |
+| 4,000 | 6.98 | 6.90 | −0.011 | 4.27 / 3.58 |
+| 7,000–9,500 (mean) | | | −0.019 (sd 0.003) | 6.8 / 5.3 |
+| 10,500 (decay starts) | 6.01 | 5.90 | −0.018 | 6.75 / 5.56 |
+| 14,500 | 5.28 | 5.23 | −0.009 | 6.64 / 5.78 |
+| 16,000 | 5.21 | 5.19 | −0.005 | 6.69 / 5.72 |
+| settled, last three evals | 5.22 | **5.19** | −0.6% | |
+
+- **The lead FO-TS held through the constant-LR phase (about −1.9%) shrank in the decay to −0.5%.** Before the extension the pair is level, inside the Δ_TS band (±3%).
+- **The softer potential persists:** FO-TS's median ω·Δt is about 5.7 against SO-TS's 6.7 from the decay to the end, at the same perplexity.
+- **Settling check (2026-10-04 rule): fails,** as SO-TS's did: fitted change −0.074 nats over steps 13,000–16,000 against a residual standard deviation of 0.017. FO-TS gets the same extension as SO-TS: `EXTRA_FLOOR_STEPS = 3_000`, `EXTEND_FROM_STEP = 15_000` (both `…_step15000.pt` and `…_step15000_best.pt` are on Drive). Δ_TS is scored after it, against SO-TS's extended 5.16, with Gate 1 beside it.
+- **Cell 6b-7** (best checkpoint, step 15,000; output `Cell-6b-7_flow_or_maps_FO_16250steps_output.txt`). The first attempt failed Gate 0 (5.64 against 8.83): the cell's patched layer loop did not apply FO-a's velocity reset. Fixed on 2026-10-19 (the patch resets at every step when `cfg.first_order_memoryless` is set), and checked on CPU: Gate 0 bit-identical for SO, FO-a and FO-b models, and unchanged for second-order ones. Against SO-TS at the same step:
+
+  | reading | SO-TS | FO-TS |
+  | --- | ---: | ---: |
+  | Gate 1, velocity reset | +2.1% | 0 (by construction) |
+  | Gate 2, N = 3 at the trained Δt | +25% | **+0.8%** |
+  | Gate 2, N = 4 / 8 | +140% / +2,000% | +14% / +72% |
+  | Gate 3, N = 3 at fixed T | +23% (0.21 nats) | **+47% (0.38 nats)** |
+  | Gate 3, N = 1 | 43.5 PPL | 239.5 PPL |
+
+  - **Without the velocity between layers the stack is robust to extra layers** (Gate 2): from rest, each extra step is close to one more gradient step toward the wells' minimum, which is stable; the carried velocity is what makes extra second-order steps overshoot.
+  - **FO-a's Gate 3 does not test refinement.** A step from rest moves a token by about (dt²/2m) f, so N steps of T/N move it by about T²/(2mN): the distance covered shrinks with N, and FO-a is not a discretisation of any one flow as the step changes. FO-b ties its mobility to the trained step, so N steps of T/N cover one flow; this is the reason behind FB4.
 
 #### FO-PMX: the exploratory first-order twin on PMX — **pre-registered 2026-10-18, before the run; exploratory, outside the 2×2 (author's decision)**
 
@@ -3655,6 +3692,88 @@ Run output `L2_SO-TS_16250steps_output.txt` (Colab, A100-80GB; Cell 0 as in the 
 - **FX1 hits:** the memory wells need second-order dynamics at this budget, and whatever the 2×2 finds on SR2 does not extend to the memory arms.
 - **FX1 misses:** even where the trained model leans hardest on momentum, a model trained first-order compensates. PMX's Gate 1 then measures how PMX was trained, not what the task needs.
 - **Scope:** as for the whole series, constant γ = 0.1, L = 2, 532.5M tokens, one seed.
+
+#### FO-b: true first-order arms on both corpora — **pre-registered 2026-10-19, before the runs (author's decision)**
+
+**Why FO-a is not first order under CfC.** FO-a sets `h_prev := h` at each layer boundary, so each layer step starts from rest; the step itself is unchanged. On the parts of the force carried by the kick (V_φ, the soft diagonal spring, the nonlinear V_θ residual), a step from rest is exactly one gradient step at learning rate dt²/2m, which is why Gen 1's Verlet Fock-G1 was first order. SR2 integrates the stiff low-rank modes exactly, and from rest each mode follows the damped-oscillator response, (1 − cos ωt)/ω² times the force for an undamped mode. That reduces to a gradient step only when ω·Δt ≪ 1, and SR2's median ω·Δt is about 6.6. **FO-a is therefore memoryless second order:** no state except h crosses a layer, but each step is still an inertial flow in the stiff modes. FO-a results test the velocity carried between layers, not second order as such. The prediction table's line "FO arms, Gates 2 and 3: pass by construction" assumed a gradient step and does not hold for FO-a under CfC.
+
+**Change to the conditional rule.** FO-b was to run only if FO-a showed a gap. A null FO-a would then leave the inertia inside each step untested, which is the claim the series is after. FO-b now runs unconditionally, on both corpora, ahead of FO-OWT (author, 2026-10-19).
+
+**FO-b** (Cell 0 `FIRST_ORDER_OVERDAMPED = True`, `cfg.first_order_overdamped`, tag `fob`). The layer step is the gradient flow dh/dt = μ f(h) with mobility μ = dt / (2m): dt is the trained layer step (4), m the learned per-token mass, f = f_θ + f_φ the same conservative force. It keeps the BAOAB step's splitting and its one force evaluation:
+- **A, half step:** the retained low-rank modes relax exactly, z → z* + e^(−μκ dt/2)(z − z*) (`cfc_baoab.lowrank_overdamped_substep`); nothing else moves.
+- **B:** a gradient step μ dt · f = (dt²/2m) f on everything A does not integrate, at the half-step point. This is the step FO-a takes from rest in the soft directions.
+- **A, half step** again, from the moved point. No velocity exists: the step returns h_prev_out = h_new, there is no friction step, and γ is unused.
+
+Because m is learned, the model can still set its own step size. μ uses the trained `cfg.dt`, not the substep, so the per-layer flow (k substeps of dt/k) refines one fixed gradient flow. No parameters are added; off is bit-identical. Supported: the low-rank integrator (the SR2 base) at T = 0; PMX's exact wells are being added (below).
+
+**Verification** (`debug/verify_fob_switch.py`, output `debug/verify_fob_switch_output.txt`, on SR2's weights): 
+1. Off is bit-identical to HEAD in logits, loss and all 73 gradients.
+2. The mode relaxation is the exact gradient flow of the low-rank spring: against a fine RK4 solve in float64, relative error 1.2e-14 for stiffness 30, 2, 0.3, 1e-9, 0 and −0.7; the complement of span(U) does not move (6.7e-16).
+3. At real layer inputs, in float64, k substeps of dt/k converge to an RK4 solve of dh/dt = μ(f_θ + f_φ)(h) over dt: the error falls at every doubling of k from 8 to 128, and the observed order over the last doublings is 1.00 (layer 0) and 1.04 (layer 1), the same with V_φ's pair term zeroed. (A first pass rule, error at k = 128 at most 2% of the k = 1 error, was replaced by this asymptotic-order rule on 2026-10-19, after PMX's layer 1 converged at order 0.99 but missed it at 2.2%: the k = 1 error depends on a layer's stiffness. SR2 passes both.) The step hands on zero velocity (h_prev_out = h_new exactly). **The scheme is first order in the step**, as any explicit first-order step with one force evaluation is: the middle part is one gradient step, so a single FO-b step is gradient descent with exact relaxation of the stiff modes.
+4. On, it trains: finite loss and gradients, the same parameters receive a gradient as when off, the mass parameters among them (they set the mobility). On SR2's second-order weights FO-b reads 3.794 against 3.507 nats (×1.33 in perplexity on this batch), descriptive only.
+5. No parameters added (89 tensors, same keys and shapes).
+6. The mobility uses the trained step, fixed at construction, so Cell 6b-7 (which sets `cfg.dt` to each probe's step) refines or extends one gradient flow; a step is unchanged when `cfg.dt` is changed.
+
+**Arms.** Both start from the matching second-order Cell 0, plus `FIRST_ORDER_OVERDAMPED = True`, with the speed switches of the 2026-10-18 amendment (`VPHI_ANALYTIC_FORCE = True`, `LAYER_CHECKPOINT = False`) and seed 0.
+- **FO-b-TS:** SO-TS's Cell 0 (TinyStories, 16,250 steps). The settling check of 2026-10-04 applies; if it fails, the same 3,000-step extension at the floor as SO-TS and FO-TS.
+- **FO-b-OWT:** SR2's Cell 0 (OpenWebText, 32,500 steps, 532.5M tokens), against SR2's 58.32. **Budget decided 2026-10-19 (author):** 0.5B tokens, because the second-order arm already exists at that budget (SR2), so the comparison costs one run of about 10 h; a 2B pair (SR2-2B and FO-b-2B, about 80 h) is decided after this result and the Gate-1-against-training-step curve. Runs next after FO-TS and its extension, then FO-b-TS.
+
+**Decisions of 2026-10-19 (author), on the order of the FO arms.** FO-b removes strictly more than FO-a: FO-a drops the velocity between layers, FO-b drops that and the inertia inside each step. So FO-b runs first, and **FO-a becomes conditional on an FO-b gap**:
+- **FO-b null:** FO-a is almost certainly null as well and is skipped.
+- **FO-b gap:** FO-a locates it, between layers or inside the step.
+
+This applies to FO-OWT (conditional on FO-b-OWT) and to FO-PMX (conditional on FO-b-PMX). FO-TS, already training, completes. **FO-b-PMX** (OpenWebText, 32,500 steps, against PMX's 54.63) replaces FO-PMX as the exploratory twin, once FO-b supports PMX's exact wells; its predictions are registered with its verification, before the run. A TinyStories PMX pair (SO-PMX-TS and FO-b-PMX-TS, both new, about 14 h) is deferred: PMX's wells exist for memory across long contexts, which TinyStories' short stories exercise little.
+
+**Statistic.** Δᵇ_corpus = (settled PPL_FO-b − settled PPL_SO) / settled PPL_SO, beside Δ_corpus for FO-a.
+
+| id | prediction | called |
+| --- | --- | --- |
+| FB1 | TinyStories does not need second order at all: Δᵇ_TS within ±3% | 55% |
+| FB2 | OpenWebText does: Δᵇ_OWT ≥ +3% (FO-b-OWT at or above 60.07) | 60% |
+| FB3 | the inertia inside the step matters more than the velocity between layers: Δᵇ ≥ Δ_FO-a + 1 point, on at least one corpus | 50% |
+| FB4 | a trained gradient flow refines: Cell 6b-7 Gate 3 at N = 3 at most +10% on both corpora (SO-TS +23.6%, SR2 +50%) | 50% |
+
+**Readings, fixed now.**
+- **FB1 and FB2 both hit:** the corpus separates first from second order, and Stage 0's statistics are the candidates for why.
+- **FB1 misses (a TinyStories gap):** inertia matters even on TinyStories once the wells are stiff; the Gen 1 null was a property of its near-linear wells (ε = 0).
+- **FB2 misses:** first-order training suffices on OpenWebText at this budget and damping. FO-PMX (second order with wells) is then the remaining case where second order might earn its keep.
+- **FO-a and FO-b agree:** the inertia inside the step adds nothing beyond what the velocity between layers carries, so FO-a's result stands for second order as a whole.
+
+**Descriptive:** Cells 6b-7 (Gate 1 reads 0 by construction), 6b-13 (ω·Δt, against SO-TS and SR2), M1 and FLOW-R.
+
+**Scope:** constant γ = 0.1 in the second-order anchors, L = 2, d = 384, one seed, 266M (TinyStories) and 532.5M (OpenWebText) tokens.
+
+#### FO-b-PMX: the true first-order twin of PMX — **pre-registered 2026-10-19, before the run (author's decision)**
+
+**Why.** PMX leans on momentum more than any SR2-base arm (Gate 1 +91% at its best checkpoint; ×1.82 on a 2 × 256 batch under FO-a, against SR2's ×1.03). Its layer-1 step balances the velocity a token carries against the pull of the memory wells (§5.15). If second order earns its keep anywhere at this budget, it is there. FO-b-PMX replaces FO-PMX (FO-a) as the exploratory twin; FO-PMX runs only if this arm shows a gap.
+
+**The step.** PMX's second-order A substeps integrate, exactly and with damping, the frozen spring K = αI + U diag(κ) Uᵀ on all of ℝ^d: V_θ's retained low-rank modes together with the wells' quadratic at the step's start (an isotropic curvature α per token, and the top 16 wells' rank-one terms, of either sign). FO-b-PMX relaxes the same spring first order, x' = μ(f − K(x − h)), exactly (`cfc_baoab.lowrank_iso_overdamped_substep`): each direction moves by μt·φ(μkt) times its force component, φ(x) = (1 − e^(−x))/x, with stiffness k = κ + α in span(U) and α on the complement. A negative stiffness grows as e^(μ|k|t) over the step, as the second-order flow grows in an unstable direction. The kick subtracts the same quadratic force as PMX's does, so the step still integrates the whole force f = f_θ + f_φ + f_wells. Mobility, splitting and everything else are FO-b's (above).
+
+**Verification** (`debug/verify_fob_switch.py arm=pmx threads=1`, output `debug/verify_fob_switch_pmx_output.txt`): 
+1. Off is bit-identical to HEAD in logits, loss and all 77 gradients (single-threaded).
+2. The isotropic relaxation is the exact gradient flow of K = αI + U diag(κ) Uᵀ: against RK4 in float64, relative error 6.1e-15 for α = 0.5, −0.3, 0, 1e-9 and 2 with the mixed-sign κ of the SR2 check.
+3. The per-layer flow converges to RK4 of dh/dt = μ(f_θ + f_φ + f_wells)(h) at first order: observed order 1.00 (layer 0) and 0.99 (layer 1), the error halving at every doubling of k from 8 to 128, zero velocity handed on. The reference must hold the well occupations at the layer input: the per-layer flow freezes them where the force is first evaluated, the first substep's midpoint, which tends to the layer input as k grows. A first reference copied them from the k = 1 run and converged to a different flow (a 5% plateau); the second-order PMX step freezes them the same way.
+4. On, it trains: finite loss and gradients, the same parameters receive a gradient as when off, the mass among them. On PMX's second-order weights FO-b reads 4.861 against 3.450 nats (×4.1 in perplexity on this batch; SR2: ×1.33), descriptive only: PMX's trained weights lean on inertia far more than SR2's.
+5. No parameters added (93 tensors).
+6. A step is unchanged when `cfg.dt` is changed.
+
+**Arm.** PMX's Cell 0 (F3.1's settings plus `POISSON_MODES = 64`, `LOWRANK_DAMPED_FLOW = True`, `POISSON_WELLS_EXACT = True`) plus `FIRST_ORDER_OVERDAMPED = True`, `VPHI_ANALYTIC_FORCE = True`, `LAYER_CHECKPOINT = False`; tag `…pm64_pmx16_sr2_fob…`; 32,500 steps, seed 0, OpenWebText; about 14 h at about 1.5 s per step.
+
+| id | prediction | called |
+| --- | --- | --- |
+| FBX1 | second order earns its keep in the wells: Δᵇ_PMX ≥ +3% (FO-b-PMX at or above 56.27) | 60% |
+| FBX2 | it earns more there than without wells: Δᵇ_PMX exceeds Δᵇ_OWT (FO-b-OWT against SR2) by at least 2 points | 55% |
+| FBX3 | the wells still help when trained first order: FO-b-PMX settles below FO-b-OWT | 60% |
+| FBX4 | the first-order wells train stably: no watchdog trigger and no loss spike above 2× the running value | 70% |
+
+**Readings, fixed now.**
+- **FBX1 hits:** the memory wells need second-order dynamics at this budget; FO-PMX (FO-a) then runs to say whether the velocity between layers or the inertia inside the step carries it.
+- **FBX1 misses:** even the model that leans hardest on momentum is matched by a first-order model trained from scratch. PMX's Gate 1 then measures how PMX was trained, not what the task needs.
+- **FBX4 misses:** the unstable well directions, which the damped oscillator contains, grow unchecked without inertia; the arm is reported as a stability result, not scored for perplexity.
+
+**Descriptive:** Cells 6b-7 (Gate 1 reads 0), 6b-13 and 6b-15 (well depths and half-lives against PMX's, to see whether a first-order model builds shallower wells).
+
+**Scope:** constant γ = 0.1 in the anchor, L = 2, d = 384, 532.5M tokens, one seed.
 
 ### 5.14 DP series: what Doi–Peliti process do the trained registers implement? — **pre-registered 2026-10-05, before any measurement**
 
