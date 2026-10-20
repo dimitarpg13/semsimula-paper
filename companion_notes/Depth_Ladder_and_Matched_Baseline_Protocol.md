@@ -3690,7 +3690,7 @@ Output `L2_FO-TS_16250steps_output.txt`. SO-TS's Cell 0 plus `FIRST_ORDER_MEMORY
   - **Cell 6b-7 on the extended best checkpoint** (step 18,000; `Cell-6b-7_flow_or_maps_FO_19250steps_ext_output.txt`): Gate 0 PASS; Gate 1 0; Gate 2 at N = 3 +1.1% (SO-TS +25.5%), at N = 8 +77% (SO-TS +2,000%); Gate 3 at N = 3 +48% (0.391 nats; SO-TS +23.6%). Unchanged by the extension.
   - **M1, matched at the step-18,000 checkpoints** (`stage0_models.py FO-TS` and `SO-TS-ext`; outputs `results/stage0_models_FO-TS_output.txt`, `results/stage0_models_SO-TS-ext_output.txt`). At the output step (layer 1): ε median 4.52 (FO-TS) against 2.59 (SO-TS); step ‖Δh‖ 20.7 against 13.4; force change ‖Δf‖/‖f‖ 1.18 against 1.83; inertial share 0 (by construction) against 0.27. Layer 0: ε 1.75 against 1.28.
   - **The Stage-0 rule's prediction for FO-TS (a gap, called 50%): MISS.** FO-TS learns strongly anharmonic wells, more so than SO-TS, and matches it. Trained first-order, the model takes larger output steps across a more non-linear stretch of the potential and reaches the same perplexity: the wells adapt to the dynamics. **ε describes a trained model; it does not say whether the task needs second order.** The Stage-0 decision rule (ε ≥ 0.3 → a gap) is refuted on its first trained test.
-  - Pending, descriptive: FLOW-R on FO-TS (`refinement_flow_confirmation.py … fo-ts`; `split_stack` now applies FO-a's reset where each trained layer begins, checked against the model's own substep path).
+  - **FLOW-R on FO-TS** (`refinement_flow_confirmation.py … fo-ts seed=20261009`, extended best checkpoint, step 18,000; output in the run's `results/`). Checks all PASS: the standard refinement reproduces Cell 6b-7 (which resets at every step) and the per-layer flow reproduces the model's own `substeps_per_layer` path (which resets where each trained layer begins), both bit-identical; `split_stack` tells the two apart by its `freeze` flag. Kick share 0.67 and 0.85 (SO-TS 0.39 and 0.65). Per-layer flow penalties in nats at N = 3, 4, 6, 8, 12, 16: 0.447, 0.221, 0.254, 0.276, 0.289, 0.279; standard refinement at N = 8: 2.39. **The flow converges on the letter of the criterion** (|pen16 − pen12| = 0.010, |pen12 − pen8| = 0.012) **but to a limit 0.28 nats above the trained step**, against 0.097 for SO-TS and 0.104 for SR2. Reading: within a layer FO-a's flow is the same damped flow as SO-TS's, started from rest; the trained FO-a step is a far coarser sample of it than SO-TS's step is of its own flow. The convergent-and-close per-layer flow is a property of the second-order step on this base; FO-b's, which refines one gradient flow, is FB4's question.
 
 #### FO-PMX: the exploratory first-order twin on PMX — **pre-registered 2026-10-18, before the run; exploratory, outside the 2×2 (author's decision)**
 
@@ -3794,6 +3794,50 @@ This applies to FO-OWT (conditional on FO-b-OWT) and to FO-PMX (conditional on F
 **Descriptive:** Cells 6b-7 (Gate 1 reads 0), 6b-13 and 6b-15 (well depths and half-lives against PMX's, to see whether a first-order model builds shallower wells).
 
 **Scope:** constant γ = 0.1 in the anchor, L = 2, d = 384, 532.5M tokens, one seed.
+
+#### SR3-crit on SR2 and the learned γ(h) arm: the damping axis of the first-vs-second-order question — **pre-registered 2026-10-20, before the runs (author's decision)**
+
+**Why now.** FO-b-OWT leads SR2 at every evaluation so far (by 5.6% at step 4,000, 3.6% at 6,500). SR2 runs at γ = 0.1 with stiff modes at ω·Δt ≈ 6.6, a damping ratio ζ ≈ 0.03. The note `Future_of_Semantic_Simulation_When_Second_Order_Earns_Its_Keep.md` (§3) argues from the equations that the second-order layer's disadvantages, a rotation instead of a contraction and an oscillating learning signal for the stiffness, are properties of **light damping**, not of second order as such. So a first-order win over SR2 has two readings: first order is better, or the oscillation was the problem. Two arms separate them, and both are cheap. The queue of 2026-10-20 places them directly after FO-b-OWT.
+
+**Arm 1, SR3-crit on SR2** (Cell 0 `STIFF_MODE_DAMPING_RATIO = 1.0` on SR2's settings, tag `sr3`; 32,500 steps, OpenWebText, seed 0, the speed switches; about 10 h). Per-mode damping in the exact damped flow of the retained stiff modes, γᵢ = γ₀ + 2ζ·ωᵢ with ζ = 1 and ωᵢ² = κᵢ/m, the book's mode-resolved friction (§7a) and the damping note's §11.2 form; the complement keeps γ₀ = 0.1 in the O-step; no new parameters; no gradient through γ. Under critical damping a stiff mode responds from rest as (1 + ωt)e^(−ωt): monotone, a contraction, with a one-signed sensitivity to the stiffness. SR3-crit is therefore "FO-b within the layer, plus the velocity between layers". **Switch verified 2026-10-20** (`debug/verify_sr3_switch.py threads=1`, output `debug/verify_sr3_switch_output.txt`, on SR2's weights): off is bit-identical to HEAD in logits, loss and all 73 gradients; at γ = 2ω the exact flow reproduces the closed-form critically damped response (1 + ωt)e^(−ωt) to 1e-16 and a fine RK4 solve to 7e-15, for ω from 3 down to 1e-6; on, the retained modes are unchanged and the step differs on span(U) (the complement differs only through the kick, re-evaluated at the new midpoint); it trains with finite gradients on the same 73 parameters; no parameters added. Descriptive: SR2's trained weights lose ×1.57 under critical damping on a 2 × 256 batch (under FO-b, ×1.33): the weights were shaped for the oscillation they were trained with, which says nothing about a model trained critically damped.
+
+| id | prediction | called |
+| --- | --- | --- |
+| SC1 | SR3-crit settles within 2% of FO-b-OWT: the FO-b gain is the damping regime | 65% |
+| SC2 | SR3-crit beats FO-b-OWT by 3% or more: the velocity between layers carries something on OpenWebText at L = 2 (then FO-OWT, the FO-a arm, runs to confirm) | 15% |
+| SC3 | SR3-crit beats SR2 (58.32) by 3% or more | 70% |
+| SC4 | Gate 1 of SR3-crit is at most SR2's +3.9% | 60% |
+| SC5 | its per-layer flow converges (FLOW-R's criterion) to a limit within 0.15 nats of the trained step | 60% |
+
+**Arm 2, the learned γ(h) on the conservative core** (Cell 0 `LEARNED_DAMPING_RATIO = True` on SR2's settings, tag `gzh`; 32,500 steps, OpenWebText, seed 0, the speed switches; about 10 h). **Design, fixed and verified 2026-10-20:** a two-layer head of width 64 on the layer input, ζ(h) = softplus(head(h)) per token and layer (4 tensors, 24,769 parameters), its last layer zero and its bias softplus⁻¹(1) so that ζ = 1 exactly at initialisation; applied as γᵢ(h) = γ₀ + 2ζ(h)ωᵢ to the retained stiff modes inside the exact damped flow, the complement keeping γ₀; gradient through ζ; the head in its own clip group `damping_head` at 0.3; the per-layer median, p10, p90 and fraction above 1 of ζ logged every 50 steps and in every eval record (`zeta_stats`). Verification (`debug/verify_gzh_switch.py threads=1`, output `debug/verify_gzh_switch_output.txt`): off bit-identical to HEAD; on at initialisation bit-identical to SR3-crit in logits, loss and all 73 shared gradients; the head's last weight and bias receive finite, non-zero gradients; the head's four tensors are the only addition; `zeta_stats` read [1, 1, 1, 0] per layer at initialisation and follow a shift of the bias. A per-token, per-layer damping γ(h) = γ₀ + 2ζ(h)·ωᵢ applied to the stiff modes, with ζ(h) produced by a small head on the layer input and **initialised at ζ = 1**, free to move toward the underdamped or the overdamped end; gradient through γ, with the per-group gradient norms logged (damping note §9.5). The critical initialisation is a consequence of the equations: at light damping the output's sensitivity to γ, about −(T/2)e^(−γT/2)cos(ωT)(z₀ − z*), depends on the mode's phase, so an arm initialised at γ = 0.1 may never find the overdamped end by gradient descent and would look as if it had chosen inertia.
+
+**The primary measurement is the trained distribution of ζ(h)**, not the perplexity: the fraction of tokens in the overdamped regime (ζ above 1) per layer, and its dependence on token frequency and position in the sequence.
+
+| id | prediction | called |
+| --- | --- | --- |
+| GH1 | the distribution goes to the overdamped end: median ζ above 1 at every layer | 60% |
+| GH2 | it does so regardless of the local anharmonic fraction ε (M1): the correlation between ζ(h) and ε is below 0.2 in magnitude. This **replaces** the registered γ(h)-link prediction of 2026-10-03 ("γ higher where ε is low"), which rested on the Stage-0 rule that FO-TS refuted | 55% |
+| GH3 | perplexity within 2% of SR3-crit | 70% |
+| GH4 | a second arm on a Fock or well base (queue item 5) shows a bimodal ζ(h), with inertia kept at the layer and tokens where the register path or the wells act | 50% |
+
+**Amendment, 2026-10-20, after FO-b-OWT's result and before either run (author's decision; the calls above stay on record).** FO-b-OWT fell behind SR2 at step 11,000 and stood +5.1% behind at step 30,000 (a settled value near +4 to +5% is projected; FB2 heading for a hit). SC1 and GH1 assumed FO-b would match SR2, so they are superseded by the following, called now:
+
+| id | prediction | called |
+| --- | --- | --- |
+| SC1′ | SR3-crit settles at or below SR2's 58.32 (within +1%): inertia is what pays, the damping level costs little | 50% |
+| SC2′ | SR3-crit beats SR2 by 2% or more: inertia pays, and SR2's light damping was costing perplexity | 25% |
+| SC3′ | SR3-crit settles 3% or more behind SR2, toward FO-b: the oscillation of the stiff modes does useful work | 25% |
+| GH1′ | the learned ζ(h) on the conservative core does **not** go to the overdamped end everywhere: median ζ at most 1 in at least one layer | 65% |
+| GH5 | ζ(h) differs between the layers by at least 0.3 in median (inertia kept in one layer, removed in the other) | 45% |
+
+SC4, SC5, GH2–GH4 stand as written. With FO-b behind, the γ(h) arm's question changes from "does the model go overdamped" to "where does it keep inertia": by layer, by token frequency and by position.
+
+**Readings, fixed now.**
+- **SC1 and GH1 both hit:** the conservative core is overdamped by its own choice, and the second-order theory's role is as the general case whose overdamped limit the trained models occupy.
+- **SC2 hits:** inertia between layers earns its keep on OpenWebText; the FO-a arm locates it, and the book's two-regime reading (§6 of the note) applies to the conservative core too.
+- **GH1 misses with SC1 hit:** the model keeps inertia it does not need; the head's optimisation, not the task, decides ζ, and the arm is reported as a design result.
+
+**Scope:** as the series: 0.5B tokens, L = 2, d = 384, one seed, OpenWebText.
 
 ### 5.14 DP series: what Doi–Peliti process do the trained registers implement? — **pre-registered 2026-10-05, before any measurement**
 

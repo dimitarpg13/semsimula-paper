@@ -272,6 +272,28 @@ class MultiXiPARFConfig(SparsePARFConfig):
     # 'baoab_cfc_lowrank' on every layer, with or without PMX's exact wells, T = 0.
     # False = off (bit-identical).
     first_order_overdamped: bool = False
+    # SR3-crit (Depth_Ladder_and_Matched_Baseline_Protocol.md SS5.13, 2026-10-20;
+    # Position_Dependent_Damping_and_Reinforcement_Field.md SS11.2): per-mode
+    # damping of the retained stiff modes inside SR2's exact damped flow,
+    # gamma_i = gamma_0 + 2 zeta omega_i with omega_i^2 = kappa_i / m (the book's
+    # mode-resolved friction, SS7a), zeta this value; the complement keeps
+    # gamma_0 in the O-step. No parameters, no gradient through gamma (kappa_i
+    # is detached by the eigensolve; m is detached here). None = off
+    # (bit-identical SR2). Needs lowrank_damped_flow without PMX.
+    stiff_mode_damping_ratio: float | None = None
+    # Learned gamma(h) (protocol SS5.13, 2026-10-20, queue item 2): the damping
+    # ratio of the stiff modes produced per token and layer by a small head on
+    # the layer input, zeta(h) = softplus(head(h)), applied as
+    # gamma_i(h) = gamma_0 + 2 zeta(h) omega_i inside SR2's exact damped flow
+    # (the complement keeps gamma_0). Initialised so that zeta = 1 exactly
+    # (critical damping: the head's last layer is zero, its bias softplus^-1(1)),
+    # for the reason in the protocol: at light damping the output's sensitivity
+    # to gamma depends on the mode's phase. Gradient flows through zeta; the
+    # head's parameters form the clip group 'damping_head'. The trained
+    # distribution of zeta(h) is the arm's primary measurement (zeta_stats).
+    # Overrides stiff_mode_damping_ratio when both are set. False = off.
+    learned_damping_ratio: bool = False
+    damping_head_hidden: int = 64
     poisson_halflife_min: float = 4.0     # tokens; per-mode half-lives are
     poisson_halflife_max: float = 128.0   # log-spaced over this range
     # PM1-cap (protocol SS5.15, 2026-10-08): bound every well depth smoothly,
@@ -577,6 +599,18 @@ class MultiXiPARFLM(SparsePARFLM):
         # getattr, not cfg.pair_potential: a checkpoint or notebook built
         # against an older config still loads and still takes the sparse
         # path, which is the whole point of the default.
+        # ── Learned damping ratio zeta(h) of the stiff modes (2026-10-20) ──
+        self.damping_head = None
+        if getattr(cfg, "learned_damping_ratio", False):
+            _hd = int(getattr(cfg, "damping_head_hidden", 64))
+            self.damping_head = nn.Sequential(
+                nn.Linear(cfg.d, _hd), nn.GELU(), nn.Linear(_hd, 1))
+            nn.init.zeros_(self.damping_head[2].weight)
+            nn.init.constant_(self.damping_head[2].bias, math.log(math.e - 1.0))   # softplus^-1(1)
+            # per layer: median, p10, p90 of zeta and the fraction above 1, from the
+            # last training forward (not the checkpoint recompute)
+            self.register_buffer("zeta_stats", torch.zeros(cfg.L, 4), persistent=False)
+
         # ── Optional relaxed force law ──
         self.relax_field = None
         self.relax_lambda = None
@@ -868,6 +902,12 @@ class MultiXiPARFLM(SparsePARFLM):
 
     # ------------------------------------------------------------------
     @torch.no_grad()
+    def zeta_stats_values(self):
+        """Learned gamma(h): per layer [median, p10, p90, fraction above 1] of zeta from the last training forward."""
+        if getattr(self, "damping_head", None) is None:
+            return []
+        return [[round(float(v), 4) for v in row] for row in self.zeta_stats]
+
     def relax_share_values(self) -> List[float]:
         """Per-layer ||added force|| / ||conservative force||, or [].
 
@@ -1482,6 +1522,10 @@ class MultiXiPARFLM(SparsePARFLM):
             h_in = h_in.requires_grad_(True)
 
         v = decode_velocity(h_in, h_prev, dt)
+        if getattr(cfg, "stiff_mode_damping_ratio", None) is not None or getattr(self, "damping_head", None) is not None:
+            if not (use_lowrank and getattr(cfg, "lowrank_damped_flow", False)) or getattr(cfg, "poisson_wells_exact", False):
+                raise NotImplementedError("stiff_mode_damping_ratio (SR3-crit) needs lowrank_damped_flow "
+                                          "(SR2) on every layer, without PMX")
         if getattr(cfg, "first_order_overdamped", False):
             if not use_lowrank:
                 raise NotImplementedError("first_order_overdamped (FO-b) supports integrator="
@@ -1598,8 +1642,25 @@ class MultiXiPARFLM(SparsePARFLM):
                     m_b, gamma, half, pm_nterms,
                 )
             elif getattr(cfg, "lowrank_damped_flow", False):
+                # SR3-crit: per-mode damping on span(U); None leaves the scalar gamma
+                _zeta = getattr(cfg, "stiff_mode_damping_ratio", None)
+                gamma_U = gamma
+                if getattr(self, "damping_head", None) is not None:
+                    # learned zeta(h) per token, (B, T, 1), from the layer input
+                    _zeta = F.softplus(self.damping_head(h_in).float())
+                    if self.training and getattr(self, "_in_stack_forward", True):
+                        with torch.no_grad():
+                            _z = _zeta.detach().flatten()
+                            self.zeta_stats[layer_idx] = torch.stack([
+                                _z.median(), torch.quantile(_z, 0.10), torch.quantile(_z, 0.90),
+                                (_z > 1.0).float().mean()]).to(self.zeta_stats.dtype)
+                if _zeta is not None:
+                    _mb = m_b.detach() if torch.is_tensor(m_b) else m_b
+                    _zeta_t = _zeta if torch.is_tensor(_zeta) else float(_zeta)
+                    gamma_U = gamma + 2.0 * _zeta_t * torch.sqrt(
+                        torch.clamp(lr_kappa / _mb, min=0.0))
                 h_mid, v_mid = lowrank_damped_substep(
-                    h_in, v, lr_U, lr_kappa, f_L, m_b, gamma, half,
+                    h_in, v, lr_U, lr_kappa, f_L, m_b, gamma_U, half,
                 )
             else:
                 h_mid, v_mid = lowrank_cfc_substep(
@@ -1678,7 +1739,7 @@ class MultiXiPARFLM(SparsePARFLM):
                 )
             elif getattr(cfg, "lowrank_damped_flow", False):
                 h_new, v_new = lowrank_damped_substep(
-                    h_mid, v_mid, lr_U, lr_kappa, f_L, m_b, gamma, half,
+                    h_mid, v_mid, lr_U, lr_kappa, f_L, m_b, gamma_U, half,
                 )
             else:
                 h_new, v_new = lowrank_cfc_substep(

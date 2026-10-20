@@ -676,7 +676,27 @@ adds a point to a curve.
 6. CG8 on the baselines, once 6b-14 exists.
 7. The overlap diagnostics D1, D2 and E4 (low priority).
 
-**GPU queue (updated 2026-10-18, agreed with the author; supersedes the 2026-10-06 queue below). One A100, serial:**
+**GPU queue (updated 2026-10-20, agreed with the author; supersedes the 2026-10-18 queue, kept below it for the record). One A100, serial. Ordered by what each run decides per GPU hour; the position-dependent damping arms move up to directly after FO-b-OWT because they decide how its result is read:**
+
+| # | run | cost | what it decides | condition |
+| --- | --- | ---: | --- | --- |
+| 0 | **FO-b-OWT** (running since 2026-10-19) | 10 h | the conservative core on OpenWebText (protocol §5.13, FB1–FB4) | — |
+| 1 | **SR3-crit on SR2**: per-mode critical damping of the stiff modes, γᵢ = γ₀ + 2ωᵢ, OpenWebText, 32,500 steps | 10 h | whether FO-b's gain is the damping regime or first order itself; the fair second-order baseline | — |
+| 2 | **learned γ(h), conservative core**, initialised at critical damping | 10 h | the per-token regime readout: does the model itself go overdamped everywhere? | — |
+| 3 | **FO-b-PMX** | 14 h | the wells' capture mechanism (FBX1, the highest call for a second-order gap) | — |
+| 4 | **FO-b-G3′** | 14 h | the register path: "architecture overdamped" against "framework overdamped" | FO-b verified with the reverse channel first |
+| 5 | **learned γ(h), Fock or well base** | 14 h | where inertia is kept, token by token, on whichever of 3–4 showed a gap (G3′ if neither) | — |
+| 6 | **FO-b-TS** (16,250 steps) | 5 h | completes the TinyStories half with true first order (FB1, FB4) | — |
+| 7 | **FO-b-XRB-F** | 10 h | the velocity-for-register-read account | — |
+| 8 | **SR2 rerun, seed 1**, with the speed switches | 10 h | the seed spread, the yardstick for any small gap | only if a gap in 0–4 is under 3% |
+| 9 | **SO/FO-b on a code corpus** (16,250 steps each) | 10 h | the third corpus | needs a `CORPUS = 'code'` branch |
+| 10 | **a deeper pair, L = 4** (SO and FO-b) | ~35 h | memory across several boundaries | — |
+| 11 | **FO-a arms** (FO-OWT, FO-PMX) | 10–14 h each | locating a gap: between layers or inside the step | only where FO-b showed a gap |
+| 12 | **the 2B pair** (SR2-2B, FO-b-2B) | 80 h | the budget | decided after 0–10 |
+
+Dropped: **SR3-on-PMX** (25 h): a learned γ(h) initialised at critical damping starts as SR3-crit and can stay there if that is best, so item 5 contains it and reports more. Deferred, unscheduled: the seed pair G3′-s1 and G2-s1 (item 8 serves the yardstick role first), SR3-L4, the TinyStories PMX pair. Code to write on CPU while 0 and 3 train: per-mode critical damping in the exact damped flow (item 1) and the learned-γ(h) head with critical initialisation (items 2 and 5), each with the bit-identity check when off. Pre-registrations for items 1 and 2: protocol §5.13 (2026-10-20).
+
+**GPU queue of 2026-10-18 (superseded; kept for the record):**
 1. ~~**W2**~~ *done 2026-10-18: settled 48.37 (−0.9% against W1), all five calls hit; the decay-gain gap is architectural (0.338 against 0.18–0.22 at the same schedule). Rule: within ±2%, so the 2B GPT-2 runs at 1.2e-3 (protocol §5.17).* The matched GPT-2 at the ladder's peak 1.2e-3 (protocol §5.17, pre-registered 2026-10-18; about 2.5 h). GPT-2 notebook: `LR_SCHEDULE = 'wsd'`, `LR = 1.2e-3`; Cell 0 must print `VARIANT_TAG = '_wsd_lr0p0012'`. Its decision rule sets the peak for item 2.
 2. ~~**The matched GPT-2 at 2B tokens**~~ *done 2026-10-18: settled 42.69 (−11.7% against W2), 3 of 4 calls hit; decay gain 0.371 (protocol §5.17, G2B).* (130,000 steps, 2.13B tokens, about 10 h): the reference for every 2B comparison, run early (author, 2026-10-18). Peak **1.2e-3** (W2's rule; settings: W2's Cell 0 plus `TOTAL_STEPS = 130_000`, tag `_wsd_lr0p0012_st130000`); registered 2026-10-18 (protocol §5.17, G2B). Resume fixed and tested first (rolling latest checkpoint with the sampler state). The notebook's tag now carries the run length (`_st130000`; existing tags unchanged, checked). The prepared pool is 2.0B tokens, so the run sees about 1.07 epochs: disclose it, or enlarge the pool first.
 3. **SO-TS, then FO-TS** (FO 2×2, protocol §5.13; about 5 h each with the speed switches), back to back so the settling check can extend both equally. Ladder Cell 0: SR2's settings plus `CORPUS = 'tinystories'`, `LADDER_STEPS = 16_250`, `VPHI_ANALYTIC_FORCE = True`, `LAYER_CHECKPOINT = False` (amendment of 2026-10-18), and `FIRST_ORDER_MEMORYLESS = True` for FO-TS. The first builds the shared TinyStories cache.
@@ -692,6 +712,12 @@ adds a point to a curve.
 8. Then the 2B-token runs of the models items 3–7 select.
 
 **SR2's card, as soon as the TinyStories half of the FO 2×2 is scored (author, 2026-10-19):** add the per-layer flow on TinyStories: SO-TS (SR2 trained on TinyStories) converges to the same limit as SR2 on OpenWebText, a gap of 0.097 nats against 0.104 on FLOW-R's batches (protocol §5.13, SO-TS block), so the convergent per-layer flow is a property of SR2's exact damped flow, not of the corpus. The full write-up (book's refinement section, the FO collection's cards) waits for the whole FO series.
+
+**Candidates for the scope of the first-vs-second-order claim (author, 2026-10-20; not scheduled, ordered once FO-b-OWT and FO-b-PMX are scored).** The series so far tests the conservative-only architecture (SR2 base) on two English prose corpora at L = 2, where exactly one layer boundary can carry velocity. Any "overdamped regime" claim is scoped to that until these run:
+- **FO-b-G3′** (about 14 h): the best model, with the reverse channel on; G3′'s Cell 0 plus `FIRST_ORDER_OVERDAMPED = True` and the speed switches. FO-b is verified only without the reverse channel (SR2, PMX); verify with it first (`debug/verify_fob_switch.py arm=g3p`, to be added).
+- **FO-b-XRB-F** (about 10 h): the arm that leans on velocity most (Gate 1 +113%), exchange field on and register read off. Tests the account that the velocity carries forward what the register read otherwise supplies. Supersedes the FO-a candidate below.
+- **A code-corpus pair, SO-CODE and FO-b-CODE** (about 5 h each at 16,250 steps, the TinyStories protocol): the third corpus, and the top of the corpus-statistics note's predicted ordering (Markov < TinyStories < OpenWebText < code). Needs a `CORPUS = 'code'` branch in Cell 3 (a GPT-2-tokenised code corpus, e.g. a Stack subset) and its own logfreq table; pre-register before the run.
+- Depth and budget stay open: L = 4 or 8 (more boundaries) and 2B tokens (item 3c's decision).
 
 **Conditional candidate, FO-XRB-F (2026-10-19, not scheduled):** XRB-F leans on velocity more than any arm except PM1 (Gate 1 +113% against SR2's +3.9% and PMX's +91%). If FO-PMX shows a real gap (FX1 hits), train XRB-F first-order, to ask whether the velocity stands in for the missing register read. Decide after FO-PMX is scored.
 

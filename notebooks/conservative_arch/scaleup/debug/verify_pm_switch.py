@@ -79,7 +79,7 @@ def build(folder, repl):
     r = model.load_state_dict(ck['model_state_dict'], strict=False)
     assert not r.unexpected_keys, r.unexpected_keys
     for k in r.missing_keys:      # new parameters: deterministic fill so HEAD and working copy agree
-        assert k in ('relax_field.logit_scale',) or k.startswith('pm_'), k
+        assert k in ('relax_field.logit_scale',) or k.startswith(('pm_', 'damping_head.')), k   # damping_head: the learned gamma(h) head (2026-10-20)
     # Fill the exchange field's per-head temperature ONLY when the checkpoint lacks it (an arm
     # trained before the parameter existed). Until 2026-10-16 this fill ran unconditionally and
     # overwrote G3''s trained temperatures with their initial value 1/0.07 on every local load.
