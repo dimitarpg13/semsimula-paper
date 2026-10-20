@@ -20,11 +20,12 @@ M2  inertial share of each layer step,
     re-running the stack with the incoming velocity reset at that layer only.
 
 Usage: python3 stage0_models.py OUT_DIR [MODEL ...]
-  MODEL from TS-SO TS-FO OWT-F31 OWT-L4 SO-TS (default: the first four, as scored on 2026-10-04).
+  MODEL from TS-SO TS-FO OWT-F31 OWT-L4 SO-TS SO-TS-ext FO-TS (default: the first four, as scored on 2026-10-04).
   SO-TS (added 2026-10-19, Stage 1): TinyStories trained in the CfC architecture on SR2's settings,
   the reading pre-registered with the Stage-0 decision. Built through the ladder notebook with
   CORPUS = 'tinystories', on its own validation tokens and its own frequency table; output
-  stage0_models_SO-TS_output.txt and .json.
+  stage0_models_SO-TS_output.txt and .json. FO-TS (2026-10-19): the same with FO-a
+  (FIRST_ORDER_MEMORYLESS = True); output stage0_models_FO-TS_output.txt and .json.
 """
 import contextlib, io, json, math, sys
 from pathlib import Path
@@ -137,6 +138,8 @@ def build_cfc_ts(folder, extra, ckpt_name=None, return_g=False):
     os.chdir(REPO / 'notebooks/conservative_arch/scaleup')
     run = DL / folder
     _vc = [run / 'data/tinystories_val_2M.npy', DL / 'semsimula_tinystories_gpt2/data/tinystories_val_2M.npy']
+    # every TinyStories run reads the one shared Drive cache, so another run's downloaded copy is the same file
+    _vc += sorted(DL.glob('semsimula_fock_cfc_baoab_ts_*/data/tinystories_val_2M.npy'))
     val = np.load(next(v for v in _vc if v.exists()))     # the run's own validation tokens (Drive: semsimula_tinystories_gpt2/data)
     g = {'__name__': '__main__'}
     c0 = G.cells['Cell 0:']
@@ -243,9 +246,13 @@ if __name__ == '__main__':
         ('OWT-F31', lambda: build_owt('semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn', False, 2)),
         ('OWT-L4', lambda: build_owt('semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_vplive_xilive_L4probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt2_lr0p0012_noattn', True, 4)),
         ('SO-TS', lambda: build_cfc_ts(_TS.format(fo=''), ())),
+        # SO-TS on its extended best checkpoint (step 18,000), matched to FO-TS's (2026-10-19)
+        ('SO-TS-ext', lambda: build_cfc_ts(_TS.format(fo=''), (), ckpt_name='fock_cfc_ts_' + _TS.format(fo='')[len('semsimula_fock_cfc_baoab_ts_'):] + '_ext19250_best.pt')),
+        ('FO-TS', lambda: build_cfc_ts(_TS.format(fo='_fo'),
+                                       (("FIRST_ORDER_MEMORYLESS = False", "FIRST_ORDER_MEMORYLESS = True"),))),
     ]
     SELECT = sys.argv[2:]
-    specs = [sp for sp in specs if (sp[0] in SELECT if SELECT else sp[0] != 'SO-TS')]
+    specs = [sp for sp in specs if (sp[0] in SELECT if SELECT else sp[0] not in ('SO-TS', 'SO-TS-ext', 'FO-TS'))]
     _lines = []
     _print = print
     def print(*a, **k):                                # also keep the printed report for an output file

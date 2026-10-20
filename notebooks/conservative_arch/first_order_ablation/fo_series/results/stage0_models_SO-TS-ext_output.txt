@@ -1,0 +1,10 @@
+FO Stage 0, model side (protocol SS5.13): each model on its own corpus, eval, 2 x 512 tokens
+
+== SO-TS-ext: d=384 L=2 dt=4 integrator=baoab_cfc_lowrank  val PPL here 4.46 (6 x 2 x 512), checkpoint 5.13
+   M1 anharmonic fraction eps (median / p10 / p90), force change ||df||/||f||, step ||dh||:
+     layer 0: eps 1.281 / 0.900 / 2.495   ||df||/||f|| 1.759   ||dh|| 18.683
+     layer 1: eps 2.585 / 1.444 / 5.996   ||df||/||f|| 1.826   ||dh|| 13.421
+     pooled: eps median 1.806, p90 4.744
+   M2 inertial share (median / p10 / p90):
+     layer 1: 0.267 / 0.196 / 0.378
+

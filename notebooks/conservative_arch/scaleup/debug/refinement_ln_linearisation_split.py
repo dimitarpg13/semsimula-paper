@@ -118,6 +118,8 @@ def split_stack(model, N, dt, policy_index, ln_once, freeze, xi_freeze=False, ph
             st['inloop'] = True
             if pmq_freeze and st['start']:
                 model._flow_ctx = {}
+            if st['start'] and getattr(model.cfg, 'first_order_memoryless', False):
+                h_prev = h        # FO-a (2026-10-19): v <- 0 where each trained layer begins, as _stack_forward
             h, h_prev, r, sal = model._fock_layer_step(h, h_prev, r, sal, m_b, gamma, dt, layer_idx=li)
             st['inloop'] = False
         st['proj'] = True

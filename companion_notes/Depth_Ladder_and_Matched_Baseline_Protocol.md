@@ -3672,6 +3672,26 @@ Output `L2_FO-TS_16250steps_output.txt`. SO-TS's Cell 0 plus `FIRST_ORDER_MEMORY
   - **Without the velocity between layers the stack is robust to extra layers** (Gate 2): from rest, each extra step is close to one more gradient step toward the wells' minimum, which is stable; the carried velocity is what makes extra second-order steps overshoot.
   - **FO-a's Gate 3 does not test refinement.** A step from rest moves a token by about (dt²/2m) f, so N steps of T/N move it by about T²/(2mN): the distance covered shrinks with N, and FO-a is not a discretisation of any one flow as the step changes. FO-b ties its mobility to the trained step, so N steps of T/N cover one flow; this is the reason behind FB4.
 
+- **FO-TS extended and re-checked, 2026-10-19: SETTLED. Δ_TS scored.** Output `L2_FO-TS_19250steps_ext_output.txt`. Resumed from the step-15,000 checkpoint, followed the original decay (1.81e-4 at step 15,050) and held the floor to 19,250, as SO-TS's extension did; no watchdog trigger; SCAF CLEAN at 19,250 (leak tax −2.4e-4 nats). Best 5.10 at step 18,000.
+
+  | step | SO-TS (ext.) | FO-TS (ext.) | FO − SO (nats) |
+  | ---: | ---: | ---: | ---: |
+  | 16,000 | 5.25 | 5.22 | −0.0065 |
+  | 17,000 | 5.21 | 5.18 | −0.0054 |
+  | 18,000 | 5.13 | 5.10 | −0.0055 |
+  | 18,500 | 5.16 | 5.13 | −0.0066 |
+  | 19,000 | 5.19 | 5.17 | −0.0052 |
+  | **settled** (18,000–19,000) | **5.16** | **5.13** | |
+
+  - **Settling re-check, steps 16,000–19,000 (seven evals):** FO-TS's fitted change −0.008 nats against a residual standard deviation of 0.013 (SO-TS: −0.008 against 0.012). Both settled.
+  - **Δ_TS = (5.13 − 5.16) / 5.16 = −0.6%. Prediction "Δ_TS within ±3%" (called 55%): HIT.** The Fock-G1 null reproduces under CfC, live gradients, d = 384 and L = 2: on TinyStories, SR2 trained without the velocity between layers matches SR2 trained with it.
+  - The paired difference over the extension is −0.0056 nats with a standard deviation of only 0.0007 across seven evals: a small, steady advantage for FO-TS within this pair (same data order, same evaluation batches), far inside the unmeasured seed spread. Not read as a gain.
+  - **Gate 1 beside it** (the amendment of 2026-10-11): SO-TS's own velocity reset costs +2.0% at its extended best checkpoint; trained first-order, the model loses nothing.
+  - **Cell 6b-7 on the extended best checkpoint** (step 18,000; `Cell-6b-7_flow_or_maps_FO_19250steps_ext_output.txt`): Gate 0 PASS; Gate 1 0; Gate 2 at N = 3 +1.1% (SO-TS +25.5%), at N = 8 +77% (SO-TS +2,000%); Gate 3 at N = 3 +48% (0.391 nats; SO-TS +23.6%). Unchanged by the extension.
+  - **M1, matched at the step-18,000 checkpoints** (`stage0_models.py FO-TS` and `SO-TS-ext`; outputs `results/stage0_models_FO-TS_output.txt`, `results/stage0_models_SO-TS-ext_output.txt`). At the output step (layer 1): ε median 4.52 (FO-TS) against 2.59 (SO-TS); step ‖Δh‖ 20.7 against 13.4; force change ‖Δf‖/‖f‖ 1.18 against 1.83; inertial share 0 (by construction) against 0.27. Layer 0: ε 1.75 against 1.28.
+  - **The Stage-0 rule's prediction for FO-TS (a gap, called 50%): MISS.** FO-TS learns strongly anharmonic wells, more so than SO-TS, and matches it. Trained first-order, the model takes larger output steps across a more non-linear stretch of the potential and reaches the same perplexity: the wells adapt to the dynamics. **ε describes a trained model; it does not say whether the task needs second order.** The Stage-0 decision rule (ε ≥ 0.3 → a gap) is refuted on its first trained test.
+  - Pending, descriptive: FLOW-R on FO-TS (`refinement_flow_confirmation.py … fo-ts`; `split_stack` now applies FO-a's reset where each trained layer begins, checked against the model's own substep path).
+
 #### FO-PMX: the exploratory first-order twin on PMX — **pre-registered 2026-10-18, before the run; exploratory, outside the 2×2 (author's decision)**
 
 **Why.** The 2×2's anchor, SR2, leans little on momentum: resetting the velocity at inference costs it +3.9% (Gate 1). PMX leans on it far more: +91% at its best checkpoint, +30,600% at the step-8,000 probe. In PMX the layer-1 step balances the velocity a token carries in against the pull of the memory wells (§5.15). If second-order dynamics earns its keep anywhere at this budget, it is there. The FO 2×2 cannot see this, because none of its arms has wells. FO-PMX asks whether PMX trained first-order matches PMX.

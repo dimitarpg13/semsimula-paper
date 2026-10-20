@@ -19,10 +19,13 @@ Checks first, all exact: switches off = 6b-7's _fom_stack; per-layer flow at
 N = 2 = trained; one fresh xi / quadratic (/ phi) per trained layer at N = 8;
 the replay with the normal clamp reproduces the captured output.
 
-Usage: python3 refinement_flow_confirmation.py OUT_DIR FOLDER {f31|sr2|pm1|pmx|sr2-ts} [seed=<int>] [ckpt=<file>]
+Usage: python3 refinement_flow_confirmation.py OUT_DIR FOLDER {f31|sr2|pm1|pmx|sr2-ts|fo-ts} [seed=<int>] [ckpt=<file>]
   sr2-ts (2026-10-19): SR2's architecture trained on TinyStories (the FO series' SO-TS), built
   through the current notebook with CORPUS = 'tinystories' and the run's own validation tokens
   and frequency table (first_order_ablation/fo_series/stage0_models.build_cfc_ts).
+  fo-ts (2026-10-19): the same with FO-a (FIRST_ORDER_MEMORYLESS = True), the FO series' FO-TS. The
+  velocity is reset where each trained layer begins and carried between the substeps inside it, as
+  the model's own substeps_per_layer path does; checked against that path.
   ckpt=<file>: a checkpoint file in FOLDER/checkpoints other than <prefix>_best.pt.
   pmx (CX3, 2026-10-11): SR2 + 64 Poisson modes with the wells integrated
   exactly; the per-layer flow also freezes the wells' quadratic and its
@@ -46,7 +49,7 @@ if __name__ == '__main__':
     SEED = next((int(a[5:]) for a in sys.argv[4:] if a.startswith('seed=')), None)
     CHECKS_ONLY = 'checks' in sys.argv[4:]
     CKPT = next((a[5:] for a in sys.argv[4:] if a.startswith('ckpt=')), None)
-    assert KIND in ('f31', 'sr2', 'pm1', 'pmx', 'sr2-ts'), KIND
+    assert KIND in ('f31', 'sr2', 'pm1', 'pmx', 'sr2-ts', 'fo-ts'), KIND
     sys.argv = [sys.argv[0], str(OUT / 'harness')]
     sys.path.insert(0, str(Path(__file__).parent))
     import verify_pm_switch as P
@@ -58,7 +61,7 @@ if __name__ == '__main__':
         repl = repl + P.PM_ON
     if KIND == 'pmx':
         repl = repl + (("POISSON_WELLS_EXACT  = False", "POISSON_WELLS_EXACT  = True"),)
-    if KIND == 'sr2-ts':
+    if KIND in ('sr2-ts', 'fo-ts'):
         sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'first_order_ablation/fo_series'))
         import importlib.util
         _sp = importlib.util.spec_from_file_location(
@@ -66,7 +69,9 @@ if __name__ == '__main__':
         _s0 = importlib.util.module_from_spec(_sp)
         _argv = list(sys.argv); sys.argv = [sys.argv[0], str(OUT / 'ts_scratch')]
         _sp.loader.exec_module(_s0); sys.argv = _argv
-        model, g, _sd = _s0.build_cfc_ts(FOLDER, (), ckpt_name=CKPT, return_g=True)
+        _fo = ((("FIRST_ORDER_MEMORYLESS = False", "FIRST_ORDER_MEMORYLESS = True"),) if KIND == 'fo-ts' else ())
+        model, g, _sd = _s0.build_cfc_ts(FOLDER, _fo, ckpt_name=CKPT, return_g=True)
+        assert bool(getattr(model.cfg, 'first_order_memoryless', False)) == (KIND == 'fo-ts')
         print(f'checkpoint: {CKPT or "<prefix>_best.pt"} (step {_sd.get("step")}, PPL {_sd.get("val_ppl", float("nan")):.3f})')
         KIND_ARCH = 'sr2'
     else:
@@ -132,7 +137,7 @@ if __name__ == '__main__':
     fresh = (st['fresh'], st['xfresh']) + ((st['pfresh'],) if PM else ()) + ((nq[0],) if PMX else ())
     ok &= all(f == L for f in fresh)
     say(f'CHECK  N=8 per-layer flow: fresh quadratic / xi{" / phi" if PM else ""}{" / wells quadratic" if PMX else ""} = {fresh} (one per trained layer: {L})')
-    if PMX:
+    if PMX or KIND == 'fo-ts':
         # an independent implementation of the same flow: the model's inference mode, 4 substeps per layer
         flow8 = logits(stack(8, FLOW))
         model.cfg.substeps_per_layer = 4
