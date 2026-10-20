@@ -2,9 +2,9 @@
 
 **Technical Report — Companion Note for the SemSimula Mega-Paper**
 **Date:** 20 October 2026
-**Status:** Working draft. FO-b-OWT is training as this is written; every statement about it is provisional and marked so.
+**Status:** Working draft, **revised the same day after FO-b-OWT was scored** (settled 61.16 against SR2's 58.32, +4.9%). The first version leaned toward an overdamped reading while FO-b led; the revision keeps the equations, says which propositions held and why the others failed on OpenWebText, and re-draws §5–§10.
 
-> **Scope.** The first-vs-second-order series has produced its first scored result (FO-TS against SO-TS on TinyStories, level) and a second run in progress (FO-b-OWT against SR2 on OpenWebText, ahead at every evaluation so far, by a margin that widened to 5.6% at step 4,000 and has since narrowed to about 3.5%). This note asks what the equations of the framework say about that, independently of any corpus: why a second-order layer can be expected to be level with or worse than a first-order one, where the same equations say second order can win, and what follows for the conservative models, the Fock models, the Poisson-well models, the Riemannian geodesics and second-order inference. It ends with the tests that decide each open case and the author's calls on them.
+> **Scope.** The first-vs-second-order series has two scored results: on TinyStories the first-order twin is level (FO-TS against SO-TS, −0.6%), and on OpenWebText the true first-order twin is clearly worse (FO-b-OWT against SR2, **+4.9%**), after leading for the first third of training. This note asks what the equations of the framework say about that: what each dynamics is good at, why a first-order layer starts faster and finishes behind on a diverse corpus, where second order is expected to win, and what follows for the conservative models, the Fock models, the Poisson-well models, the Riemannian geodesics and second-order inference. It ends with the tests that decide each open case and the author's calls on them.
 
 ---
 
@@ -36,14 +36,14 @@ What has been measured, as of this date:
 | comparison | corpus | second order | first order | status |
 | --- | --- | ---: | ---: | --- |
 | SO-TS against FO-TS (FO-a), settled after a 3,000-step extension | TinyStories, 266M tokens | 5.16 | 5.13 | scored: Δ = −0.6%, inside the pre-registered ±3% |
-| SR2 against FO-b-OWT, 32,500 steps | OpenWebText, 532.5M tokens | 58.32 | ahead at every evaluation: by 5.6% at step 4,000, 3.6% at step 6,500 | in progress; decided by the settled value |
+| SR2 against FO-b-OWT (FO-b), 32,500 steps | OpenWebText, 532.5M tokens | 58.32 | 61.16 | scored: Δ = **+4.9%**; FB2 (≥ +3%, called 60%) hit |
 | Gate 1, the velocity reset at inference on the trained second-order weights | both | +2% (SO-TS), +3.9% (SR2) | — | reliance, not need |
 
 Two further facts frame the discussion. First, the Stage-0 rule that predicted a first-order gap from anharmonic wells (ε ≥ 0.3) missed on its first trained test: FO-TS learns wells more anharmonic than SO-TS's (ε 4.5 against 2.6 at the output step) and matches it. Second, the FO-a model is robust to extra layers where the second-order one is not (Gate 2: +1% against +25% for one extra layer, +77% against +2,000% for six), while its standard refinement is worse (Gate 3 at N = 3: +48% against +24%), for a reason given in §3.
 
 ![Reliance against need: Gate 1 by arm, and the trained first-order twins against their second-order anchors](figures/future_second_order/fso_reliance_vs_need.png)
 
-*Panel A: how much each trained second-order model loses when its velocity is reset at inference (Cell 6b-7, Gate 1). Panel B: what a model trained first-order from scratch loses against its second-order twin, on the same evaluation batches, through training. The TinyStories pair is scored; the OpenWebText pair is in progress. On TinyStories the first-order lead was largest at constant learning rate and shrank through the decay to −0.6%; the OpenWebText lead peaked at step 4,000 and is narrowing in the same way, so the settled value, not the early lead, decides it.*
+*Panel A: how much each trained second-order model loses when its velocity is reset at inference (Cell 6b-7, Gate 1). Panel B: what a model trained first-order from scratch loses against its second-order twin, on the same evaluation batches, through training. Both pairs are scored. On TinyStories the first-order lead shrank through the decay to −0.6%. On OpenWebText the first-order model led until step 10,500, stalled, fell behind at step 11,000, held about 3% behind through the constant phase, and lost more ground in the decay: SR2 gained 0.196 nats from step 21,000 to 32,500, FO-b 0.175.*
 
 ---
 
@@ -89,7 +89,7 @@ SR2's median stiff mode has $\omega \cdot dt \approx 6.6$, so $\omega T \approx 
 
 ## 3. Four Propositions, from the Equations Alone
 
-The corpus enters only through the learned potential $V$. The four statements below hold for every potential in the class, so they are corpus-independent. They are statements about the architecture: a position-only readout, and a potential that is re-set at every layer.
+The corpus enters only through the learned potential $V$. The four statements below were written, in the first version of this note, as corpus-independent reasons to expect the first-order layer to be level or better. FO-b-OWT refutes that conclusion on OpenWebText, so each proposition is read again at the end of the section ("What the OpenWebText result says"): Propositions 1 and 3 stand as written; Propositions 2 and 4 are correct as mathematics but rest on premises that do not hold, and the reason they fail is itself informative.
 
 ### Proposition 1. The two layer maps have the same inputs
 
@@ -141,6 +141,18 @@ The analogy with optimisation is exact. Momentum helps when successive gradients
 
 The first-order-sufficiency chapter of the book and the corpus-statistics note bound the distance between the two dynamics' trajectories under a **fixed** potential, and predicted a gap from the anharmonicity of the wells. FO-TS refuted the anharmonicity channel on its first trained test. The reason is in Proposition 1: the potential is learned, so the right comparison is between the best map each family can learn, not between two integrators of one potential. Propositions 2 and 3 are statements about that comparison. The inequality remains correct as a bound on trajectories; it was the wrong bound for the question.
 
+### What the OpenWebText result says about the four propositions
+
+**Proposition 1 stands.** The two families are different function classes over the same inputs; nothing in it predicted a winner.
+
+**Proposition 3 stands, and explains the shape of the curve.** The gradient flow's learning problem is better conditioned, so FO-b learns faster at first, on both corpora: ahead from step 500, by 6.7% at step 5,000 on OpenWebText. Better conditioning buys speed, not a better optimum. Once the second-order model has learned to place its stiff modes' phases, its larger function class pays off, and the first-order model's advantage ends; on OpenWebText it ended at step 11,000 in a stall of the kind a rugged-but-escaped landscape on one side and a smooth-but-limited one on the other would produce.
+
+**Proposition 2 is correct mathematics with the wrong value judgement.** A lightly damped layer keeps phase-space volume, a gradient flow contracts it. The first version read contraction as the better use of an attractor. But keeping volume means **keeping information**: a rotation is invertible, so two tokens that entered a layer in different states leave it in different states, whereas a contraction merges them. Whether merging is good depends on how many distinctions the readout needs downstream. On TinyStories, a narrow corpus, few distinctions are needed and collapsing tokens onto wells costs little; on OpenWebText the next-token distribution is far broader, and the distinctions a contraction throws away are ones the readout needs. This gives the corpus a channel that the master inequality did not contain: **the value of contraction falls as the corpus's conditional entropy rises.** It is a prediction, not yet a measurement: the gap should grow on code and on any corpus with more distinctions per token than OpenWebText.
+
+**Proposition 4's premise does not hold in this architecture.** It assumed that each layer's potential is drawn fresh given the position. In the ladder's conservative core the two layers share **one** joint V_θ bank, conditioned on depth by a code, with context channels ξ that change smoothly from layer to layer, and the pair potential V_φ is evaluated on the same tokens at both layers. Successive forces are therefore correlated in depth, which is the condition (the right-hand side of the correlated-forces figure) under which a velocity carried across layers is an extrapolator and pays. The proposition remains a correct statement about a stack with independent per-layer potentials; that is not the stack that was trained. FO-a on OpenWebText (FO-OWT), now triggered, measures how much of the 4.9% this channel carries.
+
+**In short.** The equations do not say that first order is better. They say what each dynamics is good at: the gradient flow is easier to train and denoises; the lightly damped flow preserves information and can carry a velocity across correlated layers. Which matters more depends on the corpus. TinyStories rewards the first, OpenWebText the second.
+
 ### A corollary on refinement
 
 A step from rest moves a token by about $(dt^2 / 2m) f$. So $N$ steps of length $T / N$, each from rest, move it by about $T^2 / (2 m N)$ in total: the distance covered shrinks with $N$. FO-a is therefore not a discretisation of any one flow, and its Gate 3 (+48% at N = 3) measures that mismatch, not whether the model can refine. FO-b ties its mobility to the trained step, so $N$ substeps cover one gradient flow; that is prediction FB4 of the protocol (refinement at N = 3 at most +10%, against SR2's +50%).
@@ -167,15 +179,15 @@ The same equations name the conditions under which inertia is not noise. Each is
 
 **4. Sampling at T > 0.** Underdamped Langevin dynamics mixes faster than overdamped dynamics at the same temperature in many settings. If the framework ever samples hidden states rather than relaxes them, that is the one inference-time use of inertia left standing. It is a sampler's advantage, not a modelling claim.
 
-Outside these four, the equations give second order nothing to win with, on any corpus.
+Outside these four, and the information-preservation channel of §3's revision, the equations give second order nothing to win with. On OpenWebText two of them are present in the conservative core: correlated forces in depth (the shared V_θ bank) and the information a rotation keeps.
 
 ---
 
 ## 5. The Conservative Models
 
-The conservative-only architecture (V_θ, V_φ, the ξ channels, no register path to the tokens) satisfies every premise of §3: a position-only readout and a potential re-set at every layer. The propositions therefore apply in full, and the measurements agree: on TinyStories the first-order twin is level; on OpenWebText it leads at every evaluation so far.
+The first version of this section read the conservative core as overdamped because it seemed to satisfy every premise of §3. It does not: its layers share one V_θ bank, so its forces are correlated in depth, and on a broad corpus the information a rotation preserves is worth more than the denoising a contraction provides. The measurements now say: level on TinyStories (FO-a), **4.9% worse on OpenWebText (FO-b)**.
 
-If FO-b-OWT settles level with or below 58.32, the honest statement is: **at 0.5B tokens, L = 2 and d = 384, the conservative architecture operates in its overdamped regime.** What that changes:
+**On OpenWebText, at 0.5B tokens, L = 2 and d = 384, the conservative architecture is not in its overdamped regime: second order earns 4.9%.** The table below is what the overdamped reading would have meant. It remains the candidate reading for TinyStories, pending FO-b-TS, and it describes what is given up by training first order on a broad corpus:
 
 | element | second-order reading | overdamped reading |
 | --- | --- | --- |
@@ -189,13 +201,15 @@ If FO-b-OWT settles level with or below 58.32, the honest statement is: **at 0.5
 
 What does not change: the potentials, the context channels, conservativity, causality, the coupling order (register read ≻ exchange field ≻ V_φ), the per-layer flow finding, and the stiffness problem. A stiff gradient flow still needs exact relaxation of its stiff modes, which is exactly what FO-b does; the CfC idea survives, the oscillation does not.
 
-**Second-order inference on first-order-trained weights** has no benefit left in this reading. The one direction measured, SR2's weights run first-order, costs ×1.33 in perplexity (PMX's ×4.1); the other direction has no reason to be kinder, and the refinement benefit the recipe was meant to buy is delivered better by the gradient flow. It stays as a one-evaluation descriptive check on the FO-b-OWT checkpoint.
+**Two open questions about the conservative core** are now the most informative runs in the queue. SR3-crit asks whether the second-order advantage needs the **oscillation** or only the **inertia**: critical damping removes the first and keeps the second. The learned γ(h) asks **where** the model keeps inertia, by layer, token frequency and position. Both are pre-registered (protocol §5.13, with an amendment of 2026-10-20 made after this result and before the runs).
+
+**Second-order inference on first-order-trained weights** has no benefit left in either reading. The one direction measured, SR2's weights run first-order, costs ×1.33 in perplexity (PMX's ×4.1); the other direction has no reason to be kinder, and the refinement benefit the recipe was meant to buy is delivered better by the gradient flow. It stays as a one-evaluation descriptive check on the FO-b-OWT checkpoint.
 
 ---
 
 ## 6. The Fock Models
 
-The Fock arms are where the exception clause of §4 lives, and nothing measured decides them yet.
+The Fock arms add, on top of the conservative core's correlated forces, the strongest cross-layer state in the framework. With the conservative core already earning 4.9% from second order on OpenWebText, the Fock arms, which lean on velocity far more, are now expected to need it too; FO-b on them is less informative than it was, and has moved down the queue.
 
 The register bank persists across layers; the reverse channel injects it into tokens at every layer; the exchange field is a cross-token force. All three correlate successive forces in depth, which is the one condition under which Proposition 4 says momentum can help. The reliance measurements agree with that reading: the velocity reset costs the conservative SR2 +3.9%, the Fock arms +33% to +55%, and XRB-F, the arm with a cross-token field and no register read to replace it, +113%.
 
@@ -207,7 +221,7 @@ Three outcomes, and what each would mean:
 - **XRB-F needs it, G3′ does not.** The velocity stands in for the register read when the read is absent, and the register read is the better instrument. Second order is a workaround for a missing memory path, not a mechanism. The framework stays overdamped; the exchange field's design note gains a paragraph.
 - **G3′ needs it.** Inertia earns its keep where cross-layer state exists. The framework becomes two-regime: overdamped tokens in the conservative core, inertial where the register path correlates forces across layers. That is a more interesting book, and the geodesic chapter keeps its original object for those arms.
 
-The author's calls, before the runs: a real gap on FO-b-XRB-F at about 50%, on FO-b-G3′ at about 35%.
+The author's calls, revised after FO-b-OWT: a real gap on FO-b-XRB-F at about 75% (first version: 50%), on FO-b-G3′ at about 70% (first version: 35%). The first outcome above is now the least likely.
 
 ---
 
@@ -221,13 +235,15 @@ The Poisson-mode registers (PM1, PMX) add memory wells to the potential: attract
 
 **A first-order well model is a known object.** With the wells integrated by a gradient flow, PMX becomes a context-conditioned Hopfield network with dynamic, decaying memories: tokens relax toward the memories placed by past tokens. That is a legible position in the literature, and the exact relaxation of indefinite modes (a negative stiffness grows as $e^{\mu |\kappa| t}$ over the step) is what makes it well-posed. One risk is pre-registered as FBX4: the unstable well directions that the damped oscillator contains may grow unchecked without inertia.
 
-**The call.** FBX1 at 60% is the series' highest call for a second-order gap, for the capture reason above. If it misses, the wells join the conservative core in the overdamped regime, and the Poisson-mode theory is a first-order memory theory.
+**The call.** FBX1 at 60% was the series' highest call for a second-order gap when it was made. With the conservative core already showing one, a gap on PMX is now the expected outcome (about 75%); the run's interest has shifted to whether PMX's gap is larger than SR2's 4.9% (FBX2), which is what the capture mechanism predicts.
 
 ---
 
 ## 8. Riemannian Geodesics and Second-Order Inference
 
-**Geodesics.** A geodesic is the natural path of an inertial particle. In the overdamped regime the natural path is the steepest-descent line of the layer's potential in the metric set by the mobility, $\dot{h} = -M^{-1} \nabla V$ with $M$ the mass (or inverse-mobility) tensor. The two coincide only in special cases. So the geodesic residual of the book's Riemannian chapter and E1 ("is the layer step a damped V_θ geodesic?") measured the distance to a reference curve the overdamped model does not follow. Their first-order successor already exists: the per-layer flow test, which measures the distance from the trained step to the V_θ gradient flow, and which SR2 passes on both corpora (a limit 0.104 nats above the trained step on OpenWebText, 0.097 on TinyStories).
+**Geodesics, after FO-b-OWT.** On OpenWebText the conservative core is inertial, so its tokens' paths are damped Jacobi geodesics in the original sense, and the geodesic chapter keeps its object there. The paragraphs below describe what would replace geodesics in an overdamped regime; they apply to TinyStories if FO-b-TS comes out level, and to any token a learned γ(h) moves to the overdamped end.
+
+A geodesic is the natural path of an inertial particle. In the overdamped regime the natural path is the steepest-descent line of the layer's potential in the metric set by the mobility, $\dot{h} = -M^{-1} \nabla V$ with $M$ the mass (or inverse-mobility) tensor. The two coincide only in special cases. So the geodesic residual of the book's Riemannian chapter and E1 ("is the layer step a damped V_θ geodesic?") measured the distance to a reference curve the overdamped model does not follow. Their first-order successor already exists: the per-layer flow test, which measures the distance from the trained step to the V_θ gradient flow, and which SR2 passes on both corpora (a limit 0.104 nats above the trained step on OpenWebText, 0.097 on TinyStories).
 
 What survives: the metric, with a changed role. The learned mass becomes the metric of a Riemannian gradient flow, and the curvature along a trajectory is set by the Hessian of the potential, which is the anharmonic-fraction measurement M1. The Riemannian chapter keeps its mathematics and gains a second reference curve. For the Fock arms, if G3′ turns out to need inertia (§6), the geodesic reading keeps its original object there.
 
@@ -239,16 +255,23 @@ Depth matters more after this, not less. Trajectory geometry across layers (fore
 
 ## 9. What Changes in the Book and the Roadmap
 
-**The book.** The second-order theory stays as the general case; the four propositions give the reason the operating regime is overdamped for this architecture under any corpus; the two corpora become the confirmation rather than the proof. On the current PDF, 277 of 545 pages mention a geodesic, inertia, momentum, velocity or second order. About 60–80 pages need their interpretation rewritten (the Riemannian chapter, the geometric value proposition, position-dependent damping as mobility, the Lagrangian's overdamped limit promoted to the operating regime, the first-order-sufficiency chapter scored, the conclusion and front matter); about 100 need a scope sentence; about 270 are untouched. No measured number changes. The edit waits for FO-b-OWT and FO-b-PMX, because the Fock and well arms decide whether the rewrite says "the conservative architecture is overdamped" or "the framework is overdamped".
+**The book, after FO-b-OWT.** The second-order spine stays, and is now supported on the broad corpus. What changes is smaller than the first version of this section estimated: the first-order-sufficiency chapter is scored (its master inequality predicted an OpenWebText gap from anharmonicity; the gap appeared, the anharmonicity channel did not explain it, and the information-preservation and correlated-forces channels of §3's revision do); the Riemannian chapter adds the overdamped reference curve as the limit case and as the TinyStories reading if FO-b-TS is level; and the claim gains a scope sentence: second order earns its keep on broad corpora, not on narrow ones. The first version's estimate below assumed the spine would change; it is kept for the record and no longer applies.
+
+First version of this paragraph: the second-order theory stays as the general case; the four propositions give the reason the operating regime is overdamped for this architecture under any corpus; the two corpora become the confirmation rather than the proof. On the current PDF, 277 of 545 pages mention a geodesic, inertia, momentum, velocity or second order. About 60–80 pages need their interpretation rewritten (the Riemannian chapter, the geometric value proposition, position-dependent damping as mobility, the Lagrangian's overdamped limit promoted to the operating regime, the first-order-sufficiency chapter scored, the conclusion and front matter); about 100 need a scope sentence; about 270 are untouched. No measured number changes. The edit waits for FO-b-OWT and FO-b-PMX, because the Fock and well arms decide whether the rewrite says "the conservative architecture is overdamped" or "the framework is overdamped".
 
 **The roadmap.** The following diagram shows how the open runs decide the framework's shape.
 
 ```mermaid
 flowchart TD
-    A["FO-b-OWT against SR2 (in progress)"] --> B{"settled gap?"}
-    B -->|"level or FO-b ahead"| C["conservative core is overdamped"]
-    B -->|"SR2 ahead by 3% or more"| D["inertia pays on OWT; FO-a locates it (between layers or inside the step)"]
-    C --> E["FO-b-PMX against PMX (queued)"]
+    A["FO-b-OWT against SR2: SR2 ahead by 4.9% (scored)"] --> D["inertia pays on OWT"]
+    D --> S["SR3-crit: does it need the oscillation or only the inertia?"]
+    D --> GH["learned gamma(h): where is inertia kept?"]
+    D --> FA["FO-OWT (FO-a): between layers or inside the step?"]
+    D --> LR["FO-b at a lower learning rate: was the gap a tuning mismatch?"]
+    D --> TS["FO-b-TS: is TinyStories really level under true first order?"]
+    D --> B2["a 1B pair, then 2B: does the gap grow with training?"]
+    C["if FO-b-TS is level: narrow corpora are overdamped"] -.-> E["FO-b-PMX against PMX (queued)"]
+    TS --> C
     E -->|"gap (FBX1)"| F["wells need inertia: the capture mechanism"]
     E -->|"no gap"| G["wells are a first-order memory"]
     C --> H["FO-b-G3' and FO-b-XRB-F (candidates)"]
@@ -264,17 +287,22 @@ flowchart TD
 
 | test | what it decides | cost | the author's call |
 | --- | --- | ---: | --- |
-| FO-b-OWT against SR2 (running) | the conservative core on OpenWebText | 10 h | FB2 (SR2 ahead by 3% or more) was called at 60% before the run; FO-b led by 5.6% at step 4,000 and by 3.6% at step 6,500 |
-| SR2 rerun with the speed switches, seed 1 (conditional) | the seed spread, the yardstick for any gap near 2% | 10 h | decided after FO-b-OWT |
-| FO-b-TS against SO-TS | the TinyStories half of true first order | 5 h | level, 75% |
-| FO-b-PMX against PMX | the wells' capture mechanism | 14 h | a gap of 3% or more, 60% (FBX1) |
-| FO-b-G3′ against G3′ | the register path | 14 h | a gap, 35% |
-| FO-b-XRB-F against XRB-F | the exchange field without the read | 10 h | a gap, 50% |
-| SO/FO-b on a code corpus | a third corpus, top of the predicted ordering | 10 h | level, 70% |
+| FO-b-OWT against SR2 | the conservative core on OpenWebText | 10 h | **scored: +4.9%, FB2 hit** (called 60% before the run) |
+| SR3-crit on SR2 | oscillation or inertia | 10 h | at or below SR2 within 1%, 50%; beats SR2 by 2%, 25%; falls toward FO-b, 25% |
+| learned γ(h), conservative core | where inertia is kept | 10 h | not overdamped everywhere, 65%; layers differ by 0.3 in median ζ, 45% |
+| FO-OWT (FO-a), now triggered | between layers or inside the step | 10 h | FO-a closes at least half of FO-b's gap, 55% |
+| FO-b-OWT at learning rate 8e-4 | a hyperparameter mismatch | 10 h | closes less than a third of the gap, 65% |
+| a 1B pair (SR2-1B, FO-b-1B) | the trend with training | 40 h | the gap at 1B is larger than at 0.5B, 55% |
+| SR2 rerun with the speed switches, seed 1 | the seed spread | 10 h | not needed for FO-b-OWT (the gap is +4.9%, above the rule's 3%); kept for the gaps near 2% that SR3-crit may produce |
+| FO-b-TS against SO-TS | the TinyStories half of true first order | 5 h | level, 60% (first version: 75%) |
+| FO-b-PMX against PMX | the wells' capture mechanism | 14 h | a gap of 3% or more, 75% (FBX1 was called at 60%); larger than SR2's, 55% |
+| FO-b-G3′ against G3′ | the register path | 14 h | a gap, 70% |
+| FO-b-XRB-F against XRB-F | the exchange field without the read | 10 h | a gap, 75% |
+| SO/FO-b on a code corpus | a third corpus; the information-preservation channel predicts a larger gap than on OpenWebText | 10 h | a gap larger than OpenWebText's, 50% |
 | a deeper pair (L = 4 or 8) | memory across several boundaries | 20–40 h | a gap grows with depth, 40% |
 | the 2B pair (SR2-2B, FO-b-2B) | the budget | 80 h | decided after the 0.5B results |
 
-The scope line for any claim made before these run: at 0.5B tokens, L = 2, d = 384, one seed, on two English prose corpora, for the conservative-only architecture.
+The scope line for the claim as it stands: at 0.5B tokens, L = 2, d = 384, one seed, for the conservative-only architecture, second order earns 4.9% on OpenWebText and nothing measurable on TinyStories (FO-a there; FO-b-TS pending).
 
 ---
 

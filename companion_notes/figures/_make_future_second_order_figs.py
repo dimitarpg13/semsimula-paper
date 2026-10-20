@@ -191,13 +191,14 @@ ax[0].legend(handles=[Patch(color=col[k], label=k) for k in col], fontsize=8, lo
 # panel B: trained twins
 steps_ts = [4000, 7000, 7500, 8000, 8500, 9000, 9500, 10000, 10500, 11000, 11500, 12000, 12500, 13000, 13500, 14000, 14500, 15000, 15500, 16000, 16500, 17000, 17500, 18000, 18500, 19000]
 d_ts = [-0.0109, -0.0196, -0.0222, -0.0216, -0.0203, -0.0182, -0.0147, -0.0165, -0.0180, -0.0150, -0.0162, -0.0141, -0.0151, -0.0124, -0.0091, -0.0090, -0.0085, -0.0074, -0.0065, -0.0065, -0.0056, -0.0054, -0.0046, -0.0055, -0.0066, -0.0052]
-steps_owt = [500, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 5500, 6000, 6500]
-d_owt = [-0.023, -0.021, -0.018, -0.026, -0.030, -0.034, -0.044, -0.058, -0.050, -0.033, -0.036]
+steps_owt = [500, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000, 5500, 6000, 6500, 7000, 7500, 8000, 8500, 9000, 9500, 10000, 10500, 11000, 11500, 12000, 12500, 13000, 13500, 14000, 14500, 15000, 15500, 16000, 16500, 17000, 17500, 18000, 18500, 19000, 19500, 20000, 20500, 21000, 21500, 22000, 22500, 23000, 23500, 24000, 24500, 25000, 25500, 26000, 26500, 27000, 27500, 28000, 28500, 29000, 29500, 30000, 30500, 31000, 31500, 32000, 32500]
+d_owt = [-0.0234, -0.0206, -0.018, -0.0256, -0.0295, -0.034, -0.0436, -0.0579, -0.063, -0.0691, -0.0498, -0.0325, -0.0363, -0.0361, -0.0387, -0.0428, -0.0337, -0.0319, -0.0361, -0.0284, -0.0091, 0.0292, 0.0458, 0.037, 0.0376, 0.0414, 0.0476, 0.0396, 0.0431, 0.0341, 0.0317, 0.0325, 0.0384, 0.0349, 0.0279, 0.0305, 0.0319, 0.0294, 0.0305, 0.0229, 0.0323, 0.029, 0.0239, 0.0188, 0.03, 0.0238, 0.0286, 0.0264, 0.0237, 0.0231, 0.0326, 0.0327, 0.035, 0.0348, 0.0416, 0.0406, 0.0449, 0.0451, 0.0463, 0.0494, 0.0493, 0.0521, 0.0466, 0.0467, 0.0494]
 ax[1].plot(steps_ts, [100 * (np.exp(d) - 1) for d in d_ts], color=C_FOA, marker="o", ms=3, label="TinyStories: FO-a (FO-TS) against SO-TS, same batches")
-ax[1].plot(steps_owt, [100 * (np.exp(d) - 1) for d in d_owt], color=C_FO, marker="s", ms=3, label="OpenWebText: FO-b against SR2 (in progress, to step 6,500)")
+ax[1].plot(steps_owt, [100 * (np.exp(d) - 1) for d in d_owt], color=C_FO, marker="s", ms=3, label="OpenWebText: FO-b against SR2 (settled +4.9%)")
 ax[1].axhline(0, color="k", lw=0.6)
-ax[1].axvspan(10562, 19250, color=C_FOA, alpha=0.06); ax[1].text(10800, 0.6, "TS decay + floor", fontsize=8, color=C_FOA)
-ax[1].set(xlabel="training step", ylabel="first-order perplexity relative to second-order, %", title="B. Need: the trained first-order twins", ylim=(-7, 1.5))
-ax[1].legend(fontsize=8, loc="lower left")
+ax[1].axvspan(10562, 19250, color=C_FOA, alpha=0.06); ax[1].text(10800, -4.6, "TS decay + floor", fontsize=8, color=C_FOA)
+ax[1].axvspan(21125, 32500, color=C_FO, alpha=0.06); ax[1].text(27500, -1.2, "OWT decay", fontsize=8, color=C_FO)
+ax[1].set(xlabel="training step", ylabel="first-order perplexity relative to second-order, %", title="B. Need: the trained first-order twins", ylim=(-7.5, 6.5))
+ax[1].legend(fontsize=8, loc="lower right")
 fig.tight_layout(); fig.savefig(OUT / "fso_reliance_vs_need.png"); plt.close(fig)
 print("wrote", sorted(p.name for p in OUT.glob("*.png")))

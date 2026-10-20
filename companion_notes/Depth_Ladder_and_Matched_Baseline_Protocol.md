@@ -3763,6 +3763,32 @@ This applies to FO-OWT (conditional on FO-b-OWT) and to FO-PMX (conditional on F
 
 **Scope:** constant γ = 0.1 in the second-order anchors, L = 2, d = 384, one seed, 266M (TinyStories) and 532.5M (OpenWebText) tokens.
 
+#### FO-b-OWT scored: **61.16 settled, Δᵇ_OWT = +4.9% — FB2 HIT; second order earns its keep on OpenWebText** — **2026-10-20**
+
+Output `L2_FO-b-SR2_OWT_32500steps_output.txt`. SR2's Cell 0 plus `FIRST_ORDER_OVERDAMPED = True` and the speed switches; tag `…sr2_fob…`; 32,500 steps, seed 0, an A100 80 GB (about 1.04 s per step). Finished cleanly; no watchdog trigger or spike capture; SCAF CLEAN at every audit (the step-32,500 audit prints nan PPLs, the known cosmetic issue). The in-flight resonance monitor was empty throughout: it hooks the second-order substep routines, which FO-b does not call.
+
+| step | phase | SR2 | FO-b | FO-b − SR2 (nats) |
+| ---: | --- | ---: | ---: | ---: |
+| 500 | warmup | 461.8 | 451.2 | −0.023 |
+| 5,000 | constant LR | 108.4 | 101.1 | −0.069 |
+| 10,500 | constant LR | | 82.8 | −0.009 |
+| 11,000 | constant LR | | 87.3 | **+0.029: crossover** |
+| 15,000 | constant LR | 76.8 | 79.5 | +0.034 |
+| 21,000 | decay starts | | | +0.029 |
+| 25,000 | decay | 65.9 | 67.5 | +0.023 |
+| 30,000 | decay | 58.1 | 61.0 | +0.049 |
+| **settled** (31,500–32,500) | | **58.32** | **61.16** | +0.048 |
+
+- **Settling check (2026-10-04 rule), steps 29,500–32,500:** fitted change +0.001 nats against a residual standard deviation of 0.012: settled (SR2 under the same rule: +0.001 against 0.013). Best 59.51 at step 31,000.
+- **Δᵇ_OWT = (61.16 − 58.32) / 58.32 = +4.9%. FB2 (≥ +3%, called 60%): HIT.** On OpenWebText the conservative core trained as a true gradient flow is clearly worse than its second-order twin.
+- **The shape.** FO-b led from the first evaluation (−2.3% at step 500) and widened the lead to −6.7% at step 5,000. It stalled between steps 9,000 and 13,000 (evaluations between 82.8 and 87.9, no spike, no clip storm) while SR2 kept improving, crossed at step 11,000, stayed about 3% behind through the rest of the constant phase (+3.8% at 12,500 easing to +2.3% at 25,000), and lost ground again in the decay: SR2 gained 0.196 nats from step 21,000 to 32,500, FO-b 0.175. The gap grows with training in the phase that sets the settled value.
+- **What FB1, FB3 and FB4 need.** FB1 (TinyStories, ±3%): FO-b-TS. FB3 (inertia inside the step matters more than the velocity between layers): FO-a on OpenWebText (FO-OWT), now triggered by this gap under the 2026-10-19 ordering decision. FB4 (a gradient flow refines): Cell 6b-7 on FO-b-OWT's best checkpoint.
+- **Against the corpus prediction.** With FO-TS level (Δ_TS = −0.6%, FO-a), the 2×2's "OWT gap without a TinyStories gap" outcome is in view, which says the corpus separates first from second order. The clean interaction for FO-b needs FO-b-TS.
+- **A fairness caveat, recorded now.** FO-b ran with the hyperparameters tuned for the second-order arms (learning rate 1.2e-3, the WSD fractions, the clip groups). The stall between steps 9,000 and 13,000 reads as an optimisation difficulty, so part of the gap may be a hyperparameter mismatch. One FO-b-OWT run at a lower learning rate (8e-4) is proposed as a check before any 2B decision.
+- **Cell 6b-7** (best checkpoint, step 31,000; `Cell-6b-7_flow_or_maps_FO-b-SR2_OWT_32500steps_ext_output.txt`). Gate 0 PASS; Gate 1 0 (no velocity exists). Gate 2, one extra layer at the trained Δt: **+0.6%** (SR2 +35%); eight layers +138% (SR2 +567%). Gate 3 at N = 3: **+19.5% (0.178 nats)** against SR2's +50% (0.405); at N = 8 1.46 nats against 2.11; the penalty grows away from the trained step count. **FB4 (Gate 3 at N = 3 at most +10% on both corpora): MISS on OpenWebText.** The standard refinement recomputes ξ and projects onto the LayerNorm sphere at every substep, a different flow from the one the trained layer samples; SR2 failed it too and passed the per-layer flow (FLOW-R). FLOW-R on FO-b-OWT is the test that says whether a fixed-mobility gradient flow refines, pending the checkpoint's download.
+- **Cell 6b-9** divided by zero on FO-b: its velocity readings are undefined when no velocity exists. Guarded on 2026-10-20 (R_v prints nan); R_h remains the V_φ attribution of a gradient-flow step.
+- **Against the analysis of 2026-10-20** (`Future_of_Semantic_Simulation_When_Second_Order_Earns_Its_Keep.md`, §3): the early lead fits Proposition 3 (the gradient flow's learning problem is easier at first); the settled gap refutes the reading that Propositions 2 and 4 make the conservative core overdamped on any corpus. The note is revised accordingly.
+
 #### FO-b-PMX: the true first-order twin of PMX — **pre-registered 2026-10-19, before the run (author's decision)**
 
 **Why.** PMX leans on momentum more than any SR2-base arm (Gate 1 +91% at its best checkpoint; ×1.82 on a 2 × 256 batch under FO-a, against SR2's ×1.03). Its layer-1 step balances the velocity a token carries against the pull of the memory wells (§5.15). If second order earns its keep anywhere at this budget, it is there. FO-b-PMX replaces FO-PMX (FO-a) as the exploratory twin; FO-PMX runs only if this arm shows a gap.
