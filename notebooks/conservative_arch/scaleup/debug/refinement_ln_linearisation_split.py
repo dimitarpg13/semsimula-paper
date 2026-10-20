@@ -118,8 +118,13 @@ def split_stack(model, N, dt, policy_index, ln_once, freeze, xi_freeze=False, ph
             st['inloop'] = True
             if pmq_freeze and st['start']:
                 model._flow_ctx = {}
-            if st['start'] and getattr(model.cfg, 'first_order_memoryless', False):
-                h_prev = h        # FO-a (2026-10-19): v <- 0 where each trained layer begins, as _stack_forward
+            if getattr(model.cfg, 'first_order_memoryless', False) and (st['start'] or not freeze):
+                # FO-a (2026-10-19): the trained model starts every layer step from rest. Under the
+                # standard refinement (freeze=False) each substep IS a layer step, so each starts from
+                # rest, as Cell 6b-7's _fom_stack does; under the per-layer flow the substeps of one
+                # layer are one flow, so the reset falls where the layer begins, as the model's own
+                # substeps_per_layer path does.
+                h_prev = h
             h, h_prev, r, sal = model._fock_layer_step(h, h_prev, r, sal, m_b, gamma, dt, layer_idx=li)
             st['inloop'] = False
         st['proj'] = True
