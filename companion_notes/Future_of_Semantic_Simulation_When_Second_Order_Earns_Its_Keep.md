@@ -37,6 +37,7 @@ What has been measured, as of this date:
 | --- | --- | ---: | ---: | --- |
 | SO-TS against FO-TS (FO-a), settled after a 3,000-step extension | TinyStories, 266M tokens | 5.16 | 5.13 | scored: Δ = −0.6%, inside the pre-registered ±3% |
 | SR2 against FO-b-OWT (FO-b), 32,500 steps | OpenWebText, 532.5M tokens | 58.32 | 61.16 | scored: Δ = **+4.9%**; FB2 (≥ +3%, called 60%) hit |
+| stiffness of the wells, median ω·Δt (Cell 6b-13), same pair | OpenWebText | 7.55 | 0.74 | descriptive: the first-order model builds wells ten times softer, with the same context horizons |
 | Gate 1, the velocity reset at inference on the trained second-order weights | both | +2% (SO-TS), +3.9% (SR2) | — | reliance, not need |
 
 Two further facts frame the discussion. First, the Stage-0 rule that predicted a first-order gap from anharmonic wells (ε ≥ 0.3) missed on its first trained test: FO-TS learns wells more anharmonic than SO-TS's (ε 4.5 against 2.6 at the output step) and matches it. Second, the FO-a model is robust to extra layers where the second-order one is not (Gate 2: +1% against +25% for one extra layer, +77% against +2,000% for six), while its standard refinement is worse (Gate 3 at N = 3: +48% against +24%), for a reason given in §3.
@@ -115,7 +116,7 @@ $$
 
 The second-order sensitivity alternates in sign as the stiffness moves, with a period of $2\pi / T$ in $\omega$, and its amplitude grows with the layer time. The first-order sensitivity has one sign and is bounded. In words: when the model nudges a well's stiffness, the second-order output moves in a direction that depends on where the mode's phase happens to sit, so the gradient landscape in the stiffness parameters is rugged; under the gradient flow the same nudge moves the output the same way every time. This is the resonance wall again, moved from the forward pass, where the exact flow removed it, into the learning problem, where nothing removes it.
 
-![The sensitivity of the output to the learned stiffness: oscillating under second order, one-signed under first order](figures/future_second_order/fso_sensitivity.png)
+<img src="figures/future_second_order/fso_sensitivity.png" alt="The sensitivity of the output to the learned stiffness: oscillating under second order, one-signed under first order" width="560">
 
 *The derivative of the end-of-layer position with respect to the logarithm of the stiffness. Under second order the sign flips every half period of ωT and the amplitude grows with T; under first order it has one sign and decays past the stiffness at which the mode is fully relaxed.*
 
@@ -133,7 +134,7 @@ and the Bayes-optimal next step is a function of the position alone. The velocit
 
 The analogy with optimisation is exact. Momentum helps when successive gradients are correlated and hurts when each step faces a fresh landscape. A piecewise-autonomous stack is a sequence of fresh landscapes.
 
-![Momentum across layers pays only when successive forces are correlated](figures/future_second_order/fso_correlated_forces.png)
+<img src="figures/future_second_order/fso_correlated_forces.png" alt="Momentum across layers pays only when successive forces are correlated" width="560">
 
 *An eight-layer stack in which every layer pulls toward its own minimum and the minima drift from layer to layer with correlation ρ. Carrying the velocity across layers (red) beats resetting it (blue) only when the drift is coherent; when each layer's minimum is drawn fresh, the carried velocity is noise. One heavy-ball step per layer, step 0.6, momentum 0.6, 400 seeds.*
 
@@ -147,7 +148,21 @@ The first-order-sufficiency chapter of the book and the corpus-statistics note b
 
 **Proposition 3 stands, and explains the shape of the curve.** The gradient flow's learning problem is better conditioned, so FO-b learns faster at first, on both corpora: ahead from step 500, by 6.7% at step 5,000 on OpenWebText. Better conditioning buys speed, not a better optimum. Once the second-order model has learned to place its stiff modes' phases, its larger function class pays off, and the first-order model's advantage ends; on OpenWebText it ended at step 11,000 in a stall of the kind a rugged-but-escaped landscape on one side and a smooth-but-limited one on the other would produce.
 
-**Proposition 2 is correct mathematics with the wrong value judgement.** A lightly damped layer keeps phase-space volume, a gradient flow contracts it. The first version read contraction as the better use of an attractor. But keeping volume means **keeping information**: a rotation is invertible, so two tokens that entered a layer in different states leave it in different states, whereas a contraction merges them. Whether merging is good depends on how many distinctions the readout needs downstream. On TinyStories, a narrow corpus, few distinctions are needed and collapsing tokens onto wells costs little; on OpenWebText the next-token distribution is far broader, and the distinctions a contraction throws away are ones the readout needs. This gives the corpus a channel that the master inequality did not contain: **the value of contraction falls as the corpus's conditional entropy rises.** It is a prediction, not yet a measurement: the gap should grow on code and on any corpus with more distinctions per token than OpenWebText.
+**Proposition 2 is correct mathematics with the wrong value judgement.** A lightly damped layer keeps phase-space volume, a gradient flow contracts it. The first version read contraction as the better use of an attractor. But keeping volume means **keeping information**: a rotation is invertible, so two tokens that entered a layer in different states leave it in different states, whereas a contraction merges them. Whether merging is good depends on how many distinctions the readout needs downstream. On TinyStories, a narrow corpus, few distinctions are needed and collapsing tokens onto wells costs little; on OpenWebText the next-token distribution is far broader, and the distinctions a contraction throws away are ones the readout needs. This gives the corpus a channel that the master inequality did not contain: **the value of contraction falls as the corpus's conditional entropy rises.**
+
+**What FO-b-OWT's trained weights show.** The two OpenWebText models differ in one place only. Measured on their best checkpoints:
+
+| reading | SR2 (second order) | FO-b-OWT (first order) |
+| --- | ---: | ---: |
+| settled perplexity | 58.32 | 61.16 |
+| context channels' decay rates α at the end of training | 0.386, 0.521, 0.887, 0.981, 0.995 | 0.357, 0.511, 0.888, 0.992, 0.982 |
+| stiffness of the wells, median ω·Δt at the endpoint (Cell 6b-13) | **7.55** | **0.74** |
+| share of stiff-mode readings past the explicit-integrator wall (2.0) | 99.7% | 18.4% |
+| share of the layer step carried by the kick rather than the exactly integrated quadratic (FLOW-R) | 0.37 (layer 0), 0.51 (layer 1) | 0.995, 0.967 |
+
+Same corpus, same schedule, and the same context horizons to within a few hundredths: the context side is not where the two models differ. **The difference is in the wells: trained first order, the model builds them about ten times softer**, and in layer 1 most retained modes have almost no stiffness at all; nearly all of its movement comes from the kick, so the exactly integrated stiff quadratic does almost nothing. This is what Proposition 2's re-reading predicts. A second-order layer can use a stiff well as a rotor: the phase turns, the distinctions between tokens survive, and the well becomes a precise feature. A first-order layer cannot afford a stiff well, because a stiff mode under a gradient flow collapses every token onto its minimum within the step. So the first-order model is pushed to soft wells and gives up the expressivity that stiff modes provide; on TinyStories that costs nothing measurable, on OpenWebText 4.9%. (FO-TS on TinyStories built softer wells than SO-TS as well, ω·Δt 5.7 against 6.7, a far smaller difference, at no cost in perplexity.)
+
+The corpus prediction stands open: the gap should grow on code and on any corpus with more distinctions per token than OpenWebText. And SR3-crit becomes its sharpest test inside one corpus: critical damping also turns a stiff mode into a contraction, so by this account SR3-crit should be pushed toward softer wells as well, and its Cell 6b-13 reading says whether it is.
 
 **Proposition 4's premise does not hold in this architecture.** It assumed that each layer's potential is drawn fresh given the position. In the ladder's conservative core the two layers share **one** joint V_θ bank, conditioned on depth by a code, with context channels ξ that change smoothly from layer to layer, and the pair potential V_φ is evaluated on the same tokens at both layers. Successive forces are therefore correlated in depth, which is the condition (the right-hand side of the correlated-forces figure) under which a velocity carried across layers is an extrapolator and pays. The proposition remains a correct statement about a stack with independent per-layer potentials; that is not the stack that was trained. FO-a on OpenWebText (FO-OWT), now triggered, measures how much of the 4.9% this channel carries.
 
