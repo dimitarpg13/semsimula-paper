@@ -176,25 +176,28 @@ A step from rest moves a token by about $(dt^2 / 2m) f$. So $N$ steps of length 
 
 ## 4. Where Second Order Can Win
 
-The same equations name the conditions under which inertia is not noise. Each is a failure of one proposition's premise.
+The same equations name the conditions under which inertia is not noise. Each is a failure of one proposition's premise, or of its value judgement. The first was found by the OpenWebText result and is the only one with a measurement behind it so far; the others are predictions.
 
-**1. Forces correlated across depth (the premise of Proposition 4 fails).** If the potential drifts coherently from layer to layer, the velocity is an extrapolator and momentum pays, as the right-hand side of the correlated-forces figure shows. Three things in the framework produce such correlation:
+**1. A broad corpus: information that a rotation keeps (Proposition 2's value judgement fails).** A lightly damped layer turns each stiff mode through a phase and keeps the distinctions between tokens; a gradient flow collapses them onto the well. When the readout needs many distinctions, as on a broad corpus, the second-order model can use stiff wells as precise features and the first-order model cannot afford them. **Measured on OpenWebText:** same context horizons, wells ten times softer under first order (ω·Δt 0.74 against 7.55), 4.9% worse perplexity; on TinyStories, a narrow corpus, no measurable cost (§3, "What the OpenWebText result says"). The prediction that follows: the gap grows with the corpus's conditional entropy, so it should be larger on code than on OpenWebText.
 
+**2. Forces correlated across depth (the premise of Proposition 4 fails).** If the potential drifts coherently from layer to layer, the velocity is an extrapolator and momentum pays, as the right-hand side of the correlated-forces figure shows. Four things in the framework produce such correlation:
+
+- the **shared V_θ bank** of the conservative core itself: one joint bank for both layers, conditioned on depth by a code, with context channels that change smoothly between layers. This one is present in every model of the series, so Proposition 4's premise never held for them; FO-OWT (FO-a on OpenWebText), now triggered, measures how much of the 4.9% it carries;
 - the **register bank** of the Fock mechanism, which persists across layers and is injected into every layer by the reverse channel;
 - the **exchange field**, a force built from other tokens' states, which varies slowly in depth when those states do;
-- a **shared context** across layers (the autonomous framework of the book's appendix A1) or a smooth depth code.
+- a **shared context** across layers (the autonomous framework of the book's appendix A1).
 
-**2. Depth (the premise is weakest at L = 2).** With two layers there is exactly one boundary across which a velocity can carry anything. Every result in the series is the weakest possible test of memory between layers. Deeper stacks test it properly, and the stiffness oscillation of Proposition 3 compounds across layers, so depth cuts both ways.
+**3. Depth (the premise is weakest at L = 2).** With two layers there is exactly one boundary across which a velocity can carry anything. Every result in the series is the weakest possible test of memory between layers. Deeper stacks test it properly, and the stiffness oscillation of Proposition 3 compounds across layers, so depth cuts both ways.
 
-**3. Passing through a well (Proposition 1's non-containment).** A token arriving at a well with enough kinetic energy passes through it; a token under the gradient flow is always captured. If the task sometimes needs a token **not** to be captured by a memory well it approaches, inertia is the only mechanism in the class that does it. This is the one place where the Poisson-well models could need second order, taken up in §7.
+**4. Passing through a well (Proposition 1's non-containment).** A token arriving at a well with enough kinetic energy passes through it; a token under the gradient flow is always captured. If the task sometimes needs a token **not** to be captured by a memory well it approaches, inertia is the only mechanism in the class that does it. This is where the Poisson-well models may need second order beyond what the conservative core does, taken up in §7.
 
 ![A Gaussian well: with inertia a token can pass through; without it, it is always captured](figures/future_second_order/fso_well_capture.png)
 
 *A token approaching a well of depth 2 from the left. Under the gradient flow (blue) it is captured whatever happened before. Under second order (red) the outcome depends on the incoming velocity: captured below the escape velocity, through and beyond above it (panel B).*
 
-**4. Sampling at T > 0.** Underdamped Langevin dynamics mixes faster than overdamped dynamics at the same temperature in many settings. If the framework ever samples hidden states rather than relaxes them, that is the one inference-time use of inertia left standing. It is a sampler's advantage, not a modelling claim.
+**5. Sampling at T > 0.** Underdamped Langevin dynamics mixes faster than overdamped dynamics at the same temperature in many settings. If the framework ever samples hidden states rather than relaxes them, that is the one inference-time use of inertia left standing. It is a sampler's advantage, not a modelling claim.
 
-Outside these four, and the information-preservation channel of §3's revision, the equations give second order nothing to win with. On OpenWebText two of them are present in the conservative core: correlated forces in depth (the shared V_θ bank) and the information a rotation keeps.
+Outside these five, the equations give second order nothing to win with. On OpenWebText the first two are present in the conservative core, and the result says they are worth 4.9% there. Which of them carries how much is what the next runs separate: SR3-crit keeps the velocity between layers and removes the rotation (critical damping); FO-OWT keeps the rotation inside the step and removes the velocity between layers.
 
 ---
 
@@ -226,7 +229,7 @@ What does not change: the potentials, the context channels, conservativity, caus
 
 The Fock arms add, on top of the conservative core's correlated forces, the strongest cross-layer state in the framework. With the conservative core already earning 4.9% from second order on OpenWebText, the Fock arms, which lean on velocity far more, are now expected to need it too; FO-b on them is less informative than it was, and has moved down the queue.
 
-The register bank persists across layers; the reverse channel injects it into tokens at every layer; the exchange field is a cross-token force. All three correlate successive forces in depth, which is the one condition under which Proposition 4 says momentum can help. The reliance measurements agree with that reading: the velocity reset costs the conservative SR2 +3.9%, the Fock arms +33% to +55%, and XRB-F, the arm with a cross-token field and no register read to replace it, +113%.
+The register bank persists across layers; the reverse channel injects it into tokens at every layer; the exchange field is a cross-token force. All three correlate successive forces in depth, on top of the shared V_θ bank that already does so in the conservative core (item 2 of §4), which is the condition under which momentum across layers can help. The reliance measurements agree with that reading: the velocity reset costs the conservative SR2 +3.9%, the Fock arms +33% to +55%, and XRB-F, the arm with a cross-token field and no register read to replace it, +113%.
 
 But reliance is not need. Any state variable present during training can be loaded with information, whether or not a first-order model could have put the same information in the position. The one case with both readings, SR2 on TinyStories, went from +2% reliance to zero need. And a large Gate 1 can be an integrator artefact rather than a sign of correlated forces: F3.1, with no register path to the tokens, reads +34%, ten times SR2's, with the same forces and the same γ. G2 and G3′ on the F3.1 integrator read the same +33–34%, so at L = 2 the Fock mechanism added no reliance on top of the integrator's. That leaves the exchange field's +113% as the one reading the integrator does not explain.
 
@@ -242,7 +245,7 @@ The author's calls, revised after FO-b-OWT: a real gap on FO-b-XRB-F at about 75
 
 ## 7. The Poisson-Well Models
 
-The Poisson-mode registers (PM1, PMX) add memory wells to the potential: attractors placed by past tokens, with depths and half-lives. They are the one component of the framework where the equations give second order a mechanism of its own, item 3 of §4.
+The Poisson-mode registers (PM1, PMX) add memory wells to the potential: attractors placed by past tokens, with depths and half-lives. They are the component of the framework where the equations give second order a mechanism of its own beyond the conservative core's, item 4 of §4.
 
 **The capture argument.** A gradient flow is always captured by a well it enters. A token with inertia passes through a well if its kinetic energy exceeds the well's depth. If the task sometimes needs a token to approach a memory and not be bound by it, the second-order model has that option and the first-order model does not; the first-order model would have to make the well shallower for everyone, or move it.
 
