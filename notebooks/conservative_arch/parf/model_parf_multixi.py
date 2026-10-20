@@ -69,7 +69,8 @@ from cfc_baoab import (  # noqa: E402
     cfc_substep,
     decode_velocity,
     encode_velocity,
-    lowrank_cfc_substep, lowrank_damped_substep,
+    lowrank_cfc_substep, lowrank_damped_substep, lowrank_overdamped_substep,
+    lowrank_iso_overdamped_substep,
     indefinite_lowrank_modes, indefinite_lowrank_modes_split, indefinite_lowrank_modes_chol,
     lowrank_iso_damped_substep, series_terms_for,
     lowrank_modes,
@@ -255,6 +256,22 @@ class MultiXiPARFConfig(SparsePARFConfig):
     # Gaussian gate), Theta 'mlp' with tanh, detached or live sources, no value
     # transport, no exchange potential inside U_pair. False = off (bit-identical).
     vphi_analytic_force: bool = False
+    # FO-b (Depth_Ladder_and_Matched_Baseline_Protocol.md SS5.13, 2026-10-19): a
+    # true first-order (overdamped) layer step, the gradient flow dh/dt = mu f(h)
+    # with mobility mu = dt / (2 m), dt the trained layer step cfg.dt. Same
+    # A-B-A splitting and one force evaluation as the BAOAB step: the stiff
+    # low-rank modes relax exactly (lowrank_overdamped_substep; with PMX the
+    # frozen spring alpha I + modes on all of R^d, lowrank_iso_overdamped_substep), everything
+    # else takes the gradient step mu dt f = (dt^2 / 2m) f -- the step FO-a's
+    # soft directions take from rest -- and no velocity exists (h_prev_out =
+    # h_new, no O-step, gamma unused). Unlike FO-a, which keeps the inertial
+    # flow inside each step and only drops the velocity between layers, this
+    # removes inertia everywhere. mu uses the trained cfg.dt, fixed at construction,
+    # not the substep or a probe's step, so the per-layer flow and Cell 6b-7's
+    # Gate 3 refine one fixed gradient flow. Supported: integrator=
+    # 'baoab_cfc_lowrank' on every layer, with or without PMX's exact wells, T = 0.
+    # False = off (bit-identical).
+    first_order_overdamped: bool = False
     poisson_halflife_min: float = 4.0     # tokens; per-mode half-lives are
     poisson_halflife_max: float = 128.0   # log-spaced over this range
     # PM1-cap (protocol SS5.15, 2026-10-08): bound every well depth smoothly,
@@ -525,6 +542,10 @@ class MultiXiPARFLM(SparsePARFLM):
             )
 
         super().__init__(cfg)
+        # FO-b's mobility mu = dt / (2 m) uses the trained layer step, fixed here:
+        # probes that vary the step (Cell 6b-7 sets cfg.dt to the probe's dt) then
+        # refine or extend one gradient flow instead of changing the mobility with it.
+        self._fob_dt = float(cfg.dt)
 
         # ── Replace V_theta with the multi-xi version ──
         self.V_theta = ScalarPotentialMultiXi(
@@ -1461,6 +1482,12 @@ class MultiXiPARFLM(SparsePARFLM):
             h_in = h_in.requires_grad_(True)
 
         v = decode_velocity(h_in, h_prev, dt)
+        if getattr(cfg, "first_order_overdamped", False):
+            if not use_lowrank:
+                raise NotImplementedError("first_order_overdamped (FO-b) supports integrator="
+                                          "'baoab_cfc_lowrank' on every layer")
+            if getattr(cfg, "langevin_T", 0.0):
+                raise NotImplementedError("first_order_overdamped (FO-b) is defined at T = 0")
 
         # Cached, frozen linearisation of V_theta at h_in (reused by both A
         # substeps and the kick subtraction below), and the well parameters
@@ -1549,6 +1576,22 @@ class MultiXiPARFLM(SparsePARFLM):
                 )
             lr_sL = torch.einsum('...dp,...p->...d', lr_G, lr_Gmu)
             f_L = lr_sL - self._lowrank_matvec(lr_G, h_in)
+            if getattr(cfg, "first_order_overdamped", False):
+                if pmx:
+                    # the force the exact flow carries, as in PMX's A substeps
+                    def _a_force(hh):
+                        return _th_proj(lr_sL - self._lowrank_matvec(lr_G, hh)) + _pm_quad_force(hh)
+                    _kick_sub, _alpha = _a_force, pm_alpha_s
+                else:
+                    def _a_force(hh):
+                        return lr_sL - self._lowrank_matvec(lr_G, hh)
+
+                    def _kick_sub(hh):
+                        return torch.einsum('...dq,...q->...d', lr_U,
+                                            torch.einsum('...dq,...d->...q', lr_U, _a_force(hh)))
+                    _alpha = None
+                return self._overdamped_step(h_in, xis, vtheta_comps, layer_idx, dt, m_b,
+                                             lr_U, lr_kappa, _alpha, _a_force, _kick_sub, flow_ctx)
             if pmx:
                 h_mid, v_mid = lowrank_iso_damped_substep(
                     h_in, v, lr_U, lr_kappa, pm_alpha_s, _th_proj(f_L) + _pm_quad_force(h_in),
@@ -1651,6 +1694,44 @@ class MultiXiPARFLM(SparsePARFLM):
         if cfg.ln_after_step and (flow_ctx is None or flow_ctx.get("project", True)):
             h_new = self._project(h_new)
         return h_new, encode_velocity(h_new, v_new, dt)
+
+    def _overdamped_step(self, h_in, xis, vtheta_comps, layer_idx, dt, m_b,
+                         lr_U, lr_kappa, alpha, a_force, kick_sub, flow_ctx):
+        """FO-b (cfg.first_order_overdamped): one A-B-A step of the gradient flow.
+
+        A: exact relaxation over dt/2 under the frozen spring the second-order
+           step's A substeps integrate: the retained low-rank modes (SR2), or
+           with PMX ``alpha I + modes`` on all of R^d (alpha not None);
+        B: gradient step (mu dt) f on everything A does not integrate, at h_mid;
+        A: relaxation again, from the moved point. mu = dt_trained / (2 m).
+        B is one explicit (Euler) step of its part of the flow, so the scheme is
+        first order in dt, as any first-order step with one force evaluation is;
+        the per-layer flow (k substeps) converges to the gradient flow as 1/k
+        (debug/verify_fob_switch.py). Returns ``(h_new, h_new)``: zero velocity
+        into the next layer.
+        """
+        cfg = self.cfg
+        half = 0.5 * dt
+        mu = getattr(self, "_fob_dt", cfg.dt) / (2.0 * m_b)
+
+        def relax(hh):
+            if alpha is None:
+                return lowrank_overdamped_substep(hh, lr_U, lr_kappa, a_force(hh), mu, half)
+            return lowrank_iso_overdamped_substep(hh, lr_U, lr_kappa, alpha, a_force(hh), mu, half)
+        h_mid = relax(h_in)
+        if not h_mid.requires_grad:
+            h_mid = h_mid.requires_grad_(True)
+        f_theta, f_phi = self._layer_forces(
+            h_mid, xis, layer_idx, split=True, vtheta_comps=vtheta_comps,
+        )
+        f_kick = f_theta + f_phi - kick_sub(h_mid)
+        if cfg.force_clamp_max is not None:
+            f_kick = f_kick.clamp(-cfg.force_clamp_max, cfg.force_clamp_max)
+        h_mid = h_mid + (mu * dt) * f_kick
+        h_new = relax(h_mid)
+        if cfg.ln_after_step and (flow_ctx is None or flow_ctx.get("project", True)):
+            h_new = self._project(h_new)
+        return h_new, h_new
 
     @staticmethod
     def _lowrank_matvec(G: torch.Tensor, x: torch.Tensor) -> torch.Tensor:

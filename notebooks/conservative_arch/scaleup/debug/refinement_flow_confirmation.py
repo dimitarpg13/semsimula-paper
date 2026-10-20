@@ -19,7 +19,11 @@ Checks first, all exact: switches off = 6b-7's _fom_stack; per-layer flow at
 N = 2 = trained; one fresh xi / quadratic (/ phi) per trained layer at N = 8;
 the replay with the normal clamp reproduces the captured output.
 
-Usage: python3 refinement_flow_confirmation.py OUT_DIR FOLDER {f31|sr2|pm1|pmx} [seed=<int>]
+Usage: python3 refinement_flow_confirmation.py OUT_DIR FOLDER {f31|sr2|pm1|pmx|sr2-ts} [seed=<int>] [ckpt=<file>]
+  sr2-ts (2026-10-19): SR2's architecture trained on TinyStories (the FO series' SO-TS), built
+  through the current notebook with CORPUS = 'tinystories' and the run's own validation tokens
+  and frequency table (first_order_ablation/fo_series/stage0_models.build_cfc_ts).
+  ckpt=<file>: a checkpoint file in FOLDER/checkpoints other than <prefix>_best.pt.
   pmx (CX3, 2026-10-11): SR2 + 64 Poisson modes with the wells integrated
   exactly; the per-layer flow also freezes the wells' quadratic and its
   linearisation point at the share's first substep (split_stack pmq_freeze),
@@ -41,7 +45,8 @@ if __name__ == '__main__':
     OUT = Path(sys.argv[1]); FOLDER = sys.argv[2]; KIND = sys.argv[3]
     SEED = next((int(a[5:]) for a in sys.argv[4:] if a.startswith('seed=')), None)
     CHECKS_ONLY = 'checks' in sys.argv[4:]
-    assert KIND in ('f31', 'sr2', 'pm1', 'pmx'), KIND
+    CKPT = next((a[5:] for a in sys.argv[4:] if a.startswith('ckpt=')), None)
+    assert KIND in ('f31', 'sr2', 'pm1', 'pmx', 'sr2-ts'), KIND
     sys.argv = [sys.argv[0], str(OUT / 'harness')]
     sys.path.insert(0, str(Path(__file__).parent))
     import verify_pm_switch as P
@@ -53,11 +58,24 @@ if __name__ == '__main__':
         repl = repl + P.PM_ON
     if KIND == 'pmx':
         repl = repl + (("POISSON_WELLS_EXACT  = False", "POISSON_WELLS_EXACT  = True"),)
-    model, g, _ = P.build(FOLDER, repl)
+    if KIND == 'sr2-ts':
+        sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'first_order_ablation/fo_series'))
+        import importlib.util
+        _sp = importlib.util.spec_from_file_location(
+            'stage0_models', Path(__file__).resolve().parents[2] / 'first_order_ablation/fo_series/stage0_models.py')
+        _s0 = importlib.util.module_from_spec(_sp)
+        _argv = list(sys.argv); sys.argv = [sys.argv[0], str(OUT / 'ts_scratch')]
+        _sp.loader.exec_module(_s0); sys.argv = _argv
+        model, g, _sd = _s0.build_cfc_ts(FOLDER, (), ckpt_name=CKPT, return_g=True)
+        print(f'checkpoint: {CKPT or "<prefix>_best.pt"} (step {_sd.get("step")}, PPL {_sd.get("val_ppl", float("nan")):.3f})')
+        KIND_ARCH = 'sr2'
+    else:
+        model, g, _ = P.build(FOLDER, repl)
+        KIND_ARCH = KIND
     model.to('cpu'); model.eval()
-    assert bool(getattr(model.cfg, 'lowrank_damped_flow', False)) == (KIND in ('sr2', 'pmx'))
-    assert (getattr(model, 'pm_mu', None) is not None) == (KIND in ('pm1', 'pmx'))
-    assert bool(getattr(model.cfg, 'poisson_wells_exact', False)) == (KIND == 'pmx')
+    assert bool(getattr(model.cfg, 'lowrank_damped_flow', False)) == (KIND_ARCH in ('sr2', 'pmx'))
+    assert (getattr(model, 'pm_mu', None) is not None) == (KIND_ARCH in ('pm1', 'pmx'))
+    assert bool(getattr(model.cfg, 'poisson_wells_exact', False)) == (KIND_ARCH == 'pmx')
     assert model.cfg.integrator == 'baoab_cfc_lowrank' and model.reverse_ch is None and model.cfg.ln_after_step
     assert model.cfg.force_clamp_max is None
 

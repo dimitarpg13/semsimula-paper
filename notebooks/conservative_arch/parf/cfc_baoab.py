@@ -749,6 +749,67 @@ def lowrank_damped_substep(
     return h_new, v_new
 
 
+def lowrank_overdamped_substep(
+    h: torch.Tensor,
+    U: torch.Tensor,
+    kappa: torch.Tensor,
+    f_lr: torch.Tensor,
+    mu: torch.Tensor | float,
+    dt: float,
+) -> torch.Tensor:
+    """Exact gradient flow ``dh/dt = mu f_L(h)`` of the low-rank spring on span(U) by ``dt``.
+
+    FO-b (protocol SS5.13, 2026-10-19): the first-order counterpart of
+    ``lowrank_damped_substep``. Each mode relaxes exponentially toward its
+    minimum, z -> z* + exp(-mu kappa dt) (z - z*), instead of oscillating; with
+    no velocity there is no drift, so the complement of span(U) does not move.
+    ``mu`` is the mobility (a scalar or (..., 1), per token), ``f_lr`` the
+    low-rank force at ``h`` as in :func:`lowrank_cfc_substep`. Written as
+    z_new - z = mu dt phi(mu kappa dt) U^T f_lr with phi(x) = (1 - e^-x) / x,
+    which is smooth through kappa = 0 (a soft mode takes a plain gradient step
+    mu dt f) and valid for kappa of either sign. Returns ``h_new``.
+    """
+    fz = torch.einsum('...dq,...d->...q', U, f_lr)
+    x = mu * kappa * dt
+    small = x.abs() < 1e-6
+    xs = torch.where(small, torch.ones_like(x), x)
+    phi = torch.where(small, 1.0 - 0.5 * x, -torch.expm1(-xs) / xs)
+    return h + torch.einsum('...dq,...q->...d', U, (mu * dt) * phi * fz)
+
+
+def _relax_coeff(x: torch.Tensor) -> torch.Tensor:
+    """phi(x) = (1 - e^-x) / x, smooth through x = 0 and valid for either sign."""
+    small = x.abs() < 1e-6
+    xs = torch.where(small, torch.ones_like(x), x)
+    return torch.where(small, 1.0 - 0.5 * x, -torch.expm1(-xs) / xs)
+
+
+def lowrank_iso_overdamped_substep(
+    h: torch.Tensor,
+    U: torch.Tensor,
+    kappa: torch.Tensor,
+    alpha: torch.Tensor,
+    f: torch.Tensor,
+    mu: torch.Tensor | float,
+    dt: float,
+) -> torch.Tensor:
+    """Exact gradient flow over ``dt`` of  x' = mu (f - K (x - h)),  x(0) = h.
+
+    FO-b on PMX (protocol SS5.13, 2026-10-19): the first-order counterpart of
+    :func:`lowrank_iso_damped_substep`, with the same frozen spring
+    ``K = alpha I + U diag(kappa) U^T`` on all of R^d: modes in span(U) relax
+    with stiffness ``kappa + alpha``, the complement with ``alpha`` (per token;
+    either sign: a negative stiffness grows as e^(mu |k| dt)). ``f`` is the
+    force at ``h``. Each direction moves by mu dt phi(mu k dt) times its force
+    component, phi(x) = (1 - e^-x) / x. Returns ``h_new``.
+    """
+    fz = torch.einsum('...dq,...d->...q', U, f)
+    fc = f - torch.einsum('...dq,...q->...d', U, fz)
+    dz = (mu * dt) * _relax_coeff(mu * (kappa + alpha) * dt) * fz
+    dc = (mu * dt) * _relax_coeff(mu * alpha * dt) * fc
+    return h + torch.einsum('...dq,...q->...d', U, dz) + dc
+
+
 # ---------------------------------------------------------------------------
 # PMX (protocol SS5.15, 2026-10-10): the Poisson-mode wells integrated exactly
 # ---------------------------------------------------------------------------

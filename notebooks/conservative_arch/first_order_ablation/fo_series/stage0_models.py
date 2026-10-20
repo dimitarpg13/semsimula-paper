@@ -127,7 +127,7 @@ def build_owt(folder, rc, L):
     return model, np.load(G.VAL), float('nan')
 
 
-def build_cfc_ts(folder, extra):
+def build_cfc_ts(folder, extra, ckpt_name=None, return_g=False):
     """A TinyStories arm of the FO 2x2 (SO-TS, FO-TS), built through the current ladder notebook."""
     sys.path.insert(0, str(REPO / 'notebooks/conservative_arch/scaleup/debug'))
     sys.argv = sys.argv[:1] + [str(OUT / 'ts_cfc_scratch')]
@@ -167,9 +167,12 @@ def build_cfc_ts(folder, extra):
         exec(compile(G.strip(c5b), 'Cell5b', 'exec'), g)
     assert folder.endswith(g['_variant_tag']), (folder, g['_variant_tag'])
     model = g['model']
-    sd = torch.load(g['CKPT_DIR'] / f"{g['CKPT_PREFIX']}_best.pt", map_location='cpu', weights_only=False)
+    sd = torch.load(g['CKPT_DIR'] / (ckpt_name or f"{g['CKPT_PREFIX']}_best.pt"), map_location='cpu', weights_only=False)
     r = model.load_state_dict(sd['model_state_dict'], strict=False)
     assert not r.missing_keys and not r.unexpected_keys, r
+    if return_g:                                    # for the FLOW-R script: the notebook namespace (get_batch, val_ids)
+        g['val_ids'] = val
+        return model, g, sd
     return model, val, float(sd.get('val_ppl', float('nan')))
 
 
