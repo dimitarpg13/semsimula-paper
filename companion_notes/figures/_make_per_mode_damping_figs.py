@@ -2,7 +2,7 @@
 
 Six PNGs into figures/per_mode_damping/. The dynamical panels are exact solutions of the damped mode
 equation z'' + gamma z' + omega^2 z = 0 over one layer step dt = 4 (the ladder's), with gamma_0 = 0.1.
-One panel plots recorded perplexities and the learned-gamma(h) run's in-flight zeta medians (labelled).
+One figure plots recorded perplexities, the learned-gamma(h) run's zeta medians and its gap to SR2 (labelled).
 
   pmd_phase_space.png     -- one stiff mode's phase-space cloud through one layer step, for five damping
                              ratios: the area kept is exp(-gamma dt), the turn is omega_d dt.
@@ -159,15 +159,20 @@ ax[1].set_aspect("equal"); ax[1].axhline(0, color="k", lw=0.4); ax[1].axvline(0,
 fig.tight_layout(); fig.savefig(OUT / "pmd_steering.png"); plt.close(fig)
 
 # ---------------------------------------------------------------- 6. recorded: the damping axis and the learned zeta
-fig, ax = plt.subplots(1, 2, figsize=(12, 4.4))
-pts = [(0.026, 58.32, "SR2\n(γ = 0.1, ζ ≈ 0.03)", "o"), (1.0, 63.28, "SR3-crit\n(ζ = 1)", "D"), (30.0, 61.16, "FO-b\n(gradient flow)", "s")]
+fig, ax = plt.subplots(1, 3, figsize=(16, 4.4))
+# x: total damping ratio of a median stiff mode (added ratio plus gamma_0 / (2 omega), 0.026 at SR2's median stiff mode)
+pts = [(0.026, 58.32, "SR2\n(γ = 0.1, ζ ≈ 0.03)", "o"), (1.03, 63.28, "SR3-crit\n(ζ ≈ 1.03)", "D"), (30.0, 61.16, "FO-b\n(gradient flow)", "s")]
 for x, y, lab, mk in pts:
     ax[0].plot(x, y, mk, color="k", ms=8); ax[0].annotate(lab, (x, y), textcoords="offset points", xytext=(8, 4), fontsize=8)
-ax[0].axvspan(0.3, 0.6, color="#1b9e77", alpha=0.18)
-ax[0].text(0.115, 60.2, "learned γ(h):\nmedian ζ from layer 1\nto layer 0 (run in progress)", fontsize=8, color="#1b9e77")
-ax[0].set_xscale("log"); ax[0].set(xlabel="damping ratio of the stiff modes (FO-b drawn at the overdamped end)", ylabel="settled perplexity, OpenWebText",
+ax[0].plot([0.39, 0.59], [59.29, 59.29], color="#1b9e77", lw=4, solid_capstyle="butt")
+ax[0].annotate("learned γ(h), 59.29\n(median ζ, layer 1 to layer 0)", (0.39, 59.29), textcoords="offset points", xytext=(-95, 14), fontsize=8, color="#1b9e77")
+ax[0].set_xscale("log"); ax[0].set(xlabel="total damping ratio, median stiff mode (FO-b: overdamped end)", ylabel="settled perplexity, OpenWebText",
                                    title="A. The damping axis (recorded)", xlim=(0.01, 60), ylim=(57.5, 64.8))
-log = Path.home() / "Downloads/L2_learned_lambda_OWT_32500steps_output.txt"
+D = Path.home() / "Downloads"
+log = D / "L2_learned_lambda_OWT_32500steps_output.txt"
+sr2 = D / ("semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_"
+           "plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/results/L2_SR2_for_noattn_none_32500steps_output.txt")
+evals = lambda f: {int(m[0].replace(",", "")): float(m[1]) for m in re.findall(r">>> EVAL step ([\d,]+)\s+val_loss=[\d.]+\s+val_ppl=([\d.]+)", f.read_text())}
 if log.exists():
     rows = re.findall(r"step +(\d+)/32500 .*?zeta=\[([\d.]+)/[\d.]+ \| ([\d.]+)/[\d.]+\]", log.read_text())
     st = np.array([int(r[0]) for r in rows]); l0 = np.array([float(r[1]) for r in rows]); l1 = np.array([float(r[2]) for r in rows])
@@ -176,8 +181,15 @@ if log.exists():
 ax[1].axhline(1.0, color="k", ls="--", lw=0.8); ax[1].text(500, 1.02, "critical damping", fontsize=8)
 ax[1].axhline(0.026, color="0.5", ls=":", lw=0.8); ax[1].text(500, 0.04, "SR2's effective ζ", fontsize=8, color="0.4")
 ax[1].axvspan(21125, 32500, color="0.9"); ax[1].text(21400, 1.15, "decay", fontsize=8)
-ax[1].set(xlabel="training step", ylabel="median ζ (progress line, two decimals)", title="B. The learned ζ(h), through training", ylim=(0, 1.3), xlim=(0, 32500))
-ax[1].legend(fontsize=8, loc="center right")
+ax[1].set(xlabel="training step", ylabel="median added ζ (progress line, two decimals)", title="B. The learned ζ(h), through training", ylim=(0, 1.3), xlim=(0, 32500))
+ax[1].legend(fontsize=8, loc="center left", bbox_to_anchor=(0.0, 0.6))
+if log.exists() and sr2.exists():
+    g, b = evals(log), evals(sr2); ks = sorted(set(g) & set(b))
+    ax[2].plot(ks, [100 * (g[k] / b[k] - 1) for k in ks], color="#1b9e77", lw=1.5)
+ax[2].axhline(0, color="k", lw=0.8); ax[2].axvspan(21125, 32500, color="0.9"); ax[2].text(21400, -4.6, "decay", fontsize=8)
+ax[2].text(1500, 1.1, "behind SR2", fontsize=8, color="0.4"); ax[2].text(26500, -1.6, "ahead of SR2", fontsize=8, color="0.4")
+ax[2].set(xlabel="training step", ylabel="learned γ(h) against SR2, perplexity (%)", title="C. γ(h) against SR2: lead, then deficit",
+          xlim=(0, 32500), ylim=(-5.2, 2.6))
 fig.tight_layout(); fig.savefig(OUT / "pmd_damping_axis.png"); plt.close(fig)
 
 # ---------------------------------------------------------------- 7. the dial and the control (illustrative)
@@ -193,13 +205,14 @@ ax[0].set_xscale("log"); ax[0].set(xlabel="dial c: ζ(h) replaced by c·ζ(h) at
                                    title="A. D3, the damping dial (illustrative shapes)", ylim=(59, 68))
 ax[0].text(0.11, 59.4, "c < 1: toward SR2's light damping", fontsize=8); ax[0].text(1.6, 59.4, "c > 1: toward critical", fontsize=8)
 ax[0].legend(fontsize=8, loc="upper center")
-lv = [("SR2\n(ζ ≈ 0.03)", 58.32), ("constant ζ̄\n(D4)", None), ("learned ζ(h)\n(running)", None)]
-ax[1].bar([0], [58.32], color="0.4"); ax[1].bar([1], [58.0], color="0.75", hatch="//"); ax[1].bar([2], [57.7], color="#1b9e77", alpha=0.6, hatch="..")
-ax[1].set_xticks([0, 1, 2], [l for l, _ in lv]); ax[1].set_ylim(56, 59.5); ax[1].set_ylabel("settled perplexity (schematic)"); ax[1].set_yticks([])
-ax[1].annotate("", xy=(1, 58.0), xytext=(0, 58.32), arrowprops=dict(arrowstyle="->", color="k"))
-ax[1].annotate("", xy=(2, 57.7), xytext=(1, 58.0), arrowprops=dict(arrowstyle="->", color="k"))
-ax[1].text(0.25, 58.45, "value of the\ndamping LEVEL", fontsize=8); ax[1].text(1.25, 58.12, "value of the\nPOSITION DEPENDENCE", fontsize=8)
-ax[1].set_title("B. D4, the decomposition (schematic)")
+lv = ["SR2\n(recorded)", "constant $\\bar{\\zeta}$\n(D4, to measure)", "learned ζ(h)\n(recorded)"]
+ax[1].bar([0], [58.32], color="0.4"); ax[1].bar([2], [59.29], color="#1b9e77", alpha=0.6)
+ax[1].bar([1], [59.6], color="none", edgecolor="0.4", ls="--"); ax[1].text(1, 58.75, "?", ha="center", fontsize=16, color="0.4")
+for x, y in ((0, 58.32), (2, 59.29)): ax[1].text(x, y + 0.05, f"{y:.2f}", ha="center", fontsize=8)
+ax[1].set_xticks([0, 1, 2], lv); ax[1].set_ylim(57.5, 60.2); ax[1].set_ylabel("settled perplexity, OpenWebText")
+ax[1].text(0.5, 59.95, "SR2 → $\\bar{\\zeta}$: the value of the damping LEVEL", fontsize=8, ha="center")
+ax[1].text(1.5, 59.75, "$\\bar{\\zeta}$ → ζ(h): the value of POSITION DEPENDENCE", fontsize=8, ha="center")
+ax[1].set_title("B. D4: two ends recorded, the middle to measure")
 fig.tight_layout(); fig.savefig(OUT / "pmd_dial_and_control.png"); plt.close(fig)
 
 # ---------------------------------------------------------------- 8. capture at a memory well, by damping

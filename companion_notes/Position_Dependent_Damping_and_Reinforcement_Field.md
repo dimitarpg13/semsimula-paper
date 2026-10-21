@@ -14,7 +14,9 @@
 > - **The gradient-cascade instability:** [`Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`](Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md)
 > - **Model code:** [`notebooks/conservative_arch/parf/model_parf.py`](../notebooks/conservative_arch/parf/model_parf.py)
 
-> **Update, 2026-10-21.** Three damping arms have now trained on SR2's base: FO-b (the gradient flow), SR3-crit (critical damping, 8.5% behind SR2) and a learned per-token damping ratio, which kept the oscillation and damped it to a median ζ of about 0.6 (layer 0) and 0.3 (layer 1). §12 sets out the theory of the next step, a damping ratio per stiff mode, with the inference-time damping dial, the constant-ζ control, and how position-dependent damping carries over to the Fock mechanism and the Poisson-mode wells. It also scopes the 2026-09-27 correction below: scalar damping cannot steer, but a damping tensor can.
+> **Superseded for the CfC/BAOAB models, 2026-10-21.** The theory, implementation and results of position-dependent damping in the CfC/BAOAB models are now in the technical report [`Tech_Report_Position_Dependent_Damping_CfC_BAOAB.md`](Tech_Report_Position_Dependent_Damping_CfC_BAOAB.md). This note is kept unchanged as the record the protocol's pre-registrations cite: §1–§10 concern the Gen 1 models and their damped velocity-Verlet integrator; §11–§12 are the first CfC/BAOAB material, which the report restates and extends.
+
+> **Update, 2026-10-21.** Three damping arms have now trained on SR2's base: FO-b (the gradient flow), SR3-crit (critical damping, 8.5% behind SR2) and a learned per-token damping ratio, which kept the oscillation, damped it to a median ζ of 0.56 (layer 0) and 0.36 (layer 1), and settled at 59.29, 1.7% behind SR2, after leading it through the stable phase of training (protocol §5.13). §12 sets out the theory of the next step, a damping ratio per stiff mode, with the inference-time damping dial, the constant-ζ control, and how position-dependent damping carries over to the Fock mechanism and the Poisson-mode wells. It also scopes the 2026-09-27 correction below: scalar damping cannot steer, but a damping tensor can.
 
 > **Update, 2026-10-11.** No arm has trained $\gamma(h)$ yet, but the SR2, PM1, PM1-cap and PMX arms changed what it is for. §11 records three findings: refinement readiness did not need it; the place where damping matters is the memory wells, and PMX now carries the mode basis that makes mode-resolved damping free; and LayerNorm is a constraint, not the damping. The roadmap of §10 is superseded by §11.4.
 
@@ -375,6 +377,8 @@ damping sensitive to the non-conservative energy injection channel.
 | 4.2 Learned MLP | ~d/2 | No | No | High |
 | 4.3 Fock-channel | 1 scalar | Partial | Yes | Medium |
 | Hybrid 4.1 + 4.3 | 3-4 scalars | Partial | Yes | Medium-high |
+| SR3-crit, built (§4.5) | none | Yes (closed form per mode) | No | Low (fixed ratio) |
+| Learned ζ(h), built (§4.5) | 24,705 at d = 384 | No | No | High per token; spread over modes fixed by ωᵢ |
 
 A **recommended starting point** for experiments is the hybrid of 4.1
 and 4.3:
@@ -383,6 +387,25 @@ $$\gamma(h) = \gamma_{\min} + \Delta\gamma_V \cdot \sigma(\beta V_\theta(h)) + \
 
 This has four learnable scalars and uses only quantities already
 computed in the forward pass.
+
+### 4.5 What was implemented (2026-10-21)
+
+None of §4.1–§4.3 has been trained. The two damping arms that did train (protocol §5.13) took a different form from all three, set by the integrator they run in: SR2's exact damped flow of V_θ's retained stiff modes (§11.2). That flow already computes, per token, each stiff mode's stiffness κᵢ and frequency ωᵢ (the square root of κᵢ over the token's mass), so the damping is set **per mode** and measured against ωᵢ.
+
+| arm | damping rate of stiff mode i | what is learned | extra parameters |
+| --- | --- | --- | --- |
+| SR2 (the base) | γ₀ = 0.1 | nothing | 0 |
+| SR3-crit | γ₀ + 2ωᵢ: the critical rate 2ωᵢ on top of the floor (total ratio about 1.03 for a median stiff mode) | nothing | 0 |
+| learned γ(h) | γ₀ + 2ζ(h)ωᵢ | a damping ratio ζ(h) per token and layer | 24,705 |
+
+The directions outside the retained modes keep γ₀ in both arms. The learned arm relates to the proposals above as follows.
+
+- **It is a learned MLP, as in §4.2,** but the network outputs a *damping ratio* ζ, the damping rate measured against the mode's own frequency, not the damping rate γ itself. The stiffness spectrum, not the network, decides how the damping is spread over the modes.
+- **Bounds by parameterisation, not by a sigmoid.** ζ(h) is 0.005 times the exponential of the network's output, capped at 10. The added rate is never negative, so the damping never falls below SR2's.
+- **Curvature-keyed, as §4.1 intended,** but through each mode's frequency ωᵢ, not through the value of V_θ.
+- **Not in the O-step.** §6.2 and §9.7 place γ(h) in BAOAB's O-step. On the retained modes the friction is integrated inside the exact damped flow of the A sub-steps instead (the O-step is undone there), so the new rate goes in the same place.
+
+The full definition and its consequences are in §12.1.
 
 ---
 
@@ -958,7 +981,7 @@ sub-step* by the Strang splitting. This is exactly the placement the
 Rayleigh dissipation function of §2 implies -- $\gamma$ is friction, and
 friction belongs in the $\mathrm{O}$-step -- so the integrator finally
 matches the physics instead of smearing $\gamma$ across the force
-coefficients of §4.5.
+coefficients ρ and β above.
 
 **Why it helps -- three concrete gains.**
 
@@ -1225,7 +1248,7 @@ The clustering note ([`Two_Clustering_Mechanisms_Saturation_and_Synchronization.
 
 ## 12. Per-mode damping ζᵢ(h): theory, and what the October 2026 damping arms set up (2026-10-21)
 
-Three arms trained a damping of the stiff modes on SR2's base between 2026-10-19 and 2026-10-21: FO-b (the gradient flow, no velocity), SR3-crit (critical damping of every stiff mode) and a learned per-token damping ratio ζ(h). This section sets out the theory of the next step, a damping ratio per stiff mode, ζᵢ(h), together with the two controls that decide how its result reads (an inference-time damping dial and a constant-ζ control), and how position-dependent damping carries over to the Fock mechanism and the Poisson-mode wells. The experiments are D1–D7 of the checklist; the scored results are in the protocol, §5.13.
+Three arms on SR2's base, trained between 2026-10-19 and 2026-10-21, moved its damping toward the overdamped end: FO-b (the gradient flow, no velocity in any direction, with a fixed mobility in place of a damping), SR3-crit (critical damping of every stiff mode) and a learned per-token damping ratio ζ(h) on the stiff modes. This section sets out the theory of the next step, a damping ratio per stiff mode, ζᵢ(h), together with the two controls that decide how its result reads (an inference-time damping dial and a constant-ζ control), and how position-dependent damping carries over to the Fock mechanism and the Poisson-mode wells. The experiments are D1–D7 of the checklist; the scored results are in the protocol, §5.13.
 
 ### 12.1 From a scalar to a damping tensor
 
@@ -1245,6 +1268,15 @@ where aᵢ is the mode's share of the remaining force. The arms differ only in h
 | **per-mode, ζᵢ(h)** | **γ₀ + 2ζᵢ(h)ωᵢ** | **one learned ratio per token, layer and mode** |
 
 The *damping ratio* ζ is the damping rate measured against the mode's own frequency: below 1 the mode oscillates as it settles, at 1 it settles as fast as it can without overshooting, above 1 it creeps. The *total* ratio of a mode includes γ₀'s contribution: it is ζᵢ plus γ₀ divided by twice ωᵢ, which for SR2's median stiff mode (ω·Δt about 7.6, Δt = 4) is about 0.026.
+
+**How the learned arm computes ζ(h).** It is a learned MLP in the sense of §4.2, with four differences from that proposal (§4.5).
+
+- **The network.** One small network, the *damping head*, maps the token's state at the start of the layer step, h (d = 384 numbers), to one number: a linear map to 64 hidden units, a GELU nonlinearity, and a linear map to a single output s(h), 24,705 parameters in all. The ratio is $\zeta(h) = \zeta_0 e^{s(h)}$ with $\zeta_0 = 0.005$, and s is capped so that ζ never exceeds 10. The head's last layer starts at zero, so at initialisation ζ = 0.005 for every token: the arm starts as SR3's form at a ratio of 0.005, a total ratio of about 0.03 against SR2's 0.026. Its parameters have their own gradient-clipping group (norm 0.3).
+- **One head for both layers.** The same head is applied at layer 0 and at layer 1. The two layers' ratios differ (settled medians 0.56 at layer 0, 0.36 at layer 1) only because their input states differ, not because each layer has its own head.
+- **Frozen over the step.** ζ is computed once, from the step's input, and held fixed through both half-steps, as the retained modes U and stiffnesses κᵢ are. Within a step each mode is therefore a damped oscillator with constant coefficients, integrated exactly, which is what makes the layer map of §12.2 exact for the trained arm.
+- **What ωᵢ is in the damping.** ωᵢ is the square root of κᵢ over the token's mass, with the mass's gradient stopped in this term (the damping head does not train the mass). A retained mode with negative stiffness, an unstable direction, has no frequency: ωᵢ is set to 0 there, and the mode keeps γ₀ alone.
+
+SR3-crit is the same computation with no head and ζ fixed at 1.
 
 Written for the whole hidden state, these dampings are one object, a Rayleigh dissipation function whose friction is a symmetric, non-negative tensor:
 
@@ -1279,7 +1311,7 @@ This is the measured order of the damping arms read off one picture. SR2's stiff
 
 ### 12.3 The coupling in today's arms: a shared ratio erases the stiff modes first
 
-In SR3-crit and in the learned γ(h) the damping rate of mode i is γ₀ plus 2ζωᵢ with **one** ζ for all modes of a token. The amplitude kept, e to the minus ζωᵢΔt, then falls exponentially with the mode's stiffness. The learned arm settled near ζ = 0.6 at layer 0 (still running at the time of writing), and its wells are as stiff as SR2's (ω·Δt about 7.8): at that stiffness a mode keeps about 1% of its amplitude through a layer step, while a soft mode at ω·Δt = 1 keeps about 45% (its total ratio is 0.8, γ₀ adding 0.2 at that frequency). A shared ratio cannot keep a stiff mode ringing while damping a soft one; it ties how much a mode is erased to how stiff it is.
+In SR3-crit and in the learned γ(h) the damping rate of mode i is γ₀ plus 2ζωᵢ with **one** ζ for all modes of a token. The amplitude kept, e to the minus ζωᵢΔt, then falls exponentially with the mode's stiffness. The learned arm settled at ζ = 0.56 at layer 0, and its wells are as stiff as SR2's (ω·Δt about 7.9): at that stiffness a mode keeps about 1% of its amplitude through a layer step, while a soft mode at ω·Δt = 1 keeps about 45% (its total ratio is 0.8, γ₀ adding 0.2 at that frequency). A shared ratio cannot keep a stiff mode ringing while damping a soft one; it ties how much a mode is erased to how stiff it is.
 
 ![A shared ratio erases the stiff modes first; three per-mode alternatives](figures/per_mode_damping/pmd_coupling.png)
 
@@ -1289,7 +1321,7 @@ A per-mode ratio removes the tie: each mode gets its own place on the locus of �
 
 ### 12.4 Damping that steers
 
-The correction of 2026-09-27 at the head of this note says that damping is tangential at every position: the friction force is parallel to the velocity, so it changes speed along an unchanged path, never the path. That holds for **scalar** damping only. A damping tensor that is not a multiple of the identity produces a friction force that is **not** parallel to the velocity, so it bends the path:
+The correction of 2026-09-27 at the head of this note says that damping is tangential at every position: the friction force is parallel to the velocity, so it adds no force across the velocity and changes the path only indirectly, through the speed at which the potential's own transverse force bends it (paper v6 §8.6). Even that weaker limit holds for **scalar** damping only. A damping tensor that is not a multiple of the identity produces a friction force that is **not** parallel to the velocity, so it bends the path:
 
 $$
 -\Gamma(h) \dot{h} \parallel \dot{h} \quad \text{for every velocity} \iff \Gamma(h) = \gamma(h) I .
@@ -1318,17 +1350,17 @@ The readings that score them, all from the trained head on fixed weights: ζᵢ 
 Take a trained damping arm and, without retraining, replace its ζ(h) by c·ζ(h) for a dial c from about 0.1 to 10, then measure perplexity. c below 1 moves the model toward SR2's light damping; c above 1 toward critical.
 
 - **What it measures.** How sharp the optimum the model found is, and in which direction the trained wells are more fragile. The wells were shaped together with the damping they were trained under, so the curve has its minimum near c = 1 by construction; its width and asymmetry are the information.
-- **What to expect.** The arms so far suggest the curve is steeper toward critical than toward light damping: on OpenWebText critical damping cost 8.5% when trained in, and SR2's light damping is the best measured. A curve that is broad on the light side would mean the learned arm's extra damping (ζ ≈ 0.3–0.6) buys little; a sharp one, that it is finely tuned.
+- **What to expect.** The arms so far suggest the curve is steeper toward critical than toward light damping: on OpenWebText critical damping cost 8.5% when trained in, and SR2's light damping is the best measured. A curve that is broad on the light side would mean the learned arm's extra damping (ζ 0.36–0.56) buys little; a sharp one, that it is finely tuned. The learned arm settled 1.7% behind SR2, so the dial also asks whether the trained head is past its own optimum: if scaling ζ down (c below 1) on its fixed weights lowers perplexity, the head added more damping than its own wells need.
 - **What it cannot measure.** Like Gate 1, it is reliance, not need: fixed weights tell how a model trained one way reacts to another damping, not what a model trained at that damping would reach. The constant-ζ control (D4) and SR3-crit are the trained counterparts.
 - **For the per-mode arm,** the dial generalises to one dial per band of mode ranks (stiffest four, middle, softest), which reads directly which modes' damping the model depends on.
 
 ![The damping dial and the constant-ζ decomposition, illustrated](figures/per_mode_damping/pmd_dial_and_control.png)
 
-*A. Two illustrative shapes of the dial curve: a sharp optimum (the trained wells tolerate little change of damping) and a broad one. Not measured; D3 measures it. B. The decomposition D4 makes possible, schematic: from SR2 to a constant ζ̄ is the value of the damping level, from the constant to the learned ζ(h) the value of position dependence.*
+*A. Two illustrative shapes of the dial curve: a sharp optimum (the trained wells tolerate little change of damping) and a broad one. Not measured; D3 measures it. B. The decomposition D4 makes possible: SR2 (58.32) and the learned ζ(h) (59.29) are recorded; the constant-ζ̄ arm between them is to be measured. From SR2 to ζ̄ is the cost or value of the damping level, from ζ̄ to ζ(h) that of position dependence.*
 
 ### 12.7 The constant-ζ control (D4)
 
-The learned arm differs from SR2 in two ways at once: its damping **level** is higher (median ζ about 0.3–0.6 against 0.026) and its damping **varies** with the token. One run separates them: SR3's per-mode form at a **fixed** ratio ζ̄ equal to the learned arm's settled mean ratio (about 0.45; fixed at the settled value and pre-registered before the run), with no head.
+The learned arm differs from SR2 in two ways at once: its damping **level** is higher (settled median added ratio ζ 0.56 at layer 0 and 0.36 at layer 1, total ratios of about 0.59 and 0.39 for a median stiff mode, against SR2's total 0.026) and its damping **varies** with the token. One run separates them: SR3's per-mode form at a **fixed** ratio ζ̄ equal to the learned arm's settled ratio (about 0.46, the mean of the two layers' settled medians; fixed and pre-registered before the run), with no head. The learned arm settled 1.7% behind SR2, so the decomposition now reads a cost: of the 0.97 perplexity points, how much is the level and how much the variation. An arm without a head also starts from SR2's exact initial weights, which the learned arm did not (protocol §5.13, pairing caveat).
 
 $$
 \Delta_{\text{level}} = \mathrm{PPL}(\bar{\zeta}) - \mathrm{PPL}(\text{SR2}),
@@ -1336,9 +1368,9 @@ $$
 \Delta_{\text{position}} = \mathrm{PPL}(\zeta(h)) - \mathrm{PPL}(\bar{\zeta}).
 $$
 
-- If Δ_position is within the seed spread, **position dependence adds nothing**; the learned arm's value is all in the level, and a constant ratio of about 0.45 is the cheaper design.
+- If Δ_position is within the seed spread, **position dependence adds nothing**; the learned arm's value is all in the level, and a constant ratio of about 0.46 reproduces it without a head.
 - If Δ_position is clearly negative, the per-token variation earns its keep, and the per-mode arm's question (does per-*mode* variation earn more?) is the natural next one.
-- A **per-layer** constant (0.6 at layer 0, 0.3 at layer 1, the learned medians) is a cheaper intermediate, if the single constant falls short.
+- A **per-layer** constant (0.56 at layer 0, 0.36 at layer 1, the learned medians) is a cheaper intermediate, if the single constant falls short.
 - The learned arm's distribution of ζ across tokens bounds what Δ_position can be: if it is narrow (most tokens near the median), a constant reproduces it closely and Δ_position will be small. The ζ distribution (p10, p90) in the learned arm's eval records says this before D4 runs.
 
 ### 12.8 Position-dependent damping in the Fock mechanism
@@ -1364,13 +1396,13 @@ PMX integrates, exactly and with damping, the frozen spring made of V_θ's retai
 
 ### 12.10 What the per-mode run will measure
 
-- **The design.** The head outputs one ratio per retained mode, ζᵢ(h), indexed by the mode's stiffness rank (the eigensolve returns the modes in descending stiffness, so rank 1 is the stiffest mode for every token), with the per-token arm's log parameterisation, start (0.005, near SR2) and cap (10). At initialisation it equals SR3 at the fixed ratio 0.005, which the verification checks bit for bit, as for the per-token arm.
+- **The design.** The head outputs one ratio per retained mode, ζᵢ(h), indexed by the mode's stiffness rank (the eigensolve returns the modes in descending stiffness, so rank 1 is the stiffest mode for every token), with the per-token arm's log parameterisation, start (0.005, near SR2) and cap (10) of §12.1. At initialisation it equals SR3 at the fixed ratio 0.005, which the verification checks bit for bit, as for the per-token arm.
 - **The readings.** ζᵢ by rank and layer, with their spread over tokens; the implied γᵢ, amplitude kept and angle turned, scoring H1–H3 (§12.5); the dial per rank band (§12.6); perplexity against SR2, the per-token arm and the constant-ζ control (§12.7); Cell 6b-7's gates, 6b-13's stiffness and the per-layer flow, as for every damping arm.
 - **The calls** are registered in the protocol before the run, once the per-token arm and D4 are scored, since both set what a per-mode gain over them would mean.
 
 ![Recorded: perplexity along the damping axis, and the learned ζ(h) through training](figures/per_mode_damping/pmd_damping_axis.png)
 
-*A. Settled perplexity on OpenWebText against the damping ratio of the stiff modes: SR2 (light damping) best, SR3-crit (critical) worst, FO-b (the overdamped end) between; the shaded band is where the learned arm's per-layer median ζ settled (run in progress at the time of writing). B. The learned arm's median ζ at layer 0 and layer 1 through training, read from its progress lines: both start at SR2's damping, layer 0 climbs first and to about 0.6, layer 1 later and to about 0.3, both well below critical.*
+*A. Settled perplexity on OpenWebText against the damping ratio of the stiff modes: SR2 (light damping) best, SR3-crit (critical) worst, FO-b (the overdamped end) between; FO-b's place on this axis is approximate, since it removes the velocity in every direction, not only on the stiff modes; the green bar is the learned arm, settled at 59.29, across its two layers' median total ratios (0.39 to 0.59). The axis keeps its order: the more the stiff modes are damped, the worse the settled perplexity. B. The learned arm's median added ζ at layer 0 and layer 1 through training, read from its progress lines: both start at SR2's damping, layer 0 climbs first, to 0.56, layer 1 later, to 0.36, both well below critical. C. The learned arm against SR2, step by step: ahead by up to 4.7% in the stable phase, level early in the decay, 1.7% behind at the end. The two runs share their data order but not their initial weights (protocol §5.13), so the early lead is not attributed to the head.*
 
 ---
 

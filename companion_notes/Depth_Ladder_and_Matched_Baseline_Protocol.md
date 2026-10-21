@@ -3838,6 +3838,38 @@ Output `L2_SR3-crit_on_SR2_OWT_32500steps_output.txt`. SR2's Cell 0 plus `STIFF_
   | GH8 | beats SR2 by 1% or more (damping added only where it helps) | 25% |
   | GH9 | the layers differ: the median ζ at one layer is at least 3 times the other's | 40% |
 
+#### Learned γ(h) on SR2 scored: **59.29 settled, +1.7% against SR2 — the model adds moderate damping (median ζ 0.56 / 0.36), gains in the stable phase and loses it in the decay (GH7 HIT; GH6, GH8, GH9 MISS)** — **2026-10-21**
+
+Output `L2_learned_lambda_OWT_32500steps_output.txt`. SR2's Cell 0 plus `LEARNED_DAMPING_RATIO = True`, `DAMPING_RATIO_INIT = 0.005` and the speed switches; tag `…sr2_gzh…`; 32,500 steps, seed 0, an A100 80 GB (about 1.1 s per step). Finished cleanly; no watchdog trigger or spike capture; largest gradient norm 1.16; SCAF CLEAN at every audit.
+
+| step | SR2 | γ(h) | SR3-crit | FO-b | γ(h) against SR2 | median ζ, layer 0 / layer 1 (in flight) |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 2,500 | 135.3 | 134.7 | 134.3 | 131.4 | −0.4% | ζ₀ / ζ₀ |
+| 5,000 | 108.4 | 106.9 | 111.2 | 101.1 | −1.3% | 0.02 / ζ₀ |
+| 10,000 | 86.0 | 82.3 | 95.5 | 83.6 | −4.2% | 0.14 / ζ₀ |
+| 15,000 | 76.8 | 74.3 | 83.5 | 79.5 | −3.3% | 0.41 / 0.12 |
+| 20,000 | 70.8 | 69.6 | 77.7 | 72.5 | −1.7% | 0.56 / 0.24 |
+| 25,000 | 65.9 | 65.8 | 72.2 | 67.5 | −0.3% | 0.57 / 0.35 |
+| 30,000 | 58.1 | 58.9 | 63.4 | 61.0 | +1.4% | 0.56 / 0.34 |
+| **settled** | **58.32** | **59.29** | **63.28** | **61.16** | **+1.7%** | **0.56 / 0.36** (steps 29,500–32,500) |
+
+The progress lines print ζ to two decimals, so ζ₀ = 0.005 shows as 0.00 (the notebook prints three decimals since 2026-10-20; this run started before that change reached Colab).
+
+- **Settling check, steps 29,500–32,500:** fitted change +0.005 nats against a residual standard deviation of 0.014: settled. Best 57.31 at step 31,000 (SR2 56.49).
+- **A lead in the stable phase, lost in the decay.** γ(h) was ahead of SR2 at 50 of the 65 evaluations, by up to 4.7% (step 9,500). Mean γ(h) − SR2: −0.029 nats (sd 0.012) over steps 5,000–21,000, the stable phase of the schedule; −0.005 over 21,500–25,000; behind from step 25,500; +0.015 (sd 0.002) over 29,500–32,500. Decay gain from step 21,000 to 32,500: 0.171 nats, against SR2's 0.196 (SR3-crit 0.216, FO-b 0.175). The whole settled deficit forms in the decay.
+- **ζ through training.** Layer 0 stayed near ζ₀ to about step 5,000, rose through 0.14 (step 10,000) and 0.41 (15,000) to 0.56 by step 20,000, and held there (0.54–0.58 over the last 3,000 steps). Layer 1 moved later and less: 0.12 at step 15,000, 0.24 at 20,000, 0.33–0.38 from 25,000. Few tokens are overdamped: the fraction above ζ = 1 is at most 3% at layer 0 and 1% at layer 1 over the last 3,000 steps. Early on, while layer 1's median was still at ζ₀, 5–6% of its tokens were above 1 (steps 2,500–5,000), a heavily damped tail that was gone by step 10,000.
+- **The wells kept SR2's stiffness:** in-flight median ω·Δt 7.9 at step 32,500 (SR2 7.55 at the endpoint; SR3-crit's wells softened to 2.04). At ζ = 0.56 and ω·Δt ≈ 7.9 a median stiff mode keeps about 1% of its amplitude through a layer step and still turns; the model damps the oscillation hard but does not remove it.
+- **Pairing caveat, found while scoring.** The head's first layer draws random numbers when it is built, which shifts the random stream for the parameters initialised after it: built from the notebook at the same seed, 51 of the 89 tensors γ(h) shares with SR2 start from different values (E, P, lm_head, V_θ's and V_φ's projections among them). The data order is drawn from its own seeded generator and is the same. So the γ(h) − SR2 difference contains the initialisation part of the seed spread, which is unmeasured; SR3-crit and FO-b add no parameters and start from SR2's exact initial weights. The early lead in particular (it peaked at step 9,500, when layer 0's median ζ was 0.12 and layer 1's still at ζ₀) cannot be attributed to the head on this evidence. Before D5, the head will be built under its own generator so that a head arm and its base start from the same weights.
+- **Scored against the amendment of 2026-10-20:**
+  - **GH6 (median ζ below 0.3 at both layers), called 60%: MISS.** 0.56 and 0.36; layer 1 just above the line.
+  - **GH7 (within 2% of SR2's 58.32), called 55%: HIT, narrowly** (+1.7%, inside an unmeasured seed spread; see the caveat).
+  - **GH8 (beats SR2 by 1% or more), called 25%: MISS.**
+  - **GH9 (one layer's median at least 3 times the other's), called 40%: MISS** (ratio 1.6).
+  - GH2 (ζ against the local anharmonic fraction ε) waits for D1; GH4 for D6.
+  - Of the superseded calls, on record: GH1 (median above 1 at every layer) MISS; GH1′ (median at most 1 in at least one layer) would HIT; GH3 (within 2% of SR3-crit) MISS, γ(h) is 6.3% better; GH5 (medians differ by 0.3 or more) MISS, by 0.20.
+- **Reading.** Free to choose, the model adds damping to SR2's oscillation, a moderate amount, well short of critical (total ratios about 0.59 and 0.39 on a median stiff mode), keeps its wells as stiff as SR2's, and settles between SR2 and FO-b: the damping axis keeps its order, more damping of the stiff modes, worse settled perplexity. The head's choice is made at the learning rate of the stable phase, where the added damping goes with a lower loss (taking the lead at face value), and the lead goes in the decay, where SR2's lightly damped model gains more. This is the reading fixed for GH1 in the opposite direction: **the head's optimisation, not the settled optimum of the task, decides ζ**. It is reported as a design result. Two measurements separate the readings: D3, the inference-time dial (if scaling ζ down on the trained model lowers perplexity, the trained head is past its own optimum), and D4, the constant-ζ̄ control (is the cost in the level of damping or in its variation by token). Both are now pre-registrable.
+- **Not yet run:** Cells 6b-7, 6b-13 and 6b-9 on the best checkpoint (step 31,000), FLOW-R, and D1–D3 on CPU once the run's folder is downloaded.
+
 
 #### FO-b-PMX: the true first-order twin of PMX — **pre-registered 2026-10-19, before the run (author's decision)**
 
