@@ -10,7 +10,7 @@
 
 ## 1. The question
 
-The current K = 4 multi-channel ξ block summarises past hidden states with K parallel exponential moving averages (EMAs) at decay rates $\{\alpha_k\}\_{k=0}^{K-1}$:
+The current K = 4 multi-channel ξ block summarises past hidden states with K parallel exponential moving averages (EMAs) at decay rates $\lbrace\alpha_k\rbrace\_{k=0}^{K-1}$:
 
 $$
 \xi^k\_t = \mathrm{EMA}\_{\alpha\_k}(h)\_t = (1-\alpha\_k)\sum\_{s\le t}\alpha\_k^{t-s} h\_s.
@@ -29,7 +29,7 @@ The motivation is concrete: under the buggy integrator the optimiser drove the c
 The right thing to maximise is the **predictive mutual information** between the K-channel summary at time $t$ and the unrealised future, subject to a capacity constraint on the past. This is the Information Bottleneck (IB) functional applied to causal state representations:
 
 $$
-\max\_{\{\alpha\_k\}, \theta}\quad I(\xi\_t; h\_{\gt t}) - \beta \cdot I(\xi\_t; h\_{1:t}).
+\max\_{\lbrace\alpha\_k\rbrace, \theta}\quad I(\xi\_t; h\_{\gt t}) - \beta \cdot I(\xi\_t; h\_{1:t}).
 $$
 
 In words: $\xi\_t$ should be a **sufficient** statistic for predicting the future (first term) and a **minimal** one — no excess information about the past beyond what predicts the future (second term). The Lagrange multiplier $\beta \gt 0$ trades off representational capacity against predictive lift.
@@ -52,7 +52,7 @@ $$
 H\_\alpha(z) = \frac{1-\alpha}{1-\alpha z^{-1}},
 $$
 
-cutoff frequency $\omega\_c \approx 1-\alpha$, and impulse response that monotonically decays from the present. The K channels at $\alpha \in \{0.0, 0.5, 0.9, 0.99\}$ therefore cover **nested** passbands:
+cutoff frequency $\omega\_c \approx 1-\alpha$, and impulse response that monotonically decays from the present. The K channels at $\alpha \in \lbrace0.0, 0.5, 0.9, 0.99\rbrace$ therefore cover **nested** passbands:
 
 ```text
   ω = 0   (paragraph)        ω = 0.5         ω = 1.0   (token)
@@ -100,7 +100,7 @@ This is the discrete-time analogue of a Laplacian pyramid in image processing, a
 
 ### 4.2 Fix 2 — Log-spaced α with one tunable hyperparam
 
-Pick $\{\alpha\_k\}$ on a **geometric grid** so the effective horizons $\tau\_k = 1/(1-\alpha\_k)$ are log-spaced:
+Pick $\lbrace\alpha\_k\rbrace$ on a **geometric grid** so the effective horizons $\tau\_k = 1/(1-\alpha\_k)$ are log-spaced:
 
 $$
 \tau\_k = \tau\_{\max}^{k/(K-1)}, \qquad \alpha\_k = 1 - 1/\tau\_k.
@@ -114,7 +114,7 @@ Sample grids:
 | 6 | 200 | 1, 2.9, 8.4, 24.5, 71.5, 200 | 0, 0.66, 0.88, 0.96, 0.986, 0.995 |
 | 8 | 200 | 1, 2.1, 4.2, 8.7, 18, 37, 75, 200 | 0, 0.52, 0.76, 0.885, 0.945, 0.973, 0.987, 0.995 |
 
-**Why log-spacing is the right prior.** If the relevant context length is a priori unknown but expected to be scale-invariant up to the corpus's effective Markov order — which holds approximately for natural language up to paragraph scale — log-spacing minimises the worst-case expected redundancy across the prior. Specifically, the expected pairwise mutual information $\mathbb{E}\_p\left[I(\xi^j; \xi^k)\right]$ under a log-uniform prior $p(\tau) \propto 1/\tau$ on the relevant horizon $\tau$ is minimised when $\{\alpha\_k\}$ are themselves log-spaced.
+**Why log-spacing is the right prior.** If the relevant context length is a priori unknown but expected to be scale-invariant up to the corpus's effective Markov order — which holds approximately for natural language up to paragraph scale — log-spacing minimises the worst-case expected redundancy across the prior. Specifically, the expected pairwise mutual information $\mathbb{E}\_p\left[I(\xi^j; \xi^k)\right]$ under a log-uniform prior $p(\tau) \propto 1/\tau$ on the relevant horizon $\tau$ is minimised when $\lbrace\alpha\_k\rbrace$ are themselves log-spaced.
 
 **Why it is also free.** Five lines of code; one additional hyperparameter $\tau\_{\max}$ that can be swept cheaply. Compatible with Fix 1 (apply log-spacing first, then band-pass differencing) and with the existing learnable-α path (use the log-spaced grid as initialisation, let the optimiser refine).
 
@@ -146,7 +146,7 @@ $$
 c(t) = \arg\min\_{c \in \mathbb{R}^K} \int\_{-\infty}^{t} \left( f(s) - \sum\_{k=0}^{K-1} c\_k \phi\_k(s, t) \right)^2 d\mu\_t(s),
 $$
 
-for a chosen basis of K functions $\{\phi\_k(s, t)\}\_{k=0}^{K-1}$ on the past axis. The choice of measure $\mu\_t$ encodes the prior over which past tokens matter:
+for a chosen basis of K functions $\lbrace\phi\_k(s, t)\rbrace\_{k=0}^{K-1}$ on the past axis. The choice of measure $\mu\_t$ encodes the prior over which past tokens matter:
 
 - **HiPPO-LegT (translated Legendre):** $\mu\_t = \mathbb{1}[t-\theta \le s \le t] ds$, a uniform measure on a *fixed window* of length $\theta$ ending at $t$. This corresponds to "remember the last $\theta$ tokens equally well; forget everything older."
 - **HiPPO-LegS (scaled Legendre):** $\mu\_t = \mathbb{1}[0 \le s \le t] ds / t$, a uniform measure on the *entire history* but rescaled so that recent and distant tokens are weighted equally on a normalised time axis. This corresponds to "remember the whole past at scale-invariant resolution."
@@ -157,11 +157,11 @@ $$
 \frac{d c(t)}{d t} = A(t) c(t) + B(t) f(t),
 $$
 
-where $A(t) \in \mathbb{R}^{K \times K}$ and $B(t) \in \mathbb{R}^{K}$ are **structured** matrices determined by the basis $\{\phi\_k\}$ and the measure $\mu\_t$. For LegT, $A$ and $B$ are constant in $t$ (translation-invariant). For LegS, $A$ and $B$ have a $1/t$ rescaling.
+where $A(t) \in \mathbb{R}^{K \times K}$ and $B(t) \in \mathbb{R}^{K}$ are **structured** matrices determined by the basis $\lbrace\phi\_k\rbrace$ and the measure $\mu\_t$. For LegT, $A$ and $B$ are constant in $t$ (translation-invariant). For LegS, $A$ and $B$ have a $1/t$ rescaling.
 
 ### 5.2 The optimal basis is Legendre, not exponential
 
-For uniform measure on $[-1, 1]$, the basis that achieves the optimum is the orthonormal family of Legendre polynomials $\{P\_k\}\_{k \ge 0}$ satisfying
+For uniform measure on $[-1, 1]$, the basis that achieves the optimum is the orthonormal family of Legendre polynomials $\lbrace P\_k\rbrace\_{k \ge 0}$ satisfying
 
 $$
 \int\_{-1}^{1} P\_j(s) P\_k(s) \mathrm{d}s = \frac{2}{2k+1} \delta\_{jk}.
@@ -182,7 +182,7 @@ $$
 \qquad r\_k = 1/\tau\_k,
 $$
 
-(unit-norm under uniform measure on $(-\infty, t]$). This is a basis of $K$ exponentials at distinct rates $\{r\_k\}$. Two important properties:
+(unit-norm under uniform measure on $(-\infty, t]$). This is a basis of $K$ exponentials at distinct rates $\lbrace r\_k\rbrace$. Two important properties:
 
 1. The exponentials **are not orthogonal** under uniform Lebesgue measure on $(-\infty, t]$:
 
@@ -242,7 +242,7 @@ $$
 I(c\_j; c\_k) = -\tfrac{1}{2} \log \left( 1 - \rho\_{jk}^2 \right) = -\tfrac{1}{2} \log \left( \tanh^2\left( \tfrac{1}{2} \log(r\_j / r\_k) \right) \right).
 $$
 
-For the current K = 4 vanilla grid with effective horizons $\tau \in \{1, 2, 10, 100\}$:
+For the current K = 4 vanilla grid with effective horizons $\tau \in \lbrace1, 2, 10, 100\rbrace$:
 
 | pair | $\tau\_j, \tau\_k$ | $\rho\_{jk}$ | $I(c\_j; c\_k)$ (nats) |
 |---|---|---:|---:|
@@ -288,15 +288,15 @@ $$
 c\_{t+1} = \tilde A c\_t + \tilde B h\_t.
 $$
 
-Both $\tilde A$ and $\tilde B$ are constants of the architecture, just like the K decay rates $\{\alpha\_k\}$ are constants in K-EMA. They become **non-learnable** initialisation values (or weakly learnable, if we want to optimise the structured $A$ directly via parametric perturbation, as S4 does).
+Both $\tilde A$ and $\tilde B$ are constants of the architecture, just like the K decay rates $\lbrace\alpha\_k\rbrace$ are constants in K-EMA. They become **non-learnable** initialisation values (or weakly learnable, if we want to optimise the structured $A$ directly via parametric perturbation, as S4 does).
 
 ### 5.7 Embedding HiPPO inside SPLM's Lagrangian framework
 
 The SPLM conservative-flow argument requires three properties of the context summary $\xi\_t$:
 
-1. **Causality.** $\xi\_t$ depends only on $\{h\_s : s \le t\}$. → Satisfied by HiPPO trivially: the ODE is one-sided.
+1. **Causality.** $\xi\_t$ depends only on $\lbrace h\_s : s \le t\rbrace$. → Satisfied by HiPPO trivially: the ODE is one-sided.
 2. **Differentiability of $V\_\theta(\xi, h)$.** $V\_\theta$ takes $\xi$ as input alongside $h$ and produces a scalar potential. → Satisfied: $c \in \mathbb{R}^K$ is a valid input to a feed-forward $V\_\theta$ (just like the current $\xi \in \mathbb{R}^d$ is, with an architectural change to accept $K$-dimensional $c$ instead of $d$-dimensional EMA-mean $\xi$).
-3. **Compatibility with the leak fix.** The autograd path from $\xi$ back to the hidden states $\{h\_s\}$ must be severed at training time. → Satisfied: replace $h\_t$ with $\mathrm{stop}(h\_t)$ in the discrete update of §5.6:
+3. **Compatibility with the leak fix.** The autograd path from $\xi$ back to the hidden states $\lbrace h\_s\rbrace$ must be severed at training time. → Satisfied: replace $h\_t$ with $\mathrm{stop}(h\_t)$ in the discrete update of §5.6:
 
 $$
 c\_{t+1} = \tilde A c\_t + \tilde B \cdot \mathrm{stop}(h\_t),
@@ -1120,7 +1120,7 @@ with the weights given by the columns of the matrix exponential
 $e^{A(t - s)} B$. **These columns are the K basis functions of the
 context summary.** Choosing $(A, B)$ is choosing a basis. Concretely:
 
-- **K-EMA**: $A = -\mathrm{diag}(r\_0, \ldots, r\_{K-1})$, $B = (b\_0, \ldots, b\_{K-1})^\top$. Basis = K decaying exponentials $\{\sqrt{2 r\_k} e^{-r\_k \tau}\}$.
+- **K-EMA**: $A = -\mathrm{diag}(r\_0, \ldots, r\_{K-1})$, $B = (b\_0, \ldots, b\_{K-1})^\top$. Basis = K decaying exponentials $\lbrace\sqrt{2 r\_k} e^{-r\_k \tau}\rbrace$.
 - **HiPPO-LegT**: $A$ is the structured matrix from §5.3, $B = (\sqrt{2k+1})\_k$. Basis = K translated Legendre polynomials over a sliding window.
 
 There is no a priori reason to prefer one basis over another except by
@@ -1247,7 +1247,7 @@ Two equivalent interpretations:
 Three principled initialisations of the $K$ eigenvalues, in order of
 preference for our case:
 
-1. **HiPPO-LegT spectrum (default).** Compute the K eigenvalues $\{\lambda\_k\}\_{k=1}^{K}$ once at init by diagonalising the LegT $A$ matrix from §5.3. This makes R6.i a strict generalisation of R6.a / R6.e — the model starts with the same continuous-time dynamics, then gradient descent is free to drift. In code: `s4d_init_legt(K)` in `model_multixi_s4d.py`.
+1. **HiPPO-LegT spectrum (default).** Compute the K eigenvalues $\lbrace\lambda\_k\rbrace\_{k=1}^{K}$ once at init by diagonalising the LegT $A$ matrix from §5.3. This makes R6.i a strict generalisation of R6.a / R6.e — the model starts with the same continuous-time dynamics, then gradient descent is free to drift. In code: `s4d_init_legt(K)` in `model_multixi_s4d.py`.
 2. **S4D-Lin** (Gu, Goel, Gu, Re 2022). Set $\mathrm{Re}(\lambda\_k) = -1/2$ for all $k$ and $\mathrm{Im}(\lambda\_k) = \pi (k + 1/2)$. This is the canonical generic init from the S4D paper, providing a uniform spread of damping rates and a linear sweep of frequencies. Useful as an ablation against the LegT init.
 3. **K-EMA log-spaced**. Set $\mathrm{Im}(\lambda\_k) = 0$ and $\mathrm{Re}(\lambda\_k) = -1 / \tau\_k$ for $\tau\_k = \tau\_\max^{k/(K-1)}$ — i.e. start at exactly the K-EMA bank's log-spaced grid. Useful only if R6.h shows that decorrelating K-EMA hurts; then we know the gradient-trained S4D should be initialised *near* the K-EMA bank rather than near LegT.
 
@@ -1571,8 +1571,8 @@ identical LR schedule and corpus across all four runs:
 
 | run | basis | trainable params for $\xi$ | val PPL | gap to K-EMA |
 |---|---|---:|---:|---:|
-| K-EMA pilot (R6.h.0) | learnable $\{\alpha\_k\}$, hand-picked init | $K = 4$ | **14.78** | — |
-| R6.h.1 K-EMA Fix 2 | learnable $\{\alpha\_k\}$, log-spaced init $\tau\_{\max} = 100$ | $K = 4$ | **15.03** | **+0.25** |
+| K-EMA pilot (R6.h.0) | learnable $\lbrace\alpha\_k\rbrace$, hand-picked init | $K = 4$ | **14.78** | — |
+| R6.h.1 K-EMA Fix 2 | learnable $\lbrace\alpha\_k\rbrace$, log-spaced init $\tau\_{\max} = 100$ | $K = 4$ | **15.03** | **+0.25** |
 | R6.a HiPPO-LegT, fixed $\Delta$ | LegT spectrum, fixed | 0 | 19.82 | +5.04 |
 | R6.e HiPPO-LegT, learnable $\Delta$ | LegT spectrum, learnable $\Delta t$ | 1 | 17.45 | +2.67 |
 | R6.i S4D, legt-init | learnable $(A, B)$ | 12 | **16.85** | **+2.07** |
@@ -1701,7 +1701,7 @@ vanilla K-EMA's 14.78:
 | **R6.h.1** (Fix 2) | log-spaced $\alpha$ with $\tau\_{\max} = 100$, learnable | mild improvement or null ($\Delta \le 0$, magnitude $\le 1$ PPL) | **Δ = +0.25 PPL** (val_ppl 15.03; §10.12) — magnitude bound *holds*, sign opposite of predicted | Argument 2: tighter timescale coverage was expected to help slightly; orthogonal to the redundancy question. *Outcome*: did not move channel correlation (|Δ corr| = 0.014). The auto-tuning mechanism (§10.12) is a new finding; Fix 2 is now the weakest of the three §12.5 tests because the gradient pulls the channels back toward R6.h.0's regime regardless of init. |
 | **R6.h.2** (Fix 1 + Fix 2) | + band-pass differencing $\xi^k = \mathrm{EMA}\_{\alpha\_k} − \mathrm{EMA}\_{\alpha\_{k-1}}$ | **predicted to hurt** ($\Delta \gt 0$) | not yet run | Argument 3: differencing decorrelates channels, removing the implicit-ensembling regulariser. Argument 1: differencing introduces non-monotonic time-domain shapes, hurting smoothness for $V\_\theta$. |
 | **R6.h.2′** (Frozen-α + Fix 2) — *new test, post-§10.12* | log-spaced $\alpha$ with $\tau\_{\max} = 100$, **`requires_grad=False`** | **predicted to hurt** ($\Delta \gt 0$, magnitude $\ge 1$ PPL) | not yet run | Forces the channel spread that auto-tuning could not preserve in R6.h.1. If §12.3 holds, locking the wider spread should produce the val_ppl rise that R6.h.1 could not. |
-| **R6.h.3** (Fix 1 + Fix 2 + Fix 3) | + decorrelation regulariser, $\lambda \in \{10^{-4}, 10^{-3}, 10^{-2}\}$ | **predicted to hurt monotonically in $\lambda$** ($\Delta \gt 0$, increasing with $\lambda$) | not yet run | Argument 3: the decorrelation regulariser is the most direct removal of K-EMA's correlated-channel inductive bias. Should hurt cleanly under the §12.3 hypothesis. *Refined*: with R6.h.1's auto-tuning finding, R6.h.3 is now the *strongest* falsifiability test — it actively opposes the gradient preference that R6.h.1 demonstrated. |
+| **R6.h.3** (Fix 1 + Fix 2 + Fix 3) | + decorrelation regulariser, $\lambda \in \lbrace10^{-4}, 10^{-3}, 10^{-2}\rbrace$ | **predicted to hurt monotonically in $\lambda$** ($\Delta \gt 0$, increasing with $\lambda$) | not yet run | Argument 3: the decorrelation regulariser is the most direct removal of K-EMA's correlated-channel inductive bias. Should hurt cleanly under the §12.3 hypothesis. *Refined*: with R6.h.1's auto-tuning finding, R6.h.3 is now the *strongest* falsifiability test — it actively opposes the gradient preference that R6.h.1 demonstrated. |
 
 These predictions are pre-registered before each pilot launches. R6.h.1
 landed inside the predicted magnitude bound (Δ ≤ 1 PPL) but on the
