@@ -86,7 +86,7 @@ At the time of pre-registration, the paper's working claim was $H_1$. The headli
 
 > **Update 2026-04-27 (post-outcome C).** The experiment returned Outcome C ($H_0$
 > not rejected), meaning the lag-1 representation $h_t \to h_{t+1}$ was preferred
-> over the lag-2 representation $\{h_t, h_{t-1}\} \to h_{t+1}$ across all tested
+> over the lag-2 representation $\lbrace h_t, h_{t-1}\rbrace \to h_{t+1}$ across all tested
 > architectures and function classes. The current paper (v3, §12) no longer asserts
 > $H_1$ as its claim. Instead, the paper explains Outcome C as the expected
 > consequence of the overdamped regime: the full second-order EL equation reduces
@@ -128,7 +128,7 @@ This is essential. The autoregressive transformer's per-position state $h_t^{(12
 
 ### 4.1 Primary class — Gaussian RBF kernel ridge regression
 
-For each $k \in \{1, 2, 3\}$:
+For each $k \in \lbrace1, 2, 3\rbrace$:
 
 ```python
 X_k = concat([h_t, h_{t-1}, ..., h_{t-k+1}])           # shape (N, k*p)
@@ -152,7 +152,7 @@ Failure to reject in any one of these four classes will be reported. The pre-reg
 
 ### 4.3 PCA dimensionality sweep
 
-PCA component count $p \in \{20, 50, 100\}$. The PCA basis is fitted on the *training* fold of each cross-validation split and applied to the held-out fold (no leakage). The headline rejection must hold at $p = 50$ and be qualitatively present at all three $p$ values.
+PCA component count $p \in \lbrace20, 50, 100\rbrace$. The PCA basis is fitted on the *training* fold of each cross-validation split and applied to the held-out fold (no leakage). The headline rejection must hold at $p = 50$ and be qualitatively present at all three $p$ values.
 
 ---
 
@@ -166,8 +166,8 @@ Triplets and quadruples within a single sentence share a prefix and are not inde
 
 Inside each outer fold we run a 5-fold inner cross-validation on the training sentences only, used to select $(\alpha_k, \gamma_k)$ via grid search. Search ranges:
 
-- $\alpha \in \{10^{-3}, 10^{-2}, 10^{-1}, 1, 10\}$
-- $\gamma$: median heuristic at $\{0.5, 1, 2\}$ × the median pairwise distance in the training set.
+- $\alpha \in \lbrace10^{-3}, 10^{-2}, 10^{-1}, 1, 10\rbrace$
+- $\gamma$: median heuristic at $\lbrace0.5, 1, 2\rbrace$ × the median pairwise distance in the training set.
 
 The selected hyperparameters are then refit on the full outer-training fold and evaluated on the outer-held-out fold.
 
@@ -191,7 +191,7 @@ where $\bar R_k$ is the mean per-quadruple squared residual, averaged across all
 
 ### 6.2 Paired Wilcoxon signed-rank tests
 
-On the paired sequences $\{r_1^{(i)} - r_2^{(i)}\}\_i$ and $\{r_2^{(i)} - r_3^{(i)}\}\_i$, two-sided.
+On the paired sequences $\lbrace r_1^{(i)} - r_2^{(i)}\rbrace\_i$ and $\lbrace r_2^{(i)} - r_3^{(i)}\rbrace\_i$, two-sided.
 
 ### 6.3 Bootstrap confidence intervals
 
@@ -216,7 +216,7 @@ The headline conclusion (A, B, or C) must additionally satisfy:
 
 - **Architecture independence.** The same conclusion holds on Pythia-160M with the identical pipeline.
 - **Function-class robustness.** The same conclusion holds for at least 3 of the 4 classes in §4.2 (linear, polynomial-2, kernel ridge, MLP). If exactly one class disagrees, this is reported but does not invalidate the headline.
-- **PCA-dim robustness.** The same conclusion holds at $p \in \{20, 50, 100\}$.
+- **PCA-dim robustness.** The same conclusion holds at $p \in \lbrace20, 50, 100\rbrace$.
 
 If any of these required confirmations fails, the published conclusion is automatically downgraded one row in the table (A → D, B → D, C unchanged since C is already negative).
 
@@ -233,7 +233,7 @@ The robustness sweep amounts to $4 \text{ classes} \times 3 \text{ PCA dims} \ti
 | Universal-approximator confound: "maybe a bigger first-order net would win" | Kernel ridge is universal; $\alpha$ is cross-validated; first-order receives the same hyperparameter search as second-order. |
 | Token-identity leakage | Inputs are strictly hidden-state vectors; no token IDs, embeddings, or positional encodings (§3.3). |
 | Within-sentence statistical dependence | Leave-one-sentence-out CV; cluster bootstrap by sentence (§5.1, §6.3). |
-| Curse of dimensionality at $d = 768$ with ~1,200 examples | PCA to $p \in \{20, 50, 100\}$ on training fold only; sensitivity sweep (§4.3). |
+| Curse of dimensionality at $d = 768$ with ~1,200 examples | PCA to $p \in \lbrace20, 50, 100\rbrace$ on training fold only; sensitivity sweep (§4.3). |
 | Architecture-specific artefact | Mandatory replication on Pythia-160M (§3.2, §6.5). |
 | Researcher degrees of freedom | Pre-registration committed in git before any extraction or regression code is run; thresholds locked (§6.4). |
 | Multiple comparisons across the robustness grid | Bonferroni correction over 24 cells for the robustness audit (§6.6); the primary cell is fixed in advance. |
@@ -247,7 +247,7 @@ The robustness sweep amounts to $4 \text{ classes} \times 3 \text{ PCA dims} \ti
 - We do not claim the dynamics is *exactly* Markov-2 in the underlying continuous flow; the pre-registration claimed that, at the temporal-resolution probed (one token position), two lags are sufficient to predict the next state to within the noise floor of the kernel-ridge predictor. Outcome C (first-order not rejected) demonstrated that this claim does not hold at inference-fixed-point resolution, consistent with the overdamped reduction of the full EL equation.
 - We do not claim the $a_\parallel < 0$ statistic of §14 is, by itself, exclusive of first-order. This experiment was intended to deliver that exclusion or to fail to do so; it returned Outcome C — first-order not excluded — and the current paper accounts for this as the predicted observational signature of the overdamped regime.
 - We do not claim that rejection of first-order is rejection of *all* finite-order ODEs other than second; outcome **B** was explicitly allowed and would have itself been a publishable, framework-relevant finding.
-- We do not claim our pipeline tests the Lu et al. *layer-axis* first-order reading, only the STP / position-axis first-order reading. The Lu axis would require a separate experiment (regress $h_t^{(\ell+1)}$ on $\{h_t^{(\ell)}, h_t^{(\ell-1)}\}$); this remains flagged as a follow-up.
+- We do not claim our pipeline tests the Lu et al. *layer-axis* first-order reading, only the STP / position-axis first-order reading. The Lu axis would require a separate experiment (regress $h_t^{(\ell+1)}$ on $\lbrace h_t^{(\ell)}, h_t^{(\ell-1)}\rbrace$); this remains flagged as a follow-up.
 
 ---
 
