@@ -53,8 +53,8 @@
 > injection geometrically — and in fact moves the geometry the wrong way:
 > the reverse-channel increment carries no $v$ while the conservative
 > displacement does, so damping harder raises the channel's share of the
-> step. Measured on a replayed layer step: share $0.915 \to 0.931 \to 0.941
-> \to 0.952$ for $\gamma = 0.10, 0.20, 0.30, 0.50$, with the increment
+> step. Measured on a replayed layer step: share
+> $0.915 \to 0.931 \to 0.941 \to 0.952$ for $\gamma = 0.10, 0.20, 0.30, 0.50$, with the increment
 > itself constant to four decimals. Paper v6 §7a carries both corrections.
 
 ---
@@ -759,10 +759,10 @@ $$\mathcal{L}_{\text{anchor}} = \lambda_{\text{anchor}} \lVert \gamma(h) - \gamm
 | Parameterisation | FLOPs per layer | Memory per layer |
 |:---|:---|:---|
 | Constant gamma | 0 | 0 |
-| 4.1 Potential-derived | ~3 ops per token | ~B x T x 1 |
-| 4.2 Learned MLP | ~d/2 ops per token | ~B x T x d/4 activations |
-| 4.3 Fock-channel | ~2 ops per token | ~B x T x 1 |
-| 4.1 + 4.3 Hybrid | ~5 ops per token | ~B x T x 1 |
+| 4.1 Potential-derived | about 3 ops per token | about B × T × 1 |
+| 4.2 Learned MLP | about d/2 ops per token | about B × T × d/4 activations |
+| 4.3 Fock-channel | about 2 ops per token | about B × T × 1 |
+| 4.1 + 4.3 Hybrid | about 5 ops per token | about B × T × 1 |
 
 The overhead of parameterisations 4.1, 4.3, and the hybrid is negligible
 compared to the attention computation (which is $O(T^2 d)$ per layer).
@@ -822,7 +822,7 @@ valuable for detecting a second-order imprint and the wells most exposed
 to a naive $\gamma(h)$'s stability risk are therefore the same wells.
 
 **Reading this constructively.** Position-dependent damping is the
-natural candidate lever for reaching the low-$\gamma_{\text{geo}}$ corner
+natural candidate lever for reaching the corner of low $\gamma_{\text{geo}}$
 that §6.4 and §13 of the well-gap note show the scalar dial cannot reach
 on its own -- it can lower effective damping locally without lowering it
 everywhere. But it does not sidestep the coupling that note's §13.4
@@ -874,7 +874,7 @@ only lower the retained-momentum term $\rho$ everywhere at once; §12.5
 measured the cost of doing so on the aniso-Gaussian family (higher global
 $\gamma$ raised both perplexity, $211.63$ vs $184.11$, *and* reload count,
 $5$ vs $2$). $\gamma(h)$ is attractive because it could raise damping only
-at the tokens/layers where $(1+\rho) + \beta\,\lambda_{\max}(\nabla^2_h U)$
+at the tokens/layers where $(1+\rho) + \beta \lambda_{\max}(\nabla^2_h U)$
 is about to cross 1, keeping the per-layer spectral radius bounded
 *pointwise* while leaving the rest of the manifold underdamped for PPL.
 This is the same extra degree of freedom §8.2 invokes for the
@@ -901,10 +901,10 @@ contribution -- not the potential value.
 covered by §9.5).** Once $\gamma$ depends on $h$, the second-order
 backward pass must differentiate through it, and $J_\ell$ acquires a new
 term from
-$$\frac{\partial h^{(\ell+1)}}{\partial \gamma(h^{(\ell)})}\,\nabla_h\gamma(h^{(\ell)}) \;\propto\; -\frac{\Delta t^2}{(1+\gamma\Delta t)^2}\,\nabla_h\gamma(h)\otimes(\cdots).$$
-For a potential-derived $\gamma$, $\nabla_h\gamma \propto \nabla_h
-V_\theta$, so the term needed by `create_graph` re-injects $\nabla^2_h
-V_\theta$ -- the very curvature the governor is meant to tame -- back into
+$$\frac{\partial h^{(\ell+1)}}{\partial \gamma(h^{(\ell)})} \nabla_h\gamma(h^{(\ell)}) \propto -\frac{\Delta t^2}{(1+\gamma\Delta t)^2} \nabla_h\gamma(h)\otimes(\cdots).$$
+For a potential-derived $\gamma$, $\nabla_h\gamma \propto \nabla_h V_\theta$,
+so the term needed by `create_graph` re-injects $\nabla^2_h V_\theta$
+-- the very curvature the governor is meant to tame -- back into
 the backward chain; for an MLP $\gamma$ it injects the MLP's own Jacobian.
 A naive $\gamma(h)$ can therefore be *self-defeating*: it smooths the
 forward trajectory while adding fresh second-order structure to the
@@ -917,7 +917,7 @@ $\mathcal{L}_{\mathrm{NTP}}$ gets almost no signal to grow damping in the
 configurations that precede a cascade and is unlikely to become a spike
 suppressor spontaneously. Deliberate spike suppression would need either
 (a) a **prescribed** (non-learned or lightly-learned) stability governor
-$\gamma(h) = \gamma_0 + \kappa\,\phi(\lVert f(h)\rVert\;\text{or}\;
+$\gamma(h) = \gamma_0 + \kappa \phi(\lVert f(h)\rVert \text{ or }
 \lambda_{\max}(\nabla^2_h U))$ with $\phi$ monotone increasing, paired with
 the §7.2 smoothness regulariser so that $\gamma$-oscillation does not
 itself destabilise the integrator, or (b) an explicit auxiliary penalty on
@@ -947,12 +947,12 @@ t\gamma))$. A BAOAB/CfC propagator changes the picture qualitatively,
 and almost entirely in $\gamma(h)$'s favour.
 
 **What changes: damping leaves the force step and becomes a standalone
-operator.** BAOAB splits each layer into $\mathrm{B}$-$\mathrm{A}$-$\mathrm{O}$-$\mathrm{A}$-$\mathrm{B}$
+operator.** BAOAB splits each layer into B-A-O-A-B
 sub-steps, and *all* friction is handled by the $\mathrm{O}$-step alone,
 which is the exact closed-form Ornstein-Uhlenbeck solution and contains
 **no force evaluation** (§24.1 of the instabilities note). Position-dependent
 damping is then implemented as one localized change to the $\mathrm{O}$-step,
-$$v \;\leftarrow\; e^{-\gamma(h)\Delta t}\,v \;+\; \sqrt{1-e^{-2\gamma(h)\Delta t}}\,\sigma_{\mathrm{th}}\,\zeta,$$
+$$v \leftarrow e^{-\gamma(h)\Delta t} v + \sqrt{1-e^{-2\gamma(h)\Delta t}} \sigma_{\mathrm{th}} \zeta,$$
 with $\gamma(h)$ read off the position $h$ that is *frozen within that
 sub-step* by the Strang splitting. This is exactly the placement the
 Rayleigh dissipation function of §2 implies -- $\gamma$ is friction, and
@@ -975,13 +975,13 @@ coefficients of §4.5.
 
 2. **CfC hands you the correct-sign control signal analytically, still
    first-order.** §9.6 argued a spike-suppressing $\gamma(h)$ must key off
-   local curvature/force, not the potential value -- but reading $\lVert
-   \nabla V\rVert$ or $\lambda_{\max}(\nabla^2 V)$ in the Verlet world drags
+   local curvature/force, not the potential value -- but reading
+   $\lVert \nabla V\rVert$ or $\lambda_{\max}(\nabla^2 V)$ in the Verlet world drags
    a gradient into $\gamma$ and re-introduces a `create_graph` term. CfC
    removes this obstacle too: the propagator already computes the local
    harmonic frequency $\omega_k = \sqrt{2V_0\kappa_k^2}$ near each well,
    which *is* the local curvature. A curvature-keyed governor
-   $\gamma(h) = \gamma_0 + \kappa\,\phi(\omega_k)$ is therefore available
+   $\gamma(h) = \gamma_0 + \kappa \phi(\omega_k)$ is therefore available
    as an analytic byproduct of the $\mathrm{B}$-step, differentiable by
    first-order autograd -- CfC is what makes the "right" parameterization
    cheap.
@@ -1011,7 +1011,7 @@ description:
 - Under BAOAB/CfC the cascade is already handled, so $\gamma(h)$ reverts
   to its **original §4.1 purpose**: a per-token knob on the realized
   $\gamma_{\mathrm{geo}}$ for fine-grained settling and for reaching the
-  low-$\gamma_{\mathrm{geo}}$ corner that §13.4 of the corpus note shows
+  corner of low $\gamma_{\mathrm{geo}}$ that §13.4 of the corpus note shows
   the global dial cannot reach -- an *inference-geometry* knob decoupled
   from training stability.
 
@@ -1100,7 +1100,7 @@ but by whether the geodesic/settling gains are real, evaluated by the
    original §4.1 role as an inference-geometry / fine-settling knob. The
    ordering is causal: CfC removes the obstacle, creates the correct home,
    supplies the control signal, and de-risks attribution (verify a
-   constant-$\gamma$ CfC run first, then layer $\gamma(h)$ on top).
+   constant-γ CfC run first, then layer $\gamma(h)$ on top).
 
 ### 10.2 Recommended experimental sequence
 
@@ -1152,7 +1152,7 @@ Scale the winner to OpenWebText.
 - Spatial average of $\gamma(h)$ within 2x of the two-regime
   prediction (sanity check).
 - No training instability (gradient spikes, alpha collapse) beyond
-  what the constant-$\gamma$ baseline exhibits, checked specifically at
+  what the constant-γ baseline exhibits, checked specifically at
   well centers (high-occupancy head wells), not just in aggregate --
   §9.5 predicts this is where any excess risk from $\gamma(h)$ would
   concentrate.
