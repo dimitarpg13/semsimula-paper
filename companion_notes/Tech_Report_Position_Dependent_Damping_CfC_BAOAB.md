@@ -14,7 +14,7 @@
 > - **The wells integrated exactly:** [`Exact_Integration_of_Poisson_Mode_Wells_PMX.md`](Exact_Integration_of_Poisson_Mode_Wells_PMX.md)
 > - **Code:** [`parf/cfc_baoab.py`](../notebooks/conservative_arch/parf/cfc_baoab.py), [`parf/model_parf_multixi.py`](../notebooks/conservative_arch/parf/model_parf_multixi.py)
 
-**Abstract.** In a Semantic-Simulation language model each token's hidden state moves as a damped particle through a learned potential, one integration step per layer. The damping, how fast the particle's velocity is removed, has so far been one constant, γ₀ = 0.1. This report develops the theory of a damping that depends on the token's state, for the CfC/BAOAB integrator, in which the stiffest directions of the potential are integrated exactly. In that setting damping is naturally a *tensor*, one rate per direction, and three facts follow: it never adds energy; unlike a scalar damping, it supplies a force across the velocity, so it can bend a token's path; and its effect over one layer step is an exact linear map whose determinant and eigenvalues say how much of each direction a token keeps and how far it turns. Four arms on OpenWebText place the trained models on a damping axis: lightly damped stiff modes (SR2, perplexity 58.32) are best; a learned per-token damping ratio settles at 59.29; the overdamped limit at 61.16; critical damping at 63.28. What the second-order model gains from is the oscillation of its stiff modes, not inertia as such. The report sets out the parameterisations, the code that implements them and how it is verified, the results with their caveats, and the experiments that come next.
+**Abstract.** In a Semantic-Simulation language model each token's hidden state moves as a damped particle through a learned potential, one integration step per layer. The damping, how fast the particle's velocity is removed, has so far been one constant, $\gamma_0 = 0.1$. This report develops the theory of a damping that depends on the token's state, for the CfC/BAOAB integrator, in which the stiffest directions of the potential are integrated exactly. In that setting damping is naturally a *tensor*, one rate per direction, and three facts follow: it never adds energy; unlike a scalar damping, it supplies a force across the velocity, so it can bend a token's path; and its effect over one layer step is an exact linear map whose determinant and eigenvalues say how much of each direction a token keeps and how far it turns. Four arms on OpenWebText place the trained models on a damping axis: lightly damped stiff modes (SR2, perplexity 58.32) are best; a learned per-token damping ratio settles at 59.29; the overdamped limit at 61.16; critical damping at 63.28. What the second-order model gains from is the oscillation of its stiff modes, not inertia as such. The report sets out the parameterisations, the code that implements them and how it is verified, the results with their caveats, and the experiments that come next.
 
 ---
 
@@ -36,7 +36,7 @@
 
 ## 1. Scope, and how this report relates to the earlier note
 
-The note `Position_Dependent_Damping_and_Reinforcement_Field.md` was written in August 2026 for the Gen 1 models. Their integrator, a damped velocity-Verlet step, mixes the friction into the force coefficients, and most of that note is about consequences of that choice: a training-time gradient cascade that a position-dependent damping could worsen, the calibration of a single γ against two regimes of model width, and a geodesic diagnostic whose reading was later withdrawn. Its §11 and §12 (October 2026) began the CfC/BAOAB story on top of that material.
+The note `Position_Dependent_Damping_and_Reinforcement_Field.md` was written in August 2026 for the Gen 1 models. Their integrator, a damped velocity-Verlet step, mixes the friction into the force coefficients, and most of that note is about consequences of that choice: a training-time gradient cascade that a position-dependent damping could worsen, the calibration of a single $\gamma$ against two regimes of model width, and a geodesic diagnostic whose reading was later withdrawn. Its §11 and §12 (October 2026) began the CfC/BAOAB story on top of that material.
 
 This report starts again from the CfC/BAOAB step. Three properties of that step change the problem:
 
@@ -52,34 +52,32 @@ The earlier note is kept unchanged as the record that the protocol's pre-registr
 
 ### 2.1 The hidden state as a particle
 
-Each token carries a hidden state h, a vector of d = 384 numbers, and a velocity v of the same size. The token has a mass m, which depends on the token (rarer tokens are heavier; the mass is learned from the token's log-frequency). The model defines a potential energy V(h), the sum of a learned landscape V_θ (wells conditioned on the context) and a pair interaction V_φ between tokens; the force on the token is f = −∇V. Each layer advances every token by one step of length Δt of the damped equation of motion
+Each token carries a hidden state $h \in \mathbb{R}^{d}$, a vector of $d = 384$ numbers, and a velocity $v$ of the same size. The token has a mass $m$, which depends on the token (rarer tokens are heavier; the mass is learned from the token's log-frequency). The model defines a potential energy $V(h)$, the sum of a learned landscape $V_{\theta}$ (wells conditioned on the context) and a pair interaction $V_{\phi}$ between tokens; the force on the token is $f = -\nabla V$. Each layer advances every token by one step of length $\Delta t$ of the damped equation of motion
 
 $$
 m \ddot{h} = f(h) - m \Gamma(h) \dot{h} ,
 $$
 
-where Γ(h) is the **friction**: in all deployed models Γ = γ₀ I, the same rate γ₀ = 0.1 in every direction. The Gen 3 ladder model of this report has L = 2 layers over a fixed integration time T = 8, so Δt = 4.
+where $\Gamma(h)$ is the **friction**. In all deployed models $\Gamma = \gamma_0 I$, the same rate $\gamma_0 = 0.1$ in every direction. The Gen 3 ladder model of this report has $L = 2$ layers over a fixed integration time $T = 8$, so $\Delta t = T / L = 4$.
 
 ### 2.2 Friction as a dissipation function
 
 In the Lagrangian framework friction is introduced by a Rayleigh dissipation function, a quadratic form in the velocity whose gradient is the friction force:
 
 $$
-\mathcal{R}(h, \dot{h}) = \tfrac{1}{2} m \dot{h}^{\top} \Gamma(h) \dot{h} ,
-\qquad
-F_{\text{friction}} = -\frac{\partial \mathcal{R}}{\partial \dot{h}} = -m \Gamma(h) \dot{h} .
+\mathcal{R}(h, \dot{h}) = \tfrac{1}{2} m \dot{h}^{\top} \Gamma(h) \dot{h} , \qquad F_{\text{friction}} = -\frac{\partial \mathcal{R}}{\partial \dot{h}} = -m \Gamma(h) \dot{h} .
 $$
 
-Γ(h) must be symmetric and non-negative for the dissipation to be a dissipation (§3.1). Everything in this report is a choice of Γ(h).
+$\Gamma(h)$ must be symmetric and non-negative for $\mathcal{R}$ to be a dissipation (§3.1). Everything in this report is a choice of $\Gamma(h)$.
 
 ### 2.3 The BAOAB step and where friction enters
 
 The CfC/BAOAB integrator splits each layer step into four parts, each solved exactly or nearly so. In the low-rank variant used by every arm here (`integrator = 'baoab_cfc_lowrank'`):
 
-- **A (Δt/2):** move the token. On the stiff directions the motion is the exact solution of the damped oscillator under the local quadratic part of V_θ; on all other directions it is a free drift, h ← h + (Δt/2) v.
-- **B (Δt):** a kick, v ← v + (Δt/m) f̃, with f̃ the force evaluated at the midpoint minus the part the A sub-steps already carried.
-- **O (Δt):** friction on the velocity, v ← e^(−γ₀Δt) v (plus noise when a temperature is set; every arm here runs at zero temperature).
-- **A (Δt/2):** move again, as in the first A.
+- **A**, over $\Delta t / 2$: move the token. On the stiff directions the motion is the exact solution of the damped oscillator under the local quadratic part of $V_{\theta}$; on all other directions it is a free drift, $h \leftarrow h + \tfrac{1}{2} \Delta t v$.
+- **B**, over $\Delta t$: a kick, $v \leftarrow v + (\Delta t / m) \tilde{f}$, with $\tilde{f}$ the force evaluated at the midpoint minus the part the A sub-steps already carried.
+- **O**, over $\Delta t$: friction on the velocity, $v \leftarrow e^{-\gamma_0 \Delta t} v$ (plus noise when a temperature is set; every arm here runs at zero temperature).
+- **A**, over $\Delta t / 2$: move again, as in the first A.
 
 ![The SR2 layer step, and where the friction of the stiff modes and of the complement enters](figures/tr_damping/tr_layer_step.png)
 
@@ -87,17 +85,15 @@ The CfC/BAOAB integrator splits each layer step into four parts, each solved exa
 
 ### 2.4 SR2: the stiff modes integrated exactly
 
-At the layer input, V_θ is approximated by a quadratic in h. Its curvature (the Hessian) is a symmetric matrix; SR2 keeps its q = 16 largest eigenpairs. The eigenvectors uᵢ form the columns of an orthonormal d × q matrix U, the **retained stiff modes**; the eigenvalues κᵢ are their **stiffnesses**. Along mode i the token's coordinate is zᵢ = uᵢ·h, and the linearised motion is a damped oscillator:
+At the layer input, $V_{\theta}$ is approximated by a quadratic in $h$. Its curvature (the Hessian) is a symmetric matrix; SR2 keeps its $q = 16$ largest eigenpairs. The eigenvectors $u_i$ form the columns of an orthonormal $d \times q$ matrix $U$, the **retained stiff modes**; the eigenvalues $\kappa_i$ are their **stiffnesses**. Along mode $i$ the token's coordinate is $z_i = u_i^{\top} h$, and the linearised motion is a damped oscillator:
 
 $$
-\ddot{z}_i + \gamma_i \dot{z}_i + \omega_i^2 z_i = a_i ,
-\qquad
-\omega_i = \sqrt{\kappa_i / m} ,
+\ddot{z_i} + \gamma_i \dot{z_i} + \omega_i^2 z_i = a_i , \qquad \omega_i = \sqrt{\kappa_i / m} ,
 $$
 
-with ωᵢ the mode's natural frequency and aᵢ the projection of the remaining force divided by the mass. SR2 (`LOWRANK_DAMPED_FLOW = True`) solves this equation exactly over each A sub-step, with γᵢ = γ₀ for every mode, and removes the O-step's friction from span(U) so that the modes are not damped twice. The frozen quadratic (U, κᵢ) is computed once per step, at the layer input.
+with $\omega_i$ the mode's natural frequency and $a_i$ the projection of the remaining force divided by the mass. SR2 solves this equation exactly over each A sub-step, with $\gamma_i = \gamma_0$ for every mode, and removes the O-step's friction from $\mathrm{span}(U)$ so that the modes are not damped twice. The frozen quadratic, $U$ and the $\kappa_i$, is computed once per step, at the layer input.
 
-The trained SR2 has stiff wells: the median stiff mode has ωΔt ≈ 7.55, more than one full oscillation per layer step, which an explicit step could not integrate stably. At γ₀ = 0.1 such a mode is lightly damped (§3.5).
+The trained SR2 has stiff wells: its median stiff mode has $\omega \Delta t \approx 7.55$, more than one full oscillation per layer step, which an explicit step could not integrate stably. At $\gamma_0 = 0.1$ such a mode is lightly damped (§3.5).
 
 ### 2.5 Notation
 
@@ -114,7 +110,7 @@ The trained SR2 has stiff wells: the median stiff mode has ωΔt ≈ 7.55, more 
 | γᵢ | the damping rate of stiff mode i |
 | Γ(h) | the friction tensor, Σᵢ γᵢ uᵢuᵢᵀ + γ₀ P⊥ |
 | ζ, ζ(h) | the **added** damping ratio: γᵢ = γ₀ + 2ζωᵢ |
-| ζᵢ,tot | the **total** damping ratio of mode i, γᵢ / (2ωᵢ) = ζ + γ₀/(2ωᵢ) |
+| ζᵢ^tot | the **total** damping ratio of mode i, γᵢ / (2ωᵢ) = ζ + γ₀/(2ωᵢ) |
 | ζ₀, ζ_max | the learned head's starting ratio (0.005) and cap (10) |
 | s(h) | the learned head's output, ζ(h) = ζ₀ e^s(h) |
 | μ | the mobility of the first-order arm FO-b, Δt/(2m) |
@@ -125,33 +121,30 @@ The trained SR2 has stiff wells: the median stiff mode has ωΔt ≈ 7.55, more 
 
 ### 3.1 The friction tensor
 
-A position-dependent damping replaces γ₀ I by a symmetric, non-negative matrix Γ(h). For every damping in this report Γ is diagonal in the retained-mode basis:
+A position-dependent damping replaces $\gamma_0 I$ by a symmetric, non-negative matrix $\Gamma(h)$. For every damping in this report $\Gamma$ is diagonal in the retained-mode basis:
 
 $$
-\Gamma(h) = \sum_{i=1}^{q} \gamma_i(h) u_i u_i^{\top} + \gamma_0 P_{\perp} ,
-\qquad
-\gamma_i(h) \ge \gamma_0 \ge 0 .
+\Gamma(h) = \sum_{i=1}^{q} \gamma_i(h) u_i u_i^{\top} + \gamma_0 P_{\perp} , \qquad \gamma_i(h) \ge \gamma_0 \ge 0 .
 $$
 
-**It never adds energy.** With total energy E = ½ m vᵀv + V(h), the equation of motion gives
+**It never adds energy.** With the total energy $E = \tfrac{1}{2} m v^{\top} v + V(h)$, the equation of motion gives
 
 $$
 \frac{dE}{dt} = m v^{\top} \dot{v} + \nabla V^{\top} v = -m v^{\top} \Gamma(h) v \le 0 ,
 $$
 
-because Γ is non-negative. The conservative force is untouched: a position-dependent damping changes how energy leaves, never the landscape.
+because $\Gamma$ is non-negative. The conservative force is untouched: a position-dependent damping changes how energy leaves, never the landscape.
 
 ### 3.2 A scalar damping throttles; a damping tensor steers
 
-The earlier note's correction of 2026-09-27 states that damping is *tangential*: the friction force −γ(h) v is parallel to the velocity. Paper v6 (§8.6) makes the statement precise. A scalar damping adds no force across the velocity; it changes a token's path only indirectly, because a slower token is bent more sharply by the same transverse force of the potential (the path curvature is the transverse force divided by m|v|²). A scalar γ(h) is a throttle that also changes how corners are taken, not a steering wheel.
+The earlier note's correction of 2026-09-27 states that damping is *tangential*: the friction force $-\gamma(h) v$ is parallel to the velocity. Paper v6 (§8.6) makes the statement precise. A scalar damping adds no force across the velocity. It changes a token's path only indirectly, because a slower token is bent more sharply by the same transverse force of the potential: the path's curvature is $\lVert f_{\perp} \rVert / (m \lVert v \rVert^{2})$, with $f_{\perp}$ the part of the force across the velocity. A scalar $\gamma(h)$ is a throttle that also changes how corners are taken, not a steering wheel.
 
 That limit holds for a scalar only.
 
-**Proposition 1 (a damping tensor steers).** For a symmetric Γ, the friction force −Γv is parallel to v for every velocity v if and only if Γ = γI for some scalar γ. Otherwise there are velocities for which the friction has a component across v, of size
+**Proposition 1 (a damping tensor steers).** For a symmetric $\Gamma$, the friction force $-\Gamma v$ is parallel to $v$ for every velocity $v$ if and only if $\Gamma = \gamma I$ for some scalar $\gamma$. Otherwise there are velocities for which the friction has a component across $v$, of size
 
 $$
 \Big\lVert \Gamma v - \frac{v^{\top} \Gamma v}{v^{\top} v} v \Big\rVert ,
-Vert ,
 $$
 
 and that component bends the path directly. (Proof in Appendix A.)
@@ -160,32 +153,38 @@ and that component bends the path directly. (Proof in Appendix A.)
 
 *A. The same start in the same two-mode potential, damped by a scalar (blue) and by a tensor that damps the stiff mode ten times harder (red): the paths differ, not only the speeds. B. For one velocity, the scalar friction points straight back along it; the tensor's does not.*
 
-Two consequences. Every arm in this report except SR2 already steers, because its rates differ between modes (through ωᵢ), in a direction fixed by the stiffness spectrum. A damping whose per-mode rates are *learned* (§4.4) makes the steering direction learnable: damping becomes a control channel, while the dissipation stays non-negative and the conservative force stays exactly as it was.
+Two consequences. Every arm in this report except SR2 already steers, because its rates differ between modes (through $\omega_i$), in a direction fixed by the stiffness spectrum. A damping whose per-mode rates are *learned* (§4.4) makes the steering direction learnable: damping becomes a control channel, while the dissipation stays non-negative and the conservative force stays exactly as it was.
 
 ### 3.3 What a damped mode does in one layer step
 
-Over a time t, the exact solution of the mode equation is linear in the mode's state at the start. Let ω_d = √(ωᵢ² − γᵢ²/4) be the damped frequency (when ωᵢ > γᵢ/2; otherwise the cosines below become hyperbolic cosines), and
+Over a time $t$, the exact solution of the mode equation is linear in the mode's state at the start. Write $\omega_d$ for the damped frequency, defined when $\omega_i \gt \gamma_i / 2$ (otherwise the cosines below become hyperbolic cosines), and
 
 $$
-C = \cos(\omega_d t), \qquad S = \frac{\sin(\omega_d t)}{\omega_d}, \qquad e = e^{-\gamma_i t / 2} .
+\omega_d = \sqrt{\omega_i^2 - \gamma_i^2 / 4} , \qquad C = \cos(\omega_d t) , \qquad S = \frac{\sin(\omega_d t)}{\omega_d} , \qquad e = e^{-\gamma_i t / 2} .
 $$
 
-Then the displacement z and the velocity w of the mode, measured from the start, evolve as
+Then the displacement $z$ and the velocity $w$ of the mode, measured from the start, evolve as
 
 $$
-\begin{pmatrix} z(t) \\ w(t) \end{pmatrix} =
-\begin{pmatrix} e (C + \tfrac{1}{2}\gamma_i S) & e S \\ -\omega_i^2 e S & e (C - \tfrac{1}{2}\gamma_i S) \end{pmatrix}
-\begin{pmatrix} z(0) \\ w(0) \end{pmatrix}
-+
-\begin{pmatrix} Q \\ P \end{pmatrix} a_i ,
+\begin{pmatrix} z(t) \cr w(t) \end{pmatrix} = \begin{pmatrix} e (C + \tfrac{1}{2} \gamma_i S) & e S \cr -\omega_i^2 e S & e (C - \tfrac{1}{2} \gamma_i S) \end{pmatrix} \begin{pmatrix} z(0) \cr w(0) \end{pmatrix} + \begin{pmatrix} Q \cr P \end{pmatrix} a_i ,
 $$
 
-with P = eS the velocity response and Q the position response to a constant force. These are the coefficients `damped_mode_coefficients` returns (§5.2). Two numbers describe the homogeneous map completely:
+with $P = eS$ the velocity response and $Q$ the position response to a constant force,
 
-- **Its determinant is e^(−γᵢt).** It is the factor by which the map scales area in the mode's phase plane. Area in phase space is the room the model has to keep tokens apart along that mode: area lost is distinctions between tokens merged.
-- **Its eigenvalues are e^((−γᵢ/2 ± iω_d)t).** For a total ratio below 1 they are a complex pair. Their modulus, e^(−ζᵢ,tot ωᵢ t), is the **amplitude kept**; their argument, ω_d t = ωᵢt √(1 − ζᵢ,tot²), is the **angle turned**.
+$$
+Q = \frac{1 - e (C + \tfrac{1}{2} \gamma_i S)}{\omega_i^2} .
+$$
 
-Over a layer step the friction of the stiff modes acts for the two A sub-steps, Δt in all, so a mode keeps e^(−γᵢΔt/2) of its amplitude and turns ωᵢΔt √(1 − ζᵢ,tot²).
+These are the coefficients `damped_mode_coefficients` returns (§5.2). Two numbers describe the homogeneous map completely.
+
+- **The determinant** of the map is $e^{-\gamma_i t}$: the factor by which it scales area in the mode's phase plane. Area in phase space is the room the model has to keep tokens apart along that mode: area lost is distinctions between tokens merged.
+- **The eigenvalues** are $e^{(-\gamma_i / 2 \pm i \omega_d) t}$. For a total ratio below 1 they are a complex pair. Their modulus is the **amplitude kept**, their argument the **angle turned**.
+
+Over a layer step the friction of the stiff modes acts for the two A sub-steps, $\Delta t$ in all, so with the total ratio $\zeta_i^{\mathrm{tot}}$ of §3.5
+
+$$
+\text{amplitude kept} = e^{-\gamma_i \Delta t / 2} = e^{-\zeta_i^{\mathrm{tot}} \omega_i \Delta t} , \qquad \text{angle turned} = \omega_i \Delta t \sqrt{1 - (\zeta_i^{\mathrm{tot}})^2} .
+$$
 
 ![One stiff mode's phase-space cloud through one layer step, for five damping ratios](figures/per_mode_damping/pmd_phase_space.png)
 
@@ -199,23 +198,33 @@ This picture is the measured order of the damping arms (§6): SR2's stiff modes 
 
 ### 3.4 Freezing the damping over a step
 
-Every damping in this report is computed once per layer step, from the step's input, and held fixed through both A sub-steps, as U and the κᵢ are. Within a step each stiff mode is then an oscillator with constant coefficients, and the map of §3.3 is its exact solution: the step adds no splitting error of its own on span(U), whatever the damping. Freezing is the same approximation the integrator already makes for the stiffness; a damping that changed inside the step would need either a finer split or a numerical solve.
+Every damping in this report is computed once per layer step, from the step's input, and held fixed through both A sub-steps, as $U$ and the $\kappa_i$ are. Within a step each stiff mode is then an oscillator with constant coefficients, and the map of §3.3 is its exact solution: the step adds no splitting error of its own on $\mathrm{span}(U)$, whatever the damping. Freezing is the same approximation the integrator already makes for the stiffness; a damping that changed inside the step would need either a finer split or a numerical solve.
 
 ### 3.5 The damping ratio, critical damping and the overdamped limit
 
-The **damping ratio** of a mode measures its damping rate against its own frequency, ζᵢ,tot = γᵢ / (2ωᵢ):
+The **damping ratio** of a mode measures its damping rate against its own frequency:
 
-- below 1 the mode oscillates as it settles (underdamped);
-- at 1 it settles as fast as it can without overshooting (critical);
-- above 1 it creeps toward the well without oscillating (overdamped).
+$$
+\zeta_i^{\mathrm{tot}} = \frac{\gamma_i}{2 \omega_i} .
+$$
 
-SR2's median stiff mode, at ωΔt ≈ 7.55 and γ₀ = 0.1, has ζ_tot = 0.1 / (2 × 1.89) ≈ 0.026: very lightly damped, more than one oscillation per layer step, about 82% of its amplitude kept.
+- Below 1 the mode oscillates as it settles (underdamped).
+- At 1 it settles as fast as it can without overshooting (critical).
+- Above 1 it creeps toward the well without oscillating (overdamped).
 
-As the damping grows without bound, the second-order motion tends to a **gradient flow**, in which the velocity is always the force times a mobility. The arm FO-b implements that limit directly: dh/dt = μ f, with μ = Δt/(2m), chosen so that one step of length Δt from rest moves the token by the same Δt² f / (2m) a second-order step from rest would. FO-b carries no velocity in **any** direction, not only on the stiff modes; it is the end of the damping axis, reached by a different route.
+SR2's median stiff mode, at $\omega \Delta t \approx 7.55$ (so $\omega \approx 1.89$) and $\gamma_0 = 0.1$, has a total ratio of $0.1 / (2 \times 1.89) \approx 0.026$: very lightly damped, more than one oscillation per layer step, keeping $e^{-0.2} \approx 0.82$ of its amplitude.
+
+As the damping grows without bound, the second-order motion tends to a **gradient flow**, in which the velocity is always the force times a mobility. The arm FO-b implements that limit directly:
+
+$$
+\frac{dh}{dt} = \mu f(h) , \qquad \mu = \frac{\Delta t}{2m} ,
+$$
+
+with $\mu$ chosen so that one step of length $\Delta t$ from rest moves the token by $\mu \Delta t f = \Delta t^{2} f / (2m)$, the displacement a second-order step from rest makes. FO-b carries no velocity in **any** direction, not only on the stiff modes; it is the end of the damping axis, reached by a different route.
 
 ### 3.6 A shared ratio couples erasure to stiffness
 
-When one ratio ζ is shared by all modes of a token (as in SR3-crit and the learned per-token arm, §4.2–§4.3), the amplitude a mode keeps, e^(−ζ_tot ωᵢΔt), falls exponentially with its stiffness. At the learned arm's layer-0 ratio of 0.56 a mode at ωΔt ≈ 7.9 keeps about 1% of its amplitude through a step, while a soft mode at ωΔt = 1 keeps about 45%. A shared ratio cannot keep a stiff mode ringing while damping a soft one: it ties how much a mode is erased to how stiff it is.
+When one ratio $\zeta$ is shared by all modes of a token (as in SR3-crit and the learned per-token arm, §4.2–§4.3), the amplitude a mode keeps, $e^{-\zeta_i^{\mathrm{tot}} \omega_i \Delta t}$, falls exponentially with its stiffness. At the learned arm's layer-0 ratio of 0.56, a mode at $\omega \Delta t \approx 7.9$ keeps about 1% of its amplitude through a step, while a soft mode at $\omega \Delta t = 1$ keeps about 45%. A shared ratio cannot keep a stiff mode ringing while damping a soft one: it ties how much a mode is erased to how stiff it is.
 
 ![A shared ratio erases the stiff modes first; three per-mode alternatives](figures/per_mode_damping/pmd_coupling.png)
 
@@ -227,7 +236,7 @@ A per-mode ratio (§4.4) removes the tie.
 
 ## 4. The family of parameterisations
 
-Every parameterisation of this report sets the rate of stiff mode i as the base rate plus an added ratio times twice the mode's frequency, and leaves every other direction at γ₀:
+Every parameterisation of this report sets the rate of stiff mode $i$ as the base rate plus an added ratio times twice the mode's frequency, and leaves every other direction at $\gamma_0$:
 
 $$
 \gamma_i(h) = \gamma_0 + 2 \zeta_i(h) \omega_i .
@@ -250,45 +259,49 @@ They differ only in what sets the added ratio.
 
 ### 4.1 The constant base (SR2)
 
-γᵢ = γ₀ = 0.1 for every mode and token. Γ = γ₀I is a scalar, so SR2's friction does not steer. It is the base every other arm is built on and compared against.
+The rate is $\gamma_i = \gamma_0 = 0.1$ for every mode and token. $\Gamma = \gamma_0 I$ is a multiple of the identity, so SR2's friction does not steer. It is the base every other arm is built on and compared against.
 
 ### 4.2 A fixed curvature-keyed ratio (SR3-crit, and the constant control)
 
-ζ is a constant: every stiff mode of every token is damped at γ₀ + 2ζωᵢ. At ζ = 1 (SR3-crit) the added rate alone is critical, and the total ratio of the median stiff mode is 1 + 0.026 ≈ 1.03, slightly above critical. The book's constant-ratio family (paper v6, §8.8, eq. (97)) sets the *total* ratio to a target instead, absorbing γ₀; the two agree up to γ₀'s share, which is small on stiff modes. The form keys the damping to the curvature, as the earlier note's potential-derived proposal intended, but through each mode's frequency rather than through the value of V_θ. The constant control D4 is this form at ζ = 0.46 (§7).
+The added ratio $\zeta$ is a constant: every stiff mode of every token is damped at $\gamma_0 + 2 \zeta \omega_i$. At $\zeta = 1$ (SR3-crit) the added rate alone is critical, and the total ratio of the median stiff mode is $1 + 0.026 \approx 1.03$, slightly above critical. The book's constant-ratio family (paper v6, §8.8, eq. (97)) sets the *total* ratio to a target instead, absorbing the base rate; the two agree up to the share of $\gamma_0$, which is small on stiff modes. The form keys the damping to the curvature, as the earlier note's potential-derived proposal intended, but through each mode's frequency rather than through the value of $V_{\theta}$. The constant control D4 is this form at $\zeta = 0.46$ (§7).
 
 ### 4.3 A learned per-token ratio (the learned γ(h) arm)
 
-A small network, the **damping head**, maps the token's state at the start of the layer step to one number s(h):
+A small network, the **damping head**, maps the token's state at the start of the layer step to one number $s(h)$:
 
-- a linear map from the d = 384 coordinates of h to 64 hidden units;
+- a linear map from the $d = 384$ coordinates of $h$ to 64 hidden units;
 - the GELU nonlinearity;
 - a linear map from the 64 hidden units to one output;
 
 24,705 parameters in all. The ratio is
 
 $$
-\zeta(h) = \zeta_0 \exp\Big(\min\big\{ s(h), \ln(\zeta_{\max} / \zeta_0) \big\}\Big),
-\qquad
-\zeta_0 = 0.005, \quad \zeta_{\max} = 10 .
+\zeta(h) = \zeta_0 \exp\Big(\min\big\lbrace s(h), \ln(\zeta_{\max} / \zeta_0) \big\rbrace\Big) , \qquad \zeta_0 = 0.005 , \quad \zeta_{\max} = 10 .
 $$
 
-- **The start.** The head's last layer is initialised to zero, so s = 0 and ζ = ζ₀ for every token: a total ratio of about 0.031 on SR2's median stiff mode, against SR2's 0.026. The arm starts, in effect, as SR2.
-- **The bounds.** The exponential keeps ζ positive, so the damping never falls below SR2's; the cap keeps it at most 10. The log parameterisation moves ζ multiplicatively in both directions: with Adam, ln ζ moves by about the learning rate per step, so critical damping is a few thousand steps away where the loss favours it.
+- **The start.** The head's last layer is initialised to zero, so $s = 0$ and $\zeta = \zeta_0$ for every token: a total ratio of about 0.031 on SR2's median stiff mode, against SR2's 0.026. The arm starts, in effect, as SR2.
+- **The bounds.** The exponential keeps $\zeta$ positive, so the damping never falls below SR2's; the cap keeps it at most 10. The log parameterisation moves $\zeta$ multiplicatively in both directions: with Adam, $\ln \zeta$ moves by about the learning rate per step, so critical damping is a few thousand steps away where the loss favours it.
 - **One head for both layers.** The same head is applied at every layer. The two layers' ratios differ only because their input states differ.
-- **What ωᵢ is in this term.** ωᵢ = √(κᵢ/m) with the mass's gradient stopped, so the head cannot train the mass through the damping. A retained mode with negative stiffness (an unstable direction) has no frequency; ωᵢ is set to 0 there and the mode keeps γ₀.
-- **Training.** The gradient of the loss reaches the head through γᵢ. The head's parameters form their own clipping group, with gradient-norm bound 0.3.
+- **The frequency in this term.** It is $\omega_i = \sqrt{\kappa_i / m}$ with the mass's gradient stopped, so the head cannot train the mass through the damping. A retained mode with negative stiffness (an unstable direction) has no frequency; $\omega_i$ is set to 0 there, and the mode keeps $\gamma_0$.
+- **Training.** The gradient of the loss reaches the head through $\gamma_i$. The head's parameters form their own clipping group, with gradient-norm bound 0.3.
 
 **Relation to the earlier note's proposals.** The earlier note (§4.2) proposed a learned MLP that outputs a damping *rate* bounded by a sigmoid between two fixed rates, applied to every direction. The learned arm differs in three ways: it outputs a *ratio*; the stiffness spectrum, not the network, spreads it over the modes, so the friction is a tensor and steers (§3.2); and it acts inside the exact flow of the A sub-steps, not in the O-step where the earlier note placed it.
 
 ### 4.4 A learned per-mode ratio (D5, designed)
 
-The head outputs one ratio per retained mode, ζᵢ(h), i = 1, …, q. The modes are indexed by stiffness rank: the eigensolve returns them in descending stiffness, so rank 1 is the stiffest mode of every token, and a fixed output index means the same thing across tokens. The log parameterisation, start (0.005) and cap (10) are those of §4.3. At initialisation the arm equals SR3's form at the fixed ratio 0.005, which the verification checks bit for bit, as for the per-token arm.
+The head outputs one ratio per retained mode, $\zeta_i(h)$ for $i = 1, \dots, q$. The modes are indexed by stiffness rank: the eigensolve returns them in descending stiffness, so rank 1 is the stiffest mode of every token, and a fixed output index means the same thing across tokens. The log parameterisation, start (0.005) and cap (10) are those of §4.3. At initialisation the arm equals SR3's form at the fixed ratio 0.005, which the verification checks bit for bit, as for the per-token arm.
 
 The per-mode head removes the coupling of §3.6 and makes the steering direction of §3.2 learnable. What it learns scores the hypotheses H1–H3 of §7.2.
 
 ### 4.5 The overdamped end (FO-b)
 
-FO-b replaces the second-order step by an A-B-A step of the gradient flow: the stiff modes relax exactly, z ← z* + e^(−μκᵢt)(z − z*) over each half step, and the remaining force is applied as one gradient step of size μΔt at the midpoint. No velocity is carried into the next layer. It is not a parameterisation of Γ; it is the limit every Γ tends to as all its rates grow, and it anchors the overdamped end of the damping axis (§6.2).
+FO-b replaces the second-order step by an A-B-A step of the gradient flow. Over each half step the stiff modes relax exactly toward the bottom $z_i^{\star}$ of their quadratic,
+
+$$
+z_i \leftarrow z_i^{\star} + e^{-\mu \kappa_i t} (z_i - z_i^{\star}) ,
+$$
+
+and the remaining force is applied as one gradient step of size $\mu \Delta t$ at the midpoint. No velocity is carried into the next layer. It is not a parameterisation of $\Gamma$; it is the limit every $\Gamma$ tends to as all its rates grow, and it anchors the overdamped end of the damping axis (§6.2).
 
 ---
 
@@ -327,7 +340,7 @@ E22 = e * (C - 0.5 * g * S)
 P = E12                                                    # velocity response to unit forcing
 ```
 
-The underdamped and overdamped regimes share one expression through `torch.where`, with sinc and sinhc so that critical damping (ω_d = 0) is not a division by zero. The position response Q = (1 − E11)/ω² cancels catastrophically for a soft mode, so it is summed from the exact Taylor recurrence of the mode equation where ω²t² is tiny, and falls back to the zero-stiffness damped drift where the damping is large. Because γ enters as a tensor, a per-mode, per-token rate passes through unchanged.
+The underdamped and overdamped regimes share one expression through `torch.where`, with sinc and sinhc so that critical damping, where $\omega_d = 0$, is not a division by zero. The position response $Q$ of §3.3 cancels catastrophically for a soft mode, so it is summed from the exact Taylor recurrence of the mode equation where $\omega^2 t^2$ is tiny, and falls back to the zero-stiffness damped drift where the damping is large. Because $\gamma$ enters as a tensor, a per-mode, per-token rate passes through unchanged.
 
 ### 5.3 The A sub-step on span(U)
 
@@ -348,7 +361,7 @@ h_new = h + dt * v + torch.einsum('...dq,...q->...d', U, z_new - z - dt * wz)
 v_new = v + torch.einsum('...dq,...q->...d', U, wz_new - wz)
 ```
 
-The last two lines add the free drift h + Δt·v on all of ℝ^d and then replace, on span(U), the free drift by the exact damped motion.
+The last two lines add the free drift $h + \Delta t v$ on all of $\mathbb{R}^{d}$ and then replace, on $\mathrm{span}(U)$, the free drift by the exact damped motion.
 
 ### 5.4 Setting the per-mode rate
 
@@ -372,11 +385,11 @@ h_mid, v_mid = lowrank_damped_substep(
 )
 ```
 
-`h_in` is the layer input, so ζ is frozen over the step (§3.4); `m_b.detach()` stops the mass's gradient in this term; the clamp sets ωᵢ = 0 on a negative stiffness. The second A sub-step uses the same `gamma_U`.
+`h_in` is the layer input, so $\zeta$ is frozen over the step (§3.4); `m_b.detach()` stops the mass's gradient in this term; the clamp sets $\omega_i = 0$ on a negative stiffness. The second A sub-step uses the same `gamma_U`.
 
 ### 5.5 The O-step, and undoing it on span(U)
 
-The O-step damps every direction at γ₀; SR2 then restores the velocity's component on span(U), whose friction the A sub-steps already applied:
+The O-step damps every direction at $\gamma_0$; SR2 then restores the velocity's component on $\mathrm{span}(U)$, whose friction the A sub-steps already applied:
 
 ```python
 _v_pre_o = v_mid
@@ -405,11 +418,11 @@ self._zeta_head_max = math.log(10.0 / self._zeta0)    # cap: zeta <= 10
 self.register_buffer("zeta_stats", torch.zeros(cfg.L, 4), persistent=False)
 ```
 
-`zeta_stats` holds, per layer, the median, 10th and 90th percentiles of ζ and the fraction of tokens above 1, from the last training forward pass; the notebook prints the median and the fraction every 50 steps and writes all four into every evaluation record. The training cell puts the head's four tensors in the clip group `damping_head` (a name no other parameter contains).
+`zeta_stats` holds, per layer, the median, 10th and 90th percentiles of $\zeta$ and the fraction of tokens above 1, from the last training forward pass; the notebook prints the median and the fraction every 50 steps and writes all four into every evaluation record. The training cell puts the head's four tensors in the clip group `damping_head` (a name no other parameter contains).
 
 ### 5.7 Guards
 
-- A per-mode damping (fixed or learned) needs SR2's exact damped flow on every layer, and is refused with PMX, whose flow damps all of ℝ^d with one scalar (§8.2).
+- A per-mode damping (fixed or learned) needs SR2's exact damped flow on every layer, and is refused with PMX, whose flow damps all of $\mathbb{R}^{d}$ with one scalar (§8.2).
 - FO-b needs the low-rank integrator and is defined at zero temperature.
 - The run's Cell 5b prints a banner naming the active damping and refuses inconsistent combinations before any GPU time is spent.
 
@@ -428,7 +441,7 @@ On SR2's trained weights the learned arm at initialisation moves the evaluation 
 
 ### 5.9 A pairing defect, found while scoring
 
-The head's first linear layer draws random numbers when it is built, which shifts the random stream for every parameter initialised after it. Built from the notebook at the same seed, 51 of the 89 tensors the learned arm shares with SR2 start from different values (the embeddings, the output layer and V_θ's and V_φ's projections among them). The data order is drawn from its own seeded generator and is the same. So the learned arm and SR2 differ by the head **and** by their initial weights; SR3-crit, FO-b and the constant control add no parameters and start from SR2's exact weights.
+The head's first linear layer draws random numbers when it is built, which shifts the random stream for every parameter initialised after it. Built from the notebook at the same seed, 51 of the 89 tensors the learned arm shares with SR2 start from different values (the embeddings, the output layer, and the projections of $V_{\theta}$ and $V_{\phi}$ among them). The data order is drawn from its own seeded generator and is the same. So the learned arm and SR2 differ by the head **and** by their initial weights; SR3-crit, FO-b and the constant control add no parameters and start from SR2's exact weights.
 
 **The fix, before D5:** build the head under its own generator (for example inside `torch.random.fork_rng()` with a fixed seed), so that a head arm and its base start from the same weights, and add a check of that to the verification. **⟨pending: not yet applied⟩**
 
@@ -438,7 +451,7 @@ The head's first linear layer draws random numbers when it is built, which shift
 
 ### 6.1 Setup
 
-All arms: OpenWebText, d = 384, L = 2, Δt = 4, q = 16, γ₀ = 0.1; 32,500 steps at 32 sequences of 512 tokens (about 0.53 billion tokens); learning rate 1.2e-3 with warm-up to step 1,625, constant to step 21,125 and decay to 6e-5 at step 32,500; one seed (0); an A100 80 GB, about 1.1 s per step. **Settled** perplexity is the mean of the last three evaluations, once a line fitted to the last 3,000 steps changes by no more than the residual standard deviation. All four runs finished cleanly, with no watchdog trigger or spike, and every causal audit clean.
+All arms: OpenWebText, $d = 384$, $L = 2$, $\Delta t = 4$, $q = 16$, $\gamma_0 = 0.1$; 32,500 steps at 32 sequences of 512 tokens (about 0.53 billion tokens); learning rate 1.2e-3 with warm-up to step 1,625, constant to step 21,125 and decay to 6e-5 at step 32,500; one seed (0); an A100 80 GB, about 1.1 s per step. **Settled** perplexity is the mean of the last three evaluations, once a line fitted to the last 3,000 steps changes by no more than the residual standard deviation. All four runs finished cleanly, with no watchdog trigger or spike, and every causal audit clean.
 
 ### 6.2 The damping axis
 
@@ -477,12 +490,12 @@ Two readings follow.
 
 ### 6.4 What the learned head chose
 
-- **Moderate damping, well below critical.** Settled medians of the added ratio: 0.56 at layer 0, 0.36 at layer 1 (0.54–0.58 and 0.33–0.38 over the last 3,000 steps). At most 3% of tokens at layer 0, and 1% at layer 1, are above ζ = 1.
-- **Layer 0 first, layer 1 later.** Layer 0 stayed near ζ₀ to about step 5,000, then rose to 0.14 (step 10,000), 0.41 (15,000) and 0.56 (20,000), where it stayed. Layer 1 moved later and less: 0.12 at step 15,000, 0.24 at 20,000, 0.35 from 25,000.
-- **An early overdamped tail at layer 1.** While layer 1's median was still at ζ₀, 5–6% of its tokens were above ζ = 1 (steps 2,500–5,000), a heavily damped minority that was gone by step 10,000.
-- **The wells kept SR2's stiffness.** In-flight median ωΔt 7.9 at the end (SR2 7.55 at its endpoint), where critical damping had softened SR3-crit's wells to about 2. At the settled ratio a median stiff mode keeps about 1% of its amplitude through a step and still turns about one full rotation: the model damps the oscillation hard but keeps it.
+- **Moderate damping, well below critical.** The settled medians of the added ratio are 0.56 at layer 0 and 0.36 at layer 1 (0.54–0.58 and 0.33–0.38 over the last 3,000 steps). At most 3% of tokens at layer 0, and 1% at layer 1, are above $\zeta = 1$.
+- **Layer 0 first, layer 1 later.** Layer 0 stayed near $\zeta_0$ to about step 5,000, then rose to 0.14 (step 10,000), 0.41 (15,000) and 0.56 (20,000), where it stayed. Layer 1 moved later and less: 0.12 at step 15,000, 0.24 at 20,000, 0.35 from 25,000.
+- **An early overdamped tail at layer 1.** While layer 1's median was still at $\zeta_0$, 5–6% of its tokens were above $\zeta = 1$ (steps 2,500–5,000), a heavily damped minority that was gone by step 10,000.
+- **The wells kept SR2's stiffness.** The in-flight median was $\omega \Delta t \approx 7.9$ at the end (SR2: 7.55 at its endpoint), where critical damping had softened SR3-crit's wells to about 2. At the settled ratio a median stiff mode keeps about 1% of its amplitude through a step and still turns about one full rotation: the model damps the oscillation hard but keeps it.
 
-**Reading.** The head's choice is made at the learning rate of the stable phase, where the added damping went with a lower loss, and the decay rewards the lightly damped model more. The head's optimisation, not the settled optimum of the finished model, decided ζ. Two measurements test that reading: the inference-time dial D3 (if scaling ζ down on the trained model lowers perplexity, the head is past its own optimum) and the constant control D4 (§7). Because of the pairing defect (§5.9), the early lead is not attributed to the head.
+**Reading.** The head's choice is made at the learning rate of the stable phase, where the added damping went with a lower loss, and the decay rewards the lightly damped model more. The head's optimisation, not the settled optimum of the finished model, decided $\zeta$. Two measurements test that reading: the inference-time dial D3 (if scaling $\zeta$ down on the trained model lowers perplexity, the head is past its own optimum) and the constant control D4 (§7). Because of the pairing defect (§5.9), the early lead is not attributed to the head.
 
 ### 6.5 Diagnostics
 
@@ -502,8 +515,8 @@ Only the lightly damped SR2 gives a trained step that closely samples a converge
 
 - **One seed per arm**, and the spread between seeds is unmeasured. The learned arm's +1.7% (0.015 nats) is steady over the last 7,000 steps but small; the other gaps (4.9%, 8.5%) are large against any plausible spread.
 - **The learned arm and SR2 do not share initial weights** (§5.9).
-- **One corpus, one depth, one width:** OpenWebText, L = 2, d = 384, 0.53 billion tokens. D7 tests the corpus.
-- **The ζ medians in the progress lines are printed to two decimals**, so ζ₀ = 0.005 reads 0.00 in that run's log; the evaluation records hold the full values.
+- **One corpus, one depth, one width:** OpenWebText, $L = 2$, $d = 384$, 0.53 billion tokens. D7 tests the corpus.
+- **The ζ medians in the progress lines are printed to two decimals**, so $\zeta_0 = 0.005$ reads 0.00 in that run's log; the evaluation records hold the full values.
 
 ---
 
@@ -531,21 +544,33 @@ D1–D3 run on the learned arm's checkpoint **⟨pending: the run's folder to be
 | H2, equal retention | ζᵢ falls with stiffness, so the rate γᵢ is about the same for every mode | SR2's single rate was right in form, too small in value | γᵢ nearly constant across rank |
 | H3, phase code | ζᵢ is set so that each mode's angle turned lands on chosen values | the rotation angle is itself the computation | the turn clusters, modulo 2π, by mode and token type |
 
+In the terms of §3.3, H2 predicts, for one rate $\bar{\gamma}$ per token,
+
+$$
+\zeta_i(h) \approx \frac{\bar{\gamma} - \gamma_0}{2 \omega_i} ,
+$$
+
+and H3 predicts that the angle turned, $\omega_i \Delta t \sqrt{1 - (\zeta_i^{\mathrm{tot}})^2}$, clusters modulo $2\pi$.
+
 ### 7.3 The damping dial (D3)
 
-Replace the trained ζ(h) by c·ζ(h) for a dial c and measure perplexity on fixed weights. c below 1 moves the model toward SR2's light damping, c above 1 toward critical. The wells were shaped together with the damping they were trained under, so the curve has its minimum near c = 1 by construction; its width and asymmetry are the information. With the learned arm 1.7% behind SR2, the dial also asks whether the trained head is past its own optimum. Like the velocity-reset gate, it measures reliance, not need: fixed weights say how a model trained one way reacts to another damping, not what a model trained at that damping would reach. For the per-mode arm the dial generalises to one dial per band of ranks.
+Replace the trained $\zeta(h)$ by $c \zeta(h)$ for a dial $c$ and measure perplexity on fixed weights. A dial $c \lt 1$ moves the model toward SR2's light damping, $c \gt 1$ toward critical. The wells were shaped together with the damping they were trained under, so the curve has its minimum near $c = 1$ by construction; its width and asymmetry are the information. With the learned arm 1.7% behind SR2, the dial also asks whether the trained head is past its own optimum. Like the velocity-reset gate, it measures reliance, not need: fixed weights say how a model trained one way reacts to another damping, not what a model trained at that damping would reach. For the per-mode arm the dial generalises to one dial per band of ranks.
 
 ### 7.4 The constant control (D4)
 
-The learned arm differs from SR2 in two ways at once: its damping **level** is higher, and its damping **varies** with the token. One run separates them: SR3's form at a fixed ratio ζ̄, with no head.
+The learned arm differs from SR2 in two ways at once: its damping **level** is higher, and its damping **varies** with the token. One run separates them: SR3's form at a fixed ratio $\bar{\zeta}$, with no head.
 
 $$
-\Delta_{\text{level}} = \mathrm{PPL}(\bar{\zeta}) - \mathrm{PPL}(\text{SR2}),
-\qquad
-\Delta_{\text{position}} = \mathrm{PPL}(\zeta(h)) - \mathrm{PPL}(\bar{\zeta}) .
+\Delta_{\text{level}} = \mathrm{PPL}(\bar{\zeta}) - \mathrm{PPL}(\text{SR2}) , \qquad \Delta_{\text{position}} = \mathrm{PPL}(\zeta(h)) - \mathrm{PPL}(\bar{\zeta}) .
 $$
 
-ζ̄ = 0.46, the mean of the learned arm's two settled medians. The two terms add up to the learned arm's recorded cost of 0.97 perplexity points. A negative Δ_position means the per-token variation earns something back from a costly level; a Δ_position near zero means the head is a constant in disguise. The control starts from SR2's exact initial weights, so its comparison with SR2 is free of the pairing defect. A per-layer constant (0.56 and 0.36) is the intermediate if the single constant falls short; it needs a small code change, since the ratio is one number today.
+The control uses $\bar{\zeta} = 0.46$, the mean of the learned arm's two settled medians. The two terms add up to the learned arm's recorded cost:
+
+$$
+\Delta_{\text{level}} + \Delta_{\text{position}} = 59.29 - 58.32 = 0.97 .
+$$
+
+A negative $\Delta_{\text{position}}$ means the per-token variation earns something back from a costly level; a value near zero means the head is a constant in disguise. The control starts from SR2's exact initial weights, so its comparison with SR2 is free of the pairing defect. A per-layer constant (0.56 and 0.36) is the intermediate if the single constant falls short; it needs a small code change, since the ratio is one number today.
 
 ![The damping dial and the constant-ζ decomposition](figures/per_mode_damping/pmd_dial_and_control.png)
 
@@ -559,13 +584,19 @@ $$
 
 The Fock arms add a register bank that persists across layers and a reverse channel that injects it into the tokens at every layer (and, in G3′ and XRB-F, an exchange field built from other tokens' states).
 
-1. **Damping acts on the velocity, whatever produced it.** The reverse channel's increment carries no velocity of its own, while the conservative displacement does, so damping harder raises the channel's share of the step (measured: 0.915 to 0.952 as γ goes from 0.1 to 0.5). A per-mode damping keeps that property direction by direction.
-2. **The head can read the register state.** In a Fock arm the natural input to ζ(h) is the layer input together with the register occupancy, so the model can damp where memory is written or read. The earlier note's Fock-channel proposal returns here as a choice of *where to damp*, not as a geometric compensation, which a scalar damping cannot provide.
+1. **Damping acts on the velocity, whatever produced it.** The reverse channel's increment carries no velocity of its own, while the conservative displacement does, so damping harder raises the channel's share of the step (measured: 0.915 to 0.952 as $\gamma$ goes from 0.1 to 0.5). A per-mode damping keeps that property direction by direction.
+2. **The head can read the register state.** In a Fock arm the natural input to $\zeta(h)$ is the layer input together with the register occupancy, so the model can damp where memory is written or read. The earlier note's Fock-channel proposal returns here as a choice of *where to damp*, not as a geometric compensation, which a scalar damping cannot provide.
 3. **The base matters.** The damping arms are built on SR2's exact damped flow. G3′ and XRB-F use F3.1's split integrator, which has no per-mode damping coefficients to set. A Fock damping arm needs a Fock arm on the SR2 integrator first, or a head built for the split step; D6 chooses its base after D5.
 
 ### 8.2 The Poisson-mode wells (PMX)
 
-PMX integrates exactly, with damping, the frozen spring made of V_θ's retained modes and the wells' quadratic at the step's start: an isotropic curvature α per token on all of ℝ^d, plus the top wells' rank-one terms, of either sign. Its damping today is one scalar on every direction.
+PMX integrates exactly, with damping, the frozen spring made of the retained modes of $V_{\theta}$ and the wells' quadratic at the step's start: an isotropic curvature $\alpha$ per token on all of $\mathbb{R}^{d}$, plus the top wells' rank-one terms, of either sign. In the retained-mode basis the spring is
+
+$$
+K = \alpha I + U \mathrm{diag}(\kappa_1, \dots, \kappa_q) U^{\top} ,
+$$
+
+so mode $i$ has stiffness $\kappa_i + \alpha$ and the complement has stiffness $\alpha$. Its damping today is one scalar on every direction.
 
 - **At the wells, damping decides capture.** A token approaching a memory well either passes through or is captured, depending on the energy it loses near the well. The lighter the damping, the smaller the incoming velocity at which a token passes.
 
@@ -573,8 +604,8 @@ PMX integrates exactly, with damping, the frozen spring made of V_θ's retained 
 
 *A. A token approaching a well of depth 2 from x = −3, for four dampings near the well. B. The smallest incoming velocity that passes through, against the damping: damping is the capture dial. Exact simulation of the damped equation in a Gaussian well.*
 
-- **A position-dependent damping at the wells is a capture policy.** With ζ(h) in the wells' flow the model can capture tokens at the wells they should bind to and let them pass the others. A model that damps every well heavily has chosen capture everywhere, which a gradient flow already provides; one that keeps light damping at some wells uses inertia to pass them. This is the most direct test of whether the wells need second-order dynamics.
-- **Implementation.** The per-mode rate goes into `lowrank_iso_damped_substep`, which already computes its coefficients mode by mode, with stiffness κᵢ + α on span(U) and α on the complement; `damped_mode_coefficients` accepts a rate per mode. Two details need care: a negative stiffness has no oscillation, so its ratio must be defined with the magnitude of the stiffness; and the complement's isotropic spring keeps the scalar damping unless the head has a separate output for it. The guard of §5.7 excludes PMX until both are settled.
+- **A position-dependent damping at the wells is a capture policy.** With $\zeta(h)$ in the wells' flow the model can capture tokens at the wells they should bind to and let them pass the others. A model that damps every well heavily has chosen capture everywhere, which a gradient flow already provides; one that keeps light damping at some wells uses inertia to pass them. This is the most direct test of whether the wells need second-order dynamics.
+- **Implementation.** The per-mode rate goes into `lowrank_iso_damped_substep`, which already computes its coefficients mode by mode from the stiffnesses of $K$. The coefficient routine accepts a rate per mode. Two details need care. A negative stiffness has no oscillation, so its ratio must be defined with the magnitude of the stiffness. And the complement's isotropic spring keeps the scalar damping unless the head has a separate output for it. The guard of §5.7 excludes PMX until both are settled.
 
 ---
 
@@ -582,23 +613,71 @@ PMX integrates exactly, with damping, the frozen spring made of V_θ's retained 
 
 - **In the CfC/BAOAB step, damping is naturally a tensor**, one rate per stiff mode, applied inside the exact flow; computed once per step, it keeps the step exact (§3.4).
 - **A damping tensor dissipates and steers**: it never adds energy, and unlike a scalar it supplies a force across the velocity (§3.1–§3.2).
-- **One layer step of a damped mode is an exact linear map**, whose determinant (area kept, e^(−γᵢΔt)) and eigenvalues (amplitude kept and angle turned) read off what the model keeps of each direction (§3.3).
-- **The implemented family** sets γᵢ = γ₀ + 2ζωᵢ with ζ zero (SR2), constant (SR3-crit, D4), learned per token (γ(h)) or per mode (D5); FO-b is the overdamped limit (§4).
-- **On OpenWebText the damping axis is ordered**: SR2 58.32 < learned γ(h) 59.29 < FO-b 61.16 < SR3-crit 63.28. The oscillation of the stiff modes is what the second-order model gains from (§6.2).
-- **Given the choice, the model adds moderate damping** (median ζ 0.56 and 0.36), keeps its stiff wells and their rotation, leads SR2 while the learning rate is high and loses the lead in the decay (§6.3–§6.4).
+- **One layer step of a damped mode is an exact linear map**, whose determinant, $e^{-\gamma_i \Delta t}$, is the area kept and whose eigenvalues give the amplitude kept and the angle turned (§3.3).
+- **The implemented family** sets the rate $\gamma_i$ of each stiff mode to $\gamma_0 + 2 \zeta \omega_i$, with $\zeta$ zero (SR2), constant (SR3-crit, D4), learned per token (γ(h)) or per mode (D5); FO-b is the overdamped limit (§4).
+- **On OpenWebText the damping axis is ordered**: SR2 58.32, learned γ(h) 59.29, FO-b 61.16, SR3-crit 63.28. The oscillation of the stiff modes is what the second-order model gains from (§6.2).
+- **Given the choice, the model adds moderate damping** (median added ratios 0.56 and 0.36), keeps its stiff wells and their rotation, leads SR2 while the learning rate is high and loses the lead in the decay (§6.3–§6.4).
 - **Next:** the diagnostic cells and D1–D3 on the learned arm; D4 to separate level from position dependence; the pairing fix, then D5 (§7).
 
 ---
 
 ## Appendix A. Proofs
 
-**Proposition 1.** *If* Γ = γI, then −Γv = −γv is parallel to v. *Only if:* suppose −Γv is parallel to v for every v, that is, every non-zero v is an eigenvector of Γ. Take two eigenvectors x, y of the symmetric Γ with eigenvalues λ, λ′. Then x + y is also an eigenvector, with some eigenvalue ν, so λx + λ′y = Γ(x + y) = ν(x + y), and by the independence of x and y, λ = ν = λ′. All eigenvalues are equal, so Γ = γI. The component of Γv across v is Γv minus its projection on v, which is the expression in the proposition; it vanishes exactly when v is an eigenvector of Γ. ∎
+**Proposition 1.** *If.* When $\Gamma = \gamma I$, the force $-\Gamma v = -\gamma v$ is parallel to $v$.
 
-**The determinant of the mode map.** With the entries of §3.3, E11E22 − E12E21 = e²(C² − ¼γᵢ²S² + ωᵢ²S²) = e²(C² + ω_d²S²) = e² = e^(−γᵢt), since ω_d² = ωᵢ² − ¼γᵢ² and C² + ω_d²S² = cos² + sin² = 1. In the overdamped regime the same computation gives cosh² − sinh² = 1. ∎
+*Only if.* Suppose $-\Gamma v$ is parallel to $v$ for every $v$: every non-zero vector is an eigenvector of $\Gamma$. Take two linearly independent eigenvectors $x$ and $y$, with eigenvalues $\lambda$ and $\lambda'$. Their sum is an eigenvector too, with some eigenvalue $\nu$, so
 
-**The eigenvalues.** The mode equation in first-order form has the matrix with characteristic polynomial λ² + γᵢλ + ωᵢ², whose roots are −γᵢ/2 ± iω_d; the flow over time t has eigenvalues e^((−γᵢ/2 ± iω_d)t), of modulus e^(−γᵢt/2) = e^(−ζᵢ,tot ωᵢ t) and argument ±ω_d t. ∎
+$$
+\lambda x + \lambda' y = \Gamma (x + y) = \nu (x + y) \quad \Longrightarrow \quad (\lambda - \nu) x + (\lambda' - \nu) y = 0 .
+$$
 
-**Energy.** With m constant along the motion and Γ symmetric and non-negative, dE/dt = m vᵀv̇ + ∇Vᵀv = vᵀ(f − mΓv) − fᵀv = −m vᵀΓv ≤ 0. ∎
+Since $x$ and $y$ are independent, $\lambda = \nu = \lambda'$. Any two eigenvalues are equal, so $\Gamma = \gamma I$.
+
+*The transverse component.* The component of $\Gamma v$ across $v$ is $\Gamma v$ minus its projection onto $v$,
+
+$$
+\Gamma v - \frac{v^{\top} \Gamma v}{v^{\top} v} v ,
+$$
+
+which vanishes exactly when $v$ is an eigenvector of $\Gamma$. ∎
+
+**The determinant of the mode map.** With the entries of §3.3 and $e = e^{-\gamma_i t / 2}$,
+
+$$
+\det = e^{2} \big[ (C + \tfrac{1}{2} \gamma_i S)(C - \tfrac{1}{2} \gamma_i S) + \omega_i^{2} S^{2} \big] = e^{2} \big[ C^{2} + (\omega_i^{2} - \tfrac{1}{4} \gamma_i^{2}) S^{2} \big] = e^{2} \big( C^{2} + \omega_d^{2} S^{2} \big) .
+$$
+
+The definition of the damped frequency and of $S$ give
+
+$$
+\omega_d^{2} = \omega_i^{2} - \tfrac{1}{4} \gamma_i^{2} , \qquad S = \frac{\sin(\omega_d t)}{\omega_d} ,
+$$
+
+so
+
+$$
+C^{2} + \omega_d^{2} S^{2} = \cos^{2}(\omega_d t) + \sin^{2}(\omega_d t) = 1 , \qquad \text{so} \qquad \det = e^{2} = e^{-\gamma_i t} .
+$$
+
+In the overdamped regime the same computation gives $\cosh^{2} - \sinh^{2} = 1$. ∎
+
+**The eigenvalues.** Written in first-order form, the mode equation has the matrix
+
+$$
+A = \begin{pmatrix} 0 & 1 \cr -\omega_i^{2} & -\gamma_i \end{pmatrix} , \qquad \det(\lambda I - A) = \lambda^{2} + \gamma_i \lambda + \omega_i^{2} ,
+$$
+
+whose roots are $\lambda = -\gamma_i / 2 \pm i \omega_d$. The flow over a time $t$ is $e^{A t}$, with eigenvalues $e^{\lambda t}$:
+
+$$
+\lvert e^{\lambda t} \rvert = e^{-\gamma_i t / 2} = e^{-\zeta_i^{\mathrm{tot}} \omega_i t} , \qquad \arg e^{\lambda t} = \pm \omega_d t . \qquad \blacksquare
+$$
+
+**Energy.** With $m$ constant along the motion and $\Gamma$ symmetric and non-negative,
+
+$$
+\frac{dE}{dt} = m v^{\top} \dot{v} + \nabla V^{\top} v = v^{\top} (f - m \Gamma v) - f^{\top} v = -m v^{\top} \Gamma v \le 0 . \qquad \blacksquare
+$$
 
 ---
 
@@ -613,4 +692,4 @@ PMX integrates exactly, with damping, the frozen spring made of V_θ's retained 
 
 ---
 
-**Revision history.** Version 1, 2026-10-21: first issue, after the learned γ(h) arm settled.
+**Revision history.** Version 1, 2026-10-21: first issue, after the learned γ(h) arm settled. Formulas set as GitHub math throughout the prose and proofs, the same day.

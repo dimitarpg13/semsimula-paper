@@ -133,6 +133,14 @@ def lint(path):
         if re.search(r'\\middle\||\\left\\lVert|\\right\\rVert', l):
             hits.append((i, 'R19', 'fragile \\left/\\middle/\\right delimiters', l))
 
+        # Rbrace: \{ or \} in math. Markdown treats \{ as an escaped brace and strips the
+        # backslash before MathJax sees it, so \big\{ arrives as \big{ ("missing delimiter")
+        # and a set brace vanishes. Use \lbrace / \rbrace (cheatsheet: set-builder rows).
+        # A doubled \\{ is the working escape (Markdown leaves \{ for MathJax); only a single one breaks.
+        _rb = r'(?<!\\)\\[{}]'
+        if (in_display and re.search(_rb, l)) or any(re.search(_rb, b) for _, _, b in spans):
+            hits.append((i, 'Rbrace', r'\{ or \} inside math — use \lbrace / \rbrace', l))
+
         # R27 two bare ~ on one line
         _bare_tilde = re.sub(r'~~', '', re.sub(r'`[^`]*`', '', l))
         if len(re.findall(r'(?<!\\)~', _bare_tilde)) >= 2:
