@@ -283,17 +283,20 @@ class MultiXiPARFConfig(SparsePARFConfig):
     stiff_mode_damping_ratio: float | None = None
     # Learned gamma(h) (protocol SS5.13, 2026-10-20, queue item 2): the damping
     # ratio of the stiff modes produced per token and layer by a small head on
-    # the layer input, zeta(h) = softplus(head(h)), applied as
+    # the layer input, zeta(h) = zeta_0 exp(head(h)), applied as
     # gamma_i(h) = gamma_0 + 2 zeta(h) omega_i inside SR2's exact damped flow
-    # (the complement keeps gamma_0). Initialised so that zeta = 1 exactly
-    # (critical damping: the head's last layer is zero, its bias softplus^-1(1)),
-    # for the reason in the protocol: at light damping the output's sensitivity
-    # to gamma depends on the mode's phase. Gradient flows through zeta; the
-    # head's parameters form the clip group 'damping_head'. The trained
-    # distribution of zeta(h) is the arm's primary measurement (zeta_stats).
-    # Overrides stiff_mode_damping_ratio when both are set. False = off.
+    # (the complement keeps gamma_0). The head's last layer starts at zero, so
+    # zeta = zeta_0 = damping_ratio_init exactly at initialisation: near SR2's own
+    # damping (amended 2026-10-20 after SR3-crit, critical damping, settled 8.5%
+    # behind SR2; the first design started at zeta = 1). The log parameterisation
+    # moves zeta multiplicatively in both directions; zeta is capped at 10, and
+    # the added term is never negative, so the damping never falls below SR2's.
+    # Gradient flows through zeta; the head's parameters form the clip group
+    # 'damping_head'. The trained distribution of zeta(h) is the arm's primary
+    # measurement (zeta_stats). Overrides stiff_mode_damping_ratio. False = off.
     learned_damping_ratio: bool = False
     damping_head_hidden: int = 64
+    damping_ratio_init: float = 0.005
     poisson_halflife_min: float = 4.0     # tokens; per-mode half-lives are
     poisson_halflife_max: float = 128.0   # log-spaced over this range
     # PM1-cap (protocol SS5.15, 2026-10-08): bound every well depth smoothly,
@@ -606,7 +609,9 @@ class MultiXiPARFLM(SparsePARFLM):
             self.damping_head = nn.Sequential(
                 nn.Linear(cfg.d, _hd), nn.GELU(), nn.Linear(_hd, 1))
             nn.init.zeros_(self.damping_head[2].weight)
-            nn.init.constant_(self.damping_head[2].bias, math.log(math.e - 1.0))   # softplus^-1(1)
+            nn.init.zeros_(self.damping_head[2].bias)             # zeta = zeta_0 exactly at initialisation
+            self._zeta0 = float(getattr(cfg, "damping_ratio_init", 0.005))
+            self._zeta_head_max = math.log(10.0 / self._zeta0)    # cap: zeta <= 10
             # per layer: median, p10, p90 of zeta and the fraction above 1, from the
             # last training forward (not the checkpoint recompute)
             self.register_buffer("zeta_stats", torch.zeros(cfg.L, 4), persistent=False)
@@ -1647,7 +1652,8 @@ class MultiXiPARFLM(SparsePARFLM):
                 gamma_U = gamma
                 if getattr(self, "damping_head", None) is not None:
                     # learned zeta(h) per token, (B, T, 1), from the layer input
-                    _zeta = F.softplus(self.damping_head(h_in).float())
+                    _zeta = self._zeta0 * torch.exp(torch.clamp(
+                        self.damping_head(h_in).float(), max=self._zeta_head_max))
                     if self.training and getattr(self, "_in_stack_forward", True):
                         with torch.no_grad():
                             _z = _zeta.detach().flatten()

@@ -2,18 +2,20 @@
 """
 Verify the learned gamma(h) switch (Cell 0 LEARNED_DAMPING_RATIO, cfg.learned_damping_ratio; protocol
 SS5.13, 2026-10-20): zeta(h) = softplus(head(h)) per token and layer, applied as gamma_0 + 2 zeta(h) omega_i
-to the stiff modes inside SR2's exact damped flow, initialised at zeta = 1.
+to the stiff modes inside SR2's exact damped flow. Amended 2026-10-20: zeta(h) = zeta_0 exp(head(h)), starting at zeta_0 = 0.005, near SR2.
 
     python3 verify_gzh_switch.py OUT check REF.npz [threads=1]   # REF: verify_sr3_switch.py's HEAD reference
 
 On SR2's trained weights. Checks:
   1. off is HEAD, bit for bit (the reference written by verify_sr3_switch.py ref).
-  2. on, at initialisation, equals SR3-crit bit for bit: zeta = 1 exactly, so the logits, the loss and every
-     shared parameter's gradient coincide with STIFF_MODE_DAMPING_RATIO = 1.0.
+  2. on, at initialisation, is SR3 at the fixed ratio zeta_0 (STIFF_MODE_DAMPING_RATIO = 0.005): logits, loss
+     and every shared gradient agree to float rounding (zeta_0 enters as a float32 tensor there, a Python float
+     here); descriptive: how far it starts from SR2 itself.
   3. the head receives a gradient (finite, non-zero on its weight and bias), the other parameters receive the
      same gradients as SR3-crit, and the head is the only addition to the state_dict.
-  4. zeta_stats are recorded per layer in a training forward: median 1, p10 1, p90 1, fraction above 1 equal
-     to 0 at initialisation; and after a perturbation of the head's bias the recorded median moves with it.
+  4. zeta_stats are recorded per layer in a training forward: all equal to zeta_0, fraction above 1 equal to 0
+     at initialisation; with the head's bias set to log(2 / zeta_0) the recorded median is 2 and the fraction 1;
+     with the bias far above the cap, zeta is capped at 10.
   5. the clip-group name 'damping_head' matches exactly the head's parameters and nothing else.
 """
 import sys
@@ -34,7 +36,7 @@ G = P.G
 torch.set_num_threads(int(next((a[8:] for a in sys.argv[2:] if a.startswith('threads=')), 8)))
 
 SR2 = (("LOWRANK_DAMPED_FLOW  = False", "LOWRANK_DAMPED_FLOW  = True"),)
-SR3 = (("STIFF_MODE_DAMPING_RATIO = None", "STIFF_MODE_DAMPING_RATIO = 1.0"),)
+SR3 = (("STIFF_MODE_DAMPING_RATIO = None", "STIFF_MODE_DAMPING_RATIO = 0.005"),)
 GZH = (("LEARNED_DAMPING_RATIO = False", "LEARNED_DAMPING_RATIO = True"),)
 FOLDER = ('semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_'
           'sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn')
@@ -83,11 +85,14 @@ lo1, loss1, gr1 = run(on)
 shared = {n for n, v in gr1.items() if v is not None and not n.startswith('damping_head')}
 head = {n for n, v in gr1.items() if n.startswith('damping_head')}
 d_lo = float((lo1 - lo3).abs().max()); d_loss = abs(float(loss1) - float(loss3))
-d_g = max(float((gr1[n] - gr3[n]).abs().max()) for n in shared)
-c2 = d_lo == 0.0 and d_loss == 0.0 and d_g == 0.0 and shared == {n for n, v in gr3.items() if v is not None}
+rel_g = max(float((gr1[n] - gr3[n]).norm() / max(float(gr3[n].norm()), 1e-30)) for n in shared)
+c2 = d_lo < 1e-4 and d_loss < 1e-5 and rel_g < 1e-4 and shared == {n for n, v in gr3.items() if v is not None}
 ok.append(c2)
-say(f'2. on at initialisation vs SR3-crit: max |d logit| {d_lo:.1e}; |d loss| {d_loss:.1e}; max |d grad| over the '
-    f'{len(shared)} shared parameters {d_g:.1e}  -> {"PASS" if c2 else "FAIL"}')
+d_sr2 = float((lo1 - lo0).abs().max())
+nll = lambda lo: float(torch.nn.functional.cross_entropy(lo.reshape(-1, lo.shape[-1]), y.reshape(-1)))
+say(f'2. on at initialisation vs SR3 at the fixed ratio 0.005: max |d logit| {d_lo:.1e}; |d loss| {d_loss:.1e}; worst '
+    f'relative gradient difference over the {len(shared)} shared parameters {rel_g:.1e}  -> {"PASS" if c2 else "FAIL"}')
+say(f'   (descriptive) against SR2 itself: max |d logit| {d_sr2:.2e}; eval loss {nll(lo0):.4f} (SR2) -> {nll(lo1):.4f}')
 
 hg = {n: gr1[n] for n in head}
 fin = all(v is not None and torch.isfinite(v).all() for v in hg.values())
@@ -102,18 +107,23 @@ say(f'3. the head: gradients finite {fin}; |grad| on its last weight {last_w:.2e
     f'  -> {"PASS" if c3 else "FAIL"}')
 
 zs = on.zeta_stats.clone()
-init_ok = bool(torch.allclose(zs[:, :3], torch.ones_like(zs[:, :3])) and torch.all(zs[:, 3] == 0))
-with torch.no_grad():
-    on.damping_head[2].bias.fill_(float(np.log(np.exp(2.0) - 1.0)))      # softplus^-1(2)
-on.train(); on.zero_grad(set_to_none=True)
-with torch.enable_grad():
-    on(x, targets=y)
-zs2 = on.zeta_stats.clone(); on.eval()
-moved_ok = bool(torch.allclose(zs2[:, 0], torch.full_like(zs2[:, 0], 2.0), atol=1e-5) and torch.all(zs2[:, 3] == 1.0))
-c4 = init_ok and moved_ok
+init_ok = bool(torch.allclose(zs[:, :3], torch.full_like(zs[:, :3], 0.005), rtol=1e-5) and torch.all(zs[:, 3] == 0))
+def zeta_after(bias):
+    with torch.no_grad():
+        on.damping_head[2].bias.fill_(float(bias))
+    on.train(); on.zero_grad(set_to_none=True)
+    with torch.enable_grad():
+        on(x, targets=y)
+    z = on.zeta_stats.clone(); on.eval(); return z
+zs2 = zeta_after(np.log(2.0 / 0.005))
+zs3 = zeta_after(50.0)
+moved_ok = bool(torch.allclose(zs2[:, 0], torch.full_like(zs2[:, 0], 2.0), rtol=1e-4) and torch.all(zs2[:, 3] == 1.0))
+cap_ok = bool(torch.allclose(zs3[:, 0], torch.full_like(zs3[:, 0], 10.0), rtol=1e-4))
+c4 = init_ok and moved_ok and cap_ok
 ok.append(c4)
-say(f'4. zeta_stats per layer at initialisation [median, p10, p90, frac > 1]: {[[round(float(v), 3) for v in r] for r in zs]}; '
-    f'with the bias set to softplus^-1(2): {[[round(float(v), 3) for v in r] for r in zs2]}  -> {"PASS" if c4 else "FAIL"}')
+say(f'4. zeta_stats per layer at initialisation [median, p10, p90, frac > 1]: {[[round(float(v), 4) for v in r] for r in zs]}; '
+    f'with the bias set to log(2/0.005): {[[round(float(v), 3) for v in r] for r in zs2]}; with the bias at 50 (above the cap): '
+    f'median {[round(float(r[0]), 3) for r in zs3]}  -> {"PASS" if c4 else "FAIL"}')
 
 names = [n for n, _ in on.named_parameters()]
 grp = [n for n in names if 'damping_head' in n]

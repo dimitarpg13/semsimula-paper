@@ -3792,6 +3792,34 @@ Output `L2_FO-b-SR2_OWT_32500steps_output.txt`. SR2's Cell 0 plus `FIRST_ORDER_O
 - **Cell 6b-9** divided by zero on FO-b: its velocity readings are undefined when no velocity exists. Guarded on 2026-10-20 (R_v prints nan); R_h remains the V_φ attribution of a gradient-flow step.
 - **Against the analysis of 2026-10-20** (`Future_of_Semantic_Simulation_When_Second_Order_Earns_Its_Keep.md`, §3): the early lead fits Proposition 3 (the gradient flow's learning problem is easier at first); the settled gap refutes the reading that Propositions 2 and 4 make the conservative core overdamped on any corpus. The note is revised accordingly.
 
+#### SR3-crit on SR2 scored: **63.28 settled, +8.5% against SR2 and +3.5% against FO-b — the oscillation of the stiff modes is the mechanism (SC3′ HIT)** — **2026-10-20**
+
+Output `L2_SR3-crit_on_SR2_OWT_32500steps_output.txt`. SR2's Cell 0 plus `STIFF_MODE_DAMPING_RATIO = 1.0` and the speed switches; tag `…sr2_sr3…`; 32,500 steps, seed 0, an A100 80 GB (about 1.1 s per step). Finished cleanly; no watchdog trigger or spike capture; SCAF CLEAN at every audit.
+
+| step | SR2 | SR3-crit | FO-b | SR3-crit against SR2 | SR3-crit ω·Δt p50 (in flight) |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 2,500 | 135.3 | 134.3 | 131.4 | −0.7% | 2.48 |
+| 5,000 | 108.4 | 111.2 | 101.1 | +2.6% | 3.10 |
+| 10,000 | 86.0 | 95.5 | 83.6 | +11.1% | 2.13 |
+| 20,000 | 70.8 | 77.7 | 72.5 | +9.7% | 2.03 |
+| 30,000 | 58.1 | 63.4 | 61.0 | +9.2% | 2.07 |
+| **settled** | **58.32** | **63.28** | **61.16** | **+8.5%** | 2.04 (step 32,500) |
+
+- **Settling check, steps 29,500–32,500:** fitted change −0.005 nats against a residual standard deviation of 0.015: settled. Best 61.28 at step 31,000.
+- **The gap formed early and held:** level to step 2,500, behind from step 5,000; mean SR3-crit − SR2 +0.092 nats (sd 0.011) over steps 10,500–21,000 and +0.096 (sd 0.010) over 21,500–30,000. Decay gain from step 21,000 to 32,500: 0.216 nats (SR2 0.196, FO-b 0.175).
+- **Scored against the amendment of 2026-10-20** (made after FO-b-OWT, before this run): **SC3′ (3% or more behind SR2, toward FO-b), called 25%: HIT**, and beyond FO-b. SC1′ (within +1% of SR2, 50%) and SC2′ (beats SR2 by 2%, 25%): MISS. Of the superseded calls, SC1 (within 2% of FO-b) and SC3 (beats SR2 by 3%): MISS. SC4 and SC5 wait for Cell 6b-7 and FLOW-R.
+- **Reading.** Critical damping keeps the velocity between layers and removes the oscillation of the stiff modes; it is worse than removing inertia altogether (FO-b). The order SR2 (lightly damped, ζ ≈ 0.03) < FO-b (gradient flow) < SR3-crit (critically damped, velocity kept) says that **what the second-order model gains from is the oscillation of its stiff modes, not inertia as such.** This is the information-preservation account of the future note (§3): a lightly damped stiff mode is a rotation that keeps tokens distinct, a critically damped one is a contraction that collapses them, as a gradient flow does. The in-flight stiffness agrees: SR3-crit's wells stiffened to ω·Δt 3.1 by step 5,000 and then softened to about 2.05 for the rest of training, between FO-b's 0.74 and SR2's 7.55.
+- **Against Proposition 3 of the future note** (the oscillation makes the stiffness hard to learn, which was offered as the reason for FO-b's early lead): SR3-crit has no oscillation and did not learn faster than SR2; it fell behind from step 5,000. FO-b's early lead needs another explanation.
+- **Consequence for the learned γ(h) arm (queue item 2), before it runs: amended (author, 2026-10-20).** Its head started at ζ = 1, the worst point on the damping axis measured so far. **New design:** ζ(h) = ζ₀·exp(head(h)), the head's last layer at zero so that ζ = ζ₀ = 0.005 exactly at initialisation; capped at ζ = 10; the added damping 2ζ(h)ω_i is never negative, so the damping never falls below SR2's γ₀. At ζ₀ SR2's median stiff mode goes from a damping ratio of about 0.026 to about 0.031, so the arm starts at SR2's damping to within a fifth. The log parameterisation moves ζ multiplicatively in both directions (with Adam, log ζ moves at about the learning rate per step), so critical damping is reachable in a few thousand steps where the data favour it. The question becomes: **where does the model add damping to SR2's oscillation, and where does it keep it?** Cell 0 `DAMPING_RATIO_INIT = 0.005`. **Re-verified 2026-10-20** (`debug/verify_gzh_switch.py threads=1`): off bit-identical to HEAD; at initialisation bit-identical to SR3 at the fixed ratio 0.005 in logits, loss and all 73 shared gradients; on SR2's trained weights it moves the eval loss from 3.5072 to 3.5076 (0.0004 nats), so it starts, in effect, as SR2; the head's last weight and bias receive finite, non-zero gradients; `zeta_stats` read 0.005 at initialisation, 2 after a shift of the head's bias to log(2/0.005), and the cap of 10 above it. **Calls, replacing GH1′, GH3 and GH5 (GH2 and GH4 stand):**
+
+  | id | prediction | called |
+  | --- | --- | --- |
+  | GH6 | the model keeps the oscillation: the trained median ζ stays below 0.3 at both layers | 60% |
+  | GH7 | perplexity within 2% of SR2's 58.32 | 55% |
+  | GH8 | beats SR2 by 1% or more (damping added only where it helps) | 25% |
+  | GH9 | the layers differ: the median ζ at one layer is at least 3 times the other's | 40% |
+
+
 #### FO-b-PMX: the true first-order twin of PMX — **pre-registered 2026-10-19, before the run (author's decision)**
 
 **Why.** PMX leans on momentum more than any SR2-base arm (Gate 1 +91% at its best checkpoint; ×1.82 on a 2 × 256 batch under FO-a, against SR2's ×1.03). Its layer-1 step balances the velocity a token carries against the pull of the memory wells (§5.15). If second order earns its keep anywhere at this budget, it is there. FO-b-PMX replaces FO-PMX (FO-a) as the exploratory twin; FO-PMX runs only if this arm shows a gap.
