@@ -41,7 +41,7 @@
 
 We study the motion of hidden states $h_t \in \mathbb{R}^d$ across token positions $t = 1, \ldots, T$ at a fixed layer $\ell$ of a decoder-only transformer. The fundamental question is:
 
-> **Does the trajectory $\{h_t\}$ admit a compact dynamical description? If so, what class of differential equation governs it?**
+> **Does the trajectory $\lbrace h_t\rbrace$ admit a compact dynamical description? If so, what class of differential equation governs it?**
 
 This is not merely a descriptive question. A successful dynamical model of hidden state trajectories would:
 - Reveal the geometric structure of semantic space as implicitly defined by the model's weights
@@ -283,7 +283,7 @@ This is an attention-weighted sum of antisymmetric outer products.
 
 ### 5.4 The Geometric Interpretation
 
-Each stored pattern $\mu$ contributes a **vortex** in the plane spanned by $\{K^\mu, V^\mu\}$:
+Each stored pattern $\mu$ contributes a **vortex** in the plane spanned by $\lbrace K^\mu, V^\mu\rbrace$:
 
 $$\Omega^\mu = V^\mu \otimes K^\mu - K^\mu \otimes V^\mu \in \mathbb{R}^{d \times d} \quad \text{(rank-2 antisymmetric)}$$
 

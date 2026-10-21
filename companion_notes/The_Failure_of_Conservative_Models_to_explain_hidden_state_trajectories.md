@@ -166,7 +166,7 @@ was reported in v1 as the E-init negative result.
   `symplectic_euler_step` in Stage 5 of the notebook; the per-sentence
   residual sweep is Stage 10.
 - Fitted per-sentence Gaussian-well parameters
-  $\{(a_\ell, b_\ell, R^2_\ell)\}$:
+  $\lbrace(a_\ell, b_\ell, R^2_\ell)\rbrace$:
   [`notebooks/e_init/results/well_params_ps.json`][wpps].
 - Raw per-token residuals, $\gamma$ sweep, and summary arrays:
   [`notebooks/e_init/results/e_init_results_ps.npz`][nv1]
@@ -185,7 +185,7 @@ was reported in v1 as the E-init negative result.
 
 ### 1.2 Extended $\gamma$ sweep and first-order overdamped limit
 
-Extending the v1 sweep from $\gamma \in \{0, \dots, 1\}$ to
+Extending the v1 sweep from $\gamma \in \lbrace0, \dots, 1\rbrace$ to
 $\gamma \in [0, 50]$ on the same integrator (1.1), and running a
 parallel pure first-order flow
 
@@ -199,7 +199,7 @@ with the *same* per-sentence Gaussian well, yields two findings:
    integrator beats the static null on $68.44\%$ of tokens, but by tiny
    margins (median improvement $0.0011$).
 2. The first-order flow (1.2) reproduces the static null to
-   floating-point precision at *every* $\eta \in \{0.01, 0.05, \dots, 25\}$
+   floating-point precision at *every* $\eta \in \lbrace0.01, 0.05, \dots, 25\rbrace$
    tried: $\max_t |\rho^{(L)}_{t,\mathrm{1st}} - \rho^{(L)}_{t,\mathrm{static}}| = 0$.
    The mechanism is quantitative (see §4.2).
 
@@ -672,7 +672,7 @@ displacement is swamped by numerical precision. It _literally_ does
 not move the hidden state, which is why it ties the static null to
 floating-point precision
 ($\max_t|\rho^{(L)}_{t,\mathrm{1st}} - \rho^{(L)}_{t,\mathrm{static}}| = 0$)
-across all $\eta \in \{0.01,\dots,25\}$ tried in
+across all $\eta \in \lbrace0.01,\dots,25\rbrace$ tried in
 [`extended_gamma_first_order_results.npz`][r1].
 
 ### 4.3 Dimensional picture
@@ -1064,7 +1064,7 @@ Source:
   PCA basis as §1.4; six configurations (`gaussian`, `omega_x`,
   `B_const`, `B_affine_r1`, `B_affine_r2`, `omega_and_Bconst`) crossed
   with five $\gamma$ values and an eight-point shrinkage grid
-  $s\in\{0, 0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 1\}$; per-layer skew /
+  $s\in\lbrace0, 0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 1\rbrace$; per-layer skew /
   unconstrained OLS with ridge $10^{-3}$.
   Runtime ~6 min on MPS (because of the scale sweep).
 

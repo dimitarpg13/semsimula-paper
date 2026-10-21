@@ -130,7 +130,7 @@ upstream training run.
 Tiny Shakespeare at $d=128,\ L=8$ is a single data point.  The paper's
 quality numbers are essentially unknown outside this regime.
 
-### A1. Width sweep at fixed $L$: $d \in \{128, 256, 512\}$
+### A1. Width sweep at fixed $L$: $d \in \lbrace128, 256, 512\rbrace$
 
 **Motivation.** Attention-transformer FLOP scaling is $O(T d^{2})$;
 SPLM's is $O(T dd_V)$.  The FLOP gap **grows with $d$**, so the
@@ -145,7 +145,7 @@ $d$.
 **Expected outcome.** The gap closes or inverts as $d$ grows — the
 paper's efficiency story becomes more credible.
 
-### A2. Depth sweep at fixed width: $L \in \{4, 8, 12, 16, 24\}$
+### A2. Depth sweep at fixed width: $L \in \lbrace4, 8, 12, 16, 24\rbrace$
 
 **Motivation.** Verlet at $L=4$ collapsed to ppl 280; at $L=8$ gives
 160; we do not know what the plateau looks like.
@@ -163,8 +163,8 @@ distance" to put in the paper.
 the entire non-embedding parameter budget — it is plausibly the
 bottleneck.
 
-**What to run.** Sweep $v\_\text{hidden} \in \{256, 512, 1024, 2048\}$
-and $v\_\text{depth} \in \{2, 3, 4, 6\}$ at $d=256$.
+**What to run.** Sweep $v\_\text{hidden} \in \lbrace256, 512, 1024, 2048\rbrace$
+and $v\_\text{depth} \in \lbrace2, 3, 4, 6\rbrace$ at $d=256$.
 
 **Expected outcome.** Perplexity curve as a function of non-embedding
 params; directly addresses "how much of the $160.55$ is architecture
@@ -199,7 +199,7 @@ metrics.
 
 **What to run.** Measure tokens/s and peak memory for SPLM vs a
 FLOP-matched transformer at context lengths
-$T \in \{512, 1024, 2048, 4096\}$ on an A100 or MPS.  Report a
+$T \in \lbrace512, 1024, 2048, 4096\rbrace$ on an A100 or MPS.  Report a
 throughput-vs-$T$ curve.
 
 **Expected outcome.** SPLM crosses over the transformer around
@@ -541,7 +541,7 @@ If only three experiments fit in the next iteration, pick:
    implementation, one day of measurement.  Highest chart-worthy
    payoff.
 2. **A1 — Width sweep at fixed $L$, on TinyStories.**  Three
-   training runs at $d \in \{128, 256, 512\}$ plus matched
+   training runs at $d \in \lbrace128, 256, 512\rbrace$ plus matched
    transformer baselines.  Establishes the scaling story.
 3. **C2 — Energy-drift diagnostic.**  Pure-eval on existing
    checkpoints (SPLM Euler, SPLM Verlet L=16 dt=0.5, GPT-2).  No
@@ -587,7 +587,7 @@ was chosen given today's compute budget.
    contention with item 1.
 
 3. **A1 — width sweep on TinyStories.**  *Next.*  Three
-   matched training pairs at $d \in \{128, 256, 512\}$, run
+   matched training pairs at $d \in \lbrace128, 256, 512\rbrace$, run
    under the harness from Section 0 with $N \geq 3$ seeds each.
    Estimated 1-2 days of MPS time.  Pushed to last because it
    is by far the most expensive of the three; running it before

@@ -50,7 +50,7 @@ The two classes differ in exactly two structural axes: $\mathcal{F}\_S$ has $\th
 
 ### 2.2 The architectural commitment
 
-The Helmholtz architecture is the language model whose forward update applies $\mathcal{F}\_S$-type and $\mathcal{F}\_A$-type forces in alternation at the *block* level. Concretely, fix a depth schedule $\sigma : \{0,1,\dots,L-1\} \to \{S, A\}$ that assigns each layer index a block type. The update rule at layer $\ell$ is then
+The Helmholtz architecture is the language model whose forward update applies $\mathcal{F}\_S$-type and $\mathcal{F}\_A$-type forces in alternation at the *block* level. Concretely, fix a depth schedule $\sigma : \lbrace0,1,\dots,L-1\rbrace \to \lbrace S, A\rbrace$ that assigns each layer index a block type. The update rule at layer $\ell$ is then
 
 $$
 h^{(\ell+1)}_t = \begin{cases}
@@ -129,7 +129,7 @@ $$
 
 The composition $\circ$ is layer composition through the depth schedule $\sigma$. Two consequences are immediate.
 
-**Holonomy decomposition.** Section A.6 defines the global non-conservativity of an attention stack as the holonomy of the connection one-form $A_\ell(h) = -\nabla_h V(h;\theta_\ell)$ on the trivial bundle $\Sigma \times \{0,\dots,L\}$:
+**Holonomy decomposition.** Section A.6 defines the global non-conservativity of an attention stack as the holonomy of the connection one-form $A_\ell(h) = -\nabla_h V(h;\theta_\ell)$ on the trivial bundle $\Sigma \times \lbrace0,\dots,L\rbrace$:
 
 $$
 \mathrm{Hol}[\gamma] = \oint_\gamma A_\ell \cdot dh, \qquad F_\ell(h) = \partial_\ell A_\ell(h) = -\nabla_h \partial_\ell V.
@@ -183,7 +183,7 @@ $$
 \boxed{ \gamma^{*}_{\mathrm{hybrid}} = \frac{m}{L_S \Delta t} \ln\frac{1}{\rho_{\mathrm{hybrid}}} }
 $$
 
-with $\rho_{\mathrm{hybrid}}$ inheriting the leak-free SPLM value $0.565$ to first approximation. A 3-seed sweep over $\gamma \in \{0.05, 0.10, 0.15, 0.20\}$ at fixed $L_S$ and varied $L_A$ would test this directly. A double match here would be the **third independent confirmation** of the resonance methodology (after the buggy and leak-free SPLM matches), and would do so on a model class not in the original calibration set — a strong external-validity result.
+with $\rho_{\mathrm{hybrid}}$ inheriting the leak-free SPLM value $0.565$ to first approximation. A 3-seed sweep over $\gamma \in \lbrace0.05, 0.10, 0.15, 0.20\rbrace$ at fixed $L_S$ and varied $L_A$ would test this directly. A double match here would be the **third independent confirmation** of the resonance methodology (after the buggy and leak-free SPLM matches), and would do so on a model class not in the original calibration set — a strong external-validity result.
 
 ### 4.4 Decision $\beta$ (Markov-order regression)
 
@@ -248,7 +248,7 @@ The third configuration is the cleanest for the paper's narrative: it identifies
 
 ## 7. Training: standard backpropagation, with optional RL for schedule search
 
-The layer-type Helmholtz architecture is **fully differentiable end-to-end** by construction. Every $S$-block is differentiable through the symplectic Euler integrator (smooth $V_\theta$, smooth chain rule across $L_S$ steps under the §15.20 $\gamma$-damping resonance condition); every $A$-block is differentiable through standard softmax attention plus residual MLP; the schedule $\sigma : \{0, \dots, L-1\} \to \{S, A\}$ is a *fixed design-time hyperparameter* rather than a learned quantity. Training therefore reduces to standard NTP cross-entropy backpropagation through the unrolled stack, with no special infrastructure required beyond what trains a vanilla decoder.
+The layer-type Helmholtz architecture is **fully differentiable end-to-end** by construction. Every $S$-block is differentiable through the symplectic Euler integrator (smooth $V_\theta$, smooth chain rule across $L_S$ steps under the §15.20 $\gamma$-damping resonance condition); every $A$-block is differentiable through standard softmax attention plus residual MLP; the schedule $\sigma : \lbrace0, \dots, L-1\rbrace \to \lbrace S, A\rbrace$ is a *fixed design-time hyperparameter* rather than a learned quantity. Training therefore reduces to standard NTP cross-entropy backpropagation through the unrolled stack, with no special infrastructure required beyond what trains a vanilla decoder.
 
 ### 7.1 Why standard backpropagation suffices here, in contrast to PARF-augmented SPLM
 
@@ -320,7 +320,7 @@ The v3 paper's strategic move was to position SPLM as a *maximally-structured co
 - Lead with the **substack-restricted separator** as the headline result, not the val PPL. The separator is the framework-native object; PPL is a downstream consequence.
 
 **OQ-4. Block-boundary discontinuities in the trajectory.**
-The trajectory $\{h^{(\ell)}_t\}_\ell$ is smooth within each block type (verified for SPLM in §15.20's Decision-$\beta$ analysis, for attention in §14). At a $S\to A$ or $A\to S$ boundary the *governing equation* changes. Whether the trajectory inherits a measurable discontinuity in $\lVert \dot h \rVert$ or $\lVert a_\perp \rVert$ at the boundary is an open empirical question. The §13 STP–acceleration identity is layer-local and continues to hold; the prediction for the framework's deceleration statistics (§14: 97.9 % of triplets decelerate) at boundaries is unclear and worth measuring.
+The trajectory $\lbrace h^{(\ell)}_t\rbrace_\ell$ is smooth within each block type (verified for SPLM in §15.20's Decision-$\beta$ analysis, for attention in §14). At a $S\to A$ or $A\to S$ boundary the *governing equation* changes. Whether the trajectory inherits a measurable discontinuity in $\lVert \dot h \rVert$ or $\lVert a_\perp \rVert$ at the boundary is an open empirical question. The §13 STP–acceleration identity is layer-local and continues to hold; the prediction for the framework's deceleration statistics (§14: 97.9 % of triplets decelerate) at boundaries is unclear and worth measuring.
 
 **OQ-5. Should the $S$-block's $V_\theta$ depend on the most recent $A$-block's output?**
 Three options: (i) share one $V_\theta$ across all $S$-blocks regardless of attention output (cleanest, current proposal); (ii) make $V_\theta(\xi, h, c)$ where $c$ is a learned pooled summary of intermediate attention outputs (richer, but may break the strict shared-potential test on the $S$-substack); (iii) use a small $V_\theta$ family indexed by position relative to the last $A$-block (a middle ground). Option (i) is the right starting point because it preserves the §4.1 separator prediction. Options (ii) and (iii) are the natural follow-ups if (i) underperforms.

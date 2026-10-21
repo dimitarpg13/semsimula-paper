@@ -120,7 +120,7 @@ $\mathcal{L}\_\text{anchored}$ are the modes of the posterior
 $\pi(h\mid\xi) \propto \exp(-V_\theta(\xi, h))$ tempered by an
 isotropic prior at $h_\text{c}$.
 
-Sweeping $\lambda \in \{0.5, 2, 10, 50, 200, 1000\}$ we find the same
+Sweeping $\lambda \in \lbrace0.5, 2, 10, 50, 200, 1000\rbrace$ we find the same
 phenomenon at every $\lambda \ge 50$:
 
 - 70%-99% of seeds converge ($\lVert\nabla\rVert < 0.05$).
@@ -319,7 +319,7 @@ $V_\theta$ to draw a surface of.
 
 A separate training run (`train_with_snapshots.py`) retrains the
 SARF-mass Euler model on Tiny Shakespeare while checkpointing at
-log-spaced training steps $\{0, 50, 200, 500, 1000, 2000, 4000\}$.
+log-spaced training steps $\lbrace0, 50, 200, 500, 1000, 2000, 4000\rbrace$.
 `render_training_evolution.py` then reuses the landscape-rendering
 pipeline on each snapshot and tiles the results into a 7-panel figure
 (`results/training_evolution_euler_shakespeare_<prompt>.png`).
@@ -492,7 +492,7 @@ tail) absorb that cost?
 The hybrid uses $n_{\text{attn}} = 4$ attention blocks followed by
 $n_{\text{splm}} = 4$ shared-$V_\theta$ integration steps (Variant A,
 `model_hybrid.py`).  We sweep
-$\lambda_V \in \{0, 10^{-6}, 10^{-4}, 10^{-2}, 1\}$ on TinyShakespeare
+$\lambda_V \in \lbrace0, 10^{-6}, 10^{-4}, 10^{-2}, 1\rbrace$ on TinyShakespeare
 with the same training recipe as §11 (d=128, v\_hidden=512, 4000 steps,
 batch 16, block 128).
 
@@ -641,7 +641,7 @@ The actual result is more interesting than that.
 
 FockPARF on TinyShakespeare with d=128, L=8, M=16 registers,
 top\_k=16, stack discipline, structural $V_\phi$.  Same
-$\lambda_V \in \{0, 10^{-6}, 10^{-4}, 10^{-2}, 1\}$ sweep, 4000
+$\lambda_V \in \lbrace0, 10^{-6}, 10^{-4}, 10^{-2}, 1\rbrace$ sweep, 4000
 steps, batch 16, block 128.
 
 The notebook is at

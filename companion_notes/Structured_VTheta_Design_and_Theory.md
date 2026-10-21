@@ -919,7 +919,7 @@ Output: K* and per-basin curvature profiles
 
 1. **Start with Approach 3** (over-provision/prune) as the default. Set $K_{\mathrm{max}} = 2 \times K_{\mathrm{guess}}$ where $K_{\mathrm{guess}}$ is your best prior (e.g. 8 based on the SPLM TinyStories result).
 2. If $K_{\mathrm{eff}}$ is close to $K_{\mathrm{max}}$, double $K_{\mathrm{max}}$ and retrain.
-3. For final papers/releases, validate with **Approach 2** (sweep) using $K \in \{K_{\mathrm{eff}}/2, K_{\mathrm{eff}}, 2 K_{\mathrm{eff}}\}$ around the pruning result.
+3. For final papers/releases, validate with **Approach 2** (sweep) using $K \in \lbrace K_{\mathrm{eff}}/2, K_{\mathrm{eff}}, 2 K_{\mathrm{eff}}\rbrace$ around the pruning result.
 4. Use **Approach 4** (BIC) if the Gaussian well interpretation is the theoretical focus.
 5. Use **Approach 5** (Hessian spectral) only for deep-dive analysis of specific prompts/basins.
 

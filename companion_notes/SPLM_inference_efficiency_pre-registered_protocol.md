@@ -60,7 +60,7 @@ The paper currently quotes ATTN\_match at val PPL 142 (the paper §6 / A2.eq:flo
 - AdamW, $\text{lr} = 5\times10^{-4}$ with cosine decay and 200-step warmup.
 - Weight decay 0.01, betas $(0.9, 0.95)$, grad-clip 1.0.
 - Tiny Shakespeare data, GPT-2 BPE, deterministic batch RNG.
-- Three seeds: $\{0, 1, 2\}$.
+- Three seeds: $\lbrace0, 1, 2\rbrace$.
 - Per-seed final val PPL evaluated with `eval_iters = 40` on the same held-out validation split as the SPLM-1 ablation.
 
 Code: `notebooks/conservative_arch/inference_efficiency/train_matched_baseline.py` (new file; structurally a delta of `notebooks/conservative_arch/first_order_ablation/train_splm_first_order.py` with the model class swapped to `MatchedBaselineLM`).
@@ -81,7 +81,7 @@ Let $P_{\text{ATTN}}^{(s)}$ be the per-seed val PPL at seed $s$, and let $\overl
 
 Phase 2 verifies A2.C1, A2.C2, A2.C3, and A2.C4 *without conditioning on quality*. It compares the three architectures (SPLM\_2 seed 0, SPLM\_1 seed 0, ATTN\_match seed 0) across a sequence-length grid:
 
-$$T \in \{128, 256, 512, 1024, 2048, 4096, 8192, 16384\}.$$
+$$T \in \lbrace128, 256, 512, 1024, 2048, 4096, 8192, 16384\rbrace.$$
 
 The grid is extended past the paper's $T = 4096$ analytic prediction so the practical wall-clock crossover (which lags FLOP crossover because of kernel maturity asymmetry — see §7 caveat) has room to manifest.
 
@@ -105,10 +105,10 @@ Code: `notebooks/conservative_arch/inference_efficiency/{count_flops.py, benchma
 | Sub-claim | Operational form | Pre-registered prediction |
 |---|---|---|
 | **A2.C2** — FLOP crossover at $T^{\ast} = 34d$ | for $d = 128$, $T^{\ast} \in [128, 4096]$ such that $F_{\text{attn}}^{\text{fwd}}(T^{\ast}) = F_{\text{splm}}^{\text{fwd}}(T^{\ast})$ | $T^{\ast} \in [4 000, 4 700]$ (i.e. paper's $34d \approx 4 352$ ± 8 %), with $T^{\ast}$ between $T = 1 024$ and $T = 4 096$. |
-| **A2.C1** — long-context FLOP scaling | $F_{\text{attn}}^{\text{fwd}}(T) / F_{\text{splm}}^{\text{fwd}}(T)$ grows linearly in $T$ at $T \ge T^{\ast}$ | for $T \in \{8 192, 16 384\}$ the ratio should approximately double, consistent with linear-in-$T$ growth. |
+| **A2.C1** — long-context FLOP scaling | $F_{\text{attn}}^{\text{fwd}}(T) / F_{\text{splm}}^{\text{fwd}}(T)$ grows linearly in $T$ at $T \ge T^{\ast}$ | for $T \in \lbrace8 192, 16 384\rbrace$ the ratio should approximately double, consistent with linear-in-$T$ growth. |
 | **A2.C3** — constant-cost decoding for SPLM | $W_{\text{splm}}^{\text{dec}}(T) - W_{\text{splm}}^{\text{dec}}(128) < 5\%$ of $W_{\text{splm}}^{\text{dec}}(128)$ for all $T \le 16 384$ | confirmed if streaming-$\xi$ is implemented correctly; this is essentially a unit test on the streaming path. |
 | **A2.C3** — linear-cost decoding for attention | $W_{\text{attn}}^{\text{dec}}(T)$ scales as $\alpha + \beta T$ with $\beta > 0$ on a regression of the 8 grid points | confirmed if KV-cache is implemented correctly; also a unit test. |
-| **A2.C4** — depth-independent parameters for SPLM | report counted parameters for SPLM $L \in \{4, 8, 16\}$ and ATTN $L \in \{4, 8, 16\}$ | trivial; SPLM should be flat in $L$ (modulo the v-buffer for SPLM\_2 which is layer-state, not parameter), ATTN should be linear in $L$. |
+| **A2.C4** — depth-independent parameters for SPLM | report counted parameters for SPLM $L \in \lbrace4, 8, 16\rbrace$ and ATTN $L \in \lbrace4, 8, 16\rbrace$ | trivial; SPLM should be flat in $L$ (modulo the v-buffer for SPLM\_2 which is layer-state, not parameter), ATTN should be linear in $L$. |
 | **Wall-clock crossover (new claim, not in v3)** | $T_{\text{wc}}^{\ast}$ such that $W_{\text{attn}}^{\text{fwd}}(T_{\text{wc}}^{\ast}) = W_{\text{splm}}^{\text{fwd}}(T_{\text{wc}}^{\ast})$ | The paper's A2 acknowledges kernel-maturity asymmetry as a known caveat. The pre-registered prediction is that $T_{\text{wc}}^{\ast}$ exists but lies above $T^{\ast}$ (i.e. above $\sim 4 352$). If $T_{\text{wc}}^{\ast} \le 16 384$, the practical wall-clock advantage is realisable at long contexts; if not, the FLOP advantage is conceded as theoretical-only at the prototype kernel. |
 
 #### Phase 2 decision rule (locked)
@@ -134,7 +134,7 @@ The headline conclusion of Phase 2 is determined by the count of CONFIRMED / MAR
 
 For each architecture, plot val PPL on the validation split (a **fixed** number per architecture, computed at evaluation $T = 128$ to match the training configuration) against forward-pass FLOPs at multiple inference $T$. The quality number is fixed; the FLOP number is the inference cost the user pays per evaluation context of length $T$.
 
-This produces a "PPL-vs-inference-FLOPs at length-$T$" plot for $T \in \{128, 1 024, 4 096, 16 384\}$. The Pareto-dominant architecture at each $T$ is the headline.
+This produces a "PPL-vs-inference-FLOPs at length-$T$" plot for $T \in \lbrace128, 1 024, 4 096, 16 384\rbrace$. The Pareto-dominant architecture at each $T$ is the headline.
 
 #### Phase 3 hypotheses (locked)
 
@@ -174,7 +174,7 @@ The author's predictions, locked in writing for accountability:
 | Wall-clock noise at small $T$ on MPS | Median over 20 timed calls after 5-call warm-up; report inter-quartile range; pin the device to MPS only (no CPU fallback for any op). |
 | ATTN\_match's KV-cache implementation is harder than streaming-$\xi$ — implementation asymmetry could bias wall-clock | Both implementations are reviewed for matching levels of optimisation: identical batch size, identical evaluation mode, identical no\_grad scope. Code is committed and reviewable; a sceptic can replicate. |
 | Tiny Shakespeare validation split is too short for robust PPL at large $T$ | PPL is computed at $T = 128$ (training-time value), held fixed; the inference FLOPs are computed at the larger $T$ values without re-evaluating PPL. The Phase 3 plot conflates evaluation $T$ with training $T$ explicitly to highlight that the PPL number is from $T = 128$; the FLOP number is from each grid point. |
-| Researcher degrees of freedom in choosing $T$ values | Grid is locked: $\{128, 256, 512, 1024, 2048, 4096, 8192, 16384\}$. No post-hoc cell selection. |
+| Researcher degrees of freedom in choosing $T$ values | Grid is locked: $\lbrace128, 256, 512, 1024, 2048, 4096, 8192, 16384\rbrace$. No post-hoc cell selection. |
 | Multiple comparisons across 8 $T$ values × 3 architectures × 4 metrics = 96 cells | The headline conclusion is a 6-row decision rule (Phase 2) and a 3-row Pareto verdict (Phase 3); no per-cell statistical inference is involved. The 96 numbers are reported in full but not multiplicity-corrected. |
 
 ---

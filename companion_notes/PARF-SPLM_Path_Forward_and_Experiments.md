@@ -1248,7 +1248,7 @@ prediction): `--v-phi-competitive-temp ∈ {0.3, 1.0, 3.0}` and
 |---|---|---|---|
 | **P7-A1** | val PPL strictly below P1.6 (207.6) | $\Delta \ge 5$ PPL | $\Delta < 5$ PPL ⇒ Lever 3 alone insufficient; need to compose with Lever 4/6. |
 | **P7-A2** | val PPL within seed noise of P5 sparse $k{=}4$ (176.7) | $\Delta \le 5$ PPL | $\Delta > 5$ PPL ⇒ explicit sparsity matters beyond competitive selectivity; the §5.2 cutoff's *discreteness* is doing more than its *competitive structure*. |
-| **P7-B1** | post-training diagnostic shows median $\tilde\Phi$ $\le 0.3$ at most layers (no F1 saturation) | — | sustained F1 ⇒ τ too low; sweep $\tau \in \{0.3, 1.0, 3.0\}$. |
+| **P7-B1** | post-training diagnostic shows median $\tilde\Phi$ $\le 0.3$ at most layers (no F1 saturation) | — | sustained F1 ⇒ τ too low; sweep $\tau \in \lbrace0.3, 1.0, 3.0\rbrace$. |
 | **P7-B2** | $R(\ell)\in[0.1, 1.0]$ for all layers (no F5 imbalance) | — | $R(\ell) > 1.5$ ⇒ Lever 6 (warm-up curriculum) needed. |
 
 **Decision rule for P7.**
@@ -1329,7 +1329,7 @@ selection rather than gate the P7 launch.
 The first P6 deliverable (smoke-checked on the P1 dense `structural` checkpoint) returned two unanticipated channel signatures that together motivate a small composite cell, **P8**, sitting alongside (not in series with) P7:
 
 * **F-Layer1** — $R(\ell{=}1) \approx 3$. Pair force dominates the SPLM external-field force at the embedding-adjacent layer.
-* **F-Θsat** — $\lvert\Theta_\phi\rvert$ saturated to $\pm 1$ in layers $\ell \in \{2..8\}$. Boundary-saturation form of the F2 collapse — the optimiser drives the value-aligner to its rails to compensate the small per-pair $1/r$ at deep layers.
+* **F-Θsat** — $\lvert\Theta_\phi\rvert$ saturated to $\pm 1$ in layers $\ell \in \lbrace2..8\rbrace$. Boundary-saturation form of the F2 collapse — the optimiser drives the value-aligner to its rails to compensate the small per-pair $1/r$ at deep layers.
 
 Both reduce to a single mechanism — *the V_φ contribution has no per-layer scale knob, and its radial channel is tied to the absolute scale of $h$.* P8 is the minimal-drift composite cell that addresses this, with byte-identity to P1 when all flags are off (verified on a controlled harness).
 
@@ -1367,7 +1367,7 @@ The same flags compose with `--v-phi-kind structural_competitive` (P7) for the f
 | --- | --- | --- |
 | $R(\ell)$ at $\ell{=}1$ | $\approx 3$ | $\lesssim 1.2$ (post Patch A) and $\lesssim 0.5$ (post Patch B converges) |
 | $R(\ell)$ flatness ratio $\max R / \min R$ | $\sim 30\times$ | $\lesssim 3\times$ |
-| $\Pr[\lvert\Theta_\phi\rvert > 0.95]$ in $\ell \in \{2..8\}$ | $\gtrsim 70\%$ | $\lesssim 30\%$ |
+| $\Pr[\lvert\Theta_\phi\rvert > 0.95]$ in $\ell \in \lbrace2..8\rbrace$ | $\gtrsim 70\%$ | $\lesssim 30\%$ |
 | Optimised $s_\ell$ profile | (n/a) | $s_1 < s_3, s_4, s_5$ (Layer 1 down-weighted; mid-stack up-weighted) |
 | Final val PPL | $X_{\mathrm{P1}}$ | $\le X_{\mathrm{P1}}$ if any of A–D is causally responsible |
 

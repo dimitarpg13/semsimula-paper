@@ -172,7 +172,7 @@ now pinned low at $h_0$. That bias appears in the coarsened basin
 structure: the flow has fewer "upstream" degrees of freedom and
 converges on a binary split.
 
-**Implication.** The scale-gauge with $\lambda_{V_0} \in \{10^{-3}\}$
+**Implication.** The scale-gauge with $\lambda_{V_0} \in \lbrace10^{-3}\rbrace$
 is neither a useful regulariser nor a decisive falsifier. A sweep
 over $\lambda_{V_0} \in [10^{-5}, 10^{-1}]$ would likely reveal a
 crossover where the penalty starts to dominate and $V$ collapses to
@@ -266,9 +266,9 @@ Net effect on the paper's §14.15 and §14.17 (Q11):
 ## 6. What remains open
 
 * A $\lambda_{V_0}$ sweep for the scale-gauge across
-  $\{10^{-5}, 10^{-4}, 10^{-3}, 10^{-2}, 10^{-1}\}$, to locate the
+  $\lbrace10^{-5}, 10^{-4}, 10^{-3}, 10^{-2}, 10^{-1}\rbrace$, to locate the
   penalty-dominance crossover.
-* A capacity sweep for GM across $K \in \{16, 64, 256, 1024\}$, to
+* A capacity sweep for GM across $K \in \lbrace16, 64, 256, 1024\rbrace$, to
   check whether the expressivity ceiling can be lifted by making the
   mixture wide. The prediction, from the static-null result of §14.2,
   is no.

@@ -125,9 +125,9 @@ that says we should not over-engineer the integrator.
 
 The **readout** $x_L \mapsto p(\text{token})$ is, at v0, a tied
 nearest-neighbour decoder over a fixed vocabulary embedding
-$\{e_v\}_v \subset \mathbb{R}^d$:
+$\lbrace e_v\rbrace_v \subset \mathbb{R}^d$:
 $p(v \mid x_L) \propto \exp(\beta e_v^\top x_L)$.
-Whether $\{e_v\}$ is fixed (corpus-derived) or RL-calibrated is
+Whether $\lbrace e_v\rbrace$ is fixed (corpus-derived) or RL-calibrated is
 itself a parameter-classification decision (§4).
 
 This is the **complete v0 EOM**. Writing it in pseudocode is the
@@ -145,7 +145,7 @@ with explicit estimators or calibration paths for each:
 These are fixed by closed-form estimators on the corpus, calibrated
 once and never updated:
 
-- **Vocabulary embeddings** $\{e_v\}$: PMI-derived or Laplacian-eigenmap
+- **Vocabulary embeddings** $\lbrace e_v\rbrace$: PMI-derived or Laplacian-eigenmap
   derived, frozen after computation.
 - **Per-token semantic mass** $\mathfrak{m}_v = -\log p(v)$ (corpus surprisal),
   frozen after counting.
@@ -173,7 +173,7 @@ trajectory-level:
 - **Damping coefficient** $\gamma$ (or per-mass-class $\gamma_v$).
 - **Context-coupling matrix** $\Lambda$ in $V_{\text{ctx}}$.
 - **Readout temperature** $\beta$.
-- **Optionally:** small corrections to $\{e_v\}$ on top of the
+- **Optionally:** small corrections to $\lbrace e_v\rbrace$ on top of the
   corpus-statistics initialisation.
 
 Target: ~10–25% of parameters in this bucket. RL signal is what

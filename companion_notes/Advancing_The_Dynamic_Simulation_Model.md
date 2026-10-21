@@ -137,8 +137,8 @@ Tiny transformers and tiny LSTMs solve $\mathrm{Dyck}_n$ to substantial depth; t
 
 ### 4.2 Experimental setup
 
-- **Vocabulary.** $\{(_1, )_1, (_2, )_2, \ldots, (_n, )_n, \text{BOS}, \text{EOS}\}$, with $n \in \{2, 3\}$.
-- **Generator.** A stochastic grammar producing balanced strings of controlled maximum depth $D \in \{1, 2, 4, 8, 16, 32\}$, with at least $10^4$ training and $10^3$ held-out strings per depth.
+- **Vocabulary.** $\lbrace(_1, )_1, (_2, )_2, \ldots, (_n, )_n, \text{BOS}, \text{EOS}\rbrace$, with $n \in \lbrace2, 3\rbrace$.
+- **Generator.** A stochastic grammar producing balanced strings of controlled maximum depth $D \in \lbrace1, 2, 4, 8, 16, 32\rbrace$, with at least $10^4$ training and $10^3$ held-out strings per depth.
 - **Task.** At each closing-bracket position, predict the type of the closing bracket (the only context-free decision; positional decisions are regular and trivially solvable).
 - **Models at matched parameters and matched compute.**
   1. v0 simulator (the static + RL-calibrated configuration of `notebooks/semsim_simulator/`).
@@ -184,9 +184,9 @@ The base $\mathrm{Dyck}_n$ experiment falsifies v0 alone. Three nested variants 
 
 The first three falsifiers establish the v0 → v0+v2 → v0+v2+v1.5 → v0+v2+v1.5+v3 staircase **from below**: each tier has a stricter linguistic phenomenon that the previous tier cannot do. The next two falsifiers test the **upper-bound claim** that the composite system reaches *exactly* mildly context-sensitive (MCS) and not above. Both are well-known formal-language tasks for which MCS-class machines succeed and CF-class machines fail.
 
-- **F4 — cross-serial dependency $a^n b^n c^n$** confirms v0+v2+v1.5+v3 reaches MCS. The language $\{a^n b^n c^n : n \ge 1\}$ is the canonical non-context-free, mildly context-sensitive language. A pushdown automaton (CF) cannot recognise it; a tree-adjoining grammar, an LCFRS, or a 2-stack machine can. The framework's prediction is that v0+v2+v1.5+v3 succeeds at $a^n b^n c^n$ up to depth comparable to the Dyck collapse depth $D^\ast$, while v0+v2+v1.5 (without operator action) collapses to chance for $n \ge 2$. The mechanism is that the v3 operator action reads the count of "$a$" particles and *re-uses* it to license the corresponding $b$ and $c$ counts via group-element coupling, mirroring the LCFRS rule that emits paired fragments from a single non-terminal.
+- **F4 — cross-serial dependency $a^n b^n c^n$** confirms v0+v2+v1.5+v3 reaches MCS. The language $\lbrace a^n b^n c^n : n \ge 1\rbrace$ is the canonical non-context-free, mildly context-sensitive language. A pushdown automaton (CF) cannot recognise it; a tree-adjoining grammar, an LCFRS, or a 2-stack machine can. The framework's prediction is that v0+v2+v1.5+v3 succeeds at $a^n b^n c^n$ up to depth comparable to the Dyck collapse depth $D^\ast$, while v0+v2+v1.5 (without operator action) collapses to chance for $n \ge 2$. The mechanism is that the v3 operator action reads the count of "$a$" particles and *re-uses* it to license the corresponding $b$ and $c$ counts via group-element coupling, mirroring the LCFRS rule that emits paired fragments from a single non-terminal.
 
-- **F5 — bounded copy language $ww$** confirms MCS reach via a different construction. $\{ww : w \in \Sigma^\ast, |w| \le L\}$ is non-CF for $|\Sigma| \ge 2$ but is in MCS (it is the canonical example for LCFRS-style reduplication). The framework's prediction is that v0+v2+v1.5+v3 succeeds up to length $L$ matching the operator-bandwidth bound, again via v3-mediated re-use of the encoded prefix.
+- **F5 — bounded copy language $ww$** confirms MCS reach via a different construction. $\lbrace ww : w \in \Sigma^\ast, |w| \le L\rbrace$ is non-CF for $|\Sigma| \ge 2$ but is in MCS (it is the canonical example for LCFRS-style reduplication). The framework's prediction is that v0+v2+v1.5+v3 succeeds up to length $L$ matching the operator-bandwidth bound, again via v3-mediated re-use of the encoded prefix.
 
 The composite system passing F4 and F5 — at depths bounded by the same $D^\ast$ formula adjusted for the MCS-class capacity — is the empirical confirmation that the framework reaches MCS.
 

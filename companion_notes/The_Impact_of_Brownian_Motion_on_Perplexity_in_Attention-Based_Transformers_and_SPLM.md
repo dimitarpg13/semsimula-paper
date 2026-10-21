@@ -415,7 +415,7 @@ $$\lVert h_t - h_t^* \rVert_2 \propto \sigma t^\alpha, \quad \alpha < 0.5 \quad 
 
 Evaluate both models on held-out sequences of varying lengths:
 
-$$t \in \{32, 64, 128, 256, 512, 1024\}$$
+$$t \in \lbrace32, 64, 128, 256, 512, 1024\rbrace$$
 
 Plot perplexity vs. $t$ for both architectures. Theory predicts the curves diverge — GPT-2 curving upward faster than SPLM.
 
@@ -454,7 +454,7 @@ where $\tilde{\xi}_t$ is the context vector from free-running inference and $\xi
 
 ### 8.5 Practical Note on Scale
 
-The scaling law argument is **architectural, not scale-dependent**. The existing SPLM (7.1M parameters, $d=128$, $L=8$, Tiny Shakespeare) is sufficient. The $\sqrt{t}$ vs. $1/\sqrt{t}$ distinction should be visible at $t \in \{128, 256, 512, 1024\}$. No large-scale retraining is required.
+The scaling law argument is **architectural, not scale-dependent**. The existing SPLM (7.1M parameters, $d=128$, $L=8$, Tiny Shakespeare) is sufficient. The $\sqrt{t}$ vs. $1/\sqrt{t}$ distinction should be visible at $t \in \lbrace128, 256, 512, 1024\rbrace$. No large-scale retraining is required.
 
 ### 8.6 Significance
 
@@ -526,7 +526,7 @@ Both models are trained at `block_size = 128` (SPLM) and with positional encodin
 
 The asymmetric coverage means that for $t > 128$, any SPLM degradation is partly a context-length extrapolation failure rather than pure Brownian noise accumulation, while GPT-2 is still in-distribution. A fair comparison requires either (a) restricting the sweep to $t \leq 128$ (gives only a factor-of-4 span, poor for log-log slope estimation) or (b) retraining SPLM at `block_size = 512` or `block_size = 1024` before running the sweep. Option (b) is a multi-hour MPS job but is the correct choice if the goal is a publishable slope measurement; option (a) is appropriate for a quick sanity check.
 
-**Recommended grid given this constraint:** run first at $t \in \{16, 32, 64, 96, 128\}$ on existing checkpoints to obtain a factor-of-8 slope estimate. If the slope is directionally consistent with H1/H2, retrain SPLM at `block_size = 512` and extend to $t \in \{64, 128, 256, 512\}$. Only then report as a slope measurement.
+**Recommended grid given this constraint:** run first at $t \in \lbrace16, 32, 64, 96, 128\rbrace$ on existing checkpoints to obtain a factor-of-8 slope estimate. If the slope is directionally consistent with H1/H2, retrain SPLM at `block_size = 512` and extend to $t \in \lbrace64, 128, 256, 512\rbrace$. Only then report as a slope measurement.
 
 ---
 

@@ -46,7 +46,7 @@ The only scalar potential that appears anywhere in the architecture is the singl
 | **Semantic mass $m_t$** | The learnable scalar $m$ in the integrator; promoted to per-token $m_t^{(A)}$ (embed-head) and $m_t^{(B)}$ (Shannon-surprisal) in §14.14, with variant (B) $m_t \propto -\log\hat p(x_t)$ implementing the framework's information-theoretic prior directly | **Explicit.** Variant (B) achieves 44% Tiny-Shakespeare PPL reduction vs. fixed-$\xi$ SPLM. |
 | **Gaussian well $V_{\mathrm{well}}(h)$** | Not instantiated as a named Gaussian; its role is absorbed into the shared scalar MLP $V_\theta(\xi, h)$, which is free to learn whatever attractor geometry the training objective demands | **Implicit.** The MLP can in principle approximate any smooth well (including the predicted Gaussian shape), but the functional form is not constrained. The Gaussian E-init validation at `notebooks/conservative_arch/e_init_validation.py` verifies *empirically* that $V_\theta$ converges to a Gaussian-like well, but this is a measured outcome, not an inductive bias. |
 | **SARF structure-level pairwise forces** $V_{\mathrm{SARF}}(h_t, \mathcal{E}(t))$ | The $\xi$-dependence of $V_\theta$ captures the *field* a particle sees from other structures, but only in mean-field form — the aggregation $\xi$ discards which token contributed what | **Partially implicit.** The reinforcement field is explicit (via $\xi$); the bilinear structure-by-structure coupling is not disentangled from it and lives inside $V_\theta$'s weights. |
-| **PARF pairwise property-level forces** $V_{\mathrm{PARF}}(h_t, \{h_s\})$ | No pairwise interaction term at all; token $t$ sees token $s$ only through the mean-field $\xi$, never directly as a pair $(h_t, h_s)$ | **Absent.** A deliberate simplification — restoring explicit pairwise PARF would reintroduce $O(T^2)$ cost and forfeit the inference-efficiency claim. |
+| **PARF pairwise property-level forces** $V_{\mathrm{PARF}}(h_t, \lbrace h_s\rbrace)$ | No pairwise interaction term at all; token $t$ sees token $s$ only through the mean-field $\xi$, never directly as a pair $(h_t, h_s)$ | **Absent.** A deliberate simplification — restoring explicit pairwise PARF would reintroduce $O(T^2)$ cost and forfeit the inference-efficiency claim. |
 
 ### Summary of the mapping
 
@@ -72,7 +72,7 @@ Three honest caveats arise when assessing whether SPLM implements the *full* sem
 
 ### 4.1 Pairwise PARF is not represented
 
-The mean-field $\xi$ is a strict aggregation: token identities and positions inside the pool are lost. A token at position $t$ sees the *average* of $\{h_s\}_{s\le t}$, not any particular partner. This is the main gap between the framework's PARF machinery and SPLM. It is also the single biggest barrier to lifting SPLM out of mean-field physics into the genuinely pairwise regime the framework prescribes for property-level interactions.
+The mean-field $\xi$ is a strict aggregation: token identities and positions inside the pool are lost. A token at position $t$ sees the *average* of $\lbrace h_s\rbrace_{s\le t}$, not any particular partner. This is the main gap between the framework's PARF machinery and SPLM. It is also the single biggest barrier to lifting SPLM out of mean-field physics into the genuinely pairwise regime the framework prescribes for property-level interactions.
 
 ### 4.2 PARF and SARF are not disentangled
 

@@ -101,11 +101,11 @@ Identical to original §4.2: linear ridge, polynomial-2 ridge, kernel ridge (pri
 
 ### 4.3 PCA dimensionality sweep
 
-We use $p \in \{20, 50, 100\}$ as in the original. Note: $p = 100$ is close to the SPLM hidden dim ($d = 128$), so this cell is essentially "no PCA"; we keep it for direct comparability.
+We use $p \in \lbrace20, 50, 100\rbrace$ as in the original. Note: $p = 100$ is close to the SPLM hidden dim ($d = 128$), so this cell is essentially "no PCA"; we keep it for direct comparability.
 
 ### 4.4 Layer-axis robustness probe
 
-In addition to the per-token $h_t^{(L)}$ regression, we run the same Markov-order test on the **per-layer** trajectory $h_t^{(\ell)}$ for $\ell \in \{1, \ldots, L\}$ at a fixed token position. This is the SPLM analogue of the Lu et al. layer-axis first-order reading mentioned but not pre-registered in the original protocol. It tests whether the SPLM's **integration-axis** dynamics (i.e., the L=8 Euler steps) are themselves first-order at the inference fixed point.
+In addition to the per-token $h_t^{(L)}$ regression, we run the same Markov-order test on the **per-layer** trajectory $h_t^{(\ell)}$ for $\ell \in \lbrace1, \ldots, L\rbrace$ at a fixed token position. This is the SPLM analogue of the Lu et al. layer-axis first-order reading mentioned but not pre-registered in the original protocol. It tests whether the SPLM's **integration-axis** dynamics (i.e., the L=8 Euler steps) are themselves first-order at the inference fixed point.
 
 The layer-axis cell is a robustness probe; it does not enter the primary decision but is reported as part of the §9 RESULTS.md.
 
@@ -144,7 +144,7 @@ The headline conclusion is determined by the **SPLM em\_ln $\gamma^{\ast} = 0.30
 
 ### 6.2 Required confirmations beyond the primary
 
-Identical to original §6.5 — function-class robustness ($\ge 3$ of 4 classes agree), PCA-dim robustness (same conclusion at $p \in \{20, 50, 100\}$), corpus robustness (the secondary 5-domain corpus must yield the same arm-level verdict as the primary Shakespeare corpus).
+Identical to original §6.5 — function-class robustness ($\ge 3$ of 4 classes agree), PCA-dim robustness (same conclusion at $p \in \lbrace20, 50, 100\rbrace$), corpus robustness (the secondary 5-domain corpus must yield the same arm-level verdict as the primary Shakespeare corpus).
 
 If any required confirmation fails, the per-checkpoint conclusion is automatically downgraded one row (A → D, B → D, C unchanged).
 

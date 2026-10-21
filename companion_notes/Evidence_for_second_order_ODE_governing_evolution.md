@@ -111,7 +111,7 @@ Here the initial velocity $v_0$ is **not an independent degree of freedom** — 
 
 ### Lu et al. — First-Order in Layer Depth (Convection–Diffusion)
 
-$$\dot{x}_i = F_{\text{conv}}(x_i) + F_{\text{diff}}\left(x_i, \{x_j\}_{j \neq i}\right)$$
+$$\dot{x}_i = F_{\text{conv}}(x_i) + F_{\text{diff}}\left(x_i, \lbrace x_j\rbrace_{j \neq i}\right)$$
 
 Again, no independent velocity slot. $\dot{x}_i$ is determined pointwise by current positions. This is the layer-as-time counterpart of the position-as-time flow of Huang et al.
 

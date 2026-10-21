@@ -257,7 +257,7 @@ flowchart LR
 
 **Input:** $(h\_n, v\_n, r\_n)$ — hidden state, velocity, register state at start of layer $\ell$.
 
-**Constants:** $\Delta t$ (time step), $\gamma$ (damping), $\mathfrak{m}$ (semantic mass), $T$ (temperature), $c\_1 = e^{-\gamma\Delta t}$, $c\_2 = \sqrt{(k\_BT/\mathfrak{m})(1 - c\_1^2)}$, and the well parameters $\{\mu\_k, \omega\_k, \kappa\_k\}\_{k=1}^{K}$.
+**Constants:** $\Delta t$ (time step), $\gamma$ (damping), $\mathfrak{m}$ (semantic mass), $T$ (temperature), $c\_1 = e^{-\gamma\Delta t}$, $c\_2 = \sqrt{(k\_BT/\mathfrak{m})(1 - c\_1^2)}$, and the well parameters $\lbrace\mu\_k, \omega\_k, \kappa\_k\rbrace\_{k=1}^{K}$.
 
 ---
 

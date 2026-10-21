@@ -485,7 +485,7 @@ $$
 m\ddot{x} = -\nabla_x V(x; \theta_\ell) - m\gamma\dot{x}
 $$
 
-where $\theta_\ell = \{W_Q^\ell, W_K^\ell, W_V^\ell, W_{\text{MLP}}^\ell\}$ are layer-specific parameters.
+where $\theta_\ell = \lbrace W_Q^\ell, W_K^\ell, W_V^\ell, W_{\text{MLP}}^\ell\rbrace$ are layer-specific parameters.
 
 At each individual layer $\ell$, the force $-\nabla_x V(x; \theta_\ell)$ is the gradient of a scalar
 potential — hence the Jacobian is **symmetric by construction** at every layer. This
@@ -526,7 +526,7 @@ $$
 In the extended space $(h, \ell)$ — hidden state crossed with layer index — the dynamics
 trace a curve on a fiber bundle:
 
-- Base manifold: $\{\ell = 0, 1, \ldots, L\}$ (layer index — discrete)
+- Base manifold: $\lbrace\ell = 0, 1, \ldots, L\rbrace$ (layer index — discrete)
 - Fiber: $\mathbb{R}^d$ (hidden state space)
 - Connection form: $A_\ell = -\nabla V(\cdot; \theta_\ell)$ (per-layer force as connection)
 

@@ -81,7 +81,7 @@ Define:
 
 $$\Delta_s = P_A^{(s)} - P_B^{(s)}, \qquad \overline{\Delta} = \tfrac{1}{S}\sum_{s=1}^{S} \Delta_s,$$
 
-with $S = 3$ seeds, $s \in \{0, 1, 2\}$, fixed at pre-registration.
+with $S = 3$ seeds, $s \in \lbrace0, 1, 2\rbrace$, fixed at pre-registration.
 
 | Hypothesis | Operational form | Theoretical reading |
 |---|---|---|
@@ -123,7 +123,7 @@ $$\overline{\Delta}_{\text{predicted}} \in [10, 30] \text{ perplexity units.}$$
 The reasoning is informal:
 - The interior $\gamma^{\ast}$ result places the second-order minimum strictly below both the $\gamma = 0$ ballistic arm (PPL 113) and the $\gamma = 5$ heavy-overdamped arm (PPL 121).
 - SPLM-1 is, in effect, a $\gamma \to \infty$ reduction (no $v$, just gradient descent on $V_\theta$), so it is closer in spirit to the heavy-overdamped end of the U-shape than to the interior.
-- A 10–30-point penalty is consistent with the gap between $\gamma = 0.30$ (87.06) and $\gamma \in \{2.0, 5.0\}$ (103.82, 121.89) in the E5 sweep itself.
+- A 10–30-point penalty is consistent with the gap between $\gamma = 0.30$ (87.06) and $\gamma \in \lbrace2.0, 5.0\rbrace$ (103.82, 121.89) in the E5 sweep itself.
 
 This prediction is a *commitment*, not a threshold. The decision rule of §5 stands regardless of whether the observed $\overline{\Delta}$ falls inside or outside this interval, provided $\overline{\Delta} \ge 5$ and the seed-sign criterion holds.
 

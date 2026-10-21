@@ -136,7 +136,7 @@ In practice we expect the loop to converge in 1–2 iterations because $V_{\thet
 loads the locked E9 SPLM checkpoint, runs Lanczos on 100 sampled $(\xi, h)$ states, and emits
 
 - $\gamma^{\ast}_{\text{Hessian}}$ (the §2.2 prediction)
-- $\gamma^{\ast}_{\text{depth}}$ at $\rho \in \{0.05, 0.10, 0.15, 0.20\}$ (the §2.1 prediction)
+- $\gamma^{\ast}_{\text{depth}}$ at $\rho \in \lbrace0.05, 0.10, 0.15, 0.20\rbrace$ (the §2.1 prediction)
 - $\gamma^{\ast}_{\text{surprisal}}$ (the §2.3 prediction)
 - a per-layer histogram of $\sqrt{\lambda_H/m}$
 
@@ -223,7 +223,7 @@ This double match across the leak fix is structurally stronger evidence than eit
 
 **Updated practical default rule.** The Appendix A rule "$\gamma = (m / (L \Delta t)) \ln(1/\rho)$ with $\rho = 0.18$" is **superseded** for leak-corrected SPLM training. The post-fix recommended default is $\rho = 0.565$, which gives the table at the bottom of Appendix A (also updated below).
 
-**S=5 confirmation sweep canonical numbers.** Beyond the resonance-predictor double match, the second-order architectural lift was at $S = 3$ borderline-but-suggestive ($\overline{\Delta}\_{0.10} = +4.71$~PPL, $0.29$~PPL short of the pre-registered $\Delta\_{\min} = 5.0$~PPL); the $S = 5$ confirmation sweep at $\gamma \in \{0.05, 0.10, 0.15, 0.20\}$ confirms it at all four pre-registered decision criteria simultaneously: $\overline{\Delta}\_{0.10} = +5.09$~PPL ($p = 0.006$, $d\_z = +2.37$, sign $5/5$, all four ✓) and the largest paired effect at $\overline{\Delta}\_{0.15} = +7.03$~PPL ($p = 0.013$, $d\_z = +1.89$, sign $5/5$, all four ✓). The full table is at `notebooks/conservative_arch/ln_damping_sweep/results/leakfree_5seed_confirmation/RESULTS_CONFIRMATION_S5.md`.
+**S=5 confirmation sweep canonical numbers.** Beyond the resonance-predictor double match, the second-order architectural lift was at $S = 3$ borderline-but-suggestive ($\overline{\Delta}\_{0.10} = +4.71$~PPL, $0.29$~PPL short of the pre-registered $\Delta\_{\min} = 5.0$~PPL); the $S = 5$ confirmation sweep at $\gamma \in \lbrace0.05, 0.10, 0.15, 0.20\rbrace$ confirms it at all four pre-registered decision criteria simultaneously: $\overline{\Delta}\_{0.10} = +5.09$~PPL ($p = 0.006$, $d\_z = +2.37$, sign $5/5$, all four ✓) and the largest paired effect at $\overline{\Delta}\_{0.15} = +7.03$~PPL ($p = 0.013$, $d\_z = +1.89$, sign $5/5$, all four ✓). The full table is at `notebooks/conservative_arch/ln_damping_sweep/results/leakfree_5seed_confirmation/RESULTS_CONFIRMATION_S5.md`.
 
 ### 2.6 LayerNorm counter-damping and effective $\gamma$ (August 2, 2026)
 

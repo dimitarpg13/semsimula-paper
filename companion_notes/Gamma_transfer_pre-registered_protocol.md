@@ -33,7 +33,7 @@ This is a **single-arm sweep** over $\gamma$. Only the SPLM em_ln architecture i
 
 | Arm | Architecture | Ranges over | Source |
 |---|---|---|---|
-| **`splm_em_ln_gamma`** (sole arm) | SARF-faithful causal cumulative-mean $\xi$, per-token logfreq mass, second-order semi-implicit damped Euler integrator, LayerNorm projection after every step, $\gamma$ **fixed** at the swept value (no scheduling, no learning) | $\gamma \in \{0.10, 0.30, 0.60\}$ at Stage 1; $\gamma^{\ast}_{\mathrm{TS}}$ at Stages 2 and 3 (and optionally one neighbour). | new `notebooks/conservative_arch/scaleup/gamma_transfer/train_splm_em_ln_gamma_sweep.py`, modes `pilot` / `confirmation` |
+| **`splm_em_ln_gamma`** (sole arm) | SARF-faithful causal cumulative-mean $\xi$, per-token logfreq mass, second-order semi-implicit damped Euler integrator, LayerNorm projection after every step, $\gamma$ **fixed** at the swept value (no scheduling, no learning) | $\gamma \in \lbrace0.10, 0.30, 0.60\rbrace$ at Stage 1; $\gamma^{\ast}_{\mathrm{TS}}$ at Stages 2 and 3 (and optionally one neighbour). | new `notebooks/conservative_arch/scaleup/gamma_transfer/train_splm_em_ln_gamma_sweep.py`, modes `pilot` / `confirmation` |
 
 **Anchor for the comparison (re-used from E9, not re-run).**
 
@@ -113,8 +113,8 @@ Let $\hat{\gamma}^{\ast}_{\mathrm{TS}}$ denote the argmin of validation PPL over
 | Hypothesis | Operational form | Theoretical reading |
 |---|---|---|
 | $H_T$ (γ-transfer holds) | $\hat{\gamma}^{\ast}_{\mathrm{TS}} = 0.30$ | The damping optimum is scale-invariant in the regime explored; the E9 SPLM arm was at the right γ. |
-| $H_{¬T}$ (γ-transfer fails — interior) | $\hat{\gamma}^{\ast}_{\mathrm{TS}} \in \{0.10, 0.60\}$ (Stage 1 grid) | Damping optimum shifts with scale; E9 was at a sub-optimal γ. |
-| $H_{¬T,\mathrm{boundary}}$ (γ-transfer fails — outside grid) | $\hat{\gamma}^{\ast}_{\mathrm{TS}}$ at the Stage-1 grid boundary, requiring boundary expansion to a value $\not\in\{0.10, 0.30, 0.60\}$ | Damping optimum has shifted outside the bracket inferred from E5 — strong qualitative effect; warrants further analysis. |
+| $H_{¬T}$ (γ-transfer fails — interior) | $\hat{\gamma}^{\ast}_{\mathrm{TS}} \in \lbrace0.10, 0.60\rbrace$ (Stage 1 grid) | Damping optimum shifts with scale; E9 was at a sub-optimal γ. |
+| $H_{¬T,\mathrm{boundary}}$ (γ-transfer fails — outside grid) | $\hat{\gamma}^{\ast}_{\mathrm{TS}}$ at the Stage-1 grid boundary, requiring boundary expansion to a value $\not\in\lbrace0.10, 0.30, 0.60\rbrace$ | Damping optimum has shifted outside the bracket inferred from E5 — strong qualitative effect; warrants further analysis. |
 
 ### Q2 — Quality of γ\*
 
@@ -137,7 +137,7 @@ The protocol is a **three-stage adaptive plan**:
 
 ### 5.1 Stage 1 — γ-grid pilot
 
-**Grid:** $\gamma \in \{0.10,\ 0.30,\ 0.60\}$, evaluated at **seed 0 only**, for **4 000 steps** each.
+**Grid:** $\gamma \in \lbrace0.10,\ 0.30,\ 0.60\rbrace$, evaluated at **seed 0 only**, for **4 000 steps** each.
 
 **Sequencing:** the three runs are launched sequentially on the same MPS device. Wall-clock per arm is empirically known from E9 to be $\sim 5.96$ s/step × 4000 = **~6.6 h**, total Stage 1 ${\sim}19.8\text{ h}$.
 
@@ -147,9 +147,9 @@ The protocol is a **three-stage adaptive plan**:
 
 #### 5.1.1 Boundary expansion (locked, contingent)
 
-If $\hat{\gamma}^{\ast}\_{\mathrm{TS}} = 0.10$ (low boundary), run **one additional pilot at $\gamma = 0.05$**, 4000 steps, seed 0. Update $\hat{\gamma}^{\ast}\_{\mathrm{TS}}$ to the new argmin over $\{0.05, 0.10, 0.30, 0.60\}$.
+If $\hat{\gamma}^{\ast}\_{\mathrm{TS}} = 0.10$ (low boundary), run **one additional pilot at $\gamma = 0.05$**, 4000 steps, seed 0. Update $\hat{\gamma}^{\ast}\_{\mathrm{TS}}$ to the new argmin over $\lbrace0.05, 0.10, 0.30, 0.60\rbrace$.
 
-If $\hat{\gamma}^{\ast}\_{\mathrm{TS}} = 0.60$ (high boundary), run **one additional pilot at $\gamma = 0.85$**, 4000 steps, seed 0. Update $\hat{\gamma}^{\ast}\_{\mathrm{TS}}$ to the new argmin over $\{0.10, 0.30, 0.60, 0.85\}$.
+If $\hat{\gamma}^{\ast}\_{\mathrm{TS}} = 0.60$ (high boundary), run **one additional pilot at $\gamma = 0.85$**, 4000 steps, seed 0. Update $\hat{\gamma}^{\ast}\_{\mathrm{TS}}$ to the new argmin over $\lbrace0.10, 0.30, 0.60, 0.85\rbrace$.
 
 **No further boundary expansion is permitted.** If even after one boundary expansion $\hat{\gamma}^{\ast}\_{\mathrm{TS}}$ is still at the (extended) boundary, the experiment is reported as boundary-saturated ($H\_{¬T,\mathrm{boundary}}$) and a separate follow-on protocol is required to extend further.
 
@@ -224,7 +224,7 @@ Conditional on $H_{¬T}$ (i.e., conditional on $\hat{\gamma}^{\ast}_{\mathrm{TS}
 
 $$\Delta_{\gamma^{\ast}} \in [+0.2, +0.8]\ \text{PPL},\qquad\text{most-likely }\overline{\Delta}_{\gamma^{\ast}}\approx +0.4\ \text{PPL}.$$
 
-Reasoning: E5's shallowness across the $\{0.10, 0.30, 0.85\}$ bracket implies the curve is locally flat near the optimum; even a non-transferring optimum should be $\le 1$ PPL improvement at the new scale. A strong lift of $\ge 1$ PPL would be surprising and would warrant further investigation.
+Reasoning: E5's shallowness across the $\lbrace0.10, 0.30, 0.85\rbrace$ bracket implies the curve is locally flat near the optimum; even a non-transferring optimum should be $\le 1$ PPL improvement at the new scale. A strong lift of $\ge 1$ PPL would be surprising and would warrant further investigation.
 
 ### 6.3 Joint outcome prediction
 

@@ -81,7 +81,7 @@ F(h) &= \sum_{\mu=1}^{N} s_\mu(h) V^\mu - h \\
 s_\mu(h) &= \mathrm{softmax}_\mu\bigl(\beta K^\mu \cdot h\bigr) \quad \text{(attention weights)} \\
 K^\mu &= W_K \xi^\mu \qquad\qquad\ \text{(key for context pattern } \mu\text{)} \\
 V^\mu &= W_V \xi^\mu \qquad\qquad\ \text{(value for context pattern } \mu\text{)} \\
-\{\xi^\mu\} &= \text{fixed context patterns (not functions of } h \text{)}
+\lbrace\xi^\mu\rbrace &= \text{fixed context patterns (not functions of } h \text{)}
 \end{aligned}
 $$
 
@@ -110,7 +110,7 @@ $$
 s_\mu(h) = \frac{\exp\bigl(\beta K^\mu \cdot h\bigr)}{\sum_{\nu} \exp\bigl(\beta K^\nu \cdot h\bigr)} \qquad \text{(softmax)}
 $$
 
-where $\{K^\mu\}$, $\{V^\mu\}$, and $\beta$ are all fixed (functions of the weights and context,
+where $\lbrace K^\mu\rbrace$, $\lbrace V^\mu\rbrace$, and $\beta$ are all fixed (functions of the weights and context,
 not of the current hidden state $h$).
 
 ### 2.2 Component-by-Component Smoothness
@@ -237,7 +237,7 @@ $$
 $$
 
 $$
-\text{Singular set: } S = \{ h \in \mathbb{R}^d : h = c \mathbf{1} \text{ for some } c \in \mathbb{R} \}
+\text{Singular set: } S = \lbrace h \in \mathbb{R}^d : h = c \mathbf{1} \text{ for some } c \in \mathbb{R} \rbrace
 $$
 
 $S$ is a one-dimensional subspace — a line through the origin in the direction
@@ -291,7 +291,7 @@ The derivative is discontinuous at $x = 0$. ReLU is $C^0$ but not $C^1$ at $x = 
 For the full block with ReLU FFN, the set of non-differentiable points is:
 
 $$
-\text{Non-smooth set of FFN: } \{ h \in \mathbb{R}^d : (W_1 h + b_1)_i = 0 \ \text{for some } i \}
+\text{Non-smooth set of FFN: } \lbrace h \in \mathbb{R}^d : (W_1 h + b_1)_i = 0 \ \text{for some } i \rbrace
 $$
 
 This is a union of hyperplanes — a set of measure zero in $\mathbb{R}^d$.
@@ -445,7 +445,7 @@ $$
 This is:
 
 - The attention computation only (not LayerNorm, not FFN)
-- A function of $h$ with context $\{K^\mu, V^\mu\}$ fixed
+- A function of $h$ with context $\lbrace K^\mu, V^\mu\rbrace$ fixed
 - Before any nonlinear block transformation
 
 ### 7.2 Smoothness Verdict for Theorem 46
@@ -556,7 +556,7 @@ sets of arbitrarily small total volume. Intuitively: zero probability of landing
 on $S$ when drawing $h$ uniformly from any bounded region.
 
 For ReLU networks, the non-smooth set is a union of hyperplanes
-$\{ h : (W_1 h)_i = 0 \}$ — each is a $(d-1)$-dimensional flat subspace, which has
+$\lbrace h : (W_1 h)_i = 0 \rbrace$ — each is a $(d-1)$-dimensional flat subspace, which has
 measure zero in $\mathbb{R}^d$. The smooth set is open (complement of closed hyperplanes)
 and dense (every ball in $\mathbb{R}^d$ intersects it), but **need not be connected**
 (one hyperplane already splits space). Generic arguments

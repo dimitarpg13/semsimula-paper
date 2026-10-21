@@ -131,7 +131,7 @@ $$
 
 ### 3.1 Definition
 
-Let $\{\mu_v\}_{v \in \mathcal{V}} \subset \mathbb{R}^L$ be the centroids of the semantic particle types. Attach to each type the normalized Gaussian mode function
+Let $\lbrace\mu_v\rbrace_{v \in \mathcal{V}} \subset \mathbb{R}^L$ be the centroids of the semantic particle types. Attach to each type the normalized Gaussian mode function
 
 $$
 \phi_v(x) = (2\pi\sigma^2)^{-L/4}\exp\left(-\frac{\lVert x - \mu_v\rVert ^2}{4\sigma^2}\right). \qquad (3.1)
@@ -263,7 +263,7 @@ Two features are visible already. Near-synonyms have $d_{\mathrm{ov}} \approx d_
 
 ### 5.1 $d_{\mathrm{ov}}$ is a metric
 
-$d_{\mathrm{ov}}$ is the restriction of the $L^2$ norm distance to the set $\{\phi_a : a \in \mathbb{R}^L\}$, so symmetry and the triangle inequality are inherited from the norm. Positivity and identity of indiscernibles follow from
+$d_{\mathrm{ov}}$ is the restriction of the $L^2$ norm distance to the set $\lbrace\phi_a : a \in \mathbb{R}^L\rbrace$, so symmetry and the triangle inequality are inherited from the norm. Positivity and identity of indiscernibles follow from
 
 $$
 d_{\mathrm{ov}}(a,b) = 0 \iff \phi_a = \phi_b \iff a = b,
@@ -563,7 +563,7 @@ $$
 ### 8.1 Single-particle space
 
 $$
-\mathcal{H} = \overline{\mathrm{span}}\{\phi_v : v\in\mathcal{V}\} \subset L^2(\mathbb{R}^L), \qquad (8.1)
+\mathcal{H} = \overline{\mathrm{span}}\lbrace\phi_v : v\in\mathcal{V}\rbrace \subset L^2(\mathbb{R}^L), \qquad (8.1)
 $$
 
 with Gram matrix
@@ -942,7 +942,7 @@ Choice (b) is the more natural diagnostic for the routing questions studied in t
 
 #### Redundancy diagnostics
 
-From either Gram matrix, restricted to the active set $A = \{k : \sigma_k \gt  \theta_{\min}\}$:
+From either Gram matrix, restricted to the active set $A = \lbrace k : \sigma_k \gt  \theta_{\min}\rbrace$:
 
 **Smallest eigenvalue.** $\lambda_{\min}(G_A)$ approaches 0 when some register is nearly a combination of others.
 
@@ -1018,7 +1018,7 @@ The order matters: diagnostics first, on existing checkpoints, and a training in
 
 **D3. Redundancy versus perplexity** (existing checkpoints). Across runs and checkpoints, regress validation PPL (or the frequent-token excess loss, the about 79% component identified in the OWT diagnostics) on effective rank, controlling for training step. A clear negative relationship is the precondition for expecting a diversity force to help.
 
-**D4. Regularizer ablation** (training; only if D2 or D3 show signal). On TinyStories first, sweep $\lambda_{\det} \in \{0, 10^{-3}, 10^{-2}, 10^{-1}\}$ from the converged conservative checkpoint (warm start) and from scratch. Report PPL, creation entropy, diversity, effective rank, and per-module gradient norms. Success criteria, in order of preference:
+**D4. Regularizer ablation** (training; only if D2 or D3 show signal). On TinyStories first, sweep $\lambda_{\det} \in \lbrace0, 10^{-3}, 10^{-2}, 10^{-1}\rbrace$ from the converged conservative checkpoint (warm start) and from scratch. Report PPL, creation entropy, diversity, effective rank, and per-module gradient norms. Success criteria, in order of preference:
 
 1. lower PPL at equal compute;
 2. equal PPL with diversity moving toward 0.78 and higher effective rank;

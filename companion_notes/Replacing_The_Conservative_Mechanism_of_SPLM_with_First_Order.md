@@ -315,7 +315,7 @@ lightweight alternative. If large, the velocity term is essential.
 
 ### 8.2 The $\gamma$ Sweep Experiment
 
-**Design.** Train a family of SPLM models with $\gamma \in \{0, 0.1, 0.5, 0.961, 2.0, 10.0\}$,
+**Design.** Train a family of SPLM models with $\gamma \in \lbrace0, 0.1, 0.5, 0.961, 2.0, 10.0\rbrace$,
 sweeping from Hamiltonian ($\gamma = 0$) through current SPLM ($\gamma = 0.961$) to
 near-overdamped ($\gamma = 10$).
 

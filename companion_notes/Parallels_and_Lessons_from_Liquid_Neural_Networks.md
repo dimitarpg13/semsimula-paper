@@ -340,7 +340,7 @@ Every LFM release was reported against a size‑matched transformer. SemSimula's
 
 1. **Write the metriplectic bridge as a standalone result.** Position the Conservative Obstruction Theorem explicitly against the LTC bounded‑state / expressivity theorems as complementary statements within the GENERIC framework. This is a clean, citable contribution that stands on its own and gives the megapaper an external anchor.
 2. **Prototype a closed‑form conservative propagator** (the CfC analog) and measure it against stepped Verlet on the OpenWebText run — cost and energy‑drift as the two axes.
-3. **Run the minimal‑hybrid experiment**: conservative‑Fock stack with $k \in \{1,2\}$ interleaved GQA blocks; report PPL vs. $k$ to quantify how cheaply the $12.06$ floor is broken.
+3. **Run the minimal‑hybrid experiment**: conservative‑Fock stack with $k \in \lbrace1,2\rbrace$ interleaved GQA blocks; report PPL vs. $k$ to quantify how cheaply the $12.06$ floor is broken.
 4. **Land the near‑free output‑bias fix first**, then re‑baseline all subsequent ablations against the corrected number.
 5. **Fix the competitive axis to interpretability / physical guarantees** in the abstract and benchmark design; stop implicitly competing on the efficiency and scale axes that LNNs and mainstream transformers respectively own.
 6. **Foreground the damped-geodesic regime as a geometric differentiator.** The finite-$\gamma$, second-order damped Riemannian geodesic (Section 5) is structure the entire LNN lineage integrates out in its overdamped limit; make it explicit in the architecture description and ablations, since it is metric-aware inertial behavior no LTC / CfC / Liquid-S4 model retains.

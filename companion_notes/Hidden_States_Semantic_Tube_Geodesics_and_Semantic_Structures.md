@@ -154,7 +154,7 @@ graph TD
 
 | Property | Semantic Tube | Semantic Simulation |
 |---|---|---|
-| Time parameter | Token index $t \in \{0, 1, \ldots, \tau\}$ | Continuous simulation time $t_k$ |
+| Time parameter | Token index $t \in \lbrace0, 1, \ldots, \tau\rbrace$ | Continuous simulation time $t_k$ |
 | Step size | Fixed (one per token) | Variable ($\Delta s$ depends on forces) |
 | Terminal condition | Sequence ends at $\langle$EOS$\rangle$ | Structure reaches bound state ($H_i \to 0$) |
 | Deceleration | None — constant step rate | Sigmoid damping $H_i$ near bound state |

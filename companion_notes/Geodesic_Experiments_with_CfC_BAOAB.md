@@ -804,7 +804,7 @@ time, beyond the sketch:
   The Fock $\ell = 0$ true-velocity entry is degenerate ($v_0 = 0$, the
   forecast is $\mathrm{LN}(h_0)$) and is excluded from the summary.
 - (c) uses the same unit random direction for both models, scaled to
-  $\epsilon \lVert h_0 \rVert$ per token, at $\epsilon \in \{10^{-3}, 10^{-2}\}$;
+  $\epsilon \lVert h_0 \rVert$ per token, at $\epsilon \in \lbrace10^{-3}, 10^{-2}\rbrace$;
   the two rows agreeing is the linearity check. The per-step figure is the
   $L$-th root of the final-layer median.
 - The cell restores the live training weights and releases the GPT-2 on
@@ -919,7 +919,7 @@ row is twenty units above the floor and usable; it shows both models mildly
 contractive per step (0.965 vs 0.989) with the same shape at the first two
 layers (Fock 0.56, 0.93; GPT-2 0.54, 0.42) — no gap worth a claim. The cell
 now switches TF32 off for its duration and sweeps
-$\epsilon \in \{10^{-2}, 3 \times 10^{-2}, 10^{-1}\}$.
+$\epsilon \in \lbrace10^{-2}, 3 \times 10^{-2}, 10^{-1}\rbrace$.
 
 **Verdict.** No forecast advantage is measurable at L=2. Two of the three
 metrics are invalid there for a structural reason that is itself a finding:
@@ -1003,7 +1003,7 @@ def _project(self, h):
     return F.layer_norm(h, (self.cfg.d,), eps=self.cfg.ln_eps)
 ```
 
-Its image is the set $\{h : \lVert P h \rVert^2 = d\}$ where $P$ centres —
+Its image is the set $\lbrace h : \lVert P h \rVert^2 = d\rbrace$ where $P$ centres —
 a sphere of radius $\sqrt d$ in the centred subspace. Applying it after
 every step enforces the **holonomic constraint** $g(h) = \lVert Ph\rVert^2 - d = 0$
 by projection. And because $\nabla_h \lVert h \rVert^2$ is radial, radial
@@ -1141,7 +1141,7 @@ path by which they reach $h$. (A model built without warmup gets the same
 $\lambda$ through the gate parameter, via $\operatorname{artanh}(\lambda
 \tanh s)$.)
 
-### 11.3 What is measured, at each $\lambda \in \{1, 0.9, \ldots, 0.1, 0.05, 0\}$
+### 11.3 What is measured, at each $\lambda \in \lbrace1, 0.9, \ldots, 0.1, 0.05, 0\rbrace$
 
 On the same eight validation batches:
 

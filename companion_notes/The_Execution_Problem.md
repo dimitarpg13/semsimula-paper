@@ -268,9 +268,9 @@ where $\alpha_t$ is the current executive atom being processed and $I_t$ is the 
 $$I_t \rightarrow \Im_t(I_t) \rightarrow \mathfrak{E}_t(\Im_t(I_t)) \rightarrow \delta_t(\mathfrak{E}_t(\mathfrak{I}_t(I_t))) = n \in \mathbb{N}$$
 
 
-The integer n produced by $\delta_t$ is literally the action. It selects which child atom to activate next in the executive tree. If atom $\alpha_t$ has children $\{\alpha_{t,1}, \alpha_{t,2}, ..., \alpha_{t,k}\}$, then:
+The integer n produced by $\delta_t$ is literally the action. It selects which child atom to activate next in the executive tree. If atom $\alpha_t$ has children $\lbrace\alpha_{t,1}, \alpha_{t,2}, ..., \alpha_{t,k}\rbrace$, then:
 
-$$a_t = \delta_t\left(\mathfrak{E}_t\left(\mathfrak{I}_t\left(I_t\right)\right)\right) \in \{1, 2, \dots, k\}$$
+$$a_t = \delta_t\left(\mathfrak{E}_t\left(\mathfrak{I}_t\left(I_t\right)\right)\right) \in \lbrace1, 2, \dots, k\rbrace$$
 
 **Mapping RL Concepts to Execution Space**
 
@@ -313,7 +313,7 @@ The final integer n is the action. It selects which child atom to activate next.
 In RL: The set A(s) of actions available in state s. Not every action is possible in every state.
 In Execution: Atom α has some number of children in the executive tree, say k children labeled 1 through k. The available actions are:
 
-$$A(\alpha)=\{1,2,...,k\}$$
+$$A(\alpha)=\lbrace1,2,...,k\rbrace$$
 
 The action n produced by δ must index a valid child. Furthermore, each child α_n has its own latch μ_n which may reject the input - so the effectively available actions are only those children whose latches accept the current semantic input.
 
@@ -379,11 +379,11 @@ $$\delta_{\text{select}} = \arg \max_{j} \delta_{\text{eval}}(j) \quad (\text{gr
 
 In RL, the action space can vary by state. For the executive atoms, the action space is naturally defined by the tree structure:
 
-$$A(\alpha) = \{1, 2, \dots, \text{deg}(\alpha)\}$$
+$$A(\alpha) = \lbrace1, 2, \dots, \text{deg}(\alpha)\rbrace$$
 
 where deg(α) is the number of children of α in the executive tree. But since you also have the significance vectors σ⃗ on arcs, these could constrain the effective action space:
 
-$$A_{\text{eff}}(\alpha, I) = \{j \in A(\alpha) : \sigma_j \cdot \text{ssig}(I) > \theta_j\}$$
+$$A_{\text{eff}}(\alpha, I) = \lbrace j \in A(\alpha) : \sigma_j \cdot \text{ssig}(I) > \theta_j\rbrace$$
 
 Only children whose significance vector is compatible with the current semantic input are reachable - analogous to state-dependent action masking in RL.
 
@@ -399,7 +399,7 @@ You note that executive structures are equivalent to NDTMs. In RL terms, non-det
 Drawing from both formalisms, the Action in Execution Space can be defined as:
 Definition (Executive Action): Let α = (μ, ℑ, 𝔖, 𝔈, δ) be an executive atom with children {α₁, ..., αₖ} in the executive tree. The executive action at α given semantic input I is:
 
-$$a = \delta(\mathfrak{E}(\mathfrak{I}(I))) \in \{1, \dots, k\} \subseteq \mathbb{N}$$
+$$a = \delta(\mathfrak{E}(\mathfrak{I}(I))) \in \lbrace1, \dots, k\rbrace \subseteq \mathbb{N}$$
 
 This is equivalent to the RL action under the identification: - The state s = (α, I) is the atom-input pair - The action space A(s) = {1, ..., deg(α)} indexes children - The transition is deterministic: s' = (α_a, ℑ(I)) - The side-effect 𝔖(ℑ(I)) produces structures in 𝚺
 

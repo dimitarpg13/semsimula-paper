@@ -393,7 +393,7 @@ potential test (one-pane each in `sharedV_three_way.png`):
   $R^2 \le 0.2$.
 
 **$V_\psi$ capacity is not the bottleneck.** A 6-config sweep on GPT-2
-(hidden $\in \{128, 256, 512, 1024\}$, depth $\in \{2, 3, 4\}$, up to
+(hidden $\in \lbrace128, 256, 512, 1024\rbrace$, depth $\in \lbrace2, 3, 4\rbrace$, up to
 1.84 M $V_\psi$ parameters, 3 k AdamW steps each) yields **middle-layer
 $R^2$ values identical to 3 decimals across all configurations**.  The
 failure is structural, not representational -- see

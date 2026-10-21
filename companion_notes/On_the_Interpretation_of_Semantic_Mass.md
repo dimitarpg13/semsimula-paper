@@ -160,7 +160,7 @@ The total attention received by $t$ in head $n$ is $\sum_{s>t} \alpha_{s,t}^{(n)
 
 Formally, if we decompose attention into a "breadth" factor (how many positions attend) and an "intensity" factor (how strongly each attends):
 
-$$w_t^{(n)} = \underbrace{|\{s : \alpha_{s,t}^{(n)} > \epsilon\}|}_{\text{effective valence } VL_t^{(n)}} \times \underbrace{\frac{1}{|\{s : \alpha_{s,t}^{(n)} > \epsilon\}|}\sum_{s:\alpha_{s,t}^{(n)} > \epsilon} \alpha_{s,t}^{(n)}}_{\text{mean intensity} \sim IC_t^{(n)}}$$
+$$w_t^{(n)} = \underbrace{|\lbrace s : \alpha_{s,t}^{(n)} > \epsilon\rbrace|}_{\text{effective valence } VL_t^{(n)}} \times \underbrace{\frac{1}{|\lbrace s : \alpha_{s,t}^{(n)} > \epsilon\rbrace|}\sum_{s:\alpha_{s,t}^{(n)} > \epsilon} \alpha_{s,t}^{(n)}}_{\text{mean intensity} \sim IC_t^{(n)}}$$
 
 This gives $w_t^{(n)} \sim IC_t^{(n)} \times VL_t^{(n)}$, which is the transformer analog of $\mathfrak{m}_P \sim IC_P \times VL_P$.
 
@@ -326,7 +326,7 @@ which coincides with the vector $\vec{d}_1$ entering the STP loss of the first c
 
 #### 5.4.3 Ensemble Initial Velocity and the König Kinetic-Energy Decomposition
 
-For a phrase-sized ensemble $\{t_1, \ldots, t_k\}$, the attention-weighted centroid at layer $\ell$ (§4.1) is
+For a phrase-sized ensemble $\lbrace t_1, \ldots, t_k\rbrace$, the attention-weighted centroid at layer $\ell$ (§4.1) is
 
 $$\vec{r}_c^{(\ell)} = \sum_{i=1}^{k} \tilde{w}_{t_i} h_{t_i}^{(\ell)}, \qquad \tilde{w}_{t_i} = \frac{w_{t_i}}{\sum_j w_{t_j}},$$
 
@@ -470,7 +470,7 @@ graph LR
 
 **Procedure**:
 1. Compute standard PCA and attention-weighted PCA of the hidden state matrix.
-2. For each, sweep $k \in \{10, 20, 30, 50, 100, 200, d\}$.
+2. For each, sweep $k \in \lbrace10, 20, 30, 50, 100, 200, d\rbrace$.
 3. At each $k$, compute cosine distance in the projected space and fit the Gaussian well.
 4. Compare $R^2$ vs. $k$ curves for the two methods.
 

@@ -71,7 +71,7 @@ Everything not in the table — initialisation scheme, loss function (cross-entr
 
 At the locked configuration, total token-passes $= 8000\cdot 16 \cdot 512 = 65.5\text{ M}$, which is
 
-$$\frac{\text{tokens seen}}{\text{params}} \in \left\{\frac{65.5\text{M}}{15.75\text{M}},\ \frac{65.5\text{M}}{19.45\text{M}}\right\} \approx \{4.2,3.4\} \text{ tokens / param}.$$
+$$\frac{\text{tokens seen}}{\text{params}} \in \left\lbrace\frac{65.5\text{M}}{15.75\text{M}},\ \frac{65.5\text{M}}{19.45\text{M}}\right\rbrace \approx \lbrace4.2,3.4\rbrace \text{ tokens / param}.$$
 
 This is **deliberately below** the Chinchilla optimal of $\sim 20$ tokens / param. **The protocol is intentionally training-budget-limited rather than data-limited.** This is appropriate for a relative comparison (both arms see the same token budget; the comparison is unbiased), but it means absolute PPL numbers are *not* in the high-quality / well-converged regime. Reporting will explicitly acknowledge this.
 

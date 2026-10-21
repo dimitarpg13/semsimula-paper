@@ -25,7 +25,7 @@ $$
 f_t = -\frac{\partial}{\partial h_t}\Big[\sum_{s} V_\theta\big(\xi_s, h_s\big)\Big]
 $$
 
-with $\xi_s$ a *causal* but *autograd-live* function of $\{h_1, \dots, h_s\}$. Because $\xi_s$ for $s \gt t$ depends on $h_t$ through `causal_cumulative_mean` (or, in the multi-channel case, through the K-channel weighted EMA), differentiating the *summed* $V$ picked up off-diagonal terms
+with $\xi_s$ a *causal* but *autograd-live* function of $\lbrace h_1, \dots, h_s\rbrace$. Because $\xi_s$ for $s \gt t$ depends on $h_t$ through `causal_cumulative_mean` (or, in the multi-channel case, through the K-channel weighted EMA), differentiating the *summed* $V$ picked up off-diagonal terms
 
 $$
 \sum_{s \gt t} \frac{\partial V_s}{\partial \xi_s} \cdot \frac{\partial \xi_s}{\partial h_t},
@@ -42,7 +42,7 @@ What changes is the **expected magnitude** of the empirical lift and the **inter
 The leak path is *strictly more powerful* in the multi-channel architecture than in the single-channel baseline:
 
 - The single-channel cumulative mean $\xi_t = \frac{1}{t}\sum_{s=1}^{t} h_s$ has a *fixed* dependence on the future positions: each future position $s \gt t$ contributes weight $\frac{1}{s} - \frac{1}{s+1} \le \frac{1}{t(t+1)}$ to $\partial \xi_s / \partial h_t$ in expectation. The leak channel is real but bandwidth-limited.
-- The multi-channel architecture has $K = 4$ EMAs at decay rates $\{\alpha_k\}$, all *learnable*. Optimisation can drive any $\alpha_k$ toward $0$ to maximise the per-position weight on a specific $h_t$; the trained model then has $K$ near-orthogonal information channels back from any future position. Empirically (2026-05-01 forensic run), the buggy multi-ξ training does precisely this: the smallest $\alpha_k$ drifts further toward 0 over training, yielding a high-fidelity short-horizon leak.
+- The multi-channel architecture has $K = 4$ EMAs at decay rates $\lbrace\alpha_k\rbrace$, all *learnable*. Optimisation can drive any $\alpha_k$ toward $0$ to maximise the per-position weight on a specific $h_t$; the trained model then has $K$ near-orthogonal information channels back from any future position. Empirically (2026-05-01 forensic run), the buggy multi-ξ training does precisely this: the smallest $\alpha_k$ drifts further toward 0 over training, yielding a high-fidelity short-horizon leak.
 
 Quantitatively (2026-05-01 forensic run, 2000 max-steps, gamma 0.30, otherwise E9-identical configuration; final values from the completed run):
 
@@ -162,7 +162,7 @@ flowchart TD
 
 ### 3.1 Definition
 
-For each batch position $b$ and token position $t \in \{1, \dots, T\}$:
+For each batch position $b$ and token position $t \in \lbrace1, \dots, T\rbrace$:
 
 $$\xi^{\text{baseline}}_t = \frac{1}{t} \sum_{s=1}^{t} h_s.$$
 
@@ -389,7 +389,7 @@ $$\mathbf{h}^A_{1:t} \sim_l \mathbf{h}^B_{1:t} \iff z^A_t = z^B_t.$$
 
 For E9 this collapses to: same arithmetic mean. The equivalence classes are *enormous*: any permutation of the prefix lies in the same class; any prefix that integrates to the same total lies in the same class.
 
-For E11 with $K$ channels: the prefix must agree on *all* $K$ weighted means simultaneously. The equivalence classes shrink by a factor that depends on the linear independence of $\{W_k\}_{k=1..K}$. With distinct $\alpha_k$ values, the rows of $\{W_1[t, :], \dots, W_K[t, :]\}$ are linearly independent, so the equivalence classes contract roughly $K$-fold (informally: in $K$-dim direction-space).
+For E11 with $K$ channels: the prefix must agree on *all* $K$ weighted means simultaneously. The equivalence classes shrink by a factor that depends on the linear independence of $\lbrace W_k\rbrace_{k=1..K}$. With distinct $\alpha_k$ values, the rows of $\lbrace W_1[t, :], \dots, W_K[t, :]\rbrace$ are linearly independent, so the equivalence classes contract roughly $K$-fold (informally: in $K$-dim direction-space).
 
 ### 6.3 Why this matters for language modelling
 
@@ -511,7 +511,7 @@ These are *not* resolved by E11 and are explicit follow-ups.
 
 | Question | What would resolve it |
 |---|---|
-| Is $K=4$ optimal? | Ablation over $K \in \{2, 4, 6, 8\}$ at the final config |
+| Is $K=4$ optimal? | Ablation over $K \in \lbrace2, 4, 6, 8\rbrace$ at the final config |
 | Are decays better as **layer-dependent** (different α_k per integration layer)? | $L \times K$ alphas; ~$L \times K$ extra params; small ablation |
 | Should α_k be **token-dependent** (the "T3 friction tensor" lift, see [`Finding_optimal_gamma_for_SPLM.md`](Finding_optimal_gamma_for_SPLM.md) §4.3)? | Adds a small MLP head; conceptually closer to attention; tested in T3 |
 | Does the wider V_θ benefit from **deeper** (depth 4 instead of 3)? | One ablation; standard |

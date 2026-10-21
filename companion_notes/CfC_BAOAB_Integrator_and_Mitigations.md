@@ -137,7 +137,7 @@ A single-variable depth probe (same `d=384`, `dt=1`, `integrator=baoab_cfc`, ide
 - `precision_lr_max` alone is not part of the Drive variant tag (it lives in `_bound_lowrank()`, which runs regardless of integrator), so it can be enabled **in place** on this exact checkpoint lineage with no fork.
 - `INTEGRATOR='baoab_cfc_lowrank'` **is** part of the variant tag, so switching it always forks to a new Drive folder; warm-starting from this probe's progress needs the desired checkpoint copied into that new folder manually (Cell 2's auto-resume won't find it otherwise).
 
-The plan is to let this run stand as-is until it produces a real turbulence event (or clearly outlasts the L=16-equivalent horizon), then fork from the last good checkpoint / `_prereload` snapshot at that point into a `baoab_cfc_lowrank` + `precision_lr_max` lineage tuned via the same §31.2–31.4 audit procedure — testing whether the curvature fix rescues exactly the failure depth-shortening couldn't prevent, which is a sharper result than testing it pre-emptively on a run that hasn't failed yet. Combined with §31's planned L=16 A/B, this builds toward a 2×2 ($L \in \{8, 16\} \times$ integrator) without committing extra compute until each cell is actually needed.
+The plan is to let this run stand as-is until it produces a real turbulence event (or clearly outlasts the L=16-equivalent horizon), then fork from the last good checkpoint / `_prereload` snapshot at that point into a `baoab_cfc_lowrank` + `precision_lr_max` lineage tuned via the same §31.2–31.4 audit procedure — testing whether the curvature fix rescues exactly the failure depth-shortening couldn't prevent, which is a sharper result than testing it pre-emptively on a run that hasn't failed yet. Combined with §31's planned L=16 A/B, this builds toward a 2×2 ($L \in \lbrace8, 16\rbrace \times$ integrator) without committing extra compute until each cell is actually needed.
 
 **Cross-references:**
 - [Closed\_Form\_and\_Hybrid\_Integration\_Strategies\_for\_Fock-PARFLM.md](Closed_Form_and_Hybrid_Integration_Strategies_for_Fock-PARFLM.md) — full derivation of the CfC propagator, blending weights, error bounds, and BAOAB integration (§10).
@@ -1174,7 +1174,7 @@ strictly positive and a strictly negative eigenvalue** — so $H_{\text{off}}$
 is **indefinite** whenever the coupling is nonzero (i.e. whenever the wells are
 genuinely anisotropic). A minimal $2 \times 2$ witness with $G = (1, 1)^\top$:
 
-$$L = \begin{pmatrix} 1 & 1 \\ 1 & 1 \end{pmatrix},\ \mathrm{spec}(L) = \{2, 0\} \succeq 0 \quad\text{(PSD)};\qquad L_{\text{off}} = \begin{pmatrix} 0 & 1 \\ 1 & 0 \end{pmatrix},\ \mathrm{spec}(L_{\text{off}}) = \{+1, -1\}\quad\text{(indefinite)}.$$
+$$L = \begin{pmatrix} 1 & 1 \\ 1 & 1 \end{pmatrix},\ \mathrm{spec}(L) = \lbrace2, 0\rbrace \succeq 0 \quad\text{(PSD)};\qquad L_{\text{off}} = \begin{pmatrix} 0 & 1 \\ 1 & 0 \end{pmatrix},\ \mathrm{spec}(L_{\text{off}}) = \lbrace+1, -1\rbrace\quad\text{(indefinite)}.$$
 
 **Why an indefinite mode defeats the whole point.** A mode with curvature
 (eigenvalue) $\lambda$ obeys $m \ddot\eta = -\lambda \eta$:

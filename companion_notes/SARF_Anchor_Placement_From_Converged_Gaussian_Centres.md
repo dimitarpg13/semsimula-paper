@@ -81,17 +81,17 @@ $$
 w_k(\xi) = \text{softmax}_k\big(W_w \xi\big),
 $$
 
-where the responsibilities $w_k(\xi)$ are read from the same `w_proj` head the model uses at inference. Flattening over $(t, k)$ gives weighted points $\{(c_i, w_i)\}_{i=1}^{TK}$.
+where the responsibilities $w_k(\xi)$ are read from the same `w_proj` head the model uses at inference. Flattening over $(t, k)$ gives weighted points $\lbrace(c_i, w_i)\rbrace_{i=1}^{TK}$.
 
-The **empirical target modes** $M = \{m_1, \dots, m_{N_S}\}$ are the centroids of a responsibility-weighted $k$-means on the cloud:
+The **empirical target modes** $M = \lbrace m_1, \dots, m_{N_S}\rbrace$ are the centroids of a responsibility-weighted $k$-means on the cloud:
 
 $$
-M = \arg\min_{\{m_j\}} \sum_{i} w_i \min_j \lVert c_i - m_j \rVert^2 .
+M = \arg\min_{\lbrace m_j\rbrace} \sum_{i} w_i \min_j \lVert c_i - m_j \rVert^2 .
 $$
 
 These $N_S$ modes are the ground truth: they are where the converged Gaussian model concentrates its attractor mass. A good anchor rule reproduces $M$.
 
-An auxiliary diagnostic, the **per-component centroid** $\bar{\mu}_k = \tfrac{1}{T}\sum_t \mu_k(\xi_t)$, collapses each mixture component to a single point; decoding $\{\bar{\mu}_k\}$ through the LM head exposes the semantic identity of each basin and the effective component count $K_{\text{eff}}$ (components with negligible mean responsibility are inactive).
+An auxiliary diagnostic, the **per-component centroid** $\bar{\mu}_k = \tfrac{1}{T}\sum_t \mu_k(\xi_t)$, collapses each mixture component to a single point; decoding $\lbrace\bar{\mu}_k\rbrace$ through the LM head exposes the semantic identity of each basin and the effective component count $K_{\text{eff}}$ (components with negligible mean responsibility are inactive).
 
 ## 4. Candidate anchor-placement rules
 
@@ -113,10 +113,10 @@ $$
 
 with $n(v)$ the corpus count. Motivated by the §8.3 observation that learned basins decode to frequent tokens.
 
-**R2 -- Hidden-manifold modes.** Anchors are the (uniformly weighted) $k$-means centroids of the sampled final hidden states $\{h_L\}$ -- i.e. the modes of the data manifold itself, independent of the potential:
+**R2 -- Hidden-manifold modes.** Anchors are the (uniformly weighted) $k$-means centroids of the sampled final hidden states $\lbrace h_L\rbrace$ -- i.e. the modes of the data manifold itself, independent of the potential:
 
 $$
-\{a_j\} = \text{k-means}_{N_S}\big(\{h_L\}\big).
+\lbrace a_j\rbrace = \text{k-means}_{N_S}\big(\lbrace h_L\rbrace\big).
 $$
 
 **R3 -- Principal-axis (PCA) shell.** Anchors are placed symmetrically along the leading principal axes of the weighted centre cloud. With weighted mean $\bar{c}$ and weighted covariance
@@ -145,7 +145,7 @@ $$
 
 ## 5. Validation protocol and metrics
 
-After row-standardisation (§2), each rule's anchor set $A$ is scored against the target modes $M$ and the weighted cloud $\{(c_i, w_i)\}$ by three complementary metrics.
+After row-standardisation (§2), each rule's anchor set $A$ is scored against the target modes $M$ and the weighted cloud $\lbrace(c_i, w_i)\rbrace$ by three complementary metrics.
 
 **Chamfer distance** (geometric fidelity; lower is better):
 

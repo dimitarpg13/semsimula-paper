@@ -164,9 +164,9 @@ Hewitt et al. (2020) and Yao et al. (2021) established that tiny transformers an
 
 | Variable          | Specification                                                            |
 | ----------------- | ------------------------------------------------------------------------ |
-| Vocabulary         | $\{(_1, )_1, \ldots, (_n, )_n, \text{BOS}, \text{EOS}\}$                |
+| Vocabulary         | $\lbrace(_1, )_1, \ldots, (_n, )_n, \text{BOS}, \text{EOS}\rbrace$                |
 | $n$                | $2$ or $3$                                                                |
-| Depth grid         | $D \in \{1, 2, 4, 8, 16, 32\}$                                            |
+| Depth grid         | $D \in \lbrace1, 2, 4, 8, 16, 32\rbrace$                                            |
 | Train / val sizes | $\ge 10^4$ / $\ge 10^3$ strings per depth                                |
 | Task               | At each closing-bracket position, predict bracket type ($n$-way classify) |
 | Models (matched params + compute) | (a) v0 simulator; (b) tiny transformer (1-block); (c) tiny LSTM (1-layer) |
@@ -274,7 +274,7 @@ Augment the per-particle state with a salience scalar $\sigma_\ell^{(i)} \in [0,
 
 ### 8.2 Creation and destruction (v2) → Fock space / second quantisation
 
-Replace the fixed-cardinality particle list with a state on the **Fock space** $\mathcal{F}(\mathcal{H}) = \bigoplus_n \mathcal{H}^{\otimes n}$ over the single-particle Hilbert space $\mathcal{H} = \mathbb{R}^d \times \mathrm{props}$. Equip $\mathcal{F}(\mathcal{H})$ with **creation operators** $a^\dagger_v$ and **annihilation operators** $a_v$ satisfying $[a_v, a^\dagger_w] = \delta_{vw}$ (boson statistics: discourse referents commute) or $\{a_v, a^\dagger_w\} = \delta_{vw}$ (fermion statistics: discourse referents must be distinguished). The particle number is no longer conserved; it grows or shrinks during inference. The classical-mechanical specialisation of this apparatus is the **Doi–Peliti formalism** (Doi 1976; Peliti 1985), originally derived for reaction–diffusion systems without invoking quantum mechanics. v2 inherits: mean-field approximations, Hartree–Fock self-consistency, variational Monte Carlo, the BBGKY hierarchy, and second-quantised classical path integrals. *This extension lifts v0 above the regular tier*: with $a^\dagger / a$ in place, the simulator can grow its memory linearly with input length, reaching at least the deterministic-context-free tier (and, with sufficiently rich interaction Hamiltonians, higher).
+Replace the fixed-cardinality particle list with a state on the **Fock space** $\mathcal{F}(\mathcal{H}) = \bigoplus_n \mathcal{H}^{\otimes n}$ over the single-particle Hilbert space $\mathcal{H} = \mathbb{R}^d \times \mathrm{props}$. Equip $\mathcal{F}(\mathcal{H})$ with **creation operators** $a^\dagger_v$ and **annihilation operators** $a_v$ satisfying $[a_v, a^\dagger_w] = \delta_{vw}$ (boson statistics: discourse referents commute) or $\lbrace a_v, a^\dagger_w\rbrace = \delta_{vw}$ (fermion statistics: discourse referents must be distinguished). The particle number is no longer conserved; it grows or shrinks during inference. The classical-mechanical specialisation of this apparatus is the **Doi–Peliti formalism** (Doi 1976; Peliti 1985), originally derived for reaction–diffusion systems without invoking quantum mechanics. v2 inherits: mean-field approximations, Hartree–Fock self-consistency, variational Monte Carlo, the BBGKY hierarchy, and second-quantised classical path integrals. *This extension lifts v0 above the regular tier*: with $a^\dagger / a$ in place, the simulator can grow its memory linearly with input length, reaching at least the deterministic-context-free tier (and, with sufficiently rich interaction Hamiltonians, higher).
 
 ### 8.3 Execution (v3) → Lie group action / non-abelian gauge theory
 

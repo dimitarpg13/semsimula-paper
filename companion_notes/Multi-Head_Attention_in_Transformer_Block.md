@@ -54,7 +54,7 @@ The flow has seven conceptual stages: **(1)** linear projections to Q/K/V, **(2)
 
 ### 3.1 Linear projections — producing Q, K, V
 
-**Learnable parameters per head $i \in \{1, \dots, h\}$:**
+**Learnable parameters per head $i \in \lbrace1, \dots, h\rbrace$:**
 
 $$W_Q^{(i)},  W_K^{(i)},  W_V^{(i)} \in \mathbb{R}^{d \times d_k}$$
 
@@ -464,7 +464,7 @@ Two structural facts that matter for Lagrangian / shared-potential analysis:
 
 2. **The MHA sub-layer is the only non-local coupling between positions**. Its "interaction kernel" $A^{(i)}_{t,t'}$ is itself **state-dependent**, because $A$ depends on $h_t$ and $h_{t'}$ through $Q$ and $K$. This is a many-body interaction whose coupling strength is set by the configuration itself — structurally more like a self-consistent mean-field term than a fixed two-body potential.
 
-Consequently, in the per-row trajectory picture $\{h_t^{(\ell)}\}_{\ell=0}^{L}$ (one trajectory per token position), a clean separable shared potential would have to absorb a *state-dependent non-local kernel* into a single-particle term. The extent to which this approximately works — measured by your shared-potential R² separator — is therefore a direct architectural diagnostic of how strongly attention is acting as effective single-particle dynamics versus genuinely many-body dynamics at a given layer.
+Consequently, in the per-row trajectory picture $\lbrace h_t^{(\ell)}\rbrace_{\ell=0}^{L}$ (one trajectory per token position), a clean separable shared potential would have to absorb a *state-dependent non-local kernel* into a single-particle term. The extent to which this approximately works — measured by your shared-potential R² separator — is therefore a direct architectural diagnostic of how strongly attention is acting as effective single-particle dynamics versus genuinely many-body dynamics at a given layer.
 
 ---
 
@@ -486,7 +486,7 @@ This is still a matrix in the **residual-stream space** $\mathbb{R}^{T \times d}
 
 It is one **contribution** to the per-position hidden state. The role of MHA at layer $\ell$ is to compute the additive update that attention applies to each token's representation at this layer, and $OW_O$ is exactly that update.
 
-A predicted token, by contrast, is either an integer in $\{1, \dots, V\}$ (for argmax decoding) or a probability vector in $\mathbb{R}^V$ where $V \approx 50{,}000$. Neither shape matches $O$.
+A predicted token, by contrast, is either an integer in $\lbrace1, \dots, V\rbrace$ (for argmax decoding) or a probability vector in $\mathbb{R}^V$ where $V \approx 50{,}000$. Neither shape matches $O$.
 
 ### 7.2 The seven-step journey from $O$ to a predicted token
 
@@ -517,15 +517,15 @@ If $\ell = 1$ (the very first block), there are $L-1$ more blocks plus the unemb
 
 ### 7.3 Connection to the dynamics framing
 
-This is exactly why the depth-indexed trajectory $\{h_t^{(\ell)}\}_{\ell=0}^{L}$ is the natural object of dynamical study, rather than any individual $O$. The trajectory captures the full sequence of intermediate state updates — each $O$ at each layer is one nudge along the path. The "prediction" event happens **only at the boundary** $\ell = L$, when $W_U$ collapses the trajectory's endpoint into vocabulary space.
+This is exactly why the depth-indexed trajectory $\lbrace h_t^{(\ell)}\rbrace_{\ell=0}^{L}$ is the natural object of dynamical study, rather than any individual $O$. The trajectory captures the full sequence of intermediate state updates — each $O$ at each layer is one nudge along the path. The "prediction" event happens **only at the boundary** $\ell = L$, when $W_U$ collapses the trajectory's endpoint into vocabulary space.
 
 In Lagrangian terms:
 
 - **Each $O$ at layer $\ell$ is an instantaneous contribution to $\dot h_t$ along the depth axis.** The MHA output corresponds to the "kinetic update" applied to position $t$'s trajectory at depth $\ell$, with the non-local coupling structure described in §6.
-- **The trajectory $\{h_t^{(\ell)}\}_{\ell=0}^{L}$ is the path of the particle.** Its endpoint $h_t^{(L)}$ is the boundary condition that the unembedding reads out.
+- **The trajectory $\lbrace h_t^{(\ell)}\rbrace_{\ell=0}^{L}$ is the path of the particle.** Its endpoint $h_t^{(L)}$ is the boundary condition that the unembedding reads out.
 - **The loss is a boundary functional, not a bulk one.** The cross-entropy loss $\mathcal{L}_{\text{NTP}}$ depends only on $h_t^{(L)}$ (and $W_U$), not on the intermediate states. This is structurally identical to a least-action problem with a fixed-endpoint variational principle: the bulk dynamics are determined by the architectural Lagrangian, the endpoint is constrained by the loss.
 
-The **STP loss** (Huang–LeCun–Balestriero), by contrast, is a regularizer that *does* act in the bulk — but along the *token axis* $t$ at fixed depth $\ell = L$, not along the depth axis. It penalizes curvature of the trajectory $\{h\_t^{(L)}\}\_{t=1}^{T}$, complementing the boundary-only $\mathcal{L}\_{\text{NTP}}$.
+The **STP loss** (Huang–LeCun–Balestriero), by contrast, is a regularizer that *does* act in the bulk — but along the *token axis* $t$ at fixed depth $\ell = L$, not along the depth axis. It penalizes curvature of the trajectory $\lbrace h\_t^{(L)}\rbrace\_{t=1}^{T}$, complementing the boundary-only $\mathcal{L}\_{\text{NTP}}$.
 
 The descriptive Lagrangian framework, sitting on the *depth* axis, is therefore orthogonal to STP's *token* axis — and the two together cover both axes of the residual stream tensor.
 
@@ -613,7 +613,7 @@ Three substantial consequences:
 
 The residual-stream view is the natural setting for the Lagrangian framework because:
 
-- **The state space is fixed and Euclidean.** $\mathcal{R}\_t = \mathbb{R}^d$ is the same at every layer. The trajectory $\{h\_t^{(\ell)}\}\_{\ell=0}^{L}$ is a literal discrete-time path in a single 768-dimensional space (for GPT-2 small).
+- **The state space is fixed and Euclidean.** $\mathcal{R}\_t = \mathbb{R}^d$ is the same at every layer. The trajectory $\lbrace h\_t^{(\ell)}\rbrace\_{\ell=0}^{L}$ is a literal discrete-time path in a single 768-dimensional space (for GPT-2 small).
 - **The update equation is a discrete dynamical system in obvious form.** Schematically, $h_t^{(\ell+1)} - h_t^{(\ell)} = \Delta_t^{\text{MHA}} + \Delta_t^{\text{FFN}}$, which is exactly the discrete analog of $\dot h = F(h, \ell)$. In the continuum limit (Neural ODE / continuous-depth Transformer), the stream becomes a literal solution to an ODE in $\mathbb{R}^d$, parameterized by depth.
 - **Attention provides the only cross-row coupling on the stream.** The non-local term in the equation of motion comes entirely from MHA; FFN is per-position. The interaction kernel is the attention pattern $A^{(\ell)}_{t, t'}$. FFN contributes only single-particle potential terms.
 - **The shared-potential question is naturally a residual-stream statement.** Asking whether all rows obey the same single-particle dynamics is asking whether the same potential governs all rows of the residual stream. The R² separator measures how cleanly the dynamics decompose — high R² means per-row trajectories are well-approximated as independent particles in a shared field; low R² means many-body coupling (attention's state-dependent kernel) is doing essential work.
@@ -736,7 +736,7 @@ Over many steps this produces a contrastive organization of token directions —
 
 Three specific connections:
 
-1. **STP operates one step away from $W_U$.** Huang–LeCun–Balestriero's $h_t$ is the readout-side residual stream — exactly the input to $W_U$. STP regularizes the stream at the unembedding readout point. Local linearity of $\{h_t^{(L)}\}_t$ implies that consecutive predictions in token space vary along approximately straight lines in residual-stream space. Whether this corresponds to straight lines in *probability* space depends on how $W_U$ locally deforms the geometry — the non-isometry from §9.5.
+1. **STP operates one step away from $W_U$.** Huang–LeCun–Balestriero's $h_t$ is the readout-side residual stream — exactly the input to $W_U$. STP regularizes the stream at the unembedding readout point. Local linearity of $\lbrace h_t^{(L)}\rbrace_t$ implies that consecutive predictions in token space vary along approximately straight lines in residual-stream space. Whether this corresponds to straight lines in *probability* space depends on how $W_U$ locally deforms the geometry — the non-isometry from §9.5.
 
 2. **Under weight tying, the shared potential and the embedding geometry are not independent.** The dynamics that bring each $h_t^{(\ell)}$ from input to output respond to a landscape that — through training — is shaped by the geometry of token embeddings, since $W_U = W_E^\top$ enters both at readout and (indirectly, via gradient flow) at the embedding. The shared-potential R² question on a tied model is implicitly a question about the geometry of $W_E$.
 
