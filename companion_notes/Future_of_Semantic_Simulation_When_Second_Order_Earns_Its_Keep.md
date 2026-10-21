@@ -2,7 +2,7 @@
 
 **Technical Report — Companion Note for the SemSimula Mega-Paper**
 **Date:** 20 October 2026
-**Status:** Working draft, **revised the same day after FO-b-OWT was scored** (settled 61.16 against SR2's 58.32, +4.9%). The first version leaned toward an overdamped reading while FO-b led; the revision keeps the equations, says which propositions held and why the others failed on OpenWebText, and re-draws §5–§10.
+**Status:** Working draft, **revised twice on the day it was written**: after FO-b-OWT was scored (settled 61.16 against SR2's 58.32, +4.9%), and after SR3-crit was scored (critical damping, 63.28, +8.5%). The first version leaned toward an overdamped reading while FO-b led; the revisions keep the equations, say which propositions held and why the others failed, and identify the mechanism: **the oscillation of the stiff modes**.
 
 > **Scope.** The first-vs-second-order series has two scored results: on TinyStories the first-order twin is level (FO-TS against SO-TS, −0.6%), and on OpenWebText the true first-order twin is clearly worse (FO-b-OWT against SR2, **+4.9%**), after leading for the first third of training. This note asks what the equations of the framework say about that: what each dynamics is good at, why a first-order layer starts faster and finishes behind on a diverse corpus, where second order is expected to win, and what follows for the conservative models, the Fock models, the Poisson-well models, the Riemannian geodesics and second-order inference. It ends with the tests that decide each open case and the author's calls on them.
 
@@ -38,6 +38,7 @@ What has been measured, as of this date:
 | SO-TS against FO-TS (FO-a), settled after a 3,000-step extension | TinyStories, 266M tokens | 5.16 | 5.13 | scored: Δ = −0.6%, inside the pre-registered ±3% |
 | SR2 against FO-b-OWT (FO-b), 32,500 steps | OpenWebText, 532.5M tokens | 58.32 | 61.16 | scored: Δ = **+4.9%**; FB2 (≥ +3%, called 60%) hit |
 | stiffness of the wells, median ω·Δt (Cell 6b-13), same pair | OpenWebText | 7.55 | 0.74 | descriptive: the first-order model builds wells ten times softer, with the same context horizons |
+| SR2 against SR3-crit (critical damping of the stiff modes, velocity between layers kept) | OpenWebText, 532.5M tokens | 58.32 | 63.28 (critically damped, second order) | scored: **+8.5%**, worse than FO-b; SC3′ (falls toward FO-b, called 25%) hit |
 | Gate 1, the velocity reset at inference on the trained second-order weights | both | +2% (SO-TS), +3.9% (SR2) | — | reliance, not need |
 
 Two further facts frame the discussion. First, the Stage-0 rule that predicted a first-order gap from anharmonic wells (ε ≥ 0.3) missed on its first trained test: FO-TS learns wells more anharmonic than SO-TS's (ε 4.5 against 2.6 at the output step) and matches it. Second, the FO-a model is robust to extra layers where the second-order one is not (Gate 2: +1% against +25% for one extra layer, +77% against +2,000% for six), while its standard refinement is worse (Gate 3 at N = 3: +48% against +24%), for a reason given in §3.
@@ -146,7 +147,7 @@ The first-order-sufficiency chapter of the book and the corpus-statistics note b
 
 **Proposition 1 stands.** The two families are different function classes over the same inputs; nothing in it predicted a winner.
 
-**Proposition 3 stands, and explains the shape of the curve.** The gradient flow's learning problem is better conditioned, so FO-b learns faster at first, on both corpora: ahead from step 500, by 6.7% at step 5,000 on OpenWebText. Better conditioning buys speed, not a better optimum. Once the second-order model has learned to place its stiff modes' phases, its larger function class pays off, and the first-order model's advantage ends; on OpenWebText it ended at step 11,000 in a stall of the kind a rugged-but-escaped landscape on one side and a smooth-but-limited one on the other would produce.
+**Proposition 3 is correct as mathematics and fails as an explanation.** It said the oscillation makes the stiffness's learning signal change sign, so a model without the oscillation should learn faster; that was offered as the reason for FO-b's early lead (ahead from step 500, by 6.7% at step 5,000). SR3-crit tests it directly: critical damping removes the oscillation and keeps everything else, and SR3-crit did **not** learn faster than SR2; it was level to step 2,500 and behind from step 5,000. So FO-b's early lead does not come from the absence of oscillation. What else differs is the step itself: one explicit gradient step on the soft directions, with no velocity to build up, which moves a token further in the first steps of training. Whatever the cause, the early lead is a fact about optimisation speed, not about the optimum, and it ended on OpenWebText at step 11,000.
 
 **Proposition 2 is correct mathematics with the wrong value judgement.** A lightly damped layer keeps phase-space volume, a gradient flow contracts it. The first version read contraction as the better use of an attractor. But keeping volume means **keeping information**: a rotation is invertible, so two tokens that entered a layer in different states leave it in different states, whereas a contraction merges them. Whether merging is good depends on how many distinctions the readout needs downstream. On TinyStories, a narrow corpus, few distinctions are needed and collapsing tokens onto wells costs little; on OpenWebText the next-token distribution is far broader, and the distinctions a contraction throws away are ones the readout needs. This gives the corpus a channel that the master inequality did not contain: **the value of contraction falls as the corpus's conditional entropy rises.**
 
@@ -162,11 +163,21 @@ The first-order-sufficiency chapter of the book and the corpus-statistics note b
 
 Same corpus, same schedule, and the same context horizons to within a few hundredths: the context side is not where the two models differ. **The difference is in the wells: trained first order, the model builds them about ten times softer**, and in layer 1 most retained modes have almost no stiffness at all; nearly all of its movement comes from the kick, so the exactly integrated stiff quadratic does almost nothing. This is what Proposition 2's re-reading predicts. A second-order layer can use a stiff well as a rotor: the phase turns, the distinctions between tokens survive, and the well becomes a precise feature. A first-order layer cannot afford a stiff well, because a stiff mode under a gradient flow collapses every token onto its minimum within the step. So the first-order model is pushed to soft wells and gives up the expressivity that stiff modes provide; on TinyStories that costs nothing measurable, on OpenWebText 4.9%. (FO-TS on TinyStories built softer wells than SO-TS as well, ω·Δt 5.7 against 6.7, a far smaller difference, at no cost in perplexity.)
 
-The corpus prediction stands open: the gap should grow on code and on any corpus with more distinctions per token than OpenWebText. And SR3-crit becomes its sharpest test inside one corpus: critical damping also turns a stiff mode into a contraction, so by this account SR3-crit should be pushed toward softer wells as well, and its Cell 6b-13 reading says whether it is.
+The corpus prediction stands open: the gap should grow on code and on any corpus with more distinctions per token than OpenWebText.
+
+**SR3-crit confirms the mechanism inside one corpus.** Critical damping keeps the velocity between layers and turns every stiff mode into a contraction (a critically damped mode returns monotonically, with no overshoot). By this account it should lose what FO-b loses, and it does, more so:
+
+| model | stiff modes | velocity between layers | settled | ω·Δt at the endpoint | per-layer flow, penalty at N = 16 |
+| --- | --- | --- | ---: | ---: | ---: |
+| SR2 | lightly damped, oscillating (ζ ≈ 0.03) | yes | **58.32** | 7.55 | 0.104, converged |
+| FO-b | relaxed by a gradient flow | none | 61.16 | 0.74 | 0.904, not converging |
+| SR3-crit | critically damped, no oscillation | yes | 63.28 | 2.06 (layer 0: 1.69, layer 1: 5.46) | 0.300, drifting |
+
+**What the second-order model gains from is the oscillation of its stiff modes, not inertia as such.** Keeping the velocity while damping the oscillation away costs more (8.5%) than removing inertia altogether (4.9%). The stiffness readings follow: SR3-crit's wells stiffened to ω·Δt 3.1 by step 5,000 and then softened to about 2 for the rest of training, and it kept stiffness only in layer 1. And the refinement readings follow too: only the oscillating model's trained step is a close sample of a convergent per-layer flow. A critically damped stack also overshoots its trained depth badly (one extra layer costs +132%, against SR2's +35% and FO-b's +0.6%), and V_φ takes over part of the step (its share of the distance from the V_θ geodesic is −0.30, against SR2's −0.002).
 
 **Proposition 4's premise does not hold in this architecture.** It assumed that each layer's potential is drawn fresh given the position. In the ladder's conservative core the two layers share **one** joint V_θ bank, conditioned on depth by a code, with context channels ξ that change smoothly from layer to layer, and the pair potential V_φ is evaluated on the same tokens at both layers. Successive forces are therefore correlated in depth, which is the condition (the right-hand side of the correlated-forces figure) under which a velocity carried across layers is an extrapolator and pays. The proposition remains a correct statement about a stack with independent per-layer potentials; that is not the stack that was trained. FO-a on OpenWebText (FO-OWT), now triggered, measures how much of the 4.9% this channel carries.
 
-**In short.** The equations do not say that first order is better. They say what each dynamics is good at: the gradient flow is easier to train and denoises; the lightly damped flow preserves information and can carry a velocity across correlated layers. Which matters more depends on the corpus. TinyStories rewards the first, OpenWebText the second.
+**In short.** The equations do not say that first order is better. They say what each dynamics is good at: the gradient flow is quick to train and denoises; the lightly damped flow turns its stiff modes and so keeps tokens distinct. Which matters more depends on the corpus: TinyStories does not reward the rotation measurably, OpenWebText does (4.9% against the gradient flow, 8.5% against critical damping). The useful second-order ingredient is the rotation, not the inertia.
 
 ### A corollary on refinement
 
@@ -197,7 +208,7 @@ The same equations name the conditions under which inertia is not noise. Each is
 
 **5. Sampling at T > 0.** Underdamped Langevin dynamics mixes faster than overdamped dynamics at the same temperature in many settings. If the framework ever samples hidden states rather than relaxes them, that is the one inference-time use of inertia left standing. It is a sampler's advantage, not a modelling claim.
 
-Outside these five, the equations give second order nothing to win with. On OpenWebText the first two are present in the conservative core, and the result says they are worth 4.9% there. Which of them carries how much is what the next runs separate: SR3-crit keeps the velocity between layers and removes the rotation (critical damping); FO-OWT keeps the rotation inside the step and removes the velocity between layers.
+Outside these five, the equations give second order nothing to win with. On OpenWebText the first two are present in the conservative core. SR3-crit separated them: it kept the velocity between layers (item 2) and removed the rotation (item 1), and lost 8.5%, so **the rotation carries the advantage**. FO-OWT (FO-a: the rotation inside the step kept, the velocity between layers removed) is the complementary test; the prediction from SR3-crit is that it lands close to SR2.
 
 ---
 
@@ -219,7 +230,7 @@ The first version of this section read the conservative core as overdamped becau
 
 What does not change: the potentials, the context channels, conservativity, causality, the coupling order (register read ≻ exchange field ≻ V_φ), the per-layer flow finding, and the stiffness problem. A stiff gradient flow still needs exact relaxation of its stiff modes, which is exactly what FO-b does; the CfC idea survives, the oscillation does not.
 
-**Two open questions about the conservative core** are now the most informative runs in the queue. SR3-crit asks whether the second-order advantage needs the **oscillation** or only the **inertia**: critical damping removes the first and keeps the second. The learned γ(h) asks **where** the model keeps inertia, by layer, token frequency and position. Both are pre-registered (protocol §5.13, with an amendment of 2026-10-20 made after this result and before the runs).
+**SR3-crit answered the first open question about the conservative core:** the advantage needs the **oscillation**, not only the inertia (critical damping, 8.5% worse than SR2). **The learned γ(h)** asks the second: **where** does the model add damping to SR2's oscillation, and where does it keep it, by layer, token frequency and position. Its head was re-initialised before the run, after SR3-crit, to start near SR2's own damping (ζ = 0.005, against SR2's effective 0.026 on its median stiff mode) instead of at critical damping, the worst point measured; it can move multiplicatively either way and is capped at ζ = 10 (protocol §5.13, amendment of 2026-10-20).
 
 **Second-order inference on first-order-trained weights** has no benefit left in either reading. The one direction measured, SR2's weights run first-order, costs ×1.33 in perplexity (PMX's ×4.1); the other direction has no reason to be kinder, and the refinement benefit the recipe was meant to buy is delivered better by the gradient flow. It stays as a one-evaluation descriptive check on the FO-b-OWT checkpoint.
 
@@ -259,7 +270,7 @@ The Poisson-mode registers (PM1, PMX) add memory wells to the potential: attract
 
 ## 8. Riemannian Geodesics and Second-Order Inference
 
-**Geodesics, after FO-b-OWT.** On OpenWebText the conservative core is inertial, so its tokens' paths are damped Jacobi geodesics in the original sense, and the geodesic chapter keeps its object there. The paragraphs below describe what would replace geodesics in an overdamped regime; they apply to TinyStories if FO-b-TS comes out level, and to any token a learned γ(h) moves to the overdamped end.
+**Geodesics, after FO-b-OWT and SR3-crit.** On OpenWebText the conservative core is not only inertial: its advantage comes from the lightly damped, oscillating motion of the stiff modes, the regime in which tokens' paths are damped Jacobi geodesics in the original sense. The geodesic chapter keeps its object there, and the rotation reading of §3 gives it a job: a geodesic through a stiff well is a rotation that keeps tokens distinct. The paragraphs below describe what would replace geodesics in an overdamped regime; they apply to TinyStories if FO-b-TS comes out level, and to any token a learned γ(h) moves to the overdamped end.
 
 A geodesic is the natural path of an inertial particle. In the overdamped regime the natural path is the steepest-descent line of the layer's potential in the metric set by the mobility, $\dot{h} = -M^{-1} \nabla V$ with $M$ the mass (or inverse-mobility) tensor. The two coincide only in special cases. So the geodesic residual of the book's Riemannian chapter and E1 ("is the layer step a damped V_θ geodesic?") measured the distance to a reference curve the overdamped model does not follow. Their first-order successor already exists: the per-layer flow test, which measures the distance from the trained step to the V_θ gradient flow, and which SR2 passes on both corpora (a limit 0.104 nats above the trained step on OpenWebText, 0.097 on TinyStories).
 
@@ -306,9 +317,9 @@ flowchart TD
 | test | what it decides | cost | the author's call |
 | --- | --- | ---: | --- |
 | FO-b-OWT against SR2 | the conservative core on OpenWebText | 10 h | **scored: +4.9%, FB2 hit** (called 60% before the run) |
-| SR3-crit on SR2 | oscillation or inertia | 10 h | at or below SR2 within 1%, 50%; beats SR2 by 2%, 25%; falls toward FO-b, 25% |
-| learned γ(h), conservative core | where inertia is kept | 10 h | not overdamped everywhere, 65%; layers differ by 0.3 in median ζ, 45% |
-| FO-OWT (FO-a), now triggered | between layers or inside the step | 10 h | FO-a closes at least half of FO-b's gap, 55% |
+| SR3-crit on SR2 | oscillation or inertia | 10 h | **scored: +8.5%, the oscillation is the mechanism**; SC3′ (falls toward FO-b, called 25%) hit, SC4 hit, SC5 missed |
+| learned γ(h), conservative core (running), started near SR2 | where damping is added to the oscillation | 10 h | median ζ below 0.3 at both layers, 60%; within 2% of SR2, 55%; beats SR2 by 1%, 25%; layers differ by a factor of 3, 40% |
+| FO-OWT (FO-a), now triggered | between layers or inside the step | 10 h | FO-a closes at least half of FO-b's gap, 55% (after SR3-crit: lands within 2% of SR2, 60%) |
 | FO-b-OWT at learning rate 8e-4 | a hyperparameter mismatch | 10 h | closes less than a third of the gap, 65% |
 | a 1B pair (SR2-1B, FO-b-1B) | the trend with training | 40 h | the gap at 1B is larger than at 0.5B, 55% |
 | SR2 rerun with the speed switches, seed 1 | the seed spread | 10 h | not needed for FO-b-OWT (the gap is +4.9%, above the rule's 3%); kept for the gaps near 2% that SR3-crit may produce |

@@ -694,6 +694,18 @@ adds a point to a curve.
 | 11 | **FO-a arms** (FO-OWT, FO-PMX) | 10–14 h each | locating a gap: between layers or inside the step | only where FO-b showed a gap |
 | 12 | **the 2B pair** (SR2-2B, FO-b-2B) | 80 h | the budget | decided after 0–10 |
 
+**Position-dependent damping, the follow-up programme (author, 2026-10-21; after the learned γ(h) run on the conservative core, which kept the oscillation but damped it to a median ζ of about 0.6 at layer 0 and 0.3 at layer 1, with wells as stiff as SR2's).** In order:
+
+| # | run | cost | what it decides | needs |
+| --- | --- | ---: | --- | --- |
+| D1 | **what sets ζ(h)**: the trained head read token by token, against token frequency, position, surprisal, the local anharmonic fraction ε (GH2) and the stiffness of the modes it damps | CPU | the per-token map the arm was built for | the `…sr2_gzh…` checkpoint; a script under `first_order_ablation/fo_series/` |
+| D2 | **FLOW-R on the γ(h) checkpoint** | CPU | where a model at ζ ≈ 0.3–0.6 sits between SR2 (0.104, converged) and SR3-crit (0.30, drifting) | a `gzh` kind in `refinement_flow_confirmation.py` |
+| D3 | **a damping dial at inference**: the trained ζ(h) scaled up and down on fixed weights | CPU | how sharp the optimum the model found is | a small script |
+| D4 | **the constant-ζ control**: SR3 at a fixed ratio equal to the learned arm's settled mean ζ (about 0.45; fixed at the settled value, pre-registered before the run) | 10 h | the value of making damping position-dependent, as opposed to choosing a better constant | none: `STIFF_MODE_DAMPING_RATIO` |
+| D5 | **per-mode damping ζᵢ(h)** (author: likely to reveal something important) | 10 h | which stiff modes the model keeps ringing and which it damps: the finest test of "the rotation is the mechanism" | code: the head outputs one ζ per retained mode, indexed by the mode's stiffness rank (the eigensolve returns modes sorted by κ, so rank is meaningful across tokens), with the same log parameterisation, start (0.005) and cap; verification as for γ(h) (equal to SR3 at ratio 0.005 at initialisation) |
+| D6 | **γ(h) on a Fock or well base** (author: of particular interest) | 14 h | GH4: does the register path or the wells change where damping goes (a bimodal ζ(h))? | code: the head's guard excludes PMX today, so PMX needs the per-mode rate in `lowrank_iso_damped_substep`; G3′ (reverse channel on) needs the head verified with the reverse channel. Base chosen when D5 is in |
+| D7 | **γ(h) on TinyStories** | 5 h | the corpus test of the rotation account: the narrow corpus should want more damping than OpenWebText | none |
+
 Dropped: **SR3-on-PMX** (25 h): a learned γ(h) initialised at critical damping starts as SR3-crit and can stay there if that is best, so item 5 contains it and reports more. Deferred, unscheduled: the seed pair G3′-s1 and G2-s1 (item 8 serves the yardstick role first), SR3-L4, the TinyStories PMX pair. Code to write on CPU while 0 and 3 train: per-mode critical damping in the exact damped flow (item 1) and the learned-γ(h) head with critical initialisation (items 2 and 5), each with the bit-identity check when off. Pre-registrations for items 1 and 2: protocol §5.13 (2026-10-20).
 
 **GPU queue of 2026-10-18 (superseded; kept for the record):**
