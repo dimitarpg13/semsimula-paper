@@ -46,13 +46,13 @@ deliberately a strict subset of the full framework.
 
 ## 2. State space and notation
 
-For each output position $t \in \{0, 1, \ldots, T-1\}$ and each
-integration step $\ell \in \{0, 1, \ldots, L\}$, the simulator
+For each output position $t \in \lbrace0, 1, \ldots, T-1\rbrace$ and each
+integration step $\ell \in \lbrace0, 1, \ldots, L\rbrace$, the simulator
 maintains:
 
 | Symbol | Type | Meaning |
 | --- | --- | --- |
-| $v_t$ | $\{1, \ldots, V\}$ | Input token at position $t$ |
+| $v_t$ | $\lbrace1, \ldots, V\rbrace$ | Input token at position $t$ |
 | $e_v$ | $\mathbb{R}^d$ | Embedding of vocabulary item $v$ |
 | $x_t^{(\ell)}$ | $\mathbb{R}^d$ | Particle position, position $t$, step $\ell$ |
 | $\dot{x}_t^{(\ell)}$ | $\mathbb{R}^d$ | Particle velocity |
@@ -122,7 +122,7 @@ token's mass: $\mathfrak{m}_t := \mathfrak{m}_{v_t}$.
 
 ### 3.3 Concept anchor positions $x_{c,k} \in \mathbb{R}^d$
 
-$K$-means clustering of the embedding rows $\{e_v\}$ in $S^{d-1}$
+$K$-means clustering of the embedding rows $\lbrace e_v\rbrace$ in $S^{d-1}$
 gives anchor centres $x_{c,k}$ (Euclidean centroids, then re-projected
 to $S^{d-1}$). Each anchor inherits a mass
 
@@ -171,12 +171,12 @@ F_{\text{wells}}(x) =
  (x - x_{c,k}) e^{-\kappa_k^{2} \lVert x - x_{c,k}\rVert^{2}}.
 $$
 
-Parameters: $\{x_{c,k}\}$ static (3.3); $\{\mathfrak{m}_k\}$ static
-(3.3); $\{\upsilon_k\}$ and $\{\kappa_k\}$ **RL-calibrated**.
+Parameters: $\lbrace x_{c,k}\rbrace$ static (3.3); $\lbrace\mathfrak{m}_k\rbrace$ static
+(3.3); $\lbrace\upsilon_k\rbrace$ and $\lbrace\kappa_k\rbrace$ **RL-calibrated**.
 
 ### 4.2 $V_{\text{SARF}}$: semantic attractor-repellor field
 
-Pairwise interactions among $N_S$ static SARF anchors $\{a_j\}_{j=1}^{N_S}$.
+Pairwise interactions among $N_S$ static SARF anchors $\lbrace a_j\rbrace_{j=1}^{N_S}$.
 **[v0 choice]:** SARF anchors are the top-$N_S$ PMI peaks (highest
 $\max_w \mathrm{PMI}(v, w)$ tokens), so anchors are *informationally*
 extremal in a way that's distinct from clustering centres.
@@ -217,8 +217,8 @@ $$
 from $a_j$ — repulsion. For $r$ in the basin region, the bracket
 is negative and the force points toward $a_j$ — attraction.)
 
-Parameters: $\{a_j\}$ static (PMI-peak tokens' embeddings);
-$\{\alpha_j, \beta_j, \sigma_{j,+}, \sigma_{j,-}\}$ **RL-calibrated**.
+Parameters: $\lbrace a_j\rbrace$ static (PMI-peak tokens' embeddings);
+$\lbrace\alpha_j, \beta_j, \sigma_{j,+}, \sigma_{j,-}\rbrace$ **RL-calibrated**.
 
 **[v0 choice]:** $N_S = 16$ for toy-language. To preserve sparsity
 of computation, anchors are tied across positions $t$ at v0 — i.e.
@@ -254,9 +254,9 @@ the property direction. Linear potentials look strange in physics
 but are standard in semantic-space modelling — they're what gives
 attention its "additive" character in the Transformer literature.
 
-Parameters: $\{w_p\}$ static (POS/property statistics);
+Parameters: $\lbrace w_p\rbrace$ static (POS/property statistics);
 $c_p(\xi) := \langle w_p, \xi \rangle$ deterministic (no learning);
-$\{\lambda_p\}$ **RL-calibrated**.
+$\lbrace\lambda_p\rbrace$ **RL-calibrated**.
 
 **[v0 choice]:** $P = 5$. Adding more properties is an obvious
 extension; the question is whether the marginal value per added
@@ -463,14 +463,14 @@ of (9.1)+(9.2).
 
 | Symbol | Bucket | Source / signal | Count (toy) | Count (sub-domain) |
 | --- | --- | --- | --- | --- |
-| $\{e_v\}$ | static | PMI-spectral, §3.1 | $V \cdot d = 200 \cdot 64 = 12{,}800$ | $V \cdot d \approx 10^{4} \cdot 256 = 2.56 \cdot 10^{6}$ |
-| $\{\mathfrak{m}_v\}$ | static | unigram surprisal, §3.2 | $V = 200$ | $\sim 10^{4}$ |
-| $\{x_{c,k}\}$ | static | $K$-means, §3.3 | $K \cdot d = 32 \cdot 64 = 2{,}048$ | $K \cdot d = 256 \cdot 256 = 65{,}536$ |
-| $\{a_j\}$ | static | PMI-peak embeddings | $N_S \cdot d = 16 \cdot 64 = 1{,}024$ | $N_S \cdot d = 64 \cdot 256 = 16{,}384$ |
-| $\{w_p\}$ | static | property statistics | $P \cdot d = 5 \cdot 64 = 320$ | $P \cdot d = 16 \cdot 256 = 4{,}096$ |
-| $\{\upsilon_k, \kappa_k\}$ | **RL** | wells §4.1 | $2K = 64$ | $2K = 512$ |
-| $\{\alpha_j, \beta_j, \sigma_{j,\pm}\}$ | **RL** | SARF §4.2 | $4 N_S = 64$ | $4 N_S = 256$ |
-| $\{\lambda_p\}$ | **RL** | PARF §4.3 | $P = 5$ | $P = 16$ |
+| $\lbrace e_v\rbrace$ | static | PMI-spectral, §3.1 | $V \cdot d = 200 \cdot 64 = 12{,}800$ | $V \cdot d \approx 10^{4} \cdot 256 = 2.56 \cdot 10^{6}$ |
+| $\lbrace\mathfrak{m}_v\rbrace$ | static | unigram surprisal, §3.2 | $V = 200$ | $\sim 10^{4}$ |
+| $\lbrace x_{c,k}\rbrace$ | static | $K$-means, §3.3 | $K \cdot d = 32 \cdot 64 = 2{,}048$ | $K \cdot d = 256 \cdot 256 = 65{,}536$ |
+| $\lbrace a_j\rbrace$ | static | PMI-peak embeddings | $N_S \cdot d = 16 \cdot 64 = 1{,}024$ | $N_S \cdot d = 64 \cdot 256 = 16{,}384$ |
+| $\lbrace w_p\rbrace$ | static | property statistics | $P \cdot d = 5 \cdot 64 = 320$ | $P \cdot d = 16 \cdot 256 = 4{,}096$ |
+| $\lbrace\upsilon_k, \kappa_k\rbrace$ | **RL** | wells §4.1 | $2K = 64$ | $2K = 512$ |
+| $\lbrace\alpha_j, \beta_j, \sigma_{j,\pm}\rbrace$ | **RL** | SARF §4.2 | $4 N_S = 64$ | $4 N_S = 256$ |
+| $\lbrace\lambda_p\rbrace$ | **RL** | PARF §4.3 | $P = 5$ | $P = 16$ |
 | $\lambda_{\text{ctx}}$ | **RL** | ctx §4.4 | 1 | 1 |
 | $\beta$ | **RL** | readout §6 | 1 | 1 |
 | $L$, $\Delta t$, $\gamma$ | hyper | swept | 3 | 3 |
