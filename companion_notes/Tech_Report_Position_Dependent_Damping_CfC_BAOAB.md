@@ -2,7 +2,7 @@
 
 **Technical Report** · version 1 · 2026-10-21 · Dimitar Gueorguiev, with Claude
 
-> **Status.** The theory (§3), the parameterisations (§4) and the implementation (§5) are complete for the arms that have trained. The results (§6) cover four arms on OpenWebText, all settled. Slots marked **⟨pending⟩** wait for measurements that have not been run: the diagnostic cells on the learned arm, and the experiments D1–D7 (§7).
+> **Status.** The theory (§3), the parameterisations (§4) and the implementation (§5) are complete for the arms that have trained. The results (§6) cover four arms on OpenWebText, all settled. Slots marked **⟨pending⟩** wait for measurements that have not been run: the experiments D4–D7 (§7). The learned arm's diagnostic cells and D1–D3 were added on 2026-10-22 (§6.5, §6.7).
 >
 > **Scope.** Only the CfC/BAOAB models: the exact low-rank integrator of the Gen 3 ladder (SR2 and the arms built on it), PMX, and the Fock arms where they bear on damping. The Gen 1 models and their damped-velocity-Verlet integrator are out of scope; §1 says where that material lives.
 >
@@ -93,7 +93,9 @@ $$
 
 with $\omega_i$ the mode's natural frequency and $a_i$ the projection of the remaining force divided by the mass. SR2 solves this equation exactly over each A sub-step, with $\gamma_i = \gamma_0$ for every mode, and removes the O-step's friction from $\mathrm{span}(U)$ so that the modes are not damped twice. The frozen quadratic, $U$ and the $\kappa_i$, is computed once per step, at the layer input.
 
-The trained SR2 has stiff wells: its median stiff mode has $\omega \Delta t \approx 7.55$, more than one full oscillation per layer step, which an explicit step could not integrate stably. At $\gamma_0 = 0.1$ such a mode is lightly damped (§3.5).
+The trained SR2 has stiff wells: the stiffest mode of a typical token has $\omega \Delta t \approx 7.55$, more than one full oscillation per layer step, which an explicit step could not integrate stably. Here and below, a quoted $\omega \Delta t$ is that of a token's **stiffest** retained mode, $\omega_1 = \sqrt{\kappa_1 / m}$, as the resonance monitor reports it, and a median is taken over tokens. At $\gamma_0 = 0.1$ that mode is lightly damped (§3.5).
+
+The rest of the spectrum is much softer. Measured on the learned arm (§6.7, D1), a token's median retained mode at layer 0 has $\omega \Delta t \approx 1.1$ (deciles 0.7 to 1.5) against 10.2 for its stiffest, and at layer 1 more than half of the 16 retained modes have zero stiffness for every token. The spectrum is steep: one or a few stiff modes per token and a soft majority.
 
 ### 2.5 Notation
 
@@ -212,7 +214,7 @@ $$
 - At 1 it settles as fast as it can without overshooting (critical).
 - Above 1 it creeps toward the well without oscillating (overdamped).
 
-SR2's median stiff mode, at $\omega \Delta t \approx 7.55$ (so $\omega \approx 1.89$) and $\gamma_0 = 0.1$, has a total ratio of $0.1 / (2 \times 1.89) \approx 0.026$: very lightly damped, more than one oscillation per layer step, keeping $e^{-0.2} \approx 0.82$ of its amplitude.
+The stiffest mode of a typical token in SR2, at $\omega \Delta t \approx 7.55$ (so $\omega \approx 1.89$) and $\gamma_0 = 0.1$, has a total ratio of $0.1 / (2 \times 1.89) \approx 0.026$: very lightly damped, more than one oscillation per layer step, keeping $e^{-0.2} \approx 0.82$ of its amplitude.
 
 As the damping grows without bound, the second-order motion tends to a **gradient flow**, in which the velocity is always the force times a mobility. The arm FO-b implements that limit directly:
 
@@ -224,11 +226,11 @@ with $\mu$ chosen so that one step of length $\Delta t$ from rest moves the toke
 
 ### 3.6 A shared ratio couples erasure to stiffness
 
-When one ratio $\zeta$ is shared by all modes of a token (as in SR3-crit and the learned per-token arm, §4.2–§4.3), the amplitude a mode keeps, $e^{-\zeta_i^{\mathrm{tot}} \omega_i \Delta t}$, falls exponentially with its stiffness. At the learned arm's layer-0 ratio of 0.56, a mode at $\omega \Delta t \approx 7.9$ keeps about 1% of its amplitude through a step, while a soft mode at $\omega \Delta t = 1$ keeps about 45%. A shared ratio cannot keep a stiff mode ringing while damping a soft one: it ties how much a mode is erased to how stiff it is.
+When one ratio $\zeta$ is shared by all modes of a token (as in SR3-crit and the learned per-token arm, §4.2–§4.3), the amplitude a mode keeps, $e^{-\zeta_i^{\mathrm{tot}} \omega_i \Delta t}$, falls exponentially with its stiffness. At the learned arm's layer-0 ratio of 0.56, a token's stiffest mode, at $\omega \Delta t \approx 7.9$, keeps about 1% of its amplitude through a step, while its median retained mode, at $\omega \Delta t \approx 1.1$, keeps about 45%. With the steep spectrum of §2.4 a shared ratio spends nearly all of its erasure on the one or few stiffest modes of each token, the rotating modes the second-order advantage rests on (§6.2), and leaves the soft majority almost as it was. A shared ratio cannot keep a stiff mode ringing while damping a soft one: it ties how much a mode is erased to how stiff it is.
 
 ![A shared ratio erases the stiff modes first; three per-mode alternatives](figures/per_mode_damping/pmd_coupling.png)
 
-*Sixteen retained modes from ωΔt = 12 (rank 1, the stiffest) to 0.5 (rank 16). Black: one ratio, ζ = 0.6, for every mode; the stiffest modes keep less than 0.1% of their amplitude. Coloured: three hypotheses for what a per-mode damping would learn (§7.2).*
+*Sixteen retained modes from ωΔt = 12 (rank 1, the stiffest) to 0.5 (rank 16), evenly spaced for illustration (the measured spectrum is steeper, §2.4). Black: one ratio, ζ = 0.6, for every mode; the stiffest modes keep less than 0.1% of their amplitude. Coloured: three hypotheses for what a per-mode damping would learn (§7.2).*
 
 A per-mode ratio (§4.4) removes the tie.
 
@@ -255,7 +257,7 @@ They differ only in what sets the added ratio.
 
 ![The family of parameterisations: damping rate and amplitude kept, by stiffness](figures/tr_damping/tr_parameterisation_family.png)
 
-*A. The damping rate of a stiff mode against its stiffness, for each parameterisation (the learned arm as the band between its two layers' settled medians; the per-mode points are illustrative). B. The amplitude the mode keeps through one layer step. SR2 keeps about 82% of every mode; critical damping keeps 0.03% of the median stiff mode; the learned arm keeps 1–5%.*
+*A. The damping rate of a stiff mode against its stiffness, for each parameterisation (the learned arm as the band between its two layers' settled medians; the per-mode points are illustrative). B. The amplitude the mode keeps through one layer step. SR2 keeps about 82% of every mode; critical damping keeps 0.03% of a typical token's stiffest mode (dashed line), the learned arm 1–5% of it; at the median retained mode (dotted line, layer 0) the learned arm keeps about 45%.*
 
 ### 4.1 The constant base (SR2)
 
@@ -263,7 +265,7 @@ The rate is $\gamma_i = \gamma_0 = 0.1$ for every mode and token. $\Gamma = \gam
 
 ### 4.2 A fixed curvature-keyed ratio (SR3-crit, and the constant control)
 
-The added ratio $\zeta$ is a constant: every stiff mode of every token is damped at $\gamma_0 + 2 \zeta \omega_i$. At $\zeta = 1$ (SR3-crit) the added rate alone is critical, and the total ratio of the median stiff mode is $1 + 0.026 \approx 1.03$, slightly above critical. The book's constant-ratio family (paper v6, §8.8, eq. (97)) sets the *total* ratio to a target instead, absorbing the base rate; the two agree up to the share of $\gamma_0$, which is small on stiff modes. The form keys the damping to the curvature, as the earlier note's potential-derived proposal intended, but through each mode's frequency rather than through the value of $V_{\theta}$. The constant control D4 is this form at $\zeta = 0.46$ (§7).
+The added ratio $\zeta$ is a constant: every stiff mode of every token is damped at $\gamma_0 + 2 \zeta \omega_i$. At $\zeta = 1$ (SR3-crit) the added rate alone is critical, and the total ratio of a typical token's stiffest mode is $1 + 0.026 \approx 1.03$, slightly above critical. The book's constant-ratio family (paper v6, §8.8, eq. (97)) sets the *total* ratio to a target instead, absorbing the base rate; the two agree up to the share of $\gamma_0$, which is small on stiff modes. The form keys the damping to the curvature, as the earlier note's potential-derived proposal intended, but through each mode's frequency rather than through the value of $V_{\theta}$. The constant control D4 is this form at $\zeta = 0.46$ (§7).
 
 ### 4.3 A learned per-token ratio (the learned γ(h) arm)
 
@@ -279,7 +281,7 @@ $$
 \zeta(h) = \zeta_0 \exp\Big(\min\big\lbrace s(h), \ln(\zeta_{\max} / \zeta_0) \big\rbrace\Big) , \qquad \zeta_0 = 0.005 , \quad \zeta_{\max} = 10 .
 $$
 
-- **The start.** The head's last layer is initialised to zero, so $s = 0$ and $\zeta = \zeta_0$ for every token: a total ratio of about 0.031 on SR2's median stiff mode, against SR2's 0.026. The arm starts, in effect, as SR2.
+- **The start.** The head's last layer is initialised to zero, so $s = 0$ and $\zeta = \zeta_0$ for every token: a total ratio of about 0.031 on a typical token's stiffest mode in SR2, against SR2's 0.026. The arm starts, in effect, as SR2.
 - **The bounds.** The exponential keeps $\zeta$ positive, so the damping never falls below SR2's; the cap keeps it at most 10. The log parameterisation moves $\zeta$ multiplicatively in both directions: with Adam, $\ln \zeta$ moves by about the learning rate per step, so critical damping is a few thousand steps away where the loss favours it.
 - **One head for both layers.** The same head is applied at every layer. The two layers' ratios differ only because their input states differ.
 - **The frequency in this term.** It is $\omega_i = \sqrt{\kappa_i / m}$ with the mass's gradient stopped, so the head cannot train the mass through the damping. A retained mode with negative stiffness (an unstable direction) has no frequency; $\omega_i$ is set to 0 there, and the mode keeps $\gamma_0$.
@@ -455,7 +457,7 @@ All arms: OpenWebText, $d = 384$, $L = 2$, $\Delta t = 4$, $q = 16$, $\gamma_0 =
 
 ### 6.2 The damping axis
 
-| arm | damping of the stiff modes | settled perplexity | against SR2 |
+| arm | damping of a typical token's stiffest mode | settled perplexity | against SR2 |
 | --- | --- | ---: | ---: |
 | SR2 | light, total ratio ≈ 0.03 | **58.32** | — |
 | learned γ(h) | moderate, total ratios ≈ 0.39 (layer 1) and 0.59 (layer 0) | 59.29 | +1.7% |
@@ -464,12 +466,13 @@ All arms: OpenWebText, $d = 384$, $L = 2$, $\Delta t = 4$, $q = 16$, $\gamma_0 =
 
 ![Recorded: perplexity along the damping axis, the learned ζ(h) through training, and the learned arm against SR2](figures/per_mode_damping/pmd_damping_axis.png)
 
-*A. Settled perplexity against the total damping ratio of a median stiff mode (FO-b drawn at the overdamped end; its place is approximate, since it removes velocity in every direction). B. The learned arm's median added ζ per layer through training. C. The learned arm against SR2, evaluation by evaluation.*
+*A. Settled perplexity against the total damping ratio of a typical token's stiffest mode (FO-b drawn at the overdamped end; its place is approximate, since it removes velocity in every direction). B. The learned arm's median added ζ per layer through training. C. The learned arm against SR2, evaluation by evaluation.*
 
 Two readings follow.
 
 - **More damping of the stiff modes, worse settled perplexity**, among the second-order arms. SR2's light damping is the best measured.
 - **The oscillation is the mechanism, not inertia as such.** Critical damping keeps the velocity between layers and removes only the oscillation of the stiff modes; it is worse than removing inertia altogether (FO-b). In the language of §3.3: a lightly damped stiff mode is a rotation that keeps tokens distinct, a critically damped one a contraction that merges them, as a gradient flow does. This is the information-preservation account of the future note (§3).
+- **The rotation is a memory, and an explicit memory replaces it** (added 2026-10-22). On the base with 64 Poisson-mode wells, the first-order twin matches the second-order model (FO-b-PMX 54.02 against PMX 54.63, −1.1%), where without the wells it was 4.9% behind. The area a lightly damped mode keeps (§3.3) is the room to keep tokens distinct within a step, an implicit memory of the token's own past; the wells are an explicit memory of other tokens' pasts. The *memory-substitution hypothesis* (future note §7; protocol §5.13, MS1–MS7) says the second-order advantage is the advantage of that memory and disappears where an explicit one is supplied. Its test on this report's axis is MS3: critical damping on the well base, predicted to cost nothing where it cost 8.5% here.
 
 ### 6.3 Training dynamics
 
@@ -491,11 +494,11 @@ Two readings follow.
 ### 6.4 What the learned head chose
 
 - **Moderate damping, well below critical.** The settled medians of the added ratio are 0.56 at layer 0 and 0.36 at layer 1 (0.54–0.58 and 0.33–0.38 over the last 3,000 steps). At most 3% of tokens at layer 0, and 1% at layer 1, are above $\zeta = 1$.
-- **Layer 0 first, layer 1 later.** Layer 0 stayed near $\zeta_0$ to about step 5,000, then rose to 0.14 (step 10,000), 0.41 (15,000) and 0.56 (20,000), where it stayed. Layer 1 moved later and less: 0.12 at step 15,000, 0.24 at 20,000, 0.35 from 25,000.
-- **An early overdamped tail at layer 1.** While layer 1's median was still at $\zeta_0$, 5–6% of its tokens were above $\zeta = 1$ (steps 2,500–5,000), a heavily damped minority that was gone by step 10,000.
-- **The wells kept SR2's stiffness.** The in-flight median was $\omega \Delta t \approx 7.9$ at the end (SR2: 7.55 at its endpoint), where critical damping had softened SR3-crit's wells to about 2. At the settled ratio a median stiff mode keeps about 1% of its amplitude through a step and still turns about one full rotation: the model damps the oscillation hard but keeps it.
+- **First down, then up.** Both layers first moved *below* the start: by step 2,500 the medians were 0.002 (layer 0) and below 0.0005 (layer 1), so the model removed even the small starting damping from most tokens. Layer 0 then rose to 0.14 (step 10,000), 0.41 (15,000) and 0.56 (20,000), where it stayed. Layer 1 stayed near zero to step 10,000, then rose to 0.12 (15,000), 0.23 (20,000) and 0.35 from 25,000.
+- **Two-sided early, unimodal late.** At step 5,000 layer 1's median was below 0.0005, its 90th percentile 0.20, and 5.7% of its tokens were above $\zeta = 1$: an undamped majority with an overdamped minority, gone by step 10,000. The settled spread (10th to 90th percentile at step 32,500) is 0.44–0.70 at layer 0, narrow, and 0.21–0.49 at layer 1, a factor of 2.4.
+- **The wells stiffened where they were damped.** The stiffest mode's endpoint median is $\omega \Delta t \approx 7.82$ (SR2: 7.55), where critical damping had softened SR3-crit's wells to about 2. By layer: 10.16 at layer 0, which carries the larger ratio, the stiffest wells measured on this base, and 6.56 at layer 1. At the settled ratio a typical token's stiffest mode keeps about 1% of its amplitude through a step and still turns about one full rotation, while its median mode keeps about 45%: the model damps the oscillation of its stiffest modes hard but keeps it.
 
-**Reading.** The head's choice is made at the learning rate of the stable phase, where the added damping went with a lower loss, and the decay rewards the lightly damped model more. The head's optimisation, not the settled optimum of the finished model, decided $\zeta$. Two measurements test that reading: the inference-time dial D3 (if scaling $\zeta$ down on the trained model lowers perplexity, the head is past its own optimum) and the constant control D4 (§7). Because of the pairing defect (§5.9), the early lead is not attributed to the head.
+**Reading.** The head chose its damping at the learning rate of the stable phase, where the added damping went with a lower loss, and the decay rewarded the lightly damped model more. The damping dial (D3, §6.7) rules out the simplest version of this reading: on the trained weights the perplexity is lowest at the trained damping, so the head is not past its own optimum. The weights and the damping were shaped together, and the deficit against SR2 lies in where that joint training ended, not in a damping that could be turned down afterwards. The constant control D4 (§7.4) separates the damping level from its variation by token. Because of the pairing defect (§5.9), the early lead is not attributed to the head.
 
 ### 6.5 Diagnostics
 
@@ -503,20 +506,62 @@ Best checkpoints (step 31,000), Cells 6b-7, 6b-13 and 6b-9 of the ladder noteboo
 
 | reading | SR2 | learned γ(h) | SR3-crit | FO-b |
 | --- | ---: | ---: | ---: | ---: |
-| Gate 1, velocity reset between layers | +3.9% | ⟨pending⟩ | +3.6% | 0 |
-| Gate 2, one extra layer at the trained Δt | +35% | ⟨pending⟩ | +132% | +0.6% |
-| Gate 3 at N = 3 (nats) | 0.405 | ⟨pending⟩ | 0.447 | 0.178 |
-| median ωΔt at the endpoint (6b-13) | 7.55 | ⟨pending⟩ (7.9 in flight) | 2.06 | 0.74 |
-| FLOW-R: per-layer flow at N = 16 (nats above the trained step) | 0.104, converged | ⟨pending: D2⟩ | 0.300, drifting | 0.904, not converging |
+| Gate 1, velocity reset between layers | +3.9% | +4.3% | +3.6% | 0 |
+| Gate 2, one extra layer at the trained Δt | +35% | +49% | +132% | +0.6% |
+| Gate 3 at N = 3 (nats) | 0.405 | 0.747 | 0.447 | 0.178 |
+| ωΔt of the stiffest mode, median over tokens (6b-13) | 7.55 | 7.82 | 2.06 | 0.74 |
+| the same, layer 0 / layer 1 | 8.93 / — | 10.16 / 6.56 | 1.69 / 5.46 | 0.99 / 0.00 |
+| R(geo), distance from the V_θ geodesic (6b-9) | 0.62 | 0.48 | 0.85 | — |
+| FLOW-R: per-layer flow at N = 16 (nats above the trained step) | 0.104, converged | 0.312, levelling off | 0.300, drifting | 0.904, not converging |
 
-Only the lightly damped SR2 gives a trained step that closely samples a convergent per-layer flow; perplexity orders the three measured arms the same way. Where the learned arm falls is D2's question.
+- **Inertia matters as much as in SR2.** The velocity reset costs +4.3% (SR2 +3.9%): the added damping did not make the model less reliant on the velocity it carries between layers.
+- **Depth extension follows the damping.** One extra layer costs +49%, between SR2 (+35%) and SR3-crit (+132%).
+- **Refinement is the worst of the second-order arms.** At three steps of $\Delta t = 8/3$ the penalty is 0.747 nats, against SR2's 0.405 and SR3-crit's 0.447. The head was trained on the states of a $\Delta t = 4$ step; at a finer step it meets other states and sets another damping, one more thing that does not transfer across step sizes.
+- **Closer to the V_θ geodesic than SR2** (0.48 against 0.62), with V_φ again doing almost no work.
+
+Only the lightly damped SR2 gives a trained step that closely samples a convergent per-layer flow. The learned arm's flow levels off about 0.31 nats above its trained step, at SR3-crit's level and not between it and SR2 (D2, §6.7): moderate learned damping costs as much refinement as critical damping.
 
 ### 6.6 Caveats
 
 - **One seed per arm**, and the spread between seeds is unmeasured. The learned arm's +1.7% (0.015 nats) is steady over the last 7,000 steps but small; the other gaps (4.9%, 8.5%) are large against any plausible spread.
 - **The learned arm and SR2 do not share initial weights** (§5.9).
 - **One corpus, one depth, one width:** OpenWebText, $L = 2$, $d = 384$, 0.53 billion tokens. D7 tests the corpus.
-- **The ζ medians in the progress lines are printed to two decimals**, so $\zeta_0 = 0.005$ reads 0.00 in that run's log; the evaluation records hold the full values.
+- **The ζ values here come from the evaluation records** (median, percentiles and fraction above 1, per layer). The run's progress lines print two decimals, which hide values below 0.005.
+
+
+### 6.7 D1–D3: the trained head on fixed weights
+
+Three CPU measurements on the learned arm's best checkpoint (step 31,000), 2026-10-22; outputs in the run's `results/` folder.
+
+**D3, the damping dial** (`debug/d3_damping_dial.py`). The trained ratio is replaced by $c \zeta(h)$ at inference, on Cell 6b-7's twelve fixed batches, so $c = 1$ reproduces that cell's 58.02 exactly.
+
+| c | 0 | 0.1 | 0.25 | 0.5 | 0.75 | 1 | 1.25 | 1.5 | 2 | 3 | 5 | 10 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| both layers | +82% | +58% | +30% | +8.9% | +1.8% | 58.02 | +1.5% | +6.1% | +25% | +101% | +292% | +715% |
+| layer 0 only | +70% | | | +8.0% | | | | | +20% | | | |
+| layer 1 only | +6.7% | | | +1.2% | | | | | +3.3% | | | |
+
+- **The minimum is at the trained damping.** The head is not past its own optimum.
+- **The optimum is sharp and asymmetric:** about ±25% in $c$ costs under 2%; doubling costs +25%, halving +8.9%.
+- **The reliance sits at layer 0**, the more heavily damped layer: removing its added damping costs +70%, removing layer 1's +6.7%.
+- Like every fixed-weight dial, this measures reliance, not need.
+
+**D2, FLOW-R** (`refinement_flow_confirmation.py … gzh`). The per-layer flow freezes the quadratic at each trained layer's first substep and recomputes $\zeta(h)$ at every substep, as the model's own substep path does; all checks pass, including the match with that path. The trained step leans more on the kick than SR2's (kick share 0.54 and 0.63 at the two layers, SR2 0.37 and 0.51). The flow's penalty at N = 4, 6, 8, 12, 16 is 0.291, 0.272, 0.284, 0.300, 0.312 nats: inside the convergence criterion between N = 8 and 12 (a change of 0.016) but still creeping up, toward about 0.31.
+
+**D1, the head read token by token** (`debug/d1_zeta_readout.py`; 8,192 tokens per layer; the ratio captured from the head itself). Spearman rank correlation of $\zeta$ with each property:
+
+| against | layer 0 | layer 1 |
+| --- | ---: | ---: |
+| unigram surprisal (how rare the token is) | **+0.56** | −0.19 |
+| anharmonic fraction ε | +0.27 | −0.17 |
+| frequency of the token's stiffest mode | −0.28 | **+0.36** |
+| position in the sequence | +0.08 | −0.17 |
+| next-token loss | −0.12 | −0.08 |
+
+- **Layer 0 keys mainly on token rarity:** the median ratio rises from 0.42 for the most frequent tenth of tokens to 0.69 for the rarest. Rarer tokens are heavier, so their modes are slower, and the ratio rising as the frequency falls moves the added rate $2 \zeta \omega$ toward a common value across tokens. Whether it equalises the rate is left for a pass that saves the per-token data.
+- **Layer 1 keys on stiffness:** tokens with a stiffer top mode get more damping, and early positions slightly more.
+- **GH2 missed** (|ρ(ζ, ε)| below 0.2 at both layers was called at 55%; the scoring rule was fixed in the script before the run). The dependence on ε is not monotone at layer 0: the median ratio rises over the first nine tenths of ε and drops in the top tenth.
+- **The spectrum** (§2.4) was measured here: the median retained mode sits far below the stiffest, and at layer 1 most modes have no stiffness.
 
 ---
 
@@ -534,7 +579,7 @@ Only the lightly damped SR2 gives a trained step that closely samples a converge
 | D6 | a learned damping on a Fock or well base (§8) | GPU, 14 h | does the register path or the wells change where damping goes (GH4) |
 | D7 | the learned γ(h) on TinyStories | GPU, 5 h | does a narrow corpus want more damping |
 
-D1–D3 run on the learned arm's checkpoint **⟨pending: the run's folder to be downloaded⟩**. D4's calls are registered in the protocol before it runs **⟨pending⟩**. D5 waits for the pairing fix (§5.9).
+D1–D3 ran on the learned arm's checkpoint, on CPU, on 2026-10-22 (§6.7). D4's calls are registered in the protocol before it runs **⟨pending⟩**. D5 waits for the pairing fix (§5.9).
 
 ### 7.2 Three hypotheses for the per-mode head
 
@@ -554,7 +599,7 @@ and H3 predicts that the angle turned, $\omega_i \Delta t \sqrt{1 - (\zeta_i^{\m
 
 ### 7.3 The damping dial (D3)
 
-Replace the trained $\zeta(h)$ by $c \zeta(h)$ for a dial $c$ and measure perplexity on fixed weights. A dial $c \lt 1$ moves the model toward SR2's light damping, $c \gt 1$ toward critical. The wells were shaped together with the damping they were trained under, so the curve has its minimum near $c = 1$ by construction; its width and asymmetry are the information. With the learned arm 1.7% behind SR2, the dial also asks whether the trained head is past its own optimum. Like the velocity-reset gate, it measures reliance, not need: fixed weights say how a model trained one way reacts to another damping, not what a model trained at that damping would reach. For the per-mode arm the dial generalises to one dial per band of ranks.
+Replace the trained $\zeta(h)$ by $c \zeta(h)$ for a dial $c$ and measure perplexity on fixed weights. A dial $c \lt 1$ moves the model toward SR2's light damping, $c \gt 1$ toward critical. The wells were shaped together with the damping they were trained under, so the curve has its minimum near $c = 1$ by construction; its width and asymmetry are the information. With the learned arm 1.7% behind SR2, the dial also asks whether the trained head is past its own optimum. Like the velocity-reset gate, it measures reliance, not need: fixed weights say how a model trained one way reacts to another damping, not what a model trained at that damping would reach. For the per-mode arm the dial generalises to one dial per band of ranks. **Measured** (§6.7): the minimum is at $c = 1$, the optimum is sharp and steeper toward heavy damping, and the reliance sits at layer 0.
 
 ### 7.4 The constant control (D4)
 
@@ -572,9 +617,9 @@ $$
 
 A negative $\Delta_{\text{position}}$ means the per-token variation earns something back from a costly level; a value near zero means the head is a constant in disguise. The control starts from SR2's exact initial weights, so its comparison with SR2 is free of the pairing defect. A per-layer constant (0.56 and 0.36) is the intermediate if the single constant falls short; it needs a small code change, since the ratio is one number today.
 
-![The damping dial and the constant-ζ decomposition](figures/per_mode_damping/pmd_dial_and_control.png)
+![The damping dial, measured, and the constant-ζ decomposition](figures/tr_damping/tr_dial_and_control.png)
 
-*A. Two illustrative shapes of the dial curve. Not measured; D3 measures it. B. D4's decomposition: SR2 and the learned arm recorded, the constant control between them to be measured.*
+*A. D3 measured on the learned arm's fixed weights: perplexity change against the trained damping, for both layers scaled together and for each layer alone (open markers: the added damping removed, c = 0). B. D4's decomposition: SR2 and the learned arm recorded, the constant control between them to be measured.*
 
 ---
 
@@ -617,7 +662,8 @@ so mode $i$ has stiffness $\kappa_i + \alpha$ and the complement has stiffness $
 - **The implemented family** sets the rate $\gamma_i$ of each stiff mode to $\gamma_0 + 2 \zeta \omega_i$, with $\zeta$ zero (SR2), constant (SR3-crit, D4), learned per token (γ(h)) or per mode (D5); FO-b is the overdamped limit (§4).
 - **On OpenWebText the damping axis is ordered**: SR2 58.32, learned γ(h) 59.29, FO-b 61.16, SR3-crit 63.28. The oscillation of the stiff modes is what the second-order model gains from (§6.2).
 - **Given the choice, the model adds moderate damping** (median added ratios 0.56 and 0.36), keeps its stiff wells and their rotation, leads SR2 while the learning rate is high and loses the lead in the decay (§6.3–§6.4).
-- **Next:** the diagnostic cells and D1–D3 on the learned arm; D4 to separate level from position dependence; the pairing fix, then D5 (§7).
+- **On its fixed weights the learned arm sits at its own optimum** (D3), refines as poorly as the critically damped arm (D2), and its head keys on token rarity at layer 0 and on stiffness at layer 1, not mainly on the anharmonic fraction (D1; GH2 missed) (§6.7).
+- **Next:** D4 to separate level from position dependence; the pairing fix, then D5 (§7).
 
 ---
 
@@ -692,4 +738,4 @@ $$
 
 ---
 
-**Revision history.** Version 1, 2026-10-21: first issue, after the learned γ(h) arm settled. Formulas set as GitHub math throughout the prose and proofs, the same day.
+**Revision history.** Version 1, 2026-10-21: first issue, after the learned γ(h) arm settled. Formulas set as GitHub math throughout the prose and proofs, the same day. 2026-10-22: the learned arm's diagnostic cells and D1–D3 (§6.5, §6.7); the stiffness label corrected throughout: the quoted ωΔt is a token's stiffest mode (median over tokens), not the median mode, and the soft majority of the spectrum is described (§2.4, §3.6).

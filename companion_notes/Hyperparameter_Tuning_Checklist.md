@@ -706,6 +706,24 @@ adds a point to a curve.
 | D6 | **γ(h) on a Fock or well base** (author: of particular interest) | 14 h | GH4: does the register path or the wells change where damping goes (a bimodal ζ(h))? | code: the head's guard excludes PMX today, so PMX needs the per-mode rate in `lowrank_iso_damped_substep`; G3′ (reverse channel on) needs the head verified with the reverse channel. Base chosen when D5 is in |
 | D7 | **γ(h) on TinyStories** | 5 h | the corpus test of the rotation account: the narrow corpus should want more damping than OpenWebText | none |
 
+**GPU queue (2026-10-22, after FO-b-PMX; supersedes the 2026-10-20 queue above for items 3 onward, kept for the record). One A100, serial.** FO-b-PMX matched PMX (−1.1%), which with SR3-crit's result motivates the memory-substitution hypothesis (protocol §5.13, MS; future note §7). Two comparisons now sit inside an unmeasured seed spread (γ(h) +1.7%, FO-b-PMX −1.1%), so the seed rerun goes first, then the dose-response that decides the hypothesis:
+
+| # | run | cost | what it decides | condition |
+| --- | --- | ---: | --- | --- |
+| 1 | **SR2 rerun, seed 1**, with the speed switches (MS1) | 10 h | the seed spread, the yardstick for every gap under 3% | — |
+| 2 | **dose-response, K = 16** (MS2): PMX's Cell 0 with `POISSON_MODES = 16`, second order first, then FO-b; pre-registered MS2a–MS2d (protocol §5.13); build-checked at K = 16 and 256 (`debug/verify_dose_modes.py`) | 2 × 12 h | the gap between +4.9% (K = 0) and −1.1% (K = 64) | — |
+| 3 | **SR3-crit on PMX** (MS3): `STIFF_MODE_DAMPING_RATIO = 1.0` on PMX | 14 h | whether the rotation is needed once the wells remember | code: the per-mode rate in `lowrank_iso_damped_substep`, the guard lifted, verified bit-identical off |
+| 4 | **FO-b-G3′** (MS7) | 14 h | an explicit memory read by a channel: match or gap | FO-b verified with the reverse channel first |
+| 5 | **dose-response, K = 256** (MS2), both orders | 2 × 14 h | the far end of the dose | — |
+| 6 | **D4, the constant-ζ̄ control** (ζ̄ = 0.46) | 10 h | level against position dependence in the learned damping | pre-registered calls first |
+| 7 | **D5, the per-mode head** | 10 h | which stiff modes the model keeps ringing | the pairing fix (tech report §5.9) |
+| 8 | **FO-b-TS** (16,250 steps) | 5 h | the TinyStories half with true first order | — |
+| 9 | **SO/FO-b on a code corpus, without and with wells** (MS5) | 4 × 5 h | the corpus test of substitution | a `CORPUS = 'code'` branch |
+| 10 | **PMX and FO-b-PMX at L = 4** (MS6) | 2 × 25 h | depth | — |
+| 11 | **the 2B pair with wells** (MS4), then without | 2 × 100 h | the budget, against the decay-phase pattern | decided after 1–5 |
+
+CPU, meanwhile: D1–D3 are done (protocol §5.13); FLOW-R and Cells 6b-13, 6b-9 and 7 on FO-b-PMX once its folder is downloaded; the per-mode head and its verification.
+
 Dropped: **SR3-on-PMX** (25 h): a learned γ(h) initialised at critical damping starts as SR3-crit and can stay there if that is best, so item 5 contains it and reports more. Deferred, unscheduled: the seed pair G3′-s1 and G2-s1 (item 8 serves the yardstick role first), SR3-L4, the TinyStories PMX pair. Code to write on CPU while 0 and 3 train: per-mode critical damping in the exact damped flow (item 1) and the learned-γ(h) head with critical initialisation (items 2 and 5), each with the bit-identity check when off. Pre-registrations for items 1 and 2: protocol §5.13 (2026-10-20).
 
 **GPU queue of 2026-10-18 (superseded; kept for the record):**

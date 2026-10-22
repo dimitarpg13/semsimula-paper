@@ -1,0 +1,28 @@
+D3, the damping dial: learned gamma(h) arm  ....05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+   12 x 4 x 512 tokens (Cell 6b-7's batches); zeta(h) -> c * zeta(h) at inference, weights fixed
+   c = 1 (trained): PPL 58.021  (Cell 6b-7 unpatched: 58.02)   [116s per evaluation]
+
+JOINT DIAL (both layers)
+   c =  0.00   PPL  105.743    +82.25%
+   c =  0.10   PPL   91.923    +58.43%
+   c =  0.25   PPL   75.678    +30.43%
+   c =  0.50   PPL   63.201     +8.93%
+   c =  0.75   PPL   59.053     +1.78%
+   c =  1.25   PPL   58.884     +1.49%
+   c =  1.50   PPL   61.582     +6.14%
+   c =  2.00   PPL   72.775    +25.43%
+   c =  3.00   PPL  116.856   +101.40%
+   c =  5.00   PPL  227.704   +292.45%
+   c = 10.00   PPL  473.124   +715.43%
+
+PER-LAYER DIAL (layer 0 scaled, the other at its trained zeta)
+   c =  0.00   PPL   98.805    +70.29%
+   c =  0.50   PPL   62.677     +8.02%
+   c =  2.00   PPL   69.754    +20.22%
+
+PER-LAYER DIAL (layer 1 scaled, the other at its trained zeta)
+   c =  0.00   PPL   61.928     +6.73%
+   c =  0.50   PPL   58.686     +1.15%
+   c =  2.00   PPL   59.912     +3.26%
+
+minimum of the joint dial at c = 1.0 (PPL 58.021); total 2137s

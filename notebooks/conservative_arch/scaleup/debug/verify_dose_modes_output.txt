@@ -1,0 +1,5 @@
+K= 16 second order  tag ...xilive_pm16_pmx16_sr2_  params 76,578,318  pm_mu (16, 384)  loss 7.4344  finite True  |grad| pm_depth 5.04e-01 pm_mu 0.00e+00  half-lives 4.0-128.0 tokens  exact_modes 16  fob False  [11s]
+K= 16 FO-b          tag ...xilive_pm16_pmx16_sr2_fob_  params 76,578,318  pm_mu (16, 384)  loss 7.3703  finite True  |grad| pm_depth 5.07e-01 pm_mu 0.00e+00  half-lives 4.0-128.0 tokens  exact_modes 16  fob True  [7s]
+      eval forward finite: True
+K=256 second order  tag ...xilive_pm256_pmx16_sr2_  params 76,671,438  pm_mu (256, 384)  loss 7.4066  finite True  |grad| pm_depth 1.73e+00 pm_mu 0.00e+00  half-lives 4.0-128.0 tokens  exact_modes 16  fob False  [8s]
+K=256 FO-b          tag ...xilive_pm256_pmx16_sr2_fob_  params 76,671,438  pm_mu (256, 384)  loss 7.4537  finite True  |grad| pm_depth 1.91e+00 pm_mu 0.00e+00  half-lives 4.0-128.0 tokens  exact_modes 16  fob True  [8s]

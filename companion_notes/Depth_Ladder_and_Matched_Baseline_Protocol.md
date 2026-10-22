@@ -3842,24 +3842,24 @@ Output `L2_SR3-crit_on_SR2_OWT_32500steps_output.txt`. SR2's Cell 0 plus `STIFF_
 
 Output `L2_learned_lambda_OWT_32500steps_output.txt`. SR2's Cell 0 plus `LEARNED_DAMPING_RATIO = True`, `DAMPING_RATIO_INIT = 0.005` and the speed switches; tag `…sr2_gzh…`; 32,500 steps, seed 0, an A100 80 GB (about 1.1 s per step). Finished cleanly; no watchdog trigger or spike capture; largest gradient norm 1.16; SCAF CLEAN at every audit.
 
-| step | SR2 | γ(h) | SR3-crit | FO-b | γ(h) against SR2 | median ζ, layer 0 / layer 1 (in flight) |
+| step | SR2 | γ(h) | SR3-crit | FO-b | γ(h) against SR2 | median ζ, layer 0 / layer 1 (eval records) |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 2,500 | 135.3 | 134.7 | 134.3 | 131.4 | −0.4% | ζ₀ / ζ₀ |
-| 5,000 | 108.4 | 106.9 | 111.2 | 101.1 | −1.3% | 0.02 / ζ₀ |
-| 10,000 | 86.0 | 82.3 | 95.5 | 83.6 | −4.2% | 0.14 / ζ₀ |
+| 2,500 | 135.3 | 134.7 | 134.3 | 131.4 | −0.4% | 0.002 / 0.000 |
+| 5,000 | 108.4 | 106.9 | 111.2 | 101.1 | −1.3% | 0.017 / 0.000 |
+| 10,000 | 86.0 | 82.3 | 95.5 | 83.6 | −4.2% | 0.14 / 0.000 |
 | 15,000 | 76.8 | 74.3 | 83.5 | 79.5 | −3.3% | 0.41 / 0.12 |
 | 20,000 | 70.8 | 69.6 | 77.7 | 72.5 | −1.7% | 0.56 / 0.24 |
 | 25,000 | 65.9 | 65.8 | 72.2 | 67.5 | −0.3% | 0.57 / 0.35 |
 | 30,000 | 58.1 | 58.9 | 63.4 | 61.0 | +1.4% | 0.56 / 0.34 |
 | **settled** | **58.32** | **59.29** | **63.28** | **61.16** | **+1.7%** | **0.56 / 0.36** (steps 29,500–32,500) |
 
-The progress lines print ζ to two decimals, so ζ₀ = 0.005 shows as 0.00 (the notebook prints three decimals since 2026-10-20; this run started before that change reached Colab).
+ζ values from the evaluation records' `zeta_stats` (median, 10th and 90th percentiles, fraction above 1, per layer; `results/training_log.jsonl`), read 2026-10-22; 0.000 is below 0.0005. The progress lines print two decimals, which hid the early values below the start ζ₀ = 0.005 (corrected here from the first version of this block).
 
 - **Settling check, steps 29,500–32,500:** fitted change +0.005 nats against a residual standard deviation of 0.014: settled. Best 57.31 at step 31,000 (SR2 56.49).
 - **A lead in the stable phase, lost in the decay.** γ(h) was ahead of SR2 at 50 of the 65 evaluations, by up to 4.7% (step 9,500). Mean γ(h) − SR2: −0.029 nats (sd 0.012) over steps 5,000–21,000, the stable phase of the schedule; −0.005 over 21,500–25,000; behind from step 25,500; +0.015 (sd 0.002) over 29,500–32,500. Decay gain from step 21,000 to 32,500: 0.171 nats, against SR2's 0.196 (SR3-crit 0.216, FO-b 0.175). The whole settled deficit forms in the decay.
-- **ζ through training.** Layer 0 stayed near ζ₀ to about step 5,000, rose through 0.14 (step 10,000) and 0.41 (15,000) to 0.56 by step 20,000, and held there (0.54–0.58 over the last 3,000 steps). Layer 1 moved later and less: 0.12 at step 15,000, 0.24 at 20,000, 0.33–0.38 from 25,000. Few tokens are overdamped: the fraction above ζ = 1 is at most 3% at layer 0 and 1% at layer 1 over the last 3,000 steps. Early on, while layer 1's median was still at ζ₀, 5–6% of its tokens were above 1 (steps 2,500–5,000), a heavily damped tail that was gone by step 10,000.
-- **The wells kept SR2's stiffness:** in-flight median ω·Δt 7.9 at step 32,500 (SR2 7.55 at the endpoint; SR3-crit's wells softened to 2.04). At ζ = 0.56 and ω·Δt ≈ 7.9 a median stiff mode keeps about 1% of its amplitude through a layer step and still turns; the model damps the oscillation hard but does not remove it.
-- **Pairing caveat, found while scoring.** The head's first layer draws random numbers when it is built, which shifts the random stream for the parameters initialised after it: built from the notebook at the same seed, 51 of the 89 tensors γ(h) shares with SR2 start from different values (E, P, lm_head, V_θ's and V_φ's projections among them). The data order is drawn from its own seeded generator and is the same. So the γ(h) − SR2 difference contains the initialisation part of the seed spread, which is unmeasured; SR3-crit and FO-b add no parameters and start from SR2's exact initial weights. The early lead in particular (it peaked at step 9,500, when layer 0's median ζ was 0.12 and layer 1's still at ζ₀) cannot be attributed to the head on this evidence. Before D5, the head will be built under its own generator so that a head arm and its base start from the same weights.
+- **ζ through training.** Both layers first moved *below* the start: by step 2,500 layer 0's median was 0.002 and layer 1's below 0.0005, so the model removed even the small starting damping from most tokens. Layer 0 then rose through 0.14 (step 10,000) and 0.41 (15,000) to 0.56 by step 20,000, and held there. Layer 1 stayed near zero to step 10,000, then rose to 0.12 (15,000), 0.23 (20,000) and 0.35 from step 25,000. In the early phase layer 1 was **two-sided**: at step 5,000 its median was below 0.0005, its 90th percentile 0.20, and 5.7% of its tokens were above ζ = 1, an undamped majority with an overdamped minority; the tail was gone by step 10,000. **The settled spread** (step 32,500, 10th–90th percentile): layer 0 0.44–0.70, narrow, about ±25% around its median; layer 1 0.21–0.49, a factor of 2.4. Few tokens are overdamped: at most 1.5% at layer 0 and 0.7% at layer 1 in the eval records of the last 3,000 steps.
+- **The wells kept SR2's stiffness:** in-flight median ω·Δt 7.9 at step 32,500 (SR2 7.55 at the endpoint; SR3-crit's wells softened to 2.04). At ζ = 0.56 and ω·Δt ≈ 7.9 a typical token's stiffest mode keeps about 1% of its amplitude through a layer step and still turns (its median retained mode, at ω·Δt ≈ 1.1, keeps about 45%; D1 below); the model damps the oscillation hard but does not remove it.
+- **Pairing caveat, found while scoring.** The head's first layer draws random numbers when it is built, which shifts the random stream for the parameters initialised after it: built from the notebook at the same seed, 51 of the 89 tensors γ(h) shares with SR2 start from different values (E, P, lm_head, V_θ's and V_φ's projections among them). The data order is drawn from its own seeded generator and is the same. So the γ(h) − SR2 difference contains the initialisation part of the seed spread, which is unmeasured; SR3-crit and FO-b add no parameters and start from SR2's exact initial weights. The early lead in particular (it peaked at step 9,500, when layer 0's median ζ was 0.12 and layer 1's near zero) cannot be attributed to the head on this evidence. Before D5, the head will be built under its own generator so that a head arm and its base start from the same weights.
 - **Scored against the amendment of 2026-10-20:**
   - **GH6 (median ζ below 0.3 at both layers), called 60%: MISS.** 0.56 and 0.36; layer 1 just above the line.
   - **GH7 (within 2% of SR2's 58.32), called 55%: HIT, narrowly** (+1.7%, inside an unmeasured seed spread; see the caveat).
@@ -3867,8 +3867,51 @@ The progress lines print ζ to two decimals, so ζ₀ = 0.005 shows as 0.00 (the
   - **GH9 (one layer's median at least 3 times the other's), called 40%: MISS** (ratio 1.6).
   - GH2 (ζ against the local anharmonic fraction ε) waits for D1; GH4 for D6.
   - Of the superseded calls, on record: GH1 (median above 1 at every layer) MISS; GH1′ (median at most 1 in at least one layer) would HIT; GH3 (within 2% of SR3-crit) MISS, γ(h) is 6.3% better; GH5 (medians differ by 0.3 or more) MISS, by 0.20.
-- **Reading.** Free to choose, the model adds damping to SR2's oscillation, a moderate amount, well short of critical (total ratios about 0.59 and 0.39 on a median stiff mode), keeps its wells as stiff as SR2's, and settles between SR2 and FO-b: the damping axis keeps its order, more damping of the stiff modes, worse settled perplexity. The head's choice is made at the learning rate of the stable phase, where the added damping goes with a lower loss (taking the lead at face value), and the lead goes in the decay, where SR2's lightly damped model gains more. This is the reading fixed for GH1 in the opposite direction: **the head's optimisation, not the settled optimum of the task, decides ζ**. It is reported as a design result. Two measurements separate the readings: D3, the inference-time dial (if scaling ζ down on the trained model lowers perplexity, the trained head is past its own optimum), and D4, the constant-ζ̄ control (is the cost in the level of damping or in its variation by token). Both are now pre-registrable.
-- **Not yet run:** Cells 6b-7, 6b-13 and 6b-9 on the best checkpoint (step 31,000), FLOW-R, and D1–D3 on CPU once the run's folder is downloaded.
+- **Reading.** Free to choose, the model adds damping to SR2's oscillation, a moderate amount, well short of critical (total ratios about 0.59 and 0.39 on a typical token's stiffest mode), keeps its wells as stiff as SR2's, and settles between SR2 and FO-b: the damping axis keeps its order, more damping of the stiff modes, worse settled perplexity. The head's choice is made at the learning rate of the stable phase, where the added damping goes with a lower loss (taking the lead at face value), and the lead goes in the decay, where SR2's lightly damped model gains more. This is the reading fixed for GH1 in the opposite direction: **the head's optimisation, not the settled optimum of the task, decides ζ**. It is reported as a design result. Two measurements separate the readings: D3, the inference-time dial (if scaling ζ down on the trained model lowers perplexity, the trained head is past its own optimum), and D4, the constant-ζ̄ control (is the cost in the level of damping or in its variation by token). Both are now pre-registrable.
+- **Cells 6b-7, 6b-13, 6b-9 and 7** (best checkpoint, step 31,000; outputs in the run's `results/`, 2026-10-22):
+
+  | reading | SR2 | γ(h) | SR3-crit | FO-b |
+  | --- | ---: | ---: | ---: | ---: |
+  | Gate 1, velocity reset | +3.9% | **+4.3%** | +3.6% | 0 |
+  | Gate 2, one extra layer at the trained Δt | +35% | **+49%** | +132% | +0.6% |
+  | Gate 2, eight layers | +567% | **+1,133%** | +3,449% | +138% |
+  | Gate 3 at N = 3 (nats) | 0.405 | **0.747** | 0.447 | 0.178 |
+  | ω·Δt of the stiffest mode, median over tokens (6b-13) | 7.55 | **7.82** | 2.06 | 0.74 |
+  | ω·Δt, layer 0 / layer 1 | 8.93 / — | **10.16 / 6.56** | 1.69 / 5.46 | 0.99 / 0.00 |
+  | R(geo), distance from the V_θ geodesic (6b-9) | 0.62 | **0.48** | 0.85 | — |
+  | V_φ's share of that distance | −0.002 | **−0.001** | −0.30 | — |
+
+  - **Inertia matters as much as in SR2** (Gate 1 +4.3%, SR2 +3.9%): the added damping did not make the model less reliant on its velocity between layers.
+  - **Depth extension sits between SR2 and SR3-crit** (+49% for one extra layer), in the order of the damping.
+  - **Refinement is the worst of the second-order arms:** 0.747 nats at three steps, against SR2's 0.405 and SR3-crit's 0.447. A head trained on the states of a Δt = 4 step meets different states at Δt = 8/3 and sets a different damping there, so the learned arm has one more thing that does not transfer across step sizes. FLOW-R (D2) says whether its per-layer flow converges.
+  - **The wells stiffened where they were damped.** Layer 0, which carries the larger ζ (0.56), has the stiffest wells measured on this base (median ω·Δt 10.16, SR2 8.93); layer 1, at ζ 0.36, has 6.56. Damping and stiffness rose together at layer 0, the opposite of SR3-crit, whose layer 0 softened to 1.69 under critical damping.
+  - **Closer to the V_θ geodesic than SR2** (R(geo) 0.48, SR2 0.62), with V_φ again doing almost no work (−0.001): the LayerNorm projection is a smaller share of the step than in SR2. Cell 7: no reverse channel on this model (registers worth 0, as for SR2).
+- **D1–D3 on CPU, best checkpoint (step 31,000), 2026-10-22.** Outputs in `scaleup/results/…sr2_gzh…/`.
+  - **D3, the damping dial** (`debug/d3_damping_dial.py`; ζ(h) replaced by c·ζ(h) at inference, weights fixed; Cell 6b-7's 12 batches, so c = 1 reproduces its 58.02 exactly):
+
+    | c | 0 | 0.1 | 0.25 | 0.5 | 0.75 | 1 | 1.25 | 1.5 | 2 | 3 | 5 | 10 |
+    | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+    | both layers | +82% | +58% | +30% | +8.9% | +1.8% | 58.02 | +1.5% | +6.1% | +25% | +101% | +292% | +715% |
+    | layer 0 only | +70% | | | +8.0% | | | | | +20% | | | |
+    | layer 1 only | +6.7% | | | +1.2% | | | | | +3.3% | | | |
+
+    The minimum is at c = 1: **the trained head is not past its own optimum**, so the reading that the head over-damped (above) is not supported; the learned arm's deficit against SR2 lies in how training shaped the weights, not in a damping that could be turned down afterwards. The optimum is sharp (about ±25% in c costs under 2%) and steeper toward heavy damping (doubling +25%, halving +8.9%). The reliance sits at layer 0 (+70% with its added damping removed, layer 1 +6.7%). Reliance, not need.
+  - **D2, FLOW-R** (`refinement_flow_confirmation.py … gzh seed=20261009`; new `gzh` kind: the per-layer flow freezes the quadratic at each trained layer's first substep and recomputes ζ(h) at every substep, as the model's own `substeps_per_layer` path does). All checks PASS, including the per-layer flow against that path (max relative |Δ logit| 0). Kick share at the trained step 0.54 (layer 0) and 0.63 (layer 1), against SR2's 0.37 and 0.51. Penalties of the per-layer flow at N = 3, 4, 6, 8, 12, 16: 0.816, 0.291, 0.272, 0.284, 0.300, 0.312 nats; standard refinement at N = 8: 2.086. |pen12 − pen8| = 0.016, inside the 0.02 convergence criterion, but still rising slowly, toward a limit about **0.31 nats** above the trained step. **Across the damping axis** (per-layer flow at N = 16): SR2 0.104, converged; learned γ(h) 0.312, levelling off; SR3-crit 0.300, drifting; FO-b 0.904, not converging. Moderate learned damping costs as much refinement as critical damping.
+  - **D1, the head read token by token** (`debug/d1_zeta_readout.py`; 4 × 4 × 512 tokens; ζ captured from the head itself, matching the head re-applied to the trajectory exactly). Spearman correlation of ζ with each property, per layer:
+
+    | against | layer 0 | layer 1 |
+    | --- | ---: | ---: |
+    | unigram surprisal (rarity) | **+0.56** | −0.19 |
+    | anharmonic fraction ε (M1) | +0.27 | −0.17 |
+    | frequency of the token's stiffest mode | −0.28 | **+0.36** |
+    | median frequency of its 16 modes | −0.27 | — (zero for every token) |
+    | position in the sequence | +0.08 | −0.17 |
+    | next-token loss | −0.12 | −0.08 |
+
+    - **At layer 0 the head keys mainly on token identity:** rarer tokens are damped more, median ζ rising from 0.42 in the most frequent decile to 0.69 in the rarest. Rarer tokens are also heavier (the mass is learned from the log-frequency), so their modes are slower; ζ rises as ω falls (−0.28), which moves the added rate 2ζω toward the same value across tokens. Whether it equalises the rate is a question for the per-token data (not saved in this pass).
+    - **At layer 1 the head keys on stiffness:** tokens with a stiffer top mode get more damping (+0.36), and early positions slightly more (median 0.41 in the first position decile, 0.31 in the last).
+    - **GH2 (|ρ(ζ, ε)| below 0.2 at both layers, scoring rule fixed in the script before the run), called 55%: MISS** (layer 0 +0.27, layer 1 −0.17). The dependence on ε is non-monotone at layer 0 (median ζ rises over the first nine deciles of ε, 0.55 to 0.68, and drops to 0.47 in the top decile). The registered prediction of 2026-10-03 that GH2 replaced, "γ higher where ε is low", fails at layer 0 and holds weakly at layer 1.
+    - **Two facts about the stiffness spectrum,** found in passing. At layer 0 a token's median retained mode sits at ω·Δt ≈ 1.1 (deciles 0.7–1.5), far below its stiffest mode (median 10.2, Cell 6b-13). At layer 1 more than half of the 16 retained modes have zero stiffness for every token (L = GGᵀ has fewer than 8 non-zero directions there). The ω·Δt that Cell 6b-13 and the in-flight monitor report, √(λ_max/m) per token, is therefore **the stiffest mode's**, and the median quoted across this series (SR2 7.55, γ(h) 7.82) is the median over tokens of the stiffest mode, not the median mode.
 
 
 #### FO-b-PMX: the true first-order twin of PMX — **pre-registered 2026-10-19, before the run (author's decision)**
@@ -3900,6 +3943,96 @@ The progress lines print ζ to two decimals, so ζ₀ = 0.005 shows as 0.00 (the
 - **FBX4 misses:** the unstable well directions, which the damped oscillator contains, grow unchecked without inertia; the arm is reported as a stability result, not scored for perplexity.
 
 **Descriptive:** Cells 6b-7 (Gate 1 reads 0), 6b-13 and 6b-15 (well depths and half-lives against PMX's, to see whether a first-order model builds shallower wells).
+
+#### FO-b-PMX scored: **54.02 settled, Δᵇ_PMX = −1.1%: the first-order twin matches PMX (FBX1 MISS); the wells help a first-order model twice as much as a second-order one** — **2026-10-22**
+
+Output `L2_PMX16_on_OWT_32500steps_output.txt`. PMX's Cell 0 plus `FIRST_ORDER_OVERDAMPED = True` and the speed switches; tag `…pm64_pmx16_sr2_fob…`; 32,500 steps, seed 0, an A100 80 GB (about 1.38 s per step, 12.5 h). Finished cleanly; no watchdog trigger or spike capture; largest gradient norm 1.32; largest jump of the training loss above its running median ×1.006; SCAF CLEAN at every audit. 76,596,941 parameters, PMX's exactly.
+
+| step | PMX | FO-b-PMX | FO-b-PMX against PMX | SR2 | FO-b-OWT |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 500 | 454.7 | 450.4 | −0.9% | 461.8 | 451.2 |
+| 2,500 | 129.3 | 128.3 | −0.8% | 135.3 | 131.4 |
+| 5,000 | 96.5 | 96.4 | −0.1% | 108.4 | 101.1 |
+| 10,000 | 75.6 | 74.8 | −1.1% | 86.0 | 83.6 |
+| 15,000 | 68.7 | 67.8 | −1.3% | 76.8 | 79.5 |
+| 20,000 | 65.5 | 63.2 | −3.5% | 70.8 | 72.5 |
+| 22,500 | 64.2 | 60.9 | −5.1% | 67.2 | 69.2 |
+| 25,000 | 61.2 | 59.7 | −2.5% | 65.9 | 67.5 |
+| 30,000 | 55.8 | 53.8 | −3.6% | 58.1 | 61.0 |
+| **settled** | **54.63** | **54.02** | **−1.1%** | **58.32** | **61.16** |
+
+- **Settling check, steps 29,500–32,500:** fitted change +0.005 nats against a residual standard deviation of 0.014: settled. Best 52.18 at step 31,000 (PMX 53.15 at 30,500).
+- **Level with PMX throughout, ahead at the end of the stable phase.** FO-b-PMX was ahead at 47 of the 65 evaluations. Mean FO-b-PMX − PMX: −0.004 nats (sd 0.010) over steps 2,000–10,000, −0.022 (sd 0.024) over 10,500–21,000, −0.011 over 21,500–29,000 and −0.015 (sd 0.020) over the last 3,000 steps. The settled difference, 0.011 nats, is inside PMX's own residual scatter (0.024 nats) and inside any plausible seed spread: **a tie, with a slight first-order edge**. As on the SR2 base, the second-order arm gains more in the decay (21,000 → 32,500: PMX 0.218 nats, FO-b-PMX 0.173) and closes most of a gap that peaked at −5.1% (step 22,500).
+- **Scored:**
+  - **FBX1 (second order earns its keep in the wells, Δᵇ_PMX ≥ +3%), called 60%: MISS.** Δᵇ_PMX = −1.1%.
+  - **FBX2 (Δᵇ_PMX exceeds Δᵇ_OWT by 2 points or more), called 55%: MISS.** −1.1% against +4.9%: the gap goes the other way.
+  - **FBX3 (FO-b-PMX settles below FO-b-OWT), called 60%: HIT.** 54.02 against 61.16, −11.7%.
+  - **FBX4 (stable: no watchdog trigger, no spike above twice the running loss), called 70%: HIT.** The unstable well directions, which a gradient flow grows as e^(μ|k|t), did not destabilise training.
+- **Reading (fixed for FBX1's miss before the run):** even the model that leans hardest on momentum is matched by a first-order model trained from scratch. **PMX's Gate 1 (+91%) measures how PMX was trained, not what the task needs.** FO-PMX (the FO-a arm) was conditional on an FO-b-PMX gap and does not run.
+- **What the wells do to the first-vs-second-order gap.** The wells help both orders, the first-order model about twice as much: PMX is 6.3% better than SR2, FO-b-PMX 11.7% better than FO-b-OWT. On the SR2 base second order is worth 4.9%; with the wells it is worth nothing measurable. One reading, to be tested, not concluded: the lightly damped rotation of SR2's stiff modes keeps tokens distinct (the information-preservation account of the future note, §3), and the memory wells provide a different way of keeping them distinct, by capture, which a gradient flow does as well as a damped oscillator. The diagnostic cells (6b-15's well depths and half-lives against PMX's) are the first test.
+- **Caveats.** One seed per arm, and the seed spread is unmeasured; a −1.1% gap reads as a tie on any plausible spread. PMX ran without the speed switches (the analytic V_φ force and checkpointing off are the same arithmetic, verified 2026-10-18) and resumed once (its log starts at step 8,050); FO-b-PMX ran straight through. FO-b adds no parameters, so the two arms start from the same initial weights.
+- **Cells 6b-7 and 6b-15** (best checkpoint, step 31,000; outputs `Cell-6b-7_flow_or_maps_FO-b-PMX_32500steps_output.txt`, `Cell-6b-15_FO-b-PMX_tuning_what_limits_Poisson_modes_clip=0.3_32500steps_output.txt`, 2026-10-22):
+
+  | reading | PMX | FO-b-PMX | SR2 | FO-b-OWT |
+  | --- | ---: | ---: | ---: | ---: |
+  | Gate 1, velocity reset | +91% | **0** | +3.9% | 0 |
+  | Gate 2, one extra layer at the trained Δt | +956% | **+0.3%** | +35% | +0.6% |
+  | Gate 2, two extra layers | +52,000% | **+1,311%** | — | — |
+  | Gate 3 at N = 3 (nats) | 1.097 | **0.666** | 0.405 | 0.178 |
+  | well half-life, p05 / median / p95 (tokens) | 3.1 / 9.1 / 21.2 | **3.2 / 8.4 / 19.8** | — | — |
+  | well depth, median, layer 0 / layer 1 | −0.001 / −0.009 | **+0.031 / +0.071** | — | — |
+  | wells with positive (attractive) depth, layer 0 / layer 1 | 50% / 48% | **64% / 61%** | — | — |
+  | depth tails at layer 1 (p05, p95) | −0.54, +0.55 | **−0.22, +0.58** | — | — |
+  | wells' force against the conservative force, layer 0 / layer 1 | 0.81 / 4.79 | **0.61 / 3.32** | — | — |
+  | force share of the longest-lived quarter of modes, layer 0 / layer 1 | 45% / 38% | **33% / 19%** | — | — |
+  | force share of the shortest-lived quarter, layer 0 / layer 1 | 9% / 16% | **14% / 38%** | — | — |
+
+  - **Gate 1 reads 0**, as it must for a model with no velocity. PMX's +91% was reliance: its first-order twin matches it.
+  - **The first-order well model is the most extensible model in the series:** one extra layer costs +0.3% (PMX +956%, the momentum lock the step-8,000 probe first showed), and its refinement at three steps (0.666 nats) is better than PMX's (1.097), though worse than the base arms'.
+  - **The first-order model built its memory from attractive wells.** PMX's depths are balanced between attractive and repulsive (50% and 48% positive, medians at zero, symmetric tails at layer 1); FO-b-PMX's are attractive by a majority (64%, 61%; medians +0.03, +0.07), and the repulsive tail at layer 1 is less than half as deep (−0.22 against −0.54). Under a gradient flow an attractive well captures every token that enters it; the second-order model, whose tokens can pass through a well, uses repulsive wells as much as attractive ones. The half-lives are the same (medians 8.4 and 9.1 tokens), so the two models remember over the same horizons and differ in how the memory acts.
+  - **The force is carried by different modes.** In PMX the longest-lived quarter of the modes carries the largest share of the wells' force at both layers (45%, 38%); in FO-b-PMX it does at layer 0 (33%) and the shortest-lived quarter does at layer 1 (38%). The first-order model's layer-1 memory is short-range.
+  - 6b-15's four tuning questions (step size, weight decay, occupation scale, placement) read "not indicated" on both arms, as for PMX.
+- **Not yet run:** Cells 6b-13 (needs the FO-b-on-PMX recorder of 2026-10-22, uncommitted when the run finished), 6b-9 and 7; FLOW-R needs an FO-b-on-PMX kind.
+- **Reading, continued: the memory-substitution hypothesis**, pre-registered in the next block, is the explanation proposed for this result together with SR3-crit's.
+
+#### The memory-substitution hypothesis (MS) — **pre-registered 2026-10-22, after FO-b-PMX and before any further run (author's decision on the calls)**
+
+**The hypothesis.** The perplexity advantage of second-order dynamics in the conservative core is the advantage of a *memory*. A second-order layer map reads two past states, h_ℓ and h_{ℓ−1}, where a first-order map reads one: the velocity between layers is a memory of the token's own previous position, and inside a step the exact damped flow of a stiff mode keeps the share e^(−γᵢΔt) of the phase-space area of a cloud of tokens, the distinctions between them, where the gradient flow contracts that mode by e^(−(ωᵢΔt)²/2), to nothing at the stiffest modes. The Poisson-mode wells are a memory of a different kind: the occupation n̄ᵥ(t) = Σ_{s<t} λᵥ^(t−1−s) Eᵥ(s) is an exponentially weighted trace of how much earlier tokens overlapped mode v, with a learned half-life, addressed by content and acting through a force. **Where an explicit memory carries at least the information the implicit one carried, the implicit memory is redundant and the second-order advantage disappears.** Functional substitution, not identity of mechanism. Full statement, the comparison of the two memories and the figures: the future note (§7) and paper v6 §17h.
+
+**Evidence at the time of registration** (0.53B tokens, L = 2, d = 384, one seed, OpenWebText): the gap closes from +4.9% (SR2 base) to −1.1% (PMX base); the wells help first order 11.7% and second order 6.3%; SR3-crit locates the core's gain in the rotation; Gate 1 reads +91% on PMX and 0 on its matching twin (reliance, not need); the first-order model's wells are attractive by a majority where PMX's are balanced; FO-b-PMX extends a layer at +0.3% where PMX pays +956%.
+
+**Calls.** Seed spread, dose and the sharpest discriminator first.
+
+| id | test | prediction under substitution | called |
+| --- | --- | --- | ---: |
+| MS1 | **the seed spread**: SR2 rerun at seed 1 with the speed switches (queue item 8, now unconditional) | the settled difference between seeds is below 2%, so that −1.1% reads as a tie and +4.9% as a gap | 65% |
+| MS2 | **dose-response**: second-order and first-order pairs at K = 16 and K = 256 Poisson modes (PMX's settings otherwise), against the recorded K = 0 (SR2/FO-b-OWT, +4.9%) and K = 64 (PMX/FO-b-PMX, −1.1%) | the second-order gap falls monotonically with K (K = 16 between +4.9% and −1.1%) and is within the seed spread at K = 64 and K = 256 | 60% |
+| MS2′ | the mechanism along the dose: Cell 6b-15 on the first-order arm at each K | the share of attractive wells and the wells' force share rise with K in the first-order arm, and stay balanced in the second-order arm | 55% |
+| MS3 | **SR3-crit on PMX**: critical damping of the stiff modes on the well base (`STIFF_MODE_DAMPING_RATIO = 1.0` on PMX's Cell 0; needs the guard of the head lifted for PMX, since SR3's rate enters `lowrank_iso_damped_substep`) | within 2% of PMX, where it cost 8.5% without the wells: the rotation is not needed once the wells remember | 55% |
+| MS4 | **the 2B pair with wells** (PMX-2B, FO-b-PMX-2B), the decay-phase threat | the first-order twin stays within the seed spread of PMX at 2B tokens | 50% |
+| MS5 | **a code corpus**: SO/FO-b without wells and with them (four runs at 16,250 steps) | second order earns a gap without wells on code (the information-preservation channel predicts a larger one than on OpenWebText) and none with them | 45% |
+| MS6 | **depth**: PMX and FO-b-PMX at L = 4 | the first-order twin stays within the seed spread at L = 4, where the implicit memory has three boundaries to act across | 45% |
+| MS7 | **FO-b-G3′ against G3′**: an explicit memory read by a non-conservative channel, the reverse channel, not felt as a well (queue item 4) | the first-order twin matches G3′ within 2% — the opposite of the future note's call of 2026-10-20 (a gap, 70%), which stands on record | 55% |
+
+**MS2, the K = 16 pair, pre-registered in detail (2026-10-22, before the runs).** Both arms on PMX's Cell 0 (F3.1's settings plus `POISSON_MODES = 16`, `LOWRANK_DAMPED_FLOW = True`, `POISSON_WELLS_EXACT = True`) with the speed switches (`VPHI_ANALYTIC_FORCE = True`, `LAYER_CHECKPOINT = False`); the first-order arm adds `FIRST_ORDER_OVERDAMPED = True`. Tags `…pm16_pmx16_sr2_L2probe…` and `…pm16_pmx16_sr2_fob_L2probe…`; 32,500 steps, seed 0, OpenWebText; about 12 h each; the second-order arm first, as the new baseline. At K = 16 the exact rank part (`POISSON_WELLS_EXACT_MODES = 16`) covers every well. **Build check** (`debug/verify_dose_modes.py`, output `debug/verify_dose_modes_output.txt`): at K = 16 and K = 256, second order and FO-b, the notebook's own cells build the model with the expected tag and parameter count (76,578,318 at K = 16, 76,671,438 at K = 256), a training step gives a finite loss and finite gradients, and the half-lives initialise over 4–128 tokens as at K = 64. The K = 256 pair follows with the same settings and `POISSON_MODES = 256`.
+
+| id | prediction | called |
+| --- | --- | ---: |
+| MS2a | the second-order gap at K = 16 lies strictly between the recorded ends: in (+1%, +4%) | 50% |
+| MS2b | both K = 16 arms settle between their K = 0 and K = 64 counterparts (SR2 58.32 > PMX-K16 > PMX 54.63; FO-b-OWT 61.16 > FO-b-PMX-K16 > FO-b-PMX 54.02) | 65% |
+| MS2c | the wells' gain is larger for the first-order arm at K = 16 too: FO-b-OWT − FO-b-PMX-K16 exceeds SR2 − PMX-K16 in log perplexity | 60% |
+| MS2d | the first-order K = 16 arm trains stably (no watchdog trigger, no spike above twice the running loss), as at K = 64 | 75% |
+
+MS2 as called above (the gap falls monotonically with K and is within the seed spread from K = 64 on) is scored once the K = 256 pair is in; MS2a–MS2c read the K = 16 pair alone.
+
+**Readings, fixed now.**
+- **MS2 hits and MS3 hits:** the hypothesis stands at this scale; the book's §17h subsection is upgraded from "proposed" to "supported", with the scope line of MS4–MS6.
+- **MS2 misses with the gap flat in K:** the wells help both orders alike and the K = 64 tie is a coincidence of this pair; the hypothesis is withdrawn and FO-b-PMX is reported as a result about the wells.
+- **MS2 hits and MS7 misses (G3′ needs second order):** substitution holds for a memory felt as a force and fails for one read by a channel; the hypothesis is narrowed to conservative memories, and the register path is the place second order earns its keep, as the future note's §6 third outcome has it.
+- **MS4 misses (a gap reopens at 2B):** the substitution is a property of the 0.5B budget; the decay-phase pattern (the second-order arm gaining more as the learning rate falls) is then the finding, and the 2B pair without wells decides whether it is the wells or the budget.
+- **MS1 misses (seed spread above 2%):** no comparison under 3% in this series is read, including FO-b-PMX's; MS2 is scored on the trend across four K only.
+
+**Scope:** as the series, until MS4–MS6 widen it.
 
 **Scope:** constant γ = 0.1 in the anchor, L = 2, d = 384, 532.5M tokens, one seed.
 

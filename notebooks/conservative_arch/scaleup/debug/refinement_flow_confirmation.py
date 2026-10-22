@@ -19,7 +19,7 @@ Checks first, all exact: switches off = 6b-7's _fom_stack; per-layer flow at
 N = 2 = trained; one fresh xi / quadratic (/ phi) per trained layer at N = 8;
 the replay with the normal clamp reproduces the captured output.
 
-Usage: python3 refinement_flow_confirmation.py OUT_DIR FOLDER {f31|sr2|pm1|pmx|sr2-ts|fo-ts|fob|sr3} [seed=<int>] [ckpt=<file>]
+Usage: python3 refinement_flow_confirmation.py OUT_DIR FOLDER {f31|sr2|pm1|pmx|sr2-ts|fo-ts|fob|sr3|gzh|fob-pmx} [seed=<int>] [ckpt=<file>]
   sr2-ts (2026-10-19): SR2's architecture trained on TinyStories (the FO series' SO-TS), built
   through the current notebook with CORPUS = 'tinystories' and the run's own validation tokens
   and frequency table (first_order_ablation/fo_series/stage0_models.build_cfc_ts).
@@ -30,6 +30,12 @@ Usage: python3 refinement_flow_confirmation.py OUT_DIR FOLDER {f31|sr2|pm1|pmx|s
   FO-b-OWT). Its step hands on no velocity and its mobility is fixed at the trained dt, so the per-layer
   flow refines one gradient flow; checked against the model's own substeps_per_layer path.
   sr3 (2026-10-20): SR2 with per-mode critical damping of the stiff modes (STIFF_MODE_DAMPING_RATIO = 1.0, SR3-crit).
+  fob-pmx (2026-10-22): PMX trained as a true first-order gradient flow (FO-b-PMX): PMX's frozen spring relaxed
+  exactly, no velocity; the per-layer flow freezes the wells' quadratic as the pmx kind does and is checked
+  against the model's own substeps_per_layer path.
+  gzh (2026-10-22, D2): SR2 with the learned damping ratio zeta(h) (LEARNED_DAMPING_RATIO = True). As in the
+  model's own substeps_per_layer path, the per-layer flow freezes the quadratic at the layer's first substep
+  and recomputes zeta(h) from each substep's input; checked against that path.
   ckpt=<file>: a checkpoint file in FOLDER/checkpoints other than <prefix>_best.pt.
   pmx (CX3, 2026-10-11): SR2 + 64 Poisson modes with the wells integrated
   exactly; the per-layer flow also freezes the wells' quadratic and its
@@ -53,17 +59,17 @@ if __name__ == '__main__':
     SEED = next((int(a[5:]) for a in sys.argv[4:] if a.startswith('seed=')), None)
     CHECKS_ONLY = 'checks' in sys.argv[4:]
     CKPT = next((a[5:] for a in sys.argv[4:] if a.startswith('ckpt=')), None)
-    assert KIND in ('f31', 'sr2', 'pm1', 'pmx', 'sr2-ts', 'fo-ts', 'fob', 'sr3'), KIND
+    assert KIND in ('f31', 'sr2', 'pm1', 'pmx', 'sr2-ts', 'fo-ts', 'fob', 'sr3', 'gzh', 'fob-pmx'), KIND
     sys.argv = [sys.argv[0], str(OUT / 'harness')]
     sys.path.insert(0, str(Path(__file__).parent))
     import verify_pm_switch as P
     from refinement_ln_linearisation_split import split_stack
     repl = P.CONFIGS['F3.1'][1]
-    if KIND in ('sr2', 'pmx', 'fob', 'sr3'):
+    if KIND in ('sr2', 'pmx', 'fob', 'sr3', 'gzh', 'fob-pmx'):
         repl = repl + (("LOWRANK_DAMPED_FLOW  = False", "LOWRANK_DAMPED_FLOW  = True"),)
-    if KIND in ('pm1', 'pmx'):
+    if KIND in ('pm1', 'pmx', 'fob-pmx'):
         repl = repl + P.PM_ON
-    if KIND == 'pmx':
+    if KIND in ('pmx', 'fob-pmx'):
         repl = repl + (("POISSON_WELLS_EXACT  = False", "POISSON_WELLS_EXACT  = True"),)
     if KIND in ('sr2-ts', 'fo-ts'):
         sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'first_order_ablation/fo_series'))
@@ -79,14 +85,17 @@ if __name__ == '__main__':
         print(f'checkpoint: {CKPT or "<prefix>_best.pt"} (step {_sd.get("step")}, PPL {_sd.get("val_ppl", float("nan")):.3f})')
         KIND_ARCH = 'sr2'
     else:
-        if KIND == 'fob':
+        if KIND in ('fob', 'fob-pmx'):
             repl = repl + (("FIRST_ORDER_OVERDAMPED = False", "FIRST_ORDER_OVERDAMPED = True"),)
         if KIND == 'sr3':
             repl = repl + (("STIFF_MODE_DAMPING_RATIO = None", "STIFF_MODE_DAMPING_RATIO = 1.0"),)
+        if KIND == 'gzh':
+            repl = repl + (("LEARNED_DAMPING_RATIO = False", "LEARNED_DAMPING_RATIO = True"),)
         model, g, _ = P.build(FOLDER, repl)
-        KIND_ARCH = 'sr2' if KIND in ('fob', 'sr3') else KIND
+        KIND_ARCH = 'sr2' if KIND in ('fob', 'sr3', 'gzh') else ('pmx' if KIND == 'fob-pmx' else KIND)
+        assert (getattr(model, 'damping_head', None) is not None) == (KIND == 'gzh')
         assert (getattr(model.cfg, 'stiff_mode_damping_ratio', None) == 1.0) == (KIND == 'sr3')
-        assert bool(getattr(model.cfg, 'first_order_overdamped', False)) == (KIND == 'fob')
+        assert bool(getattr(model.cfg, 'first_order_overdamped', False)) == (KIND in ('fob', 'fob-pmx'))
     model.to('cpu'); model.eval()
     assert bool(getattr(model.cfg, 'lowrank_damped_flow', False)) == (KIND_ARCH in ('sr2', 'pmx'))
     assert (getattr(model, 'pm_mu', None) is not None) == (KIND_ARCH in ('pm1', 'pmx'))
@@ -106,7 +115,7 @@ if __name__ == '__main__':
     L, DT = model.cfg.L, model.cfg.dt
     T = L * DT
     PM = KIND == 'pm1'
-    PMX = KIND == 'pmx'
+    PMX = KIND in ('pmx', 'fob-pmx')
     # PMX: phi is frozen by the flow context (with the wells' quadratic), not by split_stack's call-index cache
     FLOW = dict(ln_once=True, freeze=True, xi_freeze=True, phi_freeze=PM, pmq_freeze=PMX)
     TRAINED = dict(ln_once=False, freeze=False, xi_freeze=False, phi_freeze=False)
@@ -147,7 +156,7 @@ if __name__ == '__main__':
     fresh = (st['fresh'], st['xfresh']) + ((st['pfresh'],) if PM else ()) + ((nq[0],) if PMX else ())
     ok &= all(f == L for f in fresh)
     say(f'CHECK  N=8 per-layer flow: fresh quadratic / xi{" / phi" if PM else ""}{" / wells quadratic" if PMX else ""} = {fresh} (one per trained layer: {L})')
-    if PMX or KIND in ('fo-ts', 'fob', 'sr3'):
+    if PMX or KIND in ('fo-ts', 'fob', 'sr3', 'gzh'):
         # an independent implementation of the same flow: the model's inference mode, 4 substeps per layer
         flow8 = logits(stack(8, FLOW))
         model.cfg.substeps_per_layer = 4

@@ -166,7 +166,7 @@ for x, y, lab, mk in pts:
     ax[0].plot(x, y, mk, color="k", ms=8); ax[0].annotate(lab, (x, y), textcoords="offset points", xytext=(8, 4), fontsize=8)
 ax[0].plot([0.39, 0.59], [59.29, 59.29], color="#1b9e77", lw=4, solid_capstyle="butt")
 ax[0].annotate("learned γ(h), 59.29\n(median ζ, layer 1 to layer 0)", (0.39, 59.29), textcoords="offset points", xytext=(-95, 14), fontsize=8, color="#1b9e77")
-ax[0].set_xscale("log"); ax[0].set(xlabel="total damping ratio, median stiff mode (FO-b: overdamped end)", ylabel="settled perplexity, OpenWebText",
+ax[0].set_xscale("log"); ax[0].set(xlabel="total damping ratio, a typical token's stiffest mode (FO-b: overdamped end)", ylabel="settled perplexity, OpenWebText",
                                    title="A. The damping axis (recorded)", xlim=(0.01, 60), ylim=(57.5, 64.8))
 D = Path.home() / "Downloads"
 log = D / "L2_learned_lambda_OWT_32500steps_output.txt"

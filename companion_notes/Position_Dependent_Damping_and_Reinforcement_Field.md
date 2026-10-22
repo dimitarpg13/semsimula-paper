@@ -395,7 +395,7 @@ None of §4.1–§4.3 has been trained. The two damping arms that did train (pro
 | arm | damping rate of stiff mode i | what is learned | extra parameters |
 | --- | --- | --- | --- |
 | SR2 (the base) | γ₀ = 0.1 | nothing | 0 |
-| SR3-crit | γ₀ + 2ωᵢ: the critical rate 2ωᵢ on top of the floor (total ratio about 1.03 for a median stiff mode) | nothing | 0 |
+| SR3-crit | γ₀ + 2ωᵢ: the critical rate 2ωᵢ on top of the floor (total ratio about 1.03 on a typical token's stiffest mode) | nothing | 0 |
 | learned γ(h) | γ₀ + 2ζ(h)ωᵢ | a damping ratio ζ(h) per token and layer | 24,705 |
 
 The directions outside the retained modes keep γ₀ in both arms. The learned arm relates to the proposals above as follows.
@@ -1267,7 +1267,7 @@ where aᵢ is the mode's share of the remaining force. The arms differ only in h
 | learned γ(h) | γ₀ + 2ζ(h)ωᵢ | one learned ratio per token and layer |
 | **per-mode, ζᵢ(h)** | **γ₀ + 2ζᵢ(h)ωᵢ** | **one learned ratio per token, layer and mode** |
 
-The *damping ratio* ζ is the damping rate measured against the mode's own frequency: below 1 the mode oscillates as it settles, at 1 it settles as fast as it can without overshooting, above 1 it creeps. The *total* ratio of a mode includes γ₀'s contribution: it is ζᵢ plus γ₀ divided by twice ωᵢ, which for SR2's median stiff mode (ω·Δt about 7.6, Δt = 4) is about 0.026.
+The *damping ratio* ζ is the damping rate measured against the mode's own frequency: below 1 the mode oscillates as it settles, at 1 it settles as fast as it can without overshooting, above 1 it creeps. The *total* ratio of a mode includes γ₀'s contribution: it is ζᵢ plus γ₀ divided by twice ωᵢ, which for the stiffest mode of a typical token in SR2 (ω·Δt about 7.6, Δt = 4; the median over tokens of the stiffest mode, which is what the resonance monitor reports) is about 0.026. The rest of the spectrum is much softer: in the learned arm a token's median retained mode at layer 0 sits at ω·Δt ≈ 1.1, and at layer 1 more than half of the 16 retained modes have zero stiffness (protocol §5.13, D1).
 
 **How the learned arm computes ζ(h).** It is a learned MLP in the sense of §4.2, with four differences from that proposal (§4.5).
 
@@ -1360,7 +1360,7 @@ Take a trained damping arm and, without retraining, replace its ζ(h) by c·ζ(h
 
 ### 12.7 The constant-ζ control (D4)
 
-The learned arm differs from SR2 in two ways at once: its damping **level** is higher (settled median added ratio ζ 0.56 at layer 0 and 0.36 at layer 1, total ratios of about 0.59 and 0.39 for a median stiff mode, against SR2's total 0.026) and its damping **varies** with the token. One run separates them: SR3's per-mode form at a **fixed** ratio ζ̄ equal to the learned arm's settled ratio (about 0.46, the mean of the two layers' settled medians; fixed and pre-registered before the run), with no head. The learned arm settled 1.7% behind SR2, so the decomposition now reads a cost: of the 0.97 perplexity points, how much is the level and how much the variation. An arm without a head also starts from SR2's exact initial weights, which the learned arm did not (protocol §5.13, pairing caveat).
+The learned arm differs from SR2 in two ways at once: its damping **level** is higher (settled median added ratio ζ 0.56 at layer 0 and 0.36 at layer 1, total ratios of about 0.59 and 0.39 on a typical token's stiffest mode, against SR2's total 0.026) and its damping **varies** with the token. One run separates them: SR3's per-mode form at a **fixed** ratio ζ̄ equal to the learned arm's settled ratio (about 0.46, the mean of the two layers' settled medians; fixed and pre-registered before the run), with no head. The learned arm settled 1.7% behind SR2, so the decomposition now reads a cost: of the 0.97 perplexity points, how much is the level and how much the variation. An arm without a head also starts from SR2's exact initial weights, which the learned arm did not (protocol §5.13, pairing caveat).
 
 $$
 \Delta_{\text{level}} = \mathrm{PPL}(\bar{\zeta}) - \mathrm{PPL}(\text{SR2}),

@@ -39,6 +39,8 @@ What has been measured, as of this date:
 | SR2 against FO-b-OWT (FO-b), 32,500 steps | OpenWebText, 532.5M tokens | 58.32 | 61.16 | scored: Δ = **+4.9%**; FB2 (≥ +3%, called 60%) hit |
 | stiffness of the wells, median ω·Δt (Cell 6b-13), same pair | OpenWebText | 7.55 | 0.74 | descriptive: the first-order model builds wells ten times softer, with the same context horizons |
 | SR2 against SR3-crit (critical damping of the stiff modes, velocity between layers kept) | OpenWebText, 532.5M tokens | 58.32 | 63.28 (critically damped, second order) | scored: **+8.5%**, worse than FO-b; SC3′ (falls toward FO-b, called 25%) hit |
+| SR2 against the learned per-token damping ζ(h) | OpenWebText, 532.5M tokens | 58.32 | 59.29 (second order, moderately damped) | scored: +1.7%; the model adds damping and keeps the oscillation (protocol §5.13) |
+| PMX against FO-b-PMX (FO-b), 32,500 steps | OpenWebText, 532.5M tokens | 54.63 | 54.02 | scored: Δ = **−1.1%**, a tie; FBX1 (≥ +3%, called 60%) missed, FBX3 and FBX4 hit |
 | Gate 1, the velocity reset at inference on the trained second-order weights | both | +2% (SO-TS), +3.9% (SR2) | — | reliance, not need |
 
 Two further facts frame the discussion. First, the Stage-0 rule that predicted a first-order gap from anharmonic wells (ε ≥ 0.3) missed on its first trained test: FO-TS learns wells more anharmonic than SO-TS's (ε 4.5 against 2.6 at the output step) and matches it. Second, the FO-a model is robust to extra layers where the second-order one is not (Gate 2: +1% against +25% for one extra layer, +77% against +2,000% for six), while its standard refinement is worse (Gate 3 at N = 3: +48% against +24%), for a reason given in §3.
@@ -81,7 +83,7 @@ z_{\text{SO}}(T) - z^\ast = (z_0 - z^\ast) e^{-\gamma T / 2} \cos(\omega T),
 z_{\text{FO}}(T) - z^\ast = (z_0 - z^\ast) e^{-\mu \kappa T} .
 $$
 
-SR2's median stiff mode has $\omega \cdot dt \approx 6.6$, so $\omega T \approx 13$: the mode turns through two full periods inside one layer, and $e^{-\gamma T / 2} \approx 0.67$ of its amplitude survives. These two lines are the whole argument of the next section.
+The stiffest mode of a typical token in SR2 (the median over tokens of the stiffest mode, as the resonance monitor reports it) has $\omega \cdot dt \approx 6.6$, so $\omega T \approx 13$: the mode turns through two full periods inside one layer, and $e^{-\gamma T / 2} \approx 0.67$ of its amplitude survives. These two lines are the whole argument of the next section.
 
 ![One stiff mode through one layer: oscillation against relaxation, and the end-of-layer gain by stiffness](figures/future_second_order/fso_step_maps.png)
 
@@ -200,7 +202,7 @@ The same equations name the conditions under which inertia is not noise. Each is
 
 **3. Depth (the premise is weakest at L = 2).** With two layers there is exactly one boundary across which a velocity can carry anything. Every result in the series is the weakest possible test of memory between layers. Deeper stacks test it properly, and the stiffness oscillation of Proposition 3 compounds across layers, so depth cuts both ways.
 
-**4. Passing through a well (Proposition 1's non-containment).** A token arriving at a well with enough kinetic energy passes through it; a token under the gradient flow is always captured. If the task sometimes needs a token **not** to be captured by a memory well it approaches, inertia is the only mechanism in the class that does it. This is where the Poisson-well models may need second order beyond what the conservative core does, taken up in §7.
+**4. Passing through a well (Proposition 1's non-containment).** A token arriving at a well with enough kinetic energy passes through it; a token under the gradient flow is always captured. If the task sometimes needs a token **not** to be captured by a memory well it approaches, inertia is the only mechanism in the class that does it. This is where the Poisson-well models may need second order beyond what the conservative core does, taken up in §7. **Scored 2026-10-22:** FO-b-PMX matches PMX (−1.1%), so at this scale the capture mechanism earns nothing measurable; §7 gives the reading.
 
 ![A Gaussian well: with inertia a token can pass through; without it, it is always captured](figures/future_second_order/fso_well_capture.png)
 
@@ -230,7 +232,7 @@ The first version of this section read the conservative core as overdamped becau
 
 What does not change: the potentials, the context channels, conservativity, causality, the coupling order (register read ≻ exchange field ≻ V_φ), the per-layer flow finding, and the stiffness problem. A stiff gradient flow still needs exact relaxation of its stiff modes, which is exactly what FO-b does; the CfC idea survives, the oscillation does not.
 
-**SR3-crit answered the first open question about the conservative core:** the advantage needs the **oscillation**, not only the inertia (critical damping, 8.5% worse than SR2). **The learned γ(h)** asks the second: **where** does the model add damping to SR2's oscillation, and where does it keep it, by layer, token frequency and position. Its head was re-initialised before the run, after SR3-crit, to start near SR2's own damping (ζ = 0.005, against SR2's effective 0.026 on its median stiff mode) instead of at critical damping, the worst point measured; it can move multiplicatively either way and is capped at ζ = 10 (protocol §5.13, amendment of 2026-10-20).
+**SR3-crit answered the first open question about the conservative core:** the advantage needs the **oscillation**, not only the inertia (critical damping, 8.5% worse than SR2). **The learned γ(h)** asks the second: **where** does the model add damping to SR2's oscillation, and where does it keep it, by layer, token frequency and position. Its head was re-initialised before the run, after SR3-crit, to start near SR2's own damping (ζ = 0.005, against SR2's effective 0.026 on a typical token's stiffest mode) instead of at critical damping, the worst point measured; it can move multiplicatively either way and is capped at ζ = 10 (protocol §5.13, amendment of 2026-10-20).
 
 **Second-order inference on first-order-trained weights** has no benefit left in either reading. The one direction measured, SR2's weights run first-order, costs ×1.33 in perplexity (PMX's ×4.1); the other direction has no reason to be kinder, and the refinement benefit the recipe was meant to buy is delivered better by the gradient flow. It stays as a one-evaluation descriptive check on the FO-b-OWT checkpoint.
 
@@ -264,7 +266,65 @@ The Poisson-mode registers (PM1, PMX) add memory wells to the potential: attract
 
 **A first-order well model is a known object.** With the wells integrated by a gradient flow, PMX becomes a context-conditioned Hopfield network with dynamic, decaying memories: tokens relax toward the memories placed by past tokens. That is a legible position in the literature, and the exact relaxation of indefinite modes (a negative stiffness grows as $e^{\mu |\kappa| t}$ over the step) is what makes it well-posed. One risk is pre-registered as FBX4: the unstable well directions that the damped oscillator contains may grow unchecked without inertia.
 
-**The call.** FBX1 at 60% was the series' highest call for a second-order gap when it was made. With the conservative core already showing one, a gap on PMX is now the expected outcome (about 75%); the run's interest has shifted to whether PMX's gap is larger than SR2's 4.9% (FBX2), which is what the capture mechanism predicts.
+**The call, and the score.** FBX1 at 60% was the series' highest call for a second-order gap when it was made, raised to about 75% after FO-b-OWT. **Scored 2026-10-22: FO-b-PMX settled at 54.02 against PMX's 54.63, −1.1%, a tie on any plausible seed spread; FBX1 and FBX2 missed, FBX3 (the wells help a first-order model: −11.7% against FO-b-OWT) and FBX4 (stable) hit** (protocol §5.13). The realised branch of §10's diagram is "no gap: the wells are a first-order memory". The capture argument above is refuted at this scale as a source of perplexity: whatever a token gains by passing through a well, the first-order model made up by other means. What those means are is the subject of the rest of this section.
+
+### 7.1 Two memories
+
+Three things carry information forward in these models, and the result above is about the relation between them.
+
+| what | carries | across |
+| --- | --- | --- |
+| the velocity between layers | a token's own previous position: the step is a two-term recurrence, h(ℓ+1) = Φ(h(ℓ), h(ℓ−1)) | depth: one layer boundary at L = 2 |
+| the rotation of the stiff modes inside a step | the distinctions between tokens, which a contraction would merge (Proposition 2) | one layer step |
+| the Poisson-mode wells | the context: n̄ᵥ(t) = Σ_{s<t} λᵥ^(t−1−s) Eᵥ(s), an exponentially weighted trace of earlier tokens' overlaps with each mode | the sequence, at learned half-lives of 3–20 tokens |
+
+The first two are the **implicit memory** of a second-order step. They remember the token's *own* past, as linear maps that carry whatever the state holds, with no addressing and a retention set by the damping: the velocity keeps $e^{-\gamma_0 \Delta t} = 0.67$ per layer, a stiff mode keeps $e^{-\gamma_0 \Delta t / 2} = 0.82$ of its amplitude per step and the share $e^{-\gamma_i \Delta t}$ of its phase-space area, where the gradient flow contracts the same mode by $e^{-(\omega_i \Delta t)^2 / 2}$, to nothing at the stiffest modes. Momentum in an optimiser is the same object, a decaying memory of past gradients. The wells are the **explicit memory**: of *other* tokens' pasts, addressed by content (a token deposits in the modes it overlaps and is pulled by the wells it is near), stored as $K = 64$ numbers per position, and acting through a force. They differ in substrate and in what they store; they agree in function, state that survives from one step to a later one and biases it, and both decay at a rate the model sets.
+
+![The two memories: the implicit memory of a second-order step and the explicit memory of the wells](figures/memory_substitution/ms_two_memories.png)
+
+*A. The second-order layer map reads two past states; inside a step the stiff modes rotate and keep their phase-space area. B. A mode's occupation is a decaying trace of earlier tokens' overlaps, here at the trained median half-life of 8.4 tokens. C. Retention of the implicit memory through one stack at γ₀ = 0.1. D. Retention of the explicit memory at the trained half-lives.*
+
+### 7.2 The memory-substitution hypothesis
+
+**The perplexity advantage of second order in the conservative core is the advantage of a memory. Where the architecture supplies an explicit memory that carries at least the information the implicit one carried, the implicit memory is redundant and the advantage disappears.** The claim is about function, not mechanism: the rotation keeps tokens apart within a step, the wells feed each token the context of earlier positions, and both supply information the readout needs; the hypothesis says that at this scale the wells supply it as well or better.
+
+**What supports it now.**
+
+- The gap closes with the wells: +4.9% without them, −1.1% with them. The wells help the first-order model twice as much (11.7% against 6.3%), as substitution predicts: it lacked a memory, the second-order model had one.
+- The gain on the core was the rotation (SR3-crit), the within-step part of the implicit memory.
+- Reliance is not need: resetting the velocity costs PMX +91% and SR2 +3.9%, yet PMX's first-order twin matches it.
+- The first-order model built its memory from attractive wells (Cell 6b-15): 64% and 61% of its depths are positive, medians +0.03 and +0.07, where PMX's are balanced (50%, 48%; medians at zero) with a repulsive tail at layer 1 twice as deep. A gradient flow is captured by every attractive well it enters; a token with inertia can pass through, and PMX uses repulsive wells as much as attractive ones. The half-lives are the same (medians 8.4 and 9.1 tokens): the two models remember over the same horizons and differ in how the memory acts.
+- The explicit memory frees the model from the momentum lock: one extra layer costs FO-b-PMX +0.3% and PMX +956%; refinement at three steps 0.67 nats against 1.10.
+
+![The evidence: order against wells, reliance against need, the gap through training](figures/memory_substitution/ms_substitution_evidence.png)
+
+*A. Settled perplexity of the second-order models and their first-order twins, without and with the wells. B. The cost of resetting the velocity at inference (Gate 1). C. The first-order model against its second-order twin through training, on both bases; the shaded region is the learning-rate decay.*
+
+![The trained wells of PMX and FO-b-PMX](figures/memory_substitution/ms_wells_compare.png)
+
+*Cell 6b-15 on the best checkpoints. A. Well depths over the 64 modes: the first-order model's are attractive by a majority. B. Half-lives: the same horizons. C. The share of the wells' force carried by the shortest-lived and longest-lived quarter of the modes.*
+
+**What it would mean.** If it holds for scaled and fully trained models on other corpora, it answers the book's question, when does second order matter, with a mechanism: when it is the only memory the model has. The design rule reads the other way, spend the architecture on memory and let the integrator be first order, and it places the transformer: attention is an explicit, content-addressed memory followed by a first-order residual update, and a substitution of this kind is why that combination needs no inertia.
+
+**What it does not yet show.** One seed, 0.53B tokens, L = 2, one corpus. In three of the four pairs the second-order arm gained more in the learning-rate decay, and PMX closed a 5.1% deficit in it, so a longer run could reopen a gap. The sharpest test, an explicit memory read by a non-conservative channel (the Fock register path), has not run; the §6 call of 2026-10-20 (G3′ needs second order, about 70%) predicts the opposite of substitution there, and stands on record.
+
+### 7.3 The tests (MS1–MS7, protocol §5.13)
+
+| id | test | substitution predicts | called |
+| --- | --- | --- | ---: |
+| MS1 | the seed spread (SR2, seed 1) | below 2% | 65% |
+| MS2 | dose-response: pairs at K = 16 and 256 modes, against K = 0 and 64 | the gap falls with K and is within the seed spread from K = 64 | 60% |
+| MS2′ | Cell 6b-15 along the dose | the first-order arm's wells grow more attractive and carry more force as K rises | 55% |
+| MS3 | SR3-crit on PMX | within 2% of PMX (it cost 8.5% without wells) | 55% |
+| MS4 | the 2B pair with wells | the tie holds at 2B tokens | 50% |
+| MS5 | a code corpus, with and without wells | a gap without wells, none with them | 45% |
+| MS6 | L = 4 with wells | the tie holds at L = 4 | 45% |
+| MS7 | FO-b-G3′ against G3′ | a match within 2% | 55% |
+
+![The pre-registered dose-response](figures/memory_substitution/ms_dose_response_plan.png)
+
+*MS2: the second-order advantage against the number of modes. Two points are recorded; the two shapes are what substitution and its alternative predict for the others.*
+
 
 ---
 
@@ -318,20 +378,21 @@ flowchart TD
 | --- | --- | ---: | --- |
 | FO-b-OWT against SR2 | the conservative core on OpenWebText | 10 h | **scored: +4.9%, FB2 hit** (called 60% before the run) |
 | SR3-crit on SR2 | oscillation or inertia | 10 h | **scored: +8.5%, the oscillation is the mechanism**; SC3′ (falls toward FO-b, called 25%) hit, SC4 hit, SC5 missed |
-| learned γ(h), conservative core (running), started near SR2 | where damping is added to the oscillation | 10 h | median ζ below 0.3 at both layers, 60%; within 2% of SR2, 55%; beats SR2 by 1%, 25%; layers differ by a factor of 3, 40% |
+| learned γ(h), conservative core, started near SR2 | where damping is added to the oscillation | 10 h | **scored: 59.29, +1.7%; median ζ 0.56 and 0.36; GH7 hit, GH6, GH8, GH9 missed** (protocol §5.13) |
 | FO-OWT (FO-a), now triggered | between layers or inside the step | 10 h | FO-a closes at least half of FO-b's gap, 55% (after SR3-crit: lands within 2% of SR2, 60%) |
 | FO-b-OWT at learning rate 8e-4 | a hyperparameter mismatch | 10 h | closes less than a third of the gap, 65% |
 | a 1B pair (SR2-1B, FO-b-1B) | the trend with training | 40 h | the gap at 1B is larger than at 0.5B, 55% |
-| SR2 rerun with the speed switches, seed 1 | the seed spread | 10 h | not needed for FO-b-OWT (the gap is +4.9%, above the rule's 3%); kept for the gaps near 2% that SR3-crit may produce |
+| SR2 rerun with the speed switches, seed 1 | the seed spread | 10 h | now first in the queue (MS1): the γ(h) +1.7% and the FO-b-PMX −1.1% both need it; spread below 2%, 65% |
 | FO-b-TS against SO-TS | the TinyStories half of true first order | 5 h | level, 60% (first version: 75%) |
-| FO-b-PMX against PMX | the wells' capture mechanism | 14 h | a gap of 3% or more, 75% (FBX1 was called at 60%); larger than SR2's, 55% |
+| FO-b-PMX against PMX | the wells' capture mechanism | 14 h | **scored: −1.1%, a tie; FBX1 (called 60%, then 75%) and FBX2 missed, FBX3 and FBX4 hit** |
+| the memory-substitution programme, MS1–MS7 (§7.3) | whether the second-order advantage is the advantage of a memory | 10–80 h each | the dose-response MS2 at 60%; SR3-crit on PMX within 2% at 55%; the seed spread below 2% at 65% |
 | FO-b-G3′ against G3′ | the register path | 14 h | a gap, 70% |
 | FO-b-XRB-F against XRB-F | the exchange field without the read | 10 h | a gap, 75% |
 | SO/FO-b on a code corpus | a third corpus; the information-preservation channel predicts a larger gap than on OpenWebText | 10 h | a gap larger than OpenWebText's, 50% |
 | a deeper pair (L = 4 or 8) | memory across several boundaries | 20–40 h | a gap grows with depth, 40% |
 | the 2B pair (SR2-2B, FO-b-2B) | the budget | 80 h | decided after the 0.5B results |
 
-The scope line for the claim as it stands: at 0.5B tokens, L = 2, d = 384, one seed, for the conservative-only architecture, second order earns 4.9% on OpenWebText and nothing measurable on TinyStories (FO-a there; FO-b-TS pending).
+The scope line for the claim as it stands: at 0.5B tokens, L = 2, d = 384, one seed, for the conservative-only architecture, second order earns 4.9% on OpenWebText and nothing measurable on TinyStories (FO-a there; FO-b-TS pending); with 64 Poisson-mode wells it earns nothing measurable on OpenWebText either (§7).
 
 ---
 

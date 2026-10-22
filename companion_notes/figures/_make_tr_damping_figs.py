@@ -5,6 +5,8 @@
 
   tr_layer_step.png              -- schematic: the A-B-O-A layer step of SR2 and where the friction of the
                                     stiff modes and of the complement enters (no data)
+  tr_dial_and_control.png        -- recorded: D3's damping dial on the learned arm's fixed weights (from the run's
+                                    results/d3_damping_dial.json), and D4's decomposition with its two recorded ends
   tr_parameterisation_family.png -- the damping rate of a stiff mode, and the amplitude it keeps over a layer
                                     step, against its stiffness, for every parameterisation of the report;
                                     computed from the formulas, with the learned arm's settled medians
@@ -74,7 +76,9 @@ wd_pm = np.sort(rng.uniform(1.0, 13.0, 16)); z_pm = np.exp(rng.normal(np.log(0.3
 ax[0].plot(wd_pm, g0 + 2 * z_pm * wd_pm / dt, "o", color="#7570b3", ms=4, label="per-mode ζᵢ(h), D5: one free ratio per mode (illustrative)")
 for a in ax:
     a.axvline(7.9, color="0.6", ls="--", lw=0.8)
-ax[0].text(8.1, 0.125, "median stiff mode (SR2, γ(h))", fontsize=8, color="0.4")
+    a.axvline(1.1, color="0.6", ls=":", lw=0.8)
+ax[0].text(8.1, 0.125, "stiffest mode of a typical token\n(median over tokens; SR2, γ(h))", fontsize=8, color="0.4")
+ax[0].text(1.25, 0.012, "median retained mode,\nlayer 0 (γ(h), D1)", fontsize=8, color="0.4")
 ax[0].set_yscale("log"); ax[0].set_ylim(0.01, 10)
 ax[0].set(xlabel="stiffness of the mode, ωᵢΔt (Δt = 4)", ylabel="damping rate γᵢ", title="A. The damping rate of stiff mode i")
 ax[0].legend(fontsize=7.5, loc="lower right")
@@ -84,4 +88,32 @@ ax[1].set(xlabel="stiffness of the mode, ωᵢΔt (Δt = 4)", ylabel="amplitude 
           title="B. What the mode keeps: e^(−γᵢΔt/2)")
 ax[1].legend(fontsize=7.5, loc="lower left")
 fig.tight_layout(); fig.savefig(OUT / "tr_parameterisation_family.png"); plt.close(fig)
+# ---------------------------------------------------------------- 3. D3 measured, and the D4 decomposition
+import json
+RES = Path(__file__).resolve().parents[2] / ("notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_"
+      "dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_gzh_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn")
+d3 = json.load(open(RES / "d3_damping_dial.json"))
+fig, ax = plt.subplots(1, 2, figsize=(13, 4.6))
+J = {float(k): v for k, v in d3["joint"].items()}; base = J[1.0]
+cs = sorted(c for c in J if c > 0)
+ax[0].plot(cs, [100 * (J[c] / base - 1) for c in cs], "o-", color="k", label="both layers")
+for key, col, lab in (("layer0", "#d95f02", "layer 0 only"), ("layer1", "#7570b3", "layer 1 only")):
+    D = {float(k): v for k, v in d3[key].items()}
+    pts = sorted(c for c in D if c > 0)
+    ax[0].plot(pts, [100 * (D[c] / base - 1) for c in pts], "s", color=col, ms=7, label=lab)
+    ax[0].plot([0.05], [100 * (D[0.0] / base - 1)], "s", color=col, ms=7, mfc="none")
+ax[0].plot([0.05], [100 * (J[0.0] / base - 1)], "o", color="k", mfc="none")
+ax[0].text(0.056, 100 * (J[0.0] / base - 1) + 25, "c = 0 (open\nmarkers)", fontsize=8)
+ax[0].axvline(1, color="0.5", ls="--", lw=0.8); ax[0].axhline(0, color="0.5", lw=0.6)
+ax[0].set_xscale("log"); ax[0].set_yscale("symlog", linthresh=10)
+ax[0].set(xlabel="dial c: ζ(h) replaced by c·ζ(h) at inference, weights fixed", ylabel="perplexity change against c = 1 (%)",
+          title="A. D3, the damping dial (measured)", xlim=(0.04, 12), ylim=(-0.5, 1200))
+ax[0].legend(fontsize=8, loc="upper center")
+lv = ["SR2\n(recorded)", "constant $\\bar{\\zeta}$ = 0.46\n(D4, to measure)", "learned ζ(h)\n(recorded)"]
+ax[1].bar([0], [58.32], color="0.4"); ax[1].bar([2], [59.29], color="#1b9e77", alpha=0.6)
+ax[1].bar([1], [59.6], color="none", edgecolor="0.4", ls="--"); ax[1].text(1, 58.75, "?", ha="center", fontsize=16, color="0.4")
+for x, y in ((0, 58.32), (2, 59.29)): ax[1].text(x, y + 0.05, f"{y:.2f}", ha="center", fontsize=8)
+ax[1].set_xticks([0, 1, 2], lv); ax[1].set_ylim(57.5, 60.2); ax[1].set_ylabel("settled perplexity, OpenWebText")
+ax[1].set_title("B. D4: the level and the position dependence")
+fig.tight_layout(); fig.savefig(OUT / "tr_dial_and_control.png"); plt.close(fig)
 print("wrote", sorted(p.name for p in OUT.glob("*.png")))
