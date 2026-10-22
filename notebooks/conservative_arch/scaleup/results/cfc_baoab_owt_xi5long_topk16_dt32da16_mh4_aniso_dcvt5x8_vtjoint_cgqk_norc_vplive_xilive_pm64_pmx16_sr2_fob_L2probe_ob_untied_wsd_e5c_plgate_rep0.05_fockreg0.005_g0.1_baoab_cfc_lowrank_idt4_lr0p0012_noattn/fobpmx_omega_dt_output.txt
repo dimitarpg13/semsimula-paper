@@ -1,0 +1,15 @@
+FO-b-PMX omega*dt at the endpoint (Cell 6b-13 logic on CPU), best checkpoint; 8 x 4 x 512 tokens, seed 20260928
+   stiffness kappa + alpha of the modes in span(U) (V_theta modes and the top-16 wells, 32 per token); dt = 4
+
+FO-b relaxation exponent mu*kappa*dt per layer step
+    layer      p05      p50      p95   relaxed
+        0    0.460    0.661    1.449     0.52%
+        1    0.855    0.968    3.019     5.03%
+
+omega*dt over 1,048,576 (token, mode, layer) readings
+    layer      p05      p50      p95      max  over 2.0
+        0    0.959    1.150    1.702    4.816     2.73%
+        1    1.308    1.391    2.457    7.607     8.12%
+      ALL    0.965    1.373    2.053    7.607     5.42%
+
+   NOTE: PMX and the SR2-base arms report the stiffest mode per token (lambda_max); these are all 32 retained modes per token.
