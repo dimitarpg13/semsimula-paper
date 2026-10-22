@@ -104,7 +104,7 @@ SR2F = D / ("semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt
             "plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/results/L2_SR2_for_noattn_none_32500steps_output.txt")
 PMXF = D / ("semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_pm64_pmx16_sr2_L2probe_ob_untied_wsd_e5c_"
             "plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/results/training_log.jsonl")
-have = SR2F.exists() and PMXF.exists() and (D / "L2_FO-b-SR2_OWT_32500steps_output.txt").exists() and (D / "L2_PMX16_on_OWT_32500steps_output.txt").exists()
+have = SR2F.exists() and PMXF.exists() and (D / "L2_FO-b-SR2_OWT_32500steps_output.txt").exists() and (D / "semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_pm64_pmx16_sr2_fob_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn" / "results" / "L2_FO-b-PMX_OWT_32500steps_output.txt").exists()
 fig, ax = plt.subplots(1, 3, figsize=(15, 4.6))
 # A. the 2 x 2
 x = [0, 1]
@@ -127,7 +127,7 @@ ax[1].set_ylabel("perplexity cost of resetting the velocity (Gate 1)"); ax[1].se
 ax[1].text(1.5, 150, "PMX leans on its velocity 23× more than SR2,\nyet its first-order twin matches it", ha="center", fontsize=8.5)
 # C. the first-order gap through training, both bases
 if have:
-    E = {"SR2": ev_txt(SR2F), "FOB": ev_txt(D / "L2_FO-b-SR2_OWT_32500steps_output.txt"), "PMX": ev_jsonl(PMXF), "FOBPMX": ev_txt(D / "L2_PMX16_on_OWT_32500steps_output.txt")}
+    E = {"SR2": ev_txt(SR2F), "FOB": ev_txt(D / "L2_FO-b-SR2_OWT_32500steps_output.txt"), "PMX": ev_jsonl(PMXF), "FOBPMX": ev_txt(D / "semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_pm64_pmx16_sr2_fob_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn" / "results" / "L2_FO-b-PMX_OWT_32500steps_output.txt")}
     for a, b, c, lab in (("FOB", "SR2", C1, "no wells: FO-b-OWT against SR2"), ("FOBPMX", "PMX", CW, "wells: FO-b-PMX against PMX")):
         ks = sorted(set(E[a]) & set(E[b]))
         ax[2].plot(ks, [100 * (E[a][k] / E[b][k] - 1) for k in ks], color=c, lw=1.5, label=lab)

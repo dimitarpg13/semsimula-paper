@@ -169,7 +169,7 @@ ax[0].annotate("learned γ(h), 59.29\n(median ζ, layer 1 to layer 0)", (0.39, 5
 ax[0].set_xscale("log"); ax[0].set(xlabel="total damping ratio, a typical token's stiffest mode (FO-b: overdamped end)", ylabel="settled perplexity, OpenWebText",
                                    title="A. The damping axis (recorded)", xlim=(0.01, 60), ylim=(57.5, 64.8))
 D = Path.home() / "Downloads"
-log = D / "L2_learned_lambda_OWT_32500steps_output.txt"
+log = D / "semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_gzh_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn" / "results" / "L2_learned-gamma-h_on_SR2_OWT_32500steps_output.txt"
 sr2 = D / ("semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_"
            "plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/results/L2_SR2_for_noattn_none_32500steps_output.txt")
 evals = lambda f: {int(m[0].replace(",", "")): float(m[1]) for m in re.findall(r">>> EVAL step ([\d,]+)\s+val_loss=[\d.]+\s+val_ppl=([\d.]+)", f.read_text())}

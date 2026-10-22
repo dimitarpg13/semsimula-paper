@@ -714,7 +714,7 @@ adds a point to a curve.
 | 2 | **dose-response, K = 16** (MS2): PMX's Cell 0 with `POISSON_MODES = 16`, second order first, then FO-b; pre-registered MS2a–MS2d (protocol §5.13); build-checked at K = 16 and 256 (`debug/verify_dose_modes.py`) | 2 × 12 h | the gap between +4.9% (K = 0) and −1.1% (K = 64) | — |
 | 3 | **SR3-crit on PMX** (MS3): `STIFF_MODE_DAMPING_RATIO = 1.0` on PMX | 14 h | whether the rotation is needed once the wells remember | code: the per-mode rate in `lowrank_iso_damped_substep`, the guard lifted, verified bit-identical off |
 | 4 | **FO-b-G3′** (MS7) | 14 h | an explicit memory read by a channel: match or gap | FO-b verified with the reverse channel first |
-| 5 | **dose-response, K = 256** (MS2), both orders | 2 × 14 h | the far end of the dose | — |
+| 5 | **the next dose point** (MS2), both orders: **K = 8** if the K = 16 gap is within ±2% (then K = 4 if K = 8 also ties), **K = 256** if it lies in (+2%, +4.5%), **K = 32** if it is +4.5% or more (protocol §5.13, decision rule of 2026-10-22) | 2 × 12–14 h | where the gap closes | the K = 16 pair scored |
 | 6 | **D4, the constant-ζ̄ control** (ζ̄ = 0.46) | 10 h | level against position dependence in the learned damping | pre-registered calls first |
 | 7 | **D5, the per-mode head** | 10 h | which stiff modes the model keeps ringing | the pairing fix (tech report §5.9) |
 | 8 | **FO-b-TS** (16,250 steps) | 5 h | the TinyStories half with true first order | — |

@@ -3840,7 +3840,7 @@ Output `L2_SR3-crit_on_SR2_OWT_32500steps_output.txt`. SR2's Cell 0 plus `STIFF_
 
 #### Learned γ(h) on SR2 scored: **59.29 settled, +1.7% against SR2 — the model adds moderate damping (median ζ 0.56 / 0.36), gains in the stable phase and loses it in the decay (GH7 HIT; GH6, GH8, GH9 MISS)** — **2026-10-21**
 
-Output `L2_learned_lambda_OWT_32500steps_output.txt`. SR2's Cell 0 plus `LEARNED_DAMPING_RATIO = True`, `DAMPING_RATIO_INIT = 0.005` and the speed switches; tag `…sr2_gzh…`; 32,500 steps, seed 0, an A100 80 GB (about 1.1 s per step). Finished cleanly; no watchdog trigger or spike capture; largest gradient norm 1.16; SCAF CLEAN at every audit.
+Output `L2_learned-gamma-h_on_SR2_OWT_32500steps_output.txt` (in the run's `results/`; first filed as `L2_learned_lambda_OWT_32500steps_output.txt`). SR2's Cell 0 plus `LEARNED_DAMPING_RATIO = True`, `DAMPING_RATIO_INIT = 0.005` and the speed switches; tag `…sr2_gzh…`; 32,500 steps, seed 0, an A100 80 GB (about 1.1 s per step). Finished cleanly; no watchdog trigger or spike capture; largest gradient norm 1.16; SCAF CLEAN at every audit.
 
 | step | SR2 | γ(h) | SR3-crit | FO-b | γ(h) against SR2 | median ζ, layer 0 / layer 1 (eval records) |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -3946,7 +3946,7 @@ Output `L2_learned_lambda_OWT_32500steps_output.txt`. SR2's Cell 0 plus `LEARNED
 
 #### FO-b-PMX scored: **54.02 settled, Δᵇ_PMX = −1.1%: the first-order twin matches PMX (FBX1 MISS); the wells help a first-order model twice as much as a second-order one** — **2026-10-22**
 
-Output `L2_PMX16_on_OWT_32500steps_output.txt`. PMX's Cell 0 plus `FIRST_ORDER_OVERDAMPED = True` and the speed switches; tag `…pm64_pmx16_sr2_fob…`; 32,500 steps, seed 0, an A100 80 GB (about 1.38 s per step, 12.5 h). Finished cleanly; no watchdog trigger or spike capture; largest gradient norm 1.32; largest jump of the training loss above its running median ×1.006; SCAF CLEAN at every audit. 76,596,941 parameters, PMX's exactly.
+Output `L2_FO-b-PMX_OWT_32500steps_output.txt` (in the run's `results/`; first filed as `L2_PMX16_on_OWT_32500steps_output.txt`, where `PMX16` meant the 16 exactly integrated wells, not 16 modes). PMX's Cell 0 plus `FIRST_ORDER_OVERDAMPED = True` and the speed switches; tag `…pm64_pmx16_sr2_fob…`; 32,500 steps, seed 0, an A100 80 GB (about 1.38 s per step, 12.5 h). Finished cleanly; no watchdog trigger or spike capture; largest gradient norm 1.32; largest jump of the training loss above its running median ×1.006; SCAF CLEAN at every audit. 76,596,941 parameters, PMX's exactly.
 
 | step | PMX | FO-b-PMX | FO-b-PMX against PMX | SR2 | FO-b-OWT |
 | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -4027,6 +4027,16 @@ Output `L2_PMX16_on_OWT_32500steps_output.txt`. PMX's Cell 0 plus `FIRST_ORDER_O
 | MS2d | the first-order K = 16 arm trains stably (no watchdog trigger, no spike above twice the running loss), as at K = 64 | 75% |
 
 MS2 as called above (the gap falls monotonically with K and is within the seed spread from K = 64 on) is scored once the K = 256 pair is in; MS2a–MS2c read the K = 16 pair alone.
+
+**MS2, which point comes after K = 16 (decision rule, fixed 2026-10-22, while the K = 16 second-order arm trains and before either K = 16 result).** The gap at K = 16 decides the next pair, so that the dose spends GPU time where the curve is still unresolved:
+
+| gap at K = 16 (second order against its first-order twin) | reading | next pair |
+| --- | --- | --- |
+| within ±2% (the provisional seed band, until MS1 measures it) | the gap has closed with a quarter of PMX's memory: the alternative ("the wells help both orders alike") is refuted, and the threshold lies between K = 0 and K = 16 | **K = 8**, ahead of K = 256; if K = 8 also ties, **K = 4** |
+| in (+2%, +4.5%) | the dose is resolving between the recorded ends | **K = 256** next; K = 8 later, only to fill in the curve |
+| +4.5% or more (near the K = 0 gap) | the closing happens between K = 16 and K = 64 | **K = 32** instead of K = 8, then K = 256 |
+
+Every point keeps `POISSON_WELLS_EXACT_MODES = 16`, so that only K changes along the dose; below K = 16 the integrator takes all K wells exactly (`poisson_mode_quadratic` uses every mode when `top ≥ K`), and the tags read `pm8_pmx16`, `pm4_pmx16`. **Build check at K = 8** (`debug/verify_dose_modes.py` with K = 8, output `debug/verify_dose_modes_K8_output.txt`): both orders build from the notebook's cells with 76,575,214 parameters, a training step gives a finite loss and finite gradients, and the first-order model's eval forward is finite. A K = 8 or K = 4 point carries the same four calls as K = 16 (MS2a–MS2d), with the interval of MS2a taken between that point's neighbours on the recorded curve.
 
 **Readings, fixed now.**
 - **MS2 hits and MS3 hits:** the hypothesis stands at this scale; the book's §17h subsection is upgraded from "proposed" to "supported", with the scope line of MS4–MS6.
