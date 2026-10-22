@@ -905,7 +905,7 @@ formal development in Section 23, not established theorems.*
 
 ### 7.1 The Class Hierarchy (v0–v3)
 
-Section 9 of the mega-paper defines the expressivity class hierarchy of the SPLM family:
+Section 10 of the mega-paper defines the expressivity class hierarchy of the SPLM family. The tiers it analyses are v0, v1.5, v2 and v3; v1 is named in its opening paragraph as a transitional class but is not analysed there, and is included below for completeness:
 
 **v0 — baseline SPLM.** Fixed particle set, fixed-cardinality well configuration, no salience
 dynamics. The active semantic structure set is constant throughout inference.

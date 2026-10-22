@@ -95,6 +95,8 @@ $$
 
 - **The induced distance is canonical.** The distance $\lVert\phi_a-\phi_b\rVert$ is $\sqrt2$ times the Hellinger distance between $p_a$ and $p_b$. Locally its square is one quarter of the Fisher–Rao line element, so $\lVert\phi_a-\phi_b\rVert$ is about half the Fisher–Rao distance (overlap-distance note, §6.4).
 
+**What the two arguments are.** The labels $a$ and $b$ in (1.2) range over **types**, not over particles: $\phi_a$ and $\phi_b$ are the mode functions of two entries of $\mathcal{V}$, each centred on its own centroid (1.3). A particle in the dynamics has a definite position $h\in\Sigma$, so (1.2) compares two type-level descriptions. An overlap near 1 says that the two wells barely distinguish each other's neighbourhoods — not that a particle's position is uncertain. The coefficient is also a **one-body** quantity, built from two one-particle densities; by itself it says nothing about a joint state of two particles. That lives in the two-particle sector of §5, where the same number reappears as the Gram element $G_{vw}$ in the commutator and fixes the norms (5.5a).
+
 **The three quantities, explicitly.** Take the Hellinger convention $\mathrm{He}^2(p,q) = \tfrac12\int(\sqrt p-\sqrt q)^2dx$. Expanding the square and using unit norms gives (1.2a):
 
 $$
@@ -108,6 +110,14 @@ $$
 $$
 
 For the location family of (1.3) below, the Fisher information is the identity divided by $\sigma^2$. Then (1.2b) reads $\lVert d\mu\rVert^2/(4\sigma^2) = 2\kappa^2\lVert d\mu\rVert^2$, which is exactly the small-distance expansion of $2(1-e^{-\kappa^2d^2})$ from (1.4). The local and the exact pictures agree.
+
+**The overlap is a cosine.** Because root densities are unit vectors, (1.2) is the cosine of the angle between them on the unit sphere of $L^2(\Sigma)$:
+
+$$
+\mathrm{BC}(p_a,p_b) = \cos\theta_{ab}, \qquad \theta_{ab} = \arccos\langle\phi_a,\phi_b\rangle. \qquad (1.2c)
+$$
+
+The three quantities are then the three ways of measuring one angle. The overlap is its cosine; the distance (1.2a) is the **chord**, $\lVert\phi_a-\phi_b\rVert = 2\sin(\theta_{ab}/2)$; and the Fisher–Rao distance is the **arc**, exactly $2\theta_{ab}$. The last is the global form of the local statement (1.2b): the sphere of root densities carries the Fisher–Rao metric at twice the round metric, which is why $\lVert\phi_a-\phi_b\rVert$ is about half the Fisher–Rao distance for nearby states. Identical states sit at $\theta = 0$, states with disjoint support a quarter turn apart at $\theta = 90^{\circ}$. The angle is between the **root densities** in $L^2(\Sigma)$, not between the centroids in $\Sigma$; it is not the cosine similarity of normalized embeddings weighed and rejected in §2.2, which is a different quantity on a different space.
 
 All scalars here are real and all root densities are non-negative, so a **real** Hilbert space suffices.
 
@@ -226,11 +236,13 @@ $$
 
 With $\sigma = 0.25$ (so $\kappa^2 = 1/(8\sigma^2) = 2$ and $x^{\ast} = 0.5$):
 
-| Pair | squared distance | overlap $e^{-\kappa^2 d^2}$ | overlap distance $\sqrt{2(1-\text{overlap})}$ |
-|---|---|---|---|
-| cat–kitten | 0.0125 | 0.975 | 0.222 |
-| kitten–tax | 1.525 | 0.047 | 1.380 |
-| cat–tax | 1.7425 | 0.031 | 1.392 |
+| Pair | squared distance | overlap $e^{-\kappa^2 d^2}$ | overlap distance $\sqrt{2(1-\text{overlap})}$ | angle $\theta = \arccos$ overlap (1.2c) |
+|---|---|---|---|---|
+| cat–kitten | 0.0125 | 0.975 | 0.222 | $12.8^{\circ}$ |
+| kitten–tax | 1.525 | 0.047 | 1.380 | $87.3^{\circ}$ |
+| cat–tax | 1.7425 | 0.031 | 1.392 | $88.2^{\circ}$ |
+
+The last two columns are the chord and the arc of the same angle, so each row is one geometric fact read three ways. Cat and tax are within two degrees of orthogonal: the geometry has pushed them almost as far apart as the sphere allows. Cat and kitten sit thirteen degrees apart — the same state, to within what the well can resolve.
 
 The inner product of $\mathcal{H}$ now reflects semantic geometry, and by (1.4) it is fixed by the well. **This is the recommended choice.**
 
