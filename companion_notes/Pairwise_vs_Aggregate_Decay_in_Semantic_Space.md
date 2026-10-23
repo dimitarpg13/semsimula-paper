@@ -24,13 +24,13 @@ Section 9.8 records that without destruction "the simulator's effective state gr
 
 ## 1. The claim, and why it is not obvious
 
-The quantity at stake is the net force on one participating structure: the sum of the property-level law over the set $\mathcal{P}_t$ of properties participating in the force computation at discourse step $t$,
+The quantity at stake is the net force on one participating structure: the sum of the property-level law over the set $\mathcal{P}\_t$ of properties participating in the force computation at discourse step $t$,
 
 $$
 \vec{F}_i = \sum_{j \in \mathcal{P}_t, j \neq i} \vec{f}(P_i, P_j), \qquad \vec{f}(P_i, P_j) = \sum_{A \in P_i} \sum_{B \in P_j} \vec{f}_{12}(A, B). \qquad (1.1)
 $$
 
-Creation without destruction makes $\lvert\mathcal{P}_t\rvert$ grow with discourse length, so $\vec{F}_i$ becomes a sum of unbounded length.
+Creation without destruction makes $\lvert\mathcal{P}\_t\rvert$ grow with discourse length, so $\vec{F}\_i$ becomes a sum of unbounded length.
 
 The natural reassurance is that the aspect-level force carries an inverse-square factor,
 
@@ -127,9 +127,9 @@ $$
 \lVert\vec{F}_i\rVert \approx n \int_0^R L C_L r^{L-1} \frac{\mathcal{C}}{r^2} dr \propto n R^{L-2} = \frac{N L \mathcal{C}}{(L-2) R^2}, \qquad (5.1)
 $$
 
-using $n = N/(C_L R^L)$. There is no divergent integral here. What (5.1) shows is **linear growth in $N$** — the same conclusion reached more simply by noting that in a bounded region every type-compatible pair contributes at least $\mathcal{C}\Phi\Theta/(\text{diam}(\mathcal{P}_t))^2 \gt 0$, so a sum whose terms do not tend to zero cannot converge absolutely.
+using $n = N/(C_L R^L)$. There is no divergent integral here. What (5.1) shows is **linear growth in $N$** — the same conclusion reached more simply by noting that in a bounded region every type-compatible pair contributes at least $\mathcal{C}\Phi\Theta/(\text{diam}(\mathcal{P}\_t))^2 \gt 0$, so a sum whose terms do not tend to zero cannot converge absolutely.
 
-The shell-count fact does something else here, and it is arguably worse. The fraction of $\lVert\vec{F}_i\rVert$ contributed by partners nearer than a fraction $x$ of the region's radius is
+The shell-count fact does something else here, and it is arguably worse. The fraction of $\lVert\vec{F}\_i\rVert$ contributed by partners nearer than a fraction $x$ of the region's radius is
 
 $$
 \frac{\int_0^{xR} r^{L-3} dr}{\int_0^R r^{L-3} dr} = x^{L-2}, \qquad (5.2)
@@ -152,7 +152,7 @@ so the near half keeps only $2^{-(L-2)}$ of the total:
 
 Two regimes therefore both fail, for different reasons, and the framework can meet either:
 
-- **Crowding at fixed radius.** Density grows with $\lvert\mathcal{P}_t\rvert$ and the sum grows with it by (5.1). The nearest-neighbour spacing falls as $\lvert\mathcal{P}_t\rvert^{-1/L}$, so the largest single term grows as $\lvert\mathcal{P}_t\rvert^{2/L}$, and the scale-separation ratio of the coarse-grained SARF law tends to 1, at which point the multipole truncation loses its error control.
+- **Crowding at fixed radius.** Density grows with $\lvert\mathcal{P}\_t\rvert$ and the sum grows with it by (5.1). The nearest-neighbour spacing falls as $\lvert\mathcal{P}\_t\rvert^{-1/L}$, so the largest single term grows as $\lvert\mathcal{P}\_t\rvert^{2/L}$, and the scale-separation ratio of the coarse-grained SARF law tends to 1, at which point the multipole truncation loses its error control.
 - **Spreading at fixed density.** The radius $R$ grows and the aggregate $\int r^{L-3} dr$ grows without bound for every $L \geq 2$, which is the Newtonian case of §4.
 
 ---
@@ -240,6 +240,6 @@ That is worth stating plainly: the trained models satisfy the Section 9.8 requir
 | Locality | Existence of a truncation radius capturing most of the force. Absent for $1/r^2$ in high $L$, by (5.2) |
 | Thin shell | $dr \ll r/L$, not $dr \ll r$ |
 | Well band | $r_{\text{band}} = \sqrt{L} x^{\ast}$, where the well's aggregate contribution peaks |
-| $\mathcal{P}_t$ | Properties participating in the force computation at step $t$: salience at or above the gating threshold |
+| $\mathcal{P}\_t$ | Properties participating in the force computation at step $t$: salience at or above the gating threshold |
 
 **Summary.** An inverse-square force decays pairwise and does not decay in aggregate for any $L \geq 2$. In a bounded region the consequence is not a divergent integral but the loss of locality: the force is dominated by the most distant partners and the sum admits no neighbourhood truncation, so it grows linearly in the number of participants. The framework's Gaussian well escapes this entirely, in every dimension, which is why $x^{\ast}$ is a genuine interaction range and why the one-body potential needs no cutoff while the pair potential does. Bounding the pair sum is therefore not an optimisation but a precondition, and Section 9.8's salience requirement is what supplies it.
