@@ -50,7 +50,9 @@ CONFIGS = {  # name: (weights folder, Cell 0 replacements)
 PM_ON = (("POISSON_MODES        = 0", "POISSON_MODES        = 64"),)
 
 
-def build(folder, repl):
+def build(folder, repl, ckpt=None):
+    """ckpt: a checkpoint file name in <folder>/checkpoints (default <prefix>_best.pt), e.g. a
+    <prefix>_step<N>_snap.pt training-trend snapshot (2026-10-22)."""
     c0 = G.cells['Cell 0:']
     for old, new in repl:
         assert c0.count(old) == 1, old
@@ -75,7 +77,7 @@ def build(folder, repl):
         exec(compile(G.strip(V.c5b), 'Cell5b', 'exec'), g)
     model = g['model']
     pfx = folder[len('semsimula_'):].replace('fock_cfc_baoab_owt', 'fock_cfc_owt')
-    ck = torch.load(g['CKPT_DIR'] / f'{pfx}_best.pt', map_location='cpu', weights_only=False)
+    ck = torch.load(g['CKPT_DIR'] / (ckpt or f'{pfx}_best.pt'), map_location='cpu', weights_only=False)
     r = model.load_state_dict(ck['model_state_dict'], strict=False)
     assert not r.unexpected_keys, r.unexpected_keys
     for k in r.missing_keys:      # new parameters: deterministic fill so HEAD and working copy agree

@@ -720,7 +720,7 @@ adds a point to a curve.
 | 8 | **FO-b-TS** (16,250 steps) | 5 h | the TinyStories half with true first order | — |
 | 9 | **SO/FO-b on a code corpus, without and with wells** (MS5) | 4 × 5 h | the corpus test of substitution | a `CORPUS = 'code'` branch |
 | 10 | **PMX and FO-b-PMX at L = 4** (MS6) | 2 × 25 h | depth | — |
-| 11 | **the 2B pair with wells** (MS4), then without | 2 × 100 h | the budget, against the decay-phase pattern | decided after 1–5 |
+| 11 | **the 2B runs** (protocol §5.13, TL; pre-registered 2026-10-22): PMX-2B and FO-b-PMX-2B (MS4), then SR2-2B (RT3) and FO-b-2B, each at 130,000 steps with `SNAPSHOT_STEPS` (nine weights-only snapshots per arm) and the per-snapshot diagnostics D-a to D-f | 2 × 50 h, then 2 × 40 h | memory substitution at the budget; the potential's monotonicity and the map against its continuous law, along training | decided after 1–5; the step-size check S1 first |
 
 CPU, meanwhile: D1–D3 are done (protocol §5.13); FLOW-R and Cells 6b-13, 6b-9 and 7 on FO-b-PMX once its folder is downloaded; the per-mode head and its verification.
 

@@ -91,7 +91,9 @@ if __name__ == '__main__':
             repl = repl + (("STIFF_MODE_DAMPING_RATIO = None", "STIFF_MODE_DAMPING_RATIO = 1.0"),)
         if KIND == 'gzh':
             repl = repl + (("LEARNED_DAMPING_RATIO = False", "LEARNED_DAMPING_RATIO = True"),)
-        model, g, _ = P.build(FOLDER, repl)
+        model, g, _ = P.build(FOLDER, repl, ckpt=CKPT)
+        if CKPT:
+            print(f'checkpoint: {CKPT}')
         KIND_ARCH = 'sr2' if KIND in ('fob', 'sr3', 'gzh') else ('pmx' if KIND == 'fob-pmx' else KIND)
         assert (getattr(model, 'damping_head', None) is not None) == (KIND == 'gzh')
         assert (getattr(model.cfg, 'stiff_mode_damping_ratio', None) == 1.0) == (KIND == 'sr3')
@@ -240,7 +242,8 @@ if __name__ == '__main__':
 
     txt = '\n'.join(lines)
     OUT.mkdir(parents=True, exist_ok=True)
-    stem = f'refinement_flow_confirmation_{KIND}' + ('' if SEED is None else f'_seed{SEED}')
+    stem = (f'refinement_flow_confirmation_{KIND}' + ('' if SEED is None else f'_seed{SEED}')
+            + ('' if not CKPT else '_' + CKPT.split('_')[-2] if CKPT.endswith('_snap.pt') else ''))
     (OUT / f'{stem}_output.txt').write_text(txt + '\n')
     (OUT / f'{stem}.json').write_text(json.dumps(out, indent=1))
     print(f'\nwrote {OUT}/{stem}_output.txt')

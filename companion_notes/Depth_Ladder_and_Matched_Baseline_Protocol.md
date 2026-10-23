@@ -3994,6 +3994,21 @@ Output `L2_FO-b-PMX_OWT_32500steps_output.txt` (in the run's `results/`; first f
   - 6b-15's four tuning questions (step size, weight decay, occupation scale, placement) read "not indicated" on both arms, as for PMX.
 - **FLOW-R** (`refinement_flow_confirmation.py … fob-pmx seed=20261009`, new kind; output in the run's `results/`): all seven checks PASS, including the per-layer flow against the model's own `substeps_per_layer` path with the wells' quadratic frozen. Kick share 0.30 and 0.40 (PMX 0.32, 0.29). Penalties at N = 3, 4, 6, 8, 12, 16: 1.388, 0.727, 0.753, 0.483, 0.609, 0.584 nats; standard refinement at N = 8: 1.996. **The per-layer flow does not converge** (|pen16 − pen12| = 0.025, and it oscillates), about 0.58 nats above the trained step, against PMX's converged 0.39. As on the SR2 base, the first-order model's standard refinement is the better of the pair (Gate 3) and its per-layer flow the worse: one FO-b step is first order in the step size, so the trained step is far from the continuous flow and the model learned the coarse map.
 - **ω·Δt at the endpoint** (`debug/fobpmx_omega_dt.py`, Cell 6b-13's recorder on CPU; all 32 retained modes per token, κᵢ + α): median 1.15 at layer 0 and 1.39 at layer 1 (1.37 pooled), 5.4% past the explicit wall; relaxation exponent μκΔt median 0.66 and 0.97, with 0.5% and 5% of modes fully relaxed within a step. Not comparable one-to-one with PMX's 2.06-style reading, which is the stiffest mode per token; the per-token maximum is to be added.
+- **The descent readout** (`debug/descent_readout.py`, 2026-10-22; 2 × 4 × 512 tokens, batch seed 20261009; outputs in both runs' `results/`). Each model's trained layer step against its own continuous law on the landscape frozen at the layer input (the gradient flow for FO-b-PMX, the damped second-order flow for PMX; FLOW-R's per-layer flow at N = 16):
+
+  | reading | FO-b-PMX, layer 0 | FO-b-PMX, layer 1 | PMX, layer 0 | PMX, layer 1 |
+  | --- | ---: | ---: | ---: | ---: |
+  | the potential falls along the trained step (midpoint rule) | 100% | 100% | 100% | 100% |
+  | direction of the step against its continuous law, median cosine | 0.989 | 0.838 | 0.976 | 0.891 |
+  | endpoint distance over step length, median | 0.15 | 0.64 | 0.22 | 0.48 |
+  | approach to the wells (change of log overlap over the step), rank correlation over all 64 wells, median | 0.999 | 0.800 | 0.997 | 0.928 |
+  | all three most-approached wells shared | 86% | 8% | 95% | 21% |
+  | next-token agreement, trained step against the flow (after layer 1) | 63% | | 65% | |
+
+  - **The potential falls along every trained step**, for every token, in both orders and at both layers: the measured basis for a native monotone-potential detector (TL1 tests it at 2B tokens).
+  - **Layer 0 is a faithful descent in both orders:** the step moves each token toward the same wells, in the same order, as the continuous law (approach rank correlation 0.997–0.999).
+  - **Layer 1 is a learned map in both orders, more so under first order:** FO-b-PMX's last step approaches a different set of wells than its descent would (all three shared for 8% of tokens, rank correlation 0.80), PMX's agrees more (21%, 0.93). With FLOW-R, the first-order model's step is the coarser sample of its continuous law.
+  - The first two basin readings tried were uninformative and are recorded as such: the most-overlapped well (one broad mode is the most-overlapped for every PMX token) and the ranking of the wells' pull (dominated by occupation and depth, which both endpoints share). The strongest-pulling well, kept as a coarse line, takes 3–5 of the 64 values and agrees for 98–100% of tokens.
 - **Not yet run:** Cells 6b-9 and 7.
 - **Published 2026-10-22:** `semsimula-ladder-live-owt-d384-l2-none-norc-pm64-pmx16-sr2-fob`, in the first-vs-second-order collection with PMX as the pair's second-order member.
 - **Reading, continued: the memory-substitution hypothesis**, pre-registered in the next block, is the explanation proposed for this result together with SR3-crit's.
@@ -4028,6 +4043,41 @@ Output `L2_FO-b-PMX_OWT_32500steps_output.txt` (in the run's `results/`; first f
 
 MS2 as called above (the gap falls monotonically with K and is within the seed spread from K = 64 on) is scored once the K = 256 pair is in; MS2a–MS2c read the K = 16 pair alone.
 
+**Result, the K = 16 second-order arm (PMX-K16, 2026-10-23).** Tag `…pm16_pmx16_sr2_L2probe…` (no `fob`, so `FIRST_ORDER_OVERDAMPED = False`; the log arrived as `L2_FO-b-PMX16_on_OWT_32500steps_output.txt`, a misnomer). 32,500 steps in 12.6 h, clean finish, no watchdog trigger, highest logged training loss after step 2,000 about 5.0.
+- **Settled 54.24** (mean of the last three evals: 54.17, 54.37, 54.17). The best, 52.28 at step 31,000, is a single eval; FO-b-PMX has its best at the same step (52.18), an eval batch that is easy for both. The slope over the last 3,000 steps is +0.17% per 1,000 steps, the same as FO-b-PMX's: settled.
+- **Against SR2 (58.32): −7.0%.** Against PMX at K = 64 (54.63): −0.7%. The second-order model gains no more from 64 modes than from 16. Along training PMX-K16 is level with or ahead of PMX: 65.42 against 67.57 at step 16,000, 64.69 against 66.19 at step 21,000. The decay gain (log perplexity, step 21,000 to settled) is −0.176, against PMX's −0.192 and FO-b-PMX's −0.171.
+- **MS2b, second-order half: miss on the letter** (PMX-K16 is not above PMX's 54.63), by 0.7%, inside any plausible seed band. Read as the wells' benefit to second order having saturated by K = 16. The first-order half, MS2a, MS2c and MS2d wait for the FO-b K = 16 twin. The K-rule (below) is applied then.
+- **The eval batches are shared between runs that start from step 0.** The eval at step N draws the same batches in every fresh run. So PMX-K16 and FO-b-PMX's step-to-step eval changes correlate at 0.99 over steps 25,000 to 32,500. PMX at K = 64 was resumed at step 8,500 and draws different batches (correlation 0.33). Paired by step, PMX-K16 is **+0.36%** worse than FO-b-PMX over the last eight evals (spread of the paired difference 0.08%) and +0.65% over the decay phase (0.36%). Against PMX at K = 64 the same pairing has a spread of about 2% per eval. **Consequence for the K = 64 gap (−1.1%):** its two runs do not share eval batches. With three evals each it carries an eval-sampling uncertainty of roughly ±1.2%, before any seed spread. Every arm of the dose (and MS1's seed rerun) is trained from step 0 so that its comparisons are paired; the FO-b K = 16 twin is paired with PMX-K16 this way.
+- **The run monitor recorded nothing** ("resonance monitor failed … takes 9 positional arguments but 10 were given"). The wrapper in `semsimula-diag` (`probes/resonance.py`, `_wrap_lowrank_iso_damped_substep`) did not accept the `n_terms` argument the model passes. It is fixed locally (it now passes `*a, **kw` through; the 29 resonance tests pass) and needs a push before the next run. Training was unaffected. Cell 6b-13 reads ω·Δt on the checkpoint.
+
+**Result: at 0.5B tokens the wells act as a position-dependent potential, not as a memory of content (2026-10-23).** Run after PMX-K16 settled level with PMX, and after TL7–TL9 were registered (below). Best checkpoints of PMX and FO-b-PMX, validation tokens, batch seed 20261009. Tools: `debug/pm_mode_usage.py` (2 × 4 × 512 tokens) and `debug/pm_content_swap.py` (4 × 4 × 512 tokens, paired by sequence). Outputs: `pm_mode_usage_{pmx,fob-pmx}_output.txt` and `pm_content_swap_{pmx,fob-pmx}_output.txt` in each arm's results folder.
+
+| reading | PMX L0 | PMX L1 | FO-b-PMX L0 | FO-b-PMX L1 |
+| --- | ---: | ---: | ---: | ---: |
+| effective number of modes N_eff (of 64) | 39.8 | 36.7 | 48.4 | 39.1 |
+| N_80 (fewest modes carrying 80% of the force) | 26 | 23 | 33 | 24 |
+| per-token N_eff, median (p10–p90) | 39.6 (39.5–40.6) | 36.6 (36.5–36.9) | 48.3 (48.3–48.3) | 39.3 (38.7–39.4) |
+| a token's mix against the average mix, total variation, median | 0.007 | 0.011 | 0.007 | 0.006 |
+| overlap E_v across tokens, coefficient of variation (median mode) | 0.013 | 0.036 | 0.012 | 0.034 |
+| wells' force explained by position only (leave one sequence out), R² | 0.9989 | 0.9993 | 0.9982 | 0.9998 |
+| occupations explained by position only, R² | 0.9998 | 0.9965 | 0.9996 | 0.9894 |
+
+| inference ablation (perplexity change, 16 sequences) | PMX | FO-b-PMX |
+| --- | ---: | ---: |
+| occupations from another sequence (same positions, other content) | +0.04% (spread 0.12%) | +0.02% (0.10%) |
+| occupations averaged over sequences at each position | +0.02% (0.09%) | +0.02% (0.08%) |
+| no wells (occupations zero) | +165% | +282% |
+
+- **The models use many modes, and every token feels the same mix.** The force is spread over about 37–48 effective modes, in both orders. A token's mix differs from the average mix by about 1%.
+- **The overlaps barely depend on the token.** The wells are broad: the exponent κ_v² |h − μ_v|² is of order 1. With h on the LayerNorm sphere, E_v changes by only 1–4% from token to token. The occupation n̄_v(t) = Σ_{s<t} λ_v^(t−1−s) E_v(s) is then close to Ē_v (1 − λ_v^t) / (1 − λ_v), a function of the position t alone. The wells' force f(h, t) = Σ_v w_v(t) (μ_v − h) becomes a learned potential that depends on the token's state and its position. Its centre and stiffness change with position, at rates set by the 64 half-lives.
+- **The models rely on the wells, but not on their content.** Removing them costs 165% and 282%. Giving a sequence another text's occupations costs 0.02–0.04%, inside the per-sequence spread.
+- **The wells are the models' only explicit clock.** `model_parf_multixi` has no positional encoding, and the ξ channels are *normalised* causal averages (`multixi/model_multixi.py`). The un-normalised occupations are the one signal that grows with the number of earlier tokens.
+- **Consequences.**
+  - *For MS:* the explicit memory that closes the first-order gap at 0.5B is a memory of position (how many tokens came before), not of content (which tokens). The hypothesis as registered ("an explicit memory carrying at least the information the implicit one carried") is not refuted by this. Its mechanism is narrower than the wording in the future note §7 and the book's §17h ("addressed by content"). Those texts need revision before the hypothesis is read further; the author decides the new wording.
+  - *For MS2:* K sets how many functions of position build the potential, not how much content the model can remember. Saturation by K = 16 (PMX-K16) is what a smooth function of position would show. The FO-b K = 16 twin now asks whether first order needs a richer positional potential than second order.
+  - *For TL7–TL9:* N_eff counts the modes that carry the force. It measures memory of content only if token specificity grows; TL10 (below) asks that directly.
+- **Not yet known:** whether this is a property of the 0.5B budget, which leaves the wells at their broad initial width (κ_v² starts at 1/d), or of the design. The 2B snapshots answer the first question (TL10). A trained arm with narrow initial wells would answer the second.
+
 **MS2, which point comes after K = 16 (decision rule, fixed 2026-10-22, while the K = 16 second-order arm trains and before either K = 16 result).** The gap at K = 16 decides the next pair, so that the dose spends GPU time where the curve is still unresolved:
 
 | gap at K = 16 (second order against its first-order twin) | reading | next pair |
@@ -4046,6 +4096,58 @@ Every point keeps `POISSON_WELLS_EXACT_MODES = 16`, so that only K changes along
 - **MS1 misses (seed spread above 2%):** no comparison under 3% in this series is read, including FO-b-PMX's; MS2 is scored on the trend across four K only.
 
 **Scope:** as the series, until MS4–MS6 widen it.
+
+#### The 2B-token runs: training-trend snapshots and the map against its continuous law (TL) — **pre-registered 2026-10-22, before any 2B run (author's decision on the calls)**
+
+**Why.** Two claims the book is to rest on are measured only at 0.53B tokens. (1) **Memory substitution** (MS, above): MS4 asks whether the first-order twin stays level with PMX at 2B tokens. (2) **Law-governed evolution in both orders:** the potential falls along every trained layer step (the descent readout of 2026-10-22: 100% of tokens at both layers in PMX and FO-b-PMX), which is what a native hallucination detector would rest on; and first order makes that evolution simpler, while both models, the first-order one more, learned their trained two-step map rather than the continuous curve (per-layer flow at N = 16: PMX 0.39 nats, FO-b-PMX 0.58, not converging). The one measurement of training length so far points against the continuous picture: PMX's standard refinement **worsened** from its step-8,000 probe to the end (Gate 3 at N = 3: 0.584 → 1.097 nats; RT1 missed). A 2B run gives the trend, and snapshots along one run separate training length from the schedule phase that confounds RT1 and RT2.
+
+**The runs, in order.**
+1. **PMX-2B and FO-b-PMX-2B** (MS4).
+2. **SR2-2B and FO-b-2B.** SR2-2B is RT3's run (registered 2026-10-11, its call kept); FO-b-2B is its first-order twin.
+
+Each arm: its 0.5B Cell 0 (PMX's or SR2's, with `FIRST_ORDER_OVERDAMPED = True` for the twin) plus `LADDER_STEPS = 130_000`: 2.13B tokens, the matched GPT-2 reference's budget (G2B, settled 42.69), about 1.07 passes over the 2.0B-token pool. The WSD fractions are unchanged, so warm-up ends at step 6,500, the stable phase at 84,500 and the decay at 130,000, peak 1.2e-3, floor 6e-5. Seed 0, the speed switches (`VPHI_ANALYTIC_FORCE = True`, `LAYER_CHECKPOINT = False`); float32 unless §5.26's bf16 calls BF1–BF3 hit, and both arms of a pair always in the same precision. At the measured step times, about 50 h per PMX arm and 40 h per SR2 arm.
+
+**Snapshots (the new code of 2026-10-22).** Cell 0 `SNAPSHOT_STEPS = [6_500, 16_500, 32_500, 48_500, 65_000, 84_500, 97_500, 113_500, 130_000]`: weights-only checkpoints (no optimizer state, 0.31 GB each, about 2.8 GB per arm), named `<prefix>_step<N>_snap.pt`, kept for good and never used to resume. The points are the end of warm-up; four in the stable phase, of which 32,500 is the 0.5B arms' token count, at peak learning rate; the start of the decay; two in the decay; and the end. Verification: with the default `[]` the save branch is never entered (off is bit-identical); the shared harness takes a `ckpt=` file name (`verify_pm_switch.build(folder, repl, ckpt=...)`), as do FLOW-R and the descent readout (`ckpt=`, and `folder=` for the readout); a snapshot written in the notebook's format loads to identical logits (max |Δ logit| 0 against the checkpoint it was made from).
+
+**Per-snapshot diagnostics,** every snapshot of every arm, on CPU after the folder is downloaded:
+
+| id | measurement | tool |
+| --- | --- | --- |
+| D-a | perplexity on Cell 6b-7's 12 fixed batches, so that snapshots and arms compare on the same tokens | `d3_damping_dial.py`-style evaluation at c = 1 |
+| D-b | the per-layer flow: penalties at N = 4–16, convergence (abs(pen16 − pen12)), standard refinement at N = 8 | `refinement_flow_confirmation.py … seed=20261009 ckpt=…` |
+| D-c | the descent readout: direction cosine and endpoint distance against the continuous law, per layer; the share of tokens whose potential falls along the trained step and along the flow; next-token agreement and KL; **a force-based basin** (the well with the largest force on the token, the integrator's own ranking), replacing the overlap-based basin, which proved degenerate (one broad mode is the most-overlapped for every PMX token). First look at the best checkpoints (256 tokens, 2026-10-22): the strongest-pulling well takes only 3–4 of the 64 values, and the trained step and its continuous law end under the same one for 99–100% of tokens at both layers in PMX and FO-b-PMX; a finer reading (agreement on each token's top three wells, or the rank correlation of the force over all wells) is to be added before the 2B snapshots are read | `descent_readout.py … ckpt=… folder=…` |
+| D-d | ω·Δt of each token's stiffest mode and of its median retained mode, per layer | the Cell 6b-13 recorder on CPU (`fobpmx_omega_dt.py` generalised) |
+| D-e | for the arms with wells: depths, attractive share, half-lives, force shares by half-life (Cell 6b-15's readout); **the effective number of modes in use** (added 2026-10-23, defined below the table) | Cell 6b-15, or its CPU port; `pm_mode_usage.py … ckpt=… folder=…` |
+| D-f | Gates 1–3 (Cell 6b-7) at 32,500, 84,500 and 130,000 | Cell 6b-7 |
+
+**The effective number of modes in use (D-e, added 2026-10-23, after PMX-K16 settled level with PMX at K = 64 and before the count was run on any checkpoint).** At each layer's input, with the occupations from that layer's input (as the integrator uses them), mode v pulls token t with the force f_v = w_v (μ_v − h_t), w_v = 2κ_v² a_v n̄_v(t) E_v(t), of size |w_v| |h_t − μ_v|. Over the evaluated tokens, the mode's share of the wells' force is p_v = Σ_t |f_v(t)| / Σ_t Σ_u |f_u(t)|. **The effective number of modes is N_eff = exp(−Σ_v p_v ln p_v)**: K when every mode carries the same share, 1 when one mode carries it all. Read with it: N_80, the fewest modes that carry 80% of the force; and the per-token count, the median over tokens of the same quantity built from that token's own shares (how many wells act on one token at once). Per layer; 2 × 4 × 512 tokens of the validation split, batch seed 20261009, as the descent readout.
+
+**Calls** (MS4 and RT3 stand as registered: the first-order twin within the seed spread of PMX at 2B, 50%; SR2-2B's Gate 3 at N = 3 at or below 0.30 nats with its per-layer flow still converging, 45%):
+
+| id | prediction | called |
+| --- | --- | ---: |
+| TL1 | **the potential falls along the trained step** for at least 99% of tokens at both layers, at every snapshot from 16,500 on, in all four arms | 80% |
+| TL2 | **the map departs from its continuous law with training:** the per-layer flow penalty at N = 16 is larger at 84,500 than at 32,500 (same run, same learning rate) in at least three of the four arms | 60% |
+| TL3 | **first order departs more:** from 32,500 to 130,000 the first-order arm's N = 16 penalty rises more than its second-order twin's, in both pairs | 55% |
+| TL4 | **layer 0 stays a descent:** the first-order arms' median direction cosine at layer 0 is at least 0.95 at every snapshot | 70% |
+| TL5 | **the decay-phase pattern holds at 2B:** in both pairs the second-order arm gains more than its first-order twin from 84,500 to 130,000 (log perplexity, D-a) | 65% |
+| TL6 | **the core gap grows with training:** SR2-2B is more than 4.9% better than FO-b-2B at the end | 50% |
+| TL7 | **the wells come into use with training:** in both K = 64 arms, N_eff (both layers' values averaged) is larger at 84,500 than at 32,500 (same run, same learning rate) | 55% |
+| TL8 | **the 2B models use more modes than the 0.5B ones:** in both K = 64 arms, N_eff at 130,000 exceeds the same arm's 0.5B best checkpoint, both after the decay | 60% |
+| TL9 | **first order uses more memory:** at 130,000, FO-b-PMX-2B's N_eff exceeds PMX-2B's at both layers | 55% |
+| TL10 | **the wells start to remember content** (registered 2026-10-23, after the 0.5B content swap): at 130,000, giving a sequence another sequence's occupations costs more than 0.5% perplexity in at least one K = 64 arm (`pm_content_swap.py`; 0.02–0.04% at 0.5B) | 35% |
+
+**Readings, fixed now.**
+- **TL1 hits:** a monotone potential along the trained step is a property of trained models at 2B tokens in both orders, and the native hallucination detector can rest on it. **TL1 misses:** the detector needs the full energy in second order, or the context-frozen potential with a tolerance; the tokens that break it are its first data.
+- **TL2 hits:** training ties the trained map to its step size, so the continuous-curve description has to be trained in. The book then states the second law-governed claim as an orderly two-step evolution, simpler under first order, and a continuous claim waits for the substep arm (S1, below). **TL2 misses** (the penalty falls): training pulls the map toward its continuous law, the §5.19 scope caveat ("every refinement result is from an undertrained model") is lifted in the favourable direction, and first-order evolution can be called both simple and continuous at scale.
+- **TL3 hits:** first order buys simplicity at a cost in continuity that grows with training. **TL3 misses:** first order is not more tied to its step than second order once trained longer.
+- **TL7 and TL8 hit:** the saturation at K = 16 seen at 0.5B (PMX-K16 settled 54.24 against PMX's 54.63) is a property of the budget; K is a capacity knob at scale, and the dose-response is to be repeated at 2B before the number of modes is fixed for later generations. **TL7 and TL8 miss:** the number of modes the model uses is set by the architecture, not by the data, and K = 16 serves at 2B as at 0.5B. **TL9 hits:** the first-order model leans on the explicit memory more, as substitution says (the second-order model also has its velocity); **TL9 misses:** the two orders use the wells alike, and substitution would have to act through how the wells are shaped (depth sign, width), not how many.
+- **TL10 hits:** with more data the wells turn from a positional potential into a memory of content, and the substitution reading can be tested in its content form at 2B. **TL10 misses:** at the scale of the series the wells are a learned position-dependent potential; the MS hypothesis is stated as substitution by a positional landscape, and a memory of content needs another design (narrow wells, or the Fock register path of MS7).
+- **MS4 hits with TL5 hit:** the tie survives the decay-phase pattern; substitution is robust to the second-order arm's larger decay gain. **MS4 misses with TL5 hit:** the decay gain is what reopens the gap, and the substitution is a property of the shorter budget.
+
+**S1, a step-size check before the 2B runs (proposed; calls registered when it is scheduled).** FO-b-PMX at L = 2 trained with two substeps per layer, which halves the step without adding layers or parameters (about 1.4× a normal run). It asks whether a finer trained step brings the first-order map onto its continuous law; if it does, the 2B arms can be trained with substeps and test simplicity and continuity together. Its readiness is to be checked first: `substeps_per_layer` has so far been used at inference only.
+
+**Scope:** OpenWebText, L = 2, d = 384, one seed per arm; the seed spread (MS1) is measured before the 2B runs are read.
 
 **Scope:** constant γ = 0.1 in the anchor, L = 2, d = 384, 532.5M tokens, one seed.
 
