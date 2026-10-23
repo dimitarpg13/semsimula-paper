@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-# Dose-response (MS2) build check, 2026-10-22: python3 verify_dose_modes.py OUT_DIR
+# Dose-response (MS2) build check, 2026-10-22: python3 verify_dose_modes.py OUT_DIR [Ks=16,256]
 """Does the ladder notebook build and train at K = 16 and K = 256 Poisson modes, second order and FO-b?
 Builds each model from the notebook's own cells (no checkpoint), runs a training forward + backward on
 2 x 64 validation tokens, and reports the tag, parameter count, loss, gradient norms of the pm_ tensors
 and the half-life initialisation. Then checks that an eval forward of the K = 16 FO-b model is finite."""
 import sys, torch, time
 from pathlib import Path
-OUT = Path(sys.argv[1]); sys.argv = [sys.argv[0], str(OUT / 'harness')]
+OUT = Path(sys.argv[1])
+KS = tuple(int(k) for k in next((a[3:] for a in sys.argv[2:] if a.startswith('Ks=')), '16,256').split(','))
+sys.argv = [sys.argv[0], str(OUT / 'harness')]
 sys.path.insert(0, '/Users/dimitargueorguiev/git/ml/semsimula-paper/notebooks/conservative_arch/scaleup/debug')
 import verify_pm_switch as P
 torch.set_num_threads(8)
@@ -30,7 +32,7 @@ BASE = P.CONFIGS['F3.1'][1] + (("LOWRANK_DAMPED_FLOW  = False", "LOWRANK_DAMPED_
 FOB = (("FIRST_ORDER_OVERDAMPED = False", "FIRST_ORDER_OVERDAMPED = True"),)
 lines = []
 say = lambda s: (print(s, flush=True), lines.append(s))
-for K in (16, 256):
+for K in KS:
     for order, extra in (('second order', ()), ('FO-b', FOB)):
         t0 = time.time()
         repl = BASE + (("POISSON_MODES        = 0", f"POISSON_MODES        = {K}"),) + extra
@@ -51,11 +53,11 @@ for K in (16, 256):
             f'loss {float(loss):.4f}  finite {fin}  |grad| pm_depth {pm["pm_depth"]:.2e} pm_mu {pm["pm_mu"]:.2e}  '
             f'half-lives {hl.min():.1f}-{hl.max():.1f} tokens  exact_modes {getattr(model.cfg, "poisson_wells_exact_modes", None)}  '
             f'fob {bool(getattr(model.cfg, "first_order_overdamped", False))}  [{time.time() - t0:.0f}s]')
-        if K == 16 and order == 'FO-b':
+        if K == min(KS) and order == 'FO-b':
             model.eval()
             with torch.enable_grad():
                 lo = model(xb)[0]
             say(f'      eval forward finite: {bool(torch.isfinite(lo).all())}')
         del model
-(OUT / 'dose_check_output.txt').write_text('\n'.join(lines) + '\n')
+(OUT / ('dose_check_output.txt' if KS == (16, 256) else f'dose_check_K{"_".join(map(str, KS))}_output.txt')).write_text('\n'.join(lines) + '\n')
 print('DONE')

@@ -1,0 +1,23 @@
+DESCENT READOUT: fob-pmx  (best checkpoint; 2 x 4 x 512 tokens, batch seed 20261009)
+   the model's trained layer step (N = 2) against the continuous flow on the frozen landscape (N = 16, FLOW-R's per-layer flow)
+
+LAYER 0
+   direction: cosine(model step, flow step)  median 0.989  p10 0.976  p90 0.996   share above 0.9: 100.0%
+   distance:  |flow end - model end| / |model step|  median 0.147  p90 0.218
+   Lyapunov:  dV along the trained step (midpoint rule): V falls for 100.0% of tokens (median dV -3.850)
+              dV along the flow path (8 samples):      V falls for 100.0% of tokens (median dV -1.537)
+   basin:     same strongest-pulling well at the model's and the flow's endpoint: 99.9%  (the model's endpoints use 4 distinct wells of 64)
+   approach:  the three wells the step moved the token most toward, shared by model and flow: mean 0.954 of 3/3; all three shared for 86.2% of tokens
+              rank correlation of the approach over all wells: median 0.999  p10 0.998
+LAYER 1
+   direction: cosine(model step, flow step)  median 0.838  p10 0.738  p90 0.886   share above 0.9: 4.3%
+   distance:  |flow end - model end| / |model step|  median 0.640  p90 0.741
+   Lyapunov:  dV along the trained step (midpoint rule): V falls for 100.0% of tokens (median dV -9.659)
+              dV along the flow path (8 samples):      V falls for 100.0% of tokens (median dV -4.928)
+   basin:     same strongest-pulling well at the model's and the flow's endpoint: 98.5%  (the model's endpoints use 5 distinct wells of 64)
+   approach:  the three wells the step moved the token most toward, shared by model and flow: mean 0.498 of 3/3; all three shared for 7.9% of tokens
+              rank correlation of the approach over all wells: median 0.800  p10 0.620
+
+READOUT (after layer 1)
+   top-1 agreement model vs flow: 63.3%   mean KL(model || flow): 0.502 nats
+   perplexity: model 61.35   flow 107.75

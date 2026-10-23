@@ -4088,6 +4088,25 @@ MS2 as called above (the gap falls monotonically with K and is within the seed s
 
 Every point keeps `POISSON_WELLS_EXACT_MODES = 16`, so that only K changes along the dose; below K = 16 the integrator takes all K wells exactly (`poisson_mode_quadratic` uses every mode when `top ≥ K`), and the tags read `pm8_pmx16`, `pm4_pmx16`. **Build check at K = 8** (`debug/verify_dose_modes.py` with K = 8, output `debug/verify_dose_modes_K8_output.txt`): both orders build from the notebook's cells with 76,575,214 parameters, a training step gives a finite loss and finite gradients, and the first-order model's eval forward is finite. A K = 8 or K = 4 point carries the same four calls as K = 16 (MS2a–MS2d), with the interval of MS2a taken between that point's neighbours on the recorded curve.
 
+**Amendment to the decision rule (2026-10-23, at the author's decision).** Recorded after PMX-K16 (the second-order arm) and the position-only reading of the wells, and **before the FO-b K = 16 twin has run**. The table above stands on record. Its first row changes as follows; the other two rows are unchanged.
+
+| gap at K = 16 | next pair (amended) |
+| --- | --- |
+| within ±2% | **K = 2** (PM2-PMX16 and FO-b-PM2-PMX16), in place of K = 8 |
+
+and the K = 2 point is read as:
+
+| gap at K = 2 (second order against its first-order twin) | reading | next |
+| --- | --- | --- |
+| within ±2% | the gap closes with two modes, close to the smallest positional potential: two clocks, initial half-lives 4 and 128 tokens. The low end of the dose is closed | no further low-K point; K = 256 for the top of the curve |
+| outside ±2% | the threshold lies between K = 2 and K = 16 | **K = 8**; then K = 4 if K = 8 ties, to locate it |
+
+- **Why.** At 0.5B tokens the wells act as a position-dependent potential (the result above). K therefore sets how finely that potential can follow position. Second order showed no gain from K = 64 over K = 16. K = 2 asks how little positional structure closes the gap, and whether the two orders need the same amount. It answers in one pair what K = 8 and K = 4 would answer in two.
+- **Settings.** As at K = 16, with `POISSON_MODES = 2` and `POISSON_WELLS_EXACT_MODES = 16` (every well exact, since 16 ≥ K). Tags `…pm2_pmx16_sr2_L2probe…` and `…pm2_pmx16_sr2_fob_L2probe…`. Both arms trained from step 0, so that their evals are paired; the second-order arm first.
+- **Calls.** The K = 2 point carries MS2a–MS2d as K = 16 does. MS2a's interval is taken between the recorded neighbours K = 0 (+4.9%) and K = 16. MS2b's ordering is SR2 > PM2 > PMX-K16, and FO-b-OWT > FO-b-PM2 > FO-b-PMX-K16.
+- **Build check at K = 2** (`debug/verify_dose_modes.py … Ks=2`, output `debug/verify_dose_modes_K2_output.txt`). Both orders build from the notebook's cells with 76,572,886 parameters, the expected tags, a finite loss and finite gradients, and half-lives initialised at 4.0 and 128 tokens. The first-order model's eval forward is finite. As at every K, `pm_mu` has no gradient at initialisation, because the depths start at zero; it receives one from the first step.
+- **If K = 16 shows a gap** (outside ±2%), the rule's other rows apply unchanged, and K = 2 is not run before them.
+
 **Readings, fixed now.**
 - **MS2 hits and MS3 hits:** the hypothesis stands at this scale; the book's §17h subsection is upgraded from "proposed" to "supported", with the scope line of MS4–MS6.
 - **MS2 misses with the gap flat in K:** the wells help both orders alike and the K = 64 tie is a coincidence of this pair; the hypothesis is withdrawn and FO-b-PMX is reported as a result about the wells.

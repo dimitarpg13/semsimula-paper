@@ -1,0 +1,5 @@
+POISSON-MODE CONTENT SWAP: fob-pmx  K = 64  (best checkpoint; 4 x 4 x 512 tokens, batch seed 20261009)
+   base perplexity 54.65
+   swap     perplexity    54.66   change   +0.02%  (per-sequence spread 0.10%, n = 16)   another sequence's occupations (same positions, other content)
+   posmean  perplexity    54.66   change   +0.02%  (per-sequence spread 0.08%, n = 16)   occupations averaged over sequences at each position (position only)
+   off      perplexity   208.52   change +281.58%  (per-sequence spread 26.97%, n = 16)   no wells (occupations zero)
