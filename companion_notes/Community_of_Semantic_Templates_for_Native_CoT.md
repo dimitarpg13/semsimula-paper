@@ -77,6 +77,8 @@ The Doi–Peliti note established (§2 there) that a template particle and a mod
 
 So PMX already carries a bank of 64 learned pattern-matching regions with learned triggers and a firing history, and the RF probe (protocol §5.23) found that history carries a small, real, content-bearing signal about what comes next. What a mode lacks is the two things that make a template a *function*: slots and an inference region. A mode detects; it does not construct.
 
+> **Qualified 2026-10-23.** The modes have the *form* of pattern-matching regions, but measurement says that as trained they do not have the *function* (protocol §5.13; [Implementing Semantic Templates](Implementing_Semantic_Templates_A_Path.md) §6). The trained wells stay broad, so a mode's overlap varies by only 1–4% from token to token. The occupations are reproduced to 99.8% or more from the position alone. Giving a sequence another text's occupations costs PMX 0.04%, and beyond the first ~100 tokens the wells act as a fixed extra landscape. The RF probe's content-bearing signal and the MT probe's transitions (§7, firing defined at each mode's 90th percentile) are real but live inside that small variation, which the model does not use. "A mode detects" should be read as "a mode *could* detect": selectivity has to be designed in (Stage 0′ of the implementing note) before a bank of modes can serve as matchers.
+
 ---
 
 ## 4. How a community forms
@@ -177,7 +179,7 @@ In order of what is missing, from the trained models to a community of templates
 4. **A training signal for firing.** The Doi–Peliti note's finite-β rate is the differentiable handle; the corpus is one with derivations. Feng's arithmetic and DP tasks are the natural first targets, because the template bank that solves them is known in closed form (their constructive proofs) and can be compared against what a model learns.
 5. **Depth.** Feng's constructions need four or five layers per step; the ladder's models have two. The L = 4 arms are the first on which any of this can be tested.
 
-Nothing here claims that the trained models reason. It claims that one of the two halves of native chain-of-thought, a learned bank of pattern-matching regions with triggers and a firing history, is already present in PMX in a weak form, and it names the other half.
+Nothing here claims that the trained models reason. It claims that one of the two halves of native chain-of-thought, a learned bank of pattern-matching regions with triggers and a firing history, is already present in PMX in a weak form, and it names the other half. (Qualified 2026-10-23, §3: present in form; as trained, the modes do not discriminate between tokens, so even this half has to be made selective first.)
 
 ---
 

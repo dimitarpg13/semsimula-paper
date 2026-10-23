@@ -126,7 +126,7 @@ Continual learning with weight updates at inference is a different problem, trea
 
 ## 6. What the measurements say about the current substrate
 
-This is the part that should govern sequencing, because two measured facts make templates premature today.
+This is the part that should govern sequencing, because three measured facts make templates premature today.
 
 **There is no particle-number dynamics to hang reactions on.** The book's remark on what the trained registers implement reports three pre-registered measurements (DP1–DP3) on trained Fock models:
 
@@ -138,6 +138,14 @@ The conclusion recorded there is that the trained registers are "$M$ always-occu
 
 **v2's necessity has never been witnessed.** The F1 falsifier (base Dyck) exists to show it, but the only Dyck run used the v1 register design, whose registers could not reach the tokens at all: scrambling every register-side parameter left the logits unchanged and no gradient reached them. That result is run-to-run variation, not evidence.
 
+**The candidate matchers do not match.** A template's matcher is the overlap between its cloud and the local state (§2). The trained Poisson modes have exactly that form (a centre, a width, the overlap $E_v = \exp(-\kappa_v^2 \lVert h - \mu_v \rVert^2)$, a firing record), and the community note reads them as learned pattern-matching regions. Measured on the trained PMX, FO-b-PMX and PMX-K16 (protocol §5.13, 2026-10-23), they do not discriminate:
+- a mode's overlap varies by only 1–4% from token to token, because the trained wells stay broad ($\kappa_v^2 d$ median 0.6–1.0, its value at initialisation);
+- the occupations are reproduced to 99.8% or more from the position alone;
+- giving a sequence another text's occupations costs 0.02–0.09% perplexity, against 155–282% for removing the wells;
+- beyond the first ~100 tokens, the wells act as a fixed extra landscape (fixing every occupation at one value costs about 1%).
+
+So the matching half of a template, which the community note took to be present in weak form, is present in form but not in function: training did not make the modes content-selective, and the models do not use what selectivity there is.
+
 Taken together: building templates on this substrate risks an unfalsifiable outcome. If the model improves, the cause is ambiguous; if it does not, one cannot distinguish a failure of the mechanism from a failure of the substrate to support it.
 
 ---
@@ -145,6 +153,8 @@ Taken together: building templates on this substrate risks an unfalsifiable outc
 ## 7. Staging, with pass criteria
 
 **Stage 0 — make creation real.** Before any template code. Target: an active fraction that genuinely varies across layers and positions, and a salience that behaves as an intensity. DP1–DP3 are the existing probe, so the pass criterion is already written: active fraction away from the 0.9995–1.000 ceiling, and a *positive* salience-to-force correlation. The note on the register scheme diagnoses why the current update pins the fraction — right after refresh, $s \geq (1-\lambda)/(t+1)$, so at $\lambda = 0.5$ no register can be inactive in the first 99 positions. That inequality is the thing to break.
+
+**Stage 0′ — make matching real.** Alongside Stage 0, and equally a precondition. Target: modes whose overlap discriminates between tokens, and a model that uses it. Since training does not narrow the wells, selectivity has to be designed in: narrow initial wells (larger $\kappa_v^2$) with centres placed near real hidden states, so that each mode reaches only part of the state cloud. Pass criteria, all with existing tools (`pm_mode_usage.py`, `pm_content_swap.py`): the median coefficient of variation of a mode's overlap across tokens well above the present 0.01–0.04; the occupations no longer reproduced from position alone; and a content-swap cost well above the present 0.02–0.09%. The trained test is the narrow-wells arm (protocol §5.13, proposed); a check at initialisation, on CPU, comes first.
 
 **Stage 1 — one template, smallest form.** The single-type catalytic case $A_u \to A_u + A_v$, with learned $r_0$ and $\Theta$ and an annealed $\beta$. A free correctness check comes with it: by §4.3 of the templates note, unconditional templates give a Poisson stationary state of mean $c/d$, which should reproduce the log-unigram output bias. An implementation that does not recover that is wrong before anything interesting is tested.
 
@@ -177,4 +187,4 @@ Taken together: building templates on this substrate risks an unfalsifiable outc
 | PMS-to-IS pairing | The correspondence between matched and created structures. Not a density; no formulation yet (§4) |
 | Induction | Acquiring a template from context at inference with no weight update — Tier 2, distinct from continual learning |
 
-**Summary.** The continuous parameters of a template are already differentiable, and the templates note supplies the form. The discrete part, stoichiometry, becomes differentiable under the Poisson-intensity relaxation the framework already uses, with low-rank structure as a precondition for trainability. The genuinely unformulated part is the pairing of matcher to inference structure, which is not a density and so inherits none of the overlap-distance geometry; a placement map is the weak baseline worth falsifying first. None of it should be built before the register substrate shows particle-number dynamics, because measurement currently says it has none — active fraction pinned at 0.9995–1.000, salience not an intensity, and v2's own falsifier never yet run on a substrate where registers could reach the tokens.
+**Summary.** The continuous parameters of a template are already differentiable, and the templates note supplies the form. The discrete part, stoichiometry, becomes differentiable under the Poisson-intensity relaxation the framework already uses, with low-rank structure as a precondition for trainability. The genuinely unformulated part is the pairing of matcher to inference structure, which is not a density and so inherits none of the overlap-distance geometry; a placement map is the weak baseline worth falsifying first. None of it should be built before the register substrate shows particle-number dynamics, because measurement currently says it has none — active fraction pinned at 0.9995–1.000, salience not an intensity, and v2's own falsifier never yet run on a substrate where registers could reach the tokens. Nor before the modes that would serve as matchers discriminate between tokens, which as trained they do not (Stage 0′).

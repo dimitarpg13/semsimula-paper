@@ -4050,6 +4050,68 @@ MS2 as called above (the gap falls monotonically with K and is within the seed s
 - **The eval batches are shared between runs that start from step 0.** The eval at step N draws the same batches in every fresh run. So PMX-K16 and FO-b-PMX's step-to-step eval changes correlate at 0.99 over steps 25,000 to 32,500. PMX at K = 64 was resumed at step 8,500 and draws different batches (correlation 0.33). Paired by step, PMX-K16 is **+0.36%** worse than FO-b-PMX over the last eight evals (spread of the paired difference 0.08%) and +0.65% over the decay phase (0.36%). Against PMX at K = 64 the same pairing has a spread of about 2% per eval. **Consequence for the K = 64 gap (−1.1%):** its two runs do not share eval batches. With three evals each it carries an eval-sampling uncertainty of roughly ±1.2%, before any seed spread. Every arm of the dose (and MS1's seed rerun) is trained from step 0 so that its comparisons are paired; the FO-b K = 16 twin is paired with PMX-K16 this way.
 - **The run monitor recorded nothing** ("resonance monitor failed … takes 9 positional arguments but 10 were given"). The wrapper in `semsimula-diag` (`probes/resonance.py`, `_wrap_lowrank_iso_damped_substep`) did not accept the `n_terms` argument the model passes. It is fixed locally (it now passes `*a, **kw` through; the 29 resonance tests pass) and needs a push before the next run. Training was unaffected. Cell 6b-13 reads ω·Δt on the checkpoint.
 
+**Result: beyond the first tokens, the wells are a fixed extra landscape (2026-10-23).** Run after the position-only result (below), to separate the two roles a position-only potential can have. A mode's occupation n̄_v(t) ≈ Ē_v (1 − λ_v^t)/(1 − λ_v) rises over a few half-lives (trained 3–20 tokens) and then levels off. Tool: `debug/pm_static_landscape.py` (inference, best checkpoints, 4 × 4 × 512 tokens, paired by sequence). It replaces every occupation by its late value, the mean over positions 256–511, either at all positions (`static`) or from t = 128 on (`static_128`). Outputs: `pm_static_landscape_*_output.txt` in each arm's results folder.
+
+| perplexity change | all | t 0–15 | t 16–63 | t 64–127 | t 128–255 | t 256–511 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| PMX: wells fixed at their late value everywhere | +1.03% | +19.4% | +2.1% | +1.2% | +0.1% | +0.2% |
+| PMX: fixed from t = 128 | +0.02% | 0 | 0 | 0 | +0.04% | +0.03% |
+| PMX: no wells | +165% | +17% | +87% | +144% | +174% | +199% |
+| FO-b-PMX: fixed everywhere | +0.96% | +18.5% | +2.0% | +1.0% | +0.4% | +0.0% |
+| FO-b-PMX: no wells | +282% | +37% | +156% | +230% | +296% | +346% |
+| PMX-K16: fixed everywhere | +0.73% | +14.9% | +0.7% | +0.8% | +0.3% | +0.1% |
+| PMX-K16: no wells | +156% | +11% | +77% | +141% | +162% | +189% |
+
+- **A fixed landscape carries almost all of the wells' value.** Replacing every occupation by one position-independent value costs about 1% overall, against 155–282% for removing the wells. The cost of removal *grows* with position, where the occupations are constant.
+- **The clock matters only at the start.** The positional part is worth 15–19% in the first 16 tokens and about 2% to t = 63. From t = 128 on it is worth nothing (`static_128`: 0.0%).
+- **So, at 0.53B tokens, what closes the first-order gap is mainly a fixed extra potential:** K Gaussian wells per layer with learned centres, widths and per-layer depths (repulsive or attractive), added to V_θ's eight context-driven wells. A start-of-sequence correction sits on top. Neither a memory of content nor, beyond the first tokens, a memory of position. The MS hypothesis, the future note §7 and the book's §17h (item (vi), which describes centre and stiffness as moving along the sequence) are to be re-read with this. The wording is the author's decision.
+- **For the dose:** K counts the Gaussians of that fixed landscape. The K = 2 point asks how much extra fixed landscape the first-order model needs to match.
+- **A cleaner test this suggests (proposed, not registered):** give the first-order model the same extra landscape without the Poisson machinery, either a fixed bank of K Gaussian wells per layer or more V_θ wells. If FO-b with a fixed bank matches FO-b-PMX, the occupations are not needed at all at this scale.
+
+**The FO-b K = 16 twin: a revised expectation, and what replaces the velocity (registered 2026-10-23, at the author's decision, while the twin trains and before any of its evals beyond the first steps were read).**
+
+*Revised call.* MS2a (above, 2026-10-22: the K = 16 gap in (+1%, +4%), 50%) stands and is scored as written. Added after PMX-K16 settled level with PMX, and on the precedent that reliance on the velocity does not predict need for it (PMX: Gate 1 +91% against SR2's +3.9%, yet PMX's twin matched it and SR2's did not): **MS2e — FO-b-PM16-PMX16 settles within ±2% of PMX-K16 (54.24), paired by step, 55%.**
+
+*What replaces the velocity.* PMX-K16 leans on its velocity about 60 times as much as PMX (Gate 1 +5,788%), with stiffer modes (ω·Δt median 3.65). If the twin matches it, the match is to be explained, not only recorded. A first-order model has three places to put what the velocity carried. Each is read on both twins with the same tool, and each reading is called **fired** if its threshold is met:
+
+| id | candidate | reading (FO-b-PM16-PMX16 against PMX-K16, best checkpoints) | fired if |
+| --- | --- | --- | --- |
+| M1 | **the wells reorganise** (capture, as in FO-b-PMX) | 6b-15 and `pm_mode_usage.py`: attractive share of the depths and of the wells' force, per layer; effective number of modes | at layer 0, where PMX-K16's wells are 81% repulsive, the attractive modes carry at least half the force; or the effective number of modes reaches 15 of 16 at either layer (the memory saturated) |
+| M2 | **the content channels carry more** | `mechanism_ablations.py`: cost of `xi_swap` (ξ from another text) and of `vphi_off` (no pair force), paired by sequence | either cost is at least 1.5 times PMX-K16's, and the difference exceeds twice the per-sequence spread over √16 |
+| M3 | **the landscape stiffens** | V_θ's own stiffest-mode ω·Δt at the endpoint, the 6b-13 definition (V_θ's curvature only), read on CPU for both arms | the median is at least 15% above PMX-K16's at either layer (PMX-K16: 2.87 at layer 0, 4.55 at layer 1; all layers 3.65 — per-layer values written in 2026-10-23, the row first said 3.65 for both) |
+| M4 | **none: the velocity was spare** | | the twin ties (MS2e hits) and none of M1–M3 fires |
+
+*Readings, fixed now.*
+- **A tie with M1, M2 or M3 fired:** the first-order model found a replacement, and the fired readings name it. The implicit memory was used and was substituted. This supports MS in its functional form, through the named path.
+- **A tie with M4:** the velocity was loaded because it was there (reliance without need), and nothing had to replace it at K = 16.
+- **A gap (outside ±2%):** M1–M3 describe what the twin did *not* manage to replace. A fired M1 reading (in particular a saturated mode count) together with a gap points to too few modes, and K = 32 or 64 follows the rule above.
+- The ablations are also run on the K = 64 pair (PMX, FO-b-PMX), where the first-order model is known to match, as a reference signature. They do not change these thresholds.
+
+*Amendment to M2 (2026-10-23, before the twin's result and before any context-channel ablation was run).* The full ξ swap as registered is uninformative: it costs about 10,000% in every model (PMX-K16 +10,426%, PMX +11,115%, FO-b-PMX +9,162%). The cause is that ξ includes the current token (the causal mask is s ≤ t), and its two short channels (trained α ≈ 0.3 and 0.5) put about half or more of their weight on it. So the full swap replaces the token's identity, not its context. **M2's ξ reading is replaced by `xi_ctx_swap`:** only the three context channels (trained α ≈ 0.88, 0.98, 0.997, at most 12% weight on the current token) are taken from another sequence, and the two short channels are kept. The threshold is unchanged (at least 1.5 times PMX-K16's cost, beyond twice the per-sequence spread over √16). The V_φ reading (`vphi_off`) stands as registered. Its values, read before this amendment: PMX-K16 +1.71%, PMX +1.54%, FO-b-PMX +2.68%. So in the known-match pair the first-order model relies on the pair force 1.7 times as much as its twin, beyond the noise.
+
+*Reference signatures in the known-match pair (FO-b-PMX against PMX, K = 64), read 2026-10-23.* V_θ's stiffest-mode ω·Δt with one definition for both orders (`debug/vtheta_omega_dt.py`, validated: it reproduces Cell 6b-13's 3.651 on PMX-K16 exactly) has medians of 1.89 / 5.08 (layer 0 / layer 1) for FO-b-PMX against 2.19 / 4.21 for PMX. The first-order landscape is softer at layer 0 and 21% stiffer at layer 1. Context channels only (`xi_ctx_swap`, run after the amendment): PMX +303%, FO-b-PMX +319% (1.05 times, no difference); averaged by position +91% and +96%. In that pair M3 would fire at layer 1, M2's V_φ reading would fire, and M2's ξ reading would not: the first-order model leans more on token–token coupling, not more on context. PMX-K16's own values (the twin's thresholds): ω·Δt 2.87 / 4.55; `vphi_off` +1.71%; `xi_ctx_swap` +334%. Outputs: `mechanism_ablations_{pmx,fob-pmx}_output.txt` and `vtheta_omega_dt_*_output.txt` in each arm's results folder.
+
+**PMX-K16's diagnostics (2026-10-23).** Cells 6b-7 and 6b-9 were run on Colab. Cells 6b-13 and 6b-15 were run on CPU from the downloaded best checkpoint with `debug/run_diag_cell_cpu.py`, which executes the notebook cell unchanged in the shared harness, with 6b-13 using the local, fixed `semsimula-diag` (the Colab run of 6b-13 hit the monitor bug above). Validation: 6b-13 on PMX (K = 64) on CPU reproduces its Colab output to the third decimal. Outputs are in the arm's results folder: `Cell-6b-13_omega_dt_cpu_output.txt`, `Cell-6b-15_pm_tuning_cpu_output.txt`, `pm_mode_usage_pmx_output.txt` and `pm_content_swap_pmx_output.txt`; Cells 6b-7 and 6b-9 stay in the Drive folder's `results/`.
+
+| reading | PMX-K16 | PMX (K = 64) | FO-b-PMX (K = 64) |
+| --- | ---: | ---: | ---: |
+| Gate 1: perplexity with the velocity reset (cost) | 3,099 (**+5,788%**) | 101.8 (+91%) | 0 by construction |
+| Gate 2, one extra layer (N = 3) | +845% | +956% | +0.3% |
+| Gate 3, three steps at fixed T (N = 3), nats | 1.09 | 1.10 | 0.67 |
+| 6b-9: R(geo) / the wells' share of the correction | 0.92 / −0.38 | 1.02 / −0.52 | |
+| 6b-13: ω·Δt of the stiffest mode, p50 layer 0 / layer 1 / all | 2.87 / 4.55 / **3.65** | 2.19 / 4.21 / 2.65 | |
+| 6b-13: share past the explicit wall of 2 | 99.6% | 90.2% | |
+| 6b-15: depths positive, layer 0 / layer 1 | **19% / 94%** | 50% / 48% | 64% / 61% |
+| 6b-15: median depth, layer 0 / layer 1 | −0.029 / **+0.392** | −0.001 / −0.009 | +0.031 / +0.071 |
+| 6b-15: wells' force / conservative force, layer 0 / layer 1 | 0.53 / 3.53 | 0.81 / 4.79 | 0.61 / 3.32 |
+| 6b-15: κ² × d, median (start 1.00) | 0.58 | 0.96 | 0.88 |
+| effective number of modes, layer 0 / layer 1 | 11.0 / 13.6 of 16 | 39.8 / 36.7 of 64 | 48.4 / 39.1 of 64 |
+| wells' force reproduced from position alone | 99.96% / 99.95% | 99.89% / 99.93% | 99.82% / 99.98% |
+| content swap / no wells | +0.09% / +156% | +0.04% / +165% | +0.02% / +282% |
+
+- **Same perplexity, different organisation.** PMX-K16 settles with PMX (54.24 against 54.63), and its refinement and extension costs are the same. But it leans on its velocity about 60 times as much: Gate 1 costs +5,788% against +91%. Its stiffest modes also sit further past the wall: median 3.65 against 2.65, inside the band pre-registered for L = 2, [3.3, 4.2], which PMX missed. With fewer wells, the second-order model carries more in its velocity and its stiff rotation. That is the direction substitution predicts for the implicit memory, read as reliance, not need. Whether the first-order twin needs more than PMX-K16 is what the FO-b K = 16 run asks.
+- **The wells split by layer.** At layer 0 they are nearly all repulsive and weak. At layer 1 they are attractive and deep: 94% positive, median depth +0.39, and the attractive modes carry 99% of the force. PMX's depths are balanced at both layers. The K = 16 wells are also broader (κ² × d 0.58) and still position-only (99.96%, content swap +0.09%).
+
 **Result: at 0.5B tokens the wells act as a position-dependent potential, not as a memory of content (2026-10-23).** Run after PMX-K16 settled level with PMX, and after TL7–TL9 were registered (below). Best checkpoints of PMX and FO-b-PMX, validation tokens, batch seed 20261009. Tools: `debug/pm_mode_usage.py` (2 × 4 × 512 tokens) and `debug/pm_content_swap.py` (4 × 4 × 512 tokens, paired by sequence). Outputs: `pm_mode_usage_{pmx,fob-pmx}_output.txt` and `pm_content_swap_{pmx,fob-pmx}_output.txt` in each arm's results folder.
 
 | reading | PMX L0 | PMX L1 | FO-b-PMX L0 | FO-b-PMX L1 |

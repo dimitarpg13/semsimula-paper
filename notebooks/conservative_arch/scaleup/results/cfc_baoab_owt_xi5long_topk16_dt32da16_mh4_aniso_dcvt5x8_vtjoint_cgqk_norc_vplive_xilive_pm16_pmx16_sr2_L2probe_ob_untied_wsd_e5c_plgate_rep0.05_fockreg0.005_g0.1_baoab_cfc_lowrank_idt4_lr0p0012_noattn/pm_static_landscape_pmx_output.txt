@@ -1,0 +1,8 @@
+WELLS: CLOCK OR FIXED LANDSCAPE? pmx  K = 16  (best checkpoint; 4 x 4 x 512 tokens, batch seed 20261009)
+   base perplexity 55.20
+   perplexity change by position bucket (paired by sequence; per-sequence spread in brackets)
+   variant                   all           t 0-15          t 16-63         t 64-127        t 128-255        t 256-511
+   static         +0.73% ( 0.58)   +14.86% (14.42)    +0.65% ( 1.79)    +0.78% ( 1.84)    +0.32% ( 0.90)    +0.12% ( 0.57)
+   static_128     +0.03% ( 0.17)    +0.00% ( 0.00)    -0.00% ( 0.00)    +0.00% ( 0.00)    -0.00% ( 0.18)    +0.06% ( 0.31)
+   off          +155.53% (23.38)   +11.30% (16.02)   +76.63% (16.01)  +140.66% (23.00)  +162.34% (21.27)  +188.99% (40.00)
+   base perplexity by bucket: t 0-15: 120.0, t 16-63: 67.6, t 64-127: 65.9, t 128-255: 56.7, t 256-511: 47.8
