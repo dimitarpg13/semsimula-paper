@@ -1,0 +1,17 @@
+POISSON-MODE USAGE: fob-pmx  K = 16  (pm16_pmx16_sr2_fob, best checkpoint; 2 x 4 x 512 tokens, batch seed 20261009)
+LAYER 0
+   N_eff  12.7 of 16   N_80  9   per-token N_eff median 12.7 (p10 12.7, p90 12.7)
+   token specificity: total-variation distance of a token's mix from the average mix, median 0.006 (p90 0.013; 0 = every token feels the same mix, 1 = disjoint)
+   overlap E_v across tokens: coefficient of variation, median over modes 0.008; exponent kappa^2 |h - mu|^2 median 0.40 (p10 0.10, p90 1.33)
+   top-5 modes carry 55%; top-16 carry 100%
+   attractive depths 31% of modes, 23% of the force
+   position only (leave one sequence out): the wells' force explained R^2 0.9990, median cosine 1.0000; the occupations explained R^2 0.9995
+   half-lives of the N_80 modes: median 4.8 tokens (range 3.9-18.3); all modes median 5.1
+LAYER 1
+   N_eff   9.5 of 16   N_80  6   per-token N_eff median  9.5 (p10  9.4, p90  9.5)
+   token specificity: total-variation distance of a token's mix from the average mix, median 0.003 (p90 0.005; 0 = every token feels the same mix, 1 = disjoint)
+   overlap E_v across tokens: coefficient of variation, median over modes 0.026; exponent kappa^2 |h - mu|^2 median 1.20 (p10 0.39, p90 3.52)
+   top-5 modes carry 70%; top-16 carry 100%
+   attractive depths 75% of modes, 99% of the force
+   position only (leave one sequence out): the wells' force explained R^2 0.9998, median cosine 1.0000; the occupations explained R^2 0.9919
+   half-lives of the N_80 modes: median 3.9 tokens (range 3.0-4.5); all modes median 5.1

@@ -4169,6 +4169,46 @@ and the K = 2 point is read as:
 - **Build check at K = 2** (`debug/verify_dose_modes.py … Ks=2`, output `debug/verify_dose_modes_K2_output.txt`). Both orders build from the notebook's cells with 76,572,886 parameters, the expected tags, a finite loss and finite gradients, and half-lives initialised at 4.0 and 128 tokens. The first-order model's eval forward is finite. As at every K, `pm_mu` has no gradient at initialisation, because the depths start at zero; it receives one from the first step.
 - **If K = 16 shows a gap** (outside ±2%), the rule's other rows apply unchanged, and K = 2 is not run before them.
 
+**Result, the K = 16 pair (FO-b-PM16-PMX16, 2026-10-24).** Tag `…pm16_pmx16_sr2_fob_L2probe…`, trained from step 0 at seed 0 like PMX-K16, so the two runs see the same training and evaluation batches. Their step-to-step evaluation changes correlate at 0.999. 32,500 steps, clean finish, no watchdog trigger; the highest training loss logged is 1.007 times its running mean.
+
+| | FO-b-PM16-PMX16 | PMX-K16 | first order against second |
+| --- | ---: | ---: | ---: |
+| settled (last three evals) | **53.73** | 54.24 | −0.93% |
+| paired by step, last 8 evals | | | **−0.87%** (spread 0.14%) |
+| paired, steps 10,000–21,000 (stable phase) | | | −1.08% (0.24%) |
+| paired, steps 21,500–32,500 (decay) | | | −1.10% (0.33%) |
+| decay gain, log perplexity, step 21,000 to settled | −0.171 | −0.176 | |
+
+The first-order model leads throughout training, by 1.5% at step 21,000 and 0.9% at the end. Against FO-b-PMX at K = 64 it is level or slightly ahead (53.61 against 53.96 at step 32,500). So first order is also saturated by K = 16.
+
+| id | prediction | called | result |
+| --- | --- | ---: | --- |
+| MS2a | the second-order gap at K = 16 in (+1%, +4%) | 50% | **MISS**: −0.9%, first order ahead |
+| MS2b | both K = 16 arms between their K = 0 and K = 64 counterparts | 65% | **MISS** on both halves: PMX-K16 (54.24) below PMX (54.63), FO-b-K16 (53.73) below FO-b-PMX (54.02); 16 modes do as well as 64 in both orders |
+| MS2c | the wells' gain larger for first order at K = 16 | 60% | **HIT**: log(61.16 / 53.73) = 0.130 against log(58.32 / 54.24) = 0.073 |
+| MS2d | the first-order K = 16 arm trains stably | 75% | **HIT** |
+| MS2e | within ±2% of PMX-K16, paired by step | 55% | **HIT**: −0.87% |
+
+- **Reliance is not need, again, and more sharply.** PMX-K16 relies on its velocity more than any arm in the series (Gate 1 +5,788%), and its first-order twin, which has no velocity, beats it by 0.9%.
+- **The decay-phase pattern did not reappear.** In three of four earlier pairs the second-order arm gained more in the learning-rate decay. Here the two gains are equal to within 0.005 in log perplexity. The first-order lead narrows by about 0.6 points over the decay but does not close.
+- **The K rule (amended):** a gap within ±2% at K = 16 → **K = 2 next** (PM2-PMX16 and FO-b-PM2-PMX16, second-order arm first, both from step 0). Build check: `debug/verify_dose_modes_K2_output.txt`.
+- **M1–M4 (what replaces the velocity)** are read once the twin's run folder is downloaded: 6b-15 and the mode count (M1), `mechanism_ablations.py` (M2), `vtheta_omega_dt.py` (M3). Under the readings registered above, a tie with M1, M2 or M3 fired names a replacement; a tie with none fired reads the velocity as spare. A first-order lead counts as a tie for these readings (within ±2%).
+
+**M1–M4 scored (2026-10-24).** The twin's diagnostic cells were run on Colab (Cells 6b-7, 6b-9, 6b-13, 6b-15, in its Drive folder's `results/`). The registered readings were run on CPU from its best checkpoint, with outputs in the arm's results folder: `pm_mode_usage_fob-pmx_output.txt`, `mechanism_ablations_fob-pmx_output.txt`, `vtheta_omega_dt_fob-pmx_output.txt` and `pm_static_landscape_fob-pmx_output.txt`.
+
+| reading | threshold (registered) | FO-b-PM16-PMX16 | PMX-K16 | verdict |
+| --- | --- | --- | --- | --- |
+| M1, wells reorganise | layer-0 attractive modes carry at least half the force, or N_eff at least 15 of 16 | 23% of the force (31% of the depths); N_eff 12.7 / 9.5 | 4% (19%); 11.0 / 13.6 | **not fired** |
+| M2, V_φ | `vphi_off` at least 1.5 times PMX-K16's, beyond twice the spread over √16 | **+3.60%** (2.1 times; margin 1.89 against 0.67) | +1.71% | **fired** |
+| M2, context channels | `xi_ctx_swap`, the same rule | +337% (1.01 times) | +334% | not fired |
+| M3, landscape stiffens | V_θ's stiffest-mode ω·Δt median at least 15% above at either layer | 2.13 / **5.31** (layer 1 **+16.7%**; layer 0 −26%) | 2.87 / 4.55 | **fired**, narrowly |
+
+- **Reading, as registered (a tie with M2 and M3 fired):** the first-order model found a replacement. The fired readings name it: **more token–token coupling** (it relies on the pair force about twice as much as its twin) and **a stiffer layer-1 landscape** (layer 0 softer). It is not more reliance on context, and not a reorganisation of the wells by the registered criterion.
+- **The same signature as the K = 64 pair**, where first order also matched: V_φ reliance 1.7 times, layer-1 stiffness +21% with layer 0 softer, context 1.05 times. It reproduces across the two pairs, and so is not a quirk of one run.
+- **The wells:** still position-only (force 99.90% / 99.98% from position; content swap +0.01%), and again a fixed landscape beyond the first tokens (fixing the occupations costs +29% in the first 16 tokens and nothing from t = 128 on). The first-order model relies on the wells about twice as much as its twin (removal +343% against +156%; at K = 64, +282% against +165%), with the force concentrated in fewer, short-lived modes at layer 1 (N_80 6; median half-life 3.9 tokens; attractive modes carry 99% of the force there).
+- **6b-7:** Gate 1 0 by construction; Gate 2 at N = 3 +0.5% (PMX-K16 +845%); Gate 3 at N = 3 0.86 nats (PMX-K16 1.09, FO-b-PMX 0.67). **6b-9:** R(geo) 0.75 (PMX-K16 0.92).
+- **Scope.** The ablations measure reliance in the trained model, not what a model trained without the term would reach. M3 cleared its threshold by 1.7 points. One seed per arm.
+
 **Readings, fixed now.**
 - **MS2 hits and MS3 hits:** the hypothesis stands at this scale; the book's §17h subsection is upgraded from "proposed" to "supported", with the scope line of MS4–MS6.
 - **MS2 misses with the gap flat in K:** the wells help both orders alike and the K = 64 tie is a coincidence of this pair; the hypothesis is withdrawn and FO-b-PMX is reported as a result about the wells.

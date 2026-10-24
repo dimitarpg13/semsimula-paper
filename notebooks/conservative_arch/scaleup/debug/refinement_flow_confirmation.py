@@ -69,6 +69,10 @@ if __name__ == '__main__':
         repl = repl + (("LOWRANK_DAMPED_FLOW  = False", "LOWRANK_DAMPED_FLOW  = True"),)
     if KIND in ('pm1', 'pmx', 'fob-pmx'):
         repl = repl + P.PM_ON
+        # 2026-10-24: K from the folder's pm<K> tag (the dose-response arms); K = 64 unchanged
+        _k = next((int(t[2:]) for t in FOLDER.split('_') if t.startswith('pm') and t[2:].isdigit()), 64)
+        if _k != 64:
+            repl = repl + (("POISSON_MODES        = 64", f"POISSON_MODES        = {_k}"),)
     if KIND in ('pmx', 'fob-pmx'):
         repl = repl + (("POISSON_WELLS_EXACT  = False", "POISSON_WELLS_EXACT  = True"),)
     if KIND in ('sr2-ts', 'fo-ts'):
