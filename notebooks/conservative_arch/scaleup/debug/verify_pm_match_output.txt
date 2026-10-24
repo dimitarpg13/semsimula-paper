@@ -1,0 +1,38 @@
+=== POISSON_MATCH_RANK = 8, K = 16, SR2 base, explicit wells: second order
+  [PASS] tag ...pm16_pmlr8_sr2
+  [PASS] parameters: pm_mu (2, 16, 384), pm_P (2, 8, 384), pm_log_c (2, 16), no pm_log_kappa2; 76,590,622 parameters
+  [PASS] order and explicit wells
+  [PASS] before the first training forward: not initialised
+  [PASS] first training forward initialises every layer (ready [1.0, 1.0]), loss 7.5441
+  [PASS] P_l starts orthonormal (max |P P^T - I| 1.1e-06); D2 [0.032, 32.488]
+  [PASS] layer 0 at initialisation: selectivity 3.24 (target >= 0.5; trained isotropic modes 0.01-0.04), coverage 100% (>= 90%); reach per mode min/median/max 1%/3%/72%, modes per token (median) 5
+  [PASS] layer 1 at initialisation: selectivity 3.60 (target >= 0.5; trained isotropic modes 0.01-0.04), coverage 100% (>= 90%); reach per mode min/median/max 2%/4%/68%, modes per token (median) 5
+  [PASS] layer 0: force = -grad U by autograd (relative max error 1.2e-07)
+  [PASS] layer 1: force = -grad U by autograd (relative max error 1.8e-07)
+  [PASS] after one step: |grad pm_mu| = 8.440e-01
+  [PASS] after one step: |grad pm_P| = 4.648e-01
+  [PASS] after one step: |grad pm_log_c| = 9.141e-03
+  [PASS] after one step: |grad pm_depth| = 9.889e+01
+  [PASS] after one step: |grad pm_logit_lambda| = 2.741e-02
+  [PASS] eval forward finite; D2 unchanged in eval
+  [PASS] training forward updates D2: [0.032, 36.995] -> [0.032, 41.338]
+=== POISSON_MATCH_RANK = 8, K = 16, SR2 base, explicit wells: FO-b
+  [PASS] tag ...pm16_pmlr8_sr2_fob
+  [PASS] parameters: pm_mu (2, 16, 384), pm_P (2, 8, 384), pm_log_c (2, 16), no pm_log_kappa2; 76,590,622 parameters
+  [PASS] order and explicit wells
+  [PASS] before the first training forward: not initialised
+  [PASS] first training forward initialises every layer (ready [1.0, 1.0]), loss 7.5441
+  [PASS] P_l starts orthonormal (max |P P^T - I| 8.3e-07); D2 [0.032, 32.462]
+  [PASS] layer 0 at initialisation: selectivity 3.24 (target >= 0.5; trained isotropic modes 0.01-0.04), coverage 100% (>= 90%); reach per mode min/median/max 1%/3%/71%, modes per token (median) 5
+  [PASS] layer 1 at initialisation: selectivity 3.60 (target >= 0.5; trained isotropic modes 0.01-0.04), coverage 100% (>= 90%); reach per mode min/median/max 2%/4%/68%, modes per token (median) 5
+  [PASS] layer 0: force = -grad U by autograd (relative max error 1.2e-07)
+  [PASS] layer 1: force = -grad U by autograd (relative max error 2.1e-07)
+  [PASS] after one step: |grad pm_mu| = 6.978e-01
+  [PASS] after one step: |grad pm_P| = 5.120e-01
+  [PASS] after one step: |grad pm_log_c| = 7.308e-03
+  [PASS] after one step: |grad pm_depth| = 7.619e+01
+  [PASS] after one step: |grad pm_logit_lambda| = 2.131e-02
+  [PASS] eval forward finite; D2 unchanged in eval
+  [PASS] training forward updates D2: [0.032, 37.653] -> [0.032, 42.675]
+ALL CHECKS PASS
+fingerprint (default off), HEAD against working copy, 4 configurations: BIT-IDENTICAL (run twice, before and after the k-means initialisation)

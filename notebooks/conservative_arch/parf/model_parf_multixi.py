@@ -333,6 +333,22 @@ class MultiXiPARFConfig(SparsePARFConfig):
     # be <= 32: the GPU's batched solvers stop at 32 x 32 (an 80 x 80 version
     # ran at > 26 s/step, 2026-10-10).
     poisson_wells_exact_modes: int = 16
+    # Content-selective Poisson modes (Stage 0', 2026-10-23; Implementing_Semantic_Templates_A_Path.md
+    # SS7, debug/narrow_wells_design.py). The default modes do not discriminate between tokens: the
+    # centres sit outside layer 0's small state cloud, one set of centres serves two layers whose
+    # clouds lie far apart, and in d = 384 an isotropic Gaussian cannot grade (distances concentrate).
+    # rank r > 0 matches in a learned rank-r subspace per layer instead:
+    #   E_v = exp(-kappa_v^2 |P_l (h - mu_{l,v})|^2),  kappa_v^2 = c_{l,v} / D2_l,
+    # with per-layer centres mu_l (L, K, d), projection P_l (L, r, d), learned width factor c (L, K)
+    # and D2_l a running median of the squared projected token distance (a buffer), so the width
+    # follows the cloud as it grows. mu_l, P_l and D2_l are set from the layer's own token states on
+    # the first training forward (P_l = their top-r principal directions; centres = k-means cluster
+    # means in span(P_l), k-means++ seeded).
+    # The potential stays a scalar function of h, so the force stays conservative; its curvature lies
+    # in span(P_l). Explicit kick only (needs poisson_wells_exact = False). 0 = off (bit-identical).
+    poisson_match_rank: int = 0
+    poisson_match_c_init: float = 1.0          # selectivity >= 0.5, coverage 100% at K = 16 and 64 (debug/verify_pm_match.py)
+    poisson_match_ema: float = 0.99
     relax_attn_logit_scale_init: float = 1.0 / 0.07
     relax_attn_logit_scale_max: float = 100.0
     # Fix the gate instead of learning it. None learns lambda (or holds it
@@ -801,10 +817,29 @@ class MultiXiPARFLM(SparsePARFLM):
         if _cap is not None and (_K <= 0 or not _cap > 0):
             raise ValueError("poisson_depth_cap needs poisson_modes > 0 and a positive cap, "
                              f"got poisson_modes={_K}, poisson_depth_cap={_cap}")
-        if _K > 0:
+        _R = int(getattr(cfg, "poisson_match_rank", 0) or 0)
+        if _R > 0:
+            if _K <= 0:
+                raise ValueError("poisson_match_rank needs poisson_modes > 0")
+            if getattr(cfg, "poisson_wells_exact", False):
+                raise ValueError("poisson_match_rank: the low-rank matcher runs on the explicit kick only "
+                                 "(poisson_wells_exact = False)")
+            if _R > cfg.d:
+                raise ValueError(f"poisson_match_rank = {_R} > d = {cfg.d}")
+        if _K > 0 and _R > 0:
+            # Content-selective modes: set from the token states on the first training forward
+            # (_pm_match), so no RNG is drawn here.
+            self.pm_mu = nn.Parameter(torch.zeros(cfg.L, _K, cfg.d))
+            self.pm_P = nn.Parameter(torch.zeros(cfg.L, _R, cfg.d))
+            self.pm_log_c = nn.Parameter(
+                torch.full((cfg.L, _K), math.log(float(getattr(cfg, "poisson_match_c_init", 1.0)))))
+            self.register_buffer("pm_D2", torch.ones(cfg.L))
+            self.register_buffer("pm_match_ready", torch.zeros(cfg.L))
+        elif _K > 0:
             self.pm_mu = nn.Parameter(torch.randn(_K, cfg.d))           # |mu| ~ sqrt(d), LN scale
             self.pm_log_kappa2 = nn.Parameter(
                 torch.full((_K,), -math.log(cfg.d)))                   # exponent |h - mu|^2 / d
+        if _K > 0:
             _hl = torch.logspace(
                 math.log10(getattr(cfg, "poisson_halflife_min", 4.0)),
                 math.log10(getattr(cfg, "poisson_halflife_max", 128.0)), _K)
@@ -814,7 +849,68 @@ class MultiXiPARFLM(SparsePARFLM):
             self.register_buffer("pm_share", torch.zeros(cfg.L), persistent=False)
 
     # ------------------------------------------------------------------
-    def poisson_mode_occupation(self, h: torch.Tensor):
+    def _pm_match(self, h: torch.Tensor, layer_idx: int):
+        """Content-selective overlap (cfg.poisson_match_rank > 0) at one layer.
+
+        Returns E (B, T, K), z = h P_l^T (B, T, r), m = mu_l P_l^T (K, r) and
+        kappa^2 (K,), float32. On the first training forward of each layer the
+        layer's centres, projection and width scale are set from the token
+        states it receives (centres: K distinct sampled states; P_l: their top-r
+        principal directions; D2_l: the median squared projected distance between
+        tokens); afterwards D2_l follows the cloud as a running median. Both are
+        done without gradient and draw no global RNG.
+        """
+        l = int(layer_idx)
+        hf = h.float()
+        if self.training:
+            with torch.no_grad():
+                X = hf.detach().reshape(-1, hf.shape[-1])
+                n = X.shape[0]
+                if not bool(self.pm_match_ready[l]):
+                    g = torch.Generator(device="cpu").manual_seed(1234 + l)
+                    K, R = self.pm_mu.shape[1], self.pm_P.shape[1]
+                    sub = torch.randperm(n, generator=g)[:min(n, 8192)].to(X.device)
+                    Xs = X[sub]
+                    _, _, Vh = torch.linalg.svd(Xs - Xs.mean(0, keepdim=True), full_matrices=False)
+                    # Centres: k-means in the projected subspace (k-means++ seeding, 10 Lloyd passes),
+                    # each centre the mean of its cluster's states. Random samples leave ~15% of the
+                    # tokens unreached at K = 16 (minority regions get no centre).
+                    Zs = Xs @ Vh[:R].t()
+                    seeds = [int(torch.randint(len(Zs), (1,), generator=g))]
+                    dmin = ((Zs - Zs[seeds[0]]) ** 2).sum(-1)
+                    for _ in range(1, K):
+                        pr = (dmin / dmin.sum().clamp_min(1e-30)).cpu()
+                        seeds.append(int(torch.multinomial(pr, 1, generator=g)))
+                        dmin = torch.minimum(dmin, ((Zs - Zs[seeds[-1]]) ** 2).sum(-1))
+                    C = Zs[seeds].clone()
+                    mu0 = Xs[seeds].clone()
+                    for _ in range(10):
+                        a_ = ((Zs * Zs).sum(-1, keepdim=True) + (C * C).sum(-1) - 2.0 * Zs @ C.t()).argmin(-1)
+                        for v in range(K):
+                            sel = a_ == v
+                            if bool(sel.any()):
+                                C[v] = Zs[sel].mean(0)
+                                mu0[v] = Xs[sel].mean(0)
+                    self.pm_mu.data[l].copy_(mu0)
+                    self.pm_P.data[l].copy_(Vh[:R])
+                    Z = Xs[:1024] @ Vh[:R].t()
+                    D2 = ((Z * Z).sum(-1, keepdim=True) + (Z * Z).sum(-1) - 2.0 * Z @ Z.t()).clamp_min(0.0)
+                    self.pm_D2[l] = D2[~torch.eye(len(Z), dtype=torch.bool, device=Z.device)].median()
+                    self.pm_match_ready[l] = 1.0
+                else:
+                    Z = X[:: max(1, n // 1024)][:1024] @ self.pm_P[l].detach().float().t()
+                    D2 = ((Z * Z).sum(-1, keepdim=True) + (Z * Z).sum(-1) - 2.0 * Z @ Z.t()).clamp_min(0.0)
+                    cur = D2[~torch.eye(len(Z), dtype=torch.bool, device=Z.device)].median()
+                    a = float(getattr(self.cfg, "poisson_match_ema", 0.99))
+                    self.pm_D2[l] = a * self.pm_D2[l] + (1.0 - a) * cur
+        P = self.pm_P[l].float()                                         # (r, d)
+        z = hf @ P.t()                                                   # (B, T, r)
+        m = self.pm_mu[l].float() @ P.t()                                # (K, r)
+        k2 = self.pm_log_c[l].float().exp() / self.pm_D2[l].float().clamp_min(1e-12)   # (K,)
+        d2 = ((z * z).sum(-1, keepdim=True) + (m * m).sum(-1) - 2.0 * z @ m.t()).clamp_min(0.0)
+        return torch.exp(-k2 * d2), z, m, k2
+
+    def poisson_mode_occupation(self, h: torch.Tensor, layer_idx: Optional[int] = None):
         """Mode overlaps E (B, T, K) and strict-past occupations phi (B, T, K).
 
         E[b, s, v] = exp(-kappa_v^2 |h_s - mu_v|^2) is token s's overlap with
@@ -822,24 +918,36 @@ class MultiXiPARFLM(SparsePARFLM):
         rate. phi[b, t, v] = sum_{s<t} lambda_v^(t-1-s) E[b, s, v] is the
         Poisson mean of the immigration-death process: Poisson(E) particles
         enter per token, each survives a token with probability lambda_v.
+        With cfg.poisson_match_rank > 0 the overlap is the layer's low-rank one
+        (_pm_match) and layer_idx is required.
         """
         B, T, d = h.shape
         with torch.autocast(device_type=h.device.type, enabled=False):
-            hf = h.float()
-            mu = self.pm_mu.float()
-            k2 = self.pm_log_kappa2.float().exp()                        # (K,)
-            d2 = ((hf * hf).sum(-1, keepdim=True) + (mu * mu).sum(-1)
-                  - 2.0 * hf @ mu.t()).clamp_min(0.0)                    # (B, T, K)
-            E = torch.exp(-k2 * d2)
-            log_lam = torch.nn.functional.logsigmoid(self.pm_logit_lambda.float())
-            t = torch.arange(T, device=h.device)
-            lag = (t[:, None] - t[None, :] - 1)                          # t - 1 - s
-            past = lag >= 0                                              # s < t
-            Lam = torch.where(past, torch.exp(lag.clamp_min(0)[None].float()
-                                              * log_lam[:, None, None]),
-                              torch.zeros((), device=h.device))          # (K, T, T)
-            phi = torch.einsum("kts,bsk->btk", Lam, E)
+            if getattr(self.cfg, "poisson_match_rank", 0):
+                if layer_idx is None:
+                    raise ValueError("poisson_match_rank > 0: poisson_mode_occupation needs layer_idx")
+                E = self._pm_match(h, layer_idx)[0]
+            else:
+                hf = h.float()
+                mu = self.pm_mu.float()
+                k2 = self.pm_log_kappa2.float().exp()                    # (K,)
+                d2 = ((hf * hf).sum(-1, keepdim=True) + (mu * mu).sum(-1)
+                      - 2.0 * hf @ mu.t()).clamp_min(0.0)                # (B, T, K)
+                E = torch.exp(-k2 * d2)
+            phi = self._pm_occupation_from_overlap(E)
         return E, phi
+
+    def _pm_occupation_from_overlap(self, E: torch.Tensor) -> torch.Tensor:
+        """phi[b, t, v] = sum_{s<t} lambda_v^(t-1-s) E[b, s, v], float32 (B, T, K)."""
+        T = E.shape[1]
+        log_lam = torch.nn.functional.logsigmoid(self.pm_logit_lambda.float())
+        t = torch.arange(T, device=E.device)
+        lag = (t[:, None] - t[None, :] - 1)                              # t - 1 - s
+        past = lag >= 0                                                  # s < t
+        Lam = torch.where(past, torch.exp(lag.clamp_min(0)[None].float()
+                                          * log_lam[:, None, None]),
+                          torch.zeros((), device=E.device))              # (K, T, T)
+        return torch.einsum("kts,bsk->btk", Lam, E)
 
     def poisson_mode_quadratic(self, h: torch.Tensor, layer_idx: int, top: Optional[int] = None):
         """PMX: the wells' force and Hessian pieces at h, with phi from h's context.
@@ -852,6 +960,8 @@ class MultiXiPARFLM(SparsePARFLM):
         Hessian of those wells' share is alpha I - sum_v dW_v r_v r_v^T. Live
         tensors: the caller detaches what goes into the exact flow's spring.
         """
+        if getattr(self.cfg, "poisson_match_rank", 0):
+            raise NotImplementedError("poisson_mode_quadratic (PMX) does not support poisson_match_rank > 0")
         E, phi = self.poisson_mode_occupation(h)
         with torch.autocast(device_type=h.device.type, enabled=False):
             k2 = self.pm_log_kappa2.float().exp()
@@ -892,7 +1002,20 @@ class MultiXiPARFLM(SparsePARFLM):
         phi uses tokens s < t only, so it is constant in h_t and this is the
         exact gradient in h_t; the loss still reaches earlier tokens through
         phi (live, the Gen 3 convention). a_v is pm_effective_depth.
+        With cfg.poisson_match_rank > 0, |h - mu_v|^2 is |P_l (h - mu_{l,v})|^2
+        (_pm_match), so -grad U = -P_l^T sum_v w_v P_l (h - mu_{l,v}).
         """
+        if getattr(self.cfg, "poisson_match_rank", 0):
+            with torch.autocast(device_type=h.device.type, enabled=False):
+                E, z, m, k2 = self._pm_match(h, layer_idx)
+                phi = self._pm_occupation_from_overlap(E)
+                _ctx = getattr(self, "_flow_ctx", None)
+                if _ctx is not None:
+                    phi = _ctx.setdefault("phi", phi)
+                w = phi * E * (2.0 * k2 * self.pm_effective_depth(layer_idx))    # (B, T, K)
+                fz = -(w.sum(-1, keepdim=True) * z - w @ m)                     # (B, T, r)
+                f = fz @ self.pm_P[int(layer_idx)].float()                      # (B, T, d)
+            return f.to(h.dtype)
         E, phi = self.poisson_mode_occupation(h)
         _ctx = getattr(self, "_flow_ctx", None)
         if _ctx is not None:                    # per-layer flow: phi from the layer's first substep

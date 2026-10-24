@@ -1,0 +1,5 @@
+OCCUPATIONS: SHARE OF VARIANCE EXPLAINED BY POSITION, BY HALF-LIFE RANGE  (rank-8 matcher, K = 16; 8 x 512 validation tokens; 1 - R^2 is left for content)
+  init    layer 0 (overlap selectivity 0.74):  4-128: 0.939   2-64: 0.844   2-32: 0.660   1-32: 0.614   1-16: 0.327   1-8: 0.098   1-4: -0.015
+  init    layer 1 (overlap selectivity 4.68):  4-128: 0.843   2-64: 0.648   2-32: 0.421   1-32: 0.336   1-16: 0.120   1-8: -0.010   1-4: -0.066
+  trained layer 0 (overlap selectivity 0.61):  4-128: 0.961   2-64: 0.906   2-32: 0.752   1-32: 0.744   1-16: 0.426   1-8: 0.117   1-4: -0.036
+  trained layer 1 (overlap selectivity 0.48):  4-128: 0.942   2-64: 0.872   2-32: 0.700   1-32: 0.697   1-16: 0.409   1-8: 0.131   1-4: -0.027

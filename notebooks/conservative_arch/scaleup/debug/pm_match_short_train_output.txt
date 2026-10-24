@@ -1,0 +1,36 @@
+  [iso] step    1  loss 7.7452  (12s)
+  [iso] step   25  loss 7.3213  (315s)
+  [iso] step   50  loss 7.0098  (643s)
+  [iso] step   75  loss 6.6676  (966s)
+  [iso] step  100  loss 7.2476  (1296s)
+  [iso] step  125  loss 6.7267  (1637s)
+  [iso] step  150  loss 6.5683  (2017s)
+  [iso] step  175  loss 6.7270  (2372s)
+  [iso] step  200  loss 6.6128  (2741s)
+  [iso] step  225  loss 5.8955  (3120s)
+  [iso] step  250  loss 6.5323  (3510s)
+  [iso] step  275  loss 6.4075  (3896s)
+  [iso] step  300  loss 5.7656  (4279s)
+PM-MATCH SHORT TRAIN: iso, 300 steps of 4 x 256 tokens; held-out perplexity 671.8
+   layer 0: selectivity 0.004   occupations explained by position R^2 1.0000
+   layer 1: selectivity 0.106   occupations explained by position R^2 0.9981
+   content swap: +0.00% (per-sequence spread 0.00%, n = 8)
+
+  [lr8] step    1  loss 7.7454  (12s)
+  [lr8] step   25  loss 7.3716  (322s)
+  [lr8] step   50  loss 7.2451  (668s)
+  [lr8] step   75  loss 7.0038  (1119s)
+  [lr8] step  100  loss 7.3844  (1499s)
+  [lr8] step  125  loss 6.8776  (1882s)
+  [lr8] step  150  loss 6.6377  (2336s)
+  [lr8] step  175  loss 6.8543  (2824s)
+  [lr8] step  200  loss 6.7093  (3328s)
+  [lr8] step  225  loss 5.8296  (3833s)
+  [lr8] step  250  loss 6.5562  (4330s)
+  [lr8] step  275  loss 6.3367  (4668s)
+  [lr8] step  300  loss 5.7502  (5008s)
+PM-MATCH SHORT TRAIN: lr8, 300 steps of 4 x 256 tokens; held-out perplexity 693.9
+   layer 0: selectivity 1.543   occupations explained by position R^2 0.8190
+   layer 1: selectivity 0.736   occupations explained by position R^2 0.9802
+   content swap: +0.08% (per-sequence spread 0.20%, n = 8)
+

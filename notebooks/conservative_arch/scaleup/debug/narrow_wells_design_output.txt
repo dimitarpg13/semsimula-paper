@@ -1,0 +1,52 @@
+NARROW-WELLS DESIGN, step 0'a  (K = 16; 2 x 4 x 512 validation tokens, batch seed 20261009; built in 46s)
+
+PART 1: GEOMETRY  (distances are Euclidean, in the units of h)
+  init:  |mu| median 19.7   1/kappa median 19.6   kappa^2 x d median 1.00
+    layer 0: |h| p10/p50/p90    0.5    0.6    0.6   token-token distance p50    0.8   mode-token distance: nearest token p50   19.6, median token   19.7, spread (p90 - p10) over tokens  0.07
+    layer 1: |h| p10/p50/p90   19.5   19.5   19.5   token-token distance p50   27.5   mode-token distance: nearest token p50   25.0, median token   27.7, spread (p90 - p10) over tokens  1.82
+  trained PMX-K16:  |mu| median 14.4   1/kappa median 25.7   kappa^2 x d median 0.58
+    layer 0: |h| p10/p50/p90    2.4    2.9    3.5   token-token distance p50    4.0   mode-token distance: nearest token p50   14.4, median token   14.8, spread (p90 - p10) over tokens  0.39
+    layer 1: |h| p10/p50/p90   19.6   19.6   19.6   token-token distance p50   15.5   mode-token distance: nearest token p50   25.8, median token   27.0, spread (p90 - p10) over tokens  0.78
+
+PART 2: CANDIDATES  (selectivity = median over modes of the overlap's coefficient of variation across tokens;
+  reach = median share of tokens with E above half the mode's maximum; dead = share of modes with max E < 0.01)
+  the current init (randn centres, kappa^2 = 1/d) on the init states, for reference:
+    layer 0: selectivity 0.003  reach 100%  dead 0%
+    layer 1: selectivity 0.101  reach 100%  dead 0%
+  centres = randn
+    c =  0.5:  L0 init    sel  0.000 reach   0% dead 100%  |  L0 trained sel  0.000 reach   0% dead 100%  |  L1 init    sel  0.025 reach 100% dead   0%  |  L1 trained sel  0.014 reach 100% dead   0%
+    c =    2:  L0 init    sel  0.000 reach   0% dead 100%  |  L0 trained sel  0.000 reach   0% dead 100%  |  L1 init    sel  0.102 reach 100% dead   0%  |  L1 trained sel  0.055 reach 100% dead   0%
+    c =    8:  L0 init    sel  0.000 reach   0% dead 100%  |  L0 trained sel  0.000 reach   0% dead 100%  |  L1 init    sel  0.426 reach   4% dead 100%  |  L1 trained sel  0.223 reach  27% dead 100%
+    c =   32:  L0 init    sel  0.000 reach   0% dead 100%  |  L0 trained sel  0.000 reach   0% dead 100%  |  L1 init    sel  2.798 reach   0% dead 100%  |  L1 trained sel  1.146 reach   0% dead 100%
+  centres = tok0
+    c =  0.5:  L0 init    sel  0.037 reach 100% dead   0%  |  L0 trained sel  1.823 reach   0% dead   0%  |  L1 init    sel  0.001 reach 100% dead   0%  |  L1 trained sel  0.000 reach 100% dead   0%
+    c =    2:  L0 init    sel  0.188 reach   0% dead   0%  |  L0 trained sel 37.178 reach   0% dead 100%  |  L1 init    sel  0.004 reach 100% dead   0%  |  L1 trained sel  0.002 reach 100% dead   0%
+    c =    8:  L0 init    sel 19.918 reach   0% dead   0%  |  L0 trained sel 63.871 reach   0% dead 100%  |  L1 init    sel  0.015 reach 100% dead   0%  |  L1 trained sel  0.006 reach 100% dead   0%
+    c =   32:  L0 init    sel 64.000 reach   0% dead   0%  |  L0 trained sel  0.000 reach   0% dead 100%  |  L1 init    sel  0.062 reach   0% dead 100%  |  L1 trained sel  0.026 reach 100% dead 100%
+  centres = tok1
+    c =  0.5:  L0 init    sel  0.000 reach   0% dead 100%  |  L0 trained sel  0.000 reach   0% dead 100%  |  L1 init    sel  0.031 reach 100% dead   0%  |  L1 trained sel  0.014 reach 100% dead   0%
+    c =    2:  L0 init    sel  0.000 reach   0% dead 100%  |  L0 trained sel  0.000 reach   0% dead 100%  |  L1 init    sel  0.168 reach   0% dead   0%  |  L1 trained sel  0.058 reach 100% dead   0%
+    c =    8:  L0 init    sel  0.000 reach   0% dead 100%  |  L0 trained sel  0.000 reach   0% dead 100%  |  L1 init    sel 23.700 reach   0% dead   0%  |  L1 trained sel  0.236 reach  19% dead 100%
+    c =   32:  L0 init    sel  0.000 reach   0% dead 100%  |  L0 trained sel  0.000 reach   0% dead 100%  |  L1 init    sel 64.000 reach   0% dead   0%  |  L1 trained sel  1.156 reach   0% dead 100%
+
+PART 3: REACHABLE SELECTIVITY  (centres sampled per layer from the TRAINED states, scored on the trained states;
+  reach and coverage with the absolute criterion E > 0.5; kappa^2 = c / D2 as in part 2)
+  layer 0, K = 16 (D2 = 15.8):  c=0.25 sel  0.04 reach 100% cover 100% modes/token   16  |  c=0.5  sel  0.09 reach  97% cover 100% modes/token   15  |  c=1    sel  0.18 reach   1% cover  36% modes/token    0  |  c=2    sel  0.38 reach   0% cover   8% modes/token    0  |  c=4    sel  1.61 reach   0% cover   8% modes/token    0
+  layer 0, K = 64 (D2 = 15.8):  c=0.25 sel  0.05 reach 100% cover 100% modes/token   64  |  c=0.5  sel  0.09 reach  98% cover 100% modes/token   60  |  c=1    sel  0.19 reach   4% cover  54% modes/token    1  |  c=2    sel  0.43 reach   0% cover  30% modes/token    0  |  c=4    sel  1.85 reach   0% cover  29% modes/token    0
+  layer 1, K = 16 (D2 = 241.1):  c=0.25 sel  0.04 reach 100% cover 100% modes/token   16  |  c=0.5  sel  0.08 reach  99% cover 100% modes/token   16  |  c=1    sel  0.17 reach   3% cover  45% modes/token    0  |  c=2    sel  0.34 reach   0% cover   6% modes/token    0  |  c=4    sel  1.03 reach   0% cover   1% modes/token    0
+  layer 1, K = 64 (D2 = 241.1):  c=0.25 sel  0.04 reach 100% cover 100% modes/token   64  |  c=0.5  sel  0.09 reach  99% cover 100% modes/token   64  |  c=1    sel  0.17 reach   6% cover  64% modes/token    2  |  c=2    sel  0.35 reach   0% cover  20% modes/token    0  |  c=4    sel  1.05 reach   0% cover   9% modes/token    0
+
+PART 4: LOW-RANK MATCHING  (distance measured in an r-dimensional subspace: the top-r principal directions of the
+  layer's trained states, shared by the modes; centres sampled from the trained states; kappa^2 = c / D2_r with D2_r
+  the median squared token-token distance in the subspace; the relative spread of token-mode distances is
+  (p90 - p10) / median, over tokens, median over modes)
+  layer 0, r = 384: spread 0.24  c=0.5 sel  0.10 reach  98% cover 100% modes/tok  64  |  c=1   sel  0.20 reach   4% cover  55% modes/tok   1  |  c=2   sel  0.47 reach   0% cover  32% modes/tok   0  |  c=4   sel  1.84 reach   0% cover  31% modes/tok   0
+  layer 0, r =  64: spread 0.33  c=0.5 sel  0.15 reach  91% cover 100% modes/tok  59  |  c=1   sel  0.30 reach   9% cover  88% modes/tok   7  |  c=2   sel  0.65 reach   2% cover  60% modes/tok   1  |  c=4   sel  2.67 reach   0% cover  34% modes/tok   0
+  layer 0, r =  16: spread 0.60  c=0.5 sel  0.24 reach  76% cover 100% modes/tok  50  |  c=1   sel  0.45 reach  41% cover  99% modes/tok  31  |  c=2   sel  0.78 reach   5% cover  95% modes/tok  10  |  c=4   sel  1.50 reach   4% cover  84% modes/tok   3
+  layer 0, r =   8: spread 1.00  c=0.5 sel  0.33 reach  71% cover 100% modes/tok  43  |  c=1   sel  0.54 reach  56% cover 100% modes/tok  32  |  c=2   sel  0.81 reach  15% cover  99% modes/tok  27  |  c=4   sel  1.09 reach   6% cover  94% modes/tok   7
+  layer 0, r =   4: spread 1.08  c=0.5 sel  0.39 reach  66% cover 100% modes/tok  39  |  c=1   sel  0.62 reach  47% cover 100% modes/tok  31  |  c=2   sel  0.91 reach  16% cover 100% modes/tok  22  |  c=4   sel  1.27 reach   9% cover  97% modes/tok   7
+  layer 1, r = 384: spread 0.20  c=0.5 sel  0.08 reach  99% cover 100% modes/tok  63  |  c=1   sel  0.17 reach   2% cover  61% modes/tok   2  |  c=2   sel  0.35 reach   0% cover  20% modes/tok   0  |  c=4   sel  1.15 reach   0% cover   9% modes/tok   0
+  layer 1, r =  64: spread 0.32  c=0.5 sel  0.14 reach  90% cover 100% modes/tok  60  |  c=1   sel  0.27 reach   9% cover  96% modes/tok   5  |  c=2   sel  0.55 reach   0% cover  37% modes/tok   0  |  c=4   sel  1.43 reach   0% cover  14% modes/tok   0
+  layer 1, r =  16: spread 0.58  c=0.5 sel  0.24 reach  82% cover 100% modes/tok  53  |  c=1   sel  0.42 reach  22% cover 100% modes/tok  15  |  c=2   sel  0.79 reach   5% cover  90% modes/tok   3  |  c=4   sel  1.63 reach   1% cover  39% modes/tok   0
+  layer 1, r =   8: spread 0.77  c=0.5 sel  0.30 reach  75% cover 100% modes/tok  48  |  c=1   sel  0.52 reach  29% cover 100% modes/tok  20  |  c=2   sel  0.91 reach  10% cover  98% modes/tok   6  |  c=4   sel  1.69 reach   2% cover  79% modes/tok   2
+  layer 1, r =   4: spread 1.06  c=0.5 sel  0.40 reach  64% cover 100% modes/tok  43  |  c=1   sel  0.66 reach  33% cover 100% modes/tok  22  |  c=2   sel  1.06 reach  15% cover  99% modes/tok  10  |  c=4   sel  1.70 reach   6% cover  95% modes/tok   4
