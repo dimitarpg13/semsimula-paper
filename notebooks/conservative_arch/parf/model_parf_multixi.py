@@ -855,10 +855,10 @@ class MultiXiPARFLM(SparsePARFLM):
         Returns E (B, T, K), z = h P_l^T (B, T, r), m = mu_l P_l^T (K, r) and
         kappa^2 (K,), float32. On the first training forward of each layer the
         layer's centres, projection and width scale are set from the token
-        states it receives (centres: K distinct sampled states; P_l: their top-r
-        principal directions; D2_l: the median squared projected distance between
-        tokens); afterwards D2_l follows the cloud as a running median. Both are
-        done without gradient and draw no global RNG.
+        states it receives (P_l: their top-r principal directions; centres: the
+        means of K k-means clusters in span(P_l); D2_l: the median squared
+        projected distance between tokens); afterwards D2_l follows the cloud as
+        a running median. Both are done without gradient and draw no global RNG.
         """
         l = int(layer_idx)
         hf = h.float()

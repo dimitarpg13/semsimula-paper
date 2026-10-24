@@ -36,3 +36,8 @@
   [PASS] training forward updates D2: [0.032, 37.653] -> [0.032, 42.675]
 ALL CHECKS PASS
 fingerprint (default off), HEAD against working copy, 4 configurations: BIT-IDENTICAL (run twice, before and after the k-means initialisation)
+
+planned 2B template pair (verify_pm_match.py ... planned), 2026-10-23:
+  template arm      tag ..._pm16_pmhl1t16_pmlr8_sr2_st130000_L2probe...  steps 130,000  snapshots 9  half-lives 1.00-16.00 tokens  match rank 8  76,590,622 params  loss 7.4092  finite True  (Cell 5b passed)
+  isotropic control tag ..._pm16_pmhl1t16_sr2_st130000_L2probe...  steps 130,000  snapshots 9  half-lives 1.00-16.00 tokens  match rank 0  76,578,318 params  loss 7.4083  finite True  (Cell 5b passed)
+fingerprint after the half-life switches: BIT-IDENTICAL (third run)
