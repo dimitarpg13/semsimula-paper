@@ -1,0 +1,9 @@
+FLOW CONVERGENCE ORDER: fob-pmx (first order, FO-b), init, K = 16; 4 x 256 validation tokens; reference k = 128 substeps per layer (perplexity 1879.46)
+      k  N = 2k  perplexity  rel. error  order k -> 2k
+      1       2     1879.46      1.0000           1.00
+      2       4     1879.46      0.4991           1.02
+      4       8     1879.46      0.2466           1.04
+      8      16     1879.46      0.1197           1.09
+     16      32     1879.46      0.0564           1.16
+     32      64     1879.46      0.0252           1.10
+     64     128     1879.46      0.0117            nan

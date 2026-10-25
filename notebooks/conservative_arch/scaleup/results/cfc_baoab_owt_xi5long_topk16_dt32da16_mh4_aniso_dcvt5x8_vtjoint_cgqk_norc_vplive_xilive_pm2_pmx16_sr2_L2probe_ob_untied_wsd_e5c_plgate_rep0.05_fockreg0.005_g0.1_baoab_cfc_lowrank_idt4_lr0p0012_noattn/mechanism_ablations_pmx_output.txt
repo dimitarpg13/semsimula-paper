@@ -1,0 +1,7 @@
+MECHANISM ABLATIONS: pmx  K = 2  (pm2_pmx16_sr2, best checkpoint; 4 x 4 x 512 tokens, batch seed 20261009)
+   base perplexity 55.90   xi channel alphas [0.355, 0.505, 0.883, 0.995, 0.983]
+   vphi_off      perplexity     57.47   change    +2.80%  (per-sequence spread 0.81%, n = 16)
+   xi_ctx_swap   perplexity    244.01   change  +336.51%  (per-sequence spread 46.15%, n = 16)
+   xi_ctx_posmean perplexity    110.44   change   +97.56%  (per-sequence spread 26.82%, n = 16)
+   wells_swap    perplexity     55.92   change    +0.03%  (per-sequence spread 0.13%, n = 16)
+   wells_off     perplexity    111.78   change   +99.97%  (per-sequence spread 15.42%, n = 16)

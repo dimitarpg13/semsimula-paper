@@ -4209,6 +4209,27 @@ The first-order model leads throughout training, by 1.5% at step 21,000 and 0.9%
 - **6b-7:** Gate 1 0 by construction; Gate 2 at N = 3 +0.5% (PMX-K16 +845%); Gate 3 at N = 3 0.86 nats (PMX-K16 1.09, FO-b-PMX 0.67). **6b-9:** R(geo) 0.75 (PMX-K16 0.92).
 - **Scope.** The ablations measure reliance in the trained model, not what a model trained without the term would reach. M3 cleared its threshold by 1.7 points. One seed per arm.
 
+**Result, the K = 2 second-order arm (PM2-PMX16, 2026-10-24).** Tag `…pm2_pmx16_sr2_L2probe…`, from step 0 at seed 0 (paired with PMX-K16 and SR2: step-to-step evaluation changes correlate at 0.999). 32,500 steps, clean finish, no watchdog trigger, SCAF CLEAN at all 7 audits; the training-time ω·Δt monitor worked (the `semsimula-diag` fix). Diagnostic cells on Colab; the CPU readings, in the arm's results folder: `pm_mode_usage_pmx_output.txt`, `mechanism_ablations_pmx_output.txt`, `vtheta_omega_dt_pmx_output.txt`, `pm_static_landscape_pmx_output.txt` and `refinement_flow_confirmation_pmx_seed20261009_output.txt` (checks PASS).
+
+| second order | K = 0 (SR2) | **K = 2** | K = 16 | K = 64 |
+| --- | ---: | ---: | ---: | ---: |
+| settled perplexity | 58.32 | **54.71** | 54.24 | 54.63 |
+| paired against K = 16, last 8 evals | | +0.89% (spread 0.05%) | | |
+| removing the wells | | **+100%** | +156% | +165% |
+| removing the pair force V_φ | +1.4% (CD) | **+2.80%** | +1.71% | +1.54% |
+| velocity reset, Gate 1 | +3.9% | **+5,150%** | +5,788% | +91% |
+| V_θ stiffest-mode ω·Δt, median (6b-13 definition) | | **4.26** | 3.65 | 2.65 |
+| context channels from another text | | +337% | +334% | +303% |
+| occupations from another text | | +0.03% | +0.09% | +0.04% |
+| occupations fixed at their late value: first 16 tokens / from token 128 | | +26% / +0.1% | +15% / +0.3% | +19% / +0.2% |
+| Gate 3 at N = 3, nats | | 1.26 | 1.09 | 1.10 |
+| per-layer flow at N = 16, nats | 0.104 | 0.40 (converges) | 0.33 (converges) | 0.39 |
+
+- **Two wells capture 88% of what sixteen gain over none** (paired over the last eight evaluations), and the K = 2 model is level with PMX at 64 wells.
+- **What takes up the slack in second order as the wells shrink:** the stiff rotation (ω·Δt 2.65 → 3.65 → 4.26), the velocity (Gate 1 +91% → +5,788% / +5,150%) and the pair force (V_φ removal +1.54% → +1.71% → +2.80%). The model relies less on the wells (removal +165% → +156% → +100%). These are the mechanisms the first-order twins use to replace the velocity, read here in the other direction: capacity lost from the wells is taken up by the other capacity mechanisms and by token-token routing.
+- **The two wells specialise by layer** (6b-15): both repulsive at layer 0 (median depth −0.21), both strongly attractive at layer 1 (+1.23, three times K = 16's median), half-lives moved from 4 and 128 to about 10 and 19 tokens. Still positional and then fixed (force 99.99% / 99.95% from position).
+- **Calls.** MS2b's second-order half at K = 2 (SR2 58.32 > PM2 > PMX-K16 54.24): **HIT** (54.71). MS2a, MS2c, MS2d and the amended K rule wait for the first-order twin (FO-b-PM2-PMX16, started 2026-10-24).
+
 **Readings, fixed now.**
 - **MS2 hits and MS3 hits:** the hypothesis stands at this scale; the book's §17h subsection is upgraded from "proposed" to "supported", with the scope line of MS4–MS6.
 - **MS2 misses with the gap flat in K:** the wells help both orders alike and the K = 64 tie is a coincidence of this pair; the hypothesis is withdrawn and FO-b-PMX is reported as a result about the wells.
