@@ -31,7 +31,7 @@ The total energy of a token with hidden state $h \in \mathbb{R}^d$ and velocity 
 $$
 H(h, v) = \underbrace{\tfrac{1}{2} v^\top \mathsf{M}^{-1} v}\_{T(v)}
            + \underbrace{V\_\theta(h)}\_{\text{Gaussian wells}}
-           + \underbrace{V\_\phi(h, r) + Q(h, r)}\_{\text{Fock + reverse channel}},
+           + \underbrace{V\_{\mathrm{ex}}(h, r) + Q(h, r)}\_{\text{Fock + reverse channel}},
 $$
 
 where $\mathsf{M} = \mathfrak{m} I\_d$ is the (scalar) semantic mass and $r$ denotes the Fock register state.
@@ -39,26 +39,28 @@ where $\mathsf{M} = \mathfrak{m} I\_d$ is the (scalar) semantic mass and $r$ den
 ### 2.1 The Gaussian potential $V\_\theta$
 
 $$
-V\_\theta(h) = \sum\_{k=1}^{K} V\_{0,k} \Bigl[1 - \exp\!\bigl(-\tfrac{\kappa\_k}{2}\|h - \mu\_k\|^2\bigr)\Bigr],
+V\_\theta(h) = \sum\_{k=1}^{K} V\_{0,k} \Bigl[1 - \exp\bigl(-\tfrac{\kappa\_k}{2}\|h - \mu\_k\|^2\bigr)\Bigr],
 $$
 
-with learned centroids $\mu\_k \in \mathbb{R}^d$, curvatures $\kappa\_k > 0$, and depths $V\_{0,k} > 0$.
+with learned centroids $\mu\_k \in \mathbb{R}^d$, curvatures $\kappa\_k \gt 0$, and depths $V\_{0,k} \gt 0$.
 
 **Key property:** the force from well $k$ is
 
 $$
-F\_k(h) = -\nabla\_{h} V\_k = -V\_{0,k}\,\kappa\_k\,(h - \mu\_k)\,\exp\!\bigl(-\tfrac{\kappa\_k}{2}\|h - \mu\_k\|^2\bigr).
+F\_k(h) = -\nabla\_{h} V\_k = -V\_{0,k} \kappa\_k (h - \mu\_k) \exp\bigl(-\tfrac{\kappa\_k}{2}\|h - \mu\_k\|^2\bigr).
 $$
 
-Near the centroid ($\|h - \mu\_k\| \ll 1/\sqrt{\kappa\_k}$) the exponential $\approx 1$ and the force is **harmonic**:
+Near the centroid ($\lVert h - \mu\_k\rVert \ll 1/\sqrt{\kappa\_k}$) the exponential $\approx 1$ and the force is **harmonic**:
 
 $$
-F\_k(h) \approx -\omega\_k^2\,(h - \mu\_k), \qquad \omega\_k^2 \equiv V\_{0,k}\,\kappa\_k / \mathfrak{m}.
+F\_k(h) \approx -\omega\_k^2 (h - \mu\_k), \qquad \omega\_k^2 \equiv V\_{0,k} \kappa\_k / \mathfrak{m}.
 $$
 
 Far from the centroid the exponential vanishes and $F\_k \to 0$: the particle coasts freely.
 
-### 2.2 The Fock / reverse-channel forces $V\_\phi + Q$
+### 2.2 The Fock / reverse-channel forces $V\_{\mathrm{ex}} + Q$
+
+Here $V\_{\mathrm{ex}}$ is the **exchange field** of the book's §20 — the $\xi$-routed attention potential that the Gen 3 arms run inside the integrator, written there as the force $f^{\mathrm{ex}}$ with scale $\lambda\_{\mathrm{ex}}$. It is **not** the pair potential $V\_\phi(h\_t, h\_s)$ of the book's notation table, which is a token-to-token interaction and is conservative. Earlier revisions of this note wrote $V\_\phi$ for the exchange field; that collision is what the rename removes.
 
 These arise from the register-mediated exchange interaction and the reverse channel. They are:
 - **Non-conservative** (no potential whose gradient they are),
@@ -71,7 +73,7 @@ They remain **numerical** throughout this construction.
 
 ## 3. Standard BAOAB: review
 
-The BAOAB splitting for the Langevin equation $\ddot{h} = -\nabla V(h) / \mathfrak{m} - \gamma \dot{h} + \sqrt{2\gamma k\_B T / \mathfrak{m}}\,\eta(t)$ decomposes the time step $\Delta t$ into five sub-steps:
+The BAOAB splitting for the Langevin equation $\ddot{h} = -\nabla V(h) / \mathfrak{m} - \gamma \dot{h} + \sqrt{2\gamma k\_B T / \mathfrak{m}} \eta(t)$ decomposes the time step $\Delta t$ into five sub-steps:
 
 ```mermaid
 flowchart LR
@@ -101,18 +103,18 @@ $$
 
 ---
 
-## 4. The force split: $V\_\theta$ vs. $V\_\phi + Q$
+## 4. The force split: $V\_\theta$ vs. $V\_{\mathrm{ex}} + Q$
 
 The total force decomposes as
 
 $$
--\nabla V = \underbrace{-\nabla V\_\theta(h)}\_{\text{Gaussian wells (analytical)}} + \underbrace{-\nabla V\_\phi(h, r) - Q(h, r)}\_{\text{Fock + reverse channel (numerical)}}.
+-\nabla V = \underbrace{-\nabla V\_\theta(h)}\_{\text{Gaussian wells (analytical)}} + \underbrace{-\nabla V\_{\mathrm{ex}}(h, r) - Q(h, r)}\_{\text{Fock + reverse channel (numerical)}}.
 $$
 
 The B-step therefore splits via **Strang splitting** into two sub-kicks:
 
 $$
-\text{B} = \text{B}\_\phi \circ \text{B}\_\theta \quad \text{(or } \text{B}\_\theta \circ \text{B}\_\phi\text{, swapped at opposite ends for symmetry)}.
+\text{B} = \text{B}\_{\mathrm{ex}} \circ \text{B}\_\theta \quad \text{(or } \text{B}\_\theta \circ \text{B}\_{\mathrm{ex}}\text{, swapped at opposite ends for symmetry)}.
 $$
 
 The full BAOAB with this inner splitting becomes the 7-sub-step **B̃AOAB̃** scheme.
@@ -150,7 +152,7 @@ $$
 \boxed{
 \begin{aligned}
 h' &= \mu\_k + (h - \mu\_k)\cos(\omega\_k\tau) + \frac{v}{\omega\_k}\sin(\omega\_k\tau), \\[4pt]
-v' &= -(h - \mu\_k)\,\omega\_k\sin(\omega\_k\tau) + v\cos(\omega\_k\tau).
+v' &= -(h - \mu\_k) \omega\_k\sin(\omega\_k\tau) + v\cos(\omega\_k\tau).
 \end{aligned}
 }
 $$
@@ -159,7 +161,7 @@ $$
 - $\det(\Phi\_k) = 1$ (symplectic / area-preserving)
 - $\Phi\_k(0) = I$ (identity at zero time)
 - $\Phi\_k(\tau\_1)\Phi\_k(\tau\_2) = \Phi\_k(\tau\_1 + \tau\_2)$ (group property)
-- Energy $E\_k = \frac{1}{2}v^2 + \frac{1}{2}\omega\_k^2\|\tilde{h}\|^2$ is exactly conserved
+- Energy $E\_k = \frac{1}{2}v^2 + \frac{1}{2}\omega\_k^2\lVert\tilde{h}\rVert^2$ is exactly conserved
 
 ### 5.2 The free-particle propagator
 
@@ -177,16 +179,16 @@ This is exact (not an approximation) — it is the $\omega\_k \to 0$ limit of $\
 The mixing weight for well $k$ is the Gaussian envelope of the potential:
 
 $$
-\alpha\_k(h) = \exp\!\bigl(-\tfrac{\kappa\_k}{2}\|h - \mu\_k\|^2\bigr).
+\alpha\_k(h) = \exp\bigl(-\tfrac{\kappa\_k}{2}\|h - \mu\_k\|^2\bigr).
 $$
 
 **Interpretation by zone:**
 
 | Zone | Condition | $\alpha\_k$ | Dominant propagator |
 |------|-----------|------------|-------------------|
-| I (harmonic) | $\|h - \mu\_k\| \ll 1/\sqrt{\kappa\_k}$ | $\approx 1$ | $\Phi\_k$ (harmonic, exact) |
-| II (transition) | $\|h - \mu\_k\| \sim 1/\sqrt{\kappa\_k}$ | $\in (0, 1)$ | Blend of $\Phi\_k$ and $\Phi\_{\text{free}}$ |
-| III (ballistic) | $\|h - \mu\_k\| \gg 1/\sqrt{\kappa\_k}$ | $\approx 0$ | $\Phi\_{\text{free}}$ (ballistic, exact) |
+| I (harmonic) | $\lVert h - \mu\_k\rVert \ll 1/\sqrt{\kappa\_k}$ | $\approx 1$ | $\Phi\_k$ (harmonic, exact) |
+| II (transition) | $\lVert h - \mu\_k\rVert \sim 1/\sqrt{\kappa\_k}$ | $\in (0, 1)$ | Blend of $\Phi\_k$ and $\Phi\_{\text{free}}$ |
+| III (ballistic) | $\lVert h - \mu\_k\rVert \gg 1/\sqrt{\kappa\_k}$ | $\approx 0$ | $\Phi\_{\text{free}}$ (ballistic, exact) |
 
 ![Three zones of the Gaussian potential](images/gaussian_three_zones.png)
 
@@ -199,8 +201,8 @@ For a multi-well potential with $K$ wells, the **blended CfC propagator** is
 $$
 \boxed{
 \begin{pmatrix}h'\\ v'\end{pmatrix}
-= \sum\_{k=1}^{K} \alpha\_k(h)\,\Phi\_k(\tau)\begin{pmatrix}h - \mu\_k\\ v\end{pmatrix} +
-\Bigl(1 - \sum\_{k=1}^{K}\alpha\_k(h)\Bigr)\,\Phi\_{\text{free}}(\tau)\begin{pmatrix}h\\ v\end{pmatrix} +
+= \sum\_{k=1}^{K} \alpha\_k(h) \Phi\_k(\tau)\begin{pmatrix}h - \mu\_k\\ v\end{pmatrix} +
+\Bigl(1 - \sum\_{k=1}^{K}\alpha\_k(h)\Bigr) \Phi\_{\text{free}}(\tau)\begin{pmatrix}h\\ v\end{pmatrix} +
 \sum\_{k=1}^{K}\alpha\_k(h)\begin{pmatrix}\mu\_k\\ 0\end{pmatrix}.
 }
 $$
@@ -242,13 +244,13 @@ Combining the Strang-split B-step (§4) with the CfC surrogate (§5), one **inte
 
 ```mermaid
 flowchart LR
-    S1["1. B_phi<br>(numerical)"]
+    S1["1. B_ex<br>(numerical)"]
     S2["2. B_theta CfC<br>(analytical)"]
     S3["3. A drift<br>(exact)"]
     S4["4. O thermostat<br>(exact)"]
     S5["5. A drift<br>(exact)"]
     S6["6. B_theta CfC<br>(analytical)"]
-    S7["7. B_phi<br>(numerical)"]
+    S7["7. B_ex<br>(numerical)"]
 
     S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> S7
 ```
@@ -261,10 +263,10 @@ flowchart LR
 
 ---
 
-**Step 1 — $\text{B}\_\phi$ (half-step numerical Fock kick):**
+**Step 1 — $\text{B}\_{\mathrm{ex}}$ (half-step numerical Fock kick):**
 
 $$
-v\_{(1)} = v\_n - \frac{\Delta t}{2\mathfrak{m}}\bigl[\nabla\_h V\_\phi(h\_n, r\_n) + Q(h\_n, r\_n)\bigr].
+v\_{(1)} = v\_n - \frac{\Delta t}{2\mathfrak{m}}\bigl[\nabla\_h V\_{\mathrm{ex}}(h\_n, r\_n) + Q(h\_n, r\_n)\bigr].
 $$
 
 This is the only force evaluation that requires the full Fock module forward pass.
@@ -276,16 +278,16 @@ This is the only force evaluation that requires the full Fock module forward pas
 Compute the mixing weights at the current position:
 
 $$
-\alpha\_k = \exp\!\bigl(-\tfrac{\kappa\_k}{2}\|h\_n - \mu\_k\|^2\bigr), \qquad k = 1, \ldots, K.
+\alpha\_k = \exp\bigl(-\tfrac{\kappa\_k}{2}\|h\_n - \mu\_k\|^2\bigr), \qquad k = 1, \ldots, K.
 $$
 
 Apply the blended propagator with $\tau = \Delta t / 2$:
 
 $$
 \begin{aligned}
-h\_{(2)} &= \sum\_{k=1}^{K}\alpha\_k\Bigl[\mu\_k + (h\_n - \mu\_k)\cos\!\bigl(\omega\_k\tfrac{\Delta t}{2}\bigr) + \frac{v\_{(1)}}{\omega\_k}\sin\!\bigl(\omega\_k\tfrac{\Delta t}{2}\bigr)\Bigr]
+h\_{(2)} &= \sum\_{k=1}^{K}\alpha\_k\Bigl[\mu\_k + (h\_n - \mu\_k)\cos\bigl(\omega\_k\tfrac{\Delta t}{2}\bigr) + \frac{v\_{(1)}}{\omega\_k}\sin\bigl(\omega\_k\tfrac{\Delta t}{2}\bigr)\Bigr]
             + \bigl(1 - {\textstyle\sum\_k}\alpha\_k\bigr)\bigl(h\_n + \tfrac{\Delta t}{2} v\_{(1)}\bigr), \\[6pt]
-v\_{(2)} &= \sum\_{k=1}^{K}\alpha\_k\Bigl[-(h\_n - \mu\_k)\omega\_k\sin\!\bigl(\omega\_k\tfrac{\Delta t}{2}\bigr) + v\_{(1)}\cos\!\bigl(\omega\_k\tfrac{\Delta t}{2}\bigr)\Bigr]
+v\_{(2)} &= \sum\_{k=1}^{K}\alpha\_k\Bigl[-(h\_n - \mu\_k)\omega\_k\sin\bigl(\omega\_k\tfrac{\Delta t}{2}\bigr) + v\_{(1)}\cos\bigl(\omega\_k\tfrac{\Delta t}{2}\bigr)\Bigr]
             + \bigl(1 - {\textstyle\sum\_k}\alpha\_k\bigr)\,v\_{(1)}.
 \end{aligned}
 $$
@@ -307,7 +309,7 @@ Velocity unchanged: $v\_{(3)} = v\_{(2)}$.
 **Step 4 — O (full-step Ornstein-Uhlenbeck thermostat):**
 
 $$
-v\_{(4)} = c\_1\,v\_{(3)} + c\_2\,\xi, \qquad \xi \sim \mathcal{N}(0, I\_d).
+v\_{(4)} = c\_1\,v\_{(3)} + c\_2 \xi, \qquad \xi \sim \mathcal{N}(0, I\_d).
 $$
 
 Position unchanged: $h\_{(4)} = h\_{(3)}$.
@@ -331,26 +333,26 @@ Velocity unchanged: $v\_{(5)} = v\_{(4)}$.
 Recompute mixing weights at the **updated** position $h\_{(5)}$:
 
 $$
-\alpha'\_k = \exp\!\bigl(-\tfrac{\kappa\_k}{2}\|h\_{(5)} - \mu\_k\|^2\bigr), \qquad k = 1, \ldots, K.
+\alpha'\_k = \exp\bigl(-\tfrac{\kappa\_k}{2}\|h\_{(5)} - \mu\_k\|^2\bigr), \qquad k = 1, \ldots, K.
 $$
 
 Apply the blended propagator with $\tau = \Delta t / 2$:
 
 $$
 \begin{aligned}
-h\_{(6)} &= \sum\_{k}\alpha'\_k\Bigl[\mu\_k + (h\_{(5)} - \mu\_k)\cos\!\bigl(\omega\_k\tfrac{\Delta t}{2}\bigr) + \frac{v\_{(5)}}{\omega\_k}\sin\!\bigl(\omega\_k\tfrac{\Delta t}{2}\bigr)\Bigr]
+h\_{(6)} &= \sum\_{k}\alpha'\_k\Bigl[\mu\_k + (h\_{(5)} - \mu\_k)\cos\bigl(\omega\_k\tfrac{\Delta t}{2}\bigr) + \frac{v\_{(5)}}{\omega\_k}\sin\bigl(\omega\_k\tfrac{\Delta t}{2}\bigr)\Bigr]
             + \bigl(1 - {\textstyle\sum\_k}\alpha'\_k\bigr)\bigl(h\_{(5)} + \tfrac{\Delta t}{2} v\_{(5)}\bigr), \\[6pt]
-v\_{(6)} &= \sum\_{k}\alpha'\_k\Bigl[-(h\_{(5)} - \mu\_k)\omega\_k\sin\!\bigl(\omega\_k\tfrac{\Delta t}{2}\bigr) + v\_{(5)}\cos\!\bigl(\omega\_k\tfrac{\Delta t}{2}\bigr)\Bigr]
+v\_{(6)} &= \sum\_{k}\alpha'\_k\Bigl[-(h\_{(5)} - \mu\_k)\omega\_k\sin\bigl(\omega\_k\tfrac{\Delta t}{2}\bigr) + v\_{(5)}\cos\bigl(\omega\_k\tfrac{\Delta t}{2}\bigr)\Bigr]
             + \bigl(1 - {\textstyle\sum\_k}\alpha'\_k\bigr)\,v\_{(5)}.
 \end{aligned}
 $$
 
 ---
 
-**Step 7 — $\text{B}\_\phi$ (half-step numerical Fock kick):**
+**Step 7 — $\text{B}\_{\mathrm{ex}}$ (half-step numerical Fock kick):**
 
 $$
-v\_{n+1} = v\_{(6)} - \frac{\Delta t}{2\mathfrak{m}}\bigl[\nabla\_h V\_\phi(h\_{(6)}, r\_n) + Q(h\_{(6)}, r\_n)\bigr].
+v\_{n+1} = v\_{(6)} - \frac{\Delta t}{2\mathfrak{m}}\bigl[\nabla\_h V\_{\mathrm{ex}}(h\_{(6)}, r\_n) + Q(h\_{(6)}, r\_n)\bigr].
 $$
 
 **Output:** $(h\_{n+1}, v\_{n+1}) = (h\_{(6)}, v\_{n+1})$.
@@ -361,7 +363,7 @@ $$
 
 | Sub-step | Generator | Method | Closed-form? |
 |----------|-----------|--------|:------------:|
-| 1, 7 | $V\_\phi + Q$ (Fock forces) | Numerical forward pass | No |
+| 1, 7 | $V\_{\mathrm{ex}} + Q$ (Fock forces) | Numerical forward pass | No |
 | 2, 6 | $V\_\theta$ (Gaussian wells) | CfC blended propagator | **Yes** |
 | 3, 5 | Kinetic (free drift) | $h \leftarrow h + \frac{\Delta t}{2}v$ | **Yes** (trivial) |
 | 4 | Dissipation + fluctuation | Exact OU process | **Yes** |
@@ -397,16 +399,16 @@ $$
 h\_0 = (3.5, 1.2), \qquad v\_0 = (-0.3, 0.1).
 $$
 
-### 7.3 Step-by-step trace (omitting $V\_\phi$ for clarity)
+### 7.3 Step-by-step trace (omitting $V\_{\mathrm{ex}}$ for clarity)
 
-**Step 1 (B$\_\phi$):** Assuming $\nabla V\_\phi + Q = 0$ for this example (isolated well, no registers):
+**Step 1 (B$\_{\mathrm{ex}}$):** Assuming $\nabla V\_{\mathrm{ex}} + Q = 0$ for this example (isolated well, no registers):
 $v\_{(1)} = v\_0 = (-0.3, 0.1)$.
 
 **Step 2 (B̃$\_\theta$):** Compute the mixing weight:
 
 $$
-\alpha = \exp\!\bigl(-\tfrac{2.0}{2}\|(3.5, 1.2) - (3.0, 1.0)\|^2\bigr)
-       = \exp\!\bigl(-\|(0.5, 0.2)\|^2\bigr)
+\alpha = \exp\bigl(-\tfrac{2.0}{2}\|(3.5, 1.2) - (3.0, 1.0)\|^2\bigr)
+       = \exp\bigl(-\|(0.5, 0.2)\|^2\bigr)
        = \exp(-0.29) \approx 0.748.
 $$
 
@@ -452,17 +454,17 @@ Taking a deterministic $\xi = (0, 0)$ for illustration: $v\_{(4)} = (-0.4400, 0.
 
 **Step 5 (A):** $h\_{(5)} = (3.2851, 1.2208) + 0.25 \times (-0.4400, 0.0205) = (3.1751, 1.2259)$.
 
-**Step 6 (B̃$\_\theta$):** Recompute $\alpha' = \exp(-\|(3.1751 - 3.0, 1.2259 - 1.0)\|^2) = \exp(-(0.0307 + 0.0510)) = \exp(-0.0817) \approx 0.921$.
+**Step 6 (B̃$\_\theta$):** Recompute $\alpha' = \exp(-\lVert(3.1751 - 3.0, 1.2259 - 1.0)\rVert^2) = \exp(-(0.0307 + 0.0510)) = \exp(-0.0817) \approx 0.921$.
 
 Note: $\alpha'$ is **larger** than $\alpha$ — the token has moved closer to the centroid, as expected under the attractive potential. The harmonic propagator now dominates more strongly.
 
 (The full computation for step 6 follows the same pattern as step 2; we omit the arithmetic.)
 
-**Step 7 (B$\_\phi$):** $v\_{n+1} = v\_{(6)}$ (again zero Fock forces in this example).
+**Step 7 (B$\_{\mathrm{ex}}$):** $v\_{n+1} = v\_{(6)}$ (again zero Fock forces in this example).
 
 ### 7.4 Observations from the trace
 
-1. The token at $(3.5, 1.2)$ started $0.539$ units from the centroid, well within the transition zone ($\alpha = 0.748$). The harmonic propagator contributed $\sim\!75\%$ of the update.
+1. The token at $(3.5, 1.2)$ started $0.539$ units from the centroid, well within the transition zone ($\alpha = 0.748$). The harmonic propagator contributed $\sim75\%$ of the update.
 2. After one full layer the token is at $(3.18, 1.23)$, closer to the centroid ($0.28$ units). The mixing weight rose from $0.748$ to $0.921$ — the well is attracting the token as expected.
 3. The velocity picked up a restoring component from the harmonic propagator ($v$ gained a significant negative $h\_1$-component pulling toward $\mu\_1 = 3.0$).
 
@@ -477,10 +479,10 @@ The B̃AOAB̃ scheme applies two nested Strang splittings:
 1. **Outer (BAOAB):** separates the conservative force from the Langevin bath.
    Error: $O(\Delta t^2)$ in weak sense, with the configurational error suppressed by $\gamma^{-2}$ (Leimkuhler-Matthews).
 
-2. **Inner ($\text{B}\_\phi | \tilde{\text{B}}\_\theta$):** separates the Gaussian well force from the Fock force.
-   Error: $O(\Delta t^3 \|[\nabla V\_\theta, \nabla V\_\phi + Q]\|)$, where $[\cdot, \cdot]$ is the Lie bracket (commutator of the force-field flows).
+2. **Inner ($\text{B}\_{\mathrm{ex}} | \tilde{\text{B}}\_\theta$):** separates the Gaussian well force from the Fock force.
+   Error: $O(\Delta t^3 \lVert[\nabla V\_\theta, \nabla V\_{\mathrm{ex}} + Q]\rVert)$, where $[\cdot, \cdot]$ is the Lie bracket (commutator of the force-field flows).
 
-Since the $V\_\theta$ and $V\_\phi + Q$ forces act on overlapping coordinates (both modify $v$ based on $h$), the commutator is generally nonzero but bounded by the product of the force magnitudes. In practice, $V\_\theta$ is smooth and bounded (Gaussian wells) while $V\_\phi + Q$ is moderated by per-group gradient clipping, so the inner splitting error is small.
+Since the $V\_\theta$ and $V\_{\mathrm{ex}} + Q$ forces act on overlapping coordinates (both modify $v$ based on $h$), the commutator is generally nonzero but bounded by the product of the force magnitudes. In practice, $V\_\theta$ is smooth and bounded (Gaussian wells) while $V\_{\mathrm{ex}} + Q$ is moderated by per-group gradient clipping, so the inner splitting error is small.
 
 ### 8.2 CfC blending approximation error
 
@@ -488,20 +490,20 @@ The blended propagator introduces an error wherever the harmonic approximation d
 
 $$
 \epsilon\_k(h) = \|F\_k^{\text{exact}}(h) - F\_k^{\text{harmonic}}(h)\|
-             = V\_{0,k}\kappa\_k\|h - \mu\_k\|\,\bigl|1 - \exp\!\bigl(-\tfrac{\kappa\_k}{2}\|h - \mu\_k\|^2\bigr)\bigr|.
+             = V\_{0,k}\kappa\_k\|h - \mu\_k\| \bigl|1 - \exp\bigl(-\tfrac{\kappa\_k}{2}\|h - \mu\_k\|^2\bigr)\bigr|.
 $$
 
-This vanishes in both limits (near centroid and far away) and peaks in the transition zone at $\|h - \mu\_k\| \sim 1/\sqrt{\kappa\_k}$, where
+This vanishes in both limits (near centroid and far away) and peaks in the transition zone at $\lVert h - \mu\_k\rVert \sim 1/\sqrt{\kappa\_k}$, where
 
 $$
-\max\_h \epsilon\_k \sim V\_{0,k}\sqrt{\kappa\_k}\,(1 - e^{-1/2}) \approx 0.39\,V\_{0,k}\sqrt{\kappa\_k}.
+\max\_h \epsilon\_k \sim V\_{0,k}\sqrt{\kappa\_k} (1 - e^{-1/2}) \approx 0.39\,V\_{0,k}\sqrt{\kappa\_k}.
 $$
 
 **But the blending weights suppress this error.** The contribution of well $k$'s harmonic propagator is weighted by $\alpha\_k(h)$, so the effective error is
 
 $$
-\epsilon\_k^{\text{eff}}(h) = \alpha\_k(h)\,\epsilon\_k(h)
-   = V\_{0,k}\kappa\_k\|h - \mu\_k\|\,\exp\!\bigl(-\kappa\_k\|h - \mu\_k\|^2\bigr),
+\epsilon\_k^{\text{eff}}(h) = \alpha\_k(h) \epsilon\_k(h)
+   = V\_{0,k}\kappa\_k\|h - \mu\_k\| \exp\bigl(-\kappa\_k\|h - \mu\_k\|^2\bigr),
 $$
 
 which decays as a Gaussian times a linear function — bounded uniformly by $O(V\_{0,k}\sqrt{\kappa\_k})$ and well-localised around the transition zone.
@@ -510,7 +512,7 @@ which decays as a Gaussian times a linear function — bounded uniformly by $O(V
 
 $$
 \text{Error}_{\text{total}} = \underbrace{O(\Delta t^2)}\_{\text{BAOAB splitting}}
-                              + \underbrace{O(\Delta t^3)}\_{\text{V}\_\theta/V\_\phi \text{ Strang}}
+                              + \underbrace{O(\Delta t^3)}\_{\text{V}\_\theta/V\_{\mathrm{ex}} \text{ Strang}}
                               + \underbrace{O(\kappa V\_0 \Delta t)}\_{\text{CfC blending}}.
 $$
 
@@ -641,13 +643,13 @@ class BAOABCfCLayer(nn.Module):
     One B̃AOAB̃ integration layer.
 
     Sub-steps:
-      1. B_phi   (numerical Fock kick, half-step)
+      1. B_ex   (numerical Fock kick, half-step)
       2. B̃_theta (CfC propagator, half-step, analytical)
       3. A       (free drift, half-step, exact)
       4. O       (Ornstein-Uhlenbeck, full step, exact)
       5. A       (free drift, half-step, exact)
       6. B̃_theta (CfC propagator, half-step, analytical)
-      7. B_phi   (numerical Fock kick, half-step)
+      7. B_ex   (numerical Fock kick, half-step)
     """
 
     def __init__(
@@ -680,9 +682,9 @@ class BAOABCfCLayer(nn.Module):
         mask: torch.Tensor,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
 
-        # --- Step 1: B_phi (numerical Fock kick, half-step) ---
-        F_phi = self.fock.compute_force(h, registers, mask)
-        v = v + self.half_dt / self.mass * F_phi
+        # --- Step 1: B_ex (numerical Fock kick, half-step) ---
+        F_ex = self.fock.compute_force(h, registers, mask)
+        v = v + self.half_dt / self.mass * F_ex
 
         # --- Step 2: B̃_theta (CfC propagator, half-step) ---
         h, v = self.cfc(h, v)
@@ -699,9 +701,9 @@ class BAOABCfCLayer(nn.Module):
         # --- Step 6: B̃_theta (CfC propagator, half-step) ---
         h, v = self.cfc(h, v)
 
-        # --- Step 7: B_phi (numerical Fock kick, half-step) ---
-        F_phi = self.fock.compute_force(h, registers, mask)
-        v = v + self.half_dt / self.mass * F_phi
+        # --- Step 7: B_ex (numerical Fock kick, half-step) ---
+        F_ex = self.fock.compute_force(h, registers, mask)
+        v = v + self.half_dt / self.mass * F_ex
 
         return h, v
 ```
@@ -756,10 +758,10 @@ The two ingredients of §§3–6 behave very differently once the velocity coord
 The first-order (overdamped) flow driven by the Gaussian potential is
 
 $$
-\dot h = -\frac{1}{\mathfrak{m}\gamma}\nabla V\_\theta(h).
+\dot{h} = -\frac{1}{\mathfrak{m}\gamma}\nabla V\_\theta(h).
 $$
 
-Near well $k$ (harmonic zone, $\|h-\mu\_k\| \ll 1/\sqrt{\kappa\_k}$) the potential gradient is linear,
+Near well $k$ (harmonic zone, $\lVert h-\mu\_k\rVert \ll 1/\sqrt{\kappa\_k}$) the potential gradient is linear,
 
 $$
 \nabla V\_{\theta,k}(h) \approx \mathfrak{m}\omega\_k^2 (h - \mu\_k), \qquad \omega\_k^2 = \frac{V\_{0,k}\kappa\_k}{\mathfrak{m}},
@@ -768,7 +770,7 @@ $$
 so the flow reduces to a linear relaxation toward the centroid,
 
 $$
-\dot h \approx -\lambda\_k (h - \mu\_k), \qquad \lambda\_k = \frac{\omega\_k^2}{\gamma} = \frac{V\_{0,k}\kappa\_k}{\mathfrak{m}\gamma}.
+\dot{h} \approx -\lambda\_k (h - \mu\_k), \qquad \lambda\_k = \frac{\omega\_k^2}{\gamma} = \frac{V\_{0,k}\kappa\_k}{\mathfrak{m}\gamma}.
 $$
 
 This scalar linear ODE has an exact closed-form propagator over an interval $\tau$ — a pure exponential decay, with **no oscillation and no velocity component**:
@@ -792,13 +794,13 @@ The far-field propagator degenerates to the identity because, with no velocity, 
 
 ### 12.3 The blended first-order propagator
 
-Using the same Gaussian mixing weights $\alpha\_k(h) = \exp(-\tfrac{\kappa\_k}{2}\|h - \mu\_k\|^2)$ as §5.3, the blended first-order propagator is
+Using the same Gaussian mixing weights $\alpha\_k(h) = \exp(-\tfrac{\kappa\_k}{2}\lVert h - \mu\_k\rVert^2)$ as §5.3, the blended first-order propagator is
 
 $$
 h' = \sum\_{k=1}^{K} \alpha\_k(h)\big[\mu\_k + (h - \mu\_k)e^{-\lambda\_k \tau}\big] + \Big(1 - \sum\_{k=1}^{K}\alpha\_k(h)\Big) h.
 $$
 
-The limit checks mirror §5.4: near a dominant well $j$ ($\alpha\_j \approx 1$) it is exact exponential relaxation toward $\mu\_j$; far from all wells ($\sum\_k \alpha\_k \approx 0$) it is the identity, which is exact since the $V\_\theta$ force vanishes there. A reduced Fock layer is then just a two-part composition — the analytical $V\_\theta$ relaxation above, followed by a **numerical** $V\_\phi + Q$ gradient step — with no velocity bookkeeping and no O-step.
+The limit checks mirror §5.4: near a dominant well $j$ ($\alpha\_j \approx 1$) it is exact exponential relaxation toward $\mu\_j$; far from all wells ($\sum\_k \alpha\_k \approx 0$) it is the identity, which is exact since the $V\_\theta$ force vanishes there. A reduced Fock layer is then just a two-part composition — the analytical $V\_\theta$ relaxation above, followed by a **numerical** $V\_{\mathrm{ex}} + Q$ gradient step — with no velocity bookkeeping and no O-step.
 
 ### 12.4 What it would buy
 
@@ -824,7 +826,7 @@ The correct way to obtain CfC speed **and** a clean comparison is to retrofit **
 
 3. **Training-time gradient flow**: the CfC propagator is fully differentiable (sin, cos, exp are all smooth), so gradients flow through to the well parameters $(\mu\_k, \kappa\_k, V\_0)$ during training. The gradient path is through the propagator matrix rather than through explicit $\nabla V\_\theta$ evaluations — a different computational graph that may have different numerical conditioning.
 
-4. **Adaptive blending threshold**: when $\sum\_k \alpha\_k > 1$ (overlapping wells), the residual weight becomes negative. The current implementation clamps it to zero, but a normalised version ($\alpha\_k \leftarrow \alpha\_k / \max(1, \sum\_j \alpha\_j)$) might be more principled.
+4. **Adaptive blending threshold**: when $\sum\_k \alpha\_k \gt 1$ (overlapping wells), the residual weight becomes negative. The current implementation clamps it to zero, but a normalised version ($\alpha\_k \leftarrow \alpha\_k / \max(1, \sum\_j \alpha\_j)$) might be more principled.
 
 5. **Combining CfC with STP**: the CfC propagator (Rung 1) and the STP identity (Rung 2) are complementary. CfC replaces the stepping with a matrix exponential; STP replaces the gradient evaluation with a forward contraction. For a future architecture that uses both, the CfC propagator handles the Gaussian sector while STP handles any non-Gaussian conservative forces.
 
