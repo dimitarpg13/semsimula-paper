@@ -4230,6 +4230,27 @@ The first-order model leads throughout training, by 1.5% at step 21,000 and 0.9%
 - **The two wells specialise by layer** (6b-15): both repulsive at layer 0 (median depth −0.21), both strongly attractive at layer 1 (+1.23, three times K = 16's median), half-lives moved from 4 and 128 to about 10 and 19 tokens. Still positional and then fixed (force 99.99% / 99.95% from position).
 - **Calls.** MS2b's second-order half at K = 2 (SR2 58.32 > PM2 > PMX-K16 54.24): **HIT** (54.71). MS2a, MS2c, MS2d and the amended K rule wait for the first-order twin (FO-b-PM2-PMX16, started 2026-10-24).
 
+**Result, the per-layer flow's convergence order (2026-10-24; descriptive, CPU).** Why FLOW-R converges by N = 16 for every second-order model and for no first-order one. The candidate explanation was the integrator: the second-order layer step (palindromic, kick at the midpoint) is second-order accurate, and FO-b's (exact relaxation of the stiff modes, one explicit Euler step for the rest) is first order. Script `debug/flow_convergence_order.py`: the model's own per-layer flow (`substeps_per_layer` = k, identical to FLOW-R's, checked there to 0.0 in the logits) at k = 1, 2, … 64 substeps per trained layer against a k = 128 reference, on 4 × 256 validation tokens (batch seed 20261009), for PMX-K16 and FO-b-PMX-K16, trained (best checkpoints) and at initialisation. Relative error ‖logits_k − logits_ref‖ / ‖logits_ref − logits_1‖; observed order log2(error_k / error_2k). Outputs: `flow_convergence_order_{init,trained}.txt` in each arm's results folder.
+
+| relative error at k | 1 | 2 | 4 | 8 | 16 | 32 | 64 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| PMX-K16, trained | 1.00 | 0.59 | 0.20 | 0.10 | 0.052 | 0.023 | 0.008 |
+| FO-b-PMX-K16, trained | 1.00 | 0.44 | 0.29 | 0.21 | 0.15 | 0.10 | 0.061 |
+| ratio, first order / second order | | | 1.5 | 2.1 | 2.9 | 4.4 | 7.7 |
+| FO-b-PMX-K16, at initialisation | 1.00 | 0.50 | 0.25 | 0.12 | 0.056 | 0.025 | 0.012 |
+
+| observed order (k = 4 → 32) | at initialisation | trained |
+| --- | ---: | ---: |
+| second order (PMX-K16) | **2.0** (2.01, 2.02, 2.07; float64, reference k = 32) | **about 1** (0.97, 0.94, 1.16) |
+| first order (FO-b-PMX-K16) | **1.0** (1.04, 1.09, 1.16) | **about 0.5** (0.42, 0.49, 0.58) |
+
+- **The integrators have their textbook orders before training:** 2 and 1.
+- **Trained, both run below them, and second order stays one class ahead.** The gap widens with every refinement (the error ratio grows from 1.5 to 7.7), the signature of a different order, not of one order with a different constant. Both observed orders rise with k. A reading consistent with this, not tested: the trained landscape is stiff (V_θ's stiffest-mode ω·Δt median 3.65 at the trained step), and a method reaches its asymptotic order only once the substep is small against the stiffest modes.
+- **The limits differ too.** At k = 128: perplexity 76.1 for second order, 0.27 nats above its trained step (58.4 at k = 1), against 223.6 for first order, 1.36 nats above its trained step (57.3). FLOW-R's penalties (PMX-K16 0.33 nats at N = 16, converged; FO-b-PMX-K16 1.41, still moving) are this table read at N = 2k ≤ 16.
+- **Round-off, checked.** In float32 the untrained second-order error stalls (at 0.13 against the k = 128 reference): at initialisation the logits hardly depend on k (perplexity equal to six digits), so the difference being measured is tiny. In float64 the stall disappears and the order is 2.0 (`flow_convergence_order_init_kmax16_float32_vs_float64.txt`). The trained errors are far larger and are read in float32.
+- **Memory.** The forward pass keeps its graph through every substep (the forces need autograd), so peak memory is about 4.4 GB plus 0.32 GB per substep per sequence. The runs process one sequence at a time (`chunk=1`, identical results; peak 43 GB at k = 128) and one run at a time.
+- **Reading for the book (§26, beside FLOW-R and FB4).** First and second order differ in the order at which the trained layer converges to its continuous law, not only in how far it sits from it. A design that needs each layer to be a sample of a continuous flow (the geometric reading, refinement at inference) is served by second order; at fixed depth and this budget, perplexity is not. One seed per arm, one pair (K = 16), 0.53B tokens; the K = 64 and K = 2 pairs can be run the same way.
+
 **Readings, fixed now.**
 - **MS2 hits and MS3 hits:** the hypothesis stands at this scale; the book's §17h subsection is upgraded from "proposed" to "supported", with the scope line of MS4–MS6.
 - **MS2 misses with the gap flat in K:** the wells help both orders alike and the K = 64 tie is a coincidence of this pair; the hypothesis is withdrawn and FO-b-PMX is reported as a result about the wells.
