@@ -4088,6 +4088,23 @@ Settled is the mean of the evals at steps 18,000, 18,500 and 19,000, as for SO-T
 - **Cell 6b-13:** the FO-b relaxation exponent and ω·Δt are recorded in the filed output.
 - TS1 and TS3 wait for FO-b-TS.
 
+**Result, FO-b-TS (TS-K2, true first order without wells, 2026-10-26), and the TS-K2 set scored.** Tag `…norc_vplive_xilive_sr2_fob_st16250_L2probe…`; 19,250 steps in one session, clean finish, no watchdog trigger, SCAF CLEAN at all 4 audits. 76,572,109 parameters (PM2-TS less the wells' 776). Outputs filed in `results/cfc_baoab_ts_…sr2_fob_st16250…/`.
+
+| TinyStories, 315M tokens | no wells | 2 wells | wells' gain, log perplexity |
+| --- | ---: | ---: | ---: |
+| second order | SO-TS 5.16 | PM2-TS 4.99 | 0.034 |
+| true first order (FO-b) | **FO-b-TS 5.28** | FO-b-PM2-TS 4.96 | **0.061** |
+| first order against second | **+2.3%** | −0.5% | |
+| (FO-a, velocity reset between layers) | FO-TS 5.13 (−0.5%) | | |
+
+- **TS1 (FO-b-TS within ±2% of SO-TS, paired by step), called 55%: MISS, narrowly.** Settled +2.26% (5.28: 5.35, 5.23, 5.25, against 5.16). Paired by step: +1.97% through the stable phase (spread 0.27%, correlation 0.99); over the last evaluations +1.4%, but there SO-TS's evals come from its extension session, resumed from step 15,000, so the pairing is weak (correlation 0.34, spread 1.6%). The settled value is the registered measure and is outside the band.
+- **TS3 (the wells help first order more on TinyStories), called 65%: HIT:** 0.061 against 0.034, 1.8 times (OpenWebText at two wells: 0.128 against 0.064, 2.0 times).
+- **The set, scored:** TS1 MISS (narrowly), TS2 HIT (−0.5%), TS3 HIT, TS4 HIT (−3.4%).
+- **TinyStories reproduces the OpenWebText pattern at a smaller scale.** Without wells, true first order trails second order (+2.3%; OpenWebText +4.9%); with two wells the gap closes (−0.5%; OpenWebText −1.6%). As FO-b-OWT did, FO-b-TS leads early (8.30 against 8.65 at step 2,000), falls behind by step 5,000 and stays behind.
+- **The earlier TinyStories tie was FO-a's.** FO-a resets the velocity between layers but keeps the stiff modes' rotation within each layer, and ties SO-TS (−0.5%); FO-b removes the rotation too, and trails (+2.3%; 2.8% behind FO-a). This is the reading of SR3-crit on OpenWebText (the gain is the rotation, book §26.9 item (ii)) on a second corpus.
+- **Cell 6b-7:** Gate 0 PASS; Gate 1 reads 0; one extra layer +0.4%, eight layers +138%; Gate 3 at N = 3 0.12 nats (SO-TS 0.21; on OpenWebText FO-b-OWT 0.18 against SR2's 0.41). **Cell 6b-9:** R(geo) 0.83. **Cell 6b-13:** filed.
+- **Against the matched GPT-2 (4.47):** FO-b-TS +18.0%, SO-TS +15.4%, PM2-TS +11.6%, FO-b-PM2-TS +11.0%.
+
 **MS5, amendment of 2026-10-24 (before any code run; the call and its 45% are unchanged).** The corpus and arms, fixed now:
 - **Corpus.** Python from CodeParrot's own file-level split, at pinned revisions: the first 450M GPT-2 tokens of `codeparrot/codeparrot-clean-train` (revision `3e6ab65f…`, about one of its 53 shards) as the training pool, and the first 2M tokens of `codeparrot/codeparrot-clean-valid` (revision `4db92d2e…`) as the validation set. Files are joined with a blank line, as the other corpora's documents are. `CORPUS = 'code'` in both the ladder and the matched GPT-2 notebooks, one shared cache (`semsimula_code_gpt2/data`), tag token `code`.
 - **Indentation as tabs.** GPT-2's BPE spends one token per space of indentation: on raw Python 40% of the tokens are whitespace-only (34% a single space), so four tokens in ten would be near-free predictions and a 512-token context would hold about 1,100 characters of code. Before tokenising, each leading run of four spaces becomes one tab: whitespace falls to 21.5% (22.3% on the validation set), a file takes 23% fewer tokens, and the context holds about 1,450 characters. The rewrite keeps the vocabulary, so the parameter match with GPT-2 and the other corpora is unchanged. Code perplexities are compared only within this corpus.

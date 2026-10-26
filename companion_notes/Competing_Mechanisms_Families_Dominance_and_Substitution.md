@@ -1,6 +1,6 @@
 # Competing Mechanisms: Families, Dominance and Substitution in the Conservative Core
 
-**Status:** working note, 2026-10-24. It states a tenet that the Gen 3 ladder, the coupling-dominance ablations (CD), the exchange-field factorial (XRB) and the first-versus-second-order pairs (MS) point to, and draws it as a graph. Every edge cites its measurement; edges not yet measured are marked as such. All numbers are from 0.53B-token runs at L = 2, d = 384, OpenWebText, one seed per arm (protocol §5.13, §5.21 and the ladder sections).
+**Status:** working note, 2026-10-24, updated 2026-10-26 with the final numbers of the dose series (2, 16 and 64 wells) and the TinyStories set. It states a tenet that the Gen 3 ladder, the coupling-dominance ablations (CD), the exchange-field factorial (XRB) and the first-versus-second-order pairs (MS, TS-K2) point to, and draws it as a graph. Every edge cites its measurement; edges not yet measured are marked as such. All numbers are from runs at L = 2, d = 384, one seed per arm: OpenWebText at 0.53B tokens, TinyStories at 315M (protocol §5.13, §5.21 and the ladder sections). The book's version is the chapter "Competing Mechanisms: Families, Dominance and Substitution" (book v6.1, §28).
 
 ---
 
@@ -12,9 +12,10 @@
 4. [The whole picture in one graph](#4-the-whole-picture-in-one-graph)
 5. [The order of dominance (solid arrows)](#5-the-order-of-dominance-solid-arrows)
 6. [Substitution: who can stand in for whom (dotted arrows)](#6-substitution-who-can-stand-in-for-whom-dotted-arrows)
-7. [The evidence behind each edge](#7-the-evidence-behind-each-edge)
-8. [What the graph does not yet show](#8-what-the-graph-does-not-yet-show)
-9. [Toward a measured substitution matrix](#9-toward-a-measured-substitution-matrix)
+7. [The replacement hierarchy along the dose](#7-the-replacement-hierarchy-along-the-dose)
+8. [The evidence behind each edge](#8-the-evidence-behind-each-edge)
+9. [What the graph does not yet show](#9-what-the-graph-does-not-yet-show)
+10. [Toward a measured substitution matrix](#10-toward-a-measured-substitution-matrix)
 
 ---
 
@@ -126,16 +127,43 @@ flowchart TB
 
 ## 5. The order of dominance (solid arrows)
 
-Within routing the register path dominates the exchange field, and both dominate the pair force. Integrating the stiff modes exactly leaves the pair force nearly idle even alone. Across the capacity family the wells crowd out the velocity: the fewer the wells, the more a second-order model loads into its velocity (resetting it costs +91% at 64 wells and +5,788% at 16).
+Within routing the register path dominates the exchange field, and both dominate the pair force. Integrating the stiff modes exactly leaves the pair force nearly idle even alone. Across the capacity family the wells crowd out the velocity: with fewer wells a second-order model loads more into its velocity (resetting it costs +91% at 64 wells, +5,788% at 16 and +5,150% at 2). Beyond 16 wells the reset reading is at its ceiling: a cost of thousands of percent says the model collapses without its velocity, and cannot show whether it leans on it more.
 
 ## 6. Substitution: who can stand in for whom (dotted arrows)
 
 - **Within routing:** the exchange field, trained alone, recovers three quarters of the register path's value.
-- **Within capacity, one way only:** the wells replace the velocity completely, but the velocity does not replace the wells. A second-order model without wells is 6–7% worse than one with them.
+- **Within capacity, one way only:** the wells replace the velocity completely, on both corpora: with 2, 16 or 64 wells on OpenWebText, and with 2 on TinyStories, a first-order model matches or beats its second-order twin. The velocity does not replace the wells: a second-order model without wells is 6–7% worse than one with them on OpenWebText, 3.4% on TinyStories.
+- **What the wells stand in for is the rotation.** On TinyStories, a first-order arm that resets the velocity between layers but keeps the stiff modes' rotation within each layer (FO-a) ties second order without wells (−0.6%); the arm that removes the rotation too (FO-b) trails it (+2.3%). On OpenWebText, critical damping of the stiff modes, which keeps the velocity between layers and removes the rotation, cost 8.5%.
 - **The cross-family exception:** the first-order models compensate for the missing velocity partly through the pair force, a routing mechanism, and partly through a stiffer landscape. In the graph this is the dotted arrow from the routing box into the capacity box.
 - **Coexistence:** under the explicit integrator the wells and the pair force are both load-bearing and overlap little; neither displaces the other.
 
-## 7. The evidence behind each edge
+## 7. The replacement hierarchy along the dose
+
+The dose of wells shows the competition at work in one family. Everything else fixed, OpenWebText:
+
+| wells K | 0 | 2 | 16 | 64 |
+| --- | ---: | ---: | ---: | ---: |
+| second order, settled | 58.32 | 54.71 | 54.24 | 54.63 |
+| first order (FO-b), settled | 61.16 | 53.81 | 53.73 | 54.02 |
+| first order against second | +4.9% | −1.6% | −0.9% | −1.1% |
+| resetting the velocity (second order) | +3.9% | +5,150% | +5,788% | +91% |
+| removing V phi, second / first order | 1.4% / ― | 2.8 / 3.3% | 1.7 / 3.6% | 1.5 / 2.7% |
+| V theta's stiffest-mode ω·Δt at layer 1, second / first order | ― | 4.75 / 7.05 | 4.55 / 5.31 | 4.21 / 5.08 |
+| removing the wells, second / first order | ― | 100 / 831% | 156 / 343% | 165 / 282% |
+
+- **From 64 wells down to 2 the second-order model's perplexity hardly moves** (a spread of 0.9%) while its reliance moves through the other mechanisms in order: first onto the velocity (between 64 and 16 wells), then, below 16 wells, onto the pair force and the stiffness of V theta.
+- **The first-order models, which have no velocity to load, go straight to the pair force and the stiffness, and lean harder on the wells the fewer there are** (eight times their twin at two wells).
+- **Then the hierarchy ends.** With no wells the second-order model relies on neither the velocity (+3.9%) nor V phi (1.4%) and is 6.6% worse. Its heavy use of the velocity appears only together with the wells and does not replace them.
+
+Three readings fit the flat perplexity from 64 wells down to 2, and the measurements so far do not separate them:
+
+1. **Abundant replacement:** when one mechanism is constrained, others take over its share. The reliance shifts support it.
+2. **Little demand:** what the wells do, as trained, is simple enough (a correction at the start of the sequence plus a fixed extra landscape) that two wells already do almost all of it, and the shifts are reorganisation that contributes little.
+3. **A budget floor:** at 0.53B tokens, about 7 per parameter, every variant may reach the same floor set by training, not by mechanism.
+
+The 2B-token runs decide the third, through their snapshots along training. The second needs a dose test of value rather than reliance: V phi trained out at two well counts, or a two-well model at 2B tokens.
+
+## 8. The evidence behind each edge
 
 | edge | measurement | numbers | source |
 | --- | --- | --- | --- |
@@ -144,23 +172,23 @@ Within routing the register path dominates the exchange field, and both dominate
 | register path crowds out V phi | reliance: removing V phi | 0.282 nats alone (F3.1), 0.037 beside the registers (G2) | protocol, CD |
 | exact damped flow idles V phi | reliance: removing V phi | 0.014 nats under SR2, 0.015 under PMX, against 0.282 under the explicit integrator | protocol, CD and its PMX extension |
 | wells coexist with V phi | reliance: removing each and both (PM1) | V phi 0.324 nats, wells 0.775, both 0.956: 13% overlap | protocol, CD |
-| wells make the velocity redundant | value: first-order twins with the wells | the first-order twin matches at 64 wells (−1.1%) and leads at 16 (−0.9%, paired by step, spread 0.14%) | protocol §5.13, MS |
-| velocity does not stand in for the wells | value: second order without wells | SR2 58.32 against PMX 54.63: removing the wells costs second order 6.3% to 6.8% | protocol §5.13 |
-| the wells matter more without a velocity | value: the wells' gain by order | wells help first order 11.7%, second order 6.3% | protocol §5.13, MS |
-| the velocity takes up share as the wells shrink | reliance: resetting the velocity (Gate 1) | SR2 +3.9%, PMX (64 wells) +91%, PMX-K16 (16 wells) +5,788% | Cell 6b-7 outputs |
-| V phi and a stiffer landscape partly stand in for the velocity | reliance in the first-order twins | V phi removal 1.7 times (64 wells) and 2.1 times (16 wells) its twin's; V theta layer-1 stiffness +21% and +17% | protocol §5.13, M1–M4 |
-| the context channels are not displaced | reliance: context channels from another text | +303% to +337%, the two orders within 1.01–1.05 times of each other | protocol §5.13, M2 amendment |
+| wells make the velocity redundant | value: first-order twins with the wells | the first-order twin matches at 64 wells (−1.1%) and leads at 16 (−0.9%) and 2 (−1.6%), paired by step; on TinyStories level at 2 wells (−0.5%) | protocol §5.13, MS, TS-K2 |
+| velocity does not stand in for the wells | value: second order without wells | SR2 58.32 against 54.24–54.71 with 2 to 64 wells; on TinyStories SO-TS 5.16 against PM2-TS 4.99 | protocol §5.13, TS-K2 |
+| the wells matter more without a velocity | value: the wells' gain by order, in log perplexity | twice as large in first order at 2, 16 and 64 wells (0.128 against 0.064 at two); 1.8 times on TinyStories (0.061 against 0.034) | protocol §5.13, MS, TS-K2 |
+| the velocity takes up share as the wells shrink | reliance: resetting the velocity (Gate 1) | SR2 +3.9%, 64 wells +91%, 16 wells +5,788%, 2 wells +5,150% (at the reading's ceiling); TinyStories +2.0% without wells, +3,907% with two | Cell 6b-7 outputs |
+| V phi and a stiffer landscape partly stand in for the velocity | reliance in the first-order twins | V phi removal 1.7, 2.1 and 1.2 times its twin's (64, 16, 2 wells); V theta layer-1 stiffness +21%, +17%, +48% | protocol §5.13, M1–M4 |
+| the context channels are not displaced | reliance: context channels from another text | +303% to +351%, the two orders within 1.01–1.05 times of each other at every K | protocol §5.13, M2 amendment |
 
-One provisional point belongs here too: the second-order model with **two** wells (PM2-PMX16, still training) recovers about nine tenths of the wells' benefit over no wells, paired by step. If that holds after the decay, a very small amount of the capacity family's landscape does most of the work.
+**The second corpus confirms the edges between the wells and the velocity.** On TinyStories, without wells, true first order trails second order by 2.3% (OpenWebText: 4.9%); with two wells the first-order twin is level (−0.5%); the wells help first order 1.8 times as much; and the second-order model's reliance on its velocity jumps from +2.0% without wells to +3,907% with them. The two wells learn nearly the same landscape on both corpora (layer 0 repulsive, layer 1 attractive, median half-life about 14 tokens). Two wells give the second-order model 88% of what sixteen give over none on OpenWebText: a very small amount of the capacity family's landscape does most of the work.
 
-## 8. What the graph does not yet show
+## 9. What the graph does not yet show
 
 - **Several cells are unmeasured.** No Gen 3 model has been trained without the context channels, so "ξ is not displaced" is a statement about reliance, not value. The register path and the wells have never been combined in one model, so their relation is unknown. The pair force has never been removed from a trained model's design (the VF factorial is registered, not run).
 - **Coexistence depends on the integrator.** Wells and pair force coexist under the explicit integrator and the pair force goes idle under the exact flow. The graph's edges are therefore conditional on the integrator, and the order may differ again under other designs.
-- **All of it is at one budget, one depth and one corpus.** A mechanism that loses at 0.53B tokens and L = 2 may win at 2B tokens or at L = 4; the velocity in particular has only one layer boundary to act across at L = 2.
+- **All of it is at one budget and one depth, on two corpora, the second of them narrow.** A mechanism that loses at 0.53B tokens and L = 2 may win at 2B tokens or at L = 4; the velocity in particular has only one layer boundary to act across at L = 2. A third corpus, code (protocol MS5), is fixed and queued after book v23.
 - **One seed per arm.** Paired evaluation removes the evaluation noise (to about 0.1%), not the training-seed spread.
 
-## 9. Toward a measured substitution matrix
+## 10. Toward a measured substitution matrix
 
 The graph would become a measured result with a **substitution matrix**: for each pair of mechanisms, the value of training without each, alone and together. Most cells exist already; the missing ones name the runs the tenet needs:
 
@@ -169,7 +197,7 @@ The graph would become a measured result with a **substitution matrix**: for eac
 | register path and exchange field | all four corners (XRB factorial) | none |
 | register path and V phi | reliance in both; value of the register path | V phi trained out beside the registers (VF2) |
 | wells and V phi | reliance in both (PM1, PMX) | V phi trained out beside the wells (VF1) |
-| wells and velocity | all four corners at 64 and 16 wells; K = 2 in progress | the second-order point below 2 wells |
+| wells and velocity | all four corners at 2, 16 and 64 wells on OpenWebText, and at 2 wells on TinyStories | the top of the dose (256 wells); the code corpus |
 | register path and wells | nothing | a model with both |
 | context channels and anything | reliance only | a model without the long context channels |
 | velocity and a fixed bank of Gaussian wells | nothing | the proposed fixed-bank arm: whether the Poisson machinery is needed at all |

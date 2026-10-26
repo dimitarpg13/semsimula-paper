@@ -1,0 +1,28 @@
+probing fock_cfc_ts_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_fob_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt
+   step 16,500  ppl 5.10  missing 0  unexpected 0
+   L=2  dt=4  T=L*dt=8  seed=20260928  8 x 4 x 512 tokens
+   FO-b: omega*dt read from the relaxation substep (the monitor does not hook it)
+
+FO-b relaxation exponent mu*kappa*dt per layer step (retained modes)
+    layer      p05      p50      p95   relaxed
+        0    0.300    0.811    6.325    23.87%
+        1    0.000    0.000   12.498     9.25%
+
+omega*dt over 524,288 (token, coordinate, layer) readings
+    layer      p05      p50      p95      max  over 2.0
+        0    0.774    1.274    3.557    7.342    25.65%
+        1    0.000    0.001    5.000   10.681    13.13%
+      ALL    0.000    1.024    3.675   10.681    19.39%
+
+READING
+   omega*dt p50 = 1.024 at dt = 4  ->  omega = 0.256
+   19.4% of readings are past the explicit-integrator wall of 2.
+   Under baoab_cfc_lowrank those modes are integrated EXACTLY, so this is a
+   STIFFNESS reading, not an instability: it says explicit integration
+   would have been amplifying there, and the propagator is doing the work.
+
+   pre-registered band for L=2: [3.3, 4.2]   measured 1.024   **MISS**
+   -> (1) exact compensation -- finer integration bought nothing
+   filed -> /content/drive/MyDrive/semsimula_fock_cfc_baoab_ts_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_fob_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/results/omega_dt_endpoint.jsonl
+
+   live training state restored
