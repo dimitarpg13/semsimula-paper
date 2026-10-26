@@ -4311,6 +4311,67 @@ The first-order model leads throughout training, by 1.5% at step 21,000 and 0.9%
 - **The two wells specialise by layer** (6b-15): both repulsive at layer 0 (median depth −0.21), both strongly attractive at layer 1 (+1.23, three times K = 16's median), half-lives moved from 4 and 128 to about 10 and 19 tokens. Still positional and then fixed (force 99.99% / 99.95% from position).
 - **Calls.** MS2b's second-order half at K = 2 (SR2 58.32 > PM2 > PMX-K16 54.24): **HIT** (54.71). MS2a, MS2c, MS2d and the amended K rule wait for the first-order twin (FO-b-PM2-PMX16, started 2026-10-24).
 
+**Result, the K = 2 pair (FO-b-PM2-PMX16, 2026-10-25).** Tag `…pm2_pmx16_sr2_fob_L2probe…`, from step 0 at seed 0, paired with PM2-PMX16, PMX-K16 and FO-b-PMX-K16 (step-to-step evaluation changes correlate at 0.999). 32,500 steps in about 11 h (1.22 s per step), clean finish, no watchdog trigger or spike capture, largest training loss 1.005 times its running mean, SCAF CLEAN at all 7 audits. The diagnostic cells (8, 7, 6b-7, 6b-15, 6b-13, 6b-9) ran in a second, diagnostics-only session on the best checkpoint (step 31,000, PPL 51.90). The CPU readings were run one at a time: `pm_mode_usage_fob-pmx_output.txt`, `mechanism_ablations_fob-pmx_output.txt`, `vtheta_omega_dt_fob-pmx_output.txt`, `pm_static_landscape_fob-pmx_output.txt`, `refinement_flow_confirmation_fob-pmx_seed20261009_output.txt` (with its JSON) and `flow_convergence_order_trained.txt`, all in the arm's results folder.
+
+| | FO-b-PM2-PMX16 | PM2-PMX16 | first order against second |
+| --- | ---: | ---: | ---: |
+| settled (last three evals) | **53.81** (53.77, 53.90, 53.76) | 54.71 | **−1.64%** |
+| paired by step, last 8 evals | | | **−1.63%** (spread 0.14%) |
+| paired, stable phase (10,000–21,000) | | | −3.15% (0.32%) |
+| paired, decay (21,500–32,500) | | | −2.16% (0.55%) |
+| decay gain, log perplexity, step 21,000 to settled | −0.165 | −0.177 | |
+
+- **Against the best conservative model:** FO-b-PMX-K16 (53.73), paired over the last 8 evals, +0.11% (spread 0.13%): level, with an eighth of its wells.
+- **The decay narrows the gap,** as at K = 16 and more clearly: first order leads by 2.8% at step 21,000 and 1.6% at the end; the second-order model gains 0.012 nats more in the decay (K = 16: 0.005).
+
+| id | prediction | called | result |
+| --- | --- | ---: | --- |
+| MS2a | the K = 2 gap between its recorded neighbours, K = 0 (+4.9%) and K = 16 (−0.93%) | 50% | **MISS**: −1.64%, first order further ahead than at 16 wells |
+| MS2b | both K = 2 arms between their K = 0 and K = 16 counterparts (SR2 58.32 > PM2 > PMX-K16 54.24; FO-b-OWT 61.16 > FO-b-PM2 > FO-b-PMX-K16 53.73) | 65% | **HIT** on both halves; the first-order half by 0.08 (53.81 against 53.73), inside the noise |
+| MS2c | the wells' gain larger for the first-order arm at K = 2 | 60% | **HIT**: log(61.16 / 53.81) = 0.128 against log(58.32 / 54.71) = 0.064 |
+| MS2d | the first-order K = 2 arm trains stably | 75% | **HIT** |
+
+- **The amended K rule:** a gap within ±2% at K = 2 → **the low end of the dose is closed**; no K = 8 or K = 4. The top of the curve, K = 256, remains.
+- **The dose, both orders:** K = 0 +4.9%, K = 2 −1.6%, K = 16 −0.9%, K = 64 −1.1%. The crossover lies between no wells and two. The wells help first order about twice as much at every K (0.128 / 0.130 / 0.124 against 0.064 / 0.073 / 0.065 at 2 / 16 / 64).
+
+**The readings registered for the K = 16 twin (M1–M3), read the same way at K = 2 (descriptive):**
+
+| reading | FO-b-PM2-PMX16 | PM2-PMX16 | ratio | at K = 16 |
+| --- | ---: | ---: | ---: | ---: |
+| removing V_φ (`vphi_off`) | +3.28% | +2.80% | 1.17 | 2.1 |
+| context channels from another text (`xi_ctx_swap`) | +351% | +337% | 1.04 | 1.01 |
+| V_θ's stiffest-mode ω·Δt median, layer 0 / 1 | 4.39 / **7.05** | 3.89 / 4.75 | +13% / **+48%** | −26% / +17% |
+| removing the wells | **+831%** | +100% | **8.3** | 2.2 |
+| occupations from another text | +0.02% | +0.03% | | |
+| effective number of modes, layer 0 / 1 (of 2) | 2.0 / 1.7 | 2.0 / 2.0 | | |
+| attractive share of the wells' force at layer 0 | 0% | 0% | | |
+| the wells' force reproduced from position alone | 99.98% / 99.89% | 99.99% / 99.95% | | |
+| occupations fixed at their late value: all / first 16 / tokens 128–255 | +5.35% / **+214%** / +0.78% | +1.25% / +26% / +0.06% | | |
+
+- **The K = 16 signature, stronger.** The first-order model leans on its two wells eight times as hard, builds a much stiffer second layer (+48%) and leans a little more on the pair force. The pair-force ratio is smaller than at K = 16 because at two wells the second-order model already leans on V_φ more (+2.80% against +1.71%). Context reliance is the same in both. The wells are still position-only (another text's occupations cost nothing) and a fixed landscape beyond the first tokens.
+- **Cell 6b-15:** half-lives p05 / median / p95 5.8 / 8.0 / 10.2 tokens (PM2-PMX16 9.7 / 14.2 / 18.8); median depth layer 0 / 1 −0.395 / +0.930 (−0.212 / +1.226), 0% / 100% attractive in both; the wells' force against the conservative force 0.84 / 2.22 (0.76 / 2.97). The first-order wells are deeper at layer 0, shallower at layer 1 and shorter-lived.
+- **Cell 6b-7:** Gate 0 PASS; Gate 1 reads 0 (no velocity); one extra layer +0.7% (PM2-PMX16 +608%), eight layers +7,037% (+1,712%); Gate 3 at N = 3 0.83 nats (1.26).
+- **Cell 6b-9:** R(geo) 0.80, the two wells accounting for most of the deviation from the V_θ geodesic (wells alone move R by −0.41). **Cell 6b-13:** FO-b relaxation exponent median 0.00 / 0.56 (layer 0 / 1); ω·Δt median 1.03.
+
+**FLOW-R** (`refinement_flow_confirmation.py … fob-pmx seed=20261009`): all checks PASS (the per-layer flow at N = 2 and the model's own `substeps_per_layer` path equal the trained model to 0.0). Kick share 0.465 / 0.477 of the position step, velocity 0.
+
+| steps N | 2 (trained) | 3 | 4 | 6 | 8 | 12 | 16 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| perplexity | 50.58 | 166.23 | 197.35 | 305.41 | 347.53 | 390.88 | 403.10 |
+| penalty, nats | 0 | 1.190 | 1.361 | 1.798 | 1.927 | 2.045 | **2.076** |
+
+- **The per-layer flow does not converge** (it moves 0.031 nats between N = 12 and 16) and sits 2.08 nats above the trained step; PM2-PMX16's converges at 0.40. The first-order models sit further from their continuous law the fewer wells they have: 0.58 (64 wells), 1.41 (16), 2.08 (2).
+
+**Convergence order on the K = 2 pair** (`flow_convergence_order.py … trained folder=… chunk=1`, the method of the convergence-order block below):
+
+| relative error at k substeps per layer, against k = 128 | 1 | 2 | 4 | 8 | 16 | 32 | 64 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| PM2-PMX16, trained (second order) | 1.00 | 0.71 | 0.30 | 0.16 | 0.086 | 0.039 | 0.013 |
+| FO-b-PM2-PMX16, trained (first order) | 1.00 | 0.54 | 0.41 | 0.36 | 0.19 | 0.16 | 0.15 |
+
+- **The K = 16 result reproduces:** trained second order converges at about order 1 (0.91, 0.88, 1.13 from k = 4 to 32), trained first order more slowly and erratically, at about 0.4 overall from k = 2 to 64, with the error stalling near 0.15 at the finest steps. The limits: second order 0.37 nats above its k = 1 output, first order 2.07.
+- **Published** on Hugging Face (first-vs-second-order collection) with its twin, 2026-10-25.
+
 **Result, the per-layer flow's convergence order (2026-10-24; descriptive, CPU).** Why FLOW-R converges by N = 16 for every second-order model and for no first-order one. The candidate explanation was the integrator: the second-order layer step (palindromic, kick at the midpoint) is second-order accurate, and FO-b's (exact relaxation of the stiff modes, one explicit Euler step for the rest) is first order. Script `debug/flow_convergence_order.py`: the model's own per-layer flow (`substeps_per_layer` = k, identical to FLOW-R's, checked there to 0.0 in the logits) at k = 1, 2, … 64 substeps per trained layer against a k = 128 reference, on 4 × 256 validation tokens (batch seed 20261009), for PMX-K16 and FO-b-PMX-K16, trained (best checkpoints) and at initialisation. Relative error ‖logits_k − logits_ref‖ / ‖logits_ref − logits_1‖; observed order log2(error_k / error_2k). Outputs: `flow_convergence_order_{init,trained}.txt` in each arm's results folder.
 
 | relative error at k | 1 | 2 | 4 | 8 | 16 | 32 | 64 |
