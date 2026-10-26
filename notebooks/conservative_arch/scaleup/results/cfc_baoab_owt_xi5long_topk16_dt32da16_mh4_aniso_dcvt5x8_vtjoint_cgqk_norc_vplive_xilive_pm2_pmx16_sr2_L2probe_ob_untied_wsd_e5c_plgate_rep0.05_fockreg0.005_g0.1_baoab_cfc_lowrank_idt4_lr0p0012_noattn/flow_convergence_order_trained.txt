@@ -1,0 +1,9 @@
+FLOW CONVERGENCE ORDER: pmx (second order), trained, K = 2; 4 x 256 validation tokens; reference k = 128 substeps per layer (perplexity 85.77)
+      k  N = 2k  perplexity  rel. error  order k -> 2k
+      1       2       59.18      1.0000           0.49
+      2       4      128.38      0.7106           1.26
+      4       8       90.57      0.2970           0.91
+      8      16       86.12      0.1582           0.88
+     16      32       85.78      0.0857           1.13
+     32      64       85.72      0.0391           1.55
+     64     128       85.75      0.0134            nan

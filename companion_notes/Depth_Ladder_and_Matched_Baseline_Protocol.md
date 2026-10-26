@@ -4032,6 +4032,62 @@ Output `L2_FO-b-PMX_OWT_32500steps_output.txt` (in the run's `results/`; first f
 | MS6 | **depth**: PMX and FO-b-PMX at L = 4 | the first-order twin stays within the seed spread at L = 4, where the implicit memory has three boundaries to act across | 45% |
 | MS7 | **FO-b-G3′ against G3′**: an explicit memory read by a non-conservative channel, the reverse channel, not felt as a well (queue item 4) | the first-order twin matches G3′ within 2% — the opposite of the future note's call of 2026-10-20 (a gap, 70%), which stands on record | 55% |
 
+**Result, the matched GPT-2 on TinyStories (C1, 2026-10-25).** `colab_matched_gpt2_baseline_openwebtext.ipynb` with `CORPUS = 'tinystories'`, W2's settings (WSD, peak 1.2e-3, d = 384, L = 8, 33,691,776 parameters, batch 32 × 512), `TOTAL_STEPS = 19_250`, `SCHEDULE_STEPS = 16_250`. Tag `_wsd_lr0p0012_st19250_sch16250_ts`. The tokens and the validation split are the ladder's own TinyStories cache, the same as SO-TS's and FO-TS's. Output `results/gpt2_baseline_wsd_lr0p0012_st19250_sch16250_ts/matched_GPT2_TS_19250steps_output.txt`. About 1.6 h on the A100; no loss spike.
+
+| TinyStories, 315M tokens | settled (evals at 18,000, 18,500, 19,000) | against GPT-2 |
+| --- | ---: | ---: |
+| matched GPT-2 | **4.47** | |
+| SO-TS (second order, no wells) | 5.16 | +15.4% |
+| FO-TS (FO-a, no wells) | 5.13 | +14.8% |
+
+- **Still improving slightly at the floor:** the line through the evals of steps 16,000–19,000 falls 0.012 nats, against a residual standard deviation of 0.001 (this notebook evaluates on the same batches each time, so its evaluation noise is far below the ladder's). 4.47 is therefore, if anything, generous to the Semantic Simulation models.
+- **Against OpenWebText:** there the no-wells core trails the same GPT-2 setup by 21% (SR2 58.32 against W2's 48.37); on TinyStories by 15%. The two notebooks evaluate on their own batches from the same 2M validation tokens.
+
+**The TinyStories wells set (TS-K2), registered 2026-10-25 (author's decision to run it before book v23). Calls TS1–TS4 confirmed by the author and binding from 2026-10-25, after PM2-TS's Cell 5b (fresh run) and before its Cell 6: no TS-K2 arm had trained.** Three arms on TinyStories, each from step 0 at seed 0, so they are paired with each other and with SO-TS:
+- **PM2-TS:** PM2-PMX16's Cell 0 plus `CORPUS = 'tinystories'`, `LADDER_STEPS = 16_250`, `EXTRA_FLOOR_STEPS = 3_000`.
+- **FO-b-PM2-TS:** the same plus `FIRST_ORDER_OVERDAMPED = True`.
+- **FO-b-TS** (queue item 8): SO-TS's Cell 0 plus `FIRST_ORDER_OVERDAMPED = True` and `EXTRA_FLOOR_STEPS = 3_000`. It is TinyStories' K = 0 point in true first order, since the existing FO-TS is FO-a (the velocity reset at every layer).
+- **Budget.** Every arm runs straight to 19,250 steps: the 16,250-step schedule, then 3,000 steps at the floor learning rate. SO-TS and FO-TS failed the 16,250-step settling check and were extended to 19,250 the same way, and the new arms are compared against their extended values. This replaces the settling check's two-session path with one session; the learning-rate curve is identical.
+- **Why K = 2.** It is the smallest dose that closes the OpenWebText gap (−1.6%, the K = 2 pair above), and its first-order model is level with the best conservative model. On TinyStories second order already ties without wells (with FO-a), so the set tests whether the wells' effects carry over to a second corpus.
+
+| id | prediction | called |
+| --- | --- | ---: |
+| TS1 | **the no-wells tie holds in true first order:** FO-b-TS settles within ±2% of SO-TS (5.16), paired by step | 55% |
+| TS2 | **first order matches with two wells on TinyStories too:** FO-b-PM2-TS within ±2% of PM2-TS, paired by step | 70% |
+| TS3 | **the wells help first order more on TinyStories too:** log(FO-b-TS / FO-b-PM2-TS) exceeds log(SO-TS / PM2-TS) | 65% |
+| TS4 | **the wells help at all on TinyStories:** PM2-TS settles more than 1% below SO-TS | 50% |
+
+Settled is the mean of the evals at steps 18,000, 18,500 and 19,000, as for SO-TS and FO-TS. Readings after the runs, as for the OpenWebText pairs: Cells 6b-7, 6b-15 and 6b-13, and on CPU the wells' readings (`pm_mode_usage.py`, `pm_static_landscape.py`), `mechanism_ablations.py` and FLOW-R.
+
+**Result, PM2-TS (TS-K2, the second-order arm, 2026-10-25).** Tag `…pm2_pmx16_sr2_st16250_L2probe…`, Drive folder `semsimula_fock_cfc_baoab_ts_<tag>`; 19,250 steps in one session (16,250 on the schedule, 3,000 at the floor), clean finish, no watchdog trigger, SCAF CLEAN at all 4 audits. Outputs filed in `results/cfc_baoab_ts_…pm2_pmx16_sr2_st16250…/`.
+
+| TinyStories, 315M tokens | settled (evals 18,000, 18,500, 19,000) | against SO-TS | against GPT-2 (4.47) |
+| --- | ---: | ---: | ---: |
+| **PM2-TS** | **4.99** (5.06, 4.94, 4.96) | **−3.4%** | +11.6% |
+| SO-TS | 5.16 | | +15.4% |
+
+- **Paired by step against SO-TS:** −4.2% over steps 2,000–15,000 (spread 0.5%; step-to-step changes correlate at 0.99). Past step 15,000 SO-TS's evals come from its extension session, resumed from step 15,000, so the batches no longer coincide (correlation 0.33): −4.2% over 16,000–19,000 with spread 1.6%. TinyStories evals jitter by about ±0.06 between evaluations (best 4.82 at step 16,500), so the three-eval settled mean is the number to read.
+- **TS4 (PM2-TS more than 1% below SO-TS), called 50%: HIT.** The wells' gain in second order is 0.034 in log perplexity on TinyStories, against 0.064 on OpenWebText.
+- **Cell 6b-7:** Gate 1 (resetting the velocity) **+3,907%**, against SO-TS's +2.0%: with two wells the second-order model leans heavily on its velocity on TinyStories too (OpenWebText at K = 2: +5,150%, against SR2's +3.9%). Gate 3 at N = 3: 0.52 nats (SO-TS 0.21).
+- **Cell 6b-15: the two wells are nearly the same as on OpenWebText.** Layer 0 repulsive (median depth −0.20; OpenWebText −0.21), layer 1 attractive (+1.30; +1.23), half-lives p05 / median / p95 8.4 / 14.0 / 19.7 tokens (9.7 / 14.2 / 18.8). The positional landscape the wells learn barely depends on the corpus.
+- **Cell 6b-13:** V_θ's stiffest-mode ω·Δt median 3.20 / 4.69 (layer 0 / 1).
+- TS1–TS3 wait for FO-b-PM2-TS and FO-b-TS. TS3 compares the first-order wells' gain with this 0.034.
+
+**Result, FO-b-PM2-TS (TS-K2, the first-order twin with two wells, 2026-10-26).** Tag `…pm2_pmx16_sr2_fob_st16250_L2probe…`; 19,250 steps in one session, clean finish, no watchdog trigger, SCAF CLEAN at all 4 audits. The diagnostic cells ran in a second, diagnostics-only session on the best checkpoint (step 16,500, PPL 4.80; PM2-TS's best is also at step 16,500). Outputs filed in `results/cfc_baoab_ts_…pm2_pmx16_sr2_fob_st16250…/`.
+
+| TinyStories, 315M tokens | settled (evals 18,000, 18,500, 19,000) | first order against second |
+| --- | ---: | ---: |
+| **FO-b-PM2-TS** | **4.96** (5.04, 4.92, 4.93) | **−0.47%** |
+| PM2-TS | 4.99 | |
+| paired by step, last 8 evals | | −0.50% (spread 0.15%) |
+| paired, stable / decay / floor | | −0.87% / −0.57% / −0.46% |
+
+- **TS2 (FO-b-PM2-TS within ±2% of PM2-TS), called 70%: HIT.** Both runs are single sessions from the same seed, so the pairing holds at every step (step-to-step changes correlate at 1.000). As on OpenWebText at two wells, first order leads through the stable phase and second order narrows the gap in the decay (OpenWebText: 3.2% to 1.6%; here 0.9% to 0.5%).
+- **Cell 6b-7:** Gate 0 PASS; Gate 1 reads 0 (no velocity). Gate 3 at N = 3: 0.45 nats (PM2-TS 0.52).
+- **Cell 6b-15: the OpenWebText pattern of the first-order wells.** Layer 0 deeper and repulsive (median depth −0.27, PM2-TS −0.20; OpenWebText at two wells −0.40 against −0.21), layer 1 shallower (+0.97 against +1.30; OpenWebText +0.93 against +1.23); half-lives p05 / median / p95 6.8 / 13.1 / 19.4 tokens (PM2-TS 8.4 / 14.0 / 19.7).
+- **Cell 6b-13:** the FO-b relaxation exponent and ω·Δt are recorded in the filed output.
+- TS1 and TS3 wait for FO-b-TS.
+
 **MS5, amendment of 2026-10-24 (before any code run; the call and its 45% are unchanged).** The corpus and arms, fixed now:
 - **Corpus.** Python from CodeParrot's own file-level split, at pinned revisions: the first 450M GPT-2 tokens of `codeparrot/codeparrot-clean-train` (revision `3e6ab65f…`, about one of its 53 shards) as the training pool, and the first 2M tokens of `codeparrot/codeparrot-clean-valid` (revision `4db92d2e…`) as the validation set. Files are joined with a blank line, as the other corpora's documents are. `CORPUS = 'code'` in both the ladder and the matched GPT-2 notebooks, one shared cache (`semsimula_code_gpt2/data`), tag token `code`.
 - **Indentation as tabs.** GPT-2's BPE spends one token per space of indentation: on raw Python 40% of the tokens are whitespace-only (34% a single space), so four tokens in ten would be near-free predictions and a 512-token context would hold about 1,100 characters of code. Before tokenising, each leading run of four spaces becomes one tab: whitespace falls to 21.5% (22.3% on the validation set), a file takes 23% fewer tokens, and the context holds about 1,450 characters. The rewrite keeps the vocabulary, so the parameter match with GPT-2 and the other corpora is unchanged. Code perplexities are compared only within this corpus.

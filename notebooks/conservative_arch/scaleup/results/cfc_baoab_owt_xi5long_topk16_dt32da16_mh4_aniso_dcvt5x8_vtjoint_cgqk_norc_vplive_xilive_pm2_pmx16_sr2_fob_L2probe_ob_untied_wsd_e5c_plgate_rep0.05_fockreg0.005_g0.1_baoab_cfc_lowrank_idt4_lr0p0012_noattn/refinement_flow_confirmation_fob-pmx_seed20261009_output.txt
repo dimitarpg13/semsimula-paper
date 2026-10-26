@@ -1,0 +1,29 @@
+CHECK  N=2: as trained vs Cell 6b-7 _fom_stack, max |d logit| 0.0e+00
+CHECK  N=3: as trained vs Cell 6b-7 _fom_stack, max |d logit| 0.0e+00
+CHECK  N=2: per-layer flow vs the trained model, max |d logit| 0.0e+00
+CHECK  N=8 per-layer flow: fresh quadratic / xi / wells quadratic = (2, 2, 2) (one per trained layer: 2)
+CHECK  N=8 per-layer flow vs the model's substeps_per_layer = 4: max rel |d logit| 0.0e+00
+CHECK  layer 0: replay with the normal clamp vs captured output, max |d| 0.0e+00
+CHECK  layer 1: replay with the normal clamp vs captured output, max |d| 0.0e+00
+-> checks PASS
+
+KICK SHARE at the trained N = 2 (first batch, 4 x 512 tokens): |h(no kick) - h| / |h - h_in|
+   layer 0: position median 0.465 (p90 0.535); velocity median 0.000
+   layer 1: position median 0.477 (p90 0.575); velocity median 0.000
+
+GATE 3: PPL at N steps of dt = T/N, then the penalty ln(PPL_N / PPL_2) in nats
+      as trained N=2: 50.58
+      as trained N=8: 530.82
+   as trained      PPL N=2:50.58  N=8:530.82
+                   pen N=8:2.351
+      per-layer flow N=2: 50.58
+      per-layer flow N=3: 166.23
+      per-layer flow N=4: 197.35
+      per-layer flow N=6: 305.41
+      per-layer flow N=8: 347.53
+      per-layer flow N=12: 390.88
+      per-layer flow N=16: 403.10
+   per-layer flow  PPL N=2:50.58  N=3:166.23  N=4:197.35  N=6:305.41  N=8:347.53  N=12:390.88  N=16:403.10
+                   pen N=3:1.190  N=4:1.361  N=6:1.798  N=8:1.927  N=12:2.045  N=16:2.076
+
+wrote /private/tmp/claude-501/-Users-dimitargueorguiev-git-ml-semsimula-paper/579bba46-0b7e-41c3-a7d6-2471c3f1ed57/scratchpad/k2fo/flow/refinement_flow_confirmation_fob-pmx_seed20261009_output.txt

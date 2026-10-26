@@ -1,0 +1,19 @@
+   [base done]
+   [xi_swap done]
+   [xi_posmean done]
+   [vphi_off done]
+   [wells_swap done]
+   [wells_off done]
+   [content_swap done]
+   [xi_ctx_swap done]
+   [xi_ctx_posmean done]
+MECHANISM ABLATIONS: fob-pmx  K = 2  (pm2_pmx16_sr2_fob, best checkpoint; 4 x 4 x 512 tokens, batch seed 20261009)
+   base perplexity 54.66   xi channel alphas [0.323, 0.502, 0.885, 0.994, 0.983]
+   xi_swap       perplexity   4456.72   change +8052.95%  (per-sequence spread 49.41%, n = 16)
+   xi_posmean    perplexity   1025.93   change +1776.79%  (per-sequence spread 44.06%, n = 16)
+   vphi_off      perplexity     56.46   change    +3.28%  (per-sequence spread 1.25%, n = 16)
+   wells_swap    perplexity     54.67   change    +0.02%  (per-sequence spread 0.06%, n = 16)
+   wells_off     perplexity    508.72   change  +830.63%  (per-sequence spread 39.19%, n = 16)
+   content_swap  perplexity   4455.27   change +8050.30%  (per-sequence spread 49.33%, n = 16)
+   xi_ctx_swap   perplexity    246.58   change  +351.08%  (per-sequence spread 44.79%, n = 16)
+   xi_ctx_posmean perplexity    108.43   change   +98.35%  (per-sequence spread 26.40%, n = 16)
