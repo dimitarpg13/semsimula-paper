@@ -439,6 +439,7 @@ extrapolation), so it is the cheapest first probe.
 
 ---
 
+<a name="n-cg2-gate3"></a>
 ## 8.1 Results — **run 2026-09-24**, L=2 `'none'` @1.2e-03 (Cell 6b-7)
 
 Checkpoint `..._L2probe_..._idt4_lr0p0012_noattn_best.pt`, step 31,500,

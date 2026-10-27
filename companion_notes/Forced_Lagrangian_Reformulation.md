@@ -302,6 +302,7 @@ not Vφ's own force, which is the 4.25% in point 3.
 layer 1 until λ &lt; 0.2, and Vφ's elevenfold collapse at layer
 1](figures/geodesic_cfc/gcfc_e5_slider_measured.png)
 
+<a name="n-cg6"></a>
 ### 3.1 F1 — is the forcing sparse? (Cell 6b-12, built, harness-validated)
 
 **Question.** E1's R(geo) = 1.09 is an RMS ratio averaged over tokens. Is

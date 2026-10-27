@@ -168,6 +168,7 @@ Two things follow from this table:
 
 ---
 
+<a name="n-fockg1"></a>
 ## 6. Protocol and First Result: Fock-G1, the Aniso-Gaussian First-Order Ablation
 
 `SPLM-1_ablation_pre-registered_protocol.md` answers the training-phase question for the original MLP-$V_\theta$ SPLM. There is currently **no analogous ablation for the anisotropic Gaussian $V_\theta$ + Fock coupling regularisation family** — the architecture that every scale-up sweep from d=256 through the pending d=1024 run actually uses. This section drafts that protocol, following the same structure and the same fixed-LR design discipline as the SPLM-1 original. **This is a draft for review, not a locked pre-registration** — exact implementation details should be checked against the live `model_parf_multixi.py` / `model_fock_parf_v2.py` code before any commit-hash lock-in.

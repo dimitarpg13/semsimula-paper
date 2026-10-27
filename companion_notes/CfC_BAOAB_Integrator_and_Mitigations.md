@@ -695,6 +695,7 @@ depth-dependent mechanism instead.
 
 ---
 
+<a name="n-scaf-stiff"></a>
 ## 28. Proposed (Deferred) Mitigation: Clamping the Low-Rank Precision Factor $B_k$
 
 > **Status: PROPOSED — DEFERRED until further notice (23-24 August 2026).**

@@ -21,76 +21,81 @@ hyphens) and the name exactly as the book writes it.
 
 ## Quick-lookup table
 
-| Code | Paper ref | One-line description | Status |
+| Code | Book (current; "June 2026" = old numbering) | One-line description | Status |
 |------|-----------|---------------------|--------|
-| [A1–A10](#structured-v_theta-tinystories-sweep-a1a10-b1b2) | §17.10, Tab 27 | Structured V_theta TinyStories sweep (SQ1–SQ4 + MLP variants) | completed |
-| [B1–B2](#structured-v_theta-tinystories-sweep-a1a10-b1b2) | §17.10, Tab 27 | MLP V_theta baselines for structured V_theta comparison | completed |
-| [SPLM-SVT-A1–A5](#multi-xi-splm-structured-vtheta-a1a5) | §17d, Tab 29 | Structured V_theta (SQ3) sweep on Multi-Xi SPLM — 5 arms, best A2 **13.33 PPL** | completed |
-| [PARF-SVT-A2](#multi-xi-parflm-structured-vtheta-a2) | §17d, Tab 29 | Structured V_theta (SQ3) on Multi-Xi PARFLM — A2 arm, **12.27 PPL**, 0.17 PPL gap | completed |
-| [Fock-SVT-A2](#fock-parflm-structured-vtheta-a2) | §17d, Tab 29 | Structured V_theta (SQ3) on Fock-PARFLM v2.1 — A2 arm, **10.36 PPL**, Fock paradox | completed |
-| [D1–D9](#fockparf-v2-debug-d1d9) | §17c | FockPARF v2 debug cells on TinyStories | completed |
-| [D6–D10](#qft-v21-planned-series-d6d10) | §17c.4 | Planned QFT v2.1 incremental tests | planned |
-| [E-init / E15](#e-init-mass-validation-e15) | §12.7 | Forward integration of Euler–Lagrange from GPT-2 initial conditions | completed |
-| [E1](#multi-seed-validation-and-divergence-diagnostic-e1) | §15.12 | Multi-seed SPLM validation with LN-after-step rescue | completed |
-| [E1–E3](#five-negative-scalar-potential-fits-e1e5) | §15.5 | Scalar-potential fits (seven functional forms) | completed |
-| [E4](#controlled-damping-sweep-e4) | §15.13, Tab 23 | Controlled-γ damping sweep on SPLM | completed |
-| [E5](#five-negative-scalar-potential-fits-e1e5) | §15.5 | Velocity-coupled electromagnetic-analogue gauge sweep | completed |
-| [E8](#inference-efficiency-benchmark-e8) | App A2, Tab 38–40 | Pre-registered inference benchmark (quality, wall-clock, Pareto) | completed |
-| [E9](#splm-scale-up-on-h100-e9) | §15.14, Tab 24 | SPLM scale-up validation on H100 (TinyStories d=256, L=8) | completed |
-| [E10](#-transfer-diagnostic-e10) | §15.14.2, Tab 25 | γ-transfer diagnostic: γ* at scale-up | completed |
-| [F1–F6](#f1f6-falsifier-programme) | §9.7 | Six-falsifier programme testing v0 staircase and MCS bounds | partial |
-| [F2-baseline / F2-fock-v1 / F2-fock-v2](#dyck-2-falsifier-f2) | §17c.2, Tab 32 | FockPARF v2 Dyck-2 controlled comparison | completed |
-| [FR0–FR4](#fockparf-v_theta-regularisation-fr0fr4) | §17b, Tab 26 | FockPARF V_theta regularisation sweep | completed |
-| [G1–G3](#planned-confound-resolution-sweeps-g1g3) | §17b | Planned PARF γ / d_V / em_ln confound sweeps | planned |
-| [H0 + H1](#h0-h1-schedule-sweep) | §16.3.2, Tab 18 | Hybrid schedule sweep at S=1 | completed |
-| [H1.5](#h15-v_theta-narrow-ablation) | §16.3.3, Tab 19 | V_theta-narrow FLOP-arm ablation | completed |
-| [H2](#h2-paired-confirmation) | §16.3.4, Tab 20 | Hybrid paired confirmation at n=5 | completed |
-| [H6](#h6-substack-restricted-v_-separator) | §16.3.5, Tab 21 | Substack-restricted shared-V_ψ separator test | completed |
-| [HR0–HR4](#hybrid-v_theta-regularisation-hr0hr4) | §17b, Tab 26 | Hybrid V_theta regularisation sweep | completed |
-| [L1–L3](#architecture-comparison-phase-2-l1l3) | — | TinyStories Phase 2 large-scale architecture comparison | completed |
-| [M1–M4](#experiment-a-trajectory-fitting-m1m4) | §18.7, Tab 30 | First-order vs second-order ODE trajectory fitting on GPT-2 | completed |
-| [multixi_buggy_2k / multixi_pilot_fixed](#multi-leak-fix-forensics) | §15.14.3, Tab 26 | Multi-ξ K-channel SPLM leak-fix forensic runs | completed |
-| [N5](#scale-up-n5-confirmation) | §16.5.2, Tab 22 | Five-seed paired confirmation at scale-up | completed |
-| [OQ-1](#oq-1-structural-vs-mlp-ablation) | §17.8.2 | Pre-registered structural-vs-MLP V_phi ablation | completed |
-| [P0](#p0-smoke-verification) | §17.8.1 | PARF smoke verification and causal-violation probe | completed |
-| [P1](#p1-structural-v_phi-at-seed-0) | §17.8.2, Tab 17 | PARF structural V_phi at seed 0 | completed |
-| [P1.5 / P1.5a](#p15-p15a-oq-1-ablation) | §17.8.2, Fig 18 | OQ-1 ablation: structural vs unstructured MLP V_phi | completed |
-| [P1.6](#p16-capacity-disambiguation) | §17.8.3, Fig 19 | Wider structural V_phi capacity disambiguation | completed |
-| [P5](#p5-gumbel-sparsity-at-top-k4) | §17.8.4 | Stage 1.5 Gumbel-softmax sparsity at top-k=4 | completed |
-| [P6](#p6-channel-level-diagnostic) | §17 | Channel-level gate-selectivity diagnostic | completed |
-| [P7 / P8](#p7-p8-composite-patches) | §17 | Force-balance and saturation-fix patches | completed |
-| [P10d–P10j](#p10-ablation-ladder-p10dp10j) | §17.12, Tab 28 | P10 ablation ladder on TinyStories | completed |
-| [P1–P5 (Fock)](#fockparf-improvement-sweep-p1p5-fock-g1g3) | — | FockPARF improvement sweep closing ~40 PPL gap | completed |
-| [PR0–PR4](#parflm-v_theta-regularisation-pr0pr4) | §17b, Tab 26, Fig 21–22 | PARFLM V_theta regularisation sweep | completed |
-| [Q0–Q8](#qft-v21-experimental-ladder-q0q8) | §17c.5, Tab 33 | QFT v2.1 incremental creation-gate improvements | completed |
-| [Q9c / Q9d](#q9c-q9d-architecture-definitions) | §16.1, §17.9 | PARF-augmented SPLM (Q9c) and Helmholtz hybrid (Q9d) | completed |
-| [R6.*](#r6-information-bottleneck-ladder) | §15.3, Tab 14 | R6 information-bottleneck ladder | completed |
-| [S1–S4](#architecture-comparison-s1s4) | — | TinyStories v3: PARF vs FockPARF vs Hybrids with SQ3 V_theta | completed |
-| [Scope 3](#scope-3-leak-free-multi-seed-retrain) | §15.11, Tab 15–17 | Leak-free S=5 retrain of v2 SPLM experiments | completed |
-| [SQ1–SQ5](#structured-v_theta-sweep-sq1sq5) | §17.10, Tab 27 | Structured V_theta expressivity test on TinyShakespeare | completed |
-| [MXP-H16](#multi-xi-parf-h16-pilot) | §17 | Multi-ξ PARF pilot at H=16 (pre-memory-fix) — 3 arms | completed |
-| [MXP-H128](#multi-xi-parf-h128-scaleup) | §17 | Multi-ξ PARF at H=128 (Level-2 ckpt + gathered V_φ) — 6 arms | completed |
-| [FMXP-H128](#fock-multi-xi-parf-h128-scaleup) | §17c | Fock Multi-ξ PARF at H=128 (v1/v2 gates, register sweep) — 13 arms | completed |
-| [FMXP-v21](#fock-v21-routing-fix) | §17c, Tab 34 | Fock v2.1 routing-fix arms (B1, B1+B2+B3) — PPL **9.30** | completed |
-| [FATTN-H128](#fock-attention-h128) | §17c, Tab 34 | Fock Attention direct exchange — 4 arms, best PPL 9.42 | completed |
-| [CONS1–5](#conservativity-diagnostic-cons15) | §17c (§18.8) | Controlled-conservativity 5-arm diagnostic on trained v2.1 checkpoint | completed |
-| [Stage-1.5a](#stage-15a-stage-15b-v_phi-memory-variants) | §17.9, Tab 29 | Dense V_phi forward with post-masking | completed |
-| [Stage-1.5b](#stage-15a-stage-15b-v_phi-memory-variants) | §17.9 | Gathered V_phi (top-k source gathering) | design only |
-| [VR0–VR5](#splm-v_theta-regularisation-vr0vr5) | §17b, Tab 26 | Standalone SPLM V_theta regularisation sweep | completed |
+| [A1–A10](#a1a10) | Table 26 | Structured V_theta TinyStories sweep (SQ1–SQ4 + MLP variants) | completed |
+| [B1–B2](#a1a10) | Table 26 | MLP V_theta baselines for structured V_theta comparison | completed |
+| [SPLM-SVT-A1–A5](#splmsvt) | §22.4.2 | Structured V_theta (SQ3) sweep on Multi-Xi SPLM — 5 arms, best A2 **13.33 PPL** | completed |
+| [PARF-SVT-A2](#parfsvt) | §22.4.3 | Structured V_theta (SQ3) on Multi-Xi PARFLM — A2 arm, **12.27 PPL**, 0.17 PPL gap | completed |
+| [Fock-SVT-A2](#focksvt) | §22.4.4 | Structured V_theta (SQ3) on Fock-PARFLM v2.1 — A2 arm, **10.36 PPL**, Fock paradox | completed |
+| [D1–D9](#d1d9) | Table 98 | FockPARF v2 debug cells on TinyStories | completed |
+| [D6–D10](#d6d10) | Table 98 | Planned QFT v2.1 incremental tests | planned |
+| [E-init / E15](#einit) | §13.7 | Forward integration of Euler–Lagrange from GPT-2 initial conditions | completed |
+| [E1](#e1ms) | Table 7 | Multi-seed SPLM validation with LN-after-step rescue | completed |
+| [E1–E3](#e1e3) | §16.6 | Scalar-potential fits (seven functional forms) | completed |
+| [E4](#e4damp) | Table 8 | Controlled-γ damping sweep on SPLM | completed |
+| [E5](#e5) | §16.6 | Velocity-coupled electromagnetic-analogue gauge sweep | completed |
+| [E8](#e8) | Table 86 | Pre-registered inference benchmark (quality, wall-clock, Pareto) | completed |
+| [E9](#e9) | Table 11 | SPLM scale-up validation on H100 (TinyStories d=256, L=8) | completed |
+| [E10](#e10) | Table 12 | γ-transfer diagnostic: γ* at scale-up | completed |
+| [F1–F6](#f1) | §10.8 | Six-falsifier programme testing v0 staircase and MCS bounds | partial |
+| [F2-baseline / F2-fock-v1 / F2-fock-v2](#f2baseline) | Table 98 | FockPARF v2 Dyck-2 controlled comparison | completed |
+| [FR0–FR4](#fr) | Table 33 | FockPARF V_theta regularisation sweep | completed |
+| [G1–G3](#g1) | Table 33 | Planned PARF γ / d_V / em_ln confound sweeps | planned |
+| [H0 + H1](#h0h1) | Table 18 | Hybrid schedule sweep at S=1 | completed |
+| [H1.5](#h1p5) | Table 19 | V_theta-narrow FLOP-arm ablation | completed |
+| [H2](#h2) | Table 20 | Hybrid paired confirmation at n=5 | completed |
+| [H6](#h6) | Table 21 | Substack-restricted shared-V_ψ separator test | completed |
+| [HR0–HR4](#hr) | Table 33 | Hybrid V_theta regularisation sweep | completed |
+| [L1–L3](#l1l3) | Table 99 | TinyStories Phase 2 large-scale architecture comparison | completed |
+| [M1–M4](#m1) | Table 56 | First-order vs second-order ODE trajectory fitting on GPT-2 | completed |
+| [multixi_buggy_2k / multixi_pilot_fixed](#multi-ξ-leak-fix-forensics) | §15.14.3, Tab 26 (June 2026) | Multi-ξ K-channel SPLM leak-fix forensic runs | completed |
+| [N5](#n5) | §18.3 | Five-seed paired confirmation at scale-up | completed |
+| [OQ-1](#oq1) | §19.9 | Pre-registered structural-vs-MLP V_phi ablation | completed |
+| [P0](#p0) | §19.9 | PARF smoke verification and causal-violation probe | completed |
+| [P1](#p1) | Table 24 | PARF structural V_phi at seed 0 | completed |
+| [P1.5 / P1.5a](#p1p5) | Table 24 | OQ-1 ablation: structural vs unstructured MLP V_phi | completed |
+| [P1.6](#p1p6) | §19.9 | Wider structural V_phi capacity disambiguation | completed |
+| [P5](#p5) | §19.9 | Stage 1.5 Gumbel-softmax sparsity at top-k=4 | completed |
+| [P6](#p6) | Table 24 | Channel-level gate-selectivity diagnostic | completed |
+| [P7 / P8](#p7p8) | Table 24 | Force-balance and saturation-fix patches | completed |
+| [P10d–P10j](#p10d) | Table 24 | P10 ablation ladder on TinyStories | completed |
+| [P1–P5 (Fock)](#p1p5fock) | Table 98 | FockPARF improvement sweep closing ~40 PPL gap | completed |
+| [PR0–PR4](#pr) | Table 33 | PARFLM V_theta regularisation sweep | completed |
+| [Q0–Q8](#q0) | Table 98 | QFT v2.1 incremental creation-gate improvements | completed |
+| [Q9c / Q9d](#q9c) | §19.9; §18.3 | PARF-augmented SPLM (Q9c) and Helmholtz hybrid (Q9d) | completed |
+| [R6.*](#r6h0) | Table 2 | R6 information-bottleneck ladder | completed |
+| [S1–S4](#s1s4) | Table 99 | TinyStories v3: PARF vs FockPARF vs Hybrids with SQ3 V_theta | completed |
+| [Scope 3](#scope3) | Table 4 | Leak-free S=5 retrain of v2 SPLM experiments | completed |
+| [SQ1–SQ5](#sq1) | Table 26 | Structured V_theta expressivity test on TinyShakespeare | completed |
+| [MXP-H16](#multi-xi-parf-h16-pilot) | §17 (June 2026) | Multi-ξ PARF pilot at H=16 (pre-memory-fix) — 3 arms | completed |
+| [MXP-H128](#multi-xi-parf-h128-scaleup) | §17 (June 2026) | Multi-ξ PARF at H=128 (Level-2 ckpt + gathered V_φ) — 6 arms | completed |
+| [FMXP-H128](#fock-multi-xi-parf-h128-scaleup) | §17c (June 2026) | Fock Multi-ξ PARF at H=128 (v1/v2 gates, register sweep) — 13 arms | completed |
+| [FMXP-v21](#fock-v21-routing-fix) | §17c, Tab 34 (June 2026) | Fock v2.1 routing-fix arms (B1, B1+B2+B3) — PPL **9.30** | completed |
+| [FATTN-H128](#fock-attention-h128) | §17c, Tab 34 (June 2026) | Fock Attention direct exchange — 4 arms, best PPL 9.42 | completed |
+| [CONS1–5](#cons) | §20.8 | Controlled-conservativity 5-arm diagnostic on trained v2.1 checkpoint | completed |
+| [Stage-1.5a](#stage15a) | §19.9; §19.10 | Dense V_phi forward with post-masking | completed |
+| [Stage-1.5b](#stage15b) | §19.9; §19.10 | Gathered V_phi (top-k source gathering) | design only |
+| [VR0–VR5](#vr) | Table 33 | Standalone SPLM V_theta regularisation sweep | completed |
+| [Fock-Gauss-Aniso, Fock-G1, RD, SU-iso, SU-aniso, SCAF-stiff](#gaussian-scaleup) | Appendix D | Gaussian V_θ on Fock-PARFLM, the OpenWebText scale-up and the Riemannian diagnostics | completed |
+| [CG1–CG8, SR1–SR5, CB1–CB3, DP1–DP3](#ladder-diagnostics) | Appendix D | Geometry, settling, balance and register diagnostics on the ladder | mixed |
+| [F3.1, G2, G3, G3′, XRB-F, PM1, Gen 2, GPT-2 …](#ladder) | Table 101 | The CfC/BAOAB depth ladder on OpenWebText: 18 arms, Gen 2 and Gen 3, and the matched GPT-2 references | completed |
 | [SR2, FO-b-OWT, SR3-crit, PMX, …](#fo-series) | §26.9, Tab 45, 47–48, 51 | First- vs second-order twins on the exact integrator: 19 arms on OpenWebText, TinyStories and code | completed |
-| [e0–e5 (SP-HSPLM Stage 1)](#sp-hsplm-stage-1-e0e5) | — | Per-token non-conservative force experiment (Class B/C) | completed |
-| [q9e_a–q9e_n (SP-HSPLM Stage 2)](#sp-hsplm-stage-2-q9e_aq9e_n) | — | Q9(e) pair-skew cell ladder | completed |
-| [Pilot Arms 1–5b](#scale-up-pilot-arms-15b) | §16.5.1, Tab 22 | Five-arm SPLM-family scale-up comparison | completed |
-| [H1–H3 (hypotheses)](#predictions-and-hypotheses) | §13, §18 | Jacobi / overdamped dynamics hypotheses | hypothesis |
-| [M1–M5 (mass axioms)](#mass-axioms-m1m5) | §12.1 | Five axioms any mass candidate must satisfy | axiom |
-| [P1–P4 (predictions)](#predictions-and-hypotheses) | §11 | Hidden-state testable predictions (geodesic, clustering, wells) | prediction |
-| [Q1–Q9 (open questions)](#open-questions-q1q9-19) | §19 | Research-agenda open questions | open question |
+| [e0–e5 (SP-HSPLM Stage 1)](#e0e5) | Table 99 | Per-token non-conservative force experiment (Class B/C) | completed |
+| [q9e_a–q9e_n (SP-HSPLM Stage 2)](#q9e) | Table 99 | Q9(e) pair-skew cell ladder | completed |
+| [Pilot Arms 1–5b](#pilot) | §18.3 | Five-arm SPLM-family scale-up comparison | completed |
+| [H1–H3 (hypotheses)](#predictions-and-hypotheses) | §13, §18 (June 2026) | Jacobi / overdamped dynamics hypotheses | hypothesis |
+| [M1–M5 (mass axioms)](#mass-axioms-m1m5) | §12.1 (June 2026) | Five axioms any mass candidate must satisfy | axiom |
+| [P1–P4 (predictions)](#predictions-and-hypotheses) | §11 (June 2026) | Hidden-state testable predictions (geodesic, clustering, wells) | prediction |
+| [Q1–Q9 (open questions)](#open-questions-q1q9-19) | §19 (June 2026) | Research-agenda open questions | open question |
 
 ---
 
 ## Experiment A — Trajectory fitting (§18)
 
 ### Experiment A: trajectory fitting (M1–M4)
+
+<a name="m1"></a>**M1** · <a name="m2"></a>**M2** · <a name="m3"></a>**M3** · <a name="m4"></a>**M4** — Book: Table 56 (`tab:experiment-a`)
 
 Tests whether GPT-2 hidden-state trajectories follow first-order or
 second-order autonomous ODE dynamics.
@@ -102,7 +107,6 @@ second-order autonomous ODE dynamics.
 | **M3** | General lag-1 MLP (no physics structure) | −0.93 |
 | **M4** | General lag-2 MLP | −0.81 |
 
-- **Paper:** §18.7 (Experiment A), Table 30, Figure 30–31
 - **Per-layer extension:** §18.8, Table 31, Figure 32–33
 - **Notebook:** [`notebooks/dynamics_order_test/scripts/experiment_a_trajectory_fitting.ipynb`](notebooks/dynamics_order_test/scripts/experiment_a_trajectory_fitting.ipynb)
 - **Per-layer notebook:** [`notebooks/dynamics_order_test/scripts/experiment_a_per_layer_sweep.ipynb`](notebooks/dynamics_order_test/scripts/experiment_a_per_layer_sweep.ipynb)
@@ -115,11 +119,12 @@ second-order autonomous ODE dynamics.
 
 ### E-init: mass validation (E15)
 
+<a name="einit"></a>**E-init** — Book: §13.7 (`subsec:e-init-protocol`)
+
 Forward integration of the Euler–Lagrange equation from GPT-2
 first-block initial conditions. Fits per-layer Gaussian-well potentials
 and tests symplectic Euler integration with γ calibration.
 
-- **Paper:** §12.7 (The E-init experimental protocol)
 - **Notebook:** [`notebooks/e_init/e_init_validation.ipynb`](notebooks/e_init/e_init_validation.ipynb) (local only)
 - **Results:** [`notebooks/e_init/results/`](notebooks/e_init/results/)
 - **Key finding:** Registered as experiment E15 of the mass-validation programme (E1–E14). Tests whether fitted well parameters suffice to predict the full trajectory from first-layer boundary data.
@@ -137,7 +142,7 @@ targets, not experiment runs.
 | **M4** | Bound-state proximity: heavier properties closer to centroid |
 | **M5** | Information × valence decomposition |
 
-- **Paper:** §12.1
+- **Paper (June 2026 numbering):** §12.1
 
 ---
 
@@ -145,17 +150,20 @@ targets, not experiment runs.
 
 ### Five negative scalar-potential fits (E1–E5)
 
+<a name="e1e3"></a>**E1–E3** · <a name="e4"></a>**E4** · <a name="e5"></a>**E5** — Book: §16.6 (`subsec:five-negatives`)
+
 | Code | Description |
 |------|-------------|
 | **E1–E3** | Scalar-potential sweep across seven functional forms |
 | **E4** | Linear Helmholtz augmentation: skew-symmetric solenoidal term |
 | **E5** | Velocity-coupled electromagnetic-analogue gauge sweep |
 
-- **Paper:** §15.5
 - **Results:** [`notebooks/conservative_arch/results/`](notebooks/conservative_arch/results/)
 - **Key finding:** Five prior fitting experiments all tie the static null on held-out data. The rotational/solenoidal component exists in principle but the fit is dominated by per-layer potential variation.
 
 ### R6 information-bottleneck ladder
+
+<a name="r6h0"></a>**R6.h.0** · <a name="r6h1"></a>**R6.h.1** · <a name="r6a"></a>**R6.a**<!-- aka: R6a --> · <a name="r6e"></a>**R6.e**<!-- aka: R6e --> · <a name="r6i"></a>**R6.i**<!-- aka: R6i --> — Book: Table 2 (`tab:r6-ladder`)
 
 Multi-ξ K-channel SPLM variants tested in a progressive ladder.
 
@@ -165,25 +173,28 @@ Multi-ξ K-channel SPLM variants tested in a progressive ladder.
 | **R6.a**, **R6.e**, **R6.i** | Completed ladder rungs |
 | **R6.b**, **R6.c**, **R6.f**, **R6.h.2**, **R6.h.3** | Deferred rungs |
 
-- **Paper:** §15.3, Table 14
 - **Results:** [`notebooks/conservative_arch/results/`](notebooks/conservative_arch/results/)
 
 ### Multi-seed validation and divergence diagnostic (E1)
 
+<a name="e1ms"></a>**E1** (multi-seed) — Book: Table 7 (`tab:e1-leakfree-summary`)
+
 Multi-seed SPLM validation with the LN-after-step rescue.
 
-- **Paper:** §15.12, Table 23, Figure 25–26
 - **Results:** [`notebooks/conservative_arch/ln_damping_sweep/results/leakfree_3seed/`](notebooks/conservative_arch/ln_damping_sweep/results/leakfree_3seed/)
 - **Key finding:** LN-after-step is a necessary rescue for training stability; without it, most seeds diverge or NaN.
 
 ### Controlled-γ damping sweep (E4)
 
-- **Paper:** §15.13, Table 23, Figure 24
+<a name="e4damp"></a>**E4** — Book: Table 8 (`tab:e4-leakfree-Ucurve`)
+
 - **Notebook:** included in the `ln_damping_sweep` scripts
 - **Results:** [`notebooks/conservative_arch/ln_damping_sweep/results/`](notebooks/conservative_arch/ln_damping_sweep/results/) (gamma subdirs + `leakfree_5seed_confirmation/`)
 - **Key finding:** U-shaped PPL-vs-γ curve; overdamped basin at γ∈[0.10, 0.15]; five-seed confirmation locks optimal γ.
 
 ### Scope 3: leak-free multi-seed retrain
+
+<a name="scope3"></a>**Scope 3** — Book: Table 4 (`tab:scope3-headline`)
 
 Re-runs v2 SPLM-family TinyShakespeare experiments under the v4
 leak-free integrator.
@@ -196,23 +207,24 @@ leak-free integrator.
 | **splm_sarfmass_logfreq** | SARF-mass log-frequency |
 | **matched_baseline** | Matched-attention baseline |
 
-- **Paper:** §15.11, Tables 15–17, Figures 27–28
 - **Notebook:** [`notebooks/conservative_arch/multi_seed/colab_scope3.ipynb`](notebooks/conservative_arch/multi_seed/colab_scope3.ipynb)
 - **Results:** [`notebooks/conservative_arch/multi_seed/results/scope3_shakespeare/`](notebooks/conservative_arch/multi_seed/results/scope3_shakespeare/)
 - **Key finding:** Under leak-free training the SARF xi-recomputation fix reduces the SARF advantage by 1.34×. The per-token mass head still provides a statistically significant benefit.
 
 ### SPLM scale-up on H100 (E9)
 
-- **Paper:** §15.14, Table 24
+<a name="e9"></a>**E9** — Book: Table 11 (`tab:e9-phase1`)
+
 - **Notebook:** [`notebooks/conservative_arch/scaleup/colab_pilot.ipynb`](notebooks/conservative_arch/scaleup/colab_pilot.ipynb), [`notebooks/conservative_arch/scaleup/colab_gamma_sweep.ipynb`](notebooks/conservative_arch/scaleup/colab_gamma_sweep.ipynb)
 - **Results:** [`notebooks/conservative_arch/scaleup/results/pilot/`](notebooks/conservative_arch/scaleup/results/pilot/), [`notebooks/conservative_arch/scaleup/results/gamma_sweep/`](notebooks/conservative_arch/scaleup/results/gamma_sweep/)
 - **Key finding:** Matched-attention beats SPLM em_ln by ~18–31 PPL at the prototype scale (Phase 1 grade Q3).
 
 ### γ-transfer diagnostic (E10)
 
+<a name="e10"></a>**E10** — Book: Table 12 (`tab:e10-gamma-sweep`)
+
 Tests whether small-scale optimal γ (0.166 from E5) holds at scale-up.
 
-- **Paper:** §15.14.2, Table 25
 - **Notebook:** [`notebooks/conservative_arch/scaleup/colab_gamma_sweep.ipynb`](notebooks/conservative_arch/scaleup/colab_gamma_sweep.ipynb)
 - **Results:** [`notebooks/conservative_arch/scaleup/results/gamma_sweep/`](notebooks/conservative_arch/scaleup/results/gamma_sweep/)
 - **Key finding:** γ*=0.30 at scale-up vs 0.166 at small scale; the transfer is imperfect but the U-shape is preserved.
@@ -225,7 +237,7 @@ Tests whether small-scale optimal γ (0.166 from E5) holds at scale-up.
 | **multixi_pilot_fixed** | Post-fix multi-ξ run (leak-free) |
 | **multihippo**, **multis4d** | Planned multi-ξ sweep IDs |
 
-- **Paper:** §15.14.3, Table 26
+- **Paper (June 2026 numbering):** §15.14.3, Table 26
 - **Results:** [`notebooks/conservative_arch/scaleup/results/multixi_buggy_2k/`](notebooks/conservative_arch/scaleup/results/multixi_buggy_2k/), [`notebooks/conservative_arch/scaleup/results/multixi_pilot_fixed/`](notebooks/conservative_arch/scaleup/results/multixi_pilot_fixed/)
 
 ---
@@ -234,39 +246,46 @@ Tests whether small-scale optimal γ (0.166 from E5) holds at scale-up.
 
 ### H0 + H1 schedule sweep
 
+<a name="h0h1"></a>**H0+H1** — Book: Table 18 (`tab:hybrid-H1`)
+
 Tests six hybrid SPLM+attention schedules at S=1.
 
-- **Paper:** §16.3.2, Table 18, Figure 17
 - **Results:** [`notebooks/conservative_arch/hybrid/results/h1_sweep/`](notebooks/conservative_arch/hybrid/results/h1_sweep/)
 - **Key finding:** Best hybrid (Variant A, k=4, m=4) reaches 133.01 PPL — a 15 PPL improvement over matched attention with identical parameter count.
 
 ### H1.5: V_theta-narrow ablation
 
-- **Paper:** §16.3.3, Table 19, Figure 18
+<a name="h1p5"></a>**H1.5** — Book: Table 19 (`tab:hybrid-H1p5`)
+
 - **Key finding:** V_theta-narrow prevents any cell from clearing the FLOP bar at long context; confirms the need for V_theta capacity.
 
 ### H2: paired confirmation
 
-- **Paper:** §16.3.4, Table 20
+<a name="h2"></a>**H2** — Book: Table 20 (`tab:hybrid-H2-paired`)
+
 - **Results:** [`notebooks/conservative_arch/hybrid/results/h2_paired_confirmation/`](notebooks/conservative_arch/hybrid/results/h2_paired_confirmation/)
 - **Key finding:** Hybrid advantage over matched attention confirmed at n=5 seeds.
 
 ### H6: substack-restricted V_ψ separator
 
-- **Paper:** §16.3.5, Table 21
+<a name="h6"></a>**H6** — Book: Table 21 (`tab:hybrid-H6`)
+
 - **Key finding:** The substack-restricted shared-V_ψ separator test is empirically confirmed for the Helmholtz hybrid.
 
 ### Q9c / Q9d architecture definitions
+
+<a name="q9c"></a>**Q9c** · <a name="q9d"></a>**Q9d** — Book: §19.9 (`ssec:parf-experiments`); §18.3 (`ssec:hybrid-experiments`)
 
 | Code | Description |
 |------|-------------|
 | **Q9c** | PARF-augmented SPLM |
 | **Q9d** | Helmholtz hybrid (layer-type decomposition) with AAAASSSS schedule |
 
-- **Paper:** §16.1, §17.9
 - **Notebook (Q9d scale-up):** [`notebooks/conservative_arch/scaleup/colab_pilot.ipynb`](notebooks/conservative_arch/scaleup/colab_pilot.ipynb)
 
 ### Scale-up pilot (Arms 1–5b)
+
+<a name="pilot"></a>**Pilot** — Book: §18.3 (`ssec:hybrid-experiments`)
 
 Five-arm SPLM-family comparison at the E9 scale-up configuration.
 
@@ -279,15 +298,15 @@ Five-arm SPLM-family comparison at the E9 scale-up configuration.
 | **Arm 4** | Hybrid VA (k=4, m=4) |
 | **Arm 5 / 5b** | PARF Q9c sparse (k=4); H100 scale-up |
 
-- **Paper:** §16.5.1, Table 22
 - **Notebook:** [`notebooks/conservative_arch/scaleup/colab_pilot.ipynb`](notebooks/conservative_arch/scaleup/colab_pilot.ipynb)
 - **Results:** [`notebooks/conservative_arch/scaleup/results/pilot/`](notebooks/conservative_arch/scaleup/results/pilot/)
 
 ### Scale-up N5 confirmation
 
+<a name="n5"></a>**N5** — Book: §18.3 (`ssec:hybrid-experiments`)
+
 Five-seed paired confirmation of pilot results with 95% CIs.
 
-- **Paper:** §16.5.2, Table 22
 - **Notebook:** [`notebooks/conservative_arch/scaleup/colab_n5_confirmation.ipynb`](notebooks/conservative_arch/scaleup/colab_n5_confirmation.ipynb)
 - **Results:** [`notebooks/conservative_arch/scaleup/results/n5_confirmation/`](notebooks/conservative_arch/scaleup/results/n5_confirmation/)
 
@@ -297,61 +316,71 @@ Five-seed paired confirmation of pilot results with 95% CIs.
 
 ### P0: smoke verification
 
-- **Paper:** §17.8.1
+<a name="p0"></a>**P0** — Book: §19.9 (`ssec:parf-experiments`)
+
 - **Key finding:** PARF passes the causal-violation probe; no signal leakage from future tokens.
 
 ### P1: structural V_phi at seed 0
 
-- **Paper:** §17.8.2, Table 17
+<a name="p1"></a>**P1** — Book: Table 24 (`tab:parf-single-xi-retrospective`)
+
 - **Key finding:** Structural V_phi achieves 210.5 PPL with ~4,000 V_phi params.
 
 ### OQ-1: structural vs MLP ablation
 
+<a name="oq1"></a>**OQ-1**<!-- aka: OQ1 --> — Book: §19.9 (`ssec:parf-experiments`)
+
 Pre-registered ablation testing whether the structural prior on V_phi
 matters.
 
-- **Paper:** §17.8.2 (Theorem OQ-1)
 
 ### P1.5 / P1.5a: OQ-1 ablation
+
+<a name="p1p5"></a>**P1.5** · <a name="p1p5a"></a>**P1.5a** — Book: Table 24 (`tab:parf-single-xi-retrospective`)
 
 | Code | V_phi type | Val PPL |
 |------|-----------|---------|
 | **P1** | Structural | 210.5 |
 | **P1.5a** | Unstructured MLP | 297.2 |
 
-- **Paper:** §17.8.2, Figure 18
 - **Key finding:** Structural V_phi outperforms unstructured MLP by 87 PPL — OQ-1 verdict confirms the structural prior.
 
 ### P1.6: capacity disambiguation
 
+<a name="p1p6"></a>**P1.6** — Book: §19.9 (`ssec:parf-experiments`)
+
 Wider structural V_phi to disentangle capacity from structural prior.
 
-- **Paper:** §17.8.3, Figure 19
 - **Key finding:** PPL gain comes from the structural prior, not from V_phi width.
 
 ### P5: Gumbel sparsity at top-k=4
 
+<a name="p5"></a>**P5** — Book: §19.9 (`ssec:parf-experiments`)
+
 Stage 1.5 Gumbel-softmax sparsity.
 
-- **Paper:** §17.8.4
 - **Key finding:** Large PPL gain vs P1.6; k∈{4,8,16} ordering preserved at TinyStories scale.
 
 ### P6: channel-level diagnostic
 
-- **Paper:** §17 (paired with P10i/P10j)
+<a name="p6"></a>**P6** — Book: Table 24 (`tab:parf-single-xi-retrospective`)
+
 - **Key finding:** P10j attains better gate selectivity than P10i yet worse PPL — the v0 ceiling binds.
 
 ### P7 / P8: composite patches
 
+<a name="p7p8"></a>**P7, P8** — Book: Table 24 (`tab:parf-single-xi-retrospective`)
+
 Four P8 patches: LN-before-distance, per-layer V_phi scale, softsign
 theta, bilinear theta.
 
-- **Paper:** §17 (referenced as components of P10d baseline)
 - **Notebook:** [`notebooks/conservative_arch/parf/scripts/p8_cell_a100_h100.ipynb`](notebooks/conservative_arch/parf/scripts/p8_cell_a100_h100.ipynb)
 - **Results:** [`notebooks/conservative_arch/parf/results/structural/`](notebooks/conservative_arch/parf/results/structural/)
 - **Key finding:** Fixes P6 Layer-1 force imbalance and theta saturation.
 
 ### P10 ablation ladder (P10d–P10j)
+
+<a name="p10d"></a>**P10d** · <a name="p10f"></a>**P10f** · <a name="p10g"></a>**P10g** · <a name="p10h"></a>**P10h** · <a name="p10i"></a>**P10i** · <a name="p10j"></a>**P10j** — Book: Table 24 (`tab:parf-single-xi-retrospective`)
 
 Eight-cell ablation ladder on TinyStories, progressively adding
 structural improvements.
@@ -365,19 +394,19 @@ structural improvements.
 | **P10i** | top-k Gumbel routing | 8 | 16,000 | 5M | 27.10 |
 | **P10j** | top-k Gumbel routing | 16 | 16,000 | 5M | 27.73 |
 
-- **Paper:** §17.12, Table 28
 - **Notebook:** [`notebooks/conservative_arch/parf/scripts/p10_tinystories_a100_h100.ipynb`](notebooks/conservative_arch/parf/scripts/p10_tinystories_a100_h100.ipynb) (P10a–P10h), [`notebooks/conservative_arch/parf/scripts/p10_sparsity_ladder_k8_k16.ipynb`](notebooks/conservative_arch/parf/scripts/p10_sparsity_ladder_k8_k16.ipynb) (P10i–P10j)
 - **Results:** [`notebooks/conservative_arch/scaleup/results/semsimula_parflm/p10_tinystories/`](notebooks/conservative_arch/scaleup/results/semsimula_parflm/p10_tinystories/) (P10e–P10g), [`notebooks/conservative_arch/scaleup/results/parflm/p10_tinystories/`](notebooks/conservative_arch/scaleup/results/parflm/p10_tinystories/) (P10h–P10j)
 - **Key finding:** P10h null result (zero improvement from 4× corpus) is the empirical signature of the v0 expressivity ceiling. Monotone degradation in k confirms k=4 as optimal. The ~26.4 PPL ceiling is confirmed across both corpus and sparsity axes.
 
 ### Stage-1.5a / Stage-1.5b: V_phi memory variants
 
+<a name="stage15a"></a>**Stage-1.5a** · <a name="stage15b"></a>**Stage-1.5b** — Book: §19.9 (`ssec:parf-experiments`); §19.10 (`ssec:parf-multixi-results`)
+
 | Code | Description |
 |------|-------------|
 | **Stage-1.5a** | Dense V_phi evaluation with post-masking (current implementation) |
 | **Stage-1.5b** | Gathered V_phi (evaluating only top-k pairs) — proposed |
 
-- **Paper:** §17.9, Table 29
 - **Design doc:** [`companion_notes/PARF_Stage_1_5b_design.md`](companion_notes/PARF_Stage_1_5b_design.md)
 - **POC notebook:** [`notebooks/conservative_arch/parf/scripts/gradient_checkpoint_gathered_vphi_poc.ipynb`](notebooks/conservative_arch/parf/scripts/gradient_checkpoint_gathered_vphi_poc.ipynb)
 - **Key finding:** Stage-1.5b reduces V_phi intermediates from O(T²) to O(T·k); combined with Level 2 checkpointing, peak V_phi activation memory drops from O(L·B·T²·H) to O(B·T·k·H).
@@ -394,7 +423,7 @@ grad-accum=2).
 | **competitive_k4** | structural_competitive | 4 | 16.03 |
 | **structural_k8** | structural | 8 | — |
 
-- **Paper:** §17 (multi-ξ results subsection)
+- **Paper (June 2026 numbering):** §17 (multi-ξ results subsection)
 - **Notebook:** [`notebooks/conservative_arch/scaleup/colab_parf_multixi.ipynb`](notebooks/conservative_arch/scaleup/colab_parf_multixi.ipynb)
 - **Results:** GDrive `semsimula_parf_multixi/`
 - **Key finding:** Multi-ξ dramatically improves PARF (15.44 vs 28 PPL with single ξ) but V_φ at H=16 adds ~0.75 PPL overhead vs multi-ξ SPLM alone (14.69 pilot; 11.51 at 16k). V_φ capacity is the binding constraint.
@@ -411,7 +440,7 @@ HuggingFace model card.
 | **scaleup_8k** | 8,000 | 12.49 |
 | **extended_16k** | 16,000 | **11.51** |
 
-- **Paper:** §17 (multi-ξ results subsection)
+- **Paper (June 2026 numbering):** §17 (multi-ξ results subsection)
 - **Model:** `ScalarPotentialLMSARFMassLNMultiXi` (16.5M params)
 - **Training script:** [`notebooks/conservative_arch/scaleup/train_splm_em_ln_multixi_scaleup.py`](notebooks/conservative_arch/scaleup/train_splm_em_ln_multixi_scaleup.py)
 - **Notebook:** [`notebooks/conservative_arch/scaleup/colab_splm_multixi_rerun.ipynb`](notebooks/conservative_arch/scaleup/colab_splm_multixi_rerun.ipynb)
@@ -435,7 +464,7 @@ routing density (k=4, 8), and V_φ kind (competitive, structural).
 | **comp_K8** | 8 | log_spaced | competitive | 8 | **12.06** |
 | **struct_K4** | 4 | [0.25,0.50,0.75,0.95] | structural | 8 | — |
 
-- **Paper:** §17 (multi-ξ results subsection, Table `tab:parf-multixi-h128`)
+- **Paper (June 2026 numbering):** §17 (multi-ξ results subsection, Table `tab:parf-multixi-h128`)
 - **Notebook:** [`notebooks/conservative_arch/scaleup/colab_parf_multixi_h128.ipynb`](notebooks/conservative_arch/scaleup/colab_parf_multixi_h128.ipynb)
 - **Results:** GDrive `semsimula_parf_multixi_h128/`
 - **Key finding:** K=8 log-spaced α achieves **12.06 PPL** — within 1.55× of attention (7.81), closing 77% of the single-ξ-to-attention gap. The K=2→4→8 progression (13.48→12.47→12.06) shows clear diminishing returns, confirming the remaining gap is not addressable by widening ξ alone. The 2.80-PPL improvement over multi-ξ SPLM (14.86) is the first direct evidence that the pair force actively helps beyond multi-ξ V_θ.
@@ -465,7 +494,7 @@ reverse channel (on/off), routing density (k=4, 8), V_φ kind
 | **v2_K4_M16_lifo_16k** | v2 | 4 | 16 | LIFO | ✓ | 8 | competitive | **16k** | **12.31** (best 12.00 @ 14.4k) |
 | **v2_K4_M16_lifo_32k** | v2 | 4 | 16 | LIFO | ✓ | 8 | competitive | **32k** | — |
 
-- **Paper:** §17 (first result: v2_K4_M16_lifo = 14.21 PPL)
+- **Paper (June 2026 numbering):** §17 (first result: v2_K4_M16_lifo = 14.21 PPL)
 - **Model:** [`notebooks/conservative_arch/parf/model_fock_parf_multixi.py`](notebooks/conservative_arch/parf/model_fock_parf_multixi.py)
 - **Training script:** [`notebooks/conservative_arch/scaleup/train_fock_multixi_scaleup.py`](notebooks/conservative_arch/scaleup/train_fock_multixi_scaleup.py)
 - **Notebook:** [`notebooks/conservative_arch/scaleup/colab_fock_multixi_h128.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_multixi_h128.ipynb)
@@ -486,7 +515,7 @@ B2 (per-register key subspaces), and B3 (orthogonal register init).
 | **v21_tau_only** | B1 | 4 | 16 | 16k | 11.18 |
 | **v21_tau_perK_ortho** | B1+B2+B3 | 4 | 16 | 16k | **9.30** |
 
-- **Paper:** §17c.5, Table 34
+- **Paper (June 2026 numbering):** §17c.5, Table 34
 - **Model:** [`notebooks/conservative_arch/parf/model_fock_parf_multixi.py`](notebooks/conservative_arch/parf/model_fock_parf_multixi.py), [`notebooks/conservative_arch/parf/model_fock_parf_v2.py`](notebooks/conservative_arch/parf/model_fock_parf_v2.py)
 - **Training script:** [`notebooks/conservative_arch/scaleup/train_fock_multixi_scaleup.py`](notebooks/conservative_arch/scaleup/train_fock_multixi_scaleup.py)
 - **Notebook:** [`notebooks/conservative_arch/scaleup/colab_fock_v21_routing_fix.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_v21_routing_fix.ipynb)
@@ -508,7 +537,7 @@ mechanism.
 | **direct_K8_h4_8k** | 8 | 4 | 32 | 8k | 11.65 |
 | **direct_K4_h4_16k** | 4 | 4 | 32 | 16k | **9.42** |
 
-- **Paper:** §17c.5, Table 34
+- **Paper (June 2026 numbering):** §17c.5, Table 34
 - **Model:** [`notebooks/conservative_arch/parf/model_fock_attention.py`](notebooks/conservative_arch/parf/model_fock_attention.py)
 - **Training script:** [`notebooks/conservative_arch/scaleup/train_fock_attention_scaleup.py`](notebooks/conservative_arch/scaleup/train_fock_attention_scaleup.py)
 - **Notebook:** [`notebooks/conservative_arch/scaleup/colab_fock_attention_h128.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_attention_h128.ipynb)
@@ -516,6 +545,8 @@ mechanism.
 - **Key finding:** The direct route reaches **9.42 PPL** at 16k steps — both routes cross below 10 PPL. The mediated route (9.30) slightly outperforms the direct route, confirming that once routing is solved, the register mechanism's cross-layer persistence is an advantage. The learned exchange scale is repulsive (tanh(s_ex) ∈ [−0.14, −0.32]), independently confirming the same sign discovered by the mediated route (−0.227). Costs $O(T^2)$ per layer (vs $O(1)$ for registers).
 
 ### Conservativity diagnostic (CONS1–5)
+
+<a name="cons"></a>**CONS1–5** — Book: §20.8 (`ssec:fock-conservativity-diagnostic`)
 
 Five-arm empirical verification of FockPARFLM v2.1 controlled
 conservativity, run on the trained 9.30 PPL checkpoint
@@ -530,7 +561,6 @@ of §17c (shape, magnitude, localisation).
 | **CONS4** | Conservativity dial — sweep tanh(s_ex) 0 → −0.227 | PPL 15.95 → 11.46 (28% improvement) |
 | **CONS5** | Architectural separator — extend §15 R² diagnostic | GPT-2 0.46 < Fock 0.62 < Fock(Q=0) 0.74 < SPLM 0.96 |
 
-- **Paper:** §17c (§18.8 in the compiled book), Figure 38
 - **Script:** [`notebooks/conservative_arch/parf/conservativity_diagnostic.py`](notebooks/conservative_arch/parf/conservativity_diagnostic.py)
 - **Results:** [`notebooks/conservative_arch/parf/results/conservativity_v21/`](notebooks/conservative_arch/parf/results/conservativity_v21/) (5 PNGs, JSON report, summary)
 - **Companion note:** [`companion_notes/Fock_PARFLM_Conservativity_Diagnostic.md`](companion_notes/Fock_PARFLM_Conservativity_Diagnostic.md)
@@ -540,13 +570,15 @@ of §17c (shape, magnitude, localisation).
 
 Five distinct CUDA OOM failure modes catalogued at scale-up.
 
-- **Paper:** §17.9.2, Table 29
+- **Paper (June 2026 numbering):** §17.9.2, Table 29
 
 ---
 
 ## V_theta regularisation sweeps (§17b)
 
 ### SPLM V_theta regularisation (VR0–VR5)
+
+<a name="vr"></a>**VR0–VR5** — Book: Table 33 (`tab:vreg-cross-arch`)
 
 | Code | λ_V | Description |
 |------|-----|-------------|
@@ -557,11 +589,12 @@ Five distinct CUDA OOM failure modes catalogued at scale-up.
 | **VR4** | 1 | |
 | **VR5** | — | Verlet integrator variant (L=16, dt=0.5) |
 
-- **Paper:** §17b, Table 26
 - **Notebook:** [`notebooks/conservative_arch/parf/scripts/vreg_sweep_v_theta_regularisation.ipynb`](notebooks/conservative_arch/parf/scripts/vreg_sweep_v_theta_regularisation.ipynb)
 - **Results:** [`notebooks/conservative_arch/parf/results/vreg_sweep/VR0/`](notebooks/conservative_arch/parf/results/vreg_sweep/) through `VR5/`
 
 ### PARFLM V_theta regularisation (PR0–PR4)
+
+<a name="pr"></a>**PR0–PR4** — Book: Table 33 (`tab:vreg-cross-arch`)
 
 | Code | λ_V | Best PPL |
 |------|-----|----------|
@@ -571,12 +604,13 @@ Five distinct CUDA OOM failure modes catalogued at scale-up.
 | **PR3** | 1e-2 | |
 | **PR4** | 1 | |
 
-- **Paper:** §17b, Table 26, Figure 21 (PR2 attractors), Figure 22 (V_theta histograms)
 - **Notebook:** [`notebooks/conservative_arch/parf/scripts/vreg_sweep_parf.ipynb`](notebooks/conservative_arch/parf/scripts/vreg_sweep_parf.ipynb)
 - **Results:** [`notebooks/conservative_arch/parf/results/vreg_sweep_parf/PR0/`](notebooks/conservative_arch/parf/results/vreg_sweep_parf/) through `PR4/`
 - **Key finding:** PR2 (λ_V=10⁻⁴) achieves the largest PPL improvement of any conservative architecture: −60.4 PPL vs PR0. GD attractor extraction converges at 99.9% (1919/1920 prompts). V_theta range collapses from 59 (PR0) to 20 (PR2). This is the canonical gauge-breaking recipe.
 
 ### FockPARF V_theta regularisation (FR0–FR4)
+
+<a name="fr"></a>**FR0–FR4** — Book: Table 33 (`tab:vreg-cross-arch`)
 
 | Code | λ_V |
 |------|-----|
@@ -586,12 +620,13 @@ Five distinct CUDA OOM failure modes catalogued at scale-up.
 | **FR3** | 1e-2 |
 | **FR4** | 1 |
 
-- **Paper:** §17b, Table 26
 - **Notebook:** [`notebooks/conservative_arch/parf/scripts/vreg_sweep_fockparf.ipynb`](notebooks/conservative_arch/parf/scripts/vreg_sweep_fockparf.ipynb)
 - **Results:** [`notebooks/conservative_arch/parf/results/vreg_sweep_fockparf/FR0/`](notebooks/conservative_arch/parf/results/vreg_sweep_fockparf/) through `FR4/`
 - **Key finding:** FockPARF is most tolerant of V_theta regularisation via V_phi and register lifecycle (M=16 registers, d=128, L=8).
 
 ### Hybrid V_theta regularisation (HR0–HR4)
+
+<a name="hr"></a>**HR0–HR4** — Book: Table 33 (`tab:vreg-cross-arch`)
 
 | Code | λ_V |
 |------|-----|
@@ -601,12 +636,13 @@ Five distinct CUDA OOM failure modes catalogued at scale-up.
 | **HR3** | 1e-2 |
 | **HR4** | 1 |
 
-- **Paper:** §17b, Table 26
 - **Notebook:** [`notebooks/conservative_arch/hybrid/scripts/vreg_sweep_hybrid.ipynb`](notebooks/conservative_arch/hybrid/scripts/vreg_sweep_hybrid.ipynb)
 - **Results:** [`notebooks/conservative_arch/hybrid/results/vreg_sweep_hybrid/HR0/`](notebooks/conservative_arch/hybrid/results/vreg_sweep_hybrid/) through `HR4/`
 - **Key finding:** Hybrid PPL stays within 0.7–1.6 PPL of unregularised HR0 (140.4) at all λ_V — the attention front-end pre-normalises the state, making V_theta regularisation effectively free.
 
 ### Planned confound-resolution sweeps (G1–G3)
+
+<a name="g1"></a>**G1** · <a name="g2"></a>**G2** · <a name="g3"></a>**G3** — Book: Table 33 (`tab:vreg-cross-arch`)
 
 | Code | Description |
 |------|-------------|
@@ -614,7 +650,6 @@ Five distinct CUDA OOM failure modes catalogued at scale-up.
 | **G2** | PARF d_V sweep at λ_V=10⁻⁴, γ=0.10, d_V∈{128, 256, 512} |
 | **G3** | SPLM em_ln at d_V=512, γ=0.10, λ_V=10⁻⁴ |
 
-- **Paper:** §17b
 - **Notebook:** [`notebooks/conservative_arch/parf/scripts/fockparf_improvement_sweep.ipynb`](notebooks/conservative_arch/parf/scripts/fockparf_improvement_sweep.ipynb) (G1–G3 cells)
 - **Results:** planned — no results yet
 - **Status:** planned
@@ -624,6 +659,8 @@ Five distinct CUDA OOM failure modes catalogued at scale-up.
 ## Structured V_theta (§17)
 
 ### Structured V_theta sweep (SQ1–SQ5)
+
+<a name="sq1"></a>**SQ1** · <a name="sq2"></a>**SQ2** · <a name="sq3"></a>**SQ3** · <a name="sq4"></a>**SQ4** · <a name="sq5"></a>**SQ5** — Book: Table 26 (`tab:structured-vtheta-summary`)
 
 Tests whether structured V_theta (analytical gradient, fewer params)
 can match the PR2 MLP baseline on TinyShakespeare.
@@ -636,12 +673,13 @@ can match the PR2 MLP baseline on TinyShakespeare.
 | **SQ4** | Quadratic + small MLP residual | Hybrid interpretable + learned |
 | **SQ5** | MLP reference | Full MLP rerun |
 
-- **Paper:** §17.10, Table 27
 - **Notebook:** [`notebooks/conservative_arch/parf/scripts/structured_vtheta_sweep.ipynb`](notebooks/conservative_arch/parf/scripts/structured_vtheta_sweep.ipynb)
 - **Results:** [`notebooks/conservative_arch/parf/results/structured_vtheta/SQ3/`](notebooks/conservative_arch/parf/results/structured_vtheta/) through `SQ5/`
 - **Key finding:** SQ3 (mixture K=4) matches the PR2 MLP baseline on PPL with analytical ∇_h V_theta, zero autograd cost, and interpretable basins.
 
 ### Structured V_theta TinyStories sweep (A1–A10, B1–B2)
+
+<a name="a1a10"></a>**A1–A10** · <a name="b1b2"></a>**B1–B2** — Book: Table 26 (`tab:structured-vtheta-summary`)
 
 Systematic comparison at TinyStories scale. Fixed SparsePARFLM backbone
 (d=256, L=8); only V_theta is swapped.
@@ -661,12 +699,13 @@ Systematic comparison at TinyStories scale. Fixed SparsePARFLM backbone
 | **B1** | MLP baseline (v_hidden=2048) |
 | **B2** | MLP baseline (v_hidden=512) |
 
-- **Paper:** §17.10, Table 27, Figure 23
 - **Notebook:** [`notebooks/conservative_arch/parf/scripts/structured_vtheta_tinystories_sweep.ipynb`](notebooks/conservative_arch/parf/scripts/structured_vtheta_tinystories_sweep.ipynb)
 - **Key finding:** SQ3 matches the MLP reference at TinyStories scale. SQ5 (MLP rerun) diverges due to large initial ‖V_theta‖² destabilising next-token loss.
 
 
 ### Multi-Xi SPLM structured V_theta (A1–A5)
+
+<a name="splmsvt"></a>**SPLM-SVT A1–A5** — Book: §22.4.2 (`sssec:ssp-results-multixi-splm`)
 
 Five-arm SQ3 hyperparameter sweep on the Multi-Xi SPLM, replacing the MLP V_theta
 with `StructuredVThetaMultiXiAdapter(MixtureQuadraticVTheta(...))`. Arms vary K_mix
@@ -682,7 +721,6 @@ standard scaleup config (d=256, L=8, 16k steps, TinyStories 5M tokens).
 | A5 | 8 | 1.0 | 8 | 14.25 | 8.4M |
 | B1 (MLP ref.) | — | — | 4 | 11.51 | — |
 
-- **Paper:** §17d (structured scalar potential), Table 29
 - **Notebook:** [`notebooks/conservative_arch/scaleup/colab_splm_multixi_structured_vtheta.ipynb`](notebooks/conservative_arch/scaleup/colab_splm_multixi_structured_vtheta.ipynb)
 - **Model file:** [`notebooks/conservative_arch/parf/model_structured_vtheta_multixi.py`](notebooks/conservative_arch/parf/model_structured_vtheta_multixi.py)
 - **Results:** GDrive `semsimula_splm_multixi_structured_vtheta/`
@@ -690,6 +728,8 @@ standard scaleup config (d=256, L=8, 16k steps, TinyStories 5M tokens).
 - **Key finding:** A2 (K_mix=8, K_xi=4) achieves **13.33 PPL** — a 1.82 PPL expressivity gap vs the MLP reference (11.51). Six of eight attractor basins are active at convergence. V_theta landscape: mean 0.31, range 47.2. Learned xi-channel alphas: [0.25, 0.60, 0.81, 0.96].
 
 ### Multi-Xi PARFLM structured V_theta (A2)
+
+<a name="parfsvt"></a>**PARF-SVT A2** — Book: §22.4.3 (`sssec:ssp-results-multixi-parf`)
 
 Single-arm structured V_theta experiment on the Multi-Xi PARFLM using the SPLM
 winner configuration (A2: SQ3, K_mix=8, tau=1.0, K_xi=4, lambda_V=0.01). Reveals
@@ -702,7 +742,6 @@ drastically shrinking the structured-vs-MLP PPL gap.
 | **A2** | **8** | **4** | **12.27** | **0.17 PPL (0.6%)** |
 | MLP ref. | — | 4 | 12.10 | — |
 
-- **Paper:** §17d (structured scalar potential), Table 29
 - **Notebook:** [`notebooks/conservative_arch/scaleup/colab_parf_multixi_structured_vtheta.ipynb`](notebooks/conservative_arch/scaleup/colab_parf_multixi_structured_vtheta.ipynb)
 - **Model file:** [`notebooks/conservative_arch/parf/model_structured_vtheta_multixi.py`](notebooks/conservative_arch/parf/model_structured_vtheta_multixi.py)
 - **Results:** GDrive `semsimula_parf_multixi_structured_vtheta/`
@@ -710,6 +749,8 @@ drastically shrinking the structured-vs-MLP PPL gap.
 - **Key finding:** V_phi in PARFLM compresses the V_theta landscape (mean 0.02, range 31.4 vs 47.2 in SPLM), reducing the expressivity gap from 1.82 PPL (SPLM) to just 0.17 PPL (0.6%). Learned xi-channel alphas: [0.24, 0.49, 0.74, 0.95].
 
 ### Fock-PARFLM structured V_theta (A2)
+
+<a name="focksvt"></a>**Fock-SVT A2** — Book: §22.4.4 (`sssec:ssp-results-multixi-fock`)
 
 Structured V_theta experiment on Fock-PARFLM v2.1 (`FockMultiXiPARFLM`, d=256, L=8,
 M=16 registers, LIFO, reverse channel, per-register learnable temperature, per-register
@@ -721,7 +762,6 @@ from the same hyperparameter sweep as SPLM and PARFLM experiments.
 | **A2** | **8** | **4** | **10.36** | **1.06 PPL (11.4%)** |
 | MLP ref. (B1) | — | 4 | 9.30 | — |
 
-- **Paper:** §17d (structured scalar potential), Table 29
 - **Notebook:** [`notebooks/conservative_arch/scaleup/colab_fock_multixi_structured_vtheta.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_multixi_structured_vtheta.ipynb)
 - **Model file:** [`notebooks/conservative_arch/parf/model_structured_vtheta_multixi.py`](notebooks/conservative_arch/parf/model_structured_vtheta_multixi.py)
 - **Results:** GDrive `semsimula_fock_multixi_structured_vtheta/`
@@ -732,6 +772,8 @@ from the same hyperparameter sweep as SPLM and PARFLM experiments.
 ## FockPARF v2 / QFT (§17c)
 
 ### FockPARF v2 debug (D1–D9)
+
+<a name="d1d9"></a>**D1–D9** — Book: Table 98 (`tab:expidx-fock`)
 
 Debug and tune FockPARF v2 on TinyStories before full P10g scale. Tests
 six bottleneck hypotheses.
@@ -748,10 +790,11 @@ six bottleneck hypotheses.
 | **D8** | + per-register keys |
 | **D9** | + orthogonal init |
 
-- **Paper:** §17c (referenced; detailed subsections use Q0–Q8 for the controlled ladder)
 - **Notebook:** [`notebooks/conservative_arch/parf/scripts/fockparf_v2_tinystories_debug.ipynb`](notebooks/conservative_arch/parf/scripts/fockparf_v2_tinystories_debug.ipynb)
 
 ### QFT v2.1 experimental ladder (Q0–Q8)
+
+<a name="q0"></a>**Q0** · <a name="q1fock"></a>**Q1** · <a name="q2fock"></a>**Q2** · <a name="q3fock"></a>**Q3** · <a name="q4fock"></a>**Q4** · <a name="q5fock"></a>**Q5** · <a name="q6fock"></a>**Q6** · <a name="q7fock"></a>**Q7** · <a name="q8fock"></a>**Q8** — Book: Table 98 (`tab:expidx-fock`)
 
 Controlled 9-arm experiment testing four QFT-motivated creation-gate
 improvements.
@@ -768,12 +811,13 @@ improvements.
 | **Q7** | Q5 + M=32 registers | 122.24 | +108% |
 | **Q8** | PARFLM baseline (no registers) | 56.43 | −4.1% |
 
-- **Paper:** §17c.5, Table 33
 - **Notebook:** [`notebooks/conservative_arch/parf/scripts/fockparf_v2_qft_improvements.ipynb`](notebooks/conservative_arch/parf/scripts/fockparf_v2_qft_improvements.ipynb)
 - **Results:** [`notebooks/conservative_arch/parf/results/fock_v2_qft/Q0/`](notebooks/conservative_arch/parf/results/fock_v2_qft/) through `Q8/`
 - **Key finding:** Q6 (full QFT stack + learnable temperature) achieves 53.47 PPL — 9.1% below FockPARF v2 baseline and 5.2% below plain PARFLM. The four QFT improvements are not optional refinements — they are what makes the register mechanism beneficial. Q7 (M=32) diverges: diversity collapses at layers 5–7.
 
 ### QFT v2.1 planned series (D6–D10)
+
+<a name="d6d10"></a>**D6–D10** — Book: Table 98 (`tab:expidx-fock`)
 
 Planned incremental tests isolating each QFT-motivated change.
 
@@ -785,10 +829,11 @@ Planned incremental tests isolating each QFT-motivated change.
 | **D9** | + orthogonal initialisation |
 | **D10** | + canonical destruction |
 
-- **Paper:** §17c.4
 - **Status:** planned — no notebook yet
 
 ### Dyck-2 falsifier (F2)
+
+<a name="f2baseline"></a>**F2-baseline** · <a name="f2fockv2"></a>**F2-fock-v2** — Book: Table 98 (`tab:expidx-fock`)
 
 Three-arm controlled comparison on synthetic bracket-matching.
 
@@ -798,12 +843,13 @@ Three-arm controlled comparison on synthetic bracket-matching.
 | **F2-fock-v1** | Mean-conditioned creation | 3.037 | 45.12% |
 | **F2-fock-v2** | Q/K/V creation + gated reverse | **2.856** | **49.01%** |
 
-- **Paper:** §17c.2, Table 32
 - **Notebook:** [`notebooks/conservative_arch/parf/scripts/fockparf_v2_dyck2_falsifier.ipynb`](notebooks/conservative_arch/parf/scripts/fockparf_v2_dyck2_falsifier.ipynb)
 - **Results:** [`notebooks/conservative_arch/parf/results/fock_v2/F2-baseline_seed0/`](notebooks/conservative_arch/parf/results/fock_v2/) through `F2-fock-v2_seed0/`
 - **Key finding:** FockPARF v2 achieves the best Dyck-2 performance at 49.01% deep-test accuracy, approaching the 50% success criterion.
 
 ### FockPARF improvement sweep (P1–P5 Fock, G1–G3)
+
+<a name="p1p5fock"></a>**P1–P5** — Book: Table 98 (`tab:expidx-fock`)
 
 Eight cells targeting the ~40 PPL gap between FockPARF+λ_V=1 (~190 PPL)
 and attention (~150) on TinyShakespeare.
@@ -817,7 +863,6 @@ and attention (~150) on TinyShakespeare.
 | **P5** | Phased gates |
 | **G1–G3** | γ/v_hidden confound resolution |
 
-- **Paper:** not yet in paper (notebook-only experiments)
 - **Notebook:** [`notebooks/conservative_arch/parf/scripts/fockparf_improvement_sweep.ipynb`](notebooks/conservative_arch/parf/scripts/fockparf_improvement_sweep.ipynb)
 - **Results:** [`notebooks/conservative_arch/parf/results/fockparf_improvement/P1/`](notebooks/conservative_arch/parf/results/fockparf_improvement/) through `P5/`
 
@@ -826,6 +871,8 @@ and attention (~150) on TinyShakespeare.
 ## Architecture comparison
 
 ### Architecture comparison (S1–S4)
+
+<a name="s1s4"></a>**S1–S4** — Book: Table 99 (`tab:expidx-nonconservative`)
 
 TinyStories v3 scale-up: replaces MLP V_theta with structured SQ3
 (K=4) across four architectures at d=256.
@@ -837,11 +884,12 @@ TinyStories v3 scale-up: replaces MLP V_theta with structured SQ3
 | **S3** | Hybrid FockPARF + Attention |
 | **S4** | Hybrid SPLM + Attention reference |
 
-- **Paper:** not yet in paper (notebook-only)
 - **Notebook:** [`notebooks/conservative_arch/parf/scripts/tinystories_parf_vs_fockparf.ipynb`](notebooks/conservative_arch/parf/scripts/tinystories_parf_vs_fockparf.ipynb) (also at [`notebooks/conservative_arch/tinystories_parf_vs_fockparf.ipynb`](notebooks/conservative_arch/tinystories_parf_vs_fockparf.ipynb))
 - **Results:** [`notebooks/conservative_arch/parf/results/tinystories_scaleup/`](notebooks/conservative_arch/parf/results/tinystories_scaleup/) (S1, S2), [`notebooks/conservative_arch/parf/results/tinystories_v2/`](notebooks/conservative_arch/parf/results/tinystories_v2/) (S2, S3)
 
 ### Architecture comparison Phase 2 (L1–L3)
+
+<a name="l1l3"></a>**L1–L3** — Book: Table 99 (`tab:expidx-nonconservative`)
 
 TinyStories Phase 2 large-scale comparison.
 
@@ -851,7 +899,6 @@ TinyStories Phase 2 large-scale comparison.
 | **L2** | Large FockPARF |
 | **L3** | Large Hybrid |
 
-- **Paper:** not yet in paper (notebook-only)
 - **Notebook:** [`notebooks/conservative_arch/parf/scripts/tinystories_parf_phase2_large.ipynb`](notebooks/conservative_arch/parf/scripts/tinystories_parf_phase2_large.ipynb)
 - **Results:** not yet available
 
@@ -860,6 +907,8 @@ TinyStories Phase 2 large-scale comparison.
 ## Non-conservative / SP-HSPLM
 
 ### SP-HSPLM Stage 1 (e0–e5)
+
+<a name="e0e5"></a>**e0–e5** — Book: Table 99 (`tab:expidx-nonconservative`)
 
 Per-token non-conservative terms (gyroscopic and solenoidal forces)
 testing whether they close the SPLM-vs-attention gap.
@@ -873,11 +922,12 @@ testing whether they close the SPLM-vs-attention gap.
 | **e4_solenoidal_rank4** | Solenoidal rank-4 |
 | **e5_lowrank_rank4** | Low-rank rank-4 |
 
-- **Paper:** not yet in paper (notebook-only)
 - **Notebook:** [`notebooks/conservative_arch/non_conservative/scripts/sp_hsplm_stage1_a100_h100.ipynb`](notebooks/conservative_arch/non_conservative/scripts/sp_hsplm_stage1_a100_h100.ipynb)
 - **Results:** [`notebooks/conservative_arch/non_conservative/results/sp_hsplm/stage1/`](notebooks/conservative_arch/non_conservative/results/sp_hsplm/stage1/)
 
 ### SP-HSPLM Stage 2 (q9e_a–q9e_n)
+
+<a name="q9e"></a>**q9e** — Book: Table 99 (`tab:expidx-nonconservative`)
 
 Q9(e) pair-skew cell ladder covering mechanism-2 autonomous force law,
 mechanism-1 extensions, additivity tests, and full Class F.
@@ -887,7 +937,6 @@ mechanism-1 extensions, additivity tests, and full Class F.
 | **q9e_a** | Mechanism-2 autonomous |
 | **q9e_b–q9e_n** | Progressive additions through full Class F |
 
-- **Paper:** not yet in paper (notebook-only)
 - **Notebook:** [`notebooks/conservative_arch/sphsplm/scripts/sp_hsplm_stage2_a100_h100.ipynb`](notebooks/conservative_arch/sphsplm/scripts/sp_hsplm_stage2_a100_h100.ipynb)
 - **Results:** [`notebooks/conservative_arch/sphsplm/results/sp_hsplm/stage2/`](notebooks/conservative_arch/sphsplm/results/sp_hsplm/stage2/)
 
@@ -897,6 +946,8 @@ mechanism-1 extensions, additivity tests, and full Class F.
 
 ### Inference efficiency benchmark (E8)
 
+<a name="e8"></a>**E8** — Book: Table 86 (`tab:e8-phase2-verdict`)
+
 Pre-registered three-phase inference benchmark.
 
 | Phase | Description | Grade |
@@ -905,7 +956,6 @@ Pre-registered three-phase inference benchmark.
 | **Phase 2** | Per-token wall-clock and FLOP | C (2 CONFIRMED, 2 MARGINAL, 2 REFUTED) |
 | **Phase 3** | Quality-adjusted Pareto | Attention dominates at prototype scale |
 
-- **Paper:** Appendix A2, Tables 38–40
 - **Results:** [`notebooks/conservative_arch/inference_efficiency/results/`](notebooks/conservative_arch/inference_efficiency/results/)
 - **Key finding:** SPLM achieves ~38% FLOP advantage at $T\geq 512$ but 2.5–3× wall-clock overhead due to `create_graph=True`. Phase 2 structured V_theta (SQ3) path is expected to recover 30–40% of the wall-clock overhead.
 
@@ -914,6 +964,8 @@ Pre-registered three-phase inference benchmark.
 ## Formal-language falsifiers (§9)
 
 ### F1–F6 falsifier programme
+
+<a name="f1"></a>**F1** · <a name="f2"></a>**F2** · <a name="f3"></a>**F3** · <a name="f4"></a>**F4** · <a name="f5"></a>**F5** · <a name="f6"></a>**F6** — Book: §10.8 (`subsec:falsifiers`)
 
 Six experiments testing the v0 lower-bound staircase and MCS bounds.
 
@@ -926,7 +978,6 @@ Six experiments testing the v0 lower-bound staircase and MCS bounds.
 | **F5** | Bounded copy ww | Confirms MCS reach via different construction |
 | **F6** | 2-counter machine simulation | Falsifies the upper bound (intentional over-strong) |
 
-- **Paper:** §9.7
 - **Status:** F2 partially run via the Dyck-2 falsifier notebook (see [F2 arms](#dyck-2-falsifier-f2) above). F1 prediction is closed-form. F3–F6 are post-M2 deliverables — planned, no notebooks yet.
 
 ---
@@ -942,9 +993,111 @@ bottleneck.
 | [gradient_checkpoint_poc](notebooks/conservative_arch/parf/scripts/gradient_checkpoint_poc.ipynb) | Level 2 per-layer-step gradient checkpointing POC |
 | [gradient_checkpoint_gathered_vphi_poc](notebooks/conservative_arch/parf/scripts/gradient_checkpoint_gathered_vphi_poc.ipynb) | Integrated Level 2 checkpointing + Stage-1.5b gathered V_phi POC |
 
-- **Paper:** §17.12 (scaling discussion)
+- **Paper (June 2026 numbering):** §17.12 (scaling discussion)
 - **Design docs:** [`companion_notes/Gradient_Checkpointing_for_PARF.md`](companion_notes/Gradient_Checkpointing_for_PARF.md), [`companion_notes/PARF_Stage_1_5b_design.md`](companion_notes/PARF_Stage_1_5b_design.md)
 - **Key finding:** Combined Level 2 checkpointing + Stage-1.5b reduces peak V_phi activation memory from O(L·B·T²·H) to O(B·T·k·H) — constant in L, linear in T. At B=16, T=512, L=8, k=4: ~10–14 GB → ~8 MB (~1000× reduction).
+
+---
+
+## Gaussian V_θ on Fock-PARFLM, the OpenWebText scale-up, and the Riemannian diagnostics (book Appendix D)
+
+<a name="gaussian-scaleup"></a>Models and diagnostics of August 2026 that the book's Appendix D lists
+without an earlier entry here. Where a notebook writes to Google Drive,
+the run's artefacts are on its Hugging Face card, not in the repository.
+
+| Code | What it is | Status | Notebook, cell or script | Results | Checkpoint | Written up in |
+|---|---|---|---|---|---|---|
+| <a name="fockgaussaniso"></a>**Fock-Gauss-Aniso** | Bounded anisotropic-Gaussian V_θ (diagonal plus rank-4 precision) with the Fock-coupling regulariser on Fock-PARFLM v2.1; TinyStories, d = 256, L = 8, γ = 0.30, 20,000 steps, leak-free; PPL 9.04 (`Fock_Mechanism_Engagement…` §8.2 reports 9.14 for its Experiment D) — Book: §20.7 (`ssec:fock-multixi-results`) | completed (2026-08-06) | [`colab_fock_aniso_gaussian_fockreg_tinystories.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_aniso_gaussian_fockreg_tinystories.ipynb); γ sweep [`colab_fock_gamma_sweep_geodesic_aniso_gaussian_fockreg_tinystories.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_gamma_sweep_geodesic_aniso_gaussian_fockreg_tinystories.ipynb) | on the card (the notebook writes to Drive) | [card](https://huggingface.co/dimitarpg13/semsimula-fock-parflm-anisogaussian-vtheta) | [γ note §11](companion_notes/Determining_optimal_gamma_for_Fock-PARFLM.md#n-fockgaussaniso) |
+| <a name="fockg1"></a>**Fock-G1** | First-order (gradient-flow) ablation of Fock-Gauss-Aniso: same architecture, data and γ; PPL 8.95 against 9.04, one seed — Book: §20.7 (`ssec:fock-multixi-results`) | completed (2026-08-16) | [`colab_fock_g1_aniso_gaussian_fockreg_tinystories.ipynb`](notebooks/conservative_arch/first_order_ablation/colab_fock_g1_aniso_gaussian_fockreg_tinystories.ipynb) | on the card (`fock_g1_vs_second_order_report.json`, `training_log.jsonl`) | [card](https://huggingface.co/dimitarpg13/semsimula-fock-parflm-anisogaussian-vtheta-fock-g1) | [first- vs second-order note §6](companion_notes/Implicit_vs_Explicit_Damping_and_the_First_vs_Second_Order_Dynamics_Hypothesis.md#n-fockg1) |
+| <a name="fockgaussiso"></a>**Fock-Gauss-Iso** | Isotropic, depth-conditioned multi-context Gaussian V_θ on Fock-PARFLM v2.1; TinyStories, d = 256, leak-free; PPL 16.33, the reference for the anisotropy premium — Book: §22.7.9 (`sssec:ssp-gw-status`) | completed | [`colab_fock_gaussian_vtheta_tinystories.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_gaussian_vtheta_tinystories.ipynb) | on the card | [card](https://huggingface.co/dimitarpg13/semsimula-fock-parflm-depthcond-vtheta) | [Fock-engagement note §4.2](companion_notes/Fock_Mechanism_Engagement_MLP_vs_Gaussian_VTheta.md#n-fockgaussiso) |
+| <a name="rd"></a>**RD1–5** | Riemannian diagnostic battery on Multi-ξ SPLM, Fock v2.1 and Fock-Attention checkpoints: metric validity, geodesic compliance (damped and undamped), curvature proxy, energy dissipation, conservativity separator — Book: §27.12 (`subsec:diagnostic-battery`) | completed (June 2026) | [`colab_riemannian_diagnostic.ipynb`](notebooks/conservative_arch/scaleup/colab_riemannian_diagnostic.ipynb) | [damped](notebooks/conservative_arch/scaleup/results/semsimula_riemannian_diagnostic/), [undamped](notebooks/conservative_arch/scaleup/results/semsimula_riemannian_diagnostic_undamped/) | evaluation only | [Riemannian note §3.5](companion_notes/Exploiting_the_Riemannian_geometry_of_conservative_language_models.md#n-rd) |
+| <a name="rdgamma"></a>**RD-γ** | Learned-γ diagnostic: Arm 2 re-run with the effective γ on six checkpoints; resolves the negative-R² artefact — Book: §27.12 (`par:learned-gamma-diagnostic`) | completed | [`colab_gamma_diagnostic.ipynb`](notebooks/conservative_arch/scaleup/colab_gamma_diagnostic.ipynb) | [`semsimula_gamma_diagnostic`](notebooks/conservative_arch/scaleup/results/semsimula_gamma_diagnostic/) | evaluation only | [Riemannian note, learned-γ diagnostic](companion_notes/Exploiting_the_Riemannian_geometry_of_conservative_language_models.md#n-rdgamma) |
+| <a name="su-iso"></a>**SU-iso** | OpenWebText scale-up pilot, isotropic depth-conditioned Gaussian V_θ, d = 384, L = 16 (tag `e5c_plgate`): 27.23 PPL, apparent (L3 leak); reverse-channel-off ablation `e5a` 125.94 — Book: §23.7 (`subsec:su-payoff`) | retired (L3 leak) | [`colab_fock_depthcond_vtheta_openwebtext.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_depthcond_vtheta_openwebtext.ipynb), [`colab_fock_depthcond_vtheta_openwebtext_ext.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_depthcond_vtheta_openwebtext_ext.ipynb) | [training logs](companion_notes/data/d384_e5c_plgate/) | [card](https://huggingface.co/dimitarpg13/semsimula-fock-parflm-depthcond-vtheta-openwebtext) (leak banner) | [d384 results note §1](companion_notes/Fock-PARFLM_d384_Training_Results_OpenWebText.md#n-su-iso) |
+| <a name="su-aniso"></a>**SU-aniso** | OpenWebText anisotropic-Gaussian V_θ with the Fock regulariser: damping sweeps (8 values of γ, 3,000 steps), leak-free; γ* = 0.10 at d = 384 (184.11), 0.05 at d = 768 (326.97) and d = 1024 (244.23). The d = 384 full run reached its best checkpoint, 184.11, at step 10,000 and stalled at step 17,100 of 100,000 (card) — Book: §23.9 (`subsec:su-damping`) | completed | [d384](notebooks/conservative_arch/scaleup/colab_fock_gamma_sweep_geodesic_aniso_gaussian_fockreg_d384.ipynb), [d768](notebooks/conservative_arch/scaleup/colab_fock_gamma_sweep_geodesic_aniso_gaussian_fockreg_d768.ipynb), [d1024](notebooks/conservative_arch/scaleup/colab_fock_gamma_sweep_geodesic_aniso_gaussian_fockreg_d1024.ipynb) sweeps; full run [`colab_fock_aniso_gaussian_fockreg_openwebtext.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_aniso_gaussian_fockreg_openwebtext.ipynb) | on the cards | [d384](https://huggingface.co/dimitarpg13/semsimula-fock-parflm-anisogaussian-vtheta-owt-d384-gammasweep), [d768](https://huggingface.co/dimitarpg13/semsimula-fock-parflm-anisogaussian-vtheta-owt-d768-gammasweep), [d1024](https://huggingface.co/dimitarpg13/semsimula-fock-parflm-anisogaussian-vtheta-owt-d1024-gammasweep), [d384 full run](https://huggingface.co/dimitarpg13/semsimula-fock-parflm-anisogaussian-vtheta-owt-d384-verlet-instability) | [γ note §12–14](companion_notes/Determining_optimal_gamma_for_Fock-PARFLM.md#n-su-aniso) |
+| <a name="scaf-stiff"></a>**SCAF-stiff** | SCAF `StiffnessProbe` envelope audit: the off-diagonal σ_max(B_k)² is unbounded and pushes ω·Δt past the Verlet ceiling of 2; motivates CfC/BAOAB — Book: Table 40 (`tab:su-envelope`) | completed (L = 8 bracket; L = 16 not started) | [`scaf_checkpoint_analysis_stiffness_probe.ipynb`](notebooks/conservative_arch/scaleup/debug/scaf_checkpoint_analysis_stiffness_probe.ipynb) (Phase 7), [`scaf_checkpoint_analysis.ipynb`](notebooks/conservative_arch/scaleup/debug/scaf_checkpoint_analysis.ipynb) (7b/7c); probe code in the separate `semsimula-scaf` repository | [L = 8 bracket](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc/) | evaluation only | [CfC/BAOAB note §28, §31](companion_notes/CfC_BAOAB_Integrator_and_Mitigations.md#n-scaf-stiff) |
+
+---
+
+## The CfC/BAOAB depth ladder on OpenWebText (book §D.10)
+
+<a name="ladder"></a>The models of the book's CfC/BAOAB programme: d = 384,
+532,480,000 training tokens per arm (32,500 steps of 32 × 512), the
+CfC/BAOAB integrator, a joint V_θ bank. **Gen 2** arms were trained with
+detached V_φ and ξ sources, **Gen 3** arms with live source gradients and
+the same forward pass. Registered and scored in the protocol, §5.
+
+- **Book:** Table 101 (`tab:expidx-ladder`) lists the arms; they are
+  discussed from §27 on.
+- **Notebook (every CfC/BAOAB arm):**
+  [`colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb);
+  the GPT-2 references use
+  [`colab_matched_gpt2_baseline_openwebtext.ipynb`](notebooks/conservative_arch/scaleup/colab_matched_gpt2_baseline_openwebtext.ipynb). The full Cell 0
+  of each published arm is printed on its Hugging Face card.
+- **Settled PPL** is the mean of the last three evaluations.
+- **SR2, PMX** and the first- versus second-order twins are in the next
+  section ([SR2](#sr2), [PMX](#pmx)).
+
+### Gen 3: live source gradients
+
+| Arm | What it is: Cell 0 against its base | Settled PPL | Run folder and training log | Checkpoint | Scored in |
+|---|---|---:|---|---|---|
+| <a name="f3-1"></a>**F3.1** | **Conservative-only**, no Fock mechanism (`LADDER_MECHANISM = 'none'`, `REVERSE_CHANNEL = False`), with live V_φ and ξ source gradients (`VPHI_GRAD_PATH = XI_GRAD_PATH = 'live'`); the base of SR2, PM1, PMX and XRB-F | 57.76 | [folder](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/), [log](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/L2_idt4_lr0p0012_norc_vplive_xilive_noattn_32500_result.txt) | [card](https://huggingface.co/dimitarpg13/semsimula-ladder-live-owt-d384-l2-none-norc) | [protocol](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-f3-1) |
+| <a name="g2-ladder"></a>**G2** | F3.1 with the **Fock mechanism** on (register path, `REVERSE_CHANNEL = True`), no exchange field | 53.12 | [folder](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_vplive_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/), [log](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_vplive_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/L2_arm_none_live_grads_output.txt) | [card](https://huggingface.co/dimitarpg13/semsimula-ladder-live-owt-d384-l2-none) | [protocol](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-g2-ladder) |
+| <a name="l4-live"></a>**L = 4 live** | G2 at **depth 4** (`LADDER_L = 4`, Δt = 2, T = 8) | 50.10 | [folder](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_vplive_xilive_L4probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt2_lr0p0012_noattn/), [log](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_vplive_xilive_L4probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt2_lr0p0012_noattn/L4_idt2_lr0p0012_vplive_xilive_noattn_32500_result.txt) | [card](https://huggingface.co/dimitarpg13/semsimula-ladder-live-owt-d384-l4-none) | [protocol](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-l4-live) |
+| <a name="g3-ladder"></a>**G3** | G2 plus the conservative **exchange field** (`LADDER_MECHANISM = 'attention_potential'`, `RELAX_GRAD_PATH = 'live'`): everything live | 54.21 | [folder](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_rglive_vplive_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_attnpot/), [log](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_rglive_vplive_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_attnpot/L2_arm_attnpot_live_grads_32500steps_output.txt) | [card](https://huggingface.co/dimitarpg13/semsimula-ladder-live-owt-d384-l2-attention-potential) | [protocol](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-g3-ladder) |
+| <a name="g3p"></a>**G3′** | G3 with **hardened routing**: QK-normalised exchange-field routing (`RELAX_ATTN_QK_NORM = True`) and its own clip group (`RELAX_FIELD_CLIP = 0.3`) | 52.90 | [folder](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_rglive_vplive_xilive_rfqk_rfclip0p3_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_attnpot/), [log](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_rglive_vplive_xilive_rfqk_rfclip0p3_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_attnpot/L2_arm_attnpot_rfqk_32500steps_output.txt) | [card](https://huggingface.co/dimitarpg13/semsimula-ladder-live-owt-d384-l2-attention-potential-rfqk) | [protocol](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-g3p) |
+| <a name="xrb-f"></a>**XRB-F** | F3.1 plus G3′'s exchange field, **no register read** (`REVERSE_CHANNEL = False`) | 54.27 | [folder](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_rglive_vplive_xilive_rfqk_rfclip0p3_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_attnpot/), [log](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_rglive_vplive_xilive_rfqk_rfclip0p3_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_attnpot/L2_attnpot_norc_F3.1prim_32500steps_output.txt) | [card](https://huggingface.co/dimitarpg13/semsimula-ladder-live-owt-d384-l2-attention-potential-rfqk-norc) | [protocol](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-xrb-f) |
+| <a name="pm1"></a>**PM1** | F3.1 plus 64 **Poisson-mode registers** with explicit wells (`POISSON_MODES = 64`, own clip group at 0.3); probe to 8,000 steps, then resumed to 32,500 | 55.17 | [folder](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_pm64_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/), [log 1](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_pm64_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/L2probe_arm_none_pm64_clip0.3_8000steps_output.txt), [log 2](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_pm64_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/L2_arm_none_pm64_clip0.3_32500steps_output.txt) | not published | [protocol](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-pm1) |
+
+### Gen 2: detached sources
+
+| Arm | What it is: Cell 0 against its base | Settled PPL | Run folder and training log | Checkpoint | Scored in |
+|---|---|---:|---|---|---|
+| <a name="gen2-attention"></a>**attention (Gen 2)** | Non-conservative **exchange field** (`LADDER_MECHANISM = 'attention'`), detached sources | 63.51 | [folder](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_attn/), [log](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_attn/L2_idt4_lr0p0012_attn_altE_fromscratch_32500_result.txt) | [card](https://huggingface.co/dimitarpg13/semsimula-ladder-owt-d384-l2-attention) | [protocol](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-gen2-attention) |
+| <a name="gen2-none"></a>**no-exchange (Gen 2)** | **Fock mechanism** on, no exchange field (`LADDER_MECHANISM = 'none'`), detached sources | 66.98 | [folder](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/), [log](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/L2_idt4_lr0p0012_noattn_altE_fromscratch_32500_result.txt) | [card](https://huggingface.co/dimitarpg13/semsimula-ladder-owt-d384-l2-none) | [protocol](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-gen2-none) |
+| <a name="gen2-attnpot"></a>**attention_potential (Gen 2)** | Conservative **exchange field** (`LADDER_MECHANISM = 'attention_potential'`), detached sources | 80.90 | [folder](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_attnpot/), [log](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_attnpot/L2_idt4_lr0p0012_attnpot_altE_fromscratch_32500_result.txt) | [card](https://huggingface.co/dimitarpg13/semsimula-ladder-owt-d384-l2-attention-potential) | [protocol](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-gen2-attnpot) |
+| <a name="gen2-none-norc"></a>**conservative-only (Gen 2)** | No-exchange without the reverse channel (`REVERSE_CHANNEL = False`), detached sources | 87.93 | [folder](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/), [log](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/L2_idt4_lr0p0012_norc_noattn_altE_fromscratch_32500_result.txt) | [card](https://huggingface.co/dimitarpg13/semsimula-ladder-owt-d384-l2-none-norc) | [protocol](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-gen2-none-norc) |
+| <a name="gen2-none-l4"></a>**no-exchange L = 4 (Gen 2)** | No-exchange at depth 4 (`LADDER_L = 4`, Δt = 2), detached sources (run 4) | 71.75 | [folder](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L4probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt2_lr0p0012_noattn/), [log](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L4probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt2_lr0p0012_noattn/L4_idt2_lr0p0012_noattn_altE_fromscratch_32500_result.txt) | not published | [protocol](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-gen2-none-l4) |
+| <a name="gen2-none-l1"></a>**no-exchange L = 1 (Gen 2)** | No-exchange at depth 1 (`LADDER_L = 1`, Δt = 8), detached sources (run 7) | 87.09 | [folder](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L1probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt8_lr0p0012_noattn/), [log](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L1probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt8_lr0p0012_noattn/L1_idt8_lr0p0012_noattn_altE_fromscratch_32500_result.txt) | not published | [protocol](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-gen2-none-l1) |
+| <a name="gen2-attnpot-rglive"></a>**attention_potential, live field (probe)** | The gradient-path probe: attention_potential with a live exchange-field gradient only (`RELAX_GRAD_PATH = 'live'`), extended from 3,000 to 32,500 steps | 61.11 | [folder](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_rglive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_attnpot/), [log 1](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_rglive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_attnpot/L2_idt4_lr0p0012_attnpot_rglive_probe3000_result.txt), [log 2](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_rglive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_attnpot/L2_attnpot_live_grad_exchange_field_32500steps.txt) | [card](https://huggingface.co/dimitarpg13/semsimula-ladder-owt-d384-l2-attention-potential-rglive) | [protocol](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-gen2-attnpot-rglive) |
+
+### Matched GPT-2 references
+
+| Arm | What it is: Cell 0 against its base | Settled PPL | Run folder and training log | Checkpoint | Scored in |
+|---|---|---:|---|---|---|
+| <a name="gpt2-matched"></a>**matched GPT-2** | The **reference**: d = 384, L = 8, 33.7M parameters, cosine schedule (peak 6e-4), batch 32 × 512, 32,500 steps | 49.81 | [folder](notebooks/conservative_arch/scaleup/results/gpt2_baseline_d384_L8/), [log](notebooks/conservative_arch/scaleup/results/gpt2_baseline_d384_L8/matched_batch32_32500_result.txt) | [card](https://huggingface.co/dimitarpg13/semsimula-ladder-owt-d384-l2-gpt2-matched) | [protocol](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-gpt2-matched) |
+| <a name="w1"></a>**W1** | The same GPT-2 on the ladder's WSD schedule (`LR_SCHEDULE = 'wsd'`), peak 6e-4 | 48.82 | [folder](notebooks/conservative_arch/scaleup/results/gpt2_baseline_wsd/), [log](notebooks/conservative_arch/scaleup/results/gpt2_baseline_wsd/gpt2_matched_baseline_wsd_schedule_output.txt) | not published | [protocol](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-w1) |
+| <a name="w2"></a>**W2** | W1 at the ladder's peak learning rate (`LR = 1.2e-3`) | 48.37 | [folder](notebooks/conservative_arch/scaleup/results/gpt2_baseline_wsd_lr0p0012/), [log](notebooks/conservative_arch/scaleup/results/gpt2_baseline_wsd_lr0p0012/W2_matched_gpt2_wsd_lr1.2e-3_32500steps_training_output.txt) | not published | [protocol](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-w2) |
+| <a name="g2b"></a>**G2B** | W2 for **2.13B tokens** (`TOTAL_STEPS = 130_000`) | 42.69 | [folder](notebooks/conservative_arch/scaleup/results/gpt2_baseline_wsd_lr0p0012_st130000/), [log](notebooks/conservative_arch/scaleup/results/gpt2_baseline_wsd_lr0p0012_st130000/matched_gpt2_LR=1.2e-03_130000steps_training_output.txt) | [card](https://huggingface.co/dimitarpg13/semsimula-ladder-owt-d384-gpt2-matched-2b) | [protocol](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-g2b) |
+
+---
+
+## Geometry, settling, balance and register diagnostics on the CfC/BAOAB ladder (book §D.10)
+
+<a name="ladder-diagnostics"></a>The CG, SR, CB and DP codes of the book's Appendix D. The CG codes are
+cells of the ladder notebook run on trained arms; their outputs sit in
+each arm's results folder (see [the ladder](#ladder)). SR2 and SR3 ran as
+[SR2](#sr2) and [SR3-crit](#sr3-crit).
+
+| Code | What it is | Status | Notebook, cell or script | Results | Checkpoint | Written up in |
+|---|---|---|---|---|---|---|
+| <a name="cg1"></a>**CG1** | One-step replay: how far each layer step deflects from the damped V_θ geodesic step, with arms that switch off V_φ, LayerNorm and the reverse channel (note label E1) — Book: Table 58 (`tab:cg1-arms`) | done (2026-09-25; re-run on later arms) | [`colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb), Cell 6b-9 | `Cell-6b-9_*_output.txt` in each arm's folder, e.g. [F3.1](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/); the first run's output is not in the repository | evaluation only | [geodesic note §4](companion_notes/Geodesic_Experiments_with_CfC_BAOAB.md#n-cg1) |
+| <a name="cg2"></a>**CG2** | Refinement at fixed integration time T: is the layer stack a flow or a sequence of maps? (Gates 0–3; the note's decomposed refinement E2 was designed but not run) — Book: Remark 67 (`rem:refinement-invariance`) | done (Gate 3, 2026-09-24 on; re-run on later arms) | [`colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb), Cell 6b-7 | `Cell-6b-7_flow_or_maps*_output.txt` in each arm's folder, e.g. [F3.1](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/) | evaluation only | [flow-or-maps note §8](companion_notes/Composing_Single_Layer_Inferences_Flow_or_Maps.md#n-cg2-gate3); design [geodesic note §5](companion_notes/Geodesic_Experiments_with_CfC_BAOAB.md#n-cg2) |
+| <a name="cg3"></a>**CG3** | Is the trajectory more forecastable than the matched GPT-2's? Three metrics (note label E3) — Book: Proposition 115 (`prop:cg-sphere`) | done (null at L = 2; scored on L = 4 live, 2026-10-03) | [`colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb), Cell 6b-10 | [F3.1](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/Cell-6b-10_forecastable_trajectory_output.txt), [L = 4 live](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_vplive_xilive_L4probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt2_lr0p0012_noattn/Cell-6b-10_forecastable_trajectory_output.txt) | evaluation only | [geodesic note §6](companion_notes/Geodesic_Experiments_with_CfC_BAOAB.md#n-cg3); [protocol](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-cg3) |
+| <a name="cg4"></a>**CG4** | LayerNorm acts as a position-only constraint, not a perturbation (note label E4), read from CG1's LayerNorm-off arm — Book: Proposition 113 (`prop:cg-ln-velocity`) | analysis | [`colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb), Cell 6b-9 (LayerNorm-off arm) | in the Cell 6b-9 outputs | evaluation only | [geodesic note §7](companion_notes/Geodesic_Experiments_with_CfC_BAOAB.md#n-cg4) |
+| <a name="cg5"></a>**CG5** | Reverse-channel slider: scale the reverse channel by λ from 1 to 0 and trade perplexity for geodesicity (note label E5) — Book: Figure 70 (`fig:e5-slider`) | done (2026-09-25, re-run 09-27: 69.5 → 271.8 PPL, no knee) | [`colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb), Cell 6b-11 | no Cell 6b-11 log in the repository; figure [slider](companion_notes/figures/geodesic_cfc/gcfc_e5_slider_measured.png) | evaluation only | [geodesic note §11](companion_notes/Geodesic_Experiments_with_CfC_BAOAB.md#n-cg5) |
+| <a name="cg6"></a>**CG6** | Per-token forcing: is the non-conservative deflection sparse? Uniform on every arm (note label F1) — Book: §27.14 (`par:forcing-is-uniform`) | done (2026-09-26/27) | [`colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb), Cell 6b-12 | [Gen 2 conservative-only](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/F1_6b12_per_token_deflection.txt); `Cell-6b-12_sparse_forcing_output.txt` in later arms' folders | evaluation only | [forced-Lagrangian note §3.1](companion_notes/Forced_Lagrangian_Reformulation.md#n-cg6) |
+| <a name="cg7"></a>**CG7** | ω·Δt at the end of training on fixed tokens, compared across arms (note label D2) — Book: Proposition 119 (`prop:cfp-no-wall`) | done (scored 2026-09-29; run on later arms) | [`colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb), Cell 6b-13 | [Gen 2 L = 2](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/D2_6b13_omega_dt_endpoint.txt); `Cell-6b-13_*_output.txt` in later arms' folders | evaluation only | [diagnostic note §18.3](companion_notes/Diagnostic_Programme_in_CfC_BAOAB_Integrator.md#n-cg7); [protocol](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-cg7) |
+| <a name="cg8"></a>**CG8** | Does the geometry predict the model's own next-token errors beyond its confidence? — Book: §38.6 (`subsec:geom-requirements`) | planned (Cell 6b-14 not yet written) | ladder notebook, Cell 6b-14 (planned) | — | — | [protocol §5.12](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-cg8) |
+| <a name="sr1"></a>**SR1** | Palindromic step order, the friction split around the kick (A·O½·B·O½·A); F3.1 base — Book: Table 103 (`tab:expidx-sr`) | planned | ladder notebook (to be added) | — | — | [protocol §5.9](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr) |
+| <a name="sr4"></a>**SR4** | Variable-step training: (a) N ~ U{2, 3, 4} at fixed T (refinement axis), (b) N ~ U{2, 3} at Δt = 4 (extension axis) — Book: Table 103 (`tab:expidx-sr`) | planned | ladder notebook (to be added) | — | — | [protocol §5.9](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr) |
+| <a name="sr5"></a>**SR5** | Thermal training: an O-step thermostat in training only, `LANGEVIN_T` ∈ {0.00025, 0.0022}; annealed variant only if SR4(b) passes — Book: Table 103 (`tab:expidx-sr`) | planned (temperatures calibrated 2026-10-03) | [`colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb), Cell 0 `LANGEVIN_T`; [`calibrate_langevin_T.py`](notebooks/conservative_arch/scaleup/debug/calibrate_langevin_T.py) | [calibration](notebooks/conservative_arch/scaleup/debug/calibrate_langevin_T_output.txt) | — | [protocol §5.9](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr5) |
+| <a name="cb1"></a>**CB1** | Register path ramped in late: `REVERSE_CHANNEL_WARMUP_STEPS = 20000` (tag `rcw20000`) instead of 4,000 — Book: Table 104 (`tab:expidx-cb`) | planned (switch verified) | [`colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb), Cell 0; [`verify_cb_switches.py`](notebooks/conservative_arch/scaleup/debug/verify_cb_switches.py) | — | — | [protocol §5.11](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-cb) |
+| <a name="cb2"></a>**CB2** | Per-token cap on the register increment at ρ times the conservative step: `FOCK_BUDGET` = 1.0 (CB2a) or 0.3 (CB2b) — Book: Table 104 (`tab:expidx-cb`) | planned (switch verified) | [`colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb), Cell 0; [`verify_cb_switches.py`](notebooks/conservative_arch/scaleup/debug/verify_cb_switches.py) | — | — | [protocol §5.11](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-cb) |
+| <a name="cb3"></a>**CB3** | Learned per-token gate on the register increment, L1-penalised: `FOCK_GATE_L1 = 0.02` (tag `fg0p02`) — Book: Table 104 (`tab:expidx-cb`) | planned (switch verified) | [`colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb), Cell 0; [`verify_cb_switches.py`](notebooks/conservative_arch/scaleup/debug/verify_cb_switches.py) | — | — | [protocol §5.11](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-cb) |
+| <a name="dp1"></a>**DP1** | Is particle number dynamic? Active fraction of the registers from layer 1 on — Book: Table 105 (`tab:expidx-dp`) | done (2026-10-05): 0.9995–1.000, no number dynamics | [`dp_register_statistics.py`](notebooks/conservative_arch/scaleup/debug/dp_register_statistics.py) (CPU) | [output](notebooks/conservative_arch/scaleup/debug/dp_register_statistics_output.txt), [JSON](notebooks/conservative_arch/scaleup/debug/dp_register_statistics.json) | evaluation only (G2, L = 4 live, G3) | [protocol §5.14](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-dp-scored); [Doi–Peliti note §7](companion_notes/Doi_Peliti_Dynamics_of_Semantic_Particles_and_Registers.md#n-dp) |
+| <a name="dp2"></a>**DP2** | Do registers share content? Near-duplicate pairs (cosine > 0.9) among active registers — Book: Table 105 (`tab:expidx-dp`) | done: at most 1.3%, distinct slots | [`dp_register_statistics.py`](notebooks/conservative_arch/scaleup/debug/dp_register_statistics.py) | [output](notebooks/conservative_arch/scaleup/debug/dp_register_statistics_output.txt) | evaluation only | [protocol §5.14](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-dp-scored) |
+| <a name="dp3"></a>**DP3** | Does salience act as intensity? Spearman correlation of salience with the register's own leave-one-out force — Book: Table 105 (`tab:expidx-dp`) | done: −0.41 to 0.0, retention not intensity | [`dp_register_statistics.py`](notebooks/conservative_arch/scaleup/debug/dp_register_statistics.py) | [output](notebooks/conservative_arch/scaleup/debug/dp_register_statistics_output.txt) | evaluation only | [protocol §5.14](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-dp-scored) |
 
 ---
 
@@ -989,7 +1142,7 @@ follows it.
 | <a name="gamma-h"></a>**learned ζ(h)** | SR2 plus a learned per-token damping ratio, ζ(h) = 0.005·exp(head(h)), capped at 10 (`LEARNED_DAMPING_RATIO = True`, `DAMPING_RATIO_INIT = 0.005`) | 59.29 | [folder](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_gzh_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/) (`…sr2_gzh…`), [log](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_gzh_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/L2_learned-gamma-h_on_SR2_OWT_32500steps_output.txt) | [card](https://huggingface.co/dimitarpg13/semsimula-ladder-live-owt-d384-l2-none-norc-sr2-gzh) | [protocol](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-gamma-h) |
 | <a name="fo-b-owt"></a>**FO-b-OWT** | SR2 trained as a true **first-order** gradient flow (`FIRST_ORDER_OVERDAMPED = True`) | 61.16 | [folder](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_fob_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/) (`…sr2_fob…`), [log](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_fob_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/L2_FO-b-SR2_OWT_32500steps_output.txt) | [card](https://huggingface.co/dimitarpg13/semsimula-ladder-live-owt-d384-l2-none-norc-sr2-fob) | [protocol](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-fo-b-owt) |
 | <a name="sr3-crit"></a>**SR3-crit** | SR2 with its stiff modes **critically damped**, γᵢ = γ₀ + 2ωᵢ; keeps the velocity between layers, removes the oscillation (`STIFF_MODE_DAMPING_RATIO = 1.0`) | 63.28 | [folder](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_sr3_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/) (`…sr2_sr3…`), [log](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_sr3_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/L2_SR3-crit_on_SR2_OWT_32500steps_output.txt) | [card](https://huggingface.co/dimitarpg13/semsimula-ladder-live-owt-d384-l2-none-norc-sr2-sr3) | [protocol](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr3-crit) |
-| <a name="pmx"></a>**PMX** | SR2 plus **64 Poisson-mode wells** integrated exactly (`POISSON_MODES = 64`, `POISSON_WELLS_EXACT = True`), second order | 54.63 | [folder](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_pm64_pmx16_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/) (`…pm64_pmx16_sr2…`), [log](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_pm64_pmx16_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/L2_PMX_32500steps_output.txt) | [card](https://huggingface.co/dimitarpg13/semsimula-ladder-live-owt-d384-l2-none-norc-pm64-pmx16-sr2) | [protocol](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-pmx) |
+| <a name="pmx"></a>**PMX**<!-- aka: PMX-PARFLM --> | SR2 plus **64 Poisson-mode wells** integrated exactly (`POISSON_MODES = 64`, `POISSON_WELLS_EXACT = True`), second order | 54.63 | [folder](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_pm64_pmx16_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/) (`…pm64_pmx16_sr2…`), [log](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_pm64_pmx16_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/L2_PMX_32500steps_output.txt) | [card](https://huggingface.co/dimitarpg13/semsimula-ladder-live-owt-d384-l2-none-norc-pm64-pmx16-sr2) | [protocol](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-pmx) |
 | <a name="fo-b-pmx"></a>**FO-b-PMX** | PMX trained first order (`FIRST_ORDER_OVERDAMPED = True`) | 54.02 | [folder](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_pm64_pmx16_sr2_fob_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/) (`…pm64_pmx16_sr2_fob…`), [log](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_pm64_pmx16_sr2_fob_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/L2_FO-b-PMX_OWT_32500steps_output.txt) | [card](https://huggingface.co/dimitarpg13/semsimula-ladder-live-owt-d384-l2-none-norc-pm64-pmx16-sr2-fob) | [protocol](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-fo-b-pmx) |
 | <a name="pmx-k16"></a>**PMX-K16** | PMX with **16 wells** (`POISSON_MODES = 16`), second order | 54.24 | [folder](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_pm16_pmx16_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/) (`…pm16_pmx16_sr2…`), [log](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_pm16_pmx16_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/L2_PM16-PMX16_on_OWT_32500steps_output.txt) | [card](https://huggingface.co/dimitarpg13/semsimula-ladder-live-owt-d384-l2-none-norc-pm16-pmx16-sr2) | [protocol](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-pmx-k16) |
 | <a name="fo-b-pmx-k16"></a>**FO-b-PMX-K16** | PMX-K16 trained first order; protocol name FO-b-PM16-PMX16 | 53.73 | [folder](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_pm16_pmx16_sr2_fob_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/) (`…pm16_pmx16_sr2_fob…`), [log](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_pm16_pmx16_sr2_fob_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/L2_FO-b-PM16-PMX16_on_OWT_32500steps_output.txt) | [card](https://huggingface.co/dimitarpg13/semsimula-ladder-live-owt-d384-l2-none-norc-pm16-pmx16-sr2-fob) | [protocol](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-fo-b-pmx-k16) |

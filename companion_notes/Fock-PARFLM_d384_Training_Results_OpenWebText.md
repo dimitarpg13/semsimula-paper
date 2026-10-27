@@ -30,6 +30,7 @@
 
 ---
 
+<a name="n-su-iso"></a>
 ## 1. Summary
 
 This document records the training history of the Fock-PARFLM v2.1 model at d=384, L=16 on OpenWebText (run tag: `e5c_plgate`). Training uses a graduated token-pool strategy across three phases:

@@ -387,6 +387,7 @@ By (6.1), after $L$ layers the initial salience survives with weight $\prod_l\la
 
 ---
 
+<a name="n-dp"></a>
 ## 7. What the trained models implement: the DP series
 
 ### 7.1 Design

@@ -704,6 +704,7 @@ At $d \gtrsim 768$ you should fall back to the SPLM formula **entirely**, becaus
 
 ---
 
+<a name="n-fockgaussaniso"></a>
 ## 11. Anisotropic Gaussian V_theta sweep: d=256, L=8, TinyStories (August 5, 2026)
 
 The two-regime formula of §7 was calibrated entirely from the MLP V_theta scale-up sweeps on OpenWebText ($d = 384/768/1024$). A gamma sweep on the **anisotropic Gaussian V_theta + Fock regularisation** configuration on TinyStories at $d = 256$, $L = 8$ provides a new data point that tests two things simultaneously: (a) the formula's transfer to a different V_theta family, and (b) its behaviour below $d = 384$, where $\rho\_{\text{lo}} \approx 0.06$ predicts heavy damping.
@@ -839,6 +840,7 @@ This is the first documented case where the sweep's ranking inverted at full tra
 
 ---
 
+<a name="n-su-aniso"></a>
 ## 12. Anisotropic Gaussian V_theta sweep: d=384, L=16, OpenWebText (August 8, 2026)
 
 §11's open question #1(b) asked directly: *"Aniso-Gaussian at `d=384, L=16` on OWT — does the high-$d$ anchor hold, or does OWT's higher complexity push the boundary?"* This sweep answers it.

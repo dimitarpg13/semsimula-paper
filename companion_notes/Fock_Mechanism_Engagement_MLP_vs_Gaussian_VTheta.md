@@ -108,6 +108,7 @@ Key observations:
 - **The sum $\Sigma \alpha$ is stable** around 2.4-2.7, declining very slowly as expected
   from the cosine schedule decay.
 
+<a name="n-fockgaussiso"></a>
 ### 4.2 Gaussian V\_theta (Experiment B): weaker but stable Fock engagement
 
 The clean Gaussian V\_theta run on TinyStories d=256 showed a qualitatively different

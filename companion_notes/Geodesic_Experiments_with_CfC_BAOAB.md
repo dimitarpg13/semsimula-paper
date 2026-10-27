@@ -270,6 +270,7 @@ machinery *should*. E2 tests exactly that (§5).
 
 ---
 
+<a name="n-cg1"></a>
 ## 4. E1 — the per-step deflection from the $V_\theta$ geodesic
 
 ### 4.1 Method: replay, do not re-run
@@ -627,6 +628,7 @@ bundled quantity. Cell 6b-9 now labels every non-`'none'` relax mode.
 
 ---
 
+<a name="n-cg2"></a>
 ## 5. E2 — decomposed refinement
 
 Re-run Gate 3, but refine **only the $V_\theta$ flow**: $k$ CfC substeps of
@@ -653,6 +655,7 @@ Evaluation-only; reuses Cell 6b-7's loop with the A-substep subdivided.
 
 ---
 
+<a name="n-cg3"></a>
 ## 6. E3 — is the semantic trajectory more forecastable than a transformer's?
 
 ### 6.1 What E1 ruled out, and what it left open
@@ -994,6 +997,7 @@ part. One extra entry in `R9_ARMS`; worth running alongside E3.
 
 ---
 
+<a name="n-cg4"></a>
 ## 7. E4 — LayerNorm is a constraint, not a perturbation
 
 `_project` is `F.layer_norm(h, (d,), eps)` with **no affine parameters**:
@@ -1112,6 +1116,7 @@ what E3 measures.
 
 ---
 
+<a name="n-cg5"></a>
 ## 11. E5 — the reverse-channel slider: buying geodesicity with PPL
 
 ### 11.1 The question

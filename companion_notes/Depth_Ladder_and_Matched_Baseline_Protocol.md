@@ -1092,6 +1092,8 @@ Why it is not the result, and how it must be reported:
   L=4's** (≈ 4.4–4.9 and ≈ 62%). The exploratory max ratio is therefore
   ≈ 1.5, to be confirmed by 6b-13 on both endpoints.
 
+<a name="p-gen2-none-l4"></a>
+<a name="p-cg7"></a>
 #### Run 4 settled at 71.75, and the ω·dt comparison scored — **2026-09-29**
 
 **The rung.** Run 4 finished cleanly at 32,500. Best 70.19 (step 31,000);
@@ -1285,6 +1287,7 @@ Book: §18 "The replay instrument and the forecastability test" (CG3, formerly n
 - **Indeterminate:** anything in between.
 - Metric (c) is reported separately. It speaks to contraction, not to forecasting.
 
+<a name="p-l4-live"></a>
 #### L=4 live scored: **50.10 settled — within 0.6% of the matched GPT-2** — **2026-10-03**
 
 Log: [`results/…cgqk_vplive_xilive_L4probe…idt2…_noattn/L4_idt2_lr0p0012_vplive_xilive_noattn_32500_result.txt`](../notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_vplive_xilive_L4probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt2_lr0p0012_noattn/L4_idt2_lr0p0012_vplive_xilive_noattn_32500_result.txt)
@@ -1325,6 +1328,7 @@ Log: [`results/…cgqk_vplive_xilive_L4probe…idt2…_noattn/L4_idt2_lr0p0012_v
 - **Depth:** L=4 live beats L=2 conservative-only live by 13.3%. That comparison mixes depth with the Fock mechanism, so the depth answer still needs P2.2 (L=2 Fock live).
 - Run 4's L=4 < L=2 inversion, the original question that opened the depth investigation, does not survive the gradient fix: L=4 live (50.10) is far below every L=2 arm measured so far.
 
+<a name="p-cg3"></a>
 #### L=4 live: post-training probes, and CG3 scored — **2026-10-03**
 
 Outputs filed with the run (`results/…cgqk_vplive_xilive_L4probe…/Cell-6b-*`). All gates passed bit-exactly. On the probe batches the model scores PPL 48.02, against GPT-2's 47.42.
@@ -1932,6 +1936,7 @@ This is a revision of a pre-registered band *before* the run, on the
 grounds that the stated mechanism was factually wrong — not a re-basing
 after seeing a result. Both bands stay on the record.
 
+<a name="p-gen2-attention"></a>
 ### 5.7 L=2, `'attention'` @1.2e-03 — **DONE 2026-09-26** (run 9)
 
 Log: [`results/.../L2_idt4_lr0p0012_attn_altE_fromscratch_32500_result.txt`](../notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_attn/L2_idt4_lr0p0012_attn_altE_fromscratch_32500_result.txt)
@@ -2052,6 +2057,7 @@ running away at the higher LR. `bproj_sig` saturated at 84.25 (85.4 for
 `'none'`). Decay gain 17.1% (76.62 at 21,500 to 63.51), against `'none'`'s
 19.3%.
 
+<a name="p-gen2-attnpot"></a>
 ### 5.8 L=2, `'attention_potential'` @1.2e-03 — **DONE 2026-09-27** (run 5)
 
 Log: [`results/.../L2_idt4_lr0p0012_attnpot_altE_fromscratch_32500_result.txt`](../notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_attnpot/L2_idt4_lr0p0012_attnpot_altE_fromscratch_32500_result.txt)
@@ -2441,6 +2447,7 @@ model, and a (b) confirmation alone already overturns the current reading.
 
 ---
 
+<a name="p-gen2-attnpot-rglive"></a>
 #### Probe (b), full run: post-training probes (6b-7/9/12/13) and publication — **2026-10-02**
 
 On `_best.pt` (step 31,000, PPL 59.09), against its starved parent on the same architecture. E1 values are comparable within this pair only; other arms carry different potentials.
@@ -2459,6 +2466,7 @@ On `_best.pt` (step 31,000, PPL 59.09), against its starved parent on the same a
 - 6b-13 printed MISS against [3.3, 4.2]. That band was pre-registered for the no-exchange arm and does not apply here; the reading is recorded, not scored.
 - **Published 2026-10-02** as a Gen 2 probe, NOT a ladder arm: `dimitarpg13/semsimula-ladder-owt-d384-l2-attention-potential-rglive`. It is the last item of the Gen 2 collection, and the four Gen 2 banners link it where they cite 61.11.
 
+<a name="p-gpt2-matched"></a>
 ### 5.4 Matched GPT-2 baseline — **DONE 2026-09-21**
 
 Log: [`results/gpt2_baseline_d384_L8/matched_batch32_32500_result.txt`](../notebooks/conservative_arch/scaleup/results/gpt2_baseline_d384_L8/matched_batch32_32500_result.txt)
@@ -2523,7 +2531,7 @@ in this document should be quoted without the qualifier.
 [`Hyperparameter_Tuning_Checklist.md`](Hyperparameter_Tuning_Checklist.md)**,
 together with the evidence for which knobs actually bind.
 
-**The LR sweep has landed, and it was worth far more than this section
+<a name="p-gen2-none"></a>**The LR sweep has landed, and it was worth far more than this section
 assumed.** L=2 `'none'` at 1.2e-03 settles at **66.98** against 75.09 —
 **+10.8%**, moving the ratio from 1.507 to **1.345** on a single knob. The
 paragraph above guessed "5-15%" for LR tuning and that was right; the guess
@@ -2544,6 +2552,7 @@ and LR tuning on a well-behaved setup typically buys 5-15%. Tuning is very
 unlikely to close this on its own, and claiming otherwise in advance would be
 the mirror image of the error this section exists to correct.
 
+<a name="p-gen2-none-l1"></a>
 ### 5.5 L=1, `'none'` @1.2e-03 — **DONE 2026-09-24**
 
 Log: [`results/.../L1_idt8_lr0p0012_noattn_altE_fromscratch_32500_result.txt`](../notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L1probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt8_lr0p0012_noattn/L1_idt8_lr0p0012_noattn_altE_fromscratch_32500_result.txt)
@@ -2605,6 +2614,7 @@ is the frozen bank, because L=1 changes both at once (§6.1, and
 L=2). The decomposition is the L=1 run at `register_salience_init = 0.5`,
 which is outside the ladder by design.
 
+<a name="p-gen2-none-norc"></a>
 ### 5.6 L=2, `'none'`, reverse channel off — the conservative-only control, **DONE 2026-09-25**
 
 Log: [`results/.../L2_idt4_lr0p0012_norc_noattn_altE_fromscratch_32500_result.txt`](../notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/L2_idt4_lr0p0012_norc_noattn_altE_fromscratch_32500_result.txt)
@@ -2859,6 +2869,7 @@ No-exchange's log in the repo starts at step 6,500, so it has no 5,000 eval.
   - Two isolated clip-hits in the stable phase, at steps 17,700 (1.51) and 19,250 (2.19). Total 4 of 593 logged (0.7%), against the parent's 2.6%. No watchdog trigger.
   - SCAF CLEAN at 5k, 10k, 15k, 20k and 25k.
 
+<a name="p-f3-1"></a>
 #### F3.1 scored: **57.76 settled — the best L=2 model in the programme** — **2026-10-02**
 
 Log and probe outputs: [`results/…cgqk_norc_vplive_xilive_L2probe…_noattn/`](../notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/).
@@ -2924,6 +2935,7 @@ The last three evals were 58.39, 57.54 and 57.35. The run was still improving at
 
 ---
 
+<a name="p-sr"></a>
 ### 5.9 SR1–SR4: settling, refinement and depth extension — **pre-registered 2026-10-03, before any run**
 
 Book §8.9 (`ssec:settling-refinement`, Props 44–45) gives the theory: the split A·O·A step makes a stiff mode's dissipation depend on the step count through θ/sin θ (θ = ω·Δt), proportional to the damping ratio; the exact damped-mode flow removes that for the linear stiff part; settling needs ‖v_T‖ small; a common cause, single-discretisation training with weak damping, sits behind all three failures.
@@ -3053,7 +3065,7 @@ Proposition 44 amplifies the phase-sampled dissipation of the split step by θ/s
 
 **Order.** SR-π.3 is free and runs first. SR-π.2 rides on SR2 (adding G2's configuration as a second SR2 arm). SR-π.1 needs an L=8 Fock live run: about 6 s/step, so about 55 h. It is scheduled after the CB series.
 
-**SR5, thermal training (added 2026-10-03, before any run).** `LANGEVIN_T > 0` turns the O-step into an FDT-locked thermostat. The noise is applied in training only (`noise_eval=False`), so eval PPL and every 6b probe stay deterministic. The cell-0 switch and its tag already exist; the tag now renders `T0p00025` / `T0p0022`.
+<a name="p-sr5"></a>**SR5, thermal training (added 2026-10-03, before any run).** `LANGEVIN_T > 0` turns the O-step into an FDT-locked thermostat. The noise is applied in training only (`noise_eval=False`), so eval PPL and every 6b probe stay deterministic. The cell-0 switch and its tag already exist; the tag now renders `T0p00025` / `T0p0022`.
 
 - **Why it is in the SR series.** It attacks the common cause from a different side than SR4.
   - SR4 randomises the discretisation, so the model must make its momentum work at every step count.
@@ -3105,7 +3117,7 @@ The v6 abstract (book stage 2, `Paper_v6_Section_Audit.md`) will state three thi
 - **Key line 2, depth under live gradients:** settled > 50.10 means L=4 beats L=2 on one mechanism and one convention, which is the first clean depth answer. Called at about 75%. If it is ≤ 50.10, the L=2 < L=4 inversion survives the gradient fix, and depth is not what the L=4 run bought.
 - **CG1 forecast:** V_φ attribution |·| < 0.05 (inert, as at L=4), from the substitution reading. Above 0.15 refutes the substitution account at L=2.
 
-**G2 scored, 2026-10-04.**
+<a name="p-g2-ladder"></a>**G2 scored, 2026-10-04.**
 
 | measure | value |
 | --- | --- |
@@ -3175,7 +3187,7 @@ The step-32,500 audit printed honest/standard PPL as nan, while its future pertu
 
     Predicted: the gradient norm stays flat (within ±25% of its 5,000-step value) through the stable phase, called at 70%. Settled ≤ 52.1, i.e. the exchange field adds value once hardened, called at 50%. Code: a QK-norm switch on `XiRoutedConservativeAttention`, off by default and verified bit-identical. It is not gating the v6 abstract.
 
-    **G3′ scored, 2026-10-06.** Log `~/Downloads/L2_arm_attnpot_rfqk_32500steps_output.txt`.
+    <a name="p-g3p"></a>**G3′ scored, 2026-10-06.** Log `~/Downloads/L2_arm_attnpot_rfqk_32500steps_output.txt`.
 
     | measure | value |
     | --- | --- |
@@ -3250,7 +3262,7 @@ The step-32,500 audit printed honest/standard PPL as nan, while its future pertu
       - only the five `relax_field` parameters change clip group.
     - **Watch item.** On G3's trained weights, W_v carries most of the field's gradient (4.0 against 0.1–0.4 for the others). The 0.3 group clip will be set by W_v. Per-group norms are logged, so it can be read in the run.
 
-- **G3 scored, 2026-10-05.**
+- <a name="p-g3-ladder"></a>**G3 scored, 2026-10-05.**
 
   | measure | value |
   | --- | --- |
@@ -3306,6 +3318,7 @@ The step-32,500 audit printed honest/standard PPL as nan, while its future pertu
 
 **Order and cost (author's call, 2026-10-03):** G2 first (it gates two claims and is the longest run, about 12 h at 1.29 s/step), with G4 (minutes) alongside. G3 next, or at the same time if a second session is free (about 13–14 h). G1 is deferred until all three are in. With concurrent Colab sessions, all three trainings can run at once. They share no files: separate tags and, for G1, separate folders.
 
+<a name="p-cb"></a>
 ### 5.11 CB1–CB3: balancing the conservative and Fock paths — **pre-registered 2026-10-03, before any run**
 
 **Question.** Is the pair potential (PARF's V_φ) starved when the Fock register path is present? And can a model keep most of the Fock gain while staying mostly conservative? (Author's hypothesis, 2026-10-03.)
@@ -3397,6 +3410,7 @@ About 15 h each at L=2.
 - **Harness note.** A first local run reported 1,114 at λ = 1. That was a bug in my wrapper, not in the cell. The notebook installs the depth routing as an *instance* attribute `_fock_layer_step`, and my script removed its own wrapper with `del`, which stripped the routing too. The script now restores by assignment, and the cell itself (which assigns) is unaffected. The other local scripts were checked: only `_fock_layer_step` is instance-level, and none of them deletes it.
 
 
+<a name="p-cg8"></a>
 ### 5.12 CG8: does the geometry predict the model's own errors? — **pre-registered 2026-10-03, before any measurement**
 
 **Why.** Book §18d's new subsection (`subsec:geom-requirements`) separates three properties: a conservative step (C), refinement invariance (R) and settling (S). Each geometric capability is the model's own only if the properties it reads are present. SR1–SR4 target (R) and (S); CB1–CB3 target (C). CG8 asks whether securing them is worth anything: does the trajectory's geometry carry information about the model's own errors that the output distribution does not? It is a token-level proxy for the hallucination detector (§18d Experiment G2), and it needs evaluation only.
@@ -4633,6 +4647,7 @@ SC4, SC5, GH2–GH4 stand as written. With FO-b behind, the γ(h) arm's question
 
 **Scope:** as the series: 0.5B tokens, L = 2, d = 384, one seed, OpenWebText.
 
+<a name="p-dp"></a>
 ### 5.14 DP series: what Doi–Peliti process do the trained registers implement? — **pre-registered 2026-10-05, before any measurement**
 
 **Why.** Book §10.5.2 makes the Fock registers a bosonic Doi–Peliti system. It says "a continuous salience variable plays the role of a Poisson mean." The code ([`model_fock_parf_v2.py`](../notebooks/conservative_arch/parf/model_fock_parf_v2.py), [`model_fock_parf_multixi.py`](../notebooks/conservative_arch/parf/model_fock_parf_multixi.py)) shows four structural facts that bear on that reading. They are stated here before any measurement.
@@ -4677,7 +4692,7 @@ Each register is one slot holding one content vector: an exclusion (hard-core) o
 
 **Caveat recorded in advance.** Salience is a deterministic mean-field quantity. No measurement on these models can distinguish bosonic from exclusion fluctuations, since there are none. The tests read how the models *use* the variables, not their statistics.
 
-**DP scored, 2026-10-05.** Output: `debug/dp_register_statistics_output.txt` and its JSON; figure `companion_notes/figures/doi_peliti/dp_register_diagnostics.png`. Layer checkpointing was off for the measurement (it recomputes each layer and doubles every hook); the logits are bit-identical with and without it.
+<a name="p-dp-scored"></a>**DP scored, 2026-10-05.** Output: `debug/dp_register_statistics_output.txt` and its JSON; figure `companion_notes/figures/doi_peliti/dp_register_diagnostics.png`. Layer checkpointing was off for the measurement (it recomputes each layer and doubles every hook); the logits are bit-identical with and without it.
 
 | test | G2 | L=4 live | G3 | prediction | outcome |
 | --- | --- | --- | --- | --- | --- |
@@ -4877,6 +4892,7 @@ Cell 6b-15 (PM1 tuning diagnostics, ladder notebook) reads a probe checkpoint wi
 - **Decision (author, 2026-10-07):** continue the 0.3 arm from `_step8000_probe_stop.pt` to 32,500 unchanged (`POISSON_MODE_CLIP = 0.3`, `PROBE_MAX_STEPS = None`). The Stage 2 predictions, PC4, RR-PM1 and RR-PM2 are scored on it. RR-PM1 is now the most informative: the conservative memory force dominates the layer-1 step.
 - **Candidate follow-ups, not scheduled:** a clip group of its own for pm_depth; an initial half-life range of 4–32 tokens; removing the layer-0 depths.
 
+<a name="p-pm1"></a>
 #### PM1 full run scored: **55.17 settled — 4.5% better than F3.1, 3.9% behind G2** — **2026-10-08**
 
 Run output `L2_arm_none_pm64_clip0.3_32500steps_output.txt` (steps 8,001–32,500, resumed from the 0.3 probe's step-8,000 checkpoint), filed with the probe log in `results/…pm64_L2probe…/`.
@@ -5500,7 +5516,7 @@ Settled against the other L = 2 arms: −6.3% against SR2 (58.32), −5.4% again
 - **More than 2% worse:** WSD at this peak suits GPT-2 less well. The cosine baseline stays as the reference, and the L=8 comparison uses whichever schedule is better for GPT-2, stated as such.
 - **Optional W2:** the same run at the ladder's peak learning rate (1.2e-3, tag `_wsd_lr0p0012`) separates peak from shape. Queued, not scheduled.
 
-**W1 scored, 2026-10-06.** Run output `gpt2_matched_baseline_wsd_schedule_output.txt`; fit `debug/w1_f0_fit.py` and its output and JSON. The fit reuses F0's functions unchanged and parses the 65 printed evals (loss@512, 4 decimals), because the run's `training_log.jsonl` was not downloaded.
+<a name="p-w1"></a>**W1 scored, 2026-10-06.** Run output `gpt2_matched_baseline_wsd_schedule_output.txt`; fit `debug/w1_f0_fit.py` and its output and JSON. The fit reuses F0's functions unchanged and parses the 65 printed evals (loss@512, 4 decimals), because the run's `training_log.jsonl` was not downloaded.
 
 - **Result.** Final and best eval 48.67 at step 32,500. Settled (the mean of the last three evals: 49.00, 48.78, 48.67) **48.82**, which is **−1.99%** against the cosine baseline's 49.81.
 - **W1.1 (settled within −3% to +2%, 48.3–50.8): HIT.**
@@ -5553,6 +5569,7 @@ Settled against the other L = 2 arms: −6.3% against SR2 (58.32), −5.4% again
 - **More than 2% above W1 (over 49.80):** GPT-2 prefers 6e-4. W1 stays the reference, and the 2B-token GPT-2 runs at 6e-4, stated as such.
 - **On the decay gain (W2.4):** if it hits, GPT-2 extracts more from annealing than the Fock models at equal peak, which is the architecture reading; if it misses, W1's gap was the peak learning rate.
 
+<a name="p-w2"></a>
 #### W2 scored: **settled 48.37, within 2% of W1 (−0.9%); all five calls hit. At the ladder's own schedule GPT-2 still gains more from the decay than any Fock arm, so W1's gap is the architecture, not the peak** — **2026-10-18**
 
 Run output `matched_gpt2_LR=1.2e-03_32500steps_training_output.txt` (Colab, A100-40GB, 2.7 h). Cell 0 printed the tag `_wsd_lr0p0012` and its own folders (`checkpoints_wsd_lr0p0012`, `results_wsd_lr0p0012`); batch 32 × 512, 32,500 steps, 0.532B tokens, 33.7M parameters, as W1. Scored from the 65 printed evals (loss@512, 4 decimals), as W1 was; the run's `training_log.jsonl` was not downloaded.
@@ -5592,6 +5609,7 @@ Run output `matched_gpt2_LR=1.2e-03_32500steps_training_output.txt` (Colab, A100
 
 **What it is for.** It is the denominator of every Epic-3 ratio, and its constant-phase curve is what the Fock arms' are compared with at equal tokens, which tests W2's reading (Fock ahead until the decay) at four times the budget.
 
+<a name="p-g2b"></a>
 #### G2B scored: **settled 42.69, 11.7% below the same model at 0.5B tokens; three of four calls hit. The decay gains more, not less, after a longer constant phase** — **2026-10-18**
 
 Run output `matched_gpt2_LR=1.2e-03_130000steps_training_output.txt` (Colab, A100-40GB). One uninterrupted session, 38,709 s (10.75 h, 0.30 s per step); Cell 5 printed `Training: steps 1 -> 130,000` with the tag `_wsd_lr0p0012_st130000`, so no resume was needed. 260 evals, no gap and no duplicate. Scored from the printed evals (loss@512, 4 decimals), as W1 and W2 were; the run's `training_log.jsonl` is on Drive.
@@ -6987,6 +7005,7 @@ Scope: L = 2, 532.5M tokens, one seed per arm; removal at inference measures rel
 
 **Cost.** One A100 run of about 15 hours (as G3′), then about 2 hours of local measurement. A second run without the hardening would separate the hardening's effect, and is optional.
 
+<a name="p-xrb-f"></a>
 #### XR part B, first results: **the exchange field alone is worth 6.0% to the conservative core, three quarters of what the register path is worth, and almost nothing beside it** — **2026-10-18** (all six calls scored)
 
 The run (`…cgqk_norc_rglive_vplive_xilive_rfqk_rfclip0p3_L2probe…_attnpot`, output `L2_attnpot_norc_F3.1prim_32500steps_output.txt`) finished cleanly at step 32,500:

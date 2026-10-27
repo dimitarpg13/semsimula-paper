@@ -1254,6 +1254,7 @@ This joins §15.2 (a hook that returns a bookkeeping value crashes autograd) and
 is that **an instrument's silence must be distinguishable from its absence**:
 the caller's `if result:` guard is part of the instrument.
 
+<a name="n-cg7"></a>
 ### 18.3 Cell 6b-13: an offline endpoint probe
 
 In-flight readings come from one arm's training batches, one reading per 500
