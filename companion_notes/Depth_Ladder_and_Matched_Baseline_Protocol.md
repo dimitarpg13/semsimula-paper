@@ -3435,6 +3435,7 @@ About 15 h each at L=2.
 
 **Caveat recorded in advance.** Next-token top-1 errors on OpenWebText are mostly ambiguity, not hallucination. CG8 tests whether geometry tracks error at all, not factuality. Factuality needs the QA protocol of §18d Experiment G2.
 
+<a name="p-fo-series"></a>
 ### 5.13 FO series: does OpenWebText need second-order training where TinyStories did not? — **pre-registered 2026-10-03, before any measurement**
 
 **Question** (author's, 2026-10-03). On TinyStories with Verlet, Fock-PARFLM trained first-order matched second order: Fock-G1 8.95 against 9.04, d=256, L=8, one seed. Does the same hold on OpenWebText, or does that corpus need the second-order dynamics? Which corpus statistics separate the two cases?
@@ -3497,9 +3498,9 @@ Measured on each model's own validation tokens, with ξ frozen at the layer's ow
 | OWT, Fock 'none', L=2, CfC, live (G2's configuration) | **G2** (running) | **FO-OWT** |
 | TinyStories, the same architecture, propagator, convention, d and L; **16,250 steps** (amended 2026-10-04, below) | **SO-TS** | **FO-TS** |
 
-**FO-a** is the Fock-G1 definition carried over unchanged: h_prev := h at every layer, so no velocity crosses a layer boundary. Every other channel (V_θ, V_φ, ξ, registers, reverse channel, regularisers) is identical. On the CfC propagator each step then starts from rest. It is the trained counterpart of Gate 1, and it needs one Cell-0 switch with the same bit-identity verification as the CB switches (identical to G2 when off).
+<a name="p-fo-a"></a>**FO-a** is the Fock-G1 definition carried over unchanged: h_prev := h at every layer, so no velocity crosses a layer boundary. Every other channel (V_θ, V_φ, ξ, registers, reverse channel, regularisers) is identical. On the CfC propagator each step then starts from rest. It is the trained counterpart of Gate 1, and it needs one Cell-0 switch with the same bit-identity verification as the CB switches (identical to G2 when off).
 
-**FO-b** is a true overdamped first-order Langevin step, with exact exponential relaxation of the low-rank stiff modes. It is a second, conditional arm: run only if FO-a shows a gap, to separate inter-layer memory from within-step inertia. It needs new integrator code.
+<a name="p-fo-b"></a>**FO-b** is a true overdamped first-order Langevin step, with exact exponential relaxation of the low-rank stiff modes. It is a second, conditional arm: run only if FO-a shows a gap, to separate inter-layer memory from within-step inertia. It needs new integrator code.
 
 **Statistic.** Δ_corpus = (settled PPL_FO − settled PPL_SO) / settled PPL_SO, per corpus. The test is the interaction Δ_OWT − Δ_TS.
 
@@ -3615,6 +3616,7 @@ So the FO arms differ from their anchors by FO-a alone, and the 2×2's within-co
 
 **Scope.** Selective bf16 (`AMP_BF16`) is not used: it added 2% on top (§5.26, deferred).
 
+<a name="p-so-ts"></a>
 #### Stage 1, first arm: SO-TS finished — **2026-10-19** (scoring waits for FO-TS)
 
 Run output `L2_SO-TS_16250steps_output.txt` (Colab, A100-80GB; Cell 0 as in the amendment above: SR2's settings, `CORPUS = 'tinystories'`, `LADDER_STEPS = 16_250`, analytic V_φ force, layer checkpointing off). The first TinyStories run built the shared token cache (whole train split; 2M validation tokens from the validation split) and its own frequency table for the mass model. 1.07 s per step, 4.98 h.
@@ -3643,6 +3645,7 @@ Run output `L2_SO-TS_16250steps_output.txt` (Colab, A100-80GB; Cell 0 as in the 
 
   Layer 0 is the projection of the embedding onto the LayerNorm sphere (‖Δh‖ 18.7) and is excluded, as in Stage 0. **Reading, by the rule fixed on 2026-10-04: SO-TS learns anharmonic wells (ε ≥ 0.3).** In the CfC architecture TinyStories is far from the near-linear regime the Verlet anchor was in, so the architecture, not the corpus, produced the OWT stiffness, and FO-TS is predicted to show a gap as well (called at 50%). Gate 1 above (+2.1%) points the other way, toward a small cost of removing momentum; FO-TS's training decides.
 
+<a name="p-fo-ts"></a>
 #### Stage 1, second arm: FO-TS finished — **2026-10-19** (scoring waits for its extension)
 
 Output `L2_FO-TS_16250steps_output.txt`. SO-TS's Cell 0 plus `FIRST_ORDER_MEMORYLESS = True` (FO-a), tag `…sr2_fo_st16250…`. Finished cleanly at 16,250 steps; best 5.18 at step 15,000; no watchdog trigger; SCAF CLEAN at 5,000, 10,000, 15,000 and 16,250 (the last prints nan PPLs, the known cosmetic issue).
@@ -3763,6 +3766,7 @@ This applies to FO-OWT (conditional on FO-b-OWT) and to FO-PMX (conditional on F
 
 **Scope:** constant γ = 0.1 in the second-order anchors, L = 2, d = 384, one seed, 266M (TinyStories) and 532.5M (OpenWebText) tokens.
 
+<a name="p-fo-b-owt"></a>
 #### FO-b-OWT scored: **61.16 settled, Δᵇ_OWT = +4.9% — FB2 HIT; second order earns its keep on OpenWebText** — **2026-10-20**
 
 Output `L2_FO-b-SR2_OWT_32500steps_output.txt`. SR2's Cell 0 plus `FIRST_ORDER_OVERDAMPED = True` and the speed switches; tag `…sr2_fob…`; 32,500 steps, seed 0, an A100 80 GB (about 1.04 s per step). Finished cleanly; no watchdog trigger or spike capture; SCAF CLEAN at every audit (the step-32,500 audit prints nan PPLs, the known cosmetic issue). The in-flight resonance monitor was empty throughout: it hooks the second-order substep routines, which FO-b does not call.
@@ -3792,6 +3796,7 @@ Output `L2_FO-b-SR2_OWT_32500steps_output.txt`. SR2's Cell 0 plus `FIRST_ORDER_O
 - **Cell 6b-9** divided by zero on FO-b: its velocity readings are undefined when no velocity exists. Guarded on 2026-10-20 (R_v prints nan); R_h remains the V_φ attribution of a gradient-flow step.
 - **Against the analysis of 2026-10-20** (`Future_of_Semantic_Simulation_When_Second_Order_Earns_Its_Keep.md`, §3): the early lead fits Proposition 3 (the gradient flow's learning problem is easier at first); the settled gap refutes the reading that Propositions 2 and 4 make the conservative core overdamped on any corpus. The note is revised accordingly.
 
+<a name="p-sr3-crit"></a>
 #### SR3-crit on SR2 scored: **63.28 settled, +8.5% against SR2 and +3.5% against FO-b — the oscillation of the stiff modes is the mechanism (SC3′ HIT)** — **2026-10-20**
 
 Output `L2_SR3-crit_on_SR2_OWT_32500steps_output.txt`. SR2's Cell 0 plus `STIFF_MODE_DAMPING_RATIO = 1.0` and the speed switches; tag `…sr2_sr3…`; 32,500 steps, seed 0, an A100 80 GB (about 1.1 s per step). Finished cleanly; no watchdog trigger or spike capture; SCAF CLEAN at every audit.
@@ -3838,6 +3843,7 @@ Output `L2_SR3-crit_on_SR2_OWT_32500steps_output.txt`. SR2's Cell 0 plus `STIFF_
   | GH8 | beats SR2 by 1% or more (damping added only where it helps) | 25% |
   | GH9 | the layers differ: the median ζ at one layer is at least 3 times the other's | 40% |
 
+<a name="p-gamma-h"></a>
 #### Learned γ(h) on SR2 scored: **59.29 settled, +1.7% against SR2 — the model adds moderate damping (median ζ 0.56 / 0.36), gains in the stable phase and loses it in the decay (GH7 HIT; GH6, GH8, GH9 MISS)** — **2026-10-21**
 
 Output `L2_learned-gamma-h_on_SR2_OWT_32500steps_output.txt` (in the run's `results/`; first filed as `L2_learned_lambda_OWT_32500steps_output.txt`). SR2's Cell 0 plus `LEARNED_DAMPING_RATIO = True`, `DAMPING_RATIO_INIT = 0.005` and the speed switches; tag `…sr2_gzh…`; 32,500 steps, seed 0, an A100 80 GB (about 1.1 s per step). Finished cleanly; no watchdog trigger or spike capture; largest gradient norm 1.16; SCAF CLEAN at every audit.
@@ -3944,6 +3950,7 @@ Output `L2_learned-gamma-h_on_SR2_OWT_32500steps_output.txt` (in the run's `resu
 
 **Descriptive:** Cells 6b-7 (Gate 1 reads 0), 6b-13 and 6b-15 (well depths and half-lives against PMX's, to see whether a first-order model builds shallower wells).
 
+<a name="p-fo-b-pmx"></a>
 #### FO-b-PMX scored: **54.02 settled, Δᵇ_PMX = −1.1%: the first-order twin matches PMX (FBX1 MISS); the wells help a first-order model twice as much as a second-order one** — **2026-10-22**
 
 Output `L2_FO-b-PMX_OWT_32500steps_output.txt` (in the run's `results/`; first filed as `L2_PMX16_on_OWT_32500steps_output.txt`, where `PMX16` meant the 16 exactly integrated wells, not 16 modes). PMX's Cell 0 plus `FIRST_ORDER_OVERDAMPED = True` and the speed switches; tag `…pm64_pmx16_sr2_fob…`; 32,500 steps, seed 0, an A100 80 GB (about 1.38 s per step, 12.5 h). Finished cleanly; no watchdog trigger or spike capture; largest gradient norm 1.32; largest jump of the training loss above its running median ×1.006; SCAF CLEAN at every audit. 76,596,941 parameters, PMX's exactly.
@@ -4032,7 +4039,7 @@ Output `L2_FO-b-PMX_OWT_32500steps_output.txt` (in the run's `results/`; first f
 | MS6 | **depth**: PMX and FO-b-PMX at L = 4 | the first-order twin stays within the seed spread at L = 4, where the implicit memory has three boundaries to act across | 45% |
 | MS7 | **FO-b-G3′ against G3′**: an explicit memory read by a non-conservative channel, the reverse channel, not felt as a well (queue item 4) | the first-order twin matches G3′ within 2% — the opposite of the future note's call of 2026-10-20 (a gap, 70%), which stands on record | 55% |
 
-**Result, the matched GPT-2 on TinyStories (C1, 2026-10-25).** `colab_matched_gpt2_baseline_openwebtext.ipynb` with `CORPUS = 'tinystories'`, W2's settings (WSD, peak 1.2e-3, d = 384, L = 8, 33,691,776 parameters, batch 32 × 512), `TOTAL_STEPS = 19_250`, `SCHEDULE_STEPS = 16_250`. Tag `_wsd_lr0p0012_st19250_sch16250_ts`. The tokens and the validation split are the ladder's own TinyStories cache, the same as SO-TS's and FO-TS's. Output `results/gpt2_baseline_wsd_lr0p0012_st19250_sch16250_ts/matched_GPT2_TS_19250steps_output.txt`. About 1.6 h on the A100; no loss spike.
+<a name="p-gpt2-ts"></a>**Result, the matched GPT-2 on TinyStories (C1, 2026-10-25).** `colab_matched_gpt2_baseline_openwebtext.ipynb` with `CORPUS = 'tinystories'`, W2's settings (WSD, peak 1.2e-3, d = 384, L = 8, 33,691,776 parameters, batch 32 × 512), `TOTAL_STEPS = 19_250`, `SCHEDULE_STEPS = 16_250`. Tag `_wsd_lr0p0012_st19250_sch16250_ts`. The tokens and the validation split are the ladder's own TinyStories cache, the same as SO-TS's and FO-TS's. Output `results/gpt2_baseline_wsd_lr0p0012_st19250_sch16250_ts/matched_GPT2_TS_19250steps_output.txt`. About 1.6 h on the A100; no loss spike.
 
 | TinyStories, 315M tokens | settled (evals at 18,000, 18,500, 19,000) | against GPT-2 |
 | --- | ---: | ---: |
@@ -4059,7 +4066,7 @@ Output `L2_FO-b-PMX_OWT_32500steps_output.txt` (in the run's `results/`; first f
 
 Settled is the mean of the evals at steps 18,000, 18,500 and 19,000, as for SO-TS and FO-TS. Readings after the runs, as for the OpenWebText pairs: Cells 6b-7, 6b-15 and 6b-13, and on CPU the wells' readings (`pm_mode_usage.py`, `pm_static_landscape.py`), `mechanism_ablations.py` and FLOW-R.
 
-**Result, PM2-TS (TS-K2, the second-order arm, 2026-10-25).** Tag `…pm2_pmx16_sr2_st16250_L2probe…`, Drive folder `semsimula_fock_cfc_baoab_ts_<tag>`; 19,250 steps in one session (16,250 on the schedule, 3,000 at the floor), clean finish, no watchdog trigger, SCAF CLEAN at all 4 audits. Outputs filed in `results/cfc_baoab_ts_…pm2_pmx16_sr2_st16250…/`.
+<a name="p-pm2-ts"></a>**Result, PM2-TS (TS-K2, the second-order arm, 2026-10-25).** Tag `…pm2_pmx16_sr2_st16250_L2probe…`, Drive folder `semsimula_fock_cfc_baoab_ts_<tag>`; 19,250 steps in one session (16,250 on the schedule, 3,000 at the floor), clean finish, no watchdog trigger, SCAF CLEAN at all 4 audits. Outputs filed in `results/cfc_baoab_ts_…pm2_pmx16_sr2_st16250…/`.
 
 | TinyStories, 315M tokens | settled (evals 18,000, 18,500, 19,000) | against SO-TS | against GPT-2 (4.47) |
 | --- | ---: | ---: | ---: |
@@ -4073,7 +4080,7 @@ Settled is the mean of the evals at steps 18,000, 18,500 and 19,000, as for SO-T
 - **Cell 6b-13:** V_θ's stiffest-mode ω·Δt median 3.20 / 4.69 (layer 0 / 1).
 - TS1–TS3 wait for FO-b-PM2-TS and FO-b-TS. TS3 compares the first-order wells' gain with this 0.034.
 
-**Result, FO-b-PM2-TS (TS-K2, the first-order twin with two wells, 2026-10-26).** Tag `…pm2_pmx16_sr2_fob_st16250_L2probe…`; 19,250 steps in one session, clean finish, no watchdog trigger, SCAF CLEAN at all 4 audits. The diagnostic cells ran in a second, diagnostics-only session on the best checkpoint (step 16,500, PPL 4.80; PM2-TS's best is also at step 16,500). Outputs filed in `results/cfc_baoab_ts_…pm2_pmx16_sr2_fob_st16250…/`.
+<a name="p-fo-b-pm2-ts"></a>**Result, FO-b-PM2-TS (TS-K2, the first-order twin with two wells, 2026-10-26).** Tag `…pm2_pmx16_sr2_fob_st16250_L2probe…`; 19,250 steps in one session, clean finish, no watchdog trigger, SCAF CLEAN at all 4 audits. The diagnostic cells ran in a second, diagnostics-only session on the best checkpoint (step 16,500, PPL 4.80; PM2-TS's best is also at step 16,500). Outputs filed in `results/cfc_baoab_ts_…pm2_pmx16_sr2_fob_st16250…/`.
 
 | TinyStories, 315M tokens | settled (evals 18,000, 18,500, 19,000) | first order against second |
 | --- | ---: | ---: |
@@ -4088,7 +4095,7 @@ Settled is the mean of the evals at steps 18,000, 18,500 and 19,000, as for SO-T
 - **Cell 6b-13:** the FO-b relaxation exponent and ω·Δt are recorded in the filed output.
 - TS1 and TS3 wait for FO-b-TS.
 
-**Result, FO-b-TS (TS-K2, true first order without wells, 2026-10-26), and the TS-K2 set scored.** Tag `…norc_vplive_xilive_sr2_fob_st16250_L2probe…`; 19,250 steps in one session, clean finish, no watchdog trigger, SCAF CLEAN at all 4 audits. 76,572,109 parameters (PM2-TS less the wells' 776). Outputs filed in `results/cfc_baoab_ts_…sr2_fob_st16250…/`.
+<a name="p-fo-b-ts"></a>**Result, FO-b-TS (TS-K2, true first order without wells, 2026-10-26), and the TS-K2 set scored.** Tag `…norc_vplive_xilive_sr2_fob_st16250_L2probe…`; 19,250 steps in one session, clean finish, no watchdog trigger, SCAF CLEAN at all 4 audits. 76,572,109 parameters (PM2-TS less the wells' 776). Outputs filed in `results/cfc_baoab_ts_…sr2_fob_st16250…/`.
 
 | TinyStories, 315M tokens | no wells | 2 wells | wells' gain, log perplexity |
 | --- | ---: | ---: | ---: |
@@ -4113,7 +4120,7 @@ Settled is the mean of the evals at steps 18,000, 18,500 and 19,000, as for SO-T
 - **Not in book v23** (author, 2026-10-24): the runs fill the A100's idle time during the release and go into the next version as a complete MS5.
 - **Code checked on CPU** (2026-10-24): the code functions are identical in the two notebooks; the ladder builds the cache from the pinned revisions with exact token counts, and the GPT-2 notebook reuses it unchanged; every OpenWebText and TinyStories folder token is unchanged.
 
-**Result, the matched GPT-2 on code (C3, 2026-10-26).** `colab_matched_gpt2_baseline_openwebtext.ipynb` with `CORPUS = 'code'` and C1's settings otherwise (WSD, peak 1.2e-3, d = 384, L = 8, 33,691,776 parameters, batch 32 × 512, `TOTAL_STEPS = 19_250`, `SCHEDULE_STEPS = 16_250`). Tag `_wsd_lr0p0012_st19250_sch16250_code`. This run built the shared code cache that the ladder's code arms read. Output `results/gpt2_baseline_wsd_lr0p0012_st19250_sch16250_code/matched_GPT2_Code_19250steps_output.txt`. About 1.6 h on the A100.
+<a name="p-gpt2-code"></a>**Result, the matched GPT-2 on code (C3, 2026-10-26).** `colab_matched_gpt2_baseline_openwebtext.ipynb` with `CORPUS = 'code'` and C1's settings otherwise (WSD, peak 1.2e-3, d = 384, L = 8, 33,691,776 parameters, batch 32 × 512, `TOTAL_STEPS = 19_250`, `SCHEDULE_STEPS = 16_250`). Tag `_wsd_lr0p0012_st19250_sch16250_code`. This run built the shared code cache that the ladder's code arms read. Output `results/gpt2_baseline_wsd_lr0p0012_st19250_sch16250_code/matched_GPT2_Code_19250steps_output.txt`. About 1.6 h on the A100.
 - **Settled 4.96** (the mean of the evals at 18,000, 18,500 and 19,000: 4.96, 4.96, 4.95), final 4.95. This is the reference for every code perplexity; code perplexities are compared only within this corpus.
 - **The extension at the floor was worth about 1%:** 5.02 at step 16,000 and 5.00 at 16,500, then 4.95 at 19,000. The schedule's end is not settled on code either, so the code arms get the same settling check and extension as SO-TS.
 - **No loss spike:** the largest rise between logged training losses is 0.028 (step 17,400); the gradient norm's median is 0.51 and its maximum 1.35 (step 200, in warmup).
@@ -4139,7 +4146,7 @@ Readings after the runs, as for TinyStories: Cells 6b-7, 6b-15 and 6b-13, and on
 
 **SO-CODE started 2026-10-26** (fresh run, tag `…norc_vplive_xilive_sr2_st16250…`, Drive folder `semsimula_fock_cfc_baoab_code_<tag>`): batch 16 × 2 (32 sequences of 512), WSD warm-up to 812, stable to 10,562, decay to 16,250, floor 6.00e-05 to 19,250; 76,572,109 parameters (76,502,176 decayed plus 69,933 not). Training loss at step 50: 6.1591 (the reference for the other three code arms' step 50). Estimated 5.9 h.
 
-**SO-CODE finished 2026-10-27.** Output `results/cfc_baoab_code_<tag>/L2_noattn-sr2_on_Code_19250steps_output.txt`. 19,250 steps in 5.92 h (1.11 s per step); no watchdog trigger; the largest rise between logged training losses is 0.073 (step 13,050), gradient norm median 0.46, maximum 1.67; SCAF CLEAN at 5,000, 10,000, 15,000 and 19,250 (the last prints nan PPLs, the known cosmetic issue).
+<a name="p-so-code"></a>**SO-CODE finished 2026-10-27.** Output `results/cfc_baoab_code_<tag>/L2_noattn-sr2_on_Code_19250steps_output.txt`. 19,250 steps in 5.92 h (1.11 s per step); no watchdog trigger; the largest rise between logged training losses is 0.073 (step 13,050), gradient norm median 0.46, maximum 1.67; SCAF CLEAN at 5,000, 10,000, 15,000 and 19,250 (the last prints nan PPLs, the known cosmetic issue).
 - **Settled 6.00** (evals at 18,000, 18,500 and 19,000: 5.87, 6.02, 6.10); best 5.87 at step 18,000. **+21.0% against GPT-2-CODE (4.96),** against +17.1% for SR2 on OpenWebText (58.32 / 49.81) and +15.4% for SO-TS on TinyStories (5.16 / 4.47).
 - **The gap by phase** (mean loss difference over five evals, GPT-2-CODE's at the same steps): +14.7% at the end of the stable phase (9,000–11,000), +16.9% in the decay (12,000–14,000), +21.2% at the floor (17,000–19,000). GPT-2 gains more from the decay. At step 2,000 the gap was +82%.
 - **Settling check (2026-10-04 rule), steps 16,000–19,000:** fitted change −0.020 nats against a residual standard deviation of 0.015. By the letter of the rule, not settled, by a third of the noise; the fitted change's own standard error is about 0.017 nats, so it is not distinguishable from zero. GPT-2-CODE under the same rule: −0.013 against 0.002 (its evals use fixed batches). The rule is applied to the FO-b pair, as on TinyStories: if FO-b-CODE fails it too, the decision on an extension is taken for both arms then, before CODE1 and CODE2 are scored.
@@ -4179,6 +4186,7 @@ Readings after the runs, as for TinyStories: Cells 6b-7, 6b-15 and 6b-13, and on
 - **Configuration: SO-CODE's Cell 0 with `REVERSE_CHANNEL = True`** (the notebook default; SO-CODE sets it to False). FOCK-CODE then differs from SO-CODE by the register path alone, at the same seed, batches and budget, so the two are paired by step. Tag `…cgqk_vplive_xilive_sr2_st16250_L2probe…noattn` (no `norc`).
 - **No OpenWebText arm combines the register path with SR2.** Its nearest reference is G2 against F3.1 (53.12 against 57.76, −8.0%), both without SR2. **Build check** (2026-10-27, CPU, `verify_pm_switch.build` with G2's trained weights): with `LOWRANK_DAMPED_FLOW = True` the notebook builds the model with the tag above and the same parameter count as G2 (76,770,257); a training step gives finite gradients everywhere, including every reverse-channel parameter; G2's weights lose 4.167 nats under SR2 against 4.162 as trained, on 2 × 256 OpenWebText tokens. SR2 changes the step of this model little, as it does without the register path (SR2 58.32 against F3.1 57.76).
 - **Cost:** G2 took 14.8 h for 32,500 steps without the speed switches; with them, and at 19,250 steps, an estimated 7–9 h.
+- **Build check with the exact Cell 0, 2026-10-27** (CPU, fresh initialisation, the speed switches `VPHI_ANALYTIC_FORCE = True` and `LAYER_CHECKPOINT = False` on, the notebook identical to GitHub main): tag as above, 76,770,257 parameters, all gradients finite. At initialisation the register path's upstream parameters get exactly zero gradient because `reverse_channel_scale` starts at 0; the scale itself gets a gradient (9e-6), so the path opens on the first step, as in G2. The last layer's destruction gate gets no gradient (nothing reads the registers after it), also as in G2. Diagnostics after training: Cells 8, 7, 6b-7, 6b-8, 6b-9 and 6b-13, the set G2 has, so the register readings compare with OpenWebText.
 - **Queue:** after FO-b-CODE. Before or after the PM2 pair depends on the copy split: before it if copying explains SO-CODE's gap, or the reading is mixed. Order agreed by the author on 2026-10-27.
 
 | id | prediction | called |
@@ -4212,6 +4220,32 @@ FOCK3 and PMCS1 together would separate the two mechanisms on code: the register
 
 **Proposed GPU order** (the author's call): FO-b-CODE (running) → FOCK-CODE → XI6-CODE → L4-CODE → PM2-CODE → FO-b-PM2-CODE. With FOCK4, XI2 and L4b, the copy split ranks the three routes to long-range recall (registers, more lookups, depth) by how much of the long-distance gap each closes.
 
+<a name="p-fo-b-code"></a>**FO-b-CODE finished 2026-10-27.** Tag `…norc_vplive_xilive_sr2_fob_st16250_L2probe…noattn`; output filed as `results/cfc_baoab_code_<tag>/L2_FO-b-noattn-sr2_on_Code_19250steps_output.txt` (the Drive folder and the diagnostics are not downloaded yet). 19,250 steps in 5.65 h (1.06 s per step), one session; no watchdog trigger. The largest rise between logged training losses is 0.073 at step 13,050, the same step and size as SO-CODE's (the batches are paired). Gradient norm median 0.67, maximum 1.83 (step 700, in warmup). Training loss at step 50: 6.1685 (SO-CODE 6.1591). SCAF CLEAN at 5,000, 10,000, 15,000 and 19,250 (the last prints nan PPLs, the known cosmetic issue); trained leak probe at 10,000 CLEAN (honest 5.99, standard 6.38). The `[resonance] EMPTY SUMMARY` lines are the monitor's known blind spot on first-order runs (FO-b-PM2-PMX16's OpenWebText log has them too); ω·Δt comes from Cell 6b-13.
+- **Settled 6.55** (evals at 18,000, 18,500 and 19,000: 6.43, 6.57, 6.65); best 6.43 at step 18,000. **+9.2% against SO-CODE (6.00)**, +32.0% against GPT-2-CODE (4.96).
+- **Paired by step:** FO-b-CODE is ahead through step 5,000 (−6.0% at 2,000, −0.1% at 5,000); SO-CODE leads from 5,500 on. The gap peaks at the end of the stable phase (+11.1% over 9,000–11,000), then narrows a little: +10.5% in the decay (12,000–14,000), +9.2% at the floor (17,000–19,000). Over the floor window, 16,000–19,000, the seven paired gaps are +9.1% to +9.5% (mean +0.0889 nats, SD 0.0015); the two arms' evals correlate at 0.996, and the gap's own fitted change over the window is −0.003 nats.
+- **Settling check (2026-10-04 rule), steps 16,000–19,000: fails, as SO-CODE's did:** fitted change −0.023 nats against a residual standard deviation of 0.015 (SO-CODE −0.020 against 0.015). By the rule, the extension decision for both arms is taken now, before CODE1 and CODE2 are scored. **Recommendation: no extension.** The rule guards against a first-order arm lagging and so inflating the gap. Here the two arms drift together, and the paired gap is flat to 0.003 nats over the last 3,000 steps, so a further 3,000 steps at the floor would move the ratio by about a quarter of a point. To change CODE2 it would have to fall by more than four points, and to change CODE1 by more than seven. **Author's decision pending.**
+- **Provisional scores, if no extension:** **CODE1 (more than 2%), called 65%: HIT** (+9.2%). **CODE2 (more than +4.9%, larger than on OpenWebText), called 35%: HIT.** The first-order gap without wells then orders with the corpora as the corpus-statistics note predicts: TinyStories +2.3% (FO-b-TS / SO-TS), OpenWebText +4.9% (FO-b-OWT / SR2), code +9.2%.
+- **Diagnostics and the copy split:** done the same day, below.
+
+**FO-b-CODE diagnostics and the copy split, 2026-10-27** (the Drive folder arrived the same day; Cells 8, 7, 6b-7 and 6b-13 had run on the best checkpoint, step 18,000; CPU readings in `results/copy_split_code/`).
+- **Cell 6b-7:** Gate 0 PASS. Gate 1 +0.00 (no velocity exists). Gate 2, one extra layer at the trained Δt: **+3.6%** (5.52 → 5.72; SO-CODE +42%). Gate 3 at N = 3: +32% (**0.277 nats**; SO-CODE 0.639). As on the other corpora, extra layers and refinement cost the first-order model little.
+- **Cell 6b-13: the first-order potential is soft.** ω·Δt median **0.86** (layer 0 1.17, layer 1 0.002), 22.9% of readings past the wall of 2, against SO-CODE's 7.55 and 99.97%. **The same contrast as on OpenWebText** (FO-b-OWT 0.74 and 18.4%, SR2 7.55 and 99.7%): first order builds a potential about ten times softer on either corpus. The softness belongs to the order, not to the corpus.
+- **Cell 7:** the reverse channel is off by construction, and removing the registers changes nothing.
+- **Copy split** (`copy_split_report_vs_so.txt`, `.json`; FO-b-CODE against SO-CODE on the same 262,144 targets): 7.024 against 6.442, ratio **1.090** (the settled ratio: 1.092). FO-b-CODE is worse in 98.2% of the 512 windows. Gap per token, nats:
+
+| group | share of targets | FO-b − SO | share of gap | SO − GPT-2 (for comparison) |
+| --- | ---: | ---: | ---: | ---: |
+| all | 100% | +0.086 | 100% | +0.186 |
+| first occurrence / repeat / induction | 27.7 / 22.3 / 50.0% | +0.085 / +0.110 / +0.077 | 27 / 29 / 44% | +0.189 / +0.254 / +0.154 |
+| identifier-like | 49.3% | **+0.152** | **86.6%** | +0.253 |
+| indentation, newline, space | 21.9% | +0.008 | 2.0% | +0.042 |
+| number / punctuation and other | 7.4 / 21.4% | +0.029 / +0.036 | 2.5 / 8.8% | +0.152 / +0.192 |
+| repeat or induction, last seen 1–16 / 17–64 / 65–256 / 257–512 back | 34.8 / 25.2 / 10.8 / 1.5% | **+0.043 / +0.102 / +0.178 / +0.197** | 17 / 30 / 22 / 4% | +0.109 / +0.208 / +0.342 / +0.395 |
+
+- **The gap is in identifiers and grows with the distance to the earlier occurrence,** the same shape as SO-CODE's gap to GPT-2 at about half the size. Not a position effect: among targets at positions 256–511 alone it is +0.042, +0.102, +0.176, +0.197 by distance; at a distance of 1–16 it is +0.028, +0.047, +0.042 by position. Identifiers carry it at every distance (+0.136 at 1–16 rising to +0.25–0.26 beyond 64); for the other tokens first order is level at short range (+0.005) and trails only modestly far back (+0.05–0.08). First occurrences, where there is nothing to copy, also cost first order +0.07 to +0.09, a little more late in the window.
+- **Not a failure to find the earlier occurrence** (`debug/xi_reach.py`, now taking the run folder as an argument; `xi_reach_fob.txt` and `xi_reach_so.txt`, 16 windows). FO-b-CODE trained its context channels to the same horizons, and its long channel in layer 1 puts **at least as much** weight on the earlier occurrences: 0.245 of its weight when they lie 65 or more tokens back (lift 28.8; SO-CODE 0.223, lift 26.3), over 26 effective positions against 36; 0.347 against 0.296 at 17–64 tokens. Layer 0 is the same near-uniform average in both.
+- **Reading.** Both models address the context equally well; the first-order model does less with what it retrieves. A long-range channel delivers the earlier identifier diluted, about a quarter of its weight among some 30 positions, and decoding a diluted signal into one of many identifiers needs a sharply curved readout. A first-order layer contracts a stiff mode by e^{−(ωΔt)²/2} and so erases the distinctions along it; the trained first-order model gives up stiff modes and keeps a soft potential, which reads a diluted signal less precisely. A second-order layer turns a stiff mode through a phase and keeps its amplitude, so it can afford them (the book's "within-step implicit memory", §26.9 item (ii)). Short-range copies arrive nearly undiluted (the short channels average about 2 positions), and there the gap is small. **The corpus ordering follows:** the softness is the same on every corpus, and the cost of it grows with how many distinctions the readout must keep: TinyStories +2.3%, OpenWebText +4.9%, code +9.2%. An interpretation, not a measured mechanism; one seed per model, L = 2. A test of it: the same split on the PM2 pair (C5), where the wells close the gap on the other corpora; the reading predicts that what remains of the gap on code stays in identifiers at long range.
+
 **MS2, the K = 16 pair, pre-registered in detail (2026-10-22, before the runs).** Both arms on PMX's Cell 0 (F3.1's settings plus `POISSON_MODES = 16`, `LOWRANK_DAMPED_FLOW = True`, `POISSON_WELLS_EXACT = True`) with the speed switches (`VPHI_ANALYTIC_FORCE = True`, `LAYER_CHECKPOINT = False`); the first-order arm adds `FIRST_ORDER_OVERDAMPED = True`. Tags `…pm16_pmx16_sr2_L2probe…` and `…pm16_pmx16_sr2_fob_L2probe…`; 32,500 steps, seed 0, OpenWebText; about 12 h each; the second-order arm first, as the new baseline. At K = 16 the exact rank part (`POISSON_WELLS_EXACT_MODES = 16`) covers every well. **Build check** (`debug/verify_dose_modes.py`, output `debug/verify_dose_modes_output.txt`): at K = 16 and K = 256, second order and FO-b, the notebook's own cells build the model with the expected tag and parameter count (76,578,318 at K = 16, 76,671,438 at K = 256), a training step gives a finite loss and finite gradients, and the half-lives initialise over 4–128 tokens as at K = 64. The K = 256 pair follows with the same settings and `POISSON_MODES = 256`.
 
 | id | prediction | called |
@@ -4223,7 +4257,7 @@ FOCK3 and PMCS1 together would separate the two mechanisms on code: the register
 
 MS2 as called above (the gap falls monotonically with K and is within the seed spread from K = 64 on) is scored once the K = 256 pair is in; MS2a–MS2c read the K = 16 pair alone.
 
-**Result, the K = 16 second-order arm (PMX-K16, 2026-10-23).** Tag `…pm16_pmx16_sr2_L2probe…` (no `fob`, so `FIRST_ORDER_OVERDAMPED = False`; the log arrived as `L2_FO-b-PMX16_on_OWT_32500steps_output.txt`, a misnomer). 32,500 steps in 12.6 h, clean finish, no watchdog trigger, highest logged training loss after step 2,000 about 5.0.
+<a name="p-pmx-k16"></a>**Result, the K = 16 second-order arm (PMX-K16, 2026-10-23).** Tag `…pm16_pmx16_sr2_L2probe…` (no `fob`, so `FIRST_ORDER_OVERDAMPED = False`; the log arrived as `L2_FO-b-PMX16_on_OWT_32500steps_output.txt`, a misnomer). 32,500 steps in 12.6 h, clean finish, no watchdog trigger, highest logged training loss after step 2,000 about 5.0.
 - **Settled 54.24** (mean of the last three evals: 54.17, 54.37, 54.17). The best, 52.28 at step 31,000, is a single eval; FO-b-PMX has its best at the same step (52.18), an eval batch that is easy for both. The slope over the last 3,000 steps is +0.17% per 1,000 steps, the same as FO-b-PMX's: settled.
 - **Against SR2 (58.32): −7.0%.** Against PMX at K = 64 (54.63): −0.7%. The second-order model gains no more from 64 modes than from 16. Along training PMX-K16 is level with or ahead of PMX: 65.42 against 67.57 at step 16,000, 64.69 against 66.19 at step 21,000. The decay gain (log perplexity, step 21,000 to settled) is −0.176, against PMX's −0.192 and FO-b-PMX's −0.171.
 - **MS2b, second-order half: miss on the letter** (PMX-K16 is not above PMX's 54.63), by 0.7%, inside any plausible seed band. Read as the wells' benefit to second order having saturated by K = 16. The first-order half, MS2a, MS2c and MS2d wait for the FO-b K = 16 twin. The K-rule (below) is applied then.
@@ -4349,7 +4383,7 @@ and the K = 2 point is read as:
 - **Build check at K = 2** (`debug/verify_dose_modes.py … Ks=2`, output `debug/verify_dose_modes_K2_output.txt`). Both orders build from the notebook's cells with 76,572,886 parameters, the expected tags, a finite loss and finite gradients, and half-lives initialised at 4.0 and 128 tokens. The first-order model's eval forward is finite. As at every K, `pm_mu` has no gradient at initialisation, because the depths start at zero; it receives one from the first step.
 - **If K = 16 shows a gap** (outside ±2%), the rule's other rows apply unchanged, and K = 2 is not run before them.
 
-**Result, the K = 16 pair (FO-b-PM16-PMX16, 2026-10-24).** Tag `…pm16_pmx16_sr2_fob_L2probe…`, trained from step 0 at seed 0 like PMX-K16, so the two runs see the same training and evaluation batches. Their step-to-step evaluation changes correlate at 0.999. 32,500 steps, clean finish, no watchdog trigger; the highest training loss logged is 1.007 times its running mean.
+<a name="p-fo-b-pmx-k16"></a>**Result, the K = 16 pair (FO-b-PM16-PMX16, 2026-10-24).** Tag `…pm16_pmx16_sr2_fob_L2probe…`, trained from step 0 at seed 0 like PMX-K16, so the two runs see the same training and evaluation batches. Their step-to-step evaluation changes correlate at 0.999. 32,500 steps, clean finish, no watchdog trigger; the highest training loss logged is 1.007 times its running mean.
 
 | | FO-b-PM16-PMX16 | PMX-K16 | first order against second |
 | --- | ---: | ---: | ---: |
@@ -4389,7 +4423,7 @@ The first-order model leads throughout training, by 1.5% at step 21,000 and 0.9%
 - **6b-7:** Gate 1 0 by construction; Gate 2 at N = 3 +0.5% (PMX-K16 +845%); Gate 3 at N = 3 0.86 nats (PMX-K16 1.09, FO-b-PMX 0.67). **6b-9:** R(geo) 0.75 (PMX-K16 0.92).
 - **Scope.** The ablations measure reliance in the trained model, not what a model trained without the term would reach. M3 cleared its threshold by 1.7 points. One seed per arm.
 
-**Result, the K = 2 second-order arm (PM2-PMX16, 2026-10-24).** Tag `…pm2_pmx16_sr2_L2probe…`, from step 0 at seed 0 (paired with PMX-K16 and SR2: step-to-step evaluation changes correlate at 0.999). 32,500 steps, clean finish, no watchdog trigger, SCAF CLEAN at all 7 audits; the training-time ω·Δt monitor worked (the `semsimula-diag` fix). Diagnostic cells on Colab; the CPU readings, in the arm's results folder: `pm_mode_usage_pmx_output.txt`, `mechanism_ablations_pmx_output.txt`, `vtheta_omega_dt_pmx_output.txt`, `pm_static_landscape_pmx_output.txt` and `refinement_flow_confirmation_pmx_seed20261009_output.txt` (checks PASS).
+<a name="p-pm2-pmx16"></a>**Result, the K = 2 second-order arm (PM2-PMX16, 2026-10-24).** Tag `…pm2_pmx16_sr2_L2probe…`, from step 0 at seed 0 (paired with PMX-K16 and SR2: step-to-step evaluation changes correlate at 0.999). 32,500 steps, clean finish, no watchdog trigger, SCAF CLEAN at all 7 audits; the training-time ω·Δt monitor worked (the `semsimula-diag` fix). Diagnostic cells on Colab; the CPU readings, in the arm's results folder: `pm_mode_usage_pmx_output.txt`, `mechanism_ablations_pmx_output.txt`, `vtheta_omega_dt_pmx_output.txt`, `pm_static_landscape_pmx_output.txt` and `refinement_flow_confirmation_pmx_seed20261009_output.txt` (checks PASS).
 
 | second order | K = 0 (SR2) | **K = 2** | K = 16 | K = 64 |
 | --- | ---: | ---: | ---: | ---: |
@@ -4410,7 +4444,7 @@ The first-order model leads throughout training, by 1.5% at step 21,000 and 0.9%
 - **The two wells specialise by layer** (6b-15): both repulsive at layer 0 (median depth −0.21), both strongly attractive at layer 1 (+1.23, three times K = 16's median), half-lives moved from 4 and 128 to about 10 and 19 tokens. Still positional and then fixed (force 99.99% / 99.95% from position).
 - **Calls.** MS2b's second-order half at K = 2 (SR2 58.32 > PM2 > PMX-K16 54.24): **HIT** (54.71). MS2a, MS2c, MS2d and the amended K rule wait for the first-order twin (FO-b-PM2-PMX16, started 2026-10-24).
 
-**Result, the K = 2 pair (FO-b-PM2-PMX16, 2026-10-25).** Tag `…pm2_pmx16_sr2_fob_L2probe…`, from step 0 at seed 0, paired with PM2-PMX16, PMX-K16 and FO-b-PMX-K16 (step-to-step evaluation changes correlate at 0.999). 32,500 steps in about 11 h (1.22 s per step), clean finish, no watchdog trigger or spike capture, largest training loss 1.005 times its running mean, SCAF CLEAN at all 7 audits. The diagnostic cells (8, 7, 6b-7, 6b-15, 6b-13, 6b-9) ran in a second, diagnostics-only session on the best checkpoint (step 31,000, PPL 51.90). The CPU readings were run one at a time: `pm_mode_usage_fob-pmx_output.txt`, `mechanism_ablations_fob-pmx_output.txt`, `vtheta_omega_dt_fob-pmx_output.txt`, `pm_static_landscape_fob-pmx_output.txt`, `refinement_flow_confirmation_fob-pmx_seed20261009_output.txt` (with its JSON) and `flow_convergence_order_trained.txt`, all in the arm's results folder.
+<a name="p-fo-b-pm2-pmx16"></a>**Result, the K = 2 pair (FO-b-PM2-PMX16, 2026-10-25).** Tag `…pm2_pmx16_sr2_fob_L2probe…`, from step 0 at seed 0, paired with PM2-PMX16, PMX-K16 and FO-b-PMX-K16 (step-to-step evaluation changes correlate at 0.999). 32,500 steps in about 11 h (1.22 s per step), clean finish, no watchdog trigger or spike capture, largest training loss 1.005 times its running mean, SCAF CLEAN at all 7 audits. The diagnostic cells (8, 7, 6b-7, 6b-15, 6b-13, 6b-9) ran in a second, diagnostics-only session on the best checkpoint (step 31,000, PPL 51.90). The CPU readings were run one at a time: `pm_mode_usage_fob-pmx_output.txt`, `mechanism_ablations_fob-pmx_output.txt`, `vtheta_omega_dt_fob-pmx_output.txt`, `pm_static_landscape_fob-pmx_output.txt`, `refinement_flow_confirmation_fob-pmx_seed20261009_output.txt` (with its JSON) and `flow_convergence_order_trained.txt`, all in the arm's results folder.
 
 | | FO-b-PM2-PMX16 | PM2-PMX16 | first order against second |
 | --- | ---: | ---: | ---: |
@@ -5323,6 +5357,7 @@ Run output `L2probe_PMX16_on_SR2_8000steps_output.txt` in `results/…pm64_pmx16
 - **GPU estimate from 6b-16:** about 0.25 s per optimiser step from (a) and some of the substep's 0.15 s from (b).
 - **Code by segment,** recorded for scoring: steps 1–8,000 ran the original basis; 8,001 onwards in the current session run the split basis. A resume in a fresh runtime after these are pushed would run (a) and (b). All are the same model to float rounding.
 
+<a name="p-pmx"></a>
 #### PMX full run scored (Colab part): **54.63 settled — CX1 and CX1′ hit; Gate 1 +91%; standard refinement worse than at the probe** — **2026-10-11**
 
 Run log `L2_PMX_32500steps_output.txt`; Cells 6b-7, 6b-9, 6b-12, 6b-13 and 6b-15 on the best checkpoint (step 30,500, 53.15). Every SCAF audit CLEAN with future perturbation exactly 0. The final audit's `honest_PPL=nan` is a property of the end-of-run audit, not of PMX: SR2's and PM1's final audits read nan the same way, in 8–9 s against about 29 s for a full audit.
@@ -5720,6 +5755,7 @@ Descriptive, not a test: switching SR2 on post hoc on F3.1's weights, which were
 
 **Run settings.** F3.1's Cell 0 (`REVERSE_CHANNEL = False`, `VPHI_GRAD_PATH = 'live'`, `XI_GRAD_PATH = 'live'`) plus `LOWRANK_DAMPED_FLOW = True`. Same seed, steps and schedule as F3.1. Then the full 6b set, with 6b-7 (Gates 1–3) deciding E1.
 
+<a name="p-sr2"></a>
 #### SR2 on F3.1 scored: **E1 HIT, E2 HIT — the exact flow halves the refinement penalty at no perplexity cost, but does not make the model a flow** — **2026-10-09**
 
 Run output `L2_SR2_for_noattn_none_32500steps_output.txt` and Cell 6b-7 on the best checkpoint (step 31,000), filed in `results/…_sr2_L2probe…/`. Tag `…cgqk_norc_vplive_xilive_sr2_L2probe…idt4_lr0p0012_noattn`.
