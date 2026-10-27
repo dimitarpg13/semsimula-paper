@@ -180,7 +180,10 @@ def run_bottleneck_profile(
 
     model.train()
     sizes = list(batch_sizes) if batch_sizes is not None else [1, 2, batch_size]
-    sizes = sorted({s for s in sizes if 1 <= s <= batch_size})
+    # Sizes above the training batch are measured only when asked for (2026-10-27:
+    # whether one microbatch of batch x accumulation beats the accumulated step).
+    limit = max(sizes) if batch_sizes is not None else batch_size
+    sizes = sorted({s for s in sizes if 1 <= s <= limit})
     if batch_size not in sizes:
         sizes.append(batch_size)
         sizes.sort()
@@ -215,11 +218,18 @@ def run_bottleneck_profile(
     # -- [1] batch scaling ---------------------------------------------
     print('\n[1] Batch scaling (one microbatch, fwd+bwd)')
     scale = {}
-    for bs in sizes:
-        med, samples = _time_cuda(
-            lambda bs=bs: microbatch(bs),
-            n_warmup=n_warmup, n_repeat=n_repeat,
-        )
+    for bs in list(sizes):
+        try:
+            med, samples = _time_cuda(
+                lambda bs=bs: microbatch(bs),
+                n_warmup=n_warmup, n_repeat=n_repeat,
+            )
+        except torch.cuda.OutOfMemoryError:
+            model.zero_grad(set_to_none=True)
+            torch.cuda.empty_cache()
+            sizes.remove(bs)
+            print(f'  bs={bs:<3d}  out of memory, skipped')
+            continue
         scale[bs] = med
         extra = ''
         if sizes[0] in scale and bs != sizes[0]:
@@ -234,6 +244,13 @@ def run_bottleneck_profile(
     print(f'  linear slope captured: {slope:.2f}  '
           f'(1.0 = time ∝ batch,  0.0 = time flat)')
     print(f'  => {scale_cls.upper()}')
+    print('  per sequence: ' + '  '.join(f'bs={bs} {1000 * scale[bs] / bs:.0f} ms' for bs in sizes))
+    one = batch_size * grad_accum
+    if grad_accum > 1 and one in scale:
+        print(f'  one optimizer step of {one} sequences: {grad_accum} x bs={batch_size} '
+              f'{grad_accum * scale[batch_size]:.2f}s  against 1 x bs={one} {scale[one]:.2f}s  '
+              f'(x{grad_accum * scale[batch_size] / scale[one]:.2f}; peak memory at bs={one} '
+              f'{torch.cuda.max_memory_allocated() / 2**30:.1f} GiB so far)')
 
     # -- [2] side-stream GEMM overlap ----------------------------------
     print('\n[2] Side-stream GEMM overlap (bs={})'.format(batch_size))

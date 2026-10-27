@@ -1,5 +1,26 @@
 COPY SPLIT on code validation: 512 windows x 512 = 262,144 targets, reference gpt2
-  ppl on these tokens: gpt2 5.350, so 6.442
+  ppl on these tokens: fob 7.023, gpt2 5.350, so 6.442
+
+fob against gpt2: mean gap +0.2723 nats/token (ppl ratio 1.313)
+  group                         share  gpt2 nll      fob nll      gap  ratio  of gap  seq spread
+  all                          100.0%     1.677        1.949   +0.272   1.31  100.0%  ±0.006
+  first occurrence              27.7%     4.012        4.286   +0.274   1.32   27.9%  ±0.008
+  repeat (not induction)        22.3%     1.603        1.967   +0.364   1.44   29.8%  ±0.009
+  induction                     50.0%     0.414        0.644   +0.230   1.26   42.2%  ±0.007
+  indent/newline/space          21.9%     0.278        0.328   +0.050   1.05    4.0%  ±0.005
+  identifier-like               49.3%     2.568        2.972   +0.404   1.50   73.3%  ±0.010
+  number                         7.4%     1.610        1.792   +0.181   1.20    4.9%  ±0.012
+  punct/other                   21.4%     1.078        1.306   +0.227   1.26   17.8%  ±0.008
+  identifier, first             20.3%     4.497        4.794   +0.298   1.35   22.2%  ±0.009
+  identifier, repeat             8.7%     2.404        2.993   +0.589   1.80   18.7%  ±0.020
+  identifier, induction         20.4%     0.718        1.150   +0.432   1.54   32.4%  ±0.015
+  repeat/ind., dist 1-16        34.8%     0.491        0.643   +0.152   1.16   19.4%  ±0.005
+  repeat/ind., dist 17-64       25.2%     0.805        1.115   +0.310   1.36   28.7%  ±0.009
+  repeat/ind., dist 65-256      10.8%     1.474        1.994   +0.520   1.68   20.7%  ±0.015
+  repeat/ind., dist 257-512      1.5%     2.065        2.657   +0.592   1.81    3.3%  ±0.038
+  position 0-63                 12.5%     2.312        2.494   +0.182   1.20    8.4%  ±0.007
+  position 64-255               37.5%     1.707        1.971   +0.264   1.30   36.3%  ±0.007
+  position 256-511              50.0%     1.496        1.797   +0.301   1.35   55.3%  ±0.008
 
 so against gpt2: mean gap +0.1859 nats/token (ppl ratio 1.204)
   group                         share  gpt2 nll       so nll      gap  ratio  of gap  seq spread

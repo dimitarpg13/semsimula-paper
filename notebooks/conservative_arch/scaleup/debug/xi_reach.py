@@ -1,19 +1,21 @@
 """Where do a code arm's content-routed context channels put their weight? (2026-10-27)
 
-    python3 xi_reach.py SCRATCH_DIR
+    python3 xi_reach.py SCRATCH_DIR [FOLDER]
 
 For targets at positions 256-511 whose token occurred earlier in the window, per layer and channel: the
 softmax weight on the earlier occurrences, against their uniform share; the weight more than 64 tokens back;
-and the effective number of positions (exp entropy). 16 of copy_split.py's 512 windows, SO-CODE best checkpoint.
+and the effective number of positions (exp entropy). 16 of copy_split.py's 512 windows, the best checkpoint of FOLDER (default SO-CODE's).
 """
 import sys, types, numpy as np, torch
 from pathlib import Path
 D = str(Path(__file__).resolve().parent)
-sys.argv = ['copy_split.py', sys.argv[1], 'none']
+ARGS = sys.argv[1:]
+sys.argv = ['copy_split.py', ARGS[0], 'none']
 sys.path.insert(0, D)
 src = open(D + '/copy_split.py').read().split("\nif MODE == 'nll':")[0]
 cs = types.ModuleType('cs'); cs.__file__ = D + '/copy_split.py'; exec(compile(src, cs.__file__, 'exec'), cs.__dict__)
 F = 'semsimula_fock_cfc_baoab_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn'
+F = ARGS[1] if len(ARGS) > 1 else F
 run, _ = cs.ladder_model(F, None)
 import gc
 model = [o for o in gc.get_objects() if isinstance(o, torch.nn.Module) and hasattr(o, 'xi_module') and o.xi_module is not None][0]

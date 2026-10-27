@@ -195,8 +195,9 @@ def report():
                          f'{row["gap"]:+8.3f} {np.exp(row["gap"]):6.2f} {row["gap_share"]:7.1%}  ±{se:.3f}')
     txt = '\n'.join(lines)
     print(txt)
-    (OUT / 'copy_split_report.txt').write_text(txt + '\n')
-    (OUT / 'copy_split_report.json').write_text(json.dumps(js, indent=1))
+    stem = 'copy_split_report' + ('' if ref == 'gpt2' else f'_vs_{ref}')
+    (OUT / f'{stem}.txt').write_text(txt + '\n')
+    (OUT / f'{stem}.json').write_text(json.dumps(js, indent=1))
 
 
 if MODE == 'nll':

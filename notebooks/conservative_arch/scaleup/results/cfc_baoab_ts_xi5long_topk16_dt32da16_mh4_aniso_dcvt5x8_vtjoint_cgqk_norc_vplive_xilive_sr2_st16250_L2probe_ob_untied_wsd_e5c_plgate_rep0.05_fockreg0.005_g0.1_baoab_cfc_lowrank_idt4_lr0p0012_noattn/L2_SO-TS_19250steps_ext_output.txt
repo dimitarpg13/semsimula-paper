@@ -1,0 +1,188 @@
+[no-decay-1d] weight_decay=0.01 on 54 tensors (76,502,176 params); 0.0 on 32 1-D tensors (69,933 params, incl. log_tau / reverse_channel_scale / logit_scale / depth_code)
+Optimizer: AdamW
+  CUDA after optimiser: 80.9 GB free / 85.1 GB
+Resuming from checkpoint at step 15,000: /content/drive/MyDrive/semsimula_fock_cfc_baoab_ts_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/checkpoints/fock_cfc_ts_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_step15000.pt
+[resume] loaded 89/89 tensors  missing=0  unexpected=0
+  Optimizer state restored.
+  Model loaded. Previous PPL: 5.21
+Restored running best PPL: 5.21
+
+============================================================
+CfC/BAOAB [baoab_cfc_lowrank]: steps 15,001 -> 19,250
+  batch=16 x accum=2 (eff=32)
+  block=512  lr=0.0012  grad_clip=1.0
+  schedule: WSD: warmup 0->812, stable 812->10,562, decay 10,562->16,250, floor=6.00e-05, then the floor to 19,250
+  d=384  L=2  M=32
+  fock-reg: lambda=0.005  eps=1e-06
+  integrator: baoab_cfc_lowrank  (cfg.integrator=baoab_cfc_lowrank, analytic V_theta force=True, thermostat T=0)
+  watchdog: threshold=50.0 patience=200 hard_trigger=500.0
+  spike-capture: on  capture_threshold=100.0  keep=12
+  per-group clip: default=1.0  overrides={'V_phi': 0.3, 'log_tau': 0.3, 'creation_gate_qkv.logit_scale': 0.3, 'creation_gate': 0.3, 'destruction_gate': 0.3, 'reverse_channel_scale': 0.1, 'reverse_ch': 0.1, 'register': 0.3, 'depth_code': 0.25}
+  post-resume CUDA cache warmup: empty_cache() every 50 steps for the first 1000 steps of each run_training() call (re-arms on every fresh resume, first one starts at step 15,000)
+  reverse channel: OFF
+============================================================
+
+[clip-then-sum] active for groups ['E', 'P'] (2 param(s) total), threshold=0.3
+[tau-floor] no creation_gate_qkv.log_tau on this model; skipped
+[resonance] wall monitor armed, logging every 500 steps (integrator module: model_parf_multixi)
+[scaf] LeakMonitor armed every 5,000 steps and at step 19,250; semsimula-scaf causal_probe_add_in @ 451d91b do not over-claim geometry based analysis
+[scaf]   records -> /content/drive/MyDrive/semsimula_fock_cfc_baoab_ts_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/results/scaf_leak_monitor.jsonl
+step   15050/19250  ntp=1.6173  v_reg=0.0004  fock_reg=0.0060  lr=1.81e-04  grad=0.30  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.70  bproj_sig=65.90  sig_max=60.032@r18  gamma=0.100  alpha=[0.451,0.758,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.4GB  mem_peak=32.9GB  58s  (~1.4h remaining)
+step   15100/19250  ntp=1.5985  v_reg=0.0004  fock_reg=0.0060  lr=1.71e-04  grad=0.28  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.46  bproj_sig=65.89  sig_max=60.036@r18  gamma=0.100  alpha=[0.451,0.758,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=33.9GB  mem_peak=32.9GB  110s  (~1.3h remaining)
+step   15150/19250  ntp=1.5879  v_reg=0.0005  fock_reg=0.0060  lr=1.62e-04  grad=0.28  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.48  bproj_sig=65.88  sig_max=60.042@r18  gamma=0.100  alpha=[0.450,0.758,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.4GB  mem_peak=32.9GB  162s  (~1.2h remaining)
+step   15200/19250  ntp=1.6039  v_reg=0.0005  fock_reg=0.0060  lr=1.53e-04  grad=0.29  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.57  bproj_sig=65.88  sig_max=60.043@r18  gamma=0.100  alpha=[0.450,0.758,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.4GB  mem_peak=32.9GB  214s  (~1.2h remaining)
+step   15250/19250  ntp=1.6000  v_reg=0.0004  fock_reg=0.0060  lr=1.45e-04  grad=0.26  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.46  bproj_sig=65.87  sig_max=60.043@r18  gamma=0.100  alpha=[0.450,0.758,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=33.9GB  mem_peak=32.9GB  266s  (~1.2h remaining)
+step   15300/19250  ntp=1.5912  v_reg=0.0004  fock_reg=0.0060  lr=1.37e-04  grad=0.28  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.57  bproj_sig=65.87  sig_max=60.039@r18  gamma=0.100  alpha=[0.450,0.758,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=33.9GB  mem_peak=32.9GB  318s  (~1.2h remaining)
+step   15350/19250  ntp=1.5828  v_reg=0.0005  fock_reg=0.0060  lr=1.29e-04  grad=0.29  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.53  bproj_sig=65.86  sig_max=60.041@r18  gamma=0.100  alpha=[0.450,0.758,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=33.9GB  mem_peak=32.9GB  370s  (~1.1h remaining)
+step   15400/19250  ntp=1.5984  v_reg=0.0005  fock_reg=0.0060  lr=1.22e-04  grad=0.28  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.48  bproj_sig=65.86  sig_max=60.042@r18  gamma=0.100  alpha=[0.450,0.757,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=33.8GB  mem_peak=32.9GB  421s  (~1.1h remaining)
+step   15450/19250  ntp=1.6213  v_reg=0.0005  fock_reg=0.0060  lr=1.15e-04  grad=0.29  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.64  bproj_sig=65.85  sig_max=60.042@r18  gamma=0.100  alpha=[0.450,0.757,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.4GB  mem_peak=32.9GB  473s  (~1.1h remaining)
+step   15500/19250  ntp=1.6102  v_reg=0.0005  fock_reg=0.0060  lr=1.08e-04  grad=0.31  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.65  bproj_sig=65.85  sig_max=60.043@r18  gamma=0.100  alpha=[0.450,0.758,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=33.9GB  mem_peak=32.9GB  525s  (~1.1h remaining)
+[resonance] step   15500  omega*dt p50=6.672  max=9.404  over_wall=99.298%
+    [evaluate] iter 0/40  mem_alloc=17.55GB  mem_resv=17.93GB
+    [evaluate] iter 10/40  mem_alloc=17.55GB  mem_resv=17.93GB
+    [evaluate] iter 20/40  mem_alloc=17.55GB  mem_resv=17.93GB
+    [evaluate] iter 30/40  mem_alloc=17.55GB  mem_resv=17.93GB
+    [evaluate] iter 39/40  mem_alloc=17.55GB  mem_resv=17.93GB
+    [evaluate] mem before=16.13GB  after=17.55GB  peak_during=46.16GB  trend(every 10 iters)=[17.55, 17.55, 17.55, 17.55, 17.55]GB
+>>> EVAL step 15,500  val_loss=1.6722  val_ppl=5.32  best=5.21    (561s)
+step   15550/19250  ntp=1.6070  v_reg=0.0004  fock_reg=0.0060  lr=1.02e-04  grad=0.32  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.37  bproj_sig=65.85  sig_max=60.046@r18  gamma=0.100  alpha=[0.450,0.758,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=33.9GB  mem_peak=46.2GB  613s  (~1.1h remaining)
+step   15600/19250  ntp=1.5735  v_reg=0.0005  fock_reg=0.0060  lr=9.65e-05  grad=0.28  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.65  bproj_sig=65.84  sig_max=60.048@r18  gamma=0.100  alpha=[0.450,0.757,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=33.9GB  mem_peak=32.9GB  665s  (~1.1h remaining)
+step   15650/19250  ntp=1.6012  v_reg=0.0005  fock_reg=0.0060  lr=9.11e-05  grad=0.29  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.57  bproj_sig=65.84  sig_max=60.047@r18  gamma=0.100  alpha=[0.450,0.757,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.7GB  mem_peak=32.9GB  717s  (~1.1h remaining)
+step   15700/19250  ntp=1.5894  v_reg=0.0005  fock_reg=0.0060  lr=8.62e-05  grad=0.27  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.37  bproj_sig=65.83  sig_max=60.049@r18  gamma=0.100  alpha=[0.449,0.757,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.4GB  mem_peak=32.9GB  769s  (~1.1h remaining)
+step   15750/19250  ntp=1.5808  v_reg=0.0004  fock_reg=0.0060  lr=8.17e-05  grad=0.30  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.66  bproj_sig=65.82  sig_max=60.050@r18  gamma=0.100  alpha=[0.449,0.757,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.4GB  mem_peak=32.9GB  821s  (~1.1h remaining)
+step   15800/19250  ntp=1.5909  v_reg=0.0005  fock_reg=0.0060  lr=7.76e-05  grad=0.28  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.42  bproj_sig=65.82  sig_max=60.051@r18  gamma=0.100  alpha=[0.449,0.757,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.4GB  mem_peak=32.9GB  873s  (~1.0h remaining)
+step   15850/19250  ntp=1.5976  v_reg=0.0004  fock_reg=0.0060  lr=7.39e-05  grad=0.28  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.39  bproj_sig=65.81  sig_max=60.052@r18  gamma=0.100  alpha=[0.450,0.757,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=33.9GB  mem_peak=32.9GB  925s  (~1.0h remaining)
+step   15900/19250  ntp=1.5961  v_reg=0.0004  fock_reg=0.0060  lr=7.07e-05  grad=0.27  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.37  bproj_sig=65.81  sig_max=60.053@r18  gamma=0.100  alpha=[0.449,0.757,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=33.9GB  mem_peak=32.9GB  977s  (~1.0h remaining)
+step   15950/19250  ntp=1.5962  v_reg=0.0004  fock_reg=0.0060  lr=6.79e-05  grad=0.27  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.49  bproj_sig=65.81  sig_max=60.054@r18  gamma=0.100  alpha=[0.449,0.757,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=33.9GB  mem_peak=32.9GB  1029s  (~1.0h remaining)
+step   16000/19250  ntp=1.5932  v_reg=0.0005  fock_reg=0.0060  lr=6.55e-05  grad=0.30  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.43  bproj_sig=65.80  sig_max=60.055@r18  gamma=0.100  alpha=[0.449,0.757,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=33.8GB  mem_peak=32.9GB  1081s  (~1.0h remaining)
+[resonance] step   16000  omega*dt p50=6.670  max=9.667  over_wall=98.987%
+    [evaluate] iter 0/40  mem_alloc=17.55GB  mem_resv=17.92GB
+    [evaluate] iter 10/40  mem_alloc=17.55GB  mem_resv=17.90GB
+    [evaluate] iter 20/40  mem_alloc=17.55GB  mem_resv=17.90GB
+    [evaluate] iter 30/40  mem_alloc=17.55GB  mem_resv=17.92GB
+    [evaluate] iter 39/40  mem_alloc=17.55GB  mem_resv=17.92GB
+    [evaluate] mem before=16.13GB  after=17.55GB  peak_during=46.16GB  trend(every 10 iters)=[17.55, 17.55, 17.55, 17.55, 17.55]GB
+>>> EVAL step 16,000  val_loss=1.6582  val_ppl=5.25  best=5.21    (1117s)
+step   16050/19250  ntp=1.5882  v_reg=0.0005  fock_reg=0.0060  lr=6.35e-05  grad=0.29  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.64  bproj_sig=65.79  sig_max=60.055@r18  gamma=0.100  alpha=[0.449,0.757,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=35.1GB  mem_peak=46.2GB  1169s  (~1.0h remaining)
+step   16100/19250  ntp=1.5895  v_reg=0.0005  fock_reg=0.0060  lr=6.20e-05  grad=0.26  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.38  bproj_sig=65.80  sig_max=60.055@r18  gamma=0.100  alpha=[0.449,0.757,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=35.1GB  mem_peak=32.9GB  1221s  (~1.0h remaining)
+step   16150/19250  ntp=1.6016  v_reg=0.0004  fock_reg=0.0060  lr=6.09e-05  grad=0.29  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.60  bproj_sig=65.79  sig_max=60.057@r18  gamma=0.100  alpha=[0.449,0.757,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=35.1GB  mem_peak=32.9GB  1272s  (~1.0h remaining)
+step   16200/19250  ntp=1.5948  v_reg=0.0005  fock_reg=0.0060  lr=6.02e-05  grad=0.30  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.83  bproj_sig=65.79  sig_max=60.057@r18  gamma=0.100  alpha=[0.449,0.757,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=35.1GB  mem_peak=32.9GB  1324s  (~0.9h remaining)
+step   16250/19250  ntp=1.5829  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.31  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.75  bproj_sig=65.78  sig_max=60.058@r18  gamma=0.100  alpha=[0.449,0.757,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=35.1GB  mem_peak=32.9GB  1376s  (~0.9h remaining)
+step   16300/19250  ntp=1.6078  v_reg=0.0004  fock_reg=0.0060  lr=6.00e-05  grad=0.31  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.78  bproj_sig=65.78  sig_max=60.059@r18  gamma=0.100  alpha=[0.449,0.757,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=35.1GB  mem_peak=32.9GB  1427s  (~0.9h remaining)
+step   16350/19250  ntp=1.5947  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.28  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.65  bproj_sig=65.78  sig_max=60.059@r18  gamma=0.100  alpha=[0.449,0.757,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=35.1GB  mem_peak=32.9GB  1479s  (~0.9h remaining)
+step   16400/19250  ntp=1.5870  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.29  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.45  bproj_sig=65.78  sig_max=60.060@r18  gamma=0.100  alpha=[0.449,0.757,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=35.1GB  mem_peak=32.9GB  1531s  (~0.9h remaining)
+step   16450/19250  ntp=1.5719  v_reg=0.0004  fock_reg=0.0060  lr=6.00e-05  grad=0.28  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.59  bproj_sig=65.77  sig_max=60.061@r18  gamma=0.100  alpha=[0.449,0.757,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=35.1GB  mem_peak=32.9GB  1583s  (~0.8h remaining)
+step   16500/19250  ntp=1.5841  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.26  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.52  bproj_sig=65.77  sig_max=60.061@r18  gamma=0.100  alpha=[0.449,0.757,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=35.1GB  mem_peak=32.9GB  1635s  (~0.8h remaining)
+[resonance] step   16500  omega*dt p50=6.705  max=9.053  over_wall=99.170%
+    [evaluate] iter 0/40  mem_alloc=17.55GB  mem_resv=17.83GB
+    [evaluate] iter 10/40  mem_alloc=17.55GB  mem_resv=17.83GB
+    [evaluate] iter 20/40  mem_alloc=17.55GB  mem_resv=17.81GB
+    [evaluate] iter 30/40  mem_alloc=17.55GB  mem_resv=17.81GB
+    [evaluate] iter 39/40  mem_alloc=17.55GB  mem_resv=17.83GB
+    [evaluate] mem before=16.13GB  after=17.55GB  peak_during=46.16GB  trend(every 10 iters)=[17.55, 17.55, 17.55, 17.55, 17.55]GB
+>>> EVAL step 16,500  val_loss=1.6361  val_ppl=5.14  best=5.14  *** NEW BEST ***  (1671s)
+  Checkpoint saved: /content/drive/MyDrive/semsimula_fock_cfc_baoab_ts_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/checkpoints/fock_cfc_ts_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_step16500_best.pt  (PPL=5.14)
+  Canonical best: /content/drive/MyDrive/semsimula_fock_cfc_baoab_ts_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/checkpoints/fock_cfc_ts_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt
+step   16550/19250  ntp=1.5791  v_reg=0.0004  fock_reg=0.0060  lr=6.00e-05  grad=0.29  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.65  bproj_sig=65.77  sig_max=60.059@r18  gamma=0.100  alpha=[0.449,0.757,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.8GB  mem_peak=46.2GB  1728s  (~0.8h remaining)
+step   16600/19250  ntp=1.5797  v_reg=0.0004  fock_reg=0.0060  lr=6.00e-05  grad=0.27  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.38  bproj_sig=65.76  sig_max=60.060@r18  gamma=0.100  alpha=[0.449,0.757,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.8GB  mem_peak=32.9GB  1780s  (~0.8h remaining)
+step   16650/19250  ntp=1.5848  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.29  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.50  bproj_sig=65.75  sig_max=60.060@r18  gamma=0.100  alpha=[0.449,0.757,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.8GB  mem_peak=32.9GB  1832s  (~0.8h remaining)
+step   16700/19250  ntp=1.5809  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.28  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.60  bproj_sig=65.75  sig_max=60.062@r18  gamma=0.100  alpha=[0.449,0.757,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.8GB  mem_peak=32.9GB  1884s  (~0.8h remaining)
+step   16750/19250  ntp=1.5861  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.28  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.64  bproj_sig=65.75  sig_max=60.061@r18  gamma=0.100  alpha=[0.449,0.757,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.8GB  mem_peak=32.9GB  1936s  (~0.8h remaining)
+step   16800/19250  ntp=1.5850  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.29  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.58  bproj_sig=65.75  sig_max=60.062@r18  gamma=0.100  alpha=[0.449,0.757,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.8GB  mem_peak=32.9GB  1988s  (~0.8h remaining)
+step   16850/19250  ntp=1.5798  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.30  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.42  bproj_sig=65.74  sig_max=60.063@r18  gamma=0.100  alpha=[0.449,0.757,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.8GB  mem_peak=32.9GB  2039s  (~0.7h remaining)
+step   16900/19250  ntp=1.5701  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.28  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.58  bproj_sig=65.73  sig_max=60.064@r18  gamma=0.100  alpha=[0.449,0.757,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.8GB  mem_peak=32.9GB  2091s  (~0.7h remaining)
+step   16950/19250  ntp=1.5780  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.28  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.55  bproj_sig=65.73  sig_max=60.066@r18  gamma=0.100  alpha=[0.449,0.757,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.8GB  mem_peak=32.9GB  2143s  (~0.7h remaining)
+step   17000/19250  ntp=1.5572  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.29  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.35  bproj_sig=65.72  sig_max=60.067@r18  gamma=0.100  alpha=[0.449,0.757,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.8GB  mem_peak=32.9GB  2195s  (~0.7h remaining)
+[resonance] step   17000  omega*dt p50=6.686  max=9.100  over_wall=99.164%
+    [evaluate] iter 0/40  mem_alloc=17.55GB  mem_resv=17.96GB
+    [evaluate] iter 10/40  mem_alloc=17.55GB  mem_resv=17.96GB
+    [evaluate] iter 20/40  mem_alloc=17.55GB  mem_resv=17.94GB
+    [evaluate] iter 30/40  mem_alloc=17.55GB  mem_resv=17.96GB
+    [evaluate] iter 39/40  mem_alloc=17.55GB  mem_resv=17.96GB
+    [evaluate] mem before=16.13GB  after=17.55GB  peak_during=46.16GB  trend(every 10 iters)=[17.55, 17.55, 17.55, 17.55, 17.55]GB
+>>> EVAL step 17,000  val_loss=1.6508  val_ppl=5.21  best=5.14    (2231s)
+step   17050/19250  ntp=1.5965  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.29  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.47  bproj_sig=65.72  sig_max=60.068@r18  gamma=0.100  alpha=[0.449,0.757,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.8GB  mem_peak=46.2GB  2283s  (~0.7h remaining)
+step   17100/19250  ntp=1.5837  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.27  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.39  bproj_sig=65.72  sig_max=60.069@r18  gamma=0.100  alpha=[0.449,0.757,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.8GB  mem_peak=32.9GB  2335s  (~0.7h remaining)
+step   17150/19250  ntp=1.5791  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.26  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.44  bproj_sig=65.72  sig_max=60.069@r18  gamma=0.100  alpha=[0.449,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.8GB  mem_peak=32.9GB  2386s  (~0.6h remaining)
+step   17200/19250  ntp=1.5712  v_reg=0.0004  fock_reg=0.0060  lr=6.00e-05  grad=0.27  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.54  bproj_sig=65.71  sig_max=60.069@r18  gamma=0.100  alpha=[0.449,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.8GB  mem_peak=32.9GB  2438s  (~0.6h remaining)
+step   17250/19250  ntp=1.5754  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.28  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.53  bproj_sig=65.71  sig_max=60.070@r18  gamma=0.100  alpha=[0.449,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.8GB  mem_peak=32.9GB  2490s  (~0.6h remaining)
+step   17300/19250  ntp=1.5882  v_reg=0.0004  fock_reg=0.0060  lr=6.00e-05  grad=0.27  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.40  bproj_sig=65.71  sig_max=60.071@r18  gamma=0.100  alpha=[0.449,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.8GB  mem_peak=32.9GB  2542s  (~0.6h remaining)
+step   17350/19250  ntp=1.5820  v_reg=0.0004  fock_reg=0.0060  lr=6.00e-05  grad=0.31  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.69  bproj_sig=65.71  sig_max=60.072@r18  gamma=0.100  alpha=[0.449,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.8GB  mem_peak=32.9GB  2594s  (~0.6h remaining)
+step   17400/19250  ntp=1.5865  v_reg=0.0004  fock_reg=0.0060  lr=6.00e-05  grad=0.29  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.32  bproj_sig=65.71  sig_max=60.073@r18  gamma=0.100  alpha=[0.449,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.8GB  mem_peak=32.9GB  2646s  (~0.6h remaining)
+step   17450/19250  ntp=1.5828  v_reg=0.0004  fock_reg=0.0060  lr=6.00e-05  grad=0.28  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.47  bproj_sig=65.70  sig_max=60.073@r18  gamma=0.100  alpha=[0.449,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.8GB  mem_peak=32.9GB  2698s  (~0.6h remaining)
+step   17500/19250  ntp=1.5774  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.29  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.48  bproj_sig=65.70  sig_max=60.074@r18  gamma=0.100  alpha=[0.448,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.8GB  mem_peak=32.9GB  2750s  (~0.5h remaining)
+[resonance] step   17500  omega*dt p50=6.707  max=9.518  over_wall=99.304%
+    [evaluate] iter 0/40  mem_alloc=17.55GB  mem_resv=17.87GB
+    [evaluate] iter 10/40  mem_alloc=17.55GB  mem_resv=17.87GB
+    [evaluate] iter 20/40  mem_alloc=17.55GB  mem_resv=17.87GB
+    [evaluate] iter 30/40  mem_alloc=17.55GB  mem_resv=17.87GB
+    [evaluate] iter 39/40  mem_alloc=17.55GB  mem_resv=17.87GB
+    [evaluate] mem before=16.13GB  after=17.55GB  peak_during=46.16GB  trend(every 10 iters)=[17.55, 17.55, 17.55, 17.55, 17.55]GB
+>>> EVAL step 17,500  val_loss=1.6661  val_ppl=5.29  best=5.14    (2786s)
+step   17550/19250  ntp=1.5727  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.28  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.42  bproj_sig=65.69  sig_max=60.074@r18  gamma=0.100  alpha=[0.449,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=35.8GB  mem_peak=46.2GB  2838s  (~0.5h remaining)
+step   17600/19250  ntp=1.5954  v_reg=0.0004  fock_reg=0.0060  lr=6.00e-05  grad=0.28  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.46  bproj_sig=65.69  sig_max=60.075@r18  gamma=0.100  alpha=[0.449,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=35.8GB  mem_peak=32.9GB  2890s  (~0.5h remaining)
+step   17650/19250  ntp=1.5747  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.29  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.57  bproj_sig=65.69  sig_max=60.076@r18  gamma=0.100  alpha=[0.449,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=35.8GB  mem_peak=32.9GB  2942s  (~0.5h remaining)
+step   17700/19250  ntp=1.5662  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.30  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.46  bproj_sig=65.68  sig_max=60.077@r18  gamma=0.100  alpha=[0.449,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=35.8GB  mem_peak=32.9GB  2994s  (~0.5h remaining)
+step   17750/19250  ntp=1.5665  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.29  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.54  bproj_sig=65.68  sig_max=60.078@r18  gamma=0.100  alpha=[0.449,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=35.8GB  mem_peak=32.9GB  3046s  (~0.5h remaining)
+step   17800/19250  ntp=1.5751  v_reg=0.0004  fock_reg=0.0060  lr=6.00e-05  grad=0.30  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.80  bproj_sig=65.68  sig_max=60.079@r18  gamma=0.100  alpha=[0.449,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=35.8GB  mem_peak=32.9GB  3098s  (~0.4h remaining)
+step   17850/19250  ntp=1.5774  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.29  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.41  bproj_sig=65.68  sig_max=60.079@r18  gamma=0.100  alpha=[0.448,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=35.8GB  mem_peak=32.9GB  3150s  (~0.4h remaining)
+step   17900/19250  ntp=1.5763  v_reg=0.0004  fock_reg=0.0060  lr=6.00e-05  grad=0.28  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.43  bproj_sig=65.67  sig_max=60.079@r18  gamma=0.100  alpha=[0.448,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=35.8GB  mem_peak=32.9GB  3202s  (~0.4h remaining)
+step   17950/19250  ntp=1.5607  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.29  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.50  bproj_sig=65.66  sig_max=60.080@r18  gamma=0.100  alpha=[0.449,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=35.8GB  mem_peak=32.9GB  3254s  (~0.4h remaining)
+step   18000/19250  ntp=1.5722  v_reg=0.0004  fock_reg=0.0060  lr=6.00e-05  grad=0.29  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.50  bproj_sig=65.66  sig_max=60.081@r18  gamma=0.100  alpha=[0.448,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=35.8GB  mem_peak=32.9GB  3306s  (~0.4h remaining)
+[resonance] step   18000  omega*dt p50=6.687  max=9.893  over_wall=99.249%
+    [evaluate] iter 0/40  mem_alloc=17.55GB  mem_resv=17.89GB
+    [evaluate] iter 10/40  mem_alloc=17.55GB  mem_resv=17.89GB
+    [evaluate] iter 20/40  mem_alloc=17.55GB  mem_resv=17.89GB
+    [evaluate] iter 30/40  mem_alloc=17.55GB  mem_resv=17.92GB
+    [evaluate] iter 39/40  mem_alloc=17.55GB  mem_resv=17.92GB
+    [evaluate] mem before=16.13GB  after=17.55GB  peak_during=46.16GB  trend(every 10 iters)=[17.55, 17.55, 17.55, 17.55, 17.55]GB
+>>> EVAL step 18,000  val_loss=1.6354  val_ppl=5.13  best=5.13  *** NEW BEST ***  (3342s)
+  Checkpoint saved: /content/drive/MyDrive/semsimula_fock_cfc_baoab_ts_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/checkpoints/fock_cfc_ts_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_step18000_best.pt  (PPL=5.13)
+  Canonical best: /content/drive/MyDrive/semsimula_fock_cfc_baoab_ts_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/checkpoints/fock_cfc_ts_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt
+step   18050/19250  ntp=1.5822  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.28  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.63  bproj_sig=65.66  sig_max=60.081@r18  gamma=0.100  alpha=[0.448,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.8GB  mem_peak=46.2GB  3399s  (~0.4h remaining)
+step   18100/19250  ntp=1.5797  v_reg=0.0004  fock_reg=0.0060  lr=6.00e-05  grad=0.29  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.46  bproj_sig=65.66  sig_max=60.082@r18  gamma=0.100  alpha=[0.448,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.8GB  mem_peak=32.9GB  3451s  (~0.4h remaining)
+step   18150/19250  ntp=1.5701  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.28  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.58  bproj_sig=65.66  sig_max=60.083@r18  gamma=0.100  alpha=[0.448,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.8GB  mem_peak=32.9GB  3503s  (~0.3h remaining)
+step   18200/19250  ntp=1.5834  v_reg=0.0004  fock_reg=0.0060  lr=6.00e-05  grad=0.27  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.47  bproj_sig=65.66  sig_max=60.084@r18  gamma=0.100  alpha=[0.448,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.8GB  mem_peak=32.9GB  3555s  (~0.3h remaining)
+step   18250/19250  ntp=1.5666  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.28  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.47  bproj_sig=65.65  sig_max=60.084@r18  gamma=0.100  alpha=[0.448,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.8GB  mem_peak=32.9GB  3607s  (~0.3h remaining)
+step   18300/19250  ntp=1.5779  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.29  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.60  bproj_sig=65.65  sig_max=60.087@r18  gamma=0.100  alpha=[0.448,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.8GB  mem_peak=32.9GB  3659s  (~0.3h remaining)
+step   18350/19250  ntp=1.5592  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.28  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.44  bproj_sig=65.64  sig_max=60.087@r18  gamma=0.100  alpha=[0.448,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.8GB  mem_peak=32.9GB  3710s  (~0.3h remaining)
+step   18400/19250  ntp=1.5728  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.29  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.64  bproj_sig=65.64  sig_max=60.088@r18  gamma=0.100  alpha=[0.448,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.8GB  mem_peak=32.9GB  3762s  (~0.3h remaining)
+step   18450/19250  ntp=1.5801  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.26  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.40  bproj_sig=65.64  sig_max=60.090@r18  gamma=0.100  alpha=[0.448,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.8GB  mem_peak=32.9GB  3814s  (~0.2h remaining)
+step   18500/19250  ntp=1.5757  v_reg=0.0004  fock_reg=0.0060  lr=6.00e-05  grad=0.30  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.47  bproj_sig=65.63  sig_max=60.090@r18  gamma=0.100  alpha=[0.448,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.8GB  mem_peak=32.9GB  3866s  (~0.2h remaining)
+[resonance] step   18500  omega*dt p50=6.726  max=9.411  over_wall=99.261%
+    [evaluate] iter 0/40  mem_alloc=17.55GB  mem_resv=17.89GB
+    [evaluate] iter 10/40  mem_alloc=17.55GB  mem_resv=17.91GB
+    [evaluate] iter 20/40  mem_alloc=17.55GB  mem_resv=17.91GB
+    [evaluate] iter 30/40  mem_alloc=17.55GB  mem_resv=17.91GB
+    [evaluate] iter 39/40  mem_alloc=17.55GB  mem_resv=17.91GB
+    [evaluate] mem before=16.13GB  after=17.55GB  peak_during=46.16GB  trend(every 10 iters)=[17.55, 17.55, 17.55, 17.55, 17.55]GB
+>>> EVAL step 18,500  val_loss=1.6408  val_ppl=5.16  best=5.13    (3902s)
+step   18550/19250  ntp=1.5695  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.30  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.62  bproj_sig=65.63  sig_max=60.090@r18  gamma=0.100  alpha=[0.448,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.9GB  mem_peak=46.2GB  3954s  (~0.2h remaining)
+step   18600/19250  ntp=1.5762  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.30  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.56  bproj_sig=65.63  sig_max=60.091@r18  gamma=0.100  alpha=[0.448,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.9GB  mem_peak=32.9GB  4006s  (~0.2h remaining)
+step   18650/19250  ntp=1.5666  v_reg=0.0004  fock_reg=0.0060  lr=6.00e-05  grad=0.28  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.47  bproj_sig=65.61  sig_max=60.092@r18  gamma=0.100  alpha=[0.448,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.9GB  mem_peak=32.9GB  4058s  (~0.2h remaining)
+step   18700/19250  ntp=1.5658  v_reg=0.0004  fock_reg=0.0060  lr=6.00e-05  grad=0.29  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.39  bproj_sig=65.61  sig_max=60.092@r18  gamma=0.100  alpha=[0.448,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.9GB  mem_peak=32.9GB  4110s  (~0.2h remaining)
+step   18750/19250  ntp=1.5723  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.28  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.50  bproj_sig=65.61  sig_max=60.092@r18  gamma=0.100  alpha=[0.448,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.9GB  mem_peak=32.9GB  4162s  (~0.2h remaining)
+step   18800/19250  ntp=1.5848  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.28  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.47  bproj_sig=65.61  sig_max=60.092@r18  gamma=0.100  alpha=[0.448,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.9GB  mem_peak=32.9GB  4214s  (~0.1h remaining)
+step   18850/19250  ntp=1.5751  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.28  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.54  bproj_sig=65.60  sig_max=60.092@r18  gamma=0.100  alpha=[0.448,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.9GB  mem_peak=32.9GB  4265s  (~0.1h remaining)
+step   18900/19250  ntp=1.5559  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.28  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.34  bproj_sig=65.60  sig_max=60.092@r18  gamma=0.100  alpha=[0.448,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.9GB  mem_peak=32.9GB  4317s  (~0.1h remaining)
+step   18950/19250  ntp=1.5869  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.27  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.51  bproj_sig=65.60  sig_max=60.093@r18  gamma=0.100  alpha=[0.448,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.9GB  mem_peak=32.9GB  4369s  (~0.1h remaining)
+step   19000/19250  ntp=1.5771  v_reg=0.0004  fock_reg=0.0060  lr=6.00e-05  grad=0.28  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.53  bproj_sig=65.60  sig_max=60.094@r18  gamma=0.100  alpha=[0.448,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.9GB  mem_peak=32.9GB  4421s  (~0.1h remaining)
+[resonance] step   19000  omega*dt p50=6.697  max=9.088  over_wall=99.255%
+    [evaluate] iter 0/40  mem_alloc=17.55GB  mem_resv=17.97GB
+    [evaluate] iter 10/40  mem_alloc=17.55GB  mem_resv=17.97GB
+    [evaluate] iter 20/40  mem_alloc=17.55GB  mem_resv=17.97GB
+    [evaluate] iter 30/40  mem_alloc=17.55GB  mem_resv=17.97GB
+    [evaluate] iter 39/40  mem_alloc=17.55GB  mem_resv=17.95GB
+    [evaluate] mem before=16.13GB  after=17.55GB  peak_during=46.16GB  trend(every 10 iters)=[17.55, 17.55, 17.55, 17.55, 17.55]GB
+>>> EVAL step 19,000  val_loss=1.6475  val_ppl=5.19  best=5.13    (4457s)
+step   19050/19250  ntp=1.5717  v_reg=0.0004  fock_reg=0.0060  lr=6.00e-05  grad=0.28  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.64  bproj_sig=65.60  sig_max=60.095@r18  gamma=0.100  alpha=[0.448,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.8GB  mem_peak=46.2GB  4509s  (~0.1h remaining)
+step   19100/19250  ntp=1.5547  v_reg=0.0004  fock_reg=0.0060  lr=6.00e-05  grad=0.27  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.44  bproj_sig=65.60  sig_max=60.096@r18  gamma=0.100  alpha=[0.448,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.8GB  mem_peak=32.9GB  4561s  (~0.0h remaining)
+step   19150/19250  ntp=1.5581  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.29  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.40  bproj_sig=65.59  sig_max=60.096@r18  gamma=0.100  alpha=[0.448,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.8GB  mem_peak=32.9GB  4613s  (~0.0h remaining)
+step   19200/19250  ntp=1.5592  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.27  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.38  bproj_sig=65.58  sig_max=60.097@r18  gamma=0.100  alpha=[0.448,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.8GB  mem_peak=32.9GB  4665s  (~0.0h remaining)
+step   19250/19250  ntp=1.5679  v_reg=0.0005  fock_reg=0.0060  lr=6.00e-05  grad=0.31  rep=0.0000  top[override:depth_code]=0.2  dc_ratio=1.64  bproj_sig=65.59  sig_max=60.098@r18  gamma=0.100  alpha=[0.448,0.756,0.922,0.977,0.987]  mem_alloc=1.3GB  mem_resv=34.8GB  mem_peak=32.9GB  4716s  (~0.0h remaining)
+[scaf] step 19,250  verdict=CLEAN  future_perturbation=0.0  honest_PPL=5.62  standard_PPL=5.62  leak_tax=-3.58e-07 nats  controls_ok=True  (15.786s)
+[scaf]   geometry: tierA_max_dcos=0.0  tierB_crossing_rate=0.0  latent_leak=False
+
+Training complete. Best PPL: 5.13
+
+[run_training] finished cleanly; next_step=19250 (== TOTAL_STEPS means training is fully done).
