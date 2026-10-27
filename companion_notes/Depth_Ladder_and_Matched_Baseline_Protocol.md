@@ -4113,6 +4113,105 @@ Settled is the mean of the evals at steps 18,000, 18,500 and 19,000, as for SO-T
 - **Not in book v23** (author, 2026-10-24): the runs fill the A100's idle time during the release and go into the next version as a complete MS5.
 - **Code checked on CPU** (2026-10-24): the code functions are identical in the two notebooks; the ladder builds the cache from the pinned revisions with exact token counts, and the GPT-2 notebook reuses it unchanged; every OpenWebText and TinyStories folder token is unchanged.
 
+**Result, the matched GPT-2 on code (C3, 2026-10-26).** `colab_matched_gpt2_baseline_openwebtext.ipynb` with `CORPUS = 'code'` and C1's settings otherwise (WSD, peak 1.2e-3, d = 384, L = 8, 33,691,776 parameters, batch 32 × 512, `TOTAL_STEPS = 19_250`, `SCHEDULE_STEPS = 16_250`). Tag `_wsd_lr0p0012_st19250_sch16250_code`. This run built the shared code cache that the ladder's code arms read. Output `results/gpt2_baseline_wsd_lr0p0012_st19250_sch16250_code/matched_GPT2_Code_19250steps_output.txt`. About 1.6 h on the A100.
+- **Settled 4.96** (the mean of the evals at 18,000, 18,500 and 19,000: 4.96, 4.96, 4.95), final 4.95. This is the reference for every code perplexity; code perplexities are compared only within this corpus.
+- **The extension at the floor was worth about 1%:** 5.02 at step 16,000 and 5.00 at 16,500, then 4.95 at 19,000. The schedule's end is not settled on code either, so the code arms get the same settling check and extension as SO-TS.
+- **No loss spike:** the largest rise between logged training losses is 0.028 (step 17,400); the gradient norm's median is 0.51 and its maximum 1.35 (step 200, in warmup).
+- **Training loss below validation** at the floor (about 1.53 against 1.60). The validation set is CodeParrot's own file split, so the gap is between files, not a sign of repeated tokens: 315M training tokens are drawn from the 450M pool.
+- **Not in the run folder:** Cell 2's output, so the cache's token counts are confirmed only by the CPU check of 2026-10-24. SO-CODE's Cell 3 confirmed them (2026-10-26): it loaded the cache GPT-2-CODE built and printed `train: 450,000,000   val: 2,000,000`, so each 19,250-step run reads 315,392,000 tokens, 0.70 of the pool.
+
+**The code set (MS5), registered 2026-10-26, after C3 and before any code ladder arm trained. Calls CODE1–CODE5 binding from the start of SO-CODE's Cell 6 (2026-10-26): they were written here before it, and the author started training on them without changes.** Four arms on code, each from step 0 at seed 0, so they are paired with each other by step:
+- **SO-CODE:** SR2's Cell 0 plus `CORPUS = 'code'`, `LADDER_STEPS = 16_250`, `EXTRA_FLOOR_STEPS = 3_000`.
+- **FO-b-CODE:** the same plus `FIRST_ORDER_OVERDAMPED = True`.
+- **PM2-CODE and FO-b-PM2-CODE** (C5): PM2-PMX16's Cell 0 and its FO-b twin, with the same additions. **K = 2, amending the K = 16 of 2026-10-24** (author, 2026-10-26, before any code ladder arm trained): every corpus then has the same pairs at K = 0 and K = 2, and K = 2 is the smallest dose that closed the OpenWebText gap.
+- **Budget.** Every arm runs straight to 19,250 steps, as the TinyStories set did: on code the matched GPT-2 gained about 1% at the floor after the schedule's end. Settled is the mean of the evals at 18,000, 18,500 and 19,000.
+- **The MS5 call** (45%) hits if CODE1 and CODE3 both hit.
+
+| id | prediction | called |
+| --- | --- | ---: |
+| CODE1 | **second order earns a gap without wells on code:** FO-b-CODE settles more than 2% above SO-CODE | 65% |
+| CODE2 | **the gap is larger than on OpenWebText** (the information-preservation channel's prediction): FO-b-CODE / SO-CODE exceeds +4.9% | 35% |
+| CODE3 | **first order matches with wells on code too:** FO-b-PM2-CODE within ±2% of PM2-CODE, paired by step | 65% |
+| CODE4 | **the wells help first order more on code too:** log(FO-b-CODE / FO-b-PM2-CODE) exceeds log(SO-CODE / PM2-CODE) | 70% |
+| CODE5 | **the wells help at all on code:** PM2-CODE settles more than 1% below SO-CODE | 55% |
+
+Readings after the runs, as for TinyStories: Cells 6b-7, 6b-15 and 6b-13, and on CPU `pm_mode_usage.py`, `pm_static_landscape.py`, `mechanism_ablations.py` and FLOW-R. Against the matched GPT-2 (4.96), each arm is reported as a percentage.
+
+**SO-CODE started 2026-10-26** (fresh run, tag `…norc_vplive_xilive_sr2_st16250…`, Drive folder `semsimula_fock_cfc_baoab_code_<tag>`): batch 16 × 2 (32 sequences of 512), WSD warm-up to 812, stable to 10,562, decay to 16,250, floor 6.00e-05 to 19,250; 76,572,109 parameters (76,502,176 decayed plus 69,933 not). Training loss at step 50: 6.1591 (the reference for the other three code arms' step 50). Estimated 5.9 h.
+
+**SO-CODE finished 2026-10-27.** Output `results/cfc_baoab_code_<tag>/L2_noattn-sr2_on_Code_19250steps_output.txt`. 19,250 steps in 5.92 h (1.11 s per step); no watchdog trigger; the largest rise between logged training losses is 0.073 (step 13,050), gradient norm median 0.46, maximum 1.67; SCAF CLEAN at 5,000, 10,000, 15,000 and 19,250 (the last prints nan PPLs, the known cosmetic issue).
+- **Settled 6.00** (evals at 18,000, 18,500 and 19,000: 5.87, 6.02, 6.10); best 5.87 at step 18,000. **+21.0% against GPT-2-CODE (4.96),** against +17.1% for SR2 on OpenWebText (58.32 / 49.81) and +15.4% for SO-TS on TinyStories (5.16 / 4.47).
+- **The gap by phase** (mean loss difference over five evals, GPT-2-CODE's at the same steps): +14.7% at the end of the stable phase (9,000–11,000), +16.9% in the decay (12,000–14,000), +21.2% at the floor (17,000–19,000). GPT-2 gains more from the decay. At step 2,000 the gap was +82%.
+- **Settling check (2026-10-04 rule), steps 16,000–19,000:** fitted change −0.020 nats against a residual standard deviation of 0.015. By the letter of the rule, not settled, by a third of the noise; the fitted change's own standard error is about 0.017 nats, so it is not distinguishable from zero. GPT-2-CODE under the same rule: −0.013 against 0.002 (its evals use fixed batches). The rule is applied to the FO-b pair, as on TinyStories: if FO-b-CODE fails it too, the decision on an extension is taken for both arms then, before CODE1 and CODE2 are scored.
+- **Diagnostics on the best checkpoint (step 18,000)**, outputs in the Drive folder's `results/` (Cell 7's file carries an `FO-b` label by mistake; the probed checkpoint is SO-CODE's):
+  - **Cell 6b-7:** Gate 0 PASS. **Gate 1 +4.0%** (5.06 → 5.26), the cost of resetting the velocity (SR2 on OpenWebText +3.9%, SO-TS +2.0%). Gate 2, one extra layer at the trained Δt: +42% (SR2 +35%). **Gate 3 at N = 3: +89% (0.639 nats)**, against SR2's +50% (0.405) and SO-TS's +23.6% (0.211); the penalty grows away from the trained step count.
+  - **Cell 6b-13:** ω·Δt median 7.55 (layer 0 9.58, layer 1 4.94); 99.97% of readings past the explicit wall of 2. Stiffer than SR2 (about 6) and SO-TS (6.7).
+  - **Cell 7:** the reverse channel is off by construction (`norc`), and removing the registers changes nothing, as for every `norc` arm.
+
+**The copy split, registered 2026-10-26 before SO-CODE finished (diagnostic, CPU, `debug/copy_split.py`).** At step 2,000 SO-CODE trailed GPT-2-CODE by 1.82× in perplexity, against 1.14× for SO-TS at the same step. One reading: code rewards exact copying of names chosen afresh in each file, which attention does by pointing at one earlier token and the conservative model can only approximate. The split compares the two models' per-token loss on the same 512 windows of 512 tokens, spaced evenly over the code validation set, by what the context offers each target: *first* occurrence (nothing to copy), *repeat* (the token occurs earlier), *induction* (the pair of current token and target occurs earlier); and by token class, distance to the last occurrence and position.
+- **Copying explains the gap** if the repeat and induction targets carry a share of the total gap at least 1.5 times their share of the targets, and the per-token gap on induction targets is at least twice the gap on first occurrences.
+- **The gap is general** if every group's per-token gap is within a factor 1.5 of the overall gap.
+- **Otherwise mixed.** Copying points to the Fock arm (FOCK-CODE); a general gap makes more wells as plausible a next arm as Fock.
+- **Tools.** The validation tokens were rebuilt locally with the notebook's own functions from the pinned CodeParrot revision (`debug/copy_split_build_val.py`); GPT-2-CODE gives 5.04 on all 2M of them against its 4.95 logged on Colab's random batches, so the set is the same. Window perplexity varies from 1.0 to 407 across files, which is why the windows are spread over the set and the gaps are paired by window. The loader reproduces FO-b-TS on TinyStories (5.35 on 64 windows against 5.28).
+
+**The copy split on SO-CODE, 2026-10-27** (`results/copy_split_code/copy_split_report.txt`, `.json`; SO-CODE's best checkpoint, step 18,000). On the 262,144 targets: GPT-2-CODE 5.350, SO-CODE 6.442, ratio 1.204 (the settled ratio from Colab's evals: 1.21). SO-CODE is worse in 99.0% of the 512 windows. Mean gap per token, nats (± the spread over windows):
+
+| group | share of targets | GPT-2 | SO-CODE | gap | share of gap |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| first occurrence | 27.7% | 4.012 | 4.201 | +0.189 ± 0.007 | 28.2% |
+| repeat (not induction) | 22.3% | 1.603 | 1.857 | +0.254 ± 0.008 | 30.4% |
+| induction | 50.0% | 0.414 | 0.567 | +0.154 ± 0.005 | 41.3% |
+| indentation, newline, space | 21.9% | 0.278 | 0.320 | +0.042 | 4.9% |
+| identifier, repeat (not induction) | 8.7% | 2.404 | 2.767 | +0.363 | 16.9% |
+| repeat or induction, last seen 1–16 back | 34.8% | 0.491 | 0.601 | +0.109 | 20.5% |
+| … 17–64 back | 25.2% | 0.805 | 1.013 | +0.208 | 28.1% |
+| … 65–256 back | 10.8% | 1.474 | 1.816 | +0.342 | 19.9% |
+| … 257–512 back | 1.5% | 2.065 | 2.460 | +0.395 | 3.2% |
+| position 0–63 / 64–255 / 256–511 | 12.5 / 37.5 / 50.0% | | | +0.121 / +0.178 / +0.208 | |
+
+- **Reading by the registered rule: MIXED.**
+  - **Not copying:** repeat and induction targets carry 71.7% of the gap against 72.3% of the targets (ratio 0.99, rule ≥ 1.5), and the induction gap is 0.82 of the first-occurrence gap (rule ≥ 2).
+  - **Not general by the letter:** on the three kinds of target alone the gap is uniform (every one within 1.5× of the overall +0.186). But whitespace (+0.042), repeated identifiers without the bigram cue (+0.363), and repeats last seen 65 or more tokens back (+0.342, +0.395) fall outside the factor 1.5.
+- **What the split shows instead: the gap grows with how far back the earlier occurrence is.** Short-range copying is nearly as good as GPT-2's (+0.109 within 16 tokens, ratio 1.12); recall from 65–512 tokens back costs three to four times as much per token (ratio 1.41–1.48). Not a position effect: among targets at positions 256–511 alone, the gap by distance is +0.115, +0.217, +0.356, +0.395; at a fixed distance of 1–16 it changes little with position (+0.093, +0.107, +0.115). First occurrences also lose more late in the window (+0.122 at 0–63, +0.225 at 256–511): GPT-2 uses the rest of the file even for new tokens. The context channels do reach this far (`debug/xi_reach.py`, 16 windows): they are content-routed (`XI_CONTENT_ROUTE`, a query–key term added to each channel's distance logit) and their decays are learned. SO-CODE trained them to horizons 1.7, 3.4, 12, 53 and **608 tokens**; the longest channel's distance penalty is only −0.84 logits across the whole 512-token window. In layer 1 that channel puts 22% of its weight on earlier occurrences of the target when they lie 65 or more tokens back, 26 times their uniform share, spread over about 36 effective positions; in layer 0 it is a near-uniform average (lift 1.0, about 390 positions). **The reach exists; what is scarce is the number and sharpness of long-range lookups**: one content-routed long channel per layer, which reads raw states and acts on the token only through V_θ's gradient.
+- **The deficit is long-range, content-addressed recall,** not copying as such. The wells hold fixed directions and cannot store a file's names; the register path is created through content-addressed query–key matching and could. **By the order agreed on 2026-10-27, FOCK-CODE runs before the PM2 pair** (the reading is mixed).
+
+**FOCK-CODE, a fifth code arm (exploratory, outside MS5), PROPOSED 2026-10-27 after SO-CODE finished and before the copy split ran; binding from the start of its Cell 6 once the author confirms.** The author asked for the register path on code (2026-10-26) and decided to run it (2026-10-27).
+- **Configuration: SO-CODE's Cell 0 with `REVERSE_CHANNEL = True`** (the notebook default; SO-CODE sets it to False). FOCK-CODE then differs from SO-CODE by the register path alone, at the same seed, batches and budget, so the two are paired by step. Tag `…cgqk_vplive_xilive_sr2_st16250_L2probe…noattn` (no `norc`).
+- **No OpenWebText arm combines the register path with SR2.** Its nearest reference is G2 against F3.1 (53.12 against 57.76, −8.0%), both without SR2. **Build check** (2026-10-27, CPU, `verify_pm_switch.build` with G2's trained weights): with `LOWRANK_DAMPED_FLOW = True` the notebook builds the model with the tag above and the same parameter count as G2 (76,770,257); a training step gives finite gradients everywhere, including every reverse-channel parameter; G2's weights lose 4.167 nats under SR2 against 4.162 as trained, on 2 × 256 OpenWebText tokens. SR2 changes the step of this model little, as it does without the register path (SR2 58.32 against F3.1 57.76).
+- **Cost:** G2 took 14.8 h for 32,500 steps without the speed switches; with them, and at 19,250 steps, an estimated 7–9 h.
+- **Queue:** after FO-b-CODE. Before or after the PM2 pair depends on the copy split: before it if copying explains SO-CODE's gap, or the reading is mixed. Order agreed by the author on 2026-10-27.
+
+| id | prediction | called |
+| --- | --- | ---: |
+| FOCK1 | the register path helps on code at least as much as on OpenWebText: FOCK-CODE settles more than 8% below SO-CODE (below 5.52) | 60% |
+| FOCK2 | it closes at least half of SO-CODE's gap to GPT-2-CODE in log perplexity (settles at or below 5.46) | 30% |
+| FOCK3 | its gain is a copying gain: in the copy split, the per-token gap to GPT-2-CODE shrinks by a larger fraction on induction targets than on first occurrences | 60% |
+| FOCK4 | its gain is a long-range gain: in the copy split, the per-token gap on repeat and induction targets last seen 65–512 tokens back shrinks by a larger fraction than on those last seen 1–16 back. **Added 2026-10-27 after SO-CODE's split** (which found the gap growing with distance, not concentrated on induction), before FOCK-CODE trains | 65% |
+
+**The wells in the copy split (descriptive, PROPOSED with FOCK-CODE, before PM2-CODE trains).** The trained wells act as a positional, then fixed, potential (§26.9), with fixed directions and no per-file content, so they should help with what every file shares and not with copying.
+
+| id | prediction | called |
+| --- | --- | ---: |
+| PMCS1 | in the copy split, the per-token gap to GPT-2-CODE shrinks by a larger fraction on first occurrences than on induction targets from SO-CODE to PM2-CODE | 60% |
+
+FOCK3 and PMCS1 together would separate the two mechanisms on code: the register path closes the copying part of the gap, the wells the rest.
+
+**XI6-CODE and L4-CODE, two more code arms (exploratory, outside MS5), PROPOSED 2026-10-27 after SO-CODE's copy split, before either trains; the author decided both should run.** Each changes one thing from SO-CODE, in answer to the split's finding (the gap grows with distance to the earlier occurrence) and to `debug/xi_reach.py` (one blurred long-range content lookup per layer).
+- **XI6-CODE: a second long-range context channel.** SO-CODE's Cell 0 plus `XI_OVERRIDE = '6long'`, a new preset (2026-10-27): the 5long decays plus a sixth channel initialised like the fifth, `[0.50, 0.75, 0.95, 0.99, 0.995, 0.995]`. Content routing is on for every channel; at initialisation the two long channels are identical (W_q = 0) and differ through W_k, so training separates them. Tag `xi6long_…_aniso_dcvt6x8_…norc_vplive_xilive_sr2_st16250_L2probe…noattn`.
+  - **Confound, disclosed:** V_θ's joint well bank reads the concatenation of all channels, so its projections grow with the channel count: 83,690,702 trainable parameters against SO-CODE's 76,572,109 (+9.3%), almost all in the bank's `B_proj`, `a_proj` and `mu_proj`; the channel's own query and key add 36,864. XI6-CODE therefore adds a lookup and V_θ capacity together. The copy split separates them: a second lookup should act on long-distance targets, extra capacity on all of them (XI2).
+- **L4-CODE: depth.** SO-CODE's Cell 0 plus `LADDER_L = 4` (Δt = 2, T = 8 as at L = 2). Tag `…norc_vplive_xilive_sr2_st16250_L4probe…idt2_lr0p0012_noattn`; 76,625,362 trainable parameters. On OpenWebText, depth was measured with the register path on (L = 2 G2 53.12, L = 4 50.10, −5.7%); no conservative-only L = 4 arm exists, so L4-CODE has no OpenWebText twin.
+  - **Memory:** SO-CODE peaked at 46 GB during evaluation without layer checkpointing; L = 4 doubles the activations. Proposed `LAYER_CHECKPOINT = True` for this arm (the default; the same arithmetic, not in the tag).
+- **Build check** (2026-10-27, CPU, the notebook's own Cells 0–5b on fresh weights, 2 × 512 OpenWebText tokens): with the default preset the tag equals SO-CODE's trained tag, so the new preset changes nothing for existing arms. All three build with the tags above; a training step gives finite gradients, and every parameter outside the off register path receives one. Forward and backward on CPU: SO-CODE 9.3 s, XI6-CODE 8.5 s, L4-CODE 18.2 s. Estimated on the A100: XI6-CODE about 6 h, L4-CODE about 12 h without checkpointing, more with it.
+
+| id | prediction | called |
+| --- | --- | ---: |
+| XI1 | a second long-range lookup helps: XI6-CODE settles more than 2% below SO-CODE (below 5.88) | 50% |
+| XI2 | its gain is long-range: in the copy split, the per-token gap on repeat and induction targets last seen 65–512 tokens back shrinks by a larger fraction than on those last seen 1–16 back | 60% |
+| L4a | depth helps on code at least as much as on OpenWebText: L4-CODE settles more than 5% below SO-CODE (below 5.70) | 60% |
+| L4b | its gain is long-range, as in XI2 | 55% |
+
+**Proposed GPU order** (the author's call): FO-b-CODE (running) → FOCK-CODE → XI6-CODE → L4-CODE → PM2-CODE → FO-b-PM2-CODE. With FOCK4, XI2 and L4b, the copy split ranks the three routes to long-range recall (registers, more lookups, depth) by how much of the long-distance gap each closes.
+
 **MS2, the K = 16 pair, pre-registered in detail (2026-10-22, before the runs).** Both arms on PMX's Cell 0 (F3.1's settings plus `POISSON_MODES = 16`, `LOWRANK_DAMPED_FLOW = True`, `POISSON_WELLS_EXACT = True`) with the speed switches (`VPHI_ANALYTIC_FORCE = True`, `LAYER_CHECKPOINT = False`); the first-order arm adds `FIRST_ORDER_OVERDAMPED = True`. Tags `…pm16_pmx16_sr2_L2probe…` and `…pm16_pmx16_sr2_fob_L2probe…`; 32,500 steps, seed 0, OpenWebText; about 12 h each; the second-order arm first, as the new baseline. At K = 16 the exact rank part (`POISSON_WELLS_EXACT_MODES = 16`) covers every well. **Build check** (`debug/verify_dose_modes.py`, output `debug/verify_dose_modes_output.txt`): at K = 16 and K = 256, second order and FO-b, the notebook's own cells build the model with the expected tag and parameter count (76,578,318 at K = 16, 76,671,438 at K = 256), a training step gives a finite loss and finite gradients, and the half-lives initialise over 4–128 tokens as at K = 64. The K = 256 pair follows with the same settings and `POISSON_MODES = 256`.
 
 | id | prediction | called |

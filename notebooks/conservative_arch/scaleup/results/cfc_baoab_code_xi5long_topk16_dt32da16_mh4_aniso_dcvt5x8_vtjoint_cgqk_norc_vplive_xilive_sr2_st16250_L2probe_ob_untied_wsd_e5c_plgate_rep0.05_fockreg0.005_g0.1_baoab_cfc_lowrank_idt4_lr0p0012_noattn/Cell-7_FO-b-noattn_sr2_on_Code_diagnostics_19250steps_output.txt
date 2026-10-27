@@ -1,0 +1,16 @@
+Probe target -> fock_cfc_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt  step 18000  PPL 5.87
+GPU free 82.3 / 85.1 GB before probe
+========================================================================
+Fock v2.1 STRUCTURAL HEALTH
+========================================================================
+     layer  active_fra  reg_cos_si  create_ent  create_alp  rev_entrop   rev_scale  qforce_rat  destroy_me
+     0.000       1.000       0.000       0.231       0.906        None       0.000       0.000       0.000
+     1.000       1.000      -0.000       3.213       0.054        None       0.000       0.000       0.500
+------------------------------------------------------------------------
+summary: {'active_frac': 1.0, 'salience_mean': 0.602, 'salience_std': 0.061, 'reg_cos_sim': 0.0, 'destroy_mean': 0.25, 'qforce_ratio': 0.0, 'rev_scale': 0.0, 'create_alpha_max': 0.48, 'create_entropy': 1.722}
+  * reverse channel effectively OFF (|scale|=0.0e+00): the non-conservative force is not being used -> either it has no headroom here, or warmup is still ramping / gate init needs help
+
+========================================================================
+arm                         loss       ppl      dPPL
+full model                1.7064      5.51     +0.00
+  - registers (all)       1.7064      5.51     +0.00

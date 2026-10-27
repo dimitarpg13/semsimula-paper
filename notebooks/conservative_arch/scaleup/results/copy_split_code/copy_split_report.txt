@@ -1,0 +1,23 @@
+COPY SPLIT on code validation: 512 windows x 512 = 262,144 targets, reference gpt2
+  ppl on these tokens: gpt2 5.350, so 6.442
+
+so against gpt2: mean gap +0.1859 nats/token (ppl ratio 1.204)
+  group                         share  gpt2 nll       so nll      gap  ratio  of gap  seq spread
+  all                          100.0%     1.677        1.863   +0.186   1.20  100.0%  ±0.005
+  first occurrence              27.7%     4.012        4.201   +0.189   1.21   28.2%  ±0.007
+  repeat (not induction)        22.3%     1.603        1.857   +0.254   1.29   30.4%  ±0.008
+  induction                     50.0%     0.414        0.567   +0.154   1.17   41.3%  ±0.005
+  indent/newline/space          21.9%     0.278        0.320   +0.042   1.04    4.9%  ±0.006
+  identifier-like               49.3%     2.568        2.821   +0.253   1.29   67.1%  ±0.008
+  number                         7.4%     1.610        1.762   +0.152   1.16    6.0%  ±0.010
+  punct/other                   21.4%     1.078        1.270   +0.192   1.21   22.0%  ±0.009
+  identifier, first             20.3%     4.497        4.695   +0.198   1.22   21.6%  ±0.009
+  identifier, repeat             8.7%     2.404        2.767   +0.363   1.44   16.9%  ±0.016
+  identifier, induction         20.4%     0.718        0.978   +0.260   1.30   28.5%  ±0.011
+  repeat/ind., dist 1-16        34.8%     0.491        0.601   +0.109   1.12   20.5%  ±0.004
+  repeat/ind., dist 17-64       25.2%     0.805        1.013   +0.208   1.23   28.1%  ±0.007
+  repeat/ind., dist 65-256      10.8%     1.474        1.816   +0.342   1.41   19.9%  ±0.012
+  repeat/ind., dist 257-512      1.5%     2.065        2.460   +0.395   1.48    3.2%  ±0.038
+  position 0-63                 12.5%     2.312        2.433   +0.121   1.13    8.1%  ±0.007
+  position 64-255               37.5%     1.707        1.885   +0.178   1.19   35.9%  ±0.005
+  position 256-511              50.0%     1.496        1.704   +0.208   1.23   56.0%  ±0.006

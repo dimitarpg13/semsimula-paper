@@ -1,0 +1,3 @@
+gpt2: semsimula_matched_gpt2_wsd_lr0p0012_st19250_sch16250_Code
+  gpt2_baseline_best.pt (step 19000, val 4.950)
+  512 windows x 512, ppl 5.3495
