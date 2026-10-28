@@ -1,22 +1,27 @@
 # Implementing Semantic Templates: A Path
 
 **Design note — Semantic Simulation Research Programme**
-**Relates to:** book §9.8, §10.4, §10.5.2; [*Semantic Templates as Doi–Peliti Reactions*](Semantic_Templates_as_Doi_Peliti_Reactions.md); [*Doi–Peliti Dynamics of Semantic Particles and Registers*](Doi_Peliti_Dynamics_of_Semantic_Particles_and_Registers.md); [*The Execution Problem*](The_Execution_Problem.md)
+**Relates to:** book §9.8, §10.4, §10.5.2; [*Semantic Templates as Doi–Peliti Reactions*](Semantic_Templates_as_Doi_Peliti_Reactions.md); [*Doi–Peliti Dynamics of Semantic Particles and Registers*](Doi_Peliti_Dynamics_of_Semantic_Particles_and_Registers.md); [*Poisson Mode Registers (PM1)*](Poisson_Mode_Registers_PM1.md); [*A Community of Semantic Templates for Native CoT*](Community_of_Semantic_Templates_for_Native_CoT.md); [*Realizing Execution: Gauge vs Causal Ordering*](Realizing_Execution_Gauge_vs_Causal_Ordering.md); [*The Execution Problem*](The_Execution_Problem.md); [*MCS Reduction for the v3 Composite*](MCS_Reduction_For_v3_Composite.md); [*Expressivity Bounds for the v0 Simulator*](Expressivity_Bounds_For_v0_Simulator.md)
 **Status:** Proposal. Nothing here is implemented or measured.
 
-> **Thesis.** Hardcoding a template bank cannot work, because the bank *is* the Liouvillian — it specifies the whole dynamics rather than sitting inside it. A learned bank is reachable with machinery the codebase already has, except for one piece that has no formulation yet: the pairing of a Pattern Matching Structure with its Inference Structure. And neither is worth building until the register substrate supports particle-number dynamics at all, which measurement says it currently does not.
+> **Thesis.** Hardcoding a template bank cannot work, because the bank *is* the Liouvillian — it specifies the whole dynamics rather than sitting inside it. Nor can a bank of wells work, because deepening a potential adds no degree of freedom and the v0 ceiling falls only to creation. A learned bank is reachable, but less of it is free than it first appears: the Poisson relaxation is exact only in the linear corner, so a thresholded rate costs either the formalism or a sampling step; the pairing of a Pattern Matching Structure with its Inference Structure is unformulated, and two of its three candidate forms are provably order-blind; and the MCS reduction constrains a learned bank to be finite up to string-action equivalence. The substrate is not ready on either half — creation or matching — and measurement says so for both.
 
 ---
 
 ## Contents
 
 1. [Why hardcoding fails structurally](#1-why-hardcoding-fails-structurally)
+   - [1.1 And a bank of wells is not enough either](#11-and-a-bank-of-wells-is-not-enough-either)
 2. [Anatomy of a template: three kinds of parameter](#2-anatomy-of-a-template-three-kinds-of-parameter)
-3. [The relaxation that makes stoichiometry learnable](#3-the-relaxation-that-makes-stoichiometry-learnable)
+3. [The relaxation does not make stoichiometry learnable](#3-the-relaxation-does-not-make-stoichiometry-learnable)
 4. [The part with no formulation: the PMS-to-IS pairing](#4-the-part-with-no-formulation-the-pms-to-is-pairing)
+   - [4.1 Two of the three candidates are ruled out, not merely weak](#41-two-of-the-three-candidates-are-ruled-out-not-merely-weak)
+   - [4.2 The order deficit has been measured](#42-the-order-deficit-has-been-measured)
+   - [4.3 What the placement map can be anchored to](#43-what-the-placement-map-can-be-anchored-to)
 5. [Three tiers of generality](#5-three-tiers-of-generality)
 6. [What the measurements say about the current substrate](#6-what-the-measurements-say-about-the-current-substrate)
 7. [Staging, with pass criteria](#7-staging-with-pass-criteria)
+   - [7.1 Constraints the MCS reduction places on any bank](#71-constraints-the-mcs-reduction-places-on-any-bank)
 8. [Open calibration questions](#8-open-calibration-questions)
 9. [Dictionary](#9-dictionary)
 
@@ -31,6 +36,22 @@ Section 4.4 of the templates note establishes that summing the reaction term ove
 So a template bank is not a module. Hardcoding it is hardcoding the model's entire inference dynamics: which structures may be created, under what conditions, at what rate. That is the generator of the time evolution, not a feature attached to it. A fixed bank gives a model whose dynamics cannot adapt, no matter how much data it sees.
 
 A second consequence points the same way. Section 4.3 of that note shows that templates with trivial matchers reduce to spontaneous creation $\varnothing \to A_v$, whose stationary state is Poisson with mean $c/d$ — so **a model's prior is the stationary state of its unconditional templates**. Hardcoding the bank therefore hardcodes the prior, which is the one thing that most obviously must differ between corpora.
+
+### 1.1 And a bank of wells is not enough either
+
+There is a second way to get this wrong, and it is the more likely one here, because the trained models supply the temptation. The v0 expressivity ceiling rests on exactly one hypothesis — no inference-time creation:
+
+> there is no mechanism by which the state space grows during inference (no creation, no destruction, no operator that maps to outside $M$)
+
+and the bounds note is explicit that nothing *else* can break it:
+
+> v0 cannot be made context-free by adding parameters, by adding RL signal, or by **enriching the force vocabulary**, because none of those operations grow the state-space dimension during inference.
+
+Its Cook–Wolfram section closes the remaining loophole: "the bottleneck is **not** the rule complexity… The bottleneck is the **finite, non-growing state space**."
+
+A Poisson mode is a well. Firing it deepens a potential; it adds no degree of freedom. The Community note says the same from the trained side: a mode has no "inference region that writes a structure — none: the mode deepens a well, a force on later tokens; **it writes nothing**." So a template bank whose firing only modulates $V$ is still v0, still regular, and no amount of selectivity changes that.
+
+**Templates lift the class only if firing instantiates a particle.** That is the single structural requirement the whole programme rests on, and §7 below has no stage for it — Stage 0 repairs the slot registers, Stage 0′ makes matching selective, and neither produces a new degree of freedom. This is the gap to close first in any revision of the staging.
 
 ---
 
@@ -70,17 +91,37 @@ so the matching threshold is a **binding radius measured in inflection radii**, 
 
 ---
 
-## 3. The relaxation that makes stoichiometry learnable
+## 3. The relaxation does not make stoichiometry learnable
 
-Reactions act on occupation numbers, and integer occupancy is the obstruction. The framework already relaxes it: the Poisson-mode reading carries an intensity rather than a count, and a coherent state is a Poisson distribution of mean $\alpha$ rather than a definite number of particles.
+> **Corrected 2026-10-28.** An earlier version of this section argued that because the Poisson-mode reading carries an intensity rather than a count, the stoichiometry $(k, l)$ becomes a pair of non-negative real vectors and is therefore learnable by gradient. That argument is wrong, and the two notes it leaned on say so explicitly. The section below states the constraint instead.
 
-Taking that seriously, a template's stoichiometry becomes a pair of non-negative **real** vectors,
+Reactions act on occupation numbers, and integer occupancy looks like the obstruction. The framework does relax it — PM1 carries a real-valued, unbounded Poisson intensity $\phi_v(t)$ and never an integer count, and §3.3 of the PM1 note proves that carrying only the mean is *exact*. But the proof names its own precondition, and that precondition is what forbids the generalisation.
+
+**Linearity in the occupation is a requirement, not a convenience.** The Doi–Peliti note lists it among three requirements "each forced by §2–§4":
+
+> **A coupling linear in the occupation.** Otherwise the mean is not enough.
+
+and the PM1 note's requirements table gives the reason in one line: "a coupling linear in the occupation | **so that carrying the mean is exact**". The exactness is the identity $\mathbb{E}[U(h;n)] = U(h;\mathbb{E}n) = U(h;\phi)$, which holds because the potential is linear in $n$ and for no other reason.
+
+**A thresholded firing rate is not linear in the occupation.** The rate (2.2) passes the occupation through a sigmoid, so
 
 $$
-k \in \mathbb{R}^{\lvert\mathcal{V}\rvert}_{\geq 0}, \qquad l \in \mathbb{R}^{\lvert\mathcal{V}\rvert}_{\geq 0}, \qquad (3.1)
+\mathbb{E}\left[r_\mathcal{T}(n)\right] \neq r_\mathcal{T}\left(\mathbb{E}n\right), \qquad (3.1)
 $$
 
-a requirement intensity and a production intensity over modes. A template is then a learned vector field on mode space, which is a gradient-friendly object: parameterise by $k = \mathrm{softplus}(\tilde{k})$ and likewise for $l$, exactly as semantic mass is already parameterised for positivity.
+and the deterministic model that carries $\phi$ stops computing the expected dynamics of any particle system. The exactness result is lost at the moment the threshold is introduced — which is to say, at the moment a template becomes a template rather than a well.
+
+**Reactant terms are worse.** Any $k_v \geq 1$ makes the reaction nonlinear in the occupations, and the Doi–Peliti note states the consequence generally: "Every linear process closes on its first moment this way. **Nonlinear ones, such as pair annihilation, couple each moment to the next.**" Its worked case notes that sub-Poissonian processes require "imaginary noise" in the Doi field. Moment closure fails; carrying $\phi$ alone is no longer a model of anything.
+
+**So PM1 is not a template substrate.** It occupies exactly the $k = 0$, $l = 1$ corner: one linear reaction per mode, spontaneous creation at rate $E_v$ against decay at rate $\lambda_v$, no reactant terms and no cross-mode coupling. That corner is where the relaxation is exact, and the relaxation does not extend beyond it. Neither note anywhere asserts that $(k, l)$ is continuous or learnable.
+
+**What follows for the design.** Three options, in increasing order of honesty about the cost:
+
+1. **Stay linear.** Restrict the bank to $k = 0$ templates — unconditional creation at a learned, state-independent rate. The relaxation stays exact, and the bank is a learned prior (§1) rather than a conditional inference mechanism. Cheap, and almost certainly too weak to be interesting.
+2. **Sample the occupations.** Draw $n \sim \mathrm{Poisson}(\phi)$ in training with a straight-through or score-function gradient. This is open question 2 of the PM1 note, which calls it "the only test of the statistics themselves". It restores a particle system that a nonlinear rate can legitimately act on, at the cost of gradient variance.
+3. **Accept a mean-field approximation and say so.** Keep the deterministic $\phi$ and the thresholded rate, and treat the result as a heuristic closure rather than the exact mean of a reaction. Workable, but then the Doi–Peliti apparatus is being used as notation and not as a derivation, and none of its inherited theorems apply.
+
+Option 2 is the one that keeps the formalism. It also happens to be the item the PM1 note already has on its open list, which makes it the cheapest thing to be wrong about.
 
 Two practical consequences follow.
 
@@ -98,13 +139,37 @@ Section 6 of the templates note lists what remains open, and one item is the obs
 
 Matching is a comparison of densities, and has a metric: the overlap distance restricted to template clouds. The PMS-to-IS binding is a *correspondence* — which created structure goes with which matched one, and where it is placed relative to the match. It is not a point in $\Sigma$, not a density over $\Sigma$, and so the overlap distance says nothing about it.
 
-Three candidate formulations, none worked out:
+The gap is traceable to the source. The status table of [*A Community of Semantic Templates*](Community_of_Semantic_Templates_for_Native_CoT.md) §6 reads the 2022 manuscript paragraph by paragraph, and the row for the inference structure says **"heading only (¶185)"**. It is one of three bold rows there — admission, optimal match, and what a firing constructs — and the note adds: "The last is where order lives."
 
-1. **A placement map.** The IS carries a displacement field: given the matched configuration, the created structure's centroid is $\mu_{\text{new}} = \mu_{\text{match}} + \delta_\mathcal{T}$, with $\delta_\mathcal{T}$ learned. Simple, differentiable, and almost certainly too weak — it makes placement translation-equivariant and blind to the matched configuration's shape.
-2. **An operator.** The IS is a map on the matched structure's state, which is the v3 reading, and the execution note already establishes that execution is global in $S$ and lands in a space $\mathbf{E}$ of different dimension. Expressive, but it imports v3's difficulty into what was meant to be a v2 mechanism.
-3. **A joint mode over the pair.** Treat $(\text{matched}, \text{created})$ as one multi-particle mode and let the template be a density over the pair. This keeps the overlap-distance geometry, at the cost of a Gram matrix over pairs — $\lvert\mathcal{V}\rvert^2$ in the worst case.
+### 4.1 Two of the three candidates are ruled out, not merely weak
 
-I would start with 1 as a baseline precisely because it is weak: it gives a falsifiable floor. If placement-only templates buy nothing, the question becomes whether placement is the wrong degree of freedom or whether templates are not the bottleneck.
+An earlier version of this section offered three candidates as if they differed in strength. They do not: a theorem separates them.
+
+> **Firing cannot supply order.** The Doi–Peliti note proves it (§7.3 there): a reaction reading of templates sequences firings perfectly well, through a control particle hopping on the atom tree, but every reaction changes the state by adding occupation numbers, and **additive updates commute**. "Doi–Peliti sequences the firings; it cannot make the outcome depend on the sequence." (Community note §5; [*Realizing Execution*](Realizing_Execution_Gauge_vs_Causal_Ordering.md) §1 states the same obstruction for any additive channel.)
+
+So:
+
+1. **A placement map** — $\mu_{\text{new}} = \mu_{\text{match}} + \delta_\mathcal{T}$ with $\delta_\mathcal{T}$ learned. Additive, hence **order-blind by construction**. It can serve as a v2 baseline for *what* gets written; it cannot decide whether a template with its slots swapped writes something different.
+2. **An operator.** The IS is a map on the matched structure's state. This is the only candidate that can be non-commutative, and it is the v3 reading. The execution note's asymmetry passage is the cost: templates live in $\mathbf{T}$, of the same dimension as $\Sigma$, while executive structures live in $\mathbf{E}$, "generally different dimensionality", because execution "must encode computational structure that has no natural representation in the geometry of meaning." An operator IS is an $\mathbf{E}$-object attached to a $\mathbf{T}$-object, and the attachment is exactly what is unformulated.
+3. **A joint mode over the pair.** A density over $(\text{matched}, \text{created})$. Keeps the overlap geometry — and is additive, hence **also order-blind**. The Gram-matrix cost is the lesser problem.
+
+So the real choice is binary: an additive IS that is a legitimate v2 mechanism and cannot order, or an operator IS that can order and is v3 work. Community §5 states it exactly:
+
+> A template bank therefore supplies the **v2 half** of native chain-of-thought (structured emission, with a principled, learned trigger) in full, and the **v3 half** exactly to the extent that its inference regions are non-commutative. Defining the inference region is the v3 work, and it is the one part of the manuscript that is empty.
+
+### 4.2 The order deficit has been measured
+
+It is not only undefined on paper. The MT probe (protocol §5.24, scored 2026-10-12) asked whether the trained modes already carry transitions. Three of four pre-registered calls hit: the firing information at lag 1 exceeds the state's own drift by +0.37 bits in PMX, decaying over 4–8 tokens. The fourth, the one that bears on order, missed in both arms — **zero** ordered pairs reaching a lift of 2 in PMX, three asymmetric pairs in PM1 against twenty pre-registered. The note's reading:
+
+> The transitions have no direction… u-then-v is as likely as v-then-u: the modes co-fire on temporal proximity, which is what a similarity structure does and not what a chain does… **Supplying order is therefore a design task, not a training task that more data would finish.**
+
+That closes off one hope the staging below might otherwise have carried: Stage 3 (induction) cannot recover order that no stage designed in.
+
+### 4.3 What the placement map can be anchored to
+
+The additive baseline is still worth building first, and it need not be invented from nothing. The framework already has an affixing rule, quoted in the execution note from the 2022 working note: "When the semantic latch $\mu$ associated with $\mathfrak{T}$ is triggered the centroid of $\mathfrak{T}$ is affixed to the point which has triggered the latch." That places the **matcher**. The open question for the output is asked verbatim in the same note, of the transfer template $\mathfrak{S}$: "how does an execution result become a new semantic structure? **What determines its position, mass, and signature in Semantic Space?**"
+
+A displacement relative to the affixed matcher centroid is the minimal object that answers the second question in the vocabulary of the first — and Community §8 independently names "a relative displacement" as the smallest two-slot object with an order to decide. That gives the baseline two precedents and makes the gap precise: the affixing rule exists for the PMS, and nothing exists for the IS.
 
 ---
 
@@ -205,9 +270,34 @@ Of the three pass criteria, the first is met, the second partly (layer 0), and t
 
 **Stage 1 — one template, smallest form.** The single-type catalytic case $A_u \to A_u + A_v$, with learned $r_0$ and $\Theta$ and an annealed $\beta$. A free correctness check comes with it: by §4.3 of the templates note, unconditional templates give a Poisson stationary state of mean $c/d$, which should reproduce the log-unigram output bias. An implementation that does not recover that is wrong before anything interesting is tested.
 
-**Stage 2 — a bank.** Gumbel top-k routing over templates, low-rank $(k, l)$, placement-map IS. Measured on F1 (base Dyck, v2's own falsifier) and F3 (Dyck with let-binding). F1 is the one that matters: it is the test v2 has never passed for substrate reasons.
+**Stage 1′ — slots.** Between the single template and a bank, and skipped in the first draft of this staging. A mode has one centre; a template has a tree of them. Community §8 names the minimal extension: "a mode that matches a *pair* of structures at a relative displacement, which is the manuscript's two-slot pattern-matching tree and **the smallest object with an order to decide**." Until a template reads two things, there is no order question to answer and no way to tell an additive IS from an operator one.
 
-**Stage 3 — induction.** Only once a learned bank demonstrably beats no bank on F1. Otherwise Tier 2 is being built on an unproven Tier 1.
+**Stage 2 — a bank.** Gumbel top-k routing over templates, placement-map IS, and the $k = 0$ or sampled-occupation choice of §3. Three falsifiers, with three different jobs, which the first draft of this staging conflated:
+
+| falsifier | role here | what it witnesses |
+|---|---|---|
+| F1 (base Dyck) | **positive control** | v2's necessity. The test v2 has never passed, and whose per-depth protocol "has never been run as written" |
+| F3 (Dyck + let-binding) | **negative control** | v3's necessity. A pure-v2 bank should *fail* it: "v2 can only create or destroy", and F3 needs an existing particle rebound mid-derivation |
+| F6 (2-counter machine) | **upper-bound guard** | over-generation. Success here is a failure of the MCS claim, and the notes name the likely cause as "state-dependent bulk creation in v2" |
+
+A bank that passes F3 while being described as pure v2 has not succeeded; it has become a disguised v3, which is permitted but changes the bookkeeping (§7.1).
+
+**An admission rule is a precondition for this stage, not an extra.** Routing top-k over a *fixed* bank sidesteps the question; a learned bank cannot. The manuscript has listed repulsion between template properties as a `//TODO` since 2022, and Community §4 states the consequence plainly: "**Without such a rule a learned bank either never grows or grows without bound.**" The natural form is the one the overlap geometry already supplies — admit a candidate when its overlap with every existing template is below a radius.
+
+**Stage 3 — induction.** Only once a learned bank demonstrably beats no bank on F1. Two further cautions. Induction cannot supply order (§4.2): that is a design task. And an open-ended bank threatens the expressivity result itself — see §7.1.
+
+### 7.1 Constraints the MCS reduction places on any bank
+
+The reduction to LCFRS is what licenses the framework's mildly-context-sensitive claim. A template implementation that violates its assumptions does not merely under-perform; it invalidates the result. Four constraints bind, and two of them bind hardest on a *learned* bank:
+
+- **The bank must be finite up to string-action equivalence.** "The yield-length set is semilinear **because the rule set is finite**." Finitely many distinct concatenation, permutation and copy patterns — however many continuous parameters decorate them. An open-ended induced bank is not an LCFRS at all, which makes this the binding constraint on Stage 3.
+- **Bounded multiplicity per firing.** The forbidden form is named: $\lvert\psi\rangle \to (a^\dagger_v)^{m(\lvert\psi\rangle)}\lvert\psi\rangle$, state-dependent bulk creation. A template meaning "one copy per existing $X$" destroys semilinearity and with it the MCS reach. Note what is *not* forbidden: an unbounded **number** of firings is explicitly fine. It is unbounded **breadth per firing** that breaks it.
+- **Consume and emit, never match and edit.** Linearity requires each particle's state be read exactly once. A bank that matches against the active set and mutates the matched particles in place is the forbidden in-place-mutation form, under which "polynomial parsing is replaced by PSPACE-complete recognition."
+- **Bounded fragment dimension and bounded arity.** A created particle's payload may not grow with input length, and a firing may not consume unboundedly many inputs; either lifts the class to recursively enumerable.
+
+One permission worth recording, because it makes the multi-slot design of Stage 1′ legitimate: a multi-creation operator producing a coordinated tuple with binding "reaches MCS without a separately named v3, **provided the coordination structure satisfies the boundedness assumptions**." The reduction survives. What does not survive is the clean one-to-one map from falsifier to mechanism, so a bank with binding should not then be presented as a pure-v2 result.
+
+**A depth floor independent of all of this.** Feng's constructions need four or five layers per step; the ladder's models have two. The $L = 4$ arms are the first on which any of this can be tested, and **a null result at $L = 2$ would not be informative about the mechanism.**
 
 ---
 
@@ -234,4 +324,4 @@ Of the three pass criteria, the first is met, the second partly (layer 0), and t
 | PMS-to-IS pairing | The correspondence between matched and created structures. Not a density; no formulation yet (§4) |
 | Induction | Acquiring a template from context at inference with no weight update — Tier 2, distinct from continual learning |
 
-**Summary.** The continuous parameters of a template are already differentiable, and the templates note supplies the form. The discrete part, stoichiometry, becomes differentiable under the Poisson-intensity relaxation the framework already uses, with low-rank structure as a precondition for trainability. The genuinely unformulated part is the pairing of matcher to inference structure, which is not a density and so inherits none of the overlap-distance geometry; a placement map is the weak baseline worth falsifying first. None of it should be built before the register substrate shows particle-number dynamics, because measurement currently says it has none — active fraction pinned at 0.9995–1.000, salience not an intensity, and v2's own falsifier never yet run on a substrate where registers could reach the tokens. Nor before the modes that would serve as matchers discriminate between tokens, which as trained they do not (Stage 0′).
+**Summary.** The continuous parameters of a template are already differentiable, and the templates note supplies the form. The stoichiometry is not: the Poisson relaxation is exact only where the coupling is linear in the occupation, and a thresholded rate is not, so the choice is a linear bank, sampled occupations, or an admitted mean-field approximation (§3). The pairing of matcher to inference structure is unformulated at source — "heading only (¶185)" — and the choice there is binary rather than graded, because additive updates commute: an additive IS is honest v2 and cannot order, an operator IS can order and is v3 work (§4). Order is a design task, not a training task; the MT probe found zero asymmetric transitions in PMX. A learned bank must stay finite up to string-action equivalence, bounded in multiplicity and arity, and must consume rather than edit, or the MCS reduction does not hold (§7.1). And firing must instantiate a particle, not deepen a well, or the v0 ceiling stands however good the matching becomes (§1.1). The substrate is ready on neither half: active fraction pinned at 0.9995–1.000 and salience not an intensity on the slot side, modes that do not discriminate between tokens on the matching side, and v2's own falsifier never yet run as specified.
