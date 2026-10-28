@@ -31,6 +31,8 @@
 
 The usual argument against hardcoding is that a fixed bank will not transfer across corpora. True, but the framework supplies a stronger one.
 
+Throughout, **the templates note** means [*Semantic Templates as Doi–Peliti Reactions*](Semantic_Templates_as_Doi_Peliti_Reactions.md), and equation numbers of the form (4.4) refer to it unless the text says otherwise.
+
 Section 4.4 of the templates note establishes that summing the reaction term over a bank of templates, together with transport and destruction, gives a *complete* Liouvillian — and concludes that the bank "is not an additional structure sitting beside the Doi–Peliti dynamics; it is the specification of that dynamics."
 
 So a template bank is not a module. Hardcoding it is hardcoding the model's entire inference dynamics: which structures may be created, under what conditions, at what rate. That is the generator of the time evolution, not a feature attached to it. A fixed bank gives a model whose dynamics cannot adapt, no matter how much data it sees.
