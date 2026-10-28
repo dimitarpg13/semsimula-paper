@@ -38,6 +38,33 @@ def underscore_pair_exists(line):
 
 
 
+def italic_spans(line):
+    """[(open_pos, close_pos)] for single-`*` emphasis spans, CommonMark flanking.
+
+    Only runs of exactly one `*` are considered: a run of two is strong
+    emphasis (`**bold**`), which does not trigger rule 4. Code spans are
+    masked first. The opener/closer pairing is a left-to-right stack match,
+    which is CommonMark's shape without its "rule of three" refinements --
+    enough for a linter, and it errs toward reporting.
+    """
+    masked = re.sub(r'`[^`]*`', lambda m: ' ' * len(m.group(0)), line)
+    runs = [m for m in re.finditer(r'(?<![*\\])\*+(?!\*)', masked)
+            if len(m.group(0)) == 1]
+    stack, spans = [], []
+    for m in runs:
+        b = _cls(masked[m.start()-1] if m.start() else None)
+        a = _cls(masked[m.end()] if m.end() < len(masked) else None)
+        left  = a != 'space' and not (a == 'punct' and b not in ('space', 'punct'))
+        right = b != 'space' and not (b == 'punct' and a not in ('space', 'punct'))
+        # `*` permits intraword emphasis, so opening/closing are just the
+        # flanking conditions -- unlike `_` in underscore_pair_exists above.
+        if right and stack:
+            spans.append((stack.pop(), m.start()))
+        elif left:
+            stack.append(m.start())
+    return spans
+
+
 def inline_spans(line):
     """[(start, end, body)] for $...$ spans, skipping $$ and code spans."""
     # blank out inline code first
@@ -105,10 +132,9 @@ def lint(path):
         if stripped.startswith('|') and spans and not re.fullmatch(r'\|[\s:|-]*\|', stripped):
             hits.append((i, 'R3', f'inline math in a table cell ({len(spans)} span(s))', l))
 
-        # R4 inline math inside an italic span
-        for m in re.finditer(r'(?<!\*)\*(?!\*)([^*\n]+?)\*(?!\*)', l):
-            if '$' in m.group(1):
-                hits.append((i, 'R4', 'inline math inside an italic span', l))
+        # R4 is checked below, after the display-math state is known, using
+        # CommonMark flanking rather than a bare regex: the naive form fired on
+        # the gap BETWEEN two italic spans and over-reported badly.
 
         # R5a lone * inside math
         for _, _, b in spans:
@@ -158,6 +184,17 @@ def lint(path):
         # R12a \_ inside a text-mode command
         if re.search(r'\\(text|math|textrm|textbf|textit|texttt|mathrm|mathbf|mathit|mathsf|mathtt|emph)\w*\{[^}]*\\_', l):
             hits.append((i, 'R12a', r'\_ inside a \text-family command', l))
+
+        # R4 inline math inside a single-`*` italic span. GitHub resolves the
+        # italic before the math renderer sees it, so the math emerges as raw
+        # literal text. Silent: correct source, wrong output, no warning.
+        if not in_display:
+            ital = italic_spans(l)
+            if ital:
+                for s, e, _b in spans:
+                    if any(o < s and e <= c for o, c in ital):
+                        hits.append((i, 'R4', 'inline math inside an italic span', l))
+                        break
 
         # R7 display-math line starting with - + *
         if in_display and re.match(r'^\s*[-+*]\s', l):

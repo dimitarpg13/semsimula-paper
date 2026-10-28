@@ -123,7 +123,7 @@ All scalars here are real and all root densities are non-negative, so a **real**
 
 ### 1.3 The Gaussian states of the framework
 
-**What "type" means here, and what it does not.** The index $v$ runs over the **semantic particle types** of the book's §10.5.2, which introduces $\lbrace\mu_v\rbrace_{v\in\mathcal{V}}$ as the centroids of those types and attaches one mode function to each. The book uses the term there without a numbered definition, and it is **not** the **aspect type** $l\in\mathcal{L}$ of Definition 3 (*Semantic energy field*, which introduces $\mathcal{L}$ as a discrete set of aspect types) and Definition 4 (*Semantic aspect*, $A = (\vec r, l, \boldsymbol{\theta})$). The two live at different levels of the hierarchy of Definitions 4–7:
+**What "type" means here, and what it does not.** The index $v$ runs over the **semantic particle types** of the book's §10.5.2, which introduces $\lbrace\mu_v\rbrace_{v\in\mathcal{V}}$ as the centroids of those types and attaches one mode function to each. The book uses the term there without a numbered definition. It is **not** the **aspect type** $l\in\mathcal{L}$ of Definition 3, Semantic energy field, which introduces $\mathcal{L}$ as a discrete set of aspect types. Nor is it the aspect $A = (\vec r, l, \boldsymbol{\theta})$ of Definition 4, Semantic aspect. The two live at different levels of the hierarchy of Definitions 4–7:
 
 | Book level | Object | Centroid | Carries a mode? |
 |---|---|---|---|
