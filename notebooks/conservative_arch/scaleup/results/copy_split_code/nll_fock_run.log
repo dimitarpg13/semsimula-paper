@@ -1,0 +1,147 @@
+   fock: windows 4/512  running ppl 5.961
+   fock: windows 8/512  running ppl 7.150
+   fock: windows 12/512  running ppl 6.868
+   fock: windows 16/512  running ppl 7.141
+   fock: windows 20/512  running ppl 6.751
+   fock: windows 24/512  running ppl 6.762
+   fock: windows 28/512  running ppl 7.065
+   fock: windows 32/512  running ppl 7.028
+   fock: windows 36/512  running ppl 6.906
+   fock: windows 40/512  running ppl 6.579
+   fock: windows 44/512  running ppl 6.435
+   fock: windows 48/512  running ppl 6.205
+   fock: windows 52/512  running ppl 5.912
+   fock: windows 56/512  running ppl 5.902
+   fock: windows 60/512  running ppl 5.921
+   fock: windows 64/512  running ppl 6.087
+   fock: windows 68/512  running ppl 6.125
+   fock: windows 72/512  running ppl 6.165
+   fock: windows 76/512  running ppl 6.476
+   fock: windows 80/512  running ppl 6.304
+   fock: windows 84/512  running ppl 6.242
+   fock: windows 88/512  running ppl 6.201
+   fock: windows 92/512  running ppl 6.197
+   fock: windows 96/512  running ppl 6.265
+   fock: windows 100/512  running ppl 6.370
+   fock: windows 104/512  running ppl 6.385
+   fock: windows 108/512  running ppl 6.257
+   fock: windows 112/512  running ppl 6.247
+   fock: windows 116/512  running ppl 6.211
+   fock: windows 120/512  running ppl 6.213
+   fock: windows 124/512  running ppl 6.272
+   fock: windows 128/512  running ppl 6.299
+   fock: windows 132/512  running ppl 6.313
+   fock: windows 136/512  running ppl 6.268
+   fock: windows 140/512  running ppl 6.347
+   fock: windows 144/512  running ppl 6.373
+   fock: windows 148/512  running ppl 6.434
+   fock: windows 152/512  running ppl 6.466
+   fock: windows 156/512  running ppl 6.375
+   fock: windows 160/512  running ppl 6.301
+   fock: windows 164/512  running ppl 6.269
+   fock: windows 168/512  running ppl 6.263
+   fock: windows 172/512  running ppl 6.320
+   fock: windows 176/512  running ppl 6.421
+   fock: windows 180/512  running ppl 6.513
+   fock: windows 184/512  running ppl 6.675
+   fock: windows 188/512  running ppl 6.590
+   fock: windows 192/512  running ppl 6.533
+   fock: windows 196/512  running ppl 6.432
+   fock: windows 200/512  running ppl 6.315
+   fock: windows 204/512  running ppl 6.202
+   fock: windows 208/512  running ppl 6.117
+   fock: windows 212/512  running ppl 6.056
+   fock: windows 216/512  running ppl 5.998
+   fock: windows 220/512  running ppl 5.947
+   fock: windows 224/512  running ppl 5.921
+   fock: windows 228/512  running ppl 5.878
+   fock: windows 232/512  running ppl 5.852
+   fock: windows 236/512  running ppl 5.810
+   fock: windows 240/512  running ppl 5.749
+   fock: windows 244/512  running ppl 5.682
+   fock: windows 248/512  running ppl 5.640
+   fock: windows 252/512  running ppl 5.591
+   fock: windows 256/512  running ppl 5.559
+   fock: windows 260/512  running ppl 5.564
+   fock: windows 264/512  running ppl 5.555
+   fock: windows 268/512  running ppl 5.579
+   fock: windows 272/512  running ppl 5.606
+   fock: windows 276/512  running ppl 5.625
+   fock: windows 280/512  running ppl 5.636
+   fock: windows 284/512  running ppl 5.669
+   fock: windows 288/512  running ppl 5.654
+   fock: windows 292/512  running ppl 5.676
+   fock: windows 296/512  running ppl 5.782
+   fock: windows 300/512  running ppl 5.805
+   fock: windows 304/512  running ppl 5.814
+   fock: windows 308/512  running ppl 5.841
+   fock: windows 312/512  running ppl 5.846
+   fock: windows 316/512  running ppl 5.825
+   fock: windows 320/512  running ppl 5.808
+   fock: windows 324/512  running ppl 5.801
+   fock: windows 328/512  running ppl 5.779
+   fock: windows 332/512  running ppl 5.770
+   fock: windows 336/512  running ppl 5.921
+   fock: windows 340/512  running ppl 5.928
+   fock: windows 344/512  running ppl 5.930
+   fock: windows 348/512  running ppl 5.935
+   fock: windows 352/512  running ppl 5.940
+   fock: windows 356/512  running ppl 5.982
+   fock: windows 360/512  running ppl 6.008
+   fock: windows 364/512  running ppl 6.027
+   fock: windows 368/512  running ppl 6.050
+   fock: windows 372/512  running ppl 6.036
+   fock: windows 376/512  running ppl 6.031
+   fock: windows 380/512  running ppl 6.039
+   fock: windows 384/512  running ppl 6.038
+   fock: windows 388/512  running ppl 6.019
+   fock: windows 392/512  running ppl 6.010
+   fock: windows 396/512  running ppl 5.996
+   fock: windows 400/512  running ppl 6.055
+   fock: windows 404/512  running ppl 6.063
+   fock: windows 408/512  running ppl 6.066
+   fock: windows 412/512  running ppl 6.041
+   fock: windows 416/512  running ppl 6.050
+   fock: windows 420/512  running ppl 6.081
+   fock: windows 424/512  running ppl 6.069
+   fock: windows 428/512  running ppl 6.045
+   fock: windows 432/512  running ppl 6.013
+   fock: windows 436/512  running ppl 6.040
+   fock: windows 440/512  running ppl 6.047
+   fock: windows 444/512  running ppl 6.027
+   fock: windows 448/512  running ppl 6.033
+   fock: windows 452/512  running ppl 6.052
+   fock: windows 456/512  running ppl 6.064
+   fock: windows 460/512  running ppl 6.068
+   fock: windows 464/512  running ppl 6.061
+   fock: windows 468/512  running ppl 6.065
+   fock: windows 472/512  running ppl 6.076
+   fock: windows 476/512  running ppl 6.073
+   fock: windows 480/512  running ppl 6.066
+   fock: windows 484/512  running ppl 6.059
+   fock: windows 488/512  running ppl 6.042
+   fock: windows 492/512  running ppl 6.026
+   fock: windows 496/512  running ppl 6.038
+   fock: windows 500/512  running ppl 6.034
+   fock: windows 504/512  running ppl 6.044
+   fock: windows 508/512  running ppl 6.047
+   fock: windows 512/512  running ppl 6.089
+fock: ppl 6.0885 on 512 x 512 tokens -> /Users/dimitargueorguiev/git/ml/semsimula-paper/notebooks/conservative_arch/scaleup/results/copy_split_code/nll_fock.npy
+      621.67 real      4142.74 user       356.57 sys
+          6941900800  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+            28102714  page reclaims
+                  24  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                 419  voluntary context switches
+             5769895  involuntary context switches
+      12084191285456  instructions retired
+      12852085626284  cycles elapsed
+          2787610624  peak memory footprint

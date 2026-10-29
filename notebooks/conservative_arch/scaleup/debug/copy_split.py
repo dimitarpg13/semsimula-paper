@@ -63,11 +63,21 @@ def ladder_model(folder, ckpt):
         repl += (('LOWRANK_DAMPED_FLOW  = False', 'LOWRANK_DAMPED_FLOW  = True'),)
     if 'fob' in parts:
         repl += (('FIRST_ORDER_OVERDAMPED = False', 'FIRST_ORDER_OVERDAMPED = True'),)
+    if parts[0] != 'xi5long':                    # XI6-CODE: the tag starts with the xi preset
+        repl += (("XI_OVERRIDE     = '5long'", f"XI_OVERRIDE     = '{parts[0][2:]}'"),)
+    n_l = next((int(t[1:-5]) for t in parts if re.fullmatch(r'L\d+probe', t)), 2)
+    if n_l != 2:                                 # L4-CODE
+        repl += (('LADDER_L         = 2', f'LADDER_L         = {n_l}'),)
     k = next((int(t[2:]) for t in parts if re.fullmatch(r'pm\d+', t)), 0)
     if k:
         repl += (('POISSON_MODES        = 0', f'POISSON_MODES        = {k}'),)
         if 'pmx16' in parts:
             repl += (('POISSON_WELLS_EXACT  = False', 'POISSON_WELLS_EXACT  = True'),)
+    wr = next((t for t in parts if re.fullmatch(r'wr[\dp]+l[\dp]+', t)), None)
+    if wr:                                       # well reachability penalty (training only; needed for the tag check)
+        rho, lam = (v.replace('p', '.') for v in wr[2:].split('l'))
+        repl += (('WELL_REACH_RHO    = None', f'WELL_REACH_RHO    = {rho}'),
+                 ('WELL_REACH_LAMBDA = 0.1', f'WELL_REACH_LAMBDA = {lam}'))
     if 'st16250' in parts:
         repl += (('LADDER_STEPS     = 32_500', 'LADDER_STEPS     = 16_250'),)
     if not ckpt:

@@ -297,6 +297,21 @@ class MultiXiPARFConfig(SparsePARFConfig):
     learned_damping_ratio: bool = False
     damping_head_hidden: int = 64
     damping_ratio_init: float = 0.005
+    # Well reachability (protocol p-dead-wells, 2026-10-28): XI6-CODE's layer-1
+    # wells all drifted off the states (nearest well 3.4 |h| away, occupancy 0),
+    # where a well has no force and no gradient and cannot come back. With rho
+    # set, every training layer step records its inputs, and
+    # pop_well_reach_penalty() returns the mean over layers of
+    #     mean_t relu(min_k |h_t - mu_k| / |h_t| - rho)^2,
+    # the nearest well's excess distance relative to the state, which the caller
+    # weights and adds to the loss. h and the context
+    # channels are detached, so the term moves the wells (mu_proj and the depth
+    # code) to the states, never the states or the channels to the wells; its
+    # gradient does not depend on occupancy. At rho = 3 it is zero on every
+    # layer-1 token of the healthy five-channel arms (largest ratio 2.52) and on
+    # under 0.5% of layer-0 tokens. Needs a V_theta exposing attractor_centres.
+    # None = off (bit-identical).
+    well_reach_rho: Optional[float] = None
     poisson_halflife_min: float = 4.0     # tokens; per-mode half-lives are
     poisson_halflife_max: float = 128.0   # log-spaced over this range
     # PM1-cap (protocol SS5.15, 2026-10-08): bound every well depth smoothly,
@@ -631,6 +646,19 @@ class MultiXiPARFLM(SparsePARFLM):
             # per layer: median, p10, p90 of zeta and the fraction above 1, from the
             # last training forward (not the checkpoint recompute)
             self.register_buffer("zeta_stats", torch.zeros(cfg.L, 4), persistent=False)
+
+        # ── Well reachability penalty (protocol p-dead-wells, 2026-10-28) ──
+        # Each training layer step's detached inputs (h, xis), keyed by layer and
+        # recorded in the BAOAB-family layer step only; pop_well_reach_penalty()
+        # turns them into the penalty.
+        self._well_reach_inputs: dict = {}
+        if getattr(cfg, "well_reach_rho", None) is not None:
+            if not str(getattr(cfg, "integrator", "verlet")).startswith("baoab"):
+                raise ValueError("well_reach_rho is recorded in the BAOAB-family layer step; "
+                                 f"integrator={getattr(cfg, 'integrator', 'verlet')!r}")
+            # per layer: median of min_k |h - mu_k| / |h|, fraction of tokens above
+            # rho, and the term, from the last training forward
+            self.register_buffer("well_reach_stats", torch.zeros(cfg.L, 3), persistent=False)
 
         # ── Optional relaxed force law ──
         self.relax_field = None
@@ -1058,6 +1086,63 @@ class MultiXiPARFLM(SparsePARFLM):
     def xi_alpha_values(self) -> List[float]:
         """Current α_k values (diagnostic)."""
         return [float(a) for a in self.xi_module.alpha.detach().cpu().tolist()]
+
+    def _well_reach_term(self, h: torch.Tensor, xis: torch.Tensor, layer_idx: int) -> torch.Tensor:
+        """mean_t relu(min_k |h_t - mu_k| / |h_t| - rho)^2 for one layer step.
+
+        See ``well_reach_rho`` in the config. ``h`` and ``xis`` are the layer
+        step's detached inputs, so only the well centres (mu_proj, and the
+        depth code through attractor_centres' shift) receive its gradient,
+        through the nearest well alone. Float32 outside autocast. Also fills
+        ``well_reach_stats[layer_idx]``.
+        """
+        if not hasattr(self.V_theta, "attractor_centres"):
+            raise RuntimeError("well_reach_rho needs a V_theta exposing attractor_centres(xis)")
+        rho = float(self.cfg.well_reach_rho)
+        if hasattr(self.V_theta, "set_active_layer"):
+            self.V_theta.set_active_layer(layer_idx)                      # the layer's depth code
+        with torch.autocast(device_type=h.device.type, enabled=False):
+            hd = h.float()
+            mu = self.V_theta.attractor_centres(xis.float())                  # (B, T, K, d)
+            dist = (hd.unsqueeze(-2) - mu).norm(dim=-1).min(dim=-1).values   # (B, T)
+            ratio = dist / hd.norm(dim=-1).clamp(min=1e-6)
+            term = F.relu(ratio - rho).pow(2).mean()
+        with torch.no_grad():
+            r = ratio.detach().flatten()
+            self.well_reach_stats[layer_idx % self.well_reach_stats.shape[0]] = torch.stack([
+                r.median(), (r > rho).float().mean(), term.detach()]).to(self.well_reach_stats.dtype)
+        return term
+
+    @torch.no_grad()
+    def well_reach_stats_values(self):
+        """Well reachability: per layer [median nearest-well ratio, fraction above rho, term] from the last training forward."""
+        if getattr(self, "well_reach_stats", None) is None:
+            return []
+        return [[round(float(v), 4) for v in row] for row in self.well_reach_stats]
+
+    def pop_well_reach_penalty(self) -> torch.Tensor:
+        """The reachability penalty of the last training forward: the mean over layers.
+
+        Computed here, outside the layer loop, from each layer's recorded
+        inputs (the term only needs the detached h and xis): under layer
+        checkpointing the layer step is also re-run inside the forward (V_phi's
+        autograd.grad unpacks checkpointed tensors) and in the backward, and a
+        term built inside the step would change what the checkpoint saves.
+        Call once after a training forward and before backward(), like
+        pop_fock_gate_mean(). Zero when the penalty is off. The weight is
+        applied by the caller.
+        """
+        inputs, self._well_reach_inputs = self._well_reach_inputs, {}
+        if not inputs:
+            return self.xi_module.raw_alpha.new_zeros(())
+        vt = self.V_theta
+        active = getattr(vt, "_active_layer", None)
+        try:
+            terms = [self._well_reach_term(h, xis, l) for l, (h, xis) in sorted(inputs.items())]
+        finally:
+            if active is not None:
+                vt.set_active_layer(active)                               # as the forward left it
+        return torch.stack(terms).mean()
 
     # ------------------------------------------------------------------
     def _use_analytic_vtheta(self) -> bool:
@@ -1617,6 +1702,13 @@ class MultiXiPARFLM(SparsePARFLM):
             xis = self.xi_module(xi_input)                       # (B, T, K, d)
             if flow_ctx is not None:
                 flow_ctx["xis"] = xis
+            # Well reachability: record the training layer step's inputs, here where
+            # xis is fresh (not a substep's reuse). A checkpoint recompute inside the
+            # forward overwrites them with the same values; one in the backward runs
+            # outside _stack_forward's loop and records nothing.
+            if (getattr(self.cfg, "well_reach_rho", None) is not None and self.training
+                    and getattr(self, "_in_stack_forward", True)):
+                self._well_reach_inputs[layer_idx] = (h.detach(), xis.detach())
 
         # The well parameters depend only on xis, so derive them once here and
         # hand them to the linearisation and the force evaluation: without this

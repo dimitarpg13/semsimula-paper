@@ -5,6 +5,8 @@
 For targets at positions 256-511 whose token occurred earlier in the window, per layer and channel: the
 softmax weight on the earlier occurrences, against their uniform share; the weight more than 64 tokens back;
 and the effective number of positions (exp entropy). 16 of copy_split.py's 512 windows, the best checkpoint of FOLDER (default SO-CODE's).
+A second table (2026-10-28): per layer and channel, the median and p90 of the largest weight a query puts on one position,
+the median distance back to that position, and how often it is the window's first.
 """
 import sys, types, numpy as np, torch
 from pathlib import Path
@@ -34,6 +36,9 @@ for w in idx:
         base = torch.stack([causal_ema_logits(T, xm.alpha[k], h.dtype, h.device) for k in range(K)])
         q = xm.W_q(h).view(1, T, K, dk).permute(0, 2, 1, 3); kk = xm.W_k(h).view(1, T, K, dk).permute(0, 2, 1, 3)
         wts = torch.softmax(base[None] + (q @ kk.transpose(-1, -2)) * dk ** -0.5, -1)[0].detach().numpy()   # K,T,T
+        for k in range(K):                       # peak weight per query, positions 256-511
+            pk = acc.setdefault(('peak', L, k), [[], []])
+            pk[0].append(wts[k, 256:].max(-1)); pk[1].append(wts[k, 256:].argmax(-1))
         xs, ys = x[w], y[w]
         for t in range(256, T):
             prev = np.nonzero(xs[:t + 1] == ys[t])[0]
@@ -46,5 +51,10 @@ for w in idx:
                 ent = -(wts[k, t, :t + 1] * np.log(wts[k, t, :t + 1] + 1e-12)).sum()
                 a = acc.setdefault((L, k, b), [0, 0, 0, 0, 0]); a[0] += m; a[1] += base_share; a[2] += far; a[3] += np.exp(ent); a[4] += 1
 print('layer chan  dist   n   mass on earlier copies   uniform share   lift   mass >64 back   eff. #positions')
-for (L, k, b), a in sorted(acc.items()):
+for (L, k, b), a in sorted((key, v) for key, v in acc.items() if key[0] != 'peak'):
     n = a[4]; print(f'{L:5d} {k:4d}  {b:4s} {n:5d}   {a[0]/n:20.3f}   {a[1]/n:13.3f}  {a[0]/a[1]:5.1f}   {a[2]/n:13.3f}   {a[3]/n:10.1f}')
+# 2026-10-28 (protocol p-dead-wells): how peaked each channel's weight is, over all queries at 256-511
+print('\nlayer chan   median peak weight   p90 peak weight   median distance to the peak   peak at position 0')
+for (_, L, k), (tops, ams) in sorted((key, v) for key, v in acc.items() if key[0] == 'peak'):
+    top = np.concatenate(tops); am = np.concatenate(ams); dist = np.concatenate([np.arange(256, 256 + len(a_)) - a_ for a_ in ams])
+    print(f'{L:5d} {k:4d}   {np.median(top):18.3f}   {np.quantile(top, 0.9):15.3f}   {np.median(dist):27.0f}   {np.mean(am == 0):17.1%}')

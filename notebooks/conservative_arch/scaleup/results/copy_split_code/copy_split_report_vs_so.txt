@@ -1,5 +1,5 @@
 COPY SPLIT on code validation: 512 windows x 512 = 262,144 targets, reference so
-  ppl on these tokens: fob 7.023, gpt2 5.350, so 6.442
+  ppl on these tokens: fob 7.023, fock 6.089, gpt2 5.350, so 6.442, xi6 9.159
 
 fob against so: mean gap +0.0864 nats/token (ppl ratio 1.090)
   group                         share    so nll      fob nll      gap  ratio  of gap  seq spread
@@ -22,6 +22,27 @@ fob against so: mean gap +0.0864 nats/token (ppl ratio 1.090)
   position 64-255               37.5%     1.885        1.971   +0.086   1.09   37.4%  ±0.003
   position 256-511              50.0%     1.704        1.797   +0.093   1.10   53.8%  ±0.003
 
+fock against so: mean gap -0.0565 nats/token (ppl ratio 0.945)
+  group                         share    so nll     fock nll      gap  ratio  of gap  seq spread
+  all                          100.0%     1.863        1.806   -0.056   0.95  100.0%  ±0.002
+  first occurrence              27.7%     4.201        4.138   -0.063   0.94   31.0%  ±0.004
+  repeat (not induction)        22.3%     1.857        1.780   -0.077   0.93   30.4%  ±0.004
+  induction                     50.0%     0.567        0.524   -0.044   0.96   38.5%  ±0.003
+  indent/newline/space          21.9%     0.320        0.311   -0.009   0.99    3.4%  ±0.003
+  identifier-like               49.3%     2.821        2.745   -0.076   0.93   66.4%  ±0.003
+  number                         7.4%     1.762        1.700   -0.062   0.94    8.1%  ±0.008
+  punct/other                   21.4%     1.270        1.212   -0.058   0.94   22.1%  ±0.005
+  identifier, first             20.3%     4.695        4.631   -0.064   0.94   22.9%  ±0.005
+  identifier, repeat             8.7%     2.767        2.648   -0.119   0.89   18.2%  ±0.009
+  identifier, induction         20.4%     0.978        0.908   -0.070   0.93   25.3%  ±0.006
+  repeat/ind., dist 1-16        34.8%     0.601        0.572   -0.029   0.97   17.8%  ±0.003
+  repeat/ind., dist 17-64       25.2%     1.013        0.949   -0.064   0.94   28.5%  ±0.004
+  repeat/ind., dist 65-256      10.8%     1.816        1.710   -0.106   0.90   20.2%  ±0.008
+  repeat/ind., dist 257-512      1.5%     2.460        2.371   -0.089   0.92    2.4%  ±0.024
+  position 0-63                 12.5%     2.433        2.387   -0.045   0.96   10.0%  ±0.004
+  position 64-255               37.5%     1.885        1.829   -0.056   0.95   37.3%  ±0.003
+  position 256-511              50.0%     1.704        1.644   -0.059   0.94   52.6%  ±0.003
+
 gpt2 against so: mean gap -0.1859 nats/token (ppl ratio 0.830)
   group                         share    so nll     gpt2 nll      gap  ratio  of gap  seq spread
   all                          100.0%     1.863        1.677   -0.186   0.83  100.0%  ±0.005
@@ -42,3 +63,24 @@ gpt2 against so: mean gap -0.1859 nats/token (ppl ratio 0.830)
   position 0-63                 12.5%     2.433        2.312   -0.121   0.89    8.1%  ±0.007
   position 64-255               37.5%     1.885        1.707   -0.178   0.84   35.9%  ±0.005
   position 256-511              50.0%     1.704        1.496   -0.208   0.81   56.0%  ±0.006
+
+xi6 against so: mean gap +0.3519 nats/token (ppl ratio 1.422)
+  group                         share    so nll      xi6 nll      gap  ratio  of gap  seq spread
+  all                          100.0%     1.863        2.215   +0.352   1.42  100.0%  ±0.009
+  first occurrence              27.7%     4.201        4.333   +0.132   1.14   10.4%  ±0.006
+  repeat (not induction)        22.3%     1.857        2.047   +0.190   1.21   12.1%  ±0.008
+  induction                     50.0%     0.567        1.114   +0.546   1.73   77.6%  ±0.014
+  indent/newline/space          21.9%     0.320        0.380   +0.060   1.06    3.7%  ±0.004
+  identifier-like               49.3%     2.821        3.334   +0.513   1.67   72.0%  ±0.014
+  number                         7.4%     1.762        2.043   +0.280   1.32    5.9%  ±0.017
+  punct/other                   21.4%     1.270        1.574   +0.304   1.36   18.4%  ±0.011
+  identifier, first             20.3%     4.695        4.826   +0.131   1.14    7.6%  ±0.007
+  identifier, repeat             8.7%     2.767        3.090   +0.323   1.38    7.9%  ±0.017
+  identifier, induction         20.4%     0.978        1.952   +0.974   2.65   56.5%  ±0.027
+  repeat/ind., dist 1-16        34.8%     0.601        0.807   +0.207   1.23   20.4%  ±0.007
+  repeat/ind., dist 17-64       25.2%     1.013        1.553   +0.541   1.72   38.6%  ±0.015
+  repeat/ind., dist 65-256      10.8%     1.816        2.686   +0.870   2.39   26.7%  ±0.023
+  repeat/ind., dist 257-512      1.5%     2.460        3.338   +0.879   2.41    3.8%  ±0.051
+  position 0-63                 12.5%     2.433        2.587   +0.154   1.17    5.5%  ±0.009
+  position 64-255               37.5%     1.885        2.215   +0.330   1.39   35.1%  ±0.011
+  position 256-511              50.0%     1.704        2.122   +0.418   1.52   59.4%  ±0.012

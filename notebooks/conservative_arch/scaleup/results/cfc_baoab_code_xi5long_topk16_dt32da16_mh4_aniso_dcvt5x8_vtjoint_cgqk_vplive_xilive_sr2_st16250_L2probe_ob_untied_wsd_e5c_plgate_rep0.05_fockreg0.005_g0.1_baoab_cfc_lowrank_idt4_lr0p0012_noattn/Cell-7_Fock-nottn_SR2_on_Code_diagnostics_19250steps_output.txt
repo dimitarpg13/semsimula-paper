@@ -1,0 +1,19 @@
+Probe target -> fock_cfc_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt  step 18000  PPL 5.55
+GPU free 80.9 / 85.1 GB before probe
+========================================================================
+Fock v2.1 STRUCTURAL HEALTH
+========================================================================
+     layer  active_fra  reg_cos_si  create_ent  create_alp  rev_entrop   rev_scale  qforce_rat  destroy_me
+     0.000       1.000       0.054       1.878       0.452       2.282       0.021       1.189       0.680
+     1.000       1.000       0.088       1.346       0.611       2.293       0.018       1.029       0.499
+------------------------------------------------------------------------
+summary: {'active_frac': 1.0, 'salience_mean': 0.22, 'salience_std': 0.152, 'reg_cos_sim': 0.071, 'destroy_mean': 0.589, 'qforce_ratio': 1.109, 'rev_scale': 0.019, 'create_alpha_max': 0.531, 'create_entropy': 1.612, 'rev_entropy': 2.288, 'rev_alpha_max': 0.357}
+  * reverse force DOMINATES token update (qforce_ratio=1.11): the exchange force is large vs the conservative step -> watch for instability / tighten gate
+  * destruction AGGRESSIVE (destroy_mean=0.59): registers are annihilated fast, shortening cross-layer memory -> lower destruction or raise salience decay lambda for longer-lived memory
+
+========================================================================
+arm                         loss       ppl      dPPL
+full model                1.6432      5.17     +0.00
+  - reverse channel       3.4179     30.50    +25.33
+  - registers (all)       3.4178     30.50    +25.33
+
