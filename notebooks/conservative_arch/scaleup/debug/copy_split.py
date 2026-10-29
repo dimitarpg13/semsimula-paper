@@ -78,6 +78,11 @@ def ladder_model(folder, ckpt):
         rho, lam = (v.replace('p', '.') for v in wr[2:].split('l'))
         repl += (('WELL_REACH_RHO    = None', f'WELL_REACH_RHO    = {rho}'),
                  ('WELL_REACH_LAMBDA = 0.1', f'WELL_REACH_LAMBDA = {lam}'))
+    if 'vtun' in parts:                          # dead-wells screen A: unit-norm channels at the bank input
+        repl += (('VTHETA_INPUT_UNIT_NORM = False', 'VTHETA_INPUT_UNIT_NORM = True'),)
+    vl = next((t for t in parts if re.fullmatch(r'vtlr[\dp]+', t)), None)
+    if vl:                                       # dead-wells screen B: V_theta lr multiplier (training only; tag check)
+        repl += (('VTHETA_LR_MULT         = None', f"VTHETA_LR_MULT         = {vl[4:].replace('p', '.')}"),)
     if 'st16250' in parts:
         repl += (('LADDER_STEPS     = 32_500', 'LADDER_STEPS     = 16_250'),)
     if not ckpt:

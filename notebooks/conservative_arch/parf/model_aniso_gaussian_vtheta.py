@@ -627,6 +627,7 @@ class AnisotropicDepthConditionedGaussianVTheta(nn.Module):
         force_norm_max: Optional[float] = None,
         code_init_std: float = 0.02,
         coupling: str = "additive",
+        input_unit_norm: bool = False,
     ):
         super().__init__()
         self.d = d
@@ -635,6 +636,12 @@ class AnisotropicDepthConditionedGaussianVTheta(nn.Module):
         self.n_layers = n_layers
         self.rank = rank
         self.coupling = coupling
+        # ``input_unit_norm`` (2026-10-29, dead-wells screen A): scale every
+        # context channel to unit norm before the depth code is added, so the
+        # bank sees inputs of one size in every layer (layer-1 channels are
+        # 20-70x layer 0's otherwise, and the well centres mu = W xi + b scale
+        # with them through the shared W).  Off: inputs unchanged.
+        self.input_unit_norm = bool(input_unit_norm)
         # ``coupling='additive'`` (default): one bank per channel, potentials
         # summed -- the original behaviour (a mixture, logical-OR over
         # horizons).  ``coupling='joint'``: a single bank whose wells are
@@ -674,6 +681,8 @@ class AnisotropicDepthConditionedGaussianVTheta(nn.Module):
         g = self._active_layer
         if not (0 <= g < self.n_layers):
             g = g % self.n_layers
+        if self.input_unit_norm:
+            xis = xis / xis.norm(dim=-1, keepdim=True).clamp_min(1e-6)
         code = self.depth_code[g]
         lead = xis.dim() - 2
         code = code.view(*([1] * lead), self.n_ctx, self.d)
