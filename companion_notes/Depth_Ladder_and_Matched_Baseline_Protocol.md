@@ -4371,7 +4371,7 @@ FOCK3 and PMCS1 together would separate the two mechanisms on code: the register
 - **Layer 1's wells were hardly used when they died.** Removing them (weight w_k = 0 at layer 1) on the step-500 checkpoints costs +1.6% (XI6-CODE-WR, 54.43 → 55.29) and +2.8% (SO-CODE, 54.54 → 56.08), against +202% for SO-CODE at the end. At step 1,000 it costs nothing (31.16 → 31.17).
 - **Which loss term moves the wells** (scratch `vreg_pull.py`, `mean_pull.py`; the gradient on V_θ's parameters split by term, layer 0's and layer 1's use of the bank separated by detaching the other layer's well parameters). `v_reg` is λ_v · mean V(h_L)², λ_v = `LAMBDA_V` = 0.01, evaluated at the final state with the last layer's depth code, so it acts on the layer-1 wells. Averaged over 16 batches of 4 × 256 code tokens at step 500 and preconditioned with each checkpoint's stored Adam second moment, the change in layer 1's mean nearest-well distance per unit learning rate is: NTP through layer 1 −494 / −481 / −613 (XI6-CODE-WR / SO-CODE / XI6-CODE; inward), `v_reg` +121 / +167 / +213 (outward), NTP through layer 0 −12 / +26 / +13. The update the optimizer actually stored, m̂ / (√v̂ + ε), moves them outward: +31 / +15 / +44, 2–3 times faster in the XI6 arms. **The decomposition does not reproduce the stored step** (inward on average, outward in fact), so the driver of the outward drift is not yet identified; a check with the forward under bf16 autocast, as in training, is under way. `LAMBDA_V` is therefore not shown to be the cause, but the checklist's "inert" (§3.2, read from steps 6,050–20,850 of an OpenWebText run) does not hold before step 1,000, where `v_reg` is 0.08–0.26.
 
-<a name="p-dead-wells-screens"></a>**Two short screens on the death window (2026-10-29, proposed; switches implemented, uncommitted).** Leading hypothesis: layer 1 loses a race. Its well centres μ = W ξ + b share the weight W with layer 0, whose context channels ξ are 20–70 times smaller at the bank input; W grows about fourfold over training, and the layer-1 centres inflate with it while layer 1 still barely uses its wells. Each screen is XI6-CODE-WR's Cell 0 (its 12 changes, `WELL_REACH_RHO = 3` kept so the `reach` readout and everything else match) plus one switch and `PROBE_MAX_STEPS = 3_000` (the run stops at step 3,000 and saves `…_step3000_probe_stop.pt`; about 1 h). The control is XI6-CODE-WR's own log and snapshots.
+<a name="p-dead-wells-screens"></a>**Two short screens on the death window (2026-10-29; switches committed in 8ba2317; result in `p-dead-wells-screens-result` below).** Leading hypothesis: layer 1 loses a race. Its well centres μ = W ξ + b share the weight W with layer 0, whose context channels ξ are 20–70 times smaller at the bank input; W grows about fourfold over training, and the layer-1 centres inflate with it while layer 1 still barely uses its wells. Each screen is XI6-CODE-WR's Cell 0 (its 12 changes, `WELL_REACH_RHO = 3` kept so the `reach` readout and everything else match) plus one switch and `PROBE_MAX_STEPS = 3_000` (the run stops at step 3,000 and saves `…_step3000_probe_stop.pt`; about 1 h). The control is XI6-CODE-WR's own log and snapshots.
 - **Screen A, `VTHETA_INPUT_UNIT_NORM = True`** (tag `vtun`): every context channel is scaled to unit norm at V_θ's bank input, in both layers, before the depth code is added, so the bank sees inputs of one size in every layer. Config: `AnisotropicDepthConditionedGaussianVTheta(input_unit_norm=…)` in `parf/model_aniso_gaussian_vtheta.py`.
 - **Screen B, `VTHETA_LR_MULT = 0.25`** (tag `vtlr0p25`): every V_θ parameter (bank and depth code) in its own AdamW groups, whose learning rate is 0.25 times the schedule's at every step. At a quarter of the rate a drift driven by Adam's steps is delayed by construction, so the reading is the trend of the `reach` readout over steps 1,000–3,000, not its value at one step.
 - **Checks** (2026-10-29, CPU, `debug/verify_vt_screens.py` on XI6-CODE-WR's step-500 weights through the notebook's own Cells 0–5b and Cell 6's optimizer block and schedule line as written): off, the optimizer has HEAD's two groups in HEAD's parameter order, the schedule line gives every group exactly the scheduled rate, and V_θ's shift is exactly channels + depth code, bit for bit. Screen A: the tag gains exactly `vtun`, no new parameter or state-dict key, every channel enters the bank at norm 1 in both layers with its direction kept, the training step is finite. Screen B: the tag gains exactly `vtlr0p25`, V_θ's 9 tensors and only they sit in the multiplied groups, weight decay as HEAD, and one AdamW step moves V_θ's parameters by 0.250 times the largest move elsewhere. The bit-identity of Cells 0–5b with both switches off is checked against HEAD with `debug/verify_well_reach.py` (five arms, trained weights).
@@ -4383,6 +4383,100 @@ FOCK3 and PMCS1 together would separate the two mechanisms on code: the register
 | DW3 | Screen A costs no more than 5% in validation perplexity against XI6-CODE-WR at steps 1,000–3,000 while layer 1 is alive in both (that is, at step 1,000 at least) | 50% |
 
 If DW1 holds, the input scale is confirmed as the lever and screen A becomes a full-length candidate (XI6-CODE and SO-CODE each with the switch); if neither screen changes the drift, the race hypothesis is wrong and the bf16 attribution and the training-data gradient are the next steps.
+
+<a name="p-dead-wells-screens-result"></a>**Result, the two screens (2026-10-29): both keep layer 1 alive, by different routes.** Screen A (`…wr3l0p1_vtun_L2probe…`) and screen B (`…wr3l0p1_vtlr0p25_L2probe…`) each ran 3,000 steps in about 59 min, clean, stopped by `PROBE_MAX_STEPS`. All three runs train from step 0, so their evals at a given step use the same validation batches and are paired. The DW calls were proposed but not confirmed by the author before the runs; they are scored here as proposed. Logs: each screen's results folder; probe reports: `results/dead_wells/well_probe_xi6vtun_code_step*`, `…_xi6vtlr_code_step*` and, for the control's snapshots, `…_xi6wr_code_step*`.
+
+| step | validation perplexity: control / A / B | layer-1 median nearest-well ratio: control / A / B | `v_reg`: control / A / B |
+| ---: | --- | --- | --- |
+| 500 | 43.35 / 35.75 / 50.22 | 0.95 / 0.99 / 1.04 | 0.158 / 0.027 / 0.332 |
+| 1,000 | 25.15 / 22.03 / 28.29 | 1.35 / 0.99 / 0.96 | 0.010 / 0.094 / 0.356 |
+| 1,500 | 19.72 / 18.12 / 20.57 | 2.36 / 0.99 / 0.93 | 0 / 0.094 / 0.251 |
+| 2,000 | 17.32 / 16.21 / 15.87 | 2.45 / 0.98 / 0.87 | 0 / 0.111 / 0.220 |
+| 2,500 | 16.37 / 15.30 / 13.25 | 2.52 / 0.98 / 0.84 | 0 / 0.144 / 0.134 |
+| 3,000 | 14.80 / 13.54 / **11.27** | 2.55 / 0.97 / 0.82 | 0 / 0.162 / 0.058 |
+
+For reference at step 3,000: SO-CODE 12.96, XI6-CODE 14.95, FO-b-CODE 10.72.
+
+Layer 1 on the checkpoints (`debug/vtheta_well_probe.py`, 16 code windows; the probe's perplexities use other windows than the Colab evals and are compared only with each other). "Removal cost" is the perplexity change when every layer-1 well's weight is set to zero (`keep=-1 keep_layers=1`).
+
+| arm, step | mean well-centre norm \|μ\| | nearest well (\|h\| = 19.6) | occupancy, strongest well | wells in use (n_eff) | largest well's share of the force | ω·Δt | `mu_proj` largest column norm | removal cost |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| control, 500 | 18 | 19 | 0.23 | 1.06 | 99% | 0.90 | 25.1 | +1.6% |
+| control, 1,000 | 39 | 26 | 0.001 | 1.03 | 99% | 0.04 | 40.8 | 0% |
+| A, 500 | 1.7 | 19.3 | 0.40 | 7.95 | 28% | 0.68 | 25.4 | +0.4% |
+| A, 1,000 | 3.7 | 19.3 | 0.56 | 7.16 | 32% | 1.35 | 38.5 | — |
+| A, 3,000 | 5.3 | 19.0 | 0.49 | 4.98 | 41% | 1.69 | 70.8 | +9.5% |
+| B, 500 | 13.2 | 20.4 | 0.40 | 1.02 | 79% | 1.55 | 21.3 | +5.3% |
+| B, 1,000 | 17.6 | 18.7 | 0.35 | 1.01 | 84% | 1.51 | 23.2 | — |
+| B, 3,000 | 23.0 | 16.1 | 0.23 | 1.03 | 87% | 2.93 | 28.3 | **+98%** |
+
+- **DW1 HIT.** Screen A's layer-1 median ratio is at most 0.99 at every logged step from 1,000 on (threshold 1.2), and the strongest well's occupancy at step 3,000 is 0.49 (threshold 0.05).
+- **DW2 MISS.** Screen B's layer-1 ratio falls over steps 1,000–3,000 (0.96 to 0.82) instead of rising past 1.5. It is not only a delay: V_θ's cumulative learning rate in screen B at step 3,000 (0.25 × 2,594 = 649 peak-rate steps; the warmup to step 812 counts half) equals the control's at step 1,055, inside the control's death window (ratio 1.35 at step 1,000, 2.06 at 1,100). With the same distance travelled, B's wells are alive and the control's were dying.
+- **DW3 HIT**, by more than called: screen A is 12.4% better than the control at step 1,000 (22.03 against 25.15) and 8.5% better at step 3,000.
+- **The race reading holds from both sides.** A layer-1 centre's size is roughly the `mu_proj` weight times the size of layer 1's context channels. In the control both grow while layer 1 hardly uses its wells (removal cost +1.6% at step 500), and the centres leave by step 1,000. Screen A fixes the channel size at 1: `mu_proj` grows as in the control (25 to 71), but the centres stay at norm 2–5. Screen B slows `mu_proj` (21 to 28 by step 3,000, the control's value at step 500) with layer 1's channels as large as in the control (norm 10–19 at step 3,000). In both, layer 1 starts to use its wells before the centres can leave, and a used well gets the gradient that keeps it (occupancy feedback, report §2). Not established: which term drove the control's centres outward (the averaged attribution above does not reproduce the stored Adam step).
+- **Two different layer-1 geometries.** Screen B's layer 1 works like SO-CODE's: one well carries 79–87% of the force at occupancy 0.2–0.4, and removing it costs +98% at step 3,000 (SO-CODE at the end: +202%). Screen A's layer 1 spreads over five to eight wide wells centred near the origin (\|μ\| 5 against \|h\| 19.6), the strongest at occupancy about 0.5; removing them costs +9.5%. Layer 0 is unchanged in kind in both (eight wells in use, occupancy 0.8–1.0); in screen A its context channels enter at norm 1 instead of 0.1–0.9, so its nearest-well ratio is 2.1 against the control's 1.2–1.8.
+- **Stiffness.** The run monitor's ω·Δt (all layers) at step 3,000 has median 1.88 (A), 4.01 (B) and 0.64 (control), with 36%, 96% and 34% above the wall at 2. B follows SO-CODE's path (3.47 and 90% at step 3,000, 7.67 and 99.8% at step 10,000; SO-CODE settled at 6.00). The probe puts B's layer 0 at ω·Δt 4.33 at step 3,000, because the learned mass m fell to 0.16 (the control's m reached 0.17 only at the end). The resonance wall did not stop SO-CODE; whether it limits screen B at full length is open.
+- **Perplexity.** Screen B starts behind the control (+16% at step 500, +12% at 1,000), crosses it at about step 1,700 and is 24% ahead at step 3,000, also 13% ahead of SO-CODE. Read with care: three thousand steps of a 19,250-step schedule, and a slower V_θ may help SO-CODE as well, so the gain need not be specific to the dead-well fix.
+
+**Next, proposed (author's call):** both screens can run to full length by resuming from their step-3,000 checkpoints. The `_probe_stop.pt` files carry model and optimizer state (screen B's with its 0.25 groups); Cell 2 picks them up when the same Cell 0 is run with `PROBE_MAX_STEPS = None`; about 5 h each, one at a time. Screen B first, since it is ahead and its layer 1 has the healthy arms' geometry. Then the matched SO-CODE twin of whichever is kept (SO-CODE plus the switch) separates the dead-well fix from a general gain.
+
+<a name="p-dw-screen-b-full"></a>**Screen B at full length, 2026-10-30: the dead-well deficit is gone, and XI6 is level with SO-CODE.** Screen B's Cell 0 with `PROBE_MAX_STEPS = None`, resumed by Cell 2 from the canonical `_best.pt` (step 3,000, perplexity 11.27; model and optimizer state, with the two 0.25 groups, restored; 89 of 89 tensors). Steps 3,001–19,250 in 5.2 h, one session; no watchdog trigger; gradient norm median 0.48, maximum 0.84 (step 4,600); largest rise between logged training losses 0.075 (step 16,050). SCAF CLEAN at 5,000, 10,000, 15,000 and 19,250 (NaN perplexities at the last, the known cosmetic issue). Output and Cells 7, 6b-7 and 6b-13 filed in the screen's results folder (`L2_XI6-WR-Scan_B_on_Code_19250steps_output.txt`). The full run's `training_log.jsonl` (steps 50–19,250; the screen's 3,000-step copy is its exact prefix), `scaf_leak_monitor.jsonl`, `omega_dt_endpoint.jsonl` and Cell 8's curve are filed there too; the jsonl evals and records match the text log.
+- **Settled 5.98** (evals at 18,000, 18,500 and 19,000: 5.99, 5.91, 6.04); best 5.86 at step 16,000. SO-CODE 6.00 (−0.3%), XI6-CODE 8.55, XI6-CODE-WR 8.87, GPT-2-CODE 4.96 (+20.6%).
+- **Paired by step with SO-CODE** (both trained from step 0, so the evals share batches): ahead from step 2,000 to 5,000 (−9% to −16% over 2,000–4,000, −3% to −6% at 4,500–5,000), level from step 5,000 on. The gap in log perplexity is +0.003 nats over 8,000–13,000 (SD 0.039 over 11 evals) and +0.002 over 16,000–19,000 (SD 0.034, 7 evals); XI6-CODE's was +0.355 and +0.352. **The training loss is level too:** 1.687 against SO-CODE's 1.687 over steps 16,000–19,250 (XI6-CODE 1.987).
+- **Settling check (2026-10-04 rule), steps 16,000–19,000:** fitted change −0.022 nats against a residual SD of 0.040; settled.
+- **No late death.** Layer 1's median nearest-well ratio stays at 0.76–0.83 to the end (the control's reached 2.55 by step 3,000). `v_reg` falls from 0.054 to 0.0016, but SO-CODE's falls the same way (0.0563 over steps 2,000–3,000, 0.0005 at the end), so its fall is not a death signature in itself; the reach is.
+
+Layer 1 at the end (`debug/vtheta_well_probe.py`, 16 code windows, best checkpoint, step 16,000; `results/dead_wells/well_probe_xi6vtlr_code_step16000*`):
+
+| arm, end | mean well-centre norm \|μ\| | nearest well (\|h\| = 19.6) | occupancy, strongest well | wells in use (n_eff) | largest well's share of the force | ω·Δt | `mu_proj` largest column norm | removal cost |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| screen B | 29.7 | 15.1 | 0.173 | 1.12 | 83% | 4.35 | 36.4 | **+242%** (7.61 → 26.02) |
+| SO-CODE | 59.9 | 20.2 | 0.184 | 1.06 | 89% | 5.02 | 101.5 | +202% (7.45 → 22.49) |
+| XI6-CODE | 91.9 | 67.2 | 0.000 | 2.38 | 100% | 0.000 | 112.0 | — |
+
+- **Screen B's layer 1 is SO-CODE's in kind:** one well carries the force at occupancy about 0.17, stiff, and losing it costs more than doubling the perplexity. Layer 0 uses all eight wells (n_eff 7.5, occupancy 0.98), as in the healthy arms.
+- **`mu_proj` stays three times smaller than in any full-speed arm** (36 against 100–112), and the layer-1 centres sit inside the state sphere (nearest well 15.1 against \|h\| 19.6). The slower V_θ changes the bank's scale, not the loss.
+
+| reading (best checkpoint) | screen B | SO-CODE | XI6-CODE |
+| --- | ---: | ---: | ---: |
+| Cell 7, full model | 5.52 | 5.51 | 8.07 |
+| 6b-7 Gate 0, unpatched | 5.13 | 5.06 | 7.06 |
+| 6b-7 Gate 1, velocity reset | +2.5% (5.13 → 5.26) | +4.0% | +11.8% |
+| 6b-7 Gate 2, N = 3 at the trained Δt | +37% | +42% | +10.5% |
+| 6b-7 Gate 3, N = 3 at fixed T | +34% (0.290 nats) | +89% (0.639) | +18.3% (0.168) |
+| 6b-13 ω·Δt median (layer 0 / layer 1); past 2 | 5.83 (6.37 / **4.34**); 99.9% | 7.55 (9.58 / 4.94); 99.97% | 2.61 (2.84 / 0.000); 58.8% |
+
+- **6b-7 is MAPS**, as for every second-order arm: refinement grows away from N = L. Its refinement penalty at N = 3 is about half SO-CODE's (0.290 against 0.639 nats); whether that comes from the slower V_θ or from the sixth channel is not separable here.
+- **6b-13's pre-registered band for L = 2 ([3.3, 4.2]) misses** at 5.83, as SO-CODE's 7.55 did; the cell's "omega fell with depth" verdict is its standard label for layer 1 below layer 0.
+- **No one-position lookups** (`debug/xi_reach.py` on the step-16,000 checkpoint, `results/copy_split_code/xi_reach_xi6vtlr.txt`): layer 1's channels 5 and 6 find earlier occurrences 65 or more tokens back at 19 and 27 times an even spread (SO-CODE's longest 26; XI6-CODE's 1.4 and 0.8); median peak weight on one position 0.21 (channel 4) and 0.39 (channel 6), against XI6-CODE's 0.88 and 0.97. The lookups in XI6-CODE followed from the dead wells.
+
+**Reading.**
+- **The root cause is confirmed by a fix.** XI6-CODE's whole +43% deficit came from the dead layer-1 wells: with the same architecture, loss and channels, keeping V_θ slow keeps them alive, and the model then matches SO-CODE in validation and training loss.
+- **The sixth context channel buys nothing on code.** With live wells, XI6 equals SO-CODE but does not beat it. Read with the dead-wells result: XI1 (more than 2% below SO-CODE) would still miss.
+- **Not yet separated: the fix from a general gain.** Screen B was ahead of SO-CODE early (steps 2,000–4,500), which a slower V_θ might give SO-CODE as well. The SO-CODE twin with `VTHETA_LR_MULT = 0.25` decides: if it also gains, the multiplier is a general setting; if it is level with SO-CODE, screen B is a dead-well fix that costs nothing.
+
+**Next, proposed (author's call):** the SO-CODE twin (SO-CODE's Cell 0 plus `VTHETA_LR_MULT = 0.25`, fresh, 19,250 steps, about 5–6 h). Screen A at full length is lower priority now that screen B has closed the gap; it remains the structural alternative (a capped channel size instead of a slower optimizer).
+
+<a name="p-so-code-vtlr"></a>**SO-CODE-VTLR, registered 2026-10-30 before the run: does a slower V_θ alone move SO-CODE?** The author's go-ahead; both this arm and screen B to be published on Hugging Face once it is scored. SO-CODE's Cell 0 (its nine changes: `CORPUS = 'code'`, `LADDER_STEPS = 16_250`, `EXTRA_FLOOR_STEPS = 3_000`, `REVERSE_CHANNEL = False`, `LOWRANK_DAMPED_FLOW = True`, `VPHI_GRAD_PATH = 'live'`, `XI_GRAD_PATH = 'live'`, `VPHI_ANALYTIC_FORCE = True`, `LAYER_CHECKPOINT = False`) plus `VTHETA_LR_MULT = 0.25` and `SNAPSHOT_STEPS = [1_000, 1_500, 2_000, 2_500, 3_000]` (the snapshots pair it with screen B's for the well probe). Tag `xi5long_…_aniso_dcvt5x8_…norc_vplive_xilive_sr2_st16250_vtlr0p25_L2probe…noattn` (checked by executing Cell 0 locally: the same Cell 0 without the two additions gives SO-CODE's tag exactly). Fresh run from step 0, so its evals pair with SO-CODE's and screen B's; 19,250 steps, about 5–6 h.
+
+Screen B (XI6 with V_θ × 0.25) settled level with SO-CODE (5.98 against 6.00). This arm separates its two differences from SO-CODE:
+
+| SO-CODE-VTLR settles | reading for the sixth channel (screen B against SO-CODE-VTLR) |
+| --- | --- |
+| within ±2% of 6.00 | adds nothing: the slower V_θ is neutral and screen B's parity is the channel's |
+| more than 2% below 6.00 | costs: the slower V_θ helps, and the sixth channel gives the gain back |
+| more than 2% above 6.00 | helps: the slower V_θ hurts, and the sixth channel makes up for it |
+
+**Proposed calls** (not yet confirmed by the author):
+
+| id | prediction | called |
+| --- | --- | ---: |
+| VT1 | SO-CODE-VTLR settles within ±2% of SO-CODE (5.88–6.12) | 55% |
+| VT2 | it is ahead of SO-CODE at step 3,000 by more than 5% (paired eval), as screen B was (−13%) | 65% |
+| VT3 | its layer-1 wells stay alive (median nearest-well ratio below 1.2 at every logged step; removal cost at the end above +100%) | 90% |
+| VT4 | screen B and SO-CODE-VTLR settle within ±2% of each other | 60% |
+
+±2% is about twice the paired settled-eval spread of these arms (SD 0.034–0.040 nats per eval, 3 evals). One seed each; a call within the band is read as "no effect detected", not as equality.
 
 **MS2, the K = 16 pair, pre-registered in detail (2026-10-22, before the runs).** Both arms on PMX's Cell 0 (F3.1's settings plus `POISSON_MODES = 16`, `LOWRANK_DAMPED_FLOW = True`, `POISSON_WELLS_EXACT = True`) with the speed switches (`VPHI_ANALYTIC_FORCE = True`, `LAYER_CHECKPOINT = False`); the first-order arm adds `FIRST_ORDER_OVERDAMPED = True`. Tags `…pm16_pmx16_sr2_L2probe…` and `…pm16_pmx16_sr2_fob_L2probe…`; 32,500 steps, seed 0, OpenWebText; about 12 h each; the second-order arm first, as the new baseline. At K = 16 the exact rank part (`POISSON_WELLS_EXACT_MODES = 16`) covers every well. **Build check** (`debug/verify_dose_modes.py`, output `debug/verify_dose_modes_output.txt`): at K = 16 and K = 256, second order and FO-b, the notebook's own cells build the model with the expected tag and parameter count (76,578,318 at K = 16, 76,671,438 at K = 256), a training step gives a finite loss and finite gradients, and the half-lives initialise over 4–128 tokens as at K = 64. The K = 256 pair follows with the same settings and `POISSON_MODES = 256`.
 
