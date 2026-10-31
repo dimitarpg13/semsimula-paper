@@ -56,7 +56,7 @@ Its Cook–Wolfram section closes the remaining loophole: "the bottleneck is **n
 
 A Poisson mode is a well. Firing it deepens a potential; it adds no degree of freedom. The Community note says the same from the trained side: a mode has no "inference region that writes a structure — none: the mode deepens a well, a force on later tokens; **it writes nothing**." So a template bank whose firing only modulates $V$ is still v0, still regular, and no amount of selectivity changes that.
 
-**Templates lift the class only if firing instantiates a particle.** That is the single structural requirement the whole programme rests on, and §7 below has no stage for it — Stage 0 repairs the slot registers, Stage 0′ makes matching selective, and neither produces a new degree of freedom. This is the gap to close first in any revision of the staging.
+**Templates lift the class only if firing instantiates a particle.** That is the single structural requirement the whole programme rests on. The first draft of §7 had no stage for it — Stage 0 repaired the slot registers, Stage 0′ made matching selective, and neither produced a new degree of freedom. Stage 0″ (added 2026-10-31) is that stage, and Stage 0 is retired in its favour.
 
 ---
 
@@ -188,6 +188,8 @@ A displacement relative to the affixed matcher centroid is the minimal object th
 
 Tier 1 is v2 as the book describes it: creation during inference, with the bank as a parameter. It is the tractable step.
 
+**Decision (2026-10-31).** The first implementation is Tier 1: the bank is learned at training time and fired at inference, on the Stage 0″ store of §7. Tier 2 — the model creating templates it did not have, during inference — is the stated follow-on, to be reached by extending the Tier 1 training algorithm once Tier 1 is validated, not designed in from the start.
+
 Tier 2 deserves its own name — **induction**, not learning. No weight updates; the model recognises a regularity in the context window and begins firing a template it did not previously have. That is the in-context-learning analogue, and it is what actually answers "widely different corpora without retraining." It is also where (2.2) becomes awkward: an induced template has no training signal to set $r_0$, which §8 returns to.
 
 Continual learning with weight updates at inference is a different problem, treated in the book's continual-learning section. It is probably not needed for this and should not be conflated with Tier 2.
@@ -206,6 +208,8 @@ This is the part that should govern sequencing, because three measured facts mak
 
 The conclusion recorded there is that the trained registers are "$M$ always-occupied exclusion slots whose content is renewed layer by layer." A template is a creation operator. Firing one into a pool that is already fully occupied does nothing that a content refresh was not already doing, and the Poisson-intensity relaxation of §3 has no referent in a substrate whose occupancies are pinned at one.
 
+**And the register write is the form §7.1 forbids.** Independently of how the registers are trained, the write port $r \leftarrow \sigma r + (1-\sigma) \mathrm{readout}$ (Fock v2.1 note §5.2) matches against the active set and edits the matched slot in place. That is match-and-edit, under which the MCS reduction's polynomial parsing becomes PSPACE recognition. A template substrate has to consume and emit — destroy a reactant, bear a product elsewhere — and a slot that is rewritten in place cannot do that whatever its salience does. Together with the fixed pool size $M$ (the per-position bank is $(B, T, M, d)$, so the state at position $t$ is $Md$ numbers for every $t$, and Lemma 4's hypothesis holds exactly), this is why Stage 0 below is retired rather than repaired.
+
 **v2's necessity has never been witnessed.** The F1 falsifier (base Dyck) exists to show it, but the only Dyck run used the v1 register design, whose registers could not reach the tokens at all: scrambling every register-side parameter left the logits unchanged and no gradient reached them. That result is run-to-run variation, not evidence.
 
 **The candidate matchers do not match.** A template's matcher is the overlap between its cloud and the local state (§2). The trained Poisson modes have exactly that form (a centre, a width, the overlap $E_v = \exp(-\kappa_v^2 \lVert h - \mu_v \rVert^2)$, a firing record), and the community note reads them as learned pattern-matching regions. Measured on the trained PMX, FO-b-PMX and PMX-K16 (protocol §5.13, 2026-10-23), they do not discriminate:
@@ -222,7 +226,13 @@ Taken together: building templates on this substrate risks an unfalsifiable outc
 
 ## 7. Staging, with pass criteria
 
-**Stage 0 — make creation real.** Before any template code. Target: an active fraction that genuinely varies across layers and positions, and a salience that behaves as an intensity. DP1–DP3 are the existing probe, so the pass criterion is already written: active fraction away from the 0.9995–1.000 ceiling, and a *positive* salience-to-force correlation. The note on the register scheme diagnoses why the current update pins the fraction — right after refresh, $s \geq (1-\lambda)/(t+1)$, so at $\lambda = 0.5$ no register can be inactive in the first 99 positions. That inequality is the thing to break.
+**Stage 0 — make creation real in the registers. Retired (2026-10-31).** As first written: before any template code, reach an active fraction that varies across layers and positions and a salience that behaves as an intensity, with DP1–DP3 as the probe, by breaking the inequality $s \geq (1-\lambda)/(t+1)$ that pins the fraction (at $\lambda = 0.5$ no register can be inactive in the first 99 positions). Three independent facts say the registers cannot become the substrate however that inequality is broken, so the stage is withdrawn rather than fixed:
+
+1. **The pool is fixed.** `n_registers` is a constructor constant and the per-position bank is $(B, T, M, d)$; the state at position $t$ is $Md$ numbers whatever $t$ is, so Lemma 4's hypothesis holds exactly. The book concedes it: "the class statement concerns the architecture family with a register pool that grows with the input, not the trained instances."
+2. **The write is the forbidden form** (§6): match-and-edit, where a template substrate must consume and emit.
+3. **DP1–DP3** (§6): always occupied, salience not an intensity.
+
+What survives is the probe. DP1's active-fraction measurement becomes criterion 2 of Stage 0″.
 
 **Stage 0′ — make matching real.** Alongside Stage 0, and equally a precondition. Target: modes whose overlap discriminates between tokens, and a model that uses it. Since training does not narrow the wells, selectivity has to be designed in: narrow initial wells (larger $\kappa_v^2$) with centres placed near real hidden states, so that each mode reaches only part of the state cloud. Pass criteria, all with existing tools (`pm_mode_usage.py`, `pm_content_swap.py`): the median coefficient of variation of a mode's overlap across tokens well above the present 0.01–0.04; the occupations no longer reproduced from position alone; and a content-swap cost well above the present 0.02–0.09%. The trained test is the narrow-wells arm (protocol §5.13, proposed); a check at initialisation, on CPU, comes first.
 
@@ -273,7 +283,38 @@ Of the three pass criteria, the first is met, the second partly (layer 0), and t
 
 *The trained test, as proposed (2026-10-23; calls to be registered when it is scheduled).* A pair at 2B tokens (130,000 steps, the TL plan's nine weights-only snapshots), identical except for the matcher, both on PMX-K16's base with explicit wells and the 1–16 range: the template arm `…pm16_pmhl1t16_pmlr8_sr2_st130000…` and its isotropic control `…pm16_pmhl1t16_sr2_st130000…`. At every snapshot: selectivity, the occupations' position share, the content-swap cost, and the mode count. 2B rather than 0.5B, because using content memory is a learned behaviour that may emerge late, so a 0.5B negative would not separate the design from the budget, and the snapshots give the emergence curve. Both configurations build from the notebook's cells and pass Cell 5b (`verify_pm_match.py … planned`).
 
-**Stage 1 — one template, smallest form.** The single-type catalytic case $A_u \to A_u + A_v$, with learned $r_0$ and $\Theta$ and an annealed $\beta$. A free correctness check comes with it: by §4.3 of the templates note, unconditional templates give a Poisson stationary state of mean $c/d$, which should reproduce the log-unigram output bias. An implementation that does not recover that is wrong before anything interesting is tested.
+**Stage 0″ — make allocation real (added 2026-10-31; proposed, nothing implemented).** The stage §1.1 found missing. A template lifts the class only if firing instantiates a particle, so before the first template there has to be a place for that particle to exist which neither overwrites a slot nor deepens a well. The design is a **write-once, block-causal particle store**.
+
+- **State.** Per layer, slots $(B, T, k, \cdot)$: up to $k$ particles may be *born* at each position, $k$ being the number of templates the routing keeps per position (small, 2–4). A slot carries a bounded payload — position $\mu_p \in \Sigma$, type signature $\psi_p$, mass, birth index $b_p$ — and an **existence** $e_p \in [0, 1]$, the occupation a creation operator sets. Capacity $kT$ is preallocated, so allocation is realised as $e_p$ leaving zero; what grows with the input is the number of live particles at position $t$, up to $kt$, which is what Lemma 4 forbids v0 and what §8.2 of the bounds note asks for ("grow its memory linearly with input length").
+- **Visibility.** A particle born at $b_p$ is visible to tokens $t \geq b_p$: a block-causal $T \times kT$ mask. Training stays parallel over positions; at generation the store behaves as a cache.
+- **Force on tokens.** Live particles act through the well potential already in the code, $U = -\sum_p e_p D_p \exp\left(-\kappa_p^2 \lVert P_\ell (h - \mu_p) \rVert^2\right)$ — conservative, $\Sigma$-valued, $-\nabla U$ by autograd. This is the additive v2 channel: order-blind by §4.1, and that is its job.
+- **Firing.** At position $t$, layer $\ell$, a template matches (its cloud against $h_t$ and against the visible particles, with the Stage 0′ matcher), is routed (Gumbel top-k over the bank, $k$ as above), and emits into slot $(t, j)$: $e \leftarrow \mathrm{fire}$, $\mu \leftarrow \mu_{\mathrm{match}} + \delta_\mathcal{T}$ (the §4.3 baseline), $\psi \leftarrow \psi_\mathcal{T}$. **Payloads are written once and never again.**
+- **Consumption** ($k_v \geq 1$). The matched reactant's existence is thinned, $e_p \leftarrow e_p (1 - \mathrm{fire})$; nothing else about it changes. Rebinding is destroy-old plus emit-new, never an edit.
+- **Across layers.** The store is carried layer to layer. Within a layer no particle depends on one born in the same layer, so a forward pass supports derivations of depth at most $L$ — the depth floor of §7.1 again.
+
+| requirement | how the store meets it |
+|---|---|
+| state grows with the input (Lemma 4's hypothesis fails) | live particles at $t$ up to $kt$; payloads persist |
+| bounded multiplicity per firing | at most one particle per template per position, $k$ in all |
+| consume and emit, never match and edit | write-once payloads; consumption touches only $e_p$ |
+| bounded fragment dimension and arity | payload $d + O(1)$; Stage 1′ reads two slots |
+| finite bank | bank size fixed; the admission rule of Stage 2 governs growth |
+| causal and parallel-trainable | block-causal mask; no particle-to-particle dependence within a layer |
+| conservative token forces | wells in $h$; the `verify_pm_match` autograd check applies verbatim |
+| §3 exactness | at $k_v = 0$ the store with $e \in [0,1]$ is linear, so carrying the mean is exact (option 1); with reactants it is the object options 2 and 3 act on |
+
+Cost: particle-to-token forces $O(kT^2 d)$ per layer, attention over $kT$ keys; memory $(B, T, k, d)$ per layer.
+
+*Pass criteria.*
+
+1. **Bit-identity with the switch off** on the four reference configurations (the `verify_pm_match` discipline).
+2. **Number dynamics exist.** Mean existence across slots and positions away from both 0 and 1, and varying with content — what DP1 could not find. Run first at $k_v = 0$, the exact regime, on CPU.
+3. **The collapse depth moves.** Equation (7.2) of the bounds note predicts a Dyck-1 collapse depth $D^\ast$ that does not depend on $T$ for v0. With the store at $k = 1$, $D^\ast$ on the matched baseline should exceed the v0 prediction and grow with the training-length cap. One pre-registrable number from an existing derivation; it is F1's per-depth protocol in its smallest form, which has never been run as written.
+4. **Copy beyond $M$.** A planted-copy task whose source distance exceeds what 32 registers can hold, at $L = 2$: the cheap check that persistence across positions works.
+
+*What it does not change.* Consume-and-emit does not weaken §4.1: when two reactions both fire, the resulting configuration is the same multiset in either order; consumption makes the second firing's *rate* path-dependent, not the result (templates note §7.3 says exactly "adding and removing"). The practical consequence is the one Stage 2 already books: a store with consumption can pass F3 by destroy-plus-emit rebinding, and must then be described as such.
+
+**Stage 1 — one template, smallest form.** The single-type catalytic case $A_u \to A_u + A_v$, fired into the Stage 0″ store, with learned $r_0$ and $\Theta$ and an annealed $\beta$. A free correctness check comes with it: by §4.3 of the templates note, unconditional templates give a Poisson stationary state of mean $c/d$, which should reproduce the log-unigram output bias. An implementation that does not recover that is wrong before anything interesting is tested.
 
 **Stage 1′ — slots.** Between the single template and a bank, and skipped in the first draft of this staging. A mode has one centre; a template has a tree of them. Community §8 names the minimal extension: "a mode that matches a *pair* of structures at a relative displacement, which is the manuscript's two-slot pattern-matching tree and **the smallest object with an order to decide**." Until a template reads two things, there is no order question to answer and no way to tell an additive IS from an operator one.
 
@@ -399,7 +440,7 @@ The plan above draws on sixteen companion notes. They were written for different
 The map above is also a map of absences, and these are the ones that bind:
 
 - **No formulation of the inference region.** Sixteen notes and a manuscript, and the PMS-to-IS pairing is "heading only (¶185)." Two candidate routes exist for its non-commutative part; none for the pairing itself.
-- **No mechanism that allocates.** Every creation operation in the codebase overwrites a slot or deepens a well. Nothing adds a degree of freedom at inference, and §1.1 shows nothing else lifts the class.
+- **No mechanism that allocates — now a designed stage, not a built one.** Every creation operation in the codebase overwrites a slot or deepens a well; nothing adds a degree of freedom at inference, and §1.1 shows nothing else lifts the class. Stage 0″ (§7) specifies the write-once particle store that would. It is proposed, not implemented.
 - **No stochastic treatment of the creation channel.** The Langevin note's A8 leaves it out by assumption. Option 2 of §3 would have to extend the fluctuation–dissipation lock to a channel it was deliberately built without.
 - **No run of v2's own falsifier as specified.** F1's per-depth protocol is on record as never executed; the one Dyck run used registers that could not reach the tokens.
 - **No ordered-derivation corpus.** The MT result says order is a design task; the Community note adds that testing the design needs "a corpus that contains ordered derivations," which does not exist in the programme yet.
