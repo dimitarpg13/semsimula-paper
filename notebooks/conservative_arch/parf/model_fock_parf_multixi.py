@@ -734,6 +734,7 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
             self.reverse_warmup_step += 1
 
         r, salience = self._init_registers(B, h0.device)
+        self._ps_begin()        # Stage 0'': an empty particle store for this pass
 
         # Per-layer flow inference mode (cfg.substeps_per_layer, protocol
         # SS5.19): k substeps of dt/k per layer; see MultiXiPARFLMConfig.
@@ -742,6 +743,8 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
         if k_sub != 1:
             if k_sub < 1:
                 raise ValueError(f"substeps_per_layer must be >= 1, got {k_sub}")
+            if getattr(self, "pstore_mu", None) is not None:
+                raise NotImplementedError("substeps_per_layer > 1 with a particle store: not defined yet")
             if self.training:
                 raise RuntimeError("substeps_per_layer > 1 is an inference mode; call model.eval()")
             if self.reverse_ch is not None or getattr(cfg, "integrator", "verlet") != "baoab_cfc_lowrank":

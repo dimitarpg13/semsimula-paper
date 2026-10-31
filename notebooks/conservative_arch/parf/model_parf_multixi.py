@@ -364,6 +364,33 @@ class MultiXiPARFConfig(SparsePARFConfig):
     poisson_match_rank: int = 0
     poisson_match_c_init: float = 1.0          # selectivity >= 0.5, coverage 100% at K = 16 and 64 (debug/verify_pm_match.py)
     poisson_match_ema: float = 0.99
+    # Particle store (Stage 0'', 2026-10-31; Implementing_Semantic_Templates_A_Path.md SS7): a
+    # write-once, block-causal store of CREATED particles, the degree of freedom a template
+    # needs and neither a slot register (rewritten in place, fixed M) nor a Poisson mode
+    # (deepens a well at a fixed centre) supplies. K particle types. At every layer l each token
+    # s bears, for each type j, a particle with existence e = E_j(h_s) -- the Stage 0' rank-r
+    # overlap of the token with the type, its Poisson creation mean -- and payload
+    # mu = h_s + delta_j, written once. A particle born at (layer b, token s) acts on every
+    # token t > s at every layer l >= b through the well
+    #     U = -sum a_{l,j} e lambda_j^(t-1-s) exp(-kappa_{l,j}^2 |P_l (h_t - mu)|^2),
+    # the explicit -grad_{h_t} U (strict past, so e and mu are constant in h_t); the loss
+    # reaches the creating token through e and mu (live, the Gen 3 convention). The number of
+    # live particles at token t grows as K t: the state is no longer O(1) in the input. Depths
+    # a start at 0 (force exactly 0 at step 0); half-lives lambda_j log-spaced over
+    # [HALFLIFE_MIN, HALFLIFE_MAX] tokens; matcher mu_l, P_l, D2_l set from the layer's states
+    # on the first training forward as in Stage 0'. One force evaluation per layer; explicit
+    # kick only. 0 = off (bit-identical). Tag 'ps<K>r<rank>'.
+    particle_store: int = 0
+    particle_store_rank: int = 8
+    particle_store_c_init: float = 1.0
+    particle_store_ema: float = 0.99
+    particle_store_halflife_min: float = 1.0   # the 1-16 range keeps content in the occupations (debug/pm_halflife_range.py)
+    particle_store_halflife_max: float = 16.0
+    # False: no spontaneous death (lambda = 1, no half-life parameter); a particle lives until a
+    # reaction consumes it, which is what lets the live count grow with the input (a decaying
+    # memory saturates at sum_j E_j / (1 - lambda_j), bounds note Lemma 2). Tag suffix 'nd'.
+    particle_store_decay: bool = True
+    particle_store_payload: str = "live"       # 'live' | 'detached': does the loss reach h_s through the payload mu?
     relax_attn_logit_scale_init: float = 1.0 / 0.07
     relax_attn_logit_scale_max: float = 100.0
     # Fix the gate instead of learning it. None learns lambda (or holds it
@@ -876,9 +903,59 @@ class MultiXiPARFLM(SparsePARFLM):
             self.pm_depth = nn.Parameter(torch.zeros(cfg.L, _K))
             self.register_buffer("pm_share", torch.zeros(cfg.L), persistent=False)
 
+        # Particle store (Stage 0'', 2026-10-31). Created ONLY when enabled, so the
+        # default model draws the same RNG stream and keeps the same state_dict;
+        # nothing here draws RNG (the matcher is set from the states, _lowrank_match).
+        # Depths start at zero: the force is exactly zero at step 0.
+        self.pstore_mu = None
+        self._pstore = None
+        _S = int(getattr(cfg, "particle_store", 0) or 0)
+        if _S > 0:
+            _SR = int(getattr(cfg, "particle_store_rank", 8))
+            if not 0 < _SR <= cfg.d:
+                raise ValueError(f"particle_store_rank = {_SR} must lie in [1, d = {cfg.d}]")
+            if getattr(cfg, "particle_store_payload", "live") not in ("live", "detached"):
+                raise ValueError("particle_store_payload must be 'live' or 'detached'")
+            self.pstore_mu = nn.Parameter(torch.zeros(cfg.L, _S, cfg.d))
+            self.pstore_P = nn.Parameter(torch.zeros(cfg.L, _SR, cfg.d))
+            self.pstore_log_c = nn.Parameter(
+                torch.full((cfg.L, _S), math.log(float(getattr(cfg, "particle_store_c_init", 1.0)))))
+            self.pstore_depth = nn.Parameter(torch.zeros(cfg.L, _S))
+            self.pstore_delta = nn.Parameter(torch.zeros(_S, cfg.d))
+            if getattr(cfg, "particle_store_decay", True):
+                _hl = torch.logspace(
+                    math.log10(getattr(cfg, "particle_store_halflife_min", 1.0)),
+                    math.log10(getattr(cfg, "particle_store_halflife_max", 16.0)), _S)
+                _lam = 0.5 ** (1.0 / _hl)
+                self.pstore_logit_lambda = nn.Parameter(torch.log(_lam / (1 - _lam)))
+            else:
+                # no spontaneous death: a particle lives until a reaction consumes it,
+                # so the live count at token t really grows with t (Lemma 2 of the
+                # bounds note: a decaying memory is bounded, however large the store)
+                self.pstore_logit_lambda = None
+            self.register_buffer("pstore_D2", torch.ones(cfg.L))
+            self.register_buffer("pstore_ready", torch.zeros(cfg.L))
+            self.register_buffer("pstore_share", torch.zeros(cfg.L), persistent=False)
+            # per layer: mean existence, median-over-types CV of the existence across
+            # tokens, share of the reach (the pair weights at unit depth) carried by
+            # earlier layers' particles -- do layer-0 particles touch layer-1 tokens?
+            self.register_buffer("pstore_stats", torch.zeros(cfg.L, 3), persistent=False)
+
     # ------------------------------------------------------------------
     def _pm_match(self, h: torch.Tensor, layer_idx: int):
         """Content-selective overlap (cfg.poisson_match_rank > 0) at one layer.
+
+        Returns E (B, T, K), z = h P_l^T (B, T, r), m = mu_l P_l^T (K, r) and
+        kappa^2 (K,), float32; see _lowrank_match, which does the work for
+        these modes and for the particle store alike.
+        """
+        return self._lowrank_match(h, layer_idx, self.pm_mu, self.pm_P, self.pm_log_c,
+                                   self.pm_D2, self.pm_match_ready,
+                                   float(getattr(self.cfg, "poisson_match_ema", 0.99)), 1234)
+
+    def _lowrank_match(self, h: torch.Tensor, layer_idx: int, mu, P, log_c, D2, ready,
+                       ema: float, seed: int):
+        """Rank-r overlap E = exp(-kappa^2 |P_l (h - mu_{l,v})|^2) at one layer.
 
         Returns E (B, T, K), z = h P_l^T (B, T, r), m = mu_l P_l^T (K, r) and
         kappa^2 (K,), float32. On the first training forward of each layer the
@@ -886,17 +963,26 @@ class MultiXiPARFLM(SparsePARFLM):
         states it receives (P_l: their top-r principal directions; centres: the
         means of K k-means clusters in span(P_l); D2_l: the median squared
         projected distance between tokens); afterwards D2_l follows the cloud as
-        a running median. Both are done without gradient and draw no global RNG.
+        a running median. Both are done without gradient and draw no global RNG
+        (a local generator seeded seed + l). mu (L, K, d), P (L, r, d) and
+        log_c (L, K) are parameters, D2 (L,) and ready (L,) buffers, all owned by
+        the caller (the Stage 0' modes: pm_*; the particle store: pstore_*).
         """
         l = int(layer_idx)
         hf = h.float()
-        if self.training:
+        # The initialisation and the running median are state: they run in the
+        # training forward inside the stack loop only. A layer-checkpoint recompute
+        # in the backward (_in_stack_forward False) must see the D2 the forward
+        # used, or it recomputes a different force than the forward applied and
+        # moves D2 twice per step (2026-10-31: 6.6e-5 in the gradients, D2 220.9
+        # vs 293.9 after one step on PM1-K16 pmlr8; debug/verify_particle_store.py).
+        if self.training and getattr(self, "_in_stack_forward", True):
             with torch.no_grad():
                 X = hf.detach().reshape(-1, hf.shape[-1])
                 n = X.shape[0]
-                if not bool(self.pm_match_ready[l]):
-                    g = torch.Generator(device="cpu").manual_seed(1234 + l)
-                    K, R = self.pm_mu.shape[1], self.pm_P.shape[1]
+                if not bool(ready[l]):
+                    g = torch.Generator(device="cpu").manual_seed(seed + l)
+                    K, R = mu.shape[1], P.shape[1]
                     sub = torch.randperm(n, generator=g)[:min(n, 8192)].to(X.device)
                     Xs = X[sub]
                     _, _, Vh = torch.linalg.svd(Xs - Xs.mean(0, keepdim=True), full_matrices=False)
@@ -919,24 +1005,140 @@ class MultiXiPARFLM(SparsePARFLM):
                             if bool(sel.any()):
                                 C[v] = Zs[sel].mean(0)
                                 mu0[v] = Xs[sel].mean(0)
-                    self.pm_mu.data[l].copy_(mu0)
-                    self.pm_P.data[l].copy_(Vh[:R])
+                    mu.data[l].copy_(mu0)
+                    P.data[l].copy_(Vh[:R])
                     Z = Xs[:1024] @ Vh[:R].t()
-                    D2 = ((Z * Z).sum(-1, keepdim=True) + (Z * Z).sum(-1) - 2.0 * Z @ Z.t()).clamp_min(0.0)
-                    self.pm_D2[l] = D2[~torch.eye(len(Z), dtype=torch.bool, device=Z.device)].median()
-                    self.pm_match_ready[l] = 1.0
+                    D2s = ((Z * Z).sum(-1, keepdim=True) + (Z * Z).sum(-1) - 2.0 * Z @ Z.t()).clamp_min(0.0)
+                    D2[l] = D2s[~torch.eye(len(Z), dtype=torch.bool, device=Z.device)].median()
+                    ready[l] = 1.0
                 else:
-                    Z = X[:: max(1, n // 1024)][:1024] @ self.pm_P[l].detach().float().t()
-                    D2 = ((Z * Z).sum(-1, keepdim=True) + (Z * Z).sum(-1) - 2.0 * Z @ Z.t()).clamp_min(0.0)
-                    cur = D2[~torch.eye(len(Z), dtype=torch.bool, device=Z.device)].median()
-                    a = float(getattr(self.cfg, "poisson_match_ema", 0.99))
-                    self.pm_D2[l] = a * self.pm_D2[l] + (1.0 - a) * cur
-        P = self.pm_P[l].float()                                         # (r, d)
-        z = hf @ P.t()                                                   # (B, T, r)
-        m = self.pm_mu[l].float() @ P.t()                                # (K, r)
-        k2 = self.pm_log_c[l].float().exp() / self.pm_D2[l].float().clamp_min(1e-12)   # (K,)
+                    Z = X[:: max(1, n // 1024)][:1024] @ P[l].detach().float().t()
+                    D2s = ((Z * Z).sum(-1, keepdim=True) + (Z * Z).sum(-1) - 2.0 * Z @ Z.t()).clamp_min(0.0)
+                    cur = D2s[~torch.eye(len(Z), dtype=torch.bool, device=Z.device)].median()
+                    a = ema
+                    D2[l] = a * D2[l] + (1.0 - a) * cur
+        Pl = P[l].float()                                                # (r, d)
+        z = hf @ Pl.t()                                                  # (B, T, r)
+        m = mu[l].float() @ Pl.t()                                       # (K, r)
+        k2 = log_c[l].float().exp() / D2[l].float().clamp_min(1e-12)     # (K,)
         d2 = ((z * z).sum(-1, keepdim=True) + (m * m).sum(-1) - 2.0 * z @ m.t()).clamp_min(0.0)
         return torch.exp(-k2 * d2), z, m, k2
+
+    # ------------------------------------------------------------------
+    # Particle store (Stage 0'')
+    def _ps_begin(self):
+        """Start of a forward pass: empty the store. Called by _stack_forward."""
+        if self.pstore_mu is not None:
+            self._pstore = {}
+
+    def _ps_pairs(self, h: torch.Tensor, layer_idx: int, detach_sources: bool = False):
+        """Pair terms between the tokens at h (acting layer l) and every particle they see.
+
+        Returns z = h P_l^T (B, T, r), kappa^2 (K,) and a list over birth layers
+        b <= l of (w, wu, c): w (B, T, T, K), indexed [t, s, j], the weight
+        a_{l,j} e_b[s, j] lambda_j^(t-1-s) 1[s < t] exp(-kappa_j^2 |z_t - c_{s,j}|^2)
+        of the particle of type j that token s bore at layer b; wu the same
+        without the depth a (the reach, for the readings); and c (B, T, K, r)
+        its projected payload P_l (h_b[s] + delta_j). The potential is -sum w.
+        This layer's own particles (e = E_j(h), payload h) are computed here and,
+        inside the stack forward, recorded in the store for the layers above; a
+        checkpoint recompute reads the forward's record and records nothing.
+        detach_sources holds e and the payloads fixed (the autograd check of the
+        force, which is the gradient in h_t at fixed sources).
+        """
+        cfg = self.cfg
+        l = int(layer_idx)
+        if self._pstore is None:
+            raise RuntimeError("particle store: _ps_begin was not called (forward outside _stack_forward)")
+        E, z, _, k2 = self._ps_match(h, l)                                # E (B, T, K), z (B, T, r)
+        hb_now = h.float()
+        if getattr(cfg, "particle_store_payload", "live") == "detached":
+            hb_now = hb_now.detach()
+        if getattr(self, "_in_stack_forward", True):
+            self._pstore[l] = (E, hb_now)
+        entries = [(b, self._pstore[b]) for b in sorted(self._pstore) if b < l] + [(l, (E, hb_now))]
+        a = self.pstore_depth[l].float()                                  # (K,)
+        K = a.shape[0]
+        T = h.shape[1]
+        t = torch.arange(T, device=h.device)
+        lag = (t[:, None] - t[None, :] - 1)                               # t - 1 - s
+        past = lag >= 0                                                   # s < t
+        if self.pstore_logit_lambda is not None:
+            log_lam = torch.nn.functional.logsigmoid(self.pstore_logit_lambda.float())
+            Lam = torch.where(past, torch.exp(lag.clamp_min(0)[None].float() * log_lam[:, None, None]),
+                              torch.zeros((), device=h.device))          # (K, T, T)
+            Lam = Lam.permute(1, 2, 0)                                    # (T, T, K) [t, s, j]
+        else:
+            Lam = past.float().unsqueeze(-1).expand(T, T, K)              # no decay: every past particle, in full
+        Pl = self.pstore_P[l].float()                                     # (r, d)
+        dd = self.pstore_delta.float() @ Pl.t()                           # (K, r)
+        zz = (z * z).sum(-1)                                              # (B, T)
+        out = []
+        for b, (e_b, h_b) in entries:
+            if detach_sources:
+                e_b, h_b = e_b.detach(), h_b.detach()
+            c = (h_b @ Pl.t()).unsqueeze(-2) + dd                         # (B, T, K, r)  [s, j]
+            cc = (c * c).sum(-1)                                          # (B, T, K)
+            zc = torch.einsum("btr,bskr->btsk", z, c)                     # (B, T, T, K)
+            d2 = (zz[:, :, None, None] + cc[:, None, :, :] - 2.0 * zc).clamp_min(0.0)
+            wu = e_b.unsqueeze(1) * Lam.unsqueeze(0) * torch.exp(-k2 * d2)
+            out.append((a * wu, wu, c))
+        return z, k2, out
+
+    def _ps_match(self, h: torch.Tensor, layer_idx: int):
+        return self._lowrank_match(h, layer_idx, self.pstore_mu, self.pstore_P, self.pstore_log_c,
+                                   self.pstore_D2, self.pstore_ready,
+                                   float(getattr(self.cfg, "particle_store_ema", 0.99)), 4321)
+
+    def particle_store_force(self, h: torch.Tensor, layer_idx: int) -> torch.Tensor:
+        """-grad_{h_t} U over every particle token t sees, U = -sum w (see _ps_pairs).
+
+        The sources (e, payload) are of tokens s < t, so they are constant in h_t
+        and this is the exact gradient in h_t; the loss still reaches them (live).
+        -grad U = -2 P_l^T sum_{s,j} w kappa_j^2 (z_t - c_{s,j}).
+        """
+        with torch.autocast(device_type=h.device.type, enabled=False):
+            z, k2, pairs = self._ps_pairs(h, layer_idx)
+            g = None
+            tot = prev = None
+            for b_i, (w, wu, c) in enumerate(pairs):
+                W = w * k2                                                # (B, T, T, K)
+                s1 = W.sum((2, 3)).unsqueeze(-1) * z                      # (B, T, r)
+                s2 = torch.einsum("btsk,bskr->btr", W, c)
+                g = (s1 - s2) if g is None else g + (s1 - s2)
+                if self.training and getattr(self, "_in_stack_forward", True):
+                    with torch.no_grad():                                 # reach, independent of the depths
+                        ws = wu.detach().sum()
+                        tot = ws if tot is None else tot + ws
+                        if b_i < len(pairs) - 1:
+                            prev = ws if prev is None else prev + ws
+            f = -2.0 * (g @ self.pstore_P[int(layer_idx)].float())       # (B, T, d)
+            if self.training and getattr(self, "_in_stack_forward", True):
+                with torch.no_grad():
+                    E = self._pstore[int(layer_idx)][0].detach()          # this layer's existences (B, T, K)
+                    cv = (E.std(dim=(0, 1)) / E.mean(dim=(0, 1)).clamp_min(1e-12)).median()
+                    share_prev = (prev / tot.clamp_min(1e-30)) if prev is not None else E.new_tensor(0.0)
+                    self.pstore_stats[int(layer_idx)] = torch.stack(
+                        [E.mean(), cv, share_prev]).to(self.pstore_stats.dtype)
+        return f.to(h.dtype)
+
+    def particle_store_potential(self, h: torch.Tensor, layer_idx: int) -> torch.Tensor:
+        """U(h) = -sum w with every source held fixed: -autograd.grad(U, h) is particle_store_force."""
+        with torch.autocast(device_type=h.device.type, enabled=False):
+            _, _, pairs = self._ps_pairs(h, layer_idx, detach_sources=True)
+            return -sum(w.sum() for w, _, _ in pairs)
+
+    def _stack_forward(self, h0, x, return_trajectory: bool = False):
+        """The base walk, with the particle store emptied at the start of the pass
+        and _in_stack_forward set as the Fock subclass sets it (True inside the
+        loop only), so that the matcher's state and the store are written by the
+        forward and read, not rewritten, by a checkpoint recompute."""
+        self._ps_begin()
+        self._in_stack_forward = True
+        try:
+            return super()._stack_forward(h0, x, return_trajectory)
+        finally:
+            self._in_stack_forward = False
 
     def poisson_mode_occupation(self, h: torch.Tensor, layer_idx: Optional[int] = None):
         """Mode overlaps E (B, T, K) and strict-past occupations phi (B, T, K).
@@ -1574,6 +1776,14 @@ class MultiXiPARFLM(SparsePARFLM):
                 _cons = f_phi if f_theta is None else f_theta + f_phi
                 self.pm_share[layer_idx] = _f_pm.norm() / (_cons.norm() + 1e-12)
             f_phi = f_phi + _f_pm
+
+        # Stage 0'': the particle store's force, a plain kick like the wells.
+        if self.pstore_mu is not None:
+            _f_ps = self.particle_store_force(h_in, layer_idx)
+            with torch.no_grad():
+                _cons = f_phi if f_theta is None else f_theta + f_phi
+                self.pstore_share[layer_idx] = _f_ps.norm() / (_cons.norm() + 1e-12)
+            f_phi = f_phi + _f_ps
 
         if split:
             return f_theta, f_phi

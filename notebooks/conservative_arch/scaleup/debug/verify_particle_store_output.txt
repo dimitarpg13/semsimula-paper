@@ -1,0 +1,27 @@
+# python3 verify_particle_store.py OUT  (2026-10-31; CPU, torch 2.2.2 with numpy 1.26 -- numpy 2.x breaks torch.from_numpy on this torch)
+# Bit-identity with PARTICLE_STORE = 0: verify_pm_match.py fingerprint on a HEAD worktree vs the working copy -> BIT-IDENTICAL
+#   (F3.1, PM1_K64, PMX_K16, FOb_PMX_K16; 187 entries each: loss, logits sha256, every parameter sum, every gradient norm)
+
+=== PARTICLE_STORE = 4, rank 8, F3.1 base + SR2, explicit kick ===
+  [PASS] tag ...ps4r8_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+  [PASS] new parameters ['pstore_P', 'pstore_delta', 'pstore_depth', 'pstore_log_c', 'pstore_logit_lambda', 'pstore_mu']; depths and delta at 0; 76,582,882 parameters
+  [PASS] clip group 'pstore_' catches ['pstore_P', 'pstore_delta', 'pstore_depth', 'pstore_log_c', 'pstore_logit_lambda', 'pstore_mu']
+  [PASS] depths 0: max |dlogit| vs no store 0.0e+00; grad reaches pstore_depth (norm 8.80e-01)
+  [PASS] the first training forward initialised every layer's matcher (ready [1.0, 1.0])
+  [PASS] existences finite and in (0, 1) at every layer; loss finite
+  [PASS] D2 per layer [0.121, 145.89]; P rows unit-norm
+  [PASS] layer 0: force vs -grad U at fixed sources, relative error 1.3e-07 (|F| 7.470e+01, own particles only)
+  [PASS] layer 1: force vs -grad U at fixed sources, relative error 9.2e-08 (|F| 9.688e+00, layer-0 and own particles)
+  [PASS] causality, depths non-zero: tokens replaced at t >= 128, max |dlogit| at t < 128 = 0.0e+00
+  [PASS] layer checkpointing on vs off from the same state: loss 7.380964 vs 7.380964; max grad diff 0.0e+00
+  [PASS] D2 after the step the same with checkpointing on and off: [0.1213, 148.8427]
+  [PASS] PM1-K16 pmlr8 (Stage 0'): checkpointing on vs off, loss diff 0.0e+00, max grad diff 0.0e+00, D2 [0.122, 220.883] both ways
+  [PASS] grads, depths non-zero: mu 2.09e-01, P 1.04e+00, log_c 5.70e-02, depth 2.78e-01, delta 7.34e-01, logit_lambda 2.50e-02
+--- readings (criterion 2 of Stage 0''): 2 x 256 real tokens, matcher at initialisation ---
+  decay 1-16 tokens: tag ...ps4r8_sr2
+    layer 0: mean existence 0.292, CV across tokens 0.56, share of the reach from earlier layers' particles 0.000; live particles at t = 32 / 128 / 255: 11.0 / 15.0 / 14.2; tokens with E > 0.5 per type [0.64, 0.04, 0.02, 0.67]
+    layer 1: mean existence 0.286, CV across tokens 0.58, share of the reach from earlier layers' particles 0.531; live particles at t = 32 / 128 / 255: 13.7 / 16.5 / 16.1; tokens with E > 0.5 per type [0.04, 0.03, 0.7, 0.55]
+  no decay: tag ...ps4r8nd_sr2
+    layer 0: mean existence 0.292, CV across tokens 0.56, share of the reach from earlier layers' particles 0.000; live particles at t = 32 / 128 / 255: 34.7 / 148.3 / 298.5; tokens with E > 0.5 per type [0.64, 0.04, 0.02, 0.67]
+    layer 1: mean existence 0.286, CV across tokens 0.58, share of the reach from earlier layers' particles 0.579; live particles at t = 32 / 128 / 255: 35.2 / 145.7 / 292.2; tokens with E > 0.5 per type [0.04, 0.03, 0.7, 0.55]
+-> ALL PASS
