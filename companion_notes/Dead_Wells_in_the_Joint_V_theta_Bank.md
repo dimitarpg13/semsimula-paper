@@ -35,6 +35,7 @@ Protocol entries: [XI6-CODE](Depth_Ladder_and_Matched_Baseline_Protocol.md#p-xi6
 - **Two switches keep layer 1 alive** in 3,000-step screens (§7.2): unit-norm context channels at the bank input (screen A), or V_θ's learning rate × 0.25 (screen B). Each cuts one factor of the centres' growth. Both beat the control's perplexity at step 3,000 (13.54 and 11.27 against 14.80; SO-CODE 12.96).
 - **Screen B at full length closes the gap** (§7.3): settled 5.98 against SO-CODE's 6.00 and XI6-CODE's 8.55, with layer 1 alive to the end (removing its wells costs +242%; SO-CODE +202%). The whole deficit was the dead wells; the sixth channel itself buys nothing on code.
 - **The slower V_θ is a fix, not a general gain** (§7.4). SO-CODE with the same switch (SO-CODE-VTLR) settles at 6.09, +1.6% against SO-CODE. It has screen B's early lead, and its bank follows screen B's checkpoint for checkpoint. Screen B is level with it too (−1.8%, within the paired noise), so the sixth channel adds nothing, with or without the slower V_θ.
+- **Screen A at full length closes the gap too, with V_θ at full speed** (§7.5): settled 5.95 against SO-CODE's 6.00 (paired gap −0.002 nats over the last 3,000 steps). Layer 1's wide wells narrow to one main well (72% of the force, occupancy 0.29), and removing them costs +136%. Its refinement penalty stays near SO-CODE's (Cell 6b-7 Gate 3: 0.587 against 0.639 nats), so the halved penalty of the slower-V_θ arms is the slower V_θ's. Whether unit-norm input costs a healthy arm anything needs SO-CODE's twin.
 
 ---
 
@@ -248,12 +249,13 @@ flowchart TD
 - The deaths fall in steps 750–1,200, just after the learning-rate peak, while layer 1 hardly uses its wells (removing them costs +1.6% at step 500). The one-position lookups sharpen after the deaths, so they are a consequence (§7.1).
 - Either unit-norm channels at the bank input or a slower V_θ keeps the layer-1 wells alive to step 3,000 (§7.2).
 - With the slower V_θ, the wells stay alive to step 19,250 and XI6 settles level with SO-CODE (5.98 against 6.00): the dead wells account for the whole deficit, and the one-position lookups do not form (§7.3).
+- With unit-norm input and V_θ at full speed, the same: settled 5.95, layer 1 alive at the end (§7.5).
 - The slower V_θ alone gives SO-CODE screen B's early lead and its small, inward bank; at the end it costs SO-CODE 1.5%, consistently from step 14,000 on, and screen B is level with this twin (§7.4).
 
 **Open:**
 - **Which loss term pushes the centres outward.** Averaged over 16 batches, the gradient through layer 1 pulls the wells in and `v_reg` pushes them out more weakly; the update Adam actually stored moves them outward, 2–3 times faster in the XI6 arms. The decomposition does not reproduce the stored update (§7.1).
 - **Why XI6 and not the five-channel arms.** XI6 has lost layer 1 in 2 of 2 runs, the five-channel arms in 0 of 6. A sixth channel adds one more large term to the centres; whether that alone tips the race is not separated from seed.
-- **Whether screen A's fix holds to the end of training** (§8).
+- **Whether unit-norm input costs a healthy arm anything.** Screen A's fix holds to the end of training (§7.5); its SO-CODE twin is not yet run (§8).
 
 ---
 
@@ -359,7 +361,7 @@ Screen B was resumed from its step-3,000 checkpoint (model and optimizer state, 
 - **Level with SO-CODE.** The runs share eval batches (both trained from step 0), and the paired gap is +0.003 nats over steps 8,000–13,000 and +0.002 over 16,000–19,000. The training loss is level too (1.687 for both over the last 3,250 steps; XI6-CODE 1.987). Screen B was ahead of SO-CODE only early, over steps 2,000–5,000.
 - **Layer 1 stays alive and looks like SO-CODE's:** its median nearest-well ratio stays at 0.76–0.83 to the end, one well carries 83% of the force at occupancy 0.17, and its stiffness readout ω·Δt is 4.34 (SO-CODE 4.94, XI6-CODE 0.000).
 - **The bank works at a smaller scale.** The centre map W ends three times smaller than in any full-speed arm (36 against 100–112), and the layer-1 centres sit inside the state sphere (nearest well 15.1 against ‖h‖ 19.6).
-- **No one-position lookups.** On the same 16 windows as §4.9 (`debug/xi_reach.py`, step 16,000; `results/copy_split_code/xi_reach_xi6vtlr.txt`), layer 1's long channels find earlier occurrences 65 or more tokens back at 19 and 27 times an even spread (channels 5 and 6; SO-CODE's longest 26, XI6-CODE's 1.4 and 0.8), and their median peak weight on one position is 0.21 (channel 4) and 0.39 (channel 6), against XI6-CODE's 0.88 and 0.97. With live wells the lookups do not form, so in XI6-CODE they followed from the deaths, as the snapshots' timing suggested (§7.1).
+- **No one-position lookups.** On the same 16 windows as §4.9 (`debug/xi_reach.py`, step 16,000; `results/copy_split_code/xi_reach_xi6vtlr.txt`), layer 1's long channels find earlier occurrences 65 or more tokens back at 19 and 27 times an even spread (channels 5 and 6; SO-CODE's longest 26, XI6-CODE's 1.4 and 0.8), and their median peak weight on one position is 0.21 (channel 4) and 0.39 (channel 6), against XI6-CODE's 0.88 and 0.97. With live wells the lookups do not form here, so in XI6-CODE they followed from the deaths, as the snapshots' timing suggested (§7.1). (Screen A, §7.5, later showed that one lookup channel can form alongside live wells: dead wells are not needed for a lookup, but in XI6-CODE the lookups came with them.)
 - **What it settles.** XI6-CODE's +43% was entirely the dead wells. With live wells the sixth context channel retrieves like SO-CODE's longest, yet neither helps nor hurts on code.
 
 ### 7.4 The five-channel twin: SO-CODE with the slower V_θ
@@ -378,15 +380,35 @@ Screen B differs from SO-CODE in two ways: the sixth channel and V_θ's learning
 - **So does the halved refinement penalty.** In Cell 6b-7's Gate 3 (three integration steps over the trained time), the penalty is 0.312 nats for the twin, 0.290 for screen B and 0.639 for SO-CODE.
 - **What it settles.** The sixth context channel neither helps nor hurts on code. Screen B is a dead-well fix whose cost (about 1.5%) the sixth channel gives back. `VTHETA_LR_MULT = 0.25` is not a setting to adopt for arms whose wells survive at full speed.
 
+### 7.5 Screen A at full length
+
+Screen A (every context channel scaled to unit norm at the bank input, V_θ at full speed) was resumed from its step-3,000 checkpoint and ran to step 19,250, clean (protocol `p-dw-screen-a-full-result`). Four calls were registered before the run (VA1–VA4, not confirmed by the author); all four hit.
+
+| | settled perplexity | gap to SO-CODE, steps 16,000–19,000 | layer-1 occupancy, strongest well | layer-1 removal cost | layer-1 mean centre norm | `mu_proj` largest column norm | Gate 3 penalty at N = 3 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| screen A | **5.95** | −0.002 nats (SD 0.035) | 0.289 | +136% | 7.7 | 137 | 0.587 nats |
+| screen B | 5.98 | +0.002 nats (SD 0.035) | 0.173 | +242% | 29.7 | 36 | 0.290 nats |
+| SO-CODE | 6.00 | — | 0.184 | +202% | 59.9 | 101 | 0.639 nats |
+| XI6-CODE | 8.55 | +0.352 nats | 0.000 | — | 91.9 | 112 | 0.168 nats |
+
+- **Level with SO-CODE.** Screen A leads SO-CODE before step 2,500, trails it over steps 3,000–5,500 (by 3–11%) and is level from step 6,000. From step 8,000 it moves eval by eval with screen B (SD of the paired difference 0.003 nats), 0.4–0.8% lower. Training loss 1.669 over the last 3,250 steps (SO-CODE and screen B 1.687).
+- **The wide wells narrow.** At step 3,000 layer 1 spread over about five wells and removing them cost +9.5%. At the end one well carries 72% of the force at occupancy 0.29 (n_eff 2.3), and removing layer 1's wells costs +136%. Layer 1 has moved towards SO-CODE's one-well use, less concentrated.
+- **The cap bounds the centres.** The centre map W grows larger than in any arm (largest column 137), yet the layer-1 centres stay small (mean norm 7.7, inside the state sphere of radius 19.6): every channel enters the bank at norm 1, so a large W no longer means large centres.
+- **The nearest-well ratio alone is a weak test for this arm.** Wells near the origin give a ratio near 1 whatever their use (0.97–0.99 through step 3,000, when removing them cost at most +9.5%). Occupancy and removal cost show that layer 1 is alive.
+- **The refinement penalty is SO-CODE's.** In Cell 6b-7's Gate 3 the penalty is 0.587 nats (SO-CODE 0.639; the slower-V_θ arms 0.290–0.312). Live wells do not halve it; the slower V_θ does.
+- **Resetting the velocity costs more:** +11.5% in Gate 1, against 2.5–4.0% for SO-CODE and the slower-V_θ arms (XI6-CODE +11.8%). These readings do not explain it.
+- **One lookup channel with live wells.** On the same 16 windows as §4.9 (`debug/xi_reach.py`, step 16,000; `results/copy_split_code/xi_reach_xi6vtun.txt`), layer 1's channels 4 and 6 find earlier occurrences 65 or more tokens back at 22 and 29 times an even spread (SO-CODE's longest 26). Channel 5 has become a one-position lookup: a median 1.000 of its weight on one position, a median 114 tokens back. Under unit-norm input such a lookup hands the bank a vector of norm 1, not a full-size state, so it cannot enlarge the centres as it did in XI6-CODE.
+- **What it settles.** Either fix brings XI6 level with SO-CODE: capping the bank's input size (A) or slowing V_θ (B). The sixth channel adds nothing on code by either route. Unlike the slower V_θ, unit-norm input leaves V_θ's speed and the refinement penalty as in SO-CODE; whether it costs a healthy arm anything is the next run.
+
 ---
 
 ## 8. Open questions
 
-- **Full length, screen A.** Screen B's wells survive to step 19,250 and it settles level with SO-CODE (§7.3). Whether screen A's wide, near-origin wells do as well is open; it can resume from its step-3,000 checkpoint.
-- **Specific or general, screen A.** The slower V_θ does not help SO-CODE (§7.4). Whether unit-norm input does is open; it would need its own SO-CODE twin.
+- **Specific or general, screen A.** Screen A's wells survive to the end and it settles level with SO-CODE (§7.5). The slower V_θ costs SO-CODE 1.5% (§7.4); whether unit-norm input costs it anything is open. The SO-CODE twin with `VTHETA_INPUT_UNIT_NORM = True` decides, and with it whether the switch can become a default.
+- **Why resetting the velocity costs screen A more** (+11.5% against 2.5–4.0%, §7.5).
 - **The outward push.** Which term moved the control's centres outward is not identified (§5).
 - **Seed.** Does XI6-CODE collapse on another seed? Does SO-CODE ever collapse? Layer 1's margin (occupancy 0.17–0.38 on one or two wells) suggests a collapse is possible in any arm.
-- **Why layer 1 runs on so few wells.** With unit-norm input (screen A) layer 1 uses five to eight wells, so the input scale may be the reason. A per-layer bank (more parameters) or a per-layer scale on the centre map (two scalars) remain alternatives.
+- **Why layer 1 runs on so few wells.** With unit-norm input (screen A) layer 1 used five to eight wells at step 3,000, but by the end it runs mainly on one (n_eff 2.3, §7.5), so the input scale explains the early spread at most. A per-layer bank (more parameters) or a per-layer scale on the centre map (two scalars) remain alternatives.
 
 ---
 
@@ -400,7 +422,7 @@ All on CPU, from `notebooks/conservative_arch/scaleup/debug/`, with the run fold
 | well removal | the same with `keep=<wells> keep_layers=<layer>` | `well_probe_<arm>_L<l>_keep<n>.txt` |
 | channel ablation | the same with `ablate=<channel index>` | `well_probe_xi6_code_ablate_ch6.txt` |
 | copy split | `python3 copy_split.py ../results/copy_split_code nll xi6 <FOLDER> threads=8`, then `report` and `report ref=so` | `results/copy_split_code/` |
-| channel retrieval | `python3 xi_reach.py <scratch dir> <FOLDER>` | `results/copy_split_code/xi_reach_<arm>.txt` |
+| channel retrieval | `python3 xi_reach.py <scratch dir> <FOLDER> [<checkpoint file>]` (the checkpoint when the folder has no canonical `_best.pt`, as for screen A's download) | `results/copy_split_code/xi_reach_<arm>.txt` |
 | switch check | `python3 verify_well_reach.py <HEAD worktree> <out> dump`, then `<working copy> <out> compare` and `on` | printed |
 | screen switches check | `python3 verify_vt_screens.py <out>` | printed |
 | snapshots and screens | the well probe with `ckpt=<file in the folder's checkpoints/>` (XI6-CODE-WR's snapshots: `ckpt=../snapshots/<file>`) | `results/dead_wells/well_probe_xi6wr_code_step*`, `…_xi6vtun_code_step*`, `…_xi6vtlr_code_step*`, `…_sovtlr_code_step*` |

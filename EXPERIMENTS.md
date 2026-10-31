@@ -95,7 +95,7 @@ hyphens) and the name exactly as the book writes it.
 
 ### Experiment A: trajectory fitting (M1–M4)
 
-<a name="m1"></a>**M1** · <a name="m2"></a>**M2** · <a name="m3"></a>**M3** · <a name="m4"></a>**M4** — Book: Table 56 (`tab:experiment-a`)
+<a name="m1"></a>**M1** · <a name="m2"></a>**M2** · <a name="m3"></a>**M3** · <a name="m4"></a>**M4** — Book: Table 58 (`tab:experiment-a`)
 
 Tests whether GPT-2 hidden-state trajectories follow first-order or
 second-order autonomous ODE dynamics.
@@ -578,7 +578,7 @@ Five distinct CUDA OOM failure modes catalogued at scale-up.
 
 ### SPLM V_theta regularisation (VR0–VR5)
 
-<a name="vr"></a>**VR0–VR5** — Book: Table 33 (`tab:vreg-cross-arch`)
+<a name="vr"></a>**VR0–VR5** — Book: Table 35 (`tab:vreg-cross-arch`)
 
 | Code | λ_V | Description |
 |------|-----|-------------|
@@ -594,7 +594,7 @@ Five distinct CUDA OOM failure modes catalogued at scale-up.
 
 ### PARFLM V_theta regularisation (PR0–PR4)
 
-<a name="pr"></a>**PR0–PR4** — Book: Table 33 (`tab:vreg-cross-arch`)
+<a name="pr"></a>**PR0–PR4** — Book: Table 35 (`tab:vreg-cross-arch`)
 
 | Code | λ_V | Best PPL |
 |------|-----|----------|
@@ -610,7 +610,7 @@ Five distinct CUDA OOM failure modes catalogued at scale-up.
 
 ### FockPARF V_theta regularisation (FR0–FR4)
 
-<a name="fr"></a>**FR0–FR4** — Book: Table 33 (`tab:vreg-cross-arch`)
+<a name="fr"></a>**FR0–FR4** — Book: Table 35 (`tab:vreg-cross-arch`)
 
 | Code | λ_V |
 |------|-----|
@@ -626,7 +626,7 @@ Five distinct CUDA OOM failure modes catalogued at scale-up.
 
 ### Hybrid V_theta regularisation (HR0–HR4)
 
-<a name="hr"></a>**HR0–HR4** — Book: Table 33 (`tab:vreg-cross-arch`)
+<a name="hr"></a>**HR0–HR4** — Book: Table 35 (`tab:vreg-cross-arch`)
 
 | Code | λ_V |
 |------|-----|
@@ -642,7 +642,7 @@ Five distinct CUDA OOM failure modes catalogued at scale-up.
 
 ### Planned confound-resolution sweeps (G1–G3)
 
-<a name="g1"></a>**G1** · <a name="g2"></a>**G2** · <a name="g3"></a>**G3** — Book: Table 33 (`tab:vreg-cross-arch`)
+<a name="g1"></a>**G1** · <a name="g2"></a>**G2** · <a name="g3"></a>**G3** — Book: Table 35 (`tab:vreg-cross-arch`)
 
 | Code | Description |
 |------|-------------|
@@ -773,7 +773,7 @@ from the same hyperparameter sweep as SPLM and PARFLM experiments.
 
 ### FockPARF v2 debug (D1–D9)
 
-<a name="d1d9"></a>**D1–D9** — Book: Table 98 (`tab:expidx-fock`)
+<a name="d1d9"></a>**D1–D9** — Book: Table 100 (`tab:expidx-fock`)
 
 Debug and tune FockPARF v2 on TinyStories before full P10g scale. Tests
 six bottleneck hypotheses.
@@ -794,7 +794,7 @@ six bottleneck hypotheses.
 
 ### QFT v2.1 experimental ladder (Q0–Q8)
 
-<a name="q0"></a>**Q0** · <a name="q1fock"></a>**Q1** · <a name="q2fock"></a>**Q2** · <a name="q3fock"></a>**Q3** · <a name="q4fock"></a>**Q4** · <a name="q5fock"></a>**Q5** · <a name="q6fock"></a>**Q6** · <a name="q7fock"></a>**Q7** · <a name="q8fock"></a>**Q8** — Book: Table 98 (`tab:expidx-fock`)
+<a name="q0"></a>**Q0** · <a name="q1fock"></a>**Q1** · <a name="q2fock"></a>**Q2** · <a name="q3fock"></a>**Q3** · <a name="q4fock"></a>**Q4** · <a name="q5fock"></a>**Q5** · <a name="q6fock"></a>**Q6** · <a name="q7fock"></a>**Q7** · <a name="q8fock"></a>**Q8** — Book: Table 100 (`tab:expidx-fock`)
 
 Controlled 9-arm experiment testing four QFT-motivated creation-gate
 improvements.
@@ -817,7 +817,7 @@ improvements.
 
 ### QFT v2.1 planned series (D6–D10)
 
-<a name="d6d10"></a>**D6–D10** — Book: Table 98 (`tab:expidx-fock`)
+<a name="d6d10"></a>**D6–D10** — Book: Table 100 (`tab:expidx-fock`)
 
 Planned incremental tests isolating each QFT-motivated change.
 
@@ -833,7 +833,7 @@ Planned incremental tests isolating each QFT-motivated change.
 
 ### Dyck-2 falsifier (F2)
 
-<a name="f2baseline"></a>**F2-baseline** · <a name="f2fockv2"></a>**F2-fock-v2** — Book: Table 98 (`tab:expidx-fock`)
+<a name="f2baseline"></a>**F2-baseline** · <a name="f2fockv2"></a>**F2-fock-v2** — Book: Table 100 (`tab:expidx-fock`)
 
 Three-arm controlled comparison on synthetic bracket-matching.
 
@@ -849,7 +849,7 @@ Three-arm controlled comparison on synthetic bracket-matching.
 
 ### FockPARF improvement sweep (P1–P5 Fock, G1–G3)
 
-<a name="p1p5fock"></a>**P1–P5** — Book: Table 98 (`tab:expidx-fock`)
+<a name="p1p5fock"></a>**P1–P5** — Book: Table 100 (`tab:expidx-fock`)
 
 Eight cells targeting the ~40 PPL gap between FockPARF+λ_V=1 (~190 PPL)
 and attention (~150) on TinyShakespeare.
@@ -872,7 +872,7 @@ and attention (~150) on TinyShakespeare.
 
 ### Architecture comparison (S1–S4)
 
-<a name="s1s4"></a>**S1–S4** — Book: Table 99 (`tab:expidx-nonconservative`)
+<a name="s1s4"></a>**S1–S4** — Book: Table 101 (`tab:expidx-nonconservative`)
 
 TinyStories v3 scale-up: replaces MLP V_theta with structured SQ3
 (K=4) across four architectures at d=256.
@@ -889,7 +889,7 @@ TinyStories v3 scale-up: replaces MLP V_theta with structured SQ3
 
 ### Architecture comparison Phase 2 (L1–L3)
 
-<a name="l1l3"></a>**L1–L3** — Book: Table 99 (`tab:expidx-nonconservative`)
+<a name="l1l3"></a>**L1–L3** — Book: Table 101 (`tab:expidx-nonconservative`)
 
 TinyStories Phase 2 large-scale comparison.
 
@@ -908,7 +908,7 @@ TinyStories Phase 2 large-scale comparison.
 
 ### SP-HSPLM Stage 1 (e0–e5)
 
-<a name="e0e5"></a>**e0–e5** — Book: Table 99 (`tab:expidx-nonconservative`)
+<a name="e0e5"></a>**e0–e5** — Book: Table 101 (`tab:expidx-nonconservative`)
 
 Per-token non-conservative terms (gyroscopic and solenoidal forces)
 testing whether they close the SPLM-vs-attention gap.
@@ -927,7 +927,7 @@ testing whether they close the SPLM-vs-attention gap.
 
 ### SP-HSPLM Stage 2 (q9e_a–q9e_n)
 
-<a name="q9e"></a>**q9e** — Book: Table 99 (`tab:expidx-nonconservative`)
+<a name="q9e"></a>**q9e** — Book: Table 101 (`tab:expidx-nonconservative`)
 
 Q9(e) pair-skew cell ladder covering mechanism-2 autonomous force law,
 mechanism-1 extensions, additivity tests, and full Class F.
@@ -946,7 +946,7 @@ mechanism-1 extensions, additivity tests, and full Class F.
 
 ### Inference efficiency benchmark (E8)
 
-<a name="e8"></a>**E8** — Book: Table 86 (`tab:e8-phase2-verdict`)
+<a name="e8"></a>**E8** — Book: Table 88 (`tab:e8-phase2-verdict`)
 
 Pre-registered three-phase inference benchmark.
 
@@ -1014,7 +1014,7 @@ the run's artefacts are on its Hugging Face card, not in the repository.
 | <a name="rdgamma"></a>**RD-γ** | Learned-γ diagnostic: Arm 2 re-run with the effective γ on six checkpoints; resolves the negative-R² artefact — Book: §27.12 (`par:learned-gamma-diagnostic`) | completed | [`colab_gamma_diagnostic.ipynb`](notebooks/conservative_arch/scaleup/colab_gamma_diagnostic.ipynb) | [`semsimula_gamma_diagnostic`](notebooks/conservative_arch/scaleup/results/semsimula_gamma_diagnostic/) | evaluation only | [Riemannian note, learned-γ diagnostic](companion_notes/Exploiting_the_Riemannian_geometry_of_conservative_language_models.md#n-rdgamma) |
 | <a name="su-iso"></a>**SU-iso** | OpenWebText scale-up pilot, isotropic depth-conditioned Gaussian V_θ, d = 384, L = 16 (tag `e5c_plgate`): 27.23 PPL, apparent (L3 leak); reverse-channel-off ablation `e5a` 125.94 — Book: §23.7 (`subsec:su-payoff`) | retired (L3 leak) | [`colab_fock_depthcond_vtheta_openwebtext.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_depthcond_vtheta_openwebtext.ipynb), [`colab_fock_depthcond_vtheta_openwebtext_ext.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_depthcond_vtheta_openwebtext_ext.ipynb) | [training logs](companion_notes/data/d384_e5c_plgate/) | [card](https://huggingface.co/dimitarpg13/semsimula-fock-parflm-depthcond-vtheta-openwebtext) (leak banner) | [d384 results note §1](companion_notes/Fock-PARFLM_d384_Training_Results_OpenWebText.md#n-su-iso) |
 | <a name="su-aniso"></a>**SU-aniso** | OpenWebText anisotropic-Gaussian V_θ with the Fock regulariser: damping sweeps (8 values of γ, 3,000 steps), leak-free; γ* = 0.10 at d = 384 (184.11), 0.05 at d = 768 (326.97) and d = 1024 (244.23). The d = 384 full run reached its best checkpoint, 184.11, at step 10,000 and stalled at step 17,100 of 100,000 (card) — Book: §23.9 (`subsec:su-damping`) | completed | [d384](notebooks/conservative_arch/scaleup/colab_fock_gamma_sweep_geodesic_aniso_gaussian_fockreg_d384.ipynb), [d768](notebooks/conservative_arch/scaleup/colab_fock_gamma_sweep_geodesic_aniso_gaussian_fockreg_d768.ipynb), [d1024](notebooks/conservative_arch/scaleup/colab_fock_gamma_sweep_geodesic_aniso_gaussian_fockreg_d1024.ipynb) sweeps; full run [`colab_fock_aniso_gaussian_fockreg_openwebtext.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_aniso_gaussian_fockreg_openwebtext.ipynb) | on the cards | [d384](https://huggingface.co/dimitarpg13/semsimula-fock-parflm-anisogaussian-vtheta-owt-d384-gammasweep), [d768](https://huggingface.co/dimitarpg13/semsimula-fock-parflm-anisogaussian-vtheta-owt-d768-gammasweep), [d1024](https://huggingface.co/dimitarpg13/semsimula-fock-parflm-anisogaussian-vtheta-owt-d1024-gammasweep), [d384 full run](https://huggingface.co/dimitarpg13/semsimula-fock-parflm-anisogaussian-vtheta-owt-d384-verlet-instability) | [γ note §12–14](companion_notes/Determining_optimal_gamma_for_Fock-PARFLM.md#n-su-aniso) |
-| <a name="scaf-stiff"></a>**SCAF-stiff** | SCAF `StiffnessProbe` envelope audit: the off-diagonal σ_max(B_k)² is unbounded and pushes ω·Δt past the Verlet ceiling of 2; motivates CfC/BAOAB — Book: Table 40 (`tab:su-envelope`) | completed (L = 8 bracket; L = 16 not started) | [`scaf_checkpoint_analysis_stiffness_probe.ipynb`](notebooks/conservative_arch/scaleup/debug/scaf_checkpoint_analysis_stiffness_probe.ipynb) (Phase 7), [`scaf_checkpoint_analysis.ipynb`](notebooks/conservative_arch/scaleup/debug/scaf_checkpoint_analysis.ipynb) (7b/7c); probe code in the separate `semsimula-scaf` repository | [L = 8 bracket](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc/) | evaluation only | [CfC/BAOAB note §28, §31](companion_notes/CfC_BAOAB_Integrator_and_Mitigations.md#n-scaf-stiff) |
+| <a name="scaf-stiff"></a>**SCAF-stiff** | SCAF `StiffnessProbe` envelope audit: the off-diagonal σ_max(B_k)² is unbounded and pushes ω·Δt past the Verlet ceiling of 2; motivates CfC/BAOAB — Book: Table 42 (`tab:su-envelope`) | completed (L = 8 bracket; L = 16 not started) | [`scaf_checkpoint_analysis_stiffness_probe.ipynb`](notebooks/conservative_arch/scaleup/debug/scaf_checkpoint_analysis_stiffness_probe.ipynb) (Phase 7), [`scaf_checkpoint_analysis.ipynb`](notebooks/conservative_arch/scaleup/debug/scaf_checkpoint_analysis.ipynb) (7b/7c); probe code in the separate `semsimula-scaf` repository | [L = 8 bracket](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc/) | evaluation only | [CfC/BAOAB note §28, §31](companion_notes/CfC_BAOAB_Integrator_and_Mitigations.md#n-scaf-stiff) |
 
 ---
 
@@ -1026,7 +1026,7 @@ CfC/BAOAB integrator, a joint V_θ bank. **Gen 2** arms were trained with
 detached V_φ and ξ sources, **Gen 3** arms with live source gradients and
 the same forward pass. Registered and scored in the protocol, §5.
 
-- **Book:** Table 101 (`tab:expidx-ladder`) lists the arms; they are
+- **Book:** Table 103 (`tab:expidx-ladder`) lists the arms; they are
   discussed from §27 on.
 - **Notebook (every CfC/BAOAB arm):**
   [`colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb);
@@ -1081,7 +1081,7 @@ each arm's results folder (see [the ladder](#ladder)). SR2 and SR3 ran as
 
 | Code | What it is | Status | Notebook, cell or script | Results | Checkpoint | Written up in |
 |---|---|---|---|---|---|---|
-| <a name="cg1"></a>**CG1** | One-step replay: how far each layer step deflects from the damped V_θ geodesic step, with arms that switch off V_φ, LayerNorm and the reverse channel (note label E1) — Book: Table 58 (`tab:cg1-arms`) | done (2026-09-25; re-run on later arms) | [`colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb), Cell 6b-9 | `Cell-6b-9_*_output.txt` in each arm's folder, e.g. [F3.1](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/); the first run's output is not in the repository | evaluation only | [geodesic note §4](companion_notes/Geodesic_Experiments_with_CfC_BAOAB.md#n-cg1) |
+| <a name="cg1"></a>**CG1** | One-step replay: how far each layer step deflects from the damped V_θ geodesic step, with arms that switch off V_φ, LayerNorm and the reverse channel (note label E1) — Book: Table 60 (`tab:cg1-arms`) | done (2026-09-25; re-run on later arms) | [`colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb), Cell 6b-9 | `Cell-6b-9_*_output.txt` in each arm's folder, e.g. [F3.1](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/); the first run's output is not in the repository | evaluation only | [geodesic note §4](companion_notes/Geodesic_Experiments_with_CfC_BAOAB.md#n-cg1) |
 | <a name="cg2"></a>**CG2** | Refinement at fixed integration time T: is the layer stack a flow or a sequence of maps? (Gates 0–3; the note's decomposed refinement E2 was designed but not run) — Book: Remark 67 (`rem:refinement-invariance`) | done (Gate 3, 2026-09-24 on; re-run on later arms) | [`colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb), Cell 6b-7 | `Cell-6b-7_flow_or_maps*_output.txt` in each arm's folder, e.g. [F3.1](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/) | evaluation only | [flow-or-maps note §8](companion_notes/Composing_Single_Layer_Inferences_Flow_or_Maps.md#n-cg2-gate3); design [geodesic note §5](companion_notes/Geodesic_Experiments_with_CfC_BAOAB.md#n-cg2) |
 | <a name="cg3"></a>**CG3** | Is the trajectory more forecastable than the matched GPT-2's? Three metrics (note label E3) — Book: Proposition 115 (`prop:cg-sphere`) | done (null at L = 2; scored on L = 4 live, 2026-10-03) | [`colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb), Cell 6b-10 | [F3.1](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/Cell-6b-10_forecastable_trajectory_output.txt), [L = 4 live](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_vplive_xilive_L4probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt2_lr0p0012_noattn/Cell-6b-10_forecastable_trajectory_output.txt) | evaluation only | [geodesic note §6](companion_notes/Geodesic_Experiments_with_CfC_BAOAB.md#n-cg3); [protocol](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-cg3) |
 | <a name="cg4"></a>**CG4** | LayerNorm acts as a position-only constraint, not a perturbation (note label E4), read from CG1's LayerNorm-off arm — Book: Proposition 113 (`prop:cg-ln-velocity`) | analysis | [`colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb), Cell 6b-9 (LayerNorm-off arm) | in the Cell 6b-9 outputs | evaluation only | [geodesic note §7](companion_notes/Geodesic_Experiments_with_CfC_BAOAB.md#n-cg4) |
@@ -1089,15 +1089,15 @@ each arm's results folder (see [the ladder](#ladder)). SR2 and SR3 ran as
 | <a name="cg6"></a>**CG6** | Per-token forcing: is the non-conservative deflection sparse? Uniform on every arm (note label F1) — Book: §27.14 (`par:forcing-is-uniform`) | done (2026-09-26/27) | [`colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb), Cell 6b-12 | [Gen 2 conservative-only](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/F1_6b12_per_token_deflection.txt); `Cell-6b-12_sparse_forcing_output.txt` in later arms' folders | evaluation only | [forced-Lagrangian note §3.1](companion_notes/Forced_Lagrangian_Reformulation.md#n-cg6) |
 | <a name="cg7"></a>**CG7** | ω·Δt at the end of training on fixed tokens, compared across arms (note label D2) — Book: Proposition 119 (`prop:cfp-no-wall`) | done (scored 2026-09-29; run on later arms) | [`colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb), Cell 6b-13 | [Gen 2 L = 2](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/D2_6b13_omega_dt_endpoint.txt); `Cell-6b-13_*_output.txt` in later arms' folders | evaluation only | [diagnostic note §18.3](companion_notes/Diagnostic_Programme_in_CfC_BAOAB_Integrator.md#n-cg7); [protocol](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-cg7) |
 | <a name="cg8"></a>**CG8** | Does the geometry predict the model's own next-token errors beyond its confidence? — Book: §38.6 (`subsec:geom-requirements`) | planned (Cell 6b-14 not yet written) | ladder notebook, Cell 6b-14 (planned) | — | — | [protocol §5.12](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-cg8) |
-| <a name="sr1"></a>**SR1** | Palindromic step order, the friction split around the kick (A·O½·B·O½·A); F3.1 base — Book: Table 103 (`tab:expidx-sr`) | planned | ladder notebook (to be added) | — | — | [protocol §5.9](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr) |
-| <a name="sr4"></a>**SR4** | Variable-step training: (a) N ~ U{2, 3, 4} at fixed T (refinement axis), (b) N ~ U{2, 3} at Δt = 4 (extension axis) — Book: Table 103 (`tab:expidx-sr`) | planned | ladder notebook (to be added) | — | — | [protocol §5.9](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr) |
-| <a name="sr5"></a>**SR5** | Thermal training: an O-step thermostat in training only, `LANGEVIN_T` ∈ {0.00025, 0.0022}; annealed variant only if SR4(b) passes — Book: Table 103 (`tab:expidx-sr`) | planned (temperatures calibrated 2026-10-03) | [`colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb), Cell 0 `LANGEVIN_T`; [`calibrate_langevin_T.py`](notebooks/conservative_arch/scaleup/debug/calibrate_langevin_T.py) | [calibration](notebooks/conservative_arch/scaleup/debug/calibrate_langevin_T_output.txt) | — | [protocol §5.9](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr5) |
-| <a name="cb1"></a>**CB1** | Register path ramped in late: `REVERSE_CHANNEL_WARMUP_STEPS = 20000` (tag `rcw20000`) instead of 4,000 — Book: Table 104 (`tab:expidx-cb`) | planned (switch verified) | [`colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb), Cell 0; [`verify_cb_switches.py`](notebooks/conservative_arch/scaleup/debug/verify_cb_switches.py) | — | — | [protocol §5.11](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-cb) |
-| <a name="cb2"></a>**CB2** | Per-token cap on the register increment at ρ times the conservative step: `FOCK_BUDGET` = 1.0 (CB2a) or 0.3 (CB2b) — Book: Table 104 (`tab:expidx-cb`) | planned (switch verified) | [`colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb), Cell 0; [`verify_cb_switches.py`](notebooks/conservative_arch/scaleup/debug/verify_cb_switches.py) | — | — | [protocol §5.11](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-cb) |
-| <a name="cb3"></a>**CB3** | Learned per-token gate on the register increment, L1-penalised: `FOCK_GATE_L1 = 0.02` (tag `fg0p02`) — Book: Table 104 (`tab:expidx-cb`) | planned (switch verified) | [`colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb), Cell 0; [`verify_cb_switches.py`](notebooks/conservative_arch/scaleup/debug/verify_cb_switches.py) | — | — | [protocol §5.11](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-cb) |
-| <a name="dp1"></a>**DP1** | Is particle number dynamic? Active fraction of the registers from layer 1 on — Book: Table 105 (`tab:expidx-dp`) | done (2026-10-05): 0.9995–1.000, no number dynamics | [`dp_register_statistics.py`](notebooks/conservative_arch/scaleup/debug/dp_register_statistics.py) (CPU) | [output](notebooks/conservative_arch/scaleup/debug/dp_register_statistics_output.txt), [JSON](notebooks/conservative_arch/scaleup/debug/dp_register_statistics.json) | evaluation only (G2, L = 4 live, G3) | [protocol §5.14](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-dp-scored); [Doi–Peliti note §7](companion_notes/Doi_Peliti_Dynamics_of_Semantic_Particles_and_Registers.md#n-dp) |
-| <a name="dp2"></a>**DP2** | Do registers share content? Near-duplicate pairs (cosine > 0.9) among active registers — Book: Table 105 (`tab:expidx-dp`) | done: at most 1.3%, distinct slots | [`dp_register_statistics.py`](notebooks/conservative_arch/scaleup/debug/dp_register_statistics.py) | [output](notebooks/conservative_arch/scaleup/debug/dp_register_statistics_output.txt) | evaluation only | [protocol §5.14](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-dp-scored) |
-| <a name="dp3"></a>**DP3** | Does salience act as intensity? Spearman correlation of salience with the register's own leave-one-out force — Book: Table 105 (`tab:expidx-dp`) | done: −0.41 to 0.0, retention not intensity | [`dp_register_statistics.py`](notebooks/conservative_arch/scaleup/debug/dp_register_statistics.py) | [output](notebooks/conservative_arch/scaleup/debug/dp_register_statistics_output.txt) | evaluation only | [protocol §5.14](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-dp-scored) |
+| <a name="sr1"></a>**SR1** | Palindromic step order, the friction split around the kick (A·O½·B·O½·A); F3.1 base — Book: Table 105 (`tab:expidx-sr`) | planned | ladder notebook (to be added) | — | — | [protocol §5.9](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr) |
+| <a name="sr4"></a>**SR4** | Variable-step training: (a) N ~ U{2, 3, 4} at fixed T (refinement axis), (b) N ~ U{2, 3} at Δt = 4 (extension axis) — Book: Table 105 (`tab:expidx-sr`) | planned | ladder notebook (to be added) | — | — | [protocol §5.9](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr) |
+| <a name="sr5"></a>**SR5** | Thermal training: an O-step thermostat in training only, `LANGEVIN_T` ∈ {0.00025, 0.0022}; annealed variant only if SR4(b) passes — Book: Table 105 (`tab:expidx-sr`) | planned (temperatures calibrated 2026-10-03) | [`colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb), Cell 0 `LANGEVIN_T`; [`calibrate_langevin_T.py`](notebooks/conservative_arch/scaleup/debug/calibrate_langevin_T.py) | [calibration](notebooks/conservative_arch/scaleup/debug/calibrate_langevin_T_output.txt) | — | [protocol §5.9](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr5) |
+| <a name="cb1"></a>**CB1** | Register path ramped in late: `REVERSE_CHANNEL_WARMUP_STEPS = 20000` (tag `rcw20000`) instead of 4,000 — Book: Table 106 (`tab:expidx-cb`) | planned (switch verified) | [`colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb), Cell 0; [`verify_cb_switches.py`](notebooks/conservative_arch/scaleup/debug/verify_cb_switches.py) | — | — | [protocol §5.11](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-cb) |
+| <a name="cb2"></a>**CB2** | Per-token cap on the register increment at ρ times the conservative step: `FOCK_BUDGET` = 1.0 (CB2a) or 0.3 (CB2b) — Book: Table 106 (`tab:expidx-cb`) | planned (switch verified) | [`colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb), Cell 0; [`verify_cb_switches.py`](notebooks/conservative_arch/scaleup/debug/verify_cb_switches.py) | — | — | [protocol §5.11](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-cb) |
+| <a name="cb3"></a>**CB3** | Learned per-token gate on the register increment, L1-penalised: `FOCK_GATE_L1 = 0.02` (tag `fg0p02`) — Book: Table 106 (`tab:expidx-cb`) | planned (switch verified) | [`colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb`](notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb), Cell 0; [`verify_cb_switches.py`](notebooks/conservative_arch/scaleup/debug/verify_cb_switches.py) | — | — | [protocol §5.11](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-cb) |
+| <a name="dp1"></a>**DP1** | Is particle number dynamic? Active fraction of the registers from layer 1 on — Book: Table 107 (`tab:expidx-dp`) | done (2026-10-05): 0.9995–1.000, no number dynamics | [`dp_register_statistics.py`](notebooks/conservative_arch/scaleup/debug/dp_register_statistics.py) (CPU) | [output](notebooks/conservative_arch/scaleup/debug/dp_register_statistics_output.txt), [JSON](notebooks/conservative_arch/scaleup/debug/dp_register_statistics.json) | evaluation only (G2, L = 4 live, G3) | [protocol §5.14](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-dp-scored); [Doi–Peliti note §7](companion_notes/Doi_Peliti_Dynamics_of_Semantic_Particles_and_Registers.md#n-dp) |
+| <a name="dp2"></a>**DP2** | Do registers share content? Near-duplicate pairs (cosine > 0.9) among active registers — Book: Table 107 (`tab:expidx-dp`) | done: at most 1.3%, distinct slots | [`dp_register_statistics.py`](notebooks/conservative_arch/scaleup/debug/dp_register_statistics.py) | [output](notebooks/conservative_arch/scaleup/debug/dp_register_statistics_output.txt) | evaluation only | [protocol §5.14](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-dp-scored) |
+| <a name="dp3"></a>**DP3** | Does salience act as intensity? Spearman correlation of salience with the register's own leave-one-out force — Book: Table 107 (`tab:expidx-dp`) | done: −0.41 to 0.0, retention not intensity | [`dp_register_statistics.py`](notebooks/conservative_arch/scaleup/debug/dp_register_statistics.py) | [output](notebooks/conservative_arch/scaleup/debug/dp_register_statistics_output.txt) | evaluation only | [protocol §5.14](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-dp-scored) |
 
 ---
 
@@ -1110,8 +1110,8 @@ each pair is also compared step by step. Pre-registered in the protocol,
 [§5.13 FO series](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-fo-series) and the memory-substitution block that
 follows it.
 
-- **Book:** §26.9 (`subsec:fos-memory-substitution`); Table 45
-  (`tab:ms-twobytwo`), Table 51 (`tab:ms-tinystories`), Tables 47–48
+- **Book:** §26.9 (`subsec:fos-memory-substitution`); Table 47
+  (`tab:ms-twobytwo`), Table 53 (`tab:ms-tinystories`), Tables 49–50
   (`tab:ms-code`, `tab:ms-code-split`). The numbers are those of the
   build of 2026-10-27; the labels in brackets are what to search for in
   the book's source if they move.
@@ -1179,7 +1179,7 @@ sits, by kind of token and by distance to an earlier occurrence) is in
 | <a name="fock-code"></a>**FOCK-CODE** | SO-CODE with the **register path** on (`REVERSE_CHANNEL = True`), second order; exploratory, outside MS5 | 5.66 | [folder](notebooks/conservative_arch/scaleup/results/cfc_baoab_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/) (`…xilive_sr2…`, no `norc`), [log](notebooks/conservative_arch/scaleup/results/cfc_baoab_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/L2_Fock-rc-noattn_on_Code_19250steps_output.txt) | not published | [protocol](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-fock-code) |
 | <a name="xi6-code"></a>**XI6-CODE** | SO-CODE with a **sixth content-routed context channel** (`XI_OVERRIDE = '6long'`), second order; exploratory, outside MS5; its layer-1 wells died ([root cause](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-dead-wells)) | 8.55 | [folder](notebooks/conservative_arch/scaleup/results/cfc_baoab_code_xi6long_topk16_dt32da16_mh4_aniso_dcvt6x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/) (`xi6long_…dcvt6x8…`), [log](notebooks/conservative_arch/scaleup/results/cfc_baoab_code_xi6long_topk16_dt32da16_mh4_aniso_dcvt6x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/L2_XI6_on_Code_19250steps_output.txt) | not published | [protocol](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-xi6-code) |
 | <a name="xi6-code-wr"></a>**XI6-CODE-WR** | XI6-CODE plus the **well-reachability penalty** (`WELL_REACH_RHO = 3`); exploratory; layer 1 died again ([result](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-xi6-code-wr)) | 8.87 | [folder](notebooks/conservative_arch/scaleup/results/cfc_baoab_code_xi6long_topk16_dt32da16_mh4_aniso_dcvt6x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_wr3l0p1_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/) (`…wr3l0p1…`), [log](notebooks/conservative_arch/scaleup/results/cfc_baoab_code_xi6long_topk16_dt32da16_mh4_aniso_dcvt6x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_wr3l0p1_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/L2_XI6-WR_on_Code_19250steps_output.txt) | not published | [protocol](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-xi6-code-wr) |
-| <a name="dw-screen-a"></a>**DW-SCREEN-A** | XI6-CODE-WR plus **unit-norm context channels at V_θ's bank input** (`VTHETA_INPUT_UNIT_NORM = True`), 3,000 steps; dead-wells screen A; layer 1 alive ([result](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-dead-wells-screens-result)) | 13.54 at step 3,000 | [folder](notebooks/conservative_arch/scaleup/results/cfc_baoab_code_xi6long_topk16_dt32da16_mh4_aniso_dcvt6x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_wr3l0p1_vtun_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/) (`…wr3l0p1_vtun…`), [log](notebooks/conservative_arch/scaleup/results/cfc_baoab_code_xi6long_topk16_dt32da16_mh4_aniso_dcvt6x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_wr3l0p1_vtun_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/L2probe_XI6-WR-Scan_A_on_Code_3000steps_output.txt) | not published | [protocol](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-dead-wells-screens-result) |
+| <a name="dw-screen-a"></a>**DW-SCREEN-A** | XI6-CODE-WR plus **unit-norm context channels at V_θ's bank input** (`VTHETA_INPUT_UNIT_NORM = True`), V_θ at full speed; dead-wells screen A, screened to step 3,000 ([screen](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-dead-wells-screens-result)) and resumed to full length; layer 1 alive at the end, level with SO-CODE and screen B, with SO-CODE's refinement penalty ([result](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-dw-screen-a-full-result)) | 5.95 | [folder](notebooks/conservative_arch/scaleup/results/cfc_baoab_code_xi6long_topk16_dt32da16_mh4_aniso_dcvt6x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_wr3l0p1_vtun_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/) (`…wr3l0p1_vtun…`), [log](notebooks/conservative_arch/scaleup/results/cfc_baoab_code_xi6long_topk16_dt32da16_mh4_aniso_dcvt6x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_wr3l0p1_vtun_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/L2_XI6-WR-Scan_A_on_Code_19250steps_output.txt) (steps 3,001–19,250; the first 3,000 in [the screen's log](notebooks/conservative_arch/scaleup/results/cfc_baoab_code_xi6long_topk16_dt32da16_mh4_aniso_dcvt6x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_wr3l0p1_vtun_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/L2probe_XI6-WR-Scan_A_on_Code_3000steps_output.txt)) | [card](https://huggingface.co/dimitarpg13/semsimula-ladder-live-code-d384-l2-none-norc-xi6long-sr2-wr3-vtun) | [protocol](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-dw-screen-a-full-result) |
 | <a name="dw-screen-b"></a>**DW-SCREEN-B** | XI6-CODE-WR plus **V_θ's learning rate × 0.25** (`VTHETA_LR_MULT = 0.25`); dead-wells screen B, screened to step 3,000 ([screen](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-dead-wells-screens-result)) and resumed to full length; layer 1 alive at the end, level with SO-CODE ([result](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-dw-screen-b-full)) | 5.98 | [folder](notebooks/conservative_arch/scaleup/results/cfc_baoab_code_xi6long_topk16_dt32da16_mh4_aniso_dcvt6x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_wr3l0p1_vtlr0p25_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/) (`…wr3l0p1_vtlr0p25…`), [log](notebooks/conservative_arch/scaleup/results/cfc_baoab_code_xi6long_topk16_dt32da16_mh4_aniso_dcvt6x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_wr3l0p1_vtlr0p25_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/L2_XI6-WR-Scan_B_on_Code_19250steps_output.txt) (steps 3,001–19,250; the first 3,000 in [the screen's log](notebooks/conservative_arch/scaleup/results/cfc_baoab_code_xi6long_topk16_dt32da16_mh4_aniso_dcvt6x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_wr3l0p1_vtlr0p25_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/L2probe_XI6-WR-Scan_B_on_Code_3000steps_output.txt)) | [card](https://huggingface.co/dimitarpg13/semsimula-ladder-live-code-d384-l2-none-norc-xi6long-sr2-wr3-vtlr0p25) | [protocol](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-dw-screen-b-full) |
 | <a name="so-code-vtlr"></a>**SO-CODE-VTLR** | SO-CODE plus **V_θ's learning rate × 0.25** (`VTHETA_LR_MULT = 0.25`), screen B's switch without the sixth channel; exploratory; the early lead of screen B is this switch's, and it ends +1.6% against SO-CODE ([result](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-so-code-vtlr-result)) | 6.09 | [folder](notebooks/conservative_arch/scaleup/results/cfc_baoab_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_vtlr0p25_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/) (`…sr2_st16250_vtlr0p25…`), [log](notebooks/conservative_arch/scaleup/results/cfc_baoab_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_vtlr0p25_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/L2_SR2-WR-vth_lr=0.25_on_Code_19250steps_output.txt) | [card](https://huggingface.co/dimitarpg13/semsimula-ladder-live-code-d384-l2-none-norc-sr2-vtlr0p25) | [protocol](companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-so-code-vtlr-result) |
 
