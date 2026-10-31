@@ -24,6 +24,9 @@
    - [7.1 Constraints the MCS reduction places on any bank](#71-constraints-the-mcs-reduction-places-on-any-bank)
 8. [Open calibration questions](#8-open-calibration-questions)
 9. [Dictionary](#9-dictionary)
+10. [Reading map: the companion notes this plan rests on](#10-reading-map-the-companion-notes-this-plan-rests-on)
+    - [10.1 The set at a glance](#101-the-set-at-a-glance)
+    - [10.8 What the set does not contain](#108-what-the-set-does-not-contain)
 
 ---
 
@@ -327,3 +330,76 @@ One permission worth recording, because it makes the multi-slot design of Stage 
 | Induction | Acquiring a template from context at inference with no weight update — Tier 2, distinct from continual learning |
 
 **Summary.** The continuous parameters of a template are already differentiable, and the templates note supplies the form. The stoichiometry is not: the Poisson relaxation is exact only where the coupling is linear in the occupation, and a thresholded rate is not, so the choice is a linear bank, sampled occupations, or an admitted mean-field approximation (§3). The pairing of matcher to inference structure is unformulated at source — "heading only (¶185)" — and the choice there is binary rather than graded, because additive updates commute: an additive IS is honest v2 and cannot order, an operator IS can order and is v3 work (§4). Order is a design task, not a training task; the MT probe found zero asymmetric transitions in PMX. A learned bank must stay finite up to string-action equivalence, bounded in multiplicity and arity, and must consume rather than edit, or the MCS reduction does not hold (§7.1). And firing must instantiate a particle, not deepen a well, or the v0 ceiling stands however good the matching becomes (§1.1). The substrate is ready on neither half: active fraction pinned at 0.9995–1.000 and salience not an intensity on the slot side, modes that do not discriminate between tokens on the matching side, and v2's own falsifier never yet run as specified.
+
+---
+
+## 10. Reading map: the companion notes this plan rests on
+
+The plan above draws on sixteen companion notes. They were written for different purposes over a year, and none of them was written with templates as its subject, so what each one *settles* for this programme is not what its title says it is about. This section is the index: one table to see the whole set, then one table per layer with a summary of each note and the specific thing it establishes or constrains here. Read §10.1 to orient, the per-layer tables when a stage below sends you to a source, and §10.8 for what the set as a whole still lacks.
+
+### 10.1 The set at a glance
+
+| Layer | Notes | What it settles for templates |
+|---|---|---|
+| **What a type is** | Single-Particle Hilbert Space; Overlap Distance | A mode is a root density; overlap is the Bhattacharyya coefficient and equals one minus the normalised well; the matcher and its threshold-as-radius come from here |
+| **Dynamics between firings** | Jacobi Metric; Langevin Reformulation | Trajectories as geodesics of a potential-built metric; the deterministic flow as the noise-free skeleton of a Langevin system, with creation explicitly excluded from the stochastic treatment |
+| **The substrate as built** | Fock Mechanism v2.1; Doi–Peliti Dynamics; Poisson-Mode Registers | What creation currently means in code; slot registers are exclusion objects with no particle-number dynamics; Poisson modes are bosonic in structure but not in observable consequence |
+| **Templates proper** | Semantic Templates as Doi–Peliti Reactions; this note | Firing as a catalytic reaction with a differentiable rate; the staging, its corrections, and its constraints |
+| **Order and execution** | The Execution Problem; Realizing Execution; Community of Semantic Templates; Chain-of-Thought Substrate | Additive channels commute, so order is a design task; two candidate routes; the measured absence of asymmetric transitions |
+| **Expressivity constraints** | Expressivity Bounds for v0; MCS Reduction for v3; Advancing the Dynamic Simulation Model | Only creation lifts the class; a learned bank must be finite, bounded in multiplicity and arity, and consume rather than edit |
+
+### 10.2 What a type is
+
+| Note | What it covers | What it establishes for templates | Caveat |
+|---|---|---|---|
+| [Single-Particle Hilbert Space](Single_Particle_Hilbert_Space_in_Semantic_Simulation.md) | The space a semantic particle's state lives in: root densities over semantic space, with the Bhattacharyya coefficient as inner product; Gaussian modes at width half the inflection radius; Löwdin orthonormalisation; multi-particle sectors; the Doi–Peliti Fock state | The index of a template bank runs over **semantic particle types**, one level above aspects; a mode's overlap with a state is a one-body comparison between types; symmetrisation turns labelled particles into occupation numbers, which is the variable templates act on | The §1.3 clarification that *type* is not the aspect type of Definitions 3–4 is load-bearing: a template matches a particle type, never an aspect label |
+| [Overlap Distance](Overlap_Distance_in_Semantic_Simulation.md) | Derives the overlap of two Gaussian states, its calibration to the well, the Hellinger and Fisher–Rao geometry, and the repercussions for the v2 formalism | Supplies the matcher: overlap equals one minus the normalised well potential exactly at the calibrated width, so the firing threshold becomes a binding radius in inflection radii (2.3) | The calibration is a convention chosen so one shape parameter governs both dynamics and geometry, not a consequence of the dynamics |
+
+### 10.3 Dynamics between firings
+
+| Note | What it covers | What it establishes for templates | Caveat |
+|---|---|---|---|
+| [Jacobi Metric from the Euler–Lagrange Equations](Jacobi_Metric_from_the_Euler_Lagrange_Equations.md) | Two derivations that trajectories in a potential are geodesics of the Jacobi metric, what friction changes, and the geodesic equation in layer time | Background for the piecewise picture of a template-equipped model: conservative geodesic segments *between* firings, jumps *at* firings. Says nothing about the jumps | Finds a discrepancy in the book's §27 geodesic equation — a missing term from the change of time variable — affecting the tangential acceleration, not the path |
+| [Langevin Reformulation of the Damped Lagrangian Flow](Langevin_dynamics_reformulation_of_classical_damped_Lagrangian_flow.md) | The deterministic damped flow as the noise-free skeleton of underdamped Langevin dynamics; the fluctuation–dissipation lock; calibration; BAOAB discretisation | Relevant to Option 2 of §3 — making particle statistics consequential by sampling occupations is a noise source in the creation channel, and this is the framework such noise would have to live in | **Assumption A8 excludes exactly that channel**: "the reverse-channel / Fock creation–destruction force stays as the post-Verlet correction and is OFF by default." The stochastic treatment was built on the conservative skeleton alone |
+
+### 10.4 The substrate as built
+
+| Note | What it covers | What it establishes for templates | Caveat |
+|---|---|---|---|
+| [Fock Mechanism v2.1: Principle of Operation](Fock_Mechanism_v2.1_Principle_of_Operation.md) | The Gen 3 token-to-token exchange: the direct exchange field and the mediated register route with its write port, salience and destruction, and reverse-channel read | What "creation" currently means in code is the write port of a fixed pool. §6.5 shows the read is **not the gradient of a potential** — write and read are different maps, and there is no back-reaction — so a Gen 3 layer is a conservative flow followed by a non-conservative read. §7.3 shows the register path can perform induction/copy through memory, capacity bounded by the pool size | The copy primitive it describes is memory-mediated, which is the form §7.1's linearity constraint permits; a match-and-edit implementation of the same behaviour would not be |
+| [Doi–Peliti Dynamics of Semantic Particles and Registers](Doi_Peliti_Dynamics_of_Semantic_Particles_and_Registers.md) | The second-quantised language for the registers; the exclusion-versus-bosonic question; the DP1–DP3 measurements | **Supplies the commutativity theorem** (§7.3): additive updates commute, so reactions sequence firings but cannot make the outcome depend on the sequence. Supplies the linearity requirement (§9) on which the Poisson exactness rests. Establishes that the slot registers are M always-occupied exclusion slots whose salience is a retention probability, not an intensity | The exclusion-versus-bosonic question is settled by representational capacity, not statistics: a slot holds one content vector |
+| [Poisson-Mode Registers (PM1)](Poisson_Mode_Registers_PM1.md) | The bosonic register mechanism: shared modes, a Poisson-mean occupation accumulated over the strict past, wells whose depth is that occupation | The one substrate where occupation is an unbounded intensity (DP3 on the modes +0.815). Fixes the "salience is not an intensity" defect and removes the occupancy cap. Occupies the linear corner of template space, one spontaneous creation per mode | Bosonic in structure, not in consequence: the model never sees a count, only the mean. Not refinement-ready. The "repetition counts" reading failed its test (+0.086). Settled above the slot-register model's perplexity |
+
+### 10.5 Templates proper
+
+| Note | What it covers | What it establishes for templates | Caveat |
+|---|---|---|---|
+| [Semantic Templates as Doi–Peliti Reactions](Semantic_Templates_as_Doi_Peliti_Reactions.md) | Joins the 2022 template manuscript to the reaction formalism: template particle and mode are one object; the matching functional repaired to be bilinear; firing as a catalytic creation operator; the threshold as a zero-temperature rate | The source of (2.1)–(2.3) and of the differentiable rate: finite-β firing "is also the differentiable one, which matters if templates are ever to be learned." §4.3: unconditional templates give the model's prior as a Poisson stationary state. §4.4: the bank *is* the Liouvillian | Its own §6 lists the PMS-to-IS pairing as open, "the part of a template that is not a density at all," and records that no probe exists because no trained model implements templates |
+| This note | The staging and its constraints | — | The corrections of 2026-10-28 (§3, §4.1–4.3, §7.1) are the current state |
+
+### 10.6 Order and execution
+
+| Note | What it covers | What it establishes for templates | Caveat |
+|---|---|---|---|
+| [The Execution Problem](The_Execution_Problem.md) | The executive atom (latch, inference template, two transfer templates, action); template matching as analysis and execution as synthesis; the Σ→E mapping | The duality that locates templates: matching is local in Σ and reads fragments, execution is global in S and lands in a space of different dimension. Asks verbatim the IS placement question — "what determines its position, mass, and signature" — and leaves it open | Has no numbered sections; cite by heading. The NDTM-equivalence claim is explicitly "a working conjecture… not a load-bearing assumption" |
+| [Realizing Execution: Gauge vs Causal Ordering](Realizing_Execution_Gauge_vs_Causal_Ordering.md) | The two candidate mechanisms for a non-commutative inference region: a gauge action transporting the state by a group element, or order carried by causality in the dynamics | The only formulations of the inference region that exist. §1 states the additive-channel obstruction independently. F4 against F5 is the experiment that separates the routes | Neither route is implemented or measured |
+| [Community of Semantic Templates for Native CoT](Community_of_Semantic_Templates_for_Native_CoT.md) | Identifies a DP step, a template firing and a v3 event as one object; a thought as a sequence of firings; the manuscript's status table; the MT probe; what would have to be built | **The MT measurement**: trained modes carry transition structure beyond the state's drift, but zero asymmetric pairs in PMX against twenty pre-registered — "supplying order is a design task, not a training task." The status table is where "heading only (¶185)" comes from. §8 gives the five-item build list this plan's Stage 1′ and admission rule were taken from | Its §3 was qualified on 2026-10-23: the modes have the form of matchers but not the function, which is Stage 0′ |
+| [Chain-of-Thought Substrate in Lagrangian Models](Chain_of_Thought_Substrate_in_Lagrangian_Models.md) | Whether the trained models reason in steps (not today); the Poisson registers as a conservative working memory; what is missing | The substrate is template-independent; templates are one candidate filler for its first missing item, "a training signal that produces intermediate particles." States the depth floor: Feng's constructions need four or five layers and the ladder has two | "Any reasoning at all, today" is listed among the things the framework does *not* add |
+
+### 10.7 Expressivity constraints
+
+| Note | What it covers | What it establishes for templates | Caveat |
+|---|---|---|---|
+| [Expressivity Bounds for the v0 Simulator](Expressivity_Bounds_For_v0_Simulator.md) | The four-lemma proof that v0 is at most regular: phase-space capacity, damping as information loss, non-chaoticity, Chomsky placement; the predicted Dyck collapse depth | The ceiling rests on one hypothesis — no inference-time creation — and is immune to everything else: "cannot be made context-free by adding parameters, by adding RL signal, or by enriching the force vocabulary." This is §1.1: a bank of wells cannot lift the class | Records on 2026-09-28 that the per-depth F1 protocol "has never been run as written" |
+| [MCS Reduction for the v3 Composite](MCS_Reduction_For_v3_Composite.md) | The constructive reduction of the composite to LCFRS; the step-local boundedness assumptions; the CSL failure modes; the fold-in alternative | **The four constraints of §7.1**: finite rule set up to string-action equivalence, bounded multiplicity per firing, consume-and-emit linearity, bounded fragment dimension and arity. Sanctions multi-creation with binding as a valid relabelling of v3. Names F3 as a v3 witness and F6 as the upper-bound guard | A language-level sketch: "does not yet account for finite-precision dynamics, integrator step-size, or salience-decay rate." Linearity rests on an unproven assumption about salient decay |
+| [Advancing the Dynamic Simulation Model](Advancing_The_Dynamic_Simulation_Model.md) | The conceptual scaffold for v1.5/v2/v3: the four-tier ladder, the falsifier-to-mechanism map, the apparatus each tier inherits, the roadmap | The falsifier map (F1↔v2, F3↔v3, F4/F5↔v3, F6↔over-generation) and the milestone gating: the v2 EOM specification is deferred until F1 has measured the collapse depth | Contains no results and does not mention templates; its one sentence on v2 describes "binding rules that fuse particles into composite entities," which is the multi-creation picture, not single creation |
+
+### 10.8 What the set does not contain
+
+The map above is also a map of absences, and these are the ones that bind:
+
+- **No formulation of the inference region.** Sixteen notes and a manuscript, and the PMS-to-IS pairing is "heading only (¶185)." Two candidate routes exist for its non-commutative part; none for the pairing itself.
+- **No mechanism that allocates.** Every creation operation in the codebase overwrites a slot or deepens a well. Nothing adds a degree of freedom at inference, and §1.1 shows nothing else lifts the class.
+- **No stochastic treatment of the creation channel.** The Langevin note's A8 leaves it out by assumption. Option 2 of §3 would have to extend the fluctuation–dissipation lock to a channel it was deliberately built without.
+- **No run of v2's own falsifier as specified.** F1's per-depth protocol is on record as never executed; the one Dyck run used registers that could not reach the tokens.
+- **No ordered-derivation corpus.** The MT result says order is a design task; the Community note adds that testing the design needs "a corpus that contains ordered derivations," which does not exist in the programme yet.
