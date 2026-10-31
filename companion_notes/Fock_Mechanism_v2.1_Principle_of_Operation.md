@@ -34,7 +34,7 @@ Values are those of the published G3′ (`attention-potential-rfqk-live`), $L = 
 | $\lambda_{\mathrm{ex}}$ | exchange-field gate | fixed at 1 |
 | $H$ | exchange-field heads | 8 |
 | $W^{(c)}\_{\mathrm{q}}$, $W^{(c)}\_{\mathrm{k}}$, $W^{(c)}\_{\mathrm{v}}$ | query, key and value projections of exchange head $c$ (subscripts q, k, v; v is "value", not the Greek $\nu$) | each $d \to 48$ |
-| $U^{(c)}$ | readout projection of exchange head $c$ (value space back to $d$) | $48 \to d$, random at initialisation (scale 0.02) |
+| $U^{(c)}$ | readout projection of exchange head $c$; its transpose $U^{(c)\top}$ maps the value space back to the token space | $d \to 48$, the same shape as $W^{(c)}\_{\mathrm{v}}$; random at initialisation (scale 0.02) |
 | $d_{\mathrm{k}}$, $d_{\mathrm{v}}$ | key and value width of each exchange head | 48, 48 |
 | $a^{(c)}_{ts}$ | exchange routing weight of source $s$ for token $t$, head $c$ | |
 | $\eta_c$ | exchange routing temperature, head $c$ | initial 1/0.07, cap 100 |
@@ -110,13 +110,13 @@ Steps 1, 2 and 7 act on the registers; steps 3 and 5 act on the tokens.
 
 ### 4.1 Definition
 
-The exchange field routes each token over the earlier tokens with $H$ attention heads. Head $c$ has four projections: a query projection $W^{(c)}\_{\mathrm{q}}$, a key projection $W^{(c)}\_{\mathrm{k}}$ and a value projection $W^{(c)}\_{\mathrm{v}}$, each from the token space ($d$) to a head space of width $d_{\mathrm{k}} = d_{\mathrm{v}} = 48$, and a readout $U^{(c)}$ that maps the value space back to the token space. The subscripts q, k and v stand for query, key and value. Queries and keys are normalised to unit length (a tilde marks a normalised vector), and a learned temperature restores their range ($b_c$ is a trained parameter):
+The exchange field routes each token over the earlier tokens with $H$ attention heads. Head $c$ has four projections: a query projection $W^{(c)}\_{\mathrm{q}}$, a key projection $W^{(c)}\_{\mathrm{k}}$ and a value projection $W^{(c)}\_{\mathrm{v}}$, each from the token space ($d$) to a head space of width $d_{\mathrm{k}} = d_{\mathrm{v}} = 48$, and a readout $U^{(c)}$ of the same shape as $W^{(c)}\_{\mathrm{v}}$, whose transpose $U^{(c)\top}$ maps the value space back to the token space. The subscripts q, k and v stand for query, key and value. Queries and keys are normalised to unit length (a tilde marks a normalised vector), and a learned temperature restores their range ($b_c$ is a trained parameter):
 
 $$\tilde{q}^{(c)}_t = \frac{W^{(c)}_{\mathrm{q}} h_t}{\lVert W^{(c)}_{\mathrm{q}} h_t \rVert}, \qquad \tilde{k}^{(c)}_s = \frac{W^{(c)}_{\mathrm{k}} h_s}{\lVert W^{(c)}_{\mathrm{k}} h_s \rVert}, \qquad a^{(c)}_{ts} = \mathrm{softmax}_{s \lt t}\left(\eta_c \tilde{q}^{(c)}_t \cdot \tilde{k}^{(c)}_s\right), \qquad \eta_c = \min\left(e^{b_c}, 100\right).$$
 
 The score of source $s$ for token $t$ is the dot product $\tilde{q}^{(c)}\_t \cdot \tilde{k}^{(c)}\_s$ of two unit vectors, which is the cosine of the angle between the query and the key. It always lies between −1 and 1, however large the weights grow. Multiplying by $\eta_c$ restores the range: the score is at most $\eta_c$ in size, and $\eta_c$ is capped at 100. A larger $\eta_c$ makes the softmax sharper, concentrating token $t$ on the earlier tokens that match best. The softmax over the earlier positions turns the scores into routing weights that sum to 1. (Plain attention, as in G3, uses the unnormalised dot product divided by $\sqrt{d_{\mathrm{k}}}$, whose size grows with the weights.)
 
-The force on token $t$ is the routed sum of the earlier tokens' values $W^{(c)}\_{\mathrm{v}} h_s$, mapped back to the token space by $U^{(c)}$ and scaled by $1/\sqrt{d_{\mathrm{v}}}$:
+The force on token $t$ is the routed sum of the earlier tokens' values $W^{(c)}\_{\mathrm{v}} h_s$, mapped back to the token space by $U^{(c)\top}$ and scaled by $1/\sqrt{d_{\mathrm{v}}}$:
 
 $$f^{\mathrm{ex}}_t = \lambda_{\mathrm{ex}} \sum_{c=1}^{H} \sum_{s \lt t} a^{(c)}_{ts} \frac{U^{(c)\top} W^{(c)}_{\mathrm{v}} h_s}{\sqrt{d_{\mathrm{v}}}}.$$
 
@@ -201,7 +201,7 @@ where $P$ is the set of ordered pairs of distinct active registers. Its gradient
 
 $$N_{\mathrm{eff}} = \frac{\left(\sum_i \mu_i\right)^2}{\sum_i \mu_i^2} = \frac{\mathrm{tr}(G)^2}{\lVert G \rVert_F^2}.$$
 
-If every pair has the same cosine $\rho$, then $N_{\mathrm{eff}} = M / (1 + (M - 1)\rho^2)$. At $M = 32$, a modest $\rho = 0.3$ already reduces the bank to about 10 effective registers.
+If every pair has the same cosine $\rho$, then $N_{\mathrm{eff}} = M / (1 + (M - 1)\rho^2)$. At $M = 32$, a modest $\rho = 0.3$ already reduces the bank to about 8 effective registers ($32 / (1 + 31 \times 0.09) \approx 8.4$).
 
 ## 6. The reverse channel in detail
 
@@ -378,7 +378,7 @@ The direct route is attention's single vertex pair. The mediated route has two v
 
 ### 8.2 The Fock-space reading
 
-The registers are the occupied modes of a Fock space, described classically (the Doi–Peliti formalism gives a Fock-space operator algebra for classical many-particle systems without quantum superposition):
+As designed, the registers were to be the occupied modes of a Fock space, described classically (the Doi–Peliti formalism gives a Fock-space operator algebra for classical many-particle systems without quantum superposition):
 
 | register mechanism | Fock-space object |
 | --- | --- |
@@ -387,7 +387,7 @@ The registers are the occupied modes of a Fock space, described classically (the
 | the registers currently active | the occupation numbers |
 | the bank as a whole | a state in $\mathcal{F}(\mathcal{H}) = \bigoplus_{n \geq 0} \mathcal{H}^{\otimes n}$ |
 
-In the trained G3′ every register is active at every position (§10). Creation and annihilation act through salience, as continuous weights on how much a register is rewritten, rather than by switching registers on and off.
+The trained models do not bear this reading out. In the trained G3′ every register is active at every position (§10), each register holds one content vector, and salience is not an intensity: the registers are always-occupied **exclusion slots**, described by a two-state chain, not bosonic modes ([`Doi_Peliti_Dynamics_of_Semantic_Particles_and_Registers.md`](Doi_Peliti_Dynamics_of_Semantic_Particles_and_Registers.md) §2, §7). Creation and annihilation act only through salience, as continuous weights on how much a register is rewritten. The framework's bosonic registers are the Poisson-mode registers ([`Poisson_Mode_Registers_PM1.md`](Poisson_Mode_Registers_PM1.md)), built to make the bosonic reading hold by construction.
 
 ### 8.3 The write as a spring bundle
 

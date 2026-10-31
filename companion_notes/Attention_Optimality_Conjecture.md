@@ -1,5 +1,7 @@
 # Attention Optimality Conjecture
 
+> **The QED language in this note is a structural analogy (2026-10-31).** Virtual photons, gauge bosons and Fock creation and annihilation describe the *structure* of the exchange: separate emission (write) and absorption (read) couplings with a payload distinct from both, which is what restores attention's properties P1–P3. They do not describe the trained models. Measured on them ([`Doi_Peliti_Dynamics_of_Semantic_Particles_and_Registers.md`](Doi_Peliti_Dynamics_of_Semantic_Particles_and_Registers.md) §2 and §7; book, Remark "What the trained registers implement"), the Fock registers are always-occupied **exclusion slots**: every register is active at every position, each holds one content vector, and salience is not an intensity. They are not bosons. The framework's bosonic registers are the **Poisson-mode registers** ([`Poisson_Mode_Registers_PM1.md`](Poisson_Mode_Registers_PM1.md)), built to make the bosonic reading hold by construction; they act through a per-token conservative potential and mediate no exchange of this kind. A register is not a virtual particle either: it persists across layers, is blended rather than replaced, and is not changed by what reads it. Where the text below says more than this, read it as the design intent.
+
 > **Status.** Conjecture (May 2026). The Conservative Obstruction Theorem
 > closes one half of the picture: it shows that no scalar potential on
 > token particles can reproduce attention without state-space extension.
@@ -297,8 +299,8 @@ The cleanest physics intuition is this:
 | Mechanism | Mediator | Range | Auxiliary state |
 | --- | --- | --- | --- |
 | Conservative pairwise $V_\phi$ | Static field | Decays as $\nabla V$ | None |
-| **Attention** | **Massless virtual photon** | **Infinite (within sequence)** | **None** |
-| Fock register (this programme, v2) | Massive virtual particle, lifetime $\tau \sim 1/(1-\lambda)$ | Decays geometrically with depth | $M$ register slots |
+| **Attention** | **Like a massless virtual photon** | **Infinite (within sequence)** | **None** |
+| Fock register (this programme, v2) | Like a massive virtual particle; registers persist about $1/(1-\lambda)$ layers | Decays geometrically with depth | $M$ register slots |
 | Stateful memory (RWKV, Mamba) | Recurrent hidden state | Decay determined by transition matrix | $O(d)$ per token |
 
 Attention sits at the **massless-boson** point. It is the only
@@ -308,9 +310,10 @@ within the receptive field and (b) zero auxiliary state. Adding mass
 the cost of range; this is the *predicted* trade-off from the
 conjecture, and the QED / QFT analogy
 ([§5–6 of the obstruction note](Conservative_Obstruction_and_Virtual_Particle_Necessity.md))
-is exact, not metaphorical.
+is a structural analogy, not an identity: the trained Fock registers are
+exclusion slots, not bosons (see the note at the top).
 
-![Attention as a massless boson; the Fock register as a massive boson with finite lifetime.](figures/attention_optimality/boson_analogy.png)
+![Analogy: attention like a massless boson, the Fock register like a massive one.](figures/attention_optimality/boson_analogy.png)
 
 Said differently: **attention is the unique fixed point of "maximum
 routing freedom under zero auxiliary state."** Every alternative either
@@ -411,7 +414,7 @@ appropriate for the paper.
 | **Conservative Obstruction Theorem** (companion note) | No $V \in C^2$ produces a force satisfying P1+P2+P3 without state extension |
 | **Conjecture (this note)** | Within SCN-admissibility plus bilinear score and $\mathcal{S} = 0$, scaled dot-product attention is Pareto-optimal in $(H, \mathcal{T})$ at fixed compute |
 | **Three justifications** | Gibbs / maximum entropy + entropic OT (Cuturi-Sinkformer) + Conservative Obstruction |
-| **Physical analogy** | Attention is the massless-boson point; Fock register is the massive-boson extension |
+| **Physical analogy** | Attention resembles the massless-boson point, the Fock register a massive-boson extension (analogy only) |
 | **Falsifiability** | Stated explicitly in §7; no current architecture is known to falsify it |
 | **Open problems** | No-free-lunch lemma, nonlinear score quantification, continuous $\mathcal{S}$ parameterisation |
 

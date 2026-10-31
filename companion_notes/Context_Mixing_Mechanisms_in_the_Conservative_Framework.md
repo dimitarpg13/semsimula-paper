@@ -222,7 +222,7 @@ When $V_\theta$ is a structured variant (Gaussian, SARF, SQ3), the gradient is c
 
 Before describing conservative alternatives, it is important to document an existing implementation that already introduces attention-like O(T^2) mixing into the PARFLM dynamics: `FockAttentionPARFLM` (defined in `model_fock_attention.py`).
 
-**Architecture.** FockAttentionPARFLM extends MultiXiPARFLM with a **non-conservative exchange force** modelled on Section 5.1 of the paper ("Attention as Virtual Particle Exchange"). Each token $j$ emits a virtual photon carrying a key $k_j = W_K h_j$ and payload $v_j = W_V h_j$; each token $i$ absorbs with query $q_i = W_Q h_i$. The coupling is:
+**Architecture.** FockAttentionPARFLM extends MultiXiPARFLM with a **non-conservative exchange force** modelled on Section 5.1 of the paper ("Attention as Virtual Particle Exchange"). In the particle reading of attention, each token $j$ emits a quantum carrying a key $k_j = W_K h_j$ and payload $v_j = W_V h_j$, and each token $i$ absorbs it with query $q_i = W_Q h_i$: attention itself, applied as a force. The coupling is:
 
 $$
 \alpha_{ij} = \mathrm{softmax}_j(q_i \cdot k_j / \sqrt{d_k})

@@ -1,5 +1,7 @@
 # Conservative Obstruction and Virtual Particle Necessity
 
+> **The QED language in this note is a structural analogy (2026-10-31).** Virtual photons, gauge bosons and Fock creation and annihilation describe the *structure* of the exchange: separate emission (write) and absorption (read) couplings with a payload distinct from both, which is what restores attention's properties P1–P3. They do not describe the trained models. Measured on them ([`Doi_Peliti_Dynamics_of_Semantic_Particles_and_Registers.md`](Doi_Peliti_Dynamics_of_Semantic_Particles_and_Registers.md) §2 and §7; book, Remark "What the trained registers implement"), the Fock registers are always-occupied **exclusion slots**: every register is active at every position, each holds one content vector, and salience is not an intensity. They are not bosons. The framework's bosonic registers are the **Poisson-mode registers** ([`Poisson_Mode_Registers_PM1.md`](Poisson_Mode_Registers_PM1.md)), built to make the bosonic reading hold by construction; they act through a per-token conservative potential and mediate no exchange of this kind. A register is not a virtual particle either: it persists across layers, is blended rather than replaced, and is not changed by what reads it. Where the text below says more than this, read it as the design intent.
+
 > ### Empirically confirmed — **2026-09-25**
 >
 > The theorem proved here says no scalar potential on the token particles
@@ -305,8 +307,9 @@ read/write ports) would fail to restore at least one of P1–P3.
 
 ## 6. The QFT Correspondence
 
-The structure uncovered by the theorem has a precise analogy in quantum
-field theory, which is not coincidental but structural.
+The structure uncovered by the theorem has a structural analogy in quantum
+field theory: an analogy of structure, not of mechanism (see the note at the
+top and §6.3).
 
 ### 6.1 Virtual Photon Exchange in QED
 
@@ -338,27 +341,32 @@ The Fock register mechanism maps onto this structure:
 | Absorption vertex | Reverse channel: $Q_i = \sum_k \alpha_{ik} W_V^{(\mathrm{reg})} r_k$ |
 | Photon polarization | Value projection $W_V h_j$ (content) |
 | Vertex coupling constant | Softmax attention weight $\alpha_{kj}$ or $\alpha_{ik}$ |
-| Photon lifetime | Register salience decay $\lambda$; lifetime $\tau \approx 1/(1-\lambda)$ layers |
+| Photon lifetime | Register salience decay $\lambda$; a register persists about $1/(1-\lambda)$ layers, a long-lived intermediate rather than a virtual one |
 
-### 6.3 Why the Analogy Is Structural, Not Metaphorical
+### 6.3 What the Analogy Shares, and Where It Stops
 
-The conservative obstruction theorem shows that the analogy is not a
-post-hoc metaphor but a structural necessity:
+The conservative obstruction theorem explains why the analogy is not
+arbitrary:
 
-1. **Conservative forces satisfy Newton III** (Lemma 1) — this is equivalent to
-   direct electromagnetic interactions satisfying Newton III.
-2. **Newton III is violated in QED** — the force between two charges is
-   mediated by the electromagnetic field, which carries momentum and
-   breaks the instantaneous action-reaction symmetry.
+1. **Conservative forces have a symmetric cross-Jacobian** (Lemma 1), the
+   analogue of action and reaction between the particles themselves.
+2. **In electrodynamics the forces between moving charges need not be equal
+   and opposite** — the field carries momentum, and only the momentum of
+   the particles and the field together is conserved.
 3. **The resolution in QED** is to introduce gauge bosons (photons) as
    dynamical degrees of freedom that mediate the interaction.
 4. **The resolution in Semantic Simulation** is to introduce register
    particles (Fock mechanism) as dynamical degrees of freedom that
    mediate the inter-token exchange.
 
-In both cases, the same mathematical obstruction (Jacobian symmetry of
-gradient fields) forces the same structural resolution (auxiliary
-mediating particles).
+In both cases a force that no symmetric potential of the particles can
+produce is carried by auxiliary degrees of freedom. The analogy stops
+there. The trained registers are always-occupied exclusion slots, not
+bosons, and the framework's bosonic registers are the Poisson-mode
+registers, which mediate no exchange of this kind. A register persists
+across layers and is not changed by what reads it, unlike a virtual
+photon. And the Gen 3 models add a direct token-to-token route, the
+exchange field, beside the registers.
 
 ### 6.4 Doi-Peliti Connection
 
@@ -379,7 +387,9 @@ $$
 
 where $\hat{\phi}^\dagger$ creates a virtual semantic photon from the
 token values and $\hat{\phi}$ absorbs it at the receiving token. The
-Fock mechanism makes this implicit exchange explicit and persistent.
+Fock mechanism was designed to make this implicit exchange explicit and
+persistent; as trained, its registers are exclusion slots rather than
+bosonic modes (see the note at the top).
 
 ---
 
@@ -446,4 +456,4 @@ exactly the missing structural ingredients.
 | **Theorem** | No $V \in C^2$ can satisfy P1 + P2 + P3 simultaneously |
 | **Corollary** | State-space extension is necessary for attention-like routing |
 | **Proposition** | Fock register mechanism is a sufficient and minimal extension |
-| **QFT link** | The obstruction and its resolution mirror the gauge-boson mechanism of QED |
+| **QFT link** | The obstruction and its resolution are structurally analogous to the gauge-boson mechanism of QED (analogy only: the trained registers are exclusion slots, not bosons) |

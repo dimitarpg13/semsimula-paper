@@ -1,5 +1,7 @@
 # Improving the Fock Mechanism to Match Attention Expressivity in PARFLM
 
+> **The QED language in this note is a structural analogy (2026-10-31).** Virtual photons, gauge bosons and Fock creation and annihilation describe the *structure* of the exchange: separate emission (write) and absorption (read) couplings with a payload distinct from both, which is what restores attention's properties P1–P3. They do not describe the trained models. Measured on them ([`Doi_Peliti_Dynamics_of_Semantic_Particles_and_Registers.md`](Doi_Peliti_Dynamics_of_Semantic_Particles_and_Registers.md) §2 and §7; book, Remark "What the trained registers implement"), the Fock registers are always-occupied **exclusion slots**: every register is active at every position, each holds one content vector, and salience is not an intensity. They are not bosons. The framework's bosonic registers are the **Poisson-mode registers** ([`Poisson_Mode_Registers_PM1.md`](Poisson_Mode_Registers_PM1.md)), built to make the bosonic reading hold by construction; they act through a per-token conservative potential and mediate no exchange of this kind. A register is not a virtual particle either: it persists across layers, is blended rather than replaced, and is not changed by what reads it. Where the text below says more than this, read it as the design intent.
+
 **Technical Report — Semantic Simulation Research Programme**  
 **Status:** Active — June 2026 (updated with causal leak fix, corrected v2 results, Fock Attention results, register diagnostics, v2.1 routing fix, and causal-fixed v2.1 rerun results: B1+B2+B3 = **9.30 PPL**, surpassing Fock Attention)  
 > ⚠ **Re-certification notice (July 2026):** a *second, deeper* causal leak was found after this report was written. The `8c47d90` cumulative-softmax fix was incomplete, and the **9.30 PPL** result and every "causal-fixed" number below are certified only by a probe now known to be blind. They are **pending re-certification** with `prefix_causal_registers=True`. See the banner in §19.8 and [`Fock-PARFLM_Causal_Leak_Audit_Results.md`](Fock-PARFLM_Causal_Leak_Audit_Results.md).  
@@ -170,11 +172,11 @@ Conservative potentials are additive and purely local: $V_\text{total} = \sum_{i
 
 ### 5.1 The Feynman Diagram of Attention
 
-The three structural properties of attention map precisely onto **quantum field theory** (QFT). In quantum electrodynamics (QED), two electrons interact by exchanging a virtual photon:
+The three structural properties of attention have a structural analogy in **quantum field theory** (QFT). In quantum electrodynamics (QED), two electrons interact by exchanging a virtual photon:
 
 $$e^- \xrightarrow{\text{emit}} \gamma_\text{virtual} \xrightarrow{\text{propagate}} \gamma_\text{virtual} \xrightarrow{\text{absorb}} e^-$$
 
-The Feynman vertex factor at the source (emission), the propagator (what is carried), and the vertex factor at the receiver (absorption) are **three separate objects** — exactly the Q/K/V decoupling.
+The Feynman vertex factor at the source (emission), the propagator (what is carried), and the vertex factor at the receiver (absorption) are **three separate objects**, as query, key and value are.
 
 <img src="images/fock_qed_attention_analogy.png" alt="Attention as Virtual Particle Exchange: QED analogy" width="600">
 
@@ -286,7 +288,7 @@ The current FockPARFLM therefore uses creation/destruction to implement **auxili
 
 ## 8. The Core Reframe: Creation at the Wrong Level
 
-The current FockPARFLM creates and destroys **input particles** (register slots as additional hidden states). The QFT analysis in Section 5 identifies that attention creates and destroys **virtual mediating particles** — semantic photons $\gamma$ that carry information from source $j$ to receiver $i$.
+The current FockPARFLM creates and destroys **input particles** (register slots as additional hidden states). The QFT analogy of Section 5 reads attention as creating and destroying **virtual mediating particles** — semantic photons $\gamma$ that carry information from source $j$ to receiver $i$.
 
 <img src="images/fock_current_vs_proposed.png" alt="FockPARFLM: Current vs Proposed mechanism" width="600">
 
@@ -295,7 +297,7 @@ The proposed panel above compresses two hops into one. It draws token $j$ exchan
 1. the **write port** (creation, §9.1): the register's query attends over the tokens, and the softmax runs over tokens $j$;
 2. the **read port** (the reverse channel, §9.6): the token's query attends over the registers, and the softmax runs over registers $k$.
 
-The "virtual photon" is the register $r_k$, not a quantity exchanged directly between tokens. Token $i$ is the absorber, coupled to the register by a second, separately parameterised softmax.
+In the analogy the "virtual photon" is the register $r_k$, not a quantity exchanged directly between tokens (as trained, the registers are exclusion slots, not bosons; see the note at the top). Token $i$ is the absorber, coupled to the register by a second, separately parameterised softmax.
 
 ![Fock v2.1: the registers are a memory with a write port and a read port](images/fock_register_read_write.png)
 
@@ -345,7 +347,7 @@ For $\lambda = 0.9$, a register persists for approximately 10 layers. Standard a
 
 $$g_\text{destroy}^{(k)} = \sigma\left(\mathrm{MLP}(r_k)\right), \qquad \sigma_k \leftarrow \sigma_k \cdot (1 - g_\text{destroy}^{(k)})$$
 
-In QFT language: virtual photons have finite lifetime $\tau_\text{lifetime}$ governed by $\lambda$. Standard attention produces instantaneous photons; FockPARFLM v2 produces **long-lived semantic photons** that carry information across multiple integration steps, providing cross-layer working memory that standard attention lacks.
+In the QFT analogy, standard attention is an instantaneous exchange and FockPARFLM v2 a long-lived intermediate that carries information across several integration steps, a cross-layer working memory that standard attention lacks. A register is not a virtual particle: it persists, is blended rather than replaced, and is not changed by what reads it.
 
 ### 9.4 Architecture Specification
 
@@ -1602,7 +1604,7 @@ capacity rather than routing.
 
 ## 19. Resolving the Conservative–Attention Gap
 
-The register diversity/entropy eval pass (§18.5) has been completed, and the FockAttentionPARFLM experiment (§5.1 literal Feynman diagram) has produced initial results. This section consolidates the findings and charts the resolution path.
+The register diversity/entropy eval pass (§18.5) has been completed, and the FockAttentionPARFLM experiment (§5.1: attention applied directly as a force) has produced initial results. This section consolidates the findings and charts the resolution path.
 
 ### 19.1 Updated PPL Ladder
 
@@ -1655,7 +1657,7 @@ The direct attention exchange force closes **3.05 PPL** (12.47 → 9.42 at 16k s
 
 ### 19.2 Fock Attention Experiment Results
 
-`FockAttentionPARFLM` (defined in `model_fock_attention.py`) injects the §5.1 Feynman diagram exchange force directly into the conservative Verlet dynamics as a post-Verlet correction. Four arms completed:
+`FockAttentionPARFLM` (defined in `model_fock_attention.py`) injects the §5.1 exchange force (attention applied as a force) directly into the conservative Verlet dynamics as a post-Verlet correction. Four arms completed:
 
 | Arm | K | Heads | d_k | Steps | PPL | exchange_scale | Exchange OH | Time |
 |-----|---|-------|-----|-------|-----|----------------|-------------|------|
@@ -2013,7 +2015,7 @@ Then $\mathrm{tr}(G) = M$ and $\lVert G \rVert_F^2 = M + M(M-1)\rho^2$ (the $M$ 
 
 $$\boxed{ N_{\mathrm{eff}} = \frac{M^2}{M + M(M-1)\rho^2} = \frac{M}{1 + (M-1)\rho^2}. }$$
 
-This is Panel (A). At $\rho = 0$ the pool spans $N_{\mathrm{eff}} = M$ independent directions; at $\rho \to 1$ it collapses to $N_{\mathrm{eff}} \to 1$. The dependence is quadratic in $\rho$ and is amplified by the pool size $M$: for $M = 32$ even a modest $\rho = 0.3$ already gives $N_{\mathrm{eff}} \approx 10$, which is exactly why the empirical $M = 32$ run (Q7, §17) collapsed where $M = 16$ survived — larger pools are more fragile to the same per-pair correlation.
+This is Panel (A). At $\rho = 0$ the pool spans $N_{\mathrm{eff}} = M$ independent directions; at $\rho \to 1$ it collapses to $N_{\mathrm{eff}} \to 1$. The dependence is quadratic in $\rho$ and is amplified by the pool size $M$: for $M = 32$ even a modest $\rho = 0.3$ already gives $N_{\mathrm{eff}} = 32 / (1 + 31 \times 0.09) \approx 8$, which is exactly why the empirical $M = 32$ run (Q7, §17) collapsed where $M = 16$ survived — larger pools are more fragile to the same per-pair correlation.
 
 ### 20.2 Why collapse raises the NTP loss: an information-bottleneck bound
 

@@ -492,23 +492,24 @@ def make_boson_analogy() -> None:
 
     draw_panel(
         axes[0],
-        "Attention = massless boson",
-        r"single virtual photon, range $= \infty$",
+        "Attention: like a massless boson",
+        r"one direct exchange, range $= \infty$ within the sequence",
         "#2f7d33",
         decay_lambda=1.0,
         subtitle=r"infinite range within sequence; auxiliary state $\mathcal{S}=0$",
     )
     draw_panel(
         axes[1],
-        "Fock register = massive boson",
-        r"register particles, finite lifetime $\tau \approx 1/(1-\lambda)$",
+        "Fock register: like a massive boson",
+        r"registers persist about $1/(1-\lambda)$ layers",
         "#7a4e9b",
-        decay_lambda=0.65,
+        decay_lambda=0.5,
         subtitle=r"persistence in depth at the cost of state $\mathcal{S}=M$ slots",
     )
 
     fig.suptitle(
-        "Physical analogy: attention sits at the massless point in the design space",
+        "Analogy only: attention sits at the massless point of the design space\n"
+        "(the trained registers are exclusion slots, not bosons)",
         fontsize=13,
         y=1.02,
     )

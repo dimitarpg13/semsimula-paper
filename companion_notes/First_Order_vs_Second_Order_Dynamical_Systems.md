@@ -1,5 +1,7 @@
 # First-Order vs Second-Order Dynamical Systems: Dynamical Order and State-Space Extension Are Independent Design Choices
 
+> **The QED language in this note is a structural analogy (2026-10-31).** Virtual photons, gauge bosons and Fock creation and annihilation describe the *structure* of the exchange: separate emission (write) and absorption (read) couplings with a payload distinct from both, which is what restores attention's properties P1–P3. They do not describe the trained models. Measured on them ([`Doi_Peliti_Dynamics_of_Semantic_Particles_and_Registers.md`](Doi_Peliti_Dynamics_of_Semantic_Particles_and_Registers.md) §2 and §7; book, Remark "What the trained registers implement"), the Fock registers are always-occupied **exclusion slots**: every register is active at every position, each holds one content vector, and salience is not an intensity. They are not bosons. The framework's bosonic registers are the **Poisson-mode registers** ([`Poisson_Mode_Registers_PM1.md`](Poisson_Mode_Registers_PM1.md)), built to make the bosonic reading hold by construction; they act through a per-token conservative potential and mediate no exchange of this kind. A register is not a virtual particle either: it persists across layers, is blended rather than replaced, and is not changed by what reads it. Where the text below says more than this, read it as the design intent.
+
 > **Summary.** The Semantic Simulation framework adopts a damped
 > second-order Lagrangian dynamics on the token subsystem. This note
 > separates that base-dynamics choice from a distinct design lever —
@@ -187,29 +189,30 @@ The cleanest natural analogy is electromagnetism. In QED:
 - Charged particles obey the second-order Lorentz force equation:
   $m\ddot x = q(E + \dot x \times B)$.
 
-The gauge field has no inertia; the charges do. Force is mediated
+The field has no inertia; the charges do. Force is mediated
 between charges by exchange of virtual photons (perturbative-QED
 language), and the dynamical orders of the two subsystems differ.
 
-FockPARFLM v2 has the same hybrid structure already:
+FockPARFLM v2 shares this hybrid order of the dynamics:
 
 | QED | FockPARFLM v2 | Dynamical order |
 |---|---|---|
 | Charged particle $e^-$ | Token particle $h_i$ | Second-order |
 | Gauge field / virtual photon $\gamma^*$ | Register particle $r_k$ with salience $\sigma_k$ | First-order (overwrite-with-decay) |
 | Vertex coupling | Q/K/V creation gate and reverse channel | n/a |
-| Photon lifetime | Salience lifetime $\tau \approx 1/(1-\lambda)$ | n/a |
+| Photon lifetime | Register persistence, about $1/(1-\lambda)$ layers | n/a |
 
 The registers carry content and salience, both first-order quantities
 updated by overwrite-with-decay; there is no $\ddot r_k$. The tokens
-carry position and velocity. The hybrid structure is not accidental —
-it mirrors the canonical physical realisation of the same conservative
-obstruction and its gauge-mediated resolution.
+carry position and velocity. The parallel is in the order of the dynamics
+only. The registers are not a gauge field and carry no gauge symmetry, and
+as trained they are always-occupied exclusion slots, not bosons (see the
+note at the top).
 
 A *fully* first-order Fock variant (tokens also first-order) would
 correspond to the non-relativistic, instantaneous-Coulomb-only limit
-of QED: still well-defined, but stripped of the dynamical content that
-makes the gauge picture quantitatively predictive.
+of electrodynamics: still well-defined, but without the field's own
+dynamics.
 
 ---
 

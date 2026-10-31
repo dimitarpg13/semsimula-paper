@@ -4539,6 +4539,17 @@ Layer 1's wells along the run (`debug/vtheta_well_probe.py`, 16 code windows; th
 
 **Next (author's call):** the Hugging Face cards for screen B and this arm, with the claim "a sixth long-range context channel adds nothing on code once its wells are kept alive"; both checkpoints weights-only, with the probe and `xi_reach` files.
 
+<a name="p-dw-screen-a-full"></a>**Screen A at full length, launched 2026-10-31; calls VA1–VA4 registered before any result.** The question it answers is the one screen B cannot: the slower V_θ is a fix that costs a healthy arm about 1.5% (SO-CODE-VTLR above), so it is not a candidate default; unit-norm input caps the channels' size instead, and if its wells survive to the end at no cost it could be one. Screen A's Cell 0 as for the 3,000-step screen (XI6-CODE-WR's 12 changes plus `VTHETA_INPUT_UNIT_NORM = True`) with `PROBE_MAX_STEPS = None`; tag `…sr2_st16250_wr3l0p1_vtun_L2probe…noattn`, identical to the screen's folder (GitHub HEAD `f8d084a` Cell 0 with these 13 changes reproduces it). Cell 2 resumed from the canonical `_best.pt` (step 3,000, perplexity 13.54); 89 of 89 tensors and the optimizer state restored; the optimizer has HEAD's two groups. The first logged step continues the screen without a jump: step 3,050 training loss 2.487 (screen 2.455–2.498 over steps 2,800–3,000), `reach` layer 0 2.06/0.011 and layer 1 0.97/0.000 (screen 2.13/0.014 and 0.97/0.000 at step 3,000). About 5.3 h.
+
+| id | reading | proposed |
+| --- | --- | ---: |
+| VA1 | Screen A settles within ±2% of SO-CODE (5.88–6.12; SO-CODE 6.00) | 55% |
+| VA2 | Layer 1 is alive at the best checkpoint: median nearest-well ratio below 1 and occupancy of the strongest well above 0.05 | 60% |
+| VA3 | Gate 3 (N = 3) stays near SO-CODE's 0.639 nats, above 0.45, not near the 0.29–0.31 of the two slower-V_θ arms: the halved refinement penalty belongs to the slower V_θ, not to keeping the wells alive | 60% |
+| VA4 | The paired gap to SO-CODE over steps 16,000–19,000 is within ±0.02 nats | 55% |
+
+The calls were proposed on 2026-10-30 and Cell 6 was started without changes, so they are registered as written; the author has not confirmed them. If VA1 and VA2 hold, the SO-CODE twin with the switch (SO-CODE's Cell 0 plus `VTHETA_INPUT_UNIT_NORM = True`, fresh, about 6 h) separates the fix from a general gain, as SO-CODE-VTLR did for screen B; if either fails, screen A is set aside and the twin is not needed.
+
 **MS2, the K = 16 pair, pre-registered in detail (2026-10-22, before the runs).** Both arms on PMX's Cell 0 (F3.1's settings plus `POISSON_MODES = 16`, `LOWRANK_DAMPED_FLOW = True`, `POISSON_WELLS_EXACT = True`) with the speed switches (`VPHI_ANALYTIC_FORCE = True`, `LAYER_CHECKPOINT = False`); the first-order arm adds `FIRST_ORDER_OVERDAMPED = True`. Tags `…pm16_pmx16_sr2_L2probe…` and `…pm16_pmx16_sr2_fob_L2probe…`; 32,500 steps, seed 0, OpenWebText; about 12 h each; the second-order arm first, as the new baseline. At K = 16 the exact rank part (`POISSON_WELLS_EXACT_MODES = 16`) covers every well. **Build check** (`debug/verify_dose_modes.py`, output `debug/verify_dose_modes_output.txt`): at K = 16 and K = 256, second order and FO-b, the notebook's own cells build the model with the expected tag and parameter count (76,578,318 at K = 16, 76,671,438 at K = 256), a training step gives a finite loss and finite gradients, and the half-lives initialise over 4–128 tokens as at K = 64. The K = 256 pair follows with the same settings and `POISSON_MODES = 256`.
 
 | id | prediction | called |
