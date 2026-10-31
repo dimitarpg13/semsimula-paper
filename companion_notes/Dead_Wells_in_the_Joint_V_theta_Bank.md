@@ -2,9 +2,9 @@
 
 **XI6-CODE's failure, its root cause, and two mitigations that keep the wells alive (technical report, 2026-10-28; updated 2026-10-30).**
 
-XI6-CODE added a sixth content-routed context channel to SO-CODE, the conservative second-order model on Python code. It settled 42.7% behind SO-CODE. The cause is not the channel's information but a failure of V_θ's well bank in the second layer: every layer-1 well drifted away from the region the states live in, where a well exerts no force and receives no gradient, and so cannot come back. This report describes the symptom, the debugging that located the cause, what is established and what is open, a first mitigation that failed (a reachability penalty), two short screens that kept the wells alive, and the full-length run of one of them, which closes the gap to SO-CODE.
+XI6-CODE added a sixth content-routed context channel to SO-CODE, the conservative second-order model on Python code. It settled 42.7% behind SO-CODE. The cause is not the channel's information but a failure of V_θ's well bank in the second layer: every layer-1 well drifted away from the region the states live in, where a well exerts no force and receives no gradient, and so cannot come back. This report describes the symptom, the debugging that located the cause, what is established and what is open, a first mitigation that failed (a reachability penalty), two short screens that kept the wells alive, the full-length run of one of them, which closes the gap to SO-CODE, and its five-channel twin, which shows the sixth channel itself adds nothing.
 
-Protocol entries: [XI6-CODE](Depth_Ladder_and_Matched_Baseline_Protocol.md#p-xi6-code), [root cause](Depth_Ladder_and_Matched_Baseline_Protocol.md#p-dead-wells), [reachability penalty](Depth_Ladder_and_Matched_Baseline_Protocol.md#p-well-reach), [its result](Depth_Ladder_and_Matched_Baseline_Protocol.md#p-xi6-code-wr), [screens](Depth_Ladder_and_Matched_Baseline_Protocol.md#p-dead-wells-screens) and [their result](Depth_Ladder_and_Matched_Baseline_Protocol.md#p-dead-wells-screens-result), [screen B at full length](Depth_Ladder_and_Matched_Baseline_Protocol.md#p-dw-screen-b-full). One seed per model throughout; L = 2 layers.
+Protocol entries: [XI6-CODE](Depth_Ladder_and_Matched_Baseline_Protocol.md#p-xi6-code), [root cause](Depth_Ladder_and_Matched_Baseline_Protocol.md#p-dead-wells), [reachability penalty](Depth_Ladder_and_Matched_Baseline_Protocol.md#p-well-reach), [its result](Depth_Ladder_and_Matched_Baseline_Protocol.md#p-xi6-code-wr), [screens](Depth_Ladder_and_Matched_Baseline_Protocol.md#p-dead-wells-screens) and [their result](Depth_Ladder_and_Matched_Baseline_Protocol.md#p-dead-wells-screens-result), [screen B at full length](Depth_Ladder_and_Matched_Baseline_Protocol.md#p-dw-screen-b-full), [SO-CODE-VTLR](Depth_Ladder_and_Matched_Baseline_Protocol.md#p-so-code-vtlr-result). One seed per model throughout; L = 2 layers.
 
 ---
 
@@ -33,7 +33,8 @@ Protocol entries: [XI6-CODE](Depth_Ladder_and_Matched_Baseline_Protocol.md#p-xi6
 - **First mitigation, failed.** A well-reachability penalty (a hinge on each token's nearest-well distance relative to ‖h‖, beyond ρ = 3) did not keep XI6-CODE's layer 1 alive: XI6-CODE-WR settled at 8.87. ρ = 3 was set against the healthy arms' tails, not the wells' width, and the penalty engaged only after the deaths (§7.1).
 - **When the wells die.** XI6-CODE-WR's log dates the deaths to steps 750–1,200, just after the learning rate peaks (step 812). Layer 1 was hardly using its wells then (removing them cost +1.6%), the shared centre map W was growing, and layer 1's context channels at the bank input are 20–70 times larger than layer 0's, so its centres grew with W and left the sphere (§7.1).
 - **Two switches keep layer 1 alive** in 3,000-step screens (§7.2): unit-norm context channels at the bank input (screen A), or V_θ's learning rate × 0.25 (screen B). Each cuts one factor of the centres' growth. Both beat the control's perplexity at step 3,000 (13.54 and 11.27 against 14.80; SO-CODE 12.96).
-- **Screen B at full length closes the gap** (§7.3): settled 5.98 against SO-CODE's 6.00 and XI6-CODE's 8.55, with layer 1 alive to the end (removing its wells costs +242%; SO-CODE +202%). The whole deficit was the dead wells; the sixth channel itself buys nothing on code. Whether the slower V_θ also helps SO-CODE is open.
+- **Screen B at full length closes the gap** (§7.3): settled 5.98 against SO-CODE's 6.00 and XI6-CODE's 8.55, with layer 1 alive to the end (removing its wells costs +242%; SO-CODE +202%). The whole deficit was the dead wells; the sixth channel itself buys nothing on code.
+- **The slower V_θ is a fix, not a general gain** (§7.4). SO-CODE with the same switch (SO-CODE-VTLR) settles at 6.09, +1.6% against SO-CODE. It has screen B's early lead, and its bank follows screen B's checkpoint for checkpoint. Screen B is level with it too (−1.8%, within the paired noise), so the sixth channel adds nothing, with or without the slower V_θ.
 
 ---
 
@@ -247,11 +248,12 @@ flowchart TD
 - The deaths fall in steps 750–1,200, just after the learning-rate peak, while layer 1 hardly uses its wells (removing them costs +1.6% at step 500). The one-position lookups sharpen after the deaths, so they are a consequence (§7.1).
 - Either unit-norm channels at the bank input or a slower V_θ keeps the layer-1 wells alive to step 3,000 (§7.2).
 - With the slower V_θ, the wells stay alive to step 19,250 and XI6 settles level with SO-CODE (5.98 against 6.00): the dead wells account for the whole deficit, and the one-position lookups do not form (§7.3).
+- The slower V_θ alone gives SO-CODE screen B's early lead and its small, inward bank; at the end it costs SO-CODE 1.5%, consistently from step 14,000 on, and screen B is level with this twin (§7.4).
 
 **Open:**
 - **Which loss term pushes the centres outward.** Averaged over 16 batches, the gradient through layer 1 pulls the wells in and `v_reg` pushes them out more weakly; the update Adam actually stored moves them outward, 2–3 times faster in the XI6 arms. The decomposition does not reproduce the stored update (§7.1).
 - **Why XI6 and not the five-channel arms.** XI6 has lost layer 1 in 2 of 2 runs, the five-channel arms in 0 of 6. A sixth channel adds one more large term to the centres; whether that alone tips the race is not separated from seed.
-- **Whether screen A's fix holds to the end of training**, and whether screen B's slower V_θ is specific to the dead wells or helps SO-CODE too (§8).
+- **Whether screen A's fix holds to the end of training** (§8).
 
 ---
 
@@ -360,12 +362,28 @@ Screen B was resumed from its step-3,000 checkpoint (model and optimizer state, 
 - **No one-position lookups.** On the same 16 windows as §4.9 (`debug/xi_reach.py`, step 16,000; `results/copy_split_code/xi_reach_xi6vtlr.txt`), layer 1's long channels find earlier occurrences 65 or more tokens back at 19 and 27 times an even spread (channels 5 and 6; SO-CODE's longest 26, XI6-CODE's 1.4 and 0.8), and their median peak weight on one position is 0.21 (channel 4) and 0.39 (channel 6), against XI6-CODE's 0.88 and 0.97. With live wells the lookups do not form, so in XI6-CODE they followed from the deaths, as the snapshots' timing suggested (§7.1).
 - **What it settles.** XI6-CODE's +43% was entirely the dead wells. With live wells the sixth context channel retrieves like SO-CODE's longest, yet neither helps nor hurts on code.
 
+### 7.4 The five-channel twin: SO-CODE with the slower V_θ
+
+Screen B differs from SO-CODE in two ways: the sixth channel and V_θ's learning rate × 0.25. SO-CODE-VTLR is SO-CODE with only the second, trained from step 0 for 19,250 steps (protocol `p-so-code-vtlr-result`). All three runs share eval batches, so their evals can be compared step by step.
+
+| | settled perplexity | at step 3,000 | gap to SO-CODE, steps 16,000–19,000 | layer-1 removal cost | `mu_proj` largest column norm |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| SO-CODE | 6.00 | 12.96 | — | +202% | 101 |
+| SO-CODE-VTLR | **6.09** | 11.32 | +0.015 nats (SD 0.002) | +272% | 37 |
+| screen B | 5.98 | 11.27 | +0.002 nats (SD 0.035) | +242% | 36 |
+
+- **The early lead is the slower V_θ's.** SO-CODE-VTLR starts behind SO-CODE (+16% at step 1,000), crosses it before step 2,000 and leads by 13–17% at steps 2,500–3,000, as screen B did. Screen B and the twin stay within the paired noise of each other throughout.
+- **At the end the slower V_θ costs a healthy arm about 1.5%.** The gap to SO-CODE opens in the decay phase and is 1.2–1.7% at every eval from step 14,000 (training loss 1.704 against 1.687). It sits inside the pre-registered ±2% band. Because the two runs differ only in V_θ's learning rate, their evals move together (SD of the paired difference 0.002 nats), so the gap is consistent; it is still one seed each.
+- **The bank is set by V_θ's speed, not by the channel count.** At steps 500, 1,000 and 3,000 and at the end, the twin's layer-1 nearest-well ratio, centre norm, `mu_proj` size, occupancy and removal cost match screen B's. Layer 1 stays alive throughout: its median nearest-well ratio is at most 1.03 at every checkpoint.
+- **So does the halved refinement penalty.** In Cell 6b-7's Gate 3 (three integration steps over the trained time), the penalty is 0.312 nats for the twin, 0.290 for screen B and 0.639 for SO-CODE.
+- **What it settles.** The sixth context channel neither helps nor hurts on code. Screen B is a dead-well fix whose cost (about 1.5%) the sixth channel gives back. `VTHETA_LR_MULT = 0.25` is not a setting to adopt for arms whose wells survive at full speed.
+
 ---
 
 ## 8. Open questions
 
 - **Full length, screen A.** Screen B's wells survive to step 19,250 and it settles level with SO-CODE (§7.3). Whether screen A's wide, near-origin wells do as well is open; it can resume from its step-3,000 checkpoint.
-- **Specific or general.** Does a slower V_θ (screen B) or unit-norm input (screen A) also help SO-CODE, whose wells never died? The SO-CODE twin of whichever switch is kept answers this.
+- **Specific or general, screen A.** The slower V_θ does not help SO-CODE (§7.4). Whether unit-norm input does is open; it would need its own SO-CODE twin.
 - **The outward push.** Which term moved the control's centres outward is not identified (§5).
 - **Seed.** Does XI6-CODE collapse on another seed? Does SO-CODE ever collapse? Layer 1's margin (occupancy 0.17–0.38 on one or two wells) suggests a collapse is possible in any arm.
 - **Why layer 1 runs on so few wells.** With unit-norm input (screen A) layer 1 uses five to eight wells, so the input scale may be the reason. A per-layer bank (more parameters) or a per-layer scale on the centre map (two scalars) remain alternatives.
@@ -385,7 +403,7 @@ All on CPU, from `notebooks/conservative_arch/scaleup/debug/`, with the run fold
 | channel retrieval | `python3 xi_reach.py <scratch dir> <FOLDER>` | `results/copy_split_code/xi_reach_<arm>.txt` |
 | switch check | `python3 verify_well_reach.py <HEAD worktree> <out> dump`, then `<working copy> <out> compare` and `on` | printed |
 | screen switches check | `python3 verify_vt_screens.py <out>` | printed |
-| snapshots and screens | the well probe with `ckpt=<file in the folder's checkpoints/>` (XI6-CODE-WR's snapshots: `ckpt=../snapshots/<file>`) | `results/dead_wells/well_probe_xi6wr_code_step*`, `…_xi6vtun_code_step*`, `…_xi6vtlr_code_step*` |
+| snapshots and screens | the well probe with `ckpt=<file in the folder's checkpoints/>` (XI6-CODE-WR's snapshots: `ckpt=../snapshots/<file>`) | `results/dead_wells/well_probe_xi6wr_code_step*`, `…_xi6vtun_code_step*`, `…_xi6vtlr_code_step*`, `…_sovtlr_code_step*` |
 | figures | `python3 dead_wells_figures.py` | `companion_notes/figures/dead_wells/` |
 
-XI6-CODE's run output and diagnostics: [results folder](../notebooks/conservative_arch/scaleup/results/cfc_baoab_code_xi6long_topk16_dt32da16_mh4_aniso_dcvt6x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/). XI6-CODE-WR: [results folder](../notebooks/conservative_arch/scaleup/results/cfc_baoab_code_xi6long_topk16_dt32da16_mh4_aniso_dcvt6x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_wr3l0p1_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/). Screens: [A](../notebooks/conservative_arch/scaleup/results/cfc_baoab_code_xi6long_topk16_dt32da16_mh4_aniso_dcvt6x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_wr3l0p1_vtun_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/), [B](../notebooks/conservative_arch/scaleup/results/cfc_baoab_code_xi6long_topk16_dt32da16_mh4_aniso_dcvt6x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_wr3l0p1_vtlr0p25_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/).
+XI6-CODE's run output and diagnostics: [results folder](../notebooks/conservative_arch/scaleup/results/cfc_baoab_code_xi6long_topk16_dt32da16_mh4_aniso_dcvt6x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/). XI6-CODE-WR: [results folder](../notebooks/conservative_arch/scaleup/results/cfc_baoab_code_xi6long_topk16_dt32da16_mh4_aniso_dcvt6x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_wr3l0p1_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/). Screens: [A](../notebooks/conservative_arch/scaleup/results/cfc_baoab_code_xi6long_topk16_dt32da16_mh4_aniso_dcvt6x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_wr3l0p1_vtun_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/), [B](../notebooks/conservative_arch/scaleup/results/cfc_baoab_code_xi6long_topk16_dt32da16_mh4_aniso_dcvt6x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_wr3l0p1_vtlr0p25_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/). SO-CODE-VTLR: [results folder](../notebooks/conservative_arch/scaleup/results/cfc_baoab_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_vtlr0p25_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/).

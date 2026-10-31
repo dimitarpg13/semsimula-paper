@@ -4446,14 +4446,14 @@ Layer 1 at the end (`debug/vtheta_well_probe.py`, 16 code windows, best checkpoi
 | 6b-7 Gate 3, N = 3 at fixed T | +34% (0.290 nats) | +89% (0.639) | +18.3% (0.168) |
 | 6b-13 ω·Δt median (layer 0 / layer 1); past 2 | 5.83 (6.37 / **4.34**); 99.9% | 7.55 (9.58 / 4.94); 99.97% | 2.61 (2.84 / 0.000); 58.8% |
 
-- **6b-7 is MAPS**, as for every second-order arm: refinement grows away from N = L. Its refinement penalty at N = 3 is about half SO-CODE's (0.290 against 0.639 nats); whether that comes from the slower V_θ or from the sixth channel is not separable here.
+- **6b-7 is MAPS**, as for every second-order arm: refinement grows away from N = L. Its refinement penalty at N = 3 is about half SO-CODE's (0.290 against 0.639 nats); whether that comes from the slower V_θ or from the sixth channel is not separable here (separated by SO-CODE-VTLR, `p-so-code-vtlr-result`: the slower V_θ).
 - **6b-13's pre-registered band for L = 2 ([3.3, 4.2]) misses** at 5.83, as SO-CODE's 7.55 did; the cell's "omega fell with depth" verdict is its standard label for layer 1 below layer 0.
 - **No one-position lookups** (`debug/xi_reach.py` on the step-16,000 checkpoint, `results/copy_split_code/xi_reach_xi6vtlr.txt`): layer 1's channels 5 and 6 find earlier occurrences 65 or more tokens back at 19 and 27 times an even spread (SO-CODE's longest 26; XI6-CODE's 1.4 and 0.8); median peak weight on one position 0.21 (channel 4) and 0.39 (channel 6), against XI6-CODE's 0.88 and 0.97. The lookups in XI6-CODE followed from the dead wells.
 
 **Reading.**
 - **The root cause is confirmed by a fix.** XI6-CODE's whole +43% deficit came from the dead layer-1 wells: with the same architecture, loss and channels, keeping V_θ slow keeps them alive, and the model then matches SO-CODE in validation and training loss.
 - **The sixth context channel buys nothing on code.** With live wells, XI6 equals SO-CODE but does not beat it. Read with the dead-wells result: XI1 (more than 2% below SO-CODE) would still miss.
-- **Not yet separated: the fix from a general gain.** Screen B was ahead of SO-CODE early (steps 2,000–4,500), which a slower V_θ might give SO-CODE as well. The SO-CODE twin with `VTHETA_LR_MULT = 0.25` decides: if it also gains, the multiplier is a general setting; if it is level with SO-CODE, screen B is a dead-well fix that costs nothing.
+- **Not yet separated: the fix from a general gain.** Screen B was ahead of SO-CODE early (steps 2,000–4,500), which a slower V_θ might give SO-CODE as well. The SO-CODE twin with `VTHETA_LR_MULT = 0.25` decides: if it also gains, the multiplier is a general setting; if it is level with SO-CODE, screen B is a dead-well fix that costs nothing. (Result in `p-so-code-vtlr-result`: within ±2%, +1.6%; the early lead is the slower V_θ's.)
 
 **Next, proposed (author's call):** the SO-CODE twin (SO-CODE's Cell 0 plus `VTHETA_LR_MULT = 0.25`, fresh, 19,250 steps, about 5–6 h). Screen A at full length is lower priority now that screen B has closed the gap; it remains the structural alternative (a capped channel size instead of a slower optimizer).
 
@@ -4477,6 +4477,67 @@ Screen B (XI6 with V_θ × 0.25) settled level with SO-CODE (5.98 against 6.00).
 | VT4 | screen B and SO-CODE-VTLR settle within ±2% of each other | 60% |
 
 ±2% is about twice the paired settled-eval spread of these arms (SD 0.034–0.040 nats per eval, 3 evals). One seed each; a call within the band is read as "no effect detected", not as equality.
+
+<a name="p-so-code-vtlr-result"></a>**Result, SO-CODE-VTLR (2026-10-30): the slower V_θ gives SO-CODE screen B's early lead and costs it 1.5% at the end; the sixth channel adds nothing.** Fresh run from step 0, 19,250 steps in 6.0 h, one session; no watchdog trigger. `[vtlr]` put V_θ's 9 tensors in 2 groups, and the parameter split is SO-CODE's exactly (76,502,176 decayed, 69,933 not). Gradient norm median 0.49 after step 2,000, maximum 1.86 (step 500); largest rise between logged training losses 0.074 (step 13,050). SCAF CLEAN at 5,000, 10,000, 15,000 and 19,250. Output, Cells 7, 6b-7 and 6b-13, `training_log.jsonl` (steps 50–19,250; its 38 evals match the text log), `scaf_leak_monitor.jsonl`, `omega_dt_endpoint.jsonl` and Cell 8's curve are filed in the arm's results folder (`L2_SR2-WR-vth_lr=0.25_on_Code_19250steps_output.txt`; the "WR" in the file names is a misnomer: this arm has no reachability penalty, `WELL_REACH_RHO = None`, and its tag has no `wr`).
+- **Settled 6.09** (evals at 18,000, 18,500 and 19,000: 5.96, 6.11, 6.20); best 5.96 at step 18,000. SO-CODE 6.00 (+1.6%), screen B 5.98 (−1.8% against this arm), GPT-2-CODE 4.96 (+22.7%).
+- **Settling check (2026-10-04 rule), steps 16,000–19,000: fails narrowly,** like every code arm: fitted change −0.018 nats against a residual SD of 0.015 (SO-CODE −0.020 against 0.015). The paired gap to SO-CODE is flat (below), so an extension would not move the comparison.
+
+Paired by step (all three arms trained from step 0, so their evals share batches); the mean difference in log perplexity, with the SD of the per-eval differences:
+
+| steps | SO-CODE-VTLR − SO-CODE | screen B − SO-CODE-VTLR | screen B − SO-CODE |
+| --- | ---: | ---: | ---: |
+| 2,000–4,000 (5 evals) | −0.121 (SD 0.043) | −0.013 (0.033) | −0.134 (0.034) |
+| 8,000–13,000 (11 evals) | +0.001 (0.006) | +0.002 (0.037) | +0.003 (0.039) |
+| 16,000–19,000 (7 evals) | **+0.015 (0.002)** | −0.013 (0.036) | +0.002 (0.035) |
+
+- **The early lead is the slower V_θ's.** SO-CODE-VTLR starts behind (+16% at steps 500 and 1,000; screen B +14% and +13%), crosses SO-CODE before step 2,000 and leads it by 13–17% at 2,500–3,000 (12.96 → 11.32 at step 3,000; screen B 11.27). Screen B and this arm are within the paired noise of each other over the same steps.
+- **Late, the slower V_θ costs a little, and the cost is consistent.** The gap opens during the decay phase (0.3–0.8% at steps 11,000–12,500, 0.7–1.0% at 13,000–13,500), and from step 14,000 every eval is 1.2–1.7% above SO-CODE's; over the last 3,000 steps the paired difference is +0.015 nats with an SD of 0.002 per eval. The training loss agrees: 1.704 against SO-CODE's 1.687 over steps 16,000–19,250 (screen B 1.687). The two runs differ only in V_θ's learning rate, so their evals move together and the pairing is about 20 times tighter than between architectures. One seed each: this is a consistent difference between these two runs, not a measured seed effect.
+- **Screen B against this arm**, the sixth channel's effect with the slower V_θ in both: −0.013 nats over the last 3,000 steps and +0.002 over 8,000–13,000, each within one SD of the paired noise (0.036 per eval). No effect detected.
+
+Layer 1's wells along the run (`debug/vtheta_well_probe.py`, 16 code windows; the five snapshots, the step-500 best and the best checkpoint; `results/dead_wells/well_probe_sovtlr_code_step*`), beside screen B's:
+
+| step | nearest-well ratio, median (this arm / screen B) | mean centre norm \|μ\| | largest `mu_proj` column norm | occupancy, strongest well | removal cost of layer 1's wells |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 500 | 1.03 / 1.05 | 12.5 / 13.2 | 22.1 / 21.3 | 0.30 / 0.40 | — / +5.3% |
+| 1,000 | 0.96 / 0.96 | 15.8 / 17.6 | 23.8 / 23.3 | 0.39 / 0.35 | |
+| 1,500 | 0.93 | 19.3 | 26.3 | 0.36 | |
+| 2,000 | 0.88 | 20.8 | 27.6 | 0.25 | |
+| 2,500 | 0.83 | 21.8 | 28.4 | 0.24 | |
+| 3,000 | 0.81 / 0.82 | 22.0 / 23.0 | 28.9 / 28.3 | 0.23 / 0.23 | +98% / +98% |
+| end (18,000 / 16,000) | 0.71 / 0.77 | 25.6 / 29.7 | 36.9 / 36.4 | 0.15 / 0.17 | **+272%** (7.70 → 28.68) / +242% |
+| SO-CODE, end | 1.03 | 59.9 | 101.5 | 0.18 | +202% |
+
+- **Layer 1 stays alive throughout,** with the median nearest-well ratio at or below 1.03 at every checkpoint and falling. One well carries 82% of the force at the end (n_eff 1.19), as in SO-CODE and screen B.
+- **The bank's trajectory is screen B's, step for step.** Ratio, centre norm, `mu_proj` size, occupancy and removal cost agree at steps 500, 1,000 and 3,000. The small, inward bank (`mu_proj` about a third of SO-CODE's, centres inside the state sphere) is set by V_θ's speed; the sixth channel does not change it.
+
+| reading (best checkpoint) | SO-CODE-VTLR | screen B | SO-CODE |
+| --- | ---: | ---: | ---: |
+| Cell 7, full model | 5.57 | 5.52 | 5.51 |
+| 6b-7 Gate 0, unpatched | 5.16 | 5.13 | 5.06 |
+| 6b-7 Gate 1, velocity reset | +3.1% (5.16 → 5.32) | +2.5% | +4.0% |
+| 6b-7 Gate 2, N = 3 at the trained Δt | +27.5% | +37% | +42% |
+| 6b-7 Gate 3, N = 3 at fixed T | +37% (0.312 nats) | +34% (0.290) | +89% (0.639) |
+| 6b-13 ω·Δt median (layer 0 / layer 1); past 2 | 6.16 (7.16 / 3.58); 99.3% | 5.83 (6.37 / 4.34); 99.9% | 7.55 (9.58 / 4.94); 99.97% |
+
+- **6b-7 is MAPS**, as for every second-order arm. **The halved refinement penalty belongs to the slower V_θ:** 0.312 nats here, 0.290 in screen B, 0.639 in SO-CODE. This answers the question left open in `p-dw-screen-b-full`.
+- **6b-13's band for L = 2 ([3.3, 4.2]) misses** at 6.16, as for every code arm. Layer 1's 3.58 is the lowest of the three.
+- **Context channels** (`debug/xi_reach.py`, step 18,000; `results/copy_split_code/xi_reach_sovtlr.txt`): layer 1's longest channel finds earlier occurrences 65 or more tokens back at 27.9 times an even spread (SO-CODE 26, screen B's channels 5 and 6 at 19 and 27), with a median peak weight of 0.35 on one position (screen B 0.21–0.39, XI6-CODE 0.88–0.97). No one-position lookups.
+
+**The calls, scored on the letter** (proposed before the run and not confirmed by the author):
+
+| id | prediction | result | |
+| --- | --- | --- | --- |
+| VT1 | settles within ±2% of SO-CODE (5.88–6.12) | 6.09, +1.6% | **HIT**, near the edge |
+| VT2 | more than 5% ahead of SO-CODE at step 3,000 | −12.7% (11.32 against 12.96) | **HIT** |
+| VT3 | layer-1 wells alive: nearest-well ratio below 1.2, removal cost at the end above +100% | at most 1.03 at all seven checkpoints; +272% | **HIT** (read on the checkpoints: this arm logs no reach, since `WELL_REACH_RHO` is off) |
+| VT4 | screen B and SO-CODE-VTLR within ±2% of each other | 5.98 against 6.09, −1.8% | **HIT**, near the edge |
+
+**Reading.**
+- **By the registered table, the sixth channel adds nothing.** SO-CODE-VTLR settles within ±2% of SO-CODE. Screen B is level with it and with SO-CODE, and its bank is SO-CODE-VTLR's.
+- **Screen B is a dead-well fix that costs nothing, not a general gain.** The slower V_θ alone gives the early lead (steps 2,000–5,000) and the halved refinement penalty. On SO-CODE, whose wells never died, it ends 1.5% behind. That cost is small, sits inside the ±2% band, and comes from one seed, but it is consistent from step 14,000 on. `VTHETA_LR_MULT = 0.25` is therefore not a setting to adopt for healthy arms.
+- **XI6's whole story on code:** a sixth long-range channel kills layer 1's wells at full V_θ speed (+43%). Kept alive by a slower V_θ, it gives back exactly what that slower V_θ costs SO-CODE. Net, it neither helps nor hurts.
+
+**Next (author's call):** the Hugging Face cards for screen B and this arm, with the claim "a sixth long-range context channel adds nothing on code once its wells are kept alive"; both checkpoints weights-only, with the probe and `xi_reach` files.
 
 **MS2, the K = 16 pair, pre-registered in detail (2026-10-22, before the runs).** Both arms on PMX's Cell 0 (F3.1's settings plus `POISSON_MODES = 16`, `LOWRANK_DAMPED_FLOW = True`, `POISSON_WELLS_EXACT = True`) with the speed switches (`VPHI_ANALYTIC_FORCE = True`, `LAYER_CHECKPOINT = False`); the first-order arm adds `FIRST_ORDER_OVERDAMPED = True`. Tags `…pm16_pmx16_sr2_L2probe…` and `…pm16_pmx16_sr2_fob_L2probe…`; 32,500 steps, seed 0, OpenWebText; about 12 h each; the second-order arm first, as the new baseline. At K = 16 the exact rank part (`POISSON_WELLS_EXACT_MODES = 16`) covers every well. **Build check** (`debug/verify_dose_modes.py`, output `debug/verify_dose_modes_output.txt`): at K = 16 and K = 256, second order and FO-b, the notebook's own cells build the model with the expected tag and parameter count (76,578,318 at K = 16, 76,671,438 at K = 256), a training step gives a finite loss and finite gradients, and the half-lives initialise over 4–128 tokens as at K = 64. The K = 256 pair follows with the same settings and `POISSON_MODES = 256`.
 
