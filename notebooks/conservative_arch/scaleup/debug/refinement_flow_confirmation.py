@@ -19,7 +19,12 @@ Checks first, all exact: switches off = 6b-7's _fom_stack; per-layer flow at
 N = 2 = trained; one fresh xi / quadratic (/ phi) per trained layer at N = 8;
 the replay with the normal clamp reproduces the captured output.
 
-Usage: python3 refinement_flow_confirmation.py OUT_DIR FOLDER {f31|sr2|pm1|pmx|sr2-ts|fo-ts|fob|sr3|gzh|fob-pmx} [seed=<int>] [ckpt=<file>]
+Usage: python3 refinement_flow_confirmation.py OUT_DIR FOLDER {f31|sr2|pm1|pmx|sr2-ts|fo-ts|fob|sr3|gzh|fob-pmx|code} [seed=<int>] [ckpt=<file>] [name=<stem>]
+  code (2026-11-01): a second-order code arm (SO-CODE, L4-CODE, ...), rebuilt from its folder's tag as
+  copy_split.py does (copy_split.tag_repl), evaluated on the code validation tokens; checked against the
+  model's own substeps_per_layer path. Step counts scale with the trained depth: N = L, 1.5L, 2L, 3L,
+  4L, 6L, 8L, penalties against N = L (at L = 2 these are the original 2, 3, 4, 6, 8, 12, 16).
+  name=<stem>: the output's stem suffix (default: the kind).
   sr2-ts (2026-10-19): SR2's architecture trained on TinyStories (the FO series' SO-TS), built
   through the current notebook with CORPUS = 'tinystories' and the run's own validation tokens
   and frequency table (first_order_ablation/fo_series/stage0_models.build_cfc_ts).
@@ -51,7 +56,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
-NS = (2, 3, 4, 6, 8, 12, 16)
+NS_FACTORS = (1, 1.5, 2, 3, 4, 6, 8)        # N = f * L; at L = 2: 2, 3, 4, 6, 8, 12, 16
 N_BATCH, BATCH, BLOCK = 12, 4, 512
 
 if __name__ == '__main__':
@@ -59,7 +64,8 @@ if __name__ == '__main__':
     SEED = next((int(a[5:]) for a in sys.argv[4:] if a.startswith('seed=')), None)
     CHECKS_ONLY = 'checks' in sys.argv[4:]
     CKPT = next((a[5:] for a in sys.argv[4:] if a.startswith('ckpt=')), None)
-    assert KIND in ('f31', 'sr2', 'pm1', 'pmx', 'sr2-ts', 'fo-ts', 'fob', 'sr3', 'gzh', 'fob-pmx'), KIND
+    NAME = next((a[5:] for a in sys.argv[4:] if a.startswith('name=')), KIND)
+    assert KIND in ('f31', 'sr2', 'pm1', 'pmx', 'sr2-ts', 'fo-ts', 'fob', 'sr3', 'gzh', 'fob-pmx', 'code'), KIND
     sys.argv = [sys.argv[0], str(OUT / 'harness')]
     sys.path.insert(0, str(Path(__file__).parent))
     import verify_pm_switch as P
@@ -75,7 +81,27 @@ if __name__ == '__main__':
             repl = repl + (("POISSON_MODES        = 64", f"POISSON_MODES        = {_k}"),)
     if KIND in ('pmx', 'fob-pmx'):
         repl = repl + (("POISSON_WELLS_EXACT  = False", "POISSON_WELLS_EXACT  = True"),)
-    if KIND in ('sr2-ts', 'fo-ts'):
+    if KIND == 'code':
+        # copy_split's definitions without its command dispatch, as vtheta_well_probe.py loads them
+        import types
+        _src = (Path(__file__).parent / 'copy_split.py').read_text()
+        _argv = list(sys.argv); sys.argv = ['copy_split.py', str(OUT / 'harness'), 'none']
+        CS = types.SimpleNamespace(**(lambda g: (exec(compile(_src[:_src.index("\nif MODE == 'nll':")], 'copy_split.py', 'exec'), g), g)[1])(
+            {'__name__': 'copy_split', '__file__': str(Path(__file__).parent / 'copy_split.py')}))
+        sys.argv = _argv
+        repl, _tag = CS.tag_repl(FOLDER)
+        assert 'sr2' in _tag.split('_') and 'fob' not in _tag.split('_'), _tag
+        if not CKPT:
+            _ck = [p.name for p in (Path.home() / 'Downloads' / FOLDER / 'checkpoints').glob('fock_cfc_*_best.pt')
+                   if '_step' not in p.name]
+            assert len(_ck) == 1, _ck
+            CKPT = _ck[0]
+        model, g, _ = P.build(FOLDER, repl, ckpt=CKPT)
+        assert g.get('_variant_tag', _tag) == _tag, (g.get('_variant_tag'), _tag)
+        g['val_ids'] = np.load(CS.VAL)               # the code validation tokens, not the harness's OpenWebText
+        print(f'checkpoint: {CKPT}  (code validation tokens {CS.VAL})')
+        KIND_ARCH = 'sr2'
+    elif KIND in ('sr2-ts', 'fo-ts'):
         sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'first_order_ablation/fo_series'))
         import importlib.util
         _sp = importlib.util.spec_from_file_location(
@@ -120,13 +146,14 @@ if __name__ == '__main__':
     batches = [g['get_batch'](g['val_ids'], BATCH, BLOCK, rng) for _ in range(12)][:N_BATCH]
     L, DT = model.cfg.L, model.cfg.dt
     T = L * DT
+    NS = tuple(int(f * L) for f in NS_FACTORS)
     PM = KIND == 'pm1'
     PMX = KIND in ('pmx', 'fob-pmx')
     # PMX: phi is frozen by the flow context (with the wells' quadratic), not by split_stack's call-index cache
     FLOW = dict(ln_once=True, freeze=True, xi_freeze=True, phi_freeze=PM, pmq_freeze=PMX)
     TRAINED = dict(ln_once=False, freeze=False, xi_freeze=False, phi_freeze=False)
 
-    lines = [f'{"FLOW-C" if SEED is None else "FLOW-R"}, the per-layer flow: {KIND}  ...{FOLDER[-70:]}',
+    lines = [f'{"FLOW-C" if SEED is None else "FLOW-R"}, the per-layer flow: {KIND}  ...{FOLDER[-70:]}  (L = {L}, dt = {DT:g})',
              f'   {N_BATCH} x {BATCH} x {BLOCK} tokens (' + ("Cell 6b-7's batches" if SEED is None else f'batch seed {SEED}')
              + f'); policy hold; T = {T:g}']
     say = lambda s='': (print(s, flush=True), lines.append(s))
@@ -141,11 +168,11 @@ if __name__ == '__main__':
         with ctx, torch.enable_grad():
             return model(x)[0].detach()
     ok = True
-    for n in (2, 3):
+    for n in (L, L + 1):
         d = float((logits(fom_stack(model, n, T / n, 'hold')) - logits(stack(n, TRAINED))).abs().max()); ok &= d == 0.0
         say(f'CHECK  N={n}: as trained vs Cell 6b-7 _fom_stack, max |d logit| {d:.1e}')
-    d = float((logits(stack(2, FLOW)) - logits(stack(2, TRAINED))).abs().max()); ok &= d == 0.0
-    say(f'CHECK  N=2: per-layer flow vs the trained model, max |d logit| {d:.1e}')
+    d = float((logits(stack(L, FLOW)) - logits(stack(L, TRAINED))).abs().max()); ok &= d == 0.0
+    say(f'CHECK  N={L}: per-layer flow vs the trained model, max |d logit| {d:.1e}')
     nq = [0]
     if PMX:
         orig_pmq = model.poisson_mode_quadratic
@@ -154,17 +181,17 @@ if __name__ == '__main__':
             return orig_pmq(*a, **k)
         model.poisson_mode_quadratic = count_pmq
     try:
-        with stack(8, FLOW) as st, torch.enable_grad():
+        with stack(4 * L, FLOW) as st, torch.enable_grad():
             model(x)
     finally:
         if PMX:
             del model.__dict__['poisson_mode_quadratic']
     fresh = (st['fresh'], st['xfresh']) + ((st['pfresh'],) if PM else ()) + ((nq[0],) if PMX else ())
     ok &= all(f == L for f in fresh)
-    say(f'CHECK  N=8 per-layer flow: fresh quadratic / xi{" / phi" if PM else ""}{" / wells quadratic" if PMX else ""} = {fresh} (one per trained layer: {L})')
-    if PMX or KIND in ('fo-ts', 'fob', 'sr3', 'gzh'):
+    say(f'CHECK  N={4 * L} per-layer flow: fresh quadratic / xi{" / phi" if PM else ""}{" / wells quadratic" if PMX else ""} = {fresh} (one per trained layer: {L})')
+    if PMX or KIND in ('fo-ts', 'fob', 'sr3', 'gzh', 'code'):
         # an independent implementation of the same flow: the model's inference mode, 4 substeps per layer
-        flow8 = logits(stack(8, FLOW))
+        flow8 = logits(stack(4 * L, FLOW))
         model.cfg.substeps_per_layer = 4
         try:
             with torch.enable_grad():
@@ -172,9 +199,9 @@ if __name__ == '__main__':
         finally:
             model.cfg.substeps_per_layer = 1
         d = float((flow8 - sub4).abs().max() / sub4.abs().max()); ok &= d < 1e-5
-        say(f'CHECK  N=8 per-layer flow vs the model\'s substeps_per_layer = 4: max rel |d logit| {d:.1e}')
+        say(f'CHECK  N={4 * L} per-layer flow vs the model\'s substeps_per_layer = 4: max rel |d logit| {d:.1e}')
 
-    # ---- kick share at the trained N = 2 ----
+    # ---- kick share at the trained N = L ----
     cap = []
     orig_step = model._fock_layer_step
     def capture(h, h_prev, r, sal, m_b, gamma, dt, layer_idx=0):
@@ -219,7 +246,7 @@ if __name__ == '__main__':
         print('checks only: stopping before the kick share and Gate 3', flush=True)
         raise SystemExit(0)
 
-    say('\nKICK SHARE at the trained N = 2 (first batch, 4 x 512 tokens): |h(no kick) - h| / |h - h_in|')
+    say(f'\nKICK SHARE at the trained N = {L} (first batch, 4 x 512 tokens): |h(no kick) - h| / |h - h_in|')
     for li, k in kick.items():
         say(f'   layer {li}: position median {k["h_share_median"]:.3f} (p90 {k["h_share_p90"]:.3f}); velocity median {k["v_share_median"]:.3f}')
 
@@ -234,19 +261,19 @@ if __name__ == '__main__':
         return tot / len(batches)
 
     out = {'kick_share': kick, 'gate3': {}}
-    say('\nGATE 3: PPL at N steps of dt = T/N, then the penalty ln(PPL_N / PPL_2) in nats')
+    say(f'\nGATE 3: PPL at N steps of dt = T/N, then the penalty ln(PPL_N / PPL_{L}) in nats')
     for name, arm in (('as trained', TRAINED), ('per-layer flow', FLOW)):
         loss = {}
-        for n in (NS if (SEED is None or name == 'per-layer flow') else (2, 8)):
-            loss[n] = loss[2] if (n == 2 and 2 in loss) else ev(arm, n)
+        for n in (NS if (SEED is None or name == 'per-layer flow') else (L, 4 * L)):
+            loss[n] = ev(arm, n)
             print(f'      {name} N={n}: {np.exp(loss[n]):.2f}', flush=True)
         out['gate3'][name] = dict(loss)
         say(f'   {name:<15} PPL ' + '  '.join(f'N={n}:{np.exp(loss[n]):.2f}' for n in loss))
-        say(f'   {"":<15} pen ' + '  '.join(f'N={n}:{loss[n] - loss[2]:.3f}' for n in loss if n != 2))
+        say(f'   {"":<15} pen ' + '  '.join(f'N={n}:{loss[n] - loss[L]:.3f}' for n in loss if n != L))
 
     txt = '\n'.join(lines)
     OUT.mkdir(parents=True, exist_ok=True)
-    stem = (f'refinement_flow_confirmation_{KIND}' + ('' if SEED is None else f'_seed{SEED}')
+    stem = (f'refinement_flow_confirmation_{NAME}' + ('' if SEED is None else f'_seed{SEED}')
             + ('' if not CKPT else '_' + CKPT.split('_')[-2] if CKPT.endswith('_snap.pt') else ''))
     (OUT / f'{stem}_output.txt').write_text(txt + '\n')
     (OUT / f'{stem}.json').write_text(json.dumps(out, indent=1))

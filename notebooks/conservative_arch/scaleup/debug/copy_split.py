@@ -54,6 +54,27 @@ def ladder_model(folder, ckpt):
     sys.argv = [sys.argv[0], str(OUT / 'harness')]
     sys.path.insert(0, str(Path(__file__).parent))
     import verify_pm_switch as P
+    repl, tag = tag_repl(folder)
+    if not ckpt:
+        ck = [p.name for p in (Path.home() / 'Downloads' / folder / 'checkpoints').glob('fock_cfc_*_best.pt')
+              if '_step' not in p.name]
+        assert len(ck) == 1, ck
+        ckpt = ck[0]
+    model, g, _ = P.build(folder, repl, ckpt=ckpt)
+    built = g['_variant_tag'] if '_variant_tag' in g else None
+    assert built is None or built == tag, (built, tag)
+    model.to('cpu'); model.eval(); model.cfg.use_layer_checkpoint = False
+
+    def run(x):
+        with torch.enable_grad():          # the V_phi pair force is an autograd gradient
+            return model(torch.from_numpy(x))[0].detach()
+    return run, f'{ckpt} (built tag {built})'
+
+
+def tag_repl(folder):
+    """Cell 0 replacements that rebuild a ladder run from its folder's tag (2026-11-01: split out of
+    ladder_model so refinement_flow_confirmation.py builds the code arms the same way). Returns (repl, tag)."""
+    import verify_pm_switch as P
     tag = re.fullmatch(r'semsimula_fock_cfc_baoab_[a-z]+_(.+)', folder).group(1)
     parts = tag.split('_')
     repl = P.LIVE
@@ -85,20 +106,7 @@ def ladder_model(folder, ckpt):
         repl += (('VTHETA_LR_MULT         = None', f"VTHETA_LR_MULT         = {vl[4:].replace('p', '.')}"),)
     if 'st16250' in parts:
         repl += (('LADDER_STEPS     = 32_500', 'LADDER_STEPS     = 16_250'),)
-    if not ckpt:
-        ck = [p.name for p in (Path.home() / 'Downloads' / folder / 'checkpoints').glob('fock_cfc_*_best.pt')
-              if '_step' not in p.name]
-        assert len(ck) == 1, ck
-        ckpt = ck[0]
-    model, g, _ = P.build(folder, repl, ckpt=ckpt)
-    built = g['_variant_tag'] if '_variant_tag' in g else None
-    assert built is None or built == tag, (built, tag)
-    model.to('cpu'); model.eval(); model.cfg.use_layer_checkpoint = False
-
-    def run(x):
-        with torch.enable_grad():          # the V_phi pair force is an autograd gradient
-            return model(torch.from_numpy(x))[0].detach()
-    return run, f'{ckpt} (built tag {built})'
+    return repl, tag
 
 
 def gpt2_model(folder):
