@@ -1,0 +1,147 @@
+   l4: windows 4/512  running ppl 5.827
+   l4: windows 8/512  running ppl 6.987
+   l4: windows 12/512  running ppl 6.654
+   l4: windows 16/512  running ppl 6.932
+   l4: windows 20/512  running ppl 6.528
+   l4: windows 24/512  running ppl 6.498
+   l4: windows 28/512  running ppl 6.807
+   l4: windows 32/512  running ppl 6.780
+   l4: windows 36/512  running ppl 6.669
+   l4: windows 40/512  running ppl 6.369
+   l4: windows 44/512  running ppl 6.247
+   l4: windows 48/512  running ppl 6.028
+   l4: windows 52/512  running ppl 5.753
+   l4: windows 56/512  running ppl 5.745
+   l4: windows 60/512  running ppl 5.769
+   l4: windows 64/512  running ppl 5.924
+   l4: windows 68/512  running ppl 5.964
+   l4: windows 72/512  running ppl 6.006
+   l4: windows 76/512  running ppl 6.303
+   l4: windows 80/512  running ppl 6.134
+   l4: windows 84/512  running ppl 6.069
+   l4: windows 88/512  running ppl 6.015
+   l4: windows 92/512  running ppl 6.001
+   l4: windows 96/512  running ppl 6.077
+   l4: windows 100/512  running ppl 6.174
+   l4: windows 104/512  running ppl 6.187
+   l4: windows 108/512  running ppl 6.062
+   l4: windows 112/512  running ppl 6.052
+   l4: windows 116/512  running ppl 6.016
+   l4: windows 120/512  running ppl 6.019
+   l4: windows 124/512  running ppl 6.074
+   l4: windows 128/512  running ppl 6.097
+   l4: windows 132/512  running ppl 6.113
+   l4: windows 136/512  running ppl 6.064
+   l4: windows 140/512  running ppl 6.144
+   l4: windows 144/512  running ppl 6.163
+   l4: windows 148/512  running ppl 6.220
+   l4: windows 152/512  running ppl 6.250
+   l4: windows 156/512  running ppl 6.163
+   l4: windows 160/512  running ppl 6.100
+   l4: windows 164/512  running ppl 6.075
+   l4: windows 168/512  running ppl 6.068
+   l4: windows 172/512  running ppl 6.117
+   l4: windows 176/512  running ppl 6.214
+   l4: windows 180/512  running ppl 6.306
+   l4: windows 184/512  running ppl 6.460
+   l4: windows 188/512  running ppl 6.382
+   l4: windows 192/512  running ppl 6.328
+   l4: windows 196/512  running ppl 6.231
+   l4: windows 200/512  running ppl 6.123
+   l4: windows 204/512  running ppl 6.021
+   l4: windows 208/512  running ppl 5.942
+   l4: windows 212/512  running ppl 5.885
+   l4: windows 216/512  running ppl 5.828
+   l4: windows 220/512  running ppl 5.779
+   l4: windows 224/512  running ppl 5.752
+   l4: windows 228/512  running ppl 5.713
+   l4: windows 232/512  running ppl 5.686
+   l4: windows 236/512  running ppl 5.646
+   l4: windows 240/512  running ppl 5.587
+   l4: windows 244/512  running ppl 5.522
+   l4: windows 248/512  running ppl 5.480
+   l4: windows 252/512  running ppl 5.435
+   l4: windows 256/512  running ppl 5.403
+   l4: windows 260/512  running ppl 5.406
+   l4: windows 264/512  running ppl 5.397
+   l4: windows 268/512  running ppl 5.420
+   l4: windows 272/512  running ppl 5.444
+   l4: windows 276/512  running ppl 5.461
+   l4: windows 280/512  running ppl 5.473
+   l4: windows 284/512  running ppl 5.503
+   l4: windows 288/512  running ppl 5.487
+   l4: windows 292/512  running ppl 5.507
+   l4: windows 296/512  running ppl 5.610
+   l4: windows 300/512  running ppl 5.630
+   l4: windows 304/512  running ppl 5.639
+   l4: windows 308/512  running ppl 5.665
+   l4: windows 312/512  running ppl 5.671
+   l4: windows 316/512  running ppl 5.651
+   l4: windows 320/512  running ppl 5.633
+   l4: windows 324/512  running ppl 5.620
+   l4: windows 328/512  running ppl 5.598
+   l4: windows 332/512  running ppl 5.588
+   l4: windows 336/512  running ppl 5.737
+   l4: windows 340/512  running ppl 5.745
+   l4: windows 344/512  running ppl 5.746
+   l4: windows 348/512  running ppl 5.751
+   l4: windows 352/512  running ppl 5.756
+   l4: windows 356/512  running ppl 5.795
+   l4: windows 360/512  running ppl 5.819
+   l4: windows 364/512  running ppl 5.835
+   l4: windows 368/512  running ppl 5.856
+   l4: windows 372/512  running ppl 5.842
+   l4: windows 376/512  running ppl 5.837
+   l4: windows 380/512  running ppl 5.846
+   l4: windows 384/512  running ppl 5.844
+   l4: windows 388/512  running ppl 5.828
+   l4: windows 392/512  running ppl 5.821
+   l4: windows 396/512  running ppl 5.808
+   l4: windows 400/512  running ppl 5.864
+   l4: windows 404/512  running ppl 5.872
+   l4: windows 408/512  running ppl 5.874
+   l4: windows 412/512  running ppl 5.851
+   l4: windows 416/512  running ppl 5.862
+   l4: windows 420/512  running ppl 5.895
+   l4: windows 424/512  running ppl 5.885
+   l4: windows 428/512  running ppl 5.862
+   l4: windows 432/512  running ppl 5.830
+   l4: windows 436/512  running ppl 5.856
+   l4: windows 440/512  running ppl 5.861
+   l4: windows 444/512  running ppl 5.841
+   l4: windows 448/512  running ppl 5.846
+   l4: windows 452/512  running ppl 5.866
+   l4: windows 456/512  running ppl 5.878
+   l4: windows 460/512  running ppl 5.882
+   l4: windows 464/512  running ppl 5.874
+   l4: windows 468/512  running ppl 5.878
+   l4: windows 472/512  running ppl 5.889
+   l4: windows 476/512  running ppl 5.884
+   l4: windows 480/512  running ppl 5.878
+   l4: windows 484/512  running ppl 5.871
+   l4: windows 488/512  running ppl 5.854
+   l4: windows 492/512  running ppl 5.839
+   l4: windows 496/512  running ppl 5.851
+   l4: windows 500/512  running ppl 5.844
+   l4: windows 504/512  running ppl 5.855
+   l4: windows 508/512  running ppl 5.858
+   l4: windows 512/512  running ppl 5.898
+l4: ppl 5.8984 on 512 x 512 tokens -> /Users/dimitargueorguiev/git/ml/semsimula-paper/notebooks/conservative_arch/scaleup/results/copy_split_code/nll_l4.npy
+     1207.45 real      7897.02 user      1019.95 sys
+          9544130560  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+           133615938  page reclaims
+                  15  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                   1  voluntary context switches
+             9987092  involuntary context switches
+      21736718703315  instructions retired
+      25946439064956  cycles elapsed
+          3170201600  peak memory footprint

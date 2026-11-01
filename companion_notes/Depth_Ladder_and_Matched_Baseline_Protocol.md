@@ -4737,6 +4737,90 @@ Layer 1's wells along the run (`debug/vtheta_well_probe.py`, 16 code windows; th
 
 Published on Hugging Face (author's request, 2026-10-31): [card](https://huggingface.co/dimitarpg13/semsimula-ladder-live-code-d384-l2-none-norc-sr2-vtun), weights-only step-18,000 checkpoint, the probe and `xi_reach` files; the fifth item of the dead-wells collection, after screen A. The SO-CODE, screen A, screen B and SO-CODE-VTLR cards now point to it. Both conjectures are also in the Dead Wells note §8.
 
+<a name="p-l4-code-launch"></a>**L4-CODE launched 2026-10-31/11-01 (Colab A100 80 GB); calls L4a and L4b binding as registered on 2026-10-27, the L8 rule as fixed in `p-l8-code-rule`.** Cell 0: SO-CODE's nine changes with `LAYER_CHECKPOINT = False` kept, plus `LADDER_L = 4` (Δt = 2, T = 8), `SNAPSHOT_STEPS = [1_000, 1_500, 2_000, 2_500, 3_000]` and `EVAL_LAYER_CHECKPOINT = True` (12 changes). Tag `xi5long_…_aniso_dcvt5x8_…norc_vplive_xilive_sr2_st16250_L4probe…idt2_lr0p0012_noattn`, checked by executing GitHub HEAD's Cell 0 locally (the same Cell 0 without the L = 4 and snapshot lines gives SO-CODE's tag exactly) and matched line for line by the Colab output. The particle store committed from the other machine (`f1e59e3`, `PARTICLE_STORE = 0` by default) is bit-identical when off on the code arms: `debug/verify_well_reach.py` dump on a `2ca10be` worktree against the working copy, eval logits, train logits, loss and every gradient identical on SO-CODE, XI6-CODE, FOCK-CODE, F3.1 and G3′.
+- **First attempt, out of memory at the step-500 evaluation.** Training without layer checkpointing peaks at 60.5 GB (2.0 s per step), but `evaluate()` without checkpointing holds the whole graph and needs about 15 GB more. Resuming in place was rejected: the step-500 evaluation and checkpoint were lost, and training and evaluation draw from the same `rng`, so the partial evaluation would have shifted every later training batch away from the paired arms'. Fix (`7da8776`): Cell 0 switch `EVAL_LAYER_CHECKPOINT` (default `False`, not in the tag); `evaluate()` turns checkpointing on for its own duration and restores the training setting in a `finally`. CPU check on the L4-CODE build: tag unchanged, the notebook's `evaluate()` gives a bit-identical loss with the switch off and on (8 checkpointed segments for 4 layers × 2 batches with it on), and the setting is restored when evaluation fails. The Drive folder was deleted and the run restarted from step 0.
+- **Second attempt:** 76,555,296 decayed and 70,065 undecayed parameters; step 50 training loss 6.1811 (first attempt 6.1987, SO-CODE 6.159), gradient norm 0.54; the difference from the first attempt before any evaluation is GPU nondeterminism (same seed and batches), as between XI6-CODE and XI6-CODE-WR. 2.0 s per step, about 10.9 h. Step 500: evaluation peak 60.72 GB of 85.1; validation perplexity **46.79** (SO-CODE 44.02, SO-CODE-VTLR 51.13, screen A 35.75); ω·Δt median 0.65 at Δt = 2, none past the wall.
+- **After training:** Cells 8, 7, 6b-7 (Gate 3 now runs to N = 16) and 6b-13; the Drive folder with the snapshots, the step-500 best and the final `_step*_best.pt`. On CPU: the well probe on every layer and the removal costs, `xi_reach`, the copy split for L4b, pairing by step, then L4a, L4b and the L8 rule's triggers. If 6b-7 runs out of memory, rerun the diagnostics in a fresh session with `LAYER_CHECKPOINT = True` (not in the tag).
+
+<a name="p-l4-code-result"></a>**Result, L4-CODE (2026-11-01): depth is the largest gain on code so far, −8.5% against SO-CODE, and it is general, not long-range.** 19,250 steps in 10.9 h (2.04 s per step), one session; no watchdog trigger. Gradient norm median 0.38 after step 2,000, maximum 2.06 (step 550, in warmup); largest rise between logged training losses 0.071 (step 13,050, the step of SO-CODE's 0.073). SCAF CLEAN at 5,000, 10,000, 15,000 and 19,250; trained leak probe at 10,000 CLEAN (honest 4.77, standard 5.11). Output, Cells 7, 6b-7 and 6b-13, `training_log.jsonl` (its 38 evals match the text log), `scaf_leak_monitor.jsonl`, `omega_dt_endpoint.jsonl` and Cell 8's curve are filed in the arm's results folder (`L4_SO_on_Code_19250steps_output.txt`).
+- **Settled 5.48** (evals at 18,000, 18,500 and 19,000: 5.37, 5.50, 5.59; exact 5.4847); best 5.37 at step 18,000. SO-CODE 5.99 (**−8.5%**), FOCK-CODE 5.66 (−3.0%), FO-b-CODE 6.55 (−16.2%), GPT-2-CODE 4.96 (+10.6%). It closes **47%** of SO-CODE's gap to GPT-2-CODE in log perplexity; the register path (FOCK-CODE) closed 30%.
+- **Settling check (2026-10-04 rule), steps 16,000–19,000: fails narrowly,** like every code arm: fitted change −0.021 nats against a residual SD of 0.015. The paired gap to SO-CODE is flat over those steps (fitted change −0.0003 nats), so an extension would not move the comparison.
+- **Training loss** over steps 16,000–19,250: 1.604, against SO-CODE's 1.687. The arm fits the training data better by about as much as it fits the validation data better; it is not overfitting.
+
+Paired by step (both arms trained from step 0, so their evals share batches); the mean difference in log perplexity, with the SD of the per-eval differences:
+
+| steps | L4-CODE − SO-CODE | L4-CODE − FOCK-CODE |
+| --- | ---: | ---: |
+| 2,000–4,000 (5 evals) | −0.293 (SD 0.066), −25% | −0.095 (0.040) |
+| 8,000–13,000 (11 evals) | −0.098 (0.007), −9.4% | −0.025 (0.003) |
+| 16,000–19,000 (7 evals) | **−0.088 (0.004), −8.4%** | **−0.030 (0.003), −2.9%** |
+
+- **Behind in warmup, far ahead early, a fixed lead late.** L4-CODE trails SO-CODE at steps 500 and 1,000 (+6%), leads from 1,500, most at step 2,500 (−31.8%, 10.78 against 15.80), and the lead narrows to 8–9% by step 11,000 and stays there to the end. The register path's lead over SO-CODE has the same shape at about two thirds of the size.
+
+**Cell 6b-7** (best checkpoint, step 18,000; trained N = 4, Δt = 2, T = 8; loss 1.5395, ppl 4.66):
+
+| N | Gate 2, more layers at Δt = 2 (ppl) | Gate 3, refinement at T = 8 (ppl) | Gate 3 penalty (nats) |
+| ---: | ---: | ---: | ---: |
+| 1 | 50.33 | 155.70 | 3.508 |
+| 2 | 22.23 | 121.01 | 3.256 |
+| 3 | 6.17 | 8.82 | 0.638 |
+| 4 (trained) | 4.66 | 4.66 | 0 |
+| 6 | 6.28 | 6.75 | 0.370 |
+| 8 | 9.85 | 14.46 | **1.132** |
+| 12 | | 53.91 | 2.448 |
+| 16 | | 82.16 | 2.869 |
+
+- **Gate 0 PASS. MAPS,** as for every second-order arm: the loss has a minimum at the trained step and rises on both sides; the successive changes shrink from N = 4 to 6 and grow from there on. Near the trained step the curve is flatter than SO-CODE's: one step finer (N = 6, Δt = 1.33) costs 0.37 nats, half the step (N = 8) 1.13 nats, against SO-CODE's 1.42 at its own half step.
+- **Resetting the velocity (Gate 1) costs +76%** (4.66 → 8.21), against SO-CODE's +4.0% and FOCK-CODE's +35%. At L = 4 the model leans on the velocity it carries from layer to layer far more than at L = 2.
+- **Cell 6b-13: softer layers deeper.** ω·Δt median 2.20 at Δt = 2 (ω = 1.10; SO-CODE 7.55 at Δt = 4, ω = 1.89), 53.6% of readings past 2. By layer: 3.00, 2.79, 1.47, 0.89 (past 2: 99.6%, 92.5%, 13.0%, 9.2%). The two deeper layers are mostly within the explicit integrator's limit.
+- **Cell 7:** full model 4.99 (SO-CODE 5.51) on Cell 7's batches; the register path is off by construction and removing the registers changes nothing.
+
+**V_θ's wells per layer** (`debug/vtheta_well_probe.py`, 16 code windows; best checkpoint, the step-500 best and the five snapshots; `results/dead_wells/well_probe_l4code_code_step*`):
+
+| reading (step 18,000) | layer 0 | layer 1 | layer 2 | layer 3 |
+| --- | ---: | ---: | ---: | ---: |
+| nearest-well ratio, median (p99) | 1.33 (2.39) | 1.10 (1.50) | 1.05 (1.39) | 1.33 (1.75) |
+| occupancy, strongest well | 0.76 | 0.35 | 0.12 | 0.04 |
+| wells in use (n_eff) | 7.5 | 1.5 | 1.6 | 1.3 |
+| force carried by wells 0 and 7 | 52% | 100% | 100% | 100% |
+| removal cost of the layer's wells (ppl 6.95 on these windows) | **+4,127%** (293.8) | +146% (17.07) | +57% (10.92) | +3.6% (7.20) |
+
+- **No dead wells, at any snapshot.** The median nearest-well ratio stays between 0.82 and 1.33 in every layer from step 500 to the end; the dead-wells guard proposed for L8-CODE is not needed on this evidence.
+- **The deep layers run on two wells, the first layer on all eight.** In layers 1–3 the same two wells (0 and 7) carry all the force, from step 500 on (n_eff 1.00–1.15 through step 3,000, 1.3–1.6 at the end); the other six have centres two to five times |h| away and carry none. Layer 0 uses all eight, wide and near the states (n_eff 7.5 to 7.9 throughout). SO-CODE has the same split at L = 2 (its layer 1 on wells 5 and 7, keeping only those two costs 0.0%; its layer 0 cannot spare six, +1,980%). The cost of removing a layer's wells falls with depth, from layer 0, without which the model fails, to layer 3, which barely uses them.
+- **Retrieval is not sharper; it is repeated.** `debug/xi_reach.py` (step 18,000; `results/copy_split_code/xi_reach_l4code.txt`): in each of layers 1–3 one long channel finds earlier occurrences 65 or more tokens back at 21, 28 and 21 times an even spread (channel 3, over 23–53 effective positions); SO-CODE's layer 1 does it at 26 (channel 4, 36 positions). The per-layer lift is SO-CODE's; L = 4 has three such readings where L = 2 has one.
+
+**The copy split** (`results/copy_split_code/copy_split_report.txt` and `copy_split_report_vs_so.txt`, now with L4-CODE; best checkpoint; 512 windows, 262,144 targets; 3.2 GB peak). On these targets L4-CODE 5.898, SO-CODE 6.442, FOCK-CODE 6.089, GPT-2-CODE 5.350; ratio to SO-CODE 0.916 (the settled ratio: 0.915). L4-CODE is better than SO-CODE in 97.1% of the windows. Share of SO-CODE's per-token gap to GPT-2-CODE that each route closes:
+
+| group | share of targets | L4-CODE | FOCK-CODE |
+| --- | ---: | ---: | ---: |
+| all | 100% | **47.4%** | 30.4% |
+| first occurrence / induction | 27.7 / 50.0% | 47.4 / 49.4% | 33.4 / 28.3% |
+| indentation, newline, space | 21.9% | 33.9% | 21.1% |
+| identifiers, last seen 1–16 / 65–512 back | 10.0 / 7.7% | 48.5 / 48.0% | 24.3 / 31.4% |
+| repeat or induction, last seen 1–16 / 17–64 / 65–512 back | 34.8 / 25.2 / 12.3% | 45.2 / 48.6 / 48.1% | 26.5 / 30.8 / 29.7% |
+| the same, positions 256–511 only | | 44.7 / 47.4 / 49.7% | 24.0 / 28.6 / 29.1% |
+
+- **Depth's gain is general:** it closes about half of SO-CODE's gap in every group, first occurrences (nothing to copy) as much as induction targets. Its absolute gain grows with distance (−0.049 nats per token at 1–16, −0.165 at 65–256) because the gap it scales does. The remaining gap keeps SO-CODE's shape, concentrated in identifiers and growing with distance.
+- **Far against near:** 48.1% against 45.2%, +2.9 points (95% interval over windows by a bootstrap −1.8 to +7.9; P(> 0) = 0.89); among positions 256–511, +5.0 points (−1.0 to +10.9; P = 0.95). The same reading as FOCK4 (+3.2 and +5.2 points, recomputed here with the same script, `l4b_near_far_bootstrap.py`, and matching the filed numbers).
+
+**The calls** (registered 2026-10-27 before the run):
+
+| id | prediction | result | |
+| --- | --- | --- | --- |
+| L4a | settles more than 5% below SO-CODE (below 5.70) | 5.48, −8.5% (on OpenWebText, with the register path: −5.7%) | **HIT** |
+| L4b | its gain is long-range, as in XI2 | +2.9 points (−1.8 to +7.9) | **HIT on the letter, not distinguishable from no difference** |
+
+**The L8-CODE rule** (`p-l8-code-rule`): the perplexity trigger fires (5.48 < 5.88), so **L8-CODE runs.** Neither convergence trigger fires: (a) the penalty at N = 8 is 1.13 nats, above 0.71; (b) the successive changes grow from N = 6 on. By the rule's note, L4b decides what L8-CODE is read for: a general gain, so L8-CODE is read on the settled perplexity and the all-targets share closed, not for the long-distance gap.
+
+**Reading.** On code, depth at fixed integration time does what the register path does, more: a gain spread over every kind of target, with the gap's shape unchanged. The per-layer readings are SO-CODE's (the long channel's lift, two wells in each deep layer), now repeated in three deep layers, and the model relies far more on the velocity carried between them (Gate 1). This fits Conjecture 1 of the Dead Wells note (§8, readout not retrieval): more layers give more readout steps on the same diluted retrieval, and help everywhere, as the conjecture predicted. An interpretation; one seed per model.
+
+**Published 2026-11-01** (author's request): [`semsimula-ladder-live-code-d384-l4-none-norc-sr2`](https://huggingface.co/dimitarpg13/semsimula-ladder-live-code-d384-l4-none-norc-sr2), the step-18,000 best checkpoint with the results, the well probes, the channels' reach and the copy split; in a new collection, [Gen 3: depth on code](https://huggingface.co/collections/dimitarpg13/semantic-simulation-gen-3-depth-on-code-6ae76925374cab20b1cb7d5e) (the author's choice), ordered along the depth axis: SO-CODE (L = 2), L4-CODE, and L8-CODE when it is in. SO-CODE's card now points to it.
+
+<a name="p-l8-code-setup"></a>**L8-CODE set up 2026-11-01.** Cell 0: SO-CODE's changes without `LAYER_CHECKPOINT = False` (the default `True` is kept: L4-CODE trained at 60.5 GB of 85 GB without it, and L = 8 doubles the activations), plus `LADDER_L = 8` (Δt = 1, T = 8) and `SNAPSHOT_STEPS = [1_000, 1_500, 2_000, 2_500, 3_000]`; 10 changes. Expected tag `xi5long_…_aniso_dcvt5x8_…norc_vplive_xilive_sr2_st16250_L8probe…baoab_cfc_lowrank_lr0p0012_noattn` (no `idt` part at Δt = 1), from executing GitHub HEAD's Cell 0 locally; the same script reproduces SO-CODE's and L4-CODE's tags exactly. Estimated 5–6 s per step, about 28–33 h, so more than one Colab session.
+- **Resume pairing fixed (`63ce0d2`).** Training and `evaluate()` draw from one `rng`, which Cell 6 re-seeds; a resumed run therefore repeated the batch sequence from step 0 and its evals after the resume were not paired with any other arm's (as found for PMX at K = 64, `p-pmx-k16`). Checkpoints now also save `rng.bit_generator.state` (`batch_rng_state`) and the resume block restores it, printing which case applies; older checkpoints lack the key and keep the old behaviour. Checkpoints are written after the eval and before the next training batch (periodic checkpoints every 7,500 steps, a multiple of the eval interval), so the saved state is the one the uninterrupted run continues from. Checked by simulation with the notebook's `get_batch` (two training batches per step, 40 validation batches per eval, a resume at step 1,000 through `torch.save`): the restored run draws exactly the uninterrupted run's batches; re-seeding does not. Without a resume nothing changes.
+- **Launched 2026-11-01.** Cell 0's output matches the local execution line for line (tag as above); Cell 2 found no checkpoint (fresh folder; periodic checkpoints every 7,500 steps); Cell 6: 76,661,536 decayed and 70,329 undecayed parameters (76,731,865, as extrapolated from L = 2 and 4: each extra layer adds its depth code, V_φ scale and register destruction gate, 26,626 parameters). Step 50 training loss 6.1722 (SO-CODE 6.1591, L4-CODE 6.1811), gradient norm 0.57; peak memory 28.9 GB with layer checkpointing; 5.6 s per step, about 29.9 h. So the run crosses Colab's 24-hour limit: the notebook's wall-clock autosave (`AUTOSAVE_WALLCLOCK_HOURS = 23.5`, VM uptime) writes `…_step<N>_manual.pt` through `save_checkpoint()`, so with the batch sampler's state, and Cell 6 resumes from it. Residual gap: the autosave runs before that step's evaluation, so if it fires on a multiple of 500 the resumed batches shift by one evaluation's draws (about 1 chance in 500; check the `[autosave]` line).
+- **K2-CODE queued after it (author, 2026-11-01):** SO-CODE with `V_THETA_WELLS_PER_HEAD = 2` (tag `dcvt5x2`), 50,004,679 trainable parameters (−26,567,430; V_θ 35.43M → 8.86M). The well readings above bear on it: the deep layers use two wells, the first layer all eight.
+
 **MS2, the K = 16 pair, pre-registered in detail (2026-10-22, before the runs).** Both arms on PMX's Cell 0 (F3.1's settings plus `POISSON_MODES = 16`, `LOWRANK_DAMPED_FLOW = True`, `POISSON_WELLS_EXACT = True`) with the speed switches (`VPHI_ANALYTIC_FORCE = True`, `LAYER_CHECKPOINT = False`); the first-order arm adds `FIRST_ORDER_OVERDAMPED = True`. Tags `…pm16_pmx16_sr2_L2probe…` and `…pm16_pmx16_sr2_fob_L2probe…`; 32,500 steps, seed 0, OpenWebText; about 12 h each; the second-order arm first, as the new baseline. At K = 16 the exact rank part (`POISSON_WELLS_EXACT_MODES = 16`) covers every well. **Build check** (`debug/verify_dose_modes.py`, output `debug/verify_dose_modes_output.txt`): at K = 16 and K = 256, second order and FO-b, the notebook's own cells build the model with the expected tag and parameter count (76,578,318 at K = 16, 76,671,438 at K = 256), a training step gives a finite loss and finite gradients, and the half-lives initialise over 4–128 tokens as at K = 64. The K = 256 pair follows with the same settings and `POISSON_MODES = 256`.
 
 | id | prediction | called |

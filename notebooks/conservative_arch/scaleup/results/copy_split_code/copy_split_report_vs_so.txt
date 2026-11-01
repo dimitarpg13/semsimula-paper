@@ -1,5 +1,5 @@
 COPY SPLIT on code validation: 512 windows x 512 = 262,144 targets, reference so
-  ppl on these tokens: fob 7.023, fock 6.089, gpt2 5.350, so 6.442, xi6 9.159
+  ppl on these tokens: fob 7.023, fock 6.089, gpt2 5.350, l4 5.898, so 6.442, xi6 9.159
 
 fob against so: mean gap +0.0864 nats/token (ppl ratio 1.090)
   group                         share    so nll      fob nll      gap  ratio  of gap  seq spread
@@ -63,6 +63,27 @@ gpt2 against so: mean gap -0.1859 nats/token (ppl ratio 0.830)
   position 0-63                 12.5%     2.433        2.312   -0.121   0.89    8.1%  ±0.007
   position 64-255               37.5%     1.885        1.707   -0.178   0.84   35.9%  ±0.005
   position 256-511              50.0%     1.704        1.496   -0.208   0.81   56.0%  ±0.006
+
+l4 against so: mean gap -0.0882 nats/token (ppl ratio 0.916)
+  group                         share    so nll       l4 nll      gap  ratio  of gap  seq spread
+  all                          100.0%     1.863        1.775   -0.088   0.92  100.0%  ±0.002
+  first occurrence              27.7%     4.201        4.111   -0.090   0.91   28.2%  ±0.004
+  repeat (not induction)        22.3%     1.857        1.743   -0.114   0.89   28.7%  ±0.005
+  induction                     50.0%     0.567        0.492   -0.076   0.93   43.0%  ±0.003
+  indent/newline/space          21.9%     0.320        0.306   -0.014   0.99    3.5%  ±0.004
+  identifier-like               49.3%     2.821        2.702   -0.119   0.89   66.5%  ±0.004
+  number                         7.4%     1.762        1.678   -0.084   0.92    7.0%  ±0.011
+  punct/other                   21.4%     1.270        1.175   -0.095   0.91   22.9%  ±0.005
+  identifier, first             20.3%     4.695        4.604   -0.091   0.91   20.9%  ±0.005
+  identifier, repeat             8.7%     2.767        2.607   -0.160   0.85   15.7%  ±0.010
+  identifier, induction         20.4%     0.978        0.849   -0.130   0.88   30.0%  ±0.006
+  repeat/ind., dist 1-16        34.8%     0.601        0.551   -0.049   0.95   19.5%  ±0.003
+  repeat/ind., dist 17-64       25.2%     1.013        0.912   -0.101   0.90   28.8%  ±0.004
+  repeat/ind., dist 65-256      10.8%     1.816        1.651   -0.165   0.85   20.3%  ±0.009
+  repeat/ind., dist 257-512      1.5%     2.460        2.275   -0.184   0.83    3.2%  ±0.029
+  position 0-63                 12.5%     2.433        2.375   -0.058   0.94    8.2%  ±0.005
+  position 64-255               37.5%     1.885        1.802   -0.084   0.92   35.5%  ±0.003
+  position 256-511              50.0%     1.704        1.604   -0.099   0.91   56.3%  ±0.003
 
 xi6 against so: mean gap +0.3519 nats/token (ppl ratio 1.422)
   group                         share    so nll      xi6 nll      gap  ratio  of gap  seq spread
