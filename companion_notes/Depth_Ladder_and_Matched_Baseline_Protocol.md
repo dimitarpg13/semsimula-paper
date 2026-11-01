@@ -4232,6 +4232,29 @@ FOCK3 and PMCS1 together would separate the two mechanisms on code: the register
 | L4a | depth helps on code at least as much as on OpenWebText: L4-CODE settles more than 5% below SO-CODE (below 5.70) | 60% |
 | L4b | its gain is long-range, as in XI2 | 55% |
 
+<a name="p-l8-code-rule"></a>**The L8-CODE rule, fixed by the author on 2026-10-31, before L4-CODE trains.** L8-CODE is SO-CODE's Cell 0 plus `LADDER_L = 8` (Δt = 1, T = 8 as at L = 2 and 4; `LAYER_CHECKPOINT = True`). It matches the matched GPT-2's depth (L = 8; GPT-2-CODE 4.96). It runs only on L4-CODE's settled perplexity:
+
+| L4-CODE settles | L8-CODE |
+| --- | --- |
+| more than 2% below SO-CODE (below 5.88) | **runs** |
+| within ±2% of SO-CODE (5.88–6.12): depth gives nothing at fixed T | skipped |
+| more than 2% above SO-CODE | skipped |
+
+±2% is the band used for every code arm, about twice the paired settled-eval spread. L4b's copy-split reading does not decide whether L8-CODE runs; it decides what L8-CODE is read for (the long-distance gap, or a general gain).
+
+**Amendment, fixed by the author on 2026-10-31, before L4-CODE trains: a second trigger, convergence.** L8-CODE also runs, whatever L4-CODE's perplexity, if L4-CODE's refinement test (Cell 6b-7 Gate 3: total time T = 8 held fixed, the step Δt = T/N refined, the penalty read as the validation loss at N minus the loss at the trained N = L, in nats) shows real progress towards a flow. Either condition counts:
+- **(a) A halved refinement penalty:** the penalty at half the trained step (N = 8 at L = 4, Δt = 1) is below **0.71 nats**, half of SO-CODE's at its own half step (N = 4 at L = 2: 3.0405 − 1.6221 = 1.42 nats).
+- **(b) The FLOW reading:** over the refined points N = 4, 6, 8, 12 and 16 (Δt from 2 down to 0.5), the successive changes in the loss shrink at every step, and the penalty at N = 16 is within 0.1 nats of the penalty at N = 8. The loss then levels off as the step shrinks, so the trained layers approximate a continuous curve rather than a map tied to Δt = 2.
+
+L8-CODE is skipped only if neither the perplexity rule nor (a) or (b) holds.
+- **The prior from OpenWebText** (Gen 2 with the register path on, the only depth pair with this test). Penalty at Δt × 2/3: 2.62 nats at L = 2, 1.15 at L = 4. At Δt × 1/2: 1.96 and 1.65. Depth lowered the penalty, but both arms are maps. On code at L = 2, SO-CODE's are 0.64 and 1.42.
+- **Cell 6b-7 is extended for this** (2026-10-31): `FOM_AXIS2_N = (1, 2, 3, 4, 6, 8, 12, 16, 24, 32)`, run up to N = max(8, 4L). That is refinement to 4 times the trained step count at every depth: L = 2 runs N up to 8 as before, so its outputs are unchanged; L = 4 runs up to 16 and L = 8 up to 32. The cut keeps memory bounded, since the gate evaluates with gradients on and memory grows with N. L = 2 arms train without layer checkpointing; L = 4 and 8 train with it.
+
+Proposed alongside the rule (not yet confirmed by the author):
+- **L4-CODE adds `SNAPSHOT_STEPS = [1_000, 1_500, 2_000, 2_500, 3_000]`** (weights-only saves, not in the tag, the training arithmetic unchanged), so a well death in any of layers 1–3 can be dated by `debug/vtheta_well_probe.py`, as for XI6-CODE-WR. The well bank is shared across layers and only the depth code tells them apart, so more layers depend on it at L = 4 and 8 (Dead Wells note §5).
+- **If L4-CODE loses any layer's wells, the dead-wells fix is settled before L8-CODE runs**, so that L8-CODE measures depth, not dead wells. If SO-CODE-VTUN (`p-so-code-vtun`) finds unit-norm input free on a healthy arm, it is the candidate guard for L8-CODE.
+- **Cost:** about twice L4-CODE's 12–16 h, so about 25–30 h on one A100. That is likely more than one Colab session; the run resumes from its latest checkpoint in the same tag's folder. C5's pair (PM2-CODE, FO-b-PM2-CODE) waits behind it.
+
 **XI6-CODE started 2026-10-28** (fresh run, tag `xi6long_…_aniso_dcvt6x8_…norc_vplive_xilive_sr2_st16250_L2probe…noattn`, Drive folder `semsimula_fock_cfc_baoab_code_<tag>`): 83,690,702 parameters (83,620,768 decayed plus 69,934 not), as in the build check; six context channels, the sixth initialised like the fifth (decays 0.995). Training loss at step 50: 6.1413 (SO-CODE 6.1591), at step 100: 5.7109 (5.7260). About 1.06 s per step, estimated 5.9 h. The author started Cell 6 without changes, so **XI1 and XI2 are binding as written.** Diagnostics after training: Cells 8, 7, 6b-7 and 6b-13 (SO-CODE's set); then the copy split and `xi_reach.py` on CPU (`copy_split.py` now rebuilds Cell 0 for the `xi6long` and `L4probe` tags; checked against all four code tags).
 
 **Proposed GPU order** (the author's call): FO-b-CODE (running) → FOCK-CODE → XI6-CODE → L4-CODE → PM2-CODE → FO-b-PM2-CODE. With FOCK4, XI2 and L4b, the copy split ranks the three routes to long-range recall (registers, more lookups, depth) by how much of the long-distance gap each closes.
@@ -4615,6 +4638,30 @@ Layer 1's wells along the run (`debug/vtheta_well_probe.py`, 16 code windows; th
 - **Unit-norm input is the candidate default only if it costs SO-CODE nothing.** That is the twin's question, as SO-CODE-VTLR was for screen B.
 
 **Next, by the registered rule (VA1 and VA2 hold; author's call):** the SO-CODE twin, SO-CODE's Cell 0 plus `VTHETA_INPUT_UNIT_NORM = True` (tag `…sr2_st16250_vtun_L2probe…`), fresh, 19,250 steps, about 6 h. Screen A is published on Hugging Face (author's request, 2026-10-31): [card](https://huggingface.co/dimitarpg13/semsimula-ladder-live-code-d384-l2-none-norc-xi6long-sr2-wr3-vtun), weights-only step-16,000 checkpoint, in the dead-wells collection beside screen B; the SO-CODE, screen B and SO-CODE-VTLR cards now point to it.
+
+<a name="p-so-code-vtun"></a>**SO-CODE-VTUN, registered 2026-10-31 before the run: does unit-norm input cost a healthy arm anything?** The author's go-ahead. SO-CODE's Cell 0 (its nine changes, as for SO-CODE-VTLR) plus `VTHETA_INPUT_UNIT_NORM = True` and `SNAPSHOT_STEPS = [1_000, 1_500, 2_000, 2_500, 3_000]` (the snapshots pair it with screen A's for the well probe). Tag `xi5long_…_aniso_dcvt5x8_…norc_vplive_xilive_sr2_st16250_vtun_L2probe…noattn` (checked by executing GitHub HEAD `2ca10be`'s Cell 0 locally: the same Cell 0 without the two additions gives SO-CODE's tag exactly). Fresh run from step 0, so its evals pair with SO-CODE's, screen A's, screen B's and SO-CODE-VTLR's; 19,250 steps, about 6 h.
+
+Screen A (XI6 with unit-norm input) settled level with SO-CODE (5.95 against 6.00). This arm separates its two differences from SO-CODE, and decides whether the switch can be a default:
+
+| SO-CODE-VTUN settles | reading |
+| --- | --- |
+| within ±2% of 6.00, and its paired late gap to SO-CODE below SO-CODE-VTLR's +0.015 nats | unit-norm input costs a healthy arm nothing detectable: a candidate default (on code; OpenWebText not yet tested), and the sixth channel adds nothing |
+| within ±2%, gap at or above +0.015 nats | a small consistent cost, like the slower V_θ's; a fix for XI6, not a default |
+| more than 2% below 6.00 | unit-norm input helps any arm, and screen A's parity means the sixth channel gives the gain back |
+| more than 2% above 6.00 | it hurts a healthy arm, and the sixth channel makes up for it in screen A |
+
+**Proposed calls** (not yet confirmed by the author):
+
+| id | prediction | called |
+| --- | --- | ---: |
+| VU1 | SO-CODE-VTUN settles within ±2% of SO-CODE (5.88–6.12) | 65% |
+| VU2 | its paired gap to SO-CODE over steps 16,000–19,000 is below +0.015 nats (less than the slower V_θ's cost) | 55% |
+| VU3 | its layer-1 wells stay alive: occupancy of the strongest well above 0.05 and removal cost above +100% at the best checkpoint | 85% |
+| VU4 | Cell 6b-7 Gate 3 at N = 3 stays above 0.45 nats (SO-CODE 0.639, screen A 0.587) | 75% |
+
+±2% is about twice the paired settled-eval spread of these arms. One seed; a result within the band is read as "no effect detected", not as equality.
+
+**Launched 2026-10-31** (Colab A100), calls not changed before the start. Cell 0's output matches the local execution line for line (tag as above, `[vtun]` line, `Xi: 5ch`); `SNAPSHOT_STEPS` printed as `[1000, 1500, 2000, 2500, 3000]`; Cell 5b: fresh run into the tag's folder, with the screen A banner as the only addition to SO-CODE's. Cell 6: the parameter split is SO-CODE's exactly (76,502,176 decayed, 69,933 not), the switch adds no parameters; WSD over 16,250 steps, then the floor to 19,250. Step 50: training loss 6.081 (screen A 6.081, SO-CODE 6.159, SO-CODE-VTLR 6.221), gradient norm 0.44 (screen A 0.43, SO-CODE 0.75). About 5.9 h.
 
 **MS2, the K = 16 pair, pre-registered in detail (2026-10-22, before the runs).** Both arms on PMX's Cell 0 (F3.1's settings plus `POISSON_MODES = 16`, `LOWRANK_DAMPED_FLOW = True`, `POISSON_WELLS_EXACT = True`) with the speed switches (`VPHI_ANALYTIC_FORCE = True`, `LAYER_CHECKPOINT = False`); the first-order arm adds `FIRST_ORDER_OVERDAMPED = True`. Tags `…pm16_pmx16_sr2_L2probe…` and `…pm16_pmx16_sr2_fob_L2probe…`; 32,500 steps, seed 0, OpenWebText; about 12 h each; the second-order arm first, as the new baseline. At K = 16 the exact rank part (`POISSON_WELLS_EXACT_MODES = 16`) covers every well. **Build check** (`debug/verify_dose_modes.py`, output `debug/verify_dose_modes_output.txt`): at K = 16 and K = 256, second order and FO-b, the notebook's own cells build the model with the expected tag and parameter count (76,578,318 at K = 16, 76,671,438 at K = 256), a training step gives a finite loss and finite gradients, and the half-lives initialise over 4–128 tokens as at K = 64. The K = 256 pair follows with the same settings and `POISSON_MODES = 256`.
 
