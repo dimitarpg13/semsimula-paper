@@ -1,0 +1,39 @@
+ablate channels []: loss 3.2690  ppl 26.28
+semsimula_fock_cfc_baoab_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_vtun_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+fock_cfc_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_vtun_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_step1000_snap.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_vtun_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn)
+16 code validation windows x 512; cap PRECISION_LR_MAX = 1.0; n_ctx = 5; K = 8, rank = 4
+
+medians per layer (well k* = the largest g_k at the token):
+  layer omega*dt  lam_max        m    w_max    n_eff    w(k*)  occ(k*)    sum g fro2(k*)     conc   |h-mu|  over 2
+      0    1.326    0.112    1.005    0.166    7.857    0.156    0.817    0.681    1.000    0.165    3.105    0.0%
+      1    1.159    0.089    1.005    0.217    7.334    0.187    0.523    0.175    1.000    0.503   19.471   11.5%
+
+context channels at the bank input (depth code added), per layer: norm median, cosine with the last channel
+  layer 0: norm    0.99    0.96    0.88    0.77    0.72 | cos  0.212  0.382  0.657  0.924  1.000
+  layer 1: norm    1.22    1.23    1.25    1.29    1.31 | cos  0.094  0.140  0.135  0.146  1.000
+
+well centres per layer: median |h|, mean-over-wells |mu|, nearest-well distance; |W_c xi_c| of mu per channel
+  layer 0: |h|    0.661 |mu|    3.187 nearest    2.845 | per channel    1.39    1.07    0.92    0.64    0.58
+  layer 1: |h|   19.572 |mu|    3.431 nearest   19.310 | per channel    1.28    1.20    1.22    0.97    0.94
+
+|mu_k| / |h| over all (token, well) pairs: quantiles; share above c; share of the force weight sum_k g_k carried by wells above c
+  layer 0: p05/25/50/75/95/99   3.04   3.98   4.78   6.53  11.78  13.60 | >2:  99.9% wells,  99.9% force  >3:  95.5% wells,  94.9% force  >4:  74.4% wells,  71.3% force  >6:  29.7% wells,  26.7% force
+  layer 1: p05/25/50/75/95/99   0.13   0.15   0.16   0.20   0.25   0.27 | >2:   0.0% wells,   0.0% force  >3:   0.0% wells,   0.0% force  >4:   0.0% wells,   0.0% force  >6:   0.0% wells,   0.0% force
+
+per well k = 0..K-1: share of the total force weight sum g_k; share of tokens whose nearest well it is
+  layer 0: force  12.9  12.4  15.6  12.6  12.6  13.8   8.4  11.6  | nearest  17.2   5.8  14.1   6.2  10.6  18.7  12.3  15.2
+  layer 1: force  12.6  20.3   6.2   7.6   6.2   8.6   5.5  33.2  | nearest   8.8   2.1  19.7  10.5   8.9   6.4  10.7  32.9
+
+nearest-well distance / |h| per token: quantiles; share of tokens above rho
+  layer 0: p50/90/99/99.9/max   4.26   8.65  10.41  11.16  11.61 | >1.5: 100.00%  >2:  99.96%  >2.5:  99.22%  >3:  92.85%
+  layer 1: p50/90/99/99.9/max   0.99   1.00   1.01   1.02   1.03 | >1.5:   0.00%  >2:   0.00%  >2.5:   0.00%  >3:   0.00%
+
+well centres per layer split as mu = W (xi - code_l) + W code_l + b (median over tokens of the mean over wells of each norm; cos = alignment of the code term with the total)
+  layer 0: |mu|    3.187  channels    3.315  depth code    2.102  bias    0.562  cos(code term, mu)    0.222  |code_l| 1.05
+  layer 1: |mu|    3.431  channels    2.022  depth code    2.649  bias    0.562  cos(code term, mu)    0.772  |code_l| 1.71
+
+bank projections: Frobenius norm of the weight columns reading each channel
+  B_proj    57.971   57.348   57.289   54.247   53.659   cos(last two blocks) +0.782
+  mu_proj   38.853   36.432   34.583   30.953   30.511   cos(last two blocks) +0.424
+  a_proj    36.492   36.423   40.087   37.353   37.788   cos(last two blocks) +0.403
+  w_proj     1.773    1.590    1.360    1.142    1.136   cos(last two blocks) +0.649

@@ -4252,7 +4252,7 @@ L8-CODE is skipped only if neither the perplexity rule nor (a) or (b) holds.
 
 Proposed alongside the rule (not yet confirmed by the author):
 - **L4-CODE adds `SNAPSHOT_STEPS = [1_000, 1_500, 2_000, 2_500, 3_000]`** (weights-only saves, not in the tag, the training arithmetic unchanged), so a well death in any of layers 1–3 can be dated by `debug/vtheta_well_probe.py`, as for XI6-CODE-WR. The well bank is shared across layers and only the depth code tells them apart, so more layers depend on it at L = 4 and 8 (Dead Wells note §5).
-- **If L4-CODE loses any layer's wells, the dead-wells fix is settled before L8-CODE runs**, so that L8-CODE measures depth, not dead wells. If SO-CODE-VTUN (`p-so-code-vtun`) finds unit-norm input free on a healthy arm, it is the candidate guard for L8-CODE.
+- **If L4-CODE loses any layer's wells, the dead-wells fix is settled before L8-CODE runs**, so that L8-CODE measures depth, not dead wells. If SO-CODE-VTUN (`p-so-code-vtun`) finds unit-norm input free on a healthy arm, it is the candidate guard for L8-CODE. (Result, `p-so-code-vtun-result`: it is not free, +5.8% on SO-CODE; of the two known fixes the slower V_θ, +1.5%, is the cheaper. Proposed, not confirmed.)
 - **Cost:** about twice L4-CODE's 12–16 h, so about 25–30 h on one A100. That is likely more than one Colab session; the run resumes from its latest checkpoint in the same tag's folder. C5's pair (PM2-CODE, FO-b-PM2-CODE) waits behind it.
 
 **XI6-CODE started 2026-10-28** (fresh run, tag `xi6long_…_aniso_dcvt6x8_…norc_vplive_xilive_sr2_st16250_L2probe…noattn`, Drive folder `semsimula_fock_cfc_baoab_code_<tag>`): 83,690,702 parameters (83,620,768 decayed plus 69,934 not), as in the build check; six context channels, the sixth initialised like the fifth (decays 0.995). Training loss at step 50: 6.1413 (SO-CODE 6.1591), at step 100: 5.7109 (5.7260). About 1.06 s per step, estimated 5.9 h. The author started Cell 6 without changes, so **XI1 and XI2 are binding as written.** Diagnostics after training: Cells 8, 7, 6b-7 and 6b-13 (SO-CODE's set); then the copy split and `xi_reach.py` on CPU (`copy_split.py` now rebuilds Cell 0 for the `xi6long` and `L4probe` tags; checked against all four code tags).
@@ -4662,6 +4662,78 @@ Screen A (XI6 with unit-norm input) settled level with SO-CODE (5.95 against 6.0
 ±2% is about twice the paired settled-eval spread of these arms. One seed; a result within the band is read as "no effect detected", not as equality.
 
 **Launched 2026-10-31** (Colab A100), calls not changed before the start. Cell 0's output matches the local execution line for line (tag as above, `[vtun]` line, `Xi: 5ch`); `SNAPSHOT_STEPS` printed as `[1000, 1500, 2000, 2500, 3000]`; Cell 5b: fresh run into the tag's folder, with the screen A banner as the only addition to SO-CODE's. Cell 6: the parameter split is SO-CODE's exactly (76,502,176 decayed, 69,933 not), the switch adds no parameters; WSD over 16,250 steps, then the floor to 19,250. Step 50: training loss 6.081 (screen A 6.081, SO-CODE 6.159, SO-CODE-VTLR 6.221), gradient norm 0.44 (screen A 0.43, SO-CODE 0.75). About 5.9 h.
+
+<a name="p-so-code-vtun-result"></a>**Result, SO-CODE-VTUN (2026-10-31): unit-norm input costs a healthy arm 5.8%, so screen A's parity is the sixth channel making up for it.** Fresh run from step 0, 19,250 steps in 6.1 h, one session; no watchdog trigger. Gradient norm median 0.39 after step 2,000, maximum 1.09 (step 200); largest rise between logged training losses 0.075 (step 13,050, the step of SO-CODE's 0.073). SCAF CLEAN at 5,000, 10,000, 15,000 and 19,250. Output, Cells 7, 6b-7 and 6b-13, `training_log.jsonl` (steps 50–19,250; its 38 evals match the text log), `scaf_leak_monitor.jsonl`, `omega_dt_endpoint.jsonl` and Cell 8's curve are filed in the arm's results folder (`L2_SO-VTUN_on_Code_19250steps_output.txt`).
+- **Settled 6.34** (evals at 18,000, 18,500 and 19,000: 6.23, 6.37, 6.43; exact 6.3418); best 6.23 at step 18,000. SO-CODE 6.00 (+5.8%), screen A 5.95 (+6.5%), screen B 5.98 (+6.1%), SO-CODE-VTLR 6.09 (+4.2%), GPT-2-CODE 4.96 (+27.9%).
+- **Settling check (2026-10-04 rule), steps 16,000–19,000: fails narrowly,** like every code arm: fitted change −0.020 nats against a residual SD of 0.014. The paired gap to SO-CODE is flat over those steps (below), so an extension would not move the comparison.
+
+Paired by step (all five arms trained from step 0, so their evals share batches); the mean difference in log perplexity, with the SD of the per-eval differences:
+
+| steps | SO-CODE-VTUN − SO-CODE | screen A − SO-CODE-VTUN | SO-CODE-VTUN − SO-CODE-VTLR |
+| --- | ---: | ---: | ---: |
+| 2,000–4,000 (5 evals) | +0.058 (SD 0.120) | −0.048 (0.067) | +0.179 (0.118) |
+| 8,000–13,000 (11 evals) | +0.103 (0.048) | −0.109 (0.073) | +0.103 (0.053) |
+| 16,000–19,000 (7 evals) | **+0.056 (0.002)** | **−0.058 (0.034)** | +0.041 (0.003) |
+
+- **Ahead early, then a stall, then a fixed deficit.** SO-CODE-VTUN leads SO-CODE at steps 500–2,500 (−20% at step 500, −9% at 2,000). Over the same steps it is within 1.8% of screen A, slightly lower. It falls behind SO-CODE from step 3,000 (+7.6%) and stalls: 12.81 at step 3,500 and 12.05 at 5,000, while SO-CODE goes from 10.96 to 9.27 and screen A from 12.03 to 9.89. The gap peaks at +30% over steps 5,000–6,000, closes through the decay phase, and is 5.5–6.0% at every eval from step 13,500.
+- **The late cost is consistent.** Over the last 3,000 steps the paired difference to SO-CODE is +0.056 nats with an SD of 0.002 per eval: the two runs differ only in the switch, so their evals move together. That is nearly four times the slower V_θ's cost (+0.015). One seed each.
+- **Training loss** over steps 16,000–19,250: 1.726, against SO-CODE's 1.687, screen A's 1.669 and SO-CODE-VTLR's 1.704. The arm fits the training data worse; it is not overfitting.
+
+Layer 1's wells along the run (`debug/vtheta_well_probe.py`, 16 code windows; the step-500 best, the five snapshots and the best checkpoint; `results/dead_wells/well_probe_sovtun_code_step*`), beside screen A's:
+
+| step | nearest-well ratio, median (this arm / screen A) | mean centre norm \|μ\| | largest `mu_proj` column norm | occupancy, strongest well | wells in use (n_eff) | largest well's share of the force | removal cost of layer 1's wells |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 500 | 0.99 / 0.99 | 1.7 / 1.7 | 26.4 / 25.4 | 0.39 / 0.40 | 7.97 / 7.95 | 27% / 28% | +0.2% / +0.4% |
+| 1,000 | 0.99 / 0.99 | 3.4 / 3.7 | 38.9 / 38.5 | 0.52 / 0.56 | 7.33 / 7.16 | 33% / 32% | |
+| 1,500 | 0.99 | 4.3 | 49.1 | 0.53 | 7.13 | 32% | |
+| 2,000 | 0.99 | 4.7 | 57.3 | 0.55 | 7.24 | 33% | |
+| 2,500 | 0.99 | 5.1 | 64.3 | 0.52 | 7.30 | 31% | |
+| 3,000 | 0.99 / 0.97 | 5.4 / 5.3 | 70.6 / 70.8 | 0.53 / 0.49 | **7.19 / 4.98** | 33% / 41% | +4.6% / +9.5% |
+| end (18,000 / 16,000) | 0.79 / 0.68 | 7.6 / 7.7 | 135.1 / 136.7 | 0.25 / 0.29 | 2.33 / 2.30 | 67% / 72% | **+83%** (8.09 → 14.78) / +136% |
+| SO-CODE, end | 1.03 | 59.9 | 101.5 | 0.18 | 1.06 | 89% | +202% |
+
+- **Layer 1 is alive throughout, and its bank is screen A's.** Through step 2,500 the two unit-norm arms agree on every column. At step 3,000 they part: screen A's layer 1 has begun to concentrate on fewer wells (n_eff 4.98), this arm's has not (7.19). This is also where screen A pulls ahead in perplexity. The coincidence is in time only; these readings do not show that one causes the other.
+- **At the end layer 1 carries less of the model.** One well carries 67% of the force at occupancy 0.25, as in screen A, but removing layer 1's wells costs +83%, against +136% for screen A and +202% for SO-CODE.
+- **Layer 0's wells sit further out than in any other live arm probed:** median nearest-well ratio 2.06 (57% of tokens above 2; the others 0.90–1.80, SO-CODE 1.35, screen A 1.63). They are still in use, being wide (occupancy of the strongest well 0.61, all eight wells in use, n_eff 7.9).
+
+| reading (best checkpoint) | SO-CODE-VTUN | screen A | screen B | SO-CODE-VTLR | SO-CODE |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Cell 7, full model | 5.81 | 5.46 | 5.52 | 5.57 | 5.51 |
+| 6b-7 Gate 0, unpatched | 5.30 | 5.06 | 5.13 | 5.16 | 5.06 |
+| 6b-7 Gate 1, velocity reset | **+25.3%** (5.30 → 6.64) | +11.5% | +2.5% | +3.1% | +4.0% |
+| 6b-7 Gate 2, N = 3 at the trained Δt | +20.8% | +48% | +37% | +27.5% | +42% |
+| 6b-7 Gate 3, N = 3 at fixed T | +60% (0.473 nats) | +80% (0.587) | +34% (0.290) | +37% (0.312) | +89% (0.639) |
+| 6b-7 Gate 3, N = 4 at fixed T | 0.803 nats | 1.086 | 0.941 | 0.928 | 1.418 |
+| 6b-13 ω·Δt median (layer 0 / layer 1); past 2 | 3.17 (2.94 / 3.91); 99.3% | 4.72 (5.12 / 4.16); 99.9% | 5.83 (6.37 / 4.34); 99.9% | 6.16 (7.16 / 3.58); 99.3% | 7.55 (9.58 / 4.94); 99.97% |
+
+- **6b-7 is MAPS**, as for every second-order arm. Gate 3's penalty at N = 3 is 0.473 nats, between SO-CODE's 0.639 and the slower-V_θ arms' 0.29–0.31. At N = 4 it is the lowest of the five (0.803).
+- **Resetting the velocity costs a quarter of the perplexity** (+25.3%), the most of any code arm without the register path (FOCK-CODE +35%, 4.79 → 6.47). Among the conservative-only arms with live wells, the two unit-norm arms have the two largest costs (screen A +11.5%; SO-CODE and the slower-V_θ arms 2.5–4.0%). Screen A's large Gate 1 cost (Dead Wells note §8) therefore goes with unit-norm input, not with the sixth channel. Why the velocity matters more under unit-norm input is not shown by these readings.
+- **6b-13's band for L = 2 ([3.3, 4.2]) misses** at 3.17, as for every code arm, now from below: the lowest ω·Δt of the code arms. Unit-norm input lowers layer 0's stiffness most (2.94; screen A 5.12, SO-CODE 9.58). As with FOCK-CODE, the stiffness does not track the loss.
+- **A lookup channel again** (`debug/xi_reach.py`, step 18,000; `results/copy_split_code/xi_reach_sovtun.txt`). Layer 1's channel 4 is a one-position lookup: median peak weight 0.996 (p90 1.000) on one position, a median 71 tokens back, about 1.2 effective positions (SO-CODE's channel 4: peak 0.15, about 40 positions). Channel 5, the longest, finds earlier occurrences 65 or more tokens back at 31 times an even spread (SO-CODE 26). Channel 3 finds them at 16 times (SO-CODE 0.1). Both unit-norm arms have one lookup channel with live wells (screen A's channel 5); the arms without the switch and with live wells have none. So the lookup comes with unit-norm input, not with the sixth channel.
+
+**The calls, scored on the letter** (proposed before the run, not confirmed by the author):
+
+| id | prediction | result | |
+| --- | --- | --- | --- |
+| VU1 | settles within ±2% of SO-CODE (5.88–6.12) | 6.34, +5.8% | **MISS** |
+| VU2 | paired gap to SO-CODE over steps 16,000–19,000 below +0.015 nats | +0.056 (SD 0.002) | **MISS** |
+| VU3 | layer-1 wells alive: occupancy of the strongest well above 0.05 and removal cost above +100% at the best checkpoint | 0.25; +83% | **MISS** on the removal cost (the wells are alive; layer 1 carries less) |
+| VU4 | Gate 3 at N = 3 above 0.45 nats | 0.473 | **HIT**, near the edge |
+
+**Reading, by the registered table** (row "more than 2% above 6.00"):
+- **Unit-norm input hurts a healthy arm.** On SO-CODE it costs 5.8%, nearly four times the slower V_θ's 1.5%. It is a fix for XI6's dead wells, not a default.
+- **Screen A's parity is the sixth channel making up for it.** With unit-norm input in both, the sixth channel is worth about 6% (screen A against this arm: −0.058 nats over the last 3,000 steps). The sixth channel's value on code therefore depends on how the bank's input is scaled:
+
+| bank input | five channels | six channels | six against five |
+| --- | ---: | ---: | --- |
+| as trained (SO-CODE, XI6-CODE) | 6.00 | 8.55 | +42.7%: layer 1's wells die |
+| V_θ's learning rate × 0.25 (SO-CODE-VTLR, screen B) | 6.09 | 5.98 | −1.8%, within the paired noise |
+| unit-norm channels (SO-CODE-VTUN, screen A) | 6.34 | 5.95 | **−6.1%** |
+
+- **No configuration beats SO-CODE.** The best code arms (SO-CODE, screens A and B) all settle at 5.95–6.00. The sixth channel adds nothing net: with its wells kept alive by either switch it recovers what the switch costs, no more. On a five-channel arm neither switch is free (+1.5% and +5.8%).
+- **Why unit-norm input costs five channels so much** is not shown. One possibility, untested: scaling each channel to norm 1 discards its size, which may carry information the bank uses, and a sixth channel gives the bank another input to make up for it. Zeroing or rescaling one channel at the bank input on the trained model (`vtheta_well_probe.py ablate=`) would be a first check.
+
+**Consequences for the queue.** L4-CODE runs on SO-CODE's Cell 0 as planned, with neither switch. In `p-l8-code-rule`, the guard proposed for L8-CODE, if L4-CODE loses wells, was unit-norm input, provided it was free. It is not. Of the two known fixes, the slower V_θ is the cheaper on a healthy arm; that choice is proposed, not confirmed by the author.
 
 **MS2, the K = 16 pair, pre-registered in detail (2026-10-22, before the runs).** Both arms on PMX's Cell 0 (F3.1's settings plus `POISSON_MODES = 16`, `LOWRANK_DAMPED_FLOW = True`, `POISSON_WELLS_EXACT = True`) with the speed switches (`VPHI_ANALYTIC_FORCE = True`, `LAYER_CHECKPOINT = False`); the first-order arm adds `FIRST_ORDER_OVERDAMPED = True`. Tags `…pm16_pmx16_sr2_L2probe…` and `…pm16_pmx16_sr2_fob_L2probe…`; 32,500 steps, seed 0, OpenWebText; about 12 h each; the second-order arm first, as the new baseline. At K = 16 the exact rank part (`POISSON_WELLS_EXACT_MODES = 16`) covers every well. **Build check** (`debug/verify_dose_modes.py`, output `debug/verify_dose_modes_output.txt`): at K = 16 and K = 256, second order and FO-b, the notebook's own cells build the model with the expected tag and parameter count (76,578,318 at K = 16, 76,671,438 at K = 256), a training step gives a finite loss and finite gradients, and the half-lives initialise over 4–128 tokens as at K = 64. The K = 256 pair follows with the same settings and `POISSON_MODES = 256`.
 
