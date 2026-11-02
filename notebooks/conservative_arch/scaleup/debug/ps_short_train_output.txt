@@ -1,0 +1,67 @@
+# python3 ps_short_train.py OUT {off|decay|nodecay} steps=300 batch=4 threads=8   (2026-11-01, CPU)
+# Three arms from the notebook's cells: F3.1 + SR2, no Poisson modes; the store at K = 4, rank 8.
+
+[off] tag ...sr2  76,572,110 parameters
+  [off] step    1  loss 7.7454  (9s)
+  [off] step   25  loss 7.3217  (209s)
+  [off] step   50  loss 7.0050  (448s)
+  [off] step   75  loss 6.6707  (664s)
+  [off] step  100  loss 7.2433  (856s)
+  [off] step  125  loss 6.7344  (1052s)
+  [off] step  150  loss 6.5804  (1269s)
+  [off] step  175  loss 6.7294  (1500s)
+  [off] step  200  loss 6.6318  (1760s)
+  [off] step  225  loss 5.8891  (2004s)
+  [off] step  250  loss 6.5408  (2253s)
+  [off] step  275  loss 6.4068  (2502s)
+  [off] step  300  loss 5.7619  (2772s)
+
+PARTICLE STORE SHORT TRAIN: off, 300 steps of 4 x 256 tokens, 2772s; held-out perplexity 760.8
+wrote /private/tmp/claude-501/-Users-dimitargueorguiev-git-work-ml-semsimula-paper/6e4e9e11-b97f-444c-86f4-d4ae25dcc3cc/scratchpad/ps_run/ps_short_train_off.json
+
+[decay] tag ...sr2  76,582,882 parameters
+  [decay] step    1  loss 7.7454  (8s)
+  [decay] step   25  loss 7.4011  (190s)
+  [decay] step   50  loss 7.0834  (381s)
+  [decay] step   75  loss 6.6983  (589s)
+  [decay] step  100  loss 7.2972  (801s)
+  [decay] step  125  loss 6.7956  (1014s)
+  [decay] step  150  loss 6.6297  (1260s)
+  [decay] step  175  loss 6.7596  (1501s)
+  [decay] step  200  loss 6.6697  (1740s)
+  [decay] step  225  loss 5.9656  (1989s)
+  [decay] step  250  loss 6.5915  (2251s)
+  [decay] step  275  loss 6.4289  (2538s)
+  [decay] step  300  loss 5.7512  (3805s)
+
+PARTICLE STORE SHORT TRAIN: decay, 300 steps of 4 x 256 tokens, 3805s; held-out perplexity 778.5
+   layer 0: selectivity 0.791   existences by position R^2 -0.1243   mean e 0.118   live at t=32/128/255 [4.0, 4.4, 4.4]
+   layer 1: selectivity 0.472   existences by position R^2 -0.1290   mean e 0.359   live at t=32/128/255 [12.0, 13.5, 12.3]
+   depths |a| mean 0.1133 (per layer [0.0279, 0.1986]), range -0.066..+0.248
+   force share of the store per layer [0.5805, 31.7721]
+   removal cost (depths -> 0): +5.41% (per-sequence spread 4.18%, n = 8)
+wrote /private/tmp/claude-501/-Users-dimitargueorguiev-git-work-ml-semsimula-paper/6e4e9e11-b97f-444c-86f4-d4ae25dcc3cc/scratchpad/ps_run/ps_short_train_decay.json
+
+[nodecay] tag ...sr2  76,582,878 parameters
+  [nodecay] step    1  loss 7.7454  (8s)
+  [nodecay] step   25  loss 7.3802  (187s)
+  [nodecay] step   50  loss 7.2126  (381s)
+  [nodecay] step   75  loss 6.8794  (585s)
+  [nodecay] step  100  loss 7.2938  (796s)
+  [nodecay] step  125  loss 6.8222  (1019s)
+  [nodecay] step  150  loss 6.5962  (1289s)
+  [nodecay] step  175  loss 6.8123  (1579s)
+  [nodecay] step  200  loss 6.6434  (1849s)
+  [nodecay] step  225  loss 5.8704  (2182s)
+  [nodecay] step  250  loss 6.5448  (2600s)
+  [nodecay] step  275  loss 6.3521  (2933s)
+  [nodecay] step  300  loss 5.7319  (3273s)
+
+PARTICLE STORE SHORT TRAIN: nodecay, 300 steps of 4 x 256 tokens, 3273s; held-out perplexity 773.4
+   layer 0: selectivity 2.472   existences by position R^2 -0.1286   mean e 0.003   live at t=32/128/255 [0.4, 1.5, 2.9]
+   layer 1: selectivity 0.766   existences by position R^2 -0.1321   mean e 0.282   live at t=32/128/255 [35.5, 142.9, 287.8]
+   depths |a| mean 0.0175 (per layer [0.0009, 0.0342]), range -0.051..+0.030
+   force share of the store per layer [0.0018, 29.1221]
+   removal cost (depths -> 0): +0.16% (per-sequence spread 0.15%, n = 8)
+wrote /private/tmp/claude-501/-Users-dimitargueorguiev-git-work-ml-semsimula-paper/6e4e9e11-b97f-444c-86f4-d4ae25dcc3cc/scratchpad/ps_run/ps_short_train_nodecay.json
+
