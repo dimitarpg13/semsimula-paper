@@ -1,0 +1,71 @@
+# python3 verify_vphi_force_checkpoint.py <HEAD d330f1e worktree> OUT dump
+  dumped SO-CODE default: loss 7.418827  (17 s)
+  dumped SO-CODE speed: loss 7.418827  (12 s)
+  dumped XI6-CODE default: loss 7.581263  (17 s)
+  dumped XI6-CODE speed: loss 7.581263  (15 s)
+  dumped FOCK-CODE default: loss 7.315622  (13 s)
+  dumped FOCK-CODE speed: loss 7.315622  (10 s)
+  dumped F3.1 default: loss 4.230053  (14 s)
+  dumped F3.1 speed: loss 4.230053  (11 s)
+  dumped G3' default: loss 4.318297  (12 s)
+  dumped G3' speed: loss 4.318297  (10 s)
+      142.05 real       734.49 user        80.91 sys
+
+# python3 verify_vphi_force_checkpoint.py <working copy> OUT compare
+OFF (VPHI_FORCE_CHECKPOINT = False): HEAD vs working copy, trained weights
+  SO-CODE   default eval 0.0e+00  train 0.0e+00  grads 0.0e+00  loss 7.418827  (73 params)  -> IDENTICAL
+  SO-CODE   speed   eval 0.0e+00  train 0.0e+00  grads 0.0e+00  loss 7.418827  (73 params)  -> IDENTICAL
+  XI6-CODE  default eval 0.0e+00  train 0.0e+00  grads 0.0e+00  loss 7.581263  (73 params)  -> IDENTICAL
+  XI6-CODE  speed   eval 0.0e+00  train 0.0e+00  grads 0.0e+00  loss 7.581263  (73 params)  -> IDENTICAL
+  FOCK-CODE default eval 0.0e+00  train 0.0e+00  grads 0.0e+00  loss 7.315622  (91 params)  -> IDENTICAL
+  FOCK-CODE speed   eval 0.0e+00  train 0.0e+00  grads 0.0e+00  loss 7.315622  (91 params)  -> IDENTICAL
+  F3.1      default eval 0.0e+00  train 0.0e+00  grads 0.0e+00  loss 4.230053  (73 params)  -> IDENTICAL
+  F3.1      speed   eval 0.0e+00  train 0.0e+00  grads 0.0e+00  loss 4.230053  (73 params)  -> IDENTICAL
+  G3'       default eval 0.0e+00  train 0.0e+00  grads 0.0e+00  loss 4.318297  (96 params)  -> IDENTICAL
+  G3'       speed   eval 0.0e+00  train 0.0e+00  grads 0.0e+00  loss 4.318297  (96 params)  -> IDENTICAL
+ALL IDENTICAL
+      131.41 real       736.58 user        74.53 sys
+
+# python3 verify_vphi_force_checkpoint.py <working copy> OUT on   (2026-11-02, CPU, 4.6 GB peak)
+Cell 0 guard: VPHI_FORCE_CHECKPOINT = True without VPHI_ANALYTIC_FORCE
+  [PASS] Cell 0 refuses it (VPHI_FORCE_CHECKPOINT checkpoints the closed-form pair force: set VPHI...)
+SO-CODE
+  [PASS] tag unchanged
+  [PASS] Cell 0 banner printed
+  [PASS] Cell 5 passes the switch to the model
+  [PASS] speed switches in place
+  [PASS] layer ckpt off: eval and train logits, loss, all 73 gradients bit-identical
+  [PASS] RNG state after forward + backward identical
+  [PASS] layer ckpt on (nested checkpoints): bit-identical to the switch off
+      (layer ckpt on against off, both switch settings: max |d grad| 0.0e+00)
+  [PASS] pair force: 2 calls in the forward, 2 recomputes in the backward (L = 2)
+  [PASS] under no_grad: no checkpoint, logits identical
+      saved for backward, 2 x 512 code tokens, L = 2, K = 8: off 3.580 GiB, on 1.505 GiB
+  [PASS] saved tensors at least halved
+      6b-17: float32, analytic, V_phi ckpt   1.489 s   peak nan GiB   (x0.95 against float32 + autograd)
+  [PASS] Cell 6b-17 times the new row
+  [PASS] Cell 6b-17 restores the switches
+XI6-CODE
+  [PASS] tag unchanged
+  [PASS] Cell 0 banner printed
+  [PASS] Cell 5 passes the switch to the model
+  [PASS] speed switches in place
+  [PASS] layer ckpt off: eval and train logits, loss, all 73 gradients bit-identical
+  [PASS] RNG state after forward + backward identical
+  [PASS] layer ckpt on (nested checkpoints): bit-identical to the switch off
+      (layer ckpt on against off, both switch settings: max |d grad| 0.0e+00)
+  [PASS] pair force: 2 calls in the forward, 2 recomputes in the backward (L = 2)
+  [PASS] under no_grad: no checkpoint, logits identical
+FOCK-CODE
+  [PASS] tag unchanged
+  [PASS] Cell 0 banner printed
+  [PASS] Cell 5 passes the switch to the model
+  [PASS] speed switches in place
+  [PASS] layer ckpt off: eval and train logits, loss, all 91 gradients bit-identical
+  [PASS] RNG state after forward + backward identical
+  [PASS] layer ckpt on (nested checkpoints): bit-identical to the switch off
+      (layer ckpt on against off, both switch settings: max |d grad| 0.0e+00)
+  [PASS] pair force: 2 calls in the forward, 2 recomputes in the backward (L = 2)
+  [PASS] under no_grad: no checkpoint, logits identical
+31/31 PASS
+     1041.48 real      2582.85 user       124.75 sys

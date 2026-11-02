@@ -256,6 +256,13 @@ class MultiXiPARFConfig(SparsePARFConfig):
     # Gaussian gate), Theta 'mlp' with tanh, detached or live sources, no value
     # transport, no exchange potential inside U_pair. False = off (bit-identical).
     vphi_analytic_force: bool = False
+    # 2026-11-02: with vphi_analytic_force, wrap the closed-form pair force in
+    # torch.utils.checkpoint (non-reentrant), so its (B, T, k, H) intermediates
+    # are recomputed in the backward instead of kept: about 3/4 of a layer's
+    # activation memory on the code arms, at the cost of one pair-force forward,
+    # not the whole layer's. Same arithmetic (RNG state restored for the
+    # recompute). Only while grad is enabled. False = off (bit-identical).
+    vphi_force_checkpoint: bool = False
     # FO-b (Depth_Ladder_and_Matched_Baseline_Protocol.md SS5.13, 2026-10-19): a
     # true first-order (overdamped) layer step, the gradient flow dh/dt = mu f(h)
     # with mobility mu = dt / (2 m), dt the trained layer step cfg.dt. Same
@@ -1698,8 +1705,15 @@ class MultiXiPARFLM(SparsePARFLM):
                 )
             if _vphi_closed:
                 # closed form, no autograd (cfg.vphi_analytic_force)
-                f_phi = (self._pair_force_analytic(h_in, layer_idx, h_src_live=h_src_live)
-                         if self.V_phi is not None else torch.zeros_like(h_in))
+                if self.V_phi is None:
+                    f_phi = torch.zeros_like(h_in)
+                elif getattr(cfg, "vphi_force_checkpoint", False) and torch.is_grad_enabled():
+                    f_phi = torch.utils.checkpoint.checkpoint(
+                        self._pair_force_analytic, h_in, layer_idx,
+                        h_src_live=h_src_live, use_reentrant=False,
+                    )
+                else:
+                    f_phi = self._pair_force_analytic(h_in, layer_idx, h_src_live=h_src_live)
             elif not U_pair.requires_grad:
                 # pair_potential='none' with no potential-type exchange
                 # field: nothing to differentiate.
