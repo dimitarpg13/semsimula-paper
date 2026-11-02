@@ -106,6 +106,12 @@ def tag_repl(folder):
         repl += (('VTHETA_LR_MULT         = None', f"VTHETA_LR_MULT         = {vl[4:].replace('p', '.')}"),)
     if 'st16250' in parts:
         repl += (('LADDER_STEPS     = 32_500', 'LADDER_STEPS     = 16_250'),)
+    kw = next((int(t.split('x')[1]) for t in parts if re.fullmatch(r'dcvt\d+x\d+', t)), 8)
+    if kw != 8:                                  # K2-CODE: V_theta's wells per bank
+        repl += (('V_THETA_WELLS_PER_HEAD      = 8', f'V_THETA_WELLS_PER_HEAD      = {kw}'),)
+    vs = next((t for t in parts if re.fullmatch(r'vs\d+', t)), None)
+    if vs:                                       # SR4a: training only; needed for the tag check
+        repl += (('VARIABLE_STEP_COUNTS      = None', f"VARIABLE_STEP_COUNTS      = ({', '.join(vs[2:])},)"),)
     return repl, tag
 
 

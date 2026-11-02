@@ -360,6 +360,17 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
         # at layer 0 of each forward; only populated when training + enabled.
         self._repulsion_terms: List[torch.Tensor] = []
 
+        # Variable-step walk (SR4a, protocol SS5.9; 2026-11-01). None walks the
+        # trained L steps of cfg.dt. An integer N walks N steps of L*cfg.dt/N
+        # over the same time T, each step using the trained layer that covers
+        # its share of the walk (Cell 6b-7's 'hold' policy). Set by the
+        # training loop per step; not part of cfg, so checkpoints are unchanged.
+        self.stack_steps: Optional[int] = None
+        # Index of the current step inside _stack_forward's loop, None outside
+        # it. The per-forward resets below key on the first step, since under
+        # 'hold' layer 0 can take several steps.
+        self._stack_j: Optional[int] = None
+
     # ------------------------------------------------------------------
     def _validate_salience_init(self) -> float:
         """Resolve and range-check ``register_salience_init``.
@@ -456,10 +467,15 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
             and getattr(cfg, "prefix_causal_registers", False)
         )
 
-        if layer_idx == 0 and self.training and getattr(cfg, "register_repulsion", False):
+        # First step of the walk: layer 0 in the trained walk; under a
+        # variable-step walk, step 0 (layer 0 may also take steps 1, 2, ...).
+        # Outside the loop (a checkpoint recompute) _stack_j is None and the
+        # test is layer 0, as before.
+        _first = layer_idx == 0 if self._stack_j is None else self._stack_j == 0
+        if _first and self.training and getattr(cfg, "register_repulsion", False):
             self._repulsion_terms = []
         _record = self._in_stack_forward
-        if layer_idx == 0 and _record:
+        if _first and _record:
             # CB readings and gate terms are per forward pass; reset here, not
             # in the reverse-channel branch, which a layer with no active
             # registers skips.
@@ -751,6 +767,18 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
                 raise ValueError("substeps_per_layer > 1 is defined for integrator='baoab_cfc_lowrank' "
                                  "with no reverse channel (the per-layer flow of protocol SS5.19)")
 
+        # Variable-step walk (self.stack_steps, SR4a): N steps of L*dt/N, layer
+        # min(j*L // N, L-1) at step j. N = L is the trained walk, unchanged.
+        n_walk = cfg.L if self.stack_steps is None else int(self.stack_steps)
+        if n_walk != cfg.L:
+            if n_walk < 1:
+                raise ValueError(f"stack_steps must be >= 1, got {n_walk}")
+            if k_sub != 1:
+                raise ValueError("stack_steps and substeps_per_layer > 1 are separate modes: set one")
+            if getattr(self, "pstore_mu", None) is not None:
+                raise NotImplementedError("stack_steps with a particle store: not defined yet")
+            dt = cfg.dt * cfg.L / n_walk
+
         h = h0
         h_prev = h0
 
@@ -762,7 +790,9 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
         # _in_stack_forward in __init__); recomputes in backward do not.
         self._in_stack_forward = True
         try:
-            for ell in range(cfg.L):
+            for j_walk in range(n_walk):
+                ell = j_walk if n_walk == cfg.L else min((j_walk * cfg.L) // n_walk, cfg.L - 1)
+                self._stack_j = j_walk
                 if getattr(cfg, "first_order_memoryless", False):
                     h_prev = h                   # FO-a: v <- 0 at the layer boundary
                 # Gate on grad-tracking, not train/eval mode: evaluate() runs
@@ -814,6 +844,7 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
 
         finally:
             self._in_stack_forward = False
+            self._stack_j = None
 
         return h, traj
 

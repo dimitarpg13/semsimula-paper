@@ -4839,6 +4839,72 @@ The whole-stack column is FLOW-R's own standard refinement on these batches (Cel
 - **For the book (2026-11-01):** Remark `rem:refinement-invariance` and §8.9 (`ssec:settling-refinement`) now separate the two tests. The whole-stack refinement fails on every model. The per-layer flow settles for every second-order model, to limits from 0.10 nats (SR2 on prose) to 0.40 (the well-register models on OpenWebText; code 0.31–0.37). Read against FLOW-R's full criterion over every FLOW-R output in the results folders, it converges for SR2, SO-TS, PMX-K16, SO-CODE and L4-CODE. It misses narrowly for PMX (|pen(12) − pen(8)| = 0.029), PM2-PMX16 (0.056), SR3-crit (0.028) and the learned γ(h) (|pen(16) − pen(12)| = 0.012). It does not settle for any FO-b model. The aliasing near ω·Δt = π amplifies the per-step operations; it is not a separate cause.
 - **Next on this axis:** SR4a on code (N drawn from {2, 3, 4} at T = 8 on SO-CODE, §5.9), the variable-step switch approved by the author on 2026-11-01. It asks whether training at several step counts brings the trained step onto the flow. The calls will be registered before launch.
 
+<a name="p-k2-code-setup"></a>**K2-CODE set up 2026-11-01 (author: after L8-CODE, before SR4a-CODE); calls proposed, not yet confirmed by the author.** SO-CODE with two V_θ wells instead of eight. There is one joint bank shared by both layers, so one setting changes both. The question is how much perplexity the six extra wells buy.
+
+- **Cell 0:** SO-CODE's nine changes (`REVERSE_CHANNEL = False`, `VPHI_GRAD_PATH = 'live'`, `XI_GRAD_PATH = 'live'`, `LOWRANK_DAMPED_FLOW = True`, `VPHI_ANALYTIC_FORCE = True`, `LAYER_CHECKPOINT = False`, `CORPUS = 'code'`, `LADDER_STEPS = 16_250`, `EXTRA_FLOOR_STEPS = 3_000`) plus `V_THETA_WELLS_PER_HEAD = 2` and `SNAPSHOT_STEPS = [1_000, 1_500, 2_000, 2_500, 3_000]`: 11 changes. The snapshots are proposed because two wells leave no spare if one dies early; dead wells appeared by step 1,000 in XI6-CODE-WR. They are not in the tag.
+- **Tag** (executing the working copy's Cell 0, which reproduces SO-CODE's tag exactly): `xi5long_topk16_dt32da16_mh4_aniso_dcvt5x2_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn`. It is SO-CODE's with `dcvt5x2`, and the banner reads "1 joint bank x 2 wells = 2 total attractors".
+- **Build at initialisation** through Cells 0–5b, the same seed for both:
+  - trainable **50,004,679** against SO-CODE's 76,572,109 (**−26,567,430**); V_θ 8,859,650 against 35,427,080, each well 4,427,905;
+  - training loss and backward finite on 2 × 64 tokens; all 9 V_θ tensors receive a gradient.
+  - Non-embedding: K2-CODE 11,407,303, below GPT-2-CODE's 14,196,480 (SO-CODE 37,974,733). Wells and a third of the parameters change together: the arm measures the two at once.
+- **`debug/copy_split.py` `tag_repl`** now reads the wells from `dcvt<n>x<K>` and the SR4a counts from `vs<counts>`, so the CPU probes rebuild K2-CODE and SR4a-CODE from their folder names (checked: the K2 folder adds exactly the wells line).
+- **Expected cost:** at most SO-CODE's 1.1 s per step (V_θ is a quarter of its size), about 6 h for 19,250 steps, one session. Check step-50 loss and speed against SO-CODE's.
+- **After the run:**
+  - Cells 8, 7, 6b-7, 6b-13;
+  - the Drive folder with the snapshots and best checkpoint;
+  - on CPU, `vtheta_well_probe.py` on the snapshots and the best checkpoint (nearest-well ratio, occupancy, force share per layer), the removal cost of each layer's wells (`keep=-1 keep_layers=0` and `1`), and the paired evals against SO-CODE.
+
+**Evidence the calls rest on** (removal on SO-CODE's trained weights, 16 code windows, `results/dead_wells/well_probe_so_code_L{0,1}_keep2.txt`). Keeping only two wells costs **0.0%** in layer 1 (ppl 7.45 against 7.45) and **+1,983%** in layer 0 (155.2). In L4-CODE the deep layers run on two wells and layer 0 on all eight (`p-l4-code-result`). Those are removals without retraining. K2-CODE trains with two, and layer 0 must learn to work with them.
+
+**Calls, proposed 2026-11-01** (settled = mean of the evals at 18,000, 18,500, 19,000, exp-mean-log; SO-CODE 5.99; point prediction +4%):
+
+| call | prediction | probability |
+| --- | --- | ---: |
+| K2a | **the six wells are worth something:** K2-CODE settles more than 2% behind SO-CODE (above 6.11) | 70% |
+| K2b | **but not much:** within +10% of SO-CODE (at most 6.59, level with FO-b-CODE's 6.55 or better) | 75% |
+| K2c | **no dead well:** at the best checkpoint, in both layers, the nearest-well ratio median is at most 2 and the weaker well carries at least 10% of the wells' force | 60% |
+| K2d | **layer 0 still needs its wells:** removing layer 0's two wells costs at least +100% | 85% |
+
+<a name="p-sr4a-code"></a>**SR4a-CODE: variable-step training on SO-CODE. Switch built and verified 2026-11-01 (author's go-ahead the same day); calls proposed, not yet confirmed by the author.** The pre-registered SR4a arm (§5.9: N ~ U{2, 3, 4} at T = 8, depth code by time, Cell 6b-7's `hold` policy), moved to the code base after FLOW-R on code (`p-flowr-code`). There, every model's whole stack fails refinement by 1.4–3 nats while the per-layer flow settles. SR4a asks whether training at several step counts removes the whole-stack failure, by making the model work at every N it is trained on.
+
+- **The switch.**
+  - Cell 0 `VARIABLE_STEP_COUNTS` (default `None`); tag `vs<counts>`, e.g. `…_sr2_vs234_st16250_L2probe…`.
+  - The model has a runtime attribute `stack_steps`, which is not in the config, so checkpoints are unchanged. At N ≠ L, `_stack_forward` walks N steps of L·Δt/N, and step j uses the trained layer min(j·L // N, L − 1). At N = 3, L = 2 layer 0 therefore takes two steps.
+  - The per-forward resets inside `_fock_layer_step` (repulsion terms, CB readings, gate terms) now key on the walk's first step, not on layer 0, which `hold` visits more than once. In the trained walk the two are the same step.
+  - Cell 6 draws one N per optimizer step from its own generator (seed SEED + 4,000,000; its state is saved in checkpoints and restored on resume). The batch generator `rng` is untouched, so the batches and every eval stay paired with SO-CODE's.
+  - `evaluate()` walks N = L.
+  - The step log gains `vs_ntp_by_n` and `vs_steps_by_n`: the training loss and the number of steps per N since the last log line.
+  - Every `VARIABLE_STEP_PROBE_EVERY` = 2,000 steps, `vs_refinement_probe` logs an `event: vs_probe` record with ppl and ln(PPL_N / PPL_L) at N = L, 1.5L, 2L, 3L, 4L (2, 3, 4, 6, 8). It runs on Cell 6b-7's fixed batches (seed 20260920, 12 × 4) with its own generator and with layer checkpointing on.
+  - No parameters are added.
+- **Verification** (`debug/verify_variable_step_switch.py`; SO-CODE's trained weights built through Cells 0–5b, 2 × 256 code validation tokens; 26 checks, ALL PASS):
+  - the tag gains exactly `vs234`; the banner prints; no new parameters or keys;
+  - N = L (explicit or `None`) is bit-identical to the OFF-built model;
+  - in eval, at N = 1, 3, 4, 6, 8, the walk equals Cell 6b-7's `_fom_stack` (max |Δ logit| 0.0);
+  - in training at N = 3, loss and all 73 gradients equal `_fom_stack`'s, with layer checkpointing off and on (0.0); checkpointing on against off also gives 0.0;
+  - three repulsion terms at N = 3 (one per step) and two in the trained walk;
+  - `stack_steps` together with `substeps_per_layer` > 1 is refused;
+  - the Cell 6 fragments: the draw leaves `rng` untouched; 19,250 draws are uniform (6,525 / 6,416 / 6,309, mean N 2.99); the saved state continues the draw; the per-N log entry is right, and is empty when off.
+  - With `probe` (2026-11-01, 47 min on CPU, 17 GB peak), the probe's losses equal Cell 6b-7's on the same batches at N = 2, 3, 8 (1.62207, 2.26108, 4.34890). Its perplexities, 5.06, 9.59 and 77.39, are SO-CODE's own Colab Cell 6b-7 Gate 3 values. The script's check of the state after the probe ran after its own `model.eval()` and failed spuriously. It now checks straight after the probe, and a stub run of the probe confirms: during it, eval mode with layer checkpointing on; afterwards `stack_steps` None, train mode, checkpointing as before.
+  - **OFF is bit-identical** to HEAD `c9343d6` on SO-CODE, XI6-CODE, FOCK-CODE (reverse channel on), F3.1 and G3′ (`verify_well_reach.py` dump in a HEAD worktree, compare in the working copy): eval and train logits, loss and every gradient, 0.0.
+- **Running it.**
+  - **Cell 0:** SO-CODE's nine changes plus `VARIABLE_STEP_COUNTS = (2, 3, 4)`. The expected tag is SO-CODE's with `_vs234` after `sr2` (checked by executing Cell 0).
+  - **Memory and speed:** SO-CODE's `LAYER_CHECKPOINT = False` can stay. An N = 4 step holds four layer steps' activations, about L4-CODE's 60.5 GB without checkpointing, on 80 GB. Evaluation walks N = 2, and the probe turns checkpointing on. Speed is about the mean of SO-CODE's 1.1 s per step at N = 2 and L4-CODE's 2.0 at N = 4, roughly 1.6 s per step: about 8.5 h for 19,250 steps, plus about 10 probes.
+  - **First checks:** step-50 loss and speed; the step lines show `vs=[N2:… N3:… N4:…]`; the first `vs_probe` at step 2,000.
+  - **After the run:** Cells 8, 7, 6b-7 (Gate 3 to N = 8), 6b-13; on CPU, FLOW-R (`code` kind, the tag carries `vs234`) and the paired evals against SO-CODE.
+- **The L8-CODE resume is unaffected:** the code is OFF-identical, Cell 0's default leaves every existing tag unchanged, and a resumed session that pulls this commit trains the same arithmetic.
+
+**Calls, proposed 2026-11-01 (the author confirms or changes them before launch; Cell 6b-7 batches unless stated; SO-CODE: settled 5.9951, Gate 1 +4.0%, Gate 3 at N = 3 / 4 / 8 0.639 / 1.418 / 2.727 nats (`Cell-6b-7_flow_or_maps_noattn_SR2_on_Code_19250steps_output.txt`), per-layer flow limit 0.369 on FLOW-R's batches):**
+
+| call | prediction | probability |
+| --- | --- | ---: |
+| VS1 | **refinement inside the trained range (SR4a's registered threshold):** Gate 3 penalty at N = 3 and at N = 4 both ≤ ln 1.10 = 0.095 nats | 70% |
+| VS2 | **settled at N = L within +5% of SO-CODE** (≤ 6.295) | 65% |
+| VS3 | **inertia kept** (SR4a's ≥ 80% of baseline): Gate 1 ≥ +3.2% | 70% |
+| VS4 | **refinement beyond the trained range:** Gate 3 penalty at N = 8 ≤ 0.50 nats (SO-CODE 2.73) | 40% |
+| VS5 | **the trained step moves onto its flow:** FLOW-R per-layer flow limit at k = 8 ≤ 0.20 nats (SO-CODE 0.369) | 45% |
+
+Scoring note: VS1 and VS3 are SR4a's registered thresholds carried to the code base. VS4 and VS5 separate "works at the trained step counts" from "is a flow": a model can meet VS1 by learning three maps with shared weights and still fail at N = 8.
+
 <a name="p-l8-code-setup"></a>**L8-CODE set up 2026-11-01.** Cell 0: SO-CODE's changes without `LAYER_CHECKPOINT = False` (the default `True` is kept: L4-CODE trained at 60.5 GB of 85 GB without it, and L = 8 doubles the activations), plus `LADDER_L = 8` (Δt = 1, T = 8) and `SNAPSHOT_STEPS = [1_000, 1_500, 2_000, 2_500, 3_000]`; 10 changes. Expected tag `xi5long_…_aniso_dcvt5x8_…norc_vplive_xilive_sr2_st16250_L8probe…baoab_cfc_lowrank_lr0p0012_noattn` (no `idt` part at Δt = 1), from executing GitHub HEAD's Cell 0 locally; the same script reproduces SO-CODE's and L4-CODE's tags exactly. Estimated 5–6 s per step, about 28–33 h, so more than one Colab session.
 - **Resume pairing fixed (`63ce0d2`).** Training and `evaluate()` draw from one `rng`, which Cell 6 re-seeds; a resumed run therefore repeated the batch sequence from step 0 and its evals after the resume were not paired with any other arm's (as found for PMX at K = 64, `p-pmx-k16`). Checkpoints now also save `rng.bit_generator.state` (`batch_rng_state`) and the resume block restores it, printing which case applies; older checkpoints lack the key and keep the old behaviour. Checkpoints are written after the eval and before the next training batch (periodic checkpoints every 7,500 steps, a multiple of the eval interval), so the saved state is the one the uninterrupted run continues from. Checked by simulation with the notebook's `get_batch` (two training batches per step, 40 validation batches per eval, a resume at step 1,000 through `torch.save`): the restored run draws exactly the uninterrupted run's batches; re-seeding does not. Without a resume nothing changes.
 - **Launched 2026-11-01.** Cell 0's output matches the local execution line for line (tag as above); Cell 2 found no checkpoint (fresh folder; periodic checkpoints every 7,500 steps); Cell 6: 76,661,536 decayed and 70,329 undecayed parameters (76,731,865, as extrapolated from L = 2 and 4: each extra layer adds its depth code, V_φ scale and register destruction gate, 26,626 parameters). Step 50 training loss 6.1722 (SO-CODE 6.1591, L4-CODE 6.1811), gradient norm 0.57; peak memory 28.9 GB with layer checkpointing; 5.6 s per step, about 29.9 h. So the run crosses Colab's 24-hour limit: the notebook's wall-clock autosave (`AUTOSAVE_WALLCLOCK_HOURS = 23.5`, VM uptime) writes `…_step<N>_manual.pt` through `save_checkpoint()`, so with the batch sampler's state, and Cell 6 resumes from it. Step 500: validation perplexity **50.93** (L4-CODE 46.79, SO-CODE 44.02), evaluation peak 23.1 GB; ω·Δt median 0.42 at Δt = 1, none past the wall. In warmup the deeper model trails, in depth order, as L4-CODE did before it led from step 1,500: training loss at step 500 3.867 (L4-CODE 3.806, SO-CODE 3.740). Residual gap: the autosave runs before that step's evaluation, so if it fires on a multiple of 500 the resumed batches shift by one evaluation's draws (about 1 chance in 500; check the `[autosave]` line).
