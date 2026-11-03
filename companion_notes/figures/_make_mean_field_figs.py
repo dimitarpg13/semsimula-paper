@@ -115,7 +115,7 @@ def fig_curie_weiss():
         ax.plot(Ts, ms, color=col, lw=2, label=lab)
     ax.axvline(1.0, color=GREY, ls="--", lw=1); ax.text(1.03, 0.9, "$T_c$", color=MUTED)
     ax.set_xlabel("temperature T / J"); ax.set_ylabel("self-consistent m = tanh((J m + h)/T)")
-    ax.set_title("(b) The order parameter against temperature", fontsize=11); ax.legend(frameon=False, fontsize=9)
+    ax.set_title("(b) The order parameter against temperature", fontsize=11); ax.legend(frameon=False, fontsize=9, loc="lower left")
     fig.suptitle("Synthetic illustration: the Curie–Weiss model (every spin coupled to the mean of all the others)", fontsize=10, color=MUTED, y=1.02)
     save(fig, "curie_weiss.png")
 
@@ -167,6 +167,7 @@ def fig_potts_selfconsistency():
         ne = []
         p = np.full(K, 1.0 / K) + 1e-3 * rng.standard_normal(K); p /= p.sum()
         for b in betas:
+            p = p + 1e-6 * rng.standard_normal(K); p = p.clip(1e-12); p /= p.sum()   # a fresh nudge off any unstable fixed point
             for _ in range(2000):
                 z = b * (p + h); z -= z.max()
                 q = np.exp(z); q /= q.sum()
@@ -184,11 +185,10 @@ def fig_potts_selfconsistency():
 def fig_free_energy_descent():
     """Synthetic: a density in a double well with a mean-field attraction evolves by the McKean-Vlasov (nonlinear
     Fokker-Planck) equation; its free energy F[rho] = int V rho + 1/2 int int W rho rho + T int rho ln rho decreases."""
-    x = np.linspace(-2.5, 2.5, 401); dx = x[1] - x[0]
-    V = (x * x - 1) ** 2; theta, T, dt = 0.8, 0.15, 2e-4
+    x = np.linspace(-2.0, 2.0, 201); dx = x[1] - x[0]
+    V = (x * x - 1) ** 2; theta, T, dt = 0.8, 0.15, 1e-4
     rho = np.exp(-((x + 0.3) ** 2) / (2 * 0.5 ** 2)); rho /= rho.sum() * dx
-    W = lambda r: 0.5 * theta * (x[:, None] - x[None, :]) ** 2
-    Wmat = W(None)
+    Wmat = 0.5 * theta * (x[:, None] - x[None, :]) ** 2
     def free_energy(r):
         return float((V * r).sum() * dx + 0.5 * (r @ Wmat @ r) * dx * dx + T * (r * np.log(r.clip(1e-300))).sum() * dx)
     ts, Fs, snaps = [], [], {}
@@ -198,8 +198,10 @@ def fig_free_energy_descent():
         if s in (0, 4000, 20000, 60000):
             snaps[s * dt] = rho.copy()
         mu = V + Wmat @ rho * dx + T * np.log(rho.clip(1e-300))       # the variational derivative of F
-        flux = rho * np.gradient(mu, dx)
-        rho = rho + dt * np.gradient(flux, dx)
+        # conservative scheme: the flux rho d(mu)/dx at the cell faces, zero flux at the walls
+        face = 0.5 * (rho[1:] + rho[:-1]) * (mu[1:] - mu[:-1]) / dx
+        flux = np.concatenate([[0.0], face, [0.0]])
+        rho = rho + dt * (flux[1:] - flux[:-1]) / dx
         rho = rho.clip(1e-12); rho /= rho.sum() * dx
     fig, axes = plt.subplots(1, 2, figsize=(11, 4.2))
     ax = axes[0]
