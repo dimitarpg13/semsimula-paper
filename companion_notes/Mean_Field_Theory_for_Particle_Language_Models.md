@@ -304,6 +304,14 @@ Design principles the theory suggests, stated as positions one can disagree with
 5. **Know which free energy the forward pass descends.** At the thermostat's $T = 0$ it is the energy alone; the layers roll the state to a minimum of $V_\theta + U_{\mathrm{pair}}$ in the field of the past. Whether an entropy term (a nonzero particle temperature) improves the model is a question the theory makes precise, and the SR5 arm asks it.
 6. **The field view is the scalable view.** A model whose every interaction is a functional of a density parametrised by $O(M)$ numbers has a cost per token independent of the context length and a well-defined continuum limit in depth and in context. The routed pair force has neither. That is the long-run argument for the content-gated field, independent of the step-time argument.
 
+### 7.1 Relation to the semantic-templates programme
+
+The templates line ([Implementing_Semantic_Templates_A_Path.md](Implementing_Semantic_Templates_A_Path.md), [Semantic_Templates_as_Doi_Peliti_Reactions.md](Semantic_Templates_as_Doi_Peliti_Reactions.md)) is the microscopic counterpart of everything in this note, and the two meet at three points.
+
+- **Mass action is the mean field of Doi–Peliti.** A template bank is a Liouvillian whose firings are creation terms with rates (Doi–Peliti note §4). The saddle point of the Doi–Peliti action is the law of mass action: deterministic rate equations for the mean occupancy of each type (Täuber, Howard and Vollmayr-Lee 2005). So the well-population rate law of the companion note's §5.3, and the Kramers reading of §3.5 of that note, are the mean-field level of the template dynamics; the templates supply the reactions, this note supplies the kinetics of their populations. What the mean field drops is what the templates exist for: the identity of individual particles, and with it order (additive updates commute, Doi–Peliti note §7.3).
+- **Temperature is shared.** The template firing rate $r_0 \sigma(\beta(\mathrm{BC} - \Theta))$ has a $\beta$ whose annealing schedule is an open calibration question (Path §8). §1.3 shows the trained bank anneals with depth by itself. One temperature per layer, read by the bank's softmax and by the firing rate, is the natural design, and Probe C's critical gain is where a firing threshold wants to sit.
+- **The class lift is not a field.** Only creation lifts the expressivity class (Path §1.1), and a mean field is a bounded summary with $M$ parameters whatever the context: by the bounds note's own criterion it is v0. The field view is the scalable view of the *bulk* (§7, item 6); the growing state that the class needs is the particle store's, and the store must not itself be coarse-grained (a summarised store is bounded memory). The division of labour, the dependency through depth, and the proposed sequencing of the two programmes are in the companion note's §7.1.
+
 ## 8. Pre-registered probe C: the self-consistent bank
 
 Runs on the CPU from a checkpoint's bank parameters alone ($W_w$, $b$, $M_k$, $m_k$, the depth code), in minutes, with no model forward. Calls proposed; the author confirms or changes them before it runs.
@@ -395,6 +403,7 @@ In the order I would read them, with what each is for. Chapter numbers are given
 - Santambrogio, F. (2015). *Optimal Transport for Applied Mathematicians.* Birkhäuser.
 - Sirignano, J. and Spiliopoulos, K. (2020). Mean field analysis of neural networks: a law of large numbers. *SIAM J. Appl. Math.* 80.
 - Spohn, H. (1991). *Large Scale Dynamics of Interacting Particles.* Springer.
+- Täuber, U. C., Howard, M. and Vollmayr-Lee, B. P. (2005). Applications of field-theoretic renormalization group methods to reaction–diffusion problems. *J. Phys. A* 38, R79.
 - Villani, C. (2003). *Topics in Optimal Transportation.* AMS.
 - Vuckovic, J., Baratin, A. and Tachet des Combes, R. (2020). A mathematical theory of attention. arXiv:2007.02876.
 - Wainwright, M. J. and Jordan, M. I. (2008). Graphical models, exponential families, and variational inference. *Found. Trends Mach. Learn.* 1.
