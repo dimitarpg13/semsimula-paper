@@ -2,7 +2,7 @@
 """How many wells does a corpus need? Softmax-gated mixtures of K linear maps fitted on a trained model's bank input (2026-11-03).
 
     python3 well_count_fit.py OUT FOLDER NAME [ckpt=<file>] [windows=256] [threads=8] [val=<tokens.npy>] [layer=0]
-                              [Ks=1,2,4,8] [depths=1,2] [epochs=10] [batch=2048] [lr=1e-3] [obj=ce|kl] [cache=<dir>]
+                              [Ks=1,2,4,8] [depths=1,2] [epochs=4] [evals=2] [batch=2048] [lr=3e-4] [wd=0.05] [obj=ce|kl] [cache=<dir>]
 
 A V_theta well's centre is linear in the bank input x (mu_k = M_k x + m_k, x = the context channels plus the depth
 code) and its weight is softmax(W_w x + b)_k. A layer whose wells are stiff puts the state at their weighted
@@ -24,6 +24,10 @@ evenly over the set (copy_split.windows); cached as <cache>/wcf_<NAME>_L<layer>_
 (every expert split in two with a small perturbation, the gate rows copied: the same function at the start),
 and a deeper stack from the shallower one with the new blocks at zero output. obj=ce fits the next token,
 obj=kl the trained model's own distribution (both report both). Inference of the model only; the fits on CPU.
+AdamW with weight decay, the validation objective `evals` times per epoch and the best point kept (2026-11-03: without
+the decay, at lr 1e-3 and one validation per epoch, the fits overfitted 358 windows from epoch 1-2 and the warm start
+was kept unchanged for K >= 4). Each "vs prev K" difference carries its paired per-window standard error (the test
+windows' mean differences), so the K_needed table says what the sample resolves.
 Writes OUT/well_count_fit_<NAME>[_L<layer>].txt.
 """
 import math, sys, time
@@ -41,7 +45,8 @@ sys.path.insert(0, str(DBG))
 LAYER = int(OPTS.get('layer', 0)); WIN = int(OPTS.get('windows', 256))
 KS = [int(k) for k in OPTS.get('Ks', '1,2,4,8').split(',')]
 DEPTHS = [int(k) for k in OPTS.get('depths', '1,2').split(',')]
-EPOCHS, BATCH, LR = int(OPTS.get('epochs', 10)), int(OPTS.get('batch', 2048)), float(OPTS.get('lr', 1e-3))
+EPOCHS, BATCH, LR = int(OPTS.get('epochs', 4)), int(OPTS.get('batch', 2048)), float(OPTS.get('lr', 3e-4))
+WD, EVALS = float(OPTS.get('wd', 0.05)), int(OPTS.get('evals', 2))   # 2026-11-03: AdamW weight decay; validations per epoch
 OBJ = OPTS.get('obj', 'ce'); assert OBJ in ('ce', 'kl'), OBJ
 CACHE = Path(OPTS.get('cache', Path.home() / 'Downloads/semsimula_wcf_cache')).resolve()
 cache = CACHE / f'wcf_{NAME}_L{LAYER}_w{WIN}.pt'
@@ -129,8 +134,14 @@ n_win = len(Y) // T
 perm = torch.randperm(n_win, generator=torch.Generator().manual_seed(0))
 split = {'train': perm[:int(.7 * n_win)], 'val': perm[int(.7 * n_win):int(.85 * n_win)], 'test': perm[int(.85 * n_win):]}
 idx = {k: (v[:, None] * T + torch.arange(T)).reshape(-1) for k, v in split.items()}
-mean = X[idx['train']].float().mean(0); std = X[idx['train']].float().std(0).clamp_min(1e-6)
-Xs = ((X.float() - mean) / std)                    # an affine change of variables: the fitted family is unchanged
+def _moments(ii, chunk=65536):                     # 2026-11-03: in chunks; X stays half (a 1,024-window cache is 2 GB)
+    n = 0; s1 = torch.zeros(X.shape[1], dtype=torch.float64); s2 = torch.zeros_like(s1)
+    for i in range(0, len(ii), chunk):
+        xb = X[ii[i:i + chunk]].double(); n += len(xb); s1 += xb.sum(0); s2 += (xb * xb).sum(0)
+    m = s1 / n
+    return m.float(), (s2 / n - m * m).clamp_min(0).sqrt().float().clamp_min(1e-6)
+mean, std = _moments(idx['train'])
+Xs = lambda ii: (X[ii].float() - mean) / std       # an affine change of variables: the fitted family is unchanged
 hn = H.norm(dim=-1)
 SPHERE = bool((hn.std() / hn.mean()) < 0.05 and abs(float(hn.mean()) / math.sqrt(d) - 1) < 0.05)
 proj = (lambda h: F.layer_norm(h, (d,))) if SPHERE else (lambda h: h)
@@ -182,7 +193,7 @@ class Stack(nn.Module):
 
 
 def losses(net, ii, want=('ce', 'kl')):
-    h, ws = net(Xs[ii])
+    h, ws = net(Xs(ii))
     lp = torch.log_softmax(readout(h), -1)
     ce = F.nll_loss(lp, Y[ii]) if 'ce' in want else None
     if 'kl' in want:
@@ -194,54 +205,72 @@ def losses(net, ii, want=('ce', 'kl')):
 
 
 @torch.no_grad()
-def evaluate(net, part):
+def evaluate(net, part, want=('ce', 'kl')):
     tot = {'ce': 0., 'kl': 0.}; ne = []
     ii_all = idx[part]
     for i in range(0, len(ii_all), 4096):
         ii = ii_all[i:i + 4096]
-        ce, kl, ws = losses(net, ii)
-        tot['ce'] += float(ce) * len(ii); tot['kl'] += float(kl) * len(ii)
+        ce, kl, ws = losses(net, ii, want)
+        tot['ce'] += float(ce) * len(ii) if ce is not None else 0.
+        tot['kl'] += float(kl) * len(ii) if kl is not None else 0.
         ne.append(torch.stack([torch.exp(-(w * w.clamp_min(1e-30).log()).sum(-1)) for w in ws], -1))
     ne = torch.cat(ne)
     return tot['ce'] / len(ii_all), tot['kl'] / len(ii_all), ne.median(0).values.tolist()
 
 
 def fit(net, label):
-    opt = torch.optim.Adam(net.parameters(), lr=LR)
-    tr = idx['train']; steps = EPOCHS * math.ceil(len(tr) / BATCH)
+    """AdamW, cosine schedule; the validation objective EVALS times per epoch, the best state kept (2026-11-03: the
+    first version, plain Adam at lr 1e-3 validated once per epoch, overfitted from epoch 1-2 on 358 windows, so for
+    K >= 4 the warm start was kept unchanged and the K-dependence was unreadable). Returns the best point in epochs."""
+    opt = torch.optim.AdamW(net.parameters(), lr=LR, weight_decay=WD)
+    tr = idx['train']; per_ep = math.ceil(len(tr) / BATCH); steps = EPOCHS * per_ep
     sched = torch.optim.lr_scheduler.LambdaLR(opt, lambda s: 0.5 * (1 + math.cos(math.pi * min(s, steps) / steps)))
-    best = (evaluate(net, 'val')[0 if OBJ == 'ce' else 1], {k: v.clone() for k, v in net.state_dict().items()}, 0)
-    t0 = time.time()
+    key = 0 if OBJ == 'ce' else 1
+    val = lambda: evaluate(net, 'val', want=(OBJ,))[key]
+    best = (val(), {k: v.clone() for k, v in net.state_dict().items()}, 0.0)
+    t0 = time.time(); every = max(per_ep // EVALS, 1); s = 0
     for ep in range(1, EPOCHS + 1):
         for ii in tr[torch.randperm(len(tr))].split(BATCH):
             ce, kl, _ = losses(net, ii, want=(OBJ,))
-            opt.zero_grad(); (ce if OBJ == 'ce' else kl).backward(); opt.step(); sched.step()
-        v = evaluate(net, 'val')[0 if OBJ == 'ce' else 1]
-        if v < best[0]:
-            best = (v, {k: t.clone() for k, t in net.state_dict().items()}, ep)
-        print(f'  {label} epoch {ep}: val {OBJ} {v:.4f}  ({time.time() - t0:.0f} s)', flush=True)
+            opt.zero_grad(); (ce if OBJ == 'ce' else kl).backward(); opt.step(); sched.step(); s += 1
+            if s % every == 0 or s == steps:
+                v = val()
+                if v < best[0]:
+                    best = (v, {k: t.clone() for k, t in net.state_dict().items()}, s / per_ep)
+                print(f'  {label} epoch {s / per_ep:.2f}: val {OBJ} {v:.4f}  ({time.time() - t0:.0f} s)', flush=True)
     net.load_state_dict(best[1])
     return best[2]
 
 
+@torch.no_grad()
+def test_nll(net):                                  # per-token test loss, for the paired per-window SE of differences
+    out = []
+    for i in range(0, len(idx['test']), 4096):
+        ii = idx['test'][i:i + 4096]; h, _ = net(Xs(ii)); out.append(F.cross_entropy(readout(h), Y[ii], reduction='none'))
+    return torch.cat(out)
+
+
 n_par = lambda net: sum(p.numel() for p in net.parameters())
-mce = {p: float(F.nll_loss(model_logp(idx[p]), Y[idx[p]])) for p in ('val', 'test')}
-chk = float((F.nll_loss(model_logp(idx['test']), Y[idx['test']], reduction='none') - C['nll'][idx['test']]).abs().max())
+def _model_nll(part):                              # 2026-11-03: in chunks (all test logits at once was the 26 GB peak)
+    return torch.cat([F.nll_loss(model_logp(idx[part][i:i + 4096]), Y[idx[part][i:i + 4096]], reduction='none')
+                      for i in range(0, len(idx[part]), 4096)])
+mce = {p: float(_model_nll(p).mean()) for p in ('val', 'test')}
+chk = float((_model_nll('test') - C['nll'][idx['test']]).abs().max())
 assert chk < 1e-3, f'the frozen readout does not reproduce the model loss: max |d nll| {chk}'
-din = Xs.shape[1]
+din = X.shape[1]
 hdr = [f'well-count fit, {NAME}: softmax-gated mixtures of K linear maps on the layer-{LAYER} bank input',
        f'{FOLDER}', f"{C['desc']}",
        f'{n_win} windows x {T} tokens (train/val/test {len(split["train"])}/{len(split["val"])}/{len(split["test"])} windows); '
        f'bank input {din} dims; d = {d}; final states |h| median {float(hn.median()):.2f} (sqrt d = {math.sqrt(d):.2f}) -> '
        f'{"projected onto the sphere" if SPHERE else "not projected"}',
-       f'objective {OBJ}; {EPOCHS} epochs, batch {BATCH}, Adam lr {LR} cosine; best validation epoch kept',
+       f'objective {OBJ}; {EPOCHS} epochs, batch {BATCH}, AdamW lr {LR} cosine, weight decay {WD}; validation {EVALS}x per epoch, best point kept',
        f'trained model on these tokens: test ce {mce["test"]:.4f} (ppl {math.exp(mce["test"]):.2f}), val ce {mce["val"]:.4f}; '
        f'the frozen readout on the captured final states reproduces its per-token loss to {chk:.1e}', '',
-       f'{"D":>2} {"K":>3} {"params":>10} {"test ce":>8} {"ppl":>8} {"vs model":>9} {"KL->model":>9} {"vs prev K":>9} {"best ep":>7}  gate n_eff medians']
+       f'{"D":>2} {"K":>3} {"params":>10} {"test ce":>8} {"ppl":>8} {"vs model":>9} {"KL->model":>9} {"vs prev K":>9} {"pair SE":>7} {"best ep":>7}  gate n_eff medians']
 print('\n'.join(hdr), flush=True)
-rows, res, prev_depth = [], {}, {}
+rows, res, prev_depth, ses = [], {}, {}, []
 for D in DEPTHS:
-    net, prev = None, None
+    net, prev, prev_nll = None, None, None
     for K in KS:
         if net is None:
             if D == DEPTHS[0] or (DEPTHS[DEPTHS.index(D) - 1], K) not in prev_depth:
@@ -253,17 +282,25 @@ for D in DEPTHS:
             net = Stack([b.split(K // b.K) for b in net.blocks])
         ep = fit(net, f'D={D} K={K}')
         ce, kl, ne = evaluate(net, 'test')
+        nll = test_nll(net)
         res[D, K] = ce; prev_depth[D, K] = Stack([b for b in net.blocks])
-        dp = '' if prev is None else f'{ce - prev:+9.4f}'
-        rows.append(f'{D:2d} {K:3d} {n_par(net):10,d} {ce:8.4f} {math.exp(ce):8.2f} {ce - mce["test"]:+9.4f} {kl:9.4f} {dp:>9} {ep:7d}  '
+        if prev is None:
+            dp = ''
+        else:
+            se = float((nll - prev_nll).view(-1, T).mean(1).std() / math.sqrt(len(split['test'])))
+            ses.append(se); dp = f'{ce - prev:+9.4f} {se:7.4f}'
+        rows.append(f'{D:2d} {K:3d} {n_par(net):10,d} {ce:8.4f} {math.exp(ce):8.2f} {ce - mce["test"]:+9.4f} {kl:9.4f} {dp:>17} {ep:7.2f}  '
                     + ' '.join(f'{v:.2f}' for v in ne))
         print(rows[-1], flush=True)
-        prev = ce
+        prev, prev_nll = ce, nll
 
 tail = ['', 'K_needed(eps) at each depth: the fewest K whose test ce is within eps nats of the best K at that depth']
 for D in DEPTHS:
     best = min(res[D, K] for K in KS)
     tail.append(f'  D = {D}: ' + ', '.join(f'eps {e}: K = {next(K for K in KS if res[D, K] <= best + e)}' for e in (0.005, 0.01, 0.02, 0.05)))
+if ses:
+    tail.append(f'paired per-window SE of the "vs prev K" differences: median {sorted(ses)[len(ses) // 2]:.4f}, max {max(ses):.4f}; '
+                f'a difference under about twice the SE is not resolved by {len(split["test"])} test windows')
 txt = '\n'.join(hdr + rows + tail)
 print('\n'.join(tail))
 OUT.mkdir(parents=True, exist_ok=True)
