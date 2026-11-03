@@ -1,0 +1,111 @@
+capture: windows 4/512  (4 s)
+capture: windows 68/512  (63 s)
+capture: windows 132/512  (123 s)
+capture: windows 196/512  (184 s)
+capture: windows 260/512  (243 s)
+capture: windows 324/512  (302 s)
+capture: windows 388/512  (361 s)
+capture: windows 452/512  (420 s)
+captured 262144 tokens in 479 s -> /Users/dimitargueorguiev/Downloads/semsimula_wcf_cache/wcf_so_code_L0_w512.pt
+well-count fit, so_code: softmax-gated mixtures of K linear maps on the layer-0 bank input
+semsimula_fock_cfc_baoab_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+fock_cfc_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn); validation /Users/dimitargueorguiev/Downloads/semsimula_code_gpt2/data/code_val_2M.npy
+512 windows x 512 tokens (train/val/test 358/77/77 windows); bank input 1920 dims; d = 384; final states |h| median 19.60 (sqrt d = 19.60) -> projected onto the sphere
+objective ce; 8 epochs, batch 2048, Adam lr 0.001 cosine; best validation epoch kept
+trained model on these tokens: test ce 1.8254 (ppl 6.21), val ce 1.9409; the frozen readout on the captured final states reproduces its per-token loss to 3.8e-06
+
+ D   K     params  test ce      ppl  vs model KL->model vs prev K best ep  gate n_eff medians
+  D=1 K=1 epoch 1: val ce 3.9992  (68 s)
+  D=1 K=1 epoch 2: val ce 3.8238  (135 s)
+  D=1 K=1 epoch 3: val ce 3.7744  (207 s)
+  D=1 K=1 epoch 4: val ce 3.7704  (311 s)
+  D=1 K=1 epoch 5: val ce 3.7590  (413 s)
+  D=1 K=1 epoch 6: val ce 3.7554  (512 s)
+  D=1 K=1 epoch 7: val ce 3.7586  (609 s)
+  D=1 K=1 epoch 8: val ce 3.7596  (705 s)
+ 1   1    739,585   3.5172    33.69   +1.6918    1.6797                 6  1.00
+  D=1 K=2 epoch 1: val ce 3.7480  (99 s)
+  D=1 K=2 epoch 2: val ce 3.7636  (198 s)
+  D=1 K=2 epoch 3: val ce 3.7817  (297 s)
+  D=1 K=2 epoch 4: val ce 3.7971  (395 s)
+  D=1 K=2 epoch 5: val ce 3.8175  (493 s)
+  D=1 K=2 epoch 6: val ce 3.8232  (593 s)
+  D=1 K=2 epoch 7: val ce 3.8229  (693 s)
+  D=1 K=2 epoch 8: val ce 3.8244  (792 s)
+ 1   2  1,479,170   3.4974    33.03   +1.6720    1.6688   -0.0198       1  1.77
+  D=1 K=4 epoch 1: val ce 3.7468  (107 s)
+  D=1 K=4 epoch 2: val ce 3.7551  (212 s)
+  D=1 K=4 epoch 3: val ce 3.7873  (316 s)
+  D=1 K=4 epoch 4: val ce 3.8097  (420 s)
+  D=1 K=4 epoch 5: val ce 3.8519  (525 s)
+  D=1 K=4 epoch 6: val ce 3.8640  (629 s)
+  D=1 K=4 epoch 7: val ce 3.8676  (734 s)
+  D=1 K=4 epoch 8: val ce 3.8705  (838 s)
+ 1   4  2,958,340   3.4848    32.61   +1.6593    1.6663   -0.0126       1  3.03
+  D=1 K=8 epoch 1: val ce 3.7387  (115 s)
+  D=1 K=8 epoch 2: val ce 3.7890  (228 s)
+  D=1 K=8 epoch 3: val ce 3.8084  (341 s)
+  D=1 K=8 epoch 4: val ce 3.8705  (452 s)
+  D=1 K=8 epoch 5: val ce 3.9063  (565 s)
+  D=1 K=8 epoch 6: val ce 3.9309  (680 s)
+  D=1 K=8 epoch 7: val ce 3.9364  (794 s)
+  D=1 K=8 epoch 8: val ce 3.9412  (908 s)
+ 1   8  5,916,680   3.4870    32.69   +1.6616    1.6799   +0.0022       1  5.12
+  D=2 K=1 epoch 1: val ce 3.7840  (102 s)
+  D=2 K=1 epoch 2: val ce 3.7719  (206 s)
+  D=2 K=1 epoch 3: val ce 3.7682  (310 s)
+  D=2 K=1 epoch 4: val ce 3.7719  (412 s)
+  D=2 K=1 epoch 5: val ce 3.7771  (518 s)
+  D=2 K=1 epoch 6: val ce 3.7806  (621 s)
+  D=2 K=1 epoch 7: val ce 3.7839  (724 s)
+  D=2 K=1 epoch 8: val ce 3.7840  (827 s)
+ 2   1  1,627,010   3.5172    33.69   +1.6918    1.6797                 0  1.00 1.00
+  D=2 K=2 epoch 1: val ce 3.7184  (109 s)
+  D=2 K=2 epoch 2: val ce 3.7298  (217 s)
+  D=2 K=2 epoch 3: val ce 3.7539  (324 s)
+  D=2 K=2 epoch 4: val ce 3.7654  (432 s)
+  D=2 K=2 epoch 5: val ce 3.7929  (540 s)
+  D=2 K=2 epoch 6: val ce 3.8184  (648 s)
+  D=2 K=2 epoch 7: val ce 3.8273  (756 s)
+  D=2 K=2 epoch 8: val ce 3.8310  (864 s)
+ 2   2  3,254,020   3.4936    32.90   +1.6682    1.6677   -0.0237       1  1.69 1.73
+  D=2 K=4 epoch 1: val ce 3.6956  (120 s)
+  D=2 K=4 epoch 2: val ce 3.7260  (239 s)
+  D=2 K=4 epoch 3: val ce 3.7725  (358 s)
+  D=2 K=4 epoch 4: val ce 3.8423  (477 s)
+  D=2 K=4 epoch 5: val ce 3.8834  (597 s)
+  D=2 K=4 epoch 6: val ce 3.9150  (719 s)
+  D=2 K=4 epoch 7: val ce 3.9304  (840 s)
+  D=2 K=4 epoch 8: val ce 3.9334  (960 s)
+ 2   4  6,508,040   3.4685    32.09   +1.6431    1.6603   -0.0251       1  2.83 2.87
+  D=2 K=8 epoch 1: val ce 3.7157  (146 s)
+  D=2 K=8 epoch 2: val ce 3.7652  (291 s)
+  D=2 K=8 epoch 3: val ce 3.8383  (437 s)
+  D=2 K=8 epoch 4: val ce 3.9296  (583 s)
+  D=2 K=8 epoch 5: val ce 3.9974  (729 s)
+  D=2 K=8 epoch 6: val ce 4.0507  (874 s)
+  D=2 K=8 epoch 7: val ce 4.0683  (1020 s)
+  D=2 K=8 epoch 8: val ce 4.0708  (1168 s)
+ 2   8 13,016,080   3.4685    32.09   +1.6431    1.6603   +0.0000       0  5.66 5.73
+
+K_needed(eps) at each depth: the fewest K whose test ce is within eps nats of the best K at that depth
+  D = 1: eps 0.005: K = 4, eps 0.01: K = 4, eps 0.02: K = 2, eps 0.05: K = 1
+  D = 2: eps 0.005: K = 4, eps 0.01: K = 4, eps 0.02: K = 4, eps 0.05: K = 1
+     7934.96 real     57975.00 user      4620.84 sys
+         26487181312  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+          1046000495  page reclaims
+                  19  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                 198  voluntary context switches
+            29989063  involuntary context switches
+     210261046725515  instructions retired
+     125290384762083  cycles elapsed
+         19419623424  peak memory footprint

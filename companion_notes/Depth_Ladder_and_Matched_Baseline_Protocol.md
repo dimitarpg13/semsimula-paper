@@ -4816,6 +4816,57 @@ Paired by step (both arms trained from step 0, so their evals share batches); th
 
 **Published 2026-11-01** (author's request): [`semsimula-ladder-live-code-d384-l4-none-norc-sr2`](https://huggingface.co/dimitarpg13/semsimula-ladder-live-code-d384-l4-none-norc-sr2), the step-18,000 best checkpoint with the results, the well probes, the channels' reach and the copy split; in a new collection, [Gen 3: depth on code](https://huggingface.co/collections/dimitarpg13/semantic-simulation-gen-3-depth-on-code-6ae76925374cab20b1cb7d5e) (the author's choice), ordered along the depth axis: SO-CODE (L = 2), L4-CODE, and L8-CODE when it is in. SO-CODE's card now points to it.
 
+<a name="p-l8-code-result"></a>**Result, L8-CODE (2026-11-02): eight layers settle at 5.35, −2.4% against L4-CODE and −10.7% against SO-CODE. The second doubling of depth buys about a quarter of what the first did.** Two sessions on one A100 80 GB: steps 1–15,500 (23.8 h; the wall-clock autosave wrote a manual checkpoint at step 15,001, and the session ended after the step-15,500 eval), then steps 15,501–19,250 (5.7 h), resumed by Cell 2 from the step-15,500 best checkpoint (113 of 113 tensors, optimizer state and batch sampler restored). 29.5 h in all, 5.5 s per step with layer checkpointing, peak memory 28.9 GB. Microbatch 16 × 2, as every code arm. No watchdog trigger. Gradient norm median 0.38 after step 2,000, maximum 1.06 (step 400, in warmup); largest rise between logged training losses 0.069 (step 13,050, the step of SO-CODE's 0.073). SCAF CLEAN at 5,000, 10,000, 15,000 and 19,250; trained leak probe at 10,000 CLEAN (honest 4.44, standard 4.70). Output (`L8_SO_on_Code_19250steps_output.txt`, the two sessions joined; each session's log as delivered beside it), Cells 7, 6b-7 and 6b-13, `training_log.jsonl` (its 38 evals match the text logs), `scaf_leak_monitor.jsonl`, `omega_dt_endpoint.jsonl` and Cell 8's curve are filed in the arm's results folder. The diagnostics read the step-18,000 best checkpoint (perplexity 5.26).
+
+- **Settled 5.35** (mean log perplexity of the evals at 18,000, 18,500 and 19,000: 5.26, 5.36, 5.45). Against L4-CODE (5.48) **−2.4%**, just outside the ±2% band; against FOCK-CODE (5.66) −5.3%; against SO-CODE (5.99) −10.7%; against GPT-2-CODE (4.96) +8.0% (L4-CODE +10.6%). It closes **60%** of SO-CODE's gap to GPT-2-CODE in log perplexity (L4-CODE 47%).
+- **Paired by step against L4-CODE** (both trained from step 0, so the evals share batches): +0.36 nats over steps 2,000–4,000 (SD 0.07), 0.00 over 8,000–13,000 (SD 0.011), **−0.024 over 16,000–19,000 (SD 0.0016, 7 evals)**. Against SO-CODE −0.112 (SD 0.003) over the last 3,000 steps. Early on L8-CODE trails both shallower models, level with L4-CODE by step 8,000 and ahead of it from step 10,500 on.
+- **The resume kept the pairing** (`63ce0d2`, `p-l8-code-setup`). The step-to-step eval changes of L8-CODE and L4-CODE correlate at 0.991 over steps 15,500–19,000, after the resume, and 0.994 over 8,000–15,500, before it. The paired SD after the resume (0.0016) is smaller than before it. This is the first real resume with the batch sampler restored.
+- **Skipped updates, steps 1,400–3,600.** 34 of the 45 logged steps in that window show a non-finite gradient norm, with the `P` group (one of the two clip-then-sum groups) on top. Cell 6 skips the optimizer step whenever the gradient norm is not finite. So a large share of the updates in that window were not applied, roughly 1,650 if the logged steps are typical. Cell 6's counter `n_skipped` is neither printed nor logged and restarts with each session, so the exact count is lost. No logged step is non-finite before 1,400 or after 3,600, and none in the second session. Neither L4-CODE's nor SO-CODE's log has one. The training loss stayed finite throughout, so the forward pass was sound and the fault is in the backward. The spike capture did not fire, because its test (`gradient norm > 100`) is false for NaN. Cause not diagnosed. The window is the one where L8-CODE lags L4-CODE most (+0.36 nats), and the lag is gone by step 8,000. **So L8-CODE trained on fewer updates than L4-CODE, and its −2.4% is a lower bound on the eight-layer gain at this budget, as far as the skipped steps go.** One seed.
+
+**The depth axis on code** (T = 8 fixed, Δt = 8 / L; one seed each):
+
+| reading | SO-CODE (L = 2) | L4-CODE (L = 4) | L8-CODE (L = 8) |
+| --- | ---: | ---: | ---: |
+| settled perplexity | 5.99 | 5.48 | **5.35** |
+| against the previous depth | | −8.5% | −2.4% |
+| share of SO-CODE's gap to GPT-2-CODE closed | | 47% | 60% |
+| Gate 1: cost of resetting the velocity | +4.0% | +76% | **+172%** (4.59 → 12.49) |
+| Gate 3: penalty at half the trained step (N = 2L), nats | 1.42 | 1.13 | 0.78 |
+| Gate 3: penalty at N = 1.5 L, nats | 0.64 (N = 3) | 0.37 (N = 6) | 0.42 (N = 12) |
+| 6b-13: ω·Δt median (ω = median / Δt) | 7.55 (1.89) | 2.20 (1.10) | 1.75 (1.75) |
+| 6b-13: readings past 2 | 99.97% | 53.6% | 33.8% |
+| Cell 7 perplexity on its batches | 5.51 | 4.99 | 4.89 |
+| s per step; peak memory | 1.11; 32.9 GB | 2.04; 60.5 GB | 5.5; 28.9 GB (layer checkpointing) |
+
+**Cell 6b-7** (step 18,000; trained N = 8, Δt = 1, T = 8; loss 1.5229, perplexity 4.59 on its batches). Gate 0 PASS (|Δ loss| 0).
+
+| N | Gate 2, more layers at Δt = 1 (ppl) | Gate 3, refinement at T = 8 (ppl) | Gate 3 penalty (nats) |
+| ---: | ---: | ---: | ---: |
+| 1 | 67.35 | 434.93 | 4.552 |
+| 2 | 59.42 | 157.93 | 3.539 |
+| 3 | 42.51 | 163.81 | 3.576 |
+| 4 | 26.92 | 34.33 | 2.013 |
+| 6 | 7.50 | 5.64 | 0.206 |
+| 8 (trained) | 4.59 | 4.59 | 0 |
+| 12 | | 6.95 | 0.416 |
+| 16 | | 10.04 | **0.783** |
+| 24 | | 40.37 | 2.175 |
+| 32 | | 61.98 | 2.604 |
+
+- **MAPS, as every second-order arm.** The loss has its minimum at the trained step and rises on both sides; the successive changes shrink up to N = 8 and grow from there. The half-step penalty keeps falling with depth (1.42, 1.13, 0.78 nats), by about 0.3 nats per doubling, but the curve still turns up past N = 12. A coarser step costs little near the trained one (N = 6, Δt = 1.33: +0.21 nats).
+- **Gate 2 stops at N = 8** (the cell runs Gate 2 up to N = 8 and Gate 3 up to max(8, 4L)), here the trained depth, so it gives no reading for more layers than trained. Extending it is a notebook change, offered.
+- **Gate 1: the velocity carries more with every doubling.** Resetting it between layers costs +4.0%, +76% and +172% at L = 2, 4 and 8.
+
+**Cell 6b-13** (8 × 4 × 512 tokens, 131,072 readings). ω·Δt median by layer 2.08, 1.91, 1.34, 2.26, 2.09, 1.70, 1.05, 0.62; past the explicit wall of 2: 67.6%, 38.0%, 8.1%, 71.1%, 59.0%, 22.8%, 3.0%, 0.9%. The stiff layers are 0, 3 and 4, and the last two layers are soft. At L = 4 stiffness fell monotonically with depth (3.00, 2.79, 1.47, 0.89). The training-time monitor rose to 31.7% past the wall by step 15,500 and held between 31% and 33% to the end (L4-CODE about 54%, SO-CODE 99.9%). Under `baoab_cfc_lowrank` these modes are integrated exactly, so this is a stiffness reading, not an instability.
+
+**Cell 7:** full model 4.89 on Cell 7's batches (L4-CODE 4.99, SO-CODE 5.51). The register path is off by construction, so removing the registers changes nothing. The near-degenerate creation-attention warning is the one every `norc` arm prints.
+
+**Reading.** Depth at fixed integration time keeps paying on code, with sharply diminishing returns: −0.090 nats from L = 2 to 4, −0.024 from 4 to 8, at a fixed budget of 19,250 steps (with some of L8-CODE's early steps skipped). The finer step brings the trained model closer to a flow at the half step, and the model leans ever more on the velocity it carries between layers. Matching GPT-2-CODE's depth (L = 8) leaves an 8.0% gap. An interpretation; one seed per model.
+
+**FLOW-R on L8-CODE (2026-11-03, CPU; `refinement_flow_confirmation.py … code seed=20261009 micro=1`, new option: Gate 3 in forwards of one sequence, validated on SO-CODE against its filed result, max |Δ loss| 4.5e−7; 26.5 GB peak, 1.8 h).** All checks exact. Penalty ln(PPL_N / PPL_8) in nats at k = N / L substeps per trained layer: **0.186, 0.029, 0.034, 0.035, 0.035, 0.035** at k = 1.5, 2, 3, 4, 6, 8 (L4-CODE 0.429, 0.520, 0.282, 0.320, 0.309, 0.306; SO-CODE 0.970, 0.526, 0.300, 0.384, 0.376, 0.369); whole stack at k = 4: 2.695 (2.960, 2.858). Kick share by layer (position, median) 0.15, 0.14, 0.08, 0.13, 0.15, 0.20, 0.26, 0.39. **At eight layers the per-layer flow settles 0.035 nats from the trained step, ten times closer than at two or four layers and closer than SR2 on prose (0.10).** This revises the FLOW-R reading after L4-CODE (`p-flowr-code`: depth moves the limit little): the first doubling moved it 0.06 nats, the second 0.27. The whole stack still fails. One seed; the step-18,000 checkpoint.
+
+**Still to run on CPU** (the processing recipe, one job at a time): `vtheta_well_probe.py` on all eight layers (done, below) (best checkpoint, the step-500 best and the five snapshots, with the removal cost); `xi_reach.py`; the copy split with L8-CODE; FLOW-R (`refinement_flow_confirmation.py … code`; L4-CODE peaked at 52 GB, so L8-CODE needs a memory estimate first). Then the Hugging Face card into the depth-on-code collection (the author's go-ahead), and Cell 6b-17 on this checkpoint for the V_φ-force checkpoint timing (`p-vphi-force-ckpt`).
+
 <a name="p-flowr-code"></a>**FLOW-R on the code arms (2026-11-01; descriptive, CPU): the per-layer flow converges on SO-CODE and on L4-CODE, but to limits 0.37 and 0.31 nats from the trained step, about 3.5 times as far as SO-TS on TinyStories with the same architecture, budget and schedule.** `debug/refinement_flow_confirmation.py <out> <folder> code seed=20261009 name=<arm>` (new kind `code`, any L: the model is built from the run's tag through `copy_split.tag_repl`, on the code validation tokens; SO-CODE's best checkpoint, L4-CODE's step-18,000 checkpoint by `ckpt=`). 12 × 4 × 512 tokens at FLOW-R's batch seed. Outputs `refinement_flow_confirmation_{so-code,l4-code}_seed20261009{_output.txt,.json}` in each arm's results folder. Peak memory 30.6 GB and 52.3 GB; 29 and 65 min on 8 threads.
 
 - **Every check exact on both** (max |Δ logit| 0.0): the standard refinement against Cell 6b-7's `_fom_stack` at N = L and L + 1; the per-layer flow at N = L against the trained model, and at N = 4L against the model's own `substeps_per_layer = 4`; the replay of every layer.
@@ -4865,6 +4916,31 @@ The whole-stack column is FLOW-R's own standard refinement on these batches (Cel
 | K2c | **no dead well:** at the best checkpoint, in both layers, the nearest-well ratio median is at most 2 and the weaker well carries at least 10% of the wells' force | 60% |
 | K2d | **layer 0 still needs its wells:** removing layer 0's two wells costs at least +100% | 85% |
 
+<a name="p-k2-l8-code-setup"></a>**K2-L8-CODE set up 2026-11-02 (author: launched the same day; K2-CODE at L = 2 still to run as well); calls not yet registered.** L8-CODE with two V_θ wells instead of eight. Paired with L8-CODE (both from step 0), so K is the only difference in the arithmetic. It asks whether depth changes what the six extra wells buy, set against K2-CODE at L = 2.
+
+- **Cell 0, 13 changes from the GitHub defaults:** SO-CODE's nine, plus `LADDER_L = 8`, `V_THETA_WELLS_PER_HEAD = 2`, `VPHI_FORCE_CHECKPOINT = True` and `SNAPSHOT_STEPS = [1_000, 1_500, 2_000, 2_500, 3_000]`. SO-CODE's `LAYER_CHECKPOINT = False` is kept. L8-CODE trained with layer checkpointing, and the V_φ-force checkpoint (`p-vphi-force-ckpt`) replaces it with the same arithmetic.
+- **Tag**, from executing GitHub HEAD `4459850`'s Cell 0 locally (the same script reproduces SO-CODE's and L8-CODE's tags exactly): `xi5long_topk16_dt32da16_mh4_aniso_dcvt5x2_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_lr0p0012_noattn`, which is L8-CODE's with `dcvt5x2`. The banner reads "1 joint bank x 2 wells = 2 total attractors", and the switch prints its `[V_phi]` line.
+- **Expected parameters** (arithmetic, not a build): 50,107,936 decayed and 56,499 undecayed, 50,164,435 in all. This is L8-CODE's 76,731,865 minus K2's 26,567,430: the bank is shared by all layers, so the reduction does not depend on L.
+- **The microbatch must be 16 × 2** (Cell 5's `Auto batch:`; L8-CODE's Cell 6 header reads `batch=16 x accum=2`), because E and P are clipped per microbatch. If the probe picks less, the fallback is `LAYER_CHECKPOINT = True` with `VPHI_FORCE_CHECKPOINT = False`: same tag, same arithmetic, L8-CODE's 5.5 s per step.
+- **Expected memory and speed (unmeasured on GPU):** about 29 GB at 16 × 2, from CPU saved-tensor counts; speed between about 3.8 s per step (no checkpointing, extrapolated) and L8-CODE's 5.5. About 21–29 h, so two sessions, with the autosave and resume as for L8-CODE.
+- **Watch steps 1,400–3,600 for non-finite gradient norms** (`grad=nan`), L8-CODE's skipped-update window (`p-l8-code-result`). Skips in a different window would confound the pairing.
+- **After the run:** L8-CODE's list, with `vtheta_well_probe.py` on all eight layers and the paired evals against L8-CODE and K2-CODE.
+- **Launched 2026-11-02.** Cell 0 matches the local execution (tag as above); Cell 2 found no checkpoint; Cell 5 `Auto batch: 16 x accum=2` (probe peak at 16: 36.1 GB). Cell 6: 50,107,936 decayed and 56,499 undecayed parameters, as computed. Step 50: training loss 6.2005 (L8-CODE 6.1722, SO-CODE 6.1591), gradient norm 0.62, **peak memory 35.0 GB** (the CPU estimate was about 29 GB), **3.46 s per step** (L8-CODE 5.6 with layer checkpointing), about 18.4 h. So the V_φ-force checkpoint, with the pair force recomputed and nothing else, trains L = 8 at 62% of layer checkpointing's time per step, in about 6 GB more memory. This is at K = 2: V_θ is a quarter of L8-CODE's, so the K = 8 gain is not measured here (Cell 6b-17 on L8-CODE's checkpoint).
+- **Run as a 6,000-step probe; stop rule fixed by the author on 2026-11-02, after step 50 and before any eval was read.** K2-L8-CODE costs about three K2-CODE runs, so it continues past step 6,000 only if it stays close to L8-CODE. Read at step 6,000: d = mean over the evals at 5,000, 5,500 and 6,000 of (K2-L8-CODE − L8-CODE) validation loss, in nats (paired: same batches). **d > +0.10: stop** (six wells matter at L = 8; the rest of the run would only measure how much). **d ≤ +0.05: run to the end.** In between: continue to step 10,000 and apply the same thresholds to the evals at 9,000, 9,500 and 10,000. Not before step 6,000: L8-CODE's skipped updates (steps 1,400–3,600) held it back until about step 8,000, so an early tie means little, and early gaps have closed before (L8-CODE against L4-CODE: +0.36 nats over 2,000–4,000, −0.024 at the end). L8-CODE's reference losses: 2.1818, 2.0919, 2.0602 at steps 5,000, 5,500, 6,000 (8.86, 8.10, 7.85); the +0.10 line is K2-L8-CODE above 9.8, 8.95, 8.68. If stopped, the Drive folder (snapshots 1,000–3,000 and the best checkpoint) is kept for the well probes.
+- **Through step 3,450 (read 2026-11-03): no non-finite gradient norm at any logged step**, including 1,400–3,450, where L8-CODE skipped most of its updates on the same batches; the only difference between the runs is K. Evals (paired): 500 52.38, 1,000 28.29, 1,500 18.35, 2,000 13.41, 2,500 10.98, 3,000 9.67. Against L8-CODE −0.42 nats at 3,000, which is L8-CODE's skipped-update lag, not a K effect; against L4-CODE, which had no skips, +0.11, +0.06, +0.04, +0.04, +0.02, +0.01 nats: on L4-CODE's track and closing. Peak memory 35.0 GB in training, 51.6 GB in evaluation (no layer checkpointing there either); 3.4 s per step.
+- **Through step 10,100 (Cell 6 log, read 2026-11-03): the stop rule says run to the end, and since step 8,000 K2-L8-CODE has fallen behind L8-CODE by a growing margin.** Still no non-finite gradient norm at any logged step. Stop-rule reading at step 6,000: d = mean(−0.0929, −0.0622, −0.0421) = **−0.066 nats**, below the +0.05 line, so the run continues to step 19,250. That reading still carried L8-CODE's skipped-update lag. Once L8-CODE recovered, the paired difference turned positive and grew. Validation loss (perplexity), paired, in nats:
+
+  | step | K2-L8-CODE | L8-CODE | L4-CODE | K2-L8 − L8 | K2-L8 − L4 |
+  |---:|---:|---:|---:|---:|---:|
+  | 6,000 | 2.0181 (7.52) | 2.0602 | 2.0002 | −0.042 | +0.018 |
+  | 7,000 | 1.9569 (7.08) | 1.9722 | 1.9344 | −0.015 | +0.023 |
+  | 8,000 | 1.9847 (7.28) | 1.9841 | 1.9636 | +0.001 | +0.021 |
+  | 9,000 | 1.9096 (6.75) | 1.8947 | 1.8841 | +0.015 | +0.026 |
+  | 9,500 | 1.9180 (6.81) | 1.8954 | 1.8857 | +0.023 | +0.032 |
+  | 10,000 | 1.9330 (6.91) | 1.9062 | 1.9035 | +0.027 | +0.030 |
+
+  Mean over 9,000–10,000: **+0.021 nats against L8-CODE** and +0.029 against L4-CODE, about 2–3% in perplexity. Against L4-CODE the gap has held at +0.02–0.03 since step 3,500. So far, two wells at L = 8 train about as well as eight wells at L = 4, and slightly worse than eight at L = 8. The decay phase (10,562–16,250) decides the settled reading: L8-CODE moved from +0.003 against L4-CODE at step 10,000 to −0.024 settled.
+
 <a name="p-sr4a-code"></a>**SR4a-CODE: variable-step training on SO-CODE. Switch built and verified 2026-11-01 (author's go-ahead the same day); calls proposed, not yet confirmed by the author.** The pre-registered SR4a arm (§5.9: N ~ U{2, 3, 4} at T = 8, depth code by time, Cell 6b-7's `hold` policy), moved to the code base after FLOW-R on code (`p-flowr-code`). There, every model's whole stack fails refinement by 1.4–3 nats while the per-layer flow settles. SR4a asks whether training at several step counts removes the whole-stack failure, by making the model work at every N it is trained on.
 
 - **The switch.**
@@ -4904,6 +4980,15 @@ The whole-stack column is FLOW-R's own standard refinement on these batches (Cel
 | VS5 | **the trained step moves onto its flow:** FLOW-R per-layer flow limit at k = 8 ≤ 0.20 nats (SO-CODE 0.369) | 45% |
 
 Scoring note: VS1 and VS3 are SR4a's registered thresholds carried to the code base. VS4 and VS5 separate "works at the trained step counts" from "is a flow": a model can meet VS1 by learning three maps with shared weights and still fail at N = 8.
+
+**Order of the next code arms, decided 2026-11-03 (author).** SR4a-CODE runs first. Its result decides the parameter-matched L = 8 arm, K = 2 wells at rank 6 (14,517,715 non-embedding parameters, +2.3% against GPT-2-CODE's 14,196,480).
+
+- **SR4a-CODE meets VS1:** K2-L8 at rank 6 trains with variable steps, N drawn from {8, 12, 16} (L, 1.5L and 2L, the L = 2 arm's mix).
+- **SR4a-CODE misses VS1:** K2-L8 at rank 6 trains with fixed steps, as the parameter-matched comparison with GPT-2-CODE. The variable-step version (about 28–30 h) is not run.
+- **Code needed before either L = 8 arm:**
+  - `ANISO_RANK` is not in the tag. A rank-6 run would land in K2-L8-CODE's folder. Rank ≠ 4 needs a tag suffix, read back by `copy_split.tag_repl`.
+  - For the variable-step version only: Cell 0 accepts step counts 1–9 and the tag writes them as single digits (`vs234`). {8, 12, 16} needs a separated tag, the 1–9 check relaxed, the parse in `tag_repl`, and the walk check of `debug/verify_variable_step_switch.py` repeated at L = 8, N = 12 and 16.
+- **Memory, estimated from the CPU saved-tensor count** (2 × 512 code tokens, random weights, the K2-L8-CODE settings, scaled to its logged 35.0 GB training and 51.6 GB evaluation peaks): rank 6 at L = 8 without layer checkpointing, about 37 GB at N = 8, 51 GB at N = 12, 64 GB at N = 16; evaluation at N = 8 about 58 GB; on 85.1 GB.
 
 <a name="p-vphi-force-ckpt"></a>**V_φ-force checkpointing (Cell 0 `VPHI_FORCE_CHECKPOINT`), built and verified 2026-11-02 (author's go-ahead the same day).** A memory switch, not an arm. It is meant to let an L = 8 code arm train without layer checkpointing at microbatch 16 × 2, the microbatch of every code arm.
 

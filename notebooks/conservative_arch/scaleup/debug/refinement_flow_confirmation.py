@@ -42,6 +42,9 @@ Usage: python3 refinement_flow_confirmation.py OUT_DIR FOLDER {f31|sr2|pm1|pmx|s
   model's own substeps_per_layer path, the per-layer flow freezes the quadratic at the layer's first substep
   and recomputes zeta(h) from each substep's input; checked against that path.
   ckpt=<file>: a checkpoint file in FOLDER/checkpoints other than <prefix>_best.pt.
+  micro=<k> (2026-11-02): Gate 3 runs each 4-sequence batch as forwards of k sequences and averages their
+  losses (equal-length sequences, so the same mean up to float rounding); peak memory scales with k. For
+  L = 8 (L4-CODE peaked at 52 GB at the default, 4). The checks and the kick share are unchanged.
   pmx (CX3, 2026-10-11): SR2 + 64 Poisson modes with the wells integrated
   exactly; the per-layer flow also freezes the wells' quadratic and its
   linearisation point at the share's first substep (split_stack pmq_freeze),
@@ -65,6 +68,8 @@ if __name__ == '__main__':
     CHECKS_ONLY = 'checks' in sys.argv[4:]
     CKPT = next((a[5:] for a in sys.argv[4:] if a.startswith('ckpt=')), None)
     NAME = next((a[5:] for a in sys.argv[4:] if a.startswith('name=')), KIND)
+    MICRO = next((int(a[6:]) for a in sys.argv[4:] if a.startswith('micro=')), BATCH)
+    assert BATCH % MICRO == 0, MICRO
     assert KIND in ('f31', 'sr2', 'pm1', 'pmx', 'sr2-ts', 'fo-ts', 'fob', 'sr3', 'gzh', 'fob-pmx', 'code'), KIND
     sys.argv = [sys.argv[0], str(OUT / 'harness')]
     sys.path.insert(0, str(Path(__file__).parent))
@@ -155,7 +160,7 @@ if __name__ == '__main__':
 
     lines = [f'{"FLOW-C" if SEED is None else "FLOW-R"}, the per-layer flow: {KIND}  ...{FOLDER[-70:]}  (L = {L}, dt = {DT:g})',
              f'   {N_BATCH} x {BATCH} x {BLOCK} tokens (' + ("Cell 6b-7's batches" if SEED is None else f'batch seed {SEED}')
-             + f'); policy hold; T = {T:g}']
+             + f'); policy hold; T = {T:g}' + ('' if MICRO == BATCH else f'; Gate 3 in forwards of {MICRO}')]
     say = lambda s='': (print(s, flush=True), lines.append(s))
 
     def stack(n, arm):
@@ -255,9 +260,12 @@ if __name__ == '__main__':
         tot = 0.0
         with stack(n, arm):
             for xb_, yb_ in batches:
-                with torch.enable_grad():
-                    _, loss = model(torch.from_numpy(xb_), torch.from_numpy(yb_))
-                tot += float(loss)
+                part = []
+                for i in range(0, BATCH, MICRO):
+                    with torch.enable_grad():
+                        _, loss = model(torch.from_numpy(xb_[i:i + MICRO]), torch.from_numpy(yb_[i:i + MICRO]))
+                    part.append(float(loss))
+                tot += sum(part) / len(part)
         return tot / len(batches)
 
     out = {'kick_share': kick, 'gate3': {}}

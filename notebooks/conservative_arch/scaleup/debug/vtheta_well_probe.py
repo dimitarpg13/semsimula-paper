@@ -2,13 +2,14 @@
 """Where are V_theta's wells relative to the states? Per layer, on validation windows (2026-10-28, protocol p-dead-wells).
 
     python3 vtheta_well_probe.py OUT FOLDER [ckpt=<file>] [windows=8] [threads=8] [val=<tokens.npy>] [name=<stem>]
-                                 [ablate=<channels>] [keep=<wells> keep_layers=<layers>]
+                                 [ablate=<channels>] [keep=<wells> keep_layers=<layers> [renorm=1]]
 
 Writes OUT/well_probe_<stem>.txt (the report) and .npz (per token and layer: nearest-well ratio, occupancy;
 per well: force-weight share).
 
 FOLDER is a ladder run folder in ~/Downloads (its Cell 0 is rebuilt from the tag by copy_split.ladder_model);
-val defaults to the code validation set. Reports, per layer:
+val defaults to the code validation set; a TinyStories folder (`_baoab_ts_`) is built as
+FLOW-R builds SO-TS and probed on TinyStories validation windows (2026-11-03). Reports, per layer:
   - omega*dt = sqrt(lambda_max(G G^T) / m) * dt_kick and its factors: G = [sqrt(g_k) B_k], g_k = w_k * occ_k,
     occ_k = exp(-1/2 (h-mu_k)^T P_k (h-mu_k)), ||B_k||_F^2 <= PRECISION_LR_MAX, sum_k w_k = W_SCALE, so
     lambda_max <= sum_k g_k ||B_k||_F^2; the learned mass m; the nearest well's distance and occupancy;
@@ -16,7 +17,8 @@ val defaults to the code validation set. Reports, per layer:
   - |mu_k| / |h| over all wells, the share of the force weight sum g_k by well, the nearest-well ratio's tail;
   - the split mu = W (xi - code_l) + W code_l + b of the layer's well centres (channels, depth code, bias);
   - the validation loss, optionally with channels zeroed at the bank input (ablate=) or wells removed (keep=,
-    weight w_k = 0 without renormalisation, on the layers in keep_layers=).
+    weight w_k = 0 without renormalisation, on the layers in keep_layers=; with renorm=1 the kept weights are
+    rescaled per token to the trained sum, so removing wells does not also weaken the pull).
 """
 import sys
 from pathlib import Path
@@ -42,8 +44,21 @@ _build = P.build; got = {}
 def build(*a, **k):
     r = _build(*a, **k); got['model'], got['g'] = r[0], r[1]; return r
 P.build = build
-_, desc = CS['ladder_model'](FOLDER, OPTS.get('ckpt'))
-model, g = got['model'], got['g']
+if '_baoab_ts_' in FOLDER:
+    # 2026-11-03: a TinyStories arm (SO-TS), built as FLOW-R builds it (stage0_models.build_cfc_ts: the run's own
+    # validation tokens and frequency table), on TinyStories validation windows
+    import importlib.util, tempfile
+    _sp = importlib.util.spec_from_file_location('stage0_models', DBG.parents[1] / 'first_order_ablation/fo_series/stage0_models.py')
+    _s0 = importlib.util.module_from_spec(_sp)
+    _argv = list(sys.argv); sys.argv = [sys.argv[0], tempfile.mkdtemp()]
+    _sp.loader.exec_module(_s0); sys.argv = _argv
+    model, g, _sd = _s0.build_cfc_ts(FOLDER, (), ckpt_name=OPTS.get('ckpt'), return_g=True)
+    CS['VAL'] = next(v for v in (Path.home() / 'Downloads' / FOLDER / 'data/tinystories_val_2M.npy',
+                                 Path.home() / 'Downloads/semsimula_tinystories_gpt2/data/tinystories_val_2M.npy') if v.exists())
+    desc = f"{OPTS.get('ckpt') or '<prefix>_best.pt'} (step {_sd.get('step')}, TinyStories validation {CS['VAL']})"
+else:
+    _, desc = CS['ladder_model'](FOLDER, OPTS.get('ckpt'))
+    model, g = got['model'], got['g']
 print('model:', desc, flush=True)
 
 VT = model.V_theta
@@ -60,12 +75,18 @@ def step(h, h_prev, m_b, gamma, dt_, layer_idx=0):
 ABL = [int(c) for c in OPTS.get('ablate', '').split(',') if c != '']     # channels replaced by zero at the bank input
 KEEP = [int(c) for c in OPTS.get('keep', '').split(',') if c != '']      # wells kept; the others get weight w_k = 0 (no renormalisation)
 KEEP_L = [int(c) for c in OPTS.get('keep_layers', '0,1').split(',')]      # layers the mask applies to
+RENORM = OPTS.get('renorm', '0') == '1'   # 2026-11-03: rescale the kept weights to the trained sum, per token
 if KEEP:
     _orig_comp = bank._components
     _drop = torch.tensor([k not in KEEP for k in range(bank.K)])
     def _comp(xi):
         mu, a, w, B = _orig_comp(xi)
-        return (mu, a, w.masked_fill(_drop.to(w.device), 0.0), B) if cur['layer'] in KEEP_L else (mu, a, w, B)
+        if cur['layer'] not in KEEP_L:
+            return mu, a, w, B
+        wk = w.masked_fill(_drop.to(w.device), 0.0)
+        if RENORM:
+            wk = wk * (w.sum(-1, keepdim=True) / wk.sum(-1, keepdim=True).clamp_min(1e-30))
+        return mu, a, wk, B
     bank._components = _comp
 orig_cc = bank.context_components
 def cc(xi):

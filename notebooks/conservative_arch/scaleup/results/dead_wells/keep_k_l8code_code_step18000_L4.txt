@@ -1,0 +1,10 @@
+keep-k curve, l8code_code_step18000 layer 4: wells by force share [6, 5, 0, 1, 2, 3, 4, 7] (shares [4.6, 0.0, 0.0, 0.0, 0.0, 42.9, 52.5, 0.0]); base ppl 6.74 on these windows
+ k wells kept                     ppl    change
+ 1 [6]                           7.11     +5.5%
+ 2 [5, 6]                        6.77     +0.4%
+ 3 [0, 5, 6]                     6.74     +0.0%
+ 4 [0, 1, 5, 6]                  6.74     +0.0%
+ 5 [0, 1, 2, 5, 6]               6.74     +0.0%
+ 6 [0, 1, 2, 3, 5, 6]            6.74     +0.0%
+ 7 [0, 1, 2, 3, 4, 5, 6]         6.74     +0.0%
+ 8 all (trained)                 6.74          

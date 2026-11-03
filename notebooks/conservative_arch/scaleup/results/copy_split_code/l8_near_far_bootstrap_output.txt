@@ -1,0 +1,11 @@
+all positions      L8: closed 1-16 58.6%  17-64 61.1%  65-512 60.0%  diff +1.4 pts  95% [-3.2, +6.3]  P(>0) 0.716
+all positions      FOCK: closed 1-16 26.5%  17-64 30.8%  65-512 29.7%  diff +3.2 pts  95% [-1.7, +8.1]  P(>0) 0.893
+positions 256-511  L8: closed 1-16 59.0%  17-64 60.6%  65-512 61.1%  diff +2.1 pts  95% [-4.4, +8.4]  P(>0) 0.723
+positions 256-511  FOCK: closed 1-16 24.0%  17-64 28.6%  65-512 29.1%  diff +5.2 pts  95% [-0.8, +11.2]  P(>0) 0.955
+ident 1-16     closed by L8 58.5%  (FOCK 24.3%)  L8 gain/token +0.120
+ident 65-512   closed by L8 59.9%  (FOCK 31.4%)  L8 gain/token +0.248
+first occ      closed by L8 59.1%  (FOCK 33.4%)  L8 gain/token +0.112
+induction      closed by L8 64.5%  (FOCK 28.3%)  L8 gain/token +0.099
+indent         closed by L8 53.2%  (FOCK 21.1%)  L8 gain/token +0.022
+all closed L8 59.8% FOCK 30.4%
+L8 better than SO in 98.2% of windows
