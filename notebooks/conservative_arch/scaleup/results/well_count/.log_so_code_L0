@@ -28,3 +28,8 @@ trained model on these tokens: test ce 1.8027 (ppl 6.07), val ce 1.7389; the fro
   D=1 K=1 epoch 1.49: val ce 3.5535  (213 s)
   D=1 K=1 epoch 1.99: val ce 3.4590  (282 s)
   D=1 K=1 epoch 2.49: val ce 3.4116  (351 s)
+  D=1 K=1 epoch 2.98: val ce 3.3867  (422 s)
+  D=1 K=1 epoch 3.48: val ce 3.3774  (487 s)
+  D=1 K=1 epoch 3.98: val ce 3.3760  (554 s)
+  D=1 K=1 epoch 4.00: val ce 3.3760  (568 s)
+ 1   1    739,585   3.5695    35.50   +1.7668    1.7439                      4.00  1.00
