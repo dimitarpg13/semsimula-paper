@@ -42,9 +42,9 @@ Where the time and the memory go is measured:
 
 ![Where the time and memory go](figures/macroscopic/cost_anatomy.png)
 
-Left: the GPU profile of one microbatch (plan §10.3b). Half the time is element-wise kernels (`mul` 21%, `add_` 10%, `add` 5%, `copy_` 5%, `sum` 4%), which move large tensors and do little arithmetic per byte; 27% is matrix products; 10.6% is the float64 SVD of the stiff-mode Gram matrices. Right: the bytes one training forward saves for the backward, per layer (the V_φ-force checkpointing entry of the protocol, measured on the CPU at K = 2): three quarters are the pair force's intermediates.
+Left: the GPU profile of one microbatch (plan §10.3b). Half the time is element-wise kernels (`mul` 21%, `add_` 10%, `add` 5%, `copy_` 5%, `sum` 4%), which move large tensors and do little arithmetic per byte; 27% is matrix products; 10.6% is the float64 SVD of the stiff-mode Gram matrices. Right: the bytes one training forward saves for the backward, per layer (the $V_\varphi$ force checkpointing entry of the protocol, measured on the CPU at $K = 2$): three quarters are the pair force's intermediates.
 
-The reason, stated once: a transformer layer is a few large matrix products, which run near the card's peak arithmetic rate. Our layer instead evaluates, **for every token separately**, a pair force over its neighbours, the forces of a well bank, an eigendecomposition of a 32 × 32 matrix, and an integrator substep. All of this is batched over tokens (there is no loop over tokens anywhere; every operation is one kernel over all 8,192 tokens of a microbatch), so the problem is not batching. It is *arithmetic intensity*: each of those operations does a small amount of work per token, on tensors shaped (batch, tokens, neighbours, heads), so the kernels are bound by memory bandwidth, not by arithmetic. Fusing them (§7, item 4) attacks that symptom. This note is about attacking the cause: the per-token structure of the physics itself.
+The reason, stated once: a transformer layer is a few large matrix products, which run near the card's peak arithmetic rate. Our layer instead evaluates, **for every token separately**, a pair force over its neighbours, the forces of a well bank, an eigendecomposition of a $32 \times 32$ matrix, and an integrator substep. All of this is batched over tokens (there is no loop over tokens anywhere; every operation is one kernel over all 8,192 tokens of a microbatch), so the problem is not batching. It is *arithmetic intensity*: each of those operations does a small amount of work per token, on tensors shaped (batch, tokens, neighbours, heads), so the kernels are bound by memory bandwidth, not by arithmetic. Fusing them (§7, item 4) attacks that symptom. This note is about attacking the cause: the per-token structure of the physics itself.
 
 ## 2. The step as a system of interacting particles
 
@@ -84,7 +84,7 @@ $$
 U_{\mathrm{pair}}(h_t) = s_\ell \sum_{j \in K(t)} m_{tj} V_\varphi(h_t, h_j), \qquad \lvert K(t) \rvert = 16,
 $$
 
-with the sources $h_j$ detached, so the force differentiates the query slot only and remains a gradient. Two costs follow. The score head is evaluated on every causal pair, so its intermediates are shaped (B, T, T, $H_s$): quadratic in $T$. The force over the 16 gathered neighbours has intermediates shaped (B, T, 16, ·) and, with the analytic force, those intermediates are what the backward pass keeps: the 75% of the right panel above.
+with the sources $h_j$ detached, so the force differentiates the query slot only and remains a gradient. Two costs follow. The score head is evaluated on every causal pair, so its intermediates are shaped $(B, T, T, H_s)$: quadratic in $T$. The force over the 16 gathered neighbours has intermediates shaped $(B, T, 16, \cdot)$ and, with the analytic force, those intermediates are what the backward pass keeps: the 75% of the right panel above.
 
 **The stiff modes.** The low-rank integrator (`parf/cfc_baoab.py`) treats the stiffest directions of the force's linearisation exactly and the rest explicitly. For each token it forms a $d \times P$ generator $G_t$ ($P = 32$), the $P \times P$ Gram matrix $G_t^\top G_t$, and its eigendecomposition (a float64 Jacobi SVD, after the float32 symmetric eigensolver failed on real inputs on 2026-09-17; `_gram_eigh`). The substep then uses $\cos$, $\mathrm{sinc}$, $\sinh$-type and $\exp$ functions of the eigenvalues. That SVD is the 10.6% of the profile; the einsums that project onto and out of the basis are part of the element-wise half.
 
@@ -243,7 +243,7 @@ $$
 f_t^{\mathrm{field}} \approx -\sum_{m=1}^M \pi_{m,t} \nabla_{h_t} V_\varphi(h_t, \mu_{m,t}).
 $$
 
-This is the existing gathered pair force with $M$ fixed sources instead of $16$ routed ones, and no router. The intermediates become (B, T, M, ·).
+This is the existing gathered pair force with $M$ fixed sources instead of $16$ routed ones, and no router. The intermediates become $(B, T, M, \cdot)$.
 
 **Conservativity is kept.** The field force is the gradient in $h_t$ of $\int V_\varphi(h_t, h') \rho_t(dh')$ provided $\rho_t$ does not depend on $h_t$. In the present model the sources are detached for the same reason (the force differentiates the query slot only; `causal_force`); a mixture built from the detached preceding states inherits the property.
 
@@ -312,7 +312,7 @@ Ranked by cost to find out, then by expected gain. Items 1–3 need no GPU and n
 1. **Time a step without $V_\varphi$** (Cell 6c, one Colab session, ten minutes). It bounds the gain of 5.1 from above. If the step without the pair force is not markedly faster, the pair force is not where the time goes, and 5.1 is a memory lever only.
 2. **Probe A: field $V_\varphi$ fidelity on trained checkpoints** (§8; CPU, hours). It says whether the mixture force reproduces the routed force, and at which $M$, before anything is trained.
 3. **Probe B: the stiff-subspace spread** (§8; CPU, hours). It measures $s$ of §5.2 on the real model and the loss penalty of a shared basis at block sizes 8, 64 and 512.
-4. **Fuse the element-wise work** (`torch.compile` on the layer step; plan §10.3b lever 2). Not macroscopic, but it attacks the same half of the profile from the other side, with a parity check and no model change. Plausibly 1.3–1.5× per step. It composes with everything above.
+4. **Fuse the element-wise work** (`torch.compile` on the layer step; plan §10.3b lever 2). Not macroscopic, but it attacks the same half of the profile from the other side, with a parity check and no model change. Plausibly $1.3\times$ to $1.5\times$ per step. It composes with everything above.
 5. **A field $V_\varphi$ arm** (5.1), if Probe A passes: a pre-registered model, SO-CODE's Cell 0 with the router replaced by content-gated channels at the $M$ Probe A selects, on the code base first (cheapest, 6 h) and then on OWT against F3.1 (where the term matters).
 6. **A shared-basis switch** (5.2), if Probe B passes: a memory-and-speed switch with a parity threshold rather than an arm, since it changes the arithmetic only through which basis is used.
 7. **SR4a-CODE** (5.5) is already first in the GPU queue for its own reasons; its result decides whether depth is a training cost at all.
