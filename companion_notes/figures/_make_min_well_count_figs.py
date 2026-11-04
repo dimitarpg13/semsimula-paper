@@ -8,8 +8,7 @@ Data, read from the result files named beside each figure (no checkpoints needed
 - keep-k curves:      .../dead_wells/keep_k_<arm>_L<layer>[_renorm].txt
 - temperature sweeps: .../dead_wells/vtheta_weight_logits_<arm>.txt (sweep=1)
 - well-count fits:    .../well_count/well_count_fit_<arm>[_L<layer>].txt
-- training curves:    the L8-CODE and L4-CODE Cell 6 logs in their run folders; K2-L8-CODE's evals through step
-                      10,000 are copied below from its Cell 6 log (2026-11-03), not yet filed in the repo.
+- training curves:    the K2-L8-CODE, L8-CODE and L4-CODE Cell 6 logs in their run folders.
 A figure whose data file is missing is skipped with a note.
 """
 import re
@@ -279,27 +278,25 @@ def fig_fits():
 
 
 # ---------------------------------------------------------------- Figure 7: K2-L8-CODE in training
-K2L8 = {500: 3.9585, 1000: 3.3425, 1500: 2.9096, 2000: 2.5961, 2500: 2.3957, 3000: 2.2695, 3500: 2.1698,
-        4000: 2.1617, 4500: 2.1258, 5000: 2.0889, 5500: 2.0297, 6000: 2.0181, 6500: 2.0323, 7000: 1.9569,
-        7500: 1.9485, 8000: 1.9847, 8500: 1.9637, 9000: 1.9096, 9500: 1.9180, 10000: 1.9330}
-
-
 def fig_k2l8():
+    k2l8 = evals(next(RES.glob("cfc_baoab_code_*dcvt5x2*L8probe*/L8_K2_SO_on_Code_19250steps_output.txt")))
     l8 = evals(next(RES.glob("cfc_baoab_code_*dcvt5x8*L8probe*/L8_SO_on_Code_19250steps_output.txt")))
     l4 = evals(next(RES.glob("cfc_baoab_code_*dcvt5x8*L4probe*/L4_SO_on_Code_19250steps_output.txt")))
-    st = sorted(K2L8)
+    st = sorted(k2l8)
     fig, ax = plt.subplots(figsize=(8.6, 4.4))
     ax.axvspan(1400, 3600, color=GREY, alpha=0.18, lw=0)
     ax.text(2500, 0.07, "L8-CODE's skipped\nupdates", ha="center", va="bottom", fontsize=9, color=MUTED)
+    ax.axvspan(10562, 16250, color=GREY, alpha=0.08, lw=0)
+    ax.text(13400, -0.15, "learning-rate\ndecay", ha="center", va="bottom", fontsize=9, color=MUTED)
     ax.axhline(0, color=MUTED, lw=1)
-    ax.plot(st, [K2L8[s] - l8[s] for s in st], marker="o", color=BLUE, lw=2, ms=5, label="against L8-CODE (8 wells, 8 layers)")
-    ax.plot(st, [K2L8[s] - l4[s] for s in st], marker="s", color=PURPLE, lw=2, ms=5, label="against L4-CODE (8 wells, 4 layers)")
+    ax.plot(st, [k2l8[s] - l8[s] for s in st], marker="o", color=BLUE, lw=2, ms=5, label="against L8-CODE (8 wells, 8 layers)")
+    ax.plot(st, [k2l8[s] - l4[s] for s in st], marker="s", color=PURPLE, lw=2, ms=5, label="against L4-CODE (8 wells, 4 layers)")
     ax.axvline(6000, color=MUTED, ls=":", lw=1)
-    ax.text(6100, 0.06, "stop rule read here\n(run to the end)", fontsize=9, color=MUTED, va="bottom")
+    ax.text(6100, 0.08, "stop rule read here\n(run to the end)", fontsize=9, color=MUTED, va="bottom")
     ax.set_ylim(-0.45, 0.15)
     ax.set_xlabel("training step")
     ax.set_ylabel("K2-L8-CODE validation loss minus the other (nats)")
-    ax.set_title("Two wells at eight layers, paired against eight wells (through step 10,000)", loc="left", fontsize=11)
+    ax.set_title("Two wells at eight layers, paired against eight wells (full run)", loc="left", fontsize=11)
     ax.legend(frameon=False, fontsize=9, loc="lower right")
     save(fig, "k2l8_training.png")
 

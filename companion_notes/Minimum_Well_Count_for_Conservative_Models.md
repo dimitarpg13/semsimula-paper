@@ -163,9 +163,9 @@ The second point is a property of these trained weights, not of the model. Secti
 
 ## 5. Training with fewer wells: K2-L8-CODE
 
-K2-L8-CODE is L8-CODE with two wells instead of eight, trained on the same batches from step 0, so the paired difference of validation losses isolates $K$. It is still running. The table and Figure 4 cover the evals through step 10,000.
+K2-L8-CODE is L8-CODE with two wells instead of eight, trained on the same batches from step 0, so the paired difference of validation losses isolates $K$. It ran to the end (19,250 steps, 19.0 h in one session, 2026-11-02 to 11-03). The table and Figure 4 cover the full run.
 
-![Paired validation loss differences by training step. Against L8-CODE the difference dips to minus 0.42 nats at step 3,000, during L8-CODE's skipped updates, then rises through zero at step 8,000 to plus 0.027 at step 10,000. Against L4-CODE it falls from plus 0.11 at step 500 to between plus 0.01 and plus 0.03 from step 2,500 on.](figures/min_well_count/k2l8_training.png)
+![Paired validation loss differences by training step. Against L8-CODE the difference dips to minus 0.42 nats at step 3,000, during L8-CODE's skipped updates, rises through zero at step 8,000, grows through the learning-rate decay and holds at about plus 0.056 from step 14,500 to the end. Against L4-CODE it falls from plus 0.11 at step 500 to between plus 0.01 and plus 0.03 from step 2,500, and holds at about plus 0.032 to the end.](figures/min_well_count/k2l8_training.png)
 
 Figure 4. K2-L8-CODE's validation loss minus L8-CODE's (8 wells, 8 layers) and L4-CODE's (8 wells, 4 layers), paired by step.
 
@@ -175,20 +175,28 @@ Figure 4. K2-L8-CODE's validation loss minus L8-CODE's (8 wells, 8 layers) and L
 | 8,000 | 1.9847 | 1.9841 | 1.9636 | +0.001 | +0.021 |
 | 9,000 | 1.9096 | 1.8947 | 1.8841 | +0.015 | +0.026 |
 | 10,000 | 1.9330 | 1.9062 | 1.9035 | +0.027 | +0.030 |
+| 13,000 | 1.7950 | 1.7495 | 1.7673 | +0.045 | +0.028 |
+| 16,000 | 1.7555 | 1.7017 | 1.7249 | +0.054 | +0.031 |
+| 18,000 | 1.7164 | 1.6595 | 1.6816 | +0.057 | +0.035 |
+| 18,500 | 1.7365 | 1.6784 | 1.7042 | +0.058 | +0.032 |
+| 19,000 | 1.7509 | 1.6959 | 1.7201 | +0.055 | +0.031 |
+| settled | 1.7346 (5.67) | 1.6779 (5.35) | 1.7020 (5.48) | +0.057 | +0.033 |
+
+"Settled" is the mean of the evals at steps 18,000, 18,500 and 19,000, with the perplexity in brackets.
 
 - L8-CODE skipped most of its updates over steps 1,400–3,600 (non-finite gradients). K2-L8-CODE had none on the same batches, so those skips are tied to the eight-well bank. The early lead of two wells is that lag, not an effect of $K$.
-- Since L8-CODE recovered, two wells trail eight by +0.021 nats on average over steps 9,000–10,000, and the gap has grown by about 0.013 nats per 1,000 steps.
-- Against L4-CODE, the gap has held at +0.02–0.03 nats since step 3,500: two wells at eight layers train about as well as eight wells at four layers.
-- The decay phase (steps 10,562–16,250) decides the settled number. Over it, L8-CODE went from level with L4-CODE to 0.024 nats ahead.
+- After L8-CODE recovered, the gap opened through the learning-rate decay (steps 10,562–16,250): +0.027 nats at step 10,000, +0.045 at 13,000, then flat. Over steps 16,000–19,000 it is **+0.056 nats, SD 0.0015** over 7 evals: two wells settle **5.8% behind eight** in perplexity.
+- Against L4-CODE the gap held at +0.02–0.03 nats from step 3,500 to the end (+0.032, SD 0.0016, over 16,000–19,000). Two wells at eight layers train 3.3% behind eight wells at four layers, and 5.5% ahead of SO-CODE (eight wells, two layers).
+- Measured as SO-CODE's gap to the matched GPT-2 in log perplexity, K2-L8-CODE closes 30% of it, L4-CODE 47% and L8-CODE 60%.
 
-So far, at $L = 8$ on code, $K_{\min}$ is 2 for a tolerance of about 0.03 nats and more than 2 for 0.01.
+At $L = 8$ on code, then, $K_{\min}$ is 2 for a tolerance of about 0.06 nats and more than 2 for anything tighter. The six extra wells are worth about as much as the step from four layers to eight (0.024 nats). Most of the gap opened during the learning-rate decay.
 
 **What the six wells cost.** Each well reads the full 1,920-number bank input through three maps: its centre (to 384 numbers), its diagonal precision (to 384) and its shape of rank 4 (to $4 \times 384$). At rank $r$ a well costs $(2 + r) \times 737664 + 1921$ parameters, which is 4,427,905 at $r = 4$. Embeddings excluded:
 
 | model | wells | layers | parameters, all | non-embedding | settled perplexity |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | matched GPT-2 on code | (attention) | 8 | 33,691,776 | 14,196,480 | 4.96 |
-| K2-L8-CODE | 2 | 8 | 50,164,436 | 11,567,059 | running |
+| K2-L8-CODE | 2 | 8 | 50,164,436 | 11,567,059 | 5.67 |
 | L8-CODE | 8 | 8 | 76,731,865 | 38,134,489 | 5.35 |
 
 The conservative models carry an untied readout (19.3 M parameters that GPT-2 shares with its input embedding). Outside the embeddings, K2-L8-CODE is 18% smaller than the matched GPT-2, and L8-CODE was 2.7 times larger. Six wells were 26.6 M of L8-CODE's parameters, so the minimum well count decides whether the comparison with GPT-2 is at matched size.
@@ -251,6 +259,6 @@ PENDING-SUMMARY
 - Montúfar, G., Pascanu, R., Cho, K. and Bengio, Y. (2014). On the number of linear regions of deep neural networks. *NeurIPS*.
 - Carreira-Perpiñán, M. Á. and Williams, C. K. I. (2003). On the number of modes of a Gaussian mixture. *Scale-Space Methods in Computer Vision*.
 
-**Provenance.** Probes: `notebooks/conservative_arch/scaleup/debug/vtheta_well_probe.py` (effective counts, force shares, removal; `renorm=1` added 2026-11-03), `keep_k_curves.py`, `vtheta_weight_logits.py` (the bound, the scale test and the temperature sweep), `well_count_fit.py` (the estimator). Results in `notebooks/conservative_arch/scaleup/results/dead_wells/` and `.../results/well_count/`. K2-L8-CODE's evals through step 10,000 are from its Cell 6 log (2026-11-03). The parameter counts per well are the bank's formula, checked against L8-CODE's and K2-L8-CODE's built totals.
+**Provenance.** Probes: `notebooks/conservative_arch/scaleup/debug/vtheta_well_probe.py` (effective counts, force shares, removal; `renorm=1` added 2026-11-03), `keep_k_curves.py`, `vtheta_weight_logits.py` (the bound, the scale test and the temperature sweep), `well_count_fit.py` (the estimator). Results in `notebooks/conservative_arch/scaleup/results/dead_wells/` and `.../results/well_count/`. K2-L8-CODE's evals are from its Cell 6 log, filed in its run folder (`results/cfc_baoab_code_…dcvt5x2…L8probe…lr0p0012_noattn/`, 2026-11-03). The parameter counts per well are the bank's formula, checked against L8-CODE's and K2-L8-CODE's built totals.
 
 Last updated: 3 November 2026.
