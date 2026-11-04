@@ -96,14 +96,16 @@ if cache.exists():
     C = torch.load(cache)
     assert C['folder'] == FOLDER and C['val'] == str(CS['VAL']), (C['folder'], C['val'])
 else:
+    # also=<layers>: capture those layers' bank inputs in the same forwards and cache them too (one pass for several fits)
+    LAYERS = sorted({LAYER} | {int(l) for l in OPTS.get('also', '').split(',') if l})
     vt = model.V_theta
     bank = vt.bank.bank if hasattr(vt.bank, 'bank') else vt.bank
     cur, got = {}, {}
     orig_cc = bank.context_components
     def cc(xi):
         g = vt._active_layer % vt.n_layers
-        if g == LAYER and 'x' not in cur:            # the first call at the layer in this forward (later ones repeat it)
-            cur['x'] = xi.detach().float().reshape(-1, xi.shape[-1])
+        if g in LAYERS and g not in cur:             # the first call at the layer in this forward (later ones repeat it)
+            cur[g] = xi.detach().float().reshape(-1, xi.shape[-1])
         return orig_cc(xi)
     bank.context_components = cc
     orig_lg = model.compute_logits
@@ -112,21 +114,46 @@ else:
         return orig_lg(h)
     model.compute_logits = lg
     x, y = CS['windows']()
-    xs, hs, nl, t0 = [], [], [], time.time()
-    for i in range(0, len(x), 4):
+    xs, hs, nl, kept, t0 = {g: [] for g in LAYERS}, [], [], [], time.time()
+
+    def run(j):
+        """Windows j: (bank inputs by layer, h, nll), or None where CPU LAPACK's SVD in the model's Gram step fails."""
         cur.clear()
-        with torch.enable_grad():                    # the V_phi pair force is an autograd gradient
-            lgt = model(torch.from_numpy(x[i:i + 4]))[0].detach()
-        nl.append(F.cross_entropy(lgt.reshape(-1, lgt.shape[-1]).float(), torch.from_numpy(y[i:i + 4]).reshape(-1), reduction='none'))
-        xs.append(cur['x'].half()); hs.append(cur['h'])
+        try:
+            with torch.enable_grad():                # the V_phi pair force is an autograd gradient
+                lgt = model(torch.from_numpy(x[j]))[0].detach()
+        except torch.linalg.LinAlgError:
+            return None
+        nll = F.cross_entropy(lgt.reshape(-1, lgt.shape[-1]).float(), torch.from_numpy(y[j]).reshape(-1), reduction='none')
+        return {g: cur[g] for g in LAYERS}, cur['h'], nll
+
+    for i in range(0, len(x), 4):
+        # 2026-11-03: L8-CODE hit "linalg.svd ... failed to converge" on CPU in one batch of four windows (late in the
+        # set); retry such a batch one window at a time and drop only the window that fails, counted below
+        parts = [(list(range(i, min(i + 4, len(x)))), run(slice(i, i + 4)))]
+        if parts[0][1] is None:
+            parts = [([j], run(slice(j, j + 1))) for j in range(i, min(i + 4, len(x)))]
+        for idx, r in parts:
+            if r is None:
+                continue
+            for g in LAYERS:
+                xs[g].append(r[0][g].half())
+            hs.append(r[1]); nl.append(r[2]); kept += idx
         if i % 64 == 0:
             print(f'capture: windows {i + 4}/{len(x)}  ({time.time() - t0:.0f} s)', flush=True)
     bank.context_components, model.compute_logits = orig_cc, orig_lg
-    C = dict(x=torch.cat(xs), h=torch.cat(hs), y=torch.from_numpy(y).reshape(-1), nll=torch.cat(nl), folder=FOLDER, val=str(CS['VAL']),
-             desc=desc, T=x.shape[1])
+    dropped = len(x) - len(kept)
+    if dropped:
+        print(f'capture: dropped {dropped} window(s) where the CPU SVD failed: {sorted(set(range(len(x))) - set(kept))}', flush=True)
     CACHE.mkdir(parents=True, exist_ok=True)
-    torch.save(C, cache)
-    print(f'captured {len(C["y"])} tokens in {time.time() - t0:.0f} s -> {cache}', flush=True)
+    for g in LAYERS:
+        Cg = dict(x=torch.cat(xs[g]), h=torch.cat(hs), y=torch.from_numpy(y[kept]).reshape(-1), nll=torch.cat(nl),
+                  folder=FOLDER, val=str(CS['VAL']), T=x.shape[1],
+                  desc=desc + (f'; {dropped} of {len(x)} windows dropped (CPU SVD failed)' if dropped else ''))
+        torch.save(Cg, CACHE / f'wcf_{NAME}_L{g}_w{WIN}.pt')
+        if g == LAYER:
+            C = Cg
+    print(f'captured {len(C["y"])} tokens at layers {LAYERS} in {time.time() - t0:.0f} s -> {cache}', flush=True)
 
 torch.manual_seed(0)
 X, H, Y, T = C['x'], C['h'], C['y'], C['T']
