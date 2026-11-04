@@ -1,0 +1,16 @@
+well-count fit, so_owt: softmax-gated mixtures of K linear maps on the layer-0 bank input
+semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn); validation /Users/dimitargueorguiev/Downloads/semsimula_fock_gamma_sweep_aniso_gaussian_fockreg_d384/data/openwebtext_val_2M.npy
+1024 windows x 512 tokens (train/val/test 716/154/154 windows); bank input 1920 dims; d = 384; final states |h| median 19.60 (sqrt d = 19.60) -> projected onto the sphere
+objective ce; 4 epochs, batch 2048, AdamW lr 0.0003 cosine, weight decay 0.05; validation 2x per epoch, best point kept
+trained model on these tokens: test ce 4.0306 (ppl 56.30), val ce 4.0955; the frozen readout on the captured final states reproduces its per-token loss to 6.7e-06
+
+ D   K     params  test ce      ppl  vs model KL->model vs prev K pair SE best ep  gate n_eff medians
+ 1   1    739,585   5.6766   291.97   +1.6460    1.4398                      4.00  1.00
+ 1   2  1,479,170   5.4198   225.84   +1.3892    1.2252   -0.2568  0.0058    4.00  1.23
+ 1   4  2,958,340   5.3501   210.62   +1.3195    1.1710   -0.0697  0.0030    4.00  1.88
+ 1   8  5,916,680   5.3501   210.63   +1.3195    1.1710   +0.0000  0.0000    0.00  3.76
+
+K_needed(eps) at each depth: the fewest K whose test ce is within eps nats of the best K at that depth
+  D = 1: eps 0.005: K = 4, eps 0.01: K = 4, eps 0.02: K = 4, eps 0.05: K = 4
+paired per-window SE of the "vs prev K" differences: median 0.0030, max 0.0058; a difference under about twice the SE is not resolved by 154 test windows

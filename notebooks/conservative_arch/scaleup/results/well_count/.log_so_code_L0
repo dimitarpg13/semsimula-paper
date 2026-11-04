@@ -46,3 +46,83 @@ trained model on these tokens: test ce 1.8027 (ppl 6.07), val ce 1.7389; the fro
   D=1 K=4 epoch 0.50: val ce 3.1100  (77 s)
   D=1 K=4 epoch 0.99: val ce 3.0723  (144 s)
   D=1 K=4 epoch 1.49: val ce 3.0510  (216 s)
+  D=1 K=4 epoch 1.99: val ce 3.0200  (287 s)
+  D=1 K=4 epoch 2.49: val ce 3.0145  (361 s)
+  D=1 K=4 epoch 2.98: val ce 3.0061  (434 s)
+  D=1 K=4 epoch 3.48: val ce 3.0039  (500 s)
+  D=1 K=4 epoch 3.98: val ce 3.0036  (566 s)
+  D=1 K=4 epoch 4.00: val ce 3.0036  (581 s)
+ 1   4  2,958,340   3.1940    24.38   +1.3912    1.4557   -0.0983  0.0068    4.00  1.79
+  D=1 K=8 epoch 0.50: val ce 3.0275  (74 s)
+  D=1 K=8 epoch 0.99: val ce 3.0073  (148 s)
+  D=1 K=8 epoch 1.49: val ce 3.0090  (230 s)
+  D=1 K=8 epoch 1.99: val ce 2.9878  (306 s)
+  D=1 K=8 epoch 2.49: val ce 2.9795  (381 s)
+  D=1 K=8 epoch 2.98: val ce 2.9670  (457 s)
+  D=1 K=8 epoch 3.48: val ce 2.9664  (533 s)
+  D=1 K=8 epoch 3.98: val ce 2.9658  (609 s)
+  D=1 K=8 epoch 4.00: val ce 2.9658  (626 s)
+ 1   8  5,916,680   3.1633    23.65   +1.3606    1.4573   -0.0307  0.0066    4.00  2.43
+  D=2 K=1 epoch 0.50: val ce 3.2940  (68 s)
+  D=2 K=1 epoch 0.99: val ce 3.2132  (138 s)
+  D=2 K=1 epoch 1.49: val ce 3.1812  (206 s)
+  D=2 K=1 epoch 1.99: val ce 3.1430  (274 s)
+  D=2 K=1 epoch 2.49: val ce 3.1342  (362 s)
+  D=2 K=1 epoch 2.98: val ce 3.1189  (462 s)
+  D=2 K=1 epoch 3.48: val ce 3.1152  (561 s)
+  D=2 K=1 epoch 3.98: val ce 3.1136  (662 s)
+  D=2 K=1 epoch 4.00: val ce 3.1136  (683 s)
+ 2   1  1,627,010   3.3002    27.12   +1.4975    1.5207                      4.00  1.00 1.00
+  D=2 K=2 epoch 0.50: val ce 3.1059  (105 s)
+  D=2 K=2 epoch 0.99: val ce 3.0391  (209 s)
+  D=2 K=2 epoch 1.49: val ce 3.0249  (313 s)
+  D=2 K=2 epoch 1.99: val ce 2.9953  (418 s)
+  D=2 K=2 epoch 2.49: val ce 2.9987  (523 s)
+  D=2 K=2 epoch 2.98: val ce 2.9845  (630 s)
+  D=2 K=2 epoch 3.48: val ce 2.9830  (734 s)
+  D=2 K=2 epoch 3.98: val ce 2.9830  (838 s)
+  D=2 K=2 epoch 4.00: val ce 2.9830  (860 s)
+ 2   2  3,254,020   3.1807    24.06   +1.3780    1.4461   -0.1195  0.0098    3.48  1.32 1.25
+  D=2 K=4 epoch 0.50: val ce 3.0317  (117 s)
+  D=2 K=4 epoch 0.99: val ce 3.0084  (234 s)
+  D=2 K=4 epoch 1.49: val ce 3.0044  (352 s)
+  D=2 K=4 epoch 1.99: val ce 2.9682  (469 s)
+  D=2 K=4 epoch 2.49: val ce 2.9637  (589 s)
+  D=2 K=4 epoch 2.98: val ce 2.9502  (706 s)
+  D=2 K=4 epoch 3.48: val ce 2.9475  (823 s)
+  D=2 K=4 epoch 3.98: val ce 2.9467  (942 s)
+  D=2 K=4 epoch 4.00: val ce 2.9467  (967 s)
+ 2   4  6,508,040   3.1602    23.57   +1.3575    1.4604   -0.0205  0.0083    3.98  1.94 1.92
+  D=2 K=8 epoch 0.50: val ce 2.9972  (144 s)
+  D=2 K=8 epoch 0.99: val ce 2.9686  (291 s)
+  D=2 K=8 epoch 1.49: val ce 2.9895  (436 s)
+  D=2 K=8 epoch 1.99: val ce 2.9660  (582 s)
+  D=2 K=8 epoch 2.49: val ce 2.9780  (727 s)
+  D=2 K=8 epoch 2.98: val ce 2.9695  (873 s)
+  D=2 K=8 epoch 3.48: val ce 2.9716  (1019 s)
+  D=2 K=8 epoch 3.98: val ce 2.9718  (1164 s)
+  D=2 K=8 epoch 4.00: val ce 2.9718  (1192 s)
+ 2   8 13,016,080   3.1602    23.57   +1.3575    1.4604   +0.0000  0.0000    0.00  3.88 3.85
+
+K_needed(eps) at each depth: the fewest K whose test ce is within eps nats of the best K at that depth
+  D = 1: eps 0.005: K = 8, eps 0.01: K = 8, eps 0.02: K = 8, eps 0.05: K = 4
+  D = 2: eps 0.005: K = 4, eps 0.01: K = 4, eps 0.02: K = 4, eps 0.05: K = 2
+paired per-window SE of the "vs prev K" differences: median 0.0083, max 0.0118; a difference under about twice the SE is not resolved by 154 test windows
+     7828.80 real     57509.02 user      4023.63 sys
+         17836003328  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+           946489910  page reclaims
+                   0  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                 270  voluntary context switches
+            34663232  involuntary context switches
+     234768650449899  instructions retired
+     139718347854082  cycles elapsed
+          8405139456  peak memory footprint
