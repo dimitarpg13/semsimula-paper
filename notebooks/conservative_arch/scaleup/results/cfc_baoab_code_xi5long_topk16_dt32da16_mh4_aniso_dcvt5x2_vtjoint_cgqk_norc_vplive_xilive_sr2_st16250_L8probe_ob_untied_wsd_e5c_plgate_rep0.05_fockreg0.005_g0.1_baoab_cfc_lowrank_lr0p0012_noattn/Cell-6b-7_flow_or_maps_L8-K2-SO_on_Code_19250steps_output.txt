@@ -1,0 +1,57 @@
+probing fock_cfc_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x2_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_lr0p0012_noattn_best.pt
+  step 18000  ppl 5.56  missing 0
+  trained: L=8  dt=1  T=L*dt=8
+
+  eval: 12 fixed batches x 4 x 512 = 24,576 tok
+
+GATE 0  unpatched 4.7929   patched(N=L, hold) 4.7929   |d loss| 0.00e+00
+        PASS -- the patched loop is a faithful copy
+
+GATE 1  carried     4.79   reset    17.77   +12.97
+        reset = gradient descent on V_theta at lr dt^2/2m.
+        A large positive delta is what inertia buys, measured
+        on the trained weights with no retraining.
+
+GATE 2  AXIS 1 -- more hops, dt fixed, T grows   policy='cycle'
+    N       dt        T   val_loss      ppl    d ppl
+    1    1.000    1.000     4.5674    96.30   +91.50
+    2    1.000    2.000     4.4657    86.98   +82.19
+    3    1.000    3.000     4.1588    63.99   +59.20
+    4    1.000    4.000     3.6806    39.67   +34.88
+    6    1.000    6.000     2.2450     9.44    +4.65
+    8    1.000    8.000     1.5671     4.79    +0.00  <- trained
+
+GATE 3  AXIS 2 -- refinement, T fixed  <<< THE FRAMEWORK TEST   policy='hold'
+    N       dt        T   val_loss      ppl    d ppl
+    1    8.000    8.000     5.9843   397.13  +392.33
+    2    4.000    8.000     5.3146   203.27  +198.48
+    3    2.667    8.000     4.9893   146.84  +142.04
+    4    2.000    8.000     4.5266    92.45   +87.65
+    6    1.333    8.000     2.1150     8.29    +3.50
+    8    1.000    8.000     1.5671     4.79    +0.00  <- trained
+   12    0.667    8.000     2.0323     7.63    +2.84
+   16    0.500    8.000     2.6401    14.02    +9.22
+   24    0.333    8.000     3.7354    41.91   +37.11
+   32    0.250    8.000     4.2718    71.65   +66.85
+
+    N_i -> N_j   |d ppl|  successive change
+        1 -> 2   193.854
+        2 -> 3    56.437
+        3 -> 4    54.390
+        4 -> 6    84.157
+        6 -> 8     3.497
+       8 -> 12     2.838
+      12 -> 16     6.384
+      16 -> 24    27.891
+      24 -> 32    29.741
+
+  shrinking toward 0     -> FLOW. Refinement invariance
+                            holds; the SS18 geodesic
+                            residual is a property of a
+                            curve, and depth becomes an
+                            inference-time knob.
+  monotone improvement   -> the trained dt was TOO COARSE.
+  grows away from N=L    -> MAPS. Re-scope every geodesic
+                            claim to the trained dt.
+
+  live training state restored

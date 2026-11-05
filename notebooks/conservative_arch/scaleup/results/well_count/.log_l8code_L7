@@ -1,72 +1,70 @@
-capture: windows 4/1024  (15 s)
-capture: windows 68/1024  (262 s)
-capture: windows 132/1024  (510 s)
-capture: windows 196/1024  (762 s)
-capture: windows 260/1024  (1011 s)
-capture: windows 324/1024  (1301 s)
-capture: windows 388/1024  (1647 s)
-capture: windows 452/1024  (1990 s)
-capture: windows 516/1024  (2334 s)
-capture: windows 580/1024  (2681 s)
-capture: windows 644/1024  (3025 s)
-capture: windows 708/1024  (3370 s)
-capture: windows 772/1024  (3713 s)
-capture: windows 836/1024  (4059 s)
-capture: windows 900/1024  (4403 s)
-capture: windows 964/1024  (4750 s)
-Traceback (most recent call last):
-  File "/Users/dimitargueorguiev/git/ml/semsimula-paper/notebooks/conservative_arch/scaleup/debug/well_count_fit.py", line 119, in <module>
-    lgt = model(torch.from_numpy(x[i:i + 4]))[0].detach()
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/dimitargueorguiev/.pyenv/versions/3.12.11/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1511, in _wrapped_call_impl
-    return self._call_impl(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/dimitargueorguiev/.pyenv/versions/3.12.11/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1520, in _call_impl
-    return forward_call(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/dimitargueorguiev/git/ml/semsimula-paper/notebooks/conservative_arch/parf/model_parf.py", line 1324, in forward
-    h_L, traj = self._stack_forward(
-                ^^^^^^^^^^^^^^^^^^^^
-  File "/Users/dimitargueorguiev/git/ml/semsimula-paper/notebooks/conservative_arch/parf/model_fock_parf_multixi.py", line 836, in _stack_forward
-    h_new, h_prev_out, r, salience = self._fock_layer_step(
-                                     ^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/dimitargueorguiev/git/ml/semsimula-paper/notebooks/conservative_arch/parf/model_aniso_gaussian_vtheta.py", line 762, in _routed_fock_layer_step
-    return _orig(self, h, h_prev, r, salience, m_b, gamma, dt,
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/dimitargueorguiev/git/ml/semsimula-paper/notebooks/conservative_arch/parf/model_fock_parf_multixi.py", line 516, in _fock_layer_step
-    h_new, h_prev_out = super()._layer_step_ex(
-                        ^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/dimitargueorguiev/git/ml/semsimula-paper/notebooks/conservative_arch/parf/model_parf_multixi.py", line 2270, in _layer_step_ex
-    _h_new, _h_prev_out = self._layer_step_langevin(
-                          ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/dimitargueorguiev/git/ml/semsimula-paper/notebooks/conservative_arch/parf/model_parf_multixi.py", line 1956, in _layer_step_langevin
-    return self._layer_step_langevin_core(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/dimitargueorguiev/git/ml/semsimula-paper/notebooks/conservative_arch/parf/model_parf_multixi.py", line 2059, in _layer_step_langevin_core
-    lr_U, lr_kappa = lowrank_modes(
-                     ^^^^^^^^^^^^^^
-  File "/Users/dimitargueorguiev/git/ml/semsimula-paper/notebooks/conservative_arch/parf/cfc_baoab.py", line 548, in lowrank_modes
-    U_full, S = _gram_eigh(Gd)
-                ^^^^^^^^^^^^^^
-  File "/Users/dimitargueorguiev/git/ml/semsimula-paper/notebooks/conservative_arch/parf/cfc_baoab.py", line 465, in _gram_eigh
-    V, lam, _ = torch.linalg.svd(M)                     # lam desc, = sigma^2(G)
-                ^^^^^^^^^^^^^^^^^^^
-torch._C._LinAlgError: linalg.svd: (Batch element 1665): The algorithm failed to converge because the input matrix is ill-conditioned or has too many repeated singular values (error code: 1).
-     4828.66 real     31235.59 user      3842.71 sys
-         16658620416  maximum resident set size
+well-count fit, l8code: softmax-gated mixtures of K linear maps on the layer-7 bank input
+semsimula_fock_cfc_baoab_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_lr0p0012_noattn
+fock_cfc_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_lr0p0012_noattn_step18000_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_lr0p0012_noattn); validation /Users/dimitargueorguiev/Downloads/semsimula_code_gpt2/data/code_val_2M.npy
+1024 windows x 512 tokens (train/val/test 716/154/154 windows); bank input 1920 dims; d = 384; final states |h| median 19.60 (sqrt d = 19.60) -> projected onto the sphere
+objective ce; 4 epochs, batch 2048, AdamW lr 0.0003 cosine, weight decay 0.05; validation 2x per epoch, best point kept
+trained model on these tokens: test ce 1.6908 (ppl 5.42), val ce 1.6302; the frozen readout on the captured final states reproduces its per-token loss to 5.7e-06
+
+ D   K     params  test ce      ppl  vs model KL->model vs prev K pair SE best ep  gate n_eff medians
+  D=1 K=1 epoch 0.50: val ce 3.3245  (88 s)
+  D=1 K=1 epoch 0.99: val ce 2.8244  (176 s)
+  D=1 K=1 epoch 1.49: val ce 2.5954  (263 s)
+  D=1 K=1 epoch 1.99: val ce 2.4707  (351 s)
+  D=1 K=1 epoch 2.49: val ce 2.4045  (438 s)
+  D=1 K=1 epoch 2.98: val ce 2.3687  (526 s)
+  D=1 K=1 epoch 3.48: val ce 2.3565  (614 s)
+  D=1 K=1 epoch 3.98: val ce 2.3543  (701 s)
+  D=1 K=1 epoch 4.00: val ce 2.3543  (720 s)
+ 1   1    739,585   2.4739    11.87   +0.7831    0.7742                      4.00  1.00
+  D=1 K=2 epoch 0.50: val ce 2.2374  (90 s)
+  D=1 K=2 epoch 0.99: val ce 2.1388  (181 s)
+  D=1 K=2 epoch 1.49: val ce 2.0949  (269 s)
+  D=1 K=2 epoch 1.99: val ce 2.0558  (360 s)
+  D=1 K=2 epoch 2.49: val ce 2.0434  (449 s)
+  D=1 K=2 epoch 2.98: val ce 2.0313  (539 s)
+  D=1 K=2 epoch 3.48: val ce 2.0280  (627 s)
+  D=1 K=2 epoch 3.98: val ce 2.0273  (718 s)
+  D=1 K=2 epoch 4.00: val ce 2.0273  (737 s)
+ 1   2  1,479,170   2.1249     8.37   +0.4342    0.4745   -0.3490  0.0112    4.00  1.21
+  D=1 K=4 epoch 0.50: val ce 2.0162  (94 s)
+  D=1 K=4 epoch 0.99: val ce 1.9866  (189 s)
+  D=1 K=4 epoch 1.49: val ce 1.9776  (282 s)
+  D=1 K=4 epoch 1.99: val ce 1.9617  (375 s)
+  D=1 K=4 epoch 2.49: val ce 1.9579  (468 s)
+  D=1 K=4 epoch 2.98: val ce 1.9507  (560 s)
+  D=1 K=4 epoch 3.48: val ce 1.9492  (653 s)
+  D=1 K=4 epoch 3.98: val ce 1.9489  (749 s)
+  D=1 K=4 epoch 4.00: val ce 1.9489  (772 s)
+ 1   4  2,958,340   2.0433     7.72   +0.3525    0.4152   -0.0817  0.0041    3.98  2.08
+  D=1 K=8 epoch 0.50: val ce 1.9616  (112 s)
+  D=1 K=8 epoch 0.99: val ce 1.9400  (223 s)
+  D=1 K=8 epoch 1.49: val ce 1.9459  (331 s)
+  D=1 K=8 epoch 1.99: val ce 1.9367  (434 s)
+  D=1 K=8 epoch 2.49: val ce 1.9405  (539 s)
+  D=1 K=8 epoch 2.98: val ce 1.9375  (643 s)
+  D=1 K=8 epoch 3.48: val ce 1.9377  (746 s)
+  D=1 K=8 epoch 3.98: val ce 1.9377  (848 s)
+  D=1 K=8 epoch 4.00: val ce 1.9377  (870 s)
+ 1   8  5,916,680   2.0334     7.64   +0.3426    0.4228   -0.0099  0.0023    1.99  3.77
+
+K_needed(eps) at each depth: the fewest K whose test ce is within eps nats of the best K at that depth
+  D = 1: eps 0.005: K = 8, eps 0.01: K = 4, eps 0.02: K = 4, eps 0.05: K = 4
+paired per-window SE of the "vs prev K" differences: median 0.0041, max 0.0112; a difference under about twice the SE is not resolved by 154 test windows
+     3471.13 real     25533.37 user      1875.86 sys
+         11671658496  maximum resident set size
                    0  average shared memory size
                    0  average unshared data size
                    0  average unshared stack size
-           541214860  page reclaims
-                   0  page faults
+           470707492  page reclaims
+                  27  page faults
                    0  swaps
                    0  block input operations
                    0  block output operations
                    0  messages sent
                    0  messages received
                    0  signals received
-                   3  voluntary context switches
-            16628360  involuntary context switches
-      74631983884558  instructions retired
-      84651133622345  cycles elapsed
-          5765484544  peak memory footprint
+                 610  voluntary context switches
+            13461623  involuntary context switches
+      97756337088265  instructions retired
+      54284202715872  cycles elapsed
+          7553245184  peak memory footprint

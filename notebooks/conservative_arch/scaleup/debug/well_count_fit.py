@@ -3,6 +3,7 @@
 
     python3 well_count_fit.py OUT FOLDER NAME [ckpt=<file>] [windows=256] [threads=8] [val=<tokens.npy>] [layer=0]
                               [Ks=1,2,4,8] [depths=1,2] [epochs=4] [evals=2] [batch=2048] [lr=3e-4] [wd=0.05] [obj=ce|kl] [cache=<dir>]
+                              [also=<layers>]
 
 A V_theta well's centre is linear in the bank input x (mu_k = M_k x + m_k, x = the context channels plus the depth
 code) and its weight is softmax(W_w x + b)_k. A layer whose wells are stiff puts the state at their weighted
@@ -19,7 +20,10 @@ trade; it is a relaxation: the model's deeper layers also mix positions through 
 
 Capture: the bank input at layer `layer` (default 0: the context of the embeddings, the nearest thing to a
 corpus statistic), the final state h_L and the targets, on `windows` validation windows of 512 tokens spaced
-evenly over the set (copy_split.windows); cached as <cache>/wcf_<NAME>_L<layer>_w<windows>.pt. Windows are split
+evenly over the set (copy_split.windows); cached as <cache>/wcf_<NAME>_L<layer>_w<windows>.pt. also=<layers> records
+those layers' bank inputs in the same pass, one cache each, for later runs with layer=<one of them>. A window whose
+forward fails (2026-11-03: CPU LAPACK svd non-convergence in cfc_baoab._gram_eigh on L8-CODE) is retried alone and
+dropped if it fails again; the dropped windows are printed and noted in the cache. Windows are split
 70/15/15 into train, validation (early stopping) and test (reported). Each fit starts from the previous K's
 (every expert split in two with a small perturbation, the gate rows copied: the same function at the start),
 and a deeper stack from the shallower one with the new blocks at zero output. obj=ce fits the next token,

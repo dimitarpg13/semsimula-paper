@@ -1,0 +1,9 @@
+
+B_k spectrum -- ANISO_RANK=4, PRECISION_LR_MAX=1.0 (||B||_F cap = 1.0)
+==============================================================================
+BEST (step 18,000)         PR p50=3.61/4  (p05=2.03 p95=3.85)   ||B||_F p50=1.000   sigma_max^2 p50=0.3760
+                           mean sigma_i/sigma_1: [1.000  0.793  0.702  0.622]
+==============================================================================
+=> PR p50 = 3.61 of 4: budget SATURATED. Rank 8 has a real case, and would also lower sigma_max^2 under the same Frobenius cap.
+
+

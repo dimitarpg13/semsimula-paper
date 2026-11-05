@@ -1,0 +1,27 @@
+probing fock_cfc_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x2_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_lr0p0012_noattn_best.pt
+   step 18,000  ppl 5.56  missing 0  unexpected 0
+   L=8  dt=1  T=L*dt=8  seed=20260928  8 x 4 x 512 tokens
+
+omega*dt over 131,072 (token, coordinate, layer) readings
+    layer      p05      p50      p95      max  over 2.0
+        0    2.939    3.224    3.439    3.708   100.00%
+        1    1.095    1.455    1.740    2.273     0.14%
+        2    0.603    1.145    1.628    2.367     0.21%
+        3    1.451    1.963    2.367    3.053    44.30%
+        4    1.338    1.959    2.460    3.148    45.57%
+        5    0.858    1.559    2.198    3.261    12.34%
+        6    0.293    0.900    1.661    2.777     0.92%
+        7    0.059    0.403    1.226    2.861     0.27%
+      ALL    0.281    1.505    3.256    3.708    25.47%
+
+READING
+   omega*dt p50 = 1.505 at dt = 1  ->  omega = 1.505
+   25.5% of readings are past the explicit-integrator wall of 2.
+   Under baoab_cfc_lowrank those modes are integrated EXACTLY, so this is a
+   STIFFNESS reading, not an instability: it says explicit integration
+   would have been amplifying there, and the propagator is doing the work.
+
+   (the pre-registered band is scored on the L=2 arm; this is L=8)
+   filed -> /content/drive/MyDrive/semsimula_fock_cfc_baoab_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x2_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_lr0p0012_noattn/results/omega_dt_endpoint.jsonl
+
+   live training state restored

@@ -193,7 +193,7 @@ def fig_keep_k():
     save(fig, "keep_k.png")
 
 
-# ---------------------------------------------------------------- Figure 5: what K gated linear maps can express
+# ---------------------------------------------------------------- Figure 6: what K gated linear maps can express
 def fig_schematic():
     rng = np.random.default_rng(0)
     xi = np.linspace(-3, 3, 600)
@@ -235,7 +235,7 @@ def fig_schematic():
     save(fig, "gated_linear_schematic.png")
 
 
-# ---------------------------------------------------------------- Figure 6: well-count fits against K
+# ---------------------------------------------------------------- Figure 7: well-count fits against K
 def fig_fits():
     arms = (("so_code", "SO-CODE", BLUE, 1), ("l8code", "L8-CODE", PURPLE, 7), ("so_owt", "SO-OWT", ORANGE, 1),
             ("so_ts", "SO-TS", GREEN, 1))
@@ -277,7 +277,7 @@ def fig_fits():
     save(fig, "fit_vs_K.png")
 
 
-# ---------------------------------------------------------------- Figure 7: K2-L8-CODE in training
+# ---------------------------------------------------------------- Figure 5: K2-L8-CODE in training
 def fig_k2l8():
     k2l8 = evals(next(RES.glob("cfc_baoab_code_*dcvt5x2*L8probe*/L8_K2_SO_on_Code_19250steps_output.txt")))
     l8 = evals(next(RES.glob("cfc_baoab_code_*dcvt5x8*L8probe*/L8_SO_on_Code_19250steps_output.txt")))

@@ -1,0 +1,21 @@
+well-count fit, l8code: softmax-gated mixtures of K linear maps on the layer-0 bank input
+semsimula_fock_cfc_baoab_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_lr0p0012_noattn
+fock_cfc_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_lr0p0012_noattn_step18000_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_lr0p0012_noattn); validation /Users/dimitargueorguiev/Downloads/semsimula_code_gpt2/data/code_val_2M.npy
+1024 windows x 512 tokens (train/val/test 716/154/154 windows); bank input 1920 dims; d = 384; final states |h| median 19.60 (sqrt d = 19.60) -> projected onto the sphere
+objective ce; 4 epochs, batch 2048, AdamW lr 0.0003 cosine, weight decay 0.05; validation 2x per epoch, best point kept
+trained model on these tokens: test ce 1.6908 (ppl 5.42), val ce 1.6302; the frozen readout on the captured final states reproduces its per-token loss to 5.7e-06
+
+ D   K     params  test ce      ppl  vs model KL->model vs prev K pair SE best ep  gate n_eff medians
+ 1   1    739,585   3.6595    38.84   +1.9687    1.9491                      4.00  1.00
+ 1   2  1,479,170   3.3863    29.56   +1.6955    1.7175   -0.2732  0.0114    4.00  1.20
+ 1   4  2,958,340   3.2533    25.88   +1.5626    1.6176   -0.1329  0.0076    3.98  1.75
+ 1   8  5,916,680   3.2065    24.69   +1.5158    1.5988   -0.0468  0.0065    4.00  2.40
+ 2   1  1,627,010   3.3990    29.93   +1.7082    1.7213                      4.00  1.00 1.00
+ 2   2  3,254,020   3.2247    25.15   +1.5340    1.5879   -0.1743  0.0096    4.00  1.34 1.26
+ 2   4  6,508,040   3.1627    23.63   +1.4719    1.5584   -0.0621  0.0078    3.98  1.94 1.90
+ 2   8 13,016,080   3.1627    23.63   +1.4719    1.5584   +0.0000  0.0000    0.00  3.88 3.80
+
+K_needed(eps) at each depth: the fewest K whose test ce is within eps nats of the best K at that depth
+  D = 1: eps 0.005: K = 8, eps 0.01: K = 8, eps 0.02: K = 8, eps 0.05: K = 4
+  D = 2: eps 0.005: K = 4, eps 0.01: K = 4, eps 0.02: K = 4, eps 0.05: K = 4
+paired per-window SE of the "vs prev K" differences: median 0.0078, max 0.0114; a difference under about twice the SE is not resolved by 154 test windows

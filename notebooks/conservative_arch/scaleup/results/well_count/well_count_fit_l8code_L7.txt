@@ -1,0 +1,16 @@
+well-count fit, l8code: softmax-gated mixtures of K linear maps on the layer-7 bank input
+semsimula_fock_cfc_baoab_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_lr0p0012_noattn
+fock_cfc_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_lr0p0012_noattn_step18000_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_lr0p0012_noattn); validation /Users/dimitargueorguiev/Downloads/semsimula_code_gpt2/data/code_val_2M.npy
+1024 windows x 512 tokens (train/val/test 716/154/154 windows); bank input 1920 dims; d = 384; final states |h| median 19.60 (sqrt d = 19.60) -> projected onto the sphere
+objective ce; 4 epochs, batch 2048, AdamW lr 0.0003 cosine, weight decay 0.05; validation 2x per epoch, best point kept
+trained model on these tokens: test ce 1.6908 (ppl 5.42), val ce 1.6302; the frozen readout on the captured final states reproduces its per-token loss to 5.7e-06
+
+ D   K     params  test ce      ppl  vs model KL->model vs prev K pair SE best ep  gate n_eff medians
+ 1   1    739,585   2.4739    11.87   +0.7831    0.7742                      4.00  1.00
+ 1   2  1,479,170   2.1249     8.37   +0.4342    0.4745   -0.3490  0.0112    4.00  1.21
+ 1   4  2,958,340   2.0433     7.72   +0.3525    0.4152   -0.0817  0.0041    3.98  2.08
+ 1   8  5,916,680   2.0334     7.64   +0.3426    0.4228   -0.0099  0.0023    1.99  3.77
+
+K_needed(eps) at each depth: the fewest K whose test ce is within eps nats of the best K at that depth
+  D = 1: eps 0.005: K = 8, eps 0.01: K = 4, eps 0.02: K = 4, eps 0.05: K = 4
+paired per-window SE of the "vs prev K" differences: median 0.0041, max 0.0112; a difference under about twice the SE is not resolved by 154 test windows

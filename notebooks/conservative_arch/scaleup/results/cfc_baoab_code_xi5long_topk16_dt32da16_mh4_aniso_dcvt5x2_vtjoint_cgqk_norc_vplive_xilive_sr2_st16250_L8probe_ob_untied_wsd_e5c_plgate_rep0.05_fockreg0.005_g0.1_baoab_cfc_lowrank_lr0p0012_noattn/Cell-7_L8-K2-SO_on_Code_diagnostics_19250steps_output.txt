@@ -1,0 +1,23 @@
+Probe target -> fock_cfc_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x2_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_lr0p0012_noattn_best.pt  step 18000  PPL 5.56
+GPU free 83.1 / 85.1 GB before probe
+========================================================================
+Fock v2.1 STRUCTURAL HEALTH
+========================================================================
+     layer  active_fra  reg_cos_si  create_ent  create_alp  rev_entrop   rev_scale  qforce_rat  destroy_me
+     0.000       1.000       0.000       0.409       0.826        None       0.000       0.000       0.000
+     1.000       1.000       0.000       0.209       0.914        None       0.000       0.000       0.000
+     2.000       1.000       0.000       0.062       0.976        None       0.000       0.000       0.000
+     3.000       1.000       0.000       0.050       0.981        None       0.000       0.000       0.000
+     4.000       1.000       0.000       0.063       0.978        None       0.000       0.000       0.000
+     5.000       1.000      -0.000       0.095       0.960        None       0.000       0.000       0.000
+     6.000       1.000      -0.000       0.075       0.969        None       0.000       0.000       0.000
+     7.000       1.000       0.000       0.172       0.881        None       0.000       0.000       0.501
+------------------------------------------------------------------------
+summary: {'active_frac': 1.0, 'salience_mean': 0.887, 'salience_std': 0.079, 'reg_cos_sim': -0.0, 'destroy_mean': 0.063, 'qforce_ratio': 0.0, 'rev_scale': 0.0, 'create_alpha_max': 0.935, 'create_entropy': 0.142}
+  * creation attention near-DEGENERATE (entropy=0.14, 2% of max): each register locks to ~1 token -> temperature may have collapsed; raise tau_create floor
+  * reverse channel effectively OFF (|scale|=0.0e+00): the non-conservative force is not being used -> either it has no headroom here, or warmup is still ramping / gate init needs help
+
+========================================================================
+arm                         loss       ppl      dPPL
+full model                1.6436      5.17     +0.00
+  - registers (all)       1.6436      5.17     +0.00

@@ -109,6 +109,9 @@ def tag_repl(folder):
     kw = next((int(t.split('x')[1]) for t in parts if re.fullmatch(r'dcvt\d+x\d+', t)), 8)
     if kw != 8:                                  # K2-CODE: V_theta's wells per bank
         repl += (('V_THETA_WELLS_PER_HEAD      = 8', f'V_THETA_WELLS_PER_HEAD      = {kw}'),)
+    ar = next((int(t[2:]) for t in parts if re.fullmatch(r'ar\d+', t)), 4)
+    if ar != 4:                                  # 2026-11-04: the wells' rank (K2-L8 at rank 6)
+        repl += (('ANISO_RANK                  = 4', f'ANISO_RANK                  = {ar}'),)
     vs = next((t for t in parts if re.fullmatch(r'vs\d+', t)), None)
     if vs:                                       # SR4a: training only; needed for the tag check
         repl += (('VARIABLE_STEP_COUNTS      = None', f"VARIABLE_STEP_COUNTS      = ({', '.join(vs[2:])},)"),)

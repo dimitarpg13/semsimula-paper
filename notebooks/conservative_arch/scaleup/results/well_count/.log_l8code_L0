@@ -1,1 +1,128 @@
 capture: windows 4/1024  (22 s)
+capture: windows 68/1024  (358 s)
+capture: windows 132/1024  (671 s)
+capture: windows 196/1024  (984 s)
+capture: windows 260/1024  (1295 s)
+capture: windows 324/1024  (1606 s)
+capture: windows 388/1024  (1923 s)
+capture: windows 452/1024  (2249 s)
+capture: windows 516/1024  (2574 s)
+capture: windows 580/1024  (2900 s)
+capture: windows 644/1024  (3225 s)
+capture: windows 708/1024  (3554 s)
+capture: windows 772/1024  (3880 s)
+capture: windows 836/1024  (4205 s)
+capture: windows 900/1024  (4531 s)
+capture: windows 964/1024  (4857 s)
+captured 524288 tokens at layers [0, 7] in 5177 s -> /Users/dimitargueorguiev/Downloads/semsimula_wcf_cache/wcf_l8code_L0_w1024.pt
+well-count fit, l8code: softmax-gated mixtures of K linear maps on the layer-0 bank input
+semsimula_fock_cfc_baoab_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_lr0p0012_noattn
+fock_cfc_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_lr0p0012_noattn_step18000_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_lr0p0012_noattn); validation /Users/dimitargueorguiev/Downloads/semsimula_code_gpt2/data/code_val_2M.npy
+1024 windows x 512 tokens (train/val/test 716/154/154 windows); bank input 1920 dims; d = 384; final states |h| median 19.60 (sqrt d = 19.60) -> projected onto the sphere
+objective ce; 4 epochs, batch 2048, AdamW lr 0.0003 cosine, weight decay 0.05; validation 2x per epoch, best point kept
+trained model on these tokens: test ce 1.6908 (ppl 5.42), val ce 1.6302; the frozen readout on the captured final states reproduces its per-token loss to 5.7e-06
+
+ D   K     params  test ce      ppl  vs model KL->model vs prev K pair SE best ep  gate n_eff medians
+  D=1 K=1 epoch 0.50: val ce 4.1533  (87 s)
+  D=1 K=1 epoch 0.99: val ce 3.8028  (172 s)
+  D=1 K=1 epoch 1.49: val ce 3.6461  (259 s)
+  D=1 K=1 epoch 1.99: val ce 3.5581  (343 s)
+  D=1 K=1 epoch 2.49: val ce 3.5131  (429 s)
+  D=1 K=1 epoch 2.98: val ce 3.4864  (514 s)
+  D=1 K=1 epoch 3.48: val ce 3.4772  (598 s)
+  D=1 K=1 epoch 3.98: val ce 3.4757  (682 s)
+  D=1 K=1 epoch 4.00: val ce 3.4757  (701 s)
+ 1   1    739,585   3.6595    38.84   +1.9687    1.9491                      4.00  1.00
+  D=1 K=2 epoch 0.50: val ce 3.3756  (88 s)
+  D=1 K=2 epoch 0.99: val ce 3.2904  (173 s)
+  D=1 K=2 epoch 1.49: val ce 3.2599  (262 s)
+  D=1 K=2 epoch 1.99: val ce 3.2205  (349 s)
+  D=1 K=2 epoch 2.49: val ce 3.2107  (435 s)
+  D=1 K=2 epoch 2.98: val ce 3.1997  (523 s)
+  D=1 K=2 epoch 3.48: val ce 3.1957  (610 s)
+  D=1 K=2 epoch 3.98: val ce 3.1949  (698 s)
+  D=1 K=2 epoch 4.00: val ce 3.1949  (717 s)
+ 1   2  1,479,170   3.3863    29.56   +1.6955    1.7175   -0.2732  0.0114    4.00  1.20
+  D=1 K=4 epoch 0.50: val ce 3.1993  (94 s)
+  D=1 K=4 epoch 0.99: val ce 3.1448  (186 s)
+  D=1 K=4 epoch 1.49: val ce 3.1185  (279 s)
+  D=1 K=4 epoch 1.99: val ce 3.0799  (373 s)
+  D=1 K=4 epoch 2.49: val ce 3.0749  (466 s)
+  D=1 K=4 epoch 2.98: val ce 3.0637  (558 s)
+  D=1 K=4 epoch 3.48: val ce 3.0615  (651 s)
+  D=1 K=4 epoch 3.98: val ce 3.0609  (743 s)
+  D=1 K=4 epoch 4.00: val ce 3.0609  (764 s)
+ 1   4  2,958,340   3.2533    25.88   +1.5626    1.6176   -0.1329  0.0076    3.98  1.75
+  D=1 K=8 epoch 0.50: val ce 3.0914  (103 s)
+  D=1 K=8 epoch 0.99: val ce 3.0649  (209 s)
+  D=1 K=8 epoch 1.49: val ce 3.0578  (313 s)
+  D=1 K=8 epoch 1.99: val ce 3.0291  (419 s)
+  D=1 K=8 epoch 2.49: val ce 3.0255  (522 s)
+  D=1 K=8 epoch 2.98: val ce 3.0121  (627 s)
+  D=1 K=8 epoch 3.48: val ce 3.0109  (731 s)
+  D=1 K=8 epoch 3.98: val ce 3.0107  (834 s)
+  D=1 K=8 epoch 4.00: val ce 3.0107  (856 s)
+ 1   8  5,916,680   3.2065    24.69   +1.5158    1.5988   -0.0468  0.0065    4.00  2.40
+  D=2 K=1 epoch 0.50: val ce 3.4154  (92 s)
+  D=2 K=1 epoch 0.99: val ce 3.3344  (184 s)
+  D=2 K=1 epoch 1.49: val ce 3.2955  (277 s)
+  D=2 K=1 epoch 1.99: val ce 3.2561  (369 s)
+  D=2 K=1 epoch 2.49: val ce 3.2407  (461 s)
+  D=2 K=1 epoch 2.98: val ce 3.2239  (555 s)
+  D=2 K=1 epoch 3.48: val ce 3.2171  (648 s)
+  D=2 K=1 epoch 3.98: val ce 3.2152  (740 s)
+  D=2 K=1 epoch 4.00: val ce 3.2152  (760 s)
+ 2   1  1,627,010   3.3990    29.93   +1.7082    1.7213                      4.00  1.00 1.00
+  D=2 K=2 epoch 0.50: val ce 3.1912  (98 s)
+  D=2 K=2 epoch 0.99: val ce 3.1225  (197 s)
+  D=2 K=2 epoch 1.49: val ce 3.0952  (298 s)
+  D=2 K=2 epoch 1.99: val ce 3.0637  (396 s)
+  D=2 K=2 epoch 2.49: val ce 3.0598  (493 s)
+  D=2 K=2 epoch 2.98: val ce 3.0395  (593 s)
+  D=2 K=2 epoch 3.48: val ce 3.0379  (692 s)
+  D=2 K=2 epoch 3.98: val ce 3.0371  (791 s)
+  D=2 K=2 epoch 4.00: val ce 3.0371  (812 s)
+ 2   2  3,254,020   3.2247    25.15   +1.5340    1.5879   -0.1743  0.0096    4.00  1.34 1.26
+  D=2 K=4 epoch 0.50: val ce 3.0944  (111 s)
+  D=2 K=4 epoch 0.99: val ce 3.0621  (223 s)
+  D=2 K=4 epoch 1.49: val ce 3.0435  (335 s)
+  D=2 K=4 epoch 1.99: val ce 3.0053  (447 s)
+  D=2 K=4 epoch 2.49: val ce 2.9983  (559 s)
+  D=2 K=4 epoch 2.98: val ce 2.9805  (670 s)
+  D=2 K=4 epoch 3.48: val ce 2.9788  (782 s)
+  D=2 K=4 epoch 3.98: val ce 2.9777  (893 s)
+  D=2 K=4 epoch 4.00: val ce 2.9777  (917 s)
+ 2   4  6,508,040   3.1627    23.63   +1.4719    1.5584   -0.0621  0.0078    3.98  1.94 1.90
+  D=2 K=8 epoch 0.50: val ce 3.0397  (137 s)
+  D=2 K=8 epoch 0.99: val ce 3.0031  (274 s)
+  D=2 K=8 epoch 1.49: val ce 3.0285  (413 s)
+  D=2 K=8 epoch 1.99: val ce 2.9982  (551 s)
+  D=2 K=8 epoch 2.49: val ce 3.0005  (689 s)
+  D=2 K=8 epoch 2.98: val ce 2.9892  (828 s)
+  D=2 K=8 epoch 3.48: val ce 2.9907  (971 s)
+  D=2 K=8 epoch 3.98: val ce 2.9900  (1113 s)
+  D=2 K=8 epoch 4.00: val ce 2.9900  (1142 s)
+ 2   8 13,016,080   3.1627    23.63   +1.4719    1.5584   +0.0000  0.0000    0.00  3.88 3.80
+
+K_needed(eps) at each depth: the fewest K whose test ce is within eps nats of the best K at that depth
+  D = 1: eps 0.005: K = 8, eps 0.01: K = 8, eps 0.02: K = 8, eps 0.05: K = 4
+  D = 2: eps 0.005: K = 4, eps 0.01: K = 4, eps 0.02: K = 4, eps 0.05: K = 4
+paired per-window SE of the "vs prev K" differences: median 0.0078, max 0.0114; a difference under about twice the SE is not resolved by 154 test windows
+    12541.22 real     88059.59 user      8157.09 sys
+         22057992192  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+          1507022640  page reclaims
+                  19  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                 856  voluntary context switches
+            59377162  involuntary context switches
+     294161414879939  instructions retired
+     218277969043551  cycles elapsed
+         10600505344  peak memory footprint

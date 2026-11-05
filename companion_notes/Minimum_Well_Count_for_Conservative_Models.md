@@ -8,7 +8,7 @@
 
 The raw numbers and run records live in the [protocol note](Depth_Ladder_and_Matched_Baseline_Protocol.md) ([`p-dead-wells`](Depth_Ladder_and_Matched_Baseline_Protocol.md#p-dead-wells), [`p-l8-code-result`](Depth_Ladder_and_Matched_Baseline_Protocol.md#p-l8-code-result), [`p-k2-l8-code-setup`](Depth_Ladder_and_Matched_Baseline_Protocol.md#p-k2-l8-code-setup)). The rank of each well's shape is a separate question, covered in [Curvature_Diagnostics_and_Rank_Selection_for_Aniso_Gaussian_Vtheta.md](Curvature_Diagnostics_and_Rank_Selection_for_Aniso_Gaussian_Vtheta.md).
 
-**Status, 2026-11-03:** PENDING-STATUS
+**Status, 2026-11-04:** all the minimum-well-count measurements planned for this note are done: use and force shares on eight models, the temperature sweep, removal, one training arm with two wells (K2-L8-CODE, full run) and seven corpus fits on three models and two corpora. Not run: a four-well arm, a two-well arm at two layers and the fit on TinyStories (section 8).
 
 Figures: [`figures/_make_min_well_count_figs.py`](figures/_make_min_well_count_figs.py) (it reads the result files named in its header).
 
@@ -124,7 +124,11 @@ The scale test separates the temperature from anything the layers learned. It re
 
 At the deep layers' input size, layer 0's weights concentrate on two wells. At layer 0's size, the deep layers' weights spread over seven. The 8-against-2 contrast is a temperature effect of the input's size, not a difference in what the layers need.
 
-PENDING-TEMPERATURE-FIGURE
+![Median effective well count against the norm of the bank input on a log axis, for the eight layers of L8-CODE. All eight curves fall together from about 7.7 at norm 0.25 to about 3 at norm 10 and 1.1 to 1.2 at norm 64. Layer 0 sits at norm 1.85 with 7.1 wells; layers 1 to 7 sit at norms 22 to 28 with 1.8 to 2.1.](figures/min_well_count/temperature_sweep.png)
+
+Figure 3. L8-CODE, median effective well count when every token's bank input at one layer is rescaled to the norm on the horizontal axis. Each layer keeps its own trained weights. Blue: layer 0; grey: layers 1–7; dots: each layer at its trained input norm.
+
+All eight layers trace nearly the same curve: about 7.6 wells below norm 1, about 3 at norm 10, and 1.1–1.2 at norm 64. What sets a layer's count is where its input's size puts it on that curve.
 
 **Is there a theorem that makes the deep layers' counts equal?** No. What can be proved is a continuity bound. For one token at layers $i$ and $j$, with $\delta = z_i - z_j$ the difference of the two logit vectors,
 
@@ -140,7 +144,7 @@ The keep-k curve keeps the $k$ wells with the largest force share in one layer, 
 
 ![Panel A: perplexity change against wells kept for SO-CODE layer 1 and L8-CODE layer 4; one well costs 4.6 and 5.5%, two wells 0.0 and 0.4%, three or more nothing. Panel B: layer 0 of SO-CODE and L8-CODE, perplexity relative to trained on a log axis; one well costs 28 to 39 times the trained perplexity, seven wells 19 to 30% more, with or without rescaling the kept weights.](figures/min_well_count/keep_k.png)
 
-Figure 3. Keep-k curves. Wells removed weakest first by force share; no retraining.
+Figure 4. Keep-k curves. Wells removed weakest first by force share; no retraining.
 
 | wells kept | SO-CODE layer 1 | L8-CODE layer 4 | SO-CODE layer 0 | L8-CODE layer 0 | L8-CODE layer 0, rescaled |
 | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -163,11 +167,11 @@ The second point is a property of these trained weights, not of the model. Secti
 
 ## 5. Training with fewer wells: K2-L8-CODE
 
-K2-L8-CODE is L8-CODE with two wells instead of eight, trained on the same batches from step 0, so the paired difference of validation losses isolates $K$. It ran to the end (19,250 steps, 19.0 h in one session, 2026-11-02 to 11-03). The table and Figure 4 cover the full run.
+K2-L8-CODE is L8-CODE with two wells instead of eight, trained on the same batches from step 0, so the paired difference of validation losses isolates $K$. It ran to the end (19,250 steps, 19.0 h in one session, 2026-11-02 to 11-03). The table and Figure 5 cover the full run.
 
 ![Paired validation loss differences by training step. Against L8-CODE the difference dips to minus 0.42 nats at step 3,000, during L8-CODE's skipped updates, rises through zero at step 8,000, grows through the learning-rate decay and holds at about plus 0.056 from step 14,500 to the end. Against L4-CODE it falls from plus 0.11 at step 500 to between plus 0.01 and plus 0.03 from step 2,500, and holds at about plus 0.032 to the end.](figures/min_well_count/k2l8_training.png)
 
-Figure 4. K2-L8-CODE's validation loss minus L8-CODE's (8 wells, 8 layers) and L4-CODE's (8 wells, 4 layers), paired by step.
+Figure 5. K2-L8-CODE's validation loss minus L8-CODE's (8 wells, 8 layers) and L4-CODE's (8 wells, 4 layers), paired by step.
 
 | step | K2-L8-CODE | L8-CODE | L4-CODE | K2-L8 − L8 | K2-L8 − L4 |
 | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -218,7 +222,7 @@ a softmax-gated mixture of $K$ linear maps (a mixture of linear experts). Two co
 
 ![Three panels, a synthetic sine-shaped target against context: one gated linear map fits a straight line with mean squared error 0.378; two fit the curve closely with error 0.006; four match it with error 0.001.](figures/min_well_count/gated_linear_schematic.png)
 
-Figure 5. Synthetic illustration (not model data): a one-dimensional target fitted by the form above with $K = 1$, $K = 2$ and $K = 4$.
+Figure 6. Synthetic illustration (not model data): a one-dimensional target fitted by the form above with $K = 1$, $K = 2$ and $K = 4$.
 
 So the criterion is: **$K_{\min}(\varepsilon)$ is the fewest gated linear pieces that approximate the corpus's map from context to the target state within $\varepsilon$**, scored by the loss the model would see. It depends on the corpus through two properties of that map:
 
@@ -243,13 +247,73 @@ with C set by the curvature.
 
 ## 7. The well-count estimator
 
-PENDING-ESTIMATOR
+**What it fits.** For one trained model, `well_count_fit.py` records at one layer, for every token, the bank input $x$ (1,920 numbers) and the next token. It fits the form of section 6,
+
+$$h(x) = \sum_{k=1}^{K} \mathrm{softmax}(G x + g)_k (A_k x + c_k),$$
+
+for $K = 1, 2, 4, 8$. The fitted state $h$ is projected onto the sphere of radius $\sqrt{384}$, where the model's final states lie, and scored by the cross-entropy of the next token through the model's own frozen readout. Only $G$, $g$, $A_k$ and $c_k$ are fitted; nothing of the model is retrained.
+
+- **Data.** 1,024 validation windows of 512 tokens (524,288 tokens), split by window into 716 for training, 154 for early stopping and 154 for test. All numbers below are on the test windows.
+- **Check of the recording.** The frozen readout applied to the recorded final states reproduces the model's own per-token loss to within $7 \times 10^{-6}$ nats in every run.
+- **Warm start.** Each $K$ starts from the fit at $K/2$ with every piece split in two, which is the same function, and keeps the best point on the early-stopping windows. "No gain" in the table means that point never moved: the extra pieces did not help on held-out data.
+- **Depth.** At depth $D = 2$ a second block of the same form reads $x$ together with the first block's output, $h_2 = h_1 + \mathrm{mix}([x, \mathrm{LN}(h_1)])$, where $\mathrm{mix}$ is the gated form above and $\mathrm{LN}$ is LayerNorm. It is a token-local stand-in for a second layer: the model's real second layer also mixes positions through its own context channels.
+- **Uncertainty.** Each gain from doubling $K$ is a mean of per-window differences on the same test tokens; the table gives its standard error over the 154 windows in brackets. A gain under about twice its SE is not resolved.
+- **Reading.** $K_{\mathrm{needed}}(\varepsilon)$ is the fewest $K$ whose test loss is within $\varepsilon$ nats of the best $K$ at that depth.
+- **Training of the fits.** AdamW at learning rate $3 \times 10^{-4}$ with cosine decay and weight decay 0.05; 4 epochs of batch 2,048; early-stopping check twice per epoch. CPU, 1–3.5 h per run.
+
+**Which inputs.** Layer 0's bank input is the context of the embeddings, the nearest thing to a statistic of the corpus. The last layer's input is what the deepest bank sees. Seven fits on three models:
+
+| model, input | D | test loss at K = 1 | gain to K = 2 | gain to K = 4 | gain to K = 8 | best fit above the model | K_needed at ε = 0.02 | at ε = 0.05 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| SO-CODE, layer 0 | 1 | 3.570 | −0.277 (0.012) | −0.098 (0.007) | −0.031 (0.007) | +1.36 | 8 | 4 |
+| SO-CODE, layer 0 | 2 | 3.300 | −0.120 (0.010) | −0.021 (0.008) | no gain | +1.36 | 4 | 2 |
+| L8-CODE, layer 0 | 1 | 3.660 | −0.273 (0.011) | −0.133 (0.008) | −0.047 (0.007) | +1.52 | 8 | 4 |
+| L8-CODE, layer 0 | 2 | 3.399 | −0.174 (0.010) | −0.062 (0.008) | no gain | +1.47 | 4 | 4 |
+| SO-OWT, layer 0 | 1 | 5.677 | −0.257 (0.006) | −0.070 (0.003) | no gain | +1.32 | 4 | 4 |
+| SO-CODE, layer 1 (last) | 1 | 2.489 | −0.272 (0.012) | −0.053 (0.004) | −0.002 (0.002) | +0.36 | 4 | 4 |
+| L8-CODE, layer 7 (last) | 1 | 2.474 | −0.349 (0.011) | −0.082 (0.004) | −0.010 (0.002) | +0.34 | 4 | 4 |
+
+Test losses in nats; the models themselves score 1.803 (SO-CODE), 1.691 (L8-CODE) and 4.031 (SO-OWT) on the same test tokens.
+
+![Panel A: held-out loss above the best fit against the number of gated pieces K, on layer 0's bank input, for SO-CODE and L8-CODE at depths 1 and 2 and SO-OWT at depth 1. Every curve falls steeply from K = 1 to K = 2. At depth 1 the code curves still fall from 4 to 8, by 0.03 and 0.05 nats; SO-OWT is flat from 4. At depth 2 both code curves reach zero at K = 4. Panel B: the last layer's bank input of SO-CODE and L8-CODE, falling from 0.33 and 0.44 nats at K = 1 to 0.05 and 0.09 at K = 2 and within 0.01 of the best from K = 4.](figures/min_well_count/fit_vs_K.png)
+
+Figure 7. Well-count fits: held-out loss above the best fit for that input, against the number of gated pieces. Colours as in panel A's legend; solid lines depth 1, dashed depth 2.
+
+What the fits show:
+
+- **Each doubling of $K$ buys less than the one before.** On layer 0's input each doubling buys a quarter to a half of what the previous one bought. On the last layer's input it buys a quarter or less, and the step from four pieces to eight is worth at most 0.01 nats.
+- **Four pieces are enough at a tolerance of 0.05 nats, on every input and both corpora.** SO-CODE at depth 2 needs only two. Eight are needed only for a tighter tolerance, and only on code's layer-0 input at depth 1.
+- **The corpora differ at one place.** On layer 0's input at depth 1, code still gains from four to eight (0.031 and 0.047 nats, each 5–7 SE) and OpenWebText gains nothing. That is one model on OpenWebText; TinyStories has not been fitted.
+- **Depth substitutes for wells, as section 6 predicts.** On layer 0's input, two blocks of $K$ pieces match or beat one block of $2K$ pieces at about the same parameter count. On SO-CODE: 3.181 against 3.194, and 3.160 against 3.163 (within the noise). On L8-CODE: 3.225 against 3.253, and 3.163 against 3.207. At depth 2, eight pieces add nothing over four on either model.
+- **The fit is a relaxation of the model.** Its best fits sit 0.34–0.36 nats above the model at the last layer and 1.3–1.5 nats at layer 0. The form sees one token's context through one bank; the model also has the pair potential $V_\varphi$, the registers and its other layers. So $K_{\mathrm{needed}}$ here is what one bank would need to carry the map from its input to the next token on its own.
+
+**Against the other two measures.**
+
+- **Removal.** SO-CODE's last layer loses nothing when its trained weights keep two wells (section 4). The fit on the same input asks for four: going from two pieces to four gains 0.053 nats (SE 0.004). The two do not contradict each other. Removal measures what one bank adds to a trained model that keeps everything else, including layer 0's eight wells, the pair potential and the registers. The fit measures what one bank would need with none of that. The model's real need lies between the two.
+- **Training.** In the fit on L8-CODE, going from eight pieces to two costs 0.062 nats on layer 0's input at depth 2 and 0.092 on layer 7's input. In training, K2-L8-CODE settled 0.056 nats behind L8-CODE (section 5). The order of magnitude agrees, but the arm removed wells from all eight layers at once, and the fit models one or two. This is one comparison, not a test of the estimator.
 
 ---
 
 ## 8. What the evidence says, and what is open
 
-PENDING-SUMMARY
+**What the evidence says.**
+
+- **Use is not need.** Every layer after the first spreads its weight over one or two wells, and layer 0 over three to eight, on every model and corpus (section 2). The contrast is a softmax temperature set by the size of each layer's input (section 3, Figure 3), not a difference in what the layers need.
+- **The trained weights of the deeper layers need two wells; layer 0's need all eight** (section 4). That is a property of weights trained with eight wells.
+- **Trained with two wells everywhere, L8-CODE settles 0.056 nats (5.8% in perplexity) behind eight** (section 5). On code at $L = 8$, $K_{\min}$ is 2 for a tolerance of about 0.06 nats and more than 2 for anything tighter. With two wells the model is 18% smaller than the matched GPT-2 outside the embeddings.
+- **The corpus fit puts the knee at four gated pieces** on every input of both corpora for a tolerance of 0.05 nats (section 7). On layer 0's input, code gains a little more from eight and OpenWebText does not. A second block substitutes for doubling the pieces.
+- **Where the measures meet.** Removal gives 2 for the deeper layers, the fit 4 for any one bank, and the training arm 2 for the whole model at a tolerance of 0.06 nats. They measure different things. The training arm is the definition. Removal and the fit are cheaper stand-ins that err in opposite directions: removal leaves the rest of a trained model in place, and the fit takes all of it away.
+
+**What it implies for the budget.** At rank 4 a well costs 4,427,905 parameters. Four wells instead of eight would remove 17.7 M parameters from L8-CODE, leaving 20.4 M outside the embeddings against GPT-2's 14.2 M. Two wells leave 11.6 M and cost 0.056 nats. Four is the fit's knee, but no model has been trained with four wells.
+
+**What is open.**
+
+- **A four-well arm at $L = 8$ on code.** It would test the fit's knee directly and say how much of the 0.056 nats comes back.
+- **$K_{\min}$ at two layers** (K2-CODE, $L = 2$, not yet scheduled). The fit predicts that depth substitutes for wells, so two wells should cost more at two layers than at eight.
+- **Rank at two wells.** K2-L8-CODE's wells use about 3 of their 4 rank directions (participation ratio 3.03), with the precision cap binding. Whether rank 6 helps is covered in the [rank note](Curvature_Diagnostics_and_Rank_Selection_for_Aniso_Gaussian_Vtheta.md).
+- **More corpora for the fit.** TinyStories has not been fitted, and OpenWebText has one model.
+- **From the fit to a dimension.** Each doubling's gain is a quarter to a half of the previous one on layer 0's input. Reading that as $K^{-2/d_{\mathrm{eff}}}$ (section 6) would need the loss to scale as the squared approximation error, which has not been shown.
+- **From the fit to the training loss.** There is one comparison point (section 7). More arms at other $K$ would show whether the fit's gains predict what training loses.
 
 ---
 
@@ -259,6 +323,6 @@ PENDING-SUMMARY
 - Montúfar, G., Pascanu, R., Cho, K. and Bengio, Y. (2014). On the number of linear regions of deep neural networks. *NeurIPS*.
 - Carreira-Perpiñán, M. Á. and Williams, C. K. I. (2003). On the number of modes of a Gaussian mixture. *Scale-Space Methods in Computer Vision*.
 
-**Provenance.** Probes: `notebooks/conservative_arch/scaleup/debug/vtheta_well_probe.py` (effective counts, force shares, removal; `renorm=1` added 2026-11-03), `keep_k_curves.py`, `vtheta_weight_logits.py` (the bound, the scale test and the temperature sweep), `well_count_fit.py` (the estimator). Results in `notebooks/conservative_arch/scaleup/results/dead_wells/` and `.../results/well_count/`. K2-L8-CODE's evals are from its Cell 6 log, filed in its run folder (`results/cfc_baoab_code_…dcvt5x2…L8probe…lr0p0012_noattn/`, 2026-11-03). The parameter counts per well are the bank's formula, checked against L8-CODE's and K2-L8-CODE's built totals.
+**Provenance.** Probes: `notebooks/conservative_arch/scaleup/debug/vtheta_well_probe.py` (effective counts, force shares, removal; `renorm=1` added 2026-11-03), `keep_k_curves.py`, `vtheta_weight_logits.py` (the bound, the scale test and the temperature sweep), `well_count_fit.py` (the estimator; the L8-CODE fits used its per-window retry for CPU SVD failures and dropped no windows). Results in `notebooks/conservative_arch/scaleup/results/dead_wells/` and `.../results/well_count/`. K2-L8-CODE's evals are from its Cell 6 log, filed in its run folder (`results/cfc_baoab_code_…dcvt5x2…L8probe…lr0p0012_noattn/`, 2026-11-03). The parameter counts per well are the bank's formula, checked against L8-CODE's and K2-L8-CODE's built totals.
 
-Last updated: 3 November 2026.
+Last updated: 4 November 2026.
