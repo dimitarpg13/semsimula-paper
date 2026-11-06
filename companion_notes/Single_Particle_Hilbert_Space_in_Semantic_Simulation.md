@@ -123,6 +123,14 @@ All scalars here are real and all root densities are non-negative, so a **real**
 
 ### 1.3 The Gaussian states of the framework
 
+**What a mode is.** The term is used throughout this note and in the book's §10.5.2, so state it once before relating it to anything else. A **mode** is the state the construction attaches to one semantic particle type: for each $v\in\mathcal{V}$, the unit vector $\phi_v\in\mathcal{H}$ that is the root density (1.1) of that type's Gaussian, centred on the type's centroid $\mu_v$ and of width $\sigma$ fixed by the well that binds the type. Its explicit form is (1.3) below. Three properties are definitional and are relied on later:
+
+1. **One mode per type.** The family $\lbrace\phi_v\rbrace_{v\in\mathcal{V}}$ is indexed by $\mathcal{V}$ and by nothing else — not by position in the text, not by a particle's current location, both of which enter later and separately (§3).
+2. **Unit vectors, but not orthogonal.** Each mode has $\lVert\phi_v\rVert = 1$ by (1.1), while distinct modes overlap: their pairwise inner products are exactly the coefficients (1.4). Non-orthogonality is a feature, not a defect — it is what carries semantic resemblance, and it is why the Gram matrix of §5 is not the identity.
+3. **Everything later is built over them.** The symmetrized tensor powers of §5, the vacuum of §6 and the Doi–Peliti states of §7 all take $\lbrace\phi_v\rbrace$ as their index set; the creation operator $a^\dagger_v$ means "add a particle in mode $v$".
+
+"Mode" and "mode function" denote the same object: the first as a vector of $\mathcal{H}$, the second as a function on $\Sigma$. The rest of this section fixes which types are meant, which well supplies $\sigma$ and $\kappa$, and how little of this a trained model actually carries.
+
 **What "type" means here, and what it does not.** The index $v$ runs over the **semantic particle types** of the book's §10.5.2, which introduces $\lbrace\mu_v\rbrace_{v\in\mathcal{V}}$ as the centroids of those types and attaches one mode function to each. The book defines them in Definition 62, *Semantic particle type*: two particles are of the same type when their properties agree up to translation in $\Sigma$, so the class quotients out position and with it the trajectory. It is **not** the **aspect type** $l\in\mathcal{L}$ of Definition 3, Semantic energy field, which introduces $\mathcal{L}$ as a discrete set of aspect types. Nor is it the aspect $A = (\vec r, l, \boldsymbol{\theta})$ of Definition 4, Semantic aspect. The two live at different levels of the hierarchy of Definitions 4–7:
 
 | Book level | Object | Centroid | Carries a mode? |
