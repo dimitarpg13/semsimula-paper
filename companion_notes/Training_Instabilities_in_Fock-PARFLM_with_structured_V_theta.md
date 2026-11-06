@@ -2005,7 +2005,7 @@ with model scale. Empirically:
 
 $$
 \text{LR}_{\max}(d=256) \approx 5 \times 10^{-4}, \qquad
-\text{LR}_{\max}(d=384) < 2 \times 10^{-4}
+\text{LR}_{\max}(d=384) \lt 2 \times 10^{-4}
 $$
 
 Phase 4 (SQ3 on OpenWebText, $d=384$) used `LR=1.2e-4` and was stable
@@ -2174,7 +2174,7 @@ is the learning rate. The model is stable when $\mathcal{S}$ is below
 an architecture-dependent threshold $\mathcal{S}_{\max}$:
 
 $$
-\mathcal{S} < \mathcal{S}_{\max} \quad \Longrightarrow \quad \text{stable training}
+\mathcal{S} \lt \mathcal{S}_{\max} \quad \Longrightarrow \quad \text{stable training}
 $$
 
 Each factor contributes differently on TinyStories vs OpenWebText.
@@ -2505,7 +2505,7 @@ The gradient of $1/r$ with respect to $h_t$ grows as $r^{-2}$. With
 $\varepsilon = 0.01$, the softening only bounds the gradient when
 $\lVert h_t - h_s \rVert \lesssim 0.01$. As training progresses, hidden
 states of semantically similar tokens converge in embedding space,
-and token pairs routinely satisfy $\lVert h_t - h_s \rVert < 0.1$,
+and token pairs routinely satisfy $\lVert h_t - h_s \rVert \lt 0.1$,
 placing them in the steep $r^{-2}$ gradient region.
 
 With 4 independent V\_phi heads, each contributing its own $1/r$ term,
@@ -3000,7 +3000,7 @@ components:
    Gaussian force is structurally bounded by
    $0.607\,w_k / \sigma_{\min}$.
 
-2. **The background quadratic is globally stable.** For any $\varepsilon > 0$,
+2. **The background quadratic is globally stable.** For any $\varepsilon \gt 0$,
    $V_{\text{bg}} = \varepsilon \lVert h \rVert^2$ is a convex,
    positive-definite potential with no local maxima or saddle points.
    Its Hessian is $2\varepsilon I_d$ — uniformly bounded and
@@ -3009,7 +3009,7 @@ components:
 3. **The combined potential is coercive.** Unlike pure Gaussian
    ($V \to 0$ as $\lVert h \rVert \to \infty$), the hybrid satisfies
    $V_{\text{hybrid}} \to +\infty$ as $\lVert h \rVert \to \infty$
-   for any $\varepsilon > 0$. This eliminates the escape risk
+   for any $\varepsilon \gt 0$. This eliminates the escape risk
    entirely and matches the coercivity of SQ3 without SQ3's
    divergent force.
 

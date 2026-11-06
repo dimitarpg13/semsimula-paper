@@ -1137,7 +1137,7 @@ Eq. (131):
 Plus the per-layer scalar
 
 $$
-R(\ell) = \frac{\bigl\lVert \nabla_{h_t} \sum_{s<t} V_\phi\bigr\rVert}{\bigl\lVert\nabla_{h_t} V_\theta\bigr\rVert}.
+R(\ell) = \frac{\bigl\lVert \nabla_{h_t} \sum_{s \lt t} V_\phi\bigr\rVert}{\bigl\lVert\nabla_{h_t} V_\theta\bigr\rVert}.
 $$
 
 **Outputs (per checkpoint, in
@@ -1211,7 +1211,7 @@ row-softmax over the causal sources (full derivation in the design
 doc §10.6.1):
 
 $$
-\tilde\Phi_\phi(t, s) = \mathrm{scale}(t)\cdot\frac{\exp(-c(t,s)\lVert l_t - l_s\rVert^2 / \tau)}{\sum_{s' < t}\exp(-c(t,s')\lVert l_t - l_{s'}\rVert^2 / \tau)}.
+\tilde\Phi_\phi(t, s) = \mathrm{scale}(t)\cdot\frac{\exp(-c(t,s)\lVert l_t - l_s\rVert^2 / \tau)}{\sum_{s' \lt t}\exp(-c(t,s')\lVert l_t - l_{s'}\rVert^2 / \tau)}.
 $$
 
 $\Theta_\phi$, $1/r$, and $C$ are byte-identical to dense structural;
@@ -1246,21 +1246,21 @@ prediction): `--v-phi-competitive-temp ∈ {0.3, 1.0, 3.0}` and
 
 | ID | Prediction | Magnitude | Falsifier |
 |---|---|---|---|
-| **P7-A1** | val PPL strictly below P1.6 (207.6) | $\Delta \ge 5$ PPL | $\Delta < 5$ PPL ⇒ Lever 3 alone insufficient; need to compose with Lever 4/6. |
-| **P7-A2** | val PPL within seed noise of P5 sparse $k{=}4$ (176.7) | $\Delta \le 5$ PPL | $\Delta > 5$ PPL ⇒ explicit sparsity matters beyond competitive selectivity; the §5.2 cutoff's *discreteness* is doing more than its *competitive structure*. |
+| **P7-A1** | val PPL strictly below P1.6 (207.6) | $\Delta \ge 5$ PPL | $\Delta \lt 5$ PPL ⇒ Lever 3 alone insufficient; need to compose with Lever 4/6. |
+| **P7-A2** | val PPL within seed noise of P5 sparse $k{=}4$ (176.7) | $\Delta \le 5$ PPL | $\Delta \gt 5$ PPL ⇒ explicit sparsity matters beyond competitive selectivity; the §5.2 cutoff's *discreteness* is doing more than its *competitive structure*. |
 | **P7-B1** | post-training diagnostic shows median $\tilde\Phi$ $\le 0.3$ at most layers (no F1 saturation) | — | sustained F1 ⇒ τ too low; sweep $\tau \in \lbrace0.3, 1.0, 3.0\rbrace$. |
-| **P7-B2** | $R(\ell)\in[0.1, 1.0]$ for all layers (no F5 imbalance) | — | $R(\ell) > 1.5$ ⇒ Lever 6 (warm-up curriculum) needed. |
+| **P7-B2** | $R(\ell)\in[0.1, 1.0]$ for all layers (no F5 imbalance) | — | $R(\ell) \gt 1.5$ ⇒ Lever 6 (warm-up curriculum) needed. |
 
 **Decision rule for P7.**
 
-- **PASS Lever-3 hypothesis** iff val PPL $<$ 200 (clears the +30 PPL
+- **PASS Lever-3 hypothesis** iff val PPL $\lt$ 200 (clears the +30 PPL
   margin over P1.6 at the standard ±5 PPL noise envelope) AND the
   post-training diagnostic shows $\Phi_\phi$ no longer saturated (F1
   resolved) AND $\Theta_\phi$ has not collapsed to zero output (no
   new F2 mode introduced).
 
 - **PARF-vs-SPLM-em-ln gate** (the headline gate from §6.5) iff val
-  PPL $<$ 178.6 (within +5 PPL of SPLM em-ln 173.6). If passed at P7
+  PPL $\lt$ 178.6 (within +5 PPL of SPLM em-ln 173.6). If passed at P7
   *without* the §5.2 sparsity primitive, this is a substantially
   stronger architectural claim than the P5 result alone: the
   framework's force law admits a dense, prescriptive realisation that
@@ -1298,7 +1298,7 @@ verified against three architectural-correctness invariants:
 
 1. Parameter-count parity vs dense structural (522 V_φ params either way).
 2. Forward + backward end-to-end with no `NaN` gradients (smoke shape).
-3. Row-scale invariant under `scale='row'`: $\sum_{s<t}\tilde\Phi_\phi(t, s) = t$ exactly.
+3. Row-scale invariant under `scale='row'`: $\sum_{s \lt t}\tilde\Phi_\phi(t, s) = t$ exactly.
 
 Full smoke output is included in design-doc §10.7.
 
@@ -1367,8 +1367,8 @@ The same flags compose with `--v-phi-kind structural_competitive` (P7) for the f
 | --- | --- | --- |
 | $R(\ell)$ at $\ell{=}1$ | $\approx 3$ | $\lesssim 1.2$ (post Patch A) and $\lesssim 0.5$ (post Patch B converges) |
 | $R(\ell)$ flatness ratio $\max R / \min R$ | $\sim 30\times$ | $\lesssim 3\times$ |
-| $\Pr[\lvert\Theta_\phi\rvert > 0.95]$ in $\ell \in \lbrace2..8\rbrace$ | $\gtrsim 70\%$ | $\lesssim 30\%$ |
-| Optimised $s_\ell$ profile | (n/a) | $s_1 < s_3, s_4, s_5$ (Layer 1 down-weighted; mid-stack up-weighted) |
+| $\Pr[\lvert\Theta_\phi\rvert \gt 0.95]$ in $\ell \in \lbrace2..8\rbrace$ | $\gtrsim 70\%$ | $\lesssim 30\%$ |
+| Optimised $s_\ell$ profile | (n/a) | $s_1 \lt s_3, s_4, s_5$ (Layer 1 down-weighted; mid-stack up-weighted) |
 | Final val PPL | $X_{\mathrm{P1}}$ | $\le X_{\mathrm{P1}}$ if any of A–D is causally responsible |
 
 #### 9.5.4.4. Decision rule (post-run)

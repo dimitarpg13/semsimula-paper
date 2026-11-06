@@ -108,6 +108,15 @@ def lint(path):
             in_display = not in_display
             continue
 
+        # A display block need not be delimited by bare `$$` lines: `$$\mathcal{L}...`
+        # opens one and `...\mathrm{MCS}$$` closes it.  Before 2026-11-06 only a
+        # line STARTING with `$$` toggled the state, so a block written that way
+        # left the linter stuck in display mode for the rest of the file --- which
+        # turned every later `<` into a false R13 and every `---` into a false R26.
+        # Toggle on an odd count of `$$`, and still lint the line's own content.
+        if stripped.count('$$') % 2 == 1:
+            in_display = not in_display
+
         spans = inline_spans(l)
 
         # R5 / R12: underscores across the line's inline math
