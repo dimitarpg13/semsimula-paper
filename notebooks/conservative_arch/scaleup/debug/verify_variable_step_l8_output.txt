@@ -1,0 +1,60 @@
+  [PASS] SO-CODE: tag as expected
+  [PASS] L8-CODE: tag as expected
+  [PASS] K2-L8-CODE: tag as expected
+  [PASS] K2-L8-R6-CODE: tag as expected
+  [PASS] SR4a-CODE: tag as expected
+  [PASS] K2-L8-R6, N in {8, 12, 16}: tag as expected
+  [PASS]   Cell 0 banner printed
+  [PASS] tag_repl round trip ...dcvt5x8_vtjo...sr2_st16250_L2probe_ -> VARIABLE_STEP_COUNTS None
+  [PASS] tag_repl round trip ...dcvt5x8_vtjo...sr2_st16250_L8probe_ -> VARIABLE_STEP_COUNTS None
+  [PASS] tag_repl round trip ...dcvt5x2_vtjo...sr2_st16250_L8probe_ -> VARIABLE_STEP_COUNTS None
+  [PASS] tag_repl round trip ...dcvt5x2_ar6_...sr2_st16250_L8probe_ -> VARIABLE_STEP_COUNTS None
+  [PASS] tag_repl round trip ...dcvt5x8_vtjo...sr2_vs234_st16250_L2 -> VARIABLE_STEP_COUNTS (2, 3, 4)
+  [PASS] tag_repl round trip ...dcvt5x2_ar6_...sr2_vs8-12-16_st1625 -> VARIABLE_STEP_COUNTS (8, 12, 16)
+  [PASS] Cell 0 refuses VARIABLE_STEP_COUNTS = (8,)
+  [PASS] Cell 0 refuses VARIABLE_STEP_COUNTS = (8, 12.5)
+  the walk (step j uses trained layer min(j*L // N, L-1)); share of T per layer, in units of the trained dt:
+    N =  8: layers [0, 1, 2, 3, 4, 5, 6, 7]
+            share  [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+    N =  9: layers [0, 0, 1, 2, 3, 4, 5, 6, 7]
+            share  [1.78, 0.89, 0.89, 0.89, 0.89, 0.89, 0.89, 0.89]
+    N = 10: layers [0, 0, 1, 2, 3, 4, 4, 5, 6, 7]
+            share  [1.6, 0.8, 0.8, 0.8, 1.6, 0.8, 0.8, 0.8]
+    N = 11: layers [0, 0, 1, 2, 2, 3, 4, 5, 5, 6, 7]
+            share  [1.45, 0.73, 1.45, 0.73, 0.73, 1.45, 0.73, 0.73]
+    N = 12: layers [0, 0, 1, 2, 2, 3, 4, 4, 5, 6, 6, 7]
+            share  [1.33, 0.67, 1.33, 0.67, 1.33, 0.67, 1.33, 0.67]
+    N = 13: layers [0, 0, 1, 1, 2, 3, 3, 4, 4, 5, 6, 6, 7]
+            share  [1.23, 1.23, 0.62, 1.23, 1.23, 0.62, 1.23, 0.62]
+    N = 14: layers [0, 0, 1, 1, 2, 2, 3, 4, 4, 5, 5, 6, 6, 7]
+            share  [1.14, 1.14, 1.14, 0.57, 1.14, 1.14, 1.14, 0.57]
+    N = 15: layers [0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7]
+            share  [1.07, 1.07, 1.07, 1.07, 1.07, 1.07, 1.07, 0.53]
+    N = 16: layers [0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7]
+            share  [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+  [PASS] N = 16: every layer twice, at half the trained step
+  [PASS] built K2-L8-R6-CODE (step 18,000) with the switch on (7 s): L = 8, rank 6, K = 2
+  [PASS] eval: stack_steps = 8 (= L) bit-identical to the trained walk
+  [PASS] eval N =  4: max |d logit| vs Cell 6b-7 _fom_stack 0.0e+00
+  [PASS] eval N =  6: max |d logit| vs Cell 6b-7 _fom_stack 0.0e+00
+  [PASS] eval N =  9: max |d logit| vs Cell 6b-7 _fom_stack 0.0e+00
+  [PASS] eval N = 10: max |d logit| vs Cell 6b-7 _fom_stack 0.0e+00
+  [PASS] eval N = 11: max |d logit| vs Cell 6b-7 _fom_stack 0.0e+00
+  [PASS] eval N = 12: max |d logit| vs Cell 6b-7 _fom_stack 0.0e+00
+  [PASS] eval N = 13: max |d logit| vs Cell 6b-7 _fom_stack 0.0e+00
+  [PASS] eval N = 14: max |d logit| vs Cell 6b-7 _fom_stack 0.0e+00
+  [PASS] eval N = 15: max |d logit| vs Cell 6b-7 _fom_stack 0.0e+00
+  [PASS] eval N = 16: max |d logit| vs Cell 6b-7 _fom_stack 0.0e+00
+  [PASS] eval N = 24: max |d logit| vs Cell 6b-7 _fom_stack 0.0e+00
+  [PASS] eval N = 32: max |d logit| vs Cell 6b-7 _fom_stack 0.0e+00
+  [PASS] train N = 12: loss 2.249696 vs 2.249696, max |d grad| 0.0e+00 (73 params)
+  [PASS] train N = 16: loss 2.528179 vs 2.528179, max |d grad| 0.0e+00 (73 params)
+  [PASS] N = 12: layer checkpointing on vs off, loss equal, max |d grad| 0.0e+00
+  [PASS] VARIABLE_STEP_PROBE_N = (0.5, 0.75, 1, 1.125, 1.25, 1.375, 1.5, 1.625, 1.75, 1.875, 2, 3, 4) -> N = [4, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 24, 32]
+  saved for the backward, one training forward, 2 x 512 tokens:
+    N =  8:  3.416 GiB  ->  GPU at 16 x 2 about  37.1 GB
+    N = 12:  4.988 GiB  ->  GPU at 16 x 2 about  50.6 GB
+    N = 16:  6.572 GiB  ->  GPU at 16 x 2 about  64.2 GB
+    (fixed part 7.8 GB, from the N = 8 peak)
+  [PASS] N = 16 fits an 80 GB card without layer checkpointing (64.2 GB)
+ALL PASS (35 checks, 301 s)

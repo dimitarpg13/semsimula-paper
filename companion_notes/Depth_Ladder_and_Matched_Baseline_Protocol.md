@@ -5114,6 +5114,40 @@ Reading of the calls: Cell 6b-4 on K2-L8-CODE found the Frobenius cap binding, s
 - **FLOW-R (2026-11-05, CPU; `refinement_flow_confirmation.py … code seed=20261009 name=k2-l8-r6-code ckpt=…_step18000_best.pt`; 52.4 GB peak, 1.4 h; K2-L8-CODE's, then L8-CODE's, in brackets).** All checks exact. Trained N = 8 at perplexity 5.33 on these batches (5.47). Penalty ln(PPL_N / PPL_8) in nats at k = N / L substeps per trained layer: **0.442, 0.061, 0.057, 0.058, 0.058, 0.059** at k = 1.5, 2, 3, 4, 6, 8 (0.557, 0.089, 0.096, 0.097, 0.097, 0.098; 0.186, 0.029, 0.034, 0.035, 0.035, 0.035); whole stack at k = 4: **1.772** (2.798; 2.695). Kick share by layer (position, median) 0.11, 0.18, 0.12, 0.18, 0.17, 0.23, 0.29, 0.50 (0.14, 0.14, 0.12, 0.19, 0.19, 0.26, 0.32, 0.44). **The per-layer flow settles (within 0.004 nats from k = 2 to k = 8), 0.059 nats from the trained step: rank 6 closes 62% of the gap in the limit between two wells (0.098) and eight (0.035).** The whole stack still fails, but by about one nat less than the other L = 8 models; it agrees with Cell 6b-7's N = 32 (+1.726 on its own batches). One seed; the step-18,000 checkpoint. Output and JSON filed in the results folder.
 - **Still to run:** Cell 8; `vtheta_well_probe.py` on all eight layers; `xi_reach.py`; the copy split. The variable-step version (N from {8, 12, 16}, with probes at the untrained N between them) remains open.
 
+<a name="p-k2-l8-r6-vs-setup"></a>**K2-L8-R6-VS-CODE: K2-L8-R6-CODE trained at N ∈ {8, 12, 16}. Next GPU arm (author, 2026-11-05); switch extended and verified the same day; calls proposed, for the author to confirm.** SR4a-CODE's design (`p-sr4a-code`) at L = 8 on the rank-6 model: every optimizer step draws N uniformly from {8, 12, 16} and walks N steps of T/N over T = 8, Cell 6b-7's `hold` walk. Against K2-L8-R6-CODE it changes one thing, the step count in training, on the same batches from step 0; evaluation runs at N = L = 8, so the two are paired step by step. The author's question: does a model trained at N = 8, 12 and 16 also refine at the N it never saw, 9–11 and 13–15?
+
+- **The walk at L = 8.** Step j uses trained layer ⌊jL/N⌋. At N = 16 every layer takes two half steps. At N = 12 layers 0, 2, 4 and 6 take two steps of 2/3 and the odd layers one, so the even layers get 4/3 of the trained time and the odd ones 2/3. The untrained N give other uneven patterns: at N = 9 layer 0 gets 16/9 and the others 8/9; at N = 10, layers 0 and 4 get 1.6. With one step size per walk this unevenness cannot be avoided when N is not a multiple of L. So "interpolation" here means new layer-time patterns as well as new step sizes.
+- **The switch.** Cell 0 allowed counts 1–9 and wrote them as one digit each (`vs234`). Counts are now any whole number ≥ 1. All one-digit counts keep the old tag; otherwise the counts are joined by `-`, so {8, 12, 16} is `vs8-12-16`. `copy_split.tag_repl` reads both forms. Nothing else changed: the step draw, its saved state, the per-N training log and the refinement probe already take any N. The probe runs at N = round(f · L) for f in `VARIABLE_STEP_PROBE_N`, so fractional f in Cell 0 gives the untrained counts with no code change.
+- **Verification** (`debug/verify_variable_step_l8.py`, output `debug/verify_variable_step_l8_output.txt`; CPU, 2026-11-05, 35 of 35 checks, K2-L8-R6-CODE's step-18,000 weights through the notebook's Cells 0–5b):
+  - tags unchanged for SO-CODE, L8-CODE, K2-L8-CODE, K2-L8-R6-CODE and SR4a-CODE (`vs234`); with (8, 12, 16) the tag is K2-L8-R6-CODE's plus `vs8-12-16`, and the banner prints; `tag_repl` round trip exact for all six; Cell 0 refuses one count and a fractional count;
+  - eval at N = 4, 6, 9–16, 24 and 32: the model's walk equals Cell 6b-7's `_fom_stack`, bit for bit; N = 8 equals the trained walk;
+  - training at N = 12 and 16: the loss and all 73 gradients equal `_fom_stack`'s, bit for bit; at N = 12, layer checkpointing on and off agree exactly;
+  - the probe's counts for the Cell 0 below: N = 4, 6, 8–16, 24, 32.
+- **Memory** (bytes saved for the backward by one training forward, 2 × 512 tokens, the GPU run's switches; scaled to 16 × 2 by K2-L8-R6-CODE's measured 37.1 GB at N = 8): N = 8 3.42 GiB, 37.1 GB; N = 12 4.99 GiB, about 51 GB; **N = 16 6.57 GiB, about 64 GB**. That fits the 80 GB card without layer checkpointing. Cell 5's batch probe measures at N = L = 8 only, so its `Auto batch` line must read 16 × 2 as before, and the first N = 16 step is the real test. Evaluation (N = 8) as K2-L8-R6-CODE, 55.4 GB; the probe runs with layer checkpointing on 4-sequence batches.
+- **Time.** SR4a-CODE's mean walk of 1.5 L cost 1.41 times SO-CODE's step; the same factor gives about 5.2 s per step here, about 27.5 h, plus about 0.5 h for the nine probes. So two Colab sessions. The wall-clock autosave at 23.5 h saves the batch generator and the step-count generator (`vs_rng_state`), and Cell 6 resumes both, so the pairing holds across the resume (as for L8-CODE, `63ce0d2`).
+- **Cell 0:** K2-L8-R6-CODE's 14 changes plus two, 16 in all:
+
+  ```python
+  VARIABLE_STEP_COUNTS      = (8, 12, 16)
+  VARIABLE_STEP_PROBE_N     = (0.5, 0.75, 1, 1.125, 1.25, 1.375, 1.5, 1.625, 1.75, 1.875, 2, 3, 4)
+  ```
+
+  Expected tag `xi5long_topk16_dt32da16_mh4_aniso_dcvt5x2_ar6_vtjoint_cgqk_norc_vplive_xilive_sr2_vs8-12-16_st16250_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_lr0p0012_noattn`. Cell 0 prints `[SR4a] VARIABLE_STEP_COUNTS=(8, 12, 16)`; Cell 5b must say fresh run.
+- **First checks:** `Auto batch: 16 x accum=2`; peak memory once an N = 16 step has run (the step lines report the peak since the last line); the per-N training losses in the step lines; no non-finite gradient norm; the first probe at step 2,000.
+
+**Calls, proposed 2026-11-05** (scored at step 18,000 for the probe, and paired against K2-L8-R6-CODE over steps 16,000–19,000 at N = 8; SR4a-CODE's results at L = 2 in brackets):
+
+| call | prediction | probability |
+| --- | --- | ---: |
+| RV-1 | **cost at N = L:** paired difference against K2-L8-R6-CODE at most +0.030 nats (SR4a-CODE +0.025) | 60% |
+| RV-2 | **refinement inside the trained set:** probe penalty at N = 12 and at N = 16 both ≤ 0.02 nats (−0.04 and −0.03) | 65% |
+| RV-3 | **interpolation:** probe penalty at every untrained N from 9 to 15 ≤ 0.05 nats | 45% |
+| RV-4 | **extrapolation fails:** probe penalty at N = 24 above 0.20 nats (fixed-step K2-L8-R6-CODE: 1.28; SR4a-CODE beyond its band: 1.39) | 70% |
+| RV-5 | **the per-layer flow moves away:** FLOW-R limit at k = 8 above K2-L8-R6-CODE's 0.059 (SR4a-CODE 0.84 against SO-CODE's 0.37) | 65% |
+| RV-6 | **stable:** no non-finite gradient norm at any logged step | 85% |
+
+Reading of the calls: SR4a-CODE refined inside its trained set and not beyond it, so RV-2 and RV-4 lean on that result. RV-3 is the new question and the least certain, because the untrained counts also bring layer-time patterns no training step used.
+
 <a name="p-vphi-force-ckpt"></a>**V_φ-force checkpointing (Cell 0 `VPHI_FORCE_CHECKPOINT`), built and verified 2026-11-02 (author's go-ahead the same day).** A memory switch, not an arm. It is meant to let an L = 8 code arm train without layer checkpointing at microbatch 16 × 2, the microbatch of every code arm.
 
 - **Why.** Without layer checkpointing, L = 8 does not fit an 80 GB card, even at K = 2.
