@@ -150,10 +150,24 @@ def lint(path):
         if re.search(r'\\(ddot|dot|bar|hat|vec|tilde)\s+[A-Za-z]', l):
             hits.append((i, 'R9', 'accent without braces', l))
 
-        # R13 < or > inside math
+        # R13 < or > inside math. Cheatsheet rule 13 says "inside any $...$ or
+        # $$...$$ block": GitHub's HTML sanitiser runs BEFORE KaTeX and eats from
+        # a `<` followed by a letter, leaving unbalanced braces and the pink
+        # "Extra open brace or missing close brace". Until 2026-11-06 this check
+        # looked at inline spans only, so display equations carrying `\sum_{s<t}`
+        # passed the linter and broke on GitHub.
         for _, _, b in spans:
             if re.search(r'(?<!\\)[<>]', b):
                 hits.append((i, 'R13', r'< or > inside math — use \lt / \gt', l))
+        if in_display and not stripped.startswith('>'):
+            # The documented breaker is `<` followed by a letter (the sanitiser
+            # reads it as a tag and eats to the next `>`); a bare `<` is still
+            # non-conforming.  A standalone `>` with no earlier `<` on the line
+            # the cheatsheet calls "usually safe", so it is not reported here.
+            _m = re.search(r'(?<!\\)<', l)
+            if _m:
+                _sev = 'a tag-like <X' if re.match(r'<[A-Za-z]', l[_m.start():]) else 'a bare <'
+                hits.append((i, 'R13', f'{_sev} inside DISPLAY math — use \\lt / \\gt', l))
 
         # R19 fragile delimiters
         if re.search(r'\\middle\||\\left\\lVert|\\right\\rVert', l):

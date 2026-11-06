@@ -47,7 +47,7 @@ for the particle of type $j$ that token $s$ bears at layer $b$. Capacity $KT$ is
 **Visibility and force.** A particle born at (layer $b$, token $s$) is visible to every token $t \gt s$ at every layer $l \geq b$ — a block-causal $T \times KT$ mask — and acts through the well potential the modes already use, evaluated in the acting layer's matching subspace:
 
 $$
-U_l(h_t) = -\sum_{b \leq l}\sum_{s < t}\sum_j a_{l,j} e^{(b)}_{s,j} \lambda_j^{t-1-s} \exp(-\kappa_{l,j}^2 \lVert P_l (h_t - \mu^{(b)}_{s,j}) \rVert^2), \qquad (2)
+U_l(h_t) = -\sum_{b \leq l}\sum_{s \lt t}\sum_j a_{l,j} e^{(b)}_{s,j} \lambda_j^{t-1-s} \exp(-\kappa_{l,j}^2 \lVert P_l (h_t - \mu^{(b)}_{s,j}) \rVert^2), \qquad (2)
 $$
 
 with $a$ the layer's per-type depths (starting at zero, so the force is exactly zero at step 0), $\lambda$ the per-type survival per token, and $\kappa$, $P$ the acting layer's width and projection. The sources are of tokens $s \lt t$, so they are constant in $h_t$ and the explicit gradient is exact in it, while the loss still reaches the creating token through $e$ and $\mu$:
@@ -79,7 +79,7 @@ Cost: $O(KT^2 d)$ per layer, attention over $KT$ keys; memory $(B, T, K, d)$ per
 The number of live particles a token sees is the occupation summed over types,
 
 $$
-N(t) = \sum_{s<t}\sum_j \lambda_j^{t-1-s} e_{s,j} \longrightarrow \sum_j \frac{\bar{e}_j}{1-\lambda_j} \quad (\lambda_j < 1), \qquad N(t) \approx K \bar{e} t \quad (\lambda_j = 1). \qquad (4)
+N(t) = \sum_{s \lt t}\sum_j \lambda_j^{t-1-s} e_{s,j} \longrightarrow \sum_j \frac{\bar{e}_j}{1-\lambda_j} \quad (\lambda_j \lt 1), \qquad N(t) \approx K \bar{e} t \quad (\lambda_j = 1). \qquad (4)
 $$
 
 With spontaneous death the count **saturates** — a decaying store is bounded memory however large the store, which is Lemma 2 of the bounds note (damping is information-destroying) wearing another hat. With no spontaneous death the count grows with the input, and destruction is left to consumption.
