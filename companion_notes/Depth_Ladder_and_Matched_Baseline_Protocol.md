@@ -5067,7 +5067,8 @@ The cost of training at three step counts fell through the run, most of it in th
 - **Cell 0:** K2-L8-CODE's 13 changes plus `ANISO_RANK = 6`, 14 in all. Expected tag `xi5long_topk16_dt32da16_mh4_aniso_dcvt5x2_ar6_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_lr0p0012_noattn`. Cell 2 must report no checkpoint (Cell 5b: fresh run).
 - **Memory and time,** scaled from the CPU saved-tensor count: about 37 GB in training and 55–58 GB in evaluation at 16 × 2, without layer checkpointing and with the V_φ-force checkpoint, as K2-L8-CODE. About 3.6–3.8 s per step, 19.5–20.5 h, one session.
 - **First checks:** the `Auto batch:` line reads 16 × 2; step-50 loss against K2-L8-CODE's; peak memory; no non-finite gradient norm.
-- **After the run:** Cells 8, 7, 6b-4 (the rank question at rank 6), 6b-7 and 6b-13; on CPU, the paired evals against K2-L8-CODE and L8-CODE, FLOW-R.
+- **After the run:** Cells 8, 7, 6b-4 (the rank question at rank 6), 6b-7 and 6b-13; on CPU, the paired evals against K2-L8-CODE and L8-CODE, FLOW-R. Cell 6b-4 reads the rank from the tensors (it prints "of 6"), but its printed verdict uses the rank-4 thresholds (3.0, 2.0) and does not apply; R6-4 scores the median against 4.5.
+- **Launched 2026-11-04 (evening), from GitHub `604004a`.** Cell 0 tag as expected (`…dcvt5x2_ar6_vtjoint…`), banner `Aniso rank r=6`; Cell 5b: fresh run. Cell 5: 53,115,092 parameters (V_θ 11,821,826), batch probe 38.1 GB at 16, `Auto batch: 16 x accum=2`. (Its summary line `5 heads x 2 wells = 10 attractors` ignores the joint coupling; Cell 0's `1 joint bank x 2 wells` and the parameter count are right.) Cell 6: 53,057,056 decayed and 58,035 undecayed parameters. Step 50: training loss 6.1780 (K2-L8-CODE 6.2005), gradient norm 0.65 (0.62), peak memory 37.1 GB (35.0), 3.54 s per step, about 18.9 h. Calls R6-1 to R6-5 not yet confirmed by the author.
 
 **Calls, proposed 2026-11-04 (paired against K2-L8-CODE over steps 16,000–19,000, where its SD against L8-CODE was 0.0015; K2-L8-CODE settled 5.667, GPT-2-CODE 4.959):**
 
@@ -5080,6 +5081,38 @@ The cost of training at three step counts fell through the run, most of it in th
 | R6-5 | **stable:** no non-finite gradient norm at any logged step | 85% |
 
 Reading of the calls: Cell 6b-4 on K2-L8-CODE found the Frobenius cap binding, so rank 6 spreads the same curvature budget over more directions rather than adding to it. That is why "no effect" is the likeliest single outcome.
+
+<a name="p-k2-l8-r6-result"></a>**Result, K2-L8-R6-CODE (2026-11-05): rank 6 settles at 5.54, −2.2% against K2-L8-CODE. R6-1, R6-4 and R6-5 hit; R6-2 and R6-3 miss.** The calls were not confirmed by the author before the run; they are scored as proposed. One session on one A100 80 GB, steps 1–19,250 in 19.5 h (70,205 s; 3.65 s per step), peak memory 37.1 GB in training and 55.4 GB in evaluation, microbatch 16 × 2. **No non-finite gradient norm at any of the 385 logged steps.** Gradient norm median 0.38 after step 2,000, maximum 1.40 (step 100, in warmup); largest rise between logged training losses 0.070 (step 13,050, as in K2-L8-CODE, L8-CODE and SO-CODE). No watchdog trigger. SCAF CLEAN at 5,000, 10,000, 15,000 and 19,250; trained leak probe at 10,000 CLEAN (honest 4.63, standard 4.93). Resonance at step 19,000: ωΔt median 1.29, 15.5% past the wall (K2-L8-CODE 25.6%). Best checkpoint at step 18,000 (perplexity 5.44). Outputs filed in `results/cfc_baoab_code_…dcvt5x2_ar6…L8probe…lowrank_lr0p0012_noattn/`: the Cell 6 log (`L8_K2_R6_SO_on_Code_19250steps_output.txt`), Cells 7, 6b-4, 6b-7 and 6b-13, `training_log.jsonl`, the leak and resonance records. The checkpoints (best at 18,000, best at 500, snapshots 1,000–3,000) are in the author's download.
+
+- **Settled** (mean of the evals at 18,000, 18,500 and 19,000): validation loss 1.7126, perplexity **5.543**. K2-L8-CODE 5.667, L8-CODE 5.354, L4-CODE 5.485, SO-CODE 5.994, GPT-2-CODE 4.959. It trails GPT-2-CODE by 11.8% with 2.3% more parameters outside the embeddings (14,517,715 against 14,196,480). In log perplexity it closes 41% of SO-CODE's gap to GPT-2-CODE (K2-L8-CODE 30%, L4-CODE 47%, L8-CODE 60%).
+- **Paired differences** (K2-L8-R6-CODE minus the other, validation loss in nats, same batches), mean and SD over the logged evals in each window:
+
+  | window | against K2-L8-CODE | against L8-CODE | against L4-CODE | against SO-CODE |
+  |---|---:|---:|---:|---:|
+  | 2,000–4,000 (5 evals) | −0.016, SD 0.007 | −0.356, SD 0.071 | +0.006, SD 0.010 | −0.287, SD 0.063 |
+  | 8,000–13,000 (11) | −0.020, SD 0.004 | +0.008, SD 0.015 | +0.009, SD 0.006 | −0.090, SD 0.009 |
+  | 16,000–19,000 (7) | **−0.023, SD 0.0016** | +0.033, SD 0.0015 | +0.009, SD 0.0024 | −0.079, SD 0.003 |
+
+- **Calls:**
+
+  | call | prediction | result | outcome |
+  | --- | --- | --- | --- |
+  | R6-1 (40%) | paired difference ≤ −0.010 nats | −0.023, SD 0.0016 | **hit** |
+  | R6-2 (45%) | within ±0.010 nats | −0.023 | miss |
+  | R6-3 (10%) | settled ≤ 5.45 | 5.543 (one eval, step 18,000, reads 5.44) | miss |
+  | R6-4 (50%) | participation ratio median ≥ 4.5 of 6 | 4.87 | **hit** |
+  | R6-5 (85%) | no non-finite gradient norm | none in 385 logged steps | **hit** |
+
+- **Reading.** The lead over K2-L8-CODE is there from the first eval (−0.014 at step 500) and lies between −0.005 and −0.026 at every eval; the window means grow a little (−0.016, −0.020, −0.023). Rank 6 recovers 0.023 of the 0.056 nats that L8-CODE's six extra wells are worth at L = 8 (41%), with 2.95 M parameters against their 26.6 M. Against L4-CODE it is level over steps 3,500–9,000 (−0.005 to +0.003) and 0.005–0.017 nats behind after, with 23.5 M fewer parameters; it beats SO-CODE by 0.079 nats with 23.5 M fewer. The setup's reading was wrong: the cap still binds and the budget is redistributed, not added, but the redistribution helps. One seed and one model per configuration.
+- **Cell 6b-4 (B_k spectrum, step 18,000):** participation ratio p50 **4.87 of 6** (p05 3.30, p95 5.38); ‖B‖_F p50 1.000, so the Frobenius cap still binds; σ_max² p50 **0.309** (K2-L8-CODE 0.463). Mean σ_i/σ_1 = 1.000, 0.824, 0.716, 0.626, 0.562, 0.482; budget shares 32%, 22%, 16%, 13%, 10% and 7%. So directions 5 and 6 take 17.5% of the budget, about twice the 9% extrapolated from rank 4's decay, and the spectrum is flatter (about 0.86 per direction against 0.78). The cell's printed verdict ("rank 12 has a real case") uses the rank-4 thresholds and does not apply. As a fraction of the rank, 4.87 of 6 (81%) is close to rank 4's 3.03 of 4 (76%); whether rank 8 would carry on is not answered by one spectrum.
+- **Cells 6b-7, 6b-13 and 7 (step-18,000 checkpoint, delivered 2026-11-05; K2-L8-CODE's, then L8-CODE's, in brackets):**
+  - **Gate 3, refinement at T = 8** (penalty ln(PPL_N / PPL_8) on Cell 6b-7's batches): trained N = 8 at 4.74 (4.79; 4.59). N = 6: +0.690 (+0.548; +0.206); N = 12: **+0.251** (+0.465; +0.415); N = 16: **+0.499** (+1.073; +0.783); N = 24: +1.279 (+2.168; +2.175); N = 32: +1.726 (+2.705; +2.604). Finer steps cost about half of what they cost K2-L8-CODE, and less than L8-CODE at every N above 8; coarser steps cost more (N = 4: +3.68 against +2.96 and +2.01). The whole stack still fails refinement: maps, not a flow.
+  - **Gate 1, inertia:** carried 4.74, reset 10.81, a factor of 2.28 (3.71; 2.72).
+  - **Gate 2, more hops at Δt = 1:** N = 6 at 8.60 (9.44; 5.64).
+  - **Stiffness (Cell 6b-13):** ωΔt median 1.327, 16.1% past the wall (1.505, 25.5%; 1.747, 33.8%). Layer 0 as stiff as at rank 4 (median 3.07, 99.1% past the wall; K2-L8-CODE 3.22, all readings); layers 1–7 softer (layers 3 and 4, the next stiffest, 11–12% past the wall). The lower σ_max² and the softer layers fit together: the same curvature budget over more directions puts less on each.
+  - **Registers (Cell 7):** removing all registers changes nothing (5.03 → 5.03); creation entropy 0.13 (0.14). Full-model loss on Cell 7's batches 1.6158, −0.028 nats against K2-L8-CODE and +0.029 against L8-CODE, as on the validation set.
+- **FLOW-R (2026-11-05, CPU; `refinement_flow_confirmation.py … code seed=20261009 name=k2-l8-r6-code ckpt=…_step18000_best.pt`; 52.4 GB peak, 1.4 h; K2-L8-CODE's, then L8-CODE's, in brackets).** All checks exact. Trained N = 8 at perplexity 5.33 on these batches (5.47). Penalty ln(PPL_N / PPL_8) in nats at k = N / L substeps per trained layer: **0.442, 0.061, 0.057, 0.058, 0.058, 0.059** at k = 1.5, 2, 3, 4, 6, 8 (0.557, 0.089, 0.096, 0.097, 0.097, 0.098; 0.186, 0.029, 0.034, 0.035, 0.035, 0.035); whole stack at k = 4: **1.772** (2.798; 2.695). Kick share by layer (position, median) 0.11, 0.18, 0.12, 0.18, 0.17, 0.23, 0.29, 0.50 (0.14, 0.14, 0.12, 0.19, 0.19, 0.26, 0.32, 0.44). **The per-layer flow settles (within 0.004 nats from k = 2 to k = 8), 0.059 nats from the trained step: rank 6 closes 62% of the gap in the limit between two wells (0.098) and eight (0.035).** The whole stack still fails, but by about one nat less than the other L = 8 models; it agrees with Cell 6b-7's N = 32 (+1.726 on its own batches). One seed; the step-18,000 checkpoint. Output and JSON filed in the results folder.
+- **Still to run:** Cell 8; `vtheta_well_probe.py` on all eight layers; `xi_reach.py`; the copy split. The variable-step version (N from {8, 12, 16}, with probes at the untrained N between them) remains open.
 
 <a name="p-vphi-force-ckpt"></a>**V_φ-force checkpointing (Cell 0 `VPHI_FORCE_CHECKPOINT`), built and verified 2026-11-02 (author's go-ahead the same day).** A memory switch, not an arm. It is meant to let an L = 8 code arm train without layer checkpointing at microbatch 16 × 2, the microbatch of every code arm.
 
