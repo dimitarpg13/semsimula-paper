@@ -65,6 +65,58 @@ def live_count():
     plt.close(fig)
 
 
+def short_train():
+    """The three-arm CPU run: loss curves, and what the model does with the store."""
+    import json as _json
+    D = {a: _json.load(open(OUT / f"ps_short_train_{a}.json")) for a in ("off", "decay", "nodecay")}
+    COL = {"off": GREY, "decay": BLUE, "nodecay": RED}
+    LAB = {"off": "no store", "decay": "store, half-lives 1-16", "nodecay": "store, no death"}
+    fig, (a, b, c) = plt.subplots(1, 3, figsize=(13, 3.8))
+
+    for arm, d in D.items():
+        st, ls = zip(*d["loss_log"])
+        a.plot(st, ls, color=COL[arm], lw=2, label=LAB[arm])
+    a.set_xlabel("training step")
+    a.set_ylabel("training loss")
+    a.set_title("A. the three arms train alike", loc="left", fontsize=11)
+    a.legend(frameon=False, fontsize=9)
+    a.text(0.97, 0.93, "held-out PPL\n" + "\n".join(f"{LAB[k]}: {D[k]['heldout_ppl']:.0f}" for k in D),
+           transform=a.transAxes, ha="right", va="top", fontsize=7.5, color=MUTED)
+
+    arms = ["decay", "nodecay"]
+    x = np.arange(len(arms))
+    cost = [D[k]["removal_cost_pct"] for k in arms]
+    err = [D[k]["removal_spread_pct"] / np.sqrt(8) for k in arms]
+    b.bar(x, cost, 0.5, color=[COL[k] for k in arms], yerr=err, capsize=5,
+          error_kw=dict(ecolor=INK, lw=1))
+    b.set_xticks(x); b.set_xticklabels(["half-lives\n1-16", "no\ndeath"])
+    b.set_ylabel("removal cost, % PPL")
+    b.set_title("B. does the model use the store?", loc="left", fontsize=11)
+    for xi, ci in zip(x, cost):
+        b.text(xi, ci + 0.35, f"{ci:+.2f}%", ha="center", fontsize=9, color=INK)
+    b.axhline(0, color=GREY, lw=0.8)
+    b.set_ylim(0, max(cost) * 1.45)
+
+    w = 0.38
+    for i, l in enumerate(("layer0", "layer1")):
+        c.bar(x + (i - 0.5) * w, [D[k]["layers"][l[-1]]["position_R2"] for k in arms], w,
+              color=[GREEN, PURPLE][i], label=f"layer {i}")
+    c.axhline(0, color=INK, lw=0.9)
+    c.set_xticks(x); c.set_xticklabels(["half-lives\n1-16", "no\ndeath"])
+    c.set_ylabel("existences explained by position, $R^2$")
+    c.set_ylim(-0.25, 1.0)
+    c.set_title("C. content, not position", loc="left", fontsize=11)
+    c.legend(frameon=False, fontsize=9, loc="upper left")
+    c.axhspan(0.94, 1.0, color=ORANGE, alpha=0.30, zorder=0)
+    c.text(0.97, 0.965, "Poisson occupations", transform=c.transAxes, ha="right",
+           va="top", fontsize=8, color=ORANGE)
+
+    fig.tight_layout()
+    fig.savefig(OUT / "ps_short_train.png", dpi=150)
+    plt.close(fig)
+
+
 if __name__ == "__main__":
     live_count()
-    print("wrote", OUT / "ps_live_count_init.png")
+    short_train()
+    print("wrote", OUT / "ps_live_count_init.png", "and", OUT / "ps_short_train.png")
