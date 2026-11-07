@@ -353,7 +353,16 @@ class AnisotropicMixtureGaussianVTheta(nn.Module):
             # directly is identical in value but analytic in e (no 1/sqrt(0)),
             # so the low-rank arm's gradient stays finite.  (Plain harmonic_terms
             # never hits this -- it uses g itself, not sqrt(g).)
-            sqrt_g = w.clamp(min=0.0).sqrt() * torch.exp(
+            # 2026-11-06 (K2-L8-R6-VS-CODE): the same 1/sqrt(0) on w itself. With
+            # K = 2 a well-logit gap above ~104 underflows the float32 softmax to
+            # w = 0 exactly, and w.sqrt()'s backward gave inf * 0 = NaN on ~98% of
+            # steps from step ~1,000. The where pair keeps the forward bit for bit
+            # (sqrt(w) for w > 0, 0 otherwise) and gives such a well the gradient
+            # 0, the limit of d sqrt(softmax)/dz = 0.5 sqrt(w)(delta - w) at w = 0.
+            _pos = w > 0
+            sqrt_w = torch.where(_pos, torch.where(_pos, w, torch.ones_like(w)).sqrt(),
+                                 torch.zeros_like(w))
+            sqrt_g = sqrt_w * torch.exp(
                 -0.25 * (diag_term + lr_term)
             )                                                     # (..., K)
             Gk = sqrt_g[..., None, None] * B                      # (..., K, d, r)
