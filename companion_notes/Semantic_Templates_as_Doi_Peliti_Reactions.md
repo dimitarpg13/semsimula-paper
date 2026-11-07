@@ -151,6 +151,8 @@ $$
 
 **bilinear in the roots** and integrated over all of $\Sigma$. It answers a different question: *how much do two states resemble each other?* It is a geometry, not a detector.
 
+**What the exchange gives up, and why that is a deferral.** Trading a detector for a geometry costs the **trajectory**. (1.4) integrates along the probe's path through the binding region over a window $\Delta T$, so it encodes how long the probe dwelt there and by what route; (3.1) is instantaneous, two clouds and one number, with no path and no time in it. Book Definition 8 keeps the trajectory — the Pattern Matching Structure monitors its region "for the appearance of specified semantic signatures *along specified trajectories*" — so the overlap reading currently serves the signature half of that definition and not the trajectory half. Nothing is contradicted: the book defers "the operational mechanics of template matching" rather than fixing them, so this is a gap in what has been built, not a disagreement about what is true. It is recorded here so that the omission reads as deliberate. A template that must separate *passed through* from *lingered in* cannot yet express the distinction, and the two-slot extension of the Community note §8 does not supply it either: a relative displacement is a static relation, so slots buy configuration, not dwell or direction.
+
 ### 3.3 The repair
 
 The template formalism already contains everything needed to close the gap, because the probe is not really a point. The matched property $P_1$ has, in the template reading, its own cloud: ¶83 defines the aggregate characteristics of a template property as the *stochastic* centre and *stochastic* mass of the matched semantic property. Once the probe is a density $f_q$ rather than a curve, the functional has to be a functional of two densities, and there are three canonical choices:
@@ -166,6 +168,20 @@ Taking the middle choice also repairs §1.4's units problem for free: (3.1) is a
 ![Probe as a path against probe as a cloud, and the three candidate functionals against centroid separation](figures/semantic_templates_dp/std_linear_vs_bilinear.png)
 
 **Figure 2.** Top: the two readings of a probe. As a path (left) the score is linear in $f_p$ and there is one number per trajectory; as a cloud (right) it is bilinear in the roots and there is one number per pair of states. Bottom: the three candidates of (3.2) against centroid separation in inflection radii. The Bhattacharyya coefficient and the normalized $L^2$ pairing are both bounded in $[0,1]$, but only the first equals $1 - V/(\mathfrak{m}\upsilon^2)$ and induces a metric; the $L^2$ pairing decays with twice the exponent and is not an inner product of unit vectors. The Kullback–Leibler divergence is plotted separately because it is unbounded, and it is also asymmetric.
+
+**What the probe is, and what it is not.** The probe is the thing being tested against the template: in §1.4 "a semantic property $P_1$" traversing the binding region, which is Definition 5 — **one particle's worth of content, not a structure**. Definition 7's structure, a graph of several particles, is what a *multi-slot* template would match, and no formalism here does that yet; the minimal case is the two-slot pattern-matching tree of §8 of the Community note. So the matching of this section is one cloud against one cloud.
+
+The probe has therefore been read three ways, and it is worth keeping them apart:
+
+| reading | the probe is | the score | where |
+|---|---|---|---|
+| manuscript, 2022 | a **path** $S_1$ through the template cloud | arc-length average, linear in $f_p$ | Eqs. (17)–(20), §1.4 |
+| the repair | a **cloud** with its own centre and width | $\int\sqrt{f_p f_q}$, bilinear in the roots | §3.3 |
+| the trained models | a **point**, the token state $h_s$ | $\exp(-\kappa_v^2 \lVert h_s - \mu_v\rVert^2)$ | `_lowrank_match`; PM1 |
+
+The third row is a step back toward the first, and the book says so in the Poisson-mode passage: the overlap there is the kernel of the Gram equation "with the token's state in place of a centroid". The implementation treats the probe as the centre of a cloud of the standard width rather than giving it an independently estimated spread. Nothing breaks — the kernel is the same — but the bilinearity the repair bought is only half-exercised.
+
+**Matching is particle-level throughout.** The overlap of §3.3 compares clouds over $\Sigma$, which is the inner product of $\mathcal{H}$ and therefore the *particle*-level machinery of the single-particle note. The book's other Gaussian similarity, the aspect-level type matcher $\Phi(l_1,l_2) = \exp(-d_l^2/\sigma_l^2)$ of Definition 16, plays no part in template firing: the two "enter the dynamics by different routes. Aspect types act through the field $\mathfrak{F}$ and the type matcher $\Phi$; particle types act through the modes of $\mathcal{H}$" (book §10.5.2). $\Phi$ keeps acting on the pair interaction $V_\phi$ between firings — in code with a learned per-pair bandwidth rather than the book's free constant $\sigma_l$ — so the two levels coexist rather than compete. One consequence of matching at the particle level: the overlap is a function of centroid separation alone, so two types whose internal structure differs but whose centroids nearly coincide are nearly indistinguishable to the matcher. §7 is where anisotropy puts shape back into the overlap.
 
 ### 3.4 The payoff: the threshold becomes a distance
 
