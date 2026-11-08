@@ -1,0 +1,24 @@
+Probe target -> fock_cfc_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x2_ar6_vtjoint_cgqk_norc_vplive_xilive_sr2_vs8-12-16_st16250_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_lr0p0012_noattn_best.pt  step 18000  PPL 5.56
+GPU free 82.9 / 85.1 GB before probe
+========================================================================
+Fock v2.1 STRUCTURAL HEALTH
+========================================================================
+     layer  active_fra  reg_cos_si  create_ent  create_alp  rev_entrop   rev_scale  qforce_rat  destroy_me
+     0.000       1.000      -0.000       1.023       0.565        None       0.000       0.000       0.150
+     1.000       1.000      -0.001       0.936       0.570        None       0.000       0.000       0.012
+     2.000       1.000      -0.001       0.415       0.819        None       0.000       0.000       0.000
+     3.000       1.000      -0.001       0.262       0.878        None       0.000       0.000       0.000
+     4.000       1.000      -0.000       0.149       0.945        None       0.000       0.000       0.000
+     5.000       1.000       0.000       0.152       0.937        None       0.000       0.000       0.000
+     6.000       1.000       0.001       0.151       0.926        None       0.000       0.000       0.000
+     7.000       1.000       0.002       0.301       0.879        None       0.000       0.000       0.000
+------------------------------------------------------------------------
+summary: {'active_frac': 1.0, 'salience_mean': 0.802, 'salience_std': 0.193, 'reg_cos_sim': -0.0, 'destroy_mean': 0.02, 'qforce_ratio': 0.0, 'rev_scale': 0.0, 'create_alpha_max': 0.815, 'create_entropy': 0.424}
+  * creation attention near-DEGENERATE (entropy=0.42, 6% of max): each register locks to ~1 token -> temperature may have collapsed; raise tau_create floor
+  * reverse channel effectively OFF (|scale|=0.0e+00): the non-conservative force is not being used -> either it has no headroom here, or warmup is still ramping / gate init needs help
+
+========================================================================
+arm                         loss       ppl      dPPL
+full model                1.6381      5.15     +0.00
+  - registers (all)       1.6381      5.15     +0.00
+

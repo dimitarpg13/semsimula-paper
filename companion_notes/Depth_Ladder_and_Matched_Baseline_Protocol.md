@@ -5148,6 +5148,56 @@ Reading of the calls: Cell 6b-4 on K2-L8-CODE found the Frobenius cap binding, s
 
 Reading of the calls: SR4a-CODE refined inside its trained set and not beyond it, so RV-2 and RV-4 lean on that result. RV-3 is the new question and the least certain, because the untrained counts also bring layer-time patterns no training step used.
 
+<a name="p-k2-l8-r6-vs-result"></a>**Result, K2-L8-R6-VS-CODE (2026-11-08): the model trained at N ∈ {8, 12, 16} refines at every N from 8 to 16, trained or not, and nearly to N = 32, for +0.020 nats at N = 8 against K2-L8-R6-CODE. RV-1, RV-2, RV-3 and RV-6 hit; RV-4 misses; RV-5 is pending (FLOW-R running).** The calls were not re-confirmed by the author; they are scored as proposed, on the relaunch (the first launch's are void, below).
+
+- **The first launch failed, and the arm found a bug.** Launched 2026-11-05 from `483a0f9`, it ran one 24-hour session to about step 14,650. The gradient norm was NaN at every logged step from 1,000 (269 of 293 logged steps; five finite after step 1,000), so about 98% of optimizer steps were skipped and the model hardly trained (perplexity 30.1 at step 1,000, 21.3 at 14,000, where K2-L8-R6-CODE was near 5.6). The loss stayed finite, and nothing alarmed: the watchdog, the hard trigger and the spike capture all test `grad > threshold`, which a NaN never passes.
+  - **Cause** (CPU replay of the step-1,000 checkpoint; `torch.autograd.detect_anomaly` names `SqrtBackward0`). In `harmonic_terms_lowrank`, the well's weight w = softmax(w_proj(ξ)) · w_scale enters as `w.clamp(min=0).sqrt()`. With K = 2, a gap above about 104 between the two well logits underflows the float32 softmax to w = 0 exactly, and the backward of the square root gives ∞ · 0 = NaN. It is not CUDA-specific (it fails on CPU) and not specific to the longer walks (it fails at N = 8 too). The largest logit gap on the replay batch was 18.4 at step 500 and 106.9 at step 1,000; K2-L8-R6-CODE's step-18,000 model reads 11.4. Why variable-step training sharpened the well selection six-fold in 500 steps is open. Same class as `CfC_BAOAB_Integrator_and_Mitigations.md` §34.1 fix 3, which moved the square root onto w and left this case.
+  - **Fix** (`15c236d`): a `torch.where` pair that computes sqrt(w) for w > 0 and 0 otherwise. The forward is bit-identical; such a well gets gradient 0, the limit of d sqrt(softmax)/dz at w = 0. Verified on the step-1,000 checkpoint and on K2-L8-R6-CODE's: logits and loss bit-identical before and after, every previously finite gradient bit-identical, the NaN gone.
+  - **Guard** (`15c236d`, Cell 6): 25 non-finite gradient norms in a row raise an error; the first of a streak triggers the spike capture; the step line prints `skipped=` and the log records `n_skipped`.
+  - **Relaunch** (2026-11-07) from the step-500 checkpoint, which was clean (logit gap 18): every later checkpoint and log row moved aside, the training log cut at step 500. The resume restored the weights, optimizer, batch sampler and step-count draw: step 550 training loss 3.8706 against the failed run's 3.8707, per-N losses equal to 0.0003, so the batches and the N draws are the failed run's. Step 1,000: gradient 0.69, perplexity 29.68 (failed run 30.09).
+- **Run.** Two Colab sessions on one A100 80 GB: steps 501–16,050 (86,029 s) and, after the wall-clock autosave, 15,501–19,250 from the step-15,500 best checkpoint (20,648 s; the evaluation at 16,000 repeated to 0.0002 nats). 5.5 s per step, peak memory 63.6 GB in training (the N = 16 walks; the setup's estimate was about 64 GB) and 55.4 GB in evaluation, microbatch 16 × 2. **No non-finite gradient norm at any of the 385 logged steps and no skipped step.** Gradient norm median 0.41 after step 2,000; one spike, 3.97 at step 12,000 (the V_φ group, 3.0 before its clip; the training loss fell at that step), the rest at most 1.08. Largest rise between logged training losses 0.071 (step 13,050, as in K2-L8-R6-CODE and the other L = 8 arms). No watchdog trigger. SCAF CLEAN at 5,000, 10,000, 15,000 and 19,250. Resonance at step 19,000: ωΔt median 1.36, 18.3% past the wall (K2-L8-R6-CODE 1.29, 15.5%). Best checkpoint at step 18,000 (perplexity 5.56). The step draw over the run: N = 8, 12 and 16 on 6,525, 6,416 and 6,309 steps; settled per-N training losses (steps 16,000–19,250) 1.643, 1.637 and 1.643.
+- **Settled** (mean of the evals at 18,000, 18,500 and 19,000): validation loss 1.7318, perplexity **5.651**. K2-L8-R6-CODE 5.543, K2-L8-CODE 5.667, L8-CODE 5.354, GPT-2-CODE 4.959. In log perplexity it closes 31% of SO-CODE's gap to GPT-2-CODE (K2-L8-R6-CODE 41%).
+- **Paired differences** (K2-L8-R6-VS-CODE minus the other, validation loss in nats at N = 8, same batches), mean and SD over the logged evals in each window:
+
+  | window | against K2-L8-R6-CODE | against K2-L8-CODE | against L8-CODE |
+  |---|---:|---:|---:|
+  | 500 and 1,000 | +0.066, +0.066 | +0.052, +0.048 | +0.080, +0.055 |
+  | 2,000–4,000 (5 evals) | +0.142, SD 0.048 | +0.126, SD 0.047 | −0.214, SD 0.072 |
+  | 8,000–13,000 (11) | +0.027, SD 0.005 | +0.007, SD 0.005 | +0.035, SD 0.011 |
+  | 16,000–19,000 (7) | **+0.020, SD 0.0014** | −0.003, SD 0.0007 | +0.053, SD 0.0011 |
+
+  The cost against the fixed-step model peaks at +0.22 at step 2,000, falls to +0.03 by step 8,000 and is still shrinking at the end (+0.018 at 19,000). Training at N ∈ {8, 12, 16} gives back 87% of what rank 6 gained over rank 4 at N = 8 (K2-L8-R6-CODE −0.023 against K2-L8-CODE; this arm −0.003).
+- **Calls:**
+
+  | call | prediction | result | outcome |
+  | --- | --- | --- | --- |
+  | RV-1 (60%) | paired difference at N = 8 ≤ +0.030 nats | +0.020, SD 0.0014 | **hit** |
+  | RV-2 (65%) | probe penalty at N = 12 and 16 both ≤ 0.02 nats | −0.008 and +0.001 | **hit** |
+  | RV-3 (45%) | penalty at every untrained N from 9 to 15 ≤ 0.05 nats | largest +0.006 (N = 13) | **hit** |
+  | RV-4 (70%) | penalty at N = 24 above 0.20 nats | +0.038 | miss |
+  | RV-5 (65%) | FLOW-R limit at k = 8 above 0.059 | running | pending |
+  | RV-6 (85%) | no non-finite gradient norm | none in 385 logged steps of the relaunch (the first launch: NaN from step 1,000, the bug above) | **hit** (relaunch) |
+
+- **The refinement probe** (penalty ln(PPL_N / PPL_8) on Cell 6b-7's batches, in training every 2,000 steps; step 18,000):
+
+  | N | 4 | 6 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 24 | 32 |
+  |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+  | K2-L8-R6-VS-CODE | +2.568 | +0.175 | +0.005 | −0.001 | −0.004 | **−0.008** | +0.006 | −0.000 | +0.003 | **+0.001** | +0.038 | +0.081 |
+  | K2-L8-R6-CODE (Cell 6b-7) | +3.68 | +0.690 | | | | +0.251 | | | | +0.499 | +1.279 | +1.726 |
+
+  - Inside the trained band the penalty is flat from the first probe: between −0.026 and +0.028 at every N from 9 to 16 at every probe, and between −0.019 and +0.006 from step 8,000 on. The untrained N interpolate as well as the trained ones, despite their uneven layer-time patterns (at N = 9 layer 0 gets 16/9 of its trained time).
+  - Beyond the band it also holds, which the setup did not expect: N = 24 costs 0.038 and N = 32 0.081 at step 18,000, and both fell during training (0.079 and 0.107 at step 2,000). SR4a-CODE failed beyond its band: +0.45 at N = 6 and +1.39 at N = 8 at step 18,000, the latter grown from 0.43 at step 2,000. Both bands cover 1 to 2 substeps per trained layer, and N = 24 and 32 here are 3 and 4 substeps per layer, as N = 6 and 8 were for SR4a-CODE. So the extrapolation ratio is the same and what differs is the model: L = 8 with two rank-6 wells here, L = 2 with eight rank-4 wells there. One seed each.
+  - Below the trained N it fails as before: N = 6 costs 0.175 and N = 4 2.57 (K2-L8-R6-CODE 0.69 and 3.68), and N = 4 grew during training (0.90 at step 2,000), as SR4a-CODE's out-of-band penalty did.
+- **Cells 6b-7, 6b-13, 6b-4 and 7 (step-18,000 checkpoint; K2-L8-R6-CODE's in brackets):**
+  - **Gate 3, refinement at T = 8:** trained N = 8 at 4.81 (4.74). The whole stack refines: successive perplexity changes 0.04 and 0.04 (N = 8 → 12 → 16), then 0.18 and 0.22 (16 → 24 → 32), against 1.35, 1.71, 9.2 and 9.6. The whole stack refines over N = 8–16 and nearly to 32; every earlier L = 8 code model failed Gate 3 at every N above 8.
+  - **Gate 1, inertia:** carried 4.81, reset 14.22, a factor of 2.96 (2.28).
+  - **Gate 2, more hops at Δt = 1:** N = 6 at 7.68 (8.60).
+  - **Stiffness (Cell 6b-13):** ωΔt median 1.376, 18.5% past the wall (1.327, 16.1%). Layer 0 softer (median 2.50; 3.07); layers 1–4 stiffer, 3 and 4 the most (29% and 14% past the wall; 11% and 12%); layers 5–7 softer.
+  - **Wells' curvature (Cell 6b-4):** participation ratio p50 4.71 of 6 (4.87); ‖B‖_F p50 1.000, the cap still binds; σ_max² p50 0.332 (0.309). Mean σ_i/σ_1 = 1.000, 0.790, 0.689, 0.618, 0.544, 0.457: a little steeper than at fixed N.
+  - **Registers (Cell 7):** removing them changes nothing (5.15 → 5.15), as on every conservative-only arm. Full-model loss on Cell 7's batches 1.6381 (1.6158), +0.022 nats, as on the validation set.
+- **FLOW-R** (2026-11-08, CPU, `refinement_flow_confirmation.py … code seed=20261009 name=k2-l8-r6-vs-code ckpt=…_step18000_best.pt`): running; checks exact.
+- **Still to run:** Cell 8; `vtheta_well_probe.py` on all eight layers; `xi_reach.py`; the copy split; the well-logit gap of the final model against K2-L8-R6-CODE's (the open question above). HF card on the author's go-ahead.
+
 <a name="p-vphi-force-ckpt"></a>**V_φ-force checkpointing (Cell 0 `VPHI_FORCE_CHECKPOINT`), built and verified 2026-11-02 (author's go-ahead the same day).** A memory switch, not an arm. It is meant to let an L = 8 code arm train without layer checkpointing at microbatch 16 × 2, the microbatch of every code arm.
 
 - **Why.** Without layer checkpointing, L = 8 does not fit an 80 GB card, even at K = 2.
