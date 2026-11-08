@@ -1,0 +1,32 @@
+FLOW-R, the per-layer flow: code  ...e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_lr0p0012_noattn  (L = 8, dt = 1)
+   12 x 4 x 512 tokens (batch seed 20261009); policy hold; T = 8
+CHECK  N=8: as trained vs Cell 6b-7 _fom_stack, max |d logit| 0.0e+00
+CHECK  N=9: as trained vs Cell 6b-7 _fom_stack, max |d logit| 0.0e+00
+CHECK  N=8: per-layer flow vs the trained model, max |d logit| 0.0e+00
+CHECK  N=32 per-layer flow: fresh quadratic / xi = (8, 8) (one per trained layer: 8)
+CHECK  N=32 per-layer flow vs the model's substeps_per_layer = 4: max rel |d logit| 0.0e+00
+CHECK  layer 0: replay with the normal clamp vs captured output, max |d| 0.0e+00
+CHECK  layer 1: replay with the normal clamp vs captured output, max |d| 0.0e+00
+CHECK  layer 2: replay with the normal clamp vs captured output, max |d| 0.0e+00
+CHECK  layer 3: replay with the normal clamp vs captured output, max |d| 0.0e+00
+CHECK  layer 4: replay with the normal clamp vs captured output, max |d| 0.0e+00
+CHECK  layer 5: replay with the normal clamp vs captured output, max |d| 0.0e+00
+CHECK  layer 6: replay with the normal clamp vs captured output, max |d| 0.0e+00
+CHECK  layer 7: replay with the normal clamp vs captured output, max |d| 0.0e+00
+-> checks PASS
+
+KICK SHARE at the trained N = 8 (first batch, 4 x 512 tokens): |h(no kick) - h| / |h - h_in|
+   layer 0: position median 0.095 (p90 0.165); velocity median 0.284
+   layer 1: position median 0.161 (p90 0.203); velocity median 0.199
+   layer 2: position median 0.121 (p90 0.163); velocity median 0.177
+   layer 3: position median 0.157 (p90 0.190); velocity median 0.250
+   layer 4: position median 0.182 (p90 0.240); velocity median 0.268
+   layer 5: position median 0.234 (p90 0.313); velocity median 0.343
+   layer 6: position median 0.299 (p90 0.362); velocity median 0.449
+   layer 7: position median 0.316 (p90 0.380); velocity median 0.493
+
+GATE 3: PPL at N steps of dt = T/N, then the penalty ln(PPL_N / PPL_8) in nats
+   as trained      PPL N=8:5.44  N=32:5.92
+                   pen N=32:0.085
+   per-layer flow  PPL N=8:5.44  N=12:7.97  N=16:5.61  N=24:5.62  N=32:5.63  N=48:5.63  N=64:5.63
+                   pen N=12:0.382  N=16:0.030  N=24:0.033  N=32:0.034  N=48:0.034  N=64:0.034
