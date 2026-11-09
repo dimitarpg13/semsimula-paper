@@ -56,7 +56,8 @@ ARMS_XI = {'as trained': (False, False, False), 'xi frozen': (False, False, True
 
 
 @contextlib.contextmanager
-def split_stack(model, N, dt, policy_index, ln_once, freeze, xi_freeze=False, phi_freeze=False, pmq_freeze=False):
+def split_stack(model, N, dt, policy_index, ln_once, freeze, xi_freeze=False, phi_freeze=False, pmq_freeze=False,
+                topk_freeze=False, router_off=False, topk_churn=False):
     """6b-7's _fom_stack (policy 'hold'), plus the switches. phi_freeze (PM1,
     added 2026-10-09 for FLOW-C): the occupation phi is taken at the share's
     first force evaluation; the token's own overlap E stays live.
@@ -64,12 +65,23 @@ def split_stack(model, N, dt, policy_index, ln_once, freeze, xi_freeze=False, ph
     first substep, so the wells' quadratic is frozen there together with its
     linearisation point pm_h0 (and phi with it), exactly as the model's own
     substeps_per_layer path does; a plain cache of poisson_mode_quadratic
-    would pair the frozen force with the current point."""
+    would pair the frozen force with the current point.
+    topk_freeze (TKF, added 2026-11-08): V_phi's top-k source selection idx is
+    taken at the share's first force evaluation and reused by the later
+    substeps of the share; the sources' positions, the pair potential and the
+    soft weights y stay live, and the gate m is rebuilt from the frozen idx
+    exactly as _sparse_topk_indices builds it. router_off: the gate is
+    detached and y returned as zero, so the force loses the straight-through
+    router term (autograd and analytic paths alike) and keeps its value.
+    topk_churn: measure only -- per later substep of a share, the fraction of
+    each query's k sources (queries with at least k causal sources) that
+    were also selected at the share's first substep, in st['churn']."""
     L = model.cfg.L
     lis = [policy_index(j, N, L, 'hold') for j in range(N)]
     st = {'proj': True, 'start': True, 'calls': 0, 'cache': {}, 'fresh': 0,
           'inloop': False, 'xcalls': 0, 'xcache': {}, 'xfresh': 0,
-          'pcalls': 0, 'pcache': {}, 'pfresh': 0}
+          'pcalls': 0, 'pcache': {}, 'pfresh': 0,
+          'tcalls': 0, 'tcache': {}, 'tfresh': 0, 'tlate': 0, 'li': None, 'churn': []}
     has_pm = getattr(model, 'pm_mu', None) is not None
     orig_occ = model.poisson_mode_occupation if has_pm else None
 
@@ -88,6 +100,29 @@ def split_stack(model, N, dt, policy_index, ln_once, freeze, xi_freeze=False, ph
 
     def project(h):
         return orig_project(h) if st['proj'] else h
+
+    orig_topk = model._sparse_topk_indices
+
+    def topk(pi, causal, T, return_soft=False):
+        idx, m_g, y = orig_topk(pi, causal, T, return_soft=True)
+        if (topk_freeze or topk_churn) and st['inloop']:
+            k = st['tcalls']; st['tcalls'] += 1
+            if st['start'] or k not in st['tcache']:
+                st['tcache'][k] = idx
+                st['tfresh'] += 1
+            else:
+                ref = st['tcache'][k]
+                if topk_churn:
+                    q = torch.arange(idx.shape[1], device=idx.device) >= idx.shape[-1]
+                    same = (idx.unsqueeze(-1) == ref.unsqueeze(-2)).any(-1).to(torch.float64).mean(-1)
+                    st['churn'].append((st['li'], float(same[:, q].mean())))
+                if topk_freeze:
+                    st['tlate'] += 1
+                    idx = ref
+                    m_g = gate(idx, y, causal)
+        if router_off:
+            m_g, y = m_g.detach(), torch.zeros_like(y)
+        return (idx, m_g, y) if return_soft else (idx, m_g)
 
     def htl(xis, h, *, comps=None):
         k = st['calls']; st['calls'] += 1
@@ -114,7 +149,8 @@ def split_stack(model, N, dt, policy_index, ln_once, freeze, xi_freeze=False, ph
         for j, li in enumerate(lis):
             st['start'] = j == 0 or lis[j - 1] != li
             st['proj'] = (not ln_once) or j == N - 1 or lis[j + 1] != li
-            st['calls'] = st['xcalls'] = st['pcalls'] = 0
+            st['calls'] = st['xcalls'] = st['pcalls'] = st['tcalls'] = 0
+            st['li'] = li
             st['inloop'] = True
             if pmq_freeze and st['start']:
                 model._flow_ctx = {}
@@ -133,9 +169,12 @@ def split_stack(model, N, dt, policy_index, ln_once, freeze, xi_freeze=False, ph
 
     orig_sf, orig_dt = model._stack_forward, model.cfg.dt
     model._stack_forward, model.cfg.dt = stack, dt
-    saved = {(o, k): o.__dict__[k] for o, k in ((model, '_project'), (vt, 'harmonic_terms_lowrank'),
-                                                 (model, 'poisson_mode_occupation')) if k in o.__dict__}
+    wrapped = ((model, '_project'), (vt, 'harmonic_terms_lowrank'), (model, 'poisson_mode_occupation'),
+               (model, '_sparse_topk_indices'))
+    saved = {(o, k): o.__dict__[k] for o, k in wrapped if k in o.__dict__}
     model._project, vt.harmonic_terms_lowrank = project, htl
+    if topk_freeze or router_off or topk_churn:
+        model._sparse_topk_indices = topk
     hook = model.xi_module.register_forward_hook(xi_hook)
     if has_pm:
         model.poisson_mode_occupation = occupation
@@ -145,12 +184,24 @@ def split_stack(model, N, dt, policy_index, ln_once, freeze, xi_freeze=False, ph
         hook.remove()
         model._flow_ctx = None
         model._stack_forward, model.cfg.dt = orig_sf, orig_dt
-        for o, k in ((model, '_project'), (vt, 'harmonic_terms_lowrank'), (model, 'poisson_mode_occupation')):
+        for o, k in wrapped:
             if (o, k) in saved:                     # an instance wrapper was there: put it back
                 setattr(o, k, saved[(o, k)])
             else:
                 o.__dict__.pop(k, None)
         assert model._project == orig_project and vt.harmonic_terms_lowrank == orig_htl
+        assert model._sparse_topk_indices == orig_topk
+
+
+def gate(idx, y, causal):
+    """The straight-through gate at given indices, built as _sparse_topk_indices
+    builds it: value m_hard (1 on causal sources), gradient k * grad y."""
+    causal_exp = causal.unsqueeze(0).expand_as(y) if causal.dim() == 2 else causal
+    causal_g = causal_exp.gather(-1, idx)
+    m_hard_g = torch.ones_like(idx, dtype=y.dtype) * causal_g.to(y.dtype)
+    y_g = y.gather(-1, idx) * causal_g.to(y.dtype)
+    kf = float(idx.shape[-1])
+    return (m_hard_g - kf * y_g).detach() + kf * y_g
 
 
 if __name__ == '__main__':

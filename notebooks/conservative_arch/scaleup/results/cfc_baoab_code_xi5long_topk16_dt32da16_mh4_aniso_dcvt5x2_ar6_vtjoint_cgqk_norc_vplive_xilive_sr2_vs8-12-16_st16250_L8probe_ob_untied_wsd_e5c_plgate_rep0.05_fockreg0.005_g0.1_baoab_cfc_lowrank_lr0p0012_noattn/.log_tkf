@@ -1,0 +1,99 @@
+checkpoint: fock_cfc_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x2_ar6_vtjoint_cgqk_norc_vplive_xilive_sr2_vs8-12-16_st16250_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_lr0p0012_noattn_step18000_best.pt  (code validation tokens /Users/dimitargueorguiev/Downloads/semsimula_code_gpt2/data/code_val_2M.npy); vphi_analytic_force=False, vphi_grad_path=live, top_k=16
+CHECK  N=8: as trained vs Cell 6b-7 _fom_stack, max |d logit| 0.0e+00
+CHECK  N=9: as trained vs Cell 6b-7 _fom_stack, max |d logit| 0.0e+00
+CHECK  N=8: top-k frozen vs the trained model, max |d logit| 0.0e+00
+CHECK  N=8: per-layer flow vs the trained model, max |d logit| 0.0e+00
+CHECK  N=8: all frozen vs the trained model, max |d logit| 0.0e+00
+       N=8: router off vs the trained model, max |d logit| 1.89e+00 (a different model; measured below)
+CHECK  N=32 top-k frozen: fresh / reused selections = 8 / 24 (expected 8 / 24)
+CHECK  N=32 all frozen: fresh / reused selections = 8 / 24 (expected 8 / 24)
+CHECK  rebuilt gate vs _sparse_topk_indices over 8 calls: max |d| 0.0e+00
+CHECK  layer 0: autograd vs analytic pair force in float64, router on 1.8e-15, router off 6.7e-16 (max rel)
+CHECK  layer 1: autograd vs analytic pair force in float64, router on 9.3e-15, router off 5.3e-16 (max rel)
+CHECK  layer 2: autograd vs analytic pair force in float64, router on 1.0e-14, router off 4.6e-16 (max rel)
+CHECK  layer 3: autograd vs analytic pair force in float64, router on 2.0e-14, router off 4.3e-16 (max rel)
+CHECK  layer 4: autograd vs analytic pair force in float64, router on 2.4e-14, router off 5.5e-16 (max rel)
+CHECK  layer 5: autograd vs analytic pair force in float64, router on 2.9e-14, router off 3.3e-16 (max rel)
+CHECK  layer 6: autograd vs analytic pair force in float64, router on 2.0e-14, router off 2.8e-16 (max rel)
+CHECK  layer 7: autograd vs analytic pair force in float64, router on 7.5e-15, router off 5.1e-16 (max rel)
+CHECK  N=8: the trained model after the float64 round trip, max |d logit| 0.0e+00
+-> checks PASS
+
+ROUTER TERM at the trained N = 8 (2 x 512 tokens, at each force evaluation point): |f(router on) - f(router off)| / |f(router on)| of the V_phi force, per token
+   layer 0: median 0.006 (p90 0.110); |f_pair| median 0.0227, |f_router| median 0.000159
+   layer 1: median 0.005 (p90 0.225); |f_pair| median 0.00459, |f_router| median 2.38e-05
+   layer 2: median 0.006 (p90 0.256); |f_pair| median 0.00426, |f_router| median 2.25e-05
+   layer 3: median 0.006 (p90 0.325); |f_pair| median 0.00977, |f_router| median 6.1e-05
+   layer 4: median 0.008 (p90 0.359); |f_pair| median 0.023, |f_router| median 0.000199
+   layer 5: median 0.000 (p90 0.269); |f_pair| median 0.0336, |f_router| median 2.21e-06
+   layer 6: median 0.000 (p90 0.089); |f_pair| median 0.0562, |f_router| median 1.93e-06
+   layer 7: median 0.019 (p90 0.432); |f_pair| median 0.15, |f_router| median 0.00203
+
+CHURN, as trained (2 x 512 tokens): fraction of a query's 16 sources also selected at its share's first substep, mean over queries, per later substep
+   N=16: L0 0.830  L1 0.947  L2 0.953  L3 0.951  L4 0.956  L5 0.941  L6 0.931  L7 0.853
+   N=32: L0 0.902/0.885/0.864  L1 0.975/0.958/0.943  L2 0.978/0.952/0.926  L3 0.968/0.942/0.919  L4 0.977/0.947/0.927  L5 0.970/0.935/0.903  L6 0.966/0.936/0.900  L7 0.944/0.886/0.817
+
+GATE 3: PPL at N steps of dt = T/N, then the penalty ln(PPL_N / PPL_8) in nats (against the arm's own N = 8)
+      as trained N=8: 4.813  (170 s)
+      as trained N=12: 4.776  (432 s)
+      as trained N=16: 4.817  (786 s)
+      as trained N=24: 4.998  (1307 s)
+      as trained N=32: 5.218  (1817 s)
+   as trained                 PPL N=8:4.813  N=12:4.776  N=16:4.817  N=24:4.998  N=32:5.218
+                              pen N=12:-0.008  N=16:+0.001  N=24:+0.038  N=32:+0.081
+      top-k frozen N=8: 4.813  (1817 s)
+      top-k frozen N=12: 4.777  (1992 s)
+      top-k frozen N=16: 4.818  (2228 s)
+      top-k frozen N=24: 4.999  (2581 s)
+      top-k frozen N=32: 5.221  (3213 s)
+   top-k frozen               PPL N=8:4.813  N=12:4.777  N=16:4.818  N=24:4.999  N=32:5.221
+                              pen N=12:-0.008  N=16:+0.001  N=24:+0.038  N=32:+0.081
+      top-k frozen, router off N=8: 4.818  (3374 s)
+      top-k frozen, router off N=12: 4.781  (3623 s)
+      top-k frozen, router off N=16: 4.821  (3955 s)
+      top-k frozen, router off N=24: 5.002  (4453 s)
+      top-k frozen, router off N=32: 5.224  (5129 s)
+   top-k frozen, router off   PPL N=8:4.818  N=12:4.781  N=16:4.821  N=24:5.002  N=32:5.224
+                              pen N=12:-0.008  N=16:+0.001  N=24:+0.037  N=32:+0.081
+      per-layer flow N=8: 4.813  (5129 s)
+      per-layer flow N=12: 6.973  (5388 s)
+      per-layer flow N=16: 4.962  (5736 s)
+      per-layer flow N=24: 4.980  (6251 s)
+      per-layer flow N=32: 4.982  (6932 s)
+   per-layer flow             PPL N=8:4.813  N=12:6.973  N=16:4.962  N=24:4.980  N=32:4.982
+                              pen N=12:+0.371  N=16:+0.031  N=24:+0.034  N=32:+0.035
+      all frozen N=8: 4.813  (6932 s)
+      all frozen N=12: 6.977  (7193 s)
+      all frozen N=16: 4.962  (7544 s)
+      all frozen N=24: 4.981  (8055 s)
+      all frozen N=32: 4.984  (8731 s)
+   all frozen                 PPL N=8:4.813  N=12:6.977  N=16:4.962  N=24:4.981  N=32:4.984
+                              pen N=12:+0.371  N=16:+0.031  N=24:+0.034  N=32:+0.035
+
+PAIRED against as trained: penalty difference (arm minus as trained), mean and SD over the 12 batches; share of the as-trained penalty removed
+   top-k frozen               N=12: +0.000 (SD 0.000, +1%)  N=16: +0.000 (SD 0.000, -12%)  N=24: +0.000 (SD 0.001, -1%)  N=32: +0.001 (SD 0.000, -1%)
+   top-k frozen, router off   N=12: -0.000 (SD 0.001, -2%)  N=16: -0.000 (SD 0.001, +31%)  N=24: -0.000 (SD 0.002, +1%)  N=32: -0.000 (SD 0.002, +0%)
+PAIRED against the per-layer flow (all frozen minus per-layer flow):
+   all frozen                 N=12: +0.001 (SD 0.001)  N=16: +0.000 (SD 0.000)  N=24: +0.000 (SD 0.000)  N=32: +0.000 (SD 0.001)
+ROUTER OFF at the trained N = 8: loss +0.0012 nats against the trained model (SD over batches 0.0020)
+
+wrote /Users/dimitargueorguiev/git/ml/semsimula-paper/notebooks/conservative_arch/scaleup/debug/../results/cfc_baoab_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x2_ar6_vtjoint_cgqk_norc_vplive_xilive_sr2_vs8-12-16_st16250_L8probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_lr0p0012_noattn/topk_freeze_attribution_k2-l8-r6-vs-code_output.txt
+     8893.59 real     62624.27 user      5854.57 sys
+         19359567872  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+           700397183  page reclaims
+                   0  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                   1  voluntary context switches
+            40728775  involuntary context switches
+     104795059788526  instructions retired
+     147541019871195  cycles elapsed
+          5431521280  peak memory footprint
+EXIT Sun Nov  8 16:42:13 EST 2026

@@ -5199,6 +5199,52 @@ Reading of the calls: SR4a-CODE refined inside its trained set and not beyond it
 - **Published 2026-11-08 (author asked):** `dimitarpg13/semsimula-ladder-live-code-d384-l8-none-norc-sr2-k2-r6-vs8-12-16`, public, 32 files, the step-18,000 checkpoint without optimizer state (sha256 equal to the local `.published` copy); added to the depth-on-code collection after K2-L8-R6-CODE, collection description updated.
 - **Still to run:** Cell 8; `vtheta_well_probe.py` on all eight layers; `xi_reach.py`; the copy split; the well-logit gap of the final model against K2-L8-R6-CODE's (the open question above).
 
+<a name="p-tkf-attribution"></a>**TKF-A, registered 2026-11-08 before the run: how much of the whole-stack refinement penalty is V_φ re-selecting its sources? (Author's go-ahead the same day; CPU, no training.)** The pair potential sums V_φ over each token's top-k sources (k = 16), chosen by the score head at every force evaluation. The selection is piecewise constant in the state, so it is the one part of the force that is not the gradient of one smooth potential; the straight-through router term (the gate's gradient through the score head) is the measured exception to per-token conservativity. Refined to N > L, every substep of a trained layer re-selects. TKF-A asks how much of the refinement penalty that re-selection carries, on K2-L8-R6-CODE (fixed step; Cell 6b-7 penalty 0.251, 0.499, 1.279, 1.726 at N = 12, 16, 24, 32) and K2-L8-R6-VS-CODE (trained at N ∈ {8, 12, 16}), both at their step-18,000 checkpoints.
+
+- **Harness.** `debug/topk_freeze_attribution.py <out> <folder> ckpt=<file> name=<arm>`, Gate 3 under the `hold` walk at T = 8, N = 8, 12, 16, 24, 32, on Cell 6b-7's 12 batches of 4 × 512 code tokens. Five arms through `refinement_ln_linearisation_split.split_stack`, which gains three switches (`topk_freeze`, `router_off`, `topk_churn`; off by default, and FLOW-R's checks on K2-L8-R6-VS-CODE are unchanged with them):
+
+  | arm | what changes | at N = 8 |
+  | --- | --- | --- |
+  | as trained | nothing (Cell 6b-7's Gate 3) | the trained model |
+  | top-k frozen | the substeps of one trained layer reuse the selection made at its first substep; the sources' positions, V_φ and the soft weights stay live, and the gate is rebuilt from the frozen indices as `_sparse_topk_indices` builds it | identical, checked exactly |
+  | top-k frozen, router off | the same, and the force drops the router term: at fixed context and selection it is an exact gradient | a different model, measured |
+  | per-layer flow | FLOW-R's arm (one LayerNorm per layer; quadratic and ξ frozen per layer; top-k live), on these batches | identical, checked exactly |
+  | all frozen | per-layer flow plus top-k frozen | identical, checked exactly |
+
+  Also at N = 8, on the first two sequences: the router term's size, \|f(router on) − f(router off)\| / \|f(router on)\| per token at every force evaluation point; and the churn at N = 16 and 32 (as trained), the fraction of a query's 16 sources also selected at its layer's first substep.
+- **Checks (run on K2-L8-R6-VS-CODE before this registration; all pass).** Switches off equal Cell 6b-7's `_fom_stack` at N = 8 and 9, max \|Δ logit\| 0; top-k frozen, per-layer flow and all frozen equal the trained model at N = 8, 0; at N = 32 the frozen arms make 8 fresh selections and reuse them 24 times; the rebuilt gate equals the model's own, 0; the pair force agrees between the autograd path (the harness's) and the analytic path, router on and off, in float64 to 3 × 10⁻¹⁴ relative. Seen before registration: router off moves the trained model's logits by up to 1.89 at N = 8 on the checks' 2 × 256 tokens.
+- **Calls** (penalty = ln(PPL_N / PPL_8) of the arm, on these batches; "removes" = 1 − arm penalty / as-trained penalty at the same N):
+
+  | call | prediction | p |
+  | --- | --- | --- |
+  | TF-1 | on K2-L8-R6-CODE, top-k frozen removes under a quarter of the as-trained penalty at N = 16 | 65% |
+  | TF-2 | on K2-L8-R6-VS-CODE, top-k frozen removes under half of the as-trained penalty at N = 32 | 60% |
+  | TF-3 | router off raises the loss at N = 8 by more than 0.05 nats on both models | 55% |
+  | TF-4 | inside the per-layer flow, freezing top-k changes the penalty by at most 0.02 nats at every N ≥ 16, on both models | 70% |
+
+  Reasoning: the per-layer flow already re-selects at every substep and still settles within 0.034 (VS) and 0.059 (R6) of the trained step, so re-selection should cost little once LayerNorm and ξ are held per layer (TF-4), and most of R6's whole-stack penalty should belong to those (TF-1, TF-2). TF-3 rests on the logit shift seen in the checks.
+- **What follows.** If top-k frozen removes a large share (TF-1 misses), Phase 2 trains a fixed-step and a variable-step arm with the selection frozen per layer and the router term off (TKF-R6, TKF-VS), so the trained model is per-token conservative at fixed context. If it removes little, freezing the selection is a conservativity choice to weigh on its own merits, not a refinement repair.
+
+<a name="p-tkf-attribution-result"></a>**Result, TKF-A (2026-11-08): re-selecting V_φ's sources carries none of the refinement penalty, on either model. Dropping the router term costs nothing at N = 8 and removes about a tenth of the fixed-step model's penalty at N = 24 and 32, and nothing of the variable-step model's. TF-1, TF-2 and TF-4 hit; TF-3 misses.** The calls were registered before any Gate 3 number and not confirmed by the author; they are scored as registered. CPU, one model at a time, one sequence per forward (`micro=1`): K2-L8-R6-CODE 2.4 h, K2-L8-R6-VS-CODE 2.5 h, peak memory 19.2 and 19.4 GB. Outputs `topk_freeze_attribution_{k2-l8-r6-code,k2-l8-r6-vs-code}{_output.txt,.json}` in each arm's results folder. Every check passed on both models. The as-trained arm reproduces Cell 6b-7's Gate 3 to the printed precision on both (perplexity 4.740 and 4.813 at N = 8).
+
+- **Penalty ln(PPL_N / PPL_8) in nats** (each arm against its own N = 8; the router-off arm's N = 8 is 4.740 for K2-L8-R6-CODE and 4.818 for K2-L8-R6-VS-CODE):
+
+  | arm | R6, N = 12 | 16 | 24 | 32 | VS, N = 12 | 16 | 24 | 32 |
+  | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+  | as trained | 0.251 | 0.499 | 1.279 | 1.727 | −0.008 | 0.001 | 0.038 | 0.081 |
+  | top-k frozen | 0.250 | 0.495 | 1.287 | 1.735 | −0.008 | 0.001 | 0.038 | 0.081 |
+  | top-k frozen, router off | 0.251 | 0.490 | 1.153 | 1.590 | −0.008 | 0.001 | 0.037 | 0.081 |
+  | per-layer flow | 0.425 | 0.066 | 0.059 | 0.060 | 0.371 | 0.031 | 0.034 | 0.035 |
+  | all frozen | 0.424 | 0.068 | 0.062 | 0.064 | 0.371 | 0.031 | 0.034 | 0.035 |
+
+- **Selection frozen.** Paired against as trained over the 12 batches: K2-L8-R6-CODE −0.004 (SD 0.003) at N = 16, +0.008 and +0.009 at N = 24 and 32 (SD 0.009 and 0.015); K2-L8-R6-VS-CODE within 0.001 at every N. **TF-1 hit** (1% of the N = 16 penalty removed); **TF-2 hit** (none of the N = 32 penalty removed).
+- **Router term off.** At N = 8 it changes the loss by −0.0000 nats (SD 0.0003) on K2-L8-R6-CODE and +0.0012 (SD 0.0020) on K2-L8-R6-VS-CODE, although it moves single logits by up to 2.0 and 1.9: **TF-3 miss**. Beyond the trained step it helps the fixed-step model a little: −0.009 (SD 0.005) at N = 16, −0.126 (SD 0.075) at N = 24, −0.137 (SD 0.048) at N = 32, that is 2%, 10% and 8% of the penalty. On the variable-step model it changes nothing at any N. The router-off arm also freezes the selection; since freezing alone removes nothing, the gain is put down to the router term (router off with the selection live was not run).
+- **Inside the per-layer flow** freezing the selection changes the penalty by at most +0.003 nats (K2-L8-R6-CODE; SD 0.001) and +0.001 (K2-L8-R6-VS-CODE) at every N ≥ 16: **TF-4 hit**. The flow limits on these batches, 0.060 and 0.035, match FLOW-R's 0.059 and 0.034 on its own. On K2-L8-R6-CODE the per-layer flow removes 87%, 95% and 97% of the whole-stack penalty at N = 16, 24 and 32.
+- **The router term's size** (\|f(router on) − f(router off)\| / \|f(router on)\| of the V_φ force per token, at each force evaluation point at N = 8, 2 × 512 tokens). K2-L8-R6-CODE: median at most 0.004 in every layer, 90th percentile 0.05–0.08 in layers 0–5 and at most 0.003 in layers 6 and 7. K2-L8-R6-VS-CODE: median at most 0.019, 90th percentile 0.09–0.43 (layer 7 0.43, layers 3 and 4 0.33 and 0.36). Variable-step training made the term heavier in the tail without making it matter to the loss.
+- **Churn** (as trained: the fraction of a query's 16 sources that were also selected at its layer's first substep). K2-L8-R6-CODE: layer 0 keeps 0.66 after one substep at N = 16 and 0.57 after three at N = 32; layers 1–6 keep 0.93–0.96 after one; layer 7 0.90, falling to 0.77. K2-L8-R6-VS-CODE: layer 0 keeps 0.83 and 0.86, layers 1–6 0.93–0.96, layer 7 0.85, falling to 0.82. A third of layer 0's sources change within one substep of the fixed-step model, and freezing them still changes nothing.
+- **Reading.** The fixed-step model's whole-stack failure is not a selection effect: it sits in what the per-layer flow holds per layer (the LayerNorm projection after every substep, ξ and the quadratic), which removes nearly all of it. The top-k selection is a conservativity question, not a refinement one. Frozen per layer, it makes the V_φ force without the router term an exact gradient at fixed context, at no cost at N = 8 and with no loss of refinement on either model, as evaluated here.
+- **For Phase 2.** TF-1 hit, so by the registration freezing the selection is a conservativity choice to weigh on its own merits. A trained arm with the router term off meets one more problem. The gate's forward value is the hard mask, so the score head reaches the loss only through the router term; with the term off in training the score head gets no gradient and the selection stays at its initialisation. A trainable version needs the selection learned some other way: an auxiliary loss on the score head, a soft (dense) selection, or a trained score head frozen. That is the author's decision.
+
 <a name="p-vphi-force-ckpt"></a>**V_φ-force checkpointing (Cell 0 `VPHI_FORCE_CHECKPOINT`), built and verified 2026-11-02 (author's go-ahead the same day).** A memory switch, not an arm. It is meant to let an L = 8 code arm train without layer checkpointing at microbatch 16 × 2, the microbatch of every code arm.
 
 - **Why.** Without layer checkpointing, L = 8 does not fit an 80 GB card, even at K = 2.

@@ -1,0 +1,13 @@
+RO-COST, the router term at the trained step: k2-l8-r6-code  ...e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_lr0p0012_noattn  (L = 8, dt = 1)
+   checkpoint step18000; 48 x 4 x 512 tokens (Cell 6b-7's seed; its 12 batches first); the model's own forward at N = L; analytic V_phi force
+CHECK  analytic vs autograd V_phi force, loss on one sequence: 1.877041 vs 1.877041 (rel 6.4e-08)
+CHECK  router off keeps the selection and the gate value, zeroes the soft weights: True
+CHECK  layer 0, float64: analytic vs autograd, router on 1.0e-15, router off 4.2e-16, router term itself 3.8e-14; router term / pair force max 2.57e-02
+CHECK  loss after the float64 round trip unchanged: |d| 0.0e+00
+-> checks PASS
+
+ROUTER OFF at N = 8 (48 batches, 98,304 tokens), paired by batch:
+   loss on 1.62800 (PPL 5.0937), off 1.62797 (PPL 5.0935)
+   d loss (off - on) -0.00004 nats, SD over batches 0.00027, SE 0.00004, 95% interval -0.00011 .. +0.00004; worst batch +0.00059
+   d loss on Cell 6b-7's 12 batches -0.00002 (SD 0.00033)
+   KL(on || off) per token: mean 1.26e-04, worst batch 2.79e-03; top-1 prediction changed on 0.178% of tokens; largest |d logit| 13.67
