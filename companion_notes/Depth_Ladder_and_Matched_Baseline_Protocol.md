@@ -5245,6 +5245,29 @@ Reading of the calls: SR4a-CODE refined inside its trained set and not beyond it
 - **Reading.** The fixed-step model's whole-stack failure is not a selection effect: it sits in what the per-layer flow holds per layer (the LayerNorm projection after every substep, ξ and the quadratic), which removes nearly all of it. The top-k selection is a conservativity question, not a refinement one. Frozen per layer, it makes the V_φ force without the router term an exact gradient at fixed context, at no cost at N = 8 and with no loss of refinement on either model, as evaluated here.
 - **For Phase 2.** TF-1 hit, so by the registration freezing the selection is a conservativity choice to weigh on its own merits. A trained arm with the router term off meets one more problem. The gate's forward value is the hard mask, so the score head reaches the loss only through the router term; with the term off in training the score head gets no gradient and the selection stays at its initialisation. A trainable version needs the selection learned some other way: an auxiliary loss on the score head, a soft (dense) selection, or a trained score head frozen. That is the author's decision.
 
+<a name="p-router-off-cost"></a>**RO-COST (2026-11-08; descriptive, CPU): dropping V_φ's straight-through router term at evaluation changes the loss of every code model by at most 0.0013 nats, in either direction.** The author's request, to back a stronger conservativity statement in the book before the v6.2 release. TKF-A (`p-tkf-attribution-result`) had measured the router term's cost on two models and 12 batches. `debug/router_off_cost.py <out> <folder> name=<arm> [ckpt=…]`: the model's own forward at its trained step count, with the analytic V_φ force as in training, run twice per sequence. "Router on" is the trained model. "Router off" detaches the gate and zeroes the soft weights, so the router term is exactly zero while the selection and the gate's value are kept. 48 batches of 4 × 512 code validation tokens at Cell 6b-7's seed (98,304 tokens; its 12 batches first), paired by batch. The best checkpoints: step 18,000 for the L = 4 and 8 models; SO-CODE's and SR4a-CODE's `_best.pt`. One model at a time, peak memory 5.4 GB. Outputs `router_off_cost_<arm>{_output.txt,.json}` in each arm's results folder.
+
+- **Checks (all pass on all seven).** The analytic and autograd forces give the same loss on one sequence, relative 1e-7. At one layer's input in float64, the switch keeps the selection and the gate's value; the analytic and autograd pair forces agree with the router term on, off, and in their difference, to 1e-14. A float64 round trip leaves the model unchanged. On Cell 6b-7's 12 batches, the router-on and router-off losses reproduce TKF-A's as-trained and router-off losses at N = 8, max 3e-6 nats per batch (analytic against autograd path).
+- **Router off against router on** (Δ loss = off − on, mean over the 48 batches, with its 95% interval; KL(on ‖ off) per token, mean; the share of tokens whose top-1 prediction changes; the largest logit change):
+
+  | model | L | loss on | Δ loss, router off (nats) | 95% interval | worst batch | KL per token | top-1 changed | largest \|Δ logit\| |
+  | --- | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: |
+  | SO-CODE | 2 | 1.69891 | −0.00127 | −0.00158 to −0.00096 | +0.00100 | 1.2e-03 | 0.815% | 14.22 |
+  | SR4a-CODE | 2 | 1.72563 | −0.00069 | −0.00094 to −0.00044 | +0.00080 | 7.3e-04 | 0.435% | 12.04 |
+  | L4-CODE | 4 | 1.61613 | −0.00057 | −0.00085 to −0.00029 | +0.00117 | 5.8e-04 | 0.553% | 11.62 |
+  | L8-CODE | 8 | 1.59511 | +0.00022 | −0.00002 to +0.00046 | +0.00273 | 3.5e-04 | 0.274% | 7.76 |
+  | K2-L8-CODE | 8 | 1.64469 | −0.00009 | −0.00031 to +0.00013 | +0.00201 | 3.9e-04 | 0.498% | 6.48 |
+  | K2-L8-R6-CODE | 8 | 1.62800 | −0.00004 | −0.00011 to +0.00004 | +0.00059 | 1.3e-04 | 0.178% | 13.67 |
+  | K2-L8-R6-VS-CODE | 8 | 1.64546 | +0.00064 | +0.00023 to +0.00105 | +0.00649 | 9.4e-04 | 0.526% | 9.12 |
+
+- **Reading.**
+  - The router term matters to individual tokens: a fraction of a percent of top-1 predictions change, and single logits move by up to 14.
+  - It does not matter to the model's loss. Dropping it lowers the loss on SO-CODE, SR4a-CODE and L4-CODE (by 0.0013, 0.0007 and 0.0006 nats; the intervals exclude zero), raises it only on K2-L8-R6-VS-CODE (+0.0006), and leaves the other three within their noise.
+  - So a trained model evaluated without the router term is per-token conservative at fixed context and fixed selection, at no cost to its perplexity on code.
+  - The selection itself is still piecewise constant, so the potential jumps where a token's top-k sources change; only a soft selection removes that.
+  - Training without the term is a different matter: with it off, the score head gets no gradient (`p-tkf-attribution-result`).
+- **In the book (v6.2):** §7 (the per-token conservativity statement, `07_lagrangian.tex`) and the router-term paragraph of §19.6.1 (`subsubsec:parf-vphi-analytic`).
+
 <a name="p-vphi-force-ckpt"></a>**V_φ-force checkpointing (Cell 0 `VPHI_FORCE_CHECKPOINT`), built and verified 2026-11-02 (author's go-ahead the same day).** A memory switch, not an arm. It is meant to let an L = 8 code arm train without layer checkpointing at microbatch 16 × 2, the microbatch of every code arm.
 
 - **Why.** Without layer checkpointing, L = 8 does not fit an 80 GB card, even at K = 2.
