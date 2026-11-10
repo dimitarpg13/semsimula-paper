@@ -5268,6 +5268,27 @@ Reading of the calls: SR4a-CODE refined inside its trained set and not beyond it
   - Training without the term is a different matter: with it off, the score head gets no gradient (`p-tkf-attribution-result`).
 - **In the book (v6.2):** §7 (the per-token conservativity statement, `07_lagrangian.tex`) and the router-term paragraph of §19.6.1 (`subsubsec:parf-vphi-analytic`).
 
+<a name="p-c5-code-setup"></a>**C5 on code, PM2-CODE and FO-b-PM2-CODE: set up 2026-11-09 (author: "let us wrap the CODE testing with this last pair").** The two-well pair of the code set (MS5, registered 2026-10-26), which waited behind the depth runs. It tests on code what two wells did on OpenWebText and TinyStories: there, they closed the first-order gap. On code the gap without wells is the largest measured (FO-b-CODE +9.2% against SO-CODE), and book v6.2 limits its "with wells, first order matches or leads" to the other two corpora.
+
+- **Cell 0, PM2-CODE:** SO-CODE's nine changes plus the two wells of PM2-PMX16 (11 changes):
+  ```
+  REVERSE_CHANNEL=False, VPHI_GRAD_PATH='live', XI_GRAD_PATH='live',
+  LOWRANK_DAMPED_FLOW=True,                                # SR2
+  POISSON_MODES=2, POISSON_WELLS_EXACT=True,               # PM2-PMX16's wells
+  VPHI_ANALYTIC_FORCE=True, LAYER_CHECKPOINT=False,        # speed switches, same arithmetic
+  CORPUS='code', LADDER_STEPS=16_250, EXTRA_FLOOR_STEPS=3_000
+  ```
+  Tag `xi5long_…_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_pm2_pmx16_sr2_st16250_L2probe…idt4_lr0p0012_noattn`.
+- **Cell 0, FO-b-PM2-CODE:** the same plus `FIRST_ORDER_OVERDAMPED=True` (12 changes). Tag `…xilive_pm2_pmx16_sr2_fob_st16250_L2probe…`.
+- **Checked on CPU (2026-11-09; the notebook at origin/main, last changed in `15c236d`).**
+  - Executing Cell 0 with these changes gives both tags. The same code reproduces SO-CODE's and FO-b-CODE's tags exactly, and `copy_split.tag_repl` maps both new tags back to their Cell 0s.
+  - Building each arm fresh through Cells 0–5b gives 76,572,885 trainable parameters (SO-CODE +776, the two wells), and a training step on 2 × 512 code tokens is finite in loss and every gradient.
+  - The wells' depth `pm_depth` starts at zero, so at initialisation only it receives a gradient; the centres, widths and occupation logits follow once it grows, as in PM2-PMX16 and PM2-TS.
+  - At initialisation the two twins already differ (max |Δ logit| 4.5e-3).
+- **Run.** PM2-CODE first, then FO-b-PM2-CODE, each fresh from step 0 at seed 0, so both pair by step with SO-CODE and FO-b-CODE. 19,250 steps, about 6–7 h each on one A100 80 GB, without layer checkpointing (SO-CODE peaked at 46 GB in evaluation).
+- **Calls (binding since 2026-10-26, the MS5 table under "The code set (MS5)", after `p-gpt2-code`; unchanged):** CODE3 (65%), first order matches with wells: FO-b-PM2-CODE within ±2% of PM2-CODE, paired by step. CODE4 (70%), the wells help first order more: log(FO-b-CODE / FO-b-PM2-CODE) exceeds log(SO-CODE / PM2-CODE). CODE5 (55%), the wells help at all: PM2-CODE settles more than 1% below SO-CODE. CODE1 hit, so the MS5 call (45%) is decided by CODE3. PMCS1 (60%, descriptive, the wells in the copy split) is still proposed and not confirmed by the author.
+- **After the runs:** Cells 7, 6b-7, 6b-15 and 6b-13; on CPU `pm_mode_usage.py`, `pm_static_landscape.py`, `mechanism_ablations.py`, the copy split and FLOW-R. FLOW-R's `code` kind does not yet freeze the wells' quadratic per layer, as the `pmx` kind does; it needs that extension before it runs on these two. Book: item (x) of §26.9, Table 49 and the abstract's "with two or more wells" sentence.
+
 <a name="p-vphi-force-ckpt"></a>**V_φ-force checkpointing (Cell 0 `VPHI_FORCE_CHECKPOINT`), built and verified 2026-11-02 (author's go-ahead the same day).** A memory switch, not an arm. It is meant to let an L = 8 code arm train without layer checkpointing at microbatch 16 × 2, the microbatch of every code arm.
 
 - **Why.** Without layer checkpointing, L = 8 does not fit an 80 GB card, even at K = 2.

@@ -50,7 +50,11 @@ if _k != 64:
     repl = repl + (("POISSON_MODES        = 64", f"POISSON_MODES        = {_k}"),)
 if KIND == 'fob-pmx':
     repl = repl + (("FIRST_ORDER_OVERDAMPED = False", "FIRST_ORDER_OVERDAMPED = True"),)
-model, g, _ = P.build(FOLDER, repl, ckpt=CKPT)
+if '_code_' in FOLDER:                     # 2026-11-10: a code arm, rebuilt from its tag (code_arm.py)
+    import code_arm
+    model, g, CKPT = code_arm.build(FOLDER, OUT, CKPT)
+else:
+    model, g, _ = P.build(FOLDER, repl, ckpt=CKPT)
 model.to('cpu'); model.eval(); model.cfg.use_layer_checkpoint = False
 assert bool(model.cfg.first_order_overdamped) == (KIND == 'fob-pmx') and model.cfg.poisson_wells_exact
 K = model.pm_depth.shape[1]; assert K == _k, (K, _k)

@@ -24,6 +24,9 @@ Usage: python3 refinement_flow_confirmation.py OUT_DIR FOLDER {f31|sr2|pm1|pmx|s
   copy_split.py does (copy_split.tag_repl), evaluated on the code validation tokens; checked against the
   model's own substeps_per_layer path. Step counts scale with the trained depth: N = L, 1.5L, 2L, 3L,
   4L, 6L, 8L, penalties against N = L (at L = 2 these are the original 2, 3, 4, 6, 8, 12, 16).
+  2026-11-10: also the first-order code arms and the code arms with wells (PM2-CODE, FO-b-PM2-CODE): a
+  pmx16 tag freezes the wells' quadratic as the pmx kind does (split_stack pmq_freeze), a fob tag runs the
+  first-order step as the fob kinds do; both are checked against the model's substeps_per_layer path.
   name=<stem>: the output's stem suffix (default: the kind).
   sr2-ts (2026-10-19): SR2's architecture trained on TinyStories (the FO series' SO-TS), built
   through the current notebook with CORPUS = 'tinystories' and the run's own validation tokens
@@ -95,7 +98,7 @@ if __name__ == '__main__':
             {'__name__': 'copy_split', '__file__': str(Path(__file__).parent / 'copy_split.py')}))
         sys.argv = _argv
         repl, _tag = CS.tag_repl(FOLDER)
-        assert 'sr2' in _tag.split('_') and 'fob' not in _tag.split('_'), _tag
+        assert 'sr2' in _tag.split('_'), _tag
         if not CKPT:
             _ck = [p.name for p in (Path.home() / 'Downloads' / FOLDER / 'checkpoints').glob('fock_cfc_*_best.pt')
                    if '_step' not in p.name]
@@ -105,7 +108,9 @@ if __name__ == '__main__':
         assert g.get('_variant_tag', _tag) == _tag, (g.get('_variant_tag'), _tag)
         g['val_ids'] = np.load(CS.VAL)               # the code validation tokens, not the harness's OpenWebText
         print(f'checkpoint: {CKPT}  (code validation tokens {CS.VAL})')
-        KIND_ARCH = 'sr2'
+        # 2026-11-10: the C5 pair. Wells integrated exactly (pmx16) freeze as the pmx kind; fob as the fob kinds
+        KIND_ARCH = 'pmx' if 'pmx16' in _tag.split('_') else 'sr2'
+        assert bool(getattr(model.cfg, 'first_order_overdamped', False)) == ('fob' in _tag.split('_'))
     elif KIND in ('sr2-ts', 'fo-ts'):
         sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'first_order_ablation/fo_series'))
         import importlib.util
@@ -153,7 +158,7 @@ if __name__ == '__main__':
     T = L * DT
     NS = tuple(int(f * L) for f in NS_FACTORS)
     PM = KIND == 'pm1'
-    PMX = KIND in ('pmx', 'fob-pmx')
+    PMX = KIND_ARCH == 'pmx'
     # PMX: phi is frozen by the flow context (with the wells' quadratic), not by split_stack's call-index cache
     FLOW = dict(ln_once=True, freeze=True, xi_freeze=True, phi_freeze=PM, pmq_freeze=PMX)
     TRAINED = dict(ln_once=False, freeze=False, xi_freeze=False, phi_freeze=False)
