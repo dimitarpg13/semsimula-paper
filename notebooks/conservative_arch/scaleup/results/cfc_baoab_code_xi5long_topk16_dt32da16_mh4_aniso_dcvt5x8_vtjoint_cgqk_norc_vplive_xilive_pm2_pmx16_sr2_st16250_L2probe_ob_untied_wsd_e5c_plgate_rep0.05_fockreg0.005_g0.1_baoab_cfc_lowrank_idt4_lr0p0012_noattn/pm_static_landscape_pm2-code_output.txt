@@ -1,1 +1,9 @@
 checkpoint: fock_cfc_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_pm2_pmx16_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_step18000_best.pt  (code validation tokens /Users/dimitargueorguiev/Downloads/semsimula_code_gpt2/data/code_val_2M.npy)
+WELLS: CLOCK OR FIXED LANDSCAPE? pmx  K = 2  (fock_cfc_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_pm2_pmx16_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_step18000_best.pt; 4 x 4 x 512 tokens, batch seed 20261009)
+   base perplexity 6.22
+   perplexity change by position bucket (paired by sequence; per-sequence spread in brackets)
+   variant                   all           t 0-15          t 16-63         t 64-127        t 128-255        t 256-511
+   static         +2.72% ( 1.42)   +25.35% (17.81)    +6.39% ( 7.14)    +2.02% ( 2.37)    +1.50% ( 1.89)    +1.56% ( 2.41)
+   static_128     +0.01% ( 0.16)    +0.00% ( 0.00)    +0.00% ( 0.00)    +0.00% ( 0.00)    -0.07% ( 0.29)    +0.05% ( 0.22)
+   off          +251.01% (25.89)   +11.20% ( 9.96)   +81.15% (22.06)  +173.45% (21.16)  +254.49% (30.99)  +352.23% (33.24)
+   base perplexity by bucket: t 0-15: 32.7, t 16-63: 10.5, t 64-127: 7.8, t 128-255: 6.4, t 256-511: 4.7

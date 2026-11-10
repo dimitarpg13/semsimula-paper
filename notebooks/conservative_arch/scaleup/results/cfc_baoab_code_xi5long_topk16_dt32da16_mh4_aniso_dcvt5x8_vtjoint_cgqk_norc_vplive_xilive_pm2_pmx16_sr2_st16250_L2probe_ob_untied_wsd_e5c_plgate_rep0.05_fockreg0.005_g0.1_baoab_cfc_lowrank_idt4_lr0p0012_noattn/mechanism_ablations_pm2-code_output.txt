@@ -1,1 +1,20 @@
 checkpoint: fock_cfc_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_pm2_pmx16_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_step18000_best.pt  (code validation tokens /Users/dimitargueorguiev/Downloads/semsimula_code_gpt2/data/code_val_2M.npy)
+   [base done]
+   [xi_swap done]
+   [xi_posmean done]
+   [vphi_off done]
+   [wells_swap done]
+   [wells_off done]
+   [content_swap done]
+   [xi_ctx_swap done]
+   [xi_ctx_posmean done]
+MECHANISM ABLATIONS: pmx  K = 2  (pm2_pmx16_sr2_st16250, fock_cfc_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_pm2_pmx16_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_step18000_best.pt; 4 x 4 x 512 tokens, batch seed 20261009)
+   base perplexity 6.22   xi channel alphas [0.423, 0.718, 0.916, 0.982, 0.998]
+   xi_swap       perplexity   1524.06   change +24408.08%  (per-sequence spread 71.79%, n = 16)
+   xi_posmean    perplexity    290.61   change +4573.32%  (per-sequence spread 51.80%, n = 16)
+   vphi_off      perplexity      6.39   change    +2.76%  (per-sequence spread 2.89%, n = 16)
+   wells_swap    perplexity      6.22   change    +0.04%  (per-sequence spread 0.31%, n = 16)
+   wells_off     perplexity     21.83   change  +251.01%  (per-sequence spread 25.89%, n = 16)
+   content_swap  perplexity   1532.87   change +24549.80%  (per-sequence spread 71.21%, n = 16)
+   xi_ctx_swap   perplexity     88.60   change +1324.84%  (per-sequence spread 42.05%, n = 16)
+   xi_ctx_posmean perplexity     17.46   change  +180.73%  (per-sequence spread 26.14%, n = 16)
