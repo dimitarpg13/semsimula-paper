@@ -66,7 +66,8 @@ ON = set()
 
 alphas = [float(a) for a in model.xi_module.alpha.detach()]
 CTX = 2
-assert len(alphas) == 5 and max(alphas[:CTX]) < 0.7 < min(alphas[CTX:]), alphas   # short channels first
+# short channels first; 2026-11-10: 0.8, not 0.7 -- on code the 4-token channel trains to alpha 0.70-0.72
+assert len(alphas) == 5 and max(alphas[:CTX]) < 0.8 < min(alphas[CTX:]), alphas
 orig_xi = model.xi_module.forward
 def xi_fwd(*a, **k):
     xis = orig_xi(*a, **k)

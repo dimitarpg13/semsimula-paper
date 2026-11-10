@@ -1,0 +1,18 @@
+checkpoint: fock_cfc_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_pm2_pmx16_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_step18000_best.pt  (code validation tokens /Users/dimitargueorguiev/Downloads/semsimula_code_gpt2/data/code_val_2M.npy)
+POISSON-MODE USAGE: pmx  K = 2  (pm2_pmx16_sr2_st16250, fock_cfc_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_pm2_pmx16_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_step18000_best.pt; 2 x 4 x 512 tokens, batch seed 20261009)
+LAYER 0
+   N_eff   1.9 of 2   N_80  2   per-token N_eff median  1.9 (p10  1.9, p90  2.0)
+   token specificity: total-variation distance of a token's mix from the average mix, median 0.014 (p90 0.066; 0 = every token feels the same mix, 1 = disjoint)
+   overlap E_v across tokens: coefficient of variation, median over modes 0.004; exponent kappa^2 |h - mu|^2 median 0.15 (p10 0.09, p90 0.22)
+   top-5 modes carry 100%; top-16 carry 100%
+   attractive depths 0% of modes, 0% of the force
+   position only (leave one sequence out): the wells' force explained R^2 0.9997, median cosine 1.0000; the occupations explained R^2 1.0000
+   half-lives of the N_80 modes: median 18.2 tokens (range 7.9-28.6); all modes median 18.2
+LAYER 1
+   N_eff   2.0 of 2   N_80  2   per-token N_eff median  2.0 (p10  2.0, p90  2.0)
+   token specificity: total-variation distance of a token's mix from the average mix, median 0.011 (p90 0.046; 0 = every token feels the same mix, 1 = disjoint)
+   overlap E_v across tokens: coefficient of variation, median over modes 0.021; exponent kappa^2 |h - mu|^2 median 0.68 (p10 0.45, p90 1.06)
+   top-5 modes carry 100%; top-16 carry 100%
+   attractive depths 100% of modes, 100% of the force
+   position only (leave one sequence out): the wells' force explained R^2 0.9994, median cosine 1.0000; the occupations explained R^2 0.9988
+   half-lives of the N_80 modes: median 18.2 tokens (range 7.9-28.6); all modes median 18.2
