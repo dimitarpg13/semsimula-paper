@@ -385,7 +385,24 @@ $$
 \lvert\mathbf{n}\rangle = \prod_v (\tilde{a}_v^\dagger)^{n_v}\lvert 0\rangle, \qquad \text{so that}\qquad \tilde{a}_v^\dagger\lvert\mathbf{n}\rangle = \lvert\mathbf{n} + \mathbf{e}_v\rangle, \qquad \tilde{a}_v\lvert\mathbf{n}\rangle = n_v \lvert\mathbf{n} - \mathbf{e}_v\rangle, \qquad (5.2)
 $$
 
-with $\mathbf{e}\_v$ the unit vector in direction $v$ (single-particle note (7.1), Doi–Peliti note (1.2)). Compare with (4.7) and (4.8): the $\sqrt{n!}$ has been dropped from the basis, and in consequence the creation operator acts with coefficient 1 and the annihilation operator with coefficient $n_v$. The commutator $[\tilde{a}\_v, \tilde{a}\_w^\dagger] = \delta_{vw}$ and the number operator $\tilde{a}\_v^\dagger\tilde{a}\_v$ are unchanged, because they belong to the algebra and not to the normalisation; the relation between the two bases is $\lvert\mathbf{n}\rangle_{\mathrm{DP}} = \prod_v\sqrt{n_v!} \lvert\mathbf{n}\rangle_{\mathrm{QM}}$, and pushing $a^\dagger$ through that rescaling turns $\sqrt{n+1}$ into 1 exactly.
+with $\mathbf{e}\_v$ the unit vector in direction $v$ (single-particle note (7.1), Doi–Peliti note (1.2)). Compare with (4.7) and (4.8): the $\sqrt{n!}$ has been dropped from the basis, and in consequence the creation operator acts with coefficient 1 and the annihilation operator with coefficient $n_v$. The relation between the two bases is $\lvert\mathbf{n}\rangle_{\mathrm{DP}} = \prod_v\sqrt{n_v!} \lvert\mathbf{n}\rangle_{\mathrm{QM}}$, and pushing $a^\dagger$ through that rescaling turns $\sqrt{n+1}$ into 1 exactly.
+
+**The commutator and the number operator survive this, and it is worth verifying rather than asserting**, since the coefficients of (5.2) are conspicuously lopsided. Work in one mode and drop the index. Recall that **operator products act from the right**, as in the composition $f\circ g$, so in $\tilde{a}\tilde{a}^\dagger$ the creation operator acts first. Recall also that the annihilator's coefficient reports the occupation of the state it acts *on*, not of the state it produces. Then
+
+$$
+\tilde{a} \tilde{a}^\dagger\lvert n\rangle = \tilde{a} \lvert n+1\rangle = (n+1)\lvert n\rangle, \qquad \tilde{a}^\dagger \tilde{a} \lvert n\rangle = \tilde{a}^\dagger n\lvert n-1\rangle = n\lvert n\rangle, \qquad (5.2a)
+$$
+
+the first product raising then lowering, the second lowering then raising, and the difference is $(n+1) - n = 1$. The second expression also exhibits the number operator, $\tilde{a}^\dagger\tilde{a}\lvert n\rangle = n\lvert n\rangle$, with integer eigenvalues as required of a count.
+
+The reason this is insensitive to the convention is that a commutator never sees one step; it sees the *product* of the coefficients along each of the two orderings, and the two conventions distribute the same products differently.
+
+| | raise then lower | lower then raise | difference |
+|---|---|---|---|
+| quantum, from (4.8) | $\sqrt{n+1}\cdot\sqrt{n+1} = n+1$ | $\sqrt{n}\cdot\sqrt{n} = n$ | 1 |
+| Doi–Peliti, from (5.2) | $1\cdot(n+1) = n+1$ | $n\cdot 1 = n$ | 1 |
+
+Quantum mechanics splits the combinatorial factor $n+1$ evenly as $\sqrt{n+1}$ in each direction, for the adjointness reason of §4.5; Doi–Peliti puts all of it on the annihilator and none on the creator, so that the coefficients match reaction rates as §5.4 requires. Same products, different split, same algebra. Structurally this is unavoidable: the two bases differ by a diagonal rescaling, which is a similarity transformation, and commutators are invariant under similarity transformations. The operators here are not merely analogous to the quantum ones, they are the same operators in a rescaled basis.
 
 Now encode the whole probability distribution as one vector,
 
@@ -401,7 +418,7 @@ $$
 \tilde{a}^\dagger \leftrightarrow \text{multiplication by } x, \qquad \tilde{a} \leftrightarrow \frac{d}{dx}, \qquad \Big[\frac{d}{dx},  x\Big] = 1, \qquad (5.4)
 $$
 
-and (5.2) reads $x\cdot x^n = x^{n+1}$ and $\frac{d}{dx}x^n = n x^{n-1}$, which are the Doi–Peliti rules exactly. Under this dictionary the state (5.3) becomes
+and (5.2) reads $x\cdot x^n = x^{n+1}$ and $\frac{d}{dx}x^n = n x^{n-1}$, which are the Doi–Peliti rules exactly. The commutator check (5.2a) becomes a single application of the product rule, $\frac{d}{dx}(xf) - x\frac{df}{dx} = (f + xf') - xf' = f$: differentiating a product is the commutation relation. Under this dictionary the state (5.3) becomes
 
 $$
 \lvert P\rangle \leftrightarrow \sum_n P(n) x^n, \qquad (5.5)
