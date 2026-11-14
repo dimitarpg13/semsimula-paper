@@ -26,13 +26,23 @@
 
 The v0 ceiling rests on a single hypothesis — that no mechanism grows the state space during inference. Nothing else lifts it: not more parameters, not RL signal, not a richer force vocabulary. And §8.2 of the bounds note names what does: with creation in place "the simulator can grow its memory linearly with input length".
 
-Three facts say the slot registers cannot be that mechanism, however their salience is retrained.
+**Which registers are meant.** Two different mechanisms in this programme are called registers, and the distinction matters here because the two fail for different reasons. The subject of the next three paragraphs is the **Fock register pool** of Fock-PARFLM (book §10.5.2; the `n_registers` slots of `parf/model_fock_parf_multixi.py`): a bank of $M$ content vectors carried at every token position, matched against the token and rewritten in place by the register write port. The *Poisson-mode registers* of the [PM1 note](Poisson_Mode_Registers_PM1.md) are a different object despite the shared word, a small bank of shared wells whose occupations are Poisson means; they are the "modes" of this section's title and are taken up at the end of this section.
 
-1. **The pool is fixed.** `n_registers` is a constructor constant and the per-position bank is $(B, T, M, d)$, so the state at position $t$ is $Md$ numbers whatever $t$ is. The book concedes it: the class statement "concerns the architecture family with a register pool that grows with the input, not the trained instances".
+Three facts say the Fock slot registers cannot be that mechanism, however their salience is retrained.
+
+1. **The pool is fixed.** `n_registers`, the pool size $M$, is a constructor constant, and the per-position bank is $(B, T, M, d)$ over batch, position, slot and hidden dimension, so the state at position $t$ is $Md$ numbers whatever $t$ is. The trained models carry $M = 32$. The book concedes it: the class statement "concerns the architecture family with a register pool that grows with the input, not the trained instances".
 2. **The write is the forbidden form.** The write port $r \leftarrow \sigma r + (1 - \sigma) \mathrm{readout}$ matches against the active set and edits the matched slot in place. That is match-and-edit, under which the MCS reduction's polynomial parsing becomes PSPACE-complete recognition. A template substrate must **consume and emit** — destroy a reactant, bear a product elsewhere — and a slot rewritten in place cannot.
-3. **DP1–DP3**, measured: the trained registers are always occupied, their content is renewed layer by layer, and salience is not an intensity.
+3. **DP1–DP3**, measured. Three pre-registered diagnostics asking what Doi–Peliti process the trained registers actually implement, registered in the [depth-ladder protocol](Depth_Ladder_and_Matched_Baseline_Protocol.md) §5.14 on 2026-10-05 before any measurement, and reported in the [Doi–Peliti note](Doi_Peliti_Dynamics_of_Semantic_Particles_and_Registers.md) §7.
 
-The Poisson modes fail for a different reason. A mode creates particles at a *fixed* centre, so however many it creates, the state it adds is one intensity per mode — $K$ numbers. What grows the state is a particle whose payload is set at birth from the token that bore it, and which persists to be read, matched and consumed.
+   | | question | prediction | measured | outcome |
+   |---|---|---|---|---|
+   | **DP1** | Is particle number dynamic at all? Active fraction of the $M$ registers, from layer 1 up | at least 0.95 | 0.9995 (G2), 1.0000 (L=4, G3) | hit: **no number dynamics** |
+   | **DP2** | Do registers share content? Near-duplicate pairs, cosine above 0.9, among active registers | under 1% everywhere | 1.30% (G2), 0.66–0.98% elsewhere | narrow miss; still **distinct slots** |
+   | **DP3** | Does salience act as an intensity? Spearman correlation of a register's salience against its own leave-one-out force | below 0.3 | −0.005 to −0.41 | hit: **not an intensity**, negative rather than merely weak |
+
+   The readings this note relies on: the register count stays at $M$ at every layer and position, so the creation and destruction machinery operates entirely through content rather than number; and salience behaves as a retention probability of a hard-core slot, not as a Poisson mean. Destruction is used and is switch-like, but it changes content rather than number, since an emptied register is refreshed before the next mask and stays active.
+
+The Poisson-mode registers, the second sense of the word, fail for a different reason. A mode creates particles at a *fixed* centre, so however many it creates, the state it adds is one intensity per mode — $K$ numbers. What grows the state is a particle whose payload is set at birth from the token that bore it, and which persists to be read, matched and consumed.
 
 ## 2. The design
 
