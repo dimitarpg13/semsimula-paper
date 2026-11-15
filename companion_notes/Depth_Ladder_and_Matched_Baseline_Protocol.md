@@ -5675,6 +5675,23 @@ Each arm: its 0.5B Cell 0 (PMX's or SR2's, with `FIRST_ORDER_OVERDAMPED = True` 
 - **Launched 2026-11-12 (late evening), from GitHub `d968e75`, on an A100 80 GB.** Cell 0: the tag above, 130,000 steps. Cell 1b: the shared folder, listing the rebuilt training file, the restored validation file (md5 `a4e8b4af…`, checked on Drive) and the set-aside rebuilt one. Cell 3: 2,000,000,000 training and 2,000,000 validation tokens, from the cache. Cell 5: 76,572,110 parameters (35,427,080 in the wells), `Auto batch: 16 x accum=2` (33.7 GB at 16). Cell 5b: fresh run. Cell 6: 76,502,176 decayed and 69,933 undecayed parameters; WSD warm-up to 6,500, stable to 84,500, decay to 130,000, floor 6e-5. Step 50: training loss 7.6356 at `lr=9.23e-06` (not comparable with SR2's 7.6064, whose step 50 ran at four times the learning rate), gradient norm 0.49, peak memory 32.9 GB; step 100: 7.5625. About 1.05 s per step, 38–39 h projected.
 - **After the run:** Cells 8, 7, 6b-7 (Gate 3 for RT3), 6b-13; download the folder with its snapshots and best checkpoint; on the CPU, FLOW-R on the best checkpoint (RT3's second half) and the per-snapshot diagnostics D-a to D-d of the table above. Also on the CPU, the well-occupancy readings of `p-well-occupancy-setup` on every snapshot and on SR2's 0.5B best checkpoint.
 
+<a name="p-sr2-2b-result"></a>**SR2-2B: result, filed 2026-11-15 (the run finished 2026-11-14).** Log, diagnostics and the per-snapshot FLOW-R outputs: [`results/…sr2_st130000…/`](../notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st130000_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/); model card [`semsimula-ladder-live-owt-d384-l2-none-norc-sr2-2b`](https://huggingface.co/dimitarpg13/semsimula-ladder-live-owt-d384-l2-none-norc-sr2-2b).
+
+| | SR2 (0.53B) | SR2-2B (2.13B) | G2B, the matched GPT-2 at 2.13B |
+| --- | ---: | ---: | ---: |
+| settled (mean of the last three evaluations) | 58.32 | 48.58 | 42.69 |
+| final (130,000) | | 48.21 | 42.68 |
+| best | 56.49 | 47.56 (126,500) | |
+| at the end of the stable phase (84,500) | | 59.81 | 61.84 |
+| decay gain (nats) | 0.193 | 0.220 | 0.368 |
+
+- **The gap to the transformer narrows with data and opens in the decay.** From 0.53B to 2.13B tokens SR2's settled perplexity falls 16.7% against G2B's 11.7% (from W2's 48.37), so the ratio to the matched GPT-2 goes from 1.206 to 1.138. At the end of the stable phase SR2-2B is 3.3% ahead (59.81 against 61.84); the decay turns that into 13.8% behind.
+- **Scored.** DG1 **refuted** (gain 0.220, 0.18 or more; `p-decay-branch-setup`). DG2 **HIT** (0.148 below G2B's 0.368). RT3 **MISS**: Gate 3 at N = 3 reads 0.772 nats (0.405 at 0.5B); FLOW-R's per-layer flow converges by the letter (successive differences 0.006 and 0.005 nats) but to a penalty of 0.920 nats (0.104 at 0.5B). Gate 1 +42.2, Gate 2 at N = 3 +39.7 perplexity. OC1 **MISS** and OC2 **MISS** (layer 1 needs three wells at 130,000, two at 32,500; the third enters in the decay), OC3 **HIT** (layer 0 needs all eight); `p-well-occupancy-setup`.
+- **The map departs from the flow with training.** FLOW-R's penalty at N = 16 on every snapshot: 0.008 (6,500, end of warm-up), 0.079 (16,500), 0.486 (32,500), 0.619, 0.691, 0.797 (84,500), 0.807, 0.879, 0.922 (130,000); layer 1's kick share rises from 0.36 to 0.86. TL2's condition holds on this arm (0.486 at 32,500 against 0.797 at 84,500, both at the peak rate); TL2 is scored when three of its four arms have run. TL1 waits for `descent_readout.py` to support SR2; TL4 is first-order only.
+- **Directions per token** (`vtheta_direction_count.py`, every snapshot): layer 0 fills the budget at every snapshot (more than 24 of the 32 directions; projecting onto 24 costs 3.9% at 130,000, and the need is flat after 16,500); layer 1 needs 8 from 16,500 to 97,500 and 12 at 113,500 and 130,000.
+- **Stiffness:** $\omega \Delta t$ median 4.087 at $\Delta t = 4$ at 130,000 (Cell 6b-13), against 7.554 for SR2 at 0.5B.
+- **Why the decay gain is smaller:** `p-decay-noise-cpu` (the decay gain follows the gradient noise the optimizer carries at the peak rate; G2B carries about 4.5 times more per coordinate).
+
 <a name="p-decay-branch-setup"></a>**Decay gain and decay branches: set up 2026-11-13, before SR2-2B's decay starts (the author's decision to run them; DG1 and DG2 confirmed by the author on 2026-11-13 at the values below, before step 84,500; DB1 to DB3 confirmed the same day, before any branch ran).**
 
 - **Why.** At step 71,650, SR2-2B is level with the matched GPT-2 at 2B: mean validation perplexity 61.2 against 62.2 over steps 67,000 to 72,000 (GPT-2's log `matched_gpt2_LR=1.2e-03_130000steps_training_output.txt`). At 0.5B the two were also close before the decay (70.73 against 68.01) and far apart after it (58.32 against 48.37), so the gap opens in the decay. Both models use the same schedule, a cosine from the peak $1.2 \times 10^{-3}$ to the floor $6 \times 10^{-5}$ over the last 35% of steps, so the smaller gain belongs to the model, not to a mismatched schedule. It has two readings: the cosine decay to a 5% floor does not suit our model, or our model at the peak rate carries less rate-driven excess loss, which no decay shape can recover.
@@ -5734,7 +5751,87 @@ Each arm: its 0.5B Cell 0 (PMX's or SR2's, with `FIRST_ORDER_OVERDAMPED = True` 
   - **L1c hits:** in the conservative model too, one layer gains less in the decay. Depth becomes a candidate cause of SR2-2B's decay shortfall, and a DB1 hit (the gap is not the schedule) then points to a deeper model rather than the schedule. Nothing is adopted from this alone.
   - **L1c misses:** the decay gain does not depend on depth in SR2, so the depth reading of the 2B gap loses its support, and the decay branches are read as registered.
   - **L1b** separates depth from the static bank in run 7's 30%: a hit says the bank did not cause the one-layer gap, a miss that part of it was the bank.
+- **Depth against wells (A1, filed 2026-11-15 at the author's request; the author shares the bet).** Two ways to spend the same architecture: (a) L = 2 with two wells at rank 6, the K2-R6 arm of the well screen (SR2's six deltas plus `V_THETA_WELLS_PER_HEAD = 2` and `ANISO_RANK = 6`; about 52.96M parameters, 11.8M of them in the wells), or (b) L = 1 with eight wells at rank 4, this arm (76.55M parameters, 35.4M in the wells). The case for (a): one layer cost run 7 0.263 nats, and that gap widened through training and the decay. Two wells at rank 6 give 12 directions per token, enough for layer 1 (8 at 0.5B) but not for layer 0, where projecting SR2's trained bank onto 12 directions costs +46%. Removal from a trained bank overstates what training with fewer wells costs: on code, keeping two wells in L8-CODE cost about ×20 in perplexity, while K2-L8-CODE, trained with two wells, settled only 0.057 nats behind L8-CODE ([Minimum well count note §5](Minimum_Well_Count_for_Conservative_Models.md#n-k2-l8-code)). The case for (b) is layer 0's direction need and the larger bank. Scored on settled perplexity (mean of the last three evaluations), both arms on the rebuilt pool and the ladder's validation file, when K2-R6 has run.
+
+| id | prediction | called |
+| --- | --- | --- |
+| A1 | at 0.5B, (a) K2-R6 at L = 2 settles below (b) SR2-L1 | 65% |
+
+  The same bet at 2B (about 75%) is not registered: no 2B run of either arm is planned. Where K2-R6 goes in the screen's order is still the author's decision.
 - **After the run:** Cells 8, 7 and 6b-13; download the results folder and the best checkpoint; on the CPU, FLOW-R on the best checkpoint if the script runs at L = 1 (one step of $\Delta t = 8$ against its refinement), read against SR2's 0.104 nats at 0.5B.
+
+<a name="p-sr2-l1-result"></a>**SR2-L1: result, 2026-11-15.** Log: [`results/…sr2_L1probe…idt8_lr0p0012_noattn/L1_SR2_0.5B_OWT_32500steps_output.txt`](../notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L1probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt8_lr0p0012_noattn/L1_SR2_0.5B_OWT_32500steps_output.txt). Launched from the setup above (tag, 76,545,484 parameters, 16 × 2, step 50 at `lr=3.69e-05`); 32,500 steps in 5.65 h at 0.63 s per step, peak 19.2 GB in training (20.7 GB during evaluation). Cell 1b's committed default still pointed at the deleted OpenWebText cache, so it was set by hand to `semsimula_owt_gpt2/data`, and the notebook's default now points there. Model card (published 2026-11-15, Gen 3 collection): [`semsimula-ladder-live-owt-d384-l1-none-norc-sr2`](https://huggingface.co/dimitarpg13/semsimula-ladder-live-owt-d384-l1-none-norc-sr2).
+
+| | SR2 (L = 2) | SR2-L1 (L = 1) | difference |
+| --- | ---: | ---: | ---: |
+| settled (mean of the last three evaluations) | 58.32 | 69.15 | +18.6%, +0.170 nats |
+| best | 56.49 (31,000) | 67.77 (31,000) | |
+| mean over 19,000 to 21,000 (before the decay) | 70.73 | 79.67 | |
+| decay gain (nats) | 0.193 | 0.142 | −0.051 |
+
+- **Scored.** L1a to L1c were proposed in the setup but not confirmed by the author before the decay started; they are scored on the letter and marked as unconfirmed.
+
+| id | prediction | called | outcome |
+| --- | --- | --- | --- |
+| L1a | settled at least 15% above SR2's (67.07 or more) | 80% | **HIT** (69.15, +18.6%) |
+| L1b | the gap is at least run 7's 30.0% (75.82 or more) | 50% | **MISS** (+18.6%) |
+| L1c | decay gain 0.163 nats or less | 70% | **HIT** (0.142) |
+
+- **The second layer is worth nothing early, and its value builds with training.** The gap, as window means of validation perplexity (evaluation noise about 0.016 nats per evaluation in both runs):
+
+| steps | 500–1,500 | 2,000–4,000 | 4,500–7,000 | 7,500–10,000 | 10,500–15,000 | 15,500–21,000 | 21,500–26,000 | 26,500–30,000 | 30,500–32,500 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| SR2-L1 against SR2 | −2.0% | −3.0% | −1.4% | +1.4% | +6.6% | +11.4% | +14.1% | +17.4% | +18.9% |
+
+  One layer leads for the first 7,000 steps, the two cross near 8,000, and the gap then widens through the rest of the stable phase and the decay. Run 7 against run 3 was already 12.9% apart at step 8,000. The timing matches SR2-2B's per-snapshot FLOW-R, where the two-step map is a flow at the end of warm-up and leaves it during the stable phase (`p-sr2-2b-setup`, HF card), but that is a different run and schedule, so it is a parallel, not a measurement on this pair.
+- **L1b, read as registered:** the conservative model loses 18.6% at one layer, against run 7's 30.0% with the register bank frozen. Part of run 7's gap was therefore the static bank (§6.1), not depth; SR2 also differs from run 3 in its gradient paths and integrator, so the split is not exact.
+- **L1c, read as registered:** one layer gains less in the decay in the conservative model too (0.142 against 0.193 nats, about 2.4 standard errors at 0.015 each), as in run 7 (0.135 against 0.201). Depth is a candidate cause of SR2-2B's decay shortfall against the 8-layer GPT-2; the decay branches decide whether the schedule is another.
+- **The one-layer potential is softer.** The training-time resonance monitor reads $\omega \Delta t$ at a median of 3.12 at the end (at $\Delta t = 8$, so $\omega \approx 0.39$), flat from step 10,000 (2.72) on. SR2 at 0.5B read 7.55 at $\Delta t = 4$ at its endpoint (Cell 6b-13, so $\omega \approx 1.89$; its training-time monitor was not hooked then). On SR2-2B the training monitor (4.04) and Cell 6b-13 (4.09) agree, so the two readings are comparable. The one-layer model's stiff modes are about five times slower.
+- **Run health.** No skipped steps; global gradient norm above 1.0 at 5 of 650 logged steps, all in the warm-up (steps 300 to 800, max 1.34; SR2: 1); SCAF CLEAN at all seven audits (the step-32,500 audit prints nan perplexities, as SR2's did); `sig_max` frozen at 14.286 for the whole run (the creation gate gets no gradient at L = 1; with the reverse channel off it has no path to the tokens at either depth).
+- **A1** now needs K2-R6 to settle below 69.15.
+- **Diagnostic cells on the best checkpoint (step 31,000), against SR2's own outputs.** Outputs in the results folder.
+  - **Cell 6b-7.** Gate 1 reads +0.00 (the velocity entering the only layer is zero). Gate 2, more hops at $\Delta t = 8$: 71.88 trained, 74.33 at two hops (+3.4%), 82.47 at eight. SR2's one extra hop at L = 2 costs +34.8% (57.59 to 77.63). **The one-layer step lands near a fixed point of itself**; SR2's two-step map does not. Gate 3, refining the one step: 91.57 at N = 2 (+27.4%), 158.31 at N = 3. A map, not a flow, as SR2 (N = 3 +50.0%).
+  - **Cells 6b-9 and 6b-12, what the step is made of.** The single step moves the state 7.2 times its own norm; SR2's layer 0 moves it 6.0 times and its layer 1 0.72 times. The part of the step $V_\phi$ contributes (the per-token deflection of the "$V_\theta$ geodesic + LN" arm) has median 0.17 at L = 1, against 0.053 at SR2's layer 0 and 0.000 at its layer 1, where the step is a pure $V_\theta$ geodesic. So SR2 splits the work: a large move at layer 0 with a small $V_\phi$ part, then a small move at layer 1 on $V_\theta$ alone, the layer whose occupancy is two wells (`p-well-occupancy-setup`). The one-layer model makes one larger move in which $V_\phi$'s part is three times layer 0's.
+  - **Cell 6b-13:** $\omega \Delta t$ median 3.112 at $\Delta t = 8$, $\omega = 0.389$, as the training monitor read. **Cell 7:** removing the registers changes nothing (reverse channel off).
+- **Not yet read:** well occupancy, keep-k and the direction count on SR2-L1's best checkpoint (which of the two SR2 layers the single layer resembles in its use of the wells), and FLOW-R at L = 1. The decay gain against the gradient noise is in `p-decay-noise-cpu` below.
+
+<a name="p-decay-noise-cpu"></a>**The decay gain against the optimizer's gradient noise: measured 2026-11-15 on eleven checkpoints, on the CPU (the author's question: is there a theoretical reason the decay gain depends on L?).**
+
+- **The argument.** At a constant peak rate the optimizer bounces in the steep directions, and the loss carries an excess the decay drains (the stationary picture of constant-rate SGD, and the "river valley" reading of WSD schedules). For one coordinate of curvature $\lambda$ and gradient noise $\sigma$, with the noise dominating, AdamW's second moment is $v \approx \sigma^2$, the update is SGD at step $\eta / \sigma$, the stationary variance is $\eta \sigma / (2 \lambda)$, and the excess loss is $\eta \sigma / 4$, whatever $\lambda$ is. Summed over the coordinates, the decay gain should be about $G_{\mathrm{pred}} = \frac{\eta_{\mathrm{peak}}}{4} \sum_i \sqrt{v_i}$. In a stack whose layers share parameters, as SR2's do (the well bank is 93% of the non-embedding parameters and serves every layer), each layer adds its own gradient contribution to the shared parameters, so their per-coordinate noise grows by between $\sqrt{L}$ (uncorrelated contributions) and $L$ (aligned ones), while unshared parameters do not change. That is a reason for the decay gain to grow with depth.
+- **The test.** AdamW's `exp_avg_sq` with $\beta_2 = 0.95$ averages about the last 20 steps, so it is a local reading of $\sigma_i^2$. `debug/adam_noise_decay_gain.py` sums $\sqrt{v_i}$ over every coordinate of a checkpoint's optimizer state (bias-corrected), by tensor shape, and reads the median $\lvert m \rvert / \sqrt{v}$ (about 0.15 for pure noise at $\beta_1 = 0.9$). The reading that matches the argument is at the peak rate just before the decay: SR2-2B's step 82,500, GPT-2 2B's step 75,000 and SR2-L1's step 22,500 (1,375 steps into its decay, the rate still at 97% of the peak; fetched from Drive on 2026-11-15). SR2 at 0.5B has no such checkpoint left (its Drive folder is gone), so it is read on its best checkpoint, at the end of the decay. Across the decay the sum moves +3% on SR2-L1, −9% on SR2-2B and +51% on GPT-2, so end-of-decay readings are rough stand-ins at best. Output: [`results/decay_noise/adam_noise_decay_gain.txt`](../notebooks/conservative_arch/scaleup/results/decay_noise/adam_noise_decay_gain.txt).
+
+| checkpoint | rate at the checkpoint | measured decay gain (nats) | sum of the square roots of v | predicted gain | measured over predicted | median of abs(m) over sqrt(v) |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| **SR2-L1, step 22,500** | 97% of peak | 0.142 | 661.1 | 0.198 | **0.72** | 0.098 |
+| **SR2-2B, step 82,500** | peak | 0.220 | 1,010.3 | 0.303 | **0.73** | 0.119 |
+| **GPT-2 2B, step 75,000** | peak | 0.368 | 1,654.9 | 0.496 | **0.74** | 0.146 |
+| SR2-L1, best (31,000) | end of decay | 0.142 | 683.1 | 0.205 | 0.69 | 0.106 |
+| SR2, best (31,000) | end of decay | 0.193 | 836.1 | 0.251 | 0.77 | 0.143 |
+| SR2-2B, best (126,500) | end of decay | 0.220 | 917.6 | 0.275 | 0.80 | 0.137 |
+| SR2-2B, step 37,500 | peak | 0.220 | 907.6 | 0.272 | 0.81 | 0.126 |
+| GPT-2 2B, step 25,000 | peak | 0.368 | 1,568.9 | 0.471 | 0.78 | 0.145 |
+| GPT-2 2B, step 100,000 | 75% of peak | 0.368 | 1,861.3 | 0.558 | 0.66 | 0.150 |
+| GPT-2 2B, step 125,000 | 8% of peak | 0.368 | 2,487.9 | 0.746 | 0.49 | 0.153 |
+| GPT-2 2B, best (130,000) | end of decay | 0.368 | 2,504.1 | 0.751 | 0.49 | 0.151 |
+
+- **Reading 1: the coordinates are noise-dominated** (median of $\lvert m \rvert / \sqrt{v}$ 0.11 to 0.15 everywhere), as the argument assumes.
+- **Reading 2: one constant fits both architectures, both depths and both budgets.** At the three checkpoints taken at the peak rate just before the decay, measured over predicted is 0.72 (SR2-L1), 0.73 (SR2-2B) and 0.74 (GPT-2 2B), while the gains themselves span 0.142 to 0.368 nats, a factor of 2.6. So the decay gain is $G \approx 0.73 \cdot \frac{\eta_{\mathrm{peak}}}{4} \sum_i \sqrt{v_i}$ across a weight-shared one-layer model, a weight-shared two-layer model and an unshared eight-layer transformer. The other readings (0.66 to 0.81) are further from the decay start or inside it.
+- **Reading 3: the second layer's extra noise is all in the reused parameters.** Sum of $\sqrt{v}$ by block, SR2-L1 against SR2 (both at step 31,000):
+
+| block | SR2-L1 | SR2 | ratio |
+| --- | ---: | ---: | ---: |
+| embedding and readout (two matrices of 50,257 × 384, not reused) | 447.0 | 448.4 | 1.00 |
+| V_θ precision factors `B_proj` (12,288 × 1,920, shared by both layers) | 123.2 | 182.2 | 1.48 |
+| V_θ centres and diagonals `mu_proj`, `a_proj` (two of 3,072 × 1,920, shared) | 61.6 | 132.2 | 2.15 |
+| V_θ well weights `w_proj` (8 × 1,920, shared) | 2.0 | 5.3 | 2.67 |
+| ξ content routing (two of 240 × 384, shared) | 7.6 | 26.7 | 3.50 |
+
+  The unshared matrices carry the same noise at both depths; the bank's blocks carry 1.5 to 2.2 times more at L = 2, inside the $\sqrt{2}$ to 2 the shared-gradient argument allows, and the well weights and ξ routing more than that, which two summed contributions alone cannot give (composition through the second layer is the candidate).
+- **Reading 4, GPT-2.** Before the decay it fits the SR2 constant (0.74). During the decay its gradient noise grows instead of falling: the sum goes 1,655 (75,000), 1,861 (100,000), 2,488 (125,000), most of it in the tied embedding (796 to 1,404) and the MLPs; its decay was also clipped at most steps (median gradient norm 1.17 to 1.43 against a clip at 1.0). SR2's noise stays flat or falls across its decay. Per coordinate outside the vocabulary matrices, GPT-2 carries about 4.5 times SR2-2B's noise before the decay (6.0e-5 against 1.3e-5), which is where its larger gain comes from.
+- **What this settles and what not.**
+  - It supports the reading of `p-decay-branch-setup` that SR2's smaller decay gain is less rate-driven excess at the peak rate, not a decay shape that suits it badly: SR2 stores less noise, so the decay has less to drain. It also gives the depth dependence a mechanism: in a weight-shared stack each layer adds noise to the shared parameters.
+  - Not settled: the measured gain also contains progress along the valley floor during the decay, which the argument ignores (the constant 0.73 below 1 may be partly that, partly the one-coordinate idealisation); the constant is fitted on three pre-decay points, not derived; SR2 at 0.5B has only an end-of-decay reading; no 0.5B GPT-2 point at the same peak rate is local.
+  - A consequence worth testing, not adopted: if SR2 carries little excess at the peak rate, a higher peak rate may buy more progress for little extra excess.
 
 <a name="p-well-occupancy-setup"></a>**Well occupancy against training tokens: set up 2026-11-13, while SR2-2B trains and before any of its snapshots is read (the author's question, for the book; OC1 to OC3 confirmed by the author on 2026-11-13 at the values below, before any snapshot was read).**
 
@@ -5821,7 +5918,7 @@ Each arm: its 0.5B Cell 0 (PMX's or SR2's, with `FIRST_ORDER_OVERDAMPED = True` 
   - **The head fails where the oracle works.** The oracle reads the shared basis off the trained factors; the head has to predict it from the context through the product $U(x) C_k(x)$. Doubling $s$ from 8 to 16 lowers the cost only from +731% to +578%, so the limit is predicting the basis, not its width. The frozen model is also sensitive to the force itself: a 1.9% force error costs +35% at layer 1.
   - Every number here is measured without retraining and bounds the cost from above: a model trained with a shared core could arrange itself differently. The fitted head is worse than a plain bottleneck with fewer weights, so a training run was not judged worth its GPU time.
 - **Decision (2026-11-14).** No shared-core twin. The compression candidates stay PA (context-free diagonal precision; +1.2% without retraining) and PB (PA plus a rank-512 bottleneck in `B_proj`; +41% without retraining). Their calls PA1, PB1 and PB2 await the author's confirmation.
-- **Files.** Scripts in `notebooks/conservative_arch/scaleup/debug/`: `vtheta_precision_ablation.py`, `vtheta_projection_svd.py`, `vtheta_shared_subspace_fit.py`. Outputs in `results/precision_ablation/`: `precision_ablation_so_owt.txt`, `projection_svd_so_owt.txt`, `precision_ablation_so_owt_shared.txt`, `shared_subspace_so_owt_s8.txt`, `shared_subspace_so_owt_s16.txt`. The head was fitted on `openwebtext_train_1000M.npy`, an OpenWebText training file, never on the validation set. The written-up reading is in [the well-count note, section 8](Minimum_Well_Count_for_Conservative_Models.md#8-can-the-wells-share-one-precision-core).
+- **Files.** Scripts in `notebooks/conservative_arch/scaleup/debug/`: `vtheta_precision_ablation.py`, `vtheta_projection_svd.py`, `vtheta_shared_subspace_fit.py`. Outputs in `results/precision_ablation/`: `precision_ablation_so_owt.txt`, `projection_svd_so_owt.txt`, `precision_ablation_so_owt_shared.txt`, `shared_subspace_so_owt_s8.txt`, `shared_subspace_so_owt_s16.txt`. The head was fitted on `openwebtext_train_1000M.npy`, an OpenWebText training file, never on the validation set. The written-up reading is in [the well-count note, section 8](Minimum_Well_Count_for_Conservative_Models.md#n-shared-core).
 
 **Scope:** OpenWebText, L = 2, d = 384, one seed per arm; the seed spread (MS1) is measured before the 2B runs are read.
 

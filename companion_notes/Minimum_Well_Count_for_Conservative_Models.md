@@ -167,6 +167,8 @@ The second point is a property of these trained weights, not of the model. Secti
 
 ---
 
+<a name="n-k2-l8-code"></a>
+
 ## 5. Training with fewer wells: K2-L8-CODE
 
 K2-L8-CODE is L8-CODE with two wells instead of eight, trained on the same batches from step 0, so the paired difference of validation losses isolates $K$. It ran to the end (19,250 steps, 19.0 h in one session, 2026-11-02 to 11-03). The table and Figure 5 cover the full run.
@@ -295,6 +297,8 @@ What the fits show:
 - **Training.** In the fit on L8-CODE, going from eight pieces to two costs 0.062 nats on layer 0's input at depth 2 and 0.092 on layer 7's input. In training, K2-L8-CODE settled 0.056 nats behind L8-CODE (section 5). The order of magnitude agrees, but the arm removed wells from all eight layers at once, and the fit models one or two. This is one comparison, not a test of the estimator.
 
 ---
+
+<a name="n-shared-core"></a>
 
 ## 8. Can the wells share one precision core?
 

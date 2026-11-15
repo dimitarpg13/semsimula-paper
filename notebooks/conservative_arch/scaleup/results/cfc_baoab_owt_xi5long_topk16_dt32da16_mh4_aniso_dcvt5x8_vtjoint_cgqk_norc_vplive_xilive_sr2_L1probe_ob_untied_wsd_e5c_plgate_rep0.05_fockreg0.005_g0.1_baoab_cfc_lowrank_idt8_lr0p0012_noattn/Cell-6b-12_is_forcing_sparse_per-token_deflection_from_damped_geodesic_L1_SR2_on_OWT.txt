@@ -1,0 +1,39 @@
+probing fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L1probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt8_lr0p0012_noattn_best.pt
+   step 31000  ppl 67.77  missing 0  unexpected 0
+   L=1  dt=8  reverse-channel effective gate 0  (TF32 off for this cell)   (conservative-only arm: no reverse channel)
+   captured 8 layer steps from 8 batches, 16,384 tokens per layer
+
+GATE 0  replayed full step vs captured output: max |d| = 0.000e+00   PASS
+
+F1  per-token deflection R_tok = |h_full - h_arm| / |step|,  16,384 tokens per layer
+    step size |step|/|h_in| median per layer: l0: 7.18
+
+   arm: conservative + LN
+   layer    RMS(E1)    mean     q05     q25     q50     q75     q95   <0.25  0.25-.75   >0.75   bimod
+   0          0.000   0.000   0.000   0.000   0.000   0.000   0.000  100.0%      0.0%    0.0%     nan
+
+   arm: Vtheta geodesic + LN   [PRIMARY]
+   layer    RMS(E1)    mean     q05     q25     q50     q75     q95   <0.25  0.25-.75   >0.75   bimod
+   0          0.186   0.179   0.112   0.144   0.172   0.207   0.269   91.3%      8.7%    0.0%   0.302
+
+   arm: bare Vtheta geodesic
+   layer    RMS(E1)    mean     q05     q25     q50     q75     q95   <0.25  0.25-.75   >0.75   bimod
+   0          0.719   0.716   0.609   0.680   0.721   0.758   0.804    0.0%     70.1%   29.9%   0.355
+
+   correlates of R_tok, primary arm, layer 0  (Spearman rank correlation; binned means by quintile of the key)
+   key                     raw rho  partial rho   quintile means of R_tok
+   position in block        +0.076       +0.075   0.168  0.179  0.182  0.181  0.183
+   semantic mass m_b        -0.245       -0.214   0.190  0.190  0.179  0.173  0.162
+   next-token loss          -0.060       -0.078   0.185  0.179  0.175  0.177  0.177
+   step size |s|/|h|        +0.122    (control)   0.169  0.181  0.178  0.176  0.189
+
+READING  (primary arm = 'Vtheta geodesic + LN', layer 0)
+   tokens with R < 0.25 (near-geodesic): 91.3%    R > 0.75 (strongly forced): 0.0%    IQR [0.14, 0.21]    bimodality 0.302
+   -> NEITHER pre-registered pattern cleanly; read the histogram
+   NOTE: no reverse channel, so 'conservative + LN' equals the full step by
+         construction (R = 0, gate 0 restated). The primary arm is therefore
+         'Vtheta geodesic + LN', and the row above is V_phi's per-token contribution.
+
+   figure -> /content/drive/MyDrive/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L1probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt8_lr0p0012_noattn/checkpoints/f1_forcing_per_token.png
+
+   live training state restored
