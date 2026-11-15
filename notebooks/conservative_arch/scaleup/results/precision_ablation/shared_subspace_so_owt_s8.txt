@@ -1,0 +1,11 @@
+shared-subspace head in place of B_proj, s = 8, semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn)
+fit on 128 random training windows x 512 from /Users/dimitargueorguiev/Downloads/semsimula_fock_gamma_sweep_aniso_gaussian_fockreg_d384/data/openwebtext_train_1000M.npy (131,072 token-layer inputs; seed 0), 4000 Adam steps of 2048, lr 0.001 (cosine), frob weight 0.1; scored on 16 evenly spaced validation windows from /Users/dimitargueorguiev/Downloads/semsimula_fock_gamma_sweep_aniso_gaussian_fockreg_d384/data/openwebtext_val_2M.npy
+head: U 1,920 -> 384 x 8, C 1,920 -> 8 x 8 x 4: 6,393,088 weights against B_proj's 23,605,248 (27.1%)
+relative low-rank force error on the collected inputs (sum ||F^ - F||^2 / sum ||F||^2): layer 0 13.0%  layer 1 1.9%
+
+  condition                  loss      ppl    change
+  trained                  4.0652    58.28    +0.00%
+  head, both layers        6.1832   484.52  +731.41%
+  head, layer 0 only       6.0967   444.41  +662.59%
+  head, layer 1 only       4.3653    78.67   +35.00%

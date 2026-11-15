@@ -159,7 +159,7 @@ for i in range(0, len(x), 4):
     print(f'windows {i + 4}/{len(x)}', flush=True)
 
 q = lambda t: f'{float(t.median()):8.3f}'
-L = [f'ablate channels {ABL}: loss {float(torch.stack(nll).mean()):.4f}  ppl {float(torch.stack(nll).mean().exp()):.2f}\n{FOLDER}\n{desc}\n{len(x)} code validation windows x 512; cap PRECISION_LR_MAX = {cap}; n_ctx = {n_ctx}; '
+L = [f'ablate channels {ABL}: loss {float(torch.stack(nll).mean()):.4f}  ppl {float(torch.stack(nll).mean().exp()):.2f}\n{FOLDER}\n{desc}\n{len(x)} validation windows x 512 ({Path(CS['VAL']).name}); cap PRECISION_LR_MAX = {cap}; n_ctx = {n_ctx}; '
      f'K = {bank.K}, rank = {bank.rank}\n',
      'medians per layer (well k* = the largest g_k at the token):',
      f'  {"layer":>5} {"omega*dt":>8} {"lam_max":>8} {"m":>8} {"w_max":>8} {"n_eff":>8} {"w(k*)":>8} {"occ(k*)":>8} '

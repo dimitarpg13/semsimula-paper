@@ -4,11 +4,12 @@
 
 - two counts that are easy to confuse: the number of wells a trained layer **uses** and the number the model **needs**, and why the first does not measure the second;
 - three ways to measure the need: removing wells from a trained model, training with fewer wells, and a fit to the corpus that predicts the count without training;
-- the results on code, OpenWebText and TinyStories, and what they imply for the parameter budget.
+- the results on code, OpenWebText and TinyStories, and what they imply for the parameter budget;
+- whether the wells could share one core for their shapes, which would shrink the bank (they cannot at layer 0).
 
 The raw numbers and run records live in the [protocol note](Depth_Ladder_and_Matched_Baseline_Protocol.md) ([`p-dead-wells`](Depth_Ladder_and_Matched_Baseline_Protocol.md#p-dead-wells), [`p-l8-code-result`](Depth_Ladder_and_Matched_Baseline_Protocol.md#p-l8-code-result), [`p-k2-l8-code-setup`](Depth_Ladder_and_Matched_Baseline_Protocol.md#p-k2-l8-code-setup)). The rank of each well's shape is a separate question, covered in [Curvature_Diagnostics_and_Rank_Selection_for_Aniso_Gaussian_Vtheta.md](Curvature_Diagnostics_and_Rank_Selection_for_Aniso_Gaussian_Vtheta.md).
 
-**Status, 2026-11-04:** all the minimum-well-count measurements planned for this note are done: use and force shares on eight models, the temperature sweep, removal, one training arm with two wells (K2-L8-CODE, full run) and seven corpus fits on three models and two corpora. Not run: a four-well arm, a two-well arm at two layers and the fit on TinyStories (section 8).
+**Status, 2026-11-04:** all the minimum-well-count measurements planned for this note are done: use and force shares on eight models, the temperature sweep, removal, one training arm with two wells (K2-L8-CODE, full run) and seven corpus fits on three models and two corpora. Not run: a four-well arm, a two-well arm at two layers and the fit on TinyStories (section 9). **Added 2026-11-15:** section 8, whether the wells can share one precision core (measured 2026-11-13 and 11-14 on SO-OWT; no).
 
 Figures: [`figures/_make_min_well_count_figs.py`](figures/_make_min_well_count_figs.py) (it reads the result files named in its header).
 
@@ -23,7 +24,8 @@ Figures: [`figures/_make_min_well_count_figs.py`](figures/_make_min_well_count_f
 5. [Training with fewer wells: K2-L8-CODE](#5-training-with-fewer-wells-k2-l8-code)
 6. [A corpus-side criterion: wells as gated linear pieces](#6-a-corpus-side-criterion-wells-as-gated-linear-pieces)
 7. [The well-count estimator](#7-the-well-count-estimator)
-8. [What the evidence says, and what is open](#8-what-the-evidence-says-and-what-is-open)
+8. [Can the wells share one precision core?](#8-can-the-wells-share-one-precision-core)
+9. [What the evidence says, and what is open](#9-what-the-evidence-says-and-what-is-open)
 
 ---
 
@@ -294,7 +296,53 @@ What the fits show:
 
 ---
 
-## 8. What the evidence says, and what is open
+## 8. Can the wells share one precision core?
+
+Sections 2 and 4 count wells. This section asks a different question about the same bank: whether its wells could share one core for their shapes, which would make the bank much smaller. The measurements are on SO-OWT (SR2 on OpenWebText, two layers), without retraining, on 2026-11-13 and 11-14. The numbers and run details are in the protocol ([`p-precision-twins-setup`](Depth_Ladder_and_Matched_Baseline_Protocol.md#p-precision-twins-setup), [`p-precision-cpu-result`](Depth_Ladder_and_Matched_Baseline_Protocol.md#p-precision-cpu-result)).
+
+**What a well's shape is.** Section 1's precision is
+
+$$P_k(x) = \mathrm{diag}(a_k(x)) + B_k(x) B_k(x)^\top,$$
+
+where $a_k$ is a vector of 384 diagonal precisions and $B_k$ is a $384 \times 4$ matrix, the well's **shape of rank 4**. Both are computed from the bank input $x$ for every token. The term $B_k B_k^\top (h - \mu_k)$ pushes the state towards the centre along the four columns of $B_k$, so $B_k$ says in which directions the well is stiff for this token. The map that makes all eight $B_k$ from $x$ is the bank's largest part: 23.6 M of the bank's 35.4 M parameters in SO-OWT.
+
+**Does the shape need the context?** Yes, entirely. Replacing each $B_k(x)$ with its best fixed (context-free) shape costs about as much as deleting it: +1,296% and +1,173% in perplexity. The diagonal part is the opposite: replacing $a_k(x)$ with a fixed vector costs +1.2%.
+
+**Can the wells share one shape, or a few common directions?** Three versions were tried, from the most generous to one a model could compute:
+
+- **one shape for all wells**: every well takes the strongest well's $B_k$, or the single factor that best fits all eight at that token;
+- **a shared subspace**: at each token, every well's $B_k$ is projected onto the $s$ directions that the eight wells' shapes have most in common at that token. These directions are read off the trained shapes, so this is an upper limit on what any shared basis could do;
+- **a fitted head** a model could compute: a map from $x$ to a basis $U(x)$ of $s$ directions, plus a small map from $x$ to each well's mix $C_k(x)$ of those directions, so that $B_k \approx U C_k$. It was fitted to reproduce the trained bank's force, with the rest of the model frozen.
+
+| replacement | layer 0 only | layer 1 only | both layers |
+| --- | ---: | ---: | ---: |
+| every well takes the strongest well's shape | +1,252% | +5.7% | +1,261% |
+| one shape for all wells, best per token | +1,021% | +8.1% | +1,047% |
+| shared subspace, 4 directions | +975% | +8.0% | +979% |
+| shared subspace, 8 directions | +121% | 0.0% | +121% |
+| fitted head, 8 directions (27% of the map's weights) | +663% | +35% | +731% |
+| fitted head, 16 directions (54%) | +513% | +32% | +578% |
+| for comparison: the map cut to rank 512 (31%), no fitting | | | +41% |
+
+Perplexity change against the trained model. The first four rows and the last are on one set of 16 validation windows, the fitted heads on another; each change is against the trained model on its own windows.
+
+**Why layer 0 has no shared core.**
+
+- **The weak wells are not passengers.** At layer 0 one well carries 81.5% of the force weight and the other seven 2–4% each. Yet giving all eight the strong well's shape costs +1,252%. What the seven weak wells contribute is not their pull but their directions.
+- **Each well's directions change with the token.** The average of a layer-0 well's $B_k B_k^\top$ over tokens holds only 8–16% of its mean square: most of it averages away. The directions it picks are a reading of the context, different for each token.
+- **The wells do not agree on a few directions.** At one token, the four directions the eight shapes share most carry two thirds of their combined strength, and eight directions carry four fifths. Projecting onto 8 shared directions costs +121%. The direction count on the same model needs more than 28 of the 32 available directions to come within 0.5%.
+
+In words: at layer 0 each well's shape is its own per-token reading of the context, and the eight readings point in different directions. A shared core keeps what they have in common and drops what makes them differ, which is what the layer uses. This matches section 4, where layer 0's trained weights need all eight wells.
+
+**Why layer 1 looks compressible, and why that is close to automatic.** Layer 1 runs on two wells (section 2), whose directions are steady (the averages of their $B_k B_k^\top$ hold 78% and 87% of the mean square). Two wells of rank 4 span at most 8 directions, so the 8-direction shared subspace reproduces them exactly by construction.
+
+**Why the fitted head fails even where the upper limit works.** The shared subspace is read off the trained shapes; the head must predict it from the context. Its force error was 13% at layer 0 and 1.9% at layer 1, and even the 1.9% cost +35%. Doubling the head's directions from 8 to 16 helped little (+731% to +578%), so the limit is predicting the directions, not how many there are. A plain low-rank cut of the existing map, at about the same number of weights, costs +41% with no fitting at all.
+
+**What this does and does not show.** Every number is measured on a trained model with nothing retrained, so it bounds the cost from above: a model trained with a shared core from the start could arrange itself differently. But the fitted head does worse than a plain bottleneck with fewer weights, so no shared-core model was trained. The compression candidates left are a context-free diagonal precision and a low-rank bottleneck in the shape map (twins PA and PB in the protocol, proposed and not run).
+
+---
+
+## 9. What the evidence says, and what is open
 
 **What the evidence says.**
 
@@ -302,6 +350,7 @@ What the fits show:
 - **The trained weights of the deeper layers need two wells; layer 0's need all eight** (section 4). That is a property of weights trained with eight wells.
 - **Trained with two wells everywhere, L8-CODE settles 0.056 nats (5.8% in perplexity) behind eight** (section 5). On code at $L = 8$, $K_{\min}$ is 2 for a tolerance of about 0.06 nats and more than 2 for anything tighter. With two wells the model is 18% smaller than the matched GPT-2 outside the embeddings.
 - **The corpus fit puts the knee at four gated pieces** on every input of both corpora for a tolerance of 0.05 nats (section 7). On layer 0's input, code gains a little more from eight and OpenWebText does not. A second block substitutes for doubling the pieces.
+- **The wells cannot share one precision core at layer 0** (section 8). Each well's shape is its own per-token reading of the context; one shared shape costs +1,021%, and a shared basis a model could compute costs +731% even with 27% of the shape map's weights. Measured without retraining on one model.
 - **Where the measures meet.** Removal gives 2 for the deeper layers, the fit 4 for any one bank, and the training arm 2 for the whole model at a tolerance of 0.06 nats. They measure different things. The training arm is the definition. Removal and the fit are cheaper stand-ins that err in opposite directions: removal leaves the rest of a trained model in place, and the fit takes all of it away.
 
 **What it implies for the budget.** At rank 4 a well costs 4,427,905 parameters. Four wells instead of eight would remove 17.7 M parameters from L8-CODE, leaving 20.4 M outside the embeddings against GPT-2's 14.2 M. Two wells leave 11.6 M and cost 0.056 nats. Four is the fit's knee, but no model has been trained with four wells.
@@ -323,6 +372,6 @@ What the fits show:
 - Montúfar, G., Pascanu, R., Cho, K. and Bengio, Y. (2014). On the number of linear regions of deep neural networks. *NeurIPS*.
 - Carreira-Perpiñán, M. Á. and Williams, C. K. I. (2003). On the number of modes of a Gaussian mixture. *Scale-Space Methods in Computer Vision*.
 
-**Provenance.** Probes: `notebooks/conservative_arch/scaleup/debug/vtheta_well_probe.py` (effective counts, force shares, removal; `renorm=1` added 2026-11-03), `keep_k_curves.py`, `vtheta_weight_logits.py` (the bound, the scale test and the temperature sweep), `well_count_fit.py` (the estimator; the L8-CODE fits used its per-window retry for CPU SVD failures and dropped no windows). Results in `notebooks/conservative_arch/scaleup/results/dead_wells/` and `.../results/well_count/`. K2-L8-CODE's evals are from its Cell 6 log, filed in its run folder (`results/cfc_baoab_code_…dcvt5x2…L8probe…lr0p0012_noattn/`, 2026-11-03). The parameter counts per well are the bank's formula, checked against L8-CODE's and K2-L8-CODE's built totals.
+**Provenance.** Probes: `notebooks/conservative_arch/scaleup/debug/vtheta_well_probe.py` (effective counts, force shares, removal; `renorm=1` added 2026-11-03), `keep_k_curves.py`, `vtheta_weight_logits.py` (the bound, the scale test and the temperature sweep), `well_count_fit.py` (the estimator; the L8-CODE fits used its per-window retry for CPU SVD failures and dropped no windows), and for section 8 `vtheta_precision_ablation.py`, `vtheta_projection_svd.py`, `vtheta_shared_subspace_fit.py` and `vtheta_direction_count.py` (outputs in `.../results/precision_ablation/` and `.../results/dead_wells/direction_count_so_owt.txt`). Results in `notebooks/conservative_arch/scaleup/results/dead_wells/` and `.../results/well_count/`. K2-L8-CODE's evals are from its Cell 6 log, filed in its run folder (`results/cfc_baoab_code_…dcvt5x2…L8probe…lr0p0012_noattn/`, 2026-11-03). The parameter counts per well are the bank's formula, checked against L8-CODE's and K2-L8-CODE's built totals.
 
-Last updated: 4 November 2026.
+Last updated: 15 November 2026.

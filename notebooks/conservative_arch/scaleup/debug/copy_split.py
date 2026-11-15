@@ -104,8 +104,9 @@ def tag_repl(folder):
     vl = next((t for t in parts if re.fullmatch(r'vtlr[\dp]+', t)), None)
     if vl:                                       # dead-wells screen B: V_theta lr multiplier (training only; tag check)
         repl += (('VTHETA_LR_MULT         = None', f"VTHETA_LR_MULT         = {vl[4:].replace('p', '.')}"),)
-    if 'st16250' in parts:
-        repl += (('LADDER_STEPS     = 32_500', 'LADDER_STEPS     = 16_250'),)
+    st = next((int(t[2:]) for t in parts if re.fullmatch(r'st\d+', t)), None)
+    if st:                                       # SO-TS (st16250), SR2-2B (st130000): run length, in the tag
+        repl += (('LADDER_STEPS     = 32_500', f'LADDER_STEPS     = {st:_}'),)
     kw = next((int(t.split('x')[1]) for t in parts if re.fullmatch(r'dcvt\d+x\d+', t)), 8)
     if kw != 8:                                  # K2-CODE: V_theta's wells per bank
         repl += (('V_THETA_WELLS_PER_HEAD      = 8', f'V_THETA_WELLS_PER_HEAD      = {kw}'),)

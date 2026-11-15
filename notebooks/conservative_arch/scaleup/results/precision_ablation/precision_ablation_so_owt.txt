@@ -1,0 +1,38 @@
+precision ablation, semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn)
+16 estimation windows (even) and 16 evaluation windows (odd) of 32 evenly spaced x 512 tokens, validation /Users/dimitargueorguiev/Downloads/semsimula_fock_gamma_sweep_aniso_gaussian_fockreg_d384/data/openwebtext_val_2M.npy; K = 8, rank = 4, PRECISION_LR_MAX = 1.0; moments weighted by g_k (the force weight)
+estimation windows, trained model: loss 4.0148  ppl 55.41
+
+evaluation windows (mu_k and w_k context-dependent throughout):
+  condition                            loss      ppl    change
+  trained                            4.0882    59.63   +0.00%
+  B fixed per layer                  6.7245   832.53 +1296.09%
+  B fixed, trained norm              6.5883   726.57 +1118.39%
+  B zero (diagonal only)             6.6322   759.17 +1173.06%
+  B fixed, pooled over layers        6.4930   660.52 +1007.64%
+  B shared from strongest well       6.6993   811.80 +1261.32%
+  a fixed per layer                  4.1004    60.37   +1.23%
+  a and B fixed per layer            6.7963   894.51 +1400.01%
+  B fixed, layer 0 only              6.3349   563.92 +845.65%
+  B fixed norm, layer 0 only         6.3604   578.46 +870.03%
+  a fixed, layer 0 only              4.0945    60.01   +0.63%
+  B shared, layer 0 only             6.6922   806.09 +1251.74%
+  B fixed, layer 1 only              4.6392   103.46  +73.49%
+  B fixed norm, layer 1 only         4.6557   105.18  +76.38%
+  a fixed, layer 1 only              4.0939    59.98   +0.57%
+  B shared, layer 1 only             4.1440    63.06   +5.74%
+
+per layer and well: share of the force weight; top-R share of trace E[B B^T]; mean share of the second moment for B B^T and for a (100% = no dependence on the context); sqrt E||B||_F^2
+  layer 0:
+    force share %      2.5    2.6    2.8   81.5    3.7    2.4    2.6    2.1
+    top-R share %     25.5   23.9   25.2   31.1   26.8   26.1   31.7   23.3
+    mean share B %     9.4    8.7    9.0   12.1    9.7    9.3   16.2    8.2
+    mean share a %    79.4   79.5   78.4   67.7   76.6   79.0   80.6   80.2
+    sqrt E|B|_F^2    1.000  1.000  1.000  1.000  1.000  1.000  1.000  1.000
+  layer 1:
+    force share %      0.0    0.0    0.0   80.7   19.3    0.0    0.0    0.0
+    top-R share %     32.3   27.3   29.8   81.3   88.4   31.4   29.5   26.8
+    mean share B %    13.9    9.8   11.8   78.4   87.4   12.1   11.7   10.3
+    mean share a %    58.6   56.9   58.9   38.6   25.1   58.6   59.2   62.1
+    sqrt E|B|_F^2    1.000  1.000  1.000  1.000  1.000  1.000  1.000  1.000
+  pooled over layers, top-R share %:   25.5   23.9   25.2   35.4   54.9   26.1   31.7   23.3

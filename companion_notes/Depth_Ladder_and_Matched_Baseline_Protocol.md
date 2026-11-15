@@ -5665,9 +5665,139 @@ Each arm: its 0.5B Cell 0 (PMX's or SR2's, with `FIRST_ORDER_OVERDAMPED = True` 
 - **Cell 0:** SR2's six deltas from the notebook's defaults, `REVERSE_CHANNEL = False`, `VPHI_GRAD_PATH = 'live'`, `XI_GRAD_PATH = 'live'`, `LOWRANK_DAMPED_FLOW = True`, `VPHI_ANALYTIC_FORCE = True`, `LAYER_CHECKPOINT = False`, plus `LADDER_STEPS = 130_000` and `SNAPSHOT_STEPS = [6_500, 16_500, 32_500, 48_500, 65_000, 84_500, 97_500, 113_500, 130_000]`. Float32 (BF1–BF3 were never scored), seed 0, OpenWebText.
 - **Tag, checked by executing HEAD's Cell 0 (`1eef209`) locally:** with SR2's six deltas alone it reproduces SR2's published tag exactly; with the two 2B lines it is `…norc_vplive_xilive_sr2_st130000_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn`. HEAD contains the `sqrt(w)` backward fix (`15c236d`), which a run four times the ladder's length needs.
 - **Schedule and data:** WSD with the fractions unchanged, so warm-up ends at step 6,500 (learning rate 9.23e-6 at step 50, not SR2's 3.69e-5: step 50's loss is not comparable with SR2's 7.6064), the stable phase at 84,500, the decay at 130,000; peak 1.2e-3, floor 6e-5. The shared cache `openwebtext_train_2000M.npy` (2.0B tokens), read as random windows with replacement: 2.13B tokens is about 1.07 passes, as in G2B.
+- **Data provenance (2026-11-12).** The Drive folder that held the ladder's OpenWebText pool was deleted before launch. The pool was rebuilt with `debug/rebuild_owt_pool.py`, which repeats the July procedure, into `semsimula_owt_gpt2/data`. The validation file it writes (the tail of a 2.002B-token stream, md5 `fd5c9b17…`) is not the ladder's (md5 `a4e8b4af…`), so it is set aside. What was checked:
+  - The stream reproduces: the rebuilt file's first 200M and first 1B tokens are identical to the June 200M and 1B pools kept locally. The 200M build's validation file sits in the rebuilt stream at tokens 225,067,883 to 227,067,883, and the 1B build's (md5 `3601b527…`) at 1,015,720,379 to 1,017,720,379, where those builds' stopping rule puts them.
+  - The ladder's validation file is in none of the rebuilt 2B training tokens (five 32-token samples searched; the only hits are a repeated share-button passage). Training on the rebuilt file and evaluating on the ladder's validation file therefore has no overlap.
+  - Not checked: whether the deleted training file was the first 2B tokens of this stream. The ladder's validation file is consistent with the tail of a 4B-token build (the default of `train_fock.py`, used for the Lambda Labs sweeps in July), which would make the first 2B tokens of the same stream the natural training file; a streaming check to 4.2B tokens settles it.
+  - SR2-2B therefore trains on the rebuilt `openwebtext_train_2000M.npy` and evaluates on the ladder's own `openwebtext_val_2M.npy` (md5 `a4e8b4af…`), restored to the shared folder before launch, so its validation numbers are comparable with every earlier ladder arm.
 - **Sessions:** about 1.1 s per step, so about 40 h and two Colab sessions. Cell 6 autosaves a `_manual` checkpoint at 23.5 h of VM uptime (about step 75,000, inside the stable phase) and saves the batch generator with it; Cell 2 resumes from the most recent of the periodic, `_best` and `_manual` checkpoints, and Cell 6 prints `batch sampler restored` when the pairing holds across the resume (as for L8-CODE, `63ce0d2`). The five snapshots up to 65,000 fall in session 1.
 - **Checks at launch:** the Cell 5 `Auto batch` line reads 16 × 2 (SO-CODE, the same two-layer analytic configuration, peaked at 32.9 GB at that split); step 50 logs `lr=9.23e-06`; about 1.1 s per step; no skipped steps reported in the first 1,000.
-- **After the run:** Cells 8, 7, 6b-7 (Gate 3 for RT3), 6b-13; download the folder with its snapshots and best checkpoint; on the CPU, FLOW-R on the best checkpoint (RT3's second half) and the per-snapshot diagnostics D-a to D-d of the table above.
+- **Launched 2026-11-12 (late evening), from GitHub `d968e75`, on an A100 80 GB.** Cell 0: the tag above, 130,000 steps. Cell 1b: the shared folder, listing the rebuilt training file, the restored validation file (md5 `a4e8b4af…`, checked on Drive) and the set-aside rebuilt one. Cell 3: 2,000,000,000 training and 2,000,000 validation tokens, from the cache. Cell 5: 76,572,110 parameters (35,427,080 in the wells), `Auto batch: 16 x accum=2` (33.7 GB at 16). Cell 5b: fresh run. Cell 6: 76,502,176 decayed and 69,933 undecayed parameters; WSD warm-up to 6,500, stable to 84,500, decay to 130,000, floor 6e-5. Step 50: training loss 7.6356 at `lr=9.23e-06` (not comparable with SR2's 7.6064, whose step 50 ran at four times the learning rate), gradient norm 0.49, peak memory 32.9 GB; step 100: 7.5625. About 1.05 s per step, 38–39 h projected.
+- **After the run:** Cells 8, 7, 6b-7 (Gate 3 for RT3), 6b-13; download the folder with its snapshots and best checkpoint; on the CPU, FLOW-R on the best checkpoint (RT3's second half) and the per-snapshot diagnostics D-a to D-d of the table above. Also on the CPU, the well-occupancy readings of `p-well-occupancy-setup` on every snapshot and on SR2's 0.5B best checkpoint.
+
+<a name="p-decay-branch-setup"></a>**Decay gain and decay branches: set up 2026-11-13, before SR2-2B's decay starts (the author's decision to run them; DG1 and DG2 confirmed by the author on 2026-11-13 at the values below, before step 84,500; DB1 to DB3 confirmed the same day, before any branch ran).**
+
+- **Why.** At step 71,650, SR2-2B is level with the matched GPT-2 at 2B: mean validation perplexity 61.2 against 62.2 over steps 67,000 to 72,000 (GPT-2's log `matched_gpt2_LR=1.2e-03_130000steps_training_output.txt`). At 0.5B the two were also close before the decay (70.73 against 68.01) and far apart after it (58.32 against 48.37), so the gap opens in the decay. Both models use the same schedule, a cosine from the peak $1.2 \times 10^{-3}$ to the floor $6 \times 10^{-5}$ over the last 35% of steps, so the smaller gain belongs to the model, not to a mismatched schedule. It has two readings: the cosine decay to a 5% floor does not suit our model, or our model at the peak rate carries less rate-driven excess loss, which no decay shape can recover.
+- **Decay gain, defined.** The mean validation log-perplexity over the last five evaluations at or before the decay start (steps 19,000 to 21,000 at 0.5B, 82,500 to 84,500 at 2B), minus the settled value (the mean of the last three evaluations). Measured: SR2 at 0.5B 0.193 nats, GPT-2 at 0.5B 0.341, GPT-2 at 2B 0.368. With SR2-2B's evaluation spread of 0.020 nats, the standard error of its gain is about 0.015 nats.
+- **The clipping conjecture, and what the logs already show.** The conjecture is that clipping caps SR2's updates in the stable phase, so the decay has less noise to remove. SR2 clips the global gradient norm at 1.0 and the $V_\phi$ group at 0.3 (Cell 6 header). At 0.5B neither clip acted: the global norm exceeded 1.0 in 0.2% of logged steps, and after step 5,000 the largest group's norm exceeded 0.3 in 1.1%, with $V_\phi$ never the largest. The gap was there all the same (0.193 against 0.341). GPT-2 also clips at 1.0, was clipped in most steps of its 2B decay (median gradient norm 1.17 over steps 110,000 to 120,000 and 1.43 over 120,000 to 130,000), and still gained 0.368. Under AdamW a steady clip factor largely cancels, because the update divides by the running gradient scale. So clipping is not the cause of the 0.5B gap. At 2B it may add to it: from step 57,000 the $V_\phi$ gradient grows (median global norm 0.46 over steps 48,000 to 56,000 and 1.1 to 1.4 over 60,000 to 72,000, above 1.0 in 65% of steps, with $V_\phi$ the largest group), which SR2 at 0.5B never showed. GPT-2's norm stayed near 0.68 through its whole stable phase.
+
+| id | prediction | called |
+| --- | --- | --- |
+| DG1 | SR2-2B's decay gain is below 0.15 nats: the clipping active at 2B adds to the gap (refuted at 0.18 or more; 0.15 to 0.18 is undecided) | 30% |
+| DG2 | SR2-2B's decay gain is smaller than GPT-2's 2B gain (0.368) by 0.10 nats or more | 75% |
+
+- **Decay branches, after SR2-2B finishes.** Each model gets the same decay window (84,500 to 130,000), with only the shape and the floor changed:
+  - **B0, the control:** the current decay, a cosine to $6 \times 10^{-5}$.
+  - **B1:** a cosine to zero.
+  - **B2:** $1 - \sqrt{p}$ to zero, where $p$ is the fraction of the decay elapsed.
+- **SR2's branches** start from SR2-2B's periodic checkpoint at step 82,500, which holds the model, AdamW and the batch sampler. They therefore draw the main run's batches, so the main run's own decay is B0 and the comparison is paired. Check: a branch's evaluations at 83,000 to 84,500, before its decay starts, must match the main run's to within GPU nondeterminism.
+- **GPT-2's branches** start from its periodic checkpoint at step 75,000. Its periodic checkpoints, written every 25,000 steps, hold the model and AdamW but not the batch sampler (only the rolling `gpt2_baseline_latest.pt` does). The branches therefore start with a re-seeded sampler, and B0 runs as a branch of its own. Its evaluation batches are fixed, so all three are scored on the same text. The file is on Drive (`semsimula_matched_gpt2_baseline_owt/checkpoints_wsd_lr0p0012_st130000/gpt2_baseline_step75000.pt`, 412,820,591 bytes, the size of the weights plus AdamW's two moments; checked 2026-11-13), so no rerun is needed.
+- **Scored as the narrowing:** a variant's gain for SR2 over SR2's B0 minus its gain for GPT-2 over GPT-2's B0, in settled log-perplexity.
+
+| id | prediction | called |
+| --- | --- | --- |
+| DB1 | neither B1 nor B2 narrows the SR2 to GPT-2 gap by 0.03 nats or more: the gap is not a schedule effect | 65% |
+| DB2 | B1 or B2 improves GPT-2's settled perplexity by 1% or more over its B0 | 50% |
+| DB3 | B1 or B2 improves SR2's settled perplexity by 1% or more over its B0 | 50% |
+
+- **Readings, fixed now:**
+  - **DG1 hits:** the 2B clipping adds to the gap. The next arm is a branch from 82,500 with the $V_\phi$ clip at 1.0 through the decay (not registered here).
+  - **DB1 hits:** the gap is not the schedule, so the lever is the peak rate or the architecture, and the 2B queue keeps the current decay.
+  - **DB1 misses:** the variant that narrows the gap becomes a candidate for the 2B queue, adopted only together with a matched GPT-2 rerun.
+  - **DB2 or DB3 hits while DB1 hits:** a general gain for both models. It is recorded, not adopted mid-programme, since the registered 2B comparisons run on the current schedule.
+- **What the notebooks need (checked 2026-11-13 against HEAD `d968e75`, not yet written):**
+  - The ladder notebook's `WSD_LR_FLOOR` is not in the run tag, so a floor-zero branch would resolve to SR2-2B's folder, and Cell 2 would resume SR2-2B's latest checkpoint. Cell 0 needs a decay-shape switch (`WSD_DECAY_SHAPE`, default `'cosine'`) and conditional tag components for a non-default floor and shape, so every existing tag stays the same. Cell 6's `lr_schedule` gains the $1 - \sqrt{p}$ case.
+  - Cell 1d stages a branch's source checkpoint only for a `WSD_STABLE_FRAC` branch: it strips the `sf` component to find the source folder. It needs the same for the new components. Its assert that the branch step lies at or before the decay start holds for 82,500.
+  - The GPT-2 notebook needs the same switch, tag components for `LR_MIN` and the shape, and a start from the step-75,000 checkpoint.
+- **Cost.** SR2's branches run 47,500 steps each at about 1.09 s per step, about 14.4 h each, so 29 h for B1 and B2. GPT-2's three branches run 55,000 steps each at 0.30 s per step, about 4.6 h each, so 14 h. In total about 43 GPU-hours after SR2-2B; where they go in the queue is the author's decision.
+- **Checkpoints to keep:** SR2-2B's periodic `_step75000.pt` and `_step82500.pt`, through pruning and the post-run Drive cleanup, and GPT-2's `gpt2_baseline_step75000.pt`.
+
+<a name="p-well-occupancy-setup"></a>**Well occupancy against training tokens: set up 2026-11-13, while SR2-2B trains and before any of its snapshots is read (the author's question, for the book; OC1 to OC3 confirmed by the author on 2026-11-13 at the values below, before any snapshot was read).**
+
+- **The question.** Does a layer use more of its eight $V_\theta$ wells as the training budget grows? At 0.5B, layer 1 runs on one or two wells in every healthy arm (`Dead_Wells_in_the_Joint_V_theta_Bank.md` §4.7). SO-OWT, which is SR2, gives 58.27 with only layer 1's two strongest wells against 58.28 with all eight. SO-CODE loses 4.6% with one well and nothing with two. In L8-CODE the same two wells carry 87–99% of the pull in all seven deep layers. Layer 0 needs all eight. If layer 1 recruits more wells with more data, "two wells are enough" is a property of the 0.5B budget, and the $K = 2$ arms (K2-L8-R6-OWT is queued at 0.5B) would lose ground at 2B. If it does not, the narrowness is structural.
+- **Measured as wells needed.** For each layer, the smallest $k$ whose $k$ strongest wells, ranked by force share, give a perplexity within 0.5% of all eight on 16 validation windows (`debug/keep_k_curves.py`, which runs `debug/vtheta_well_probe.py`). Recorded alongside: each well's force share and occupancy, and the median nearest-well ratio.
+- **Read on:**
+  - SR2-2B's nine weights-only snapshots: 6,500, 16,500, 32,500, 48,500, 65,000 and 84,500 in the stable phase, and 97,500, 113,500 and 130,000 in the decay. The five up to 65,000 are on Drive (Cell 6 log). The snapshots hold `model_state_dict` and `model_cfg`, as the probe's loader expects; this is checked on the first one before the rest are read.
+  - SR2 at 0.5B (its best checkpoint, step 32,500), with the same measure, as the decayed 0.5B point.
+- **What the readings can and cannot show.** The 0.5B and 2B endpoints are both fully decayed, so they compare budgets directly. The snapshots in between are read at the peak learning rate (stable phase) or part-way through the decay, so the curve over training mixes the budget with the schedule; it shows the direction and when changes happen, not a clean budget curve. One seed, one corpus.
+- **An optional decayed 1B point (proposed, not agreed).** A branch from SR2-2B's periodic checkpoint at step 37,500 with `LADDER_STEPS = 65_000`. Its stable phase ends at 42,250 and its decay runs to 65,000, the 1B schedule. The branch is SR2-2B's first 37,500 steps followed by the 1B schedule's remainder, and differs from a 1B run from scratch only in the warm-up: 6,500 steps instead of 3,250. It costs 27,500 steps, about 8.3 h, gives three decayed budgets (0.5B, 1B, 2B) for both the wells and the perplexity, and needs Cell 1d to stage from the `st130000` folder into the `st65000` one.
+
+| id | prediction | called |
+| --- | --- | --- |
+| OC1 | at step 130,000, layer 1 needs at most two wells | 65% |
+| OC2 | layer 1's wells needed at 130,000 equals its count at the 32,500 snapshot | 60% |
+| OC3 | layer 0 still needs all eight wells at 130,000 | 70% |
+
+- **Checkpoints to keep:** all of SR2-2B's `_snap.pt` files, and its periodic `_step37500.pt` for the 1B branch.
+
+<a name="p-precision-twins-setup"></a>**What the $V_\theta$ projections need, and two smaller twins of SR2: measured and set up 2026-11-13 (the author's question: can the model shrink?; the twins and their calls are proposed and await the author's confirmation).**
+
+- **Where $V_\theta$'s parameters are.** SR2's joint bank holds 35,427,080 of the model's 76,572,110 parameters. It maps the concatenated context channels (1,920 wide) with dense layers: `B_proj` to the wells' low-rank precision factors (23,605,248), `mu_proj` to the centres (5,901,312), `a_proj` to the diagonal precisions (5,901,312), `w_proj` to the weights (15,368), plus the depth code (3,840). The matched GPT-2 has 33.7M parameters in all.
+- **Measured without retraining** on SR2's best checkpoint: 16 OpenWebText validation windows to estimate, 16 others to score, trained perplexity 59.63 on the latter. The scripts are `debug/vtheta_precision_ablation.py` and `debug/vtheta_projection_svd.py`, with outputs in `results/precision_ablation/`.
+
+| replacement (both layers unless stated) | perplexity change |
+| --- | ---: |
+| `B` fixed per well and layer (best rank-4 fit to its force-weighted mean) | +1,296% |
+| the same, rescaled to the trained norm | +1,118% |
+| `B` removed (diagonal precision only) | +1,173% |
+| every well takes the strongest well's `B`, layer 0 / layer 1 only | +1,252% / +5.7% |
+| `B` fixed, layer 0 / layer 1 only | +846% / +73% |
+| `a` fixed per well and layer | +1.2% |
+| `B_proj` truncated to rank 256 / 512 / 1,024 (SVD) | +102% / +41% / +7.0% |
+| `mu_proj` truncated to rank 512 / 1,024 (input-aware) | +12% / +1.6% |
+| `a_proj` truncated to rank 64 | +1.2% |
+
+- **Reading.**
+  - **`B` is the part that carries context.** Fixing its orientation costs about as much as removing it, so as trained, all of `B`'s value lies in its dependence on the context. The term $B_k B_k^{\top}(h - \mu_k)$ projects the state's offset from the well onto rank-4 directions chosen per token: it is the bank's main path from the context into the state.
+  - **Layer 0 needs `B` per well and per token.** Sharing one `B` across the wells costs +1,252% there, so the weak wells' orientations matter, in line with layer 0 needing all eight wells. Layer 1 is far more compressible: its two working wells have steadier orientations (78–87% of the second moment in the mean), a shared `B` costs +5.7% and keeping two wells costs nothing.
+  - **`B_proj` is close to full rank.** Half its squared singular values lie outside the top 256 directions, and truncation needs rank 1,024 of 1,920 to stay within +7%.
+  - **`a` is nearly context-free:** fixing it costs +1.2%, and `a_proj` truncates to rank 64 at the same cost.
+  - Truncation and replacement without retraining are upper bounds on the cost: a model trained with the smaller map can adapt to it.
+- **Twin PA, SR2 with a context-free diagonal precision.** `a_proj` is replaced by one learned $a_k$ per well and layer ($2 \times 8 \times 384$ = 6,144 parameters), with the same softplus and clamp. The model has 70,676,942 parameters, 5,894,986 fewer than SR2.
+- **Twin PB, PA plus a bottleneck in `B_proj`.** `B_proj` becomes a map from 1,920 to 512 to 12,288 dimensions (no bias in the first layer), 7,286,784 parameters instead of 23,605,248. The model has 54,358,478 parameters, 22,213,632 fewer than SR2. Width 512 is chosen because it is the narrowest width that still saves most of `B_proj`; its truncation cost (+41%) is the risk this twin measures. A width of 1,024 would be the safe choice, but it saves only 9.1M.
+- **Both twins:** SR2's Cell 0 plus the switch, 32,500 steps, OpenWebText, seed 0, paired against SR2 on the same batches; about 10 h each.
+
+| id | prediction | called |
+| --- | --- | --- |
+| PA1 | PA settles within +1% of SR2 (58.32) | 75% |
+| PB1 | PB settles within +2% of SR2 | 35% |
+| PB2 | PB settles within +5% of SR2 | 65% |
+
+- **What the notebooks need (checked 2026-11-13 against HEAD `d968e75`, not yet written).** A switch for each twin in Cell 0, each with a conditional tag component so that every existing tag stays the same. The per-layer $a_k$ lives in the depth-conditioned wrapper (`AnisotropicDepthConditionedGaussianVTheta`), which knows the active layer, and is passed to the joint bank in place of `a_proj`'s output. The bottleneck is a change to `B_proj`'s construction in the joint bank. A parameter-count check against the numbers above is part of the verification.
+
+<a name="p-precision-cpu-result"></a>**Can the wells share one precision core? Measured 2026-11-14 on SR2's best checkpoint, without retraining (the author's question). No shared-core twin is filed; PA and PB above stay proposed, unconfirmed and not run.**
+
+- **The question.** `B_proj` is the bank's largest map (23.6M of its 35.4M parameters). It gives each of the eight wells its own rank-4 factor $B_k$ for every token. Layer 1 runs on two wells with steady orientations (above), so the author asked whether the wells could share one core: one $B$ for all wells, or a small basis shared by the wells with a cheap per-well mix. Three versions, from the most generous to the one a model could compute:
+  - **one shared $B$:** every well takes the strongest well's $B_k$ (as above), or the per-token best single factor for all wells, read off the trained factors (the oracle);
+  - **a shared subspace (oracle):** per token, every well's $B_k$ is projected onto the top $s$ left singular vectors of $C = [\sqrt{w_k} B_k]$, the wells' factors stacked and weighted by their context weights, then rescaled to its trained norm. The basis is read off the trained factors, so the model could not compute it more cheaply than it computes them;
+  - **a fitted shared-subspace head:** $\widehat{B_k}(x) = \mathrm{cap}(U(x) C_k(x))$, with a basis $U(x)$ of $s$ directions (a dense map from 1,920 to $384 s$) and a per-well mix $C_k(x)$ of size $s \times 4$ (a dense map from 1,920 to $8 \times 4 s$). It is fitted to the trained low-rank force $g_k B_k B_k^{\top}(h - \mu_k)$, plus 0.1 times the Frobenius mismatch of $B_k B_k^{\top}$, on 128 random training windows (131,072 token-layer inputs; Adam, 4,000 steps of 2,048, both layers pooled because the bank is shared), with the rest of the model frozen.
+- **Shared $B$ and shared subspace** (`debug/vtheta_precision_ablation.py`, `conds=shared`; the 16 odd validation windows of the block above, trained perplexity 59.63; $\mu_k$ and $w_k$ stay context-dependent):
+
+| replacement | layer 0 only | layer 1 only | both layers |
+| --- | ---: | ---: | ---: |
+| every well takes the strongest well's B_k | +1,252% | +5.7% | +1,261% |
+| one shared B (oracle) | +1,021% | +8.1% | +1,047% |
+| each B_k in a shared 4-dimensional subspace (oracle) | +975% | +8.0% | +979% |
+| each B_k in a shared 8-dimensional subspace (oracle) | +121% | −0.0% | +121% |
+
+- **The fitted head** (`debug/vtheta_shared_subspace_fit.py`; 16 evenly spaced validation windows, trained perplexity 58.28):
+
+| head | weights (share of `B_proj`) | force error, layer 0 / layer 1 | layer 0 only | layer 1 only | both layers |
+| --- | ---: | --- | ---: | ---: | ---: |
+| s = 8 | 6,393,088 (27.1%) | 13.0% / 1.9% | +663% | +35% | +731% |
+| s = 16 | 12,786,176 (54.2%) | 7.3% / 1.2% | +513% | +32% | +578% |
+
+  The force error is $\sum \lVert \hat{F} - F \rVert^2 / \sum \lVert F \rVert^2$ on the fitting inputs. For comparison, the plain SVD truncation of `B_proj` to rank 512 (7,274,496 weights, 30.8%; block above) costs +41% on both layers with no fitting at all.
+- **Per-well readings** (same output as the first table):
+  - **Layer 0:** well 3 carries 81.5% of the force weight and the other seven 2.1–3.7% each. The mean of $B_k B_k^{\top}$ over tokens holds 8–16% of its second moment, so each well's orientation changes from token to token. The top 4 shared directions per token hold a median 66% of $\sum_k w_k \lVert B_k \rVert_F^2$, and the top 8 hold 79%.
+  - **Layer 1:** wells 3 and 4 carry 80.7% and 19.3%, and their means hold 78% and 87% of the second moment. The top 4 directions hold 90% and the top 8 hold 99.9%.
+- **Reading.**
+  - **Layer 0 has no shared core.** Its seven weak wells carry 18.5% of the force between them, yet replacing their factors with the strong well's costs +1,252%. Their orientations are per-token readings of the context that the strong well's factor does not hold, and the wells do not agree on a few common directions. The direction count on the same model (`dead_wells/direction_count_so_owt.txt`, on the head's 16 windows) agrees: 8 shared directions cost +157% at layer 0, 24 cost +5.0% and 28 cost +1.8%.
+  - **Layer 1's success is close to automatic.** Two working wells at rank 4 span at most 8 directions, so a shared 8-dimensional subspace is exact by construction.
+  - **The head fails where the oracle works.** The oracle reads the shared basis off the trained factors; the head has to predict it from the context through the product $U(x) C_k(x)$. Doubling $s$ from 8 to 16 lowers the cost only from +731% to +578%, so the limit is predicting the basis, not its width. The frozen model is also sensitive to the force itself: a 1.9% force error costs +35% at layer 1.
+  - Every number here is measured without retraining and bounds the cost from above: a model trained with a shared core could arrange itself differently. The fitted head is worse than a plain bottleneck with fewer weights, so a training run was not judged worth its GPU time.
+- **Decision (2026-11-14).** No shared-core twin. The compression candidates stay PA (context-free diagonal precision; +1.2% without retraining) and PB (PA plus a rank-512 bottleneck in `B_proj`; +41% without retraining). Their calls PA1, PB1 and PB2 await the author's confirmation.
+- **Files.** Scripts in `notebooks/conservative_arch/scaleup/debug/`: `vtheta_precision_ablation.py`, `vtheta_projection_svd.py`, `vtheta_shared_subspace_fit.py`. Outputs in `results/precision_ablation/`: `precision_ablation_so_owt.txt`, `projection_svd_so_owt.txt`, `precision_ablation_so_owt_shared.txt`, `shared_subspace_so_owt_s8.txt`, `shared_subspace_so_owt_s16.txt`. The head was fitted on `openwebtext_train_1000M.npy`, an OpenWebText training file, never on the validation set. The written-up reading is in [the well-count note, section 8](Minimum_Well_Count_for_Conservative_Models.md#8-can-the-wells-share-one-precision-core).
 
 **Scope:** OpenWebText, L = 2, d = 384, one seed per arm; the seed spread (MS1) is measured before the 2B runs are read.
 
