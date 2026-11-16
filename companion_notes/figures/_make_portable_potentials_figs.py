@@ -11,7 +11,18 @@ Generates three PNGs into this folder:
       integrator-dependent: Verlet consumes minima (mode selection), Langevin
       consumes Boltzmann mass (occupancy), over the SAME learned geometry.
 
-All surfaces / placements are SCHEMATIC (illustrative), not measured.
+All surfaces / placements of these three are SCHEMATIC (illustrative), not
+measured. They belong to the first version of the note (July 2026); the
+revised note (2026-11-15) uses only the fourth figure:
+
+  portable_potentials_gen3_calibration.png -- the Gen 3 (CfC/BAOAB, T = 0)
+      replacement for calibration_axes: (A) the same well centres with the
+      stiffness each trained integrator gives them (schematic shapes, measured
+      median omega*dt), (B) the cost of switching the integrator on trained
+      weights against training with it (measured), (C) SR2-2B's per-layer
+      flow penalty against training tokens (measured).
+
+Run:  python3 _make_portable_potentials_figs.py [gen3]   (gen3: the fourth only)
 """
 
 import numpy as np
@@ -226,7 +237,123 @@ def fig_calibration():
     print("wrote", out)
 
 
+# ---------------------------------------------------------------------------
+# Gen 3 replacement (2026-11-15). Every number below is measured; sources:
+#   omega*dt medians at the endpoint, Cell 6b-13: SR2 7.55, F3.1 4.32 (SR2's HF
+#     card, geometry row), FO-b 0.74 (FO-b-OWT card).
+#   post-hoc switch: F3.1's weights under SR2's exact flow, 4.230 -> 4.356 nats
+#     (protocol SS5.19); trained from scratch: SR2 58.32 vs F3.1 57.76 settled.
+#   per-layer flow penalty ln(PPL at 8 substeps per layer / trained), fresh
+#     batches (FLOW-R): SR2 0.53B 0.104; SR2-2B snapshots (protocol
+#     p-sr2-2b-result; generations.json gen3_2b flowr_snaps).
+TOK_PER_STEP = 32 * 512
+SNAP_STEPS = [6_500, 16_500, 32_500, 48_500, 65_000, 84_500, 97_500, 113_500, 130_000]
+SNAP_PEN = [0.008, 0.079, 0.486, 0.619, 0.691, 0.797, 0.807, 0.879, 0.922]
+
+
+def fig_gen3_calibration(book=False):
+    """book=True: two rows (A on top, B and C below) at a larger font, for the
+    book's text width; written as portable_potentials_gen3_calibration_book.png."""
+    FS, FSL, FSA = (11, 10.5, 12) if book else (8.5, 8, 9.5)
+    YA, YBC = (-0.25, -0.44) if book else (-0.17, -0.30)      # footnote heights below the axes
+    if book:
+        plt.rcParams.update({"font.size": 13, "axes.titlesize": 14})
+        fig = plt.figure(figsize=(11.0, 9.0))
+        gs = fig.add_gridspec(2, 2, height_ratios=[1.0, 1.05], hspace=0.62, wspace=0.32)
+        axes = [fig.add_subplot(gs[0, :]), fig.add_subplot(gs[1, 0]), fig.add_subplot(gs[1, 1])]
+    else:
+        fig, axes = plt.subplots(1, 3, figsize=(15.6, 5.0),
+                                 gridspec_kw={"width_ratios": [1.35, 0.8, 1.15]})
+    x = np.linspace(-6, 6, 1200)
+    centres = (-2.6, 2.4)
+
+    # (A) same centres, integrator-specific stiffness. Width ~ 1/omega; at a
+    # shared dt that is 1 : 7.55/4.32 for SR2 : F3.1. FO-b's wells are about
+    # ten times softer; drawn at 4x so the panel stays readable.
+    ax = axes[0]
+    arms = [("SR2: exact damped flow", 7.55, 0.55, BLUE),
+            ("F3.1: split step", 4.32, 0.55 * 7.55 / 4.32, AMBER),
+            ("FO-b: first order", 0.74, 0.55 * 4.0, TEAL)]
+    for name, wdt, sig, col in arms:
+        V = sum(-np.exp(-((x - c) ** 2) / (2 * sig ** 2)) for c in centres)
+        ax.plot(x, V, color=col, lw=2, label=f"{name}  (median \u03c9\u00b7\u0394t {wdt:g})")
+    for c in centres:
+        ax.axvline(c, color=GREY, lw=1, ls="--", zorder=0)
+    ax.text(0.0, -1.16, "same centres: the part that\ncan port within one integrator",
+            ha="center", va="top", fontsize=FS, color="#374151")
+    ax.set_xlim(-6, 6); ax.set_ylim(-1.45, 0.95)
+    ax.set_xticks([]); ax.set_yticks([])
+    ax.set_xlabel("hidden coordinate h (schematic 1-D slice)", fontsize=FSA)
+    ax.set_ylabel("V\u03b8(h; x) at one token", fontsize=FSA)
+    ax.set_title("(A) Stiffness belongs to the integrator")
+    ax.legend(loc="upper center", fontsize=FSL, frameon=False, ncol=1,
+              bbox_to_anchor=(0.5, 1.0))
+    ax.text(0.5, YA, "shapes schematic; \u03c9\u00b7\u0394t measured (Cell 6b-13).\n"
+            "FO-b drawn 4\u00d7 wider than SR2; measured about 10\u00d7",
+            transform=ax.transAxes, ha="center", fontsize=FS, color="#374151")
+
+    # (B) switching the integrator on trained weights vs training with it
+    ax = axes[1]
+    vals = [4.356 - 4.230, np.log(58.32 / 57.76)]
+    labels = ["switch on\ntrained weights\n(F3.1 \u2192 exact flow)",
+              "train with it\nfrom scratch\n(SR2 vs F3.1)"]
+    bars = ax.bar([0, 1], vals, width=0.55, color=[RED, BLUE])
+    for b, v in zip(bars, vals):
+        ax.text(b.get_x() + b.get_width() / 2, v + 0.004, f"+{v:.3f}",
+                ha="center", va="bottom", fontsize=10, fontweight="bold", color=DARK)
+    ax.set_xticks([0, 1]); ax.set_xticklabels(labels, fontsize=FS)
+    ax.set_ylim(0, 0.15)
+    ax.set_ylabel("validation loss cost (nats)", fontsize=FSA)
+    ax.set_title("(B) The cost is in the transplant")
+    ax.text(0.5, YBC, "measured: protocol \u00a75.19 (post-hoc switch, diagnostic batches);\nsettled PPL 58.32 vs 57.76 (full eval)",
+            transform=ax.transAxes, ha="center", fontsize=FS, color="#374151")
+
+    # (C) the tuning to the step tightens with training
+    ax = axes[2]
+    tok = [s * TOK_PER_STEP / 1e9 for s in SNAP_STEPS]
+    dstart = 84_500 * TOK_PER_STEP / 1e9
+    ax.axvspan(dstart, tok[-1] + 0.05, color="#F3F4F6", zorder=0)
+    ax.text((dstart + tok[-1]) / 2, 0.05, "learning-rate\ndecay", ha="center",
+            fontsize=FS, color="#6B7280")
+    ax.plot(tok, SNAP_PEN, color=BLUE, lw=2, marker="o", ms=5,
+            label="SR2-2B snapshots (2.13B-token run)")
+    ax.scatter([32_500 * TOK_PER_STEP / 1e9], [0.104], s=70, color=AMBER, zorder=4,
+               edgecolor="white", linewidth=1.5, label="SR2 at 0.53B, after its own decay")
+    ax.annotate("0.104", (0.532, 0.104), xytext=(0.62, 0.20), fontsize=9,
+                color=AMBER, arrowprops=dict(arrowstyle="-", color=AMBER, lw=1))
+    ax.annotate("0.922", (tok[-1], SNAP_PEN[-1]), xytext=(1.80, 0.60) if book else (1.55, 0.98), fontsize=9,
+                color=BLUE, arrowprops=dict(arrowstyle="-", color=BLUE, lw=1))
+    ax.set_xlim(0, 2.25); ax.set_ylim(0, 1.08)
+    ax.set_xlabel("training tokens (billions)", fontsize=FSA)
+    ax.set_ylabel("per-layer flow above the trained step (nats)", fontsize=FSA)
+    ax.set_title("(C) The tuning tightens with training")
+    ax.legend(loc="upper left", fontsize=FSL, frameon=False)
+    ax.text(0.5, YBC, "measured: FLOW-R, 8 substeps per layer, fresh batches;\n"
+            "snapshots before 1.38B are at the peak learning rate",
+            transform=ax.transAxes, ha="center", fontsize=FS, color="#374151")
+
+    for ax in axes:
+        for sp in ("top", "right"):
+            ax.spines[sp].set_visible(False)
+    if not book:                     # the book's caption carries the title
+        fig.suptitle("The trained bank is calibrated to its CfC/BAOAB step (Gen 3, T = 0)",
+                     fontsize=13, fontweight="bold")
+    if not book:
+        fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+    out = "portable_potentials_gen3_calibration_book.png" if book else "portable_potentials_gen3_calibration.png"
+    fig.savefig(out, bbox_inches="tight")
+    plt.close(fig)
+    print("wrote", out)
+
+
 if __name__ == "__main__":
-    fig_landscape()
-    fig_matrix()
-    fig_calibration()
+    import sys
+    if sys.argv[1:] == ["gen3"]:
+        fig_gen3_calibration()
+        fig_gen3_calibration(book=True)
+    else:
+        fig_landscape()
+        fig_matrix()
+        fig_calibration()
+        fig_gen3_calibration()
+        fig_gen3_calibration(book=True)

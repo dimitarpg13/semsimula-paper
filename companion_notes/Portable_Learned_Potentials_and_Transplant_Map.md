@@ -178,6 +178,10 @@ The first version's rule was "geometry ports; amplitudes re-fit". The measuremen
 - **Curvature does not port across integrators:** precisions and shapes are trained for the step (§4.1, §4.2), more tightly with more training (§4.3).
 - **Centres and weights may port within one integrator**, which is the case the first version's Level 1 described. No measurement here tests it directly.
 
+![The trained bank is calibrated to its CfC/BAOAB step: (A) the same well centres with the stiffness each trained integrator gives them, (B) switching the integrator on trained weights against training with it, (C) the per-layer flow penalty against training tokens](figures/portable_potentials_gen3_calibration.png)
+
+*Panel A's shapes are schematic, its ω·Δt values measured; panels B and C are measured (§4.1, §4.3). Generator: `figures/_make_portable_potentials_figs.py gen3`.*
+
 ---
 
 ## 5. Frozen landscape against warm start
@@ -281,9 +285,7 @@ The position-dependent-damping report (`Tech_Report_Position_Dependent_Damping_C
 
 The first version's main consumer was an O-step Langevin sampler: the same conservative core with the friction step replaced by an exact Ornstein–Uhlenbeck substep carrying thermostat noise locked to the friction by the fluctuation–dissipation relation. Its stationary density $\rho \propto \exp(-\beta V)$ is what a softmax readout reads, so under it a well's **occupancy**, not only its location, would matter, and the weights would have to be re-fitted to occupancy (first version §9; `Langevin_dynamics_reformulation_of_classical_damped_Lagrangian_flow.md`).
 
-![Same learned geometry, integrator-dependent calibration: Verlet consumes the mode, Langevin consumes Boltzmann occupancy](figures/portable_potentials_calibration_axes.png)
-
-In the ladder this is the SR5 arm, thermal training with an O-step in training only, planned with calibrated temperatures and not yet run. The figure belongs to the first version's Verlet-against-Langevin framing; in Gen 3 the producer would be SR2's deterministic exact flow.
+In the ladder this is the SR5 arm, thermal training with an O-step in training only: the Cell 0 switch `LANGEVIN_T` exists and two temperatures were calibrated on the CPU (protocol `p-sr5`, 2026-10-03), but it has not been run. **No model in the programme has been trained or evaluated with the thermostat on;** every result in this note is at $T = 0$. The first version's figure for this axis (`figures/portable_potentials_calibration_axes.png`, the mode against the occupancy) is kept in the folder for the record and replaced here by the Gen 3 figure of §4.9.
 
 ---
 
