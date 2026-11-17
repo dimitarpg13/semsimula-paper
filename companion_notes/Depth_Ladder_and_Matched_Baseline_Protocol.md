@@ -6135,6 +6135,32 @@ Each arm: its 0.5B Cell 0 (PMX's or SR2's, with `FIRST_ORDER_OVERDAMPED = True` 
   - SR2 is 6.3 times slower than the naive GPT-2 at 512 tokens, 4.5 times at 2,048 and 2.3 times at 8,192; against fused attention it is 5.5, 7.4 and 8.5 times slower. At 8,192 tokens it needs 25.6 GB against 6.2 to 8.0.
   - **The bank's size as a speed lever** (2026-11-17, the same benchmark on K4-R6 and K2-R6; `cpu_bench_{k4r6,k2r6}.txt`). Tokens per second at 512 / 2,048 / 8,192: SR2 459 / 338 / 195; K4-R6 742 / 559 / 251; K2-R6 846 / 592 / 275. So K4-R6 is 1.62, 1.65 and 1.28 times faster than SR2 at +2.2% perplexity, and K2-R6 1.84, 1.75 and 1.41 times at +11.7%. Peak memory at 8,192 tokens is about 25 GB for all three, so it comes from the context terms, not the bank. The decompositions' share at 512 tokens falls from 21% (SR2) to 16% (K4-R6) and 9% (K2-R6).
   - **Where SR2's time goes** (profile at 512 and 2,048 tokens): matrix products 43% and 47%, mostly the $V_\theta$ bank; the per-token decompositions for the stiff modes 21% and 18%; elementwise work, copies and reductions 34% and 33%; softmax, top-k and gathers about 1%; no autograd. The pair and routing work that a mean-field approximation would target is a small share at these lengths; the bank and the stiff-mode solves dominate.
+- **The code verdict on the memory mechanism, 2026-11-17: CT1 and CT2 miss, CT3 hits; SC1 misses, SC2 and SC3 hit. On code, as on OpenWebText, the stiff directions do not carry the recall better than other directions, and the first-order potential is not softer. What differs is the configuration of the wells around the state.** Outputs `results/transmission_probe/transmission_recall_{so,fob}_code.{txt,json}` and `results/force_response/force_response_factors_{so,fob}_code.{txt,json}`. The recall probe made one jittered mode-solver retry on SO-CODE, in the layer-1 far-band complement arm; the earlier tokens there moved by 0.007 against a reading of 4.3, which is the size of that perturbation. Every other arm keeps the earlier tokens fixed exactly. 47 near and 48 far recall pairs per model.
+
+| recall probe, target-logit change | SO-CODE | FO-b-CODE |
+| --- | ---: | ---: |
+| layer 0, far (17 to 256 back): stiff over complement | **1.32** | **1.32** |
+| layer 0, near (1 to 16 back): stiff over complement | 1.34 | 1.01 |
+| layer 0, far: absolute, stiff move; complement move | 0.350; 0.264 | 0.265; 0.200 |
+| layer 1, far: stiff over complement | 1.96 | 1.17 |
+| layer 1, far: absolute, stiff move; complement move | 0.184; 0.094 | 0.059; 0.051 |
+| a stiff move's part on U after layer 0's step (near; far) | 2.70; 2.85 | 2.09; 2.12 |
+
+  - **CT1 (layer 0, far: SO-CODE's ratio at least 1.5 times FO-b-CODE's), 35%: MISS.** 1.32 against 1.32, a factor of 1.00.
+  - **CT2 (SO-CODE's layer-0 ratio larger far than near), 40%: MISS.** 1.32 against 1.34.
+  - **CT3 (a stiff move's part on U after layer 0 larger in SO-CODE), 80%: HIT.** 2.70 and 2.85 against 2.09 and 2.12.
+
+| layer 0, per-well factors | SO-CODE | FO-b-CODE |
+| --- | ---: | ---: |
+| heaviest well: weight; force | 84.1%; **35.3%** | 77.4%; **81.3%** |
+| heaviest well: stiffness s; occupancy (median) | **0.019**; **0.98** | **0.199**; **0.32** |
+| light wells: stiffness s (geometric mean) | 0.101 | 0.119 |
+
+  - **SC1 (FO-b-CODE's light wells softer than SO-CODE's), 40%: MISS.** They are stiffer, 0.119 against 0.101. The heaviest well is ten times stiffer in FO-b-CODE.
+  - **SC2 (SO-CODE's heaviest well softer than every light well and holding the state at occupancy 0.9 or more), 60%: HIT.** Stiffness 0.019 against the light wells' 0.085 to 0.137; occupancy 0.98.
+  - **SC3 (FO-b-CODE's heaviest well holds its state less than SO-CODE's), 70%: HIT.** 0.32 against 0.98.
+  - **Reading.** The configuration seen on OpenWebText is sharper on code. SO-CODE holds its state at the bottom of a soft basin (stiffness 0.019, occupancy 0.98), which therefore pulls little: 35% of the force for 84% of the weight. Its light wells do the rest. FO-b-CODE holds its state far out on the side of one stiff well (stiffness 0.199, occupancy 0.32), and that well carries 81% of the force. The first-order potential is not too soft; its dominant well is the stiffest well in either model.
+  - **Not called, so not evidence until registered: transmission to recall is larger in SO-CODE overall.** A move of an earlier occurrence changes the later recall's target logit 1.3 times more in SO-CODE at layer 0, along stiff and other directions alike. At layer 1 the factor is 3.1 along stiff directions and 1.8 along others, and there the stiff directions do carry more (ratio 1.96 against 1.17). This would fit a memory that works through layer 1 and through the whole state, not through layer 0's stiff modes. It is one seed and an unregistered reading.
 - **For the book, after FO-b-K2-R6:** the question, the removal evidence, the mechanism and the interaction measured on the two-by-two, with this record as the source.
 
 <a name="p-well-occupancy-setup"></a>**Well occupancy against training tokens: set up 2026-11-13, while SR2-2B trains and before any of its snapshots is read (the author's question, for the book; OC1 to OC3 confirmed by the author on 2026-11-13 at the values below, before any snapshot was read).**
