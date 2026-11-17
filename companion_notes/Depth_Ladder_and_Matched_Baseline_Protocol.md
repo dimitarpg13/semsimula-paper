@@ -5870,6 +5870,117 @@ Each arm: its 0.5B Cell 0 (PMX's or SR2's, with `FIRST_ORDER_OVERDAMPED = True` 
 - **After the run:** Cells 8, 7, 6b-7, 6b-9, 6b-12 and 6b-13, as for SR2-L1; download the results folder, the best checkpoint and the periodic checkpoint at step 22,500 (for the decay-gain reading of `p-decay-noise-cpu`). On the CPU, on the best checkpoint: the well probe and keep-k curves for both layers (`debug/vtheta_well_probe.py`, `debug/keep_k_curves.py`) and the direction count (`debug/vtheta_direction_count.py` with `s=4,6,8,12,16,18,20,22`); both rebuild $K$ and $R$ from the tag. They score KS3 to KS5.
 - **What the screen cannot settle.** One seed per arm. The decay branches run on SR2-2B's checkpoints, which have eight wells of rank 4, so a schedule chosen there carries to a new well count only by assumption.
 
+<a name="p-k4-r6-result"></a>**K4-R6 scored 2026-11-16: settled 59.62, +2.2% against SR2. KS1 misses by 0.13; KS2 to KS5 hit. Next arm: K2-R6, by the author's decision after the result, in place of the rule's K8-R6.**
+
+- **The run.** Output `L2_SR2_K4_R6_OWT_32500steps_output.txt`, copied with the cell outputs into `notebooks/conservative_arch/scaleup/results/<tag>/`. 32,500 steps on the A100 40 GB in 35,813 s (1.10 s per step); training peak 31.2 GB, evaluation peak 30.57 GB. No watchdog trigger and no spike capture. SCAF CLEAN at every audit (the step-32,500 audit prints nan perplexities, the known cosmetic issue). The ξ decays ended at 0.467, 0.493, 0.886, 0.994, 0.984.
+- **Against SR2, step for step** (validation perplexity; the gap is the difference in validation loss):
+
+| step | phase | SR2 | K4-R6 | K4-R6 − SR2 (nats) |
+| ---: | --- | ---: | ---: | ---: |
+| 500 | warm-up | 461.8 | 452.5 | −0.021 |
+| 5,000 | stable | 108.4 | 107.2 | −0.011 |
+| 10,000 | stable | 86.0 | 82.8 | −0.037 |
+| 20,000 | stable | 70.8 | 70.7 | −0.002 |
+| 25,000 | decay | 65.9 | 66.6 | +0.010 |
+| 30,000 | decay | 58.1 | 59.4 | +0.023 |
+| **settled** (31,500–32,500) | | **58.32** | **59.62** | **+0.022** |
+
+- **The gap is measured, not noise.** Over the last seven evaluations (steps 29,500 to 32,500), the gap is +0.0219 nats with a standard deviation of 0.0007. Both runs score the same validation batches, so the 2% evaluation scatter is common to both and cancels in the difference. Settling check, steps 29,500 to 32,500: a fitted change of +0.001 nats against a residual of 0.013; settled (SR2: +0.001 against 0.013). Best 57.71 at step 31,000 (SR2 56.49, also at step 31,000).
+- **Where the gap forms.** K4-R6 is ahead in the stable phase: −0.017 nats on average over steps 5,000 to 21,000, with a standard deviation of 0.014. The decay gain (as defined in `p-decay-branch-setup`: the mean validation log perplexity of the last five evaluations up to the decay start, minus the settled value) is 0.175 nats, against SR2's 0.193. **The deficit does not start at the decay** (corrected the same day; the first filing said it did). The paired gap, fitted per phase in nats per 1,000 steps, falls at −0.0061 over steps 2,000 to 10,000 (to −0.037 at step 10,000), rises at +0.0037 over steps 10,000 to 21,000 (to +0.007), and rises at +0.0013 over the decay (to +0.022); the residuals are 0.004 in every phase, and the gap's lag-1 autocorrelation in the stable phase is 0.93, so it drifts rather than scatters. K4-R6 leads early, SR2 overtakes it from about step 10,000, and the decay continues that trend at about a third of the late-stable rate. The smaller decay gain is that trend carried through the decay, not a loss the decay adds. The same per-phase fits for the other arms: SR2-L1 against SR2 +0.0081 (10,000 to 21,000) and +0.0054 (decay), so also slower in the decay; FO-b against SR2 +0.0012 and +0.0027, the one arm whose deficit grows faster in the decay than before it (its gap fell from +0.037 at step 12,000 to +0.023 at step 20,000, then rose to +0.049).
+- **The calls:**
+
+| id | prediction | called | result | scored |
+| --- | --- | --- | --- | --- |
+| KS1 | settled within +2% of SR2 (59.49 or less) | 45% | 59.62, +2.2% | **MISS** (by 0.13) |
+| KS2 | settled within +5% of SR2 (61.24 or less) | 80% | 59.62 | **HIT** |
+| KS3 | layer 0 needs all four wells (keep-3 costs more than 0.5%) | 85% | keep-3 +29.5% | **HIT** |
+| KS4 | layer 0 needs more than 20 of 24 directions (20 cost more than 0.5%) | 75% | 20 directions +3.7% | **HIT** |
+| KS5 | layer 1 needs at most two wells (keep-2 costs at most 0.5%) | 70% | keep-2 −0.0%, keep-1 −0.0% | **HIT** |
+
+- **The pool caveat holds** (step 1 above). The paired evaluation gap is exact, but whether K4-R6 drew SR2's training batches is not confirmed by the registered check. The training loss agrees with the same draws: at step 50 it is 7.5981 against SR2's 7.6064, and over the first 1,000 steps the training gap has a standard deviation of 0.005, below the 0.06 that different draws would give.
+- **The wells, on the CPU** (best checkpoint, step 31,000; 16 validation windows of `openwebtext_val_2M.npy`; trained perplexity 59.49 on these windows against SR2's 58.28; outputs in `notebooks/conservative_arch/scaleup/results/well_screen/`, files `*k4r6_owt*`):
+  - **Layer 0 needs all four wells and nearly all 24 directions.** Keeping the strongest one, two and three wells costs +1,293%, +249% and +29.5%. Well 0 carries 89.7% of the force weight, and each of the other three carries 3.4–3.5% (SR2: 81% and 2.3–3.7%). Projecting onto 16, 18, 20 and 22 shared directions costs +12.3%, +7.0%, +3.7% and +1.4%, so no tested $s$ is within 0.5% ($r^{\ast} \gt 22$). SR2 at 24 directions: +5.0%. Trained with 24 directions, layer 0 fills all of them, as SR2's layer 0 fills its 32.
+  - **Layer 1 runs on one well of rank 6.** That well carries 100.0% of the force weight; keeping it alone costs −0.0%. Its need is $r^{\ast} = 6$: four directions cost +17.2% and six cost −0.0% (SR2: 8, from two wells of rank 4). Layer 1's directions fit inside one well when the well is wide enough.
+  - The weight entropy: $n_{\mathrm{eff}}$ is 2.18 at layer 0 and 1.01 at layer 1 (SR2: 3.8 and 1.5).
+- **The cells** (best checkpoint), with SR2 in brackets:
+  - **Cell 6b-13:** median ω·Δt 6.83 [7.55]; layer 0 7.80 [8.93], layer 1 4.69 [5.46]; 99.4% past the explicit wall. Fewer, wider wells are a little softer. The cell's "pre-registered band" MISS is its depth-ladder band for SR2-L*, not a call of this screen.
+  - **Cell 6b-7:** Gate 0 PASS. Gate 1 (velocity reset) +2.83 perplexity [+2.22]. Gate 2 at N = 3: +0.243 nats [+0.299]. Gate 3 at N = 3: +0.653 nats [+0.405]. MAPS, as for SR2. FLOW-R has not been run on K4-R6.
+  - **Cell 6b-9:** R(geo) 0.601 [0.620]. The LayerNorm projection moves it by −0.564 [−0.586] and $V_\phi$ by −0.002 [−0.002].
+  - **Cell 6b-12:** in the primary arm, layer 0 has a median per-token deflection of 0.060 [0.053] and layer 1 has none. No forcing, as expected without a reverse channel.
+  - **Cell 7:** the registers ablate to +0.00, as for any arm without the reverse channel.
+- **Reading.** A bank of 23.6M parameters, against SR2's 35.4M, costs 2.2% at 0.5B. The cost builds from step 10,000 on, faster in the late stable phase than in the decay. Layer 0 uses all 24 of its directions and loses 29.5% without its fourth well, so a direction budget of 24 is below what layer 0 would use. Layer 1 is indifferent: it needs six directions and one well. Whether layer 0's shortfall grows with the budget is the question the 2B data leave open: SR2-2B's layer 0 need was flat from step 16,500, while K4-R6 lost ground steadily from step 10,000.
+- **Next arm: K2-R6 (author's decision, 2026-11-16, after the result).** The rule confirmed on 2026-11-15 sends a KS1 miss to K8-R6. The author chose K2-R6 instead.
+  - K2-R6 is the lower bound on the well count, and it is the arm A1 is scored on (`p-sr2-l1-setup`: K2-R6 at L = 2 settles below SR2-L1's 69.15, 65%).
+  - The readings above bound what it should show. Layer 1 should not care: it runs on one rank-6 well. Layer 0 drops to 12 directions; projecting K4-R6's layer 0 onto 12 costs +38.6%, and keeping its two strongest wells costs +249%. Both are removal costs, which overstate what a model trained with the smaller budget loses (on code, ×20 by removal against 0.057 nats trained).
+  - K8-R6 stays the arm that asks whether layer 0 uses more than 32 directions. It is not dropped, only deferred.
+- **K2-R6 launch.** Cell 0 is K4-R6's nine changes with `V_THETA_WELLS_PER_HEAD = 2` in place of 4. Checks: Cell 0 prints the tag `…dcvt5x2_ar6…`, Cell 5 reports 52,955,336 parameters (11,810,306 in $V_\theta$), Cell 5b reports a fresh run, and step 50 logs `lr=3.69e-05`.
+- **K2-R6 calls (proposed and confirmed by the author on 2026-11-16, before K2-R6 trained; Cell 0 printed the tag `…dcvt5x2_ar6…`):**
+
+| id | prediction | called |
+| --- | --- | --- |
+| KS6 | K2-R6 settles within +5% of SR2 (61.24 or less) | 35% |
+| KS7 | within +10% of SR2 (64.15 or less) | 80% |
+| KS8 | the K2-R6 − SR2 gap in the stable phase (mean over steps 5,000 to 21,000) is at most +0.01 nats: like K4-R6, it loses in the decay | 55% |
+| KS9 | layer 1 of K2-R6 needs one well (keep-1 costs at most 0.5%) | 75% |
+
+- **K2-R6 launch, 2026-11-16, on an A100 80 GB (85.1 GB device), from GitHub `6ae745f`** (the notebook and the scaleup code are unchanged since `ae280af`). Cell 0 printed the tag `…aniso_dcvt5x2_ar6_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe…` with K4-R6's nine changes, `V_THETA_WELLS_PER_HEAD = 2` in place of 4. Cell 5 reported 52,955,336 parameters (11,810,306 in $V_\theta$) and `Auto batch: 16 x accum=2`. Cell 5b reported a fresh run. Step 50 logged `lr=3.69e-05`, a training loss of 7.5949 (K4-R6 7.5981, SR2 7.6064), a training peak of 29.4 GB and about 0.8 s per step, so about 7.5 h.
+
+- **The decay gain against the gradient noise (`p-decay-noise-cpu`), read 2026-11-16.** The checkpoint is the one saved at step 22,500, 1,375 steps into the decay with the rate at 97% of the peak: the same position as SR2-L1's reading. It is the best-so-far save and carries the AdamW state. Output: [`results/decay_noise/k4r6/adam_noise_decay_gain.txt`](../notebooks/conservative_arch/scaleup/results/decay_noise/k4r6/adam_noise_decay_gain.txt).
+
+| checkpoint | sum of the square roots of v | predicted gain | measured gain | measured over predicted | median of abs(m) over sqrt(v) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| K4-R6, step 22,500 (97% of peak) | 861.2 | 0.258 | 0.175 | **0.68** | 0.131 |
+| K4-R6, best (31,000; end of decay) | 849.9 | 0.255 | 0.175 | 0.69 | 0.131 |
+| SR2, best (31,000; end of decay) | 836.1 | 0.251 | 0.193 | 0.77 | 0.143 |
+
+  - **The noise argument does not explain K4-R6's smaller decay gain.** K4-R6 carries about as much optimizer noise as SR2, slightly more (850 against 836 at the same step, 470 against 449 in the vocabulary matrices), yet drains less. Its ratio, 0.68, is below the 0.72 to 0.74 that SR2-L1, SR2-2B and GPT-2 2B give at the same position. The pre-decay constant was fitted on three points, so 0.68 is a first point outside the band, not a refutation.
+  - **The reading:** the 0.02-nat shortfall is not less excess at the peak rate. It is the term the argument ignores, progress during the decay, and here that progress is the continuation of the slower learning that began at step 10,000 (the per-phase fits above), not a decay-specific loss. A gain measured from the decay start includes that trend; a trend-corrected gain would separate the two.
+  - **By block:** the bank's precision factors (`B_proj`, 9,216 × 1,920 here against SR2's 12,288 × 1,920) carry 186 against SR2's 182. The centres and diagonals (`mu_proj` and `a_proj`, two of 1,536 × 1,920) carry 119 against SR2's 132. Per coordinate, the smaller bank's maps are noisier.
+- **Does the first-order model need its wells as SR2 does? Read 2026-11-16 on FO-b-OWT's best checkpoint (the author's question: would a smaller bank cost FO-b more than it costs SR2?).** The same probes and the same 16 validation windows as for SR2 (`results/dead_wells/*so_owt*`); trained perplexity 60.09 on them against SR2's 58.28. Outputs in `results/well_screen/`, files `*fob_owt*`. `debug/vtheta_well_probe.py` now prints nan for ω·Δt and the mass on a first-order arm, which has neither.
+
+| reading, layer 0 (8 wells of rank 4) | SR2 | FO-b |
+| --- | ---: | ---: |
+| force weight of the strongest well | 81.0% | 60.7% |
+| weight entropy n_eff | 3.8 | 6.9 |
+| occupancy of the strongest well (median) | 0.99 | 0.50 |
+| distance to that well (median; the state's norm is about 3) | 3.1 | 6.4 |
+| keep the 1 / 2 / 3 strongest wells | +1,279% / +729% / +276% | +730% / +398% / +217% |
+| keep 4 / 5 / 6 / 7 | +130% / +53% / +28% / +10% | +128% / +60% / +26% / +7.1% |
+| project onto 8 / 12 / 16 shared directions | +157% / +46% / +19% | +48% / +22% / +12% |
+| project onto 20 / 24 / 28 | +9.8% / +5.0% / +1.8% | +6.8% / +3.5% / +1.4% |
+| energy in the top 8 directions (median) | 79% | 66% |
+
+  - **Layer 0 of FO-b also fills its budget** (28 of 32 directions cost +1.4%), but it degrades more gently: at 8 and 12 directions, removal costs SR2 3.3 and 2.1 times what it costs FO-b; with one to three wells, 1.3 to 1.8 times. From four wells or 16 directions up the two are close. FO-b spreads its weight over more wells, sits farther from them and only half inside the nearest (the soft wells of `p-fo-b-owt`, ω·Δt 0.74), and its directions share the energy more evenly.
+  - **Layer 1 of FO-b runs on one well and four directions or fewer:** keep-1 +0.0%, and projecting onto 4 directions changes nothing (100% of the energy is in the top 4). SR2's layer 1 uses two wells and 8 directions.
+  - **What it predicts, by removal:** at K2-R6's 12 directions, the first-order model should lose less than SR2, not more. This is a removal reading, which overstates what a trained model loses, and it is read on two models trained with 32 directions.
+- **Still to come from K4-R6:** FLOW-R, if the author wants it.
+
+<a name="p-bank-memory-conjecture"></a>**Is the $V_\theta$ bank a memory store of the second-order model? A preliminary record, 2026-11-16 (the author's conjecture; the evidence so far is removal on the CPU; the trained test is FO-b-K2-R6, not yet set up; no calls registered).** The author asked for this record to be kept until the fourth arm has run, and for the discussion to go into the book after that, as a subsection or a paragraph. "Wells" here means the wells of the $V_\theta$ bank (`V_THETA_WELLS_PER_HEAD`, `ANISO_RANK`), not the memory wells of PMX.
+
+- **The question, in the author's words (2026-11-16):** "will this deficit in the late stable and decay phase be more pronounced in the first order model of SR2-K2-R6-OWT? If that is the case removing wells from layer 0 acts as a memory-based deficiency." It follows the author's earlier conjecture on K4-R6, that at a fixed layer count restricting layer 0's wells deepens the deficit in the decay. The per-phase fits in `p-k4-r6-result` do not support that one as decay-specific: K4-R6's gap to SR2 grows from step 10,000 on, faster in the late stable phase (+0.0037 nats per 1,000 steps) than in the decay (+0.0013).
+- **What the removal readings say** (the FO-b table in `p-k4-r6-result`): both models' layer 0 fills its 32 directions, but removal costs SR2 more at small budgets, 3.3 and 2.1 times FO-b's cost at 8 and 12 directions and 1.3 to 1.8 times with one to three wells. SR2 sits deep inside one stiff well (81% of the force, occupancy 0.99); FO-b spreads its force over more, softer wells and sits only half inside the nearest (61%, 0.50). The removal reading therefore predicts the opposite of the question's guess: at K2-R6's budget, the first-order model should lose less than SR2.
+- **A memory reading that fits these numbers, turned around.** SR3-crit (`p-sr3-crit`) located the second-order model's gain in the oscillation of its stiff modes: a lightly damped stiff mode is a rotation that keeps tokens distinct, a critically damped one is a contraction that merges them, as a gradient flow does. In SR2 the stiff modes lie along the bank's precision directions. If that is where SR2 keeps information, each direction removed takes away an information-carrying mode as well as a pull; FO-b's directions only contract, so it loses only the pull. On this reading the bank is a memory store in the second-order model and only a force in the first-order one, and a smaller bank should cost SR2 more.
+- **Three predictions,** none yet registered as a call:
+  - removing directions costs the second-order model more (seen by removal, above);
+  - second order's lead over first order shrinks as the bank shrinks: it is +4.9% at 8 wells of rank 4 (`p-fo-b-owt`, 61.16 against 58.32);
+  - FO-b's late-stable and decay deficit at K2-R6 is smaller than SR2's, not larger.
+- **The trained test, FO-b-K2-R6, completes a two-by-two.** Its Cell 0 would be K2-R6's nine changes plus `FIRST_ORDER_OVERDAMPED = True`, the way FO-b-OWT was built from SR2; the build has not yet been checked locally. About 8 h of GPU, after K2-R6 finishes.
+
+| | 8 wells of rank 4 | 2 wells of rank 6 |
+| --- | --- | --- |
+| second order | SR2, settled 58.32 | K2-R6, training (launched 2026-11-16) |
+| first order | FO-b-OWT, settled 61.16 | FO-b-K2-R6, not set up |
+
+  The measure is the interaction, in nats of settled perplexity $P$:
+
+  $$
+  I = \left(\ln P_{\text{FO-b-K2-R6}} - \ln P_{\text{FO-b}}\right) - \left(\ln P_{\text{K2-R6}} - \ln P_{\text{SR2}}\right).
+  $$
+
+  $I \lt 0$ means the first-order model loses less from the smaller bank (the memory reading); $I \gt 0$ means it loses more (the question's guess). The same difference taken on the per-phase gap slopes says where in training any interaction forms. All four arms share seed 0 and the same training and evaluation batches, so the cells can be paired step by step.
+- **Caveats.** Removal overstates what a trained model loses: on code it put the cost of fewer wells at about 20 times what training with fewer wells cost (0.057 nats). Both models were read with 32 directions, not at the small budget. One seed per arm. FO-b's gap to SR2 may partly reflect its learning rate (the fairness caveat in `p-fo-b-owt`).
+- **For the book, after FO-b-K2-R6:** the question, the removal evidence, the mechanism and the interaction measured on the two-by-two, with this record as the source.
+
 <a name="p-well-occupancy-setup"></a>**Well occupancy against training tokens: set up 2026-11-13, while SR2-2B trains and before any of its snapshots is read (the author's question, for the book; OC1 to OC3 confirmed by the author on 2026-11-13 at the values below, before any snapshot was read).**
 
 - **The question.** Does a layer use more of its eight $V_\theta$ wells as the training budget grows? At 0.5B, layer 1 runs on one or two wells in every healthy arm (`Dead_Wells_in_the_Joint_V_theta_Bank.md` §4.7). SO-OWT, which is SR2, gives 58.27 with only layer 1's two strongest wells against 58.28 with all eight. SO-CODE loses 4.6% with one well and nothing with two. In L8-CODE the same two wells carry 87–99% of the pull in all seven deep layers. Layer 0 needs all eight. If layer 1 recruits more wells with more data, "two wells are enough" is a property of the 0.5B budget, and the $K = 2$ arms (K2-L8-R6-OWT is queued at 0.5B) would lose ground at 2B. If it does not, the narrowness is structural.

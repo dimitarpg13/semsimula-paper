@@ -166,6 +166,8 @@ L = [f'ablate channels {ABL}: loss {float(torch.stack(nll).mean()):.4f}  ppl {fl
      f'{"sum g":>8} {"fro2(k*)":>8} {"conc":>8} {"|h-mu|":>8} {"over 2":>7}']
 for l in sorted(rec):
     r = {k: (torch.cat(v) if isinstance(v, list) and k != 'xi' else v) for k, v in rec[l].items()}
+    if 'm' not in r:                                 # FO-b (2026-11-16): no mass, no substep; omega*dt and m print nan
+        r['m'], r['dt_kick'] = torch.tensor([float('nan')]), float('nan')
     m = r['m'] if r['m'].numel() == r['lam'].numel() else r['m'].expand_as(r['lam'])
     wdt = (r['lam'] / m.clamp(min=1e-30)).sqrt() * r['dt_kick']
     L.append(f'  {l:5d} {q(wdt)} {q(r["lam"])} {q(m)} {q(r["wmax"])} {q(r["neff"])} {q(r["w_star"])} {q(r["occ_star"])} '

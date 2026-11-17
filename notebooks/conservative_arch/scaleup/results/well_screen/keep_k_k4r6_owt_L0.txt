@@ -1,0 +1,6 @@
+keep-k curve, k4r6_owt layer 0: wells by force share [0, 1, 2, 3] (shares [89.7, 3.5, 3.4, 3.4]); base ppl 59.49 on these windows
+ k wells kept                     ppl    change
+ 1 [0]                         828.48  +1292.6%
+ 2 [0, 1]                      207.42   +248.7%
+ 3 [0, 1, 2]                    77.03    +29.5%
+ 4 all (trained)                59.49          
