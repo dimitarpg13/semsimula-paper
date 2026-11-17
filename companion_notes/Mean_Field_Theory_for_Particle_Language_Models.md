@@ -259,7 +259,7 @@ Lasry and Lions (2007) and Huang, Malhamé and Caines (2006) studied many agents
 | a sequence of $T$ tokens | an $N$-body system with $N = T$, in a fixed order | the order (causality) has no analogue; the field at $t$ uses $s \lt t$ only |
 | a layer | one time step of the dynamics | $\Delta t = 8 / L$ |
 | the well bank $V_\theta(h; \xi_t)$ | an external potential whose parameters are functionals of the empirical measure of the past | this is the mean-field coupling the model already has |
-| the context channels $\xi_t$ | the first moments of position-weighted densities of the past | five densities, five decays |
+| the context channels $\xi_t$ | the first moments of position-weighted densities of the past | five densities, five decays; this holds with content routing off; the ladder models route by content (programme note, §1.1) |
 | the bank weights $w(x)$ | a Gibbs distribution over $K$ states | logit = minus energy over temperature |
 | the bank input norm | the inverse temperature of the bank | §1.2 |
 | the bias $b$ | an external field | sets the entropy at infinite temperature |

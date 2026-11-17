@@ -9,7 +9,7 @@
 ## Contents
 
 0. [The one-page version](#0-the-one-page-version)
-1. [What a mean-field PARFLM is](#1-what-a-mean-field-parflm-is)
+1. [What a mean-field PARFLM is](#1-what-a-mean-field-parflm-is) (and [1.1, the correction on ξ](#11-correction-2026-11-17-the-context-channels-are-content-routed))
 2. [Where the pair term matters: the base is F3.1, not SR2](#2-where-the-pair-term-matters-the-base-is-f31-not-sr2)
 3. [Material and rules](#3-material-and-rules)
 4. [The sequence](#4-the-sequence)
@@ -22,7 +22,7 @@
 
 ## 0. The one-page version
 
-PARFLM has three couplings between tokens, and two of them are already mean fields. The context channels $\xi_t$ are first moments of position-weighted densities of the past, and $V_\theta$ reads those moments and never a token; the Fock registers are exclusion slots and lie outside this question. The one particle–particle term is the routed pair force: a sum of $V_\varphi(h_t, h_j)$ over the 16 earlier tokens a score head selects for each $t$. A mean-field PARFLM replaces that sum by the force of a *density* of the preceding states, carried as a mixture with $M$ components whose weights and means are content-gated EMA channels (Macroscopic §5.1). The router and its $(B, T, T, H_s)$ tensor disappear; the force remains a gradient because the mixture is detached, exactly as the sources are now.
+PARFLM has three couplings between tokens, and one of them is already a mean field. The context channels $\xi_t$ would be first moments of position-weighted densities of the past, read by $V_\theta$, if they were plain EMAs; in every ladder model they are content-routed, which makes them a second content-addressed lookup (§1.1, corrected 2026-11-17); the Fock registers are exclusion slots and lie outside this question. The one particle–particle term is the routed pair force: a sum of $V_\varphi(h_t, h_j)$ over the 16 earlier tokens a score head selects for each $t$. A mean-field PARFLM replaces that sum by the force of a *density* of the preceding states, carried as a mixture with $M$ components whose weights and means are content-gated EMA channels (Macroscopic §5.1). The router and its $(B, T, T, H_s)$ tensor disappear; the force remains a gradient because the mixture is detached, exactly as the sources are now.
 
 The programme has two levels that validate each other. The **theory level** asks whether the trained model already behaves macroscopically: whether its well bank has phases of its own (Probe C), whether its states cluster with depth (Probe D), and whether a layer acts on a token through a few collective variables rather than its exact state (Probe E). The **model level** asks whether the routed force of a trained model is representable by a field (Probe A), and then whether a model trained with the field reaches the routed model (the field arm). The first level needs no new model; the second ends on a GPU.
 
@@ -34,7 +34,7 @@ Term by term, on the two-layer conservative-only model ($d = 384$, five context 
 
 | coupling | what it is | mean field already? |
 | --- | --- | --- |
-| context channels ξ → V_θ | five EMAs of the past states with fixed decays; V_θ's centres, shapes and weights are linear in them | yes: a field of density moments, cost per token independent of T |
+| context channels ξ → V_θ | five channels whose weights are a softmax over an EMA distance term plus a content term (query of the token against keys of the past states); V_θ's centres, shapes and weights are linear in them | no, as trained: content-routed (§1.1); with the content term off they are EMAs, a field of density moments whose cost per token is independent of T |
 | routed pair force | Σ over 16 earlier tokens, chosen by content, of ∇V_φ(h_t, h_j) | no: the only particle term and the only content-addressed lookup |
 | per-token stiff basis | the d × P generator and its eigendecomposition, per token | not an interaction: a numerical choice (Probe B) |
 | Fock registers | exclusion slots with creation and destruction gates | outside this note |
@@ -58,6 +58,20 @@ two matrix products with the same causal weight matrix $W$ the existing channels
 **One scale to fix.** The trained routed term is a sum over 16 neighbours with unit gates; the field is an average with $\sum_m \pi_{m,t} \le 1$. A per-layer scalar $\lambda_\ell$ therefore multiplies the field force in every comparison and substitution below, fitted by least squares to the model's own force on the probe windows and reported. The cosine metrics are scale-free; the error and loss metrics use $\lambda_\ell$.
 
 **What is lost by construction.** Two past tokens that fall in the same component are indistinguishable to the field. If the routed force's value lies in retrieving one specific earlier token, no mixture at any $M$ reproduces it; Probe A's copy-split reading (A4) tests for exactly that, and the templates line owns that job if it is confirmed (Macroscopic §7.1).
+
+### 1.1 Correction (2026-11-17): the context channels are content-routed
+
+Sections 0 and 1 first described $\xi$ as five EMAs with fixed decays. That is the model with `XI_CONTENT_ROUTE = False`. Every ladder model runs with it on ("Alternative E"; protocol, configuration table), F3.1 and SR2 included. Each channel's weight on an earlier token $s$ is then
+
+$$
+w_{ts}^{(c)} = \underset{s \le t}{\mathrm{softmax}} \left( (t - s) \ln \alpha_c + \frac{q_c(h_t) \cdot k_c(h_s)}{\sqrt{48}} \right),
+$$
+
+with learned query and key maps of width 48 (`multixi/model_multixi.py`, `MultiChannelXi.forward`). This is five-head attention with a distance bias and the raw states as values. Three consequences for this programme:
+
+- **The context field is not yet a mean field.** It is a content-addressed lookup like the pair force, with a $(K, T, T)$ weight tensor per layer in prefill and a cache of every earlier key and state at decoding (about 624 numbers per token and layer). The claim that the model "already" has one mean-field coupling holds for the pair-free, routing-free model only.
+- **The content-gated mixture of §1 applies to $\xi$ as well.** The same prototypes $c_m$ and responsibilities $r_{s,m}$, summed by the existing causal EMA weights, give per-channel mixture weights and means as linear recurrences. A content-gated $\xi$ keeps a dependence on content (through which component an earlier state falls in) and has a state of $O(M d)$ per channel. With the field form of $V_\varphi$ it would make every coupling of the model a fixed-size recurrence, so that decoding needs no cache.
+- **What it loses** is the same as for the pair term: two earlier tokens in the same component become indistinguishable. Whether the trained routing uses that resolution is measurable in the same way as Probe A. Substitute the content-gated channels for the routed ones in a trained model, at $M \in \lbrace 1, 4, 16 \rbrace$, and read the cost against turning the content term off ($M = 1$ with uniform responsibilities is the plain EMA). No call is proposed yet.
 
 ## 2. Where the pair term matters: the base is F3.1, not SR2
 
@@ -161,6 +175,14 @@ The direct test of a macroscopic description: if the deep layers' dynamics is go
 ### Probe B: the shared stiff basis (Stage 5)
 
 As specified in Macroscopic §8: per token and layer the top $P$ left singular subspace of the generator, the pooled subspace over blocks of $b \in \lbrace 8, 64, 512 \rbrace$ consecutive tokens, the principal angles and energy fractions, and the loss with the block basis substituted in every layer. Calls B1–B3 as written there (energy fraction ≥ 0.9 at $b = 64$ in layers 1–7 of L8-CODE, 55%; substitution penalty ≤ 0.02 nats at $b = 64$, 50%; layer 0 has the largest angles, 70%). Independent of the field; included because it is the other per-token term.
+
+**Set up 2026-11-17 (the author asked for it, after the CPU benchmark put the per-token decompositions at 18 to 21% of SR2's inference time; calls PB1 to PB3 confirmed by the author on 2026-11-17, before the run; queued after the code recall probe and the code per-well reading).** Two amendments. (i) The models are SR2 on OpenWebText (the benchmarked model) and SO-CODE; L8-CODE can follow. (ii) A basis pooled over a block reads later tokens of that block, so it is not causal. The probe therefore also measures a **causal** basis, from the previous block, which a decoder could use; the first block keeps its own per-token modes. Each token's modes are then the exact eigenpairs of its $L_t$ restricted to the block subspace, a $q \times q$ problem. Readings: energy fraction and largest principal angle per layer; the loss with the block basis on layer 0, on layer 1 and on both, at $b \in \lbrace 8, 64, 512 \rbrace$, paired by window; and the time spent in the mode computation. Script `debug/shared_stiff_basis_probe.py`; outputs `results/shared_basis/`; a check on K4-R6 first.
+
+| id | call | confirmed at |
+| --- | --- | ---: |
+| PB1 | on SR2 at b = 64 (pooled), the median energy fraction is at least 0.9 at layer 1 and below 0.9 at layer 0 | 55% |
+| PB2 | on SR2 the causal basis at b = 64 on layer 1 only costs at most 0.01 nats | 55% |
+| PB3 | on SR2 the causal basis at b = 64 on both layers costs at most 0.02 nats | 25% |
 
 ### VF0: F3.1 trained without $V_\varphi$ (Stage 6a, GPU prerequisite)
 
