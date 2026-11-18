@@ -490,6 +490,13 @@ class FockMultiXiPARFLM(MultiXiPARFLM):
             g_create = self.creation_gates[layer_idx](h_mean)
             salience = salience * decay + g_create * (1.0 - decay)
             r_causal = None
+        elif (prefix_causal and not self.training and self.reverse_ch is None
+              and getattr(cfg, "skip_unread_registers", False)):
+            # Inference-only switch (2026-11-17, cfg.skip_unread_registers, unset = off). With no reverse
+            # channel nothing reads the registers (the token step never receives r; the repulsion term is
+            # training-only), so their creation and blending are skipped. The logits are unchanged; only
+            # register diagnostics are lost. Check: debug/verify_inference_chunking.py.
+            r_causal = None
         elif prefix_causal:
             # Diagonal creation queries: token t is scored by the register
             # bank as of position t; constant-shift cumulative softmax makes

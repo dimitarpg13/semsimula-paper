@@ -1446,6 +1446,7 @@ class MultiXiPARFLM(SparsePARFLM):
     def _pair_force_analytic(
         self, h_in: torch.Tensor, layer_idx: int,
         h_src_live: Optional[torch.Tensor] = None,
+        q_slice: Optional[slice] = None,
     ) -> torch.Tensor:
         """f_phi = -grad_{h_in} U_pair in closed form (cfg.vphi_analytic_force).
 
@@ -1460,6 +1461,17 @@ class MultiXiPARFLM(SparsePARFLM):
         """
         cfg = self.cfg
         B, T, d = h_in.shape
+        # Inference-only memory switch (2026-11-17, cfg.vphi_query_chunk, unset = off): every term below is a
+        # sum over one query's own row (its top-k, its soft router weights, its router term), so the force can
+        # be built a block of query rows at a time against all sources. Same values up to float rounding;
+        # the (B, T, T, Hs) score-head tensors shrink to (B, chunk, T, Hs). Check: debug/verify_inference_chunking.py.
+        _chunk = getattr(cfg, "vphi_query_chunk", None)
+        if q_slice is None and _chunk and T > int(_chunk) and not torch.is_grad_enabled():
+            _c = int(_chunk)
+            return torch.cat([self._pair_force_analytic(h_in, layer_idx, h_src_live, q_slice=slice(a, min(a + _c, T)))
+                              for a in range(0, T, _c)], dim=1)
+        h_q = h_in if q_slice is None else h_in[:, q_slice]                # the query rows
+        Tq = h_q.shape[1]
         _mode = getattr(cfg, "force_relaxation", "none")
         if (self.V_attn is not None or self.V_phi is None or not cfg.use_gathered_v_phi
                 or getattr(cfg, "v_phi_add_value_transport", False)):
@@ -1488,29 +1500,31 @@ class MultiXiPARFLM(SparsePARFLM):
 
         # ---- router: the score head exactly as ScoreHead.forward, keeping its pre-activation
         sh = self.score_head
-        proj_t = sh.w_q(h_in) + sh.w_d(h_in) + sh.b1                       # (B, T, Hs)
+        proj_t = sh.w_q(h_q) + sh.w_d(h_q) + sh.b1                         # (B, Tq, Hs)
         proj_u = sh.w_s(h_src_sc) - sh.w_d(h_src_sc)                       # (B, T, Hs)
-        hid_s = proj_t.unsqueeze(2) + proj_u.unsqueeze(1)                  # (B, T, T, Hs)
+        hid_s = proj_t.unsqueeze(2) + proj_u.unsqueeze(1)                  # (B, Tq, T, Hs)
         pi = sh.w2(F.gelu(hid_s)).squeeze(-1)                              # (B, T, T)
         causal = self._pair_mask_for(T, h_in.device)
+        if q_slice is not None:
+            causal = causal[q_slice]                                        # (Tq, T)
         idx, m_g, y = self._sparse_topk_indices(pi, causal, T, return_soft=True)
         k = idx.shape[-1]
         tau = float(self._gumbel_tau)
-        causal_b = causal.unsqueeze(0).expand(B, T, T) if causal.dim() == 2 else causal
+        causal_b = causal.unsqueeze(0).expand(B, Tq, T) if causal.dim() == 2 else causal
         causal_g = causal_b.gather(-1, idx).to(h_in.dtype)                  # (B, T, k)
-        h_src_g = h_src.gather(1, idx.reshape(B, T * k, 1).expand(-1, -1, d)).view(B, T, k, d)
+        h_src_g = h_src.gather(1, idx.reshape(B, Tq * k, 1).expand(-1, -1, d)).view(B, Tq, k, d)
         s_ell = self.per_layer_scale(layer_idx)
         s_ell = 1.0 if s_ell is None else s_ell
 
-        f_pair = h_in.new_zeros(B, T, d)
-        V_tot = h_in.new_zeros(B, T, k)
+        f_pair = h_q.new_zeros(B, Tq, d)
+        V_tot = h_q.new_zeros(B, Tq, k)
         if heads and heads[0].ln_before_distance:
-            u_q = F.layer_norm(h_in, (d,))
-            sig = torch.sqrt(h_in.var(-1, unbiased=False, keepdim=True) + 1e-5)
+            u_q = F.layer_norm(h_q, (d,))
+            sig = torch.sqrt(h_q.var(-1, unbiased=False, keepdim=True) + 1e-5)
             u_s = F.layer_norm(h_src_g, (d,))
         for hd in heads:
             # type gate Phi = exp(-c(D) D), c = softplus(MLP(D)), D = |W_l h_t - W_l h_j|^2
-            l_q = hd.W_l(h_in); l_s = hd.W_l(h_src_g)
+            l_q = hd.W_l(h_q); l_s = hd.W_l(h_src_g)
             diff_l = l_q.unsqueeze(2) - l_s                                 # (B, T, k, dl)
             D = (diff_l * diff_l).sum(-1)
             lin1, lin2 = hd.phi_c_net[0], hd.phi_c_net[2]
@@ -1521,7 +1535,7 @@ class MultiXiPARFLM(SparsePARFLM):
             Phi = torch.exp(-c * D)
             dPhi_dD = -Phi * (c + D * dc_dD)
             # value aligner Theta = tanh(MLP(theta_t, theta_j))
-            th_q = hd.W_theta(h_in); th_s = hd.W_theta(h_src_g)
+            th_q = hd.W_theta(h_q); th_s = hd.W_theta(h_src_g)
             pt = (hd.theta_w_q(th_q) + hd.theta_w_d(th_q) + hd.theta_b1).unsqueeze(2)
             hid = pt + (hd.theta_w_s(th_s) - hd.theta_w_d(th_s))            # (B, T, k, H)
             Theta = torch.tanh(hd.theta_w2(F.gelu(hid)).squeeze(-1))
@@ -1530,7 +1544,7 @@ class MultiXiPARFLM(SparsePARFLM):
             if hd.ln_before_distance:
                 diff_u = u_q.unsqueeze(2) - u_s
             else:
-                diff_u = h_in.unsqueeze(2) - h_src_g
+                diff_u = h_q.unsqueeze(2) - h_src_g
             r = torch.sqrt((diff_u * diff_u).sum(-1) + hd.eps2)
             V_tot = V_tot + (-hd.C) * Theta * Phi / r
             # pair weights: the live gate. Its value is the hard mask, but its gradient path into
@@ -1717,6 +1731,18 @@ class MultiXiPARFLM(SparsePARFLM):
             elif not U_pair.requires_grad:
                 # pair_potential='none' with no potential-type exchange
                 # field: nothing to differentiate.
+                # Guard (2026-11-17): under torch.no_grad a real pair potential also arrives here without a
+                # graph, and its force used to be replaced by zeros without a word (SR2 evaluated that way
+                # loses +0.016 nats: it runs with no pair force). Refuse instead.
+                _has_pair = self.V_phi is not None or getattr(self, "V_attn", None) is not None or (
+                    self.relax_field is not None
+                    and getattr(cfg, "force_relaxation", "none") in ("potential", "attention_potential"))
+                if _has_pair and not torch.is_grad_enabled():
+                    raise RuntimeError(
+                        "The V_phi pair force is an autograd gradient here, and autograd is disabled "
+                        "(torch.no_grad / inference_mode): the force would silently be zero. Evaluate "
+                        "under torch.enable_grad(), or set cfg.vphi_analytic_force = True (the closed-form "
+                        "force, which needs no graph).")
                 f_phi = torch.zeros_like(h_in)
             else:
                 with torch.autocast(device_type="cuda", enabled=False):

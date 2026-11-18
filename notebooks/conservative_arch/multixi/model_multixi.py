@@ -148,6 +148,29 @@ def causal_ema_logits(
     return log_W.masked_fill(~causal, float("-inf"))
 
 
+def causal_ema_logits_rows(
+    t0: int,
+    t1: int,
+    T: int,
+    alpha: torch.Tensor,
+    dtype: torch.dtype,
+    device: torch.device,
+) -> torch.Tensor:
+    """Rows t0..t1-1 of ``causal_ema_logits(T, ...)``, shape (t1 - t0, T), without the (T, T) matrix.
+
+    The same arithmetic on the same operands (2026-11-17, for the inference-only query chunking of
+    MultiChannelXi; debug/verify_inference_chunking.py checks it against slices of the full matrix).
+    """
+    alpha_safe = alpha.clamp(min=_ALPHA_EPS, max=1.0 - _ALPHA_EPS)
+    t_idx = torch.arange(t0, t1, dtype=dtype, device=device)
+    s_idx = torch.arange(T, dtype=dtype, device=device)
+    diffs = t_idx.view(-1, 1) - s_idx.view(1, T)             # (t1 - t0, T): t - s
+    causal = (diffs >= 0)
+    log_alpha = torch.log(alpha_safe)
+    log_W = log_alpha * diffs.clamp(min=0.0)
+    return log_W.masked_fill(~causal, float("-inf"))
+
+
 class MultiChannelXi(nn.Module):
     """K parallel causal weighted EMAs over h with learnable decays.
 
@@ -234,6 +257,23 @@ class MultiChannelXi(nn.Module):
         # the branch above.  No row is fully masked (s = t is allowed), so
         # the softmax cannot produce NaN the way a strict-causal mask can.
         dk = self.content_d_k
+        # Inference-only memory switch (2026-11-17, attribute query_chunk, unset = off): each row of the
+        # softmax is one query's, so the channels can be built a block of query rows at a time. Same values
+        # up to float rounding; the (K, T, T) and (B, K, T, T) tensors shrink to (K, chunk, T), (B, K, chunk, T).
+        qc = getattr(self, "query_chunk", None)
+        if qc and T > int(qc) and not torch.is_grad_enabled():
+            qc = int(qc)
+            q = self.W_q(h).view(B, T, self.K, dk).permute(0, 2, 1, 3)
+            kk = self.W_k(h).view(B, T, self.K, dk).permute(0, 2, 1, 3)
+            hs = h.unsqueeze(1)
+            out = []
+            for t0 in range(0, T, qc):
+                t1 = min(t0 + qc, T)
+                base_c = torch.stack([causal_ema_logits_rows(t0, t1, T, alphas[k], h.dtype, h.device)
+                                      for k in range(self.K)], dim=0)        # (K, Tq, T)
+                content = (q[:, :, t0:t1] @ kk.transpose(-1, -2)) * (dk ** -0.5)
+                out.append(torch.softmax(base_c.unsqueeze(0) + content, dim=-1) @ hs)   # (B, K, Tq, d)
+            return torch.cat(out, dim=2).permute(0, 2, 1, 3).contiguous()
         base = torch.stack(
             [causal_ema_logits(T, alphas[k], h.dtype, h.device)
              for k in range(self.K)], dim=0,
