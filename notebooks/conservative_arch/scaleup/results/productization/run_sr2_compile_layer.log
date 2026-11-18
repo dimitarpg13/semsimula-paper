@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "/Users/dimitargueorguiev/git/ml/semsimula-paper/notebooks/conservative_arch/scaleup/debug/cpu_throughput_benchmark.py", line 147, in <module>
+    m._layer_step_langevin = torch.compile(m._layer_step_langevin)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dimitargueorguiev/.pyenv/versions/3.12.11/lib/python3.12/site-packages/torch/__init__.py", line 1801, in compile
+    raise RuntimeError("Dynamo is not supported on Python 3.12+")
+RuntimeError: Dynamo is not supported on Python 3.12+

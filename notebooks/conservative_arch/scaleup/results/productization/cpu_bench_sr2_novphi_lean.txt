@@ -1,0 +1,33 @@
+CPU inference benchmark: ladder  semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn); analytic V_phi True; query chunk 512; skip unread registers True; V_phi removed; layer 1 pruned to wells [3, 4]; gram driver by float64 eigh; 79,324,622 parameters; 8 threads; float32; one sequence per forward
+
+length   median s   tokens/s  peak RSS GB  times
+   512      0.468     1093.7         1.99  0.468
+        components at 512 (one timed forward, 0.483 s; inclusive wall time, calls):
+           11.7%     0.057 s    2  context channels (xi)
+           23.1%     0.111 s    2  well bank: context_components
+            5.9%     0.029 s    2  well bank: harmonic_terms_lowrank
+           22.8%     0.110 s    2  stiff-mode decomposition (lowrank_modes)
+            4.3%     0.021 s    2  well bank: analytical_grad
+            0.0%     0.000 s    2  pair force (V_phi, score network, top-k, router)
+           32.1%  the rest (integrator, embeddings, output head)
+  2048      2.696      759.7         3.53  2.696
+        components at 2048 (one timed forward, 2.762 s; inclusive wall time, calls):
+           40.4%     1.116 s    2  context channels (xi)
+           15.8%     0.437 s    2  well bank: context_components
+            4.1%     0.112 s    2  well bank: harmonic_terms_lowrank
+           16.3%     0.451 s    2  stiff-mode decomposition (lowrank_modes)
+            2.5%     0.069 s    2  well bank: analytical_grad
+            0.0%     0.001 s    2  pair force (V_phi, score network, top-k, router)
+           20.9%  the rest (integrator, embeddings, output head)
+  8192     21.675      377.9         8.07  21.675
+        components at 8192 (one timed forward, 22.812 s; inclusive wall time, calls):
+           72.5%    16.537 s    2  context channels (xi)
+            7.2%     1.633 s    2  well bank: context_components
+            2.0%     0.460 s    2  well bank: harmonic_terms_lowrank
+            8.1%     1.838 s    2  stiff-mode decomposition (lowrank_modes)
+            1.3%     0.307 s    2  well bank: analytical_grad
+            0.0%     0.004 s    2  pair force (V_phi, score network, top-k, router)
+            8.9%  the rest (integrator, embeddings, output head)
+
+validation loss on 16 windows of 512 (openwebtext_val_2M.npy): 4.0835 (ppl 59.35)

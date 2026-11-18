@@ -2,7 +2,9 @@
 
 **What this note is.** The plan for closing the speed and memory gap between the Gen 3 conservative core (SR2, K4-R6, K2-R6 and their first-order and code twins) and the matched GPT-2 at inference. It starts from what was measured on 2026-11-17, lists every lever in two groups (those that leave the trained model unchanged, and those that need a new training run), and sets the order of work. Written 2026-11-17.
 
-**Status.** A plan. The measurements in §1 and §2 are done ([CPU_Inference_Benchmark.md](../depth_ladder/CPU_Inference_Benchmark.md)); no lever in §4 or §5 has been tried. The calls for the GPU arms are not yet written; each gets a pre-registration, confirmed by the author, before it launches.
+**Status.** A plan. The measurements in §1 and §2 are done ([CPU_Inference_Benchmark.md](../depth_ladder/CPU_Inference_Benchmark.md)); stage 1 (the levers of §4 that run on the CPU, and the first reading for T3) is measured in [Stage1_CPU_Levers.md](Stage1_CPU_Levers.md) (2026-11-17); N2 could not run on this machine, N4 and §5 are untried. The calls for the GPU arms are not yet written; each gets a pre-registration, confirmed by the author, before it launches.
+
+**Decision (2026-11-17).** The pair force stays disabled for the rest of the productization work: every later lever is measured on the models with $V_\varphi$ removed, the configuration of the bound in §1. Replacing it by a mean field (T2) is part of this plan and postponed; §5.1 holds that agenda.
 
 **Predecessor.** [Fock_Inference_Productionization_Plan.md](Fock_Inference_Productionization_Plan.md) (2026-09-18) did the same for the Gen 2 Fock arm at eight layers: a cost model by multiply–accumulate counts, A100 measurements, and the training-speed levers of the 2B-token runs. §3 below says which of its levers carry over.
 
@@ -14,7 +16,7 @@
 2. [Where the time and the memory go](#2-where-the-time-and-the-memory-go)
 3. [What carries over from the Gen 2 plan](#3-what-carries-over-from-the-gen-2-plan)
 4. [Levers that leave the trained model unchanged](#4-levers-that-leave-the-trained-model-unchanged)
-5. [Levers that need a new training run](#5-levers-that-need-a-new-training-run)
+5. [Levers that need a new training run](#5-levers-that-need-a-new-training-run) (and [5.1, the mean-field agenda](#51-the-mean-field-agenda-for-the-pair-force-t2-postponed))
 6. [The order of work](#6-the-order-of-work)
 7. [What this plan does not claim](#7-what-this-plan-does-not-claim)
 8. [Files and related notes](#8-files-and-related-notes)
@@ -88,7 +90,7 @@ with $b_k$ the channel's distance term, $q$ and $\kappa$ its query and key (widt
 
 **N4. An incremental decoder.** Without one, decoding speed cannot be measured at all, for these models or against GPT-2 with its key–value cache. With the pair force it caches the states and the score network's projections; without it, the channels' keys and the states. It is exact by construction and a prerequisite for any claim about generation speed.
 
-**N5. The decompositions.** 8% to 16% of the time, in float64. A float32 decomposition at inference would be cheaper, but the first float32 version of this solver failed on real matrices (2026-09-17, the note in `_gram_eigh`), so it would need checking on every model. Last in priority.
+**N5. The decompositions.** 8% to 16% of the time by the operator profile; the component timers of stage 1 put the whole decomposition step at 21% at 512 tokens, and 34% once the pair force is removed. In float64. A float32 decomposition at inference would be cheaper, but the first float32 version of this solver failed on real matrices (2026-09-17, the note in `_gram_eigh`), so it would need checking on every model. Last in priority.
 
 ## 5. Levers that need a new training run
 
@@ -96,17 +98,53 @@ Each changes what the model can express, so each needs a trained arm on one A100
 
 **T1. Train without the pair force.** The largest lever: it gives the bound in §1. The pair force carries none of the recall on code: cutting the earlier occurrence from layer 1's pair force changes the far-recall loss by +0.000 nats in both orders ([Second_Order_Memory_Probes.md](../depth_ladder/Second_Order_Memory_Probes.md), probe 6). VF0 (F3.1 trained without $V_\varphi$) is pre-registered and not run ([Coupling_Removal_Costs_CD.md](../depth_ladder/Coupling_Removal_Costs_CD.md), §5); it answers the value question on F3.1. The productization arm is SR2, or K4-R6, trained without it.
 
-**T2. A field form of the pair force.** Only if T1 costs more than the author's tolerance. The routed force is replaced by its interaction with a mixture of a few components, carried by content-gated exponential averages, so its cost per token no longer grows with the context ([Mean_Field_PARFLM_Programme.md](../Mean_Field_PARFLM_Programme.md), §1 and the field arm FA-OWT).
+**T2. A field form of the pair force.** Postponed (2026-11-17); the agenda is §5.1. The routed force is replaced by its interaction with a mixture of a few components, carried by content-gated exponential averages, so its cost per token no longer grows with the context ([Mean_Field_PARFLM_Programme.md](../Mean_Field_PARFLM_Programme.md), §1 and the field arm FA-OWT).
 
 **T3. Content-gated context channels, layer by layer.** The same mixture used for the channels gives a fixed decoding state and prefill linear in $T$ (the mean-field note, §1.1). But **recall runs through layer 1's content-routed channels**: removing the earlier occurrence from them costs +0.794 nats at far-recall positions in SO-CODE and +0.740 in FO-b-CODE, against +0.000 at control positions (probe 6). Replacing layer 1's channels risks exactly that, since a mixture cannot single out one earlier token. The candidate is therefore a hybrid: content-gated channels at layer 0, content-routed at layer 1, decoded with a cache at layer 1 only. What layer 0's content term carries has not been measured. Its first reading is a removal on the trained model, where setting layer 0's query map to zero turns its channels into exact exponential averages (§6, stage 1).
 
 **T4. A smaller bank.** K4-R6 is measured: +2.2% in perplexity, 1.14 times faster than SR2 at 512 tokens and level at 8,192 ([Well_Screen_and_Precision.md](../depth_ladder/Well_Screen_and_Precision.md)). Further candidates are a per-layer bank (layer 0 as now, layer 1 with one well of rank 6, which N3 measures without retraining first) and the twins PA and PB, which shrink the bank's projections. The bank is a small speed lever on its own; it matters most once the pair force is gone and matrix products are 55% of the time.
 
+### 5.1 The mean-field agenda for the pair force (T2, postponed)
+
+Disabling the pair force gives the upper bound on speed. The intended replacement is a mean field: the same pair potential, evaluated against a few summaries of the past instead of against routed earlier tokens. This section records how it would be built and tested, so that it can be resumed as it stands. It is postponed by the author's decision of 2026-11-17.
+
+**What it replaces.** Today, per layer and query token $t$, a score network runs on every earlier token (the $(T, T, 32)$ tensors), the 16 highest-scoring are kept, and the force is the gradient of $\sum_j m_{tj} V_\varphi(h_t, h_j)$ plus a router term. Each of the four heads is $V_\varphi = -C \Theta \Phi / r$: a value aligner, a type gate on a learned distance, and the inverse distance in state space. The score network is what grows as $T^2$; in stage 1 the pair force took 38% to 69% of SR2's time.
+
+**The field** ([Mean_Field_PARFLM_Programme.md](../Mean_Field_PARFLM_Programme.md), §1 and the field arm FA-OWT):
+
+$$f_t = -\lambda_\ell \nabla_{h_t} \sum_{m=1}^{M} \pi_{m,t} V_\varphi(h_t, \mu_{m,t}),$$
+
+with $\pi_{m,t}$ and $\mu_{m,t}$ the weights and means of a mixture of $M$ components, built from the earlier states by content-gated exponential averages: prototypes $c_m$, responsibilities $r_{s,m} = \underset{m}{\mathrm{softmax}}(-\lVert h_s - c_m \rVert^2 / \tau)$, and averages over $s \lt t$ only. No score network, top-k or router remains.
+
+**Why the implementation is small.**
+- The closed-form force `_pair_force_analytic` already evaluates the heads against a set of gathered sources (`h_src_g`, shape `(B, T, k, d)`) with per-source weights. The field passes the $M$ component means as the sources and $\lambda_\ell \pi_{m,t}$ as the weights, and drops the router term; the per-head code is reused as it is.
+- The mixture is a linear recurrence: $O(T M d)$ in prefill as a chunked scan, and a fixed decoding state of $M (d + 1)$ numbers per layer. It must not be built from the $(T, T)$ weight matrix the context channels use, or the $T^2$ cost returns.
+- Conservativity holds as now: the sources are detached and a token is excluded from its own field, so the force is the gradient of a potential in $h_t$.
+- Per token the heads see $M$ sources (8 against today's 16) and no score network, so the speed should land close to the bound. That is an estimate until measured.
+
+**The work, in order.**
+
+| step | what | effort | machine |
+| --- | --- | --- | --- |
+| 1 | Probe A: k-means prototypes on a trained model; the field force against the model's force (cosine), and the loss with the field substituted | 1–2 days, code and runs | CPU |
+| 2 | the field module behind a switch; an equivalence test (sources set to the gathered top 16 and weights to the gate reproduce today's pair term exactly) and the scan checked against the matrix form | 2–3 days | CPU |
+| 3 | VF0, F3.1 trained without the pair force: the value the field is scored against | about 14 h | A100 |
+| 4 | FA-OWT, the field arm with learned prototypes, temperature τ and scale λ_ℓ | about 14 h, after VF0 | A100 |
+
+Probe A's calls A0 to A5 and the field arm's FA1 to FA3 are written in the mean-field note as proposed, not confirmed.
+
+**The risks are scientific, not in the code.**
+- **Retrieval.** A mixture cannot single out one earlier token; where the routed force retrieves, the field loses it (call A4). On code the pair force carries none of the recall (+0.000 nats, [Second_Order_Memory_Probes.md](../depth_ladder/Second_Order_Memory_Probes.md), probe 6), which favours the field.
+- **Little to replace on SR2.** Removing the pair force costs SR2 1.8% (§1), and call A5 predicts nothing is left for the field to reproduce there. The programme's base is F3.1, where the pair term carries 0.28 nats. For SR2-class models, VF0's analogue may show that the field is not needed and the bound is the model.
+- **The monopole approximation.** $V_\varphi$ is evaluated at each component's mean, not averaged over the component; sigma points are the next order if call A1 misses.
+
+**When to resume.** When the author lifts the postponement. Probe A first: it needs no training and is the cheapest test of whether a field can represent the trained force at all.
+
 ## 6. The order of work
 
-1. **Stage 1, CPU, no retraining.** First separate the context channels' share of the profile. Then measure N1, N2 and N3, alone and together, on SR2 and K4-R6, with and without the pair force, at 512, 2,048 and 8,192 tokens, each with its exactness check. In the same session, take the layer-0 content-term removal for T3. One job at a time.
-2. **Stage 2, CPU.** Build the incremental decoder (N4) for the configuration stage 1 leaves best, and measure decoding speed and state size against the matched GPT-2 with its key–value cache.
-3. **Stage 3, GPU, one arm at a time.** First T1 (VF0, then the SR2-class arm without the pair force, with the leanest bank stage 1 supports). Then T3's hybrid, if stage 1 shows layer 0's content term carries little. T2 only if T1 costs more than the tolerance. The author sets the perplexity tolerance before each arm.
+1. **Stage 1, CPU, no retraining.** First separate the context channels' share of the profile. Then measure N1, N2 and N3, alone and together, on SR2 and K4-R6, with and without the pair force, at 512, 2,048 and 8,192 tokens, each with its exactness check. In the same session, take the layer-0 content-term removal for T3. One job at a time. **Done 2026-11-17** ([Stage1_CPU_Levers.md](Stage1_CPU_Levers.md)), except N2, which needs a Python 3.11 environment.
+2. **Stage 2, CPU.** Build the incremental decoder (N4) for the configuration stage 1 leaves best, with the pair force disabled, and measure decoding speed and state size against the matched GPT-2 with its key–value cache.
+3. **Stage 3, GPU, one arm at a time.** First T1 (VF0, then the SR2-class arm without the pair force, with the leanest bank stage 1 supports). Then T3's hybrid, if a trained arm can recover what layer 0's content term carries (stage 1 found the trained model relies on it heavily). T2 is postponed (§5.1). The author sets the perplexity tolerance before each arm.
 4. **After each stage.** Update §1's table, the benchmark note, and the book's Appendix C.10 where the bound or the measured state changes.
 
 ## 7. What this plan does not claim

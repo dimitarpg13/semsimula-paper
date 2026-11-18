@@ -1,0 +1,112 @@
+{
+ "model": "ladder",
+ "folder": "semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn",
+ "desc": "fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn); analytic V_phi True; query chunk 512; skip unread registers True",
+ "params": 79324622,
+ "threads": 8,
+ "lengths": {
+  "512": {
+   "times": [
+    0.9528310631867498
+   ],
+   "median_s": 0.9528310631867498,
+   "tokens_per_s": 537.3460414772925,
+   "peak_rss_gb": 2.1584854125976562,
+   "components": {
+    "context channels (xi)": {
+     "s": 0.055915045784786344,
+     "calls": 2
+    },
+    "well bank: context_components": {
+     "s": 0.13437244785018265,
+     "calls": 2
+    },
+    "well bank: harmonic_terms_lowrank": {
+     "s": 0.03594552003778517,
+     "calls": 2
+    },
+    "stiff-mode decomposition (lowrank_modes)": {
+     "s": 0.2082347208634019,
+     "calls": 2
+    },
+    "well bank: analytical_grad": {
+     "s": 0.022873510839417577,
+     "calls": 2
+    },
+    "pair force (V_phi, score network, top-k, router)": {
+     "s": 0.3734579721931368,
+     "calls": 2
+    }
+   }
+  },
+  "2048": {
+   "times": [
+    6.660267447121441
+   ],
+   "median_s": 6.660267447121441,
+   "tokens_per_s": 307.49515935507105,
+   "peak_rss_gb": 3.9091262817382812,
+   "components": {
+    "context channels (xi)": {
+     "s": 0.9416472630109638,
+     "calls": 2
+    },
+    "well bank: context_components": {
+     "s": 0.5269009103067219,
+     "calls": 2
+    },
+    "well bank: harmonic_terms_lowrank": {
+     "s": 0.13975860993377864,
+     "calls": 2
+    },
+    "stiff-mode decomposition (lowrank_modes)": {
+     "s": 0.8123752628453076,
+     "calls": 2
+    },
+    "well bank: analytical_grad": {
+     "s": 0.0914096247870475,
+     "calls": 2
+    },
+    "pair force (V_phi, score network, top-k, router)": {
+     "s": 3.5975771660450846,
+     "calls": 2
+    }
+   }
+  },
+  "8192": {
+   "times": [
+    65.42107723397203
+   ],
+   "median_s": 65.42107723397203,
+   "tokens_per_s": 125.21958283722722,
+   "peak_rss_gb": 10.114421844482422,
+   "components": {
+    "context channels (xi)": {
+     "s": 12.680870981188491,
+     "calls": 2
+    },
+    "well bank: context_components": {
+     "s": 2.034099356038496,
+     "calls": 2
+    },
+    "well bank: harmonic_terms_lowrank": {
+     "s": 0.5418812350835651,
+     "calls": 2
+    },
+    "stiff-mode decomposition (lowrank_modes)": {
+     "s": 2.8518057139590383,
+     "calls": 2
+    },
+    "well bank: analytical_grad": {
+     "s": 0.3714341791346669,
+     "calls": 2
+    },
+    "pair force (V_phi, score network, top-k, router)": {
+     "s": 45.324044357053936,
+     "calls": 2
+    }
+   }
+  }
+ },
+ "val_loss": 4.065200328826904
+}

@@ -1,0 +1,9 @@
+done sr2_memopt_timers 0
+done sr2_ref 0
+done sr2_prune_mask 0
+done sr2_prune 0
+done sr2_novphi_prune 0
+done sr2_eigh64 0
+done sr2_novphi_lean 0
+done sr2_compile_layer 1
+done all

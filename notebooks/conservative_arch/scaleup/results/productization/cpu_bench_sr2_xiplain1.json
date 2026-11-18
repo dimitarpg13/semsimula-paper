@@ -1,0 +1,23 @@
+{
+ "model": "ladder",
+ "folder": "semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn",
+ "desc": "fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn); analytic V_phi True; query chunk 512; skip unread registers True; content term of the context channels removed on layers [1]",
+ "params": 76572110,
+ "threads": 8,
+ "lengths": {
+  "512": {
+   "times": [
+    1.157986065139994
+   ],
+   "median_s": 1.157986065139994,
+   "tokens_per_s": 442.14694408960963,
+   "peak_rss_gb": 2.147918701171875
+  }
+ },
+ "val_loss": 4.412003517150879,
+ "compare": {
+  "max_abs": 21.49010467529297,
+  "mean_abs": 3.725356101989746,
+  "argmax_agree": 0.6796875
+ }
+}
