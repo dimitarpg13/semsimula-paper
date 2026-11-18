@@ -190,7 +190,7 @@ executes, so it must be written and tested before it lands.
 
 #### Pre-registration for run 4 — recorded **2026-09-27, before launch**
 
-Drafted by Claude; overrule before starting if you read it differently.
+Drafted for the author's review; overrule before starting if you read it differently.
 
 **Point 59, band 55–65 settled.**
 
