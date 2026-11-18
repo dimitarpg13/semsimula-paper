@@ -2,7 +2,7 @@
 
 **How tokens cluster in attention dynamics and in the Lagrangian framework, what the theorems of Geshkovski, Letrouit, Polyanskiy, Rigollet and Karagodin say, and which mechanism our trained arms show**
 
-Companion note to protocol [`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md) (§5.15, §5.19) and to the book's §17c (ii), the Sinkformer passage, and §37.6, property (C). The measurements are `debug/dsync_clustering_diagnostics.py` and its outputs in each arm's results folder; the figures are made by [`figures/_make_clustering_mechanisms_figs.py`](figures/_make_clustering_mechanisms_figs.py).
+Companion note to protocol [`Poisson_Mode_Wells_PM1_PMX.md`](depth_ladder/Poisson_Mode_Wells_PM1_PMX.md), [`Refinement_Invariance_Tests.md`](depth_ladder/Refinement_Invariance_Tests.md) (§5.15, §5.19) and to the book's §17c (ii), the Sinkformer passage, and §37.6, property (C). The measurements are `debug/dsync_clustering_diagnostics.py` and its outputs in each arm's results folder; the figures are made by [`figures/_make_clustering_mechanisms_figs.py`](figures/_make_clustering_mechanisms_figs.py).
 
 **Status, 2026-10-11.** Descriptive, not pre-registered. Two questions prompted it: whether the eigensolve failures of 2026-09-17 in the low-rank integrator were a clustering effect, and whether spontaneous synchronization of coupled oscillators has a use in understanding the Fock mechanism. The first is answered below: the failures were **saturation** of the context gating, not synchronization of tokens. The second is left as measured hypotheses (§7).
 

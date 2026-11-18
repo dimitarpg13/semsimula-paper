@@ -193,7 +193,7 @@ Nothing here claims that the trained models reason. It claims that one of the tw
 | [`Poisson_Mode_Registers_PM1.md`](Poisson_Mode_Registers_PM1.md) | the modes: creation rate, occupation, wells (§1), the Poisson-mean theorem (§3) |
 | [`Single_Particle_Hilbert_Space_in_Semantic_Simulation.md`](Single_Particle_Hilbert_Space_in_Semantic_Simulation.md) | modes as root densities; the overlap as the Bhattacharyya coefficient (§1) |
 | [`The_Execution_Problem.md`](The_Execution_Problem.md) | the template–execution duality; the executive atom |
-| [`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md) | §5.23 RF; §5.24 MT |
+| [`Side_Probes_CG8_DP_F0_RF_MT_BF.md`](depth_ladder/Side_Probes_CG8_DP_F0_RF_MT_BF.md) | §5.23 RF; §5.24 MT |
 | `manuscripts/Semantic_Templates.docx` | the source; `PROVENANCE.md` for its history and the PDF's status |
 
 **References.** G. Feng, B. Zhang, Y. Gu, H. Ye, D. He, L. Wang, Towards revealing the mystery behind chain of thought: a theoretical perspective, NeurIPS 36 (2023). J. Wei et al., Chain-of-thought prompting elicits reasoning in large language models, NeurIPS 35 (2022). D. Gueorguiev, Semantic Templates and Semantic Functions, manuscript (2022).

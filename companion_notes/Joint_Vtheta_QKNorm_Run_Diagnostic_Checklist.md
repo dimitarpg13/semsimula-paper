@@ -1063,7 +1063,7 @@ than assumed:
 > **Every figure in this section that converts steps to budget inherits the
 > error**, including §9.2's crossing point. See the correction inline there.
 > A genuinely token-matched baseline is queued in
-> [`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md);
+> [`Matched_GPT2_Baselines.md`](depth_ladder/Matched_GPT2_Baselines.md);
 > it supersedes this section's budget claims and is expected to land
 > **below** 54.59, widening the reported gap rather than narrowing it.
 >

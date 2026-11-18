@@ -82,7 +82,7 @@ The **forcing** breaks per-step geodesicity, and only in the model that has
 it. The conservative arm is therefore *piecewise geodesic with maps between
 the pieces*; the full arm is *not even piecewise geodesic*. **And the
 geodesics cost 31.3%** — the ladder prices them
-([`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md)
+([`Ladder_Early_Arms_Results.md`](depth_ladder/Ladder_Early_Arms_Results.md)
 §5.6).
 
 **E1 has now run (§4.7): R(geo) = 1.09.** The geodesic reading fails at the

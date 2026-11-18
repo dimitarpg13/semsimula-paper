@@ -6,7 +6,7 @@
 - why each one exists, and what its result means;
 - the variable-step training arm SR4a-CODE, with its five calls (VS1–VS5) and its code.
 
-The pre-registrations, scores and raw numbers live in the [protocol note](Depth_Ladder_and_Matched_Baseline_Protocol.md): §5.9 (SR1–SR5), §5.19 (FLOW-R), [`p-flowr-code`](Depth_Ladder_and_Matched_Baseline_Protocol.md#p-flowr-code) and [`p-sr4a-code`](Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr4a-code). The original derivation of the gates is in [Composing_Single_Layer_Inferences_Flow_or_Maps.md](Composing_Single_Layer_Inferences_Flow_or_Maps.md). The book's treatment is Remark 67 (`rem:refinement-invariance`) and §8.9 (`ssec:settling-refinement`).
+The pre-registrations, scores and raw numbers live in the [`SR_Series_Settling_and_Refinement.md`](depth_ladder/SR_Series_Settling_and_Refinement.md), [`Refinement_Invariance_Tests.md`](depth_ladder/Refinement_Invariance_Tests.md): §5.9 (SR1–SR5), §5.19 (FLOW-R), [`p-flowr-code`](depth_ladder/Code_Refinement_and_Router_Probes.md) and [`p-sr4a-code`](depth_ladder/SR_Series_Settling_and_Refinement.md). The original derivation of the gates is in [Composing_Single_Layer_Inferences_Flow_or_Maps.md](Composing_Single_Layer_Inferences_Flow_or_Maps.md). The book's treatment is Remark 67 (`rem:refinement-invariance`) and §8.9 (`ssec:settling-refinement`).
 
 **Status, 2026-11-01:**
 

@@ -8,7 +8,7 @@
 >
 > **Companion documents:**
 > - **The earlier note, now historical:** [`Position_Dependent_Damping_and_Reinforcement_Field.md`](Position_Dependent_Damping_and_Reinforcement_Field.md)
-> - **Pre-registrations and scores:** [`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md) §5.13
+> - **Pre-registrations and scores:** [`SR_Series_Settling_and_Refinement.md`](depth_ladder/SR_Series_Settling_and_Refinement.md) §5.13
 > - **The experiment queue (D1–D7):** [`Hyperparameter_Tuning_Checklist.md`](Hyperparameter_Tuning_Checklist.md)
 > - **Why second order can pay:** [`Future_of_Semantic_Simulation_When_Second_Order_Earns_Its_Keep.md`](Future_of_Semantic_Simulation_When_Second_Order_Earns_Its_Keep.md)
 > - **The wells integrated exactly:** [`Exact_Integration_of_Poisson_Mode_Wells_PMX.md`](Exact_Integration_of_Poisson_Mode_Wells_PMX.md)

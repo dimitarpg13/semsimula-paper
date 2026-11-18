@@ -404,7 +404,7 @@ The scope line for the claim as it stands: at 0.5B tokens, L = 2, d = 384, one s
 - [Composing Single-Layer Inferences: Flow or Maps](Composing_Single_Layer_Inferences_Flow_or_Maps.md): Cell 6b-7's gates and the per-layer flow.
 - [Exact Integration of Poisson-Mode Wells (PMX)](Exact_Integration_of_Poisson_Mode_Wells_PMX.md) and [Poisson-Mode Registers (PM1)](Poisson_Mode_Registers_PM1.md): the well models.
 - [Exploiting the Riemannian Geometry of Conservative Language Models](Exploiting_the_Riemannian_geometry_of_conservative_language_models.md) and [Damped Riemannian Geodesics in the SPLM Family](Damped_Riemannian_Geodesics_in_the_SPLM_family-Comparative_Analysis.md): the geodesic programme whose reference curve this note re-scopes.
-- [Depth Ladder and Matched Baseline Protocol](Depth_Ladder_and_Matched_Baseline_Protocol.md), §5.13: the FO series' pre-registrations (FO-a, FO-b, FO-b-PMX), amendments and scored results.
+- [Depth Ladder and Matched Baseline Protocol](depth_ladder/First_vs_Second_Order_Series.md), §5.13: the FO series' pre-registrations (FO-a, FO-b, FO-b-PMX), amendments and scored results.
 - [Hyperparameter Tuning Checklist](Hyperparameter_Tuning_Checklist.md): the GPU queue and the candidate runs of §10.
 
 The figures are produced by `figures/_make_future_second_order_figs.py`; every dynamical panel is an exact simulation of the equations in §2 with the ladder's constants, and the measurement panel plots the recorded values with their sources.

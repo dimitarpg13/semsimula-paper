@@ -5,7 +5,7 @@
 Tier 1 done (2026-10-01): `vphi_grad_path` / `xi_grad_path`
 built, forward bit-identical, source gradient opened. **P2.1 (2026-10-01): 127.73 vs 158.09, MOVE (−19.2%)**; **F3.1 (2026-10-02): 57.76 settled**, the best L=2 model in the programme. Vφ woke up (E1 −0.0015 → −0.291). Next: P2.2 / Fock-PARF live (the Fock mechanism's real value), then the rest of the live ladder.
 **Companion to:**
-[`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md)
+[`Ladder_Early_Arms_Results.md`](depth_ladder/Ladder_Early_Arms_Results.md)
 §5.8 (the gradient-path probes and the full `rglive` run),
 [`Paper_v6_Section_Audit.md`](Paper_v6_Section_Audit.md),
 [`Hyperparameter_Tuning_Checklist.md`](Hyperparameter_Tuning_Checklist.md) (the queue).

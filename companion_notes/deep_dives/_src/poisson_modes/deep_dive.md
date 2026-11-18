@@ -506,7 +506,7 @@ One generator, seeded by `SEED`, serves both the training batches and the evalua
 
 \[10\] [debug/verify_pm_match.py](https://github.com/dimitarpg13/semsimula-paper/blob/main/notebooks/conservative_arch/scaleup/debug/verify_pm_match.py), [debug/pm_match_short_train.py](https://github.com/dimitarpg13/semsimula-paper/blob/main/notebooks/conservative_arch/scaleup/debug/pm_match_short_train.py), [debug/pm_halflife_range.py](https://github.com/dimitarpg13/semsimula-paper/blob/main/notebooks/conservative_arch/scaleup/debug/pm_halflife_range.py)
 
-\[11\] [Depth Ladder and Matched Baseline Protocol](https://github.com/dimitarpg13/semsimula-paper/blob/main/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md), §5.13 (MS, TL, the K = 16 pair and the wells' results)
+\[11\] [Depth Ladder and Matched Baseline Protocol](https://github.com/dimitarpg13/semsimula-paper/blob/main/companion_notes/depth_ladder/First_vs_Second_Order_Series.md), §5.13 (MS, TL, the K = 16 pair and the wells' results)
 
 \[12\] [A Community of Semantic Templates as the Source of Native Chain-of-Thought](https://github.com/dimitarpg13/semsimula-paper/blob/main/companion_notes/Community_of_Semantic_Templates_for_Native_CoT.md), companion note
 

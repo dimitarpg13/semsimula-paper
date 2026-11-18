@@ -24,7 +24,7 @@
 > doing precisely what a conservative potential can do, and that is the
 > ceiling the theorem describes.
 >
-> Ladder: [`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md) §5.6. Geometry: [`Geodesic_Experiments_with_CfC_BAOAB.md`](Geodesic_Experiments_with_CfC_BAOAB.md) §4.9.
+> Ladder: [`Ladder_Early_Arms_Results.md`](depth_ladder/Ladder_Early_Arms_Results.md) §5.6. Geometry: [`Geodesic_Experiments_with_CfC_BAOAB.md`](Geodesic_Experiments_with_CfC_BAOAB.md) §4.9.
 
 > **Summary.** We prove that no scalar potential on token particles can
 > reproduce the three structural properties of scaled dot-product

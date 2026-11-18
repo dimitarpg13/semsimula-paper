@@ -17,7 +17,7 @@ the whole model, and the Fock mechanism is inert — which is how it was found:
 a live L=1 run held ``sig_max`` at its initialisation value for hundreds of
 steps while both L=2 arms differentiated within 50.
 
-See companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md §6.1.
+See companion_notes/depth_ladder/Ladder_Early_Arms_Results.md §6.1.
 """
 import math
 import sys

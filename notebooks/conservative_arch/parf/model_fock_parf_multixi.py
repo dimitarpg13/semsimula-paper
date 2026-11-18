@@ -94,7 +94,7 @@ class FockMultiXiPARFConfig(MultiXiPARFConfig):
                               trainable. Must stay above
                               ``register_salience_threshold`` or every
                               register starts inactive. See §6.1 of
-                              companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md.
+                              companion_notes/depth_ladder/README.md.
       creation_gate_hidden  : int — Hidden width of the v1 creation gate MLP.
       stack_discipline      : bool — LIFO (salience-ordered) activation.
       register_init_scale   : float — Std of the learnable vacuum embeddings.
@@ -176,7 +176,7 @@ class FockMultiXiPARFConfig(MultiXiPARFConfig):
     # 'v1'.  No parameters are added or removed, so state_dicts remain
     # compatible in both directions.
     prefix_causal_registers: bool = True
-    # CB series (Depth_Ladder_and_Matched_Baseline_Protocol.md SS5.11): bound
+    # CB series (depth_ladder/Abstract_Gating_Runs.md SS5.11): bound
     # how much of each layer step goes through the non-conservative reverse
     # channel.  Both act on the reverse-channel increment only; off (the
     # defaults) leaves the forward pass and the parameter set unchanged.
@@ -199,7 +199,7 @@ class FockMultiXiPARFConfig(MultiXiPARFConfig):
     fock_gate_bias_init: float = 2.0   # sigmoid(2)=0.881 -> g=0.957; inside the
                                        # stretch, so the gate has gradient at init
     fock_gate_pin: bool = False
-    # FO series (Depth_Ladder_and_Matched_Baseline_Protocol.md SS5.13, FO-a,
+    # FO series (depth_ladder/First_vs_Second_Order_Series.md SS5.13, FO-a,
     # 2026-10-18): first-order, memoryless training. h_prev := h at the start
     # of every layer step, so no velocity crosses a layer boundary and each
     # step starts from rest -- the Fock-G1 definition, and the trained

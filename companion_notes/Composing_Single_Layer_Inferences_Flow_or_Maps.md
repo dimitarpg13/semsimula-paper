@@ -774,7 +774,7 @@ it is the strongest entry §37 has.
   train the shared gate. The live L=1 ladder run shows it — `sig_max` pinned
   at its initialisation value while both L=2 arms differentiate within 50
   steps. See §6.1 of
-  [`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md).
+  [`Ladder_Early_Arms_Results.md`](depth_ladder/Ladder_Early_Arms_Results.md).
   So the N=1 *evaluation* is well defined and worth running, but it is not a
   point on the same curve as N>=2, and its endpoint should not be read as
   evidence about refinement.

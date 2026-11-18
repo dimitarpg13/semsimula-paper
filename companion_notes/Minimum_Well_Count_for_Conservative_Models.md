@@ -7,7 +7,7 @@
 - the results on code, OpenWebText and TinyStories, and what they imply for the parameter budget;
 - whether the wells could share one core for their shapes, which would shrink the bank (they cannot at layer 0).
 
-The raw numbers and run records live in the [protocol note](Depth_Ladder_and_Matched_Baseline_Protocol.md) ([`p-dead-wells`](Depth_Ladder_and_Matched_Baseline_Protocol.md#p-dead-wells), [`p-l8-code-result`](Depth_Ladder_and_Matched_Baseline_Protocol.md#p-l8-code-result), [`p-k2-l8-code-setup`](Depth_Ladder_and_Matched_Baseline_Protocol.md#p-k2-l8-code-setup)). The rank of each well's shape is a separate question, covered in [Curvature_Diagnostics_and_Rank_Selection_for_Aniso_Gaussian_Vtheta.md](Curvature_Diagnostics_and_Rank_Selection_for_Aniso_Gaussian_Vtheta.md).
+The raw numbers and run records live in the [protocol note](depth_ladder/README.md) ([`p-dead-wells`](depth_ladder/Code_Dead_Wells_and_Screens.md), [`p-l8-code-result`](depth_ladder/Code_Depth_Runs.md), [`p-k2-l8-code-setup`](depth_ladder/Code_Depth_Runs.md)). The rank of each well's shape is a separate question, covered in [Curvature_Diagnostics_and_Rank_Selection_for_Aniso_Gaussian_Vtheta.md](Curvature_Diagnostics_and_Rank_Selection_for_Aniso_Gaussian_Vtheta.md).
 
 **Status, 2026-11-04:** all the minimum-well-count measurements planned for this note are done: use and force shares on eight models, the temperature sweep, removal, one training arm with two wells (K2-L8-CODE, full run) and seven corpus fits on three models and two corpora. Not run: a four-well arm, a two-well arm at two layers and the fit on TinyStories (section 9). **Added 2026-11-15:** section 8, whether the wells can share one precision core (measured 2026-11-13 and 11-14 on SO-OWT; no).
 
@@ -302,7 +302,7 @@ What the fits show:
 
 ## 8. Can the wells share one precision core?
 
-Sections 2 and 4 count wells. This section asks a different question about the same bank: whether its wells could share one core for their shapes, which would make the bank much smaller. The measurements are on SO-OWT (SR2 on OpenWebText, two layers), without retraining, on 2026-11-13 and 11-14. The numbers and run details are in the protocol ([`p-precision-twins-setup`](Depth_Ladder_and_Matched_Baseline_Protocol.md#p-precision-twins-setup), [`p-precision-cpu-result`](Depth_Ladder_and_Matched_Baseline_Protocol.md#p-precision-cpu-result)).
+Sections 2 and 4 count wells. This section asks a different question about the same bank: whether its wells could share one core for their shapes, which would make the bank much smaller. The measurements are on SO-OWT (SR2 on OpenWebText, two layers), without retraining, on 2026-11-13 and 11-14. The numbers and run details are in the protocol ([`p-precision-twins-setup`](depth_ladder/Well_Screen_and_Precision.md), [`p-precision-cpu-result`](depth_ladder/Well_Screen_and_Precision.md)).
 
 **What a well's shape is.** Section 1's precision is
 

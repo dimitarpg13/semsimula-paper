@@ -649,7 +649,7 @@ to 6b-12 are **thesis experiments, not spike diagnostics**:
 
 They are recorded in `Geodesic_Experiments_with_CfC_BAOAB.md`,
 `Forced_Lagrangian_Reformulation.md` and
-`Depth_Ladder_and_Matched_Baseline_Protocol.md`, and are deliberately not
+`depth_ladder/README.md`, and are deliberately not
 inventoried here.
 
 **At a glance, by target module.** Verified by parsing this table
@@ -1188,7 +1188,7 @@ notebook
 (`colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb`, integrator
 `baoab_cfc_lowrank`), not from the L=8 run the rest of this note studies. Their
 interpretation for the ladder is in
-[`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md);
+[`depth_ladder/README.md`](depth_ladder/README.md);
 what is recorded here is the instrument and what it has read.
 
 ### 18.1 What it measures, and why the diagonal proxy is not enough

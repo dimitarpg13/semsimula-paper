@@ -6,7 +6,7 @@
 > document.
 >
 > Distinct from
-> [`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md),
+> [`Ladder_Protocol_Overview.md`](depth_ladder/Ladder_Protocol_Overview.md),
 > which fixes the configuration so that `L` and the added mechanism are the
 > only variables — **this document is the list of things that protocol holds
 > fixed, and why each was fixed at the value it was.** Distinct also from
@@ -521,7 +521,7 @@ creation gate is not trainable: `salience` initialises to exactly 1.0, so
 `(1 - blend) == 0` annihilates the creation readout at layer 0, and only
 layers 1 and up can train the shared module. L=1 therefore runs with a
 **static** bank. §6.1 of
-[`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md)
+[`Ladder_Early_Arms_Results.md`](depth_ladder/Ladder_Early_Arms_Results.md)
 has the evidence and the opt-in `register_salience_init` knob;
 [`Fock_Mechanism_Efficiency_Across_Layer_Depth.md`](Fock_Mechanism_Efficiency_Across_Layer_Depth.md)
 has the depth-by-depth picture.
@@ -902,7 +902,7 @@ Scope: at the current damping regime (constant γ = 0.1, ζ ≈ 0.05, CfC low-ra
 
 ## Agenda: SR-series — settling, refinement and depth extension — **opened 2026-10-03**
 
-Theory: book §8.9 (Props 44–45). Pre-registration: [`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md) §5.9. Baseline config: F3.1 (L=2 conservative-only, live V_φ + ξ), full runs.
+Theory: book §8.9 (Props 44–45). Pre-registration: [`SR_Series_Settling_and_Refinement.md`](depth_ladder/SR_Series_Settling_and_Refinement.md) §5.9. Baseline config: F3.1 (L=2 conservative-only, live V_φ + ξ), full runs.
 
 > **Insight, 2026-10-04: refinement readiness tracks the π crossing** (protocol §5.9, SR-π).
 >
@@ -1082,7 +1082,7 @@ compensation at layer 0 and none beyond it (protocol note, "Run 4 settled at
 71.75").
 
 Full design, pre-registrations and tag checks:
-[`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md)
+[`L4_Diagnosis_and_D_Series.md`](depth_ladder/L4_Diagnosis_and_D_Series.md)
 §3b.
 
 - [ ] **D1 — L=4 at fixed dt = 4** (`LADDER_L=4`, `LADDER_T=16.0`), ~27 h.
@@ -1170,7 +1170,7 @@ channel, not a stronger one. Any bias makes the mechanism look more important
 than it is.
 
 **Probe series and pre-registrations:**
-[`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md)
+[`Clipping_and_the_C_Series.md`](depth_ladder/Clipping_and_the_C_Series.md)
 § "The C-series". C0 run; C1 (extend the E5 slider above λ = 1) and C2 (Adam
 realised-step audit) are free and unrun; C4 (paired 500-step run) waits for
 L=4; C5 (full re-run) only on evidence.

@@ -10,7 +10,7 @@
 > contribution at each depth. Distinct from
 > [`Fock_Mechanism_Ablation_Study_d384_OpenWebText.md`](Fock_Mechanism_Ablation_Study_d384_OpenWebText.md),
 > which reports one completed L=8 experiment, and from
-> [`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md),
+> [`Ladder_Early_Arms_Results.md`](depth_ladder/Ladder_Early_Arms_Results.md),
 > whose §6.1 carries the L=1 consequence for that programme.
 
 ---
@@ -294,7 +294,7 @@ ablation rather than a trained-without arm, so read it as an upper bound.
 > very loose. **+275% must not be quoted as the price of the Fock
 > mechanism**; it is the cost of removing the channel from a model trained
 > to use it, which is a sensitivity measurement. See
-> [`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md)
+> [`Ladder_Early_Arms_Results.md`](depth_ladder/Ladder_Early_Arms_Results.md)
 > §5.6.
 
 ### 6.2 B failed, and the failure is instructive
@@ -397,7 +397,7 @@ repeated as "the reverse channel is decisive" throughout the programme.
 schedule and budget, the model reaches **87.93** against **66.98** —
 **+31.3%**. The ablation overstated the mechanism by **2.9× in PPL ratio
 and 4.9× in nats**
-([`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md)
+([`Ladder_Early_Arms_Results.md`](depth_ladder/Ladder_Early_Arms_Results.md)
 §5.6).
 
 **The rule.** An ablation measures *sensitivity of a trained model to

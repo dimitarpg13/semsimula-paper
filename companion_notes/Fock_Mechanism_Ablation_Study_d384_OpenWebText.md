@@ -20,7 +20,7 @@
 > architecture; the *magnitude* does not. **Do not quote ablation
 > percentages as the price of the Fock mechanism.**
 >
-> Measured price and method: [`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md) §5.6.
+> Measured price and method: [`Ladder_Early_Arms_Results.md`](depth_ladder/Ladder_Early_Arms_Results.md) §5.6.
 
 ---
 

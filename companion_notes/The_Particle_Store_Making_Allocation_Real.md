@@ -32,7 +32,7 @@ Three facts say the Fock slot registers cannot be that mechanism, however their 
 
 1. **The pool is fixed.** `n_registers`, the pool size $M$, is a constructor constant, and the per-position bank is $(B, T, M, d)$ over batch, position, slot and hidden dimension, so the state at position $t$ is $Md$ numbers whatever $t$ is. The trained models carry $M = 32$. The book concedes it: the class statement "concerns the architecture family with a register pool that grows with the input, not the trained instances".
 2. **The write is the forbidden form.** The write port $r \leftarrow \sigma r + (1 - \sigma) \mathrm{readout}$ matches against the active set and edits the matched slot in place. That is match-and-edit, under which the MCS reduction's polynomial parsing becomes PSPACE-complete recognition. A template substrate must **consume and emit** — destroy a reactant, bear a product elsewhere — and a slot rewritten in place cannot.
-3. **DP1–DP3**, measured. Three pre-registered diagnostics asking what Doi–Peliti process the trained registers actually implement, registered in the [depth-ladder protocol](Depth_Ladder_and_Matched_Baseline_Protocol.md) §5.14 on 2026-10-05 before any measurement, and reported in the [Doi–Peliti note](Doi_Peliti_Dynamics_of_Semantic_Particles_and_Registers.md) §7.
+3. **DP1–DP3**, measured. Three pre-registered diagnostics asking what Doi–Peliti process the trained registers actually implement, registered in the [depth-ladder protocol](depth_ladder/Side_Probes_CG8_DP_F0_RF_MT_BF.md) §5.14 on 2026-10-05 before any measurement, and reported in the [Doi–Peliti note](Doi_Peliti_Dynamics_of_Semantic_Particles_and_Registers.md) §7.
 
    | | question | prediction | measured | outcome |
    |---|---|---|---|---|

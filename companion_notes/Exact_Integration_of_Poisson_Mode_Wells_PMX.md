@@ -2,7 +2,7 @@
 
 How the PMX models integrate the Poisson-mode wells exactly: the derivations, the numerical route and its verification. PMX is the mechanism of [`Poisson_Mode_Registers_PM1.md`](Poisson_Mode_Registers_PM1.md) (the registers, their occupations and their wells) with one change: the wells leave the explicit kick of the integrator and join the exact damped flow that SR2 introduced for V_θ's stiff modes. The force law is unchanged; only its integration differs.
 
-The design was pre-registered and verified on 2026-10-10 (protocol [`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md) §5.15, the PMX blocks). The code is `parf/cfc_baoab.py` and the `pmx` branch of `_layer_step_langevin` in `parf/model_parf_multixi.py`; §13 maps every equation below to its function. The figures are made by [`figures/_make_pmx_exact_wells_figs.py`](figures/_make_pmx_exact_wells_figs.py).
+The design was pre-registered and verified on 2026-10-10 (protocol [`Poisson_Mode_Wells_PM1_PMX.md`](depth_ladder/Poisson_Mode_Wells_PM1_PMX.md) §5.15, the PMX blocks). The code is `parf/cfc_baoab.py` and the `pmx` branch of `_layer_step_langevin` in `parf/model_parf_multixi.py`; §13 maps every equation below to its function. The figures are made by [`figures/_make_pmx_exact_wells_figs.py`](figures/_make_pmx_exact_wells_figs.py).
 
 **Notation.** The wells' potential is written $U$, as in the PM1 note; the book writes it $V_{\mathrm{pm}}$ (the book's convention that potentials are $V$'s). Token $t$, layer $l$, hidden state $h \in \mathbb{R}^d$ with $d = 384$, mass $m$ (per token), damping $\gamma = 0.1$, layer step $\Delta t = 4$. Everything below is per token and per layer, at fixed context.
 

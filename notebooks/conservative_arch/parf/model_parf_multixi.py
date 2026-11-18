@@ -263,7 +263,7 @@ class MultiXiPARFConfig(SparsePARFConfig):
     # not the whole layer's. Same arithmetic (RNG state restored for the
     # recompute). Only while grad is enabled. False = off (bit-identical).
     vphi_force_checkpoint: bool = False
-    # FO-b (Depth_Ladder_and_Matched_Baseline_Protocol.md SS5.13, 2026-10-19): a
+    # FO-b (depth_ladder/First_vs_Second_Order_Series.md SS5.13, 2026-10-19): a
     # true first-order (overdamped) layer step, the gradient flow dh/dt = mu f(h)
     # with mobility mu = dt / (2 m), dt the trained layer step cfg.dt. Same
     # A-B-A splitting and one force evaluation as the BAOAB step: the stiff
@@ -279,7 +279,7 @@ class MultiXiPARFConfig(SparsePARFConfig):
     # 'baoab_cfc_lowrank' on every layer, with or without PMX's exact wells, T = 0.
     # False = off (bit-identical).
     first_order_overdamped: bool = False
-    # SR3-crit (Depth_Ladder_and_Matched_Baseline_Protocol.md SS5.13, 2026-10-20;
+    # SR3-crit (depth_ladder/SR_Series_Settling_and_Refinement.md SS5.13, 2026-10-20;
     # Position_Dependent_Damping_and_Reinforcement_Field.md SS11.2): per-mode
     # damping of the retained stiff modes inside SR2's exact damped flow,
     # gamma_i = gamma_0 + 2 zeta omega_i with omega_i^2 = kappa_i / m (the book's

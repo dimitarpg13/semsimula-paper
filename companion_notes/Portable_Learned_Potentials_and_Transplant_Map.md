@@ -54,7 +54,7 @@ The operating rule becomes:
 
 ## 2. What a Gen 3 model learns
 
-The reference model is SR2: the conservative-only Gen 3 model with the exact damped stiff-mode flow, $L = 2$, $d = 384$, 76,572,110 parameters, settled perplexity 58.32 on OpenWebText at 0.53B tokens (`Depth_Ladder_and_Matched_Baseline_Protocol.md`, §5.19). The ladder notebook is `notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb`.
+The reference model is SR2: the conservative-only Gen 3 model with the exact damped stiff-mode flow, $L = 2$, $d = 384$, 76,572,110 parameters, settled perplexity 58.32 on OpenWebText at 0.53B tokens (`depth_ladder/Refinement_Invariance_Tests.md`, §5.19). The ladder notebook is `notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb`.
 
 ### 2.1 The context $\xi$
 
@@ -411,7 +411,7 @@ Cheaper first steps on the CPU, before any of these: the init-scale and use gate
 ## 19. Related notes
 
 **The Gen 3 model.**
-- `Depth_Ladder_and_Matched_Baseline_Protocol.md` — the ladder, every arm's setup and result; §5.19 (the exact flow, FLOW-C and FLOW-R, the post-hoc switch), §5.20 (removal costs), `p-sr2-2b-result`, `p-well-screen-setup`.
+- `depth_ladder/README.md`, `depth_ladder/Refinement_Invariance_Tests.md`, `depth_ladder/Coupling_Removal_Costs_CD.md` — the ladder, every arm's setup and result; §5.19 (the exact flow, FLOW-C and FLOW-R, the post-hoc switch), §5.20 (removal costs), `p-sr2-2b-result`, `p-well-screen-setup`.
 - `Analytic_Multi_Channel_Integration_in_Structured_Vtheta.md` — the joint bank.
 - `Closed_Form_and_Hybrid_Integration_Strategies_for_Fock-PARFLM.md`, `Blended_CfC_BAOAB_Deep_Dive.md` — the integrator.
 - `Structured_VTheta_Design_and_Theory.md`, `Structured_VPhi_Design_and_Theory.md` — the potentials' design.

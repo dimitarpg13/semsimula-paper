@@ -47,7 +47,7 @@ GPT-2 runs nanoGPT defaults, known-good across a wide range. The Fock side
 inherits its learning rate from the L=8 arm and has never been swept at this
 depth, and its exchange-field lambda was chosen on structural argument rather
 than evidence. The ratios are therefore an **upper bound on the gap**. See
-[`Depth_Ladder_and_Matched_Baseline_Protocol.md`](../../../../../companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md)
+[`Matched_GPT2_Baselines.md`](../../../../../companion_notes/depth_ladder/Matched_GPT2_Baselines.md)
 SS5.4.
 
 ## Do not quote the superseded numbers
@@ -56,4 +56,4 @@ The matched run replaces them. Its endpoint is the correct denominator for
 every Fock-versus-GPT-2 ratio. The notebook now **raises** on a batch
 mismatch rather than printing a warning, so this cannot recur silently.
 
-See [`Depth_Ladder_and_Matched_Baseline_Protocol.md`](../../../../../companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md) §4.
+See [`Ladder_Protocol_Overview.md`](../../../../../companion_notes/depth_ladder/Ladder_Protocol_Overview.md) §4.

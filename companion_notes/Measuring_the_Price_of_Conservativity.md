@@ -26,7 +26,7 @@ written beyond what already exists.
 > without arm says 1.31×. A gated sweep is a useful instrument and a poor
 > price.
 >
-> Ladder and results: [`Depth_Ladder_and_Matched_Baseline_Protocol.md`](Depth_Ladder_and_Matched_Baseline_Protocol.md) §2–§3, §5.6.
+> Ladder and results: [`Ladder_Protocol_Overview.md`](depth_ladder/Ladder_Protocol_Overview.md), [`Ladder_Early_Arms_Results.md`](depth_ladder/Ladder_Early_Arms_Results.md) §2–§3, §5.6.
 
 ---
 

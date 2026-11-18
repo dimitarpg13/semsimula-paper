@@ -24,8 +24,8 @@
 
 Two findings of 2026-11-17 set the question.
 
-- **Cost is not the case for the architecture.** On a CPU the Gen 3 conservative core is slower than a matched GPT-2 at every measured length. Its decoding state grows with the context: the content-routed context channels and the routed pair force both need a per-token cache ([protocol](Depth_Ladder_and_Matched_Baseline_Protocol.md), the CPU benchmark and the inference-complexity audit). Reaching cost parity is engineering, worth doing. It is not a reason to build the model.
-- **What the construction delivers today is interpretability and testability.** Its parts are named and closed-form, so mechanism hypotheses become controlled interventions, and several of them have failed cleanly ([protocol, `p-bank-memory-conjecture`](Depth_Ladder_and_Matched_Baseline_Protocol.md#p-bank-memory-conjecture)). That is a payoff for understanding, not for capability.
+- **Cost is not the case for the architecture.** On a CPU the Gen 3 conservative core is slower than a matched GPT-2 at every measured length. Its decoding state grows with the context: the content-routed context channels and the routed pair force both need a per-token cache ([protocol](depth_ladder/CPU_Inference_Benchmark.md), the CPU benchmark and the inference-complexity audit). Reaching cost parity is engineering, worth doing. It is not a reason to build the model.
+- **What the construction delivers today is interpretability and testability.** Its parts are named and closed-form, so mechanism hypotheses become controlled interventions, and several of them have failed cleanly ([protocol, `p-bank-memory-conjecture`](depth_ladder/Second_Order_Memory_Probes.md)). That is a payoff for understanding, not for capability.
 
 The capability payoff the programme stakes is the expressivity ladder: templates that create structure during inference. A claim of that kind needs a benchmark fixed before the model that would pass it exists, or the benchmark gets chosen to fit the model.
 
@@ -46,7 +46,7 @@ Each part can fail separately. The transformer may generalise too, in which case
 1. **Generalisation splits, not in-distribution accuracy.** Train on lengths or depths up to $N$; test on a grid up to $4N$ to $10N$. In-distribution accuracy is reported but is not the score.
 2. **A strong transformer, not a strawman.** Matched parameters and matched training compute. Several positional schemes (learned, rotary, ALiBi, none), because length generalisation depends on them. Scratchpad or chain-of-thought variants reported separately, since they change what is being compared. Tuning budgets equal across models.
 3. **The conservative core as a control.** The same core without templates, so that any lift is attributable to creation. The bounds note's Dyck protocol is its floor test (§3, family B).
-4. **Pre-registration.** For each task: the split, the metric, the threshold for "generalises", and a probability for each model's outcome, all confirmed before the templates arm trains, as for every call in the [protocol](Depth_Ladder_and_Matched_Baseline_Protocol.md).
+4. **Pre-registration.** For each task: the split, the metric, the threshold for "generalises", and a probability for each model's outcome, all confirmed before the templates arm trains, as for every call in the [protocol](depth_ladder/README.md).
 5. **Seeds and spread.** At least three seeds per model and task. Length generalisation is known to vary strongly across seeds.
 6. **Cost reported alongside.** Training and inference FLOPs, peak memory and the decoding state per token, measured as in the protocol's CPU benchmark. A capability bought at a large cost is still reported, with its cost.
 7. **Report the losses too.** Every task where the transformer wins is reported in the same table.
