@@ -184,6 +184,22 @@ As specified in Macroscopic §8: per token and layer the top $P$ left singular s
 | PB2 | on SR2 the causal basis at b = 64 on layer 1 only costs at most 0.01 nats | 55% |
 | PB3 | on SR2 the causal basis at b = 64 on both layers costs at most 0.02 nats | 25% |
 
+**Result, 2026-11-17: PB1 hits; PB2 and PB3 miss. A causal shared stiff basis costs too much on either layer, so the per-token decompositions stay.** Outputs `notebooks/conservative_arch/scaleup/results/shared_basis/shared_basis_{check_k4r6,sr2_owt,so_code}.{txt,json}`; no mode-solver retries. Loss change in nats with the block basis, against the trained model (paired standard error 0.002 to 0.04):
+
+| model, layer | pooled b = 8 | pooled b = 64 | causal b = 8 | causal b = 64 |
+| --- | ---: | ---: | ---: | ---: |
+| SR2, layer 1 only | +0.0001 | +0.005 | +0.040 | **+0.032** |
+| SR2, layer 0 only | +0.108 | +0.392 | +0.760 | +0.574 |
+| SR2, both layers | +0.115 | +0.433 | +0.843 | **+0.642** |
+| SO-CODE, layer 1 only | +0.0004 | +0.016 | +0.074 | +0.074 |
+| SO-CODE, both layers | +0.230 | +0.676 | +1.024 | +0.854 |
+
+- **PB1 (SR2, pooled b = 64: energy at least 90% at layer 1, below 90% at layer 0), 55%: HIT.** 92.2% and 56.1%. SO-CODE: 91.8% and 67.0%.
+- **PB2 (SR2, causal b = 64 on layer 1 only costs at most 0.01 nats), 55%: MISS.** +0.032.
+- **PB3 (SR2, causal b = 64 on both layers at most 0.02 nats), 25%: MISS.** +0.642.
+- **Reading.** Layer 1's stiff subspace is shared within a block: a basis pooled over the block's own tokens costs nothing at b = 8. But that basis reads later tokens of the block, so a causal model cannot use it. The basis a decoder could use, from the previous block, costs 0.03 to 0.07 nats on layer 1 alone and far more on layer 0, whose stiff directions change from token to token (energy fractions of 38% to 54%). Sharing the stiff basis is not a lever; the remaining one on this term is a cheaper per-token solver.
+- **Two readings that do not mean what they seem.** The principal angles are about 90° everywhere, because each token's 16 retained modes include inert, near-null ones; the angle reading is uninformative and the energy fraction is the measure. The causal rows at b = 512 equal the trained model, because in 512-token windows the first block keeps its own modes. The mode-time column includes the readings' own computations on the base run, so it is not a timing of the method.
+
 ### VF0: F3.1 trained without $V_\varphi$ (Stage 6a, GPU prerequisite)
 
 Exactly the protocol's §5.21 arm: F3.1's Cell 0 with `PAIR_POTENTIAL = 'none'` (tag `nophi`), seed 0, WSD on 32,500 steps, one A100, about 14 h; the switch check (`debug/verify_pair_potential_none.py`, verified 2026-10-01 for the multi-ξ and Fock builds) rerun on F3.1's cell before launch. Readout $v_0 = \ln(\mathrm{PPL}_{\mathrm{VF0}} / 57.76)$, and the protocol's call VF-a ($v_0 \ge 0.03$, 70%) stands. Its role here: $v_0$ is the **value** of the pair term, the quantity the field arm is scored against. VF1 and VF2 keep their place in the protocol and are not prerequisites.
