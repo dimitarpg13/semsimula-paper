@@ -3,7 +3,7 @@
 ## What this note is
 
 This note is a short, readable summary of one part of the
-[Depth Ladder and Matched Baseline Protocol](../Depth_Ladder_and_Matched_Baseline_Protocol.md).
+[Depth Ladder and Matched Baseline Protocol](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md).
 That protocol is a running log of pre-registered tests, and it is long.
 This note collects in one place what its §5.19 ("The refinement decomposition: two failure modes, two tests") asks, how the tests were registered, and what they found.
 It also collects the scope caveat on training budget and the three budget tests RT1, RT2 and RT3, which are scored in other entries of the log.
@@ -196,7 +196,7 @@ TL2 itself is scored only when three of its four arms have run.
 
 ## Where to read the full record
 
-- §5.19, its scope caveat and the RT registration, followed by the SR2 result, the fine-step diagnostic, FLOW-C and FLOW-R: [protocol, `p-sr2`](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr2) (the §5.19 heading sits just above this anchor).
-- RT1 scored, PMX full run: [protocol, `p-pmx`](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-pmx).
-- RT3 set-up and result, SR2-2B: [protocol, `p-sr2-2b-setup`](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr2-2b-setup) and [protocol, `p-sr2-2b-result`](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr2-2b-result).
+- §5.19, its scope caveat and the RT registration, followed by the SR2 result, the fine-step diagnostic, FLOW-C and FLOW-R: [protocol, `p-sr2`](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr2) (the §5.19 heading sits just above this anchor).
+- RT1 scored, PMX full run: [protocol, `p-pmx`](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-pmx).
+- RT3 set-up and result, SR2-2B: [protocol, `p-sr2-2b-setup`](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr2-2b-setup) and [protocol, `p-sr2-2b-result`](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr2-2b-result).
 - The gate definitions (Gates 0 to 4) and the first MAPS verdict: [Composing single-layer inferences: flow or maps?](../Composing_Single_Layer_Inferences_Flow_or_Maps.md), §8.

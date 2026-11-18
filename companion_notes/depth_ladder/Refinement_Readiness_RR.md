@@ -1,6 +1,6 @@
 # §5.18 RR: what makes a model refinement-ready?
 
-**What this note is.** A short, readable summary of §5.18 of the depth-ladder protocol, "RR: what makes a model refinement-ready?", written 2026-11-17. The section was pre-registered on 2026-10-06, before any measurement, and scored the same day. It gives the clue that started it, the hypothesis H-RR, the three calls and their results. Every number, verdict and date is copied from the [protocol](../Depth_Ladder_and_Matched_Baseline_Protocol.md), which keeps the full running log and remains the record of truth.
+**What this note is.** A short, readable summary of §5.18 of the depth-ladder protocol, "RR: what makes a model refinement-ready?", written 2026-11-17. The section was pre-registered on 2026-10-06, before any measurement, and scored the same day. It gives the clue that started it, the hypothesis H-RR, the three calls and their results. Every number, verdict and date is copied from the [protocol](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md), which keeps the full running log and remains the record of truth.
 
 **Status in one line.** Two of three calls hit (RR1, RR2); RR3 missed, in the direction that supports H-RR. The decisive test, a second seed of G3′ and of G2, has not been recorded as run.
 

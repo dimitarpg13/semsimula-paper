@@ -1,6 +1,6 @@
 # First Order against Second Order: The Series on OpenWebText and TinyStories
 
-**What this note is.** A readable summary, written 2026-11-17, of the first-vs-second-order series in §5.13 of the [protocol](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-fo-series). The series trains the same conservative model twice, once with second-order dynamics (a velocity and inertia) and once as a first-order gradient flow, and compares the two. It covers OpenWebText and TinyStories, with and without the Poisson-mode wells. The protocol is a running log: it keeps every pre-registration, amendment, check and output path. This note keeps the questions, the calls, the numbers and the verdicts, each as the protocol records it. Where the protocol gives no verdict, the note says so. The code set (call MS5) is summarised in a separate note, [Code_Set_First_vs_Second_Order.md](Code_Set_First_vs_Second_Order.md). The later direct probes of the memory reading are in [Second_Order_Memory_Probes.md](Second_Order_Memory_Probes.md).
+**What this note is.** A readable summary, written 2026-11-17, of the first-vs-second-order series in §5.13 of the [protocol](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-fo-series). The series trains the same conservative model twice, once with second-order dynamics (a velocity and inertia) and once as a first-order gradient flow, and compares the two. It covers OpenWebText and TinyStories, with and without the Poisson-mode wells. The protocol is a running log: it keeps every pre-registration, amendment, check and output path. This note keeps the questions, the calls, the numbers and the verdicts, each as the protocol records it. Where the protocol gives no verdict, the note says so. The code set (call MS5) is summarised in a separate note, [Code_Set_First_vs_Second_Order.md](Code_Set_First_vs_Second_Order.md). The later direct probes of the memory reading are in [Second_Order_Memory_Probes.md](Second_Order_Memory_Probes.md).
 
 ---
 
@@ -65,7 +65,7 @@ TinyStories arms ran 19,250 steps (315M tokens); OpenWebText arms ran 32,500 ste
 
 ## 4. TinyStories without wells: SO-TS and FO-TS
 
-Anchors: [p-so-ts](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-so-ts), [p-fo-ts](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-fo-ts).
+Anchors: [p-so-ts](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-so-ts), [p-fo-ts](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-fo-ts).
 
 **Setup.** SO-TS is SR2's configuration on TinyStories. FO-TS adds FO-a. Both were planned for 16,250 steps (266M tokens). Both failed the pre-registered settling check (a line fitted to the last 3,000 steps still fell beyond the evaluation noise). So both were extended by 3,000 steps at the floor learning rate, to 19,250, and both then settled.
 
@@ -77,7 +77,7 @@ Anchors: [p-so-ts](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-so-ts), [p
 
 ## 5. OpenWebText without wells: FO-b-OWT
 
-Anchor: [p-fo-b-owt](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-fo-b-owt). Pre-registration (FB1 to FB4): the FO-b block after FO-PMX (the arm's first definition is at [p-fo-b](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-fo-b)).
+Anchor: [p-fo-b-owt](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-fo-b-owt). Pre-registration (FB1 to FB4): the FO-b block after FO-PMX (the arm's first definition is at [p-fo-b](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-fo-b)).
 
 **Why FO-b.** FO-a keeps an inertial flow inside each step, because SR2's stiff modes sit at $\omega \Delta t \approx 6.6$, far from the regime where a step from rest is a gradient step. So FO-a tests only the velocity between layers. FO-b was made unconditional on 2026-10-19 and run first; FO-a arms became conditional on an FO-b gap.
 
@@ -98,11 +98,11 @@ Anchor: [p-fo-b-owt](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-fo-b-owt
 
 ## 6. SR3-crit: critical damping on SR2
 
-Anchor: [p-sr3-crit](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr3-crit). SR3-crit is SR2 with its stiff modes critically damped ($\zeta = 1$): it keeps the velocity between layers but removes the oscillation inside the step. It settled at 63.28 (2026-10-20): +8.5% against SR2 and +3.5% against FO-b. The call SC3′ (3% or more behind SR2, called 25%) **HIT**. So the order is SR2, then FO-b, then SR3-crit, and the protocol reads it as: what the second-order model gains from is the oscillation of its stiff modes, not inertia as such. The damping axis (with the learned $\gamma(h)$ arm) is covered in detail elsewhere in the protocol.
+Anchor: [p-sr3-crit](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr3-crit). SR3-crit is SR2 with its stiff modes critically damped ($\zeta = 1$): it keeps the velocity between layers but removes the oscillation inside the step. It settled at 63.28 (2026-10-20): +8.5% against SR2 and +3.5% against FO-b. The call SC3′ (3% or more behind SR2, called 25%) **HIT**. So the order is SR2, then FO-b, then SR3-crit, and the protocol reads it as: what the second-order model gains from is the oscillation of its stiff modes, not inertia as such. The damping axis (with the learned $\gamma(h)$ arm) is covered in detail elsewhere in the protocol.
 
 ## 7. OpenWebText with 64 wells: FO-b-PMX
 
-Anchor: [p-fo-b-pmx](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-fo-b-pmx).
+Anchor: [p-fo-b-pmx](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-fo-b-pmx).
 
 **Why.** PMX leans on its velocity far more than SR2 (Gate 1 +91%, against SR2's +3.9%). If second order earns its keep anywhere at this budget, the protocol reasoned, it is there. FO-b-PMX (pre-registered 2026-10-19) replaced the earlier FO-a twin FO-PMX.
 
@@ -121,7 +121,7 @@ Anchor: [p-fo-b-pmx](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-fo-b-pmx
 
 ## 8. The memory-substitution hypothesis and the MS calls
 
-Pre-registered 2026-10-22, after FO-b-PMX and before any further run. The block follows [p-fo-b-pmx](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-fo-b-pmx); its readings close the block before the TL registration.
+Pre-registered 2026-10-22, after FO-b-PMX and before any further run. The block follows [p-fo-b-pmx](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-fo-b-pmx); its readings close the block before the TL registration.
 
 **The hypothesis, in plain words.** The perplexity advantage of second order in the conservative core is the advantage of a memory. A second-order step reads two past states, a first-order step one. Inside a step, the exact damped flow of a stiff mode keeps the distinctions between tokens, where a gradient flow contracts them. The Poisson-mode wells are a memory of another kind. Where an explicit memory carries at least what the implicit one carried, the implicit memory is redundant and the second-order advantage disappears. This is functional substitution, not identity of mechanism.
 
@@ -140,7 +140,7 @@ Pre-registered 2026-10-22, after FO-b-PMX and before any further run. The block 
 
 ## 9. The K = 16 pair and M1 to M4
 
-Anchors: [p-pmx-k16](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-pmx-k16), [p-fo-b-pmx-k16](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-fo-b-pmx-k16).
+Anchors: [p-pmx-k16](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-pmx-k16), [p-fo-b-pmx-k16](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-fo-b-pmx-k16).
 
 **The second-order arm (PMX-K16, 2026-10-23).** Settled 54.24: 7.0% better than SR2 and 0.7% better than PMX at 64 modes. The second-order model gains no more from 64 modes than from 16. It leans on its velocity about 60 times as much as PMX (Gate 1 +5,788%). Both K = 16 arms trained from step 0 at seed 0, so they share training and evaluation batches and are paired by step.
 
@@ -168,7 +168,7 @@ Anchors: [p-pmx-k16](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-pmx-k16)
 
 ## 10. The dose rule and the K = 2 pair
 
-Anchors: [p-pm2-pmx16](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-pm2-pmx16), [p-fo-b-pm2-pmx16](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-fo-b-pm2-pmx16).
+Anchors: [p-pm2-pmx16](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-pm2-pmx16), [p-fo-b-pm2-pmx16](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-fo-b-pm2-pmx16).
 
 **The dose rule (fixed 2026-10-22, before either K = 16 result).** The gap at $K = 16$ was to pick the next pair, so that GPU time goes where the curve is unresolved:
 
@@ -218,7 +218,7 @@ Before training both integrators have their textbook orders. Trained, both run b
 
 ## 12. The TinyStories wells set (TS-K2) and the matched GPT-2 (C1)
 
-Anchors: [p-gpt2-ts](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-gpt2-ts), [p-pm2-ts](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-pm2-ts), [p-fo-b-pm2-ts](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-fo-b-pm2-ts), [p-fo-b-ts](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-fo-b-ts).
+Anchors: [p-gpt2-ts](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-gpt2-ts), [p-pm2-ts](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-pm2-ts), [p-fo-b-pm2-ts](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-fo-b-pm2-ts), [p-fo-b-ts](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-fo-b-ts).
 
 **C1, the matched GPT-2 on TinyStories (2026-10-25).** Here C1 names this run (the code GPT-2 is C3); it is not the Stage-0 corpus statistic of the same name. An eight-layer GPT-2 at the matched settings (33,691,776 parameters), on the ladder's own TinyStories tokens, 19,250 steps. Settled 4.47. It was still improving slightly at the floor, so the protocol calls 4.47 "if anything, generous" to the Semantic Simulation models. On TinyStories the no-wells core trails it by 15%; on OpenWebText by 21% (SR2 58.32 against 48.37).
 
@@ -242,7 +242,7 @@ Anchors: [p-gpt2-ts](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-gpt2-ts)
 
 ## 13. The 2B runs: the TL calls as registered
 
-Pre-registered 2026-10-22, before any 2B run; the block sits just before [p-sr2-2b-setup](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr2-2b-setup). Two pairs at 2.13B tokens (130,000 steps) were planned: PMX-2B with FO-b-PMX-2B (for MS4), then SR2-2B with FO-b-2B. Weights-only snapshots along each run separate training length from the schedule phase.
+Pre-registered 2026-10-22, before any 2B run; the block sits just before [p-sr2-2b-setup](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr2-2b-setup). Two pairs at 2.13B tokens (130,000 steps) were planned: PMX-2B with FO-b-PMX-2B (for MS4), then SR2-2B with FO-b-2B. Weights-only snapshots along each run separate training length from the schedule phase.
 
 | id | prediction | called |
 | --- | --- | ---: |
@@ -253,7 +253,7 @@ Pre-registered 2026-10-22, before any 2B run; the block sits just before [p-sr2-
 | TL5 | the decay-phase pattern holds at 2B: in both pairs the second-order arm gains more from 84,500 to 130,000 | 65% |
 | TL6 | the core gap grows with training: SR2-2B is more than 4.9% better than FO-b-2B at the end | 50% |
 
-TL7 to TL10 (the number of modes in use and whether the wells start to remember content) were registered with them. On 2026-11-12 the author put SR2-2B first, ahead of the PMX pair. Its result is filed at [p-sr2-2b-result](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr2-2b-result). TL3, TL5 and TL6 need FO-b-2B, and TL2 needs three of its four arms; none of TL1 to TL6 is scored as of this note.
+TL7 to TL10 (the number of modes in use and whether the wells start to remember content) were registered with them. On 2026-11-12 the author put SR2-2B first, ahead of the PMX pair. Its result is filed at [p-sr2-2b-result](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr2-2b-result). TL3, TL5 and TL6 need FO-b-2B, and TL2 needs three of its four arms; none of TL1 to TL6 is scored as of this note.
 
 ## 14. What stands and what is open
 

@@ -1,6 +1,6 @@
 # The v6 abstract-gating runs: G1 to G4, and the CB series
 
-**What this note is.** A short, readable summary, written 2026-11-17, of the runs that decide three claims in the v6 abstract of the book: what the Fock register mechanism is worth when every channel gets gradient, whether depth helps under the same condition, and whether parity with the matched GPT-2 survives a parameter-matched baseline. These are protocol §5.10 (the abstract-gating runs G1 to G4, called AG1 to AG4 in the book) and, briefly, protocol §5.11 (CB1 to CB3, balancing the conservative and Fock paths). For each arm it gives the configuration, what was registered before the run, the mid-run readings where there were any, the scoring and the diagnostics. Every number, verdict and date is copied from the [protocol](../Depth_Ladder_and_Matched_Baseline_Protocol.md), which keeps the full log and remains the record of truth.
+**What this note is.** A short, readable summary, written 2026-11-17, of the runs that decide three claims in the v6 abstract of the book: what the Fock register mechanism is worth when every channel gets gradient, whether depth helps under the same condition, and whether parity with the matched GPT-2 survives a parameter-matched baseline. These are protocol §5.10 (the abstract-gating runs G1 to G4, called AG1 to AG4 in the book) and, briefly, protocol §5.11 (CB1 to CB3, balancing the conservative and Fock paths). For each arm it gives the configuration, what was registered before the run, the mid-run readings where there were any, the scoring and the diagnostics. Every number, verdict and date is copied from the [protocol](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md), which keeps the full log and remains the record of truth.
 
 **Status in one line.** G2, G3 and the hardened follow-up arm G3′ have run and are scored. G1 (a parameter-matched GPT-2) was deferred, and no G4 result or CB-arm result is recorded in the protocol; CB0, a free reading on G2's checkpoint, is scored.
 
@@ -70,7 +70,7 @@ The abstract's wording for each outcome was fixed in advance, so the results fil
 | step-3,000 criterion | at or below 137.1 (Gen 2 twin: 140.61) | — |
 | CG1 forecast | V_φ share below 0.05 in size (above 0.15 refutes the substitution account) | — |
 
-**Scored 2026-10-04** ([protocol, `p-g2-ladder`](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-g2-ladder)).
+**Scored 2026-10-04** ([protocol, `p-g2-ladder`](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-g2-ladder)).
 
 | measure | value |
 | --- | --- |
@@ -124,7 +124,7 @@ The abstract's wording for each outcome was fixed in advance, so the results fil
 - **Hypothesis:** the field's routing is unnormalised (free query and key projections $W_q$, $W_k$), and in Gen 2 it never received gradient, so it never needed the QK-norm hardening the creation gate got. Under live gradients its logits grow.
 - **Projection:** about 54.4, missing the key line. This led to the follow-up arm G3′ (section 6).
 
-**Scored 2026-10-05** ([protocol, `p-g3-ladder`](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-g3-ladder)).
+**Scored 2026-10-05** ([protocol, `p-g3-ladder`](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-g3-ladder)).
 
 | measure | value |
 | --- | --- |
@@ -170,7 +170,7 @@ The abstract's wording for each outcome was fixed in advance, so the results fil
 
 G3′ held a steady 3–4% lead over G3, while its lead over G2 was shrinking. Projection: 52.4 to 52.7, missing 52.1 narrowly. The gradient call was trending to a miss.
 
-**Scored 2026-10-06** ([protocol, `p-g3p`](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-g3p)).
+**Scored 2026-10-06** ([protocol, `p-g3p`](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-g3p)).
 
 | measure | value |
 | --- | --- |

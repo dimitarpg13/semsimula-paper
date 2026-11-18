@@ -1,6 +1,6 @@
 # The matched GPT-2 baselines: cosine, W1, W2 and G2B
 
-**What this note is.** A short, readable summary, written 2026-11-17, of the GPT-2 models that every Fock-PARFLM and SR-series perplexity in the depth ladder is compared with. It covers the token-matched cosine baseline of protocol §5.4 and the three runs of protocol §5.17: W1 (the same GPT-2 on the ladder's learning-rate schedule), W2 (the same at the ladder's peak learning rate) and G2B (W2's setup at 2B tokens). For each it gives the configuration, what was registered before the run, the verdicts, and the results, including the stable-phase fits. It also says plainly what is and is not matched between these baselines and the Fock arms. Every number, verdict and date is copied from the [protocol](../Depth_Ladder_and_Matched_Baseline_Protocol.md), which keeps the full log and remains the record of truth.
+**What this note is.** A short, readable summary, written 2026-11-17, of the GPT-2 models that every Fock-PARFLM and SR-series perplexity in the depth ladder is compared with. It covers the token-matched cosine baseline of protocol §5.4 and the three runs of protocol §5.17: W1 (the same GPT-2 on the ladder's learning-rate schedule), W2 (the same at the ladder's peak learning rate) and G2B (W2's setup at 2B tokens). For each it gives the configuration, what was registered before the run, the verdicts, and the results, including the stable-phase fits. It also says plainly what is and is not matched between these baselines and the Fock arms. Every number, verdict and date is copied from the [protocol](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md), which keeps the full log and remains the record of truth.
 
 **Status in one line.** All four runs are done and scored: the cosine baseline settles at 49.81, W1 at 48.82, W2 at 48.37, and G2B at 42.69.
 
@@ -125,7 +125,7 @@ So every ratio of that date is "at these hyperparameters": an upper bound on the
 
 **Decision rule.** Within 2% of 49.81, the parity reading of $L = 4$ survives the schedule change and the book's sentence stands. More than 2% better, the book's $L = 4$ comparison is restated against W1. More than 2% worse, the cosine baseline stays the reference.
 
-**Scored 2026-10-06** ([protocol, `p-w1`](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-w1)). Fit script `debug/w1_f0_fit.py`, using F0's functions unchanged on the 65 printed evaluations.
+**Scored 2026-10-06** ([protocol, `p-w1`](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-w1)). Fit script `debug/w1_f0_fit.py`, using F0's functions unchanged on the 65 printed evaluations.
 
 | | result | verdict |
 | --- | --- | --- |
@@ -160,7 +160,7 @@ At the end of the stable phase the Fock arms lead or are level ($L = 4$ is 5% ah
 
 **The run.** W1 with `LR = 1.2e-3`; the floor stays at 6e-5, which is the ladder's floor at this peak (`WSD_LR_FLOOR = 0.05 × LR`). Verified 2026-10-18: the schedule equals the learning rate logged by a ladder run (XRB-F) at all 650 logged steps, to a relative 5e-16.
 
-**Scored 2026-10-18** ([protocol, `p-w2`](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-w2)). Colab A100-40GB, 2.7 h; 0.532B tokens, 33.7M parameters. Decay gain is measured from step 21,000.
+**Scored 2026-10-18** ([protocol, `p-w2`](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-w2)). Colab A100-40GB, 2.7 h; 0.532B tokens, 33.7M parameters. Decay gain is measured from step 21,000.
 
 | | prediction | called | result | verdict |
 | --- | --- | ---: | --- | --- |
@@ -187,7 +187,7 @@ At the end of the stable phase the Fock arms lead or are level ($L = 4$ is 5% ah
 - **Resume, fixed 2026-10-18.** A rolling checkpoint every 2,500 steps now stores the batch sampler's state. A test on a tiny CPU model resumed bit-identically to an uninterrupted run.
 - **Data.** The 2.0B-token cache every 2B arm uses, read as random windows with replacement: about 1.07 passes on average. The protocol discloses this and does not enlarge the pool.
 
-**Scored 2026-10-18** ([protocol, `p-g2b`](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-g2b)). One uninterrupted Colab session, 38,709 s (10.75 h, 0.30 s per step), 260 evaluations. Decay gain is measured from step 84,500.
+**Scored 2026-10-18** ([protocol, `p-g2b`](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-g2b)). One uninterrupted Colab session, 38,709 s (10.75 h, 0.30 s per step), 260 evaluations. Decay gain is measured from step 84,500.
 
 | | prediction | called | result | verdict |
 | --- | --- | ---: | --- | --- |

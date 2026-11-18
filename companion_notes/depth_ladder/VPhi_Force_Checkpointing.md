@@ -1,7 +1,7 @@
 # Checkpointing the $V_\varphi$ pair force
 
 > **Status: built and verified 2026-11-02; used by every $L = 8$ code arm since.** This note distils one
-> entry of the running log, [`Depth_Ladder_and_Matched_Baseline_Protocol.md`, entry `p-vphi-force-ckpt`](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-vphi-force-ckpt),
+> entry of the running log, [`Depth_Ladder_and_Matched_Baseline_Protocol.md`, entry `p-vphi-force-ckpt`](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-vphi-force-ckpt),
 > and the later entries that used it. Every number below is quoted from those entries or from the
 > verification output. Numbers marked "expected" were scaled from CPU counts and not measured.
 
@@ -119,7 +119,7 @@ whether the switch beats layer checkpointing there. The log still lists it as "s
 
 ## Where to look
 
-- Log entries: [`p-vphi-force-ckpt`](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-vphi-force-ckpt), [`p-k2-l8-code-setup`](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-k2-l8-code-setup), [`p-k2-l8-code-result`](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-k2-l8-code-result), [`p-k2-l8-r6-result`](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-k2-l8-r6-result), [`p-k2-l8-r6-vs-result`](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-k2-l8-r6-vs-result).
+- Log entries: [`p-vphi-force-ckpt`](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-vphi-force-ckpt), [`p-k2-l8-code-setup`](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-k2-l8-code-setup), [`p-k2-l8-code-result`](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-k2-l8-code-result), [`p-k2-l8-r6-result`](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-k2-l8-r6-result), [`p-k2-l8-r6-vs-result`](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-k2-l8-r6-vs-result).
 - Code: [`notebooks/conservative_arch/parf/model_parf_multixi.py`](../../notebooks/conservative_arch/parf/model_parf_multixi.py),
   config field `vphi_force_checkpoint` and its call site in `_layer_forces`.
 - Check: [`notebooks/conservative_arch/scaleup/debug/verify_vphi_force_checkpoint.py`](../../notebooks/conservative_arch/scaleup/debug/verify_vphi_force_checkpoint.py),

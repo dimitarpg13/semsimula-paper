@@ -1,6 +1,6 @@
 # CPU Inference: Cost, Memory Switches and the Bound
 
-**What this note is.** A readable account of the inference-cost work of 2026-11-17 on the Gen 3 conservative models: what their pathways between tokens cost, how they compare with the matched GPT-2 on a CPU, three inference-only memory switches, and the upper bound on what replacing the pair force $V_\varphi$ could save. The full log is in the [protocol](../Depth_Ladder_and_Matched_Baseline_Protocol.md) (the CPU-benchmark entries after `p-bank-memory-conjecture`); the book reports the same numbers in its Appendix C.10, "Gen 3 models: what is and is not constant-memory".
+**What this note is.** A readable account of the inference-cost work of 2026-11-17 on the Gen 3 conservative models: what their pathways between tokens cost, how they compare with the matched GPT-2 on a CPU, three inference-only memory switches, and the upper bound on what replacing the pair force $V_\varphi$ could save. The full log is in the [protocol](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md) (the CPU-benchmark entries after `p-bank-memory-conjecture`); the book reports the same numbers in its Appendix C.10, "Gen 3 models: what is and is not constant-memory".
 
 **Status.** Measured; nothing here is a pre-registered test. The numbers describe the models as they are, not the target.
 

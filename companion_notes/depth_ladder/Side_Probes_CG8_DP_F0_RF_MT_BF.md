@@ -1,6 +1,6 @@
 # Side probes: CG8, DP, F0, RF, MT and BF
 
-**What this note is.** A readable summary of six small pre-registered programmes in §5 of the depth-ladder [protocol](../Depth_Ladder_and_Matched_Baseline_Protocol.md), written 2026-11-17. Each asks one narrow question beside the main ladder runs: §5.12 CG8, §5.14 the DP series, §5.16 F0, §5.23 RF, §5.24 MT and §5.26 BF. For each, the note gives the question, the method, the calls with their stated probabilities, the result and verdict as recorded, and the status. Every number, verdict and date is copied from the protocol, which stays the record of truth.
+**What this note is.** A readable summary of six small pre-registered programmes in §5 of the depth-ladder [protocol](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md), written 2026-11-17. Each asks one narrow question beside the main ladder runs: §5.12 CG8, §5.14 the DP series, §5.16 F0, §5.23 RF, §5.24 MT and §5.26 BF. For each, the note gives the question, the method, the calls with their stated probabilities, the result and verdict as recorded, and the status. Every number, verdict and date is copied from the protocol, which stays the record of truth.
 
 **Status in one line.** DP, F0, RF and MT were run and scored (2026-10-05, 2026-10-06, 2026-10-12, 2026-10-12); CG8 has no recorded result; BF is a draft that was deferred on 2026-10-18 and never run.
 

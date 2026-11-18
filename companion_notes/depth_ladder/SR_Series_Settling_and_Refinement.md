@@ -1,6 +1,6 @@
 # The SR series: settling, refinement and depth extension
 
-**What this note is.** A short, readable summary of the SR series of the depth ladder, written 2026-11-17. It gives, for each arm, the question it asks, what was registered before it ran, and what happened. Every number, verdict and date below is copied from the [protocol note](../Depth_Ladder_and_Matched_Baseline_Protocol.md), which remains the record of truth. The registration is [protocol, `p-sr`](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr) (§5.9, pre-registered 2026-10-03, before any run) and [protocol, `p-sr5`](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr5). The refinement tests themselves are explained with figures in [Refinement_Experiments_and_Variable_Step_Training.md](../Refinement_Experiments_and_Variable_Step_Training.md).
+**What this note is.** A short, readable summary of the SR series of the depth ladder, written 2026-11-17. It gives, for each arm, the question it asks, what was registered before it ran, and what happened. Every number, verdict and date below is copied from the [protocol note](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md), which remains the record of truth. The registration is [protocol, `p-sr`](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr) (§5.9, pre-registered 2026-10-03, before any run) and [protocol, `p-sr5`](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr5). The refinement tests themselves are explained with figures in [Refinement_Experiments_and_Variable_Step_Training.md](../Refinement_Experiments_and_Variable_Step_Training.md).
 
 **Status in one line.** SR2, SR3 and SR4a have run and are scored. SR1, SR4b, SR5a and SR5b have not run. SR5c was conditional on SR4b and was never scheduled.
 
@@ -27,7 +27,7 @@ The **refinement penalty** is $\ln(\mathrm{PPL_N} / \mathrm{PPL_L})$ in nats, th
 
 Two more quantities recur. The **damping ratio** $\zeta$ of a mode compares its friction with the friction that would make it critically damped: $\zeta = 1$ is critical (no oscillation), and $\zeta$ near 0 is a lightly damped oscillation. The product $\omega \Delta t$ is how far, in radians, a stiff mode of angular frequency $\omega$ rotates in one layer step.
 
-**The baseline.** Every arm starts from F3.1, the $L = 2$ conservative-only configuration with live gradients, retrained from scratch for 32,500 steps. Its readings in [protocol, `p-sr`](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr):
+**The baseline.** Every arm starts from F3.1, the $L = 2$ conservative-only configuration with live gradients, retrained from scratch for 32,500 steps. Its readings in [protocol, `p-sr`](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr):
 
 | F3.1 reading | value |
 | --- | ---: |
@@ -61,11 +61,11 @@ Thresholds are on the F3.1 readings above, at $N = 3$ against the trained $N = 2
 - If neither does, the cause lies in what no arm touches. Record a negative result.
 - **The common-cause check.** Gate 1 and Gate 3 had been perfectly rank-ordered across the $L = 2$ arms. SR4a was predicted to break that ordering (keep inertia, become refinable). SR3 and SR5 were predicted to keep it.
 
-**SR5's logic** ([protocol, `p-sr5`](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr5)). Velocity noise in training only randomises the phase of the one discrete trajectory, so the readout cannot rely on it. The temperatures were calibrated on F3.1's checkpoint so that the thermal speed is $r$ times the typical speed. SR5 is not a settling route at inference: with $\gamma T = 0.8$ the relaxation time exceeds the trajectory.
+**SR5's logic** ([protocol, `p-sr5`](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr5)). Velocity noise in training only randomises the phase of the one discrete trajectory, so the readout cannot rely on it. The temperatures were calibrated on F3.1's checkpoint so that the thermal speed is $r$ times the typical speed. SR5 is not a settling route at inference: with $\gamma T = 0.8$ the relaxation time exceeds the trajectory.
 
 ## 3. SR2: the exact damped stiff-mode flow
 
-[protocol, `p-sr2`](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr2). SR2 replaces the split step on the stiff subspace with the closed-form flow of a forced damped oscillator, which removes the $\theta / \sin\theta$ phase term. Before the run, §5.19 of the protocol (2026-10-06) added two calls: E1, the $N = 3$ penalty halves to 0.45 nats or below (55%), and E2, settled PPL at or below 59.5 (60%).
+[protocol, `p-sr2`](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr2). SR2 replaces the split step on the stiff subspace with the closed-form flow of a forced damped oscillator, which removes the $\theta / \sin\theta$ phase term. Before the run, §5.19 of the protocol (2026-10-06) added two calls: E1, the $N = 3$ penalty halves to 0.45 nats or below (55%), and E2, settled PPL at or below 59.5 (60%).
 
 | reading | SR2 | F3.1 |
 | --- | ---: | ---: |
@@ -95,11 +95,11 @@ Thresholds are on the F3.1 readings above, at $N = 3$ against the trained $N = 2
 
 So SR2's layer step is a coarse sample of a convergent per-layer flow, 0.104 nats from the trained step. The standard refinement, which recomputes the context and projects at every substep, still fails. This became the inference mode `substeps_per_layer`.
 
-**At four times the data** ([protocol, `p-sr2-2b-result`](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr2-2b-result), 2026-11-15). RT3 predicted that SR2 trained on 2.13B tokens would read Gate 3 at $N = 3$ at or below 0.30 nats. **MISS:** 0.772 nats (0.405 at 0.53B). Its per-layer flow converges by the letter, but to 0.920 nats (0.104 at 0.53B). Settled PPL fell from 58.32 to 48.58.
+**At four times the data** ([protocol, `p-sr2-2b-result`](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr2-2b-result), 2026-11-15). RT3 predicted that SR2 trained on 2.13B tokens would read Gate 3 at $N = 3$ at or below 0.30 nats. **MISS:** 0.772 nats (0.405 at 0.53B). Its per-layer flow converges by the letter, but to 0.920 nats (0.104 at 0.53B). Settled PPL fell from 58.32 to 48.58.
 
 ## 4. SR3: critical damping of the stiff modes (SR3-crit)
 
-[protocol, `p-sr3-crit`](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr3-crit). SR3 was run as SR3-crit on SR2's settings: each stiff mode gets friction $\gamma_i = \gamma_0 + 2\zeta\omega_i$ with $\zeta = 1$, which removes its oscillation but keeps the velocity between layers. By then the question had shifted to the first-versus-second-order comparison, so its calls (SC1 to SC5) were re-registered 2026-10-20 and amended the same day after the first-order twin FO-b-OWT fell behind SR2. They are scored against SR2 and FO-b, not against the §5.9 table.
+[protocol, `p-sr3-crit`](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr3-crit). SR3 was run as SR3-crit on SR2's settings: each stiff mode gets friction $\gamma_i = \gamma_0 + 2\zeta\omega_i$ with $\zeta = 1$, which removes its oscillation but keeps the velocity between layers. By then the question had shifted to the first-versus-second-order comparison, so its calls (SC1 to SC5) were re-registered 2026-10-20 and amended the same day after the first-order twin FO-b-OWT fell behind SR2. They are scored against SR2 and FO-b, not against the §5.9 table.
 
 | reading | SR2 | SR3-crit | FO-b |
 | --- | ---: | ---: | ---: |
@@ -117,13 +117,13 @@ So SR2's layer step is a coarse sample of a convergent per-layer flow, 0.104 nat
 
 **Against the §5.9 table** (this note's reading, not a scored call): Gate 1 meets $\le +25\%$. Gate 2 (+132%) misses $\le +50\%$. PPL is +9.6% against F3.1's 57.76, outside $+5\%$. A follow-up, SR3-crit on the well base PMX (call MS3), is registered; the protocol records no result as of 2026-11-17.
 
-**The learned damping arm** ([protocol, `p-gamma-h`](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-gamma-h), 2026-10-21). The same axis, with $\zeta(h)$ learned per token by a small head starting at $\zeta = 0.005$. The model chose moderate damping (median $\zeta$ 0.56 at layer 0, 0.36 at layer 1) and settled at 59.29, +1.7% against SR2. GH7 (within 2% of SR2) HIT; GH6, GH8 and GH9 MISS. Its Gate 3 at $N = 3$ is the worst of the second-order arms, 0.747 nats. A pairing caveat applies: the head shifts the initial weights, so the difference contains an unmeasured seed spread.
+**The learned damping arm** ([protocol, `p-gamma-h`](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-gamma-h), 2026-10-21). The same axis, with $\zeta(h)$ learned per token by a small head starting at $\zeta = 0.005$. The model chose moderate damping (median $\zeta$ 0.56 at layer 0, 0.36 at layer 1) and settled at 59.29, +1.7% against SR2. GH7 (within 2% of SR2) HIT; GH6, GH8 and GH9 MISS. Its Gate 3 at $N = 3$ is the worst of the second-order arms, 0.747 nats. A pairing caveat applies: the head shifts the initial weights, so the difference contains an unmeasured seed spread.
 
 ## 5. SR4a: variable-step training
 
-[protocol, `p-sr4a-code`](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr4a-code). SR4a moved to the code corpus after FLOW-R on code showed every model's whole stack failing refinement by 1.4 to 3 nats while its per-layer flow settles. Its base is SO-CODE, the second-order conservative model on code ($L = 2$, already with SR2's exact flow). Each optimizer step draws $N$ uniformly from $\lbrace 2, 3, 4 \rbrace$ at $T = 8$. The calls VS1 to VS5 were **proposed 2026-11-01 and not confirmed by the author before launch**; they are scored as proposed. VS1 and VS3 carry the §5.9 thresholds over unchanged.
+[protocol, `p-sr4a-code`](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr4a-code). SR4a moved to the code corpus after FLOW-R on code showed every model's whole stack failing refinement by 1.4 to 3 nats while its per-layer flow settles. Its base is SO-CODE, the second-order conservative model on code ($L = 2$, already with SR2's exact flow). Each optimizer step draws $N$ uniformly from $\lbrace 2, 3, 4 \rbrace$ at $T = 8$. The calls VS1 to VS5 were **proposed 2026-11-01 and not confirmed by the author before launch**; they are scored as proposed. VS1 and VS3 carry the §5.9 thresholds over unchanged.
 
-Result, 2026-11-04 ([protocol, `p-sr4a-code-result`](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr4a-code-result)). Gate 3 penalty in nats, $\ln(\mathrm{PPL_N} / \mathrm{PPL_2})$:
+Result, 2026-11-04 ([protocol, `p-sr4a-code-result`](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr4a-code-result)). Gate 3 penalty in nats, $\ln(\mathrm{PPL_N} / \mathrm{PPL_2})$:
 
 | N | 2 | 3 | 4 | 6 | 8 |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -142,11 +142,11 @@ Result, 2026-11-04 ([protocol, `p-sr4a-code-result`](../Depth_Ladder_and_Matched
 - Inertia is worth twice as much as in SO-CODE (Gate 1 +8.1% against +4.0%), while the stack refines inside its band. This is the break in the Gate 1 and Gate 3 ordering that the common-cause check predicted for SR4a.
 - Variable steps moved each layer's step further from its own continuous limit (0.840 against 0.369 nats). The model learned three maps, not a flow that refines further.
 
-**At eight layers** ([protocol, `p-k2-l8-r6-vs-result`](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-k2-l8-r6-vs-result), 2026-11-08). The same design on an $L = 8$ code model, K2-L8-R6-VS-CODE, trained at $N$ in $\lbrace 8, 12, 16 \rbrace$. Calls RV-1 to RV-6 were proposed and not re-confirmed by the author. The outcome was the opposite of SR4a-CODE beyond the band. The model refines at every $N$ from 8 to 16, trained or not (largest penalty +0.006 nats), and nearly to $N = 32$ (+0.038 at 24, +0.081 at 32). It costs +0.020 nats at $N = 8$ against its fixed-step parent. Its per-layer flow sits 0.034 nats from the trained step, closer than the parent's 0.059. RV-1, RV-2, RV-3 and RV-6 hit. RV-4 and RV-5 miss, both in the favourable direction. One seed each, and the two models differ in depth and wells, so the protocol does not attribute the difference.
+**At eight layers** ([protocol, `p-k2-l8-r6-vs-result`](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-k2-l8-r6-vs-result), 2026-11-08). The same design on an $L = 8$ code model, K2-L8-R6-VS-CODE, trained at $N$ in $\lbrace 8, 12, 16 \rbrace$. Calls RV-1 to RV-6 were proposed and not re-confirmed by the author. The outcome was the opposite of SR4a-CODE beyond the band. The model refines at every $N$ from 8 to 16, trained or not (largest penalty +0.006 nats), and nearly to $N = 32$ (+0.038 at 24, +0.081 at 32). It costs +0.020 nats at $N = 8$ against its fixed-step parent. Its per-layer flow sits 0.034 nats from the trained step, closer than the parent's 0.059. RV-1, RV-2, RV-3 and RV-6 hit. RV-4 and RV-5 miss, both in the favourable direction. One seed each, and the two models differ in depth and wells, so the protocol does not attribute the difference.
 
 ## 6. The SR-π side tests (2026-10-04 to 2026-10-05)
 
-[protocol, `p-sr`](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr) also holds four evaluation-only tests on the Fock arms, which tried to explain their much larger refinement failure before any GPU run. Each named a single cause. The three that ran each missed.
+[protocol, `p-sr`](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-sr) also holds four evaluation-only tests on the Fock arms, which tried to explain their much larger refinement failure before any GPU run. Each named a single cause. The three that ran each missed.
 
 | test | single cause tested | verdict |
 | --- | --- | --- |

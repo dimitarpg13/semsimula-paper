@@ -1,6 +1,6 @@
 # §5.15 Poisson-mode wells: PM1, PM1-cap and PMX
 
-**What this note is.** A short, readable summary of §5.15 of the depth-ladder protocol, "PM1: bosonic Poisson-mode registers", written 2026-11-17. It covers the three arms of that section (PM1, PM1-cap and PMX), what was pre-registered for each before it ran, how each was scored, and the calls. Every number, verdict and date is copied from the [protocol](../Depth_Ladder_and_Matched_Baseline_Protocol.md), which keeps the full running log and remains the record of truth. Two scoring blocks there have anchors: the PM1 full run, [protocol, `p-pm1`](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-pm1), and the PMX full run, [protocol, `p-pmx`](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-pmx). The mechanism and its proofs are in [Poisson_Mode_Registers_PM1.md](../Poisson_Mode_Registers_PM1.md) and [Exact_Integration_of_Poisson_Mode_Wells_PMX.md](../Exact_Integration_of_Poisson_Mode_Wells_PMX.md).
+**What this note is.** A short, readable summary of §5.15 of the depth-ladder protocol, "PM1: bosonic Poisson-mode registers", written 2026-11-17. It covers the three arms of that section (PM1, PM1-cap and PMX), what was pre-registered for each before it ran, how each was scored, and the calls. Every number, verdict and date is copied from the [protocol](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md), which keeps the full running log and remains the record of truth. Two scoring blocks there have anchors: the PM1 full run, [protocol, `p-pm1`](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-pm1), and the PMX full run, [protocol, `p-pmx`](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-pmx). The mechanism and its proofs are in [Poisson_Mode_Registers_PM1.md](../Poisson_Mode_Registers_PM1.md) and [Exact_Integration_of_Poisson_Mode_Wells_PMX.md](../Exact_Integration_of_Poisson_Mode_Wells_PMX.md).
 
 **Status in one line.** PM1 and PMX ran to 32,500 steps and are scored. PM1-cap was stopped by its probe gate at step 8,000. PMX is the best conservative model on the ladder by perplexity (settled 54.63), but it missed the per-layer-flow calls CX3 and CX3′, so SR2 remains the refinement-ready arm.
 
@@ -57,7 +57,7 @@
 
 **Clip 1.0, scored 2026-10-07: 81.67, so the 0.3 arm continues.** PC1 (clip hits under 5%) HIT; PC2 (81.4 or lower) MISS by 0.27 PPL; PC3 (78.2 or lower) MISS. Clip 1.0 trailed at every evaluation from step 2,000, by 1.4–4.4%. The reading: under AdamW a constant rescaling cancels in the update, so the 0.3 clip was not a learning-rate cut; it made every step's pm_ gradient count equally. Cell 6b-15 (tuning diagnostics) then flagged no knob on either checkpoint. Both showed the same picture: PM1 acts at layer 1, with attractive wells whose force is 5–6 times the conservative force, and has switched itself off at layer 0.
 
-**Full run scored, 2026-10-08** ([protocol, `p-pm1`](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-pm1)):
+**Full run scored, 2026-10-08** ([protocol, `p-pm1`](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-pm1)):
 
 | | PM1 | F3.1 | G2 | matched GPT-2 |
 | --- | ---: | ---: | ---: | ---: |
@@ -116,7 +116,7 @@ A CPU diagnostic (not pre-registered) scaled the trained well depths by a factor
 
 **Probe scored, 2026-10-11: 79.43, the gate passes** (90.1 or lower). PMX tracked PM1 within 1.2% at every evaluation. Integrating the deep wells exactly kept the memory gain that the cap erased. At the probe, Gate 1 was +30,600%.
 
-**Full run scored, 2026-10-11** ([protocol, `p-pmx`](../Depth_Ladder_and_Matched_Baseline_Protocol.md#p-pmx)), best checkpoint at step 30,500:
+**Full run scored, 2026-10-11** ([protocol, `p-pmx`](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md#p-pmx)), best checkpoint at step 30,500:
 
 | call | prediction | called | result |
 | --- | --- | ---: | --- |
