@@ -65,7 +65,7 @@ SR2 is 5.0, 8.7 and 14 times slower than fused attention at the three lengths. T
 
 ## 5. Where the time goes
 
-At 512 tokens most of SR2's time goes to the well bank's matrix products (43% to 47% of the profile at 512 and 2,048 tokens) and to the per-token decompositions that give the stiff modes (18% to 21%). At 8,192 tokens two thirds is elementwise work (66%), most of it the pair force's score network over the $(T, T, 32)$ tensors; matrix products 25%, decompositions 8%.
+At 512 and 2,048 tokens SR2's time splits between elementwise work (47% and 53% of the profile), matrix products (36% and 33%) and the per-token decompositions that give the stiff modes (16% and 12%). At 8,192 tokens two thirds is elementwise work (66%), most of it the pair force's score network over the $(T, T, 32)$ tensors; matrix products 25%, decompositions 8%. (Corrected 2026-11-17: a first version of this paragraph gave 43% to 47% for the matrix products and 18% to 21% for the decompositions, the shares of the first run, which timed the models without their pair force.)
 
 Sharing the stiff basis across neighbouring tokens does not reduce the decomposition cost: a basis a causal model can use costs 0.03 nats on layer 1 alone and 0.64 on both layers (Probe B, in [the mean-field programme note](../Mean_Field_PARFLM_Programme.md)).
 
@@ -94,7 +94,7 @@ Removing the pair force makes SR2 1.5, 2.1 and 3.3 times faster and costs 1.8% i
 
 ## 8. What would restore constant memory
 
-Both pathways have a fixed-size form. A mixture of $M$ components whose weights and means are content-gated exponential averages of the earlier states is a linear recurrence. Used for the context channels it keeps a dependence on content; used as the source of a field form of $V_\varphi$ it replaces the routed pair force. Together they would make every coupling a fixed-size recurrence and the decoding state independent of the context length ([the mean-field programme note](../Mean_Field_PARFLM_Programme.md), §1.1). What either costs in perplexity is untested.
+Both pathways have a fixed-size form. A mixture of $M$ components whose weights and means are content-gated exponential averages of the earlier states is a linear recurrence. Used for the context channels it keeps a dependence on content; used as the source of a field form of $V_\varphi$ it replaces the routed pair force. Together they would make every coupling a fixed-size recurrence and the decoding state independent of the context length ([the mean-field programme note](../Mean_Field_PARFLM_Programme.md), §1.1). What either costs in perplexity is untested. The plan for these and the other levers is [Conservative_Core_Productization_Plan.md](../productization/Conservative_Core_Productization_Plan.md).
 
 ## 9. Files
 

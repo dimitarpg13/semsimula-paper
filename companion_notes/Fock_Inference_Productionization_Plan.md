@@ -1,6 +1,7 @@
 # Productionizing Fock-PARFLM: Where the Inference Cost Is, and How to Remove It
 
 **Status:** analysis complete, measured. **Update 2026-10-18:** the analytic V_phi gradient (§8a.4, step 1) is implemented and verified; §10 adds the training-speed levers for the 2B-token runs, ordered by priority.
+**Successor (2026-11-17):** for the Gen 3 conservative core, the plan is [productization/Conservative_Core_Productization_Plan.md](productization/Conservative_Core_Productization_Plan.md); its §3 says which levers of this note carry over.
 **Date:** 2026-09-18.
 **Scope:** the joint `V_theta` + QK-norm arm at `d=384`, `L=8`, as configured in
 [`colab_fock_cfc_baoab_joint_vtheta_qknorm_openwebtext_d384.ipynb`](../notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_joint_vtheta_qknorm_openwebtext_d384.ipynb).
