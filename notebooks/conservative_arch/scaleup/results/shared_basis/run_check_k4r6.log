@@ -1,0 +1,41 @@
+model: fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x4_ar6_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x4_ar6_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn)
+windows 4/4
+Shared stiff basis (Probe B): semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x4_ar6_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+model fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x4_ar6_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x4_ar6_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn)
+4 validation windows x 512 (openwebtext_val_2M.npy); blocks [8, 64, 512]; base loss 4.0851 (ppl 59.45); the mode computation took 8.9 s over the base forwards; mode-solver retries 0
+pooled = basis from the block itself (reads later tokens of the block: not causal, an upper bound); causal = basis from the previous block
+
+readings on the trained run (median, p10, p90):
+  layer 0     b8_pooled: energy fraction 0.664 (0.594, 0.750); largest principal angle 89.3 deg (88.2, 89.9)
+  layer 0     b8_causal: energy fraction 0.221 (0.140, 0.380); largest principal angle 89.3 deg (88.3, 89.9)
+  layer 0    b64_pooled: energy fraction 0.398 (0.303, 0.525); largest principal angle 89.2 deg (88.0, 89.9)
+  layer 0    b64_causal: energy fraction 0.256 (0.169, 0.379); largest principal angle 89.3 deg (88.2, 89.9)
+  layer 0   b512_pooled: energy fraction 0.315 (0.230, 0.423); largest principal angle 89.2 deg (88.0, 89.9)
+  layer 0   b512_causal: energy fraction nan (nan, nan); largest principal angle nan deg (nan, nan)
+  layer 1     b8_pooled: energy fraction 0.933 (0.892, 0.960); largest principal angle 90.0 deg (89.5, 90.0)
+  layer 1     b8_causal: energy fraction 0.792 (0.698, 0.858); largest principal angle 90.0 deg (89.4, 90.0)
+  layer 1    b64_pooled: energy fraction 0.854 (0.804, 0.891); largest principal angle 90.0 deg (89.5, 90.0)
+  layer 1    b64_causal: energy fraction 0.798 (0.731, 0.844); largest principal angle 90.0 deg (89.5, 90.0)
+  layer 1   b512_pooled: energy fraction 0.819 (0.767, 0.858); largest principal angle 90.0 deg (89.4, 90.0)
+  layer 1   b512_causal: energy fraction nan (nan, nan); largest principal angle nan deg (nan, nan)
+
+                 arm     loss    d nats       se  ppl change  mode time s
+                base   4.0851   +0.0000   0.0000      +0.00%          8.9
+        L0_b8_pooled   4.3794   +0.2943   0.0247     +34.22%          2.0
+        L1_b8_pooled   4.0934   +0.0083   0.0043      +0.84%          2.2
+      both_b8_pooled   4.4060   +0.3210   0.0285     +37.85%          3.5
+        L0_b8_causal   4.7080   +0.6229   0.0426     +86.44%          2.0
+        L1_b8_causal   4.1292   +0.0441   0.0055      +4.51%          1.9
+      both_b8_causal   4.7938   +0.7087   0.0472    +103.14%          3.4
+       L0_b64_pooled   4.6410   +0.5560   0.0336     +74.36%          0.8
+       L1_b64_pooled   4.1001   +0.0150   0.0059      +1.51%          0.8
+     both_b64_pooled   4.6903   +0.6053   0.0396     +83.17%          1.1
+       L0_b64_causal   4.5935   +0.5084   0.0393     +66.27%          0.8
+       L1_b64_causal   4.1287   +0.0436   0.0044      +4.46%          0.8
+     both_b64_causal   4.6753   +0.5902   0.0488     +80.44%          1.1
+      L0_b512_pooled   4.7011   +0.6160   0.0448     +85.15%          0.7
+      L1_b512_pooled   4.1112   +0.0262   0.0056      +2.65%          0.7
+    both_b512_pooled   4.7532   +0.6681   0.0553     +95.05%          0.9
+      L0_b512_causal   4.0851   +0.0000   0.0000      +0.00%          0.7
+      L1_b512_causal   4.0851   +0.0000   0.0000      +0.00%          0.7
+    both_b512_causal   4.0851   +0.0000   0.0000      +0.00%          0.9

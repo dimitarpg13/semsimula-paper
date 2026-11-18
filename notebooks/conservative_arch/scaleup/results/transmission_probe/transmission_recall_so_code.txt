@@ -1,0 +1,43 @@
+Stiff-direction transmission to recall positions: semsimula_fock_cfc_baoab_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+model fock_cfc_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn)
+16 validation windows x 512 (code_val_2M.npy); first order False; eps 0.0025; per window and band 3 earlier occurrences p moved, one at a time; tokens occurring more than 8 times in the window excluded; (p, q) pairs read: {'near': 47, 'far': 48}; mode-solver retries 1
+recall = centred-logit change at the positions q whose target last occurred at p; recall_tgt = the change of the target's own centred logit there; now = at p; posU = p after the step, on its U; before = check, must be 0
+
+layer   band         kind      recall  recall_tgt         now        posU      before
+    0    far         comp     17.9569      0.2642     80.4198      1.1210      0.0000
+    0    far   comp_first     18.4934      0.3492    118.7679      1.1626      0.0000
+    0    far    comp_half     18.4922      0.3492    133.5404      1.1627      0.0000
+    0    far        stiff     18.2117      0.3500     63.6455      2.8533      0.0000
+    0    far  stiff_first     21.1593      0.4862     69.6665      2.2959      0.0000
+    0    far   stiff_half     21.1727      0.4856     60.2990      2.2962      0.0000
+    0   near         comp     21.4893      0.2716     57.2072      1.0861      0.0000
+    0   near   comp_first     21.3393      0.1816     51.1223      1.0771      0.0000
+    0   near    comp_half     21.3397      0.1818     51.1098      1.0762      0.0000
+    0   near        stiff     22.0982      0.3644     68.3143      2.6966      0.0000
+    0   near  stiff_first     23.6649      0.4054     78.4705      2.0024      0.0000
+    0   near   stiff_half     23.6655      0.4055     56.5334      2.0017      0.0000
+    1    far         comp      4.2724      0.0941     21.7239      0.6796      0.0069
+    1    far   comp_first      4.8145      0.1417     37.6381      1.2901      0.0000
+    1    far    comp_half      4.8146      0.1417     12.9820      0.2711      0.0000
+    1    far        stiff      6.2997      0.1842     28.2617      1.3632      0.0000
+    1    far  stiff_first      4.5533      0.1026     11.4253      1.2142      0.0000
+    1    far   stiff_half      4.5534      0.1026     11.4254      1.2142      0.0000
+    1   near         comp      4.5329      0.0869     13.2588      0.2624      0.0000
+    1   near   comp_first      4.4486      0.0730     13.6392      0.2855      0.0000
+    1   near    comp_half      4.4486      0.0730     13.6392      0.2855      0.0000
+    1   near        stiff      5.0203      0.1336     13.3065      1.0348      0.0000
+    1   near  stiff_first      4.8474      0.0973     11.5840      1.1968      0.0000
+    1   near   stiff_half      4.8473      0.0972     11.5840      1.1968      0.0000
+
+layer 0, near: stiff over complement: recall 1.028, recall_tgt 1.342, now 1.194; posU (stiff) 2.697
+  linearity, near stiff (first direction): recall 23.6649 at eps, 23.6655 at eps/2; recall_tgt 0.4054, 0.4055
+  linearity, near comp (first direction): recall 21.3393 at eps, 21.3397 at eps/2; recall_tgt 0.1816, 0.1818
+layer 0, far: stiff over complement: recall 1.014, recall_tgt 1.324, now 0.791; posU (stiff) 2.853
+  linearity, far stiff (first direction): recall 21.1593 at eps, 21.1727 at eps/2; recall_tgt 0.4862, 0.4856
+  linearity, far comp (first direction): recall 18.4934 at eps, 18.4922 at eps/2; recall_tgt 0.3492, 0.3492
+layer 1, near: stiff over complement: recall 1.108, recall_tgt 1.538, now 1.004; posU (stiff) 1.035
+  linearity, near stiff (first direction): recall 4.8474 at eps, 4.8473 at eps/2; recall_tgt 0.0973, 0.0972
+  linearity, near comp (first direction): recall 4.4486 at eps, 4.4486 at eps/2; recall_tgt 0.0730, 0.0730
+layer 1, far: stiff over complement: recall 1.475, recall_tgt 1.958, now 1.301; posU (stiff) 1.363
+  linearity, far stiff (first direction): recall 4.5533 at eps, 4.5534 at eps/2; recall_tgt 0.1026, 0.1026
+  linearity, far comp (first direction): recall 4.8145 at eps, 4.8146 at eps/2; recall_tgt 0.1417, 0.1417

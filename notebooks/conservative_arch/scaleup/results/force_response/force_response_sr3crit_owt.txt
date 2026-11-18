@@ -1,0 +1,30 @@
+Well force shares and removal response: semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_sr3_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+model fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_sr3_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_sr3_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn)
+16 validation windows x 512 (openwebtext_val_2M.npy); first order False; K 8; delta 0.001; base loss 4.1663 (ppl 64.47)
+force share = E|f_k| / sum_j E|f_j|; weight share = E g_k / E sum_j g_j; drop = w_k -> 0 on that layer (loss change in nats, centred-logit RMS, layer-output RMS); lin = the same per unit delta of w_k -> (1-delta) w_k
+
+layer 0: |sum f_k| / sum |f_k| = 0.696; check, sum_k f_k against the model force: largest relative difference 3.5e-15 (all layers)
+well   weight    force  drop nats  drop logit  drop h_out   lin nats  lin logit  lin h_out
+   2    17.9%    16.6%    +0.1304     71.0625      3.4810    -0.0054   312.1152     4.3178
+   3    15.4%    14.4%    +0.1074     63.2972      3.2773    -0.0077   179.6612     4.4876
+   5    13.7%    13.6%    +0.1105     66.7106      3.0578    -0.0061   303.3109     3.0134
+   0    12.0%    12.2%    +0.0855     57.3785      2.9405    -0.0055   149.8259     4.3687
+   1     8.9%    12.0%    +0.0968     67.6083      3.4697    -0.0074   129.9738     3.3217
+   4    12.7%    11.7%    +0.0820     58.3784      2.9369    -0.0010   288.9900     3.5305
+   7    10.8%    10.4%    +0.0859     57.6482      2.9379    -0.0109   155.7460     3.6982
+   6     8.5%     9.2%    +0.0842     57.4126      2.7796    -0.0110   116.6316     2.3116
+  per unit force share (fit through 0 over the wells): drop nats 0.779, lin logit 1656.772, lin h_out 28.821
+  linearity, well 0: lin logit 149.82591 at delta, 254.45584 at delta/2; nats -0.00547, -0.00668
+
+layer 1: |sum f_k| / sum |f_k| = 1.000; check, sum_k f_k against the model force: largest relative difference 3.5e-15 (all layers)
+well   weight    force  drop nats  drop logit  drop h_out   lin nats  lin logit  lin h_out
+   1   100.0%   100.0%    +0.3492    106.1394      8.5582    +0.0131    85.5108     6.8518
+   6     0.0%     0.0%    -0.0000      1.0545      0.0828    -0.0000     0.0049     0.0004
+   7     0.0%     0.0%    +0.0000      0.7077      0.0558    -0.0000     0.0114     0.0012
+   4     0.0%     0.0%    -0.0000      1.2822      0.1017    +0.0000     0.0093     0.0007
+   3     0.0%     0.0%    +0.0000      0.2919      0.0228    -0.0000     0.0027     0.0002
+   0     0.0%     0.0%    -0.0000      0.0009      0.0001    -0.0000     0.0009     0.0001
+   2     0.0%     0.0%    -0.0000      0.2814      0.0224    -0.0000     0.0054     0.0004
+   5     0.0%     0.0%    -0.0000      0.0000      0.0000    -0.0000     0.0000     0.0000
+  per unit force share (fit through 0 over the wells): drop nats 0.349, lin logit 85.511, lin h_out 6.852
+  linearity, well 0: lin logit 0.00088 at delta, 0.00088 at delta/2; nats -0.00000, -0.00000

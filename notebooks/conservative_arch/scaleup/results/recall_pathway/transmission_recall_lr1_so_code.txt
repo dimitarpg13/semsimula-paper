@@ -1,0 +1,13 @@
+Stiff-direction transmission to recall positions: semsimula_fock_cfc_baoab_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+model fock_cfc_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn)
+16 validation windows x 512 (code_val_2M.npy); first order False; eps 0.0025; per window and band 3 earlier occurrences p moved, one at a time; tokens occurring more than 8 times in the window excluded; (p, q) pairs read: {'near': 47, 'far': 48}; mode-solver retries 0
+recall = centred-logit change at the positions q whose target last occurred at p; recall_tgt = the change of the target's own centred logit there; now = at p; posU = p after the step, on its U; before = check, must be 0
+
+layer   band         kind      recall  recall_tgt         now        posU      before
+    1    far         comp      5.8146      0.1174     14.1998      0.3546      0.0000
+    1    far        stiff      6.6209      0.1957     14.6203      1.0322      0.0000
+    1   near         comp      4.6292      0.0655     13.5061      0.2697      0.0000
+    1   near        stiff      5.4544      0.1349     14.0183      1.0600      0.0000
+
+layer 1, near: stiff over complement: recall 1.178, recall_tgt 2.060, now 1.038; posU (stiff) 1.060
+layer 1, far: stiff over complement: recall 1.139, recall_tgt 1.667, now 1.030; posU (stiff) 1.032

@@ -1,0 +1,47 @@
+model: fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn); analytic V_phi True; query chunk 512; skip unread registers True 79,324,622 parameters
+   512      1.219      420.0         2.31  1.205 1.219 1.266
+  2048      8.944      229.0         4.34  8.600 8.944 9.272
+  8192     82.443       99.4        11.65  91.203 82.443 67.693
+STAGE:2026-11-17 16:59:48 87463:19324926 ActivityProfilerController.cpp:314] Completed Stage: Warm Up
+STAGE:2026-11-17 17:00:55 87463:19324926 ActivityProfilerController.cpp:320] Completed Stage: Collection
+STAGE:2026-11-17 17:00:55 87463:19324926 ActivityProfilerController.cpp:324] Completed Stage: Post Processing
+length   median s   tokens/s  peak RSS GB  times
+   512      1.219      420.0         2.31  1.205 1.219 1.266
+  2048      8.944      229.0         4.34  8.600 8.944 9.272
+  8192     82.443       99.4        11.65  91.203 82.443 67.693
+
+profile at length 8192: self CPU time 47.20 s summed over threads and operators
+    7.4%  decompositions (svd, eigh, qr, cholesky, solve)
+    0.0%  backward (autograd)
+   29.2%  matrix products (mm, bmm, matmul, einsum, addmm, linear)
+    1.0%  softmax
+    0.5%  top-k, sort, gather, scatter
+   62.0%  other (elementwise, copies, reductions)
+
+  top operators by self CPU time:
+  ------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  
+                            Name    Self CPU %      Self CPU   CPU total %     CPU total  CPU time avg    # of Calls  
+  ------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  
+                       aten::mul        32.70%       15.433s        32.72%       15.446s       2.439ms          6333  
+                       aten::bmm        22.08%       10.422s        22.08%       10.422s      18.414ms           566  
+                       aten::add        12.70%        5.995s        12.71%        5.999s       2.405ms          2494  
+                       aten::erf         6.50%        3.066s         6.50%        3.066s      10.646ms           288  
+                     aten::addmm         4.84%        2.283s         5.12%        2.418s       5.677ms           426  
+                       aten::exp         4.14%        1.953s         4.14%        1.953s       4.520ms           432  
+                      aten::gelu         3.76%        1.775s         3.76%        1.775s       6.122ms           290  
+               aten::_linalg_svd         3.51%        1.658s         3.54%        1.672s     835.866ms             2  
+                        aten::mm         2.20%        1.040s         2.20%        1.040s     660.541us          1575  
+                     aten::copy_         1.91%     902.762ms         1.91%     902.762ms     229.652us          3931  
+                  aten::_softmax         0.96%     454.479ms         0.96%     454.479ms       6.886ms            66  
+                       aten::sub         0.95%     449.168ms         0.95%     449.861ms     417.311us          1078  
+                       aten::cat         0.59%     280.437ms         0.59%     280.798ms       7.800ms            36  
+                     aten::clamp         0.57%     270.494ms         0.57%     270.495ms     819.682us           330  
+              aten::masked_fill_         0.32%     151.398ms         0.32%     151.398ms     675.884us           224  
+                        aten::ge         0.31%     146.943ms         0.32%     148.837ms     907.543us           164  
+                      aten::topk         0.26%     122.024ms         0.26%     122.024ms       3.813ms            32  
+                       aten::sum         0.23%     107.650ms         0.24%     113.668ms     203.706us           558  
+                    aten::gather         0.22%     105.258ms         0.22%     105.258ms     548.219us           192  
+               aten::bitwise_not         0.19%      91.445ms         0.19%      91.445ms     408.237us           224  
+  ------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  
+  Self CPU time total: 47.201s
+  

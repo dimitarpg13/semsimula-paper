@@ -1,0 +1,57 @@
+{
+ "model": "ladder",
+ "folder": "semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn",
+ "desc": "fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn)",
+ "params": 79324622,
+ "threads": 8,
+ "lengths": {
+  "512": {
+   "times": [
+    1.0886180009692907,
+    1.1414524130523205,
+    1.1154313429724425
+   ],
+   "median_s": 1.1154313429724425,
+   "tokens_per_s": 459.0152529115809,
+   "peak_rss_gb": 2.2622642517089844
+  },
+  "2048": {
+   "times": [
+    5.905388281913474,
+    6.059352295007557,
+    6.096072826068848
+   ],
+   "median_s": 6.059352295007557,
+   "tokens_per_s": 337.98992042225296,
+   "peak_rss_gb": 4.668842315673828
+  },
+  "8192": {
+   "times": [
+    41.875926659908146,
+    42.63340044114739,
+    42.006425705039874
+   ],
+   "median_s": 42.006425705039874,
+   "tokens_per_s": 195.0177826964491,
+   "peak_rss_gb": 25.576934814453125
+  }
+ },
+ "profile": {
+  "512": {
+   "decompositions (svd, eigh, qr, cholesky, solve)": 0.2134401833862573,
+   "backward (autograd)": 0.0,
+   "matrix products (mm, bmm, matmul, einsum, addmm, linear)": 0.4299923902219049,
+   "softmax": 0.002356917382236335,
+   "top-k, sort, gather, scatter": 0.010210959959414517,
+   "other (elementwise, copies, reductions)": 0.343999549050187
+  },
+  "2048": {
+   "decompositions (svd, eigh, qr, cholesky, solve)": 0.18284124753683986,
+   "backward (autograd)": 0.0,
+   "matrix products (mm, bmm, matmul, einsum, addmm, linear)": 0.4714965556186356,
+   "softmax": 0.0078344609767946,
+   "top-k, sort, gather, scatter": 0.006766292002553773,
+   "other (elementwise, copies, reductions)": 0.3310614438651761
+  }
+ }
+}

@@ -1,0 +1,49 @@
+{
+ "model": "ladder",
+ "folder": "semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x4_ar6_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn",
+ "desc": "fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x4_ar6_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x4_ar6_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn)",
+ "params": 67514314,
+ "threads": 8,
+ "lengths": {
+  "512": {
+   "times": [
+    0.6895983989816159,
+    0.6996100540272892,
+    0.6897203458938748
+   ],
+   "median_s": 0.6897203458938748,
+   "tokens_per_s": 742.3298486815697,
+   "peak_rss_gb": 2.1109046936035156
+  },
+  "2048": {
+   "times": [
+    3.664779809070751,
+    3.7723861599806696,
+    3.6054950510151684
+   ],
+   "median_s": 3.664779809070751,
+   "tokens_per_s": 558.8330286395283,
+   "peak_rss_gb": 4.634105682373047
+  },
+  "8192": {
+   "times": [
+    32.70669864397496,
+    32.698701698798686,
+    32.6944923249539
+   ],
+   "median_s": 32.698701698798686,
+   "tokens_per_s": 250.52982456184077,
+   "peak_rss_gb": 25.71307373046875
+  }
+ },
+ "profile": {
+  "512": {
+   "decompositions (svd, eigh, qr, cholesky, solve)": 0.1631099317122779,
+   "backward (autograd)": 0.0,
+   "matrix products (mm, bmm, matmul, einsum, addmm, linear)": 0.4556109943629856,
+   "softmax": 0.0048484679953442,
+   "top-k, sort, gather, scatter": 0.01413027501797568,
+   "other (elementwise, copies, reductions)": 0.36230033091141667
+  }
+ }
+}

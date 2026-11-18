@@ -1,0 +1,15 @@
+Inference-only memory switches: semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+model fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn)
+4 windows x 1024 tokens, chunk 256
+
+1. causal_ema_logits_rows against causal_ema_logits: bit-identical True  -> PASS
+reference (all off, no_grad): loss 4.147567; counters {'vphi_chunks': 0, 'xi_row_blocks': 0, 'register_creations': 2}
+2.   V_phi query chunking: max |d logit| 2.29e-05, |d loss| 0.00e+00; engaged True {'vphi_chunks': 8, 'xi_row_blocks': 0, 'register_creations': 2}  -> PASS
+2.      xi query chunking: max |d logit| 0.00e+00, |d loss| 0.00e+00; engaged True {'vphi_chunks': 0, 'xi_row_blocks': 40, 'register_creations': 2}  -> PASS
+2.  skip unread registers: max |d logit| 0.00e+00, |d loss| 0.00e+00; engaged True {'vphi_chunks': 0, 'xi_row_blocks': 0, 'register_creations': 0}  -> PASS
+2.              all three: max |d logit| 2.29e-05, |d loss| 0.00e+00; engaged True {'vphi_chunks': 8, 'xi_row_blocks': 40, 'register_creations': 0}  -> PASS
+3. enable_grad, chunking switches on: bit-identical True; with the register skip too, max |d logit| 0.00e+00  -> PASS
+4. a window of 256 tokens (no chunk entered): bit-identical True  -> PASS
+5. guard: autograd force under no_grad raises True ("The V_phi pair force is an autograd gradient here, and autograd is dis..."); under enable_grad it matches the analytic force, max |d logit| 3.05e-05  -> PASS
+
+ALL PASS

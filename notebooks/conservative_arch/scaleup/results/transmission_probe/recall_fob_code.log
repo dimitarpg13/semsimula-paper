@@ -1,0 +1,48 @@
+model: fock_cfc_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_fob_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_fob_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn)
+windows 4/16
+windows 8/16
+windows 12/16
+windows 16/16
+Stiff-direction transmission to recall positions: semsimula_fock_cfc_baoab_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_fob_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+model fock_cfc_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_fob_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_fob_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn)
+16 validation windows x 512 (code_val_2M.npy); first order True; eps 0.0025; per window and band 3 earlier occurrences p moved, one at a time; tokens occurring more than 8 times in the window excluded; (p, q) pairs read: {'near': 47, 'far': 48}; mode-solver retries 0
+recall = centred-logit change at the positions q whose target last occurred at p; recall_tgt = the change of the target's own centred logit there; now = at p; posU = p after the step, on its U; before = check, must be 0
+
+layer   band         kind      recall  recall_tgt         now        posU      before
+    0    far         comp     17.6692      0.2004     61.6941      1.2670      0.0000
+    0    far   comp_first     17.6214      0.1753     56.0903      1.2652      0.0000
+    0    far    comp_half     17.6211      0.1754     58.9555      1.2649      0.0000
+    0    far        stiff     15.3546      0.2651     47.1520      2.1234      0.0000
+    0    far  stiff_first     16.3751      0.2357     53.7598      2.5882      0.0000
+    0    far   stiff_half     16.3742      0.2357     53.7460      2.5882      0.0000
+    0   near         comp     30.4228      0.3362     59.2891      1.3590      0.0000
+    0   near   comp_first     23.2024      0.2715     56.3370      1.5592      0.0000
+    0   near    comp_half     23.2036      0.2715     56.3607      1.5506      0.0000
+    0   near        stiff     26.9395      0.3378     49.8230      2.0863      0.0000
+    0   near  stiff_first     31.2273      0.4376     65.9479      2.5522      0.0000
+    0   near   stiff_half     31.2024      0.4371     65.9371      2.5523      0.0000
+    1    far         comp      3.8015      0.0505     14.5273      0.2679      0.0000
+    1    far   comp_first      3.9007      0.0418     13.8782      0.2555      0.0000
+    1    far    comp_half      3.9007      0.0418     13.8782      0.2555      0.0000
+    1    far        stiff      4.0070      0.0592     14.1881      0.6453      0.0000
+    1    far  stiff_first      3.2698      0.0444     11.8037      0.7842      0.0000
+    1    far   stiff_half      3.2698      0.0444     11.8037      0.7842      0.0000
+    1   near         comp      3.7450      0.0511     14.3681      0.3037      0.0000
+    1   near   comp_first      3.3013      0.0375     15.3164      0.3261      0.0000
+    1   near    comp_half      3.3015      0.0375     15.3173      0.3261      0.0000
+    1   near        stiff      7.1639      0.0941     16.9683      0.8252      0.0000
+    1   near  stiff_first      4.4597      0.0575     14.5035      0.9846      0.0000
+    1   near   stiff_half      4.4590      0.0575     14.4996      0.9844      0.0000
+
+layer 0, near: stiff over complement: recall 0.886, recall_tgt 1.005, now 0.840; posU (stiff) 2.086
+  linearity, near stiff (first direction): recall 31.2273 at eps, 31.2024 at eps/2; recall_tgt 0.4376, 0.4371
+  linearity, near comp (first direction): recall 23.2024 at eps, 23.2036 at eps/2; recall_tgt 0.2715, 0.2715
+layer 0, far: stiff over complement: recall 0.869, recall_tgt 1.323, now 0.764; posU (stiff) 2.123
+  linearity, far stiff (first direction): recall 16.3751 at eps, 16.3742 at eps/2; recall_tgt 0.2357, 0.2357
+  linearity, far comp (first direction): recall 17.6214 at eps, 17.6211 at eps/2; recall_tgt 0.1753, 0.1754
+layer 1, near: stiff over complement: recall 1.913, recall_tgt 1.840, now 1.181; posU (stiff) 0.825
+  linearity, near stiff (first direction): recall 4.4597 at eps, 4.4590 at eps/2; recall_tgt 0.0575, 0.0575
+  linearity, near comp (first direction): recall 3.3013 at eps, 3.3015 at eps/2; recall_tgt 0.0375, 0.0375
+layer 1, far: stiff over complement: recall 1.054, recall_tgt 1.172, now 0.977; posU (stiff) 0.645
+  linearity, far stiff (first direction): recall 3.2698 at eps, 3.2698 at eps/2; recall_tgt 0.0444, 0.0444
+  linearity, far comp (first direction): recall 3.9007 at eps, 3.9007 at eps/2; recall_tgt 0.0418, 0.0418

@@ -1,0 +1,65 @@
+{
+ "model": "ladder",
+ "folder": "semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn",
+ "desc": "fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn); analytic V_phi True; query chunk off; skip unread registers False",
+ "params": 79324622,
+ "threads": 8,
+ "lengths": {
+  "512": {
+   "times": [
+    1.003949134144932,
+    1.0184259212110192,
+    1.0659773738589138
+   ],
+   "median_s": 1.0184259212110192,
+   "tokens_per_s": 502.7366147467813,
+   "peak_rss_gb": 2.3540802001953125
+  },
+  "2048": {
+   "times": [
+    7.081441858084872,
+    7.055296369828284,
+    7.118436370044947
+   ],
+   "median_s": 7.081441858084872,
+   "tokens_per_s": 289.206639134063,
+   "peak_rss_gb": 5.795768737792969
+  },
+  "8192": {
+   "times": [
+    68.71814978378825,
+    70.86001795297489,
+    90.29550297907554
+   ],
+   "median_s": 70.86001795297489,
+   "tokens_per_s": 115.60821231285165,
+   "peak_rss_gb": 40.083499908447266
+  }
+ },
+ "profile": {
+  "512": {
+   "decompositions (svd, eigh, qr, cholesky, solve)": 0.15806415525431092,
+   "backward (autograd)": 0.0,
+   "matrix products (mm, bmm, matmul, einsum, addmm, linear)": 0.3605231977514713,
+   "softmax": 0.002908650253996536,
+   "top-k, sort, gather, scatter": 0.008084120582415977,
+   "other (elementwise, copies, reductions)": 0.4704198761578053
+  },
+  "2048": {
+   "decompositions (svd, eigh, qr, cholesky, solve)": 0.1236644650707083,
+   "backward (autograd)": 0.0,
+   "matrix products (mm, bmm, matmul, einsum, addmm, linear)": 0.3326107878924506,
+   "softmax": 0.0056733816427215105,
+   "top-k, sort, gather, scatter": 0.005441038124387643,
+   "other (elementwise, copies, reductions)": 0.532610327269732
+  },
+  "8192": {
+   "decompositions (svd, eigh, qr, cholesky, solve)": 0.07693547672804582,
+   "backward (autograd)": 0.0,
+   "matrix products (mm, bmm, matmul, einsum, addmm, linear)": 0.24886998307333824,
+   "softmax": 0.009778294452303096,
+   "top-k, sort, gather, scatter": 0.0027718797040613852,
+   "other (elementwise, copies, reductions)": 0.6616443660422515
+  }
+ }
+}

@@ -1,0 +1,9 @@
+Stiff-mode damping at evaluation: semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_sr3_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+model fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_sr3_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_sr3_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn)
+16 validation windows x 512 (openwebtext_val_2M.npy); trained stiff_mode_damping_ratio = 1.0; layers seen [0, 1]
+
+       arm     loss      ppl   vs base    d nats       se  max|dlogit|
+      base   4.1663    64.47    +0.00%   +0.0000   0.0000     0.00e+00
+  none@all   4.7018   110.15   +70.84%   +0.5356   0.0176     3.29e+01
+    none@0   4.6427   103.83   +61.04%   +0.4765   0.0169     3.06e+01
+    none@1   4.3261    75.65   +17.33%   +0.1598   0.0108     2.55e+01

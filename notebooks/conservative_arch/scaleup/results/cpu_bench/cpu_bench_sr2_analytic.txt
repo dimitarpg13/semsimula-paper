@@ -1,0 +1,115 @@
+CPU inference benchmark: ladder  semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn); analytic V_phi True; query chunk off; skip unread registers False; 79,324,622 parameters; 8 threads; float32; one sequence per forward
+
+length   median s   tokens/s  peak RSS GB  times
+   512      1.018      502.7         2.35  1.004 1.018 1.066
+  2048      7.081      289.2         5.80  7.081 7.055 7.118
+  8192     70.860      115.6        40.08  68.718 70.860 90.296
+
+profile at length 512: self CPU time 1.22 s summed over threads and operators
+   15.8%  decompositions (svd, eigh, qr, cholesky, solve)
+    0.0%  backward (autograd)
+   36.1%  matrix products (mm, bmm, matmul, einsum, addmm, linear)
+    0.3%  softmax
+    0.8%  top-k, sort, gather, scatter
+   47.0%  other (elementwise, copies, reductions)
+
+  top operators by self CPU time:
+  ------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  
+                            Name    Self CPU %      Self CPU   CPU total %     CPU total  CPU time avg    # of Calls  
+  ------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  
+                       aten::mul        22.89%     280.302ms        23.04%     282.205ms     211.073us          1337  
+                     aten::addmm        14.91%     182.545ms        15.58%     190.801ms       5.300ms            36  
+               aten::_linalg_svd        13.81%     169.178ms        13.95%     170.864ms      85.432ms             2  
+                       aten::bmm        12.28%     150.424ms        13.61%     166.713ms       1.852ms            90  
+                        aten::mm         8.07%      98.838ms         8.07%      98.838ms     923.720us           107  
+                       aten::add         6.35%      77.721ms         6.38%      78.077ms     150.728us           518  
+                     aten::copy_         5.02%      61.463ms         5.02%      61.463ms      83.396us           737  
+                       aten::erf         2.50%      30.639ms         2.50%      30.639ms       1.702ms            18  
+                       aten::sub         1.94%      23.809ms         1.95%      23.935ms     196.189us           122  
+                      aten::gelu         1.63%      19.999ms         1.63%      19.999ms     999.950us            20  
+                    aten::cumsum         1.56%      19.143ms         1.56%      19.143ms       4.786ms             4  
+                       aten::exp         1.34%      16.433ms         1.34%      16.433ms     357.239us            46  
+                       aten::div         1.31%      15.983ms         1.38%      16.873ms      65.399us           258  
+                       aten::sum         0.72%       8.767ms         0.76%       9.297ms     185.940us            50  
+                    aten::gather         0.56%       6.832ms         0.56%       6.832ms     569.333us            12  
+                     aten::where         0.47%       5.784ms         0.47%       5.801ms      93.565us            62  
+                    aten::matmul         0.40%       4.877ms        14.91%     182.616ms       1.485ms           123  
+                  aten::softplus         0.33%       4.003ms         0.33%       4.003ms     285.929us            14  
+                    aten::einsum         0.32%       3.899ms         8.55%     104.656ms       1.276ms            82  
+                  aten::_softmax         0.29%       3.536ms         0.29%       3.536ms     589.333us             6  
+  ------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  
+  Self CPU time total: 1.225s
+  
+
+profile at length 2048: self CPU time 7.38 s summed over threads and operators
+   12.4%  decompositions (svd, eigh, qr, cholesky, solve)
+    0.0%  backward (autograd)
+   33.3%  matrix products (mm, bmm, matmul, einsum, addmm, linear)
+    0.6%  softmax
+    0.5%  top-k, sort, gather, scatter
+   53.3%  other (elementwise, copies, reductions)
+
+  top operators by self CPU time:
+  ------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  
+                            Name    Self CPU %      Self CPU   CPU total %     CPU total  CPU time avg    # of Calls  
+  ------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  
+                       aten::mul        24.25%        1.790s        24.28%        1.792s       1.341ms          1337  
+                       aten::bmm        17.97%        1.326s        19.27%        1.422s      15.805ms            90  
+                       aten::add        10.21%     753.641ms        10.22%     754.139ms       1.456ms           518  
+                     aten::addmm        10.02%     739.570ms        10.53%     777.150ms      21.587ms            36  
+               aten::_linalg_svd         9.20%     679.222ms         9.25%     682.774ms     341.387ms             2  
+                        aten::mm         4.95%     365.365ms         4.95%     365.366ms       3.415ms           107  
+                     aten::copy_         4.25%     313.549ms         4.25%     313.549ms     425.440us           737  
+                       aten::erf         4.15%     306.550ms         4.15%     306.550ms      17.031ms            18  
+                      aten::gelu         2.98%     219.863ms         2.98%     219.863ms      10.993ms            20  
+                       aten::exp         2.65%     195.308ms         2.65%     195.308ms       4.246ms            46  
+                    aten::cumsum         2.07%     152.850ms         2.07%     152.850ms      38.212ms             4  
+                       aten::sub         1.66%     122.290ms         1.66%     122.431ms       1.004ms           122  
+                       aten::div         0.73%      53.655ms         0.74%      54.590ms     211.589us           258  
+                  aten::_softmax         0.57%      41.840ms         0.57%      41.840ms       6.973ms             6  
+                       aten::sum         0.49%      36.448ms         0.53%      38.764ms     775.280us            50  
+                    aten::gather         0.38%      28.203ms         0.38%      28.203ms       2.350ms            12  
+                     aten::clamp         0.37%      27.032ms         0.37%      27.032ms     750.889us            36  
+                       aten::cat         0.36%      26.622ms         0.36%      26.645ms      13.322ms             2  
+                     aten::where         0.25%      18.787ms         0.25%      18.813ms     303.435us            62  
+                    aten::matmul         0.24%      17.440ms        18.49%        1.365s      11.096ms           123  
+  ------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  
+  Self CPU time total: 7.381s
+  
+
+profile at length 8192: self CPU time 70.04 s summed over threads and operators
+    7.7%  decompositions (svd, eigh, qr, cholesky, solve)
+    0.0%  backward (autograd)
+   24.9%  matrix products (mm, bmm, matmul, einsum, addmm, linear)
+    1.0%  softmax
+    0.3%  top-k, sort, gather, scatter
+   66.2%  other (elementwise, copies, reductions)
+
+  top operators by self CPU time:
+  ------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  
+                            Name    Self CPU %      Self CPU   CPU total %     CPU total  CPU time avg    # of Calls  
+  ------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  
+                       aten::mul        32.34%       22.654s        32.35%       22.657s      16.946ms          1337  
+                       aten::bmm        17.97%       12.586s        18.56%       12.999s     144.432ms            90  
+                       aten::add        12.41%        8.696s        12.42%        8.696s      16.789ms           518  
+                       aten::erf         6.64%        4.649s         6.64%        4.649s     258.254ms            18  
+                       aten::exp         5.09%        3.564s         5.09%        3.564s      77.478ms            46  
+                     aten::addmm         4.70%        3.293s         4.98%        3.487s      96.858ms            36  
+                      aten::gelu         4.08%        2.858s         4.08%        2.858s     142.890ms            20  
+               aten::_linalg_svd         3.54%        2.482s         3.57%        2.502s        1.251s             2  
+                    aten::cumsum         3.07%        2.149s         3.07%        2.149s     537.341ms             4  
+                     aten::copy_         2.55%        1.783s         2.55%        1.783s       2.420ms           737  
+                        aten::mm         2.11%        1.477s         2.11%        1.477s      13.805ms           107  
+                       aten::sub         0.99%     693.730ms         0.99%     693.900ms       5.688ms           122  
+                  aten::_softmax         0.98%     684.873ms         0.98%     684.873ms     114.145ms             6  
+                       aten::cat         0.54%     379.826ms         0.54%     379.845ms     189.923ms             2  
+                     aten::clamp         0.54%     377.048ms         0.54%     377.049ms      10.474ms            36  
+                       aten::div         0.38%     263.067ms         0.38%     264.181ms       1.024ms           258  
+              aten::masked_fill_         0.35%     242.195ms         0.35%     242.195ms      17.300ms            14  
+                        aten::ge         0.31%     215.876ms         0.31%     216.098ms      15.436ms            14  
+                       aten::sum         0.25%     177.021ms         0.27%     188.639ms       3.773ms            50  
+               aten::bitwise_not         0.15%     107.574ms         0.15%     107.574ms       7.684ms            14  
+  ------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  
+  Self CPU time total: 70.045s
+  

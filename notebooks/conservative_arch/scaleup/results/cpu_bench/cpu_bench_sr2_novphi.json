@@ -1,0 +1,50 @@
+{
+ "model": "ladder",
+ "folder": "semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn",
+ "desc": "fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn); analytic V_phi True; query chunk off; skip unread registers False; V_phi removed",
+ "params": 79324622,
+ "threads": 8,
+ "lengths": {
+  "512": {
+   "times": [
+    0.6616859990172088,
+    0.6763604360166937,
+    0.678348622051999
+   ],
+   "median_s": 0.6763604360166937,
+   "tokens_per_s": 756.9928291715794,
+   "peak_rss_gb": 2.203685760498047
+  },
+  "2048": {
+   "times": [
+    3.3283540410920978,
+    3.329013884998858,
+    3.3475426591467112
+   ],
+   "median_s": 3.329013884998858,
+   "tokens_per_s": 615.1971937481728,
+   "peak_rss_gb": 4.181194305419922
+  },
+  "8192": {
+   "times": [
+    20.942514879163355,
+    21.224040816072375,
+    21.50524679198861
+   ],
+   "median_s": 21.224040816072375,
+   "tokens_per_s": 385.9773956802998,
+   "peak_rss_gb": 14.001834869384766
+  }
+ },
+ "val_loss": 4.083562850952148,
+ "profile": {
+  "8192": {
+   "decompositions (svd, eigh, qr, cholesky, solve)": 0.09638696022892189,
+   "backward (autograd)": 0.0,
+   "matrix products (mm, bmm, matmul, einsum, addmm, linear)": 0.5468589545239821,
+   "softmax": 0.019583569219527808,
+   "top-k, sort, gather, scatter": 0.00018767931123183986,
+   "other (elementwise, copies, reductions)": 0.33698283671633633
+  }
+ }
+}

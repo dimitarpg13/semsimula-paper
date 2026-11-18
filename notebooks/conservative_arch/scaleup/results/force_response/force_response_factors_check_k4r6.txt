@@ -1,0 +1,20 @@
+Well force shares and removal response: semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x4_ar6_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+model fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x4_ar6_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x4_ar6_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn)
+4 validation windows x 512 (openwebtext_val_2M.npy); first order False; K 4; delta 0.001; base loss 4.0851 (ppl 59.45)
+force share = E|f_k| / sum_j E|f_j|; weight share = E g_k / E sum_j g_j; drop = w_k -> 0 on that layer (loss change in nats, centred-logit RMS, layer-output RMS); lin = the same per unit delta of w_k -> (1-delta) w_k
+
+layer 0: force factors, |f_k| = g_k s_k d_k (force-weighted means over tokens of the logs; s = |P(mu-h)|/|mu-h|, the effective stiffness along the displacement; d = |mu-h|)
+well   weight    force   <log g>   <log s>   <log d>   occ p50
+   0    89.3%    37.6%    -0.277    -4.230     1.149     0.987
+   3     3.6%    20.4%    -3.510    -2.817     2.319     0.402
+   1     3.6%    20.2%    -3.515    -2.796     2.284     0.411
+   2     3.5%    21.9%    -3.534    -2.705     2.295     0.361
+  light wells against the heaviest (0): force over g larger by log +2.608 = stiffness +1.457 + distance +1.151 (stiffness part 0.56); light wells' geometric-mean s 0.06248, heaviest 0.01455
+
+layer 1: force factors, |f_k| = g_k s_k d_k (force-weighted means over tokens of the logs; s = |P(mu-h)|/|mu-h|, the effective stiffness along the displacement; d = |mu-h|)
+well   weight    force   <log g>   <log s>   <log d>   occ p50
+   0   100.0%   100.0%    -1.798    -3.550     2.958     0.162
+   3     0.0%     0.0%   -13.234    -4.374     4.228     0.000
+   2     0.0%     0.0%   -13.959    -4.085     4.217     0.000
+   1     0.0%     0.0%   -14.277    -4.155     4.213     0.000
+  light wells against the heaviest (0): force over g larger by log +0.606 = stiffness -0.654 + distance +1.261 (stiffness part -1.08); light wells' geometric-mean s 0.01492, heaviest 0.02871

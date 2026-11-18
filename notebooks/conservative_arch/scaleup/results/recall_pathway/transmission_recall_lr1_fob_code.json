@@ -1,0 +1,46 @@
+{
+ "folder": "semsimula_fock_cfc_baoab_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_fob_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn",
+ "model": "fock_cfc_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_fob_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_fob_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn)",
+ "first_order": true,
+ "eps": 0.0025,
+ "readings": {
+  "pairs": {
+   "near": 47,
+   "far": 48
+  },
+  "1:far:comp": {
+   "recall": 4.624273238028342,
+   "recall_tgt": 0.06185009615895508,
+   "now": 13.162121295896878,
+   "before": 0.0,
+   "posU": 0.26949944884583826
+  },
+  "1:far:stiff": {
+   "recall": 4.453672236566758,
+   "recall_tgt": 0.07516223237528741,
+   "now": 11.852446689083598,
+   "before": 0.0,
+   "posU": 0.6600713197280073
+  },
+  "1:near:comp": {
+   "recall": 3.8970177330919205,
+   "recall_tgt": 0.05155671748390627,
+   "now": 14.837168143554043,
+   "before": 0.0,
+   "posU": 0.31487138964927874
+  },
+  "1:near:stiff": {
+   "recall": 4.585345179074868,
+   "recall_tgt": 0.07055029571493174,
+   "now": 13.742402218652279,
+   "before": 0.0,
+   "posU": 0.7561438021659931
+  },
+  "1:near:R_recall": 1.1766292824736069,
+  "1:near:R_recall_tgt": 1.3684016197686446,
+  "1:near:R_now": 0.9262146311001145,
+  "1:far:R_recall": 0.9631074997777764,
+  "1:far:R_recall_tgt": 1.2152322638613215,
+  "1:far:R_now": 0.9004966921842945
+ }
+}

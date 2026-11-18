@@ -1,0 +1,33 @@
+model: fock_cfc_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn)
+windows 4/16
+windows 8/16
+windows 12/16
+windows 16/16
+Well force shares and removal response: semsimula_fock_cfc_baoab_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+model fock_cfc_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn)
+16 validation windows x 512 (code_val_2M.npy); first order False; K 8; delta 0.001; base loss 2.0085 (ppl 7.45); mode-solver retries 0
+force share = E|f_k| / sum_j E|f_j|; weight share = E g_k / E sum_j g_j; drop = w_k -> 0 on that layer (loss change in nats, centred-logit RMS, layer-output RMS); lin = the same per unit delta of w_k -> (1-delta) w_k
+
+layer 0: force factors, |f_k| = g_k s_k d_k (force-weighted means over tokens of the logs; s = |P(mu-h)|/|mu-h|, the effective stiffness along the displacement; d = |mu-h|)
+well   weight    force   <log g>   <log s>   <log d>   occ p50
+   5    84.1%    35.3%    -0.331    -3.967     1.217     0.981
+   7     3.1%     8.9%    -3.645    -2.318     1.436     0.776
+   0     2.6%     8.6%    -3.851    -2.470     1.786     0.683
+   3     2.4%     8.4%    -3.956    -2.468     1.870     0.670
+   2     2.4%     9.4%    -3.914    -2.418     1.852     0.573
+   1     2.0%     9.4%    -4.107    -2.241     1.890     0.487
+   6     1.8%    10.6%    -4.178    -1.990     1.815     0.387
+   4     1.6%     9.4%    -4.315    -2.139     1.980     0.332
+  light wells against the heaviest (5): force over g larger by log +2.262 = stiffness +1.675 + distance +0.587 (stiffness part 0.74); light wells' geometric-mean s 0.1011, heaviest 0.01893
+
+layer 1: force factors, |f_k| = g_k s_k d_k (force-weighted means over tokens of the logs; s = |P(mu-h)|/|mu-h|, the effective stiffness along the displacement; d = |mu-h|)
+well   weight    force   <log g>   <log s>   <log d>   occ p50
+   5    89.1%    86.3%    -1.751    -3.764     3.003     0.190
+   7    10.9%    13.7%    -2.480    -3.695     3.204     0.152
+   2     0.0%     0.0%   -17.435    -4.237     4.223     0.000
+   6     0.0%     0.0%   -16.140    -4.008     4.218     0.000
+   0     0.0%     0.0%   -18.875    -3.932     4.165     0.000
+   1     0.0%     0.0%   -18.018    -4.134     4.208     0.000
+   4     0.0%     0.0%   -17.593    -4.226     4.271     0.000
+   3     0.0%     0.0%   -20.164    -3.962     4.270     0.000
+  light wells against the heaviest (5): force over g larger by log +0.814 = stiffness -0.263 + distance +1.077 (stiffness part -0.32); light wells' geometric-mean s 0.01781, heaviest 0.02318

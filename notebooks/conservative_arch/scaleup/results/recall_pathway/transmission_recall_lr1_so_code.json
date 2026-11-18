@@ -1,0 +1,46 @@
+{
+ "folder": "semsimula_fock_cfc_baoab_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn",
+ "model": "fock_cfc_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn)",
+ "first_order": false,
+ "eps": 0.0025,
+ "readings": {
+  "pairs": {
+   "near": 47,
+   "far": 48
+  },
+  "1:far:comp": {
+   "recall": 5.814621192137411,
+   "recall_tgt": 0.11740765344525615,
+   "now": 14.199805899074063,
+   "before": 0.0,
+   "posU": 0.35459415158441543
+  },
+  "1:far:stiff": {
+   "recall": 6.62092197200887,
+   "recall_tgt": 0.1956645274513358,
+   "now": 14.620260157187229,
+   "before": 0.0,
+   "posU": 1.0322089917900248
+  },
+  "1:near:comp": {
+   "recall": 4.629201353489287,
+   "recall_tgt": 0.06549141341141168,
+   "now": 13.506110982351595,
+   "before": 0.0,
+   "posU": 0.26971622314551547
+  },
+  "1:near:stiff": {
+   "recall": 5.454444707041586,
+   "recall_tgt": 0.134891191797581,
+   "now": 14.018330414178989,
+   "before": 0.0,
+   "posU": 1.0599896954067372
+  },
+  "1:near:R_recall": 1.1782690556180424,
+  "1:near:R_recall_tgt": 2.059677517573267,
+  "1:near:R_now": 1.037925012795816,
+  "1:far:R_recall": 1.138667808826781,
+  "1:far:R_recall_tgt": 1.6665398013645558,
+  "1:far:R_now": 1.0296098595362195
+ }
+}

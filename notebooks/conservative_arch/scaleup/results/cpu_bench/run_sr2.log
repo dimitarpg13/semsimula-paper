@@ -1,0 +1,50 @@
+model: fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn) 79,324,622 parameters
+   512      1.115      459.0         2.26  1.089 1.141 1.115
+  2048      6.059      338.0         4.67  5.905 6.059 6.096
+  8192     42.006      195.0        25.58  41.876 42.633 42.006
+STAGE:2026-11-17 13:11:54 81797:19121903 ActivityProfilerController.cpp:314] Completed Stage: Warm Up
+STAGE:2026-11-17 13:11:55 81797:19121903 ActivityProfilerController.cpp:320] Completed Stage: Collection
+STAGE:2026-11-17 13:11:55 81797:19121903 ActivityProfilerController.cpp:324] Completed Stage: Post Processing
+STAGE:2026-11-17 13:11:56 81797:19121903 ActivityProfilerController.cpp:314] Completed Stage: Warm Up
+STAGE:2026-11-17 13:12:02 81797:19121903 ActivityProfilerController.cpp:320] Completed Stage: Collection
+STAGE:2026-11-17 13:12:02 81797:19121903 ActivityProfilerController.cpp:324] Completed Stage: Post Processing
+        aten::linalg_vector_norm         0.31%       2.598ms         0.31%       2.600ms     433.333us             6  
+  ------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  
+  Self CPU time total: 851.536ms
+  
+
+profile at length 2048: self CPU time 4.64 s summed over threads and operators
+   18.3%  decompositions (svd, eigh, qr, cholesky, solve)
+    0.0%  backward (autograd)
+   47.1%  matrix products (mm, bmm, matmul, einsum, addmm, linear)
+    0.8%  softmax
+    0.7%  top-k, sort, gather, scatter
+   33.1%  other (elementwise, copies, reductions)
+
+  top operators by self CPU time:
+  ------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  
+                            Name    Self CPU %      Self CPU   CPU total %     CPU total  CPU time avg    # of Calls  
+  ------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  
+                       aten::bmm        24.77%        1.149s        26.82%        1.244s      20.059ms            62  
+                     aten::addmm        15.96%     739.978ms        16.79%     778.917ms      21.637ms            36  
+               aten::_linalg_svd        13.70%     635.297ms        13.78%     639.063ms     319.531ms             2  
+                       aten::mul         7.62%     353.563ms         7.65%     354.757ms     332.481us          1067  
+                     aten::copy_         6.64%     307.980ms         6.64%     307.980ms     514.157us           599  
+                       aten::add         6.35%     294.671ms         6.36%     294.894ms     679.479us           434  
+                        aten::mm         5.96%     276.390ms         5.96%     276.390ms       3.412ms            81  
+                      aten::gelu         4.25%     196.881ms         4.25%     196.881ms       9.844ms            20  
+                    aten::cumsum         3.12%     144.746ms         3.12%     144.746ms      36.187ms             4  
+                       aten::sub         2.47%     114.569ms         2.47%     114.664ms       1.194ms            96  
+         aten::native_layer_norm         1.33%      61.778ms         1.33%      61.890ms       3.438ms            18  
+                       aten::div         1.08%      50.299ms         1.10%      51.247ms     237.255us           216  
+                  aten::_softmax         0.78%      36.302ms         0.78%      36.302ms       6.050ms             6  
+                       aten::sum         0.77%      35.560ms         0.80%      37.198ms       1.094ms            34  
+                     aten::clamp         0.63%      29.026ms         0.63%      29.027ms     806.306us            36  
+                    aten::gather         0.50%      23.008ms         0.50%      23.008ms       3.835ms             6  
+                     aten::where         0.49%      22.690ms         0.49%      22.713ms     366.339us            62  
+                       aten::cat         0.45%      20.822ms         0.45%      20.846ms      10.423ms             2  
+                    aten::matmul         0.36%      16.807ms        26.15%        1.213s      13.626ms            89  
+                aten::nan_to_num         0.33%      15.423ms         0.66%      30.841ms       7.710ms             4  
+  ------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  
+  Self CPU time total: 4.638s
+  

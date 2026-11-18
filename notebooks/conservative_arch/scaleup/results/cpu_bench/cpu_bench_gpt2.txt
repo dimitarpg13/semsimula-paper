@@ -1,0 +1,7 @@
+CPU inference benchmark: gpt2  semsimula_matched_gpt2_baseline_owt
+gpt2_baseline_best.pt (step 32500, val 49.764); L 8, d 384; 36,640,896 parameters; 8 threads; float32; one sequence per forward
+
+length   median s   tokens/s  peak RSS GB  times
+   512      0.177     2887.3         1.65  0.159 0.177 0.189
+  2048      1.339     1529.2         2.70  1.339 1.325 1.522
+  8192     18.485      443.2         7.95  15.583 18.485 19.440

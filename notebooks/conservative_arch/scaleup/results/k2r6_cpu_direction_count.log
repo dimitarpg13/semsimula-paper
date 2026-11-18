@@ -1,0 +1,27 @@
+model: fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x2_ar6_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x2_ar6_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn)
+trained: done
+layer 0, s = 4: done
+layer 0, s = 6: done
+layer 0, s = 8: done
+layer 0, s = 10: done
+layer 1, s = 4: done
+layer 1, s = 6: done
+layer 1, s = 8: done
+layer 1, s = 10: done
+direction count, semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x2_ar6_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x2_ar6_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x2_ar6_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn)
+16 evenly spaced validation windows x 512 tokens, validation /Users/dimitargueorguiev/Downloads/semsimula_fock_gamma_sweep_aniso_gaussian_fockreg_d384/data/openwebtext_val_2M.npy; K = 2, rank = 6, K * R = 12; tolerance 0.5% in perplexity
+trained: loss 4.1854  ppl 65.72
+
+every well's B_k projected onto the top s shared directions of C = [sqrt(w_k) B_k] per token, on one layer:
+  layer    s     loss      ppl    change   energy in top s (median, p10)
+      0    4   6.3199   555.51  +745.23%                   74.8%   71.7%
+      0    6   5.0799   160.76  +144.61%                   86.7%   83.6%
+      0    8   4.5235    92.16   +40.22%                   93.3%   91.2%
+      0   10   4.2884    72.85   +10.85%                   97.2%   96.3%
+      1    4   4.3542    77.80   +18.38%                   87.2%   84.6%
+      1    6   4.1854    65.72    -0.00%                  100.0%   99.9%
+      1    8   4.1855    65.72    +0.00%                  100.0%   99.9%
+      1   10   4.1855    65.72    +0.00%                  100.0%  100.0%
+
+r* (smallest s within tolerance; "> s_max" if none): layer 0: > 10  layer 1: 6

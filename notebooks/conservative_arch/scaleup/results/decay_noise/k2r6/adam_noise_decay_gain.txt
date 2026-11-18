@@ -1,0 +1,17 @@
+K2R6_s22500: step 22500  lr now 1.16e-03  val ppl 74.33
+   sum sqrt(v): all 868.6  vocab-sized 501.7  rest 366.9   G_pred = eta/4 * sum: all 0.261  rest 0.110   median |m|/sqrt(v) 0.131
+K2R6_best: step 31000  lr now 1.08e-04  val ppl 63.07
+   sum sqrt(v): all 844.5  vocab-sized 486.0  rest 358.5   G_pred = eta/4 * sum: all 0.253  rest 0.108   median |m|/sqrt(v) 0.143
+
+sum sqrt(v) by tensor shape:
+             shape        K2R6_s22500          K2R6_best
+      (50257, 384)              500.6              485.0
+      (4608, 1920)              168.6              161.1
+       (768, 1920)              115.6              117.3
+       (1024, 384)               35.5               34.1
+        (240, 384)               29.3               29.9
+       (2, 5, 384)                9.0                7.5
+         (32, 384)                2.8                2.6
+         (2, 1920)                2.2                2.4
+           (4608,)                1.4                1.2
+          (50257,)                1.0                1.0

@@ -1,0 +1,39 @@
+Shared stiff basis (Probe B): semsimula_fock_cfc_baoab_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+model fock_cfc_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn)
+16 validation windows x 512 (code_val_2M.npy); blocks [8, 64, 512]; base loss 2.0085 (ppl 7.45); the mode computation took 39.2 s over the base forwards; mode-solver retries 0
+pooled = basis from the block itself (reads later tokens of the block: not causal, an upper bound); causal = basis from the previous block
+
+readings on the trained run (median, p10, p90):
+  layer 0     b8_pooled: energy fraction 0.831 (0.790, 0.874); largest principal angle 89.1 deg (87.8, 89.8)
+  layer 0     b8_causal: energy fraction 0.510 (0.321, 0.704); largest principal angle 89.3 deg (88.1, 89.9)
+  layer 0    b64_pooled: energy fraction 0.670 (0.557, 0.766); largest principal angle 89.2 deg (88.1, 89.9)
+  layer 0    b64_causal: energy fraction 0.535 (0.372, 0.682); largest principal angle 89.3 deg (88.2, 89.9)
+  layer 0   b512_pooled: energy fraction 0.586 (0.443, 0.701); largest principal angle 89.2 deg (88.1, 89.9)
+  layer 0   b512_causal: energy fraction nan (nan, nan); largest principal angle nan deg (nan, nan)
+  layer 1     b8_pooled: energy fraction 0.972 (0.941, 0.988); largest principal angle 90.0 deg (90.0, 90.0)
+  layer 1     b8_causal: energy fraction 0.867 (0.753, 0.935); largest principal angle 90.0 deg (90.0, 90.0)
+  layer 1    b64_pooled: energy fraction 0.918 (0.869, 0.952); largest principal angle 90.0 deg (90.0, 90.0)
+  layer 1    b64_causal: energy fraction 0.870 (0.809, 0.915); largest principal angle 90.0 deg (90.0, 90.0)
+  layer 1   b512_pooled: energy fraction 0.890 (0.839, 0.927); largest principal angle 90.0 deg (90.0, 90.0)
+  layer 1   b512_causal: energy fraction nan (nan, nan); largest principal angle nan deg (nan, nan)
+
+                 arm     loss    d nats       se  ppl change  mode time s
+                base   2.0085   +0.0000   0.0000      +0.00%         39.2
+        L0_b8_pooled   2.2127   +0.2043   0.0112     +22.66%         10.0
+        L1_b8_pooled   2.0089   +0.0004   0.0040      +0.04%         10.1
+      both_b8_pooled   2.2383   +0.2298   0.0123     +25.83%         17.1
+        L0_b8_causal   2.8007   +0.7923   0.0305    +120.84%         10.4
+        L1_b8_causal   2.0825   +0.0740   0.0066      +7.68%         10.4
+      both_b8_causal   3.0322   +1.0237   0.0451    +178.36%         17.3
+       L0_b64_pooled   2.5768   +0.5683   0.0221     +76.53%          5.0
+       L1_b64_pooled   2.0246   +0.0161   0.0063      +1.62%          5.0
+     both_b64_pooled   2.6840   +0.6755   0.0298     +96.50%          6.4
+       L0_b64_causal   2.6597   +0.6512   0.0293     +91.79%          4.9
+       L1_b64_causal   2.0828   +0.0743   0.0063      +7.71%          5.0
+     both_b64_causal   2.8625   +0.8540   0.0374    +134.90%          6.3
+      L0_b512_pooled   2.7119   +0.7034   0.0270    +102.06%          4.5
+      L1_b512_pooled   2.0555   +0.0470   0.0065      +4.81%          4.5
+    both_b512_pooled   2.8719   +0.8634   0.0329    +137.13%          5.5
+      L0_b512_causal   2.0085   +0.0000   0.0000      +0.00%          4.4
+      L1_b512_causal   2.0085   +0.0000   0.0000      +0.00%          4.4
+    both_b512_causal   2.0085   +0.0000   0.0000      +0.00%          5.4

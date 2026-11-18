@@ -1,0 +1,30 @@
+model: fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn)
+windows 4/16
+windows 8/16
+windows 12/16
+windows 16/16
+Stiff-direction transmission: semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+model fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn)
+16 validation windows x 512 (openwebtext_val_2M.npy); first order False; eps 0.0025; one token moved per window at positions [96, 288]; 4 stiffest modes and 4 complement directions; dt 4.0; U, kappa shapes {0: ((4, 512, 384, 16), (4, 512, 16)), 1: ((4, 512, 384, 16), (4, 512, 16))}
+now = centred-logit change at the moved token; next64 / after64 = RMS over the next 64 / the 64 after those (memory); pos, posU, vel = the moved token after the layer step (all, on its U, velocity); before = check, must be 0 (causality)
+
+layer         kind       now    next64   after64       pos      posU       vel    before
+    0         comp   58.5112    6.0810    7.1641    4.4025    1.6654    0.4112    0.0000
+    0   comp_first   58.1898    5.9273    6.8901    4.3686    1.5687    0.4009    0.0000
+    0    comp_half   58.1896    5.9277    1.7941    4.3686    1.5687    0.4009    0.0000
+    0        stiff   59.3065    6.1746    4.2040    4.2610    3.1286    0.5326    0.0000
+    0  stiff_first   58.7758    6.1175    1.8138    4.2162    2.9678    0.5733    0.0000
+    0   stiff_half   58.7758    6.1167    1.8137    4.2163    2.9678    0.5733    0.0000
+    1         comp   11.4475    0.7840    0.3317    0.8775    0.2612    0.2462    0.0000
+    1   comp_first   11.3232    0.7728    0.3202    0.8636    0.2339    0.2410    0.0000
+    1    comp_half   11.3232    0.7727    0.3202    0.8636    0.2339    0.2410    0.0000
+    1        stiff   14.8296    0.8397    0.4003    1.3011    1.1762    0.5039    0.0000
+    1  stiff_first   12.6968    0.7822    0.3992    1.2928    1.2079    0.4993    0.0000
+    1   stiff_half   12.6920    0.7822    0.3992    1.2923    1.2074    0.4992    0.0000
+
+layer 0: stiff over complement: now 1.014, next64 1.015, after64 0.587; position kept on U (stiff input) 3.129
+  linearity, stiff (first direction): next64 6.1175 at eps, 6.1167 at eps/2; now 58.7758, 58.7758; posU 2.9678, 2.9678
+  linearity, comp (first direction): next64 5.9273 at eps, 5.9277 at eps/2; now 58.1898, 58.1896; posU 1.5687, 1.5687
+layer 1: stiff over complement: now 1.295, next64 1.071, after64 1.207; position kept on U (stiff input) 1.176
+  linearity, stiff (first direction): next64 0.7822 at eps, 0.7822 at eps/2; now 12.6968, 12.6920; posU 1.2079, 1.2074
+  linearity, comp (first direction): next64 0.7728 at eps, 0.7727 at eps/2; now 11.3232, 11.3232; posU 0.2339, 0.2339

@@ -1,0 +1,51 @@
+model: fock_cfc_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn)
+windows 4/16
+windows 8/16
+windows 12/16
+Traceback (most recent call last):
+  File "/Users/dimitargueorguiev/git/ml/semsimula-paper/notebooks/conservative_arch/scaleup/debug/stiff_mode_transmission_probe.py", line 158, in <module>
+    dl = (forward(xb) - lg0) / e
+          ^^^^^^^^^^^
+  File "/Users/dimitargueorguiev/git/ml/semsimula-paper/notebooks/conservative_arch/scaleup/debug/stiff_mode_transmission_probe.py", line 88, in forward
+    lg = model(torch.from_numpy(xb))[0].detach()
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dimitargueorguiev/.pyenv/versions/3.12.11/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1511, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dimitargueorguiev/.pyenv/versions/3.12.11/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1520, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dimitargueorguiev/git/ml/semsimula-paper/notebooks/conservative_arch/parf/model_parf.py", line 1324, in forward
+    h_L, traj = self._stack_forward(
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dimitargueorguiev/git/ml/semsimula-paper/notebooks/conservative_arch/parf/model_fock_parf_multixi.py", line 836, in _stack_forward
+    h_new, h_prev_out, r, salience = self._fock_layer_step(
+                                     ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dimitargueorguiev/git/ml/semsimula-paper/notebooks/conservative_arch/parf/model_aniso_gaussian_vtheta.py", line 771, in _routed_fock_layer_step
+    return _orig(self, h, h_prev, r, salience, m_b, gamma, dt,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dimitargueorguiev/git/ml/semsimula-paper/notebooks/conservative_arch/parf/model_fock_parf_multixi.py", line 516, in _fock_layer_step
+    h_new, h_prev_out = super()._layer_step_ex(
+                        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dimitargueorguiev/git/ml/semsimula-paper/notebooks/conservative_arch/parf/model_parf_multixi.py", line 2270, in _layer_step_ex
+    _h_new, _h_prev_out = self._layer_step_langevin(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dimitargueorguiev/git/ml/semsimula-paper/notebooks/conservative_arch/scaleup/debug/stiff_mode_transmission_probe.py", line 78, in step
+    h_new, h_prev_out = orig_step(h, h_prev, m_b, gamma, dt_, layer_idx)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dimitargueorguiev/git/ml/semsimula-paper/notebooks/conservative_arch/parf/model_parf_multixi.py", line 1956, in _layer_step_langevin
+    return self._layer_step_langevin_core(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dimitargueorguiev/git/ml/semsimula-paper/notebooks/conservative_arch/parf/model_parf_multixi.py", line 2059, in _layer_step_langevin_core
+    lr_U, lr_kappa = lowrank_modes(
+                     ^^^^^^^^^^^^^^
+  File "/Users/dimitargueorguiev/git/ml/semsimula-paper/notebooks/conservative_arch/scaleup/debug/stiff_mode_transmission_probe.py", line 64, in modes
+    U, kappa = orig_modes(*a, **k)
+               ^^^^^^^^^^^^^^^^^^^
+  File "/Users/dimitargueorguiev/git/ml/semsimula-paper/notebooks/conservative_arch/parf/cfc_baoab.py", line 548, in lowrank_modes
+    U_full, S = _gram_eigh(Gd)
+                ^^^^^^^^^^^^^^
+  File "/Users/dimitargueorguiev/git/ml/semsimula-paper/notebooks/conservative_arch/parf/cfc_baoab.py", line 465, in _gram_eigh
+    V, lam, _ = torch.linalg.svd(M)                     # lam desc, = sigma^2(G)
+                ^^^^^^^^^^^^^^^^^^^
+torch._C._LinAlgError: linalg.svd: (Batch element 625): The algorithm failed to converge because the input matrix is ill-conditioned or has too many repeated singular values (error code: 1).
