@@ -1,0 +1,15 @@
+model: fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x4_ar6_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x4_ar6_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn); analytic V_phi True; query chunk 512; skip unread registers True; V_phi removed; layer 1 pruned to wells [0]; gram driver by float64 eigh 67,526,602 parameters
+decoder against the full forward on 256 validation tokens (prefill 128, then single steps): max |dlogit| prefill 3.815e-05, steps 6.294e-05 (mean 7.072e-06); top-1 agreement 100.00%
+    512      0.313     0.0241       41.5       2.6         1.77
+   2048      1.864     0.0251       39.8       9.9         3.15
+   8192     16.330     0.0320       31.2      39.2         7.36
+CPU decoding benchmark: ladder  semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x4_ar6_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x4_ar6_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x4_ar6_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn); analytic V_phi True; query chunk 512; skip unread registers True; V_phi removed; layer 1 pruned to wells [0]; gram driver by float64 eigh; 67,526,602 parameters; 8 threads; float32; batch 1; 32 decoded tokens per length
+
+decoder against the full forward on 256 validation tokens (prefill 128, then single steps): max |dlogit| prefill 3.815e-05, steps 6.294e-05 (mean 7.072e-06); top-1 agreement 100.00%
+
+context  prefill s    s/token   tokens/s  cache MB  peak RSS GB
+    512      0.313     0.0241       41.5       2.6         1.77
+   2048      1.864     0.0251       39.8       9.9         3.15
+   8192     16.330     0.0320       31.2      39.2         7.36
+cache: 1,248 numbers per token

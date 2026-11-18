@@ -1,0 +1,10 @@
+CPU decoding benchmark: ladder  semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x4_ar6_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x4_ar6_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x4_ar6_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn); analytic V_phi True; query chunk 512; skip unread registers True; V_phi removed; layer 1 pruned to wells [0]; gram driver by float64 eigh; torch.compile (core); 67,529,674 parameters; 8 threads; float32; batch 1; 32 decoded tokens per length
+
+decoder against the full forward on 256 validation tokens (prefill 128, then single steps): max |dlogit| prefill 4.387e-05, steps 4.959e-05 (mean 7.663e-06); top-1 agreement 100.00%
+
+context  prefill s    s/token   tokens/s  cache MB  peak RSS GB
+    512      0.386     0.0169       59.3       2.6         1.78
+   2048      2.384     0.0189       53.0       9.9         3.01
+   8192     18.499     0.0268       37.3      39.2         6.87
+cache: 1,248 numbers per token

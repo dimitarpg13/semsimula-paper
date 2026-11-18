@@ -1,0 +1,5 @@
+done c2_eager 0
+done c2_compile_layer 0
+done c2_compile_model 1
+done c2_eager_after 0
+done all

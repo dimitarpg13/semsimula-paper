@@ -1,0 +1,58 @@
+model: fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn); analytic V_phi True; query chunk 512; skip unread registers True; V_phi removed; layer 1 pruned to wells [3, 4]; context channels by folded fused attention; gram driver by float64 eigh; torch.compile (model) 79,324,622 parameters
+Traceback (most recent call last):
+  File "/Users/dimitargueorguiev/git/ml/semsimula-paper/notebooks/conservative_arch/scaleup/debug/cpu_throughput_benchmark.py", line 344, in <module>
+    run(x)                                           # warm-up
+    ^^^^^^
+  File "/Users/dimitargueorguiev/git/ml/semsimula-paper/notebooks/conservative_arch/scaleup/debug/cpu_throughput_benchmark.py", line 238, in run
+    return m(x)[0]
+           ^^^^
+  File "/Users/dimitargueorguiev/.venvs/py311-torch222/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1511, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dimitargueorguiev/.venvs/py311-torch222/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1520, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dimitargueorguiev/.venvs/py311-torch222/lib/python3.11/site-packages/torch/_dynamo/eval_frame.py", line 489, in _fn
+    return fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/Users/dimitargueorguiev/git/ml/semsimula-paper/notebooks/conservative_arch/parf/model_parf.py", line 1316, in forward
+    def forward(
+  File "/Users/dimitargueorguiev/.venvs/py311-torch222/lib/python3.11/site-packages/torch/_dynamo/eval_frame.py", line 655, in catch_errors
+    return callback(frame, cache_entry, hooks, frame_state)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dimitargueorguiev/.venvs/py311-torch222/lib/python3.11/site-packages/torch/_dynamo/convert_frame.py", line 727, in _convert_frame
+    result = inner_convert(frame, cache_entry, hooks, frame_state)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dimitargueorguiev/.venvs/py311-torch222/lib/python3.11/site-packages/torch/_dynamo/convert_frame.py", line 383, in _convert_frame_assert
+    compiled_product = _compile(
+                       ^^^^^^^^^
+  File "/Users/dimitargueorguiev/.venvs/py311-torch222/lib/python3.11/site-packages/torch/_dynamo/convert_frame.py", line 665, in _compile
+    raise InternalTorchDynamoError(str(e)).with_traceback(
+  File "/Users/dimitargueorguiev/.venvs/py311-torch222/lib/python3.11/site-packages/torch/_dynamo/convert_frame.py", line 646, in _compile
+    guarded_code = compile_inner(code, one_graph, hooks, transform)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dimitargueorguiev/.venvs/py311-torch222/lib/python3.11/site-packages/torch/_dynamo/utils.py", line 244, in time_wrapper
+    r = func(*args, **kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dimitargueorguiev/.venvs/py311-torch222/lib/python3.11/site-packages/torch/_dynamo/convert_frame.py", line 626, in compile_inner
+    check_fn = CheckFunctionManager(
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dimitargueorguiev/.venvs/py311-torch222/lib/python3.11/site-packages/torch/_dynamo/guards.py", line 1012, in __init__
+    self.check_fn = self.compile_check_fn(builder, guards, guard_fail_fn)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dimitargueorguiev/.venvs/py311-torch222/lib/python3.11/site-packages/torch/_dynamo/guards.py", line 1095, in compile_check_fn
+    dynamic_dims_sizes = [
+                         ^
+  File "/Users/dimitargueorguiev/.venvs/py311-torch222/lib/python3.11/site-packages/torch/_dynamo/guards.py", line 1096, in <listcomp>
+    convert(self.output_graph.tensor_weakref_to_sizes_strides[t]["size"])
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "/Users/dimitargueorguiev/.venvs/py311-torch222/lib/python3.11/site-packages/torch/utils/weak.py", line 136, in __getitem__
+    return self.data[WeakIdRef(key)]  # CHANGED
+           ~~~~~~~~~^^^^^^^^^^^^^^^^
+torch._dynamo.exc.InternalTorchDynamoError: <weakref at 0x137826aa0; to 'Tensor' at 0x13758b050>
+
+
+You can suppress this exception and fall back to eager by setting:
+    import torch._dynamo
+    torch._dynamo.config.suppress_errors = True
+

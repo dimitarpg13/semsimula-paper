@@ -1,0 +1,31 @@
+CPU decoding benchmark: gpt2_sdpa  semsimula_matched_gpt2_baseline_owt
+gpt2_baseline_best.pt (step 32500, val 49.764); L 8, d 384; attention by F.scaled_dot_product_attention; 33,707,136 parameters; 8 threads; float32; batch 1; 32 decoded tokens per length
+
+context  prefill s    s/token   tokens/s  cache MB  peak RSS GB
+
+decode profile at context 512: 1036 operator calls per step; wall 46.8 ms per step under the profiler, operator self time 7.4 ms (summed over threads)
+  top operators by self CPU time:
+  ---------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  
+                                           Name    Self CPU %      Self CPU   CPU total %     CPU total  CPU time avg    # of Calls  
+  ---------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  
+                                       aten::mm        32.50%      19.213ms        32.50%      19.213ms       2.402ms             8  
+                                    aten::addmm        29.33%      17.338ms        30.78%      18.195ms      71.074us           256  
+      aten::_scaled_dot_product_flash_attention        11.21%       6.626ms        12.67%       7.491ms     117.047us            64  
+                                     aten::gelu         5.97%       3.527ms         5.97%       3.527ms      55.109us            64  
+                                   aten::linear         3.07%       1.812ms        36.95%      21.842ms      85.320us           256  
+                        aten::native_layer_norm         2.27%       1.344ms         3.10%       1.832ms      13.471us           136  
+                                    aten::slice         1.92%       1.134ms         1.93%       1.143ms       2.232us           512  
+                                     aten::view         1.76%       1.041ms         1.76%       1.041ms       1.093us           952  
+                                    aten::copy_         1.67%     986.000us         1.67%     986.000us       2.568us           384  
+                                    aten::empty         1.59%     942.000us         1.59%     942.000us       0.935us          1008  
+                                aten::transpose         1.37%     808.000us         1.42%     838.000us       1.309us           640  
+                                      aten::add         0.96%     567.000us         0.96%     567.000us       4.169us           136  
+                                        aten::t         0.93%     548.000us         1.48%     874.000us       3.414us           256  
+                                   aten::unbind         0.82%     486.000us         1.39%     821.000us      12.828us            64  
+             aten::scaled_dot_product_attention         0.82%     486.000us        13.49%       7.977ms     124.641us            64  
+  ---------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  
+  Self CPU time total: 59.113ms
+  
+
+    512      0.125     0.0081      122.9      12.8         0.85
+cache: 6,144 numbers per token

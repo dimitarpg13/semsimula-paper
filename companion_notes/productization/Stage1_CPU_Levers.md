@@ -2,7 +2,7 @@
 
 **What this note is.** The results of stage 1 of [Conservative_Core_Productization_Plan.md](Conservative_Core_Productization_Plan.md): where SR2's inference time goes component by component, and what the levers that leave the trained model unchanged recover, each checked against the unmodified model's logits and validation loss. It also takes the first reading for lever T3, the content term of the context channels removed one layer at a time. Measured 2026-11-17 on an Intel Core i9-9880H with 8 threads, float32, PyTorch 2.2.2, one sequence per forward (prefill).
 
-**Status.** Measured. Lever N2 (`torch.compile`) could not run on this machine (§6). Decoding (N4) is stage 2 and not measured.
+**Status.** Measured. Lever N2 (`torch.compile`) could not run in this environment (§6); it was measured afterwards with decoding (N4), in [Stage2_Decoding.md](Stage2_Decoding.md).
 
 ---
 
@@ -102,7 +102,7 @@ The trained model relies on content routing at layer 0 even more than at layer 1
 
 ## 6. What did not run, and what this changes in the plan
 
-**`torch.compile` (N2) cannot run here.** PyTorch 2.2.2 does not support it on Python 3.12, and 2.2.2 is the last PyTorch release with wheels for Intel Macs, so a newer PyTorch is not an option either. Testing it needs a Python 3.11 environment with PyTorch 2.2.2. The same limit rules out the newer CPU attention kernels that accept a mask.
+**`torch.compile` (N2) cannot run under Python 3.12.** PyTorch 2.2.2 does not support it there, and 2.2.2 is the last PyTorch release with wheels for Intel Macs, so a newer PyTorch is not an option either; the same limit rules out the newer CPU attention kernels that accept a mask. Measured later the same day in a Python 3.11 environment ([Stage2_Decoding.md](Stage2_Decoding.md), §5): compiling the layer step gives 0.96 to 1.13 times in prefill; compiling its core gives 1.28 to 1.40 times in decoding.
 
 **What changes.**
 - Without the pair force, the short-context cost is now the stiff-mode decomposition and the well bank, and pruning plus `eigh` take 38% off the time at 512 tokens. At long context it is the context channels, and the folded form takes 1.4 times off them.

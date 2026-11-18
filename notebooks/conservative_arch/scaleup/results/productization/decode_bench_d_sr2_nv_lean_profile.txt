@@ -1,0 +1,31 @@
+CPU decoding benchmark: ladder  semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn); analytic V_phi True; query chunk 512; skip unread registers True; V_phi removed; layer 1 pruned to wells [3, 4]; gram driver by float64 eigh; 76,572,110 parameters; 8 threads; float32; batch 1; 32 decoded tokens per length
+
+context  prefill s    s/token   tokens/s  cache MB  peak RSS GB
+
+decode profile at context 512: 5854 operator calls per step; wall 256.3 ms per step under the profiler, operator self time 20.2 ms (summed over threads)
+  top operators by self CPU time:
+  ------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  
+                            Name    Self CPU %      Self CPU   CPU total %     CPU total  CPU time avg    # of Calls  
+  ------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  
+                     aten::addmm        29.85%      48.323ms        30.07%      48.669ms     608.362us            80  
+                        aten::mm        13.16%      21.308ms        13.16%      21.308ms     380.500us            56  
+                       aten::mul         8.91%      14.426ms        12.66%      20.493ms       2.580us          7944  
+                    aten::einsum         6.41%      10.380ms        13.55%      21.933ms      54.833us           400  
+                  aten::_to_copy         4.43%       7.170ms         6.73%      10.890ms       3.203us          3400  
+                       aten::bmm         4.27%       6.915ms         4.27%       6.915ms      14.903us           464  
+                       aten::div         3.07%       4.969ms         6.38%      10.326ms       6.519us          1584  
+                       aten::add         3.06%       4.951ms         3.17%       5.126ms       1.669us          3072  
+                   aten::permute         3.01%       4.872ms         3.11%       5.042ms       2.443us          2064  
+                        aten::to         2.35%       3.799ms         8.39%      13.573ms       3.847us          3528  
+             aten::empty_strided         1.76%       2.849ms         1.76%       2.849ms       0.747us          3816  
+                     aten::copy_         1.53%       2.476ms         1.53%       2.476ms       0.686us          3608  
+                      aten::view         1.35%       2.187ms         1.35%       2.187ms       1.111us          1968  
+                     aten::where         1.31%       2.120ms         1.35%       2.182ms       4.399us           496  
+              aten::_linalg_eigh         1.14%       1.853ms         1.46%       2.360ms     147.500us            16  
+  ------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  
+  Self CPU time total: 161.868ms
+  
+
+    512      0.394     0.0267       37.5       2.6         1.91
+cache: 1,248 numbers per token

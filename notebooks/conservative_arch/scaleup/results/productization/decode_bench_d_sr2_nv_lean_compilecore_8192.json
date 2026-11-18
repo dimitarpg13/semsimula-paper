@@ -1,0 +1,52 @@
+{
+ "model": "ladder",
+ "folder": "semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn",
+ "desc": "fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn); analytic V_phi True; query chunk 512; skip unread registers True; V_phi removed; layer 1 pruned to wells [3, 4]; gram driver by float64 eigh; torch.compile (core)",
+ "params": 79339982,
+ "threads": 8,
+ "lengths": {},
+ "decode": {
+  "8192": {
+   "prefill_s": 71.51513379998505,
+   "step_times": [
+    22.46506974194199,
+    0.026378033217042685,
+    0.02699635992757976,
+    0.03171400213614106,
+    0.02982957288622856,
+    0.02761178486980498,
+    0.027389427879825234,
+    0.02903181198053062,
+    0.027294924948364496,
+    0.026266828179359436,
+    0.03304034494794905,
+    0.03137435903772712,
+    0.031009125988930464,
+    0.02610173705033958,
+    0.02971341786906123,
+    0.027711843140423298,
+    0.0275025749579072,
+    0.02850609691813588,
+    0.028965078061446548,
+    0.03221956198103726,
+    0.030600906116887927,
+    0.02703749295324087,
+    0.026343738893046975,
+    0.02676951908506453,
+    0.02747010812163353,
+    0.028256733901798725,
+    0.03347398201003671,
+    0.031288140919059515,
+    0.03268137201666832,
+    0.029223745921626687,
+    0.028712007915601134,
+    0.026448943885043263
+   ],
+   "median_step_s": 0.028609052416868508,
+   "tokens_per_s": 34.95397140138688,
+   "cache_mb": 39.15234375,
+   "cache_numbers_per_token": 1248,
+   "peak_rss_gb": 6.386859893798828
+  }
+ }
+}

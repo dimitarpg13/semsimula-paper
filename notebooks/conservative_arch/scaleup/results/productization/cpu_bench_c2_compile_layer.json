@@ -1,0 +1,45 @@
+{
+ "model": "ladder",
+ "folder": "semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn",
+ "desc": "fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn); analytic V_phi True; query chunk 512; skip unread registers True; V_phi removed; layer 1 pruned to wells [3, 4]; context channels by folded fused attention; gram driver by float64 eigh; torch.compile (layer)",
+ "params": 79324622,
+ "threads": 8,
+ "lengths": {
+  "512": {
+   "times": [
+    0.3783975651022047,
+    0.3836563630029559,
+    0.36372772394679487
+   ],
+   "median_s": 0.3783975651022047,
+   "tokens_per_s": 1353.0742457650579,
+   "peak_rss_gb": 1.7284507751464844
+  },
+  "2048": {
+   "times": [
+    1.681378594134003,
+    1.6596738039515913,
+    1.678968840977177
+   ],
+   "median_s": 1.678968840977177,
+   "tokens_per_s": 1219.7963118886967,
+   "peak_rss_gb": 3.8283653259277344
+  },
+  "8192": {
+   "times": [
+    11.364876189036295,
+    11.533710415940732,
+    11.502732966793701
+   ],
+   "median_s": 11.502732966793701,
+   "tokens_per_s": 712.1785773562522,
+   "peak_rss_gb": 11.64862060546875
+  }
+ },
+ "val_loss": 4.083523273468018,
+ "compare": {
+  "max_abs": 0.28925132751464844,
+  "mean_abs": 0.013850642368197441,
+  "argmax_agree": 0.99609375
+ }
+}
