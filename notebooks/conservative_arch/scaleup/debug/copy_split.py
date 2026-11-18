@@ -84,6 +84,8 @@ def tag_repl(folder):
         repl += (('LOWRANK_DAMPED_FLOW  = False', 'LOWRANK_DAMPED_FLOW  = True'),)
     if 'fob' in parts:
         repl += (('FIRST_ORDER_OVERDAMPED = False', 'FIRST_ORDER_OVERDAMPED = True'),)
+    if 'sr3' in parts:                           # SR3-crit (2026-11-16, for the stiff-mode damping probe)
+        repl += (('STIFF_MODE_DAMPING_RATIO = None', 'STIFF_MODE_DAMPING_RATIO = 1.0'),)
     if parts[0] != 'xi5long':                    # XI6-CODE: the tag starts with the xi preset
         repl += (("XI_OVERRIDE     = '5long'", f"XI_OVERRIDE     = '{parts[0][2:]}'"),)
     n_l = next((int(t[1:-5]) for t in parts if re.fullmatch(r'L\d+probe', t)), 2)
