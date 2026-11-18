@@ -1139,7 +1139,7 @@ real decay. Credit Fock a generous 2 PPL and the conclusion does not move.
 ### 9.4 The bottleneck diagnosis
 
 Full analysis in
-[`Fock_Inference_Productionization_Plan.md`](Fock_Inference_Productionization_Plan.md) §7.
+[`Fock_Inference_Productionization_Plan.md`](productization/Fock_Inference_Productionization_Plan.md) §7.
 In brief: the context reaches the token update only through 5 fixed-decay
 EMAs, whose weights depend on distance `t-s` and never on content. 93.9% of
 Fock's non-embedding parameters sit in `V_theta`'s well-parameter generator,
@@ -1172,7 +1172,7 @@ for other reasons.
 ## 10. Family A: xi-routed conservative attention — **GATES 0-2 PASSED, 2026-09-18**
 
 Tests prediction 3 of §9.5. Motivation and the bottleneck argument are in
-[`Fock_Inference_Productionization_Plan.md`](Fock_Inference_Productionization_Plan.md) §7.
+[`Fock_Inference_Productionization_Plan.md`](productization/Fock_Inference_Productionization_Plan.md) §7.
 
 ### 10.1 What already existed
 

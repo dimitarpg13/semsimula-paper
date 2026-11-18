@@ -441,6 +441,6 @@ Measured, V_theta costs 35.429 MMAC/token/layer, of which 35.405 is
 GENERATING the well bank from xi and 0.025 is using it -- a 1441:1 ratio,
 and 87.6% of the whole model. B_proj alone (1920 -> 12288) is 58.3% of
 Fock's total inference cost. That is the term to attack; see
-companion_notes/Fock_Inference_Productionization_Plan.md.
+companion_notes/productization/Fock_Inference_Productionization_Plan.md.
 """)
 print('done.')

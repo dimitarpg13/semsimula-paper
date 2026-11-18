@@ -4,7 +4,7 @@
 
 **Status.** A plan. The measurements in §1 and §2 are done ([CPU_Inference_Benchmark.md](../depth_ladder/CPU_Inference_Benchmark.md)); no lever in §4 or §5 has been tried. The calls for the GPU arms are not yet written; each gets a pre-registration, confirmed by the author, before it launches.
 
-**Predecessor.** [Fock_Inference_Productionization_Plan.md](../Fock_Inference_Productionization_Plan.md) (2026-09-18) did the same for the Gen 2 Fock arm at eight layers: a cost model by multiply–accumulate counts, A100 measurements, and the training-speed levers of the 2B-token runs. §3 below says which of its levers carry over.
+**Predecessor.** [Fock_Inference_Productionization_Plan.md](Fock_Inference_Productionization_Plan.md) (2026-09-18) did the same for the Gen 2 Fock arm at eight layers: a cost model by multiply–accumulate counts, A100 measurements, and the training-speed levers of the 2B-token runs. §3 below says which of its levers carry over.
 
 ---
 

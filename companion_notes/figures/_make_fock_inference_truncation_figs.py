@@ -1,4 +1,4 @@
-"""Figure for Fock_Inference_Productionization_Plan.md SS6.1.
+"""Figure for productization/Fock_Inference_Productionization_Plan.md SS6.1.
 
 One PNG into figures/fock_inference/. Every number is MEASURED, not
 modelled: the spectrum and the truncation sweep both come from

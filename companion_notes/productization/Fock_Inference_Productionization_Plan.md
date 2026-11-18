@@ -1,10 +1,10 @@
 # Productionizing Fock-PARFLM: Where the Inference Cost Is, and How to Remove It
 
 **Status:** analysis complete, measured. **Update 2026-10-18:** the analytic V_phi gradient (§8a.4, step 1) is implemented and verified; §10 adds the training-speed levers for the 2B-token runs, ordered by priority.
-**Successor (2026-11-17):** for the Gen 3 conservative core, the plan is [productization/Conservative_Core_Productization_Plan.md](productization/Conservative_Core_Productization_Plan.md); its §3 says which levers of this note carry over.
+**Successor (2026-11-17):** for the Gen 3 conservative core, the plan is [Conservative_Core_Productization_Plan.md](Conservative_Core_Productization_Plan.md); its §3 says which levers of this note carry over.
 **Date:** 2026-09-18.
 **Scope:** the joint `V_theta` + QK-norm arm at `d=384`, `L=8`, as configured in
-[`colab_fock_cfc_baoab_joint_vtheta_qknorm_openwebtext_d384.ipynb`](../notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_joint_vtheta_qknorm_openwebtext_d384.ipynb).
+[`colab_fock_cfc_baoab_joint_vtheta_qknorm_openwebtext_d384.ipynb`](../../notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_joint_vtheta_qknorm_openwebtext_d384.ipynb).
 
 ---
 
@@ -25,7 +25,7 @@ in one place:
 | **Fock total** | **323.574** | |
 | **GPT-2 total** | **36.600** | |
 
-![Per-token inference cost breakdown](figures/fock_inference/cost_breakdown.png)
+![Per-token inference cost breakdown](../figures/fock_inference/cost_breakdown.png)
 
 And within `V_theta`, the split is more extreme still. `V_theta` is a
 *hypernetwork*: each token, at each layer, it **generates** a bank of 8
@@ -185,7 +185,7 @@ Measured: `0.0246` MMAC. Exact agreement.
 
 $$\boxed{\ \frac{F_{\mathrm{gen}}}{F_{\mathrm{use}}} = \frac{35404800}{24576} = 1441 \ }$$
 
-![Generate versus use](figures/fock_inference/generate_vs_use.png)
+![Generate versus use](../figures/fock_inference/generate_vs_use.png)
 
 The model manufactures $K(2d + dr) = 8 \cdot (768 + 1536) = 18432$ fresh
 numbers per token per layer, and then performs 24576 MACs with them. Put
@@ -224,7 +224,7 @@ $$M_{\mathrm{score}} = 4 B T^2 H_s \text{ bytes} = 537 \text{ MiB at } B=16, T=5
 per layer, per forward, growing as $T^2$. GPT-2's comparable quantity is
 $(B, n_h, T, T)$ and **flash SDPA never materializes it at all**.
 
-![ScoreHead memory scaling](figures/fock_inference/scorehead_memory.png)
+![ScoreHead memory scaling](../figures/fock_inference/scorehead_memory.png)
 
 ### 2.5 `V_phi` and the output head
 
@@ -345,7 +345,7 @@ so **any** $b \lt 1660$ is a strict win. The dense map has rank at most
 $\min(1920, 12288) = 1920$ to begin with, so $b = 1920$ is already lossless;
 every reduction below that is a genuine capacity constraint, but a mild one.
 
-![B_proj factorisation](figures/fock_inference/bproj_factorisation.png)
+![B_proj factorisation](../figures/fock_inference/bproj_factorisation.png)
 
 | `b` | MMAC/token/layer | vs dense | saving over 8 layers |
 | --: | ---------------: | -------: | -------------------: |
@@ -426,7 +426,7 @@ Zero FLOP change, zero quality risk, two distinct wins:
 
 ## 6. Roadmap
 
-![Optimization waterfall](figures/fock_inference/waterfall.png)
+![Optimization waterfall](../figures/fock_inference/waterfall.png)
 
 ```mermaid
 flowchart TB
@@ -469,7 +469,7 @@ tests that assumption directly against the deployed $d = 384$ step-28,500
 checkpoint, by truncating the trained weights in place and re-evaluating.
 No retraining.
 
-![Generator truncation](figures/fock_inference/generator_truncation.png)
+![Generator truncation](../figures/fock_inference/generator_truncation.png)
 
 #### The spectrum
 
@@ -557,7 +557,7 @@ $W_a$ is nearly intact — the damage at rank 256 is not coming from $W_a$ at
 all. Measured on the same 12 fixed batches, so directly comparable to the
 table above:
 
-![Allocation frontier](figures/fock_inference/generator_frontier.png)
+![Allocation frontier](../figures/fock_inference/generator_frontier.png)
 
 | allocation | generator | of gen | ppl | delta ppl | non-emb | inference |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -710,7 +710,7 @@ failed by 16x.
 **Prediction 3 — refuted (Alternative E).** Content-addressed $\xi$ pooling
 gained **1.79 PPL** against a predicted 10 or more, landing inside the
 pre-registered refutation band. See
-[`Context_Mixing_Mechanisms_in_the_Conservative_Framework.md`](Context_Mixing_Mechanisms_in_the_Conservative_Framework.md)
+[`Context_Mixing_Mechanisms_in_the_Conservative_Framework.md`](../Context_Mixing_Mechanisms_in_the_Conservative_Framework.md)
 §8.
 
 **Prediction 2 — not run.**
@@ -726,7 +726,7 @@ was looking. §7's diagnosis as stated does not survive this pair.
 
 ## 8. What must be validated before any of this is believed
 
-1. **Run [`bench_inference.py`](../notebooks/conservative_arch/scaleup/debug/bench_inference.py).**
+1. **Run [`bench_inference.py`](../../notebooks/conservative_arch/scaleup/debug/bench_inference.py).**
    Everything above is an analytic FLOP count. FLOPs are not wall-clock: the
    `ScoreHead` is the clearest case where a negligible FLOP count hides a
    severe memory-bandwidth cost, and there may be others. The benchmark's

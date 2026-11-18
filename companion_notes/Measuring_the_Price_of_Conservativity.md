@@ -4,7 +4,7 @@
 written beyond what already exists.
 **Date:** 2026-09-19.
 **Companion to:** [`Joint_Vtheta_QKNorm_Run_Diagnostic_Checklist.md`](Joint_Vtheta_QKNorm_Run_Diagnostic_Checklist.md) §10.8,
-[`Fock_Inference_Productionization_Plan.md`](Fock_Inference_Productionization_Plan.md) §7,
+[`Fock_Inference_Productionization_Plan.md`](productization/Fock_Inference_Productionization_Plan.md) §7,
 [`Context_Mixing_Mechanisms_in_the_Conservative_Framework.md`](Context_Mixing_Mechanisms_in_the_Conservative_Framework.md) §8.
 
 > ### Partly answered by a different method — **2026-09-25**
@@ -71,7 +71,7 @@ Lagrangian, and must not be written as one.
 **The eliminations do not point here.** They were not designed as a search
 that converges on conservativity; each ruled out a different downstream
 mechanism. The most recent two are the sharpest illustration:
-`Fock_Inference_Productionization_Plan.md` §7 diagnosed the ξ bottleneck —
+`productization/Fock_Inference_Productionization_Plan.md` §7 diagnosed the ξ bottleneck —
 context that is weighted by distance and never by content — and staked two
 pre-registered predictions on it. Both failed (§7.6 there): content-addressed
 pooling bought 1.79 PPL against a predicted 10 or more, and truncating the

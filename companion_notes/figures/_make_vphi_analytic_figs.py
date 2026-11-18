@@ -1,7 +1,7 @@
 """Figures for Eliminating_the_Autograd_Dependency_in_VPhi.md.
 
 Four PNGs into figures/vphi_analytic/. Panels A of the first figure are
-MEASURED values quoted from Fock_Inference_Productionization_Plan.md SS8a.3
+MEASURED values quoted from productization/Fock_Inference_Productionization_Plan.md SS8a.3
 (A100 80GB, 2026-09-19); everything else is exact arithmetic on the
 deployed shapes (d=384, d_l=32, K=16, T=512, TOP_K=16) or a labelled
 schematic of a decision.

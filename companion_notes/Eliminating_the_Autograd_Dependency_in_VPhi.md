@@ -2,7 +2,7 @@
 
 > **Status: design and derivation. Nothing measured.** Every number quoted
 > as measured is cited from
-> [`Fock_Inference_Productionization_Plan.md`](Fock_Inference_Productionization_Plan.md)
+> [`Fock_Inference_Productionization_Plan.md`](productization/Fock_Inference_Productionization_Plan.md)
 > §8a.3; everything else is exact arithmetic on the deployed shapes or a
 > derivation. §4 is the one option testable today, in minutes.
 
