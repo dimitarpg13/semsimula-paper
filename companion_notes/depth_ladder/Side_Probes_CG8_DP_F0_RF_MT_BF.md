@@ -82,6 +82,54 @@ Each register is one slot holding one content vector: an exclusion (hard-core) o
 - **DP2, do registers share content?** Among active registers, the salience-weighted mean absolute cosine between their contents, and the fraction of pairs with cosine above 0.9 (near-duplicates). Earlier positions and the last position are reported apart, because the 0.05 repulsion penalty acts in training only on the last.
 - **DP3, does salience act as intensity?** The Spearman rank correlation between each active register's salience and its leave-one-out contribution to the reverse-channel force.
 
+**The three statistics, written out.** The wording above is the intent; this is what the script computes, so that a reader can reproduce the numbers rather than approximate them.
+
+At layer $\ell$, in sequence $b$ at position $t$, let $r_k \in \mathbb{R}^d$ be the content vector of register $k$ and $\sigma_k \in [0,1]$ its salience. The book defines a register as *active* by a threshold test on salience (§20, p. 296), which this note writes as an indicator, since neither the book nor the code gives it a symbol:
+
+$$
+a_k = \mathbf{1}\lbrack \sigma_k \gt \tau \rbrack, \qquad \tau = 0.005.
+$$
+
+**DP1** is then the mean of that indicator over the $M = 32$ registers, reported per layer and position,
+
+$$
+A(b,t) = \frac{1}{M}\sum_{k=1}^{M} a_k .
+$$
+
+**DP2** normalises the contents, forms the pairwise cosine matrix, and weights each pair by the product of the two masked saliences:
+
+$$
+\hat{r}_k = \frac{r_k}{\lVert r_k\rVert}, \qquad C_{kj} = \hat{r}_k \cdot \hat{r}_j, \qquad W_{kj} = (\sigma_k a_k)(\sigma_j a_j).
+$$
+
+Writing $\mathcal{P} = \lbrace (k,j) : k \neq j \rbrace$ for the ordered pairs of distinct registers, the first statistic is the weighted mean of $\lvert C_{kj}\rvert$ over a set $S$ of positions. Numerator and denominator are pooled across $S$ before dividing, rather than averaging per-position ratios:
+
+$$
+\bar{c}(S) = \frac{\sum_{(b,t)\in S} \sum_{(k,j)\in\mathcal{P}} W_{kj}^{(b,t)} \lvert C_{kj}^{(b,t)}\rvert}{\sum_{(b,t)\in S} \sum_{(k,j)\in\mathcal{P}} W_{kj}^{(b,t)}} .
+$$
+
+The mask enters only through the weights: an inactive register contributes zero to both sums, so pairs are excluded by weight rather than filtered out, and the result is a genuine weighted mean over active pairs. The absolute value matters because two registers holding opposite content span the same direction, and without it aligned and anti-aligned pairs would cancel and hide duplication.
+
+With $L = \lbrace (b,t) : t = T-1 \rbrace$ the last position of each sequence and $E$ its complement, the reported quantity is the difference
+
+$$
+\Delta_\ell = \bar{c}(E) - \bar{c}(L),
+$$
+
+which measures how much of the registers' distinctness is owed to the repulsion penalty, since that penalty acts in training only on $L$. The second statistic counts near-duplicates instead of weighting them, and uses the signed cosine, because two slots holding opposite content are not duplicates:
+
+$$
+\mathrm{dup}(S) = \frac{\lvert \lbrace (b,t,k,j) \in S\times\mathcal{P} : C_{kj} \gt 0.9, a_k a_j = 1 \rbrace\rvert}{\lvert \lbrace (b,t,k,j) \in S\times\mathcal{P} : a_k a_j = 1 \rbrace\rvert} .
+$$
+
+**DP3** removes one register at a time from the mask and measures how far the reverse-channel force moves. With $Q(a)$ the force the channel returns under mask $a$, and $a^{(-k)}$ that mask with register $k$ switched off,
+
+$$
+\delta_k = \lVert Q(a) - Q(a^{(-k)}) \rVert ,
+$$
+
+and the reported number is the Spearman rank correlation $\rho(\sigma, \delta)$ taken across the active registers at one position, then averaged over positions. Positions with fewer than four active registers are skipped. A positive $\rho$ would mean that a more salient register contributes more force, which is what an intensity reading predicts.
+
 **Calls.**
 
 | test | arm(s) | prediction | called |
