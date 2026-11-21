@@ -1,0 +1,18 @@
+== SR2
+   tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+   5b: [ladder] L=2  dt=4  T=L*dt=8  mech='none'  steps=32,500  lowrank_driver='gram'
+   5b: [ladder] lowrank_driver='gram'  max_modes=16
+   params 76,572,110   eval loss 7.5145   train loss 7.5145   grad norm 1.067   forward+backward 6.70 s (median of 3, CPU, 2 x 512)
+   layer 0 step: grad -> earlier tokens 2.2652e+00   -> own token 1.7456e+03
+   layer 1 step: grad -> earlier tokens 2.8256e-01   -> own token 5.2628e+01
+== SR2, pair force off
+   tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+   5b: [ladder] L=2  dt=4  T=L*dt=8  mech='none'  steps=32,500  lowrank_driver='gram'
+   5b: [ladder] lowrank_driver='gram'  max_modes=16
+   5b: NO PAIR POTENTIAL (PAIR_POTENTIAL='none') -- NOT A LADDER POINT
+   5b: multi-xi SPLM (run 10), 76,434,307 parameters.
+   params 76,434,307   eval loss 7.5145   train loss 7.5145   grad norm 1.067   forward+backward 3.09 s (median of 3, CPU, 2 x 512)
+   layer 0 step: grad -> earlier tokens 2.2649e+00   -> own token 1.7456e+03
+   layer 1 step: grad -> earlier tokens 2.8279e-01   -> own token 5.2628e+01
+
+forward+backward time, pair force off over SR2: 0.46
