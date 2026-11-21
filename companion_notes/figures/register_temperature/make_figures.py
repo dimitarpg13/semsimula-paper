@@ -1,4 +1,4 @@
-"""Figures for Register_Temperature_Instability_in_the_Fock_Creation_Gate.md.
+"""Figures for training_instabilities/Register_Temperature_Instability_in_the_Fock_Creation_Gate.md.
 
 Every number here is measured, not simulated, except the two phase/Riccati
 panels which are explicitly analytical illustrations of the derived ODEs.

@@ -1,4 +1,4 @@
-"""Figures for Curvature_Diagnostics_and_Rank_Selection_for_Aniso_Gaussian_Vtheta.md.
+"""Figures for training_instabilities/Curvature_Diagnostics_and_Rank_Selection_for_Aniso_Gaussian_Vtheta.md.
 
 Four PNGs into this folder. Every panel is either an exact evaluation of a
 formula stated in that note, or a clearly-labelled synthetic illustration of

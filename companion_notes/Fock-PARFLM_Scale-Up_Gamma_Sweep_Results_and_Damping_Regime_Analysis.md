@@ -15,7 +15,7 @@ This document records and analyses the gamma sweep results for Fock-PARFLM at ea
 - [Determining_optimal_gamma_for_SPLM.md](Determining_optimal_gamma_for_SPLM.md) — the depth-scaling closed-form predictor $\gamma^{\ast}\_{\text{depth}}$ and the four-estimator framework.
 - [E4_sweep_results_and_discussion.md](E4_sweep_results_and_discussion.md) — SPLM damping sweep on Tiny Shakespeare (`d=384`, `L=8`).
 - [Damped_Riemannian_Geodesics_in_the_SPLM_family-Comparative_Analysis.md](Damped_Riemannian_Geodesics_in_the_SPLM_family-Comparative_Analysis.md) — theoretical analysis of geodesic regimes.
-- [Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md](Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md) — gradient spike taxonomy, `reverse_channel_scale` behaviour.
+- [training_instabilities/README.md](training_instabilities/README.md) — gradient spike taxonomy, `reverse_channel_scale` behaviour.
 
 **Hardware:** All sweeps run on NVIDIA H100 80GB HBM3 (LambdaLabs instances). Sweep candidates: 3,000 steps each, WSD schedule (warmup 0→150, stable→1,950, decay→3,000), `eff_batch=32`. The d=384 sweep was also prepared as a Colab notebook (H100/A100).
 
@@ -48,7 +48,7 @@ This document records and analyses the gamma sweep results for Fock-PARFLM at ea
 
 4. **Wall-clock near-constant.** All candidates took ~6.4h (23,000s) per 3,000-step sweep on a single H100. The damping coefficient does not meaningfully affect throughput.
 
-5. **Late-training instability (update July 17, 2026).** Full training at gamma=0.05 revealed that the clean stability observed in the 3,000-step sweep does **not** persist indefinitely. Catastrophic gradient spikes (up to grad=81,019, P=78,417) emerged at step ~37,000, with the same P/E/creation_gate signature seen in the d=1024 sweep. Despite the spikes, the model continued to improve (best PPL=93.17 at step 38,000). See [Training\_Instabilities\_in\_Fock-PARFLM\_with\_structured\_V\_theta.md](Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md) §25 for the full analysis. **The 3K-step sweep protocol is validated for finding the optimal gamma but cannot predict long-term stability.**
+5. **Late-training instability (update July 17, 2026).** Full training at gamma=0.05 revealed that the clean stability observed in the 3,000-step sweep does **not** persist indefinitely. Catastrophic gradient spikes (up to grad=81,019, P=78,417) emerged at step ~37,000, with the same P/E/creation_gate signature seen in the d=1024 sweep. Despite the spikes, the model continued to improve (best PPL=93.17 at step 38,000). See [CfC_BAOAB_Propagator_and_the_Cascade.md](training_instabilities/CfC_BAOAB_Propagator_and_the_Cascade.md) §25 for the full analysis. **The 3K-step sweep protocol is validated for finding the optimal gamma but cannot predict long-term stability.**
 
 ### 2.3 Independent confirmation with anisotropic Gaussian V_theta (August 14, 2026)
 
@@ -286,7 +286,7 @@ The depth-scaling formula's assumption that $\gamma^\star$ depends only on $L$ i
 | 2 | **Shorten the cascade** | Reduce $L$ from 24 to 16 | **Applied — resolved instability** |
 | 3 | **Segment or remove the cascade** | BAOAB + CfC propagator (analytical propagator, first-order backward) | Deferred (not needed with L=16) |
 
-The BAOAB + CfC propagator (Tier 3) remains relevant for future attempts at deeper networks (L>16) but is not required for the current d=1024 configuration. See §24 of [Training\_Instabilities\_in\_Fock-PARFLM\_with\_structured\_V\_theta.md](Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md) and §10 of [Closed\_Form\_and\_Hybrid\_Integration\_Strategies\_for\_Fock-PARFLM.md](Closed_Form_and_Hybrid_Integration_Strategies_for_Fock-PARFLM.md) for the full analysis.
+The BAOAB + CfC propagator (Tier 3) remains relevant for future attempts at deeper networks (L>16) but is not required for the current d=1024 configuration. See §24 of [CfC_BAOAB_Propagator_and_the_Cascade.md](training_instabilities/CfC_BAOAB_Propagator_and_the_Cascade.md) and §10 of [Closed\_Form\_and\_Hybrid\_Integration\_Strategies\_for\_Fock-PARFLM.md](Closed_Form_and_Hybrid_Integration_Strategies_for_Fock-PARFLM.md) for the full analysis.
 
 ### 4.4 Independent confirmation with anisotropic Gaussian V_theta (August 14, 2026)
 

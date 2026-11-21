@@ -1,7 +1,7 @@
 # Progressive Curvature Confinement for the Anisotropic Gaussian $V_\theta$
 
 Companion to
-[`CfC_BAOAB_Integrator_and_Mitigations.md`](CfC_BAOAB_Integrator_and_Mitigations.md)
+[`Localized_Mode_and_Chronic_Replays.md`](Localized_Mode_and_Chronic_Replays.md)
 (§40 integrator ablation, §41 chronic low-rank dominance) and to
 [`Diagnostic_Programme_in_CfC_BAOAB_Integrator.md`](Diagnostic_Programme_in_CfC_BAOAB_Integrator.md)
 (§3 spike-generation derivation, §13 the integrator-ablation replay).
@@ -103,7 +103,7 @@ it are available, and both matter below:
   the live run), so a penalty built on it confines a number we are already
   watching.
 
-![Isotropic vs low-rank-sharpened well: a single off-diagonal factor turns a round basin into a razor ridge, and the largest forces live on a thin shell rather than at the centre. This is the object the confinement acts on.](figures/dp_well_landscape.png)
+![Isotropic vs low-rank-sharpened well: a single off-diagonal factor turns a round basin into a razor ridge, and the largest forces live on a thin shell rather than at the centre. This is the object the confinement acts on.](../figures/dp_well_landscape.png)
 
 (The well/force geometry above is reproduced from the diagnostic programme
 note, where §3 derives it in full; it is the picture the confinement is
@@ -125,7 +125,7 @@ worst-case gradient with respect to the factor $B_k$ grows like $\lambda = s_k$ 
 force on a thinner, closer shell — a spike generator that gets worse
 monotonically as $s_k$ drifts up.
 
-![The along-direction force phi(t)=lambda*t*exp(-lambda t^2/2) for a sweep of curvatures, and the scaling of its peak. Peak force grows like sqrt(lambda); the worst-case parameter gradient grows like lambda = sigma_max(B_k)^2.](figures/dp_force_profile.png)
+![The along-direction force phi(t)=lambda*t*exp(-lambda t^2/2) for a sweep of curvatures, and the scaling of its peak. Peak force grows like sqrt(lambda); the worst-case parameter gradient grows like lambda = sigma_max(B_k)^2.](../figures/dp_force_profile.png)
 
 Crucially, nothing in the plain training objective opposes this drift: the
 data-fit gradient generally *rewards* sharper wells (they lower next-token
@@ -179,7 +179,7 @@ extra output. But it has two limitations that motivate the softer form in §5:
    region, where the gradient through the `tanh` is near zero — a recipe for
    dead gradients and brittle behaviour if the cap is ever relaxed.
 
-![precision_lr_max is a hard output ceiling: the effective factor norm saturates at the budget while the raw factor is free to drift right, and the marginal effect of further raw drive falls to zero. A penalty instead keeps a growing restoring force on the actual parameters.](figures/cc_cap_vs_penalty.png)
+![precision_lr_max is a hard output ceiling: the effective factor norm saturates at the budget while the raw factor is free to drift right, and the marginal effect of further raw drive falls to zero. A penalty instead keeps a growing restoring force on the actual parameters.](../figures/cc_cap_vs_penalty.png)
 
 The programme's next step (§5) keeps the good part — a bound on $s_k$ — while
 replacing the ceiling with a restoring force that (a) negotiates an
@@ -227,7 +227,7 @@ $$R_e(s_k) = \lambda [\exp(\beta(s_k - s_0)) - 1]_+.$$
 Negligible below $s_0$, exponential resistance above — firmer than the power
 form, gentler than the pole of the barrier.
 
-![The confining potential R(s) and its restoring force for the three families sharing a target s0: free below s0, super-linear cost above it, with the marginal cost of sharpening rising as the well gets sharper.](figures/cc_confining_potentials.png)
+![The confining potential R(s) and its restoring force for the three families sharing a target s0: free below s0, super-linear cost above it, with the marginal cost of sharpening rising as the well gets sharper.](../figures/cc_confining_potentials.png)
 
 All three are **optimiser-agnostic**: they are ordinary loss terms and ride
 on the existing AdamW. All three target the same $s_k$ we already log. The
@@ -250,7 +250,7 @@ independently of how hard the data pulls. That data-insensitivity is the
 whole point: it converts "curvature is a free coordinate under an upward
 pull" into "curvature relaxes to a set point".
 
-![Force balance: the data pull G intersects the restoring force at the equilibrium sharpness, and a steeper penalty pins that equilibrium near the target s0 regardless of the pull magnitude.](figures/cc_equilibrium.png)
+![Force balance: the data pull G intersects the restoring force at the equilibrium sharpness, and a steeper penalty pins that equilibrium near the target s0 regardless of the pull magnitude.](../figures/cc_equilibrium.png)
 
 For the simplest quadratic confinement $R(s) = \tfrac{\lambda}{2}(s - s_0)^2$
 (active above $s_0$), the stochastic-gradient dynamics of $s$ become an
@@ -265,7 +265,7 @@ gradient is the forcing. Raising $\lambda$ (or the power $p$) tightens both
 the mean and the spread, and in particular damps the transient excursions
 that a resonant batch would otherwise turn into a spike.
 
-![Toy dynamics of the sharpness coordinate under intermittent resonant pulls: with no confinement it runs away, a hard cap clamps it flat, and the progressive penalties settle at a stable equilibrium while absorbing the resonant excursions.](figures/cc_trajectory.png)
+![Toy dynamics of the sharpness coordinate under intermittent resonant pulls: with no confinement it runs away, a hard cap clamps it flat, and the progressive penalties settle at a stable equilibrium while absorbing the resonant excursions.](../figures/cc_trajectory.png)
 
 The trajectory panel makes the qualitative claim concrete (it is a
 transparent integration of the SDE above, not a drawing): the unconfined
@@ -557,7 +557,7 @@ integration of the sharpness SDE of §6 (seeded, not fit). The chronic
 low-rank dominance, the two-mechanism taxonomy, and the two ablation helpers
 (`replay_precision_cap_ablation`, `replay_integrator_ablation`) are documented
 in companion note
-[`CfC_BAOAB_Integrator_and_Mitigations.md`](CfC_BAOAB_Integrator_and_Mitigations.md)
+[`Localized_Mode_and_Chronic_Replays.md`](Localized_Mode_and_Chronic_Replays.md)
 §40-§41.
 
 Last updated: 31 August 2026 (initial version: derives progressive curvature

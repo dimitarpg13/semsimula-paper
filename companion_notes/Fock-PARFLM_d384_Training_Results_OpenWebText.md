@@ -338,7 +338,7 @@ During non-spike steps, the dominant gradient group is `reverse_channel_scale`, 
 | d=768, L=12 | 5,158,336 | ~110 (at 65.5K steps) | 2 | Catastrophic (late-training) |
 | d=1024, L=16 | 63,949 | frequent | multiple | Catastrophic (early-onset) |
 
-The d=384 model's spike regime is qualitatively different: spikes are moderate (3 orders of magnitude smaller than d=768/d=1024) and never trigger the watchdog. This confirms that the catastrophic second-order gradient cascade (documented in [Training\_Instabilities\_in\_Fock-PARFLM\_with\_structured\_V\_theta.md](Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md) §23–25) is a scale-dependent phenomenon that does not manifest at d=384.
+The d=384 model's spike regime is qualitatively different: spikes are moderate (3 orders of magnitude smaller than d=768/d=1024) and never trigger the watchdog. This confirms that the catastrophic second-order gradient cascade (documented in [training_instabilities/README.md](training_instabilities/README.md) §23–25) is a scale-dependent phenomenon that does not manifest at d=384.
 
 ---
 
@@ -562,6 +562,6 @@ Each JSONL entry contains: `step`, `train_loss`, `v_reg`, `lr`, `grad_norm`, `ga
 
 - [Fock-PARFLM\_Scale-Up\_Comparative\_Experiments.md](Fock-PARFLM_Scale-Up_Comparative_Experiments.md) — parameter counts and architecture comparison with GPT-2
 - [Fock\_Mechanism\_Ablation\_Study\_d384\_OpenWebText.md](Fock_Mechanism_Ablation_Study_d384_OpenWebText.md) — ablation study comparing e5c (full Fock) vs e5a (no reverse channel)
-- [Training\_Instabilities\_in\_Fock-PARFLM\_with\_structured\_V\_theta.md](Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md) — gradient spike analysis and cascade mechanism
+- [training_instabilities/README.md](training_instabilities/README.md) — gradient spike analysis and cascade mechanism
 - [Fock-PARFLM\_Scale-Up\_Gamma\_Sweep\_Results\_and\_Damping\_Regime\_Analysis.md](Fock-PARFLM_Scale-Up_Gamma_Sweep_Results_and_Damping_Regime_Analysis.md) — gamma sweep results and dimension-dependent phase transition
 - [Geodesic\_Preservation\_Experiment.md](Geodesic_Preservation_Experiment.md) — geodesic residual analysis and PPL-geodesic coincidence breakdown

@@ -133,7 +133,7 @@ cheaper randomised-SVD knobs (``lowrank_niter=1``, ``lowrank_oversample=2``)
 ~3-4x too slow to finish a 100k-step run in practical time (the 2-layer
 figure alone is ~22 days for the last 62.5k steps).  It is also aimed at
 the wrong target: the companion note's stiffness-bracket result (see
-``semsimula-paper/companion_notes/CfC_BAOAB_Integrator_and_Mitigations.md``,
+``semsimula-paper/companion_notes/training_instabilities/README.md``,
 S:33) already showed ``sigma_max(B_k)^2`` -- the very quantity this arm
 integrates exactly -- is only a weak correlate of the observed gradient
 spikes, not their driver (``E``, ``P`` and ``depth_code`` lead the hard

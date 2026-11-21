@@ -7,7 +7,7 @@
 - [`Context_Mixing_Mechanisms_in_the_Conservative_Framework.md`](./Context_Mixing_Mechanisms_in_the_Conservative_Framework.md) -- the four conservative context-mixing alternatives; this note develops the integrator-structure axis that is orthogonal to those.
 - [`Structured_VTheta_Design_and_Theory.md`](./Structured_VTheta_Design_and_Theory.md) -- single-particle scalar potential.
 - [`Structured_VPhi_Design_and_Theory.md`](./Structured_VPhi_Design_and_Theory.md) -- pairwise interaction potential.
-- [`Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`](./Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md) -- the gradient-explosion phenomenology that this proposal partially addresses.
+- [`training_instabilities/README.md`](./training_instabilities/README.md) -- the gradient-explosion phenomenology that this proposal partially addresses.
 - **Implementation:** [`notebooks/conservative_arch/parf/model_parf.py`](../notebooks/conservative_arch/parf/model_parf.py) (the `_stack_forward` / `_layer_step` methods are the target of the modification).
 
 ---

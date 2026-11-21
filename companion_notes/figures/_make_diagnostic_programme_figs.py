@@ -1,4 +1,4 @@
-"""Figures for Diagnostic_Programme_in_CfC_BAOAB_Integrator.md.
+"""Figures for training_instabilities/Diagnostic_Programme_in_CfC_BAOAB_Integrator.md.
 
 Generates five PNGs into the same folder, all from either closed-form
 evaluation of the anisotropic-Gaussian well or the real replay/Phase-0

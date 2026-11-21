@@ -5,7 +5,7 @@
 **Companion docs:**
 
 - [`Structured_VTheta_Design_and_Theory.md`](./Structured_VTheta_Design_and_Theory.md) -- structured $V_\theta$ theory and the SQ3/Gaussian/SARF family.
-- [`Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`](./Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md) -- stability fixes (LR, watchdog, sigma/precision caps) carried into the analysis loader.
+- [`training_instabilities/README.md`](./training_instabilities/README.md) -- stability fixes (LR, watchdog, sigma/precision caps) carried into the analysis loader.
 - **Implementation:**
   - Analysis module: [`notebooks/conservative_arch/parf/well_centre_analysis.py`](../notebooks/conservative_arch/parf/well_centre_analysis.py).
   - Driver notebook: [`notebooks/conservative_arch/scaleup/colab_analyze_well_centres.ipynb`](../notebooks/conservative_arch/scaleup/colab_analyze_well_centres.ipynb).
@@ -230,5 +230,5 @@ Once a rule demonstrably wins on the geometric and decode metrics, the **definit
 
 - Gueorguiev, D. (2026). *Semantic Simulation: A Prescriptive Lagrangian Framework for Efficient Semantic Inference.*
 - [`Structured_VTheta_Design_and_Theory.md`](./Structured_VTheta_Design_and_Theory.md) -- structured $V_\theta$ derivations, attractor interpretability (§6, §8.3), and $K_{\text{mix}}$ selection.
-- [`Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`](./Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md) -- the precision/sigma caps and watchdog logic reused by the analysis loader.
+- [`training_instabilities/README.md`](./training_instabilities/README.md) -- the precision/sigma caps and watchdog logic reused by the analysis loader.
 - Church, K. & Hanks, P. (1990). *Word Association Norms, Mutual Information, and Lexicography.* Computational Linguistics 16(1) -- PMI baseline.

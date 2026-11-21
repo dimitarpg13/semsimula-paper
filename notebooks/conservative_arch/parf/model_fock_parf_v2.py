@@ -195,7 +195,7 @@ class FockPARFConfig_v2(SparsePARFConfig):
     n_registers: int = 16
     d_k: int = 64
     tau_create_init: Optional[float] = 0.1
-    # 2026-09-09 (CfC_BAOAB_Integrator_and_Mitigations.md §49): opt-in
+    # 2026-09-09 (training_instabilities/log_tau_Runaway_Record.md §49): opt-in
     # QK-normalisation for QKVCreationGate_v21, mirroring the hardening
     # ReverseChannel has had since §10.12/E5c. OFF by default because it is
     # NOT retrofittable: with it on, raw scores are capped at
@@ -376,7 +376,7 @@ class QKVCreationGate_v21(nn.Module):
            ReverseChannel's §10.12/E5c hardening: L2-normalise Q and K and
            restore dynamic range with a *clamped* learnable ``logit_scale``,
            bounding scores regardless of ||Q||·||K||.  Motivation is §49 of
-           CfC_BAOAB_Integrator_and_Mitigations.md: with B1's per-register
+           training_instabilities/README.md: with B1's per-register
            temperatures unconstrained relative to each other, one register's
            tau drifted to the bottom of the pool, its scaled scores ran an
            order of magnitude above every other register's, and -- since

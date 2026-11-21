@@ -1,4 +1,4 @@
-"""Figures for Progressive_Curvature_Confinement_for_Aniso_Gaussian_Vtheta.md.
+"""Figures for training_instabilities/Progressive_Curvature_Confinement_for_Aniso_Gaussian_Vtheta.md.
 
 Generates four PNGs into the same folder. Every curve is an exact evaluation
 of a confining potential / restoring force discussed in the note, or a

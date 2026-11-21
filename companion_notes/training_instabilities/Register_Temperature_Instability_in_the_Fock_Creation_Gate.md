@@ -2,7 +2,7 @@
 
 **A technical report on the `creation_gate_qkv.log_tau` gradient spikes: what we measured, what we got wrong twice, the covariance identity and Riccati equation that explain the dynamics, the AdamW configuration error that turned out to dominate them, and the six mitigations that follow.**
 
-Companion to `CfC_BAOAB_Integrator_and_Mitigations.md` (§48-§51) and
+Companion to `Session_Loss_clip_then_sum_and_Replay_Fidelity.md` and `log_tau_Runaway_Record.md` (§48-§51) and
 `Diagnostic_Programme_in_CfC_BAOAB_Integrator.md`. This report consolidates
 material that is scattered across those sections into a single narrative,
 and adds the analysis that neither of them contains: the existence and
@@ -187,7 +187,7 @@ Both `log_tau` (shape 32) and `reverse_channel_scale` (shape 8) are small
 enough to decompose element by element from the full-batch backward pass.
 The result is the single most striking measurement in this investigation.
 
-![Per-element gradient decomposition on a log scale: log_tau's gradient is a spike on register 14, and reverse_channel_scale's is a spike on layer 0](figures/register_temperature/gradient_concentration.png)
+![Per-element gradient decomposition on a log scale: log_tau's gradient is a spike on register 14, and reverse_channel_scale's is a spike on layer 0](../figures/register_temperature/gradient_concentration.png)
 
 | parameter | step 70522 | step 71194 |
 |---|---|---|
@@ -514,7 +514,7 @@ $$\dot{v}_k = \eta C_k v_k^{2}, \qquad v_k(t) = \frac{v_k(0)}{1 - \eta C_k v_k(0
 A Riccati equation. The inverse temperature blows up in **finite time**, not
 merely exponentially.
 
-![The Riccati trajectory diverges in finite time, faster than exponential; a floor on the temperature is what terminates it](figures/register_temperature/riccati.png)
+![The Riccati trajectory diverges in finite time, faster than exponential; a floor on the temperature is what terminates it](../figures/register_temperature/riccati.png)
 
 Three things intervene before the literal singularity: Adam's per-parameter
 normalisation makes the effective step size adaptive rather than
@@ -606,7 +606,7 @@ gradient at all**:
 Against the measured pool at step ≈71,985: minimum 5.21 (register 14),
 median 6.48, maximum 8.95.
 
-![The pure weight decay curve runs through the middle of the observed temperature pool, between register 14 and the pool median](figures/register_temperature/tau_trajectory.png)
+![The pure weight decay curve runs through the middle of the observed temperature pool, between register 14 and the pool median](../figures/register_temperature/tau_trajectory.png)
 
 The decay line at 5.42 sits *between* register 14 and the pool median. The
 pool-wide cooling from the initial 8.0 — which §5 noted but did not explain,
@@ -754,7 +754,7 @@ never `FIXED_GAMMA`):
 | equilibrium at gamma_wd 0.02, anchored at log 8 | temperature 5.89 |
 | separatrix at gamma_wd 0.02 | temperature 0.77 |
 
-![Left: the drift rate as a function of log temperature under four weight-decay configurations. Right: the saddle-node bifurcation, showing the equilibrium exists only above a threshold weight-decay strength gamma_wd](figures/register_temperature/phase_portrait.png)
+![Left: the drift rate as a function of log temperature under four weight-decay configurations. Right: the saddle-node bifurcation, showing the equilibrium exists only above a threshold weight-decay strength gamma_wd](../figures/register_temperature/phase_portrait.png)
 
 Read the left panel from the bottom up. The orange curve is what the run
 actually had: decay anchored at zero *adds* to the sharpening everywhere
@@ -920,7 +920,7 @@ patched readout:
 | 10x | 4303.1 | 13.5 |
 | 30x | 14461.0 | 14.7 |
 
-![Scaled score against weight scale on log-log axes: the current gate grows quadratically and unbounded, the hardened gate is flat](figures/register_temperature/score_bound.png)
+![Scaled score against weight scale on log-log axes: the current gate grows quadratically and unbounded, the hardened gate is flat](../figures/register_temperature/score_bound.png)
 
 The current gate grows quadratically in the weight scale, unbounded. The
 hardened gate is flat, with the residual variation being initialisation
@@ -1394,7 +1394,7 @@ channel-input Hessian, not off the creation gate.
 
 > **Correction (2026-09-13).** The paragraph below argued from a spike
 > mechanism since falsified. See
-> [Gradient_Spikes_as_Routing_Conjunctions.md](Gradient_Spikes_as_Routing_Conjunctions.md):
+> [Gradient_Spikes_as_Routing_Conjunctions.md](../Gradient_Spikes_as_Routing_Conjunctions.md):
 > spikes in Run 1 are conjunctions between one microbatch and its routing
 > draw, not curvature events. Resetting the RNG per microbatch collapsed
 > every captured spike to baseline at three checkpoints; a follow-up
@@ -1541,7 +1541,7 @@ here are traceable to their console output rather than to this document.
 ---
 
 Last updated: 9 September 2026. Consolidates and extends §49, §50, and §51
-of `CfC_BAOAB_Integrator_and_Mitigations.md`. New material relative to those
+of the CfC/BAOAB note, now [`log_tau_Runaway_Record.md`](log_tau_Runaway_Record.md). New material relative to those
 sections: the saddle-node existence condition and one-nat stability
 criterion for the interior equilibrium (§9.2, §9.3), the estimate of the
 covariance coefficient from the observed drift and the resulting finding

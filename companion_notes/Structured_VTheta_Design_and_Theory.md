@@ -928,7 +928,7 @@ Output: K* and per-basin curvature profiles
 The SQ3 (log-sum-exp quadratic) parameterisation achieves the best
 PPL across all three architectures on TinyStories (§8) but suffers
 from **structurally unbounded force** that causes repeated blowups on
-OpenWebText (documented in [`Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`](./Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md), §2–§4, §13). The Gaussian mixture-PDF alternative
+OpenWebText (documented in [`training_instabilities/README.md`](./training_instabilities/README.md), §2–§4, §13). The Gaussian mixture-PDF alternative
 (MixtureGaussianVTheta, §12.4) is bounded by construction
 ($V \in [-\Sigma w_k, 0]$) and trains stably on OpenWebText, but
 sacrifices ~5.6 PPL on TinyStories (15.95 vs 10.36 for Fock A2).
@@ -1205,7 +1205,7 @@ does once trained, on the anisotropic-Gaussian, depth-conditioned V_theta
 production runs (`aniso_dcvt5x8`: $n_{\text{ctx}}=5$, $K=8$, $d=384$,
 $L=16$, `code_init_std`$=0.02$) behind the gamma=0.10 OpenWebText experiments
 discussed in
-[`Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`](./Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md).
+[`training_instabilities/README.md`](./training_instabilities/README.md).
 Values below are $\lVert e_g \rVert$ (the depth-code row's Frobenius norm
 over its $n_{\text{ctx}} \times d = 1{,}920$ entries), relative to the
 random-init expectation $\lVert e_g \rVert_{\text{init}} \approx

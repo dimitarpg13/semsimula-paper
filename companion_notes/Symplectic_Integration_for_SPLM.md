@@ -160,7 +160,7 @@ derived in full in
 [PyTorch Implementation of CfC/BAOAB, §4.1](https://github.com/dimitarpg13/semantic_simulation/blob/main/docs/BAOAB/PyTorch_Implementation_of_CfC_BAOAB_in_Fock-PARFLM.md#41-the-verlet-stability-bound),
 and is the mechanism behind the Fock-PARFLM gradient spikes analysed
 in
-[Training Instabilities §24](https://github.com/dimitarpg13/semsimula-paper/blob/main/companion_notes/Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md#24-baoab--cfc-propagator-eliminating-the-force-cascade-at-source).
+[Training Instabilities §24](https://github.com/dimitarpg13/semsimula-paper/blob/main/companion_notes/training_instabilities/CfC_BAOAB_Propagator_and_the_Cascade.md#24-baoab--cfc-propagator-eliminating-the-force-cascade-at-source).
 A natural question given this tutorial's own framing — "which of the
 three structures does the integrator preserve?" — is whether some
 *other* symmetric, symplectic, Euler-family integrator preserves the
@@ -229,7 +229,7 @@ $L=16$ and $\gamma\approx0.85$ that $\omega\Delta t$ never crossed 2.
 The bound became load-bearing only at production scale ($d=768$ or
 $1024$, $L=16$ to $24$, tens of thousands of steps sharpening the
 wells) — see
-[Training Instabilities §§23–25](https://github.com/dimitarpg13/semsimula-paper/blob/main/companion_notes/Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md).
+[Training Instabilities §§23–25](https://github.com/dimitarpg13/semsimula-paper/blob/main/companion_notes/training_instabilities/README.md).
 
 ---
 

@@ -2,7 +2,7 @@
 loop (Cell 6) and the Phase 1/2 spike-replay forensics (Cell 6d) in
 colab_fock_cfc_baoab_aniso_gaussian_openwebtext_d384.ipynb.
 
-Extracted 2026-08-30 (companion note CfC_BAOAB_Integrator_and_Mitigations.md
+Extracted 2026-08-30 (companion note training_instabilities/README.md
 SS37): these three functions used to be defined inline in Cell 6, with
 Cell 6d's replay_spike_batch()/replay_all_captures() silently depending on
 Cell 6 having already executed at least once (so they existed as notebook

@@ -10,9 +10,9 @@ leak probe `[CLEAN]` (honest PPL 53.59 vs. standard 51.14, diff +0.0469
 nats — consistent with the +0.0136 nats seen at step 90,000, not a drift).
 
 Full background lives alongside this file in `companion_notes/`:
-[`Diagnostic_Programme_in_CfC_BAOAB_Integrator.md`](Diagnostic_Programme_in_CfC_BAOAB_Integrator.md) §17,
-[`Curvature_Diagnostics_and_Rank_Selection_for_Aniso_Gaussian_Vtheta.md`](Curvature_Diagnostics_and_Rank_Selection_for_Aniso_Gaussian_Vtheta.md),
-[`CfC_BAOAB_Integrator_and_Mitigations.md`](CfC_BAOAB_Integrator_and_Mitigations.md) §41-42, 49-51.
+[`Diagnostic_Programme_in_CfC_BAOAB_Integrator.md`](training_instabilities/Diagnostic_Programme_in_CfC_BAOAB_Integrator.md) §17,
+[`Curvature_Diagnostics_and_Rank_Selection_for_Aniso_Gaussian_Vtheta.md`](training_instabilities/Curvature_Diagnostics_and_Rank_Selection_for_Aniso_Gaussian_Vtheta.md),
+[`training_instabilities/README.md`](training_instabilities/README.md) §41-42, 49-51.
 
 ---
 
@@ -164,7 +164,7 @@ converged property rather than a spike-time artifact.
 > directions idle in channel 0 to serve channel 2, at **+33%** of total
 > parameters. A per-channel allocation targets the same hypothesis for about
 > **+1.7%**. See Stage 4 in
-> `Curvature_Diagnostics_and_Rank_Selection_for_Aniso_Gaussian_Vtheta.md`,
+> `training_instabilities/Curvature_Diagnostics_and_Rank_Selection_for_Aniso_Gaussian_Vtheta.md`,
 > now indicated rather than hypothetical.
 >
 > **Methodology note.** Run the by-site probe, not the pooled one, and load

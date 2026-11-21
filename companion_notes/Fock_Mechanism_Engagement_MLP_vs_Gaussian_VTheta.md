@@ -438,6 +438,6 @@ against disengagement.
 - [Closed-Form and Hybrid Integration Strategies for Fock-PARFLM](Closed_Form_and_Hybrid_Integration_Strategies_for_Fock-PARFLM.md): Section 14 documents the empirical cost of structural boundedness and explains why MLP V\_theta cannot support BAOAB.
 - [Fock-PARFLM Scale-Up Comparative Experiments](Fock-PARFLM_Scale-Up_Comparative_Experiments.md): the primary scale-up results document.
 - [Fock-PARFLM Causal Leak Audit Results](Fock-PARFLM_Causal_Leak_Audit_Results.md): detailed SCAF audit results for the leaky Experiment C.
-- [Training Instabilities in Fock-PARFLM with structured V\_theta](Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md): gradient spike analysis and per-group clipping strategies.
+- [Training Instabilities in Fock-PARFLM with structured V\_theta](training_instabilities/README.md): gradient spike analysis and per-group clipping strategies.
 - [SARF Anchor Placement From Converged Gaussian Centres](SARF_Anchor_Placement_From_Converged_Gaussian_Centres.md): data-driven well placement for Gaussian V\_theta.
 - [Fock Mechanism Ablation Study d384 OpenWebText](Fock_Mechanism_Ablation_Study_d384_OpenWebText.md): ablation study isolating the Fock mechanism's contribution.

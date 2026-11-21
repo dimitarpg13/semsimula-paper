@@ -22,7 +22,7 @@ Fock-PARFLM family — the analogue of
 - [`PARF_Stage_1_5b_design.md`](./PARF_Stage_1_5b_design.md) — the gathered / sparse evaluation path.
 - [`On_Gumbel_softmax_sparsity_applied_to_V_phi.md`](./On_Gumbel_softmax_sparsity_applied_to_V_phi.md)
   — top-$k$ Gumbel routing over pairs.
-- [`Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`](./Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md)
+- [`training_instabilities/README.md`](./training_instabilities/README.md)
   — the $1/r$ gradient-explosion failure mode and the stability levers.
 - [`Continuous_Learning_in_Semantic_Simulation-based_models_vs_with_Transformer_models.md`](./Continuous_Learning_in_Semantic_Simulation-based_models_vs_with_Transformer_models.md)
   — §4.5, the spawnability / continuous-learning properties.
@@ -310,7 +310,7 @@ dissipation force — it is absorbed into the dissipation budget.
 
 The $1/r$ kernel is the one genuinely dangerous element: when two hidden states cluster, $r \to 0$ and
 the force can explode (documented in
-[`Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`](./Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md)).
+[`training_instabilities/README.md`](./training_instabilities/README.md)).
 The levers, in order of leverage:
 
 | Lever | Config | Effect |
@@ -450,7 +450,7 @@ relevant ways:
    training when Gaussian well centres have not yet converged.
 
 2. **Joint stability.** The SQ3 $V_\theta$ blowups documented in
-   [`Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`](./Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md) §2–§4
+   [`Three_Blowups_and_Their_Causes.md`](./training_instabilities/Three_Blowups_and_Their_Causes.md) §2–§4
    were caused by unbounded $V_\theta$ forces — not by $V_\phi$. The
    structured $V_\phi$ was a **stabilising factor** (bounded force,
    Plummer softening) during those events. The hybrid $V_\theta$
@@ -481,7 +481,7 @@ production configuration.
   [`Gumbel_sparsity_method.md`](./Gumbel_sparsity_method.md) — top-$k$ Gumbel routing.
 - [`Fock_PARFLM_Conservativity_Diagnostic.md`](./Fock_PARFLM_Conservativity_Diagnostic.md) —
   conservativity of multi-head V_phi.
-- [`Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`](./Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md)
+- [`training_instabilities/README.md`](./training_instabilities/README.md)
   — the 1/r explosion and the stability levers.
 - [`Continuous_Learning_in_Semantic_Simulation-based_models_vs_with_Transformer_models.md`](./Continuous_Learning_in_Semantic_Simulation-based_models_vs_with_Transformer_models.md)
   — §4.5 spawnability (Propositions 6–8), the G6 experiment.

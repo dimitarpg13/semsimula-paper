@@ -956,7 +956,7 @@ The Gaussian potential's explicit, parametric form makes all three strategies fe
 - [Langevin Dynamics Reformulation](Langevin_dynamics_reformulation_of_classical_damped_Lagrangian_flow.md) --- the BAOAB integrator whose $V\_\theta$ substep would benefit directly from the CfC propagator
 - [Structural Stability of Learned Potentials](Structural_Stability_of_Learned_Potentials_in_Semantic_Simulation.md) --- gauge equivalence and perturbation theory for the well parameters used in the propagator
 - [Portable Learned Potentials and Transplant Map](Portable_Learned_Potentials_and_Transplant_Map.md) --- the well parameters ($\mu\_k, \kappa\_k, V\_0$) that the CfC propagator consumes are exactly the harvested potentials
-- [Training Instabilities in Fock-PARFLM](Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md) --- gradient spikes and per-group clipping, which the CfC propagator does not change (it replaces forward-pass integration, not the gradient clipping pipeline)
+- [Training Instabilities in Fock-PARFLM](training_instabilities/README.md) --- gradient spikes and per-group clipping, which the CfC propagator does not change (it replaces forward-pass integration, not the gradient clipping pipeline)
 - [Blended CfC B̃AOAB̃ Deep Dive](Blended_CfC_BAOAB_Deep_Dive.md) --- fully worked-out construction of the 7-sub-step B̃AOAB̃ scheme with explicit matrices, a numerical example, and error analysis
 - [Fock-PARFLM Scale-Up Comparative Experiments](Fock-PARFLM_Scale-Up_Comparative_Experiments.md) --- the broader V\_theta comparison programme (MLP, SQ3, Gaussian) whose PPL results are summarised in §14
 

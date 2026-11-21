@@ -38,7 +38,7 @@ Background lives alongside this file in `companion_notes/`:
 (the additive arm's equivalent — many probes here are its counterparts),
 [`Gradient_Spikes_as_Routing_Conjunctions.md`](Gradient_Spikes_as_Routing_Conjunctions.md),
 [`Analytic_Multi_Channel_Integration_in_Structured_Vtheta.md`](Analytic_Multi_Channel_Integration_in_Structured_Vtheta.md) §5,
-[`Register_Temperature_Instability_in_the_Fock_Creation_Gate.md`](Register_Temperature_Instability_in_the_Fock_Creation_Gate.md).
+[`Register_Temperature_Instability_in_the_Fock_Creation_Gate.md`](training_instabilities/Register_Temperature_Instability_in_the_Fock_Creation_Gate.md).
 
 ---
 

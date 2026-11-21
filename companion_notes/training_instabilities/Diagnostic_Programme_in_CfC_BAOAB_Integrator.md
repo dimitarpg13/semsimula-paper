@@ -1,9 +1,8 @@
 # A Diagnostic Programme for Gradient Spikes in the CfC/BAOAB Fock-PARFLM
 
-Companion to
-[`CfC_BAOAB_Integrator_and_Mitigations.md`](CfC_BAOAB_Integrator_and_Mitigations.md)
-and its parent
-[`Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`](Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md).
+Companion to the CfC/BAOAB sections (§24–§52) of
+[the training-instabilities record](README.md)
+and to its earlier sections (§1–§23).
 
 Where those notes tell the *chronological* story of the CfC/BAOAB integrator
 and the spike hunt section by section (§24–§39), this note steps back and
@@ -111,7 +110,7 @@ Empirically (companion note §38–§39) the low-rank term dominates the exponen
 `lr_term_share` sits at $\approx 0.999$. So to a very good approximation the
 well's stiffness *is* the spectrum of $B_k$.
 
-![Isotropic vs low-rank-sharpened well: a single off-diagonal factor turns a round basin into a razor ridge, and the largest forces live on a thin shell rather than at the centre.](figures/dp_well_landscape.png)
+![Isotropic vs low-rank-sharpened well: a single off-diagonal factor turns a round basin into a razor ridge, and the largest forces live on a thin shell rather than at the centre.](../figures/dp_well_landscape.png)
 
 The left panel is a purely diagonal well; the middle panel is the same well
 after adding one low-rank factor $B_k B_k^{\top}$ oriented along an oblique
@@ -167,7 +166,7 @@ Two consequences, both visible in the figure below:
    the well sharpens, the band of displacements that experience a near-peak
    force shrinks *and* moves closer to the centre.
 
-![The along-sharp-direction force phi(t)=lambda*t*exp(-lambda t^2/2) for a sweep of curvatures, and the scaling of its peak with lambda. Peak force grows like sqrt(lambda); the worst-case parameter gradient grows like lambda = sigma_max(B_k)^2.](figures/dp_force_profile.png)
+![The along-sharp-direction force phi(t)=lambda*t*exp(-lambda t^2/2) for a sweep of curvatures, and the scaling of its peak with lambda. Peak force grows like sqrt(lambda); the worst-case parameter gradient grows like lambda = sigma_max(B_k)^2.](../figures/dp_force_profile.png)
 
 ### 3.3 From force to parameter gradient: the quadratic that `precision_lr_max` bounds
 
@@ -436,7 +435,7 @@ conjecture (§9).
 The per-layer $h$-gradient profile from `replay_spike_batch` splits every
 captured event cleanly into two families.
 
-![Per-layer h-gradient of four replayed captures on a log scale: two smooth-cascade events decay gently across layers, two localized events cliff by 50-177x within layers 0-2.](figures/dp_mode_profiles.png)
+![Per-layer h-gradient of four replayed captures on a log scale: two smooth-cascade events decay gently across layers, two localized events cliff by 50-177x within layers 0-2.](../figures/dp_mode_profiles.png)
 
 | Mode | Per-layer profile (L0 → L3) | `dc_ratio` | Crossed 500? | Reading |
 |---|---|---|---|---|
@@ -472,7 +471,7 @@ captures — a good sign the instruments have teeth.
 tokens land near a sharp well dictates the update direction. `attribute_spike_rows`
 says the opposite: the localized captures are the **flattest** across rows.
 
-![Per-row top-1 share of the depth_code gradient for four captures against the flat-batch baseline; the localized events (39,983 and 41,837) are flatter across rows than the smooth ones, and the more layer-localized an event is the more batch-uniform it becomes.](figures/dp_perrow_falsification.png)
+![Per-row top-1 share of the depth_code gradient for four captures against the flat-batch baseline; the localized events (39,983 and 41,837) are flatter across rows than the smooth ones, and the more layer-localized an event is the more batch-uniform it becomes.](../figures/dp_perrow_falsification.png)
 
 The right panel is the punchline: top-1 row share is **monotonically
 anti-correlated** with localization severity. The more the event concentrates in
@@ -484,7 +483,7 @@ $V_\theta$ well occupancy (more tokens "inside" a well). The exponent-occupancy
 histogram shows no separation between the modes, and $\gt 99.9\%$ of well–token
 pairs are numerically dead ($\exp(\text{exponent})\approx 0$) in *every* capture.
 
-![V_theta exponent live-fraction per bank across four captures on a log scale; smooth and localized events overlap and more than 99.9 percent of well-token pairs are numerically dead in every capture.](figures/dp_exponent_occupancy.png)
+![V_theta exponent live-fraction per bank across four captures on a log scale; smooth and localized events overlap and more than 99.9 percent of well-token pairs are numerically dead in every capture.](../figures/dp_exponent_occupancy.png)
 
 Both negatives point the same way: the discriminator is not in *which tokens are
 in this batch*. It is in the **weights** feeding the low-rank precision factor —
@@ -869,7 +868,7 @@ quantity exactly rather than approximately (§3.3's derivation is about the
 across a layer step*). That makes it the natural instrument to test the
 hypothesis directly, and this section sketches the offline version of that
 test -- full derivation and code in companion note
-`CfC_BAOAB_Integrator_and_Mitigations.md` §40.
+`Localized_Mode_and_Chronic_Replays.md` §40.
 
 **Why an old negative result does not settle this.** An earlier bracket
 measurement (companion note §33) had already looked at `sigma_max(B_k)` and
@@ -922,7 +921,7 @@ retraining trial before there is a reason to.
 ## 14. Case study: three new replays confirm chronic low-rank dominance and expose a `dc_ratio` blind spot
 
 Full derivation, exact numbers, and code are in companion note
-`CfC_BAOAB_Integrator_and_Mitigations.md` §41; this section folds the
+`Localized_Mode_and_Chronic_Replays.md` §41; this section folds the
 findings back into the programme's own framework (§8-§10) as a worked
 example of the categorize -> classify -> diagnose -> remediate loop
 running on real captures, and records two follow-ups the programme's own
@@ -1002,7 +1001,7 @@ expected to touch mechanism B, which needs its own instrument (§14.4).
 ## 15. Closing the loop: the ablation validates remediation across both mechanisms, and two tooling lessons
 
 §13 sketched the offline test; full derivation, exact numbers, and code
-are in companion note `CfC_BAOAB_Integrator_and_Mitigations.md` §42. This
+are in companion note `precision_lr_max_and_LowRank_Validated.md` §42. This
 section folds the *result* back into the programme's own remediate step
 (§10) and records two lessons for the diagnostic tooling itself -- one
 about how instruments can silently fail, the other about how a diagnostic
@@ -1188,7 +1187,7 @@ notebook
 (`colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb`, integrator
 `baoab_cfc_lowrank`), not from the L=8 run the rest of this note studies. Their
 interpretation for the ladder is in
-[`depth_ladder/README.md`](depth_ladder/README.md);
+[`depth_ladder/README.md`](../depth_ladder/README.md);
 what is recorded here is the instrument and what it has read.
 
 ### 18.1 What it measures, and why the diagonal proxy is not enough
@@ -1338,8 +1337,8 @@ Provenance. The math in §2-§3 is the exact energy/force of
 `_bound_lowrank`). The diagnostics in §5-§7 are the instruments added to
 `notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_aniso_gaussian_openwebtext_d384.ipynb`
 and `grad_clip_utils.py`; their chronological derivation and the underlying data
-are companion note `CfC_BAOAB_Integrator_and_Mitigations.md`
-(see [this link](CfC_BAOAB_Integrator_and_Mitigations.md)) §35-§41. All five
+are in §35-§41 of the training-instabilities record, from
+[`First_Replays_Spike_Capture_and_Resumable_Training.md`](First_Replays_Spike_Capture_and_Resumable_Training.md) on ([the index](README.md)). All five
 figures are produced by `figures/_make_diagnostic_programme_figs.py`: the well
 and force panels are exact evaluations of the potential, and the mode-profile,
 per-row, and occupancy panels are the literal replay numbers from the four

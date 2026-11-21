@@ -422,6 +422,6 @@ PPL projections are based on the d=384 phase-over-phase reduction pattern (Phase
 
 - [Fock-PARFLM\_Scale-Up\_Comparative\_Experiments.md](Fock-PARFLM_Scale-Up_Comparative_Experiments.md) — parameter counts and architecture comparison with GPT-2
 - [Fock-PARFLM\_d384\_Training\_Results\_OpenWebText.md](Fock-PARFLM_d384_Training_Results_OpenWebText.md) — d=384 training results (reference point for scale comparison)
-- [Training\_Instabilities\_in\_Fock-PARFLM\_with\_structured\_V\_theta.md](Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md) — gradient spike analysis and cascade mechanism
+- [training_instabilities/README.md](training_instabilities/README.md) — gradient spike analysis and cascade mechanism
 - [Fock-PARFLM\_Scale-Up\_Gamma\_Sweep\_Results\_and\_Damping\_Regime\_Analysis.md](Fock-PARFLM_Scale-Up_Gamma_Sweep_Results_and_Damping_Regime_Analysis.md) — gamma sweep results and dimension-dependent phase transition
 - [Geodesic\_Preservation\_Experiment.md](Geodesic_Preservation_Experiment.md) — geodesic residual analysis and PPL-geodesic coincidence

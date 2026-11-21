@@ -335,7 +335,7 @@ the isotropic-Gaussian d384 history, the gamma sweeps, both
 Aniso-Gaussian $+$ Fock-Reg OWT arms — was diagnosed purely from
 downstream symptoms (raw gradient-norm spikes, watchdog reload
 counts, EMA thresholds in
-[Training Instabilities](Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md)).
+[Training Instabilities](training_instabilities/README.md)).
 That is monitoring the effect, not the mechanism, and it is a real
 gap in the original methodology, not a subtlety to gloss over.
 

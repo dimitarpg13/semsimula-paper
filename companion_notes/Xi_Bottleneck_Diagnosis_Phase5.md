@@ -4,7 +4,7 @@
 **Scope:** diagnosing and isolating the capacity bottleneck that causes the Gaussian-well Fock-PARFLM v2.1 to plateau at PPL ~222 on OpenWebText, and defining the experimental protocol to resolve it.
 **Companion docs:**
 
-- [`Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`](./Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md) -- stability fixes (LR, watchdog, sigma/precision caps).
+- [`training_instabilities/README.md`](./training_instabilities/README.md) -- stability fixes (LR, watchdog, sigma/precision caps).
 - [`Structured_VTheta_Design_and_Theory.md`](./Structured_VTheta_Design_and_Theory.md) -- structured $V_\theta$ theory and the Gaussian/SARF family.
 - **Implementation:**
   - Diagnostics module: [`notebooks/conservative_arch/parf/xi_bottleneck_diagnostics.py`](../notebooks/conservative_arch/parf/xi_bottleneck_diagnostics.py).
@@ -1089,5 +1089,5 @@ penalty acts on the output-near state that the last layer's potential governs.
 
 - Gueorguiev, D. (2026). *Semantic Simulation: A Prescriptive Lagrangian Framework for Efficient Semantic Inference.*
 - [`Structured_VTheta_Design_and_Theory.md`](./Structured_VTheta_Design_and_Theory.md) -- structured $V_\theta$ derivations, attractor interpretability, $K_{\text{mix}}$ selection, and §14 depth-conditioning theory.
-- [`Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`](./Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md) -- stability fixes applied in Phase 5.
+- [`training_instabilities/README.md`](./training_instabilities/README.md) -- stability fixes applied in Phase 5.
 - [`SARF_Anchor_Placement_From_Converged_Gaussian_Centres.md`](./SARF_Anchor_Placement_From_Converged_Gaussian_Centres.md) -- anchor-placement methodology (uses converged centres from the winning arm).

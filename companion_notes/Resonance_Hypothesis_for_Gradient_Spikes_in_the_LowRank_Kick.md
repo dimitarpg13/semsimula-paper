@@ -21,7 +21,7 @@ refutation itself, which is recorded in §4 and §5 and remains valid.
 ## 1. The observation
 
 Stage 2 of the rank-selection procedure (see
-`Curvature_Diagnostics_and_Rank_Selection_for_Aniso_Gaussian_Vtheta.md` §7.3)
+`training_instabilities/Curvature_Diagnostics_and_Rank_Selection_for_Aniso_Gaussian_Vtheta.md` §7.3)
 was run against the step-87196 spikebatch capture with
 `replay_rank_truncation_ablation`. Each arm replays the identical captured
 batch with every realised $B_k$ replaced by its rank-$r'$ SVD truncation.
@@ -77,7 +77,7 @@ truncation. Only the gradient is discontinuous.
 The working account of these spikes has been a magnitude one: the low-rank
 curvature channel grows too sharp, and sharpness drives the gradient. That
 account has never sat comfortably with the bracket measurement in
-`CfC_BAOAB_Integrator_and_Mitigations.md` §33, which found
+`training_instabilities/L8_Runs_and_the_Bracketing_Result.md` §33, which found
 $\sigma_{\max}(B_k)^2$ — the very quantity the sharpness story indicts —
 elevated by only +1% to +24%, and non-monotonically, between a healthy
 checkpoint and both hard-trigger snapshots. §34.4 drew the reasonable
@@ -354,7 +354,7 @@ originally did. The weight $g_k$ — defined in §3 — is a per-well,
 *unnormalised* value at a single token. "Exponent occupancy" already means
 something else in these notes — `live_frac`, the fraction of token-slots per
 bank whose exponent clears an underflow cutoff, measured in
-`CfC_BAOAB_Integrator_and_Mitigations.md` §39.3. That is a count over a
+`training_instabilities/Two_Failure_Modes_and_the_Token_Minority_Conjecture.md` §39.3. That is a count over a
 population, not a weight. Both derive from $e_k$, and neither is the
 normalised *responsibility* of the log-sum-exp quadratic family. All three
 are now defined and contrasted in

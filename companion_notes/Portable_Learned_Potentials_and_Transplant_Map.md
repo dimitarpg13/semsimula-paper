@@ -254,7 +254,7 @@ With free centres, the centres are read from the context, the context is built f
 
 ### 10.2 The initialisation scale
 
-A badly scaled potential at step 0 drives a large gradient through any penalty on its size and destabilises training; a fresh unstructured MLP potential averaged about 581 against 1.9–8.8 for the structured variants (first version §8.2, `Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`). A harvested bank is trained, so its scale is set; the gate (§15, gate 1) checks that the consumer's states put it in the same range as the producer's. The Gen 3 range has not been measured and should be read off the producer before any transplant.
+A badly scaled potential at step 0 drives a large gradient through any penalty on its size and destabilises training; a fresh unstructured MLP potential averaged about 581 against 1.9–8.8 for the structured variants (first version §8.2, `training_instabilities/Fixes_Watchdog_and_Residual_Risk.md`). A harvested bank is trained, so its scale is set; the gate (§15, gate 1) checks that the consumer's states put it in the same range as the producer's. The Gen 3 range has not been measured and should be read off the producer before any transplant.
 
 ---
 
@@ -429,7 +429,7 @@ Cheaper first steps on the CPU, before any of these: the init-scale and use gate
 **Frame and stability.**
 - `SARF_Anchor_Placement_From_Converged_Gaussian_Centres.md` — anchored wells.
 - `Structural_Stability_of_Learned_Potentials_in_Semantic_Simulation.md` — gauge equivalence, perturbation under data shifts, basin protection.
-- `Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md` — the init-scale pathology.
+- `training_instabilities/README.md` — the init-scale pathology.
 - `Lessons_from_AlphaFold.md` — the "never fold from scratch" analogue.
 
 **Superseded tooling** (first version, pre-ladder): `colab_fock_depthcond_vtheta_openwebtext.ipynb`, `colab_fock_ostep_gammaT_sweep_openwebtext.ipynb`, `colab_fock_ostep_langevin_openwebtext.ipynb`, `fock_ostep_setup.py`. The current tooling is the ladder notebook named in §2.

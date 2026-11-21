@@ -5,7 +5,7 @@ Companion to
 (the confinement *programme*),
 [`Diagnostic_Programme_in_CfC_BAOAB_Integrator.md`](Diagnostic_Programme_in_CfC_BAOAB_Integrator.md)
 (the spike-forensics *pipeline*), and
-[`CfC_BAOAB_Integrator_and_Mitigations.md`](CfC_BAOAB_Integrator_and_Mitigations.md)
+[the training-instabilities record](README.md)
 (the chronological record, §28-§34 and §41-§42).
 
 Where the confinement note asks *how do we stop the curvature running away* and
@@ -64,7 +64,7 @@ the integrator treats them differently:
 | reachable curvature | 0.0052 (1.93x above its own init) | ambient $\sigma_{\max}(B_k)^2 \approx 283$ at $p_{50}$ |
 | share of the exponent | under 0.1% | `lr_term_share` ≈ 0.999 |
 
-![Panel A: the reachable curvature of each channel on a log axis, showing the diagonal capped at 2/d while the low-rank channel reaches ambient percentiles of 283 to 6362 -- a roughly 54,000x gap. Panel B: which channel each integrator treats exactly versus by explicit kick.](figures/cr_two_channels.png)
+![Panel A: the reachable curvature of each channel on a log axis, showing the diagonal capped at 2/d while the low-rank channel reaches ambient percentiles of 283 to 6362 -- a roughly 54,000x gap. Panel B: which channel each integrator treats exactly versus by explicit kick.](../figures/cr_two_channels.png)
 
 *Figure 1. The asymmetry, at the measured values. Panel A's low-rank percentiles
 are the healthy step-27,000 column of the bracketing table in the Mitigations
@@ -271,7 +271,7 @@ the normalised eigenvalue distribution of $B_k B_k^\top$), and it has exactly th
 two limits the rank question needs: $\mathrm{PR} = 1$ when all the budget sits in
 one direction, $\mathrm{PR} = r$ when the spectrum is flat.
 
-![Panel A: four example spectra at rank 4 -- flat, mild decay, steep decay and rank-1 -- plotted as sigma i over sigma 1, each annotated with its exact participation ratio. Panel B: the same four PR values as horizontal bars against the decision bands used by the tooling.](figures/cr_spectrum_pr.png)
+![Panel A: four example spectra at rank 4 -- flat, mild decay, steep decay and rank-1 -- plotted as sigma i over sigma 1, each annotated with its exact participation ratio. Panel B: the same four PR values as horizontal bars against the decision bands used by the tooling.](../figures/cr_spectrum_pr.png)
 
 *Figure 2. Participation ratio on four representative spectra at rank 4. The
 values are exact evaluations of the formula above, verified against a closed-form
@@ -336,7 +336,7 @@ $$\frac{b^2}{r} \le \sigma_{\max}(B_k)^2 \le b^2,$$
 with the lower bound attained by a flat spectrum and the upper by a degenerate
 one.
 
-![Panel A: sigma max squared against rank for a flat spectrum versus a degenerate spectrum under a binding Frobenius cap, with the region between them shaded as the range rank buys. Panel B: the same quantity on a log axis as the worst-case parameter-gradient proxy, annotated to show rank 4 to 8 halving it for a flat spectrum while a degenerate spectrum gains nothing.](figures/cr_rank_budget.png)
+![Panel A: sigma max squared against rank for a flat spectrum versus a degenerate spectrum under a binding Frobenius cap, with the region between them shaded as the range rank buys. Panel B: the same quantity on a log axis as the worst-case parameter-gradient proxy, annotated to show rank 4 to 8 halving it for a flat spectrum while a degenerate spectrum gains nothing.](../figures/cr_rank_budget.png)
 
 *Figure 3. Exact evaluations of the two bounds above, at a Frobenius budget of
 1.0. Panel B re-labels the same curve as the spike-magnitude proxy, since §3 of
@@ -391,7 +391,7 @@ be tight. Layers 0-2 carry meaningful salience while layers 5-6 sit three orders
 of magnitude lower (diagnostic programme §8); wells differ in how many contexts
 they serve.
 
-![Panel A: participation ratio against the rank the model is given, for three synthetic wells whose intrinsic dimensionality is about 2, 6 and 11, each tracking the diagonal until it saturates, with stars marking the knee. Panel B: an illustrative histogram of per-well participation ratio at rank 4, showing a large over-served population near PR 1.4 and a starved tail near PR 3.5.](figures/cr_rank_selection.png)
+![Panel A: participation ratio against the rank the model is given, for three synthetic wells whose intrinsic dimensionality is about 2, 6 and 11, each tracking the diagonal until it saturates, with stars marking the knee. Panel B: an illustrative histogram of per-well participation ratio at rank 4, showing a large over-served population near PR 1.4 and a starved tail near PR 3.5.](../figures/cr_rank_selection.png)
 
 *Figure 4. Panel A is the knee-detection signal the procedure below keys on
 (synthetic, showing the shape to look for, not measured data). Panel B is an
@@ -495,7 +495,7 @@ parameters.
 > metric cannot report what the tail directions contribute. The loss column
 > still gives a usable reading — each discarded direction costs real
 > perplexity — but the spike behaviour it exposed is tracked in
-> [Resonance_Hypothesis_for_Gradient_Spikes_in_the_LowRank_Kick.md](Resonance_Hypothesis_for_Gradient_Spikes_in_the_LowRank_Kick.md).
+> [Resonance_Hypothesis_for_Gradient_Spikes_in_the_LowRank_Kick.md](../Resonance_Hypothesis_for_Gradient_Spikes_in_the_LowRank_Kick.md).
 > Run that note's D1 control before reading a Stage 2 result as evidence
 > about rank, and prefer a healthy checkpoint to a spike capture.
 >

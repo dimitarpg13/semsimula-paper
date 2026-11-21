@@ -7,7 +7,7 @@
 - the results on code, OpenWebText and TinyStories, and what they imply for the parameter budget;
 - whether the wells could share one core for their shapes, which would shrink the bank (they cannot at layer 0).
 
-The raw numbers and run records live in the [protocol note](depth_ladder/README.md) ([`p-dead-wells`](depth_ladder/Code_Dead_Wells_and_Screens.md), [`p-l8-code-result`](depth_ladder/Code_Depth_Runs.md), [`p-k2-l8-code-setup`](depth_ladder/Code_Depth_Runs.md)). The rank of each well's shape is a separate question, covered in [Curvature_Diagnostics_and_Rank_Selection_for_Aniso_Gaussian_Vtheta.md](Curvature_Diagnostics_and_Rank_Selection_for_Aniso_Gaussian_Vtheta.md).
+The raw numbers and run records live in the [protocol note](depth_ladder/README.md) ([`p-dead-wells`](depth_ladder/Code_Dead_Wells_and_Screens.md), [`p-l8-code-result`](depth_ladder/Code_Depth_Runs.md), [`p-k2-l8-code-setup`](depth_ladder/Code_Depth_Runs.md)). The rank of each well's shape is a separate question, covered in [Curvature_Diagnostics_and_Rank_Selection_for_Aniso_Gaussian_Vtheta.md](training_instabilities/Curvature_Diagnostics_and_Rank_Selection_for_Aniso_Gaussian_Vtheta.md).
 
 **Status, 2026-11-04:** all the minimum-well-count measurements planned for this note are done: use and force shares on eight models, the temperature sweep, removal, one training arm with two wells (K2-L8-CODE, full run) and seven corpus fits on three models and two corpora. Not run: a four-well arm, a two-well arm at two layers and the fit on TinyStories (section 9). **Added 2026-11-15:** section 8, whether the wells can share one precision core (measured 2026-11-13 and 11-14 on SO-OWT; no).
 
@@ -363,7 +363,7 @@ In words: at layer 0 each well's shape is its own per-token reading of the conte
 
 - **A four-well arm at $L = 8$ on code.** It would test the fit's knee directly and say how much of the 0.056 nats comes back.
 - **$K_{\min}$ at two layers** (K2-CODE, $L = 2$, not yet scheduled). The fit predicts that depth substitutes for wells, so two wells should cost more at two layers than at eight.
-- **Rank at two wells.** K2-L8-CODE's wells use about 3 of their 4 rank directions (participation ratio 3.03), with the precision cap binding. Whether rank 6 helps is covered in the [rank note](Curvature_Diagnostics_and_Rank_Selection_for_Aniso_Gaussian_Vtheta.md).
+- **Rank at two wells.** K2-L8-CODE's wells use about 3 of their 4 rank directions (participation ratio 3.03), with the precision cap binding. Whether rank 6 helps is covered in the [rank note](training_instabilities/Curvature_Diagnostics_and_Rank_Selection_for_Aniso_Gaussian_Vtheta.md).
 - **More corpora for the fit.** TinyStories has not been fitted, and OpenWebText has one model.
 - **From the fit to a dimension.** Each doubling's gain is a quarter to a half of the previous one on layer 0's input. Reading that as $K^{-2/d_{\mathrm{eff}}}$ (section 6) would need the loss to scale as the squared approximation error, which has not been shown.
 - **From the fit to the training loss.** There is one comparison point (section 7). More arms at other $K$ would show whether the fit's gains predict what training loses.

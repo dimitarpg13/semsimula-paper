@@ -2,7 +2,7 @@
 
 **Date:** September 2026
 **Author context:** SemSimula / Fock-PARFLM independent research program
-**Companion to:** [Fock Mechanism Engagement: MLP vs Gaussian V_theta](Fock_Mechanism_Engagement_MLP_vs_Gaussian_VTheta.md), [Training Instabilities in Fock-PARFLM with structured V_theta](Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md), [CfC-BAOAB Integrator and Mitigations](CfC_BAOAB_Integrator_and_Mitigations.md), [Progressive Curvature Confinement for Aniso Gaussian V_theta](Progressive_Curvature_Confinement_for_Aniso_Gaussian_Vtheta.md), [Reducing the Information Bottleneck in Multi-Channel Xi SPLM](Reducing_Information_Bottleneck_In_Multi-Channel_Xi_SPLM.md)
+**Companion to:** [Fock Mechanism Engagement: MLP vs Gaussian V_theta](Fock_Mechanism_Engagement_MLP_vs_Gaussian_VTheta.md), [Training Instabilities in Fock-PARFLM with structured V_theta](training_instabilities/README.md), [CfC-BAOAB Integrator and Mitigations](training_instabilities/README.md), [Progressive Curvature Confinement for Aniso Gaussian V_theta](training_instabilities/Progressive_Curvature_Confinement_for_Aniso_Gaussian_Vtheta.md), [Reducing the Information Bottleneck in Multi-Channel Xi SPLM](Reducing_Information_Bottleneck_In_Multi-Channel_Xi_SPLM.md)
 
 ---
 

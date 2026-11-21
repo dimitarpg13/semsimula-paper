@@ -727,7 +727,7 @@ The practical consequences are direct:
   conservative dynamics.
 
 **Training instabilities.**
-- `Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`
+- `training_instabilities/README.md`
   — instabilities arising from the potential structure and from
   embedding spikes (distinct from the stability theory here, which
   concerns the final converged landscape rather than the training path).

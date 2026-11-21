@@ -40,7 +40,7 @@ parameter delta of a few percent to ~2x, discussed per-tier below.
 **Key architectural fact:** Fock-PARFLM here uses **untied** input/output
 embeddings (`tie_embeddings=False`). This is a hard requirement, not an
 arbitrary choice — see
-[Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md](Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md)
+[training_instabilities/README.md](training_instabilities/README.md)
 §22 and the D0.4 diagnostic in
 [Xi_Bottleneck_Diagnosis_Phase5.md](Xi_Bottleneck_Diagnosis_Phase5.md) §8.4–§9.1:
 tied embeddings caused a long-tail pathology where the rarest-token
@@ -396,7 +396,7 @@ unclaimed memory/speed lever on an H100:
   `register_salience_threshold`), and `tau_create_init` — plus a
   documented gradient-spike history on the `reverse_channel_scale`
   parameter group (see
-  [Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md §20](Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md#20-remediation-per-group-clipping-vs-global-norm-clipping)).
+  [Embedding_Spikes.md §20](training_instabilities/Embedding_Spikes.md#20-remediation-per-group-clipping-vs-global-norm-clipping)).
   None of these are in `autocast`'s default fp32-forced op list, so if
   any turn out to be precision-sensitive under bf16, the fix is to wrap
   just those submodules in `torch.autocast(..., enabled=False)` to force
@@ -501,7 +501,7 @@ candidate is mostly finished.
   configuration (5 Xi channels, depth-conditioned V_theta, output bias)
   but the qualitative conclusions about relative parameter efficiency
   carry over.
-- [Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md](Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md) —
+- [training_instabilities/README.md](training_instabilities/README.md) —
   documents the tied-embedding long-tail pathology that motivates the
   untied-embedding requirement quantified in §2 and §4.1 above.
 - [Xi_Bottleneck_Diagnosis_Phase5.md](Xi_Bottleneck_Diagnosis_Phase5.md) §8.4 —
@@ -515,6 +515,6 @@ candidate is mostly finished.
   with `d` and `L` — that applies to the plain Fock-PARFLM causal-LM
   training path in `train_fock.py`, which has no second-order autograd
   graph in scope.
-- [Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md](Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md) §20 —
+- [Embedding_Spikes.md](training_instabilities/Embedding_Spikes.md) §20 —
   per-group gradient clipping and the `reverse_channel_scale` spike
   history referenced in §6.5's bf16 precision-sensitivity discussion.

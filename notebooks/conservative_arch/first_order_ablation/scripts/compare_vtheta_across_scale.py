@@ -12,7 +12,7 @@ before any first-order counterpart exists at this scale?
 
 This is a same-order, cross-scale probe -- a cheap proxy for whether the
 "second-order gradient cascade" documented in
-companion_notes/Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md
+companion_notes/training_instabilities/README.md
 (Sec 23-25) and paper_v5/sections/17e_scaling_up.tex leaves a visible
 imprint on V_theta's own shape even in runs that never hit the watchdog
 (the local OWT gamma-sweep checkpoints here are short, ~3k-step runs,

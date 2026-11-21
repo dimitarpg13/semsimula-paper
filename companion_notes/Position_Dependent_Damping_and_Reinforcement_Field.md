@@ -11,7 +11,7 @@
 > - **SPLM gamma framework:** [`Determining_optimal_gamma_for_SPLM.md`](Determining_optimal_gamma_for_SPLM.md)
 > - **Fock mechanism engagement:** [`Fock_Mechanism_Engagement_MLP_vs_Gaussian_VTheta.md`](Fock_Mechanism_Engagement_MLP_vs_Gaussian_VTheta.md)
 > - **The well-gap / order-gap analysis and the three optimal dampings:** [`Corpus_Statistics_and_the_First_vs_Second_Order_Well_Gap.md`](Corpus_Statistics_and_the_First_vs_Second_Order_Well_Gap.md) (§13 and §9.5 below)
-> - **The gradient-cascade instability:** [`Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`](Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md)
+> - **The gradient-cascade instability:** [`training_instabilities/README.md`](training_instabilities/README.md)
 > - **Model code:** [`notebooks/conservative_arch/parf/model_parf.py`](../notebooks/conservative_arch/parf/model_parf.py)
 
 > **Superseded for the CfC/BAOAB models, 2026-10-21.** The theory, implementation and results of position-dependent damping in the CfC/BAOAB models are now in the technical report [`Tech_Report_Position_Dependent_Damping_CfC_BAOAB.md`](Tech_Report_Position_Dependent_Damping_CfC_BAOAB.md). This note is kept unchanged as the record the protocol's pre-registrations cite: §1–§10 concern the Gen 1 models and their damped velocity-Verlet integrator; §11–§12 are the first CfC/BAOAB material, which the report restates and extends.
@@ -800,7 +800,7 @@ stability, which is a separate axis developed after this note was
 drafted, in
 [`Corpus_Statistics_and_the_First_vs_Second_Order_Well_Gap.md`](Corpus_Statistics_and_the_First_vs_Second_Order_Well_Gap.md)
 §13 and
-[`Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`](Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md).
+[`training_instabilities/README.md`](training_instabilities/README.md).
 Filling that gap surfaces a real tension, not just a missing
 cross-reference, and it is worth recording here because it bears directly
 on which parameterisation of §4 is actually safe to run.
@@ -874,7 +874,7 @@ diagnostic).
 > **not on the current agenda** -- the immediate lever for the gradient
 > cascade remains the already-working combination of per-group gradient
 > clipping and the EMA watchdog
-> (`Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md`).
+> (`training_instabilities/README.md`).
 > It is written down here so the reasoning -- including two failure modes
 > §9.5 does not cover -- is not lost.
 
@@ -883,7 +883,7 @@ with the cascade, and answers that the potential-derived design of §4.1
 concentrates risk at well centers. The complementary question is whether
 $\gamma(h)$ could be turned around and used **on purpose** to suppress the
 training-time gradient spikes of
-`Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md` §26 and
+`training_instabilities/CfC_BAOAB_Propagator_and_the_Cascade.md` §26 and
 `Determining_optimal_gamma_for_Fock-PARFLM.md` §12.5. The tentative answer
 is *yes in principle, but not with any parameterisation §4 currently
 recommends, and only after clearing two failure modes*.
@@ -959,7 +959,7 @@ pays off if it clears failure mode B.
 > **Priority note.** Unlike §9.6, this subsection *is* on the agenda,
 > because it fixes the order in which two already-planned pieces of work
 > should land. The CfC/BAOAB propagator
-> (`Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md` §24)
+> (`training_instabilities/CfC_BAOAB_Propagator_and_the_Cascade.md` §24)
 > is the next major implementation item; this subsection records what it
 > changes for $\gamma(h)$ and why $\gamma(h)$ must come *after* it.
 

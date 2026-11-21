@@ -29,7 +29,7 @@
 This document presents the results of a controlled ablation study comparing the Fock-PARFLM architecture with and without the reverse channel mechanism at hidden dimension $d{=}384$ on OpenWebText. The comparison provides direct evidence that the Fock mechanism — the register-based particle creation/destruction channel with reverse information flow — is not a marginal architectural decoration but the essential component responsible for the model's language modelling capability.
 
 **Companion documents:**
-- [Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md](Training_Instabilities_in_Fock-PARFLM_with_structured_V_theta.md) — gradient spike taxonomy and per-group clipping analysis
+- [training_instabilities/README.md](training_instabilities/README.md) — gradient spike taxonomy and per-group clipping analysis
 - [Fock-PARFLM_Scale-Up_Gamma_Sweep_Results_and_Damping_Regime_Analysis.md](Fock-PARFLM_Scale-Up_Gamma_Sweep_Results_and_Damping_Regime_Analysis.md) — gamma sweep results across scales
 - [Geodesic_Preservation_Experiment.md](Geodesic_Preservation_Experiment.md) — geodesic residual analysis framework
 - [Improving_the_Fock_Mechanism_to_match_Attention.md](Improving_the_Fock_Mechanism_to_match_Attention.md) — theoretical analysis of the reverse channel design

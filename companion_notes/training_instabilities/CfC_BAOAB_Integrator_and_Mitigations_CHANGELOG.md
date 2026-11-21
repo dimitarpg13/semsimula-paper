@@ -1,8 +1,8 @@
 # Revision History — CfC/BAOAB Integrator and Mitigations
 
 Extracted from
-[`CfC_BAOAB_Integrator_and_Mitigations.md`](CfC_BAOAB_Integrator_and_Mitigations.md)
-on 11 September 2026 (see that note's §52.2 for the reasoning). The trailer had
+[`CfC_BAOAB_Integrator_and_Mitigations.md`](https://github.com/dimitarpg13/semsimula-paper/blob/5551315/companion_notes/CfC_BAOAB_Integrator_and_Mitigations.md)
+on 11 September 2026 (see that note's §52.2 for the reasoning, now in [`Curvature_Instruments_and_the_Split_Plan.md`](Curvature_Instruments_and_the_Split_Plan.md)). That note was itself split into this folder on 2026-11-21; [the index](README.md) maps its sections to their notes. The trailer had
 grown to 440 lines and 26 chained "Previously updated" entries in a single
 paragraph — 7.6% of the parent document — and contains no section anchors, so
 nothing links into it and moving it breaks no cross-reference.
@@ -412,3 +412,38 @@ A-stable — replacing the earlier overstated "no wall at all" claim. §30 is no
 the as-built description (frozen/detached mode geometry, mode curvature
 $\kappa_j = \lambda_j$ of $L$ rather than a Rayleigh quotient of $H$, and the
 soft $D_a$ + nonlinear residual demoted to the explicit kick).
+
+---
+
+## Latest entry of the parent note (moved here 2026-11-21)
+
+The note's own last revision entry, kept at its foot until the note was split into this folder:
+
+Last updated: 9 September 2026, night (§51: AdamW was built from a flat
+parameter list, so `weight_decay=0.01` was hitting
+`creation_gate_qkv.log_tau` -- and decoupled decay on a
+*log*-parameterised temperature drives $\tau$ toward 1 from an
+initialisation of 8.0. Integrating the real WSD schedule with zero loss
+gradient, pure decay takes $\tau$ from 8.0 to 5.42 by step 72k (and 5.11
+by 100k), which lands between the observed register-14 minimum of 5.21
+and the pool median of 6.48 -- i.e. the pool-wide cooling §49 noted but
+did not explain is a config artifact, and decay accounts for ~70% of the
+register-14 drift §49.5 read as self-reinforcing divergence. What
+survives: the *differential* is entirely loss-gradient (median +0.0151,
+resisting decay; register 14 −0.0073, not resisting), so register 14 is
+the register that fails to resist a pool-wide pull rather than one being
+actively driven away, and §49.3's per-step gradient concentration is
+untouched. 31 of 32 registers having loss gradients that push $\tau$ *up*
+is also direct evidence against reading §50.2's "no interior equilibrium"
+as a universal runaway -- that result holds only at zero decay, and any
+restoring term anchored at $\ell_0$ creates a stable interior fixed point;
+this run had one, aimed at the wrong target. Fixed via `NO_DECAY_1D`,
+excluding 1-D parameters (biases, norm gains, `log_tau`,
+`reverse_channel_scale`, `logit_scale`, `depth_code` -- almost exactly
+the set that dominates every captured spike) from weight decay, with
+`_remap_optim_state` carrying Adam moments across the param-group split:
+both load sites previously hid a `ValueError` behind `except: pass` and
+would have silently discarded every moment at step ~72k, and a
+plausible-looking sequential re-index loads without error while
+mis-assigning 4 of 6 parameters, so the remap is verified exact against a
+negative control. The §49.8 $\tau$ floor is now expected never to bind.

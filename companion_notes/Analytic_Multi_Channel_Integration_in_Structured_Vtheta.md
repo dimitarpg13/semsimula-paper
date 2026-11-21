@@ -2,7 +2,7 @@
 
 **Date:** September 2026
 **Author context:** SemSimula / Fock-PARFLM independent research program
-**Companion to:** [MLP V_theta Fock-PARFLM on OWT d384](MLP_VTheta_Fock-PARFLM_on_OWT_d384.md), [Structured V_theta Design and Theory](Structured_VTheta_Design_and_Theory.md), [CfC-BAOAB Integrator and Mitigations](CfC_BAOAB_Integrator_and_Mitigations.md), [Progressive Curvature Confinement for Aniso Gaussian V_theta](Progressive_Curvature_Confinement_for_Aniso_Gaussian_Vtheta.md)
+**Companion to:** [MLP V_theta Fock-PARFLM on OWT d384](MLP_VTheta_Fock-PARFLM_on_OWT_d384.md), [Structured V_theta Design and Theory](Structured_VTheta_Design_and_Theory.md), [CfC-BAOAB Integrator and Mitigations](training_instabilities/README.md), [Progressive Curvature Confinement for Aniso Gaussian V_theta](training_instabilities/Progressive_Curvature_Confinement_for_Aniso_Gaussian_Vtheta.md)
 
 ---
 

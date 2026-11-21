@@ -24,7 +24,7 @@
 > (the refinement result),
 > [`Fock_Mechanism_Efficiency_Across_Layer_Depth.md`](Fock_Mechanism_Efficiency_Across_Layer_Depth.md)
 > (what the register path is worth),
-> [`CfC_BAOAB_Integrator_and_Mitigations.md`](CfC_BAOAB_Integrator_and_Mitigations.md)
+> [`training_instabilities/README.md`](training_instabilities/README.md)
 > (the integrator itself).
 
 ---
