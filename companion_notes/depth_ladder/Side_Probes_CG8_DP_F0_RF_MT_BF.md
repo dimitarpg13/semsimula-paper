@@ -130,9 +130,29 @@ $$
 
 taken over the active registers at one layer and position. Three things about this quantity are easy to state wrongly, and all three matter for how the result reads.
 
-- It is the **size of the change** in the force vector, so it is unsigned. A rotation or an increase would register as readily as a decrease; calling it a force *drop* asserts a direction the measurement does not carry. Nor is it a displacement, a word the book uses for the centered aspect positions of the signature matrix.
-- The read is a **softmax over the active registers**, so withholding $k$ also redistributes weight across the rest. $\delta_k$ therefore mixes the register's own contribution with the reweighting of the others, and is not an additive share. With one register dropped from 32 the effect is mild, but the right reading is "how much the force moves when $k$ is withheld", not "how much force $k$ supplied".
+- It is the **size of the change** in the force vector, so it is unsigned. A rotation or an increase would register as readily as a decrease.
 - The force is recomputed, not observed: the channel is re-run under the ablated mask.
+- The read is a **softmax over the active registers**, so withholding $k$ also redistributes weight across the rest. $\delta_k$ therefore mixes the register's own contribution with the reweighting of the others, and is not an additive share.
+
+That last point is the one worth seeing in full, because it is what stops $\delta_k$ from being a clean attribution. The reverse channel is the read port of [Fock_Mechanism_v2.1_Principle_of_Operation.md](../Fock_Mechanism_v2.1_Principle_of_Operation.md) §6.1, implemented in `ReverseChannel.forward` of [`parf/model_fock_parf_v2.py`](../../notebooks/conservative_arch/parf/model_fock_parf_v2.py). Token $i$ queries the registers, each register offers a key and a value, and the mask selects which may be read:
+
+$$
+q_i = W_Q \mathrm{LN}(h_i), \qquad \kappa_k = W_K \mathrm{LN}(r_k), \qquad u_k = W_V \mathrm{LN}(r_k).
+$$
+
+The scores are cosines between query and key, scaled by a clamped learnable temperature in the QK-normalised arms and by $1/\sqrt{d_k}$ otherwise. Inactive registers are not dropped from the array; their scores are set to $-10^9$ before the softmax, which is the same thing numerically:
+
+$$
+\alpha_{ik}(a) = \frac{a_k \exp(s_{ik})}{\sum_{j} a_j \exp(s_{ij})}, \qquad s_{ik} = \eta \frac{q_i \cdot \kappa_k}{\lVert q_i\rVert \lVert \kappa_k\rVert}, \qquad Q_i(a) = \sum_{k} \alpha_{ik}(a) u_k .
+$$
+
+The denominator is where the coupling lives. Switching $a_k$ from 1 to 0 removes one term from the numerator *and* shrinks the denominator, so every surviving weight grows by the common factor $1/(1 - \alpha_{ik})$. The ablated force is therefore
+
+$$
+Q_i(a^{(-k)}) = \frac{Q_i(a) - \alpha_{ik} u_k}{1 - \alpha_{ik}}, \qquad\text{so}\qquad \delta_k = \frac{\alpha_{ik}}{1 - \alpha_{ik}} \lVert u_k - Q_i(a) \rVert .
+$$
+
+So $\delta_k$ is not $\alpha_{ik}\lVert u_k\rVert$, the register's own term. It measures how far that register's value sits from the mixture the token was already receiving, amplified as the register's own weight approaches one. A register carrying exactly the consensus value moves the force not at all, however salient it is. With one register withheld out of 32 the amplification factor is close to 1, so the two readings rarely diverge much, but the right reading is "how much the force moves when $k$ is withheld", not "how much force $k$ supplied".
 
 The two rank vectors are then correlated. Writing $R(\cdot)$ for the rank within the position's $N$ active registers,
 
