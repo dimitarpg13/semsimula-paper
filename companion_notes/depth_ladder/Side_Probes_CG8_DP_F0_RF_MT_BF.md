@@ -128,7 +128,23 @@ $$
 \delta_k = \lVert Q(a) - Q(a^{(-k)}) \rVert ,
 $$
 
-and the reported number is the Spearman rank correlation $\rho(\sigma, \delta)$ taken across the active registers at one position, then averaged over positions. Positions with fewer than four active registers are skipped. A positive $\rho$ would mean that a more salient register contributes more force, which is what an intensity reading predicts.
+taken over the active registers at one layer and position. Three things about this quantity are easy to state wrongly, and all three matter for how the result reads.
+
+- It is the **size of the change** in the force vector, so it is unsigned. A rotation or an increase would register as readily as a decrease; calling it a force *drop* asserts a direction the measurement does not carry. Nor is it a displacement, a word the book uses for the centered aspect positions of the signature matrix.
+- The read is a **softmax over the active registers**, so withholding $k$ also redistributes weight across the rest. $\delta_k$ therefore mixes the register's own contribution with the reweighting of the others, and is not an additive share. With one register dropped from 32 the effect is mild, but the right reading is "how much the force moves when $k$ is withheld", not "how much force $k$ supplied".
+- The force is recomputed, not observed: the channel is re-run under the ablated mask.
+
+The two rank vectors are then correlated. Writing $R(\cdot)$ for the rank within the position's $N$ active registers,
+
+$$
+\rho_{\mathrm{pos}} = \mathrm{corr}\lbrack R(\sigma), R(\delta)\rbrack ,
+$$
+
+the ordinary Pearson correlation of the centred ranks, which is what the script evaluates. The classical form $1 - 6\sum_k d_k^2 / (N(N^2-1))$ with $d_k = R(\sigma_k) - R(\delta_k)$ is the same number when no ranks are tied, but it is an identity rather than the implementation: ranks come from a double argsort, so ties are broken in arbitrary order rather than averaged into midranks, and the two forms would then disagree. Exact ties among floating-point values are rare enough that this is a footnote.
+
+Positions with fewer than four active registers are skipped, a filter that almost never fires, since DP1 puts the active fraction at 0.9995 to 1.000 and so $N$ is essentially always 32. Both the mean and the median across positions are recorded; the headline figure is the mean.
+
+A **positive** $\rho$ would mean that a more salient register moves the force more, which is what an intensity reading predicts. The measured values run the other way, and §"Found without pre-registration" below gives the mechanism.
 
 **Calls.**
 
