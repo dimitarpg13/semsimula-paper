@@ -29,6 +29,7 @@
 | §5.13 | the well screen (K4-R6, K2-R6) and whether the wells can share a precision core | [Well_Screen_and_Precision.md](Well_Screen_and_Precision.md) |
 | §5.13 | second order as memory: six probes of the mechanism | [Second_Order_Memory_Probes.md](Second_Order_Memory_Probes.md) |
 | §5.13 | probe 6 in full: which pathway carries recall (equations, code, results on code and OpenWebText) | [Recall_Pathway_Probe.md](Recall_Pathway_Probe.md) |
+| §5.13 | the velocity and the pair force as competing mechanisms: the velocity as a carrier, what each stands in for, the interaction test (book §28) | [Velocity_and_Pair_Force_as_Competing_Mechanisms.md](Velocity_and_Pair_Force_as_Competing_Mechanisms.md) |
 | §5.13 | CPU inference: cost, the memory switches, the bound without the pair force | [CPU_Inference_Benchmark.md](CPU_Inference_Benchmark.md) |
 | §5.15 | Poisson-mode wells: PM1, PM1-cap, PMX | [Poisson_Mode_Wells_PM1_PMX.md](Poisson_Mode_Wells_PM1_PMX.md) |
 | §5.18 | what makes a model refinement-ready (RR) | [Refinement_Readiness_RR.md](Refinement_Readiness_RR.md) |

@@ -4,7 +4,7 @@
 
 **Folders with their own index.**
 
-- [depth_ladder/](depth_ladder/README.md): the depth-ladder programme, the conservative models trained one mechanism at a time against a matched GPT-2; includes the recall pathway probe.
+- [depth_ladder/](depth_ladder/README.md): the depth-ladder programme, the conservative models trained one mechanism at a time against a matched GPT-2; includes the recall pathway probe and the velocity and the pair force as competing mechanisms.
 - [productization/](productization/README.md): making the conservative core cheap to run, stage by stage.
 - [training_instabilities/](training_instabilities/README.md): the training instabilities of Fock-PARFLM with a structured $V_\theta$, and the CfC+BAOAB integrator with its mitigations.
 - [deep_dives/](deep_dives/): long-form Word documents (with PDFs): the SPLM model and code, the structured scalar potential, the Poisson-mode registers and semantic templates, and the Jacobi metric.

@@ -120,6 +120,7 @@ Read 2026-11-21. The model card holds the full tables: [`semsimula-ladder-live-o
   - SR2's pair force carries none of it on OpenWebText either (+0.000).
   - This arm leans more on the velocity. Zeroing the velocity into layer 1 costs +0.111 nats on control tokens, against SR2's +0.064 (paired difference +0.046, se 0.006).
   - Gate 1 of 6b-7 agrees (+3.21 in perplexity against +2.22).
+- **What it means for the competing mechanisms** (book §28): the velocity partly stands in for the pair force; the mathematics, the definitions and the interaction test that would settle it are in [Velocity_and_Pair_Force_as_Competing_Mechanisms.md](../depth_ladder/Velocity_and_Pair_Force_as_Competing_Mechanisms.md).
 
 ## 6. Launch
 

@@ -153,7 +153,7 @@ Change of the loss per token in nats; standard error over windows in brackets.
 
 The figures are made by [`figures/_make_recall_pathway_figs.py`](../figures/_make_recall_pathway_figs.py); Figures 3 and 4 read only the JSON files in [`results/recall_pathway/`](../../notebooks/conservative_arch/scaleup/results/recall_pathway/).
 
-The registered calls of the code run (LR2, LR3) and their verdicts are in §8 of [Second_Order_Memory_Probes.md](Second_Order_Memory_Probes.md). The OpenWebText runs had no calls.
+The registered calls of the code run (LR2, LR3) and their verdicts are in §8 of [Second_Order_Memory_Probes.md](Second_Order_Memory_Probes.md). The OpenWebText runs had no calls. What the velocity readings mean for the competition between the velocity and the pair force is worked out in [Velocity_and_Pair_Force_as_Competing_Mechanisms.md](Velocity_and_Pair_Force_as_Competing_Mechanisms.md).
 
 ## 7. Limits
 
