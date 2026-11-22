@@ -115,7 +115,7 @@ All models have two layers, width $d = 384$, and are trained at matched budgets.
 
 ## 8. Probe 6: which pathway carries the recall?
 
-**Method.** On 16 fresh code windows, cut one pathway at a layer for every recall pair at once, and read the loss change at near and far recall positions against control positions (whose target does not occur earlier in the window).
+**Method.** On 16 fresh code windows, cut one pathway at a layer for every recall pair at once, and read the loss change at near and far recall positions against control positions (whose target does not occur earlier in the window). The problem in equations, the code and the later OpenWebText runs: [Recall_Pathway_Probe.md](Recall_Pathway_Probe.md).
 
 | loss change, nats per token | SO-CODE far recall | SO-CODE control | FO-b-CODE far recall | FO-b-CODE control |
 | --- | ---: | ---: | ---: | ---: |

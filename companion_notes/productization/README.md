@@ -9,7 +9,7 @@
 | [Conservative_Core_Productization_Plan.md](Conservative_Core_Productization_Plan.md) | the Gen 3 conservative core (SR2, K4-R6, K2-R6): the measured gap, the levers with and without retraining, the order of work |
 | [Stage1_CPU_Levers.md](Stage1_CPU_Levers.md) | stage 1 of the plan, measured: where SR2's time goes by component, the levers that need no retraining (layer-1 pruning, `eigh`, folded fused attention) with their checks, the ratios against GPT-2, and the first reading for content-gated context channels |
 | [Stage2_Decoding.md](Stage2_Decoding.md) | stage 2, measured: the incremental decoder and its check, decoding speed and cache size against GPT-2 with a key–value cache, where a decode step's time goes, and `torch.compile` |
-| [Stage3_SR2_Without_Pair_Force.md](Stage3_SR2_Without_Pair_Force.md) | stage 3, set up: SR2 trained without the pair force (SR2-NP), its configuration, build check, calls and launch |
+| [Stage3_SR2_Without_Pair_Force.md](Stage3_SR2_Without_Pair_Force.md) | stage 3, first arm done: SR2 trained without the pair force (SR2-NP), settled 58.51 (+0.3% against SR2); calls, diagnostics, CPU speeds and the model card |
 | [Fock_Inference_Productionization_Plan.md](Fock_Inference_Productionization_Plan.md) | its predecessor, for the Gen 2 Fock arm at eight layers (2026-09-18): the cost model, A100 measurements, the training-speed levers of the 2B-token runs |
 
 ## Related notes elsewhere
