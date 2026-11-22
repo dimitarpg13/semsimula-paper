@@ -1,0 +1,28 @@
+input embedding against output head, semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+50,257 token types in five frequency fifths (Q0 rarest); per fifth the median over its types, and the training-frequency-weighted mean (the loss-relevant average) in brackets
+
+reading                                                Q0               Q1               Q2               Q3               Q4
+norm E                                     1.874 ( 2.001)   2.319 ( 2.363)   2.517 ( 2.573)   2.728 ( 2.792)   2.963 ( 3.002)
+norm W                                     0.791 ( 0.898)   1.019 ( 1.152)   1.194 ( 1.304)   1.334 ( 1.416)   1.429 ( 1.520)
+cos(E, W) raw                              0.018 ( 0.022)   0.034 ( 0.036)   0.043 ( 0.047)   0.054 ( 0.055)   0.048 (-0.039)
+cos(EA, W) mapped                          0.275 ( 0.321)   0.400 ( 0.412)   0.443 ( 0.453)   0.500 ( 0.506)   0.557 ( 0.453)
+residual mapped                            0.995 ( 0.999)   0.936 ( 0.933)   0.907 ( 0.901)   0.874 ( 0.865)   0.843 ( 0.918)
+cos(EA, W) mapped, freq-weighted fit       0.139 ( 0.195)   0.268 ( 0.276)   0.316 ( 0.321)   0.389 ( 0.391)   0.514 ( 0.821)
+residual mapped, freq-weighted fit         1.161 ( 1.194)   1.076 ( 1.103)   1.022 ( 1.040)   0.963 ( 0.973)   0.876 ( 0.434)
+null: cos(E_i A, W_j) shuffled            -0.009 (-0.003)   0.003 ( 0.002)   0.007 ( 0.003)   0.008 ( 0.003)   0.012 (-0.046)
+
+frequency-weighted over all types: norm E 2.961, norm W 1.498, cos(E, W) raw -0.029, cos(EA, W) mapped 0.454, residual mapped 0.916, cos(EA, W) mapped, freq-weighted fit 0.770, residual mapped, freq-weighted fit 0.497, null: cos(E_i A, W_j) shuffled -0.041
+
+the tied model's shared matrix (semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_tied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn), predicted by a linear map from the untied model's rows
+(per fifth: R^2 pooled over its rows, frequency-weighted in brackets; maps fitted unweighted over all types)
+
+predicted from                                         Q0               Q1               Q2               Q3               Q4
+untied input embedding E                   0.131 ( 0.136)   0.173 ( 0.174)   0.209 ( 0.211)   0.253 ( 0.257)   0.336 ( 0.379)
+untied output head W                       0.155 ( 0.149)   0.188 ( 0.189)   0.210 ( 0.211)   0.253 ( 0.257)   0.345 ( 0.158)
+
+the same by frequency rank (pooled R^2; share of training targets)
+  ranks      0 to 100    share 0.452   R^2 from E 0.419   from W 0.222   untied cos(EA, W) median 0.486
+  ranks    100 to 1000   share 0.209   R^2 from E 0.410   from W 0.387   untied cos(EA, W) median 0.574
+  ranks   1000 to 10051  share 0.233   R^2 from E 0.326   from W 0.342   untied cos(EA, W) median 0.556
+  ranks  10051 to 50257  share 0.106   R^2 from E 0.205   from W 0.212   untied cos(EA, W) median 0.419
+norm shared (tied)                         0.904 ( 0.969)   1.162 ( 1.188)   1.300 ( 1.332)   1.414 ( 1.451)   1.532 ( 1.705)
