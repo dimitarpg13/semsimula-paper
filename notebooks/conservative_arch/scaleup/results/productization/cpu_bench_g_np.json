@@ -1,0 +1,40 @@
+{
+ "model": "ladder",
+ "folder": "semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn",
+ "desc": "fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn); analytic V_phi True; query chunk 512; skip unread registers True",
+ "params": 79186819,
+ "threads": 8,
+ "lengths": {
+  "512": {
+   "times": [
+    0.5919630220159888,
+    0.6035776261705905,
+    0.5817722349893302
+   ],
+   "median_s": 0.5919630220159888,
+   "tokens_per_s": 864.918890129882,
+   "peak_rss_gb": 2.129741668701172
+  },
+  "2048": {
+   "times": [
+    3.025118096033111,
+    3.0510909990407526,
+    3.08248164691031
+   ],
+   "median_s": 3.0510909990407526,
+   "tokens_per_s": 671.2353058771046,
+   "peak_rss_gb": 3.9237937927246094
+  },
+  "8192": {
+   "times": [
+    19.577001983998343,
+    20.02685794001445,
+    19.833528991090134
+   ],
+   "median_s": 19.833528991090134,
+   "tokens_per_s": 413.0379421473664,
+   "peak_rss_gb": 9.589412689208984
+  }
+ },
+ "val_loss": 4.067490577697754
+}

@@ -1,0 +1,39 @@
+{
+ "model": "ladder",
+ "folder": "semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn",
+ "desc": "fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn); analytic V_phi True; query chunk 512; skip unread registers True; V_phi removed; layer 1 pruned to wells [3, 4]; context channels by folded fused attention; gram driver by float64 eigh",
+ "params": 79324622,
+ "threads": 8,
+ "lengths": {
+  "512": {
+   "times": [
+    0.372803338104859,
+    0.3848132269922644,
+    0.38380120089277625
+   ],
+   "median_s": 0.38380120089277625,
+   "tokens_per_s": 1334.0239655556447,
+   "peak_rss_gb": 2.1393775939941406
+  },
+  "2048": {
+   "times": [
+    1.9317993531003594,
+    1.9390712869353592,
+    1.965071550104767
+   ],
+   "median_s": 1.9390712869353592,
+   "tokens_per_s": 1056.1757134967427,
+   "peak_rss_gb": 3.8776016235351562
+  },
+  "8192": {
+   "times": [
+    13.74370730202645,
+    13.956895074108616,
+    13.806623484008014
+   ],
+   "median_s": 13.806623484008014,
+   "tokens_per_s": 593.338408155235,
+   "peak_rss_gb": 9.536491394042969
+  }
+ }
+}

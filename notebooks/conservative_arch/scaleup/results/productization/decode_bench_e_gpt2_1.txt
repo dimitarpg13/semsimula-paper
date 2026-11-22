@@ -1,0 +1,8 @@
+CPU decoding benchmark: gpt2_sdpa  semsimula_matched_gpt2_baseline_owt
+gpt2_baseline_best.pt (step 32500, val 49.764); L 8, d 384; attention by F.scaled_dot_product_attention; 36,656,256 parameters; 8 threads; float32; batch 1; 32 decoded tokens per length
+
+context  prefill s    s/token   tokens/s  cache MB  peak RSS GB
+    512      0.131     0.0085      118.2      12.8         1.37
+   2048      0.517     0.0094      106.5      48.8         1.91
+   8192      2.879     0.0133       75.2     192.8         3.79
+cache: 6,144 numbers per token

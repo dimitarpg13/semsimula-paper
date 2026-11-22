@@ -59,11 +59,13 @@ for _extra in sys.argv[8:]:
         _subs = (("POISSON_DEPTH_CAP    = None", f"POISSON_DEPTH_CAP    = {float(_extra[5:].replace('p', '.'))}"),)
     elif _extra == 'sr2':
         _subs = (("LOWRANK_DAMPED_FLOW  = False", "LOWRANK_DAMPED_FLOW  = True"),)
+    elif _extra == 'nophi':                    # SR2-NP (2026-11-21): no pair force; pass VPHI = default
+        _subs = (("PAIR_POTENTIAL  = 'sparse_topk'", "PAIR_POTENTIAL  = 'none'"),)
     elif _re.fullmatch(r'pmx\d+', _extra):
         _subs = (("POISSON_WELLS_EXACT  = False", "POISSON_WELLS_EXACT  = True"),
                  ("POISSON_WELLS_EXACT_MODES = 16", f"POISSON_WELLS_EXACT_MODES = {int(_extra[3:])}"))
     else:
-        raise SystemExit(f'unknown option {_extra!r} (expected rfqk, pm<K>, pmclip<thr>, pmcap<c>, sr2, pmx<M>)')
+        raise SystemExit(f'unknown option {_extra!r} (expected rfqk, pm<K>, pmclip<thr>, pmcap<c>, sr2, nophi, pmx<M>)')
     for _old, _new in _subs:
         assert G.cells['Cell 0:'].count(_old) == 1, _old
         G.cells['Cell 0:'] = G.cells['Cell 0:'].replace(_old, _new)

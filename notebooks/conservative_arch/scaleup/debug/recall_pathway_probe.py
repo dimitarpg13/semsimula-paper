@@ -113,6 +113,8 @@ m._pair_mask_for = pair_mask
 
 ARMS = [('base', set(), None)] + ([] if FOB else [('vel@1', {'vel'}, 1)]) + \
        [('xi@1', {'xi'}, 1), ('phi@1', {'phi'}, 1), ('xiphi@1', {'xi', 'phi'}, 1), ('xiphi@0', {'xi', 'phi'}, 0)]
+if getattr(m, 'V_phi', None) is None:              # SR2-NP (2026-11-21): no pair force, so only the xi cuts
+    ARMS = [a for a in ARMS if a[0] in ('base', 'vel@1', 'xi@1')] + [('xi@0', {'xi'}, 0)]
 per = {a: {c: [] for c in ('near', 'far', 'control')} for a, _, _ in ARMS}
 n_cls = {c: 0 for c in ('near', 'far', 'control')}
 checks = []
@@ -134,6 +136,7 @@ for i in range(0, W, 4):
         ce[a] = torch.nn.functional.cross_entropy(lg.reshape(-1, lg.shape[-1]).float(),
                                                   torch.from_numpy(yb).reshape(-1), reduction='none').view(B, T)
     if OPTS.get('check', '0') == '1' and i == 0:
+        _cut = 'xiphi@1' if 'xiphi@1' in ce else 'xi@1'
         # the re-implemented xi branch reproduces the model's own with nothing removed; a cut leaves earlier
         # positions than the first recall position unchanged (causality)
         st.update(cut={'xi'}, cut_layer=1, REM=torch.zeros(B, T, T, dtype=torch.bool))
@@ -143,8 +146,8 @@ for i in range(0, W, 4):
                                                  torch.from_numpy(yb).reshape(-1), reduction='none').view(B, T)
         checks.append(f'xi re-implementation with nothing removed: max |d loss| {float((ce_e - ce["base"]).abs().max()):.2e}')
         q0 = min(q for b in range(B) for c in ('near', 'far') for q, _ in cl[b][c])
-        checks.append(f'cut xiphi@1 before the first recall position ({q0}): max |d loss| '
-                      f'{float((ce["xiphi@1"][:, :q0] - ce["base"][:, :q0]).abs().max()):.2e}')
+        checks.append(f'cut {_cut} before the first recall position ({q0}): max |d loss| '
+                      f'{float((ce[_cut][:, :q0] - ce["base"][:, :q0]).abs().max()):.2e}')
     for a, _, _ in ARMS:
         d_ = ce[a] - ce['base']
         for b in range(B):

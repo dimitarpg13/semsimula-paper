@@ -1,0 +1,19 @@
+SR2NP_s22500: step 22500  lr now 1.16e-03  val ppl 67.28
+   sum sqrt(v): all 846.5  vocab-sized 465.9  rest 380.5   G_pred = eta/4 * sum: all 0.254  rest 0.114   median |m|/sqrt(v) 0.128
+SR2NP_best: step 31000  lr now 1.08e-04  val ppl 56.71
+   sum sqrt(v): all 831.6  vocab-sized 451.6  rest 380.0   G_pred = eta/4 * sum: all 0.249  rest 0.114   median |m|/sqrt(v) 0.140
+SR2_best: step 31000  lr now 1.08e-04  val ppl 56.49
+   sum sqrt(v): all 836.1  vocab-sized 449.4  rest 386.7   G_pred = eta/4 * sum: all 0.251  rest 0.116   median |m|/sqrt(v) 0.143
+
+sum sqrt(v) by tensor shape:
+             shape       SR2NP_s22500         SR2NP_best           SR2_best
+      (50257, 384)              464.9              450.7              448.4
+     (12288, 1920)              185.6              183.5              182.2
+      (3072, 1920)              123.5              127.5              132.2
+       (1024, 384)               30.0               28.7               28.5
+        (240, 384)               26.9               27.5               26.7
+       (2, 5, 384)                8.6                7.1                6.8
+         (8, 1920)                3.2                3.4                5.3
+         (32, 384)                0.0                0.0                1.7
+          (12288,)                1.7                1.5                1.4
+          (50257,)                1.0                1.0                1.0

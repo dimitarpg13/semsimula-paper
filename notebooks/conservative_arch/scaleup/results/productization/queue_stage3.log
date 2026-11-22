@@ -1,0 +1,15 @@
+17:13:15 done keep_k_L0 0
+17:13:20 done decay_noise 0
+17:13:39 done g_gpt2_1 0
+17:15:34 done g_np 0
+17:16:52 done g_np_lean_fold 0
+17:18:46 done g_sr2_nv 0
+17:20:03 done g_sr2_nv_lean_fold 0
+17:20:25 done g_gpt2_2 0
+17:20:46 done e_gpt2_1 0
+17:21:28 done e_np 0
+17:22:02 done e_np_lean 0
+17:24:11 done e_np_lean_compilecore 0
+17:25:52 done e_sr2_nv_lean_compilecore 0
+17:25:59 done e_gpt2_2 0
+17:25:59 done all

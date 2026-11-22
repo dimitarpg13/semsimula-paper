@@ -291,7 +291,7 @@ if NDEC:
     from incremental_decoder import GPT2Decoder, LadderDecoder
     def make_decoder(n):
         if MODEL == 'ladder':
-            if OPTS.get('novphi', '0') != '1':
+            if OPTS.get('novphi', '0') != '1' and m.V_phi is not None:   # SR2-NP (2026-11-21) has none to drop
                 sys.exit('decode=1 on a ladder model needs novphi=1: the decoder has no cache for the pair force')
             return LadderDecoder(m, n, drop_pair_force=True)
         return GPT2Decoder(m, n)

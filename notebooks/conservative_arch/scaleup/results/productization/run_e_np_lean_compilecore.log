@@ -1,0 +1,15 @@
+model: fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn); analytic V_phi True; query chunk 512; skip unread registers True; layer 1 pruned to wells [5]; gram driver by float64 eigh; torch.compile (core) 79,202,179 parameters
+decoder against the full forward on 256 validation tokens (prefill 128, then single steps): max |dlogit| prefill 3.624e-05, steps 5.531e-05 (mean 7.208e-06); top-1 agreement 100.00%
+    512      0.424     0.0157       63.9       2.6         1.65
+   2048      2.010     0.0166       60.1       9.9         3.12
+   8192     15.333     0.0256       39.1      39.2         7.06
+CPU decoding benchmark: ladder  semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn); analytic V_phi True; query chunk 512; skip unread registers True; layer 1 pruned to wells [5]; gram driver by float64 eigh; torch.compile (core); 79,202,179 parameters; 8 threads; float32; batch 1; 32 decoded tokens per length
+
+decoder against the full forward on 256 validation tokens (prefill 128, then single steps): max |dlogit| prefill 3.624e-05, steps 5.531e-05 (mean 7.208e-06); top-1 agreement 100.00%
+
+context  prefill s    s/token   tokens/s  cache MB  peak RSS GB
+    512      0.424     0.0157       63.9       2.6         1.65
+   2048      2.010     0.0166       60.1       9.9         3.12
+   8192     15.333     0.0256       39.1      39.2         7.06
+cache: 1,248 numbers per token

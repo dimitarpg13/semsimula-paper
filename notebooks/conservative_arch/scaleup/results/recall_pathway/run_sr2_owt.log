@@ -1,0 +1,21 @@
+model: fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn)
+windows 4/16
+windows 8/16
+windows 12/16
+windows 16/16
+Recall pathway probe: semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+model fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn)
+16 fresh validation windows x 512 (openwebtext_val_2M.npy; offset half a spacing); first order False; tokens over 8 occurrences per window excluded; positions: {'near': 317, 'far': 1507, 'control': 4198}
+change of the per-token loss (nats) at the class, mean over windows (se over windows)
+
+      cut         near recall          far recall             control  far / control
+     base    +0.0000 (0.0000)    +0.0000 (0.0000)    +0.0000 (0.0000)            nan
+    vel@1    +0.0023 (0.0193)    +0.0080 (0.0086)    +0.0642 (0.0060)           0.12
+     xi@1    +0.3882 (0.0606)    +0.3756 (0.0450)    +0.0000 (0.0000)     9561826.19
+    phi@1    +0.0000 (0.0000)    +0.0000 (0.0000)    +0.0000 (0.0000)            nan
+  xiphi@1    +0.3882 (0.0606)    +0.3756 (0.0450)    +0.0000 (0.0000)     9561825.97
+  xiphi@0    +0.3418 (0.0510)    +0.0406 (0.0027)    +0.0007 (0.0006)          59.79
+
+checks:
+  xi re-implementation with nothing removed: max |d loss| 0.00e+00
+  cut xiphi@1 before the first recall position (1): max |d loss| 0.00e+00

@@ -10,8 +10,8 @@ Builds SR2 and the new arm through the ladder notebook's own Cells 0-5b at fresh
   4. one real layer step's gradient into earlier tokens: with the pair force gone, the context channels (live) are the
      only pathway between tokens, so it must stay > 0
 
-The new arm's Cell 0 is SR2's six deltas with PAIR_POTENTIAL = 'none', except VPHI_GRAD_PATH, which stays 'default' as
-Cell 0 requires when there is no V_phi to make live.
+The new arm's Cell 0 is SR2's deltas with PAIR_POTENTIAL = 'none', except VPHI_GRAD_PATH and VPHI_ANALYTIC_FORCE, which
+stay at their defaults: with no V_phi, Cell 5b refuses the first and the second is inert (both force paths give zero).
 
 Usage: python3 verify_sr2_nophi_build.py OUT_DIR
 """
@@ -28,9 +28,11 @@ from verify_vphi_xi_grad_path import c5b, step_source_grad
 SR2 = [('REVERSE_CHANNEL              = True', 'REVERSE_CHANNEL              = False'),
        ("XI_GRAD_PATH           = 'default'", "XI_GRAD_PATH           = 'live'"),
        ('LOWRANK_DAMPED_FLOW  = False', 'LOWRANK_DAMPED_FLOW  = True'),
-       ('VPHI_ANALYTIC_FORCE = False', 'VPHI_ANALYTIC_FORCE = True'),
        ('LAYER_CHECKPOINT = True', 'LAYER_CHECKPOINT = False')]
-ARMS = {'SR2': SR2 + [("VPHI_GRAD_PATH         = 'default'", "VPHI_GRAD_PATH         = 'live'")],
+ARMS = {'SR2': SR2 + [("VPHI_GRAD_PATH         = 'default'", "VPHI_GRAD_PATH         = 'live'"),
+                     ('VPHI_ANALYTIC_FORCE = False', 'VPHI_ANALYTIC_FORCE = True')],
+        # VPHI_GRAD_PATH and VPHI_ANALYTIC_FORCE stay at their defaults: with no V_phi the first is refused by Cell 5b
+        # and the second is inert (both force paths return zeros), 2026-11-21
         'SR2, pair force off': SR2 + [("PAIR_POTENTIAL  = 'sparse_topk'", "PAIR_POTENTIAL  = 'none'")]}
 
 

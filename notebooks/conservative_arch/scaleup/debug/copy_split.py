@@ -78,6 +78,9 @@ def tag_repl(folder):
     tag = re.fullmatch(r'semsimula_fock_cfc_baoab_[a-z]+_(.+)', folder).group(1)
     parts = tag.split('_')
     repl = P.LIVE
+    if 'nophi' in parts:                         # SR2-NP (2026-11-21): no pair force; Cell 5b refuses a live V_phi path
+        repl = tuple(r for r in repl if 'VPHI_GRAD_PATH' not in r[0]) + \
+            (("PAIR_POTENTIAL  = 'sparse_topk'", "PAIR_POTENTIAL  = 'none'"),)
     if 'norc' in parts:
         repl += (('REVERSE_CHANNEL              = True', 'REVERSE_CHANNEL              = False'),)
     if 'sr2' in parts:

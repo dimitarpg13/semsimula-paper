@@ -131,8 +131,9 @@ def term_functions(model, h, xis, l, t, rc_in):
             model.__dict__.pop('poisson_mode_force', None)
         return ft[0, t], fp[0, t]
 
-    fns = {'V_theta': lambda x: forces(x)[0],
-           'V_phi': lambda x: forces(x, pm_on=False)[1]}
+    fns = {'V_theta': lambda x: forces(x)[0]}
+    if getattr(model, 'V_phi', None) is not None:     # SR2-NP (2026-11-21) has no pair force to test
+        fns['V_phi'] = lambda x: forces(x, pm_on=False)[1]
     if has_pm:
         fns['PM1'] = lambda x: type(model).poisson_mode_force(model, replace_row(h, t, x), l)[0, t]
     fns['total'] = lambda x: sum(forces(x))
@@ -354,6 +355,8 @@ if __name__ == '__main__':
             subs = (("POISSON_DEPTH_CAP    = None", f"POISSON_DEPTH_CAP    = {float(e[5:].replace('p', '.'))}"),)
         elif e == 'sr2':
             subs = (("LOWRANK_DAMPED_FLOW  = False", "LOWRANK_DAMPED_FLOW  = True"),)
+        elif e == 'nophi':                    # SR2-NP (2026-11-21): no pair force; pass VPHI = default
+            subs = (("PAIR_POTENTIAL  = 'sparse_topk'", "PAIR_POTENTIAL  = 'none'"),)
         elif re.fullmatch(r'pmx\d+', e):      # PMX (2026-10-11): exact wells, M modes in the eigensolve
             subs = (("POISSON_WELLS_EXACT  = False", "POISSON_WELLS_EXACT  = True"),
                     ("POISSON_WELLS_EXACT_MODES = 16", f"POISSON_WELLS_EXACT_MODES = {int(e[3:])}"))
@@ -382,9 +385,10 @@ if __name__ == '__main__':
         raise SystemExit(0)
     res = run(model, np.load(G.VAL))
     txt, _ = report(res, label)
-    rs = router_shares(model, np.load(G.VAL))
+    rs = router_shares(model, np.load(G.VAL)) if model.V_phi is not None else {}
     res['router'] = rs
-    txt += '\n   V_phi ROUTER TERM (exact), share of the total conservative force on the token:'
+    txt += ('\n   V_phi ROUTER TERM (exact), share of the total conservative force on the token:' if rs
+            else '\n   no pair force: no V_phi router term to measure')
     for l, bands in sorted(rs.items()):
         for band, r in bands.items():
             txt += (f'\n     layer {l} {band:>8}: median {100*r["router_over_total_median"]:.3f}%  p95 {100*r["router_over_total_p95"]:.3f}%'
