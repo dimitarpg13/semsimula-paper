@@ -41,6 +41,10 @@ be the last input position at or before $q$ holding the target, if there is one.
 
 Positions with $p(q) = q$ (the target repeats the current input token) are left out of every class. The frequency filter keeps out tokens so common that their repetition says little about memory (punctuation, keywords, frequent words). It is a rough proxy, discussed in §7.
 
+![Recall and control positions in one window](../figures/recall_pathway/rp_classes.png)
+
+**Figure 1.** One window, with an invented sentence (positions 12 to 39 not drawn; none of them holds "Alice"). Each class is marked at its position $q$ (solid outline), with the earlier occurrence $p(q)$ shaded and the target $y_q = x_{q+1}$ outlined dashed. At $q = 6$ the target "Bob" last occurred at $p = 2$: a near pair with $\delta = 5$. At $q = 40$ the target "Alice" last occurred at $p = 0$: a far pair with $\delta = 41$. At $q = 1$ the target "Bob" has not occurred yet: a control position. At $q = 9$ the target "very" is the current input token, $p(9) = 9$, and the position is left out.
+
 ## 3. The pathways and the cuts
 
 Write $\ell \in \lbrace 0, 1 \rbrace$ for the layer, $H^{(\ell)} = (h_0^{(\ell)}, \dots, h_{T-1}^{(\ell)})$ for the states entering layer $\ell$, and $R$ for the set of all near and far recall pairs of the window. Every cut acts at **one layer** $\ell^\ast$, on **every pair in $R$ at once**, and leaves the model's weights unchanged.
@@ -68,6 +72,10 @@ $$v_t^{(\ell^\ast)} = 0 \quad \text{for every position } t .$$
 This cut is not restricted to the recall pairs: it removes the velocity at every token, so its control column is the general cost of losing the inertia, against which the recall columns are read. A first-order model has no velocity, and the cut is skipped.
 
 **What each cut leaves untouched.** At the last layer ($\ell^\ast = 1$), a `xi` or `phi` cut changes only the update of the rows $q$ that recall something: the states entering layer 1 are unchanged, so the control positions read exactly zero. At layer 0 the changed states propagate into layer 1, and control positions can move slightly.
+
+![Where each cut acts](../figures/recall_pathway/rp_cuts.png)
+
+**Figure 2.** The three cuts at layer $\ell^\ast$, for one recall pair $(q, p)$. Left: every earlier state feeds the channel read $\xi_{k,q}$; the cut removes the link from $h_p$ and the remaining weights renormalise. Middle: the pair force at $q$ draws on sources chosen from the causal mask; the cut removes $p$ from the mask and the score head may pick another source instead (dotted). Right: the velocity is decoded from the two states the step receives; the cut makes them equal, so the velocity is zero at every position, including the control position $c$.
 
 ## 4. The estimator
 
@@ -128,12 +136,22 @@ Change of the loss per token in nats; standard error over windows in brackets.
 | `xiphi@0` (SR2-NP: `xi@0`) | +0.342 (0.051) | +0.041 (0.003) | +0.001 | +0.343 (0.049) | +0.047 (0.004) | +0.000 |
 | `vel@1` | +0.002 (0.019) | +0.008 (0.009) | +0.064 (0.006) | +0.004 (0.022) | +0.038 (0.008) | +0.111 (0.006) |
 
+![The readings of the four models](../figures/recall_pathway/rp_results.png)
+
+**Figure 3.** The two tables above, drawn from the probe's JSON outputs. Rows: corpus; columns: class; one standard error over windows. The `xi@1` points stand alone in the two recall columns and sit on zero in the control column. The `phi@1` points sit on zero everywhere. The layer-0 cut reaches near pairs far more than far ones. Only `vel@1` moves the control positions.
+
 **What they show.**
 - **One pathway carries far recall, in every model:** the context channels at layer 1. Removing the earlier occurrence there costs 0.36 to 0.79 nats per recalled token and nothing at control positions.
 - **The pair force carries none of it,** on code and on OpenWebText alike.
 - **Near recall is shared between the layers:** on OpenWebText, removing the earlier occurrence at layer 0 costs about as much as at layer 1 for near pairs, but little for far ones.
 - **The velocity is not the memory:** zeroing it costs ordinary tokens more than recalled ones in every second-order model.
 - **The arm without a pair force leans more on the velocity.** SR2-NP against SR2, paired: +0.046 nats on control positions (se 0.006) and +0.030 on far recall (se 0.011). The layer-1 read itself does not change (far recall −0.011, se 0.009).
+
+![SR2-NP minus SR2, window by window](../figures/recall_pathway/rp_paired.png)
+
+**Figure 4.** The paired comparison of the last point, one dot per window. Under `vel@1` the arm without a pair force loses more on control positions in all 16 windows, and on far recall in 12 of 16. Near recall shows no difference. Under `xi@1` the two arms do not differ.
+
+The figures are made by [`figures/_make_recall_pathway_figs.py`](../figures/_make_recall_pathway_figs.py); Figures 3 and 4 read only the JSON files in [`results/recall_pathway/`](../../notebooks/conservative_arch/scaleup/results/recall_pathway/).
 
 The registered calls of the code run (LR2, LR3) and their verdicts are in §8 of [Second_Order_Memory_Probes.md](Second_Order_Memory_Probes.md). The OpenWebText runs had no calls.
 
