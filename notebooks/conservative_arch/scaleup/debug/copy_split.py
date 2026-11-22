@@ -81,6 +81,10 @@ def tag_repl(folder):
     if 'nophi' in parts:                         # SR2-NP (2026-11-21): no pair force; Cell 5b refuses a live V_phi path
         repl = tuple(r for r in repl if 'VPHI_GRAD_PATH' not in r[0]) + \
             (("PAIR_POTENTIAL  = 'sparse_topk'", "PAIR_POTENTIAL  = 'none'"),)
+    if 'tied' in parts:                          # SR2-NP-T (2026-11-21): tied embeddings; the tag carries the head switches
+        repl += (('TIE_EMBEDDINGS  = False', 'TIE_EMBEDDINGS  = True'),)
+    if 'nob' in parts:
+        repl += (('USE_OUTPUT_BIAS = True', 'USE_OUTPUT_BIAS = False'),)
     if 'norc' in parts:
         repl += (('REVERSE_CHANNEL              = True', 'REVERSE_CHANNEL              = False'),)
     if 'sr2' in parts:
