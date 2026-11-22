@@ -3,7 +3,7 @@
 **Status:** proposed, not yet run. Derivation and protocol complete; no code
 written beyond what already exists.
 **Date:** 2026-09-19.
-**Companion to:** [`Joint_Vtheta_QKNorm_Run_Diagnostic_Checklist.md`](Joint_Vtheta_QKNorm_Run_Diagnostic_Checklist.md) §10.8,
+**Companion to:** [`joint_vtheta_arm/Content_Addressed_Context_Routing.md`](joint_vtheta_arm/Content_Addressed_Context_Routing.md) §5,
 [`Fock_Inference_Productionization_Plan.md`](productization/Fock_Inference_Productionization_Plan.md) §7,
 [`Context_Mixing_Mechanisms_in_the_Conservative_Framework.md`](Context_Mixing_Mechanisms_in_the_Conservative_Framework.md) §8.
 

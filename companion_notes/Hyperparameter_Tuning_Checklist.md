@@ -10,7 +10,7 @@
 > which fixes the configuration so that `L` and the added mechanism are the
 > only variables — **this document is the list of things that protocol holds
 > fixed, and why each was fixed at the value it was.** Distinct also from
-> [`Joint_Vtheta_QKNorm_Run_Diagnostic_Checklist.md`](Joint_Vtheta_QKNorm_Run_Diagnostic_Checklist.md),
+> [`joint_vtheta_arm/`](joint_vtheta_arm/README.md),
 > which covers run *health* rather than run *quality*.
 >
 > **Notebook:** [`colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb`](../notebooks/conservative_arch/scaleup/colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb)

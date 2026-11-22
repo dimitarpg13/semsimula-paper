@@ -1000,7 +1000,7 @@ off. `causal_ema_logits` is factored out of `causal_ema_weights` so the two
 paths cannot drift. Verified: identity of §8.2 to `5.6e-17`, bit-identity at
 initialisation to `4.4e-16`, gradient flow per §8.4, causality per §8.7.
 Gates 3 and beyond are recorded in
-`Joint_Vtheta_QKNorm_Run_Diagnostic_Checklist.md` §10.
+[`joint_vtheta_arm/Content_Addressed_Context_Routing.md`](joint_vtheta_arm/Content_Addressed_Context_Routing.md).
 
 ---
 
