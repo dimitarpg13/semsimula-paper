@@ -108,6 +108,8 @@ provided in [`manuscripts/PROVENANCE.md`](manuscripts/PROVENANCE.md).
 
 Working notes developed alongside the paper. They capture material the paper does not subsume — either summarised briefly in the main text with a pointer here, or deferred to future work. Each note's header identifies the paper sections it backs.
 
+**All notes by topic:** [companion_notes/README.md](companion_notes/README.md) lists every note, grouped by topic. The tables below cover only the notes the paper cites directly.
+
 #### Notes cited by BibTeX key
 
 | Note | Role |
