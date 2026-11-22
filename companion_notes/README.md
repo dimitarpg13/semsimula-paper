@@ -216,7 +216,7 @@
 - [Composing_Single_Layer_Inferences_Flow_or_Maps](Composing_Single_Layer_Inferences_Flow_or_Maps.md): is the layer stack one flow or a sequence of maps? (verdict: maps)
 - [Tech_Report_Position_Dependent_Damping_CfC_BAOAB](Tech_Report_Position_Dependent_Damping_CfC_BAOAB.md): position-dependent damping under CfC+BAOAB: theory, implementation and the four OpenWebText arms
 - [Post_100K_CfC_BAOAB_Analysis_Checklist](Post_100K_CfC_BAOAB_Analysis_Checklist.md): working checklist after the 100,000-step CfC+BAOAB $d = 384$ run
-- [joint_vtheta_arm/](joint_vtheta_arm/README.md): the $d = 384$ run with a joint $V_\theta$ bank and QK-norm (September 2026), in five self-contained studies: bank geometry and stiffness, the anneal probes, integration refinement, the matched GPT-2 comparison, content-addressed context routing (split from the former [Joint_Vtheta_QKNorm_Run_Diagnostic_Checklist](Joint_Vtheta_QKNorm_Run_Diagnostic_Checklist.md), now a pointer page)
+- [joint_vtheta_arm/](joint_vtheta_arm/README.md): the $d = 384$ run with a joint $V_\theta$ bank and QK-norm (September 2026), in five self-contained studies: bank geometry and stiffness, the anneal probes, integration refinement, the matched GPT-2 comparison, content-addressed context routing
 - [Parallels_and_Lessons_from_Liquid_Neural_Networks](Parallels_and_Lessons_from_Liquid_Neural_Networks.md): a comparison with liquid neural networks (the origin of the CfC integrator) and their path to product
 
 

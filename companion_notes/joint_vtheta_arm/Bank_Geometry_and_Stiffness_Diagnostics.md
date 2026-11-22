@@ -1,6 +1,6 @@
 # Bank Geometry and Stiffness Diagnostics of the Joint Arm
 
-**What this note is.** The diagnostic plan drawn up for the joint-coupling $V_\theta$ arm when its 50,000-step probe stopped improving (September 2026): what the well bank's low-rank precision factors are doing, why the stiffness `omega*dt` keeps rising, what causes the gradient spikes, and the predictions recorded in advance for step 50,000. Split out of the former `Joint_Vtheta_QKNorm_Run_Diagnostic_Checklist.md` (its §0, §2 to §5) on 2026-11-22; the run's story and the other studies are indexed in [README.md](README.md).
+**What this note is.** The diagnostic plan drawn up for the joint-coupling $V_\theta$ arm when its 50,000-step probe stopped improving (September 2026): what the well bank's low-rank precision factors are doing, why the stiffness `omega*dt` keeps rising, what causes the gradient spikes, and the predictions recorded in advance for step 50,000. Written on 2026-11-22 from its §0, §2 to §5 of the arm's original diagnostic checklist, which the documents in this folder replace; the run's story and the other studies are indexed in [README.md](README.md).
 
 **Status.** §5's predictions were scored on 2026-09-16. The probes of §4 were proposed then; the decisions they feed are in §6. What happened next is in [Anneal_Probes.md](Anneal_Probes.md) and [Integration_Refinement.md](Integration_Refinement.md).
 

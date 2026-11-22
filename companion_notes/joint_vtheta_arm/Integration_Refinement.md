@@ -1,6 +1,6 @@
 # Integration Refinement: Does the Joint Arm's Over-the-Wall Tail Cost Anything?
 
-**What this note is.** The integration side of the joint-coupling $V_\theta$ arm's diagnostics (September 2026): why an explicit kick on the low-rank precision modes is under-resolved and, past `omega*dt` = 2, unstable; the two remedies (smaller steps, and integrating the stiffest modes exactly with `baoab_cfc_lowrank`); the benchmark that made the exact integrator affordable; and what not to do with depth. Split out of the former `Joint_Vtheta_QKNorm_Run_Diagnostic_Checklist.md` (its §7) on 2026-11-22; the run's story is in [README.md](README.md).
+**What this note is.** The integration side of the joint-coupling $V_\theta$ arm's diagnostics (September 2026): why an explicit kick on the low-rank precision modes is under-resolved and, past `omega*dt` = 2, unstable; the two remedies (smaller steps, and integrating the stiffest modes exactly with `baoab_cfc_lowrank`); the benchmark that made the exact integrator affordable; and what not to do with depth. Written on 2026-11-22 from its §7 of the arm's original diagnostic checklist, which the documents in this folder replace; the run's story is in [README.md](README.md).
 
 **Status.** The benchmark ran 2026-09-17 and the exact low-rank integrator was run against a control and closed on 2026-09-18 (§5): it is affordable and buys stability rather than loss. The substep variant (§6) was largely superseded by it.
 

@@ -1,6 +1,6 @@
 # The Joint Arm Against a Matched GPT-2
 
-**What this note is.** The September 2026 comparison of the joint-coupling $V_\theta$ arm (Fock-PARFLM) with a GPT-2 trained on the same data, and the bottleneck diagnosis and predictions it led to. Split out of the former `Joint_Vtheta_QKNorm_Run_Diagnostic_Checklist.md` (its §9) on 2026-11-22; the run's story is in [README.md](README.md).
+**What this note is.** The September 2026 comparison of the joint-coupling $V_\theta$ arm (Fock-PARFLM) with a GPT-2 trained on the same data, and the bottleneck diagnosis and predictions it led to. Written on 2026-11-22 from its §9 of the arm's original diagnostic checklist, which the documents in this folder replace; the run's story is in [README.md](README.md).
 
 **Status.** Run 2026-09-18 to 2026-09-19. The endpoint perplexities stand; the token budgets were not matched (corrected 2026-09-20, §3), and a token-matched baseline is in [depth_ladder/Matched_GPT2_Baselines.md](../depth_ladder/Matched_GPT2_Baselines.md), which supersedes this note's budget claims.
 

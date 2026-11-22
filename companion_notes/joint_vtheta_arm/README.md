@@ -1,6 +1,6 @@
 # The Joint-Coupling V_theta Arm (September 2026)
 
-**What this folder is.** The studies run on the joint-coupling $V_\theta$ arm with the QK-normalised creation gate at d = 384 (`fock_cfc_owt_..._vtjoint_cgqk_L8probe_..._baoab_cfc`) in September 2026, just before the depth ladder. They decided four things the later Gen 3 models rest on: one joint well bank over the five context channels, a learning-rate decay timed to the run's peak, the exact low-rank integrator, and a content term in the context channels. They also produced the first matched-GPT-2 comparison. Split out of the former `Joint_Vtheta_QKNorm_Run_Diagnostic_Checklist.md` on 2026-11-22: each document below is self-contained, with its own definitions, problem statement and analysis.
+**What this folder is.** The studies run on the joint-coupling $V_\theta$ arm with the QK-normalised creation gate at d = 384 (`fock_cfc_owt_..._vtjoint_cgqk_L8probe_..._baoab_cfc`) in September 2026, just before the depth ladder. They decided four things the later Gen 3 models rest on: one joint well bank over the five context channels, a learning-rate decay timed to the run's peak, the exact low-rank integrator, and a content term in the context channels. They also produced the first matched-GPT-2 comparison. Written on 2026-11-22 from the arm's original diagnostic checklist, which these documents replace: each one below is self-contained, with its own definitions, problem statement and analysis.
 
 ---
 

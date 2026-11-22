@@ -1,6 +1,6 @@
 # Anneal Probes: Was the Joint Arm's Plateau a Learning-Rate Problem?
 
-**What this note is.** Two short learning-rate decays branched from the joint-coupling $V_\theta$ arm in September 2026, one from where the run stopped (step 50,000) and one from its best checkpoint (step 28,500), and the production decay they led to. Split out of the former `Joint_Vtheta_QKNorm_Run_Diagnostic_Checklist.md` (its §6) on 2026-11-22; the run's story is in [README.md](README.md).
+**What this note is.** Two short learning-rate decays branched from the joint-coupling $V_\theta$ arm in September 2026, one from where the run stopped (step 50,000) and one from its best checkpoint (step 28,500), and the production decay they led to. Written on 2026-11-22 from its §6 of the arm's original diagnostic checklist, which the documents in this folder replace; the run's story is in [README.md](README.md).
 
 **Status.** Both probes run, 2026-09-17. The learning rate was the block; and the run had been trained about 36,500 steps past its peak. The production decay from step 28,500 was the next action (§6).
 
