@@ -242,7 +242,7 @@ so the additive prediction is $58.32 \times 59.35 / 58.51 \approx 59.16$. The in
 
 $$I = \ln P_{\mathrm{SR2\text{-}T}} - \ln P_{\mathrm{SR2}} - \ln P_{\mathrm{SR2\text{-}NP\text{-}T}} + \ln P_{\mathrm{SR2\text{-}NP}},$$
 
-and a clearly negative $I$ (SR2 tied settling below 59.16) would mean the pair force absorbs part of what the tie takes away. This is a research question about competing mechanisms, not a productization arm: the deployment model has no pair force, and the untied head stays.
+and a clearly negative $I$ (SR2 tied settling below 59.16) would mean the pair force absorbs part of what the tie takes away. This is a research question about competing mechanisms, not a productization arm: the deployment model has no pair force, and the untied head stays. The arm is set up, with the additive prediction as a call and a trigger for the mean-field programme: [Stage3d_SR2_Tied_With_Pair_Force.md](Stage3d_SR2_Tied_With_Pair_Force.md).
 
 **Limits.**
 

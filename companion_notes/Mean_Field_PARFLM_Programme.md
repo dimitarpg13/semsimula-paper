@@ -2,7 +2,7 @@
 
 **What this note is.** A plan, with pre-registered probes and calls, for building and testing a mean-field (macroscopic) approximation of the basic conservative model, PARFLM: the context potential $V_\theta(h; \xi)$ plus the pair potential $V_\varphi$. It is the execution plan for the proposals of two earlier notes: [Macroscopic_Limits_of_the_Conservative_Step.md](Macroscopic_Limits_of_the_Conservative_Step.md), which proposes the field form of $V_\varphi$ and Probes A and B, and [Mean_Field_Theory_for_Particle_Language_Models.md](Mean_Field_Theory_for_Particle_Language_Models.md), which supplies the theory and Probe C. Everything up to the last stage runs on the CPU, on checkpoints already on the machine, one job at a time. The calls are proposed; the author confirms or changes them before each probe runs, as for every pre-registered item in the [protocol](depth_ladder/README.md). (Draft, 2026-11-11.)
 
-**Status.** Nothing in this note has run. Probe A's calls A1 to A5 were confirmed by the author on 2026-11-21 (§5); everything else is PENDING and proposed.
+**Status.** Nothing in this note has run. Probe A's calls A1 to A5 were confirmed by the author on 2026-11-21 (§5); everything else is PENDING and proposed. **A reopening trigger (2026-11-22):** the arm SR2-T (SR2 with tied embeddings, [productization/Stage3d_SR2_Tied_With_Pair_Force.md](productization/Stage3d_SR2_Tied_With_Pair_Force.md)) carries the proposed call ST1: if the pair force recovers at least half of the tie's cost, a cheap stand-in for it would let the deployment model tie its embeddings, and this programme returns to the productization path, after a cheaper competitor (a linear map before the tied read-out) and Probe A on SR2-T's weights.
 
 ---
 
