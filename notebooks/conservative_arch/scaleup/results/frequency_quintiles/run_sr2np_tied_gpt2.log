@@ -1,0 +1,84 @@
+model: semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn (cached)
+  owt_xi5long_topk16_dt32da16_mh4_aniso_dc... windows 4/128
+  owt_xi5long_topk16_dt32da16_mh4_aniso_dc... windows 8/128
+  owt_xi5long_topk16_dt32da16_mh4_aniso_dc... windows 12/128
+  owt_xi5long_topk16_dt32da16_mh4_aniso_dc... windows 16/128
+  owt_xi5long_topk16_dt32da16_mh4_aniso_dc... windows 20/128
+  owt_xi5long_topk16_dt32da16_mh4_aniso_dc... windows 24/128
+  owt_xi5long_topk16_dt32da16_mh4_aniso_dc... windows 28/128
+  owt_xi5long_topk16_dt32da16_mh4_aniso_dc... windows 32/128
+  owt_xi5long_topk16_dt32da16_mh4_aniso_dc... windows 36/128
+  owt_xi5long_topk16_dt32da16_mh4_aniso_dc... windows 40/128
+  owt_xi5long_topk16_dt32da16_mh4_aniso_dc... windows 44/128
+  owt_xi5long_topk16_dt32da16_mh4_aniso_dc... windows 48/128
+  owt_xi5long_topk16_dt32da16_mh4_aniso_dc... windows 52/128
+  owt_xi5long_topk16_dt32da16_mh4_aniso_dc... windows 56/128
+  owt_xi5long_topk16_dt32da16_mh4_aniso_dc... windows 60/128
+  owt_xi5long_topk16_dt32da16_mh4_aniso_dc... windows 64/128
+  owt_xi5long_topk16_dt32da16_mh4_aniso_dc... windows 68/128
+  owt_xi5long_topk16_dt32da16_mh4_aniso_dc... windows 72/128
+  owt_xi5long_topk16_dt32da16_mh4_aniso_dc... windows 76/128
+  owt_xi5long_topk16_dt32da16_mh4_aniso_dc... windows 80/128
+  owt_xi5long_topk16_dt32da16_mh4_aniso_dc... windows 84/128
+  owt_xi5long_topk16_dt32da16_mh4_aniso_dc... windows 88/128
+  owt_xi5long_topk16_dt32da16_mh4_aniso_dc... windows 92/128
+  owt_xi5long_topk16_dt32da16_mh4_aniso_dc... windows 96/128
+  owt_xi5long_topk16_dt32da16_mh4_aniso_dc... windows 100/128
+  owt_xi5long_topk16_dt32da16_mh4_aniso_dc... windows 104/128
+  owt_xi5long_topk16_dt32da16_mh4_aniso_dc... windows 108/128
+  owt_xi5long_topk16_dt32da16_mh4_aniso_dc... windows 112/128
+  owt_xi5long_topk16_dt32da16_mh4_aniso_dc... windows 116/128
+  owt_xi5long_topk16_dt32da16_mh4_aniso_dc... windows 120/128
+  owt_xi5long_topk16_dt32da16_mh4_aniso_dc... windows 124/128
+  owt_xi5long_topk16_dt32da16_mh4_aniso_dc... windows 128/128
+model: fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_tied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_tied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn)
+model: semsimula_matched_gpt2_baseline_owt (cached)
+Loss by token-frequency quintile (D0.4) -- 128 validation windows x 512 = 65,536 targets (openwebtext_val_2M.npy); quintiles of the 50,257 token types by training frequency (logfreq_surprisal_openwebtext.npy); uniform guess ln V = 10.82 nats
+
+unigram prior (training frequencies only), mean loss per quintile: Q0 13.958, Q1 13.316, Q2 12.825, Q3 12.073, Q4 7.017; overall 7.620
+
+owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+  overall mean loss 4.1093 nats (perplexity 60.90 on these windows)
+  quintile         mean loss  unigram    gain   targets   share   below ln V?
+  Q0 rarest           11.473   13.958   2.484       564    0.9%   no
+  Q1                  10.056   13.316   3.260     1,055    1.6%   yes
+  Q2                   8.375   12.825   4.449     1,720    2.6%   yes
+  Q3                   7.137   12.073   4.936     3,752    5.7%   yes
+  Q4 most frequent     3.611    7.017   3.406    58,445   89.2%   yes
+
+owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_tied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+  overall mean loss 4.1289 nats (perplexity 62.11 on these windows)
+  quintile         mean loss  unigram    gain   targets   share   below ln V?
+  Q0 rarest           11.115   13.958   2.843       564    0.9%   no
+  Q1                   9.669   13.316   3.646     1,055    1.6%   yes
+  Q2                   8.208   12.825   4.617     1,720    2.6%   yes
+  Q3                   7.042   12.073   5.031     3,752    5.7%   yes
+  Q4 most frequent     3.654    7.017   3.362    58,445   89.2%   yes
+
+semsimula_matched_gpt2_baseline_owt
+  overall mean loss 3.9604 nats (perplexity 52.48 on these windows)
+  quintile         mean loss  unigram    gain   targets   share   below ln V?
+  Q0 rarest           10.838   13.958   3.120       564    0.9%   no
+  Q1                   9.774   13.316   3.541     1,055    1.6%   yes
+  Q2                   8.171   12.825   4.654     1,720    2.6%   yes
+  Q3                   6.825   12.073   5.249     3,752    5.7%   yes
+  Q4 most frequent     3.481    7.017   3.535    58,445   89.2%   yes
+
+paired: owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_tied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+  minus owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn, same targets; standard error clustered by window
+  Q0: -0.358 nats (se 0.180)
+  Q1: -0.387 nats (se 0.089)
+  Q2: -0.168 nats (se 0.050)
+  Q3: -0.095 nats (se 0.037)
+  Q4: +0.043 nats (se 0.004)
+  overall: +0.0196 nats
+
+paired: semsimula_matched_gpt2_baseline_owt
+  minus owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn, same targets; standard error clustered by window
+  Q0: -0.635 nats (se 0.140)
+  Q1: -0.282 nats (se 0.065)
+  Q2: -0.204 nats (se 0.050)
+  Q3: -0.313 nats (se 0.045)
+  Q4: -0.130 nats (se 0.009)
+  overall: -0.1489 nats
+
