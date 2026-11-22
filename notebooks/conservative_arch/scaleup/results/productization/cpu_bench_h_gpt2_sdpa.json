@@ -1,0 +1,40 @@
+{
+ "model": "gpt2_sdpa",
+ "folder": "semsimula_matched_gpt2_baseline_owt",
+ "desc": "gpt2_baseline_best.pt (step 32500, val 49.764); L 8, d 384; attention by F.scaled_dot_product_attention",
+ "params": 36640896,
+ "threads": 8,
+ "flush_denormal": false,
+ "lengths": {
+  "512": {
+   "times": [
+    0.1106399679556489,
+    0.10800846293568611,
+    0.1230167169123888
+   ],
+   "median_s": 0.1106399679556489,
+   "tokens_per_s": 4627.622453806568,
+   "peak_rss_gb": 1.5564613342285156
+  },
+  "2048": {
+   "times": [
+    0.4374115269165486,
+    0.48581017297692597,
+    0.5320122248958796
+   ],
+   "median_s": 0.48581017297692597,
+   "tokens_per_s": 4215.638358189078,
+   "peak_rss_gb": 2.540843963623047
+  },
+  "8192": {
+   "times": [
+    2.8196856228169054,
+    2.784079398959875,
+    3.1703171050176024
+   ],
+   "median_s": 2.8196856228169054,
+   "tokens_per_s": 2905.28842425209,
+   "peak_rss_gb": 6.215106964111328
+  }
+ }
+}

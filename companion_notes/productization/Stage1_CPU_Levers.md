@@ -15,6 +15,7 @@
 5. [Lever T3: what the content term carries at each layer](#5-lever-t3-what-the-content-term-carries-at-each-layer)
 6. [What did not run, and what this changes in the plan](#6-what-did-not-run-and-what-this-changes-in-the-plan)
 7. [Files](#7-files)
+8. [Lever N6: flushing subnormal floats (added 2026-11-22)](#8-lever-n6-flushing-subnormal-floats-added-2026-11-22)
 
 ---
 
@@ -115,3 +116,31 @@ The trained model relies on content routing at layer 0 even more than at layer 1
 - Script: [`cpu_throughput_benchmark.py`](../../notebooks/conservative_arch/scaleup/debug/cpu_throughput_benchmark.py), with the stage-1 options `timers=1`, `prune=<layer>:<wells>` and `mask=1`, `gram=eigh64`, `xi=fold`, `xichunk=0`, `xiplain=<layers>`, `compile=`, `dump=` and `compare=`; [`xi_sdpa_microbench.py`](../../notebooks/conservative_arch/scaleup/debug/xi_sdpa_microbench.py).
 - Outputs in [`results/productization/`](../../notebooks/conservative_arch/scaleup/results/productization/): component timers `cpu_bench_sr2_memopt_timers.txt` and `cpu_bench_sr2_novphi_memopt_timers.txt`; checks `cpu_bench_sr2_prune*.txt`, `cpu_bench_sr2_eigh64.txt`, `cpu_bench_sr2_fold_check.txt`; §3 `cpu_bench_f_*.txt`; §4 `cpu_bench_b_*.txt` and `thermal_bracket.log`; §5 `cpu_bench_sr2_xiplain0.txt` and `cpu_bench_sr2_xiplain1.txt`; the microbenchmark `xi_sdpa_microbench_*.txt`.
 - The wells each layer uses: [Well_Screen_and_Precision.md](../depth_ladder/Well_Screen_and_Precision.md) and the keep-k curves in `results/dead_wells/` and `results/well_screen/`.
+
+## 8. Lever N6: flushing subnormal floats (added 2026-11-22)
+
+**Where the long-context time went.** Component timers on SR2-NP with every lever on (`prune=1:5 gram=eigh64 xi=fold`, the memory switches, 2026-11-22; `cpu_bench_np_lean_fold_timers.txt`) put the context channels at 13% of the forward at 512 tokens and 63% at 8,192 (9.2 s of 14.7 s). By arithmetic they need fewer multiply-adds than the matched GPT-2's attention: 5 channels of width $48 + 1$ in the scores and 384 in the values, at two layers, against 48 heads of 64 and 64 at eight layers, about 4,330 against 6,144 times $T^2$.
+
+**The cause.** In isolation at 8,192 tokens, the folded fused-attention call took 3.36 s per layer with the model's queries and keys, but 1.37 s with random ones of the same shapes and layout. The folded keys carry the distance term $-s \log \alpha$, which grows with the position $s$; inside the fused softmax the exponentials of the older keys fall into the subnormal range, where x86 arithmetic is slow. With `torch.set_flush_denormal(True)` the same call takes 1.25 s per layer, and its output is bit-identical.
+
+**The lever.** `denormal=flush` in `cpu_throughput_benchmark.py` flushes subnormals for the whole run. One session, matched GPT-2 timed before and after, tokens per second at 512 / 2,048 / 8,192:
+
+| configuration | without the flush | with the flush |
+| --- | --- | --- |
+| SR2-NP, every lever | 1,485 / 1,093 / 594 | 1,473 / 1,510 / 1,096 |
+| matched GPT-2 (fused attention) | 4,628 / 4,216 / 2,905 | 5,185 / 5,482 / 3,245 |
+| GPT-2 against SR2-NP | 3.2 / 3.6 / 4.9 times faster | 3.5 / 3.6 / 3.0 times faster |
+
+- SR2-NP gains 1.0, 1.38 and 1.85 times; the gain grows with the context, as the distance term does. Perplexity on the 16 windows is unchanged (58.41) and the logits are identical to the run without the flush. Peak memory is unchanged.
+- GPT-2 gains 12% to 30% from the same switch, so the gap narrows only at long context, from 4.9 to 3.0 times at 8,192 tokens.
+
+**The context channels as 30 heads of 64** (`xi=fold64`, measured 2026-11-22). Queries and keys (48 plus the folded distance component) are zero-padded to 64, which leaves every score unchanged, and the 384-wide value is split into six blocks of 64, each attended with its channel's scores: the same computation with equal head widths. Against a float64 reference at 2,048 tokens it is off by 2.3e-4, as the folded form is (2.2e-4); in the model the perplexity and the logits check are unchanged. Interleaved runs, subnormals flushed, every other lever on (`cpu_bench_j_*`):
+
+| | folded (two runs) | 30 heads of 64 (two runs) |
+| --- | --- | --- |
+| context channels at 8,192 tokens | 2.42, 2.34 s | 1.32, 1.31 s |
+| forward at 8,192 tokens, tokens per second | 1,131, 1,176 | 1,348, 1,391 |
+| context channels at 512 tokens | 0.012, 0.013 s | 0.022, 0.019 s |
+| forward at 512 tokens, tokens per second | 1,422, 1,594 | 1,508, 1,553 |
+
+At long context the 30 heads take the channels 1.8 times faster and the forward 1.18 times; at 512 tokens they are 8 ms slower in the channels, inside the noise of the forward. Use them above about 1,000 tokens. The derivation, the kernel dispatch rule that explains the gain, and the cost and error analysis are in [Stage1b_Context_Channels_as_30_Heads.md](Stage1b_Context_Channels_as_30_Heads.md). With both, the matched GPT-2 (flushed, 3,168 to 3,245 tokens per second at 8,192) is about 2.3 times faster at 8,192 tokens and about 3.5 times at 512. The component timers at 8,192 tokens then read: context channels 23%, well bank 20% plus 8% for its quadratic and force, stiff-mode decomposition 23%, the rest 26%. The remaining time is no longer in the channels. Outputs: `cpu_bench_h_*`, `cpu_bench_i_*`, `cpu_bench_j_*`, `queue_denormal.log` and `queue_fold64.log` in `results/productization/`.

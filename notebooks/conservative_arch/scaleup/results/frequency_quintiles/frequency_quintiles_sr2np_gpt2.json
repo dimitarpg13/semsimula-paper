@@ -1,0 +1,124 @@
+{
+ "windows": 128,
+ "T": 512,
+ "val": "/Users/dimitargueorguiev/Downloads/semsimula_fock_gamma_sweep_aniso_gaussian_fockreg_d384/data/openwebtext_val_2M.npy",
+ "logfreq": "/Users/dimitargueorguiev/Downloads/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/results/logfreq_surprisal_openwebtext.npy",
+ "ln_V": 10.82490511970208,
+ "models": {
+  "owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn": {
+   "overall": 4.109261512756348,
+   "quintiles": [
+    {
+     "q": 0,
+     "mean_loss": 11.473252296447754,
+     "gain_over_unigram": 2.48437995268098,
+     "targets": 564
+    },
+    {
+     "q": 1,
+     "mean_loss": 10.055950164794922,
+     "gain_over_unigram": 3.2596030999133934,
+     "targets": 1055
+    },
+    {
+     "q": 2,
+     "mean_loss": 8.37547492980957,
+     "gain_over_unigram": 4.4494615748871205,
+     "targets": 1720
+    },
+    {
+     "q": 3,
+     "mean_loss": 7.137241363525391,
+     "gain_over_unigram": 4.93588934625898,
+     "targets": 3752
+    },
+    {
+     "q": 4,
+     "mean_loss": 3.6109139919281006,
+     "gain_over_unigram": 3.4056077198921457,
+     "targets": 58445
+    }
+   ],
+   "all_below_ln_V": false
+  },
+  "semsimula_matched_gpt2_baseline_owt": {
+   "overall": 3.960387945175171,
+   "quintiles": [
+    {
+     "q": 0,
+     "mean_loss": 10.838083267211914,
+     "gain_over_unigram": 3.11954898191682,
+     "targets": 564
+    },
+    {
+     "q": 1,
+     "mean_loss": 9.774206161499023,
+     "gain_over_unigram": 3.541347103209292,
+     "targets": 1055
+    },
+    {
+     "q": 2,
+     "mean_loss": 8.171152114868164,
+     "gain_over_unigram": 4.653784389828527,
+     "targets": 1720
+    },
+    {
+     "q": 3,
+     "mean_loss": 6.824614524841309,
+     "gain_over_unigram": 5.248516184943062,
+     "targets": 3752
+    },
+    {
+     "q": 4,
+     "mean_loss": 3.481276035308838,
+     "gain_over_unigram": 3.5352456765114084,
+     "targets": 58445
+    }
+   ],
+   "all_below_ln_V": false
+  }
+ },
+ "unigram_prior": {
+  "quintiles": [
+   13.957632249128734,
+   13.315553264708315,
+   12.82493650469669,
+   12.07313070978437,
+   7.016521711820246
+  ],
+  "overall": 7.619596892414847
+ },
+ "paired": {
+  "semsimula_matched_gpt2_baseline_owt": {
+   "against": "owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn",
+   "quintiles": [
+    {
+     "q": 0,
+     "diff": -0.6351683139801025,
+     "se": 0.13960224806799332
+    },
+    {
+     "q": 1,
+     "diff": -0.2817450165748596,
+     "se": 0.06477527364049361
+    },
+    {
+     "q": 2,
+     "diff": -0.204323410987854,
+     "se": 0.04983181778422645
+    },
+    {
+     "q": 3,
+     "diff": -0.31262630224227905,
+     "se": 0.04485188522863867
+    },
+    {
+     "q": 4,
+     "diff": -0.1296381652355194,
+     "se": 0.00881686429744101
+    }
+   ],
+   "overall": -0.1488737314939499
+  }
+ }
+}

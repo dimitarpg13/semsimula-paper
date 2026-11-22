@@ -1,0 +1,28 @@
+CPU inference benchmark: ladder  semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn); analytic V_phi True; query chunk 512; skip unread registers True; layer 1 pruned to wells [5]; context channels by folded fused attention; gram driver by float64 eigh; 79,186,819 parameters; 8 threads; float32; one sequence per forward
+
+length   median s   tokens/s  peak RSS GB  times
+   512      0.383     1337.4         2.13  0.385 0.381
+        components at 512 (one timed forward, 0.367 s; inclusive wall time, calls):
+           12.9%     0.047 s    2  context channels (xi)
+           24.2%     0.089 s    2  well bank: context_components
+            4.5%     0.016 s    2  well bank: harmonic_terms_lowrank
+           25.7%     0.094 s    2  stiff-mode decomposition (lowrank_modes)
+            3.8%     0.014 s    2  well bank: analytical_grad
+           28.9%  the rest (integrator, embeddings, output head)
+  2048      1.863     1099.5         3.95  1.857 1.868
+        components at 2048 (one timed forward, 1.982 s; inclusive wall time, calls):
+           36.6%     0.726 s    2  context channels (xi)
+           18.4%     0.365 s    2  well bank: context_components
+            3.7%     0.074 s    2  well bank: harmonic_terms_lowrank
+           18.2%     0.361 s    2  stiff-mode decomposition (lowrank_modes)
+            2.1%     0.042 s    2  well bank: analytical_grad
+           20.9%  the rest (integrator, embeddings, output head)
+  8192     14.558      562.7         9.59  14.307 14.810
+        components at 8192 (one timed forward, 14.654 s; inclusive wall time, calls):
+           62.6%     9.168 s    2  context channels (xi)
+           10.1%     1.479 s    2  well bank: context_components
+            2.2%     0.324 s    2  well bank: harmonic_terms_lowrank
+           10.4%     1.531 s    2  stiff-mode decomposition (lowrank_modes)
+            1.6%     0.237 s    2  well bank: analytical_grad
+           13.1%  the rest (integrator, embeddings, output head)

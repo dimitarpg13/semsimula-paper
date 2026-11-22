@@ -16,9 +16,11 @@ one warm-up, tokens per second, and the process's peak resident memory so far (l
 Writes OUT/cpu_bench_<stem>.txt and .json.
 
 Stage 1 of the productization plan (2026-11-17; companion_notes/productization/Conservative_Core_Productization_Plan.md)
-adds, for ladder models: timers=1 (wall time per component), prune=<layer>:<wells> [mask=1] (lever N3), compile=layer
+adds, for ladder models: timers=1 (wall time per component), bank=pb<width> (twin PB's arithmetic, timing only),
+prune=<layer>:<wells> [mask=1] (lever N3), compile=layer
 or compile=model (lever N2), and dump=<file.npy> / compare=<file.npy> (the logits on one fixed validation window,
 with loss=, to check a variant against the unmodified model).
+denormal=flush (2026-11-22) flushes subnormal floats to zero for the whole run (see the note at set_flush_denormal).
 """
 import json, os, resource, sys, time
 from pathlib import Path
@@ -42,6 +44,10 @@ sys.argv = ['copy_split.py', str(OUT), 'probe', 'windows=1', f'threads={THREADS}
 CS = {'__name__': 'copy_split', '__file__': str(DBG / 'copy_split.py')}
 exec(compile(src, str(DBG / 'copy_split.py'), 'exec'), CS)
 torch.set_num_threads(THREADS)
+# 2026-11-22: denormal=flush flushes subnormal floats to zero. The folded context channels' keys carry -s log a, which
+# grows with s, so the fused attention's softmax produces many subnormal exponentials; on x86 these are slow. On SR2-NP's
+# folded channels at 8,192 tokens: 3.36 s -> 1.25 s per layer, output bit-identical. Applies to every model.
+FLUSH_DENORMAL = OPTS.get('denormal') == 'flush' and torch.set_flush_denormal(True)
 
 
 def tile(w, n):
@@ -77,6 +83,29 @@ if MODEL == 'ladder':
         assert m.cfg.vphi_analytic_force, 'novphi replaces the analytic pair force'
         m._pair_force_analytic = lambda h_in, layer_idx, h_src_live=None, q_slice=None: torch.zeros_like(h_in)
         desc += '; V_phi removed'
+    if OPTS.get('bank', '').startswith('pb'):
+        # 2026-11-22 (productization plan, item 4): bank=pb<width> times twin PB without training it. B_proj becomes
+        # two maps through a bottleneck of <width> (its truncated SVD, no bias in the first map) and a_proj a fixed
+        # value per well (its bias): the arithmetic of the trained twin, not its predictions (the SVD at 512 costs
+        # +41% untrained; Well_Screen_and_Precision.md, section 5). Timing only. Before prune=, which copies rows.
+        nn_ = torch.nn
+        full = m.V_theta.bank.banks[0]; WB = int(OPTS['bank'][2:])
+        class _Bottleneck(nn_.Module):
+            def __init__(self, first, second):
+                super().__init__(); self.first, self.second = first, second
+            def forward(self, x):
+                return self.second(self.first(x))
+        class _Fixed(nn_.Module):
+            def __init__(self, value):
+                super().__init__(); self.value = nn_.Parameter(value)
+            def forward(self, x):
+                return self.value.expand(*x.shape[:-1], -1)
+        U_, S_, Vh_ = torch.linalg.svd(full.B_proj.weight.data, full_matrices=False)
+        first = nn_.Linear(full.B_proj.in_features, WB, bias=False); first.weight.data = (S_[:WB, None] * Vh_[:WB]).clone()
+        second = nn_.Linear(WB, full.B_proj.out_features); second.weight.data = U_[:, :WB].clone()
+        second.bias.data = full.B_proj.bias.data.clone()
+        full.B_proj = _Bottleneck(first, second); full.a_proj = _Fixed(full.a_proj.bias.data.clone())
+        desc += f'; bank timed as twin PB (B_proj through {WB}, a fixed per well; timing proxy, predictions not trained)'
     if OPTS.get('prune'):
         # 2026-11-17 (lever N3): prune=<layer>:<wells> keeps only those wells of the shared bank while that layer is
         # active, e.g. prune=1:3,4. The dropped wells get weight 0 without renormalisation, as in the keep-k screen
@@ -99,6 +128,10 @@ if MODEL == 'ladder':
             sub = copy.deepcopy(full); sub.K = len(KEEPW)
             def _rows(lin, width):
                 idx = torch.cat([torch.arange(k * width, (k + 1) * width) for k in KEEPW])
+                if hasattr(lin, 'second'):                           # bank=pb: keep the shared first map
+                    new = copy.deepcopy(lin); new.second = _rows(lin.second, width); return new
+                if hasattr(lin, 'value'):
+                    new = copy.deepcopy(lin); new.value.data = lin.value.data[idx].clone(); return new
                 new = torch.nn.Linear(lin.in_features, idx.numel())
                 new.weight.data = lin.weight.data[idx].clone(); new.bias.data = lin.bias.data[idx].clone()
                 return new
@@ -164,6 +197,31 @@ if MODEL == 'ladder':
             return o.permute(0, 2, 1, 3).contiguous()                  # (B, T, K, d)
         xm.forward = _xi_fold
         desc += '; context channels by folded fused attention'
+    if OPTS.get('xi') == 'fold64':
+        # 2026-11-22 (after lever N6): the folded channels as 5 x 6 = 30 heads of width 64. Queries and keys (48 + the
+        # folded distance component = 49) are zero-padded to 64, which leaves every score unchanged; the 384-wide value
+        # is split into six blocks of 64, each attended with its channel's scores. Same computation as xi=fold, with
+        # equal head widths, which the fused CPU kernel runs faster (sdpa_bench: 1.29 -> 0.63 s per layer at 8,192).
+        xm = m.xi_module
+        assert xm.W_q is not None, 'xi=fold64 needs the content-routed channels'
+        def _xi_fold64(h):
+            B, T, D = h.shape; K_, dk_ = xm.K, xm.content_d_k
+            nb = D // 64
+            assert nb * 64 == D and dk_ + 1 <= 64
+            la = torch.log(xm.alpha.clamp(min=1e-6, max=1 - 1e-6))
+            q = xm.W_q(h).view(B, T, K_, dk_).permute(0, 2, 1, 3)
+            kk = xm.W_k(h).view(B, T, K_, dk_).permute(0, 2, 1, 3)
+            s = torch.arange(T, dtype=h.dtype, device=h.device)
+            pad = torch.zeros((B, K_, T, 64 - dk_ - 1), dtype=h.dtype, device=h.device)
+            q = torch.cat([q, torch.full((B, K_, T, 1), dk_ ** 0.5, dtype=h.dtype, device=h.device), pad], -1)
+            kk = torch.cat([kk, (-s.view(1, 1, T, 1) * la.view(1, K_, 1, 1)).expand(B, K_, T, 1), pad], -1)
+            q = q.unsqueeze(2).expand(B, K_, nb, T, 64).reshape(B, K_ * nb, T, 64)
+            kk = kk.unsqueeze(2).expand(B, K_, nb, T, 64).reshape(B, K_ * nb, T, 64)
+            v = h.view(B, T, nb, 64).permute(0, 2, 1, 3).unsqueeze(1).expand(B, K_, nb, T, 64).reshape(B, K_ * nb, T, 64)
+            o = torch.nn.functional.scaled_dot_product_attention(q, kk, v, is_causal=True, scale=dk_ ** -0.5)
+            return o.view(B, K_, nb, T, 64).permute(0, 3, 1, 2, 4).reshape(B, T, K_, D)   # (B, T, K, d)
+        xm.forward = _xi_fold64
+        desc += '; context channels by folded fused attention, 30 heads of 64'
     if OPTS.get('gram') == 'eigh64':
         # 2026-11-17 (lever N5): the gram driver's float64 SVD of the symmetric PSD Gram matrix replaced by a float64
         # symmetric eigensolve, same hardenings (symmetrise, float64, ramp), values put in the descending order the
@@ -278,7 +336,8 @@ m.eval()
 n_par = sum(p.numel() for p in m.parameters())
 print('model:', desc, f'{n_par:,} parameters', flush=True)
 rng = np.random.default_rng(0)
-res = {'model': MODEL, 'folder': FOLDER, 'desc': desc, 'params': n_par, 'threads': THREADS, 'lengths': {}}
+res = {'model': MODEL, 'folder': FOLDER, 'desc': desc + ('; subnormals flushed' if FLUSH_DENORMAL else ''),
+       'params': n_par, 'threads': THREADS, 'flush_denormal': bool(FLUSH_DENORMAL), 'lengths': {}}
 lines = [f'CPU inference benchmark: {MODEL}  {FOLDER}', f'{desc}; {n_par:,} parameters; {THREADS} threads; float32; '
          'one sequence per forward', '', f'{"length":>6}  {"median s":>9}  {"tokens/s":>9}  {"peak RSS GB":>11}  times']
 if NDEC:

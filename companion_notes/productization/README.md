@@ -8,6 +8,7 @@
 | --- | --- |
 | [Conservative_Core_Productization_Plan.md](Conservative_Core_Productization_Plan.md) | the Gen 3 conservative core (SR2, K4-R6, K2-R6): the measured gap, the levers with and without retraining, the order of work |
 | [Stage1_CPU_Levers.md](Stage1_CPU_Levers.md) | stage 1 of the plan, measured: where SR2's time goes by component, the levers that need no retraining (layer-1 pruning, `eigh`, folded fused attention) with their checks, the ratios against GPT-2, and the first reading for content-gated context channels |
+| [Stage1b_Context_Channels_as_30_Heads.md](Stage1b_Context_Channels_as_30_Heads.md) | the context channels rewritten exactly as 30 heads of 64 so the tiled CPU attention kernel runs: problem statement, derivation, dispatch rule, cost and error analysis, measurements (1.67 times on the channels at 8,192 tokens) |
 | [Stage2_Decoding.md](Stage2_Decoding.md) | stage 2, measured: the incremental decoder and its check, decoding speed and cache size against GPT-2 with a key–value cache, where a decode step's time goes, and `torch.compile` |
 | [Stage3_SR2_Without_Pair_Force.md](Stage3_SR2_Without_Pair_Force.md) | stage 3, first arm done: SR2 trained without the pair force (SR2-NP), settled 58.51 (+0.3% against SR2); calls, diagnostics, CPU speeds and the model card |
 | [Stage3b_SR2_NP_Tied_Embeddings.md](Stage3b_SR2_NP_Tied_Embeddings.md) | stage 3, second arm set up: SR2-NP with tied embeddings (SR2-NP-T, 57.1M parameters); is the separate output head needed? calls TE1–TE3 confirmed |

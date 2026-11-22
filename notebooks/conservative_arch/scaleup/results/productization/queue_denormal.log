@@ -1,0 +1,6 @@
+00:41:35 h_gpt2 exit 0
+00:41:52 h_gpt2_flush exit 0
+00:43:14 h_np exit 0
+00:44:09 h_np_flush exit 0
+00:44:28 h_gpt2_2 exit 0
+done

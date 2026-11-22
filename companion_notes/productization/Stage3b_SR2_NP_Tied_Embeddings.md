@@ -2,7 +2,7 @@
 
 **What this note is.** The setup and pre-registration of the second GPU arm of stage 3 of [Conservative_Core_Productization_Plan.md](Conservative_Core_Productization_Plan.md): [SR2-NP](Stage3_SR2_Without_Pair_Force.md) trained from scratch with its input embedding and output head tied, and the output bias kept. Its question: is the separate output head, 19.3M of SR2-NP's 76.4M parameters, needed? Written 2026-11-21.
 
-**Status.** Set up 2026-11-21. A first launch on 2026-11-22 was stopped at step 50 because of the gradient clip of the shared matrix (§2); relaunched with the fix. The calls in §3 were **confirmed by the author on 2026-11-21**, with the 1% tolerance of TE1, and are binding.
+**Status.** Set up 2026-11-21. A first launch on 2026-11-22 was stopped at step 50 because of the gradient clip of the shared matrix (§2); relaunched with the fix. The calls in §3 were **confirmed by the author on 2026-11-21**, with the 1% tolerance of TE1, and are binding; TE2's threshold was amended on 2026-11-22, with the author's confirmation, before any result (§3).
 
 ---
 
@@ -61,8 +61,10 @@ Confirmed by the author on 2026-11-21, at the probabilities below; binding. Sett
 | id | call | probability |
 | --- | --- | ---: |
 | TE1 | SR2-NP-T settles within 1% of SR2-NP's 58.51 (at or below 59.10) | 50% |
-| TE2 | the rare-token collapse does not return: in SR2-NP-T every quintile's mean loss is below the uniform guess of 10.83 nats | 80% |
+| TE2 | the rare-token collapse does not return: in SR2-NP-T every quintile's mean loss is below the unigram prior's on the same targets (amended 2026-11-22; see below) | 80% |
 | TE3 | the rarest quintile's mean loss in SR2-NP-T is within 0.5 nats of SR2-NP's | 55% |
+
+**TE2 amended before any result (2026-11-22, confirmed by the author).** As first written, TE2 compared each quintile with the uniform guess $\ln V = 10.83$ nats. The D0.4 script (§5) showed that this threshold says nothing about a collapse: a calibrated model must score above $\ln V$ on types rarer than $1/V$, and the matched GPT-2 itself reads 10.84 nats on the rarest quintile, SR2-NP 11.47. The reference that does mark a collapse is the unigram prior, the loss of a model that knows only the training frequencies (13.96 nats on the rarest quintile of the same validation targets; `results/frequency_quintiles/frequency_quintiles_sr2np_gpt2.txt`). The amendment was made while SR2-NP-T was still training and before any of its outputs were seen; the probability stays at 80%.
 
 **Decision rule** (the 1% tolerance confirmed by the author). TE1 hits: later productization arms run tied, and the cards and the book quote 57.1M parameters. TE1 misses: the untied head stays, now as a measured requirement on the Gen 3 core, and TE2 and TE3 say whether the cost sits in the rare tokens, as D0.4 found on Gen 1, or elsewhere.
 
@@ -76,7 +78,7 @@ After training, on the best checkpoint, the same diagnostic cells as SR2-NP: 6b-
 
 On the CPU, one job at a time:
 
-- **The quintile breakdown** for SR2-NP and SR2-NP-T on the same validation windows (TE2, TE3). The script does not exist yet; it is a few dozen lines on top of the per-token loss the recall pathway probe already computes.
+- **The quintile breakdown** for SR2-NP and SR2-NP-T on the same validation windows (TE2, TE3): `debug/frequency_quintile_loss.py`, written and tested on SR2-NP and the matched GPT-2 on 2026-11-22; SR2-NP's per-token losses are cached, so only SR2-NP-T needs computing.
 - **The causality check** on the final weights, as for SR2-NP: the shared matrix touches no force term, so it should read clean.
 - **The well screen** of layer 1 (one well in SR2-NP), to see whether the read-out change moves the bank.
 

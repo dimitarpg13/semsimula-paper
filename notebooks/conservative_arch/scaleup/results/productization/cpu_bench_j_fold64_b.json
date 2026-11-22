@@ -1,0 +1,74 @@
+{
+ "model": "ladder",
+ "folder": "semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn",
+ "desc": "fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn); analytic V_phi True; query chunk 512; skip unread registers True; layer 1 pruned to wells [5]; context channels by folded fused attention, 30 heads of 64; gram driver by float64 eigh; subnormals flushed",
+ "params": 79186819,
+ "threads": 8,
+ "flush_denormal": true,
+ "lengths": {
+  "512": {
+   "times": [
+    0.329647168982774,
+    0.3660776161123067,
+    0.3271676430013031
+   ],
+   "median_s": 0.329647168982774,
+   "tokens_per_s": 1553.1757836110978,
+   "peak_rss_gb": 2.131694793701172,
+   "components": {
+    "context channels (xi)": {
+     "s": 0.019180036848410964,
+     "calls": 2
+    },
+    "well bank: context_components": {
+     "s": 0.07963894214481115,
+     "calls": 2
+    },
+    "well bank: harmonic_terms_lowrank": {
+     "s": 0.017701057018712163,
+     "calls": 2
+    },
+    "stiff-mode decomposition (lowrank_modes)": {
+     "s": 0.08995803608559072,
+     "calls": 2
+    },
+    "well bank: analytical_grad": {
+     "s": 0.04609318822622299,
+     "calls": 2
+    }
+   }
+  },
+  "8192": {
+   "times": [
+    5.812223457964137,
+    5.91169047402218,
+    5.88899785396643
+   ],
+   "median_s": 5.88899785396643,
+   "tokens_per_s": 1391.0685999796085,
+   "peak_rss_gb": 10.284095764160156,
+   "components": {
+    "context channels (xi)": {
+     "s": 1.3089801976457238,
+     "calls": 2
+    },
+    "well bank: context_components": {
+     "s": 1.1818907659035176,
+     "calls": 2
+    },
+    "well bank: harmonic_terms_lowrank": {
+     "s": 0.28639729507267475,
+     "calls": 2
+    },
+    "stiff-mode decomposition (lowrank_modes)": {
+     "s": 1.3648571909870952,
+     "calls": 2
+    },
+    "well bank: analytical_grad": {
+     "s": 0.241082311142236,
+     "calls": 2
+    }
+   }
+  }
+ }
+}

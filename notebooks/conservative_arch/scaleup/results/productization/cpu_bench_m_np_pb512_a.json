@@ -1,0 +1,41 @@
+{
+ "model": "ladder",
+ "folder": "semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn",
+ "desc": "fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn); analytic V_phi True; query chunk 512; skip unread registers True; bank timed as twin PB (B_proj through 512, a fixed per well; timing proxy, predictions not trained); layer 1 pruned to wells [5]; context channels by folded fused attention, 30 heads of 64; gram driver by float64 eigh; subnormals flushed",
+ "params": 56970115,
+ "threads": 8,
+ "flush_denormal": true,
+ "lengths": {
+  "512": {
+   "times": [
+    0.29775010305456817,
+    0.42348755593411624,
+    0.5487233211752027
+   ],
+   "median_s": 0.42348755593411624,
+   "tokens_per_s": 1209.0083706725352,
+   "peak_rss_gb": 2.179271697998047
+  },
+  "2048": {
+   "times": [
+    1.7090940200723708,
+    1.5879666260443628,
+    1.6240230179391801
+   ],
+   "median_s": 1.6240230179391801,
+   "tokens_per_s": 1261.0658699892256,
+   "peak_rss_gb": 3.91278076171875
+  },
+  "8192": {
+   "times": [
+    7.746190409176052,
+    7.364145688014105,
+    6.2206908809021115
+   ],
+   "median_s": 7.364145688014105,
+   "tokens_per_s": 1112.4168840566683,
+   "peak_rss_gb": 9.545730590820312
+  }
+ },
+ "val_loss": 4.415457248687744
+}

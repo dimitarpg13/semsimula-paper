@@ -75,10 +75,27 @@ PyTorch 2.2.2, the last release with wheels for Intel Macs, supports `torch.comp
 | target | prefill, 512 / 2,048 / 8,192 tokens | decoding | logits |
 | --- | --- | --- | --- |
 | the layer step | 0.96 / 1.13 / 1.09 times eager | not measured | as eager |
-| the layer step's core (from the linearisation on) | not measured | 1.28 / 1.40 times (512 / 2,048 context) | as eager (§2) |
+| the layer step's core (from the linearisation on) | 1.02 / 1.39 / 1.17 times eager (SR2-NP, measured 2026-11-22, below) | 1.28 / 1.40 times (512 / 2,048 context) | as eager (§2) |
 | the whole model | failed inside PyTorch 2.2's tracer | | |
 
 The prefill comparison ran eager, compiled, eager in one session (eager 1,407 and 1,410 tokens per second at 512 before and after). In prefill the operations are already large, so fusion gains little; in decoding they are tiny, and it gains more. Compiling adds a one-off cost on the first call of each shape (in the 8,192-token prefill, about 50 s).
+
+**The core in prefill (2026-11-22, item 3 of the plan's remaining speed push).** On SR2-NP with every current lever on (`chunk=512 skipreg=1 prune=1:5 gram=eigh64 xi=fold64 denormal=flush`), one session in the Python 3.11 environment, in the order eager, core compiled, eager, layer step compiled; tokens per second at 512 / 2,048 / 8,192 tokens:
+
+| run | 512 | 2,048 | 8,192 | peak memory at 8,192, GB |
+| --- | ---: | ---: | ---: | ---: |
+| eager | 1,384 | 1,189 | 1,257 | 9.55 |
+| core compiled | 1,390 | 1,763 | 1,461 | 11.10 |
+| eager | 1,339 | 1,340 | 1,244 | 9.53 |
+| layer step compiled | 1,134 | 1,738 | 1,437 | 11.09 |
+
+- Against the mean of the two eager runs, compiling the core gives 1.02, 1.39 and 1.17 times. The eager runs differ by 13% at 2,048 tokens, so that reading carries the most noise.
+- Compiling the whole layer step gains as much at 2,048 and 8,192 tokens but loses 17% at 512.
+- The perplexity on 16 windows (58.41) and the logits check against the reference agree with eager to the printed digits in every run.
+- The compiled runs hold about 1.5 GB more at 8,192 tokens.
+- These eager runs are slower than the Python 3.12 runs of Stage1_CPU_Levers.md, §8 (1,250 against about 1,370 tokens per second at 8,192), so compare within this table only.
+
+So the core is worth compiling for prefill from about 2,048 tokens. At 512 it gains nothing: there the time sits in the large matrix products, which compiling does not change. Outputs: `cpu_bench_l_np_*` and `queue_compile_prefill.log` in `results/productization/`.
 
 ## 6. What this changes in the plan
 
