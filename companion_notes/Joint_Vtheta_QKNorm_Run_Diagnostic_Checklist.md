@@ -42,6 +42,217 @@ Background lives alongside this file in `companion_notes/`:
 
 ---
 
+## Contents
+
+- [Definitions](#definitions)
+- [The tests, stated mathematically](#the-tests-stated-mathematically)
+  - [T1. Is the cap binding? (§2.1, §4)](#t1-is-the-cap-binding-21-4)
+  - [T2. How is the rank used, and where? (§2.2)](#t2-how-is-the-rank-used-and-where-22)
+  - [T3. When did it happen? (§2.3)](#t3-when-did-it-happen-23)
+  - [T4. What budget would bind? (§2.4)](#t4-what-budget-would-bind-24)
+  - [T5. Which factor of `omega*dt` moves? (§2.5)](#t5-which-factor-of-omegadt-moves-25)
+  - [T6. What makes a spike? (§2.6)](#t6-what-makes-a-spike-26)
+  - [T7. Is `omega*dt` shifting or widening? (§3, §7.7)](#t7-is-omegadt-shifting-or-widening-3-77)
+  - [T8. Was the plateau a learning-rate problem? (§6, §6.3)](#t8-was-the-plateau-a-learning-rate-problem-6-63)
+  - [T9. Does integration error cost loss? (§7, §7.2, §7.6)](#t9-does-integration-error-cost-loss-7-72-76)
+  - [T10. What does the linear algebra cost? (§7.0)](#t10-what-does-the-linear-algebra-cost-70)
+  - [T11. Where does the architecture stand against a transformer? (§9)](#t11-where-does-the-architecture-stand-against-a-transformer-9)
+  - [T12. Is Family A conservative and causal? (§10.3, §10.4)](#t12-is-family-a-conservative-and-causal-103-104)
+  - [T13. Does content-addressed pooling recover the gap? (§10.7, §10.8)](#t13-does-content-addressed-pooling-recover-the-gap-107-108)
+  - [T14. Were the well bank's parameters used? (§9.5, §10.9)](#t14-were-the-well-banks-parameters-used-95-109)
+- [0. Before running anything](#0-before-running-anything)
+- [1. What exists, and what is blocked](#1-what-exists-and-what-is-blocked)
+- [2. Run in this order](#2-run-in-this-order)
+  - [2.1 Is `||B_k||_F` pinned at the `PRECISION_LR_MAX = 1.0` cap? — PROPOSED](#21-is-b_k_f-pinned-at-the-precision_lr_max--10-cap--proposed)
+  - [2.2 Per-site rank structure of the joint bank — PROPOSED](#22-per-site-rank-structure-of-the-joint-bank--proposed)
+  - [2.3 Trajectory across checkpoints — PROPOSED](#23-trajectory-across-checkpoints--proposed)
+  - [2.4 `bracket_precision_lr_max` — PROPOSED](#24-bracket_precision_lr_max--proposed)
+  - [2.5 `omega*dt` decomposition — NEEDS NEW TOOLING](#25-omegadt-decomposition--needs-new-tooling)
+  - [2.6 Bundle-dependent probes — UNBLOCKED, 2026-09-16](#26-bundle-dependent-probes--unblocked-2026-09-16)
+- [3. Predictions recorded in advance, for the 50,000-step checkpoint](#3-predictions-recorded-in-advance-for-the-50000-step-checkpoint)
+- [4. What the results decide](#4-what-the-results-decide)
+- [5. Lower priority / optional](#5-lower-priority--optional)
+- [6. The anneal probe — RUN, SUCCEEDED (2026-09-17)](#6-the-anneal-probe--run-succeeded-2026-09-17)
+  - [6.1 RESULT, 2026-09-17 — the LR was the block](#61-result-2026-09-17--the-lr-was-the-block)
+  - [6.2 Next action](#62-next-action)
+  - [6.3 Companion probe: anneal from the run's BEST (step 28,500) — RUN, SUCCEEDED](#63-companion-probe-anneal-from-the-runs-best-step-28500--run-succeeded)
+  - [6.4 Production decay from step 28,500 — NEXT](#64-production-decay-from-step-28500--next)
+- [7. Integration refinement: does the over-wall tail actually cost anything?](#7-integration-refinement-does-the-over-wall-tail-actually-cost-anything)
+  - [7.0 Benchmark the linalg before choosing — RUN, 2026-09-17](#70-benchmark-the-linalg-before-choosing--run-2026-09-17)
+  - [7.1 What refines for free, and what does not](#71-what-refines-for-free-and-what-does-not)
+  - [7.2 Substeps at dt=0.5 — LARGELY SUPERSEDED by §7.6, 2026-09-18](#72-substeps-at-dt05--largely-superseded-by-76-2026-09-18)
+  - [7.3 Fallback: L=16 at dt=0.5 with checkpoint surgery — only if §7.2 or §7.6 says yes](#73-fallback-l16-at-dt05-with-checkpoint-surgery--only-if-72-or-76-says-yes)
+  - [7.4 Do NOT run L=16 at dt=1.0](#74-do-not-run-l16-at-dt10)
+  - [7.5 Standing facts about depth in this architecture](#75-standing-facts-about-depth-in-this-architecture)
+  - [7.6 `baoab_cfc_lowrank` — RUN AND CLOSED, 2026-09-18](#76-baoab_cfc_lowrank--run-and-closed-2026-09-18)
+  - [7.7 Do NOT coarsen (L=4 at dt=2.0, etc.)](#77-do-not-coarsen-l4-at-dt20-etc)
+- [8. After this analysis](#8-after-this-analysis)
+- [9. The matched GPT-2 baseline — RUNNING, 2026-09-18](#9-the-matched-gpt-2-baseline--running-2026-09-18)
+  - [9.1 Why this comparison is valid](#91-why-this-comparison-is-valid)
+  - [9.2 Result](#92-result)
+  - [9.3 The four-axis comparison](#93-the-four-axis-comparison)
+  - [9.4 The bottleneck diagnosis](#94-the-bottleneck-diagnosis)
+  - [9.5 Pre-registered predictions](#95-pre-registered-predictions)
+- [10. Family A: xi-routed conservative attention — GATES 0-2 PASSED, 2026-09-18](#10-family-a-xi-routed-conservative-attention--gates-0-2-passed-2026-09-18)
+  - [10.1 What already existed](#101-what-already-existed)
+  - [10.2 The port (Gate 0) — DONE, committed in `661d959`](#102-the-port-gate-0--done-committed-in-661d959)
+  - [10.3 Gate results](#103-gate-results)
+  - [10.4 Two findings from running the gates](#104-two-findings-from-running-the-gates)
+  - [10.5 Cost and parameters at d=384](#105-cost-and-parameters-at-d384)
+  - [10.6 Two mechanisms, two slots](#106-two-mechanisms-two-slots)
+  - [10.7 Remaining gates](#107-remaining-gates)
+  - [10.8 Alternative E result — RUN, DIAGNOSIS REFUTED (2026-09-19)](#108-alternative-e-result--run-diagnosis-refuted-2026-09-19)
+  - [10.9 Next: Phase 2 factorisation probe — PROPOSED](#109-next-phase-2-factorisation-probe--proposed)
+
+---
+
+## Definitions
+
+Terms used throughout this checklist, in the order a reader meets them. Symbols follow the CfC/BAOAB notes.
+
+- **Arm.** One training configuration. **The joint arm** (this checklist) has one well bank whose wells read all five context channels at once (`vtjoint`); **the additive arm** ([`Post_100K_CfC_BAOAB_Analysis_Checklist.md`](Post_100K_CfC_BAOAB_Analysis_Checklist.md)) has one bank per channel, five in all, whose potentials are summed.
+- **Context channels.** $\xi_c(t)$, $c = 1, \dots, 5$: causal averages of the past states with learned decays. In this arm they are exponential moving averages; Alternative E (§10.6 to §10.8) adds a content term inside their softmax.
+- **Well bank, $V_\theta$.** A potential over $K$ wells, each with a centre $\mu_k$, a weight $w_k$ and a precision $P_k$, all computed from the context by dense maps (`mu_proj`, `w_proj`, `a_proj`, `B_proj`):
+
+  $$V_\theta(h; \xi) = -\sum_k w_k \exp\left(-\tfrac{1}{2}(h - \mu_k)^{\top} P_k (h - \mu_k)\right).$$
+
+- **Precision.** A diagonal part and a low-rank part, with $B_k$ of size $d \times r$ and rank $r = 4$:
+
+  $$P_k = \mathrm{diag}(a_k) + B_k B_k^{\top}.$$
+
+- **Force weight.** How strongly well $k$ pulls the token at its current state $h$:
+
+  $$g_k = w_k \exp\left(-\tfrac{1}{2}(h - \mu_k)^{\top} P_k (h - \mu_k)\right).$$
+
+- **Site.** One (layer, bank) pair. The joint arm has 8 sites (8 layers, one bank); the additive arm has 40 (8 layers, five banks).
+- **The cap, `PRECISION_LR_MAX`.** A smooth bound on the Frobenius norm of each $B_k$, at most the square root of the cap. With the cap at 1.0, a factor at the cap has Frobenius norm 1; **pinned** means every site reads 1.
+- **Participation ratio (PR).** For the singular values $\sigma_i$ of $B_k$, the effective number of directions in use, between 1 and $r$:
+
+  $$\mathrm{PR} = \frac{\left(\sum_i \sigma_i^2\right)^2}{\sum_i \sigma_i^4}.$$
+
+  Its **random-init null** at $r = 4$ is 3.96, so a high PR alone says nothing.
+- **`between_frac`.** From `sigma_lr_spectrum_by_site`: the share of PR's spread that lies between sites rather than among the wells of one site, with $s_b$ the spread of the per-site median PR and $s_w$ the mean spread inside a site:
+
+  $$\text{between-frac} = \frac{s_b^2}{s_b^2 + s_w^2}.$$
+
+  Near 0, homogeneous; near 1, organised by site.
+- **Stiffness operator.** The low-rank part of the potential's curvature at the token's state:
+
+  $$\mathcal{K} = \sum_k g_k B_k B_k^{\top}.$$
+
+- **Semantic mass.** $m$ (in the code `m_b`), the per-token mass in the second-order step.
+- **$\omega \Delta t$.** The stiffest low-rank mode's angular frequency times the step: $\omega = \sqrt{\lambda_{\max}(\mathcal{K}) / m}$, read per token, per layer; the checklist writes it `omega*dt`.
+- **The wall.** An explicit (leapfrog-type) kick on a harmonic mode is stable only for $\omega \Delta t \lt 2$. **`over_wall`** is the share of readings above 2.
+- **Integrators.** `baoab_cfc`: the CfC/BAOAB step, exact on the diagonal precision, explicit on the low-rank part. `baoab_cfc_lowrank`: exact also on the stiffest low-rank modes, so that channel has no wall.
+- **`bproj_sig`.** The largest singular value of `B_proj`'s weight matrix, logged during training: how large the low-rank factors can get for any unit-norm input.
+- **WSD schedule.** Warm-up, stable phase at the peak learning rate, decay to a floor. **Settled PPL**: the mean of the last three evaluations. **Eval noise**: about 1.5 PPL (σ ≈ 1.54) on this arm.
+- **Anneal probe.** A compressed decay (4,000 steps, cosine) branched from a stable-phase checkpoint, to measure what that state is worth once decayed. **Decay gain**: stable-phase PPL minus settled PPL after the decay.
+- **Pre-clip gradient norm, spike.** The global gradient norm before per-group clipping. A **spike** is a step whose pre-clip norm exceeds the capture threshold (100); a **spikebatch bundle** saves the weights, the batch and the random state at that step, so the step can be replayed. Bundles at or above 200 are archived permanently.
+- **Per-group clip.** Clipping thresholds set per parameter group (0.1 to 0.3 on the groups implicated in spikes, 1.0 otherwise).
+- **Routing conjunction.** The finding on the additive arm ([`Gradient_Spikes_as_Routing_Conjunctions.md`](Gradient_Spikes_as_Routing_Conjunctions.md)) that a spike is the coincidence of a particular microbatch with a particular random draw, not a property of the curvature.
+- **Leak probe.** A causality check: **honest PPL** scores each position with only its prefix; **standard PPL** with the whole block. Equal within noise means no leak.
+- **MMAC per token.** Millions of multiply-accumulates per generated token at inference.
+- **Matched GPT-2.** A GPT-2 with the same tokenizer, data, width, context and endpoint, used as the reference (§9).
+- **Family A.** $\xi$-routed conservative attention in the pair slot: `V_attn` replaces the top-k pair force $V_\varphi$ (§10.1 to §10.5).
+- **Alternative E.** Content-addressed $\xi$ pooling: a content term added inside the context channels' softmax (§10.6 to §10.8; design in [`Context_Mixing_Mechanisms_in_the_Conservative_Framework.md`](Context_Mixing_Mechanisms_in_the_Conservative_Framework.md) §8).
+- **Gate.** A pass/fail check run before a longer experiment is trusted.
+- **Phase 2 factorisation.** Bottlenecks in the well bank's dense maps (§9.5 prediction 1, §10.9).
+
+---
+
+## The tests, stated mathematically
+
+Each test below is stated as a question, the quantity measured, and the decision it feeds, with the section that runs or reports it.
+
+### T1. Is the cap binding? (§2.1, §4)
+
+For each site $s$, read the factors' Frobenius norms against the cap $c$:
+
+$$\rho_s = \mathrm{median}\left( \lVert B_k \rVert_F \right) / \sqrt{c}.$$
+
+$\rho_s \approx 1$ at every site means the cap fixes $B$'s scale, so a growing $\omega \Delta t$ cannot come from $B$'s magnitude and lowering the cap is not a lever (go to T5). $\rho_s \lt 1$ means the cap is slack and lowering it acts directly on $\omega \Delta t$.
+
+### T2. How is the rank used, and where? (§2.2)
+
+Per site, the distribution of PR (Definitions), read against the null 3.96, and `between_frac`. On the additive arm `between_frac` was 0.39 to 0.41, carried more by channel than by layer. The joint bank has no channel axis by construction, so the test asks whether the layer axis alone produces structure.
+
+### T3. When did it happen? (§2.3)
+
+The same quantities across checkpoints $\tau$: the cap ratio $\rho_s$ and the per-site PR at each checkpoint. PR falling while the cap ratio stays at 1 points to alignment or concentration (T5) as the source of the growing $\omega \Delta t$.
+
+### T4. What budget would bind? (§2.4)
+
+The quantiles of each factor's squared largest singular value at a healthy checkpoint and at spike checkpoints. A cap $c$ is a useful tail-only budget only if it sits above the healthy quantiles and below the spike-regime ones; on the additive arm the two regimes overlapped (medians about 280 to 310), so no such $c$ existed.
+
+### T5. Which factor of `omega*dt` moves? (§2.5)
+
+Taking logarithms,
+
+$$\ln(\omega \Delta t) = \ln \Delta t + \tfrac{1}{2} \ln \lambda_{\max}(\mathcal{K}) - \tfrac{1}{2} \ln m.$$
+
+At fixed $\Delta t$, either the mass falls or $\lambda_{\max}(\mathcal{K})$ rises. For the second, the largest eigenvalue of a sum of positive semi-definite terms is bounded on both sides:
+
+$$\max_k g_k \sigma_{\max}(B_k)^2 \le \lambda_{\max}(\mathcal{K}) \le \sum_k g_k \sigma_{\max}(B_k)^2.$$
+
+The upper bound is reached when the wells' top directions coincide. So with the factors' norms fixed (T1), $\lambda_{\max}$ can grow in two ways: **concentration** (the weights pile onto fewer wells, raising the lower bound) or **alignment** (the wells' column spaces rotate together, moving $\lambda_{\max}$ towards the upper bound). The probe reads the entropy of the weights after normalising them to sum to one, the principal angles between the $B_k$ column spaces, and the percentiles of $m$, and compares them with an earlier checkpoint.
+
+### T6. What makes a spike? (§2.6)
+
+On a spikebatch bundle, replay the step and record the pre-clip norm $G_0$; then replay under a control arm and record $G_1$. The **collapse ratio**, $G_0$ divided by $G_1$, large (the additive arm read 264 to 937) means the spike depends on the specific draw or directions, not on curvature. The control in `replay_rank_perturbation_control` perturbs $B$ with isotropic noise carrying the energy a rank truncation would remove: it separates "these directions are load-bearing" from "any perturbation of this size defuses it". (§2.6 calls it "the RNG-reset test"; check the function's docstring before reading it that way.) The companion readings compare the spiking step's $\omega \Delta t$ quantiles with the ambient ones.
+
+### T7. Is `omega*dt` shifting or widening? (§3, §7.7)
+
+Model the per-token readings as log-normal, $\ln(\omega \Delta t) \sim \mathcal{N}(\mu, \sigma^2)$, so the median is $e^{\mu}$ and
+
+$$\text{over-wall share} = 1 - \Phi\left( \frac{\ln 2 - \mu}{\sigma} \right),$$
+
+with $\Phi$ the standard normal distribution function. A **rigid shift** is $\mu$ rising with $\sigma$ fixed; **widening** is $\sigma$ rising. The model reproduces the checklist's numbers: at the step-50,000 median 1.128 and $\sigma$ = 0.217 it gives 0.41% over the wall (measured 0.423%), and §7.7's projection for $\Delta t$ = 2 (median 2.256) gives 71%. Because $\omega \Delta t$ is proportional to $\Delta t$, changing the step shifts $\mu$ by $\ln$ of the ratio and leaves $\sigma$ unchanged. The saturating reading fits $\mu(\tau) = a + b \ln \tau$; the falsifiers recorded in §3 are $\sigma$ well past 0.22, the median past 1.2, or the over-wall share well past 0.5% at step 50,000.
+
+### T8. Was the plateau a learning-rate problem? (§6, §6.3)
+
+The anneal's learning rate over its $S$ = 4,000 steps is a cosine from $\eta_0$ = 3e-4 to $\eta_1$ = 1.5e-5:
+
+$$\eta(s) = \eta_1 + \tfrac{1}{2}(\eta_0 - \eta_1)\left(1 + \cos(\pi s / S)\right),$$
+
+which gives the table in §6 (for example 2.892e-4 at $s$ = 500). The decision reads the settled PPL: into the 70s confirms a learning-rate block, high 80s says the block is deeper. §6.3 runs the same anneal from a second starting state, so the difference of the two settled values measures the starting states' worth with the schedule held fixed; $\omega \Delta t$ is logged throughout to see whether curvature moved with the loss.
+
+### T9. Does integration error cost loss? (§7, §7.2, §7.6)
+
+For a leapfrog step on a harmonic mode of frequency $\omega$, the numerical frequency satisfies
+
+$$\sin\left( \tfrac{1}{2} \omega_{\mathrm{num}} \Delta t \right) = \tfrac{1}{2} \omega \Delta t,$$
+
+so the relative frequency error is $\omega_{\mathrm{num}} / \omega - 1$ (6.2% at $\omega \Delta t$ = 1.128) and there is no real solution above 2: the wall. Two remedies are tested: halving $\Delta t$ (substeps, §7.2), which halves every reading, and integrating the stiff modes exactly (`baoab_cfc_lowrank`, §7.6). The zero-training read is asymmetric: an immediate improvement is evidence that integration error cost loss, an immediate regression is not evidence against it, because the trained weights partly compensate for the error being removed. §7.6's paired run compares train loss, validation PPL (the gap against eval noise) and the gradient-norm statistics over matched steps.
+
+### T10. What does the linear algebra cost? (§7.0)
+
+Time per call of each operation in the low-rank mode extraction at the shapes this arm produces (QR, small and full SVDs, the Gram driver), normalised to a reference matrix product. It decides whether the exact integrator is affordable, and which of its drivers to use.
+
+### T11. Where does the architecture stand against a transformer? (§9)
+
+The ratio of the Fock arm's endpoint perplexity to the matched GPT-2's, on the same validation file at fully decayed endpoints (1.49 settled), with parameters, inference cost and training time beside it. The budget comparison counts tokens, $\sum_{\mathrm{steps}} (\text{batch} \times \text{accumulation} \times 512)$, not steps; §9's correction records why. The crossing point is found by linear interpolation of PPL between two evaluations.
+
+### T12. Is Family A conservative and causal? (§10.3, §10.4)
+
+**Gate 1, conservativity:** with the context frozen, compare the force with minus the finite-difference gradient of the potential; the relative error must be at the level of float rounding. **Gate 2, causality:** perturb the tokens at positions $t \ge 4$; the force at every $t \lt 4$ must not change at all. The Hessian-symmetry test is vacuous for the `dot` kernel: its potential is linear in $h_t$ (the source $h_s$ is detached), so its Hessian is identically zero.
+
+### T13. Does content-addressed pooling recover the gap? (§10.7, §10.8)
+
+Alternative E's logit adds a content term to the distance term of each context channel:
+
+$$\ell_c(t, s) = (t - s) \log \alpha_c + \frac{(W_q h_t)^{\top} (W_k h_s)}{\sqrt{d_k}}.$$
+
+With $W_q = 0$ the content term vanishes, so a warm start from a trained checkpoint is exact (Gate 3: the step-0 PPL must reproduce the checkpoint's 84.31). The key map must not also start at zero: the term is bilinear, so its gradient with respect to the query map is proportional to the keys and its gradient with respect to the key map to the queries, and both vanish when both maps are zero, a saddle from which nothing would learn. The test statistic is the settled gap in nats against the §6.3 control on the same schedule:
+
+$$\Delta = \ln \frac{\mathrm{PPL}_{\mathrm{control}}}{\mathrm{PPL}_{\mathrm{E}}}.$$
+ The prediction of 10 PPL corresponds to $\ln(81.58 / 71.58) \approx 0.131$ nats; the bands are recorded in §10.7.
+
+### T14. Were the well bank's parameters used? (§9.5, §10.9)
+
+Replace each dense map by its truncation to rank $m$ = 256, warm-started from the SVD of the trained weights, and run the same decay. Read with T13 as a 2×2: starved or not (T13) against used or not (T14).
+
+---
+
 ## 0. Before running anything
 
 - **Cell order for a diagnostics-only session**: Cell 0 → 1 → 1c → 2 → 3 →
