@@ -1,0 +1,118 @@
+model: fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn)
+input moment: windows 4/16
+input moment: windows 8/16
+input moment: windows 12/16
+input moment: windows 16/16
+trained: windows 4/16
+trained: windows 8/16
+trained: windows 12/16
+trained: windows 16/16
+B_proj plain 256: windows 4/16
+B_proj plain 256: windows 8/16
+B_proj plain 256: windows 12/16
+B_proj plain 256: windows 16/16
+B_proj plain 512: windows 4/16
+B_proj plain 512: windows 8/16
+B_proj plain 512: windows 12/16
+B_proj plain 512: windows 16/16
+B_proj plain 1024: windows 4/16
+B_proj plain 1024: windows 8/16
+B_proj plain 1024: windows 12/16
+B_proj plain 1024: windows 16/16
+B_proj aware 256: windows 4/16
+B_proj aware 256: windows 8/16
+B_proj aware 256: windows 12/16
+B_proj aware 256: windows 16/16
+B_proj aware 512: windows 4/16
+B_proj aware 512: windows 8/16
+B_proj aware 512: windows 12/16
+B_proj aware 512: windows 16/16
+B_proj aware 1024: windows 4/16
+B_proj aware 1024: windows 8/16
+B_proj aware 1024: windows 12/16
+B_proj aware 1024: windows 16/16
+mu_proj plain 256: windows 4/16
+mu_proj plain 256: windows 8/16
+mu_proj plain 256: windows 12/16
+mu_proj plain 256: windows 16/16
+mu_proj plain 512: windows 4/16
+mu_proj plain 512: windows 8/16
+mu_proj plain 512: windows 12/16
+mu_proj plain 512: windows 16/16
+mu_proj plain 1024: windows 4/16
+mu_proj plain 1024: windows 8/16
+mu_proj plain 1024: windows 12/16
+mu_proj plain 1024: windows 16/16
+mu_proj aware 256: windows 4/16
+mu_proj aware 256: windows 8/16
+mu_proj aware 256: windows 12/16
+mu_proj aware 256: windows 16/16
+mu_proj aware 512: windows 4/16
+mu_proj aware 512: windows 8/16
+mu_proj aware 512: windows 12/16
+mu_proj aware 512: windows 16/16
+mu_proj aware 1024: windows 4/16
+mu_proj aware 1024: windows 8/16
+mu_proj aware 1024: windows 12/16
+mu_proj aware 1024: windows 16/16
+a_proj plain 256: windows 4/16
+a_proj plain 256: windows 8/16
+a_proj plain 256: windows 12/16
+a_proj plain 256: windows 16/16
+a_proj plain 512: windows 4/16
+a_proj plain 512: windows 8/16
+a_proj plain 512: windows 12/16
+a_proj plain 512: windows 16/16
+a_proj plain 1024: windows 4/16
+a_proj plain 1024: windows 8/16
+a_proj plain 1024: windows 12/16
+a_proj plain 1024: windows 16/16
+a_proj aware 256: windows 4/16
+a_proj aware 256: windows 8/16
+a_proj aware 256: windows 12/16
+a_proj aware 256: windows 16/16
+a_proj aware 512: windows 4/16
+a_proj aware 512: windows 8/16
+a_proj aware 512: windows 12/16
+a_proj aware 512: windows 16/16
+a_proj aware 1024: windows 4/16
+a_proj aware 1024: windows 8/16
+a_proj aware 1024: windows 12/16
+a_proj aware 1024: windows 16/16
+all three aware 512: windows 4/16
+all three aware 512: windows 8/16
+all three aware 512: windows 12/16
+all three aware 512: windows 16/16
+projection SVD truncation, semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn)
+input moment on 16 even windows, loss on 16 held-out odd windows of 32 evenly spaced x 512 tokens, validation /Users/dimitargueorguiev/Downloads/semsimula_fock_gamma_sweep_aniso_gaussian_fockreg_d384/data/openwebtext_val_2M.npy; K = 8, rank = 4; bank input 1920 wide, 16,384 input vectors
+trained: loss 4.0911  ppl 59.81
+
+share of the squared singular values in the top m (plain | input-aware):
+  B_proj   m=256:  50.8 |  93.5  m=512:  69.6 |  97.6  m=1024:  89.6 |  99.7
+  mu_proj  m=256:  58.1 |  92.8  m=512:  77.6 |  97.7  m=1024:  94.2 |  99.8
+  a_proj   m=256:  63.1 |  96.1  m=512:  82.4 |  98.9  m=1024:  96.1 |  99.9
+
+one projection truncated to rank m (a bottleneck of width m has m * (in + out) weights):
+  projection method     m      weights  of dense     loss      ppl    change
+  B_proj     plain    256    3,637,248     15.4%   4.8008   121.61  +103.34%
+  B_proj     plain    512    7,274,496     30.8%   4.4400    84.78   +41.75%
+  B_proj     plain   1024   14,548,992     61.7%   4.1559    63.81    +6.70%
+  B_proj     aware    256    3,637,248     15.4%   4.7711   118.05   +97.38%
+  B_proj     aware    512    7,274,496     30.8%   4.4157    82.74   +38.34%
+  B_proj     aware   1024   14,548,992     61.7%   4.1471    63.25    +5.75%
+  mu_proj    plain    256    1,277,952     21.7%   4.7452   115.03   +92.33%
+  mu_proj    plain    512    2,555,904     43.3%   4.3888    80.54   +34.67%
+  mu_proj    plain   1024    5,111,808     86.7%   4.1835    65.59    +9.68%
+  mu_proj    aware    256    1,277,952     21.7%   4.3201    75.19   +25.73%
+  mu_proj    aware    512    2,555,904     43.3%   4.1509    63.49    +6.16%
+  mu_proj    aware   1024    5,111,808     86.7%   4.0999    60.33    +0.88%
+  a_proj     plain    256    1,277,952     21.7%   4.0946    60.01    +0.35%
+  a_proj     plain    512    2,555,904     43.3%   4.0928    59.91    +0.17%
+  a_proj     plain   1024    5,111,808     86.7%   4.0917    59.84    +0.06%
+  a_proj     aware    256    1,277,952     21.7%   4.0932    59.93    +0.21%
+  a_proj     aware    512    2,555,904     43.3%   4.0921    59.87    +0.10%
+  a_proj     aware   1024    5,111,808     86.7%   4.0914    59.82    +0.03%
+
+all three projections truncated together (input-aware):
+  m =   512: loss 4.4810  ppl 88.32  +47.68%

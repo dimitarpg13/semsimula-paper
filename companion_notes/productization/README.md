@@ -12,6 +12,7 @@
 | [Stage2_Decoding.md](Stage2_Decoding.md) | stage 2, measured: the incremental decoder and its check, decoding speed and cache size against GPT-2 with a key–value cache, where a decode step's time goes, and `torch.compile` |
 | [Stage3_SR2_Without_Pair_Force.md](Stage3_SR2_Without_Pair_Force.md) | stage 3, first arm done: SR2 trained without the pair force (SR2-NP), settled 58.51 (+0.3% against SR2); calls, diagnostics, CPU speeds and the model card |
 | [Stage3b_SR2_NP_Tied_Embeddings.md](Stage3b_SR2_NP_Tied_Embeddings.md) | stage 3, second arm set up: SR2-NP with tied embeddings (SR2-NP-T, 57.1M parameters); is the separate output head needed? calls TE1–TE3 confirmed |
+| [Stage3c_Twin_PB_Precision_Bottleneck.md](Stage3c_Twin_PB_Precision_Bottleneck.md) | stage 3, pre-registration of item 4: twin PB (`B_proj` through 512, context-free diagonal precision) on the productization base; speed measured by a timing proxy (1.11 times at 512 tokens), untrained cost +42%; calls PB1–PB3 and the +2% tolerance confirmed 2026-11-22; code not yet written |
 | [Fock_Inference_Productionization_Plan.md](Fock_Inference_Productionization_Plan.md) | its predecessor, for the Gen 2 Fock arm at eight layers (2026-09-18): the cost model, A100 measurements, the training-speed levers of the 2B-token runs |
 
 ## Related notes elsewhere

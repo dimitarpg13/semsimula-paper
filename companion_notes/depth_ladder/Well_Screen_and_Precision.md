@@ -251,6 +251,8 @@ The refinement penalty grows as the bank shrinks.
 | PB1 | PB settles within +2% of SR2 | 35% |
 | PB2 | PB settles within +5% of SR2 | 65% |
 
+**Moved onto the productization base (2026-11-22).** Twin PB's pre-registration (calls confirmed) on SR2-NP or SR2-NP-T, with SR2-NP's own untrained costs and a timing proxy, is [productization/Stage3c_Twin_PB_Precision_Bottleneck.md](../productization/Stage3c_Twin_PB_Precision_Bottleneck.md).
+
 **What the notebooks need** (checked 2026-11-13 against HEAD `d968e75`; not yet written): a Cell 0 switch for each twin with a conditional tag component, so existing tags stay the same; the per-layer $a_k$ in `AnisotropicDepthConditionedGaussianVTheta`; the bottleneck in `B_proj`'s construction; and a parameter-count check.
 
 ---

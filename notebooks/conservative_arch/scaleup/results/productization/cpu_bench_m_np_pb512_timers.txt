@@ -1,0 +1,20 @@
+CPU inference benchmark: ladder  semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn); analytic V_phi True; query chunk 512; skip unread registers True; bank timed as twin PB (B_proj through 512, a fixed per well; timing proxy, predictions not trained); layer 1 pruned to wells [5]; context channels by folded fused attention, 30 heads of 64; gram driver by float64 eigh; 56,970,115 parameters; 8 threads; float32; one sequence per forward
+
+length   median s   tokens/s  peak RSS GB  times
+   512      0.301     1703.7         2.11  0.287 0.314
+        components at 512 (one timed forward, 0.305 s; inclusive wall time, calls):
+            6.9%     0.021 s    2  context channels (xi)
+           15.6%     0.047 s    2  well bank: context_components
+            5.6%     0.017 s    2  well bank: harmonic_terms_lowrank
+           29.0%     0.089 s    2  stiff-mode decomposition (lowrank_modes)
+            4.3%     0.013 s    2  well bank: analytical_grad
+           38.6%  the rest (integrator, embeddings, output head)
+  8192      6.070     1349.7        10.27  5.952 6.187
+        components at 8192 (one timed forward, 6.247 s; inclusive wall time, calls):
+           25.0%     1.561 s    2  context channels (xi)
+           10.6%     0.664 s    2  well bank: context_components
+            5.4%     0.336 s    2  well bank: harmonic_terms_lowrank
+           27.7%     1.729 s    2  stiff-mode decomposition (lowrank_modes)
+            3.6%     0.226 s    2  well bank: analytical_grad
+           27.7%  the rest (integrator, embeddings, output head)
