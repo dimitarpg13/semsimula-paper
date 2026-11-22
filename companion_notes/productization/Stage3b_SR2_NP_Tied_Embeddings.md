@@ -2,7 +2,7 @@
 
 **What this note is.** The setup and pre-registration of the second GPU arm of stage 3 of [Conservative_Core_Productization_Plan.md](Conservative_Core_Productization_Plan.md): [SR2-NP](Stage3_SR2_Without_Pair_Force.md) trained from scratch with its input embedding and output head tied, and the output bias kept. Its question: is the separate output head, 19.3M of SR2-NP's 76.4M parameters, needed? Written 2026-11-21.
 
-**Status.** Set up 2026-11-21; not launched. The calls in §3 were **confirmed by the author on 2026-11-21**, with the 1% tolerance of TE1, and are binding.
+**Status.** Set up 2026-11-21. A first launch on 2026-11-22 was stopped at step 50 because of the gradient clip of the shared matrix (§2); relaunched with the fix. The calls in §3 were **confirmed by the author on 2026-11-21**, with the 1% tolerance of TE1, and are binding.
 
 ---
 
@@ -52,6 +52,8 @@ TIE_EMBEDDINGS      = True      # this arm; USE_OUTPUT_BIAS stays True
 
 The difference is exactly the separate head, 19,298,688 parameters. In both, the tag built by Cell 0 equals the one `tag_repl` expects.
 
+**The gradient clip of the shared matrix** (found at the first launch, 2026-11-22). Clip groups are keyed by the first part of a parameter's name. In SR2-NP the separate head `lm_head` is its own group: summed over the two microbatches, then clipped once at 1.0, a threshold it never reached (the whole model's norm was 0.32 at step 50). The input embedding `E` is one of the two groups clipped *per microbatch* at 0.3 before summing (`CLIP_THEN_SUM_GROUPS = {'E', 'P'}`). Tied, `E` carries the head's gradient too, and the first launch read `top[E]=0.6` at step 50, exactly twice 0.3: the per-microbatch clip was binding on the head, so the arm would have tested tying and a tighter clip at once. That launch was stopped at step 50 and its Drive folder renamed with the suffix `_aborted_clip`. Cell 6 now sets `CLIP_THEN_SUM_GROUPS = {'P'} if TIE_EMBEDDINGS else {'E', 'P'}`: tied, the shared matrix is clipped as SR2-NP's head was, and untied runs are unchanged. The rule follows from `tied` in the tag.
+
 ## 3. Calls
 
 Confirmed by the author on 2026-11-21, at the probabilities below; binding. Settled perplexity is defined as for every OpenWebText arm (the mean of the last three evaluations once the trend has flattened). The frequency quintiles follow D0.4: token types ranked by their frequency in the training split, in five groups of equal size; the reading is the mean loss on the validation targets of each group.
@@ -66,7 +68,7 @@ Confirmed by the author on 2026-11-21, at the probabilities below; binding. Sett
 
 ## 4. Launch
 
-Open `colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb` from GitHub after the tag change of §2 is pushed. In Cell 0, set the six values of §2. Run Cell 0 → 1 → 1b → 1c → 1d → 2 → 3 → 4 → 5 → 5b → 6. Check that Cell 0 prints the SR2-NP-T tag of §2 (with `_ob_tied_`) and Cell 5 reports 57,135,619 parameters.
+Open `colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb` from GitHub after the tag change of §2 is pushed. In Cell 0, set the six values of §2. Run Cell 0 → 1 → 1b → 1c → 1d → 2 → 3 → 4 → 5 → 5b → 6. Check that Cell 0 prints the SR2-NP-T tag of §2 (with `_ob_tied_`), Cell 5 reports 57,135,619 parameters, and Cell 6's header reads `[clip-then-sum] active for groups ['P'] (1 param(s) total)`.
 
 After training, on the best checkpoint, the same diagnostic cells as SR2-NP: 6b-7 (flow or maps; its Gate 1 reads the velocity reset), 6b-9 (the damped $V_\theta$ geodesic step), 6b-12 (is the forcing sparse), 6b-13 ($\omega \Delta t$ at the endpoint), 7 (component diagnostics) and 8 (the training curve). Cells 6b-8, 6b-10 and 6b-11 concern the reverse channel or the register path and do not apply. Expected time: SR2-NP's, about 6 hours on an A100, perhaps slightly less (a smaller optimizer state); if evaluation runs out of memory, `EVAL_LAYER_CHECKPOINT = True` as before.
 
