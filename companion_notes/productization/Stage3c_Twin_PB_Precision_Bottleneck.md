@@ -2,7 +2,7 @@
 
 **What this note is.** The pre-registration of item 4 of the remaining speed push in [Conservative_Core_Productization_Plan.md](Conservative_Core_Productization_Plan.md), §6: twin PB of [Well_Screen_and_Precision.md](../depth_ladder/Well_Screen_and_Precision.md), §5, moved onto the productization base. The well bank's largest map, `B_proj`, goes through a bottleneck of width 512, and its diagonal precision `a_proj` is replaced by one learned value per well and layer. Written 2026-11-22.
 
-**Status.** Pre-registered. **The calls in §6 and the +2% tolerance were confirmed by the author on 2026-11-22 and are binding.** The code is not written (§5). The base is SR2-NP, untied: SR2-NP-T missed TE1 on 2026-11-22 (§4). The speed it buys and the cost of the bottleneck without training were measured on the CPU (§3).
+**Status.** Pre-registered. **The calls in §6 and the +2% tolerance were confirmed by the author on 2026-11-22 and are binding.** The code is written and checked on the CPU (§5), not yet committed. The base is SR2-NP, untied: SR2-NP-T missed TE1 on 2026-11-22 (§4). The speed it buys and the cost of the bottleneck without training were measured on the CPU (§3).
 
 ---
 
@@ -86,7 +86,7 @@ PB is SR2-NP's Cell 0 plus the two switches of §5, 32,500 steps on OpenWebText,
 
 ## 5. What the code needs
 
-None of this is written yet. Checked 2026-11-22 against the working tree:
+The checklist as drawn up on 2026-11-22; its status follows the list.
 
 1. **The bank** (`parf/model_aniso_gaussian_vtheta.py`, `AnisotropicMixtureGaussianVTheta`): a bottleneck width, with `B_proj` built as two maps when it is set. Initialise the pair so that the product's entries have the same spread as SR2-NP's single map at the start (normal, standard deviation 0.01), for example the first map at $1/\sqrt{1920}$ and the second at $0.01 \cdot \sqrt{1920/512}$.
 2. **The diagonal precision per well and layer.** The bank does not know the active layer; the depth-conditioned wrapper does (`set_active_layer`). Store the per-layer values in the wrapper, or give the bank the active layer, and keep the softplus and the floor of $10^{-4}$ of `_components`.
@@ -96,6 +96,16 @@ None of this is written yet. Checked 2026-11-22 against the working tree:
 6. **Cell 0 switches and the tag.** Two switches (the bottleneck width, default 0; the context-free precision, default off), each adding a tag component only when set (for example `bb512` and `afree`), so that every existing tag stays the same. `debug/copy_split.py`'s `tag_repl` must read them back.
 7. **The gradient clip.** Clip groups are keyed by the first part of a parameter's name; the new parameters sit under `V_theta`, as the old ones did, so the groups do not change. Cell 6's header must be checked at launch, as for SR2-NP-T.
 8. **A build check** on the CPU, through the notebook's own Cells 0 to 5: the tag, and the parameter count of §2 (54,220,675 untied or 34,921,987 tied).
+
+**Written and checked 2026-11-22 (uncommitted).**
+
+- **The bank** (`parf/model_aniso_gaussian_vtheta.py`): `b_bottleneck` builds `B_proj` as `_BottleneckLinear`, two maps (1,920 to 512 without bias, 512 to 12,288 with bias) initialised so the product's entries have standard deviation 0.01 (measured 0.0100). `a_context_free` replaces `a_proj` by `a_free`, a one-dimensional parameter of 2 × 8 × 384 values filled with `a_proj`'s initial bias; the depth-conditioned wrapper's `set_active_layer` selects the active layer's values. `_BottleneckLinear` exposes `weight` (the product) and `bias` for reading, so Cell 6's `bproj_sig` works unchanged.
+- **Defaults unchanged:** with both switches off, the bank's parameter names, initial values (same seed) and outputs (potential, force, low-rank harmonic terms, both layers) are identical to the previous code; `parf/test_cfc_baoab.py` passes.
+- **Equivalence at initialisation:** with `a_context_free` and the other weights copied, the bank's outputs equal the trained form's at initialisation, at both layers; the gradient reaches only the active layer's values.
+- **Notebook:** Cell 0 has `VTHETA_B_BOTTLENECK = 0` and `VTHETA_A_CONTEXT_FREE = False`, with tag components `bb<m>` and `afree` added only when set (after the wells component, so the tag reads `…aniso_dcvt5x8_bb512_afree_vtjoint…`) and a print line; Cell 5 passes both to the bank in its two constructions. 17 lines added, none changed.
+- **Weight decay and clip:** `a_free` is one-dimensional, so it is not decayed, as `a_proj`'s bias was not; the two maps are decayed as the dense map was. The new parameters sit under `V_theta`, so the clip groups do not change.
+- **Build check** (Cells 0 to 5 on the CPU): SR2-NP unchanged (its tag, 76,434,307 parameters); SR2-NP with `bb512 afree` builds the expected tag, 54,220,675 parameters, a bank of 13,213,448 (35,427,080 dense). One forward and backward: every new parameter receives a gradient, the loss at initialisation is 7.43 (the unigram level, from the output bias), and the spectral diagnostic reads 3.34 (SR2-T's dense map read 3.24 at step 50).
+- **CPU tools:** `copy_split.tag_repl` and `causality_check_checkpoint.py` (options `bb<m>`, `afree`) read the switches back; `vtheta_projection_svd.py` refuses a bottleneck (it overwrites `B_proj.weight`, which would have no effect); `vtheta_well_probe.py` skips the missing `a_proj`; the benchmark's layer-1 pruning keeps the shared down map and the kept wells' context-free values, and `bank=pb` refuses a model already built as PB. The pruning path for a trained PB checkpoint is untested until one exists.
 
 ## 6. Calls
 
@@ -115,7 +125,19 @@ None of this is written yet. Checked 2026-11-22 against the working tree:
 
 ## 7. Launch and readings
 
-Launch as for the base, with the two switches set. Check that Cell 0 prints the new tag, Cell 5 the parameter count of §2, and Cell 6 the clip groups unchanged. Expected time: a little under the base's, about 6 hours on an A100 (the bottleneck shortens one of the larger products in every step).
+Launch as for the base, with the two switches set. SR2-NP's Cell 0 plus the two:
+
+```python
+REVERSE_CHANNEL     = False     # SR2
+XI_GRAD_PATH        = 'live'    # SR2
+LOWRANK_DAMPED_FLOW = True      # SR2
+LAYER_CHECKPOINT    = False     # SR2 (speed switch; same arithmetic)
+PAIR_POTENTIAL      = 'none'    # SR2-NP
+VTHETA_B_BOTTLENECK   = 512     # this arm
+VTHETA_A_CONTEXT_FREE = True    # this arm
+```
+
+The notebook change of §5 must be pushed to GitHub first. Check that Cell 0 prints the tag `…aniso_dcvt5x8_bb512_afree_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_…` and the `[twin PB]` line, Cell 5 the parameter count of §2, and Cell 6 the clip groups unchanged. Expected time: a little under the base's, about 6 hours on an A100 (the bottleneck shortens one of the larger products in every step).
 
 After the run, on the best checkpoint:
 

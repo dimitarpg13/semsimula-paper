@@ -53,6 +53,8 @@ print('model:', desc, flush=True)
 VT = model.V_theta
 bank = VT.bank.bank if hasattr(VT.bank, 'bank') else VT.bank      # depth-conditioned -> joint -> mixture
 PROJ = [n for n in ('B_proj', 'mu_proj', 'a_proj') if getattr(bank, n, None) is not None]
+if hasattr(getattr(bank, 'B_proj', None), 'down'):    # twin PB (2026-11-22): weight is a product recomputed on read
+    raise SystemExit('B_proj is a bottleneck (twin PB): this script overwrites B_proj.weight, which has no effect on it')
 
 x, y = CS['windows']()
 xe, xv, yv = x[0::2], x[1::2], y[1::2]

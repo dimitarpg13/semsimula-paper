@@ -1,8 +1,8 @@
 # Stage 3d: SR2 With Tied Embeddings and the Pair Force (SR2-T)
 
-**What this note is.** The setup and draft pre-registration of SR2-T: [SR2](Stage3_SR2_Without_Pair_Force.md), which keeps the routed pair force $V_\varphi$, trained from scratch with its input embedding and output head tied, as [SR2-NP-T](Stage3b_SR2_NP_Tied_Embeddings.md) was. It completes the 2×2 of pair force (on, off) by embeddings (untied, tied), and its first call is a trigger fixed in advance for whether the mean-field programme for the pair force should reopen. Written 2026-11-22.
+**What this note is.** The setup and pre-registration of SR2-T: [SR2](Stage3_SR2_Without_Pair_Force.md), which keeps the routed pair force $V_\varphi$, trained from scratch with its input embedding and output head tied, as [SR2-NP-T](Stage3b_SR2_NP_Tied_Embeddings.md) was. It completes the 2×2 of pair force (on, off) by embeddings (untied, tied), and its first call is a trigger fixed in advance for whether the mean-field programme for the pair force should reopen. Written 2026-11-22.
 
-**Status.** Set up; build check passed (§3). **The calls in §4 are proposed and await the author's confirmation.** Not launched.
+**Status.** Launched 2026-11-22 on an A100 40 GB (16 × 2 microbatches, pair-force checkpoint on; §2). **The calls in §4 were confirmed by the author on 2026-11-22, before the first evaluation, and are binding.**
 
 ---
 
@@ -45,7 +45,7 @@ zero under additivity and negative if the pair force absorbs part of what the ti
 
 ## 2. The configuration
 
-SR2's Cell 0, plus `TIE_EMBEDDINGS = True`. Against the notebook's defaults, seven settings differ:
+SR2's Cell 0, plus `TIE_EMBEDDINGS = True` and the pair-force checkpoint. Against the notebook's defaults, eight settings differ:
 
 ```python
 REVERSE_CHANNEL     = False     # SR2
@@ -54,10 +54,13 @@ XI_GRAD_PATH        = 'live'    # SR2
 LOWRANK_DAMPED_FLOW = True      # SR2
 VPHI_ANALYTIC_FORCE = True      # SR2
 LAYER_CHECKPOINT    = False     # SR2 (speed switch; same arithmetic)
+VPHI_FORCE_CHECKPOINT = True    # memory switch; same arithmetic (see below)
 TIE_EMBEDDINGS      = True      # this arm; USE_OUTPUT_BIAS stays True
 ```
 
-`PAIR_POTENTIAL` stays at its default (`'sparse_topk'`), the routed pair force of SR2. The tag lines and the gradient clip of the shared matrix are handled as for SR2-NP-T (Stage3b, §2): Cell 0 appends `tied`, and Cell 6 sets `CLIP_THEN_SUM_GROUPS = {'P'}` when the embeddings are tied, so the shared matrix is clipped as SR2's separate head was.
+`PAIR_POTENTIAL` stays at its default (`'sparse_topk'`), the routed pair force of SR2.
+
+**Why the pair-force checkpoint (2026-11-22, at launch).** Without it, Cell 5's memory probe on a 40 GB A100 found batch 16 at 33.6 GB plus a 0.6 GB optimizer reserve, over the notebook's 80% budget of 33.9 GB, and fell back to 8 sequences × 4 accumulations. SR2, SR2-NP, SR2-NP-T, K4-R6 and K2-R6 all ran at 16 × 2; at 8 × 4 the per-microbatch clip of the positional table acts four times per step instead of two, a second difference inside the 2×2. `VPHI_FORCE_CHECKPOINT = True` recomputes only the closed-form pair force in the backward, which frees most of the pair force's saved intermediates; the loss and every gradient are bit-identical on the CPU (`debug/verify_vphi_force_checkpoint.py`), it is not in the tag, and K2-L8-CODE used it in place of layer checkpointing. Cell 5 builds the model with it, so the probe sees the saving: with it on, batch 16 peaked at 21.7 GB (33.6 GB without), and the probe chose 16 × 2. The tag lines and the gradient clip of the shared matrix are handled as for SR2-NP-T (Stage3b, §2): Cell 0 appends `tied`, and Cell 6 sets `CLIP_THEN_SUM_GROUPS = {'P'}` when the embeddings are tied, so the shared matrix is clipped as SR2's separate head was.
 
 ## 3. The build check
 
@@ -72,7 +75,7 @@ The difference is exactly the separate head, 19,298,688 parameters. In both, the
 
 ## 4. Calls
 
-**Proposed 2026-11-22; not confirmed by the author.** Settled perplexity as for every OpenWebText arm (the mean of the last three evaluations once the trend has flattened). The tie's cost without the pair force is $\ln(59.35 / 58.51) = 0.0143$ nats.
+**Proposed and confirmed by the author on 2026-11-22, at the probabilities below, before the run's first evaluation; binding.** Settled perplexity as for every OpenWebText arm (the mean of the last three evaluations once the trend has flattened). The tie's cost without the pair force is $\ln(59.35 / 58.51) = 0.0143$ nats.
 
 | id | call | probability |
 | --- | --- | ---: |
@@ -100,7 +103,7 @@ The mean field is implemented only if the competitor falls short and Probe A say
 
 ## 6. Launch and readings
 
-Open `colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb` from GitHub, set the seven values of §2 in Cell 0, and run Cell 0 → 1 → 1b → 1c → 1d → 2 → 3 → 4 → 5 → 5b → 6. Check that Cell 0 prints the SR2-T tag of §3 (with `_vplive_` and `_ob_tied_`), Cell 5 reports 57,273,422 parameters, and Cell 6's header reads `[clip-then-sum] active for groups ['P'] (1 param(s) total)`.
+Open `colab_fock_cfc_baoab_lowrank_depth_ladder_openwebtext_d384.ipynb` from GitHub, set the eight values of §2 in Cell 0, and run Cell 0 → 1 → 1b → 1c → 1d → 2 → 3 → 4 → 5 → 5b → 6. Check that Cell 0 prints the SR2-T tag of §3 (with `_vplive_` and `_ob_tied_`) and the line `[V_phi] VPHI_FORCE_CHECKPOINT=True`, Cell 5 reports 57,273,422 parameters and `Auto batch: 16 x accum=2`, and Cell 6's header reads `[clip-then-sum] active for groups ['P'] (1 param(s) total)`.
 
 **Expected time:** the pair force makes each step slower than SR2-NP's (0.68 s). K4-R6, the most recent run with the pair force, took 1.10 s per step on an A100 40 GB, so about 10 hours. If evaluation runs out of memory, `EVAL_LAYER_CHECKPOINT = True` (recompute during evaluation only; the training arithmetic and the tag are unchanged).
 

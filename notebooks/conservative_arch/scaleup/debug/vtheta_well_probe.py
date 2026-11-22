@@ -211,6 +211,8 @@ for l in sorted(rec):
              f'  bias {float(bterm.norm(dim=-1).mean()):8.3f}  cos(code term, mu) {q(cs_)}  |code_l| {float(code.norm()):.2f}')
 L.append('\nbank projections: Frobenius norm of the weight columns reading each channel')
 for name in ('B_proj', 'mu_proj', 'a_proj', 'w_proj'):
+    if getattr(bank, name, None) is None:          # twin PA/PB (2026-11-22): no a_proj
+        continue
     W = getattr(bank, name).weight.detach().float().reshape(-1, n_ctx, d)
     L.append(f'  {name:7s} ' + ' '.join(f'{float(W[:, c].norm()):8.3f}' for c in range(n_ctx))
              + f'   cos(last two blocks) {float(torch.nn.functional.cosine_similarity(W[:, -2].flatten(), W[:, -1].flatten(), dim=0)):+.3f}')

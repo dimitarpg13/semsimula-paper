@@ -84,6 +84,8 @@ if MODEL == 'ladder':
         m._pair_force_analytic = lambda h_in, layer_idx, h_src_live=None, q_slice=None: torch.zeros_like(h_in)
         desc += '; V_phi removed'
     if OPTS.get('bank', '').startswith('pb'):
+        assert m.V_theta.bank.banks[0].a_proj is not None and not hasattr(m.V_theta.bank.banks[0].B_proj, 'down'), \
+            'bank=pb times a dense bank as twin PB; this model is already built with the twin PB switches'
         # 2026-11-22 (productization plan, item 4): bank=pb<width> times twin PB without training it. B_proj becomes
         # two maps through a bottleneck of <width> (its truncated SVD, no bias in the first map) and a_proj a fixed
         # value per well (its bias): the arithmetic of the trained twin, not its predictions (the SVD at 512 costs
@@ -130,19 +132,31 @@ if MODEL == 'ladder':
                 idx = torch.cat([torch.arange(k * width, (k + 1) * width) for k in KEEPW])
                 if hasattr(lin, 'second'):                           # bank=pb: keep the shared first map
                     new = copy.deepcopy(lin); new.second = _rows(lin.second, width); return new
+                if hasattr(lin, 'up'):                               # a trained twin PB: keep the shared down map
+                    new = copy.deepcopy(lin); new.up = _rows(lin.up, width); new.out_features = new.up.out_features
+                    return new
                 if hasattr(lin, 'value'):
                     new = copy.deepcopy(lin); new.value.data = lin.value.data[idx].clone(); return new
                 new = torch.nn.Linear(lin.in_features, idx.numel())
                 new.weight.data = lin.weight.data[idx].clone(); new.bias.data = lin.bias.data[idx].clone()
                 return new
-            sub.mu_proj, sub.a_proj = _rows(full.mu_proj, d_), _rows(full.a_proj, d_)
+            sub.mu_proj = _rows(full.mu_proj, d_)
+            if full.a_proj is not None:
+                sub.a_proj = _rows(full.a_proj, d_)
+            else:                                                    # twin PA/PB: the kept wells' context-free values
+                sub.a_free = torch.nn.Parameter(
+                    full.a_free.data.view(full.n_a_layers, full.K, d_)[:, KEEPW].reshape(-1).clone())
             sub.B_proj = _rows(full.B_proj, d_ * r_); sub.w_proj = None
             _kw = torch.tensor(KEEPW)
             F_ = torch.nn.functional
             def _sub_components(xi):
                 lead = xi.shape[:-1]
                 mu = sub.mu_proj(xi).view(*lead, sub.K, d_)
-                a = (F_.softplus(sub.a_proj(xi)) + 1e-4).view(*lead, sub.K, d_)
+                if sub.a_proj is not None:
+                    a = (F_.softplus(sub.a_proj(xi)) + 1e-4).view(*lead, sub.K, d_)
+                else:
+                    a_l = sub.a_free.view(sub.n_a_layers, sub.K, d_)[sub.active_a_layer % sub.n_a_layers]
+                    a = (F_.softplus(a_l) + 1e-4).expand(*lead, sub.K, d_)
                 if sub._precision_max is not None:
                     a = a.clamp(max=sub._precision_max)
                 w = (F_.softmax(full.w_proj(xi), dim=-1) * full.w_scale)[..., _kw]
@@ -152,6 +166,7 @@ if MODEL == 'ladder':
             _set = vt.set_active_layer
             def _set_active(i):
                 _set(i); joint.banks[0] = sub if vt._active_layer == PL else full
+                joint.banks[0].active_a_layer = vt._active_layer % vt.n_layers      # twin PA/PB: after the swap
             vt.set_active_layer = _set_active
             desc += f'; layer {PL} pruned to wells {KEEPW}'
     if 'xichunk' in OPTS:

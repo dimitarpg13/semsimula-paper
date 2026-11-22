@@ -46,6 +46,35 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+class _BottleneckLinear(nn.Module):
+    """A dense map in_features -> out_features through a bottleneck of width ``width`` (twin PB, 2026-11-22;
+    companion_notes/productization/Stage3c_Twin_PB_Precision_Bottleneck.md).
+
+    ``up(down(x))`` with no bias in ``down`` and a bias in ``up``: the form W x + b of a dense map, with
+    W = up.weight @ down.weight of rank at most ``width``. ``weight`` and ``bias`` give that product and the
+    bias for READING (the spectral-norm diagnostic, the SVD tools), recomputed on every access. Writing into
+    them (``.weight.copy_``, ``.weight.data = ...``) changes a temporary and has no effect, so tools that
+    modify ``B_proj.weight`` must refuse a model built with a bottleneck.
+    """
+
+    def __init__(self, in_features: int, out_features: int, width: int):
+        super().__init__()
+        self.in_features, self.out_features, self.width = in_features, out_features, width
+        self.down = nn.Linear(in_features, width, bias=False)
+        self.up = nn.Linear(width, out_features)
+
+    @property
+    def weight(self) -> torch.Tensor:
+        return self.up.weight @ self.down.weight
+
+    @property
+    def bias(self) -> torch.Tensor:
+        return self.up.bias
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.up(self.down(x))
+
+
 class AnisotropicMixtureGaussianVTheta(nn.Module):
     """K-component mixture of anisotropic Gaussian wells.
 
@@ -73,6 +102,9 @@ class AnisotropicMixtureGaussianVTheta(nn.Module):
         precision_max: Optional[float] = None,
         precision_lr_max: Optional[float] = None,
         force_norm_max: Optional[float] = None,
+        b_bottleneck: int = 0,
+        a_context_free: bool = False,
+        n_a_layers: int = 1,
     ):
         """
         Parameters
@@ -109,6 +141,17 @@ class AnisotropicMixtureGaussianVTheta(nn.Module):
             audit rather than as a literal ``sigma_max^2`` target.
         force_norm_max : float or None
             Per-well force magnitude cap.
+        b_bottleneck : int
+            Twin PB (2026-11-22): build ``B_proj`` as two maps through a
+            bottleneck of this width (``_BottleneckLinear``). ``0`` (default)
+            keeps the dense map.
+        a_context_free : bool
+            Twin PA/PB (2026-11-22): replace ``a_proj`` by one learned
+            diagonal precision per well and layer (``a_free``), independent of
+            the context. ``False`` (default) keeps ``a_proj``.
+        n_a_layers : int
+            Number of layers ``a_free`` holds values for; the depth-conditioned
+            wrapper selects one through ``active_a_layer``.
         """
         super().__init__()
         self.d = d
@@ -120,24 +163,45 @@ class AnisotropicMixtureGaussianVTheta(nn.Module):
         self._force_norm_max = force_norm_max
         in_d = xi_d if xi_d is not None else d
 
+        self.a_context_free = bool(a_context_free)
+        self.n_a_layers = int(n_a_layers)
+        self.active_a_layer = 0
+
         self.mu_proj = nn.Linear(in_d, K * d)
-        self.a_proj = nn.Linear(in_d, K * d)
+        if self.a_context_free:
+            # Stored 1-D, (n_a_layers * K * d,), so the optimizer's no-decay rule for 1-D tensors applies to it as it
+            # did to a_proj's bias, which held the same values at initialisation (a_proj's weight starts at zero).
+            self.a_proj = None
+            self.a_free = nn.Parameter(torch.empty(self.n_a_layers * K * d))
+        else:
+            self.a_proj = nn.Linear(in_d, K * d)
         self.w_proj = nn.Linear(in_d, K)
-        self.B_proj = nn.Linear(in_d, K * d * rank) if rank > 0 else None
+        if rank > 0 and b_bottleneck:
+            self.B_proj = _BottleneckLinear(in_d, K * d * rank, int(b_bottleneck))
+        else:
+            self.B_proj = nn.Linear(in_d, K * d * rank) if rank > 0 else None
 
         self._init_weights(init_log_precision)
 
     def _init_weights(self, init_log_precision: Optional[float]) -> None:
         nn.init.xavier_uniform_(self.mu_proj.weight)
         nn.init.zeros_(self.mu_proj.bias)
-        nn.init.zeros_(self.a_proj.weight)
-        if init_log_precision is not None:
-            self.a_proj.bias.data.fill_(init_log_precision)
+        a0 = init_log_precision if init_log_precision is not None else 0.0
+        if self.a_proj is not None:
+            nn.init.zeros_(self.a_proj.weight)
+            self.a_proj.bias.data.fill_(a0)
         else:
-            self.a_proj.bias.data.fill_(0.0)
+            self.a_free.data.fill_(a0)
         nn.init.zeros_(self.w_proj.weight)
         nn.init.zeros_(self.w_proj.bias)
-        if self.B_proj is not None:
+        if isinstance(self.B_proj, _BottleneckLinear):
+            # The product's entries start with the dense map's spread (normal, std 0.01): an entry of up @ down is a
+            # sum of `width` products, so its std is sqrt(width) * std(up) * std(down) = 0.01 with these two.
+            m, n_in = self.B_proj.width, self.B_proj.in_features
+            nn.init.normal_(self.B_proj.down.weight, std=n_in ** -0.5)
+            nn.init.normal_(self.B_proj.up.weight, std=0.01 * (n_in / m) ** 0.5)
+            nn.init.zeros_(self.B_proj.up.bias)
+        elif self.B_proj is not None:
             nn.init.normal_(self.B_proj.weight, std=0.01)
             nn.init.zeros_(self.B_proj.bias)
 
@@ -145,7 +209,11 @@ class AnisotropicMixtureGaussianVTheta(nn.Module):
         """Parse context xi into well parameters: (mu, a, w, B)."""
         lead = xi.shape[:-1]
         mu = self.mu_proj(xi).view(*lead, self.K, self.d)
-        a = (F.softplus(self.a_proj(xi)) + 1e-4).view(*lead, self.K, self.d)
+        if self.a_proj is not None:
+            a = (F.softplus(self.a_proj(xi)) + 1e-4).view(*lead, self.K, self.d)
+        else:
+            a_l = self.a_free.view(self.n_a_layers, self.K, self.d)[self.active_a_layer % self.n_a_layers]
+            a = (F.softplus(a_l) + 1e-4).expand(*lead, self.K, self.d)
         if self._precision_max is not None:
             a = a.clamp(max=self._precision_max)
         w = F.softmax(self.w_proj(xi), dim=-1) * self.w_scale
@@ -404,6 +472,9 @@ class AnisotropicMultiContextGaussianVTheta(nn.Module):
         precision_max: Optional[float] = None,
         precision_lr_max: Optional[float] = None,
         force_norm_max: Optional[float] = None,
+        b_bottleneck: int = 0,
+        a_context_free: bool = False,
+        n_a_layers: int = 1,
     ):
         super().__init__()
         self.d = d
@@ -416,6 +487,9 @@ class AnisotropicMultiContextGaussianVTheta(nn.Module):
                 precision_max=precision_max,
                 precision_lr_max=precision_lr_max,
                 force_norm_max=force_norm_max,
+                b_bottleneck=b_bottleneck,
+                a_context_free=a_context_free,
+                n_a_layers=n_a_layers,
             )
             for _ in range(n_ctx)
         )
@@ -551,6 +625,9 @@ class JointContextAnisotropicGaussianVTheta(nn.Module):
         precision_max: Optional[float] = None,
         precision_lr_max: Optional[float] = None,
         force_norm_max: Optional[float] = None,
+        b_bottleneck: int = 0,
+        a_context_free: bool = False,
+        n_a_layers: int = 1,
     ):
         super().__init__()
         self.d = d
@@ -568,6 +645,9 @@ class JointContextAnisotropicGaussianVTheta(nn.Module):
                 precision_max=precision_max,
                 precision_lr_max=precision_lr_max,
                 force_norm_max=force_norm_max,
+                b_bottleneck=b_bottleneck,
+                a_context_free=a_context_free,
+                n_a_layers=n_a_layers,
             )
         ])
 
@@ -637,6 +717,8 @@ class AnisotropicDepthConditionedGaussianVTheta(nn.Module):
         code_init_std: float = 0.02,
         coupling: str = "additive",
         input_unit_norm: bool = False,
+        b_bottleneck: int = 0,
+        a_context_free: bool = False,
     ):
         super().__init__()
         self.d = d
@@ -665,12 +747,18 @@ class AnisotropicDepthConditionedGaussianVTheta(nn.Module):
             raise ValueError(
                 f"coupling={coupling!r} not in {{'additive', 'joint'}}"
             )
+        # Twin PB (2026-11-22): b_bottleneck builds B_proj through a bottleneck; a_context_free gives each well one
+        # learned diagonal precision per layer (the bank is shared by the layers, so the values for the active
+        # layer are selected in set_active_layer). Both off by default: the bank is then exactly as before.
         self.bank = bank_cls(
             d=d, K=K, n_ctx=n_ctx, rank=rank, w_scale=w_scale,
             init_log_precision=init_log_precision,
             precision_max=precision_max,
             precision_lr_max=precision_lr_max,
             force_norm_max=force_norm_max,
+            b_bottleneck=b_bottleneck,
+            a_context_free=a_context_free,
+            n_a_layers=n_layers if a_context_free else 1,
         )
         self.depth_code = nn.Parameter(
             torch.randn(n_layers, n_ctx, d) * code_init_std
@@ -684,6 +772,8 @@ class AnisotropicDepthConditionedGaussianVTheta(nn.Module):
 
     def set_active_layer(self, layer_idx: int) -> None:
         self._active_layer = int(layer_idx)
+        for b in self.bank.banks:                    # the context-free precision's values for this layer
+            b.active_a_layer = self._active_layer % self.n_layers
 
     def _shift(self, xis: torch.Tensor) -> torch.Tensor:
         """Add the active layer's depth code to xis: (..., n_ctx, d)."""

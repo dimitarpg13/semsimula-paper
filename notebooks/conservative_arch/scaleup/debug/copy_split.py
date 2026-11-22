@@ -122,6 +122,11 @@ def tag_repl(folder):
     ar = next((int(t[2:]) for t in parts if re.fullmatch(r'ar\d+', t)), 4)
     if ar != 4:                                  # 2026-11-04: the wells' rank (K2-L8 at rank 6)
         repl += (('ANISO_RANK                  = 4', f'ANISO_RANK                  = {ar}'),)
+    bb = next((int(t[2:]) for t in parts if re.fullmatch(r'bb\d+', t)), 0)
+    if bb:                                       # twin PB (2026-11-22): B_proj through a bottleneck of width bb
+        repl += (('VTHETA_B_BOTTLENECK         = 0', f'VTHETA_B_BOTTLENECK         = {bb}'),)
+    if 'afree' in parts:                         # twin PA/PB: context-free diagonal precision per well and layer
+        repl += (('VTHETA_A_CONTEXT_FREE       = False', 'VTHETA_A_CONTEXT_FREE       = True'),)
     vs = next((t for t in parts if re.fullmatch(r'vs\d+(-\d+)*', t)), None)
     if vs:                                       # SR4a: training only; needed for the tag check
         ns = vs[2:].split('-') if '-' in vs else list(vs[2:])    # 'vs234' or (2026-11-05) 'vs8-12-16'
