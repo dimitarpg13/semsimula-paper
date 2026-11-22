@@ -2,7 +2,7 @@
 
 **What this note is.** A plan, with pre-registered probes and calls, for building and testing a mean-field (macroscopic) approximation of the basic conservative model, PARFLM: the context potential $V_\theta(h; \xi)$ plus the pair potential $V_\varphi$. It is the execution plan for the proposals of two earlier notes: [Macroscopic_Limits_of_the_Conservative_Step.md](Macroscopic_Limits_of_the_Conservative_Step.md), which proposes the field form of $V_\varphi$ and Probes A and B, and [Mean_Field_Theory_for_Particle_Language_Models.md](Mean_Field_Theory_for_Particle_Language_Models.md), which supplies the theory and Probe C. Everything up to the last stage runs on the CPU, on checkpoints already on the machine, one job at a time. The calls are proposed; the author confirms or changes them before each probe runs, as for every pre-registered item in the [protocol](depth_ladder/README.md). (Draft, 2026-11-11.)
 
-**Status.** Nothing in this note has run. PENDING throughout.
+**Status.** Nothing in this note has run. Probe A's calls A1 to A5 were confirmed by the author on 2026-11-21 (§5); everything else is PENDING and proposed.
 
 ---
 
@@ -144,6 +144,8 @@ As specified in the mean-field note §8, with two amendments from its review (20
 | A3 | on every model layer 0's median cosine is below the deeper layers' at every M (the hot layer) | 75% |
 | A4 | on SO-CODE the field's substitution cost is concentrated in the induction category: its share of the cost exceeds its share of the tokens by a factor of at least 2 | 55% |
 | A5 | on SR2 the substitution cost at M = 8 is within twice its paired standard error of zero (there is nothing left for the field to reproduce) | 75% |
+
+**Confirmed 2026-11-21.** The author confirmed A1 to A5 as written, at the probabilities above; they are binding from that date. A0 is proposed, not confirmed by the author. Context at confirmation: SR2-NP (SR2 trained without the pair force) had settled at 58.51 against SR2's 58.32, so on SR2 the pair force is worth 0.2 to 0.3% in value while removing it from the trained model costs 1.8%. A5 tests the second of these, the trained model's reliance, and is scored as written.
 
 **Reading.** A1 and A2 hit: the field arm (Stage 6b) is built at the smallest $M$ that reaches $\rho_M \ge 0.75$ on F3.1. A1 misses but $\rho_M$ still rises at $M = 32$: raise $M$ or add sigma points before deciding; the kernel's scale may be narrower than the components. A2 misses: the field is not the right parametrisation of this kernel at any $M$; stop the model level, keep the theory level. A4 hit: the part the field cannot carry is retrieval of a specific earlier token, which is the templates line's job; the field arm then is a **hybrid** (routed force in layer 0, field above), or waits.
 
