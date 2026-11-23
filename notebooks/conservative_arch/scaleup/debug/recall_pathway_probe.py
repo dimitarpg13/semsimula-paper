@@ -12,9 +12,14 @@ one layer, applied to every recall pair at once:
   - vel:  the velocity entering the layer is set to zero (h_prev = h); a second-order model only;
   - xi:   for each pair, p is removed from q's content-routed xi channels (its logit set to -inf);
   - phi:  for each pair, p is removed from q's V_phi sources (the causal mask at (q, p) set to False);
-  - xiphi: both.
-Readings: the change of the per-token loss (nats) at near and far recall positions and at control positions,
-averaged within each window and then over windows, with the standard error over windows. The windows are evenly
+  - xiphi: both;
+  - phioff: the whole pair force off (f_phi = 0), at one layer or at both (2026-11-22, the mean-field question:
+    is the pair force's cost at recall positions or at positions that recall nothing?).
+For a model with a pair force the base pass also records the top-k sources the pair force selects at each layer,
+and reads how often the earlier occurrence p is among q's selected sources, against the chance rate k / (sources
+q can select).
+Readings: the change of the per-token loss (nats) at near and far recall positions, at control positions and over
+all positions, averaged within each window and then over windows, with the standard error over windows. The windows are evenly
 spaced over the validation set and offset by half a spacing, so they are not the windows of the earlier probes.
 Writes OUT/recall_pathway_<stem>.txt and .json.
 """
@@ -111,11 +116,32 @@ def pair_mask(T_, device):
     return mk
 m._pair_mask_for = pair_mask
 
+PHI = getattr(m, 'V_phi', None) is not None
+if PHI:
+    orig_pf, orig_pp = m._pair_force_analytic, m._pair_potential
+    def _phioff():
+        return 'phioff' in st['cut'] and st['cut_layer'] in (None, st['layer'])
+    def pf(h_in, *a, **k):
+        return torch.zeros_like(h_in) if _phioff() else orig_pf(h_in, *a, **k)
+    def pp(h_in, *a, **k):
+        return torch.zeros((), device=h_in.device) if _phioff() else orig_pp(h_in, *a, **k)
+    m._pair_force_analytic, m._pair_potential = pf, pp
+    orig_topk = m._sparse_topk_indices
+    def topk(*a, **k):
+        r = orig_topk(*a, **k)
+        if st.get('record') is not None:
+            st['record'][st['layer']] = r[0].detach()   # (B, T, k) source indices
+        return r
+    m._sparse_topk_indices = topk
+
 ARMS = [('base', set(), None)] + ([] if FOB else [('vel@1', {'vel'}, 1)]) + \
-       [('xi@1', {'xi'}, 1), ('phi@1', {'phi'}, 1), ('xiphi@1', {'xi', 'phi'}, 1), ('xiphi@0', {'xi', 'phi'}, 0)]
+       [('xi@1', {'xi'}, 1), ('phi@1', {'phi'}, 1), ('xiphi@1', {'xi', 'phi'}, 1), ('xiphi@0', {'xi', 'phi'}, 0),
+        ('phi@0', {'phi'}, 0), ('phioff', {'phioff'}, None), ('phioff@0', {'phioff'}, 0), ('phioff@1', {'phioff'}, 1)]
 if getattr(m, 'V_phi', None) is None:              # SR2-NP (2026-11-21): no pair force, so only the xi cuts
     ARMS = [a for a in ARMS if a[0] in ('base', 'vel@1', 'xi@1')] + [('xi@0', {'xi'}, 0)]
-per = {a: {c: [] for c in ('near', 'far', 'control')} for a, _, _ in ARMS}
+CLS = ('near', 'far', 'control', 'all')
+per = {a: {c: [] for c in CLS} for a, _, _ in ARMS}
+sel = {L: {c: [] for c in ('near', 'far')} for L in (0, 1)}       # per window: selected rate, chance rate
 n_cls = {c: 0 for c in ('near', 'far', 'control')}
 checks = []
 for i in range(0, W, 4):
@@ -130,9 +156,21 @@ for i in range(0, W, 4):
         n_cls[c] += sum(len(cl[b][c]) for b in range(B))
     ce = {}
     for a, cut, L in ARMS:
-        st.update(cut=cut, cut_layer=L, REM=REM if cut & {'xi', 'phi'} else None)
+        st.update(cut=cut, cut_layer=L, REM=REM if cut & {'xi', 'phi'} else None,
+                  record={} if (a == 'base' and PHI) else None)
         with torch.enable_grad():                       # the V_phi pair force is an autograd gradient here
             lg = m(torch.from_numpy(xb))[0].detach()
+        if st['record']:
+            mk = orig_mask(T, 'cpu'); n_src = mk.sum(-1) if mk.dim() == 2 else None
+            for Ls, idx in st['record'].items():
+                k_ = idx.shape[-1]
+                for b in range(B):
+                    for c in ('near', 'far'):
+                        if not cl[b][c]:
+                            continue
+                        hit = [float((idx[b, q] == p).any()) for q, p in cl[b][c]]
+                        ch = [min(1.0, k_ / max(1, int(n_src[q]))) for q, _ in cl[b][c]]
+                        sel[Ls][c].append((float(np.mean(hit)), float(np.mean(ch))))
         ce[a] = torch.nn.functional.cross_entropy(lg.reshape(-1, lg.shape[-1]).float(),
                                                   torch.from_numpy(yb).reshape(-1), reduction='none').view(B, T)
     if OPTS.get('check', '0') == '1' and i == 0:
@@ -154,7 +192,8 @@ for i in range(0, W, 4):
             for c in ('near', 'far', 'control'):
                 qs = [q for q, _ in cl[b][c]]
                 per[a][c].append(float(d_[b, qs].mean()) if qs else float('nan'))
-    st.update(cut=set(), cut_layer=None, REM=None)
+            per[a]['all'].append(float(d_[b].mean()))
+    st.update(cut=set(), cut_layer=None, REM=None, record=None)
     print(f'windows {i + 4}/{W}', flush=True)
 
 res = {'n': n_cls, 'arms': {}, 'checks': checks, 'first_order': FOB}
@@ -162,17 +201,30 @@ lines = [f'Recall pathway probe: {FOLDER}', f'model {desc}',
          f'{W} fresh validation windows x {T} ({Path(CS["VAL"]).name}; offset half a spacing); first order {FOB}; '
          f'tokens over {MAXF} occurrences per window excluded; positions: {n_cls}',
          'change of the per-token loss (nats) at the class, mean over windows (se over windows)', '',
-         f'{"cut":>9}  {"near recall":>18}  {"far recall":>18}  {"control":>18}  {"far / control":>13}']
+         f'{"cut":>9}  {"near recall":>18}  {"far recall":>18}  {"control":>18}  {"all positions":>18}  {"far / control":>13}']
 for a, _, _ in ARMS:
     r = {}
-    for c in ('near', 'far', 'control'):
+    for c in CLS:
         x_ = np.array(per[a][c]); x_ = x_[np.isfinite(x_)]
         r[c] = [float(x_.mean()), float(x_.std(ddof=1) / np.sqrt(len(x_))) if len(x_) > 1 else float('nan')]
     r['per_window'] = per[a]
     res['arms'][a] = r
     ratio = r['far'][0] / r['control'][0] if r['control'][0] != 0 else float('nan')
     lines.append(f'{a:>9}  {r["near"][0]:+9.4f} ({r["near"][1]:.4f})  {r["far"][0]:+9.4f} ({r["far"][1]:.4f})  '
-                 f'{r["control"][0]:+9.4f} ({r["control"][1]:.4f})  {ratio:13.2f}')
+                 f'{r["control"][0]:+9.4f} ({r["control"][1]:.4f})  {r["all"][0]:+9.4f} ({r["all"][1]:.4f})  {ratio:13.2f}')
+if any(sel[L][c] for L in sel for c in sel[L]):
+    lines += ['', 'the pair force\'s top-k sources: how often the earlier occurrence p is among q\'s selected sources '
+              '(mean over windows, se), against the chance rate k / (sources q can select)']
+    res['selection'] = {}
+    for L in (0, 1):
+        for c in ('near', 'far'):
+            if not sel[L][c]:
+                continue
+            hv = np.array([x[0] for x in sel[L][c]]); cv = np.array([x[1] for x in sel[L][c]])
+            res['selection'][f'{c}@{L}'] = {'selected': [float(hv.mean()), float(hv.std(ddof=1) / np.sqrt(len(hv)))],
+                                            'chance': float(cv.mean())}
+            lines.append(f'  layer {L}, {c:>4} recall: selected {hv.mean():.3f} ({hv.std(ddof=1) / np.sqrt(len(hv)):.3f}); '
+                         f'chance {cv.mean():.3f}; ratio {hv.mean() / cv.mean():.2f}')
 if checks:
     lines += ['', 'checks:'] + ['  ' + c for c in checks]
 stem = OPTS.get('name', FOLDER[-40:])

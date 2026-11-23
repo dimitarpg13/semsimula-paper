@@ -95,4 +95,4 @@ $V_\phi$'s value in each setting is $v = \ln(\mathrm{PPL_{without}} / \mathrm{PP
 | VF-c | the wells do not substitute: v(wells) ≥ v₀ − 0.01 | 55% |
 | VF-d | the wells enhance V_φ: v(wells) > v₀ + 0.02 | 30% |
 
-**Status.** No VF arm is scored in the protocol. VF1 first needs a switch check (`PAIR_POTENTIAL = 'none'` together with the wells), and VF0 and VF1 come before VF2, behind PMX's scoring. Until VF1 is scored, the book may say only "the wells work beside $V_\phi$".
+**Status.** No VF arm is scored in the protocol. VF0 is set up and checked, and the author decided on 2026-11-22 to run it: [VF0_F31_Without_Pair_Force.md](VF0_F31_Without_Pair_Force.md). VF1 first needs a switch check (`PAIR_POTENTIAL = 'none'` together with the wells), and VF0 and VF1 come before VF2, behind PMX's scoring. Until VF1 is scored, the book may say only "the wells work beside $V_\phi$".

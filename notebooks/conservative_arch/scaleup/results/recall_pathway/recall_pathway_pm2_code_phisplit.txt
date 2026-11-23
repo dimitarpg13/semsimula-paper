@@ -1,0 +1,26 @@
+Recall pathway probe: semsimula_fock_cfc_baoab_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_pm2_pmx16_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+model fock_cfc_code_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_pm2_pmx16_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_step18000_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_pm2_pmx16_sr2_st16250_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn)
+16 fresh validation windows x 512 (code_val_2M.npy; offset half a spacing); first order False; tokens over 8 occurrences per window excluded; positions: {'near': 443, 'far': 1552, 'control': 2016}
+change of the per-token loss (nats) at the class, mean over windows (se over windows)
+
+      cut         near recall          far recall             control       all positions  far / control
+     base    +0.0000 (0.0000)    +0.0000 (0.0000)    +0.0000 (0.0000)    +0.0000 (0.0000)            nan
+    vel@1    +5.2923 (0.3321)    +5.3869 (0.2518)    +4.4056 (0.4566)    +4.2150 (0.2222)           1.22
+     xi@1    +0.8852 (0.1266)    +0.8605 (0.0753)    +0.0000 (0.0001)    +0.2057 (0.0202)      109693.91
+    phi@1    +0.0001 (0.0001)    -0.0000 (0.0001)    +0.0000 (0.0000)    +0.0000 (0.0000)            nan
+  xiphi@1    +0.8854 (0.1266)    +0.8606 (0.0754)    +0.0000 (0.0001)    +0.2057 (0.0202)      109706.32
+  xiphi@0    +0.1852 (0.0794)    +0.0135 (0.0028)    -0.0006 (0.0012)    +0.0093 (0.0027)         -22.16
+    phi@0    +0.0004 (0.0003)    -0.0002 (0.0002)    +0.0001 (0.0001)    +0.0001 (0.0001)          -1.30
+   phioff    +0.0601 (0.0218)    +0.0606 (0.0113)    -0.0027 (0.0053)    +0.0187 (0.0043)         -22.56
+ phioff@0    +0.0591 (0.0204)    +0.0621 (0.0109)    -0.0028 (0.0047)    +0.0150 (0.0035)         -22.18
+ phioff@1    +0.0003 (0.0020)    -0.0014 (0.0009)    -0.0004 (0.0010)    +0.0025 (0.0020)           3.50
+
+the pair force's top-k sources: how often the earlier occurrence p is among q's selected sources (mean over windows, se), against the chance rate k / (sources q can select)
+  layer 0, near recall: selected 0.203 (0.035); chance 0.103; ratio 1.96
+  layer 0,  far recall: selected 0.162 (0.017); chance 0.073; ratio 2.21
+  layer 1, near recall: selected 0.288 (0.040); chance 0.103; ratio 2.78
+  layer 1,  far recall: selected 0.239 (0.017); chance 0.073; ratio 3.26
+
+checks:
+  xi re-implementation with nothing removed: max |d loss| 0.00e+00
+  cut xiphi@1 before the first recall position (32): max |d loss| 0.00e+00

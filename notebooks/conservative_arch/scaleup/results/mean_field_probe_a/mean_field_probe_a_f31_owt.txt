@@ -1,0 +1,58 @@
+Mean-field Probe A: semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+model fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn)
+64 windows x 512 evenly spaced over openwebtext_val_2M.npy; M in [1, 2, 4, 8, 16, 32]; variants ['ema', 'uniform', 'global']; 2 layers; token shares {"first occurrence": 0.52, "repeat (not induction)": 0.338, "induction": 0.142, "recall, distance 1-16": 0.138, "recall, distance 17-256": 0.323}
+
+checks:
+  closed-form against autograd pair force, first batch: max |d loss| 2.29e-05 (2 pair-force evaluations per forward)
+  heads re-implemented against the closed-form force on its own top-16 sources (layer 0, router term off): relative difference 2.05e-07
+  causality: field force at positions 0-299 after perturbing positions 300-511: max |d f| 0.00e+00
+
+pair force off: cost +0.2665 (0.0086) nats per token (all), first occurrence +0.2941, repeat (not induction) +0.1854, induction +0.3364, recall, distance 1-16 +0.1675, recall, distance 17-256 +0.2529
+
+force fidelity per layer: cosine (p10 / median / p90), relative error after lambda (median), lambda
+  ema     M= 1  L0: cos +0.96/+0.988/+1.00 err 0.19 lam 13.6  L1: cos +0.99/+0.995/+1.00 err 0.13 lam 12
+  ema     M= 2  L0: cos +0.96/+0.988/+1.00 err 0.19 lam 13.6  L1: cos +0.99/+0.996/+1.00 err 0.13 lam 12.3
+  ema     M= 4  L0: cos +0.97/+0.989/+1.00 err 0.18 lam 13.9  L1: cos +0.99/+0.997/+1.00 err 0.12 lam 12.5
+  ema     M= 8  L0: cos +0.97/+0.990/+1.00 err 0.16 lam 14.2  L1: cos +0.99/+0.997/+1.00 err 0.10 lam 12.9
+  ema     M=16  L0: cos +0.98/+0.991/+1.00 err 0.15 lam 14.5  L1: cos +0.99/+0.998/+1.00 err 0.10 lam 13.3
+  ema     M=32  L0: cos +0.98/+0.992/+1.00 err 0.14 lam 14.7  L1: cos +1.00/+0.998/+1.00 err 0.09 lam 13.6
+  uniform M= 1  L0: cos +0.96/+0.987/+1.00 err 0.19 lam 13.5  L1: cos +0.99/+0.995/+1.00 err 0.13 lam 12
+  uniform M= 2  L0: cos +0.96/+0.987/+1.00 err 0.19 lam 13.5  L1: cos +0.99/+0.996/+1.00 err 0.13 lam 12.3
+  uniform M= 4  L0: cos +0.96/+0.989/+1.00 err 0.18 lam 13.9  L1: cos +0.99/+0.997/+1.00 err 0.11 lam 12.5
+  uniform M= 8  L0: cos +0.97/+0.990/+1.00 err 0.16 lam 14.2  L1: cos +0.99/+0.997/+1.00 err 0.10 lam 12.9
+  uniform M=16  L0: cos +0.98/+0.991/+1.00 err 0.15 lam 14.4  L1: cos +0.99/+0.998/+1.00 err 0.10 lam 13.3
+  uniform M=32  L0: cos +0.98/+0.992/+1.00 err 0.14 lam 14.7  L1: cos +1.00/+0.998/+1.00 err 0.09 lam 13.6
+  global  M= 1  L0: cos +0.96/+0.988/+1.00 err 0.18 lam 13.7  L1: cos +0.99/+0.995/+1.00 err 0.14 lam 13.3
+  global  M= 2  L0: cos +0.97/+0.989/+1.00 err 0.17 lam 14  L1: cos +0.99/+0.996/+1.00 err 0.14 lam 14
+  global  M= 4  L0: cos +0.97/+0.989/+1.00 err 0.17 lam 14.1  L1: cos +0.99/+0.996/+1.00 err 0.12 lam 13.9
+  global  M= 8  L0: cos +0.97/+0.990/+1.00 err 0.16 lam 14.4  L1: cos +0.99/+0.997/+1.00 err 0.10 lam 14.2
+  global  M=16  L0: cos +0.98/+0.991/+1.00 err 0.15 lam 14.6  L1: cos +0.99/+0.997/+1.00 err 0.10 lam 14.4
+  global  M=32  L0: cos +0.98/+0.992/+1.00 err 0.14 lam 14.9  L1: cos +0.99/+0.997/+1.00 err 0.10 lam 14.7
+
+substitution: the field force (times lambda) in every layer; cost against the trained model, nats per token (se over windows); rho = 1 - cost / cost of the pair force off
+  variant   M     rho                     all        first occurrence  repeat (not induction)               induction  recall, distance 17-25
+  ema       1   0.941        +0.0156 (0.0010)        +0.0156 (0.0013)        +0.0118 (0.0019)        +0.0190 (0.0036)        +0.0192 (0.0019)
+  ema       2   0.944        +0.0149 (0.0010)        +0.0154 (0.0013)        +0.0106 (0.0019)        +0.0173 (0.0035)        +0.0175 (0.0019)
+  ema       4   0.955        +0.0121 (0.0009)        +0.0124 (0.0013)        +0.0087 (0.0018)        +0.0155 (0.0031)        +0.0148 (0.0018)
+  ema       8   0.962        +0.0101 (0.0009)        +0.0100 (0.0013)        +0.0064 (0.0018)        +0.0154 (0.0030)        +0.0131 (0.0017)
+  ema      16   0.967        +0.0087 (0.0009)        +0.0088 (0.0012)        +0.0042 (0.0017)        +0.0155 (0.0030)        +0.0116 (0.0017)
+  ema      32   0.972        +0.0075 (0.0008)        +0.0075 (0.0011)        +0.0038 (0.0019)        +0.0123 (0.0028)        +0.0102 (0.0016)
+  uniform   1   0.941        +0.0156 (0.0011)        +0.0151 (0.0013)        +0.0120 (0.0018)        +0.0207 (0.0037)        +0.0201 (0.0020)
+  uniform   2   0.944        +0.0149 (0.0010)        +0.0148 (0.0013)        +0.0108 (0.0018)        +0.0190 (0.0036)        +0.0184 (0.0019)
+  uniform   4   0.955        +0.0121 (0.0009)        +0.0118 (0.0013)        +0.0090 (0.0017)        +0.0171 (0.0032)        +0.0156 (0.0018)
+  uniform   8   0.962        +0.0101 (0.0009)        +0.0095 (0.0013)        +0.0068 (0.0017)        +0.0170 (0.0031)        +0.0141 (0.0017)
+  uniform  16   0.967        +0.0088 (0.0009)        +0.0082 (0.0012)        +0.0047 (0.0016)        +0.0170 (0.0031)        +0.0125 (0.0017)
+  uniform  32   0.972        +0.0075 (0.0008)        +0.0068 (0.0011)        +0.0043 (0.0018)        +0.0136 (0.0029)        +0.0110 (0.0016)
+  global    1   0.945        +0.0147 (0.0013)        +0.0126 (0.0013)        +0.0125 (0.0018)        +0.0228 (0.0044)        +0.0229 (0.0027)
+  global    2   0.951        +0.0131 (0.0013)        +0.0112 (0.0012)        +0.0084 (0.0017)        +0.0267 (0.0047)        +0.0218 (0.0027)
+  global    4   0.958        +0.0112 (0.0012)        +0.0083 (0.0012)        +0.0105 (0.0016)        +0.0202 (0.0038)        +0.0193 (0.0024)
+  global    8   0.964        +0.0096 (0.0011)        +0.0066 (0.0012)        +0.0086 (0.0015)        +0.0204 (0.0038)        +0.0184 (0.0024)
+  global   16   0.966        +0.0089 (0.0011)        +0.0063 (0.0012)        +0.0071 (0.0015)        +0.0199 (0.0037)        +0.0172 (0.0024)
+  global   32   0.970        +0.0080 (0.0011)        +0.0053 (0.0012)        +0.0075 (0.0015)        +0.0163 (0.0035)        +0.0162 (0.0022)
+
+share of the substitution cost against share of the tokens (A4 reads the induction row)
+  ema M=8: first occurrence: cost 0.51 / tokens 0.52; repeat (not induction): cost 0.23 / tokens 0.34; induction: cost 0.26 / tokens 0.14
+  uniform M=8: first occurrence: cost 0.48 / tokens 0.52; repeat (not induction): cost 0.24 / tokens 0.34; induction: cost 0.28 / tokens 0.14
+  global M=8: first occurrence: cost 0.35 / tokens 0.52; repeat (not induction): cost 0.30 / tokens 0.34; induction: cost 0.35 / tokens 0.14
+
+time 1388 s; peak resident memory 10.7 GB

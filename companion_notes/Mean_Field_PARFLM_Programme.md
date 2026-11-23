@@ -2,7 +2,13 @@
 
 **What this note is.** A plan, with pre-registered probes and calls, for building and testing a mean-field (macroscopic) approximation of the basic conservative model, PARFLM: the context potential $V_\theta(h; \xi)$ plus the pair potential $V_\varphi$. It is the execution plan for the proposals of two earlier notes: [Macroscopic_Limits_of_the_Conservative_Step.md](Macroscopic_Limits_of_the_Conservative_Step.md), which proposes the field form of $V_\varphi$ and Probes A and B, and [Mean_Field_Theory_for_Particle_Language_Models.md](Mean_Field_Theory_for_Particle_Language_Models.md), which supplies the theory and Probe C. Everything up to the last stage runs on the CPU, on checkpoints already on the machine, one job at a time. The calls are proposed; the author confirms or changes them before each probe runs, as for every pre-registered item in the [protocol](depth_ladder/README.md). (Draft, 2026-11-11.)
 
-**Status.** Nothing in this note has run. Probe A's calls A1 to A5 were confirmed by the author on 2026-11-21 (§5); everything else is PENDING and proposed. **A reopening trigger (2026-11-22):** the arm SR2-T (SR2 with tied embeddings, [productization/Stage3d_SR2_Tied_With_Pair_Force.md](productization/Stage3d_SR2_Tied_With_Pair_Force.md)) carries the call ST1 (confirmed by the author 2026-11-22): if the pair force recovers at least half of the tie's cost, a cheap stand-in for it would let the deployment model tie its embeddings, and this programme returns to the productization path, after a cheaper competitor (a linear map before the tied read-out) and Probe A on SR2-T's weights.
+**Status.** Probe A has run on five models (2026-11-22) and is scored in §5, with the full write-up in [mean_field/Probe_A_Field_Pair_Force.md](mean_field/Probe_A_Field_Pair_Force.md): A1 hit; A2, A3, A4 and A5 missed. **A2 missed at every M, which fires the §6 gate "stop Stages 6" (VF0 and the field arm). Author's ruling, 2026-11-22: no field arm; VF0 runs anyway, under the protocol's own entry (§5.21), to complete the investigation of the pair force: [depth_ladder/VF0_F31_Without_Pair_Force.md](depth_ladder/VF0_F31_Without_Pair_Force.md).** Probe A's calls A1 to A5 were confirmed by the author on 2026-11-21; everything else is PENDING and proposed. **A reopening trigger (2026-11-22):** the arm SR2-T (SR2 with tied embeddings, [productization/Stage3d_SR2_Tied_With_Pair_Force.md](productization/Stage3d_SR2_Tied_With_Pair_Force.md)) carries the call ST1 (confirmed by the author 2026-11-22): if the pair force recovers at least half of the tie's cost, a cheap stand-in for it would let the deployment model tie its embeddings, and this programme returns to the productization path, after a cheaper competitor (a linear map before the tied read-out) and Probe A on SR2-T's weights.
+
+**Why the programme matters (author, 2026-11-22).** The pair force is a useful mechanism with its own place in Lagrangian modelling of language, and how much it carries depends on the model and the use case. It carries a third of the perplexity when it is the only token-to-token channel (F3.1, PM1), little under the exact stiff-mode flow or beside the registers, and more again in the first-order models with wells (1.2 to 2.1 times their second-order twins, 3 times on code). The mean field therefore has two kinds of significance:
+- **scientific:** a macroscopic description of the pair interaction;
+- **practical:** wherever the pair force is kept, the field removes its quadratic cost in context length and its growing decoding state.
+
+**A second route back to productization (2026-11-22):** the PMX line of the productization plan. The pair force does no addressing in FO-b-PMX-K16, so a field loses nothing the router provides ([productization/Pair_Force_Recall_Split_FO_b_PMX_K16.md](productization/Pair_Force_Recall_Split_FO_b_PMX_K16.md)). Its value there is being measured by FO-b-PMX-K16 trained without it ([productization/Stage3e_FO_b_PMX_K16_Without_Pair_Force.md](productization/Stage3e_FO_b_PMX_K16_Without_Pair_Force.md)).
 
 ---
 
@@ -86,6 +92,8 @@ The protocol's CD measurements (§5.20, scored 2026-10-11) removed $V_\varphi$ a
 
 Three facts follow and set the plan. First, the pair mechanism carries a third of the perplexity when it is the model's only content-addressed channel, and the wells do not displace it (CD4 missed and withdrew the earlier "wells took over" reading). Second, what idles it is SR2's integrator refinement, not anything in PARFLM: on SR2 and its descendants (every code arm, the PM pairs) a field cannot be tested, because there is nothing left for it to reproduce; the `mechanism_ablations` `vphi_off` readings on those models are +1.5% to +3.6% on OpenWebText and +2.8% (second order) to +8.5% (first order) on code. Third, 0.28 nats is **reliance**, not value: the trained model leans on the term that much, but a model trained without it may recover part of the loss through the other couplings (the Fock channel's reliance was 1.49 nats against a trained-without gain of 0.084). The protocol's VF factorial (§5.21, pre-registered 2026-10-11) was designed to measure the value and never ran. VF0 is this programme's one GPU prerequisite.
 
+**Correction (2026-11-22).** The second fact is wrong for the code arms without wells. Zeroing the pair force's scale costs SO-CODE +0.19 nats (+21%) and FO-b-CODE +0.68 nats (+98%), against +0.019 (+1.9%) and +0.065 (+6.7%) for their twins with two wells, PM2-CODE and FO-b-PM2-CODE ([productization/Pair_Force_Recall_Split_FO_b_PMX_K16.md](productization/Pair_Force_Recall_Split_FO_b_PMX_K16.md)). On code it is the wells that displace the pair force, not the exact flow. SO-CODE was a Probe A model and the field recovers 92% of its pair force (§5).
+
 So F3.1 is the primary base for every question about $V_\varphi$, and SR2 the secondary base, where the question is the complementary one: with a field in place of the router, does the exact flow still make the pair term redundant, or does the field find work the router could not do?
 
 ## 3. Material and rules
@@ -148,6 +156,24 @@ As specified in the mean-field note §8, with two amendments from its review (20
 **Confirmed 2026-11-21.** The author confirmed A1 to A5 as written, at the probabilities above; they are binding from that date. A0 is proposed, not confirmed by the author. Context at confirmation: SR2-NP (SR2 trained without the pair force) had settled at 58.51 against SR2's 58.32, so on SR2 the pair force is worth 0.2 to 0.3% in value while removing it from the trained model costs 1.8%. A5 tests the second of these, the trained model's reliance, and is scored as written.
 
 **Reading.** A1 and A2 hit: the field arm (Stage 6b) is built at the smallest $M$ that reaches $\rho_M \ge 0.75$ on F3.1. A1 misses but $\rho_M$ still rises at $M = 32$: raise $M$ or add sigma points before deciding; the kernel's scale may be narrower than the components. A2 misses: the field is not the right parametrisation of this kernel at any $M$; stop the model level, keep the theory level. A4 hit: the part the field cannot carry is retrieval of a specific earlier token, which is the templates line's job; the field arm then is a **hybrid** (routed force in layer 0, field above), or waits.
+
+**Result, 2026-11-22 (F3.1, FO-b-PMX-K16, SO-CODE, SR2, L8-CODE).** Full write-up: [mean_field/Probe_A_Field_Pair_Force.md](mean_field/Probe_A_Field_Pair_Force.md). Fraction recovered, causal field (EMA) at $M = 1$ and $M = 8$, with a context-free control added after the smoke test (the k-means centres at fixed weights, the same for every token):
+
+| model | pair force off (nats) | EMA, M = 1 | EMA, M = 8 | context-free, M = 8 |
+| --- | ---: | ---: | ---: | ---: |
+| F3.1 | +0.2665 | 0.941 | 0.962 | 0.964 |
+| SO-CODE | +0.2007 | 0.901 | 0.920 | 0.913 |
+| FO-b-PMX-K16 | +0.0245 | 0.663 | 0.738 | 0.681 |
+| SR2 | +0.0148 | 0.487 | 0.582 | 0.573 |
+| L8-CODE | +0.0620 | 0.583 | 0.760 | 0.756 |
+
+- **A0 (proposed only), MISS:** $\rho_1 = 0.941$.
+- **A1, HIT:** $\rho_8 = 0.962$.
+- **A2, MISS at every M:** L8-CODE's layers 1 and 7 at 0.593 and 0.774 at $M = 8$, at most 0.650 and 0.842 at $M = 32$. Layer 0 is at 0.956; the deep layers are not field-like in direction, though the field keeps 76% of the loss.
+- **A3, MISS:** layer 0 has the lower cosine on F3.1 and SO-CODE, as called, but the higher one on FO-b-PMX-K16 and L8-CODE at every $M$; SR2's layer 1 is not measurable (scale 0.006).
+- **A4, MISS on its letter:** factor 1.94 against a ceiling of 2.01, since induction is 49.8% of the code tokens; 97% of the remaining cost falls on induction tokens. The threshold was mis-set; scored as written.
+- **A5, MISS:** +0.0062 (0.0007) nats at $M = 8$.
+- **Reading.** On F3.1 a context-free landscape with one centre does as well as any field: the pair force acts as a function of the token's own state. At depth on code the field is not a faithful copy. The A2 gate fires; the write-up (§7) recommends honouring it for the content-gated field, running VF0 under the protocol's own §5.21 entry, and registering a context-free landscape arm on F3.1 as post hoc only if VF0 shows value. For the author to rule.
 
 ### Probe D: state clustering with depth (Stage 3)
 

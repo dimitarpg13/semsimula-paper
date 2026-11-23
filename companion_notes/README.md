@@ -6,6 +6,7 @@
 
 - [depth_ladder/](depth_ladder/README.md): the depth-ladder programme, the conservative models trained one mechanism at a time against a matched GPT-2; includes the recall pathway probe and the velocity and the pair force as competing mechanisms.
 - [productization/](productization/README.md): making the conservative core cheap to run, stage by stage.
+- [mean_field/](mean_field/README.md): results of the mean-field programme, one note per probe or arm (Probe A so far).
 - [training_instabilities/](training_instabilities/README.md): the training instabilities of Fock-PARFLM with a structured $V_\theta$, and the CfC+BAOAB integrator with its mitigations.
 - [deep_dives/](deep_dives/): long-form Word documents (with PDFs): the SPLM model and code, the structured scalar potential, the Poisson-mode registers and semantic templates, and the Jacobi metric.
 - [figures/](figures/): the figures of the notes and the scripts that make them (`_make_<topic>_figs.py`).
@@ -297,6 +298,7 @@
 - [Macroscopic_Limits_of_the_Conservative_Step](Macroscopic_Limits_of_the_Conservative_Step.md): replacing per-token physics by field equations: a proposal
 - [Mean_Field_Theory_for_Particle_Language_Models](Mean_Field_Theory_for_Particle_Language_Models.md): a study guide to mean-field theory, from its simplest model to machine learning
 - [Mean_Field_PARFLM_Programme](Mean_Field_PARFLM_Programme.md): pre-registered programme for a mean-field approximation of PARFLM
+- [mean_field/Probe_A_Field_Pair_Force](mean_field/Probe_A_Field_Pair_Force.md): Probe A, scored: a field, and even a context-free landscape, stands in for most of the trained pair force
 
 
 ## Causal leaks and auditing
