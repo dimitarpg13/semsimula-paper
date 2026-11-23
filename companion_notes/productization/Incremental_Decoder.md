@@ -1,6 +1,6 @@
 # The Incremental Decoder: What It Is and How It Works
 
-**What this note is.** A reader's account of the incremental decoder written in stage 2 of the productization plan ([Stage2_Decoding.md](Stage2_Decoding.md), measured 2026-11-17): what a decoder is in a language model, why the conservative core admits one, how it works, its place in text generation, and what it requires of a model. The levers that speed up its step are in [Stage2b_Decode_Step_Levers.md](Stage2b_Decode_Step_Levers.md). Written 2026-11-23.
+**What this note is.** A reader's account of the incremental decoder written in stage 2 of the productization plan ([Stage2_Decoding.md](Stage2_Decoding.md), measured 2026-11-17): what a decoder is in a language model, why the conservative core admits one, how it works, its place in text generation, and what it requires of a model. The levers that speed up its step are in [Stage2b_Decode_Step_Levers.md](Stage2b_Decode_Step_Levers.md); how decoding sits beside training and the prompt pass is in [Training_Prefill_and_Decoding.md](Training_Prefill_and_Decoding.md). Written 2026-11-23.
 
 ---
 
