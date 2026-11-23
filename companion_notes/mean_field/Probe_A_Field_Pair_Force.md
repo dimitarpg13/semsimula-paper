@@ -1,8 +1,8 @@
 # Probe A: Can a Field Stand In for the Pair Force?
 
-**What this note is.** The write-up of Probe A of the mean-field programme ([Mean_Field_PARFLM_Programme.md](../Mean_Field_PARFLM_Programme.md), §5). The probe asks whether the trained pair force $V_\varphi$ can be replaced by a field: a force built from a few summary points of the earlier states instead of 16 routed earlier tokens. It is a CPU test on trained checkpoints. Run 2026-11-22 on F3.1, FO-b-PMX-K16, SO-CODE, SR2 and L8-CODE.
+**What this note is.** The write-up of Probe A of the mean-field programme ([Mean_Field_PARFLM_Programme.md](../Mean_Field_PARFLM_Programme.md), §5). The probe asks whether the trained pair force $V_\varphi$ can be replaced by a field: a force built from a few summary points of the earlier states instead of 16 routed earlier tokens. It is a CPU test on trained checkpoints. Run 2026-11-22 on seven models: F3.1, PM1, FO-b-PMX-K16, PMX-K16, SR2, SO-CODE and L8-CODE.
 
-**Status.** Five models done; PM1 and PMX-K16 are running (§7). All the calls are scored: A1 hits; A2, A3, A4 and A5 miss; A0, which was proposed but never confirmed, also misses. **A2's miss fires the programme's stop gate for the field arm** (§7), which the author has to rule on. The main finding was not pre-registered. A control with **no context at all** does as well as the causal field: on F3.1 the pair force acts almost entirely as a function of the token's own state. In the deep layers of the eight-layer code model, no field reproduces the force's direction.
+**Status.** Complete: seven models. All the calls are scored: A1 hits; A2, A3, A4 and A5 miss; A0, which was proposed but never confirmed, also misses. **A2's miss fired the programme's stop gate for the field arm** (§7); the author ruled that no field arm runs and that VF0 runs under the protocol's own entry. The main finding was not pre-registered. A control with **no context at all** does as well as the causal field: on F3.1 the pair force acts almost entirely as a function of the token's own state. In the deep layers of the eight-layer code model, no field reproduces the force's direction.
 
 ---
 
@@ -93,18 +93,21 @@ Costs in nats per token against the trained model, with the standard error over 
 | FO-b-PMX-K16 (OpenWebText) | +0.0245 (0.0013) | 0.663 | 0.738 | 0.627 | 0.681 |
 | SR2 (OpenWebText) | +0.0148 (0.0011) | 0.487 | 0.582 | 0.472 | 0.573 |
 | L8-CODE (code, eight layers) | +0.0620 (0.0032) | 0.583 | 0.760 | 0.535 | 0.756 |
+| PM1 (F3.1 with 64 wells) | +0.3119 (0.0055) | 0.974 | **0.984** | 0.971 | **0.981** |
+| PMX-K16 (second order, 16 wells) | +0.0159 (0.0010) | 0.401 | 0.522 | 0.408 | 0.515 |
 
 The uniform average scores within 0.01 of the EMA everywhere. The remaining costs at $M = 8$ (EMA) are +0.0101 (F3.1), +0.0160 (SO-CODE), +0.0064 (FO-b-PMX-K16), +0.0062 (SR2) and +0.0149 (L8-CODE), each with a standard error of 0.0007 to 0.0017.
 
 ![rho against M](../figures/mean_field_probe_a/pa_rho.png)
 
-*Figure 1. The fraction of the pair force's removal cost the field recovers, against the number of components. Solid: the causal field; dashed: the context-free control. On F3.1, SO-CODE, SR2 and L8-CODE (from M = 2) the two lines lie close; only FO-b-PMX-K16 separates them.*
+*Figure 1. The fraction of the pair force's removal cost the field recovers, against the number of components. Solid: the causal field; dashed: the context-free control. In every model but FO-b-PMX-K16 the two lines lie close, at least from M = 4.*
 
 **Force fidelity (EMA, $M = 8$; median cosine, layer 0 and layer 1).**
 - F3.1: 0.990 and 0.997.
 - SO-CODE: 0.973 and 0.997.
 - FO-b-PMX-K16: 0.931 and 0.874.
 - SR2: 0.740 at layer 0. Layer 1's force cannot be measured, because its trained scale is 0.006 and the force is close to zero; its fitted $\lambda$ is meaningless.
+- PM1: 0.978 and 0.851. PMX-K16: 0.655 and 0.842.
 - L8-CODE: 0.956 at layer 0, then 0.593, 0.576, 0.576, 0.632, 0.705, 0.775 and 0.774 at layers 1 to 7. At $M = 32$ layers 1 and 7 reach only 0.643 and 0.832; the context-free control gives the same.
 
 The fitted $\lambda_\ell$ is 13 to 15 on F3.1 and SO-CODE: the routed sum acts like about 16 copies of one average source.
@@ -134,7 +137,7 @@ Confirmed by the author 2026-11-21 (A1 to A5); A0 was proposed only. Scored as w
 - **A0 (F3.1, $\rho_1 \lt 0.25$: content gating is needed), 70%, proposed only: MISS.** $\rho_1 = 0.941$. A single component, even a context-free one, recovers 94%.
 - **A1 (F3.1, $\rho_8 \ge 0.75$), 50%: HIT.** $\rho_8 = 0.962$ (EMA), 0.962 (uniform).
 - **A2 (L8-CODE, layers 1 and 7, median cosine at least 0.9 at $M = 8$), 60%: MISS.** 0.593 and 0.774 (EMA), 0.600 and 0.787 (uniform). It misses at every $M$: the best is 0.650 and 0.842, at $M = 32$ (uniform).
-- **A3 (on every model, layer 0's median cosine below the deeper layers' at every $M$), 75%: MISS.** It holds on F3.1 and SO-CODE at every $M$ and variant. It is reversed at every $M$ and variant on FO-b-PMX-K16 (0.931 against 0.874 at $M = 8$) and on L8-CODE, where layer 0 is the most field-like layer of all (0.956 against 0.58 to 0.77). SR2's layer 1 is not measurable.
+- **A3 (on every model, layer 0's median cosine below the deeper layers' at every $M$), 75%: MISS.** It holds on F3.1, SO-CODE and PMX-K16 at every $M$ and variant. It is reversed on FO-b-PMX-K16 (0.931 against 0.874 at $M = 8$), on PM1 (0.978 against 0.851) and on L8-CODE, where layer 0 is the most field-like layer of all (0.956 against 0.58 to 0.77). SR2's layer 1 is not measurable.
 - **A4 (SO-CODE, the induction share of the substitution cost at least twice its share of the tokens), 55%: MISS.** The factor is 1.94 (EMA, $M = 8$; 1.93 to 1.96 for EMA and uniform at every $M$). **A flaw in the call:** induction is 49.8% of the code tokens, so the largest possible factor is 2.01. The call could pass only if more than 99.6% of the cost fell on induction tokens. I set the threshold without checking the token share. On the substance, the remaining cost is as concentrated as it can be: 97% of it falls on induction tokens, and the other two categories are within noise of zero. The call stays scored as written.
 - **A5 (SR2, substitution cost at $M = 8$ within twice its standard error of zero), 75%: MISS.** +0.0062 (0.0007), nine standard errors. SR2's pair force is small (1.5% of the loss on these windows) but not idle, and the field recovers 58% of it.
 
@@ -144,7 +147,17 @@ Confirmed by the author 2026-11-21 (A1 to A5); A0 was proposed only. Scored as w
 
 **The part that depends on context is small and sits on induction tokens.** What no field recovers is 4% of the removal cost on F3.1, 8% on SO-CODE, 26% on FO-b-PMX-K16 and 42% on SR2. On code it falls entirely on induction tokens, and the context-free control leaves the same remainder (induction share 1.01 at $M = 8$). The causal field's context does not capture it either. It is the part that needs one specific earlier token, the job the programme assigns to the particle store of the templates line ([Mean_Field_PARFLM_Programme.md](../Mean_Field_PARFLM_Programme.md), §7). On code the router selects the earlier occurrence two to three times as often as chance, against 1.3 times on OpenWebText ([Pair_Force_Recall_Split_FO_b_PMX_K16.md](../productization/Pair_Force_Recall_Split_FO_b_PMX_K16.md)).
 
-**A hypothesis about the wells, from one model.** Only FO-b-PMX-K16, the one model here with wells, shows a context gap: 0.738 against 0.681 at $M = 8$ (L8-CODE, without wells: 0.760 against 0.756), a cost difference of 0.0014 nats. The paired standard error of that difference was not recorded in these runs, so it is not yet resolved; a rerun that records it is queued (§7). If it holds, it suggests a division of labour: the wells take over the landscape part of the pair force, and what remains of the pair force in a model with wells is more context-dependent. That fits the code results, where the second-order model with two wells leans on the pair force a tenth as much as the model without wells (+1.9% against +21%). PM1 (64 wells, F3.1's integrator) and PMX-K16 (16 wells, second order) test it. Neither is a pre-registered call; this is a reading to check, not a result.
+**The wells hypothesis, tested: not supported.** The first runs left one pattern to check: only FO-b-PMX-K16, the one model with wells, showed a context gap. That suggested the wells take over the landscape part of the pair force, leaving a more context-dependent remainder. The three runs added to test it record the paired context gap, the causal field's cost minus the context-free control's, at $M = 8$:
+
+| model | wells | pair force off (nats) | context gap at M = 8 (nats) | gap as a share of the removal cost |
+| --- | --- | ---: | ---: | ---: |
+| PM1 | 64 | +0.312 | −0.0008 (0.0003) | 0.3% |
+| PMX-K16 | 16 | +0.016 | −0.0001 (0.0003) | unresolved |
+| FO-b-PMX-K16 | 16 | +0.025 | −0.0014 (0.0004) | 6% |
+
+PM1 has the most wells, and its pair force is as context-free as F3.1's. PMX-K16 has the same wells as FO-b-PMX-K16 and no gap. The gap is resolved only in FO-b-PMX-K16, where it is small. So the wells do not make the pair force context-dependent. What remains is a property of that one first-order model, not of the wells.
+
+**A different pattern: the larger the pair force, the more field-like.** Across the seven models, $\rho_8$ follows the size of the removal cost. Where the pair force carries a lot, a field reproduces nearly all of it: PM1 (0.31 nats, $\rho_8 = 0.98$), F3.1 (0.27, 0.96), SO-CODE (0.20, 0.92). Where it carries little, much less: L8-CODE (0.062, 0.76), FO-b-PMX-K16 (0.025, 0.74), SR2 (0.015, 0.58), PMX-K16 (0.016, 0.52). The order does not follow the integrator: SO-CODE has SR2's exact stiff-mode flow and is near the top. A reading, not a call: when the pair force does a large share of the model's work, it does it as a landscape term, a fixed shape over the state space. When the rest of the model has taken that work over, what is left is a small, more structured remainder that no smooth field copies well.
 
 **With depth, the field keeps most of the loss but not the force.** On L8-CODE the field recovers 76% of the removal cost at $M = 8$, yet in layers 1 to 7 its force points only loosely along the model's (median cosine 0.58 to 0.77, relative error 0.66 to 0.84). Layer 0 is field-like (0.956), as in every two-layer model. Two readings are open, and Probe A cannot separate them, because it substitutes the field in every layer at once and does not cost the layers one by one. Either the deep layers' pair force matters little to the loss, so a poor copy of it costs little. Or the deep layers' force depends on which specific states are near, and the loss the field keeps comes from layer 0. The cosine still rises with $M$ in the deep layers (layer 1: 0.26 at $M = 1$, 0.64 at $M = 32$), which points to fine structure in the states that a few components cannot resolve. That is the depth question the field programme needed answered, and the answer is no: at eight layers on code, a field is not a faithful copy of the pair force.
 
@@ -168,9 +181,7 @@ Confirmed by the author 2026-11-21 (A1 to A5); A0 was proposed only. Scored as w
 
 **For A4's gate.** The gate reads "the routed force does retrieval; the field arm is the hybrid". A4 missed on its letter, and with the field arm stopped the gate has no arm to act on. The retrieval part is 8% of the pair force's cost on SO-CODE, 4% on F3.1, and a larger share on L8-CODE (77% of a 24% remainder).
 
-**Running now (CPU, one job at a time, 45 GB watchdog):**
-1. PM1 (planned in the programme), then PMX-K16: the wells hypothesis.
-2. FO-b-PMX-K16 again at $M = 1$ and 8, with the paired context gap that the script now records.
+**Done.** PM1, PMX-K16 and the paired rerun of FO-b-PMX-K16 finished on 2026-11-22 (§6, "The wells hypothesis, tested").
 
 ## 8. Caveats
 

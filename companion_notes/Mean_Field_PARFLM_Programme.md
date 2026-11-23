@@ -157,7 +157,7 @@ As specified in the mean-field note §8, with two amendments from its review (20
 
 **Reading.** A1 and A2 hit: the field arm (Stage 6b) is built at the smallest $M$ that reaches $\rho_M \ge 0.75$ on F3.1. A1 misses but $\rho_M$ still rises at $M = 32$: raise $M$ or add sigma points before deciding; the kernel's scale may be narrower than the components. A2 misses: the field is not the right parametrisation of this kernel at any $M$; stop the model level, keep the theory level. A4 hit: the part the field cannot carry is retrieval of a specific earlier token, which is the templates line's job; the field arm then is a **hybrid** (routed force in layer 0, field above), or waits.
 
-**Result, 2026-11-22 (F3.1, FO-b-PMX-K16, SO-CODE, SR2, L8-CODE).** Full write-up: [mean_field/Probe_A_Field_Pair_Force.md](mean_field/Probe_A_Field_Pair_Force.md). Fraction recovered, causal field (EMA) at $M = 1$ and $M = 8$, with a context-free control added after the smoke test (the k-means centres at fixed weights, the same for every token):
+**Result, 2026-11-22 (F3.1, PM1, FO-b-PMX-K16, PMX-K16, SR2, SO-CODE, L8-CODE).** Full write-up: [mean_field/Probe_A_Field_Pair_Force.md](mean_field/Probe_A_Field_Pair_Force.md). Fraction recovered, causal field (EMA) at $M = 1$ and $M = 8$, with a context-free control added after the smoke test (the k-means centres at fixed weights, the same for every token):
 
 | model | pair force off (nats) | EMA, M = 1 | EMA, M = 8 | context-free, M = 8 |
 | --- | ---: | ---: | ---: | ---: |
@@ -166,6 +166,8 @@ As specified in the mean-field note §8, with two amendments from its review (20
 | FO-b-PMX-K16 | +0.0245 | 0.663 | 0.738 | 0.681 |
 | SR2 | +0.0148 | 0.487 | 0.582 | 0.573 |
 | L8-CODE | +0.0620 | 0.583 | 0.760 | 0.756 |
+| PM1 | +0.3119 | 0.974 | 0.984 | 0.981 |
+| PMX-K16 | +0.0159 | 0.401 | 0.522 | 0.515 |
 
 - **A0 (proposed only), MISS:** $\rho_1 = 0.941$.
 - **A1, HIT:** $\rho_8 = 0.962$.

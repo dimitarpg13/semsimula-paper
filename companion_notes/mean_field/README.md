@@ -6,7 +6,7 @@
 
 | note | topic |
 | --- | --- |
-| [Probe_A_Field_Pair_Force.md](Probe_A_Field_Pair_Force.md) | Probe A (CPU, 2026-11-22): can a field stand in for the trained pair force? On F3.1 a context-free landscape with one centre recovers 94% of the removal cost and the causal field adds nothing; SO-CODE 90%, FO-b-PMX-K16 63 to 74%, SR2 about half of a small force. L8-CODE 76% of the loss, but its deep layers' force is not field-like. A1 hit; A2, A3, A4, A5 missed (A4's threshold sat at its ceiling); A2's miss fires the stop gate for the field arm, for the author to rule on |
+| [Probe_A_Field_Pair_Force.md](Probe_A_Field_Pair_Force.md) | Probe A (CPU, 2026-11-22): can a field stand in for the trained pair force? Seven models. On F3.1 (and PM1) a context-free landscape with one centre recovers 94% (97%) of the removal cost and the causal field adds nothing; the larger the pair force, the more field-like; the wells hypothesis is not supported; SO-CODE 90%, FO-b-PMX-K16 63 to 74%, SR2 about half of a small force. L8-CODE 76% of the loss, but its deep layers' force is not field-like. A1 hit; A2, A3, A4, A5 missed (A4's threshold sat at its ceiling); A2's miss fires the stop gate for the field arm, for the author to rule on |
 
 ## The programme and its background
 
