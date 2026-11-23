@@ -257,7 +257,7 @@ if MODEL == 'ladder':
         assert _cb._gram_eigh.__module__ == _cb.__name__
         _cb._gram_eigh = _gram_eigh64
         desc += '; gram driver by float64 eigh'
-    if OPTS.get('compile'):
+    def _compile_setup():
         # 2026-11-17 (lever N2): compile=layer compiles one layer's step (the integrator, the bank's force, the pair
         # force); compile=core its part from the linearisation on; compile=model the whole forward. Inductor on the CPU; graph breaks fall back to eager.
         # PyTorch 2.2.2 supports torch.compile on Python <= 3.11 only. On an Intel Mac, Apple clang has no OpenMP:
@@ -274,6 +274,13 @@ if MODEL == 'ladder':
         # The layer step asks torch.is_autocast_enabled(device), which PyTorch 2.2's Dynamo cannot trace; autocast is
         # never on at CPU inference, so the check is a constant here.
         sys.modules[type(m)._layer_step_langevin.__module__]._autocast_active = lambda *a, **k: False
+    # 2026-11-23 (Stage2b step 3): an ab= variant containing 'compiled' swaps the compiled layer-step core in per step
+    CORE_EAGER = m._layer_step_langevin_core
+    CORE_COMPILED = None
+    if 'compiled' in OPTS.get('ab', ''):
+        _compile_setup(); CORE_COMPILED = torch.compile(CORE_EAGER)
+    if OPTS.get('compile'):
+        _compile_setup()
         if OPTS['compile'] == 'layer':
             m._layer_step_langevin = torch.compile(m._layer_step_langevin)
         elif OPTS['compile'] == 'core':
@@ -355,6 +362,66 @@ res = {'model': MODEL, 'folder': FOLDER, 'desc': desc + ('; subnormals flushed' 
        'params': n_par, 'threads': THREADS, 'flush_denormal': bool(FLUSH_DENORMAL), 'lengths': {}}
 lines = [f'CPU inference benchmark: {MODEL}  {FOLDER}', f'{desc}; {n_par:,} parameters; {THREADS} threads; float32; '
          'one sequence per forward', '', f'{"length":>6}  {"median s":>9}  {"tokens/s":>9}  {"peak RSS GB":>11}  times']
+if MODEL == 'ladder' and OPTS.get('train_ab'):
+    # 2026-11-23 (Stage2b_Decode_Step_Levers.md, §6): does the series length matter in TRAINING? A paired comparison of
+    # two term counts for the damped-mode coefficients' series (train_ab=A,B, each an integer or 'auto' = the count
+    # series_terms_for gives at the configured damping), on one training step: forward with targets, then backward
+    # (no optimizer step, which both share). train_batch x train_T tokens from the validation file (loss=). Per variant:
+    # the loss, and the bytes autograd saves for the backward (saved-tensor hooks: exact, per variant). Timing: one
+    # warm-up step per variant, then train_blocks blocks of four steps A B B A on the same batch.
+    CB = sys.modules['cfc_baoab']
+    m.train()
+    nb, Tt, nblk = int(OPTS.get('train_batch', 4)), int(OPTS.get('train_T', 512)), int(OPTS.get('train_blocks', 6))
+    vv = np.load(OPTS['loss']).astype(np.int64)
+    starts = np.linspace(0, len(vv) - Tt - 2, nb).astype(int)
+    xb = torch.from_numpy(np.stack([vv[s0:s0 + Tt] for s0 in starts])); yb = torch.from_numpy(np.stack([vv[s0 + 1:s0 + Tt + 1] for s0 in starts]))
+    def terms(v):              # gamma * t = 0.2 for the half step of every SR2-type model (recorded 2026-11-23); train_gamma_t= overrides
+        return CB.series_terms_for(float(OPTS.get('train_gamma_t', 0.2))) if v == 'auto' else int(v)
+    va, vb = OPTS['train_ab'].split(',')
+    def step(v, count=False):
+        CB.SERIES_TERMS_FIXED = terms(v)
+        m.zero_grad(set_to_none=True)
+        saved = [0]
+        def pack(t):
+            saved[0] += t.numel() * t.element_size(); return t
+        ctx = torch.autograd.graph.saved_tensors_hooks(pack, lambda t: t) if count else contextlib.nullcontext()
+        t0 = time.perf_counter()
+        with torch.enable_grad(), ctx:
+            loss = m(xb, yb)[1]
+        loss.backward()
+        return time.perf_counter() - t0, float(loss), saved[0]
+    import contextlib
+    res['train_ab'] = {'A': va, 'B': vb, 'terms': {va: terms(va), vb: terms(vb)}, 'batch': nb, 'T': Tt}
+    lines = [f'CPU training-step benchmark: {FOLDER}', f'{desc}; {n_par:,} parameters; {THREADS} threads; float32; '
+             f'batch {nb} x {Tt} validation tokens; training mode; forward + backward', '',
+             f'paired comparison of the series term count: A = {va} ({terms(va)} terms), B = {vb} ({terms(vb)} terms)']
+    for v in (va, vb):
+        tw, lo, sv = step(v, count=True)
+        res['train_ab'][v] = {'loss': lo, 'saved_bytes': sv}
+        lines.append(f'  {v:<6} loss {lo:.6f}; saved for the backward {sv / 2 ** 20:9.1f} MB')
+    tt = []
+    for v in [va, vb, vb, va] * nblk:
+        tt.append(step(v)[0])
+    tt = np.array(tt).reshape(nblk, 4); a_ = tt[:, [0, 3]].sum(1); b_ = tt[:, [1, 2]].sum(1)
+    ratio = b_ / a_; save = (a_ - b_) / 2
+    bs = np.random.default_rng(1)
+    def ci(x):
+        mm = [np.median(x[bs.integers(0, len(x), len(x))]) for _ in range(2000)]
+        return np.percentile(mm, 2.5), np.percentile(mm, 97.5)
+    (r_lo, r_hi), (s_lo, s_hi) = ci(ratio), ci(save)
+    res['train_ab'].update({'A_s': float(np.median(a_ / 2)), 'B_s': float(np.median(b_ / 2)), 'ratio': float(np.median(ratio)),
+                            'ratio_ci': [float(r_lo), float(r_hi)], 'saving_s': float(np.median(save)),
+                            'saving_ci_s': [float(s_lo), float(s_hi)], 'times': tt.tolist()})
+    lines += ['', f'step time over {nblk} blocks: A {np.median(a_ / 2):.3f} s, B {np.median(b_ / 2):.3f} s; '
+              f'B/A {np.median(ratio):.3f} [{r_lo:.3f}, {r_hi:.3f}]; saving {np.median(save):.3f} s [{s_lo:.3f}, {s_hi:.3f}]',
+              '  block ratios: ' + ' '.join(f'{r:.3f}' for r in ratio)]
+    CB.SERIES_TERMS_FIXED = None
+    stem = OPTS.get('name', MODEL); OUT.mkdir(parents=True, exist_ok=True)
+    (OUT / f'train_ab_{stem}.txt').write_text('\n'.join(lines) + '\n')
+    (OUT / f'train_ab_{stem}.json').write_text(json.dumps(res, indent=1, default=str))
+    print('\n'.join(lines))
+    sys.exit(0)
+
 if NDEC:
     # 2026-11-17 (stage 2, lever N4): token-by-token decoding with a cache (parf/incremental_decoder.py). Ladder models
     # decode with the pair force dropped (novphi=1 required). decode_check=<n> first compares the decoder's logits with
@@ -405,10 +472,14 @@ if NDEC:
         import collections
         from torch.utils._python_dispatch import TorchDispatchMode
         CB = sys.modules['cfc_baoab']
-        def setv(name):           # a '+'-joined set of masked, auto, products (step 2); 'base' sets none
+        ID = sys.modules['incremental_decoder']
+        ID.FOLD_CACHE = 'fold' in OPTS['ab']          # step 4: decoders keep the folded keys when a variant reads them
+        def setv(name):           # a '+'-joined set of masked, auto, products, compiled, gemm, fold; 'base' sets none
             on = set(name.split('+')) - {'base'}
-            assert on <= {'masked', 'auto', 'products'}, name
+            assert on <= {'masked', 'auto', 'products', 'compiled', 'gemm', 'fold'}, name
             CB.SERIES_ONLY_WHERE_USED, CB.SERIES_TERMS_AUTO, CB.SMALL_PRODUCTS = ('masked' in on), ('auto' in on), ('products' in on)
+            ID.XI_READ = 'fold' if 'fold' in on else 'gemm' if 'gemm' in on else 'broadcast'
+            m._layer_step_langevin_core = CORE_COMPILED if 'compiled' in on else CORE_EAGER
         va, vb = OPTS['ab'].split(',')
         res['ab'] = {'A': va, 'B': vb, 'check': {}, 'ops_per_step': {}, 'lengths': {}}
         lines.append(f'paired comparison A = {va}, B = {vb}')
@@ -433,6 +504,8 @@ if NDEC:
                 _Count.n += 1
                 return func(*args, **(kwargs or {}))
         for v in (va, vb):
+            if 'compiled' in v:                           # fused kernels: an operator count would not mean the same
+                continue
             d = make_decoder(LENGTHS[0] + 16); setv(v)
             d.forward(torch.from_numpy(rng.integers(0, 50257, size=(1, LENGTHS[0])).astype(np.int64)))
             _Count.n = 0
@@ -449,6 +522,13 @@ if NDEC:
             d = make_decoder(T + 4 * NDEC + 8); setv('base')
             d.forward(torch.from_numpy(rng.integers(0, 50257, size=(1, T)).astype(np.int64)))
             toks = torch.from_numpy(rng.integers(0, 50257, size=(1, 4 * NDEC + 4)).astype(np.int64))
+            # step 4: the same new token decoded once under A and once under B at this context, the cache rewound in
+            # between (the second pass overwrites the rows the first wrote): their largest logit difference
+            t_keep = d.t; extra = torch.from_numpy(rng.integers(0, 50257, size=(1, 1)).astype(np.int64))
+            setv(va); la_ = d.forward(extra)[0]; d.t = t_keep
+            setv(vb); lb_ = d.forward(extra)[0]; d.t = t_keep
+            dctx = float((la_ - lb_).abs().max())
+            res['ab'].setdefault('ctx_check', {})[T] = dctx
             seq = [va, vb, vb, va] * (NDEC + 1); tt = []
             for j, v in enumerate(seq):
                 setv(v); t0 = time.perf_counter(); d.forward(toks[:, j:j + 1]); tt.append(time.perf_counter() - t0)
@@ -464,9 +544,10 @@ if NDEC:
             res['ab']['lengths'][T] = {'A_ms': 1e3 * float(np.median(a_ / 2)), 'B_ms': 1e3 * float(np.median(b_ / 2)),
                                        'ratio': float(np.median(ratio)), 'ratio_ci': [float(r_lo), float(r_hi)],
                                        'saving_ms': 1e3 * float(np.median(save)), 'saving_ci_ms': [1e3 * s_lo, 1e3 * s_hi],
-                                       'blocks': NDEC, 'times': tt.tolist()}
+                                       'blocks': NDEC, 'times': tt.tolist(), 'max_abs_dlogit_at_context': dctx}
             lines.append(f'{T:>7}  {1e3 * np.median(a_ / 2):8.2f}  {1e3 * np.median(b_ / 2):8.2f}  {np.median(ratio):6.3f}  '
-                         f'[{r_lo:.3f}, {r_hi:.3f}]  {1e3 * np.median(save):9.2f}  [{1e3 * s_lo:.2f}, {1e3 * s_hi:.2f}]  {NDEC}')
+                         f'[{r_lo:.3f}, {r_hi:.3f}]  {1e3 * np.median(save):9.2f}  [{1e3 * s_lo:.2f}, {1e3 * s_hi:.2f}]  {NDEC}'
+                         f'   max |dlogit| A vs B at this context {dctx:.2e}')
             print(lines[-1], flush=True)
         if OPTS.get('ab_prefill'):
             # prefill, paired the same way: per length one warm-up forward per variant, then ab_prefill blocks of four

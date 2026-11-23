@@ -25,6 +25,18 @@ import torch
 import torch.nn.functional as F
 
 
+# Stage 2b step 4 (2026-11-23; companion_notes/productization/Stage2b_Decode_Step_Levers.md, §5.6): how a decode step
+# reads the context-channel cache. 'broadcast' (default, the original): the weights (B, K, 1, n) times the states
+# broadcast over the K channels, which PyTorch runs as K row-times-matrix products, each reading all cached states.
+# 'gemm': the same arithmetic as one (K x n)(n x d) product per sequence, reading the states once. 'fold': the distance
+# term folded into the cached keys (one extra component, centred) and the read done by one
+# F.scaled_dot_product_attention call. All three are exact in exact arithmetic; 'fold' adds float32 error that grows
+# with the context (Stage1b_Context_Channels_as_30_Heads.md, §7). FOLD_CACHE must be set before a decoder is built for
+# 'fold' to be usable: the decoder then also keeps the folded keys.
+XI_READ = 'broadcast'
+FOLD_CACHE = False
+
+
 class LadderDecoder:
     """Token-by-token decoding of a ladder model (FockMultiXiPARFLM) with the pair force disabled.
 
@@ -58,6 +70,12 @@ class LadderDecoder:
         self.dk = int(xm.content_d_k) if self.content else 0
         dt = m.P.dtype
         self.keys = [torch.zeros(batch, self.K, max_len, self.dk, dtype=dt) for _ in range(self.L)]
+        # step 4, 'fold': per layer, keys widened by one component lambda_k (s - s0), lambda_k = -log a_k > 0, centred at
+        # s0 = (max_len - 1) / 2 (any constant cancels in each softmax row and centring halves the largest term)
+        self.fold = FOLD_CACHE and self.content
+        if self.fold:
+            self.s0 = (max_len - 1) / 2
+            self.fkeys = [torch.zeros(batch, self.K, max_len, self.dk + 1, dtype=dt) for _ in range(self.L)]
         self.states = [torch.zeros(batch, max_len, self.d, dtype=dt) for _ in range(self.L)]
         self.max_len, self.t, self._layer = max_len, 0, 0
         self._xi_full = xm.forward              # the module's own forward, used for the prefill
@@ -81,11 +99,24 @@ class LadderDecoder:
         if self.content:
             kk = xm.W_k(h).view(B, T, self.K, self.dk).permute(0, 2, 1, 3)
             self.keys[li][:B, :, t0:t0 + T] = kk
+            if self.fold:
+                lam = -torch.log(xm.alpha.clamp(min=1e-6, max=1.0 - 1e-6))                      # (K,)
+                pos = torch.arange(t0, t0 + T, dtype=h.dtype, device=h.device) - self.s0
+                self.fkeys[li][:B, :, t0:t0 + T, :self.dk] = kk
+                self.fkeys[li][:B, :, t0:t0 + T, self.dk] = (lam.view(self.K, 1) * pos.view(1, T)).unsqueeze(0)
         if T > 1:                               # the prefill: the ordinary computation over the prompt
             if t0 != 0:
                 raise NotImplementedError("a multi-token step is supported only as the prefill")
             return self._xi_full(h)
         n = t0 + 1                              # positions 0..t0, the new token included
+        if XI_READ == 'fold':
+            if not self.fold:
+                raise RuntimeError("XI_READ='fold' needs FOLD_CACHE = True before the decoder is built")
+            q = xm.W_q(h).view(B, 1, self.K, self.dk).permute(0, 2, 1, 3)                # (B, K, 1, dk)
+            qf = torch.cat([q, torch.full_like(q[..., :1], self.dk ** 0.5)], dim=-1)     # (B, K, 1, dk + 1)
+            vals = self.states[li][:B, :n].unsqueeze(1).expand(B, self.K, n, self.d)     # no copy: stride 0
+            out = F.scaled_dot_product_attention(qf, self.fkeys[li][:B, :, :n], vals, scale=self.dk ** -0.5)
+            return out.permute(0, 2, 1, 3).contiguous()                                 # (B, 1, K, d)
         la = torch.log(xm.alpha.clamp(min=1e-6, max=1.0 - 1e-6))                   # as causal_ema_logits
         dist = (t0 - torch.arange(n, dtype=h.dtype, device=h.device))              # t - s >= 0
         logits = (la.view(self.K, 1) * dist.view(1, n)).unsqueeze(0).unsqueeze(2)  # (1, K, 1, n)
@@ -93,6 +124,8 @@ class LadderDecoder:
             q = xm.W_q(h).view(B, 1, self.K, self.dk).permute(0, 2, 1, 3)        # (B, K, 1, dk)
             logits = logits + (q @ self.keys[li][:B, :, :n].transpose(-1, -2)) * (self.dk ** -0.5)
         w = torch.softmax(logits, dim=-1)                                          # (B, K, 1, n)
+        if XI_READ == 'gemm':                   # one (K x n)(n x d) product: the states are read once, not K times
+            return (w.view(B, self.K, n) @ self.states[li][:B, :n]).unsqueeze(1)    # (B, 1, K, d)
         out = w @ self.states[li][:B, :n].unsqueeze(1)                             # (B, K, 1, d)
         return out.permute(0, 2, 1, 3).contiguous()                                # (B, 1, K, d)
 

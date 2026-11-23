@@ -672,6 +672,9 @@ def _sinhc(x: torch.Tensor) -> torch.Tensor:
 # from series_terms_for at the largest gamma * t instead of the default 40 (equal to float64 rounding).
 SERIES_ONLY_WHERE_USED = False
 SERIES_TERMS_AUTO = False
+# SERIES_TERMS_FIXED (2026-11-23): a term count for lowrank_damped_substep fixed once, e.g. series_terms_for(gamma * dt/2)
+# from the configured damping, so that no call reads gamma on the host (on a GPU that read stops the device). None = 40.
+SERIES_TERMS_FIXED = None
 # Step 2 (2026-11-23): SMALL_PRODUCTS computes the decode step's single-token products as multiply-and-sum, 3 operator
 # calls instead of einsum's 11. Only where the operands hold one token; otherwise, and when off, the same einsum as
 # before, so the prefill and training are unchanged bit for bit. The decode step changes by float32 rounding.
@@ -792,7 +795,10 @@ def lowrank_damped_substep(
     fz = proj_modes(U, f_lr)
     mq = m                                                    # (..., 1) broadcasts over the q modes
     w0sq = kappa / mq
-    n_terms = series_terms_for(float(torch.as_tensor(gamma).max()) * dt) if SERIES_TERMS_AUTO else 40
+    if SERIES_TERMS_FIXED is not None:
+        n_terms = SERIES_TERMS_FIXED
+    else:
+        n_terms = series_terms_for(float(torch.as_tensor(gamma).max()) * dt) if SERIES_TERMS_AUTO else 40
     E12, E22, P, Q = damped_mode_coefficients(w0sq, gamma, dt, n_terms)
     E12, E22, P, Q = (c.to(h.dtype) for c in (E12, E22, P, Q))
     a = fz / mq
