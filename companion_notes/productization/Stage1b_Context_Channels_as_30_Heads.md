@@ -2,7 +2,7 @@
 
 **What this note is.** The mathematics and the measurements behind the second speed lever of 2026-11-22 in [Conservative_Core_Productization_Plan.md](Conservative_Core_Productization_Plan.md) (§6, "What remains of the speed push", item 2): an exact rewriting of SR2-NP's content-routed context channels that lets PyTorch's tiled attention kernel compute them on the CPU. [Stage1_CPU_Levers.md](Stage1_CPU_Levers.md), §8, records the result in one paragraph; this note states the problem, derives the rewriting and its cost and error, and explains why it is faster. Written 2026-11-22.
 
-**Status.** Measured on the CPU (PyTorch 2.2.2, 8 threads, float32, one sequence), on SR2-NP's trained weights. The rewriting is exact in exact arithmetic; in float32 it matches the folded form of lever N1 to rounding. It lives in the benchmark (`xi=fold64` in `cpu_throughput_benchmark.py`); it is not yet in the model code, the decoder or the deployment path.
+**Status.** Measured on the CPU (PyTorch 2.2.2, 8 threads, float32, one sequence), on SR2-NP's trained weights. The rewriting is exact in exact arithmetic; in float32 it matches the folded form of lever N1 to rounding. It lives in the benchmark (`xi=fold64` in `cpu_throughput_benchmark.py`); it is not in the model code or in the incremental decoder of [Stage2_Decoding.md](Stage2_Decoding.md). There it could help only the prompt phase, and only for long prompts (§9).
 
 ---
 
@@ -281,11 +281,11 @@ The whole model's peak memory at 8,192 tokens is almost unchanged (10.42 against
 
 ## 9. Scope and limits
 
-- **Prefill only.** In decoding, each step adds one query row; any implementation then forms a $1 \times T$ score row, not a $T \times T$ matrix, and the problem of §5 does not arise. Whether the tiled kernel helps a single query has not been measured.
+- **Prefill only.** In decoding, each step adds one query row; any implementation then forms a $1 \times T$ score row, not a $T \times T$ matrix, and the problem of §5 does not arise. Whether the tiled kernel helps a single query has not been measured. It would not change the decoding picture of [Stage2_Decoding.md](Stage2_Decoding.md) in any case: a decode step is bound by per-operation overhead (about 5,900 operator calls per step against GPT-2's 1,000), not by the channel read.
 - **This PyTorch.** The dispatch rule of §5 was read on PyTorch 2.2.2. A release whose tiled kernel accepts unequal widths would make the folded form fast as it stands, and would allow the one-pass arithmetic of §6.
 - **The CPU.** Nothing here was timed on a GPU. Training uses the trained code path, which builds the $K \times T \times T$ tensors explicitly; whether the equal-width form would speed up training is untested, and its error grows with $T$ (§7).
 - **Exact, but not bit-exact.** The rewriting is exact in exact arithmetic; in float32 its error is that of the folded form, which grows as $3 u \lambda_c T$ (about $10^{-3}$ at 8,192 tokens on the fastest channels) where the trained code path stays near $10^{-5}$. Centring halves it.
-- **Not yet deployed.** The form exists as a replacement for `MultiChannelXi.forward` inside the benchmark. To carry it into the decoder's prefill and the deployment path it needs to become an inference-only switch of the module, like the query chunking: equal widths above a length threshold, centred key term, subnormals flushed.
+- **Not in the model code.** The form exists as a replacement for `MultiChannelXi.forward` inside the benchmark. The incremental decoder exists (stage 2, 2026-11-17) and runs the module's trained code path. Carrying the form into it would speed up only the decoder's prompt phase, and only for prompts longer than about 1,000 tokens (1.18 times on the forward at 8,192). It would need an inference-only switch of the module, like the query chunking: equal widths above a length threshold, centred key term, subnormals flushed. No planned use case needs prompts that long, so it is not scheduled (2026-11-23).
 
 ## 10. Files
 

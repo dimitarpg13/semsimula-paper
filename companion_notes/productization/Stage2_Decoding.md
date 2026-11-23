@@ -20,6 +20,8 @@
 
 ## 1. How the decoder works
 
+A reader's account, with what a decoder is, its role in text generation, what it requires of a model, and figures, is in [Incremental_Decoder.md](Incremental_Decoder.md).
+
 With the pair force disabled and the unread registers skipped, the only pathway between positions is the context channels $\xi$. At layer $\ell$, position $t$ reads
 
 $$\xi_{k,t} = \sum_{s \le t} \underset{s}{\mathrm{softmax}}\left((t - s) \log a_k + \frac{q_{k,t} \cdot \kappa_{k,s}}{\sqrt{d_\kappa}}\right) h_s$$
@@ -67,6 +69,20 @@ A profile of eight decode steps at context 512 (SR2, pair force removed, layer 1
 | step, without the profiler | 27 ms | 8 ms |
 
 The large matrix products (`addmm` and `mm`: the bank's projections and the output head) take about 8.7 ms of a step. The rest is thousands of operations on single-token tensors, among them about 425 dtype conversions per step for the float64 decomposition. A decode step is bound by per-operation overhead, not by arithmetic: removing 75% of layer 1's bank (pruning) speeds decoding by only 1.13 times, while compiling the step's core, which fuses the small operations, speeds it by 1.28 to 1.40 times.
+
+**Which code issues the calls (2026-11-23).** The benchmark's `decode_attrib=1` attributes every operator call of 8 decode steps to the innermost source function that issues it, on the same configuration at context 512 (`decode_bench_decode_attrib_sr2_nv_lean.txt`). It counts at the dispatch level, where composite operators such as `einsum` and `to` are already split into their parts and their nested calls are not counted again, so its total is 2,918 calls per step against the profiler's 5,854. The shares:
+
+| source | calls per step | share | what they are |
+| --- | ---: | ---: | --- |
+| `cfc_baoab.py: damped_mode_coefficients` | 1,692 | 58% | the exact damped-oscillator coefficients of the stiff modes, 4 calls per step |
+| the low-rank substep, the low-rank matrix–vector product, the layer step, the bank's harmonic terms and gradient | 742 | 25% | mostly `permute`, `view`, `unsqueeze` and `bmm`: `einsum` on one token's tensors, split into its parts |
+| the context-channel read (`incremental_decoder.py: _xi`) | 94 | 3% | |
+| the float64 `eigh` path | 82 | 3% | |
+| everything else | 308 | 11% | |
+
+The first row is the root cause. `damped_mode_coefficients` computes, in float64, the coefficients of the exact flow of each stiff mode over the step, for every damping regime at once (`torch.where` evaluates every branch). Its position coefficient $Q = (1 - E_{11})/\omega_0^2$ cancels where $\omega_0^2 t^2$ is tiny, so it also sums a 40-term Taylor series. The series runs on every mode on every call, although only modes with $\omega_0^2 t^2 \lt 10^{-4}$ use it: about 9 operations per term, some 360 per call. In prefill each of these operations covers $T \times 16$ modes and costs little. In decoding each one acts on 16 numbers and costs its full overhead. Timed alone on one token's 16 modes (8 threads), a call takes 1.43 ms, and 0.26 ms without the series: about 5.7 ms of a 27 ms step, 4.7 ms of it the series. A transformer layer, by contrast, is a dozen large operations on full-width vectors.
+
+**Levers this points to (not done).** (1) Replace the series by its first terms in $\omega_0^2$ about the closed form at $\omega_0 = 0$ (relative error of order $(\omega_0^2 t^2)^2 \le 10^{-8}$ in the branch that uses it), or evaluate it only on the modes that need it: about 1,450 calls and 4.5 ms per step. (2) Write the single-token products as plain matrix products instead of `einsum`. (3) Fuse the rest, by compiling or by a hand-written single-token step.
 
 ## 5. torch.compile
 
