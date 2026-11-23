@@ -98,10 +98,10 @@ Choosing each token from the logits (greedy, sampling with a temperature, top-k 
 
 ![cost](../figures/incremental_decoder/dec_cost.png)
 
-*Figure 3. (a) Numbers cached per token. (b) Milliseconds per generated token against the context length: GPT-2 with its key–value cache (2026-11-17), and SR2-NP with layer 1 pruned, before and after step 1 of Stage 2b (2026-11-23). One thread pool of 8 on the same CPU, batch 1, float32; the GPT-2 and SR2-NP runs come from different sessions.*
+*Figure 3. (a) Numbers cached per token. (b) Milliseconds per generated token against the context length: GPT-2 with its key–value cache (2026-11-17), and SR2-NP with layer 1 pruned, with the original decode step and with every lever of Stage 2b (2026-11-23). One thread pool of 8 on the same CPU, batch 1, float32; the three lines come from different sessions.*
 
 - **The cache is a fifth of GPT-2's.** 1,248 numbers per token against 6,144: two layers of five 48-wide keys and one 384-wide state, against eight layers of six heads' keys and values. Both grow in proportion to the context; neither is a fixed-size state.
-- **The step is slower.** After step 1, SR2-NP generates a token in 19.8 ms at context 512 and 30.3 ms at 8,192, against GPT-2's 8.2 and 14.7. The gap narrows with the context, because a longer cache costs GPT-2's eight attention layers more than the core's two channel reads.
+- **The step is slower, and nearly flat in the context.** With every lever of [Stage2b_Decode_Step_Levers.md](Stage2b_Decode_Step_Levers.md) (multiply-and-sum products, the compiled core, the cache read as one product), SR2-NP generates a token in 15.1 ms at context 512 and 16.7 ms at 8,192, against GPT-2's 8.2 and 14.7: 1.8 times slower at 512 and 1.14 times at 8,192. The original step took 28.9 and 37.1 ms. The core's step grows by under 2 ms over this range, GPT-2's by 6.5 ms, because a longer cache costs GPT-2's eight attention layers more than the core's two channel reads.
 
 ## 8. Limits
 

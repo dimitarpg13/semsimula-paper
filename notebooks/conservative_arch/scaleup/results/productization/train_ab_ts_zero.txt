@@ -1,0 +1,9 @@
+CPU training-step benchmark: semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn); analytic V_phi True; query chunk off; skip unread registers False; 76,434,307 parameters; 8 threads; float32; batch 4 x 512 validation tokens; training mode; forward + backward
+
+paired comparison of the series term count: A = 40 (40 terms), B = 0 (0 terms)
+  40     loss 4.077451; saved for the backward    7518.1 MB
+  0      loss 4.077451; saved for the backward    7440.1 MB
+
+step time over 6 blocks: A 12.684 s, B 12.715 s; B/A 1.000 [0.980, 1.022]; saving 0.001 s [-0.268, 0.260]
+  block ratios: 1.039 1.003 0.997 1.004 0.979 0.981

@@ -1,0 +1,5 @@
+done s4_null 0
+done s4_gemm 0
+done s4_fold 0
+done s4_gemm_fold 0
+done all

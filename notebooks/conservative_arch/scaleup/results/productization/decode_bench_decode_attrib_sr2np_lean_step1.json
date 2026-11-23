@@ -1,0 +1,63 @@
+{
+ "model": "ladder",
+ "folder": "semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn",
+ "desc": "fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn); analytic V_phi True; query chunk 512; skip unread registers True; layer 1 pruned to wells [5]; gram driver by float64 eigh",
+ "params": 76434307,
+ "threads": 8,
+ "flush_denormal": false,
+ "lengths": {},
+ "decode": {
+  "512": {
+   "prefill_s": 0.40259068203158677,
+   "step_times": [
+    0.019888459937646985,
+    0.024611512199044228,
+    0.020466374000534415,
+    0.020885941106826067,
+    0.02225261810235679,
+    0.02800832292996347,
+    0.02296163304708898,
+    0.0226208190433681
+   ],
+   "median_step_s": 0.022436718572862446,
+   "tokens_per_s": 44.569797350380604,
+   "cache_mb": 2.4755859375,
+   "cache_numbers_per_token": 1248,
+   "peak_rss_gb": 1.8570365905761719
+  }
+ },
+ "decode_attrib": {
+  "cfc_baoab.py:lowrank_damped_substep": 296.0,
+  "cfc_baoab.py:damped_mode_coefficients": 256.0,
+  "model_parf_multixi.py:_layer_step_langevin_core": 132.0,
+  "model_parf_multixi.py:_lowrank_matvec": 132.0,
+  "model_aniso_gaussian_vtheta.py:harmonic_terms_lowrank": 113.0,
+  "incremental_decoder.py:_xi": 93.75,
+  "cpu_throughput_benchmark.py:_gram_eigh64": 82.0,
+  "model_aniso_gaussian_vtheta.py:analytical_grad": 76.0,
+  "cfc_baoab.py:_sinc": 40.0,
+  "cfc_baoab.py:_sinhc": 40.0,
+  "cfc_baoab.py:lowrank_modes": 35.0,
+  "cpu_throughput_benchmark.py:_sub_components": 25.0,
+  "model_aniso_gaussian_vtheta.py:_components": 24.0,
+  "model_fock_parf_v2.py:forward": 24.0,
+  "model_aniso_gaussian_vtheta.py:_bound_lowrank": 20.0,
+  "model_fock_parf_multixi.py:_active_mask": 16.0,
+  "cfc_baoab.py:<genexpr>": 16.0,
+  "cfc_baoab.py:ou_step": 12.0,
+  "model_fock_parf_multixi.py:_fock_layer_step": 8.0,
+  "model_parf.py:compute_mass": 7.0,
+  "model_aniso_gaussian_vtheta.py:_shift": 6.0,
+  "model_parf.py:compute_logits": 5.0,
+  "model_parf.py:_embed": 4.0,
+  "cfc_baoab.py:decode_velocity": 4.0,
+  "model_parf_multixi.py:_layer_forces": 4.0,
+  "cfc_baoab.py:encode_velocity": 4.0,
+  "model_fock_parf_multixi.py:_init_registers": 3.0,
+  "cpu_throughput_benchmark.py:<module>": 2.0,
+  "model_multixi.py:alpha": 2.0,
+  "model_aniso_gaussian_vtheta.py:_flatten": 2.0,
+  "model_parf.py:_project": 2.0,
+  "model_parf.py:gamma": 1.0
+ }
+}

@@ -2,7 +2,7 @@
 
 **What this note is.** The design, and as they come in the results, of three controlled experiments on the cost of one decoding step of the conservative core. They follow from the attribution in [Stage2_Decoding.md](Stage2_Decoding.md), §4: a decode step issues about 2,900 operator calls (dispatch level; the profiler counts 5,854 with nested calls), against about 1,000 for the matched GPT-2, and the step is bound by per-call overhead. The levers are taken one at a time, each against the step before it. Written 2026-11-23.
 
-**Status.** Step 1 done (2026-11-23, §3.5): bit-identical logits, and the decode step 29% faster at context 512 in the productization configuration (19% at 8,192), prefill unchanged. Step 2 done (§4.5): its calls P1 to P4, confirmed by the author before any timing, all hit; the decode step another 10% faster at 512 (6% at 8,192), the prefill unchanged bit for bit. Step 3 done (§5.4): calls Q1 to Q4, confirmed before any timing, all hit; compiled, the core is fastest with the series switches off (B2), 23% faster than steps 1 and 2 eager at 512 and 14% at 8,192. End to end (§5.5): the decode step 0.516 of the original at 512 and 0.653 at 8,192, prefill 8 to 16% faster. Training estimate running (§6); step 4 (the context-channel read) implemented, its calls R1 to R4 awaiting the author's confirmation (§5.6). **Step 1 is not pre-registered:** a harness smoke test meant as the null comparison (base against base) was launched as base against step 1, so a first reading was seen before any call was written (§3.4). Steps 2 and 3 will be pre-registered: calls written and confirmed by the author before their first timing, and every smoke test run as a null comparison.
+**Status.** Step 1 done (2026-11-23, §3.5): bit-identical logits, and the decode step 29% faster at context 512 in the productization configuration (19% at 8,192), prefill unchanged. Step 2 done (§4.5): its calls P1 to P4, confirmed by the author before any timing, all hit; the decode step another 10% faster at 512 (6% at 8,192), the prefill unchanged bit for bit. Step 3 done (§5.4): calls Q1 to Q4, confirmed before any timing, all hit; compiled, the core is fastest with the series switches off (B2), 23% faster than steps 1 and 2 eager at 512 and 14% at 8,192. End to end (§5.5): the decode step 0.516 of the original at 512 and 0.653 at 8,192, prefill 8 to 16% faster. Training: the series costs nothing measurable (§6), so no GPU session; step 4 done (§5.7): reading the cached states once (`gemm`) makes the step 31% faster at 8,192 tokens and leaves it nearly flat in the context; the folded read is slower and misses its correctness bound at 8,192. R1, R3, R4 hit; R2 misses. **Step 1 is not pre-registered:** a harness smoke test meant as the null comparison (base against base) was launched as base against step 1, so a first reading was seen before any call was written (§3.4). Steps 2 and 3 will be pre-registered: calls written and confirmed by the author before their first timing, and every smoke test run as a null comparison.
 
 ---
 
@@ -287,7 +287,7 @@ Both are switches of the decoder (`XI_READ`, `FOLD_CACHE` in `parf/incremental_d
 - A against A + `gemm`; A against A + `fold`; A + `gemm` against A + `fold`, directly;
 - correctness: the logit check of §2, and a new check at each timed length: the same new token decoded under A and under B with the cache rewound in between, so that their logits are compared at contexts of 512, 2,048 and 8,192.
 
-**Calls (proposed 2026-11-23, to be confirmed by the author before the first timing).**
+**Calls (proposed 2026-11-23; confirmed by the author the same day, before any timing of the lever; binding).**
 
 | id | prediction | called |
 | --- | --- | ---: |
@@ -298,9 +298,60 @@ Both are switches of the decoder (`XI_READ`, `FOLD_CACHE` in `parf/incremental_d
 
 **What the result decides.** A variant that passes its correctness call and whose interval at 8,192 lies below 0.95 joins the deployment configuration; if both qualify, the faster. If neither does, the read stays as it is and the remaining gap to GPT-2 at long contexts is recorded as the channels' cost.
 
+### 5.7 Step 4: result (2026-11-23)
+
+Run by `results/productization/queue_stage2b_step4.sh` in the Python 3.11 environment; outputs `decode_ab_s4_*.txt`. A is the final configuration of §5.5 (`products+compiled`).
+
+**Correctness.** On the check window, the decoder's logits against the base: A and `gemm` $3.4 \times 10^{-5}$, `fold` $4.5 \times 10^{-4}$; top token the same at all 64 single steps for all three. The same new token decoded under A and under B at each timed context:
+
+| B | context 512 | 2,048 | 8,192 |
+| --- | ---: | ---: | ---: |
+| A (null) | 0 | 0 | 0 |
+| `gemm` | $1.5 \times 10^{-5}$ | $7.6 \times 10^{-6}$ | $1.5 \times 10^{-5}$ |
+| `fold` | $1.1 \times 10^{-4}$ | $3.9 \times 10^{-4}$ | $1.9 \times 10^{-3}$ |
+
+**Decode step time,** paired: medians over 32 blocks, bootstrap 95% intervals.
+
+| comparison | context | A, ms | B, ms | B/A | saving, ms |
+| --- | ---: | ---: | ---: | --- | --- |
+| null | 512 | 15.31 | 15.17 | 0.998 [0.979, 1.005] | 0.03 [−0.08, 0.37] |
+| | 2,048 | 15.92 | 16.06 | 1.002 [0.998, 1.009] | −0.04 [−0.16, 0.03] |
+| | 8,192 | 24.44 | 24.27 | 0.995 [0.987, 1.002] | 0.13 [−0.04, 0.31] |
+| A → `gemm` | 512 | 15.16 | 15.14 | 0.988 [0.969, 1.013] | 0.18 [−0.19, 0.49] |
+| | 2,048 | 16.07 | 15.05 | 0.931 [0.901, 0.977] | 1.09 [0.40, 1.63] |
+| | 8,192 | 24.44 | **16.74** | **0.685** [0.679, 0.695] | 7.66 [7.48, 7.84] |
+| A → `fold` | 512 | 15.63 | 15.69 | 1.001 [0.997, 1.012] | −0.02 [−0.22, 0.05] |
+| | 2,048 | 16.36 | 16.79 | 1.016 [1.007, 1.034] | −0.27 [−0.58, −0.12] |
+| | 8,192 | 24.26 | 25.51 | 1.048 [1.042, 1.060] | −1.16 [−1.45, −1.03] |
+| `gemm` → `fold` | 512 | 15.43 | 15.54 | 1.009 [1.002, 1.031] | −0.13 [−0.48, −0.03] |
+| | 2,048 | 15.53 | 16.94 | 1.097 [1.079, 1.102] | −1.51 [−1.58, −1.25] |
+| | 8,192 | 16.90 | 25.82 | 1.526 [1.515, 1.536] | −8.87 [−9.07, −8.67] |
+
+**The calls.**
+- **R1 (`gemm` exact to float rounding), 90%: HIT.** At most $1.5 \times 10^{-5}$ at every context (threshold $10^{-4}$); top token the same at 64 of 64 steps.
+- **R2 (`fold` within $10^{-3}$ on the check window and at every context), 70%: MISS.** Within the bound on the check window ($4.5 \times 10^{-4}$) and at 512 and 2,048, but $1.9 \times 10^{-3}$ at 8,192: the error grows with the context, as Stage1b's analysis predicted, and centring did not keep it under $10^{-3}$.
+- **R3 (`gemm` at 8,192: ratio at most 0.85), 55%: HIT.** 0.685.
+- **R4 (`gemm` faster than `fold` at 8,192), 65%: HIT.** `fold` takes 1.53 times as long.
+
+**Reading.**
+- **The read's cost was reading the states once per channel.** Written as one product, the read removes 7.7 ms at 8,192 tokens, 85% of the 9 ms the read added over context 512. The step now grows by only 1.6 ms between 512 and 8,192 (15.1 to 16.7 ms), against 6.5 ms for the matched GPT-2.
+- **The fold is slower and less accurate.** It removes the cheap part (the distance row) and keeps the expensive one: the fused call is given the states broadcast over the five channels and reads them five times, like the original. It is also 5% slower at 8,192, and its error passes $10^{-3}$ there.
+- **Against the matched GPT-2,** across sessions: 15.1 against 8.2 ms per token at 512 (1.8 times slower), 16.7 against 14.7 at 8,192 (1.14 times).
+- **Decision (§5.6):** `gemm` passes R1 and its interval at 8,192 lies below 0.95, so it joins the deployment configuration: **`products`, the compiled core and the `gemm` read**. `fold` does not.
+
 ## 6. Does the series length matter in training?
 
 The step 1 lever's term count may also save time in training, where the 40-term series runs over every token's modes and autograd keeps its intermediates for the backward pass. A CPU estimate first (the author's stop rule: under about 2% of a training step, no GPU session): one training step of SR2-NP, unpruned, 4 sequences of 512 validation tokens, forward and backward, paired A B B A in 6 blocks; 40 terms against 12 (the count at $\gamma t = 0.2$) and against 0 (the series removed, an upper bound with wrong numbers), with a null; per variant the loss and the bytes autograd saves for the backward. For a GPU, `SERIES_TERMS_FIXED` in `cfc_baoab.py` fixes the count once, so no call reads $\gamma$ on the host. Harness: `train_ab=A,B` (`results/productization/queue_train_series.sh`).
+**Result (2026-11-23).** Outputs `results/productization/train_ab_ts_{null,auto,zero}.txt`. One training step takes about 12.5 s on this CPU.
+
+| comparison | step-time ratio B/A | saving, s | saved for the backward, MB | loss |
+| --- | --- | --- | --- | --- |
+| null, 40 against 40 | 1.000 [0.976, 1.009] | −0.005 [−0.116, 0.303] | 7,518 / 7,518 | 4.077451 / 4.077451 |
+| 40 against 12 (the lever) | 0.993 [0.967, 1.046] | 0.096 [−0.585, 0.433] | 7,518 / 7,462 (−0.7%) | 4.077451 / 4.077451 |
+| 40 against 0 (series removed) | 1.000 [0.980, 1.022] | 0.001 [−0.268, 0.260] | 7,518 / 7,440 (−1.0%) | 4.077451 / 4.077451 |
+
+**Reading.** Even removing the series altogether leaves the training step unchanged within ±2%, the floor of this design, and saves 1% of the activation memory. In training every operation covers $B \times T \times 16$ modes, so the 360 elementwise operations are a small part of a step dominated by the large products of the bank and the head; their per-call overhead, which dominated the decode step, is spread over 2,048 tokens. The loss is identical to the printed digits under every variant: no mode in this model's training step uses the series in a way that reaches the loss. **Decision, by the rule agreed with the author:** under 2%, no GPU session. `SERIES_TERMS_FIXED` stays in the code, off by default, for a GPU decoder.
+
 ## 7. Files
 
 - Switches: [`parf/cfc_baoab.py`](../../notebooks/conservative_arch/parf/cfc_baoab.py), `SERIES_ONLY_WHERE_USED` and `SERIES_TERMS_AUTO` above `damped_mode_coefficients`.

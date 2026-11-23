@@ -1,0 +1,6 @@
+done s1_null_pruned 0
+done s1_masked_pruned 0
+done s1_null_unpruned 0
+done s1_masked_unpruned 0
+done s1_auto_unpruned 0
+done all

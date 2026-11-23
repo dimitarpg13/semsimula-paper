@@ -1,0 +1,41 @@
+CPU decoding benchmark: ladder  semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn); analytic V_phi True; query chunk 512; skip unread registers True; V_phi removed; layer 1 pruned to wells [3, 4]; gram driver by float64 eigh; 76,572,110 parameters; 8 threads; float32; batch 1; 8 decoded tokens per length
+
+context  prefill s    s/token   tokens/s  cache MB  peak RSS GB
+decode attribution at context 512: 2918 aten calls per step (dispatch level), by the innermost source function outside torch:
+   1692.0   58.0%  cfc_baoab.py:damped_mode_coefficients                    mul 888, add 328, div 168, neg 164, where 36
+    288.0    9.9%  cfc_baoab.py:lowrank_damped_substep                      permute 100, view 80, mul 24, add 24, unsqueeze 20
+    132.0    4.5%  model_parf_multixi.py:_layer_step_langevin_core          permute 50, view 40, unsqueeze 10, bmm 10, sub 10
+    132.0    4.5%  model_parf_multixi.py:_lowrank_matvec                    permute 60, view 48, unsqueeze 12, bmm 12
+    114.0    3.9%  model_aniso_gaussian_vtheta.py:harmonic_terms_lowrank    mul 22, permute 22, view 18, unsqueeze 14, sum 8
+     93.8    3.2%  incremental_decoder.py:_xi                               view 20, slice 12, _unsafe_view 8, expand 8, permute 6
+     82.0    2.8%  cpu_throughput_benchmark.py:_gram_eigh64                 expand 8, view 8, mul 8, _to_copy 8, clamp 6
+     76.0    2.6%  model_aniso_gaussian_vtheta.py:analytical_grad           permute 20, view 16, mul 14, unsqueeze 8, sum 6
+     40.0    1.4%  cfc_baoab.py:_sinc                                       where 8, div 8, abs 4, lt 4, ones_like 4
+     40.0    1.4%  cfc_baoab.py:_sinhc                                      where 8, div 8, abs 4, lt 4, ones_like 4
+     35.0    1.2%  cfc_baoab.py:lowrank_modes                               detach 4, slice 4, zeros_like 4, where 4, pow 2
+     25.0    0.9%  cpu_throughput_benchmark.py:_sub_components              view 11, t 4, addmm 4, softplus 1, add 1
+     24.0    0.8%  model_aniso_gaussian_vtheta.py:_components               view 11, t 4, addmm 4, softplus 1, add 1
+     24.0    0.8%  model_fock_parf_v2.py:forward                            view 6, t 4, mm 2, _unsafe_view 2, add 2
+     20.0    0.7%  model_aniso_gaussian_vtheta.py:_bound_lowrank            div 4, mul 4, unsqueeze 4, view 2, linalg_vector_norm 2
+     16.0    0.5%  model_fock_parf_multixi.py:_active_mask                  gt 4, _to_copy 4, sort 2, cumprod 2, zeros_like 2
+     16.0    0.5%  cfc_baoab.py:<genexpr>                                   _to_copy 16
+     12.0    0.4%  cfc_baoab.py:ou_step                                     mul 6, neg 2, exp 2, rsub 2
+      8.0    0.3%  model_fock_parf_multixi.py:_fock_layer_step              mul 4, _to_copy 2, rsub 2
+      7.0    0.2%  model_parf.py:compute_mass                               softplus 2, add 2, index 1, unsqueeze 1, mul 1
+      6.0    0.2%  model_aniso_gaussian_vtheta.py:_shift                    select 2, view 2, add 2
+      5.0    0.2%  model_parf.py:compute_logits                             t 1, view 1, mm 1, _unsafe_view 1, add 1
+      4.0    0.1%  model_parf.py:_embed                                     slice 1, unsqueeze 1, embedding 1, add 1
+      4.0    0.1%  cfc_baoab.py:decode_velocity                             sub 2, div 2
+      4.0    0.1%  model_parf_multixi.py:_layer_forces                      view 2, neg 2
+      4.0    0.1%  cfc_baoab.py:encode_velocity                             mul 2, sub 2
+      3.0    0.1%  model_fock_parf_multixi.py:_init_registers               view 1, expand 1, full 1
+      2.0    0.1%  cpu_throughput_benchmark.py:<module>                     slice 2
+      2.0    0.1%  model_multixi.py:alpha                                   sigmoid 2
+      2.0    0.1%  model_aniso_gaussian_vtheta.py:_flatten                  view 2
+      2.0    0.1%  incremental_decoder.py:<lambda>                          zeros_like 2
+      2.0    0.1%  model_parf.py:_project                                   native_layer_norm 2
+      1.0    0.0%  model_parf.py:gamma                                      full 1
+
+    512      0.460     0.0296       33.8       2.5         1.84
+cache: 1,248 numbers per token

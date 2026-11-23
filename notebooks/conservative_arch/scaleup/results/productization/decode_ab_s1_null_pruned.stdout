@@ -1,0 +1,17 @@
+model: fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn); analytic V_phi True; query chunk 512; skip unread registers True; layer 1 pruned to wells [5]; gram driver by float64 eigh 79,239,043 parameters
+    512     29.24     29.61   1.024  [0.996, 1.038]      -0.71  [-1.08, 0.02]  32
+   2048     29.27     29.35   1.004  [0.990, 1.015]      -0.13  [-0.46, 0.30]  32
+   8192     37.13     37.17   0.994  [0.982, 1.012]       0.21  [-0.43, 0.76]  32
+CPU decoding benchmark: ladder  semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn); analytic V_phi True; query chunk 512; skip unread registers True; layer 1 pruned to wells [5]; gram driver by float64 eigh; 79,239,043 parameters; 8 threads; float32; batch 1; 32 decoded tokens per length
+
+paired comparison A = base, B = base
+  check base         max |dlogit| against base: full forward 0.000e+00, decoder 0.000e+00
+  check base         max |dlogit| against base: full forward 0.000e+00, decoder 0.000e+00
+  base         2914 operator calls per decode step (dispatch level, context 512)
+  base         2914 operator calls per decode step (dispatch level, context 512)
+
+context      A ms      B ms     B/A     95% interval  saving ms     95% interval  blocks
+    512     29.24     29.61   1.024  [0.996, 1.038]      -0.71  [-1.08, 0.02]  32
+   2048     29.27     29.35   1.004  [0.990, 1.015]      -0.13  [-0.46, 0.30]  32
+   8192     37.13     37.17   0.994  [0.982, 1.012]       0.21  [-0.43, 0.76]  32

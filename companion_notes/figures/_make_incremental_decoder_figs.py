@@ -10,9 +10,9 @@ Generates PNGs into figures/incremental_decoder/:
                        conservative core against the matched GPT-2.
 
 Numbers in dec_cost.png: cache sizes from parf/incremental_decoder.py (cache_numbers_per_token); times per token from
-results/productization/decode_bench_d_gpt2_{1,2,3}.txt (GPT-2, mean of three, 2026-11-17) and
-decode_ab_s1_masked_pruned.txt (SR2-NP, layer 1 pruned, before and after Stage 2b step 1, 2026-11-23). The GPT-2 runs
-and the SR2-NP runs come from different sessions.
+results/productization/decode_bench_d_gpt2_{1,2,3}.txt (GPT-2, mean of three, 2026-11-17), decode_ab_e2e_final.txt
+(SR2-NP, layer 1 pruned, the original step) and decode_ab_s4_gemm.txt (the same with every Stage 2b lever), 2026-11-23.
+The three come from different sessions.
 """
 
 from pathlib import Path
@@ -116,8 +116,8 @@ def step():
 def cost():
     ctx = [512, 2048, 8192]
     gpt2_ms = [1e3 / 122, 1e3 / 107, 1e3 / 68]          # decode_bench_d_gpt2_{1,2,3}, mean tokens per second
-    core_ms = [27.97, 29.38, 37.55]                     # decode_ab_s1_masked_pruned.txt, A (before step 1)
-    step1_ms = [19.82, 21.43, 30.33]                    # the same, B (after step 1)
+    core_ms = [28.92, 28.68, 37.07]                     # decode_ab_e2e_final.txt, A (the original step)
+    step1_ms = [15.14, 15.05, 16.74]                    # decode_ab_s4_gemm.txt, B (all Stage 2b levers: products, compiled core, gemm read)
     fig, (a, b) = plt.subplots(1, 2, figsize=(11.5, 4.3))
     a.bar([0, 1], [1248, 6144], 0.55, color=[GREEN, BLUE])
     a.set_xticks([0, 1], ["conservative core\n(2 layers)", "matched GPT-2\n(8 layers)"])
@@ -125,7 +125,7 @@ def cost():
         a.text(x, v + 120, f"{v:,}", ha="center", fontsize=10)
     a.set_ylabel("numbers cached per token"); a.set_title("(a) Cache per token")
     a.spines[["top", "right"]].set_visible(False)
-    for ys, col, lab, mk in ((core_ms, GREY, "core, before step 1", "o"), (step1_ms, GREEN, "core, after step 1", "s"),
+    for ys, col, lab, mk in ((core_ms, GREY, "core, original step", "o"), (step1_ms, GREEN, "core, all levers", "s"),
                              (gpt2_ms, BLUE, "matched GPT-2", "D")):
         b.plot(ctx, ys, color=col, marker=mk, lw=2, ms=7)
         b.annotate(lab, (ctx[-1], ys[-1]), xytext=(8, 0), textcoords="offset points", va="center", fontsize=9.5)

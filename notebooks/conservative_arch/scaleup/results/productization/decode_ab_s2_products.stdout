@@ -1,0 +1,25 @@
+model: fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn); analytic V_phi True; query chunk 512; skip unread registers True; layer 1 pruned to wells [5]; gram driver by float64 eigh 79,239,043 parameters
+    512     21.56     19.43   0.897  [0.882, 0.919]       2.26  [1.76, 2.56]  32
+   2048     22.96     20.99   0.919  [0.903, 0.936]       1.88  [1.46, 2.24]  32
+   8192     32.45     30.94   0.940  [0.925, 0.966]       1.95  [1.02, 2.49]  32
+    512     0.409     0.401  1.028 0.893 1.052
+   2048     2.344     2.319  0.969 1.002 0.940
+   8192    16.610    16.763  1.013 0.988 1.081
+CPU decoding benchmark: ladder  semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn); analytic V_phi True; query chunk 512; skip unread registers True; layer 1 pruned to wells [5]; gram driver by float64 eigh; 79,239,043 parameters; 8 threads; float32; batch 1; 32 decoded tokens per length
+
+paired comparison A = masked+auto, B = masked+auto+products
+  check masked+auto  max |dlogit| against base: full forward 0.000e+00, decoder 0.000e+00; top-1 agrees at 64 of 64 single steps
+  check masked+auto+products max |dlogit| against base: full forward 0.000e+00, decoder 4.005e-05; top-1 agrees at 64 of 64 single steps
+  masked+auto  1486 operator calls per decode step (dispatch level, context 512)
+  masked+auto+products 1086 operator calls per decode step (dispatch level, context 512)
+
+context      A ms      B ms     B/A     95% interval  saving ms     95% interval  blocks
+    512     21.56     19.43   0.897  [0.882, 0.919]       2.26  [1.76, 2.56]  32
+   2048     22.96     20.99   0.919  [0.903, 0.936]       1.88  [1.46, 2.24]  32
+   8192     32.45     30.94   0.940  [0.925, 0.966]       1.95  [1.02, 2.49]  32
+
+prefill, 3 blocks A B B A per length: median A s, median B s, block ratios B/A
+    512     0.409     0.401  1.028 0.893 1.052
+   2048     2.344     2.319  0.969 1.002 0.940
+   8192    16.610    16.763  1.013 0.988 1.081

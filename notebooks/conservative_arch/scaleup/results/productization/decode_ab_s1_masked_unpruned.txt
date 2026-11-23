@@ -1,0 +1,18 @@
+CPU decoding benchmark: ladder  semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn); analytic V_phi True; query chunk 512; skip unread registers True; gram driver by float64 eigh; 79,239,043 parameters; 8 threads; float32; batch 1; 32 decoded tokens per length
+
+paired comparison A = base, B = masked
+  check base         max |dlogit| against base: full forward 0.000e+00, decoder 0.000e+00
+  check masked       max |dlogit| against base: full forward 0.000e+00, decoder 0.000e+00
+  base         2915 operator calls per decode step (dispatch level, context 512)
+  masked       2211 operator calls per decode step (dispatch level, context 512)
+
+context      A ms      B ms     B/A     95% interval  saving ms     95% interval  blocks
+    512     33.13     29.70   0.889  [0.881, 0.908]       3.76  [3.03, 3.91]  32
+   2048     34.79     31.12   0.899  [0.883, 0.909]       3.55  [3.15, 3.98]  32
+   8192     43.82     40.52   0.925  [0.906, 0.946]       3.30  [2.38, 4.12]  32
+
+prefill, 3 blocks A B B A per length: median A s, median B s, block ratios B/A
+    512     0.546     0.533  0.970 1.018 0.976
+   2048     2.813     2.776  0.987 0.992 1.004
+   8192    19.504    19.854  0.996 1.018 1.006
