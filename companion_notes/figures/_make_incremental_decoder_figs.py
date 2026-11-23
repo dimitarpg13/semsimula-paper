@@ -67,7 +67,7 @@ def pipeline():
     arrow(ax, 4.6, 0.65, 3.5, 0.65, color=GREEN)                     # decode step -> cache (append)
     ax.text(4.05, 1.13, "read", color=MUTED, fontsize=9, ha="center", va="bottom")
     ax.text(4.05, 0.57, "append", color=GREEN, fontsize=9, ha="center", va="top")
-    ax.text(8.2, 1.75, "repeat until\nthe text ends", fontsize=9, color=MUTED, ha="left")
+    ax.text(9.55, 1.45, "repeat until\nthe text ends", fontsize=9, color=MUTED, ha="left")
     ax.text(3.7, 4.25, "time to the first token: the prefill", fontsize=9.5, color=BLUE, ha="center")
     ax.text(6.05, 0.05, "time per further token: one decode step", fontsize=9.5, color=GREEN, ha="center")
     ax.set_title("Text generation with an incremental decoder", loc="left")
@@ -79,7 +79,7 @@ def step():
     # left: the conservative core
     ax = axes[0]; ax.set_xlim(0, 7.2); ax.set_ylim(0, 7.0); ax.axis("off")
     ax.set_title("Conservative core (SR2-NP), one decode step", loc="left")
-    box(ax, 2.2, 0.2, 2.8, 0.6, "embedding of the new token at position t")
+    box(ax, 1.6, 0.2, 4.0, 0.6, "embedding of the new token at position t")
     for li, y0 in enumerate((1.25, 3.85)):
         ax.add_patch(FancyBboxPatch((0.15, y0 - 0.1), 6.9, 2.35, boxstyle="round,pad=0.02,rounding_size=0.1",
                                     fc="#FAFAFA", ec=GREY, lw=1.0, ls="--"))
@@ -90,9 +90,10 @@ def step():
         box(ax, 4.95, y0 + 0.1, 1.95, 1.65, "integrator:\nexact damped flow\nof the stiff modes,\nkick, friction\n→ h_t at the next layer", fc="#F5F3FF", ec=PURPLE, fs=9)
         arrow(ax, 2.35, y0 + 1.0, 2.75, y0 + 1.3); arrow(ax, 3.7, y0 + 0.95, 3.7, y0 + 0.8)
         arrow(ax, 4.65, y0 + 0.45, 4.95, y0 + 0.9); arrow(ax, 4.65, y0 + 1.35, 4.95, y0 + 1.1)
-    arrow(ax, 3.6, 0.8, 1.35, 1.35); arrow(ax, 5.9, 3.3, 1.35, 3.95, rad=0.15)
+    arrow(ax, 3.6, 0.8, 3.6, 1.15); arrow(ax, 3.6, 3.5, 3.6, 3.75)   # embedding -> layer 0 -> layer 1
+    ax.text(3.7, 3.62, "h_t", fontsize=9, color=INK, va="center")
     box(ax, 4.95, 6.35, 1.95, 0.55, "output head → logits")
-    arrow(ax, 5.92, 5.85, 5.92, 6.35)
+    arrow(ax, 5.92, 6.1, 5.92, 6.35)
     ax.text(0.35, 6.55, "orange: reads the cache (keys and states\nof all earlier tokens, per layer)\npurple: the new token's own position only",
             fontsize=8.5, color=INK, va="center")
     # right: the matched GPT-2
@@ -118,7 +119,7 @@ def cost():
     core_ms = [27.97, 29.38, 37.55]                     # decode_ab_s1_masked_pruned.txt, A (before step 1)
     step1_ms = [19.82, 21.43, 30.33]                    # the same, B (after step 1)
     fig, (a, b) = plt.subplots(1, 2, figsize=(11.5, 4.3))
-    a.bar([0, 1], [1248, 6144], 0.55, color=[GREEN, GREY])
+    a.bar([0, 1], [1248, 6144], 0.55, color=[GREEN, BLUE])
     a.set_xticks([0, 1], ["conservative core\n(2 layers)", "matched GPT-2\n(8 layers)"])
     for x, v in ((0, 1248), (1, 6144)):
         a.text(x, v + 120, f"{v:,}", ha="center", fontsize=10)
