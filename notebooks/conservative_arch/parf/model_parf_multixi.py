@@ -72,7 +72,7 @@ from cfc_baoab import (  # noqa: E402
     lowrank_cfc_substep, lowrank_damped_substep, lowrank_overdamped_substep,
     lowrank_iso_overdamped_substep,
     indefinite_lowrank_modes, indefinite_lowrank_modes_split, indefinite_lowrank_modes_chol,
-    lowrank_iso_damped_substep, series_terms_for,
+    lowrank_iso_damped_substep, series_terms_for, proj_modes, lift_modes,
     lowrank_modes,
     ou_step,
 )
@@ -2088,7 +2088,7 @@ class MultiXiPARFLM(SparsePARFLM):
                     oversample=getattr(cfg, "lowrank_oversample", 4),
                     driver=getattr(cfg, "lowrank_driver", "svd"),
                 )
-            lr_sL = torch.einsum('...dp,...p->...d', lr_G, lr_Gmu)
+            lr_sL = lift_modes(lr_G, lr_Gmu)
             f_L = lr_sL - self._lowrank_matvec(lr_G, h_in)
             if getattr(cfg, "first_order_overdamped", False):
                 if pmx:
@@ -2174,10 +2174,7 @@ class MultiXiPARFLM(SparsePARFLM):
                 # wells' quadratic in full; the soft modes stay in the kick
                 f_kick = f_kick - (_th_proj(f_L_mid) + _pm_quad_force(h_mid))
             else:
-                f_L_mid = torch.einsum(
-                    '...dq,...q->...d', lr_U,
-                    torch.einsum('...dq,...d->...q', lr_U, f_L_mid),
-                )
+                f_L_mid = lift_modes(lr_U, proj_modes(lr_U, f_L_mid))
                 f_kick = f_kick - f_L_mid
         if cfg.force_clamp_max is not None:
             f_kick = f_kick.clamp(-cfg.force_clamp_max, cfg.force_clamp_max)
@@ -2195,10 +2192,7 @@ class MultiXiPARFLM(SparsePARFLM):
         if use_lowrank and getattr(cfg, "lowrank_damped_flow", False) and not pmx:
             # SR2: span(U) gets its friction inside the exact damped flow of
             # the A substeps, so undo the O-step there (complement unchanged).
-            v_mid = v_mid + torch.einsum(
-                '...dq,...q->...d', lr_U,
-                torch.einsum('...dq,...d->...q', lr_U, _v_pre_o - v_mid),
-            )
+            v_mid = v_mid + lift_modes(lr_U, proj_modes(lr_U, _v_pre_o - v_mid))
 
         # ── A: second half substep ──
         if use_lowrank:
@@ -2268,9 +2262,7 @@ class MultiXiPARFLM(SparsePARFLM):
     @staticmethod
     def _lowrank_matvec(G: torch.Tensor, x: torch.Tensor) -> torch.Tensor:
         """``(G G^T) x`` without forming the d x d operator: G @ (G^T x)."""
-        return torch.einsum(
-            '...dp,...p->...d', G, torch.einsum('...dp,...d->...p', G, x),
-        )
+        return lift_modes(G, proj_modes(G, x))
 
     # ------------------------------------------------------------------
     def _layer_step_ex(

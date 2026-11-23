@@ -666,6 +666,46 @@ def _sinhc(x: torch.Tensor) -> torch.Tensor:
     return torch.where(small, 1.0 + x * x / 6.0, torch.sinh(safe) / safe)
 
 
+# Inference switches for decoding (2026-11-23; companion_notes/productization/Stage2b_Decode_Step_Levers.md). Both
+# default off, so training is unchanged. SERIES_ONLY_WHERE_USED sums the Taylor series of Q only over the modes that
+# use it (bit-identical; one host check per call). SERIES_TERMS_AUTO lets lowrank_damped_substep take the term count
+# from series_terms_for at the largest gamma * t instead of the default 40 (equal to float64 rounding).
+SERIES_ONLY_WHERE_USED = False
+SERIES_TERMS_AUTO = False
+# Step 2 (2026-11-23): SMALL_PRODUCTS computes the decode step's single-token products as multiply-and-sum, 3 operator
+# calls instead of einsum's 11. Only where the operands hold one token; otherwise, and when off, the same einsum as
+# before, so the prefill and training are unchanged bit for bit. The decode step changes by float32 rounding.
+SMALL_PRODUCTS = False
+
+
+def proj_modes(U: torch.Tensor, x: torch.Tensor) -> torch.Tensor:
+    """U^T x over the last axis of x: einsum '...dq,...d->...q'."""
+    if SMALL_PRODUCTS and U.shape[:-2].numel() == 1 and x.shape[:-1].numel() == 1:
+        return (U * x.unsqueeze(-1)).sum(-2)
+    return torch.einsum('...dq,...d->...q', U, x)
+
+
+def lift_modes(U: torch.Tensor, z: torch.Tensor) -> torch.Tensor:
+    """U z: einsum '...dq,...q->...d'."""
+    if SMALL_PRODUCTS and U.shape[:-2].numel() == 1 and z.shape[:-1].numel() == 1:
+        return (U * z.unsqueeze(-2)).sum(-1)
+    return torch.einsum('...dq,...q->...d', U, z)
+
+
+def proj_wells(x: torch.Tensor, B: torch.Tensor) -> torch.Tensor:
+    """Per well k, B_k^T x_k: einsum '...kd,...kdr->...kr'."""
+    if SMALL_PRODUCTS and x.shape[:-2].numel() == 1 and B.shape[:-3].numel() == 1:
+        return (x.unsqueeze(-1) * B).sum(-2)
+    return torch.einsum('...kd,...kdr->...kr', x, B)
+
+
+def lift_wells(B: torch.Tensor, z: torch.Tensor) -> torch.Tensor:
+    """Per well k, B_k z_k: einsum '...kdr,...kr->...kd'."""
+    if SMALL_PRODUCTS and B.shape[:-3].numel() == 1 and z.shape[:-2].numel() == 1:
+        return (B * z.unsqueeze(-2)).sum(-1)
+    return torch.einsum('...kdr,...kr->...kd', B, z)
+
+
 def damped_mode_coefficients(
     omega0_sq: torch.Tensor, gamma: torch.Tensor | float, t: float,
     n_terms: int = 40,
@@ -704,11 +744,24 @@ def damped_mode_coefficients(
     safe_w2 = torch.where(w2 != 0, w2, torch.ones_like(w2))
     Q_div = (1.0 - E11) / safe_w2
     gt = g * t
-    Tm, Tn = torch.zeros_like(w2), torch.full_like(w2, 0.5 * t * t)     # T_1, T_2
-    Q_ser = Tn
-    for k in range(2, 2 + n_terms):                            # T_3 .. T_41 at the default 40
-        Tm, Tn = Tn, -(gt * k * Tn + w2 * t * t * Tm) / ((k + 1) * k)
-        Q_ser = Q_ser + Tn
+    if SERIES_ONLY_WHERE_USED:
+        # Inference switch (2026-11-23): the same recurrence, elementwise, on the modes in the series branch only;
+        # skipped when there are none. Bit-identical to the full sum, which torch.where discards elsewhere.
+        Q_ser = torch.zeros_like(w2)
+        if bool(small.any()):
+            ws, gts = w2[small], torch.broadcast_to(gt, w2.shape)[small]
+            Tm, Tn = torch.zeros_like(ws), torch.full_like(ws, 0.5 * t * t)
+            qs = Tn
+            for k in range(2, 2 + n_terms):
+                Tm, Tn = Tn, -(gts * k * Tn + ws * t * t * Tm) / ((k + 1) * k)
+                qs = qs + Tn
+            Q_ser[small] = qs
+    else:
+        Tm, Tn = torch.zeros_like(w2), torch.full_like(w2, 0.5 * t * t)     # T_1, T_2
+        Q_ser = Tn
+        for k in range(2, 2 + n_terms):                        # T_3 .. T_41 at the default 40
+            Tm, Tn = Tn, -(gt * k * Tn + w2 * t * t * Tm) / ((k + 1) * k)
+            Q_ser = Q_ser + Tn
     g_safe = torch.where(gt > 0, g, torch.ones_like(g))
     Q_zero = (gt - 1.0 + torch.exp(-gt)) / (g_safe * g_safe)
     Q_large = torch.where(w2.abs() * t < 1e-8 * g_safe, Q_zero.expand_as(Q_div), Q_div)
@@ -734,18 +787,19 @@ def lowrank_damped_substep(
     ``gamma = 0`` this equals ``lowrank_cfc_substep`` (up to its omega^2
     floor). The caller must NOT also apply the O-step to span(U).
     """
-    z = torch.einsum('...dq,...d->...q', U, h)
-    wz = torch.einsum('...dq,...d->...q', U, v)
-    fz = torch.einsum('...dq,...d->...q', U, f_lr)
+    z = proj_modes(U, h)
+    wz = proj_modes(U, v)
+    fz = proj_modes(U, f_lr)
     mq = m                                                    # (..., 1) broadcasts over the q modes
     w0sq = kappa / mq
-    E12, E22, P, Q = damped_mode_coefficients(w0sq, gamma, dt)
+    n_terms = series_terms_for(float(torch.as_tensor(gamma).max()) * dt) if SERIES_TERMS_AUTO else 40
+    E12, E22, P, Q = damped_mode_coefficients(w0sq, gamma, dt, n_terms)
     E12, E22, P, Q = (c.to(h.dtype) for c in (E12, E22, P, Q))
     a = fz / mq
     z_new = z + E12 * wz + Q * a
     wz_new = E22 * wz + P * a
-    h_new = h + dt * v + torch.einsum('...dq,...q->...d', U, z_new - z - dt * wz)
-    v_new = v + torch.einsum('...dq,...q->...d', U, wz_new - wz)
+    h_new = h + dt * v + lift_modes(U, z_new - z - dt * wz)
+    v_new = v + lift_modes(U, wz_new - wz)
     return h_new, v_new
 
 

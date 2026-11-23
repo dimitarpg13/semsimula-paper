@@ -45,6 +45,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from cfc_baoab import proj_wells, lift_wells  # noqa: E402  (2026-11-23, Stage2b step 2)
+
 
 class _BottleneckLinear(nn.Module):
     """A dense map in_features -> out_features through a bottleneck of width ``width`` (twin PB, 2026-11-22;
@@ -282,7 +284,7 @@ class AnisotropicMixtureGaussianVTheta(nn.Module):
         diff = h_e - mu
 
         diag_term = (a * diff * diff).sum(dim=-1)
-        Bt_diff = torch.einsum('...kd,...kdr->...kr', diff, B)
+        Bt_diff = proj_wells(diff, B)
         lr_term = (Bt_diff * Bt_diff).sum(dim=-1)
 
         exponent = -0.5 * (diag_term + lr_term)
@@ -292,7 +294,7 @@ class AnisotropicMixtureGaussianVTheta(nn.Module):
         # axis inside einsums looks leaner but measures ~40% *worse*,
         # because autograd then has to save both einsum operands instead
         # of reusing the buffers this expression already holds.
-        grad_lr = torch.einsum('...kdr,...kr->...kd', B, Bt_diff)
+        grad_lr = lift_wells(B, Bt_diff)
         per_comp = (a * diff + grad_lr) * g.unsqueeze(-1)
 
         if self._force_norm_max is not None:
@@ -397,7 +399,7 @@ class AnisotropicMixtureGaussianVTheta(nn.Module):
         diff = h_e - mu
 
         diag_term = (a * diff * diff).sum(dim=-1)
-        Bt_diff = torch.einsum('...kd,...kdr->...kr', diff, B)
+        Bt_diff = proj_wells(diff, B)
         lr_term = (Bt_diff * Bt_diff).sum(dim=-1)
 
         g = w * torch.exp(-0.5 * (diag_term + lr_term))           # (..., K)
@@ -435,7 +437,7 @@ class AnisotropicMixtureGaussianVTheta(nn.Module):
             )                                                     # (..., K)
             Gk = sqrt_g[..., None, None] * B                      # (..., K, d, r)
             G = Gk.movedim(-3, -2).reshape(*lead, self.d, self.K * self.rank)
-            Btmu = torch.einsum('...kd,...kdr->...kr', mu, B)     # (..., K, r)
+            Btmu = proj_wells(mu, B)     # (..., K, r)
             Gmu = (sqrt_g[..., None] * Btmu).reshape(
                 *lead, self.K * self.rank,
             )

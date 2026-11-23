@@ -36,7 +36,7 @@ LENGTHS = [int(t) for t in OPTS.get('lengths', '512,2048,8192').split(',')]
 REPS = int(OPTS.get('reps', 3)); THREADS = int(OPTS.get('threads', 8))
 PROF = [int(t) for t in OPTS.get('profile', '512,2048').split(',') if t] if MODEL == 'ladder' else []
 NDEC = int(OPTS.get('decode_tokens', 32)) if OPTS.get('decode') == '1' else 0
-TMAX = max(LENGTHS) + NDEC + (8 if NDEC else 0)
+TMAX = max(LENGTHS) + ((4 * NDEC + 8 if OPTS.get('ab') else NDEC + 8) if NDEC else 0)   # ab=: 4 steps per block
 
 src = (DBG / 'copy_split.py').read_text()
 src = src[:src.index("\nif MODE == 'nll':")]
@@ -363,6 +363,11 @@ if NDEC:
     # median seconds per step, tokens per second, the cache size and the peak resident memory.
     sys.path.insert(0, str(DBG.parents[1] / 'parf'))
     from incremental_decoder import GPT2Decoder, LadderDecoder
+    if OPTS.get('series'):        # 2026-11-23, Stage2b step 1: series=masked|auto|masked+auto sets the switches for the run
+        _CB = sys.modules['cfc_baoab']
+        _CB.SERIES_ONLY_WHERE_USED = 'masked' in OPTS['series']; _CB.SERIES_TERMS_AUTO = 'auto' in OPTS['series']
+        _CB.SMALL_PRODUCTS = 'products' in OPTS['series']
+        desc += f"; series {OPTS['series']}"
     def make_decoder(n):
         if MODEL == 'ladder':
             if OPTS.get('novphi', '0') != '1' and m.V_phi is not None:   # SR2-NP (2026-11-21) has none to drop
@@ -388,6 +393,104 @@ if NDEC:
                   f'max |dlogit| prefill {dif[:half].max():.3e}, steps {dif[half:].max():.3e} '
                   f'(mean {dif[half:].mean():.3e}); top-1 agreement {100 * res["decode_check"]["argmax_agree"]:.2f}%', '']
         print(lines[-2], flush=True)
+    if OPTS.get('ab'):
+        # 2026-11-23 (companion_notes/productization/Stage2b_Decode_Step_Levers.md): a paired comparison of two
+        # inference variants A,B of the decode step, ab=A,B, each base or a '+'-joined set of masked, auto, products
+        # (cfc_baoab switches).
+        # Check: the full forward's logits on one validation window (needs loss=) and the decoder's (prefill 448, then
+        # 64 single steps) under each variant, against base. Operator calls per step (dispatch level) per variant.
+        # Timing: per length, one prefill, then 4 warm-up steps and NDEC blocks of four steps in the order A B B A on
+        # the same cache, so drift and the growing context cancel within a block; per block, the ratio B/A of the
+        # summed step times and the saving (A - B) per step; medians with bootstrap 95% intervals over blocks.
+        import collections
+        from torch.utils._python_dispatch import TorchDispatchMode
+        CB = sys.modules['cfc_baoab']
+        def setv(name):           # a '+'-joined set of masked, auto, products (step 2); 'base' sets none
+            on = set(name.split('+')) - {'base'}
+            assert on <= {'masked', 'auto', 'products'}, name
+            CB.SERIES_ONLY_WHERE_USED, CB.SERIES_TERMS_AUTO, CB.SMALL_PRODUCTS = ('masked' in on), ('auto' in on), ('products' in on)
+        va, vb = OPTS['ab'].split(',')
+        res['ab'] = {'A': va, 'B': vb, 'check': {}, 'ops_per_step': {}, 'lengths': {}}
+        lines.append(f'paired comparison A = {va}, B = {vb}')
+        if OPTS.get('loss'):
+            vv = np.load(OPTS['loss']).astype(np.int64); xc = torch.from_numpy(vv[None, 1000:1512])
+            def dec_logits():
+                d = make_decoder(520); outp = [d.forward(xc[:, :448])[0]] + [d.forward(xc[:, j:j + 1])[0] for j in range(448, 512)]
+                if hasattr(d, 'close'):
+                    d.close()
+                return torch.cat(outp, 0)
+            setv('base'); ref_f = run(xc)[0]; ref_d = dec_logits()
+            for v in (va, vb):
+                setv(v); lf = run(xc)[0]; ld = dec_logits()
+                df = (lf - ref_f).abs().max().item(); dd = (ld - ref_d).abs().max().item()
+                top = int((ld[448:].argmax(-1) == ref_d[448:].argmax(-1)).sum())
+                res['ab']['check'][v] = {'max_abs_forward': df, 'max_abs_decoder': dd, 'top1_agree_steps': top}
+                lines.append(f'  check {v:<12} max |dlogit| against base: full forward {df:.3e}, decoder {dd:.3e}; '
+                             f'top-1 agrees at {top} of 64 single steps')
+        class _Count(TorchDispatchMode):
+            n = 0
+            def __torch_dispatch__(self, func, types, args=(), kwargs=None):
+                _Count.n += 1
+                return func(*args, **(kwargs or {}))
+        for v in (va, vb):
+            d = make_decoder(LENGTHS[0] + 16); setv(v)
+            d.forward(torch.from_numpy(rng.integers(0, 50257, size=(1, LENGTHS[0])).astype(np.int64)))
+            _Count.n = 0
+            with _Count():
+                for j in range(8):
+                    d.forward(torch.from_numpy(rng.integers(0, 50257, size=(1, 1)).astype(np.int64)))
+            if hasattr(d, 'close'):
+                d.close()
+            res['ab']['ops_per_step'][v] = _Count.n / 8
+            lines.append(f'  {v:<12} {_Count.n / 8:.0f} operator calls per decode step (dispatch level, context {LENGTHS[0]})')
+        lines += ['', f'{"context":>7}  {"A ms":>8}  {"B ms":>8}  {"B/A":>6}  {"95% interval":>15}  {"saving ms":>9}  {"95% interval":>15}  blocks']
+        bs = np.random.default_rng(1)
+        for T in LENGTHS:
+            d = make_decoder(T + 4 * NDEC + 8); setv('base')
+            d.forward(torch.from_numpy(rng.integers(0, 50257, size=(1, T)).astype(np.int64)))
+            toks = torch.from_numpy(rng.integers(0, 50257, size=(1, 4 * NDEC + 4)).astype(np.int64))
+            seq = [va, vb, vb, va] * (NDEC + 1); tt = []
+            for j, v in enumerate(seq):
+                setv(v); t0 = time.perf_counter(); d.forward(toks[:, j:j + 1]); tt.append(time.perf_counter() - t0)
+            if hasattr(d, 'close'):
+                d.close()
+            tt = np.array(tt[4:]).reshape(NDEC, 4)                    # drop the warm-up block
+            a_ = tt[:, [0, 3]].sum(1); b_ = tt[:, [1, 2]].sum(1)
+            ratio = b_ / a_; save = (a_ - b_) / 2
+            def ci(x):
+                m = [np.median(x[bs.integers(0, len(x), len(x))]) for _ in range(2000)]
+                return np.percentile(m, 2.5), np.percentile(m, 97.5)
+            r_lo, r_hi = ci(ratio); s_lo, s_hi = ci(save)
+            res['ab']['lengths'][T] = {'A_ms': 1e3 * float(np.median(a_ / 2)), 'B_ms': 1e3 * float(np.median(b_ / 2)),
+                                       'ratio': float(np.median(ratio)), 'ratio_ci': [float(r_lo), float(r_hi)],
+                                       'saving_ms': 1e3 * float(np.median(save)), 'saving_ci_ms': [1e3 * s_lo, 1e3 * s_hi],
+                                       'blocks': NDEC, 'times': tt.tolist()}
+            lines.append(f'{T:>7}  {1e3 * np.median(a_ / 2):8.2f}  {1e3 * np.median(b_ / 2):8.2f}  {np.median(ratio):6.3f}  '
+                         f'[{r_lo:.3f}, {r_hi:.3f}]  {1e3 * np.median(save):9.2f}  [{1e3 * s_lo:.2f}, {1e3 * s_hi:.2f}]  {NDEC}')
+            print(lines[-1], flush=True)
+        if OPTS.get('ab_prefill'):
+            # prefill, paired the same way: per length one warm-up forward per variant, then ab_prefill blocks of four
+            # full forwards A B B A on the same tokens; every block's ratio B/A is reported (too few for an interval)
+            nb = int(OPTS['ab_prefill']); res['ab']['prefill'] = {}
+            lines += ['', f'prefill, {nb} blocks A B B A per length: median A s, median B s, block ratios B/A']
+            for T in LENGTHS:
+                x = torch.from_numpy(rng.integers(0, 50257, size=(1, T)).astype(np.int64))
+                for v in (va, vb):
+                    setv(v); run(x)
+                tt = []
+                for v in [va, vb, vb, va] * nb:
+                    setv(v); t0 = time.perf_counter(); run(x); tt.append(time.perf_counter() - t0)
+                tt = np.array(tt).reshape(nb, 4); a_ = tt[:, [0, 3]].sum(1); b_ = tt[:, [1, 2]].sum(1)
+                res['ab']['prefill'][T] = {'A_s': float(np.median(a_ / 2)), 'B_s': float(np.median(b_ / 2)),
+                                           'ratios': (b_ / a_).tolist(), 'times': tt.tolist()}
+                lines.append(f'{T:>7}  {np.median(a_ / 2):8.3f}  {np.median(b_ / 2):8.3f}  ' + ' '.join(f'{r:.3f}' for r in b_ / a_))
+                print(lines[-1], flush=True)
+        setv('base')
+        stem = OPTS.get('name', MODEL); OUT.mkdir(parents=True, exist_ok=True)
+        (OUT / f'decode_ab_{stem}.txt').write_text('\n'.join(lines) + '\n')
+        (OUT / f'decode_ab_{stem}.json').write_text(json.dumps(res, indent=1, default=str))
+        print('\n'.join(lines))
+        sys.exit(0)
     lines.append(f'{"context":>7}  {"prefill s":>9}  {"s/token":>9}  {"tokens/s":>9}  {"cache MB":>8}  {"peak RSS GB":>11}')
     res['decode'] = {}
     for T in LENGTHS:
@@ -413,6 +516,33 @@ if NDEC:
                       f'per step under the profiler, operator self time {tot / 1e3:.1f} ms (summed over threads)',
                       '  top operators by self CPU time:'] + \
                      ['  ' + l for l in ka.table(sort_by='self_cpu_time_total', row_limit=15).split('\n')] + ['']
+        if OPTS.get('decode_attrib') == '1' and T == LENGTHS[0]:
+            # 2026-11-23: which source code issues a decode step's operator calls. Each aten call of 8 steps is
+            # attributed to the innermost Python frame outside torch (file:function). A dispatch mode sees composite
+            # operators (einsum, to, ...) already decomposed, so its total differs from the profiler's count above.
+            import collections
+            from torch.utils._python_dispatch import TorchDispatchMode
+            by_fn = collections.Counter(); by_fn_op = collections.defaultdict(collections.Counter)
+            class _Attrib(TorchDispatchMode):
+                def __torch_dispatch__(self, func, types, args=(), kwargs=None):
+                    f = sys._getframe(1)
+                    while f is not None and ('/torch/' in f.f_code.co_filename or f.f_code.co_name == '__torch_dispatch__'):
+                        f = f.f_back
+                    key = f'{Path(f.f_code.co_filename).name}:{f.f_code.co_name}' if f is not None else '?'
+                    by_fn[key] += 1; by_fn_op[key][str(func.overloadpacket.__name__)] += 1
+                    return func(*args, **(kwargs or {}))
+            more = torch.from_numpy(rng.integers(0, 50257, size=(1, 8)).astype(np.int64))
+            with _Attrib():
+                for j in range(8):
+                    dec_.forward(more[:, j:j + 1])
+            n_all = sum(by_fn.values()) / 8
+            res['decode_attrib'] = {k: v / 8 for k, v in by_fn.most_common()}
+            lines += [f'decode attribution at context {T}: {n_all:.0f} aten calls per step (dispatch level), by the '
+                      'innermost source function outside torch:']
+            for k, v in by_fn.most_common(40):
+                top = ', '.join(f'{o} {c / 8:.0f}' for o, c in by_fn_op[k].most_common(5))
+                lines.append(f'  {v / 8:7.1f}  {100 * v / 8 / n_all:5.1f}%  {k:<55}  {top}')
+            lines.append('')
         if hasattr(dec_, 'close'):
             dec_.close()
         med = float(np.median(ts[2:] if NDEC > 4 else ts))          # the first steps warm the allocator
