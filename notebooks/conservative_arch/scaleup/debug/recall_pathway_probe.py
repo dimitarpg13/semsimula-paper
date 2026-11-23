@@ -3,7 +3,7 @@
 token is recalled (2026-11-17, protocol p-bank-memory-conjecture: the recall pathway probe, LR2 and LR3).
 
     python3 recall_pathway_probe.py OUT FOLDER [ckpt=<file>] [windows=16] [threads=8] [val=<tokens.npy>]
-                                    [name=<stem>] [maxfreq=8] [check=1]
+                                    [name=<stem>] [maxfreq=8] [check=1] [arms=phioff_layers]
 
 Recall pairs, per window: a position q whose target last occurred at an earlier input position p, at distance
 q + 1 - p in a band (near 1-16, far 17-256); tokens occurring more than `maxfreq` times in the window are excluded.
@@ -15,6 +15,9 @@ one layer, applied to every recall pair at once:
   - xiphi: both;
   - phioff: the whole pair force off (f_phi = 0), at one layer or at both (2026-11-22, the mean-field question:
     is the pair force's cost at recall positions or at positions that recall nothing?).
+    With arms=phioff_layers (2026-11-22, for deep models such as L8-CODE) only the pair force is cut: off in every
+    layer, and off in one layer at a time for each layer of the model. With arms=phioff_deep: off in every layer, in
+    layer 0 only, and in every layer but layer 0 (the deep layers jointly).
 For a model with a pair force the base pass also records the top-k sources the pair force selects at each layer,
 and reads how often the earlier occurrence p is among q's selected sources, against the chance rate k / (sources
 q can select).
@@ -120,7 +123,8 @@ PHI = getattr(m, 'V_phi', None) is not None
 if PHI:
     orig_pf, orig_pp = m._pair_force_analytic, m._pair_potential
     def _phioff():
-        return 'phioff' in st['cut'] and st['cut_layer'] in (None, st['layer'])
+        cl = st['cut_layer']
+        return 'phioff' in st['cut'] and (cl in (None, st['layer']) or (cl == 'deep' and st['layer'] >= 1))
     def pf(h_in, *a, **k):
         return torch.zeros_like(h_in) if _phioff() else orig_pf(h_in, *a, **k)
     def pp(h_in, *a, **k):
@@ -137,11 +141,18 @@ if PHI:
 ARMS = [('base', set(), None)] + ([] if FOB else [('vel@1', {'vel'}, 1)]) + \
        [('xi@1', {'xi'}, 1), ('phi@1', {'phi'}, 1), ('xiphi@1', {'xi', 'phi'}, 1), ('xiphi@0', {'xi', 'phi'}, 0),
         ('phi@0', {'phi'}, 0), ('phioff', {'phioff'}, None), ('phioff@0', {'phioff'}, 0), ('phioff@1', {'phioff'}, 1)]
+if OPTS.get('arms') == 'phioff_layers':
+    import re
+    NL = int(re.search(r'_L(\d+)probe', desc).group(1))
+    ARMS = [('base', set(), None), ('phioff', {'phioff'}, None)] + [(f'phioff@{L}', {'phioff'}, L) for L in range(NL)]
+elif OPTS.get('arms') == 'phioff_deep':           # the deep layers jointly: off at every layer but layer 0
+    ARMS = [('base', set(), None), ('phioff', {'phioff'}, None), ('phioff@0', {'phioff'}, 0), ('phioff@1+', {'phioff'}, 'deep')]
 if getattr(m, 'V_phi', None) is None:              # SR2-NP (2026-11-21): no pair force, so only the xi cuts
     ARMS = [a for a in ARMS if a[0] in ('base', 'vel@1', 'xi@1')] + [('xi@0', {'xi'}, 0)]
 CLS = ('near', 'far', 'control', 'all')
 per = {a: {c: [] for c in CLS} for a, _, _ in ARMS}
-sel = {L: {c: [] for c in ('near', 'far')} for L in (0, 1)}       # per window: selected rate, chance rate
+from collections import defaultdict
+sel = defaultdict(lambda: {c: [] for c in ('near', 'far')})      # per layer and window: selected rate, chance rate
 n_cls = {c: 0 for c in ('near', 'far', 'control')}
 checks = []
 for i in range(0, W, 4):
@@ -216,7 +227,7 @@ if any(sel[L][c] for L in sel for c in sel[L]):
     lines += ['', 'the pair force\'s top-k sources: how often the earlier occurrence p is among q\'s selected sources '
               '(mean over windows, se), against the chance rate k / (sources q can select)']
     res['selection'] = {}
-    for L in (0, 1):
+    for L in sorted(sel):
         for c in ('near', 'far'):
             if not sel[L][c]:
                 continue

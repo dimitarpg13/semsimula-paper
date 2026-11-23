@@ -1,0 +1,258 @@
+{
+ "windows": 128,
+ "T": 512,
+ "val": "/Users/dimitargueorguiev/Downloads/semsimula_fock_gamma_sweep_aniso_gaussian_fockreg_d384/data/openwebtext_val_2M.npy",
+ "logfreq": "/Users/dimitargueorguiev/Downloads/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/results/logfreq_surprisal_openwebtext.npy",
+ "ln_V": 10.82490511970208,
+ "models": {
+  "owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn": {
+   "overall": 4.109617710113525,
+   "quintiles": [
+    {
+     "q": 0,
+     "mean_loss": 11.397226333618164,
+     "gain_over_unigram": 2.56040591551057,
+     "targets": 564
+    },
+    {
+     "q": 1,
+     "mean_loss": 10.015424728393555,
+     "gain_over_unigram": 3.3001285363147606,
+     "targets": 1055
+    },
+    {
+     "q": 2,
+     "mean_loss": 8.346936225891113,
+     "gain_over_unigram": 4.4780002788055775,
+     "targets": 1720
+    },
+    {
+     "q": 3,
+     "mean_loss": 7.127326011657715,
+     "gain_over_unigram": 4.945804698126656,
+     "targets": 3752
+    },
+    {
+     "q": 4,
+     "mean_loss": 3.61425518989563,
+     "gain_over_unigram": 3.4022665219246164,
+     "targets": 58445
+    }
+   ],
+   "all_below_ln_V": false
+  },
+  "owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_tied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn": {
+   "overall": 4.159134864807129,
+   "quintiles": [
+    {
+     "q": 0,
+     "mean_loss": 11.30157470703125,
+     "gain_over_unigram": 2.656057542097484,
+     "targets": 564
+    },
+    {
+     "q": 1,
+     "mean_loss": 9.890385627746582,
+     "gain_over_unigram": 3.425167636961733,
+     "targets": 1055
+    },
+    {
+     "q": 2,
+     "mean_loss": 8.322815895080566,
+     "gain_over_unigram": 4.502120609616124,
+     "targets": 1720
+    },
+    {
+     "q": 3,
+     "mean_loss": 7.095480442047119,
+     "gain_over_unigram": 4.977650267737252,
+     "targets": 3752
+    },
+    {
+     "q": 4,
+     "mean_loss": 3.6757147312164307,
+     "gain_over_unigram": 3.3408069806038156,
+     "targets": 58445
+    }
+   ],
+   "all_below_ln_V": false
+  },
+  "owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn": {
+   "overall": 4.109261512756348,
+   "quintiles": [
+    {
+     "q": 0,
+     "mean_loss": 11.473252296447754,
+     "gain_over_unigram": 2.48437995268098,
+     "targets": 564
+    },
+    {
+     "q": 1,
+     "mean_loss": 10.055950164794922,
+     "gain_over_unigram": 3.2596030999133934,
+     "targets": 1055
+    },
+    {
+     "q": 2,
+     "mean_loss": 8.37547492980957,
+     "gain_over_unigram": 4.4494615748871205,
+     "targets": 1720
+    },
+    {
+     "q": 3,
+     "mean_loss": 7.137241363525391,
+     "gain_over_unigram": 4.93588934625898,
+     "targets": 3752
+    },
+    {
+     "q": 4,
+     "mean_loss": 3.6109139919281006,
+     "gain_over_unigram": 3.4056077198921457,
+     "targets": 58445
+    }
+   ],
+   "all_below_ln_V": false
+  },
+  "owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_tied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn": {
+   "overall": 4.128851890563965,
+   "quintiles": [
+    {
+     "q": 0,
+     "mean_loss": 11.11493968963623,
+     "gain_over_unigram": 2.8426925594925034,
+     "targets": 564
+    },
+    {
+     "q": 1,
+     "mean_loss": 9.669111251831055,
+     "gain_over_unigram": 3.6464420128772606,
+     "targets": 1055
+    },
+    {
+     "q": 2,
+     "mean_loss": 8.20765209197998,
+     "gain_over_unigram": 4.61728441271671,
+     "targets": 1720
+    },
+    {
+     "q": 3,
+     "mean_loss": 7.042326927185059,
+     "gain_over_unigram": 5.030803782599312,
+     "targets": 3752
+    },
+    {
+     "q": 4,
+     "mean_loss": 3.6543548107147217,
+     "gain_over_unigram": 3.3621669011055246,
+     "targets": 58445
+    }
+   ],
+   "all_below_ln_V": false
+  }
+ },
+ "unigram_prior": {
+  "quintiles": [
+   13.957632249128734,
+   13.315553264708315,
+   12.82493650469669,
+   12.07313070978437,
+   7.016521711820246
+  ],
+  "overall": 7.619596892414847
+ },
+ "paired": {
+  "owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_tied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn": {
+   "against": "owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn",
+   "quintiles": [
+    {
+     "q": 0,
+     "diff": -0.09565065056085587,
+     "se": 0.16160545983792232
+    },
+    {
+     "q": 1,
+     "diff": -0.12504099309444427,
+     "se": 0.08262373839290714
+    },
+    {
+     "q": 2,
+     "diff": -0.024120645597577095,
+     "se": 0.05191159209570101
+    },
+    {
+     "q": 3,
+     "diff": -0.031845442950725555,
+     "se": 0.032307582898966784
+    },
+    {
+     "q": 4,
+     "diff": 0.06145915016531944,
+     "se": 0.004275437723742973
+    }
+   ],
+   "overall": 0.0495169535279274
+  },
+  "owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn": {
+   "against": "owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn",
+   "quintiles": [
+    {
+     "q": 0,
+     "diff": 0.07602538913488388,
+     "se": 0.05204958218678982
+    },
+    {
+     "q": 1,
+     "diff": 0.04052499309182167,
+     "se": 0.0317138833916776
+    },
+    {
+     "q": 2,
+     "diff": 0.028538646176457405,
+     "se": 0.028488007770447386
+    },
+    {
+     "q": 3,
+     "diff": 0.009915337897837162,
+     "se": 0.019979927170962995
+    },
+    {
+     "q": 4,
+     "diff": -0.003341283183544874,
+     "se": 0.003327741754851783
+    }
+   ],
+   "overall": -0.0003564493381418288
+  },
+  "owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_tied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn": {
+   "against": "owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn",
+   "quintiles": [
+    {
+     "q": 0,
+     "diff": -0.28228574991226196,
+     "se": 0.1901981536117652
+    },
+    {
+     "q": 1,
+     "diff": -0.3463153541088104,
+     "se": 0.08692113297630887
+    },
+    {
+     "q": 2,
+     "diff": -0.1392839401960373,
+     "se": 0.04785002734111529
+    },
+    {
+     "q": 3,
+     "diff": -0.08499879390001297,
+     "se": 0.037360251130000875
+    },
+    {
+     "q": 4,
+     "diff": 0.04009903222322464,
+     "se": 0.00484520672340524
+    }
+   ],
+   "overall": 0.019234195351600647
+  }
+ }
+}

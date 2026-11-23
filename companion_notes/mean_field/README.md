@@ -7,6 +7,7 @@
 | note | topic |
 | --- | --- |
 | [Probe_A_Field_Pair_Force.md](Probe_A_Field_Pair_Force.md) | Probe A (CPU, 2026-11-22): can a field stand in for the trained pair force? Seven models. On F3.1 (and PM1) a context-free landscape with one centre recovers 94% (97%) of the removal cost and the causal field adds nothing; the larger the pair force, the more field-like; the wells hypothesis is not supported; SO-CODE 90%, FO-b-PMX-K16 63 to 74%, SR2 about half of a small force. L8-CODE 76% of the loss, but its deep layers' force is not field-like. A1 hit; A2, A3, A4, A5 missed (A4's threshold sat at its ceiling); A2's miss fires the stop gate for the field arm, for the author to rule on |
+| [Pair_Force_By_Layer_L8_CODE.md](Pair_Force_By_Layer_L8_CODE.md) | the pair force layer by layer in the eight-layer code model (CPU, 2026-11-22): calls PL1–PL3 hit on their letter; layer 0 is the costliest single layer, but layers 1 to 7 together carry more (0.034 nats against 0.019), redundantly; the deep layers' pair force is not field-like; its routers avoid the answer token |
 
 ## The programme and its background
 

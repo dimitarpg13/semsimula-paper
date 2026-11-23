@@ -181,6 +181,16 @@ PM1 has the most wells, and its pair force is as context-free as F3.1's. PMX-K16
 
 **For A4's gate.** The gate reads "the routed force does retrieval; the field arm is the hybrid". A4 missed on its letter, and with the field arm stopped the gate has no arm to act on. The retrieval part is 8% of the pair force's cost on SO-CODE, 4% on F3.1, and a larger share on L8-CODE (77% of a 24% remainder).
 
+**Follow-up: the pair force layer by layer in L8-CODE (calls written 2026-11-22, before the run started; confirmed by the author the same day, before any result; binding).** Test whether A2 missed on a weak term or on a strong, structured one. Switch the pair force off in one layer at a time and read the loss (`debug/recall_pathway_probe.py arms=phioff_layers`; 16 windows of 512 code tokens). If strength and field-likeness go together, the per-layer costs follow the per-layer cosines of Figure 2:
+
+| id | prediction | called |
+| --- | --- | ---: |
+| PL1 | layer 0 carries at least half of the summed single-layer costs | 65% |
+| PL2 | over layers 1 to 7, the single-layer cost rises with the layer's median cosine at M = 8 (Spearman correlation above 0) | 60% |
+| PL3 | layers 1 to 7 together are weak: their summed single-layer costs are under 0.02 nats, a third of the whole pair force's 0.062 | 55% |
+
+PL1 and PL3 together confirm the reading that A2 failed on a weak term. PL2 tests the pattern inside one model. If confirmed, the result goes into the book's pair-force batch (author, 2026-11-22). **Result (2026-11-22):** all three hit on their letter, but a joint cut shows layers 1 to 7 together carry 0.034 nats, more than layer 0; they cover for one another. A2's miss is a real limit at depth, not a weak-term technicality. Full report: [Pair_Force_By_Layer_L8_CODE.md](Pair_Force_By_Layer_L8_CODE.md).
+
 **Done.** PM1, PMX-K16 and the paired rerun of FO-b-PMX-K16 finished on 2026-11-22 (§6, "The wells hypothesis, tested").
 
 ## 8. Caveats

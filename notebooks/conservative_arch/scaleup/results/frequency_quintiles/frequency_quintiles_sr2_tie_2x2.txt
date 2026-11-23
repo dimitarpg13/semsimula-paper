@@ -1,0 +1,67 @@
+Loss by token-frequency quintile (D0.4) -- 128 validation windows x 512 = 65,536 targets (openwebtext_val_2M.npy); quintiles of the 50,257 token types by training frequency (logfreq_surprisal_openwebtext.npy); uniform guess ln V = 10.82 nats
+
+unigram prior (training frequencies only), mean loss per quintile: Q0 13.958, Q1 13.316, Q2 12.825, Q3 12.073, Q4 7.017; overall 7.620
+
+owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+  overall mean loss 4.1096 nats (perplexity 60.92 on these windows)
+  quintile         mean loss  unigram    gain   targets   share   below ln V?
+  Q0 rarest           11.397   13.958   2.560       564    0.9%   no
+  Q1                  10.015   13.316   3.300     1,055    1.6%   yes
+  Q2                   8.347   12.825   4.478     1,720    2.6%   yes
+  Q3                   7.127   12.073   4.946     3,752    5.7%   yes
+  Q4 most frequent     3.614    7.017   3.402    58,445   89.2%   yes
+
+owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_tied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+  overall mean loss 4.1591 nats (perplexity 64.02 on these windows)
+  quintile         mean loss  unigram    gain   targets   share   below ln V?
+  Q0 rarest           11.302   13.958   2.656       564    0.9%   no
+  Q1                   9.890   13.316   3.425     1,055    1.6%   yes
+  Q2                   8.323   12.825   4.502     1,720    2.6%   yes
+  Q3                   7.095   12.073   4.978     3,752    5.7%   yes
+  Q4 most frequent     3.676    7.017   3.341    58,445   89.2%   yes
+
+owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+  overall mean loss 4.1093 nats (perplexity 60.90 on these windows)
+  quintile         mean loss  unigram    gain   targets   share   below ln V?
+  Q0 rarest           11.473   13.958   2.484       564    0.9%   no
+  Q1                  10.056   13.316   3.260     1,055    1.6%   yes
+  Q2                   8.375   12.825   4.449     1,720    2.6%   yes
+  Q3                   7.137   12.073   4.936     3,752    5.7%   yes
+  Q4 most frequent     3.611    7.017   3.406    58,445   89.2%   yes
+
+owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_tied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+  overall mean loss 4.1289 nats (perplexity 62.11 on these windows)
+  quintile         mean loss  unigram    gain   targets   share   below ln V?
+  Q0 rarest           11.115   13.958   2.843       564    0.9%   no
+  Q1                   9.669   13.316   3.646     1,055    1.6%   yes
+  Q2                   8.208   12.825   4.617     1,720    2.6%   yes
+  Q3                   7.042   12.073   5.031     3,752    5.7%   yes
+  Q4 most frequent     3.654    7.017   3.362    58,445   89.2%   yes
+
+paired: owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_tied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+  minus owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn, same targets; standard error clustered by window
+  Q0: -0.096 nats (se 0.162)
+  Q1: -0.125 nats (se 0.083)
+  Q2: -0.024 nats (se 0.052)
+  Q3: -0.032 nats (se 0.032)
+  Q4: +0.061 nats (se 0.004)
+  overall: +0.0495 nats
+
+paired: owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+  minus owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn, same targets; standard error clustered by window
+  Q0: +0.076 nats (se 0.052)
+  Q1: +0.041 nats (se 0.032)
+  Q2: +0.029 nats (se 0.028)
+  Q3: +0.010 nats (se 0.020)
+  Q4: -0.003 nats (se 0.003)
+  overall: -0.0004 nats
+
+paired: owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_tied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+  minus owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn, same targets; standard error clustered by window
+  Q0: -0.282 nats (se 0.190)
+  Q1: -0.346 nats (se 0.087)
+  Q2: -0.139 nats (se 0.048)
+  Q3: -0.085 nats (se 0.037)
+  Q4: +0.040 nats (se 0.005)
+  overall: +0.0192 nats
+

@@ -299,6 +299,7 @@
 - [Mean_Field_Theory_for_Particle_Language_Models](Mean_Field_Theory_for_Particle_Language_Models.md): a study guide to mean-field theory, from its simplest model to machine learning
 - [Mean_Field_PARFLM_Programme](Mean_Field_PARFLM_Programme.md): pre-registered programme for a mean-field approximation of PARFLM
 - [mean_field/Probe_A_Field_Pair_Force](mean_field/Probe_A_Field_Pair_Force.md): Probe A, scored: a field, and even a context-free landscape, stands in for most of the trained pair force
+- [mean_field/Pair_Force_By_Layer_L8_CODE](mean_field/Pair_Force_By_Layer_L8_CODE.md): the pair force layer by layer at eight layers: shared redundantly across depth, not field-like there
 
 
 ## Causal leaks and auditing
