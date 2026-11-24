@@ -234,6 +234,35 @@ Compare the shapes with the training branch of §2. There the content term is `(
 
 The `fold` path is the only one that changes what is cached rather than how it is multiplied, and its correctness rests on the constant-per-row argument set out in [Incremental_Decoder.md](Incremental_Decoder.md) §4. Its value tensor is built with `expand` rather than a repeat, so the $K$ channels share one copy of the states at stride 0 and no memory is duplicated.
 
+**What `self.m` is.** The trained model itself, bound once in the constructor and never wrapped: `self.m(x, position_offset=self.t)` is an ordinary module call landing in the model's own `forward`. **The decoder calls the real model, not a reimplementation of it**, which is why its logits match the full forward to float rounding rather than approximately. That forward is three steps:
+
+```python
+h0 = self._embed(x, position_offset=position_offset)
+h_L, traj = self._stack_forward(h0, x, return_trajectory=return_trajectory)
+logits = self.compute_logits(h_L)
+```
+
+**The offset is used in exactly one place**, the embedding, and nowhere else:
+
+```python
+def _embed(self, x, position_offset=0):
+    B, T = x.shape
+    pos = self.P[position_offset:position_offset + T].unsqueeze(0)
+    return self.E(x) + pos
+```
+
+This is the one thing a decode step must be told. The call sees a tensor holding a single token and would otherwise embed it at position 0; passing `self.t` slices the position table at the right place. The decoder's cache index and this offset are the same counter, advanced together by `self.t += x.shape[1]`. Then `_stack_forward` walks the $L$ layer steps, carrying the state and a velocity proxy with the mass computed once, and the head projects the last state to the vocabulary. With no targets, no loss is computed, and `[0]` takes the logits from the returned tuple.
+
+**Three senses of "inference mode", of which the decoder changes one.**
+
+- **The same as training.** The forward itself: embedding, the layer walk, the wells, the stiff modes, the integrator and the head are the identical code running identical arithmetic.
+- **Inference-mode proper.** Gradients are off under the decoder's `@torch.no_grad()`, no targets are passed so no loss is computed, and nothing is retained for a backward. The layer-checkpoint branch takes the plain path, since it is gated on `torch.is_grad_enabled()` rather than on a training flag. The source comments that gating on `self.training` instead would silently retain every layer's graph during evaluation and inflate peak memory above the training peak.
+- **Specific to the decoder, and neither of the above.** The position offset, and the swapped context-channel method. Prefill is already full inference mode and uses the model's own channel method unchanged; only the decode step needs the substitution.
+
+So the three phases are: training is forward plus backward; prefill is forward alone; a decode step is forward alone with the cross-position computation rewritten to read what prefill stored.
+
+**A caution on the word, because this architecture breaks the usual association.** In a transformer, inference implies no autograd. Here it does not: the PARF and SARF forces call `autograd.grad` at every layer whatever the mode, which is why the probes and diagnostics re-enable gradients inside a no-grad context. The decoder can run under `no_grad` only because the configurations it accepts take the closed-form force paths, `vtheta_analytic_force` and `vphi_analytic_force`, which compute $-\nabla V$ from its analytic expression instead of by differentiation. The BAOAB family forces the first of those on, since it needs the force split; the constructor checks the second before it will drop the pair force.
+
 **What the step does not do.** No $T \times T$ weight matrix is built at any layer, nothing is kept for a backward, and no earlier position is recomputed. The entire cost that scales with context is the one query-against-keys product and the one weights-against-states product, per channel per layer, which is why §4 finds the step bound by per-operation overhead at short context and by reading the cache at long context.
 
 ![The weights of the context channels in each phase: B stacks of five T by T lower-triangular matrices in training, five T by T in the prefill, five rows of length n in a decode step.](../figures/training_prefill_decoding/tpd_shapes.png)
