@@ -7,6 +7,7 @@
 - [depth_ladder/](depth_ladder/README.md): the depth-ladder programme, the conservative models trained one mechanism at a time against a matched GPT-2; includes the recall pathway probe and the velocity and the pair force as competing mechanisms.
 - [productization/](productization/README.md): making the conservative core cheap to run, stage by stage.
 - [mean_field/](mean_field/README.md): results of the mean-field programme, one note per probe or arm (Probe A so far).
+- [semantic_templates/](semantic_templates/README.md): building semantic templates into the models: where and when a template search may start, and the measurements that test it.
 - [training_instabilities/](training_instabilities/README.md): the training instabilities of Fock-PARFLM with a structured $V_\theta$, and the CfC+BAOAB integrator with its mitigations.
 - [deep_dives/](deep_dives/): long-form Word documents (with PDFs): the SPLM model and code, the structured scalar potential, the Poisson-mode registers and semantic templates, and the Jacobi metric.
 - [figures/](figures/): the figures of the notes and the scripts that make them (`_make_<topic>_figs.py`).
@@ -179,6 +180,8 @@
 - [Implementing_Semantic_Templates_A_Path](Implementing_Semantic_Templates_A_Path.md): a staged path to implementing semantic templates
 - [Semantic_Templates_as_Doi_Peliti_Reactions](Semantic_Templates_as_Doi_Peliti_Reactions.md): semantic templates as the reaction rules of the Doi–Peliti dynamics, and the repair the join needs
 - [The_Particle_Store_Making_Allocation_Real](The_Particle_Store_Making_Allocation_Real.md): the particle store (Stage 0″): design and first results
+- [semantic_templates/Admissible_Regions_for_Template_Search](semantic_templates/Admissible_Regions_for_Template_Search.md): where in semantic space and when in training a template search may start: the well frame, context spread, training drift, the admissibility criterion; SR2-NP's settling map
+- [semantic_templates/Well_Settling_Map_SR2_NP](semantic_templates/Well_Settling_Map_SR2_NP.md): technical report of the first settling map (CPU, 2026-11-24): the live well keeps its tokens through the decay, but their order inside it is only half kept; no admissible region over that window
 - [Renormalization_Group_Readings_of_Template_Matching_A_Proposal](Renormalization_Group_Readings_of_Template_Matching_A_Proposal.md): reading template matching through renormalisation-group ideas (proposal)
 - [Community_of_Semantic_Templates_for_Native_CoT](Community_of_Semantic_Templates_for_Native_CoT.md): a community of templates as the source of native chain-of-thought
 - [Chain_of_Thought_Substrate_in_Lagrangian_Models](Chain_of_Thought_Substrate_in_Lagrangian_Models.md): can chain-of-thought be built from the mechanisms the models have today?

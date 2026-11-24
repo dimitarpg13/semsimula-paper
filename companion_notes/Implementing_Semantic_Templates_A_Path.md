@@ -373,6 +373,10 @@ One permission worth recording, because it makes the multi-slot design of Stage 
 
 **A depth floor independent of all of this.** Feng's constructions need four or five layers per step; the ladder's models have two. The $L = 4$ arms are the first on which any of this can be tested, and **a null result at $L = 2$ would not be informative about the mechanism.**
 
+### 7.2 Where and when a template search may start
+
+The author's observation (2026-11-24): during training everything moves, including the wells, so regions of semantic space and training time in which a search for patterns can start must be identified first; not every region is appropriate. The formulation and its first measurement are in [*Admissible Regions for Template Search*](semantic_templates/Admissible_Regions_for_Template_Search.md). In short: three motions break the repetition a Pattern Matching Structure needs (the wells move with the optimizer, the coordinates of the state space move with it, and the context moves every well's realised centre); a template is written in the dominant well's own frame (the whitened displacement from its centre), which removes the second motion exactly; the first and third become a training drift measured without coordinates and a context spread measured in the well's metric; and a region is admissible when the well is live, dominant, context-tame, settled over a window of checkpoints and read at warm positions. Inside such a region a signature along a trajectory is reproducible to first order in the tolerances. The admission condition is a statistic over many tokens and checkpoints, i.e. the first level 1 template of §5.
+
 ---
 
 ## 8. Open calibration questions
