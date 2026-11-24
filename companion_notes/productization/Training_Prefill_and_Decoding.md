@@ -269,6 +269,8 @@ So the three phases are: training is forward plus backward; prefill is forward a
 
 *Figure 2. The context-channel weights each phase builds. White: the masked half, where the earlier-token index exceeds the current one.*
 
+**The diagonal is the causal boundary, and it is on the allowed side.** The squares are indexed by row $t$, the current token, against column $s$, the earlier one, and the admitted region is $s \le t$ rather than $s \lt t$: a token participates in its own channel reading. That is deliberate. Under a strict mask the first row would have no admissible source at all and its softmax would be undefined; including the diagonal makes row 0 a single weight of 1 on the token itself. The decode step inherits the same convention as an ordering requirement rather than a mask, which is why the new token's key and state are written into the cache before the weights are built, and why its row has length $n = t_0 + 1$, the extra one being the token counting itself. The third panel shows no triangle because a step has no boundary to draw: $t$ is fixed, so there is one row whose right-hand end is the diagonal.
+
 ## 4. What limits each phase, and the levers
 
 **Training** is dominated by large matrix products over $B \times 512$ positions: the bank's projections, the output head, the channels. Small operations are spread over thousands of positions, so their overhead hardly matters. The CPU estimate of the series lever showed this: removing the whole 40-term series of the damped-mode coefficients leaves a training step unchanged within 2% ([Stage2b_Decode_Step_Levers.md](Stage2b_Decode_Step_Levers.md), §6).

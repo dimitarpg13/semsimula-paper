@@ -60,7 +60,7 @@ Everything else in a layer acts within one position: the well bank $V_\theta$ re
 
 **Decode step.** For the new token at position $t$:
 1. The model's own forward runs on that token alone, told its position ($t$), so the position embedding is the right one.
-2. At each layer, the context-channel module is replaced by one that computes $\xi_{k,t}$ from the cache: one row of weights over positions $0, \dots, t$ per channel, instead of a $t \times t$ matrix. It first appends the new token's keys and state, so the new position reads itself too, as in the full forward.
+2. At each layer, the context-channel module is replaced by one that computes $\xi_{k,t}$ from the cache: one row of weights over positions $0, \dots, t$ per channel, instead of a $t \times t$ matrix. It first appends the new token's keys and state, so the new position reads itself too, as in the full forward. The order matters: the mask of the full forward admits $s \le t$ rather than $s \lt t$, so a token counts itself, and the step reproduces that only by writing before it reads. Its row is therefore $t + 1$ long, not $t$. The inclusive mask is also what keeps the softmax defined at position 0, which under a strict mask would have no admissible source.
 3. The rest of the layer (wells, stiff modes, integrator) runs on the new position as in the full forward.
 4. The output head gives the logits for position $t + 1$.
 
