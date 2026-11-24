@@ -54,7 +54,7 @@ V_\theta(h, \xi) = -\sum_{k=1}^{K} w_k(\xi)  e^{-q_k(h,\xi)/2}, \qquad
 q_k(h, \xi) = (h - \mu_k(\xi))^{\top} P_k(\xi) (h - \mu_k(\xi)),
 $$
 
-a sum of attractive Gaussian wells, and the force on $h$ is $-\nabla_h V_\theta$. The force weight of well $k$ at a token is $g_k = w_k e^{-q_k/2}$; this is the quantity the well probe (`vtheta_well_probe.py`) reports per well.
+a sum of attractive Gaussian wells, and the force on $h$ is $-\nabla_h V_\theta$. The force weight of well $k$ at a token is its term of the sum, $w_k e^{-q_k/2}$, written $g_k$; this is the quantity the well probe (`vtheta_well_probe.py`) reports per well.
 
 **The three times.** The word *time* has three senses here and the formulation keeps them apart:
 
@@ -84,11 +84,27 @@ $$
 
 the components along the directions in which the well is narrowest (these are the directions the exact damped propagator treats as stiff modes).
 
-**Definition 2 (dominance).** The *dominance share* of well $k$ at a token is $\pi_k = g_k / \sum_j g_j$, with $g_k = w_k e^{-q_k/2}$; the *dominant well* is $k^{\ast} = \arg\max_k \pi_k$.
+**Definition 2 (dominance).** The *force weight* of well $k$ at a token, its *dominance share* and the *dominant well* are
+
+$$
+g_k = w_k e^{-q_k/2}, \qquad \pi_k = \frac{g_k}{\sum_{j=1}^{K} g_j}, \qquad k^{\ast} = \arg\max_k \pi_k.
+$$
 
 **Proposition 1 (frame invariance).** Let the state space be re-parametrised by an invertible affine map $h \mapsto Ah + c$, applied jointly to the states and to the wells, so that $\mu_k \mapsto A\mu_k + c$ and $P_k \mapsto A^{-\top} P_k A^{-1}$. Then $q_k$, $g_k$, $\pi_k$, $r_k$ and $u_k$ are unchanged, and $z_k \mapsto Q z_k$ for an orthogonal $Q$.
 
-*Proof.* $h - \mu_k \mapsto A(h - \mu_k)$, so $q_k \mapsto (h-\mu_k)^{\top} A^{\top} A^{-\top} P_k A^{-1} A (h - \mu_k) = q_k$; $g_k$ and $\pi_k$ are functions of $q_k$ and $w_k$; $B_k \mapsto A^{-\top} B_k$ (so that $B_k B_k^{\top}$ transforms as $P_k$ does), hence $u_k = B_k^{\top}(h - \mu_k) \mapsto B_k^{\top} A^{-1} A (h - \mu_k) = u_k$. For $z_k$: with $P' = A^{-\top} P A^{-1}$, $z' = P'^{1/2} A (h - \mu) = Q z$ with $Q = P'^{1/2} A P^{-1/2}$, and $Q^{\top} Q = P^{-1/2} A^{\top} P' A P^{-1/2} = I$. $\square$
+*Proof.* Under the map, $h - \mu_k \mapsto A(h - \mu_k)$, so
+
+$$
+q_k \mapsto (h-\mu_k)^{\top} A^{\top} A^{-\top} P_k A^{-1} A (h - \mu_k) = q_k,
+$$
+
+and $g_k$ and $\pi_k$, being functions of $q_k$ and $w_k$, are unchanged. The low-rank factor transforms as $B_k \mapsto A^{-\top} B_k$, so that $B_k B_k^{\top}$ transforms as $P_k$ does; hence
+
+$$
+u_k = B_k^{\top}(h - \mu_k) \mapsto B_k^{\top} A^{-1} A (h - \mu_k) = u_k.
+$$
+
+For $z_k$: with $P' = A^{-\top} P A^{-1}$, $z' = P'^{1/2} A (h - \mu) = Q z$ with $Q = P'^{1/2} A P^{-1/2}$, and $Q^{\top} Q = P^{-1/2} A^{\top} P' A P^{-1/2} = I$. $\square$
 
 What the proposition says for the second motion of §1: if training re-parametrises the states by an affine map and carries the wells along with it, every quantity above is unchanged, and a pattern written in terms of well radii, dominance shares, stiff coordinates and inner products of well coordinates survives the re-parametrisation exactly. Training is of course not an affine map of the state space; but whatever it is, the part of it that *is* a change of frame is invisible in the well frame, and the part that is not shows up as the training drift of §5, measured without reference to any coordinates. The practical rule is the one anticipated in the plan note's §4.3: **a template is anchored to a well and written in that well's frame**, not in the coordinates of $\mathbb{R}^d$.
 
@@ -98,24 +114,36 @@ What the proposition says for the second motion of §1: if training re-parametri
 
 At fixed parameters the well still moves, because its centre is a function of the context. The question is not how far it moves in $\mathbb{R}^d$ but how far it moves *in units of its own width*: a centre that shifts by a large Euclidean distance along a direction in which the well is very wide has not moved, as far as any token inside it can tell.
 
-**Definition 3 (context spread).** Over the tokens of a corpus sample at layer $\ell$ and step $\tau$, let $\bar{\mu_k} = \mathbb{E}[\mu_k(\xi_t)]$, the mean over the tokens, be the mean realised centre of well $k$. The *context spread* of the well is
+**Definition 3 (context spread).** Over the tokens of a corpus sample at layer $\ell$ and step $\tau$, let the mean realised centre of well $k$ be its average over the tokens,
 
 $$
-s_k^2 = \mathrm{median}_t \big[(\mu_k(\xi_t) - \bar{\mu_k})^{\top} P_k(\xi_t) (\mu_k(\xi_t) - \bar{\mu_k})\big],
+\bar{\mu}_k = \mathbb{E}_t \big[ \mu_k(\xi_t) \big].
 $$
 
-the typical displacement of the realised centre from the mean centre, measured in the well's own metric at that token. Its Euclidean counterpart $s_{k,\mathrm{eu}}^2 = \mathrm{median} \lVert \mu_k(\xi_t) - \bar{\mu_k} \rVert^2 / \lVert \bar{\mu_k} \rVert^2$ (the median over the tokens) is what the well probe's centre split sees.
+The *context spread* of the well is
+
+$$
+s_k^2 = \mathrm{median}_t \big[(\mu_k(\xi_t) - \bar{\mu}_k)^{\top} P_k(\xi_t) (\mu_k(\xi_t) - \bar{\mu}_k)\big],
+$$
+
+the typical displacement of the realised centre from the mean centre, measured in the well's own metric at that token. Its Euclidean counterpart, relative to the length of the mean centre,
+
+$$
+s_{k,\mathrm{eu}}^2 = \frac{\mathrm{median}_t \lVert \mu_k(\xi_t) - \bar{\mu}_k \rVert^2}{\lVert \bar{\mu}_k \rVert^2},
+$$
+
+is what the well probe's centre split sees.
 
 **Proposition 2 (closed form).** When the precision is context-free, $P_k(\xi) \equiv P_k$ (as in twin PB's `a_context_free` with $r = 0$, or as an approximation with the mean precision), the mean-square version of the spread is a quadratic form in the channel covariance $\Sigma_\xi = \mathrm{Cov}[\xi_t]$ (over the tokens):
 
 $$
-\mathbb{E}_t\big[(\mu_k - \bar{\mu_k})^{\top} P_k (\mu_k - \bar{\mu_k})\big] = \mathrm{tr}\big(P_k W_k \Sigma_\xi W_k^{\top}\big), \qquad
-\mathbb{E}_t \lVert \mu_k - \bar{\mu_k} \rVert^2 = \mathrm{tr}\big(W_k \Sigma_\xi W_k^{\top}\big).
+\mathbb{E}_t\big[(\mu_k - \bar{\mu}_k)^{\top} P_k (\mu_k - \bar{\mu}_k)\big] = \mathrm{tr}\big(P_k W_k \Sigma_\xi W_k^{\top}\big), \qquad
+\mathbb{E}_t \lVert \mu_k - \bar{\mu}_k \rVert^2 = \mathrm{tr}\big(W_k \Sigma_\xi W_k^{\top}\big).
 $$
 
-*Proof.* $\mu_k - \bar{\mu_k} = W_k(\xi_t - \bar{\xi})$ since the centre is affine in $\xi$; take the expectation of the quadratic form. $\square$
+*Proof.* Since the centre is affine in the context, $\mu_k - \bar{\mu_k}$ equals $W_k(\xi_t - \bar{\xi})$; take the expectation of the quadratic form. $\square$
 
-The two traces differ by the factor $P_k$ inside, and that is the whole point: the Euclidean spread can be large while the metric spread is small, exactly when $W_k \Sigma_\xi W_k^{\top}$ is concentrated on the soft directions of $P_k$ (small eigenvalues). In SR2-NP the well probe already shows the symptom without the diagnosis: at layer 0 the channel term of the centre has norm 10.6 against a mean centre of 8.6, so the context moves the centre by more than the centre's own length, and yet the dominant well's occupancy $e^{-q/2}$ at the token is 0.98 (`well_probe_sr2np_owt.txt`). Either the tokens move with the centre, or the centre moves along directions the well does not resolve. Definition 3 separates the two; §7 measures it.
+The two traces differ by the factor $P_k$ inside, and that is the whole point: the Euclidean spread can be large while the metric spread is small, exactly when the covariance of the centre (the matrix inside the second trace) is concentrated on the soft directions of $P_k$, those with small eigenvalues. In SR2-NP the well probe already shows the symptom without the diagnosis: at layer 0 the channel term of the centre has norm 10.6 against a mean centre of 8.6, so the context moves the centre by more than the centre's own length, and yet the dominant well's occupancy $e^{-q/2}$ at the token is 0.98 (`well_probe_sr2np_owt.txt`). Either the tokens move with the centre, or the centre moves along directions the well does not resolve. Definition 3 separates the two; §7 measures it.
 
 ---
 
@@ -123,11 +151,19 @@ The two traces differ by the factor $P_k$ inside, and that is the whole point: t
 
 Between two checkpoints $\tau \lt \tau'$ the same validation tokens are run through both models. Every comparison below uses only the frame-free quantities of Proposition 1, so that a change of frame between the checkpoints contributes nothing.
 
-**Definition 4 (drift measures).** For well $k$ at layer $\ell$, with $S_k^{\tau} = \lbrace t : k^{\ast}(t) = k \rbrace$ the set of tokens the well dominates at step $\tau$:
+**Definition 4 (drift measures).** For well $k$ at layer $\ell$, let $S_k^{\tau}$ be the set of tokens the well dominates at step $\tau$, those with $k^{\ast} = k$. The *assignment overlap* is the Jaccard index of the two dominated sets,
 
-- *assignment overlap*: the Jaccard index $J_k(\tau, \tau') = \lvert S_k^{\tau} \cap S_k^{\tau'} \rvert / \lvert S_k^{\tau} \cup S_k^{\tau'} \rvert$;
-- *radial drift*: the 1-D Wasserstein distance $\Delta_k(\tau, \tau') = W_1(\mathrm{law}[r_k^{\tau}], \mathrm{law}[r_k^{\tau'}]) / \mathrm{median}[r_k^{\tau'}]$ between the two radial laws over all tokens, in units of the later median radius;
-- *token-wise rank agreement*: the Spearman correlations $\rho_r$ of $r_k^{\tau}$ with $r_k^{\tau'}$ and $\rho_u$ of $\lVert u_k^{\tau} \rVert$ with $\lVert u_k^{\tau'} \rVert$ over the same tokens.
+$$
+J_k(\tau, \tau') = \frac{\lvert S_k^{\tau} \cap S_k^{\tau'} \rvert}{\lvert S_k^{\tau} \cup S_k^{\tau'} \rvert}.
+$$
+
+The *radial drift* is the 1-D Wasserstein distance between the two radial laws over all tokens, in units of the later median radius,
+
+$$
+\Delta_k(\tau, \tau') = \frac{W_1\big(\mathcal{L}(r_k^{\tau}), \mathcal{L}(r_k^{\tau'})\big)}{\mathrm{median}_t \big( r_k^{\tau'} \big)},
+$$
+
+with $\mathcal{L}(r)$ the distribution of $r$ over the tokens. The *token-wise rank agreements* are the Spearman correlations over the same tokens: $\rho_r$ of $r_k^{\tau}$ with $r_k^{\tau'}$, and $\rho_u$ of $\lVert u_k^{\tau} \rVert$ with $\lVert u_k^{\tau'} \rVert$.
 
 The first says whether the well still owns the same tokens; the second whether its radial law has the same shape; the third whether the *ordering* of tokens by depth in the well, and by position along its stiff directions, is preserved, which is the finest of the three and the one a signature along a trajectory depends on. A well is *settled* over a window of checkpoints when all three are near their ideal values ($J \to 1$, $\Delta \to 0$, $\rho \to 1$) for every consecutive pair in the window.
 
@@ -135,19 +171,19 @@ The first says whether the well still owns the same tokens; the second whether i
 
 ## 6. Admissible regions, and what admissibility buys
 
-**Definition 5 (position warmth).** Channel $c$ at position $t$ carries the weight $\alpha_c^{ t}$ of the missing prefix before the window's start. It is *warm at tolerance* $\varepsilon$ when $\alpha_c^{ t} \le \varepsilon$, i.e. $t \ge t_c(\varepsilon) = \ln \varepsilon / \ln \alpha_c$. At $\varepsilon = 0.1$: $t_c = 4, 8, 45, 229, 459$ for the five decays. The slowest channel is never warm inside a 512-token training window, which is a fact about the model, not about the measurement: a pattern that reads the slowest channel is position-dependent by construction, and a template built on it inherits that dependence.
+**Definition 5 (position warmth).** Channel $c$ at position $t$ carries the weight $\alpha_c^{t}$ of the missing prefix before the window's start. It is *warm at tolerance* $\varepsilon$ when $\alpha_c^{ t} \le \varepsilon$, i.e. $t \ge t_c(\varepsilon) = \ln \varepsilon / \ln \alpha_c$. At $\varepsilon = 0.1$: $t_c = 4, 8, 45, 229, 459$ for the five decays. The slowest channel is never warm inside a 512-token training window, which is a fact about the model, not about the measurement: a pattern that reads the slowest channel is position-dependent by construction, and a template built on it inherits that dependence.
 
-**Definition 6 (admissible region).** The region of well $k$ at layer $\ell$, over positions $t \ge t_0$, at step $\tau$, is *admissible at tolerances* $(\varepsilon_{\mathrm{live}}, \varepsilon_{\mathrm{dom}}, \varepsilon_{\mathrm{ctx}}, \varepsilon_{\mathrm{drift}}, \varepsilon_{\mathrm{warm}})$ over a window of $W$ checkpoints ending at $\tau$ when
+**Definition 6 (admissible region).** The region of well $k$ at layer $\ell$, over positions $t \ge t_0$, at step $\tau$, is *admissible* at five tolerances, one per clause and written $\varepsilon$ with the clause's name as a subscript, over a window of $W$ checkpoints ending at $\tau$ when
 
 1. **live**: the well dominates a share $\ge \varepsilon_{\mathrm{live}}$ of the tokens;
 2. **dominant**: on those tokens the median dominance $\pi_k \ge 1 - \varepsilon_{\mathrm{dom}}$;
 3. **context-tame**: the context spread $s_k \le \varepsilon_{\mathrm{ctx}}$;
-4. **settled**: for every consecutive pair of checkpoints in the window, $J_k \ge 1 - \varepsilon_{\mathrm{drift}}$, $\Delta_k \le \varepsilon_{\mathrm{drift}}$ and $\rho_r, \rho_u \ge 1 - \varepsilon_{\mathrm{drift}}$;
-5. **warm**: $t_0 \ge \max_c t_c(\varepsilon_{\mathrm{warm}})$ over the channels the template reads.
+4. **settled**: for every consecutive pair of checkpoints in the window, $J_k \ge 1 - \varepsilon_{\mathrm{drift}}$, $\Delta_k \le \varepsilon_{\mathrm{drift}}$ and $\rho_r$ and $\rho_u$ both at least $1 - \varepsilon_{\mathrm{drift}}$;
+5. **warm**: $t_0$ is at least the largest $t_c(\varepsilon_{\mathrm{warm}})$ over the channels the template reads.
 
 Clauses 1 and 2 are the dead-wells lesson (a well nobody visits, or that never wins, has no trajectories to watch); clause 3 is §4; clause 4 is §5; clause 5 is the position sense of time.
 
-**Proposition 3 (what admissibility buys).** Inside an admissible region, write the local flow in the well coordinate of the dominant well as $\dot{z} = F_0(z) + \Delta(z, \xi, \tau)$, where $F_0$ is the flow of the single frozen well $k$ at its mean realised parameters and $\Delta$ collects everything else: the other wells' force (bounded by $\varepsilon_{\mathrm{dom}}$ through their total weight $1 - \pi_k$), the context's displacement of the well (bounded by $\varepsilon_{\mathrm{ctx}}$ through the Lipschitz constant of the Gaussian force in its centre), and the change of the well between the checkpoints of the window (bounded by $\varepsilon_{\mathrm{drift}}$). If $F_0$ is $\Lambda$-Lipschitz on the basin and $\lVert \Delta \rVert \le C(\varepsilon_{\mathrm{dom}} + \varepsilon_{\mathrm{ctx}} + \varepsilon_{\mathrm{drift}})$ there, then two trajectories started from the same $z_0$, one under the full flow and one under $F_0$, satisfy for a depth $s$ inside the basin
+**Proposition 3 (what admissibility buys).** Inside an admissible region, write the local flow in the well coordinate of the dominant well as $\dot{z} = F_0(z) + \Delta(z, \xi, \tau)$, where $F_0$ is the flow of the single frozen well $k$ at its mean realised parameters and $\Delta$ collects everything else: the other wells' force (bounded by $\varepsilon_{\mathrm{dom}}$ through their total weight $1 - \pi_k$), the context's displacement of the well (bounded by $\varepsilon_{\mathrm{ctx}}$ through the Lipschitz constant of the Gaussian force in its centre), and the change of the well between the checkpoints of the window (bounded by $\varepsilon_{\mathrm{drift}}$). If $F_0$ is $\Lambda$-Lipschitz on the basin and $\lVert \Delta \rVert$ is at most $C$ times the sum of the three tolerances $\varepsilon_{\mathrm{dom}}$, $\varepsilon_{\mathrm{ctx}}$ and $\varepsilon_{\mathrm{drift}}$ there, then two trajectories started from the same $z_0$, one under the full flow and one under $F_0$, satisfy for a depth $s$ inside the basin
 
 $$
 \lVert z(s) - \hat{z}(s) \rVert \le C (\varepsilon_{\mathrm{dom}} + \varepsilon_{\mathrm{ctx}} + \varepsilon_{\mathrm{drift}}) \frac{e^{\Lambda s} - 1}{\Lambda}.
@@ -165,9 +201,9 @@ One consequence for the hierarchy of §5 of the plan note: clause 4 is a conditi
 
 **Model.** SR2-NP (SR2 without the pair force; [Stage 3](../productization/Stage3_SR2_Without_Pair_Force.md)), whose only context mixing is the bank itself, so that clause 3 is the whole of the context's effect. Its run folder keeps three checkpoints: step 500 (inside the 5% warmup of the WSD schedule), step 22,500 (1,375 steps into the decay phase, which starts at step 21,125), and the best checkpoint (step 31,000, late in the decay, of 32,500 steps). $K = 8$, $r = 4$, two layers; the trained model uses one well per layer (well 5 carries 77% of the force weight at layer 0 and 100% at layer 1; `well_probe_sr2np_owt.txt`).
 
-**Data.** The same 16 evenly spaced validation windows of 512 tokens from OpenWebText as the well probe (8,192 tokens), run through each checkpoint; the bank's components $(\mu_k, a_k, w_k, B_k)$ and the state $h$ are captured at the first evaluation of each layer, and $q_k$, $\pi_k$, $u_k$ and the context spread are computed per token and well. Script: `debug/well_settling_map.py`; outputs in `results/well_settling/settling_sr2np.{txt,json,npz}`.
+**Data.** The same 16 evenly spaced validation windows of 512 tokens from OpenWebText as the well probe (8,192 tokens), run through each checkpoint; the bank's components $\mu_k$, $a_k$, $w_k$ and $B_k$ and the state $h$ are captured at the first evaluation of each layer, and $q_k$, $\pi_k$, $u_k$ and the context spread are computed per token and well. Script: `debug/well_settling_map.py`; outputs in `results/well_settling/settling_sr2np.{txt,json,npz}`.
 
-**Quantities.** Per checkpoint, layer and well: the dominated share, the median $\pi_k$, the median radius $r_k$, the median $\lVert u_k \rVert$, the context spread $s_k$ and its Euclidean counterpart. Per consecutive pair of checkpoints: $J_k$, $\Delta_k$, $\rho_r$, $\rho_u$. The collection is call-independent; the calls below were written before any result was read and are to be confirmed by the author before scoring.
+**Quantities.** Per checkpoint, layer and well: the dominated share, the median $\pi_k$, the median radius $r_k$, the median $\lVert u_k \rVert$, the context spread $s_k$ and its Euclidean counterpart. Per consecutive pair of checkpoints: $J_k$, $\Delta_k$, $\rho_r$, $\rho_u$. The collection is call-independent. The calls below were composed before the results were read and confirmed by the author on 2026-11-24; the run finished while they were being written, a timing the report's §6 records.
 
 **Calls (2026-11-24, before the results).**
 
@@ -184,17 +220,22 @@ If AR1 and AR3 hit, the decay phase of the schedule is the earliest training tim
 
 The full report, with the setup, code, tables, figures and analysis, is [*Well Settling Map of SR2-NP*](Well_Settling_Map_SR2_NP.md). In short (calls confirmed by the author 2026-11-24, scored on their letter):
 
-| call | verdict | reading |
-| --- | --- | --- |
-| AR1 settling is late | hit | every drift measure better in the late pair at both layers; the early pair shares nothing at the token level (ρ ≈ 0) |
-| AR2 metric spread vs Euclidean | hit | layer 0: s = 0.24 widths against a Euclidean spread of 1.81; layer 1: s = 1.63 |
-| AR3 the live set forms before the decay | miss | the dominant well is fixed by step 22,500 (J = 1), but at layer 1 it already dominates in the warm-up (median largest π 0.96 at step 500) |
-| AR4 the inside settles last | miss on the letter | J = 1 and ρ_u = 0.50 at both layers; Δ = 0.235 at layer 0 breaks the Δ ≤ 0.1 clause, an artefact of the normalisation below |
+- **AR1, settling is late: hit.** Every drift measure is closer to its ideal value in the late pair, at both layers; the early pair shares nothing at the token level ($\rho_r$ and $\rho_u$ are near 0).
+- **AR2, the metric spread against the Euclidean: hit.** At layer 0 the dominant well's context spread is $s_5 = 0.24$ widths against a Euclidean spread of $s_{5,\mathrm{eu}} = 1.81$; at layer 1, $s_5 = 1.63$.
+- **AR3, the live set forms before the decay: miss.** The dominant well is fixed by step 22,500 ($J_5 = 1$), but at layer 1 it already dominates in the warm-up: the median over tokens of $\max_k \pi_k$ is 0.96 at step 500.
+- **AR4, the inside settles last: miss on the letter.** $J_5 = 1$ and $\rho_u = 0.50$ at both layers, but $\Delta_5 = 0.235$ at layer 0 breaks the condition $\Delta_5 \le 0.1$, an artefact of the normalisation discussed below.
+
+| call | verdict |
+| --- | --- |
+| AR1 | hit |
+| AR2 | hit |
+| AR3 | miss |
+| AR4 | miss on the letter |
 
 What it means for Definition 6:
 
 - **No region of SR2-NP is admissible over the window from step 22,500 to the end** at $\varepsilon_{\mathrm{drift}} = 0.1$. The only live well keeps the same tokens, but the order of those tokens inside it agrees only at $\rho \approx 0.5$. In width units the tokens move very little (0.045 widths at layer 0), but that is as much as their own spread inside the well (0.98 of its interquartile range).
-- **Clause 4 is meaningful only together with clauses 1 and 2.** The seven wells that own no tokens are the most settled (ρ 0.86 to 0.91 at layer 0); the live well is the least.
+- **Clause 4 is meaningful only together with clauses 1 and 2.** The seven wells that own no tokens are the most settled ($\rho_r$ from 0.86 to 0.91 at layer 0); the live well is the least.
 - **Clause 3 must be read in the well metric.** At layer 1 the Euclidean spread ranks the wells in the opposite order to the metric spread.
 - **The earliest admissible time lies inside the decay phase or at its end**, and three checkpoints cannot place it more precisely.
 
