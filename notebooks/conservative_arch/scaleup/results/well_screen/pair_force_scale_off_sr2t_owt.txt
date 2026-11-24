@@ -1,0 +1,3 @@
+# debug/pair_force_scale_off.py <out> <SR2-T folder> val=<openwebtext_val_2M.npy>, 2026-11-22: SR2-T's pair force removed by zeroing its trained per-layer scale; 16 OpenWebText validation windows of 512 tokens
+scales (softplus): [0.06337333470582962, 1.6936211585998535]
+fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoi  base 4.0500  pair force scale zeroed 4.8404  change +0.7904 nats (+120.4% ppl)

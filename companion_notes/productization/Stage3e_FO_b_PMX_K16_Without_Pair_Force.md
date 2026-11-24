@@ -2,7 +2,7 @@
 
 **What this note is.** The pre-registration of the second arm of the PMX line in the productization plan ([Conservative_Core_Productization_Plan.md](Conservative_Core_Productization_Plan.md), §6). The arm is the first-order model with sixteen Poisson-mode wells, trained without the pair force $V_\varphi$: the analogue, on the PMX line, of SR2-NP ([Stage3_SR2_Without_Pair_Force.md](Stage3_SR2_Without_Pair_Force.md)). Written 2026-11-22.
 
-**Status.** Set up; not launched. The calls in §4 were confirmed by the author on 2026-11-22 and are binding; the author sets the perplexity tolerance before launch.
+**Status.** Set up; not launched. The calls in §4 were confirmed by the author on 2026-11-22 and are binding. **The tolerance is +2%,** set by the author on 2026-11-24 before launch, as for twin PB and the earlier first- against second-order comparisons (§5).
 
 ---
 
@@ -84,7 +84,8 @@ Proposed 2026-11-22, before the arm runs; **confirmed by the author on 2026-11-2
 
 - **At or below +1% (FN2 passes).** The pair force is not worth its cost on the PMX line in first order. The PMX line's production candidate drops it, as SR2-NP did, and the mean field is not needed there.
 - **Above +2% (FN1 fails).** The pair force carries value that nothing else in the model can absorb. The mean field returns to the productization path, with Probe A and the field arm run on FO-b-PMX-K16 beside F3.1.
-- **Between +1% and +2%.** The author's tolerance, set before launch, decides.
+- **Between +1% and +2%.** Within the author's tolerance of +2% (set 2026-11-24, before launch): the PMX line's production candidate drops the pair force, as at or below +1%.
+- **Since written (2026-11-22):** Probe A has run and the author ruled that no field arm runs ([Probe_A_Field_Pair_Force.md](../mean_field/Probe_A_Field_Pair_Force.md), §7). Above +2%, the pair force therefore stays in the PMX line's candidate, and any stand-in would need its own registration.
 
 **A companion arm, not pre-registered here.** PMX-K16 trained without the pair force would complete a 2 × 2: {first order, second order} × {with, without the pair force}. With trained-out costs at both orders, it would answer directly whether the pair force is valuable only when the model has no velocity. Its interaction term is defined in [Velocity_and_Pair_Force_as_Competing_Mechanisms.md](../depth_ladder/Velocity_and_Pair_Force_as_Competing_Mechanisms.md).
 
