@@ -39,7 +39,23 @@ $$
 \xi_{k,t} = \sum_{s \le t} w_k(t,s) h_s, \qquad w_k(t,s) = \underset{s \le t}{\mathrm{softmax}}\left[ (t-s) \log a_k + \frac{q_{k,t} \cdot \kappa_{k,s}}{\sqrt{48}} \right].
 $$
 
-   The first term of the logit favours recent tokens, each channel $k$ with its own learned decay $a_k$, from about 2 to about 200 tokens. The second compares a 48-wide query $q_{k,t}$ of the current state with a key $\kappa_{k,s}$ of each earlier state, so that tokens whose content matches weigh more. This is attention with a distance bias, and the earlier states themselves are the values (family E of the book's §24).
+   The first term of the logit favours recent tokens, each channel $k$ with its own learned decay $a_k$, from about 2 to about 200 tokens. The second compares a 48-wide query $q_{k,t}$ of the current state with a key $\kappa_{k,s}$ of each earlier state, so that tokens whose content matches weigh more. This is attention with a distance bias, and the earlier states themselves are the values (family E of the book's §24, proposed in [Context_Mixing_Mechanisms_in_the_Conservative_Framework.md](../Context_Mixing_Mechanisms_in_the_Conservative_Framework.md) §8).
+
+   **The query and the key.** Both are plain linear reads of the same layer-input state, one pair per channel, with no bias, no normalisation and no position term. Two weight matrices of shape $Kd_k \times d$ are applied to every token and the result is split into the $K$ channels:
+
+$$
+q_{k,t} = \left(W_q h_t\right)_k, \qquad \kappa_{k,s} = \left(W_k h_s\right)_k, \qquad W_q, W_k \in \mathbb{R}^{Kd_k \times d}, \quad d_k = 48 .
+$$
+
+   Three properties of this choice matter later. **The key is of the same $h$ that is pooled**, so a token serves as its own value; nothing separate is stored. **The scaling is the usual $1/\sqrt{d_k}$** and the logit is a bare dot product, with no unit-normalisation of $q$ or $\kappa$, unlike the query-key normalisation used in the exchange field and the creation gate. And **$W_q$ is initialised to zero while $W_k$ is not**, which makes the content term exactly zero at step 0, so the channels start as the pure exponential moving average of the earlier arms and the switch is bit-identical when first enabled. The asymmetry is deliberate: the logit is bilinear, so zeroing both would leave both gradients zero and the term could never learn.
+
+   Written out, the content logit is the ordinary scaled dot product and the whole weight is one softmax over the prefix:
+
+$$
+w_k(t,s) = \frac{\exp\left[(t-s)\log a_k + d_k^{-1/2}\ q_{k,t} \cdot \kappa_{k,s}\right]}{\sum_{r \le t} \exp\left[(t-r)\log a_k + d_k^{-1/2}\ q_{k,t} \cdot \kappa_{k,r}\right]} .
+$$
+
+   Note that $s = t$ is allowed, so no row of the softmax is ever fully masked. The implementation is `MultiXiChannels` in [`conservative_arch/multixi/model_multixi.py`](../../notebooks/conservative_arch/multixi/model_multixi.py), under the switch `xi_content_route` with width `xi_content_d_k`; with the switch off the same code path reduces to $w_k(t,s) \propto a_k^{t-s}$, the content-independent pooling.
 2. **The potential and its force.** The well bank $V_\theta(\xi_t, h)$ is a sum of anisotropic Gaussian wells whose centres, precisions and weights are generated from the token's five channel readings. Its stiffest directions are found by an eigendecomposition of the potential's low-rank curvature.
 3. **The integrator.** The token's state and velocity move one step: the stiff directions as exact damped oscillators (two half steps), the rest by a kick from the force $-\nabla_h V_\theta$ and friction. The velocity carries into the next layer.
 
