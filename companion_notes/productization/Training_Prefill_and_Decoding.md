@@ -178,6 +178,64 @@ The prompt tokens themselves, in the benchmark, are drawn at random over the voc
 
 **Decode step.** The model's own forward on the one new token, told its position. At each layer the context channels read the cache instead of building a $T \times T$ matrix: one row of weights per channel over the $n$ cached tokens. The rest of the layer runs on the new position as in the full forward.
 
+**The step, line by line.** The decoder changes no model code. It replaces one method, the context-channel module's `forward`, and puts the original back when closed:
+
+```python
+self._xi_full = xm.forward        # the module's own forward, used for the prefill
+xm.forward = self._xi
+```
+
+Everything else about the forward is untouched, which is what makes the arithmetic identical rather than merely close. The step itself is one ordinary call with a position offset, plus a guard that every layer's channels were reached exactly once:
+
+```python
+@torch.no_grad()
+def forward(self, x: torch.Tensor) -> torch.Tensor:
+    self._layer = 0
+    logits = self.m(x, position_offset=self.t)[0]
+    if self._layer != self.L:
+        raise RuntimeError(f"expected {self.L} context-channel calls per forward, saw {self._layer}")
+    self.t += x.shape[1]
+    return logits
+```
+
+That counter is the decoder's safety net. If a configuration routed the model down a path that skipped or repeated a layer's channels, the cache would silently desynchronise from the model; instead the call fails.
+
+Inside the replaced method, the new token is **written before it is read**, so the position attends to itself exactly as the full forward does:
+
+```python
+self.states[li][:B, t0:t0 + T] = h
+if self.content:
+    kk = xm.W_k(h).view(B, T, self.K, self.dk).permute(0, 2, 1, 3)
+    self.keys[li][:B, :, t0:t0 + T] = kk
+```
+
+Then the read. The distance part of the logit cannot be cached, since it depends on both ends, so it is rebuilt each step as one vector over the $n$ cached positions; the content part is the new query against all stored keys; the two are added inside a single softmax, exactly as in training:
+
+```python
+n  = t0 + 1                       # positions 0..t0, the new token included
+la = torch.log(xm.alpha.clamp(min=1e-6, max=1.0 - 1e-6))
+dist   = (t0 - torch.arange(n, dtype=h.dtype, device=h.device))      # t - s >= 0
+logits = (la.view(self.K, 1) * dist.view(1, n)).unsqueeze(0).unsqueeze(2)
+if self.content:
+    q = xm.W_q(h).view(B, 1, self.K, self.dk).permute(0, 2, 1, 3)
+    logits = logits + (q @ self.keys[li][:B, :, :n].transpose(-1, -2)) * (self.dk ** -0.5)
+w = torch.softmax(logits, dim=-1)                                     # (B, K, 1, n)
+```
+
+Compare the shapes with the training branch of §2. There the content term is `(q @ kk.transpose(-1, -2))` of shape $(B, K, T, T)$; here the query has a single row, so the same expression yields $(B, K, 1, n)$. **The step is the training computation with $T$ collapsed to 1 on the query side only.** That is the whole of the saving, and it is why the result is exact rather than approximate.
+
+**Three ways to finish the read**, selected by the module constant `XI_READ`. They differ only in how the weights meet the states:
+
+| variant | the final product | why |
+| --- | --- | --- |
+| `broadcast` (default) | `w @ states.unsqueeze(1)` | the plain form; the states are broadcast to the $K$ channels and read $K$ times |
+| `gemm` | `(w.view(B, K, n) @ states)` | one $(K \times n)(n \times d)$ product, so the states are read once instead of $K$ times |
+| `fold` | `F.scaled_dot_product_attention(qf, fkeys, vals, scale=...)` | the distance term is folded into a widened key, so the whole logit is one dot product and fused attention applies |
+
+The `fold` path is the only one that changes what is cached rather than how it is multiplied, and its correctness rests on the constant-per-row argument set out in [Incremental_Decoder.md](Incremental_Decoder.md) §4. Its value tensor is built with `expand` rather than a repeat, so the $K$ channels share one copy of the states at stride 0 and no memory is duplicated.
+
+**What the step does not do.** No $T \times T$ weight matrix is built at any layer, nothing is kept for a backward, and no earlier position is recomputed. The entire cost that scales with context is the one query-against-keys product and the one weights-against-states product, per channel per layer, which is why §4 finds the step bound by per-operation overhead at short context and by reading the cache at long context.
+
 ![The weights of the context channels in each phase: B stacks of five T by T lower-triangular matrices in training, five T by T in the prefill, five rows of length n in a decode step.](../figures/training_prefill_decoding/tpd_shapes.png)
 
 *Figure 2. The context-channel weights each phase builds. White: the masked half, where the earlier-token index exceeds the current one.*
