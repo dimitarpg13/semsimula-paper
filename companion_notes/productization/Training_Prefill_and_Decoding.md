@@ -56,6 +56,60 @@ w_k(t,s) = \frac{\exp\left[(t-s)\log a_k + d_k^{-1/2}\ q_{k,t} \cdot \kappa_{k,s
 $$
 
    Note that $s = t$ is allowed, so no row of the softmax is ever fully masked. The implementation is `MultiXiChannels` in [`conservative_arch/multixi/model_multixi.py`](../../notebooks/conservative_arch/multixi/model_multixi.py), under the switch `xi_content_route` with width `xi_content_d_k`; with the switch off the same code path reduces to $w_k(t,s) \propto a_k^{t-s}$, the content-independent pooling.
+
+   **There is no value projection and no read-out.** The exchange field of the Fock arms carries four matrices, a routing pair and a bilinear value kernel $U^{\top}W_v$ that transports and reshapes what it moves. The channels carry two. The values are the earlier states themselves, so $\xi_{k,t}$ is a convex combination of actual hidden states and lives in the same space as $h$, which is what lets it feed the generator of the well bank. The consequence is that **the channels can reweight what they transport but cannot rotate or reshape it**: the only learnable part of the transport is the weights. A $W_v$ would break that, since the pooled result would no longer be a state.
+
+   The four query-key pairs in the architecture are independent, despite the shared naming. The channels' pair reads $h$ and queries earlier tokens; the creation gate's query is a persistent per-register probe; the reverse channel's pair (`W_Q_rev`, `W_K_rev`) has a token query the registers; and the exchange field's pair reads the context summary, of width $\xi_{\text{channels}} \times d$, not $d$. Nothing is shared between them.
+
+   **Where they are defined.** Both are created only when the switch is on, in the constructor of `MultiXiChannels`, with the asymmetric initialisation the code comments at length:
+
+```python
+self.W_q = None
+self.W_k = None
+if content_route:
+    self.W_q = nn.Linear(d, K * content_d_k, bias=False)
+    self.W_k = nn.Linear(d, K * content_d_k, bias=False)
+    # ASYMMETRIC init, deliberately.
+    #   W_q = 0 makes the content logit exactly zero, so xi is
+    #   BIT-IDENTICAL to the pure EMA at step 0 and a warm start
+    #   from an existing checkpoint is exact rather than approximate.
+    #   W_k must NOT also be zero: the logit is bilinear, so
+    #   d(q.k)/dW_q = h (x) (W_k h) and d(q.k)/dW_k = (W_q h) (x) h.
+    #   Zeroing both makes BOTH gradients vanish -- a saddle the
+    #   optimiser never leaves...
+    nn.init.zeros_(self.W_q.weight)
+    nn.init.normal_(self.W_k.weight, std=content_init_scale)
+```
+
+   **Where they are used.** One projection per matrix for the whole sequence, reshaped into the $K$ channels, then one softmax over the prefix and one pooling of the raw states. The five lines are the whole mechanism:
+
+```python
+q  = self.W_q(h).view(B, T, self.K, dk).permute(0, 2, 1, 3)
+kk = self.W_k(h).view(B, T, self.K, dk).permute(0, 2, 1, 3)
+content = (q @ kk.transpose(-1, -2)) * (dk ** -0.5)   # (B, K, T, T)
+w   = torch.softmax(base.unsqueeze(0) + content, dim=-1)
+xis = w @ h.unsqueeze(1)                              # (B, K, T, d)
+```
+
+   `base` is the distance logit $(t-s)\log a_k$, masked to $s \le t$ and built once per channel by `causal_ema_logits`; the content term is simply added to it inside the same softmax, which is why the switch degrades exactly to the moving average rather than approximately. The last line is where the absence of a value projection shows: the pooling multiplies `h` itself, not a projection of it. There is a second, numerically equivalent branch guarded by `query_chunk` that builds the softmax rows a block of queries at a time, so the $(B, K, T, T)$ tensor never has to exist at inference.
+
+   **In the backward pass**, write $g_{k,t} = \partial \mathcal{L} / \partial \xi_{k,t}$ for the gradient arriving at a channel reading. The softmax backward gives the gradient on a single logit the form
+
+$$
+\frac{\partial \mathcal{L}}{\partial \ell_{k,t,s}} = w_k(t,s)\ g_{k,t} \cdot \left( h_s - \xi_{k,t} \right),
+$$
+
+   the weight times how far that source deviates from the pooled value the token already receives. A source equal to the current reading contributes no gradient however heavily it is weighted. Since the logit is bilinear in the two projections, each matrix then accumulates an outer product over positions:
+
+$$
+\frac{\partial \mathcal{L}}{\partial W_q^{(k)}} = d_k^{-1/2} \sum_t \left( \sum_s \frac{\partial \mathcal{L}}{\partial \ell_{k,t,s}} \kappa_{k,s} \right) h_t^{\top}, \qquad \frac{\partial \mathcal{L}}{\partial W_k^{(k)}} = d_k^{-1/2} \sum_s \left( \sum_t \frac{\partial \mathcal{L}}{\partial \ell_{k,t,s}} q_{k,t} \right) h_s^{\top} .
+$$
+
+   Two consequences follow, and both are design, not accident.
+
+   **The zero initialisation makes the two matrices start at different times.** At step 0, $q = W_q h = 0$, so the query gradient above is driven by $\kappa = W_k h$, which is non-zero, and $W_q$ moves. The key gradient is driven by $q$, which is zero, so $W_k$ receives **exactly no gradient on the first step** and only begins to learn once $W_q$ has left zero. Zeroing both would strand both at zero permanently. This is why the code zero-initialises one and randomly initialises the other.
+
+   **The states are live on three paths, not one.** A gradient reaches $h_s$ as a value, through $w_k(t,s)$, as a key, through $\kappa_{k,s}$, and at $s = t$ as a query. Nothing in the channel path is detached. That is the whole difference between this and the exchange field, whose routing is computed from a detached $\xi$ precisely so that the weights are constant with respect to $h_t$ and the force stays a gradient. The channels are not a force term, so they are under no such constraint, and the generation 2 arms that detached them are the ones the `live` slug distinguishes.
 2. **The potential and its force.** The well bank $V_\theta(\xi_t, h)$ is a sum of anisotropic Gaussian wells whose centres, precisions and weights are generated from the token's five channel readings. Its stiffest directions are found by an eigendecomposition of the potential's low-rank curvature.
 3. **The integrator.** The token's state and velocity move one step: the stiff directions as exact damped oscillators (two half steps), the rest by a kick from the force $-\nabla_h V_\theta$ and friction. The velocity carries into the next layer.
 
