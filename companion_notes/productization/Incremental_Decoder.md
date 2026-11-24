@@ -66,6 +66,26 @@ Everything else in a layer acts within one position: the well bank $V_\theta$ re
 
 The model's code is not changed. The decoder swaps the context-channel module's `forward` for its cache-reading one and restores it when closed.
 
+**Why the keys can be cached and the query cannot.** Both come from the same two matrices the trained model already carries, $W_q$ and $W_k$, each of shape $Kd_\kappa \times d$, applied to a state and split across the $K$ channels: $q_{k,t}$ is the $k$-th block of $W_q h_t$ and $\kappa_{k,s}$ the $k$-th block of $W_k h_s$. The asymmetry that makes a decoder possible is that **a key depends only on its own token while a query depends only on the current one**. Token $s$'s key is the same whichever $t$ later reads it, so it is computed once, when $s$ is first seen, and stored:
+
+```python
+kk = xm.W_k(h).view(B, T, self.K, self.dk).permute(0, 2, 1, 3)
+self.keys[li][:B, :, t0:t0 + T] = kk
+```
+
+That one line runs in both phases, over the whole prompt during the prefill and over the single new token during a step, which is why the prefill needs no separate key-writing path. The query is the opposite: it is a read of the state the step has just produced, so it is recomputed every step, for one position only:
+
+```python
+q = xm.W_q(h).view(B, 1, self.K, self.dk).permute(0, 2, 1, 3)   # (B, K, 1, dk)
+logits = logits + (q @ self.keys[li][:B, :, :n].transpose(-1, -2)) * (self.dk ** -0.5)
+```
+
+The cost of the query is therefore one $d \times Kd_\kappa$ product per step, independent of the context, while the keys it multiplies grow with it. The distance part of the logit is not cached either, since $(t-s)\log a_k$ depends on both ends; it is rebuilt per step as a vector over the $n$ cached positions.
+
+**Folding the distance into the key.** The `FOLD_CACHE` variant of [Stage2b_Decode_Step_Levers.md](Stage2b_Decode_Step_Levers.md) removes that separate term by widening both sides by one component, so the whole logit becomes a single dot product and the step can call fused attention. With $\lambda_k = -\log a_k \gt 0$, the key gains $\lambda_k (s - s_0)$ and the query gains the constant $\sqrt{d_\kappa}$, so after the usual $1/\sqrt{d_\kappa}$ scaling the extra product contributes exactly $\lambda_k(s - s_0)$. That differs from the true distance term $\lambda_k(s - t)$ by $\lambda_k(t - s_0)$, which is the same for every $s$ in the row and therefore cancels in the softmax. The centring at $s_0$ at half the cache's capacity is not needed for correctness; it halves the largest value the component ever takes. I checked the identity numerically: the two logit vectors differ by exactly the predicted constant and the resulting weights agree to 6e-17.
+
+The price is a second key array held alongside the first, which is the extra 490 numbers per token recorded in §5.
+
 ![one decode step](../figures/incremental_decoder/dec_step.png)
 
 *Figure 2. One decode step, the conservative core beside the matched GPT-2. Orange parts read the cache; purple parts act within the new token's position. The core reads its cache through five context channels per layer at two layers; GPT-2 through six attention heads per layer at eight layers.*
