@@ -77,7 +77,7 @@ The model's code is not changed. The decoder swaps the context-channel module's 
 A deployed model answers a request in two phases with different costs:
 - **Time to the first token** is the prefill: one forward over the prompt. Its cost grows with the prompt's length, partly in proportion to the square of it. The stage 1 levers ([Stage1_CPU_Levers.md](Stage1_CPU_Levers.md)) and the context channels as 30 heads ([Stage1b_Context_Channels_as_30_Heads.md](Stage1b_Context_Channels_as_30_Heads.md)) act here.
 - **Time per further token** is the decode step. For a single sequence on a CPU it is dominated by per-operation overhead, not arithmetic ([Stage2_Decoding.md](Stage2_Decoding.md), §4), which is what the levers of [Stage2b_Decode_Step_Levers.md](Stage2b_Decode_Step_Levers.md) address.
-- **Memory** is the model's weights plus the cache, which grows by 1,248 numbers per token of context.
+- **Memory** is the model's weights plus the cache, which grows by 1,248 numbers per token of context. At float32 that is $L(Kd_k + d) \times 4 = 4{,}992$ bytes, just under 4.9 KiB per token, so 2.59 MB at a context of 512 and 39.15 MB at 8,192. The dtype is the model's own, so a half-precision model halves it. The prompt's token ids are negligible beside it, $8T$ bytes, 64 KiB even at 8,192 tokens. The breakdown and the caveat about the folded-key experiment are in [Training_Prefill_and_Decoding.md](Training_Prefill_and_Decoding.md) §3.
 
 Choosing each token from the logits (greedy, sampling with a temperature, top-k and so on), and turning token ids back into text, sit outside the decoder. The benchmark feeds random tokens, since the cost of a step does not depend on which token it is.
 
@@ -107,7 +107,7 @@ Choosing each token from the logits (greedy, sampling with a temperature, top-k 
 
 - **One sequence at a time.** Batch 1 only; batched decoding of several requests is not written or measured.
 - **The prompt in one piece.** A multi-token step is accepted only as the prefill, at position 0.
-- **A fixed capacity.** The cache is allocated for a maximum length at the start.
+- **A fixed capacity.** The cache is allocated for a maximum length at the start, the `max_len` given to the constructor. Prompt and generated tokens share that ceiling, and overrunning it raises `decoder cache full` before anything is written, rather than growing the buffers.
 - **Not a fixed-size state.** Like a key–value cache, the cache grows with the context. A fixed-size state would need the content term of the context channels in a recurrent form, which stage 1 found risky at layer 0 ([Stage2_Decoding.md](Stage2_Decoding.md), §6).
 
 ## 9. Files

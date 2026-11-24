@@ -134,6 +134,48 @@ After the last layer an output head turns $h$ into logits. **Only the context ch
 
 **Prefill.** The same forward pass as in training, on one sequence and without the backward. On the way it stores, per layer, every prompt token's keys and state in the cache.
 
+**What the prompt is, and what it costs.** The prompt is not a buffer the decoder owns. It is whatever token tensor is passed on the first call, of shape $(B, T)$, and `LadderDecoder.forward` decides what to do with it from the cache's state alone:
+
+```python
+@torch.no_grad()
+def forward(self, x: torch.Tensor) -> torch.Tensor:
+    """Logits for the tokens x (B, T): the prompt when the cache is empty, else one new token."""
+```
+
+Inside the channel hook, a call with more than one token is treated as the prefill and is accepted only at position 0, which is what makes "the prompt in one piece" a constraint rather than a convention:
+
+```python
+if T > 1:                       # the prefill: the ordinary computation over the prompt
+    if t0 != 0:
+        raise NotImplementedError("a multi-token step is supported only as the prefill")
+    return self._xi_full(h)
+```
+
+As token ids the prompt is negligible: `int64` indices, so $8T$ bytes, 4 KiB at 512 tokens and 64 KiB at 8,192. What costs memory is the **cache**, which is allocated once at construction for a fixed ceiling `max_len` and is what the prompt fills:
+
+```python
+self.keys   = [torch.zeros(batch, self.K, max_len, self.dk, dtype=dt) for _ in range(self.L)]
+self.states = [torch.zeros(batch, max_len, self.d, dtype=dt) for _ in range(self.L)]
+```
+
+Overrunning that ceiling is a hard error, `decoder cache full`, raised before anything is written. The per-token footprint is one key of width $d_k$ for each of the $K$ channels plus the state itself, at every layer:
+
+$$
+\text{numbers per token} = L\left(K d_k + d\right) = 2\left(5 \times 48 + 384\right) = 1248 ,
+$$
+
+which at float32 is **4,992 bytes, just under 4.9 KiB per token of context**. The benchmark reports the total as `cache_numbers_per_token() * (T + decoded) * 4`:
+
+| prompt | prompt ids | cache |
+| --- | ---: | ---: |
+| 512 | 4 KiB | 2.59 MB |
+| 2,048 | 16 KiB | 9.90 MB |
+| 8,192 | 64 KiB | 39.15 MB |
+
+Two caveats on that figure. The dtype is the model's own, `m.P.dtype`, so a half-precision model halves it to 2,496 bytes per token. And with the `FOLD_CACHE` experiment of [Stage2b_Decode_Step_Levers.md](Stage2b_Decode_Step_Levers.md) enabled, a second array of widened keys is allocated **in addition** to the first, so the true allocation rises to $L(Kd_k + K(d_k+1) + d) = 1738$ numbers per token while `cache_numbers_per_token()` still reports 1248.
+
+The prompt tokens themselves, in the benchmark, are drawn at random over the vocabulary for timing and from the validation set for the correctness check, which is the `decode_check` path that compares a prefill plus single steps against one full forward.
+
 **Decode step.** The model's own forward on the one new token, told its position. At each layer the context channels read the cache instead of building a $T \times T$ matrix: one row of weights per channel over the $n$ cached tokens. The rest of the layer runs on the new position as in the full forward.
 
 ![The weights of the context channels in each phase: B stacks of five T by T lower-triangular matrices in training, five T by T in the prefill, five rows of length n in a decode step.](../figures/training_prefill_decoding/tpd_shapes.png)
