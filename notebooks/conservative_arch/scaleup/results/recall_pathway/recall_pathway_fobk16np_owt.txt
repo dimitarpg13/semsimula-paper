@@ -1,0 +1,13 @@
+Recall pathway probe: semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_pm16_pmx16_sr2_fob_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+model fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_pm16_pmx16_sr2_fob_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_pm16_pmx16_sr2_fob_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn)
+16 fresh validation windows x 512 (openwebtext_val_2M.npy; offset half a spacing); first order True; tokens over 8 occurrences per window excluded; positions: {'near': 317, 'far': 1507, 'control': 4198}
+change of the per-token loss (nats) at the class, mean over windows (se over windows)
+
+      cut         near recall          far recall             control       all positions  far / control
+     base    +0.0000 (0.0000)    +0.0000 (0.0000)    +0.0000 (0.0000)    +0.0000 (0.0000)            nan
+     xi@1    +0.5300 (0.0671)    +0.4562 (0.0524)    -0.0000 (0.0000)    +0.1107 (0.0132)     -122485.89
+     xi@0    +0.1996 (0.0540)    +0.0104 (0.0015)    +0.0032 (0.0018)    +0.0105 (0.0017)           3.27
+
+checks:
+  xi re-implementation with nothing removed: max |d loss| 0.00e+00
+  cut xi@1 before the first recall position (1): max |d loss| 0.00e+00

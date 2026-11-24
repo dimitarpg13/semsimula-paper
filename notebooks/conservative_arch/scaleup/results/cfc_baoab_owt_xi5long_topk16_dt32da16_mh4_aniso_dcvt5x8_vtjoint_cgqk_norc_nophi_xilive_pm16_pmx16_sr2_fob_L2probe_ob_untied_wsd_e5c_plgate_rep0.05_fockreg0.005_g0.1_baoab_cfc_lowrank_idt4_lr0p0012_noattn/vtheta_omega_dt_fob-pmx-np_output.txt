@@ -1,0 +1,5 @@
+V_THETA STIFFEST-MODE OMEGA*DT: fob-pmx  K = 16  (one definition for both orders; Cell 6b-13 batches, seed 20260928, 8 x 4 x 512 tokens; dt = 4)
+    layer      p05      p50      p95      max  over 2.0
+        0    1.784    2.353    4.422    7.360    81.55%
+        1    4.303    6.432    7.791    9.116    99.83%
+      ALL    1.883    4.372    7.524    9.116    90.69%   (32,768 readings)

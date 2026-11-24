@@ -1,0 +1,22 @@
+PAIR FORCE IN THE STEP: fob-pmx  pm16_pmx16_sr2_fob  (best checkpoint; 8 x 4 x 512 tokens, batch seed 20261009; perturbation eps = 0.01)
+   first order: True   pair force: False   base perplexity 52.07
+   per-token readings at the kick point, p05 / p50 / p95 (mean)
+   layer 0  f_rest              0.1647     0.2271     0.3007   (0.2284)
+   layer 0  rough_rest         0.06635     0.1484     0.3752   (0.1765)
+   layer 0  step                 18.42      18.92      19.23   (18.89)
+   layer 0  h_in                 2.226      2.939      3.632   (2.921)
+   layer 1  f_rest              0.3285     0.3389     0.3487   (0.3379)
+   layer 1  rough_rest           0.837      1.025      2.015   (1.176)
+   layer 1  step                 18.15      22.73      25.48   (22.34)
+   layer 1  h_in                  19.6       19.6       19.6   (19.6)
+   loss change against the trained step, nats per token (mean over sequences; se over sequences)
+   refine_all_k2    +0.66887 (0.01689)   perplexity change +95.20%
+   refine_all_k4    +0.45568 (0.01007)   perplexity change +57.72%
+   by position bucket [a, b): 0-0  1-1  2-3  4-7  8-15  16-31  32-63  64-127  128-255  256-511
+   loss base              5.6880  5.9819  4.8648  4.8639  4.2695  4.1353  4.1527  4.1118  3.9761  3.8187
+   loss base_measured     5.6880  5.9819  4.8648  4.8639  4.2695  4.1353  4.1527  4.1118  3.9761  3.8187
+   loss refine_all_k2     5.8751  6.4132  5.3902  5.2616  4.6704  4.5471  4.7233  4.7561  4.6766  4.5228
+   loss refine_all_k4     5.9317  6.4082  5.3430  5.2777  4.7373  4.5239  4.5732  4.5528  4.4373  4.2849
+   layer 0 f_rest             0.2207  0.2344   0.235  0.2373   0.229   0.228  0.2298  0.2269  0.2261  0.2295
+   layer 1 f_rest             0.1915   0.223  0.2555  0.2935  0.3315  0.3393  0.3395  0.3387   0.339  0.3395
+   (162s)

@@ -131,6 +131,9 @@ if __name__ == '__main__':
             repl = repl + (("STIFF_MODE_DAMPING_RATIO = None", "STIFF_MODE_DAMPING_RATIO = 1.0"),)
         if KIND == 'gzh':
             repl = repl + (("LEARNED_DAMPING_RATIO = False", "LEARNED_DAMPING_RATIO = True"),)
+        if 'nophi' in FOLDER.split('_'):         # FO-b-PMX-K16-NP (2026-11-24): no pair force, as copy_split.tag_repl
+            repl = tuple(r for r in repl if 'VPHI_GRAD_PATH' not in r[0]) + \
+                (("PAIR_POTENTIAL  = 'sparse_topk'", "PAIR_POTENTIAL  = 'none'"),)
         model, g, _ = P.build(FOLDER, repl, ckpt=CKPT)
         if CKPT:
             print(f'checkpoint: {CKPT}')

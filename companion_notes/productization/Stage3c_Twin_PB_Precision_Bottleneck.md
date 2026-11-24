@@ -2,7 +2,7 @@
 
 **What this note is.** The pre-registration of item 4 of the remaining speed push in [Conservative_Core_Productization_Plan.md](Conservative_Core_Productization_Plan.md), §6: twin PB of [Well_Screen_and_Precision.md](../depth_ladder/Well_Screen_and_Precision.md), §5, moved onto the productization base. The well bank's largest map, `B_proj`, goes through a bottleneck of width 512, and its diagonal precision `a_proj` is replaced by one learned value per well and layer. Written 2026-11-22.
 
-**Status.** Pre-registered. **The calls in §6 and the +2% tolerance were confirmed by the author on 2026-11-22 and are binding.** The code is written and checked on the CPU (§5) and is on GitHub (commit `c342b13`). The author kept the arm on 2026-11-22 as the last productization arm. The base is SR2-NP, untied: SR2-NP-T missed TE1 on 2026-11-22 (§4). The speed it buys and the cost of the bottleneck without training were measured on the CPU (§3).
+**Status.** Pre-registered. **The calls in §6 and the +2% tolerance were confirmed by the author on 2026-11-22 and are binding.** The code is written and checked on the CPU (§5) and is on GitHub (commit `c342b13`). The author kept the arm on 2026-11-22 as the last productization arm; **on 2026-11-24 the author set it second in the GPU queue, after VF0 and before PMX-K16-NP.** The base is SR2-NP, untied: SR2-NP-T missed TE1 on 2026-11-22 (§4). The speed it buys and the cost of the bottleneck without training were measured on the CPU (§3).
 
 ---
 

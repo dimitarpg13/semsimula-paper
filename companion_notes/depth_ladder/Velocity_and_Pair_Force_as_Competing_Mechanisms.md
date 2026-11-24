@@ -4,6 +4,8 @@
 
 **Status.** One direction of the edge was in the book before SR2-NP: first-order models lean harder on the pair force. The other direction comes from [SR2-NP](../productization/Stage3_SR2_Without_Pair_Force.md), SR2 trained without the pair force (2026-11-21). The interaction test of §8 has not been run.
 
+**Update 2026-11-24.** On the line with sixteen Poisson-mode wells, the first-order model trained without the pair force ([FO-b-PMX-K16-NP](../productization/Stage3e_FO_b_PMX_K16_Without_Pair_Force.md)) settled 0.63% *below* FO-b-PMX-K16: there the pair force's value is negative although the model relies on it twice as much as its second-order twin. A probe of the layer step reads this as the pair force crowding out the wells and the layer-1 landscape in first order ([Pair_Force_in_the_First_Order_Step.md](Pair_Force_in_the_First_Order_Step.md)). The interaction on that line needs PMX-K16 trained without the pair force.
+
 **Related.** [Recall_Pathway_Probe.md](Recall_Pathway_Probe.md) (the velocity and $\xi$ cuts); [First_vs_Second_Order_Series.md](First_vs_Second_Order_Series.md) (the first-order twins and the Poisson-mode wells); [Competing_Mechanisms_Families_Dominance_and_Substitution.md](../Competing_Mechanisms_Families_Dominance_and_Substitution.md) (the working note behind the book's chapter).
 
 ---

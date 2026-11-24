@@ -52,6 +52,9 @@ if _k != 64:
     repl = repl + (("POISSON_MODES        = 64", f"POISSON_MODES        = {_k}"),)
 if KIND == 'fob-pmx':
     repl = repl + (("FIRST_ORDER_OVERDAMPED = False", "FIRST_ORDER_OVERDAMPED = True"),)
+if 'nophi' in FOLDER.split('_'):            # FO-b-PMX-K16-NP (2026-11-24): no pair force, as copy_split.tag_repl
+    repl = tuple(r for r in repl if 'VPHI_GRAD_PATH' not in r[0]) + \
+        (("PAIR_POTENTIAL  = 'sparse_topk'", "PAIR_POTENTIAL  = 'none'"),)
 if '_code_' in FOLDER:                     # 2026-11-10: a code arm, rebuilt from its tag (code_arm.py)
     import code_arm
     model, g, CKPT = code_arm.build(FOLDER, OUT, CKPT)

@@ -357,6 +357,8 @@ if __name__ == '__main__':
             subs = (("LOWRANK_DAMPED_FLOW  = False", "LOWRANK_DAMPED_FLOW  = True"),)
         elif e == 'nophi':                    # SR2-NP (2026-11-21): no pair force; pass VPHI = default
             subs = (("PAIR_POTENTIAL  = 'sparse_topk'", "PAIR_POTENTIAL  = 'none'"),)
+        elif e == 'fob':                      # FO-b-PMX-K16-NP (2026-11-24): first-order overdamped flow
+            subs = (("FIRST_ORDER_OVERDAMPED = False", "FIRST_ORDER_OVERDAMPED = True"),)
         elif re.fullmatch(r'pmx\d+', e):      # PMX (2026-10-11): exact wells, M modes in the eigensolve
             subs = (("POISSON_WELLS_EXACT  = False", "POISSON_WELLS_EXACT  = True"),
                     ("POISSON_WELLS_EXACT_MODES = 16", f"POISSON_WELLS_EXACT_MODES = {int(e[3:])}"))

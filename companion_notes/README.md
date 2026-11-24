@@ -4,7 +4,7 @@
 
 **Folders with their own index.**
 
-- [depth_ladder/](depth_ladder/README.md): the depth-ladder programme, the conservative models trained one mechanism at a time against a matched GPT-2; includes the recall pathway probe and the velocity and the pair force as competing mechanisms.
+- [depth_ladder/](depth_ladder/README.md): the depth-ladder programme, the conservative models trained one mechanism at a time against a matched GPT-2; includes the recall pathway probe, the velocity and the pair force as competing mechanisms, and why a first-order model is better trained without the pair force.
 - [productization/](productization/README.md): making the conservative core cheap to run, stage by stage.
 - [mean_field/](mean_field/README.md): results of the mean-field programme, one note per probe or arm (Probe A so far).
 - [semantic_templates/](semantic_templates/README.md): building semantic templates into the models: where and when a template search may start, and the measurements that test it.
@@ -303,6 +303,7 @@
 - [Mean_Field_PARFLM_Programme](Mean_Field_PARFLM_Programme.md): pre-registered programme for a mean-field approximation of PARFLM
 - [mean_field/Probe_A_Field_Pair_Force](mean_field/Probe_A_Field_Pair_Force.md): Probe A, scored: a field, and even a context-free landscape, stands in for most of the trained pair force
 - [mean_field/Pair_Force_By_Layer_L8_CODE](mean_field/Pair_Force_By_Layer_L8_CODE.md): the pair force layer by layer at eight layers: shared redundantly across depth, not field-like there
+- [depth_ladder/Pair_Force_in_the_First_Order_Step](depth_ladder/Pair_Force_in_the_First_Order_Step.md): why FO-b-PMX-K16 is better trained without the pair force: in first order the pair force grows into a push along the landscape and crowds out the wells and the layer-1 landscape
 
 
 ## Causal leaks and auditing

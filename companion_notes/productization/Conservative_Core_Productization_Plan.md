@@ -181,6 +181,14 @@ T3 (hybrid context channels) stays a candidate behind its CPU speed bound. Secon
 
 **Where the push ends (author, 2026-11-22).** The training side of the productization push ends with the pair force × tie grid above: VF0 and VF0-T, PMX-K16-NP and PMX-K16-NP-T, FO-b-PMX-K16-NP and FO-b-PMX-K16-NP-T, with SR2-T finishing, and twin PB (kept by the author the same day as the last productization arm: the only lever left on the bank's per-token cost). Its results then decide which conservative models besides SR2 are trained on 2B tokens, the programme the push preempted.
 
+**The GPU order (author, 2026-11-24).** After FO-b-PMX-K16-NP (trained and scored 2026-11-24: 53.39, 0.63% below FO-b-PMX-K16, [Stage3e_FO_b_PMX_K16_Without_Pair_Force.md](Stage3e_FO_b_PMX_K16_Without_Pair_Force.md)), the arms run in this order:
+
+1. VF0, F3.1 without the pair force ([VF0_F31_Without_Pair_Force.md](../depth_ladder/VF0_F31_Without_Pair_Force.md)): set up, calls binding.
+2. Twin PB ([Stage3c_Twin_PB_Precision_Bottleneck.md](Stage3c_Twin_PB_Precision_Bottleneck.md)): set up, calls binding.
+3. PMX-K16-NP, the fourth corner of order × pair force on the line with sixteen wells ([Stage3f_PMX_K16_Without_Pair_Force.md](Stage3f_PMX_K16_Without_Pair_Force.md)): build check passed, calls PN1 to PN5 confirmed by the author on 2026-11-24.
+
+The tied arms of the grid follow; their order is open.
+
 4. **After each stage.** Update §1's table, the benchmark note, and the book's Appendix C.10 where the bound or the measured state changes.
 
 ## 7. What this plan does not claim

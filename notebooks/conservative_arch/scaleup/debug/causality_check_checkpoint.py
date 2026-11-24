@@ -45,6 +45,7 @@ RG = sys.argv[7] if len(sys.argv) > 7 else 'default'
 #   'sr2'           LOWRANK_DAMPED_FLOW = True (SR2, protocol SS5.19, 2026-10-08)
 #   'nophi'         PAIR_POTENTIAL = 'none' (SR2-NP, 2026-11-21)
 #   'tied'          TIE_EMBEDDINGS = True (SR2-NP-T, 2026-11-22)
+#   'fob'           FIRST_ORDER_OVERDAMPED = True (FO-b-PMX-K16-NP, 2026-11-24)
 #   'bb<m>', 'afree' VTHETA_B_BOTTLENECK = m, VTHETA_A_CONTEXT_FREE = True (twin PB, 2026-11-22)
 #   'pmx<M>'        POISSON_WELLS_EXACT = True, POISSON_WELLS_EXACT_MODES = M (PMX, 2026-10-11);
 #                   with pm64 and sr2, e.g. ... pm64 sr2 pmx16
@@ -64,6 +65,8 @@ for _extra in sys.argv[8:]:
         _subs = (("LOWRANK_DAMPED_FLOW  = False", "LOWRANK_DAMPED_FLOW  = True"),)
     elif _extra == 'nophi':                    # SR2-NP (2026-11-21): no pair force; pass VPHI = default
         _subs = (("PAIR_POTENTIAL  = 'sparse_topk'", "PAIR_POTENTIAL  = 'none'"),)
+    elif _extra == 'fob':                      # FO-b (2026-11-24, FO-b-PMX-K16-NP): first-order overdamped flow
+        _subs = (("FIRST_ORDER_OVERDAMPED = False", "FIRST_ORDER_OVERDAMPED = True"),)
     elif _extra == 'tied':                     # SR2-NP-T (2026-11-22): input embedding and output head tied
         _subs = (("TIE_EMBEDDINGS  = False", "TIE_EMBEDDINGS  = True"),)
     elif _re.fullmatch(r'bb\d+', _extra):      # twin PB (2026-11-22): B_proj through a bottleneck
@@ -74,7 +77,7 @@ for _extra in sys.argv[8:]:
         _subs = (("POISSON_WELLS_EXACT  = False", "POISSON_WELLS_EXACT  = True"),
                  ("POISSON_WELLS_EXACT_MODES = 16", f"POISSON_WELLS_EXACT_MODES = {int(_extra[3:])}"))
     else:
-        raise SystemExit(f'unknown option {_extra!r} (expected rfqk, pm<K>, pmclip<thr>, pmcap<c>, sr2, nophi, tied, bb<m>, afree, pmx<M>)')
+        raise SystemExit(f'unknown option {_extra!r} (expected rfqk, pm<K>, pmclip<thr>, pmcap<c>, sr2, nophi, tied, fob, bb<m>, afree, pmx<M>)')
     for _old, _new in _subs:
         assert G.cells['Cell 0:'].count(_old) == 1, _old
         G.cells['Cell 0:'] = G.cells['Cell 0:'].replace(_old, _new)

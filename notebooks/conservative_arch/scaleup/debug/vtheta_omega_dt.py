@@ -38,6 +38,9 @@ if _k != 64:
     repl = repl + (("POISSON_MODES        = 64", f"POISSON_MODES        = {_k}"),)
 if KIND == 'fob-pmx':
     repl = repl + (("FIRST_ORDER_OVERDAMPED = False", "FIRST_ORDER_OVERDAMPED = True"),)
+if 'nophi' in FOLDER.split('_'):            # FO-b-PMX-K16-NP (2026-11-24): no pair force, as copy_split.tag_repl
+    repl = tuple(r for r in repl if 'VPHI_GRAD_PATH' not in r[0]) + \
+        (("PAIR_POTENTIAL  = 'sparse_topk'", "PAIR_POTENTIAL  = 'none'"),)
 model, g, _ = P.build(FOLDER, repl)
 model.to('cpu'); model.eval(); model.cfg.use_layer_checkpoint = False
 assert bool(model.cfg.first_order_overdamped) == (KIND == 'fob-pmx') and model.pm_depth.shape[1] == _k

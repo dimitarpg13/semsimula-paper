@@ -2,7 +2,7 @@
 
 **What this note is.** The launch record and pre-registration of VF0, the first cell of the trained-without factorial (protocol §5.21, [Coupling_Removal_Costs_CD.md](Coupling_Removal_Costs_CD.md), §5). The arm is F3.1, the conservative-only model with the split stiff-mode step, trained without the pair force $V_\varphi$. Written 2026-11-22.
 
-**Status.** Set up; build and switch checks passed; not launched. The author decided on 2026-11-22 to run it ("for the sake of completing the investigation on the pair force as a valid mechanism for replacement of others and updating the book"). The queue position is the author's call. VF-a has been binding since 2026-10-11; VN1 and VN2 (§4) were confirmed by the author on 2026-11-22 and are binding.
+**Status.** Set up; build and switch checks passed; not launched. The author decided on 2026-11-22 to run it ("for the sake of completing the investigation on the pair force as a valid mechanism for replacement of others and updating the book"). The queue position is the author's call: **next on the GPU, set by the author on 2026-11-24** (then twin PB, then PMX-K16-NP). VF-a has been binding since 2026-10-11; VN1 and VN2 (§4) were confirmed by the author on 2026-11-22 and are binding.
 
 ---
 

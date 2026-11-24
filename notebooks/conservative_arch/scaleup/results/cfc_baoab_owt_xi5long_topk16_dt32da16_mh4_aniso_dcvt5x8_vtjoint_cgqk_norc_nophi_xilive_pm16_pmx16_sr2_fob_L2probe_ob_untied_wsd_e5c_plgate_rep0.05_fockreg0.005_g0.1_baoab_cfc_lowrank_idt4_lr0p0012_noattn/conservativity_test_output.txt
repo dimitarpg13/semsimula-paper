@@ -1,0 +1,13 @@
+CONSERVATIVITY TEST on trained weights: cgqk_norc_nophi_xilive_pm16_pmx16_sr2_fob_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+   train-mode vs eval force values at the captured states: max |d| = 0.000e+00  (identical)
+   per token at fixed context; 5 tokens per layer; worst token shown (median in brackets)
+   verdict from asym and loop; fd_asym is descriptive (float32 floor = the V_theta row)
+   layer term           asym (autograd)              fd_asym                 loop       |F|   verdict
+   0     V_theta    4.00e-07 (2.3e-07)  8.91e-03 (4.4e-03)  1.97e-07 (9.2e-08)   7.2e-07   conservative
+   0     PM1        2.12e-07 (1.7e-07)  8.34e-04 (6.7e-04)  7.35e-08 (4.0e-08)     0.109   conservative
+   0     total      2.21e-07 (1.7e-07)  1.05e-03 (5.5e-04)  1.71e-07 (9.3e-08)     0.109   conservative
+   1     V_theta    3.26e-07 (1.8e-07)  9.70e-04 (5.1e-04)  8.74e-08 (6.7e-08)     0.149   conservative
+   1     PM1        1.71e-07 (1.4e-07)  2.87e-04 (1.2e-04)  1.14e-07 (5.7e-08)       0.3   conservative
+   1     total      2.45e-07 (1.8e-07)  3.64e-04 (2.0e-04)  1.31e-07 (8.7e-08)     0.326   conservative
+   SUMMARY: V_theta conservative; PM1 conservative; total conservative
+   no pair force: no V_phi router term to measure

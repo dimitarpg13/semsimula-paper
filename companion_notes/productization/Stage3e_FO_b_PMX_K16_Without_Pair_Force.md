@@ -2,7 +2,7 @@
 
 **What this note is.** The pre-registration of the second arm of the PMX line in the productization plan ([Conservative_Core_Productization_Plan.md](Conservative_Core_Productization_Plan.md), §6). The arm is the first-order model with sixteen Poisson-mode wells, trained without the pair force $V_\varphi$: the analogue, on the PMX line, of SR2-NP ([Stage3_SR2_Without_Pair_Force.md](Stage3_SR2_Without_Pair_Force.md)). Written 2026-11-22.
 
-**Status.** Set up; not launched. The calls in §4 were confirmed by the author on 2026-11-22 and are binding. **The tolerance is +2%,** set by the author on 2026-11-24 before launch, as for twin PB and the earlier first- against second-order comparisons (§5).
+**Status.** Trained and scored (results downloaded 2026-11-24; §7). The calls in §4 were confirmed by the author on 2026-11-22 and are binding; **the tolerance is +2%,** set by the author on 2026-11-24 before launch. **FN1, FN2, FN3 and FN4 all hit.** The model settled at 53.39, 0.63% *below* FO-b-PMX-K16: training without the pair force made the first-order model better. Why is the subject of a separate probe, [Pair_Force_in_the_First_Order_Step.md](../depth_ladder/Pair_Force_in_the_First_Order_Step.md).
 
 ---
 
@@ -14,7 +14,8 @@
 4. [Calls](#4-calls)
 5. [What the result decides](#5-what-the-result-decides)
 6. [Launch](#6-launch)
-7. [Caveats](#7-caveats)
+7. [Results](#7-results)
+8. [Caveats](#8-caveats)
 
 ---
 
@@ -109,7 +110,72 @@ Then run Cell 0 → 1 → 1b → 1c → 1d → 2 → 3 → 4 → 5 → 5b → 6.
 - the diagnostic cells FO-b-PMX-K16 ran: 6b-7 (flow or maps), 6b-9 (the damped $V_\theta$ geodesic step), 6b-13 ($\omega \Delta t$ at the endpoint), 6b-15 (the wells), 7 and 8;
 - on the CPU: `mechanism_ablations.py` (FN4, and the context-swap reading), `vtheta_omega_dt.py` (layer stiffness), `recall_pathway_probe.py` (recall through the context channels, against FO-b-PMX-K16), and the causality check.
 
-## 7. Caveats
+## 7. Results
+
+Results downloaded 2026-11-24; the run folder, the CPU readings and the copied run outputs are in `results/<tag>/` (the tag of §2 with the `cfc_baoab_owt_` prefix).
+
+### 7.1 The training result
+
+| model | settled | best (step 31,000) | last three evaluations |
+| --- | ---: | ---: | --- |
+| this arm | **53.39** | 51.53 | 53.37, 53.55, 53.26 |
+| FO-b-PMX-K16 | 53.73 | 51.82 | 53.77, 53.81, 53.61 |
+| PMX-K16 | 54.24 | 52.28 | |
+
+Against FO-b-PMX-K16 the settled difference is −0.63%. Paired by step over the 23 evaluations of the decay, the mean gap is −0.0074 nats (standard deviation 0.0015), negative at all 23. In the stable phase (steps 5,500 to 21,000) it is −0.0051 nats, negative at 28 of 32. Between steps 2,000 and 5,500 the pair force helped, by up to 0.015 nats at step 4,000. Both models gain 0.171 nats over the decay.
+
+### 7.2 The calls
+
+| id | prediction | called | outcome |
+| --- | --- | --- | --- |
+| FN1 | settles within +2% of FO-b-PMX-K16 (54.80 or less) | 70% | **HIT** (53.39, −0.63%) |
+| FN2 | settles within +1% of FO-b-PMX-K16 (54.27 or less) | 45% | **HIT** (53.39) |
+| FN3 | settles at or below PMX-K16 (54.24) | 40% | **HIT** (53.39, −1.57%) |
+| FN4 | removing the wells costs more than FO-b-PMX-K16's +343% | 60% | **HIT** (+382.5% on the same windows; per-sequence spread 29%) |
+
+**What it decides (§5).** At or below +1%, the PMX line's production candidate drops the pair force, and the mean field is not needed there. The result goes further than the decision rule anticipated: the pair force has negative value in this model.
+
+### 7.3 Run health and cost
+
+- 0.974 s per training step (median), 8.8 hours for 32,500 steps, against 1.33 s for FO-b-PMX-K16: 27% faster, though slower than the 0.7 to 0.8 s expected in §6. The log does not record the card.
+- Training peak memory 17.5 GB (24.6 GB with evaluation). No skipped steps; the gradient norm exceeded 1.0 at 15 of 650 logged steps, 11 of them in the warm-up (largest 1.50, step 1,000).
+- SCAF leak monitor CLEAN at all seven audits (5k to 30k and 32.5k; future perturbation exactly 0; leak tax at most 1.5e-4 nats).
+
+### 7.4 The CPU readings
+
+On the best checkpoint, against FO-b-PMX-K16 on the same windows where both were read:
+
+| reading | this arm | FO-b-PMX-K16 |
+| --- | ---: | ---: |
+| base perplexity, mechanism-ablation windows | 54.39 | 54.76 |
+| removing the wells | +382.5% | +343.4% |
+| swapping the context channels with another sequence's | +349.4% | +337.5% |
+| swapping the wells' occupations with another sequence's | −0.00% | +0.01% |
+| stiffness of the context potential, median angle per step of its stiffest mode, layer 0 / layer 1 | 2.35 / 6.43 | 2.13 / 5.31 |
+| wells' force against the rest of the force, layer 0 / layer 1 (Cell 6b-15) | 0.535 / 3.81 | 0.559 / 3.24 |
+| wells' depth positive, layer 0 / layer 1 (Cell 6b-15) | 50% / 88% | 31% / 75% |
+| freezing the wells' clock, first 16 positions | +61.8% | +28.8% |
+| layer 1: share of the step made by the explicit kick | 0.585 | 0.417 |
+| per-layer flow, refinement penalty at 16 substeps (nats) | 1.430 | 1.414 |
+| far recall: earlier occurrence removed from the layer-1 context channels (nats) | +0.456 (0.052) | +0.463 (0.055) |
+
+- **The wells and the layer-1 landscape took the pair force's work.** Removing the wells costs more, their force share and depth at layer 1 are larger, the context potential is stiffer at layer 1, and the explicit kick makes more of layer 1's step. The context channels change little.
+- **The wells are still positional:** swapping their occupations between sequences changes nothing, and position explains their force with R² 0.996 at layer 0 and 0.9999 at layer 1 (`pm_mode_usage.py`).
+- **Recall runs through the same pathway,** the layer-1 context channels; the paired difference on far recall is −0.004 nats (standard error 0.002).
+- **The per-layer flow still does not settle,** as in every first-order model; as trained, eight steps cost 2.21 nats against FO-b-PMX-K16's 2.18.
+- **Causality, on the best weights:** future perturbation at five cut points exactly 0, batch independence exactly 0, prefix-only scoring leak tax +7.0e-7 nats. Clean.
+- **Conservativity, on the trained weights:** every term conservative at both layers (Jacobian asymmetry at most 4.0e-7, closed-loop work at most 2.0e-7). At layer 0 the force of $V_\theta$ is negligible (median norm 7e-7, five tokens) and the wells carry it.
+
+### 7.5 Why: the step probe
+
+The probe and its reading are in [Pair_Force_in_the_First_Order_Step.md](../depth_ladder/Pair_Force_in_the_First_Order_Step.md). In short: in the trained FO-b-PMX-K16 the pair force at layer 0 has grown into a push along the landscape force (cosine 0.63, against 0.16 in PMX-K16; about 0.1 in both at step 500). The model leans on it, and the wells and the layer-1 landscape do less. Trained without it, they do that work themselves, and do it better. The explicit update of the pair force is not the main cause: the force is not rougher in first order, and re-evaluating it in sub-kicks costs a quarter to a third of its reliance.
+
+### 7.6 Not run
+
+- Cell 8 of the launch list (§6): its output is not in the downloaded folder.
+- `recall_pathway_probe.py` has no pair-force arms here (the model has none); the context-channel cuts were run.
+
+## 8. Caveats
 
 - **One seed.** The pairing removes the evaluation noise, not the training-seed spread, which is unmeasured.
 - **The hyperparameters were tuned for the second-order models** and are inherited unchanged.
