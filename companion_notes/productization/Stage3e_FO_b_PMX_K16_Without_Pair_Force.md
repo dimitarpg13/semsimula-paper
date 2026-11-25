@@ -137,7 +137,7 @@ Against FO-b-PMX-K16 the settled difference is −0.63%. Paired by step over the
 
 ### 7.3 Run health and cost
 
-- 0.974 s per training step (median), 8.8 hours for 32,500 steps, against 1.33 s for FO-b-PMX-K16: 27% faster, though slower than the 0.7 to 0.8 s expected in §6. The log does not record the card.
+- 0.974 s per training step (median), 8.8 hours for 32,500 steps, against 1.33 s for FO-b-PMX-K16: 27% faster, though slower than the 0.7 to 0.8 s expected in §6. The card was an A100 40 GB: Cell 7 reports 42.4 GB of device memory.
 - Training peak memory 17.5 GB (24.6 GB with evaluation). No skipped steps; the gradient norm exceeded 1.0 at 15 of 650 logged steps, 11 of them in the warm-up (largest 1.50, step 1,000).
 - SCAF leak monitor CLEAN at all seven audits (5k to 30k and 32.5k; future perturbation exactly 0; leak tax at most 1.5e-4 nats).
 
@@ -170,9 +170,9 @@ On the best checkpoint, against FO-b-PMX-K16 on the same windows where both were
 
 The probe and its reading are in [Pair_Force_in_the_First_Order_Step.md](../depth_ladder/Pair_Force_in_the_First_Order_Step.md). In short: in the trained FO-b-PMX-K16 the pair force at layer 0 has grown into a push along the landscape force (cosine 0.63, against 0.16 in PMX-K16; about 0.1 in both at step 500). The model leans on it, and the wells and the layer-1 landscape do less. Trained without it, they do that work themselves, and do it better. The explicit update of the pair force is not the main cause: the force is not rougher in first order, and re-evaluating it in sub-kicks costs a quarter to a third of its reliance.
 
-### 7.6 Not run
+### 7.6 Not run, and a correction
 
-- Cell 8 of the launch list (§6): its output is not in the downloaded folder.
+- Cell 8, the training curve, did run: its plot is `training_curve_aniso_gaussian_owt.png` in the run folder (corrected 2026-11-24; an earlier version of this note said it had not run).
 - `recall_pathway_probe.py` has no pair-force arms here (the model has none); the context-channel cuts were run.
 
 ## 8. Caveats
