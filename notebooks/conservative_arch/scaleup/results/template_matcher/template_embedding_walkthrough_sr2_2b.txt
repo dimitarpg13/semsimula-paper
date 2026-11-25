@@ -1,0 +1,46 @@
+if-then:U        fires -    rates {'MP': 0.0, 'MT': 0.0, 'DS1': 0.0, 'DS2': 0.0} nearest [('cond:U', 5.4), ('cond:Un', 11.9), ('text', 20.5)] inside True
+if-then:near     fires -    rates {'MP': 0.0, 'MT': 0.0, 'DS1': 0.0, 'DS2': 0.0} nearest [('cond:near', 3.0), ('disj:near', 32.3), ('cond:nearn', 47.9)] inside True
+if-then:swap     fires -    rates {'MP': 0.0, 'MT': 0.0, 'DS1': 0.0, 'DS2': 0.0} nearest [('cond:swap', 2.5), ('disj:swap', 38.7), ('cond:swapn', 53.5)] inside True
+if-then:MP       fires MP   rates {'MP': 1.0, 'MT': 0.0, 'DS1': 0.0, 'DS2': 0.0} nearest [('cond:MP', 1.6), ('disj:P', 32.1), ('cond:DA', 156.7)] inside True
+if-then:MT       fires MT   rates {'MP': 0.0, 'MT': 1.0, 'DS1': 0.0, 'DS2': 0.0} nearest [('cond:MT', 2.5), ('disj:DS2', 30.2), ('cond:nearQn', 36.5)] inside True
+if-then:AC       fires -    rates {'MP': 0.0, 'MT': 0.0, 'DS1': 0.0, 'DS2': 0.0} nearest [('cond:AC', 0.5), ('disj:Q', 31.0), ('cond:nearQ', 188.3)] inside True
+if-then:DA       fires -    rates {'MP': 0.0, 'MT': 0.0, 'DS1': 0.0, 'DS2': 0.0} nearest [('cond:DA', 1.5), ('disj:DS1', 32.7), ('cond:swapn', 41.8)] inside True
+if-then:MPsyn    fires -    rates {'MP': 0.0, 'MT': 0.0, 'DS1': 0.0, 'DS2': 0.0} nearest [('cond:near', 4.2), ('disj:near', 31.3), ('cond:nearn', 46.3)] inside True
+when:U           fires -    rates {'MP': 0.0, 'MT': 0.0, 'DS1': 0.0, 'DS2': 0.0} nearest [('cond:U', 2.2), ('cond:Un', 6.2), ('text', 16.5)] inside True
+when:near        fires -    rates {'MP': 0.0, 'MT': 0.0, 'DS1': 0.0, 'DS2': 0.0} nearest [('cond:near', 2.8), ('disj:near', 32.6), ('cond:nearn', 47.8)] inside True
+when:swap        fires -    rates {'MP': 0.0, 'MT': 0.0, 'DS1': 0.0, 'DS2': 0.0} nearest [('cond:swap', 2.3), ('disj:swap', 39.4), ('cond:swapn', 53.4)] inside True
+when:MP          fires MP   rates {'MP': 1.0, 'MT': 0.0, 'DS1': 0.0, 'DS2': 0.0} nearest [('cond:MP', 1.7), ('disj:P', 32.3), ('cond:DA', 155.6)] inside True
+when:MT          fires MT   rates {'MP': 0.0, 'MT': 1.0, 'DS1': 0.0, 'DS2': 0.0} nearest [('cond:MT', 2.5), ('disj:DS2', 31.2), ('cond:nearQn', 37.7)] inside True
+when:AC          fires -    rates {'MP': 0.0, 'MT': 0.0, 'DS1': 0.0, 'DS2': 0.0} nearest [('cond:AC', 0.6), ('disj:Q', 30.5), ('cond:nearQ', 190.2)] inside True
+when:DA          fires -    rates {'MP': 0.0, 'MT': 0.0, 'DS1': 0.0, 'DS2': 0.0} nearest [('cond:DA', 1.6), ('disj:DS1', 33.7), ('cond:swapn', 42.6)] inside True
+when:MPsyn       fires -    rates {'MP': 0.0, 'MT': 0.0, 'DS1': 0.0, 'DS2': 0.0} nearest [('cond:near', 4.2), ('disj:near', 32.2), ('cond:nearn', 46.3)] inside True
+either-or:U      fires -    rates {'MP': 0.0, 'MT': 0.0, 'DS1': 0.0, 'DS2': 0.0} nearest [('disj:U', 3.4), ('disj:Un', 6.5), ('text', 9.6)] inside True
+either-or:near   fires -    rates {'MP': 0.0, 'MT': 0.0, 'DS1': 0.0, 'DS2': 0.0} nearest [('disj:near', 3.4), ('cond:near', 35.4), ('disj:nearn', 50.6)] inside True
+either-or:swap   fires -    rates {'MP': 0.0, 'MT': 0.0, 'DS1': 0.0, 'DS2': 0.0} nearest [('disj:swap', 11.5), ('cond:swap', 35.1), ('disj:swapn', 55.4)] inside True
+either-or:DS1    fires DS1  rates {'MP': 0.0, 'MT': 0.0, 'DS1': 1.0, 'DS2': 0.0} nearest [('disj:DS1', 2.8), ('cond:DA', 34.0), ('disj:swapn', 35.6)] inside True
+either-or:DS2    fires DS2  rates {'MP': 0.0, 'MT': 0.0, 'DS1': 0.0, 'DS2': 1.0} nearest [('disj:DS2', 2.4), ('cond:MT', 38.3), ('disj:nearQn', 39.2)] inside True
+either-or:P      fires -    rates {'MP': 0.0, 'MT': 0.0, 'DS1': 0.0, 'DS2': 0.0} nearest [('disj:P', 2.1), ('cond:MP', 34.7), ('disj:swap', 119.1)] inside True
+either-or:Q      fires -    rates {'MP': 0.0, 'MT': 0.0, 'DS1': 0.0, 'DS2': 0.0} nearest [('disj:Q', 0.9), ('cond:AC', 34.5), ('disj:DS2', 207.7)] inside True
+unless:U         fires -    rates {'MP': 0.0, 'MT': 0.0, 'DS1': 0.0, 'DS2': 0.0} nearest [('cond:U', 5.7), ('text', 6.8), ('cond:Un', 9.4)] inside True
+unless:near      fires -    rates {'MP': 0.0, 'MT': 0.0, 'DS1': 0.0, 'DS2': 0.0} nearest [('cond:near', 6.6), ('disj:near', 14.8), ('cond:nearn', 52.3)] inside True
+unless:swap      fires -    rates {'MP': 0.0, 'MT': 0.0, 'DS1': 0.0, 'DS2': 0.0} nearest [('cond:swap', 6.4), ('disj:swap', 21.9), ('cond:swapn', 58.1)] inside True
+unless:DS1       fires -    rates {'MP': 0.0, 'MT': 0.0, 'DS1': 0.01, 'DS2': 0.0} nearest [('cond:DA', 5.4), ('disj:DS1', 14.6), ('cond:swapn', 45.5)] inside True
+unless:DS2       fires MT   rates {'MP': 0.0, 'MT': 0.948, 'DS1': 0.0, 'DS2': 0.052} nearest [('cond:MT', 7.2), ('disj:DS2', 13.1), ('cond:nearQn', 43.8)] inside True
+unless:P         fires MP   rates {'MP': 0.989, 'MT': 0.0, 'DS1': 0.0, 'DS2': 0.0} nearest [('cond:MP', 5.2), ('disj:P', 14.3), ('disj:swap', 140.6)] inside True
+unless:Q         fires -    rates {'MP': 0.0, 'MT': 0.0, 'DS1': 0.0, 'DS2': 0.0} nearest [('cond:AC', 5.1), ('disj:Q', 12.0), ('cond:nearQ', 198.2)] inside True
+swap from near [('premise 2 to clause 1, worst 2', -40.4), ('clause 1 to premise 2, worst 2', -2.6), ('odd particle 3: to premise-2 mean', -1.0), ('mean states, clause 1', -0.6), ('odd particle 4: to next', -0.4)]
+swap from MPsyn [('premise 2 to clause 1, worst 2', -32.5), ('clause 1 to premise 2, worst 2', -2.4), ('odd particle 3: to premise-2 mean', -1.1), ('mean states, clause 1', -0.5), ('odd particle 4: to next', -0.4)]
+swap from DA [('premise 2 to clause 1, worst 2', -49.4), ('odd particle 3: to premise-2 mean', -1.2), ('odd particle 2: to previous', -1.0), ('premise 2 to clause 2, worst 4', -0.5), ('odd particle 4: to next', -0.4)]
+swap from U [('premise 2 to clause 1, worst 2', -49.4), ('clause 1 to premise 2, worst 2', -2.8), ('clause 1 to premise 2, worst 3', -2.4), ('odd particle 4: to premise-2 mean', -1.4), ('mean states, clause 1', -1.3)]
+known test {'detect': {'MP': 0.9972222222222222, 'MT': 0.9027777777777778, 'DS1': 0.7666666666666667, 'DS2': 0.7638888888888888}, 'any_rival': 0.011111111111111112} without position {'rho': 0.6200000000000003, 'detect': {'MP': 0.26666666666666666, 'MT': 0.23055555555555557, 'DS1': 0.275, 'DS2': 0.3611111111111111}, 'any_rival': 0.012444444444444444} base log odds 15.276154007585571
+rho 0.5400000000000003 without position {'rho': 0.6200000000000003, 'fires': {'if-then:U': '', 'if-then:near': '', 'if-then:swap': '', 'if-then:MP': '', 'if-then:MT': '', 'if-then:AC': '', 'if-then:DA': '', 'if-then:MPsyn': '', 'when:U': '', 'when:near': '', 'when:swap': '', 'when:MP': '', 'when:MT': '', 'when:AC': '', 'when:DA': '', 'when:MPsyn': '', 'either-or:U': '', 'either-or:near': '', 'either-or:swap': '', 'either-or:DS1': '', 'either-or:DS2': '', 'either-or:P': '', 'either-or:Q': '', 'unless:U': '', 'unless:near': '', 'unless:swap': '', 'unless:DS1': '', 'unless:DS2': '', 'unless:P': '', 'unless:Q': ''}, 'detect': {'MP': 0.26666666666666666, 'MT': 0.23055555555555557, 'DS1': 0.275, 'DS2': 0.3611111111111111}, 'any_rival': 0.012444444444444444}
+1 30.2 [('mean states, clause 1', 0.86), ('last particles, clause 1', 0.82), ('mean states, clause 2', -0.82), ('clause 1 to premise 2, worst 2', 0.78)]
+2 24.6 [('premise 2 to clause 1, worst 3', 0.64), ('premise 2 to clause 1, worst 4', 0.62), ('premise 2 to clause 1, worst 2', 0.59), ('odd particle 5: to premise-2 mean', 0.59)]
+3 19.6 [('premise 2 to clause 2, worst 2', -0.73), ('odd particle 1: to previous', -0.59), ('clause 1 to premise 2, worst 2', -0.44), ('premise 2 to clause 2, worst 1', -0.43)]
+4 17.5 [('connective position', 0.53), ('premise 2 to clause 1, worst 2', 0.52), ('clause 2 to premise 2, worst 1', 0.52), ('clause 2 to premise 2, worst 2', 0.37)]
+5 14.2 [('connective position', -0.83), ('last particles, clause 2', 0.23), ('premise 2 to clause 1, worst 2', 0.23), ('connective-Therefore', -0.22)]
+6 12.6 [('premise 2 to clause 2, worst 4', -0.4), ('premise 2 to clause 2, worst 3', -0.37), ('clause 2 to premise 2, worst 3', -0.37), ('odd particle 8: to premise-2 mean', -0.35)]
+7 11.8 [('odd particle 7: to next', -0.52), ('odd particle 6: to next', -0.5), ('odd particle 8: to next', -0.5), ('odd particle 5: to next', -0.47)]
+8 10.9 [('odd particle 2: to previous', -0.37), ('odd particle 1: to premise-2 mean', -0.34), ('premise 2 to clause 1, worst 2', 0.33), ('odd particle 4: to premise-2 mean', -0.29)]
+9 9.7 [('mean states, clause 2', 0.29), ('odd particle 8: log norm', 0.29), ('odd particle 7: log norm', 0.29), ('clause 2 to premise 2, worst 3', 0.28)]
+10 9.3 [('odd particle 8: log norm', -0.31), ('clause 1 to premise 2, worst 3', -0.3), ('premise 2 to clause 1, worst 8', -0.29), ('clause 1 to premise 2, worst 8', -0.29)]

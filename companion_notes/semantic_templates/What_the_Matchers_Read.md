@@ -66,6 +66,8 @@ Without that coordinate the embedding fails. With the coordinates fixed in advan
 
 So "the embedding does nearly as well" holds only with the added coordinate. In that comparison the embedding also used 8 particles of the second sentence, against 4 for $h^{(1)}$ with $h^{(2)}$. Those numbers were set by hand for each state; only the dimension was searched there. The table above is from the earlier search, where both are chosen on development clauses (5 and 4).
 
+The mechanism, step by step on one premise, is in [The_Embedding_Template_Matcher.md](The_Embedding_Template_Matcher.md).
+
 ## 4. What the layers do to the state
 
 ![States](../figures/template_matcher/tm_states.png)

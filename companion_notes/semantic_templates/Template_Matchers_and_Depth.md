@@ -2,7 +2,7 @@
 
 **What this note is.** The pre-registration of the depth arms of the template-matcher test: the same premises and the same matchers on models that differ in the number of layers. It tests the author's conjecture that at eight layers a layer is close to its own flow, so the path a particle takes means more, and that more layers give a matcher a longer path to read. Written 2026-11-25, after the SR2-2B run was reported ([Template_Matchers_on_the_Dynamics_SR2_2B.md](Template_Matchers_on_the_Dynamics_SR2_2B.md)) and before any result of a depth arm was read.
 
-**Status.** Calls **proposed, not confirmed**. The extraction for G2 (prose, two layers, 0.5B tokens) was started on 2026-11-25; its files are not read. The four-layer prose model is next, then the code models.
+**Status.** Calls TL1 to TL6 **confirmed by the author on 2026-11-25, as written; binding.** The extraction for G2 (prose, two layers, 0.5B tokens) was started on 2026-11-25, before the confirmation, and its files were not read before it. The four-layer prose model is next, then the code models.
 
 ---
 
@@ -46,7 +46,7 @@ The prose pair has the live gradient path, the pair force and the reverse channe
 
 Two choices were made from the SR2-2B report, before any depth result.
 
-1. **"Unless" is left out of fitting and scoring for the primary reading.** On SR2-2B it filled the hard set (§5.4 of the report). The twelve-wording numbers stay as a secondary reading with the same number of particles and the same dimension. Whether "unless" should be a form of its own is the author's ruling.
+1. **"Unless" is left out of fitting and scoring for the primary reading.** On SR2-2B it filled the hard set (§5.4 of the report). The twelve-wording numbers stay as a secondary reading with the same number of particles and the same dimension. Whether "unless" should be a form of its own is the author's ruling. **Discussion of 2026-11-25:** the author proposed filing it as a form of its own. The drawbacks, as the agent sees them: (a) it is not a new logical form, since "unless P, Q" is "if not P, then Q" and also "P or Q", so its templates would recognise a wording, not a form; (b) it would need two valid templates (the premise "not P" and the premise "not Q") and two fallacy kinds; (c) with one wording in its family, it can never be tested on an unseen wording, which is the test that matters, unless more wordings of the same form are added ("Q unless P", "except if", "if not P, then Q"); (d) its clouds rest on one wording instead of six. Leaving the confirmed calls as they are, it can be added as a further secondary reading. Not decided.
 2. **Paraphrases are also read at a fixed rate of near-miss fires** (1%), because the rule's threshold is a different operating point for each matcher (§5.5).
 
 Everything else is unchanged: the same 60 development and 60 test clauses, the same search over the particles (1 to 8) and the dimension (6, 10, 15, 20, 25, 31).
@@ -61,9 +61,9 @@ Per model and per matcher: R1 (unseen wordings) without "unless" and with it, th
 
 All differences are to the embedding **of the same model** and paired over the test clauses, with 95% intervals from 4,000 resamples. Between two models the differences are compared clause by clause, since the clauses are the same. The flow gap is read for every layer, on ordinary text and on premises.
 
-## 5. Calls, proposed
+## 5. Calls
 
-A call hits when the point difference reaches the mark and, where an interval is named, its lower end is above zero. All are for the prose pair; the code arms have no calls yet.
+Proposed and confirmed on 2026-11-25. A call hits when the point difference reaches the mark and, where an interval is named, its lower end is above zero. All are for the prose pair; the code arms have no calls yet.
 
 | id | prediction | called |
 | --- | --- | ---: |
@@ -80,7 +80,7 @@ A call hits when the point difference reaches the mark and, where an interval is
 
 ## 6. What the results would decide
 
-- **TL1 hits and TL2 hits.** The conjecture is supported in the form tested here: a layer closer to its flow gives a path that reads better. The author's plan of four- and eight-layer models at 0.5B and 2B tokens follows.
+- **TL1 hits and TL2 hits.** The conjecture is supported in the form tested here: a layer closer to its flow gives a path that reads better. The author would then train an eight-layer model on OpenWebText at 0.5B tokens, and not at 2B, since the readings of the dynamic landscape did not differ between 0.5B and 2B tokens (author, 2026-11-25).
 - **TL1 hits and TL2 misses.** Depth brings the layer close to its flow without improving the signature, at four layers. The path would then need another reading (angles between successive displacements, time inside a well, the velocity).
 - **TL1 misses.** The pair does not differ enough in step to test the conjecture.
 - **TL6 hits.** The states carry paraphrase information beyond the words, with depth. It confirms or not the one post-hoc gain of SR2-2B.

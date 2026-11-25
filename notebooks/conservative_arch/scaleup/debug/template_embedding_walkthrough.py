@@ -36,17 +36,23 @@ work = {}
 for i in np.flatnonzero(te & (np.array([x['P'] for x in M]) == 'the coffee is cold') & np.isin(wi, list(LAY)) & np.isin(K, ['MP', 'MT', 'AC', 'DA', 'near', 'MPsyn', 'U', 'swap', 'DS1', 'DS2', 'P', 'Q'])):
     it = M[i]; st = Rr[i]['st'][0]; tk = tokens(it); assert len(tk) == len(Rr[i]['roles']), (tk, Rr[i]['roles'])
     work[f"{it['wording']}:{it['kind']}"] = dict(text=it['text'], want=it['want'], tokens=tk, roles=Rr[i]['roles'], G=np.round(st['G'].astype(float), 3).tolist(), norm=np.round(st['norm'].astype(float), 2).tolist(), r=XF[i].tolist(), **decide(XF[i]))
-    print(f"{it['wording']:9s} {it['kind']:5s} fires {work[f'{it[chr(119)+chr(111)+chr(114)+chr(100)+chr(105)+chr(110)+chr(103)]}:{it[chr(107)+chr(105)+chr(110)+chr(100)]}']['fires'] or '-':4s}", it['text'][:110], flush=True)
+    key = f"{it['wording']}:{it['kind']}"; w_ = work[key]; print(f"{key:16s} fires {w_['fires'] or '-':4s} rates", {t: round(v, 3) for t, v in w_['rates'].items()}, 'nearest', [(a_, round(b_, 1)) for a_, b_ in w_['nearest'][:3]], 'inside', w_['inside_reach'], flush=True)
 idx = {f"{M[i]['wording']}:{M[i]['kind']}": i for i in np.flatnonzero(te & (np.array([x['P'] for x in M]) == 'the coffee is cold') & np.isin(wi, list(LAY)))}
 def llr(xf):
-    y = ((xf - c.mu0) / c.sd) @ c.B; L = -.5 * ((y - c.C) ** 2).sum(1); P = np.exp(L - L.max()); P /= P.sum(); return float(np.log(P[[ids[k] for k in c.cl if c.tpl[k] == 'MP']].sum() + 1e-300))
+    """log odds of the MP template: log of its clouds' density over the density of all other clouds"""
+    y = ((xf - c.mu0) / c.sd) @ c.B; L = -.5 * ((y - c.C) ** 2).sum(1); mp = np.array([c.tpl[k] == 'MP' for k in c.cl]); return float(np.logaddexp.reduce(L[mp]) - np.logaddexp.reduce(L[~mp]))
 base = XF[idx['if-then:MP']]; out['swaps'] = {}
 for other in ('near', 'MPsyn', 'DA', 'U'):
     o = XF[idx[f'if-then:{other}']]; ch = []
     for j in range(len(base)):
         x = base.copy(); x[j] = o[j]; ch.append((nms[j], float(base[j]), float(o[j]), llr(x) - llr(base)))
-    out['swaps'][other] = sorted(ch, key=lambda v: v[3])[:8]; print('swap from', other, [(a, round(e, 1)) for a, _, _, e in out['swaps'][other][:5]])
+    out['swaps'][other] = sorted(ch, key=lambda v: v[3])[:10]; print('swap from', other, [(a, round(e, 1)) for a, _, _, e in out['swaps'][other][:5]])
 # without the position: refit and decide the same premises
-c2 = Clouds(X[dev], lab[dev], want[dev], d_); rho2 = cv(X[dev], lab[dev], want[dev], g[dev], d_)[0]; out['without position'] = dict(rho=rho2, fires={k: str(c2.fire(X[[v]], rho2)[0]) for k, v in idx.items() if k in work})
+c2 = Clouds(X[dev], lab[dev], want[dev], d_); rho2 = cv(X[dev], lab[dev], want[dev], g[dev], d_)[0]; F2 = c2.fire(X[te], rho2); out['without position'] = dict(rho=rho2, fires={k: str(c2.fire(X[[v]], rho2)[0]) for k, v in idx.items() if k in work}, detect={t: float((F2[K[te] == t] == t).mean()) for t in ('MP', 'MT', 'DS1', 'DS2')}, any_rival=float((F2[np.isin(K[te], sum(DIFF.values(), ()) + sum(FALL.values(), ()))] != '').mean()))
+F1 = c.fire(XF[te], rho); out['known-wording test'] = dict(detect={t: float((F1[K[te] == t] == t).mean()) for t in ('MP', 'MT', 'DS1', 'DS2')}, any_rival=float((F1[np.isin(K[te], sum(DIFF.values(), ()) + sum(FALL.values(), ()))] != '').mean()))
+out['base log odds'] = llr(base); print('known test', out['known-wording test'], 'without position', {k: v for k, v in out['without position'].items() if k != 'fires'}, 'base log odds', out['base log odds'])
+SEL = ['premise 2 to clause 1, worst 2', 'premise 2 to clause 2, worst 2', 'last particles, clause 1', 'last particles, clause 2', 'connective position']
+out['test distributions'] = {cn: {kk: [float(v) for v in np.percentile(XF[te & (K == kk) & (fr == f), nms.index(cn)], [10, 25, 50, 75, 90])] for f, kk in (('cond', 'MP'), ('cond', 'MPsyn'), ('cond', 'near'), ('cond', 'DA'), ('cond', 'AC'), ('cond', 'MT'), ('cond', 'U'), ('disj', 'DS1'), ('disj', 'P'))} for cn in SEL}
+out['position by wording'] = {w: float(np.median(XF[te & (wi == w), -1])) for w in sum(WC.values(), [])}
 out['work'] = work; (OUT / f'template_embedding_walkthrough_{s}.json').write_text(json.dumps(out, indent=1)); print('rho', rho, 'without position', out['without position'])
 for i, l in enumerate(out['directions']): print(i + 1, round(c.sv[i], 1), [(n, round(x, 2)) for n, x in l[:4]])
