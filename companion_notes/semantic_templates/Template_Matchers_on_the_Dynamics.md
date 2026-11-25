@@ -21,7 +21,7 @@
 
 ## 1. The question
 
-The geometry-only matcher fires a template when the figure of the premise's particles falls in the template's cloud. On fresh clauses it does this well when the wording is known, but the same matcher on the embedding $h^{(0)}$ does nearly as well once the connective's position is included, and better on unseen wordings. So it is not shown that the trained landscape adds anything. The author's proposal is that the signature of a premise is in the evolution of its particles. This test asks whether the evolution identifies a logical form better than the words do.
+The geometry-only matcher fires a template when the figure of the premise's particles falls in the template's cloud. On fresh clauses it does this well when the wording is known, but the same matcher on the embedding $h^{(0)}$ does nearly as well once the connective's position is included, and better on unseen wordings. So it is not shown that the trained landscape adds anything. The author's proposal is that the signature of a premise is in the evolution of its particles. This test asks whether the evolution identifies a logical form better than the words do. The discussion that led here, with the readings behind it, is in [What_the_Matchers_Read.md](What_the_Matchers_Read.md).
 
 ## 2. What was known before
 

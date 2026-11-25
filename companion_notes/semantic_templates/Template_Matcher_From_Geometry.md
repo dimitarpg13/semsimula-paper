@@ -47,6 +47,10 @@ This is the report of the first completed test of a template matcher. The author
 
 **Premise geometry.** For a premise with particles $z_1, \dots, z_n$, the cosines $z_i \cdot z_j / (\lVert z_i \rVert \lVert z_j \rVert)$ and the norms $\lVert z_i \rVert$. No token identity is used, and no list of words.
 
+![Premise geometry](../figures/template_matcher/tm_figure.png)
+
+**What the matcher sees:** the cosines between the particles of one premise after layer 0 (SR2-2B). Left: modus ponens, where the second sentence repeats clause 1 and shows as a bright diagonal in that block. Middle: the same first sentence with an unrelated second sentence. Right: a disjunctive syllogism.
+
 **Relational coordinates.** A vector $r(z) \in \mathbb{R}^{D}$ built from the premise geometry, for a number $m$ of particles:
 - for each clause of the first sentence, the $m$ smallest best-cosines of the second sentence's particles to the clause, the $m$ smallest of the clause's particles to the second sentence, the cosine of the two last particles, and the cosine of the two mean states;
 - for the $m$ particles of the second sentence worst matched to the nearer clause: the log norm, and the cosines to "Therefore", to the connective, to the neighbours on each side, and to the second sentence's mean;
@@ -162,7 +166,7 @@ fire = (rate.max(1) >= rho) & (D.min(1) <= reach[nearest])
 | | |
 | --- | --- |
 | **written before any result** | the relational coordinates, the clouds, the rate, the threshold rule, the reach, the choice of particles and dimension on development clauses, the scores |
-| **post hoc, after the first SR2-2B results** | the position of the connective, the matched comparisons, more than 5 particles, the pair predictions, the chi-squared check |
+| **post hoc, after the first SR2-2B results** | the position of the connective, the matched comparisons, more than 5 particles, the pair predictions, the chi-squared check. With the position, the number of particles is set by hand per state (h1 6, h2 4, h1 with h2 4, h0 8) and only the dimension is searched |
 | **not fixed at all** | the 60 test clauses were scored with both variants, so they informed the position. Fresh clauses are needed to confirm it (they are in [Template_Matchers_on_the_Dynamics.md](Template_Matchers_on_the_Dynamics.md)) |
 
 Where a table shows "as fixed in advance" it is the first kind of matcher. The other column adds the position. An earlier, naive matcher (three hard gates on node means, no likelihood) fired on 10 to 55% of valid premises, at the same states, and was abandoned at the author's word.
@@ -283,7 +287,7 @@ The paraphrase is told from the near miss better than chance at any trained stat
 
 ### 5.7 The embedding as a reference
 
-The same matcher on h0, with the position, fires on 100, 90, 77 and 76% with known wordings and 95, 74, 76 and 75% with unseen ones. With the coordinates fixed in advance it does not (88, 11, 13% for MP, MT, DS). The position of the connective is the connective's own vector there, so it reads the connective's word. The trained states win on the disjunctive syllogisms with known wordings (92 and 93% against 76 and 77%) and lose on unseen wordings for modus ponens (78% against 95%).
+The same matcher on h0, with the position and 8 particles, fires on 100, 90, 77 and 76% with known wordings and 95, 74, 76 and 75% with unseen ones. With the coordinates fixed in advance it does not (88, 11, 13% for MP, MT, DS). The position of the connective is the connective's own vector there, so it reads the connective's word. The trained states win on the disjunctive syllogisms with known wordings (92 and 93% against 76 and 77%) and lose on unseen wordings for modus ponens (78% against 95%).
 
 ### 5.8 What training adds
 
@@ -310,6 +314,8 @@ Step-500 models already fire on 80 to 100% of exact premises with known wordings
 **What it recognises is the frame and the restatement.** Direction 1 is the restatement of a clause, direction 3 the connective, directions 2 and 4 the exactness. That is enough to separate the forms, and to reject near misses, unrelated clauses and ordinary text. It is not enough for a new wording: a connective not seen in fitting moves along direction 3 to a place the clouds do not cover, and its premise falls outside the reach or in the wrong cloud.
 
 **The fallacies are the weak spot because they are one step from a valid form.** Denying the antecedent shares the first sentence with MP and the second sentence with DS; an affirmed disjunct shares the second sentence with MP. These are the only rivals that fire.
+
+**This matcher does not read the evolution.** It reads angles and lengths of the states, with no well and no path, so it is not a test of the idea that the signature of a premise is in how its particles move. What each state is, why the embedding scores well and what would test the idea are in [What_the_Matchers_Read.md](What_the_Matchers_Read.md).
 
 **The trained layers contribute less than the embedding does.** Word vectors and connectives suffice for most of the identification, and the layers contribute paraphrase tolerance and the disjunctive syllogisms with known wordings. The step-500 rows support this: the geometry is already there before the landscape is trained.
 
