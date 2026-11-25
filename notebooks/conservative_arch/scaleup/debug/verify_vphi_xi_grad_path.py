@@ -90,6 +90,8 @@ def step_source_grad(model, x, layer):
     with torch.enable_grad():
         _, traj = model._stack_forward(model._embed(x), x, return_trajectory=True)
         h = traj[layer].clone().float().requires_grad_(True)
+        if hasattr(model.V_theta, 'set_active_layer'):      # outside the routed step: select this layer's depth code
+            model.V_theta.set_active_layer(layer)
         h_new, _ = model._layer_step_ex(h, h.detach().clone(), model.compute_mass(x),
                                         model.gamma, model.cfg.dt, layer_idx=layer)
         cot = torch.zeros_like(h_new)

@@ -109,6 +109,8 @@ def probe_arm(name, rc, folder, x):
             rev[l] = scale * q.pow(2).mean().sqrt().item()
     gen = torch.Generator().manual_seed(0)
     for l in range(cfg.L):
+        if hasattr(model.V_theta, 'set_active_layer'):      # outside the routed step: select this layer's depth code
+            model.V_theta.set_active_layer(l)
         h = traj[l].clone().float().requires_grad_(True)
         B, T, d = h.shape
         cot = torch.zeros(B, T, d); cot[:, -1] = torch.randn(B, d, generator=gen)

@@ -1,0 +1,26 @@
+1. whitened cosines, test clauses, if-then wording: last word of premise 2 against last word of clause 1
+  h0  repeated (MP, n=60) 0.998 [0.993, 0.999]   unrelated (U, n=60) 0.047
+  h1  repeated (MP, n=60) 0.917 [0.859, 0.962]   unrelated (U, n=60) 0.147
+  h2  repeated (MP, n=60) 0.760 [0.635, 0.881]   unrelated (U, n=60) 0.237
+2. correlation of the particle cosines of one premise between two states (400 test premises, median [10%, 90%])
+  h0 vs h1  0.840 [0.787, 0.879]
+  h0 vs h2  0.509 [0.384, 0.614]
+  h1 vs h2  0.726 [0.623, 0.794]
+3. lengths and displacements, 12288 ordinary tokens (raw states, medians)
+  |h0| 3.72
+  |pre1| 9.54
+  |h1| 19.60
+  |pre2| 20.03
+  |h2| 19.60
+  layer 0: |displacement| 8.03, over |state on entry| 2.17, cosine with the state on entry 0.21
+  layer 1: |displacement| 24.04, over |state on entry| 1.23, cosine with the state on entry -0.60
+  h0 -> h1: cosine 0.60, linear fit explains 0.547 of the held-out variance
+  h1 -> h2: cosine 0.30, linear fit explains 0.619 of the held-out variance
+  h0 -> h2: cosine 0.13, linear fit explains 0.267 of the held-out variance
+4. the wells: radius sqrt(q) to the well that dominates on entry, in the layer's own context
+  layer 0: radius 10/50/90% on entry 0.21/0.26/0.33, after the step 0.33/0.44/0.58, after its LayerNorm 0.88/1.18/1.70; closer after the step 1.15%
+    dominant wells on entry [0, 6, 10, 0, 16, 2, 13, 12241], after the step [0, 2, 1, 0, 10, 1, 0, 12274]; same well 99.6%; radius to the new dominant well 0.44, to the nearest 0.44
+    occupancy exp(-q/2) of the dominant well on entry 0.966, after the step 9.06e-01; median share on entry 0.68
+  layer 1: radius 10/50/90% on entry 1.45/1.95/2.27, after the step 4.83/9.23/13.24, after its LayerNorm 5.12/9.59/13.71; closer after the step 0.02%
+    dominant wells on entry [0, 0, 0, 9209, 0, 0, 0, 3079], after the step [74, 1724, 1812, 139, 1827, 302, 145, 6265]; same well 14.5%; radius to the new dominant well 4.24, to the nearest 3.88
+    occupancy exp(-q/2) of the dominant well on entry 0.150, after the step 1.24e-04; median share on entry 0.68

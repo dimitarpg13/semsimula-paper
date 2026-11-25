@@ -159,6 +159,8 @@ say(f'3. per-layer flow vs RK4 on dh/dt = mu (f_theta + f_phi), mu = dt / 2m (dt
 
 def layer_map(h, layer, k):
     m._flow_ctx = {}
+    if hasattr(m.V_theta, 'set_active_layer'):          # outside the routed step: select this layer's depth code
+        m.V_theta.set_active_layer(layer)
     try:
         hp = h
         for j in range(k):

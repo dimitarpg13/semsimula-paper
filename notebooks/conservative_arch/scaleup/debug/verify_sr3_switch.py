@@ -134,6 +134,8 @@ def capture(name, m):
     MPX.lowrank_damped_substep = w_
     try:
         with torch.enable_grad():
+            if hasattr(m.V_theta, 'set_active_layer'):  # outside the routed step: select layer 0's depth code
+                m.V_theta.set_active_layer(0)
             h_new, hp = m._layer_step_langevin(h, h, mb, m.gamma, float(m.cfg.dt), 0)
     finally:
         CB.lowrank_damped_substep = f0; MPX.lowrank_damped_substep = f0

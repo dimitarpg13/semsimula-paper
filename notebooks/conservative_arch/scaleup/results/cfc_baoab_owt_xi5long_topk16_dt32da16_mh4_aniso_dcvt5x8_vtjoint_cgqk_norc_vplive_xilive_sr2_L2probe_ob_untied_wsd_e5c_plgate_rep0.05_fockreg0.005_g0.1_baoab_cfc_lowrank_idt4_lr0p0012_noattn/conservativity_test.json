@@ -3,13 +3,13 @@
  "layers": {
   "0": {
    "V_theta": {
-    "asym_worst": 3.445900571896378e-07,
-    "asym_median": 2.2774829079246531e-07,
-    "fd_worst": 0.004710039470995079,
-    "fd_median": 0.00467364798541837,
-    "loop_worst": 2.2041010315830858e-07,
-    "loop_median": 1.018938341019011e-07,
-    "force_norm_median": 0.08959639072418213
+    "asym_worst": 4.999734729012555e-07,
+    "asym_median": 1.769271290479514e-07,
+    "fd_worst": 0.0005444707052812371,
+    "fd_median": 0.00036569212285670455,
+    "loop_worst": 7.965360575920827e-08,
+    "loop_median": 5.4367679953792074e-08,
+    "force_norm_median": 0.07138753682374954
    },
    "V_phi": {
     "asym_worst": 1.942781211227998e-06,
@@ -21,13 +21,13 @@
     "force_norm_median": 0.0030727568082511425
    },
    "total": {
-    "asym_worst": 7.612185168350624e-07,
-    "asym_median": 4.6461079366421295e-07,
-    "fd_worst": 0.006418239323015358,
-    "fd_median": 0.005683649708578758,
-    "loop_worst": 5.119580790505724e-07,
-    "loop_median": 1.2408745896914422e-07,
-    "force_norm_median": 0.0894189104437828
+    "asym_worst": 4.6460665562290154e-07,
+    "asym_median": 3.338815400447663e-07,
+    "fd_worst": 0.0005579324254710584,
+    "fd_median": 0.00019171391253690068,
+    "loop_worst": 8.461071123441207e-07,
+    "loop_median": 1.8508222261408846e-07,
+    "force_norm_median": 0.07237563282251358
    }
   },
   "1": {
@@ -65,18 +65,18 @@
    "t>=16": {
     "router_over_vphi_median": 0.0004978000652045012,
     "router_over_vphi_p95": 0.00202933163382113,
-    "router_over_total_median": 1.64237389981281e-05,
-    "router_over_total_p95": 8.707139932084829e-05,
+    "router_over_total_median": 2.1978572476655245e-05,
+    "router_over_total_p95": 0.00010390739771537483,
     "vphi_norm_median": 0.003035785397514701,
-    "total_norm_median": 0.0894189104437828
+    "total_norm_median": 0.06768880784511566
    },
    "3<=t<16": {
     "router_over_vphi_median": 0.0,
     "router_over_vphi_p95": 5.687450510549752e-08,
     "router_over_total_median": 0.0,
-    "router_over_total_p95": 1.2589084219527535e-09,
+    "router_over_total_p95": 1.4324683661470772e-09,
     "vphi_norm_median": 0.001496711978688836,
-    "total_norm_median": 0.08758743107318878
+    "total_norm_median": 0.07610216736793518
    }
   },
   "1": {

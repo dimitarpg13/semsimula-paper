@@ -64,9 +64,11 @@ OUTCOME OF THE CONTROLS, and what changed (2026-10-07, before any PM1 run):
     DESCRIPTIVE, read against the V_theta row of the same layer, and the
     verdict uses asym and loop only, with the thresholds as pre-stated.
   - the router term is measured EXACTLY instead (router mode, below) and is
-    reported in every full run. F3.1: 0 at layer 1; at layer 0 median 0.006%,
-    p95 2.4% of the total conservative force. G2: 11% median at layer 0 (its
-    V_phi has nearly collapsed, so the router dominates what is left).
+    reported in every full run. F3.1: 0 at layer 1 for t >= 16; at layer 0
+    median 0.001%, p95 0.22% of the total conservative force. G2: 0.44% median
+    at layer 0, 11% of what is left of its collapsed V_phi. (Corrected
+    2026-11-25: the first controls read layer 0 with layer 1's depth code and
+    gave 0.006%, 2.4% and 11% of the total.)
   - a second, separate caveat is not measured: hard top-k selection makes
     V_phi's potential switch when the selected set changes, so the field is a
     gradient piecewise; a loop that crosses a switch has non-zero work. The
@@ -262,14 +264,29 @@ def capture(model, x):
     if getattr(model, 'reverse_ch', None) is not None:
         hook = model.reverse_ch.register_forward_hook(
             lambda m, inp, out: rcs.append(tuple(i.detach().clone() for i in inp)))
-    model._fock_layer_step = spy
+    orig_forces, used = model._layer_forces, {}
+
+    def spy_forces(h, xis, layer_idx, **kw):
+        out = orig_forces(h, xis, layer_idx, **kw)
+        if isinstance(out, tuple):
+            used.setdefault(layer_idx, (h.detach().clone(), xis.detach().clone(), out[0].detach().clone()))
+        return out
+    model._fock_layer_step, model._layer_forces = spy, spy_forces
     try:
         with torch.enable_grad():
             model(x)
     finally:
         model._fock_layer_step = orig_step
+        model.__dict__.pop('_layer_forces', None)
         if hook is not None:
             hook.remove()
+    # the replayed V_theta force must be the one the forward pass used (added 2026-11-25: without the layer's depth code it is not)
+    for l, (h, xis, ft) in used.items():
+        at_layer(model, l)
+        with torch.no_grad():
+            d = float((-model.V_theta.analytical_grad(xis, h) - ft).abs().max() / ft.abs().max())
+        assert d < 1e-5, f'layer {l}: the replayed V_theta force differs from the forward pass by {d:.1e}'
+    assert set(used) == set(range(model.cfg.L)), sorted(used)
     return caps, (rcs if rcs else None)
 
 

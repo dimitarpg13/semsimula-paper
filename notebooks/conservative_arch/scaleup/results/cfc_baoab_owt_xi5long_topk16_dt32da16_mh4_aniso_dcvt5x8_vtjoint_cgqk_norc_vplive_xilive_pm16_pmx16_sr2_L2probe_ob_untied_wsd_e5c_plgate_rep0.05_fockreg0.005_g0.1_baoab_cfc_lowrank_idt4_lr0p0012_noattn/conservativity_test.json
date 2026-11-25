@@ -3,13 +3,13 @@
  "layers": {
   "0": {
    "V_theta": {
-    "asym_worst": 4.7660283304320617e-07,
-    "asym_median": 3.7627441879718755e-07,
-    "fd_worst": 0.011214666244639314,
-    "fd_median": 0.007206507646587552,
-    "loop_worst": 6.345007367271419e-07,
-    "loop_median": 1.7996734847051135e-07,
-    "force_norm_median": 4.71644170829677e-06
+    "asym_worst": 2.3915030050495546e-07,
+    "asym_median": 2.2131915391717024e-07,
+    "fd_worst": 0.0037923475372911336,
+    "fd_median": 0.0017266171611156392,
+    "loop_worst": 1.2436530303432323e-07,
+    "loop_median": 7.987832257289317e-08,
+    "force_norm_median": 0.1681891232728958
    },
    "V_phi": {
     "asym_worst": 4.504614672027829e-06,
@@ -30,13 +30,13 @@
     "force_norm_median": 0.07696514576673508
    },
    "total": {
-    "asym_worst": 1.2994878678294546e-06,
-    "asym_median": 3.9014114549690065e-07,
-    "fd_worst": 0.0032147065844943747,
-    "fd_median": 0.00033813002290346565,
-    "loop_worst": 8.375437515789613e-05,
-    "loop_median": 1.5631887349808505e-07,
-    "force_norm_median": 0.08333930373191833
+    "asym_worst": 9.81395283591454e-07,
+    "asym_median": 3.24193890328611e-07,
+    "fd_worst": 0.0021567176603100994,
+    "fd_median": 0.001378608209377065,
+    "loop_worst": 4.586241681620794e-06,
+    "loop_median": 1.2389834979237252e-07,
+    "force_norm_median": 0.200290247797966
    }
   },
   "1": {
@@ -84,9 +84,9 @@
     "router_over_vphi_median": 0.0,
     "router_over_vphi_p95": 0.003648549085482955,
     "router_over_total_median": 0.0,
-    "router_over_total_p95": 0.0005382975214160979,
+    "router_over_total_p95": 0.0002579157007858157,
     "vphi_norm_median": 0.013553448021411896,
-    "total_norm_median": 0.08545388281345367
+    "total_norm_median": 0.19563530385494232
    },
    "3<=t<16": {
     "router_over_vphi_median": 0.0,
@@ -94,7 +94,7 @@
     "router_over_total_median": 0.0,
     "router_over_total_p95": 0.0,
     "vphi_norm_median": 0.00862682331353426,
-    "total_norm_median": 0.04003167524933815
+    "total_norm_median": 0.18824778497219086
    }
   },
   "1": {

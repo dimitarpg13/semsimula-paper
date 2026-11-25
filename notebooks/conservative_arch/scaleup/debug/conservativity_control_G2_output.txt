@@ -1,14 +1,20 @@
-Control run 2026-10-07 (before PM1). Verdicts use asym (autograd) and loop; fd_asym is descriptive.
+# Control, rerun 2026-11-25 with each layer's own depth code selected (first run 2026-10-07 read layer 0 with layer 1's code).
 CONSERVATIVITY TEST on trained weights: cgqk_vplive_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
    train-mode vs eval force values at the captured states: max |d| = 0.000e+00  (identical)
    per token at fixed context; 5 tokens per layer; worst token shown (median in brackets)
+   verdict from asym and loop; fd_asym is descriptive (float32 floor = the V_theta row)
    layer term           asym (autograd)              fd_asym                 loop       |F|   verdict
-   0     V_theta    3.56e-07 (3.3e-07)  1.09e-02 (7.6e-03)  2.38e-07 (1.2e-07)  0.000555   unclear
+   0     V_theta    5.44e-07 (2.5e-07)  4.79e-03 (3.3e-03)  7.54e-08 (3.7e-08)     0.236   conservative
    0     V_phi      4.57e-06 (1.2e-06)  1.55e+00 (8.4e-02)  1.30e-01 (1.8e-03)   0.00222   NOT conservative
-   0     total      1.52e-05 (1.1e-06)  1.06e+00 (4.3e-02)  6.62e-02 (1.2e-02)    0.0024   NOT conservative
+   0     total      1.42e-06 (4.2e-07)  2.70e-01 (4.3e-02)  1.91e-04 (1.3e-04)     0.236   conservative
    0     RC         1.72e+00 (1.5e+00)  1.63e+00 (1.5e+00)  5.18e-02 (3.4e-03)      19.6   NOT conservative
    1     V_theta    4.54e-07 (2.6e-07)  3.54e-04 (2.5e-04)  2.11e-07 (1.2e-07)     0.172   conservative
    1     V_phi      2.75e-06 (4.7e-07)  3.29e-03 (6.8e-04)  8.64e-01 (4.6e-06)     8e-13   NOT conservative
    1     total      2.70e-07 (2.5e-07)  3.29e-04 (2.7e-04)  3.96e-07 (1.2e-07)     0.172   conservative
    1     RC         1.79e+00 (1.3e+00)  1.43e+00 (1.4e+00)  8.30e-02 (3.7e-03)      19.6   NOT conservative
-   SUMMARY: V_theta unclear; V_phi NOT conservative; total NOT conservative; RC NOT conservative
+   SUMMARY: V_theta conservative; V_phi NOT conservative; total conservative; RC NOT conservative
+   V_phi ROUTER TERM (exact), share of the total conservative force on the token:
+     layer 0    t>=16: median 0.440%  p95 2.681%   (of V_phi: median 11.15%, p95 92.77%)
+     layer 0  3<=t<16: median 0.092%  p95 1.716%   (of V_phi: median 16.87%, p95 95.69%)
+     layer 1    t>=16: median 0.000%  p95 0.168%   (of V_phi: median 0.65%, p95 97.08%)
+     layer 1  3<=t<16: median 0.000%  p95 0.000%   (of V_phi: median 0.02%, p95 97.42%)

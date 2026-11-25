@@ -3,17 +3,17 @@ CONSERVATIVITY TEST on trained weights: cgqk_norc_vplive_xilive_pm16_pmx16_sr2_L
    per token at fixed context; 5 tokens per layer; worst token shown (median in brackets)
    verdict from asym and loop; fd_asym is descriptive (float32 floor = the V_theta row)
    layer term           asym (autograd)              fd_asym                 loop       |F|   verdict
-   0     V_theta    4.77e-07 (3.8e-07)  1.12e-02 (7.2e-03)  6.35e-07 (1.8e-07)  4.72e-06   conservative
+   0     V_theta    2.39e-07 (2.2e-07)  3.79e-03 (1.7e-03)  1.24e-07 (8.0e-08)     0.168   conservative
    0     V_phi      4.50e-06 (6.1e-07)  9.33e-03 (4.3e-04)  4.68e-05 (4.9e-08)     0.013   conservative
    0     PM1        1.92e-07 (1.4e-07)  4.94e-04 (2.5e-04)  6.22e-08 (4.0e-08)     0.077   conservative
-   0     total      1.30e-06 (3.9e-07)  3.21e-03 (3.4e-04)  8.38e-05 (1.6e-07)    0.0833   conservative
+   0     total      9.81e-07 (3.2e-07)  2.16e-03 (1.4e-03)  4.59e-06 (1.2e-07)       0.2   conservative
    1     V_theta    5.85e-07 (3.4e-07)  8.27e-04 (3.2e-04)  2.33e-07 (1.2e-07)     0.145   conservative
    1     V_phi      2.65e-06 (3.7e-07)  1.05e-03 (5.4e-04)  6.96e-07 (1.6e-07)     0.027   conservative
    1     PM1        1.74e-07 (1.5e-07)  1.20e-04 (8.6e-05)  1.70e-07 (6.0e-08)     0.578   conservative
    1     total      5.99e-07 (2.8e-07)  2.33e-04 (1.6e-04)  1.41e-07 (7.2e-08)     0.597   conservative
    SUMMARY: V_theta conservative; V_phi conservative; PM1 conservative; total conservative
    V_phi ROUTER TERM (exact), share of the total conservative force on the token:
-     layer 0    t>=16: median 0.000%  p95 0.054%   (of V_phi: median 0.00%, p95 0.36%)
+     layer 0    t>=16: median 0.000%  p95 0.026%   (of V_phi: median 0.00%, p95 0.36%)
      layer 0  3<=t<16: median 0.000%  p95 0.000%   (of V_phi: median 0.00%, p95 0.00%)
      layer 1    t>=16: median 0.000%  p95 0.000%   (of V_phi: median 0.00%, p95 0.00%)
      layer 1  3<=t<16: median 0.000%  p95 0.000%   (of V_phi: median 0.00%, p95 0.00%)
