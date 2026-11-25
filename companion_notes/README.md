@@ -182,6 +182,7 @@
 - [The_Particle_Store_Making_Allocation_Real](The_Particle_Store_Making_Allocation_Real.md): the particle store (Stage 0″): design and first results
 - [semantic_templates/Admissible_Regions_for_Template_Search](semantic_templates/Admissible_Regions_for_Template_Search.md): where in semantic space and when in training a template search may start: the well frame, context spread, training drift, the admissibility criterion; SR2-NP's settling map
 - [semantic_templates/Well_Settling_Map_SR2_NP](semantic_templates/Well_Settling_Map_SR2_NP.md): technical report of the first settling map (CPU, 2026-11-24): the live well keeps its tokens through the decay, but their order inside it is only half kept; no admissible region over that window
+- [semantic_templates/Logical_Forms_as_Geometric_Figures](semantic_templates/Logical_Forms_as_Geometric_Figures.md): logical argument forms frozen as small figures: they transfer between models, and record the frame, the restatements and negation rather than validity
 - [Renormalization_Group_Readings_of_Template_Matching_A_Proposal](Renormalization_Group_Readings_of_Template_Matching_A_Proposal.md): reading template matching through renormalisation-group ideas (proposal)
 - [Community_of_Semantic_Templates_for_Native_CoT](Community_of_Semantic_Templates_for_Native_CoT.md): a community of templates as the source of native chain-of-thought
 - [Chain_of_Thought_Substrate_in_Lagrangian_Models](Chain_of_Thought_Substrate_in_Lagrangian_Models.md): can chain-of-thought be built from the mechanisms the models have today?

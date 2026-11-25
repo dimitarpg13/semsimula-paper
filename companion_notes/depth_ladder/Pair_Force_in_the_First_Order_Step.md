@@ -201,7 +201,17 @@ In the model trained without the pair force:
 - **layer 1 works harder:** $V_\theta$ is stiffer there, the rest of the force is larger, and the explicit kick makes a larger share of the step;
 - **layer 0's landscape force is about the same** (0.23 against 0.24), without the pair force's aligned push on top of it.
 
-**At layer 0 the rest of the force is the wells' force.** The conservativity test splits the force by term on five tokens per layer. At layer 0 the force of $V_\theta$ is negligible in all three models (norms 5e-6 in PMX-K16, 2e-7 in FO-b-PMX-K16, 7e-7 here), against about 0.08 to 0.11 for the wells. So the push the first-order pair force aligns with at layer 0 is the wells' force, which position alone explains: in FO-b-PMX-K16 the pair force has been trained to reinforce the wells' positional clock.
+**What the rest of the force is at layer 0** (`debug/layer_force_split.py`, 16 windows, at the kick point; medians over tokens):
+
+| model | context potential's force | wells' force | cosine of the pair force with each |
+| --- | ---: | ---: | --- |
+| PMX-K16 | 0.155 | 0.085 | 0.09 and 0.20 |
+| FO-b-PMX-K16 | 0.168 | 0.102 | 0.54 and 0.60 |
+| FO-b-PMX-K16-NP | 0.165 | 0.091 | no pair force |
+
+Both terms matter at layer 0 and the context potential's is the larger. The first-order pair force aligns with both. The ratio of the two agrees with Cell 6b-15 (0.535 for this arm).
+
+**Correction (2026-11-25).** From 2026-11-24 this section said that the force of $V_\theta$ is negligible at layer 0 and that the pair force therefore reinforces the wells' positional clock. That was wrong: the figures came from the conservativity test's row for its worst token, not from a typical one, and they contradicted Cell 6b-15.
 
 The context channels change little, and recall runs through them exactly as before: removing the earlier occurrence from the layer-1 channels costs 0.456 nats on far recall, against 0.463 (paired difference −0.004, standard error 0.002).
 
@@ -226,7 +236,7 @@ What the readings do not show is when the lock-in happens, or that it causes the
 
 **Why first order: open.** An earlier version of this note (2026-11-24) read the order dependence as the pair force standing in for the velocity, which in second order carries layer 0's displacement into layer 1. That reading predicts that the pair force helps. It explains the reliance but not the negative value. It could also cut the other way: in second order the velocity amplifies layer 0's displacement on its way into layer 1, which would make a layer-0 push more attractive there, not less. Whether the pair force's value depends on the order on this line at all is open until PMX-K16-NP runs ([Stage3f_PMX_K16_Without_Pair_Force.md](../productization/Stage3f_PMX_K16_Without_Pair_Force.md)). On SR2, which has no wells, it was +0.33%.
 
-**In one sentence:** in a first-order model with wells, the pair force becomes a second, cruder push along the wells' force at layer 0; the readings fit a training lock-in, in which the model leans on that push instead of strengthening its wells and its layer-1 landscape, and it ends 0.6% worse than without it.
+**In one sentence:** in a first-order model with wells, the pair force becomes a second, cruder push along the rest of the force at layer 0; the readings fit a training lock-in, in which the model leans on that push instead of strengthening its wells and its layer-1 landscape, and it ends 0.6% worse than without it.
 
 ## 7. What would settle it
 

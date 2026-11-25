@@ -29,7 +29,7 @@ Three corners of the grid are trained, each on the same 532,480,000 OpenWebText 
 | FO-b-PMX-K16-NP | first | none | 53.39 |
 | **PMX-K16-NP** (this arm) | second | none | |
 
-In first order, training without the pair force made the model 0.63% better. The step probe reads this as the pair force crowding out the wells and the layer-1 landscape: at layer 0 the trained first-order pair force pushes along the wells' force, and the model leans on it instead of strengthening its landscape ([Pair_Force_in_the_First_Order_Step.md](../depth_ladder/Pair_Force_in_the_First_Order_Step.md)). On SR2, which has no wells, training without the pair force cost the second-order model 0.33%.
+In first order, training without the pair force made the model 0.63% better. The step probe reads this as the pair force crowding out the wells and the layer-1 landscape: at layer 0 the trained first-order pair force pushes along the rest of the force, and the model leans on it instead of strengthening its landscape ([Pair_Force_in_the_First_Order_Step.md](../depth_ladder/Pair_Force_in_the_First_Order_Step.md)). On SR2, which has no wells, training without the pair force cost the second-order model 0.33%.
 
 Whether the pair force's value depends on the order on this line is open until this arm runs. With PMX-K16 as the base, write $V$ for the value of training a mechanism out, as in [the competing-mechanisms note](../depth_ladder/Velocity_and_Pair_Force_as_Competing_Mechanisms.md), §1. The two first-order corners give
 
@@ -103,7 +103,7 @@ The 137,803 parameters removed are the pair force, its score head and its per-la
 
 **Reasoning.**
 - **PN1.** In both precedents training the pair force out cost at most a third of a percent, and here the reliance is only +1.7%.
-- **PN2 and PN3.** The step probe found the second-order pair force nearly orthogonal to the wells' force at layer 0 (cosine 0.16, against 0.63 in first order), so the layer-0 crowding seen in first order should be weaker. But at layer 1 the second-order pair force does align with the rest of the force (0.39), so some crowding there is possible; hence PN3 at a coin toss.
+- **PN2 and PN3.** The step probe found the second-order pair force nearly orthogonal to the rest of the force at layer 0 (cosine 0.16, against 0.63 in first order), so the layer-0 crowding seen in first order should be weaker. But at layer 1 the second-order pair force does align with the rest of the force (0.39), so some crowding there is possible; hence PN3 at a coin toss.
 - **PN4.** With wells, first order matched or beat second order at 2, 16 and 64 wells. If the pair force's value is higher in second order (PN2), the gap widens.
 - **PN5.** In first order, removing the wells cost 39 points more without the pair force. The second-order model also has the velocity to absorb work, so the rise may be smaller.
 
@@ -144,3 +144,4 @@ Leave `FIRST_ORDER_OVERDAMPED` off and `SEED` at 0. Then run Cell 0 → 1 → 1b
 - **One seed.** The pairing removes the evaluation noise, not the training-seed spread, which is unmeasured. The thresholds of PN2 and PN3 lie 0.6% apart, of the order of a seed spread.
 - **The hyperparameters were tuned for the second-order models** and are inherited unchanged.
 - **L = 2 and 532M tokens.** The balance could change with depth or training length.
+- **Wording corrected on 2026-11-25:** §1 and §4 said "the wells' force" where the probe measured the rest of the force (the context potential and the wells together). The calls are unchanged.

@@ -1,0 +1,73 @@
+LOGIC FIGURES: sr2np  (reg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt)
+   40 contents x 3 forms; prefix 256 tokens of OpenWebText validation text
+   nodes: c1, a1, c2, a2, p2, th, cn
+
+REACTION: loss on the conclusion clause (nats per token), the valid one against the alternative
+   MP: valid 2.765  alternative 2.050  preference -0.715 (se 0.199; valid preferred in 7 of 40)
+   MT: valid 3.204  alternative 3.174  preference -0.030 (se 0.123; valid preferred in 17 of 40)
+   DS: valid 3.311  alternative 2.366  preference -0.945 (se 0.210; valid preferred in 6 of 40)
+   AC: valid 3.175  alternative 1.984  preference -1.191 (se 0.199; valid preferred in 7 of 40)
+   DA: valid 2.986  alternative 2.776  preference -0.210 (se 0.089; valid preferred in 8 of 40)
+
+STATE h0 (the embedding)
+   MP: one figure spans 3 dims at 90%, 4 at 99% (median of 40; at most 6); all 40 span 8 / 25 / 60 dims at 90 / 95 / 99%; shape residual 0.003 (labels permuted 0.346); frozen figure in 4 dims
+   MT: one figure spans 3 dims at 90%, 5 at 99% (median of 40; at most 6); all 40 span 5 / 22 / 66 dims at 90 / 95 / 99%; shape residual 0.004 (labels permuted 0.266); frozen figure in 5 dims
+   DS: one figure spans 4 dims at 90%, 5 at 99% (median of 40; at most 6); all 40 span 8 / 26 / 64 dims at 90 / 95 / 99%; shape residual 0.004 (labels permuted 0.297); frozen figure in 5 dims
+   AC: one figure spans 3 dims at 90%, 4 at 99% (median of 40; at most 6); all 40 span 8 / 25 / 61 dims at 90 / 95 / 99%; shape residual 0.003 (labels permuted 0.338); frozen figure in 4 dims
+   DA: one figure spans 3 dims at 90%, 5 at 99% (median of 40; at most 6); all 40 span 5 / 22 / 65 dims at 90 / 95 / 99%; shape residual 0.004 (labels permuted 0.267); frozen figure in 5 dims
+   residual of each form's figures against each mean shape (rows: figures; columns: mean shape of MP, MT, DS, AC, DA):
+      MP: 0.003  0.092  0.015  0.105  0.021
+      MT: 0.092  0.004  0.088  0.022  0.048
+      DS: 0.016  0.090  0.004  0.103  0.027
+      AC: 0.105  0.021  0.102  0.003  0.092
+      DA: 0.022  0.048  0.027  0.091  0.004
+
+STATE h1 (after layer 0)
+   MP: one figure spans 4 dims at 90%, 5 at 99% (median of 40; at most 6); all 40 span 20 / 41 / 91 dims at 90 / 95 / 99%; shape residual 0.005 (labels permuted 0.244); frozen figure in 5 dims
+   MT: one figure spans 4 dims at 90%, 6 at 99% (median of 40; at most 6); all 40 span 17 / 41 / 103 dims at 90 / 95 / 99%; shape residual 0.009 (labels permuted 0.190); frozen figure in 6 dims
+   DS: one figure spans 4 dims at 90%, 6 at 99% (median of 40; at most 6); all 40 span 29 / 54 / 112 dims at 90 / 95 / 99%; shape residual 0.008 (labels permuted 0.198); frozen figure in 6 dims
+   AC: one figure spans 4 dims at 90%, 5 at 99% (median of 40; at most 6); all 40 span 22 / 44 / 98 dims at 90 / 95 / 99%; shape residual 0.006 (labels permuted 0.236); frozen figure in 5 dims
+   DA: one figure spans 4 dims at 90%, 6 at 99% (median of 40; at most 6); all 40 span 15 / 38 / 99 dims at 90 / 95 / 99%; shape residual 0.008 (labels permuted 0.192); frozen figure in 6 dims
+   residual of each form's figures against each mean shape (rows: figures; columns: mean shape of MP, MT, DS, AC, DA):
+      MP: 0.005  0.080  0.031  0.096  0.017
+      MT: 0.082  0.009  0.080  0.019  0.051
+      DS: 0.033  0.079  0.008  0.100  0.033
+      AC: 0.096  0.016  0.099  0.006  0.078
+      DA: 0.020  0.050  0.033  0.080  0.008
+
+STATE h2 (after layer 1)
+   MP: one figure spans 4 dims at 90%, 6 at 99% (median of 40; at most 6); all 40 span 27 / 54 / 117 dims at 90 / 95 / 99%; shape residual 0.007 (labels permuted 0.212); frozen figure in 6 dims
+   MT: one figure spans 4 dims at 90%, 6 at 99% (median of 40; at most 6); all 40 span 27 / 56 / 124 dims at 90 / 95 / 99%; shape residual 0.010 (labels permuted 0.174); frozen figure in 6 dims
+   DS: one figure spans 4 dims at 90%, 6 at 99% (median of 40; at most 6); all 40 span 38 / 67 / 133 dims at 90 / 95 / 99%; shape residual 0.010 (labels permuted 0.174); frozen figure in 6 dims
+   AC: one figure spans 4 dims at 90%, 6 at 99% (median of 40; at most 6); all 40 span 31 / 59 / 124 dims at 90 / 95 / 99%; shape residual 0.008 (labels permuted 0.197); frozen figure in 6 dims
+   DA: one figure spans 4 dims at 90%, 6 at 99% (median of 40; at most 6); all 40 span 24 / 52 / 120 dims at 90 / 95 / 99%; shape residual 0.010 (labels permuted 0.186); frozen figure in 6 dims
+   residual of each form's figures against each mean shape (rows: figures; columns: mean shape of MP, MT, DS, AC, DA):
+      MP: 0.007  0.052  0.041  0.062  0.011
+      MT: 0.055  0.010  0.072  0.014  0.039
+      DS: 0.044  0.072  0.010  0.084  0.042
+      AC: 0.063  0.012  0.082  0.008  0.051
+      DA: 0.014  0.039  0.042  0.052  0.010
+
+WELLS: dominant well of each node, share of the 40 instances on the most common well (per layer)
+   layer 0 MP: c1 k5 100%, a1 k5 100%, c2 k5 100%, a2 k5 100%, p2 k5 100%, th k5 100%, cn k5 100%
+      in the dominant well's 4 stiff coordinates: shape residual 0.148 (labels permuted 0.616)
+   layer 0 MT: c1 k5 100%, a1 k5 100%, c2 k5 100%, a2 k5 100%, p2 k5 100%, th k5 100%, cn k5 100%
+      in the dominant well's 4 stiff coordinates: shape residual 0.132 (labels permuted 0.593)
+   layer 0 DS: c1 k5 100%, a1 k5 100%, c2 k5 100%, a2 k5 100%, p2 k5 100%, th k5 100%, cn k5 100%
+      in the dominant well's 4 stiff coordinates: shape residual 0.129 (labels permuted 0.592)
+   layer 0 AC: c1 k5 100%, a1 k5 100%, c2 k5 100%, a2 k5 100%, p2 k5 100%, th k5 100%, cn k5 100%
+      in the dominant well's 4 stiff coordinates: shape residual 0.145 (labels permuted 0.602)
+   layer 0 DA: c1 k5 100%, a1 k5 100%, c2 k5 100%, a2 k5 100%, p2 k5 100%, th k5 100%, cn k5 100%
+      in the dominant well's 4 stiff coordinates: shape residual 0.131 (labels permuted 0.585)
+   layer 1 MP: c1 k5 100%, a1 k5 100%, c2 k5 100%, a2 k5 100%, p2 k5 100%, th k5 100%, cn k5 100%
+      in the dominant well's 4 stiff coordinates: shape residual 0.160 (labels permuted 0.622)
+   layer 1 MT: c1 k5 100%, a1 k5 100%, c2 k5 100%, a2 k5 100%, p2 k5 100%, th k5 100%, cn k5 100%
+      in the dominant well's 4 stiff coordinates: shape residual 0.162 (labels permuted 0.653)
+   layer 1 DS: c1 k5 100%, a1 k5 100%, c2 k5 100%, a2 k5 100%, p2 k5 100%, th k5 100%, cn k5 100%
+      in the dominant well's 4 stiff coordinates: shape residual 0.194 (labels permuted 0.586)
+   layer 1 AC: c1 k5 100%, a1 k5 100%, c2 k5 100%, a2 k5 100%, p2 k5 100%, th k5 100%, cn k5 100%
+      in the dominant well's 4 stiff coordinates: shape residual 0.167 (labels permuted 0.624)
+   layer 1 DA: c1 k5 100%, a1 k5 100%, c2 k5 100%, a2 k5 100%, p2 k5 100%, th k5 100%, cn k5 100%
+      in the dominant well's 4 stiff coordinates: shape residual 0.159 (labels permuted 0.602)
+
+(225s)

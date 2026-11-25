@@ -164,7 +164,7 @@ On the best checkpoint, against FO-b-PMX-K16 on the same windows where both were
 - **Recall runs through the same pathway,** the layer-1 context channels; the paired difference on far recall is −0.004 nats (standard error 0.002).
 - **The per-layer flow still does not settle,** as in every first-order model; as trained, eight steps cost 2.21 nats against FO-b-PMX-K16's 2.18.
 - **Causality, on the best weights:** future perturbation at five cut points exactly 0, batch independence exactly 0, prefix-only scoring leak tax +7.0e-7 nats. Clean.
-- **Conservativity, on the trained weights:** every term conservative at both layers (Jacobian asymmetry at most 4.0e-7, closed-loop work at most 2.0e-7). At layer 0 the force of $V_\theta$ is negligible (median norm 7e-7, five tokens) and the wells carry it.
+- **Conservativity, on the trained weights:** every term conservative at both layers (Jacobian asymmetry at most 4.0e-7, closed-loop work at most 2.0e-7). An earlier version added that the force of $V_\theta$ is negligible at layer 0; that misread the test's worst-token row and is withdrawn (2026-11-25).
 
 ### 7.5 Why: the step probe
 

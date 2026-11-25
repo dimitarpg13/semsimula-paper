@@ -8,6 +8,7 @@
 | --- | --- |
 | [Admissible_Regions_for_Template_Search.md](Admissible_Regions_for_Template_Search.md) | where in semantic space and when in training a template search may start: the three motions of a training model (wells, coordinates, context), the well frame and its invariance, the context spread of a well, training drift measured without coordinates, the admissibility criterion and the bound it buys; the settling map of SR2-NP's three checkpoints, calls AR1 to AR4 |
 | [Well_Settling_Map_SR2_NP.md](Well_Settling_Map_SR2_NP.md) | technical report of the first measurement (CPU, 2026-11-24): SR2-NP at steps 500, 22,500 and 31,000 on 8,192 validation tokens; definitions, setup, code, four figures. AR1 and AR2 hit, AR3 and AR4 miss. The live well keeps its tokens through the decay, but their order inside it has a rank agreement of only about 0.5, so no region is admissible over that window; the metric spread separates what the Euclidean spread confuses |
+| [Logical_Forms_as_Geometric_Figures.md](Logical_Forms_as_Geometric_Figures.md) | preliminary experiment (CPU, 2026-11-25): modus ponens, modus tollens, disjunctive syllogism and two fallacies through four trained models; a form frozen as 21 distances identifies new arguments 85 to 88% of the time and transfers between models, but it records the sentence frame, the restatements and negation; no validity signal found, at 0.5B or 2B tokens |
 
 ## Related notes elsewhere
 
