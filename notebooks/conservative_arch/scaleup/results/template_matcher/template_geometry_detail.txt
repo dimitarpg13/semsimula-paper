@@ -1,0 +1,176 @@
+##### sr2_2b h1 m 6 d 20; dev by m 1:0.883 2:0.922 3:0.934 4:0.935 5:0.941 6:0.943 7:0.945 8:0.945
+  known  detect MP 0.77 MT 0.74 DS1 0.72 DS2 0.63 | para MP 0.09 MT 0.20 DS1 0.10 DS2 0.14 | any false 0.01 AC 0.00 DA 0.03 disj 0.09 wrong 0.07
+     matched near miss     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 0.98 DS1 1.00 DS2 0.99 | AUROC paraphrase MP 0.87 MT 0.82 DS1 0.82 DS2 0.82
+     matched other subject false MP 0.00 MT 0.01 DS1 0.01 DS2 0.00 | AUROC exact MP 1.00 MT 0.97 DS1 0.98 DS2 0.98 | AUROC paraphrase MP 0.76 MT 0.64 DS1 0.67 DS2 0.66
+     matched unrelated     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 1.00 DS1 1.00 DS2 1.00 | AUROC paraphrase MP 0.94 MT 0.96 DS1 0.87 DS2 0.93
+  unseen detect MP 0.59 MT 0.71 DS1 0.33 DS2 0.59 | para MP 0.08 MT 0.20 DS1 0.06 DS2 0.12 | any false 0.03 AC 0.00 DA 0.12 disj 0.20 wrong 0.08
+     matched near miss     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 0.98 DS1 0.99 DS2 0.99 | AUROC paraphrase MP 0.87 MT 0.81 DS1 0.81 DS2 0.83
+     matched other subject false MP 0.00 MT 0.01 DS1 0.01 DS2 0.00 | AUROC exact MP 1.00 MT 0.97 DS1 0.98 DS2 0.98 | AUROC paraphrase MP 0.76 MT 0.64 DS1 0.66 DS2 0.67
+     matched unrelated     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 1.00 DS1 1.00 DS2 1.00 | AUROC paraphrase MP 0.94 MT 0.96 DS1 0.87 DS2 0.93
+  pairs (distance, predicted error, measured): MP/DA 9.8 0.000 0.000 ; MP/near 10.3 0.000 0.000 ; MP/swap 9.1 0.000 0.000 ; MT/AC 8.9 0.000 0.000 ; MT/nearQn 7.8 0.000 0.036 ; MT/swapQn 7.0 0.000 0.037 ; DS1/P 10.2 0.000 0.000 ; DS1/nearn 9.0 0.000 0.040 ; DS2/Q 9.2 0.000 0.000 ; DS1/DS2 13.2 0.000 0.000 ; MP/P 2.3 0.127 0.200 
+  chi2 {'cond:MP': (13.5, 20, 0.01), 'cond:MT': (18.4, 20, 0.09), 'disj:DS1': (19.5, 20, 0.08), 'disj:DS2': (19.9, 20, 0.07)}
+##### sr2_2b h2 m 4 d 12; dev by m 1:0.858 2:0.883 3:0.890 4:0.897 5:0.899 6:0.891 7:0.887 8:0.878
+  known  detect MP 0.40 MT 0.20 DS1 0.30 DS2 0.32 | para MP 0.12 MT 0.11 DS1 0.12 DS2 0.09 | any false 0.01 AC 0.00 DA 0.03 disj 0.04 wrong 0.01
+     matched near miss     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 0.99 MT 0.98 DS1 0.99 DS2 0.99 | AUROC paraphrase MP 0.83 MT 0.79 DS1 0.81 DS2 0.81
+     matched other subject false MP 0.01 MT 0.01 DS1 0.01 DS2 0.01 | AUROC exact MP 0.98 MT 0.92 DS1 0.95 DS2 0.94 | AUROC paraphrase MP 0.66 MT 0.58 DS1 0.64 DS2 0.62
+     matched unrelated     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 0.99 DS1 1.00 DS2 1.00 | AUROC paraphrase MP 0.92 MT 0.91 DS1 0.91 DS2 0.91
+  unseen detect MP 0.24 MT 0.09 DS1 0.22 DS2 0.23 | para MP 0.06 MT 0.05 DS1 0.08 DS2 0.05 | any false 0.02 AC 0.00 DA 0.12 disj 0.09 wrong 0.03
+     matched near miss     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 0.99 MT 0.98 DS1 0.98 DS2 0.99 | AUROC paraphrase MP 0.83 MT 0.79 DS1 0.80 DS2 0.81
+     matched other subject false MP 0.00 MT 0.01 DS1 0.00 DS2 0.01 | AUROC exact MP 0.97 MT 0.90 DS1 0.94 DS2 0.94 | AUROC paraphrase MP 0.66 MT 0.57 DS1 0.63 DS2 0.61
+     matched unrelated     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 0.99 DS1 1.00 DS2 1.00 | AUROC paraphrase MP 0.92 MT 0.89 DS1 0.90 DS2 0.91
+  pairs (distance, predicted error, measured): MP/DA 3.8 0.028 0.043 ; MP/near 6.3 0.001 0.007 ; MP/swap 4.9 0.007 0.072 ; MT/AC 4.2 0.018 0.043 ; MT/nearQn 5.4 0.004 0.042 ; MT/swapQn 3.6 0.038 0.118 ; DS1/P 3.9 0.027 0.064 ; DS1/nearn 5.4 0.003 0.039 ; DS2/Q 4.0 0.022 0.065 ; DS1/DS2 9.4 0.000 0.000 ; MP/P 1.8 0.181 0.249 
+  chi2 {'cond:MP': (11.8, 12, 0.05), 'cond:MT': (13.4, 12, 0.09), 'disj:DS1': (13.4, 12, 0.06), 'disj:DS2': (13.0, 12, 0.07)}
+##### sr2_2b h1+h2 m 4 d 20; dev by m 1:0.897 2:0.944 3:0.952 4:0.957 5:0.959 6:0.959 7:0.958 8:0.957
+  known  detect MP 0.82 MT 0.87 DS1 0.78 DS2 0.67 | para MP 0.11 MT 0.20 DS1 0.21 DS2 0.19 | any false 0.01 AC 0.00 DA 0.07 disj 0.07 wrong 0.04
+     matched near miss     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 0.98 DS1 1.00 DS2 0.99 | AUROC paraphrase MP 0.87 MT 0.85 DS1 0.88 DS2 0.86
+     matched other subject false MP 0.00 MT 0.01 DS1 0.01 DS2 0.01 | AUROC exact MP 1.00 MT 0.96 DS1 0.98 DS2 0.98 | AUROC paraphrase MP 0.75 MT 0.68 DS1 0.71 DS2 0.74
+     matched unrelated     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 1.00 DS1 1.00 DS2 1.00 | AUROC paraphrase MP 0.93 MT 0.98 DS1 0.92 DS2 0.96
+  unseen detect MP 0.61 MT 0.66 DS1 0.58 DS2 0.59 | para MP 0.09 MT 0.14 DS1 0.11 DS2 0.16 | any false 0.03 AC 0.00 DA 0.16 disj 0.20 wrong 0.08
+     matched near miss     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 0.98 DS1 0.99 DS2 0.99 | AUROC paraphrase MP 0.87 MT 0.84 DS1 0.86 DS2 0.87
+     matched other subject false MP 0.00 MT 0.01 DS1 0.01 DS2 0.01 | AUROC exact MP 1.00 MT 0.96 DS1 0.98 DS2 0.98 | AUROC paraphrase MP 0.75 MT 0.67 DS1 0.69 DS2 0.75
+     matched unrelated     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 1.00 DS1 1.00 DS2 1.00 | AUROC paraphrase MP 0.93 MT 0.98 DS1 0.91 DS2 0.96
+  pairs (distance, predicted error, measured): MP/DA 10.1 0.000 0.000 ; MP/near 10.8 0.000 0.000 ; MP/swap 9.8 0.000 0.000 ; MT/AC 9.4 0.000 0.000 ; MT/nearQn 7.8 0.000 0.036 ; MT/swapQn 7.1 0.000 0.039 ; DS1/P 10.5 0.000 0.000 ; DS1/nearn 9.2 0.000 0.036 ; DS2/Q 9.8 0.000 0.000 ; DS1/DS2 14.2 0.000 0.000 ; MP/P 3.3 0.049 0.133 
+  chi2 {'cond:MP': (14.9, 20, 0.02), 'cond:MT': (20.0, 20, 0.09), 'disj:DS1': (24.8, 20, 0.11), 'disj:DS2': (22.7, 20, 0.09)}
+##### sr2_2b h0 m 8 d 25; dev by m 1:0.858 2:0.864 3:0.869 4:0.874 5:0.877 6:0.880 7:0.880 8:0.883
+  known  detect MP 0.76 MT 0.13 DS1 0.28 DS2 0.00 | para MP 0.00 MT 0.00 DS1 0.01 DS2 0.00 | any false 0.01 AC 0.00 DA 0.00 disj 0.09 wrong 0.00
+     matched near miss     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 0.99 DS1 0.98 DS2 0.99 | AUROC paraphrase MP 0.92 MT 0.80 DS1 0.82 DS2 0.84
+     matched other subject false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 0.99 DS1 0.97 DS2 1.00 | AUROC paraphrase MP 0.87 MT 0.82 DS1 0.75 DS2 0.90
+     matched unrelated     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 1.00 DS1 1.00 DS2 1.00 | AUROC paraphrase MP 0.95 MT 0.98 DS1 0.98 DS2 0.98
+  unseen detect MP 0.63 MT 0.01 DS1 0.30 DS2 0.00 | para MP 0.00 MT 0.00 DS1 0.02 DS2 0.00 | any false 0.00 AC 0.00 DA 0.00 disj 0.00 wrong 0.00
+     matched near miss     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 0.85 DS1 0.97 DS2 0.99 | AUROC paraphrase MP 0.91 MT 0.75 DS1 0.80 DS2 0.84
+     matched other subject false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 0.85 DS1 0.95 DS2 0.99 | AUROC paraphrase MP 0.86 MT 0.77 DS1 0.72 DS2 0.89
+     matched unrelated     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 0.87 DS1 1.00 DS2 1.00 | AUROC paraphrase MP 0.96 MT 0.97 DS1 0.98 DS2 0.98
+  pairs (distance, predicted error, measured): MP/DA 12.8 0.000 0.000 ; MP/near 13.1 0.000 0.000 ; MP/swap 12.9 0.000 0.000 ; MT/AC 14.3 0.000 0.000 ; MT/nearQn 7.5 0.000 0.050 ; MT/swapQn 7.8 0.000 0.028 ; DS1/P 12.2 0.000 0.000 ; DS1/nearn 7.8 0.000 0.050 ; DS2/Q 14.9 0.000 0.000 ; DS1/DS2 14.5 0.000 0.000 ; MP/P 4.0 0.022 0.333 
+  chi2 {'cond:MP': (9.0, 25, 0.02), 'cond:MT': (23.8, 25, 0.23), 'disj:DS1': (27.3, 25, 0.16), 'disj:DS2': (17.6, 25, 0.1)}
+##### sr2 h1 m 4 d 15; dev by m 1:0.907 2:0.934 3:0.932 4:0.940 5:0.937 6:0.940 7:0.937 8:0.939
+  known  detect MP 0.74 MT 0.68 DS1 0.72 DS2 0.60 | para MP 0.06 MT 0.16 DS1 0.09 DS2 0.06 | any false 0.01 AC 0.00 DA 0.06 disj 0.04 wrong 0.05
+     matched near miss     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 0.98 DS1 0.98 DS2 0.99 | AUROC paraphrase MP 0.88 MT 0.84 DS1 0.87 DS2 0.85
+     matched other subject false MP 0.00 MT 0.04 DS1 0.00 DS2 0.03 | AUROC exact MP 1.00 MT 0.97 DS1 0.97 DS2 0.97 | AUROC paraphrase MP 0.89 MT 0.67 DS1 0.68 DS2 0.70
+     matched unrelated     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 1.00 DS1 0.99 DS2 1.00 | AUROC paraphrase MP 0.93 MT 0.95 DS1 0.91 DS2 0.94
+  unseen detect MP 0.48 MT 0.56 DS1 0.59 DS2 0.52 | para MP 0.06 MT 0.13 DS1 0.06 DS2 0.02 | any false 0.02 AC 0.00 DA 0.12 disj 0.11 wrong 0.08
+     matched near miss     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 0.98 DS1 0.98 DS2 0.99 | AUROC paraphrase MP 0.88 MT 0.83 DS1 0.86 DS2 0.85
+     matched other subject false MP 0.00 MT 0.04 DS1 0.00 DS2 0.03 | AUROC exact MP 1.00 MT 0.97 DS1 0.96 DS2 0.97 | AUROC paraphrase MP 0.89 MT 0.67 DS1 0.67 DS2 0.69
+     matched unrelated     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 1.00 DS1 0.99 DS2 1.00 | AUROC paraphrase MP 0.93 MT 0.95 DS1 0.90 DS2 0.94
+  pairs (distance, predicted error, measured): MP/DA 8.9 0.000 0.000 ; MP/near 9.8 0.000 0.000 ; MP/swap 9.9 0.000 0.000 ; MT/AC 8.6 0.000 0.000 ; MT/nearQn 7.3 0.000 0.035 ; MT/swapQn 7.0 0.000 0.054 ; DS1/P 9.0 0.000 0.000 ; DS1/nearn 7.7 0.000 0.042 ; DS2/Q 8.4 0.000 0.000 ; DS1/DS2 12.4 0.000 0.006 ; MP/P 2.2 0.134 0.132 
+  chi2 {'cond:MP': (9.3, 15, 0.01), 'cond:MT': (16.3, 15, 0.11), 'disj:DS1': (18.6, 15, 0.11), 'disj:DS2': (16.8, 15, 0.09)}
+##### sr2 h2 m 5 d 31; dev by m 1:0.870 2:0.885 3:0.898 4:0.902 5:0.904 6:0.893 7:0.891 8:0.891
+  known  detect MP 0.32 MT 0.29 DS1 0.45 DS2 0.42 | para MP 0.07 MT 0.04 DS1 0.05 DS2 0.04 | any false 0.01 AC 0.00 DA 0.12 disj 0.02 wrong 0.01
+     matched near miss     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 0.99 MT 0.97 DS1 0.98 DS2 0.97 | AUROC paraphrase MP 0.83 MT 0.76 DS1 0.78 DS2 0.77
+     matched other subject false MP 0.00 MT 0.01 DS1 0.00 DS2 0.03 | AUROC exact MP 0.98 MT 0.95 DS1 0.96 DS2 0.95 | AUROC paraphrase MP 0.70 MT 0.63 DS1 0.65 DS2 0.66
+     matched unrelated     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 0.99 DS1 0.99 DS2 0.99 | AUROC paraphrase MP 0.88 MT 0.88 DS1 0.86 DS2 0.88
+  unseen detect MP 0.13 MT 0.15 DS1 0.36 DS2 0.28 | para MP 0.04 MT 0.01 DS1 0.03 DS2 0.03 | any false 0.02 AC 0.00 DA 0.21 disj 0.05 wrong 0.03
+     matched near miss     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 0.99 MT 0.95 DS1 0.97 DS2 0.97 | AUROC paraphrase MP 0.83 MT 0.75 DS1 0.77 DS2 0.77
+     matched other subject false MP 0.00 MT 0.02 DS1 0.00 DS2 0.02 | AUROC exact MP 0.98 MT 0.90 DS1 0.95 DS2 0.95 | AUROC paraphrase MP 0.70 MT 0.60 DS1 0.65 DS2 0.66
+     matched unrelated     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 0.98 DS1 0.98 DS2 0.99 | AUROC paraphrase MP 0.89 MT 0.86 DS1 0.86 DS2 0.89
+  pairs (distance, predicted error, measured): MP/DA 5.6 0.002 0.046 ; MP/near 7.4 0.000 0.050 ; MP/swap 6.8 0.000 0.046 ; MT/AC 5.6 0.003 0.028 ; MT/nearQn 5.7 0.002 0.047 ; MT/swapQn 5.2 0.005 0.078 ; DS1/P 5.9 0.002 0.019 ; DS1/nearn 6.0 0.001 0.051 ; DS2/Q 5.5 0.003 0.035 ; DS1/DS2 10.6 0.000 0.008 ; MP/P 2.7 0.086 0.214 
+  chi2 {'cond:MP': (28.6, 31, 0.09), 'cond:MT': (31.8, 31, 0.09), 'disj:DS1': (35.0, 31, 0.12), 'disj:DS2': (30.2, 31, 0.09)}
+##### sr2 h1+h2 m 4 d 20; dev by m 1:0.930 2:0.946 3:0.947 4:0.950 5:0.952 6:0.951 7:0.951 8:0.950
+  known  detect MP 0.80 MT 0.76 DS1 0.75 DS2 0.67 | para MP 0.10 MT 0.19 DS1 0.07 DS2 0.12 | any false 0.01 AC 0.00 DA 0.01 disj 0.03 wrong 0.02
+     matched near miss     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 0.98 DS1 0.98 DS2 0.99 | AUROC paraphrase MP 0.89 MT 0.82 DS1 0.87 DS2 0.83
+     matched other subject false MP 0.00 MT 0.01 DS1 0.00 DS2 0.03 | AUROC exact MP 1.00 MT 0.97 DS1 0.97 DS2 0.98 | AUROC paraphrase MP 0.89 MT 0.71 DS1 0.72 DS2 0.76
+     matched unrelated     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 1.00 DS1 0.99 DS2 1.00 | AUROC paraphrase MP 0.95 MT 0.96 DS1 0.92 DS2 0.95
+  unseen detect MP 0.55 MT 0.50 DS1 0.65 DS2 0.60 | para MP 0.07 MT 0.12 DS1 0.06 DS2 0.09 | any false 0.02 AC 0.00 DA 0.13 disj 0.08 wrong 0.06
+     matched near miss     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 0.98 DS1 0.98 DS2 0.99 | AUROC paraphrase MP 0.88 MT 0.82 DS1 0.87 DS2 0.83
+     matched other subject false MP 0.00 MT 0.01 DS1 0.00 DS2 0.03 | AUROC exact MP 1.00 MT 0.97 DS1 0.97 DS2 0.98 | AUROC paraphrase MP 0.89 MT 0.71 DS1 0.70 DS2 0.76
+     matched unrelated     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 1.00 DS1 0.99 DS2 1.00 | AUROC paraphrase MP 0.95 MT 0.96 DS1 0.92 DS2 0.95
+  pairs (distance, predicted error, measured): MP/DA 9.7 0.000 0.000 ; MP/near 10.5 0.000 0.000 ; MP/swap 10.6 0.000 0.000 ; MT/AC 9.6 0.000 0.000 ; MT/nearQn 7.7 0.000 0.033 ; MT/swapQn 7.8 0.000 0.057 ; DS1/P 9.9 0.000 0.000 ; DS1/nearn 8.2 0.000 0.042 ; DS2/Q 9.5 0.000 0.000 ; DS1/DS2 13.4 0.000 0.000 ; MP/P 3.6 0.035 0.094 
+  chi2 {'cond:MP': (15.0, 20, 0.02), 'cond:MT': (21.6, 20, 0.11), 'disj:DS1': (26.0, 20, 0.12), 'disj:DS2': (22.4, 20, 0.08)}
+##### sr2 h0 m 7 d 10; dev by m 1:0.843 2:0.855 3:0.862 4:0.865 5:0.869 6:0.862 7:0.871 8:0.872
+  known  detect MP 0.16 MT 0.16 DS1 0.28 DS2 0.24 | para MP 0.00 MT 0.02 DS1 0.03 DS2 0.04 | any false 0.02 AC 0.00 DA 0.11 disj 0.02 wrong 0.02
+     matched near miss     false MP 0.02 MT 0.02 DS1 0.02 DS2 0.01 | AUROC exact MP 0.99 MT 0.98 DS1 0.96 DS2 0.99 | AUROC paraphrase MP 0.89 MT 0.80 DS1 0.80 DS2 0.80
+     matched other subject false MP 0.00 MT 0.01 DS1 0.01 DS2 0.01 | AUROC exact MP 1.00 MT 0.98 DS1 0.97 DS2 0.99 | AUROC paraphrase MP 0.86 MT 0.83 DS1 0.77 DS2 0.89
+     matched unrelated     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 1.00 DS1 1.00 DS2 1.00 | AUROC paraphrase MP 0.94 MT 0.97 DS1 0.97 DS2 0.96
+  unseen detect MP 0.03 MT 0.04 DS1 0.28 DS2 0.07 | para MP 0.00 MT 0.01 DS1 0.04 DS2 0.03 | any false 0.02 AC 0.00 DA 0.12 disj 0.02 wrong 0.03
+     matched near miss     false MP 0.01 MT 0.01 DS1 0.02 DS2 0.01 | AUROC exact MP 0.98 MT 0.85 DS1 0.96 DS2 0.98 | AUROC paraphrase MP 0.88 MT 0.76 DS1 0.80 DS2 0.80
+     matched other subject false MP 0.00 MT 0.00 DS1 0.01 DS2 0.00 | AUROC exact MP 1.00 MT 0.87 DS1 0.96 DS2 0.99 | AUROC paraphrase MP 0.84 MT 0.81 DS1 0.76 DS2 0.89
+     matched unrelated     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 0.92 DS1 1.00 DS2 1.00 | AUROC paraphrase MP 0.95 MT 0.95 DS1 0.97 DS2 0.97
+  pairs (distance, predicted error, measured): MP/DA 12.8 0.000 0.000 ; MP/near 12.9 0.000 0.000 ; MP/swap 13.1 0.000 0.000 ; MT/AC 14.6 0.000 0.000 ; MT/nearQn 6.5 0.001 0.050 ; MT/swapQn 7.2 0.000 0.022 ; DS1/P 12.0 0.000 0.000 ; DS1/nearn 6.5 0.001 0.050 ; DS2/Q 15.4 0.000 0.000 ; DS1/DS2 12.8 0.000 0.000 ; MP/P 0.6 0.382 0.375 
+  chi2 {'cond:MP': (3.5, 10, 0.01), 'cond:MT': (12.5, 10, 0.23), 'disj:DS1': (12.0, 10, 0.11), 'disj:DS2': (8.1, 10, 0.1)}
+##### sr2_2b_s500 h1 m 8 d 20; dev by m 1:0.855 2:0.868 3:0.879 4:0.878 5:0.878 6:0.880 7:0.880 8:0.886
+  known  detect MP 0.47 MT 0.35 DS1 0.34 DS2 0.26 | para MP 0.00 MT 0.00 DS1 0.00 DS2 0.01 | any false 0.01 AC 0.00 DA 0.03 disj 0.03 wrong 0.02
+     matched near miss     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.01 | AUROC exact MP 1.00 MT 0.98 DS1 0.97 DS2 0.97 | AUROC paraphrase MP 0.62 MT 0.51 DS1 0.48 DS2 0.51
+     matched other subject false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 1.00 DS1 1.00 DS2 1.00 | AUROC paraphrase MP 0.86 MT 0.98 DS1 0.96 DS2 0.97
+     matched unrelated     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 1.00 DS1 1.00 DS2 1.00 | AUROC paraphrase MP 0.82 MT 1.00 DS1 1.00 DS2 1.00
+  unseen detect MP 0.23 MT 0.21 DS1 0.09 DS2 0.12 | para MP 0.00 MT 0.00 DS1 0.01 DS2 0.00 | any false 0.02 AC 0.00 DA 0.11 disj 0.16 wrong 0.06
+     matched near miss     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.01 | AUROC exact MP 0.99 MT 0.98 DS1 0.96 DS2 0.97 | AUROC paraphrase MP 0.62 MT 0.51 DS1 0.48 DS2 0.51
+     matched other subject false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 1.00 DS1 1.00 DS2 1.00 | AUROC paraphrase MP 0.85 MT 0.98 DS1 0.95 DS2 0.97
+     matched unrelated     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 1.00 DS1 1.00 DS2 1.00 | AUROC paraphrase MP 0.82 MT 1.00 DS1 1.00 DS2 1.00
+  pairs (distance, predicted error, measured): MP/DA 20.5 0.000 0.000 ; MP/near 20.5 0.000 0.000 ; MP/swap 20.3 0.000 0.000 ; MT/AC 22.3 0.000 0.000 ; MT/nearQn 5.2 0.005 0.108 ; MT/swapQn 7.8 0.000 0.011 ; DS1/P 20.6 0.000 0.000 ; DS1/nearn 5.6 0.002 0.108 ; DS2/Q 22.5 0.000 0.000 ; DS1/DS2 12.9 0.000 0.000 ; MP/P 1.1 0.286 0.247 
+  chi2 {'cond:MP': (11.6, 20, 0.02), 'cond:MT': (14.0, 20, 0.06), 'disj:DS1': (15.6, 20, 0.08), 'disj:DS2': (14.2, 20, 0.07)}
+##### sr2_2b_s500 h2 m 7 d 20; dev by m 1:0.853 2:0.864 3:0.876 4:0.878 5:0.878 6:0.878 7:0.882 8:0.882
+  known  detect MP 0.47 MT 0.35 DS1 0.36 DS2 0.26 | para MP 0.00 MT 0.00 DS1 0.00 DS2 0.01 | any false 0.01 AC 0.00 DA 0.02 disj 0.04 wrong 0.02
+     matched near miss     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.01 | AUROC exact MP 1.00 MT 0.97 DS1 0.97 DS2 0.97 | AUROC paraphrase MP 0.62 MT 0.51 DS1 0.48 DS2 0.52
+     matched other subject false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 1.00 DS1 1.00 DS2 1.00 | AUROC paraphrase MP 0.85 MT 0.98 DS1 0.96 DS2 0.97
+     matched unrelated     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 1.00 DS1 1.00 DS2 1.00 | AUROC paraphrase MP 0.83 MT 1.00 DS1 1.00 DS2 1.00
+  unseen detect MP 0.23 MT 0.21 DS1 0.14 DS2 0.12 | para MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | any false 0.02 AC 0.00 DA 0.09 disj 0.16 wrong 0.07
+     matched near miss     false MP 0.00 MT 0.01 DS1 0.00 DS2 0.01 | AUROC exact MP 0.99 MT 0.97 DS1 0.96 DS2 0.97 | AUROC paraphrase MP 0.62 MT 0.52 DS1 0.48 DS2 0.52
+     matched other subject false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 1.00 DS1 1.00 DS2 1.00 | AUROC paraphrase MP 0.84 MT 0.98 DS1 0.95 DS2 0.97
+     matched unrelated     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 1.00 DS1 1.00 DS2 1.00 | AUROC paraphrase MP 0.83 MT 1.00 DS1 0.99 DS2 1.00
+  pairs (distance, predicted error, measured): MP/DA 20.1 0.000 0.000 ; MP/near 20.3 0.000 0.000 ; MP/swap 20.2 0.000 0.000 ; MT/AC 22.0 0.000 0.000 ; MT/nearQn 5.2 0.005 0.111 ; MT/swapQn 7.6 0.000 0.011 ; DS1/P 20.2 0.000 0.000 ; DS1/nearn 5.6 0.003 0.108 ; DS2/Q 22.2 0.000 0.000 ; DS1/DS2 12.7 0.000 0.000 ; MP/P 1.1 0.284 0.242 
+  chi2 {'cond:MP': (11.6, 20, 0.02), 'cond:MT': (14.1, 20, 0.07), 'disj:DS1': (15.6, 20, 0.08), 'disj:DS2': (14.2, 20, 0.08)}
+##### sr2_2b_s500 h1+h2 m 4 d 20; dev by m 1:0.858 2:0.874 3:0.880 4:0.883 5:0.882 6:0.885 7:0.882 8:0.884
+  known  detect MP 0.69 MT 0.48 DS1 0.45 DS2 0.34 | para MP 0.00 MT 0.01 DS1 0.01 DS2 0.01 | any false 0.01 AC 0.00 DA 0.03 disj 0.05 wrong 0.03
+     matched near miss     false MP 0.01 MT 0.00 DS1 0.01 DS2 0.01 | AUROC exact MP 0.99 MT 0.96 DS1 0.96 DS2 0.96 | AUROC paraphrase MP 0.62 MT 0.57 DS1 0.55 DS2 0.57
+     matched other subject false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 1.00 DS1 1.00 DS2 1.00 | AUROC paraphrase MP 0.87 MT 0.98 DS1 0.97 DS2 0.97
+     matched unrelated     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 1.00 DS1 1.00 DS2 1.00 | AUROC paraphrase MP 0.69 MT 1.00 DS1 1.00 DS2 1.00
+  unseen detect MP 0.26 MT 0.25 DS1 0.17 DS2 0.16 | para MP 0.00 MT 0.01 DS1 0.01 DS2 0.00 | any false 0.03 AC 0.00 DA 0.08 disj 0.21 wrong 0.09
+     matched near miss     false MP 0.01 MT 0.00 DS1 0.01 DS2 0.01 | AUROC exact MP 0.99 MT 0.96 DS1 0.96 DS2 0.96 | AUROC paraphrase MP 0.62 MT 0.57 DS1 0.55 DS2 0.57
+     matched other subject false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 1.00 DS1 1.00 DS2 1.00 | AUROC paraphrase MP 0.86 MT 0.98 DS1 0.96 DS2 0.97
+     matched unrelated     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 1.00 DS1 1.00 DS2 1.00 | AUROC paraphrase MP 0.70 MT 1.00 DS1 1.00 DS2 1.00
+  pairs (distance, predicted error, measured): MP/DA 21.7 0.000 0.000 ; MP/near 21.5 0.000 0.000 ; MP/swap 21.3 0.000 0.000 ; MT/AC 23.6 0.000 0.000 ; MT/nearQn 4.9 0.007 0.114 ; MT/swapQn 7.2 0.000 0.017 ; DS1/P 21.8 0.000 0.000 ; DS1/nearn 5.3 0.004 0.114 ; DS2/Q 23.8 0.000 0.000 ; DS1/DS2 12.5 0.000 0.000 ; MP/P 1.2 0.271 0.199 
+  chi2 {'cond:MP': (12.5, 20, 0.02), 'cond:MT': (17.3, 20, 0.09), 'disj:DS1': (18.2, 20, 0.1), 'disj:DS2': (17.0, 20, 0.09)}
+##### sr2_2b_s500 h0 m 3 d 15; dev by m 1:0.838 2:0.864 3:0.873 4:0.874 5:0.874 6:0.871 7:0.872 8:0.870
+  known  detect MP 0.24 MT 0.35 DS1 0.20 DS2 0.24 | para MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | any false 0.01 AC 0.00 DA 0.01 disj 0.09 wrong 0.05
+     matched near miss     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 0.92 DS1 0.92 DS2 0.92 | AUROC paraphrase MP 0.64 MT 0.53 DS1 0.51 DS2 0.52
+     matched other subject false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 0.96 DS1 0.95 DS2 0.96 | AUROC paraphrase MP 0.60 MT 0.85 DS1 0.77 DS2 0.84
+     matched unrelated     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 1.00 DS1 1.00 DS2 1.00 | AUROC paraphrase MP 0.92 MT 1.00 DS1 1.00 DS2 1.00
+  unseen detect MP 0.11 MT 0.07 DS1 0.00 DS2 0.01 | para MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | any false 0.02 AC 0.00 DA 0.07 disj 0.18 wrong 0.08
+     matched near miss     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 0.92 DS1 0.92 DS2 0.92 | AUROC paraphrase MP 0.64 MT 0.52 DS1 0.51 DS2 0.51
+     matched other subject false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 0.96 DS1 0.95 DS2 0.96 | AUROC paraphrase MP 0.59 MT 0.84 DS1 0.74 DS2 0.82
+     matched unrelated     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 1.00 DS1 1.00 DS2 1.00 | AUROC paraphrase MP 0.92 MT 1.00 DS1 1.00 DS2 1.00
+  pairs (distance, predicted error, measured): MP/DA 13.3 0.000 0.000 ; MP/near 13.3 0.000 0.000 ; MP/swap 12.7 0.000 0.000 ; MT/AC 14.9 0.000 0.000 ; MT/nearQn 4.3 0.016 0.108 ; MT/swapQn 5.4 0.003 0.042 ; DS1/P 13.2 0.000 0.000 ; DS1/nearn 4.5 0.012 0.111 ; DS2/Q 14.9 0.000 0.000 ; DS1/DS2 10.7 0.000 0.000 ; MP/P 0.5 0.393 0.408 
+  chi2 {'cond:MP': (9.8, 15, 0.02), 'cond:MT': (10.6, 15, 0.08), 'disj:DS1': (12.8, 15, 0.08), 'disj:DS2': (12.0, 15, 0.09)}
+##### sr2_s500 h1 m 3 d 15; dev by m 1:0.855 2:0.873 3:0.889 4:0.886 5:0.888 6:0.890 7:0.890 8:0.888
+  known  detect MP 0.67 MT 0.45 DS1 0.46 DS2 0.31 | para MP 0.00 MT 0.00 DS1 0.01 DS2 0.01 | any false 0.01 AC 0.00 DA 0.03 disj 0.07 wrong 0.03
+     matched near miss     false MP 0.01 MT 0.02 DS1 0.01 DS2 0.01 | AUROC exact MP 1.00 MT 0.95 DS1 0.94 DS2 0.95 | AUROC paraphrase MP 0.66 MT 0.53 DS1 0.55 DS2 0.54
+     matched other subject false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 0.99 DS1 0.99 DS2 0.99 | AUROC paraphrase MP 0.83 MT 0.88 DS1 0.87 DS2 0.92
+     matched unrelated     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 1.00 DS1 1.00 DS2 1.00 | AUROC paraphrase MP 0.43 MT 1.00 DS1 1.00 DS2 1.00
+  unseen detect MP 0.47 MT 0.26 DS1 0.29 DS2 0.09 | para MP 0.00 MT 0.00 DS1 0.01 DS2 0.01 | any false 0.02 AC 0.00 DA 0.07 disj 0.15 wrong 0.08
+     matched near miss     false MP 0.01 MT 0.02 DS1 0.01 DS2 0.01 | AUROC exact MP 0.99 MT 0.94 DS1 0.94 DS2 0.95 | AUROC paraphrase MP 0.67 MT 0.53 DS1 0.54 DS2 0.54
+     matched other subject false MP 0.01 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 0.99 MT 0.98 DS1 0.99 DS2 0.99 | AUROC paraphrase MP 0.82 MT 0.86 DS1 0.85 DS2 0.91
+     matched unrelated     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 1.00 DS1 1.00 DS2 1.00 | AUROC paraphrase MP 0.45 MT 1.00 DS1 0.99 DS2 1.00
+  pairs (distance, predicted error, measured): MP/DA 18.6 0.000 0.000 ; MP/near 18.9 0.000 0.000 ; MP/swap 19.5 0.000 0.000 ; MT/AC 20.7 0.000 0.000 ; MT/nearQn 4.6 0.011 0.114 ; MT/swapQn 5.9 0.002 0.039 ; DS1/P 17.7 0.000 0.000 ; DS1/nearn 4.8 0.008 0.114 ; DS2/Q 20.5 0.000 0.000 ; DS1/DS2 11.1 0.000 0.000 ; MP/P 1.5 0.229 0.201 
+  chi2 {'cond:MP': (7.3, 15, 0.02), 'cond:MT': (15.5, 15, 0.11), 'disj:DS1': (16.8, 15, 0.09), 'disj:DS2': (14.4, 15, 0.11)}
+##### sr2_s500 h2 m 5 d 20; dev by m 1:0.856 2:0.873 3:0.890 4:0.890 5:0.892 6:0.894 7:0.895 8:0.892
+  known  detect MP 0.63 MT 0.22 DS1 0.41 DS2 0.22 | para MP 0.00 MT 0.00 DS1 0.01 DS2 0.00 | any false 0.01 AC 0.00 DA 0.03 disj 0.03 wrong 0.01
+     matched near miss     false MP 0.00 MT 0.01 DS1 0.00 DS2 0.00 | AUROC exact MP 0.99 MT 0.97 DS1 0.96 DS2 0.97 | AUROC paraphrase MP 0.65 MT 0.51 DS1 0.51 DS2 0.51
+     matched other subject false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 1.00 DS1 1.00 DS2 1.00 | AUROC paraphrase MP 0.89 MT 0.89 DS1 0.84 DS2 0.94
+     matched unrelated     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 1.00 DS1 1.00 DS2 1.00 | AUROC paraphrase MP 0.66 MT 0.97 DS1 0.93 DS2 0.97
+  unseen detect MP 0.51 MT 0.08 DS1 0.26 DS2 0.16 | para MP 0.00 MT 0.00 DS1 0.01 DS2 0.00 | any false 0.02 AC 0.00 DA 0.08 disj 0.12 wrong 0.05
+     matched near miss     false MP 0.01 MT 0.01 DS1 0.00 DS2 0.00 | AUROC exact MP 0.99 MT 0.97 DS1 0.96 DS2 0.97 | AUROC paraphrase MP 0.66 MT 0.51 DS1 0.50 DS2 0.51
+     matched other subject false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 1.00 DS1 1.00 DS2 1.00 | AUROC paraphrase MP 0.89 MT 0.88 DS1 0.83 DS2 0.93
+     matched unrelated     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 1.00 DS1 1.00 DS2 1.00 | AUROC paraphrase MP 0.70 MT 0.97 DS1 0.92 DS2 0.97
+  pairs (distance, predicted error, measured): MP/DA 19.4 0.000 0.000 ; MP/near 19.7 0.000 0.000 ; MP/swap 20.2 0.000 0.000 ; MT/AC 21.4 0.000 0.000 ; MT/nearQn 5.4 0.003 0.101 ; MT/swapQn 7.3 0.000 0.011 ; DS1/P 18.5 0.000 0.000 ; DS1/nearn 5.6 0.003 0.108 ; DS2/Q 21.3 0.000 0.000 ; DS1/DS2 11.9 0.000 0.000 ; MP/P 2.4 0.116 0.199 
+  chi2 {'cond:MP': (12.3, 20, 0.02), 'cond:MT': (17.7, 20, 0.09), 'disj:DS1': (18.7, 20, 0.08), 'disj:DS2': (16.3, 20, 0.09)}
+##### sr2_s500 h1+h2 m 7 d 20; dev by m 1:0.855 2:0.877 3:0.889 4:0.888 5:0.890 6:0.889 7:0.895 8:0.892
+  known  detect MP 0.65 MT 0.22 DS1 0.42 DS2 0.24 | para MP 0.00 MT 0.00 DS1 0.01 DS2 0.00 | any false 0.01 AC 0.00 DA 0.03 disj 0.03 wrong 0.01
+     matched near miss     false MP 0.00 MT 0.00 DS1 0.01 DS2 0.00 | AUROC exact MP 0.99 MT 0.97 DS1 0.96 DS2 0.97 | AUROC paraphrase MP 0.66 MT 0.49 DS1 0.49 DS2 0.49
+     matched other subject false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 1.00 DS1 1.00 DS2 1.00 | AUROC paraphrase MP 0.92 MT 0.91 DS1 0.87 DS2 0.95
+     matched unrelated     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 1.00 DS1 1.00 DS2 1.00 | AUROC paraphrase MP 0.69 MT 0.99 DS1 0.98 DS2 0.99
+  unseen detect MP 0.51 MT 0.08 DS1 0.26 DS2 0.11 | para MP 0.00 MT 0.00 DS1 0.01 DS2 0.00 | any false 0.02 AC 0.00 DA 0.08 disj 0.12 wrong 0.04
+     matched near miss     false MP 0.01 MT 0.01 DS1 0.01 DS2 0.00 | AUROC exact MP 0.99 MT 0.97 DS1 0.95 DS2 0.97 | AUROC paraphrase MP 0.66 MT 0.49 DS1 0.49 DS2 0.48
+     matched other subject false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 0.99 MT 1.00 DS1 1.00 DS2 1.00 | AUROC paraphrase MP 0.92 MT 0.90 DS1 0.86 DS2 0.95
+     matched unrelated     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 1.00 DS1 1.00 DS2 1.00 | AUROC paraphrase MP 0.71 MT 0.98 DS1 0.98 DS2 0.99
+  pairs (distance, predicted error, measured): MP/DA 21.4 0.000 0.000 ; MP/near 21.6 0.000 0.000 ; MP/swap 22.0 0.000 0.000 ; MT/AC 23.2 0.000 0.000 ; MT/nearQn 5.6 0.003 0.097 ; MT/swapQn 7.8 0.000 0.010 ; DS1/P 20.4 0.000 0.000 ; DS1/nearn 5.8 0.002 0.106 ; DS2/Q 23.1 0.000 0.000 ; DS1/DS2 12.6 0.000 0.000 ; MP/P 2.7 0.090 0.194 
+  chi2 {'cond:MP': (11.9, 20, 0.02), 'cond:MT': (17.1, 20, 0.07), 'disj:DS1': (17.8, 20, 0.07), 'disj:DS2': (15.6, 20, 0.09)}
+##### sr2_s500 h0 m 3 d 20; dev by m 1:0.853 2:0.899 3:0.911 4:0.906 5:0.900 6:0.908 7:0.902 8:0.896
+  known  detect MP 0.82 MT 0.62 DS1 0.52 DS2 0.52 | para MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | any false 0.01 AC 0.00 DA 0.01 disj 0.12 wrong 0.04
+     matched near miss     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 0.92 DS1 0.92 DS2 0.92 | AUROC paraphrase MP 0.65 MT 0.51 DS1 0.52 DS2 0.51
+     matched other subject false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 0.96 DS1 0.95 DS2 0.96 | AUROC paraphrase MP 0.65 MT 0.84 DS1 0.76 DS2 0.86
+     matched unrelated     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 1.00 DS1 1.00 DS2 1.00 | AUROC paraphrase MP 0.80 MT 0.99 DS1 0.99 DS2 0.99
+  unseen detect MP 0.75 MT 0.45 DS1 0.36 DS2 0.44 | para MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | any false 0.02 AC 0.00 DA 0.04 disj 0.20 wrong 0.08
+     matched near miss     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 0.92 DS1 0.91 DS2 0.92 | AUROC paraphrase MP 0.65 MT 0.51 DS1 0.51 DS2 0.51
+     matched other subject false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 0.95 DS1 0.95 DS2 0.96 | AUROC paraphrase MP 0.63 MT 0.82 DS1 0.73 DS2 0.84
+     matched unrelated     false MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | AUROC exact MP 1.00 MT 1.00 DS1 1.00 DS2 1.00 | AUROC paraphrase MP 0.83 MT 0.99 DS1 0.99 DS2 0.99
+  pairs (distance, predicted error, measured): MP/DA 13.8 0.000 0.000 ; MP/near 13.8 0.000 0.000 ; MP/swap 13.6 0.000 0.003 ; MT/AC 15.3 0.000 0.000 ; MT/nearQn 4.4 0.014 0.111 ; MT/swapQn 5.6 0.003 0.042 ; DS1/P 13.2 0.000 0.000 ; DS1/nearn 4.7 0.010 0.108 ; DS2/Q 15.5 0.000 0.000 ; DS1/DS2 10.6 0.000 0.000 ; MP/P 2.1 0.147 0.226 
+  chi2 {'cond:MP': (11.4, 20, 0.02), 'cond:MT': (16.3, 20, 0.08), 'disj:DS1': (18.3, 20, 0.09), 'disj:DS2': (16.1, 20, 0.08)}

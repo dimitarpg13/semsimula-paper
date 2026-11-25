@@ -113,6 +113,13 @@ def verdict(asym, loop, fd=0.0):
     return 'unclear'
 
 
+def at_layer(model, l):
+    """Select layer l's depth code of the aniso V_theta bank. In the model's forward a wrapper around _fock_layer_step does
+    this; every force here is evaluated outside the forward, where the last layer's code would otherwise stay selected."""
+    if hasattr(model.V_theta, 'set_active_layer'):
+        model.V_theta.set_active_layer(l)
+
+
 def replace_row(h, t, x):
     return torch.cat([h[:, :t], x[None, None], h[:, t + 1:]], 1)
 
@@ -123,6 +130,7 @@ def term_functions(model, h, xis, l, t, rc_in):
 
     def forces(x, pm_on=True):
         H = replace_row(h, t, x)
+        at_layer(model, l)
         if not pm_on and has_pm:
             model.poisson_mode_force = lambda h_, li_: torch.zeros_like(h_)
         try:
@@ -205,6 +213,7 @@ def router_shares(model, val):
     orig_fwd = sh.forward
     out = {}
     for l in range(L):
+        at_layer(model, l)
         h = caps[l].clone().requires_grad_(True)
         with torch.no_grad():
             xis = model.xi_module(h)
@@ -278,12 +287,14 @@ def run(model, val):
     model.cfg.gumbel_noise = False
     ev = {}
     for l in range(L):
+        at_layer(model, l)
         h = caps[l].clone().requires_grad_(True)       # the force differentiates w.r.t. it
         with torch.enable_grad():
             ev[l] = tuple(f.detach() for f in model._layer_forces(h, model.xi_module(h), l, split=True))
     model.train()
     check = 0.0
     for l in range(L):
+        at_layer(model, l)
         h = caps[l].clone().requires_grad_(True)
         with torch.enable_grad():
             tr = tuple(f.detach() for f in model._layer_forces(h, model.xi_module(h), l, split=True))
@@ -295,6 +306,7 @@ def run(model, val):
     gen = torch.Generator().manual_seed(7)
     try:
         for l in range(L):
+            at_layer(model, l)
             h = caps[l].detach()
             with torch.no_grad():
                 xis = model.xi_module(h)            # context held fixed
