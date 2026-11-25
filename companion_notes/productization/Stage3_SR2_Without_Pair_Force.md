@@ -114,7 +114,7 @@ Read 2026-11-21. The model card holds the full tables: [`semsimula-ladder-live-o
 
 **On the final weights** (read the same day on the CPU; outputs in the run's results folder and `results/recall_pathway/*_owt*`):
 - **Causality:** clean. Future perturbation and batch independence are exact; the prefix-only leak tax is $-2.2 \times 10^{-7}$ nats.
-- **Conservativity:** every force term passes at both layers (Jacobian asymmetry at most $6.7 \times 10^{-7}$, closed-loop work at most $1.6 \times 10^{-6}$).
+- **Conservativity:** every force term passes at both layers (Jacobian asymmetry at most $2.9 \times 10^{-7}$, closed-loop work at most $1.6 \times 10^{-6}$; rerun 2026-11-25 with each layer's own depth code, [Depth_Code_Correction.md](../depth_ladder/Depth_Code_Correction.md), the first run gave $6.7 \times 10^{-7}$).
 - **Recall pathway** (probe 6, 16 fresh OpenWebText windows, SR2 on the same windows; the probe in full: [Recall_Pathway_Probe.md](../depth_ladder/Recall_Pathway_Probe.md)):
   - Far recall runs through the layer-1 context channels as in SR2: +0.364 nats when the earlier occurrence is removed, against SR2's +0.376.
   - SR2's pair force carries none of it on OpenWebText either (+0.000).

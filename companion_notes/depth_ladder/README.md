@@ -31,6 +31,7 @@
 | §5.13 | probe 6 in full: which pathway carries recall (equations, code, results on code and OpenWebText) | [Recall_Pathway_Probe.md](Recall_Pathway_Probe.md) |
 | §5.13 | the velocity and the pair force as competing mechanisms: the velocity as a carrier, what each stands in for, the interaction test (book §28) | [Velocity_and_Pair_Force_as_Competing_Mechanisms.md](Velocity_and_Pair_Force_as_Competing_Mechanisms.md) |
 | §5.13 | the pair force in the first-order step: why FO-b-PMX-K16 is better trained without it; the step probe (alignment with the landscape force, roughness, sub-kick refinement) at step 500 and at the best checkpoint, against PMX-K16 (2026-11-24) | [Pair_Force_in_the_First_Order_Step.md](Pair_Force_in_the_First_Order_Step.md) |
+| corrections | 2026-11-25: layer 0 read with layer 1's depth code by five scripts; what was affected, corrected numbers, what was audited | [Depth_Code_Correction.md](Depth_Code_Correction.md) |
 | §5.13 | CPU inference: cost, the memory switches, the bound without the pair force | [CPU_Inference_Benchmark.md](CPU_Inference_Benchmark.md) |
 | §5.15 | Poisson-mode wells: PM1, PM1-cap, PMX | [Poisson_Mode_Wells_PM1_PMX.md](Poisson_Mode_Wells_PM1_PMX.md) |
 | §5.18 | what makes a model refinement-ready (RR) | [Refinement_Readiness_RR.md](Refinement_Readiness_RR.md) |

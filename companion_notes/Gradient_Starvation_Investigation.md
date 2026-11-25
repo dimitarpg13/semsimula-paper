@@ -100,11 +100,13 @@ Output:
 Inputs: the two `_best.pt` checkpoints (no-exchange step 31,500; conservative-only step 31,000), 2 × 512 validation tokens (seed 20260930), and a random cotangent on the last position.
 The harness propagates it back through each layer's force at the trained layer inputs.
 
+**Corrected 2026-11-25.** The first run evaluated both layers' V_θ with layer 1's depth code, so its layer-0 readings of V_θ and ξ were wrong ([Depth_Code_Correction.md](depth_ladder/Depth_Code_Correction.md)). The table and the bullets below are from the rerun. The zero-gradient result (G0.1, G0.2), the V_φ readings and all of layer 1 are unchanged. The first run's layer-0 values were RMS F_θ 0.0000 and ξ live 4.3e-5 (no-exchange), and 0.0056 and 1.0e-1 (conservative-only).
+
 | arm | layer | RMS F_θ | RMS F_φ | RMS F_rev | V_φ → earlier, as trained | V_φ → earlier, live | ξ → earlier, as trained | ξ → earlier, live |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| no-exchange | 0 | 0.0000 | 0.0006 | 0.0173 | **0** | 2.2e-2 | **0** | 4.3e-5 |
+| no-exchange | 0 | 0.0056 | 0.0006 | 0.0173 | **0** | 2.2e-2 | **0** | 5.6e-1 |
 | no-exchange | 1 | 0.0109 | 0.0008 | 0.0147 | **0** | 1.7e-2 | **0** | 3.8e-1 |
-| conservative-only | 0 | 0.0056 | 0.0005 | — | **0** | 2.8e-2 | **0** | 1.0e-1 |
+| conservative-only | 0 | 0.0040 | 0.0005 | — | **0** | 2.8e-2 | **0** | 3.5e-1 |
 | conservative-only | 1 | 0.0048 | 0.0000 | — | **0** | 7.8e-8 | **0** | 1.4e-1 |
 
 "Live" is the Tier 1 construction applied offline. The forward force is unchanged: its maximum difference from the trained force is **exactly 0** in every row, for both V_φ and ξ. Only the source tensor is left live for backprop.
@@ -121,11 +123,11 @@ The harness propagates it back through each layer's force at the trained layer i
   - The forward pass is bit-identical, and the source gradient becomes non-zero wherever the channel's force is non-zero.
   - That clears I1.1 and I1.2 in principle. The model-code switches still need their own checks on the real training path.
 - **G0.4: what the forces look like.**
-  - V_φ is small everywhere: 7–9% of F_θ's RMS where both are active.
+  - V_φ is small everywhere: 7–13% of F_θ's RMS where both are active.
   - In conservative-only layer 1, V_φ is **effectively off**: force below 5e-5 RMS, and the live gradient only 8e-8. The cause (per-layer scale, gate, or learned flatness) has not been checked.
-  - In no-exchange layer 0, the V_θ force is about 0. The reverse channel (0.017) carries that layer's inter-token force, so live ξ has almost nothing to act through there (4e-5).
+  - In no-exchange layer 0, the reverse channel (0.017) is three times the V_θ force (0.0056). Live ξ acts through V_θ there as at layer 1 (0.56). An earlier version said that the V_θ force is about 0 at this layer; that was the wrong depth code.
 - **Reading for Tier 2.**
-  - Where there is a force to act through, **live ξ offers 4–20× more source gradient than live V_φ (3.6× and 22×)**.
+  - Where there is a force to act through, **live ξ offers 12–25× more source gradient than live V_φ (25× and 22× in no-exchange, 12× at conservative-only layer 0)**. The first run gave 3.6× for the last.
   - In the conservative-only arm, the "only inter-token channels" turn out to be ξ at both layers plus a weak V_φ at layer 0 alone.
   - So if P2.1 moves, ξ is the more likely cause. P2.4 (ξ only) is the more informative decomposition.
   - Gradient norm under one random cotangent measures what could be learned. It does not predict PPL. The bands stay as written.
@@ -162,19 +164,21 @@ Each arm was built through the notebook's own Cells 0–5b on the parent's `_bes
 | arm | switches | forward vs parent (eval / train) | layer 0 → earlier | layer 1 → earlier |
 | --- | --- | --- | ---: | ---: |
 | no-exchange | default | 0 / 0 | **0** | **0** |
-| no-exchange | V_φ live | 0 / 0 | 23.9 | 0.36 |
-| no-exchange | ξ live | 0 / 0 | 0.023 | 8.8 |
-| no-exchange | both | 0 / 0 | 23.9 | 8.8 |
+| no-exchange | V_φ live | 0 / 0 | 3.5 | 0.36 |
+| no-exchange | ξ live | 0 / 0 | 70.8 | 8.8 |
+| no-exchange | both | 0 / 0 | 70.9 | 8.8 |
 | conservative-only | default | 0 / 0 | **0** | **0** |
-| conservative-only | V_φ live | 0 / 0 | 41.1 | 1.8e-17 |
-| conservative-only | ξ live | 0 / 0 | 20.1 | 13.1 |
-| conservative-only | both | 0 / 0 | 45.8 | 13.1 |
+| conservative-only | V_φ live | 0 / 0 | 41.6 | 1.8e-17 |
+| conservative-only | ξ live | 0 / 0 | 98.2 | 13.1 |
+| conservative-only | both | 0 / 0 | 107.0 | 13.1 |
+
+(Layer-0 column corrected 2026-11-25; the first run stepped layer 0 with layer 1's depth code and gave 23.9, 0.023, 23.9, 41.1, 20.1 and 45.8. The defaults' exact zeros, the forward identities and the layer-1 column are unchanged.)
 
 - **The forward pass is bit-identical** (max |Δlogit| = 0) in all eight builds, in eval and in train mode with the same Gumbel seed. The tiny random Verlet model, where the alias is required, is bit-identical too.
 - **As trained, a layer step sends exactly 0 gradient to earlier tokens.** Within a step, V_φ and ξ are the only inter-token paths. The live switches open them.
 - The pattern matches Tier 0:
   - V_φ carries nothing at conservative-only layer 1.
-  - ξ carries little at no-exchange layer 0.
+  - ξ carries most of the source gradient wherever V_θ acts, which is at both layers of both arms. (The first run's "ξ carries little at no-exchange layer 0" was the wrong depth code.)
 - The step-level gradients are larger than Tier 0's force-only ones because they include the CfC linearisation.
 - **Cost:**
   - Train forward+backward time on CPU is unchanged (11.6–13.8 s for every build).
@@ -263,7 +267,7 @@ F3.1's mid-run readings, a move at 3k and about 57–59 projected settled, make 
   - Output: [`results/gradient_starvation/pair_potential_none_verify_output.txt`](../notebooks/conservative_arch/scaleup/results/gradient_starvation/pair_potential_none_verify_output.txt).
   - V_φ, the score head and the per-layer scale are gone from the module and the `state_dict`: 137,803 parameters (0.18%).
   - Both arms build, train-step and backprop.
-  - In multi-ξ SPLM, ξ is the only inter-token channel. A layer step sends exactly 0 gradient to earlier tokens by default (2.2 at layer 0 with `xilive`), and the forward pass is identical.
+  - In multi-ξ SPLM, ξ is the only inter-token channel. A layer step sends exactly 0 gradient to earlier tokens by default (2.3 at layer 0 with `xilive`), and the forward pass is identical.
   - Regression: every existing-arm reading in `verify_vphi_xi_grad_path.py` is unchanged, and both `_smoke` suites pass.
   - `VPHI_GRAD_PATH = 'live'` with no V_φ is refused, in the model and in Cell 5b.
 

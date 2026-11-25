@@ -211,7 +211,7 @@ In the model trained without the pair force:
 
 Both terms matter at layer 0 and the context potential's is the larger. The first-order pair force aligns with both. The ratio of the two agrees with Cell 6b-15 (0.535 for this arm).
 
-**Correction (2026-11-25).** From 2026-11-24 this section said that the force of $V_\theta$ is negligible at layer 0 and that the pair force therefore reinforces the wells' positional clock. That was wrong: the figures came from the conservativity test's row for its worst token, not from a typical one, and they contradicted Cell 6b-15.
+**Correction (2026-11-25).** From 2026-11-24 this section said that the force of $V_\theta$ is negligible at layer 0 and that the pair force therefore reinforces the wells' positional clock. That was wrong. The figures came from the conservativity test, whose script read layer 0 with layer 1's depth code, and they contradicted Cell 6b-15. Rerun with the right code, the test gives $V_\theta$ a force of 0.17 at layer 0 on PMX-K16, 0.09 on FO-b-PMX-K16 and 0.10 on FO-b-PMX-K16-NP (medians of its five tokens), in line with the table above. A first correction, made the same day, blamed a misread row of the output; the output itself was wrong ([Depth_Code_Correction.md](Depth_Code_Correction.md)).
 
 The context channels change little, and recall runs through them exactly as before: removing the earlier occurrence from the layer-1 channels costs 0.456 nats on far recall, against 0.463 (paired difference −0.004, standard error 0.002).
 

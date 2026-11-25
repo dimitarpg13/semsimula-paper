@@ -402,17 +402,19 @@ Cell 6b-15 (step size, weight decay, occupation scale, placement) flagged no kno
 
 ### 6.4 Conservativity and causality on the trained weights
 
-This answers the first open question of the earlier draft: does the proof of §4 hold on the trained model? The test is `debug/conservativity_test_checkpoint.py`. It measures autograd Jacobian symmetry and closed-loop work per token at fixed context, for each force term at each layer. It was validated first on F3.1, which passes, and on G2, whose reverse channel fails with asymmetry 1.3–1.9.
+This answers the first open question of the earlier draft: does the proof of §4 hold on the trained model? The test is `debug/conservativity_test_checkpoint.py`. It measures autograd Jacobian symmetry and closed-loop work per token at fixed context, for each force term at each layer. It was validated first on F3.1, which passes, and on G2, whose reverse channel fails with asymmetry 1.3–1.8.
+
+**Corrected 2026-11-25.** The first run read layer 0 with layer 1's depth code (the script evaluated the forces outside the forward pass, where the code of the last layer stays selected). The table and the shares below are from the rerun with each layer's own code ([Depth_Code_Correction.md](depth_ladder/Depth_Code_Correction.md)). Layer 1 is unchanged to every digit and no verdict on PM1 changes; the total force at layer 0 is twice the first value, and the router share there is smaller.
 
 | layer | term | Jacobian asymmetry | closed-loop work | force | verdict |
 | ---: | --- | ---: | ---: | ---: | --- |
 | 0 | PM1 wells | 1.8e-07 | 9.3e-08 | 0.10 | conservative |
-| 0 | total | 5.1e-06 | 1.9e-07 | 0.12 | conservative |
+| 0 | total | 2.6e-06 | 4.4e-07 | 0.24 | conservative |
 | 1 | PM1 wells | 1.7e-07 | 9.3e-08 | 1.26 | conservative |
 | 1 | total | 2.6e-07 | 3.0e-04 | 1.24 | conservative |
 
 - **The wells are exact,** as §4 proves.
-- **The one non-gradient piece is shared with F3.1: V_φ's straight-through router term.** V_φ's top-k sources are chosen by a score head that reads the token's own state. The router term is 0 at positions t ≥ 16. At 3 ≤ t < 16 its share of the force has median 0 and p95 0.98% (layer 0), against F3.1's p95 of 2.4–15%. **PM1's step is a gradient flow to within 1% for its worst 5% of tokens, and cleaner than F3.1's.**
+- **The one non-gradient piece is shared with F3.1: V_φ's straight-through router term.** V_φ's top-k sources are chosen by a score head that reads the token's own state. The router term is 0 at positions t ≥ 16. At 3 ≤ t < 16 its share of the force has median 0 and p95 0.37% (layer 0) and 0.01% (layer 1). F3.1's p95 is 0.22% at layer 0 for t ≥ 16 and 15% at layer 1 for t < 16. **PM1's step is a gradient flow to within 0.4% at the 95th percentile of tokens, and cleaner than F3.1's.**
 - **Causal.** The independent check (`debug/causality_check_checkpoint.py … pm64`) found future perturbation and batch independence both exactly 0.
   - Its prefix-only comparison flagged a CHECK (max |Δ logit| 0.098). This is explained, not a leak.
   - The discrepancy lives only at positions 3–15 and vanishes when the router term is removed. The straight-through mask scales that term by k = min(top_k, T − 1), so a short prefix and the full sequence weigh it differently.
