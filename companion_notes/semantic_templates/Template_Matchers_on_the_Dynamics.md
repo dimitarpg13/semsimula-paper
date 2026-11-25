@@ -2,7 +2,7 @@
 
 **What this note is.** The pre-registration of a second family of template matchers. The geometry-only matcher reads the premise's particles as states. The matchers here read what the trained model did to those particles: how far each layer moved them, and where they sit in the frame of the wells. The reference they must beat is the embedding, the same matcher on the states that no well has acted on. Written 2026-11-25, before any result of these matchers was seen.
 
-**Status.** Set up; not run. The calls of §5 were **confirmed by the author on 2026-11-25, as written,** before any extraction or scoring, and are binding. The extraction on SR2-2B starts after the corrected conservativity runs (an unrelated script bug found while writing this test, see §7) and the reports of the earlier template tests.
+**Status.** Run on SR2-2B and scored on 2026-11-25: **TD2 and TD5 hit, TD1, TD3 and TD4 miss.** Report: [Template_Matchers_on_the_Dynamics_SR2_2B.md](Template_Matchers_on_the_Dynamics_SR2_2B.md). The calls of §5 were **confirmed by the author on 2026-11-25, as written,** before any extraction or scoring, and are binding. The depth-code correction that had to come first is done ([Depth_Code_Correction.md](../depth_ladder/Depth_Code_Correction.md)); it does not touch this test.
 
 ---
 
@@ -79,6 +79,18 @@ Confirmed by the author on 2026-11-25, binding. A call hits when the point diffe
 **Reasoning.** The states after layers 0 and 1 already score about 0.27 on R2 against 0.13 for h0 on the earlier clauses, so a displacement reading may keep that. On unseen wordings the same states score below h0, and the displacement shares the states' word content, so R1 is unlikely. Layer 1 moves particles many widths through the wells, so the well-frame reading is noisier there; hence lower probabilities for B. TD5 repeats the disjunction gap seen earlier on known wordings.
 
 **Not a call.** The step-500 control and the 0.5B prose pair (L = 2 and L = 4) are not run here.
+
+### Outcome on SR2-2B (2026-11-25)
+
+| id | difference to the embedding | 95% interval | outcome |
+| --- | ---: | --- | --- |
+| TD1 | -0.085 | -0.104 to -0.064 | miss |
+| TD2 | +0.105, near misses fire 0.24% | +0.065 to +0.147 | hit |
+| TD3 | -0.141 | -0.163 to -0.122 | miss |
+| TD4 | +0.081, near misses fire 1.2% | +0.042 to +0.122 | miss |
+| TD5 | +0.101 | not computed | hit |
+
+Two post-hoc readings qualify it: one wording ("unless") accounts for the fallacy fires and for TD5, and at a fixed rate of near misses the displacement matcher ranks paraphrases as the embedding does (TD2). The report gives both.
 
 ## 6. What the results would decide
 

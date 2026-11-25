@@ -7,7 +7,7 @@ This is the report of the first completed test of a template matcher. The author
 **In brief.**
 - With known wordings the right template fires on 92 to 97% of fresh valid premises, with false fires on 0.3% of the rivals, once the position of the connective is one of the coordinates. With the coordinates fixed in advance it is 67 to 87% and 1%. The position was added after the first results were seen.
 - The smallest subspace that holds the matcher is 10-dimensional (20 without the position), reached with the 4 particles of premise 2 that match the clauses worst. A premise has about 15 particles.
-- With a wording that the clouds were not fitted on, the right template fires on 72 to 78%, and the two fallacies that share a premise with a valid form are the weak spot: denying the antecedent fires 15% of the time and an affirmed disjunct 8%.
+- With a wording that the clouds were not fitted on, the right template fires on 72 to 78%, and denying the antecedent fires 15% of the time and an affirmed disjunct 8%. **Corrected on 2026-11-25:** these fallacy fires come from one wording, "unless", which the agent filed with the disjunctions; without it they are 0% (§5.4).
 - The embedding read through the same geometry does as well on unseen wordings and not far behind on known ones. Training shows mainly in one place: a paraphrased premise is told from its near miss with AUROC 0.84 in the trained models, 0.52 to 0.63 at step 500.
 - Nothing here needs a validity signal. Each template is one cloud.
 
@@ -264,6 +264,18 @@ A reworded denial in the second sentence ("it is not true that $P$") fires 95% o
 
 The pooled 2.1% of §5.3 hides the two rows that matter: of 9,000 rival premises 188 fire, 107 of them denying the antecedent and 60 affirmed disjuncts. For the fallacies alone the rate is 167 of 1,800, **9.3%**. Near misses never fire, even though they share the subject and the whole sentence frame with the valid premise.
 
+**Correction (2026-11-25): the fallacy fires are one wording's.** "Unless P, Q" was filed with the disjunctive wordings. It has the layout of "When P, Q", and in every particle vector of the dynamics test its connective sits among the conditional wordings ([Template_Matchers_on_the_Dynamics_SR2_2B.md](Template_Matchers_on_the_Dynamics_SR2_2B.md), §5.4). Refitted on the eleven other wordings (dimension searched again), SR2-2B, states after both layers, unseen wordings:
+
+| | all twelve wordings | without "unless" |
+| --- | ---: | ---: |
+| right template on MP, MT, DS1, DS2 | 78, 72, 77, 76% | 73, 88, 91, 92% |
+| denying the antecedent | 14.9% | **0%** |
+| affirmed disjunct | 8.3% | **0%** |
+| any rival | 2.1% | 0.1% |
+| wrong template | 6.2% | 0.2% |
+
+The embedding changes the same way (denying the antecedent 3% to 0%, affirmed disjunct 8% to 0%). Outputs: `template_geometry_frame_without_unless.{json,txt}`.
+
 ### 5.5 Wordings left out
 
 ![Wordings](../figures/template_matcher/tm_wordings.png)
@@ -313,7 +325,7 @@ Step-500 models already fire on 80 to 100% of exact premises with known wordings
 
 **What it recognises is the frame and the restatement.** Direction 1 is the restatement of a clause, direction 3 the connective, directions 2 and 4 the exactness. That is enough to separate the forms, and to reject near misses, unrelated clauses and ordinary text. It is not enough for a new wording: a connective not seen in fitting moves along direction 3 to a place the clouds do not cover, and its premise falls outside the reach or in the wrong cloud.
 
-**The fallacies are the weak spot because they are one step from a valid form.** Denying the antecedent shares the first sentence with MP and the second sentence with DS; an affirmed disjunct shares the second sentence with MP. These are the only rivals that fire.
+**The fallacies fire because of "unless", not because they are one step from a valid form** (corrected on 2026-11-25, §5.4). The earlier reading, kept for the record: denying the antecedent shares the first sentence with MP and the second sentence with DS; an affirmed disjunct shares the second sentence with MP. These are the only rivals that fire.
 
 **This matcher does not read the evolution.** It reads angles and lengths of the states, with no well and no path, so it is not a test of the idea that the signature of a premise is in how its particles move. What each state is, why the embedding scores well and what would test the idea are in [What_the_Matchers_Read.md](What_the_Matchers_Read.md).
 
@@ -323,13 +335,13 @@ Step-500 models already fire on 80 to 100% of exact premises with known wordings
 
 ## 7. Conjectures
 
-1. **The failure on "unless" is a property of the connective's word,** not of the geometry: the matcher would work if the disjunctive centroid were learned with "unless" in it, and cannot otherwise.
+1. **The failure on "unless" is a property of the connective's word.** Partly settled (2026-11-25): "unless" sits with the conditional connectives in the embedding and in every later vector, and "unless P, Q" is also "if not P, then Q". Filing it with the disjunctions is what makes the fallacies fire (§5.4).
 2. **A paraphrase threshold is a matter of the metric:** the paraphrase AUROC of 0.84 and the low firing rate at 1% false fires say the paraphrases lie close to the near-miss cloud; a rival cloud for near misses that is wider on the paraphrase directions would help.
 3. **Depth could move the point where the connective is read.** The connective's position enters the state after layer 0 already. Whether more layers give the second sentence a meaning of its own, rather than a cosine, is the test that comes next ([Template_Matchers_on_the_Dynamics.md](Template_Matchers_on_the_Dynamics.md)).
 
 ## 8. Further directions
 
-1. **Confirm the position on clauses not seen here.** The fresh clauses of the dynamics test are those clauses.
+1. **Confirm the position on clauses not seen here.** Done (2026-11-25): on the 60 fresh clauses of the dynamics test, states after both layers, 5 particles chosen by the search, the right template fires on 91, 98, 98 and 98% with known wordings and 69, 83, 81 and 80% with unseen ones, any false fire 0%; the embedding 100, 98, 83, 84 and 90, 77, 82, 82. Paraphrases are harder there (2, 10, 19, 11% for the states).
 2. **More wordings,** including ones drawn from a language model's own paraphrases, and an explicit treatment of "unless".
 3. **Displacements and well-frame vectors** in place of the states ([Template_Matchers_on_the_Dynamics.md](Template_Matchers_on_the_Dynamics.md)).
 4. **Clouds against clouds.** The Bhattacharyya overlap between a template's cloud and a premise's cloud needs a premise with a spread of its own (several phrasings, several contexts), and is a separate test.
@@ -342,6 +354,7 @@ Step-500 models already fire on 80 to 100% of exact premises with known wordings
 - **Post hoc parts** are marked in §4.3 and in every table that uses them. The position of the connective was motivated by the confusion of MP with an affirmed disjunct on these same test clauses.
 - **Clause boundaries are given.** The matcher is told which tokens form each clause.
 - **One seed per model, one prefix.** Clauses and paraphrases were drafted by the agent and await the author's check. Some are odd as disjunctions.
+- **The wording "unless"** was filed with the disjunctions by the agent; the fallacy rates of §5.3 to §5.5 for unseen wordings carry it (§5.4).
 - **Reported as 2.1% and corrected here.** An earlier summary gave "0%" for the affirmed disjunct at known wordings; it is 0.4% (3 of 720). The pooled rate for unseen wordings was given without the fallacy split; §5.4 gives both.
 - **Two layers only.** The states are taken at layer boundaries: no depth axis.
 - **SR2 and SR2-2B share an architecture and differ in tokens and, with them, in the length of the schedule.**

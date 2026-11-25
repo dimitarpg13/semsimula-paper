@@ -7,7 +7,7 @@
 - All states come from one forward pass through one frozen, trained checkpoint. Training converged; the particles of a premise do not come to rest.
 - The first matcher reads angles between particles and never reads a well. It is not yet a test of the idea that the signature comes from the evolution.
 - On SR2-2B the particles move **away** from the well that dominates them on entry, at both layers. The author accepts this: what matters is that the matcher uses the evolution, not that the particles settle in wells.
-- Two matchers on the evolution are set up (displacements, well frame). A third, iterated settling, is parked.
+- Two matchers on the evolution were run on SR2-2B (displacements, well frame; §6). A third, iterated settling, is parked.
 
 ---
 
@@ -133,8 +133,8 @@ The first matcher reads angles and lengths of the states. It uses no well centre
 
 | | reading | status |
 | --- | --- | --- |
-| 1 | **displacements** of each layer, before the LayerNorm; they remove the additive copy of the state on entry | set up, matcher A |
-| 2 | **well-frame coordinates** of each particle: the share of each well, the radius, the stiff coordinates, and their change over the step | set up, matcher B |
+| 1 | **displacements** of each layer, before the LayerNorm; they remove the additive copy of the state on entry | run on SR2-2B: matcher A |
+| 2 | **well-frame coordinates** of each particle: the share of each well, the radius, the stiff coordinates, and their change over the step | run on SR2-2B: matcher B |
 | 3 | **iterated settling:** keep applying a layer's step with the context frozen until the particles stop moving, and freeze that figure | parked |
 
 The stiff coordinates of well $k$ are
@@ -143,7 +143,7 @@ $$
 u_k = B_k^{\top} (h - \mu_k),
 $$
 
-with $B_k$ the low-rank factor of its precision. The word still influences all three readings through the forces, so $h^{(0)}$ stays the control: **if one of them beats the embedding on unseen wordings or on paraphrases, the landscape adds something the words do not.** The author approved 1 and 2 on SR2-2B. The coordinates, the pass marks and the calls TD1 to TD5 were written and confirmed before the run ([Template_Matchers_on_the_Dynamics.md](Template_Matchers_on_the_Dynamics.md), §5).
+with $B_k$ the low-rank factor of its precision. The word still influences all three readings through the forces, so $h^{(0)}$ stays the control: **if one of them beats the embedding on unseen wordings or on paraphrases, the landscape adds something the words do not.** The author approved 1 and 2 on SR2-2B. **The run was scored on 2026-11-25:** neither beats the embedding on unseen wordings, the displacement reading beats it on paraphrases by the pre-registered rule but not at a fixed near-miss rate, and one wording drives most of the differences ([Template_Matchers_on_the_Dynamics_SR2_2B.md](Template_Matchers_on_the_Dynamics_SR2_2B.md)). The coordinates, the pass marks and the calls TD1 to TD5 were written and confirmed before the run ([Template_Matchers_on_the_Dynamics.md](Template_Matchers_on_the_Dynamics.md), §5).
 
 Reading 3 is the closest to a converged figure, but it runs the model outside its training regime. §5 shows that one step moves the particles away from the wells at both layers, so whether repeated steps come to rest at all has to be checked before such a matcher is designed.
 
@@ -162,6 +162,8 @@ The three models integrate over the same total time, so an eight-layer step is f
 **Conjecture (the author asked to verify it).** At eight layers a layer is close to its own flow, so the path a particle takes means more, and more layers give a matcher a longer path to read. Templates read from the evolution should then improve with depth.
 
 **What the readings do not say.** They are per layer. Refining the whole stack still fails at every depth (2.695 nats at $k = 4$ for L8-CODE). And no reading links a layer that is close to its flow to a better signature. That is what the runs have to show.
+
+The pre-registration with the proposed calls is [Template_Matchers_and_Depth.md](Template_Matchers_and_Depth.md).
 
 **Plan (author, 2026-11-25).** After SR2-2B, on the CPU, one model at a time, each with its report before the next:
 1. the prose pair at 0.5B tokens, G2 (two layers) and the four-layer model with live gradients, the same settings except for depth and, with it, the step; the clean comparison;
