@@ -40,8 +40,8 @@ A script that captures the layer inputs in a forward pass and evaluates the forc
 | `conservativity_test_checkpoint.py` (nine models, router mode included) | results folders, the PM1 note, the SR2-NP and FO-b-PMX-K16-NP notes, the pair-force note, four model cards | layer-0 rows of $V_\theta$ and of the total; shares of the total at layer 0 |
 | `gradcheck_vphi_xi_paths.py` | the gradient-starvation note, Tier 0 | layer-0 force of $V_\theta$, and the live gradient through the context channels |
 | `verify_vphi_xi_grad_path.py` (and the exchange and no-pair-force checks that use it) | the same note, Tier 1 | layer-0 step gradients |
-| `verify_fob_switch.py` | the damping report (pass or fail) | layer-1 convergence numbers; both sides of the comparison used the same code |
-| `verify_sr3_switch.py` | the same | none: the rerun reproduces the output exactly |
+| `verify_fob_switch.py` | the damping report (pass or fail) | a freshly built model holds layer 0's code, so here it was layer 1 that was read with the wrong one. Both sides of the comparison used it, so the check stayed valid; the layer-1 errors change (§3.5) |
+| `verify_sr3_switch.py` | the same | none: it reads layer 0 of a fresh model, and the rerun reproduces the committed output exactly |
 
 All five now select the layer. The conservativity test also asserts that the $V_\theta$ force it replays is the one the forward pass used. The assertion passes on seven of the nine models when their router checks are repeated (outputs identical). With the selection disabled it fails on SR2, where layer 0 is off by 1.7 times its largest component.
 
@@ -108,6 +108,20 @@ Share of the total conservative force, 95th percentile over tokens.
 | conservative-only, layer 0, the same through one layer step | 20.1 | 98.2 |
 
 The findings that the programme rests on are unchanged: as trained in Gen 2, exactly zero gradient reaches earlier tokens through $V_\varphi$ and through $\xi$; the live construction leaves the forward pass bit-identical.
+
+### 3.5 Convergence of the first-order step
+
+`verify_fob_switch.py` compares the layer step, cut into substeps, with a fine solution of the gradient flow. Relative error at layer 1:
+
+| model | substeps | first run | corrected |
+| --- | ---: | ---: | ---: |
+| SR2, full force | 1 | 1.1 | 0.35 |
+| | 8 | 0.37 | 0.059 |
+| | 128 | 0.0086 | 0.0018 |
+| SR2, pair force off | 1 | 0.97 | 0.33 |
+| | 128 | 0.0025 | 0.0020 |
+
+The observed order between 64 and 128 substeps is 0.99 in both (it was 1.04 and 0.99). Layer 0 is unchanged and the verdict is unchanged. One step of the trained size is three times closer to its own flow than the first run said. PMX: its rerun is below.
 
 ## 4. Statements withdrawn
 
