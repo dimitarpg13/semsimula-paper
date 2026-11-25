@@ -43,7 +43,7 @@ A script that captures the layer inputs in a forward pass and evaluates the forc
 | `verify_fob_switch.py` | the damping report (pass or fail) | layer-1 convergence numbers; both sides of the comparison used the same code |
 | `verify_sr3_switch.py` | the same | none: the rerun reproduces the output exactly |
 
-All five now select the layer. The conservativity test asserts that the force values match the forward pass.
+All five now select the layer. The conservativity test also asserts that the $V_\theta$ force it replays is the one the forward pass used. The assertion passes on seven of the nine models when their router checks are repeated (outputs identical). With the selection disabled it fails on SR2, where layer 0 is off by 1.7 times its largest component.
 
 ## 3. Corrected numbers
 
@@ -120,7 +120,7 @@ The findings that the programme rests on are unchanged: as trained in Gen 2, exa
 ## 5. What was audited and found right
 
 - **Taken inside a forward pass, where the wrapper sets the layer:** all notebook cells, the refinement tests and the per-layer flow (FLOW-R), the settling map, the well probes, the pair-force probe, `layer_force_split.py`, `vphi_ste_term.py`, mechanism ablations, the recall probe, the synchronization tests, the well-force and descent readings, `fobpmx_omega_dt.py` and `vtheta_omega_dt.py`.
-- **Set the layer themselves:** `geodesic_residual.py`, `d1_zeta_readout.py`, `stage0_models.py`, the SCAF stiffness and well probes, the HF speed benchmark.
+- **Set the layer themselves:** `geodesic_residual.py`, `d1_zeta_readout.py`, `stage0_models.py`, the SCAF stiffness and well probes, `cpu_throughput_benchmark.py`.
 - **Evaluate the last layer only:** `verify_pm_wells_exact.py`.
 - **The wells of the Poisson modes, the pair force and the reverse channel carry no depth code in $V_\theta$.** Their own rows are unchanged.
 - **The template tests** read states and the bank inside the forward pass.
@@ -135,4 +135,4 @@ if hasattr(model.V_theta, 'set_active_layer'):
     model.V_theta.set_active_layer(layer)
 ```
 
-and asserts that its replay equals what the forward pass produced. The test that would have caught this compares the replayed force with the captured one, at every layer. It is in the conservativity test now.
+and asserts that its replay equals what the forward pass produced. The test that would have caught this compares the replayed force with the captured one, at every layer. The conservativity test now does this for the $V_\theta$ force at every layer.

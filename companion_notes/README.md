@@ -307,6 +307,7 @@
 - [Mean_Field_PARFLM_Programme](Mean_Field_PARFLM_Programme.md): pre-registered programme for a mean-field approximation of PARFLM
 - [mean_field/Probe_A_Field_Pair_Force](mean_field/Probe_A_Field_Pair_Force.md): Probe A, scored: a field, and even a context-free landscape, stands in for most of the trained pair force
 - [mean_field/Pair_Force_By_Layer_L8_CODE](mean_field/Pair_Force_By_Layer_L8_CODE.md): the pair force layer by layer at eight layers: shared redundantly across depth, not field-like there
+- [depth_ladder/Depth_Code_Correction](depth_ladder/Depth_Code_Correction.md): correction record (2026-11-25): five scripts read layer 0 with layer 1's depth code; what was affected and the corrected numbers
 - [depth_ladder/Pair_Force_in_the_First_Order_Step](depth_ladder/Pair_Force_in_the_First_Order_Step.md): why FO-b-PMX-K16 is better trained without the pair force: in first order the pair force grows into a push along the landscape and crowds out the wells and the layer-1 landscape
 
 
