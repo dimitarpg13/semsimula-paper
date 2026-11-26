@@ -1,0 +1,19 @@
+np lex m7 d6; wording left out: when; connective coordinate on its test premises: [-0.]
+connective coordinate, development, by frame: {'cond': (0.307, 0.119), 'disj': (-0.46, 0.173)}
+
+  as fitted: rho 0.600
+    MP    n   60 fires: MP 60 | mean template rates MP 1.00 MT 0.00 DS1 0.00 DS2 0.00 | nearest clouds of two premises: ['cond:MP 11.8, disj:P 24.1, cond:DA 270.8', 'cond:MP 11.8, disj:P 24.1, cond:DA 270.8']
+    MT    n   60 fires: none 15, MT 45 | mean template rates MP 0.00 MT 0.74 DS1 0.00 DS2 0.00 | nearest clouds of two premises: ['cond:MT 11.2, cond:nearQn 17.7, cond:swapQn 19.3', 'cond:MT 11.2, cond:nearQn 17.7, cond:swapQn 19.3']
+    DA    n   60 fires: none 60 | mean template rates MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | nearest clouds of two premises: ['cond:DA 11.5, cond:nearn 21.7, cond:swapn 22.2', 'cond:DA 11.5, cond:nearn 21.7, cond:swapn 22.2']
+    AC    n   60 fires: none 60 | mean template rates MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | nearest clouds of two premises: ['cond:AC 11.4, disj:Q 24.6, cond:MT 417.9', 'cond:AC 11.4, disj:Q 24.6, cond:MT 417.9']
+    near  n   60 fires: none 60 | mean template rates MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | nearest clouds of two premises: ['cond:near 11.5, cond:swap 15.3, disj:near 24.7', 'cond:near 11.5, cond:swap 15.3, disj:near 24.7']
+
+  frame coordinate set to the development mean: rho 0.600
+    MP    n   60 fires: MP 60 | mean template rates MP 0.73 MT 0.00 DS1 0.00 DS2 0.00 | nearest clouds of two premises: ['cond:MP 16.6, disj:P 18.2, cond:DA 275.4', 'cond:MP 16.6, disj:P 18.2, cond:DA 275.4']
+    MT    n   60 fires: none 15, MT 45 | mean template rates MP 0.00 MT 0.57 DS1 0.00 DS2 0.15 | nearest clouds of two premises: ['cond:MT 15.9, disj:DS2 18.7, cond:nearQn 22.3', 'cond:MT 15.9, disj:DS2 18.7, cond:nearQn 22.3']
+    DA    n   60 fires: none 60 | mean template rates MP 0.00 MT 0.00 DS1 0.16 DS2 0.00 | nearest clouds of two premises: ['cond:DA 16.3, disj:DS1 18.5, cond:nearn 26.4', 'cond:DA 16.3, disj:DS1 18.5, cond:nearn 26.4']
+    AC    n   60 fires: none 60 | mean template rates MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | nearest clouds of two premises: ['cond:AC 16.1, disj:Q 18.7, cond:MT 422.5', 'cond:AC 16.1, disj:Q 18.7, cond:MT 422.5']
+    near  n   60 fires: none 60 | mean template rates MP 0.00 MT 0.00 DS1 0.00 DS2 0.00 | nearest clouds of two premises: ['cond:near 16.2, disj:near 18.8, cond:swap 20.2', 'cond:near 16.2, disj:near 18.8, cond:swap 20.2']
+MT: missed contents 15 of 60; the denied clause is inflected for 15 of them; inflected clauses 15
+DS1: missed contents 15 of 60; the denied clause is inflected for 15 of them; inflected clauses 15
+DS2: missed contents 15 of 60; the denied clause is inflected for 15 of them; inflected clauses 15
