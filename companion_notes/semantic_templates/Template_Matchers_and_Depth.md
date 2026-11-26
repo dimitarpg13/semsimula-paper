@@ -2,7 +2,7 @@
 
 **What this note is.** The pre-registration of the depth arms of the template-matcher test: the same premises and the same matchers on models that differ in the number of layers. It tests the author's conjecture that at eight layers a layer is close to its own flow, so the path a particle takes means more, and that more layers give a matcher a longer path to read. Written 2026-11-25, after the SR2-2B run was reported ([Template_Matchers_on_the_Dynamics_SR2_2B.md](Template_Matchers_on_the_Dynamics_SR2_2B.md)) and before any result of a depth arm was read.
 
-**Status.** Calls TL1 to TL6 **confirmed by the author on 2026-11-25, as written; binding.** The extraction for G2 (prose, two layers, 0.5B tokens) was started on 2026-11-25, before the confirmation, and its files were not read before it. **G2 is reported** ([Template_Matchers_and_Depth_G2.md](Template_Matchers_and_Depth_G2.md)); its numbers make TL5 unreachable (§6 there). The four-layer prose model is next, then the code models.
+**Status.** Calls TL1 to TL6 **confirmed by the author on 2026-11-25, as written; binding.** The extraction for G2 (prose, two layers, 0.5B tokens) was started on 2026-11-25, before the confirmation, and its files were not read before it. **G2 is reported** ([Template_Matchers_and_Depth_G2.md](Template_Matchers_and_Depth_G2.md)); its numbers make TL5 unreachable (§6 there). **Scored on 2026-11-25 with the four-layer model ([Template_Matchers_and_Depth_L4.md](Template_Matchers_and_Depth_L4.md)): TL4 and TL6 hit; TL1, TL2, TL3 and TL5 miss.** The flow gap was first computed with a replay bug, found while scoring and fixed before TL1 was scored (§1 of the L4 report).
 
 ---
 
@@ -79,6 +79,19 @@ Proposed and confirmed on 2026-11-25. A call hits when the point difference reac
 **Reasoning.** TL1: the four-layer step is half the two-layer one at the same total time; the code models already show the fall. TL2 and TL3: on SR2-2B the gap was 0.036 below (path A, without "unless"). A shorter step moves the displacement of layer 1 closer to a flow, but the linear part of a displacement cannot change the matcher (§3.1 of the report), so the gap may not close. TL4: the displacement matcher ranked paraphrases as the embedding did on SR2-2B. TL5: the layer-1 reading breaks where the particles leave the wells; shorter steps may break it less. TL6: on SR2-2B the states beat the embedding at 1% near misses by 0.053, interval just above zero, and that was one of many readings.
 
 **Not a call.** The wells matcher (it read worst on SR2-2B), the code models, and the flow gap on premises.
+
+### Outcome (2026-11-25)
+
+| id | measured | outcome |
+| --- | --- | --- |
+| TL1 | mean flow gap 0.256 at four layers, 0.140 at two | miss |
+| TL2 | -0.084 (-0.095 to -0.073) | miss |
+| TL3 | -0.089 | miss |
+| TL4 | +0.121 (+0.072 to +0.173) | hit |
+| TL5 | layer 3, 0.628, against 0.915 | miss |
+| TL6 | +0.156 (+0.111 to +0.206) | hit |
+
+The flow gap sits in layer 0 in both models; the later layers are already close to their flow at two layers. The paraphrase hits are bounded by a weaker embedding at four layers (§4 of the L4 report).
 
 ## 6. What the results would decide
 

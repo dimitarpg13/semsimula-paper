@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Template matchers on the dynamics at any depth, and how close each layer is to its own flow (2026-11-25).
-    python3 template_depth_test.py OUTDIR FOLDER name=<stem> [ckpt=best|step500] [limit=N] [threads=8]
+    python3 template_depth_test.py OUTDIR FOLDER name=<stem> [ckpt=best|step500] [limit=N] [threads=8] [flowonly=1]
 Premises as template_dynamics_test.py (the 60 fresh test clauses, the old 60 for development). For every vector kind the
 cosines and norms between the whitened particles and the connective's mean vector are saved, not the states:
   h<l>      the state that enters layer l (l = 0..L; h<L> is the state that leaves the last layer, after the reverse channel if any)
@@ -12,7 +12,9 @@ flow_<stem>.json: each layer step replayed from its captured inputs (ordinary te
 of dt/k (context, low-rank quadratic and wells frozen at the first substep, one LayerNorm at the end: the per-layer flow of
 protocol SS5.19). gap_k = |pre_k - pre_16| / |pre_16 - h_in|, median over tokens: k = 1 is the trained step. Also the cosine of the
 trained step's displacement with the flow's, the size of the displacements along depth, and the cosine of successive ones. For a
-model with a reverse channel only the conservative step is replayed."""
+model with a reverse channel only the conservative step is replayed. flowonly=1 writes flow_<stem>.json and stops (no premise pkl).
+Bug fixed 2026-11-25: the replay passed the trained step's h_prev (velocity encoded at dt) with dt/k, so every k > 1 replay
+started k times too fast and gap_k came out as 1 - k/16 on every layer that particles enter moving (all but layer 0)."""
 import json, pickle, sys, time
 from pathlib import Path
 import numpy as np, torch
@@ -112,6 +114,7 @@ def replay(l, k):
     h, hp, mb, ga, dt_ = keep['args'][l]
     if hasattr(m.V_theta, 'set_active_layer'): m.V_theta.set_active_layer(l)
     m._flow_ctx = {} if k > 1 else None
+    if k > 1: hp = h - (h - hp) / k          # the velocity enters encoded at dt; re-encode it at dt/k (v = (h - h_prev)/dt). Fixed 2026-11-25
     try:
         for j in range(k):
             if k > 1: m._flow_ctx['project'] = j == k - 1
@@ -146,6 +149,7 @@ for b in range(0, len(order), 32):
         it = items[i]; pp = [len(pre) + j for ro in ('c', 'a1', 'a2', 'p2', 'th') for j, q_ in enumerate(it['role']) if q_ == ro]; bi += [r] * len(pp); ti += pp; cut.append(len(ti))
     pos = (torch.tensor(bi), torch.tensor(ti)); V = vecs(pos)
     if b == 0 and keep['args'] is not None: flow['premises'] = flow_rows(pos); keep['args'] = None
+    if OPTS.get('flowonly'): (OUT / f'flow_{OPTS["name"]}.json').write_text(json.dumps(flow, indent=1)); print('flow only, done'); sys.exit()
     Z = {k: (V[k] - W[k][0]) @ W[k][1] for k in KINDS}
     for r, i in enumerate(idx):
         it = items[i]; a, e_ = cut[r], cut[r + 1]; ro_ = [ro for ro in ('c', 'a1', 'a2', 'p2', 'th') for q_ in it['role'] if q_ == ro]; c = np.array([q == 'c' for q in ro_]); st = {}

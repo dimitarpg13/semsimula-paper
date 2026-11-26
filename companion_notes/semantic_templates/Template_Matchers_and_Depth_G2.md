@@ -1,10 +1,12 @@
 # Template Matchers and Depth: G2, the Two-Layer End
 
-**Report of the first depth arm (CPU, 2026-11-25).** G2 is the two-layer prose model at 0.5B tokens, with the live gradient path, the pair force and the reverse channel. It is the two-layer end of the comparison pre-registered in [Template_Matchers_and_Depth.md](Template_Matchers_and_Depth.md). The calls TL1 to TL6 compare it with the four-layer model and cannot be scored until that model has run. This report gives the two-layer readings they will be compared against, and what they show on their own.
+**Report of the first depth arm (CPU, 2026-11-25).** G2 is the two-layer prose model at 0.5B tokens, with the live gradient path, the pair force and the reverse channel. It is the two-layer end of the comparison pre-registered in [Template_Matchers_and_Depth.md](Template_Matchers_and_Depth.md). The calls TL1 to TL6 compare it with the four-layer model and cannot be scored until that model has run. This report gives the two-layer readings they will be compared against, and what they show on their own. The four-layer model has since run: [Template_Matchers_and_Depth_L4.md](Template_Matchers_and_Depth_L4.md).
+
+**Correction (2026-11-25, same day).** The first version of this report said that layer 1 was far from its flow (gap 0.94) and that its 16-substep reference was not converged. Both came from a bug in the replay of the extraction script: each substepped replay was handed the velocity encoded for the full step and so started $k$ times too fast, which gives a gap of exactly $1 - k/16$ on any layer that particles enter moving (all but layer 0). Fixed and rerun: **layer 1 is 0.045 from its flow, and every reference is converged.** §2, §6, §7 and the caveats are corrected below. The matcher readings were taken from the forward pass and are not affected.
 
 **In brief.**
 - **The path matches the embedding.** The matcher on both displacements is level with the embedding on unseen wordings: -0.005, interval -0.015 to +0.004. On SR2-2B, read on the same clauses, it was 0.036 below.
-- **The two-layer step is far from its flow at layer 1.** The trained step of layer 0 is 0.24 from its 16-substep flow; layer 1's is 0.94, and even 8 substeps are 0.50 from 16. So the reference flow of layer 1 is itself not converged at 16 substeps. This bears on TL1 (§6).
+- **Layer 0 carries the flow gap; layer 1 is close to its flow.** The trained step of layer 0 is 0.24 from its 16-substep flow, layer 1's only 0.045. Both references are converged (8 substeps are within 0.004 of 16). Corrected; see the note above.
 - **The state after layer 0 is the only reading to beat the embedding,** on paraphrases at 1% near misses, by 0.064 (interval +0.008 to +0.120). On R1 it is level (+0.009).
 - **What layer 1 does differs between the two two-layer models.** On G2 the layer-1 displacement reads well (R1 0.915), but the final state, which includes the reverse channel, reads badly (0.656). On SR2-2B, which has no reverse channel, it was the other way round (0.656 and 0.780).
 - **Giving "unless" clouds of its own breaks the conditional templates here too:** the embedding detects MP on unseen wordings 0% of the time and fires on 98% of denied antecedents. The path is the most robust reading under that filing (R1 0.841).
@@ -40,15 +42,15 @@
 
 | | layer 0 | layer 1 |
 | --- | ---: | ---: |
-| gap of the trained step, ordinary text | 0.236 | **0.944** |
-| gap at 2, 4, 8 substeps, ordinary text | 0.103, 0.017, 0.004 | 0.884, 0.758, 0.503 |
-| gap of the trained step, premises | 0.259 | 0.948 |
-| cosine of the trained displacement with the flow's | 0.996 | 0.788 |
+| gap of the trained step, ordinary text | **0.236** | 0.045 |
+| gap at 2, 4, 8 substeps, ordinary text | 0.103, 0.017, 0.004 | 0.024, 0.007, 0.002 |
+| gap of the trained step, premises | 0.259 | 0.033 |
+| cosine of the trained displacement with the flow's | 0.996 | 0.999 |
 | median length of the displacement, ordinary text | 4.87 | 7.82 |
 | median length of the entry state | 2.90 | 19.60 |
 | cosine of the two layers' displacements, ordinary text | 0.41 | |
 
-Layer 0 converges quickly: 4 substeps are within 2% of 16. **Layer 1 does not converge by 16 substeps:** halving the step from 8 to 16 still moves the displacement by half its length. The entry state of layer 1 has length 19.6, the LayerNorm's scale, against 2.9 for the embedding, so the forces of layer 1 act on much larger states. The trained displacement of layer 1 still points the same way as the 16-substep one (cosine 0.79).
+Both layers converge: 4 substeps are within 2% of 16, 8 within 0.4%. **The gap sits in layer 0.** Its trained step moves a particle by 4.9, more than its entry length (2.9), and lands 24% away from the flow's end point. Layer 1 moves its particles by 7.8 from states of length 19.6 (the LayerNorm's scale), a smaller step relative to the state, and its trained step is within 5% of its flow.
 
 ## 3. The matchers
 
@@ -119,7 +121,7 @@ The failure of [Connectives_With_a_Hidden_Negation.md](Connectives_With_a_Hidden
 
 None of TL1 to TL6 is scored by this arm alone. Three facts matter for them:
 
-- **TL1** compares the mean flow gap of the layers between the two models. On G2 the mean is 0.59 (0.236 and 0.944) on ordinary text. The 16-substep reference of layer 1 is not converged, so for G2's layer 1 the gap understates the distance to the true flow. The call is scored as written. Whether the four-layer reference is converged will be reported beside it.
+- **TL1** compares the mean flow gap of the layers between the two models. On G2 the mean is 0.140 (0.236 and 0.045) on ordinary text (corrected; the first version had 0.59).
 - **TL2 and TL3** compare the path's gap to the embedding. G2's is -0.005 (-0.015 to +0.004): the four-layer model starts from a level path, not a deficit, so TL2 needs it to beat the embedding by about 0.015 or more.
 - **TL5** compares the worst single displacement of layers 1 to 3 at four layers with G2's layer-1 displacement, R1 0.915. A gain of 0.10 would need R1 above 1, so TL5 cannot hit. The call was written expecting a broken layer-1 reading, as on SR2-2B (0.656). The agent wrote it before G2 was read, and the outcome is fixed by G2's number; it will be scored as a miss, with this note.
 
@@ -129,7 +131,7 @@ None of TL1 to TL6 is scored by this arm alone. Three facts matter for them:
 
 **The reverse channel changes what the last state carries.** G2's final state reads 0.30 below the embedding, while its layer-1 displacement, before the reverse channel, reads only 0.04 below. On SR2-2B, without a reverse channel, the layer-1 displacement was the broken reading. So the step at which the reading breaks is not fixed by the depth. It depends on what comes after the conservative step. This was not foreseen.
 
-**The layer-1 step is long and not close to a flow.** Its displacement still identifies the forms (0.915). Closeness to the flow and the quality of the reading are not tied together in this model.
+**Layer 1 is close to its flow, layer 0 is not.** Both displacements identify the forms about as well (0.924 and 0.915). (The first version read layer 1 as far from its flow; that was the replay bug.)
 
 **The paraphrase gain is small and sits in the state after layer 0.** It is the same layer on both two-layer models and near the noise in both.
 
@@ -137,7 +139,7 @@ None of TL1 to TL6 is scored by this arm alone. Three facts matter for them:
 
 - One model, one seed; 0.5B tokens; English premises drafted by the agent, awaiting the author's check.
 - The comparison with SR2-2B is not paired in the scoring and the two models' matchers were tuned on different development sets (with and without "unless").
-- The flow reference of layer 1 is not converged at 16 substeps.
+- The flow gap of the first version was wrong (replay bug, corrected the same day); the matcher readings were not affected.
 - The state after the last layer includes the reverse channel; the displacements do not.
 - The paraphrase readings are many comparisons; only the 1% one of the state after layer 0 is clear of zero.
 
@@ -151,4 +153,4 @@ python3 debug/template_depth_positions.py OUT OUT g2               # the connect
 python3 ../../../companion_notes/figures/_make_template_depth_figs.py g2
 ```
 
-Outputs in `results/template_matcher/`: `template_depth_g2.{json,txt}` (all three readings, with the differences to the embedding), `flow_g2.json`, `template_depth_positions_g2.{json,txt}`, `template_depth_g2_extraction.log`. The premise geometry (`depth_g2.pkl`, 0.2 GB) is not in the repository.
+Outputs in `results/template_matcher/`: `template_depth_g2.{json,txt}` (all three readings, with the differences to the embedding), `flow_g2.json` (corrected; rerun with `flowonly=1`, log `flow_rerun_2026-11-25.log`), `template_depth_positions_g2.{json,txt}`, `template_depth_g2_extraction.log`. The premise geometry (`depth_g2.pkl`, 0.2 GB) is not in the repository.
