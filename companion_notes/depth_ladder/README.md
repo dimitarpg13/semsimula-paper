@@ -37,7 +37,7 @@
 | §5.18 | what makes a model refinement-ready (RR) | [Refinement_Readiness_RR.md](Refinement_Readiness_RR.md) |
 | §5.19 | refinement invariance: the two failure modes, FLOW-R, the scope caveat and RT1–RT3 | [Refinement_Invariance_Tests.md](Refinement_Invariance_Tests.md) |
 | §5.20–§5.21 | what each coupling costs when removed (CD), and the trained-without factorial (VF) | [Coupling_Removal_Costs_CD.md](Coupling_Removal_Costs_CD.md) |
-| §5.21 | VF0, F3.1 trained without the pair force: configuration, build and switch checks, calls, launch (set up 2026-11-22) | [VF0_F31_Without_Pair_Force.md](VF0_F31_Without_Pair_Force.md) |
+| §5.21 | VF0, F3.1 trained without the pair force: configuration, build and switch checks, calls, launch (set up 2026-11-22); **scored 2026-11-26**: settled 61.06, VF-a and VN1 hit, VN2 misses; with SR2 and SR2-NP a two-by-two of the stiff-mode step and the pair force (interaction 0.052 nats); the layer-0 landscape stiffened fourfold | [VF0_F31_Without_Pair_Force.md](VF0_F31_Without_Pair_Force.md) |
 | §5.22 | spontaneous synchronization and semantic binding (SY) | [Synchronization_Tests_SY.md](Synchronization_Tests_SY.md) |
 | §5.25 | the exchange field against the reverse channel (XR, parts A and B) | [Exchange_Field_Routes_XR.md](Exchange_Field_Routes_XR.md) |
 | §7 | the publication audit of 2026-09-27 | [Publication_Audit_2026_09.md](Publication_Audit_2026_09.md) |

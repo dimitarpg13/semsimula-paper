@@ -2,7 +2,7 @@
 
 **What this note is.** The launch record and pre-registration of VF0, the first cell of the trained-without factorial (protocol §5.21, [Coupling_Removal_Costs_CD.md](Coupling_Removal_Costs_CD.md), §5). The arm is F3.1, the conservative-only model with the split stiff-mode step, trained without the pair force $V_\varphi$. Written 2026-11-22.
 
-**Status.** Set up; build and switch checks passed; not launched. The author decided on 2026-11-22 to run it ("for the sake of completing the investigation on the pair force as a valid mechanism for replacement of others and updating the book"). The queue position is the author's call: **next on the GPU, set by the author on 2026-11-24** (then twin PB, then PMX-K16-NP). VF-a has been binding since 2026-10-11; VN1 and VN2 (§4) were confirmed by the author on 2026-11-22 and are binding.
+**Status.** **Trained and scored (2026-11-26): VF0 settled at 61.06, $v_0 = 0.056$. VF-a and VN1 hit, VN2 misses** (§7). The run finished on 2026-11-25; the calls were binding before launch (VF-a since 2026-10-11, VN1 and VN2 since 2026-11-22). The causality check is clean; the other CPU readings of §6 are not yet run. It ran first in the GPU order the author set on 2026-11-24 (then twin PB, then PMX-K16-NP).
 
 ---
 
@@ -14,7 +14,8 @@
 4. [Calls](#4-calls)
 5. [What the result decides](#5-what-the-result-decides)
 6. [Launch](#6-launch)
-7. [Caveats](#7-caveats)
+7. [Results](#7-results)
+8. [Caveats](#8-caveats)
 
 ---
 
@@ -118,7 +119,79 @@ Leave every other switch at its default (in particular `LOWRANK_DAMPED_FLOW`, `P
   - the causality check;
   - the CPU inference benchmark against F3.1 and SR2-NP, the measure of the fast-model claim.
 
-## 7. Caveats
+## 7. Results
+
+Scored 2026-11-26 from the run's own log and diagnostic cells (`results/<tag>/`, the tag of §2). Nothing below changed a call; the calls are scored on the letter of §4.
+
+### 7.1 The calls
+
+The run went 32,500 steps without a restart, a spike or a watchdog trigger, and ended with the leak monitor clean. The last three evaluations read 61.01, 61.10 and 61.08, so VF0 **settles at 61.06**, and
+
+$$
+v_0 = \ln (61.06 / 57.76) = 0.056 .
+$$
+
+| id | threshold | measured | outcome |
+| --- | --- | --- | --- |
+| VF-a | settles at 59.52 or above | 61.06 | **hit** |
+| VN1 | settles at 66.5 or below | 61.06 | **hit** |
+| VN2 | settles at 58.51 or below | 61.06 | **miss** |
+
+**How firm VF-a is.** The evaluations scatter by about 0.015 nats around their trend, in VF0 and in F3.1 alike, so a mean of three has a standard error near 0.009 and the difference of two such means near 0.012. VF-a's margin is 0.026, about two standard errors. Two other readings agree:
+
+- a straight-line fit of the last twelve evaluations (steps 27,000 to 32,500), the same fit for both models, gives 59.89 against 56.78 at step 32,500, so 0.053;
+- best checkpoint against best checkpoint (59.23 at step 31,000 against 57.35) gives 0.032, still above 0.03. VF0's best is one low evaluation: the next three are all near 61.
+
+**The value against the reliance.** Switching the pair force off in the trained F3.1 costs 0.282 nats. Training without it costs 0.056, a fifth of that. The two precedents of §1 were a sixth (SR2) and an eighteenth (the Fock channel). So training recovers most of the reliance here too, but less of it than in SR2, as the reasoning of §4 expected for a model with nothing else to absorb it.
+
+### 7.2 The two-by-two: the stiff-mode step and the pair force
+
+VF0 completes a square. F3.1 and SR2 differ only in the stiff-mode step (split in F3.1, exact flow in SR2, `LOWRANK_DAMPED_FLOW`); SR2-NP and VF0 are the same two models trained without the pair force.
+
+| stiff-mode step | with the pair force | without | value of the pair force, nats |
+| --- | ---: | ---: | ---: |
+| split (F3.1, VF0) | 57.76 | 61.06 | 0.056 |
+| exact flow (SR2, SR2-NP) | 58.32 | 58.51 | 0.003 |
+
+- **The two mechanisms stand in for each other.** The pair force is worth 0.056 nats on the split step and 0.003 on the exact flow. The exact flow costs 0.010 nats with the pair force and gains 0.043 without it. The interaction is 0.052 nats: almost all of each mechanism's value is the work the other one would otherwise do.
+- **For the productization line.** Without the pair force the exact flow is the better design by 4.4% (VN2's miss). F3.1's advantage in training time does not buy a model without the pair force that matches SR2-NP.
+
+One seed per cell, so the interaction carries the training-seed spread of four runs, which is unmeasured.
+
+### 7.3 What the diagnostic cells show
+
+Best checkpoint (step 31,000), against F3.1 and SR2-NP read by the same cells:
+
+| reading | VF0 | F3.1 | SR2-NP |
+| --- | ---: | ---: | ---: |
+| stiffness of the landscape, layer 0 (median of the stiffest mode's frequency times the step) | 16.98 | 4.34 | 7.29 |
+| the same, layer 1 | 4.85 | 4.28 | 4.31 |
+| velocity reset at inference, change in perplexity | +5.7% | +34.3% | +5.6% |
+| refinement, three substeps in place of two, change in perplexity | +51.0 | +80.7 | +28.6 |
+| distance of the step from the landscape's damped geodesic, mean of the two layers | 0.767 | 0.665 | 0.498 |
+| step size relative to the state, layer 0 | 5.62 | 6.27 | 5.97 |
+| step size relative to the state, layer 1 | 0.77 | 1.07 | 0.75 |
+
+- **The landscape at layer 0 took the pair force's place.** Its stiffest modes are four times stiffer than F3.1's ($\omega \Delta t$ median 17.0 against 4.3) and stiffer than SR2-NP's (7.3). This fits Probe A, where F3.1's pair force acted almost entirely as a fixed landscape in the token's own state: trained without it, $V_\theta$ grows that landscape itself. Layer 1 is unchanged. The cell's automatic verdict ("band [3.3, 4.2], MISS") is the ladder's band for models with the pair force and is not a call of this note. The split step integrates these modes exactly, so the stiffness is not an instability.
+- **The model leans on the velocity far less.** Resetting the velocity between the layers costs 5.7%, against 34% in F3.1 and the same 5.6% as SR2-NP. This is reliance, not value: in F3.1 the carried velocity was used together with the pair force, and without it the model does not route as much through inertia.
+- **It is still a map, not a flow.** Refining the step at a fixed total time makes it worse, as for F3.1 and SR2-NP (Gate 3 of 6b-7).
+- **The geodesic reading has nothing left but the LayerNorm.** Without the pair force every force is the landscape's, so the step's distance from the landscape's geodesic (0.767) is the layer-end LayerNorm's alone; in F3.1 the 0.665 includes the pair force.
+- Cell 7: no register or reverse-channel term is active, as configured. Cell 8 and 6b-12 were not run.
+
+**Speed.** 0.81 s per step including evaluations, on a GPU with 102 GB of memory, not the A100 40 GB that SR2-NP ran on, so the step times cannot be compared (§8). The CPU benchmark of §6 is the like-for-like measure.
+
+### 7.4 What the result decides
+
+By §5, **VF-a and VN1 hit**: the pair force has real value in F3.1, and training recovers most of its reliance. §5 makes a context-free landscape arm on F3.1 worth registering, post hoc and limited to two layers, scored against VF0. Two facts weigh on that choice, and it is the author's:
+
+- the landscape already grew stiffer to take the pair force's work, so a context-free stand-in may add little that $V_\theta$ has not absorbed;
+- to be useful for productization the stand-in would have to recover the 4.4% gap to SR2-NP, which has no pair force and no stand-in.
+
+**Causality check (CPU, 2026-11-26): clean.** Perturbing the future changes nothing (0 to machine precision), and scoring on the prefix alone moves a logit by at most $3.7 \times 10^{-5}$ (leak tax $7 \times 10^{-7}$ nats). Output: `causality_check_output.txt` in the run's results folder.
+
+**Not yet done.** The other CPU readings of §6: the mechanism ablations (velocity reset and context swap), the landscape stiffness by `vtheta_omega_dt.py`, the recall pathway and the CPU benchmark against F3.1 and SR2-NP. `mechanism_ablations.py` and `vtheta_omega_dt.py` are now written for the PMX models and need an F3.1 path first.
+
+## 8. Caveats
 
 - **One seed.** The pairing removes the evaluation noise, not the training-seed spread, which is unmeasured.
 - **L = 2 and 532M tokens.** The pair force's value could change with depth or training length; this arm measures it at the ladder's scale only.
