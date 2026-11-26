@@ -1,11 +1,13 @@
 """Figures for the depth arms of the template matchers (semantic_templates/Template_Matchers_and_Depth_<arm>.md), 2026-11-25.
 
 Reads results/template_matcher/template_depth_<stem>.json and flow_<stem>.json (debug/template_depth_{test,analysis}.py) and,
-for the comparison with SR2-2B, template_dynamics_without_unless_sr2_2b.json. Usage: python3 _make_template_depth_figs.py stem
+for the comparison with SR2-2B, template_dynamics_without_unless_sr2_2b.json. Usage: python3 _make_template_depth_figs.py stem [other]
 Writes into figures/template_matcher/:
   tdp_<stem>_flow.png       the gap of each layer's trained step to its 16-substep flow, against the number of substeps
   tdp_<stem>_contrasts.png  every matcher against the embedding: R1 (without "unless") and paraphrases at 1% near misses
-  tdp_<stem>_vs_sr2_2b.png  R1 per reading, this model and SR2-2B (same clauses, both without "unless")
+  tdp_<stem>_vs_sr2_2b.png  R1 per reading, this model and SR2-2B (same clauses, both without "unless"); two-layer models only
+  with [other]: tdp_<stem>_vs_<other>_depth.png  single-layer readings along relative depth, both models
+                tdp_<stem>_vs_<other>_joint.png  the joint readings and the embedding, both models
 """
 import json, sys
 from pathlib import Path
@@ -40,7 +42,8 @@ for ax, key, ttl in ((axs[0], "r1", "R1, unseen wordings, without \"unless\""), 
         m, lo, hi = P[n]["minus h0"][key]; col = BLUE if n in ("path", "states", "wells") else GREY
         ax.plot([lo, hi], [i, i], color=col, lw=2); ax.plot(m, i, "o", ms=8, color=col, mec="white", mew=1.5); ax.text(1.0, i, f"{m:+.3f}", va="center", ha="right", fontsize=9.5, color=INK, transform=ax.get_yaxis_transform())
     ax.axvline(0, color=INK, lw=1); ax.set_title(ttl, fontsize=11.5); ax.set_xlabel("difference to the embedding"); despine(ax)
-axs[0].set_yticks(range(len(order)), [NAME.get(n, n) for n in order]); axs[0].set_xlim(-.5, .12); axs[1].set_xlim(-.35, .2)
+ext = lambda key, j: [P[n]["minus h0"][key][j] for n in order]
+axs[0].set_yticks(range(len(order)), [NAME.get(n, n) for n in order]); axs[0].set_xlim(min(-.5, min(ext("r1", 1)) - .03), .12); axs[1].set_xlim(-.35, max(.2, max(ext("p0.01", 2)) + .1))
 save(fig, f"tdp_{s}_contrasts.png")
 
 # 3. against SR2-2B (two-layer readings only)
@@ -53,3 +56,29 @@ if Lq == 2:
     for xx, v in zip(x + .2, b): ax.text(xx, v + .01, f"{v:.2f}", ha="center", fontsize=8.5, color=MUTED)
     ax.set_xticks(x, [p[0] for p in pairs], rotation=30, ha="right", fontsize=9.5); ax.set_ylim(.4, 1.05); ax.set_ylabel("R1, unseen wordings, without \"unless\""); ax.legend(frameon=False); despine(ax); ax.set_title("Two two-layer models on the same clauses")
     save(fig, f"tdp_{s}_vs_sr2_2b.png")
+
+# 4. against another depth of the same recipe
+if len(sys.argv) > 2:
+    o = sys.argv[2]; Po = L(f"template_depth_{o}.json")["primary"]; Lo = L(f"template_depth_{o}.json")["L"]
+    fam = (("states", "h", lambda l, n: l / n, BLUE), ("displacements", "D", lambda l, n: (l + .5) / n, AMBER), ("well frames", "W", lambda l, n: (l + .5) / n, GREEN))
+    fig, axs = plt.subplots(1, 2, figsize=(13, 4.6), gridspec_kw={"wspace": .22})
+    for ax, key, ttl in ((axs[0], "R1 unseen", "R1, unseen wordings, without \"unless\""), (axs[1], "p", "paraphrases caught at 1% near misses")):
+        for lab_, pre_, xf, col in fam:
+            for PP, n, ls, mk, nm in ((P, Lq, "-", "o", s.upper()), (Po, Lo, "--", "s", o.upper())):
+                ks = [l for l in range(n + 1 if pre_ == "h" else n) if f"{pre_}{l}" in PP]
+                y = [PP[f"{pre_}{l}"][key] if key != "p" else PP[f"{pre_}{l}"]["para at near-miss rate"]["0.01"] for l in ks]
+                ax.plot([xf(l, n) for l in ks], y, ls=ls, marker=mk, color=col, lw=2, ms=6, mec="white", label=f"{lab_}, {nm}")
+        ax.set_xlabel("relative depth (0 = embedding, 1 = after the last layer)"); ax.set_title(ttl, fontsize=11.5); despine(ax)
+    axs[0].legend(frameon=False, fontsize=8.5, ncol=2, loc="lower left"); axs[0].set_ylabel("score")
+    fig.suptitle(f"Single-layer readings along depth: {s.upper()} (solid) and {o.upper()} (dashed)", fontweight="bold", y=1.02)
+    save(fig, f"tdp_{s}_vs_{o}_depth.png")
+    js = (("embedding", "h0"), ("path", "path"), ("states", "states"), ("wells", "wells"))
+    fig, axs = plt.subplots(1, 2, figsize=(12, 4.2), gridspec_kw={"wspace": .18}); x = np.arange(len(js))
+    for ax, key, ttl in ((axs[0], "R1 unseen", "R1, unseen wordings, without \"unless\""), (axs[1], "p", "paraphrases caught at 1% near misses")):
+        g = lambda PP, k: PP[k][key] if key != "p" else PP[k]["para at near-miss rate"]["0.01"]
+        for off, PP, col, nm in ((-.2, Po, GREY, o.upper()), (.2, P, BLUE, s.upper())):
+            v = [g(PP, k) for _, k in js]; ax.bar(x + off, v, .38, color=col, label=nm)
+            for xx, vv in zip(x + off, v): ax.text(xx, vv + .01, f"{vv:.2f}", ha="center", fontsize=8.5, color=INK if col == BLUE else MUTED)
+        ax.set_xticks(x, [j[0] for j in js]); ax.set_title(ttl, fontsize=11.5); despine(ax)
+    axs[0].set_ylim(.4, 1.05); axs[1].set_ylim(0, .45); axs[0].legend(frameon=False); fig.suptitle(f"Joint readings at {Lo} and {Lq} layers, same clauses", fontweight="bold", y=1.02)
+    save(fig, f"tdp_{s}_vs_{o}_joint.png")
