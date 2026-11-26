@@ -183,13 +183,13 @@ T3 (hybrid context channels) stays a candidate behind its CPU speed bound. Secon
 
 **The GPU order (author, 2026-11-24).** After FO-b-PMX-K16-NP (trained and scored 2026-11-24: 53.39, 0.63% below FO-b-PMX-K16, [Stage3e_FO_b_PMX_K16_Without_Pair_Force.md](Stage3e_FO_b_PMX_K16_Without_Pair_Force.md)), the arms run in this order:
 
-1. VF0, F3.1 without the pair force ([VF0_F31_Without_Pair_Force.md](../depth_ladder/VF0_F31_Without_Pair_Force.md)): set up, calls binding.
+1. VF0, F3.1 without the pair force ([VF0_F31_Without_Pair_Force.md](../depth_ladder/VF0_F31_Without_Pair_Force.md)): **trained and scored 2026-11-26**, settled 61.06: VF-a and VN1 hit, VN2 misses (4.4% above SR2-NP). Without the pair force the exact stiff-mode flow is the better design (§7.2 of the note).
 2. Twin PB ([Stage3c_Twin_PB_Precision_Bottleneck.md](Stage3c_Twin_PB_Precision_Bottleneck.md)): set up, calls binding.
 3. PMX-K16-NP, the fourth corner of order × pair force on the line with sixteen wells ([Stage3f_PMX_K16_Without_Pair_Force.md](Stage3f_PMX_K16_Without_Pair_Force.md)): build check passed, calls PN1 to PN5 confirmed by the author on 2026-11-24.
 
 The tied arms of the grid follow; their order is open.
 
-**The template depth runs wait (author, 2026-11-25).** The eight-layer and four-layer template runs (SR2-NP-L8, its pair-force twin SR2-L8, SR2-NP-L4; [Template_Matchers_and_Depth_L4.md](../semantic_templates/Template_Matchers_and_Depth_L4.md), §9) do not go ahead of this order. They will run, but they are not the top priority, and the author reads the CPU template results first. VF0 has been trained; its results are not yet scored.
+**The template depth runs wait (author, 2026-11-25).** The eight-layer and four-layer template runs (SR2-NP-L8, its pair-force twin SR2-L8, SR2-NP-L4; [Template_Matchers_and_Depth_L4.md](../semantic_templates/Template_Matchers_and_Depth_L4.md), §9) do not go ahead of this order. They will run, but they are not the top priority, and the author reads the CPU template results first. VF0 has since been scored (item 1).
 
 4. **After each stage.** Update §1's table, the benchmark note, and the book's Appendix C.10 where the bound or the measured state changes.
 

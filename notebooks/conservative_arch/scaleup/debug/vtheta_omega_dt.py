@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """V_theta's stiffest-mode omega*dt with ONE definition for both orders (2026-10-23; M3 of the FO-b K = 16 twin).
 
-    python3 vtheta_omega_dt.py OUT_DIR {pmx|fob-pmx} [threads=16] [folder=<run folder>]
+    python3 vtheta_omega_dt.py OUT_DIR {pmx|fob-pmx|tag} [threads=16] [folder=<run folder>]
 
 Cell 6b-13 reads different quantities in the two orders: for second order the semsimula-diag monitor reads V_theta's
 stiffest eigenvalue per token (opened by harmonic_terms_lowrank, closed by the damped substep); for FO-b on the well
@@ -20,7 +20,8 @@ import torch
 OUT = Path(sys.argv[1]); KIND = sys.argv[2]
 THREADS = int(next((a[8:] for a in sys.argv[3:] if a.startswith('threads=')), 16))
 FOLDER_ARG = next((a[7:] for a in sys.argv[3:] if a.startswith('folder=')), None)
-assert KIND in ('pmx', 'fob-pmx')
+assert KIND in ('pmx', 'fob-pmx', 'tag')        # 2026-11-26: 'tag' = any run rebuilt from its folder's tag (VF0, F3.1); needs folder=
+assert KIND != 'tag' or FOLDER_ARG, "KIND 'tag' needs folder="
 sys.argv = [sys.argv[0], str(OUT / 'harness')]
 sys.path.insert(0, str(Path(__file__).parent))
 import verify_pm_switch as P
@@ -41,9 +42,13 @@ if KIND == 'fob-pmx':
 if 'nophi' in FOLDER.split('_'):            # FO-b-PMX-K16-NP (2026-11-24): no pair force, as copy_split.tag_repl
     repl = tuple(r for r in repl if 'VPHI_GRAD_PATH' not in r[0]) + \
         (("PAIR_POTENTIAL  = 'sparse_topk'", "PAIR_POTENTIAL  = 'none'"),)
-model, g, _ = P.build(FOLDER, repl)
+if KIND == 'tag':                          # 2026-11-26: any OWT run rebuilt from its tag (code_arm.py, harness validation tokens)
+    import code_arm
+    model, g, _ = code_arm.build(FOLDER, OUT, None, code_val=False)
+else:
+    model, g, _ = P.build(FOLDER, repl)
 model.to('cpu'); model.eval(); model.cfg.use_layer_checkpoint = False
-assert bool(model.cfg.first_order_overdamped) == (KIND == 'fob-pmx') and model.pm_depth.shape[1] == _k
+assert KIND == 'tag' or (bool(model.cfg.first_order_overdamped) == (KIND == 'fob-pmx') and model.pm_depth.shape[1] == _k)
 mod = sys.modules[type(model)._layer_step_langevin.__module__]
 dt = float(model.cfg.dt); dtt = float(getattr(model, '_fob_dt', dt))
 
@@ -69,7 +74,7 @@ for xb, yb in batches:
         per_layer.setdefault(lay, []).extend(rows)
 assert per_layer, 'no reading: the record was never closed'
 
-print(f'V_THETA STIFFEST-MODE OMEGA*DT: {KIND}  K = {_k}  (one definition for both orders; Cell 6b-13 batches, '
+print(f'V_THETA STIFFEST-MODE OMEGA*DT: {KIND}  K = {_k if KIND != "tag" else 0}  (one definition for both orders; Cell 6b-13 batches, '
       f'seed 20260928, 8 x 4 x 512 tokens; dt = {dt:g})')
 print(f'   {"layer":>6} {"p05":>8} {"p50":>8} {"p95":>8} {"max":>8} {"over 2.0":>9}')
 allv = []

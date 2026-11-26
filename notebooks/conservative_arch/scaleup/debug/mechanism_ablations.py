@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Where does a model keep what its velocity would carry? Inference ablations of the content paths (2026-10-23).
 
-    python3 mechanism_ablations.py OUT_DIR {pmx|fob-pmx} [batches=4] [threads=16] [ckpt=<file>] [folder=<run folder>]
+    python3 mechanism_ablations.py OUT_DIR {pmx|fob-pmx|tag} [batches=4] [threads=16] [ckpt=<file>] [folder=<run folder>]
                                    [variants=base,xi_ctx_swap,...]
 
 Registered with the FO-b K = 16 twin (protocol §5.13, "what replaces the velocity", M1-M4), before its result. Best
@@ -36,7 +36,8 @@ THREADS = int(next((a[8:] for a in sys.argv[3:] if a.startswith('threads=')), 16
 CKPT = next((a[5:] for a in sys.argv[3:] if a.startswith('ckpt=')), None)
 FOLDER_ARG = next((a[7:] for a in sys.argv[3:] if a.startswith('folder=')), None)
 ONLY = next((a[9:].split(',') for a in sys.argv[3:] if a.startswith('variants=')), None)
-assert KIND in ('pmx', 'fob-pmx')
+assert KIND in ('pmx', 'fob-pmx', 'tag')        # 2026-11-26: 'tag' = any run rebuilt from its folder's tag (VF0, F3.1); needs folder=
+assert KIND != 'tag' or FOLDER_ARG, "KIND 'tag' needs folder="
 sys.argv = [sys.argv[0], str(OUT / 'harness')]
 sys.path.insert(0, str(Path(__file__).parent))
 import verify_pm_switch as P
@@ -55,13 +56,13 @@ if KIND == 'fob-pmx':
 if 'nophi' in FOLDER.split('_'):            # FO-b-PMX-K16-NP (2026-11-24): no pair force, as copy_split.tag_repl
     repl = tuple(r for r in repl if 'VPHI_GRAD_PATH' not in r[0]) + \
         (("PAIR_POTENTIAL  = 'sparse_topk'", "PAIR_POTENTIAL  = 'none'"),)
-if '_code_' in FOLDER:                     # 2026-11-10: a code arm, rebuilt from its tag (code_arm.py)
+if '_code_' in FOLDER or KIND == 'tag':    # 2026-11-10: a code arm, rebuilt from its tag (code_arm.py); 2026-11-26: or KIND 'tag'
     import code_arm
-    model, g, CKPT = code_arm.build(FOLDER, OUT, CKPT)
+    model, g, CKPT = code_arm.build(FOLDER, OUT, CKPT, code_val='_code_' in FOLDER)
 else:
     model, g, _ = P.build(FOLDER, repl, ckpt=CKPT)
 model.to('cpu'); model.eval(); model.cfg.use_layer_checkpoint = False
-assert bool(model.cfg.first_order_overdamped) == (KIND == 'fob-pmx') and model.pm_depth.shape[1] == _k
+assert KIND == 'tag' or (bool(model.cfg.first_order_overdamped) == (KIND == 'fob-pmx') and model.pm_depth.shape[1] == _k)
 
 rng = np.random.default_rng(20261009)
 batches = [g['get_batch'](g['val_ids'], 4, 512, rng) for _ in range(NB_)]
@@ -85,7 +86,7 @@ def xi_fwd(*a, **k):
     return xis
 model.xi_module.forward = xi_fwd
 
-orig_occ = model.poisson_mode_occupation
+orig_occ = getattr(model, 'poisson_mode_occupation', None)   # 2026-11-26: absent or unused without wells (KIND 'tag')
 def occ(h):
     E, phi = orig_occ(h)
     if 'wells_swap' in ON:
@@ -93,7 +94,8 @@ def occ(h):
     elif 'wells_off' in ON:
         phi = torch.zeros_like(phi)
     return E, phi
-model.poisson_mode_occupation = occ
+if orig_occ is not None:
+    model.poisson_mode_occupation = occ
 
 orig_pf, orig_pp = model._pair_force_analytic, model._pair_potential
 def pf(h_in, *a, **k):
@@ -119,7 +121,7 @@ for v, sw in VARIANTS.items():
     print(f'   [{v} done]', flush=True)
 ON.clear()
 
-print(f'MECHANISM ABLATIONS: {KIND}  K = {_k}  ({FOLDER.split("xilive_")[1].split("_L2probe")[0]}, '
+print(f'MECHANISM ABLATIONS: {KIND}  K = {_k if KIND != "tag" else "-"}  ({FOLDER.split("xilive_")[1].split("_L2probe")[0] or FOLDER}, '
       f'{CKPT or "best checkpoint"}; {NB_} x 4 x 512 tokens, batch seed 20261009)')
 print(f'   base perplexity {np.exp(nll["base"].mean()):.2f}   xi channel alphas {[round(a, 3) for a in alphas]}')
 for v in list(VARIANTS)[1:]:

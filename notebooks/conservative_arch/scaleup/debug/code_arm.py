@@ -5,7 +5,8 @@
 FOLDER is a ladder run folder in ~/Downloads (semsimula_fock_cfc_baoab_code_<tag>). Its Cell 0 is rebuilt from
 the tag's parts by copy_split.tag_repl, as copy_split.py and refinement_flow_confirmation.py's code kind do; the
 default checkpoint is the folder's <prefix>_best.pt; g['val_ids'] becomes the code validation tokens (copy_split's
-VAL) in place of the harness's OpenWebText. The caller has set sys.argv for verify_pm_switch before importing it.
+VAL) in place of the harness's OpenWebText, unless code_val=False (2026-11-26: any OpenWebText run rebuilt from its tag).
+The caller has set sys.argv for verify_pm_switch before importing it.
 """
 import sys
 from pathlib import Path
@@ -28,7 +29,7 @@ def copy_split_defs(out):
     return types.SimpleNamespace(**g)
 
 
-def build(folder, out, ckpt=None):
+def build(folder, out, ckpt=None, code_val=True):
     import verify_pm_switch as P
     CS = copy_split_defs(out)
     repl, tag = CS.tag_repl(folder)
@@ -39,6 +40,7 @@ def build(folder, out, ckpt=None):
         ckpt = ck[0]
     model, g, _ = P.build(folder, repl, ckpt=ckpt)
     assert g.get('_variant_tag', tag) == tag, (g.get('_variant_tag'), tag)
-    g['val_ids'] = np.load(CS.VAL)
-    print(f'checkpoint: {ckpt}  (code validation tokens {CS.VAL})', flush=True)
+    if code_val:                         # 2026-11-26: code_val=False keeps the harness's OpenWebText (any OWT run by its tag)
+        g['val_ids'] = np.load(CS.VAL)
+    print(f'checkpoint: {ckpt}  ({"code validation tokens " + str(CS.VAL) if code_val else "OpenWebText validation tokens"})', flush=True)
     return model, g, ckpt

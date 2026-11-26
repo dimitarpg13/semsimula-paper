@@ -2,7 +2,7 @@
 
 **What this note is.** The launch record and pre-registration of VF0, the first cell of the trained-without factorial (protocol §5.21, [Coupling_Removal_Costs_CD.md](Coupling_Removal_Costs_CD.md), §5). The arm is F3.1, the conservative-only model with the split stiff-mode step, trained without the pair force $V_\varphi$. Written 2026-11-22.
 
-**Status.** **Trained and scored (2026-11-26): VF0 settled at 61.06, $v_0 = 0.056$. VF-a and VN1 hit, VN2 misses** (§7). The run finished on 2026-11-25; the calls were binding before launch (VF-a since 2026-10-11, VN1 and VN2 since 2026-11-22). The causality check is clean; the other CPU readings of §6 are not yet run. It ran first in the GPU order the author set on 2026-11-24 (then twin PB, then PMX-K16-NP).
+**Status.** **Trained and scored (2026-11-26): VF0 settled at 61.06, $v_0 = 0.056$. VF-a and VN1 hit, VN2 misses** (§7). The run finished on 2026-11-25; the calls were binding before launch (VF-a since 2026-10-11, VN1 and VN2 since 2026-11-22). The CPU readings of §6 are done (§7.5): VF0 runs at SR2-NP's speed and two to four times faster than F3.1. **Published on Hugging Face (2026-11-26):** [semsimula-ladder-live-owt-d384-l2-none-norc-nophi](https://huggingface.co/dimitarpg13/semsimula-ladder-live-owt-d384-l2-none-norc-nophi), in the Gen 3 collection. It ran first in the GPU order the author set on 2026-11-24 (then twin PB, then PMX-K16-NP).
 
 ---
 
@@ -189,7 +189,54 @@ By §5, **VF-a and VN1 hit**: the pair force has real value in F3.1, and trainin
 
 **Causality check (CPU, 2026-11-26): clean.** Perturbing the future changes nothing (0 to machine precision), and scoring on the prefix alone moves a logit by at most $3.7 \times 10^{-5}$ (leak tax $7 \times 10^{-7}$ nats). Output: `causality_check_output.txt` in the run's results folder.
 
-**Not yet done.** The other CPU readings of §6: the mechanism ablations (velocity reset and context swap), the landscape stiffness by `vtheta_omega_dt.py`, the recall pathway and the CPU benchmark against F3.1 and SR2-NP. `mechanism_ablations.py` and `vtheta_omega_dt.py` are now written for the PMX models and need an F3.1 path first.
+### 7.5 The CPU readings (2026-11-26)
+
+All four corners of the two-by-two were read by the same scripts on the same tokens, one job at a time on the laptop CPU. `mechanism_ablations.py` and `vtheta_omega_dt.py` gained a kind `tag`, which rebuilds any OpenWebText run from its folder's tag (`code_arm.build` with the OpenWebText validation tokens kept).
+
+**Stiffness.** `vtheta_omega_dt.py` reproduces Cell 6b-13 to the third decimal: VF0 16.98 and 4.85 at layers 0 and 1, F3.1 4.34 and 4.28.
+
+**Where the content is kept.** Inference ablations, 16 sequences of 512 tokens, change in perplexity:
+
+| ablation | VF0 | F3.1 | SR2-NP | SR2 |
+| --- | ---: | ---: | ---: | ---: |
+| the three context channels from another sequence | +278% | +286% | +284% | +290% |
+| the three context channels averaged over sequences | +89% | +90% | +94% | +92% |
+| the pair force off | none | +30.9% | none | +1.0% |
+
+- **The context channels carry the same share in all four models.** The per-sequence spread is about 42%, so the standard error of each figure is about 10 points; the four differ by 12. Training without the pair force did not move its work into the context channels. With the stiffness reading of §7.3, it went into the landscape.
+- **F3.1's reliance on the pair force reads +30.9% here,** against +33% in CD on other tokens.
+
+**Where recall runs.** Probe 6, 16 fresh windows, the same windows for all four (SR2 and SR2-NP from 2026-11-21); change of the loss per token in nats, standard error over windows in brackets:
+
+| cut | VF0 | F3.1 | SR2-NP | SR2 |
+| --- | ---: | ---: | ---: | ---: |
+| earlier occurrence removed from the layer-1 context channels, far recall | +0.415 (0.048) | +0.406 (0.044) | +0.364 (0.045) | +0.376 (0.045) |
+| earlier occurrence removed from the layer-1 pair force, far recall | none | +0.001 (0.000) | none | +0.000 |
+| velocity into layer 1 set to zero, far recall | +0.079 (0.013) | +0.295 (0.021) | +0.038 (0.008) | +0.008 (0.009) |
+| velocity into layer 1 set to zero, control tokens | +0.089 (0.008) | +0.337 (0.025) | +0.111 (0.006) | +0.064 (0.006) |
+
+- **Recall runs through the layer-1 context channels in all four,** and F3.1's pair force carries none of it. Switching F3.1's pair force off everywhere costs about the same at recall and at control positions (+0.35 and +0.33 nats), which fits a landscape, not a retrieval channel (Probe A).
+- **F3.1 leans on the velocity three to four times more than VF0,** at recall and control positions alike, as Gate 1 of 6b-7 says (+34% against +5.7%). Without the pair force the model's reliance on inertia falls to the level of the exact-flow models.
+
+**Speed.** Prefill, one sequence, float32, 8 threads; GPT-2 (fused attention) timed first and last; the three models run in mirrored order (VF0, F3.1, SR2-NP, then the reverse), so a steady drift cancels in each model's mean. The laptop throttled during the session: GPT-2 ran 1.3 to 1.45 times slower at the end than at the start. Tokens per second, geometric mean of each model's two runs, at 512, 2,048 and 8,192 tokens:
+
+| model | no levers | with the general levers |
+| --- | --- | --- |
+| matched GPT-2 | 3,550 / 3,423 / 2,162 | |
+| VF0 | 592 / 485 / 304 | 655 / 712 / 556 |
+| F3.1 | 294 / 180 / 84 | 481 / 302 / 102 |
+| SR2-NP | 614 / 472 / 304 | 705 / 712 / 688 |
+
+The general levers are those that apply to any of the three: the context channels as folded fused attention (`xi=fold64`), subnormal floats flushed (`denormal=flush`) and the float64 eigensolver (`gram=eigh64`). The layer-1 pruning that SR2-NP's speed figures in Stage 3 use is left out, because it depends on each model's wells.
+
+- **VF0 runs at SR2-NP's speed:** 0.96, 1.03 and 1.00 of it without levers, 0.93, 1.00 and 0.81 with them, within the session's scatter. The split step and the exact flow cost the same at inference.
+- **Removing the pair force makes F3.1 two to four times faster:** VF0 runs 2.0, 2.7 and 3.6 times faster than F3.1 without levers. The pair force is the dominant inference cost of F3.1, and it grows with length.
+- **For productization:** VF0 is as fast as SR2-NP and 4.4% worse. SR2-NP dominates it, so F3.1 without the pair force is not a candidate fast model.
+- **Perplexity on the benchmark's 16 windows:** VF0 61.78, F3.1 58.35, SR2-NP 58.41. VF0 against F3.1 on the same windows is 0.057 nats, as the settled values give.
+
+Outputs: `mechanism_ablations_vf0_output.txt` and `vtheta_omega_dt_vf0_output.txt` in the run's results folder (F3.1's, SR2-NP's and SR2's beside their own runs); `results/recall_pathway/recall_pathway_{vf0,f31}_owt.txt`; `results/productization/cpu_bench_v_*`.
+
+**Conservativity (CPU, 2026-11-26): every force term passes** at both layers, per token at fixed context, each layer read with its own depth code: Jacobian asymmetry at most $4.4 \times 10^{-7}$ and closed-loop work at most $1.0 \times 10^{-6}$, for $V_\theta$ and for the total. With no pair force there is no router term. Output: `conservativity_test_output.txt` and `.json` in the run's results folder.
 
 ## 8. Caveats
 
