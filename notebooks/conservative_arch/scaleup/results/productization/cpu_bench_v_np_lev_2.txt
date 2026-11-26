@@ -1,0 +1,9 @@
+CPU inference benchmark: ladder  semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn); analytic V_phi True; query chunk 512; skip unread registers True; context channels by folded fused attention, 30 heads of 64; gram driver by float64 eigh; 79,186,819 parameters; 8 threads; float32; one sequence per forward
+
+length   median s   tokens/s  peak RSS GB  times
+   512      0.953      537.2         2.19  0.581 0.953 1.051
+  2048      3.315      617.7         3.93  3.315 3.294 3.594
+  8192     15.670      522.8         9.57  10.854 15.670 17.551
+
+validation loss on 16 windows of 512 (openwebtext_val_2M.npy): 4.0675 (ppl 58.41)

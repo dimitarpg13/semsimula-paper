@@ -1,0 +1,9 @@
+CPU inference benchmark: ladder  semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn
+fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt (built tag xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn); analytic V_phi True; query chunk 512; skip unread registers True; 79,186,819 parameters; 8 threads; float32; one sequence per forward
+
+length   median s   tokens/s  peak RSS GB  times
+   512      0.918      557.5         2.19  0.912 0.928 0.918
+  2048      4.531      452.0         3.95  4.420 4.531 4.602
+  8192     28.641      286.0         9.58  28.710 28.641 28.424
+
+validation loss on 16 windows of 512 (openwebtext_val_2M.npy): 4.1236 (ppl 61.78)
