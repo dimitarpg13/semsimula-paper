@@ -192,6 +192,7 @@
 - [semantic_templates/Template_Matchers_and_Depth_L4](semantic_templates/Template_Matchers_and_Depth_L4.md): report of the four-layer depth arm (L4) and the scoring of TL1 to TL6
 - [semantic_templates/Connectives_With_a_Hidden_Negation](semantic_templates/Connectives_With_a_Hidden_Negation.md): the "unless" problem: a connective whose truth function its words do not show, and why the template matchers cannot read it
 - [semantic_templates/The_Embedding_Template_Matcher](semantic_templates/The_Embedding_Template_Matcher.md): the embedding-based template matcher step by step, on one premise and its rivals
+- [semantic_templates/Hybrid_Template_Matchers](semantic_templates/Hybrid_Template_Matchers.md): theory and proposal: matchers that use the embedding and the layer states together; a logical form as four factors, the residual separation, eight designs with pros and cons, a staged plan (not run)
 - [Renormalization_Group_Readings_of_Template_Matching_A_Proposal](Renormalization_Group_Readings_of_Template_Matching_A_Proposal.md): reading template matching through renormalisation-group ideas (proposal)
 - [Community_of_Semantic_Templates_for_Native_CoT](Community_of_Semantic_Templates_for_Native_CoT.md): a community of templates as the source of native chain-of-thought
 - [Chain_of_Thought_Substrate_in_Lagrangian_Models](Chain_of_Thought_Substrate_in_Lagrangian_Models.md): can chain-of-thought be built from the mechanisms the models have today?
