@@ -1,0 +1,52 @@
+   [np h0 rebuilt: m 6 d 10, X 70 coordinates]
+   [np h1 rebuilt: m 4 d 15, X 50 coordinates]
+   [np states rebuilt: m 5 d 10, X 120 coordinates]
+
+np (L = 2): 60 test clauses, halves 6300 / 6300 premises; embedding matcher T right on 0.862 of paraphrases
+   h0           dim   70 | per pair held-out @1% (AUROC) [in-sample, Gauss]: MP 0.28 (0.912) [0.37, 0.90]  MT 0.20 (0.855) [0.44, 0.52]  DS1 0.25 (0.871) [0.27, 0.54]  DS2 0.53 (0.876) [0.52, 0.61]
+                pooled narrow: para @1% 0.357 | pass: near 0.0106 exact 0.988 fallacy 0.667 other subj 0.853 unrelated 0.137
+                pooled broad : para @1% 0.139 | pass: near 0.0106 exact 0.907 fallacy 0.340 other subj 0.001 unrelated 0.000
+   h1           dim   50 | per pair held-out @1% (AUROC) [in-sample, Gauss]: MP 0.40 (0.920) [0.48, -]  MT 0.33 (0.836) [0.36, -]  DS1 0.39 (0.850) [0.44, -]  DS2 0.38 (0.830) [0.39, -]
+                pooled narrow: para @1% 0.245 | pass: near 0.0106 exact 0.902 fallacy 0.613 other subj 0.481 unrelated 0.054
+                pooled broad : para @1% 0.089 | pass: near 0.0106 exact 0.851 fallacy 0.409 other subj 0.024 unrelated 0.000
+   h0+h1        dim  120 | per pair held-out @1% (AUROC) [in-sample, Gauss]: MP 0.34 (0.925) [0.47, 0.99]  MT 0.41 (0.865) [0.53, 0.78]  DS1 0.62 (0.889) [0.67, 0.83]  DS2 0.43 (0.876) [0.56, 0.82]
+                pooled narrow: para @1% 0.269 | pass: near 0.0106 exact 0.951 fallacy 0.683 other subj 0.752 unrelated 0.140
+                pooled broad : para @1% 0.089 | pass: near 0.0106 exact 0.944 fallacy 0.341 other subj 0.000 unrelated 0.000
+   h0+states    dim  190 | per pair held-out @1% (AUROC) [in-sample, Gauss]: MP 0.38 (0.931) [0.59, 0.99]  MT 0.57 (0.878) [0.59, 0.87]  DS1 0.61 (0.889) [0.68, 0.89]  DS2 0.46 (0.873) [0.57, 0.88]
+                pooled narrow: para @1% 0.375 | pass: near 0.0106 exact 0.954 fallacy 0.705 other subj 0.824 unrelated 0.231
+                pooled broad : para @1% 0.092 | pass: near 0.0106 exact 0.925 fallacy 0.263 other subj 0.000 unrelated 0.000
+   [g2 h0 rebuilt: m 7 d 10, X 80 coordinates]
+   [g2 h1 rebuilt: m 7 d 20, X 80 coordinates]
+   [g2 states rebuilt: m 5 d 10, X 120 coordinates]
+
+g2 (L = 2): 60 test clauses, halves 6300 / 6300 premises; embedding matcher T right on 0.877 of paraphrases
+   h0           dim   80 | per pair held-out @1% (AUROC) [in-sample, Gauss]: MP 0.32 (0.917) [0.40, 0.93]  MT 0.25 (0.872) [0.49, 0.58]  DS1 0.23 (0.888) [0.34, 0.59]  DS2 0.25 (0.890) [0.48, 0.66]
+                pooled narrow: para @1% 0.349 | pass: near 0.0106 exact 0.994 fallacy 0.643 other subj 0.778 unrelated 0.070
+                pooled broad : para @1% 0.159 | pass: near 0.0106 exact 0.945 fallacy 0.272 other subj 0.001 unrelated 0.000
+   h1           dim   80 | per pair held-out @1% (AUROC) [in-sample, Gauss]: MP 0.42 (0.928) [0.46, -]  MT 0.46 (0.892) [0.56, -]  DS1 0.36 (0.888) [0.48, -]  DS2 0.46 (0.893) [0.64, -]
+                pooled narrow: para @1% 0.207 | pass: near 0.0106 exact 0.695 fallacy 0.523 other subj 0.404 unrelated 0.044
+                pooled broad : para @1% 0.105 | pass: near 0.0106 exact 0.960 fallacy 0.321 other subj 0.006 unrelated 0.000
+   h0+h1        dim  160 | per pair held-out @1% (AUROC) [in-sample, Gauss]: MP 0.41 (0.935) [0.59, 0.99]  MT 0.48 (0.898) [0.61, 0.92]  DS1 0.44 (0.907) [0.52, 0.92]  DS2 0.53 (0.903) [0.71, 0.93]
+                pooled narrow: para @1% 0.332 | pass: near 0.0106 exact 0.936 fallacy 0.630 other subj 0.555 unrelated 0.111
+                pooled broad : para @1% 0.113 | pass: near 0.0106 exact 0.942 fallacy 0.236 other subj 0.000 unrelated 0.000
+   h0+states    dim  200 | per pair held-out @1% (AUROC) [in-sample, Gauss]: MP 0.41 (0.944) [0.64, 1.00]  MT 0.53 (0.908) [0.62, 0.94]  DS1 0.49 (0.906) [0.63, 0.94]  DS2 0.61 (0.908) [0.71, 0.96]
+                pooled narrow: para @1% 0.361 | pass: near 0.0106 exact 0.945 fallacy 0.616 other subj 0.561 unrelated 0.123
+                pooled broad : para @1% 0.109 | pass: near 0.0106 exact 0.958 fallacy 0.251 other subj 0.000 unrelated 0.000
+   [l4 h0 rebuilt: m 5 d 31, X 60 coordinates]
+   [l4 h2 rebuilt: m 4 d 15, X 50 coordinates]
+   [l4 states rebuilt: m 4 d 10, X 200 coordinates]
+
+l4 (L = 4): 60 test clauses, halves 6300 / 6300 premises; embedding matcher T right on 0.877 of paraphrases
+   h0           dim   60 | per pair held-out @1% (AUROC) [in-sample, Gauss]: MP 0.21 (0.927) [0.28, 0.94]  MT 0.26 (0.868) [0.41, 0.54]  DS1 0.35 (0.880) [0.23, 0.58]  DS2 0.30 (0.882) [0.55, 0.61]
+                pooled narrow: para @1% 0.242 | pass: near 0.0106 exact 0.985 fallacy 0.652 other subj 0.786 unrelated 0.078
+                pooled broad : para @1% 0.164 | pass: near 0.0106 exact 0.927 fallacy 0.197 other subj 0.001 unrelated 0.000
+   h2           dim   50 | per pair held-out @1% (AUROC) [in-sample, Gauss]: MP 0.25 (0.936) [0.17, -]  MT 0.51 (0.858) [0.49, -]  DS1 0.38 (0.852) [0.39, -]  DS2 0.37 (0.846) [0.48, -]
+                pooled narrow: para @1% 0.248 | pass: near 0.0106 exact 0.747 fallacy 0.573 other subj 0.564 unrelated 0.053
+                pooled broad : para @1% 0.137 | pass: near 0.0106 exact 0.966 fallacy 0.259 other subj 0.012 unrelated 0.000
+   h0+h2        dim  110 | per pair held-out @1% (AUROC) [in-sample, Gauss]: MP 0.31 (0.937) [0.42, 1.00]  MT 0.50 (0.878) [0.59, 0.87]  DS1 0.48 (0.879) [0.52, 0.85]  DS2 0.40 (0.873) [0.56, 0.88]
+                pooled narrow: para @1% 0.276 | pass: near 0.0106 exact 0.939 fallacy 0.623 other subj 0.602 unrelated 0.139
+                pooled broad : para @1% 0.167 | pass: near 0.0106 exact 0.976 fallacy 0.194 other subj 0.000 unrelated 0.000
+   h0+states    dim  260 | per pair held-out @1% (AUROC) [in-sample, Gauss]: MP 0.26 (0.944) [0.60, 1.00]  MT 0.46 (0.900) [0.54, 0.97]  DS1 0.45 (0.893) [0.57, 0.96]  DS2 0.43 (0.877) [0.65, 0.95]
+                pooled narrow: para @1% 0.324 | pass: near 0.0106 exact 0.884 fallacy 0.568 other subj 0.497 unrelated 0.155
+                pooled broad : para @1% 0.141 | pass: near 0.0106 exact 0.973 fallacy 0.174 other subj 0.000 unrelated 0.000
+exit 0

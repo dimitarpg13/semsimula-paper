@@ -1,0 +1,8 @@
+checkpoint: fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt  (OpenWebText validation tokens)
+MECHANISM ABLATIONS: tag  K = -  (L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn, fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt; 4 x 4 x 512 tokens, batch seed 20261009)
+   base perplexity 61.71   xi channel alphas [0.367, 0.503, 0.893, 0.994, 0.986]
+   xi_ctx_swap   perplexity    233.24   change  +277.99%  (per-sequence spread 42.67%, n = 16)
+   xi_ctx_posmean perplexity    116.38   change   +88.60%  (per-sequence spread 27.61%, n = 16)
+   xi_swap       perplexity   6362.98   change +10211.79%  (per-sequence spread 39.04%, n = 16)
+   xi_posmean    perplexity    939.75   change +1422.96%  (per-sequence spread 41.77%, n = 16)
+   vphi_off      perplexity     61.71   change    +0.00%  (per-sequence spread 0.00%, n = 16)
