@@ -186,6 +186,11 @@
 - [semantic_templates/Template_Matcher_From_Geometry](semantic_templates/Template_Matcher_From_Geometry.md): report of the first template matcher: a cloud per logical form in a small subspace, fired from the geometry of the premise alone
 - [semantic_templates/What_the_Matchers_Read](semantic_templates/What_the_Matchers_Read.md): what the embedding, the layer states and the wells are to a template matcher; why the embedding scores well; particles move away from the wells; what would test the evolution
 - [semantic_templates/Template_Matchers_on_the_Dynamics](semantic_templates/Template_Matchers_on_the_Dynamics.md): pre-registration of template matchers that read the layers' displacements and the well frame, against the embedding
+- [semantic_templates/Template_Matchers_on_the_Dynamics_SR2_2B](semantic_templates/Template_Matchers_on_the_Dynamics_SR2_2B.md): report of their first run, on SR2-2B: TD2 and TD5 hit, the other three miss; one wording ("unless") drives most of the differences
+- [semantic_templates/Template_Matchers_and_Depth](semantic_templates/Template_Matchers_and_Depth.md): pre-registration of the depth arms of the template matchers
+- [semantic_templates/Template_Matchers_and_Depth_G2](semantic_templates/Template_Matchers_and_Depth_G2.md): report of the two-layer depth arm (G2)
+- [semantic_templates/Connectives_With_a_Hidden_Negation](semantic_templates/Connectives_With_a_Hidden_Negation.md): the "unless" problem: a connective whose truth function its words do not show, and why the template matchers cannot read it
+- [semantic_templates/The_Embedding_Template_Matcher](semantic_templates/The_Embedding_Template_Matcher.md): the embedding-based template matcher step by step, on one premise and its rivals
 - [Renormalization_Group_Readings_of_Template_Matching_A_Proposal](Renormalization_Group_Readings_of_Template_Matching_A_Proposal.md): reading template matching through renormalisation-group ideas (proposal)
 - [Community_of_Semantic_Templates_for_Native_CoT](Community_of_Semantic_Templates_for_Native_CoT.md): a community of templates as the source of native chain-of-thought
 - [Chain_of_Thought_Substrate_in_Lagrangian_Models](Chain_of_Thought_Substrate_in_Lagrangian_Models.md): can chain-of-thought be built from the mechanisms the models have today?
