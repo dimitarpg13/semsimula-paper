@@ -49,6 +49,26 @@ The author proposed the experiment: pass modus ponens, modus tollens and disjunc
 
 $$\bar{X} = \frac{C X}{\lVert C X \rVert_F}, \qquad C = I_7 - \tfrac{1}{7} \mathbf{1} \mathbf{1}^\top .$$
 
+The symbols, in words (added 2026-11-25 at the author's request):
+
+- $X$ is the argument's node matrix: 7 rows, one per node in the order c1, a1, c2, a2, p2, th, cn, and $d = 384$ columns. Row $i$ is the state of node $i$.
+- $\mathbf{1}$ is the column of seven ones, and $\mathbf{1}^\top$ the same as a row. Their product $\mathbf{1} \mathbf{1}^\top$ is the $7 \times 7$ matrix with every entry equal to 1.
+- $I_7$ is the $7 \times 7$ identity matrix: ones on the diagonal, zeros elsewhere.
+- $C$ is the **centring matrix**: 6/7 on the diagonal and -1/7 everywhere else. Multiplying by it subtracts the mean row: $C X = X - \mathbf{1} \bar{x}^\top$, where $\bar{x}^\top = \tfrac{1}{7} \mathbf{1}^\top X$ is the mean of the seven node states. So $C X$ is the node matrix with the argument's centre moved to the origin. Each row is a node's state minus the mean node.
+- $\lVert C X \rVert_F$ is the Frobenius norm: the square root of the sum of the squares of all $7 d$ entries. Dividing by it gives the centred figure unit size.
+
+The figure is therefore the shape of the seven nodes, without where the argument sits in the state space or how spread out it is. Moving every node by the same vector, or scaling them all by the same factor, leaves it unchanged. In the code (`debug/logic_analysis.py`) this is `X = X - X.mean(-2, keepdims=True); X / np.linalg.norm(X, axis=(-2, -1), keepdims=True)`.
+
+**A small example,** with 3 nodes in 2 dimensions instead of 7 in 384, so $C = I_3 - \tfrac{1}{3} \mathbf{1} \mathbf{1}^\top$:
+
+$$
+X = \begin{pmatrix} 1 & 0 \\ 3 & 0 \\ 2 & 3 \end{pmatrix}, \qquad
+C = \frac{1}{3} \begin{pmatrix} 2 & -1 & -1 \\ -1 & 2 & -1 \\ -1 & -1 & 2 \end{pmatrix}, \qquad
+C X = \begin{pmatrix} -1 & -1 \\ 1 & -1 \\ 0 & 2 \end{pmatrix} .
+$$
+
+The mean row of $X$ is $(2, 1)$, and $C X$ is $X$ with $(2, 1)$ subtracted from every row. Its Frobenius norm is the square root of $1 + 1 + 1 + 1 + 0 + 4 = 8$, about 2.83, so the figure is $C X / 2.83$. The rows of $C X$ sum to zero, as every centred figure's do.
+
 **Frozen figure.** The mean, over the arguments of a form, of the distances between the nodes of the figure: $7 \cdot 6 / 2 = 21$ numbers. An argument is read as the form whose frozen figure is nearest. Every such reading holds out one content, in all its forms, from the frozen figures.
 
 **Enclosing dimension.** The number of leading singular directions that hold 90% of the squared norm of a set of centred points.
@@ -65,7 +85,30 @@ Any answer needs baselines. Seven points always span at most six dimensions, the
 
 ## 3. Mathematical analysis
 
-**A figure up to rotation is its distances.** For an orthogonal $R$, $(\bar{X} R)(\bar{X} R)^\top = \bar{X} \bar{X}^\top$, and two point sets with equal Gram matrices differ by an orthogonal map. The distances determine the Gram matrix of a centred figure, so the 21 distances are a complete description of a figure up to rotation and reflection. They discard where in the state space the figure sits and how it is turned.
+**A figure up to rotation is its distances.** For an orthogonal $R$,
+
+$$
+(\bar{X} R)(\bar{X} R)^{\top} = \bar{X} R R^{\top} \bar{X}^{\top} = \bar{X} \bar{X}^{\top} ,
+$$
+
+and two point sets with equal Gram matrices differ by an orthogonal map. The distances determine the Gram matrix of a centred figure, so the 21 distances are a complete description of a figure up to rotation and reflection. They discard where in the state space the figure sits and how it is turned.
+
+The symbols (added 2026-11-25 at the author's request):
+
+- $X$ is the node matrix of one argument, 7 rows (nodes) by $d = 384$ columns, and $\bar{X}$ the figure of §1: $X$ centred over its nodes and scaled to unit Frobenius norm. Same shape, 7 by 384.
+- $R$ is a $d \times d$ **orthogonal matrix**, $R R^{\top} = I_d$: a rotation or reflection of the whole state space. Since the nodes are rows, $\bar{X} R$ applies the same rotation to all seven nodes at once. It moves the figure without bending it.
+- $\bar{X} \bar{X}^{\top}$ is the $7 \times 7$ **Gram matrix**: entry $(i, j)$ is the inner product of node $i$ with node $j$. The first equation says a rotation does not change it.
+- From the Gram matrix $G$ the squared distances follow, $\lVert x_i - x_j \rVert^2 = G_{ii} + G_{jj} - 2 G_{ij}$. For a centred figure the converse also holds: $G = -\tfrac{1}{2} C D C$, with $D$ the matrix of squared distances and $C$ the centring matrix of §1. So distances and Gram matrix carry the same information.
+
+**Example,** the three-node figure of §1 before scaling, $C X$ with rows $(-1, -1)$, $(1, -1)$, $(0, 2)$, and $R$ the rotation of the plane by 90 degrees acting on row vectors, $(x, y) \mapsto (-y, x)$:
+
+$$
+R = \begin{pmatrix} 0 & 1 \\ -1 & 0 \end{pmatrix}, \qquad
+C X R = \begin{pmatrix} 1 & -1 \\ 1 & 1 \\ -2 & 0 \end{pmatrix}, \qquad
+(C X)(C X)^{\top} = (C X R)(C X R)^{\top} = \begin{pmatrix} 2 & 0 & -2 \\ 0 & 2 & -2 \\ -2 & -2 & 4 \end{pmatrix} .
+$$
+
+The rotated rows are different vectors, but every inner product between them is the same. So are the distances: nodes 1 and 2 are 2 apart, nodes 1 and 3 and nodes 2 and 3 are the square root of 10 apart, before and after. Dividing by the norm (the square root of 8) scales every entry of the Gram matrix by 1/8 and leaves this unchanged.
 
 **The rank bound.** Centring removes one direction, so one figure has rank at most 6 whatever $d$ is. A form's enclosing dimension is bounded only by 6 times the number of contents, so it must be read against the number of contents and against the baselines.
 

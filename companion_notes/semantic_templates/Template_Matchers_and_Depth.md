@@ -42,6 +42,8 @@ zero when the layer moves its particles along its own flow. The conjecture says 
 
 The prose pair has the live gradient path, the pair force and the reverse channel on. They are not SR2-2B's settings, so the depth question is read within the pair only. The eight-layer prose model does not exist.
 
+**Decided on 2026-11-25 (author).** The depth series is completed on the SR2 recipe **without the pair force**, at 0.5B tokens: SR2-NP-L8 first, then SR2-NP-L4 (SR2-NP's Cell 0 with only the number of layers changed, so the step is 1 and 2 at the same total time). The two-layer reference is the existing SR2-NP, which the agent extracts before they land. A pair-force twin at eight layers was first left until the eight-layer path is read; **the author asked the same day to settle the pair force's part sooner.** Two steps: on the CPU now, SR2 (with it) against SR2-NP (without it) at two layers, both 0.5B, both existing; on the GPU, SR2-L8 with the pair force trained right after SR2-NP-L8, as its twin. No 2B-token runs: the readings so far show no difference between 0.5B and 2B tokens that would justify the time (the logic figures, and the geometry matcher, where SR2-2B is not clearly ahead of SR2). The dynamics matchers have not yet been compared across tokens; the agent will extract SR2 at 0.5B to check it directly. These runs get their own calls, written before they land.
+
 ## 3. What changes from the first run, and why
 
 Two choices were made from the SR2-2B report, before any depth result.
