@@ -2,6 +2,10 @@
 
 **What this note is.** A theory and proposal note. The template matchers so far read one kind of vector at a time: either the embedding, or a state or displacement of the trained layers (the "geometry" of the dynamics). Across four models the two kinds fail at different tasks. This note asks whether one matcher can use both, and how. It sets out what the measurements so far imply, the mathematics of combining two readings, eight ways of building a hybrid with their pros and cons, and a staged plan whose first step costs minutes on data already extracted. Written 2026-11-25 at the author's request. Nothing in it has been measured yet; the numbers quoted are from the earlier reports.
 
+**Status (author, 2026-11-26).** The viable alternatives are to be tested on the CPU, after VF0 is scored and the next productization arm is launched on the GPU. Step 0 of §6 comes first.
+
+**Step 0 done (2026-11-26): [Hybrid_Step0_Complementarity.md](Hybrid_Step0_Complementarity.md).** The readings partly complement each other (the best single state alone catches 4.8%, 13.3% and 18.6% of paraphrases on SR2-NP, G2 and L4), but about two thirds of the paraphrases are caught by neither, and "either fires" gains at most 0.03. The coordinates already separate a paraphrase from its near miss by 2.4 to 3.9 widths in the embedding alone: the ceiling is the fit, which has no paraphrase cloud, not the vector. That points to approach G. The prediction of §3.1 that the layer states add nothing to the frame is withdrawn: they add the most there.
+
 **In brief.**
 - **The two readings are the same matcher on different vectors.** Whitening, relational coordinates, clouds, the rate and the 1% rule are identical. A hybrid needs no new machinery, only a rule for which vector feeds which part of the decision.
 - **The embedding wins on new wordings; the layer states sometimes win on paraphrases.** On unseen wordings the embedding scores 0.95 to 0.98 on every model and no layer reading beats it by more than 0.01. On paraphrases at 1% near-miss fires the best layer reading beats the embedding on G2 (0.320 against 0.255) and on L4 (0.334 against 0.177), but not on SR2-NP (0.280 against 0.298).
@@ -115,6 +119,8 @@ where $V_T$ is the set of factor values that make template $T$ (one triple for e
 | clause restated | which clause shares tokens with the second sentence | exact for repetition (cosine 0.96 to 1.00 for the same token) | nothing for exact repetition |
 | polarity | an explicit "not" or a hidden negation | exact for "not" as a token | hidden negation, if the layers encode it |
 | gate | whether a changed predicate means the same | the word vectors' similarity only (0.23 for "chilled" against "cold", 0.16 for "strong") | context-dependent similarity, if the layers build it |
+
+*(Correction, 2026-11-26: the frame row's prediction failed in step 0. The layer states raise the separation of the conditional from the disjunctive frame more than any other, because they spread the connective's identity into the other particles: [Hybrid_Step0_Complementarity.md](Hybrid_Step0_Complementarity.md), §5.)*
 
 The table predicts where a layer reading can help: the gate and the hidden negation. It also predicts where it cannot: exact repetition, which the embedding already does perfectly and which a layer can only blur. Both predictions fit §2: the layer states help, when they help, on paraphrases; they lose on R1 when they blur repetition (the late states).
 
