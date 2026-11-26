@@ -8,6 +8,8 @@ Step 1a (semantic_templates/Hybrid_Step1a_Fitted_Gate.md), from template_gate_fi
   hyb_gate_auroc.png      per pair, the matcher's AUROC against the fitted gate's held-out AUROC (embedding, embedding + all states)
   hyb_gate_separation.png the pooled-covariance squared separation against the separation the two kinds have along the direction
   hyb_gate_pass.png       the pooled gates: paraphrases caught at 1% near misses, and what else passes the same threshold
+Step 1b (semantic_templates/Hybrid_Step1b_Null_Check.md), from template_gate_null_*.json:
+  hyb_null.png            what all the states add to the embedding, three ways, against two null blocks of the same size
 """
 import json
 from pathlib import Path
@@ -97,3 +99,24 @@ for ax, (s, nm) in zip(axs, MODELS):
 axs[0].set_ylabel("share, at 1% of near misses"); fig.legend(*axs[0].get_legend_handles_labels(), frameon=False, fontsize=9.5, ncol=4, loc="lower center", bbox_to_anchor=(.5, .99))
 fig.suptitle("The narrow gate catches more paraphrases but lets most fallacies and other subjects through (dotted: the best matcher)", fontweight="bold", y=1.09)
 save(fig, "hyb_gate_pass.png")
+
+# 6. step 1b: real residual against the nulls (all states)
+N = {s: json.loads((RES / f"template_gate_null_{s}.json").read_text()) for s, _ in MODELS}
+PN = ("MP", "MT", "DS1", "DS2", "control"); RW = (("pooled", "pooled covariance\n(squared widths)"), ("along", "along the held-out direction\n(squared widths)"), ("auroc", "held-out AUROC"))
+fig, axs = plt.subplots(3, 3, figsize=(13, 9), sharey="row", gridspec_kw={"wspace": .08, "hspace": .35}); x = np.arange(len(PN))
+for j, (s, nm) in enumerate(MODELS):
+    pr = N[s]["states"]["pairs"]
+    for i, (m, lab) in enumerate(RW):
+        ax = axs[i, j]; v = [pr[t]["real"][m] for t in PN]
+        ax.bar(x, v, .55, color=[BLUE] * 4 + [GREY], label="real states")
+        for xx, t in zip(x, PN):
+            for dx, nn, c in ((-.12, "noise", AMBER), (.12, "shuffled", INK)):
+                q = pr[t][nn][m]; ax.plot([xx + dx] * 2, [q["mean"], q["max"]], color=c, lw=1.6); ax.scatter([xx + dx], [q["mean"]], color=c, s=14, zorder=3)
+        ax.axhline(0, color=MUTED, lw=.8); ax.set_xticks(x, PN, fontsize=9.5); despine(ax)
+        if m != "pooled": ax.set_yscale("symlog", linthresh=.05 if m == "auroc" else 1)
+        if j == 0: ax.set_ylabel(lab, fontsize=10)
+        if i == 0: ax.set_title(nm, fontsize=11.5)
+hs = [plt.Rectangle((0, 0), 1, 1, color=BLUE), plt.Rectangle((0, 0), 1, 1, color=GREY), plt.Line2D([], [], color=AMBER, marker="o", ms=4), plt.Line2D([], [], color=INK, marker="o", ms=4)]
+fig.legend(hs, ["real states, paraphrase pairs", "real states, control", "noise block: mean to largest of 20", "shuffled states: mean to largest of 20"], frameon=False, ncol=4, loc="lower center", bbox_to_anchor=(.5, .94), fontsize=9.5)
+fig.suptitle("What all the states add to the embedding, against null blocks of the same size", fontweight="bold", y=.99)
+save(fig, "hyb_null.png")

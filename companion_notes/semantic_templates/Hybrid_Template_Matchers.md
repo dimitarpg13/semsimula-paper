@@ -4,7 +4,11 @@
 
 **Status (author, 2026-11-26).** The viable alternatives are to be tested on the CPU, after VF0 is scored and the next productization arm is launched on the GPU. Step 0 of §6 comes first.
 
-**Step 0 done (2026-11-26): [Hybrid_Step0_Complementarity.md](Hybrid_Step0_Complementarity.md).** The readings partly complement each other (the best single state alone catches 4.8%, 13.3% and 18.6% of paraphrases on SR2-NP, G2 and L4), but about two thirds of the paraphrases are caught by neither, and "either fires" gains at most 0.03. The coordinates already separate a paraphrase from its near miss by 2.4 to 3.9 widths in the embedding alone: the ceiling is the fit, which has no paraphrase cloud, not the vector. That points to approach G. The prediction of §3.1 that the layer states add nothing to the frame is withdrawn: they add the most there.
+**Step 0 done (2026-11-26): [Hybrid_Step0_Complementarity.md](Hybrid_Step0_Complementarity.md).** The readings partly complement each other (the best single state alone catches 4.8%, 13.3% and 18.6% of paraphrases on SR2-NP, G2 and L4), but about two thirds of the paraphrases are caught by neither, and "either fires" gains at most 0.03. The prediction of §3.1 that the layer states add nothing to the frame is withdrawn: they make the frame readable from the relational coordinates.
+
+**Step 1a done (2026-11-26): [Hybrid_Step1a_Fitted_Gate.md](Hybrid_Step1a_Fitted_Gate.md).** A linear gate for approach G, fitted on half the test clauses: it raises the AUROC of paraphrase against near miss by 0.05 to 0.15, but at 1% near misses it gains only 0.04 to 0.08 on SR2-NP and G2 and nothing on L4. Step 0's claim that the coordinates separate paraphrases from near misses by 2.4 to 3.9 widths was overstated 1.8 to 3.9 times (the paraphrases spread much wider than the pooled kinds, each clause at its own place), so "the ceiling is the fit, not the vector" is withdrawn: both limit it. A gate alone passes most fallacies and other subjects; it needs a form decision in front of it (D or F).
+
+**Step 1b done (2026-11-26): [Hybrid_Step1b_Null_Check.md](Hybrid_Step1b_Null_Check.md).** The null check: what the layer states add to the embedding survives two null blocks of the same size, but held-out it is small for paraphrases (0.25 to 1.42 squared widths on 2.2 to 4.9; AUROC up to +0.036) and large for the frame (AUROC +0.13 to +0.17). The states look most useful as the frame reader of a factorised matcher (F).
 
 **In brief.**
 - **The two readings are the same matcher on different vectors.** Whitening, relational coordinates, clouds, the rate and the 1% rule are identical. A hybrid needs no new machinery, only a rule for which vector feeds which part of the decision.
@@ -120,7 +124,7 @@ where $V_T$ is the set of factor values that make template $T$ (one triple for e
 | polarity | an explicit "not" or a hidden negation | exact for "not" as a token | hidden negation, if the layers encode it |
 | gate | whether a changed predicate means the same | the word vectors' similarity only (0.23 for "chilled" against "cold", 0.16 for "strong") | context-dependent similarity, if the layers build it |
 
-*(Correction, 2026-11-26: the frame row's prediction failed in step 0. The layer states raise the separation of the conditional from the disjunctive frame more than any other, because they spread the connective's identity into the other particles: [Hybrid_Step0_Complementarity.md](Hybrid_Step0_Complementarity.md), §5.)*
+*(Correction, 2026-11-26: the frame row's prediction failed in step 0. The layer states raise the separation of the conditional from the disjunctive frame more than any other, because they spread the connective's identity into the other particles: [Hybrid_Step0_Complementarity.md](Hybrid_Step0_Complementarity.md), §5. Step 1a, §4, corrects the sizes: read as AUROC, 0.84 to 0.88 from the embedding's relational coordinates, 1.00 with all states.)*
 
 The table predicts where a layer reading can help: the gate and the hidden negation. It also predicts where it cannot: exact repetition, which the embedding already does perfectly and which a layer can only blur. Both predictions fit §2: the layer states help, when they help, on paraphrases; they lose on R1 when they blur repetition (the late states).
 

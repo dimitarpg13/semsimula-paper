@@ -2,13 +2,15 @@
 
 **Report of step 0 of [Hybrid_Template_Matchers.md](Hybrid_Template_Matchers.md) (CPU, 2026-11-26).** The hybrid note asked whether the embedding reading and the layer readings of the template matcher fail on the same paraphrases, and proposed a decision rule before the check. This report gives the check on three models (SR2-NP, G2, L4), from the extractions already saved; nothing was extracted anew. The decision rule was proposed by the agent and **has not been confirmed by the author**, so everything here is exploratory, and the test clauses had been read by every earlier matcher.
 
+**Correction (2026-11-26, after step 1a, [Hybrid_Step1a_Fitted_Gate.md](Hybrid_Step1a_Fitted_Gate.md)).** The separations of §5 were overstated by a factor of 1.8 to 3.9. They measure distance in units of the spread of all premise kinds pooled, and along the separating direction the paraphrases spread 1.9 to 4.8 times wider than that, and the near misses 1.3 to 3.3 times. The prediction of 52 to 94% at 1% near misses is withdrawn; a direction fitted with the test labels catches 0.23 to 0.55. The bullets, §5, §6 and §7 below are corrected in place; the complementarity counts (§3, §4) are unchanged.
+
 **In brief.**
 - **The readings partly complement each other.** The best single layer state catches paraphrases the embedding misses: 4.8% of all test paraphrases on SR2-NP, 13.3% on G2, 18.6% on L4. On L4 most of that is the weak embedding there.
 - **About two thirds of the paraphrases are caught by neither reading** (61 to 68% on every model and reading). Choosing between the two vectors, or taking both, cannot reach them.
 - **"Either reading fires", at a matched 1% of near misses, gains little:** +0.017 and +0.029 over the best single reading on SR2-NP and G2, and −0.020 on L4.
-- **The information to tell a paraphrase from its near miss is in the coordinates already.** Read with a direction fitted for that purpose, the embedding's coordinates alone separate each paraphrase kind from its near miss by 2.4 to 3.9 widths. Under the Gaussian model that would catch 52 to 94% of paraphrases at 1% false alarms, against the 18 to 30% the matcher catches. Adding the layer states raises the separation further.
-- **So the ceiling is the fit, not the vector.** The matcher has no cloud for paraphrases: none are in the development clauses, so a paraphrase can only fire by landing in the cloud of the exact restatement. A fit that sees paraphrases is the lever this check points to (approach G of the hybrid note, or paraphrase kinds in the development set).
-- **A prediction of the hybrid note fails.** Its §3.1 said the layer states add nothing to telling the conditional frame from the disjunctive one, because the connective is a word. The control pair says the opposite: the layer states raise that separation the most of all.
+- ~~The information to tell a paraphrase from its near miss is in the coordinates already: 2.4 to 3.9 widths in the embedding alone, 52 to 94% caught at 1% under the Gaussian model.~~ **Corrected (step 1a):** along the best direction the embedding separates each paraphrase kind from its near miss by 1.7 to 2.3 widths, and that direction, fitted with the test labels, catches 0.23 to 0.55 at 1% near misses (the matcher 0.14 to 0.34 per kind). Adding the layer states raises the separation (to 2.2 to 2.8 widths).
+- ~~So the ceiling is the fit, not the vector.~~ **Corrected (step 1a):** both limit it. The matcher has no cloud for paraphrases (none are in the development clauses), and a fitted direction does order paraphrases against near misses better (AUROC up by 0.05 to 0.15). But each clause's paraphrase lands at its own place, so a linear gate fitted on 30 clauses gains little at 1% near misses.
+- **A prediction of the hybrid note fails.** Its §3.1 said the layer states add nothing to telling the conditional frame from the disjunctive one, because the connective is a word. The control pair says the opposite: the layer states make the frame readable from the relational coordinates (step 1a: AUROC 0.84 to 0.88 from the embedding's, 1.00 with all states; the squared separations of §5 for the control are not meaningful).
 
 ---
 
@@ -131,15 +133,19 @@ With the embedding alone, $\Delta^2$ = 5.7 to 7.5 (MT, DS1, DS2) gives 52 to 66%
 - **The control gains the most,** by 11 to 41. The hybrid note's §3.1 predicted no gain there, since the frame is the connective's word. The layer states spread the connective's identity into the other particles of the premise, so the frame becomes readable from many coordinates. The prediction is withdrawn.
 - These are the best case: the direction is fitted with the test labels, the Gaussian law understates the tails of these clouds ([Template_Matcher_From_Geometry.md](Template_Matcher_From_Geometry.md), §5.9), and a fit on fewer clauses would lose some of it.
 
+**Correction (step 1a, [Hybrid_Step1a_Fitted_Gate.md](Hybrid_Step1a_Fitted_Gate.md), §4).** The predictions above are withdrawn. The squared separation $\delta^{\top} \Sigma^{-1} \delta$ equals the separation two kinds actually have along the direction only if they spread along it like the pooled kinds. Along that direction the paraphrases spread 1.9 to 4.8 times wider and the near misses 1.3 to 3.3 times, almost all of it between clauses, and the near misses' upper tail is heavier than Gaussian. The squared separation along the direction is 2.9 to 5.2 for the embedding (not 5.7 to 15.2) and 4.7 to 7.8 with all states. The layer states still add separation for every pair, by 1.1 to 2.6 squared widths in sample, and by 0.25 to 1.42 on held-out clauses, above a null block of the same size ([Hybrid_Step1b_Null_Check.md](Hybrid_Step1b_Null_Check.md)). For the control, the affirmed-disjunct premises spread 10 to 28 times wider (the five disjunctive wordings), so its numbers in the table cannot be read as distances; its AUROC rises from 0.84 to 0.88 (embedding) to 1.00 (all states).
+
 ## 6. Scoring against the proposed rule
 
 The hybrid note's §6 proposed, before the check: if the share caught by the layer reading only is at least 0.05 on two models or more, the readings complement each other, and the role split (approach D), then the factorised templates (F), come next; if it is below 0.05 on every model and the rank correlation is above 0.8, the ceiling holds, and a new identity coordinate (E, then G) comes next.
 
 - **By the letter, the first branch applies:** 0.133 (G2) and 0.186 (L4), with SR2-NP just below (0.048).
 - **The agent's stated expectation** (ranks above 0.8; small on SR2-NP, moderate on L4) was **partly right**: the single states' rank correlations are 0.77 to 0.84, the joint states' 0.89 to 0.92; SR2-NP is small; L4 is larger than "moderate".
-- **The rule did not foresee §5.** It assumed that the choice of vector was the lever. Two thirds of the paraphrases are caught by neither reading, while the coordinates hold enough to catch most of them. That favours the second branch's approach G (a fitted identity direction) over D, whatever the letter of the rule. The rule was never confirmed, so the author decides.
+- **The rule did not foresee §5.** It assumed that the choice of vector was the lever. Two thirds of the paraphrases are caught by neither reading, while the coordinates hold enough to catch most of them. That favours the second branch's approach G (a fitted identity direction) over D, whatever the letter of the rule. The rule was never confirmed, so the author decides. *(Corrected after step 1a: the coordinates do not hold enough to catch most of them with a linear direction; the author chose to test G first, and it gains little at 1% near misses. See [Hybrid_Step1a_Fitted_Gate.md](Hybrid_Step1a_Fitted_Gate.md).)*
 
 ## 7. Interpretation
+
+*(This section is corrected by step 1a, [Hybrid_Step1a_Fitted_Gate.md](Hybrid_Step1a_Fitted_Gate.md): the ceiling is shared by the fit and the vectors, and the separations quoted in it are overstated. It is kept as written for the record.)*
 
 **The paraphrase ceiling is a property of the fit.** Every reading orders paraphrases against near misses in much the same way (AUROC 0.76 to 0.79 in the depth reports, rank correlation 0.75 to 0.92 here), and every reading catches at most a third of them at 1% near misses. The cause is not that the vectors cannot tell the two apart. Along a direction fitted for the purpose, the embedding's own coordinates separate them well. The matcher was built to recognise forms, never shown a paraphrase, and so never learned which direction separates "same statement, other words" from "same subject, other statement".
 
@@ -149,8 +155,8 @@ The hybrid note's §6 proposed, before the check: if the share caught by the lay
 
 ## 8. What to test next
 
-1. **A paraphrase gate fitted across clauses, on the saved extractions (cheap).** Fit the paraphrase-against-near-miss direction on half of the test clauses and catch paraphrases at 1% near misses on the other half, then swap the halves. Do it for the embedding, a layer state, and both. This is approach G without new data, and it measures how much of §5's best case survives a fit.
-2. **The null check for §5.** The same cross-fitted residual with the layer block replaced by noise of the same dimension, which must read about zero.
+1. **Done: [Hybrid_Step1a_Fitted_Gate.md](Hybrid_Step1a_Fitted_Gate.md).** **A paraphrase gate fitted across clauses, on the saved extractions (cheap).** Fit the paraphrase-against-near-miss direction on half of the test clauses and catch paraphrases at 1% near misses on the other half, then swap the halves. Do it for the embedding, a layer state, and both. This is approach G without new data, and it measures how much of §5's best case survives a fit.
+2. **Done: [Hybrid_Step1b_Null_Check.md](Hybrid_Step1b_Null_Check.md).** **The null check for §5.** The same cross-fitted residual with the layer block replaced by noise of the same dimension, which must read about zero.
 3. **Paraphrases in the development clauses (new extraction).** Paraphrase and near-miss kinds added to the 60 development clauses, so that the matcher fits a cloud for them. This needs new paraphrases drafted and checked.
 4. **D and F stay on the list,** for the frame and polarity parts where §5 shows the layer states carry more than the words.
 
@@ -158,7 +164,9 @@ The hybrid note's §6 proposed, before the check: if the share caught by the lay
 
 - **Exploratory.** The decision rule was not confirmed; the test clauses have been read by every earlier matcher.
 - **The separations of §5 use the test labels** to place the direction; they bound what a fitted gate could do.
-- **No null check yet** for the residual separation. The cross-fit removes the bias from the noise of the means, but the covariance is shrunk 10% toward its diagonal and estimated on the same premises.
+- **The separations of §5 are overstated** (step 1a); the pooled covariance does not describe the paraphrase and near-miss kinds.
+- **Null check done in step 1b** ([Hybrid_Step1b_Null_Check.md](Hybrid_Step1b_Null_Check.md)): the pooled estimate has no bias of note (null residual 0.0 to 0.2); the states' gain survives the null but is small held-out.
+- *(Original caveat:)* **No null check yet** for the residual separation. The cross-fit removes the bias from the noise of the means, but the covariance is shrunk 10% toward its diagonal and estimated on the same premises.
 - **Three models, one seed each, English premises drafted by the agent;** the paraphrases and near misses await the author's check.
 - **SR2-2B is not included.**
 
