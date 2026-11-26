@@ -61,11 +61,7 @@ The figure is therefore the shape of the seven nodes, without where the argument
 
 **A small example,** with 3 nodes in 2 dimensions instead of 7 in 384, so $C = I_3 - \tfrac{1}{3} \mathbf{1} \mathbf{1}^\top$:
 
-$$
-X = \begin{pmatrix} 1 & 0 \\ 3 & 0 \\ 2 & 3 \end{pmatrix}, \qquad
-C = \frac{1}{3} \begin{pmatrix} 2 & -1 & -1 \\ -1 & 2 & -1 \\ -1 & -1 & 2 \end{pmatrix}, \qquad
-C X = \begin{pmatrix} -1 & -1 \\ 1 & -1 \\ 0 & 2 \end{pmatrix} .
-$$
+$$X = \begin{pmatrix} 1 & 0 \cr 3 & 0 \cr 2 & 3 \end{pmatrix}, \qquad C = \frac{1}{3} \begin{pmatrix} 2 & -1 & -1 \cr -1 & 2 & -1 \cr -1 & -1 & 2 \end{pmatrix}, \qquad C X = \begin{pmatrix} -1 & -1 \cr 1 & -1 \cr 0 & 2 \end{pmatrix} .$$
 
 The mean row of $X$ is $(2, 1)$, and $C X$ is $X$ with $(2, 1)$ subtracted from every row. Its Frobenius norm is the square root of $1 + 1 + 1 + 1 + 0 + 4 = 8$, about 2.83, so the figure is $C X / 2.83$. The rows of $C X$ sum to zero, as every centred figure's do.
 
@@ -102,11 +98,7 @@ The symbols (added 2026-11-25 at the author's request):
 
 **Example,** the three-node figure of §1 before scaling, $C X$ with rows $(-1, -1)$, $(1, -1)$, $(0, 2)$, and $R$ the rotation of the plane by 90 degrees acting on row vectors, $(x, y) \mapsto (-y, x)$:
 
-$$
-R = \begin{pmatrix} 0 & 1 \\ -1 & 0 \end{pmatrix}, \qquad
-C X R = \begin{pmatrix} 1 & -1 \\ 1 & 1 \\ -2 & 0 \end{pmatrix}, \qquad
-(C X)(C X)^{\top} = (C X R)(C X R)^{\top} = \begin{pmatrix} 2 & 0 & -2 \\ 0 & 2 & -2 \\ -2 & -2 & 4 \end{pmatrix} .
-$$
+$$R = \begin{pmatrix} 0 & 1 \cr -1 & 0 \end{pmatrix}, \qquad C X R = \begin{pmatrix} 1 & -1 \cr 1 & 1 \cr -2 & 0 \end{pmatrix}, \qquad (C X)(C X)^{\top} = (C X R)(C X R)^{\top} = \begin{pmatrix} 2 & 0 & -2 \cr 0 & 2 & -2 \cr -2 & -2 & 4 \end{pmatrix} .$$
 
 The rotated rows are different vectors, but every inner product between them is the same. So are the distances: nodes 1 and 2 are 2 apart, nodes 1 and 3 and nodes 2 and 3 are the square root of 10 apart, before and after. Dividing by the norm (the square root of 8) scales every entry of the Gram matrix by 1/8 and leaves this unchanged.
 

@@ -227,6 +227,12 @@ def lint(path):
         if in_display and re.fullmatch(r'\s*[=-]+\s*', l) and l.strip():
             hits.append((i, 'R26', 'bare = / - line inside display math (Setext heading)', l))
 
+        # R25b a \\ row break inside a MULTI-LINE $$ block (cheatsheet quick-reference card, added 2026-11-25
+        # after the example matrices of Logical_Forms_as_Geometric_Figures.md collapsed onto one row): GitHub drops
+        # the row breaks. Put the display on one source line and write each row break as \cr.
+        if in_display and '\\\\' in l:
+            hits.append((i, 'R25b', r'\\ row break inside a multi-line $$ block: one source line, rows as \cr', l))
+
         # extra: $ glued to a word character (renders literally on GitHub)
         for s, e, b in spans:
             before = l[s-1] if s > 0 else ' '
