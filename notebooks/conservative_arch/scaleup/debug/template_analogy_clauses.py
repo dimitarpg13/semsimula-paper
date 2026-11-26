@@ -1,0 +1,244 @@
+"""Draft item bank for the analogy and in-context test set (companion_notes/semantic_templates/Analogy_and_Context_Test_Set.md).
+Drafted by the agent on 2026-11-26, 20 frames per level, for the author's review; not yet used by any extraction.
+
+Every restatement has a foil that shares as many tokens with the clause it is compared with (checked by template_analogy_review.py).
+Sentences are lower case without a final full stop, as in template_fresh_clauses.py; the generator capitalises them.
+The forms are built as in the current test: MP = conditional + restatement of P, MT = conditional + denial of Q, AC = conditional +
+restatement of Q, DA = conditional + denial of P, DS1 = disjunctive + denial of P, DS2 = disjunctive + denial of Q, the affirmed
+disjunct = disjunctive + restatement of P. For clause-level banks (BASE, L3, L5, L6) Q is another entry of the same bank, as now.
+"""
+
+
+def cop(subj, pred):
+    return f'{subj} is {pred}', f'{subj} is not {pred}'
+
+
+def neg(s):
+    """denial of a sentence with one 'is' or 'are'"""
+    for a in (' is ', ' are '):
+        if a in f' {s} ':
+            return f' {s} '.replace(a, a.rstrip() + ' not ', 1).strip()
+    raise ValueError(s)
+
+
+# L0 verbatim, L1 one word, L2 full paraphrase: one bank, so the three levels are paired by clause.
+# (subject, predicate, near-miss predicate, one-word paraphrase, paraphrased subject, paraphrased predicate, foil predicate for L2)
+_BASE = [
+    ('the road', 'closed', 'long', 'shut', 'the street', 'blocked', 'wide'),
+    ('the coffee', 'cold', 'strong', 'chilly', 'the brew', 'cool', 'bitter'),
+    ('the door', 'open', 'red', 'ajar', 'the entrance', 'unbarred', 'narrow'),
+    ('the patient', 'asleep', 'tall', 'sleeping', 'the sick man', 'dozing', 'bearded'),
+    ('the shop', 'busy', 'new', 'crowded', 'the store', 'packed', 'painted'),
+    ('the soldier', 'brave', 'young', 'fearless', 'the fighter', 'courageous', 'famous'),
+    ('the lake', 'frozen', 'deep', 'icy', 'the pond', 'iced over', 'shallow'),
+    ('the car', 'fast', 'blue', 'quick', 'the vehicle', 'speedy', 'rusty'),
+    ('the child', 'happy', 'short', 'cheerful', 'the youngster', 'joyful', 'clever'),
+    ('the room', 'dark', 'large', 'dim', 'the chamber', 'unlit', 'square'),
+    ('the bread', 'stale', 'sliced', 'dry', 'the loaf', 'dried out', 'cut in half'),
+    ('the singer', 'famous', 'hungry', 'renowned', 'the vocalist', 'celebrated', 'seated'),
+    ('the bridge', 'unsafe', 'old', 'dangerous', 'the crossing', 'hazardous', 'wooden'),
+    ('the river', 'wide', 'cold', 'broad', 'the waterway', 'expansive', 'muddy'),
+    ('the teacher', 'angry', 'tall', 'furious', 'the instructor', 'cross', 'bald'),
+    ('the meal', 'ready', 'spicy', 'prepared', 'dinner', 'done', 'late'),
+    ('the hill', 'steep', 'green', 'sheer', 'the slope', 'precipitous', 'grassy'),
+    ('the box', 'sealed', 'heavy', 'shut', 'the crate', 'taped closed', 'painted green'),
+    ('the lawyer', 'honest', 'busy', 'truthful', 'the attorney', 'trustworthy', 'wealthy'),
+    ('the engine', 'noisy', 'small', 'loud', 'the motor', 'roaring', 'rusty'),
+]
+BASE = []
+for s, p, nr, sy, ps, pp, pf in _BASE:
+    aff, ng = cop(s, p); BASE.append(dict(subj=s, aff=aff, neg=ng, near=cop(s, nr)[0], near_neg=cop(s, nr)[1], syn=cop(s, sy)[0], syn_neg=cop(s, sy)[1],
+                                         para=cop(ps, pp)[0], para_neg=cop(ps, pp)[1], pfoil=cop(ps, pf)[0], pfoil_neg=cop(ps, pf)[1]))
+
+# L3 entailed case: case entails the clause, ncase entails its denial; each foil shares as many tokens and decides neither.
+L3 = [dict(aff=a, case=c, case_foil=cf, ncase=n, ncase_foil=nf) for a, c, cf, n, nf in [
+    ('it rains', 'a storm is pouring down on the pitch', 'a crowd is pouring onto the pitch', 'the sky is cloudless and the ground is dry', 'the stands are crowded and the ground is hard'),
+    ('the guest is ill', 'the guest has a high fever', 'the guest has a high collar', 'the guest has just run a marathon', 'the guest has just run a bath'),
+    ('the animal is a mammal', 'the animal is a whale', 'the animal is a pet', 'the animal is a shark', 'the animal is in a zoo'),
+    ('the metal is valuable', 'the metal is gold', 'the metal is grey', 'the metal is scrap', 'the metal is shiny'),
+    ('the container holds liquid', 'the container holds milk', 'the container holds a lot', 'the container holds rice', 'the container holds two kilos'),
+    ('the house is empty', 'all the tenants have moved out of the house', 'all the tenants have argued about the house', 'all the tenants are at home in the house', 'all the tenants are fond of the house'),
+    ('the team won', 'the team scored three goals and conceded none', 'the team scored three goals and conceded four', 'the team lost every one of its games', 'the team travelled four hours by coach'),
+    ('the plant is dead', 'the plant has withered to brown stalks', 'the plant has been moved onto a porch', 'the plant has burst into bloom', 'the plant has been watered daily'),
+    ('the bird can fly', 'the bird is soaring over the valley', 'the bird is singing over the valley', 'the bird is a penguin', 'the bird is in a cage'),
+    ('the water is hot', 'the water is boiling', 'the water is murky', 'the water has frozen solid', 'the water has turned green'),
+    ('the prisoner escaped', 'the prisoner climbed over the wall and fled', 'the prisoner climbed onto the wall and sang', 'the prisoner is still in his cell', 'the prisoner is still very quiet'),
+    ('the shop is closed', 'the shutters of the shop are down and locked', 'the shutters of the shop are green and dusty', "customers are queuing at the shop's tills", "customers are talking about the shop's prices"),
+    ('the man is married', 'the man has a wife', 'the man has a wallet', 'the man is a bachelor', 'the man is a baker'),
+    ('the film was long', 'the film ran for four hours', 'the film ran for four weeks', 'the film was over in ten minutes', 'the film was shown in ten cities'),
+    ('the number is even', 'the number is twelve', 'the number is large', 'the number is seven', 'the number is written down'),
+    ('the road is wet', 'puddles cover the road', 'potholes cover the road', 'dust is blowing across the road', 'smoke is blowing across the road'),
+    ('the drawer is locked', 'the drawer will not open without the key', 'the drawer will not close without the stopper', 'the drawer slides open at a touch', 'the drawer squeaks at a touch'),
+    ('the soup is salty', 'the soup tastes like seawater', 'the soup looks like seawater', 'the cook added no salt at all to the soup', 'the cook added no pepper at all to the soup'),
+    ('the window is broken', 'shards of the window lie on the floor', 'photos of the window lie on the floor', 'the window has just passed its inspection', 'the window has just been cleaned'),
+    ('the horse is tired', 'the horse is panting and stumbling', 'the horse is brown and white', 'the horse is galloping eagerly', 'the horse is grazing quietly'),
+]]
+
+# L4 reference: the second sentence names its subject by a pronoun only. The foil is the same sentence with the other clause's
+# pronoun (it says the predicate of P about Q's subject). Both pronouns take "is", so restatement and foil differ in one token.
+# (P subject, P predicate, P pronoun, Q subject, Q predicate, Q pronoun)
+_L4 = [
+    ('the king', 'ill', 'he', 'the queen', 'in charge', 'she'),
+    ('the waiter', 'late', 'he', 'the actress', 'hungry', 'she'),
+    ('the dog', 'barking', 'it', 'the girl', 'frightened', 'she'),
+    ('the uncle', 'asleep', 'he', 'the aunt', 'cooking', 'she'),
+    ('the bull', 'angry', 'it', "the farmer's wife", 'worried', 'she'),
+    ('the boy', 'lost', 'he', 'the mother', 'searching', 'she'),
+    ('the kettle', 'boiling', 'it', 'the grandmother', 'pleased', 'she'),
+    ('the nun', 'silent', 'she', 'the bishop', 'speaking', 'he'),
+    ('the car', 'broken', 'it', 'the mechanic', 'away', 'he'),
+    ('the bride', 'nervous', 'she', 'the groom', 'calm', 'he'),
+    ('Anna', 'tired', 'she', 'Tom', 'driving', 'he'),
+    ('the princess', 'unhappy', 'she', 'the prince', 'abroad', 'he'),
+    ('the boiler', 'leaking', 'it', 'the landlady', 'upset', 'she'),
+    ('the father', 'proud', 'he', 'the daughter', 'graduating', 'she'),
+    ('the cat', 'missing', 'it', 'the boy', 'crying', 'he'),
+    ('the duchess', 'generous', 'she', 'the duke', 'bankrupt', 'he'),
+    ('the phone', 'ringing', 'it', 'the grandfather', 'asleep', 'he'),
+    ('Maria', 'angry', 'she', 'Peter', 'apologising', 'he'),
+    ('the policeman', 'suspicious', 'he', 'the woman', 'innocent', 'she'),
+    ('the clock', 'fast', 'it', 'the headmistress', 'impatient', 'she'),
+]
+L4 = []
+for ps, pp, pr, qs, qp, qr in _L4:
+    L4.append(dict(P=cop(ps, pp)[0], Q=cop(qs, qp)[0], res=cop(pr, pp)[0], res_neg=cop(pr, pp)[1], foil=cop(qr, pp)[0], foil_neg=cop(qr, pp)[1],
+                   resQ=cop(qr, qp)[0], resQ_neg=cop(qr, qp)[1], foilQ=cop(pr, qp)[0], foilQ_neg=cop(pr, qp)[1]))
+
+# L5 restructured: the clause said again with another syntax (nominalisation, passive); the foil keeps the same frame and words of
+# the clause, with the event replaced.
+L5 = [dict(aff=a, res=r, foil=f, res_neg=rn, foil_neg=fn) for a, r, f, rn, fn in [
+    ('the council approves the plan', "the plan has the council's approval", "the plan has the council's attention", "the plan lacks the council's approval", "the plan lacks the council's attention"),
+    ('the company hires the graduate', 'the graduate gets a job at the company', 'the graduate gets a tour of the company', 'the graduate gets no job at the company', 'the graduate gets no tour of the company'),
+    ('the doctor examined the patient', 'the patient had an examination by the doctor', 'the patient had a conversation with the doctor', 'the patient had no examination by the doctor', 'the patient had no conversation with the doctor'),
+    ('the police arrested the thief', 'the thief is under arrest by the police', 'the thief is under watch by the police', 'the thief is not under arrest by the police', 'the thief is not under watch by the police'),
+    ('the jury acquitted the defendant', 'the defendant won an acquittal from the jury', 'the defendant won a smile from the jury', 'the defendant won no acquittal from the jury', 'the defendant won no smile from the jury'),
+    ('the committee rejected the proposal', 'the proposal met with rejection from the committee', 'the proposal met with interest from the committee', 'the proposal met with no rejection from the committee', 'the proposal met with no interest from the committee'),
+    ('the team celebrated the victory', 'there was a celebration of the victory by the team', 'there was a discussion of the victory by the team', 'there was no celebration of the victory by the team', 'there was no discussion of the victory by the team'),
+    ('the bank refused the loan', 'the loan met with a refusal from the bank', 'the loan met with a review from the bank', 'the loan met with no refusal from the bank', 'the loan met with no review from the bank'),
+    ('the army invaded the island', 'the island suffered an invasion by the army', 'the island hosted a parade by the army', 'the island suffered no invasion by the army', 'the island hosted no parade by the army'),
+    ('the singer cancelled the concert', "the concert's cancellation came from the singer", "the concert's announcement came from the singer", "no cancellation of the concert came from the singer", "no announcement of the concert came from the singer"),
+    ('the government raised taxes', 'taxes saw an increase by the government', 'taxes saw a review by the government', 'taxes saw no increase by the government', 'taxes saw no review by the government'),
+    ('the river flooded the village', 'the village got a flood from the river', 'the village got its water from the river', 'the village got no flood from the river', 'the village got no water from the river'),
+    ('the student completed the course', 'the course saw completion by the student', 'the course saw criticism by the student', 'the course saw no completion by the student', 'the course saw no criticism by the student'),
+    ('the chef burnt the steak', "the chef's steak is charred", "the chef's steak is tender", "the chef's steak is not charred", "the chef's steak is not tender"),
+    ('the coach praised the players', 'the players received praise from the coach', 'the players received drinks from the coach', 'the players received no praise from the coach', 'the players received no drinks from the coach'),
+    ('the nurse vaccinated the child', 'the child got a vaccination from the nurse', 'the child got a sticker from the nurse', 'the child got no vaccination from the nurse', 'the child got no sticker from the nurse'),
+    ('the critics loved the film', "the film won the critics' love", "the film won the critics' attention", "the film did not win the critics' love", "the film did not win the critics' attention"),
+    ('the guard opened the gate', "the gate's opening was the guard's doing", "the gate's painting was the guard's doing", "the gate's opening was not the guard's doing", "the gate's painting was not the guard's doing"),
+    ('the voters elected the mayor', 'the mayor won election by the voters', 'the mayor won applause from the voters', 'the mayor won no election by the voters', 'the mayor won no applause from the voters'),
+    ('the fire destroyed the barn', "the barn's destruction was caused by the fire", "the barn's evacuation was caused by the fire", "the barn's destruction was not caused by the fire", "the barn's evacuation was not caused by the fire"),
+]]
+
+# L6 new domain: L2 paraphrases in domains absent from the development clauses (law, medicine, machines, fiction).
+_L6 = [
+    ('the contract', 'void', 'the agreement', 'invalid', 'lengthy'), ('the witness', 'credible', 'the testifier', 'believable', 'nervous'),
+    ('the appeal', 'pending', 'the challenge', 'undecided', 'written'), ('the lease', 'expired', 'the tenancy', 'over', 'cheap'),
+    ('the defendant', 'liable', 'the accused', 'responsible', 'elderly'), ('the tumour', 'benign', 'the growth', 'harmless', 'round'),
+    ('the fracture', 'healed', 'the break', 'mended', 'visible'), ('the infection', 'contagious', 'the illness', 'catching', 'seasonal'),
+    ('the patient', 'sedated', 'the sufferer', 'tranquillised', 'bandaged'), ('the wound', 'septic', 'the cut', 'infected', 'shallow'),
+    ('the valve', 'jammed', 'the tap', 'stuck', 'chrome'), ('the battery', 'flat', 'the cell', 'drained', 'cylindrical'),
+    ('the circuit', 'live', 'the wiring', 'energised', 'insulated'), ('the turbine', 'idle', 'the generator', 'inactive', 'enormous'),
+    ('the sensor', 'faulty', 'the detector', 'defective', 'sensitive'), ('the dragon', 'awake', 'the wyrm', 'stirring', 'ancient'),
+    ('the spell', 'broken', 'the enchantment', 'undone', 'powerful'), ('the knight', 'slain', 'the warrior', 'killed', 'armoured'),
+    ('the castle', 'haunted', 'the fortress', 'ghost-ridden', 'well-guarded'), ('the prophecy', 'fulfilled', 'the foretelling', 'realised', 'obscure'),
+]
+L6 = []
+for s, p, ps, pp, pf in _L6:
+    L6.append(dict(aff=cop(s, p)[0], neg=cop(s, p)[1], para=cop(ps, pp)[0], para_neg=cop(ps, pp)[1], pfoil=cop(ps, pf)[0], pfoil_neg=cop(ps, pf)[1]))
+
+# C1 alias in context: a context sentence names two people; the clause uses a role, the restatement the right name, the foil the
+# other name with the same predicate. Only the context links the name to the role.
+_C1 = [
+    ('Mr Hale runs the only bakery in town, and Mrs Roe runs the flower shop.', 'the baker', 'ill', 'the bakery stays shut', 'Mr Hale', 'Mrs Roe'),
+    ("Dr Patel is the town's only dentist; Dr Okafor is its vet.", 'the dentist', 'away', 'the clinic cancels its appointments', 'Dr Patel', 'Dr Okafor'),
+    ('Lena captains the hockey team; Sara coaches it.', 'the captain', 'injured', 'the team forfeits the match', 'Lena', 'Sara'),
+    ('Mr Brook drives the school bus; Mr Finch teaches music.', 'the driver', 'sick', 'the children walk to school', 'Mr Brook', 'Mr Finch'),
+    ('Our neighbour Ruth is the mayor; her brother Ian is the treasurer.', 'the mayor', 'abroad', 'the council meeting is postponed', 'Ruth', 'Ian'),
+    ('Mr Moss commands the ship; Mr Reed is its cook.', 'the commander', 'drunk', 'the voyage is delayed', 'Mr Moss', 'Mr Reed'),
+    ('Professor Lind chairs the panel; Dr Hart takes the minutes.', 'the chair', 'late', 'the hearing is delayed', 'Professor Lind', 'Dr Hart'),
+    ('Pedro owns the café on the corner; Marco works at the bank.', 'the café owner', 'on holiday', 'the café is closed', 'Pedro', 'Marco'),
+    ('The goalkeeper is a woman called Joy; the striker is called Kim.', 'the goalkeeper', 'tired', 'the defence is weak', 'Joy', 'Kim'),
+    ('Mr Grant is the night guard at the museum; Mr Adler is its curator.', 'the guard', 'asleep', 'the alarm goes unanswered', 'Mr Grant', 'Mr Adler'),
+    ('Nora manages the hotel; Vera cleans the rooms.', 'the manager', 'unavailable', 'the complaint is ignored', 'Nora', 'Vera'),
+    ('Ivan flies the morning plane; Oleg sits beside him as co-pilot.', 'the pilot', 'unwell', 'the flight is cancelled', 'Ivan', 'Oleg'),
+    ('Mrs Kahn is the head teacher; Miss Doyle teaches art.', 'the head teacher', 'absent', 'the assembly is cancelled', 'Mrs Kahn', 'Miss Doyle'),
+    ("Bruno is the band's drummer; Felix sings.", 'the drummer', 'ill', 'the concert is called off', 'Bruno', 'Felix'),
+    ('Mrs Ward hears the case; Mr Slade defends the accused.', 'the judge', 'delayed', 'the trial is adjourned', 'Mrs Ward', 'Mr Slade'),
+    ('Tom is the village blacksmith; Will is the miller.', 'the blacksmith', 'busy', 'the horses wait unshod', 'Tom', 'Will'),
+    ("Amira is the expedition's doctor; Jonas is its guide.", 'the doctor', 'lost', 'the expedition turns back', 'Amira', 'Jonas'),
+    ('Mr Cole keeps the pub; Mr Dunn is one of its regulars.', 'the landlord', 'angry', 'the pub closes early', 'Mr Cole', 'Mr Dunn'),
+    ('Hana conducts the orchestra; Mei plays first violin.', 'the conductor', 'late', 'the rehearsal is cut short', 'Hana', 'Mei'),
+    ("Mr Price owns the shop; Mr Shah keeps its accounts.", 'the owner', 'worried', 'the shop is sold', 'Mr Price', 'Mr Shah'),
+]
+C1 = []
+for ctx, role, pr, q, right, wrong in _C1:
+    C1.append(dict(context=ctx, P=cop(role, pr)[0], Q=q, res=cop(right, pr)[0], res_neg=cop(right, pr)[1], foil=cop(wrong, pr)[0], foil_neg=cop(wrong, pr)[1]))
+
+# C2 same word, sense differs: the clause's sense is fixed by its consequent; the restatement adds a word of that sense, the foil a
+# word of the other sense, as many tokens. C2' pairs a paraphrase in the clause's sense (para) with the same foil (a false friend).
+_C2 = [
+    ('the bank is closed', 'we cannot withdraw cash', 'the bank on the high street is closed', 'the bank of the river is closed', 'the branch on the high street has shut'),
+    ('the bat is in the shed', 'the game cannot start', 'the cricket bat is in the shed', 'the fruit bat is in the shed', 'the willow paddle is stored in the outbuilding'),
+    ('the crane is standing by the lake', 'the birdwatchers gather', 'the white crane is standing by the lake', 'the steel crane is standing by the lake', 'the long-legged wader waits at the water\'s edge'),
+    ('the mouse is under the desk', 'the cat is excited', 'the field mouse is under the desk', 'the computer mouse is under the desk', 'the little rodent hides beneath the table'),
+    ('the letter is missing', 'the post office apologises', 'the posted letter is missing', 'the capital letter is missing', 'the mailed envelope has gone astray'),
+    ('the plant is dying', 'we water it more often', 'the potted plant is dying', 'the steel plant is dying', 'the house fern is wilting'),
+    ('the court is empty', 'the trial cannot go ahead', 'the criminal court is empty', 'the tennis court is empty', 'the hall of justice has nobody in it'),
+    ('the organ is damaged', 'the surgeon cannot transplant it', 'the donor organ is damaged', 'the church organ is damaged', 'the harvested kidney is injured'),
+    ('the club is new', 'the golfer practises more', 'the golf club is new', 'the youth club is new', 'the iron he swings has just been bought'),
+    ('the ring is too small', 'the bride cannot wear it', 'the wedding ring is too small', 'the boxing ring is too small', 'the gold band will not fit her finger'),
+    ('the nail is bent', 'the carpenter pulls it out', 'the steel nail is bent', 'the toe nail is bent', 'the iron spike is crooked'),
+    ('the palm is dry', 'the gardener waters it', 'the date palm is dry', 'the left palm is dry', 'the date tree is parched'),
+    ('the glasses are broken', 'the reader cannot see the page', 'the reading glasses are broken', 'the wine glasses are broken', 'her spectacles have cracked'),
+    ('the key is lost', 'we cannot open the front door', 'the door key is lost', 'the answer key is lost', 'the latchkey has gone missing'),
+    ('the jam is terrible', 'we will be late for work', 'the traffic jam is terrible', 'the strawberry jam is terrible', 'the congestion on the motorway is awful'),
+    ('the fan is broken', 'the room is too hot', 'the ceiling fan is broken', 'the football fan is broken', 'the overhead cooler has stopped working'),
+    ('the deck is wet', 'the sailors slip', 'the upper deck is wet', 'the card deck is wet', "the boat's planking is soaked"),
+    ('the pupil is small', 'the light is too bright', 'the eye pupil is small', 'the school pupil is small', 'the iris opening has narrowed'),
+    ('the bark is rough', 'the climber grips it easily', 'the tree bark is rough', 'the dog bark is rough', "the oak's skin is coarse"),
+    ('the record is broken', 'the music stops', 'the vinyl record is broken', 'the world record is broken', 'the old LP has cracked'),
+]
+C2 = [dict(P=p, Q=q, res=r, res_neg=neg(r), foil=f, foil_neg=neg(f), para=pa) for p, q, r, f, pa in _C2]
+
+# C3 ellipsis: the second sentence keeps only a pronoun and "does": the clause's subject and verb must come from the context.
+# The foil is the other clause's pronoun (the AC twin). (P subject, P verb, P pronoun, Q subject, Q verb, Q pronoun)
+_C3 = [
+    ('the tap', 'leaks', 'it', 'the landlady', 'complains', 'she'), ('the dog', 'barks', 'it', 'the old man', 'wakes', 'he'),
+    ('the kettle', 'whistles', 'it', 'the grandmother', 'smiles', 'she'), ('Tom', 'snores', 'he', 'Anna', 'leaves', 'she'),
+    ('the boiler', 'breaks', 'it', 'the landlord', 'pays', 'he'), ('the princess', 'sings', 'she', 'the king', 'weeps', 'he'),
+    ('the car', 'stalls', 'it', 'the father', 'swears', 'he'), ('the clock', 'chimes', 'it', 'the nun', 'prays', 'she'),
+    ('the boy', 'lies', 'he', 'the mother', 'worries', 'she'), ('the printer', 'jams', 'it', 'Mrs Lee', 'shouts', 'she'),
+    ('the bride', 'cries', 'she', 'the groom', 'laughs', 'he'), ('the engine', 'overheats', 'it', 'Mr Ross', 'lands early', 'he'),
+    ('the roof', 'sags', 'it', 'the duchess', 'moves out', 'she'), ('Maria', 'wins', 'she', 'Peter', 'cheers', 'he'),
+    ('the radio', 'crackles', 'it', 'the grandfather', 'switches channels', 'he'), ('the policeman', 'whistles', 'he', 'the woman', 'stops', 'she'),
+    ('the phone', 'rings', 'it', 'the daughter', 'answers', 'she'), ('the uncle', 'visits', 'he', 'the aunt', 'bakes', 'she'),
+    ('the volcano', 'erupts', 'it', 'the queen', 'flees', 'she'), ('the alarm', 'sounds', 'it', 'the headmistress', 'clears the hall', 'she'),
+]
+C3 = [dict(P=f'{ps} {pv}', Q=f'{qs} {qv}', res=f'{pr} does', res_neg=f'{pr} does not', foil=f'{qr} does', foil_neg=f'{qr} does not') for ps, pv, pr, qs, qv, qr in _C3]
+
+# C4 denial by an incompatible value: the second sentence denies a clause only through what is known about it (green denies red).
+# Q_inc denies Q (MT analogue), P_inc denies P (DS1 and DA analogues); each foil keeps the subject and decides nothing.
+C4 = [dict(P=p, Q=q, Q_inc=qi, Q_foil=qf, P_inc=pi, P_foil=pf) for p, q, qi, qf, pi, pf in [
+    ('the alarm is on', 'the light is red', 'the light is green', 'the light is bright', 'the alarm is off', 'the alarm is loud'),
+    ('the shop is open', 'the door is unlocked', 'the door is bolted', 'the door is wooden', 'the shop is shut', 'the shop is small'),
+    ('the patient is alive', 'his heart is beating', 'his heart is still', 'his heart is large', 'the patient is dead', 'the patient is old'),
+    ('the glass is full', 'the jug is empty', 'the jug is brimming', 'the jug is ceramic', 'the glass is drained', 'the glass is cold'),
+    ('the meeting is on Monday', 'the room is booked', 'the room is free', 'the room is large', 'the meeting is on Friday', 'the meeting is on schedule'),
+    ('the signal is red', 'the cars stop', 'the cars keep moving', 'the cars keep honking', 'the signal is green', 'the signal is bright'),
+    ('the child is awake', 'the nursery is noisy', 'the nursery is silent', 'the nursery is blue', 'the child is sleeping', 'the child is small'),
+    ('the coin landed heads', 'Anna wins the bet', 'Anna loses the bet', 'Anna doubles the bet', 'the coin landed tails', 'the coin landed quickly'),
+    ('the oven is hot', 'the bread is baking', 'the bread is raw', 'the bread is wholemeal', 'the oven is cold', 'the oven is new'),
+    ('the student passed', 'her parents are proud', 'her parents are ashamed', 'her parents are tall', 'the student failed', 'the student studied'),
+    ('the door is closed', 'the cat is inside', 'the cat is outside', 'the cat is ginger', 'the door is ajar', 'the door is painted'),
+    ('the tank is full', 'the gauge points high', 'the gauge points low', 'the gauge points north', 'the tank is dry', 'the tank is metal'),
+    ('the river is high', 'the ford is dangerous', 'the ford is safe', 'the ford is wide', 'the river is low', 'the river is brown'),
+    ('the road is dry', 'the race goes ahead', 'the race is called off', 'the race is televised', 'the road is flooded', 'the road is long'),
+    ('the flag is up', 'the castle is occupied', 'the castle is deserted', 'the castle is ancient', 'the flag is down', 'the flag is blue'),
+    ('the tide is in', 'the beach is covered', 'the beach is exposed', 'the beach is sandy', 'the tide is out', 'the tide is strong'),
+    ('the fridge is working', 'the milk is cold', 'the milk is warm', 'the milk is fresh', 'the fridge is broken', 'the fridge is white'),
+    ('the train is early', 'the platform is crowded', 'the platform is deserted', 'the platform is long', 'the train is late', 'the train is new'),
+    ('the soup is hot', 'the bowl is warm', 'the bowl is icy', 'the bowl is round', 'the soup is cold', 'the soup is thick'),
+    ('the switch is up', 'the lamp is lit', 'the lamp is dark', 'the lamp is brass', 'the switch is down', 'the switch is plastic'),
+]]
+
+LEVELS = dict(BASE=BASE, L3=L3, L4=L4, L5=L5, L6=L6, C1=C1, C2=C2, C3=C3, C4=C4)

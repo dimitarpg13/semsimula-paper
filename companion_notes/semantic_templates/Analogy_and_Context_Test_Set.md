@@ -80,7 +80,7 @@ Each level has the four valid forms (MP, MT, DS1, DS2), their fallacy twins (aff
 
 Notes on the examples:
 
-- **Matched overlap.** In every row the restatement and its foil share the same number of tokens with the clause: none from L2 on, the subject alone in L1, "is ill" in C1, "bank is closed" in C2. String identity therefore cannot prefer the restatement.
+- **Matched overlap.** In every row the restatement and its foil share the same number of tokens with the clause: from L2 on no content word (only words such as "the" and "is", equally in both), the subject in L1, "is ill" in C1, "bank is closed" in C2. String identity therefore cannot prefer the restatement.
 - **The strongest foils share the restatement's own surface.** In L3 both sentences are "a … is pouring … the pitch". In C2 both repeat "bank is closed". The only difference is meaning.
 - **C2′ inverts string identity.** The false friend repeats the clause's words; the true restatement does not. A reading that follows words ranks the foil first.
 - **C4 needs knowledge.** "Green" denies "red" only through what the reader knows about lights. That is a test of what the model carries, not of the matcher.
@@ -210,6 +210,6 @@ Every reading is compared with the lexical baseline (at chance by construction f
 ## 9. Next steps
 
 1. The lexical baseline is reported ([Lexical_Baseline.md](Lexical_Baseline.md)). Test 3, the metric fitted per reading, is running (the vector extractions take about four hours on the CPU); its report follows.
-2. Draft 20 clause frames per level for the author's check, with the overlap and tie checks of §7.
+2. Done: 20 clause frames per level, drafted for the author's check, in [analogy_items/](analogy_items/README.md); all 420 restatement and foil pairs pass the overlap check.
 3. Write the calls (per level and reading) for the author to confirm.
 4. Draft the remaining frames, extract on SR2-NP, G2 and L4, and score.

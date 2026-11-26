@@ -45,7 +45,8 @@ x = np.arange(len(lev)); b.bar(x - 0.18, pos_ov, 0.34, color=GREEN, alpha=0.8, l
 b.bar(x + 0.18, foil_ov, 0.34, color=RED, alpha=0.8, label="matched foil")
 b.set_xticks(x, lev, fontsize=9); b.set_ylim(0, 1.05)
 for i_ in range(2, 6): b.text(i_, 0.015, "0", ha="center", fontsize=9, color=MUTED); b.set_title("Analogy levels (design targets)"); b.legend(frameon=False, fontsize=9, loc="upper right"); despine(b)
-b.text(3.5, 0.25, "from L2 on, restatement and foil\nshare no token with the clause:\nstring identity is at chance", ha="center", fontsize=9.5, color=INK)
+b.text(3.5, 0.25, "from L2 on, restatement and foil\nshare no content word with the clause:\nstring identity is at chance", ha="center", fontsize=9.5, color=INK)
+b.set_ylabel("content-word overlap with the clause")
 save(fig, "an_overlap.png")
 
 # 2. toy 2-D: word vectors against context-mixed states
