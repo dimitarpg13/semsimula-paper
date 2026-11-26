@@ -1,0 +1,6 @@
+checkpoint: fock_cfc_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_vplive_xilive_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn_best.pt  (OpenWebText validation tokens)
+V_THETA STIFFEST-MODE OMEGA*DT: tag  K = 0  (one definition for both orders; Cell 6b-13 batches, seed 20260928, 8 x 4 x 512 tokens; dt = 4)
+    layer      p05      p50      p95      max  over 2.0
+        0    3.812    4.340    4.973    5.613    99.96%
+        1    3.061    4.283    5.327    7.438    99.57%
+      ALL    3.348    4.320    5.161    7.438    99.77%   (32,768 readings)
