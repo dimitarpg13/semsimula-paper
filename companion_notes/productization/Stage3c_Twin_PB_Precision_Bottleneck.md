@@ -2,7 +2,7 @@
 
 **What this note is.** The pre-registration of item 4 of the remaining speed push in [Conservative_Core_Productization_Plan.md](Conservative_Core_Productization_Plan.md), §6: twin PB of [Well_Screen_and_Precision.md](../depth_ladder/Well_Screen_and_Precision.md), §5, moved onto the productization base. The well bank's largest map, `B_proj`, goes through a bottleneck of width 512, and its diagonal precision `a_proj` is replaced by one learned value per well and layer. Written 2026-11-22.
 
-**Status.** Pre-registered. **The calls in §6 and the +2% tolerance were confirmed by the author on 2026-11-22 and are binding.** The code is written and checked on the CPU (§5) and is on GitHub (commit `c342b13`). The author kept the arm on 2026-11-22 as the last productization arm; **on 2026-11-24 the author set it second in the GPU queue, after VF0 and before PMX-K16-NP.** The base is SR2-NP, untied: SR2-NP-T missed TE1 on 2026-11-22 (§4). The speed it buys and the cost of the bottleneck without training were measured on the CPU (§3).
+**Status.** **Trained and scored (2026-11-26): twin PB settled at 63.15, +7.9% on SR2-NP's 58.51. PB1 and PB2 miss, PB3 hits** (§9). By the decision rule the dense `B_proj` stays; twin PA alone is the follow-up. Pre-registered. **The calls in §6 and the +2% tolerance were confirmed by the author on 2026-11-22 and are binding.** The code is written and checked on the CPU (§5) and is on GitHub (commit `c342b13`). The author kept the arm on 2026-11-22 as the last productization arm; **on 2026-11-24 the author set it second in the GPU queue, after VF0 and before PMX-K16-NP.** The base is SR2-NP, untied: SR2-NP-T missed TE1 on 2026-11-22 (§4). The speed it buys and the cost of the bottleneck without training were measured on the CPU (§3).
 
 ---
 
@@ -16,6 +16,7 @@
 6. [Calls](#6-calls)
 7. [Launch and readings](#7-launch-and-readings)
 8. [Caveats](#8-caveats)
+9. [Results](#9-results)
 
 ---
 
@@ -154,3 +155,20 @@ After the run, on the best checkpoint:
 - **PA and PB are confounded.** The arm changes both maps at once. The untrained costs (+1.5% for a context-free `a`, +42% for `B_proj` through 512) say which one carries the risk, but a trained PA was never run.
 - **The tied, GPT-2-sized configuration stays unmeasured.** SR2-NP-T missed TE1, so PB runs untied. Tied and with PB (34.9M parameters) would combine two costs, +1.44% measured for the tie and PB's own.
 - **The timing proxy is the trained twin's arithmetic** only if the trained twin keeps the same shapes. The two-map `B_proj` and the context-free precision do keep them; the proxy's whole-forward figures are as noisy as the session (single repeats ranged from 0.30 to 0.58 s at 512 tokens).
+
+## 9. Results
+
+Trained on 2026-11-26 on the 102 GB GPU: 32,500 steps in 7.2 hours (0.795 s per step), peak memory 14.4 GB, 54,220,675 parameters as built. Logs and the diagnostic cells (6b-7, 6b-9, 6b-12, 6b-13, 7) are in [the run folder](notebooks/conservative_arch/scaleup/results/cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_bb512_afree_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/); Cell 8 was not run.
+
+| id | call | result | verdict |
+| --- | --- | --- | --- |
+| PB1 | settles within +2% of the base (59.68 or less) | 63.15, +7.9% | miss |
+| PB2 | settles within +5% of the base (61.44 or less) | 63.15 | miss |
+| PB3 | rarest quintile within 0.25 nats of the base | +0.207 nats (standard error 0.056) | hit |
+
+- **Settled perplexity** 63.15, the mean of the last three evaluations (63.12, 63.06, 63.27); the best checkpoint, 61.25 at step 31,000, is one low evaluation. Paired with SR2-NP at the 14 evaluations from step 26,000 the gap is $+0.078$ nats (standard error 0.0005), behind at all 14.
+- **By frequency** (`results/frequency_quintiles/frequency_quintiles_pb_vs_sr2np.txt`, 128 windows, paired on the same targets): Q0 $+0.207$, Q1 $+0.147$, Q2 $+0.134$, Q3 $+0.104$, Q4 $+0.072$ nats. Every fifth loses; the loss grows toward the rare tokens, so the bank's width matters more for them, though Q0 stays inside PB3's 0.25.
+- **The bottleneck's gain.** The largest singular value of the bottleneck product ends at 479, against 86 for SR2-NP's dense map. Hypothesis: the narrow map makes up for its width with larger gains.
+- **Speed** on the GPU, 0.795 s per step against SR2-NP's 0.736, is not a comparison: the runs used different GPUs. The CPU benchmark of §7 is the speed reading, and with the arm outside tolerance it decides nothing.
+
+**Decision (the rule of §6, above +5%).** The dense `B_proj` stays, now as a measured requirement: a 512-wide bottleneck costs 0.078 nats. The follow-up is twin PA alone (the context-free diagonal precision, about 5.9M parameters saved, +1.5% untrained), which is not yet set up. **The author (2026-11-27):** a useful finding; twin PA runs after the template run SR2-NP-L8, its place then set against the rest of the productization order and the 2B-token priorities.

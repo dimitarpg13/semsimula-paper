@@ -189,7 +189,7 @@ T3 (hybrid context channels) stays a candidate behind its CPU speed bound. Secon
 
 The tied arms of the grid follow; their order is open.
 
-**The template depth runs wait (author, 2026-11-25).** The eight-layer and four-layer template runs (SR2-NP-L8, its pair-force twin SR2-L8, SR2-NP-L4; [Template_Matchers_and_Depth_L4.md](../semantic_templates/Template_Matchers_and_Depth_L4.md), §9) do not go ahead of this order. They will run, but they are not the top priority, and the author reads the CPU template results first. VF0 has since been scored (item 1).
+**The template depth runs wait (author, 2026-11-25).** The eight-layer and four-layer template runs (SR2-NP-L8, its pair-force twin SR2-L8, SR2-NP-L4; [Template_Matchers_and_Depth_L4.md](../semantic_templates/Template_Matchers_and_Depth_L4.md), §9) do not go ahead of this order. They will run, but they are not the top priority, and the author reads the CPU template results first. VF0 has since been scored (item 1). **Update 2026-11-26 (author):** SR2-NP-L8 is launched now on a second GPU (G4, over 100 GiB), alongside twin PB, ahead of PMX-K16-NP. Cell 0 is SR2-NP's with only `LADDER_L = 8` (layer checkpointing stays off). CPU build check: tag `…xilive_sr2_L8probe_ob_untied_…_baoab_cfc_lowrank_lr0p0012_noattn` (no `idt` token at dt = 1), 76,594,057 parameters, 32,500 steps; one forward and backward 3.79 times SR2-NP's on the CPU. Its calls are written before results land.
 
 4. **After each stage.** Update §1's table, the benchmark note, and the book's Appendix C.10 where the bound or the measured state changes.
 
