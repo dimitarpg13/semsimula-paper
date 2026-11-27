@@ -209,7 +209,7 @@ Every reading is compared with the lexical baseline (at chance by construction f
 
 ## 9. Next steps
 
-1. The lexical baseline is reported ([Lexical_Baseline.md](Lexical_Baseline.md)). Test 3, the metric fitted per reading, is running (the vector extractions take about four hours on the CPU); its report follows.
-2. Done: 20 clause frames per level, drafted for the author's check, in [analogy_items/](analogy_items/README.md); all 420 restatement and foil pairs pass the overlap check.
-3. Write the calls (per level and reading) for the author to confirm.
-4. Draft the remaining frames, extract on SR2-NP, G2 and L4, and score.
+1. The lexical baseline is reported ([Lexical_Baseline.md](Lexical_Baseline.md)). Test 3, the metric fitted per reading, has run on the three models; its report follows.
+2. Done: 20 clause frames per level, reviewed item by item by the author (the corrections are logged in [analogy_items/](analogy_items/README.md)); all 420 restatement and foil pairs pass the overlap check.
+3. Done (awaiting the author's confirmation): the calls per level and reading, in [Analogy_Test_Calls.md](Analogy_Test_Calls.md). They depart from this design in two places: 20 frames per level instead of 60, and the threshold-free foil reading taken as the share of matched pairs won.
+4. Extraction on SR2-NP, G2 and L4 with the 20 frames (running 2026-11-26), then scoring once the calls are confirmed. More frames per level would narrow the intervals and need another review round.

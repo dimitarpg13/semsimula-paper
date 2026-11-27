@@ -30,6 +30,6 @@
 | 15 | The coach praised the players. | The players received praise from the coach. | The players received drinks from the coach. | The players received no praise from the coach. |
 | 16 | The nurse vaccinated the child. | The child got a vaccination from the nurse. | The child got a sticker from the nurse. | The child got no vaccination from the nurse. |
 | 17 | The critics loved the film. | The film won the critics' love. | The film won the critics' attention. | The film did not win the critics' love. |
-| 18 | The guard opened the gate. | The gate's opening was the guard's doing. | The gate's painting was the guard's doing. | The gate's opening was not the guard's doing. |
+| 18 | The guard opened the gate. | The opening of the gate was done by the guard. | The painting of the gate was done by the guard. | The opening of the gate was not done by the guard. |
 | 19 | The voters elected the mayor. | The mayor won election by the voters. | The mayor won applause from the voters. | The mayor won no election by the voters. |
 | 20 | The fire destroyed the barn. | The barn's destruction was caused by the fire. | The barn's evacuation was caused by the fire. | The barn's destruction was not caused by the fire. |

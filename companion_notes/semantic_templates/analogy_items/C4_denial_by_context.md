@@ -14,7 +14,7 @@
 | # | clause P | clause Q | denies Q | foil | denies P | foil |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | The alarm is on. | The light is red. | The light is green. | The light is bright. | The alarm is off. | The alarm is loud. |
-| 2 | The shop is open. | The door is unlocked. | The door is bolted. | The door is wooden. | The shop is shut. | The shop is small. |
+| 2 | The shop is open. | The shutters are up. | The shutters are down. | The shutters are metal. | The shop is shut. | The shop is small. |
 | 3 | The patient is alive. | His heart is beating. | His heart is still. | His heart is large. | The patient is dead. | The patient is old. |
 | 4 | The glass is full. | The jug is empty. | The jug is brimming. | The jug is ceramic. | The glass is drained. | The glass is cold. |
 | 5 | The meeting is on Monday. | The room is booked. | The room is free. | The room is large. | The meeting is on Friday. | The meeting is on schedule. |
@@ -24,7 +24,7 @@
 | 9 | The oven is hot. | The bread is baking. | The bread is raw. | The bread is wholemeal. | The oven is cold. | The oven is new. |
 | 10 | The student passed. | Her parents are proud. | Her parents are ashamed. | Her parents are tall. | The student failed. | The student studied. |
 | 11 | The door is closed. | The cat is inside. | The cat is outside. | The cat is ginger. | The door is ajar. | The door is painted. |
-| 12 | The tank is full. | The gauge points high. | The gauge points low. | The gauge points north. | The tank is dry. | The tank is metal. |
+| 12 | The tank is full. | The gauge points high. | The gauge points low. | The gauge points steadily. | The tank is dry. | The tank is metal. |
 | 13 | The river is high. | The ford is dangerous. | The ford is safe. | The ford is wide. | The river is low. | The river is brown. |
 | 14 | The road is dry. | The race goes ahead. | The race is called off. | The race is televised. | The road is flooded. | The road is long. |
 | 15 | The flag is up. | The castle is occupied. | The castle is deserted. | The castle is ancient. | The flag is down. | The flag is blue. |

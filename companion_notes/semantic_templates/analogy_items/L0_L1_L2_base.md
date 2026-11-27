@@ -15,21 +15,21 @@
 | --- | --- | --- | --- | --- | --- |
 | 1 | The road is closed. | The road is long. | The road is shut. | The street is blocked. | The street is wide. |
 | 2 | The coffee is cold. | The coffee is strong. | The coffee is chilly. | The brew is cool. | The brew is bitter. |
-| 3 | The door is open. | The door is red. | The door is ajar. | The entrance is unbarred. | The entrance is narrow. |
-| 4 | The patient is asleep. | The patient is tall. | The patient is sleeping. | The sick man is dozing. | The sick man is bearded. |
+| 3 | The door is open. | The door is red. | The door is ajar. | The entrance is unclosed. | The entrance is narrow. |
+| 4 | The infant is asleep. | The infant is hungry. | The infant is sleeping. | The baby is slumbering. | The baby is swaddled. |
 | 5 | The shop is busy. | The shop is new. | The shop is crowded. | The store is packed. | The store is painted. |
 | 6 | The soldier is brave. | The soldier is young. | The soldier is fearless. | The fighter is courageous. | The fighter is famous. |
 | 7 | The lake is frozen. | The lake is deep. | The lake is icy. | The pond is iced over. | The pond is shallow. |
 | 8 | The car is fast. | The car is blue. | The car is quick. | The vehicle is speedy. | The vehicle is rusty. |
 | 9 | The child is happy. | The child is short. | The child is cheerful. | The youngster is joyful. | The youngster is clever. |
 | 10 | The room is dark. | The room is large. | The room is dim. | The chamber is unlit. | The chamber is square. |
-| 11 | The bread is stale. | The bread is sliced. | The bread is dry. | The loaf is dried out. | The loaf is cut in half. |
+| 11 | The merchant is wealthy. | The merchant is tall. | The merchant is rich. | The trader is affluent. | The trader is talkative. |
 | 12 | The singer is famous. | The singer is hungry. | The singer is renowned. | The vocalist is celebrated. | The vocalist is seated. |
 | 13 | The bridge is unsafe. | The bridge is old. | The bridge is dangerous. | The crossing is hazardous. | The crossing is wooden. |
-| 14 | The river is wide. | The river is cold. | The river is broad. | The waterway is expansive. | The waterway is muddy. |
+| 14 | The sofa is wide. | The sofa is old. | The sofa is broad. | The couch is broad. | The couch is soft. |
 | 15 | The teacher is angry. | The teacher is tall. | The teacher is furious. | The instructor is cross. | The instructor is bald. |
-| 16 | The meal is ready. | The meal is spicy. | The meal is prepared. | Dinner is done. | Dinner is late. |
-| 17 | The hill is steep. | The hill is green. | The hill is sheer. | The slope is precipitous. | The slope is grassy. |
-| 18 | The box is sealed. | The box is heavy. | The box is shut. | The crate is taped closed. | The crate is painted green. |
+| 16 | The task is difficult. | The task is urgent. | The task is hard. | The job is tough. | The job is boring. |
+| 17 | The film is boring. | The film is long. | The film is dull. | The movie is tedious. | The movie is French. |
+| 18 | The gift is expensive. | The gift is small. | The gift is costly. | The present is pricey. | The present is wrapped. |
 | 19 | The lawyer is honest. | The lawyer is busy. | The lawyer is truthful. | The attorney is trustworthy. | The attorney is wealthy. |
 | 20 | The engine is noisy. | The engine is small. | The engine is loud. | The motor is roaring. | The motor is rusty. |

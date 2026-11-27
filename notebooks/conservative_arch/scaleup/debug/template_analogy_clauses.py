@@ -39,9 +39,9 @@ _BASE = [
     ('the bridge', 'unsafe', 'old', 'dangerous', 'the crossing', 'hazardous', 'wooden'),
     ('the sofa', 'wide', 'old', 'broad', 'the couch', 'broad', 'soft'),
     ('the teacher', 'angry', 'tall', 'furious', 'the instructor', 'cross', 'bald'),
-    ('the meal', 'ready', 'spicy', 'prepared', 'dinner', 'done', 'late'),
-    ('the hill', 'steep', 'green', 'sheer', 'the slope', 'precipitous', 'grassy'),
-    ('the box', 'sealed', 'heavy', 'shut', 'the crate', 'taped closed', 'painted green'),
+    ('the task', 'difficult', 'urgent', 'hard', 'the job', 'tough', 'boring'),
+    ('the film', 'boring', 'long', 'dull', 'the movie', 'tedious', 'French'),
+    ('the gift', 'expensive', 'small', 'costly', 'the present', 'pricey', 'wrapped'),
     ('the lawyer', 'honest', 'busy', 'truthful', 'the attorney', 'trustworthy', 'wealthy'),
     ('the engine', 'noisy', 'small', 'loud', 'the motor', 'roaring', 'rusty'),
 ]
@@ -52,17 +52,17 @@ for s, p, nr, sy, ps, pp, pf in _BASE:
 
 # L3 entailed case: case entails the clause, ncase entails its denial; each foil shares as many tokens and decides neither.
 L3 = [dict(aff=a, case=c, case_foil=cf, ncase=n, ncase_foil=nf) for a, c, cf, n, nf in [
-    ('it rains', 'a storm is pouring down on the pitch', 'a crowd is pouring onto the pitch', 'the sky is cloudless and the ground is dry', 'the stands are crowded and the ground is hard'),
+    ('it rains', 'a storm is pouring down on the pitch', 'a crowd is pouring onto the pitch', 'the sky is cloudless and the ground is dry', 'the stands are crowded and the ground is level'),
     ('the guest is ill', 'the guest has a high fever', 'the guest has a high collar', 'the guest has just finished a marathon', 'the guest has just finished a novel'),
     ('the animal is a mammal', 'the animal is a whale', 'the animal is a pet', 'the animal is a shark', 'the animal is in a zoo'),
-    ('the metal is valuable', 'the metal is gold', 'the metal is grey', 'the metal is scrap', 'the metal is shiny'),
+    ('the metal is precious', 'the metal is gold', 'the metal is grey', 'the metal is iron', 'the metal is shiny'),
     ('the container holds liquid', 'the container holds milk', 'the container holds a lot', 'the container holds rice', 'the container holds two kilos'),
     ('the house is empty', 'all the tenants have moved out of the house', 'all the tenants have argued about the house', 'all the tenants are at home in the house', 'all the tenants are fond of the house'),
     ('the team won', 'the team scored three goals and conceded none', 'the team scored three goals and received two yellow cards', 'the team lost every one of its games', 'the team travelled four hours by coach'),
     ('the plant is dead', 'the plant has withered to brown stalks', 'the plant has been moved onto a porch', 'the plant has burst into bloom', 'the plant has been watered daily'),
     ('the bird can fly', 'the bird is soaring over the valley', 'the bird is singing over the valley', 'the bird is a penguin', 'the bird is in a cage'),
     ('the water is hot', 'the water is boiling', 'the water is murky', 'the water has frozen solid', 'the water has turned green'),
-    ('the prisoner escaped', 'the prisoner climbed over the wall and fled', 'the prisoner climbed onto the wall and sang', 'the prisoner is still in his cell', 'the prisoner is still very quiet'),
+    ('the prisoner escaped', 'the prisoner climbed over the wall and fled', 'the prisoner climbed a wall in the gym', 'the prisoner is still in his cell', 'the prisoner is still very quiet'),
     ('the shop is closed', 'the shutters of the shop are down and locked', 'the shutters of the shop are green and dusty', "customers are queuing at the shop's tills", "customers are talking about the shop's prices"),
     ('the man is married', 'the man has a wife', 'the man has a wallet', 'the man is a bachelor', 'the man is a baker'),
     ('the film was long', 'the film ran for four hours', 'the film ran for four weeks', 'the film was over in ten minutes', 'the film was shown in ten cities'),
@@ -126,7 +126,7 @@ L5 = [dict(aff=a, res=r, foil=f, res_neg=rn, foil_neg=fn) for a, r, f, rn, fn in
     ('the coach praised the players', 'the players received praise from the coach', 'the players received drinks from the coach', 'the players received no praise from the coach', 'the players received no drinks from the coach'),
     ('the nurse vaccinated the child', 'the child got a vaccination from the nurse', 'the child got a sticker from the nurse', 'the child got no vaccination from the nurse', 'the child got no sticker from the nurse'),
     ('the critics loved the film', "the film won the critics' love", "the film won the critics' attention", "the film did not win the critics' love", "the film did not win the critics' attention"),
-    ('the guard opened the gate', "the gate's opening was the guard's doing", "the gate's painting was the guard's doing", "the gate's opening was not the guard's doing", "the gate's painting was not the guard's doing"),
+    ('the guard opened the gate', 'the opening of the gate was done by the guard', 'the painting of the gate was done by the guard', 'the opening of the gate was not done by the guard', 'the painting of the gate was not done by the guard'),
     ('the voters elected the mayor', 'the mayor won election by the voters', 'the mayor won applause from the voters', 'the mayor won no election by the voters', 'the mayor won no applause from the voters'),
     ('the fire destroyed the barn', "the barn's destruction was caused by the fire", "the barn's evacuation was caused by the fire", "the barn's destruction was not caused by the fire", "the barn's evacuation was not caused by the fire"),
 ]]
@@ -134,14 +134,14 @@ L5 = [dict(aff=a, res=r, foil=f, res_neg=rn, foil_neg=fn) for a, r, f, rn, fn in
 # L6 new domain: L2 paraphrases in domains absent from the development clauses (law, medicine, machines, fiction).
 _L6 = [
     ('the contract', 'void', 'the agreement', 'invalid', 'lengthy'), ('the witness', 'credible', 'the testifier', 'believable', 'nervous'),
-    ('the appeal', 'pending', 'the challenge', 'undecided', 'written'), ('the lease', 'expired', 'the tenancy', 'over', 'cheap'),
-    ('the defendant', 'liable', 'the accused', 'responsible', 'elderly'), ('the tumour', 'benign', 'the growth', 'harmless', 'round'),
-    ('the fracture', 'healed', 'the break', 'mended', 'visible'), ('the infection', 'contagious', 'the illness', 'catching', 'seasonal'),
-    ('the patient', 'sedated', 'the sufferer', 'tranquillised', 'bandaged'), ('the wound', 'septic', 'the cut', 'infected', 'shallow'),
-    ('the valve', 'jammed', 'the tap', 'stuck', 'chrome'), ('the battery', 'flat', 'the cell', 'drained', 'cylindrical'),
-    ('the circuit', 'live', 'the wiring', 'energised', 'insulated'), ('the turbine', 'idle', 'the generator', 'inactive', 'enormous'),
+    ('the will', 'forged', 'the testament', 'faked', 'handwritten'), ('the lease', 'expired', 'the tenancy', 'over', 'cheap'),
+    ('the defendant', 'liable', 'the accused', 'responsible', 'elderly'), ('the tumour', 'benign', 'the neoplasm', 'harmless', 'round'),
+    ('the fracture', 'healed', 'the break', 'mended', 'visible'), ('the disease', 'contagious', 'the illness', 'catching', 'seasonal'),
+    ('the pill', 'tiny', 'the tablet', 'minuscule', 'white'), ('the operation', 'risky', 'the surgery', 'dangerous', 'lengthy'),
+    ('the photocopier', 'broken', 'the copier', 'out of order', 'beige'), ('the lorry', 'overloaded', 'the truck', 'overburdened', 'muddy'),
+    ('the bicycle', 'rusty', 'the bike', 'corroded', 'folding'), ('the aircraft', 'grounded', 'the plane', 'barred from flying', 'enormous'),
     ('the sensor', 'faulty', 'the detector', 'defective', 'sensitive'), ('the dragon', 'awake', 'the wyrm', 'stirring', 'ancient'),
-    ('the spell', 'broken', 'the enchantment', 'undone', 'powerful'), ('the knight', 'slain', 'the warrior', 'killed', 'armoured'),
+    ('the spell', 'broken', 'the enchantment', 'undone', 'powerful'), ('the wizard', 'slain', 'the sorcerer', 'killed', 'bearded'),
     ('the castle', 'haunted', 'the fortress', 'ghost-ridden', 'well-guarded'), ('the prophecy', 'fulfilled', 'the foretelling', 'realised', 'obscure'),
 ]
 L6 = []
@@ -180,14 +180,14 @@ for ctx, role, pr, q, right, wrong in _C1:
 # word of the other sense, as many tokens. C2' pairs a paraphrase in the clause's sense (para) with the same foil (a false friend).
 _C2 = [
     ('the bank is closed', 'we cannot withdraw cash', 'the bank on the high street is closed', 'the bank of the river is closed', 'the branch on the high street has shut'),
-    ('the bat is in the shed', 'the game cannot start', 'the cricket bat is in the shed', 'the fruit bat is in the shed', 'the willow paddle is stored in the outbuilding'),
+    ('the bat is in the shed', 'the game cannot start', 'the cricket bat is in the shed', 'the fruit bat is in the shed', "the batsman's willow is kept in the hut"),
     ('the crane is standing by the lake', 'the birdwatchers gather', 'the white crane is standing by the lake', 'the steel crane is standing by the lake', 'the long-legged wader waits at the water\'s edge'),
     ('the mouse is under the desk', 'the cat is excited', 'the field mouse is under the desk', 'the computer mouse is under the desk', 'the little rodent hides beneath the table'),
     ('the letter is missing', 'the post office apologises', 'the posted letter is missing', 'the capital letter is missing', 'the mailed envelope has gone astray'),
     ('the plant is dying', 'we water it more often', 'the potted plant is dying', 'the steel plant is dying', 'the house fern is wilting'),
     ('the court is empty', 'the trial cannot go ahead', 'the criminal court is empty', 'the tennis court is empty', 'the hall of justice has nobody in it'),
     ('the organ is damaged', 'the surgeon cannot transplant it', 'the donor organ is damaged', 'the church organ is damaged', 'the harvested kidney is injured'),
-    ('the club is new', 'the golfer practises more', 'the golf club is new', 'the youth club is new', 'the iron he swings has just been bought'),
+    ('the club is new', 'the golfer practises more', 'the golf club is new', 'the youth club is new', "the golfer's driver was bought last week"),
     ('the ring is too small', 'the bride cannot wear it', 'the wedding ring is too small', 'the boxing ring is too small', 'the gold band will not fit her finger'),
     ('the nail is bent', 'the carpenter pulls it out', 'the steel nail is bent', 'the toe nail is bent', 'the iron spike is crooked'),
     ('the palm is dry', 'the gardener waters it', 'the date palm is dry', 'the left palm is dry', 'the date tree is parched'),
@@ -197,7 +197,7 @@ _C2 = [
     ('the fan is broken', 'the room is too hot', 'the ceiling fan is broken', 'the football fan is broken', 'the overhead cooler has stopped working'),
     ('the deck is wet', 'the sailors slip', 'the upper deck is wet', 'the card deck is wet', "the boat's planking is soaked"),
     ('the pupil is small', 'the light is too bright', 'the eye pupil is small', 'the school pupil is small', 'the iris opening has narrowed'),
-    ('the bark is rough', 'the climber grips it easily', 'the tree bark is rough', 'the dog bark is rough', "the oak's skin is coarse"),
+    ('the bark is rough', 'the climber grips it easily', 'the tree bark is rough', "the dog's bark is rough", "the oak's skin is coarse"),
     ('the record is broken', 'the music stops', 'the vinyl record is broken', 'the world record is broken', 'the old LP has cracked'),
 ]
 C2 = [dict(P=p, Q=q, res=r, res_neg=neg(r), foil=f, foil_neg=neg(f), para=pa) for p, q, r, f, pa in _C2]
@@ -258,6 +258,27 @@ REVIEW_LOG = [
     ('2026-11-26', 'C3, all frames', 'redrafted as L4 was: one man and one woman per frame, he and she only, unambiguous genders, verbs plausible for either person, P "he" in 10 frames and "she" in 10. Thirteen frames paired "it" with a person, so animacy alone told the restatement from the foil without recovering the clause (author and agent).'),
     ('2026-11-26', 'C4, frame 2', 'Q "the door is unlocked" with its denial "the door is bolted" and foil "the door is wooden" replaced by "the shutters are up", "the shutters are down", "the shutters are metal": a door can be unlocked and still bolted, so "bolted" does not deny "unlocked" (author); "bolted" also means fastened with bolts or ran off (agent).'),
     ('2026-11-26', 'C4, frame 12', 'foil of Q "the gauge points north" replaced by "the gauge points steadily": a fuel gauge does not point to a compass direction, so the old foil read as nonsense (agent).'),
+    ('2026-11-26', 'L0 to L2, frame 16', 'frame "the meal is ready" (L1 "prepared", L2 "dinner is done") replaced by "the task is difficult" (L1 "hard", L2 "the job is tough", foils "urgent", "boring"): dinner is narrower than a meal and lacked its article, and "done" can mean finished eating (agent; author agreed).'),
+    ('2026-11-26', 'L0 to L2, frame 17', 'frame "the hill is steep" (L1 "sheer", L2 "the slope is precipitous") replaced by "the film is boring" (L1 "dull", L2 "the movie is tedious", foils "long", "French"): sheer means vertical, a slope is part of a hill, and precipitous is rare and stronger than steep (agent; author agreed).'),
+    ('2026-11-26', 'L0 to L2, frame 18', 'frame "the box is sealed" (L1 "shut", L2 "the crate is taped closed") replaced by "the gift is expensive" (L1 "costly", L2 "the present is pricey", foils "small", "wrapped"): a crate is not a box, and shut is not sealed and repeated frame 1 (agent; author agreed).'),
+    ('2026-11-26', 'L6', 'subjects "the infection / the illness" replaced by "the disease is contagious / the illness is catching": the subjects are not synonyms (an infection is the invasion by a germ, an illness the state of being unwell) (author).'),
+    ('2026-11-26', 'L6', 'subjects "the patient / the sufferer" replaced by "the pill is tiny / the tablet is minuscule" (foil "white"): the subjects are not synonyms (a patient is under care, a sufferer is anyone with an affliction) (author).'),
+    ('2026-11-26', 'L6', 'subjects "the wound / the cut" replaced by "the operation is risky / the surgery is dangerous" (foil "lengthy"): the subjects are not synonyms (a cut is one kind of wound) (author).'),
+    ('2026-11-26', 'L6', 'subjects "the valve / the tap" replaced by "the photocopier is broken / the copier is out of order" (foil "beige"): the subjects are not synonyms (a tap is one kind of valve) (author). The first replacement, the lift and the elevator, was dropped because "the elevator is stuck" was taken for a development clause; it is in fact a clause of the earlier robust-matcher test set (template_robust_clauses.py, TEST), not of the development set, so the reason was wrong. The photocopier frame is kept, as it serves equally (agent, corrected the same day).'),
+    ('2026-11-26', 'L6', 'subjects "the battery / the cell" replaced by "the lorry is overloaded / the truck is overburdened" (foil "muddy"): the subjects are not synonyms (a battery is made of cells, and "cell" has other senses) (author).'),
+    ('2026-11-26', 'L6', 'subjects "the circuit / the wiring" replaced by "the bicycle is rusty / the bike is corroded" (foil "folding"): the subjects are not synonyms (wiring is part of a circuit) (author).'),
+    ('2026-11-26', 'C4, frame 14', 'kept: the denial "the race is called off" is a common phrasal verb and reads clearly; the proposed "the race is cancelled" is not needed (author).'),
+    ('2026-11-26', 'L3, frame 1', 'foil of the denial case "the stands are crowded and the ground is hard" replaced by "... the ground is level": hard ground hints that it is dry, so the old foil leaned toward deciding (agent; author agreed).'),
+    ('2026-11-26', 'L3, frame 4', 'clause "the metal is valuable" with denial case "the metal is scrap" replaced by "the metal is precious" with denial case "the metal is iron" (case gold and foils grey and shiny kept): scrap metal can be valuable, and iron is not a precious metal by definition (agent; author agreed).'),
+    ('2026-11-26', 'L3, frame 11', 'foil of the case "the prisoner climbed onto the wall and sang" replaced by "the prisoner climbed a wall in the gym": the old foil was odd; a gym climbing wall says nothing about an escape (agent; author agreed).'),
+    ('2026-11-26', 'L5, frame 18', 'restatement "the gate\'s opening was the guard\'s doing" and its foil replaced by "the opening of the gate was done by the guard" and "the painting of the gate was done by the guard": "was X\'s doing" is an idiom (agent; author agreed).'),
+    ('2026-11-26', 'C2, frame 2', 'C2\u2032 paraphrase "the willow paddle is stored in the outbuilding" replaced by "the batsman\'s willow is kept in the hut": a paddle is not a bat (agent; author agreed).'),
+    ('2026-11-26', 'C2, frame 9', 'C2\u2032 paraphrase "the iron he swings has just been bought" replaced by "the golfer\'s driver was bought last week": "he" had no antecedent, and an iron is only one kind of club (agent; author agreed).'),
+    ('2026-11-26', 'C2, frame 19', 'foil "the dog bark is rough" replaced by "the dog\'s bark is rough": "dog bark" is not a natural compound (agent; author agreed).'),
+    ('2026-11-26', 'L6', 'subjects "the appeal / the challenge" replaced by "the will is forged / the testament is faked" (foil "handwritten"): the subjects are not synonyms (a challenge is broader than an appeal) (agent; author agreed).'),
+    ('2026-11-26', 'L6', 'subjects "the tumour / the growth" replaced by "the tumour is benign / the neoplasm is harmless" (foil "round"): the subjects are not synonyms (a growth is broader than a tumour; neoplasm is the medical synonym) (agent; author agreed).'),
+    ('2026-11-26', 'L6', 'subjects "the turbine / the generator" replaced by "the aircraft is grounded / the plane is barred from flying" (foil "enormous"): the subjects are not synonyms (a turbine drives a generator; they are different machines) (agent; author agreed).'),
+    ('2026-11-26', 'L6', 'subjects "the knight / the warrior" replaced by "the wizard is slain / the sorcerer is killed" (foil "bearded"): the subjects are not synonyms (a knight is one kind of warrior) (agent; author agreed).'),
 ]
 
 LEVELS = dict(BASE=BASE, L3=L3, L4=L4, L5=L5, L6=L6, C1=C1, C2=C2, C3=C3, C4=C4)
