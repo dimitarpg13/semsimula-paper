@@ -12,3 +12,4 @@
 - [P-rot-6_transformer_dynamics.md](../P-rot-6_transformer_dynamics.md): a damped equation with a velocity-coupled skew force, tied to the key–value asymmetry of attention.
 - [Evidence_for_second_order_ODE_governing_evolution.md](../Evidence_for_second_order_ODE_governing_evolution.md): fitting equations of motion to the hidden states of trained transformers.
 - [semantic_templates/Depth_and_Architecture_Battery.md](../semantic_templates/Depth_and_Architecture_Battery.md): the template tests run on the matched GPT-2 and SR2-NP-L8 at equal depth.
+- [semantic_templates/Deploying_Semantic_Templates.md](../semantic_templates/Deploying_Semantic_Templates.md): deploying templates in a transformer (Part II there): probes, steering, editing, a template module, inserted tokens, emitted text, and why a trained transformer has no landscape to hold a well.

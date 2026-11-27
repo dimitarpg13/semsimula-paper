@@ -92,7 +92,7 @@ Each line states its standing: **measured** (read from a confirmed or explorator
 
 ### 5.4 Later investigations
 
-- **Installing a template**: a well trained so that its basin holds the premises of one form, then read by the same tests. This is where the conservative architecture has a claim a transformer cannot make.
+- **Installing a template**: a well trained so that its basin holds the premises of one form, then read by the same tests. This is where the conservative architecture has a claim a transformer cannot make. The deployment options in both families, with their pros, cons and challenges, are in [Deploying_Semantic_Templates.md](Deploying_Semantic_Templates.md).
 - **More frames per level** (60 instead of 20) for the levels that carry the main claims, so that a gain of 0.1 is resolved on one level.
 - **The factorised hybrid** (approach F): the particle matcher for the frame and the clause match, the summary reader for the binding.
 
