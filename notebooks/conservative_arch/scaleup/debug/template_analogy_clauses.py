@@ -26,18 +26,18 @@ def neg(s):
 _BASE = [
     ('the road', 'closed', 'long', 'shut', 'the street', 'blocked', 'wide'),
     ('the coffee', 'cold', 'strong', 'chilly', 'the brew', 'cool', 'bitter'),
-    ('the door', 'open', 'red', 'ajar', 'the entrance', 'unbarred', 'narrow'),
-    ('the patient', 'asleep', 'tall', 'sleeping', 'the sick man', 'dozing', 'bearded'),
+    ('the door', 'open', 'red', 'ajar', 'the entrance', 'unclosed', 'narrow'),
+    ('the infant', 'asleep', 'hungry', 'sleeping', 'the baby', 'slumbering', 'swaddled'),
     ('the shop', 'busy', 'new', 'crowded', 'the store', 'packed', 'painted'),
     ('the soldier', 'brave', 'young', 'fearless', 'the fighter', 'courageous', 'famous'),
     ('the lake', 'frozen', 'deep', 'icy', 'the pond', 'iced over', 'shallow'),
     ('the car', 'fast', 'blue', 'quick', 'the vehicle', 'speedy', 'rusty'),
     ('the child', 'happy', 'short', 'cheerful', 'the youngster', 'joyful', 'clever'),
     ('the room', 'dark', 'large', 'dim', 'the chamber', 'unlit', 'square'),
-    ('the bread', 'stale', 'sliced', 'dry', 'the loaf', 'dried out', 'cut in half'),
+    ('the merchant', 'wealthy', 'tall', 'rich', 'the trader', 'affluent', 'talkative'),
     ('the singer', 'famous', 'hungry', 'renowned', 'the vocalist', 'celebrated', 'seated'),
     ('the bridge', 'unsafe', 'old', 'dangerous', 'the crossing', 'hazardous', 'wooden'),
-    ('the river', 'wide', 'cold', 'broad', 'the waterway', 'expansive', 'muddy'),
+    ('the sofa', 'wide', 'old', 'broad', 'the couch', 'broad', 'soft'),
     ('the teacher', 'angry', 'tall', 'furious', 'the instructor', 'cross', 'bald'),
     ('the meal', 'ready', 'spicy', 'prepared', 'dinner', 'done', 'late'),
     ('the hill', 'steep', 'green', 'sheer', 'the slope', 'precipitous', 'grassy'),
@@ -53,12 +53,12 @@ for s, p, nr, sy, ps, pp, pf in _BASE:
 # L3 entailed case: case entails the clause, ncase entails its denial; each foil shares as many tokens and decides neither.
 L3 = [dict(aff=a, case=c, case_foil=cf, ncase=n, ncase_foil=nf) for a, c, cf, n, nf in [
     ('it rains', 'a storm is pouring down on the pitch', 'a crowd is pouring onto the pitch', 'the sky is cloudless and the ground is dry', 'the stands are crowded and the ground is hard'),
-    ('the guest is ill', 'the guest has a high fever', 'the guest has a high collar', 'the guest has just run a marathon', 'the guest has just run a bath'),
+    ('the guest is ill', 'the guest has a high fever', 'the guest has a high collar', 'the guest has just finished a marathon', 'the guest has just finished a novel'),
     ('the animal is a mammal', 'the animal is a whale', 'the animal is a pet', 'the animal is a shark', 'the animal is in a zoo'),
     ('the metal is valuable', 'the metal is gold', 'the metal is grey', 'the metal is scrap', 'the metal is shiny'),
     ('the container holds liquid', 'the container holds milk', 'the container holds a lot', 'the container holds rice', 'the container holds two kilos'),
     ('the house is empty', 'all the tenants have moved out of the house', 'all the tenants have argued about the house', 'all the tenants are at home in the house', 'all the tenants are fond of the house'),
-    ('the team won', 'the team scored three goals and conceded none', 'the team scored three goals and conceded four', 'the team lost every one of its games', 'the team travelled four hours by coach'),
+    ('the team won', 'the team scored three goals and conceded none', 'the team scored three goals and received two yellow cards', 'the team lost every one of its games', 'the team travelled four hours by coach'),
     ('the plant is dead', 'the plant has withered to brown stalks', 'the plant has been moved onto a porch', 'the plant has burst into bloom', 'the plant has been watered daily'),
     ('the bird can fly', 'the bird is soaring over the valley', 'the bird is singing over the valley', 'the bird is a penguin', 'the bird is in a cage'),
     ('the water is hot', 'the water is boiling', 'the water is murky', 'the water has frozen solid', 'the water has turned green'),
@@ -75,29 +75,31 @@ L3 = [dict(aff=a, case=c, case_foil=cf, ncase=n, ncase_foil=nf) for a, c, cf, n,
 ]]
 
 # L4 reference: the second sentence names its subject by a pronoun only. The foil is the same sentence with the other clause's
-# pronoun (it says the predicate of P about Q's subject). Both pronouns take "is", so restatement and foil differ in one token.
+# pronoun (it says the predicate of P about Q's subject). Revised 2026-11-26 with the author: he and she only, every subject
+# unambiguously gendered, both predicates plausible for either person (so no foil can be rejected as nonsense), and P is "he" in
+# 10 frames and "she" in 10. Both pronouns take "is", so restatement and foil differ in one token, which neither clause contains.
 # (P subject, P predicate, P pronoun, Q subject, Q predicate, Q pronoun)
 _L4 = [
     ('the king', 'ill', 'he', 'the queen', 'in charge', 'she'),
-    ('the waiter', 'late', 'he', 'the actress', 'hungry', 'she'),
-    ('the dog', 'barking', 'it', 'the girl', 'frightened', 'she'),
+    ('the waitress', 'late', 'she', 'the landlord', 'busy', 'he'),
+    ('the girl', 'frightened', 'she', 'the old man', 'cheerful', 'he'),
     ('the uncle', 'asleep', 'he', 'the aunt', 'cooking', 'she'),
-    ('the bull', 'angry', 'it', "the farmer's wife", 'worried', 'she'),
+    ('the widow', 'worried', 'she', 'the priest', 'hopeful', 'he'),
     ('the boy', 'lost', 'he', 'the mother', 'searching', 'she'),
-    ('the kettle', 'boiling', 'it', 'the grandmother', 'pleased', 'she'),
+    ('the grandmother', 'pleased', 'she', 'the grandson', 'shy', 'he'),
     ('the nun', 'silent', 'she', 'the bishop', 'speaking', 'he'),
-    ('the car', 'broken', 'it', 'the mechanic', 'away', 'he'),
+    ('the husband', 'away', 'he', 'the wife', 'anxious', 'she'),
     ('the bride', 'nervous', 'she', 'the groom', 'calm', 'he'),
     ('Anna', 'tired', 'she', 'Tom', 'driving', 'he'),
-    ('the princess', 'unhappy', 'she', 'the prince', 'abroad', 'he'),
-    ('the boiler', 'leaking', 'it', 'the landlady', 'upset', 'she'),
+    ('the prince', 'abroad', 'he', 'the princess', 'unhappy', 'she'),
+    ('the landlady', 'upset', 'she', 'the postman', 'early', 'he'),
     ('the father', 'proud', 'he', 'the daughter', 'graduating', 'she'),
-    ('the cat', 'missing', 'it', 'the boy', 'crying', 'he'),
-    ('the duchess', 'generous', 'she', 'the duke', 'bankrupt', 'he'),
-    ('the phone', 'ringing', 'it', 'the grandfather', 'asleep', 'he'),
+    ('the schoolboy', 'crying', 'he', 'the headmistress', 'stern', 'she'),
+    ('the duke', 'bankrupt', 'he', 'the duchess', 'generous', 'she'),
+    ('the grandfather', 'asleep', 'he', 'the granddaughter', 'bored', 'she'),
     ('Maria', 'angry', 'she', 'Peter', 'apologising', 'he'),
     ('the policeman', 'suspicious', 'he', 'the woman', 'innocent', 'she'),
-    ('the clock', 'fast', 'it', 'the headmistress', 'impatient', 'she'),
+    ('the actress', 'impatient', 'she', 'the cameraman', 'tired', 'he'),
 ]
 L4 = []
 for ps, pp, pr, qs, qp, qr in _L4:
@@ -202,17 +204,19 @@ C2 = [dict(P=p, Q=q, res=r, res_neg=neg(r), foil=f, foil_neg=neg(f), para=pa) fo
 
 # C3 ellipsis: the second sentence keeps only a pronoun and "does": the clause's subject and verb must come from the context.
 # The foil is the other clause's pronoun (the AC twin). (P subject, P verb, P pronoun, Q subject, Q verb, Q pronoun)
+# Redrafted 2026-11-26 as L4 was: one man and one woman per frame, unambiguous genders, verbs plausible for either person;
+# P is "he" in 10 frames and "she" in 10.
 _C3 = [
-    ('the tap', 'leaks', 'it', 'the landlady', 'complains', 'she'), ('the dog', 'barks', 'it', 'the old man', 'wakes', 'he'),
-    ('the kettle', 'whistles', 'it', 'the grandmother', 'smiles', 'she'), ('Tom', 'snores', 'he', 'Anna', 'leaves', 'she'),
-    ('the boiler', 'breaks', 'it', 'the landlord', 'pays', 'he'), ('the princess', 'sings', 'she', 'the king', 'weeps', 'he'),
-    ('the car', 'stalls', 'it', 'the father', 'swears', 'he'), ('the clock', 'chimes', 'it', 'the nun', 'prays', 'she'),
-    ('the boy', 'lies', 'he', 'the mother', 'worries', 'she'), ('the printer', 'jams', 'it', 'Mrs Lee', 'shouts', 'she'),
-    ('the bride', 'cries', 'she', 'the groom', 'laughs', 'he'), ('the engine', 'overheats', 'it', 'Mr Ross', 'lands early', 'he'),
-    ('the roof', 'sags', 'it', 'the duchess', 'moves out', 'she'), ('Maria', 'wins', 'she', 'Peter', 'cheers', 'he'),
-    ('the radio', 'crackles', 'it', 'the grandfather', 'switches channels', 'he'), ('the policeman', 'whistles', 'he', 'the woman', 'stops', 'she'),
-    ('the phone', 'rings', 'it', 'the daughter', 'answers', 'she'), ('the uncle', 'visits', 'he', 'the aunt', 'bakes', 'she'),
-    ('the volcano', 'erupts', 'it', 'the queen', 'flees', 'she'), ('the alarm', 'sounds', 'it', 'the headmistress', 'clears the hall', 'she'),
+    ('the uncle', 'snores', 'he', 'the aunt', 'complains', 'she'), ('the grandmother', 'sings', 'she', 'the grandfather', 'smiles', 'he'),
+    ('Tom', 'oversleeps', 'he', 'Anna', 'leaves', 'she'), ('the princess', 'dances', 'she', 'the king', 'weeps', 'he'),
+    ('the father', 'swears', 'he', 'the daughter', 'blushes', 'she'), ('the nun', 'prays', 'she', 'the bishop', 'listens', 'he'),
+    ('the boy', 'cheats', 'he', 'the mother', 'worries', 'she'), ('the landlady', 'shouts', 'she', 'the postman', 'apologises', 'he'),
+    ('the bride', 'cries', 'she', 'the groom', 'laughs', 'he'), ('the duke', 'gambles', 'he', 'the duchess', 'moves out', 'she'),
+    ('Maria', 'wins', 'she', 'Peter', 'cheers', 'he'), ('the grandson', 'whistles', 'he', 'the granddaughter', 'hums', 'she'),
+    ('the policeman', 'hesitates', 'he', 'the woman', 'escapes', 'she'), ('the waitress', 'stumbles', 'she', 'the landlord', 'frowns', 'he'),
+    ('the husband', 'travels', 'he', 'the wife', 'stays home', 'she'), ('the queen', 'abdicates', 'she', 'the prince', 'rules', 'he'),
+    ('the actress', 'improvises', 'she', 'the cameraman', 'keeps filming', 'he'), ('the schoolboy', 'misbehaves', 'he', 'the headmistress', 'intervenes', 'she'),
+    ('the widow', 'remarries', 'she', 'the son', 'objects', 'he'), ('the brother', 'calls', 'he', 'the sister', 'answers', 'she'),
 ]
 C3 = [dict(P=f'{ps} {pv}', Q=f'{qs} {qv}', res=f'{pr} does', res_neg=f'{pr} does not', foil=f'{qr} does', foil_neg=f'{qr} does not') for ps, pv, pr, qs, qv, qr in _C3]
 
@@ -220,7 +224,7 @@ C3 = [dict(P=f'{ps} {pv}', Q=f'{qs} {qv}', res=f'{pr} does', res_neg=f'{pr} does
 # Q_inc denies Q (MT analogue), P_inc denies P (DS1 and DA analogues); each foil keeps the subject and decides nothing.
 C4 = [dict(P=p, Q=q, Q_inc=qi, Q_foil=qf, P_inc=pi, P_foil=pf) for p, q, qi, qf, pi, pf in [
     ('the alarm is on', 'the light is red', 'the light is green', 'the light is bright', 'the alarm is off', 'the alarm is loud'),
-    ('the shop is open', 'the door is unlocked', 'the door is bolted', 'the door is wooden', 'the shop is shut', 'the shop is small'),
+    ('the shop is open', 'the shutters are up', 'the shutters are down', 'the shutters are metal', 'the shop is shut', 'the shop is small'),
     ('the patient is alive', 'his heart is beating', 'his heart is still', 'his heart is large', 'the patient is dead', 'the patient is old'),
     ('the glass is full', 'the jug is empty', 'the jug is brimming', 'the jug is ceramic', 'the glass is drained', 'the glass is cold'),
     ('the meeting is on Monday', 'the room is booked', 'the room is free', 'the room is large', 'the meeting is on Friday', 'the meeting is on schedule'),
@@ -230,7 +234,7 @@ C4 = [dict(P=p, Q=q, Q_inc=qi, Q_foil=qf, P_inc=pi, P_foil=pf) for p, q, qi, qf,
     ('the oven is hot', 'the bread is baking', 'the bread is raw', 'the bread is wholemeal', 'the oven is cold', 'the oven is new'),
     ('the student passed', 'her parents are proud', 'her parents are ashamed', 'her parents are tall', 'the student failed', 'the student studied'),
     ('the door is closed', 'the cat is inside', 'the cat is outside', 'the cat is ginger', 'the door is ajar', 'the door is painted'),
-    ('the tank is full', 'the gauge points high', 'the gauge points low', 'the gauge points north', 'the tank is dry', 'the tank is metal'),
+    ('the tank is full', 'the gauge points high', 'the gauge points low', 'the gauge points steadily', 'the tank is dry', 'the tank is metal'),
     ('the river is high', 'the ford is dangerous', 'the ford is safe', 'the ford is wide', 'the river is low', 'the river is brown'),
     ('the road is dry', 'the race goes ahead', 'the race is called off', 'the race is televised', 'the road is flooded', 'the road is long'),
     ('the flag is up', 'the castle is occupied', 'the castle is deserted', 'the castle is ancient', 'the flag is down', 'the flag is blue'),
@@ -240,5 +244,20 @@ C4 = [dict(P=p, Q=q, Q_inc=qi, Q_foil=qf, P_inc=pi, P_foil=pf) for p, q, qi, qf,
     ('the soup is hot', 'the bowl is warm', 'the bowl is icy', 'the bowl is round', 'the soup is cold', 'the soup is thick'),
     ('the switch is up', 'the lamp is lit', 'the lamp is dark', 'the lamp is brass', 'the switch is down', 'the switch is plastic'),
 ]]
+
+# The author's corrections, in order; template_analogy_review.py prints them on the index page.
+REVIEW_LOG = [
+    ('2026-11-26', 'L0 to L2, frame 3', '"the entrance is unbarred" replaced by "the entrance is unclosed": unbarred means unlocked, not open (author).'),
+    ('2026-11-26', 'L0 to L2, frame 11', 'frame "the bread is stale" (L1 "dry", L2 "the loaf is dried out") replaced by "the merchant is wealthy" (L1 "rich", L2 "the trader is affluent", foils "tall", "talkative"): dry is a texture, bread can be dried on purpose and be fresh, and stale has no one-word synonym (author).'),
+    ('2026-11-26', 'L0 to L2, frame 14', 'frame "the river is wide" (L2 "the waterway is expansive") replaced by "the sofa is wide" (L1 "broad", L2 "the couch is broad", foils "old", "soft"): expansive speaks of extent (length or area) rather than width (author), and a waterway is a broader term than a river (agent).'),
+    ('2026-11-26', 'L0 to L2, frame 4', 'frame "the patient is asleep" (L2 "the sick man is dozing") replaced by "the infant is asleep" (L1 "sleeping", L2 "the baby is slumbering", foils "hungry", "swaddled"): a sick man is not the same as a patient (author); patient has no exact synonym, and dozing is a light sleep (agent).'),
+    ('2026-11-26', 'L3, frame 2', 'denial case and foil "has just run a marathon / a bath" replaced by "has just finished a marathon / a novel": "to run a bath" is an idiom whose meaning is not clear to every reader (author), and it plays on two senses of "run" (agent).'),
+    ('2026-11-26', 'L3, frame 7', 'case foil "scored three goals and conceded four" replaced by "scored three goals and received two yellow cards": three against four is a loss, so the old foil denied the clause instead of deciding nothing (agent). The denial case "lost every one of its games" stays: a denial case need only exclude the clause, not restate its denial (author).'),
+    ('2026-11-26', 'L3, frame 19', 'kept: "the window has just passed its inspection" excludes "the window is broken" in the ordinary reading (a window that passed inspection was not broken, unless the inspector failed) (author).'),
+    ('2026-11-26', 'L4, all frames', 'redrafted: he and she only, unambiguous genders, predicates plausible for either person, P "he" in 10 frames and "she" in 10. The eight frames that paired "it" with a person (3, 5, 7, 9, 13, 15, 17, 20) gave absurd foils ("She is barking.") that a reader rejects as nonsense without resolving the reference; "the waiter" replaced (either gender); frames 12 and 16 reversed for balance (author and agent).'),
+    ('2026-11-26', 'C3, all frames', 'redrafted as L4 was: one man and one woman per frame, he and she only, unambiguous genders, verbs plausible for either person, P "he" in 10 frames and "she" in 10. Thirteen frames paired "it" with a person, so animacy alone told the restatement from the foil without recovering the clause (author and agent).'),
+    ('2026-11-26', 'C4, frame 2', 'Q "the door is unlocked" with its denial "the door is bolted" and foil "the door is wooden" replaced by "the shutters are up", "the shutters are down", "the shutters are metal": a door can be unlocked and still bolted, so "bolted" does not deny "unlocked" (author); "bolted" also means fastened with bolts or ran off (agent).'),
+    ('2026-11-26', 'C4, frame 12', 'foil of Q "the gauge points north" replaced by "the gauge points steadily": a fuel gauge does not point to a compass direction, so the old foil read as nonsense (agent).'),
+]
 
 LEVELS = dict(BASE=BASE, L3=L3, L4=L4, L5=L5, L6=L6, C1=C1, C2=C2, C3=C3, C4=C4)

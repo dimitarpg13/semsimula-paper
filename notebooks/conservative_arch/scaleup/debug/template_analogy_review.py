@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 DBG = Path(__file__).resolve().parent; sys.path.insert(0, str(DBG))
 import tiktoken
-from template_analogy_clauses import LEVELS
+from template_analogy_clauses import LEVELS, REVIEW_LOG
 enc = tiktoken.get_encoding('gpt2'); OUT = Path(sys.argv[1]); OUT.mkdir(parents=True, exist_ok=True)
 tok = lambda s: [enc.decode([t]).strip().lower() for t in enc.encode(' ' + s)]
 ov = lambda s, ref: sum(x in set(tok(ref)) for x in tok(s))
@@ -23,13 +23,13 @@ SPEC = {
              [('clause', 'aff'), ('near miss (L0, L1 foil)', 'near'), ('L1 paraphrase', 'syn'), ('L2 paraphrase', 'para'), ('L2 foil', 'pfoil')],
              [('L1', 'syn', 'near', 'aff'), ('L1 denial', 'syn_neg', 'near_neg', 'aff'), ('L2', 'para', 'pfoil', 'aff'), ('L2 denial', 'para_neg', 'pfoil_neg', 'aff')]),
     'L3': ('L3 entailed case', 'L3_entailed.md',
-           'The second sentence states a specific case that implies the clause (or its denial), in other words. The foil shares the same tokens with the clause and decides nothing about it; where possible it shares the case\'s own surface too ("a crowd is pouring onto the pitch").',
-           ['Does each case really imply the clause, for an ordinary reader?', 'Does each denial case really imply the clause is false?', 'Is each foil neutral: neither implies the clause nor its denial?'],
-           [('clause', 'aff'), ('case (implies the clause)', 'case'), ('foil', 'case_foil'), ('case (implies the denial)', 'ncase'), ('foil', 'ncase_foil')],
+           'The second sentence states a specific case that implies the clause (the MP analogue), or one that implies its denial (the DS1 and DA analogues), in other words. Each case has a foil that shares as many tokens with the clause and decides nothing about it. Where possible the foil copies its case word for word except the one word that carries the meaning ("the guest has a high fever" against "the guest has a high collar"), so only knowing what that word means separates them. A denial case need only exclude the clause; it need not say the same as the clause\'s denial ("the team lost every one of its games" excludes "the team won") (author, 2026-11-26).',
+           ['Does each case really imply the clause, for an ordinary reader?', 'Does each denial case really exclude the clause (it need not restate the denial)?', 'Is each foil neutral: it neither implies the clause nor excludes it?'],
+           [('clause', 'aff'), ('case (implies the clause)', 'case'), ('foil of the case (decides nothing)', 'case_foil'), ('denial case (implies the clause is false)', 'ncase'), ('foil of the denial case (decides nothing)', 'ncase_foil')],
            [('case', 'case', 'case_foil', 'aff'), ('denial case', 'ncase', 'ncase_foil', 'aff')]),
     'L4': ('L4 reference', 'L4_reference.md',
-           'The second sentence names its subject by a pronoun only. The two clauses have subjects that take different pronouns, so the pronoun says which clause is meant. The foil is the same sentence with the other clause\'s pronoun: it says P\'s predicate about Q\'s subject. Restatement and foil differ in one token, which neither clause contains.',
-           ['Is the pronoun unambiguous for each pair (he, she, it)?', 'Is each foil a different statement (the wrong person or thing), not a restatement?'],
+           'The second sentence names its subject by a pronoun only. Each frame pairs a man and a woman, so "he" or "she" says which clause is meant. The foil is the same sentence with the other pronoun: it says P\'s predicate about Q\'s subject ("He is ill." restates "the king is ill"; "She is ill." says the queen is ill). Restatement and foil differ in one token, which neither clause contains. Every predicate is plausible for either person, so a foil cannot be rejected as nonsense, and P is "he" in half the frames. The cue is the gender of the subject word, which is knowledge the model may or may not link to the pronoun.',
+           ['Is each subject unambiguously male or female?', 'Is every predicate plausible for both people, so that no foil reads as nonsense?', 'Is each foil a different statement (about the wrong person), not a restatement?'],
            [('clause P', 'P'), ('clause Q', 'Q'), ('restatement of P', 'res'), ('foil (Q\'s pronoun)', 'foil'), ('restatement of Q (AC twin)', 'resQ')],
            [('P', 'res', 'foil', 'P'), ('P denial', 'res_neg', 'foil_neg', 'P'), ('Q', 'resQ', 'foilQ', 'Q')]),
     'L5': ('L5 restructured', 'L5_restructured.md',
@@ -53,8 +53,8 @@ SPEC = {
            [('clause P', 'P'), ('consequent Q (fixes the sense)', 'Q'), ('restatement (same sense)', 'res'), ('foil (other sense)', 'foil'), ('C2′ paraphrase', 'para')],
            [('C2', 'res', 'foil', 'P'), ('C2 denial', 'res_neg', 'foil_neg', 'P'), ('C2′ (foil shares more by design)', 'para', 'foil', 'P')]),
     'C3': ('C3 ellipsis', 'C3_ellipsis.md',
-           'The second sentence keeps only a pronoun and "does": "It does." The clause\'s subject and verb must be recovered from the premise. The foil is the other clause\'s pronoun ("She does."), which affirms Q: the AC twin. Neither shares a token with the clauses.',
-           ['Is the pronoun unambiguous?', 'Does "does" read naturally as standing for the clause\'s verb?'],
+           'The second sentence keeps only a pronoun and "does": "He does." The clause\'s subject and verb must be recovered from the premise. The foil is the other clause\'s pronoun ("She does."), which affirms Q: the AC twin. Neither shares a token with the clauses. Each frame has one man and one woman, so the pronoun alone picks the clause, and P is "he" in 10 frames and "she" in 10.',
+           ['Is the gender of each person unambiguous, so the pronoun picks one clause?', 'Is each verb plausible for either person, so the verb does not tell which one is meant?', 'Does "does" read naturally as standing for the clause\'s verb?'],
            [('clause P', 'P'), ('clause Q', 'Q'), ('restatement', 'res'), ('foil (AC twin)', 'foil'), ('denial', 'res_neg')],
            [('P', 'res', 'foil', 'P'), ('P denial', 'res_neg', 'foil_neg', 'P')]),
     'C4': ('C4 denial by an incompatible value', 'C4_denial_by_context.md',
@@ -87,6 +87,7 @@ R = ['# Analogy and In-Context Test Set: Draft Items', '', '**What this folder i
      '**The matched-overlap rule.** Each restatement has a foil that shares exactly as many tokens with the clause (GPT-2 tokens, lower-cased), so token identity cannot prefer the restatement. The check below is computed, not judged by eye.', '',
      '| level | page | frames | pairs checked | pairs that break the rule |', '| --- | --- | ---: | ---: | ---: |'] + [f'| {t} | [{f}]({f}) | {k} | {n} | {b} |' for t, f, k, n, b in summary] + ['',
      '**What the author is asked to check, for every level:** that each restatement is the same statement as its clause (or implies it, at L3), that each foil is clearly a different statement and is neither implied nor excluded by the clause, and that nothing reads unnaturally. Items can be struck, replaced or rewritten; the overlap check reruns on the new text.', '',
+     '**Review log** (the author\'s corrections, applied in the source):', '', '| date | item | change |', '| --- | --- | --- |'] + [f'| {d} | {i} | {c} |' for d, i, c in REVIEW_LOG] + ['',
      '**Known limits of the draft.**', '- C1 and C4 test the second sentence about one clause; the other forms of the frame (those that restate or deny the other clause) fall back on verbatim sentences.', '- C4 relies on general knowledge (green denies red). A variant in which a context sentence sets the incompatibility is not drafted yet.', '- L4 and C3 use gendered pronouns, which need the model to know the gender of "the king" or "the bride"; the embedding may carry part of that, which the readings would then show.', '- All items are by one drafter, so the foils may share a style the restatements lack. The author\'s check and a later lexical check on style words limit this.']
 (OUT / 'README.md').write_text('\n'.join(R) + '\n')
 for t, f, k, n, b in summary: print(f'{t:70s} frames {k}  pairs {n}  break the rule {b}')
