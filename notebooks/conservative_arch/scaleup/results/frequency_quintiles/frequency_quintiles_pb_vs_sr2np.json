@@ -1,0 +1,124 @@
+{
+ "windows": 128,
+ "T": 512,
+ "val": "/Users/dimitargueorguiev/Downloads/semsimula_fock_gamma_sweep_aniso_gaussian_fockreg_d384/data/openwebtext_val_2M.npy",
+ "logfreq": "/Users/dimitargueorguiev/Downloads/semsimula_fock_cfc_baoab_owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn/results/logfreq_surprisal_openwebtext.npy",
+ "ln_V": 10.82490511970208,
+ "models": {
+  "owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn": {
+   "overall": 4.109261512756348,
+   "quintiles": [
+    {
+     "q": 0,
+     "mean_loss": 11.473252296447754,
+     "gain_over_unigram": 2.48437995268098,
+     "targets": 564
+    },
+    {
+     "q": 1,
+     "mean_loss": 10.055950164794922,
+     "gain_over_unigram": 3.2596030999133934,
+     "targets": 1055
+    },
+    {
+     "q": 2,
+     "mean_loss": 8.37547492980957,
+     "gain_over_unigram": 4.4494615748871205,
+     "targets": 1720
+    },
+    {
+     "q": 3,
+     "mean_loss": 7.137241363525391,
+     "gain_over_unigram": 4.93588934625898,
+     "targets": 3752
+    },
+    {
+     "q": 4,
+     "mean_loss": 3.6109139919281006,
+     "gain_over_unigram": 3.4056077198921457,
+     "targets": 58445
+    }
+   ],
+   "all_below_ln_V": false
+  },
+  "owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_bb512_afree_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn": {
+   "overall": 4.1866960525512695,
+   "quintiles": [
+    {
+     "q": 0,
+     "mean_loss": 11.679903030395508,
+     "gain_over_unigram": 2.277729218733226,
+     "targets": 564
+    },
+    {
+     "q": 1,
+     "mean_loss": 10.202983856201172,
+     "gain_over_unigram": 3.1125694085071434,
+     "targets": 1055
+    },
+    {
+     "q": 2,
+     "mean_loss": 8.509809494018555,
+     "gain_over_unigram": 4.315127010678136,
+     "targets": 1720
+    },
+    {
+     "q": 3,
+     "mean_loss": 7.241330623626709,
+     "gain_over_unigram": 4.831800086157662,
+     "targets": 3752
+    },
+    {
+     "q": 4,
+     "mean_loss": 3.6824593544006348,
+     "gain_over_unigram": 3.3340623574196115,
+     "targets": 58445
+    }
+   ],
+   "all_below_ln_V": false
+  }
+ },
+ "unigram_prior": {
+  "quintiles": [
+   13.957632249128734,
+   13.315553264708315,
+   12.82493650469669,
+   12.07313070978437,
+   7.016521711820246
+  ],
+  "overall": 7.619596892414847
+ },
+ "paired": {
+  "owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_bb512_afree_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn": {
+   "against": "owt_xi5long_topk16_dt32da16_mh4_aniso_dcvt5x8_vtjoint_cgqk_norc_nophi_xilive_sr2_L2probe_ob_untied_wsd_e5c_plgate_rep0.05_fockreg0.005_g0.1_baoab_cfc_lowrank_idt4_lr0p0012_noattn",
+   "quintiles": [
+    {
+     "q": 0,
+     "diff": 0.20665191113948822,
+     "se": 0.056177814226632226
+    },
+    {
+     "q": 1,
+     "diff": 0.14703378081321716,
+     "se": 0.031087030276337753
+    },
+    {
+     "q": 2,
+     "diff": 0.13433440029621124,
+     "se": 0.027006239725125242
+    },
+    {
+     "q": 3,
+     "diff": 0.10408981889486313,
+     "se": 0.019880237692047532
+    },
+    {
+     "q": 4,
+     "diff": 0.07154535502195358,
+     "se": 0.00351034724893427
+    }
+   ],
+   "overall": 0.07743439823389053
+  }
+ }
+}
