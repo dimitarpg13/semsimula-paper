@@ -110,6 +110,6 @@ Every layer state is above both controls on both scores, every interval of the d
 
 **This is the clearest case so far where the layer states add to the embedding.** On the geometry matcher's own coordinates the states were level with the embedding or a little above it; on information that has to travel to one position, the embedding has nothing and the states have most of the answer.
 
-**The firing rule needs its own design for single-vector readings.** A follow-up that keeps the clouds and calibrates the threshold on the readings' own development scores would turn the rank and twin signals into fires; it was not part of the calls.
+**The firing rule needs its own design for single-vector readings** (the same holds for every reading outside verbatim premises; [BLogic_Test.md](BLogic_Test.md), §5.4a, on ranking against firing). A follow-up that keeps the clouds and calibrates the threshold on the readings' own development scores would turn the rank and twin signals into fires; it was not part of the calls.
 
 **Secondary: the Test 2 premises at "Therefore"** (exploratory). The early state separates valid forms from twins on most levels (0.70 to 0.80, and 0.75 to 1.00 on C1 and C2) and its foil reading is 0.52 to 0.81 on L2, L5, L6 and C4 (point estimates) but 0.45 to 0.50 on C1; the embedding and the length are at 0.46 to 0.55 on every foil reading except C2′, where the length follows the false friend. Numbers in the JSON outputs under `analogy`.

@@ -134,12 +134,16 @@ def tag_repl(folder):
     return repl, tag
 
 
-def gpt2_model(folder):
-    """The matched GPT-2 notebook's own model class (its Cells 0 and 3) and the run's best checkpoint."""
+def gpt2_model(folder, sub=None):
+    """The matched GPT-2 notebook's own model class (its Cells 0 and 3) and the run's best checkpoint. sub: the checkpoint
+    subfolder (default 'checkpoints', else the only checkpoints*/ subfolder, as in the W2 download). The model is run.model."""
     nb = Path(__file__).resolve().parents[1] / 'colab_matched_gpt2_baseline_openwebtext.ipynb'
     cells = [''.join(c['source']) for c in json.load(open(nb))['cells']]
-    ck = torch.load(Path.home() / 'Downloads' / folder / 'checkpoints' / 'gpt2_baseline_best.pt',
-                    map_location='cpu', weights_only=False)
+    D = Path.home() / 'Downloads' / folder
+    sub = sub or ('checkpoints' if (D / 'checkpoints').is_dir() else None)
+    cks = [D / sub / 'gpt2_baseline_best.pt'] if sub else sorted(D.glob('checkpoints*/gpt2_baseline_best.pt'))
+    assert len(cks) == 1, cks
+    ck = torch.load(cks[0], map_location='cpu', weights_only=False)
     g = {}
     with contextlib.redirect_stdout(io.StringIO()):
         exec('import math, torch, torch.nn as nn, torch.nn.functional as F, numpy as np', g)
@@ -152,7 +156,8 @@ def gpt2_model(folder):
     def run(x):
         with torch.no_grad():
             return m(torch.from_numpy(x))[0]
-    return run, f"gpt2_baseline_best.pt (step {ck['step']}, val {ck['val_ppl']:.3f})"
+    run.model = m
+    return run, f"{cks[0].parent.name}/gpt2_baseline_best.pt (step {ck['step']}, val {ck['val_ppl']:.3f}, lr {ck['config']['lr']})"
 
 
 def nll(name, folder):

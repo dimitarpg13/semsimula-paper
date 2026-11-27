@@ -1,0 +1,81 @@
+np check {'h0': 0.0, 'h1': 6e-05, 'h2': 0.0, 'D0': 0.00012, 'D1': 0.00024, 'W0': 0.00024, 'W1': 0.00024} | development premises {'original': 6390, 'clean': 5561} clean clauses {'dev': 6, 'test': 27}
+np original lex     m7 d 6 | BCa: 0.50,0.50,0.50 BCb: 0.50,0.50,0.50
+np original h0      m6 d10 | BCa: 0.50,0.50,0.50 BCb: 0.50,0.50,0.50
+np original h1      m4 d15 | BCa: 0.50,0.34,0.47 BCb: 0.51,0.45,0.51
+np original h2      m5 d25 | BCa: 0.47,0.47,0.54 BCb: 0.47,0.45,0.48
+np original D0      m5 d15 | BCa: 0.50,0.50,0.42 BCb: 0.50,0.57,0.58
+np original D1      m7 d25 | BCa: 0.48,0.70,0.65 BCb: 0.43,0.60,0.56
+np original W0      m4 d20 | BCa: 0.50,0.43,0.52 BCb: 0.50,0.37,0.42
+np original W1      m3 d10 | BCa: 0.40,0.61,0.57 BCb: 0.38,0.55,0.50
+np original path    m5 d15 | BCa: 0.51,0.61,0.57 BCb: 0.49,0.55,0.59
+np original wells   m4 d25 | BCa: 0.50,0.52,0.56 BCb: 0.51,0.43,0.50
+np original states  m5 d10 | BCa: 0.50,0.35,0.47 BCb: 0.50,0.52,0.53
+np clean    lex     m7 d 6 | BCa: 0.50,0.50,0.50 BCb: 0.50,0.50,0.50
+np clean    h0      m6 d10 | BCa: 0.50,0.50,0.50 BCb: 0.50,0.50,0.50
+np clean    h1      m4 d15 | BCa: 0.50,0.42,0.50 BCb: 0.50,0.32,0.44
+np clean    h2      m5 d25 | BCa: 0.49,0.44,0.51 BCb: 0.50,0.42,0.47
+np clean    D0      m5 d15 | BCa: 0.48,0.62,0.37 BCb: 0.50,0.46,0.53
+np clean    D1      m7 d25 | BCa: 0.52,0.70,0.60 BCb: 0.47,0.60,0.57
+np clean    W0      m4 d20 | BCa: 0.50,0.43,0.56 BCb: 0.49,0.43,0.41
+np clean    W1      m3 d10 | BCa: 0.53,0.53,0.57 BCb: 0.47,0.50,0.45
+np clean    path    m5 d15 | BCa: 0.52,0.59,0.50 BCb: 0.50,0.49,0.58
+np clean    wells   m4 d25 | BCa: 0.48,0.53,0.56 BCb: 0.47,0.47,0.44
+np clean    states  m5 d10 | BCa: 0.47,0.39,0.47 BCb: 0.51,0.51,0.56
+g2 check {'h0': 0.0, 'h1': 2e-05, 'h2': 0.00012, 'D0': 0.0, 'D1': 6e-05, 'W0': 0.00024, 'W1': 0.00012} | development premises {'original': 6390, 'clean': 5561} clean clauses {'dev': 6, 'test': 27}
+g2 original lex     m7 d 6 | BCa: 0.50,0.50,0.50 BCb: 0.50,0.50,0.50
+g2 original h0      m7 d10 | BCa: 0.50,0.50,0.50 BCb: 0.50,0.50,0.50
+g2 original h1      m7 d20 | BCa: 0.49,0.39,0.28 BCb: 0.47,0.28,0.26
+g2 original h2      m5 d20 | BCa: 0.46,0.54,0.49 BCb: 0.45,0.57,0.34
+g2 original D0      m4 d10 | BCa: 0.48,0.26,0.23 BCb: 0.47,0.25,0.27
+g2 original D1      m5 d10 | BCa: 0.52,0.53,0.53 BCb: 0.56,0.52,0.56
+g2 original W0      m5 d31 | BCa: 0.47,0.56,0.58 BCb: 0.47,0.45,0.53
+g2 original W1      m4 d10 | BCa: 0.46,0.56,0.59 BCb: 0.47,0.42,0.42
+g2 original path    m5 d25 | BCa: 0.50,0.51,0.39 BCb: 0.52,0.44,0.42
+g2 original wells   m5 d15 | BCa: 0.51,0.48,0.61 BCb: 0.52,0.38,0.42
+g2 original states  m5 d10 | BCa: 0.50,0.42,0.27 BCb: 0.49,0.47,0.34
+g2 clean    lex     m7 d 6 | BCa: 0.50,0.50,0.50 BCb: 0.50,0.50,0.50
+g2 clean    h0      m7 d10 | BCa: 0.50,0.50,0.50 BCb: 0.50,0.50,0.50
+g2 clean    h1      m7 d20 | BCa: 0.43,0.35,0.21 BCb: 0.45,0.24,0.28
+g2 clean    h2      m5 d20 | BCa: 0.46,0.54,0.45 BCb: 0.42,0.56,0.33
+g2 clean    D0      m4 d10 | BCa: 0.44,0.32,0.21 BCb: 0.43,0.27,0.25
+g2 clean    D1      m5 d10 | BCa: 0.53,0.65,0.52 BCb: 0.60,0.53,0.53
+g2 clean    W0      m5 d31 | BCa: 0.43,0.61,0.55 BCb: 0.44,0.48,0.49
+g2 clean    W1      m4 d10 | BCa: 0.48,0.50,0.58 BCb: 0.47,0.44,0.42
+g2 clean    path    m5 d25 | BCa: 0.50,0.50,0.44 BCb: 0.49,0.41,0.40
+g2 clean    wells   m5 d15 | BCa: 0.50,0.56,0.55 BCb: 0.50,0.51,0.50
+g2 clean    states  m5 d10 | BCa: 0.48,0.33,0.18 BCb: 0.49,0.36,0.31
+l4 check {'h0': 0.0, 'h1': 0.0, 'h2': 6e-05, 'h3': 0.00024, 'h4': 0.00024, 'D0': 0.0, 'D1': 0.00012, 'D2': 0.00012, 'D3': 6e-05, 'W0': 2e-05, 'W1': 0.00012, 'W2': 0.00049, 'W3': 0.00049} | development premises {'original': 6390, 'clean': 5561} clean clauses {'dev': 6, 'test': 27}
+l4 original lex     m7 d 6 | BCa: 0.50,0.50,0.50 BCb: 0.50,0.50,0.50
+l4 original h0      m5 d31 | BCa: 0.50,0.50,0.50 BCb: 0.50,0.50,0.50
+l4 original h1      m5 d25 | BCa: 0.49,0.30,0.42 BCb: 0.48,0.29,0.28
+l4 original h2      m4 d15 | BCa: 0.50,0.33,0.41 BCb: 0.45,0.23,0.25
+l4 original h3      m5 d25 | BCa: 0.56,0.53,0.42 BCb: 0.47,0.28,0.28
+l4 original h4      m8 d10 | BCa: 0.55,0.58,0.50 BCb: 0.49,0.33,0.36
+l4 original D0      m5 d10 | BCa: 0.50,0.25,0.33 BCb: 0.50,0.17,0.25
+l4 original D1      m5 d10 | BCa: 0.53,0.52,0.39 BCb: 0.50,0.32,0.34
+l4 original D2      m5 d10 | BCa: 0.59,0.72,0.50 BCb: 0.48,0.41,0.29
+l4 original D3      m5 d10 | BCa: 0.52,0.50,0.44 BCb: 0.45,0.44,0.37
+l4 original W0      m6 d20 | BCa: 0.51,0.47,0.47 BCb: 0.50,0.42,0.40
+l4 original W1      m6 d25 | BCa: 0.55,0.58,0.57 BCb: 0.57,0.58,0.45
+l4 original W2      m7 d10 | BCa: 0.43,0.30,0.30 BCb: 0.51,0.49,0.51
+l4 original W3      m7 d 6 | BCa: 0.35,0.52,0.52 BCb: 0.31,0.44,0.46
+l4 original path    m2 d10 | BCa: 0.52,0.27,0.32 BCb: 0.49,0.30,0.28
+l4 original wells   m6 d20 | BCa: 0.51,0.70,0.52 BCb: 0.51,0.50,0.40
+l4 original states  m4 d10 | BCa: 0.49,0.40,0.40 BCb: 0.50,0.43,0.42
+l4 clean    lex     m7 d 6 | BCa: 0.50,0.50,0.50 BCb: 0.50,0.50,0.50
+l4 clean    h0      m5 d31 | BCa: 0.50,0.50,0.50 BCb: 0.50,0.50,0.50
+l4 clean    h1      m5 d25 | BCa: 0.50,0.34,0.38 BCb: 0.50,0.24,0.32
+l4 clean    h2      m4 d15 | BCa: 0.50,0.40,0.35 BCb: 0.47,0.23,0.23
+l4 clean    h3      m5 d25 | BCa: 0.57,0.55,0.37 BCb: 0.48,0.28,0.27
+l4 clean    h4      m8 d10 | BCa: 0.55,0.57,0.48 BCb: 0.50,0.32,0.37
+l4 clean    D0      m5 d10 | BCa: 0.50,0.19,0.29 BCb: 0.50,0.19,0.25
+l4 clean    D1      m5 d10 | BCa: 0.54,0.59,0.39 BCb: 0.52,0.33,0.29
+l4 clean    D2      m5 d10 | BCa: 0.59,0.63,0.50 BCb: 0.50,0.34,0.27
+l4 clean    D3      m5 d10 | BCa: 0.50,0.46,0.45 BCb: 0.44,0.40,0.38
+l4 clean    W0      m6 d20 | BCa: 0.51,0.56,0.46 BCb: 0.50,0.50,0.42
+l4 clean    W1      m6 d25 | BCa: 0.52,0.57,0.58 BCb: 0.56,0.61,0.45
+l4 clean    W2      m7 d10 | BCa: 0.46,0.35,0.32 BCb: 0.52,0.47,0.53
+l4 clean    W3      m7 d 6 | BCa: 0.38,0.53,0.51 BCb: 0.35,0.44,0.43
+l4 clean    path    m2 d10 | BCa: 0.49,0.21,0.35 BCb: 0.47,0.23,0.27
+l4 clean    wells   m6 d20 | BCa: 0.51,0.55,0.56 BCb: 0.52,0.45,0.45
+l4 clean    states  m4 d10 | BCa: 0.50,0.37,0.39 BCb: 0.49,0.32,0.43

@@ -131,6 +131,7 @@ if __name__ == '__main__':
         Pd_full = {k: [x['st'][k] for x in dres] for k in kinds}; Pd_full['lex'] = lexical(dev_ids, cv); del dres
         Pt = {k: [x['st'][k] for x in tres] for k in kinds}; Pt['lex'] = lexical([(m_['pids'], r) for m_, r in zip(tmeta, Rt_)], cv); del tres
         MATCH = [('lex', ('lex',), JL['m'], JL['d']), ('h0', ('h0',), None, None)] + [(k, (k,), None, None) for k in kinds if k != 'h0'] + [('path', tuple(f'D{l}' for l in range(L_)), None, None), ('wells', tuple(f'W{l}' for l in range(L_)), None, None), ('states', tuple(f'h{l}' for l in range(1, L_ + 1)), None, None)]
+        MATCH = [x for x in MATCH if all(k in kinds or k == 'lex' for k in x[1])]          # the matched GPT-2 has no D, W (2026-11-27)
         if GATES: MATCH, DEVS = MATCH[:1], {'original': DEVS['original']}
         for dv, msk in DEVS.items():
             ix = np.flatnonzero(msk); Pd = {k: [v[i] for i in ix] for k, v in Pd_full.items()}; Rd = [Rd_all[i] for i in ix]; dm = (K[ix], want[ix], wi[ix], fr[ix], g[ix], lab[ix])

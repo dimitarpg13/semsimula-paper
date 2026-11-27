@@ -13,6 +13,9 @@ of dt/k (context, low-rank quadratic and wells frozen at the first substep, one 
 protocol SS5.19). gap_k = |pre_k - pre_16| / |pre_16 - h_in|, median over tokens: k = 1 is the trained step. Also the cosine of the
 trained step's displacement with the flow's, the size of the displacements along depth, and the cosine of successive ones. For a
 model with a reverse channel only the conservative step is replayed. flowonly=1 writes flow_<stem>.json and stops (no premise pkl).
+A folder of the matched GPT-2 (semsimula_matched_gpt2_..., 2026-11-27; [sub=<checkpoint subfolder>]): the kinds are h0 ... hL only,
+the residual stream at the entry of each block (h0 = token plus position vector) and at the last block's output, before the final
+LayerNorm; no D, no W, no flow replay (flow_<stem>.json records that there is no conservative step).
 Bug fixed 2026-11-25: the replay passed the trained step's h_prev (velocity encoded at dt) with dt/k, so every k > 1 replay
 started k times too fast and gap_k came out as 1 - k/16 on every layer that particles enter moving (all but layer 0)."""
 import json, pickle, sys, time
@@ -70,64 +73,74 @@ pre = [int(v) for v in val[1_000_000:1_000_048]] + enc.encode("\n\n")
 src = (DBG / 'copy_split.py').read_text(); src = src[:src.index("\nif MODE == 'nll':")]
 sys.argv = ['copy_split.py', str(OUT / 'harness'), 'probe', 'windows=1', f"threads={OPTS.get('threads', 8)}"]
 CS = {'__name__': 'copy_split', '__file__': str(DBG / 'copy_split.py')}; exec(compile(src, 'copy_split.py', 'exec'), CS)
-_b = P_.build; got = {}
-def build(*a, **k):
-    r = _b(*a, **k); got['m'] = r[0]; return r
-P_.build = build; ck = OPTS.get('ckpt', 'best'); D = Path.home() / 'Downloads' / FOLDER / 'checkpoints'
-cf = [p.name for p in D.glob('fock_cfc_*_best.pt') if ('_step' not in p.name if ck == 'best' else f'_{ck}_best' in p.name)]; assert len(cf) == 1, cf
-CS['ladder_model'](FOLDER, cf[0]); m = got['m']; m.eval(); rec = {}; os_ = m._layer_step_langevin; bank = m.V_theta.bank.bank if hasattr(m.V_theta.bank, 'bank') else m.V_theta.bank
-cur = {}; olr = bank.harmonic_terms_lowrank; L_ = m.cfg.L
-def lr(xi, h, *, comps=None):
-    if cur.get('l') is not None and cur['l'] not in cur['done']:          # the first evaluation of the layer: at the state that enters it
-        cur['done'].add(cur['l'])
-        with torch.no_grad(): rec['c', cur['l']] = [v.detach().float() for v in (comps if comps is not None else bank._components(xi))]
-    return olr(xi, h, comps=comps)
-bank.harmonic_terms_lowrank = lr
-keep = {'args': None}
-def step(h, h_prev, m_b, gamma, dt_, layer_idx=0):
-    l = int(layer_idx); cur['l'] = l
-    if l == 0: cur['done'] = set()
-    rec['in', l] = h.detach().float()
-    if keep['args'] is not None: keep['args'][l] = (h.detach(), h_prev.detach(), m_b, gamma, dt_)
-    o = os_(h, h_prev, m_b, gamma, dt_, layer_idx); cur['l'] = None; return o
-m._layer_step_langevin = step; opj = m._project
-def proj(h):
-    if cur.get('l') is not None: rec['pre', cur['l']] = h.detach().float(); rec['pn', cur['l']] = rec.get(('pn', cur['l']), 0) + 1
-    if keep.get('replay') is not None: keep['replay'] = h.detach().float()
-    return opj(h)
-m._project = proj; osf = m._stack_forward
-def sf(h0, x, return_trajectory=False):
-    for l in range(L_): rec['pn', l] = 0
-    o = osf(h0, x, return_trajectory); rec['in', L_] = o[0].detach().float(); return o
-m._stack_forward = sf; KINDS = [f'h{l}' for l in range(L_ + 1)] + [f'D{l}' for l in range(L_)] + [f'W{l}' for l in range(L_)]
-def vecs(pos):
-    """kind -> (particles, dim) float32 at the (b, t) index arrays, for the sequences just run"""
-    assert all(rec['pn', l] == 1 for l in range(L_)), [rec['pn', l] for l in range(L_)]; o = {f'h{l}': rec['in', l][pos].numpy() for l in range(L_ + 1)}
-    for l in range(L_):
-        h, p = rec['in', l][pos], rec['pre', l][pos]; o[f'D{l}'] = (p - h).numpy(); mu, a, w, B = (v[pos] for v in rec['c', l]); out = []
-        for st in (h, p):
-            d = st.unsqueeze(1) - mu; u = torch.einsum('nkd,nkdr->nkr', d, B); out.append(((a * d * d).sum(-1) + (u * u).sum(-1), u.flatten(1)))
-        (qi, ui), (qo, uo) = out; lg = torch.log(w.clamp_min(1e-12)) - .5 * qi; lp = lg - torch.logsumexp(lg, 1, keepdim=True); ri, ro = qi.sqrt(), qo.sqrt()
-        o[f'W{l}'] = torch.cat([lp.clamp_min(-20), ri, ro - ri, ui, uo - ui], 1).numpy()
-    return o
-def replay(l, k):
-    h, hp, mb, ga, dt_ = keep['args'][l]
-    if hasattr(m.V_theta, 'set_active_layer'): m.V_theta.set_active_layer(l)
-    m._flow_ctx = {} if k > 1 else None
-    if k > 1: hp = h - (h - hp) / k          # the velocity enters encoded at dt; re-encode it at dt/k (v = (h - h_prev)/dt). Fixed 2026-11-25
-    try:
-        for j in range(k):
-            if k > 1: m._flow_ctx['project'] = j == k - 1
-            with torch.enable_grad(): keep['replay'] = None if j < k - 1 else True; o = os_(h, hp, mb, ga, dt_ / k, l)
-            h, hp = o[0].detach(), o[1].detach()
-    finally: m._flow_ctx = None
-    r, keep['replay'] = keep['replay'], None; return r
-def flow_rows(mask_pos):
-    rows = []
-    for l in range(L_):
-        h = keep['args'][l][0].float(); pre = {k: replay(l, k) for k in (1, 2, 4, 8, 16)}; ref = pre[16]; dmax = float((pre[1] - rec['pre', l]).abs().max()); assert dmax < 1e-4, (l, dmax); D16 = (ref - h)[mask_pos]; D1 = (pre[1] - h)[mask_pos]; nD = D16.norm(dim=1)
-        rows.append(dict(layer=l, gap={k: float(((pre[k][mask_pos] - ref[mask_pos]).norm(dim=1) / nD).median()) for k in (1, 2, 4, 8)}, cos=float((D1 * D16).sum(1).div(D1.norm(dim=1) * nD).median()), disp=float(D1.norm(dim=1).median()), state=float(h[mask_pos].norm(dim=1).median())))
-    return rows
+GPT2 = 'matched_gpt2' in FOLDER
+if GPT2:              # the matched GPT-2 (2026-11-27): the residual stream at the entry of each block and at the last block's output (before ln_f)
+    run, what = CS['gpt2_model'](FOLDER, OPTS.get('sub')); m = run.model; L_ = len(m.blocks); rec = {}; keep = {'args': None}; print('GPT-2:', what, flush=True)
+    for p_ in m.parameters(): p_.requires_grad_(False)
+    for l, blk in enumerate(m.blocks): blk.register_forward_pre_hook(lambda mod, a, l=l: rec.__setitem__(('in', l), a[0].detach().float()))
+    m.blocks[-1].register_forward_hook(lambda mod, a, o: rec.__setitem__(('in', L_), o.detach().float()))
+    KINDS = [f'h{l}' for l in range(L_ + 1)]; flow_rows = lambda pos: 'no conservative step'
+    def vecs(pos):
+        return {f'h{l}': rec['in', l][pos].numpy() for l in range(L_ + 1)}
+else:
+    _b = P_.build; got = {}
+    def build(*a, **k):
+        r = _b(*a, **k); got['m'] = r[0]; return r
+    P_.build = build; ck = OPTS.get('ckpt', 'best'); D = Path.home() / 'Downloads' / FOLDER / 'checkpoints'
+    cf = [p.name for p in D.glob('fock_cfc_*_best.pt') if ('_step' not in p.name if ck == 'best' else f'_{ck}_best' in p.name)]; assert len(cf) == 1, cf
+    CS['ladder_model'](FOLDER, cf[0]); m = got['m']; m.eval(); rec = {}; os_ = m._layer_step_langevin; bank = m.V_theta.bank.bank if hasattr(m.V_theta.bank, 'bank') else m.V_theta.bank
+    cur = {}; olr = bank.harmonic_terms_lowrank; L_ = m.cfg.L
+    def lr(xi, h, *, comps=None):
+        if cur.get('l') is not None and cur['l'] not in cur['done']:          # the first evaluation of the layer: at the state that enters it
+            cur['done'].add(cur['l'])
+            with torch.no_grad(): rec['c', cur['l']] = [v.detach().float() for v in (comps if comps is not None else bank._components(xi))]
+        return olr(xi, h, comps=comps)
+    bank.harmonic_terms_lowrank = lr
+    keep = {'args': None}
+    def step(h, h_prev, m_b, gamma, dt_, layer_idx=0):
+        l = int(layer_idx); cur['l'] = l
+        if l == 0: cur['done'] = set()
+        rec['in', l] = h.detach().float()
+        if keep['args'] is not None: keep['args'][l] = (h.detach(), h_prev.detach(), m_b, gamma, dt_)
+        o = os_(h, h_prev, m_b, gamma, dt_, layer_idx); cur['l'] = None; return o
+    m._layer_step_langevin = step; opj = m._project
+    def proj(h):
+        if cur.get('l') is not None: rec['pre', cur['l']] = h.detach().float(); rec['pn', cur['l']] = rec.get(('pn', cur['l']), 0) + 1
+        if keep.get('replay') is not None: keep['replay'] = h.detach().float()
+        return opj(h)
+    m._project = proj; osf = m._stack_forward
+    def sf(h0, x, return_trajectory=False):
+        for l in range(L_): rec['pn', l] = 0
+        o = osf(h0, x, return_trajectory); rec['in', L_] = o[0].detach().float(); return o
+    m._stack_forward = sf; KINDS = [f'h{l}' for l in range(L_ + 1)] + [f'D{l}' for l in range(L_)] + [f'W{l}' for l in range(L_)]
+    def vecs(pos):
+        """kind -> (particles, dim) float32 at the (b, t) index arrays, for the sequences just run"""
+        assert all(rec['pn', l] == 1 for l in range(L_)), [rec['pn', l] for l in range(L_)]; o = {f'h{l}': rec['in', l][pos].numpy() for l in range(L_ + 1)}
+        for l in range(L_):
+            h, p = rec['in', l][pos], rec['pre', l][pos]; o[f'D{l}'] = (p - h).numpy(); mu, a, w, B = (v[pos] for v in rec['c', l]); out = []
+            for st in (h, p):
+                d = st.unsqueeze(1) - mu; u = torch.einsum('nkd,nkdr->nkr', d, B); out.append(((a * d * d).sum(-1) + (u * u).sum(-1), u.flatten(1)))
+            (qi, ui), (qo, uo) = out; lg = torch.log(w.clamp_min(1e-12)) - .5 * qi; lp = lg - torch.logsumexp(lg, 1, keepdim=True); ri, ro = qi.sqrt(), qo.sqrt()
+            o[f'W{l}'] = torch.cat([lp.clamp_min(-20), ri, ro - ri, ui, uo - ui], 1).numpy()
+        return o
+    def replay(l, k):
+        h, hp, mb, ga, dt_ = keep['args'][l]
+        if hasattr(m.V_theta, 'set_active_layer'): m.V_theta.set_active_layer(l)
+        m._flow_ctx = {} if k > 1 else None
+        if k > 1: hp = h - (h - hp) / k          # the velocity enters encoded at dt; re-encode it at dt/k (v = (h - h_prev)/dt). Fixed 2026-11-25
+        try:
+            for j in range(k):
+                if k > 1: m._flow_ctx['project'] = j == k - 1
+                with torch.enable_grad(): keep['replay'] = None if j < k - 1 else True; o = os_(h, hp, mb, ga, dt_ / k, l)
+                h, hp = o[0].detach(), o[1].detach()
+        finally: m._flow_ctx = None
+        r, keep['replay'] = keep['replay'], None; return r
+    def flow_rows(mask_pos):
+        rows = []
+        for l in range(L_):
+            h = keep['args'][l][0].float(); pre = {k: replay(l, k) for k in (1, 2, 4, 8, 16)}; ref = pre[16]; dmax = float((pre[1] - rec['pre', l]).abs().max()); assert dmax < 1e-4, (l, dmax); D16 = (ref - h)[mask_pos]; D1 = (pre[1] - h)[mask_pos]; nD = D16.norm(dim=1)
+            rows.append(dict(layer=l, gap={k: float(((pre[k][mask_pos] - ref[mask_pos]).norm(dim=1) / nD).median()) for k in (1, 2, 4, 8)}, cos=float((D1 * D16).sum(1).div(D1.norm(dim=1) * nD).median()), disp=float(D1.norm(dim=1).median()), state=float(h[mask_pos].norm(dim=1).median())))
+        return rows
 ws = torch.tensor(np.stack([val[300_000 + 700 * i:300_000 + 700 * i + 160] for i in range(96)])); TV = {k: [] for k in KINDS}; flow = {}; jump = []
 for i in range(0, 96, 16):
     if i == 0: keep['args'] = {}
@@ -138,7 +151,8 @@ for i in range(0, 96, 16):
 W = {}
 for k in KINDS:
     x = np.concatenate(TV[k]); mu = x.mean(0); e, U = np.linalg.eigh(np.cov((x - mu).T)); e = np.maximum(e, 0); W[k] = (mu, U / np.sqrt(e + .1 * e.mean()))
-D_ = [np.concatenate(TV[f'D{l}']) for l in range(L_)]; n = lambda a: np.linalg.norm(a, axis=1); flow['cos successive D (text)'] = [float(np.median((D_[l] * D_[l + 1]).sum(1) / (n(D_[l]) * n(D_[l + 1])))) for l in range(L_ - 1)]; flow['|D| (text)'] = [float(np.median(n(d))) for d in D_]
+n = lambda a: np.linalg.norm(a, axis=1)
+if not GPT2: D_ = [np.concatenate(TV[f'D{l}']) for l in range(L_)]; flow['cos successive D (text)'] = [float(np.median((D_[l] * D_[l + 1]).sum(1) / (n(D_[l]) * n(D_[l + 1])))) for l in range(L_ - 1)]; flow['|D| (text)'] = [float(np.median(n(d))) for d in D_]
 res = [None] * len(items); order = sorted(range(len(items)), key=lambda i: len(items[i]['ids'])); t0 = time.time()
 for b in range(0, len(order), 32):
     idx = order[b:b + 32]; Ln = len(pre) + max(len(items[i]['ids']) for i in idx); x = torch.tensor([pre + items[i]['ids'] + [50256] * (Ln - len(pre) - len(items[i]['ids'])) for i in idx])

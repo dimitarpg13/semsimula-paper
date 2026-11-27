@@ -7,6 +7,7 @@
 - [depth_ladder/](depth_ladder/README.md): the depth-ladder programme, the conservative models trained one mechanism at a time against a matched GPT-2; includes the recall pathway probe, the velocity and the pair force as competing mechanisms, and why a first-order model is better trained without the pair force.
 - [productization/](productization/README.md): making the conservative core cheap to run, stage by stage.
 - [mean_field/](mean_field/README.md): results of the mean-field programme, one note per probe or arm (Probe A so far).
+- [transformer/](transformer/README.md): the attention-based transformer read as a dynamical system (depth as time, layers as steps of a discrete-time flow, tokens as interacting particles): the literature and what it means for the conservative models.
 - [semantic_templates/](semantic_templates/README.md): building semantic templates into the models: where and when a template search may start, and the measurements that test it.
 - [training_instabilities/](training_instabilities/README.md): the training instabilities of Fock-PARFLM with a structured $V_\theta$, and the CfC+BAOAB integrator with its mitigations.
 - [deep_dives/](deep_dives/): long-form Word documents (with PDFs): the SPLM model and code, the structured scalar potential, the Poisson-mode registers and semantic templates, and the Jacobi metric.
@@ -74,6 +75,7 @@
 - [Considered_Non-Autonomous_Conservative_Mechanisms](Considered_Non-Autonomous_Conservative_Mechanisms.md): the candidate governing equations considered for transformer dynamics, up to the non-autonomous conservative class
 - [Addendum_Non_Autonomous_Fields_For_Appendix_A](Addendum_Non_Autonomous_Fields_For_Appendix_A.md): reader's guide to the book's Appendix A on non-autonomous conservative fields
 - [P-rot-6_transformer_dynamics](P-rot-6_transformer_dynamics.md): a damped equation with a velocity-coupled skew force, tied to the key–value asymmetry of attention
+- [transformer/Transformers_as_Dynamical_Systems](transformer/Transformers_as_Dynamical_Systems.md): reading guide to the papers that read a transformer as a dynamical system: Euler and splitting steps, clustering on the sphere, when attention is a gradient flow, rank collapse (2026-11-27)
 - [Conservative_by_Construction_Language_Models](Conservative_by_Construction_Language_Models.md): the design rationale for language models that are conservative by construction (SPLM)
 - [The_Overdamped_Limit_and_The_Position_of_The_2nd_Order_Lagrangian_Framework](The_Overdamped_Limit_and_The_Position_of_The_2nd_Order_Lagrangian_Framework.md): where the second-order framework stands given that transformers and SPLM look overdamped
 
@@ -202,6 +204,9 @@
 - [semantic_templates/Analogy_Test_Calls](semantic_templates/Analogy_Test_Calls.md): the calls for test 2 on the reviewed analogy items, confirmed by the author: readings, gates, and the calls on the embedding and on the layer states.
 - [semantic_templates/Analogy_Test_Results](semantic_templates/Analogy_Test_Results.md): test 2 results: the embedding is not displaced by analogy items (word similarity still decides), the layer states add nothing on the two-layer models, no reading binds a name from context; C4 is a lead for the states.
 - [semantic_templates/Summary_State_Test](semantic_templates/Summary_State_Test.md): task A, the logical form read from the state at "Therefore" alone (the embedding carries only the position there); calls confirmed and scored: the states at "Therefore" carry the form and which clause was restated (rank 54–62%, twin AUROC 0.75), the embedding does not.
+- [semantic_templates/Template_Programme_Status_and_Plan](semantic_templates/Template_Programme_Status_and_Plan.md): the template programme's status and plan (2026-11-27): what is established, what is open, the next experiments.
+- [semantic_templates/Depth_and_Architecture_Battery](semantic_templates/Depth_and_Architecture_Battery.md): calls for SR2-NP-L8 and the matched GPT-2 on the template battery (confirmed 2026-11-27).
+- [semantic_templates/GPT2_Template_Battery_Results](semantic_templates/GPT2_Template_Battery_Results.md): the matched GPT-2 read by every template test: GA1, GA2, GA4 hit; level with SR2-NP, but three blocks to get there (2026-11-27).
 - [semantic_templates/analogy_items](semantic_templates/analogy_items/README.md): draft items of that test set for the author's review, 20 frames per level, with the matched-overlap check
 - [Renormalization_Group_Readings_of_Template_Matching_A_Proposal](Renormalization_Group_Readings_of_Template_Matching_A_Proposal.md): reading template matching through renormalisation-group ideas (proposal)
 - [Community_of_Semantic_Templates_for_Native_CoT](Community_of_Semantic_Templates_for_Native_CoT.md): a community of templates as the source of native chain-of-thought
@@ -299,6 +304,7 @@
 - [Conservative_Obstruction_and_Virtual_Particle_Necessity](Conservative_Obstruction_and_Virtual_Particle_Necessity.md): why a conservative model needs a virtual-particle exchange to match attention
 - [P-rot-6_transformer_dynamics](P-rot-6_transformer_dynamics.md): a damped equation with a velocity-coupled skew force, tied to the key–value asymmetry of attention
 - [Two_Clustering_Mechanisms_Saturation_and_Synchronization](Two_Clustering_Mechanisms_Saturation_and_Synchronization.md): how tokens cluster in attention dynamics and in the framework: saturation and synchronization
+- [transformer/Transformers_as_Dynamical_Systems](transformer/Transformers_as_Dynamical_Systems.md): reading guide to the papers that read a transformer as a dynamical system (2026-11-27)
 - [The_Impact_of_Brownian_Motion_on_Perplexity_in_Attention-Based_Transformers_and_SPLM](The_Impact_of_Brownian_Motion_on_Perplexity_in_Attention-Based_Transformers_and_SPLM.md): the training ODE and inference SDE behind STP, and what Brownian motion does to perplexity in transformers and SPLM
 
 

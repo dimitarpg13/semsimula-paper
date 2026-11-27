@@ -1,0 +1,2 @@
+w2 check {'h0': 0.0, 'h1': 3e-05, 'h2': 2e-05, 'h3': 0.00012, 'h4': 3e-05, 'h5': 6e-05, 'h6': 0.00024, 'h7': 0.00024, 'h8': 0.00012} | development premises {'original': 6390, 'clean': 5561} clean clauses {'dev': 6, 'test': 27}
+w2 original lex     m7 d 6 | BCa: 0.50,0.50,0.50 BCb: 0.50,0.50,0.50

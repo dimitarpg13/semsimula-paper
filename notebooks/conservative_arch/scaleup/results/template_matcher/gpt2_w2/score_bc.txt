@@ -1,0 +1,23 @@
+w2 check {'h0': 0.0, 'h1': 3e-05, 'h2': 2e-05, 'h3': 0.00012, 'h4': 3e-05, 'h5': 6e-05, 'h6': 0.00024, 'h7': 0.00024, 'h8': 0.00012} | development premises {'original': 6390, 'clean': 5561} clean clauses {'dev': 6, 'test': 27}
+w2 original lex     m7 d 6 | BCa: 0.50,0.50,0.50 BCb: 0.50,0.50,0.50
+w2 original h0      m3 d10 | BCa: 0.50,0.50,0.50 BCb: 0.50,0.50,0.50
+w2 original h1      m3 d10 | BCa: 0.50,0.35,0.42 BCb: 0.50,0.38,0.63
+w2 original h2      m3 d25 | BCa: 0.50,0.39,0.45 BCb: 0.50,0.44,0.54
+w2 original h3      m3 d10 | BCa: 0.50,0.55,0.43 BCb: 0.50,0.30,0.36
+w2 original h4      m4 d20 | BCa: 0.50,0.38,0.58 BCb: 0.49,0.29,0.36
+w2 original h5      m2 d10 | BCa: 0.50,0.33,0.45 BCb: 0.50,0.35,0.49
+w2 original h6      m4 d10 | BCa: 0.48,0.57,0.42 BCb: 0.52,0.68,0.36
+w2 original h7      m5 d15 | BCa: 0.49,0.36,0.50 BCb: 0.55,0.52,0.55
+w2 original h8      m4 d20 | BCa: 0.45,0.43,0.41 BCb: 0.50,0.53,0.50
+w2 original states  m1 d 6 | BCa: 0.48,0.47,0.47 BCb: 0.50,0.52,0.54
+w2 clean    lex     m7 d 6 | BCa: 0.50,0.50,0.50 BCb: 0.50,0.50,0.50
+w2 clean    h0      m3 d10 | BCa: 0.50,0.50,0.50 BCb: 0.50,0.50,0.50
+w2 clean    h1      m3 d10 | BCa: 0.50,0.40,0.42 BCb: 0.50,0.47,0.62
+w2 clean    h2      m3 d25 | BCa: 0.50,0.32,0.42 BCb: 0.50,0.39,0.53
+w2 clean    h3      m3 d10 | BCa: 0.51,0.56,0.36 BCb: 0.50,0.25,0.38
+w2 clean    h4      m4 d20 | BCa: 0.51,0.38,0.45 BCb: 0.50,0.23,0.35
+w2 clean    h5      m2 d10 | BCa: 0.50,0.33,0.42 BCb: 0.50,0.31,0.49
+w2 clean    h6      m4 d10 | BCa: 0.46,0.56,0.42 BCb: 0.50,0.68,0.37
+w2 clean    h7      m5 d15 | BCa: 0.50,0.35,0.49 BCb: 0.53,0.54,0.62
+w2 clean    h8      m4 d20 | BCa: 0.49,0.32,0.42 BCb: 0.50,0.49,0.51
+w2 clean    states  m1 d 6 | BCa: 0.49,0.43,0.54 BCb: 0.50,0.43,0.50

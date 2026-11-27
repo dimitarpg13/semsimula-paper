@@ -56,6 +56,7 @@ KIND = {'cond': {'P': 'MP', 'Q': 'AC', 'notQ': 'MT', 'notP': 'DA', 'U': 'foil'},
 # the review log: the author's corrections, in order (template_blogic_review.py prints it)
 REVIEW_LOG = [
     ('2026-11-27', 'all frames', 'reviewed by the author: "makes sense"; no change.'),
+    ('2026-11-27', 'control contexts', 'the both-clauses contexts (variants a and b) reviewed by the author: they read well; no change.'),
 ]
 
 

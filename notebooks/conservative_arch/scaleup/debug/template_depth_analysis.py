@@ -47,6 +47,7 @@ if __name__ == '__main__':
         M = pickle.load(open(RUN / f'depth_{s}.pkl', 'rb')); meta, res, L_ = M['meta'], M['res'], M['L']; R = [x['roles'] for x in res]; kinds = M['kinds']; P = {k: [x['st'][k] for x in res] for k in kinds}
         K = np.array([x['kind'] for x in meta]); want = np.array([x['want'] for x in meta], object); wi = np.array([x['wording'] for x in meta]); sp = np.array([x['split'] for x in meta]); fr = np.array([x['frame'] for x in meta]); g = np.array([x['content'] for x in meta]); lab = np.array(['text' if k == 'text' else f'{f}:{k}' for k, f in zip(K, fr)]); L_meta = (K, want, wi, sp, fr, g, lab)
         q = out[s] = dict(L=L_, flow=json.load(open(RUN / f'flow_{s}.json'))) if (RUN / f'flow_{s}.json').exists() else dict(L=L_); vec[s] = {}; MATCH = [('h0', ('h0',))] + [(k, (k,)) for k in kinds if k != 'h0'] + [('path', tuple(f'D{l}' for l in range(L_))), ('wells', tuple(f'W{l}' for l in range(L_))), ('states', tuple(f'h{l}' for l in range(1, L_ + 1)))]
+        MATCH = [x for x in MATCH if all(k in kinds for k in x[1])]          # the matched GPT-2 has no D, W (2026-11-27)
         q['primary'], q['twelve wordings'], q['unless own clouds'] = {}, {}, {}
         for name, ks in MATCH:
             q['primary'][name], vec[s][name] = score(name, P, ks, R, L_meta); fx = (q['primary'][name]['dev'], q['primary'][name]['m'], q['primary'][name]['d'])
@@ -61,6 +62,6 @@ if __name__ == '__main__':
     if len(STEMS) > 1:                                    # gap to h0 at each depth, compared clause by clause, every later model against the first
         a = STEMS[0]; q = out['depth comparison'] = {}
         for b in STEMS[1:]:
-            q[f'{b} minus {a}'] = {name: {k: boot((vec[b][name][k] - vec[b]['h0'][k]) - (vec[a][name][k] - vec[a]['h0'][k])) for k in ('r1', 'r2', 'p0.01')} for name in ('path', 'wells', 'states')}
+            q[f'{b} minus {a}'] = {name: {k: boot((vec[b][name][k] - vec[b]['h0'][k]) - (vec[a][name][k] - vec[a]['h0'][k])) for k in ('r1', 'r2', 'p0.01')} for name in ('path', 'wells', 'states') if name in vec[a] and name in vec[b]}
             for name, v in q[f'{b} minus {a}'].items(): print(f'{b} minus {a} {name}', {k: [round(x, 3) for x in vv] for k, vv in v.items()}, flush=True)
         (OUT / 'template_depth_comparison.json').write_text(json.dumps(q, indent=1))

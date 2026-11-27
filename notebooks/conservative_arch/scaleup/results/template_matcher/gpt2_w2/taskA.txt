@@ -1,0 +1,11 @@
+w2 length  R1u 0.497 rank 0.412 twin 0.572 para 0.009 | known det 0.00 0.00 0.02 0.00 fires 0.019 | unseen det 0.00 0.00 0.02 0.00 fires 0.013
+w2 h0      R1u 0.493 rank 0.303 twin 0.552 para 0.009 | known det 0.00 0.00 0.02 0.00 fires 0.017 | unseen det 0.00 0.00 0.00 0.00 fires 0.015
+w2 h1      R1u 0.497 rank 0.288 twin 0.545 para 0.003 | known det 0.00 0.00 0.00 0.00 fires 0.001 | unseen det 0.00 0.00 0.00 0.00 fires 0.006
+w2 h2      R1u 0.495 rank 0.274 twin 0.559 para 0.006 | known det 0.00 0.00 0.00 0.00 fires 0.006 | unseen det 0.00 0.00 0.00 0.00 fires 0.011
+w2 h3      R1u 0.474 rank 0.552 twin 0.749 para 0.016 | known det 0.00 0.00 0.00 0.00 fires 0.055 | unseen det 0.00 0.00 0.00 0.00 fires 0.056
+w2 h4      R1u 0.479 rank 0.611 twin 0.754 para 0.035 | known det 0.00 0.00 0.00 0.00 fires 0.065 | unseen det 0.00 0.00 0.00 0.00 fires 0.046
+w2 h5      R1u 0.477 rank 0.573 twin 0.748 para 0.020 | known det 0.00 0.00 0.00 0.00 fires 0.037 | unseen det 0.00 0.00 0.00 0.00 fires 0.050
+w2 h6      R1u 0.479 rank 0.567 twin 0.747 para 0.018 | known det 0.00 0.00 0.00 0.00 fires 0.063 | unseen det 0.00 0.00 0.00 0.00 fires 0.046
+w2 h7      R1u 0.482 rank 0.653 twin 0.738 para 0.020 | known det 0.00 0.00 0.00 0.00 fires 0.045 | unseen det 0.00 0.00 0.00 0.00 fires 0.038
+w2 h8      R1u 0.481 rank 0.601 twin 0.746 para 0.024 | known det 0.00 0.00 0.00 0.00 fires 0.024 | unseen det 0.00 0.00 0.00 0.00 fires 0.041
+w2 states  R1u 0.469 rank 0.553 twin 0.754 para 0.020 | known det 0.00 0.00 0.00 0.00 fires 0.068 | unseen det 0.00 0.00 0.00 0.00 fires 0.067
