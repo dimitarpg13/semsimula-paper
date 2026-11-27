@@ -38,7 +38,7 @@ A semantic template is a recogniser for a pattern of meaning; the first template
 | 2026-11-26 | the runner-up | the early state is level with the embedding on wordings and ahead on paraphrases (+0.05 to +0.16) | [Early_State_Matcher_Runner_Up.md](Early_State_Matcher_Runner_Up.md) |
 | 2026-11-26 | test 1: the lexical baseline | token identity reaches 0.906; the verbatim test is mostly string matching | [Lexical_Baseline.md](Lexical_Baseline.md) |
 | 2026-11-26 | test 3: a metric fitted per reading | run; report pending | (pending) |
-| 2026-11-26 | test 2: analogy and in-context meaning | the embedding stays above chance on every analogy level; the states add nothing on two layers; nothing above chance on C1 | [Analogy_Test_Results.md](Analogy_Test_Results.md) |
+| 2026-11-26 | test 2: analogy and in-context meaning | the embedding stays above chance on every analogy level; through the particle coordinates the states add nothing on two layers and nothing is above chance on C1 | [Analogy_Test_Results.md](Analogy_Test_Results.md) |
 | 2026-11-27 | task A: the form at "Therefore" | the states carry the form and which clause was restated; the embedding does not | [Summary_State_Test.md](Summary_State_Test.md) |
 | 2026-11-27 | task B-logic and its control | a context sentence alone sets the form of an identical premise; the states at "Therefore" carry the binding, the matcher's particle coordinates only the mention | [BLogic_Test.md](BLogic_Test.md) |
 | 2026-11-27 | the matched GPT-2 on every test | GA1, GA2, GA4 hit: a transformer's states carry form and binding to "Therefore" at SR2-NP's level, but only from the third block | [GPT2_Template_Battery_Results.md](GPT2_Template_Battery_Results.md) |
@@ -64,6 +64,7 @@ Each line states its standing: **measured** (read from a confirmed or explorator
 - **Can templates fire on context-defined premises?** A threshold on the summary reader's log odds, set on development premises.
 - **Does binding extend to roles** ("the man was bitten by the dog" against "the dog was bitten by the man")? Task C.
 - **Why did C1 fail** while B-logic succeeded? C1 was read only through the matcher's particle coordinates; it has not been read at the summary position.
+- **Do the displacements or well frames carry form and binding at the summary position?** The context tests were read through the states only; task A's reader fed the evolution readings at "Therefore" would test the author's proposal where the words cannot help ([Template_Matchers_on_the_Dynamics.md](Template_Matchers_on_the_Dynamics.md), §9).
 - **What does the pair force, the reverse channel or the exact damped flow contribute?** SR2-NP reaches 0.90 at two layers where G2 reaches 0.57; the recipes differ in all three.
 - **Can a template be installed** as a well whose basin is the premises of one form? The design question of [Implementing_Semantic_Templates_A_Path.md](../Implementing_Semantic_Templates_A_Path.md), untouched by measurement.
 

@@ -6,6 +6,7 @@
 - **The runner-up is the geometry matcher fed an early layer state.** The matcher of [The_Embedding_Template_Matcher.md](The_Embedding_Template_Matcher.md) is used unchanged, but each particle's vector is the state after layer 0 (on L4 also the state after layer 1) instead of the embedding.
 - **On unseen wordings it is level with the embedding** on three of four models (differences 0.000 to +0.009, intervals across zero) and 0.043 below it on SR2-NP.
 - **On paraphrases at 1% near misses it is above the embedding** on SR2-2B (+0.051), G2 (+0.064) and L4 (+0.158), with intervals above zero, and level on SR2-NP (−0.019).
+- **Update 2026-11-27 (the author's question).** The comparisons here are on verbatim premises and paraphrases, where the words decide. On tests built so that the words cannot decide, the picture reverses: when the form must be carried to "Therefore" (task A, [Summary_State_Test.md](Summary_State_Test.md)) the embedding reads 20 to 22% against the states' 54 to 62%, and when only a context sentence sets the form (B-logic and its control, [BLogic_Test.md](BLogic_Test.md)) the embedding ties at 0.5 by construction while the states at "Therefore" carry which clause the context bound. Templates there rank; they do not fire.
 - **Why it beats the dynamics readings:**
   - it keeps the embedding's repetition signal almost whole (measured);
   - the displacement loses the part of the state that a whitened matcher reads best (derived, and measured on one cosine);

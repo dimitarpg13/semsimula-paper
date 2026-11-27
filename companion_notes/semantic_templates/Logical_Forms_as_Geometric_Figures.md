@@ -7,7 +7,7 @@ The author proposed the experiment: pass modus ponens, modus tollens and disjunc
 **In brief.**
 - A form can be frozen as 21 numbers, the distances between seven nodes. After layer 1 the frozen figure identifies the form of a new argument 85 to 88% of the time (chance 20%), and a figure frozen on one model reads another model's arguments 78 to 89% of the time.
 - The figure describes the frame of the sentences, which clause is restated where, and whether it is negated. It is not evidence of logic: no validity signal was found beyond negation, and the models' predictions follow copying.
-- The embedding alone identifies the forms better than the final state. The layers do not build the figure; they keep most of it and make it more alike across models.
+- The embedding alone identifies the forms better than the final state. The layers do not build the figure; they keep most of it and make it more alike across models. **Update 2026-11-27 (the author's question):** this holds for verbatim arguments, where the figure is which clause repeats. On tests built so that the words cannot decide, the picture reverses: when the form must be carried to "Therefore" (task A, [Summary_State_Test.md](Summary_State_Test.md)) the embedding reads 20 to 22% against the states' 54 to 62%, and when only a context sentence sets the form (B-logic and its control, [BLogic_Test.md](BLogic_Test.md)) the embedding ties at 0.5 by construction while the states at "Therefore" carry which clause the context bound. Templates there rank; they do not fire.
 - Four times more training tokens changed none of this.
 
 ---

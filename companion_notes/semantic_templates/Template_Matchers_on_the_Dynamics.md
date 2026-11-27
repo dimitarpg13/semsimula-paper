@@ -16,12 +16,13 @@
 6. [What the results would decide](#6-what-the-results-would-decide)
 7. [Caveats](#7-caveats)
 8. [Reproduce](#8-reproduce)
+9. [Later evidence: the tests that need context (2026-11-27)](#9-later-evidence-the-tests-that-need-context-2026-11-27)
 
 ---
 
 ## 1. The question
 
-The geometry matcher fires a template when the figure of the premise's particles falls in the template's cloud. Fed the trained layer states, it does this well on fresh clauses when the wording is known, but the same matcher fed the embedding $h^{(0)}$ does nearly as well once the connective's position is included, and better on unseen wordings. So it is not shown that the trained landscape adds anything. **Update 2026-11-27 (the author's question; the sentence states what was known when this note was written, 2026-11-25):** later runs show that the layer states do add something, on one task. On paraphrases caught at 1% near misses the early state is above the embedding on SR2-2B ($+0.051$), G2 ($+0.064$) and L4 ($+0.158$), each interval above zero, and level on SR2-NP ([Early_State_Matcher_Runner_Up.md](Early_State_Matcher_Runner_Up.md)); part of L4's gain is its weak embedding (0.177 against G2's 0.255). On identifying the form on unseen wordings the states stay level with the embedding, and on the analogy test their lead on L4 is not resolved ([Analogy_Test_Results.md](Analogy_Test_Results.md)). The displacements and well frames proposed here have not been shown to add anything beyond the states: the well frames fall below them everywhere, and the path's lead on L4's analogy items (0.76 against the states' 0.71) is within the noise. The author's proposal is that the signature of a premise is in the evolution of its particles. This test asks whether the evolution identifies a logical form better than the words do. The discussion that led here, with the readings behind it, is in [What_the_Matchers_Read.md](What_the_Matchers_Read.md).
+The geometry matcher fires a template when the figure of the premise's particles falls in the template's cloud. Fed the trained layer states, it does this well on fresh clauses when the wording is known, but the same matcher fed the embedding $h^{(0)}$ does nearly as well once the connective's position is included, and better on unseen wordings. So it is not shown that the trained landscape adds anything. **Update 2026-11-27 (the author's question; the sentence states what was known when this note was written, 2026-11-25):** later runs show that the layer states do add something, on one task. On paraphrases caught at 1% near misses the early state is above the embedding on SR2-2B ($+0.051$), G2 ($+0.064$) and L4 ($+0.158$), each interval above zero, and level on SR2-NP ([Early_State_Matcher_Runner_Up.md](Early_State_Matcher_Runner_Up.md)); part of L4's gain is its weak embedding (0.177 against G2's 0.255). On identifying the form on unseen wordings the states stay level with the embedding, and on the analogy test their lead on L4 is not resolved ([Analogy_Test_Results.md](Analogy_Test_Results.md)). The displacements and well frames proposed here have not been shown to add anything beyond the states: the well frames fall below them everywhere, and the path's lead on L4's analogy items (0.76 against the states' 0.71) is within the noise. On the tests that need context (task A and B-logic, 2026-11-27) the embedding falls far behind the layer states; what that does and does not say about the matchers of this note is in [§9](#9-later-evidence-the-tests-that-need-context-2026-11-27). The author's proposal is that the signature of a premise is in the evolution of its particles. This test asks whether the evolution identifies a logical form better than the words do. The discussion that led here, with the readings behind it, is in [What_the_Matchers_Read.md](What_the_Matchers_Read.md).
 
 ## 2. What was known before
 
@@ -90,7 +91,7 @@ Confirmed by the author on 2026-11-25, binding. A call hits when the point diffe
 | TD4 | +0.081, near misses fire 1.2% | +0.042 to +0.122 | miss |
 | TD5 | +0.101 | not computed | hit |
 
-Two post-hoc readings qualify it: one wording ("unless") accounts for the fallacy fires and for TD5, and at a fixed rate of near misses the displacement matcher ranks paraphrases as the embedding does (TD2). The report gives both.
+Two post-hoc readings qualify it: one wording ("unless") accounts for the fallacy fires and for TD5, and at a fixed rate of near misses the displacement matcher ranks paraphrases as the embedding does (TD2). The report gives both. The later tests that need context are summarised in §9.
 
 ## 6. What the results would decide
 
@@ -113,3 +114,28 @@ Two post-hoc readings qualify it: one wording ("unless") accounts for the fallac
 debug/template_dynamics_test.py OUT FOLDER name=sr2_2b      # extraction, about an hour on 8 threads
 debug/template_dynamics_analysis.py OUT OUT sr2_2b          # scoring
 ```
+
+## 9. Later evidence: the tests that need context (2026-11-27)
+
+Added at the author's question: does this note need updating now that the embedding falls short of the trained model's readings on the tests that need context? It does, with one distinction kept clear. **What beats the embedding there is the layer states, read at one position by a one-particle reader. It is not the displacements or the well frames proposed here, and not the geometry matcher's particle coordinates.** The displacement $\Delta_{\ell}$ and the well-frame vector are defined in §3 of this note; their properties are analysed in [Template_Matchers_on_the_Dynamics_SR2_2B.md](Template_Matchers_on_the_Dynamics_SR2_2B.md), §1 and §3 (a whitening matcher cannot see the part of a displacement that is linear in the entry state), and in [Early_State_Matcher_Runner_Up.md](Early_State_Matcher_Runner_Up.md), §3.2 and §3.3.
+
+### 9.1 What was measured
+
+| test | what the words cannot give | embedding | layer states | report |
+| --- | --- | --- | --- | --- |
+| task A, the form at "Therefore" | the form, carried to a token that is the same in every premise | ranks the right template first 20 to 22%; valid against twin AUROC 0.51 to 0.54 | 54 to 62% (chance 25%, the length alone 41%); AUROC 0.74 to 0.76 | [Summary_State_Test.md](Summary_State_Test.md) |
+| B-logic, the form set by a context sentence | which clause a context sentence ties the signal to, on identical premise tokens | 0.500 on every reading, tied by construction | at "Therefore": foil 0.70 to 0.91, twin 0.73 to 0.80 | [BLogic_Test.md](BLogic_Test.md), §5.2 |
+| the B-logic control, both clauses named | the binding, with mention removed | 0.500, tied by construction | at "Therefore": foil 0.57 to 0.97, twin 0.69 to 0.84 | [BLogic_Test.md](BLogic_Test.md), §5.6 |
+
+The models are SR2-NP, G2 and L4; the matched GPT-2 reads form and binding at "Therefore" at SR2-NP's level, from its third block ([GPT2_Template_Battery_Results.md](GPT2_Template_Battery_Results.md)).
+
+### 9.2 What it means for the matchers of this note
+
+- **The states, not the evolution readings, carry the context.** Task A read only the states at "Therefore" (and the length); it did not read the displacements or the well frames there. In B-logic the geometry matcher read every vector. L4's later states and well frames gave twin readings of 0.56 to 0.68, but the control was read only through the early state and all states, and through the matcher's coordinates those fell to chance or below (the early state's twin reading 0.26 to 0.28 on G2, 0.28 to 0.42 on L4): what they followed was the mention, not the binding. **Measured.**
+- **The advantage over the embedding is not specific to the conservative dynamics.** GPT-2's residual stream does the same at the summary position. The context result shows that a trained model's states carry what the words alone cannot. It does not show that wells or displacements carry it. **Derived.**
+- **The calls of §5 are unchanged.** They were made on verbatim premises, where the words decide, and they stand as scored.
+- **The author's proposal, that a premise's signature is in the evolution of its particles, is still untested where it matters most.** The tests in which the words cannot help have not yet been read through the displacements or the well frames at the summary position. **Open.**
+
+### 9.3 The test this suggests (not a call)
+
+Feed task A's reader the displacement and the well-frame vector of "Therefore", layer by layer, on the task A premises and the B-logic control, and compare it with the state at "Therefore" on the same premises. A displacement or well frame that matches or beats the state there would be the first evidence that the evolution carries form and binding. A reading below the state would confirm that in these models the context sits in the states and the wells only pass it on. Whether the stored arrays hold these vectors at "Therefore", or a new extraction is needed, is to be checked. Calls would be written and confirmed before scoring.
