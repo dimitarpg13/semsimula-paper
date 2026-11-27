@@ -3,7 +3,7 @@
 **What this note is.** A synthesis of readings already reported, written 2026-11-26 after the author asked which template matcher comes second among those tested, and whether any note explains why it does better than the readings of the dynamics and the joined readings. None did: the pieces were spread over five reports. Nothing new was run; one figure is drawn from the saved results. Each claim below is marked **measured** (a number in a report), **derived** (it follows from how the matcher is defined), or **hypothesis** (proposed, not tested).
 
 **In brief.**
-- **The runner-up is the embedding matcher fed an early layer state.** The matcher of [The_Embedding_Template_Matcher.md](The_Embedding_Template_Matcher.md) is used unchanged, but each particle's vector is the state after layer 0 (on L4 also the state after layer 1) instead of the embedding.
+- **The runner-up is the geometry matcher fed an early layer state.** The matcher of [The_Embedding_Template_Matcher.md](The_Embedding_Template_Matcher.md) is used unchanged, but each particle's vector is the state after layer 0 (on L4 also the state after layer 1) instead of the embedding.
 - **On unseen wordings it is level with the embedding** on three of four models (differences 0.000 to +0.009, intervals across zero) and 0.043 below it on SR2-NP.
 - **On paraphrases at 1% near misses it is above the embedding** on SR2-2B (+0.051), G2 (+0.064) and L4 (+0.158), with intervals above zero, and level on SR2-NP (−0.019).
 - **Why it beats the dynamics readings:**

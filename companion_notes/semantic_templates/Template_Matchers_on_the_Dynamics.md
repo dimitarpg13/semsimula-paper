@@ -1,6 +1,6 @@
 # Template Matchers on the Dynamics
 
-**What this note is.** The pre-registration of a second family of template matchers. The geometry-only matcher reads the premise's particles as states. The matchers here read what the trained model did to those particles: how far each layer moved them, and where they sit in the frame of the wells. The reference they must beat is the embedding, the same matcher on the states that no well has acted on. Written 2026-11-25, before any result of these matchers was seen.
+**What this note is.** The pre-registration of a second family of template matchers. The geometry matcher of [Template_Matcher_From_Geometry.md](Template_Matcher_From_Geometry.md) reads the premise's particles as states, the trained layer states $h^{(1)}$ and $h^{(2)}$ in that report. **Terminology (clarified 2026-11-27 at the author's question):** "geometry" names the matcher, the same whatever vector stands for a particle: cosines and norms between particles, relational coordinates, clouds in a small subspace, no word list. The embedding matcher is that geometry fed the embedding $h^{(0)}$; the matchers here are that geometry fed the displacements or the well frames. Earlier wording called the version on the layer states "the geometry-only matcher"; read it as "the geometry matcher on the layer states". The matchers here read what the trained model did to those particles: how far each layer moved them, and where they sit in the frame of the wells. The reference they must beat is the embedding, the same matcher on the states that no well has acted on. Written 2026-11-25, before any result of these matchers was seen.
 
 **Status.** Run on SR2-2B and scored on 2026-11-25: **TD2 and TD5 hit, TD1, TD3 and TD4 miss.** Report: [Template_Matchers_on_the_Dynamics_SR2_2B.md](Template_Matchers_on_the_Dynamics_SR2_2B.md). The calls of §5 were **confirmed by the author on 2026-11-25, as written,** before any extraction or scoring, and are binding. The depth-code correction that had to come first is done ([Depth_Code_Correction.md](../depth_ladder/Depth_Code_Correction.md)); it does not touch this test.
 
@@ -21,7 +21,7 @@
 
 ## 1. The question
 
-The geometry-only matcher fires a template when the figure of the premise's particles falls in the template's cloud. On fresh clauses it does this well when the wording is known, but the same matcher on the embedding $h^{(0)}$ does nearly as well once the connective's position is included, and better on unseen wordings. So it is not shown that the trained landscape adds anything. The author's proposal is that the signature of a premise is in the evolution of its particles. This test asks whether the evolution identifies a logical form better than the words do. The discussion that led here, with the readings behind it, is in [What_the_Matchers_Read.md](What_the_Matchers_Read.md).
+The geometry matcher fires a template when the figure of the premise's particles falls in the template's cloud. Fed the trained layer states, it does this well on fresh clauses when the wording is known, but the same matcher fed the embedding $h^{(0)}$ does nearly as well once the connective's position is included, and better on unseen wordings. So it is not shown that the trained landscape adds anything. The author's proposal is that the signature of a premise is in the evolution of its particles. This test asks whether the evolution identifies a logical form better than the words do. The discussion that led here, with the readings behind it, is in [What_the_Matchers_Read.md](What_the_Matchers_Read.md).
 
 ## 2. What was known before
 
@@ -53,7 +53,7 @@ $$
 | h0 | embedding state | the reference to beat |
 | the single layers; the states after layer 0 and 1 | | secondary readings |
 
-Everything after the vector is as in the geometry-only matcher and unchanged: centring and whitening by ordinary text, the cosines and norms between particles, the relational coordinates, one Gaussian cloud per kind of premise with one covariance, the discriminant subspace, the 1% false-fire rule, plus the connective's position along the axis from disjunctive to conditional wordings. The number of particles $m$ (1 to 8) and the subspace dimension $d$ (6, 10, 15, 20, 25, 31) are chosen by the same search for every matcher: the best content-wise five-fold score on the development clauses. Nothing else is tuned.
+Everything after the vector is as in the geometry matcher and unchanged: centring and whitening by ordinary text, the cosines and norms between particles, the relational coordinates, one Gaussian cloud per kind of premise with one covariance, the discriminant subspace, the 1% false-fire rule, plus the connective's position along the axis from disjunctive to conditional wordings. The number of particles $m$ (1 to 8) and the subspace dimension $d$ (6, 10, 15, 20, 25, 31) are chosen by the same search for every matcher: the best content-wise five-fold score on the development clauses. Nothing else is tuned.
 
 ## 4. The test
 

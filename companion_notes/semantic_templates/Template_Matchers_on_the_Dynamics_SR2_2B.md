@@ -52,7 +52,7 @@ with $\mu_k$ the centre and $P_k$ the precision, at the context of the layer.
 
 ## 2. The problem
 
-The first matcher read the states and never a path. Its accuracy could rest on the words. The question of this test is whether a reading that **exists only because the forces acted** identifies the form better than the embedding, on the clauses and wordings the matcher was not fitted on. The embedding is the control because a figure of a premise that already shows in the embedding is in the words, and the landscape did not create it. The author accepts that particles move away from the wells; the matcher should take advantage of the evolution ([What_the_Matchers_Read.md](What_the_Matchers_Read.md), §5).
+The geometry matcher, as first run ([Template_Matcher_From_Geometry.md](Template_Matcher_From_Geometry.md)), read the states and never a path. Its accuracy could rest on the words. The question of this test is whether a reading that **exists only because the forces acted** identifies the form better than the embedding, on the clauses and wordings the matcher was not fitted on. The embedding is the control because a figure of a premise that already shows in the embedding is in the words, and the landscape did not create it. The author accepts that particles move away from the wells; the matcher should take advantage of the evolution ([What_the_Matchers_Read.md](What_the_Matchers_Read.md), §5).
 
 ## 3. Mathematical analysis
 
@@ -97,7 +97,7 @@ A higher R2 can come from a better **ranking** of paraphrases over near misses, 
 
 ### 4.2 Matchers and the search
 
-Everything after the vector is as in the geometry-only matcher: whitening, cosines and norms, the relational coordinates ($10 m + 10$ per vector), one Gaussian cloud per kind with one covariance, the discriminant subspace, the 1% false-fire rule, and the connective's position as one more coordinate. The number of particles of the second sentence $m$ (1 to 8) and the subspace dimension $d$ (6, 10, 15, 20, 25, 31) are the grid point with the best content-wise five-fold development score, and the search is the same for every matcher. Nothing else is tuned.
+Everything after the vector is as in the geometry matcher (the same for every vector): whitening, cosines and norms, the relational coordinates ($10 m + 10$ per vector), one Gaussian cloud per kind with one covariance, the discriminant subspace, the 1% false-fire rule, and the connective's position as one more coordinate. The number of particles of the second sentence $m$ (1 to 8) and the subspace dimension $d$ (6, 10, 15, 20, 25, 31) are the grid point with the best content-wise five-fold development score, and the search is the same for every matcher. Nothing else is tuned.
 
 The code that forms the vectors (`debug/template_dynamics_analysis.py`):
 
@@ -320,7 +320,7 @@ No joint matcher improves R1, and the reason is not known. The search picked 5 p
 
 ## 9. Caveats and corrections
 
-- **The wording "unless" was filed under the disjunctions by the agent,** in the first matcher and here. It is the agent's error and it affects the earlier reports. Corrected in [Template_Matcher_From_Geometry.md](Template_Matcher_From_Geometry.md), §5.4 and §6, where the "fallacies are the weak spot" conclusion is replaced by this reading, verified there by refitting without it.
+- **The wording "unless" was filed under the disjunctions by the agent,** in the geometry matcher's first run and here. It is the agent's error and it affects the earlier reports. Corrected in [Template_Matcher_From_Geometry.md](Template_Matcher_From_Geometry.md), §5.4 and §6, where the "fallacies are the weak spot" conclusion is replaced by this reading, verified there by refitting without it.
 - **The calls stand as scored.** The rule, the threshold and the wordings were fixed before the run. Leaving "unless" out was decided after the results were seen, so it changes no call.
 - **Clauses not checked.** The 60 test clauses were drafted by the agent and await the author's check. The paraphrases of this set are harder than the earlier ones for every matcher (states after both layers 2, 10, 19 and 11% on the four forms, against 12, 29, 34 and 32% before).
 - **The near-miss rates of §5.5** are set on the test near misses and are not a tuned threshold.
@@ -339,7 +339,7 @@ python3 debug/template_dynamics_readings.py OUT OUT sr2_2b OUT/template_dynamics
 python3 debug/template_dynamics_rates.py OUT OUT sr2_2b OUT/template_dynamics.json      # fixed near-miss rates
 python3 debug/template_dynamics_without_unless.py OUT OUT sr2_2b OUT/template_dynamics.json
 python3 debug/template_connective_position.py OUT OUT sr2_2b OUT/template_dynamics.json
-python3 debug/template_geometry_frame_without_unless.py RUN RES sr2_2b          # the same check on the first matcher
+python3 debug/template_geometry_frame_without_unless.py RUN RES sr2_2b          # the same check on the geometry matcher's first run
 python3 ../../../companion_notes/figures/_make_template_dynamics_figs.py
 ```
 

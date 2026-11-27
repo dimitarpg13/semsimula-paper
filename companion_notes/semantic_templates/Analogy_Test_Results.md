@@ -122,7 +122,7 @@ The early state on L4 is h1. **Measured.**
 
 **The well frames lose the most.** They record which well a particle sits in, not which word; on the analogy levels that lost information is the word similarity the embedding uses, and nothing replaces it. **Derived; consistent with the verbatim tests.**
 
-**For the programme.** The analogy question cannot be settled on these models with this matcher. Two routes stay open: deeper models (the eight-layer runs, already queued after productization), and a matcher whose coordinates are not built around best-match cosines (the fitted metric of test 3, refitted on development premises, or approach F).
+**For the programme.** The analogy question cannot be settled on these models with this matcher. Two routes stay open: deeper models (the eight-layer prose run SR2-NP-L8, queued after productization; the code models, L8-CODE included, are not used, by the author's ruling of 2026-11-26, because English premises lie outside their training text and the test would not be fair), and a matcher whose coordinates are not built around best-match cosines (the fitted metric of test 3, refitted on development premises, or approach F).
 
 ## 8. Caveats
 

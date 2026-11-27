@@ -5,7 +5,7 @@
 **In brief.**
 - The embedding has not been moved by any well, so a matcher on it uses no convergence. It is the control.
 - All states come from one forward pass through one frozen, trained checkpoint. Training converged; the particles of a premise do not come to rest.
-- The first matcher reads angles between particles and never reads a well. It is not yet a test of the idea that the signature comes from the evolution.
+- The geometry matcher, as first run, reads angles between particles and never reads a well. It is not yet a test of the idea that the signature comes from the evolution.
 - On SR2-2B the particles move **away** from the well that dominates them on entry, at both layers. The author accepts this: what matters is that the matcher uses the evolution, not that the particles settle in wells.
 - Two matchers on the evolution were run on SR2-2B (displacements, well frame; §6). A third, iterated settling, is parked.
 
@@ -131,7 +131,7 @@ Which term drives the particles outwards, and what the velocity contributes, has
 
 ## 6. What would test the idea
 
-The first matcher reads angles and lengths of the states. It uses no well centre, no radius and no stiff direction, and it does not read the path. Whatever it finds, it does not test whether the signature of a premise is in how its particles evolve. Three readings exist only because the forces act:
+The geometry matcher, as first run, reads angles and lengths of the states. It uses no well centre, no radius and no stiff direction, and it does not read the path. Whatever it finds, it does not test whether the signature of a premise is in how its particles evolve. Three readings exist only because the forces act:
 
 | | reading | status |
 | --- | --- | --- |
