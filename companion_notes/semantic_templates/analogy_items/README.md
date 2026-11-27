@@ -56,6 +56,7 @@
 | 2026-11-26 | L6 | subjects "the tumour / the growth" replaced by "the tumour is benign / the neoplasm is harmless" (foil "round"): the subjects are not synonyms (a growth is broader than a tumour; neoplasm is the medical synonym) (agent; author agreed). |
 | 2026-11-26 | L6 | subjects "the turbine / the generator" replaced by "the aircraft is grounded / the plane is barred from flying" (foil "enormous"): the subjects are not synonyms (a turbine drives a generator; they are different machines) (agent; author agreed). |
 | 2026-11-26 | L6 | subjects "the knight / the warrior" replaced by "the wizard is slain / the sorcerer is killed" (foil "bearded"): the subjects are not synonyms (a knight is one kind of warrior) (agent; author agreed). |
+| 2026-11-26 | L3, 17 foils | every foil whose GPT-2 length differed from its restatement's was redrafted to the same length, overlap with the clause kept equal (frames 1, 3, 5, 6, 7, 8, 11, 12, 15, 17, 19, 20; frame 7's case foil is now "the team scored three goals and travelled home"): token identity preferred the foils (gate G1 of Analogy_Test_Calls.md failed, 0.385, interval 0.32 to 0.45), because the matcher's coordinates count unmatched particles, so length alone moved the score (agent; author approved). |
 
 **Known limits of the draft.**
 - C1 and C4 test the second sentence about one clause; the other forms of the frame (those that restate or deny the other clause) fall back on verbatim sentences.

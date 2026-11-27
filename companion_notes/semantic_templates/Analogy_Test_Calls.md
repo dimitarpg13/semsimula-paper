@@ -1,13 +1,13 @@
 # Test 2, the Analogy and In-Context Set: What Is Scored, and the Calls
 
-**Status (2026-11-26).** The calls below were drafted by the agent and **await the author's confirmation**. The extraction is running, since it reads no score. Scoring waits until the calls are confirmed. The design is [Analogy_and_Context_Test_Set.md](Analogy_and_Context_Test_Set.md); the items, as reviewed by the author, are in [analogy_items/](analogy_items/README.md).
+**Status (2026-11-26).** The calls below were drafted by the agent and **confirmed by the author** the same day, as written ("cautious, I am OK with that"). The programme is exploratory: readings without a call are leads (§4). **Scored 2026-11-26:** [Analogy_Test_Results.md](Analogy_Test_Results.md). Gate G1 first failed on L3 (foil lengths); after the author approved length-matched foils every gate passed. Nine calls hit, S1 hit on two models of three, S3 missed. The design is [Analogy_and_Context_Test_Set.md](Analogy_and_Context_Test_Set.md); the items, as reviewed by the author, are in [analogy_items/](analogy_items/README.md).
 
 **In brief.**
 - **Items.** 11 levels, 20 frames each, six known wordings (if-then, when, provided; either-or, or, or else): 6,720 premises per model, on SR2-NP, G2 and L4.
 - **Matcher.** The matcher is unchanged. The clouds are fitted on the 60 verbatim development clauses of the earlier tests and never see an analogy premise. Nothing is tuned: each reading keeps the particle count and dimension of its earlier primary run.
 - **Main reading.** For each pair of a restatement and its matched foil, does the restatement get the larger log odds for its template? Chance is 0.5. Token identity is at chance by construction from L1 on.
 - **Uncertainty.** With 20 clauses per level, the 95% intervals are roughly 0.1 either side.
-- **Calls.**
+- **Calls (confirmed).**
   - Three gates on the item set and the pipeline.
   - One anchor on the verbatim level.
   - Five calls on the embedding.
@@ -97,7 +97,7 @@ Each call names its model scope. "Above 0.5" means the interval lies above 0.5. 
 
 - **The rank reading.** Its chance value is 0.25, but a reader that sees only "not" already decides two of the four choices, and lex reads "not". Its real floor is lex's own score, so it is reported against lex, not against 0.25.
 - **L4's model on C1,** and every level not named above for the states. The deeper model may or may not bind names; there is no basis for a call.
-- **Displacements, well frames and the single states other than the early state.** Reported, not called. The earlier tests put them below the embedding on the verbatim test.
+- **Displacements, well frames and the single states other than the early state.** Reported, not called. The agent proposed calls for them (path and wells below the embedding on L0 and L1, with a larger gain over it on the analogy levels) and two combined matchers (the embedding beside path, and beside wells). **Author ruling, 2026-11-26:** not added, because the programme is still exploratory. Their results are read as leads, to be confirmed by a later run, not as tests of a prior call.
 - **The secondary readings:** the clean development set, and detection and false fires at the 1% rule's threshold.
 - **The fitted metric of test 3.** Its report is pending, and it was fitted on test paraphrases, which this test may not use. The extraction keeps the particle vectors so that a metric fitted on development premises can be read later.
 
@@ -113,7 +113,8 @@ Each call names its model scope. "Above 0.5" means the interval lies above 0.5. 
 cd notebooks/conservative_arch/scaleup
 python3 debug/template_analogy_items.py                       # builds the 6,720 premises and checks that every pair is complete
 python3 debug/template_analogy_test.py RUN FOLDER name=np vec=1   # extraction, about 15 minutes on SR2-NP; also g2, l4
-python3 debug/template_analogy_analysis.py DEPTHDIR RUN results/template_matcher np,g2,l4   # after the calls are confirmed
+python3 debug/template_analogy_analysis.py DEPTHDIR RUN results/template_matcher np,g2,l4 gates   # token identity only: gates G1 to G3
+python3 debug/template_analogy_analysis.py DEPTHDIR RUN results/template_matcher np,g2,l4         # all readings
 ```
 
 Scripts in `notebooks/conservative_arch/scaleup/debug/`: `template_analogy_items.py` (premises and pairs), `template_analogy_test.py` (extraction: the depth extraction with the premise list replaced), `template_analogy_analysis.py` (scoring). Outputs will be `results/template_matcher/template_analogy_{np,g2,l4}.json`.
