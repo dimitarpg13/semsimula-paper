@@ -39,6 +39,7 @@ R += [f'- {p}' for p in problems] + ([''] if problems else [])
 R += [f'Context sentences run from {min(lens)} to {max(lens)} GPT-2 tokens.', '', '**Size.** 20 frames × 2 frames of premise × 5 meanings × 3 wordings × 2 flavours = 1,200 premises per model.', '']
 if B.REVIEW_LOG:
     R += ['**The author\'s corrections.**', '', '| date | item | change |', '| --- | --- | --- |'] + [f'| {d} | {it} | {c} |' for d, it, c in B.REVIEW_LOG] + ['']
+R += ['**The control** (added 2026-11-27, BLogic_Test.md §5.4): contexts that name both clauses, in two orders; all of them on [control.md](control.md). Example, frame 1, MP, variant a: `' + B.control_contexts(0, 'both_a')['P'] + '`', '']
 R += ['## The frames', '', '| # | P | Q | signal S | unrelated U |', '| --- | --- | --- | --- | --- |']
 R += [f'| {i + 1} | {P} | {Q} | {S} | {U} |' for i, (P, Q, S, U) in enumerate(B.FRAMES)] + ['']
 R += ['## The context sentences', '']
@@ -49,3 +50,12 @@ for i, (P, Q, S, U) in enumerate(B.FRAMES):
 (OUT / 'README.md').write_text('\n'.join(R))
 print(f'{len(B.FRAMES)} frames, {len(problems)} problems; context lengths {min(lens)}-{max(lens)} tokens')
 for p in problems: print('  ', p)
+
+# the control's contexts (2026-11-27): one page, linked from the README
+C = ['# Task B-logic: the Control Contexts', '', 'Every context names both clauses; the versions of a frame differ only in which clause the signal is tied to (BLogic_Test.md, §5.4). Variant a names the bound clause first, variant b last, so that the clause named just before the premise is the bound one in b and the other one in a. Generated from the approved frames by `template_blogic_clauses.py` (`CONTROL`); the index is [README.md](README.md).', '']
+for i, (P, Q, S, U) in enumerate(B.FRAMES):
+    a, b = B.control_contexts(i, 'both_a'), B.control_contexts(i, 'both_b')
+    C += [f'## Frame {i + 1}', '', '| S means | conditional | disjunctive | variant a | variant b |', '| --- | --- | --- | --- | --- |']
+    C += [f'| {m.replace("not", "not ")} | {B.KIND["cond"][m]} | {B.KIND["disj"][m]} | {a[m]} | {b[m]} |' for m in B.MEANING] + ['']
+(OUT / 'control.md').write_text('\n'.join(C))
+print('wrote control.md')

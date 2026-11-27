@@ -37,6 +37,8 @@ Context sentences run from 11 to 20 GPT-2 tokens.
 | --- | --- | --- |
 | 2026-11-27 | all frames | reviewed by the author: "makes sense"; no change. |
 
+**The control** (added 2026-11-27, BLogic_Test.md §5.4): contexts that name both clauses, in two orders; all of them on [control.md](control.md). Example, frame 1, MP, variant a: `Here, "the blue flag is up" means that the bank is closed, and nothing about whether the high street is quiet.`
+
 ## The frames
 
 | # | P | Q | signal S | unrelated U |

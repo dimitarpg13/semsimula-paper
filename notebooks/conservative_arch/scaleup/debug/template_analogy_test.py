@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Test 2 extraction: the analogy and in-context premises (2026-11-26).
     python3 template_analogy_test.py OUTDIR FOLDER name=<stem> [ckpt=best|step500] [threads=8] [vec=1] [limit=N] [levels=L3,C2] [bank=blogic]
-bank=blogic extracts the premises of task B-logic (template_blogic_items.py) instead of Test 2's.
+bank=blogic extracts the premises of task B-logic (template_blogic_items.py) instead of Test 2's; bank=blogic_control its control.
 levels= extracts only those levels (plus the check premises), for re-extracting a level after its items change; merge the
 result into the full file with template_analogy_merge.py. Every premise is extracted alone in its batch row, so its values do not
 depend on which other premises are run (the check premises confirm it).
@@ -35,7 +35,7 @@ def _analogy(depth_items):
     import numpy as np, tiktoken
     bank = next((x.split('=', 1)[1] for x in sys.argv if x.startswith('bank=')), 'analogy')
     from importlib import import_module
-    build = import_module({'analogy': 'template_analogy_items', 'blogic': 'template_blogic_items'}[bank]).build
+    build = import_module({'analogy': 'template_analogy_items', 'blogic': 'template_blogic_items', 'blogic_control': 'template_blogic_control_items'}[bank]).build
     rng = np.random.default_rng(5); pick = sorted(rng.choice([j for j, x in enumerate(depth_items) if x['kind'] != 'text'], 96, replace=False))
     chk = [{**depth_items[j], 'split': 'check', 'level': 'check', 'depth_index': int(j)} for j in pick]
     lv = next((a.split('=', 1)[1].split(',') for a in sys.argv if a.startswith('levels=')), None)

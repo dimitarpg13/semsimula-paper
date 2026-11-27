@@ -62,3 +62,16 @@ REVIEW_LOG = [
 def contexts(i, flavour):
     P, Q, S, U = FRAMES[i]
     return {m: CONTEXT[flavour](S, f(P, Q, U)) for m, f in MEANING.items()}
+
+
+# The control (2026-11-27, BLogic_Test.md §5.4): every context names both clauses and the versions differ only in which one the
+# signal is tied to, so a state that only marks "this clause was named before" cannot separate them. Two orders, so that the
+# clause named last before the premise is the bound one in variant b and the other one in variant a.
+OTHER = {'P': lambda P, Q: Q, 'notP': lambda P, Q: Q, 'Q': lambda P, Q: P, 'notQ': lambda P, Q: P, 'U': lambda P, Q: f'{P} or {Q}'}
+CONTROL = {'both_a': lambda S, X, O: f'Here, "{S}" means that {X}, and nothing about whether {O}.',
+           'both_b': lambda S, X, O: f'Here, "{S}" says nothing about whether {O}; it means that {X}.'}
+
+
+def control_contexts(i, variant):
+    P, Q, S, U = FRAMES[i]
+    return {m: CONTROL[variant](S, f(P, Q, U), OTHER[m](P, Q)) for m, f in MEANING.items()}
