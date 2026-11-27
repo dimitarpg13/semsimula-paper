@@ -1,0 +1,81 @@
+np check {'h0': 0.0, 'h1': 6e-05, 'h2': 0.0, 'D0': 0.00012, 'D1': 0.00024, 'W0': 0.00024, 'W1': 0.00024} | development premises {'original': 6390, 'clean': 5561} clean clauses {'dev': 6, 'test': 27}
+np original lex     m7 d 6 | BX: 0.50,0.50,0.50 BN: 0.50,0.50,0.50
+np original h0      m6 d10 | BX: 0.50,0.50,0.50 BN: 0.50,0.50,0.50
+np original h1      m4 d15 | BX: 0.52,0.64,0.59 BN: 0.55,0.65,0.57
+np original h2      m5 d25 | BX: 0.54,0.62,0.55 BN: 0.57,0.62,0.54
+np original D0      m5 d15 | BX: 0.51,0.64,0.61 BN: 0.51,0.61,0.62
+np original D1      m7 d25 | BX: 0.44,0.61,0.63 BN: 0.46,0.69,0.62
+np original W0      m4 d20 | BX: 0.52,0.44,0.45 BN: 0.52,0.40,0.43
+np original W1      m3 d10 | BX: 0.45,0.51,0.57 BN: 0.48,0.52,0.60
+np original path    m5 d15 | BX: 0.52,0.64,0.63 BN: 0.51,0.62,0.61
+np original wells   m4 d25 | BX: 0.51,0.51,0.52 BN: 0.51,0.48,0.49
+np original states  m5 d10 | BX: 0.57,0.60,0.57 BN: 0.56,0.64,0.56
+np clean    lex     m7 d 6 | BX: 0.50,0.50,0.50 BN: 0.50,0.50,0.50
+np clean    h0      m6 d10 | BX: 0.50,0.50,0.50 BN: 0.50,0.50,0.50
+np clean    h1      m4 d15 | BX: 0.54,0.57,0.52 BN: 0.55,0.56,0.48
+np clean    h2      m5 d25 | BX: 0.52,0.64,0.57 BN: 0.53,0.65,0.51
+np clean    D0      m5 d15 | BX: 0.53,0.51,0.55 BN: 0.54,0.46,0.54
+np clean    D1      m7 d25 | BX: 0.53,0.63,0.63 BN: 0.53,0.71,0.62
+np clean    W0      m4 d20 | BX: 0.51,0.47,0.45 BN: 0.50,0.44,0.41
+np clean    W1      m3 d10 | BX: 0.50,0.51,0.53 BN: 0.47,0.52,0.53
+np clean    path    m5 d15 | BX: 0.56,0.53,0.60 BN: 0.54,0.58,0.59
+np clean    wells   m4 d25 | BX: 0.50,0.43,0.47 BN: 0.50,0.40,0.44
+np clean    states  m5 d10 | BX: 0.56,0.63,0.60 BN: 0.56,0.66,0.54
+g2 check {'h0': 0.0, 'h1': 2e-05, 'h2': 0.00012, 'D0': 0.0, 'D1': 6e-05, 'W0': 0.00024, 'W1': 0.00012} | development premises {'original': 6390, 'clean': 5561} clean clauses {'dev': 6, 'test': 27}
+g2 original lex     m7 d 6 | BX: 0.50,0.50,0.50 BN: 0.50,0.50,0.50
+g2 original h0      m7 d10 | BX: 0.50,0.50,0.50 BN: 0.50,0.50,0.50
+g2 original h1      m7 d20 | BX: 0.55,0.84,0.43 BN: 0.56,0.85,0.48
+g2 original h2      m5 d20 | BX: 0.67,0.85,0.58 BN: 0.63,0.85,0.58
+g2 original D0      m4 d10 | BX: 0.50,0.76,0.42 BN: 0.50,0.74,0.42
+g2 original D1      m5 d10 | BX: 0.74,0.78,0.64 BN: 0.71,0.81,0.52
+g2 original W0      m5 d31 | BX: 0.45,0.51,0.51 BN: 0.46,0.53,0.53
+g2 original W1      m4 d10 | BX: 0.60,0.70,0.57 BN: 0.63,0.78,0.57
+g2 original path    m5 d25 | BX: 0.55,0.84,0.56 BN: 0.54,0.87,0.47
+g2 original wells   m5 d15 | BX: 0.51,0.61,0.54 BN: 0.54,0.65,0.53
+g2 original states  m5 d10 | BX: 0.53,0.78,0.46 BN: 0.53,0.79,0.50
+g2 clean    lex     m7 d 6 | BX: 0.50,0.50,0.50 BN: 0.50,0.50,0.50
+g2 clean    h0      m7 d10 | BX: 0.50,0.50,0.50 BN: 0.50,0.50,0.50
+g2 clean    h1      m7 d20 | BX: 0.57,0.89,0.43 BN: 0.57,0.89,0.51
+g2 clean    h2      m5 d20 | BX: 0.62,0.91,0.59 BN: 0.59,0.86,0.56
+g2 clean    D0      m4 d10 | BX: 0.48,0.77,0.43 BN: 0.47,0.77,0.44
+g2 clean    D1      m5 d10 | BX: 0.72,0.82,0.64 BN: 0.69,0.83,0.56
+g2 clean    W0      m5 d31 | BX: 0.42,0.55,0.51 BN: 0.39,0.55,0.52
+g2 clean    W1      m4 d10 | BX: 0.57,0.73,0.60 BN: 0.57,0.70,0.59
+g2 clean    path    m5 d25 | BX: 0.55,0.81,0.53 BN: 0.55,0.86,0.51
+g2 clean    wells   m5 d15 | BX: 0.53,0.71,0.57 BN: 0.56,0.70,0.55
+g2 clean    states  m5 d10 | BX: 0.53,0.82,0.45 BN: 0.53,0.84,0.49
+l4 check {'h0': 0.0, 'h1': 0.0, 'h2': 6e-05, 'h3': 0.00024, 'h4': 0.00024, 'D0': 0.0, 'D1': 0.00012, 'D2': 0.00012, 'D3': 6e-05, 'W0': 2e-05, 'W1': 0.00012, 'W2': 0.00049, 'W3': 0.00049} | development premises {'original': 6390, 'clean': 5561} clean clauses {'dev': 6, 'test': 27}
+l4 original lex     m7 d 6 | BX: 0.50,0.50,0.50 BN: 0.50,0.50,0.50
+l4 original h0      m5 d31 | BX: 0.50,0.50,0.50 BN: 0.50,0.50,0.50
+l4 original h1      m5 d25 | BX: 0.58,0.93,0.50 BN: 0.56,0.91,0.53
+l4 original h2      m4 d15 | BX: 0.59,0.92,0.50 BN: 0.58,0.89,0.45
+l4 original h3      m5 d25 | BX: 0.72,0.84,0.52 BN: 0.68,0.81,0.52
+l4 original h4      m8 d10 | BX: 0.73,0.87,0.68 BN: 0.68,0.87,0.61
+l4 original D0      m5 d10 | BX: 0.52,0.76,0.42 BN: 0.53,0.72,0.41
+l4 original D1      m5 d10 | BX: 0.58,0.89,0.48 BN: 0.54,0.88,0.47
+l4 original D2      m5 d10 | BX: 0.74,0.90,0.57 BN: 0.68,0.86,0.50
+l4 original D3      m5 d10 | BX: 0.72,0.92,0.56 BN: 0.63,0.89,0.52
+l4 original W0      m6 d20 | BX: 0.50,0.33,0.42 BN: 0.49,0.36,0.40
+l4 original W1      m6 d25 | BX: 0.75,0.79,0.62 BN: 0.73,0.78,0.58
+l4 original W2      m7 d10 | BX: 0.76,0.90,0.62 BN: 0.74,0.85,0.57
+l4 original W3      m7 d 6 | BX: 0.50,0.76,0.65 BN: 0.51,0.82,0.67
+l4 original path    m2 d10 | BX: 0.56,0.75,0.33 BN: 0.55,0.77,0.37
+l4 original wells   m6 d20 | BX: 0.58,0.70,0.65 BN: 0.53,0.55,0.61
+l4 original states  m4 d10 | BX: 0.53,0.72,0.64 BN: 0.51,0.71,0.46
+l4 clean    lex     m7 d 6 | BX: 0.50,0.50,0.50 BN: 0.50,0.50,0.50
+l4 clean    h0      m5 d31 | BX: 0.50,0.50,0.50 BN: 0.50,0.50,0.50
+l4 clean    h1      m5 d25 | BX: 0.57,0.95,0.51 BN: 0.55,0.96,0.49
+l4 clean    h2      m4 d15 | BX: 0.59,0.94,0.45 BN: 0.57,0.91,0.45
+l4 clean    h3      m5 d25 | BX: 0.65,0.84,0.50 BN: 0.62,0.84,0.49
+l4 clean    h4      m8 d10 | BX: 0.69,0.80,0.57 BN: 0.66,0.80,0.64
+l4 clean    D0      m5 d10 | BX: 0.52,0.82,0.44 BN: 0.52,0.80,0.38
+l4 clean    D1      m5 d10 | BX: 0.59,0.90,0.50 BN: 0.57,0.89,0.46
+l4 clean    D2      m5 d10 | BX: 0.76,0.90,0.53 BN: 0.68,0.88,0.50
+l4 clean    D3      m5 d10 | BX: 0.67,0.92,0.56 BN: 0.60,0.89,0.57
+l4 clean    W0      m6 d20 | BX: 0.50,0.47,0.50 BN: 0.50,0.49,0.52
+l4 clean    W1      m6 d25 | BX: 0.72,0.79,0.64 BN: 0.74,0.80,0.60
+l4 clean    W2      m7 d10 | BX: 0.73,0.80,0.67 BN: 0.70,0.84,0.62
+l4 clean    W3      m7 d 6 | BX: 0.54,0.77,0.63 BN: 0.57,0.83,0.62
+l4 clean    path    m2 d10 | BX: 0.60,0.83,0.43 BN: 0.57,0.83,0.43
+l4 clean    wells   m6 d20 | BX: 0.58,0.75,0.59 BN: 0.57,0.68,0.59
+l4 clean    states  m4 d10 | BX: 0.55,0.74,0.58 BN: 0.54,0.74,0.41

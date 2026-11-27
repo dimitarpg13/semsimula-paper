@@ -1,0 +1,6 @@
+np check {'h0': 0.0, 'h1': 6e-05, 'h2': 0.0, 'D0': 0.00012, 'D1': 0.00024, 'W0': 0.00024, 'W1': 0.00024} | development premises {'original': 6390, 'clean': 5561} clean clauses {'dev': 6, 'test': 27}
+np original lex     m7 d 6 | BX: 0.50,0.50,0.50 BN: 0.50,0.50,0.50
+g2 check {'h0': 0.0, 'h1': 2e-05, 'h2': 0.00012, 'D0': 0.0, 'D1': 6e-05, 'W0': 0.00024, 'W1': 0.00012} | development premises {'original': 6390, 'clean': 5561} clean clauses {'dev': 6, 'test': 27}
+g2 original lex     m7 d 6 | BX: 0.50,0.50,0.50 BN: 0.50,0.50,0.50
+l4 check {'h0': 0.0, 'h1': 0.0, 'h2': 6e-05, 'h3': 0.00024, 'h4': 0.00024, 'D0': 0.0, 'D1': 0.00012, 'D2': 0.00012, 'D3': 6e-05, 'W0': 2e-05, 'W1': 0.00012, 'W2': 0.00049, 'W3': 0.00049} | development premises {'original': 6390, 'clean': 5561} clean clauses {'dev': 6, 'test': 27}
+l4 original lex     m7 d 6 | BX: 0.50,0.50,0.50 BN: 0.50,0.50,0.50

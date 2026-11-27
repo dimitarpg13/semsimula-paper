@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Test 2 scoring: the template matchers on the analogy and in-context premises (2026-11-26; written before any result of test 2).
-    python3 template_analogy_analysis.py DEPTHDIR ANALOGYDIR OUTDIR stem[,stem...] [gates]
+    python3 template_analogy_analysis.py DEPTHDIR ANALOGYDIR OUTDIR stem[,stem...] [gates] [items=template_blogic_items] [tag=blogic]
+items= scores another item set with the same readings (task B-logic: its pairs and levels); tag= names the output files.
 "gates" scores token identity only, on the primary development set, and checks the extraction (gates G1 to G3 of the calls),
 so the item set can be checked before any model reading is computed; it writes template_analogy_gates_<stem>.json.
 DEPTHDIR holds depth_<stem>.pkl (template_depth_test.py), ANALOGYDIR analogy_<stem>.pkl (template_analogy_test.py); OUTDIR holds
@@ -32,9 +33,10 @@ import json, pickle, re, sys
 from pathlib import Path
 import numpy as np
 DBG = Path(__file__).resolve().parent; sys.path.insert(0, str(DBG))
-GATES = 'gates' in sys.argv[5:]; DEPTH_, AN_, OUT_, STEMS_ = sys.argv[1:5]; sys.argv = [sys.argv[0], DEPTH_, OUT_, STEMS_]
+GATES = 'gates' in sys.argv[5:]; TAG = next((x.split('=', 1)[1] for x in sys.argv[5:] if x.startswith('tag=')), 'analogy'); ITEMS_MOD = next((x.split('=', 1)[1] for x in sys.argv[5:] if x.startswith('items=')), 'template_analogy_items'); DEPTH_, AN_, OUT_, STEMS_ = sys.argv[1:5]; sys.argv = [sys.argv[0], DEPTH_, OUT_, STEMS_]
 _S = (DBG / 'template_depth_analysis.py').read_text(); _S = _S[:_S.rindex("if __name__ == '__main__':")]; exec(_S)
-from template_analogy_items import PAIRS, LEVEL_ORDER
+from importlib import import_module as _im
+_IT = _im(ITEMS_MOD); PAIRS, LEVEL_ORDER = _IT.PAIRS, _IT.LEVEL_ORDER
 from template_robust_clauses import DEV
 from template_fresh_clauses import FRESH
 RUN, AN, OUT = Path(DEPTH_), Path(AN_), Path(OUT_)
@@ -144,8 +146,8 @@ if __name__ == '__main__':
             # the gain of each reading over the embedding, analogy levels against L0 and L1 (call S3); levels resampled independently
             ANL, BAS = ('L2', 'L3', 'L4', 'L5', 'L6', 'C1', 'C2', 'C3'), ('L0', 'L1')
             for name in per:
-                if name in ('h0', 'lex') or GATES: continue
+                if name in ('h0', 'lex') or GATES or not set(ANL + BAS) <= set(LEVEL_ORDER): continue
                 dd = {L: per[name][L]['foil'] - per['h0'][L]['foil'] for L in ANL + BAS}; bs = []
                 for _ in range(B_): bs.append(np.mean([dd[L][RNG.integers(20, size=20)].mean() for L in ANL]) - np.mean([dd[L][RNG.integers(20, size=20)].mean() for L in BAS]))
                 pt = np.mean([dd[L].mean() for L in ANL]) - np.mean([dd[L].mean() for L in BAS]); q[dv][name]['S3 gain over h0, analogy minus L0-L1 (foil)'] = [float(pt), *[float(x) for x in np.percentile(bs, [2.5, 97.5])]]
-        (OUT / f'template_analogy_{"gates_" if GATES else ""}{s}.json').write_text(json.dumps(q, indent=1))
+        (OUT / f'template_{TAG}_{"gates_" if GATES else ""}{s}.json').write_text(json.dumps(q, indent=1))
