@@ -6,6 +6,7 @@ so the item set can be checked before any model reading is computed; it writes t
 DEPTHDIR holds depth_<stem>.pkl (template_depth_test.py), ANALOGYDIR analogy_<stem>.pkl (template_analogy_test.py); OUTDIR holds
 template_depth_<stem>.json and template_lexical_<stem>.json, whose primary m and d are reused (nothing is tuned here).
 Design: companion_notes/semantic_templates/Analogy_and_Context_Test_Set.md; items: analogy_items/; calls: Analogy_Test_Calls.md.
+The calls (G1 to G3, A1, E1 to E5, S1 to S4) were written before any reading and confirmed by the author on 2026-11-26.
 
 The matcher is the depth analysis's, unchanged (relational coordinates, connective position, one cloud per kind, discriminant
 subspace), and the clouds are fitted on development premises only, never on an analogy premise:

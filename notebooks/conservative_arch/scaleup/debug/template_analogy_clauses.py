@@ -52,26 +52,26 @@ for s, p, nr, sy, ps, pp, pf in _BASE:
 
 # L3 entailed case: case entails the clause, ncase entails its denial; each foil shares as many tokens and decides neither.
 L3 = [dict(aff=a, case=c, case_foil=cf, ncase=n, ncase_foil=nf) for a, c, cf, n, nf in [
-    ('it rains', 'a storm is pouring down on the pitch', 'a crowd is pouring onto the pitch', 'the sky is cloudless and the ground is dry', 'the stands are crowded and the ground is level'),
+    ('it rains', 'a storm is pouring down on the pitch', 'a crowd is pouring down onto the pitch', 'the sky is cloudless and the ground is dry', 'the stands are very crowded and the ground is level'),
     ('the guest is ill', 'the guest has a high fever', 'the guest has a high collar', 'the guest has just finished a marathon', 'the guest has just finished a novel'),
-    ('the animal is a mammal', 'the animal is a whale', 'the animal is a pet', 'the animal is a shark', 'the animal is in a zoo'),
+    ('the animal is a mammal', 'the animal is a whale', 'the animal is a pet', 'the animal is a shark', 'the animal is a female'),
     ('the metal is precious', 'the metal is gold', 'the metal is grey', 'the metal is iron', 'the metal is shiny'),
-    ('the container holds liquid', 'the container holds milk', 'the container holds a lot', 'the container holds rice', 'the container holds two kilos'),
-    ('the house is empty', 'all the tenants have moved out of the house', 'all the tenants have argued about the house', 'all the tenants are at home in the house', 'all the tenants are fond of the house'),
-    ('the team won', 'the team scored three goals and conceded none', 'the team scored three goals and received two yellow cards', 'the team lost every one of its games', 'the team travelled four hours by coach'),
-    ('the plant is dead', 'the plant has withered to brown stalks', 'the plant has been moved onto a porch', 'the plant has burst into bloom', 'the plant has been watered daily'),
+    ('the container holds liquid', 'the container holds milk', 'the container holds plenty', 'the container holds rice', 'the container holds enough'),
+    ('the house is empty', 'all the tenants have moved out of the house', 'all the tenants have often argued about the house', 'all the tenants are at home in the house', 'all the tenants are very fond of the house'),
+    ('the team won', 'the team scored three goals and conceded none', 'the team scored three goals and travelled home', 'the team lost every one of its games', 'the team travelled for four hours by coach'),
+    ('the plant is dead', 'the plant has withered to brown stalks', 'the plant has been moved out onto a porch', 'the plant has burst into bloom', 'the plant has been watered daily'),
     ('the bird can fly', 'the bird is soaring over the valley', 'the bird is singing over the valley', 'the bird is a penguin', 'the bird is in a cage'),
     ('the water is hot', 'the water is boiling', 'the water is murky', 'the water has frozen solid', 'the water has turned green'),
-    ('the prisoner escaped', 'the prisoner climbed over the wall and fled', 'the prisoner climbed a wall in the gym', 'the prisoner is still in his cell', 'the prisoner is still very quiet'),
-    ('the shop is closed', 'the shutters of the shop are down and locked', 'the shutters of the shop are green and dusty', "customers are queuing at the shop's tills", "customers are talking about the shop's prices"),
+    ('the prisoner escaped', 'the prisoner climbed over the wall and fled', 'the prisoner climbed a wall in the gym', 'the prisoner is still in his cell', 'the prisoner is still very quiet today'),
+    ('the shop is closed', 'the shutters of the shop are down and locked', 'the shutters of the shop are green and dusty', "customers are queuing at the shop's tills", "customers are talking at length about the shop's prices"),
     ('the man is married', 'the man has a wife', 'the man has a wallet', 'the man is a bachelor', 'the man is a baker'),
     ('the film was long', 'the film ran for four hours', 'the film ran for four weeks', 'the film was over in ten minutes', 'the film was shown in ten cities'),
-    ('the number is even', 'the number is twelve', 'the number is large', 'the number is seven', 'the number is written down'),
+    ('the number is even', 'the number is twelve', 'the number is large', 'the number is seven', 'the number is printed'),
     ('the road is wet', 'puddles cover the road', 'potholes cover the road', 'dust is blowing across the road', 'smoke is blowing across the road'),
-    ('the drawer is locked', 'the drawer will not open without the key', 'the drawer will not close without the stopper', 'the drawer slides open at a touch', 'the drawer squeaks at a touch'),
+    ('the drawer is locked', 'the drawer will not open without the key', 'the drawer will not close without the latch', 'the drawer slides open at a touch', 'the drawer squeaks at a touch'),
     ('the soup is salty', 'the soup tastes like seawater', 'the soup looks like seawater', 'the cook added no salt at all to the soup', 'the cook added no pepper at all to the soup'),
-    ('the window is broken', 'shards of the window lie on the floor', 'photos of the window lie on the floor', 'the window has just passed its inspection', 'the window has just been cleaned'),
-    ('the horse is tired', 'the horse is panting and stumbling', 'the horse is brown and white', 'the horse is galloping eagerly', 'the horse is grazing quietly'),
+    ('the window is broken', 'shards of the window lie on the floor', 'photos of the window lie on the floor', 'the window has just passed its inspection', 'the window has just been cleaned again'),
+    ('the horse is tired', 'the horse is panting and stumbling', 'the horse is chestnut and white', 'the horse is galloping eagerly', 'the horse is grazing very quietly'),
 ]]
 
 # L4 reference: the second sentence names its subject by a pronoun only. The foil is the same sentence with the other clause's
@@ -279,6 +279,7 @@ REVIEW_LOG = [
     ('2026-11-26', 'L6', 'subjects "the tumour / the growth" replaced by "the tumour is benign / the neoplasm is harmless" (foil "round"): the subjects are not synonyms (a growth is broader than a tumour; neoplasm is the medical synonym) (agent; author agreed).'),
     ('2026-11-26', 'L6', 'subjects "the turbine / the generator" replaced by "the aircraft is grounded / the plane is barred from flying" (foil "enormous"): the subjects are not synonyms (a turbine drives a generator; they are different machines) (agent; author agreed).'),
     ('2026-11-26', 'L6', 'subjects "the knight / the warrior" replaced by "the wizard is slain / the sorcerer is killed" (foil "bearded"): the subjects are not synonyms (a knight is one kind of warrior) (agent; author agreed).'),
+    ('2026-11-26', 'L3, 17 foils', 'every foil whose GPT-2 length differed from its restatement\'s was redrafted to the same length, overlap with the clause kept equal (frames 1, 3, 5, 6, 7, 8, 11, 12, 15, 17, 19, 20; frame 7\'s case foil is now "the team scored three goals and travelled home"): token identity preferred the foils (gate G1 of Analogy_Test_Calls.md failed, 0.385, interval 0.32 to 0.45), because the matcher\'s coordinates count unmatched particles, so length alone moved the score (agent; author approved).'),
 ]
 
 LEVELS = dict(BASE=BASE, L3=L3, L4=L4, L5=L5, L6=L6, C1=C1, C2=C2, C3=C3, C4=C4)

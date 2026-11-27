@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Test 2 extraction: the analogy and in-context premises (2026-11-26).
-    python3 template_analogy_test.py OUTDIR FOLDER name=<stem> [ckpt=best|step500] [threads=8] [vec=1] [limit=N]
+    python3 template_analogy_test.py OUTDIR FOLDER name=<stem> [ckpt=best|step500] [threads=8] [vec=1] [limit=N] [levels=L3,C2]
+levels= extracts only those levels (plus the check premises), for re-extracting a level after its items change; merge the
+result into the full file with template_analogy_merge.py. Every premise is extracted alone in its batch row, so its values do not
+depend on which other premises are run (the check premises confirm it).
 Runs template_depth_test.py with its premise list replaced by the 6,720 premises of template_analogy_items.py, plus 96 of its own
 development and test premises rebuilt the same way (split 'check', with 'depth_index' their place in depth_<stem>.pkl), so that the
 scorer can confirm that the premises stored by the depth extraction are what this run gives. Everything else is the depth
@@ -32,7 +35,8 @@ def _analogy(depth_items):
     from template_analogy_items import build
     rng = np.random.default_rng(5); pick = sorted(rng.choice([j for j, x in enumerate(depth_items) if x['kind'] != 'text'], 96, replace=False))
     chk = [{**depth_items[j], 'split': 'check', 'level': 'check', 'depth_index': int(j)} for j in pick]
-    return chk + build(tiktoken.get_encoding('gpt2'))
+    lv = next((a.split('=', 1)[1].split(',') for a in sys.argv if a.startswith('levels=')), None)
+    return chk + [x for x in build(tiktoken.get_encoding('gpt2')) if lv is None or x['level'] in lv]
 
 
 exec(compile(src, str(DBG / 'template_depth_test.py'), 'exec'), {'__name__': '__main__', '__file__': str(DBG / 'template_depth_test.py'), '_analogy': _analogy})
