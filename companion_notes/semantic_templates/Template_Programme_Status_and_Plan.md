@@ -92,6 +92,7 @@ Each line states its standing: **measured** (read from a confirmed or explorator
 - **SR2-L8**, the pair-force twin at eight layers (the author asked to settle the pair force's part sooner), then **SR2-NP-L4**, which completes the clean depth series.
 - **Twin PA** (productization), after SR2-NP-L8, its slot set against the productization order and the 2B-token priorities.
 - The productization order continues on the main GPU: PMX-K16-NP, then the tied arms of the grid.
+- **N-live** (added 2026-11-27, author): the non-conservative exchange-field twin of G3 under live gradients, for the book's open price-of-conservativity question; set-up in [Conservative_Core_Productization_Plan.md](../productization/Conservative_Core_Productization_Plan.md), §6. Position: the author's call.
 
 ### 5.4 Later investigations
 

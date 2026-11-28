@@ -66,7 +66,7 @@ The width, depth, weight decay and batch of the cosine baseline are those listed
 **Not matched in any run:**
 
 - **Depth.** GPT-2 has $L = 8$ layers; the Fock arms compared with it have $L = 2$ or $L = 4$. The protocol notes this as "the depth mismatch the G2B card states (L = 8 against L = 2)".
-- **Parameter count.** GPT-2 has 33.7M parameters. The $L = 4$ live Fock arm has 76.8M and G2 76,770,256. A parameter-matched GPT-2 (G1, $L = 22$) was registered but deferred; see the [abstract-gating note](Abstract_Gating_Runs.md).
+- **Parameter count.** GPT-2 has 33.7M parameters. The $L = 4$ live Fock arm has 76.8M and G2 76,770,256. A parameter-matched GPT-2 (G1, $L = 22$) was registered and deferred, then dropped by the author on 2026-11-27: a 22-layer GPT-2 is not a realistic comparison, and any further transformer baseline stays at 8 to 16 layers. See the [abstract-gating note](Abstract_Gating_Runs.md).
 - **Attention heads.** GPT-2 uses 6 heads of width 64; the Fock models use 8 of width 48, chosen for width parity.
 - **Hyperparameter effort.** GPT-2's settings are nanoGPT defaults, "known-good across a wide range". At §5.4's date the Fock side's settings were inherited and unswept. Section 4 gives the table.
 
@@ -225,7 +225,7 @@ C1 and C3 use W2's settings on other corpora and are recorded in protocol §5.13
 | --- | --- | --- | ---: | ---: |
 | C1, 2026-10-25 | `p-gpt2-ts` | TinyStories, 315M tokens | 19,250 | 4.47 |
 | C3 (GPT-2-CODE), 2026-10-26 | `p-gpt2-code` | Python code (CodeParrot) | 19,250 | 4.96 |
-| G1 (parameter-matched, L = 22) | §5.10 | OpenWebText | — | deferred, not run |
+| G1 (parameter-matched, L = 22) | §5.10 | OpenWebText | — | dropped 2026-11-27, never run |
 
 Both C1 and C3 report 33,691,776 parameters.
 

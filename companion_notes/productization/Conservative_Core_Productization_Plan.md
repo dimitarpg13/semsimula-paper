@@ -189,6 +189,13 @@ T3 (hybrid context channels) stays a candidate behind its CPU speed bound. Secon
 
 The tied arms of the grid follow; their order is open.
 
+**Added to the GPU queue (author, 2026-11-27): N-live, the non-conservative exchange-field twin of G3 under live gradients.** This is a ladder arm, not a productization arm. It answers the one price-of-conservativity question the book still lists as open (the scope paragraph and Remark 110): the ladder's exchange field as a direct force (non-conservative) against the same field as the gradient of a potential (G3, 54.21), with every gradient live. The non-conservative form has run only under the detached convention (run 9, 63.51), so the Gen 2 pair (+27.4%) has no live counterpart yet. The arm's Cell 0 is G3's, with two switches changed:
+
+- `FORCE_RELAXATION = 'attention'` (the notebook's arm N) instead of `'attention_potential'`;
+- `RELAX_GRAD_PATH = 'default'`, because the direct force back-propagates through its queries, keys and values on its own, and `'live'` applies only to the potential.
+
+Everything else stays as in G3: `REVERSE_CHANNEL = True`, `VPHI_GRAD_PATH = 'live'`, `XI_GRAD_PATH = 'live'`, unhardened routing (the `rfqk` hardening exists only for the potential, so G3, not G3′, is the twin). Expected tag `…vtjoint_cgqk_vplive_xilive_L2probe_…_lr0p0012_attn`. Parameters as G3: the Gen 2 pair was matched exactly (77,360,081). Not yet done: the CPU build check, and the calls, which are proposed and confirmed before launch. Its position in the queue is the author's call.
+
 **The template depth runs wait (author, 2026-11-25).** The eight-layer and four-layer template runs (SR2-NP-L8, its pair-force twin SR2-L8, SR2-NP-L4; [Template_Matchers_and_Depth_L4.md](../semantic_templates/Template_Matchers_and_Depth_L4.md), §9) do not go ahead of this order. They will run, but they are not the top priority, and the author reads the CPU template results first. VF0 has since been scored (item 1). **Update 2026-11-26 (author):** SR2-NP-L8 is launched now on a second GPU (G4, over 100 GiB), alongside twin PB, ahead of PMX-K16-NP. Cell 0 is SR2-NP's with only `LADDER_L = 8` (layer checkpointing stays off). CPU build check: tag `…xilive_sr2_L8probe_ob_untied_…_baoab_cfc_lowrank_lr0p0012_noattn` (no `idt` token at dt = 1), 76,594,057 parameters, 32,500 steps; one forward and backward 3.79 times SR2-NP's on the CPU. Its calls are written before results land.
 
 4. **After each stage.** Update §1's table, the benchmark note, and the book's Appendix C.10 where the bound or the measured state changes.

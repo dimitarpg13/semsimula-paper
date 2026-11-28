@@ -2,7 +2,7 @@
 
 **What this note is.** A short, readable summary, written 2026-11-17, of the runs that decide three claims in the v6 abstract of the book: what the Fock register mechanism is worth when every channel gets gradient, whether depth helps under the same condition, and whether parity with the matched GPT-2 survives a parameter-matched baseline. These are protocol §5.10 (the abstract-gating runs G1 to G4, called AG1 to AG4 in the book) and, briefly, protocol §5.11 (CB1 to CB3, balancing the conservative and Fock paths). For each arm it gives the configuration, what was registered before the run, the mid-run readings where there were any, the scoring and the diagnostics. Every number, verdict and date is copied from the [protocol](https://github.com/dimitarpg13/semsimula-paper/blob/0e3e3f22199a5595d86c15c39a27319746b55ae2/companion_notes/Depth_Ladder_and_Matched_Baseline_Protocol.md), which keeps the full log and remains the record of truth.
 
-**Status in one line.** G2, G3 and the hardened follow-up arm G3′ have run and are scored. G1 (a parameter-matched GPT-2) was deferred, and no G4 result or CB-arm result is recorded in the protocol; CB0, a free reading on G2's checkpoint, is scored.
+**Status in one line.** G2, G3 and the hardened follow-up arm G3′ have run and are scored. G1 (a parameter-matched GPT-2) was deferred and then dropped (2026-11-27), and no G4 result or CB-arm result is recorded in the protocol; CB0, a free reading on G2's checkpoint, is scored.
 
 ## Contents
 
@@ -46,7 +46,7 @@ The abstract's wording for each outcome was fixed in advance, so the results fil
 
 ## 3. G1: a parameter-matched GPT-2 (protocol §5.10)
 
-**Registered 2026-10-03, deferred until G2 to G4 are in.**
+**Registered 2026-10-03, deferred until G2 to G4 are in.** **Dropped by the author 2026-11-27:** a 22-layer GPT-2 is not a realistic comparison; any further transformer baseline stays at 8 to 16 layers.
 
 - **Configuration.** The matched GPT-2 notebook with `N_LAYERS = 22` and `TIE_EMBEDDINGS = False`; $d = 384$, 6 heads, learning rate 6e-4 with a cosine to 6e-5, 16,384 tokens per step.
 - **Parameters:** 77,832,960, 1.3% above the $L = 4$ live arm's 76,823,510. $L = 22$ was chosen over $L = 21$ so that the baseline is never the smaller model.
@@ -54,7 +54,7 @@ The abstract's wording for each outcome was fixed in advance, so the results fil
 - **Author's reservation.** Matching parameters by stacking depth ignores the model's dynamics. The primary comparison stays the width-matched 33.7M baseline, with both parameter counts stated.
 - **Prediction:** settled 45, band 41 to 48. Settled at or below 47.6 (5% below 50.10) means parity does not hold on a parameter-matched footing. Called at about 65% that it does not hold.
 
-**Result:** none recorded in the protocol. Until G1 runs, the abstract quotes the width-matched baseline (49.81, 33.7M) against the $L = 4$ live arm (50.10, 76.8M). The GPT-2 baselines themselves are in [Matched_GPT2_Baselines.md](Matched_GPT2_Baselines.md).
+**Result:** never run. The abstract quotes the width-matched baseline (49.81, 33.7M) against the $L = 4$ live arm (50.10, 76.8M). The GPT-2 baselines themselves are in [Matched_GPT2_Baselines.md](Matched_GPT2_Baselines.md).
 
 ## 4. G2: the Fock arm without an exchange field (protocol §5.10)
 
@@ -230,5 +230,6 @@ Cell 6b-10 on run 4, the Gen 2 twin of the $L = 4$ live arm. Prediction: tangent
 
 ## 9. Unclear items
 
-- **G1, G4 and CB1 to CB3.** The protocol has no scored entry for any of them. This note does not say whether they were dropped or are still queued.
+- **G1** was dropped by the author on 2026-11-27 (§3).
+- **G4 and CB1 to CB3.** The protocol has no scored entry for any of them. This note does not say whether they were dropped or are still queued.
 - **G3′'s Gate 3.** The Colab reading is +115%. Protocol §5.18 (RR-B, a local replay on SR-π.3's tokens) reads +119% after the 2026-10-16 correction. They appear to be different measurements; both are quoted as written.
